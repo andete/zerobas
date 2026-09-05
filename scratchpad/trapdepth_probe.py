@@ -126,11 +126,49 @@ for s in sides:
 
 w = max(len(l) for l in ORDER)
 print(f"\n{'row':<{w}}  " + "  ".join(f"{s:>14}" for s in sides) + "   verdict")
+# 🔴 SCORE `E F`, NOT `D E F` -- AND THE OLD VERDICT WAS FOUR FALSE
+# DIVERGENCES. `D` is the recursion DEPTH reached before overflow, i.e. a
+# CAPACITY figure set by how much RAM each machine has for GOSUB frames. It read
+# 4071 / 3302 / 2858 on the three sides and can never agree; scoring the whole
+# `[D E F]` string therefore reported `🔴 REFS SPLIT   zb DIFF` on all four rows
+# while `E` (the ERR that stopped it) and `F` (actual handler entries) were
+# IDENTICAL on all three, every row -- which is the subject.
+# `scratchpad/filed_row_sweep.py` duly listed those four as UNFILED divergences
+# nobody had adjudicated. They were artefacts of comparing machine RAM size.
+#
+# ⚠️ AND THE THING `D` IS ACTUALLY FOR IS A WITHIN-MACHINE DELTA, which the
+# absolute comparison hid: d.depth0 -> d.depth1 costs 25 / 25 / 22 frames, and
+# d.depth0 -> d.ctl20 costs 31 / 31 / 27. Those are printed below as context and
+# deliberately NOT scored: a frame is 8 B here (`GOSUB_FRAME`) and the
+# references' frame size is not measured by this row, so a 25-vs-22 difference in
+# FRAMES is not yet a difference in BYTES [[a-mechanism-inferred-from-one-observation]].
+def _def(face):
+    """(D, 'E F') -- the capacity figure apart from the subject."""
+    parts = str(face).split()
+    return (parts[0] if parts else "?"), " ".join(parts[1:]) if len(parts) > 1 else ""
+
+
+_base = {s: _def(res[s][ORDER[0]])[0] for s in sides}
 for lab in ORDER:
     v = [res[s][lab] for s in sides]
-    tag = "refs agree" if v[0] == v[1] else "🔴 REFS SPLIT"
-    zb = "" if v[1] == v[2] else "   zb DIFF"
-    print(f"{lab:<{w}}  " + "  ".join(f"{x:>14}" for x in v) + f"   {tag}{zb}")
+    subj = [_def(x)[1] for x in v]
+    tag = "refs agree" if subj[0] == subj[1] else "🔴 REFS SPLIT"
+    zb = "" if subj[1] == subj[2] else "   zb DIFF"
+    try:
+        dd = "  ΔD " + "/".join(
+            str(int(_def(v[i])[0]) - int(_base[sides[i]])) for i in range(3))
+    except ValueError:
+        dd = ""
+    # 🔴 THE ROW MUST END IN A VERDICT WORD, and removing the FALSE markers
+    # is what exposed that it never did. `scratchpad/filed_row_sweep.py` parses a
+    # row by `SAME|DIFF|NO-ORACLE` at END of line (or a `vg8020=` pair); this
+    # table has neither, so with the bogus mid-line `DIFF`s gone the sweep went
+    # straight from "4 UNFILED" to "🔴 NOTHING PARSED" -- honest, and still
+    # blind. A probe that is CLEAN has to be able to say so.
+    word = ("NO-ORACLE" if subj[0] != subj[1]
+            else "DIFF" if subj[1] != subj[2] else "SAME")
+    print(f"{lab:<{w}}  " + "  ".join(f"{x:>14}" for x in v)
+          + f"   {tag}{zb}{dd}   {word}")
 print("""
 read: `[N E]` -- N is the count reached, E the ERR that stopped it (0 = never).
   d.depth0 vs d.depth1  EQUAL  -> the abandoned dispatch's GOSUB frame IS reclaimed

@@ -410,7 +410,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:9142 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:9164 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -474,7 +474,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:2192 (T-6FE392)8 (T-529ABE)` from `TODO.md:8345 (T-529ABE)`: a
+      `TODO.md:2214 (T-6FE392)8 (T-529ABE)` from `TODO.md:8367 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -995,8 +995,30 @@ list. **When a slice lands, grep this list for what it just shipped.**
       LINES, AND THEY ARE THE NEXT THING TO READ:**
 
           casfch_probe      6 markers   0 known, 6 UNFILED   (rc=1)
-          trapdepth_probe   4 markers   0 known, 4 UNFILED   (exits 0)
+          trapdepth_probe   4 markers   0 known, 4 UNFILED   (exits 0)  🟢 READ
           ramfree_probe    10 markers   9 known, 1 UNFILED   (rc=1)
+
+      🟢 **`trapdepth_probe` READ 2026-09-05 — ALL FOUR WERE FALSE, AND THE CAUSE
+      IS WORTH THE ENTRY.** It scored the whole reading `[D E F]`, and **`D` is
+      the recursion DEPTH before overflow — a CAPACITY figure set by how much RAM
+      each machine has for GOSUB frames.** It reads 4071 / 3302 / 2858 and can
+      never agree, so every row reported `REFS SPLIT · zb DIFF` while `E` (the
+      ERR that stopped it) and `F` (actual handler entries) were **identical on
+      all three, every row** — which is the subject. Now scored on `E F`; all
+      four read `refs agree`.
+      🎯 **AND THE ABSOLUTE COMPARISON WAS HIDING THE FIGURE `D` IS ACTUALLY
+      FOR.** The question is a WITHIN-machine delta, and it is now printed:
+      `d.depth0 → d.depth1` costs **−25 / −25 / −22** frames, `→ d.ctl20`
+      **−31 / −31 / −27**. ⚠️ **Deliberately NOT scored**: a frame is 8 B here
+      (`GOSUB_FRAME`) and this row does not measure the references' frame size,
+      so 25-vs-22 in FRAMES is not yet a difference in BYTES
+      [[a-mechanism-inferred-from-one-observation]].
+      🔴 **AND REMOVING THE FALSE MARKERS EXPOSED A SECOND HOLE**: the sweep went
+      from `4 UNFILED` straight to `🔴 NOTHING PARSED`, because this table ends no
+      row in a verdict word and carries no `vg8020=` pair. Honest, and still
+      blind — **a probe that is CLEAN has to be able to say so.** Each row now
+      ends `SAME`/`DIFF`/`NO-ORACLE`; the sweep reads
+      `clean: 4 parsed line(s), no divergence marker`.
 
       That is the sweep doing exactly what it exists for: a divergence nobody has
       adjudicated, made loud. **Not read yet — recorded so the next pass starts
@@ -2830,7 +2852,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:8345 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:8367 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
