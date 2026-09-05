@@ -9019,6 +9019,31 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       Worth a tool: resolve fall-through and shared-tail edges when enumerating
       "who can reach routine X", the same way `check_tenant_closure.py` walks a
       call graph rather than grepping for names.
+      ✅ **BUILT 2026-09-05 (D-WHOREACH, `tools/who_reaches.py`).** It asks
+      `check_dead_code.Spans` the REVERSE question — that graph already resolves
+      fall-through and shared-tail edges for the dead-code sweep — and reports
+      reachers by HOP DISTANCE, which is what makes the answer readable:
+      | | `print_msg` | |
+      |---|---|---|
+      | hop 1 | **9** routines | **all 9 NAME it** — which is why a grep finds them |
+      | hop 2 | **64** routines | **all 64 SILENT** — no grep for the callee can list one |
+      🎯 **THE HOP-1 COLUMN IS THE LOAD-BEARING HALF.** That every hop-1 reacher
+      names the target is what makes "silent" mean something: it establishes the
+      grep/hop-1 equivalence the report asserts, so hop 2+ is exactly the blind
+      spot and not merely a bigger number. The selftest requires it.
+      🔬 **AND ITS SELFTEST IS THIS ENTRY'S OWN CASE**: `dl_store` — the
+      line-number-out-of-range arm that reaches `print_msg` by `jr
+      dl_ovf_report` and never names it — must come back as a reacher beyond hop
+      1, and must not name the target. Without that the tool would only be
+      re-deriving what a grep already finds. `dl_ovf_report` is required at hop 1
+      in the same run.
+      ⚠️ **A QUERY TOOL, NOT A GATE, deliberately**: "no silent reachers" is not
+      a property this tree has or should have — 64 legitimate ones for this one
+      callee. What a blast-radius sweep needs is the LIST, not a verdict. It is
+      collected by `selftest-check` (its `TREES` includes `tools`).
+      ⚠️ `@prologue:` nodes are filtered: they are the dead-code graph's own
+      per-file artefact, not routines anyone can name or migrate, and counting
+      them would pad the answer with things that are not callers.
       🤖 AUTONOMOUS — the reference or a gate settles it; finishable unattended (no his-decision signal found).
 
 - [ ] ⚠️ **A PROBE'S MESSAGE LITERAL IS EITHER AN ASSERTION OR A CLASSIFIER
