@@ -3090,6 +3090,18 @@ todo-citation-check:
 todo-marker-check:
 	python3 tools/check_todo_markers.py
 
+# D-DEFERPIN. A DEFERRED row is measured, printed and never scored -- so its
+# stated REASON is the only thing saying why, and a reason is prose that nothing
+# checks. 🔴 Five times now a filed FACE rotted while the row went on diverging,
+# invisible to filed-row adjudication (which asks known/unfiled/no-longer-
+# diverging, and a row that diverges to a DIFFERENT face is `known`). The face
+# now lives in the probe as probe_report.Deferral(reason, side=face, ...), red on
+# drift in either direction; this static gate is what stops the next deferral
+# being added as a bare string again.
+# <1 s, read-only, no emulator.
+deferral-pin-check:
+	python3 tools/check_deferral_pins.py
+
 # Three items filed "and nothing checks it" and each proposed its own cheap
 # checker. They are ONE property, not three subjects: a shared helper exists
 # BECAUSE the obvious hand-written version was measured wrong, so writing the
@@ -3170,7 +3182,7 @@ clean:
         badfnum-characterize badfnum-acceptance \
         deffn-acceptance deffn-selftest deffn-strict switch-build-check \
         msgexact-gate msgexact-relock preflight-check latch-check injector-check \
-        omsx-diag-teeth temp-root-check shared-body-check probe-reach-check citation-check todo-citation-check todo-marker-check \
+        omsx-diag-teeth temp-root-check shared-body-check probe-reach-check citation-check todo-citation-check todo-marker-check deferral-pin-check \
         chokepoint-check banner-acceptance wall-literal-check \
         patch-freshness-check gates clean
 

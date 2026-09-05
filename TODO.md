@@ -254,7 +254,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:8481 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:8511 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -318,7 +318,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:1977 (T-6FE392)8 (T-529ABE)` from `TODO.md:7684 (T-529ABE)`: a
+      `TODO.md:2007 (T-6FE392)8 (T-529ABE)` from `TODO.md:7714 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -730,6 +730,36 @@ list. **When a slice lands, grep this list for what it just shipped.**
       does exactly this for 8 rows and goes RED on drift **in either direction**,
       which is the shape this wants.
       🤖 AUTONOMOUS — the corpus and the failure mode are both in hand; what is missing is a design, not a decision.
+      🟢 **THE DEFERRAL HALF IS DONE (D-DEFERPIN, 2026-09-05), AND TWO MORE
+      INSTANCES TURNED UP WHILE DOING IT** — so the class is at **five**, not
+      three:
+      • `basic_probe_namspc.py`'s three bare-verb deferrals read *"`Missing
+        operand` on the CF-3300, `Syntax error` here"* while all three machines
+        had come to print `Missing operand` (D-MISSOPMSG, same day). 🔴 **That
+        note carried its OWN ⚠️ saying the reason must not go stale, written one
+        round earlier. A warning is not a check.**
+      • `basic_probe_fldwidth.py`'s `r.len100` said *"`Syntax error` here"*
+        against a measured `Illegal function call`. 🔴 **This entry had already
+        corrected that face on the `LEN=r` ENTRY a day earlier** — correcting the
+        filing does not correct the probe, and nothing connected them.
+      ➡️ **A DEFERRAL IS A PIN, NOT A NOTE.** `probe_report.Deferral(reason,
+      side=face, ...)` records the faces that make the deferral true and goes RED
+      on drift **in either direction**, including a side that stops being
+      measured and a side measured but never pinned — the shape this entry itself
+      named as the likely cheap half (`basic_probe_nodisk.py`'s `PINNED`).
+      **All 10 live deferred rows in the battery are pinned**: `namspc` 2,
+      `fldwidth` 2, `nxlist` 3, `screenerr` 3 (counted from the last green
+      battery's logs, not from this line — recount before quoting).
+      🟢 **AND IT HAS TEETH, MEASURED NOT ASSUMED**: K-DP1 mutated one pinned
+      face (`m.blank`'s `zb`) and `namspc-acceptance` went **rc=2** naming exactly
+      what moved, with the probe source restored byte-identically afterwards.
+      🔒 **`make deferral-pin-check` (7 arms) stops the next deferral being
+      added as a bare string again** — a static AST read, so it costs no emulator
+      time and cannot be skipped by a row that did not run.
+      🔴 **WHAT IS NOT DONE, EXPLICITLY**: the SCORED-row half. A row that still
+      diverges but to a different face is still `known` to `filed_row_sweep`, and
+      that is the design question this entry opened. Pinning 10 deferrals does
+      not touch the 54 pinned divergent rows. **The item stays open for that.**
 
 - [ ] 🔴 **SEVEN FILED PROBES PRINT DIVERGENCES AND EXIT 0.** Measured
       2026-08-31 by D-FILEDROT,
@@ -2578,7 +2608,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:7684 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:7714 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

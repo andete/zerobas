@@ -372,13 +372,24 @@ DEFERRED: dict[str, str] = {
     # does not), and ex_field now reads FCH_RECLENS[ch] inline.
     # 🔴 PROMOTING THEM IS THE STRICTER MOVE: a DEFERRED row is measured and
     # printed but never scored, so it cannot fail. These now can.
-    "r.sum":    "DEFERRED — ran TWO questions together (a non-tiling LEN=100 AND "
-                "the running total); split into r.len100 + r.sum128, which are "
-                "scored. Kept as the record of a row whose MISS was the finding",
-    "r.len100": "DEFERRED — a NON-TILING `LEN=` is `OK` on the CF-3300 and "
-                "`Syntax error` here (oo_parse_reclen demands a power of two so "
-                "records tile the 512-byte sector). A SEPARATE defect, filed in "
-                "TODO.md; NOT part of the ERR-50 rule and not fixed by it",
+    "r.sum": probe_report.Deferral(
+        "DEFERRED — ran TWO questions together (a non-tiling LEN=100 AND "
+        "the running total); split into r.len100 + r.sum128, which are "
+        "scored. Kept as the record of a row whose MISS was the finding",
+        cf3300="<FIELD overflow>", zb="<Illegal function call>"),
+    # \U0001f534 THIS REASON HAD ALREADY ROTTED WHEN THE PIN WAS ADDED. It said
+    # "`Syntax error` here"; the measured face is `<Illegal function call>`
+    # (ERR 5), and TODO.md's D-RECLENDOM had corrected the ENTRY on 2026-09-04
+    # while the probe kept the old wording. Corrected beside, not instead:
+    # `Syntax error` is what it read when the deferral was written.
+    "r.len100": probe_report.Deferral(
+        "DEFERRED — a NON-TILING `LEN=` is `OK` on the CF-3300 and "
+        "`Illegal function call` here (it read `Syntax error` when this was "
+        "filed; D-RECLENDOM re-measured it as ERR 5 on 2026-09-04). "
+        "oo_parse_reclen demands a power of two so records tile the 512-byte "
+        "sector. A SEPARATE defect, filed in TODO.md; NOT part of the ERR-50 "
+        "rule and not fixed by it",
+        cf3300="OK", zb="<Illegal function call>"),
 }
 
 
@@ -570,14 +581,19 @@ def main() -> int:
         return 0
 
     agree = dis = noref = onlyone = refsplit = deferred = 0
+    rotted: list[tuple[str, str]] = []
     for lab in present:
         vals = {s: results[s][lab] for s in sides if lab in results[s]}
         refs = {s: v for s, v in vals.items()
                 if s in ("vg8020", "cf3300") and v not in SENTINELS}
         if lab in DEFERRED:
             deferred += 1
+            moved = DEFERRED[lab].drift(vals)
+            if moved:
+                rotted.append((lab, moved))
             print(probe_report.row("....", lab, LABEL_W, vals,
-                                   f"   [{DEFERRED[lab]}]"))
+                                   f"   [{DEFERRED[lab]}]"
+                                   + (f"   \U0001f534 FACE ROTTED: {moved}" if moved else "")))
             continue
         note = "   [POSITIVE CONTROL]" if lab in CONTROLS else ""
         if lab in NEGATIVE:
@@ -643,8 +659,14 @@ def main() -> int:
           "field; a `LEN=` record length other than the 256-byte default; "
           "`FIELD` on a CAS: channel; and message WORDING (D-MSGEXACT's "
           "surface -- the error-name match here is case-insensitive).")
-    if a.gate and dis:
-        sys.stderr.write(f"fldwidth: {dis} reading(s) diverge\n")
+    if rotted:
+        print("\U0001f534 DEFERRED FACE(S) ROTTED — a deferral is a PIN, not a "
+              "note (D-DEFERPIN). The row still may not be scored; what moved "
+              "is the reading the deferral's REASON is written about:")
+        for _lab, _why in rotted:
+            print(f"    {_lab}  {_why}")
+    if a.gate and (dis or rotted):
+        sys.stderr.write(f"fldwidth: {dis} reading(s) diverge [+{len(rotted)} rotted deferred face(s)]\n")
         return 1
     return 0
 

@@ -919,7 +919,13 @@ SITE_CONTROL = {
 # on those verbs, and doing that is the next step -- not writing the check.
 # 🟢 The disk ROM has room (8910 B free, 2026-09-04), so this is deferred on the
 # MEASUREMENT that is missing, not on a wall.
-DEFERRED: dict[str, str] = {
+# 🟢 D-DEFERPIN (2026-09-05): each value is a `probe_report.Deferral`, so the
+# FACES that make the deferral true are pinned and drift EITHER WAY is RED. This
+# probe is why: its three bare-verb deferrals carried the reason "`Missing
+# operand` on the CF-3300, `Syntax error` here" long after all three machines had
+# come to print `Missing operand`, under a ⚠️ of its own saying the reason must
+# not go stale. A warning is not a check.
+DEFERRED: dict[str, "probe_report.Deferral"] = {
     # ✅ ALL THIRTEEN OTHER D-FSPEC ROWS GRADUATED THE SAME DAY THEY WERE FILED
     # and are ORDINARY SCORED ROWS above: build_83_name truncates positionally
     # instead of rejecting, and parse_disk_fcb RAISES `Bad file name` (ERR 56)
@@ -933,8 +939,14 @@ DEFERRED: dict[str, str] = {
     # (m.drvkill/m.drvload/m.drvsave, scored). So the empty-name rejection is
     # right for every verb that has no bare form, and the fix must go in
     # `do_files` -- those three rows are what would catch it going anywhere else.
-    "m.blank": "D-FSPEC: a BLANK filespec is `no filespec` there (lists all); a do_files question",
-    "m.drvbare": "D-FSPECCHAR: a DRIVE-PREFIX-ONLY filespec is the same class as m.blank -- `no filespec` there (lists all); the other verbs are measured and AGREE (m.drvkill/load/save), so the fix is in do_files, NOT in bn_done's empty-name test",
+    "m.blank": probe_report.Deferral(
+        "D-FSPEC: a BLANK filespec is `no filespec` there (lists all); a do_files question",
+        vg8020="<NO DISK ON THIS SIDE>", cf3300="5 entries + OK",
+        zb="0 entries + <Bad file name>"),
+    "m.drvbare": probe_report.Deferral(
+        "D-FSPECCHAR: a DRIVE-PREFIX-ONLY filespec is the same class as m.blank -- `no filespec` there (lists all); the other verbs are measured and AGREE (m.drvkill/load/save), so the fix is in do_files, NOT in bn_done's empty-name test",
+        vg8020="<NO DISK ON THIS SIDE>", cf3300="5 entries + OK",
+        zb="0 entries + <Bad file name>"),
 }
 
 # ✅ ALL EIGHT D-FNARG2 ROWS GRADUATED 2026-08-21 (D-FNEXPR2) and are ORDINARY
@@ -1379,14 +1391,19 @@ def main() -> int:
         return 0
 
     agree = dis = noref = onlyone = refsplit = deferred = 0
+    rotted: list[tuple[str, str]] = []
     for lab in present:
         vals = {s: results[s][lab] for s in sides if lab in results[s]}
         refs = {s: v for s, v in vals.items()
                 if s in ("vg8020", "cf3300") and v not in SENTINELS}
         if lab in DEFERRED:
             deferred += 1
+            moved = DEFERRED[lab].drift(vals)
+            if moved:
+                rotted.append((lab, moved))
             print(probe_report.row("....", lab, LABEL_W, vals,
-                                   f"   [{DEFERRED[lab]}]"))
+                                   f"   [{DEFERRED[lab]}]"
+                                   + (f"   🔴 FACE ROTTED: {moved}" if moved else "")))
             continue
         note = "   [POSITIVE CONTROL]" if lab in CONTROLS else ""
         if lab in NEGATIVE:
@@ -1455,8 +1472,16 @@ def main() -> int:
           "inside a DEF FN name or a line-number list; `RSET` and the FIELD "
           "family (D-TGTSPC's nine lvalue surfaces already carry the `(` "
           "position and share one parse site).")
-    if a.gate and dis:
-        sys.stderr.write(f"namspc: {dis} reading(s) diverge\n")
+    if rotted:
+        print("\U0001f534 DEFERRED FACE(S) ROTTED — a deferral is a PIN, not a note "
+              "(D-DEFERPIN). The row still may not be scored; what moved is the "
+              "reading the deferral's REASON is written about, so the reason is "
+              "now describing a machine that no longer exists:")
+        for lab, why in rotted:
+            print(f"    {lab}  {why}")
+    if a.gate and (dis or rotted):
+        sys.stderr.write(f"namspc: {dis} reading(s) diverge, "
+                         f"{len(rotted)} deferred face(s) rotted\n")
         return 1
     return 0
 

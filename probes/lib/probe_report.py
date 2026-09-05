@@ -112,6 +112,60 @@ def footer(printed: int, scored: int, why: str) -> str:
     return f"ROWS: {printed} printed, {scored} scored — {why}"
 
 
+# --- D-DEFERPIN: a deferral is a PIN, not a note ----------------------------
+# 🔴 A FILED *FACE* ROTS WITHOUT THE ROW CEASING TO DIVERGE, AND NOTHING
+# DETECTED THAT. Five instances now, every one found by hand:
+#   * the NAME rows, `LEN=r`, and the concatenation entry (all 2026-09-04);
+#   * `basic_probe_namspc.py`'s three bare-verb deferrals, whose stated reason
+#     was *"`Missing operand` on the CF-3300, `Syntax error` here"* while all
+#     three machines had come to print `Missing operand` (D-MISSOPMSG,
+#     2026-09-05) -- and that note carried its OWN ⚠️ saying the reason must not
+#     go stale, written one round earlier. A warning is not a check.
+#   * the TODO entry above it, resting on "zerobas has no `Missing operand`
+#     message at all" months after the message shipped.
+#
+# 🎯 `filed_row_sweep` CANNOT SEE THIS CLASS AND ITS OWN DESIGN SAYS WHY: it
+# adjudicates *known* / *unfiled* / *no longer diverging*, and a row that still
+# diverges but diverges to a DIFFERENT FACE is `known`. Its 2026-09-04 run was
+# 0 UNFILED / 0 NO-LONGER-DIVERGING with two of the three above live.
+#
+# So the face goes in the PROBE's own pin, where the measurement is -- the shape
+# `basic_probe_nodisk.py`'s `PINNED` dict already has, and which TODO.md's own
+# entry names as the likely cheap half.
+#
+# ⚠️ EVERY MEASURED SIDE MUST BE PINNED, not just the interesting one. An
+# unpinned side is a face that can rot unseen, which is the whole defect; and a
+# pinned side that stops being measured is reported rather than passed over
+# [[an-unnamed-outcome-reads-as-no-outcome]].
+class Deferral:
+    """A row measured, printed, and NEVER scored -- with the faces that make the
+    deferral true. Prints as its reason, so it drops into an existing
+    f"[{DEFERRED[lab]}]" unchanged; `drift()` is what gives it teeth."""
+
+    def __init__(self, reason: str, **faces: str):
+        if not faces:
+            raise ValueError("a deferral with no pinned face is a note, not a "
+                             "pin -- that is the defect this class exists for")
+        self.reason = reason
+        self.faces = dict(faces)
+
+    def __str__(self) -> str:
+        return self.reason
+
+    def drift(self, vals: dict) -> str | None:
+        """None if every side reads exactly as pinned; else what moved."""
+        bad = []
+        for side, want in self.faces.items():
+            if side not in vals:
+                bad.append(f"{side}: pinned {want!r}, NOT MEASURED")
+            elif vals[side] != want:
+                bad.append(f"{side}: pinned {want!r}, now {vals[side]!r}")
+        for side in vals:
+            if side not in self.faces:
+                bad.append(f"{side}: MEASURED BUT NOT PINNED ({vals[side]!r})")
+        return "; ".join(bad) if bad else None
+
+
 def _decode(lit: str) -> str:
     """A python string repr back to its value, without eval()."""
     out, i = [], 1

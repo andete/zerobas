@@ -324,9 +324,18 @@ LABEL_W = 10
 # exactly "0 and 3 are accepted here and refused there", not "this slot is
 # unchecked".
 DEFERRED: dict[str, str] = {
-    "t.b0":  "slot 3 domain is 1..2 on both refs; ~12 B against 6 B free",
-    "t.b3":  "slot 3 domain is 1..2 on both refs; ~12 B against 6 B free",
-    "t.s6":  "arity bounded at 5 slots on both refs (ERR 2); ~8 B, same wall",
+    # \u26a0\ufe0f THE "6 B free" IN THESE REASONS IS A WALL READING AND WALL READINGS
+    # ROT -- `make wall-assertion-check` polices TODO.md, not a probe. Read the
+    # live figure with `make basic-reloc`; the prices are ~2026-09-05.
+    "t.b0": probe_report.Deferral(
+        "slot 3 domain is 1..2 on both refs; ~12 B against 6 B free (2026-09-05)",
+        vg8020=" 5 , 1 ", cf3300=" 5 , 1 ", zb=" 0 , 1 "),
+    "t.b3": probe_report.Deferral(
+        "slot 3 domain is 1..2 on both refs; ~12 B against 6 B free (2026-09-05)",
+        vg8020=" 5 , 1 ", cf3300=" 5 , 1 ", zb=" 0 , 1 "),
+    "t.s6": probe_report.Deferral(
+        "arity bounded at 5 slots on both refs (ERR 2); ~8 B, same wall",
+        vg8020=" 2 , 1 ", cf3300=" 2 , 1 ", zb=" 0 , 1 "),
 }
 
 SENTINELS = ("<NO CAPTURE>", "<NO ECHO>")
@@ -537,6 +546,7 @@ def main() -> int:
         return 0
 
     agree = dis = refsplit = deferred = 0
+    rotted: list[tuple[str, str]] = []
     for lab in present:
         vals = {s: results[s][lab] for s in sides if lab in results[s]}
         ok = len(set(vals.values())) == 1 and len(vals) > 1
@@ -545,8 +555,12 @@ def main() -> int:
         refs = {vals[s] for s in ("vg8020", "cf3300") if s in vals}
         if lab in DEFERRED:
             deferred += 1
+            moved = DEFERRED[lab].drift(vals)
+            if moved:
+                rotted.append((lab, moved))
             print(probe_report.row("....", lab, LABEL_W, vals,
-                                   f"   [{DEFERRED[lab]}]"))
+                                   f"   [{DEFERRED[lab]}]"
+                                   + (f"   \U0001f534 FACE ROTTED: {moved}" if moved else "")))
             continue
         agree += ok
         dis += not ok
@@ -575,8 +589,14 @@ def main() -> int:
           "WIDTH are core MSX-BASIC, present on every MSX1, so BOTH references "
           "are legitimate oracles for every row here")
     print("DENOMINATOR: " + DENOMINATOR)
-    if a.gate and dis:
-        sys.stderr.write(f"screenerr: {dis} reading(s) diverge\n")
+    if rotted:
+        print("\U0001f534 DEFERRED FACE(S) ROTTED — a deferral is a PIN, not a "
+              "note (D-DEFERPIN). The row still may not be scored; what moved "
+              "is the reading the deferral's REASON is written about:")
+        for _lab, _why in rotted:
+            print(f"    {_lab}  {_why}")
+    if a.gate and (dis or rotted):
+        sys.stderr.write(f"screenerr: {dis} reading(s) diverge [+{len(rotted)} rotted deferred face(s)]\n")
         return 1
     return 0
 

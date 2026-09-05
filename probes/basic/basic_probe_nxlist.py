@@ -198,11 +198,22 @@ LABEL_W = 12
 # evidence -- and are excluded from the tally in BOTH directions, because a
 # deferred row that started agreeing would itself be a finding.
 DEFERRED = {
-    "m.ary":    "DEFERRED — a NEXT operand is a full variable REFERENCE; see "
-                "m.ary9",
-    "m.ary9":   "DEFERRED — the reference EVALUATES the subscript, so the "
-                "8-byte unmatchable-key fix answers the WRONG error",
-    "m.aryspc": "DEFERRED — and the `(` is not lexically contiguous either",
+    # \u26a0\ufe0f ALL THREE CURRENTLY AGREE ON ALL THREE MACHINES. They are deferred
+    # on what a FIX would answer, not on a live divergence -- so the pin is what
+    # says the agreement is still the agreement these reasons were written about.
+    "m.ary": probe_report.Deferral(
+        "DEFERRED — a NEXT operand is a full variable REFERENCE; see m.ary9",
+        vg8020="<NEXT without FOR>", cf3300="<NEXT without FOR>",
+        zb="<NEXT without FOR>"),
+    "m.ary9": probe_report.Deferral(
+        "DEFERRED — the reference EVALUATES the subscript, so the "
+        "8-byte unmatchable-key fix answers the WRONG error",
+        vg8020="<Subscript out of range>", cf3300="<Subscript out of range>",
+        zb="<Subscript out of range>"),
+    "m.aryspc": probe_report.Deferral(
+        "DEFERRED — and the `(` is not lexically contiguous either",
+        vg8020="<NEXT without FOR>", cf3300="<NEXT without FOR>",
+        zb="<NEXT without FOR>"),
 }
 
 # A row that answers one of these is NEVER agreement, however many sides answer
@@ -349,6 +360,7 @@ def main() -> int:
         return 0
 
     agree = dis = refsplit = deferred = 0
+    rotted: list[tuple[str, str]] = []
     for lab in present:
         vals = {s: results[s][lab] for s in sides if lab in results[s]}
         ok = len(set(vals.values())) == 1 and len(vals) > 1
@@ -357,8 +369,12 @@ def main() -> int:
         refs = {vals[s] for s in ("vg8020", "cf3300") if s in vals}
         if lab in DEFERRED:
             deferred += 1
+            moved = DEFERRED[lab].drift(vals)
+            if moved:
+                rotted.append((lab, moved))
             print(probe_report.row("....", lab, LABEL_W, vals,
-                                   f"   [{DEFERRED[lab]}]"))
+                                   f"   [{DEFERRED[lab]}]"
+                                   + (f"   \U0001f534 FACE ROTTED: {moved}" if moved else "")))
             continue
         agree += ok
         dis += not ok
@@ -394,8 +410,14 @@ def main() -> int:
           "NOT covered: `NEXT A(1)` and its subscript evaluation (3 DEFERRED "
           "rows, declined with a price); a `$` element inside a list; a list "
           "spanning a line boundary; a list longer than three")
-    if a.gate and dis:
-        sys.stderr.write(f"nxlist: {dis} reading(s) diverge\n")
+    if rotted:
+        print("\U0001f534 DEFERRED FACE(S) ROTTED — a deferral is a PIN, not a "
+              "note (D-DEFERPIN). The row still may not be scored; what moved "
+              "is the reading the deferral's REASON is written about:")
+        for _lab, _why in rotted:
+            print(f"    {_lab}  {_why}")
+    if a.gate and (dis or rotted):
+        sys.stderr.write(f"nxlist: {dis} reading(s) diverge [+{len(rotted)} rotted deferred face(s)]\n")
         return 1
     return 0
 
