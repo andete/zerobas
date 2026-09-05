@@ -410,7 +410,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:9440 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:9465 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -483,10 +483,35 @@ list. **When a slice lands, grep this list for what it just shipped.**
       found the first four**, which is now five data points for a class no gate
       covers. Repointed to `T-E0B04B`, with the wrong citation quoted in place
       under the checker's own `NOT-A-CITATION` marker.
-      ⚠️ **CLOSING AN ITEM IS WHAT SURFACES THESE, and that is worth knowing when
+      ⚠️ ~~**CLOSING AN ITEM IS WHAT SURFACES THESE, and that is worth knowing when
       picking work**: the id is derived from the headline, so a `- [ ]` → `- [x]`
       edit re-keys every inbound citation. Five of five were found that way and
-      none by looking.
+      none by looking.~~ **Five of SEVEN. Two were found by LOOKING the next
+      morning, and that changes the conclusion above.**
+      🔴 **INSTANCES SIX AND SEVEN, 2026-09-06 (D-CITEHEAD), BOTH IN
+      `docs/gapsweep-2026-08-21.md`, BOTH GREEN SINCE 2026-08-21.**
+      | § | heading | cited | should be |
+      |---|---|---|---|
+      | 3 | *SCREEN 3 draws on both references; zerobas raises ERR 5* | the *"rule witnessed only by a DEFERRED error"* item (`FN_FEND`, DEF FN knives) | **`T-6AC87B`** — whose headline is that heading VERBATIM, and which has since **moved to the archive** |
+      | 5 | *A stored `DATA` literal charges the string pool 25 B* | the *"an item that states the wall inline goes stale"* item (prose wall figures) | **`T-B22650`** — again the heading verbatim |
+      🎯 §3's real target moving to `TODO-done.md` is **the archive-move shape
+      this entry predicted would produce more**, now observed rather than
+      anticipated.
+      🔬 **AND THE SEMANTIC ROUTE IS SHUT AS A *GATE*, NOT AS AN *AUDIT* — the
+      sentence above overstated it.** Narrowed from "the citing sentence" to
+      "the markdown HEADING above the citation", which in a survey document IS
+      the item's name, and gated on the heading being claim-shaped (≥4
+      distinctive tokens, so grouping headings like *"Also open, lower value"*
+      and structural ones like *"S1 — Make the build…"* are out of scope):
+      **41 md citations → 13 no heading, 10 heading too thin, 10 sharing a
+      token, 10 FLAGGED of which 2 were REAL.** 20% precision — too noisy to
+      collect into `make gates`, where a red that is wrong four times in five
+      teaches people to ignore reds, and productive as a one-off sweep.
+      [`scratchpad/citehead_audit.py`](scratchpad/citehead_audit.py) ships as an
+      AUDIT with `rc 0` on purpose. Its eight remaining flags are all one shape:
+      a document's own title or `§0` heading, which names the DOC and not the
+      cited item. **Not tuned away — that would be fitting a rule to two data
+      points.**
       💰 Zero ROM bytes; a tools-only change.
       🤖 AUTONOMOUS — a gate settles it; finishable unattended (no his-decision signal found).
 
@@ -516,7 +541,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:2293 (T-6FE392)8 (T-529ABE)` from `TODO.md:8643 (T-529ABE)`: a
+      `TODO.md:2318 (T-6FE392)8 (T-529ABE)` from `TODO.md:8668 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -2931,7 +2956,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:8643 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:8668 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
