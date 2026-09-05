@@ -431,6 +431,19 @@ str_inputd:
                 ; not-open (or device) slot got fch_select'd -- the very thing
                 ; fch_mode_class's header forbids. Measured reference rule: mode 1
                 ; reads; RANDOM is ERR 61; EVERY other open mode is ERR 55.
+                ; 🔴 FALSIFIED FOR MODE 8, 2026-09-05 (D-CASFCH). That rule was
+                ; measured over modes 0-6 and then written over ALL of them. On a
+                ; CAS: channel opened FOR INPUT (CAS_IN_MODE = 8) the CF-3300
+                ; READS: `OPEN"CAS:D"FOR INPUT AS#3 : A$=INPUT$(1,#3)` returns no
+                ; error and A$ is the tape's first byte (ASC 72, the "H" of a
+                ; HELLO fixture) -- witnessed positively, not by an absent error.
+                ; We answer ERR 55 here. The `cp 1` below is a WHITELIST OF ONE,
+                ; so mode 8 falls to the 55 tail with everything else.
+                ; ⚠️ Not a one-line widening: sid_ok's tail is fch_select +
+                ; str_inputd_read, both disk-oriented, while the cassette source
+                ; is cas_in_getbyte (input_common has its own `cp CAS_IN_MODE`
+                ; arm for exactly this). Filed in TODO with the measurement;
+                ; scratchpad/casfch_probe.py --input-only is the reading.
                 call    fch_mode_class      ; A = FCH_MODES[E]; ERR 59 if NOT OPEN
                 cp      1                   ; open FOR INPUT -> read it
                 jr      z,sid_ok

@@ -8218,8 +8218,48 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       control now measure the CODE instead of its neighbours.
       🙋 NEEDS-JOOST — a call that is yours to make (retire / delete).
 
-- [ ] **`GET`/`PUT`/`FIELD`/`INPUT$` on a `CAS:` channel (`FCH_MODES` 7/8) are
-      INFERRED, not measured.** D-NOTOPEN2 swept modes 0–6 against the CF-3300 and
+- [x] ✅ **`GET`/`PUT`/`FIELD`/`INPUT$` on a `CAS:` channel (`FCH_MODES` 7/8) are
+      INFERRED, not measured.** MEASURED 2026-09-05 (D-CASFCH,
+      `scratchpad/casfch_probe.py`). **15 of 16 cells confirm the inference; ONE
+      DOES NOT, and it is a real divergence.**
+      🔴 **BOTH RECORDED BLOCKERS WERE STALE.** *"No harness on either side
+      drives a tape and a disk at once"* was already false when written:
+      `basic_probe_cas_verbs.py` runs on `C-BIOS_MSX1_EU_REPACK_DISK`, whose own
+      `<CassettePort/>` sits beside the disk, and
+      `basic_probe_cas_match_cf3300.py` boots the **stock CF-3300 with `-diska`
+      AND `-cassetteplayer` together** — the exact combination the entry says
+      nobody has. 🎯 **And it did not matter, because the OUTPUT half needs no
+      tape at all**: `OPEN"CAS:T"FOR OUTPUT` succeeds with nothing in the drive,
+      so the channel can be interrogated on a bare machine. The blocker described
+      apparatus for a harder experiment than the question needs.
+      *"There is no reading to falsify"* was true of the FILING, not of the
+      world — **an inference predicts values, and predictions are falsifiable.**
+      | | CF-3300 | zerobas | |
+      |---|---|---|---|
+      | `OPEN"CAS:T"FOR OUTPUT` (mode 7) | 0 | 0 | ✅ |
+      | `FIELD#1` · `GET#1` · `PUT#1` · `INPUT$(1,#1)` | 5 · 58 · 58 · 55 | same | ✅ |
+      | `OPEN"CAS:D"FOR INPUT` (mode 8) | 0 | 0 | ✅ |
+      | `FIELD#3` · `GET#3` · `PUT#3` | 5 · 58 · 58 | same | ✅ |
+      | **`A$=INPUT$(1,#3)`** | **0, and `A$`=`"H"`** | **ERR 55** | 🔴 **DIFF** |
+      🔬 **The reference READS**, and the row proves it positively rather than by
+      an absent error: the `$EA` tape's one line is `HELLO`, and `ASC(A$)` comes
+      back **72**. zerobas raises 55 and never writes the byte slot. Filed as its
+      own item below.
+      🟢 **The `LPT:` control was re-measured on the same machines in the same
+      run** — 0 / 5 / 58 / 55, per-verb, exactly as this entry predicted from the
+      local evidence. 🔴 Its first run was INVALID and agreed anyway: it opened
+      `AS#2` while `MAXFILES` defaulted to 1, so all four slots read 52 (*Bad file
+      number*) on BOTH sides — a tidy agreeing column measuring "channel 2 does
+      not exist" [[a-case-that-agrees-can-agree-for-the-wrong-reason]].
+      ⚠️ **THE ARMS ARE NOT INDEPENDENT.** In the full program the CF-3300 never
+      reached the INPUT arm — its done-marker read `$FF`, which is exactly what
+      the markers exist to distinguish from a measured value. Isolated
+      (`--input-only`), the same machine completes at the same 40 s cap, so time
+      is not the cause: running the OUTPUT arm first stops the INPUT arm finding
+      its file. Stated as the reading; which of consume-vs-reposition does it is
+      not measured.
+      --- the original filing ---
+      D-NOTOPEN2 swept modes 0–6 against the CF-3300 and
       sends 7/8 down the *device* arm (CF clear, since both are >= `LPT_MODE`), i.e.
       `GET`/`PUT` → 58, `FIELD` → 5, `INPUT$` → 55, **by analogy with `LPT:`/`CRT:`
       rather than by measurement.** 🔴 That is precisely the shape that slice spent
@@ -8238,6 +8278,42 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       [`docs/todo-staleness-sweep-2026-08.md`](docs/todo-staleness-sweep-2026-08.md)
       §5.
       🤖 AUTONOMOUS — the reference or a gate settles it; finishable unattended (no his-decision signal found).
+
+- [ ] 🔴 **`INPUT$` ON A `CAS:` CHANNEL OPENED FOR INPUT READS ON THE REFERENCE
+      AND RAISES ERR 55 HERE.** Found 2026-09-05 by D-CASFCH while measuring the
+      entry above; `scratchpad/casfch_probe.py --input-only` is the reading.
+      `OPEN"CAS:D"FOR INPUT AS#3` then `A$=INPUT$(1,#3)`: the CF-3300 returns no
+      error and `A$` is `"H"` — the first byte of the `$EA` tape's `HELLO`,
+      asserted as `ASC(A$)=72`, so the row witnesses the READ and not merely the
+      absence of an error. zerobas answers ERR 55.
+      🎯 **THE SITE, READ RATHER THAN INFERRED.** ~~`basic/files.asm` sends 7/8
+      down the *device* arm because both are `>= LPT_MODE`~~ — **that was my own
+      first write-up and it is wrong**; I inferred it from the entry above instead
+      of opening the file. The real dispatch is
+      [`basic/strvar.asm:434`](basic/strvar.asm:434), and it is an explicit
+      **whitelist of one**: `fch_mode_class` then `cp 1 / jr z,sid_ok`, `cp 4` →
+      ERR 61 for RANDOM, **everything else → ERR 55**. `CAS_IN_MODE` (8) simply is
+      not mode 1.
+      🔴 **AND THE COMMENT BESIDE IT IS NOW FALSIFIED.** It reads *"Measured
+      reference rule: mode 1 reads; RANDOM is ERR 61; EVERY other open mode is
+      ERR 55."* That rule was measured by D-NOTOPEN2 **over modes 0–6** and then
+      stated over ALL modes — the generalisation this very entry was filed to
+      complain about, with a concrete wrong answer at the end of it. Annotated in
+      place, not deleted.
+      ⚠️ **The read machinery exists but is not simply reusable**: `input_common`
+      has its own `cp CAS_IN_MODE / jr z,inp_cas` arm sourcing bytes through
+      `cas_in_getbyte`, whereas `INPUT$`'s `sid_ok` tail goes `fch_select` +
+      `str_inputd_read`, which are disk-oriented. So the fix is a second source
+      for `str_inputd_read`, not a one-line widening of the `cp 1`. **Cost
+      unmeasured — do not quote this paragraph as a price.**
+      ⚠️ The other seven cells of the same sweep AGREE (`FIELD` 5, `GET` 58,
+      `PUT` 58 in both modes; `INPUT$` 55 in OUTPUT mode is correct — a channel
+      open for writing cannot be read). Only the one cell where the mode's own
+      direction makes the verb legal is wrong.
+      💰 Unmeasured; the arm exists, so this is a dispatch test rather than new
+      machinery. ⚠️ `diskbasic-acceptance`/a cassette-side gate owns the surface,
+      and the row set has no CAS: channel rows at all yet.
+      🤖 AUTONOMOUS — the reference settles it; finishable unattended (no his-decision signal found).
 
 - [ ] **UNMEASURED: a machine reset BETWEEN a RANDOM `PUT` and its `CLOSE`.**
       Filed 2026-07-31 by D-RNDDIR as the one thing its rows do not reach. In
