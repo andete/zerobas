@@ -55,6 +55,7 @@ import os as _zbo, sys as _zbs  # noqa: E402
 _zbs.path.insert(0, _zbo.path.join(_zbo.path.dirname(
     _zbo.path.dirname(_zbo.path.abspath(__file__))), "lib"))
 import omsx_preflight  # noqa: E402
+from subrom_entry import page0_entry, le16  # noqa: E402
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 REPO = os.path.dirname(os.path.dirname(HERE))
@@ -73,7 +74,7 @@ GFX_OP = 0xE030   # G2: index 8 is now selector-dispatched; 0 = the floor self-t
 STUB_BYTES = bytes([
     0xF3,                    # di
     0xFD, 0x21, 0x00, 0x8B,  # ld iy,$8B00                (slot 3-2)
-    0xDD, 0x21, 0x58, 0x00,  # ld ix,$0058                (page-0 index 8)
+    0xDD, 0x21, *le16(page0_entry("GRAPHICS")), # ld ix,<derived: base + 3*GRAPHICS>
     0xCD, 0x1C, 0x00,        # call $001C                 (CALSLT -> graphics_selftest)
     0x76,                    # halt                       (capture bp)
 ])

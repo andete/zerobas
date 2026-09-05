@@ -84,6 +84,7 @@ import os as _zbo, sys as _zbs  # noqa: E402
 _zbs.path.insert(0, _zbo.path.join(_zbo.path.dirname(
     _zbo.path.dirname(_zbo.path.abspath(__file__))), "lib"))
 import omsx_preflight  # noqa: E402
+from subrom_entry import page0_entry, le16  # noqa: E402
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 REPO = os.path.dirname(os.path.dirname(HERE))
@@ -102,7 +103,7 @@ RES = 0xC100
 STUB_BYTES = bytes([
     0xF3,                    # di
     0xFD, 0x21, 0x00, 0x8B,  # ld iy,$8B00                (slot 3-2)
-    0xDD, 0x21, 0x49, 0x00,  # ld ix,$0049                (page-0 index 3)
+    0xDD, 0x21, *le16(page0_entry("INTTEST")),  # ld ix,<derived: base + 3*INTTEST>
     0xCD, 0x1C, 0x00,        # call $001C                 (CALSLT -> sub_int_selftest)
     0x3A, 0x4D, 0xF1,        # ld a,($F14D)               (SUB_INT_DELTA)
     0x32, 0x00, 0xC1,        # ld ($C100),a               (stash result)

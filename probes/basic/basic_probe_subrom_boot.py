@@ -55,6 +55,7 @@ import os as _zbo, sys as _zbs  # noqa: E402
 _zbs.path.insert(0, _zbo.path.join(_zbo.path.dirname(
     _zbo.path.dirname(_zbo.path.abspath(__file__))), "lib"))
 import omsx_preflight  # noqa: E402
+from subrom_entry import page0_entry, le16  # noqa: E402
 
 SUB_ROM = os.path.join(REPO, "build", "sub.rom")
 OMSX = os.environ.get("OPENMSX", "/opt/homebrew/bin/openmsx")
@@ -70,7 +71,7 @@ STUB_BYTES = bytes([
     0xF3,                    # di
     0xAF, 0x32, 0x05, 0xF1,  # xor a ; ld ($F105),a       (clear SUB_PING)
     0xFD, 0x21, 0x00, 0x8B,  # ld iy,$8B00                (slot 3-2)
-    0xDD, 0x21, 0x40, 0x00,  # ld ix,$0040                (page-0 entry)
+    0xDD, 0x21, *le16(page0_entry("PING")),   # ld ix,<derived: base + 3*PING>
     0xCD, 0x1C, 0x00,        # call $001C                 (CALSLT)
     0x3A, 0x05, 0xF1,        # ld a,($F105)
     0x32, 0x00, 0xC1,        # ld ($C100),a               (page-0 result)

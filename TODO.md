@@ -198,7 +198,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:8228 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:8252 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -262,7 +262,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:1917 (T-6FE392)8 (T-529ABE)` from `TODO.md:7431 (T-529ABE)`: a
+      `TODO.md:1917 (T-6FE392)8 (T-529ABE)` from `TODO.md:7455 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -2518,7 +2518,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:7431 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:7455 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -7264,11 +7264,35 @@ list. **When a slice lands, grep this list for what it just shipped.**
       Re-open by walking preflight's own rule over its subject's life first.
       Detail: `docs/spec-probe-injjudge.md` §3.6.
       🤖 AUTONOMOUS — the reference or a gate settles it; finishable unattended (no his-decision signal found).
-- [ ] ⚠️ **Three probe page-0 entry addresses stay HARDCODED** —
+- [x] ✅ **Three probe page-0 entry addresses stay HARDCODED** —
       `basic_probe_subrom_boot.py` (`$0040`), `basic_probe_subrom_inttest.py`
       (`$0049`), `basic_probe_graphics_floor.py` (`$0058`). All three ARE scored;
       deriving them from `sub/equates.inc` needs its own falsification because they
       inject raw bytes into a bare machine deliberately. Detail: line 2582.
+      **DERIVED 2026-09-05 (D-P0ENTRY, `probes/lib/subrom_entry.py`).** Each
+      probe's `ld ix,nnnn` operand bytes are now
+      `le16(page0_entry("PING"|"INTTEST"|"GRAPHICS"))`, computed from
+      `SUBROM_ENTRY_BASE_P0 + 3*SUBROM_IDX_<name>` in `sub/equates.inc` at
+      import time. **Byte-identical to the old literals today** (checked by
+      assembling each `STUB_BYTES` and comparing the operand), so this is a
+      zero-behaviour change with a live derivation; all three gates PASS.
+      🎯 **THE FALSIFICATION IS THE REFUSAL, not the arithmetic** — which is
+      what the entry's "needs its own falsification" turns out to mean. A
+      derivation that quietly returned 0 on a broken parse would inject
+      `ld ix,$0000`, an RST vector, into a running machine, and the probe would
+      then FAIL for a reason that reads like a ROM defect. So a missing symbol
+      RAISES, and the module's `--selftest` plants four things and requires each
+      to be seen: a MOVED base (the answer must move), a MISSING index (must
+      refuse), a MISSING base (must refuse), and a **page-1-only index** (must
+      refuse even though it is defined — `FORMAT` is 10 in one table and
+      `READVAL` is 10 in the other, so a name that only lives in the page-1
+      block is pointed at the wrong table silently unless the derivation reads
+      the page-0 block alone).
+      🟢 Auto-collected by `selftest-check` (its `TREES` includes `probes/lib`
+      and it matches the literal `"--selftest"`): 29 scripts run, 0 failing.
+      ⚠️ The selftest also carries the three historical literals as a CONTROL,
+      not a pin: if `equates.inc` ever moves them, the derivation moves and that
+      one line is the thing to update, deliberately.
       🤖 AUTONOMOUS — the reference or a gate settles it; finishable unattended (no his-decision signal found).
 - [ ] ⚠️ **`build/disk.rom` pad-only damage is invisible ON PURPOSE** — 9543 of
       16384 bytes (58.2 %) are `$00` pad in 252 runs. Closing it needs a whole-image
