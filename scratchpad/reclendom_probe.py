@@ -83,6 +83,15 @@ CASES = [
     ("f.128",  'OPEN"TS.DAT"AS #1 LEN=128:FIELD #1,128 AS A$:CLOSE', 'the tiling twin of f.100'),
     ("f.over", 'OPEN"TS.DAT"AS #1 LEN=100:FIELD #1,101 AS A$:CLOSE', 'one byte past the record'),
     ("p.100",  'OPEN"TS.DAT"AS #1 LEN=100:FIELD #1,100 AS A$:LSET A$="x":PUT #1,1:CLOSE', 'and actually WRITE one'),
+    # 🔴 THE INSTRUMENT'S OWN RED ARM, AND IT DID NOT EXIST. main() has always
+    # ended with "if got['ctl.div0'] == got['ctl.kill5']: INSTRUMENT FAULT" -- the
+    # check that says the readout can separate two error codes at all, without
+    # which every agreement above is worthless. Neither row was ever in CASES, so
+    # that arm raised KeyError and the probe exited 1: a crash where a verdict
+    # should be, and a guard that names its own subject and is not there
+    # [[a-guard-witnessed-only-by-a-deferred-error]]. Added 2026-09-05.
+    ("ctl.div0", 'KILL 1/0', 'CONTROL: must read ERR 11, and NOT ctl.kill5'),
+    ("ctl.kill5", 'KILL 5', 'CONTROL: must read ERR 13, and NOT ctl.div0'),
 ]
 
 

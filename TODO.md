@@ -336,7 +336,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:8857 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:8879 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -400,7 +400,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:2089 (T-6FE392)8 (T-529ABE)` from `TODO.md:8060 (T-529ABE)`: a
+      `TODO.md:2089 (T-6FE392)8 (T-529ABE)` from `TODO.md:8082 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -2727,7 +2727,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:8060 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:8082 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -6999,10 +6999,32 @@ list. **When a slice lands, grep this list for what it just shipped.**
       🔴 **RECORD 6 IS THE ONLY ROW THAT COULD HAVE SAID SO** — records 1 and 5
       lie wholly inside the first sector and would round-trip on an
       implementation that cannot straddle at all.
-      ✅ **AND THE VALIDATOR IS NOW WIDENED (D-RECLEN2, 2026-08-30).** The
+      ✅ ~~**AND THE VALIDATOR IS NOW WIDENED (D-RECLEN2, 2026-08-30).** The
       "still unmeasured, needs three `PUT`s" caveat that stood here is
       DISCHARGED: writing only record 6 is a SINGLE `PUT`, and zerobas
-      round-trips it exactly as the reference does.
+      round-trips it exactly as the reference does.~~
+      🔴 **THAT IS FALSE, AND HAS BEEN SINCE THE DAY IT WAS WRITTEN: THE
+      WIDENING WAS PUT BACK.** Re-measured 2026-09-05 —
+      `scratchpad/reclendom_probe.py` reads **7 DIFF rows**: `LEN=` 3, 7, 100,
+      127 and 255 are ERR 5 here and 0 on the CF-3300, and `f.100` / `f.over` /
+      `p.100` follow. Only the powers of two pass.
+      🎯 **THE SOURCE KNEW AND THE ENTRY DID NOT.**
+      [`basic/files.asm`](basic/files.asm) `opr_lowbyte` carries the whole story:
+      *"D-RECLEN2 TRIED TO DROP THIS AND HAD TO PUT IT BACK … `fat_rand_put`'s
+      overlay is an `ldir` into `FWBUF + GP_WITHIN` for `GP_RECLEN` bytes, and
+      record 6 at r=100 has within=500, so it writes **88 bytes PAST the 512-byte
+      sector buffer**. Measured: two PUTs at LEN=100 including record 6 kill the
+      program."* An entry can carry a ✅ for work that was undone, and nothing
+      re-reads it [[a-filed-face-rots-without-the-row-ceasing-to-diverge]].
+      ⚠️ **AND THE ROUND-TRIP THAT "PROVED IT SAFE" WAS BLIND TWICE**, per the same
+      comment: it wrote record 6 through the OLD shift arithmetic (`*64` →
+      within=320, no straddle at all), and **a round-trip cannot see a wrong
+      offset because `PUT` and `GET` share it**. `tests/test_open_len.py` caught
+      the arithmetic; an adjacency row caught the overrun.
+      💰 **SO THE PRICE IS EXACT NOW AND IT IS NOT THE VALIDATOR**: widening needs
+      `fat_rand_put` / `fat_rand_get` to span TWO sectors. Dropping the
+      power-of-two test alone is a one-liner that reintroduces an 88-byte buffer
+      overrun — **worse than the error it removes**, which is why it went back.
       ⚠️ ONE REFERENCE (Disk BASIC; a diskless VG-8020 cannot express it).
       🤖 AUTONOMOUS — the reference or a gate settles it; finishable unattended (no his-decision signal found).
 - [ ] ⚠️ **A STORED `DATA` LITERAL CHARGES THE STRING POOL NOTHING ON BOTH
