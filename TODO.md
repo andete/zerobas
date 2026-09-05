@@ -198,7 +198,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:8062 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:8085 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -262,7 +262,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:1917 (T-6FE392)8 (T-529ABE)` from `TODO.md:7265 (T-529ABE)`: a
+      `TODO.md:1917 (T-6FE392)8 (T-529ABE)` from `TODO.md:7288 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -2518,7 +2518,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:7265 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:7288 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -4964,10 +4964,33 @@ list. **When a slice lands, grep this list for what it just shipped.**
       🎯 This is `build_83_name`'s domain, which D-FSPEC (2026-09-04) has just
       been through for LENGTH and DOT rules — it validates neither the character
       SET nor control bytes. The reference evidently does.
-      💰 Unmeasured. The character domain is unswept in both directions: which
-      bytes the reference refuses (control only? high-bit? the DOS separators
-      `:` `\` `/`?) is a sweep nobody has run, and the fix cannot be scoped
-      before it is. ⚠️ `namspc-acceptance` owns the surface.
+      ✅ **DOMAIN SWEPT 2026-09-05 (D-FSPECCHAR, `scratchpad/fspecchar_probe.py`),
+      47 byte values, `FILES CHR$(n)+"BC.TXT"` on both machines.**
+      | | bytes |
+      |---|---|
+      | **both refuse** | `$00` NUL · `$20` space · `$22` `"` · `$2E` `.` |
+      | 🔴 **CF-3300 refuses, zerobas ACCEPTS** | the whole `$01`–`$1F` control band · `+` `,` `/` `:` `;` `=` `[` `\` `]` · `$FF` |
+      | **both accept** | letters (upper and lower) · `! # $ % & ' ( ) - < > ? @ ^ _ \` { \| } ~` · `$7F` DEL · `$80` · the wildcards `*` `?` |
+      🎯 **That is the DOS/CP-M illegal-character set** — controls, space, and
+      `" . + , / : ; = [ ] \` — plus `$FF`. zerobas already refuses four of them
+      (`NUL`, space, `"`, `.`), so `build_83_name` has *some* character
+      validation; what it lacks is the control band, the nine separators and
+      `$FF`. **41 byte values in total.**
+      ⚠️ **`$80` is ACCEPTED and `$FF` is REFUSED on the reference**, so this is
+      NOT a high-bit rule and must not be implemented as one. `<` and `>` are
+      both accepted — they are not a separator pair here.
+      ⚠️ Two rows in the sweep are CONTROLS and must stay accepted (`A`, and `*`,
+      the wildcard every FILES row uses); the probe refuses to report a finding if
+      either is rejected, because a column of `Bad file name` reads the same
+      whether the reference is strict or the row shape is broken. `.` is in the
+      sweep as a KNOWN-SHAPE anchor, not a finding — it is the 8.3 separator, so
+      that row is the two-dot case D-FSPEC already settled.
+      💰 **AND THERE IS ROOM.** `basic/fcbname-body.inc` has exactly ONE include
+      site — `sub/fcbname.asm`, i.e. the sub-ROM **page-1 island**, which `make
+      basic-reloc` printed at **957 B free** on 2026-09-05. So the check costs no
+      main-ROM bytes at all. ⚠️ That is a wall reading and wall readings rot:
+      re-run `basic-reloc` before spending it.
+      ⚠️ `namspc-acceptance` owns the surface.
       🤖 AUTONOMOUS — the reference settles it; finishable unattended (no his-decision signal found).
       🤖 AUTONOMOUS — the reference or a gate settles it; finishable unattended (no his-decision signal found).
 
