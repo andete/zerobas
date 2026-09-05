@@ -8897,6 +8897,18 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
         published ceiling is fetched and then ignored — **still hangs**. So the
         fault is `call fch_ctx_addr` from `dl_store`, not `strheap_varceil()`
         being wrong or too low.
+        🟢 **AND THE CAUSE IS ORDINARY — FOUND ON THE SECOND ATTEMPT, SAME DAY.
+        `fch_ctx_addr` RETURNS IN HL, AND HL AT `dl_lnok` IS `tokenise`'S SOURCE
+        CURSOR.** Its header lists *"Clobbers A, BC, DE, IX"* and does not mention
+        HL **because HL is the result**, so a reader checking the clobber list
+        sees nothing wrong. `push hl` / `pop hl` around the call (+2 B) and the
+        machine is healthy again: `NEW` / `10 PRINT"HI"` / `RUN` prints `HI`.
+        🔴 **SO THE "MECHANISM NOT ESTABLISHED" NOTE ABOVE IS SUPERSEDED, NOT
+        VINDICATED.** K-TC1 was right that the CALL was at fault and wrong to
+        leave it there: "contextual to line-entry" pointed at slot state and
+        re-entrancy when the answer was a clobbered pointer. The knife narrowed
+        the site; it did not diagnose it, and stopping at a narrowed site reads
+        as a finished diagnosis.
         ⚠️ **THE MECHANISM IS NOT ESTABLISHED AND IS NOT GUESSED AT HERE**
         [[a-mechanism-inferred-from-one-observation]]. What IS known: the same
         routine works from its existing callers (`fch_save_active` /
@@ -8912,7 +8924,28 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
         sub-ROM call out of the line-entry path entirely, which is exactly where
         the measured fault is. 🔴 It also needs a boot-time initial value, or a
         program typed before any `CLEAR` reads an unwritten cell.
-        💰 **THE 9 B ARE NOT SPENT** — the attempt was reverted and all four
+        🔴 **AND WITH THAT FIXED THE BOUND STILL DOES NOT BIND — the item stays
+        OPEN and this is where the next reader starts.** 11 B (the 9 + the
+        `push hl`/`pop hl`), which FITS: main page 1 15 → **4 B free**. The
+        machine is healthy, and `crf-oomsay` / `crf-oomlst` read EXACTLY as
+        before: `Out of memory` on both references, `<nothing listed>` here, and
+        the refused line still in the listing.
+        📏 **WHAT WAS MEASURED, so nobody re-derives it**: after
+        `CLEAR 300,TXTTAB+1000`, `SL_CEIL` reads **30119** (`$75A7`) — a MAIN-ROM
+        PAGE-1 ADDRESS, not a RAM ceiling, and far from
+        `min(HIMEM,TXTMAX) − POOLSIZE − MAXF×FCH_CTXSZ` (HIMEM read 33769,
+        TXTMAX is `$DB00`). And the sub-side arm IS assembled — K-ARM planted a
+        bogus token inside the `IF CLEARPOOL` branch of
+        [`sub/lineedit.asm`](sub/lineedit.asm) and the assembler saw it on line
+        170 — so this is not a branch that was compiled out.
+        ⚠️ **THAT IS AN OBSERVATION, NOT A DIAGNOSIS.** `SH_PTR` holding a
+        plausible-looking ROM address is consistent with op 18 not having run,
+        with `fch_ctx_addr` needing pool state this path does not have, and with
+        several other things; naming one would be the error this entry has
+        already made once today
+        [[a-mechanism-inferred-from-one-observation]]. **The next step is to read
+        `SH_OP`/`SH_LEN`/`SH_PTR` around the call**, not to try another site.
+        💰 **THE 11 B ARE NOT SPENT** — the attempt was reverted and all four
         ROM digests re-read back to the values `make gates` had recorded for the
         preceding green battery (not quoted here: four 8-hex groups in a row are
         what `audit_citations.py`'s hex-dump check exists to catch, and it caught
