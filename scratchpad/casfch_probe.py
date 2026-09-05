@@ -205,20 +205,51 @@ def main():
     live = {n for n, _o, _s in SLOTS}
     if "--input-only" in sys.argv:
         live = {n for n in live if n.startswith("i.") or n == "IMARK"}
+    # 🔴 IMARK IS A DONE MARKER AND WAS BEING SCORED AS A ROW. MARK and LMARK
+    # got the "(ran)" / "DID NOT REACH IT" treatment; IMARK fell through to the
+    # generic DIFF branch, so a CF-3300 that never completed the CAS-INPUT block
+    # reported SIX divergences -- i.open/i.field/i.get/i.put/i.inp and IMARK
+    # itself -- when the five `i.*` values were 255, the UNTOUCHED-RAM sentinel,
+    # and not readings at all. `scratchpad/filed_row_sweep.py` listed all six as
+    # unadjudicated divergences. Counting a consequence as evidence inflates ONE
+    # fact into six, which is the trap reclen_probe's ten blank rows already
+    # taught this tree [[an-unnamed-outcome-reads-as-no-outcome]].
+    imark_off = next(o for n, o, _ in SLOTS if n == "IMARK")
+    iblock_ran = ref[imark_off] == 0xA5
     for name, off, stmt in SLOTS:
         if name not in live:
             continue
         r, z = ref[off], zb[off]
-        if name in ("MARK", "LMARK"):
+        if name in ("MARK", "LMARK", "IMARK"):
             note = "  (ran)" if r == 0xA5 else "  🔴 DID NOT REACH IT"
-            print(f"  {name:8} {stmt:28} {r:9} {z:9}{note}")
+            # ⚠️ END IN A VERDICT WORD -- scratchpad/filed_row_sweep.py parses a
+            # row by SAME/DIFF/NO-ORACLE at END of line. Without it this probe
+            # read `🔴 NOTHING PARSED` the moment the six inflated DIFFs went
+            # away: honest rc, invisible finding. A probe has to be able to say
+            # both "clean" and "this one thing".
+            print(f"  {name:8} {stmt:28} {r:9} {z:9}{note}"
+                  f"   {'SAME' if r == 0xA5 else 'DIFF'}")
             if r != 0xA5:
                 bad.append(name)
+            continue
+        # ⚠️ AN `i.*` SLOT IS ONLY A READING IF THE BLOCK REACHED ITS MARKER.
+        if name.startswith("i.") and not iblock_ran:
+            print(f"  {name:8} {stmt:28} {r:9} {z:9}"
+                  f"  ⚠️ NOT A READING (IMARK says the CF-3300 never got"
+                  f" here)   NO-ORACLE")
             continue
         flag = "" if r == z else "  🔴 DIFF"
         if r != z:
             bad.append(name)
-        print(f"  {name:8} {stmt:28} {r:9} {z:9}{flag}")
+        print(f"  {name:8} {stmt:28} {r:9} {z:9}{flag}"
+              f"   {'SAME' if r == z else 'DIFF'}")
+    if not iblock_ran:
+        print("\n🎯 THE CAS-INPUT BLOCK DID NOT COMPLETE ON THE CF-3300, and that "
+              "is ONE fact,\n   not six: every `i.*` slot above is untouched RAM "
+              "(255) on that side. zerobas\n   reached IMARK, so the divergence "
+              "is that the REFERENCE does not return from\n   a `CAS:` input "
+              "open -- the `LOAD\"CAS:\"` non-returning class this tree already "
+              "files.")
     print("\n" + ("ALL AGREE — the inference is CONFIRMED by measurement"
                   if not bad else f"🔴 {len(bad)} row(s) disagree: {bad}"))
     return 1 if bad else 0

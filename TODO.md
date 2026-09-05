@@ -410,7 +410,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:9164 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:9179 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -474,7 +474,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:2214 (T-6FE392)8 (T-529ABE)` from `TODO.md:8367 (T-529ABE)`: a
+      `TODO.md:2214 (T-6FE392)8 (T-529ABE)` from `TODO.md:8382 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -2852,7 +2852,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:8367 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:8382 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -8072,7 +8072,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       the entry not parse.
       🤖 AUTONOMOUS — the reference or a gate settles it; finishable unattended (no his-decision signal found).
 
-- [ ] 🔴 **NOTHING POLICES A RAM FREE-SPACE CLAIM, AND THE ONE IN THE MAP WAS
+- [x] ✅ **NOTHING POLICES A RAM FREE-SPACE CLAIM, AND THE ONE IN THE MAP WAS
       36x WRONG.** Filed 2026-08-22 by the D-DEFFN RAM hunt,
       [`docs/deffn-ramhunt-2026-08-22.md`](docs/deffn-ramhunt-2026-08-22.md) §1.
       `make wall-assertion-check` gates ROM figures and dates them; RAM figures
@@ -8110,7 +8110,16 @@ list. **When a slice lands, grep this list for what it just shipped.**
       of which most were its own misreading — a cell's own extent read as a
       claim, a layout table's `FREE` describing the named cell, a comment quoting
       a claim it had already corrected [[an-instrument-can-fail-the-way-the-thing-it-replaced-failed]].
-      🤖 AUTONOMOUS — the reference or a gate settles it; finishable unattended (no his-decision signal found).
+      ✅ **CHECKBOX CLOSED 2026-09-05 — THE ENTRY HAD SAID SO SINCE 2026-09-04 AND
+      NOBODY TICKED IT.** *"⇒ THE ITEM IS CLOSED — both halves gated"* is nine
+      lines up; the block stayed `- [ ]` with a 🤖 marker, so the /loop kept
+      re-picking finished work and the row-rot sweep kept adjudicating a
+      SUPERSEDED scratch probe. 🎯 **RE-RUN BEFORE TICKING, not trusted**: `make
+      ram-claim-check` rc=0 (*"0 violation(s)"*, 5 spans) and `make
+      ramfree-acceptance` rc=0 (*"rows 11  red 0 / RAMFREE: PASS"*), both today,
+      and both appear in `tools/run_gates.py`'s lists as well as the Makefile's
+      `gates`. [[a-ranked-candidate-rots-like-a-wall]]
+      ~~🤖 AUTONOMOUS — the reference or a gate settles it; finishable unattended (no his-decision signal found).~~
 
 - [ ] 🔴 **THE `[...]` READOUT FAMILY IS DEFENDED BY ACCIDENT IN EVERY SCRATCH
       PROBE.** Filed 2026-08-22 by the D-DEFFN RAM hunt,
@@ -8124,7 +8133,13 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `deffn_scout.py` all use `BR.search`, and are protected only because their
       fixtures enter a graphics mode and the closing `SCREEN 0` clears the
       screen. **A fixture that never leaves SCREEN 0 has no defence at all** —
-      which is exactly which rows of `ramfree_probe.py` failed. Remedy is
+      which is exactly which rows of `scratchpad/ramfree_probe.py` failed.
+      ⚠️ **THE PATH IS LOAD-BEARING, ADDED 2026-09-05.** `filed_row_sweep.py`
+      finds a probe by `scratchpad/<name>_probe.py`, so while this item said only
+      `ramfree_probe.py` it did not count as citing it, and the rows pinned
+      against that probe in [`tools/filed-row-known.txt`](tools/filed-row-known.txt)
+      were reachable ONLY through the RAM-free-space item above — which closed
+      today. A bare filename would have orphaned them silently. Remedy is
       `findall()[-1]` (the program's own output is always the last bracket) or
       the shipped `CLS`; pick one and apply it to the family.
       ⛔ BLOCKED — neither of us can start it now (needs a fixture).
@@ -9824,6 +9839,27 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       for itself across both sites rather than costing twice.
       ⚠️ `diskbasic-acceptance`/a cassette-side gate owns the surface, and the row
       set has no CAS: channel rows at all yet.
+      🔴 **THE ROW-ROT SWEEP WAS READING THE WRONG MODE, 2026-09-05.**
+      `scratchpad/filed_row_sweep.py` runs every cited probe **bare**, and this
+      entry's reading is the `--input-only` one, as the sentence above says in as
+      many words. Run bare, the probe reports **six** divergences (`i.open`,
+      `i.field`, `i.get`, `i.put`, `i.inp`, `IMARK`) with the CF-3300 side reading
+      **255** — untouched RAM — in every one, because `IMARK`, the block's own
+      done-marker, never got written. `MARK`/`LMARK` had a *"🔴 DID NOT REACH
+      IT"* arm; `IMARK` fell through to the generic DIFF branch, so **one fact
+      about the fixture was printed as six facts about the machine**, and the
+      sweep scored all six as UNFILED rows nobody had noticed
+      [[an-unnamed-outcome-reads-as-no-outcome]]. Fixed on both sides: the probe
+      now prints `⚠️ NOT A READING (IMARK says the CF-3300 never got here)` for
+      the `i.*` rows and every row ends in a verdict word, and the sweep carries
+      an `ARGS` map so a probe whose filed reading needs a flag is RUN with it.
+      ⚠️ **WHY the bare run does not complete is NOT established** — one
+      observation cannot separate a reference behaviour from a fixture artefact
+      (tape position after the preceding CAS-OUT arm is the obvious candidate and
+      is exactly the kind of mechanism that has been wrong before
+      [[a-mechanism-inferred-from-one-observation]]). It is recorded as a reading,
+      not a cause. `i.inp` and `i.byte` are pinned in
+      [`tools/filed-row-known.txt`](tools/filed-row-known.txt).
       🤖 AUTONOMOUS — the reference settles it; finishable unattended (no his-decision signal found).
 
 - [x] ✅ **UNMEASURED: a machine reset BETWEEN a RANDOM `PUT` and its `CLOSE`.**

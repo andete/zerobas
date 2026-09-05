@@ -47,8 +47,20 @@ SUMMARY = re.compile(r"^\s*DIFF(?: vs references)?:\s*(\d+)\s*/\s*(\d+)(.*)$", r
 #   reclen   rc=0  a two-column table, NO verdict word anywhere -- an EIGHTH
 #                  shape that simply has no channel to read, and is reported as
 #                  unparsed rather than guessed at.
-MARKER = re.compile(r"(?:\U0001f534\s*DIFF\b|\bDIFF\s*$|\bDIVERGENCE\b|"
+MARKER = re.compile(r"(?:🔴\s*DIFF\b|\bDIFF\s*$|\bDIVERGENCE\b|"
                     r"^\s*DIFF\s|\bDIFFER\b|^\s*FAIL\s)", re.M)
+# 🔴 A PROBE WHOSE FILED READING NEEDS A FLAG WAS MEASURED IN THE WRONG MODE
+# BY CONSTRUCTION. This sweep ran every probe BARE, and `casfch_probe`'s entry
+# says in as many words that *"`scratchpad/casfch_probe.py --input-only` is the
+# reading"*. Run bare, its CAS-OUT and LPT arms go first and the CF-3300 then
+# never completes the CAS-INPUT block, so the sweep scored an apparatus
+# interaction instead of the filed subject -- and reported it as UNFILED.
+# The flag belongs here, with the reason, not in the probe's default: the
+# three-arm run has its own controls (MARK / LMARK) and is worth keeping.
+ARGS = {
+    "casfch_probe": ("--input-only",),
+}
+
 # every row shape seen in this corpus, not just the one the first probe used
 ROWLINE = re.compile(r"(?:\b(?:SAME|DIFF|NO-ORACLE)\s*$|vg8020=|cf3300=|"
                      r"\bzb=|^\s*ROW\s|->\s*'|^\s*(?:OK|FAIL)\s)", re.M)
@@ -132,7 +144,7 @@ def score(out, state, known=()):
         stale = [r for r in known if r not in hit]
         adj = f"  [{len(hit)} known"
         if fresh:
-            adj += f", \U0001f534 {fresh} marker line(s) UNFILED -- read them"
+            adj += f", 🔴 {fresh} marker line(s) UNFILED -- read them"
         if stale:
             adj += f", \u26a0\ufe0f {len(stale)} known row(s) NO LONGER " \
                    f"DIVERGING ({' '.join(stale)}) -- the CVI shape, re-run " \
@@ -142,7 +154,7 @@ def score(out, state, known=()):
                  else f"{marks} marker(s) in {rows} parsed line(s)") + adj
         # 🔴 The second cause of green: a probe can print divergences and STILL
         # exit 0, so a collector reading only the rc would call this clean.
-        hidden = "  \U0001f534 AND EXITS 0 -- invisible to any rc-only collector" \
+        hidden = "  🔴 AND EXITS 0 -- invisible to any rc-only collector" \
             if state == "rc=0" else ""
         return f"DIVERGES {where}{hidden}"
     if rows == 0:
@@ -218,11 +230,13 @@ def main():
           f"{a.timeout:.0f}s each")
     for i, m in enumerate(todo, 1):
         rel = f"scratchpad/{m}.py"
+        args = ARGS.get(m, ())
         out = f"/tmp/zerobas/rot_{m}.out"
         t0 = time.time()
         with open(out, "w") as fh:
             try:
-                rc = subprocess.call([sys.executable, os.path.join(ROOT, rel)],
+                rc = subprocess.call([sys.executable, os.path.join(ROOT, rel),
+                                      *args],
                                      stdout=fh, stderr=subprocess.STDOUT,
                                      cwd=ROOT, timeout=a.timeout, env=env)
                 state = f"rc={rc}"
