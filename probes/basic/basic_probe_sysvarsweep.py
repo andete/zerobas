@@ -1061,6 +1061,64 @@ def main() -> int:
         print(f"=== {k}  ({ROLE[k]}) ===")
         print("    " + "  ".join(f"{v}={len(cls[v])}" for v in VERDICTS
                                  if cls[v]) + f"   (of {tot} B)")
+        # 🔴 NO-ORACLE IS A VERDICT ABOUT THE COMPARISON, NOT ABOUT THE
+        # VARIABLE, AND THE CENSUS STILL ASKS IT ABSOLUTELY — filed 2026-08-01
+        # by D-REHOME after `FRETOP` sat in this bucket scored "no reading"
+        # while all three sides agreed PERFECTLY on the movement (-4/-20). The
+        # re-homing table below already asks the delta question; the byte census
+        # did not, so the bucket is an over-count by an amount nobody had
+        # measured. This measures it.
+        #
+        # ⚠️ THE PAIRING RULE IS THE WHOLE DIFFICULTY, and the filing says so:
+        # "naive per-byte deltas on a 16-bit cell will agree by luck on the high
+        # byte". So a pair is never guessed from adjacency — it is a PUBLISHED
+        # head whose DERIVED extent (distance to the next published symbol) is
+        # exactly 2, and BOTH of whose bytes are in this bucket. Bytes in cells
+        # of any other width are counted separately and left alone: we do not
+        # know their width, and inventing one is the error being avoided.
+        # ⚠️ NOT AT THE BASELINE, and the first run of this block is why: it
+        # reported all 13 cells "agreeing on the delta" there, because at the
+        # baseline every delta is 0 and 0 == 0. That is the same vacuous
+        # agreement `classify` already refuses to dress up ("a machine that never
+        # touches a byte agrees with one that does"), and it would have inflated
+        # the answer from 7 cells to 13.
+        if cls["NO-ORACLE"] and k != BASELINE:
+            noor = set(cls["NO-ORACLE"])
+            ext = {}
+            for a in head_of.values():
+                ext[a] = ext.get(a, 0) + 1
+            pairs, wide, lone = [], 0, 0
+            for j in sorted(noor):
+                a = WORK_LO + j
+                h = head_of.get(a)
+                if h is None:
+                    lone += 1
+                elif ext.get(h) == 2:
+                    if h == a and _idx(h) in noor and _idx(h + 1) in noor:
+                        pairs.append(h)
+                else:
+                    wide += 1
+            same, diff = [], []
+            for h in pairs:
+                ds = set()
+                for sd in REF_SIDES:
+                    b, c = mem[sd].get(BASELINE), mem[sd].get(k)
+                    if b is None or c is None:
+                        ds = None
+                        break
+                    jj = _idx(h)
+                    ds.add(_delta(bytes(b[0][jj:jj + 2]), bytes(c[0][jj:jj + 2])))
+                (same if ds and len(ds) == 1 else diff).append(h)
+            print(f"      NO-ORACLE breakdown: {len(pairs) * 2} B in derived "
+                  f"2-byte cells ({len(pairs)} cells), {wide} B in cells of "
+                  f"another width, {lone} B unnamed")
+            if same:
+                print(f"        🔴 {len(same) * 2} B ({len(same)} cells) AGREE ON "
+                      f"THE DELTA — an oracle the absolute test threw away: "
+                      + ", ".join(names.get(h, f'${h:04X}') for h in same))
+            if diff:
+                print(f"        {len(diff) * 2} B ({len(diff)} cells) disagree on "
+                      f"the delta too — NO-ORACLE stands for those")
         for v in ("BASE-DIFF", "DIVERGE", "EXTRA"):
             if cls[v]:
                 # The ownership split is what says whose defect a row is. A BIOS
