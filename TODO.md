@@ -410,7 +410,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:9773 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:9798 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -541,7 +541,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:2318 (T-6FE392)8 (T-529ABE)` from `TODO.md:8976 (T-529ABE)`: a
+      `TODO.md:2318 (T-6FE392)8 (T-529ABE)` from `TODO.md:9001 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -2956,7 +2956,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:8976 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:9001 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -7481,13 +7481,38 @@ list. **When a slice lands, grep this list for what it just shipped.**
       per-write overhead predicts a constant cost, and what is measured is a
       STEP. D-PUTCOST's two earlier mechanisms are separately dead — `DSKF` reads
       706/706/706 after 1/2/3 writes on both machines.
-      ➡️ **THE SUBJECT IS NOW `CLOSE`-AFTER-WRITE, AND IT HAS ITS OWN
-      CANDIDATES.** `CLOSE` flushes the write-back cache and stamps the
-      directory; the reopen re-mounts and re-reads it. Nothing here has read
-      that path yet, and the four candidates killed above (string pool, GC,
-      record geometry, per-`PUT` sector traffic, the per-write directory stamp)
-      were all killed as explanations of the WRITE count — they say nothing
-      about a close.
+      ✅ **THE EXCESS IS THE PER-`PUT` DIRECTORY STAMP, AND IT IS AN
+      UNFAITHFULNESS AS WELL AS A COST (D-DIRSTAMP2, 2026-09-06).** Knife K-DS1
+      cuts `fat_rand_put`'s `jp fat_dir_update` tail; re-run against the FIXED
+      probe with the refcache off:
+
+          smallest run_gap that completes    base    K-DS1
+            3 writes                          3.0     <=2.5
+            4 writes                         3.68      2.92
+            6 writes                         4.85      3.68
+
+      **~0.2 s per write, and three writes come back inside the default
+      budget.** 🔴 **My first run of this knife reported "changed nothing" and
+      that is RETRACTED** — it was driven by the probe before D-PUTFLOOR fixed
+      it, and a verdict of "no change" from an instrument that cannot resolve
+      the range it is scanning is not a refutation. The knife's own written
+      PREDICTION held exactly: it moves the figure without removing the shape.
+      🎯 **AND THE REFERENCE DOES NOT DO IT.** `frnd_update_size`'s own comment,
+      measured on the CF-3300 (`docs/lof-cf3300-characterization.md` §3): *"after
+      `PUT #1,1` the reference reports LOF = 256 while the on-disk DIRECTORY
+      entry still holds 0"*. It keeps `LOF`'s field live in RAM and stamps the
+      directory at `CLOSE`. zerobas reads AND writes the directory sector on
+      every random `PUT` — which is the measured excess AND a divergence with an
+      oracle row already behind it.
+      📏 **THE REAL I/O, COUNTED WITH `fat_dir_update` UNTRAPPED** (D-PUTIO's
+      count had it trapped, so its own sectors were invisible): **2 reads + 1
+      write per `PUT`**, linear — 2 accesses for one write, 8 for three. At
+      roughly 0.3 s per physical access that crosses the 2.5 s default budget at
+      exactly the third write, which is the "step" I chased for three commits.
+      ⚠️ **NOT THE WHOLE COST**: six writes still need 3.68 s after the cut, so
+      something else remains. And the cut itself is a DIAGNOSTIC — dropping the
+      stamp loses the on-disk size if a program never closes, which is a
+      behaviour question (`PUT` then reset) with its own filed item.
       ⚠️ **AND THE PROBE'S OWN PROSE IS NOW WRONG IN A NEW WAY**: it still says
       the failing rows are "BLIND FOR THAT REASON (they write three records)".
       They are blind because they CLOSE. Corrected in

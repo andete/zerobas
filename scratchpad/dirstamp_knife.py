@@ -41,7 +41,15 @@ SRC = os.path.join(os.path.dirname(HERE), "basic", "randio-body.inc")
 CUT = ("                jp      fat_dir_update      ; tail: stamp first cluster "
        "+ size into dir",
        "                ret                         ; K-DS1 CUT (restored on exit)")
-ROWS = [(f"n.same{n}", R.samerec(n), "ABCDEFGH"[n - 1] * 3) for n in (1, 2, 3, 4)]
+ROWS = [(f"n.same{n}", R.samerec(n), "ABCDEFGH"[n - 1] * 3) for n in (3, 4, 6)]
+
+# 🔴 THE FIRST RUN OF THIS KNIFE SAID "CHANGED NOTHING" AND COULD NOT HAVE KNOWN.
+# It was driven by rungap_probe BEFORE D-PUTFLOOR fixed two bugs in it: a
+# `run_gap` below `step` is a no-op (so every rung under 2.5 was one experiment),
+# and the mounted .dsk path was keyed on the LINE COUNT, so different programs
+# shared an image the emulator writes to. A verdict of "no change" from an
+# instrument that cannot resolve the range it is scanning is not a refutation.
+# Re-run against the fixed probe, with the refcache off.
 
 
 def sweep_all(tag):
