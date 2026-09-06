@@ -410,7 +410,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:9994 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:10046 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -575,7 +575,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:2352 (T-6FE392)8 (T-529ABE)` from `TODO.md:9197 (T-529ABE)`: a
+      `TODO.md:2352 (T-6FE392)8 (T-529ABE)` from `TODO.md:9249 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -2990,7 +2990,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:9197 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:9249 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -4312,6 +4312,58 @@ list. **When a slice lands, grep this list for what it just shipped.**
       edge-fired 2×2 can decide whether the other three share it in a form their
       event source cannot show. A discriminating instrument for that would have
       to observe the trap STATE, not the fire count.
+      ✅ **BUILT AND RUN 2026-09-06 (D-TRAPSTATE) —
+      [`scratchpad/trapstate_probe.py`](scratchpad/trapstate_probe.py). THE
+      ANSWER IS THAT `KEY` AND `STRIG` ARE CLEAN AT THE STATE LEVEL, NOT MERELY
+      QUIET AT THE COUNT LEVEL.** Reading `ZTRAP`'s per-entry state byte plus
+      `TRAPENA`/`TRAPSVC` right after the `CLEAR`, against a no-`CLEAR` control
+      and a `returned` negative control:
+      | verb | case | entry | state | ENA | SVC |
+      |---|---|---|---|---|---|
+      | `KEY` | CLEAR | — | all OFF | 0 | 0 |
+      | `KEY` | control | e17 | SERVICING | 0 | 1 |
+      | `KEY` | returned | e17 | ON | 1 | 0 |
+      | `STRIG` | CLEAR | — | all OFF | 0 | 0 |
+      | `STRIG` | control | e3 | SERVICING | 0 | 1 |
+      | `STRIG` | returned | e3 | ON | 1 | 0 |
+      🎯 **`CLEAR` WIPES THE ENTRY TO OFF AND ZEROES BOTH COUNTERS**, and all six
+      rows are internally consistent (ENA/SVC agree with the table). So their
+      `1`s in the 2×2 are not an event source hiding a wrong state — the state
+      is right. SPRITE re-fires 250× through the same `CLEAR`, so its entry is
+      NOT left OFF: **the verbs differ at the level of STATE, and the shared-code
+      argument is refuted with a reading rather than with a count.**
+      ⚠️ **THE MECHANISM FOR SPRITE IS STILL NOT ESTABLISHED AND STILL NOT
+      GUESSED AT** [[a-mechanism-inferred-from-one-observation]]. Its state
+      cannot be read the same way: the re-enabled trap fires once per frame and
+      the program starves before any reporting line, which is the same
+      starvation that left its 2×2 mechanism cells unwritten.
+      ⚠️ **`STOP` IS OUT OF SCOPE FOR THE INSTRUMENT, AND THE REASON IS THE
+      CHANNEL, NOT THE VERB** — `basic_probe_stop_trap`'s capture reads exactly
+      `FLAG`/`RAN`/`DONE`, and its `DONE` is set by an INJECTED direct POKE, so
+      there is no cell to put a state byte in and nothing to gate it on. Named
+      rather than quietly dropped [[an-unnamed-outcome-reads-as-no-outcome]].
+      🔴 **AND THE FIRST THREE RUNS MEASURED NOTHING FOR `STRIG` WHILE PRINTING
+      A PLAUSIBLE TABLE.** `basic_probe_strig_trap`'s capture emitted no `aux`
+      cell, so `r.get("aux", 255)` supplied the sentinel and **the DEFAULT became
+      the data** — it decoded to "no live entry" on every STRIG row, and a
+      consistency check then reported *"TRAPSVC=1 but the table shows no live
+      entry — counter and table DISAGREE"* off a value no machine produced. I was
+      one step from filing that as a ROM defect.
+      🎯 **WHAT CAUGHT IT WAS AN IMPOSSIBLE VALUE, NOT A SUSPICION.** A
+      `--direct` cross-check packs `idx*8 + state`, whose maximum is 31; 255
+      cannot occur there, so seeing 255 proved the CHANNEL absent rather than the
+      machine odd. The fix is additive (one emitted cell), and the probe now
+      **REFUSES** when a row comes back with no `aux` key instead of defaulting
+      [[an-instrument-can-fail-the-way-the-thing-it-replaced-failed]].
+      🔴 **A THIRD FINDING, IN THE SOURCE**: this run flagged `KEY(1) ON` arming
+      **entry 17** as unexpected. The entry was RIGHT — the KEY band is laid out
+      REVERSED, KEY 10 at `ZTI_KEY1` and KEY 1 at `ZTI_KEY1+9`
+      ([`basic/keytrap.asm:121`](basic/keytrap.asm:121),
+      [`basic/program.asm:2924`](basic/program.asm:2924), three `ld a,ZTI_KEY1+9`
+      sites) — and [`basic/sysvars.inc`](basic/sysvars.inc:1200)'s *"KEY n → 7+n,
+      n=1..10"* was the wrong half of a two-file disagreement
+      [[two-sections-of-one-doc-disagreed]]. Corrected in place beside the
+      original, 0 bytes.
       🤖 AUTONOMOUS — the reference or a gate settles it; finishable unattended (SPRITE measured 2026-08-26; KEY/STRIG/STOP still argued).
 
 - [ ] 💰 **MAIN PAGE 1 WAS 1 B FREE ON 2026-08-23 AT `4db8010` — NOTHING LANDS

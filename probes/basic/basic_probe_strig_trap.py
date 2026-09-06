@@ -97,6 +97,13 @@ REF_MACHINE = "Philips_VG_8020"
 ZB_MACHINE = os.environ.get("ZEROBAS_BASIC_MACHINE", "C-BIOS_MSX1_EU_REPACK_DISK")
 
 CNT, WHO, ERRC, DONE = 0xD000, 0xD001, 0xD002, 0xD003
+# 🔴 AUX IS ADDITIVE AND EXISTS BECAUSE ITS ABSENCE WAS UNREADABLE FROM OUTSIDE.
+# D-TRAPSTATE poked a trap-table state byte here and read it back with
+# `r.get("aux", 255)`; this capture never emitted `aux`, so the DEFAULT became
+# the data and printed as a plausible "no live entry" on every row. No existing
+# reading changes -- one more cell is emitted, and callers that do not ask for it
+# are unaffected [[an-instrument-can-fail-the-way-the-thing-it-replaced-failed]].
+AUX = 0xD004
 SPACE_ROW, SPACE_BIT = 8, 0x01
 
 # --- the trigger-1..4 injection (spec §7.3) --------------------------------
@@ -132,7 +139,7 @@ def run(machine, prog, events, *, boot=8.0, step=3.0, run_gap=2.0, poll_from=2.0
     lines = [
         "set throttle off",
         f'proc __cap {{}} {{ set f [open {{{out_path}}} w];'
-        f' puts $f "cnt=[debug read memory {CNT}] who=[debug read memory {WHO}]'
+        f' puts $f "aux=[debug read memory {AUX}] cnt=[debug read memory {CNT}] who=[debug read memory {WHO}]'
         f' err=[debug read memory {ERRC}] done=[debug read memory {DONE}]'
         f' t=[expr {{int([machine_info time])}}]";'
         + (f' binary scan [debug read_block VRAM 0x0000 960] H* h;'

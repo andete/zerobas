@@ -1197,7 +1197,18 @@ ZTI_INTERVAL    equ     0       ; entry index: INTERVAL
 ZTI_STOP        equ     1       ; entry index: STOP
 ZTI_SPRITE      equ     2       ; entry index: SPRITE
 ZTI_STRIG0      equ     3       ; entry index: STRIG 0 (STRIG n -> 3+n, n=0..4)
-ZTI_KEY1        equ     8       ; entry index: KEY 1 (KEY n -> 7+n, n=1..10)
+ZTI_KEY1        equ     8       ; entry index: the KEY band's BASE. 🔴 NOT "KEY n
+                                ; -> 7+n": the band is laid out REVERSED, KEY 10
+                                ; at ZTI_KEY1 and KEY 1 at ZTI_KEY1+9, which is
+                                ; what basic/keytrap.asm:121 and
+                                ; basic/program.asm:2924 both say and what the
+                                ; three `ld a,ZTI_KEY1+9` sites implement.
+                                ; ~~KEY n -> 7+n, n=1..10~~ was false here while
+                                ; two other files carried the right rule
+                                ; (D-TRAPSTATE 2026-09-06, found by a probe that
+                                ; flagged `KEY(1) ON` arming entry 17 as
+                                ; unexpected -- the entry was right and the
+                                ; comment that set the expectation was wrong).
 ZTRAP_NENT      equ     18      ; total entries
 ; trap state field bit values
 ZTS_OFF         equ     0       ; disabled (OFF clears PENDING too)
