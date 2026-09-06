@@ -410,7 +410,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:10046 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:10070 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -575,7 +575,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:2352 (T-6FE392)8 (T-529ABE)` from `TODO.md:9249 (T-529ABE)`: a
+      `TODO.md:2376 (T-6FE392)8 (T-529ABE)` from `TODO.md:9273 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -1124,6 +1124,30 @@ list. **When a slice lands, grep this list for what it just shipped.**
       That is the sweep doing exactly what it exists for: a divergence nobody has
       adjudicated, made loud. **Not read yet — recorded so the next pass starts
       from a list rather than a re-run.**
+      🟢 **THE ORPHAN SIDE IS NOW CLEAN, 2026-09-06 (D-PINPRUNE) — 17 pins → 14,
+      and TWO OF THE THREE WERE DEBT THIS DAY'S OWN FIXES LEFT.**
+      `--check-orphans` named three pins cited by no OPEN item, so the sweep
+      never ran them and could not see them go stale. Re-run by hand with the
+      refcache OFF, every pinned row now AGREES:
+      | pin | rows | reading | closed by |
+      |---|---|---|---|
+      | `uplus_probe` | `x.str` `x.strlit` `x.prstr` | 0 of 9 diverge | D-UPSTR (today) |
+      | `reclendom_probe` | 8 rows | 0 of 23 diverge | D-RECLENFIX (today) |
+      | `ntwall_probe` | 6 rows | all `refs-agree zb=same` | D-NTFLOOD |
+      All three removed; `--check-orphans` now reads *"no orphans — every pin
+      names a probe this sweep still runs"*.
+      🎯 **THIS IS THE `onerrarm_probe` SHAPE AGAIN, AND IT IS THE ENTRY'S OWN
+      STANDING DEBT** — *"the debt a fix leaves when it does not move the pin
+      with it"*. It recurred twice in one day, from my own commits, which says
+      the rule is not carried by anything that runs: closing an item does not
+      touch `tools/filed-row-known.txt`, and only `--check-orphans` notices, and
+      only when someone runs it.
+      🔴 **AND I ALMOST FILED A FALSE FINDING OFF A TRUNCATED VIEW.** The first
+      look at `ntwall_probe` showed 4 rows, none of them the six pinned, and I
+      was one step from *"the pin names rows the probe no longer emits"*. The
+      file I was reading was **my own `tail -22`**, not the run: the probe's
+      output had gone to `scratchpad/ntwall_rerun.out`, 115 lines, where all six
+      are present and agreeing [[a-readout-blind-to-its-own-subject]].
       🤖 AUTONOMOUS — what remains is keeping the file honest as entries close,
       and the sweep now says so itself when one rots; the 11 above are the
       standing to-do.
@@ -2990,7 +3014,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:9249 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:9273 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
