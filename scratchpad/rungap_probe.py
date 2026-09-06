@@ -129,6 +129,30 @@ def samerec(n):
 
 
 COUNT = [(f"n.same{n}", samerec(n), "ABCDEFGH"[n - 1] * 3) for n in (3, 4, 5, 6)]
+
+# 🔴 EVERY ROW ABOVE ENDS WITH A `GET` READ-BACK, AND NONE OF THEM ASKS WHETHER
+# THAT IS THE COST. `s.lsetonly` is the only fast row with no PUT -- and it has
+# no GET either, so it cannot separate them. These write N records and print a
+# CONSTANT instead of reading anything back.
+#   fast  -> the cost is in the READ-BACK after N writes, not in the writes
+#   slow  -> the writes really are the subject and the GET is innocent
+def nogets(n):
+    return (['CLEAR 2000', 'OPEN"TS.DAT"AS #1 LEN=128', 'FIELD#1,128 AS A$']
+            + [f'LSET A$=STRING$(128,"{"ABCDEFGH"[i]}"):PUT#1,6' for i in range(n)]
+            + ['PRINT"[";"XYZ";"]"'])
+
+
+NOGET = [(f"g.noget{n}", nogets(n), "XYZ") for n in (1, 3, 6)]
+# and the mirror: ONE write, then N read-backs
+def getonly(n):
+    return (['CLEAR 2000', 'OPEN"TS.DAT"AS #1 LEN=128', 'FIELD#1,128 AS A$',
+             'LSET A$=STRING$(128,"A"):PUT#1,6']
+            + [f'GET#1,6' for _ in range(n)]
+            + ['PRINT"[";LEFT$(A$,1);MID$(A$,50,1);RIGHT$(A$,1);"]"'])
+
+
+GETONLY = [(f"g.get{n}", getonly(n), "AAA") for n in (1, 3, 6)]
+LADDER = LADDER + NOGET + GETONLY
 LADDER = LADDER + SEP + COUNT
 
 
@@ -147,16 +171,42 @@ def run(side, lines, gap):
     return F.bracket(caps[0])
 
 
-def sweep(side, lines, want):
-    """The smallest run_gap at which the row READS. None = needs more than the
-    largest tried, which is a bound and is reported as one."""
-    for g in GAPS:
-        got = run(side, lines, g)
-        ok = got == want
-        print(f"    run_gap={g:5.1f}  {str(got):>14}   {'ok' if ok else ''}")
-        if ok:
-            return g
-    return None
+LO, HI, TOL = 0.05, 24.0, 0.15
+
+
+def sweep(side, lines, want, verbose=True):
+    """The smallest run_gap at which the row READS, by BISECTION.
+
+    🔴 THE LINEAR LADDER WAS TOO COARSE TO SUPPORT THE SHAPES I WAS READING OFF
+    IT. Its rungs were 0.5, 1, 1.5, 2, 3, 4, 6..., and its smallest rung is a
+    FLOOR: a row costing 0.05 s and one costing 0.49 s both printed "0.5". Four
+    disk operations then looked fast in one arrangement and slow in another,
+    which is a threshold artefact of the grid and not a property of the machine.
+    Bisection over a continuous range costs FEWER runs and gives a number
+    instead of a bracket.
+
+    ⚠️ MONOTONICITY IS THE ASSUMPTION, and it is the harness's own rule: the
+    budget is a completion window, so a row that finishes in T finishes in
+    anything larger. A row that fails at HI is reported as a BOUND.
+    """
+    if run(side, lines, HI) != want:
+        if verbose:
+            print(f"    run_gap>{HI}: never completed")
+        return None
+    lo, hi = LO, HI
+    if run(side, lines, lo) == want:
+        if verbose:
+            print(f"    run_gap<={lo}")
+        return lo
+    while hi - lo > TOL:
+        mid = (lo + hi) / 2.0
+        if run(side, lines, mid) == want:
+            hi = mid
+        else:
+            lo = mid
+    if verbose:
+        print(f"    needs {hi:.2f}s (bisected, +/-{TOL})")
+    return round(hi, 2)
 
 
 def main():

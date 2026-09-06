@@ -410,7 +410,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:9718 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:9761 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -541,7 +541,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:2318 (T-6FE392)8 (T-529ABE)` from `TODO.md:8921 (T-529ABE)`: a
+      `TODO.md:2318 (T-6FE392)8 (T-529ABE)` from `TODO.md:8964 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -2956,7 +2956,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:8921 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:8964 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -7329,11 +7329,43 @@ list. **When a slice lands, grep this list for what it just shipped.**
             2 PUTs                               <=0.5   <=0.5
             3 PUTs                               <=0.5     3.0
 
-      🎯 **SO THE THIRD `PUT` IS INDIVIDUALLY SLOW, AND THAT IS THE ORIGINAL
-      FILING'S CLAIM — the one D-PUT3SLOW explicitly declined to make.** It is a
-      STEP, not an accumulation: cumulative overrun predicts ~1.6 s for two
-      writes and ~0.8 s for one, and both complete in ≤0.5. **≥6× the
-      reference's budget, at the third write and not before.**
+      🔴 ~~**SO THE THIRD `PUT` IS INDIVIDUALLY SLOW** ... ≥6× the reference's
+      budget, at the third write and not before.~~ **RETRACTED THE SAME MORNING
+      (D-CLOSEFLUSH). THE THIRD `PUT` IS NOT SLOW AT ALL, AND THE SUBJECT IS
+      `CLOSE`.**
+      🔴 **MY LADDER WAS A COARSE GRID READ AS A CURVE.** `sweep` returned the
+      first rung that completed, and its smallest rung was **0.5** — a FLOOR, so
+      a row costing 0.05 s and one costing 0.49 s both printed "0.5". Replacing
+      the linear scan with a BISECTION over a continuous range (fewer emulator
+      runs, and a number instead of a bracket) reads **0.05 for one, two AND
+      three writes on both machines**.
+      ✅ **AND WITH `ZEROBAS_REFCACHE=0` THE WHOLE PICTURE SEPARATES CLEANLY:**
+
+          3 writes + GET                     cf3300 0.05    zb  0.05
+          3 writes + CLOSE + reopen + GET    cf3300 3.51    zb  >24
+          1 write  + CLOSE + reopen + GET    cf3300 3.51    zb  >24
+          CLOSE + reopen with NO write       cf3300 0.05    zb  0.05
+
+      **It is `CLOSE` after a write — one write is as bad as three — and the
+      write count never mattered.** `reclen_probe` run cache-off now reads
+      `p.put3`, `p.same3`, `p.trap3`, `x.l1p3`, `x.l0p3` and `k.put3` all **OK**:
+      every three-`PUT` row WITHOUT a close passes, and every failing row
+      (`p.close3`, `ctl.128.r5/r6/r7`, `s.100.r5/r6/r7`, `s.96.r6`) contains a
+      `CLOSE` + reopen. 100% and 0%.
+      🎯 **THE FILING HAD THE SEPARATING ROW AND READ IT BACKWARDS.** `p.close3`
+      is captioned *"a CLOSE and reopen does NOT reset it"* — taken as evidence
+      that the put-COUNTER survived a close, when the `CLOSE` was the subject
+      [[two-rules-that-coincide-on-every-row-you-have]].
+      📏 **THE REFERENCE PAYS 3.51 s FOR IT TOO** — this is expensive on both
+      machines and zerobas is **≥7× worse**, possibly unbounded (>24 s is a
+      BOUND, not a measurement).
+      ⚠️ **AND WHY `p.put3` READ `<NO OUTPUT>` THIS MORNING AND `OK` NOW IS NOT
+      ESTABLISHED.** Two candidates, neither eliminated: the earlier readings
+      were unreliable, or D-STRADDLE's restructuring of `fat_rand_put` changed
+      it. The second is not the obvious answer it looks like — at LEN=128 the
+      new two-pass loop runs exactly one pass and is functionally equivalent —
+      but it is NOT the same code, and it also moved two words of RAM into
+      `$EA3A`. Recorded as open rather than attributed.
       ⚠️ ~~**measured 2026-09-06 (D-PUTCOST), and `PUT` IS NOT SLOWER. The
       performance framing is refuted by the same kind of reading that refuted
       the hang.**~~ — struck: the performance framing STANDS, sharpened from
@@ -7437,8 +7469,19 @@ list. **When a slice lands, grep this list for what it just shipped.**
       per-write overhead predicts a constant cost, and what is measured is a
       STEP. D-PUTCOST's two earlier mechanisms are separately dead — `DSKF` reads
       706/706/706 after 1/2/3 writes on both machines.
-      🤖 AUTONOMOUS — the reference settles it; the cost is now a NUMBER and the
-      subject is the third write specifically.
+      ➡️ **THE SUBJECT IS NOW `CLOSE`-AFTER-WRITE, AND IT HAS ITS OWN
+      CANDIDATES.** `CLOSE` flushes the write-back cache and stamps the
+      directory; the reopen re-mounts and re-reads it. Nothing here has read
+      that path yet, and the four candidates killed above (string pool, GC,
+      record geometry, per-`PUT` sector traffic, the per-write directory stamp)
+      were all killed as explanations of the WRITE count — they say nothing
+      about a close.
+      ⚠️ **AND THE PROBE'S OWN PROSE IS NOW WRONG IN A NEW WAY**: it still says
+      the failing rows are "BLIND FOR THAT REASON (they write three records)".
+      They are blind because they CLOSE. Corrected in
+      `scratchpad/reclen_probe.py`.
+      🤖 AUTONOMOUS — the reference settles it; the subject is `CLOSE` after a
+      write, measured at 3.51 s there against >24 s here.
 
       ⬇️ **THE ORIGINAL FILING FOLLOWS, KEPT BECAUSE ITS ROW WORK IS SOUND** —
       every characterisation below (PUT count, not layout; survives CLOSE; not
