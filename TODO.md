@@ -410,7 +410,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:9491 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:9512 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -541,7 +541,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:2318 (T-6FE392)8 (T-529ABE)` from `TODO.md:8694 (T-529ABE)`: a
+      `TODO.md:2318 (T-6FE392)8 (T-529ABE)` from `TODO.md:8715 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -2956,7 +2956,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:8694 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:8715 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -7592,7 +7592,28 @@ list. **When a slice lands, grep this list for what it just shipped.**
       offset `avail` — for PUT re-running `frnd_locate` in extend mode and the
       read-old-or-fill decision against `GP_OLDNSEC` for the new sector too.
       💰 **~60–100 B against 920**, so the cost is the ENGINEERING and the
-      data-loss risk, not the wall. ⚠️ Still a SLICE, not a tick: it needs its
+      data-loss risk, not the wall.
+      🔴 **AND THE PROBE'S OWN DOCSTRING STILL CARRIED THE REFUTED CLAIM UNTIL
+      2026-09-06.** `scratchpad/reclen2_probe.py` opened with *"AND SO DOES THIS
+      ENGINE: with the power-of-two test cut diagnostically, record 6
+      round-tripped here too"* — the sentence this entry and
+      `docs/spec-basic-put3.md` §2 had BOTH already struck. The spec was
+      corrected on 2026-08-30 and the probe was not; **no gate reads prose**, and
+      the probe is what the next person opens first. Corrected beside the
+      original, with the two blindnesses named (a round-trip cannot see a wrong
+      offset; `mul_reclen`'s shift loop put record 6 at within=320) and the rows
+      that CAN see it — `s.100.r5` / `s.100.r7`, the neighbours.
+      🟢 **AND THE OBVIOUS DETECTOR FOR THAT CLASS IS A MEASURED NEGATIVE —
+      WHICH IS GOOD NEWS.** Sweeping every `~~struck~~` passage in tracked `.md`
+      (**108**) for the same text surviving UNSTRUCK elsewhere finds **4**
+      cross-file survivals, and reading all four: three are correct practice
+      (`spec-basic-open2.md` §3 and `spec-basic-lineerr.md` §10.4 quote a struck
+      claim in order to REFUTE it; `todo-staleness-sweep-2026-08.md` §3.4 is an
+      index heading), and the fourth is a knife runner quoting the hypothesis it
+      was built to test — annotated as answered. **Zero stale assertions.** ⚠️ The
+      limit is exact: this probe's stale claim was an INDEPENDENTLY WORDED
+      assertion of the refuted thing, not a copy of the struck words, so no
+      text-matching sweep could have found it. ⚠️ Still a SLICE, not a tick: it needs its
       own predictions, an adjacency row (a round-trip cannot see a wrong offset
       because `PUT` and `GET` share it — that is how the last attempt passed
       while writing 88 bytes past the buffer) and a knife per pass.

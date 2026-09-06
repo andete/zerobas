@@ -9,6 +9,12 @@ TODO.md's `locarg` apparatus item ends with a question, not a finding:
     before its `ret`, so the run may simply stop at the next `rp_run` check
     before a second message can print — that is a hypothesis, not a reading.
 
+🔴 THAT QUESTION IS ANSWERED AND THE HYPOTHESIS IS THE WRONG WAY ROUND — the
+quote above is kept because it is what this runner was built to test, not
+because it still stands. `u.str` was never the row that carries the property
+(`u.trail` is), and `K-LM3` shows `ENDFLAG` alone moves nothing: with the SP
+reset in place it is `ld sp,(SAVSTK)` plus the tail `ret` that ends the run.
+
 K-LP1 cuts `fre_abort_low`'s `ld sp,(SAVSTK)`, putting the depth-dependence back.
 Exactly one row of forty-five moves — `u.bare`, to `''` — and `u.str`
 (`LOCATE "5",3`) stays green, so the battery detects the property at one row, by

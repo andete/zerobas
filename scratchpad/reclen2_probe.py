@@ -10,17 +10,34 @@ halves are measured wrong:
   DOMAIN  the CF-3300 accepts LEN=1/100/128/255/256 -- any value in 1..256.
   FACE    LEN=0 / 257 / 512 answer `Illegal function call`, not `Syntax error`.
 
-🎯 AND THE STRADDLE JUSTIFICATION IS FALSE FOR **BOTH** ENGINES. The reference
-round-trips record 6 at LEN=100 -- bytes 500..599, across the boundary -- intact
-(docs/spec-basic-put3.md §2). And so does THIS engine: with the power-of-two test
-cut diagnostically, record 6 round-tripped here too. The validator was refusing
-lengths its own FAT layer handles correctly.
+🎯 AND THE STRADDLE JUSTIFICATION IS FALSE FOR THE REFERENCE. It round-trips
+record 6 at LEN=100 -- bytes 500..599, across the boundary -- intact
+(docs/spec-basic-put3.md §2). The validator was refusing lengths the REFERENCE's
+FAT layer handles correctly.
 
-🔴 THE ROW THAT UNBLOCKED IT NEEDED ONE `PUT`, NOT THREE. D-RECLEN sat blocked on
-"zerobas's own straddling is unmeasured, because the rows need three PUTs and the
-third hangs" (D-PUT3) -- but writing ONLY record 6 is a SINGLE put, and reading
-it back is a GET. The blocker was a property of how the first rows were written,
-not of the machine. [[a-coverage-row-whose-geometry-cannot-reach-the-case]]
+🔴 ~~And so does THIS engine: with the power-of-two test cut diagnostically,
+record 6 round-tripped here too.~~ **THAT IS FALSE AND THE WIDENING WAS REVERTED
+(2026-08-30, corrected here 2026-09-06).** `zerobas` CANNOT straddle:
+`fat_rand_put`'s overlay `ldir`s into `FWBUF + within`, so record 6 at r=100
+writes **88 bytes past the 512-byte sector buffer** -- `basic/files.asm`
+`opr_lowbyte` carries the measurement that put the check back.
+
+🔴 THE ROW THAT SAID OTHERWISE WAS BLIND TWICE, AND BOTH ARE WORTH KNOWING
+BEFORE WRITING THE NEXT ONE:
+  * **a round-trip cannot see a wrong offset**, because `PUT` and `GET` share
+    it -- write to the wrong place, read from the same wrong place, get your
+    bytes back [[a-coverage-row-whose-geometry-cannot-reach-the-case]];
+  * `mul_reclen`'s then-current shift loop put record 6 at within=**320**, so
+    the row that was supposed to straddle never straddled at all.
+🎯 THE ROWS THAT CAN SEE IT ARE THE **ADJACENCY** ONES -- `s.100.r5` and
+`s.100.r7`, the NEIGHBOURS of the straddling write (spec-basic-put3.md §2).
+Damage from a wrong offset lands on a record nobody asked about, which is
+precisely why the subject's own round-trip stays green.
+
+🔴 THE ROW THAT UNBLOCKED THE DOMAIN QUESTION NEEDED ONE `PUT`, NOT THREE.
+D-RECLEN sat blocked on "zerobas's own straddling is unmeasured, because the rows
+need three PUTs and the third hangs" (D-PUT3) -- but writing ONLY record 6 is a
+SINGLE put. That half stands; what it measured was the DOMAIN, not the straddle.
 
 ⚠️ THE `FIELD`-WIDTH ROWS ARE CONTROLS, NOT SUBJECTS: `FIELD#1,256` is
 `Illegal function call` on both sides (the width max is 255) and `FIELD#1,255` is
