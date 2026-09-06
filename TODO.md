@@ -410,7 +410,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:9910 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:9920 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -541,7 +541,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:2318 (T-6FE392)8 (T-529ABE)` from `TODO.md:9113 (T-529ABE)`: a
+      `TODO.md:2318 (T-6FE392)8 (T-529ABE)` from `TODO.md:9123 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -2956,7 +2956,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:9113 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:9123 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -5389,7 +5389,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unit-checked (empty is NOT data-only; a named target keeps its edge); battery
       43/43 with 7 flakes recovered serially.
 
-- [ ] ⚠️ **THE `tools/` SEED ARM IS AN INTERSECTION, NOT AN ASSERTION** (filed
+- [x] ⚠️ **THE `tools/` SEED ARM IS AN INTERSECTION, NOT AN ASSERTION** (filed
       2026-08-22 by D-SEEDHOLE2, §11.5). `init`, the sub entry-table tenants and
       the resident-ABI import each fail loudly if they stop resolving; the
       `tools/` arm is `set(m.nodes) & external_names(['tools'])`, so a main
@@ -5421,6 +5421,16 @@ list. **When a slice lands, grep this list for what it just shipped.**
       ⚠️ So this closes the *"filed rather than fixed"* status honestly: the
       hole is not fixed, it is **measured empty and instrumented to say when it
       stops being empty**.
+      ☑️ **BOX TICKED 2026-09-06 — the work landed on 09-05 and the checkbox did
+      not follow it, which is the failure the very next item in this section
+      describes.** Nothing was owed but the tick: `make deadcode` is green today
+      (main 0 dead, sub 0 dead + 2 allowlisted, both still verified dead), the
+      weight-comparison guard is live in
+      [`tools/check_dead_code.py:622`](tools/check_dead_code.py:622), and the
+      only remaining scope is CONDITIONAL — the per-tool lookup model is owed
+      *when the arm starts carrying weight*, and that gate is precisely what
+      announces the moment. A residual whose trigger is gated is not an open
+      item; it is a gate.
       🤖 AUTONOMOUS — the reference or a gate settles it; finishable unattended (no his-decision signal found).
 
 - [x] ⚠️ **`SAVE` / `LOAD` / `BLOAD` WITH NO ARGUMENT SAY `Syntax error` WHERE
