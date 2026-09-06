@@ -10711,6 +10711,39 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       `make basic-reloc` before believing it, and note `input_common` solves the
       same problem with an `ARL_GETBYTE` vector, so a shared indirection might pay
       for itself across both sites rather than costing twice.
+      🔴 **THE COST DRIVER ABOVE IS WRONG, RE-READ 2026-09-06 (D-CASVEC) — AND
+      THE HYPOTHESIS AT THE END OF IT IS RIGHT.** *"`str_inputd_read` calls
+      `fat_io_getbyte` directly — no vector"* is false at the level that matters:
+      [`basic/files.asm:2018`](basic/files.asm:2018) already carries
+      **`arl_getbyte`**, a resident call-through-pointer trampoline
+      (`ld hl,(ARL_GETBYTE)` / `jp (hl)`), invoked as an ordinary `call`. So the
+      call-site change at [`basic/strvar.asm:489`](basic/strvar.asm:489) —
+      `call fat_io_getbyte` → `call arl_getbyte` — is **0 bytes**, not "an
+      indirection at that call site".
+      🎯 **THE REAL DRIVER IS THE SETTER, NOT THE INDIRECTION.** `ARL_GETBYTE` is
+      pointed at the right source by `input_common`
+      ([`basic/files.asm:1012`](basic/files.asm:1012)), which is `INPUT`'s path,
+      not `INPUT$`'s — two `ld hl,<src>` / `ld (ARL_GETBYTE),hl` pairs and a
+      join. `INPUT$` has no equivalent and would have to grow one.
+      💰 **AND THAT IS WHERE THE SHARED INDIRECTION PAYS, AS THIS ENTRY GUESSED.**
+      Duplicating the setter in `INPUT$` prices at **~18 B** (4 B dispatch +
+      ~14 B setter + 0 B site). Factoring it instead into one `arl_set_src`
+      helper (`ld hl,fat_io_getbyte` / `cp CAS_IN_MODE` / `jr nz` /
+      `ld hl,cas_in_getbyte` / store / `ret`, ~14 B) lets `input_common` REPLACE
+      its own ~14 B with a 3 B call, so the net is **~+10 B** rather than ~+18.
+      ⚠️ **THAT IS ARITHMETIC FROM THE INSTRUCTION ENCODINGS, NOT A BUILT
+      MEASUREMENT** — nothing here was assembled, and `input_common`'s `inp_cas`
+      is a jump target from elsewhere, so the refactor is more delicate than the
+      addition. Do not quote ~10 B as a price; quote it as a reason to try.
+      🔴 **STILL BLOCKED, AND HARDER THAN WHEN FILED: main page 1 read 0 B free
+      on 2026-09-06**, down from the 6 B this entry recorded on 09-05, and the
+      `jp`→`jr` reserve read **ONE page-1 site** that day — `pdfcb-body.inc`,
+      the unspendable shared three-way include. D-SCRBAUD spent the last of it.
+      ⚠️ Both figures rot; re-run `make basic-reloc` and
+      [`scratchpad/jr_mapper.py`](scratchpad/jr_mapper.py) rather than quoting
+      this paragraph — which is what re-running them today did to the 09-05
+      price directly above.
+      So this needs a CARVE before it needs a fix, and the carve is the slice.
       ⚠️ `diskbasic-acceptance`/a cassette-side gate owns the surface, and the row
       set has no CAS: channel rows at all yet.
       🔴 **THE ROW-ROT SWEEP WAS READING THE WRONG MODE, 2026-09-05.**
