@@ -410,7 +410,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:9858 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:9875 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -541,7 +541,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:2318 (T-6FE392)8 (T-529ABE)` from `TODO.md:9061 (T-529ABE)`: a
+      `TODO.md:2318 (T-6FE392)8 (T-529ABE)` from `TODO.md:9078 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -2956,7 +2956,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:9061 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:9078 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -8929,7 +8929,15 @@ list. **When a slice lands, grep this list for what it just shipped.**
       for a human; the tool deliberately does not make it. Reasons are written in
       `tools/citations-listing-allow.txt`. Detail:
       `docs/spec-audit-citations-docs.md` §2.6.
-      🤖 AUTONOMOUS — the reference or a gate settles it; finishable unattended (no his-decision signal found).
+      🔴 **RE-MARKED 🙋 2026-09-06 — A MISFILED 🤖, AND THE ITEM DIRECTLY BELOW
+      IT IS THE PROOF.** This block's own words are *"a judgement
+      `docs/clean-room-audit.md` reserves for a human; the tool deliberately does
+      not make it"* — and `int_h_body`, the very next item, has the identical
+      shape (*"a judgement the tool declines to make"*) and is correctly marked
+      🙋. Neither a reference nor a gate can settle whether a C-BIOS listing is
+      inside the B/Conditional grade; that is the paper trail, and the paper
+      trail is his. Misfiling toward 🤖 is the expensive direction.
+      🙋 NEEDS-JOOST — a clean-room grading call the audit reserves for a human.
 - [ ] ⚠️ **`disk/runtime.asm:423` `int_h_body` awaits a HUMAN decision** — newly
       visible (D-NEGJUDGE) and acknowledged in `tools/citations-advisory-allow.txt`,
       not resolved. Its block attests in prose (*"the MSX1 standard,
@@ -8948,6 +8956,15 @@ list. **When a slice lands, grep this list for what it just shipped.**
       captured, 59 lines). A third IS a finding to
       chase; capture the **whole** log (`> file 2>&1`), because sighting 1's row
       identity was lost to a `tail -6`. Detail: line 3678.
+      📏 **STILL NOTHING, AND THE DENOMINATOR IS MUCH LARGER NOW: +24 FULL GREEN
+      BATTERIES ON 2026-09-05..06 ALONE** (counted from the run logs that carry
+      `recorded: this full green battery`, filtered by mtime — not from memory),
+      every one of which runs `lof-acceptance`, with **zero** oracle drift in any
+      of them. So the watch stands at eight slices plus twenty-four batteries.
+      ⚠️ **A LONGER QUIET RUN IS NOT EVIDENCE OF ABSENCE FOR AN INTERMITTENT** —
+      it raises the bar for what a third sighting would have to be, and the
+      instruction to capture the WHOLE log is what makes the third one usable
+      when it comes.
       🤖 AUTONOMOUS — the reference or a gate settles it; finishable unattended (no his-decision signal found).
 
 ## Phase 1 — committed loader-stub target (✅ closed)
