@@ -410,7 +410,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:9813 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:9838 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -541,7 +541,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:2318 (T-6FE392)8 (T-529ABE)` from `TODO.md:9016 (T-529ABE)`: a
+      `TODO.md:2318 (T-6FE392)8 (T-529ABE)` from `TODO.md:9041 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -2956,7 +2956,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:9016 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:9041 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -7509,8 +7509,33 @@ list. **When a slice lands, grep this list for what it just shipped.**
       write per `PUT`**, linear — 2 accesses for one write, 8 for three. At
       roughly 0.3 s per physical access that crosses the 2.5 s default budget at
       exactly the third write, which is the "step" I chased for three commits.
-      ⚠️ **NOT THE WHOLE COST**: six writes still need 3.68 s after the cut, so
-      something else remains. That residual is the autonomous part of this item.
+      ✅ **AND THE RESIDUAL IS NAMED: THE REFERENCE CACHES THE SECTOR AND THIS
+      ENGINE DOES NOT (D-PUTCACHE, 2026-09-06).** N writes, cache off, bisected
+      above the floor:
+
+          all writes to ONE record        n=3     n=6    n=12
+            cf3300                      <=2.5   <=2.5   <=2.5      FLAT
+            zb                            3.0    4.77    8.38      linear
+          each write to a DIFFERENT sector
+            cf3300                      <=2.5    3.59    6.11
+            zb                           3.76    6.78    17.2
+
+      🎯 **Twelve writes to the SAME sector cost the CF-3300 nothing measurable
+      and cost zerobas 8.38 s.** The reference keeps the sector in its buffer and
+      writes it back only when the target sector CHANGES; `fat_rand_put` does a
+      full read-modify-write per `PUT` whatever the target. Both machines scale
+      once the sector really does change, and there zerobas is ~2.8× (17.2
+      against 6.11).
+      🔬 **AND D-PUTCUT CORROBORATES IT FROM A COMPLETELY DIFFERENT ROW.** Its
+      cut-after-`PUT` image shows the CF-3300 with *"no chain, no data"* — the
+      record was never written because **it was still in the buffer**. A
+      performance reading and a crash-image reading, taken a day apart for
+      unrelated reasons, name the same mechanism.
+      📏 **SO THERE IS NO "STEP AT THE THIRD WRITE" AT ALL.** The cost is linear
+      in physical accesses (2 per `PUT`: the record read-modify-write plus the
+      directory stamp) and the 2.5 s default budget simply falls between the
+      second and third. Three commits chased a step that was an artefact of
+      where the threshold sat.
       🙋 **BUT REMOVING THE STAMP IS A TRADE, NOT A FIX, AND THE TRADE IS HIS.**
       D-PUTCUT (2026-09-05) measured exactly what the stamp buys, and it is not
       nothing:
