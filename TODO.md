@@ -410,7 +410,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:9623 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:9653 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -541,7 +541,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:2318 (T-6FE392)8 (T-529ABE)` from `TODO.md:8826 (T-529ABE)`: a
+      `TODO.md:2318 (T-6FE392)8 (T-529ABE)` from `TODO.md:8856 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -2956,7 +2956,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:8826 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:8856 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -7342,8 +7342,38 @@ list. **When a slice lands, grep this list for what it just shipped.**
       A readout that fails on its own positive control is the instrument, not the
       machine [[readout-blind-to-its-own-subject]]; the LIST-format question has
       to be solved before that row means anything.
-      🤖 AUTONOMOUS — the reference settles it; what is left is why a 0.12 s
-      program needs a 5 s step, and the first attempt at that row was blind.
+      ✅ **AND THE LIST-FORMAT ROW IS UNBLOCKED — LINE ENTRY IS REFUTED
+      (D-LINEENTRY, 2026-09-06,
+      [`scratchpad/lineentry_probe.py`](scratchpad/lineentry_probe.py)).** Typing
+      the six-line program and `LIST`ing it back gives **6/6 lines matching at
+      `step=2.5`**, the very step at which `RUN` prints nothing — so the program
+      ARRIVES intact and a dropped-keystroke explanation is dead.
+      🔴 **THE BLIND READER HAD TWO FAULTS AND THE CONTROL FOUND BOTH.** The
+      capture is the SCREEN — one string, no newlines, 40 columns to a row — so
+      `splitlines()` saw one line; and zerobas prints `ZB` with no trailing
+      newline, so its echo row is `ZBLIST` and its terminator a bare `ZB`, where
+      the reader matched `== "LIST"` and broke on `== "Ok"`. The CF-3300 passed
+      throughout, which is what said the fault was mine
+      [[readout-blind-to-its-own-subject]]. ⚠️ The probe's own summary counted
+      blind rows as failures too, and printed a FINDING off four rows that had
+      read nothing; blind and mangled are separate counts now, and a blind run
+      refuses [[an-unnamed-outcome-reads-as-no-outcome]].
+      📏 **AND THE SCREEN SAYS EXACTLY WHERE IT STOPS.** At `step=2.5` the last
+      row is `ZBRUN` and there is nothing after it; at `step=8.0` the next row is
+      `[BBB]`. The capture is taken before the output exists.
+      ➡️ **SO THE CAUSE IS NARROWED TO ONE PLACE AND STILL NOT NAMED**: not
+      execution (the guest's own `TIME` says 0.12 s), not line entry (the listing
+      is intact), but the wall time between `RUN` and the first output character.
+      🔴 **WHICH MAKES D-PUTCOST'S INSTRUMENT A SUSPECT, AND THAT IS WORTH SAYING
+      OUT LOUD.** `TIME` counts guest VBlanks; if openMSX stalls the guest clock
+      while it performs HOST file I/O, then `TIME` is blind to precisely the cost
+      in question and *"1.71 ticks per PUT"* would be true and irrelevant. ⚠️ A
+      CANDIDATE, not a finding — and my one attempt to measure host wall time
+      instead returned **0.3 s for a run that includes an 8 s boot**, which is
+      not a reading at all. The next row needs a host-side timer that is
+      demonstrated on a known-slow case first.
+      🤖 AUTONOMOUS — the reference settles it; two causes are now eliminated by
+      rows and the third needs a host clock the harness does not yet have.
 
       ⬇️ **THE ORIGINAL FILING FOLLOWS, KEPT BECAUSE ITS ROW WORK IS SOUND** —
       every characterisation below (PUT count, not layout; survives CLOSE; not
