@@ -410,7 +410,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:9761 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:9773 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -541,7 +541,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:2318 (T-6FE392)8 (T-529ABE)` from `TODO.md:8964 (T-529ABE)`: a
+      `TODO.md:2318 (T-6FE392)8 (T-529ABE)` from `TODO.md:8976 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -2956,7 +2956,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:8964 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:8976 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -7329,36 +7329,48 @@ list. **When a slice lands, grep this list for what it just shipped.**
             2 PUTs                               <=0.5   <=0.5
             3 PUTs                               <=0.5     3.0
 
-      🔴 ~~**SO THE THIRD `PUT` IS INDIVIDUALLY SLOW** ... ≥6× the reference's
-      budget, at the third write and not before.~~ **RETRACTED THE SAME MORNING
-      (D-CLOSEFLUSH). THE THIRD `PUT` IS NOT SLOW AT ALL, AND THE SUBJECT IS
-      `CLOSE`.**
-      🔴 **MY LADDER WAS A COARSE GRID READ AS A CURVE.** `sweep` returned the
-      first rung that completed, and its smallest rung was **0.5** — a FLOOR, so
-      a row costing 0.05 s and one costing 0.49 s both printed "0.5". Replacing
-      the linear scan with a BISECTION over a continuous range (fewer emulator
-      runs, and a number instead of a bracket) reads **0.05 for one, two AND
-      three writes on both machines**.
-      ✅ **AND WITH `ZEROBAS_REFCACHE=0` THE WHOLE PICTURE SEPARATES CLEANLY:**
+      🎯 **THE THIRD `PUT` IS INDIVIDUALLY SLOW. THIS SURVIVED A RETRACTION AND
+      A RE-INSTATEMENT ON 2026-09-06, AND THE TWO INSTRUMENT BUGS BEHIND THAT
+      ARE THE PART WORTH READING** (D-RUNGAP → D-CLOSEFLUSH → D-PUTFLOOR).
+      Final, with BOTH bugs fixed, the refcache OFF, and three repeats per cell:
 
-          3 writes + GET                     cf3300 0.05    zb  0.05
-          3 writes + CLOSE + reopen + GET    cf3300 3.51    zb  >24
-          1 write  + CLOSE + reopen + GET    cf3300 3.51    zb  >24
-          CLOSE + reopen with NO write       cf3300 0.05    zb  0.05
+          smallest run_gap that completes    cf3300      zb
+            1 write                           <=2.5    <=2.5
+            2 writes                          <=2.5    <=2.5
+            3 writes                          <=2.5      3.0
+            4 writes                          <=2.5     3.68
 
-      **It is `CLOSE` after a write — one write is as bad as three — and the
-      write count never mattered.** `reclen_probe` run cache-off now reads
-      `p.put3`, `p.same3`, `p.trap3`, `x.l1p3`, `x.l0p3` and `k.put3` all **OK**:
-      every three-`PUT` row WITHOUT a close passes, and every failing row
-      (`p.close3`, `ctl.128.r5/r6/r7`, `s.100.r5/r6/r7`, `s.96.r6`) contains a
-      `CLOSE` + reopen. 100% and 0%.
-      🎯 **THE FILING HAD THE SEPARATING ROW AND READ IT BACKWARDS.** `p.close3`
-      is captioned *"a CLOSE and reopen does NOT reset it"* — taken as evidence
-      that the put-COUNTER survived a close, when the `CLOSE` was the subject
-      [[two-rules-that-coincide-on-every-row-you-have]].
-      📏 **THE REFERENCE PAYS 3.51 s FOR IT TOO** — this is expensive on both
-      machines and zerobas is **≥7× worse**, possibly unbounded (>24 s is a
-      BOUND, not a measurement).
+      ⚠️ `<=2.5` is a FLOOR, not a value — see the first bug. The STEP at the
+      third write is real; its size is bounded below, not measured.
+      🔴 **BUG 1 — `run_gap` BELOW `step` IS A NO-OP, AND I BISECTED INTO IT.**
+      `omsx_repl` schedules the capture at `t`, which `emit` has ALREADY advanced
+      one `step` past the last injected line, and then does
+      `t = max(t, t_run + run_gap)`. So every reading I took below 2.5 was the
+      SAME experiment wearing a smaller number, and the "bisection" that replaced
+      my coarse ladder had no resolution there at all — it reported `0.05` for
+      cases that had simply run at the default budget. `LO` is `step` now and a
+      row at the floor prints *"completes within the default budget"* instead of
+      a number.
+      🔴 **BUG 2 — THE DISK IMAGE WAS SHARED BETWEEN PROGRAMS.** The mounted
+      `.dsk` path was keyed on `len(lines)` and the gap, so two different cases
+      with the same LINE COUNT got one image — and the emulator WRITES to it. The
+      second case started on a disk the first had modified, which is exactly why
+      the same experiment repeated cleanly WITHIN an invocation and disagreed
+      ACROSS them [[test-disk-mutation-gotcha]]. Keyed on a hash of the program
+      now.
+      ⚠️ **AND THE SHARED FIXTURE WAS CHECKED AND IS CLEAN** — `git status
+      disk/` is empty, so `disk/test720.dsk` itself was never mounted or
+      mutated; the collision was entirely among the per-case copies.
+      🔴 ~~**It is `CLOSE` after a write — one write is as bad as three — and the
+      write count never mattered.**~~ **THAT WAS D-CLOSEFLUSH AND IT IS
+      RETRACTED**: it rested on the two bugs above. With both fixed, cache off
+      and three repeats, `3 writes + GET` with **no close anywhere** reads
+      `<NO OUTPUT>` on zb ×3 while `1 write + GET` reads `BBB` ×3. The write
+      count is the subject after all.
+      ⚠️ **WHAT SURVIVES FROM THAT ROUND**: the reference does NOT finish
+      `3W + CLOSE + reopen + GET` at the default budget either — it reads
+      `<UNREADABLE: …>` — so a close after a write is separately expensive on
+      BOTH machines. That is its own question and not this one.
       ⚠️ **AND WHY `p.put3` READ `<NO OUTPUT>` THIS MORNING AND `OK` NOW IS NOT
       ESTABLISHED.** Two candidates, neither eliminated: the earlier readings
       were unreliable, or D-STRADDLE's restructuring of `fat_rand_put` changed

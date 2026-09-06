@@ -31,6 +31,7 @@ if it does not, `run_gap` is not the axis and that is a finding too.
 """
 from __future__ import annotations
 
+import hashlib
 import os
 import shutil
 import sys
@@ -160,7 +161,15 @@ def run(side, lines, gap):
     cfg = F.SIDES[side]
     kw = {}
     if cfg["diska"]:
-        dsk = probe_tmp.tmp(f"rungap_{side}_{len(lines)}_{gap}.dsk")
+        # 🔴 THE IMAGE MUST BE UNIQUE PER *PROGRAM*, NOT PER LINE COUNT. This
+        # used to key the path on `len(lines)` and the gap, so two different
+        # cases with the same number of lines shared one mounted `.dsk` -- and
+        # the emulator WRITES to it. The second case then started on a disk the
+        # first had already modified, which is why the same experiment gave
+        # different answers in different invocations while repeating cleanly
+        # within one [[test-disk-mutation-gotcha]].
+        tag = hashlib.sha1("\n".join(lines).encode()).hexdigest()[:10]
+        dsk = probe_tmp.tmp(f"rungap_{side}_{tag}_{gap}.dsk")
         shutil.copy(os.path.join(ROOT, "disk", "test720.dsk"), dsk)
         kw["diska"] = dsk
     body = [f"{10 * (k + 1)} {ln}" for k, ln in enumerate(lines)]
@@ -171,7 +180,18 @@ def run(side, lines, gap):
     return F.bracket(caps[0])
 
 
-LO, HI, TOL = 0.05, 24.0, 0.15
+# 🔴 THE FLOOR IS `step`, NOT ZERO, AND NOT KNOWING THAT INVALIDATED A WHOLE
+# ROUND OF READINGS. omsx_repl schedules the capture at `t`, which `emit` has
+# ALREADY advanced one `step` past the last injected line, and then does
+# `t = max(t, t_run + run_gap)`. So a run_gap BELOW step changes nothing: every
+# "0.05" this probe printed was the default 2.5 s budget wearing a smaller
+# number. Bisecting into that range measured the same run over and over and
+# reported a resolution it never had.
+# ⚠️ AND IT BREAKS MONOTONICITY-BY-CONSTRUCTION TOO: below the floor the budget
+# is CONSTANT, so a "smallest gap that completes" of 0.05 and one of 2.4 are the
+# same experiment. LO is `step` now, and anything at LO is reported as "<=step"
+# rather than as a measured value.
+LO, HI, TOL = STEP, 24.0, 0.15
 
 
 def sweep(side, lines, want, verbose=True):
@@ -196,7 +216,7 @@ def sweep(side, lines, want, verbose=True):
     lo, hi = LO, HI
     if run(side, lines, lo) == want:
         if verbose:
-            print(f"    run_gap<={lo}")
+            print(f"    completes within the default budget (<={lo} = step)")
         return lo
     while hi - lo > TOL:
         mid = (lo + hi) / 2.0
