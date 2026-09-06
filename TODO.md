@@ -410,7 +410,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:9920 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:9954 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -512,6 +512,40 @@ list. **When a slice lands, grep this list for what it just shipped.**
       a document's own title or `§0` heading, which names the DOC and not the
       cited item. **Not tuned away — that would be fitting a rule to two data
       points.**
+      🟢 **THE LONE-CITATION RESIDUAL IS NO LONGER UNCOVERED, 2026-09-06
+      (D-CITENAME)** — [`scratchpad/citename_audit.py`](scratchpad/citename_audit.py).
+      🎯 **AND THE SIGNAL WAS ALREADY IN THE RECORD, MIS-STATED.** Instances six
+      and seven are written up above as headings that *disagree* with the cited
+      block — a similarity, which is what made the semantic route look like the
+      only one and it measured shut. Read them again and both carried something
+      stronger and POSITIVE: the heading **IS** another block's headline,
+      verbatim (`T-6AC87B`, `T-B22650`). That is an IDENTIFICATION, needs no
+      threshold, and is precise exactly where token overlap is broad. Absence of
+      a match says nothing, so the two rules are complements, not rivals.
+      🔬 **FALSIFIED THREE WAYS, each restoring byte-identically.** A planted
+      LONE mis-aim (§4 repointed at `T-B22650`) leaves
+      `check_todo_citations.py` at **rc 0** and reads **rc 1** here — the
+      residual class reproduced, and the existing gate demonstrated blind to it
+      on the same bytes. A planted **see-also** (correct citation + one to
+      another block) is ABSORBED, no flag: the unit is the HEADING, not the
+      citation, and a group is clean as soon as any member names the identified
+      block. Scored per citation that see-also would be a false positive with no
+      defence. Plus `--selftest`, 8 arms.
+      🔴 **AND IT READ A CLEAN 0 TWICE BEFORE IT READ ANYTHING** — once because
+      `norm` kept sentence-final periods (`himem.` != `himem`), once because the
+      section number sat at token 0 and defeated the prefix match. Same symptom,
+      two causes, and **both were caught only because the readout also prints
+      the POSITIVE bucket**: "0 flags" beside "0 headings name the block they
+      cite" is not clean, it is blind
+      [[readout-blind-to-its-own-subject]]. Live now: 41 citations → 21 name no
+      block, 13 no heading in scope, 5 too thin, **2 positive controls**, 0 flags.
+      ⚠️ **NOT COLLECTED INTO `make gates`, AND NOT FOR `citehead_audit`'s
+      REASON.** That one is 20% precise; this reads 0 false positives with its
+      only known FP shape designed out. The reason is the **DENOMINATOR — 2 of
+      41 citations are in scope**, so as a gate it is 39/41 vacuous, and a green
+      covering two rows is the shape this project keeps catching itself
+      trusting. Recorded so the next reader does not re-derive the precision
+      question when the real objection is coverage.
       💰 Zero ROM bytes; a tools-only change.
       🤖 AUTONOMOUS — a gate settles it; finishable unattended (no his-decision signal found).
 
@@ -541,7 +575,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:2318 (T-6FE392)8 (T-529ABE)` from `TODO.md:9123 (T-529ABE)`: a
+      `TODO.md:2352 (T-6FE392)8 (T-529ABE)` from `TODO.md:9157 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -2956,7 +2990,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:9123 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:9157 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
