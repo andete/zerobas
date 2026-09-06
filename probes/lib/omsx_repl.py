@@ -1918,16 +1918,43 @@ PROMPTS = ("Ok", "ZB")
 # it (what terminates a tail, below), while a row that STARTS with one is an
 # echo -- probes that read echo rows must still strip the leading prompt.
 
-def result_span(raw: str | None) -> str | None:
+def result_span(raw: str | None, why: dict | None = None) -> str | None:
     """Text between the LAST '[' and the following ']' (the printed value).
-    None if the ']' never printed (statement aborted before the PRINT)."""
+    None if the ']' never printed (statement aborted before the PRINT).
+
+    🔴 `None` MEANS FOUR DIFFERENT THINGS AND A CALLER CANNOT TELL THEM APART.
+    Nothing captured, no '[' anywhere, a '[' with no ']', and -- in
+    `result_span_after_echo` -- no echo row to search after. A payload that
+    prints NO BRACKETS therefore reads `None` on EVERY side, and sides that all
+    failed compare EQUAL and report *agrees*: `basic_probe_lnblank.py`'s
+    `dir-print` sat in that state from the day it was written
+    (TODO.md, D-NAMBLANK). A sentinel that also means "no reading" is not a
+    measurement.
+
+    🎯 SO PASS A `why` DICT AND GET THE DIAGNOSIS. Same out-parameter idiom this
+    module already uses for `settle_out`, and the same cure as `_why_missing`:
+    the evidence was always there, it was just thrown away. Callers that pass
+    nothing are completely unaffected -- the return contract is unchanged.
+    """
     if raw is None:
+        if why is not None:
+            why["reason"] = "no capture at all (the run produced no screen)"
         return None
     i = raw.rfind("[")
     if i < 0:
+        if why is not None:
+            why["reason"] = ("no '[' anywhere in the searched text -- either the "
+                             "statement aborted before its PRINT, or THE PAYLOAD "
+                             "HAS NO BRACKETS AND CAN NEVER PRODUCE A READING")
         return None
     j = raw.find("]", i)
-    return raw[i + 1:j] if j >= 0 else None
+    if j < 0:
+        if why is not None:
+            why["reason"] = "a '[' with no ']' after it -- aborted mid-PRINT"
+        return None
+    if why is not None:
+        why["reason"] = "ok"
+    return raw[i + 1:j]
 
 
 def _echo_idx(rows: list[str], cmdline: str) -> int | None:
@@ -1958,17 +1985,25 @@ def screen_tail(raw: str | None, cmdline: str) -> str | None:
     return "|".join(out)
 
 
-def result_span_after_echo(raw: str | None, cmdline: str) -> str | None:
+def result_span_after_echo(raw: str | None, cmdline: str,
+                           why: dict | None = None) -> str | None:
     """Like result_span but restricted to rows AFTER the echoed command line, so
     an aborted case's echoed '[' is not misread as printed output. None if the
-    echo row can't be found."""
+    echo row can't be found. `why` as in result_span -- with one more reason
+    only this function can give."""
     if raw is None:
+        if why is not None:
+            why["reason"] = "no capture at all (the run produced no screen)"
         return None
     rows = [raw[r * COLS:(r + 1) * COLS] for r in range(ROWS)]
     idx = _echo_idx([r.strip() for r in rows], cmdline)
     if idx is None:
+        if why is not None:
+            why["reason"] = (f"the echo row for {cmdline.strip()!r} was never "
+                             f"found, so there is no 'after' to search -- an "
+                             f"INSTRUMENT result, not a machine one")
         return None
-    return result_span("".join(rows[idx + 1:]))
+    return result_span("".join(rows[idx + 1:]), why)
 
 
 # --- self-test: earn trust by reproduction + fix the batching-safety boundary -

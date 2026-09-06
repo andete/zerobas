@@ -10749,10 +10749,34 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       gate filters `--say` rows out). Both its payload and the new `dir-name` are
       bracketed now and locked.
       ⚠️ **The class is not closed** — this was found in one probe by accident.
-      Sweep every `SAY_ONLY`/`result_span` row in `probes/` for a payload that
-      cannot produce a bracketed span, and consider making the helper *fail loudly*
-      on a payload with no `[` in it rather than returning the same `None` a
-      genuine abort returns. Same shape as [`chancost` NOREAD](docs/chancost-cf3300-characterization.md):
+      ~~Sweep every `SAY_ONLY`/`result_span` row in `probes/` for a payload that
+      cannot produce a bracketed span~~ — **THE SWEEP IS NOT EXPRESSIBLE AS A TEXT
+      SCAN, MEASURED 2026-09-06.** 36 files reach the span reader; scanning their
+      string literals for a `PRINT` payload with no `[` returns **200 hits**, and
+      nearly all are ERROR-FACE rows whose reading is the message, not a span —
+      they never go through `result_span` at all. Payloads live in data tables
+      and the reader is called elsewhere, so which payload reaches which call
+      cannot be decided statically. A 200-hit advisory is one nobody reads
+      [[an-instrument-can-fail-the-way-the-thing-it-replaced-failed]].
+      ✅ **THE HELPER HALF SHIPPED INSTEAD (D-SPANWHY, 2026-09-06), AND IT IS THE
+      HALF THAT GENERALISES.** `result_span` returns `None` for **FOUR** distinct
+      situations — nothing captured, no `[` anywhere, a `[` with no `]`, and (in
+      `result_span_after_echo`) no echo row to search after — so no caller could
+      tell "this payload can never produce a reading" from "the machine aborted".
+      Both now take an optional `why` dict and name which, using the same
+      out-parameter idiom `run_cases` already has for `settle_out` and the same
+      cure as `_why_missing`. **Additive: every existing caller passes no `why`
+      and is untouched**, which a dedicated arm pins.
+      🔬 Gated by [`tests/test_span_reader.py`](tests/test_span_reader.py), 8
+      arms under `make unit-test` — including the one that matters, that a
+      bracketless payload and an abort give DIFFERENT reasons. ⚠️ Deliberately
+      NOT in `omsx_repl --selftest`: that entry takes a MACHINE and boots an
+      emulator, and `tools/check_selftests.py` excuses it from the static gate
+      for exactly that reason, so arms added there would be gated by nothing
+      cheap.
+      ➡️ **STILL OPEN: nothing yet PASSES `why`.** The channel exists and is
+      tested; converting call sites is opportunistic, and the audit of which rows
+      are in the bracketless state still has no mechanical route. Same shape as [`chancost` NOREAD](docs/chancost-cf3300-characterization.md):
       a sentinel that also means "no reading" is not a measurement.
       🤖 AUTONOMOUS — the reference or a gate settles it; finishable unattended (no his-decision signal found).
 
