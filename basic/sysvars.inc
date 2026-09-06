@@ -3427,7 +3427,18 @@ SL_CEIL         equ     $E058   ; store_line: the VARIABLE-region ceiling the
                                 ; that is a measurement.
 ; FREE-RAM $E05A..$E080  the rest of the retired GOSUB_STK
 ; FREE-RAM $E080..$E0B8  the pre-D-FORVAR FOR stack, free since it relocated
-; FREE-RAM $EA3A..$EA92  the retired FOR_STK (88 B), same arc
+; --- D-STRADDLE: the random-record PASS cursor (2026-09-06) -----------------
+; A record whose span crosses a 512-byte sector boundary is written in TWO
+; passes, and these two words are the state that has to survive `frnd_locate`,
+; `read_sector` and `write_sector` -- all of which clobber every register.
+; ⚠️ TAKEN FROM THE RETIRED FOR_STK, not from the $E238 gap beside PLN_*: that
+; gap is line-parse scratch, and sharing RAM with an unrelated subsystem is the
+; aliasing shape this tree keeps paying for. $EA3A is watched by
+; `make ramfree-acceptance`, which fills every declared span and runs nine
+; subsystems over it -- so "nothing else writes here" is a measurement.
+GP_SRC          equ     $EA3A   ; pass cursor into FSECTOR_BUF (2)
+GP_LEFT         equ     $EA3C   ; record bytes still to move (2) -> ends $EA3E
+; FREE-RAM $EA3E..$EA92  the rest of the retired FOR_STK (84 B), same arc
 FOR_STK_END     equ     $EA92   ; RETIRED AS A STACK; the literal survives ONLY as
                                 ; FN_BASE's anchor below, which must not move.
 ; --- DEF FN: the parameter (shadow) area -----------------------------------

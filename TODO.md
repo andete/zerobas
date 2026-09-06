@@ -410,7 +410,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:9529 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:9564 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -541,7 +541,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:2318 (T-6FE392)8 (T-529ABE)` from `TODO.md:8732 (T-529ABE)`: a
+      `TODO.md:2318 (T-6FE392)8 (T-529ABE)` from `TODO.md:8767 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -2956,7 +2956,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:8732 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:8767 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -7608,8 +7608,43 @@ list. **When a slice lands, grep this list for what it just shipped.**
       — 15 rows, checked against an INDEPENDENTLY derived offset, which is what
       caught the ×64 in the first place. Falsified by planting: cutting the
       `add hl,bc` reddens the power-of-two anchors too, so the rows are live.
-      💰 **~60–100 B against 920**, so the cost is the ENGINEERING and the
-      data-loss risk, not the wall.
+      ✅ **THE SPANNING LANDED 2026-09-06 (D-STRADDLE) — 111 B, and NOTHING
+      SHIPPED MOVES.** `fat_rand_put` and `fat_rand_get` each run TWO passes
+      through a shared `frnd_pass_len` (`n = min(left, 512 - within)`), with the
+      cursor in two new sysvars. Sub page 1 **909 → 798 B free (2026-09-06)**.
+      `oo_parse_reclen` is untouched, so no straddling length can be reached yet
+      — that is the third and last component, and it is where the emulator rows
+      come in.
+      🔬 **THE WITNESS CAME FIRST AND FAILED AS PREDICTED**:
+      [`tests/test_rand_straddle.py`](tests/test_rand_straddle.py) traps
+      `frnd_locate` / `read_sector` / `write_sector` on the sub image, builds the
+      expected sector image **independently in Python**, and guards the bytes
+      above `FWBUF+512`. Against the OLD engine every non-straddle row passed and
+      every straddle row failed TWO ways — sector 1 never written, **56 of 64
+      guard bytes clobbered**. 🎯 That guard is the check a round-trip
+      structurally cannot make: the damage lands in memory nobody asked about,
+      which is exactly why the 2026-08-30 rows were green.
+      ⚠️ **TWO INSTRUMENT FAULTS OF MY OWN, both in the witness.** The first
+      guard flagged **8 bytes on rows with no straddle at all** — `FAT_FILESIZE`
+      and `FWR_BYTES` both sit above `FWBUF+512` and are written legitimately by
+      `frnd_update_size`; a guard that fires on every row says nothing, so it
+      excludes those two by name. And the GET fixture laid down records 1..11 and
+      then asked for record **74**, reporting *"7 byte(s) differ"* — a fault in
+      the FIXTURE presented as one in the engine
+      [[an-instrument-can-fail-the-way-the-thing-it-replaced-failed]].
+      📏 **RAM: two words from the retired `FOR_STK` (`$EA3A`), NOT the `$E238`
+      gap beside the line-parse scratch** — sharing RAM with an unrelated
+      subsystem is the aliasing shape this tree keeps paying for, and
+      `ramfree-acceptance` already fills and watches `$EA3A`, so *"nothing else
+      writes here"* is a measurement rather than a hope. `ram-claim-check` clean,
+      `unit-test` 60/60, battery 114/114.
+      ➡️ **STILL OPEN: the validator, and a GET that runs off the end mid-record.**
+      `frg_eoffill` fills the WHOLE record with spaces when either pass hits EOF,
+      matching the lenient empty-record rule already there — recorded as a
+      DECISION, because what the reference does with a record half past EOF is
+      unmeasured and no row can carry it while `oo_parse_reclen` still refuses.
+      💰 ~~**~60–100 B against 920**~~ — **111 B, measured**, so the remaining
+      cost is the validator plus the emulator rows, not the wall.
       🔴 **AND THE PROBE'S OWN DOCSTRING STILL CARRIED THE REFUTED CLAIM UNTIL
       2026-09-06.** `scratchpad/reclen2_probe.py` opened with *"AND SO DOES THIS
       ENGINE: with the power-of-two test cut diagnostically, record 6

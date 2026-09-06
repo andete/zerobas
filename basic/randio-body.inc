@@ -355,10 +355,10 @@ frnd_calc:
 fat_rand_put:
                 ld      a,(GP_RECNO+1)      ; recno high byte must be 0 (recno <= 255)
                 or      a
-                jr      nz,frp_err
-                ld      a,(GP_RECNO)
+                jp      nz,frp_err          ; `jp`: the two-pass body below pushed
+                ld      a,(GP_RECNO)        ; frp_err out of jr range (D-STRADDLE)
                 or      a
-                jr      z,frp_err           ; record 0 invalid
+                jp      z,frp_err           ; record 0 invalid
                 call    frnd_calc           ; GP_SEC, GP_WITHIN
                 ; old_nsec = ceil(FWR_BYTES_lo16 / 512) = (size + 511) >> 9
                 ld      hl,(FWR_BYTES)
@@ -369,6 +369,20 @@ fat_rand_put:
                 ld      l,a
                 ld      h,0
                 ld      (GP_OLDNSEC),hl
+                ; 🎯 D-STRADDLE: A RECORD THAT CROSSES A SECTOR BOUNDARY IS WRITTEN
+                ; IN TWO PASSES. The body below used to be straight-line and its
+                ; overlay was ONE `ldir` into `FWBUF + within` for the whole
+                ; record -- so record 6 at r=100 (within=500) wrote 88 bytes PAST
+                ; the 512-byte buffer, into the sysvars above it.
+                ; `tests/test_rand_straddle.py` is the witness: it builds the
+                ; expected sector image INDEPENDENTLY and guards the bytes above
+                ; FWBUF+512, neither of which a round-trip can do (`PUT` and
+                ; `GET` share the offset, so they agree on the same wrong answer).
+                ld      hl,FSECTOR_BUF
+                ld      (GP_SRC),hl         ; pass cursor into the record
+                ld      hl,(GP_RECLEN)
+                ld      (GP_LEFT),hl        ; bytes still to move
+frp_pass:
                 ld      a,1
                 ld      (GP_FLAGS),a        ; extend (allocate as needed)
                 call    frnd_locate         ; GP_PHYS = sector; chain extended
@@ -387,20 +401,61 @@ frp_readold:
                 call    read_sector
                 ret     c
 frp_overlay:
-                ; FWBUF[within..within+reclen) = FSECTOR_BUF[0..reclen)
+                ; n = min(left, 512 - within) -- what fits in THIS sector
+                call    frnd_pass_len       ; BC = n, and GP_LEFT -= n
                 ld      hl,(GP_WITHIN)
                 ld      de,FWBUF
                 add     hl,de
                 ex      de,hl               ; DE = FWBUF + within (dest)
-                ld      hl,FSECTOR_BUF      ; src = the record
-                ld      bc,(GP_RECLEN)      ; reclen bytes (set by frnd_calc above)
+                ld      hl,(GP_SRC)         ; src = the record, advanced per pass
                 ldir
+                ld      (GP_SRC),hl         ; HL is past the bytes just moved
                 ld      de,(GP_PHYS)
                 ld      hl,FWBUF
                 call    write_sector
                 ret     c
-                call    frnd_update_size    ; FWR_BYTES = max(old, recno*256)
+                ld      hl,(GP_LEFT)
+                ld      a,h
+                or      l
+                jr      z,frp_done          ; the record is fully written
+                ; ⚠️ THE NEXT PASS STARTS AT OFFSET 0 OF THE NEXT SECTOR. Only a
+                ; record longer than a sector could need a third pass, and
+                ; reclen <= 256 < 512, so this loops at most once.
+                ld      hl,0
+                ld      (GP_WITHIN),hl
+                ld      hl,(GP_SEC)
+                inc     hl
+                ld      (GP_SEC),hl
+                jr      frp_pass
+frp_done:
+                call    frnd_update_size    ; FWR_BYTES = max(old, recno*reclen)
                 jp      fat_dir_update      ; tail: stamp first cluster + size into dir
+
+; frnd_pass_len — BC := min(GP_LEFT, 512 - GP_WITHIN), and GP_LEFT -= BC.
+; The bytes of the record that fit in the sector this pass is holding.
+; Clobbers A,BC,DE,HL.
+frnd_pass_len:
+                ld      hl,512
+                ld      de,(GP_WITHIN)
+                or      a
+                sbc     hl,de               ; HL = avail (1..512)
+                ex      de,hl               ; DE = avail
+                ld      hl,(GP_LEFT)
+                or      a
+                sbc     hl,de               ; left - avail
+                jr      nc,fpl_split        ; left >= avail -> this pass takes avail
+                ; the whole rest fits: n = left, nothing left over
+                add     hl,de               ; HL = left again
+                ld      b,h
+                ld      c,l
+                ld      hl,0
+                ld      (GP_LEFT),hl
+                ret
+fpl_split:
+                ld      (GP_LEFT),hl        ; the remainder for the next pass
+                ld      b,d
+                ld      c,e                 ; n = avail
+                ret
 frp_err:
                 scf
                 ret
@@ -442,6 +497,15 @@ fat_rand_get:
                 or      a
                 jr      z,frg_err
                 call    frnd_calc
+                ; 🎯 D-STRADDLE: THE READ SPANS TWO SECTORS TOO, and its failure is
+                ; a wrong ANSWER rather than corruption -- the single `ldir` used
+                ; to copy the tail of a straddling record out of the bytes ABOVE
+                ; FWBUF. Same two-pass shape as `fat_rand_put`, minus the extend.
+                ld      hl,FSECTOR_BUF
+                ld      (GP_SRC),hl         ; here the cursor is the DESTINATION
+                ld      hl,(GP_RECLEN)
+                ld      (GP_LEFT),hl
+frg_pass:
                 xor     a
                 ld      (GP_FLAGS),a        ; read only (do not extend)
                 call    frnd_locate
@@ -450,15 +514,34 @@ fat_rand_get:
                 ld      hl,FWBUF
                 call    read_sector
                 ret     c
-                ; FSECTOR_BUF[0..reclen) = FWBUF[within..within+reclen)
+                ; FSECTOR_BUF[..] = FWBUF[within..within+n) for this sector's share
+                call    frnd_pass_len       ; BC = n, and GP_LEFT -= n
                 ld      hl,(GP_WITHIN)
                 ld      de,FWBUF
                 add     hl,de               ; HL = FWBUF + within (src)
-                ld      de,FSECTOR_BUF
-                ld      bc,(GP_RECLEN)      ; reclen bytes (set by frnd_calc above)
+                ld      de,(GP_SRC)         ; dest, advanced per pass
                 ldir
-                or      a                   ; Cy = 0
+                ld      (GP_SRC),de         ; DE is past the bytes just moved
+                ld      hl,(GP_LEFT)
+                ld      a,h
+                or      l
+                jr      z,frg_ok
+                ld      hl,0
+                ld      (GP_WITHIN),hl
+                ld      hl,(GP_SEC)
+                inc     hl
+                ld      (GP_SEC),hl
+                jr      frg_pass
+frg_ok:
+                or      a                   ; Cy = 0 (A is 0 here)
                 ret
+; ⚠️ A SECOND PASS THAT RUNS OFF THE END TAKES THE WHOLE RECORD WITH IT: the
+; `jr c,frg_eoffill` above fires on either pass, and frg_eoffill fills the
+; ENTIRE record with spaces rather than only the missing tail. That matches the
+; lenient empty-record rule this routine already has (a GET past EOF is not an
+; error here), and it is a DECISION, not an oversight -- what the reference does
+; with a record half past EOF is unmeasured, and no row here can carry it while
+; `oo_parse_reclen` still refuses a straddling length.
 frg_eoffill:
                 ld      hl,FSECTOR_BUF
                 ld      de,FSECTOR_BUF+1
