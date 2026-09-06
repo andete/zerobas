@@ -349,6 +349,17 @@ sel_close:
                 push    hl                  ; guard the advanced cursor
                 ex      de,hl               ; HL = literal start (mk_rvdesc's body)
                 call    mk_rvdesc           ; RVDESC := [len][ptr]; HL = RVDESC
+                ; 🎯 D-PUBTAIL: THE CANONICAL "PUBLISH HL AS THE RESULT
+                ; DESCRIPTOR" TAIL. Five sites ended with these three instructions
+                ; verbatim; this one KEEPS them and the other four `jp` here, so the
+                ; shared body costs no new bytes -- an existing tail given a name.
+                ; ⚠️ THE PROTOCOL IS THE PART TO CHECK, NOT THE BYTES. Every site
+                ; arrives with HL = the descriptor and EXACTLY ONE saved cursor on top
+                ; of the stack, which this `pop hl` takes. A site with a different
+                ; stack depth would return to the WRONG PLACE and no size or
+                ; byte-identity check would say so, which is why all five were read
+                ; before this landed.
+str_pub_ok:
                 ld      (STRPTR),hl
                 pop     hl                  ; HL = cursor past the operand
                 jp      str_eval_ok
@@ -1081,9 +1092,8 @@ sfs_cp:
                 djnz    sfs_cp              ; B = source length (>=1)
 sfs_finish:
                 pop     hl                  ; HL = temp desc addr                    [CURSOR]
-                ld      (STRPTR),hl
-                pop     hl                  ; restore cursor                            [ ]
-                jp      str_eval_ok
+                                            ; restore cursor                            [ ]
+                jp      str_pub_ok          ; D-PUBTAIL (-4 B, low region)
 
 ; LEFT$(a$,n): the first min(n,len) bytes. Snapshot the source into an owned
 ; temp, then truncate in place.
@@ -1641,9 +1651,8 @@ sfi_done:
 sfi_empty:
                 xor     a
                 call    str_temp_alloc      ; A=0 -> HL=temp desc(len0,ptr0), DE=0
-                ld      (STRPTR),hl
-                pop     hl                  ; restore cursor                                [ ]
-                jp      str_eval_ok
+                                            ; restore cursor                                [ ]
+                jp      str_pub_ok          ; D-PUBTAIL (-4 B, low region)
 
 ; str_fn_string: STRING$(n,c) / STRING$(n,x$) -> n copies of a single fill
 ; byte, clamped to STRMAX (D-3). The fill byte is resolved by PROBING the 2nd

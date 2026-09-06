@@ -410,7 +410,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:10092 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:10117 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -575,7 +575,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:2398 (T-6FE392)8 (T-529ABE)` from `TODO.md:9295 (T-529ABE)`: a
+      `TODO.md:2423 (T-6FE392)8 (T-529ABE)` from `TODO.md:9320 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -819,6 +819,31 @@ list. **When a slice lands, grep this list for what it just shipped.**
       📏 Battery 114/114 green, full — the ROM moved. The carve is
       behaviour-neutral by construction (same instructions, reached by `jp`), and
       the battery is what says so.
+      🟢 **AND A SECOND ONE THE SAME EVENING (D-PUBTAIL), 2026-09-06: ANOTHER
+      8 B RECOVERED IN PAGE 1 AND 8 B IN THE LOW REGION ON THAT DATE, AGAIN FOR
+      ZERO NEW BYTES.**
+      `ld (STRPTR),hl | pop hl | jp str_eval_ok` at **five** sites — three in
+      [`basic/str-engine.asm`](basic/str-engine.asm) (low) and two in
+      [`basic/strvar.asm`](basic/strvar.asm) (page 1). Canonical `str_pub_ok` is
+      the existing tail at `sel_close`; the other four became a 3 B `jp`.
+      **Page 1 8 → 16 B free, low region 6 → 14 B (2026-09-06).**
+      ⚠️ **THIS TAIL CARRIES A STACK PROTOCOL AND THE `penderr` ONE DID NOT.**
+      Every site must arrive with HL = the descriptor and EXACTLY ONE saved
+      cursor on top, which the shared `pop hl` takes. A site at a different depth
+      would return to the WRONG PLACE, and neither a size check nor a
+      byte-identity check would say so
+      [[a-mechanical-fix-can-break-a-different-invariant]] — the same shape as
+      the `push_lhs_frame` candidate this sweep DECLINES for a frame protocol.
+      All five were read first; the battery is what confirms it.
+      🔴 **THE FIRST ATTEMPT WROTE NOTHING, AND THAT WAS THE GUARD WORKING.** The
+      anchors were built from a COMMENT-STRIPPED dump, so none matched the real
+      lines and every assertion tripped before any write. Redone by line index
+      with a per-line assertion on the stripped opcode, keeping each site's
+      original comment text
+      [[check-the-name-is-free-before-cat-heredoc]].
+      📏 **TOGETHER THE TWO CARVES TOOK MAIN PAGE 1 FROM 0 B TO 16 B FREE AND THE
+      LOW REGION FROM 2 B TO 14 B, ON 2026-09-06, ADDING NO BYTES.** Both figures
+      rot — `make basic-reloc`.
       unmarked open item is unclassified, so the loop was skipping the one arc it
       has shipped nineteen slices of. Not a tie: what is left is a MEASUREMENT
       (`scratchpad/ngram_sweep.py --main` — does any candidate still rank above
@@ -3036,7 +3061,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:9295 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:9320 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

@@ -402,9 +402,8 @@ str_mkf_desc:
                 call    strscr_desc         ; RVDESC -> [len][ptr] wrapping STRSCR
                                             ; (arrays slice-4a §10: every STRPTR
                                             ; target is a [len:1][ptr:2] descriptor)
-                ld      (STRPTR),hl
-                pop     hl                  ; restore the eval cursor
-                jp      str_eval_ok
+                                            ; restore the eval cursor
+                jp      str_pub_ok          ; D-PUBTAIL (-4 B, main page 1)
 str_eval_maybe_inputd:
                 inc     hl                  ; tentatively past the INPUT token
                 ld      a,(hl)
@@ -473,9 +472,8 @@ sid_ok:
                 call    str_inputd_read     ; fill STRSCR [len][bytes] with n bytes
                 call    strscr_desc         ; RVDESC -> [len][ptr] wrapping STRSCR
                                             ; (arrays slice-4a §10)
-                ld      (STRPTR),hl         ; the stack (HL here would clobber it)
-                pop     hl                  ; restore the eval cursor (past ')')
-                jp      str_eval_ok
+                                            ; the stack (HL here would clobber it); restore the eval cursor (past ')')
+                jp      str_pub_ok          ; D-PUBTAIL (-4 B, main page 1)
 ; str_inputd_read — consume INDLR_N bytes from the open channel into STRSCR
 ; ([len][bytes]); store up to STRMAX, but keep consuming so the file cursor advances
 ; the full count. Stops early at EOF. All loop state is in RAM (CALSLT clobbers regs).
