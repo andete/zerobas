@@ -410,7 +410,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:9838 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:9858 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -541,7 +541,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:2318 (T-6FE392)8 (T-529ABE)` from `TODO.md:9041 (T-529ABE)`: a
+      `TODO.md:2318 (T-6FE392)8 (T-529ABE)` from `TODO.md:9061 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -2956,7 +2956,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:9041 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:9061 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -6100,6 +6100,26 @@ list. **When a slice lands, grep this list for what it just shipped.**
       rows a parseable encoding is a format change to a **162-word** sweep whose
       re-run is the real cost, bought to prevent a fault the runner rule already
       prevents. **No byte count is implied.**
+      ✅ **THE CHEAP HALF SHIPPED 2026-09-06 (D-KWFOOT), AND IT IS THE I3 HALF
+      RATHER THAN THE DE-TABULATING ONE.** `probe_report`'s own invariant is
+      *"every exit path that prints rows ends with `footer()`: a POSITIVE
+      statement"* — and `basic_probe_kwsweep.py` had **FIVE exit paths and not
+      one footer**, including the success path. So a runner could not tell *"the
+      probe measured nothing"* from *"I failed to parse it"*, which is exactly
+      the complaint in this entry's second paragraph. All five now say which:
+      • `return 2` (defect table) — *"probe defect, nothing measured: the listed
+        words' direct-mode exec lines exceed one screen row"*
+      • `return 2` (`--only` typo) — *"nothing measured"*
+      • `return 3` (ROMs changed mid-run) — *"DISCARDED … taken from more than
+        one machine"*
+      • `return 4` (control group failed) — *"NOT SCORED … the apparatus is not
+        measuring what it claims"*
+      • `return 0` — `ROWS: 55 printed, 37 scored — 18 crunch-only word(s) carry
+        no support reading and are printed but not scored`
+      ⚠️ **THE UNDELIMITED-BODY HALF IS UNCHANGED AND STILL OUT OF CONTRACT.**
+      A footer says what happened; it does not make `{state:5}  {key:9} {body}`
+      recoverable when the body contains a space. That is still the 162-word
+      re-run this entry prices, and it is still not bought.
       🤖 AUTONOMOUS — the reference or a gate settles it; finishable unattended (no his-decision signal found).
 - [ ] ⚠️ **`s.fldarymix` IS A GATE ROW NO KNIFE CAN REDDEN, and that is recorded
       rather than fixed** (D-FLDARY, spec §10.6). A scalar field and an

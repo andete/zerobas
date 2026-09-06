@@ -83,6 +83,8 @@ import hashlib
 import subprocess
 
 import omsx_repl  # typing-free KEYBUF-injection REPL driver
+import probe_report  # 🔴 D-KWFOOT: I3 -- every exit path that prints
+                      # rows ends with a POSITIVE statement of what it measured
 
 MACHINE = "Philips_VG_8020"
 # A DISK-EQUIPPED reference, for the rows whose verbs live in Disk BASIC.
@@ -483,6 +485,14 @@ def main() -> int:
               f"({MAX_DIRECT_ECHO} cols); use mode='stored' for these:")
         for k, n in too_long:
             print(f"    {k:9} {n} chars")
+        # 🔴 D-KWFOOT: THIS EXIT PRINTS A DIFFERENT TABLE ENTIRELY, and without a
+        # footer a runner holding a kwsweep baseline sees ZERO rows and cannot
+        # tell "the probe measured nothing" from "I failed to parse it". The
+        # abort is CORRECT; what was missing is it SAYING SO.
+        print(probe_report.footer(
+            len(too_long), 0,
+            "probe defect, nothing measured: the listed words' direct-mode exec "
+            "lines exceed one screen row, so their echo can never match"))
         return 2
 
     rows = SWEEP
@@ -492,6 +502,9 @@ def main() -> int:
         missing = want - {r[0] for r in rows}
         if missing:
             print(f"unknown word keys: {', '.join(sorted(missing))}")
+            print(probe_report.footer(
+                0, 0, "nothing measured: --only named word keys this sweep does "
+                      "not have"))
             return 2
     batch = not args.boot_per_case
 
@@ -670,12 +683,20 @@ def main() -> int:
     print(f"         executed {len(executed)} / {len(rows)} words; "
           f"{len(skipped)} crunch-only")
     print("=" * 78)
+    print(probe_report.footer(
+        len(rows), len(executed),
+        f"{len(skipped)} crunch-only word(s) carry no support reading and are "
+        f"printed but not scored"))
 
     if fp_before != fp_after:
         print("\n*** APPARATUS WARNING — the ROMs changed DURING this run:")
         print(f"      before: {fp_before}")
         print(f"      after : {fp_after}")
         print("    Another session rebuilt the tree. DISCARD this report and re-run.")
+        print(probe_report.footer(
+            len(executed), 0,
+            "DISCARDED: the ROMs changed during the run, so every row above was "
+            "taken from more than one machine"))
         return 3
 
     # NEEDS-DISK rows cannot be controls: their oracle is the disk-equipped
@@ -688,6 +709,10 @@ def main() -> int:
         print(f"\n*** CONTROL GROUP FAILED: {', '.join(bad)}")
         print("    The apparatus is not measuring what it claims. Every other row "
               "in this\n    report is untrustworthy until this is explained.")
+        print(probe_report.footer(
+            len(executed), 0,
+            f"NOT SCORED: the control group failed ({', '.join(bad)}), so the "
+            f"apparatus is not measuring what it claims"))
         return 4
 
     return 0
