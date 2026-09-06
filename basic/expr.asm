@@ -1997,9 +1997,7 @@ evmc_sqr:
                 jr      evmc_dispatch
 evmc_sqr_err:
                 ld      a,3
-                call    penderr_set
-                ld      de,0
-                ret
+                jp      penderr_de0         ; D-PENDTAIL (-4 B, main page 1)
 
 ; --- evmc_prologue / evmc_dispatch: the body the math-function stubs shared ---
 ; verbatim.  Until 2026-07-27 EIGHT stubs (SQR LOG EXP ATN SIN COS TAN RND) each
@@ -2131,9 +2129,7 @@ evmc_exp_huge:
                 jp      fac_dbl_int16       ; D-NGRAM14
 evmc_exp_overflow:
                 ld      a,1
-                call    penderr_set
-                ld      de,0
-                ret
+                jp      penderr_de0         ; D-PENDTAIL (-4 B, main page 1)
 
 ; ATN / SIN / COS / TAN / RND have no stubs of their own any more -- see
 ; `evmc_total_scan` and `evmc_total_tab` above (the SWAP-funding carve,

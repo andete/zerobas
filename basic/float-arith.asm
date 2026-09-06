@@ -2009,6 +2009,17 @@ cpow_frac:
                 or      a
                 jr      z,cpow_frac_ok
                 ld      a,3
+                ; 🎯 D-PENDTAIL: THE CANONICAL "DEFER CODE A, RETURN DE=0" TAIL.
+                ; Four sites had these three instructions verbatim; this one keeps
+                ; them and the other three `jp` here, so the shared body costs no
+                ; new bytes at all -- it is an existing tail given a name.
+                ; ⚠️ THIS IS NOT THE `ev_f_err` SHAPE, WHICH D-EVFERR DECLINED.
+                ; There, jumping to the shared tail WOULD HAVE MADE THE DECISION
+                ; ("fail with no error code"), and that measured wrong at all seven
+                ; sites. Here the decision is the error CODE, it is made by the
+                ; `ld a,<code>` that stays at each site, and only the mechanical
+                ; call-and-return-zero is shared [[a-shared-tail-is-not-a-decision]].
+penderr_de0:
                 call    penderr_set         ; illegal function call
                 ld      de,0
                 ret
@@ -2077,9 +2088,7 @@ sdivmod_zerocheck:
                                             ; signed_mod_de_bc (own-design early-out; see
                                             ; header)
                 ld      a,2
-                call    penderr_set
-                ld      de,0
-                ret
+                jp      penderr_de0         ; D-PENDTAIL (-4 B, low region)
 
 ; --- sdivmod_mag: DE=dividend, BC=divisor (both SIGNED int16, divisor -----
 ; already confirmed nonzero) -> DE=quotient magnitude, HL=remainder

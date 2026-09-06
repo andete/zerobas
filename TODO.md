@@ -410,7 +410,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:10070 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:10092 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -575,7 +575,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:2376 (T-6FE392)8 (T-529ABE)` from `TODO.md:9273 (T-529ABE)`: a
+      `TODO.md:2398 (T-6FE392)8 (T-529ABE)` from `TODO.md:9295 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -797,6 +797,28 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fat-*`, `merge`) are not in the class at all** — their loads come from
       minted fixtures, not a same-boot save. The fear outran its instances.
       🤖 AUTONOMOUS — **marker added 2026-09-01; this block had none**, and an
+      🟢 **A PAGE-1 CARVE OUT OF THIS SEAM, 2026-09-06 (D-PENDTAIL) — 8 B IN MAIN
+      PAGE 1 AND 4 B IN THE LOW REGION, FOR ZERO NEW BYTES.** `--main` ranked
+      `call penderr_set | ld de,0 | ret` at **4 sites, 12 B**: `evmc_sqr_err` and
+      `evmc_exp_overflow` ([`basic/expr.asm`](basic/expr.asm), page 1) and two in
+      [`basic/float-arith.asm`](basic/float-arith.asm) (low region). The canonical
+      is an EXISTING tail given a name — `penderr_de0` at `cpow_frac`'s — so the
+      shared body costs nothing and the other three become a 3 B `jp` in place of
+      7 B. Page 1 **0 → 8 B free**, low region **2 → 6 B** (2026-09-06).
+      🎯 **AND IT IS NOT THE `ev_f_err` SHAPE THIS SWEEP DECLINES DIRECTLY ABOVE
+      IT.** The declined candidate shares a tail that MAKES the decision — "fail
+      with no error code", which measured wrong at all seven sites. Here the
+      decision is the error CODE; it is made by the `ld a,<code>` that STAYS at
+      each site, and only the mechanical call-and-return-zero is shared
+      [[a-shared-tail-is-not-a-decision]]. Two candidates one line apart in the
+      same ranking, opposite verdicts, and the ranking cannot tell them apart —
+      which is why the sweep prices and a human decides.
+      ⚠️ **`evmc_sqr_err` IS ONE OF D-DUPSPAN2's ELEVEN OWED CANONICALS**, and its
+      body is now a `jp`. A knife planted there scores a different span than the
+      one that roster was built against; re-read the roster before cutting it.
+      📏 Battery 114/114 green, full — the ROM moved. The carve is
+      behaviour-neutral by construction (same instructions, reached by `jp`), and
+      the battery is what says so.
       unmarked open item is unclassified, so the loop was skipping the one arc it
       has shipped nineteen slices of. Not a tie: what is left is a MEASUREMENT
       (`scratchpad/ngram_sweep.py --main` — does any candidate still rank above
@@ -3014,7 +3036,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:9273 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:9295 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
