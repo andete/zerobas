@@ -410,7 +410,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:9875 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:9910 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -541,7 +541,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:2318 (T-6FE392)8 (T-529ABE)` from `TODO.md:9078 (T-529ABE)`: a
+      `TODO.md:2318 (T-6FE392)8 (T-529ABE)` from `TODO.md:9113 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -2956,7 +2956,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:9078 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:9113 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -4724,13 +4724,48 @@ list. **When a slice lands, grep this list for what it just shipped.**
       EQU. My first cut looked only for `^name:` and resolved **22 of 27** — and
       the five it could not place were all EQUs, which are the *clearest* aliases
       in the tree [[a-hand-listed-denominator-is-a-scope-claim]].
-      ➡️ **THE OBSERVABILITY HALF IS STILL OWED, AND NOW IT IS PRICED.** The
-      knives the item asks for are **21** (one per canonical, not 27), each
-      needing its own battery to score — roughly 21 × 7 min. That is the real
-      cost of turning the mechanism argument into an observable, and it is why
-      nobody has done it; a cheaper design (one knife reddening several
-      canonicals at once) cannot say WHICH site was observed, which is the whole
-      question.
+      ➡️ ~~**THE OBSERVABILITY HALF IS STILL OWED, AND NOW IT IS PRICED.** The
+      knives the item asks for are **21** … each needing its own battery to
+      score — roughly 21 × 7 min.~~ 🔴 **THE PRICE ASSUMED THE BATTERY IS THE
+      ONLY SCORER, AND IT IS NOT (D-DUPOBS, 2026-09-06).**
+      ✅ **ALL 21 ARMS RUN, HOST-SIDE, IN ~13 MINUTES**
+      ([`scratchpad/dupobs_knives.py`](scratchpad/dupobs_knives.py)): each
+      canonical cut to a bare `ret` — one uniform mutation, so a green arm cannot
+      be "my cut was too gentle here" — and scored with `make unit-test`, ~31 s
+      per arm and no emulator anywhere.
+
+          observed by the HOST tests alone   10 of 21
+          not observed                       11  ctp_err_pop ctp_link_err
+                                                 ed_done elas_err ers_undef
+                                                 evmc_sqr_err gosub_stk_over
+                                                 nm_fail pl_typeerr
+                                                 sst_overflow tm_raise
+
+      🎯 **So half the owed work is DONE and the remainder is bounded**: eleven
+      canonicals the host tests do not reach, which may still be exercised by the
+      emulator battery — that is the part still worth ~7 min each, and it is
+      eleven, not twenty-one.
+      ⚠️ **WHAT A CUT CAN AND CANNOT SAY, WHICH THE ENTRY'S OWN WORDING
+      OVERSTATES.** An `equ` alias IS the canonical's address, so there is no
+      separate code to cut and **no knife can distinguish "reached via the alias"
+      from "reached via the canonical"** — that is a STATIC question about who
+      names which symbol. What a cut answers is the half the entry actually calls
+      owed: whether the shared body is exercised at all, or is *"a site nothing
+      exercises [that] stays green through any mistake made to it"*.
+      🔴 **AND MY SCANNER MADE THIS ITEM'S OWN DOCUMENTED MISTAKE.** It looked for
+      `^canon:` and resolved **20 of 21** — `elas_err` is `equ ems_err_pop1`, a
+      canonical that is itself an alias. This entry already says *"an alias is
+      spelled two ways and a scanner that knows one undercounts"* and records the
+      identical 22-of-27 miss. Reading a warning is not heeding it; the scanner
+      follows `equ` chains now, and `elas_err` scores NOT OBSERVED rather than
+      going uncounted.
+      🔬 **AND `knife-rom-guard-check` CAUGHT THE RUNNER SHIPPING WITHOUT A
+      ROM-HASH CHECK — correctly, and it matters more here than usual.** In most
+      knives an inert cut produces a green arm that looks like "reddened
+      nothing"; in THIS one a green arm **is the finding** (*"this site is
+      unobserved"*), so an inert knife would manufacture the very result the run
+      exists to report. The runner hashes the images around every build and
+      reports `INERT (ROM unchanged)` as its own outcome now.
       🤖 AUTONOMOUS — the reference or a gate settles it; finishable unattended (roster + count fixed 2026-08-26; the 21 knives remain, now priced).
 
 - [ ] ⚠️ **A probe with an honest `rc` that NO battery collects is not an oracle.**
