@@ -43,7 +43,7 @@ import probe_tmp                                                  # noqa: E402
 import basic_probe_fldwidth as F                                  # noqa: E402
 
 STEP = 2.5
-GAPS = (0.5, 1.0, 1.5, 2.0, 3.0, 4.0, 6.0, 8.0, 16.0)
+GAPS = (0.5, 1.0, 1.5, 2.0, 3.0, 4.0, 6.0, 8.0, 12.0, 16.0, 24.0)
 RD = 'GET#1,6:PRINT"[";LEFT$(A$,1);MID$(A$,50,1);RIGHT$(A$,1);"]"'
 
 PROG = ['CLEAR 1000',
@@ -74,6 +74,62 @@ def ladder(n):
 
 LADDER = [(f"{n} PUT{'s' if n > 1 else ' '}", ladder(n), "ABC"[n - 1] * 3)
           for n in (1, 2, 3)]
+
+# \U0001f3af WHAT IS DIFFERENT ABOUT THE THIRD WRITE? Four candidates, each with a
+# row that isolates it. The 3-PUT ladder rung above moves ALL of them at once,
+# so on its own it names nothing.
+#   s.nolset   three PUTs and NO string temps. The filing's own note says the
+#              failure "needed all THREE `LSET A$=STRING$` temps ... it was the
+#              STRING POOL, not the records" -- but that was read at a fixed
+#              step under the hang framing. If this is FAST, the pool is the
+#              subject and PUT is not; if SLOW, the pool is exonerated.
+#   s.lsetonly three temps and NO write at all -- the other half of the same
+#              separation, and the row that says whether GC alone is the cost.
+#   s.samerec  three writes to ONE record: same sector, same offset, no layout
+#              question. Isolates the COUNT from the geometry.
+#   s.spread   three writes to records in THREE DIFFERENT sectors (1, 5, 9 at
+#              LEN=128 land in sectors 0, 1, 2). Isolates the geometry from the
+#              count -- and it is the row that would catch a per-sector cost
+#              that the 5/6/7 rung, all in ONE sector, cannot see.
+#   s.bigpool  the 5/6/7 rung with FOUR times the string pool. A gap between
+#              this and the 3-PUT rung is garbage collection, measured rather
+#              than argued.
+HEAD = ['CLEAR 1000', 'OPEN"TS.DAT"AS #1 LEN=128', 'FIELD#1,128 AS A$']
+RDN = 'GET#1,%d:PRINT"[";LEFT$(A$,1);MID$(A$,50,1);RIGHT$(A$,1);"]"'
+SEP = [
+    ("s.nolset ", HEAD + ['LSET A$=STRING$(128,"C")',
+                          'PUT#1,5', 'PUT#1,6', 'PUT#1,7', RDN % 7], "CCC"),
+    ("s.lsetonly", HEAD + ['LSET A$=STRING$(128,"A")',
+                           'LSET A$=STRING$(128,"B")',
+                           'LSET A$=STRING$(128,"C")',
+                           'PRINT"[";LEFT$(A$,1);MID$(A$,50,1);'
+                           'RIGHT$(A$,1);"]"'], "CCC"),
+    ("s.samerec", HEAD + ['LSET A$=STRING$(128,"A"):PUT#1,6',
+                          'LSET A$=STRING$(128,"B"):PUT#1,6',
+                          'LSET A$=STRING$(128,"C"):PUT#1,6', RDN % 6], "CCC"),
+    ("s.spread ", HEAD + ['LSET A$=STRING$(128,"A"):PUT#1,1',
+                          'LSET A$=STRING$(128,"B"):PUT#1,5',
+                          'LSET A$=STRING$(128,"C"):PUT#1,9', RDN % 9], "CCC"),
+    ("s.bigpool", ['CLEAR 4000', 'OPEN"TS.DAT"AS #1 LEN=128', 'FIELD#1,128 AS A$',
+                   'LSET A$=STRING$(128,"A"):PUT#1,5',
+                   'LSET A$=STRING$(128,"B"):PUT#1,6',
+                   'LSET A$=STRING$(128,"C"):PUT#1,7', RDN % 7], "CCC"),
+]
+# 🎯 IS IT A STEP AT THREE, OR A COST THAT ONLY SHOWS ABOVE A THRESHOLD? The
+# rows above cannot say: 3 is the only count above 2 they try. Same record every
+# time, so nothing but the COUNT moves.
+#   n=3 -> 3.0 and n=6 -> 3.0   a one-off event at the third write
+#   n=3 -> 3.0 and n=6 -> 6.0+  a recurring cost every third write
+#   a smooth rise                a per-write cost the 1/2 rungs were too coarse
+#                                to see
+def samerec(n):
+    return (['CLEAR 2000', 'OPEN"TS.DAT"AS #1 LEN=128', 'FIELD#1,128 AS A$']
+            + [f'LSET A$=STRING$(128,"{"ABCDEFGH"[i]}"):PUT#1,6' for i in range(n)]
+            + [RDN % 6])
+
+
+COUNT = [(f"n.same{n}", samerec(n), "ABCDEFGH"[n - 1] * 3) for n in (3, 4, 5, 6)]
+LADDER = LADDER + SEP + COUNT
 
 
 def run(side, lines, gap):

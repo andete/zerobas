@@ -410,7 +410,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:9689 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:9718 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -541,7 +541,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:2318 (T-6FE392)8 (T-529ABE)` from `TODO.md:8892 (T-529ABE)`: a
+      `TODO.md:2318 (T-6FE392)8 (T-529ABE)` from `TODO.md:8921 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -2956,7 +2956,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:8892 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:8921 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -7404,10 +7404,39 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `probes/lib/omsx_repl.py` beside the very rule it implements, and the
       3-PUT row is its known-slow case. Reading the harness answered a question I
       had filed as needing new apparatus.
-      ➡️ **STILL OPEN: WHY the third write and not the second.** Nothing in the
-      code has been read for this yet, and D-PUTCOST's two refuted mechanisms (a
-      per-PUT cluster leak; a `fat_count_free` cache) were both measured dead —
-      `DSKF` reads 706/706/706 after 1/2/3 writes on both machines.
+      📏 **THE SHAPE, SAME RECORD EVERY TIME so only the COUNT moves**: n=3 → 3.0,
+      n=4 → 4.0, n=5 → 6.0, n=6 → 6.0 (cf3300 ≤0.5 throughout). A step at the
+      third write plus roughly a second each thereafter — ⚠️ the gap ladder is
+      coarse and those are brackets, not points.
+      🔬 **FOUR CANDIDATES, EACH WITH A ROW, AND THREE ARE DEAD:**
+      • `s.nolset` — three `PUT`s and **no string temps at all** — is **3.0**, so
+        the STRING POOL is exonerated. (The original filing's note said the
+        failure *"needed all THREE temps ... it was the STRING POOL"*; that was
+        read at a fixed step under the hang framing and does not survive.)
+      • `s.lsetonly` — three temps and **no write** — is **0.5**, so garbage
+        collection is exonerated from the other side.
+      • `s.samerec` — three writes to **ONE record**, same sector, same offset —
+        is **3.0**, so it is the COUNT and not the geometry.
+      • `s.bigpool` — the same rung with **4× the pool** — is **3.0**: pool size
+        is irrelevant.
+      ⚠️ `s.spread` (three writes into THREE sectors) is **6.0**, twice
+      `s.samerec` — so geometry ADDS on top of the count even though it is not
+      the cause.
+      📏 **AND THE ENGINE'S OWN SECTOR TRAFFIC IS FLAT** — D-PUTIO,
+      [`scratchpad/putio_probe.py`](scratchpad/putio_probe.py), host-side with
+      `read_sector` / `write_sector` / `fat_dir_update` trapped and `frnd_locate`
+      stubbed so the chain walk cannot contribute: **one write, one directory
+      stamp and (after the first) one read-back per `PUT`, whatever N is**. So
+      the rising cost is NOT this engine issuing more I/O as writes accumulate.
+      ➡️ **STILL OPEN: WHY the third write and not the second.** What remains is
+      per-access latency with zerobas doing more accesses per write than the
+      reference — and `fat_dir_update` on EVERY `PUT` is the specific suspect,
+      because `frnd_update_size`'s own comment records that after `PUT #1,1` the
+      CF-3300 moves `LOF`'s field live while *"the on-disk DIRECTORY entry still
+      holds 0"*. ⚠️ **A CANDIDATE WHOSE ARITHMETIC DOES NOT YET FIT**: a constant
+      per-write overhead predicts a constant cost, and what is measured is a
+      STEP. D-PUTCOST's two earlier mechanisms are separately dead — `DSKF` reads
+      706/706/706 after 1/2/3 writes on both machines.
       🤖 AUTONOMOUS — the reference settles it; the cost is now a NUMBER and the
       subject is the third write specifically.
 
