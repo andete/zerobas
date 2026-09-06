@@ -410,7 +410,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:9592 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:9623 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -541,7 +541,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:2318 (T-6FE392)8 (T-529ABE)` from `TODO.md:8795 (T-529ABE)`: a
+      `TODO.md:2318 (T-6FE392)8 (T-529ABE)` from `TODO.md:8826 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -2956,7 +2956,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:8795 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:8826 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -7307,12 +7307,43 @@ list. **When a slice lands, grep this list for what it just shipped.**
       ⚠️ **AND D-PUT3CONSUME's "DSKF AFTER ONE PUT DIES" (committed EARLIER THE
       SAME DAY) IS WITHDRAWN BY THIS** — same cause, same correction. It returns
       706, slowly.
-      ➡️ **WHAT IS STILL OWED:** the per-`PUT` cost, measured rather than
+      ➡️ ~~**WHAT IS STILL OWED:** the per-`PUT` cost, measured rather than
       bounded, against the reference's. A write loop at ~2x the reference is a
-      real defect against a faithful-implementation charter — just not the
-      correctness emergency this was filed as.
-      🤖 AUTONOMOUS — the reference settles it; what is left is a timing
-      measurement, not a bisect.
+      real defect against a faithful-implementation charter~~ — **measured
+      2026-09-06 (D-PUTCOST), and `PUT` IS NOT SLOWER. The performance framing
+      is refuted by the same kind of reading that refuted the hang.**
+      🎯 **ASK THE MACHINE, NOT THE HARNESS.** `step` measures how long the
+      harness waits before typing the next line; `TIME` is the VBlank counter
+      both machines keep, so `T=TIME : <work> : PRINT TIME-T` is a reading in the
+      guest's own 50 Hz ticks. [`scratchpad/putcost_probe.py`](scratchpad/putcost_probe.py):
+
+          slope (p.8 - p.1)/7      cf3300 2.14 ticks/PUT      zb 1.71  -> 0.80x
+          f.open  45 / 2      f.field 0 / 1      f.lset 1 / 1
+          f.close  0 / 1      f.lof   0 / 1      f.dskf 6 / 2
+          x.far200 2 / 2      x.far2nd 1 / 2     (extension allocates: not slow)
+          g.three1k  4 / 6    <- THE EXACT PROGRAM THAT READ <NO OUTPUT>
+
+      **Every component is fast on both machines, and the failing shape itself
+      runs in 6 ticks — 0.12 s — on zerobas.** The largest single figure in the
+      table is the CF-3300's own `OPEN` at 45 ticks.
+      🔬 **THE CONTROL IS WHAT MAKES THAT MEAN SOMETHING.** `c.tick`
+      (`FOR I=1 TO 1000:NEXT`) reads **97 on the CF-3300 and 301 here** — 3.1×,
+      squarely inside the separately-filed interpreter-speed band. So the ticks
+      ARE comparable, the interpreter IS slow, and the write path is not.
+      🔴 **SO WHAT MAKES THOSE ROWS READ `<NO OUTPUT>` AT step=2.5 IS NOT
+      EXECUTION TIME, AND I HAVE NOT ESTABLISHED WHAT IT IS.** A line-entry
+      hypothesis (a slower editor dropping injected keystrokes between typed
+      lines) fits, and is exactly the kind of mechanism-from-one-observation this
+      tree keeps paying for [[a-mechanism-inferred-from-one-observation]] — so it
+      is written here as a candidate, not a finding.
+      ⚠️ **AND MY ONE ATTEMPT TO GET A ROW FOR IT WAS BLIND**: reading `LIST`
+      instead of `RUN` to see whether the program ARRIVES intact matched **0
+      program lines on all three sides — including the CF-3300, which works**.
+      A readout that fails on its own positive control is the instrument, not the
+      machine [[readout-blind-to-its-own-subject]]; the LIST-format question has
+      to be solved before that row means anything.
+      🤖 AUTONOMOUS — the reference settles it; what is left is why a 0.12 s
+      program needs a 5 s step, and the first attempt at that row was blind.
 
       ⬇️ **THE ORIGINAL FILING FOLLOWS, KEPT BECAUSE ITS ROW WORK IS SOUND** —
       every characterisation below (PUT count, not layout; survives CLOSE; not
