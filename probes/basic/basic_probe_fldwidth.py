@@ -372,24 +372,21 @@ DEFERRED: dict[str, str] = {
     # does not), and ex_field now reads FCH_RECLENS[ch] inline.
     # 🔴 PROMOTING THEM IS THE STRICTER MOVE: a DEFERRED row is measured and
     # printed but never scored, so it cannot fail. These now can.
-    "r.sum": probe_report.Deferral(
-        "DEFERRED — ran TWO questions together (a non-tiling LEN=100 AND "
-        "the running total); split into r.len100 + r.sum128, which are "
-        "scored. Kept as the record of a row whose MISS was the finding",
-        cf3300="<FIELD overflow>", zb="<Illegal function call>"),
-    # \U0001f534 THIS REASON HAD ALREADY ROTTED WHEN THE PIN WAS ADDED. It said
-    # "`Syntax error` here"; the measured face is `<Illegal function call>`
-    # (ERR 5), and TODO.md's D-RECLENDOM had corrected the ENTRY on 2026-09-04
-    # while the probe kept the old wording. Corrected beside, not instead:
-    # `Syntax error` is what it read when the deferral was written.
-    "r.len100": probe_report.Deferral(
-        "DEFERRED — a NON-TILING `LEN=` is `OK` on the CF-3300 and "
-        "`Illegal function call` here (it read `Syntax error` when this was "
-        "filed; D-RECLENDOM re-measured it as ERR 5 on 2026-09-04). "
-        "oo_parse_reclen demands a power of two so records tile the 512-byte "
-        "sector. A SEPARATE defect, filed in TODO.md; NOT part of the ERR-50 "
-        "rule and not fixed by it",
-        cf3300="OK", zb="<Illegal function call>"),
+    # ✅ D-RECLENFIX SHIPPED (2026-09-06): `r.len100` AND `r.sum` ARE SCORED NOW.
+    # Both were deferred on the power-of-two `LEN=` rule, and the gate is what
+    # said so — the battery went RED with "🔴 FACE ROTTED: zb: pinned
+    # '<Illegal function call>', now 'OK'" the moment the widening landed. That
+    # is D-DEFERPIN working as designed: a deferred row that starts AGREEING is
+    # itself a finding, and a pinned face makes it one instead of a silent pass
+    # [[a-filed-face-rots-without-the-row-ceasing-to-diverge]].
+    #   r.len100  a non-tiling `LEN=` — `OK` on both sides now. The three fixes
+    #             behind it were D-MULREC (mul_reclen was a shift), D-STRADDLE
+    #             (fat_rand_put/get span two sectors) and dropping the validator.
+    #   r.sum     ran two questions together (a non-tiling LEN=100 AND the
+    #             running total); it was kept as the record of a row whose MISS
+    #             was the finding, and it now reads `<FIELD overflow>` on both.
+    # 🔴 PROMOTING THEM IS THE STRICTER MOVE: a DEFERRED row is measured and
+    # printed but never scored, so it cannot fail. These now can.
 }
 
 
@@ -593,7 +590,7 @@ def main() -> int:
                 rotted.append((lab, moved))
             print(probe_report.row("....", lab, LABEL_W, vals,
                                    f"   [{DEFERRED[lab]}]"
-                                   + (f"   \U0001f534 FACE ROTTED: {moved}" if moved else "")))
+                                   + (f"   🔴 FACE ROTTED: {moved}" if moved else "")))
             continue
         note = "   [POSITIVE CONTROL]" if lab in CONTROLS else ""
         if lab in NEGATIVE:
@@ -660,7 +657,7 @@ def main() -> int:
           "`FIELD` on a CAS: channel; and message WORDING (D-MSGEXACT's "
           "surface -- the error-name match here is case-insensitive).")
     if rotted:
-        print("\U0001f534 DEFERRED FACE(S) ROTTED — a deferral is a PIN, not a "
+        print("🔴 DEFERRED FACE(S) ROTTED — a deferral is a PIN, not a "
               "note (D-DEFERPIN). The row still may not be scored; what moved "
               "is the reading the deferral's REASON is written about:")
         for _lab, _why in rotted:

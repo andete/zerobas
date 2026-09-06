@@ -916,29 +916,29 @@ opr_have:
                 ret
 opr_lowbyte:
                 ld      a,e
-                or      a
+                or      a                   ; also clears Cy for the accept below
                 jr      z,opr_bad           ; reclen 0 invalid
-                ; 🔴 D-RECLEN2 TRIED TO DROP THIS AND HAD TO PUT IT BACK. The
-                ; power-of-two rule is NOT the reference's -- a CF-3300 accepts
-                ; LEN=100/255 and round-trips a straddling record intact -- but it
-                ; IS load-bearing HERE: `fat_rand_put`'s overlay is an `ldir` into
-                ; `FWBUF + GP_WITHIN` for GP_RECLEN bytes, and record 6 at r=100
-                ; has within=500, so it writes 88 bytes PAST the 512-byte sector
-                ; buffer. Measured: two PUTs at LEN=100 including record 6 kill the
-                ; program; the same shape at LEN=128 is fine, and ONE put to
-                ; record 5 (within=400, no straddle) is fine.
-                ; ⚠️ AND THE PROBE THAT "PROVED" IT SAFE WAS BLIND TWICE: it wrote
-                ; record 6 through the OLD shift arithmetic (*64 -> within=320, no
-                ; straddle at all), and a round-trip cannot see a wrong offset
-                ; because PUT and GET share it. tests/test_open_len.py caught the
-                ; arithmetic; the adjacency row caught the overrun.
-                ; ➡️ Widening needs fat_rand_put/get to span TWO sectors first.
-                ld      b,a
-                dec     a
-                and     b                   ; (E & (E-1)) == 0 iff power of two
-                jr      nz,opr_bad          ; not a power of two -> would straddle
-                or      a                   ; Cy = 0; DE = reclen (D = 0)
-                ret
+                ; ✅ THE DOMAIN IS 1..256, AS THE REFERENCE'S IS (D-RECLENFIX,
+                ; 2026-09-06). A power-of-two rule stood here and was
+                ; load-bearing for exactly as long as the engine could not
+                ; straddle a sector: `fat_rand_put`'s overlay was ONE `ldir` into
+                ; `FWBUF + GP_WITHIN`, so record 6 at r=100 (within=500) wrote 88
+                ; bytes PAST the 512-byte buffer, and two PUTs at LEN=100
+                ; including record 6 killed the program.
+                ; 🔴 IT TOOK THREE FIXES, NOT ONE, AND D-RECLEN2 SHIPPED THE
+                ; DROP ALONE IN 2026-08-30 AND HAD TO REVERT IT:
+                ;   * `mul_reclen` was a SHIFT (HL * 2^floor(log2 r)) -- D-MULREC;
+                ;   * `fat_rand_put`/`fat_rand_get` could not span two sectors --
+                ;     D-STRADDLE, witnessed by tests/test_rand_straddle.py, which
+                ;     builds the expected sector image INDEPENDENTLY and guards
+                ;     the bytes above FWBUF+512;
+                ;   * only then this.
+                ; ⚠️ AND THE ROWS THAT "PROVED IT SAFE" IN AUGUST WERE BLIND TWICE:
+                ; the shift put record 6 at within=320 so it never straddled, and
+                ; a round-trip cannot see a wrong offset because PUT and GET share
+                ; it. Neither blindness is fixable by adding emulator rows of the
+                ; same shape, which is why the witness is a HOST test.
+                ret                         ; Cy = 0 from the `or a` above
 opr_bad:
                 scf
                 ret

@@ -410,7 +410,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:9564 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:9592 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -541,7 +541,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:2318 (T-6FE392)8 (T-529ABE)` from `TODO.md:8767 (T-529ABE)`: a
+      `TODO.md:2318 (T-6FE392)8 (T-529ABE)` from `TODO.md:8795 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -2956,7 +2956,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:8767 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:8795 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -7485,7 +7485,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       - ⚠️ **A ROUND-TRIP ROW IS NOT EVIDENCE HERE** — `PUT` and `GET` share
         `frnd_calc`, so they agree on a wrong offset. That mistake shipped once
         already.
-- [ ] 🔴 **A NON-TILING `LEN=r` IS `Syntax error` HERE AND `OK` ON THE CF-3300 —
+- [x] ✅ **A NON-TILING `LEN=r` IS `Syntax error` HERE AND `OK` ON THE CF-3300 —
       AND THE DOC CLAIMED BYTE-IDENTITY ON A CORPUS THAT NEVER CONTAINED THE
       CASE.** Filed 2026-08-19 by D-RECLEN, found by a row that MISSED its
       prediction while measuring something else.
@@ -7645,6 +7645,34 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unmeasured and no row can carry it while `oo_parse_reclen` still refuses.
       💰 ~~**~60–100 B against 920**~~ — **111 B, measured**, so the remaining
       cost is the validator plus the emulator rows, not the wall.
+      ✅ **CLOSED 2026-09-06 (D-RECLENFIX). `scratchpad/reclendom_probe.py` reads
+      0 of 23 rows diverging, where this entry recorded SEVEN.** `LEN=` 3, 7,
+      100, 127 and 255 are accepted here as they are on the CF-3300, and
+      `f.100` / `f.over` / `p.100` follow. `fldwidth-acceptance` is **49 printed,
+      49 SCORED, 49 agree, 0 deferred**.
+      🎯 **THREE FIXES, IN THE ONLY ORDER THAT COULD BE VERIFIED**: D-MULREC (the
+      shift that was not a multiply), D-STRADDLE (the two-sector spanning, with a
+      HOST witness) and only then the validator. D-RECLEN2 shipped the third
+      ALONE on 2026-08-30 and had to revert it.
+      💰 **DROPPING THE VALIDATOR RECOVERED 6 B OF MAIN PAGE 1 (3 → 9 B free,
+      2026-09-06)** — a test that existed only to make an engine limitation
+      unreachable.
+      🔬 **AND THE `Deferral` PINS ARE WHAT ANNOUNCED IT.** `fldwidth-acceptance`
+      went RED the moment the widening landed — *"🔴 FACE ROTTED: zb: pinned
+      '<Illegal function call>', now 'OK'"* on `r.len100`, and the same on
+      `r.sum`. A deferred row that starts AGREEING is a finding, and the pin is
+      what makes it one instead of a silent pass
+      [[a-filed-face-rots-without-the-row-ceasing-to-diverge]]. Both are scored
+      now, which is the stricter state: a deferred row cannot fail.
+      ⚠️ **THE EMULATOR STRADDLE ROWS STILL CANNOT BE READ, AND NOT BECAUSE OF
+      THIS.** `s.100.r5` / `r6` / `r7` in `scratchpad/reclen_probe.py` come back
+      `<NO OUTPUT>` on zb: their programs issue three `PUT`s and **D-PUT3** (the
+      third `PUT` of a session hangs, untrappably) swallows them. 🎯 The proof it
+      is not today's change is `ctl.128.r6` — the POWER-OF-TWO control — which is
+      equally blind, and `LEN=128` was always accepted. That is exactly why this
+      slice's witness is `tests/test_rand_straddle.py`, which needs no emulator
+      and would have proved the adjacency property even if D-PUT3 had never been
+      filed.
       🔴 **AND THE PROBE'S OWN DOCSTRING STILL CARRIED THE REFUTED CLAIM UNTIL
       2026-09-06.** `scratchpad/reclen2_probe.py` opened with *"AND SO DOES THIS
       ENGINE: with the power-of-two test cut diagnostically, record 6

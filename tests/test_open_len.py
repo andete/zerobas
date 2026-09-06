@@ -113,11 +113,10 @@ def run():
     # tried to widen the domain on 2026-08-30 -- the emulator rows could not,
     # because PUT and GET share the arithmetic and agree on the same wrong
     # answer.
-    # ⚠️ STILL OUTSTANDING, and NOT tested here because the engine cannot do it:
-    # `fat_rand_put`'s overlay is one `ldir` into FWBUF + within, so record 6 at
-    # r=100 (within=500, 100 bytes) would write 88 bytes past the 512-byte
-    # buffer. `oo_parse_reclen` still refuses r=100 for exactly that reason, and
-    # the `LEN=100 (bad)` row below pins OUR limit, not the reference's rule.
+    # ✅ AND THE ENGINE CAN NOW DO IT: `fat_rand_put`/`fat_rand_get` span two
+    # sectors since D-STRADDLE, witnessed byte-for-byte by
+    # tests/test_rand_straddle.py, so `oo_parse_reclen` accepts the whole 1..256
+    # domain and the parse rows below no longer pin a limit of our own.
     # ➡️ Record 6 is the row that matters: bytes 500..599, the straddle.
     for recno in (1, 5, 6, 7, 11, 255):
         report(f"r=100 recno={recno}", geom(100, recno), expect(100, recno))
@@ -163,8 +162,14 @@ def run():
         ("LEN=128",      LEN + i1(128),        128, False),
         ("LEN=64",       LEN + i1(64),          64, False),
         ("LEN=1",        LEN + i1(1),            1, False),
-        ("LEN=200 (bad)", LEN + i1(200),         0, True),   # not a power of two
-        ("LEN=100 (bad)", LEN + i1(100),         0, True),   # would straddle here
+        # ✅ D-RECLENFIX (2026-09-06): the domain is 1..256, the reference's own.
+        # These four used to be `(bad)`; they are the rows that were pinning OUR
+        # limit rather than the CF-3300's rule, and they flip together with the
+        # engine that made the limit necessary.
+        ("LEN=200",      LEN + i1(200),        200, False),   # not a power of two
+        ("LEN=100",      LEN + i1(100),        100, False),   # straddles at rec 6
+        ("LEN=255",      LEN + i1(255),        255, False),   # top, straddles early
+        ("LEN=7",        LEN + i1(7),            7, False),   # a prime
         ("LEN=0 (bad)",  LEN + i1(0),            0, True),
         ("LEN=512 (bad)", LEN + i2(512),         0, True),   # > 256
         ("LEN=257 (bad)", LEN + i2(257),         0, True),   # just past the top
