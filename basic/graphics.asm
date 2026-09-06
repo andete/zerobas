@@ -1224,8 +1224,36 @@ spr_extra_arg:
                 ; comma (screen.asm), because an OMITTED argument never reaches
                 ; here to be counted. Slot 1 is the sprite size; 2+ are ignored.
                 ld      a,(GFX_SARGN)
-                dec     a
-                ret     nz
+                dec     a                   ; 0 = slot 1 (size), 2 = slot 3 (baud)
+                ; 🎯 D-SCRBAUD: SLOT 3 IS THE CASSETTE BAUD RATE AND ITS DOMAIN IS
+                ; 1..2, NOT 0..255 (docs/spec-basic-screenerr.md §10). `SCREEN
+                ; 1,,,0` and `SCREEN 1,,,3` are ERR 5 on BOTH references and were
+                ; accepted here; `SCREEN 1,,,1` / `,,,2` are accepted on all three,
+                ; and without that accepted pair a refusal of 0 and 3 would prove
+                ; only that the slot rejects everything. Slot 4 (printer) really is
+                ; byte-wide, so the narrowing is specific to slot 3 rather than
+                ; general to "later slots" -- which is why this is one arm and not
+                ; a rule.
+                ; 💰 THE BOUND LIVES IN C SO BOTH SLOTS SHARE ONE `jp nc`, AND THEN
+                ; C SAYS WHICH SLOT WE WERE. gb_illegal is at ~$4582 and this is at
+                ; ~$61C6, so `jr` cannot reach it and a second copy would cost 3 B
+                ; -- the version with two `jp`s prices at 12 B against 11 B free.
+                ; C is dead on both sides: spr_tenant takes only A, and subrom_call
+                ; clobbers everything; the sole caller (screen.asm's scr_extra)
+                ; reads nothing but HL, which it pushes.
+                ld      c,4                 ; sprite size: 0..3
+                jr      z,sea_bound
+                cp      2                   ; slot 3?  (A = slot - 1)
+                ret     nz                  ; slots 2, 4 and 5 stay ignored
+                dec     e                   ; baud 1..2 -> 0..1, so ONE bound test
+                ld      c,2                 ; serves both domains
+sea_bound:
+                ld      a,e
+                cp      c
+                jp      nc,gb_illegal       ; ERR 5 -- out of this slot's domain
+                dec     c
+                dec     c                   ; 4 -> 2 (size), 2 -> 0 (baud)
+                ret     z                   ; baud is validated and then IGNORED
                 ; D-SCRERR (docs/spec-basic-screenerr.md §2.2): the sprite size has
                 ; its OWN domain and it is 0..3, not "the low two bits of whatever
                 ; you passed". `SCREEN 1,99` and `SCREEN 1,-1` are Illegal function
@@ -1237,10 +1265,7 @@ spr_extra_arg:
                 ; reaches here at all, because the caller's byte stage rejects a
                 ; set high byte first. The two rows look like one class and are
                 ; caught by two different stages (spec-basic-screenerr.md §8).
-                ld      a,e
-                cp      4
-                jp      nc,gb_illegal       ; ERR 5 -- sizes are 0..3
-                ld      (GFX_SSIZE),a
+                ld      (GFX_SSIZE),a       ; A = E, checked against C above
                 ld      a,12                ; tenant: apply the size bits to register 1
                 jr      spr_tenant
 

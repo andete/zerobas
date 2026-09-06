@@ -337,18 +337,18 @@ LABEL_W = 10
 # exactly "0 and 3 are accepted here and refused there", not "this slot is
 # unchecked".
 DEFERRED: dict[str, str] = {
-    # \u26a0\ufe0f THE FREE-SPACE FIGURE IN THESE REASONS IS A WALL READING AND WALL
-    # READINGS ROT -- `make wall-assertion-check` polices TODO.md, not a probe.
-    # Read the live figure with `make basic-reloc`; the prices are 2026-09-05,
-    # RE-TAKEN that day after D-SCRARITY spent the last of page 1 on the arity
-    # half (6 B free became 0, and the jp->jr reserve 5 sites became 3, one of
-    # which is a shared *-body.inc that has two answers).
-    "t.b0": probe_report.Deferral(
-        "slot 3 domain is 1..2 on both refs; ~12 B against 0 B free (2026-09-05)",
-        vg8020=" 5 , 1 ", cf3300=" 5 , 1 ", zb=" 0 , 1 "),
-    "t.b3": probe_report.Deferral(
-        "slot 3 domain is 1..2 on both refs; ~12 B against 0 B free (2026-09-05)",
-        vg8020=" 5 , 1 ", cf3300=" 5 , 1 ", zb=" 0 , 1 "),
+    # 🟢 t.b0 / t.b3 WERE THE LAST TWO DEFERRALS HERE AND THEY SHIPPED
+    # 2026-09-06 (D-SCRBAUD). Both are now SCORED: slot 3 is the cassette baud
+    # rate, its domain is 1..2, and `SCREEN 1,,,0` / `SCREEN 1,,,3` read ERR 5 on
+    # all three sides. The deferral reason was a PRICE ("~12 B against 0 B free"),
+    # and a price is a wall reading -- it rotted in a day. Re-read on 2026-09-06
+    # it was 9 B free, the jp->jr reserve had renewed to 2 spendable page-1 sites,
+    # and sharing the bound through C brought the arm itself from 12 B to 11.
+    # ⚠️ So the lesson kept from the old note is the one that was right:
+    # A DEFERRAL RESTING ON A PRICE IS A DEFERRAL RESTING ON A WALL READING, and
+    # `make wall-assertion-check` polices TODO.md, not a probe. Nothing here
+    # would have said this became affordable. Read the live figure with
+    # `make basic-reloc`.
 }
 
 SENTINELS = ("<NO CAPTURE>", "<NO ECHO>")

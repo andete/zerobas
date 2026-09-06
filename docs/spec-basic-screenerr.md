@@ -338,8 +338,8 @@ twelve.
 |---|---|---|---|---|
 | `t.b1` | `SCREEN 1,,,1` | ok | ok | ok |
 | `t.b2` | `SCREEN 1,,,2` | ok | ok | ok |
-| `t.b0` | `SCREEN 1,,,0` | **ERR 5** | **ERR 5** | 🔴 ok |
-| `t.b3` | `SCREEN 1,,,3` | **ERR 5** | **ERR 5** | 🔴 ok |
+| `t.b0` | `SCREEN 1,,,0` | **ERR 5** | **ERR 5** | ~~🔴 ok~~ **ERR 5** (§10.1) |
+| `t.b3` | `SCREEN 1,,,3` | **ERR 5** | **ERR 5** | ~~🔴 ok~~ **ERR 5** (§10.1) |
 | `t.b300` | `SCREEN 1,,,300` | ERR 5 | ERR 5 | ERR 5 |
 | `t.bneg` | `SCREEN 1,,,-1` | ERR 5 | ERR 5 | ERR 5 |
 | `t.bbig` | `SCREEN 1,,,70000` | ERR 6 | ERR 6 | ERR 6 |
@@ -374,3 +374,50 @@ rather than silently left out.
 decline resting on a figure that rots — the `CLEAR`/TRAPSTK item sat deferred on
 *"2 B free"* and turned out to be a 3 B fix against 333 B
 [[repricing-page1-slice]].
+
+### 10.1 🟢 D-SCRBAUD — the slot-3 half shipped 2026-09-06, and it cost 11 B not 12
+
+The arity half shipped on 2026-09-05 (D-SCRARITY, 5 B). The baud half was
+DECLINED the same day on a price: *"~12 B against 0 B free"*. That decline was a
+wall reading, and wall readings rot — re-read on 2026-09-06 the wall was **9 B**
+and the `jp`→`jr` reserve had renewed to **2 spendable page-1 sites**, so the
+budget was 11 B against a 12 B arm.
+
+**The last byte came out of the arm, not the budget.** `gb_illegal` sits at
+`$4582` and `spr_extra_arg` at `$61C6`, so `jr` cannot reach it and a second
+copy of the refusal costs a full 3-byte `jp`. Instead the BOUND moved into `C` —
+4 for the sprite size, 2 for the baud rate after `dec e` shifts `1..2` down to
+`0..1` — so one `jp nc,gb_illegal` serves both domains, and `dec c / dec c /
+ret z` then reads `C` back to say which slot it was. 11 B, and page 1 is at 0 B
+free again.
+
+⚠️ **Folding two domains onto one comparison means one cut can break two
+features**, so the knives are about separability, not just liveness
+(`scratchpad/scrbaud_knives.py`, four arms, ROM-hashed, all restoring
+byte-identically):
+
+| knife | cut | `t.b0` | `t.b1` | `t.b2` | `t.b3` | `a.spr` | `a.sprslot1` |
+|---|---|---|---|---|---|---|---|
+| K-SB1 | `cp c` → `cp a` | — | **MOVE** | **MOVE** | — | **MOVE** | **MOVE** |
+| K-SB2 | `ld c,2` → `ld c,4` | — | — | — | **MOVE** | — | — |
+| K-SB3 | `ret z` → `ret nz` | — | — | — | — | — | **MOVE** |
+| K-SB4 | `dec e` → `nop` | **MOVE** | — | **MOVE** | — | — | — |
+
+🎯 **K-SB2 is the arm that matters**: widening only the baud bound moves `t.b3`
+and *not* `t.b0`, so `C` is demonstrably carrying the slot-3 domain and not
+being ignored. A knife that reddened both baud rows would have been consistent
+with "the bound does nothing".
+
+🔴 **K-SB4 exists because the first three left `t.b0` with no witness at all.**
+`SCREEN 1,,,0` is refused by the `dec e` WRAP (0 → 255), not by the bound value,
+and **no reachable bound can witness it** — accepting `E=0` through `cp c` would
+need a bound above 255. Cutting `dec e` to `nop` moves `t.b0` (5 → 0) and `t.b2`
+(0 → 5) and leaves `t.b1`/`t.b3` alone, exactly as predicted.
+
+⚠️ **`a.spr` holds under K-SB3, and that is the blindness filed in §9**, not a
+gap: it reads only the error code, and a size that is never applied raises
+nothing. `a.sprslot1` — the row built to cover exactly that — moved to ERROR 99.
+
+`screenerr-acceptance` is now **76 printed, 76 scored, 0 deferred**; `t.b0` and
+`t.b3` were this probe's last two deferrals.
+

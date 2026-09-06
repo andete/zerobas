@@ -410,7 +410,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:9954 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:9994 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -575,7 +575,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:2352 (T-6FE392)8 (T-529ABE)` from `TODO.md:9157 (T-529ABE)`: a
+      `TODO.md:2352 (T-6FE392)8 (T-529ABE)` from `TODO.md:9197 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -2990,7 +2990,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:9157 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:9197 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -6307,7 +6307,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       up next, and it already retired one (D-LINEMAX, above).
       🙋 NEEDS-JOOST — a call that is yours to make (retire / delete).
 
-- [ ] ⚠️ **THE THIRD TRAILING `SCREEN` ARGUMENT'S DOMAIN IS UNMEASURED.**
+- [x] ⚠️ **THE THIRD TRAILING `SCREEN` ARGUMENT'S DOMAIN IS UNMEASURED.**
       Filed 2026-08-10 by D-SCRERR. Slot 1 (sprite size) is pinned to 0..3 and
       slot 2 (key click) to 0..255; `scr_extra` treats slots 3+ identically to
       slot 2, so the open risk is a reference that narrows a later one.
@@ -6361,6 +6361,46 @@ list. **When a slice lands, grep this list for what it just shipped.**
       that has TWO answers (in range in main, out of range in the sub tenant),
       so it is not 3 spendable bytes. ⚠️ Re-run `make basic-reloc` and
       `scratchpad/jr_mapper.py`; both of those figures rot.
+      🟢 **AND THEY DID, IN ONE DAY. THE SLOT-3 HALF SHIPPED 2026-09-06
+      (D-SCRBAUD), 11 B — THIS ITEM IS CLOSED**
+      ([`docs/spec-basic-screenerr.md`](docs/spec-basic-screenerr.md) §10.1).
+      The instruction directly above is the one that paid: re-read, the wall was
+      **9 B free** (not 0) and the `jp`→`jr` reserve had renewed to **2
+      spendable page-1 sites** (`basic/program.asm` ×2; `pdfcb-body.inc` is
+      still the unspendable one, and its header states byte-identical inclusion
+      from three places as a design property — the same reason `IF SUB_BUILD`
+      was declined for `fatio-body.inc`). Budget 11 B against a 12 B arm.
+      💰 **THE LAST BYTE CAME OUT OF THE ARM, NOT THE BUDGET.** `gb_illegal` is
+      at `$4582` and `spr_extra_arg` at `$61C6`, so `jr` cannot reach it and a
+      second refusal costs a full 3 B `jp`. The BOUND moved into `C` instead —
+      4 for the sprite size, 2 for the baud after `dec e` shifts 1..2 down to
+      0..1 — so ONE `jp nc,gb_illegal` serves both domains and `dec c / dec c /
+      ret z` reads `C` back to say which slot it was. Page 1 is at **0 B free**
+      again (2026-09-06).
+      🔬 **FOUR KNIVES, because folding two domains onto one comparison means a
+      single cut can break two features** — the question is separability, not
+      liveness ([`scratchpad/scrbaud_knives.py`](scratchpad/scrbaud_knives.py),
+      ROM-hashed, all restoring byte-identically). **K-SB2 is the one that
+      matters**: widening only the baud bound moves `t.b3` and NOT `t.b0`, so
+      `C` is demonstrably carrying the slot-3 domain; a knife reddening both
+      baud rows would have been consistent with "the bound does nothing".
+      🔴 **AND THE FIRST THREE LEFT `t.b0` WITH NO WITNESS AT ALL.** It is
+      refused by the `dec e` WRAP (0 → 255), not by the bound value, and **no
+      reachable bound can witness it** — accepting `E=0` through `cp c` needs a
+      bound above 255 [[a-coverage-row-whose-geometry-cannot-reach-the-case]].
+      K-SB4 (`dec e` → `nop`) moves `t.b0` and `t.b2` and leaves `t.b1`/`t.b3`,
+      exactly as predicted.
+      ⚠️ **ONE PREDICTION WAS BACKWARDS AND IS KEPT THAT WAY IN THE RUNNER**:
+      K-SB1 was written as *"the bound accepts everything"*, but `jp nc` fires
+      when carry is CLEAR and `cp a` clears it, so it makes the bound REJECT
+      everything. Inverted it answers more, not less — every valid value moves,
+      on BOTH slots — but only after `t.b1`/`t.b2` were added to the watch list
+      for K-SB4. With the first watch list it read as a size-only witness, which
+      was a property of the instrument's scope and not of the ROM.
+      📏 `screenerr-acceptance`: **76 printed, 76 scored, 0 deferred** — `t.b0`
+      and `t.b3` were this probe's last two deferrals, and the face-rot detector
+      fired on both the moment the ROM changed, which is how a shipped fix is
+      supposed to announce itself.
       🤖 AUTONOMOUS — the reference or a gate settles it; finishable unattended (no his-decision signal found).
 
 - [x] ✅ **`a.spr` IS BLIND TO A CUT THAT STOPS THE SPRITE SIZE BEING APPLIED.**

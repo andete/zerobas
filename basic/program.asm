@@ -732,7 +732,8 @@ rp_do_break:
                 ; that was about to run -> the CONT resume point. do_break records
                 ; it, prints "Break in <line>", and sets ENDFLAG; we then return
                 ; to the REPL (the run is suspended, not torn down).
-                jp      do_break
+                jr      do_break            ; D-SCRBAUD carve: in jr range (measured
+                                            ; by scratchpad/jr_mapper.py, not assumed)
 
 ; --- do_break: record a CONT resume point and report "Break in <line>" -------
 ; in: HL = the token position to resume at; CURLINE = the line being interrupted
@@ -2407,7 +2408,8 @@ ex_on_error:
                 cp      COLON
                 jr      z,oe_disable        ; `ON ERROR GOTO :`      == GOTO 0
                 cp      LINENO_TOKEN
-                jp      nz,oe_badop         ; present, not a line number
+                jr      nz,oe_badop         ; present, not a line number (D-SCRBAUD
+                                            ; carve: jr range, per jr_mapper.py)
                 call    req_lineno          ; D-NGRAM10: $0E,lo,hi expected (GOTO's
                                             ; own operand shape) -- BC = the line,
                                             ; HL past the $0E operand
