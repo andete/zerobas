@@ -410,7 +410,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:9798 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:9813 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -541,7 +541,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:2318 (T-6FE392)8 (T-529ABE)` from `TODO.md:9001 (T-529ABE)`: a
+      `TODO.md:2318 (T-6FE392)8 (T-529ABE)` from `TODO.md:9016 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -2956,7 +2956,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:9001 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:9016 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -7510,9 +7510,24 @@ list. **When a slice lands, grep this list for what it just shipped.**
       roughly 0.3 s per physical access that crosses the 2.5 s default budget at
       exactly the third write, which is the "step" I chased for three commits.
       ⚠️ **NOT THE WHOLE COST**: six writes still need 3.68 s after the cut, so
-      something else remains. And the cut itself is a DIAGNOSTIC — dropping the
-      stamp loses the on-disk size if a program never closes, which is a
-      behaviour question (`PUT` then reset) with its own filed item.
+      something else remains. That residual is the autonomous part of this item.
+      🙋 **BUT REMOVING THE STAMP IS A TRADE, NOT A FIX, AND THE TRADE IS HIS.**
+      D-PUTCUT (2026-09-05) measured exactly what the stamp buys, and it is not
+      nothing:
+      | | clean `CLOSE` | CUT after `PUT` |
+      |---|---|---|
+      | **zerobas** | entry, size=16, clus=3, FAT=EOC, record on disk | **IDENTICAL** |
+      | **CF-3300** | same | entry present, **clus=0, size=0, no chain, no data** |
+      Its conclusion: *"For zerobas the `CLOSE` changes nothing on disk at all;
+      everything the file needs is committed by the `PUT`"*, and **zerobas is
+      strictly the more robust of the two** — the dangling 0-byte entry is the
+      REFERENCE's. 🎯 So the per-`PUT` stamp is simultaneously (a) the measured
+      performance excess, (b) a divergence from the reference's behaviour, and
+      (c) the thing that makes this engine crash-safe where the reference is not.
+      Faithfulness says drop it; D-PUTCUT says it is the better behaviour.
+      **That is the same shape as the `LOAD"CAS:"` item — bug-for-bug fidelity
+      costing a working feature — and it is Joost's call, not a measurement.**
+      ⚠️ Nothing here proposes shipping the cut; K-DS1 is a diagnostic.
       ⚠️ **AND THE PROBE'S OWN PROSE IS NOW WRONG IN A NEW WAY**: it still says
       the failing rows are "BLIND FOR THAT REASON (they write three records)".
       They are blind because they CLOSE. Corrected in
