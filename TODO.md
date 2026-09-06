@@ -410,7 +410,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:9653 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:9689 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -541,7 +541,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:2318 (T-6FE392)8 (T-529ABE)` from `TODO.md:8856 (T-529ABE)`: a
+      `TODO.md:2318 (T-6FE392)8 (T-529ABE)` from `TODO.md:8892 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -2956,7 +2956,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:8856 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:8892 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -7307,11 +7307,37 @@ list. **When a slice lands, grep this list for what it just shipped.**
       ⚠️ **AND D-PUT3CONSUME's "DSKF AFTER ONE PUT DIES" (committed EARLIER THE
       SAME DAY) IS WITHDRAWN BY THIS** — same cause, same correction. It returns
       706, slowly.
-      ➡️ ~~**WHAT IS STILL OWED:** the per-`PUT` cost, measured rather than
-      bounded, against the reference's. A write loop at ~2x the reference is a
-      real defect against a faithful-implementation charter~~ — **measured
-      2026-09-06 (D-PUTCOST), and `PUT` IS NOT SLOWER. The performance framing
-      is refuted by the same kind of reading that refuted the hang.**
+      ➡️ **WHAT WAS OWED:** the per-`PUT` cost, measured rather than bounded,
+      against the reference's. **MEASURED, TWICE, AND THE SECOND READING
+      OVERTURNS THE FIRST.**
+      🔴 **D-PUTCOST (2026-09-06) SAID "`PUT` IS NOT SLOWER" AND THAT IS WRONG —
+      ITS INSTRUMENT WAS BLIND.** It timed the work with the guest's own `TIME`
+      and read 1.71 ticks/PUT here against 2.14 on the CF-3300. ⚠️ `TIME` is
+      JIFFY, advanced by the **VBlank interrupt handler**, and disk routines run
+      stretches with interrupts DISABLED — so a `TIME` delta can under-count
+      precisely the interval in question. (That mechanism is a CANDIDATE; what is
+      MEASURED is that `TIME` and the harness disagree by an order of magnitude.)
+      ✅ **THE HARNESS'S OWN CLOCK SETTLES IT — D-RUNGAP, 2026-09-06,
+      [`scratchpad/rungap_probe.py`](scratchpad/rungap_probe.py).** `omsx_repl`'s
+      comment says *"the window a case's budget actually buys between RUN and
+      capture is exactly `step`"*, and `run_gap` sets that budget on its own. So
+      the smallest `run_gap` at which a row completes IS its cost, in emulated
+      seconds, comparable across machines and independent of JIFFY:
+
+          smallest run_gap that completes      cf3300     zb
+            1 PUT                                <=0.5   <=0.5
+            2 PUTs                               <=0.5   <=0.5
+            3 PUTs                               <=0.5     3.0
+
+      🎯 **SO THE THIRD `PUT` IS INDIVIDUALLY SLOW, AND THAT IS THE ORIGINAL
+      FILING'S CLAIM — the one D-PUT3SLOW explicitly declined to make.** It is a
+      STEP, not an accumulation: cumulative overrun predicts ~1.6 s for two
+      writes and ~0.8 s for one, and both complete in ≤0.5. **≥6× the
+      reference's budget, at the third write and not before.**
+      ⚠️ ~~**measured 2026-09-06 (D-PUTCOST), and `PUT` IS NOT SLOWER. The
+      performance framing is refuted by the same kind of reading that refuted
+      the hang.**~~ — struck: the performance framing STANDS, sharpened from
+      "PUT is slow" to "the third PUT is".
       🎯 **ASK THE MACHINE, NOT THE HARNESS.** `step` measures how long the
       harness waits before typing the next line; `TIME` is the VBlank counter
       both machines keep, so `T=TIME : <work> : PRINT TIME-T` is a reading in the
@@ -7372,8 +7398,18 @@ list. **When a slice lands, grep this list for what it just shipped.**
       instead returned **0.3 s for a run that includes an 8 s boot**, which is
       not a reading at all. The next row needs a host-side timer that is
       demonstrated on a known-slow case first.
-      🤖 AUTONOMOUS — the reference settles it; two causes are now eliminated by
-      rows and the third needs a host clock the harness does not yet have.
+      ⚠️ **AND THE HOST CLOCK I SAID WAS MISSING WAS ALREADY THERE.** The
+      previous note asked for "a host-side timer demonstrated on a known-slow
+      case first"; `run_gap` is that timer, it is documented in
+      `probes/lib/omsx_repl.py` beside the very rule it implements, and the
+      3-PUT row is its known-slow case. Reading the harness answered a question I
+      had filed as needing new apparatus.
+      ➡️ **STILL OPEN: WHY the third write and not the second.** Nothing in the
+      code has been read for this yet, and D-PUTCOST's two refuted mechanisms (a
+      per-PUT cluster leak; a `fat_count_free` cache) were both measured dead —
+      `DSKF` reads 706/706/706 after 1/2/3 writes on both machines.
+      🤖 AUTONOMOUS — the reference settles it; the cost is now a NUMBER and the
+      subject is the third write specifically.
 
       ⬇️ **THE ORIGINAL FILING FOLLOWS, KEPT BECAUSE ITS ROW WORK IS SOUND** —
       every characterisation below (PUT count, not layout; survives CLOSE; not
