@@ -104,15 +104,29 @@ def run():
     # r=1 -- 512 records per sector (extreme tiling); recno<=255 -> all in sector 0
     for recno in (1, 2, 255):
         report(f"r=1 recno={recno}", geom(1, recno), expect(1, recno))
-    # 🔴 NON-TILING LENGTHS ARE NOT TESTED HERE, AND THAT IS A STATEMENT ABOUT
-    # THE ENGINE, NOT AN OMISSION. `mul_reclen` is a SHIFT loop -- HL *
-    # 2^floor(log2 r) -- so at r=100 it computes *64, and `fat_rand_put`'s
-    # overlay would `ldir` 88 bytes past the 512-byte FWBUF for record 6
-    # (within=500). Both were measured on 2026-08-30 when D-RECLEN2 tried to
-    # widen the domain and had to put the power-of-two rule back.
-    # ➡️ When fat_rand_put/get can span two sectors and mul_reclen really
-    # multiplies, add:  for recno in (1, 5, 6, 7, 11, 255): r=100  -- record 6 is
-    # bytes 500..599 and is the row that matters.
+    # 🎯 NON-TILING LENGTHS, ENABLED 2026-09-06 (D-MULREC) — THE FIRST OF THE
+    # THREE THINGS THE `LEN=` WIDENING NEEDS, AND THE ONLY ONE WITH NO DISK RISK.
+    # ~~`mul_reclen` is a SHIFT loop -- HL * 2^floor(log2 r) -- so at r=100 it
+    # computes *64~~: it is a shift-and-add multiply now, and these rows are the
+    # ones that say so. They check `frnd_calc` against an INDEPENDENTLY derived
+    # offset, which is what caught the *64 in the first place when D-RECLEN2
+    # tried to widen the domain on 2026-08-30 -- the emulator rows could not,
+    # because PUT and GET share the arithmetic and agree on the same wrong
+    # answer.
+    # ⚠️ STILL OUTSTANDING, and NOT tested here because the engine cannot do it:
+    # `fat_rand_put`'s overlay is one `ldir` into FWBUF + within, so record 6 at
+    # r=100 (within=500, 100 bytes) would write 88 bytes past the 512-byte
+    # buffer. `oo_parse_reclen` still refuses r=100 for exactly that reason, and
+    # the `LEN=100 (bad)` row below pins OUR limit, not the reference's rule.
+    # ➡️ Record 6 is the row that matters: bytes 500..599, the straddle.
+    for recno in (1, 5, 6, 7, 11, 255):
+        report(f"r=100 recno={recno}", geom(100, recno), expect(100, recno))
+    # a prime, so no power-of-two shift can approximate it at all
+    for recno in (1, 2, 6, 73, 255):
+        report(f"r=7 recno={recno}", geom(7, recno), expect(7, recno))
+    # the top of the domain, one below a power of two
+    for recno in (1, 2, 3, 255):
+        report(f"r=255 recno={recno}", geom(255, recno), expect(255, recno))
 
     # -----------------------------------------------------------------------
     # oo_parse_reclen: the OPEN LEN= clause parser + tiling validation. LEN is
@@ -163,7 +177,7 @@ def run():
             report(f"parse {label}", (de, cy), (want_de, False))
 
     print()
-    print("ALL PASS — LEN= record geometry tiles the sector for every r"
+    print("ALL PASS — LEN= record geometry is right for every r, tiling or not"
           if not fails else f"{fails} CASE(S) FAILED")
     return fails
 

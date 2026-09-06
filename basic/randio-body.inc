@@ -279,29 +279,59 @@ load_reclen:
                 ld      (GP_RECLEN),de
                 ret
 
-; mul_reclen — HL := HL * GP_RECLEN. The record length is a power of two (enforced
-; at OPEN), so the multiply is a shift: double HL while halving r until r == 1.
-; Clobbers A,DE.
+; mul_reclen — HL := HL * GP_RECLEN. Clobbers A,DE (BC is preserved).
+;
+; 🔴 THIS USED TO BE A SHIFT, AND THE SHIFT IS WHY THE `LEN=` DOMAIN IS STILL
+; POWERS OF TWO. The old body doubled HL while halving r until r == 1 -- exactly
+; `HL * 2^floor(log2 r)` -- correct for a power of two and silently wrong for
+; everything else: at r=100 it computed **×64**, so record 6 landed at
+; within=320 instead of 500. `tests/test_open_len.py` is what caught that when
+; D-RECLEN2 tried to widen the domain in 2026-08-30, because it checks
+; `frnd_calc` against an INDEPENDENTLY derived offset; the emulator rows could
+; not, since `PUT` and `GET` share the arithmetic and agree on the same wrong
+; answer [[a-case-that-agrees-can-agree-for-the-wrong-reason]].
+;
+; 🎯 SO THIS IS ONE OF THREE THINGS THE WIDENING NEEDS, and the only one that
+; can be fixed and PROVEN with no disk risk at all. The other two are
+; `fat_rand_put`/`fat_rand_get` spanning two sectors, and `oo_parse_reclen`'s
+; validator. Until those land nothing but a power of two reaches here, and for a
+; power of two shift-and-add gives bit-identical answers -- so this change moves
+; no shipped behaviour, which is precisely what makes it safe to land alone.
+;
+; Shift-and-add, LSB first: k <= 254 and r <= 256, so the product is <= 65024 and
+; the running BC (k << bit) never exceeds 16 bits either.
 mul_reclen:
-                ld      de,(GP_RECLEN)
+                ld      de,(GP_RECLEN)      ; DE = r, the multiplier
+                push    bc                  ; the header promised A,DE only
+                ld      b,h
+                ld      c,l                 ; BC = k, the multiplicand
+                ld      hl,0                ; HL = product
 mr_loop:
-                ld      a,d
-                or      a
-                jr      nz,mr_shift         ; r >= 256 -> still shifting
                 ld      a,e
-                cp      2
-                ret     c                   ; r == 1 -> HL unchanged (done)
-mr_shift:
-                add     hl,hl               ; HL <<= 1
+                and     1                   ; r bit 0 set -> add this partial
+                jr      z,mr_skip
+                add     hl,bc
+mr_skip:
+                sla     c
+                rl      b                   ; BC <<= 1
                 srl     d
                 rr      e                   ; r >>= 1
-                jr      mr_loop
+                ld      a,d
+                or      e
+                jr      nz,mr_loop          ; r exhausted -> done
+                pop     bc
+                ret
 
 ; frnd_calc — split GP_RECNO into GP_SEC (file sector index) + GP_WITHIN (byte
 ; offset within the 512-byte sector). byteoffset = (recno-1) * reclen; GP_SEC =
-; byteoffset >> 9; GP_WITHIN = byteoffset & 511. reclen tiles the sector (power of
-; two 1..256), so a record never straddles two sectors. recno is 1..255 and reclen
-; <= 256, so byteoffset <= 254*256 = 65024 (fits 16 bits). Clobbers A,DE,HL.
+; byteoffset >> 9; GP_WITHIN = byteoffset & 511. recno is 1..255 and reclen <= 256,
+; so byteoffset <= 254*256 = 65024 (fits 16 bits). Clobbers A,DE,HL.
+; ⚠️ THE ARITHMETIC HERE IS GENERAL SINCE `mul_reclen` stopped being a shift; what
+; still requires a power of two is `fat_rand_put`/`fat_rand_get`, whose overlay is
+; a single `ldir` that cannot cross a sector boundary. The sentence that stood
+; here — ~~"reclen tiles the sector (power of two 1..256), so a record never
+; straddles two sectors"~~ — described the CONSEQUENCE of the validator, not a
+; property of this routine, and it will be wrong the day the validator widens.
 frnd_calc:
                 call    load_reclen         ; GP_RECLEN = this channel's record size
                 ld      hl,(GP_RECNO)

@@ -410,7 +410,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:9512 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:9529 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -541,7 +541,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:2318 (T-6FE392)8 (T-529ABE)` from `TODO.md:8715 (T-529ABE)`: a
+      `TODO.md:2318 (T-6FE392)8 (T-529ABE)` from `TODO.md:8732 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -2956,7 +2956,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:8715 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:8732 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -7591,6 +7591,23 @@ list. **When a slice lands, grep this list for what it just shipped.**
       pass at `GP_SEC+1` with `within = 0`, `len = reclen - avail`, source/dest
       offset `avail` — for PUT re-running `frnd_locate` in extend mode and the
       read-old-or-fill decision against `GP_OLDNSEC` for the new sector too.
+      🔴 **AND THE WIDENING NEEDS THREE THINGS, NOT TWO — THE THIRD IS THE
+      MULTIPLY.** `mul_reclen` was a SHIFT loop (`HL * 2^floor(log2 r)`),
+      correct for a power of two and silently wrong for everything else: at
+      r=100 it computed **×64**, putting record 6 at within=**320** instead of
+      500. That is the second of the two blindnesses recorded above, and neither
+      this entry's price nor its "the shape, read off both bodies" paragraph had
+      it. ✅ **FIXED 2026-09-06 (D-MULREC): shift-and-add, 11 B of sub page 1
+      (920 → 909 B free).**
+      🎯 **IT SHIPS ALONE BECAUSE IT MOVES NOTHING.** Until the other two land,
+      only a power of two reaches `mul_reclen`, and for a power of two
+      shift-and-add is bit-identical — so this is the one component of the slice
+      with **no disk risk at all**, provable entirely host-side.
+      📏 `tests/test_open_len.py` gains **r=100 (record 6 reads `(0, 500)`, the
+      straddle offset), r=7 (a prime, which no shift can approximate) and r=255**
+      — 15 rows, checked against an INDEPENDENTLY derived offset, which is what
+      caught the ×64 in the first place. Falsified by planting: cutting the
+      `add hl,bc` reddens the power-of-two anchors too, so the rows are live.
       💰 **~60–100 B against 920**, so the cost is the ENGINEERING and the
       data-loss risk, not the wall.
       🔴 **AND THE PROBE'S OWN DOCSTRING STILL CARRIED THE REFUTED CLAIM UNTIL
