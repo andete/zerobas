@@ -1,0 +1,17 @@
+
+w.sec0: after DSKI$(0,0): $EB00..$EB07 must be sector 0's first eight bytes
+    image wants: 235 254 144 90 69 82 79 66
+    machine has: 0 0 0 0 0 0 0 0
+    -> 🔴 NO
+
+w.sec1: after DSKI$(0,1): the SAME window must now hold sector 1's -- the row that makes w.sec0 more than a coincidence
+    image wants: 249 255 255 3 240 255 255 255
+    machine has: 0 0 0 0 0 0 0 0
+    -> 🔴 NO
+
+w.half2: after DSKI$(0,14): $EC00..$EC07 vs that sector's bytes 256..263 -- is the transfer 512 bytes or 256?
+    image wants: 3 3 3 3 3 3 3 3
+    machine has: 1 1 1 1 1 1 1 1
+    -> 🔴 NO
+
+🔴 AT LEAST ONE ROW DID NOT MATCH -- read the rows above; a mismatch on w.half2 alone is a 256-byte transfer, a mismatch on w.sec0/w.sec1 means the address is wrong.

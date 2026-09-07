@@ -410,7 +410,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:10575 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:10613 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -575,7 +575,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:2423 (T-6FE392)8 (T-529ABE)` from `TODO.md:9512 (T-529ABE)`: a
+      `TODO.md:2423 (T-6FE392)8 (T-529ABE)` from `TODO.md:9550 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -3061,7 +3061,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:9512 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:9550 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -6447,6 +6447,44 @@ list. **When a slice lands, grep this list for what it just shipped.**
       result looks like *and* what an unmounted fixture looks like, which is why
       `d.mount` opens a file that exists on the image and must read 55
       [[an-unnamed-outcome-reads-as-no-outcome]].
+      🔴 **AND "WHERE DOES THE SECTOR DATA GO" IS STILL OPEN — BUT ONE ANSWER IS
+      NOW EXCLUDED, AND MY OWN FIRST ANSWER WAS WRONG (2026-09-07, D-DSKIWHERE /
+      D-DSKIBYTES).**
+      [`scratchpad/dskiwhere_probe.py`](scratchpad/dskiwhere_probe.py) has the
+      machine checksum every 256-byte page of `$C000..$FFFF` around two `DSKI$`
+      reads of DIFFERENT sectors, against a control that reads the SAME sector
+      twice so the probe's own footprint subtracts out. Exactly **one** page moves:
+      `$2B`, i.e. **`$EB00`** — reproduced with `ZEROBAS_REFCACHE=0`, because the
+      first "repeat" was served `2 hit, 0 miss` from the cache and proved nothing.
+      🔴 **I READ THAT AS THE LANDING ADDRESS. IT IS NOT.**
+      [`scratchpad/dskibytes_probe.py`](scratchpad/dskibytes_probe.py) reads
+      `$EB00..$EB07` after `DSKI$(0,0)` and compares with `disk/test720.dsk`'s own
+      first bytes (`EB FE 90 5A …`, the FAT12 jump and OEM name): the machine holds
+      **`0 0 0 0 0 0 0 0`**, and the same after `DSKI$(0,1)`.
+      [`scratchpad/dskipagediff.py`](scratchpad/dskipagediff.py) then counted which
+      bytes of that page move at all — **25 of them, first offset 149, last 180** —
+      a ~32-byte record at `$EB95..$EBB4` that tracks the REQUEST, not a 512-byte
+      transfer.
+      🎯 **A MOVED PAGE IS NOT A LANDING SPOT.** A page checksum answers *"something
+      here depends on the sector"*, which is one step short of *"the sector is
+      here"* — and the two differ by exactly the claim an implementation would be
+      built on [[a-mechanism-inferred-from-one-observation]].
+      ➡️ **WHAT IS ESTABLISHED:** `DSKI$` returns and does not hang (a stage marker
+      after it prints); its value-face is empty; the drive is validated and the
+      sector number is not; and **the 512 bytes are NOT anywhere in
+      `$C000..$FFFF`**, since every page of that window was checksummed and only the
+      work-area page moved. Where they DO go is not established — below `$C000`, or
+      in RAM the BASIC slot configuration does not let `PEEK` see. That is the next
+      measurement and an implementation still needs it.
+      🔴 **TWO APPARATUS FAULTS, BOTH MINE, BOTH CAUGHT BY A CONTROL RATHER THAN BY
+      READING THE CODE.** (1) `cap_gap` is the gap AFTER the capture and "buys this
+      case nothing" — [`probes/lib/omsx_repl.py:684`](probes/lib/omsx_repl.py:684)
+      says so in as many words; the window between `RUN` and capture is `step`. A
+      first cut passed `cap_gap=240` and captured 5 emulated seconds after `RUN`,
+      which put the stage-1 marker on screen and nothing else and read exactly like
+      a hang. `run_gap` is the parameter. (2) The byte reader first built a hex
+      STRING in its read loop; MSX string space lives at the top of memory, where
+      the buffer under test is.
       🤖 AUTONOMOUS — the reference settles every token, and the pin is built.
 
 - [ ] 📌 **`basic_probe_kwsweep.py` PRINTS ROWS NO RUNNER CAN PARSE, AND ITS

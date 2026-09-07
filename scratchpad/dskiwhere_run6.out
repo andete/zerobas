@@ -1,0 +1,7 @@
+  s.diff   '1A 2B 3B'
+  s.same   '1A 1B 1C 3B'
+
+  s.diff pages: '1A 2B 3B'
+  s.same pages (NOISE): '1A 1B 1C 3B'
+
+🎯 PAGES THAT MOVE WITH THE SECTOR (s.diff minus noise): ['2B']
