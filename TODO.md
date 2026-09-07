@@ -410,7 +410,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:10364 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:10397 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -10002,12 +10002,45 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       through CHGET … BREAKX scans the key matrix directly, which is the only
       thing that can see it."* True — and it does not establish that Ctrl-C
       should NOT also work, which is what the references do.
-      ⚠️ **SO `AUTO`'s NUMBERING IS MEASURED ON THE REFERENCES AND STILL
+      ~~⚠️ **SO `AUTO`'s NUMBERING IS MEASURED ON THE REFERENCES AND STILL
       UNMEASURED HERE.** `a.plain` reading `7,20` on both pins the documented
       10,10 default; `a.start` pins start-and-step separately. zerobas's own
       numbering cannot be scored until the probe drives a REAL Ctrl-STOP through
       the key matrix (`basic_probe_stop_trap` has that machinery) — the verb has
-      a full body (`ex_auto`, R-AU5/AU6/AU9), so this is not a stub.
+      a full body (`ex_auto`, R-AU5/AU6/AU9), so this is not a stub.~~
+      🟢 **FIXED AND MEASURED 2026-09-07 (D-CTRLC) — AND THE CTRL-STOP DETOUR
+      WAS NOT NEEDED, BECAUSE THE DIVERGENCE WAS NOT ABOUT `AUTO`.**
+      🎯 **CTRL-C IS A LINE-EDITOR KEY, NOT AN `AUTO` KEY.** The escape looked
+      AUTO-shaped only because `AUTO` is where its absence was visible.
+      [`scratchpad/ctrlc_probe.py`](scratchpad/ctrlc_probe.py) types
+      `PRINT"ZC";<^C>1;"CZ"` in the ORDINARY REPL, no `AUTO` anywhere, and both
+      references print **nothing** — the line is ABORTED, never executed — while
+      zerobas printed `1`. `read_line`'s `cp 32 / jr c,rl_loop` dropped `$03` as
+      "some control character" and went on building the line.
+      **The fix is 5 bytes** ([`basic/repl.asm`](basic/repl.asm) `rl_get`):
+      `cp 3 / jp z,rl_break`, sited BEFORE the `pop hl` because `rl_break` is
+      `lgb_eof`, which pops the HL that `rl_loop` pushed. The REPL side is
+      **free**: [`basic/repl.asm:65`](basic/repl.asm:65) already called
+      `dispatch_line` unconditionally and now calls it `nc` — CF set = the line
+      was aborted, so it is discarded unexecuted, and `call nc,nn` is the same
+      3 bytes as `call nn`. Page-1 free was **7 B before the fix** and 2 B after
+      (`make basic-reloc`, 2026-09-07).
+      | row | | vg8020 | cf3300 | zb after |
+      |---|---|---|---|---|
+      | `c.plain` | CONTROL: no `^C` | `1` | `1` | `1` |
+      | `c.mid` | `^C` mid-line | aborted | aborted | aborted |
+      | `c.after` | CONTROL: an ordinary line AFTER an aborted one | `9` | `9` | `9` |
+      | `a.start` | `AUTO 200,5` | `7,205` | `7,205` | `7,205` |
+      | `a.plain` | bare `AUTO` (default 10,10) | `7,20` | `7,20` | `7,20` |
+      🎯 **`c.after` IS THE ROW THAT MAKES THE OTHER TWO MEAN ANYTHING.** "No
+      output" is what an ABORT looks like and also what a WEDGED EDITOR looks
+      like; a fix that hung `read_line` would have scored identically to the
+      references on `c.mid` alone [[an-unnamed-outcome-reads-as-no-outcome]].
+      🎯 **AND `AUTO`'s OWN NUMBERING CAME FOR FREE.** With the escape working,
+      `a.start` and `a.plain` are readable on zerobas for the first time and
+      both AGREE — start, step, and the 10,10 default. The Ctrl-STOP-through-
+      the-key-matrix detour this item prescribed was priced against a cause that
+      turned out to be the wrong one.
       🔴 **AND THE CONTROL EARNED ITS PLACE ON THE FIRST RUN.** `a.esc` read
       `0,0` on ALL THREE — my handler was numbered 100, and `AUTO 200,5` makes
       lines 200/205, so `RUN` reached the HANDLER before the body and printed

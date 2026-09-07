@@ -85,7 +85,7 @@ def main() -> int:
             print("🔴 INSTRUMENT FAULT: neither anchor matched -- the cut is stale")
             return 2
         open(SRC, "w", encoding="utf-8").write(planted)
-        moved, after, _rc = knife_guard.build("filesguard_K-FG1", base_h)
+        moved, after, _rc = knife_guard.build("scratchpad/filesguard_K-FG1", base_h)
         print("\n" + knife_guard.report("K-FG1", moved, base_h, after))
         if not moved:
             print("  K-FG1 DID NOT REACH THE ROM -- score discarded")
@@ -98,7 +98,7 @@ def main() -> int:
                   + (f"  ->  {g!r}" if b != g else ""))
     finally:
         open(SRC, "w", encoding="utf-8").write(orig)
-        _m, restored, _rc = knife_guard.build("filesguard_restore", base_h)
+        _m, restored, _rc = knife_guard.build("scratchpad/filesguard_restore", base_h)
         ok = restored == base_h
         print(f"\nrestore: {base_h} -> {restored}  "
               f"{'BYTE-IDENTICAL' if ok else '🔴 DRIFT'}")

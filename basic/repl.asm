@@ -63,7 +63,10 @@ repl:
                 ld      hl,prompt_text
                 call    print_string
                 call    read_line           ; LINEBUF <- typed line (ASCII, 0-term)
-                call    dispatch_line       ; store / RUN / NEW / direct-execute
+                call    nc,dispatch_line    ; store / RUN / NEW / direct-execute --
+                                            ; CF set = the line was ABORTED (Ctrl-C,
+                                            ; D-CTRLC), so it is DISCARDED unexecuted.
+                                            ; `call nc` costs the same 3 bytes as `call`.
                 jr      repl
 
 ; --- print_string: CHPUT a 0-terminated string at (HL) --------------------
@@ -111,6 +114,14 @@ rl_poll:
                 jr      z,rl_poll
 rl_get:
                 call    CHGET               ; wait for a key -> A
+                ; D-CTRLC: Ctrl-C ($03) ABORTS the line on both references -- it is
+                ; not one of the control chars the `cp 32` below silently drops.
+                ; Measured (scratchpad/auto_probe.py): typing PRINT"ZC";<^C>1;"CZ"
+                ; and Enter prints nothing on VG-8020 and CF-3300; zerobas printed
+                ; `1`. This test sits BEFORE the `pop hl` because rl_break is
+                ; lgb_eof, which pops the HL that rl_loop pushed.
+                cp      3
+                jp      z,rl_break
                 pop     hl
                 cp      13                  ; Enter -> finish
                 jr      z,rl_enter

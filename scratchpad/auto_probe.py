@@ -71,6 +71,14 @@ CASES = [
      "AUTO 200,5 -- start AND step, so 7,205"),
     ("a.plain",  HEAD + ['AUTO', 'X=1', 'ERROR 7', ESC],
      "bare AUTO -- documented default 10,10, so 7,20"),
+    # 🎯 THE ESCAPE'S OWN CONTROL. Without it, "the references exit on $03"
+    # rests on the $03 line being the CAUSE rather than on AUTO ending some other
+    # way. This row is a.start with the ESC REMOVED: if the references still read
+    # 7,205 the escape is not what ends the session and the whole finding is
+    # misattributed [[a-mechanism-inferred-from-one-observation]].
+    ("a.noesc",  HEAD + ['AUTO 200,5', 'X=1', 'ERROR 7'],
+     "CONTROL on the ESCAPE: same as a.start with NO Ctrl-C -- RUN should be "
+     "swallowed on every machine"),
 ]
 
 
