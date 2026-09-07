@@ -10740,6 +10740,35 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
         ZEROBAS TAX.** Reserving `256 B × MAXFILES` up front is exactly the shape
         the reference uses (267 × MAXFILES); it is not waste peculiar to us, and
         "allocate only what is opened" is not what the reference does either.
+        ✅ **AND IT TRACKS `MAXFILES` EXACTLY (2026-09-07, D-MAXFRE,
+        [`scratchpad/maxfiles_probe.py`](scratchpad/maxfiles_probe.py))** — one
+        program, stepping `MAXFILES` 0→4 and printing `FRE(0)` after each change
+        (it must be PRINTED, not held in a variable: `MAXFILES` clears them):
+        | MAXFILES | VG-8020 | CF-3300 | zerobas |
+        |---|---|---|---|
+        | 0 | 28890 | 23505 | 22899 |
+        | 1 | 28623 | 23238 | 22849 |
+        | 2 | 28356 | 22971 | 22799 |
+        | 3 | 28089 | 22704 | 22749 |
+        | 4 | 27822 | 22437 | 22699 |
+        **−267 per channel on BOTH references and −50 on zerobas, at every one of
+        the four steps.** Five points in one boot, where D-HIMEMRES fitted the
+        same rule from two points across separate runs.
+        🎯 **AND THE VG-8020 IS DISKLESS.** It has no drive at all and still
+        reserves 267 per `MAXFILES`, so this is base MSX BASIC's file-buffer
+        reservation and NOT a Disk-BASIC artefact. It also puts a measurement
+        behind the arithmetic this entry earlier flagged as unverified: the step
+        is exactly 267 and a record is at most 256, so 267 = 256 + 11 of
+        per-channel overhead — and 11 is precisely what D-RESERVE measured OPEN
+        adding on every machine, zerobas included.
+        ➡️ **SO ZEROBAS IS THE OUTLIER BY 217 B PER CHANNEL, BY DESIGN**, and
+        attempt A closes exactly that gap in exactly the reference's way.
+        🔴 **THE FIRST RUN PRINTED `0` FOR EVERY VG-8020 CELL.** It is diskless,
+        so mounting a fixture made openMSX refuse to boot ("No disk drive A
+        present") — the harness said so plainly and the probe still tabulated
+        zeros, which read as measurements of zero rather than as an apparatus
+        failure [[an-unnamed-outcome-reads-as-no-outcome]]. `MAXFILES` needs no
+        disk; the mount is now skipped for that side and the row is real.
         ⚠️ **The 4 B gap between the two `base` figures is the PROGRAM TEXT** —
         `LEN=256` is two characters longer on two lines — not a reservation
         effect. Named so it is not read as one.
