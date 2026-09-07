@@ -1,0 +1,26 @@
+  a.ctl     POKE&HC000,0     vg=no error  cf=no error  zb=no error 
+  kill      KILL 5           vg=ERR 5     cf=ERR 13    zb=ERR 13      🟡 REFS-SPLIT
+  name      NAME 5 AS "X"    vg=ERR 5     cf=ERR 13    zb=ERR 13      🟡 REFS-SPLIT
+  save      SAVE 5           vg=ERR 13    cf=ERR 13    zb=ERR 13   
+  load      LOAD 5           vg=ERR 13    cf=ERR 13    zb=ERR 13   
+  bload     BLOAD 5          vg=ERR 13    cf=ERR 13    zb=ERR 13   
+  open      OPEN 5 AS #1     vg=ERR 13    cf=ERR 13    zb=ERR 13   
+  files     FILES 5          vg=ERR 5     cf=ERR 13    zb=ERR 13      🟡 REFS-SPLIT
+  play      PLAY 5           vg=ERR 13    cf=ERR 13    zb=ERR 13   
+  draw      DRAW 5           vg=ERR 5     cf=ERR 5     zb=ERR 5    
+  lset      LSET A$=5        vg=ERR 5     cf=ERR 13    zb=ERR 13      🟡 REFS-SPLIT
+  poke      POKE "A",0       vg=ERR 13    cf=ERR 13    zb=ERR 13   
+  vpoke     VPOKE "A",0      vg=ERR 13    cf=ERR 13    zb=ERR 13   
+  out       OUT "A",0        vg=ERR 13    cf=ERR 13    zb=ERR 13   
+  locate    LOCATE "A",0     vg=ERR 13    cf=ERR 13    zb=ERR 13   
+  sound     SOUND "A",0      vg=ERR 13    cf=ERR 13    zb=ERR 13   
+  width     WIDTH "A"        vg=ERR 13    cf=ERR 13    zb=ERR 13   
+  screen    SCREEN "A"       vg=ERR 13    cf=ERR 13    zb=ERR 13   
+  color     COLOR "A"        vg=ERR 13    cf=ERR 13    zb=ERR 13   
+  maxfiles  MAXFILES="A"     vg=ERR 13    cf=ERR 13    zb=ERR 13   
+  time      TIME="A"         vg=ERR 13    cf=ERR 13    zb=ERR 13   
+  pset      PSET("A",0)      vg=ERR 13    cf=ERR 13    zb=ERR 13   
+
+=== 0 divergence(s): none ===
+    REFS-SPLIT (4): ['kill', 'name', 'files', 'lset'] -- scored against the CF-3300 only,
+    since zerobas ships a disk ROM and the cassette machine has no vote on these.

@@ -410,7 +410,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:10988 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:11012 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -575,7 +575,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:2423 (T-6FE392)8 (T-529ABE)` from `TODO.md:9925 (T-529ABE)`: a
+      `TODO.md:2423 (T-6FE392)8 (T-529ABE)` from `TODO.md:9949 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -3061,7 +3061,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:9925 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:9949 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -4161,6 +4161,30 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `tools/redundant-load-reviewed.txt` with no candidate, and
       `redundant-load-check` calls that *"how this control goes blind"*. RETIRED
       with its reason, on the `print_crlf` precedent in the same file.
+      🟢 **AND THE WRONG-TYPE ARGUMENT CLASS IS SWEPT AND CLEAN (2026-09-08,
+      D-ARGTYPE, [`scratchpad/argtype_probe.py`](scratchpad/argtype_probe.py),
+      [`.out`](scratchpad/argtype_run2.out)).** Three members had been found ONE AT
+      A TIME — `FILES 5` (D-FILESIDE), `LSET A$=5` (D-LSETTM, fixed +4 B) and
+      `MERGE 5` (D-MERGEXPR, hours earlier) — and the class was never checked. 21
+      statements handed the WRONG TYPE (a number where a string belongs, a string
+      where a number belongs), three machines: **0 divergences.** So those three
+      were the complete set and not a sample.
+      ⚠️ **FOUR REFS-SPLITS, ALL THE SAME CAUSE**: `KILL`/`NAME`/`FILES`/`LSET` read
+      `ERR 5` on the diskless VG-8020 against `ERR 13` on the CF-3300, and zerobas
+      agrees with the CF-3300 on every one — *"zerobas ships a disk ROM ⇒ the
+      CF-3300 is the oracle, the cassette machines have no vote"*, this file's own
+      rule. Labelled, not scored.
+      🔴 **THE DISKLESS VG-8020 BIT FOR THE THIRD TIME IN TWO SESSIONS, IN A NEW
+      WAY.** D-BAREFORM scored it as an oracle it could not be; here the fixture was
+      MOUNTED on it and openMSX refused the machine outright — *"Fatal error: No
+      disk drive A present to put image … in."* — so every VG row came back
+      `<none>`. The control caught it and the probe refused to score. `disk` is now
+      a PER-SIDE flag, false for the VG.
+      🎯 **THAT IS THE THIRD DISTINCT FAILURE MODE OF ONE MACHINE FACT**: score it
+      wrongly, mount to it wrongly, or (kwsweep's original) compare against it
+      wrongly. The fact is in `basic_probe_kwsweep.py`'s header; what keeps being
+      missing is a shared SIDES helper that carries it
+      [[an-instrument-can-fail-the-way-the-thing-it-replaced-failed]].
       🔴 **THE SLOPPY-ACCEPT CLASS D-FMTTAIL OPENED IS ALSO SWEPT, AND IT FOUND A
       DATA-LOSS DEFECT (2026-09-08, D-TAILJUNK → D-MAXFTAIL,
       [`scratchpad/tailjunk_probe.py`](scratchpad/tailjunk_probe.py),
