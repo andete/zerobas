@@ -77,12 +77,41 @@ def moved(before: str | None, after: str) -> bool:
     return before is not None and after != before
 
 
-def report(tag: str, moved: bool, before: str, after: str) -> str:
+def report(tag: str, moved: bool, before: str, after: str,
+           rc: int | None = None, log: str | None = None) -> str:
+    """`rc`/`log` are the build's own return code and log path, from build().
+
+    🔴 PASS THEM. An unchanged ROM has TWO causes and they need different
+    words. 2026-09-07 (D-CTRLC/D-FILESGUARD): K-FG1 reported `KNIFE INERT`, which
+    is true and reads as "the cut is stale" — the actual cause was that the cut
+    ADDS 6 bytes and D-CTRLC had just left **2 B free in page 1**, so pasmo died
+    on `BASIC_IMAGE_OVERRAN_8000_CEILING` and the old ROM stayed on disk. Nothing
+    in the runner's output said so; the cause was only in the build log, because
+    the caller had discarded rc as `_rc`.
+    🎯 A BYTE-ADDING CUT IS WALL-DEPENDENT, AND NOTHING DECLARES THAT.
+    An unrelated commit five bytes wide can silently disarm a knife that has
+    worked for weeks, and the knife will still print a sentence about its own
+    arm. Without `rc` this function cannot tell you which happened.
+    """
     if moved:
         return f"  ROM {before}  ->  {after}"
+    if rc:
+        why = ""
+        if log and os.path.exists(log):
+            for ln in open(log, errors="replace"):
+                if "ERROR:" in ln:
+                    why = f"\n     {ln.strip()}"
+                    break
+        return (f"  🔴 {tag}: THE BUILD FAILED (rc={rc}) — the cut never "
+                f"reached the assembler's output, so the ROM on disk is the UNCUT "
+                f"one. This is NOT 'the arm found nothing' and NOT a stale anchor: "
+                f"a byte-ADDING cut is wall-dependent, and the wall moves under it "
+                f"between runs.{why}")
     return (f"  🔴 {tag}: KNIFE INERT — the ROM did not change ({after}); the "
             f"probe would measure the UNCUT machine, and any 'moved 0 rows' "
-            f"below would be meaningless")
+            f"below would be meaningless. The build SUCCEEDED (rc=0), so this is "
+            f"a stale anchor or a cut with no effect — not a space failure; pass "
+            f"`rc=` to keep those two apart")
 
 
 # --------------------------------------------------------------------------

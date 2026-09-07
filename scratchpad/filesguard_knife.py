@@ -85,8 +85,11 @@ def main() -> int:
             print("🔴 INSTRUMENT FAULT: neither anchor matched -- the cut is stale")
             return 2
         open(SRC, "w", encoding="utf-8").write(planted)
-        moved, after, _rc = knife_guard.build("scratchpad/filesguard_K-FG1", base_h)
-        print("\n" + knife_guard.report("K-FG1", moved, base_h, after))
+        log = "scratchpad/filesguard_K-FG1"
+        moved, after, rc = knife_guard.build(log, base_h)
+        # rc is NOT discarded: a cut that adds bytes can be refused by the WALL,
+        # and "the build failed" must not print as "the arm found nothing".
+        print("\n" + knife_guard.report("K-FG1", moved, base_h, after, rc, log))
         if not moved:
             print("  K-FG1 DID NOT REACH THE ROM -- score discarded")
             return 2

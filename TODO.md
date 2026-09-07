@@ -410,7 +410,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:10446 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:10489 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -575,7 +575,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:2423 (T-6FE392)8 (T-529ABE)` from `TODO.md:9383 (T-529ABE)`: a
+      `TODO.md:2423 (T-6FE392)8 (T-529ABE)` from `TODO.md:9426 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -3061,7 +3061,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:9383 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:9426 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -6015,6 +6015,49 @@ list. **When a slice lands, grep this list for what it just shipped.**
       rows are right and the structural argument is proven from source; only the
       cut is wrong. The item stays open on that, and it is now a much smaller
       question than the one above it.
+      🔴 **AND AS OF 2026-09-07 THE KNIFE CANNOT RUN AT ALL — FOR A BYTE REASON,
+      NOT A LOGIC ONE.** K-FI1's cut ADDS 6 bytes (`ld (DISKOP_OP),a` at the head,
+      `ld a,(DISKOP_OP)` at the pop site) and **D-CTRLC left page 1 at
+      2 B free, measured 2026-09-07** (`make basic-reloc`), so pasmo dies on
+      `BASIC_IMAGE_OVERRAN_8000_CEILING__TRIM_IT_OR_EVICT_TO_SUBROM` and the UNCUT
+      ROM stays on disk (`scratchpad/filesguard_run2.out`).
+      🎯 **A BYTE-ADDING KNIFE IS WALL-DEPENDENT AND NOTHING DECLARED THAT.** An
+      unrelated five-byte commit disarmed a knife that had worked, and the runner
+      still printed a sentence about its own arm: `knife_guard`'s hash correctly
+      said `KNIFE INERT`, which is TRUE and reads as *"the anchor is stale"*. The
+      caller had discarded the build's `rc` as `_rc`, so the real cause existed
+      only in the build log [[a-knife-can-be-inert-because-the-build-did-not-happen]].
+      🟢 **FIXED IN THE SHARED GUARD, NOT IN THIS RUNNER**:
+      [`scratchpad/knife_guard.py`](scratchpad/knife_guard.py) `report()` now takes
+      the build's `rc` and log and prints **THE BUILD FAILED (rc=N)** with the
+      assembler's own `ERROR:` line, and its no-rc branch now says the build
+      SUCCEEDED so the two causes cannot be read as one. `rc` defaults to `None`,
+      so the other 39 `knife_guard` runners are untouched — **and every one of
+      them still cannot tell these two apart until it passes `rc`.**
+      🔴 **THE `????????.BAS` IN THE PARAGRAPH ABOVE IS NOT A CORRUPTED ENTRY.**
+      `lfl-wild` is `LFILES"*.BAS"`
+      ([`probes/basic/basic_probe_lptverb.py:245`](probes/basic/basic_probe_lptverb.py:245)),
+      and `bn_star_fill`
+      ([`basic/fcbname-body.inc:216`](basic/fcbname-body.inc:216)) fills the rest
+      of the field with `'?'` — so `????????.BAS` is the 8.3 PATTERN itself,
+      printed where the matched entries belong. The knifed build listed its own
+      wildcard. That is a much more specific symptom than "corrupted", and it
+      names where to look.
+      🔴 **AND "RESTORE THE PRE-FIX STATE" IS AMBIGUOUS, WHICH IS THE REAL REASON
+      THE IMPORT DOES NOT TRANSFER.** `227a1d37` changed **TWO** things in one
+      commit: the op-selector guard AND the filespec parser — `cp '"' / jr nz,
+      df_nofilespec` became `or a / jr z,df_nofilespec` plus `fname_expr`
+      (D-FNEXPR2/D-FILESIDE). Inverting only the `DISKOP_OP` half produces a verb
+      that **never existed**: today's expression parser with yesterday's parked
+      selector. The `lfl-*` rows landed 2026-08-06 and were green for the 15 days
+      before the guard — but under the QUOTE parser, so their greenness is not
+      evidence about the hybrid the knife builds
+      [[two-rules-that-coincide-on-every-row-you-have]].
+      ➡️ **SO THE OWED CUT NEEDS TWO THINGS, NOT ONE**: a byte budget it does not
+      have today (or a cut that is byte-neutral — the head write can REPLACE the
+      `push af` rather than precede it, and the pop site can drop its two
+      instructions, which is smaller than the original), and a stated answer to
+      *which* pre-fix machine it claims to be.
       🤖 AUTONOMOUS — 💰 0 ROM bytes; it is a row, and the references settle it.
 
 - [x] ✅ **A FILESPEC OF CONTROL BYTES: CF-3300 SAYS `Bad file name`, ZEROBAS
