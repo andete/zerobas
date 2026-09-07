@@ -380,6 +380,26 @@ basic-reloc: $(RELOC_SYM) $(RELOC_ROM) $(SUB_ROM) $(DISK_ROM)
 deadcode: $(RELOC_SYM) $(SUB_ROM)
 	python3 tools/check_dead_code.py --report $(RELOC_SYM) $(SUB_SYM)
 
+# --- Layout invariant (D-LAYOUTINV) -------------------------------------------
+# The property a LAYOUT PASS is allowed to preserve: every routine keeps its
+# ORDERED INSTRUCTION SEQUENCE, and only its address and the FORM of its branches
+# may move. Strictly stronger than "the battery is green" -- a battery samples
+# behaviour, this asserts the code is the same code.
+#
+# 🔴 DELIBERATELY NOT COLLECTED INTO `make gates`. It is vacuous without a
+# recorded baseline, and the baseline is meaningful only for the duration of a
+# pass: ordinary work CHANGES routine bodies, which is exactly what this refuses.
+# Collected, it would be red on every normal commit and would teach its readers
+# to ignore it. Record before a pass, check after each step, delete when done.
+layout-invariant:
+	python3 tools/check_layout_invariant.py
+
+layout-invariant-record:
+	python3 tools/check_layout_invariant.py --record
+
+layout-invariant-selftest:
+	python3 tools/check_layout_invariant.py --selftest
+
 # --- Redundant-load sweep (D-LOADSWEEP) ---------------------------------------
 # The gate D-RETLN asked for on 2026-08-02 and did not get: it carved 160 dead
 # bytes of one shape (`call skip_spaces` / `ld a,(hl)`, where the callee already

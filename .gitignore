@@ -47,3 +47,8 @@ scratchpad/*.txt
 # D-AUTOLOCK: the desktop scheduled task's overlap lock (runs can collide --
 # a gate battery outlasts the task's interval). Never a repo artifact.
 scratchpad/.autolock/
+
+# D-LAYOUTINV: the layout-pass baseline is per-pass working state, never a
+# repo artifact — a committed one would go stale the moment ordinary work
+# changes a routine body, which is exactly what the checker refuses.
+tools/layout-invariant-baseline.json
