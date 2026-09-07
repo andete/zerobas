@@ -10704,6 +10704,36 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
         outside the `FCH_STATE0..FWR_DIROFF` span) and a DIRTY bit so `LSET`
         without a `PUT` survives a switch. That is a designed change rather than
         a 16-byte patch, and it is the one worth making.
+        🔴 **SECOND ATTEMPT ALSO FAILED (2026-09-07, D-WBRAND) — AND IT FAILED
+        WORSE THAN THE FIRST.** Joost asked for the low-RAM shape, so: a fixed
+        16-entry `FCH_RECNOS` word array (32 B total, **not** per reserved
+        channel), noted by the `t_fat_rand_get`/`t_fat_rand_put` tenant wrappers,
+        plus a mode-4 arm in `fat_restage_channel` (re-read) and
+        `fat_detach_channel` (write back). **Zero main-ROM bytes** — main page 1
+        stayed at 23 B, the 75 B all landed in sub page 1.
+        **It breaks two-channel operation outright**: every two-channel row went
+        to `<empty>` on zerobas while the ONE-channel control `w.seq` stayed
+        green, so the switch itself is what the arms break.
+        🎯 **THE LIKELY REASON IS WRITTEN IN THE BODY I CALLED.**
+        [`basic/randio-body.inc:267`](basic/randio-body.inc:267) says the rand
+        primitives assume *"the channel is already live (GET/PUT call
+        `fch_select` first, setting `FCH_ACTIVE`)"* — and these arms call them
+        from INSIDE `fch_select`, when it is not. `fdet_rand` also fires a full
+        read-modify-write plus a directory update mid-switch, far heavier than
+        the OUTPUT flush that path was built for, and it clobbers `FWBUF` which
+        the switch machinery itself uses. ⚠️ **Not established** — the arms were
+        reverted rather than instrumented [[a-mechanism-inferred-from-one-observation]].
+        ➡️ **WHAT THE NEXT ATTEMPT NEEDS TO KNOW.** Two shapes are now measured
+        rather than imagined:
+        | attempt | main B | RAM | result |
+        |---|---|---|---|
+        | record travels in the context (`FCH_CTXSZ` 50→306) | 16 | **256 B per reserved channel** | **both defects FIXED vs the reference**; reds `ramfree ctl.pool` (hardcoded `$D980`) and `array scalar.input.chain.oom` (zb-only, unexplained) |
+        | write-back cache for mode 4 (`FCH_RECNOS`) | **0** | 32 B fixed | **breaks two-channel operation entirely** |
+        The first WORKS and costs the RAM; the second costs nothing and does not
+        work as written. A third shape — restage-only, with the write-back left
+        to the existing `PUT` rather than done at switch time — is untried and is
+        where I would start: it removes the mid-switch WRITE, which is the half
+        that plausibly re-enters.
         ⚠️ **THE CONTROL FAILED FIRST, FOR A REASON THAT WAS MINE**: its lines
         were numbered 10/20/50/30/60 to mirror the other row visually, so BASIC
         SORTED them and re-opened `#1` while it was still open — `<NO READING>`
