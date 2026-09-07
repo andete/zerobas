@@ -43,3 +43,7 @@ scratchpad/gate_logs/
 # standing corpus driver) and a commit message already lives in git history.
 scratchpad/*.sh
 scratchpad/*.txt
+
+# D-AUTOLOCK: the desktop scheduled task's overlap lock (runs can collide --
+# a gate battery outlasts the task's interval). Never a repo artifact.
+scratchpad/.autolock/
