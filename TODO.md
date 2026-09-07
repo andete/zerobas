@@ -410,7 +410,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:10685 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:10722 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -575,7 +575,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:2423 (T-6FE392)8 (T-529ABE)` from `TODO.md:9622 (T-529ABE)`: a
+      `TODO.md:2423 (T-6FE392)8 (T-529ABE)` from `TODO.md:9659 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -3061,7 +3061,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:9622 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:9659 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -6557,6 +6557,43 @@ list. **When a slice lands, grep this list for what it just shipped.**
       EVIDENCE** — a working verb with four measured faces, against `DSKI$`'s empty
       string. It belongs in the disk ROM, which had ~8910 B free (`make
       basic-reloc`, 2026-09-07). Not built here: this is the characterisation.
+      🟢 **ALL EIGHT ARE NOW CHARACTERISED (2026-09-07, D-KWREST,
+      [`scratchpad/kwrest_probe.py`](scratchpad/kwrest_probe.py),
+      [`.out`](scratchpad/kwrest_run2.out)) — AND FOUR OF THEM DO NOTHING ON THE
+      REFERENCE EITHER.**
+      | word | form | cf3300 |
+      |---|---|---|
+      | `DSKI$` | function ONLY | runs clean, evaluates to `""` |
+      | `DSKO$` | **statement ONLY** (`A$=DSKO$(0,0)` is `Syntax error`) | runs clean |
+      | `COPY` | statement | **works**; `ERR 53` / `ERR 5` faces |
+      | `ATTR$` | function | **`ERR 5`** |
+      | `CMD` | statement | **`ERR 5`** |
+      | `SET` | statement, bare or with args | **`ERR 5`** |
+      | `IPL` | statement | **`ERR 5`** |
+      | `LOC` | function | (separately filed under File-position) |
+      🎯 **`DSKO$` IS THE EXACT MIRROR OF `DSKI$`, AND `kwsweep` HAD IT RIGHT ALL
+      ALONG.** D-DSKIFORM suspected the probe's asymmetric bodies
+      (`a$=dski$(0,0)` vs `dsko$0,0`) of being an oversight and tested `DSKI$` as a
+      statement; it is a function only. `DSKO$` is a **statement only**. The
+      asymmetry was the measurement, not a slip.
+      🎯 **AND FOUR WORDS ARE TOKENISED-BUT-UNIMPLEMENTED ON THE REFERENCE.**
+      `ATTR$`, `CMD`, `SET` and `IPL` all raise **Illegal function call**, and
+      `SET ZZZ QQQ` / `IPL ZZZ QQQ` raise **`ERR 5`, not `ERR 2`** — so the tail is
+      never parsed and the handler refuses on sight. That makes their faithful
+      behaviour *"tokenise, then ERR 5"*, with **no verb to implement at all**.
+      💰 **CHEAP IS NOT FREE, AND THE WALL SAYS WHERE.** The `kwtable` entries are
+      small (`ATTR$` 8 B, `CMD`/`SET`/`IPL` 6 B each ≈ 26 B) and the table lives in
+      the sub-ROM, which had **798 B free in page 1 and 1339 B in page 0** (`make
+      basic-reloc`, 2026-09-07). But the DISPATCH is `stmt_table` in
+      [`basic/interp.asm`](basic/interp.asm), main page 1, which had **2 B free**
+      the same day — four entries at 3 B is 12 B. **So even the do-nothing four
+      need a carve first**, and that is priced here rather than discovered halfway.
+      ⚠️ **`DSKO$`, `SET` AND `IPL` WRITE, AND `kwsweep` REFUSES TO EXECUTE THEM FOR
+      THAT REASON.** They are driven here because every row mounts its OWN COPY of
+      `disk/test720.dsk`; the shared fixture is never opened for writing.
+      ⚠️ **THE SURFACE IS NOT THE SEMANTICS.** `DSKO$0,0` "runs clean" says it was
+      accepted, NOT that it wrote anything — that is unmeasured, and deliberately
+      not guessed at [[a-mechanism-inferred-from-one-observation]].
       🤖 AUTONOMOUS — the reference settles every token, and the pin is built.
 
 - [ ] 📌 **`basic_probe_kwsweep.py` PRINTS ROWS NO RUNNER CAN PARSE, AND ITS
