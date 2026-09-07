@@ -410,7 +410,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:10308 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:10333 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -575,7 +575,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:2423 (T-6FE392)8 (T-529ABE)` from `TODO.md:9358 (T-529ABE)`: a
+      `TODO.md:2423 (T-6FE392)8 (T-529ABE)` from `TODO.md:9383 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -3061,7 +3061,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:9358 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:9383 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -8697,6 +8697,31 @@ list. **When a slice lands, grep this list for what it just shipped.**
       | **`lineerr`** | **REVERTED** | **30 of 220 rows leak** |
       | `graphics` | not attempted | 44 separate `run_cases` sites, a different job |
       | `deffn` | not attempted | imported by a dozen probes; wide blast radius |
+      🔴 **THE BATTERY'S OWN PER-UNIT TIMES ARE INFLATED BY CONTENTION, AND
+      THIS ITEM HAS BEEN PICKING TARGETS FROM THEM (2026-09-07, D-BATCHWALL).**
+      `ctllim-acceptance` reads **411 s** in the battery's unit list and **156.6 s
+      run alone** (`/usr/bin/time -p make ctllim-acceptance`, `CTLLIM: PASS`,
+      3 rows, 0 red) — a 2.6x gap for that unit, because ~78 emulator units share
+      ~8 workers and each one is measured while the others compete for CPU.
+      ⚠️ **2.6x IS ONE UNIT'S FACTOR, NOT A GLOBAL ONE** — no other unit was
+      timed both ways, so nothing here licenses scaling the whole list.
+      🎯 **THE CONSEQUENCE IS METHODOLOGICAL: a ranking taken from the battery's
+      unit times ranks CONTENTION, not work.** The three biggest entries today
+      (`ramfree` 443 s, `ctllim` 411 s, `graphics` 404 s) are the ones a reader
+      would attack first, and at least one of them is less than half that size in
+      isolation. Time a candidate ALONE before pricing a conversion for it.
+      🔴 **AND `ctllim` IS CONVERTIBLE BUT NOT WORTH CONVERTING** —
+      `scratchpad/batchcheck.py ctllim-acceptance` reads **batched 153.0 s vs
+      boot-per-case 155.4 s, every row identical, 1.0x**. Its cost is CASE
+      RUNTIME (`step=180.0`; the cases exhaust the control-frame pool on purpose),
+      not boots, so the whole boot-sharing idea cannot touch it. A CONVERTIBLE
+      verdict is a statement about SAFETY, not about value, and this is the first
+      row where the two come apart.
+      ⚠️ **`ramfree` (the single biggest) CANNOT BE JUDGED YET**: it calls
+      `run_cases` with a ONE-case matrix inside a Python loop, so the control
+      refuses it as `NOT TESTED` until the `run_side` restructure. It is one of
+      the "25 for-loop probes" — and that figure comes from the same grep this
+      entry already records as having over-counted.
       🔴 **`lineerr` WAS THE BIGGEST PRIZE IN THE BATTERY (~210 boots, 3.2x on
       offer) AND IT IS NOT AVAILABLE.** Its `d.*` rows PEEK system variables
       (`GRPACX`/`GRPACY`, `GXPOS`/`GYPOS`) that survive a case, so a shared boot
