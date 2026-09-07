@@ -410,7 +410,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:10333 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:10364 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -9980,10 +9980,41 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       [[an-unnamed-outcome-reads-as-no-outcome]]. A direct-mode `PRINT ERR,ERL`
       after `RUN` turns it into `u5,30` — untrapped ERROR 5 at line 30 — a
       reading rather than an absence.
-      ⚠️ **`AUTO` IS STILL UNMEASURED, AND THE REASON IS THE VERB**: it enters
+      ~~⚠️ **`AUTO` IS STILL UNMEASURED, AND THE REASON IS THE VERB**: it enters
       auto-line-number mode and swallows every following line as program text.
       Driving it needs an escape and a REPL that can prove it left the mode. Named
-      rather than quietly skipped; 1 of 3 remains.
+      rather than quietly skipped; 1 of 3 remains.~~
+      🔴 **DRIVEN 2026-09-07 (D-AUTO,
+      [`scratchpad/auto_probe.py`](scratchpad/auto_probe.py)) — AND THE ESCAPE IS
+      ITSELF A DIVERGENCE.**
+      | row | | vg8020 | cf3300 | zb |
+      |---|---|---|---|---|
+      | `a.esc` | CONTROL: no `AUTO`, numbers typed | `7,205` | `7,205` | `7,205` |
+      | `a.start` | `AUTO 200,5` | `7,205` | `7,205` | **`<NO READING>`** |
+      | `a.plain` | bare `AUTO` (default 10,10) | `7,20` | `7,20` | **`<NO READING>`** |
+      🎯 **THE REFERENCES LEAVE `AUTO` ON CTRL-C (`$03`), A CHARACTER; ZEROBAS
+      ONLY LEAVES ON CTRL-STOP.** The probe injects `$03` through KEYBUF, the
+      same path every typed line takes. Both references end the session and run;
+      zerobas reads it through `CHGET` as ordinary input, so it becomes program
+      text and `RUN` is swallowed too — hence no reading at all.
+      [`basic/repl.asm:102`](basic/repl.asm:102) says why, and its reasoning is
+      sound as far as it goes: *"Ctrl-STOP is not a character and never arrives
+      through CHGET … BREAKX scans the key matrix directly, which is the only
+      thing that can see it."* True — and it does not establish that Ctrl-C
+      should NOT also work, which is what the references do.
+      ⚠️ **SO `AUTO`'s NUMBERING IS MEASURED ON THE REFERENCES AND STILL
+      UNMEASURED HERE.** `a.plain` reading `7,20` on both pins the documented
+      10,10 default; `a.start` pins start-and-step separately. zerobas's own
+      numbering cannot be scored until the probe drives a REAL Ctrl-STOP through
+      the key matrix (`basic_probe_stop_trap` has that machinery) — the verb has
+      a full body (`ex_auto`, R-AU5/AU6/AU9), so this is not a stub.
+      🔴 **AND THE CONTROL EARNED ITS PLACE ON THE FIRST RUN.** `a.esc` read
+      `0,0` on ALL THREE — my handler was numbered 100, and `AUTO 200,5` makes
+      lines 200/205, so `RUN` reached the HANDLER before the body and printed
+      ERR 0 at ERL 0. Bare `AUTO` starts at 10, so `a.plain` worked and `a.start`
+      did not, which made a numbering mistake of mine look like an `AUTO`
+      difference. The handler is at 9000 now
+      [[a-case-that-agrees-can-agree-for-the-wrong-reason]].
       ⚠️ **NOT COLLECTED INTO A GATE.** Eight rows × three machines is 24 boots,
       and `make gates` is already ~15 min. The probe is committed and cited, so
       the measurement is repeatable — but it is a probe, not a pin, and a
