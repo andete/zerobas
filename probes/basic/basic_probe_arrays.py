@@ -501,9 +501,22 @@ CASES = [
     # 🎯 Pinning CLEAR at the OLD binding value restores the geometry EXACTLY and
     # makes the row depend only on a number it sets itself. A test whose squeeze
     # is defined by someone else's ceiling measures that ceiling, not its subject
+    # 🔴 AND THE SAME THING HAPPENED AGAIN, THROUGH THE OTHER TERM (D-FIELDFIX,
+    # 2026-09-07). The allocation ceiling is
+    # `min(HIMEM,TXTMAX) - POOLSIZE - MAXFILES*FCH_CTXSZ`. Pinning CLEAR fixed the
+    # FIRST two terms; FCH_CTXSZ then grew 50 -> 306 to make the record travel with
+    # its channel, the region lost 256 B, `DIM Z(1840)` stopped fitting AT ALL, and
+    # both rows went green-to-red on a change that again has nothing to do with
+    # what they test.
+    # 🎯 SO `MAXFILES=0` IS PINNED TOO, which zeroes the whole reservation term and
+    # leaves the squeeze depending ONLY on CLEAR and the DIM -- both numbers these
+    # rows set themselves. Re-sized to N=1845 against the pinned reservation
+    # (MEASURED with MAXFILES=0: N=1840 leaves 67 B, N=1846 leaves 19 B, so 1845
+    # leaves ~27 -- the ~26 B the original geometry had). Neither row uses a file,
+    # so reserving no channels costs them nothing.
     # [[a-coverage-row-whose-geometry-cannot-reach-the-case]].
     ("scalar.str.chain.oom",   "direct",
-        ['CLEAR 200,47872', 'DIM Z(1840)']
+        ['MAXFILES=0', 'CLEAR 200,47872', 'DIM Z(1845)']
         + [f'{c}$="1"' for c in "ABCDEFGHIJKLMNOPQRSTUVWXYZ"],
         "zberr"),
 
@@ -962,7 +975,7 @@ def _line_tokens(raw):
 # path even after ex_let_str's own fix); post-fix it is '1|Out of memory'.
 INPUT_OOM = [
     ("scalar.input.chain.oom",
-     ['CLEAR 200,47872', 'DIM Z(1840)'] +
+     ['MAXFILES=0', 'CLEAR 200,47872', 'DIM Z(1845)'] +
      [ln for c in "ABCDEFGHIJKLMNOPQRSTUVWXYZ" for ln in (f'LINE INPUT {c}$', '1')],
      "LINE INPUT Z$", "1|Out of memory"),
 ]

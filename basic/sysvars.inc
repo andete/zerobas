@@ -3176,7 +3176,27 @@ FCH_STATE0      equ     FAT_CURCLUS         ; $E9C9 — base of the per-channel 
 FCH_STATESZ     equ     FWR_DIROFF+2-FCH_STATE0     ; $E9C9..$E9FA inclusive = 50 bytes
 FCH_CEIL        equ     15      ; repack: the MEASURED reference ceiling (§3, exactly
                                 ; 15) — free now that unused channels cost nothing
-FCH_CTXSZ       equ     FCH_STATESZ         ; repack: block = state ONLY (no buffer)
+; 🔴 D-FIELDFIX: THE RECORD MUST TRAVEL WITH THE CHANNEL, AND IT STOPPED.
+; basic/field.asm's header states the premise its code rests on -- "the record
+; buffer is the channel's FSECTOR_BUF ... so a field's bytes live in the
+; channel's context and TRAVEL WITH IT" -- and the repack then made the block
+; ~~state ONLY (no buffer)~~, withdrawing exactly that. Nothing re-read the
+; header, so the premise stayed in the source after the mechanism left.
+; The write-back cache does not cover the gap either: fat_restage_channel
+; handles mode 1 (INPUT) and 2 (OUTPUT) and returns for everything else,
+; fat_detach_channel flushes only mode 2 -- a RANDOM channel is outside both.
+; Measured: `F$` on #1 returned #2's record (D-FIELDALIAS) and `LSET F$` +
+; `PUT #1` wrote #2's bytes into #1's FILE (D-FIELDWRITE), corruption that
+; survives the program.
+; 💰 THE COST IS THE REFERENCE'S OWN, NOT A ZEROBAS TAX. D-MAXFRE stepped
+; MAXFILES 0..4 and read FRE(0): BOTH references charge exactly -267 B per
+; channel at every step, and the VG-8020 does it while DISKLESS -- so this is
+; base MSX BASIC's file-buffer reservation, reserved UP FRONT (D-RESERVE: OPEN
+; adds only 11 B, the same 11 zerobas already pays) and NOT sized by LEN=.
+; 267 = 256 + 11. Growing the block to hold the record charges the same thing in
+; the same way; zerobas's 50 was the outlier.
+FCH_RECMAX      equ     256     ; the largest record (the OPEN LEN= domain is 1..256)
+FCH_CTXSZ       equ     FCH_STATESZ + FCH_RECMAX
 ; --- Phase 2c slice 1: random-access FIELD table + fielded-read scratch -----
 ; zerobas stores string vars INLINE in STRTAB ([name0][name1][len][bytes:32]); a
 ; MS-BASIC-style descriptor pointing into a record buffer does not exist. So a

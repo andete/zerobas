@@ -1281,6 +1281,13 @@ fch_save_active:
                 ld      hl,FCH_STATE0       ; copy the 50-byte engine-state span
                 ld      bc,FCH_STATESZ
                 ldir                        ; DE -> ctx + FCH_STATESZ
+                ; D-FIELDFIX: and the RECORD travels too, which field.asm's header
+                ; has always said it does. DE already points at the block's record
+                ; slot. Without this a FIELD on a non-current channel slices
+                ; whatever the last GET left in the one global buffer.
+                ld      hl,FSECTOR_BUF
+                ld      bc,FCH_RECMAX
+                ldir
                 ret
 
 ; fch_load_ctx — load channel A's context block into the engine globals and make
@@ -1293,6 +1300,9 @@ fch_load_ctx:
                 ld      de,FCH_STATE0
                 ld      bc,FCH_STATESZ
                 ldir                        ; ctx state -> globals
+                ld      de,FSECTOR_BUF      ; D-FIELDFIX: restore THIS channel's
+                ld      bc,FCH_RECMAX       ; record -- the twin of the save above
+                ldir
                 pop     af
                 ld      (FCH_ACTIVE),a
                 jp      fch_restage         ; re-read this channel's staged sector

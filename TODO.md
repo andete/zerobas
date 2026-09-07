@@ -10704,7 +10704,36 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
         outside the `FCH_STATE0..FWR_DIROFF` span) and a DIRTY bit so `LSET`
         without a `PUT` survives a switch. That is a designed change rather than
         a 16-byte patch, and it is the one worth making.
-        🔴 **SECOND ATTEMPT ALSO FAILED (2026-09-07, D-WBRAND) — AND IT FAILED
+        🟢 **SHIPPED 2026-09-07 (D-FIELDFIX) — OPTION A, ON JOOST'S CALL AFTER
+        THE RESERVATION EVIDENCE. BOTH DEFECTS CLOSED, 114/114 GREEN.**
+        `FCH_CTXSZ` 50 → 306 (`FCH_STATESZ + FCH_RECMAX`), plus one `ldir` in
+        each of `fch_save_active` / `fch_load_ctx` so the record travels with its
+        channel — which is what [`basic/field.asm`](basic/field.asm:21)'s header
+        always claimed. **16 B of main page 1** (23 → 7 B free, 2026-09-07).
+        | probe | before | after |
+        |---|---|---|
+        | `fieldalias` `Q$` | `ZZZZZZZZ` | **`AAAAAAAA`** = CF-3300 |
+        | `fieldwrite` `w.two` | `22222222/22222222` | **`11111111/22222222`** = CF-3300 |
+        🎯 **AND THE RAM IS THE REFERENCE'S OWN PRICE, PAID THE REFERENCE'S WAY** —
+        D-MAXFRE and D-RESERVE measured it: reserved UP FRONT at `MAXFILES` time,
+        −267 B per channel on BOTH references at every step, a FIXED block not
+        sized by `LEN=`, and the VG-8020 charges it while DISKLESS.
+        🔧 **THE TWO ROWS THAT WENT RED WERE BOTH CALIBRATION, AND BOTH ARE NOW
+        IMMUNE RATHER THAN RE-TUNED.**
+        • `ramfree` `ctl.pool` pinned the control pool at a hardcoded `$D980`,
+        which the lowered ceiling put ABOVE the pool top (`$D906`) — so it
+        truthfully reported "the pool did not move" about a window no longer in
+        it. It now derives its window from **`CTLTOP` on the machine**, which is
+        what the probe's own comment had already said would be better; the row
+        reads a stronger result than before (16 of 16 bytes moved).
+        • `array`'s two chain-OOM rows are a deliberately room-filling `DIM`
+        calibrated against the allocation ceiling. That comment already records
+        being bitten this way ONCE — *"raising TXTMAX … handed the row 2128 B it
+        did not expect"* — and the fix then was to pin `CLEAR`. The ceiling has
+        THREE terms and only two were pinned; `MAXFILES=0` is now pinned too, so
+        the squeeze depends solely on numbers the rows set themselves, and the
+        `DIM` is re-sized to 1845 (measured: 1840 → 67 B, 1846 → 19 B).
+        ~~🔴 **SECOND ATTEMPT ALSO FAILED (2026-09-07, D-WBRAND) — AND IT FAILED
         WORSE THAN THE FIRST.** Joost asked for the low-RAM shape, so: a fixed
         16-entry `FCH_RECNOS` word array (32 B total, **not** per reserved
         channel), noted by the `t_fat_rand_get`/`t_fat_rand_put` tenant wrappers,
@@ -10782,7 +10811,7 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
         work as written. A third shape — restage-only, with the write-back left
         to the existing `PUT` rather than done at switch time — is untried and is
         where I would start: it removes the mid-switch WRITE, which is the half
-        that plausibly re-enters.
+        that plausibly re-enters.~~ **← SUPERSEDED: option A shipped, above.**
         ⚠️ **THE CONTROL FAILED FIRST, FOR A REASON THAT WAS MINE**: its lines
         were numbered 10/20/50/30/60 to mirror the other row visually, so BASIC
         SORTED them and re-opened `#1` while it was still open — `<NO READING>`

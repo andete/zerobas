@@ -71,7 +71,18 @@ SYSVARS = os.path.join(ROOT, "basic", "sysvars.inc")
 # that ceiling are the FIRST a GOSUB frame takes. Read from the machine would be
 # better; a fixed probe address a few frames down is enough for a control whose
 # only job is "something happened".
-POOL_PROBE, POOL_N = 0xD980, 16
+# \U0001f534 DERIVED FROM THE MACHINE, NOT HARDCODED -- and the comment above used to
+# say a fixed address was "enough". It was, until the ceiling moved: D-FIELDFIX
+# grew the per-channel block by 256 B, `strheap_varceil()` dropped with it, and
+# $D980 ended up ABOVE the pool top ($D906) instead of a few frames below it.
+# The row then read "the GOSUB nest did NOT move the control pool" -- a true
+# statement about a window that was no longer in the pool.
+# CTLTOP ($E052) caches `strheap_varceil()` on the machine, so the workload can
+# compute its own window and no constant can go stale again.
+CTLTOP_ADDR = 0xE052    # the pool's TOP, cached in RAM (sysvars.inc)
+POOL_BACKOFF = 24       # a few frames below the top, where a GOSUB writes first
+POOL_N = 16
+POOL_BASE = "PB"        # the BASIC variable the workload computes it into
 MAX_SPANS = 8           # Q0..Q7 counters; more would need a second letter
 
 
@@ -127,7 +138,7 @@ def face(cap):
     return (" ".join(ms[-1].split()) or "<empty>") if ms else "<NO OUTPUT>"
 
 
-def build(spans, lines, poke, errcont):
+def build(spans, lines, poke, errcont, pool_span=False):
     """The BASIC program: fill every span, run the workout, count per span.
     ⚠️ Index `P`, counters `Q0..`; the workouts use A-K, X, Z$ and A$/B$, and
     the ancestor was bitten by a nest that clobbered the instrument's own
@@ -148,14 +159,21 @@ def build(spans, lines, poke, errcont):
     # basic_probe_ctllim.py needs for its own tally.
     names = " ".join(f"Q{i}=0:" for i in range(len(spans)))
     body, ln = ["10 ON ERROR GOTO 900", f"15 P=0:Q9=0:Q8=0:{names}P=0"], 20
-    for i, (lo, hi) in enumerate(spans):                       # fill
+    # base EXPRESSION per span: a literal for the declared windows, and the
+    # machine's own CTLTOP for the pool probe (see POOL_BASE above)
+    bases = [f"&H{lo:04X}" for lo, _hi in spans]
+    if pool_span:
+        bases[-1] = POOL_BASE
+        body.append(f"17 {POOL_BASE}=PEEK(&H{CTLTOP_ADDR:04X})"
+                    f"+256*PEEK(&H{CTLTOP_ADDR+1:04X})-{POOL_BACKOFF}")
+    for i, ((lo, hi), base) in enumerate(zip(spans, bases)):   # fill
         body.append(f"{ln} P=0")
-        body.append(f"{ln+10} POKE &H{lo:04X}+P,((P+{i}) AND 255):P=P+1"
+        body.append(f"{ln+10} POKE {base}+P,((P+{i}) AND 255):P=P+1"
                     f":IF P<{hi-lo} THEN {ln+10}")
         ln += 20
     if poke:                                                   # the control
-        for lo, _hi in spans:
-            body.append(f"{ln} POKE &H{lo:04X},PEEK(&H{lo:04X}) XOR 255")
+        for base in bases:
+            body.append(f"{ln} POKE {base},PEEK({base}) XOR 255")
             ln += 10
     for line in lines or []:
         # `{SELF}` is this line's own number -- a workout that loops cannot know
@@ -164,9 +182,9 @@ def build(spans, lines, poke, errcont):
         body.append(f"{ln} " + line.replace("{SELF}", str(ln)))
         ln += 10
     check = ln
-    for i, (lo, hi) in enumerate(spans):                       # count
+    for i, ((lo, hi), base) in enumerate(zip(spans, bases)):   # count
         body.append(f"{ln} Q{i}=0:P=0")
-        body.append(f"{ln+10} IF PEEK(&H{lo:04X}+P)<>((P+{i}) AND 255) "
+        body.append(f"{ln+10} IF PEEK({base}+P)<>((P+{i}) AND 255) "
                     f"THEN Q{i}=Q{i}+1")
         body.append(f"{ln+20} P=P+1:IF P<{hi-lo} THEN {ln+10}")
         ln += 30
@@ -209,9 +227,11 @@ def main():
 
     fails, w = [], max(len(c[0]) for c in CASES)
     for label, lines, step, disk, errcont, expect in sel:
-        watch = spans + ([(POOL_PROBE, POOL_PROBE + POOL_N)]
-                         if expect == "POOL" else [])
-        body = build(watch, lines, expect == "POKE", errcont)
+        # the pool window's ADDRESSES are placeholders -- only its LENGTH is
+        # used, because build() computes the base from CTLTOP on the machine
+        watch = spans + ([(0, POOL_N)] if expect == "POOL" else [])
+        body = build(watch, lines, expect == "POKE", errcont,
+                     pool_span=(expect == "POOL"))
         kw = {}
         tmp = None
         if disk:
@@ -249,7 +269,7 @@ def main():
                     if ok else
                     "🔴 the GOSUB nest did NOT move the control pool -- either "
                     "the workout never ran or the pool is not at "
-                    f"${POOL_PROBE:04X}")
+                    f"CTLTOP-{POOL_BACKOFF}")
         else:
             ok = all(int(v) == 0 for v in vals)
             note = "clean" if ok else "🔴 A DECLARED-FREE WINDOW WAS WRITTEN"
