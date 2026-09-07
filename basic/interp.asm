@@ -946,7 +946,7 @@ ex_let_str:
                 push    hl                  ; guard cursor across str_set_key
                 ld      de,(STRPTR)         ; DE -> source descriptor
                 call    str_set_key         ; A$[key] := descriptor (clamped)
-                jp      fp_stmt_done        ; D-CARVE3 (-7 B, main page 1)
+                jr      fp_stmt_done        ; D-CARVE3 (-7 B, main page 1)
 
 ; --- skip_spaces: advance HL past 0x20 bytes -------------------------------
 skip_spaces:

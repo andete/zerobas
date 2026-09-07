@@ -388,7 +388,7 @@ oas_yes:
 exp_comma:
                 inc     hl
                 call    print_comma_zone    ; pad to the next 14-column zone
-                jp      exp_stmt_end        ; D-CARVE3 (-10 B, main page 1)
+                jr      exp_stmt_end        ; D-CARVE3 (-10 B, main page 1)
 
 ; --- print_number: DE = signed-16 value -> screen --------------------------
 ; Formats into NUMBUF (sign/space, digits, trailing space, 0) then print_string.

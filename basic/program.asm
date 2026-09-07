@@ -2134,7 +2134,7 @@ ers_line:
 ers_find:
                 call    find_line_bc        ; CF set + HL = line link-field
                 jr      nc,ers_undef
-                jp      restore_done        ; D-CARVE3 (-8 B, main page 1)
+                jr      restore_done        ; D-CARVE3 (-8 B, main page 1)
 ers_undef:
                 pop     hl                  ; balance the stack
                 jp      ex_goto_undef       ; reuse "undefined line"

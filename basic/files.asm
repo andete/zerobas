@@ -723,7 +723,7 @@ oocas_do_out:
 oocas_mark:
                 pop     hl                  ; text cursor
                 pop     de                  ; channel
-                jp      oo_stamp_devtype    ; D-CARVE2 (-10 B, main page 1)
+                jr      oo_stamp_devtype    ; D-CARVE2 (-10 B, main page 1)
 oocas_ioerr:
                 pop     hl
                 pop     de
