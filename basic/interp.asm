@@ -972,8 +972,13 @@ skip_spaces:
 ; a fixed span window with up to two operands masked; the other six differ beyond
 ; that window. Its estimate also assumes a plain `call`, which this is not. The
 ; family was found by grepping the IDIOM, and the price measured by building it.
-; 🟢 All nine callers and skip_spaces are page 1, so no caller reaches across the
-; low/page-1 boundary to get here.
+; ~~🟢 All nine callers and skip_spaces are page 1, so no caller reaches across the
+; low/page-1 boundary to get here.~~ 🔴 NO LONGER TRUE as of D-MAXFTAIL
+; (2026-09-07): `mxf_require_end` lives in main.asm's LOW region and calls in from
+; there. That is fine — both regions are mapped and the low region already `jp`s
+; to raise_error in page 1 — but the sentence claimed a property of the caller set
+; that a later caller quietly broke, so it is corrected rather than left standing
+; [[a-fix-falsifies-the-justification-beside-it]].
 stmt_bare_end:
                 inc     hl                  ; past the statement's token
                 call    skip_spaces

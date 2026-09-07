@@ -410,7 +410,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:10947 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:10988 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -575,7 +575,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:2423 (T-6FE392)8 (T-529ABE)` from `TODO.md:9884 (T-529ABE)`: a
+      `TODO.md:2423 (T-6FE392)8 (T-529ABE)` from `TODO.md:9925 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -3061,7 +3061,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:9884 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:9925 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -4161,6 +4161,47 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `tools/redundant-load-reviewed.txt` with no candidate, and
       `redundant-load-check` calls that *"how this control goes blind"*. RETIRED
       with its reason, on the `print_crlf` precedent in the same file.
+      🔴 **THE SLOPPY-ACCEPT CLASS D-FMTTAIL OPENED IS ALSO SWEPT, AND IT FOUND A
+      DATA-LOSS DEFECT (2026-09-08, D-TAILJUNK → D-MAXFTAIL,
+      [`scratchpad/tailjunk_probe.py`](scratchpad/tailjunk_probe.py),
+      [`scratchpad/maxfilestail_probe.py`](scratchpad/maxfilestail_probe.py)).**
+      D-FMTTAIL fixed `CALL FORMAT` swallowing everything after its name and never
+      swept the class. 24 complete statements, each given a trailing `ZZ`, three
+      machines: **every one agreed except `MAXFILES`**, which gave **no reading at
+      all** on zerobas.
+      🎯 **A BLANK IS AN ABSENCE, SO THE SCREEN WAS READ INSTEAD OF THE FENCE**, and
+      it says `Syntax error in 20` — **UNTRAPPED**, escaping an `ON ERROR GOTO` that
+      both references honour.
+      🔴 **AND THE UNTRAPPABLE ERROR WAS THE *VISIBLE* HALF. THE OTHER HALF WAS
+      SILENT DATA LOSS.** `MAXFILES` performs a `CLEAR` (D-FCH §3.2:
+      unconditionally), and `CLEAR` disarms the error trap — so zerobas executed the
+      statement, wiped the variables AND the handler, and only then tripped over
+      `ZZ` with nothing left to catch it. Setting `A=42` first shows the references
+      do it the other way round:
+      | | handler | `A` afterwards |
+      |---|---|---|
+      | vg8020 / cf3300 | `A=42 ERR=2` | `42` |
+      | zb **before** | **never ran** | **`0`** |
+      | zb **after** | `A=42 ERR=2` | `42` |
+      **So a typo after `MAXFILES=` destroyed the user's variables.** Fixed by
+      requiring end-of-statement BEFORE the commit: `mxf_require_end` in the low
+      region + one `call` in `ex_maxfiles`. Low 26 → 18 B, page 1 4 → **1 B**
+      (`make basic-reloc` from clean, 2026-09-08). Legal, `:`-tail and ceiling forms
+      all re-checked; battery 114/114.
+      🔴 **A STALE COMMENT COST A BUILD.** `oo_fail_bfn`'s header says *"The body
+      lives in main.asm's low region (page 1 is the scarce wall)"* — it does NOT:
+      those raisers sit at **`$7FEE`, in page 1's TAIL**. A body appended there on
+      the strength of that sentence overran the `$8000` ceiling. Corrected in place;
+      the real low region is the include block above `__MEAS_LOW_END`
+      [[a-fix-falsifies-the-justification-beside-it]].
+      🔴 **AND THE FIX FALSIFIED A COMMENT OF ITS OWN**: `stmt_bare_end`'s header
+      read *"All nine callers and skip_spaces are page 1, so no caller reaches
+      across the low/page-1 boundary to get here"*, and `mxf_require_end` now does.
+      Mechanically fine — co-mapped pages, and the low region already `jp`s to
+      `raise_error` — but struck and corrected rather than left standing.
+      🟢 **`CLOSE ZZ` AND `CLEAR ZZ` SWALLOW THE TAIL ON ALL THREE MACHINES.** That
+      is the reference's own sloppiness and a faithful reimplementation must KEEP
+      it; recorded so it is not "fixed" later.
       🔴 **AND THE BARE-FORM CLASS IS *NOT* CLEAN: 7 NEW DIVERGENCES FROM ONE
       SWEEP (2026-09-07, D-BAREFORM,
       [`scratchpad/bareform_probe.py`](scratchpad/bareform_probe.py),

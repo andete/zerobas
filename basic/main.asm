@@ -143,6 +143,21 @@ SUB_BUILD       equ     0
 ; docs/rom-region-structure-review.md §5.
 
 
+; mxf_require_end — MAXFILES's operand must be the LAST thing in the statement
+; (D-MAXFTAIL). Sited here for the same reason the two raisers below page 1's tail
+; were: page 1 pays one `call` and nothing else. It is reached from files.asm by an
+; ordinary in-slot call — the two regions are co-mapped slot-0 pages.
+; ⚠️ `stmt_bare_end` (interp.asm) does its own `inc hl` — it REPLACES a caller's
+; opening advance rather than following it — so the `dec hl` cancels that and
+; leaves HL where eval_byte_arg left it. On the Z path HL has been walked past any
+; spaces onto the ':' or the $00, which is what exec_stmt wants anyway.
+mxf_require_end:
+                dec     hl
+                call    stmt_bare_end       ; Z iff the statement ends here
+                ret     z
+                jp      stmt_error          ; anything else -> ERR 2, raised BEFORE
+                                            ; the CLEAR that would eat the variables
+
 ; low-region overflow guard: the low-region tenants must not reach the $4000 header.
 ; If they do, the `ds` below would be negative (pasmo warns + emits nothing, a silent
 ; corruption), so assert first — an overrun references an undefined symbol -> clean
@@ -376,6 +391,11 @@ __MEAS_LOW_END:
 
 ; The two raisers. Sited here (not in files.asm/expr.asm) so page 1 pays nothing
 ; for them; reached by ordinary in-slot `jp` from page 1, both regions mapped.
+; 🔴 D-MAXFTAIL (2026-09-07): oo_fail_bfn's own header calls this "main.asm's
+; low region", and it is NOT — these sit at $7FEE, in page 1's TAIL. The claim
+; cost a build: a body appended here on the strength of it landed in the scarce
+; page. The genuine low region is the include block near the top of this file,
+; above __MEAS_LOW_END, which is where mxf_require_end went instead.
 oo_fail_bfn:                                ; OPEN's bad-file-number reject (ERR 52)
                 xor     a                   ; -- same FCH_MODE clear oo_fail_syn does
                 ld      (FCH_MODE),a        ; (the provisional mode must not survive

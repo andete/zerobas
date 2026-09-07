@@ -1,0 +1,29 @@
+  t.ctl     POKE&HC000,0     vg=SWALLOWED  cf=SWALLOWED  zb=SWALLOWED 
+  poke      POKE&HC000,0 ZZ  vg=ERR 2      cf=ERR 2      zb=ERR 2     
+  vpoke     VPOKE 0,0 ZZ     vg=ERR 2      cf=ERR 2      zb=ERR 2     
+  out       OUT &HA0,0 ZZ    vg=ERR 2      cf=ERR 2      zb=ERR 2     
+  locate    LOCATE 0,0 ZZ    vg=ERR 2      cf=ERR 2      zb=ERR 2     
+  color     COLOR 15,4,4 ZZ  vg=ERR 2      cf=ERR 2      zb=ERR 2     
+  screen    SCREEN 0 ZZ      vg=ERR 2      cf=ERR 2      zb=ERR 2     
+  width     WIDTH 40 ZZ      vg=ERR 2      cf=ERR 2      zb=ERR 2     
+  sound     SOUND 0,0 ZZ     vg=ERR 2      cf=ERR 2      zb=ERR 2     
+  cls       CLS ZZ           vg=ERR 2      cf=ERR 2      zb=ERR 2     
+  tron      TRON ZZ          vg=ERR 2      cf=ERR 2      zb=ERR 2     
+  troff     TROFF ZZ         vg=ERR 2      cf=ERR 2      zb=ERR 2     
+  beep      BEEP ZZ          vg=ERR 2      cf=ERR 2      zb=ERR 2     
+  motor     MOTOR OFF ZZ     vg=ERR 2      cf=ERR 2      zb=ERR 2     
+  keyoff    KEY OFF ZZ       vg=ERR 2      cf=ERR 2      zb=ERR 2     
+  close     CLOSE ZZ         vg=SWALLOWED  cf=SWALLOWED  zb=SWALLOWED 
+  clear     CLEAR ZZ         vg=SWALLOWED  cf=SWALLOWED  zb=SWALLOWED 
+  restore   RESTORE ZZ       vg=ERR 8      cf=ERR 8      zb=ERR 8     
+  defint    DEFINT Q ZZ      vg=ERR 2      cf=ERR 2      zb=ERR 2     
+  maxfiles  MAXFILES=1 ZZ    vg=ERR 2      cf=ERR 2      zb=<none>       🔴 DIFF
+  time      TIME=0 ZZ        vg=ERR 2      cf=ERR 2      zb=ERR 2     
+  pset      PSET(0,0) ZZ     vg=ERR 5      cf=ERR 5      zb=ERR 5     
+  preset    PRESET(0,0) ZZ   vg=ERR 5      cf=ERR 5      zb=ERR 5     
+  erase     ERASE Q ZZ       vg=ERR 5      cf=ERR 5      zb=ERR 5     
+  swap      SWAP A,B ZZ      vg=ERR 5      cf=ERR 5      zb=ERR 5     
+
+=== 1 divergence(s): ['maxfiles'] ===
+    REFS-SPLIT (0): none
+    🟢 ['close', 'clear'] swallow the tail on ALL THREE -- agreement, and NOT a zerobas defect. Worth writing down as the reference's own sloppiness, which a faithful reimplementation must KEEP.

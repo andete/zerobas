@@ -1867,6 +1867,16 @@ ex_maxfiles:
                 call    eval_byte_arg       ; A = E = 0..255; ERR 6 >int16, ERR 5 else
                 cp      FCH_CEIL+1
                 jp      nc,gb_illegal       ; > FCH_CEIL -> ERR 5
+                ; 🔴 D-MAXFTAIL: THE STATEMENT MUST END HERE, AND THE CHECK MUST
+                ; COME BEFORE THE COMMIT. `MAXFILES=1 ZZ` used to execute the whole
+                ; statement and only then trip over `ZZ` -- by which point
+                ; `clr_done`'s CLEAR had WIPED THE USER'S VARIABLES and disarmed
+                ; `ON ERROR`, so the Syntax error was UNTRAPPABLE too. Both
+                ; references reject it first: measured A=42,ERR=2 on each against
+                ; A=0 and no handler here (scratchpad/maxfilestail_probe.py).
+                ; The body is in main.asm's low region, on oo_fail_bfn's precedent
+                ; -- page 1 pays only this call.
+                call    mxf_require_end
                 push    de                  ; guard the requested value
                 push    hl                  ; guard the text cursor across CALSLT
                 call    fch_close_all       ; MAXFILES reinitialises: close everything
