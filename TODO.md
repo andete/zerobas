@@ -410,7 +410,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:10792 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:10830 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -575,7 +575,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:2423 (T-6FE392)8 (T-529ABE)` from `TODO.md:9729 (T-529ABE)`: a
+      `TODO.md:2423 (T-6FE392)8 (T-529ABE)` from `TODO.md:9767 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -3061,7 +3061,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:9729 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:9767 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -4128,6 +4128,44 @@ list. **When a slice lands, grep this list for what it just shipped.**
       D-FNEXPR2 closed at six verbs while its own plan said *"a row on each of
       `OPEN`/`KILL`/`NAME`"*, and the verb it dropped is the one that diverges
       [[a-row-written-off-as-out-of-scope-leaves-the-bookkeeping]].
+      🔴 **AND THE DENOMINATOR WAS STILL SHORT BY ONE VERB A YEAR LATER: `MERGE`
+      WAS NEVER CONVERTED.** Found 2026-09-07 by READING, in the standing review
+      tier (D-MERGEXPR,
+      [`scratchpad/mergexpr_probe.py`](scratchpad/mergexpr_probe.py),
+      [`.out`](scratchpad/mergexpr_run4.out)). Nine verbs call `fname_expr`;
+      [`basic/files.asm`](basic/files.asm) `ex_merge` opened with
+      `cp '"' / jp nz,stmt_error` and went straight to `parse_disk_fcb`.
+      | row | | cf3300 | zb before | zb after |
+      |---|---|---|---|---|
+      | `m.lit` | `MERGE"A:NOSUCH.BAS"` | `ERR 53` | `ERR 53` | `ERR 53` |
+      | `m.var` | `A$=…:MERGE A$` | `ERR 53` | **`ERR 2`** | `ERR 53` |
+      | `m.concat` | `MERGE "A:"+"NOSUCH.BAS"` | `ERR 53` | **`ERR 56`** | `ERR 53` |
+      | `m.bare` | `MERGE` | `ERR 24` | **`ERR 2`** | `ERR 24` |
+      | `m.colon` | `MERGE:PRINT"x"` | `ERR 24` | — | `ERR 24` |
+      | `m.num` | `MERGE 5` | `ERR 13` | **`ERR 2`** | `ERR 13` |
+      | `k.var` | `A$=…:KILL A$` | `ERR 53` | `ERR 53` | `ERR 53` |
+      **4 DIFF → 0, and it SAVED a byte** (main page 1 6 B → 7 B, `make
+      basic-reloc` from clean, 2026-09-07).
+      🎯 **EVERY ROW NAMES A FILE THAT DOES NOT EXIST, WHICH SEPARATES PARSING
+      FROM I/O BY ERROR CODE** — `ERR 53` means the name was evaluated then looked
+      up, `ERR 2` means it was never evaluated at all. No fixture CONTENT is
+      needed, which is what made a 7-row differential cheap. `m.lit` pins that the
+      file is genuinely absent; `k.var` pins that zerobas's own `fname_expr` path
+      works for `KILL`, so `m.var` is about `MERGE` and not a broken shared helper.
+      🔴 **TWO GATES CAUGHT THE FIX, AND BOTH WERE RIGHT.** (1) The first cut
+      jumped to `g8_missing`, which lives in `graphics.asm` under `G8_RESIDENT`,
+      from an always-assembled site — `make switch-build-check` failed the
+      `G8_RESIDENT=0` build, the same class D-CARVE2 hit eleven days earlier.
+      `loc_missing` already has the ELSE arm and costs the shipping build nothing.
+      (2) Deleting `merge_cas`'s `ld a,(hl)` left `cas_capture_name` in
+      `tools/redundant-load-reviewed.txt` with no candidate, and
+      `redundant-load-check` calls that *"how this control goes blind"*. RETIRED
+      with its reason, on the `print_crlf` precedent in the same file.
+      ⚠️ **`m.colon` AGREES FOR A REASON I HAVE NOT ESTABLISHED.** The explicit
+      guard is `or a`, which tests only for `$00`; a colon is not zero, so it
+      reaches `fname_expr` and comes back `ERR 24` by some path inside `str_eval`
+      that was not traced. The row is green and the mechanism is NOT claimed
+      [[a-case-that-agrees-can-agree-for-the-wrong-reason]].
       💰 **SCOUTED AND PRICED 2026-09-02 — +6 B, AND THE MECHANISM IS ALREADY
       PROVEN BY A GREEN ROW.** The reference rule is *look the old file up FIRST,
       then evaluate the new name*, so the reorder moves `call fname_expr` (the

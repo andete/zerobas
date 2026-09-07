@@ -58,7 +58,14 @@ var_name_key     CLOBBER  returns A = the RESOLVED TYPE (VARTYPE), HL past the n
 # entry as STALE in the same run -- which is the whole point of a review
 # file that must KEEP MATCHING: an entry that asserts nothing is how this
 # control goes blind.
-cas_capture_name CLOBBER  exits having written CAS_WANT_ON / a CF verdict
+# cas_capture_name -- RETIRED 2026-09-07 (D-MERGEXPR). It read:
+#   cas_capture_name CLOBBER  exits having written CAS_WANT_ON / a CF verdict
+# Its only candidate was merge_cas's `ld a,(hl)` re-read, part of an
+# "unterminated string" test that the fname_expr conversion deleted: the staged
+# copy is '"'-terminated by construction, so that error could no longer fire.
+# With the candidate gone the entry asserted nothing, and the gate said so in
+# the same run that the conversion landed -- which is exactly what this file is
+# for. Retired rather than deleted, on print_crlf's precedent below.
 # print_crlf -- RETIRED 2026-08-26 (D-PUSING). It read:
 #   print_crlf       CLOBBER  tail-jumps into pchar with A = 10
 # and it is gone for the same reason parse_disk_fcb above is: its candidate is

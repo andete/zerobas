@@ -1907,20 +1907,47 @@ ex_maxfiles:
 ; user file channel is open is undefined (documented). Token $B6 oracle-locked.
 ; Sources: MSX-BASIC language reference (MERGE merges ASCII line-numbered programs);
 ; the ASCII save format = line text + CR/LF, Ctrl-Z terminator. See PROVENANCE §MERGE.
+; 🔴 D-MERGEXPR: MERGE'S FILENAME IS A STRING EXPRESSION, AND THIS WAS THE LAST
+; VERB STILL ON THE QUOTE TEST. D-FNEXPR2/D-FILESIDE converted nine (BLOAD, LOAD,
+; FILES, OPEN, KILL, NAME x2, SAVE, BSAVE) and `ex_merge` was missed: it opened
+; with `cp '"' / jp nz,stmt_error` and went straight to parse_disk_fcb, with no
+; fname_expr anywhere. Found by READING, in the standing review tier.
+; MEASURED (scratchpad/mergexpr_probe.py, CF-3300 vs zerobas, 4 rows DIFF):
+;     MERGE A$              ERR 53 File not found   <- was ERR 2 Syntax error
+;     MERGE "A:"+"NOSUCH"   ERR 53                  <- was ERR 56
+;     MERGE                 ERR 24 Missing operand  <- was ERR 2
+;     MERGE 5               ERR 13 Type mismatch    <- was ERR 2
+; The last two are the faces the deleted quote gate used to produce, and they are
+; why the bare test below is explicit: `fname_expr` hands a non-string to
+; els_tc_common (ERR 13, free), but NOTHING in it answers "no operand at all".
 ex_merge:
                 inc     hl                  ; HL -> bytes after the MERGE token
                 call    skip_spaces
-                cp      '"'
-                jp      nz,stmt_error       ; filename string required
-                inc     hl                  ; HL -> first filename char (inside quotes)
+                or      a
+                jp      z,loc_missing       ; bare MERGE -> ERR 24 (MEASURED)
+                                            ; 🔴 `loc_missing`, NOT `g8_missing`:
+                                            ; the latter lives in graphics.asm and
+                                            ; only exists under G8_RESIDENT, while
+                                            ; ex_merge is ALWAYS assembled --
+                                            ; `make switch-build-check` caught the
+                                            ; first cut on exactly that. missing.asm
+                                            ; already carries the ELSE arm, so this
+                                            ; name is defined either way and costs
+                                            ; the shipping build nothing.
+                call    fname_expr          ; the filename is an EXPRESSION; HL ->
+                                            ; the staged '"'-terminated copy
                 ; device dispatch: "CAS:" -> tape ASCII merge; else -> disk. dev_cmp
                 ; advances HL past a matched prefix, restores it on a miss (so the
-                ; disk path still sees HL at the filename start).
+                ; disk path still sees HL at the staged name's start).
+                ; ⚠️ THE DISPATCH NOW RUNS ON THE STAGED COPY, not on program text --
+                ; the same move do_open documents, so `MERGE A$` with A$="CAS:X"
+                ; reaches the tape arm exactly as the literal does.
                 ld      de,dev_cas
                 call    dev_cmp
                 jr      z,merge_cas         ; matched "CAS:" -> tape merge (HL past prefix)
                 call    parse_disk_fcb      ; build DISK_FCB_NAME; HL -> closing '"'
-                inc     hl                  ; past the closing '"'
+                ld      hl,(FN_RESUME)      ; resume past the EXPRESSION, not past a
+                                            ; quote in the staging buffer
                 ld      a,(DISKSLOT_OK)
                 or      a
                 jp      z,load_error
@@ -1951,10 +1978,11 @@ mrg_ioerr:
 ; name (MERGE"CAS:") merges the next file, unchanged.
 merge_cas:
                 call    cas_capture_name    ; -> CAS_WANT + CAS_WANT_ON; HL on '"'
-                ld      a,(hl)
-                cp      '"'
-                jp      nz,stmt_error       ; unterminated string
-                inc     hl                  ; past the closing '"'
+                ; D-MERGEXPR: the name came from fname_expr's staged copy, which is
+                ; ALWAYS '"'-terminated by construction, so the old "unterminated
+                ; string" test here could no longer fire. The cursor resumes past
+                ; the EXPRESSION, exactly as on the disk arm above.
+                ld      hl,(FN_RESUME)
                 push    hl                  ; guard the text cursor across the merge
                 call    cas_open_match      ; find the (named) $EA file; header consumed
                 jr      c,mc_ioerr

@@ -1,0 +1,9 @@
+  m.lit     cf3300=      ERR 53  zb=      ERR 53   CONTROL: the literal form -- must be ERR 53 (File not found) on both
+  m.var     cf3300=      ERR 53  zb=      ERR 53   THE SUBJECT: a variable. 53 = evaluated; 2 = the quote test refused it
+  m.concat  cf3300=      ERR 53  zb=      ERR 53   an expression that is not a bare variable -- same question
+  m.bare    cf3300=      ERR 24  zb=      ERR 24   bare MERGE, no argument at all -- the face the quote gate produces today
+  m.colon   cf3300=      ERR 24  zb=      ERR 24   MERGE with a COLON, not end-of-line -- the second no-operand shape, and a fix that tests only for $00 would answer this one differently
+  m.num     cf3300=      ERR 13  zb=      ERR 13   a NUMBER, not a string -- Type mismatch (13) if evaluated, Syntax (2) if refused
+  k.var     cf3300=      ERR 53  zb=      ERR 53   CONTROL on zerobas's OWN expression path: KILL was converted by D-FNEXPR, so 53 on both, or fname_expr is broken generally
+
+=== 0 divergence(s): none ===
