@@ -410,7 +410,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:10237 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:10275 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -9892,6 +9892,44 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       read `crunch-only — support UNKNOWN`. They have bodies, but **nothing
       executes them**, so "implemented" here is a claim about the source and not
       about the machine [[a-shadowed-guard-has-no-knife]].
+      🟢 **CLOSED FOR `RENUM` AND `DELETE` 2026-09-07 (D-RENUM) — BOTH CORRECT,
+      EIGHT ROWS, ALL THREE MACHINES AGREEING**
+      ([`scratchpad/renum_probe.py`](scratchpad/renum_probe.py)):
+      | row | command | all three |
+      |---|---|---|
+      | `c.base` | (none) | `7,20` |
+      | `r.plain` | `RENUM` | `7,30` |
+      | `r.start` | `RENUM 100` | `7,120` |
+      | `r.step` | `RENUM 100,,5` | `7,110` |
+      | `r.goto` | `RENUM` (forward `GOTO`) | `5,40` |
+      | `d.one` | `DELETE 20` | `5,30` |
+      | `d.range` | `DELETE 20-30` | `0,0` |
+      | `d.from` | `DELETE -20` | `u5,30` |
+      🎯 **THE READOUT IS `(ERR, ERL)`, NOT A LISTING.** Diffing `LIST` across
+      three machines is a text diff over a 40-column screen with three different
+      prompts; `ERL` is the line an error happened on, so one fence carries both
+      what happened and WHERE — and the where IS the renumbering.
+      🎯 **AND THE HANDLER IS PART OF THE TEST**: `ON ERROR GOTO 100` is a LINE
+      REFERENCE, so RENUM must rewrite it or the trap stops resolving. Reference
+      rewriting is the half of RENUM that is easy to get wrong and invisible to a
+      listing that only checks the left margin; `r.goto` adds a forward `GOTO` in
+      the body for the same reason. `r.step` uses `RENUM 100,,5` because one row
+      cannot tell "starts in the right place" from "steps by the right amount".
+      🔴 **`d.from` FIRST READ `<no fence>` ON ALL THREE — AGREEMENT THAT MEANT
+      NOTHING.** It deletes the handler along with everything up to line 20, so
+      its error goes untrapped and the program prints nothing, which is
+      indistinguishable from a wedged machine or a lost capture
+      [[an-unnamed-outcome-reads-as-no-outcome]]. A direct-mode `PRINT ERR,ERL`
+      after `RUN` turns it into `u5,30` — untrapped ERROR 5 at line 30 — a
+      reading rather than an absence.
+      ⚠️ **`AUTO` IS STILL UNMEASURED, AND THE REASON IS THE VERB**: it enters
+      auto-line-number mode and swallows every following line as program text.
+      Driving it needs an escape and a REPL that can prove it left the mode. Named
+      rather than quietly skipped; 1 of 3 remains.
+      ⚠️ **NOT COLLECTED INTO A GATE.** Eight rows × three machines is 24 boots,
+      and `make gates` is already ~15 min. The probe is committed and cited, so
+      the measurement is repeatable — but it is a probe, not a pin, and a
+      regression in RENUM would not redden anything today.
       (`ERASE`
       shipped 2026-07-15 with the arrays arc, slice 2; `DELETE <range>` shipped
       2026-08-02 with D-DELETE and **`LIST <range>` the same day with D-LSTRNG**,
