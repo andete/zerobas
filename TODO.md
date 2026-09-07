@@ -10624,7 +10624,35 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
         |---|---|---|---|
         | `t.solo` | one channel, three reads | `AAA,AAA,AAA` | `AAA,AAA,AAA` |
         | `t.two` | **two channels, interleaved** | `AAA,BBB,AAA` | `AAA,BBB,AAA` |
-        🎯 **THE HAZARD WAS SPECIFIC AND IT DID NOT FIRE.** `FSECTOR_BUF` and
+        🔴 **REFUTED THE NEXT HOUR (2026-09-07, D-FIELDALIAS) — THE HAZARD DOES
+        FIRE, AND THE SEQUENTIAL ROW WAS THE WRONG SHAPE TO SEE IT.**
+        [`scratchpad/fieldalias_probe.py`](scratchpad/fieldalias_probe.py):
+        | field | CF-3300 | zerobas | |
+        |---|---|---|---|
+        | `P$` = `F$` after its own `GET #1,1` | `AAAAAAAA` | `AAAAAAAA` | SAME |
+        | **`Q$` = `F$` after `GET #2,1`** | **`AAAAAAAA`** | **`ZZZZZZZZ`** | 🔴 **DIFF** |
+        | `R$` = `G$` after `GET #2,1` (control) | `ZZZZZZZZ` | `ZZZZZZZZ` | SAME |
+        **A `FIELD` variable is a WINDOW onto the record buffer, not a copy** —
+        `basic/sysvars.inc` says so in as many words — so with ONE shared buffer
+        `F$` (on #1) and `G$` (on #2) are the SAME MEMORY. Reading `F$` after a
+        `GET` on the other channel returns the other channel's record.
+        🎯 **WHY D-TWOCHAN COULD NOT SEE IT**: every observation there followed a
+        fresh `GET` on the channel being read, so a correct re-read HID the
+        sharing. This row takes its reading with **no `GET` on #1 in between**,
+        which is the only geometry that exposes an alias
+        [[a-coverage-row-whose-geometry-cannot-reach-the-case]]. Sequential
+        reads were the wrong shape; the FIELD row should have gone first.
+        ⚠️ **SO THE ANSWER TO THE CAVEAT IS "WE DO NEED SOMETHING", AND IT IS
+        SMALLER THAN 267 B.** What is needed is per-channel backing for the
+        RECORD buffer (`LEN` ≤ 256), not a per-channel 512-byte SECTOR buffer.
+        ⚠️ **That 267 ≈ 256 + overhead is ARITHMETIC, NOT A MEASUREMENT** — the
+        reference's block was never dissected, and nothing here establishes what
+        its 267 bytes contain [[a-mechanism-inferred-from-one-observation]].
+        ➡️ **THIS IS A REAL, USER-VISIBLE DEFECT**: any program with two open
+        random files and a `FIELD` on each reads the wrong record. Unpriced, and
+        the fix shape is not obvious — per-channel record backing, or refreshing
+        the field descriptors at `fch_select`.
+        ~~🎯 **THE HAZARD WAS SPECIFIC AND IT DID NOT FIRE.**~~ `FSECTOR_BUF` and
         `FWBUF` are ONE buffer each, global, while the 50 B per-channel state
         carries position and cache markers (`FAT_CURCLUS`, `FAT_CLUSSEC`,
         `FAT_FATSEC` = *"FAT sector currently read"*). So a channel's restored
@@ -10633,8 +10661,8 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
         `t.two` puts exactly that case live: #2's read evicts #1's sector, and
         #1's next read still returns `AAA`. zerobas does not trust the stale
         cache. The reference's per-channel buffers buy correctness we already
-        have by other means.
-        ⚠️ **ONE PATTERN, NOT A PROOF.** What is NOT covered: RANDOM `GET`/`PUT`
+        have by other means.~~ **← REFUTED, see D-FIELDALIAS above.**
+        ⚠️ **ONE PATTERN, NOT A PROOF — and the pattern was the wrong one.** What is NOT covered: RANDOM `GET`/`PUT`
         interleaved on two channels (a different path through `FSECTOR_BUF`),
         multi-sector files where a re-read is forced mid-record, and two-channel
         WRITE interleaving. If the buffers are ever suspected again, those are
