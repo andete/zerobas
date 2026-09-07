@@ -10652,6 +10652,27 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
         random files and a `FIELD` on each reads the wrong record. Unpriced, and
         the fix shape is not obvious — per-channel record backing, or refreshing
         the field descriptors at `fch_select`.
+        🔴 **AND THE WRITE HALF CORRUPTS THE DISK (2026-09-07, D-FIELDWRITE,
+        [`scratchpad/fieldwrite_probe.py`](scratchpad/fieldwrite_probe.py)).**
+        | row | | CF-3300 | zerobas | |
+        |---|---|---|---|---|
+        | `w.two` | two channels open, both FIELDed, both written | `11111111/22222222` | **`22222222/22222222`** | 🔴 DIFF |
+        | `w.seq` | CONTROL: one channel at a time | `11111111/22222222` | `11111111/22222222` | SAME |
+        `LSET F$="1111…"` then `LSET G$="2222…"` write the SAME BYTES, so
+        `PUT #1,1` stores channel 2's record into channel 1's FILE. The row reads
+        both files back after `CLOSE`, so this is what is ON THE DISK — it
+        survives the program. The read-half defect above is a wrong value in a
+        variable; this one is wrong data in a file.
+        🎯 **THE CONTROL IS WHAT MAKES IT AN ALIAS RATHER THAN A BROKEN VERB**:
+        `w.seq` does the identical two writes with only ONE channel open at a
+        time and both machines agree, so `LSET`/`PUT` are correct in general and
+        the fault is specifically two channels sharing one record buffer.
+        ⚠️ **THE CONTROL FAILED FIRST, FOR A REASON THAT WAS MINE**: its lines
+        were numbered 10/20/50/30/60 to mirror the other row visually, so BASIC
+        SORTED them and re-opened `#1` while it was still open — `<NO READING>`
+        on both sides. The probe REFUSED to score `w.two` without its control
+        rather than publishing a divergence with nothing to rule out the obvious
+        rival cause.
         ~~🎯 **THE HAZARD WAS SPECIFIC AND IT DID NOT FIRE.**~~ `FSECTOR_BUF` and
         `FWBUF` are ONE buffer each, global, while the 50 B per-channel state
         carries position and cache markers (`FAT_CURCLUS`, `FAT_CLUSSEC`,
