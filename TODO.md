@@ -410,7 +410,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:10764 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:10792 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -575,7 +575,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:2423 (T-6FE392)8 (T-529ABE)` from `TODO.md:9701 (T-529ABE)`: a
+      `TODO.md:2423 (T-6FE392)8 (T-529ABE)` from `TODO.md:9729 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -3061,7 +3061,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:9701 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:9729 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -6630,8 +6630,36 @@ list. **When a slice lands, grep this list for what it just shipped.**
       [[a-shared-tail-is-not-a-decision]]. The 5 B above is for a NEW raiser with
       no side effects, and the low region had 26 B free on 2026-09-07, plus Route D's 10.
       ➡️ **SO THE SLICE IS: carve a further 3 B from main page 1, then spend.**
-      Route D is now SPENT (D-CARVE4 banked its 4 B), so the next 3 B must come
-      from somewhere else. 🔴 RE-MEASURE BOTH SIDES AT PICK-UP: the wall moves, and
+      🔴 **AND ROUTE D IS NOT MERELY SPENT — IT DID NOT RENEW (2026-09-07, measured
+      right after D-CARVE4, [`scratchpad/jrmap_after_carve4.out`](scratchpad/jrmap_after_carve4.out)).**
+      `jr_mapper.py` went **15 sites → 11, page 1 5 → 1**, and that last one is the
+      `pdfcb-body.inc` line that cannot convert (three inclusions, one in range). So
+      **page-1 Route D yield is 0**. The "Route D renews" property is real but it is
+      NOT guaranteed per carve, and this carve renewed nothing.
+      🔬 **THE DUP-SPAN ROUTE WAS RE-SWEPT THE SAME DAY
+      ([`scratchpad/dupspan_0907.out`](scratchpad/dupspan_0907.out), 25 groups) AND
+      ALL THREE PAGE-1 CANDIDATES FAIL FOR ONE REASON — THEIR *EXITS*, NOT THEIR
+      BYTES.**
+      | span | sites | why not |
+      |---|---|---|
+      | 11 B ×2 | `pn_wr` `$577A` / `dde_wr` `$63AC` | its `jr z,+6` exits FORWARD into caller-specific code |
+      | 8 B ×2 | `vnk_more` `$473C` / `vst_walk` `$477E` | same shape: `jr nc,+3` leaves into differing continuations |
+      | 5 B ×2 | `g8_missing` `$6313` / `csav_noname` `$6B51` | genuinely self-contained (`ld a,24 / jp raise_error`) but 2110 B apart, so `jp` not `jr` → saves **2 B**, not 3 |
+      🎯 **BYTE-IDENTICAL IS NOT INTERCHANGEABLE, AND THE SWEEP CANNOT SEE THE
+      DIFFERENCE** — it reports byte runs; what decides a carve is whether the span
+      ENDS and whether every exit lands somewhere common
+      [[dupspan-slice]]. Two of the three above end in a *conditional* branch out.
+      🔬 **THE ONE REAL PAGE-1 CARVE LEFT IS A MERGE, AND IT IS NOT CHEAP.**
+      `eostr_lp` ([`basic/program.asm:2820`](basic/program.asm:2820)) and `eokey_lp`
+      ([`basic/program.asm:2945`](basic/program.asm:2945)) are ~37 B each and differ
+      in exactly THREE places: the ZTRAP index (`ld a,c / add a,ZTI_STRIG0`
+      ascending vs `ld a,ZTI_KEY1+9 / sub c` **descending** — the reversed band),
+      the slot limit (`cp 5` vs `cp 10`), and the loop-back label. Parameterising
+      the limit is trivial; parameterising an index that counts UP in one and DOWN
+      in the other is not, and every cheap register is already spoken for (HL
+      cursor, DE link, BC counter). ⚠️ **NOT ATTEMPTED**: subtle trap code, and the
+      reversed band has already falsified a comment once. Worth ~10–15 B to whoever
+      takes it, with `key-trap`/`sprite-trap`/`stop-trap` acceptance as the net. 🔴 RE-MEASURE BOTH SIDES AT PICK-UP: the wall moves, and
       Route D RENEWS — these four insertions will themselves have pulled fresh
       targets into range. Shipping only some of the four is worse than
       shipping none — it leaves `CRUNCH_DIFF_PINNED` half-stale and the class
