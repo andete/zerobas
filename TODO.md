@@ -410,7 +410,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:10853 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:10891 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -575,7 +575,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:2423 (T-6FE392)8 (T-529ABE)` from `TODO.md:9790 (T-529ABE)`: a
+      `TODO.md:2423 (T-6FE392)8 (T-529ABE)` from `TODO.md:9828 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -3061,7 +3061,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:9790 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:9828 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -4161,6 +4161,44 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `tools/redundant-load-reviewed.txt` with no candidate, and
       `redundant-load-check` calls that *"how this control goes blind"*. RETIRED
       with its reason, on the `print_crlf` precedent in the same file.
+      🔴 **AND THE BARE-FORM CLASS IS *NOT* CLEAN: 7 NEW DIVERGENCES FROM ONE
+      SWEEP (2026-09-07, D-BAREFORM,
+      [`scratchpad/bareform_probe.py`](scratchpad/bareform_probe.py),
+      [`.out`](scratchpad/bareform_confirm.out)).** Same method again — `MERGE`
+      bare was `ERR 2` against the reference's `ERR 24`, and `ex_locate` already
+      carried the identical measured face ("a bare `LOCATE` is Missing operand,
+      not a no-op and not a Syntax error"). Two verbs, one shape, found eleven days
+      apart and never swept. **49 verbs, bare form, both machines:**
+      | verb | vg8020 | zb |
+      |---|---|---|
+      | `KILL` | `ERR 5` | **`ERR 24`** |
+      | `NAME` | `ERR 5` | **`ERR 24`** |
+      | `FIELD` | `ERR 5` | **`ERR 24`** |
+      | `LSET` | `ERR 5` | **`ERR 2`** |
+      | `RSET` | `ERR 5` | **`ERR 2`** |
+      | `COLOR` | `ERR 24` | **legal — no error at all** |
+      | `KEY` | `ERR 24` | **`ERR 2`** |
+      **Re-measured independently with `--only` and all seven reproduce.** The
+      other 42 agree, including the 12 that answer `ERR 24` correctly today.
+      🎯 **`COLOR` IS THE ODD ONE AND THE MOST INTERESTING**: zerobas's bare form
+      **succeeds**, re-applying the current colours, where the reference raises
+      Missing operand. That is a deliberate no-op arm (`ex_color`'s "bare form
+      re-applies") — and `ex_locate` was written against the OPPOSITE measured
+      answer for the same question. One of the two was never re-asked
+      [[two-rules-that-coincide-on-every-row-you-have]].
+      ⚠️ **`CLOAD` IS THE EIGHTH ROW AND IT IS NOT A NEW FINDING.** The reference
+      BLOCKS (no reading at all — it waits for tape) where zerobas returns; that is
+      the filed `LOAD"CAS:"`-does-not-return class, which is 🙋 and whose faithful
+      behaviour is a hang no row can carry. Counted separately, not fixed here.
+      ⚠️ **AND THREE ROWS BLANKED ON BOTH AND ARE EXCLUDED, WITH REASONS**:
+      `RESUME` bare re-enters its own erroring statement, `LPRINT` bare blocks on a
+      printer that is not there, and `RANDOMIZE` never returns (D-COLONTAIL
+      established that). `INPUT`/`LINE INPUT`/`AUTO`/`NEW`/`RUN`/`END`/`STOP`/`CONT`
+      are excluded by construction — each would blank or destroy rather than
+      answer, and a blank row is not a reading.
+      💰 **NOT FIXED IN THIS COMMIT.** Most look byte-neutral (`jp stmt_error` →
+      `jp loc_missing` is 3 B either way), but seven verbs across several files is
+      its own slice and each needs its bare path read rather than assumed.
       🟢 **AND THE COLON-TAIL CLASS D-DATACOLON OPENED IS NOW SWEPT AND CLEAN
       (2026-09-07, D-COLONTAIL,
       [`scratchpad/colontail_probe.py`](scratchpad/colontail_probe.py),

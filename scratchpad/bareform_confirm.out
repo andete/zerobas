@@ -1,0 +1,12 @@
+  REM       vg=legal     zb=legal    
+  KILL      vg=ERR 5     zb=ERR 24      🔴 DIFF
+  NAME      vg=ERR 5     zb=ERR 24      🔴 DIFF
+  FIELD     vg=ERR 5     zb=ERR 24      🔴 DIFF
+  LSET      vg=ERR 5     zb=ERR 2       🔴 DIFF
+  RSET      vg=ERR 5     zb=ERR 2       🔴 DIFF
+  CLOAD     vg=<none>    zb=legal       🔴 DIFF
+  COLOR     vg=ERR 24    zb=legal       🔴 DIFF
+  KEY       vg=ERR 24    zb=ERR 2       🔴 DIFF
+
+=== 8 divergence(s): ['KILL', 'NAME', 'FIELD', 'LSET', 'RSET', 'CLOAD', 'COLOR', 'KEY'] ===
+    🔴 ['CLOAD'] produced NO reading on a side -- that is an absence, not agreement, and each needs a reason before it is read as anything [[an-unnamed-outcome-reads-as-no-outcome]].
