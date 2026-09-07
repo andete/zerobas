@@ -1,0 +1,10 @@
+  k.bare   KILL                 cf=ERR 24    zb=ERR 24   
+  k.empty  KILL ""              cf=ERR 56    zb=ERR 56   
+  k.name   KILL "A:NOSUCH.BAS"  cf=ERR 53    zb=ERR 53   
+  l.bare   LSET                 cf=ERR 2     zb=ERR 2    
+  l.eq     LSET A$="x"          cf=no error  zb=no error 
+  l.noeq   LSET A$              cf=ERR 2     zb=ERR 2    
+
+🎯 THE ANSWER: k.bare=24  k.empty=56
+   DIFFERENT -> the ERR 5 really is the ABSENT-operand face, and a bare-form
+   test is the right shape.

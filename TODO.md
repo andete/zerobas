@@ -410,7 +410,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:10891 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:10928 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -575,7 +575,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:2423 (T-6FE392)8 (T-529ABE)` from `TODO.md:9828 (T-529ABE)`: a
+      `TODO.md:2423 (T-6FE392)8 (T-529ABE)` from `TODO.md:9865 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -3061,7 +3061,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:9828 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:9865 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -4178,8 +4178,41 @@ list. **When a slice lands, grep this list for what it just shipped.**
       | `RSET` | `ERR 5` | **`ERR 2`** |
       | `COLOR` | `ERR 24` | **legal — no error at all** |
       | `KEY` | `ERR 24` | **`ERR 2`** |
-      **Re-measured independently with `--only` and all seven reproduce.** The
-      other 42 agree, including the 12 that answer `ERR 24` correctly today.
+      ~~**Re-measured independently with `--only` and all seven reproduce.** The
+      other 42 agree, including the 12 that answer `ERR 24` correctly today.~~
+      🔴 **FIVE OF THOSE SEVEN WERE MINE, NOT ZEROBAS'S — THE SWEEP RAN ONE
+      REFERENCE AND IT WAS THE WRONG ONE FOR HALF THE LIST (corrected the same
+      evening, [`scratchpad/bareform_3way_full.out`](scratchpad/bareform_3way_full.out)).**
+      The VG-8020 is **DISKLESS**, and `KILL`/`NAME`/`FIELD`/`LSET`/`RSET` are
+      Disk-BASIC verbs. Re-run against BOTH references:
+      | verb | vg8020 | cf3300 | zb | |
+      |---|---|---|---|---|
+      | `KILL` `NAME` `FIELD` | `ERR 5` | `ERR 24` | `ERR 24` | **REFS-SPLIT** |
+      | `LSET` `RSET` | `ERR 5` | `ERR 2` | `ERR 2` | **REFS-SPLIT** |
+      | `COLOR` | `ERR 24` | `ERR 24` | **legal** | real |
+      | `KEY` | `ERR 24` | `ERR 24` | **`ERR 2`** | real |
+      **zerobas AGREES with the disk-equipped reference on all five.** The count is
+      **2 real divergences, not 7**; `CLOAD` is the third DIFF and remains the
+      filed `LOAD"CAS:"` class.
+      🔴 **AND THE TRAP WAS DOCUMENTED IN A FILE I HAD READ THAT EVENING.**
+      [`probes/basic/basic_probe_kwsweep.py:95`](probes/basic/basic_probe_kwsweep.py:95)
+      says it outright — *"the default reference is a DISKLESS VG-8020, while the
+      zerobas side is C-BIOS_MSX1_EU_REPACK_**DISK**, so every Disk-BASIC row was
+      comparing 'no disk ROM' against 'disk ROM' and attributing the difference to
+      zerobas"* — and its `NEEDS-DISK` tag exists for exactly this. I quoted that
+      file's NO-ORACLE handling in D-KWPIN hours earlier and then built a fresh
+      sweep with the same fault
+      [[an-instrument-can-fail-the-way-the-thing-it-replaced-failed]].
+      🎯 **IT SURFACED ONLY BECAUSE THE FIX WAS NOT STARTED.** D-EMPTYOP
+      ([`scratchpad/emptyop_probe.py`](scratchpad/emptyop_probe.py)) was written to
+      ask whether the `ERR 5` face was about an ABSENT or an EMPTY operand — a
+      question about *how* to fix it — and it put `KILL` on the CF-3300, which
+      came back agreeing with zerobas. Fixing first would have "corrected" five
+      verbs away from the disk reference.
+      🟢 **THE ERROR ONLY OVER-REPORTED.** The full 49-verb three-way re-run finds
+      **no divergence the wrong oracle had hidden**: every verb outside those eight
+      agrees on all three machines. The probe now runs BOTH references on every row
+      and reports REFS-SPLIT rather than scoring it.
       🎯 **`COLOR` IS THE ODD ONE AND THE MOST INTERESTING**: zerobas's bare form
       **succeeds**, re-applying the current colours, where the reference raises
       Missing operand. That is a deliberate no-op arm (`ex_color`'s "bare form
@@ -4196,9 +4229,13 @@ list. **When a slice lands, grep this list for what it just shipped.**
       established that). `INPUT`/`LINE INPUT`/`AUTO`/`NEW`/`RUN`/`END`/`STOP`/`CONT`
       are excluded by construction — each would blank or destroy rather than
       answer, and a blank row is not a reading.
-      💰 **NOT FIXED IN THIS COMMIT.** Most look byte-neutral (`jp stmt_error` →
+      💰 **NOT FIXED IN THIS COMMIT.** ~~Most look byte-neutral (`jp stmt_error` →
       `jp loc_missing` is 3 B either way), but seven verbs across several files is
-      its own slice and each needs its bare path read rather than assumed.
+      its own slice and each needs its bare path read rather than assumed.~~ The
+      real work is **two verbs**: bare `COLOR` must stop succeeding (it re-applies
+      the current colours where both references raise Missing operand — and
+      `ex_locate` was written against the OPPOSITE answer to the same question),
+      and bare `KEY` must answer `ERR 24` instead of `ERR 2`.
       🟢 **AND THE COLON-TAIL CLASS D-DATACOLON OPENED IS NOW SWEPT AND CLEAN
       (2026-09-07, D-COLONTAIL,
       [`scratchpad/colontail_probe.py`](scratchpad/colontail_probe.py),

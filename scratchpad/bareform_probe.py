@@ -43,8 +43,20 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, os.path.join(ROOT, "probes", "lib"))
 import omsx_repl                                                  # noqa: E402
 
+# 🔴 THE FIRST CUT RAN ONE REFERENCE AND IT WAS THE WRONG ONE FOR HALF THE
+# LIST. The VG-8020 is DISKLESS. `basic_probe_kwsweep.py` says what that costs, in
+# as many words: "the default reference is a DISKLESS VG-8020, while the zerobas
+# side is C-BIOS_MSX1_EU_REPACK_DISK, so every Disk-BASIC row was comparing 'no
+# disk ROM' against 'disk ROM' and attributing the difference to zerobas." I read
+# that file the same evening and made the mistake anyway: D-BAREFORM's first table
+# reported KILL/NAME/FIELD/LSET/RSET as zerobas divergences when the CF-3300
+# AGREES with zerobas on them.
+# 🎯 SO BOTH REFERENCES RUN ON EVERY ROW NOW, and a row where they disagree is
+# reported as REFS-SPLIT rather than scored against zerobas.
 SIDES = {
     "vg8020": dict(machine="Philips_VG_8020", boot=8.0, reset=("NEW",)),
+    "cf3300": dict(machine="National_CF-3300", boot=14.0,
+                   reset=("", "SCREEN 0", "NEW")),
     "zb": dict(machine=os.environ.get("ZEROBAS_BASIC_MACHINE",
                                       "C-BIOS_MSX1_EU_REPACK_DISK"),
                boot=10.0, reset=("NEW",)),
@@ -90,22 +102,33 @@ def main() -> int:
                 run_gap=12.0, cap_gap=4.0, timeout=420.0)[0] or "")
             row[side] = value(raw)
         out[verb] = row
-        f = {s: ("<none>" if row[s] is None else
-                 ("legal" if row[s] == 0 else f"ERR {row[s]}")) for s in SIDES}
-        mark = "" if f["vg8020"] == f["zb"] else "   \U0001f534 DIFF"
-        print(f"  {verb:9s} vg={f['vg8020']:9s} zb={f['zb']:9s}{mark}", flush=True)
+        f = {s_: ("<none>" if row[s_] is None else
+                  ("legal" if row[s_] == 0 else f"ERR {row[s_]}")) for s_ in SIDES}
+        if f["vg8020"] != f["cf3300"]:
+            mark = "   \U0001f7e1 REFS-SPLIT"
+        elif f["zb"] != f["cf3300"]:
+            mark = "   \U0001f534 DIFF"
+        else:
+            mark = ""
+        print(f"  {verb:9s} vg={f['vg8020']:9s} cf={f['cf3300']:9s} "
+              f"zb={f['zb']:9s}{mark}", flush=True)
 
     if out.get("REM", {}).get("vg8020") != 0 or out.get("REM", {}).get("zb") != 0:
         print(f"\n\U0001f534 THE `REM` CONTROL DID NOT READ 0 ({out.get('REM')}) -- "
               f"the fence or the typing is broken and no row is a reading.")
         return 2
-    dis = [k for k, v in out.items() if v["vg8020"] != v["zb"]]
-    blank = [k for k, v in out.items() if v["vg8020"] is None or v["zb"] is None]
+    split = [k for k, v in out.items() if v["vg8020"] != v["cf3300"]]
+    dis = [k for k, v in out.items()
+           if v["vg8020"] == v["cf3300"] and v["zb"] != v["cf3300"]]
+    blank = [k for k, v in out.items() if any(v[s_] is None for s_ in SIDES)]
     print(f"\n=== {len(dis)} divergence(s): {dis or 'none'} ===")
+    print(f"    REFS-SPLIT ({len(split)}): {split or 'none'} -- the two references "
+          f"disagree, so\n    zerobas cannot be scored on these. Most are "
+          f"Disk-BASIC verbs and the VG-8020\n    has no disk ROM.")
     if blank:
-        print(f"    \U0001f534 {blank} produced NO reading on a side -- that is an "
-              f"absence, not agreement, and each needs a reason before it is read "
-              f"as anything [[an-unnamed-outcome-reads-as-no-outcome]].")
+        print(f"    \U0001f534 {blank} produced NO reading on a side -- an absence, not "
+              f"agreement, and each needs a reason "
+              f"[[an-unnamed-outcome-reads-as-no-outcome]].")
     return 1 if dis else 0
 
 
