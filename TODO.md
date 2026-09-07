@@ -410,7 +410,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:10722 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:10751 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -575,7 +575,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:2423 (T-6FE392)8 (T-529ABE)` from `TODO.md:9659 (T-529ABE)`: a
+      `TODO.md:2423 (T-6FE392)8 (T-529ABE)` from `TODO.md:9688 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -3061,7 +3061,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:9659 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:9688 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -6594,6 +6594,35 @@ list. **When a slice lands, grep this list for what it just shipped.**
       ⚠️ **THE SURFACE IS NOT THE SEMANTICS.** `DSKO$0,0` "runs clean" says it was
       accepted, NOT that it wrote anything — that is unmeasured, and deliberately
       not guessed at [[a-mechanism-inferred-from-one-observation]].
+      💰 **THE DO-NOTHING FOUR ARE PRICED TO THE BYTE (2026-09-07), AND THEY ARE
+      2 B SHORT — read this before starting, not halfway through.**
+      Dispatch is a linear `db <token>, dw <handler>` table
+      ([`basic/interp.asm:539`](basic/interp.asm:539) `stmt_table`, at `$4115`), so
+      each statement word costs exactly **3 B in main page 1** and the table cannot
+      be split.
+      | need | bytes | where |
+      |---|---|---|
+      | `SET`/`IPL`/`CMD` table entries | **9** | main page 1, unavoidable |
+      | a clean `ld a,5 / jp raise_error` | 5 | LOW region — `dw` takes any address |
+      | `ATTR$`: `cp $E9 / jp z,…` in `ev_f` | 5 | main page 1 (`ev_f` is at `$4D05`) |
+      **Available in main page 1: 2 B free + 5 B from Route D** (`jp`→`jr`;
+      `scratchpad/jr_mapper.py` re-measured 2026-09-07 →
+      [`scratchpad/jrmap_0907.out`](scratchpad/jrmap_0907.out): **15 convertible
+      sites, 5 in page 1 and 10 in the low region**) = **7 B as measured 2026-09-07**.
+      The three
+      statements alone need 9. All four need 14.
+      🔴 **AND `oo_fail_ifc` IS NOT THE RAISER TO POINT AT**, though it is the
+      obvious candidate — [`basic/files.asm:522`](basic/files.asm:522) clears
+      `FCH_MODE` before raising, which is OPEN's own channel cleanup. Three
+      unrelated verbs jumping there would silently close a channel
+      [[a-shared-tail-is-not-a-decision]]. The 5 B above is for a NEW raiser with
+      no side effects, and the low region had 26 B free on 2026-09-07, plus Route D's 10.
+      ➡️ **SO THE SLICE IS: carve further from main page 1 — on the 2026-09-07
+      readings that was a shortfall of 2 B for the statements alone, with Route D's 5
+      already counted — then spend.** 🔴 RE-MEASURE BOTH SIDES AT PICK-UP: the wall
+      moves and Route D RENEWS with every insertion. Shipping only some of the four is worse than
+      shipping none — it leaves `CRUNCH_DIFF_PINNED` half-stale and the class
+      inconsistent.
       🤖 AUTONOMOUS — the reference settles every token, and the pin is built.
 
 - [ ] 📌 **`basic_probe_kwsweep.py` PRINTS ROWS NO RUNNER CAN PARSE, AND ITS

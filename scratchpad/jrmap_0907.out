@@ -1,0 +1,8 @@
+convertible ROM sites: 15
+  proposals (unique source match): 15  [page1 5, low 10]
+  skipped no-match: 0   skipped ambiguous: 0
+    $42C7 jp    -> fp_stmt_done         basic/interp.asm:949
+    $575C jp    -> exp_stmt_end         basic/print.asm:391
+    $6588 jp    -> bl_load_error        basic/pdfcb-body.inc:53
+    $6E33 jp    -> oo_stamp_devtype     basic/files.asm:726
+    $7BA8 jp    -> restore_done         basic/program.asm:2137
