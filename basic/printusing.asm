@@ -258,10 +258,7 @@ pu_to_field:
                 ret
 pu_emit_tail:
                 ld      ix,SUBROM_ENTRY_BASE_P0 + 3*SUBROM_IDX_PU_TAIL
-                call    subrom_call         ; tenant: emit trailing literals -> DETOKBUF
-                jp      c,subrom_absent_error
-                ld      hl,DETOKBUF
-                jp      print_string        ; drain -> pchar (PRDEST), then ret
+                jp      detok_emit          ; D-CARVE3 (-9 B, main page 1)
 
 ; pu_do_number — eval the next value and emit it right-justified in PU_W; '%' + full
 ; number on overflow. HL = token cursor (guarded across div10). Clobbers everything.

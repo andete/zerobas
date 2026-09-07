@@ -31,6 +31,17 @@ ASSERTED = [
     ("out_addr_hi",   "OUT 40000,0",  "cont"),   # 40000 in address domain -> ok
     ("out_neg",       "OUT -1,0",     "cont"),   # -1 wraps -> ok
     ("out_ok",        "OUT 254,7",    "cont"),
+    # --- D-WAIT: WAIT shares OUT's argument domain, because it shares the guard --
+    # 🔴 EVERY WAIT ROW HERE MUST ABORT IN THE PARSE. `check_fperr_only` runs
+    # AFTER both evals and BEFORE the spin loop, so an out-of-domain argument
+    # raises and the loop is never entered. A row whose arguments were VALID would
+    # spin until its mask was satisfied -- which is WAIT's documented behaviour and
+    # not something a batch can host. The terminating forms are measured in
+    # scratchpad/wait_probe.py instead, each constructed to finish.
+    ("wait_port_ovf", "WAIT 99999,1", "ERR6"),
+    ("wait_mask_ovf", "WAIT 0,99999", "ERR6"),
+    ("wait_xor_ovf",  "WAIT 0,1,99999", "ERR6"),
+    ("wait_nocomma",  "WAIT 254",     "ERR2"),   # the mask is not optional
     # --- regression guards: already-faithful address-domain sites (POKE, F2) ------
     ("poke_addr_ovf", "POKE 99999,0", "ERR6"),
     ("poke_addr_hi",  "POKE 40000,0", "cont"),

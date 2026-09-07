@@ -89,6 +89,12 @@ from msxtest import Machine  # noqa: E402
 # being told about it.
 EXPECTED = [
     ('COLON', 'ex_sep'),
+    # D-WAIT 2026-09-07: WAIT is the one entry NOT recovered from the
+    # pre-refactor chain, because it did not exist then — the statement was
+    # missing from zerobas entirely (kwsweep's crunch layer read `wait 0,0` back
+    # as the ASCII bytes of a VARIABLE). Added deliberately, and this file's own
+    # failure message is what asked for the line.
+    ('WAIT_TOKEN', 'ex_wait'),
     ('BLOAD_TOKEN', 'ex_bload'),
     ('CLOAD_TOKEN', 'ex_cload'),
     ('LOAD_TOKEN', 'ex_load'),

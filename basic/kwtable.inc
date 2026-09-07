@@ -341,6 +341,7 @@ kwtable:
                 ; but this keeps the more specific entries adjacent).
                 db      5,"VPOKE",1,VPOKE_TOKEN
                 db      5,"VPEEK",2,PEEK_PREFIX,VPEEK_TOKEN
+                db      4,"WAIT",1,WAIT_TOKEN
                 db      3,"OUT",1,OUT_TOKEN
                 db      3,"INP",2,PEEK_PREFIX,INP_TOKEN
                 db      6,"VARPTR",1,VARPTR_TOKEN

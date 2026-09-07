@@ -301,6 +301,9 @@ exps_print:
 exps_fallback   equ     ems_fallback
 exp_semi:
                 inc     hl                  ; ';' = no spacing
+                ; 🎯 D-CARVE3: canonical PRINT item-list terminator -- end of
+                ; statement, `:` or another item. Both PRINT arms share it.
+exp_stmt_end:
                 call    skip_spaces
                 or      a
                 ret     z                   ; trailing ';' at EOL -> no newline
@@ -385,12 +388,7 @@ oas_yes:
 exp_comma:
                 inc     hl
                 call    print_comma_zone    ; pad to the next 14-column zone
-                call    skip_spaces
-                or      a
-                ret     z                   ; trailing ',' at EOL -> no newline
-                cp      COLON
-                jp      z,exec_stmt         ; trailing ',' before ':' -> no newline
-                jp      exp_loop
+                jp      exp_stmt_end        ; D-CARVE3 (-10 B, main page 1)
 
 ; --- print_number: DE = signed-16 value -> screen --------------------------
 ; Formats into NUMBUF (sign/space, digits, trailing space, 0) then print_string.
@@ -424,6 +422,9 @@ pn_tail:
                 ld      a,' '               ; trailing space (MSX number format)
                 ld      (de),a
                 inc     de
+                ; 🎯 D-CARVE3: canonical "0-terminate NUMBUF and print it" tail;
+                ; basic/list.asm's line-number emitter jumps here.
+num_publish:
                 xor     a
                 ld      (de),a              ; 0-terminate
                 ld      hl,NUMBUF

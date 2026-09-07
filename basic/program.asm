@@ -2116,6 +2116,9 @@ ex_restore:
 ers_bare:
                 push    hl                  ; keep the exec cursor -- the old code
                 ld      hl,TXTBASE          ; clobbered HL because it never came back
+                ; 🎯 D-CARVE3: canonical RESTORE tail -- pin the line, clear the
+                ; DATA state, resume. Both RESTORE arms end this way.
+restore_done:
                 ld      (RESTORE_LINE),hl
                 xor     a
                 ld      (DATASTATE),a
@@ -2131,11 +2134,7 @@ ers_line:
 ers_find:
                 call    find_line_bc        ; CF set + HL = line link-field
                 jr      nc,ers_undef
-                ld      (RESTORE_LINE),hl
-                xor     a
-                ld      (DATASTATE),a
-                pop     hl
-                jp      exec_stmt
+                jp      restore_done        ; D-CARVE3 (-8 B, main page 1)
 ers_undef:
                 pop     hl                  ; balance the stack
                 jp      ex_goto_undef       ; reuse "undefined line"

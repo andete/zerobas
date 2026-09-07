@@ -381,6 +381,15 @@ ERASE_TOKEN     equ     $A5     ; ERASE <name>[,<name>...] (statement)
 ; statement tokens; VPEEK / INP are $FF-prefixed two-byte function tokens (like
 ; PEEK); VARPTR / BASE are single-byte function tokens (no $FF prefix).
 VPOKE_TOKEN     equ     $C6     ; VPOKE addr,value (statement)
+WAIT_TOKEN      equ     $96     ; WAIT port,mask[,xor]  (statement). ORACLE-SOURCED
+                                ; (D-WAIT): the reference crunches `wait 0,0` to
+                                ; 96 20 11 2C 11 00 -- a BARE $96, not $FF $96.
+                                ; CHRD_TOKEN is also $96 and does NOT collide: it
+                                ; is a two-byte function token, always preceded by
+                                ; PEEK_PREFIX. $96 was the ONLY free single-byte
+                                ; statement token in $90..$9F, sitting exactly
+                                ; between ON ($95) and DEF ($97) -- which is where
+                                ; the reference's own table puts WAIT.
 OUT_TOKEN       equ     $9C     ; OUT port,value   (statement)
 VPEEK_TOKEN     equ     $98     ; VPEEK(addr) -> $FF $98 (function)
 INP_TOKEN       equ     $90     ; INP(port)   -> $FF $90 (function)

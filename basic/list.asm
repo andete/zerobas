@@ -257,6 +257,9 @@ list_num:
 ;     from detok.inc's sub-side one (which serves the evicted detok_dec).
 detok:
                 ld      ix,SUBROM_ENTRY_BASE_P0 + 3*SUBROM_IDX_DETOK
+                ; 🎯 D-CARVE3: canonical "detokenise via the tenant, then print"
+                ; tail; basic/printusing.asm's number path jumps here.
+detok_emit:
                 call    subrom_call         ; HL=token body in; sub core fills DETOKBUF
                                             ; (0-terminated); CF=1 if the sub-ROM is absent
                 jp      c,subrom_absent_error ; reduced build w/o sub-ROM (never on the
@@ -280,10 +283,7 @@ dde_wr:
                 inc     de
                 jr      dde_wr
 dde_tail:
-                xor     a
-                ld      (de),a
-                ld      hl,NUMBUF
-                jp      print_string
+                jp      num_publish         ; D-CARVE3 (-5 B, main page 1)
 
 ; (Arrays slice-4a: the resident hex_digit/oct_digit copies that used to live
 ; here for str-engine.asm's HEX$/OCT$ are GONE — HEX$/OCT$ moved their digit-

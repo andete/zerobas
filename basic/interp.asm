@@ -539,6 +539,8 @@ es_noentry:
 stmt_table:
                 db      COLON
                 dw      ex_sep    ; ':' separator / empty statement
+                db      WAIT_TOKEN
+                dw      ex_wait
                 db      BLOAD_TOKEN
                 dw      ex_bload
                 db      CLOAD_TOKEN
@@ -896,6 +898,10 @@ ex_let:
                 ld      a,(LHS_VARTYPE)     ; F3 §11.2: coerce DE/FAC into the LHS's
                 call    var_store_fac       ; LATCHED resolved type and store (vars.asm);
                                             ; may set FPERR on a coercion-time Overflow
+                ; 🎯 D-CARVE3: canonical "statement done, unless FPERR is sticky"
+                ; tail. The DECISION -- whether an FP fault happened -- is the
+                ; cell, read here; both callers just arrive.
+fp_stmt_done:
                 pop     hl
                 ld      a,(FPERR)           ; store-coercion Overflow (§11.2) aborts the
                 or      a                   ; statement exactly like an eval()-time one
@@ -940,23 +946,7 @@ ex_let_str:
                 push    hl                  ; guard cursor across str_set_key
                 ld      de,(STRPTR)         ; DE -> source descriptor
                 call    str_set_key         ; A$[key] := descriptor (clamped)
-                pop     hl
-                ; Arrays slice-4c (docs/spec-basic-arrays-slice4c-string-
-                ; scalar-unification.md §7.3): a scalar-CHAIN OOM (the table-
-                ; full disposition, now dynamic/unbounded rather than the
-                ; pre-4c fixed 8-slot STRTAB) sets FPERR via str_set_key's
-                ; own ARY_OP=5 -> ary_errmap path but does NOT itself abort
-                ; (mirrors var_alloc_or_find's identical contract) -- must be
-                ; surfaced HERE, exactly like ex_let's own post-store check
-                ; just above for the numeric path. Without this the OOM was
-                ; silently swallowed (the OLD STRTAB-full "silent drop"
-                ; contract this slice retires; a string-heap BODY OOM is
-                ; UNAFFECTED -- str_heap_oom_error already aborts
-                ; unconditionally inside str_set_key itself).
-                ld      a,(FPERR)
-                or      a
-                jr      nz,fp_runtime_error
-                jp      exec_stmt
+                jp      fp_stmt_done        ; D-CARVE3 (-7 B, main page 1)
 
 ; --- skip_spaces: advance HL past 0x20 bytes -------------------------------
 skip_spaces:

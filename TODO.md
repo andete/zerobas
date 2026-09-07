@@ -410,7 +410,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:10204 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:10237 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -9820,8 +9820,41 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       four shipped words as outstanding — struck rather than deleted, because a
       reader who saw the old line would otherwise wonder whether it was ever
       true [[a-fix-falsifies-the-justification-beside-it]].
-      🔴 **`WAIT` IS THE ONLY ONE STILL ABSENT, AND IT IS ABSENT ON THE MACHINE,
-      NOT MERELY MISSING FROM A TABLE.** `kwsweep`'s LAYER-1 crunch test types
+      🟢 **`WAIT` SHIPPED 2026-09-07 (D-WAIT) — 51 B, AND THE BUCKET IS NOW EMPTY
+      BAR `CLEAR` SEMANTICS.** `wait 0,0` crunches **SAME** as the reference;
+      four domain rows in `intarg-acceptance` (`wait_port_ovf`, `wait_mask_ovf`,
+      `wait_xor_ovf`, `wait_nocomma`) all PASS against the VG-8020; and
+      [`scratchpad/wait_probe.py`](scratchpad/wait_probe.py) measures the
+      terminating forms:
+      | row | form | vg8020 | cf3300 | zb |
+      |---|---|---|---|---|
+      | `w.two` | `WAIT P,V` | 1 | 1 | **1** |
+      | `w.three` | `WAIT P,255,X` | 2 | 2 | **2** |
+      | `w.vbl` | `WAIT &H99,128` | 3 | `<NO READING>` | **3** |
+      | `w.err` | `WAIT` bare | 24 | 24 | **24** |
+      🎯 **`w.vbl` IS THE ONLY ROW THAT PROVES IT LOOPS** rather than falling
+      through: VDP status bit 7 is the VBLANK flag, clear when the `WAIT` is
+      reached (line 10 read the port, which clears it) and set within one frame.
+      ⚠️ **The CF-3300 gives NO READING on that row and WHY IS NOT ESTABLISHED** —
+      it is a REFS-SPLIT, so the row scores against the VG-8020 alone. A plausible
+      cause is that its own ISR reads `$99` and clears the flag first, but that is
+      a guess and is not asserted [[a-mechanism-inferred-from-one-observation]].
+      🔴 **THE TOKEN IS `$96` AND IT WAS ALREADY ORACLE-TAKEN** by `kwsweep`'s
+      crunch bytes. Corroborated independently: `$96` was the ONLY free
+      single-byte statement token in `$90..$9F`, sitting exactly between `ON`
+      (`$95`) and `DEF` (`$97`) — where the reference's own table puts WAIT.
+      `CHRD_TOKEN` is also `$96` and does not collide: it is a two-byte function
+      token, always preceded by `PEEK_PREFIX`.
+      💰 51 B: 7 B crunch-table entry, 3 B `stmt_table` row, 41 B body beside
+      `do_out` (they share the argument shape and the `check_fperr_only` guard).
+      The spin loop is **six bytes** — `in a,(c) / xor e / and d / jr z` — because
+      D, E and C carry mask, xor and port rather than RAM.
+      ⚠️ **`mask = 0` NEVER TERMINATES, on the reference too.** That is the
+      statement's documented behaviour, not a defect to guard, and it is why
+      `kwsweep` lists WAIT crunch-only and why every row above is constructed to
+      finish.
+      ~~🔴 `WAIT` IS THE ONLY ONE STILL ABSENT, AND IT IS ABSENT ON THE MACHINE,
+      NOT MERELY MISSING FROM A TABLE.~~ `kwsweep`'s LAYER-1 crunch test types
       `wait 0,0` and compares the stored bytes:
       ```
       ref: 96 20 11 2C 11 00              $96 = the WAIT token

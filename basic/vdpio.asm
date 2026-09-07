@@ -47,6 +47,49 @@ do_vpoke:
 
 ; --- do_out: OUT port,value -----------------------------------------------
 ; port = Z80 I/O port (BC = port for `out (c),a`), value low byte.
+; --- ex_wait: WAIT port,mask[,xor] -------------------------------------------
+; D-WAIT. Spin until `(INP(port) XOR xor) AND mask` is non-zero. The last MSX1
+; MAIN-ROM statement zerobas did not have: `make kwsweep`'s crunch layer read
+; `wait 0,0` back as the ASCII bytes 57 41 49 54 -- a VARIABLE named WAIT --
+; where the reference stores the token $96.
+; ⚠️ `mask = 0` NEVER terminates, on the reference too. That is the statement's
+; documented behaviour and not a bug to guard: it is how WAIT is used to block on
+; a hardware line. It is also why kwsweep lists WAIT crunch-only and never runs
+; it, and why the acceptance rows below pick a mask that is satisfied at once.
+; Register plan keeps the loop at SIX bytes: D = mask, E = xor, C = port.
+;   in:  HL -> the WAIT token (the stmt_table contract, as for ex_out)
+ex_wait:
+                inc     hl                  ; past the token
+                call    eval_addr           ; DE = port (checked, as OUT's is)
+                push    de
+                call    skip_spaces
+                cp      ','                 ; the mask is NOT optional
+                jp      nz,vdp_err
+                inc     hl
+                call    eval_addr           ; DE = mask
+                ld      d,e                 ; D = mask
+                ld      e,0                 ; E = xor, defaulted
+                call    skip_spaces
+                cp      ','
+                jr      nz,wt_go            ; two-argument form
+                inc     hl
+                push    de                  ; guard mask+default across the eval
+                call    eval_addr           ; DE = xor
+                ld      a,e
+                pop     de
+                ld      e,a                 ; E = the given xor
+wt_go:
+                pop     bc                  ; BC = port (C = the port number)
+                call    check_fperr_only    ; an out-of-domain port/mask/xor ->
+                                            ; Overflow, exactly as do_out treats it
+wt_lp:
+                in      a,(c)
+                xor     e
+                and     d
+                jr      z,wt_lp             ; still masked off -> keep waiting
+                jp      exec_stmt           ; `in` preserves HL, so no guard is
+                                            ; needed -- the do_out precedent below
+
 do_out:
                 call    eval_addr           ; D-F2-2 A1: OUT's port/value are the checked
                 push    de                  ; save port
