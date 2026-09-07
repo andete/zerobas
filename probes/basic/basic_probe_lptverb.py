@@ -248,6 +248,43 @@ LFL = [
     # message was printed. Same blindness as `scr-lpr*` above.
     ("lfl-noneb",   ['LFILES"NOSUCH.XXX"']),
     ("lfl-sink",    ['LFILES:PRINT"SCR"']),
+    # === D-FILESGUARD: the row that PINS do_files' op-selector park ===========
+    # 🔴 AND IT HAS TO BE `LFILES`, NOT `FILES`. `do_files` parks its dirverb
+    # selector on the stack across the filespec parse (+5 B) because `str_eval`
+    # can run `INPUT$(n,#ch)`, which reaches the drive through `fatprim_bounce`
+    # and overwrites DISKOP_OP -- measured at **7**
+    # (DISKOP_SEL_FAT_READ_FILE_SECTOR). TODO.md filed the pinning row as
+    # `FILES INPUT$(...)`, and `f.filesinp` in namspc-acceptance was built that
+    # way; it HOLDS under a faithful pre-fix knife, and now we know why.
+    # 🎯 EVERY CONSUMER OF DISKOP_OP INSIDE THE TENANT IS THE SAME BINARY TEST.
+    # sub/dirverb.asm reads it at four more places past the dispatch -- :260
+    # (trailing CR/LF), :297 (field layout), :349 (the printer's own space) and
+    # :375 (the SINK, CHPUT vs LPTOUT) -- and every one of them is
+    # `cp DISKOP_SEL_LFILES`. FILES is 2, LFILES is 3, the clobber is 7. So for
+    # FILES the clobber is INVISIBLE BY CONSTRUCTION: 2 and 7 are both "not 3"
+    # and take the identical branch at all four. No `FILES` row can ever pin this
+    # guard, however the refill is arranged -- the verb was wrong, not just the
+    # geometry [[a-coverage-row-whose-geometry-cannot-reach-the-case]].
+    # 🟢 FOR `LFILES` THE SAME CLOBBER IS LOUD: 3 takes the LFILES branch and 7
+    # does not, so an unparked selector flips the SINK from printer to screen and
+    # the layout from one-per-line to packed. That is what these two rows read.
+    # ⚠️ `CLEAR 1000` FIRST, AND BEFORE THE OPEN -- two 255-byte reads do not fit
+    # the default 200-byte pool, and `CLEAR` closes channels. The two reads leave
+    # the channel 2 bytes short of the sector boundary so the filespec's own
+    # `INPUT$(3,#1)` is what crosses it and forces the REFILL; without that the
+    # whole file is already buffered and no FAT primitive is reached at all.
+    # `LEFT$(...,0)` discards the bytes, so the filespec stays the same literal
+    # `lfl-wild` uses and the ONLY thing varied is whether a drive access
+    # happened during the parse.
+    ("lfl-inp",     ['CLEAR 1000', 'OPEN"TEST.BIN"FOR INPUT AS #1',
+                     'A$=INPUT$(255,#1):A$=INPUT$(255,#1)',
+                     'LFILES"*.BAS"+LEFT$(INPUT$(3,#1),0)']),
+    # The screen half, on the `lfl-none`/`lfl-noneb` precedent above: an empty
+    # printer log says nothing about whether the listing went somewhere ELSE, and
+    # "somewhere else" is exactly the failure this pair exists to catch.
+    ("lfl-inpb",    ['CLEAR 1000', 'OPEN"TEST.BIN"FOR INPUT AS #1',
+                     'A$=INPUT$(255,#1):A$=INPUT$(255,#1)',
+                     'LFILES"*.BAS"+LEFT$(INPUT$(3,#1),0)']),
     # 🔴 THE EIGHTH ROW, ADDED BY D-LFILES (docs/spec-basic-lfiles.md §2.2), AND
     # IT IS ABOUT `FILES`, NOT `LFILES`. R-LF4 says LFILES's no-match prints
     # `File not found`; zerobas raises no message at all on a no-match, and the
@@ -296,7 +333,8 @@ LFL = [
 # Rows in the LFILES battery whose readout is the SCREEN, not the printer log.
 # Named explicitly: deriving it from the label would make adding a row a guess.
 LFL_SCREEN = {"lfl-ctlf", "lfl-noneb", "lfl-nonef",
-              "lfl-emptyctl", "lfl-emptyf", "lfl-emptypb"}
+              "lfl-emptyctl", "lfl-emptyf", "lfl-emptypb",
+              "lfl-inpb"}          # D-FILESGUARD: the screen half of lfl-inp
 # Rows that mount the EMPTY fixture instead of test720.dsk. Also named
 # explicitly -- a battery whose rows disagree about which DISK they are looking
 # at is one where a divergence has two candidate causes.

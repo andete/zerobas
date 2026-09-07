@@ -410,7 +410,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:10117 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:10155 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -575,7 +575,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:2423 (T-6FE392)8 (T-529ABE)` from `TODO.md:9320 (T-529ABE)`: a
+      `TODO.md:2423 (T-6FE392)8 (T-529ABE)` from `TODO.md:9358 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -3061,7 +3061,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:9320 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:9358 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -5977,6 +5977,44 @@ list. **When a slice lands, grep this list for what it just shipped.**
       these rows, and **why** is unmeasured. Either the tenant does not consult
       `DISKOP_OP` on the FILES path, or 7 is harmless there. That is a smaller
       and much more answerable question than the one this entry was filed with.
+      ✅ **ANSWERED 2026-09-07 (D-FILESGUARD) — IT IS THE SECOND, AND IT IS
+      STRUCTURAL. NO `FILES` ROW CAN EVER PIN THIS GUARD.**
+      [`sub/dirverb.asm`](sub/dirverb.asm) reads `DISKOP_OP` at FOUR sites past
+      the dispatch — [:260](sub/dirverb.asm:260) (trailing CR/LF),
+      [:297](sub/dirverb.asm:297) (field layout), [:349](sub/dirverb.asm:349)
+      (the printer's own space) and [:375](sub/dirverb.asm:375) (the SINK,
+      `CHPUT` vs `LPTOUT`) — and **every one is the same binary test,
+      `cp DISKOP_SEL_LFILES`**. `DISKOP_SEL_FILES` is **2**,
+      `DISKOP_SEL_LFILES` is **3**, the clobber is **7**. 2 and 7 are both
+      "not 3", so for FILES the clobber takes the identical branch at all four
+      consumers — invisible **by construction**, however the refill is arranged.
+      🔴 **THE FILED ROW'S VERB WAS WRONG, NOT JUST ITS GEOMETRY.** This entry
+      already corrected the shape once (HI.TXT was fully buffered, so the read
+      touched no FAT primitive). That correction was necessary and not
+      sufficient: `f.filesinp` reaches the clobber and still cannot see it,
+      because the thing it clobbers to is indistinguishable from what it
+      replaced [[a-coverage-row-whose-geometry-cannot-reach-the-case]].
+      🟢 **FOR `LFILES` THE SAME CLOBBER IS LOUD** — 3 takes the LFILES branch
+      and 7 does not, so an unparked selector flips the SINK from printer to
+      screen and the layout from one-per-line to packed. Two rows added to
+      `lptverb-acceptance` on the file's own `lfl-none`/`lfl-noneb` precedent:
+      `lfl-inp` (printer) and `lfl-inpb` (its screen half). Baseline agrees with
+      the CF-3300 on both — printer `PROG.BAS`/`PROG2.BAS`, screen `<nothing>`.
+      🔴 **AND THE KNIFE IS NOT YET A PIN — THE GREEN CONTROLS REFUTED IT**
+      ([`scratchpad/filesguard_knife.py`](scratchpad/filesguard_knife.py),
+      K-FG1). `lfl-inp` moved to `<nothing printed>` as predicted, but
+      **`lfl-wild`, `lfl-all` and `lfl-sink` moved too**, all to a corrupted
+      first entry `????????.BAS`. By this knife's own stated criterion that means
+      the cut is breaking the VERB rather than the guard, so the red proves
+      nothing [[a-case-that-agrees-can-agree-for-the-wrong-reason]]. K-FI1's cut
+      was validated against FILES rows and is **not faithful for LFILES**; the
+      `????????` is a filespec/pattern effect, not a sink flip. Imported rather
+      than copied, so the two knives cannot drift — and this is the import
+      telling us it does not transfer.
+      ➡️ **WHAT IS OWED IS A FAITHFUL PRE-FIX CUT FOR THE LFILES PATH.** The
+      rows are right and the structural argument is proven from source; only the
+      cut is wrong. The item stays open on that, and it is now a much smaller
+      question than the one above it.
       🤖 AUTONOMOUS — 💰 0 ROM bytes; it is a row, and the references settle it.
 
 - [x] ✅ **A FILESPEC OF CONTROL BYTES: CF-3300 SAYS `Bad file name`, ZEROBAS
