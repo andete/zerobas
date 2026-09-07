@@ -10667,6 +10667,43 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
         `w.seq` does the identical two writes with only ONE channel open at a
         time and both machines agree, so `LSET`/`PUT` are correct in general and
         the fault is specifically two channels sharing one record buffer.
+        🎯 **ROOT CAUSE LOCATED 2026-09-07 (D-FIELDFIX), AND IT IS A PREMISE THAT
+        WAS WITHDRAWN WITHOUT ITS DEPENDANT BEING TOLD.**
+        [`basic/field.asm`](basic/field.asm:21)'s header states the design its
+        code rests on — *"the record buffer is the channel's `FSECTOR_BUF` … so a
+        field's bytes live in the channel's context and **travel with it**"* —
+        and the repack then set `FCH_CTXSZ equ FCH_STATESZ` with the comment
+        *"block = state ONLY (no buffer)"*, withdrawing exactly that. The premise
+        stayed in the source after the mechanism left
+        [[a-fix-falsifies-the-justification-beside-it]].
+        🔴 **AND THE WRITE-BACK CACHE DOES NOT COVER THE GAP.**
+        `fat_restage_channel` ([`basic/fat-prim-body.inc:467`](basic/fat-prim-body.inc:467))
+        dispatches on mode — `1 = INPUT`, `2 = OUTPUT`, **everything else returns
+        with "device channels own no sector"** — and `fat_detach_channel` flushes
+        only mode 2. A RANDOM channel is outside BOTH, so its record is neither
+        saved on switch-out nor restored on switch-in. That is the whole defect.
+        💰 **A FIX WAS BUILT, PROVEN AND REVERTED.** Letting the record travel
+        with the context (`FCH_CTXSZ` 50 → 306, plus a second `ldir` in each of
+        `fch_save_active` / `fch_load_ctx`) costs **16 B of main page 1** and
+        **closes both defects against the reference**: `Q$` reads `AAAAAAAA` and
+        `w.two` writes `11111111/22222222`, with both controls still green.
+        🔴 **REVERTED BECAUSE IT REDS TWO ROWS AND I COULD NOT EXPLAIN ONE.**
+        `ramfree`'s `ctl.pool` is understood — it pins the control pool at a
+        hardcoded `$D980` that the lowered ceiling moves. But `array`'s
+        `scalar.input.chain.oom` (a **zb-only** geometry assertion) stops
+        reporting `Out of memory` when the machine has **less** RAM, which is
+        backwards; the likely cause is `DIM Z(1840)` no longer fitting and so
+        freeing ~7 KB, but a direct check of that produced no reading and the
+        mechanism is NOT established [[a-mechanism-inferred-from-one-observation]].
+        Committing a red battery with an unexplained side effect is the shape
+        this tree keeps paying for, so the ROM is back to byte-identical.
+        ➡️ **THE BETTER FIX, AND IT IS WHAT JOOST'S INSTINCT POINTED AT: EXTEND
+        THE WRITE-BACK CACHE TO RANDOM MODE INSTEAD.** ~0 RAM — no per-channel
+        record slot at all. It needs two things the state does not have today: a
+        per-channel RECORD NUMBER (`GP_RECNO` is a single global at `$EEC4`,
+        outside the `FCH_STATE0..FWR_DIROFF` span) and a DIRTY bit so `LSET`
+        without a `PUT` survives a switch. That is a designed change rather than
+        a 16-byte patch, and it is the one worth making.
         ⚠️ **THE CONTROL FAILED FIRST, FOR A REASON THAT WAS MINE**: its lines
         were numbered 10/20/50/30/60 to mirror the other row visually, so BASIC
         SORTED them and re-opened `#1` while it was still open — `<NO READING>`
