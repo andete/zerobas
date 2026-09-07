@@ -1001,7 +1001,8 @@ input_common:
                 call    fch_mode_class      ; A = FCH_MODES[ch]; ERR 59 if not open
                 pop     hl
                 cp      CAS_IN_MODE
-                jr      z,inp_cas
+                jr      z,inp_setsrc        ; cassette: A = CAS_IN_MODE already, and
+                                            ; NO fch_select (see above)
                 push    hl                  ; guard text cursor (fch_select uses LDIR)
                 ld      a,e
                 call    fch_select          ; make channel e live; FCH_MODE = its mode
@@ -1009,12 +1010,12 @@ input_common:
                 ld      a,(FCH_MODE)
                 cp      1                   ; a channel must be open for INPUT
                 jp      nz,load_error
-                ld      de,fat_io_getbyte   ; disk channel -> read via fat_io_getbyte
-                ld      (ARL_GETBYTE),de
-                jr      inp_readvar
-inp_cas:
-                ld      de,cas_in_getbyte   ; CAS: input channel -> tape block source
-                ld      (ARL_GETBYTE),de
+inp_setsrc:
+                ; D-CASINP: the two-way source choice moved to arl_set_src
+                ; (basic/input.asm) so INPUT$ can make it too. -11 B here.
+                push    hl                  ; HL is the text cursor; arl_set_src uses it
+                call    arl_set_src         ; A = the mode (1 disk / CAS_IN_MODE tape)
+                pop     hl
 inp_readvar:
                 call    req_comma           ; D-NGRAM17
                 call    req_letter          ; D-NGRAM: a string variable name must follow

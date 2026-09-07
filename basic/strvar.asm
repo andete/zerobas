@@ -460,20 +460,33 @@ str_inputd:
                 call    fch_mode_class      ; A = FCH_MODES[E]; ERR 59 if NOT OPEN
                 cp      1                   ; open FOR INPUT -> read it
                 jr      z,sid_ok
+                cp      CAS_IN_MODE         ; D-CASINP: OPEN"CAS:" FOR INPUT reads on
+                jr      z,sid_cas           ; the reference too -- MEASURED (ASC(A$)=72,
+                                            ; the 'H' of the HELLO fixture), not inferred
                 cp      4
                 ld      a,55                ; input past end (modes 2/3/5/6 alike)
                 jr      nz,sid_raise
                 ld      a,61                ; bad file mode (RANDOM)
 sid_raise:
                 jp      raise_error         ; no `pop hl` -- raise_error resets SP
+sid_cas:
+                ; 🔴 NO fch_select ON A CASSETTE CHANNEL. It owns no fat.asm ctx and
+                ; selecting it would LDIR garbage over the globals; input_common's
+                ; own arm skips it for exactly this reason (basic/files.asm).
+                call    arl_set_src         ; A = CAS_IN_MODE -> cas_in_getbyte
+                jr      sid_read
 sid_ok:
+                push    af                  ; the mode -- fch_select does not preserve it
                 ld      a,e
                 call    fch_select          ; make channel f live; FCH_MODE = its mode
+                pop     af
+                call    arl_set_src         ; A = 1 -> fat_io_getbyte
+sid_read:
                 call    str_inputd_read     ; fill STRSCR [len][bytes] with n bytes
                 call    strscr_desc         ; RVDESC -> [len][ptr] wrapping STRSCR
-                                            ; (arrays slice-4a §10)
-                                            ; the stack (HL here would clobber it); restore the eval cursor (past ')')
-                jp      str_pub_ok          ; D-PUBTAIL (-4 B, main page 1)
+                                            ; (arrays slice-4a §10); the eval cursor is
+                                            ; restored by str_pub_ok's own `pop hl`
+                jp      str_pub_ok          ; D-PUBTAIL
 ; str_inputd_read — consume INDLR_N bytes from the open channel into STRSCR
 ; ([len][bytes]); store up to STRMAX, but keep consuming so the file cursor advances
 ; the full count. Stops early at EOF. All loop state is in RAM (CALSLT clobbers regs).
@@ -484,7 +497,8 @@ sidr_lp:
                 ld      a,(INDLR_N)
                 or      a
                 jr      z,sidr_done         ; consumed all n
-                call    fat_io_getbyte
+                call    arl_getbyte         ; D-CASINP: through the vector, so a
+                                            ; CAS: channel sources from the tape
                 jr      c,sidr_done         ; EOF before n -> stop (partial)
                 ld      c,a                 ; C = the byte read
                 ld      hl,INDLR_N

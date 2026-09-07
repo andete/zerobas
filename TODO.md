@@ -10740,7 +10740,7 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       §5.
       🤖 AUTONOMOUS — the reference or a gate settles it; finishable unattended (no his-decision signal found).
 
-- [ ] 🔴 **`INPUT$` ON A `CAS:` CHANNEL OPENED FOR INPUT READS ON THE REFERENCE
+- [x] 🔴 **`INPUT$` ON A `CAS:` CHANNEL OPENED FOR INPUT READS ON THE REFERENCE
       AND RAISES ERR 55 HERE.** Found 2026-09-05 by D-CASFCH while measuring the
       entry above; `scratchpad/casfch_probe.py --input-only` is the reading.
       `OPEN"CAS:D"FOR INPUT AS#3` then `A$=INPUT$(1,#3)`: the CF-3300 returns no
@@ -10815,6 +10815,35 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       this paragraph — which is what re-running them today did to the 09-05
       price directly above.
       So this needs a CARVE before it needs a fix, and the carve is the slice.
+      🟢 **SHIPPED 2026-09-07 (D-CASINP) — `INPUT$` ON A `CAS:` INPUT CHANNEL NOW
+      READS THE TAPE, AND THE ROW SET AGREES ON ALL SEVEN CELLS.**
+      Re-measured first, not inherited: `i.inp` read **0 vs 55** and `i.byte`
+      **72 vs 255** that morning, with `IMARK` 165/165 saying the program ran.
+      After: `i.inp` **0/0**, `i.byte` **72/72** — zerobas returns the `H` of the
+      `$EA` tape's `HELLO`, positively witnessed rather than by an absent error.
+      💰 **THE SHARED INDIRECTION PAID, WHICH IS WHY IT FITS.** Duplicating the
+      two-way source choice inside `INPUT$` prices at ~18 B against a 16 B wall.
+      Instead `arl_set_src` ([`basic/input.asm`](basic/input.asm)) makes the
+      choice once, `input_common` GIVES BACK the 14 B it spent inline (−11 B
+      net), and `INPUT$` pays 14 B — **+3 B in main page 1**. The call site in
+      `str_inputd_read` cost **0 B**: `call fat_io_getbyte` → `call arl_getbyte`,
+      the trampoline that already existed. Page 1 **16 → 13 B free**, low region
+      **14 → 0 B free** (2026-09-07); the helper lives low, beside
+      `linebuf_getbyte` — the third byte source — where the room was.
+      🔴 **THE LOW REGION IS NOW AT 0 B AND THAT IS THE NEXT CONSTRAINT**, not
+      page 1. Both figures rot: `make basic-reloc`.
+      🎯 **`sid_cas` DOES NOT `fch_select`, AND THAT IS LOAD-BEARING** — a
+      cassette channel owns no `fat.asm` ctx, so selecting it would `LDIR`
+      garbage over the globals. `input_common`'s arm skips it for exactly that
+      reason and the new arm copies the reason, not just the shape.
+      ⚠️ `arl_set_src` CLOBBERS HL, which is the BASIC text cursor inside
+      `input_common`; that site guards it with `push`/`pop` (+2 B, already in the
+      −11). `INPUT$` has pushed its own cursor long before. The HL-clobbering
+      form is 14 B where a DE-preserving one is 15 — `ld (nn),de` is 4 bytes and
+      `ld (nn),hl` is 3 — and 14 was exactly the room available.
+      📏 Battery 114/114 green, full. The refactor sits under `INPUT#` and
+      `LINE INPUT#`, not only under the new path, which is what the battery is
+      for.
       ⚠️ `diskbasic-acceptance`/a cassette-side gate owns the surface, and the row
       set has no CAS: channel rows at all yet.
       🔴 **THE ROW-ROT SWEEP WAS READING THE WRONG MODE, 2026-09-05.**

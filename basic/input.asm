@@ -261,6 +261,29 @@ inpc_nomore:
                 or      1                   ; A nonzero -> ZF = 0 (no more input)
                 ret
 
+; --- arl_set_src: point ARL_GETBYTE at the right FILE byte source ----------
+; D-CASINP. Both INPUT#/LINE INPUT# (input_common, basic/files.asm) and
+; INPUT$(n,#f) (str_eval_inputd, basic/strvar.asm) have to choose between the
+; disk source and the tape source before reading. input_common did it inline;
+; INPUT$ did not do it at all, which is why INPUT$ on a CAS: channel could only
+; ever read a disk channel and was refused outright.
+; 💰 SHARED RATHER THAN COPIED BECAUSE THE COPY DOES NOT FIT: duplicating the
+; two-way choice inside INPUT$ prices at ~18 B against a 16 B page-1 wall, while
+; this form lets input_common GIVE BACK the 14 B it spent inline. It lives in the
+; low region beside linebuf_getbyte, the third source, where the room is.
+;   in:  A = the channel's FCH_MODES value (1 = disk open FOR INPUT,
+;        CAS_IN_MODE = OPEN"CAS:" FOR INPUT). A SURVIVES (`cp` does not write it).
+;   out: ARL_GETBYTE set. ⚠️ CLOBBERS HL -- input_common holds the BASIC text
+;        cursor there and guards it; INPUT$ has already pushed its own.
+arl_set_src:
+                ld      hl,fat_io_getbyte
+                cp      CAS_IN_MODE
+                jr      nz,ass_store
+                ld      hl,cas_in_getbyte
+ass_store:
+                ld      (ARL_GETBYTE),hl
+                ret
+
 ; --- linebuf_getbyte: ARL_GETBYTE source for the console line --------------
 ; The byte-source vector read_into_strscr calls (via arl_getbyte) while parsing a
 ; console INPUT line. Returns the next LINEBUF byte and advances INP_CURSOR; the 0
