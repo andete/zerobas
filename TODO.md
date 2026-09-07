@@ -10616,13 +10616,40 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
         and variable area — is FIXED, and `make txtceil-acceptance` pins it with
         four rows including the `c.fits` control that stops a bound which
         over-refuses from reading green.
-        🙋 **WHAT REMAINS IS JOOST'S AND ONLY HIS**: whether `FRE(0)` should
+        ✅ **DECIDED BY JOOST 2026-09-07: DO NOT RESERVE BUFFERS WE DO NOT USE
+        — with the caveat that we must be SURE we do not need them if the
+        references do.** That caveat is now measured
+        ([`scratchpad/twochan_probe.py`](scratchpad/twochan_probe.py)):
+        | row | case | CF-3300 | zerobas |
+        |---|---|---|---|
+        | `t.solo` | one channel, three reads | `AAA,AAA,AAA` | `AAA,AAA,AAA` |
+        | `t.two` | **two channels, interleaved** | `AAA,BBB,AAA` | `AAA,BBB,AAA` |
+        🎯 **THE HAZARD WAS SPECIFIC AND IT DID NOT FIRE.** `FSECTOR_BUF` and
+        `FWBUF` are ONE buffer each, global, while the 50 B per-channel state
+        carries position and cache markers (`FAT_CURCLUS`, `FAT_CLUSSEC`,
+        `FAT_FATSEC` = *"FAT sector currently read"*). So a channel's restored
+        state can say "the sector I need is loaded" while the shared buffer holds
+        another channel's. Both test files are 12 bytes — ONE sector each — so
+        `t.two` puts exactly that case live: #2's read evicts #1's sector, and
+        #1's next read still returns `AAA`. zerobas does not trust the stale
+        cache. The reference's per-channel buffers buy correctness we already
+        have by other means.
+        ⚠️ **ONE PATTERN, NOT A PROOF.** What is NOT covered: RANDOM `GET`/`PUT`
+        interleaved on two channels (a different path through `FSECTOR_BUF`),
+        multi-sector files where a re-read is forced mid-record, and two-channel
+        WRITE interleaving. If the buffers are ever suspected again, those are
+        the three rows to add [[a-coverage-row-whose-geometry-cannot-reach-the-case]].
+        ~~🙋 **WHAT REMAINS IS JOOST'S AND ONLY HIS**: whether `FRE(0)` should
         AGREE with the references, which would mean reserving **267 B per
         channel** for sector buffers zerobas deliberately does not have
         (`FCH_CTXSZ equ FCH_STATESZ ; repack: block = state ONLY (no buffer)`).
         That is a faithfulness call about a MEASURED architectural difference —
         `R = 293 + 267×MAXFILES` there against `R = 12 + 50×MAXFILES` here — not
-        a bug, and `crf-oomsay`/`crf-oomlst` cannot agree until it is made.
+        a bug, and `crf-oomsay`/`crf-oomlst` cannot agree until it is made.~~
+        ➡️ **SO `crf-oomsay` / `crf-oomlst` STAY DIFF, PERMANENTLY AND ON
+        PURPOSE.** They compare `FRE(0)` across an architecture the two machines
+        do not share, and the decision above is that zerobas keeps its own. Those
+        two rows are now a RECORDED difference rather than an open question.
         Left in place rather than split into its own item: the measurement that
         frames the question is this entry, and a one-line item elsewhere would
         arrive without it.
