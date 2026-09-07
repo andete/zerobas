@@ -410,7 +410,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:10830 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:10853 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -575,7 +575,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:2423 (T-6FE392)8 (T-529ABE)` from `TODO.md:9767 (T-529ABE)`: a
+      `TODO.md:2423 (T-6FE392)8 (T-529ABE)` from `TODO.md:9790 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -3061,7 +3061,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:9767 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:9790 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -4161,6 +4161,29 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `tools/redundant-load-reviewed.txt` with no candidate, and
       `redundant-load-check` calls that *"how this control goes blind"*. RETIRED
       with its reason, on the `print_crlf` precedent in the same file.
+      🟢 **AND THE COLON-TAIL CLASS D-DATACOLON OPENED IS NOW SWEPT AND CLEAN
+      (2026-09-07, D-COLONTAIL,
+      [`scratchpad/colontail_probe.py`](scratchpad/colontail_probe.py),
+      [`.out`](scratchpad/colontail_run4.out)).** D-DATACOLON found bare
+      `RESTORE`'s `ret` ending the WHOLE LINE — the dispatcher enters handlers by
+      push/ret, so a handler that `ret`s instead of `jp exec_stmt` swallows the
+      rest. One verb was fixed; **the class was never checked.** 23 verbs, one line
+      each (`<VERB> <minimal args>:PRINT…`), both machines: **0 divergences.** So
+      that defect was a one-off, not a family — a negative result, and a cheap
+      standing re-run.
+      🔴 **THREE ROWS FIRST BLANKED ON BOTH MACHINES, WHICH IS WHAT "SWALLOWED"
+      LOOKS LIKE AND MEASURES NOTHING.** `OUT &H99,0` writes the VDP CONTROL port
+      and latches half a register write; `WAIT &H99,0,0` has an AND-mask of **0**,
+      so the row asked the machine to hang and both obliged. Repaired to
+      `OUT &HA0,0` (PSG register select) and `WAIT &H99,128` (D-WAIT's own VBLANK
+      form) — both then read `continued` on both machines.
+      🎯 **`RANDOMIZE 1` STILL BLANKS ON BOTH, AND THE REASON IS NOW ESTABLISHED
+      RATHER THAN ASSUMED**: with the fence moved to its OWN numbered line it is
+      still blank, so the verb never RETURNS on either machine — it BLOCKS. That
+      is agreement, and this instrument cannot say anything about its line
+      handling; the probe now says so in its own output, and demands the same of
+      any future tag that lands there
+      [[an-unnamed-outcome-reads-as-no-outcome]].
       ⚠️ **`m.colon` AGREES FOR A REASON I HAVE NOT ESTABLISHED.** The explicit
       guard is `or a`, which tests only for `$00`; a colon is not zero, so it
       reaches `fname_expr` and comes back `ERR 24` by some path inside `str_eval`
