@@ -183,8 +183,25 @@ SWEEP: list[tuple[str, str, str | None, str, str]] = [
      # 67/67 covers it at a pinned WIDTH 40 + CLS across six cases
      # (docs/cursor-vg8020-characterization.md §2). Treat this row as evidence
      # that CSRLIN is PRESENT, never as evidence about its value.
+     #
+     # 🟢 SO IT IS NOW SCORED **WEAK**, WHICH IS WHAT THE PARAGRAPH ABOVE HAS
+     # BEEN ARGUING FOR WITHOUT USING THE WORD (D-WAITGAP, 2026-09-07). A row
+     # that is evidence of PRESENCE and never of VALUE is this probe's own
+     # definition of WEAK, and `time` already uses it. The cost of leaving it
+     # DIVERGENT was not cosmetic: the sweep read `DIVERGENT=1` permanently, so
+     # the headline could not move if CSRLIN ever really broke, and a count that
+     # is always 1 teaches its readers to skip it.
      'PRINT:PRINT:PRINT"[";CSRLIN;"]"',              "direct",
-     "absent => variable CSRLIN reads 0; real => the (non-zero) cursor row"),
+     "WEAK: absent => variable CSRLIN reads 0; real => the (non-zero) cursor "
+     "row -- but the VALUE is ambient scroll state, so only the non-zero-ness "
+     "is a reading. Scored WEAK for the reason the block above gives, and "
+     "measured 2026-09-07 (D-WAITGAP, scratchpad/csrlin_probe.py): on THIS row "
+     "the two REFERENCES disagree with EACH OTHER -- vg8020 11, cf3300 8, zb 10 "
+     "-- in one batch, so it cannot score anything by construction. Anchored "
+     "with CLS all three agree everywhere (CLS 0/0/0, CLS:PRINT 1/1/1, "
+     "CLS:PRINT:PRINT 2/2/2) and CSRLIN is correct: LOCATE 0,5 -> 5, 0,10 -> 10, "
+     "0,0 -> 0 on all three, which is the decisive form because a set row admits "
+     "no scroll history."),
     ("pos",     "a=pos(0)",
      'PRINT"    ";:PRINT"[";POS(0);"]"',             "direct",
      "absent => array POS(0) auto-dims to 0; real => the (non-zero) column"),

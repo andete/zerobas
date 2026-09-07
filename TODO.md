@@ -410,7 +410,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:10155 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:10204 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -9809,8 +9809,57 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       the only row that saw anything, and it had been written to rule out a
       different hypothesis.
       🤖 AUTONOMOUS — the reference or a gate settles it; finishable unattended (no his-decision signal found).
-- [ ] **Editor / program management** — `RENUM`, `AUTO`,
-      `TRON`/`TROFF`, `SWAP`, `WAIT`, `FRE`, full `CLEAR` semantics (`ERASE`
+- [ ] **Editor / program management** — ~~`RENUM`, `AUTO`,
+      `TRON`/`TROFF`, `SWAP`, `WAIT`, `FRE`~~ **`WAIT` ALONE**, full `CLEAR`
+      semantics
+      🟢 **THE BUCKET IS DOWN TO ONE WORD, MEASURED 2026-09-07 (D-WAITGAP).**
+      `make kwsweep` re-run today scores `TRON`, `TROFF`, `SWAP` and `FRE` as
+      **present + SUPPORTED**; `RENUM`, `AUTO` and `DELETE` crunch and have
+      bodies (`ex_renum`, `ex_auto`, `ex_delete` in
+      [`basic/program.asm`](basic/program.asm)). The list above had been naming
+      four shipped words as outstanding — struck rather than deleted, because a
+      reader who saw the old line would otherwise wonder whether it was ever
+      true [[a-fix-falsifies-the-justification-beside-it]].
+      🔴 **`WAIT` IS THE ONLY ONE STILL ABSENT, AND IT IS ABSENT ON THE MACHINE,
+      NOT MERELY MISSING FROM A TABLE.** `kwsweep`'s LAYER-1 crunch test types
+      `wait 0,0` and compares the stored bytes:
+      ```
+      ref: 96 20 11 2C 11 00              $96 = the WAIT token
+      zb : 57 41 49 54 20 30 2C 11 00     "WAIT 0" as raw ASCII -- a VARIABLE
+      ```
+      zerobas parses it as a variable name. That matters more than
+      "unimplemented": `WAIT` is a MAIN-ROM MSX1 statement, not Disk BASIC, so it
+      is squarely inside the faithful-full-MSX1-BASIC charter
+      [[charter-faithful-full-msx1-basic]].
+      ⚠️ **TABLE-ABSENCE WOULD NOT HAVE BEEN EVIDENCE, AND THIS ENTRY NEARLY
+      RESTED ON IT.** `MAXFILES` is also absent from
+      [`basic/kwtable.inc`](basic/kwtable.inc)'s 152 words and is NOT missing —
+      it is COMPOSED, `MAX`($CD) + `FILES`($B7), exactly as the table's own
+      comment says (the `OUTPUT` = `OUT`+`PUT` shape). `INTERVAL` is absent from
+      the list too and crunches **SAME**. The crunch layer is what separates
+      these from `WAIT`; a grep of the table cannot
+      [[a-readout-blind-to-its-own-subject]].
+      💰 **PRICED FROM `do_out`, WHICH HAS THE SAME ARGUMENT SHAPE**
+      ([`basic/vdpio.asm:50`](basic/vdpio.asm:50)): `WAIT port,mask[,xor]` is
+      that two-argument parse plus an optional third and the spin loop — **~55–65 B
+      of body**, plus a keyword-table entry and a statement-alphabet/dispatch
+      slot. The body can be a sub tenant (sub page 1 has room), but the table
+      entry and the dispatch shim are main-side: **~20–25 B against 13 B free in
+      main page 1 (2026-09-07)**. ⚠️ Both figures rot — `make basic-reloc`.
+      **So this needs ~10 B of carve before it needs a design.**
+      🟢 **AND THE ORACLE TOKEN IS ALREADY TAKEN: `WAIT` = `$96`**, read off the
+      reference's own crunch bytes above. kwtable's convention is to lock a token
+      from the reference and never invent one; this run did that walk as a side
+      effect, so no separate oracle pass is owed.
+      ⚠️ **AND THE SPIN IS THE HAZARD THE PROBE HAS TO SOLVE**: `WAIT` with a
+      mask that never matches does not return, which is why `kwsweep` lists it
+      crunch-only ("can spin forever — never executed in a batch"). A row needs a
+      port/mask pair that is satisfied immediately, or it hangs the battery.
+      📌 **AND A SEPARATE HOLE THE SAME RUN NAMED**: `RENUM`, `AUTO` and `DELETE`
+      read `crunch-only — support UNKNOWN`. They have bodies, but **nothing
+      executes them**, so "implemented" here is a claim about the source and not
+      about the machine [[a-shadowed-guard-has-no-knife]].
+      (`ERASE`
       shipped 2026-07-15 with the arrays arc, slice 2; `DELETE <range>` shipped
       2026-08-02 with D-DELETE and **`LIST <range>` the same day with D-LSTRNG**,
       `.` excepted in both — its own item below).
