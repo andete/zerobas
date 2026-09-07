@@ -410,7 +410,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:10275 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:10308 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -9441,10 +9441,43 @@ architecture and write code. Each step is independently oracle-validatable.
             cluster count via a sector-cached FAT scan; $FF$A6 oracle-locked;
             `PRINT DSKF(0)`=707 matches a direct FAT12 count AND the real CF-3300
             (`disk_probe_dskf.py`). See PROVENANCE §DSKF.
-      - [ ] **`LOC(#n)`** — deferred: CF-3300 `LOC(1)` returns 26 (file size) both
+      - [ ] **`LOC(#n)`** — ~~deferred: CF-3300 `LOC(1)` returns 26 (file size) both
             before and after a read; sequential-file semantics unclear, so not
-            cargo-culted. **`LFILES`** — printer-bound (LPT), no device in zerobas.
+            cargo-culted.~~ **`LFILES`** — printer-bound (LPT), no device in zerobas.
             Both observed + documented in PROVENANCE §LOC / LFILES.
+            🟢 **THE SEMANTICS ARE NOT UNCLEAR — MEASURED 2026-09-07 (D-LOCSEM),
+            [`scratchpad/loc_probe.py`](scratchpad/loc_probe.py).** The filed
+            observation was taken on a SEQUENTIAL file, which is the one case
+            where MSX's `LOC` is least legible. On a RANDOM file — where it is
+            defined — the CF-3300 is exact:
+            | row | case | CF-3300 | zerobas |
+            |---|---|---|---|
+            | `s.seq` | sequential, LOC before / after 5 B / after 10 B | `26,26,26` | `0,0,0` |
+            | `r.get` | random, `GET #1,3` then `GET #1,7` | **`0,3,7`** | `0,0,0` |
+            | `w.put` | random, `PUT #1,4` | **`0,4,0`** | `0,0,0` |
+            `r.get` reads the RECORD NUMBER exactly, and `w.put` shows the write
+            side does too. The sequential column reproduces the filed `26` and
+            extends it: it is CONSTANT at the file size across two reads, which
+            is a stable rule and not an ambiguity. zerobas reads `0,0,0`
+            throughout because it has no `LOC` — `LOC(1)` parses as an array
+            reference and auto-dims, which is what the gap looks like from BASIC.
+            🎯 **SO THE COST DRIVER IS NOT THE SEMANTICS, IT IS PER-CHANNEL
+            STATE.** `ev_ff_lof` ([`basic/expr.asm:1257`](basic/expr.asm:1257)) is
+            ~13 B and `LOC` mirrors it — except that the record number lives in
+            **`GP_RECNO`, a SINGLE GLOBAL** written once in
+            [`basic/field.asm:795`](basic/field.asm:795). A `LOC` built on it is
+            right for one open random file and wrong the moment there are two.
+            A faithful one needs a per-channel word array plus writes at GET/PUT.
+            ⚠️ **ONE ORACLE ONLY.** The VG-8020 is diskless, so no row here can be
+            cross-checked between two references.
+            ⚠️ **THIS IS A CALL FOR JOOST, AND IT IS NOW A PRICED TRADE RATHER
+            THAN AN UNCERTAINTY**: the cheap `LOC` (~15–20 B, correct for one
+            open random file) or the faithful one (per-channel state), against
+            23 B free in main page 1 (2026-09-07, and it rots). Written as prose
+            rather than as a `NEEDS-JOOST` marker on purpose — this is a nested
+            sub-item inside a block that already carries its own marker, and a
+            second one there reads as an ambiguous item to
+            `make todo-marker-check` rather than as a scoped question.
 - [ ] **Direct sector access — INVESTIGATED, DEFERRED to Phase 3** — `DSKI$` (fn,
       $EA) / `DSKO$` (stmt, $D1). Tokens oracle-confirmed real (VG-8020 crunch), but
       NOT a clean "sector ↔ string" pair, and blocked on three counts:
