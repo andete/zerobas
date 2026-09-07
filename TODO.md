@@ -410,7 +410,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:10652 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:10685 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -575,7 +575,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:2423 (T-6FE392)8 (T-529ABE)` from `TODO.md:9589 (T-529ABE)`: a
+      `TODO.md:2423 (T-6FE392)8 (T-529ABE)` from `TODO.md:9622 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -3061,7 +3061,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:9589 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:9622 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -6524,6 +6524,39 @@ list. **When a slice lands, grep this list for what it just shipped.**
       caught. Scoped to `DSKI$` alone: *do we ship a verb whose measured face is
       "returns an empty string", or keep hunting for the read?* The other seven
       words are unaffected and the item stays 🤖 for them.
+      🟢 **`COPY` CHARACTERISED 2026-09-07 (D-COPYVERB,
+      [`scratchpad/copyverb_probe.py`](scratchpad/copyverb_probe.py),
+      [`.out`](scratchpad/copyverb_run2.out)) — AND UNLIKE `DSKI$` IT PLAINLY DOES
+      SOMETHING.** Second of the eight, taken because a file copy either happens or
+      does not and the CHECK is a separate statement.
+      | row | | cf3300 |
+      |---|---|---|
+      | `c.ctl` | CONTROL: no `COPY`, OPEN an existing file | `55` |
+      | `c.basic` | `COPY"A:PROG.BAS"TO"A:NEW.BAS"`, then OPEN `NEW.BAS` | **`55`** |
+      | `c.missing` | source does not exist | **`ERR 53`** |
+      | `c.self` | copy a file onto itself | **`ERR 5`** |
+      | `c.nodest` | `COPY"A:PROG.BAS"` with no `TO` | **`ERR 5`** |
+      🎯 **THE READOUT IS A SECOND STATEMENT, NOT THE VERB'S OWN FACE.** After the
+      copy the program OPENs the destination — separating *"the COPY returned
+      without error"* from *"the file is there"*, which a verb that silently did
+      nothing would pass and fail respectively.
+      🎯 **AND `c.nodest` IS `ERR 5`, NOT `ERR 2`** — so the one-argument form
+      PARSES and is rejected semantically, not by the tokeniser. That is a
+      distinction an implementation has to reproduce and could easily get wrong.
+      🔴 **`c.basic` WOULD HAVE AGREED FOR THE WRONG REASON IF `NEW.BAS` WERE
+      ALREADY ON THE FIXTURE**, so the probe now reads
+      `disk/test720.dsk`'s FAT12 root directory itself and REFUSES to score unless
+      the destination is absent (it holds `TEST.BIN HI.TXT PROG.BIN PROG.BAS
+      PROG2.BAS`). Checked once by hand is not checked — a regenerated fixture
+      would rot it silently [[a-case-that-agrees-can-agree-for-the-wrong-reason]].
+      ⚠️ **EVERY ROW WRITES, SO EVERY ROW MOUNTS A PRIVATE COPY** of the image, on
+      `basic_probe_lptverb.py`'s precedent: boot-per-case reboots the machine but
+      keeps mounting the SAME file, so one row's new file would be in the directory
+      for every later row.
+      ➡️ **SO `COPY` IS THE FIRST OF THE EIGHT THAT IS WORTH IMPLEMENTING ON THE
+      EVIDENCE** — a working verb with four measured faces, against `DSKI$`'s empty
+      string. It belongs in the disk ROM, which had ~8910 B free (`make
+      basic-reloc`, 2026-09-07). Not built here: this is the characterisation.
       🤖 AUTONOMOUS — the reference settles every token, and the pin is built.
 
 - [ ] 📌 **`basic_probe_kwsweep.py` PRINTS ROWS NO RUNNER CAN PARSE, AND ITS
