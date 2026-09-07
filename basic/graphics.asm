@@ -1089,9 +1089,14 @@ spr_set:
                 inc     hl                  ; consume the ON/OFF/STOP sub-keyword
                 push    hl                  ; guard the exec-continue ptr across set_state
                 ld      hl,ZTRAP+ZTI_SPRITE*ZTRAP_ENTSZ
-                call    set_state
-                pop     hl
-                jp      exec_stmt           ; continue the line (a bare `ret` would
+                ; 🎯 D-CARVE2: the shared "set a trap state and resume" tail.
+                ; 🔴 THE CANONICAL IS IN basic/program.asm, NOT HERE, and that is
+                ; a switch constraint rather than a preference: this arm is under
+                ; IF G7_RESIDENT + IF TRAPS_T4, while program.asm's STOP arm is
+                ; ALWAYS assembled. A canonical inside a switch cannot serve a
+                ; caller outside it -- `make switch-build-check` proved that by
+                ; failing on the first attempt, which had it the other way round.
+                jp      trap_state_done     ; D-CARVE2 (-4 B, main page 1)
                                             ; SWALLOW the rest of it -- the T1 lesson)
     ELSE
                 cp      ON_TOKEN
@@ -1129,6 +1134,13 @@ spr_assign:
                                             ; truncate and the pad (string bodies live
                                             ; in page-3 RAM, which it can read)
                 ld      a,7                 ; GFX_OP = 7 -> tenant pattern write
+                ; 🎯 D-CARVE2: THE CANONICAL "RUN THE SPRITE TENANT AND RESUME"
+                ; TAIL. Three G7/G8 statement arms ended with these three verbatim.
+                ; The DECISION -- which tenant op -- is the `ld a,<op>` that stays
+                ; at each site; only the call-and-resume is shared.
+                ; Contract: one saved cursor on top of the stack, which this
+                ; `pop hl` takes.
+spr_stmt_done:
                 call    spr_tenant
                 pop     hl
                 jp      exec_stmt
@@ -1343,9 +1355,7 @@ pspr_pattern:
 pspr_go:
                 push    hl
                 ld      a,9                 ; GFX_OP = 9 -> tenant attribute merge
-                call    spr_tenant
-                pop     hl
-                jp      exec_stmt
+                jp      spr_stmt_done       ; D-CARVE2 (-4 B, main page 1)
 
     ENDIF
 
@@ -1492,7 +1502,13 @@ g8_assign:
 g8_run:                                     ; run-aborting stmt_error exec_stmt would give
                 push    hl                  ; keep the cursor across the tenant call
                 ld      a,(GFX_OP)
-                call    spr_tenant          ; runs GFX_OP=A, raises the tenant's ERR code
+                ; 🔴 NOT `jp spr_stmt_done`: that canonical lives under
+                ; IF G7_RESIDENT and THIS arm is under IF G8_RESIDENT. The two
+                ; switches are INDEPENDENT, so the shared tail would vanish from
+                ; under this jump whenever G7 is off. `make switch-build-check`
+                ; caught it; a shared tail across two switches needs a home
+                ; outside BOTH, and there is none to be had for free here.
+                call    spr_tenant
                 pop     hl
                 jp      exec_stmt
 g8_missing:

@@ -516,10 +516,13 @@ sst_op:
                 jr      z,sst_overflow
                 ld      a,FPERR_STROOM
                 call    penderr_set         ; heap OOM (sysvars.inc)
-                ld      hl,(SH_PTR)
-                ld      (STRPTR),hl
-                ret
+                jp      sh_publish          ; D-CARVE2 (-4 B, low region)
 sst_ok:
+                ; 🎯 D-CARVE2: the canonical "publish SH_PTR as the result" tail.
+                ; Reached by fallthrough from sst_ok AND by jp from the two
+                ; string-space-overflow arms, which differ only in the
+                ; `penderr_set` they run FIRST -- the decision stays with them.
+sh_publish:
                 ld      hl,(SH_PTR)
                 ld      (STRPTR),hl
                 ret
@@ -1185,6 +1188,10 @@ str_fn_left:
                 ld      d,0                 ; D = start = 0 (LEFT$ -> pure truncation)
                 ld      b,h
                 ld      c,l                 ; BC = temp addr
+                ; 🎯 D-CARVE2: the canonical "slice into a temp and publish" tail,
+                ; shared by three MID$/RIGHT$-family arms. Contract: BC = the
+                ; source, D = the length, one saved cursor on the stack.
+str_slice_done:
                 call    str_temp_slice
                 pop     hl                  ; restore cursor
                 jp      str_eval_ok
@@ -1214,9 +1221,7 @@ str_fn_right:
                 ld      d,a                 ; D = start
                 ld      b,h
                 ld      c,l                 ; BC = temp addr
-                call    str_temp_slice
-                pop     hl
-                jp      str_eval_ok
+                jp      str_slice_done      ; D-CARVE2 (-4 B, low region)
 
 ; MID$(a$,p[,n]): count bytes from 1-based position p (or to end if n omitted).
 ; p<1 is clamped to the start; p>len yields "". Snapshot, then slice.
@@ -1276,9 +1281,7 @@ sfm_starthave:
                 ld      l,c
                 ld      h,b
                 ld      (STRPTR),hl         ; STRPTR = temp (before the slice clobbers BC)
-                call    str_temp_slice      ; in-place slice [start..start+count)
-                pop     hl                  ; restore cursor
-                jp      str_eval_ok
+                jp      str_slice_done      ; D-CARVE2 (-4 B, low region)
 sfm_reject2:
                 pop     bc                  ; discard p
                 pop     bc                  ; discard temp
@@ -1577,9 +1580,7 @@ shx_finish:
                 jp      z,shxf_overflow     ; span, out of `jr` reach from here
                 ld      a,FPERR_STROOM
                 call    penderr_set         ; heap OOM (sysvars.inc)
-                ld      hl,(SH_PTR)
-                ld      (STRPTR),hl
-                ret
+                jp      sh_publish          ; D-CARVE2 (-4 B, low region)
 ; D-DUPSPAN2: an ALIAS, not a second copy -- byte-identical to sst_ok,
 ; and POSITION-INDEPENDENT by tools/dupspan_indep.py (terminates, no
 ; escaping relative jump, not entered by fallthrough, same ROM region).

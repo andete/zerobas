@@ -599,6 +599,13 @@ oodv_as:
 oodv_ok:
                 ; mark the channel open as a device (FCH_MODES[ch] = LPT/CRT_MODE);
                 ; no fat.asm I/O. Guard the text cursor across the array store.
+                ; 🎯 D-CARVE2: THE CANONICAL "STAMP THE DEVICE TYPE AND RESUME"
+                ; TAIL. Both OPEN arms -- the device arm here and the cassette arm
+                ; at oocas_mark -- ended with these seven instructions verbatim.
+                ; Entry contract, identical at both: HL = the BASIC text cursor
+                ; (pushed and popped here), E = the channel number. oocas_mark
+                ; reaches it having just restored both with `pop hl / pop de`.
+oo_stamp_devtype:
                 push    hl
                 ld      a,e
                 call    fch_modes_ptr
@@ -716,13 +723,7 @@ oocas_do_out:
 oocas_mark:
                 pop     hl                  ; text cursor
                 pop     de                  ; channel
-                push    hl                  ; guard cursor across the array store
-                ld      a,e
-                call    fch_modes_ptr
-                ld      a,(OO_DEVTYPE)
-                ld      (hl),a              ; FCH_MODES[ch] = CAS_OUT/CAS_IN (committed)
-                pop     hl
-                jp      exec_stmt
+                jp      oo_stamp_devtype    ; D-CARVE2 (-10 B, main page 1)
 oocas_ioerr:
                 pop     hl
                 pop     de

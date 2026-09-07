@@ -1006,9 +1006,15 @@ es_set:
                 ; UNREACHABLE for STOP anyway: OFF (00) and STOP (10) both clear bit 0, so
                 ; a Ctrl-STOP held while the trap is not ON hits rp_real_break and stops
                 ; the program at the line boundary BEFORE `STOP ON` can run.
+                ; 🎯 D-CARVE2: THE CANONICAL "set a trap state and resume" tail.
+                ; It lives HERE because this arm is assembled unconditionally,
+                ; while its other two callers sit under IF G7_RESIDENT / IF
+                ; TRAPS_T4. The trap INDEX is set by each caller; only the
+                ; call-and-resume is shared.
+trap_state_done:
                 call    set_state
-                pop     hl                  ; HL = cursor past the sub-keyword (':'/EOL)
-                jp      exec_stmt           ; continue the line -- a bare `ret` here would
+                pop     hl
+                jp      exec_stmt           ; continue the line (a bare `ret` would
                                             ; SWALLOW the rest of the line (STOP ON:STOP OFF
                                             ; left OFF a no-op; VG-8020 differential caught it)
 
@@ -3003,7 +3009,5 @@ key_set:
                 push    hl                  ; guard the exec-continue cursor
                 ex      de,hl               ; HL = the entry pointer
                 ld      a,b
-                call    set_state           ; maintains the TRAPENA "# ON" count
-                pop     hl
-                jp      exec_stmt           ; continue the line (the T1 es_set lesson)
+                jp      trap_state_done     ; D-CARVE2 (-4 B, main page 1)
     ENDIF

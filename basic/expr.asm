@@ -1821,6 +1821,12 @@ evmc_abs:
                 ; Shared with ev_f_neg's unary-minus arm (D-NEG8K) -- the SAME
                 ; escape, at the second operator that can produce +32768.
 evabs_esc:
+                ; 🎯 D-CARVE2: THE CANONICAL "RESULT IS +32768" TAIL. Two callers
+                ; reach the same escape: ABS(-32768) and -32768/-1 both overflow
+                ; int16 POSITIVE, so both answer 32768 as a float. The other is
+                ; basic/float-arith.asm's signed divide, in the LOW region, which
+                ; now jumps here -- so the 10 B come back where they are scarcest.
+flt_ret_32768:
                 ld      hl,ARGA
                 xor     a
                 ld      de,32768

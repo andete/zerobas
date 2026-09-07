@@ -2148,11 +2148,7 @@ sdiv_applied:
                 jr      nz,sdiv_ret
                 ; DE == $8000 with the intended sign positive -> the true value
                 ; is +32768, which does not fit int16: promote to double.
-                ld      hl,ARGA
-                xor     a
-                ld      de,32768
-                call    widen_uint_to
-                jp      round_and_finalize
+                jp      flt_ret_32768       ; D-CARVE2 (-10 B, low region)
 sdiv_ret:
                 ret
 

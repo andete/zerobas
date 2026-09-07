@@ -250,12 +250,24 @@ def main(argv):
     seen = set()
     print(f"{'B':>4s} {'n':>3s} {'x':>3s} {'each':>5s}  shape")
     print("-" * 92)
+    # 🔴 THE REPORT USED TO STOP AT 14 ROWS WITH NO WAY PAST IT, which is
+    # fine for "what is the biggest win today" and useless for a CARVE PASS: the
+    # tail candidates worth taking sink below the cut as the top ones are taken,
+    # and the run then LOOKS exhausted while 490+ priced candidates remain.
+    # `--top N` (and `--tails` for the safest class) is what makes the pass
+    # finishable rather than merely started.
+    top = 14
+    for a in argv:
+        if a.startswith("--top="):
+            top = int(a.split("=", 1)[1])
+    tails_only = "--tails" in argv
     shown = 0
     for gain, N, k, m, tail, g, hits in best:
         sig = g[:3]
         if sig in seen: continue
+        if tails_only and not tail: continue
         seen.add(sig); shown += 1
-        if shown > 14: break
+        if shown > top: break
         kind = "TAIL" if tail else "sub"
         why = declined_reason(g)
         mark = "⛔ " if why else ""
