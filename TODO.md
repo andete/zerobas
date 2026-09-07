@@ -410,7 +410,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:10543 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:10575 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -575,7 +575,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:2423 (T-6FE392)8 (T-529ABE)` from `TODO.md:9480 (T-529ABE)`: a
+      `TODO.md:2423 (T-6FE392)8 (T-529ABE)` from `TODO.md:9512 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -3061,7 +3061,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:9480 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:9512 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -6415,6 +6415,38 @@ list. **When a slice lands, grep this list for what it just shipped.**
       2026-09-07)** — the words belong there, as on a real MSX, not in main page 1.
       `SET`/`IPL`/`DSKO$` write to disk and two are flagged DESTRUCTIVE by the
       sweep, so they need a fixture policy before a row, not after.
+      🟢 **`DSKI$` CHARACTERISED 2026-09-07 (D-DSKI,
+      [`scratchpad/dski_probe.py`](scratchpad/dski_probe.py),
+      [`.out`](scratchpad/dski_run3.out)) — AND THE OBVIOUS IMPLEMENTATION IS
+      REFUTED.** Taken first of the eight because it READS (no fixture is
+      destroyed) and zerobas already owns the sector I/O that would back it.
+      | row | | cf3300 | zb |
+      |---|---|---|---|
+      | `d.ctl` | CONTROL: the fence, no `DSKI$` | `7` | `7` |
+      | `d.mount` | CONTROL: `test720.dsk` mounted and readable | `55` | `55` |
+      | `d.len` | `A$=DSKI$(0,0)` then `LEN(A$)` | **`0`** | `0` |
+      | `d.byte0` | …then `ASC(A$)` | `ERR 5` | `ERR 5` |
+      | `d.err9` | `DSKI$(0,9999)` — past the end of a 720 KB disk | **no error** | `ERR 9` |
+      | `d.drv9` | `DSKI$(9,0)` — a drive that does not exist | **`ERR 62`** | no error |
+      🎯 **"IT RETURNS THE SECTOR AS A STRING" IS REFUTED, AND IT COULD NOT HAVE
+      BEEN RIGHT ANYWAY**: a sector is 512 bytes and an MSX string caps at 255.
+      The reference's value-face is the EMPTY string, `ASC` of it is `ERR 5`, and
+      the DRIVE is validated (`ERR 62`) while the SECTOR NUMBER is not. **Where
+      the sector data goes is NOT established and is deliberately not guessed at**
+      [[a-mechanism-inferred-from-one-observation]] — that is the next
+      measurement, and it is what an implementation needs.
+      🔴 **BOTH COLUMNS READ `0` FOR `d.len` FOR COMPLETELY DIFFERENT REASONS** —
+      the reference returns an empty string; zerobas has no `DSKI$`, so `A$=DSKI$(0,0)`
+      is a subscripted string ARRAY there. The probe therefore states in its own
+      output that it CHARACTERISES the reference and does not score zerobas
+      [[a-case-that-agrees-can-agree-for-the-wrong-reason]].
+      🔴 **AND THE CONTROLS EARNED THEIR PLACE TWICE, ON THE SAME RUN.** The first
+      cut had no `END` before the handler, so the program FELL INTO its own
+      `ON ERROR` line — every row's last fence was `-ERR` with `ERR` still 0 and
+      `d.ctl` read `0` instead of `7`. And `d.len` reading 0 is what an empty
+      result looks like *and* what an unmounted fixture looks like, which is why
+      `d.mount` opens a file that exists on the image and must read 55
+      [[an-unnamed-outcome-reads-as-no-outcome]].
       🤖 AUTONOMOUS — the reference settles every token, and the pin is built.
 
 - [ ] 📌 **`basic_probe_kwsweep.py` PRINTS ROWS NO RUNNER CAN PARSE, AND ITS
