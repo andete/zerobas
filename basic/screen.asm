@@ -177,7 +177,16 @@ scr_extra:                                  ; the trailing arguments
 ; Each colour is optional; an omitted one keeps the current work-area value.
 ex_color:
                 call    stmt_bare_end       ; D-BAREEND: Z iff the statement ends here
-                jr      z,clr_apply
+                ; 🔴 D-BAREFORM: a BARE `COLOR` is `Missing operand`, NOT a re-apply.
+                ; Measured on BOTH references (ERR 24 each); zerobas answered with
+                ; no error at all, re-applying the current colours. The note in
+                ; missing.asm reads "ex_color's bare form re-applies, LOCATE's
+                ; simply does not move that axis" -- and LOCATE was written against
+                ; the OPPOSITE measured answer to the same question. One of the two
+                ; was never re-asked [[two-rules-that-coincide-on-every-row-you-have]].
+                ; `clr_apply` keeps every OTHER entry (`COLOR fg`, `COLOR ,bg`,
+                ; `COLOR fg,,bd` and the comma-tail forms below).
+                jp      z,loc_missing       ; +1 B: `jr` cannot reach it
                 cp      ','                 ; "COLOR ,bg" -> fg omitted
                 jr      z,clr_bg
                 call    eval                ; DE = foreground
@@ -284,8 +293,22 @@ wid_missing:
 
 ; --- ex_key: KEY OFF | KEY ON ----------------------------------------------
 ex_key:
-                inc     hl                  ; past the KEY token
-                call    skip_spaces
+                ; 🔴 D-BAREFORM: a BARE `KEY` is `Missing operand`, not `Syntax
+                ; error`. Measured ERR 24 on BOTH references; zerobas answered
+                ; ERR 2. The test is HERE and not at the `jp stmt_error` below,
+                ; because that tail is also the face for `KEY n,"str"` and
+                ; `KEY LIST` -- forms that are UNIMPLEMENTED rather than absent,
+                ; and whose face is a separate open item. A shared tail is a
+                ; label, not a decision [[a-shared-tail-is-not-a-decision]].
+                ; ⚠️ `stmt_bare_end` DOES THE `inc hl` ITSELF (interp.asm:978) and
+                ; then skip_spaces, so it REPLACES this handler's opening two
+                ; instructions -- it does not follow them. The first cut kept the
+                ; `inc hl` and called it afterwards, which stepped past the $00
+                ; terminator into the next line and never saw end-of-statement:
+                ; bare KEY still answered ERR 2 and the row was still red.
+                ; Net +2 B this way, against +6 B for the wrong shape.
+                call    stmt_bare_end       ; past the KEY token; Z iff it ends here
+                jp      z,loc_missing       ; bare KEY / `KEY:` -> ERR 24
     IF TRAPS_T3
                 cp      '('                 ; KEY(n) ON|OFF|STOP -- the T3 arming form.
                 jp      z,ex_key_stmt       ; Tested AHEAD of ON/OFF so the display form

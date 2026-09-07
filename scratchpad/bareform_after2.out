@@ -1,0 +1,10 @@
+  REM       vg=legal     cf=legal     zb=legal    
+  LOCATE    vg=ERR 24    cf=ERR 24    zb=ERR 24   
+  SCREEN    vg=ERR 24    cf=ERR 24    zb=ERR 24   
+  COLOR     vg=ERR 24    cf=ERR 24    zb=ERR 24   
+  KEY       vg=ERR 24    cf=ERR 24    zb=ERR 24   
+
+=== 0 divergence(s): none ===
+    REFS-SPLIT (0): none -- the two references disagree, so
+    zerobas cannot be scored on these. Most are Disk-BASIC verbs and the VG-8020
+    has no disk ROM.

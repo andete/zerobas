@@ -410,7 +410,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:10928 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:10947 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -575,7 +575,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:2423 (T-6FE392)8 (T-529ABE)` from `TODO.md:9865 (T-529ABE)`: a
+      `TODO.md:2423 (T-6FE392)8 (T-529ABE)` from `TODO.md:9884 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -3061,7 +3061,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:9865 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:9884 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -4236,6 +4236,25 @@ list. **When a slice lands, grep this list for what it just shipped.**
       the current colours where both references raise Missing operand — and
       `ex_locate` was written against the OPPOSITE answer to the same question),
       and bare `KEY` must answer `ERR 24` instead of `ERR 2`.
+      ✅ **BOTH SHIPPED 2026-09-07 (D-BAREFIX,
+      [`scratchpad/bareform_after2.out`](scratchpad/bareform_after2.out)) — 2 DIFF
+      → 0, and every one of the 49 rows now agrees on all three machines except the
+      five REFS-SPLITs and `CLOAD`.** `ex_color`'s bare arm becomes
+      `jp z,loc_missing` (+1 B); `ex_key` gains a `stmt_bare_end` test ahead of the
+      `ON`/`OFF` compares (+2 B). Page 1 6 B → **4 B** (`make basic-reloc` from
+      clean). Full battery 114/114.
+      🔴 **THE `KEY` FIX WAS WRONG THE FIRST TIME, AND THE ROW CAUGHT IT.**
+      `stmt_bare_end` ([`basic/interp.asm:978`](basic/interp.asm:978)) begins with
+      its OWN `inc hl` — it REPLACES a handler's opening `inc hl` / `skip_spaces`,
+      it does not follow them. `ex_color` calls it as its first instruction, so it
+      works there; the first cut of `ex_key` kept the existing `inc hl` and called
+      it afterwards, which stepped past the `$00` terminator into the next line and
+      never saw end-of-statement. Bare `KEY` still answered `ERR 2`. Calling it as
+      a REPLACEMENT is also cheaper: **+2 B against +6 B** — on the 2026-09-07
+      readings that was the difference between 4 B free and none at all.
+      ⚠️ **THE `jp stmt_error` BELOW IS DELIBERATELY UNTOUCHED**: it is also the
+      face for `KEY n,"str"` and `KEY LIST`, which are UNIMPLEMENTED rather than
+      absent and are their own open item [[a-shared-tail-is-not-a-decision]].
       🟢 **AND THE COLON-TAIL CLASS D-DATACOLON OPENED IS NOW SWEPT AND CLEAN
       (2026-09-07, D-COLONTAIL,
       [`scratchpad/colontail_probe.py`](scratchpad/colontail_probe.py),
