@@ -10354,7 +10354,7 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       direction, which is why ties go to 🙋.
       🙋 NEEDS-JOOST — bug-for-bug fidelity here costs a working feature; that trade is his call.
 
-- [ ] 🔴 **A LINE STORE IS BOUNDED BY THE CONSTANT `TXTMAX`, NOT BY HIMEM.**
+- [x] 🔴 **A LINE STORE IS BOUNDED BY THE CONSTANT `TXTMAX`, NOT BY HIMEM.**
       Found 2026-08-03 by D-DOTGAPS (§4.2/§6 D4). After
       `CLEAR 300,TXTTAB+1000` both references have **148** free bytes and refuse
       a 32-byte line with `Out of memory`; zerobas has **646**, stores it, and
@@ -10580,18 +10580,52 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
         🙋 **Still his**: whether `FRE(0)` should AGREE with the references, which
         would mean reserving 267 B per channel for buffers that do not exist
         here.
-        ➡️ **WHAT IS LEFT IS THE VALUE, NOT THE PLUMBING.** The cell is proven,
+        ➡️ ~~**WHAT IS LEFT IS THE VALUE, NOT THE PLUMBING.** The cell is proven,
         the fetch site is right, the `push hl` and `IF CLEARPOOL` guards are
         settled, and 11 B fits (main page 1 15 → 4 B free on 2026-09-05).
         **Nothing is shipped**: swapping one wrong bound for another that is 4 B
         closer changes behaviour no row pins and leaves `crf-oom*` DIFF either
-        way.
-        💰 **THE 11 B ARE NOT SPENT** — the attempt was reverted and all four
+        way.~~
+        🔴 **THE TWO PARAGRAPHS ABOVE AND BELOW ARE STALE, AND THEY SIT AT THE
+        END WHERE A READER STOPS (struck 2026-09-07, D-TXTSTALE).** This entry
+        says **SHIPPED** in its middle and **"Nothing is shipped"** at its
+        bottom; a reader who scrolls to the end concludes the opposite of the
+        truth [[two-sections-of-one-doc-disagreed]]. The ROM settles it, not the
+        prose: [`sub/lineedit.asm:170`](sub/lineedit.asm:170) reads
+        `ld de,(SL_CEIL)`, [`basic/program.asm:163`](basic/program.asm:163)
+        publishes it, commit `0731a3e0` is titled *D-TXTCEIL SHIPS*, and
+        `make txtceil-acceptance` is collected in the emulator tier and ran green
+        in 19 s in today's battery.
+        🔴 **AND THE FIX FALSIFIED TWO COMMENTS BESIDE ITS OWN CODE.**
+        `sub/lineedit.asm` still told its reader *"NO EMULATOR ROW ON THIS SIDE
+        CAN SEE IT ... a green acceptance run is NOT coverage of this rule"* —
+        forty lines above the `SL_CEIL` bound that makes it false, and with an
+        emulator gate now doing exactly that. Struck in place, plus three inline
+        comments that still named `TXTMAX` as the bound. Comments only: the main
+        ROM hashes byte-identical across the edit
+        [[a-fix-falsifies-the-justification-beside-it]].
+        ~~💰 **THE 11 B ARE NOT SPENT** — the attempt was reverted and all four
         ROM digests re-read back to the values `make gates` had recorded for the
         preceding green battery (not quoted here: four 8-hex groups in a row are
         what `audit_citations.py`'s hex-dump check exists to catch, and it caught
         this line). Main page 1 was back to **15 B free on 2026-09-05** — re-read
-        it with `make basic-reloc`, never from here.
+        it with `make basic-reloc`, never from here.~~
+        ✅ **SO THE AUTONOMOUS HALF OF THIS ITEM IS DONE AND THE BOX IS TICKED
+        (2026-09-07).** The defect the headline names — a line store bounded by
+        the constant `TXTMAX` instead of by HIMEM, so lines grow into the string
+        and variable area — is FIXED, and `make txtceil-acceptance` pins it with
+        four rows including the `c.fits` control that stops a bound which
+        over-refuses from reading green.
+        🙋 **WHAT REMAINS IS JOOST'S AND ONLY HIS**: whether `FRE(0)` should
+        AGREE with the references, which would mean reserving **267 B per
+        channel** for sector buffers zerobas deliberately does not have
+        (`FCH_CTXSZ equ FCH_STATESZ ; repack: block = state ONLY (no buffer)`).
+        That is a faithfulness call about a MEASURED architectural difference —
+        `R = 293 + 267×MAXFILES` there against `R = 12 + 50×MAXFILES` here — not
+        a bug, and `crf-oomsay`/`crf-oomlst` cannot agree until it is made.
+        Left in place rather than split into its own item: the measurement that
+        frames the question is this entry, and a one-line item elsewhere would
+        arrive without it.
       * ⚠️ ~~**UNVERIFIED, AND IT IS THE FIRST THING TO CHECK**: `sh_chan_addr` sits
         behind an assembly-time `IF` in `sub/strheap.asm`, so a build without
         D-FCH may not have it. Read the guard before believing the 7-byte shape~~

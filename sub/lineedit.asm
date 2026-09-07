@@ -139,12 +139,21 @@ le_store:
                 ; ceiling is checked in the resident head (basic/program.asm
                 ; dl_store) before store_line marshals here, so this instruction
                 ; is inside the one gap in the tree that satisfies both readings.
-                ; ⚠️ NO EMULATOR ROW ON THIS SIDE CAN SEE IT: a line store is
+                ; ⚠️ ~~NO EMULATOR ROW ON THIS SIDE CAN SEE IT: a line store is
                 ; bounded by the CONSTANT TXTMAX below, not by HIMEM, so no CLEAR
                 ; and no typed line reaches the OOM path at all (characterization
                 ; §6 D4). tests/test_program.py's store_line OOM row is the
                 ; instrument -- a green acceptance run is NOT coverage of this
-                ; rule.
+                ; rule.~~
+                ; 🟢 FALSIFIED BY THE FIX 40 LINES BELOW (D-TXTCEIL shipped
+                ; 2026-09-05; struck here 2026-09-07). The bound is `SL_CEIL`,
+                ; not the constant, so `CLEAR n,himem` DOES reach this check --
+                ; and `make txtceil-acceptance` is an emulator gate in the
+                ; collected tier whose p.n25 / p.n40 / p.pool2 rows exercise it
+                ; directly. A green acceptance run IS coverage of this rule now.
+                ; Struck rather than deleted: a reader who met the old sentence
+                ; would otherwise wonder whether it was ever true
+                ; [[a-fix-falsifies-the-justification-beside-it]].
                 ld      hl,(SL_NUM)
                 ld      (DOT),hl
                 ld      hl,(SL_TOK)
@@ -163,7 +172,8 @@ le_store:
                 ld      (SL_SIZE),hl
                 ld      b,h
                 ld      c,l                     ; BC = size (for the bounds check)
-                ; bounds: PRGEND + size must stay below TXTMAX
+                ; bounds: PRGEND + size must stay below the ceiling selected
+                ; below -- SL_CEIL when CLEARPOOL, else the TXTMAX constant
                 ld      hl,(PRGEND)
                 add     hl,bc
     IF CLEARPOOL
@@ -178,8 +188,8 @@ le_store:
                                             ; than reading an unwritten cell.
     ENDIF
                 or      a
-                sbc     hl,de                   ; (PRGEND+size) - TXTMAX
-                jr      nc,le_oom               ; >= TXTMAX -> out of memory
+                sbc     hl,de                   ; (PRGEND+size) - the ceiling
+                jr      nc,le_oom               ; >= ceiling -> out of memory
                 call    prog_find_del           ; SL_SLOT = insertion point (post-delete)
                 call    open_gap                ; make room of SL_SIZE at SL_SLOT
                 ld      hl,(SL_SLOT)
