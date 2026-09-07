@@ -410,7 +410,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:10397 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:10446 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -9866,6 +9866,55 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       The wrong-row control (cursor-up ×1 onto an `Ok` row → `Syntax error`) is
       the only row that saw anything, and it had been written to rule out a
       different hypothesis.
+      🟢 **TWO OF THE SCOUT'S UNPRICED BULLETS ARE NOW MEASURED (2026-09-07,
+      D-EDITLINE, [`scratchpad/editline_probe.py`](scratchpad/editline_probe.py)) —
+      AND THE BOUNDARY ONE WENT THE EXPENSIVE WAY.**
+      | row | | vg8020 | cf3300 | zb |
+      |---|---|---|---|---|
+      | `x.plain` | POSITIVE CONTROL: re-enter an ordinary line | `2` | `2` | `1` |
+      | `x.noup` | baseline, nothing re-entered | `0` | `0` | `0` |
+      | `x.reenter` | payload row under a **PRINT-wrapped** full row | `0` | `0` | `0` |
+      | `x.vpoke` | payload row under a **VPOKE-written** full row | **`1`** | **`1`** | `0` |
+      (`A` = how many times the payload executed, read from a fresh
+      `PRINT"ZQ";A;"QZ"` line after the re-entry.)
+      🎯 **THE BOUNDARY CANNOT BE INFERRED FROM THE SCREEN.** `x.reenter` and
+      `x.vpoke` put the SAME shape on the display — 40 apostrophes filling the row
+      directly above the payload row — and get OPPOSITE answers. Where the fill was
+      produced by a `PRINT` that wrapped, the machine walks back and takes both
+      rows as one logical line, so the leading `'` REMs the payload (`0`); where
+      the identical fill was written straight into the name table with `VPOKE`, it
+      stops at the row start and executes the payload alone (`1`). **Both
+      references agree**, so this is MSX1, not one machine.
+      ➡️ **SO THE CHEAP RULE IS REFUTED.** The scout asked *"whether it can infer
+      the boundary (a predecessor row filled to `LINLEN`)"*; it cannot. The
+      reference keeps **continuation state the screen does not carry**, and a
+      zerobas reader must keep its own — per-row bookkeeping written where the
+      wrap happens, i.e. in the output path, not only in the reader. That is a
+      cost the placement scout did not price and it is not zero.
+      ⚠️ **WHAT THIS DOES *NOT* ESTABLISH IS THE MECHANISM.** "CHPUT recorded a
+      wrap" is the obvious reading and it is NOT asserted — one pair of rows shows
+      that the screen is insufficient, not what the sufficient thing is
+      [[a-mechanism-inferred-from-one-observation]]. Any third rule that separates
+      a wrapped `PRINT` from a `VPOKE` would fit these rows equally.
+      🟢 **AND THE `CF-3300` BULLET IS CLOSED**: the scout ran ONE reference and
+      said so. All five rows here run on both, and both agree on every one —
+      including `x.plain`, which is D-EDITSCOUT's own re-entry row and reads `2`
+      on the CF-3300 too. The screen editor is an MSX1 property, not a VG-8020 one.
+      🔴 **THE FIRST CUT OF THIS PROBE WAS BLIND THE WAY §3 WARNS, AND ITS
+      DOCSTRING CLAIMED IT WAS NOT.** It read the SCREEN and argued a REM'd
+      re-entry would look different from no re-entry; it does not — the editor does
+      not re-echo a line already on screen, and `Ok` reprints over the `Ok` already
+      there, so `x.reenter` came back BYTE-IDENTICAL to `x.noup` on both
+      references. Reading a VARIABLE on a fresh row is what made the rows say
+      anything [[an-unnamed-outcome-reads-as-no-outcome]].
+      🔴 **AND THE WIDTH WAS AN ASSUMPTION THAT MEASURED WRONG**: `STRING$(40,…)`
+      was picked to fill a row exactly, and the first run showed **35** apostrophes
+      per row on the VG-8020 and **39** on the CF-3300 — the two references were
+      not running the same construction, and on one of them the payload row began
+      with a stray `'`. Every side now sets `WIDTH 40` first.
+      ⚠️ **STILL UNPRICED, UNCHANGED BY THIS:** the byte cost of the VRAM reader,
+      `INS`/`HOME`/`CTRL`+key and the r23 function-key row, and whether a tenant may
+      read VRAM from inside. The 0.6–0.9 KB figure remains the 2026-07-11 estimate.
       🤖 AUTONOMOUS — the reference or a gate settles it; finishable unattended (no his-decision signal found).
 - [ ] **Editor / program management** — ~~`RENUM`, `AUTO`,
       `TRON`/`TROFF`, `SWAP`, `WAIT`, `FRE`~~ **`WAIT` ALONE**, full `CLEAR`
