@@ -10723,6 +10723,26 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
         the OUTPUT flush that path was built for, and it clobbers `FWBUF` which
         the switch machinery itself uses. ⚠️ **Not established** — the arms were
         reverted rather than instrumented [[a-mechanism-inferred-from-one-observation]].
+        ✅ **AND JOOST'S QUESTION IS ANSWERED (2026-09-07, D-RESERVE,
+        [`scratchpad/reserve_probe.py`](scratchpad/reserve_probe.py)): THE
+        REFERENCE RESERVES UP FRONT FOR `MAXFILES`, NOT AS CHANNELS ARE OPENED,
+        AND THE BLOCK IS NOT SIZED BY `LEN=`.**
+        | case | base | +open #1 | +open #2 | closed |
+        |---|---|---|---|---|
+        | CF-3300 `LEN=8` | 22966 | 22955 | 22944 | 22933 |
+        | CF-3300 `LEN=256` | 22962 | 22951 | 22940 | 22929 |
+        | zerobas `LEN=8` | 22809 | 22798 | 22787 | 22776 |
+        `FRE(0)` drops **exactly 11 B per OPEN on both machines**, and the same
+        11 whether the record is 8 bytes or 256. So the 267 B/channel of
+        D-HIMEMRES is charged at `MAXFILES` time and OPEN adds only a small
+        variable-area block that zerobas already pays too.
+        🎯 **WHICH MEANS ATTEMPT A IS THE REFERENCE'S OWN ARCHITECTURE, NOT A
+        ZEROBAS TAX.** Reserving `256 B × MAXFILES` up front is exactly the shape
+        the reference uses (267 × MAXFILES); it is not waste peculiar to us, and
+        "allocate only what is opened" is not what the reference does either.
+        ⚠️ **The 4 B gap between the two `base` figures is the PROGRAM TEXT** —
+        `LEN=256` is two characters longer on two lines — not a reservation
+        effect. Named so it is not read as one.
         ➡️ **WHAT THE NEXT ATTEMPT NEEDS TO KNOW.** Two shapes are now measured
         rather than imagined:
         | attempt | main B | RAM | result |
