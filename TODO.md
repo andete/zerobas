@@ -410,7 +410,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:10489 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:10543 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -575,7 +575,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:2423 (T-6FE392)8 (T-529ABE)` from `TODO.md:9426 (T-529ABE)`: a
+      `TODO.md:2423 (T-6FE392)8 (T-529ABE)` from `TODO.md:9480 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -3061,7 +3061,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:9426 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:9480 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -6362,6 +6362,60 @@ list. **When a slice lands, grep this list for what it just shipped.**
       positives, low yield — the 87 above are none of those). This is a
       convention decision, not a defect fix, so it is filed rather than taken.
       🤖 AUTONOMOUS — the reference or a gate settles it; finishable unattended (no his-decision signal found).
+
+- [ ] 🔴 **EIGHT KEYWORDS THE REFERENCE TOKENISES AND ZEROBAS DOES NOT — AND
+      `make kwsweep` WAS GREEN ON ALL EIGHT.** Measured 2026-09-07 (D-KWPIN,
+      [`scratchpad/kwsweep_pin.out`](scratchpad/kwsweep_pin.out)).
+      | word | reference token | in `kwtable.inc`? |
+      |---|---|---|
+      | `DSKI$` | `$EA` | no |
+      | `DSKO$` | `$D1` | no |
+      | `COPY` | `$D6` | no |
+      | `SET` | `$D2` | no |
+      | `ATTR$` | `$E9` | no |
+      | `IPL` | `$D5` | no |
+      | `CMD` | `$D7` | no |
+      | `LOC` | `$FF $AC` (two-byte function token) | no |
+      Every token is **ORACLE-SOURCED**, read out of the reference's own program
+      area by the sweep's own Layer 1 — the same provenance as every token
+      already in [`basic/kwtable.inc`](basic/kwtable.inc).
+      🎯 **THE SWEEP PRINTED ALL EIGHT AS `DIFF` AND EXITED 0.** `main()` returned
+      0 unless the ROMs moved mid-run or the CONTROL GROUP failed; **no crunch
+      result reached the exit code at any point.** Layer 1's states are
+      `SAME`/`DIFF`, while `MISSING` is a **Layer 2** state — and all eight are
+      crunch-only rows Layer 2 never runs. So a word absent from `kwtable.inc`
+      that is also crunch-only was **structurally incapable of being scored**
+      [[a-coverage-row-whose-geometry-cannot-reach-the-case]]. `make kwsweep` is
+      collected by `make gates` and was green in the 114/114 battery that morning.
+      🔴 **AND THE `NO-ORACLE` REASONING DOES NOT REACH THIS LAYER.** The rows are
+      tagged `NEEDS-DISK` because their **support** oracle is a disk-equipped
+      reference, and the probe rightly declines to attribute a support difference
+      to zerobas. **Tokenising needs no disk.** The reference's bytes are in the
+      report, and a single token against the raw ASCII of a variable name is not
+      an ambiguous reading.
+      🟢 **PINNED, WITH BOTH ARMS TESTED.** `CRUNCH_DIFF_PINNED` now carries the
+      eight with their tokens, and the sweep goes RED on a crunch `DIFF` outside
+      it **or** on a pin that has stopped diverging. Mutation-tested both ways:
+      dropping `copy` from the pin ⇒ `1 UNPINNED CRUNCH DIFF(S): copy`; pinning
+      `lfiles` (which crunches SAME) ⇒ `1 PIN(S) NO LONGER DIVERGE: lfiles`. Both
+      red, and the file restores byte-identically [[gateblind-slice]].
+      🎯 **`LFILES` IS THE CONTROL THAT MAKES THIS A LIST AND NOT A CLASS**: also
+      a Disk-BASIC word, also `NEEDS-DISK`, but it IS in `kwtable.inc` and it
+      crunches `SAME`. So the finding is not "zerobas omits Disk BASIC's
+      keywords" — it is these eight specific words.
+      ⚠️ **WHAT IS *NOT* CLAIMED: THAT THE SWEEP'S WORD LIST IS THE DENOMINATOR.**
+      Its docstring says it measures *"the WHOLE reserved-word set at once"*; it
+      carries **55** rows while `kwtable.inc` has **153** entries. A static diff
+      of the table against the published MSX1 word set found **0** words in
+      `kwtable.inc` that are not real MSX1 words, and the 6 candidates missing
+      from it are all in the 8 above — but that check was a one-off script, not a
+      gate, and 98 implemented words carry no sweep row at all.
+      ➡️ **THE OPEN WORK IS THE VERBS, NOT THE PIN.** Implementing them is a
+      Disk-BASIC slice, and the **disk ROM had ~8910 B free (`make basic-reloc`,
+      2026-09-07)** — the words belong there, as on a real MSX, not in main page 1.
+      `SET`/`IPL`/`DSKO$` write to disk and two are flagged DESTRUCTIVE by the
+      sweep, so they need a fixture policy before a row, not after.
+      🤖 AUTONOMOUS — the reference settles every token, and the pin is built.
 
 - [ ] 📌 **`basic_probe_kwsweep.py` PRINTS ROWS NO RUNNER CAN PARSE, AND ITS
       EXIT-2 PATH PRINTS A DIFFERENT TABLE ENTIRELY.** Found 2026-08-07 by

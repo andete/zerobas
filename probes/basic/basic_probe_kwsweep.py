@@ -356,6 +356,42 @@ SWEEP: list[tuple[str, str, str | None, str, str]] = [
 # a silent absence (no-silent-caps).
 SKIP_EXEC = {k for k, _, ex, _, _ in SWEEP if ex is None}
 
+# --------------------------------------------------------------------------
+# --- CRUNCH_DIFF_PINNED: the keywords zerobas does not tokenise ------------
+# 🔴 UNTIL 2026-09-07 THE CRUNCH LAYER SCORED NOTHING AT ALL. `main()`
+# returned 0 unless the ROMs moved mid-run or the CONTROL GROUP failed, so this
+# file — collected by `make gates`, green in the 114/114 battery of that morning
+# — printed EIGHT words the reference tokenises and zerobas does not, and exited
+# 0. Layer 1's states are SAME/DIFF; `MISSING` is a LAYER 2 state, and all eight
+# are crunch-only rows that Layer 2 never runs. **A word absent from
+# `kwtable.inc` that is also crunch-only was structurally incapable of being
+# scored** [[a-coverage-row-whose-geometry-cannot-reach-the-case]].
+#
+# 🎯 AND THE "NO-ORACLE" REASONING DOES NOT REACH THIS LAYER. The rows are
+# tagged NEEDS-DISK because their SUPPORT oracle is a disk-equipped reference;
+# the probe declines to attribute a support difference to zerobas. Tokenising
+# needs no disk. The reference's bytes are right there, the difference is
+# unambiguous (a single token vs the raw ASCII of a variable name), and it IS
+# attributable.
+#
+# The values are ORACLE-SOURCED — read out of the reference's own program area by
+# this probe's Layer 1, the same provenance as every token in kwtable.inc.
+CRUNCH_DIFF_PINNED = {
+    "dski": "DSKI$  -> $EA",
+    "dsko": "DSKO$  -> $D1",
+    "copy": "COPY   -> $D6",
+    "set":  "SET    -> $D2",
+    "attr": "ATTR$  -> $E9",
+    "ipl":  "IPL    -> $D5",
+    "cmd":  "CMD    -> $D7",
+    "loc":  "LOC    -> $FF $AC (two-byte function token)",
+}
+# 🎯 `LFILES` IS THE CONTROL THAT MAKES THIS A LIST AND NOT A CLASS: it is
+# a Disk-BASIC word too, it IS in kwtable.inc, and it crunches SAME. So "zerobas
+# omits Disk BASIC's keywords" is not the finding — these eight specific words
+# are.
+
+
 # 🔴 EVERY ENTRY MUST STAY LOWERCASE. `classify` below does `low = tail.lower()`
 # and then `phrase in low`, so a capitalised entry can NEVER match -- it does not
 # fail loudly, it silently reclassifies that row from `error:<phrase>` to
@@ -731,6 +767,34 @@ def main() -> int:
             f"NOT SCORED: the control group failed ({', '.join(bad)}), so the "
             f"apparatus is not measuring what it claims"))
         return 4
+
+    # --- the crunch pin: a MISSING keyword has no other way to be scored ----
+    if args.layer in ("crunch", "both"):
+        diffs = {k for k in results
+                 if results[k].get("crunch", (None,))[0] == "DIFF"}
+        new_d = sorted(diffs - set(CRUNCH_DIFF_PINNED))
+        gone = sorted(set(CRUNCH_DIFF_PINNED) - diffs)
+        print("\n=== CRUNCH PIN — words the reference tokenises and zerobas "
+              "does not ===")
+        for k in sorted(CRUNCH_DIFF_PINNED):
+            mark = "still DIFF" if k in diffs else "\U0001f7e2 NO LONGER DIFF"
+            print(f"    {k:9s} {CRUNCH_DIFF_PINNED[k]:44s} {mark}")
+        if new_d:
+            print(f"\n*** \U0001f534 {len(new_d)} UNPINNED CRUNCH DIFF(S): "
+                  f"{', '.join(new_d)}")
+            print("    The reference tokenises these and zerobas does not, so "
+                  "zerobas is\n    MISSING the keyword and parses it as an "
+                  "ordinary VARIABLE -- the silent\n    shape this whole probe "
+                  "exists to catch (TIME, TAB(). Implement it, or\n    pin it in "
+                  "CRUNCH_DIFF_PINNED with its oracle-measured token and a why.")
+            return 5
+        if gone:
+            print(f"\n*** \U0001f534 {len(gone)} PIN(S) NO LONGER DIVERGE: "
+                  f"{', '.join(gone)}")
+            print("    Good news, and it must be BOOKED: drop them from "
+                  "CRUNCH_DIFF_PINNED,\n    or a stale pin hides the next real "
+                  "one.")
+            return 5
 
     return 0
 
