@@ -1,0 +1,10 @@
+  f.ctl     ran clean      CONTROL: no DSKI$ -- must read 7
+  f.func    ran clean      the form the three earlier probes used
+  f.stmt    ERR 2          statement form, as kwsweep writes DSKO$
+  f.stmtsp  ERR 2          statement form with a space
+  f.bare    ERR 2          function form used as a statement
+
+🎯 FORMS THAT RUN CLEAN: ['f.func']
+   FORMS THAT ARE A SYNTAX ERROR (ERR 2): ['f.stmt', 'f.stmtsp', 'f.bare']
+   Which form does the READ is NOT answered here -- running clean and doing
+   the work are different questions, and that is the next probe.

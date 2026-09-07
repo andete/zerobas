@@ -410,7 +410,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:10613 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:10652 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -575,7 +575,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:2423 (T-6FE392)8 (T-529ABE)` from `TODO.md:9550 (T-529ABE)`: a
+      `TODO.md:2423 (T-6FE392)8 (T-529ABE)` from `TODO.md:9589 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -3061,7 +3061,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:9550 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:9589 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -6485,6 +6485,45 @@ list. **When a slice lands, grep this list for what it just shipped.**
       a hang. `run_gap` is the parameter. (2) The byte reader first built a hex
       STRING in its read loop; MSX string space lives at the top of memory, where
       the buffer under test is.
+      🟢 **THE `DSKI$` SURFACE IS NOW CLOSED, AND BOTH REMAINING ESCAPE HATCHES
+      ARE SHUT (2026-09-07, D-DSKIFORM,
+      [`scratchpad/dskiform_probe.py`](scratchpad/dskiform_probe.py) +
+      [`scratchpad/dskidrive_probe.py`](scratchpad/dskidrive_probe.py)).**
+      The empty value invited two "I drove it wrong" explanations and both are
+      refuted:
+      | form | | cf3300 |
+      |---|---|---|
+      | `A$=DSKI$(0,0)` | function | **runs clean** |
+      | `DSKI$0,0` | statement, as `kwsweep` writes `DSKO$` | `Syntax error` |
+      | `DSKI$ 0,0` | statement with a space | `Syntax error` |
+      | `DSKI$(0,0)` | function used as a statement | `Syntax error` |
+      **`DSKI$` is a FUNCTION ONLY**, so the form all four earlier probes drove was
+      the right one. And the drive numbering is not it either: `DSKI$(0,0)` and
+      `DSKI$(1,0)` both give `LEN 0`, while `DSKI$(2,0)` blocks on the
+      drive prompt — a `<none>` that is itself the reading that argument 1 IS a
+      drive selector.
+      🎯 **SO THE OBSERVABLE FACE IS COMPLETE: a function of (drive, sector) that
+      validates the DRIVE (`ERR 62` out of range, a prompt for an absent one), does
+      NOT validate the SECTOR, and evaluates to the EMPTY STRING** — with no page of
+      `$C000..$FFFF` holding the sector afterwards and only a ~32-byte work-area
+      record moving.
+      🙋 **AND THAT IS WHERE THIS STOPS BEING AUTONOMOUS.** A black-box
+      reimplementation takes the reference's observable face as the spec, and this
+      face is a function that appears to do nothing useful. Two readings fit: the
+      face IS the behaviour and a faithful `DSKI$` returns `""`; or the read lands
+      somewhere this harness cannot see (below `$C000`, or RAM the BASIC slot
+      configuration hides from `PEEK`) and the face is incomplete. **Nothing
+      measured here separates them**, and shipping the first would be committing to
+      a verb that does nothing [[a-mechanism-inferred-from-one-observation]].
+      ⚠️ The cheap next measurement, if it is wanted: extend D-DSKIWHERE's page scan
+      below `$C000`. It is noisier there (the BASIC program itself lives in that
+      window) but the same-sector control subtracts that out.
+      ⚠️ **THE `DSKI$` SUB-QUESTION IS HIS, AND IT IS WRITTEN AS PROSE ON PURPOSE**
+      — a second marker inside a block that already carries one reads as an
+      ambiguous item to `make todo-marker-check`, which is how this paragraph was
+      caught. Scoped to `DSKI$` alone: *do we ship a verb whose measured face is
+      "returns an empty string", or keep hunting for the read?* The other seven
+      words are unaffected and the item stays 🤖 for them.
       🤖 AUTONOMOUS — the reference settles every token, and the pin is built.
 
 - [ ] 📌 **`basic_probe_kwsweep.py` PRINTS ROWS NO RUNNER CAN PARSE, AND ITS

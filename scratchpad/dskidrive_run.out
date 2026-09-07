@@ -1,0 +1,7 @@
+  drv0  A$=DSKI$(0,0)      -> LEN/-ERR = 0
+  drv1  A$=DSKI$(1,0)      -> LEN/-ERR = 0
+  drv2  A$=DSKI$(2,0)      -> LEN/-ERR = <none>
+
+A `<none>` on drv2 is NOT a lost capture: B: does not exist on this machine,
+so the drive prompt blocks -- which is itself the reading that the first
+argument is a DRIVE SELECTOR.
