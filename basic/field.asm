@@ -255,8 +255,7 @@ fld_key_de:
 ; HL = cursor at the FIELD token. Drops any prior fields on the channel, then walks
 ; the comma list assigning each variable a slice [running offset, width].
 ex_field:
-                inc     hl                  ; past the FIELD token
-                call    skip_spaces
+                call    inc_skip           ; past the FIELD token
                 cp      '#'
                 jr      nz,exf_havech
                 inc     hl
@@ -334,8 +333,7 @@ exf_item:
                 call    upcase
                 cp      'S'
                 jp      nz,exf_syn
-                inc     hl
-                call    skip_spaces
+                call    inc_skip
                 call    is_letter           ; a string variable name?
                 jp      nc,exf_syn
                 call    var_str_type        ; A=1 if `$` suffix
@@ -754,8 +752,7 @@ ex_put:
                 ; two reserved words (PUT $B3 + SPRITE $C7), disambiguated at RUN
                 ; time on the token that follows (basic/graphics.asm ex_put_sprite).
                 push    hl
-                inc     hl
-                call    skip_spaces
+                call    inc_skip
                 cp      SPRITE_TOKEN
                 jr      z,pus_is_sprite
                 pop     hl
@@ -771,8 +768,7 @@ ex_get:
                 xor     a                   ; mode = GET (read)
 gp_common:
                 ld      (GP_MODE),a
-                inc     hl                  ; past the GET/PUT token
-                call    skip_spaces
+                call    inc_skip           ; past the GET/PUT token
                 cp      '#'
                 jr      nz,gp_nochan
                 inc     hl

@@ -572,8 +572,7 @@ sct_go:
                                             ; harmless temp)
                 ex      (sp),hl             ; [R]; HL = cursor (@ '+')
 sct_loop:
-                inc     hl                  ; past the '+'
-                call    skip_spaces         ; HL -> the next operand
+                call    inc_skip           ; past the '+'
                 call    str_eval_one        ; STRPTR -> operand, HL = ADVANCED cursor, CF
                 jr      nc,sct_err2         ; malformed operand -> clean [R]
                 push    hl                  ; [R][advanced cursor] (save the ADVANCED

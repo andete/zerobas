@@ -112,8 +112,7 @@ clr_himem:
                 ; ⚠️ REACHED BY FALLTHROUGH ONLY since D-CLRFIX deleted its one
                 ; incoming jump (the leading-comma arm above). `jr nz,clr_done`
                 ; three lines up is the only way in.
-                inc     hl                  ; past the comma
-                call    skip_spaces
+                call    inc_skip           ; past the comma
                 ; 🔴 D-CLRFIX: `call eval` STOOD HERE WITH NO CHECK OF ANY KIND,
                 ; and the slot deferred EVERY fault code -- 24 (`CLEAR 200,`),
                 ; 11 (`,1/0`), 13 (`,"x"`) -- storing DE anyway, falling into

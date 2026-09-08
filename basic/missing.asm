@@ -48,8 +48,7 @@
 ; machine. ZTS_OFF/ZTS_ON are literally 0/1 (sysvars.inc), so onoff_decode's
 ; answer IS the STMOTR argument with no mapping step.
 ex_motor:
-                inc     hl                  ; past the MOTOR token
-                call    skip_spaces         ; returns A = (HL)
+                call    inc_skip           ; past the MOTOR token
                 call    onoff_decode
                 jr      c,mot_onoff
                 ; Not ON/OFF/STOP. A bare MOTOR is the TOGGLE form, but only at a

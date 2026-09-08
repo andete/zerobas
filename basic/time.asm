@@ -52,12 +52,10 @@
 ; otherwise inherit. Six bytes make `TIME=` correct where it stands; the general
 ; gap is tracked separately rather than widened into this slice.
 ex_time_assign:
-                inc     hl                  ; past the TIME token
-                call    skip_spaces
+                call    inc_skip           ; past the TIME token
                 cp      EQ_TOKEN
                 jr      nz,tm_err2          ; `TIME` bare / `TIME 5` / `TIME(1)=5` -> ERR 2
-                inc     hl
-                call    skip_spaces
+                call    inc_skip
                 or      a
                 jr      z,tm_err24          ; `TIME=` at end of line -> Missing operand
                 cp      ':'

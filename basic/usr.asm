@@ -67,8 +67,7 @@ cut_lp:
 ; Anything after DEF that is not USR (incl. DEF FN) hits stmt_error. On
 ; success continues the line.
 ex_def:
-                inc     hl                  ; past the DEF token
-                call    skip_spaces
+                call    inc_skip           ; past the DEF token
                 cp      FN_TOKEN            ; D-DEFFN: DEF FN -> basic/deffn.asm
                 jp      z,ex_deffn
                 cp      USR_TOKEN           ; DEF USR -> machine-code vector

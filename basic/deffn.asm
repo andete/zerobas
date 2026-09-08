@@ -129,8 +129,7 @@ exdf_run:
 ev_fn:
                 push    ix
                 pop     hl
-                inc     hl
-                call    skip_spaces
+                call    inc_skip
                 call    var_str_type        ; is the FN's own name a string name?
                 or      a
                 jp      nz,ev_f_tmm         ; deferred FPERR=10 -- the same shape
@@ -149,8 +148,7 @@ ev_fn:
 ; anyway. So this restores HL and returns CF clear.
 str_ev_fn:
                 push    hl
-                inc     hl
-                call    skip_spaces
+                call    inc_skip
                 call    var_str_type
                 or      a
                 pop     hl

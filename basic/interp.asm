@@ -313,8 +313,7 @@ req_gosub:
 ; anyone adds) plus one saved byte -- and saying so with an arm beats asserting
 ; it in a comment. [[a-case-that-agrees-can-agree-for-the-wrong-reason]]
 str_eval_next:
-                inc     hl                  ; past the delimiter
-                call    skip_spaces
+                call    inc_skip           ; past the delimiter
                 jp      str_eval            ; TAIL jump -- see the note above
 
 ; --- req_lineno: a LINE NUMBER is REQUIRED at the cursor (D-NGRAM10) --------
@@ -948,6 +947,23 @@ ex_let_str:
                 call    str_set_key         ; A$[key] := descriptor (clamped)
                 jr      fp_stmt_done        ; D-CARVE3 (-7 B, main page 1)
 
+; --- inc_skip: `inc hl` then skip_spaces, as ONE call ----------------------
+; 💰 D-INCSKIP. `inc hl` / `call skip_spaces` stood open-coded at FIFTY sites --
+; 4 bytes each. This label is ONE byte (the `inc hl`) and FALLS THROUGH into
+; skip_spaces below, so every site becomes a 3-byte `call inc_skip` and nets
+; **-1 B per site**. It is not a clone_scout candidate: the two instructions sit
+; in different label-blocks at most sites, and the tool's own rule would price an
+; 8-byte group as irreducible anyway.
+; 🎯 BEHAVIOURALLY IDENTICAL, and the stack is why it is worth stating: `call
+; inc_skip` pushes exactly ONE return address, the same depth `call skip_spaces`
+; had, and `inc hl` touches no flags — so A, the flags and SP are what every
+; caller already expected. A label on the old `inc hl` moves to the `call` and
+; means the same thing.
+; ⚠️ basic/readdata-body.inc is DELIBERATELY NOT converted: sub/readdata.asm
+; includes it, so a `call inc_skip` there would be a main-ROM escape from a
+; sub-ROM tenant (subrom-closure-check's subject).
+inc_skip:
+                inc     hl
 ; --- skip_spaces: advance HL past 0x20 bytes -------------------------------
 skip_spaces:
                 ld      a,(hl)
@@ -980,8 +996,7 @@ skip_spaces:
 ; that a later caller quietly broke, so it is corrected rather than left standing
 ; [[a-fix-falsifies-the-justification-beside-it]].
 stmt_bare_end:
-                inc     hl                  ; past the statement's token
-                call    skip_spaces
+                call    inc_skip           ; past the statement's token
                 or      a
                 ret     z                   ; end of line
                 cp      COLON
@@ -1822,8 +1837,7 @@ cee_abort_fp:
 
 ; --- ex_letkw: optional LET keyword before an assignment -------------------
 ex_letkw:
-                inc     hl                  ; past the LET token
-                call    skip_spaces
+                call    inc_skip           ; past the LET token
     IF G8_RESIDENT
                 ; `LET VDP(0)=2` / `LET BASE(0)=…` are ERR 2 on the reference
                 ; (measured, docs/spec-basic-graphics-g8.md §3). Without this they
@@ -1883,8 +1897,7 @@ ex_goto_undef:
 ; A clause is either a line number (implicit GOTO) or statements. Condition is
 ; true when the expression is non-zero (no comparison operators yet).
 ex_if:
-                inc     hl                  ; past the IF token
-                call    skip_spaces
+                call    inc_skip           ; past the IF token
                 call    eval                ; DE = condition, HL after expr
                 call    check_expr_errors   ; D-2/D-F2-1: `IF A$<5 THEN...` / a runtime
                                             ; numeric error both abort before either clause
@@ -1916,8 +1929,7 @@ if_goto_form:
                 jr      z,if_false
                 jp      exec_stmt           ; true: let exec run the GOTO at HL
 if_then:
-                inc     hl                  ; past THEN
-                call    skip_spaces
+                call    inc_skip           ; past THEN
                 ld      a,d                 ; condition true?
                 or      e
                 jr      z,if_false
@@ -1931,8 +1943,7 @@ if_false:
                 call    if_skip_to_else     ; scan to ELSE token or end of line
                 or      a
                 ret     z                   ; no ELSE -> line done
-                inc     hl                  ; past the ELSE ($A1) token
-                call    skip_spaces
+                call    inc_skip           ; past the ELSE ($A1) token
                 cp      LINENO_TOKEN
                 jr      z,if_branch
                 jp      exec_stmt           ; ELSE <statements>
