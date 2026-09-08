@@ -410,7 +410,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:11504 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:11537 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -575,7 +575,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:2520 (T-6FE392)8 (T-529ABE)` from `TODO.md:10441 (T-529ABE)`: a
+      `TODO.md:2520 (T-6FE392)8 (T-529ABE)` from `TODO.md:10474 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -3158,7 +3158,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:10441 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:10474 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -4527,6 +4527,39 @@ list. **When a slice lands, grep this list for what it just shipped.**
       span, and the 8 B pair is a self-contained loop whose merge needs a
       `call`/`ret` wrapper that nets **one** byte and adds call overhead inside a
       loop.
+      🔴 **AND THE THIRD ROUTE IS OUT TOO — `clone_scout` RE-RUN 2026-09-08 EVENING
+      ([`scratchpad/clone_0908.out`](scratchpad/clone_0908.out)), AFTER FOUR
+      INSERTIONS THAT WOULD HAVE RENEWED IT.** `--min 4 --extend` over 1270 spans
+      returns exactly **one** group, and it is a FALSE POSITIVE by the tool's own
+      documented rule: *"once a group's per-member size approaches the cost of a
+      stub (~5-10 B) there is nothing left to take."* `each` is **8 B**.
+      The group is `dc_all` / `get_int16_checked` / `mot_go`, all one shape —
+      `push hl / call X / pop hl / jp Y` — and the two operands BOTH vary:
+      | member | call | jp |
+      |---|---|---|
+      | `dc_all` | `fch_close_all` | `exec_stmt` |
+      | `get_int16_checked` | `fac_to_int_strict` | `check_fperr_only` |
+      | `mot_go` | `STMOTR` | `exec_stmt` |
+      🎯 **SO EVERY COLLAPSE SHAPE LOSES BYTES, AND THE ARITHMETIC IS THE ANSWER,
+      NOT THE SMELL.** Three sites × 8 B = 24 B today. A shared body needs each
+      site to hand it two 16-bit addresses, and the Z80 has no `call (hl)`: the
+      cheapest stub is `ld iy,callee / ld de,after / jp guard` = **10 B**, worse
+      than the 8 B it replaces before the helper is counted. Restricting to the two
+      members that share `jp exec_stmt` leaves one varying operand — but **`HL` is
+      the very thing being guarded**, so the callee cannot ride in it; `ld iy,callee
+      / jp guard` is 7 B against 8, saving 2 B total, and an indirect call through
+      IY costs more than 2 B to build because there is no `call (iy)` either.
+      📏 **AND IT IS NOT A THRESHOLD ARTEFACT**: `--min 10`, `--min 14` and
+      `--min 20` each return **0 groups**, so the 8 B group is not the small tail of
+      a larger family.
+      ➡️ **ALL THREE MECHANICAL ROUTES ARE THEREFORE SHUT FOR MAIN PAGE 1, AND THE
+      NEXT BYTE HAS TO BE DESIGNED RATHER THAN SWEPT.** Route D: one unconvertible
+      site. Clone/dup-span: one group, refuted above. Promotion (D-PROMOTE): moves
+      the split between page 1 and the low region 1:1 but **cannot raise their
+      sum**, which stood at **3 B** (2 B page 1 + 1 B low) on 2026-09-08 after
+      D-ATTRFN. ⚠️ Route D still RENEWS on insertion — re-run `jr_mapper.py` after
+      any slice — but it did not renew across tonight's four (it read 1 site before
+      and 1 after).
       ✅ **TAKEN 2026-09-08 (D-CARVE6): the low region is 4 B → 14 B.** Ten
       `jp`→`jr` conversions, nine in `str-engine.asm` and one in `float-arith.asm`,
       both verified single-inclusion first — `pdfcb-body.inc` cost a build earlier

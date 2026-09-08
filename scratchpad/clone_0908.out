@@ -1,0 +1,7 @@
+1270 span(s)  [--extend: groups grow across label boundaries]
+est.save   n  each  region  file / members
+====================================================================================================
+       4   3     8  page1   basic/files.asm
+           dc_all, get_int16_checked, mot_go
+
+1 candidate groups; total est. savings 4 B (overlapping groups NOT deduped)
