@@ -410,7 +410,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:11304 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:11329 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -575,7 +575,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:2459 (T-6FE392)8 (T-529ABE)` from `TODO.md:10241 (T-529ABE)`: a
+      `TODO.md:2484 (T-6FE392)8 (T-529ABE)` from `TODO.md:10266 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -1072,10 +1072,10 @@ list. **When a slice lands, grep this list for what it just shipped.**
       command — showed most had RUN and printed real readings.
       | | before | after |
       |---|---|---|
-      | clean | 18 | **19** |
+      | clean | 18 | **20** |
       | diverging | 11 | **12** |
-      | no verdict BY DESIGN (declared) | 3 | **10** |
-      | 🔴 unparsed | **15** | **6** |
+      | no verdict BY DESIGN (declared) | 3 | **15** |
+      | 🔴 unparsed | **15** | **0** |
       🎯 **SEVEN WERE CHARACTERISATION PROBES WITH NO VERDICT CHANNEL** — they
       measure what the REFERENCE does and print zerobas for the record. Declared in
       `tools/filed-row-known.txt` using the convention that **already existed**
@@ -1095,11 +1095,36 @@ list. **When a slice lands, grep this list for what it just shipped.**
       D-MAXFTAIL had fixed that divergence the night before; any future fix would
       have done the same. This file's own *"0 has two causes"* rule, turned on
       itself — a matched summary is now proof of measurement whatever its count.
-      ➡️ **SIX REMAIN UNPARSED AND ARE DELIBERATELY LEFT SO**: `lineentry`, `loc`,
-      `putcost`, `putio`, `rungap`, `trapstate`. Nobody has established whether they
-      score or characterise, and declaring them would be the guess that produced the
-      wrong answer in the first place.
-      🤖 AUTONOMOUS — reading each probe's `return` statements settles its kind.
+      ✅ **AND THE LAST SIX ARE SETTLED — 0 UNPARSED, EVIDENCE PER PROBE.**
+      `loc_probe` answers for itself (*"NO VERDICT COLUMN ON PURPOSE. zerobas has no
+      LOC, so this is not a differential"*); `trapstate` runs
+      `ZEROBAS_BASIC_MACHINE` **only** and `putio` is single-machine counts, so
+      neither can produce a differential at all; `putcost` measures per-PUT ticks,
+      the shape already declared for `interpspeed_probe`; `rungap` measures the
+      HARNESS (step fixed, `run_gap` moving), not BASIC. Only **`lineentry` SCORES**
+      — each side is checked against the LISTING — so it got a `DIFF: n/m` line
+      instead of a declaration.
+      🔴 **THE EXIT-CODE TEST FROM THE FIRST PASS WOULD HAVE GOT `lineentry`
+      WRONG.** It returns only 0 or 2, exactly like the five characterisation
+      probes beside it, and it scores anyway. Reading the OUTPUT and the MACHINE
+      COUNT is what separated them — one signal was not enough, which is the same
+      correction that produced the first pass's wrong answer
+      [[a-mechanism-inferred-from-one-observation]].
+      ⚠️ **`loc_probe` WAS THE TRAP**: its table shows `26,26,26` against `0,0,0`,
+      which reads exactly like a live divergence. Going by the table alone would
+      have added a spurious row to the count; its own note and the `LOC(#n)` filing
+      (D-LOCSEM) are what settle it.
+      ➡️ **WHAT KEEPS THIS OPEN: `ramfree_probe` IS STILL ROTTED.** Its `ctl.forstk`
+      positive control watches `$EA3A` for FOR-loop writes that **cannot happen
+      there** — D-CTLPOOL retired that stack — so the control can never fire, and by
+      the probe's own rule a failed control voids its rows. It also needs
+      `RAMFREE_STEP` raised: at the 12 s default the fill-and-check does not finish
+      and eight rows read their own source echo, while at 45 s `ctl.self` and
+      `base.none` both pass. **Its window `$EA92..$EB00` is also DEF FN's frame now**
+      (`FN_BASE equ FOR_STK_END`), so the probe hunts RAM that D-DEFFN already spent;
+      the genuinely free span is `$EA3E..$EA92`, declared FREE-RAM in
+      [`basic/sysvars.inc:3481`](basic/sysvars.inc:3481).
+      🤖 AUTONOMOUS — the control, the step and the window are each a measured fix.
 
 - [ ] 🔴 **SEVEN FILED PROBES PRINT DIVERGENCES AND EXIT 0.** Measured
       2026-08-31 by D-FILEDROT,
@@ -3097,7 +3122,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:10241 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:10266 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

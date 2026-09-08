@@ -43,6 +43,14 @@ dskiwhere_probe: NO-VERDICT -- page-checksum scan for where a sector lands; prin
 copyverb_probe: NO-VERDICT -- COPY's four faces on the CF-3300; states in its own output that it characterises and does not score
 kwrest_probe: NO-VERDICT -- the surface of the five remaining pinned keywords; ERR faces on the reference, zerobas has none of them to compare
 editline_probe: NO-VERDICT -- screen dumps of the screen-editor re-entry rows; reports, does not score
+# --- 2026-09-08, second pass: the six D-FRSKIND deliberately left unknown. Kind
+# established from EVIDENCE per probe, not from the family name -- five have no
+# differential to give and `lineentry_probe` does, so only it gets a summary line.
+loc_probe: NO-VERDICT -- says so in its own output: "NO VERDICT COLUMN ON PURPOSE. zerobas has no LOC, so this is not a differential -- it is a CHARACTERISATION of the reference". Its rows are filed under LOC(#n) (D-LOCSEM)
+trapstate_probe: NO-VERDICT -- runs ZEROBAS_BASIC_MACHINE ONLY; a single-machine ZTRAP state dump cannot produce a differential
+putio_probe: NO-VERDICT -- single-machine read/write/per-PUT counts; no comparison column exists to adjudicate
+putcost_probe: NO-VERDICT -- per-PUT ticks on the guest's own clock, the same shape as interpspeed_probe above; it serves the SPEED entry, which the scoreboard reclassified as not-correctness
+rungap_probe: NO-VERDICT -- measures the HARNESS (step held fixed while run_gap moves), not BASIC; an apparatus calibration with no BASIC subject
 
 deffn_alias_probe: o.alias; o.aliasnest -- "DEF FN: two formals of ONE call can alias"; the rows ARE the filing
 dupopen_probe: s.same; s.space; s.newtwice; s.modes; s.seqsame; s.reclaim -- "THE SAME FILE ON TWO CHANNELS IS ACCEPTED HERE AND REFUSED ON THE CF-3300". ⚠️ FILED IN PROSE BUT NEVER PINNED: D-DUPOPEN (2026-09-02) characterises all six rows by name in the entry, and the sweep reads THIS FILE, not prose -- so they read UNFILED for two days. The item prices the fix at 165 B of RAM (11 B x FCH_CEIL) and the cheap dirent route is refuted by s.case.

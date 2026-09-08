@@ -105,7 +105,8 @@ def run(side, step):
 def main():
     print(f"\ntyped {len(TYPED)} line(s); comparing against the LISTING\n")
     mangled = blind = 0
-    for side, step in (("cf3300", 4.5), ("zb", 2.5), ("zb", 5.0), ("zb", 8.0)):
+    SIDES_RUN = (("cf3300", 4.5), ("zb", 2.5), ("zb", 5.0), ("zb", 8.0))
+    for side, step in SIDES_RUN:
         got = run(side, step)
         tag = f"{side} step={step}"
         if got is None:
@@ -135,6 +136,11 @@ def main():
     else:
         print("🟢 the program arrives INTACT at every step, including the failing "
               "one — so line entry is REFUTED and the cause is still unknown.")
+    # `DIFF: n/m` -- the summary line filed_row_sweep.py already parses. This probe
+    # DOES score (each side is checked against the LISTING), so it is deliberately
+    # NOT declared NO-VERDICT alongside the five characterisation probes filed with
+    # it. Without this line a CLEAN run reported as "NOTHING PARSED".
+    print(f"DIFF: {mangled}/{len(SIDES_RUN)}")
     return 0
 
 
