@@ -1,0 +1,11 @@
+  p.ctl      COLOR 7,4,4   vg=fg=7 bg=4 ERR=0        cf=fg=7 bg=4 ERR=0        zb=fg=7 bg=4 ERR=0       
+  col.fgok   COLOR 7,99    vg=fg=15 bg=4 ERR=5       cf=fg=15 bg=4 ERR=5       zb=fg=7 bg=4 ERR=5          🔴 DIFF
+  col.bgok   COLOR 7,8,99  vg=fg=15 bg=4 ERR=5       cf=fg=15 bg=4 ERR=5       zb=fg=7 bg=8 ERR=5          🔴 DIFF
+  col.tail   COLOR 7,8,    vg=fg=15 bg=4 ERR=24      cf=fg=15 bg=4 ERR=24      zb=fg=7 bg=8 ERR=24         🔴 DIFF
+  col.type   COLOR 7,"A"   vg=fg=15 bg=4 ERR=13      cf=fg=15 bg=4 ERR=13      zb=fg=7 bg=0 ERR=13         🔴 DIFF
+  col.fgbad  COLOR 99,8    vg=fg=15 bg=4 ERR=5       cf=fg=15 bg=4 ERR=5       zb=fg=15 bg=4 ERR=5      
+
+=== 4 divergence(s): ['col.fgok', 'col.bgok', 'col.tail', 'col.type'] ===
+  🎯 `COLOR 7,99` on the reference leaves FORCLR = 15  -> the statement is rejected ATOMICALLY, and a per-component
+     validator is NOT faithful.
+refcache: 12 hit, 6 miss, 6 stored

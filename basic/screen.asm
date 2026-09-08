@@ -175,6 +175,7 @@ scr_extra:                                  ; the trailing arguments
 ; --- ex_color: COLOR [<fg>][,<bg>][,<border>] ------------------------------
 ; Each colour is optional; an omitted one keeps the current work-area value.
 ex_color:
+                call    clr_prep            ; D-PARTIAL: snapshot fg+bg into the shadow
                 call    stmt_bare_end       ; D-BAREEND: Z iff the statement ends here
                 ; 🔴 D-BAREFORM: a BARE `COLOR` is `Missing operand`, NOT a re-apply.
                 ; Measured on BOTH references (ERR 24 each); zerobas answered with
@@ -190,7 +191,7 @@ ex_color:
                 jr      z,clr_bg
                 call    clr_eval            ; DE = foreground, VALIDATED 0..15
                 ld      a,e
-                ld      (FORCLR),a
+                ld      (CLR_SAVE),a        ; D-PARTIAL: the SHADOW, not the sysvar
                 call    skip_comma
                 jr      nz,clr_apply
 clr_bg:
@@ -203,7 +204,7 @@ clr_bg:
                 jr      z,clr_apply
                 call    clr_eval            ; DE = background, VALIDATED 0..15
                 ld      a,e
-                ld      (BAKCLR),a
+                ld      (CLR_SAVE+1),a      ; D-PARTIAL: the SHADOW, not the sysvar
                 call    skip_comma
                 jr      nz,clr_apply
 clr_bd:
@@ -223,8 +224,22 @@ clr_bd:
                 ld      a,e
                 ld      (BDRCLR),a
 clr_apply:
+                ; 🔴 D-PARTIAL, second half: SURFACE A DEFERRED TYPE MISMATCH BEFORE
+                ; COMMITTING. `COLOR 7,"A"` does not fail inside `eval` — eval sets
+                ; TMISMATCH and YIELDS 0 when a string meets a non-string, so
+                ; clr_eval's 0..15 check passes on that 0, the statement runs to
+                ; completion, and `exec_stmt` raises ERR 13 afterwards. The shadow
+                ; alone therefore did NOT fix this row: it faithfully committed a
+                ; foreground of 7 and a background of 0 — the "0 that no argument
+                ; asked for", finally explained rather than merely observed.
+                ; 🎯 The remedy is the one this tree already uses at ev_ff_arg:
+                ; ask check_expr_errors before acting, not after.
+                call    check_expr_errors   ; TMISMATCH -> ERR 13, before any store
                 ld      a,(SCRMOD)          ; CHGCLR wants the current screen mode
                 push    hl
+                call    clr_commit          ; D-PARTIAL: publish the shadow — the ONLY
+                                            ; point at which COLOR becomes visible, and
+                                            ; it is past every way the statement can fail
                 call    CHGCLR
                 pop     hl
                 jp      exec_stmt

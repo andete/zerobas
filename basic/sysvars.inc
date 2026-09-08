@@ -3508,7 +3508,21 @@ SL_CEIL         equ     $E058   ; store_line: the VARIABLE-region ceiling the
 ; subsystems over it -- so "nothing else writes here" is a measurement.
 GP_SRC          equ     $EA3A   ; pass cursor into FSECTOR_BUF (2)
 GP_LEFT         equ     $EA3C   ; record bytes still to move (2) -> ends $EA3E
-; FREE-RAM $EA3E..$EA92  the rest of the retired FOR_STK (84 B), same arc
+; --- D-PARTIAL: COLOR's shadow colour pair (2026-09-08) ----------------------
+; `COLOR 7,99` must leave the foreground UNCHANGED: both references reject the
+; statement ATOMICALLY, and zerobas stored each component as it validated it.
+; ex_color now writes the fg/bg here and clr_apply copies them out, so NOTHING
+; reaches the real sysvars until the statement has committed — which makes every
+; failure path atomic for free, including the ones that reset SP.
+; ⚠️ FORCLR ($F3E9) and BAKCLR ($F3EA) are ADJACENT, so both ride one 16-bit load.
+; BDRCLR is NOT shadowed and needs no saving: the border is stored LAST and
+; nothing between that store and clr_apply can fail.
+; 🟢 TAKEN FROM THE RETIRED FOR_STK, and the span is MEASURED free rather than
+; merely unnamed: `make ramfree-acceptance` fills it and runs nine subsystems over
+; it — FOR nests to depth 9, GOSUB, crunch, PAINT, DRAW, PLAY, the string heap,
+; disk I/O and FILES — all leaving it at 0 bytes changed (D-RAMFIX).
+CLR_SAVE        equ     $EA3E   ; fg+bg, in flight across a COLOR statement (2)
+; FREE-RAM $EA40..$EA92  the rest of the retired FOR_STK (82 B), same arc
 FOR_STK_END     equ     $EA92   ; RETIRED AS A STACK; the literal survives ONLY as
                                 ; FN_BASE's anchor below, which must not move.
 ; --- DEF FN: the parameter (shadow) area -----------------------------------

@@ -2066,6 +2066,29 @@ arl_ok:
 ; Preserves nothing (neither source routine does); ascii_read_lines already
 ; reloads everything it needs from RAM after each call.
 ;   out: A = byte, CF clear; or CF set = no more data (source-defined "EOF").
+; 🔁 DEMOTED BACK TO PAGE 1, 2026-09-08 (D-REBALANCE). It was PROMOTED
+; into the low region earlier the same evening, when main page 1 had 3 B and the
+; low region 14 B. D-INCSKIP and D-SKIPCOMMA then freed 113 B of page 1 and only
+; 12 of low, so the SCARCE wall changed sides and the promotion now costs the
+; wrong region. The two regions are one budget; which side a routine sits on is a
+; reading of today's split, not a property of the routine.
+; arl_getbyte — the indirect byte source ascii_read_lines reads through.
+;   out: A = byte, CF clear; or CF set = no more data (source-defined "EOF").
+; Preserves nothing (neither source routine does); ascii_read_lines already
+; reloads everything it needs from RAM after each call.
+; 💰 PROMOTED OUT OF basic/files.asm (main page 1) INTO THE LOW REGION,
+; 2026-09-08, to fund `ATTR$`'s `ev_f` arm (D-ATTRFN). Same route as `upcase`
+; above (D-PROMOTE): the two regions are one contiguous, freely inter-callable
+; image, so these four bytes cost nothing here and buy four bytes of page 1.
+; 🎯 It qualifies because nothing about it is position-dependent: entered only by
+; `call`, left only by `jp (hl)` — an unconditional terminator — emits no data,
+; and no `jr`/`djnz` crosses its boundary. `ascii_read_lines`, its only caller,
+; reaches it absolutely. Sited ABOVE the overflow guard, which has to stay the
+; last thing in this block or it does not guard the bytes after it.
+arl_getbyte:
+                ld      hl,(ARL_GETBYTE)
+                jp      (hl)
+
 ; mrg_storeline — 0-terminate LINEBUF at MRG_PTR and, if it is a numbered (or blank)
 ; line, hand it to dispatch_line (same tokenise + store_line path as a typed line).
 ;   out: CF set = a non-blank, non-numbered line (error); CF clear = stored/skipped.

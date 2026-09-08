@@ -970,6 +970,34 @@ skip_comma:
                 cp      ','
                 ret
 
+; 🔁 DEMOTED BACK TO PAGE 1, 2026-09-08 (D-REBALANCE). It was PROMOTED
+; into the low region earlier the same evening, when main page 1 had 3 B and the
+; low region 14 B. D-INCSKIP and D-SKIPCOMMA then freed 113 B of page 1 and only
+; 12 of low, so the SCARCE wall changed sides and the promotion now costs the
+; wrong region. The two regions are one budget; which side a routine sits on is a
+; reading of today's split, not a property of the routine.
+; --- upcase: fold A to uppercase if it is 'a'..'z' -------------------------
+; Preserves BC/DE/HL. Source: ASCII (allowed).
+; 💰 PROMOTED OUT OF basic/interp.asm (main page 1) INTO THE LOW REGION,
+; 2026-09-08, to fund the `SET`/`IPL`/`CMD` dispatch entries. The two regions are
+; ONE contiguous, freely inter-callable image and which one a routine lands in is
+; decided purely by where its `include` sits relative to `__MEAS_LOW_END` below,
+; so moving these nine bytes here costs nothing and buys nine bytes of page 1.
+; 🎯 IT QUALIFIES BECAUSE NOTHING ABOUT IT IS POSITION-DEPENDENT: it is entered
+; only by `call` (absolute), leaves only by `ret`, emits no data, and no `jr` or
+; `djnz` crosses its boundary in either direction — `is_letter`, which sat
+; directly below it in interp.asm and calls it, reaches it absolutely.
+; The sweep that says so is scratchpad/promote_scout.py; its `--selftest` plants
+; a clean routine and four unmovable ones and asserts each is judged for its own
+; stated reason, so "promotable" is a reading rather than a parse failure.
+upcase:
+                cp      'a'
+                ret     c                   ; below 'a'
+                cp      'z'+1
+                ret     nc                  ; above 'z'
+                sub     $20
+                ret
+
 ; --- inc_skip: `inc hl` then skip_spaces, as ONE call ----------------------
 ; 💰 D-INCSKIP. `inc hl` / `call skip_spaces` stood open-coded at FIFTY sites --
 ; 4 bytes each. This label is ONE byte (the `inc hl`) and FALLS THROUGH into

@@ -410,7 +410,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:11751 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:11780 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -575,7 +575,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:2734 (T-6FE392)8 (T-529ABE)` from `TODO.md:10688 (T-529ABE)`: a
+      `TODO.md:2734 (T-6FE392)8 (T-529ABE)` from `TODO.md:10717 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -3372,7 +3372,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:10688 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:10717 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -4716,8 +4716,37 @@ list. **When a slice lands, grep this list for what it just shipped.**
         from `SCRMOD`) survives it.
       - `BDRCLR` is NOT shadowed and needs no saving: the border is stored **LAST**,
         and nothing between that store and `clr_apply` can fail.
-      🔴 **AND PROMOTION CANNOT FUND IT — SETTLED 2026-09-08 (D-PROMOTE), so nobody
-      re-prices this one hoping.** The low region and main page 1 share ONE budget
+      🟢 **SHIPPED 2026-09-08 — ALL FOUR ROWS CLOSED, 0 DIFF**
+      ([after](scratchpad/partial_after3.out)). 9 B main page 1 + 16 B low + 2 B
+      RAM; page 1 88 → **79 B**, low 27 → **11 B**.
+      💰 **FUNDED BY REBALANCING THE SPLIT, NOT BY A NEW CARVE (D-REBALANCE).**
+      `upcase` and `arl_getbyte` — 9 B and 4 B, as sited 2026-09-08 — had been
+      PROMOTED into the low region earlier that same evening, when page 1 stood at
+      3 B and low at 14 B (both read 2026-09-08). D-INCSKIP and
+      D-SKIPCOMMA then freed 113 B of page 1 and only 12 of low, so **the scarce
+      wall changed sides** and the promotion was costing the wrong region.
+      Demoting both back: low 14 → 27 B, page 1 101 → 88 B. 🎯 The two regions are
+      ONE budget, and which side a routine sits on is a reading of today's split
+      rather than a property of the routine.
+      🎯 **THE SHADOW MADE THREE OF THE FOUR EXITS ATOMIC FOR FREE** — no arm at
+      `clr_ill` at all, which is what the save-and-restore shape could never have
+      done for `clr_missing` and the `eval` raise, both of which reset SP.
+      🔴 **AND THE FOURTH ROW NEEDED A SECOND FIX — THE ONE THIS ITEM FILED AS AN
+      OBSERVATION AND REFUSED TO EXPLAIN.** `COLOR 7,"A"` leaving `BAKCLR = 0` is
+      now explained: `eval` sets `TMISMATCH` and **yields 0** when a string meets a
+      non-string, so `clr_eval`'s 0..15 check passes on that 0, the statement runs
+      to COMPLETION, and `exec_stmt` raises ERR 13 afterwards. The shadow committed
+      a foreground of 7 and a background of 0 perfectly faithfully. Fixed with
+      `call check_expr_errors` at `clr_apply` before the commit (**+3 B**) — the
+      same remedy `ev_ff_arg` already uses: ask before acting, not after.
+      🟢 **REFUSING TO NAME THAT MECHANISM WHEN IT WAS ONE OBSERVATION WAS RIGHT.**
+      The guess available then was "something else writes the cell"; the truth is
+      that nothing else writes it and the statement simply succeeds
+      [[a-mechanism-inferred-from-one-observation]].
+      🔴 **~~AND PROMOTION CANNOT FUND IT — SETTLED 2026-09-08 (D-PROMOTE), so nobody
+      re-prices this one hoping.~~ TRUE WHEN WRITTEN, AND OVERTAKEN THE SAME NIGHT:**
+      promotion could not RAISE the combined budget, and it did not — two carves
+      did, and then a re-split put the bytes on the side that needed them. The low region and main page 1 share ONE budget
       (17 B combined on 2026-09-08) and promoting a routine out of page 1 only
       moves the split; it spends a low byte for every page-1 byte it wins. This
       shadow needs **22 B total**. It is short against the COMBINED wall, not just

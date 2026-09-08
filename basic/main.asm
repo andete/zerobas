@@ -177,46 +177,35 @@ clr_eval:
                 cp      16
                 ret     c                   ; 0..15 -> good
 clr_ill:
+                ; 🟢 D-PARTIAL: NOTHING TO UNDO HERE, WHICH IS THE POINT. A
+                ; save-and-restore shape would need an arm at every exit — and
+                ; `clr_missing` and any error raised inside `eval` both reach
+                ; `raise_error`, which resets SP, so two of the four exits could
+                ; not run one. The shadow makes them all atomic without an arm.
                 jp      gb_illegal          ; ERR 5 Illegal function call
 
-; --- upcase: fold A to uppercase if it is 'a'..'z' -------------------------
-; Preserves BC/DE/HL. Source: ASCII (allowed).
-; 💰 PROMOTED OUT OF basic/interp.asm (main page 1) INTO THE LOW REGION,
-; 2026-09-08, to fund the `SET`/`IPL`/`CMD` dispatch entries. The two regions are
-; ONE contiguous, freely inter-callable image and which one a routine lands in is
-; decided purely by where its `include` sits relative to `__MEAS_LOW_END` below,
-; so moving these nine bytes here costs nothing and buys nine bytes of page 1.
-; 🎯 IT QUALIFIES BECAUSE NOTHING ABOUT IT IS POSITION-DEPENDENT: it is entered
-; only by `call` (absolute), leaves only by `ret`, emits no data, and no `jr` or
-; `djnz` crosses its boundary in either direction — `is_letter`, which sat
-; directly below it in interp.asm and calls it, reaches it absolutely.
-; The sweep that says so is scratchpad/promote_scout.py; its `--selftest` plants
-; a clean routine and four unmovable ones and asserts each is judged for its own
-; stated reason, so "promotable" is a reading rather than a parse failure.
-upcase:
-                cp      'a'
-                ret     c                   ; below 'a'
-                cp      'z'+1
-                ret     nc                  ; above 'z'
-                sub     $20
+; clr_prep — snapshot FORCLR+BAKCLR into the shadow before COLOR parses anything.
+; Called from ex_color's first instruction; page 1 pays only the `call`.
+; ⚠️ IT MUST PRESERVE HL ITSELF: HL is the text cursor, live in every statement
+; handler. An earlier attempt at this fix used HL as scratch here and turned every
+; `COLOR` in the tree into ERR 2 — the probe's CONTROL row is what caught it.
+; 🎯 THE SNAPSHOT IS ALSO WHAT MAKES AN OMITTED ARGUMENT WORK: `COLOR ,bg` never
+; writes the fg slot, so the commit puts the old foreground back unchanged.
+clr_prep:
+                push    hl
+                ld      hl,(FORCLR)
+                ld      (CLR_SAVE),hl
+                pop     hl
                 ret
 
-; arl_getbyte — the indirect byte source ascii_read_lines reads through.
-;   out: A = byte, CF clear; or CF set = no more data (source-defined "EOF").
-; Preserves nothing (neither source routine does); ascii_read_lines already
-; reloads everything it needs from RAM after each call.
-; 💰 PROMOTED OUT OF basic/files.asm (main page 1) INTO THE LOW REGION,
-; 2026-09-08, to fund `ATTR$`'s `ev_f` arm (D-ATTRFN). Same route as `upcase`
-; above (D-PROMOTE): the two regions are one contiguous, freely inter-callable
-; image, so these four bytes cost nothing here and buy four bytes of page 1.
-; 🎯 It qualifies because nothing about it is position-dependent: entered only by
-; `call`, left only by `jp (hl)` — an unconditional terminator — emits no data,
-; and no `jr`/`djnz` crosses its boundary. `ascii_read_lines`, its only caller,
-; reaches it absolutely. Sited ABOVE the overflow guard, which has to stay the
-; last thing in this block or it does not guard the bytes after it.
-arl_getbyte:
-                ld      hl,(ARL_GETBYTE)
-                jp      (hl)
+; clr_commit — publish the shadow pair, once the whole statement has parsed.
+; Called from INSIDE clr_apply's existing `push hl` window and BEFORE `call
+; CHGCLR`, which reads the three sysvars — so it needs no HL guard of its own,
+; and it leaves A alone because clr_apply loaded SCRMOD into it first.
+clr_commit:
+                ld      hl,(CLR_SAVE)
+                ld      (FORCLR),hl         ; FORCLR+BAKCLR are adjacent
+                ret
 
 ; low-region overflow guard: the low-region tenants must not reach the $4000 header.
 ; If they do, the `ds` below would be negative (pasmo warns + emits nothing, a silent
