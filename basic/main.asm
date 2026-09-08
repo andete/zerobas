@@ -179,6 +179,28 @@ clr_eval:
 clr_ill:
                 jp      gb_illegal          ; ERR 5 Illegal function call
 
+; --- upcase: fold A to uppercase if it is 'a'..'z' -------------------------
+; Preserves BC/DE/HL. Source: ASCII (allowed).
+; 💰 PROMOTED OUT OF basic/interp.asm (main page 1) INTO THE LOW REGION,
+; 2026-09-08, to fund the `SET`/`IPL`/`CMD` dispatch entries. The two regions are
+; ONE contiguous, freely inter-callable image and which one a routine lands in is
+; decided purely by where its `include` sits relative to `__MEAS_LOW_END` below,
+; so moving these nine bytes here costs nothing and buys nine bytes of page 1.
+; 🎯 IT QUALIFIES BECAUSE NOTHING ABOUT IT IS POSITION-DEPENDENT: it is entered
+; only by `call` (absolute), leaves only by `ret`, emits no data, and no `jr` or
+; `djnz` crosses its boundary in either direction — `is_letter`, which sat
+; directly below it in interp.asm and calls it, reaches it absolutely.
+; The sweep that says so is scratchpad/promote_scout.py; its `--selftest` plants
+; a clean routine and four unmovable ones and asserts each is judged for its own
+; stated reason, so "promotable" is a reading rather than a parse failure.
+upcase:
+                cp      'a'
+                ret     c                   ; below 'a'
+                cp      'z'+1
+                ret     nc                  ; above 'z'
+                sub     $20
+                ret
+
 ; low-region overflow guard: the low-region tenants must not reach the $4000 header.
 ; If they do, the `ds` below would be negative (pasmo warns + emits nothing, a silent
 ; corruption), so assert first — an overrun references an undefined symbol -> clean

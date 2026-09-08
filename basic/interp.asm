@@ -203,16 +203,6 @@ tokenise:
 ; where the label resolves. The reloc-only string-function keywords live inside the
 ; include, gated.
 
-; --- upcase: fold A to uppercase if it is 'a'..'z' -------------------------
-; Preserves BC/DE/HL. Source: ASCII (allowed).
-upcase:
-                cp      'a'
-                ret     c                   ; below 'a'
-                cp      'z'+1
-                ret     nc                  ; above 'z'
-                sub     $20
-                ret
-
 ; --- is_letter: CF set if A is 'A'..'Z' or 'a'..'z' (A preserved) ----------
 is_letter:
                 push    af

@@ -410,7 +410,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:11396 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:11426 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -575,7 +575,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:2505 (T-6FE392)8 (T-529ABE)` from `TODO.md:10333 (T-529ABE)`: a
+      `TODO.md:2505 (T-6FE392)8 (T-529ABE)` from `TODO.md:10363 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -3143,7 +3143,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:10333 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:10363 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -4487,6 +4487,13 @@ list. **When a slice lands, grep this list for what it just shipped.**
         from `SCRMOD`) survives it.
       - `BDRCLR` is NOT shadowed and needs no saving: the border is stored **LAST**,
         and nothing between that store and `clr_apply` can fail.
+      🔴 **AND PROMOTION CANNOT FUND IT — SETTLED 2026-09-08 (D-PROMOTE), so nobody
+      re-prices this one hoping.** The low region and main page 1 share ONE budget
+      (17 B combined on 2026-09-08) and promoting a routine out of page 1 only
+      moves the split; it spends a low byte for every page-1 byte it wins. This
+      shadow needs **22 B total**. It is short against the COMBINED wall, not just
+      the page-1 one, so it needs an ABSOLUTE carve — bytes that stop existing —
+      and Route D and dup-span are both measured out.
       ➡️ **SO THE CARVE IS THE BLOCKER AGAIN**, and Route D is dry in page 1. This is
       the second item tonight parked on the same three-to-four bytes (the other is the
       four do-nothing keywords).
@@ -7192,6 +7199,29 @@ list. **When a slice lands, grep this list for what it just shipped.**
       [`basic/interp.asm`](basic/interp.asm), main page 1, which had **2 B free**
       the same day — four entries at 3 B is 12 B. **So even the do-nothing four
       need a carve first**, and that is priced here rather than discovered halfway.
+      🟢 **THE PAGE-1 HALF IS NO LONGER THE BLOCKER (D-PROMOTE, 2026-09-08).** The
+      low region and main page 1 are ONE contiguous, freely inter-callable image,
+      and which one a routine lands in is decided purely by where its `include`
+      sits relative to `__MEAS_LOW_END` in [`basic/main.asm`](basic/main.asm). So
+      **the two walls share one budget** and promotion moves the split 1:1. Against
+      the combined figure the arithmetic changes:
+      | want | page 1 | low | total | against the 17 B combined, read 2026-09-08 |
+      |---|---|---|---|---|
+      | `SET`/`IPL`/`CMD` (3 entries + one raiser) | 9 | 5 | **14** | ✅ fits |
+      | + `ATTR$` (`cp $E9` in `ev_f`) | 14 | 5 | **19** | ❌ 2 B over |
+      `upcase` was promoted the same day and page 1 went **3 B → 12 B** (low 14 B →
+      5 B), which covers the 9. ⚠️ **THE FOUR STILL DO NOT ALL FIT** — the combined
+      budget is 17 B and they need 19 — so this unblocks **three** words, not four,
+      and `ATTR$` stays parked. `scratchpad/promote_scout.py` lists 174 further
+      promotable routines if more page-1 room is wanted, but every byte it moves is
+      a low-region byte spent, so it cannot raise the 17.
+      ⚠️ **AND THE TOKENS ARE NOT MEASURED YET.** `SET`, `IPL` and `CMD` have no
+      `*_TOKEN` in [`basic/sysvars.inc`](basic/sysvars.inc) and no `kwtable.inc`
+      row: they are not tokenised at all, so the 9 B of `stmt_table` entries is the
+      *dispatch* cost and not the whole job. The token VALUES have to come off the
+      reference as a black-box reading (tokenise a line, PEEK the program text) the
+      way the crunch pins in `basic_probe_kwsweep.py` were taken. **Do that first;
+      the byte price above assumes it.**
       ⚠️ **`DSKO$`, `SET` AND `IPL` WRITE, AND `kwsweep` REFUSES TO EXECUTE THEM FOR
       THAT REASON.** They are driven here because every row mounts its OWN COPY of
       `disk/test720.dsk`; the shared fixture is never opened for writing.
