@@ -76,7 +76,18 @@ ngram14_probe: r.atn; r.exphuge; x.m100; x.m200; x.m1e30; x.m150; x.m170; x.m180
 # both DIVERGE. Unpinned they would read `🔴 UNFILED -- read them`, which is the
 # sweep working: a divergence nobody has adjudicated. Adjudicated here, from the
 # runs, against the entries that own them.
-casfch_probe: i.inp; i.byte -- "`INPUT$` ON A `CAS:` CHANNEL OPENED FOR INPUT READS ON THE REFERENCE AND RAISES ERR 55 HERE"; the CF-3300 returns no error and A$ is "H" (ASC=72), so i.byte witnesses the READ and not merely the absence of an error. ⚠️ Read with --input-only, which is why filed_row_sweep.py now carries that flag in ARGS: run BARE the reference never completes the CAS-input block and the rows are untouched RAM
+# casfch_probe: REMOVED 2026-09-08 -- `i.inp` and `i.byte` no longer diverge.
+# Re-measured with --input-only (scratchpad/casfch_orphan_recheck.out): the whole
+# CAS-input row set reads SAME, `i.inp` 0/0 and `i.byte` 72/72 ('H' of HELLO), so
+# INPUT$ on a CAS: channel opened FOR INPUT now READS on both machines where the
+# pin said zerobas raised ERR 55. A known row that stops diverging leaves the set,
+# per this file's own rule.
+# 🔴 IT WAS THE SIXTH STALE PIN, AND IT WAS INVISIBLE BY CONSTRUCTION. This sweep
+# validates the probes cited by OPEN items; when an item CLOSES, its probe leaves
+# the corpus and its pin can no longer be seen going stale. `--check-orphans`
+# exists for exactly that hole and reported this one -- run it WHENEVER AN ITEM
+# CLOSES, which is how this was found (the do-nothing-keyword item closed the same
+# night). 🎯 A PIN OUTLIVING ITS FIX READS AS DEBT THE TREE DOES NOT HAVE.
 # onerrarm_probe: REMOVED 2026-09-02 (D-ONERRGO) -- a.badtok, a.badstr,
 # t.stored and t.stored2 no longer diverge (the matrix is 0/12), so the four
 # rows leave the set per this file's own rule. The entry that owned them is
