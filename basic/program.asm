@@ -1507,8 +1507,17 @@ gosub_stk_over:
 ex_gosub:
                 call    inc_skip           ; past the GOSUB token
                 call    req_lineno          ; D-NGRAM10: $0E,<lineno LE> expected --
-                                            ; BC = target, HL = resume point (after
-                                            ; the statement)
+                                            ; BC = target, HL = just past the line
+                                            ; number -- NOT yet the resume point
+                ; D-FLOWTAIL: the resume point is the end of the STATEMENT, not
+                ; the byte after the line number. `GOSUB 100 ZZ` is accepted on
+                ; both references and the ZZ never runs; here RETURN came back
+                ; onto it and raised ERR 2. Sited at THIS verb and at eon_gosub
+                ; rather than at the shared `goto_take_bc` below, whose own header
+                ; says a change there serves GOTO too -- and `GOTO 100 ZZ` AGREES
+                ; today, because GOTO never comes back to its tail
+                ; [[a-shared-tail-is-not-a-decision]].
+                call    skip_stmt_tail      ; HL -> ':' or EOL; BC (the target) kept
                 call    gosub_push          ; push frame; BC=target kept; CF set = full
                 jr      c,gosub_stk_over
                 jp      goto_take_bc        ; BC = target; arm GOTOTGT/GOTOFLAG
@@ -2226,6 +2235,9 @@ eon_gosub:
                 inc     hl                  ; past GOSUB token
                 call    eon_seek_nth        ; BC = line number, HL past list; CF set if found
                 jr      nc,eon_notfound     ; D-ONLIST: 0 B, the same instruction
+                call    skip_stmt_tail      ; D-FLOWTAIL: resume after the STATEMENT --
+                                            ; `ON 1 GOSUB 100 ZZ` diverged exactly as
+                                            ; the plain GOSUB above did
                 call    gosub_push          ; push [CURLINE][resume=HL]; BC kept; CF=full
                 jp      c,gosub_stk_over    ; jp (not jr): gosub_stk_over is far back
 ; --- goto_take_bc: BC names the target line -- find it and ARM the jump ------

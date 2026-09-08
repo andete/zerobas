@@ -2020,6 +2020,26 @@ ifs_nested:
                 dec     b                   ; this ELSE belongs to a nested IF
                 jr      ifs_step
 
+; --- skip_stmt_tail: advance HL to this statement's ':' or EOL --------------
+; D-FLOWTAIL. `GOSUB <line> ZZ` is ACCEPTED on both references and the tail is
+; never executed; zerobas stored the resume point where `req_lineno` left it,
+; which is ON the junk, so RETURN came back to `ZZ` and raised ERR 2. The
+; reference resumes after the STATEMENT — measured by the row that separates it
+; from "after the LINE": `GOSUB 100 ZZ:A=A+10` leaves A=17 there, so the
+; `:`-statement still runs.
+; ⚠️ IT PRESERVES BC BECAUSE BC IS THE BRANCH TARGET. `req_lineno` and
+; `eon_seek_nth` both return the target line in BC, and `tok_skip_to` takes its
+; terminator in C — so the obvious inline `ld c,COLON` would destroy the very
+; thing the caller is about to jump to.
+;   in:  HL -> the rest of the statement.   out: HL on ':' or the 0 terminator.
+;   clobbers A (tok_skip's own; HL is the point).
+skip_stmt_tail:
+                push    bc
+                ld      c,COLON
+                call    tok_skip_to
+                pop     bc
+                ret
+
 tok_skip_to:                                ; C = the terminator token
                 ld      a,(hl)
                 or      a

@@ -410,7 +410,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:11735 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:11751 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -575,7 +575,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:2718 (T-6FE392)8 (T-529ABE)` from `TODO.md:10672 (T-529ABE)`: a
+      `TODO.md:2734 (T-6FE392)8 (T-529ABE)` from `TODO.md:10688 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -2258,8 +2258,8 @@ list. **When a slice lands, grep this list for what it just shipped.**
       skip_spaces` shape (+2 B) would have been**: the carve made its own consumer
       cheaper. Low 3 B → 2 B, page 1 unchanged at 49 B (2026-09-08).
 
-- [ ] 🔴 **D-FLOWTAIL (2026-09-08): A TAIL AFTER `GOSUB <line>` IS ACCEPTED ON
-      BOTH REFERENCES AND RAISES ERR 2 HERE — 4 rows, PRICED AND PARKED**
+- [x] ✅ **D-FLOWTAIL (2026-09-08): A TAIL AFTER `GOSUB <line>` IS ACCEPTED ON
+      BOTH REFERENCES AND RAISED ERR 2 HERE — 4 DIFF → 0, SHIPPED FOR 14 B**
       ([`scratchpad/flowtail_probe.py`](scratchpad/flowtail_probe.py),
       [`.out`](scratchpad/flowtail_sep.out)).
       Found by auditing `ex_gosub`, the review-tier entry that flagged its own
@@ -2299,9 +2299,25 @@ list. **When a slice lands, grep this list for what it just shipped.**
       INTERRUPTED statement rather than a parsed one. **That path is unverified.**
       The safe shape is the two branch sites separately at **10 B**
       [[a-shared-tail-is-not-a-decision]].
-      🤖 AUTONOMOUS — the references settle every row; the carve is the open part,
-      and all three mechanical routes are shut (D-CARVEOUT), so this needs a
-      DESIGNED carve first.
+      🟢 **SHIPPED THE SAME EVENING, ONCE THE DESIGNED CARVE ARRIVED**
+      ([after](scratchpad/flowtail_after.out), 8 rows × 3 machines, **0 DIFF**).
+      D-INCSKIP and D-SKIPCOMMA took main page 1 from 2 B to 115 B, and this cost
+      **14 B** (page 1 115 → **101 B**, low unchanged at 14 B, 2026-09-08).
+      🔴 **AND THE PRICED SHAPE HAD A BUG THE PRICING DID NOT SEE.** `tok_skip_to`
+      takes its terminator in **C**, and `req_lineno`/`eon_seek_nth` both return the
+      branch target in **BC** — so the filed `ld c,COLON / call tok_skip_to` would
+      have destroyed the very line number the caller was about to jump to. The fix
+      is a BC-preserving wrapper, `skip_stmt_tail` (8 B), called from both sites
+      (3 B each): 14 B rather than the 10 B filed.
+      🟢 **SITED AT THE TWO GOSUB VERBS, NOT AT `goto_take_bc`.** That shared tail's
+      own header says a change there serves GOTO as well — and `GOTO 100 ZZ`
+      AGREES today, because GOTO never comes back to its tail. The safe-shape
+      reasoning in the filing held [[a-shared-tail-is-not-a-decision]]; `gosub_push`
+      was likewise left alone, its third caller being the trap dispatcher.
+      🎯 **THE SEPARATING ROW IS WHAT SAYS THE RIGHT RULE SHIPPED**: `GOSUB 100
+      ZZ:A=A+10` now reads **A=17** on all three machines, so the `:`-statement
+      runs — "resume after the STATEMENT". Had the fix skipped to end-of-LINE, the
+      first four rows would still have gone green and this row would read 7.
 
 - [x] ✅ **D-RAWVAL (2026-09-08): the raw-I/O trio's SECOND argument had the
       ADDRESS domain, so it WRAPPED** ([`docs/spec-basic-rawval.md`](docs/spec-basic-rawval.md),
@@ -3356,7 +3372,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:10672 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:10688 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
