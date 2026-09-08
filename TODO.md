@@ -410,7 +410,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:11827 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:11849 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -575,7 +575,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:2781 (T-6FE392)8 (T-529ABE)` from `TODO.md:10764 (T-529ABE)`: a
+      `TODO.md:2803 (T-6FE392)8 (T-529ABE)` from `TODO.md:10786 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -2232,6 +2232,28 @@ list. **When a slice lands, grep this list for what it just shipped.**
       Filed as unmeasured rather than agreed; it needs a rig that can absorb a
       tape write, or a disk-path variant on the CF-3300.
 
+- [x] ✅ **D-LISTCOMMA (2026-09-09): a TRAILING SEPARATOR on a LIST-taking verb —
+      CLASS MEASURED EMPTY, 7 rows × 3 machines, 0 DIFF**
+      ([`scratchpad/listcomma_probe.py`](scratchpad/listcomma_probe.py),
+      [`.out`](scratchpad/listcomma_run.out)).
+      D-OMITARG measured `COLOR 15,4,` as `Missing operand` on both references and
+      silently ACCEPTED here. The verbs taking a LIST had never been asked, and it
+      is a different shape from the tail sweep: `tailjunk_probe` appends a bare
+      NAME (`ZZ`), chosen because no statement can legitimately consume one, while
+      a trailing SEPARATOR leaves the parser in a legal "another item is coming"
+      state right up to the line end — which is exactly how COLOR got it wrong.
+      Measured: `DIM Z(5),`, `ERASE Z,`, `DEFINT A,` and `READ A,` are **ERR 2** on
+      the VG-8020, the CF-3300 and zerobas alike; `ON 1 GOTO 60,` branches on all
+      three; `DIM Z(5),Y(5)` is accepted on all three.
+      🟢 **THE INSTRUMENT CAN FAIL**: the two controls read `M=5` (statement
+      accepted, execution carried on), so a zerobas that had swallowed the trailing
+      comma would have shown `M=5` against the references' `M=0`. Acceptance is
+      visible, which is what makes the empty result a reading
+      [[a-case-that-agrees-can-agree-for-the-wrong-reason]].
+      ⚠️ **AND THE PROBE'S OWN LEGEND IS WRONG FOR ONE ROW**, recorded in its
+      docstring rather than papered over: on `l.ongoto`, `M=0` means *branched to
+      line 60*, not *raised*. The comparison holds; the legend does not describe it.
+
 - [x] ✅ **D-FNSPACE (2026-09-09): `LEFT$ ("ABC",2)` — A SPACE BEFORE A STRING
       FUNCTION'S PAREN — WAS `ERR 2` WHERE BOTH REFERENCES ACCEPT. 6 DIFF → 0**
       ([`scratchpad/fnspace_probe.py`](scratchpad/fnspace_probe.py),
@@ -3419,7 +3441,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:10764 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:10786 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

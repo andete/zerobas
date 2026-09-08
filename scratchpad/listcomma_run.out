@@ -1,0 +1,18 @@
+  ctl       DIM Z(5)         vg=ERR=0 M=5       cf=ERR=0 M=5       zb=ERR=0 M=5      
+  l.dim     DIM Z(5),        vg=ERR=2 M=0       cf=ERR=2 M=0       zb=ERR=2 M=0      
+  l.erase   ERASE Z,         vg=ERR=2 M=0       cf=ERR=2 M=0       zb=ERR=2 M=0      
+  l.defint  DEFINT A,        vg=ERR=2 M=0       cf=ERR=2 M=0       zb=ERR=2 M=0      
+  l.read    READ A,          vg=ERR=2 M=0       cf=ERR=2 M=0       zb=ERR=2 M=0      
+  l.ongoto  ON 1 GOTO 60,    vg=ERR=0 M=0       cf=ERR=0 M=0       zb=ERR=0 M=0      
+  l.dim2    DIM Z(5),Y(5)    vg=ERR=0 M=5       cf=ERR=0 M=5       zb=ERR=0 M=5      
+
+=== 0 divergence(s): none ===
+=== M=5 accepted-and-carried-on · M=0 raised ===
+   ctl       vg ('0', '5')   cf ('0', '5')   zb ('0', '5')
+   l.dim     vg ('2', '0')   cf ('2', '0')   zb ('2', '0')
+   l.erase   vg ('2', '0')   cf ('2', '0')   zb ('2', '0')
+   l.defint  vg ('2', '0')   cf ('2', '0')   zb ('2', '0')
+   l.read    vg ('2', '0')   cf ('2', '0')   zb ('2', '0')
+   l.ongoto  vg ('0', '0')   cf ('0', '0')   zb ('0', '0')
+   l.dim2    vg ('0', '5')   cf ('0', '5')   zb ('0', '5')
+refcache: 0 hit, 21 miss, 21 stored
