@@ -279,6 +279,32 @@ MECHANISM before trusting the name — and the filed suspicions.
   a hole — the fact can be re-proven when the code changes, which is the point.
   ⚠️ Coverage verified by READING what each probe exercises; the handlers
   themselves were not re-read line by line. Covered, not audited.
+  🔴 **AUDITED 2026-09-08, AND THE SELF-FLAG WAS RIGHT AGAIN: TWO DIVERGENCES,
+  FIXED BYTE-NEUTRALLY** (D-SAVETRAP,
+  [`scratchpad/savetrap_probe.py`](../scratchpad/savetrap_probe.py),
+  [before](../scratchpad/savetrap_run.out), [after](../scratchpad/savetrap_after.out)).
+  The read found two suspicious mechanisms and both were already owned —
+  filename-as-expression by D-FNEXPR2, printed-vs-raised MISSING-FILE errors by
+  D-LOADERR-FIX. What neither covers is the **parse** failures.
+  | row | vg8020 | cf3300 | zb before |
+  |---|---|---|---|
+  | `BSAVE"CAS:X"` (no `,start,end`) | ERR 2, trapped | ERR 2, trapped | **ERR 0, ran on** |
+  | `BSAVE"CAS:X",0` (no `,end`) | ERR 2, trapped | ERR 2, trapped | **ERR 0, ran on** |
+  | `SAVE` bare / `BLOAD` bare | ERR 24, trapped | ERR 24, trapped | ERR 24 ✅ |
+  `expect_comma_eval` did `jp nz,load_error`, which PRINTS and does not raise, so
+  a `BSAVE` missing a REQUIRED positional argument printed `load error` and let the
+  program run on with **no error at all**.
+  🎯 **THE WITNESS IS WHY THIS IS READABLE.** Each row sets `A=9` inside the
+  `ON ERROR` handler, so "trapped" and "printed and continued" are distinguishable
+  — by `ERR` alone they are not, and the untrappability is the serious half, as in
+  D-MAXFTAIL: a program guarding its saves with `ON ERROR` was told nothing had
+  gone wrong.
+  💰 **BYTE-NEUTRAL**: both targets are a 3-byte `jp`, and the helper's ONLY four
+  callers are `do_bsave`'s own `,start`/`,end` on the disk and CAS paths, so the
+  change cannot reach another verb [[a-shared-tail-is-not-a-decision]].
+  ⚠️ **`bsave_opt4`'s stray-4th-token reject still prints** and is NOT changed: no
+  row measures it, because every form that reaches it has a valid start/end and
+  would begin a real tape write. Filed as unmeasured, not agreed.
 - ✅ **`diskbasic-acceptance` RUN 2026-09-02: 34/34 verbs CONVERGED** — the whole
   Disk-BASIC verb surface still matches the oracle. Third exclusion this day
   moved from *"NOT MEASURED"* to a measurement; re-reasoned to SCOPE. Two left:

@@ -410,7 +410,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:11678 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:11709 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -575,7 +575,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:2661 (T-6FE392)8 (T-529ABE)` from `TODO.md:10615 (T-529ABE)`: a
+      `TODO.md:2692 (T-6FE392)8 (T-529ABE)` from `TODO.md:10646 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -2201,6 +2201,37 @@ list. **When a slice lands, grep this list for what it just shipped.**
       it verb by verb, cheapest-context verbs first, and file what each review
       measures.
 
+- [x] ✅ **D-SAVETRAP (2026-09-08): `BSAVE` WITH A MISSING REQUIRED ARGUMENT
+      PRINTED AND RAN ON — 2 DIFF → 0, BYTE-NEUTRAL**
+      ([`scratchpad/savetrap_probe.py`](scratchpad/savetrap_probe.py),
+      [before](scratchpad/savetrap_run.out),
+      [after](scratchpad/savetrap_after.out)).
+      The second self-flagged review-tier entry (*"the handlers themselves were not
+      re-read line by line"*), audited. Its two suspicious mechanisms were both
+      already owned — filename-as-expression by D-FNEXPR2, printed-vs-raised
+      MISSING-FILE errors by D-LOADERR-FIX — and **neither covers the PARSE
+      failures**.
+      | row | vg8020 | cf3300 | zb before |
+      |---|---|---|---|
+      | `BSAVE"CAS:X"` (no `,start,end`) | ERR 2, trapped | ERR 2, trapped | **ERR 0, ran on** |
+      | `BSAVE"CAS:X",0` (no `,end`) | ERR 2, trapped | ERR 2, trapped | **ERR 0, ran on** |
+      | `SAVE` bare / `BLOAD` bare | ERR 24, trapped | ERR 24, trapped | ERR 24 ✅ |
+      `expect_comma_eval` did `jp nz,load_error`, which PRINTS and does not raise.
+      🎯 **THE WITNESS IS WHY THIS IS READABLE AT ALL.** Every row sets `A=9`
+      inside the `ON ERROR` handler, so *trapped* and *printed-and-continued* are
+      distinguishable; by `ERR` alone they are not. **The untrappability is the
+      serious half**, exactly as in D-MAXFTAIL — a program guarding its saves with
+      `ON ERROR` was told nothing had gone wrong.
+      💰 **BYTE-NEUTRAL** (page 1 2 B and low 1 B, before and after, 2026-09-08):
+      both targets are a 3-byte `jp`, and `expect_comma_eval`'s ONLY four callers
+      are `do_bsave`'s own `,start`/`,end` on the disk and CAS paths, so it cannot
+      reach another verb [[a-shared-tail-is-not-a-decision]].
+      ⚠️ **RESIDUAL: `bsave_opt4`'s stray-4th-token reject still `jp c,load_error`**
+      and is deliberately NOT changed — no row measures it, because every form
+      reaching it carries a valid start/end and would begin a real tape write.
+      Filed as unmeasured rather than agreed; it needs a rig that can absorb a
+      tape write, or a disk-path variant on the CF-3300.
+
 - [ ] 🔴 **D-FLOWTAIL (2026-09-08): A TAIL AFTER `GOSUB <line>` IS ACCEPTED ON
       BOTH REFERENCES AND RAISES ERR 2 HERE — 4 rows, PRICED AND PARKED**
       ([`scratchpad/flowtail_probe.py`](scratchpad/flowtail_probe.py),
@@ -3299,7 +3330,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:10615 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:10646 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

@@ -1,0 +1,14 @@
+  ctl       A=1/0            vg=ERR=11 A=9                 cf=ERR=11 A=9                 zb=ERR=11 A=9                
+  s.bare    SAVE             vg=ERR=24 A=9                 cf=ERR=24 A=9                 zb=ERR=24 A=9                
+  b.noargs  BSAVE"CAS:X"     vg=ERR=2 A=9                  cf=ERR=2 A=9                  zb=ERR=0 A=0                    🔴 DIFF
+  b.noend   BSAVE"CAS:X",0   vg=ERR=2 A=9                  cf=ERR=2 A=9                  zb=ERR=0 A=0                    🔴 DIFF
+  l.bare    BLOAD            vg=ERR=24 A=9                 cf=ERR=24 A=9                 zb=ERR=24 A=9                
+
+=== 2 divergence(s): ['b.noargs', 'b.noend'] ===
+=== A=9 trapped · A=0 printed-and-continued · <none> stopped untrapped ===
+   ctl       vg ('11', '9')   cf ('11', '9')   zb ('11', '9')
+   s.bare    vg ('24', '9')   cf ('24', '9')   zb ('24', '9')
+   b.noargs  vg ('2', '9')   cf ('2', '9')   zb ('0', '0')
+   b.noend   vg ('2', '9')   cf ('2', '9')   zb ('0', '0')
+   l.bare    vg ('24', '9')   cf ('24', '9')   zb ('24', '9')
+refcache: 0 hit, 15 miss, 15 stored

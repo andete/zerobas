@@ -663,11 +663,27 @@ b4_expr:
 
 ; ===========================================================================
 ; expect_comma_eval — skip spaces, require a ',', then eval the following
-; expression. DE = value, HL advanced. On a missing comma, jumps to load_error.
+; expression. DE = value, HL advanced. On a missing comma, RAISES ERR 2.
+;
+; 🔴 D-SAVETRAP: THIS USED TO `jp nz,load_error`, WHICH PRINTS AND DOES NOT RAISE.
+; `BSAVE"CAS:X"` and `BSAVE"CAS:X",0` — both missing a REQUIRED positional
+; argument — printed `load error` and let the program RUN ON with no error at all.
+; Both references raise a TRAPPABLE `Syntax error`; measured with a witness set
+; inside the ON ERROR handler, so "trapped" and "printed and continued" are
+; distinguishable rather than both reading as ERR 2
+; (scratchpad/savetrap_probe.py: refs ERR 2 / A=9, here ERR 0 / A=0).
+; 🎯 AND THE UNTRAPPABILITY IS THE SERIOUS HALF, exactly as in D-MAXFTAIL: a
+; program that guards its saves with ON ERROR was told nothing went wrong.
+; 💰 BYTE-NEUTRAL — both targets are a 3-byte `jp`, and this helper's ONLY four
+; callers are do_bsave's own ,start and ,end on the disk and CAS paths, so the
+; change cannot reach another verb [[a-shared-tail-is-not-a-decision]].
+; ⚠️ `bsave_opt4`'s stray-4th-token reject still `jp c,load_error` and is NOT
+; changed here: no row measures it, because the forms that reach it have valid
+; start/end and would start a real tape write. Left as filed, not as agreed.
 expect_comma_eval:
                 call    skip_spaces
                 cp      ','
-                jp      nz,load_error
+                jp      nz,stmt_error       ; ERR 2, RAISED — trappable
                 inc     hl                  ; past the comma
                 jp      eval                ; DE = value, HL advanced (BC clobbered)
 
