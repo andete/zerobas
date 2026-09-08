@@ -1,0 +1,17 @@
+  ctl       VDP(0)=0       vg=ERR=0     cf=ERR=0     zb=ERR=0       CONTROL: a legal register write
+  v.val256  VDP(0)=256     vg=ERR=5     cf=ERR=5     zb=ERR=5       VALUE past a byte -- 0 = wrapped
+  v.valneg  VDP(0)=-1      vg=ERR=5     cf=ERR=5     zb=ERR=5       VALUE negative -- the separating cell
+  v.reg99   VDP(99)=0      vg=ERR=5     cf=ERR=5     zb=ERR=5       INDEX past the register file
+  v.regneg  VDP(-1)=0      vg=ERR=5     cf=ERR=5     zb=ERR=5       INDEX negative
+  b.reg99   BASE(99)=0     vg=ERR=5     cf=ERR=5     zb=ERR=5       BASE INDEX past its table
+  b.regneg  BASE(-1)=0     vg=ERR=5     cf=ERR=5     zb=ERR=5       BASE INDEX negative
+
+=== 0 divergence(s): none ===
+   ctl       vg 0   cf 0   zb 0
+   v.val256  vg 5   cf 5   zb 5
+   v.valneg  vg 5   cf 5   zb 5
+   v.reg99   vg 5   cf 5   zb 5
+   v.regneg  vg 5   cf 5   zb 5
+   b.reg99   vg 5   cf 5   zb 5
+   b.regneg  vg 5   cf 5   zb 5
+refcache: 0 hit, 21 miss, 21 stored

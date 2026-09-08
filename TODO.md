@@ -410,7 +410,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:11849 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:11874 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -575,7 +575,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:2803 (T-6FE392)8 (T-529ABE)` from `TODO.md:10786 (T-529ABE)`: a
+      `TODO.md:2828 (T-6FE392)8 (T-529ABE)` from `TODO.md:10811 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -2232,6 +2232,31 @@ list. **When a slice lands, grep this list for what it just shipped.**
       Filed as unmeasured rather than agreed; it needs a rig that can absorb a
       tape write, or a disk-path variant on the CF-3300.
 
+- [x] ✅ **D-VDPDOM (2026-09-09): `VDP(n)=` and `BASE(n)=` argument domains —
+      CLASS MEASURED EMPTY, 7 rows × 3 machines, 0 DIFF**
+      ([`scratchpad/vdpdom_probe.py`](scratchpad/vdpdom_probe.py),
+      [`.out`](scratchpad/vdpdom_run.out)).
+      Picked by ranking every handler by **comment density** — a proxy for how much
+      it has been examined — rather than by name; `ex_base_assign` came out near the
+      bottom of the substantial handlers. Reading it looked like a hit: both the
+      register INDEX and the assigned VALUE go through `g8_num_operand`, which is
+      `str_eval_one` + `gfx_eval_int16` — **the int16 domain**, exactly the shape
+      D-RAWVAL found in POKE/VPOKE/OUT, in a verb pair that sweep never covered.
+      Measured: `VDP(0)=256`, `VDP(0)=-1`, `VDP(99)=0`, `VDP(-1)=0`, `BASE(99)=0`
+      and `BASE(-1)=0` are **ERR 5 on all three machines**.
+      🎯 **THE READING WAS RIGHT AND THE CONCLUSION WOULD HAVE BEEN WRONG: THE CHECK
+      LIVES ONE LAYER DOWN.** `g8_num_operand` really does hand over an int16, and
+      the **tenant** (`GFX_OP` 13/14) range-checks it. So the int16-parse smell is
+      not by itself evidence of a defect — **it bites only when the CONSUMER is a
+      raw store**. In D-RAWVAL the consumers were `ld (bc),a` and `out (c),a`, which
+      cannot check anything; here the consumer can and does.
+      ➡️ **That is the rule to carry**: before pricing an int16-for-a-byte finding,
+      read the CONSUMER, not just the parser [[a-mechanism-inferred-from-one-observation]].
+      🟢 The probe runs `SCREEN 0` before its readout, because a successful bad VDP
+      write reprograms the display and would destroy the evidence of its own
+      success — register 0 alone carries the mode bits. The defence was never needed
+      (nothing wrote), and it is the right shape regardless.
+
 - [x] ✅ **D-LISTCOMMA (2026-09-09): a TRAILING SEPARATOR on a LIST-taking verb —
       CLASS MEASURED EMPTY, 7 rows × 3 machines, 0 DIFF**
       ([`scratchpad/listcomma_probe.py`](scratchpad/listcomma_probe.py),
@@ -3441,7 +3466,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:10786 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:10811 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
