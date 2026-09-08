@@ -1,0 +1,17 @@
+  x.ctl     COLOR 15,4,4         vg=ACCEPTED  cf=ACCEPTED  zb=ACCEPTED 
+  color     COLOR 15,4,4,1       vg=ERR 2     cf=ERR 2     zb=ERR 2    
+  locate    LOCATE 0,0,0,1       vg=ERR 2     cf=ERR 2     zb=ERR 2    
+  sound     SOUND 0,0,0          vg=ERR 2     cf=ERR 2     zb=ERR 2    
+  poke      POKE&HC000,0,0       vg=ERR 2     cf=ERR 2     zb=ERR 2    
+  vpoke     VPOKE 0,0,0          vg=ERR 2     cf=ERR 2     zb=ERR 2    
+  out       OUT &HA0,0,0         vg=ERR 2     cf=ERR 2     zb=ERR 2    
+  width     WIDTH 40,40          vg=ERR 2     cf=ERR 2     zb=ERR 2    
+  screen    SCREEN 0,0,0,0,0,0   vg=ERR 5     cf=ERR 5     zb=ERR 5    
+  pset      PSET(0,0),1,1        vg=ERR 5     cf=ERR 5     zb=ERR 5    
+  maxfiles  MAXFILES=1,1         vg=ERR 2     cf=ERR 2     zb=ERR 2    
+  time      TIME=0,0             vg=ERR 2     cf=ERR 2     zb=ERR 2    
+  beep      BEEP,1               vg=ERR 2     cf=ERR 2     zb=ERR 2    
+  cls       CLS,1                vg=ERR 2     cf=ERR 2     zb=ERR 2    
+
+=== 0 divergence(s): none ===
+    REFS-SPLIT (0): none
