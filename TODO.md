@@ -410,7 +410,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:11350 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:11396 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -575,7 +575,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:2505 (T-6FE392)8 (T-529ABE)` from `TODO.md:10287 (T-529ABE)`: a
+      `TODO.md:2505 (T-6FE392)8 (T-529ABE)` from `TODO.md:10333 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -3143,7 +3143,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:10287 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:10333 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -4417,30 +4417,76 @@ list. **When a slice lands, grep this list for what it just shipped.**
       🔴 **AND THE D-DOMAIN FIX IS NOT COMPLETE — IT GOT THE ERROR CODE RIGHT AND
       THE STATE WRONG (D-PARTIAL, 2026-09-08,
       [`scratchpad/partial_probe.py`](scratchpad/partial_probe.py),
-      [`.out`](scratchpad/partial_run.out)).** `clr_eval` validates each component
+      [first run](scratchpad/partial_run.out), [widened](scratchpad/partial_wide.out)).** `clr_eval` validates each component
       as it is evaluated, so `COLOR 7,99` STORES the foreground and then rejects the
-      background. Both references reject the statement **ATOMICALLY**:
-      | row | | vg8020 | cf3300 | zb |
+      background. Both references reject the statement **ATOMICALLY**.
+      🔴 **RE-MEASURED WIDER 2026-09-08 AND IT IS FOUR DIVERGENCES, NOT ONE.** The
+      first table asked only about `clr_ill` (a component out of range). `ex_color`
+      has **four** exits that can fire after something has been stored, and the
+      widened probe reads `BAKCLR` as well as `FORCLR`, because a fix that restored
+      only the foreground would have read green on every row of the first table
+      while the background stayed partial:
+      | row | fails at | vg8020 | cf3300 | zb |
       |---|---|---|---|---|
-      | `COLOR 7,4,4` | CONTROL, legal | `FORCLR=7` | `FORCLR=7` | `FORCLR=7` |
-      | `COLOR 7,99` | bg illegal | `FORCLR=15` | `FORCLR=15` | **`FORCLR=7`** |
-      | `COLOR 7,8,99` | border illegal | `FORCLR=15` | `FORCLR=15` | **`FORCLR=7`** |
-      | `COLOR 99,8` | fg illegal | `FORCLR=15` | `FORCLR=15` | `FORCLR=15` |
+      | `COLOR 7,4,4` | CONTROL, legal | `fg=7 bg=4` | `fg=7 bg=4` | `fg=7 bg=4` |
+      | `COLOR 7,99` | bg range → `clr_ill` | `fg=15 bg=4` | `fg=15 bg=4` | **`fg=7 bg=4`** |
+      | `COLOR 7,8,99` | border range → `clr_ill` | `fg=15 bg=4` | `fg=15 bg=4` | **`fg=7 bg=8`** |
+      | `COLOR 7,8,` | trailing comma → `clr_missing` | `fg=15 bg=4` | `fg=15 bg=4` | **`fg=7 bg=8`** |
+      | `COLOR 7,"A"` | type → raised inside `eval` | `fg=15 bg=4` | `fg=15 bg=4` | **`fg=7 bg=0`** |
+      | `COLOR 99,8` | fg range | `fg=15 bg=4` | `fg=15 bg=4` | `fg=15 bg=4` |
       🎯 **D-DOMAIN'S ROWS READ GREEN BECAUSE THEY ONLY ASKED FOR THE ERROR CODE.**
       A fix verified by the code alone can be half-right, and this one is: the
-      statement now FAILS correctly and still leaves the wrong state behind.
+      statement now FAILS correctly and still leaves the wrong state behind. The
+      error code is right on **all six** rows; the state is wrong on four.
+      🔴 **AND `COLOR 7,"A"` LEAVES `BAKCLR = 0` — a value no argument asked for.**
+      Both references leave it untouched at 4. This is *extra* damage on top of the
+      partial store, and it is a SECOND observation, not a second explanation: the
+      mechanism is NOT established, and one reading does not license naming a cause
+      [[a-mechanism-inferred-from-one-observation]]. Whoever picks this up should
+      find out where that 0 is written before assuming the shadow below catches it.
       🟢 **IT IS AN IMPROVEMENT, NOT A REGRESSION — worth being exact about.**
       BEFORE D-DOMAIN, `COLOR 7,99` was accepted ENTIRELY: fg **and** bg both
       stored, no error. After it: fg stored, bg not, `ERR 5` raised. The reference:
       nothing stored, `ERR 5`. Two wrongs became one.
-      💰 **PRICED AND NOT AFFORDABLE TODAY: five bytes in main page 1 and four in the
-      low region, against page-1 free = 1 B and low free = 4 B, both measured
-      2026-09-08 (`make basic-reloc` from clean).** `FORCLR $F3E9` and `BAKCLR $F3EA` are ADJACENT, so both save in
-      one `ld hl,(FORCLR)` / `push hl` at entry (four bytes, page 1), a `pop hl` at
-      `clr_apply` (one byte, page 1 — the single success exit), and `pop hl /
-      ld (FORCLR),hl` at `clr_ill` (four bytes, low region). `BDRCLR` needs no saving: the
-      border is stored LAST, so nothing can fail after it. **The low half fits
-      exactly; page 1 is four bytes short.**
+      🔴 **THE SHAPE PRICED HERE ON 2026-09-08 WAS WITHDRAWN THE SAME DAY — IT
+      CLOSED TWO ROWS OF FOUR.** It was save-on-entry / restore-at-`clr_ill`, and
+      `clr_ill` is one exit of four. `clr_missing` and any error raised *inside*
+      `eval` both reach `raise_error`, which resets `SP` — so the saved value is
+      discarded without ever being put back, and the `COLOR 7,8,` and `COLOR 7,"A"`
+      rows stay divergent. **The four rows in the first table would all have read
+      green, because the first table did not contain either of them.** Same trap as
+      D-DOMAIN's, one level up: a fix verified against the rows that motivated it.
+      🔴 **AND IT WAS BUILT AND IT DID NOT RUN.** The entry helper was
+      `ld hl,(FORCLR) / ld (CLR_SAVE),hl / ret`, sited in the low region and called
+      from `ex_color` — and **`HL` is the text pointer**. Every `COLOR` in the tree
+      became `ERR 2`, including the probe's own control row. The control is what
+      caught it: it asserts `FORCLR=7` after a fully legal statement and refuses to
+      report the rows below when that fails, so the run said *"the probe is not
+      reading the cell it thinks it is"* instead of printing four plausible tables.
+      🎯 **A HELPER CALLED FROM A STATEMENT BODY INHERITS THAT BODY'S LIVE
+      REGISTERS**, and in this interpreter `HL` is live in every statement handler.
+      💰 **PRICED COMPLETE: 6 B main page 1 + 16 B low region + 2 B RAM, against
+      page-1 free = 3 B and low free = 14 B (`make basic-reloc` from clean,
+      2026-09-08). Short by 3 B in page 1 and 2 B in the low region.** The shape is
+      a **shadow**, not a save/restore, which is what makes it cover all four exits
+      instead of one: nothing reaches the real sysvars until the statement has
+      committed, so every failure path is atomic for free, including the ones that
+      reset `SP`.
+      - `CLR_SAVE`, 2 B, from the retired `FOR_STK` span `$EA3E..$EA92` — **measured**
+        free by `make ramfree-acceptance`, not merely unnamed (D-RAMFIX).
+      - `clr_prep` at `ex_color`'s entry: `push hl / ld hl,(FORCLR) / ld (CLR_SAVE),hl
+        / pop hl / ret` — **9 B low**, `call` = **3 B page 1**, both priced 2026-09-08.
+        It must preserve `HL`
+        itself; see above.
+      - the two stores retarget to `CLR_SAVE` and `CLR_SAVE+1` — **byte-neutral**.
+        `FORCLR $F3E9` and `BAKCLR $F3EA` are ADJACENT, so both ride one 16-bit load.
+      - `clr_commit`: `ld hl,(CLR_SAVE) / ld (FORCLR),hl / ret` — **7 B low**, `call`
+        = **3 B page 1**, both priced 2026-09-08 — spent INSIDE `clr_apply`'s existing `push hl` / `pop hl`
+        window and BEFORE `call CHGCLR`, which reads the three sysvars. That window
+        is why the commit needs no push/pop of its own, and why `A` (already loaded
+        from `SCRMOD`) survives it.
+      - `BDRCLR` is NOT shadowed and needs no saving: the border is stored **LAST**,
+        and nothing between that store and `clr_apply` can fail.
       ➡️ **SO THE CARVE IS THE BLOCKER AGAIN**, and Route D is dry in page 1. This is
       the second item tonight parked on the same three-to-four bytes (the other is the
       four do-nothing keywords).

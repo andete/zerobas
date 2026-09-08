@@ -41,9 +41,13 @@ SIDES = probe_sides.sides("vg8020", "cf3300", "zb")
 SETUP = ["10 ON ERROR GOTO 900", "20 COLOR 15,4,4"]
 CASES = [
     ("p.ctl",     "COLOR 7,4,4",  "CONTROL: fully legal -- FORCLR must read 7"),
-    ("col.fgok",  "COLOR 7,99",   "fg legal, bg illegal -- 7 = applied, 15 = atomic"),
-    ("col.bgok",  "COLOR 7,8,99", "fg+bg legal, border illegal -- 7 = applied"),
-    ("col.fgbad", "COLOR 99,8",   "fg ILLEGAL -- 15 expected on any reading"),
+    # --- the four ways a COLOR statement can fail AFTER storing something ------
+    ("col.fgok",  "COLOR 7,99",   "bg out of range   -> clr_ill"),
+    ("col.bgok",  "COLOR 7,8,99", "border out of range -> clr_ill"),
+    ("col.tail",  "COLOR 7,8,",   "trailing comma    -> clr_missing (ERR 24)"),
+    ("col.type",  'COLOR 7,"A"',  "type mismatch     -> raised inside eval"),
+    # --- and one that must be clean on any reading ----------------------------
+    ("col.fgbad", "COLOR 99,8",   "fg ILLEGAL -- nothing stored on any reading"),
 ]
 
 
@@ -53,23 +57,23 @@ def main() -> int:
         row = {}
         for side, c in SIDES.items():
             p = SETUP + [f"30 {stmt}",
-                         '40 PRINT"ZQ";PEEK(&HF3E9);",";0;"QZ":END',
-                         '900 PRINT"ZQ";PEEK(&HF3E9);",";ERR;"QZ":END']
+                         '40 PRINT"ZQ";PEEK(&HF3E9);",";PEEK(&HF3EA);",";0;"QZ":END',
+                         '900 PRINT"ZQ";PEEK(&HF3E9);",";PEEK(&HF3EA);",";ERR;"QZ":END']
             raw = "".join(omsx_repl.run_cases(
                 c["machine"], [("direct", list(c["reset"]) + p + ["RUN"])],
                 batch=False, reset=(), boot=c["boot"], step=4.0, run_gap=12.0,
                 cap_gap=4.0, timeout=420.0)[0] or "")
-            v = [g for g in re.findall(r"ZQ\s*([0-9]+)\s*,\s*([0-9]+)\s*QZ", raw)
+            v = [g for g in re.findall(r"ZQ\s*([0-9]+)\s*,\s*([0-9]+)\s*,\s*([0-9]+)\s*QZ", raw)
                  if not any(ch in "".join(g) for ch in '"$;')]
             row[side] = v[-1] if v else None
         out[tag] = row
         f = {s_: ("<none>" if row[s_] is None else
-                  f"FORCLR={row[s_][0]} ERR={row[s_][1]}") for s_ in SIDES}
+                  f"fg={row[s_][0]} bg={row[s_][1]} ERR={row[s_][2]}") for s_ in SIDES}
         v_ = probe_sides.verdict(f["vg8020"], f["cf3300"], f["zb"])
         mark = {"SAME": "", "REFS-SPLIT": "   \U0001f7e1 REFS-SPLIT",
                 "DIFF": "   \U0001f534 DIFF"}[v_]
-        print(f"  {tag:10s} {stmt:14s} vg={f['vg8020']:18s} cf={f['cf3300']:18s} "
-              f"zb={f['zb']:18s}{mark}", flush=True)
+        print(f"  {tag:10s} {stmt:13s} vg={f['vg8020']:22s} cf={f['cf3300']:22s} "
+              f"zb={f['zb']:22s}{mark}", flush=True)
 
     ctl = out.get("p.ctl", {})
     if any(ctl.get(s_) is None or ctl[s_][0] != "7" for s_ in SIDES):

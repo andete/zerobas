@@ -121,3 +121,12 @@ trapsvc_probe: int.six; gos.leak -- "a trap handler left without RETURN is perma
 # (basic_probe_nodisk.PINNED) to their exact values, so the gate goes RED if
 # either column changes -- a regression AND an unannounced fix both show.
 basic_probe_nodisk: k.mks; k.mkd; k.cvs; k.mki; k.cvi; v.dskf; v.cvistr; v.mkifld -- "SHOULD THE DISK-BASIC VERBS LIVE IN disk.rom BEHIND A HOOK"; 🙋 Joost, docs/spec-basic-nodisk.md
+# --- 2026-09-08: COLOR is not atomic (D-PARTIAL) -----------------------------
+# Filed under "🔴 AND THE D-DOMAIN FIX IS NOT COMPLETE — IT GOT THE ERROR CODE
+# RIGHT AND THE STATE WRONG". All four rows are the SAME defect seen at four
+# different exits from ex_color; the fix is priced complete (6 B page 1 + 16 B
+# low + 2 B RAM) and is 3 B over the page-1 wall, so it is measured-and-known
+# rather than measured-and-unnoticed. ⚠️ col.type carries a SECOND, unexplained
+# reading on top of the partial store: BAKCLR = 0, a value no argument asked
+# for. That reading is filed with the item, NOT explained.
+partial_probe: col.fgok; col.bgok; col.tail; col.type -- COLOR stores each component as it validates it; both references reject the statement atomically. Priced complete and blocked on a page-1 carve.
