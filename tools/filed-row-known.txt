@@ -27,6 +27,22 @@
 budget_probe: NO-VERDICT -- emulated-time window/used/margin percentages, for sizing probe budgets
 interpspeed_probe: NO-VERDICT -- TIME ratios zb/cf3300; the entry it serves is "THE INTERPRETER IS 2.5-3.8x SLOWER"
 put3consume_probe: NO-VERDICT -- cluster/LOF values under an explicit "read:" note, characterisation only
+# --- 2026-09-08: seven CHARACTERISATION probes from the missing-keyword and
+# screen-editor arcs. `filed_row_sweep` reported all seven as "NOTHING PARSED",
+# alongside a genuinely ROTTED probe (ramfree), and the two were
+# indistinguishable in the report -- which is how the rot stayed unnoticed.
+# Each returns only 0 (ran) or 2 (INSTRUMENT FAULT); none has a SAME/DIFF column,
+# because each measures what the REFERENCE does, with zerobas printed for the
+# record. Verified per probe from its `return` statements, not assumed from the
+# family name: dskibytes and maxfilestail are in the SAME arcs and DO score, so
+# they are deliberately NOT here.
+dski_probe: NO-VERDICT -- DSKI$'s value-face, drive check and sector non-check on the CF-3300; its own output says it characterises the reference and does not score zerobas
+dskidrive_probe: NO-VERDICT -- LEN readings for DSKI$ drives 0/1/2; returns 0 unconditionally, the drive-2 block being itself the reading
+dskiform_probe: NO-VERDICT -- which DSKI$ FORMS parse (function vs statement); reports the surface, no zerobas verdict
+dskiwhere_probe: NO-VERDICT -- page-checksum scan for where a sector lands; prints moved pages, and D-DSKIBYTES is what adjudicates them
+copyverb_probe: NO-VERDICT -- COPY's four faces on the CF-3300; states in its own output that it characterises and does not score
+kwrest_probe: NO-VERDICT -- the surface of the five remaining pinned keywords; ERR faces on the reference, zerobas has none of them to compare
+editline_probe: NO-VERDICT -- screen dumps of the screen-editor re-entry rows; reports, does not score
 
 deffn_alias_probe: o.alias; o.aliasnest -- "DEF FN: two formals of ONE call can alias"; the rows ARE the filing
 dupopen_probe: s.same; s.space; s.newtwice; s.modes; s.seqsame; s.reclaim -- "THE SAME FILE ON TWO CHANNELS IS ACCEPTED HERE AND REFUSED ON THE CF-3300". ⚠️ FILED IN PROSE BUT NEVER PINNED: D-DUPOPEN (2026-09-02) characterises all six rows by name in the entry, and the sweep reads THIS FILE, not prose -- so they read UNFILED for two days. The item prices the fix at 165 B of RAM (11 B x FCH_CEIL) and the cheap dirent route is refuted by s.case.

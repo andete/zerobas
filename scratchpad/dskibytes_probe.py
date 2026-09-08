@@ -96,6 +96,7 @@ def value(scr):
 
 def main() -> int:
     ok = True
+    bad = 0
     for label, prog, sector, off, note in CASES:
         raw = "".join(omsx_repl.run_cases(
             CF, [("direct", ["NEW"] + prog + ["RUN"])], batch=False,
@@ -105,11 +106,17 @@ def main() -> int:
         match = "MATCH" if got == want else "\U0001f534 NO"
         if got != want:
             ok = False
+            bad += 1
         print(f"\n{label}: {note}")
         print(f"    image wants: {want}")
         print(f"    machine has: {got}")
         print(f"    -> {match}")
 
+    # `DIFF: n/m` is the summary line `filed_row_sweep.py` already parses. Without
+    # it this probe SCORES (it returns 1 on a mismatch) but reports in a format the
+    # sweep cannot read, so it landed in "NOTHING PARSED" beside probes that have
+    # no verdict at all -- and a rotted instrument hid in that same bucket.
+    print(f"DIFF: {sum(1 for _ in ()) + bad}/{len(CASES)}")
     print("\n" + ("\U0001f3af THE LANDING ADDRESS IS ESTABLISHED, NOT INFERRED."
                   if ok else
                   "\U0001f534 AT LEAST ONE ROW DID NOT MATCH -- read the rows above; "

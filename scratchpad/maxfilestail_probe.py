@@ -81,6 +81,11 @@ def main() -> int:
               f"the premise of this probe is wrong and nothing here is a reading.")
         return 2
     zb = out.get("zb", (None, None))
+    # `DIFF: n/m` -- the summary line filed_row_sweep.py already parses. This
+    # probe SCORES (it returns 1 when zerobas wipes the variables), but reported
+    # in a shape the sweep could not read, so it sat in "NOTHING PARSED" next to
+    # probes that have no verdict channel at all.
+    print(f"DIFF: {1 if (zb[0] is None and zb[1] == '0') else 0}/1")
     if zb[0] is None and zb[1] == "0":
         print("\n\U0001f534 CONFIRMED: zerobas's handler NEVER RAN (the error was "
               "untrappable) and A came back 0 -- the variables were wiped, where "

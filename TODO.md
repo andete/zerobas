@@ -410,7 +410,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:11268 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:11304 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -575,7 +575,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:2423 (T-6FE392)8 (T-529ABE)` from `TODO.md:10205 (T-529ABE)`: a
+      `TODO.md:2459 (T-6FE392)8 (T-529ABE)` from `TODO.md:10241 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -1064,6 +1064,42 @@ list. **When a slice lands, grep this list for what it just shipped.**
       diverges but to a different face is still `known` to `filed_row_sweep`, and
       that is the design question this entry opened. Pinning 10 deferrals does
       not touch the 54 pinned divergent rows. **The item stays open for that.**
+
+- [ ] 🔬 **THE FILED-ROW DENOMINATOR WAS UNREADABLE FOR A THIRD OF ITS CORPUS, AND
+      A ROTTED PROBE HID IN THE SAME BUCKET (2026-09-08, D-FRSKIND).** A full run of
+      [`scratchpad/filed_row_sweep.py`](scratchpad/filed_row_sweep.py) over all 47
+      cited probes reported **15 as `NOTHING PARSED`**. Reading their logs — one
+      command — showed most had RUN and printed real readings.
+      | | before | after |
+      |---|---|---|
+      | clean | 18 | **19** |
+      | diverging | 11 | **12** |
+      | no verdict BY DESIGN (declared) | 3 | **10** |
+      | 🔴 unparsed | **15** | **6** |
+      🎯 **SEVEN WERE CHARACTERISATION PROBES WITH NO VERDICT CHANNEL** — they
+      measure what the REFERENCE does and print zerobas for the record. Declared in
+      `tools/filed-row-known.txt` using the convention that **already existed**
+      (`<probe>: NO-VERDICT -- why`, three entries since 2026-08-31). ⚠️ **Verified
+      per probe from its `return` statements, not from the family name**:
+      `dskibytes_probe` and `maxfilestail_probe` are in the SAME arcs and DO score,
+      so they are deliberately NOT declared.
+      🔴 **AND THIS IS WHY IT MATTERED: `ramfree_probe` HAS GENUINELY ROTTED, and it
+      sat in that same bucket, indistinguishable from seven healthy probes.**
+      Lumping "has no verdict" together with "measured nothing" is what let the rot
+      go unnoticed, and it is what made the first reading of this sweep wrong.
+      🔴 **THE VERIFICATION THEN FOUND A SECOND, BETTER BUG: A SUMMARY OF ZERO WAS
+      READ AS A SILENCE.** `maxfilestail_probe` printed `DIFF: 0/1` — the sweep's
+      OWN summary format — and still reported `NOTHING PARSED`, because
+      `n = int(v.group(1))` is 0 and the `if n:` branch is false. **So a probe going
+      from DIVERGING to CLEAN looks like it broke.** It surfaced only because
+      D-MAXFTAIL had fixed that divergence the night before; any future fix would
+      have done the same. This file's own *"0 has two causes"* rule, turned on
+      itself — a matched summary is now proof of measurement whatever its count.
+      ➡️ **SIX REMAIN UNPARSED AND ARE DELIBERATELY LEFT SO**: `lineentry`, `loc`,
+      `putcost`, `putio`, `rungap`, `trapstate`. Nobody has established whether they
+      score or characterise, and declaring them would be the guess that produced the
+      wrong answer in the first place.
+      🤖 AUTONOMOUS — reading each probe's `return` statements settles its kind.
 
 - [ ] 🔴 **SEVEN FILED PROBES PRINT DIVERGENCES AND EXIT 0.** Measured
       2026-08-31 by D-FILEDROT,
@@ -3061,7 +3097,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:10205 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:10241 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

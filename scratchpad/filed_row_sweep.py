@@ -122,6 +122,16 @@ def score(out, state, known=()):
     marks = len(MARKER.findall(body))
     v = SUMMARY.search(body)
     n = int(v.group(1)) if v else marks
+    # 🔴 A SUMMARY OF **ZERO** IS STILL A MEASUREMENT, and this sweep used to lose
+    # it. `n` falls to 0 for a probe reporting `DIFF: 0/1`, the `if n:` below is
+    # false, and it drops through to the rows test -- so a probe that says, in the
+    # sweep's OWN summary format, "I ran and found nothing" was reported as
+    # "NOTHING PARSED -- probe measured nothing". Found 2026-09-08 on
+    # maxfilestail_probe the moment its divergence was FIXED: the row went green
+    # and the sweep called the instrument silent.
+    # 🎯 That is this file's own "0 has two causes" rule turned on itself -- clean
+    # and blind are the same number, and only the matched summary separates them.
+    measured_clean = v is not None and n == 0
     # 🔴 ORDER MATTERS, AND THE FIRST CUT HAD IT BACKWARDS. `playfn_fixture_probe`
     # prints `<-- DIFFER` on rows this sweep's ROWLINE cannot match, so the
     # rows==0 refusal fired FIRST and buried two real divergences under
@@ -174,6 +184,9 @@ def score(out, state, known=()):
         if "NO-VERDICT" in known:
             return ("--  no verdict channel BY DESIGN (declared): a measurement "
                     "instrument, not an oracle. Its ROWS still need a human.")
+        if measured_clean:
+            return (f"clean: reported `{v.group(0).strip()}` -- a summary of ZERO "
+                    f"is a measurement, not a silence")
         return "🔴 NOTHING PARSED -- probe measured nothing, or format unknown"
     if state not in ("rc=0",):
         return f"\u26a0\ufe0f  {state} but no divergence marker in {rows} parsed line(s) -- READ IT"
