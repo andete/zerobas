@@ -159,6 +159,45 @@ MECHANISM before trusting the name — and the filed suspicions.
   ⚠️ NOT reviewed line-by-line — `ex_gosub`'s own body was read only far enough
   to confirm the depth question is the filed one. Recorded as covered, not as
   audited.
+  🔴 **AUDITED 2026-09-08, AND THE SELF-FLAG WAS RIGHT: FOUR DIVERGENCES**
+  (D-FLOWTAIL, [`scratchpad/flowtail_probe.py`](../scratchpad/flowtail_probe.py),
+  [`.out`](../scratchpad/flowtail_sep.out)). The audit found them not in
+  `ex_gosub`'s body — which reads clean — but in what the tail sweep does not
+  reach: **`tailjunk_probe` covers 20 verbs and NOT ONE of them branches.**
+  GOTO, GOSUB, RETURN and ON..GOSUB were never asked the question that produced
+  D-MAXFTAIL, D-DEFCORNER, D-FMTTAIL and D-OMITARG.
+  | row | vg8020 | cf3300 | zb |
+  |---|---|---|---|
+  | `GOSUB 100 ZZ` | ERR 0 | ERR 0 | **ERR 2** |
+  | `ON 1 GOSUB 100 ZZ` | ERR 0 | ERR 0 | **ERR 2** |
+  | `GOSUB 100,` | ERR 0 | ERR 0 | **ERR 2** |
+  | `GOTO 100 ZZ` | ERR 0 | ERR 0 | ERR 0 ✅ |
+  🎯 **THE DIRECTION IS REVERSED FROM EVERY EARLIER TAIL FINDING** — here the
+  references ACCEPT what zerobas rejects — and `GOTO` agreeing is what localises
+  it: GOTO never comes back, so the tail is never reached on either machine. This
+  is a RESUME-POINT difference, not a parse-time one.
+  🎯 **AND THE MECHANISM WAS SEPARATED BEFORE BEING NAMED.** Two rules fit those
+  rows: the reference resumes after the STATEMENT, or after the LINE. The witness
+  row settles it — `GOSUB 100 ZZ:A=A+10` leaves **A=17** on both references
+  (the `:`-statement still runs) against **A=7 + ERR 2** on zerobas, while the
+  control `GOSUB 100:A=A+10` is 17 everywhere. So the rule is **resume after the
+  STATEMENT**, and zerobas's ordinary mid-line resume is already correct
+  [[two-rules-that-coincide-on-every-row-you-have]].
+  💰 **PRICED, NOT SHIPPED: 5 B or 10 B of main page 1, against 2 B free
+  (2026-09-08, all three carve routes measured shut — D-CARVEOUT).**
+  `tok_skip_to` ([`basic/interp.asm:1989`](../basic/interp.asm:1989)) is a
+  main-ROM token-aware skipper with a parameterised terminator, so the site cost
+  is `ld c,COLON / call tok_skip_to` = **5 B** — far cheaper than reusing
+  `scan_stmt_end`, which is a sub-ROM tenant needing ~13 B of marshaling.
+  ⚠️ **BUT `gosub_push` HAS THREE CALLERS, AND ONLY TWO ARE THIS.** Siting the
+  skip inside it fixes `ex_gosub` AND `eon_gosub` for one 5 B spend — and also
+  changes the TRAP dispatcher's push ([`basic/traps.asm:360`](../basic/traps.asm:360)),
+  whose resume point is an interrupted statement, not a parsed one. That path is
+  UNVERIFIED here. The safe shape is the two branch sites separately, **10 B**
+  [[a-shared-tail-is-not-a-decision]].
+  📌 **AND THE ENTRY'S OWN CITATION WAS STALE**: "The GOSUB DEPTH difference
+  (refs 12, zb 8)" was fixed on 2026-09-04 by the control-frame pool (D-CTLPOOL /
+  D-CTLLIM) — depth is now linear in `CLEAR`, measured 2868. Corrected here.
 - ✅ **print/lprint/llist — REVIEWED 2026-09-02, NO FINDING**
   (`scratchpad/printzone_probe.py`, 25 rows x 3 machines).
   🎯 **THE GAP WAS REAL BUT THE SURFACE IS CORRECT.** There is no general PRINT

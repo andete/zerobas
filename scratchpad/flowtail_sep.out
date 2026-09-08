@@ -1,0 +1,20 @@
+  ctl      GOSUB 100            vg=ERR=0 A=7       cf=ERR=0 A=7       zb=ERR=0 A=7      
+  g.tail   GOSUB 100 ZZ         vg=ERR=0 A=7       cf=ERR=0 A=7       zb=ERR=2 A=7         🔴 DIFF
+  t.tail   GOTO 100 ZZ          vg=ERR=0 A=7       cf=ERR=0 A=7       zb=ERR=0 A=7      
+  r.tail   GOSUB 100            vg=ERR=2 A=7       cf=ERR=2 A=7       zb=ERR=2 A=7      
+  o.tail   ON 1 GOSUB 100 ZZ    vg=ERR=0 A=7       cf=ERR=0 A=7       zb=ERR=2 A=7         🔴 DIFF
+  g.comma  GOSUB 100,           vg=ERR=0 A=7       cf=ERR=0 A=7       zb=ERR=2 A=7         🔴 DIFF
+  ctl.col  GOSUB 100:A=A+10     vg=ERR=0 A=17      cf=ERR=0 A=17      zb=ERR=0 A=17     
+  g.col    GOSUB 100 ZZ:A=A+10  vg=ERR=0 A=17      cf=ERR=0 A=17      zb=ERR=2 A=7         🔴 DIFF
+
+=== 4 divergence(s): ['g.tail', 'o.tail', 'g.comma', 'g.col'] ===
+=== the witness is the point: A=0 refused before branching, A=7 branched first ===
+   ctl      vg ('0', '7')   cf ('0', '7')   zb ('0', '7')
+   g.tail   vg ('0', '7')   cf ('0', '7')   zb ('2', '7')
+   t.tail   vg ('0', '7')   cf ('0', '7')   zb ('0', '7')
+   r.tail   vg ('2', '7')   cf ('2', '7')   zb ('2', '7')
+   o.tail   vg ('0', '7')   cf ('0', '7')   zb ('2', '7')
+   g.comma  vg ('0', '7')   cf ('0', '7')   zb ('2', '7')
+   ctl.col  vg ('0', '17')   cf ('0', '17')   zb ('0', '17')
+   g.col    vg ('0', '17')   cf ('0', '17')   zb ('2', '7')
+refcache: 18 hit, 6 miss, 6 stored

@@ -410,7 +410,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:11633 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:11678 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -575,7 +575,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:2616 (T-6FE392)8 (T-529ABE)` from `TODO.md:10570 (T-529ABE)`: a
+      `TODO.md:2661 (T-6FE392)8 (T-529ABE)` from `TODO.md:10615 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -2201,6 +2201,51 @@ list. **When a slice lands, grep this list for what it just shipped.**
       it verb by verb, cheapest-context verbs first, and file what each review
       measures.
 
+- [ ] 🔴 **D-FLOWTAIL (2026-09-08): A TAIL AFTER `GOSUB <line>` IS ACCEPTED ON
+      BOTH REFERENCES AND RAISES ERR 2 HERE — 4 rows, PRICED AND PARKED**
+      ([`scratchpad/flowtail_probe.py`](scratchpad/flowtail_probe.py),
+      [`.out`](scratchpad/flowtail_sep.out)).
+      Found by auditing `ex_gosub`, the review-tier entry that flagged its own
+      limit (*"Recorded as covered, not as audited"*). The body reads clean; the
+      hole is in what the tail sweep does not reach — **`tailjunk_probe` covers 20
+      verbs and NOT ONE of them branches**, so GOTO/GOSUB/RETURN/ON..GOSUB were
+      never asked the question behind D-MAXFTAIL, D-DEFCORNER, D-FMTTAIL and
+      D-OMITARG.
+      | row | vg8020 | cf3300 | zb |
+      |---|---|---|---|
+      | `GOSUB 100 ZZ` | ERR 0 | ERR 0 | **ERR 2** |
+      | `ON 1 GOSUB 100 ZZ` | ERR 0 | ERR 0 | **ERR 2** |
+      | `GOSUB 100,` | ERR 0 | ERR 0 | **ERR 2** |
+      | `GOTO 100 ZZ` | ERR 0 | ERR 0 | ERR 0 ✅ |
+      🎯 **THE DIRECTION IS REVERSED FROM EVERY EARLIER TAIL FINDING** — the
+      references ACCEPT what zerobas rejects — and `GOTO` agreeing localises it:
+      GOTO never comes back, so its tail is never reached on either machine. This
+      is a RESUME-POINT difference, not a parse-time one, and every row carries a
+      witness (`A=7` = the subroutine ran) so "refused before branching" and
+      "branched, then failed on the way back" are distinguishable. They are not
+      distinguishable by ERR alone — both are ERR 2.
+      🎯 **MECHANISM SEPARATED BEFORE BEING NAMED.** Two rules fit those rows: the
+      reference resumes after the STATEMENT, or after the LINE. `GOSUB 100 ZZ:A=A+10`
+      settles it — **A=17 on both references** (the `:`-statement still runs) against
+      **A=7 + ERR 2** here, while the control `GOSUB 100:A=A+10` is 17 everywhere. So
+      the rule is **resume after the STATEMENT**, and zerobas's ordinary mid-line
+      resume is already right [[two-rules-that-coincide-on-every-row-you-have]].
+      💰 **5 B OR 10 B OF MAIN PAGE 1, AGAINST 2 B FREE (2026-09-08).**
+      `tok_skip_to` ([`basic/interp.asm:1989`](basic/interp.asm:1989)) is a
+      main-ROM token-aware skipper with a parameterised terminator, so the site is
+      `ld c,COLON / call tok_skip_to` = **5 B** — against ~13 B to reuse
+      `scan_stmt_end`, which is a sub-ROM tenant needing marshaling.
+      ⚠️ **`gosub_push` HAS THREE CALLERS AND ONLY TWO ARE THIS.** Siting the skip
+      inside it fixes `ex_gosub` AND `eon_gosub` for one 5 B spend — and also
+      changes the TRAP dispatcher's push
+      ([`basic/traps.asm:360`](basic/traps.asm:360)), whose resume point is an
+      INTERRUPTED statement rather than a parsed one. **That path is unverified.**
+      The safe shape is the two branch sites separately at **10 B**
+      [[a-shared-tail-is-not-a-decision]].
+      🤖 AUTONOMOUS — the references settle every row; the carve is the open part,
+      and all three mechanical routes are shut (D-CARVEOUT), so this needs a
+      DESIGNED carve first.
+
 - [x] ✅ **D-RAWVAL (2026-09-08): the raw-I/O trio's SECOND argument had the
       ADDRESS domain, so it WRAPPED** ([`docs/spec-basic-rawval.md`](docs/spec-basic-rawval.md),
       [`scratchpad/rawval_probe.py`](scratchpad/rawval_probe.py),
@@ -3254,7 +3299,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:10570 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:10615 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
