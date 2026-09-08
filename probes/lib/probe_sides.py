@@ -148,4 +148,13 @@ def _selftest() -> int:
 
 
 if __name__ == "__main__":
+    # 🔴 `--selftest` IS THE HOUSE ADVERTISEMENT, AND IT IS WHAT GETS THIS RUN.
+    # `tools/check_selftests.py` (gate `selftest-check`, in the battery) invokes
+    # every script that ADVERTISES `--selftest` -- 38 of them, probes/lib included.
+    # The first cut ran its arms on bare invocation only, so it was invisible to
+    # that gate and needed a bespoke make target to be collected at all. Both work
+    # now; the flag is the one that matters.
+    import sys as _s
+    if len(_s.argv) > 1 and _s.argv[1] not in ("--selftest",):
+        raise SystemExit(f"usage: {_s.argv[0]} [--selftest]")
     raise SystemExit(_selftest())

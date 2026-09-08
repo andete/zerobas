@@ -410,7 +410,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:11042 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:11060 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -575,7 +575,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:2423 (T-6FE392)8 (T-529ABE)` from `TODO.md:9979 (T-529ABE)`: a
+      `TODO.md:2423 (T-6FE392)8 (T-529ABE)` from `TODO.md:9997 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -3061,7 +3061,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:9979 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:9997 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -4200,7 +4200,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       and the selftest passed when invoked by hand — both true, and the gate sat
       outside the battery. **The only signal was the unit COUNT: 121 in two
       consecutive runs.** Fixed; it is 122 units and 115/115 now.
-      🔬 **THAT EXPOSED A GAP IN `battery-membership-check` ITSELF.** It enforces
+      ~~🔬 **THAT EXPOSED A GAP IN `battery-membership-check` ITSELF.** It enforces
       collection for `*-acceptance` targets only, while its own docstring states the
       problem in general terms — *"a script outside the battery can be RED FOR
       MONTHS and nobody learns"*. Measured: of **4** `*-selftest` targets,
@@ -4209,7 +4209,25 @@ list. **When a slice lands, grep this list for what it just shipped.**
       rather than harmful — `layout-invariant` has a written reason (deliberately
       out of the battery), `diskdep` has none. ➡️ **OWED: widen the membership gate
       to `*-selftest`, with the same written-reason allowlist it already has for
-      acceptance targets.** Not done here; it is a separate change from the helper.
+      acceptance targets.** Not done here; it is a separate change from the helper.~~
+      🔴 **THAT WAS WRONG IN BOTH HALVES, AND THE RECOMMENDATION WOULD HAVE MADE
+      THINGS WORSE (corrected 2026-09-08, before acting on it).** The membership
+      gate polices `-acceptance` **and `-check`** — someone widened it once already
+      — and, more to the point, **`selftest-check` is the mechanism for selftests**:
+      [`tools/check_selftests.py`](tools/check_selftests.py) invokes **every script
+      that advertises `--selftest`** (39 of them, `probes/lib` included) and IS in
+      the battery. `check_disk_deps.py` and `check_layout_invariant.py` both
+      advertise it, so **their content was in the battery all along** — only their
+      make TARGETS are uncollected, which is not the thing that matters. Widening
+      the membership gate to `*-selftest` would have reddened two targets whose
+      selftests already run, and the fix would have been two allowlist entries
+      excusing a problem that does not exist.
+      🎯 **THE REAL FINDING WAS ABOUT MY OWN MODULE.** `probe_sides.py` ran its arms
+      on BARE invocation and did not advertise `--selftest`, so `selftest-check`
+      could not see it — which is why it needed a bespoke make target to be
+      collected at all. It advertises the flag now (39 scripts, up from 38) and is
+      covered the way every other selftest is. The explicit target stays: that is
+      the house pattern, `deffn-selftest` does both.
       🎯 **THAT IS THE THIRD DISTINCT FAILURE MODE OF ONE MACHINE FACT**: score it
       wrongly, mount to it wrongly, or (kwsweep's original) compare against it
       wrongly. The fact is in `basic_probe_kwsweep.py`'s header; what keeps being
