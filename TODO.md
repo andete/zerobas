@@ -410,7 +410,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:11170 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:11189 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -575,7 +575,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:2423 (T-6FE392)8 (T-529ABE)` from `TODO.md:10107 (T-529ABE)`: a
+      `TODO.md:2423 (T-6FE392)8 (T-529ABE)` from `TODO.md:10126 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -3061,7 +3061,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:10107 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:10126 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -4233,6 +4233,25 @@ list. **When a slice lands, grep this list for what it just shipped.**
       wrongly. The fact is in `basic_probe_kwsweep.py`'s header; what keeps being
       missing is a shared SIDES helper that carries it
       [[an-instrument-can-fail-the-way-the-thing-it-replaced-failed]].
+      🟢 **FUNCTION ARITY IS SWEPT AND CLEAN TOO (2026-09-08, D-FNARITY,
+      [`scratchpad/fnarity_probe.py`](scratchpad/fnarity_probe.py),
+      [`.out`](scratchpad/fnarity_run.out)) — 18 rows, 0 divergences.** Every sweep
+      before it was about STATEMENTS; functions are a different surface and the
+      existing coverage does not reach arity (`kwsweep` exercises each function with
+      ONE valid usage; `intarg-acceptance` covers numeric DOMAINS, not counts).
+      `LEFT$`/`RIGHT$`/`MID$`/`INSTR`/`STRING$`/`CHR$`/`ASC`/`LEN`/`PEEK`/`ABS`/
+      `POINT`/`STICK` all answer `ERR 2` to both too-few and too-many, on all three
+      machines.
+      🎯 **THE LEGAL ARITY IS PART OF EACH ROW, NOT AN ASSUMPTION** — `MID$` and
+      `INSTR` take **2 OR 3**, so "one too few" and "one too many" are different
+      numbers per function. A sweep with a fixed count would have reported the
+      optional third argument as an error and manufactured two divergences.
+      📊 **AND THAT IS THE ARGUMENT SURFACE EXHAUSTED: 7 sweeps, 175 rows, 5 defects,
+      all fixed** (shape ×5 axes, `#channel`, value domain, function arity). The
+      last four sweeps found **one** defect between them, all four in `COLOR`'s
+      domain check. ➡️ **SO THE NEXT TICK SHOULD NOT BE AN EIGHTH ARGUMENT AXIS** —
+      the yield curve says the remaining value is in a different KIND of question:
+      state and sequencing (what a verb leaves behind), not what it accepts.
       📏 **THE ARGUMENT-SHAPE FAMILY IS NOW SWEPT ON FIVE AXES, AND IT IS CLOSED
       (2026-09-07/08).** Each axis had one or two members found individually over
       months; none had been checked as a class. Together they are the surface a

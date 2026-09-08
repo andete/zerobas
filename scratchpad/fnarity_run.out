@@ -1,0 +1,21 @@
+  f.ctl       A$=LEFT$("ab",1)         vg=ACCEPTED  cf=ACCEPTED  zb=ACCEPTED 
+  left.few    A$=LEFT$("ab")           vg=ERR 2     cf=ERR 2     zb=ERR 2    
+  left.many   A$=LEFT$("ab",1,1)       vg=ERR 2     cf=ERR 2     zb=ERR 2    
+  right.few   A$=RIGHT$("ab")          vg=ERR 2     cf=ERR 2     zb=ERR 2    
+  mid.few     A$=MID$("ab")            vg=ERR 2     cf=ERR 2     zb=ERR 2    
+  mid.many    A$=MID$("ab",1,1,1)      vg=ERR 2     cf=ERR 2     zb=ERR 2    
+  instr.few   A=INSTR("ab")            vg=ERR 2     cf=ERR 2     zb=ERR 2    
+  instr.many  A=INSTR(1,"ab","b",1)    vg=ERR 2     cf=ERR 2     zb=ERR 2    
+  strng.few   A$=STRING$(3)            vg=ERR 2     cf=ERR 2     zb=ERR 2    
+  strng.many  A$=STRING$(3,65,1)       vg=ERR 2     cf=ERR 2     zb=ERR 2    
+  chr.none    A$=CHR$()                vg=ERR 2     cf=ERR 2     zb=ERR 2    
+  chr.many    A$=CHR$(65,1)            vg=ERR 2     cf=ERR 2     zb=ERR 2    
+  asc.many    A=ASC("a","b")           vg=ERR 2     cf=ERR 2     zb=ERR 2    
+  len.many    A=LEN("a",1)             vg=ERR 2     cf=ERR 2     zb=ERR 2    
+  peek.many   A=PEEK(0,1)              vg=ERR 2     cf=ERR 2     zb=ERR 2    
+  abs.many    A=ABS(1,1)               vg=ERR 2     cf=ERR 2     zb=ERR 2    
+  point.few   A=POINT(0)               vg=ERR 2     cf=ERR 2     zb=ERR 2    
+  stick.many  A=STICK(0,1)             vg=ERR 2     cf=ERR 2     zb=ERR 2    
+
+=== 0 divergence(s): none ===
+    REFS-SPLIT (0): none
