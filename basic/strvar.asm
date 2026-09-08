@@ -309,8 +309,9 @@ str_mks:        ld      c,4
                 jr      str_mkf
 str_mkd:        ld      c,8
 str_mkf:
-                inc     hl                  ; past the MKx$ selector
-                ld      a,(hl)
+                call    inc_skip            ; D-FNSPACE: past the name AND any
+                                            ; spaces before '(' — both references
+                                            ; accept `LEFT$ ("AB",1)`
                 cp      '('
                 jr      nz,str_eval_no
                 inc     hl
@@ -412,16 +413,19 @@ str_eval_maybe_inputd:
                 dec     hl                  ; not INPUT$ -> restore, not a string operand
                 jp      str_eval_no
 str_inputd:
-                inc     hl                  ; past '$'
-                ld      a,(hl)
+                call    inc_skip            ; D-FNSPACE: past the name AND any
+                                            ; spaces before '(' — both references
+                                            ; accept `LEFT$ ("AB",1)`
                 cp      '('
                 jp      nz,str_eval_no
                 inc     hl
                 call    eval                ; DE = n (byte count); HL advanced past it
                 ld      a,e
                 ld      (INDLR_N),a         ; target count (low byte; n <= 255)
-                ld      a,(hl)
-                cp      ','                 ; INPUT$(n) keyboard form (no ',') = Phase 3
+                call    skip_comma          ; D-FNSPACE: Z iff ',' — and it
+                                            ; SKIPS SPACES first, which a bare
+                                            ; `ld a,(hl)` did not. BYTE-NEUTRAL:
+                                            ; 3 B for 3 B.
                 jp      nz,str_eval_no
                 inc     hl
                 ld      a,(hl)

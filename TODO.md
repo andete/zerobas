@@ -410,7 +410,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:11780 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:11812 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -575,7 +575,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:2734 (T-6FE392)8 (T-529ABE)` from `TODO.md:10717 (T-529ABE)`: a
+      `TODO.md:2766 (T-6FE392)8 (T-529ABE)` from `TODO.md:10749 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -2232,6 +2232,38 @@ list. **When a slice lands, grep this list for what it just shipped.**
       Filed as unmeasured rather than agreed; it needs a rig that can absorb a
       tape write, or a disk-path variant on the CF-3300.
 
+- [x] ✅ **D-FNSPACE (2026-09-09): `LEFT$ ("ABC",2)` — A SPACE BEFORE A STRING
+      FUNCTION'S PAREN — WAS `ERR 2` WHERE BOTH REFERENCES ACCEPT. 6 DIFF → 0**
+      ([`scratchpad/fnspace_probe.py`](scratchpad/fnspace_probe.py),
+      [before](scratchpad/fnspace_run.out), [after](scratchpad/fnspace_after2.out),
+      11 rows × 3 machines).
+      D-MIDSPACE found the SPACE axis on one verb; this is the axis swept properly.
+      | row | vg8020 | cf3300 | zb before |
+      |---|---|---|---|
+      | `LEFT$ ("ABCDE",2)` | `AB` | `AB` | **ERR 2** |
+      | `MID$ ("ABCDE",2,2)` | `BC` | `BC` | **ERR 2** |
+      | `RIGHT$ ("ABCDE",2)` | `DE` | `DE` | **ERR 2** |
+      | `STRING$ (2,65)` | `AA` | `AA` | **ERR 2** |
+      | `CHR$ (65)` | `A` | `A` | **ERR 2** |
+      | `LEFT$("ABCDE" ,2)` | `AB` | `AB` | **ERR 2** |
+      | `LEFT$("ABCDE",2 )` | `AB` | `AB` | `AB` ✅ |
+      🎯 **THE SOURCE SIGNATURE OVER-REPORTS, AND D-MIDSPACE IS WHY I KNEW.** A
+      sweep for *"`ld a,(hl)` immediately before a separator test, unguarded"*
+      returns **41** sites. Four of D-MIDSPACE's five had exactly that shape and
+      all four PASS — `eval` and `str_target_parse` leave HL past trailing spaces,
+      so those sites are guarded by their NEIGHBOURS. The subset worth measuring is
+      the one matching the shape that actually failed: **`inc hl` immediately
+      before the test**, which skips nothing. Ten sites; nine were real.
+      🟢 **`f.close` IS THE ROW THAT PROVES THE DIAGNOSIS RATHER THAN THE PATCH**:
+      a space before the CLOSE paren was already accepted, because `eval` runs
+      first there. Had every space row failed, "the parser ignores spaces
+      generally" would have fitted equally well.
+      💰 **9 B: 7 low + 2 page 1** for the open-paren sites (`inc hl / ld a,(hl)` →
+      `call inc_skip`), and the seven comma sites are **BYTE-NEUTRAL** —
+      `call skip_comma` is 3 B for the 3 B of `ld a,(hl) / cp ','`, so D-SKIPCOMMA's
+      helper paid for the second half of this fix. Low 11 → **4 B**, page 1 79 →
+      **77 B** (2026-09-09).
+
 - [x] ✅ **D-MIDSPACE (2026-09-08): `MID$(A$,2) ="X"` — A SPACE BEFORE THE `=` —
       RAISED ERR 2 WHERE BOTH REFERENCES ASSIGN. 1 DIFF → 0, +1 B**
       ([`scratchpad/midspace_probe.py`](scratchpad/midspace_probe.py),
@@ -3372,7 +3404,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:10717 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:10749 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

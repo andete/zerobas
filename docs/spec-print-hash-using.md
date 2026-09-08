@@ -111,7 +111,7 @@ self-fund or golf locally before considering a tenant.
 
 ## Documentation debt to correct alongside
 
-- [../TODO.md:3345 (T-027472)](../TODO.md) lists `PRINT# USING` under a **DONE** umbrella — false;
+- [../TODO.md:3377 (T-027472)](../TODO.md) lists `PRINT# USING` under a **DONE** umbrella — false;
   it is unfinished/broken. Correct to reflect the real state (see the interim
   doc-truth fix already applied).
 - On landing: update [basic/printusing.asm:25–27](../basic/printusing.asm) and

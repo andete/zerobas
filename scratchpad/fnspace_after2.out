@@ -1,0 +1,25 @@
+  f.ctl    LEFT$("ABCDE",2)     vg=ERR=0 R$=AB       cf=ERR=0 R$=AB       zb=ERR=0 R$=AB      
+  f.left   LEFT$ ("ABCDE",2)    vg=ERR=0 R$=AB       cf=ERR=0 R$=AB       zb=ERR=0 R$=AB      
+  f.mid    MID$ ("ABCDE",2,2)   vg=ERR=0 R$=BC       cf=ERR=0 R$=BC       zb=ERR=0 R$=BC      
+  f.right  RIGHT$ ("ABCDE",2)   vg=ERR=0 R$=DE       cf=ERR=0 R$=DE       zb=ERR=0 R$=DE      
+  f.strn   STRING$ (2,65)       vg=ERR=0 R$=AA       cf=ERR=0 R$=AA       zb=ERR=0 R$=AA      
+  f.chr    CHR$ (65)            vg=ERR=0 R$=A        cf=ERR=0 R$=A        zb=ERR=0 R$=A       
+  f.close  LEFT$("ABCDE",2 )    vg=ERR=0 R$=AB       cf=ERR=0 R$=AB       zb=ERR=0 R$=AB      
+  f.comma  LEFT$("ABCDE" ,2)    vg=ERR=0 R$=AB       cf=ERR=0 R$=AB       zb=ERR=0 R$=AB      
+  f.mid2   MID$("ABCDE",2 ,2)   vg=ERR=0 R$=BC       cf=ERR=0 R$=BC       zb=ERR=0 R$=BC      
+  f.strn2  STRING$(2 ,65)       vg=ERR=0 R$=AA       cf=ERR=0 R$=AA       zb=ERR=0 R$=AA      
+  f.rgt2   RIGHT$("ABCDE" ,2)   vg=ERR=0 R$=DE       cf=ERR=0 R$=DE       zb=ERR=0 R$=DE      
+
+=== 0 divergence(s): none ===
+   f.ctl    vg ('0', 'AB')   cf ('0', 'AB')   zb ('0', 'AB')
+   f.left   vg ('0', 'AB')   cf ('0', 'AB')   zb ('0', 'AB')
+   f.mid    vg ('0', 'BC')   cf ('0', 'BC')   zb ('0', 'BC')
+   f.right  vg ('0', 'DE')   cf ('0', 'DE')   zb ('0', 'DE')
+   f.strn   vg ('0', 'AA')   cf ('0', 'AA')   zb ('0', 'AA')
+   f.chr    vg ('0', 'A')   cf ('0', 'A')   zb ('0', 'A')
+   f.close  vg ('0', 'AB')   cf ('0', 'AB')   zb ('0', 'AB')
+   f.comma  vg ('0', 'AB')   cf ('0', 'AB')   zb ('0', 'AB')
+   f.mid2   vg ('0', 'BC')   cf ('0', 'BC')   zb ('0', 'BC')
+   f.strn2  vg ('0', 'AA')   cf ('0', 'AA')   zb ('0', 'AA')
+   f.rgt2   vg ('0', 'DE')   cf ('0', 'DE')   zb ('0', 'DE')
+refcache: 16 hit, 17 miss, 17 stored

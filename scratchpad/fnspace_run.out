@@ -1,0 +1,19 @@
+  f.ctl    LEFT$("ABCDE",2)     vg=ERR=0 R$=AB       cf=ERR=0 R$=AB       zb=ERR=0 R$=AB      
+  f.left   LEFT$ ("ABCDE",2)    vg=ERR=0 R$=AB       cf=ERR=0 R$=AB       zb=ERR=2 R$=-          🔴 DIFF
+  f.mid    MID$ ("ABCDE",2,2)   vg=ERR=0 R$=BC       cf=ERR=0 R$=BC       zb=ERR=2 R$=-          🔴 DIFF
+  f.right  RIGHT$ ("ABCDE",2)   vg=ERR=0 R$=DE       cf=ERR=0 R$=DE       zb=ERR=2 R$=-          🔴 DIFF
+  f.strn   STRING$ (2,65)       vg=ERR=0 R$=AA       cf=ERR=0 R$=AA       zb=ERR=2 R$=-          🔴 DIFF
+  f.chr    CHR$ (65)            vg=ERR=0 R$=A        cf=ERR=0 R$=A        zb=ERR=2 R$=-          🔴 DIFF
+  f.close  LEFT$("ABCDE",2 )    vg=ERR=0 R$=AB       cf=ERR=0 R$=AB       zb=ERR=0 R$=AB      
+  f.comma  LEFT$("ABCDE" ,2)    vg=ERR=0 R$=AB       cf=ERR=0 R$=AB       zb=ERR=2 R$=-          🔴 DIFF
+
+=== 6 divergence(s): ['f.left', 'f.mid', 'f.right', 'f.strn', 'f.chr', 'f.comma'] ===
+   f.ctl    vg ('0', 'AB')   cf ('0', 'AB')   zb ('0', 'AB')
+   f.left   vg ('0', 'AB')   cf ('0', 'AB')   zb ('2', '-')
+   f.mid    vg ('0', 'BC')   cf ('0', 'BC')   zb ('2', '-')
+   f.right  vg ('0', 'DE')   cf ('0', 'DE')   zb ('2', '-')
+   f.strn   vg ('0', 'AA')   cf ('0', 'AA')   zb ('2', '-')
+   f.chr    vg ('0', 'A')   cf ('0', 'A')   zb ('2', '-')
+   f.close  vg ('0', 'AB')   cf ('0', 'AB')   zb ('0', 'AB')
+   f.comma  vg ('0', 'AB')   cf ('0', 'AB')   zb ('2', '-')
+refcache: 0 hit, 24 miss, 24 stored

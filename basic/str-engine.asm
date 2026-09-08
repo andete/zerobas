@@ -995,8 +995,9 @@ str_func_ff:
 ; In-domain behaviour is unchanged, coercion included: the reference truncates
 ; toward zero BEFORE checking, so CHR$(255.9) and CHR$(-0.5) are legal.
 str_fn_chr:
-                inc     hl                  ; past the selector
-                ld      a,(hl)
+                call    inc_skip            ; D-FNSPACE: past the name AND any
+                                            ; spaces before '(' — both references
+                                            ; accept `LEFT$ ("AB",1)`
                 cp      '('
                 jr      nz,str_arg_empty
                 inc     hl
@@ -1018,8 +1019,9 @@ str_fn_chr:
 ; pu_fmt_int (NUMBUF = "[-]digits",0, B = digit count) — no perturbation of the
 ; existing PRINT/USING paths (they keep their own entry points).
 str_fn_str:
-                inc     hl                  ; past the selector
-                ld      a,(hl)
+                call    inc_skip            ; D-FNSPACE: past the name AND any
+                                            ; spaces before '(' — both references
+                                            ; accept `LEFT$ ("AB",1)`
                 cp      '('
                 jr      nz,str_arg_empty
                 inc     hl
@@ -1143,8 +1145,9 @@ str_arg_empty:
 ; Contrast sas_decline below, whose pop IS witnessed -- a DECLINE is not an
 ; error; the caller RETRIES the operand numerically, and that retry is visible.
 str_arg_open:
-                inc     hl                  ; past the selector
-                ld      a,(hl)
+                call    inc_skip            ; D-FNSPACE: past the name AND any
+                                            ; spaces before '(' — both references
+                                            ; accept `LEFT$ ("AB",1)`
                 cp      '('
                 jr      nz,sao_empty
                 inc     hl
@@ -1154,8 +1157,10 @@ str_arg_open:
                 cp      ','
                 jr      z,sao_empty
                 call    str_arg_snap        ; STRPTR -> an OWNED temp; HL = cursor
-                ld      a,(hl)
-                cp      ','
+                call    skip_comma          ; D-FNSPACE: Z iff ',' — and it
+                                            ; SKIPS SPACES first, which a bare
+                                            ; `ld a,(hl)` did not. BYTE-NEUTRAL:
+                                            ; 3 B for 3 B.
                 jr      nz,sao_empty
                 inc     hl
                 ld      bc,(STRPTR)         ; BC = temp addr (ld rr,(nn) leaves flags)
@@ -1232,8 +1237,10 @@ str_fn_mid:
                                             ; p is the family's one 1-BASED argument:
                                             ; MID$("abc",0) raises where 255 does not.
                 push    de                  ; [temp][p]
-                ld      a,(hl)
-                cp      ','
+                call    skip_comma          ; D-FNSPACE: Z iff ',' — and it
+                                            ; SKIPS SPACES first, which a bare
+                                            ; `ld a,(hl)` did not. BYTE-NEUTRAL:
+                                            ; 3 B for 3 B.
                 jr      z,sfm_haveN
                 ld      de,$FFFF            ; n omitted -> "to end" (clamps to avail)
                 jr      sfm_close
@@ -1335,8 +1342,9 @@ ex_mid_stmt:                                ; (traps T2) entered with HL already
                 ld      a,(hl)
                 cp      MIDD_TOKEN          ; must be MID$ ($83); any other $FF here is
                 jp      nz,stmt_error       ; not a statement
-                inc     hl                  ; HL past $FF $83
-                ld      a,(hl)
+                call    inc_skip            ; D-FNSPACE: past the name AND any
+                                            ; spaces before '(' — both references
+                                            ; accept `LEFT$ ("AB",1)`
                 cp      '('
                 jp      nz,stmt_error
                 inc     hl                  ; HL -> target var name
@@ -1353,14 +1361,18 @@ ex_mid_stmt:                                ; (traps T2) entered with HL already
                                             ; survive the arg parse's VARPTR)
                 ld      (MIDS_DEST),hl      ; stash dest; cursor kept on the stack
                 pop     hl                  ; HL = cursor
-                ld      a,(hl)
-                cp      ','
+                call    skip_comma          ; D-FNSPACE: Z iff ',' — and it
+                                            ; SKIPS SPACES first, which a bare
+                                            ; `ld a,(hl)` did not. BYTE-NEUTRAL:
+                                            ; 3 B for 3 B.
                 jp      nz,stmt_error
                 inc     hl
                 call    eval_pos_arg        ; DE = n, 1..255 (D-MISS-2; or aborts)
                 push    de                  ; [n]
-                ld      a,(hl)
-                cp      ','
+                call    skip_comma          ; D-FNSPACE: Z iff ',' — and it
+                                            ; SKIPS SPACES first, which a bare
+                                            ; `ld a,(hl)` did not. BYTE-NEUTRAL:
+                                            ; 3 B for 3 B.
                 jr      z,ems_have_m
                 ld      de,$00FF            ; m omitted -> a cap larger than any avail (<=255)
                 jr      ems_close
@@ -1521,8 +1533,9 @@ str_fn_bin:
                 ld      a,14                ; op = 14 (BIN_BUILD; 8 is sh_fill)
 str_fn_radix:
                 ld      c,a                 ; C = the build op
-                inc     hl                  ; past the selector
-                ld      a,(hl)
+                call    inc_skip            ; D-FNSPACE: past the name AND any
+                                            ; spaces before '(' — both references
+                                            ; accept `LEFT$ ("AB",1)`
                 cp      '('
                 jp      nz,str_arg_empty
                 inc     hl
@@ -1611,8 +1624,9 @@ shxf_overflow   equ     sst_overflow
 ; str_min_bc (A=STRMAX ceiling, BC=n), exactly like LEFT$/RIGHT$/MID$'s count clamp.
 ; Length is known upfront -> allocate once, fill directly.
 str_fn_space:
-                inc     hl                  ; past the selector
-                ld      a,(hl)
+                call    inc_skip            ; D-FNSPACE: past the name AND any
+                                            ; spaces before '(' — both references
+                                            ; accept `LEFT$ ("AB",1)`
                 cp      '('
                 jp      nz,str_arg_empty
                 inc     hl
@@ -1679,8 +1693,9 @@ sfi_empty:
 ; token (Group B), unlike the $FF-prefixed Group A verbs above. Length known
 ; upfront -> allocate once, fill directly.
 str_fn_string:
-                inc     hl                  ; past the STRING_TOKEN byte ($E3)
-                ld      a,(hl)
+                call    inc_skip            ; D-FNSPACE: past the name AND any
+                                            ; spaces before '(' — both references
+                                            ; accept `LEFT$ ("AB",1)`
                 cp      '('
                 jp      nz,str_arg_empty    ; BUG C class (Fable 2026-07-17): STRING$ is a
                                             ; SINGLE-byte token ($E3) -> its malformed re-
@@ -1694,8 +1709,10 @@ str_fn_string:
                                             ; replaces the clamp + D-3 negative hang-fix
                                             ; (STRMAX=255 == byte ceiling). A = fill count.
                 push    af                  ; guard the count                  [count]
-                ld      a,(hl)
-                cp      ','
+                call    skip_comma          ; D-FNSPACE: Z iff ',' — and it
+                                            ; SKIPS SPACES first, which a bare
+                                            ; `ld a,(hl)` did not. BYTE-NEUTRAL:
+                                            ; 3 B for 3 B.
                 jr      nz,sfg_reject1      ; unbalance-safe: pop [count] first
                 inc     hl
                 ; --- resolve the fill byte: probe for a string 2nd arg (D-4) ---
@@ -1822,8 +1839,10 @@ efi_dup_a:
                 push    hl                  ; guard cursor (past a$)              [p][cursor]
                 call    str_snapshot_to_temp ; HL = aT (a$ snapshot); STRPTR=aT
                 ex      (sp),hl             ; HL=cursor(restored); top:=aT        [p][aT]
-                ld      a,(hl)
-                cp      ','
+                call    skip_comma          ; D-FNSPACE: Z iff ',' — and it
+                                            ; SKIPS SPACES first, which a bare
+                                            ; `ld a,(hl)` did not. BYTE-NEUTRAL:
+                                            ; 3 B for 3 B.
                 jr      nz,efi_reject_pa    ; malformed -> discard [p][aT]
                 call    str_eval_next       ; D-NGRAM11: past ',', STRPTR -> b$;
                                             ; HL advanced; CF=ok
