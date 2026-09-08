@@ -1,0 +1,23 @@
+  n.ctl    ABS(-7)                vg=ERR=0 V=7        cf=ERR=0 V=7        zb=ERR=0 V=7       
+  n.abs    ABS (-7)               vg=ERR=0 V=7        cf=ERR=0 V=7        zb=ERR=0 V=7       
+  n.int    INT (7.9)              vg=ERR=0 V=7        cf=ERR=0 V=7        zb=ERR=0 V=7       
+  n.sgn    SGN (7)                vg=ERR=0 V=1        cf=ERR=0 V=1        zb=ERR=0 V=1       
+  n.len    LEN ("ABCDEFG")        vg=ERR=0 V=7        cf=ERR=0 V=7        zb=ERR=0 V=7       
+  n.asc    ASC ("A")              vg=ERR=0 V=65       cf=ERR=0 V=65       zb=ERR=0 V=65      
+  n.val    VAL ("7")              vg=ERR=0 V=7        cf=ERR=0 V=7        zb=ERR=0 V=7       
+  n.instr  INSTR ("ABCDE","C")    vg=ERR=0 V=3        cf=ERR=0 V=3        zb=ERR=0 V=3       
+  n.deffn  FNQ (3)                vg=ERR=0 V=6        cf=ERR=0 V=6        zb=ERR=0 V=6       
+  n.array  Q (3)                  vg=ERR=0 V=7        cf=ERR=0 V=7        zb=ERR=0 V=7       
+
+=== 0 divergence(s): none ===
+   n.ctl    vg ('0', '7')   cf ('0', '7')   zb ('0', '7')
+   n.abs    vg ('0', '7')   cf ('0', '7')   zb ('0', '7')
+   n.int    vg ('0', '7')   cf ('0', '7')   zb ('0', '7')
+   n.sgn    vg ('0', '1')   cf ('0', '1')   zb ('0', '1')
+   n.len    vg ('0', '7')   cf ('0', '7')   zb ('0', '7')
+   n.asc    vg ('0', '65')   cf ('0', '65')   zb ('0', '65')
+   n.val    vg ('0', '7')   cf ('0', '7')   zb ('0', '7')
+   n.instr  vg ('0', '3')   cf ('0', '3')   zb ('0', '3')
+   n.deffn  vg ('0', '6')   cf ('0', '6')   zb ('0', '6')
+   n.array  vg ('0', '7')   cf ('0', '7')   zb ('0', '7')
+refcache: 0 hit, 30 miss, 30 stored

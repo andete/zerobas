@@ -410,7 +410,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:11812 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:11827 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -575,7 +575,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:2766 (T-6FE392)8 (T-529ABE)` from `TODO.md:10749 (T-529ABE)`: a
+      `TODO.md:2781 (T-6FE392)8 (T-529ABE)` from `TODO.md:10764 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -2263,6 +2263,21 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `call skip_comma` is 3 B for the 3 B of `ld a,(hl) / cp ','`, so D-SKIPCOMMA's
       helper paid for the second half of this fix. Low 11 → **4 B**, page 1 79 →
       **77 B** (2026-09-09).
+      ✅ **AND THE AXIS IS MEASURED EMPTY ON THE NUMERIC SIDE (D-NUMSPACE,
+      [`scratchpad/numspace_probe.py`](scratchpad/numspace_probe.py),
+      [`.out`](scratchpad/numspace_run.out), 10 rows × 3 machines, **0 DIFF**).**
+      `ABS (-7)`, `INT (7.9)`, `SGN (7)`, `LEN ("ABCDEFG")`, `ASC ("A")`,
+      `VAL ("7")`, `INSTR ("ABCDE","C")`, a **DEF FN call** `FNQ (3)` and an
+      **array subscript** `Q (3)` all already accept the space, on all three
+      machines. The source sweep had flagged `interp.asm:878`, `interp.asm:920`,
+      `expr.asm:597` and `missing.asm:459` with the same `cp '('` shape.
+      🎯 **SO D-FNSPACE IS BOUNDED, NOT THE TIP OF A PATTERN.** The string
+      functions carry their own hand-rolled `inc hl / ld a,(hl)` entry in
+      `str-engine.asm`/`strvar.asm`; everything else reaches its paren through
+      `ev_sp`/`ev_f`, which skip spaces already.
+      🟢 **AND THE EMPTY RESULT IS A READING**: the identical row shape — a space
+      before `(` — was RED on six string functions an hour earlier
+      [[a-case-that-agrees-can-agree-for-the-wrong-reason]].
 
 - [x] ✅ **D-MIDSPACE (2026-09-08): `MID$(A$,2) ="X"` — A SPACE BEFORE THE `=` —
       RAISED ERR 2 WHERE BOTH REFERENCES ASSIGN. 1 DIFF → 0, +1 B**
@@ -3404,7 +3419,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:10749 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:10764 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
