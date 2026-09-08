@@ -113,8 +113,7 @@ ex_screen:
     ENDIF
                 pop     hl
 scr_extra:                                  ; the trailing arguments
-                call    skip_spaces
-                cp      ','
+                call    skip_comma
                 jp      nz,exec_stmt        ; no comma -> done (the ONLY legal way
                                             ; out of this loop)
                 inc     hl                  ; past the comma
@@ -192,8 +191,7 @@ ex_color:
                 call    clr_eval            ; DE = foreground, VALIDATED 0..15
                 ld      a,e
                 ld      (FORCLR),a
-                call    skip_spaces
-                cp      ','
+                call    skip_comma
                 jr      nz,clr_apply
 clr_bg:
                 call    inc_skip           ; past the comma
@@ -206,8 +204,7 @@ clr_bg:
                 call    clr_eval            ; DE = background, VALIDATED 0..15
                 ld      a,e
                 ld      (BAKCLR),a
-                call    skip_spaces
-                cp      ','
+                call    skip_comma
                 jr      nz,clr_apply
 clr_bd:
                 call    stmt_bare_end       ; D-BAREEND: Z iff the statement ends here

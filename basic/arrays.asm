@@ -418,8 +418,7 @@ apsub_lp:
                                             ; LINEMAX is 96, so n <= 43; even a
                                             ; 255-char line only reaches 123)
                 push    bc                  ; [COUNT] back on top
-                call    skip_spaces
-                cp      ','
+                call    skip_comma
                 jr      z,apsub_comma
                 cp      ')'
                 jr      z,apsub_close
@@ -658,8 +657,7 @@ ed_settype:
 ed_next:                                    ; D-DIMBARE: the list continuation, now
                                             ; also reached by an item that carried
                                             ; no bound list at all
-                call    skip_spaces
-                cp      ','
+                call    skip_comma
                 jr      nz,ed_done
                 inc     hl
                 jr      ed_lp
@@ -767,8 +765,7 @@ ee_settype:
                                             ; the abort path too -- fp_runtime_error
                                             ; never reads HL, just tidy stack balance)
                 jp      nz,fp_runtime_error
-                call    skip_spaces
-                cp      ','
+                call    skip_comma
                 jr      nz,ee_done
                 inc     hl
                 jr      ee_lp               ; next name

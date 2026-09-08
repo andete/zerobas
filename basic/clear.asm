@@ -105,8 +105,7 @@ ex_clear:
     ELSE
                 call    eval                ; <string-space>, evaluated and ignored
     ENDIF
-                call    skip_spaces
-                cp      ','                 ; a second (memory-top) arg?
+                call    skip_comma          ; a second (memory-top) arg?
                 jr      nz,clr_done         ; no comma -> done
 clr_himem:
                 ; ⚠️ REACHED BY FALLTHROUGH ONLY since D-CLRFIX deleted its one

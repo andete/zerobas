@@ -1782,8 +1782,7 @@ ev_f_instr:
                 ; --- not a string: the leading numeric p (3-arg form) ---
                 call    eval_pos_arg        ; DE = p, 1..255 (D-MISS-2; or aborts)
                 push    de                  ; guard p                             [p]
-                call    skip_spaces
-                cp      ','
+                call    skip_comma
                 jr      nz,efi_reject_p
                 call    str_eval_next       ; D-NGRAM11: past ',', STRPTR -> a$;
                                             ; HL advanced; CF=ok

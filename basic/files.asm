@@ -1072,8 +1072,7 @@ inp_readvar:
                 ; left. ⚠️ Numeric `INPUT #n` is still rejected at the top of the
                 ; loop, exactly as it was for a single target -- this widens the
                 ; COUNT of targets, not their type.
-                call    skip_spaces
-                cp      ','
+                call    skip_comma
                 jr      z,inp_readvar       ; another target -> round again
                 jp      exec_stmt
 
@@ -1151,8 +1150,7 @@ dc_num:
                 call    fch_do_close_ch     ; flush (if OUTPUT) + mark closed
 dc_done:
                 pop     hl                  ; restore the text cursor
-                call    skip_spaces
-                cp      ','
+                call    skip_comma
                 jp     nz,dc_finish        ; no more channels in the list
                 inc     hl                  ; consume ',' and parse the next channel
                 jr      dc_listloop

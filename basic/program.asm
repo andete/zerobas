@@ -1970,8 +1970,7 @@ nx_end:
                 ; m.count reads 3x2 = ` 6 ` inner-body executions and is the only row
                 ; that can see a comma test placed one fork too early.
                 ; `call skip_spaces` is here for `NEXT B , A` (row m.space).
-                call    skip_spaces
-                cp      ','
+                call    skip_comma
                 jp      z,nx_comma
                 jp      exec_stmt           ; run on past NEXT
 nx_nofor:
@@ -2063,8 +2062,7 @@ exr_str:
                 ; site variant (TMISMATCH is always 0 -- READ never sets it).
                 call    check_expr_errors
 exr_after:
-                call    skip_spaces
-                cp      ','                 ; more variables to fill?
+                call    skip_comma          ; more variables to fill?
                 jr      z,exr_more
                 jp      exec_stmt           ; READ statement done
 exr_more:
@@ -2276,8 +2274,7 @@ esn_p1:
                 or      e
                 jr      z,esn_found         ; DE == 0 -> this was the Nth entry
                 ; still counting: expect a comma before the next entry
-                call    skip_spaces
-                cp      ','
+                call    skip_comma
                 jr      nz,esn_nocf         ; no comma -> list shorter than N
                 inc     hl                  ; past comma
                 jr      esn_p1
@@ -2285,8 +2282,7 @@ esn_p1:
 esn_found:
                 push    bc                  ; guard the found line number
 esn_p2:
-                call    skip_spaces
-                cp      ','
+                call    skip_comma
                 jr      nz,esn_ok           ; no more commas -> HL past the list
                 call    inc_skip           ; past comma
                 cp      LINENO_TOKEN
@@ -2308,8 +2304,7 @@ esn_scan:
                 inc     hl
                 inc     hl                  ; skip first $0E,lo,hi
 esn_scan_lp:
-                call    skip_spaces
-                cp      ','
+                call    skip_comma
                 jr      nz,esn_nocf         ; no more commas -> done
                 call    inc_skip           ; past comma
                 cp      LINENO_TOKEN
@@ -2827,8 +2822,7 @@ eostr_store:
                 ld      (hl),d
                 pop     hl                  ; HL = cursor
                 inc     c
-                call    skip_spaces
-                cp      ','                 ; another slot?
+                call    skip_comma          ; another slot?
                 jp      nz,exec_stmt        ; no -> statement done, continue the line
                 inc     hl                  ; consume the comma
                 ld      a,c
@@ -2950,8 +2944,7 @@ eokey_store:
                 ld      (hl),d
                 pop     hl                  ; HL = cursor
                 inc     c
-                call    skip_spaces
-                cp      ','                 ; another slot?
+                call    skip_comma          ; another slot?
                 jp      nz,exec_stmt        ; no -> statement done, continue the line
                 inc     hl                  ; consume the comma
                 ld      a,c

@@ -84,8 +84,7 @@ pl_voice:
                 or      c                   ; mark this voice present
                 ld      (AUDIO_VMASK),a
                 ; after a string, an optional ',' introduces the next voice
-                call    skip_spaces
-                cp      ','
+                call    skip_comma
                 jr      nz,pl_dispatch      ; no separator -> argument list done
                 inc     hl                  ; consume the ',' separator
                 ld      de,VCB_STRIDE

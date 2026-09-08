@@ -70,8 +70,7 @@ gfx_plot_stmt:
                 ; does both, in the measured order -- spec-basic-lineerr.md §2.
                 call    gfx_point_gate      ; BC/DE/HL preserved
                 ; --- optional ",c" colour override ---
-                call    skip_spaces
-                cp      ','
+                call    skip_comma
                 jr      nz,gfx_plot_go      ; no ",c" -> keep the default colour
                 inc     hl                  ; consume the ','
                 push    bc                  ; save x across the colour eval (eval clobbers all)
@@ -241,8 +240,7 @@ elg_second:
                 ; --- optional ",[c][,B|BF]" ---
                 xor     a
                 ld      (GFX_MODE),a        ; default: segment
-                call    skip_spaces
-                cp      ','
+                call    skip_comma
                 jr      nz,elg_draw         ; no options
                 call    inc_skip           ; consume the 1st comma
                 cp      ','                 ; ",," -> colour omitted, straight to box field
@@ -267,8 +265,7 @@ elg_second:
                 ; `LINE (0,0)-(9,9),16` is ERR 5 on both references (k.16 /
                 ; k.b16), matching CIRCLE/PAINT and now PSET.
                 call    gfx_store_colour_checked
-                call    skip_spaces
-                cp      ','
+                call    skip_comma
                 jr      nz,elg_draw         ; ",c" only
 elg_box_comma:
                 call    inc_skip           ; consume the box-introducing comma
@@ -345,8 +342,7 @@ pc_flag:
                 inc     hl
                 call    gfx_eval_int16   ; DE = x, ERR 6 if > int16 (HL guarded)
                 push    de                  ; save x across the y eval
-                call    skip_spaces
-                cp      ','
+                call    skip_comma
                 jp      nz,pc_syntax
                 inc     hl
                 call    gfx_eval_int16   ; DE = value; ERR 6 if > int16
@@ -733,8 +729,7 @@ ex_paint:
                 and     $0F
                 ld      (GFX_C),a
                 ; --- optional ",[C][,[B]]" ---
-                call    skip_spaces
-                cp      ','
+                call    skip_comma
                 jr      nz,ep_default_b     ; no fields at all -> C=FORCLR, B=C
                 call    inc_skip           ; consume the comma
                 cp      ','
@@ -760,8 +755,7 @@ ex_paint:
                 jp      c,gfx_typeerr       ; a string colour operand -> Type mismatch
                 call    gfx_eval_int16      ; DE = value (silent int16); ERR 6 if > int16
                 call    gfx_store_colour_checked  ; ERR 5 if outside 0..15; GFX_C=value
-                call    skip_spaces
-                cp      ','
+                call    skip_comma
                 jr      nz,ep_default_b     ; no ",B" -> B = C
                 inc     hl                  ; consume the comma introducing B
                 jr      ep_parse_b
@@ -1293,8 +1287,7 @@ ex_put_sprite:
                 ld      (GFX_SFLAGS),a
                 call    gfx_eval_int16      ; DE = plane (domain checked by the tenant)
                 ld      (GFX_SN),de
-                call    skip_spaces
-                cp      ','
+                call    skip_comma
                 jp      nz,gfx_syntax       ; `PUT SPRITE 0` -> ERR 2 (measured)
                 call    inc_skip
                 cp      '('
@@ -1314,8 +1307,7 @@ pspr_coords:
                                             ; marshalling cells (no G7-private pair)
                 ld      a,1                 ; bit 0 = coordinates given
                 ld      (GFX_SFLAGS),a
-                call    skip_spaces
-                cp      ','
+                call    skip_comma
                 jr      nz,pspr_go
 pspr_optional:
                 call    inc_skip           ; past the ',' before the colour
@@ -1326,8 +1318,7 @@ pspr_optional:
                 ld      a,(GFX_SFLAGS)
                 or      $02                 ; bit 1 = colour given
                 ld      (GFX_SFLAGS),a
-                call    skip_spaces
-                cp      ','
+                call    skip_comma
                 jr      nz,pspr_go
 pspr_pattern:
                 inc     hl                  ; past the ',' before the pattern number

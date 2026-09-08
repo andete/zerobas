@@ -205,8 +205,7 @@ sav_is_disk:
                 call    parse_disk_fcb      ; build DISK_FCB; HL -> closing '"'
                 ld      hl,(FN_RESUME)      ; D-FNEXPR2: resume past the EXPRESSION
                 ; --- optional ,A -> ASCII listing save; else tokenised ------
-                call    skip_spaces
-                cp      ','
+                call    skip_comma
                 jr      z,sav_ascii_flag    ; SAVE"name",<flag> -> check for ,A
                 or      a
                 jp      nz,load_error       ; trailing junk after the name
@@ -250,8 +249,7 @@ sav_is_cas:
                 call    tape_parse_name     ; fills TSV_NAME; HL -> closing '"'
                 ld      hl,(FN_RESUME)      ; D-FNEXPR2: resume past the EXPRESSION
                 ; --- optional ,A -> ASCII listing save to tape; else tokenised ---
-                call    skip_spaces
-                cp      ','
+                call    skip_comma
                 jr      z,sav_cas_flag      ; SAVE"CAS:name",<flag> -> check for ,A
                 or      a
                 jp      nz,load_error       ; trailing junk after the name
@@ -622,8 +620,7 @@ tpn_fill:
 ; Clobbers A, BC, DE, HL. Distinguishing S-the-flag from an S-started variable: the
 ; flag is a lone 'S' followed by a statement terminator (NUL or ':'); "SX"/"S+1" reject.
 bsave_opt4:
-                call    skip_spaces
-                cp      ','
+                call    skip_comma
                 jr      z,b4_have
                 xor     a                   ; no 4th argument (A=0, CF clear)
                 ret
@@ -678,8 +675,7 @@ b4_expr:
 ; changed here: no row measures it, because the forms that reach it have valid
 ; start/end and would start a real tape write. Left as filed, not as agreed.
 expect_comma_eval:
-                call    skip_spaces
-                cp      ','
+                call    skip_comma
                 jp      nz,stmt_error       ; ERR 2, RAISED — trappable
                 inc     hl                  ; past the comma
                 jp      eval                ; DE = value, HL advanced (BC clobbered)

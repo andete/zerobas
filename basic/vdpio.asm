@@ -27,8 +27,7 @@ do_vpoke:
                 call    get_vram_arg        ; domain 0..16383 (NOT the 0..65535 address
                                             ; domain F2 wired) -- >int16 ERR 6, 16384.. ERR 5.
                 push    de                  ; save address
-                call    skip_spaces
-                cp      ','                 ; comma required
+                call    skip_comma          ; comma required
                 jp     nz,vdp_err
                 inc     hl
                 call    eval_byte_checked   ; DE = value 0..255, HL = cursor
@@ -75,15 +74,13 @@ ex_wait:
                 inc     hl                  ; past the token
                 call    eval_addr           ; DE = port (checked, as OUT's is)
                 push    de
-                call    skip_spaces
-                cp      ','                 ; the mask is NOT optional
+                call    skip_comma          ; the mask is NOT optional
                 jp      nz,vdp_err
                 inc     hl
                 call    eval_addr           ; DE = mask
                 ld      d,e                 ; D = mask
                 ld      e,0                 ; E = xor, defaulted
-                call    skip_spaces
-                cp      ','
+                call    skip_comma
                 jr      nz,wt_go            ; two-argument form
                 inc     hl
                 push    de                  ; guard mask+default across the eval
@@ -112,8 +109,7 @@ do_out:
                 ; [[two-rules-that-coincide-on-every-row-you-have]].
                 call    eval_addr           ; D-F2-2 A1: OUT's port/value are the checked
                 push    de                  ; save port
-                call    skip_spaces
-                cp      ','                 ; comma required
+                call    skip_comma          ; comma required
                 jp     nz,vdp_err
                 inc     hl
                 call    eval_byte_checked   ; DE = value 0..255, HL = cursor

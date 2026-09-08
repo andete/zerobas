@@ -396,8 +396,7 @@ exf_item:
                 jr      exf_raise
 exf_fits:
                 pop     hl
-                call    skip_spaces
-                cp      ','
+                call    skip_comma
                 jr      z,exf_comma
                 jp      exec_stmt           ; end of the field list
 exf_comma:
@@ -779,8 +778,7 @@ gp_nochan:
                 ld      a,e
                 ld      (GP_CHAN),a
                 ; optional ", recno" (else default record 1)
-                call    skip_spaces
-                cp      ','
+                call    skip_comma
                 jr      nz,gp_defrec
                 inc     hl
                 call    eval                ; DE = record number

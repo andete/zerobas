@@ -261,8 +261,7 @@ req_letter:
 ; comma is consumed exactly once; `g.*` rows read the argument AFTER it to say so
 ; (scratchpad/reqcomma_probe.py).
 req_comma:
-                call    skip_spaces
-                cp      ','
+                call    skip_comma
                 jp      nz,stmt_error       ; no comma: the statement aborts
                 inc     hl                  ; consume it
                 ret
@@ -946,6 +945,30 @@ ex_let_str:
                 ld      de,(STRPTR)         ; DE -> source descriptor
                 call    str_set_key         ; A$[key] := descriptor (clamped)
                 jr      fp_stmt_done        ; D-CARVE3 (-7 B, main page 1)
+
+; --- skip_comma: skip_spaces, then "is it a comma?" ------------------------
+; 💰 D-SKIPCOMMA. `call skip_spaces` / `cp ','` stood open-coded at FORTY-TWO
+; sites across 16 files — 5 bytes each, against 3 for a call, so every site nets
+; **-2 B**. Sited in page 1 ON PURPOSE: the low region has only 6 of the 42 sites
+; but is the scarcer wall, so letting page 1 carry the 6-byte helper converts
+; twelve low bytes instead of six.
+; 🎯 FLAGS ARE THE WHOLE CONTRACT, AND `ret` DOES NOT TOUCH THEM. Callers branch
+; on Z from the `cp`, and they get exactly that; A is the byte, HL is advanced
+; past the spaces. The only difference is one more stack frame while skip_spaces
+; runs, and skip_spaces touches nothing but A/HL and its own return address.
+; ⚠️ Files that sub/ or disk/ also include are EXCLUDED from the conversion — a
+; `call skip_comma` inside a sub-ROM tenant would be a main-ROM escape.
+; 🔴 AND THIS BODY IS WHY THE CONVERSION PASS MUST EXCLUDE ITS OWN HELPER.
+; The first run added `skip_comma` and THEN swept for `call skip_spaces` / `cp ','`
+; -- which is exactly what these two lines are -- so the helper was rewritten into
+; `skip_comma: call skip_comma / ret`: infinite recursion, in the routine 43 sites
+; had just been pointed at. pasmo assembled it happily and the wall figures even
+; IMPROVED (a 4-byte helper instead of 6). The only signal was arithmetic: 42 pairs
+; removed against 43 calls added [[a-mechanical-fix-can-break-a-different-invariant]].
+skip_comma:
+                call    skip_spaces
+                cp      ','
+                ret
 
 ; --- inc_skip: `inc hl` then skip_spaces, as ONE call ----------------------
 ; 💰 D-INCSKIP. `inc hl` / `call skip_spaces` stood open-coded at FIFTY sites --

@@ -315,8 +315,7 @@ loc_missing:
 
 ; loc_more: is another argument coming? CF=1 -> yes (its comma is consumed).
 loc_more:
-                call    skip_spaces
-                cp      ','
+                call    skip_comma
                 jr      z,loc_more_yes
                 or      a                   ; CF = 0: no more arguments
                 ret

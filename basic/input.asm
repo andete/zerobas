@@ -157,8 +157,7 @@ inpc_vstr:
                 ; untouched.
                 call    check_expr_errors_popbc
 inpc_after:
-                call    skip_spaces
-                cp      ','
+                call    skip_comma
                 jr      z,inpc_morevars
                 ; end of the variable list: any leftover input -> ?extra ignored.
                 push    hl                  ; guard textcur across inpc_more_input

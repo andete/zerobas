@@ -18,8 +18,7 @@
 do_poke:
                 call    eval_addr           ; spec §10.3: POKE's arguments are the
                 push    de                  ; save address
-                call    skip_spaces
-                cp      ','                 ; comma required
+                call    skip_comma          ; comma required
                 jp     nz,poke_err
                 inc     hl
                 call    eval_byte_checked   ; DE = value 0..255, HL = cursor

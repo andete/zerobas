@@ -130,8 +130,7 @@ exp_dev_cas:
 exp_dev_set:
                 ld      (PRDEV),a
 exp_sep:
-                call    skip_spaces         ; consume the separator after #n (','/';')
-                cp      ','
+                call    skip_comma          ; consume the separator after #n (','/';')
                 jr      z,exp_hash_sep
                 cp      ';'
                 jr      nz,exp_hash_go      ; PRINT#1  (no items) -> just the CRLF
