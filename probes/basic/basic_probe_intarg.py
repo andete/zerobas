@@ -64,6 +64,8 @@ ASSERTED = [
     # stops the next reader "harmonising" OUT's two arguments onto one domain and
     # shipping a regression [[two-rules-that-coincide-on-every-row-you-have]].
     ("out_port_hi",   "OUT 256,0",       "cont"),
+    ("out_port_40k",  "OUT 40000,0",     "cont"),   # port: address domain
+    ("out_val_40k",   "OUT 0,40000",     "ERR6"),   # value: byte domain, beyond int16
     # 🎯 PRECEDENCE: OVERFLOW BEATS DOMAIN, and no row had ever paired a bad
     # address with a bad VALUE -- every existing one pairs a bad address with a
     # legal value, so the fix could have changed this answer unobserved.

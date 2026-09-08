@@ -410,7 +410,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:11583 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:11610 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -575,7 +575,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:2566 (T-6FE392)8 (T-529ABE)` from `TODO.md:10520 (T-529ABE)`: a
+      `TODO.md:2593 (T-6FE392)8 (T-529ABE)` from `TODO.md:10547 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -2236,8 +2236,35 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `POKE 99999,256` is **ERR 6** on all three: overflow beats domain, and **no
       existing row could have seen that change**, because every one pairs a bad
       address with a LEGAL value. Both measured BEFORE the fix, and both now gated.
-      ✅ **10 ROWS ADDED TO `intarg-acceptance` (49 total, ALL PASS)** — six were
-      RED before the fix, four are the guards above.
+      ✅ **12 ROWS ADDED TO `intarg-acceptance` (51 total, ALL PASS)** — six were
+      RED before the fix, the rest are the guards above.
+      🔴 **AND THIS TRIO HAD ALREADY BEEN REVIEWED AND RECORDED AS A *NO FINDING*
+      — ON THIS EXACT SUSPICION.**
+      [`docs/review-tier-worklist.md`](docs/review-tier-worklist.md) carried since
+      2026-08-31: *"REVIEWED, NO FINDING … the suspicion the ranking was built on —
+      **a 0..255 value domain the low-byte write ignores** — is REFUTED by D-F2-2's
+      own VG-8020 table … recorded WITH the refuting table so nobody re-walks this
+      on the same suspicion."* The suspicion was right, and sat refuted for 8 days.
+      🎯 **THE REFUTING TABLE HAD ONE COLUMN FOR A TWO-ARGUMENT VERB.** D-F2-2 §1.1's
+      Group-A row is `OUT p,v` **(both args)** with a single `arg=` column, probed at
+      40000 / 99999 / −1 — and the answers it records are the **PORT's**. Measured in
+      both positions ([`.out`](scratchpad/rawval_f22.out)), two of its own three
+      probe values separate them:
+      | | `OUT <arg>,0` port | `OUT 0,<arg>` value |
+      |---|---|---|
+      | `arg=40000` | cont | **ERR 6** |
+      | `arg=-1` | cont | **ERR 5** |
+      | `arg=99999` | ERR 6 | ERR 6 |
+      **The table was not misread — it was never able to say what it was cited as
+      saying**, and the Group-A heading generalises again ("the SAME domain
+      POKE/VPOKE already use": true of their address, false of their value).
+      ⚠️ **THE ENTRY ACTIVELY DISCOURAGED THE RE-WALK THAT FOUND IT.** *"…so nobody
+      re-walks this on the same suspicion"* is what made this cost eight days rather
+      than an afternoon. **A no-finding is a claim like any other; one that names a
+      citation must be re-checked AT ITS CITATION, not credited for having one.**
+      Both documents corrected in place, originals kept — the analysis is right
+      about the port, only the SCOPE of the claim was wrong
+      [[a-fix-falsifies-the-justification-beside-it]].
 
 - [x] ✅ **D-DATACOLON (2026-08-31): three DATA/RESTORE defects from one
       review read** ([`docs/spec-basic-datacolon.md`](docs/spec-basic-datacolon.md),
@@ -3204,7 +3231,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:10520 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:10547 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

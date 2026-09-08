@@ -74,9 +74,33 @@ Overflow ERR 6 only beyond). This is the SAME domain POKE/VPOKE already use.
 
 | Site | Code | `arg=40000` | `arg=99999` | `arg=-1` | zb today |
 |---|---|---|---|---|---|
-| `OUT p,v` (both args) | `basic/vdpio.asm` `do_out` | cont | **ERR 6** | cont | cont (silent) |
+| `OUT p,v` — **PORT ONLY, see below** | `basic/vdpio.asm` `do_out` | cont | **ERR 6** | cont | cont (silent) |
 | `PEEK(a)` | `basic/expr.asm` (ev PEEK) | cont | **ERR 6** | cont | cont (silent) |
 | `INP(p)` | `basic/expr.asm` (ev INP) | cont | **ERR 6** | cont | cont (silent) |
+
+🔴 **THE `OUT p,v` ROW SAID "(both args)" AND MEASURED ONE (corrected 2026-09-08,
+D-RAWVAL).** This table has a single `arg=` column, so it *cannot express* a
+two-argument verb — and the values recorded are the PORT's. The VALUE is a
+Group-B byte site, and **two of the three probe values above separate the two
+positions**, measured on the VG-8020 and the CF-3300 alike
+(`scratchpad/rawval_probe.py`, [`.out`](../scratchpad/rawval_f22.out)):
+
+| | `OUT <arg>,0` (port) | `OUT 0,<arg>` (value) |
+|---|---|---|
+| `arg=40000` | cont | **ERR 6** |
+| `arg=-1` | cont | **ERR 5** |
+| `arg=99999` | ERR 6 | ERR 6 |
+
+So `OUT`'s port IS Group-A address domain, exactly as recorded, and its value is
+Group-B 0..255 — as are `POKE`'s and `VPOKE`'s, which the Group-A heading below
+also generalises to ("the SAME domain POKE/VPOKE already use": true of their
+ADDRESS, false of their value). ⚠️ **The heading and the row are kept rather than
+rewritten**, because the analysis is right about the port and only the scope of
+the claim was wrong; D-RAWVAL wires the three values onto `get_byte_arg`'s leaf.
+🎯 **AND THIS TABLE WAS LATER CITED AS A REFUTATION.** The review-tier worklist
+recorded the raw-I/O trio as a NO FINDING on the strength of these cells and
+wrote *"recorded WITH the refuting table so nobody re-walks this on the same
+suspicion"* — see [`review-tier-worklist.md`](review-tier-worklist.md).
 
 **Group B — RANGE-checked** (int16-coerce → Overflow ERR 6 if `|x|>32767`; then range-check
 to the site's valid max → illegal function call ERR 5 outside). The GETBYT pattern, with a

@@ -5,7 +5,26 @@ The 85 are NOT 85 holes -- most are covered under ARC names. Grouping, with
 the crude signal refined by which arc/gate actually exercises the file:
 
 ## Likely THIN (no arc obviously owns the mechanism) — review these first
-- ✅ ex_out, ex_poke, ex_vpoke — **REVIEWED 2026-08-31, NO FINDING.** All three
+- 🔴 ex_out, ex_poke, ex_vpoke — **THE NO-FINDING WAS WRONG. REVIEWED AGAIN
+  2026-09-08 (D-RAWVAL, [`spec-basic-rawval.md`](spec-basic-rawval.md)): SIX
+  DIVERGENCES, on the exact suspicion recorded below as refuted.** `POKE x,256`
+  wrote **0** and `POKE x,-1` wrote **255**, with no error, where both references
+  raise ERR 5 and write nothing; same for `VPOKE`, and `OUT 0,256` / `OUT 0,-1`
+  are ERR 5 on both references too.
+  🎯 **THE REFUTING TABLE HAD ONE COLUMN FOR A TWO-ARGUMENT VERB.** D-F2-2 §1.1's
+  Group-A row is `OUT p,v` **(both args)** with a single `arg=` column, probed at
+  40000 / 99999 / −1 — and the answers recorded are the PORT's. Measured in both
+  positions, two of those three values separate them: `OUT 40000,0` is cont while
+  `OUT 0,40000` is **ERR 6**, and `OUT -1,0` is cont while `OUT 0,-1` is **ERR 5**.
+  The port is Group-A; the value is Group-B. The table was not misread — it was
+  never able to say what it was cited as saying.
+  ⚠️ **AND THE ENTRY ACTIVELY DISCOURAGED THE RE-WALK THAT FOUND IT** — *"recorded
+  WITH the refuting table so nobody re-walks this on the same suspicion."* A
+  no-finding is a claim like any other, and one that names a citation should be
+  re-checked AT ITS CITATION, not accepted on the strength of having one.
+  🟢 Fixed byte-neutrally; 10 rows added to `intarg-acceptance`.
+  **The original entry follows, unedited, because it is right about the port:**
+- ~~✅ ex_out, ex_poke, ex_vpoke — **REVIEWED 2026-08-31, NO FINDING.**~~ All three
   bodies + the read twins (PEEK/VPEEK/INP, `ev_f_ff`) read in full. The
   suspicion the ranking was built on — a 0..255 value domain the low-byte write
   ignores — is REFUTED by D-F2-2's own VG-8020 table

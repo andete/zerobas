@@ -70,6 +70,38 @@ because every one of them pairs a bad address with a **legal** value:
 `eval_byte_checked`'s int16 stage runs `check_fperr_only` on the sticky `FPERR`
 before the byte stage, so ERR 6 still wins. Measured before the fix and after.
 
+## 3a. This trio was reviewed before, and recorded as a NO FINDING
+
+[review-tier-worklist.md](review-tier-worklist.md) carried, since 2026-08-31:
+
+> ✅ ex_out, ex_poke, ex_vpoke — **REVIEWED, NO FINDING.** … The suspicion the
+> ranking was built on — a 0..255 value domain the low-byte write ignores — is
+> REFUTED by D-F2-2's own VG-8020 table … 🎯 The tier's first no-finding: recorded
+> WITH the refuting table so nobody re-walks this on the same suspicion.
+
+The suspicion was exactly right, and it was recorded as refuted for eight days.
+
+🎯 **THE REFUTING TABLE HAD ONE COLUMN FOR A TWO-ARGUMENT VERB.** D-F2-2 §1.1's
+Group-A row reads `OUT p,v` **(both args)** with a single `arg=` column, probed at
+40000 / 99999 / −1. A one-column table cannot express a two-argument verb, and the
+answers it records are the **port's**. Measured in both positions, two of its own
+three probe values separate them:
+
+| | `OUT <arg>,0` (port) | `OUT 0,<arg>` (value) |
+|---|---|---|
+| `arg=40000` | cont | **ERR 6** |
+| `arg=-1` | cont | **ERR 5** |
+| `arg=99999` | ERR 6 | ERR 6 |
+
+The table was not misread. It was never able to say what it was cited as saying —
+and the Group-A heading generalises once more, "the SAME domain POKE/VPOKE already
+use", which is true of their address and false of their value.
+
+⚠️ **AND THE ENTRY DISCOURAGED THE RE-WALK THAT FOUND IT.** "…so nobody re-walks
+this on the same suspicion" is the sentence that made this cost eight days rather
+than an afternoon. A no-finding is a claim like any other; one that names a
+citation should be re-checked **at its citation**, not credited for having one.
+
 ## 4. The fix
 
 One symbol at three sites: the **value** argument calls `eval_byte_checked`

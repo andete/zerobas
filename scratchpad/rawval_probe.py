@@ -69,6 +69,13 @@ CASES = [
     # --- and OUT's PORT has no rows anywhere either --------------------------
     ("x.port", "OUT 256,0",       "0",             "port beyond a byte"),
     ("x.pneg", "OUT -1,0",        "0",             "negative port"),
+    # --- D-F2-2's OWN probe value, asked in the OTHER argument position -------
+    # Its Group-A row is `OUT p,v` (both args) with ONE `arg=` column, probed at
+    # 40000 / 99999 / -1 and recorded `cont` / ERR 6 / `cont`. 40000 SEPARATES the
+    # two domains: address-domain says cont, byte-domain says ERR 6 (beyond int16).
+    # The recorded `cont` is the PORT's answer. These two rows ask both positions.
+    ("y.p40k", "OUT 40000,0",     "0",             "port at the table's probe value"),
+    ("y.v40k", "OUT 0,40000",     "0",             "VALUE at the same probe value"),
 ]
 
 
