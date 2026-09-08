@@ -207,8 +207,27 @@ MECHANISM before trusting the name — and the filed suspicions.
   or drop it. ✅ **`lnblank-say-acceptance` DONE the same day: 208/208 gating rows
   agree** (2 allowlisted KNOWN_DIVERGE, pinned); re-reasoned to SCOPE — it is a
   `--say` variant of a suite that IS collected and green, so running both doubles
-  ~134 s of battery for one subject. Three left: `bdos`, `diskbasic`,
-  `input-devices`.
+  ~134 s of battery for one subject. ~~Three left: `bdos`, `diskbasic`,
+  `input-devices`.~~
+  🔴 **"THREE LEFT" WAS ITSELF STALE, AND THIS ENTRY WARNED ABOUT EXACTLY THAT
+  CLASS ELEVEN LINES ABOVE.** All five were measured on 2026-09-02 —
+  `tools/battery-exclusions.txt` records each with its numbers — and this sentence
+  was never updated. The `CALL FORMAT` entry above says *"this line exists because
+  the worklist still said 'unmeasured' a day after the fix shipped — the same
+  stale-record class as the five battery exclusions"*, and the sentence about the
+  five exclusions then went stale in the same way, in the same file.
+  🔁 **RE-CONFIRMED 2026-09-08 (D-EXCLROT), AND THAT IS THE PART THAT MATTERS.**
+  An excluded target runs in **no** battery, so "MEASURED GREEN 2026-09-02" is a
+  snapshot that rots exactly like a wall reading. The ROM moved FOUR times on
+  2026-09-08 — D-PROMOTE, D-DONOTHING3, D-ATTRFN, D-RAWVAL, including four NEW
+  crunch tokens and a changed evaluator leaf — and none of these suites had run
+  since. Re-run against that ROM: `diskbasic` **34/34 verbs**, `fat-error`
+  **11 scored, ALL PASS** over a live FAT layer, `input-devices` **50 cases ALL
+  PASS**, `bdos` **12/12 differentials**. All still green.
+  ➡️ **The exclusion reasons now carry that date and a re-run rule**: after any
+  slice that moves the `kwtable`, `stmt_table` or a shared evaluator leaf, run
+  these four. `lnblank-say` is exempt — it is a variant of a suite the battery
+  already collects, so the battery covers its subject.
 - ✅ **cload/csave/bload/bsave/save — VERIFIED COVERED 2026-09-02, four probes
   under three names.** `csave`/`bload`/`bsave` have no same-named spec, which is
   what put them on this list; all three are covered anyway. `BSAVE"CAS:"` →
