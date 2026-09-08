@@ -516,7 +516,7 @@ sst_op:
                 jr      z,sst_overflow
                 ld      a,FPERR_STROOM
                 call    penderr_set         ; heap OOM (sysvars.inc)
-                jp      sh_publish          ; D-CARVE2 (-4 B, low region)
+                jr      sh_publish          ; D-CARVE2 (-4 B, low region)
 sst_ok:
                 ; 🎯 D-CARVE2: the canonical "publish SH_PTR as the result" tail.
                 ; Reached by fallthrough from sst_ok AND by jp from the two
@@ -922,7 +922,7 @@ evv_defer:
 ; Filed in TODO.md.
 str_arg_snap:
                 call    str_eval            ; STRPTR -> source; HL advanced; CF=ok
-                jp      nc,sas_decline
+                jr      nc,sas_decline
                 push    hl                  ; save the cursor across the snapshot
                 call    str_snapshot_arg    ; STRPTR -> an OWNED temp; HL=temp
                 pop     hl
@@ -1205,7 +1205,7 @@ str_fn_right:
                 pop     bc
                 ld      a,(hl)
                 cp      ')'
-                jp      nz,str_arg_empty
+                jr      nz,str_arg_empty
                 inc     hl
                 push    hl
                 ld      l,c
@@ -1221,13 +1221,13 @@ str_fn_right:
                 ld      d,a                 ; D = start
                 ld      b,h
                 ld      c,l                 ; BC = temp addr
-                jp      str_slice_done      ; D-CARVE2 (-4 B, low region)
+                jr      str_slice_done      ; D-CARVE2 (-4 B, low region)
 
 ; MID$(a$,p[,n]): count bytes from 1-based position p (or to end if n omitted).
 ; p<1 is clamped to the start; p>len yields "". Snapshot, then slice.
 str_fn_mid:
                 call    str_arg_open        ; BC = temp addr; HL past the ','
-                jp      nc,str_arg_empty    ; malformed -> raise HERE, not one frame in
+                jr      nc,str_arg_empty    ; malformed -> raise HERE, not one frame in
                 push    bc                  ; [temp]
                 call    eval_pos_arg        ; DE = p, 1..255 (D-MISS-2; or aborts).
                                             ; p is the family's one 1-BASED argument:
@@ -1281,7 +1281,7 @@ sfm_starthave:
                 ld      l,c
                 ld      h,b
                 ld      (STRPTR),hl         ; STRPTR = temp (before the slice clobbers BC)
-                jp      str_slice_done      ; D-CARVE2 (-4 B, low region)
+                jr      str_slice_done      ; D-CARVE2 (-4 B, low region)
 sfm_reject2:
                 pop     bc                  ; discard p
                 pop     bc                  ; discard temp
@@ -1406,7 +1406,12 @@ ems_close:
                 ; ERR 2. It is what already makes `A$=` and `A$=+` read 24, and
                 ; files.asm:724 records that a THIRD entry point costs nothing:
                 ; each caller pops its own saved words and enters the tail.
-                jp      nc,ems_typecheck    ; +1 B over the `jr`
+                ; ~~`jp nc` here cost +1 B over the `jr`~~ 🟢 D-CARVE6
+                ; (2026-09-08): it IS the `jr` now. The extra byte was paid
+                ; because the target was out of reach when this landed; later
+                ; carves moved the low region under it and brought it back in.
+                ; Route D RENEWS -- that is this line, twice.
+                jr      nc,ems_typecheck
                 ; --- compute + copy. HL = the continue cursor (keep it). ---
                 ; n<1/n>255 and the La>=n check, the avail/cap derivation, the
                 ; final k=min(cap,Lb), and the actual byte-overwrite ALL moved
@@ -1537,7 +1542,7 @@ str_fn_radix:
                 push    hl                  ; guard cursor
                 ld      (SH_NUM),de
                 ld      a,c                 ; op = 6 HEX / 7 OCT / 14 BIN
-                jp      shx_op_tail
+                jr      shx_op_tail
 
 ; --- shx_op_tail / shx_tail: the sub-ROM string-op RESULT tail (D-NGRAM4) ---
 ; Four verbs ended with the identical 10 B run -- CHR$ (str_fn_chr),
@@ -1620,7 +1625,7 @@ str_fn_space:
                                             ; the fill loop moved to the sub-ROM
                                             ; tenant (sub/strheap.asm sh_fill),
                                             ; this low region ran out of room
-                jp      shx_op_tail
+                jr      shx_op_tail
 
 ; str_fn_inkey: INKEY$ -> a 0- or 1-character string. Samples the keyboard ONCE,
 ; strictly non-blocking (D-2): CHSNS ($009C) reports Z = buffer empty / NZ = a key

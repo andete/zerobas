@@ -2088,7 +2088,7 @@ sdivmod_zerocheck:
                                             ; signed_mod_de_bc (own-design early-out; see
                                             ; header)
                 ld      a,2
-                jp      penderr_de0         ; D-PENDTAIL (-4 B, low region)
+                jr      penderr_de0         ; D-PENDTAIL (-4 B, low region)
 
 ; --- sdivmod_mag: DE=dividend, BC=divisor (both SIGNED int16, divisor -----
 ; already confirmed nonzero) -> DE=quotient magnitude, HL=remainder

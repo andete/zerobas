@@ -410,7 +410,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:11242 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:11268 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -575,7 +575,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:2423 (T-6FE392)8 (T-529ABE)` from `TODO.md:10179 (T-529ABE)`: a
+      `TODO.md:2423 (T-6FE392)8 (T-529ABE)` from `TODO.md:10205 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -3061,7 +3061,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:10179 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:10205 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -4377,6 +4377,32 @@ list. **When a slice lands, grep this list for what it just shipped.**
       span, and the 8 B pair is a self-contained loop whose merge needs a
       `call`/`ret` wrapper that nets **one** byte and adds call overhead inside a
       loop.
+      ✅ **TAKEN 2026-09-08 (D-CARVE6): the low region is 4 B → 14 B.** Ten
+      `jp`→`jr` conversions, nine in `str-engine.asm` and one in `float-arith.asm`,
+      both verified single-inclusion first — `pdfcb-body.inc` cost a build earlier
+      the same day by being included three times.
+      🔴 **AND THE MAPPER WAS HIDING ITS OWN ANSWER.** `jr_mapper.py` LISTED page-1
+      proposals only while COUNTING `[page1 1, low 10]`, so "page 1 is dry" read as
+      "the carve is dry" for most of a session. The listing prints both now.
+      🔴 **ONE CONVERTED LINE FALSIFIED ITS OWN COMMENT**: `str-engine.asm:1409`
+      carried `; +1 B over the \`jr\``, justifying a `jp` because the target was out
+      of reach when it landed. Later carves moved the low region under it and
+      brought it back into range — it IS the `jr` now. Corrected in place; Route D
+      renewing, visible on one line twice.
+      📌 **AND A MAIN-ROM CARVE CHANGES ALL FOUR ROM ARTIFACTS.** `sub.rom` and
+      `disk.rom` hashes moved too, which looked alarming until it was chased:
+      `sub/basic-resident-abi.inc` and `disk/basic-resident-abi.inc` are GENERATED
+      headers carrying main-ROM label addresses, so moving labels regenerates them
+      and rebuilds both dependent ROMs. `subrom-abi-check`/`diskrom-abi-check` are
+      what verify that, and both are green. **Stage those two files with any carve.**
+      ➡️ **SO THE COLOR ATOMIC FIX IS NOW AFFORDABLE IN CODE AND BLOCKED ON RAM.**
+      `call clr_enter` is **three bytes** in page 1 (exactly what is free) and the
+      save/restore is about **thirteen** in the low region (fourteen free). What it
+      still needs is **2 bytes of RAM**, and 🔴 **RAM HAS NO GATE** — `rammap_sweep`
+      reports gaps between NAMES, and a delta between two names is not free space
+      [[deffn-ramhunt-slice]]. Allocating unverified RAM to fix partial state on an
+      already-erroring statement is the wrong trade unattended; the RAM question is
+      a separate, checkable step (`ramfree_probe.py` asks the machine).
       🎯 **BUT THE LOW REGION IS NOT DRY: Route D has TEN sites there.** That reopens
       the COLOR atomic fix on a different shape — `ex_color` calls a low-region
       prologue (**three bytes** in page 1, which is exactly what is free) that saves

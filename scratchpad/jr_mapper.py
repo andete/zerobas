@@ -151,6 +151,11 @@ if "--write" in sys.argv:
         print(f"  wrote {len(edits)} to {f}")
     print(f"APPLIED {total} conversions.")
 else:
-    for addr,mnem,tgt,reg,(f,k,raw) in page1[:12]:
+    # 🔴 THE LISTING USED TO SHOW page1 ONLY, so the ten LOW-region
+    # proposals were counted in the summary and never named -- and page 1 being dry
+    # read as "the carve is dry" for a whole session (D-CARVE5). The low region is
+    # a separate wall with its own budget; a routine can be sited there and called
+    # from page 1 for 3 bytes.
+    for addr,mnem,tgt,reg,(f,k,raw) in (page1+low)[:24]:
         tl=addr2names.get(tgt,['?'])[0]
         print(f"    ${addr:04X} {mnem:6}-> {tl:20} {f}:{k}")
