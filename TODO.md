@@ -410,7 +410,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:11537 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:11545 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -575,7 +575,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:2520 (T-6FE392)8 (T-529ABE)` from `TODO.md:10474 (T-529ABE)`: a
+      `TODO.md:2528 (T-6FE392)8 (T-529ABE)` from `TODO.md:10482 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -2104,10 +2104,18 @@ list. **When a slice lands, grep this list for what it just shipped.**
       reference and raises ERR 55 here"*. The divergence was fixed and **the pin
       outlived the fix**. Retired from `tools/filed-row-known.txt`; 27 pins → 26,
       and the orphan check now reads clean.
-      🎯 **SO THE 16 IS NOT A NUMBER TO QUOTE — IT IS A SWEEP TO RE-RUN.** Two of
-      its rows were this probe's. The count above was correct when taken and this
-      block is the third demonstration in its own text that a scoreboard built from
-      pins inherits every stale pin; **re-derive it, do not decrement it**
+      🔴 **AND MY FIRST WORDING OF THIS NOTE WAS WRONG — *"two of the 16 rows were
+      this probe's"*. THEY WERE NOT.** The 16 are enumerated right above:
+      `ntwall` 6 + `deffn_alias` 2 + `trapsvc` 2 + `playfn` 2 + `open2` 1 +
+      `ngram13` 3. `casfch` is in none of them, so retiring its pin leaves the
+      correctness queue exactly where it was and moves only the 54-row pinned
+      total. I wrote the sentence from "a pin died, the board counts pins" without
+      reading the board's own enumeration four lines up — a relationship asserted,
+      not checked [[a-justification-parenthesis-is-an-unrun-claim]].
+      🎯 **THE POINT SURVIVES THE CORRECTION, WHICH IS WHY IT IS WORTH KEEPING.**
+      A board built from pins inherits every stale pin, this block says so three
+      times in its own text, and a sixth pin has now died since the last re-run —
+      so **re-derive the number, do not decrement it**, in either direction
       [[a-ranked-candidate-rots-like-a-wall]].
       🤖 AUTONOMOUS — the named rows are the queue; re-run before working one.
 
@@ -3158,7 +3166,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:10474 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:10482 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
