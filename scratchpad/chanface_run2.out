@@ -1,0 +1,15 @@
+  x.ctl       vg=no error  cf=no error  zb=no error    CONTROL: no channel at all
+  ch.zero     vg=ERR 59    cf=ERR 59    zb=ERR 59      channel 0 is the SCREEN -- should WORK
+  ch.unopened vg=ERR 59    cf=ERR 59    zb=ERR 59      PRINT# to a channel never opened
+  ch.big      vg=ERR 52    cf=ERR 52    zb=ERR 52      a channel number past any ceiling
+  ch.neg      vg=ERR 5     cf=ERR 5     zb=ERR 5       a negative channel number
+  ch.closeun  vg=no error  cf=no error  zb=no error    CLOSE a channel never opened
+  ch.eofun    vg=ERR 59    cf=ERR 59    zb=ERR 59      EOF() on a channel never opened
+  ch.lofun    vg=ERR 59    cf=ERR 59    zb=ERR 59      LOF() on a channel never opened
+  ch.getun    vg=ERR 59    cf=ERR 59    zb=ERR 59      GET on a channel never opened
+  ch.fieldun  vg=ERR 5     cf=ERR 59    zb=ERR 59      🟡 REFS-SPLIT   FIELD on a channel never opened
+  ch.inputun  vg=ERR 59    cf=ERR 59    zb=ERR 59      INPUT# on a channel never opened
+  ch.overmax  vg=ERR 52    cf=ERR 52    zb=ERR 52      past the MAXFILES ceiling
+
+=== 0 divergence(s): none ===
+    REFS-SPLIT (1): ['ch.fieldun']

@@ -410,7 +410,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:11110 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:11140 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -575,7 +575,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:2423 (T-6FE392)8 (T-529ABE)` from `TODO.md:10047 (T-529ABE)`: a
+      `TODO.md:2423 (T-6FE392)8 (T-529ABE)` from `TODO.md:10077 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -3061,7 +3061,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:10047 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:10077 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -4255,9 +4255,39 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `SOUND 0,0,0`, `POKE x,0,0`, `WIDTH 40,40`, `BEEP,1`, `CLS,1` and the rest all
       agree on three machines. **0 divergences**, so COLOR's two defects were in the
       omission and bare axes only.
-      ➡️ **WHAT THIS DOES NOT COVER**, and is the obvious next axis: the `#channel`
+      ~~➡️ **WHAT THIS DOES NOT COVER**, and is the obvious next axis: the `#channel`
       forms (`PRINT#0`, `#99`, an unopened or closed channel) and out-of-RANGE values
-      in optional positions. Neither is an argument SHAPE question.
+      in optional positions. Neither is an argument SHAPE question.~~
+      🟢 **THE `#channel` AXIS IS SWEPT AND CLEAN (2026-09-08, D-CHANFACE,
+      [`scratchpad/chanface_probe.py`](scratchpad/chanface_probe.py),
+      [`.out`](scratchpad/chanface_run2.out)) — 12 rows, 0 divergences.** Every row
+      names a channel that is not open or cannot exist, and the faces are the
+      interesting part because MSX BASIC distinguishes three of them:
+      | row | | all three |
+      |---|---|---|
+      | `PRINT#0` / `PRINT#1` unopened | | `ERR 59` |
+      | `PRINT#99` | past any ceiling | `ERR 52` |
+      | `PRINT#-1` | negative | `ERR 5` |
+      | `CLOSE#1` unopened | | **no error** |
+      | `EOF(1)` `LOF(1)` `GET#1` `INPUT#1` unopened | | `ERR 59` |
+      | `MAXFILES=1` then `PRINT#2` | past the ceiling | `ERR 52` |
+      🎯 **`PRINT#0` IS `ERR 59`, NOT A SCREEN WRITE.** The row was written expecting
+      channel 0 to be the screen and to WORK; all three machines say File not open,
+      so the expectation was wrong and the agreement is the answer.
+      ⚠️ **ONE REFS-SPLIT**: `FIELD#1` on an unopened channel is `ERR 5` on the
+      diskless VG-8020 against `ERR 59` on the CF-3300, with zerobas agreeing with
+      the CF-3300. The usual cause, labelled not scored.
+      🔴 **AND ONE ROW BLANKED ON ALL THREE UNTIL ITS ORDER WAS FIXED — FOR A CAUSE
+      THIS FILE MEASURED HOURS EARLIER.** `ch.overmax` installed `ON ERROR` and then
+      ran `MAXFILES=1`; **`MAXFILES` performs a `CLEAR`, and `CLEAR` disarms the
+      error trap** (D-MAXFTAIL, from the other direction), so line 20's error was
+      untrapped everywhere and the row agreed while measuring nothing. Handler
+      installed after the `MAXFILES` now; it reads `ERR 52` on all three. An
+      independent confirmation of the D-MAXFTAIL mechanism, arrived at by tripping
+      over it [[an-unnamed-outcome-reads-as-no-outcome]].
+      ➡️ **STILL NOT COVERED**: out-of-RANGE values in optional positions
+      (`COLOR 99`, `LOCATE 999,999`, `SOUND 99,0`), which is a DOMAIN question
+      rather than a shape or channel one.
       🔴 **AND THE OMITTED-ARGUMENT CLASS FOUND `COLOR` A SECOND TIME (2026-09-08,
       D-OMITARG, [`scratchpad/omitarg_probe.py`](scratchpad/omitarg_probe.py),
       [`.out`](scratchpad/omitarg_after.out)).** `missing.asm` records the design
