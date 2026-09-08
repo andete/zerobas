@@ -1,0 +1,15 @@
+  OK   ctl.self    $EA3E+84  changed='1' want=1
+  OK   ctl.gpcur   $EA3A+4   changed='4' want=>0
+  OK   base.none   $EA3E+84  changed='0' want=0
+  OK   n.for8      $EA3E+84  changed='0' want=0
+  OK   n.for9      $EA3E+84  changed='0' want=0
+  OK   n.gosub     $EA3E+84  changed='0' want=0
+  OK   n.crunch    $EA3E+84  changed='0' want=0
+  OK   s.paint     $EA3E+84  changed='0' want=0
+  OK   s.draw      $EA3E+84  changed='0' want=0
+  OK   s.play      $EA3E+84  changed='0' want=0
+  OK   s.str       $EA3E+84  changed='0' want=0
+  OK   s.disk      $EA3E+84  changed='0' want=0
+  OK   s.files     $EA3E+84  changed='0' want=0
+  OK   ctl.diskfail $EA3E+84  changed='ERR 99' want=ERR 99
+done — 14/14 rows as expected

@@ -410,7 +410,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:11329 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:11350 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -575,7 +575,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:2484 (T-6FE392)8 (T-529ABE)` from `TODO.md:10266 (T-529ABE)`: a
+      `TODO.md:2505 (T-6FE392)8 (T-529ABE)` from `TODO.md:10287 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -1124,7 +1124,28 @@ list. **When a slice lands, grep this list for what it just shipped.**
       (`FN_BASE equ FOR_STK_END`), so the probe hunts RAM that D-DEFFN already spent;
       the genuinely free span is `$EA3E..$EA92`, declared FREE-RAM in
       [`basic/sysvars.inc:3481`](basic/sysvars.inc:3481).
-      🤖 AUTONOMOUS — the control, the step and the window are each a measured fix.
+      ✅ **REPAIRED AND RE-RUN 2026-09-08 (D-RAMFIX): 14/14 ROWS, EVERY CONTROL
+      PASSING** ([`scratchpad/ramfree_repaired.out`](scratchpad/ramfree_repaired.out)).
+      All three faults were real and independent:
+      | fault | was | now |
+      |---|---|---|
+      | window | `$EA92..$EB00` — **DEF FN's frame**, RAM this probe's own slice spent | `$EA3E..$EA92`, the span `sysvars.inc:3481` declares |
+      | control | `ctl.forstk`, watching a stack D-CTLPOOL retired — could never fire | `ctl.gpcur`, a random-record `PUT` writing the D-STRADDLE cursors |
+      | step | 12 s — eight rows read their own source echo | 45 s |
+      🎯 **AND THE RESULT IS A MEASUREMENT, NOT JUST A GREEN PROBE: `$EA3E..$EA92`
+      (84 B) IS FREE.** `ctl.self` sees a POKE (1 changed), `ctl.gpcur` sees a
+      SUBSYSTEM write (4 changed — which a bare POKE control cannot prove), and all
+      nine workouts — FOR nests to depth 9, GOSUB, crunch, PAINT, DRAW, PLAY, the
+      string heap, disk I/O and FILES — leave the window at **0 changed**.
+      ➡️ **THIS UNBLOCKS THE `COLOR` ATOMIC FIX**, which needed 2 bytes of RAM and
+      was parked because RAM has no gate. It has one now, for this span.
+      🔴 **THE RENAME LEFT ITS JUSTIFICATION BEHIND, TWICE OVER**: three code uses of
+      `FOR_STK` broke loudly with a `NameError`, but four PROSE claims did not —
+      including the header's *"the window is bounded BELOW by `FOR_STK`"* and a
+      comment asserting *"a `FOR` loop WRITES FOR_STK"*, which is the exact claim
+      D-CTLPOOL invalidated and the one the broken control rested on. Struck in
+      place, not deleted [[a-fix-falsifies-the-justification-beside-it]].
+      🤖 AUTONOMOUS — the control, the step and the window were each a measured fix.
 
 - [ ] 🔴 **SEVEN FILED PROBES PRINT DIVERGENCES AND EXIT 0.** Measured
       2026-08-31 by D-FILEDROT,
@@ -3122,7 +3143,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:10266 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:10287 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

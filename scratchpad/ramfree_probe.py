@@ -22,7 +22,9 @@ real FAT write is slower still. **READ THE SCREEN before believing a red row** -
 the raw capture for `n.for8` showed `RUN` with nothing after it, which is a
 program still running and not a program that printed nothing.
 
-🎯 THE NEIGHBOURS ARE THE POINT. The window is bounded BELOW by `FOR_STK`
+🎯 THE NEIGHBOURS ARE THE POINT. The window is bounded BELOW by the
+D-STRADDLE random-record cursors (`GP_SRC`/`GP_LEFT`, the low end of the retired
+`FOR_STK` span)
 ($EA3A..$EA92, 8 x 11 B) and ABOVE by `LINEBUF` ($EB00, 256 B) with `TOKBUF`
 ($EC00, 576 B) beyond it. Those three are what a fill would most plausibly be
 clobbered by, so each gets a row that drives it to its limit -- a full 8-deep FOR
@@ -38,7 +40,7 @@ the 8 bytes BELOW the window and requires a `FOR` workout to change them -- but
 the first cut filled only the window, so those bytes were never pattern-keyed and
 read "8 of 8 changed" whether or not the workout ran. It scored OK and proved
 nothing. **A control is honest only about the cell it reads, and only if that
-cell was SET.** The fill now covers FOR_STK and the window alike.
+cell was SET.** The fill now covers the neighbour cursors and the window alike.
 """
 from __future__ import annotations
 import os
@@ -60,8 +62,24 @@ REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 # so never mount the original).
 TEST_DSK = os.path.join(REPO, "disk", "test720.dsk")
 
-LO, N = 0xEA92, 110          # the candidate window, from rammap_sweep.py
-FOR_STK = 0xEA3A             # the neighbour below -- ctl.forstk's subject
+# 🔴 THE WINDOW WAS SPENT AND THE PROBE KEPT HUNTING IT (repaired 2026-09-08).
+# $EA92..$EB00 was this probe's candidate for D-DEFFN -- and D-DEFFN then TOOK it:
+# `FN_BASE equ FOR_STK_END` (basic/sysvars.inc) puts the DEF FN frame at $EA92
+# exactly. The probe was measuring RAM that its own slice had allocated.
+# 🎯 The span that is actually free is the one sysvars.inc:3481 declares:
+# `FREE-RAM $EA3E..$EA92  the rest of the retired FOR_STK (84 B)`.
+LO, N = 0xEA3E, 84           # the declared free span, from basic/sysvars.inc
+
+# 🔴 AND ctl.forstk WATCHED A STACK THAT NO LONGER EXISTS. D-CTLPOOL retired
+# FOR_STK -- FOR frames live in the control-frame pool now -- so `FOR I=1 TO 3`
+# could never move a byte at $EA3A and the control read 0 forever. By this
+# probe's own rule a failed control voids every row, so the whole battery was
+# unreadable while looking merely red.
+# $EA3A is now the D-STRADDLE random-record cursors (GP_SRC/GP_LEFT), which a
+# random-record PUT genuinely writes -- so the control keeps its JOB (prove a
+# SUBSYSTEM write is visible, which ctl.self's bare POKE does not) with a
+# subject that still exists.
+GPCUR = 0xEA3A               # GP_SRC/GP_LEFT (4 B) -- ctl.gpcur's subject
 
 # label -> (workout lines, watch-base, watch-length, expected changed)
 CASES: dict[str, tuple[list[str], int, int, str]] = {}
@@ -87,8 +105,11 @@ def case(label, lines, want, base=LO, n=N, step=None, errcont=False,
 
 # --- controls first: a battery whose subject is "nothing happened" must prove
 #     it can see something happen at all -------------------------------------
-case("ctl.self",   ["POKE &HEA92,255"],            "1")
-case("ctl.forstk", ["FOR I=1 TO 3:NEXT"],          ">0", base=FOR_STK, n=8)
+case("ctl.self",   ["POKE &HEA3E,255"],            "1")
+case("ctl.gpcur",  ['OPEN"TS.DAT"AS #1 LEN=16',
+                    'FIELD#1,16 AS A$', 'LSET A$="x"',
+                    'PUT#1,2', 'CLOSE#1'],         ">0", base=GPCUR, n=4,
+     step=120.0, disk=True)
 case("base.none",  ["A=1"],                        "0")
 
 # --- the three neighbours, each driven to its limit -----------------------
@@ -152,11 +173,12 @@ case("ctl.diskfail", ['OPEN"TS.TXT"FOR OUTPUT AS #1',
      disk=True)
 
 # 🔴 GOTO LOOPS, NOT `FOR` LOOPS, AND THAT IS THE WHOLE INSTRUMENT DESIGN.
-# A `FOR` loop WRITES FOR_STK ($EA3A..$EA92) -- the window's own lower
-# neighbour. Filling or checking with one makes the instrument write the very
-# region it is measuring, and it makes ctl.forstk unfalsifiable. A GOTO loop
-# touches no stack, so the fill covers FOR_STK and the candidate window ALIKE
-# and the control becomes real: fill both, run a FOR loop, and FOR_STK must
+# ~~A `FOR` loop WRITES FOR_STK ($EA3A..$EA92)~~ 🔴 NOT SINCE D-CTLPOOL, which
+# retired that stack -- FOR frames live in the control-frame pool now, and the
+# control that rested on this sentence read 0 forever. The neighbour below the
+# window is the D-STRADDLE random-record cursor pair (GP_SRC/GP_LEFT, 4 B at
+# $EA3A), which a random-record PUT does write, so ctl.gpcur uses that instead
+# and the fill still covers the neighbour and the window alike.
 # change while the window must not.
 FILL = ("I=0", "POKE {lo}+I,(I AND 255):I=I+1:IF I<{n} THEN {ln}")
 CHECK = ("D=0:I=0",
@@ -186,20 +208,27 @@ def main() -> int:
     if bad:
         print(f"unknown case(s): {bad}", file=sys.stderr)
         return 2
-    dflt = float(os.environ.get("RAMFREE_STEP", "12.0"))
+    # 🔴 12.0 WAS TOO SHORT AND EIGHT ROWS READ THEIR OWN SOURCE ECHO. The window
+    # between RUN and capture is `step` (omsx_repl.py:684 -- `cap_gap` is the gap
+    # AFTER it), and this program POKEs ~88 bytes, runs a workout and PEEKs them
+    # back. At 12 s the default-step rows never reached their PRINT, so the scrape
+    # matched the echoed `PRINT"[ERR";ERR;"]"` source line and reported
+    # `changed='ERR";ERR;"'` -- a reading shaped like a result. Measured: at 45 s
+    # ctl.self and base.none both pass.
+    dflt = float(os.environ.get("RAMFREE_STEP", "45.0"))
     fails = 0
     for label in want:
         lines, base, n, expect = CASES[label]
         step = STEP.get(label, dflt)
-        # the fill covers FOR_STK *and* the window, so both are pattern-keyed
-        span = LO + N - FOR_STK
+        # the fill covers the neighbour cursors *and* the window, so both are keyed
+        span = LO + N - GPCUR
         body = ["10 ON ERROR GOTO 900",
                 "20 " + FILL[0],
-                "30 " + FILL[1].format(lo=FOR_STK, n=span, ln=30)]
+                "30 " + FILL[1].format(lo=GPCUR, n=span, ln=30)]
         body += [f"{40+10*k} {ln}" for k, ln in enumerate(lines)]
         t = 40 + 10 * len(lines)
         body += [f"{t} " + CHECK[0],
-                 f"{t+10} " + CHECK[1].format(base=base, off=base - FOR_STK),
+                 f"{t+10} " + CHECK[1].format(base=base, off=base - GPCUR),
                  f"{t+20} " + CHECK[2].format(n=n, ln=t + 10),
                  f'{t+30} SCREEN 0:PRINT"[";D;"]":END',
                  # a row whose workout is MEANT to fault must still reach the
