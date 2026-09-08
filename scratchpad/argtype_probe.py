@@ -35,22 +35,16 @@ import tempfile
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, os.path.join(ROOT, "probes", "lib"))
 import omsx_repl                                                  # noqa: E402
+import probe_sides                                                # noqa: E402
 
 SRC = os.path.join(ROOT, "disk", "test720.dsk")
-# 🔴 `disk` IS PER-SIDE AND THE VG-8020's IS FALSE. It has NO DRIVE, and
-# openMSX refuses the machine outright rather than ignoring the image:
-# "Fatal error: No disk drive A present to put image ... in." The first cut mounted
-# the fixture on every side, so every VG row came back <none> and the CONTROL
-# caught it. That is the same diskless machine that produced D-BAREFORM's five
-# false divergences the night before.
-SIDES = {
-    "vg8020": dict(machine="Philips_VG_8020", boot=8.0, reset=("NEW",), disk=False),
-    "cf3300": dict(machine="National_CF-3300", boot=14.0,
-                   reset=("", "SCREEN 0", "NEW"), disk=True),
-    "zb": dict(machine=os.environ.get("ZEROBAS_BASIC_MACHINE",
-                                      "C-BIOS_MSX1_EU_REPACK_DISK"),
-               boot=10.0, reset=("NEW",), disk=True),
-}
+# The machine facts come from probes/lib/probe_sides.py now, not from a dict
+# copied into this file. That module exists because ONE fact -- the VG-8020 has no
+# disk drive -- produced three different failures in three probes, including this
+# one's first cut, which mounted the fixture on it and got <none> on every VG row
+# ("Fatal error: No disk drive A present to put image ... in.").
+SIDES = probe_sides.sides("vg8020", "cf3300", "zb")
+
 CASES = [
     ("a.ctl",    'POKE&HC000,0',       "CONTROL: correctly typed -- must be no error"),
     # a NUMBER where a STRING belongs
@@ -94,9 +88,10 @@ def main() -> int:
     for tag, stmt, note in CASES:
         row = {}
         for side, c in SIDES.items():
-            dsk = None
-            if c["disk"]:
-                dsk = os.path.join(tempfile.gettempdir(), f"zb_at_{tag}_{side}.dsk")
+            dsk = os.path.join(tempfile.gettempdir(), f"zb_at_{tag}_{side}.dsk")
+            if probe_sides.diska(side, dsk) is None:
+                dsk = None                      # this side has no drive
+            else:
                 shutil.copy(SRC, dsk)
             p = ['10 ON ERROR GOTO 900', f'20 {stmt}',
                  '30 PRINT"ZQ";0;"QZ":END', '900 PRINT"ZQ";ERR;"QZ":END']
@@ -108,12 +103,9 @@ def main() -> int:
         out[tag] = row
         f = {s_: ("<none>" if row[s_] is None else
                   ("no error" if row[s_] == 0 else f"ERR {row[s_]}")) for s_ in SIDES}
-        if f["vg8020"] != f["cf3300"]:
-            mark = "   \U0001f7e1 REFS-SPLIT"
-        elif f["zb"] != f["cf3300"]:
-            mark = "   \U0001f534 DIFF"
-        else:
-            mark = ""
+        v = probe_sides.verdict(f["vg8020"], f["cf3300"], f["zb"])
+        mark = {"SAME": "", "REFS-SPLIT": "   \U0001f7e1 REFS-SPLIT",
+                "DIFF": "   \U0001f534 DIFF"}[v]
         print(f"  {tag:9s} {stmt:16s} vg={f['vg8020']:9s} cf={f['cf3300']:9s} "
               f"zb={f['zb']:9s}{mark}", flush=True)
 
@@ -121,9 +113,10 @@ def main() -> int:
         print(f"\n\U0001f534 THE CONTROL ERRORED ({out.get('a.ctl')}) -- the rows "
               f"below are measuring the form, not the type.")
         return 2
-    split = [k for k, v in out.items() if v["vg8020"] != v["cf3300"]]
-    dis = [k for k, v in out.items()
-           if v["vg8020"] == v["cf3300"] and v["zb"] != v["cf3300"]]
+    vd = {k: probe_sides.verdict(v["vg8020"], v["cf3300"], v["zb"])
+          for k, v in out.items()}
+    split = [k for k, x in vd.items() if x == "REFS-SPLIT"]
+    dis = [k for k, x in vd.items() if x == "DIFF"]
     print(f"\n=== {len(dis)} divergence(s): {dis or 'none'} ===")
     print(f"    REFS-SPLIT ({len(split)}): {split or 'none'} -- scored against the "
           f"CF-3300 only,\n    since zerobas ships a disk ROM and the cassette "

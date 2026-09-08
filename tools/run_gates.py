@@ -73,7 +73,8 @@ shared-body-check probe-reach-check battery-membership-check fixture-integrity-c
 preflight-check latch-check diskdep-check switch-build-check kwsweep
 patch-freshness-check refcache-check knife-guard-check knife-rom-guard-check
 selftest-check
-deffn-selftest""".split()
+deffn-selftest
+probe-sides-selftest""".split()
 
 EMULATOR = """banner-acceptance string-acceptance str-domain-acceptance strparen-acceptance
 penderr-acceptance missing-acceptance error-acceptance error-trap-acceptance

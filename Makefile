@@ -2853,6 +2853,13 @@ deffn-acceptance: repack-machine
 deffn-selftest:
 	python3 probes/basic/basic_probe_deffn.py --selftest
 
+# probe-sides-selftest: the machine facts must keep matching the arms that use them.
+# ONE fact -- the VG-8020 has no disk drive -- produced three separate probe
+# failures (compare against it, score it, mount to it), so it now lives in one
+# module and the module is gated.
+probe-sides-selftest:
+	python3 probes/lib/probe_sides.py
+
 deffn-strict: repack-machine
 	python3 probes/basic/basic_probe_deffn.py --gate --strict \
 	        $(if $(ONLY),--only $(ONLY),) $(if $(SIDES),--sides $(SIDES),)
@@ -3232,7 +3239,7 @@ clean:
         lineerr-characterize lineerr-acceptance \
         lof-characterize lof-acceptance \
         badfnum-characterize badfnum-acceptance \
-        deffn-acceptance deffn-selftest deffn-strict switch-build-check \
+        deffn-acceptance deffn-selftest probe-sides-selftest deffn-strict switch-build-check \
         msgexact-gate msgexact-relock preflight-check latch-check injector-check \
         omsx-diag-teeth temp-root-check shared-body-check probe-reach-check citation-check todo-citation-check todo-marker-check deferral-pin-check error-alphabet-check \
         chokepoint-check banner-acceptance wall-literal-check \

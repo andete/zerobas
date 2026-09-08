@@ -410,7 +410,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:11012 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:11042 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -575,7 +575,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:2423 (T-6FE392)8 (T-529ABE)` from `TODO.md:9949 (T-529ABE)`: a
+      `TODO.md:2423 (T-6FE392)8 (T-529ABE)` from `TODO.md:9979 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -3061,7 +3061,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:9949 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:9979 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -4180,6 +4180,36 @@ list. **When a slice lands, grep this list for what it just shipped.**
       disk drive A present to put image … in."* — so every VG row came back
       `<none>`. The control caught it and the probe refused to score. `disk` is now
       a PER-SIDE flag, false for the VG.
+      🟢 **THE SHARED HELPER EXISTS NOW (2026-09-08, D-PSIDES):
+      [`probes/lib/probe_sides.py`](probes/lib/probe_sides.py), gated by
+      `make probe-sides-selftest`.** It carries the machine table and three
+      functions: `sides()` for the SIDES dict, `diska()` which returns **None** for
+      a driveless machine instead of handing it an image, and `verdict()` which
+      applies this file's own oracle rule (CF-3300 decides Disk-BASIC rows; a
+      reference disagreement is a REFS-SPLIT, not a zerobas defect). One selftest
+      arm per failure that actually happened, plus a table check so the arms cannot
+      go vacuous if the flags drift. Both mutations redden it (flipping the VG's
+      `disk` flag fails 4 assertions; deleting the refs-split branch fails 2).
+      `argtype_probe.py` is retrofitted and **reproduces its 21 known-good rows
+      exactly**; the rest stay opportunistic — a mechanical sweep over every probe
+      is the class this file bans doing casually.
+      🔴 **AND THE GATE I ADDED WAS NOT RUNNING.** `probe-sides-selftest` went into
+      the Makefile's `.PHONY` list, which DECLARES targets and collects nothing;
+      the battery's unit list is in
+      [`tools/run_gates.py`](tools/run_gates.py). The battery said **114/114 green**
+      and the selftest passed when invoked by hand — both true, and the gate sat
+      outside the battery. **The only signal was the unit COUNT: 121 in two
+      consecutive runs.** Fixed; it is 122 units and 115/115 now.
+      🔬 **THAT EXPOSED A GAP IN `battery-membership-check` ITSELF.** It enforces
+      collection for `*-acceptance` targets only, while its own docstring states the
+      problem in general terms — *"a script outside the battery can be RED FOR
+      MONTHS and nobody learns"*. Measured: of **4** `*-selftest` targets,
+      **`diskdep-selftest` and `layout-invariant-selftest` are NOT collected**.
+      🟢 **BOTH ARE GREEN TODAY**, so nothing was hiding and the gap is latent
+      rather than harmful — `layout-invariant` has a written reason (deliberately
+      out of the battery), `diskdep` has none. ➡️ **OWED: widen the membership gate
+      to `*-selftest`, with the same written-reason allowlist it already has for
+      acceptance targets.** Not done here; it is a separate change from the helper.
       🎯 **THAT IS THE THIRD DISTINCT FAILURE MODE OF ONE MACHINE FACT**: score it
       wrongly, mount to it wrongly, or (kwsweep's original) compare against it
       wrongly. The fact is in `basic_probe_kwsweep.py`'s header; what keeps being
