@@ -543,8 +543,17 @@ csav_noname:
                 ; There is no no-name form: the reference errors on all three.
                 ; 🟢 And the six-space fill this replaces is why the change is
                 ; byte-NEGATIVE rather than a spend, in a page 1 with 8 B free.
-                ld      a,24                ; Missing operand
-                jp      raise_error
+                ; 💰 D-CARVE5: this body WAS `ld a,24 / jp raise_error`, byte for
+                ; byte the same five bytes as `loc_missing` (basic/missing.asm) and
+                ; `g8_missing`. Jumping there saves 2 B of main page 1, which was
+                ; at 1 B free on 2026-09-08 and is the shared blocker for two
+                ; parked items. `loc_missing` is a bare raiser with NO side effects,
+                ; so this is a jump to the same instructions, not a shared tail
+                ; that decides anything [[a-shared-tail-is-not-a-decision]].
+                ; ⚠️ NOT an `equ` alias, which would be free: the two `jr z,
+                ; csav_noname` sites above are 2110 bytes from `loc_missing` and
+                ; would each have to become a `jp` (+2 B), netting -1 instead of -2.
+                jp      loc_missing         ; ERR 24
 tape_save_basic:
                 ld      a,SV_OP_SAV_CAS
                 jp      sv_tenant           ; CSAVE -> tape, tokenised (D-CASSAVE:

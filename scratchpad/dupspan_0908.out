@@ -1,0 +1,85 @@
+  denominator: 1603 labels in [2812,8000), 1538 non-empty spans
+   14 B x2  30117ec601fe0a3805d60a371801
+        $3362  ai14_lp
+        $33EB  ai6_lp
+   13 B x2  cdc942c5cd187dc13803110000
+        $7DA3  eostr_lp
+        $7E24  eokey_lp
+    3 B x5  c30843
+        $43E0  ee_raise
+        $4B09  sid_raise
+        $5361  pl_parse_err/tm_raise
+        $7357  exf_raise
+        $749E  gp_raise
+   11 B x2  216af0cde938cd16341807
+        $3E6F  asw_single
+        $48AB  vsf_single
+   11 B x2  f1feff2806c630121318f5
+        $577A  pn_wr
+        $63AF  dde_wr
+    3 B x4  af1802
+        $3977  combine_add
+        $7391  ex_lset
+        $74FE  fmt_sel_360
+        $7A71  ex_next
+    8 B x2  cd124730032318f8
+        $473C  vnk_more
+        $477E  vst_walk
+    7 B x2  cdd337ed5350f1
+        $3E7A  asw_int
+        $48B6  vsf_int
+    6 B x2  23cda6400e00
+        $7D9D  ex_on_strig
+        $7E1E  ex_on_key
+    5 B x2  772310fcc9
+        $3290  zf_lp
+        $3446  fzm_lp
+    5 B x2  3e18c30843
+        $6316  g8_missing/loc_missing
+        $6B54  csav_noname
+    5 B x2  20696e2000
+        $7766  in_msg
+        $78D4  rn_in
+    4 B x2  23cd6f45
+        $2BF8  sfm_haveN
+        $2C5A  ems_have_m
+    4 B x2  e1c3414a
+        $2D37  sfi_done
+        $61AA  spr_rd_done
+    4 B x2  772b10ed
+        $3371  ai14_st
+        $33FA  ai6_st
+    4 B x2  3e0d1802
+        $535B  tm_err13
+        $62D5  ex_vdp_assign
+    4 B x2  ed5324e0
+        $69E9  bsv_set_exec
+        $6A1A  bsv_cas_exec
+    4 B x2  3e051802
+        $6D87  oo_dev_lpt
+        $7351  exf_dev
+    4 B x2  e1c3dd40
+        $7D62  ei_done
+        $7E1A  strig_done
+    3 B x2  78b7c9
+        $3359  affn_found
+        $6885  cal_srv_ret
+    3 B x2  c37d45
+        $3FF9  clr_ill
+        $5AEF  wid_illegal
+    3 B x2  c31663
+        $5AF2  clr_missing/wid_missing
+        $60AE  ep_missing
+    3 B x2  210180
+        $6353  list_walk
+        $781A  find_line_bc
+    3 B x2  cdc966
+        $664A  dl_is_cas
+        $66B0  dr_is_cas
+    3 B x2  cd6b6a
+        $6A3E  sav_ascii_flag
+        $6A80  sav_cas_flag
+    3 B x2  c3d942
+        $6B51  csav_comma
+        $6CCF  oo_synerr
+  26 duplicate groups, 155 B recoverable IF every collapse is position-independent (READ EACH ONE)

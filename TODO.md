@@ -410,7 +410,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:11219 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:11242 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -575,7 +575,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:2423 (T-6FE392)8 (T-529ABE)` from `TODO.md:10156 (T-529ABE)`: a
+      `TODO.md:2423 (T-6FE392)8 (T-529ABE)` from `TODO.md:10179 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -3061,7 +3061,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:10156 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:10179 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -4359,9 +4359,32 @@ list. **When a slice lands, grep this list for what it just shipped.**
       ld (FORCLR),hl` at `clr_ill` (four bytes, low region). `BDRCLR` needs no saving: the
       border is stored LAST, so nothing can fail after it. **The low half fits
       exactly; page 1 is four bytes short.**
-      ➡️ **SO THE CARVE IS THE BLOCKER AGAIN**, and Route D is dry. This is the
-      second item tonight parked on the same three-to-four bytes (the other is the four
-      do-nothing keywords).
+      ➡️ **SO THE CARVE IS THE BLOCKER AGAIN**, and Route D is dry in page 1. This is
+      the second item tonight parked on the same three-to-four bytes (the other is the
+      four do-nothing keywords).
+      💰 **2 B BANKED 2026-09-08 (D-CARVE5): page 1 1 B → 3 B.** `csav_noname`'s body
+      was `ld a,24 / jp raise_error` — byte for byte the same five bytes as
+      `loc_missing`, so it jumps there instead. ⚠️ **NOT the free `equ` alias**: it
+      has no fallthrough and only `jr z` callers, but it sits **2110 bytes** from
+      `loc_missing`, so aliasing would force both `jr`s to `jp`s (+2 B) and net −1
+      instead of −2. And `loc_missing` is a bare raiser with no side effects, unlike
+      `oo_fail_ifc` which was rejected for exactly that reason
+      [[a-shared-tail-is-not-a-decision]].
+      📏 **THE PAGE-1 CARVE ROUTES ARE NOW MEASURED OUT (2026-09-08).** Route D: **0**
+      usable in page 1 (the one site left is `pdfcb-body.inc`, included three times,
+      one in range). Dup-span: three page-1 candidates and D-CARVE5 was the only
+      clean one — the 11 B pair exits into site-specific code two bytes past its
+      span, and the 8 B pair is a self-contained loop whose merge needs a
+      `call`/`ret` wrapper that nets **one** byte and adds call overhead inside a
+      loop.
+      🎯 **BUT THE LOW REGION IS NOT DRY: Route D has TEN sites there.** That reopens
+      the COLOR atomic fix on a different shape — `ex_color` calls a low-region
+      prologue (**three bytes** in page 1, which is exactly what is free) that saves
+      `FORCLR`/`BAKCLR` to a RAM cell, and `clr_ill` restores from it. That moves the
+      cost off the scarce page: roughly thirteen bytes in the low region against
+      4 B free plus ten from Route D. **Not attempted here** — ten conversions plus a
+      restructure is its own slice, and `pdfcb-body.inc` is the standing warning that
+      a mapper site can be one source line and three ROM sites.
       🔴 **THAT IS THREE `COLOR` DEFECTS IN ONE NIGHT, EACH FOUND BY A DIFFERENT
       AXIS** — bare form (D-BAREFIX), trailing comma (D-OMITARG), no domain check
       (D-DOMAIN). `ex_color` was the least-validated verb in the tree and no single
