@@ -1,0 +1,18 @@
+  o.ctl      COLOR 15,4,4    vg=no error  cf=no error  zb=no error 
+  col.lead   COLOR ,4        vg=no error  cf=no error  zb=no error 
+  col.mid    COLOR 15,,4     vg=no error  cf=no error  zb=no error 
+  col.trail  COLOR 15,4,     vg=ERR 24    cf=ERR 24    zb=ERR 24   
+  col.two    COLOR ,,4       vg=no error  cf=no error  zb=no error 
+  col.onlyc  COLOR ,,        vg=ERR 24    cf=ERR 24    zb=ERR 24   
+  loc.lead   LOCATE ,5       vg=no error  cf=no error  zb=no error 
+  loc.mid    LOCATE 0,,1     vg=no error  cf=no error  zb=no error 
+  loc.trail  LOCATE 0,5,     vg=ERR 24    cf=ERR 24    zb=ERR 24   
+  scr.lead   SCREEN ,1       vg=no error  cf=no error  zb=no error 
+  scr.trail  SCREEN 0,       vg=ERR 24    cf=ERR 24    zb=ERR 24   
+  pset.col   PSET(0,0),      vg=ERR 5     cf=ERR 5     zb=ERR 5    
+  snd.trail  SOUND 0,        vg=ERR 24    cf=ERR 24    zb=ERR 24   
+  poke.trail POKE&HC000,     vg=ERR 24    cf=ERR 24    zb=ERR 24   
+  wid.trail  WIDTH 40,       vg=ERR 2     cf=ERR 2     zb=ERR 2    
+
+=== 0 divergence(s): none ===
+    REFS-SPLIT (0): none

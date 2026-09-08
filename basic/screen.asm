@@ -212,7 +212,17 @@ clr_bg:
                 jr      nz,clr_apply
 clr_bd:
                 call    stmt_bare_end       ; D-BAREEND: Z iff the statement ends here
-                jr      z,clr_apply
+                ; 🔴 D-OMITARG: A TRAILING COMMA IS `Missing operand`, NOT A
+                ; RE-APPLY. `COLOR 15,4,` and `COLOR ,,` both reach here with the
+                ; statement ending right after a separator, and both used to fall
+                ; into clr_apply and succeed. Measured ERR 24 on BOTH references,
+                ; and every OTHER verb in the tree already rejects its trailing
+                ; comma (LOCATE 0,5, / SCREEN 0, / SOUND 0, / POKE x, all ERR 24).
+                ; COLOR was the only one that did not.
+                ; 💰 BYTE-NEUTRAL: `wid_missing` is 76 bytes away, so this stays a
+                ; `jr`. The alias below costs nothing and keeps the name honest --
+                ; the same shape as `loc_missing equ g8_missing` in missing.asm.
+                jr      z,clr_missing
                 call    eval                ; DE = border
                 ld      a,e
                 ld      (BDRCLR),a
@@ -289,6 +299,9 @@ wid_apply:
 wid_illegal:
                 jp      gb_illegal          ; ERR 5
 wid_missing:
+clr_missing:                                ; D-OMITARG: COLOR's trailing-comma
+                                            ; reject. Same raiser, 0 bytes -- a
+                                            ; second label, not a second body.
                 jp      loc_missing         ; ERR 24
 
 ; --- ex_key: KEY OFF | KEY ON ----------------------------------------------

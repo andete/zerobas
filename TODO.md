@@ -410,7 +410,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:11060 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:11085 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -575,7 +575,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:2423 (T-6FE392)8 (T-529ABE)` from `TODO.md:9997 (T-529ABE)`: a
+      `TODO.md:2423 (T-6FE392)8 (T-529ABE)` from `TODO.md:10022 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -3061,7 +3061,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:9997 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:10022 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -4233,6 +4233,31 @@ list. **When a slice lands, grep this list for what it just shipped.**
       wrongly. The fact is in `basic_probe_kwsweep.py`'s header; what keeps being
       missing is a shared SIDES helper that carries it
       [[an-instrument-can-fail-the-way-the-thing-it-replaced-failed]].
+      🔴 **AND THE OMITTED-ARGUMENT CLASS FOUND `COLOR` A SECOND TIME (2026-09-08,
+      D-OMITARG, [`scratchpad/omitarg_probe.py`](scratchpad/omitarg_probe.py),
+      [`.out`](scratchpad/omitarg_after.out)).** `missing.asm` records the design
+      question those verbs share — *"an OMITTED argument KEEPS the current value …
+      ex_color's bare form re-applies, LOCATE's simply does not move that axis"* —
+      about ONE axis of ONE verb. 15 comma-omission shapes across 8 verbs, three
+      machines, **2 DIFF → 0**:
+      | row | | vg8020 | cf3300 | zb before |
+      |---|---|---|---|---|
+      | `COLOR 15,4,` | trailing comma | `ERR 24` | `ERR 24` | **no error** |
+      | `COLOR ,,` | commas only | `ERR 24` | `ERR 24` | **no error** |
+      🎯 **EVERY OTHER VERB ALREADY REJECTED ITS TRAILING COMMA** — `LOCATE 0,5,`,
+      `SCREEN 0,`, `SOUND 0,`, `POKE x,` all `ERR 24`, `WIDTH 40,` `ERR 2`,
+      `PSET(0,0),` `ERR 5`. COLOR was the only one that did not, and it is the same
+      verb whose BARE form D-BAREFIX corrected hours earlier: the neighbourhood was
+      worth sweeping because one member of it had already been wrong.
+      🟢 **AND THE LEGAL OMISSIONS STILL WORK** — `COLOR ,4`, `COLOR 15,,4` and
+      `COLOR ,,4` are all still accepted. That is what separates this from tightening
+      the parser until the rows go green.
+      💰 **BYTE-NEUTRAL, WHICH MATTERED**: page 1 was 1 B free on 2026-09-08 and Route D dry, so
+      `jp z,loc_missing` (+1 B) would have taken it to zero. `wid_missing` sits **76
+      bytes away**, inside `jr` reach, so the branch stays 2 bytes; a zero-cost
+      second label `clr_missing` keeps the name honest rather than making COLOR jump
+      to something called *wid* [[a-shared-tail-is-not-a-decision]]. Page 1 still
+      1 B after (`make basic-reloc` from clean, 2026-09-08); battery 115/115.
       🔴 **THE SLOPPY-ACCEPT CLASS D-FMTTAIL OPENED IS ALSO SWEPT, AND IT FOUND A
       DATA-LOSS DEFECT (2026-09-08, D-TAILJUNK → D-MAXFTAIL,
       [`scratchpad/tailjunk_probe.py`](scratchpad/tailjunk_probe.py),
