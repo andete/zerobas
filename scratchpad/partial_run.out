@@ -1,0 +1,8 @@
+  p.ctl      COLOR 7,4,4    vg=FORCLR=7 ERR=0     cf=FORCLR=7 ERR=0     zb=FORCLR=7 ERR=0    
+  col.fgok   COLOR 7,99     vg=FORCLR=15 ERR=5    cf=FORCLR=15 ERR=5    zb=FORCLR=7 ERR=5       🔴 DIFF
+  col.bgok   COLOR 7,8,99   vg=FORCLR=15 ERR=5    cf=FORCLR=15 ERR=5    zb=FORCLR=7 ERR=5       🔴 DIFF
+  col.fgbad  COLOR 99,8     vg=FORCLR=15 ERR=5    cf=FORCLR=15 ERR=5    zb=FORCLR=15 ERR=5   
+
+=== 2 divergence(s): ['col.fgok', 'col.bgok'] ===
+  🎯 `COLOR 7,99` on the reference leaves FORCLR = 15  -> the statement is rejected ATOMICALLY, and a per-component
+     validator is NOT faithful.

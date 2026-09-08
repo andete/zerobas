@@ -410,7 +410,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:11189 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:11219 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -575,7 +575,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:2423 (T-6FE392)8 (T-529ABE)` from `TODO.md:10126 (T-529ABE)`: a
+      `TODO.md:2423 (T-6FE392)8 (T-529ABE)` from `TODO.md:10156 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -3061,7 +3061,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:10126 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:10156 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -4332,6 +4332,36 @@ list. **When a slice lands, grep this list for what it just shipped.**
       became `call clr_eval` at the same 3 bytes each, and the 14 B validating
       helper went to the LOW region (18 B → **4 B**, `make basic-reloc` from clean,
       2026-09-08). Battery 115/115.
+      🔴 **AND THE D-DOMAIN FIX IS NOT COMPLETE — IT GOT THE ERROR CODE RIGHT AND
+      THE STATE WRONG (D-PARTIAL, 2026-09-08,
+      [`scratchpad/partial_probe.py`](scratchpad/partial_probe.py),
+      [`.out`](scratchpad/partial_run.out)).** `clr_eval` validates each component
+      as it is evaluated, so `COLOR 7,99` STORES the foreground and then rejects the
+      background. Both references reject the statement **ATOMICALLY**:
+      | row | | vg8020 | cf3300 | zb |
+      |---|---|---|---|---|
+      | `COLOR 7,4,4` | CONTROL, legal | `FORCLR=7` | `FORCLR=7` | `FORCLR=7` |
+      | `COLOR 7,99` | bg illegal | `FORCLR=15` | `FORCLR=15` | **`FORCLR=7`** |
+      | `COLOR 7,8,99` | border illegal | `FORCLR=15` | `FORCLR=15` | **`FORCLR=7`** |
+      | `COLOR 99,8` | fg illegal | `FORCLR=15` | `FORCLR=15` | `FORCLR=15` |
+      🎯 **D-DOMAIN'S ROWS READ GREEN BECAUSE THEY ONLY ASKED FOR THE ERROR CODE.**
+      A fix verified by the code alone can be half-right, and this one is: the
+      statement now FAILS correctly and still leaves the wrong state behind.
+      🟢 **IT IS AN IMPROVEMENT, NOT A REGRESSION — worth being exact about.**
+      BEFORE D-DOMAIN, `COLOR 7,99` was accepted ENTIRELY: fg **and** bg both
+      stored, no error. After it: fg stored, bg not, `ERR 5` raised. The reference:
+      nothing stored, `ERR 5`. Two wrongs became one.
+      💰 **PRICED AND NOT AFFORDABLE TODAY: five bytes in main page 1 and four in the
+      low region, against page-1 free = 1 B and low free = 4 B, both measured
+      2026-09-08 (`make basic-reloc` from clean).** `FORCLR $F3E9` and `BAKCLR $F3EA` are ADJACENT, so both save in
+      one `ld hl,(FORCLR)` / `push hl` at entry (four bytes, page 1), a `pop hl` at
+      `clr_apply` (one byte, page 1 — the single success exit), and `pop hl /
+      ld (FORCLR),hl` at `clr_ill` (four bytes, low region). `BDRCLR` needs no saving: the
+      border is stored LAST, so nothing can fail after it. **The low half fits
+      exactly; page 1 is four bytes short.**
+      ➡️ **SO THE CARVE IS THE BLOCKER AGAIN**, and Route D is dry. This is the
+      second item tonight parked on the same three-to-four bytes (the other is the four
+      do-nothing keywords).
       🔴 **THAT IS THREE `COLOR` DEFECTS IN ONE NIGHT, EACH FOUND BY A DIFFERENT
       AXIS** — bare form (D-BAREFIX), trailing comma (D-OMITARG), no domain check
       (D-DOMAIN). `ex_color` was the least-validated verb in the tree and no single
