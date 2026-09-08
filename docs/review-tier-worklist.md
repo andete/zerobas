@@ -4,6 +4,32 @@ Denominator: 133 ex_/ev_f_ handlers; 48 have a same-named spec, 85 do not.
 The 85 are NOT 85 holes -- most are covered under ARC names. Grouping, with
 the crude signal refined by which arc/gate actually exercises the file:
 
+> ✅ **AND THAT CLAIM IS NOW MEASURED, NOT ASSERTED (2026-09-08, D-TIERSCOPE,
+> [`scratchpad/tierscope_sweep.py`](../scratchpad/tierscope_sweep.py) — has a
+> `--selftest`).** 24 entries against 133 handlers *looks* like a hole, and after a
+> night in which two entries that CLAIMED coverage hid six and two divergences
+> (D-RAWVAL, D-SAVETRAP), it was worth a measurement.
+> **135 handlers in `basic/` today** (133 when this file was written): **21**
+> attributed by their own label, **58** by their BASIC verb as a whole word,
+> **31** by their source file — **110 of 135 in scope**, and 25 unattributed.
+> ⚠️ Attributing three ways matters: a LABEL-only match reports 114 unattributed
+> and would be a scary, wrong number, because this file groups in prose
+> (`field.asm / files.asm (close/files/kill/merge/name)`) so `ex_close` is scoped
+> without its label ever appearing.
+> 🟢 **AND OF THE 25, ONLY THREE ARE EXERCISED BY NOTHING NAMED IN `probes/` OR
+> `docs/` — AND ALL THREE ARE INTERNAL LEAVES, NOT VERBS:** `ev_f_digit` (decodes
+> a crunched single-digit constant `$11..$1A`, so every numeric literal 0..9 in
+> every probe goes through it), `ev_f_uword` (the unsigned→FAC widening leaf,
+> shared with `TIME`), and `ev_f_errfn` — **the `ERR` function, which every probe
+> in this tree uses**; the sweep cannot attribute it only because "ERR" is too
+> generic a string to search for. So the grouping claim holds and the residual is
+> an artefact of name-based attribution, not a coverage hole.
+> 🔴 **THIS MEASURES SCOPING, NOT QUALITY.** A handler attributed here is IN
+> SCOPE, not correct. `ex_out`/`ex_poke`/`ex_vpoke` were named, reviewed AND
+> recorded as a no-finding, and had six divergences in an argument position the
+> cited table could not express
+> [[a-coverage-row-whose-geometry-cannot-reach-the-case]].
+
 ## Likely THIN (no arc obviously owns the mechanism) — review these first
 - 🔴 ex_out, ex_poke, ex_vpoke — **THE NO-FINDING WAS WRONG. REVIEWED AGAIN
   2026-09-08 (D-RAWVAL, [`spec-basic-rawval.md`](spec-basic-rawval.md)): SIX

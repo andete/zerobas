@@ -1,0 +1,34 @@
+handlers in basic/: 135   worklist entries: 24
+   label 21
+   verb  58
+   file  31
+   NONE  25
+
+unattributed by label, verb OR file (25):
+   ev_f_arr               arrays.asm
+   ev_f_base              expr.asm
+   ev_f_csrlin            expr.asm
+   ev_f_defer             expr.asm
+   ev_f_digit             expr.asm
+   ev_f_erlfn             expr.asm
+   ev_f_ifc               expr.asm
+   ev_f_instr             str-engine.asm
+   ev_f_missop            expr.asm
+   ev_f_neg               expr.asm
+   ev_f_notword           expr.asm
+   ev_f_tmm               expr.asm
+   ev_f_uword             expr.asm
+   ev_f_var               expr.asm
+   ev_f_varptr            expr.asm
+   ev_f_word              expr.asm
+   ex_beep                sound.asm
+   ex_deffn               deffn.asm
+   ex_dim                 arrays.asm
+   ex_erase               arrays.asm
+   ex_mid_stmt            str-engine.asm
+   ex_swap                missing.asm
+   ex_troff               missing.asm
+   ex_tron                missing.asm
+   ex_wait                vdpio.asm
+
+🔴 THIS MEASURES SCOPING, NOT QUALITY. A handler attributed here is IN SCOPE, not correct -- the raw-I/O trio was named, reviewed and cleared, and had six divergences.
