@@ -1,0 +1,16 @@
+  ctl      MID$(A$,2)="X"       vg=ERR=0 A$=AXCDE       cf=ERR=0 A$=AXCDE       zb=ERR=0 A$=AXCDE      
+  m.tgt    MID$(A$ ,2)="X"      vg=ERR=0 A$=AXCDE       cf=ERR=0 A$=AXCDE       zb=ERR=0 A$=AXCDE      
+  m.n      MID$(A$, 2)="X"      vg=ERR=0 A$=AXCDE       cf=ERR=0 A$=AXCDE       zb=ERR=0 A$=AXCDE      
+  m.m      MID$(A$,2 ,1)="X"    vg=ERR=0 A$=AXCDE       cf=ERR=0 A$=AXCDE       zb=ERR=0 A$=AXCDE      
+  m.close  MID$(A$,2 )="X"      vg=ERR=0 A$=AXCDE       cf=ERR=0 A$=AXCDE       zb=ERR=0 A$=AXCDE      
+  m.eq     MID$(A$,2) ="X"      vg=ERR=0 A$=AXCDE       cf=ERR=0 A$=AXCDE       zb=ERR=0 A$=AXCDE      
+
+=== 0 divergence(s): none ===
+=== the STRING is the witness: a silent no-op and an assignment are both ERR 0 ===
+   ctl      vg ('0', 'AXCDE')   cf ('0', 'AXCDE')   zb ('0', 'AXCDE')
+   m.tgt    vg ('0', 'AXCDE')   cf ('0', 'AXCDE')   zb ('0', 'AXCDE')
+   m.n      vg ('0', 'AXCDE')   cf ('0', 'AXCDE')   zb ('0', 'AXCDE')
+   m.m      vg ('0', 'AXCDE')   cf ('0', 'AXCDE')   zb ('0', 'AXCDE')
+   m.close  vg ('0', 'AXCDE')   cf ('0', 'AXCDE')   zb ('0', 'AXCDE')
+   m.eq     vg ('0', 'AXCDE')   cf ('0', 'AXCDE')   zb ('0', 'AXCDE')
+refcache: 12 hit, 6 miss, 6 stored

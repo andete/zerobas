@@ -1377,8 +1377,18 @@ ems_close:
                 ld      a,(hl)
                 cp      ')'
                 jr      nz,ems_err_pop2
-                inc     hl
-                ld      a,(hl)
+                ; 🔴 D-MIDSPACE: `call skip_spaces`, NOT `ld a,(hl)`. This was the
+                ; ONE separator in ex_mid_stmt with nothing skipping spaces ahead
+                ; of it, so `MID$(A$,2) ="X"` — a space before the `=` — read $20,
+                ; missed EQ_TOKEN and raised ERR 2 where BOTH references perform
+                ; the assignment (measured: refs A$=AXCDE, here A$=ABCDE + ERR 2).
+                ; 🎯 THE OTHER FOUR SEPARATORS ARE FINE AND THE READ SAID OTHERWISE.
+                ; Their `cp ','`/`cp ')'` are equally bare, and I predicted all of
+                ; them would fail; they pass, because `str_target_parse` and `eval`
+                ; each leave HL past trailing spaces. The rows found the one site
+                ; that had no such guard in front of it, which reading the source
+                ; alone got wrong in both directions.
+                call    inc_skip            ; past ')' AND any spaces (D-INCSKIP)
                 cp      EQ_TOKEN            ; '=' crunches to $EF
                 jr      nz,ems_err_pop2
                 call    str_eval_next       ; D-NGRAM11: past '=', STRPTR -> RHS

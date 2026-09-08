@@ -410,7 +410,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:11709 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:11735 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -575,7 +575,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:2692 (T-6FE392)8 (T-529ABE)` from `TODO.md:10646 (T-529ABE)`: a
+      `TODO.md:2718 (T-6FE392)8 (T-529ABE)` from `TODO.md:10672 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -2232,6 +2232,32 @@ list. **When a slice lands, grep this list for what it just shipped.**
       Filed as unmeasured rather than agreed; it needs a rig that can absorb a
       tape write, or a disk-path variant on the CF-3300.
 
+- [x] ✅ **D-MIDSPACE (2026-09-08): `MID$(A$,2) ="X"` — A SPACE BEFORE THE `=` —
+      RAISED ERR 2 WHERE BOTH REFERENCES ASSIGN. 1 DIFF → 0, +1 B**
+      ([`scratchpad/midspace_probe.py`](scratchpad/midspace_probe.py),
+      [before](scratchpad/midspace_run.out), [after](scratchpad/midspace_after.out)).
+      A **fourth axis**, after the TAIL (D-MAXFTAIL, D-FMTTAIL, D-FLOWTAIL), the
+      ARGUMENT POSITION (D-RAWVAL) and whether a failure RAISES (D-SAVETRAP):
+      **a space around a separator**, which no probe in this tree varied.
+      | row | vg8020 | cf3300 | zb before |
+      |---|---|---|---|
+      | `MID$(A$,2) ="X"` | `AXCDE` | `AXCDE` | **ERR 2, `ABCDE`** |
+      | `MID$(A$ ,2)` / `(A$, 2)` / `(A$,2 ,1)` / `(A$,2 )` | `AXCDE` | `AXCDE` | `AXCDE` ✅ |
+      🔴 **AND THE READ PREDICTED THE WRONG FOUR SITES.** `ex_mid_stmt`'s comma and
+      close-paren checks are all bare `ld a,(hl) / cp ','` with no `skip_spaces` —
+      which is what put this verb on the list — and I predicted every one of them
+      would fail. **They all pass**, because `str_target_parse` and `eval` each
+      leave HL past trailing spaces. The one site with no such guard ahead of it is
+      the `=`, which I had not read when I wrote the rows. The rows found it; the
+      reading would not have [[a-mechanism-inferred-from-one-observation]].
+      🎯 **THE WITNESS IS THE STRING, NOT THE CODE.** A silent no-op and a
+      successful assignment are both `ERR 0`; only `A$` separates them.
+      💰 **+1 B in the low region** — `call inc_skip` (3 B) replacing
+      `inc hl / ld a,(hl)` (2 B). It fits because D-INCSKIP had just taken the low
+      region 1 B → 3 B the same evening, and it is **cheaper than the `call
+      skip_spaces` shape (+2 B) would have been**: the carve made its own consumer
+      cheaper. Low 3 B → 2 B, page 1 unchanged at 49 B (2026-09-08).
+
 - [ ] 🔴 **D-FLOWTAIL (2026-09-08): A TAIL AFTER `GOSUB <line>` IS ACCEPTED ON
       BOTH REFERENCES AND RAISES ERR 2 HERE — 4 rows, PRICED AND PARKED**
       ([`scratchpad/flowtail_probe.py`](scratchpad/flowtail_probe.py),
@@ -3330,7 +3356,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:10646 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:10672 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
