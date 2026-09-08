@@ -124,6 +124,9 @@ kwtable:
                 db      3,"SET",1,SET_TOKEN
                 db      3,"IPL",1,IPL_TOKEN
                 db      3,"CMD",1,CMD_TOKEN
+                ; D-ATTRFN: ATTR$ is the same class, but a FUNCTION — the
+                ; handler is an `ev_f` arm rather than a stmt_table row.
+                db      5,"ATTR$",1,ATTR_TOKEN
                 ; MAXFILES = MAX($CD) + FILES($B7) — two reserved words (oracle-
                 ; locked, like OUTPUT = OUT+PUT). FILES is already in this table, so
                 ; only "MAX" is added; the tokeniser then crunches "MAXFILES" to

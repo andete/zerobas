@@ -281,6 +281,18 @@ NAME_TOKEN      equ     $D3     ; NAME "old" AS "new" — rename a file (stateme
 SET_TOKEN       equ     $D2     ; SET — tokenised, then ERR 5 (no verb)
 IPL_TOKEN       equ     $D5     ; IPL — tokenised, then ERR 5 (no verb)
 CMD_TOKEN       equ     $D7     ; CMD — tokenised, then ERR 5 (no verb)
+; --- D-ATTRFN: ATTR$ (2026-09-08) -------------------------------------------
+; The fourth do-nothing word, and the one that is a FUNCTION rather than a
+; statement — so it costs an arm in `ev_f` (basic/expr.asm), not a stmt_table row.
+; Measured on FOUR sides (scratchpad/attr_probe.py), both references agreeing:
+;   PRINT ATTR$ / A$=ATTR$ / A$=ATTR$(0)  ->  ERR 5   (raised on sight)
+;   ATTR$="Z"                             ->  ERR 2   (a token is not an l-value)
+; 🎯 THE SECOND ROW IS THE ONE THAT NEEDED MEASURING. Both faces come out of one
+; change: `ev_f` raises ERR 5 for the r-value uses, and the ASSIGNMENT reaches
+; exec_stmt with a leading token that is in no stmt_table row, which is already
+; ERR 2. Nothing extra is spent on it.
+; 🟢 Oracle-sourced like its three neighbours, pinned in CRUNCH_DIFF_PINNED.
+ATTR_TOKEN      equ     $E9     ; ATTR$ — tokenised, then ERR 5 (no function)
 REM_TOKEN       equ     $8F     ; spec-tokens-statements.md; swallows rest of line
 POKE_TOKEN      equ     $98     ; spec-tokens-statements.md
 ; PEEK is a *function* token: a $FF prefix followed by a second byte.

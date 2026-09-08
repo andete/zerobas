@@ -1,0 +1,15 @@
+  a.ctl     A$="Y"         vg=ERR=0    cf=ERR=0    zb=ERR=0    nodisk=ERR=0   
+  a.print   PRINT ATTR$    vg=ERR=5    cf=ERR=5    zb=ERR=0    nodisk=ERR=0      🔴 DIFF
+  a.asg     A$=ATTR$       vg=ERR=5    cf=ERR=5    zb=ERR=0    nodisk=ERR=0      🔴 DIFF
+  a.call    A$=ATTR$(0)    vg=ERR=5    cf=ERR=5    zb=ERR=0    nodisk=ERR=0      🔴 DIFF
+  a.var     ATTR$="Z"      vg=ERR=2    cf=ERR=2    zb=ERR=0    nodisk=ERR=0      🔴 DIFF
+
+=== the two references agree on every row: True ===
+=== per row: vg / cf / zb / nodisk ===
+   a.ctl     0 / 0 / 0 / 0
+   a.print   5 / 5 / 0 / 0
+   a.asg     5 / 5 / 0 / 0
+   a.call    5 / 5 / 0 / 0
+   a.var     2 / 2 / 0 / 0
+=== 4 divergence(s): ['a.print', 'a.asg', 'a.call', 'a.var'] ===
+refcache: 0 hit, 20 miss, 20 stored

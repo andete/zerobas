@@ -1,0 +1,15 @@
+  a.ctl     A$="Y"         vg=ERR=0    cf=ERR=0    zb=ERR=0    nodisk=ERR=0   
+  a.print   PRINT ATTR$    vg=ERR=5    cf=ERR=5    zb=ERR=5    nodisk=ERR=5   
+  a.asg     A$=ATTR$       vg=ERR=5    cf=ERR=5    zb=ERR=5    nodisk=ERR=5   
+  a.call    A$=ATTR$(0)    vg=ERR=5    cf=ERR=5    zb=ERR=5    nodisk=ERR=5   
+  a.var     ATTR$="Z"      vg=ERR=2    cf=ERR=2    zb=ERR=2    nodisk=ERR=2   
+
+=== the two references agree on every row: True ===
+=== per row: vg / cf / zb / nodisk ===
+   a.ctl     0 / 0 / 0 / 0
+   a.print   5 / 5 / 5 / 5
+   a.asg     5 / 5 / 5 / 5
+   a.call    5 / 5 / 5 / 5
+   a.var     2 / 2 / 2 / 2
+=== 0 divergence(s): none ===
+refcache: 10 hit, 10 miss, 10 stored

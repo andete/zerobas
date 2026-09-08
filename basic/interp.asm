@@ -2163,6 +2163,10 @@ gba_byte:
 ; SET/IPL/CMD-specific behaviour needs its own body, not an edit here
 ; [[a-shared-tail-is-not-a-decision]].
 ex_donothing    equ     gb_illegal
+; ev_f_attr — the FUNCTION face of the same thing (D-ATTRFN). A second 0-byte
+; alias rather than a reuse of `ex_donothing`, because that name says "statement"
+; and `ATTR$` is reached from `ev_f`. Both are labels, not decisions.
+ev_f_attr       equ     gb_illegal
 gb_illegal:
                 ld      a,5
                 jp      raise_error         ; ERR 5 illegal function call

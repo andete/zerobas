@@ -2075,10 +2075,6 @@ arl_ok:
 ; Preserves nothing (neither source routine does); ascii_read_lines already
 ; reloads everything it needs from RAM after each call.
 ;   out: A = byte, CF clear; or CF set = no more data (source-defined "EOF").
-arl_getbyte:
-                ld      hl,(ARL_GETBYTE)
-                jp      (hl)
-
 ; mrg_storeline — 0-terminate LINEBUF at MRG_PTR and, if it is a numbered (or blank)
 ; line, hand it to dispatch_line (same tokenise + store_line path as a typed line).
 ;   out: CF set = a non-blank, non-numbered line (error); CF clear = stored/skipped.

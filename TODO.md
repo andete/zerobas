@@ -410,7 +410,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:11460 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:11489 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -575,7 +575,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:2505 (T-6FE392)8 (T-529ABE)` from `TODO.md:10397 (T-529ABE)`: a
+      `TODO.md:2505 (T-6FE392)8 (T-529ABE)` from `TODO.md:10426 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -3143,7 +3143,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:10397 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:10426 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -7246,10 +7246,39 @@ list. **When a slice lands, grep this list for what it just shipped.**
       🔴 **`SET`/`IPL`/`CMD` HAVE LEFT `CRUNCH_DIFF_PINNED`** — a pinned row that
       stops diverging is a STALE PIN and `basic_probe_kwsweep.py` returns 5 on one.
       Five words remain pinned: `DSKI$`, `DSKO$`, `COPY`, `ATTR$`, `LOC`.
-      ⚠️ **`ATTR$` IS STILL PARKED**, and for a different reason than the other
-      three: it is a FUNCTION, so it needs `cp $E9 / jp z,…` inside `ev_f` (5 B,
-      main page 1) rather than a table row, and page 1 was back to 3 B free on
-      2026-09-08 after the three statements were spent.
+      🟢 **AND `ATTR$` SHIPPED TOO, THE SAME DAY (D-ATTRFN) — THE GROUP IS CLOSED.**
+      It is a FUNCTION, so it cost `cp ATTR_TOKEN / jp z,ev_f_attr` inside `ev_f`
+      (**5 B main page 1**, spent 2026-09-08) plus an 8 B `kwtable` row, not a
+      `stmt_table` entry.
+      Measured on four sides before and after
+      ([`scratchpad/attr_probe.py`](scratchpad/attr_probe.py),
+      [before](scratchpad/attr_run.out), [after](scratchpad/attr_after.out)).
+      Funded by promoting `arl_getbyte` (4 B) out of page 1 — page 1 3 B → 7 B → **2 B**,
+      low 5 B → **1 B**, sub page 0 1321 B → **1313 B** (`make basic-reloc` from
+      clean, 2026-09-08).
+      | row | vg8020 | cf3300 | zb before | zb after |
+      |---|---|---|---|---|
+      | `PRINT ATTR$` | ERR 5 | ERR 5 | **ERR 0** | ERR 5 |
+      | `A$=ATTR$` | ERR 5 | ERR 5 | **ERR 0** | ERR 5 |
+      | `A$=ATTR$(0)` | ERR 5 | ERR 5 | **ERR 0** | ERR 5 |
+      | `ATTR$="Z"` | ERR 2 | ERR 2 | **ERR 0** | ERR 2 |
+      🎯 **THE `ERR 0` COLUMN IS WHY THE PROBE ASKED FOR MORE THAN THE ERROR CODE.**
+      Untokenised, `ATTR$` is a perfectly good STRING VARIABLE NAME, so zerobas did
+      not raise anything at all — `PRINT ATTR$` printed the empty string. A row that
+      only compared "is it ERR 5" would have looked like a missing check; the defect
+      was that the word was not reserved.
+      🎯 **AND THE `ERR 2` FACE CAME FREE.** `ATTR$="Z"` is *Syntax error*, not
+      *Illegal function call*, on both references — a token cannot be an l-value —
+      and that falls out of the same change: the assignment reaches `exec_stmt` with
+      a leading token in no `stmt_table` row, which is already ERR 2. It was
+      measured before the fix rather than discovered after
+      [[two-rules-that-coincide-on-every-row-you-have]].
+      📏 **THE CHAIN'S OWN COST WARNING IS CURRENTLY EMPTY.**
+      [`basic/expr.asm`](basic/expr.asm) says to assume any insertion into `ev_f`'s
+      dispatch costs **+1 B per surviving `jr`**. Counted 2026-09-08: **zero** `jr`
+      arms remain, every one already converted by D-NUMSTR and D-PLAYFN, so the arm
+      cost exactly 5 B. The caution stands for the day a `jr` reappears — but do not
+      pad a slice that lands there on the strength of it without counting first.
       🟢 **AND THE RAISER IS FREE.** `gb_illegal`
       ([`basic/interp.asm:2145`](basic/interp.asm:2145)) is already exactly
       `ld a,5 / jp raise_error`, and `dw` takes any address, so all three entries

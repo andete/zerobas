@@ -376,6 +376,10 @@ SKIP_EXEC = {k for k, _, ex, _, _ in SWEEP if ex is None}
 #
 # The values are ORACLE-SOURCED — read out of the reference's own program area by
 # this probe's Layer 1, the same provenance as every token in kwtable.inc.
+# 🟢 ATTR$ ($E9) LEFT THIS SET on 2026-09-08 too (D-ATTRFN) — the same class, but
+# a FUNCTION, so its handler is an `ev_f` arm and not a stmt_table row. Measured on
+# four sides: `PRINT ATTR$` / `A$=ATTR$` / `A$=ATTR$(0)` are ERR 5 and `ATTR$="Z"`
+# is ERR 2, both references agreeing, and zerobas now matches all four.
 # 🟢 SET ($D2), IPL ($D5) and CMD ($D7) LEFT THIS SET on 2026-09-08 (D-DONOTHING3):
 # zerobas now crunches all three and dispatches them to `gb_illegal`, so they read
 # SAME. A pinned row that stops diverging is a STALE PIN and this probe returns 5
@@ -389,7 +393,6 @@ CRUNCH_DIFF_PINNED = {
     "dski": "DSKI$  -> $EA",
     "dsko": "DSKO$  -> $D1",
     "copy": "COPY   -> $D6",
-    "attr": "ATTR$  -> $E9",
     "loc":  "LOC    -> $FF $AC (two-byte function token)",
 }
 # 🎯 `LFILES` IS THE CONTROL THAT MAKES THIS A LIST AND NOT A CLASS: it is

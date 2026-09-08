@@ -520,6 +520,19 @@ ev_f:
                                             ; between it and ev_f's tail costs +1 B per
                                             ; surviving `jr`, and check before pricing a
                                             ; slice that lands here. +1 B.
+                ; D-ATTRFN: ATTR$ ($E9) is TOKENISED and then refused on sight —
+                ; ERR 5 on both references, for the bare word, as an r-value and
+                ; with an argument alike. `ev_f_attr` is a 0-byte `equ` alias of
+                ; `gb_illegal` below; sited next to CSRLIN because the tokens are
+                ; adjacent ($E8/$E9), not because the verbs are related.
+                ; 💰 EXACTLY 5 B, AND THE CHAIN'S OWN WARNING NO LONGER ADDS TO IT.
+                ; The caution above says to assume an insertion costs +1 B per
+                ; surviving `jr` — MEASURED 2026-09-08, this chain has **zero** `jr`
+                ; arms left, every one having already been converted by D-NUMSTR and
+                ; D-PLAYFN. The caution stands for the day a `jr` reappears; today
+                ; its price is nil, so do not pad a slice that lands here.
+                cp      ATTR_TOKEN          ; $E9 -> ATTR$, tokenised then ERR 5
+                jp      z,ev_f_attr
                 cp      POINT_TOKEN         ; $ED -> POINT(x,y) (graphics G2, graphics.asm)
                 jp      z,ev_f_point
                 cp      PLAY_TOKEN          ; $C1 -> PLAY(n) background-queue status

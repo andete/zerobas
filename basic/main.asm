@@ -201,6 +201,23 @@ upcase:
                 sub     $20
                 ret
 
+; arl_getbyte — the indirect byte source ascii_read_lines reads through.
+;   out: A = byte, CF clear; or CF set = no more data (source-defined "EOF").
+; Preserves nothing (neither source routine does); ascii_read_lines already
+; reloads everything it needs from RAM after each call.
+; 💰 PROMOTED OUT OF basic/files.asm (main page 1) INTO THE LOW REGION,
+; 2026-09-08, to fund `ATTR$`'s `ev_f` arm (D-ATTRFN). Same route as `upcase`
+; above (D-PROMOTE): the two regions are one contiguous, freely inter-callable
+; image, so these four bytes cost nothing here and buy four bytes of page 1.
+; 🎯 It qualifies because nothing about it is position-dependent: entered only by
+; `call`, left only by `jp (hl)` — an unconditional terminator — emits no data,
+; and no `jr`/`djnz` crosses its boundary. `ascii_read_lines`, its only caller,
+; reaches it absolutely. Sited ABOVE the overflow guard, which has to stay the
+; last thing in this block or it does not guard the bytes after it.
+arl_getbyte:
+                ld      hl,(ARL_GETBYTE)
+                jp      (hl)
+
 ; low-region overflow guard: the low-region tenants must not reach the $4000 header.
 ; If they do, the `ds` below would be negative (pasmo warns + emits nothing, a silent
 ; corruption), so assert first — an overrun references an undefined symbol -> clean
