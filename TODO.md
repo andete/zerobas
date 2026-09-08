@@ -410,7 +410,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:11140 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:11170 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -575,7 +575,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:2423 (T-6FE392)8 (T-529ABE)` from `TODO.md:10077 (T-529ABE)`: a
+      `TODO.md:2423 (T-6FE392)8 (T-529ABE)` from `TODO.md:10107 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -3061,7 +3061,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:10077 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:10107 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -4285,9 +4285,39 @@ list. **When a slice lands, grep this list for what it just shipped.**
       installed after the `MAXFILES` now; it reads `ERR 52` on all three. An
       independent confirmation of the D-MAXFTAIL mechanism, arrived at by tripping
       over it [[an-unnamed-outcome-reads-as-no-outcome]].
-      ➡️ **STILL NOT COVERED**: out-of-RANGE values in optional positions
+      ~~➡️ **STILL NOT COVERED**: out-of-RANGE values in optional positions
       (`COLOR 99`, `LOCATE 999,999`, `SOUND 99,0`), which is a DOMAIN question
-      rather than a shape or channel one.
+      rather than a shape or channel one.~~
+      🔴 **SWEPT 2026-09-08 (D-DOMAIN,
+      [`scratchpad/domain_probe.py`](scratchpad/domain_probe.py),
+      [`.out`](scratchpad/domain_after.out)) — AND `COLOR` VALIDATED **NOTHING**.
+      7 DIFF → 0.** Not a duplicate of `intarg-acceptance`, which gates the raw-I/O
+      and string family (`OUT`/`POKE`/`VPOKE`/`PEEK`/`WAIT`/`WIDTH`/`ON`/`SPACE$`…);
+      the screen, graphics and sound verbs had no domain rows at all.
+      | row | | vg8020 | cf3300 | zb before |
+      |---|---|---|---|---|
+      | `COLOR 16` | first illegal | `ERR 5` | `ERR 5` | **accepted** |
+      | `COLOR 99` / `255` / `256` / `-1` | | `ERR 5` | `ERR 5` | **accepted** |
+      | `COLOR 15,99` / `15,4,99` | bg, border | `ERR 5` | `ERR 5` | **accepted** |
+      🎯 **THE BOUNDARY ROWS ARE WHY THE FIX IS RIGHT AND NOT MERELY GREEN.**
+      `COLOR 99` alone does not say WHERE the domain ends — a fix written against it
+      could reject `15` or accept `16`. Measured: **0 and 15 legal, 16 the first
+      illegal**, and **`COLOR 256` is ALSO `ERR 5`**, which forces the test onto the
+      full 16-bit value because 256's low byte is 0 and passes any byte-only check.
+      🟢 **AND THE SWEEP'S CONTRAST IS WHAT MAKES IT A DOMAIN FINDING RATHER THAN
+      "ADD VALIDATION EVERYWHERE"**: `LOCATE 99,0` and `LOCATE 0,99` are ACCEPTED on
+      all three — a CLAMP, and faithful — while `LOCATE -1,0` and `LOCATE 999,999`
+      are `ERR 5` everywhere. `SCREEN`, `SOUND` and `PSET` were already correct on
+      every row [[drawclamp-slice]].
+      💰 **BYTE-NEUTRAL IN PAGE 1**, which was at 1 B on 2026-09-08: the three `call eval` sites
+      became `call clr_eval` at the same 3 bytes each, and the 14 B validating
+      helper went to the LOW region (18 B → **4 B**, `make basic-reloc` from clean,
+      2026-09-08). Battery 115/115.
+      🔴 **THAT IS THREE `COLOR` DEFECTS IN ONE NIGHT, EACH FOUND BY A DIFFERENT
+      AXIS** — bare form (D-BAREFIX), trailing comma (D-OMITARG), no domain check
+      (D-DOMAIN). `ex_color` was the least-validated verb in the tree and no single
+      sweep would have shown that; what showed it was sweeping the NEIGHBOURHOOD of
+      a verb already found wrong, three times running.
       🔴 **AND THE OMITTED-ARGUMENT CLASS FOUND `COLOR` A SECOND TIME (2026-09-08,
       D-OMITARG, [`scratchpad/omitarg_probe.py`](scratchpad/omitarg_probe.py),
       [`.out`](scratchpad/omitarg_after.out)).** `missing.asm` records the design

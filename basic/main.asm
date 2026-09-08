@@ -158,6 +158,27 @@ mxf_require_end:
                 jp      stmt_error          ; anything else -> ERR 2, raised BEFORE
                                             ; the CLEAR that would eat the variables
 
+; 🔴 D-DOMAIN: COLOR VALIDATED NOTHING. `COLOR 99`, `COLOR -1`, `COLOR 256`,
+; `COLOR 15,99` and `COLOR 15,4,99` were all ACCEPTED here and are all
+; `Illegal function call` on BOTH references. The domain is pinned by rows, not
+; guessed: 0 and 15 are legal, **16 is the first illegal one**, and `COLOR 256`
+; is ALSO ERR 5 -- so the test must see the whole 16-bit value, because 256's
+; low byte is 0 and would pass a byte-only check.
+; 💰 The three call sites stay 3 bytes each (`call eval` -> `call clr_eval`), so
+; page 1 pays NOTHING; the helper itself lives in the low region.
+; clr_eval — evaluate a COLOR component and require 0..15.
+; out: E = the value, D = 0. Anything else raises ERR 5 and does not return.
+clr_eval:
+                call    eval
+                ld      a,d                 ; the HIGH byte first: 256 has a low
+                or      a                   ; byte of 0 and must NOT pass
+                jr      nz,clr_ill
+                ld      a,e
+                cp      16
+                ret     c                   ; 0..15 -> good
+clr_ill:
+                jp      gb_illegal          ; ERR 5 Illegal function call
+
 ; low-region overflow guard: the low-region tenants must not reach the $4000 header.
 ; If they do, the `ds` below would be negative (pasmo warns + emits nothing, a silent
 ; corruption), so assert first — an overrun references an undefined symbol -> clean

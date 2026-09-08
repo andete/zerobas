@@ -189,7 +189,7 @@ ex_color:
                 jp      z,loc_missing       ; +1 B: `jr` cannot reach it
                 cp      ','                 ; "COLOR ,bg" -> fg omitted
                 jr      z,clr_bg
-                call    eval                ; DE = foreground
+                call    clr_eval            ; DE = foreground, VALIDATED 0..15
                 ld      a,e
                 ld      (FORCLR),a
                 call    skip_spaces
@@ -204,7 +204,7 @@ clr_bg:
                 jr      z,clr_apply
                 cp      COLON
                 jr      z,clr_apply
-                call    eval                ; DE = background
+                call    clr_eval            ; DE = background, VALIDATED 0..15
                 ld      a,e
                 ld      (BAKCLR),a
                 call    skip_spaces
@@ -223,7 +223,7 @@ clr_bd:
                 ; `jr`. The alias below costs nothing and keeps the name honest --
                 ; the same shape as `loc_missing equ g8_missing` in missing.asm.
                 jr      z,clr_missing
-                call    eval                ; DE = border
+                call    clr_eval            ; DE = border, VALIDATED 0..15
                 ld      a,e
                 ld      (BDRCLR),a
 clr_apply:
