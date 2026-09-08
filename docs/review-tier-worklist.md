@@ -92,6 +92,37 @@ the crude signal refined by which arc/gate actually exercises the file:
   survival with its own separating pair). AUTO's loop stores nothing itself —
   every dispatch_line rule applies for free.
 
+**🔴 THE FOUR REMAINING NO-FINDINGS RE-CHECKED AT THEIR CITATIONS (2026-09-08,
+after D-NOFIND showed the fifth was wrong).** The trio's failure was structural —
+its refuting table varied ONE argument position for a two-argument verb — so the
+question asked of the others was *which axis did the cited coverage vary*, not
+whether the prose reads convincingly:
+
+* **Tail axis — COVERED.** `scratchpad/tailjunk_probe.py` sweeps a trailing `ZZ`
+  across 20 verbs *including* `MOTOR OFF`, `LOCATE 0,0` and `KEY OFF`. `ex_motor`,
+  `ex_locate` and `ex_key` survive this check, and the tail is the class four
+  separate defects landed in (D-MAXFTAIL, D-DEFCORNER, D-FMTTAIL, D-OMITARG).
+* **Later-argument domain axis — WAS a hole, now SWEPT and EMPTY.** D-DOMAIN's
+  sweep put **every negative it tests in position 1** (`SOUND -1,0`, `LOCATE -1,0`,
+  `SCREEN -1`, `COLOR -1`) and reached no third argument at all — the same shape
+  that hid the trio, since a negative is the cell that separates the address and
+  byte domains (`OUT -1,0` continues, `OUT 0,-1` raises) while a large value like
+  `SOUND 0,999` cannot, being out of range for both.
+  `scratchpad/argpos_probe.py` ([`.out`](../scratchpad/argpos_run.out)) sweeps
+  those cells: **8 rows × 3 machines, 0 DIFF.**
+  | row | vg8020 | cf3300 | zb |
+  |---|---|---|---|
+  | `SOUND 0,-1` / `SOUND 0,256` | ERR 5 | ERR 5 | ERR 5 |
+  | `LOCATE 0,-1` | ERR 5 | ERR 5 | ERR 5 |
+  | `LOCATE 0,0,2` | **ERR 0** | **ERR 0** | ERR 0 |
+  | `LOCATE 0,0,-1` | ERR 5 | ERR 5 | ERR 5 |
+  | `SCREEN 0,-1` / `SCREEN 0,99` | ERR 5 | ERR 5 | ERR 5 |
+  🟢 **AND THE SWEEP IS NOT BLIND**: the identical row shape — a negative in a
+  later position — was RED on all six raw-I/O rows hours earlier. An instrument
+  that just found six divergences with this shape returning 0 here is a reading.
+  ⚠️ `LOCATE 0,0,2` is worth noting: the cursor argument ACCEPTS 2 (past its
+  documented 0..1) and REJECTS −1, on both references, and zerobas matches both.
+
 **THE THIN SECTION IS FULLY WALKED (2026-09-01).** Score: 3 verb groups with
 real defects (DATA/RESTORE x3, DEFtype x1, PLAY x3 slices earlier), 5
 no-findings recorded with their refuting citations, 2 false-thin entries, 1

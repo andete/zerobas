@@ -1,0 +1,20 @@
+  ctl       SOUND 0,0       vg=ERR=0     cf=ERR=0     zb=ERR=0       CONTROL: legal, ERR 0 everywhere
+  s.vneg    SOUND 0,-1      vg=ERR=5     cf=ERR=5     zb=ERR=5       value NEGATIVE -- the separating cell
+  s.v256    SOUND 0,256     vg=ERR=5     cf=ERR=5     zb=ERR=5       value just past a byte
+  l.rneg    LOCATE 0,-1     vg=ERR=5     cf=ERR=5     zb=ERR=5       row NEGATIVE -- position 2
+  l.cur2    LOCATE 0,0,2    vg=ERR=0     cf=ERR=0     zb=ERR=0       cursor arg past 0..1 -- position 3
+  l.curneg  LOCATE 0,0,-1   vg=ERR=5     cf=ERR=5     zb=ERR=5       cursor arg NEGATIVE -- position 3
+  sc.sneg   SCREEN 0,-1     vg=ERR=5     cf=ERR=5     zb=ERR=5       sprite-size NEGATIVE -- position 2
+  sc.s99    SCREEN 0,99     vg=ERR=5     cf=ERR=5     zb=ERR=5       sprite-size out of range -- position 2
+
+=== 0 divergence(s): none ===
+=== reference answers, for the record (vg / cf) ===
+   ctl       0 / 0
+   s.vneg    5 / 5
+   s.v256    5 / 5
+   l.rneg    5 / 5
+   l.cur2    0 / 0
+   l.curneg  5 / 5
+   sc.sneg   5 / 5
+   sc.s99    5 / 5
+refcache: 0 hit, 24 miss, 24 stored

@@ -410,7 +410,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:11610 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:11633 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -575,7 +575,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:2593 (T-6FE392)8 (T-529ABE)` from `TODO.md:10547 (T-529ABE)`: a
+      `TODO.md:2616 (T-6FE392)8 (T-529ABE)` from `TODO.md:10570 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -2265,6 +2265,29 @@ list. **When a slice lands, grep this list for what it just shipped.**
       Both documents corrected in place, originals kept — the analysis is right
       about the port, only the SCOPE of the claim was wrong
       [[a-fix-falsifies-the-justification-beside-it]].
+      ✅ **AND THE OTHER FOUR NO-FINDINGS FROM THAT WALK WERE RE-CHECKED AT THEIR
+      CITATIONS (2026-09-08) — ALL FOUR SURVIVE.** The question asked was *which
+      axis did the cited coverage vary*, not whether the prose reads convincingly.
+      **Tail axis: covered** — `tailjunk_probe` sweeps a trailing `ZZ` across 20
+      verbs including `MOTOR OFF`, `LOCATE 0,0` and `KEY OFF`, and the tail is the
+      class four defects landed in. **Later-argument domain axis: WAS a hole** —
+      D-DOMAIN put *every negative it tests in position 1* and reached no third
+      argument — **now swept and MEASURED EMPTY**
+      ([`scratchpad/argpos_probe.py`](scratchpad/argpos_probe.py),
+      [`.out`](scratchpad/argpos_run.out), 8 rows × 3 machines, **0 DIFF**):
+      `SOUND 0,-1`, `SOUND 0,256`, `LOCATE 0,-1`, `LOCATE 0,0,2`, `LOCATE 0,0,-1`,
+      `SCREEN 0,-1`, `SCREEN 0,99`.
+      🟢 **THE SWEEP IS NOT BLIND — THE SAME ROW SHAPE WAS RED HOURS EARLIER.** A
+      negative in a later position is the cell that separates the address and byte
+      domains, and it is exactly what returned six divergences for POKE/VPOKE/OUT.
+      Returning 0 for SOUND/LOCATE/SCREEN is a reading, not a silent instrument
+      [[a-case-that-agrees-can-agree-for-the-wrong-reason]].
+      🎯 **SO D-RAWVAL IS BOUNDED, NOT THE TIP OF A PATTERN.** The raw-I/O trio
+      passed its value to `eval_addr` because those three verbs genuinely take an
+      address in position 1; the screen and sound verbs never had an address to
+      borrow the domain from. ⚠️ `LOCATE 0,0,2` is a curiosity worth keeping: the
+      cursor argument ACCEPTS 2, past its documented 0..1, and REJECTS −1 — on both
+      references, and zerobas matches both.
 
 - [x] ✅ **D-DATACOLON (2026-08-31): three DATA/RESTORE defects from one
       review read** ([`docs/spec-basic-datacolon.md`](docs/spec-basic-datacolon.md),
@@ -3231,7 +3254,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:10547 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:10570 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
