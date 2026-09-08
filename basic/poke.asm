@@ -22,7 +22,20 @@ do_poke:
                 cp      ','                 ; comma required
                 jp     nz,poke_err
                 inc     hl
-                call    eval_addr           ; DE = value, HL = cursor
+                call    eval_byte_checked   ; DE = value 0..255, HL = cursor
+                                            ; 🔴 D-RAWVAL: the VALUE is a BYTE, not an
+                                            ; address. `eval_addr` applies the ADDRESS
+                                            ; domain -- which WRAPS by design -- so
+                                            ; `,256` wrote 0 and `,-1` wrote 255 with no
+                                            ; error, where both references raise ERR 5
+                                            ; and write nothing. `eval_byte_checked` is
+                                            ; the same 3 bytes and already existed.
+                                            ; 🎯 ORDER PRESERVED, AND MEASURED:
+                                            ; its int16 stage runs check_fperr_only on
+                                            ; the STICKY FPERR first, so `POKE 99999,256`
+                                            ; stays ERR 6 (overflow beats domain) --
+                                            ; the row nobody had, because every existing
+                                            ; row pairs a bad address with a legal value.
                 pop     bc                  ; BC = address
                 call    check_fperr_only
                 ld      a,e                 ; low byte of value

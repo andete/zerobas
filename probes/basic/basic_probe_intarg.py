@@ -42,6 +42,32 @@ ASSERTED = [
     ("wait_mask_ovf", "WAIT 0,99999", "ERR6"),
     ("wait_xor_ovf",  "WAIT 0,1,99999", "ERR6"),
     ("wait_nocomma",  "WAIT 254",     "ERR2"),   # the mask is not optional
+    # --- D-RAWVAL: the SECOND argument is a BYTE (0..255), not an address --------
+    # 🔴 EVERY ROW IN THIS FILE FOR POKE/VPOKE/OUT USED TO BE ABOUT THE FIRST
+    # ARGUMENT. All three handlers evaluated the VALUE with `eval_addr` -- the
+    # ADDRESS domain, which WRAPS by design -- and then took `ld a,e`, the low
+    # byte, silently. Measured on BOTH references: `POKE x,256` wrote 0 and
+    # `POKE x,-1` wrote 255 with no error, where the references raise ERR 5 and
+    # write NOTHING (scratchpad/rawval_probe.py primes the target with 65 and
+    # PEEKs it back, so "refused" and "wrote something" are distinguishable).
+    # Fixed byte-neutrally onto `eval_byte_checked`, which already existed.
+    ("poke_val_hi",   "POKE &HD020,256", "ERR5"),
+    ("poke_val_neg",  "POKE &HD020,-1",  "ERR5"),
+    ("poke_val_max",  "POKE &HD020,255", "cont"),   # 255 IS legal -- the boundary
+    ("vpoke_val_hi",  "VPOKE 100,256",   "ERR5"),
+    ("vpoke_val_neg", "VPOKE 100,-1",    "ERR5"),
+    ("out_val_hi",    "OUT 0,256",       "ERR5"),
+    ("out_val_neg",   "OUT 0,-1",        "ERR5"),
+    # 🎯 AND THE PORT IS *NOT* A BYTE -- MEASURED, NOT INHERITED. `OUT 256,0` is
+    # ACCEPTED on both references: the port wraps in the address domain where the
+    # value raises. `out_neg` above says the same for -1. These two rows are what
+    # stops the next reader "harmonising" OUT's two arguments onto one domain and
+    # shipping a regression [[two-rules-that-coincide-on-every-row-you-have]].
+    ("out_port_hi",   "OUT 256,0",       "cont"),
+    # 🎯 PRECEDENCE: OVERFLOW BEATS DOMAIN, and no row had ever paired a bad
+    # address with a bad VALUE -- every existing one pairs a bad address with a
+    # legal value, so the fix could have changed this answer unobserved.
+    ("poke_both_bad", "POKE 99999,256",  "ERR6"),
     # --- regression guards: already-faithful address-domain sites (POKE, F2) ------
     ("poke_addr_ovf", "POKE 99999,0", "ERR6"),
     ("poke_addr_hi",  "POKE 40000,0", "cont"),

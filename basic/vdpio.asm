@@ -31,7 +31,20 @@ do_vpoke:
                 cp      ','                 ; comma required
                 jp     nz,vdp_err
                 inc     hl
-                call    eval_addr           ; DE = value, HL = cursor
+                call    eval_byte_checked   ; DE = value 0..255, HL = cursor
+                                            ; 🔴 D-RAWVAL: the VALUE is a BYTE, not an
+                                            ; address. `eval_addr` applies the ADDRESS
+                                            ; domain -- which WRAPS by design -- so
+                                            ; `,256` wrote 0 and `,-1` wrote 255 with no
+                                            ; error, where both references raise ERR 5
+                                            ; and write nothing. `eval_byte_checked` is
+                                            ; the same 3 bytes and already existed.
+                                            ; 🎯 ORDER PRESERVED, AND MEASURED:
+                                            ; its int16 stage runs check_fperr_only on
+                                            ; the STICKY FPERR first, so `POKE 99999,256`
+                                            ; stays ERR 6 (overflow beats domain) --
+                                            ; the row nobody had, because every existing
+                                            ; row pairs a bad address with a legal value.
                 pop     bc                  ; BC = VRAM address (popped BEFORE the check so
                                             ; the stack is SP-clean for check_fperr_only --
                                             ; same shape do_out now uses; an out-of-domain
@@ -91,13 +104,32 @@ wt_lp:
                                             ; needed -- the do_out precedent below
 
 do_out:
+                ; 🟢 THE PORT STAYS ADDRESS-DOMAIN, AND THAT IS MEASURED, NOT
+                ; INHERITED. `OUT 256,0` and `OUT -1,0` are BOTH accepted on the
+                ; VG-8020 and the CF-3300 (ERR 0) -- the port wraps where the VALUE
+                ; raises ERR 5. Applying the byte domain to both arguments would
+                ; look tidier and would be a REGRESSION on the port
+                ; [[two-rules-that-coincide-on-every-row-you-have]].
                 call    eval_addr           ; D-F2-2 A1: OUT's port/value are the checked
                 push    de                  ; save port
                 call    skip_spaces
                 cp      ','                 ; comma required
                 jp     nz,vdp_err
                 inc     hl
-                call    eval_addr           ; DE = value, HL = cursor
+                call    eval_byte_checked   ; DE = value 0..255, HL = cursor
+                                            ; 🔴 D-RAWVAL: the VALUE is a BYTE, not an
+                                            ; address. `eval_addr` applies the ADDRESS
+                                            ; domain -- which WRAPS by design -- so
+                                            ; `,256` wrote 0 and `,-1` wrote 255 with no
+                                            ; error, where both references raise ERR 5
+                                            ; and write nothing. `eval_byte_checked` is
+                                            ; the same 3 bytes and already existed.
+                                            ; 🎯 ORDER PRESERVED, AND MEASURED:
+                                            ; its int16 stage runs check_fperr_only on
+                                            ; the STICKY FPERR first, so `POKE 99999,256`
+                                            ; stays ERR 6 (overflow beats domain) --
+                                            ; the row nobody had, because every existing
+                                            ; row pairs a bad address with a legal value.
                 pop     bc                  ; BC = port (C = port number)
                 call    check_fperr_only    ; an out-of-domain port OR value (FPERR sticky
                                             ; across both eval_addr's, set-only) -> Overflow

@@ -410,7 +410,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:11545 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:11583 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -575,7 +575,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:2528 (T-6FE392)8 (T-529ABE)` from `TODO.md:10482 (T-529ABE)`: a
+      `TODO.md:2566 (T-6FE392)8 (T-529ABE)` from `TODO.md:10520 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -2201,6 +2201,44 @@ list. **When a slice lands, grep this list for what it just shipped.**
       it verb by verb, cheapest-context verbs first, and file what each review
       measures.
 
+- [x] ✅ **D-RAWVAL (2026-09-08): the raw-I/O trio's SECOND argument had the
+      ADDRESS domain, so it WRAPPED** ([`docs/spec-basic-rawval.md`](docs/spec-basic-rawval.md),
+      [`scratchpad/rawval_probe.py`](scratchpad/rawval_probe.py),
+      [before](scratchpad/rawval_wide.out), [after](scratchpad/rawval_after.out),
+      13 rows × 3 machines, **6 DIFF → 0**, **byte-neutral**). The trio the
+      worklist names FIRST, and the review found it by reading rather than by rows:
+      `intarg-acceptance` had **eleven** rows for POKE/VPOKE/OUT and every one was
+      about the FIRST argument. All three handlers evaluated the VALUE with
+      `eval_addr` — the ADDRESS domain, which WRAPS by design — and then took
+      `ld a,e`, the low byte, silently.
+      | row | vg8020 | cf3300 | zb before |
+      |---|---|---|---|
+      | `POKE x,256` | ERR 5, untouched | ERR 5, untouched | **ERR 0, wrote 0** |
+      | `POKE x,-1` | ERR 5, untouched | ERR 5, untouched | **ERR 0, wrote 255** |
+      | `VPOKE x,256` / `x,-1` | ERR 5 | ERR 5 | **ERR 0, wrote 0 / 255** |
+      | `OUT 0,256` / `0,-1` | ERR 5 | ERR 5 | **ERR 0** |
+      🎯 **THE ASYMMETRY WAS VISIBLE IN THE SOURCE ALONE.** `eval_byte_checked`
+      (0..255, ERR 5) already existed and is what `STRING$`'s char code uses —
+      `STRING$(5,256)` was a GATED ERR 5 row throughout. So `STRING$`'s byte was
+      checked and `POKE`'s was not, in one tree. The fix is that one symbol at
+      three sites, and both calls are 3 B, so it cost **nothing** — which mattered,
+      page 1 being at 2 B with all three carve routes shut (D-CARVEOUT).
+      🎯 **AND EACH ROW PRIMES ITS TARGET WITH 65 AND PEEKs IT BACK**, so "refused"
+      and "wrote something" are distinguishable. The predicted wrap values — **0**
+      for 256, **255** for −1 — came out exactly, which is what makes `ld a,e` the
+      CONFIRMED mechanism and not a plausible one
+      [[a-mechanism-inferred-from-one-observation]].
+      🔴 **TWO ROWS EXIST ONLY TO STOP THE TIDY VERSION OF THIS FIX.** `OUT`'s PORT
+      is still `eval_addr` and that reads as an oversight — but `OUT 256,0` and
+      `OUT -1,0` are **ACCEPTED on both references**. The port wraps where the
+      value raises; harmonising the two arguments onto one domain would be a
+      REGRESSION [[two-rules-that-coincide-on-every-row-you-have]]. And
+      `POKE 99999,256` is **ERR 6** on all three: overflow beats domain, and **no
+      existing row could have seen that change**, because every one pairs a bad
+      address with a LEGAL value. Both measured BEFORE the fix, and both now gated.
+      ✅ **10 ROWS ADDED TO `intarg-acceptance` (49 total, ALL PASS)** — six were
+      RED before the fix, four are the guards above.
+
 - [x] ✅ **D-DATACOLON (2026-08-31): three DATA/RESTORE defects from one
       review read** ([`docs/spec-basic-datacolon.md`](docs/spec-basic-datacolon.md),
       `scratchpad/datacolon_probe.py`, 7 rows x 3 machines, 6 DIFF -> 0). The
@@ -3166,7 +3204,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:10482 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:10520 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

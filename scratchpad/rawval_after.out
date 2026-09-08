@@ -1,0 +1,17 @@
+  p.ctl   POKE &HD020,42     vg=ERR=0 got=42         cf=ERR=0 got=42         zb=ERR=0 got=42        
+  p.255   POKE &HD020,255    vg=ERR=0 got=255        cf=ERR=0 got=255        zb=ERR=0 got=255       
+  p.256   POKE &HD020,256    vg=ERR=5 got=65         cf=ERR=5 got=65         zb=ERR=5 got=65        
+  p.neg   POKE &HD020,-1     vg=ERR=5 got=65         cf=ERR=5 got=65         zb=ERR=5 got=65        
+  v.ctl   VPOKE 16000,42     vg=ERR=0 got=42         cf=ERR=0 got=42         zb=ERR=0 got=42        
+  v.256   VPOKE 16000,256    vg=ERR=5 got=65         cf=ERR=5 got=65         zb=ERR=5 got=65        
+  v.neg   VPOKE 16000,-1     vg=ERR=5 got=65         cf=ERR=5 got=65         zb=ERR=5 got=65        
+  o.256   OUT 0,256          vg=ERR=5 got=0          cf=ERR=5 got=0          zb=ERR=5 got=0         
+  o.neg   OUT 0,-1           vg=ERR=5 got=0          cf=ERR=5 got=0          zb=ERR=5 got=0         
+  x.both  POKE 99999,256     vg=ERR=6 got=65         cf=ERR=6 got=65         zb=ERR=6 got=65        
+  x.vovf  POKE &HD020,99999  vg=ERR=6 got=65         cf=ERR=6 got=65         zb=ERR=6 got=65        
+  x.port  OUT 256,0          vg=ERR=0 got=0          cf=ERR=0 got=0          zb=ERR=0 got=0         
+  x.pneg  OUT -1,0           vg=ERR=0 got=0          cf=ERR=0 got=0          zb=ERR=0 got=0         
+
+=== 0 divergence(s): none ===
+  🎯 `POKE x,256` on the reference: ERR 5, target left at 65  -> REFUSED (the byte domain is real)
+refcache: 26 hit, 13 miss, 13 stored
