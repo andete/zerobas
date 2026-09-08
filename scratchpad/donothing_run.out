@@ -1,0 +1,11 @@
+  d.ctl      PRINT 1        vg=ERR=0    cf=ERR=0    zb=ERR=0    nodisk=ERR=0   
+  d.set      SET            vg=ERR=5    cf=ERR=5    zb=ERR=5    nodisk=ERR=5   
+  d.settail  SET ZZZ QQQ    vg=ERR=5    cf=ERR=5    zb=ERR=5    nodisk=ERR=5   
+  d.ipl      IPL            vg=ERR=5    cf=ERR=5    zb=ERR=5    nodisk=ERR=5   
+  d.ipltail  IPL ZZZ QQQ    vg=ERR=5    cf=ERR=5    zb=ERR=5    nodisk=ERR=5   
+  d.cmd      CMD            vg=ERR=5    cf=ERR=5    zb=ERR=5    nodisk=ERR=5   
+  d.var      SET=1:PRINT 0  vg=ERR=5    cf=ERR=5    zb=ERR=5    nodisk=ERR=5   
+
+=== against the CF-3300 (the oracle; the VG-8020 is DISKLESS): 0 row(s) not matching ERR 5: none ===
+=== diskless target vs the VG-8020: 0 divergent row(s): none ===
+refcache: 0 hit, 28 miss, 28 stored

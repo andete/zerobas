@@ -263,6 +263,24 @@ MAX_TOKEN       equ     $CD     ; MAX — 1st half of MAXFILES (statement: MAX F
 ; is a keyword token in the crunch stream; BASIC_ID is a cassette file-format byte.
 ; Kept as separately-named constants on purpose (no collision), like SAVE/BSAVE.
 NAME_TOKEN      equ     $D3     ; NAME "old" AS "new" — rename a file (statement)
+; --- D-DONOTHING3: SET / IPL / CMD (2026-09-08) ------------------------------
+; Three statement words the reference TOKENISES and then refuses on sight:
+; `SET`, `IPL` and `CMD` all raise ERR 5 (Illegal function call), and
+; `SET ZZZ QQQ` / `IPL ZZZ QQQ` raise ERR 5 too — NOT ERR 2 — so the tail is
+; never parsed and there is no verb to implement at all. Faithful behaviour is
+; "tokenise, then ERR 5", and the whole main-side cost is three stmt_table rows.
+; 🟢 ORACLE-SOURCED, not guessed: read out of the reference's own program area by
+; basic_probe_kwsweep.py's Layer 1 and pinned in CRUNCH_DIFF_PINNED, the same
+; provenance as every other token in kwtable.inc. The occupied neighbours are
+; BSAVE $D0, NAME $D3, KILL $D4 and LOCATE $D8; these three sit in the holes.
+; 🔴 THEY ARE NOT DISK-BASIC WORDS, THOUGH THEY WERE FILED AS SUCH. The DISKLESS
+; VG-8020 answers ERR 5 to all three AND to `SET=1` -- so they are reserved in
+; plain MSX BASIC, the diskless build owes no divergence here, and the VG-8020 is
+; an oracle for them like any other base keyword (measured on four sides,
+; scratchpad/donothing_probe.py).
+SET_TOKEN       equ     $D2     ; SET — tokenised, then ERR 5 (no verb)
+IPL_TOKEN       equ     $D5     ; IPL — tokenised, then ERR 5 (no verb)
+CMD_TOKEN       equ     $D7     ; CMD — tokenised, then ERR 5 (no verb)
 REM_TOKEN       equ     $8F     ; spec-tokens-statements.md; swallows rest of line
 POKE_TOKEN      equ     $98     ; spec-tokens-statements.md
 ; PEEK is a *function* token: a $FF prefix followed by a second byte.

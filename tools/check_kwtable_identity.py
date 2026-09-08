@@ -84,9 +84,10 @@ SUB_BASE = 0x0000
 # that matched no expected delta would be the finding.
 # Previous pins: 1058 B / 334b29c4… at b5f4135 (D-LPTVERB, +17 = LPRINT 9 + LPOS
 # 8); 1041 B / 8f120510… at 9bfcfb9 (2026-08-05), kwtable @ $2CD2.
-KWTABLE_SIZE = 1133   # D-WAIT 2026-09-07: +7 B, the WAIT entry ($96, oracle-
-                      # sourced). Was 1126 after D-MKSD's +30 B (MKS$/MKD$/CVS/CVD).
-KWTABLE_SHA = "e1915ca9b5fdac46bd18e6dccbf997eb4496e441085acb35b7237987ca3087de"
+KWTABLE_SIZE = 1151   # D-DONOTHING3 2026-09-08: +18 B, the SET ($D2) / IPL ($D5)
+                      # / CMD ($D7) entries, 6 B each, all three oracle-sourced.
+                      # Was 1133 after D-WAIT's +7 B (the WAIT entry, $96).
+KWTABLE_SHA = "b1266f99a73568bf8f3f4815f6dbed02010f432860a5ce443caab3c741ce417c"
 
 
 def load_syms(path):

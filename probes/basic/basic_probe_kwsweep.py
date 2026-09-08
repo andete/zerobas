@@ -376,14 +376,20 @@ SKIP_EXEC = {k for k, _, ex, _, _ in SWEEP if ex is None}
 #
 # The values are ORACLE-SOURCED — read out of the reference's own program area by
 # this probe's Layer 1, the same provenance as every token in kwtable.inc.
+# 🟢 SET ($D2), IPL ($D5) and CMD ($D7) LEFT THIS SET on 2026-09-08 (D-DONOTHING3):
+# zerobas now crunches all three and dispatches them to `gb_illegal`, so they read
+# SAME. A pinned row that stops diverging is a STALE PIN and this probe returns 5
+# on one, which is what removing them here answers.
+# 🔴 AND THEY WERE NEVER DISK-BASIC WORDS. This block sat under a Disk-BASIC
+# heading and the fix was filed as needing a disk-equipped oracle; measured, the
+# DISKLESS VG-8020 answers ERR 5 to `SET`, `IPL`, `CMD` AND to `SET=1` -- so all
+# three are reserved in plain MSX BASIC and the VG-8020 is a perfectly good oracle
+# for them (scratchpad/donothing_probe.py, four sides).
 CRUNCH_DIFF_PINNED = {
     "dski": "DSKI$  -> $EA",
     "dsko": "DSKO$  -> $D1",
     "copy": "COPY   -> $D6",
-    "set":  "SET    -> $D2",
     "attr": "ATTR$  -> $E9",
-    "ipl":  "IPL    -> $D5",
-    "cmd":  "CMD    -> $D7",
     "loc":  "LOC    -> $FF $AC (two-byte function token)",
 }
 # 🎯 `LFILES` IS THE CONTROL THAT MAKES THIS A LIST AND NOT A CLASS: it is

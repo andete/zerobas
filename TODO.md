@@ -410,7 +410,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:11426 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:11460 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -575,7 +575,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:2505 (T-6FE392)8 (T-529ABE)` from `TODO.md:10363 (T-529ABE)`: a
+      `TODO.md:2505 (T-6FE392)8 (T-529ABE)` from `TODO.md:10397 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -3143,7 +3143,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:10363 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:10397 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -7215,13 +7215,47 @@ list. **When a slice lands, grep this list for what it just shipped.**
       and `ATTR$` stays parked. `scratchpad/promote_scout.py` lists 174 further
       promotable routines if more page-1 room is wanted, but every byte it moves is
       a low-region byte spent, so it cannot raise the 17.
-      ⚠️ **AND THE TOKENS ARE NOT MEASURED YET.** `SET`, `IPL` and `CMD` have no
-      `*_TOKEN` in [`basic/sysvars.inc`](basic/sysvars.inc) and no `kwtable.inc`
-      row: they are not tokenised at all, so the 9 B of `stmt_table` entries is the
-      *dispatch* cost and not the whole job. The token VALUES have to come off the
-      reference as a black-box reading (tokenise a line, PEEK the program text) the
-      way the crunch pins in `basic_probe_kwsweep.py` were taken. **Do that first;
-      the byte price above assumes it.**
+      🟢 **THE TOKENS ARE ALREADY MEASURED — `SET` `$D2`, `IPL` `$D5`, `CMD` `$D7`,
+      `ATTR$` `$E9`** — oracle-sourced, read out of the reference's own program
+      area and pinned in `CRUNCH_DIFF_PINNED`
+      ([`probes/basic/basic_probe_kwsweep.py:379`](probes/basic/basic_probe_kwsweep.py:379)).
+      ⚠️ I wrote "the tokens are not measured yet" here an hour before finding
+      them, from `grep SET_TOKEN basic/sysvars.inc` coming back empty — which
+      showed only that zerobas does not DEFINE them, never that nobody had READ
+      them. All three values are free of zerobas's own table (`$D0` BSAVE, `$D3`
+      NAME, `$D4` KILL, `$D8` LOCATE are the occupied neighbours).
+      🟢 **SHIPPED 2026-09-08 (D-DONOTHING3): `SET`, `IPL` AND `CMD` NOW TOKENISE
+      AND RAISE ERR 5 — 9 B in main page 1, 18 B in sub page 0, NOTHING in the low
+      region.** Three `stmt_table` rows pointing at `gb_illegal`, three
+      `kwtable.inc` rows, three `*_TOKEN` equs. Measured on FOUR sides
+      ([`scratchpad/donothing_probe.py`](scratchpad/donothing_probe.py),
+      [`.out`](scratchpad/donothing_run.out)): `SET`, `SET ZZZ QQQ`, `IPL`,
+      `IPL ZZZ QQQ` and `CMD` all read **ERR 5** on the VG-8020, the CF-3300, the
+      disk build and the diskless build alike. Page 1 12 B → **3 B**; sub page 0
+      1339 B → **1321 B** (`make basic-reloc` from clean, 2026-09-08).
+      🔴 **AND THEY WERE NEVER DISK-BASIC WORDS.** They sat under this item's
+      Disk-BASIC heading and the fix was expected to owe the diskless target a
+      divergence row, on the reasoning that zerobas's `kwtable` lives in the
+      always-present sub-ROM while a real diskless machine has no Disk BASIC. The
+      probe carried a fourth side to measure exactly that — and the **DISKLESS
+      VG-8020 answers ERR 5 to all three, and to `SET=1` as well**, so all three
+      are reserved in plain MSX BASIC, the diskless build owes NOTHING, and the
+      VG-8020 is a perfectly good oracle for them. The prediction was wrong in the
+      direction that would have blocked the work, which is why the row was carried
+      rather than reasoned about [[diskless-is-an-official-target]].
+      🔴 **`SET`/`IPL`/`CMD` HAVE LEFT `CRUNCH_DIFF_PINNED`** — a pinned row that
+      stops diverging is a STALE PIN and `basic_probe_kwsweep.py` returns 5 on one.
+      Five words remain pinned: `DSKI$`, `DSKO$`, `COPY`, `ATTR$`, `LOC`.
+      ⚠️ **`ATTR$` IS STILL PARKED**, and for a different reason than the other
+      three: it is a FUNCTION, so it needs `cp $E9 / jp z,…` inside `ev_f` (5 B,
+      main page 1) rather than a table row, and page 1 was back to 3 B free on
+      2026-09-08 after the three statements were spent.
+      🟢 **AND THE RAISER IS FREE.** `gb_illegal`
+      ([`basic/interp.asm:2145`](basic/interp.asm:2145)) is already exactly
+      `ld a,5 / jp raise_error`, and `dw` takes any address, so all three entries
+      point straight at it. That dropped the price, on 2026-09-08, to **9 B in main page 1 and
+      NOTHING in the low region** — the 5 B low half above was priced before
+      anyone checked whether the raiser existed.
       ⚠️ **`DSKO$`, `SET` AND `IPL` WRITE, AND `kwsweep` REFUSES TO EXECUTE THEM FOR
       THAT REASON.** They are driven here because every row mounts its OWN COPY of
       `disk/test720.dsk`; the shared fixture is never opened for writing.

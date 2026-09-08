@@ -552,6 +552,16 @@ stmt_table:
                 ; The listing itself is sub-ROM page 1 (sub/dirverb.asm tnt_files).
                 db      LFILES_TOKEN
                 dw      ex_lfiles    ; LFILES ["<filespec>"] -- FILES to LPT:
+                ; D-DONOTHING3: SET / IPL / CMD are tokenised-but-unimplemented
+                ; on the reference — ERR 5 on sight, tail unparsed. `gb_illegal`
+                ; is already `ld a,5 / jp raise_error`, so three rows is the
+                ; ENTIRE main-side cost: 9 B here and nothing in the low region.
+                db      SET_TOKEN
+                dw      ex_donothing
+                db      IPL_TOKEN
+                dw      ex_donothing
+                db      CMD_TOKEN
+                dw      ex_donothing
                 db      MERGE_TOKEN
                 dw      ex_merge
                 db      OPEN_TOKEN
@@ -2142,6 +2152,17 @@ gba_byte:
                 jr      nz,gb_illegal
                 ld      a,e
                 ret
+; ex_donothing — the statement handler for SET / IPL / CMD (D-DONOTHING3).
+; An `equ` ALIAS, not a second copy: 0 bytes, the same shape as
+; `loc_missing equ g8_missing` in missing.asm. It exists so `stmt_table`'s targets
+; stay `ex_*` labels (tests/test_stmt_dispatch.py asserts that) and so the
+; dispatch site says what it means — those three words are TOKENISED and then
+; refused on sight, which is the reference's whole behaviour for them.
+; ⚠️ IT IS AN ALIAS, SO IT IS A LABEL AND NOT A DECISION: anything sited on
+; `ex_donothing` serves every one of `gb_illegal`'s callers too. A future
+; SET/IPL/CMD-specific behaviour needs its own body, not an edit here
+; [[a-shared-tail-is-not-a-decision]].
+ex_donothing    equ     gb_illegal
 gb_illegal:
                 ld      a,5
                 jp      raise_error         ; ERR 5 illegal function call

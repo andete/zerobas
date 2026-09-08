@@ -111,6 +111,19 @@ kwtable:
                 ; tokens ($D4 / $D3). "NAME" shares no prefix with another entry.
                 db      4,"KILL",1,KILL_TOKEN
                 db      4,"NAME",1,NAME_TOKEN
+                ; D-DONOTHING3: SET / IPL / CMD — reserved words in plain MSX
+                ; BASIC (the DISKLESS VG-8020 reserves them too, measured), so
+                ; they belong in the base table and not behind a disk switch.
+                ; Tokenised here so the crunch matches the reference byte for
+                ; byte; the statement handler is
+                ; `gb_illegal`, because ERR 5 on sight IS the reference's verb.
+                ; Order is free (match_kw is full-keyword), and "SET" cannot
+                ; shadow LSET/RSET/PSET/PRESET for the same reason: the match
+                ; starts at the current text position, which for those begins
+                ; with L, R or P.
+                db      3,"SET",1,SET_TOKEN
+                db      3,"IPL",1,IPL_TOKEN
+                db      3,"CMD",1,CMD_TOKEN
                 ; MAXFILES = MAX($CD) + FILES($B7) — two reserved words (oracle-
                 ; locked, like OUTPUT = OUT+PUT). FILES is already in this table, so
                 ; only "MAX" is added; the tokeniser then crunches "MAXFILES" to

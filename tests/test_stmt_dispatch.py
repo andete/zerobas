@@ -102,6 +102,12 @@ EXPECTED = [
     ('BSAVE_TOKEN', 'ex_bsave'),
     ('SAVE_TOKEN', 'ex_save'),
     ('FILES_TOKEN', 'ex_files'),
+    # D-DONOTHING3: SET / IPL / CMD are tokenised and then refused on sight
+    # (ERR 5, tail unparsed) on both references, so all three share one handler
+    # -- `ex_donothing`, a 0-byte `equ` alias of `gb_illegal`.
+    ('SET_TOKEN', 'ex_donothing'),
+    ('IPL_TOKEN', 'ex_donothing'),
+    ('CMD_TOKEN', 'ex_donothing'),
     ('MERGE_TOKEN', 'ex_merge'),
     ('OPEN_TOKEN', 'ex_open'),
     ('INPUT_TOKEN', 'ex_input'),
