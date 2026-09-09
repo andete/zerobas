@@ -339,11 +339,15 @@ LFL_SCREEN = {"lfl-ctlf", "lfl-noneb", "lfl-nonef",
 # explicitly -- a battery whose rows disagree about which DISK they are looking
 # at is one where a divergence has two candidate causes.
 LFL_EMPTY = {"lfl-emptyctl", "lfl-emptyf", "lfl-emptyp", "lfl-emptypb"}
-# Rows that WRITE to the image they mount. Each gets a private copy, because
-# boot-per-case reboots the machine but keeps mounting the SAME file: a control
-# that SAVEs would otherwise make the "empty" directory non-empty for every
-# later row in its group, and for the whole of a `--repeat 2` second pass.
+# Rows that WRITE to the image they mount -- on a CORRECT build. Boot-per-case
+# reboots the machine but keeps mounting the SAME file, so a control that SAVEs
+# would otherwise make the "empty" directory non-empty for every later row in
+# its group, and for the whole of a `--repeat 2` second pass.
+# 🔴 THIS SET IS DOCUMENTARY NOW, NOT A DISPATCH KEY: every row gets its own
+# copy (see the loop in `run_side`), because WHICH ROWS WRITE IS A PROPERTY OF
+# THE BUILD, and a knife exists to run builds that are not this one.
 LFL_WRITES = {"lfl-emptyctl"}
+assert LFL_WRITES <= {r[0] for r in LFL}, "LFL_WRITES names a row that is not in LFL"
 
 PROMPTS = omsx_repl.PROMPTS
 
@@ -529,20 +533,28 @@ def run_side(side, only):
                     out[label] = "<NO DISK FIXTURE>"
                 continue
             tag = os.path.basename(src).replace(".dsk", "")
-            ro = [r for r in rows if r[0] not in LFL_WRITES]
-            # Read-only rows share ONE working copy; the committed fixture is
-            # never the file openMSX is handed.
-            if ro:
-                dsk = probe_tmp.tmp(f"zb_lptverb_{side}_{tag}.dsk")
-                shutil.copy(src, dsk)
-                scr = [r for r in ro if r[0] in LFL_SCREEN]
-                prn = [r for r in ro if r[0] not in LFL_SCREEN]
-                if scr:
-                    scr_battery(scr, diska=dsk)
-                if prn:
-                    prn_battery(prn, diska=dsk)
-            # Every WRITING row gets a fresh copy of its own.
-            for row in [r for r in rows if r[0] in LFL_WRITES]:
+            # 🔴 EVERY ROW GETS ITS OWN COPY, NOT JUST THE ONES THAT WRITE ON A
+            # CORRECT BUILD (K-FG2, 2026-09-09). The committed fixture is never
+            # the file openMSX is handed, and now neither is any other row's.
+            # The old shape shared ONE working copy between every row this file
+            # calls read-only. That is correct for a correct build and wrong for
+            # every other one -- and a knife exists precisely to run other ones.
+            # MEASURED, not feared: under the `do_files` op-selector cut,
+            # `lfl-inpb` wrote its own wildcard FCB into the image's FIRST
+            # directory entry, so `lfl-all`, `lfl-wild` and `lfl-sink` each read
+            # `????????.BAS` on a later boot and the knife reported "controls
+            # moved -- the cut breaks the verb". `lfl-all` run ALONE under the
+            # same cut is byte-identical to baseline.
+            # 🎯 Boot-per-case reboots the MACHINE; it does not re-mount a clean
+            # DISK. `scr_battery` and `prn_battery` are separate `run_cases`
+            # invocations, so RAM cannot carry between them and the image is the
+            # only state they share -- which is what makes the reading above an
+            # elimination and not a guess.
+            # A three-line sharing optimisation therefore cost a real finding a
+            # whole round of false negatives, and the cost of undoing it is one
+            # ~720 KB copy per row in the per-process scratch directory
+            # `probe_tmp` removes at exit [[apparatus-is-part-of-the-measurement]].
+            for row in rows:
                 dsk = probe_tmp.tmp(f"zb_lptverb_{side}_{tag}_{row[0]}.dsk")
                 shutil.copy(src, dsk)
                 if row[0] in LFL_SCREEN:

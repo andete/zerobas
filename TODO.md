@@ -434,7 +434,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:13019 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:13037 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -599,7 +599,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:3234 (T-6FE392)8 (T-529ABE)` from `TODO.md:11956 (T-529ABE)`: a
+      `TODO.md:3234 (T-6FE392)8 (T-529ABE)` from `TODO.md:11974 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -4015,7 +4015,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:11956 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:11974 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -7897,7 +7897,9 @@ list. **When a slice lands, grep this list for what it just shipped.**
       is how that control goes blind, and the gate says so itself.
       🤖 AUTONOMOUS — the reference or a gate settles it; finishable unattended (no his-decision signal found).
 
-- [ ] 🔴 **THE `do_files` OP-SELECTOR GUARD IS PINNED BY NOTHING.** Filed
+- [x] ✅ **THE `do_files` OP-SELECTOR GUARD IS PINNED BY NOTHING — PINNED
+      2026-09-09 (K-FG2), AND THE TWO EARLIER "CONTROLS MOVED" VERDICTS WERE
+      THE APPARATUS.** Filed
       2026-08-21 by D-FNEXPR2 §3.5, against its own fix.
       `do_files` parks its dirverb op selector on the stack across the filespec
       parse (+5 B) because `str_eval` can now run `INPUT$(n,#ch)`, which reaches
@@ -8038,25 +8040,41 @@ list. **When a slice lands, grep this list for what it just shipped.**
       the build we ship* — so the right cut is TODAY's machine with the guard
       removed, which is exactly the machine whose guard is under test. The
       historical hybrid the entry worried about is irrelevant to that.
-      🔴 **AND K-FG2 FAILS THE SAME CONTROL TEST K-FG1 DID — TWO INDEPENDENT CUTS,
-      ONE SYMPTOM.** `lfl-inp` and `lfl-inpb` moved as predicted, and so did
-      `lfl-wild`, `lfl-all` and `lfl-sink`, all showing `????????.BAS` as the
-      first entry. By the criterion this entry set, the red proves nothing.
-      🎯 **WHICH MAKES THE OWED THING NARROWER AND STRANGER THAN "a faithful
-      cut".** `lfl-all` is a BARE `LFILES` — no filespec, so `fname_expr` is never
-      reached — and between the head and the tenant call the only routines on that
-      path are `skip_spaces` and (for the filespec case) `fname_expr` /
-      `parse_disk_fcb`. **None of them is among `DISKOP_OP`'s writers**
-      (`fatprim_bounce` and two sites in `files.asm`). So on the evidence the bare
-      path cannot lose its selector, and it demonstrably does.
-      ➡️ **THE NEXT STEP IS THEREFORE A TRACE, NOT ANOTHER CUT**: read
-      `DISKOP_OP` either side of the tenant call on a bare `LFILES` under the
-      knifed build, the way the 2026-09-05 diagnostic did for `INPUT$`. Two cuts
-      failing identically is evidence that the assumption they share — *"nothing
-      writes DISKOP_OP in between"* — is what is wrong, not the cuts
-      [[a-mechanism-inferred-from-one-observation]].
-      🤖 AUTONOMOUS — 💰 0 ROM bytes; it is a row, and the references settle it.
-      The budget half is closed; what remains is one trace.
+      🟢 **K-FG2 IS EXACT — `MOVED == want == ['lfl-inp', 'lfl-inpb']`**, with all
+      five plain-`LFILES` controls (`lfl-ctlf`, `lfl-ctlp`, `lfl-all`, `lfl-wild`,
+      `lfl-sink`) byte-identical. Removing the guard is visible, and visible ONLY
+      where the filespec expression reaches the drive. That is the whole claim the
+      2026-08-21 entry said no knife could make.
+      🔴 **AND IT WAS EXACT ONLY AFTER THE APPARATUS WAS FIXED. BOTH EARLIER
+      "CONTROLS MOVED" VERDICTS — K-FG1's AND K-FG2's FIRST RUN — WERE THE PROBE,
+      NOT THE CODE.** `basic_probe_lptverb.py` shared ONE working disk copy
+      between every row it calls read-only, giving a private copy only to
+      `LFL_WRITES`. Under the cut, `lfl-inpb` writes its own wildcard FCB into the
+      image's FIRST directory entry, so every later row on that copy lists
+      `????????.BAS` — which is exactly the symptom that read as "the cut breaks
+      the verb".
+      🔬 **MEASURED IN THREE STEPS, EACH ONE FALSIFIABLE**:
+      • `--only lfl-all` (the bare row ALONE, under the cut) → **byte-identical**.
+        A cut that broke the bare verb could not produce that.
+      • `--only lfl-inpb,lfl-all` → `lfl-all` reads `????????.BAS`. The two rows
+        run in SEPARATE `run_cases` invocations (`scr_battery` and `prn_battery`),
+        each boot-per-case, so RAM cannot carry between them and the mounted image
+        is the only state they share. The image changed; nothing was inferred.
+      • per-row copies, full battery → **exact**.
+      🎯 **THE GENERALISABLE PART: `LFL_WRITES` IS A PROPERTY OF THE BUILD, NOT OF
+      THE ROW.** Boot-per-case reboots the MACHINE; it does not re-mount a clean
+      DISK. A row that is read-only on the build we ship can write on a mutated
+      one — and a knife exists precisely to run mutated ones, so the one battery
+      that most needs per-row isolation was the one that had shared state. Fixed
+      by giving every LFILES row its own ~720 KB copy; `LFL_WRITES` is now
+      documentary, asserted against the row set rather than dispatched on
+      [[apparatus-is-part-of-the-measurement]].
+      ⚠️ **THE `????????.BAS` WRITE IS NOT ITSELF INVESTIGATED, AND IT DOES NOT
+      NEED TO BE** — it only ever occurs on a build with the guard removed, i.e.
+      the build this entry exists to forbid. Named here so it is not rediscovered
+      as a new defect.
+      📌 Knife: `scratchpad/filesguard2_knife.py` (takes an optional row-prefix
+      filter as `argv[1]`, which is what made the three-step measurement cheap).
 
 - [x] ✅ **A FILESPEC OF CONTROL BYTES: CF-3300 SAYS `Bad file name`, ZEROBAS
       SAYS `File not found`.** **FIXED 2026-09-05 (D-FSPECCHAR) — 45/45 byte

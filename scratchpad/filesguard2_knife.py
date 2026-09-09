@@ -88,11 +88,18 @@ def build():
     return rc, log
 
 
+# \U0001f534 ROW ISOLATION, ADDED 2026-09-09. K-FG1 and K-FG2 both scored "the
+# controls moved", and the obvious next suspicion -- one row contaminating the
+# next -- is refuted by the probe itself: `prn_battery` is BOOT-PER-CASE. Running
+# a single row anyway is what turns that from an argument into a reading.
+ONLY = sys.argv[1] if len(sys.argv) > 1 else ""
+
+
 def run_gate(tag):
     log = os.path.join(TMP, f"{tag}.out")
+    cmd = [sys.executable, GATE, "--gate"] + (["--only", ONLY] if ONLY else [])
     with open(log, "w") as fh:
-        subprocess.call([sys.executable, GATE, "--gate"], cwd=ROOT,
-                        stdout=fh, stderr=subprocess.STDOUT)
+        subprocess.call(cmd, cwd=ROOT, stdout=fh, stderr=subprocess.STDOUT)
     txt = open(log, encoding="utf-8", errors="replace").read()
     return {k: v for k, v in ROW.findall(txt) if k in WATCH}, log
 
