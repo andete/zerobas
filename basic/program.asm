@@ -1011,8 +1011,7 @@ es_set:
                 ; call-and-resume is shared.
 trap_state_done:
                 call    set_state
-                pop     hl
-                jp      exec_stmt           ; continue the line (a bare `ret` would
+                jp      pop_exec            ; continue the line (a bare `ret` would
                                             ; SWALLOW the rest of the line (STOP ON:STOP OFF
                                             ; left OFF a no-op; VG-8020 differential caught it)
 
@@ -1773,8 +1772,7 @@ ef_havestep:
                 ld      hl,FOR_CUR          ; push the FOR_FRAME-byte frame
                 ld      bc,FOR_FRAME
                 ldir
-                pop     hl                  ; HL = loop body -> run it
-                jp      exec_stmt
+                jp      pop_exec            ; HL = loop body -> run it
 ; D-DUPSPAN2: an ALIAS, not a second copy -- byte-identical to gosub_stk_over,
 ; and POSITION-INDEPENDENT by tools/dupspan_indep.py (terminates, no
 ; escaping relative jump, not entered by fallthrough, same ROM region).
@@ -2124,8 +2122,7 @@ restore_done:
                 ld      (RESTORE_LINE),hl
                 xor     a
                 ld      (DATASTATE),a
-                pop     hl
-                jp      exec_stmt
+                jp      pop_exec            ; D-POPEXEC: pop hl + exec_stmt
 ers_line:
                 inc     hl
                 ld      c,(hl)              ; target line number, LE
@@ -2738,8 +2735,7 @@ ei_set:
                 ld      a,1
                 ld      (TRAPPEND),a        ; make check_traps look once more
 ei_done:
-                pop     hl
-                jp      exec_stmt           ; continue the line (`INTERVAL ON:...`)
+                jp      pop_exec            ; continue the line (`INTERVAL ON:...`)
 
 ; --- ex_on_interval: ON INTERVAL = <expr> GOSUB [<line>] ---------------------
 ; Entry: HL past the compound, on the `=`.
@@ -2898,8 +2894,7 @@ strig_flag:     push    af                  ; carry the decision across set_stat
                 jr      z,strig_done
                 set     6,(hl)              ; seed the edge shadow (ZTS_SHADOW)
 strig_done:
-                pop     hl                  ; HL = cursor past the sub-keyword
-                jp      exec_stmt           ; continue the line -- a bare `ret` here would
+                jp      pop_exec            ; continue the line -- a bare `ret` here would
                                             ; SWALLOW the rest of it (the T1 es_set lesson)
 ; D-DUPSPAN: an ALIAS, not a second copy -- the two instructions were
 ; byte-identical to interp.asm's gb_illegal, on gfx_absent's own precedent.

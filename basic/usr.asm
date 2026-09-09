@@ -84,8 +84,7 @@ ex_def:
                 pop     af                  ; A = index
                 push    hl                  ; guard cursor across the store
                 call    usr_setslot         ; USRTAB[index] = DE
-                pop     hl
-                jp      exec_stmt           ; continue the line
+                jp      pop_exec            ; continue the line
 ; D-XREG: an ALIAS across the low <-> page-1 boundary. Byte-identical to
 ; ee_synerr_pop and POSITION-INDEPENDENT (tools/dupspan_indep.py), and the
 ; REGION question -- is this label reached from a tenant whose mapping

@@ -241,8 +241,7 @@ clr_apply:
                                             ; point at which COLOR becomes visible, and
                                             ; it is past every way the statement can fail
                 call    CHGCLR
-                pop     hl
-                jp      exec_stmt
+                jp      pop_exec            ; D-POPEXEC: pop hl + exec_stmt
 
 ; --- ex_cls: CLS -----------------------------------------------------------
 ex_cls:
@@ -250,8 +249,7 @@ ex_cls:
                 push    hl
                 xor     a                   ; CLS requires the zero flag set on entry
                 call    CLS
-                pop     hl
-                jp      exec_stmt
+                jp      pop_exec            ; D-POPEXEC: pop hl + exec_stmt
 
 ; --- ex_width: WIDTH <columns> ---------------------------------------------
 ; Records the line length in LINLEN and in the active mode's per-mode default
@@ -302,8 +300,7 @@ wid_apply:
                 ld      a,(SCRMOD)
                 push    hl
                 call    CHGMOD              ; re-init the screen at the new width
-                pop     hl
-                jp      exec_stmt
+                jp      pop_exec            ; D-POPEXEC: pop hl + exec_stmt
                 ; Both rejects run at ex_width's OWN depth (exec_stmt `jp`s here),
                 ; so they need no return-address parking -- the same reason
                 ; ex_swap tests its operands at the handler's depth.
@@ -347,11 +344,9 @@ key_off:
                 inc     hl                  ; past OFF
                 push    hl
                 call    ERAFNK
-                pop     hl
-                jp      exec_stmt
+                jp      pop_exec            ; D-POPEXEC: pop hl + exec_stmt
 key_on:
                 inc     hl                  ; past ON
                 push    hl
                 call    DSPFNK
-                pop     hl
-                jp      exec_stmt
+                jp      pop_exec            ; D-POPEXEC: pop hl + exec_stmt

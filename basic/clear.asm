@@ -207,5 +207,4 @@ clr_done:
                                             ; CLEAR wipes any live scalars/arrays too;
                                             ; PRGEND is already valid here (a program
                                             ; may already exist)
-                pop     hl
-                jp      exec_stmt           ; HL = cursor; run the next statement
+                jp      pop_exec            ; HL = cursor; run the next statement

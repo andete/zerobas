@@ -417,6 +417,22 @@ req_operand:
                 jp      z,loc_missing       ; `... :` likewise -> ERR 24
                 ret
 
+; --- pop_exec: `pop hl` then exec_stmt, as ONE jump ------------------------
+; 💰 D-POPEXEC, the third instruction pair. `pop hl` / `jp exec_stmt` — a handler
+; releasing its guarded cursor and returning to the statement driver — stood at
+; TWENTY-TWO sites, 4 bytes each. This label is ONE byte and FALLS THROUGH into
+; `exec` below, so each site becomes a 3-byte `jp pop_exec`: **-1 B per site**.
+; 🔴 IT GOES ABOVE **BOTH** LABELS, AND THAT IS NOT A STYLE CHOICE. `exec:` and
+; `exec_stmt:` sit on the SAME address; putting the `pop hl` between them would
+; leave `exec` pointing at it, so every `call exec` would pop a word nobody
+; pushed. Above both, the fall-through order is pop_exec -> exec -> exec_stmt and
+; each label still means what it meant.
+; 🟢 AND NOTHING FALLS INTO `exec` FROM ABOVE — the instruction before is an
+; unconditional `ret`, which is what makes inserting a byte here safe at all.
+; ⚠️ Entered by `jp`, never `call`: exec_stmt does not return to its caller.
+pop_exec:
+                pop     hl
+
 ; --- exec: walk the line, dispatching each statement -----------------------
 ; in: HL = token buffer (0x00-terminated). Statements are separated by ':'.
 ; Returns to the REPL at end of line (or hands off via BLOAD,R, never to return).

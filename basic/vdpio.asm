@@ -54,8 +54,7 @@ do_vpoke:
                 ld      h,b
                 ld      l,c                 ; HL = VRAM address (WRTVRM wants it here)
                 call    WRTVRM              ; write A to VRAM[HL]
-                pop     hl                  ; HL = cursor
-                jp      exec_stmt           ; run the next statement
+                jp      pop_exec            ; run the next statement
 
 ; --- do_out: OUT port,value -----------------------------------------------
 ; port = Z80 I/O port (BC = port for `out (c),a`), value low byte.

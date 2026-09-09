@@ -1457,8 +1457,7 @@ ems_close:
                 ld      a,(SH_ERR)
                 cp      3
                 jr      z,ems_range         ; range error (n<1/n>255/n>La)
-                pop     hl                  ; HL = continue cursor
-                jp      exec_stmt
+                jp      pop_exec            ; HL = continue cursor
 ems_range:
                 ; The only range error the tenant still reports is n > LEN(A$)
                 ; (n<1 / n>255 are now rejected by eval_pos_arg before the tenant

@@ -72,8 +72,7 @@ mot_onoff:
 mot_go:
                 push    hl                  ; guard the cursor across the BIOS call
                 call    STMOTR
-                pop     hl
-                jp      exec_stmt           ; continue the line (a bare `ret` would
+                jp      pop_exec            ; continue the line (a bare `ret` would
                                             ; swallow the rest of it -- the T1 lesson)
 
 ; --- err_missing_operand / err_linebuf_overflow: both MIGRATED --------------
@@ -432,8 +431,7 @@ sw_xloop:
                 inc     hl
                 inc     de
                 djnz    sw_xloop
-                pop     hl
-                jp      exec_stmt
+                jp      pop_exec            ; D-POPEXEC: pop hl + exec_stmt
 
 ; sw_operand: resolve ONE operand at HL -> SW_ADDR (its VALUE address) and
 ; SW_TYPE. SW_MODE picks the scalar routine: 0 = var_alloc_or_find (may create),

@@ -1133,8 +1133,7 @@ spr_assign:
                 ; `pop hl` takes.
 spr_stmt_done:
                 call    spr_tenant
-                pop     hl
-                jp      exec_stmt
+                jp      pop_exec            ; D-POPEXEC: pop hl + exec_stmt
 
 ; --- ev_f_sprite: SPRITE$(n) as a string FACTOR -----------------------------
 ; Reached from str_eval_one (basic/strvar.asm) with HL ON the SPRITE token. The
@@ -1494,8 +1493,7 @@ g8_run:                                     ; run-aborting stmt_error exec_stmt 
                 ; caught it; a shared tail across two switches needs a home
                 ; outside BOTH, and there is none to be had for free here.
                 call    spr_tenant
-                pop     hl
-                jp      exec_stmt
+                jp      pop_exec            ; D-POPEXEC: pop hl + exec_stmt
 g8_missing:
                 ld      a,24                ; Missing operand (measured, spec §3)
                 jp      raise_error

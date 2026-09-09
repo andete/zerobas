@@ -490,8 +490,7 @@ oo_storemode:
                 call    fch_modes_ptr
                 ld      a,(FCH_MODE)        ; 1 (INPUT) or 2 (OUTPUT/APPEND)
                 ld      (hl),a              ; FCH_MODES[ch] = mode (now committed)
-                pop     hl
-                jp      exec_stmt
+                jp      pop_exec            ; D-POPEXEC: pop hl + exec_stmt
 oo_fail:
                 ; post-claim failure (DE = channel): release the slot we claimed and
                 ; mark the channel closed in the table (its globals are stale garbage).
@@ -610,8 +609,7 @@ oo_stamp_devtype:
                 call    fch_modes_ptr
                 ld      a,(OO_DEVTYPE)
                 ld      (hl),a
-                pop     hl
-                jp      exec_stmt
+                jp      pop_exec            ; D-POPEXEC: pop hl + exec_stmt
 
 ; --- OPEN "CAS:name" FOR OUTPUT|INPUT AS #n --------------------------------
 ; A cassette SEQUENTIAL data channel. Like LPT:/CRT: it owns no fat.asm context
@@ -1168,8 +1166,7 @@ dc_finish       equ     ed_done
 dc_all:
                 push    hl                  ; guard text cursor across CALSLT
                 call    fch_close_all
-                pop     hl
-                jp      exec_stmt
+                jp      pop_exec            ; D-POPEXEC: pop hl + exec_stmt
 
 ; init_filechan — cold-start the file-channel state: no channel open, PRINT to
 ; screen, the multi-channel table empty, and MAXFILES = 1 (the observed default:

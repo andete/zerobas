@@ -579,8 +579,7 @@ lrs_var:
                 ld      (LRSET_DEST),hl
 lrs_store:
                 call    lrset_store
-                pop     hl
-                jp      exec_stmt
+                jp      pop_exec            ; D-POPEXEC: pop hl + exec_stmt
 ; --- lrset_notfld: the target has no field -> store into the VARIABLE ---------
 ; D-LRVAR (docs/spec-basic-lrvar.md). Until this slice this was a bare
 ; `jp stmt_error` commented "slice-1 limit" -- measured 2026-08-08 as the last two
