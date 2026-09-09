@@ -410,7 +410,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:11989 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:12015 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -575,7 +575,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:2943 (T-6FE392)8 (T-529ABE)` from `TODO.md:10926 (T-529ABE)`: a
+      `TODO.md:2969 (T-6FE392)8 (T-529ABE)` from `TODO.md:10952 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -2307,6 +2307,32 @@ list. **When a slice lands, grep this list for what it just shipped.**
       length, so it is the one part that ships without settling the EOF bound. The
       four remaining rows (`,-1`, `,256`, `,300`, and `,2` on a one-record file) are
       all the reference's END-OF-FILE rule and stay divergent, deliberately.
+      📐 **THE DESIGN STEP, SPECIFIED 2026-09-09 SO IT IS NO LONGER A QUESTION.**
+      Everything the EOF bound needs is already in the tree:
+      - **The length is reachable.** `FAT_FILESIZE` (`$E9CE`, 4-byte LE) is set by
+        `fat_find` at OPEN and bound to the channel by `fch_select` — which
+        `gp_common` already calls. It lives in page-3 RAM, so the sub-ROM tenant
+        sees it too; `ev_ff_lof` reads exactly this for `LOF(#n)`.
+      - **The offset is already computed.** `frnd_calc`
+        ([`basic/randio-body.inc`](basic/randio-body.inc)) does
+        `HL = (recno-1) * reclen` via `mul_reclen`, and its own comment pins
+        `byteoffset < 32768`.
+      - **So the test is a comparison, not arithmetic**: if `FAT_FILESIZE`'s HIGH
+        word is nonzero the file exceeds 64 KB and any in-cap record is in range;
+        otherwise `offset >= FAT_FILESIZE(low)` means the record starts at or past
+        EOF. ~15–20 B in the sub-ROM, which had **1313 B** free in page 0
+        (2026-09-08).
+      🔴 **THE HARD PART IS REPORTING, NOT DETECTING.** The tenant returns only CF,
+      and `gp_fin` turns any CF into `jp c,load_error` — one bit for two conditions.
+      Distinguishing "past EOF" (ERR 55) from a genuine I/O error needs a status
+      byte in the shared page-3 span that `gp_fin` reads, which is a change to the
+      **tenant's error contract** — the thing to design, and the reason this is not
+      a byte price.
+      ⚠️ **AND LIFTING THE 1..255 CAP IS A SEPARATE, LARGER CHANGE.** `PUT#1,256` is
+      ACCEPTED on the reference and EXTENDS the file; here the cap refuses it, and
+      `frnd_calc`'s sector math assumes `byteoffset < 32768`. Growing a file is not
+      the same job as bounding a read, and conflating them is how one change becomes
+      three.
       ➡️ **THE REST IS NOT FIXED, DELIBERATELY.** Making the codes trappable is the easy half
       (5 for record 0, 55 otherwise, at `gp_common` where the value is already in
       DE). The hard half is that the *right* bound is the file's record count,
@@ -3581,7 +3607,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:10926 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:10952 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
