@@ -420,36 +420,26 @@ cinl_done:
                 pop     bc
                 ret
 
-; --- int_h_body - the OLD page-1 $0038 handler (A-2/A-2b) — SUPERSEDED by A-3 -------
-; DEAD as of A-3: $0038 no longer points here (it points at INT_H_HIRAM). Kept in place
-; (net-zero, no address shift) pending removal; the live handler is int_h_hiram_tmpl
-; below, relocated into always-mapped high RAM because page 1 is reclaimed for the TPA.
-; A bare VDP ack is not enough: the kernel/COMMAND.COM need H.KEYI/H.TIMI/keyboard/
-; JIFFY, which only the main-BIOS KEYINT runs. Stock's $0038 handler ($DDAE) inter-slot
-; CALSLTs to the main-ROM KEYINT ($0038 entry -> body $0C3C, calling H.KEYI $FD9A +
-; H.TIMI $FD9F) - the MSX1 standard, BIOS-agnostic. We do the same via pg0_mainrom_in:
-; page the main ROM in, call $0038 (KEYINT does its own VDP ack), restore, return.
-int_h_body:
-                ld      (INT_SP_SAVE), sp   ; A-2b: save caller SP (no stack touch) ...
-                ld      sp, INT_STK_TOP     ; ... and run on our private interrupt stack,
-                                            ; so a corrupt caller SP is never marched (§8.75)
-                push    af
-                push    bc
-                push    de
-                push    hl
-                di
-                call    pg0_mainrom_in      ; main BIOS ROM -> page 0 (portable, EXPTBL[0])
-                call    $0038               ; main-ROM KEYINT: ack + H.KEYI + H.TIMI + kb + JIFFY
-                di                          ; close KEYINT's internal EI before un-mapping
-                call    pg0_mainrom_out     ; restore page 0 = RAM
-                pop     hl
-                pop     de
-                pop     bc
-                pop     af
-                ld      sp, (INT_SP_SAVE)   ; A-2b: restore caller SP, then the single EI
-                ei
-                ret
-
+; --- int_h_body - REMOVED 2026-09-09 (D-INTHDEAD) ---------------------------------
+; The OLD page-1 $0038 handler (A-2/A-2b), superseded by A-3 and kept "pending
+; removal" ever since. Removed on Joost's rule: *"as long as we have proof via the
+; oracle we can remove the stale ref"*, and the proof is
+; `disk/docs/provider-oracle-scope.md` §8.70 O-2 — a `pctrace --arm 0xDDAE --stock`
+; reading of the STOCK machine showing its $0038 handler save registers, switch to a
+; private stack, and inter-slot CALSLT to the main-ROM KEYINT ($0038 entry -> body
+; $0C3C, calling H.KEYI $FD9A + H.TIMI $FD9F). That is the contract this body
+; implemented, it is measured from the oracle, and `int_h_hiram_tmpl` below still
+; implements it.
+;
+; 🔴 IT WAS NOT LINK-DEAD, AND THE FILING SAID IT WAS. `disk/pageenv.asm` still
+; carried `jp int_h_body` in the page-1 `int_h` trampoline, so deleting the body
+; alone would not have assembled. What made the removal safe is the VECTOR TABLE,
+; not the header: `p0_env_tab` (disk/kernel.asm) reads
+; `dw $0038, INT_H_HIRAM` — with its own comment "(NOT page-1 int_h: page 1 is
+; reclaimed by the TPA)". So $0038 never points at the trampoline, the trampoline
+; is unreachable, and both go together. The trampoline's SLOT stays six bytes so
+; dskio does not shift.
+;
 ; --- int_h_hiram_tmpl - the LIVE $0038 handler, A-3 + A-5 (tier2-a5-spec.md) ------
 ; Relocated by a plain LDIR into INT_H_HIRAM ($DDAE) page-3 high RAM during init, so it
 ; survives COMMAND.COM reclaiming page 1 (wa_seg_ram). RELOCATABLE: straight-line, ONLY a

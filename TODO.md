@@ -434,7 +434,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:12380 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:12413 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -599,7 +599,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:3097 (T-6FE392)8 (T-529ABE)` from `TODO.md:11317 (T-529ABE)`: a
+      `TODO.md:3097 (T-6FE392)8 (T-529ABE)` from `TODO.md:11350 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -3735,7 +3735,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:11317 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:11350 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -11159,7 +11159,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       recorded here, which is the whole point of reserving it. The allowlist
       entries in `tools/citations-listing-allow.txt` stand, and the tool is
       correct to keep declining to make this call itself.
-- [ ] ⚠️ **`disk/runtime.asm:423` `int_h_body` — HUMAN DECISION TAKEN, deletion queued** — newly
+- [x] ✅ **`disk/runtime.asm` `int_h_body` — DECISION TAKEN AND DELETED** — newly
       visible (D-NEGJUDGE) and acknowledged in `tools/citations-advisory-allow.txt`,
       not resolved. Its block attests in prose (*"the MSX1 standard,
       BIOS-agnostic"*) but names no document; the finding it restates is
@@ -11185,9 +11185,42 @@ list. **When a slice lands, grep this list for what it just shipped.**
       [[a-mechanical-fix-can-break-a-different-invariant]]. Doing it at the tail
       of a long session, on the riskiest file in the tree, is how a silent
       Tier-2 regression ships.
-      🤖 AUTONOMOUS — the decision is made and the oracle proof is named
-      (§8.70 O-2). The slice: cite §8.70 in the header, delete the superseded
-      body, then `make gates` AND `make bdos-acceptance` by hand.
+      ✅ **DONE 2026-09-09 (D-INTHDEAD).** `int_h_body` is gone, the page-1 `int_h`
+      trampoline with it, and the acknowledged advisory entry retired from
+      `tools/citations-advisory-allow.txt` — the one remedy that file's own header
+      did not list, and the cleanest: there is no longer an uncited header to
+      acknowledge. Disk ROM free space **8910 → 8942 B**. Main and sub ROMs are
+      byte-identical across the change — `basic-reloc.rom` still hashes
+      `9168d2b0`, `sub.rom` hashes `760789a8`, `zerobas-main-eu.rom` hashes
+      `c4c369c2` — and only `disk.rom` moved, from `5c9643a0` to `43bb4d27`.
+      ⚠️ Written one hash per clause on purpose: three 8-hex groups in a row read
+      as a BINARY DUMP to `audit_citations.py` check 6, which flagged this line
+      and is right to be narrow about it. Rewording is the fix; growing the dump
+      allowlist for a cosmetic hit would blunt a rule that exists to catch a real
+      clean-room violation.
+      🔴 **AND THE FILING'S PREMISE WAS WRONG: THE BODY WAS NOT LINK-DEAD.**
+      *"Delete the dead body"* reads as a one-line removal. `disk/pageenv.asm`
+      still carried `jp int_h_body` in the page-1 trampoline, so deleting the body
+      alone would not have assembled. What made the removal safe is not the
+      header's own `DEAD as of A-3` claim — a header asserting its own deadness is
+      the least reliable witness available — but the VECTOR TABLE:
+      `p0_env_tab` (`disk/kernel.asm`) reads `dw $0038, INT_H_HIRAM`, with its own
+      comment *"(NOT page-1 int_h: page 1 is reclaimed by the TPA)"*. So `$0038`
+      never points at the trampoline and both are unreachable together.
+      ⚠️ **THE TRAMPOLINE'S SIX BYTES STAY** (`ds 6,$00`): the slot is what keeps
+      `dskio` at its canonical offset, so reclaiming them is an ADDRESS SHIFT — a
+      different change with a different gate to satisfy, and not smuggled in here.
+      🟢 **AND THE AUDIT GATE CAUGHT THE LOOSE END BY ITSELF.** Removing the header
+      made its allowlist entry stop matching, and `audit_citations.py` exited 2
+      with *"INSTRUMENT NOT WORKING — acknowledged advisory header(s) no longer
+      reported"* — a control, not a suppression list, doing exactly what its own
+      docstring promises.
+      📋 **VERIFIED THE WAY AN EXCLUDED TARGET HAS TO BE**: `make gates` **116/116**
+      with the full emulator tier, then by hand **`bdos-acceptance` 12/12**,
+      **`diskbasic-acceptance` 34/34** and **`fat-error-acceptance` ALL PASS** —
+      and `bdos` was baselined green BEFORE the change
+      ([`.out`](scratchpad/bdos_baseline_2026-09-09.out)), so the after-reading is
+      attributable [[a-mechanical-fix-can-break-a-different-invariant]].
 - [ ] ⚠️ **`lof-acceptance` intermittent oracle drift — two sightings, nothing
       since.** Sighting 3 has not occurred across EIGHT consecutive slices
       (D-PINDATA, D-INJSINK, D-ROMJUDGE, D-DSKJUDGE, D-CITEJUDGE, D-DOCJUDGE,

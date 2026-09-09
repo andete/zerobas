@@ -151,6 +151,12 @@ ena_apply:
 ; VDP ack is NOT enough — the kernel needs H.KEYI/H.TIMI/keyboard/JIFFY, which only the
 ; main-ROM KEYINT runs. This slot stays 6 bytes (jp + ds 3) so dskio does not shift.
 int_h:
-                jp      int_h_body      ; -> free-tail main-ROM KEYINT chain (A-2)
-                ds      3, $00          ; net-zero: keep dskio at its canonical offset
+                ; D-INTHDEAD (2026-09-09): the `jp int_h_body` that lived here is GONE
+                ; with its body. $0038 has pointed at INT_H_HIRAM since A-3 --
+                ; `p0_env_tab` says so in its own entry, "(NOT page-1 int_h: page 1 is
+                ; reclaimed by the TPA)" -- so nothing has reached this label since.
+                ; ⚠️ THE SIX BYTES STAY. The slot is what keeps dskio at its canonical
+                ; offset; reclaiming them is an address shift, which is a different
+                ; change with a different gate to satisfy.
+                ds      6, $00          ; net-zero: keep dskio at its canonical offset
 
