@@ -1,0 +1,10 @@
+base ROMs 2acb539258e8   81 rows read
+
+K-PD1: roms=a054ff6bb3f9  moved=['s.comma', 's.dec', 's.neg', 's.plus', 's.stardol', 's.wide', 'x.dollar']
+       want=['s.comma', 's.dec', 's.neg', 's.plus', 's.stardol', 's.wide', 'x.dollar']  PASS
+K-PD2: roms=374614184e2d  moved=['s.comma', 's.dec', 's.full', 's.neg', 's.ovf', 's.plus', 's.stardol', 's.wide', 'x.dollar']
+       want=['s.comma', 's.dec', 's.full', 's.neg', 's.ovf', 's.plus', 's.stardol', 's.wide', 'x.dollar']  PASS
+K-PD3: roms=9c33b8eb79af  moved=['s.neg', 's.plus']
+       want=['s.neg', 's.plus']  PASS
+
+restored 2acb539258e8 (base 2acb539258e8) OK

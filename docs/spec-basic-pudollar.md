@@ -3,7 +3,8 @@
 **Status:** shipped 2026-09-09. **Measurement:** `scratchpad/dollar_probe.py`
 (`scratchpad/dollar_run.out` before, `scratchpad/dollar_after.out` after).
 **Gate:** `probes/basic/basic_probe_pusing.py`, rows `d.*`.
-**Knives:** `scratchpad/pudollar_knives.py`.
+**Knives:** `scratchpad/pudollar_knives.py` — **3/3 exact, first round**
+(`scratchpad/pudollar_knives.out`).
 
 D-USING swept `PRINT USING`'s whole format vocabulary — 14 rows — and found the
 implementation broadly right, with **three reference splits and no single
@@ -99,7 +100,29 @@ regressed by it, and leaving them unnamed is how a denominator rots
   it is a hypothesis from one observation until that row is run
   ([[a-mechanism-inferred-from-one-observation]]).
 
-## 5. The gate needed a category it did not have
+## 5. Knives — 3/3, and the asymmetry is the evidence
+
+```
+K-PD1  the pair stops counting toward the width   moved 7  -- NOT s.full, NOT s.ovf   PASS
+K-PD2  the emitted character becomes a space      moved 9  -- INCLUDING both of them  PASS
+K-PD3  the `$` goes BEFORE the sign               moved 2  -- s.neg and s.plus only    PASS
+```
+
+Eight rows went green together, which is equally consistent with one of the
+three changes doing all the work. `s.full` and `s.ovf` are what separate the
+first two claims: both are **already overflowing** (`$$###` with 12345, `$$#`
+with 1234), so narrowing the field by two cannot change them — they read `%$…`
+either way — while killing the `$` itself does, because the character is part of
+what overflows. K-PD3 then moves exactly the two rows that HAVE a sign. Had the
+arms moved the same rows, the claims would be indistinguishable and two of the
+three unproven.
+
+⚠️ **The predictions include `x.dollar` and `s.stardol`, which the gate never
+scores.** They are still rows in the survey table, so a knife sees them move —
+and D-PUSTAR's round 1 read FAIL on both arms for exactly this reason: the arms
+were right and the prediction was short.
+
+## 6. The gate needed a category it did not have
 
 All eight in-scope rows are reference SPLITS, and `basic_probe_pusing.py` scored
 only rows where the two references AGREE — splits went to `NO_ORACLE`, printed
