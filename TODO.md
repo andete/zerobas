@@ -434,7 +434,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:12413 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:12439 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -599,7 +599,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:3097 (T-6FE392)8 (T-529ABE)` from `TODO.md:11350 (T-529ABE)`: a
+      `TODO.md:3097 (T-6FE392)8 (T-529ABE)` from `TODO.md:11376 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -3735,7 +3735,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:11350 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:11376 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -7933,9 +7933,35 @@ list. **When a slice lands, grep this list for what it just shipped.**
       configuration hides from `PEEK`) and the face is incomplete. **Nothing
       measured here separates them**, and shipping the first would be committing to
       a verb that does nothing [[a-mechanism-inferred-from-one-observation]].
-      ⚠️ The cheap next measurement, if it is wanted: extend D-DSKIWHERE's page scan
-      below `$C000`. It is noisier there (the BASIC program itself lives in that
-      window) but the same-sector control subtracts that out.
+      ✅ **TAKEN 2026-09-09 (Joost: *"yes, investigate"*) — D-DSKILOW,
+      [`scratchpad/dskilow_probe.py`](scratchpad/dskilow_probe.py),
+      [`.out`](scratchpad/dskilow.out). THE ANSWER IS A CLEAN NEGATIVE.**
+      D-DSKIWHERE's instrument, verbatim except for the window: `$8000..$BFFF`,
+      the 64 pages under the one it already swept.
+
+          s.diff  (sector 0 then sector 1)   pages 1 2 3
+          s.same  (sector 0 twice, CONTROL)  pages 1 2 3
+          SEPARATING                          NONE
+
+      🎯 **AND THE CONTROL IS ALSO THE SENSITIVITY WITNESS.** Pages 1–3 move in
+      BOTH rows — the BASIC program, its variables and its string heap — which is
+      what says the scan can see a change in this window at all. A negative from
+      an instrument that cannot detect anything is not a reading; this one can
+      [[a-case-that-agrees-can-agree-for-the-wrong-reason]].
+      ➡️ **SO THE 512 BYTES ARE IN NEITHER PEEK-VISIBLE HALF OF THE MAP.** Combined
+      with D-DSKIWHERE's `$C000..$FFFF` sweep (one page moved, and D-DSKIBYTES
+      showed it holds a ~32-byte REQUEST record, not a transfer), what is excluded
+      is the whole `PEEK`-reachable address space. What is NOT excluded, and is
+      now the only surviving alternative to *"the face is the behaviour"*, is RAM
+      the BASIC slot configuration hides from `PEEK` — page-1 RAM behind the disk
+      ROM, or the disk ROM's own slot. Reaching that needs slot-switched reads, a
+      machine-code rig rather than a BASIC one.
+      ⚠️ **THIS DOES NOT DECIDE THE SHIP QUESTION, IT NARROWS IT.** One reading is
+      now much better supported: the reference's `DSKI$` really does evaluate to
+      `""` and puts the sector nowhere a program can reach it. That is still a
+      verb that does nothing useful, which is what Joost's *"if we have a reference
+      finding that is good enough"* was about — but the exclusion is of a place,
+      not a proof of the mechanism [[a-mechanism-inferred-from-one-observation]].
       ⚠️ **THE `DSKI$` SUB-QUESTION IS HIS, AND IT IS WRITTEN AS PROSE ON PURPOSE**
       — a second marker inside a block that already carries one reads as an
       ambiguous item to `make todo-marker-check`, which is how this paragraph was

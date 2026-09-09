@@ -1,0 +1,10 @@
+  s.diff   '1 2 3'
+  s.same   '1 2 3'
+
+  window $8000..$BFFF
+  s.diff pages: '1 2 3'
+  s.same pages (NOISE): '1 2 3'
+
+  SEPARATING pages (moved for sector 1 and NOT in the control): NONE
+  🟢 NEGATIVE, AND IT IS A READING: no page of this window tracks the sector number either. Combined with D-DSKIWHERE's $C000..$FFFF result, the 512 bytes are not in either half of the PEEK-visible map -- which leaves RAM the slot configuration hides, not 'no read happened'.
+refcache: 0 hit, 2 miss, 2 stored
