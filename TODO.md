@@ -434,7 +434,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:12675 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:12707 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -599,7 +599,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:3097 (T-6FE392)8 (T-529ABE)` from `TODO.md:11612 (T-529ABE)`: a
+      `TODO.md:3097 (T-6FE392)8 (T-529ABE)` from `TODO.md:11644 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -3725,7 +3725,39 @@ list. **When a slice lands, grep this list for what it just shipped.**
       ⚠️ Unpriced, and probably not worth taking alone: folding it needs a
       shared entry with the exit selected somehow, which is likely to cost more
       than it saves. Filed for the SWEEP, not for the carve.
-      🙋 NEEDS-JOOST — a call that is yours to make (page-1 budget).
+      🟢 **THE SWEEP IS BUILT, 2026-09-09 (D-NGRAMCARVE,
+      [](scratchpad/pair_carve_scout.py),
+      [](scratchpad/ngram_carve.out)) — AND THIS ITEM WAS RIGHT THAT THE
+      TOOLING QUESTION WAS WORTH MORE THAN THE FOUR BYTES.** The pair scout was
+      2-instruction-only, so a THREE-instruction shared run was invisible to it
+      exactly as it was to , for a different reason. Widened to
+      runs of 2..5: **68 runs at 8+ sites**, top row
+
+          net sites  B  k  run
+           31     8  8  3  call ev_sp | cp ')' | jp nz,ev_f_empty
+           29    12  6  2  ld hl,arga | call widen_rhs_operand
+           20     9  6  3  inc ix | call ev_sp | cp '('
+
+      **Verified, not taken on the tool's word**: the top run's 8 sites were
+      re-counted by an independent grep (7 in , 1 in ).
+      🎯 **AND THE PAIR SWEEP'S OWN OUTPUT WAS THE ARGUMENT FOR WIDENING.** Every
+      row it printed said *"cannot win: a 3 B call is not cheaper"* — which is not
+      a fact about the tree, it is a fact about the WINDOW. A 3 B call can never
+      beat a 2 B pair; it beats an 8 B run easily.
+      🔴 **A SECOND FAULT, AND IT WAS BURYING WINNERS: THE RANKING KEY.** The old
+      sweep sorted by SITE COUNT and printed the top 20, so  — 12 sites, 6 B, **net +29** — sat below every 26-to-55
+      site 2-byte pair that could not pay for itself, and was never shown. Ranked
+      by NET now [[an-instrument-can-fail-the-way-the-thing-it-replaced-failed]].
+      ⚠️ **TWO ARMS THE PAIR VERSION NEVER HAD**, because a widened window widens
+      the hazards: a run containing a / is REFUSED (the displacement
+      moves, the identical hazard  decides as its question 2),
+      and runs OVERLAP by construction — a 5-gram contains two 4-grams — so the
+      savings are not additive and the tool says so: take the top row, re-run.
+      💰 **AND IT FUNDS THE QUEUE.** 31 B from one run is more than the pending
+       ASCII-digit arm needs; a carve is how that spend gets afforded rather
+      than argued for.
+      🤖 AUTONOMOUS — the sweep is the deliverable and the 4 B this item filed
+      stays not-worth-taking. The candidates it found are the follow-on.
 
 - [ ] 🔴 **`KEY n,"str"` AND `KEY LIST` ARE UNIMPLEMENTED — A WELL-FORMED
       STATEMENT IS `Syntax error` HERE AND SILENT ON BOTH REFERENCES.** Filed
@@ -3735,7 +3767,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:11612 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:11644 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
