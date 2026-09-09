@@ -434,7 +434,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:12985 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:13019 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -599,7 +599,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:3234 (T-6FE392)8 (T-529ABE)` from `TODO.md:11922 (T-529ABE)`: a
+      `TODO.md:3234 (T-6FE392)8 (T-529ABE)` from `TODO.md:11956 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -4015,7 +4015,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:11922 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:11956 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -8022,7 +8022,41 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `push af` rather than precede it, and the pop site can drop its two
       instructions, which is smaller than the original), and a stated answer to
       *which* pre-fix machine it claims to be.
+      🟢 **THE BYTE BLOCKER IS GONE, AND IT WAS DISSOLVABLE ALL ALONG — K-FG2,
+      2026-09-09** ([`scratchpad/filesguard2_knife.py`](scratchpad/filesguard2_knife.py),
+      [`.out`](scratchpad/filesguard2.out)). This entry named the byte-neutral
+      shape and then did not take it. Done properly: `push af`(1) →
+      `ld (DISKOP_OP),a`(3) = **+2**, minus the DISKSLOT abort's balancing
+      `pop af`(1) = **−1**, minus the pop site's `pop af`(1) +
+      `ld (DISKOP_OP),a`(3) = **−4**. Net **−3 B** — the cut is SMALLER than the
+      guard, so no wall can refuse it, and the build succeeded. (Page 1 also reads
+      130 B on 2026-09-09 after the evening's carves, so the 2 B wall that
+      disarmed K-FG1 is doubly gone.)
+      🎯 **AND "WHICH PRE-FIX MACHINE?" IS THE WRONG QUESTION TO HOLD IT ON.** A
+      knife is not a time machine; it is a falsification instrument. The question
+      is not *what did the August build do* but *does this guard do anything on
+      the build we ship* — so the right cut is TODAY's machine with the guard
+      removed, which is exactly the machine whose guard is under test. The
+      historical hybrid the entry worried about is irrelevant to that.
+      🔴 **AND K-FG2 FAILS THE SAME CONTROL TEST K-FG1 DID — TWO INDEPENDENT CUTS,
+      ONE SYMPTOM.** `lfl-inp` and `lfl-inpb` moved as predicted, and so did
+      `lfl-wild`, `lfl-all` and `lfl-sink`, all showing `????????.BAS` as the
+      first entry. By the criterion this entry set, the red proves nothing.
+      🎯 **WHICH MAKES THE OWED THING NARROWER AND STRANGER THAN "a faithful
+      cut".** `lfl-all` is a BARE `LFILES` — no filespec, so `fname_expr` is never
+      reached — and between the head and the tenant call the only routines on that
+      path are `skip_spaces` and (for the filespec case) `fname_expr` /
+      `parse_disk_fcb`. **None of them is among `DISKOP_OP`'s writers**
+      (`fatprim_bounce` and two sites in `files.asm`). So on the evidence the bare
+      path cannot lose its selector, and it demonstrably does.
+      ➡️ **THE NEXT STEP IS THEREFORE A TRACE, NOT ANOTHER CUT**: read
+      `DISKOP_OP` either side of the tenant call on a bare `LFILES` under the
+      knifed build, the way the 2026-09-05 diagnostic did for `INPUT$`. Two cuts
+      failing identically is evidence that the assumption they share — *"nothing
+      writes DISKOP_OP in between"* — is what is wrong, not the cuts
+      [[a-mechanism-inferred-from-one-observation]].
       🤖 AUTONOMOUS — 💰 0 ROM bytes; it is a row, and the references settle it.
+      The budget half is closed; what remains is one trace.
 
 - [x] ✅ **A FILESPEC OF CONTROL BYTES: CF-3300 SAYS `Bad file name`, ZEROBAS
       SAYS `File not found`.** **FIXED 2026-09-05 (D-FSPECCHAR) — 45/45 byte
