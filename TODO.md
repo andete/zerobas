@@ -434,7 +434,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:12539 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:12563 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -599,7 +599,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:3097 (T-6FE392)8 (T-529ABE)` from `TODO.md:11476 (T-529ABE)`: a
+      `TODO.md:3097 (T-6FE392)8 (T-529ABE)` from `TODO.md:11500 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -3735,7 +3735,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:11476 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:11500 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -5549,10 +5549,34 @@ list. **When a slice lands, grep this list for what it just shipped.**
       first factor lookup finds nothing. That is one observation's worth of
       mechanism and is written down to be attacked, not believed
       [[a-mechanism-inferred-from-one-observation]].
-      🤖 AUTONOMOUS — five pins under two mechanisms, and the next instrument is
-      the code: `eval`'s first-factor path for a crunched constant, and what a
-      `subrom_call` leaves behind that it depends on. The rows are exhausted —
-      eight operand shapes now say the same thing.
+      🟢 **AND THE SECOND CAUSE OF THAT `ERR 2` IS NOW EXCLUDED, NOT ASSUMED
+      (2026-09-09, D-NAMESURVIVE,
+      [`scratchpad/namesurvive_probe.py`](scratchpad/namesurvive_probe.py),
+      [`.out`](scratchpad/namesurvive.out)).** Every reading above took the 2 to be
+      `els_tc_common`'s *"re-drive found no operand"* exit. **It has a second
+      sufficient cause on this path**: if `str_eval` had ACCEPTED the crunched
+      constant, `do_name` would carry on to the dirverb stamp and then resume at a
+      cursor inside the operand, which `exec_stmt` reports as the SAME `Syntax
+      error` [[two-rules-that-coincide-on-every-row-you-have]].
+      🎯 **THE SEPARATOR IS THE DISK, NOT THE SCREEN.** Run the statement, trap the
+      error, then ask whether `HI.TXT` still opens:
+
+          row        E  F   statement
+          s.const    2  1   NAME"HI.TXT"AS 5     the failing shape
+          s.var     13  1   NAME"HI.TXT"AS A     CONTROL: a clean operand fault
+          s.ctl      0  1   REM                  CONTROL: nothing touched the file
+
+      **`F = 1` on the subject: the file SURVIVED**, so the statement never
+      reached the stamp and the 2 is the operand fault after all. Both controls
+      held, which is what makes *"still there"* mean anything. A branch closed by
+      measurement rather than by confidence.
+      🤖 AUTONOMOUS — five pins under two mechanisms. **The next instrument is
+      cheap and is NOT more error rows: PEEK the stored program bytes.** Compare
+      how `5` is crunched in `NAME"HI.TXT"AS 5` against `NAME 5 AS"X.DAT"`, which
+      answers 13 through the same `fname_expr`. If the crunch emits a different
+      constant form after `AS`, the whole first-byte signature falls out of it and
+      no evaluator reading is needed; if the bytes are identical, that is what
+      finally forces the difference into `eval`'s first-factor path.
       program in the corpus renames with a numeric operand. The scouting the 🔭
       asked for is DONE; what is left is the call.
 

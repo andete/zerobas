@@ -1,0 +1,11 @@
+  ran s.const  -> '2 1'
+  ran s.var    -> '13 1'
+  ran s.ctl    -> '0 1'
+
+  row           E F   statement
+  s.const       2 1   NAME"HI.TXT"AS 5     THE SUBJECT: the operand shape that answers 2
+  s.var        13 1   NAME"HI.TXT"AS A     CONTROL: the shape that answers 13 correctly
+  s.ctl         0 1   REM                  CONTROL: no NAME at all -- HI.TXT must survive
+
+  🟢 HI.TXT SURVIVED. The statement never reached the stamp, so the ERR 2 IS the operand fault -- els_tc_common's 'no operand parsed' exit, exactly as assumed. The second cause is excluded.
+refcache: 0 hit, 3 miss, 3 stored
