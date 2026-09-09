@@ -434,7 +434,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:13098 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:13165 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -599,7 +599,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:3295 (T-6FE392)8 (T-529ABE)` from `TODO.md:12035 (T-529ABE)`: a
+      `TODO.md:3362 (T-6FE392)8 (T-529ABE)` from `TODO.md:12102 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -2642,8 +2642,75 @@ list. **When a slice lands, grep this list for what it just shipped.**
       no `LEN=` defaults to **reclen 256**. Both machines answered 256 and the
       probe refused to score anything, which is exactly what a boring control is
       for [[a-case-that-agrees-can-agree-for-the-wrong-reason]].
-      ⚠️ Still un-priced: `frnd_calc`'s sector math is documented as assuming
-      `byteoffset < 32768`, so lifting the cap is not a constant change.
+      ✅ **THAT BLOCKER IS RETIRED, AND IT WAS FALSE — D-PUTDOMAIN, 2026-09-09.**
+      It read *"`frnd_calc`'s sector math is documented as assuming
+      `byteoffset < 32768`, so lifting the cap is not a constant change."* The
+      documentation said that; the code does not. `ld l,h / ld h,0 / srl l` is
+      exactly `byteoffset >> 9` for **any** 16-bit byteoffset — H stays 0 because
+      `65535>>9` is 127, not because the offset is under 32768 — and `ld a,h /
+      and 1` is `& 511` unconditionally. The comment is corrected in
+      [`basic/randio-body.inc`](basic/randio-body.inc); the real 16-bit bound is
+      `mul_reclen`'s silently-wrapping `add hl,bc`
+      [[a-justification-parenthesis-is-an-unrun-claim]].
+      ➡️ **The cap-lifting itself is now the item below.**
+
+- [ ] 🙋 **D-PUTDOMAIN (2026-09-09): THE REFERENCE'S RECORD OFFSETS ARE WIDER
+      THAN 16 BITS, SO LIFTING `PUT`'s CAP IS A 32-BIT CHANGE — AND THE PROBE
+      FOUND A SECOND, LIVE DEFECT INSIDE THE DOMAIN WE ALREADY SUPPORT**
+      ([`scratchpad/putdomain_probe.py`](scratchpad/putdomain_probe.py),
+      [`.out`](scratchpad/putdomain.out)). 10 rows × 2 machines, **8 DIFF**.
+      🎯 **THE QUESTION THIS WAS WRITTEN TO ASK WAS `r.257`, AND THE ANSWER IS THE
+      INCONVENIENT ONE.** At the default reclen 256, record 257 is the first whose
+      byte offset (65536) does NOT fit 16 bits. The CF-3300 serves it: `LOF`
+      **65792**. `r.300` reads **76800**. So the reference's offsets are not
+      16-bit, and widening this tree to "every record whose offset fits 16 bits"
+      would have **moved** the divergence to record 257 rather than closing it —
+      a fix that looks like a fix and is a new bug at a new line.
+      | row | statement | cf3300 LOF | zb LOF |
+      |---|---|---|---|
+      | `r.ctl` | `PUT#1,1` | 256 | 256 ✅ control |
+      | `r.255` | `PUT#1,255` | 65280 | **−256** 🔴 |
+      | `r.256` | `PUT#1,256` | 65536 | 256 |
+      | `r.257` | `PUT#1,257` | **65792** | 256 |
+      | `r.300` | `PUT#1,300` | 76800 | 256 |
+      | `l1.65535` | `PUT#1,65535` `LEN=1` | 65535 | 1 |
+      🔴 **`r.255` IS THE FINDING NOBODY WAS LOOKING FOR, AND IT IS THE WORST ROW
+      HERE.** Record 255 is INSIDE this tree's own 1..255 cap, so the write is
+      performed and the file really is extended — and `LOF(1)` then reports
+      **−256**, which is 65280 reinterpreted as a SIGNED 16-bit integer. Every
+      file of 32768 bytes or more reports a negative length, silently, on a path
+      that is supposed to work today. D-PUTEXTEND could not see it because every
+      row it ran was one this tree REFUSED.
+      💰 **PRICED, AND IT IS NOT A CONSTANT.** `ev_ff_lof`
+      ([`basic/expr.asm:1290`](basic/expr.asm:1290)) is `ld de,(FAT_FILESIZE) /
+      ret` — its own comment says *"return its low 16 bits"* — handed back as an
+      INTEGER, so it both truncates past 65535 and sign-flips past 32767. The
+      reference returns a FLOAT (65536 and 76800 are not 16-bit values at all).
+      **There is no u32 → float helper anywhere in the tree** (`widen_rhs_operand`
+      is the only widener and it is 16-bit signed), so a faithful `LOF` means
+      building one.
+      ⚠️ **AND A PARTIAL FIX HERE IS A TRAP.** Making `LOF` unsigned-16 fixes
+      `r.255` and leaves `r.257` wrong — two rules that coincide on the rows we
+      happen to have [[two-rules-that-coincide-on-every-row-you-have]]. The u32
+      path is what BOTH halves need: `LOF`'s readout and `PUT`'s offset domain.
+      🙋 **NEEDS-JOOST** — over the 20 B standing budget, and a design call
+      rather than a carve. Three questions, in the order they bite:
+      1. Is a **u32 → float** conversion the shape you want (it would also serve
+         `LOF` past 64 KB, `LOC`, and any future `DSKF` widening), or should
+         `LOF` alone be widened and `PUT` left capped?
+      2. `PUT`'s offset domain needs 32-bit `(recno-1)*reclen` in `mul_reclen`
+         and a 32-bit `GP_SEC`. Main page 1 was **129 B** free on 2026-09-09 and
+         sub-ROM page 0 **1184 B**, both on a clean tree; `randio-body.inc` is
+         main-resident today, so is moving the random-record arithmetic sub-side
+         on the table? (Re-read both with `make basic-reloc` before pricing —
+         these are readings, not constants.)
+      3. `r.255`'s negative `LOF` is a live wrong answer on a supported path. Is
+         it worth shipping the unsigned-16 half **first**, named as partial, to
+         stop that — or does that just create the coincidence above?
+      ⚠️ The measurement half is done and needs nothing further; what is blocked
+      is only the shape — so this block carries ONE marker, the 🙋 above. (It
+      first carried a trailing 🤖 as well, and `todo-marker-check` read the block
+      as unclassified: two canonical markers is ambiguous, not "both true".)
 
 - [x] ✅ **D-PARTSTATE (2026-09-09): LIST verbs execute PARTIALLY on the reference
       TOO — and that BOUNDS D-PARTIAL. 5 rows × 3 machines, 0 DIFF**
@@ -4076,7 +4143,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:12035 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:12102 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

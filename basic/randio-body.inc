@@ -332,6 +332,12 @@ mr_skip:
 ; offset within the 512-byte sector). byteoffset = (recno-1) * reclen; GP_SEC =
 ; byteoffset >> 9; GP_WITHIN = byteoffset & 511. recno is 1..255 and reclen <= 256,
 ; so byteoffset <= 254*256 = 65024 (fits 16 bits). Clobbers A,DE,HL.
+; 🎯 THE SPLIT ITSELF IS GENERAL OVER THE WHOLE 16-BIT RANGE (D-PUTDOMAIN,
+; 2026-09-09): `ld l,h / ld h,0 / srl l` is exactly `byteoffset >> 9` for any
+; byteoffset 0..65535, and `ld a,h / and 1` is exactly `& 511`. Nothing here
+; caps anything. **The 16-bit bound comes from `mul_reclen` above**, which
+; accumulates `k * reclen` with a plain `add hl,bc` and wraps SILENTLY -- that,
+; and not this routine, is what a wider record domain would have to address.
 ; ⚠️ THE ARITHMETIC HERE IS GENERAL SINCE `mul_reclen` stopped being a shift; what
 ; still requires a power of two is `fat_rand_put`/`fat_rand_get`, whose overlay is
 ; a single `ldir` that cannot cross a sector boundary. The sentence that stood
@@ -352,7 +358,14 @@ frnd_calc:
                 ; GP_SEC = HL >> 9 = (HL >> 8) >> 1
                 ld      l,h
                 ld      h,0                 ; HL = HL >> 8
-                srl     l                   ; HL = HL >> 9  (H stays 0; byteoffset < 32768)
+                srl     l                   ; HL = HL >> 9 -- H stays 0 for EVERY
+                                            ; 16-bit byteoffset, since 65535>>9
+                                            ; is 127. D-PUTDOMAIN: this line read
+                                            ; "(H stays 0; byteoffset < 32768)"
+                                            ; and that precondition does not
+                                            ; exist -- it was cited as the
+                                            ; blocker on lifting PUT's 1..255 cap
+                                            ; and cost the item a filing cycle.
                 ld      (GP_SEC),hl
                 ret
 
