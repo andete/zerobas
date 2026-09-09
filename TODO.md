@@ -434,7 +434,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:12795 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:12818 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -599,7 +599,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:3097 (T-6FE392)8 (T-529ABE)` from `TODO.md:11732 (T-529ABE)`: a
+      `TODO.md:3097 (T-6FE392)8 (T-529ABE)` from `TODO.md:11755 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -3705,6 +3705,29 @@ list. **When a slice lands, grep this list for what it just shipped.**
       place to contain its own subject. AST now.
       ✅ **DONE** — both halves.
 
+- [x] ✅ **D-IXSP (2026-09-09): THE THIRD N-GRAM CARVE — `inc ix / call ev_sp`
+      AT SIXTEEN SITES, +24 B PREDICTED AND +24 B MEASURED**
+      ([`scratchpad/ngram_carve5.out`](scratchpad/ngram_carve5.out) is the re-run
+      with the row consumed).
+      📏 **Main page 1 185 → 197 B, low 23 → 35 B; combined +24 B**, from a clean
+      tree. Fifteen LIVE sites × 2 B − a 6 B helper = 24, to the byte.
+      🎯 **THE SWITCH CHECK WAS DONE BEFORE BUILDING, AND IT MATTERED AGAIN**:
+      sixteen sites, but `expr.asm`'s is inside `IF !G8_RESIDENT`, off in the
+      shipping build, so it costs nothing and saves nothing. Predicting **+24**
+      rather than the sweep's **+26** is the whole value of having been caught by
+      this once [[an-instrument-can-fail-the-way-the-thing-it-replaced-failed]].
+      🟢 **Frame-neutral and flag-transparent**: `ret` after `call ev_sp` disturbs
+      neither A nor the flags, so all fifteen sites see what they saw open-coded —
+      nine go straight on to `cp '('`, the rest to `call relop_bit`, `push ix`,
+      `call is_letter` or `call str_eval_ix`. Nothing jumps outward, so there is
+      no frame to discard.
+      🟢 **GATES**: `make gates` **117/117**, full emulator tier, plus all five
+      battery-excluded targets re-run by hand (D-EXCLROT): `diskbasic`,
+      `fat-error`, `input-devices`, `lnblank-say`, `bdos`, all rc=0.
+      💰 **N-GRAM ROUTE RUNNING TOTAL: +78 B in three carves** (24 + 30 + 24).
+      Main page 1 has gone **142 → 197 B** and the low region **12 → 35 B** in one
+      evening, on a route that was recorded measured-shut on 2026-09-08.
+
 - [x] ✅ **D-IXSIZE (2026-09-09): THE SWEEP'S SIZER UNDER-COUNTED EVERY IX/IY
       INSTRUCTION, IN THE FILES IT RANKS MOST**
       ([`scratchpad/ngram_carve4.out`](scratchpad/ngram_carve4.out)).
@@ -3855,7 +3878,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:11732 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:11755 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

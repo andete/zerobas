@@ -763,8 +763,7 @@ ev_ff_strnum:
                 ; the mirror-image reason: at that instant the argument has NOT been
                 ; evaluated, so the mismatch armed FIRST and BLOCKED the real fault.
                 ; Same code, same mechanism, opposite side of the evaluation.
-                inc     ix                  ; past the selector
-                call    ev_sp
+                call    ixsp                ; D-IXSP
                 cp      '('
                 jr      nz,evff_strnum_tm   ; malformed: no argument to evaluate
                 inc     ix
@@ -780,12 +779,10 @@ evff_strnum_tm:
 ; other factor error. Entered with IX on the function selector byte. UNCHANGED
 ; from pre-4a (format-agnostic — it only ever hands off to str_eval).
 ev_str_arg:
-                inc     ix                  ; skip the selector
-                call    ev_sp
+                call    ixsp                ; D-IXSP
                 cp      '('
                 jp      nz,ev_f_empty
-                inc     ix
-                call    ev_sp
+                call    ixsp                ; D-IXSP
                 ; empty string-argument (LEN()/ASC()/VAL(), or a trailing ','):
                 ; the same missing-operand syntax error as ev_f's ')'/',' gate
                 ; (D-F2-3). Route to ev_f_empty so FPERR=4 is set on THIS eval --
@@ -1781,13 +1778,11 @@ sfg_reject2:
 ; by then, and is bridged back into IX only right before the return, so ev_f's
 ; "IX = cursor advanced past the call" convention still holds.
 ev_f_instr:
-                inc     ix                  ; skip the INSTR selector
-                call    ev_sp
+                call    ixsp                ; D-IXSP
                 cp      '('
                 jp      nz,ev_f_empty       ; BUG C class: INSTR without '(' -> deferred
                                             ; syntax error (was silent ev_f_err)
-                inc     ix
-                call    ev_sp
+                call    ixsp                ; D-IXSP
                 call    str_eval_ix            ; CF set -> a$ (2-arg form); STRPTR->desc
                 jr      c,efi_have_a
                 ; --- not a string: the leading numeric p (3-arg form) ---
@@ -2132,8 +2127,7 @@ ev_rel_str:
                 call    relop_bit
                 jr      nc,ers_mismatch     ; bare string LHS, no relop -> D-2 ([LHStemp])
                 ld      c,b                 ; C = requested relation bits
-                inc     ix
-                call    ev_sp
+                call    ixsp                ; D-IXSP
                 call    relop_bit           ; a second relop? (<=, >=, <>)
                 jr      nc,ers_rhs
                 ld      a,c

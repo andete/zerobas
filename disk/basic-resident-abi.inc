@@ -10,9 +10,9 @@
 ; main ROM, read out of our own build's symbol file. Nothing here is derived
 ; from a disassembly or byte-copy of any reference ROM.
 
-widen_rhs_operand equ 038DAH
-round_single_and_pack equ 03407H
-round_and_finalize equ 033AAH
+widen_rhs_operand equ 038CEH
+round_single_and_pack equ 033FBH
+round_and_finalize equ 0339EH
 ARGA equ 0F06AH
 STRSCR equ 0E26DH
 FAC equ 0F01CH

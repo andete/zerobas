@@ -233,8 +233,7 @@ evr_scan:
                 call    relop_bit
                 ret     nc                  ; no relational operator -> plain value
                 ld      c,b                 ; C = requested relation bits
-                inc     ix
-                call    ev_sp
+                call    ixsp                ; D-IXSP
                 call    relop_bit           ; a second relop? (<=, >=, <>)
                 jr      nc,evr_rhs
                 ld      a,c
@@ -1016,8 +1015,7 @@ ev_ff_argtab:
 ev_ff_argtab_len equ    $ - ev_ff_argtab
 ev_ff_arg:
                 ld      c,a                 ; C = selector (survives the parse)
-                inc     ix                  ; skip the selector byte
-                call    ev_sp
+                call    ixsp                ; D-IXSP
                 cp      '('
                 ; Residual found by the I1 differential (spec §3): a MISSING
                 ; argument list -- `PRINT PEEK`, `PRINT STICK`, `PEEK 100` --
@@ -1383,14 +1381,12 @@ ev_ff_cv:
                 ; resulting descriptor. (IX is reloaded from str_eval's advanced HL, so
                 ; an inner eval clobbering IX is harmless.) Entered with IX on the
                 ; CVI selector byte.
-                inc     ix                  ; skip the CVI selector
-                call    ev_sp
+                call    ixsp                ; D-IXSP
                 cp      '('
                 jp      nz,ev_f_empty       ; BUG C class (Fable 2026-07-17): CVI missing
                                             ; '(' -> deferred syntax error (was silent
                                             ; ev_f_err -> " 0"); ref = Syntax error
-                inc     ix
-                call    ev_sp
+                call    ixsp                ; D-IXSP
                 ; 🎯 `CVI()` NEEDS NO TEST OF ITS OWN. D-CVITM added a `cp ')'` here
                 ; because routing every decline straight to `ev_f_tmm` turned the
                 ; reference's Syntax error into Type mismatch. Once `cvi_tmm`
@@ -1519,12 +1515,10 @@ cvi_tmm:
 ; gap and CLEAR's string-space argument is discarded, so BOTH forms answer with
 ; that gap. Computed sub-side (op 15) because the array-region walk lives there.
 ev_ff_fre:
-                inc     ix                  ; skip the FRE selector
-                call    ev_sp
+                call    ixsp                ; D-IXSP
                 cp      '('
                 jp      nz,ev_f_empty       ; bare FRE -> deferred syntax error
-                inc     ix
-                call    ev_sp
+                call    ixsp                ; D-IXSP
                 push    ix                  ; guard the cursor for the numeric retry:
                 call    str_eval_ix         ; a STRING argument? (repack str_eval
                                             ; CALSLTs and can exit NC with GARBAGE IX --
@@ -1730,8 +1724,7 @@ evmc_total_tab:
 ; to decide its own result type (spec §9.1's "same FACTYP as x" / int-result
 ; columns). IX advanced past ')'. Clobbers as ev_xor.
 ev_mc_arg:
-                inc     ix                  ; skip the selector byte
-                call    ev_sp
+                call    ixsp                ; D-IXSP
                 cp      '('
                 jp      nz,ev_f_empty       ; D-F2-4: missing '(' (bare fn / operator- or
                                             ; space-separated) -> deferred FPERR=4 "syntax
@@ -2190,8 +2183,7 @@ evmc_exp_overflow:
 ; on read, which is what ev_f_arr does and what the references do; the oracle
 ; here covers the unset SCALAR only, and the fix is scoped to it.
 ev_f_varptr:
-                inc     ix                  ; skip the VARPTR token
-                call    ev_sp
+                call    ixsp                ; D-IXSP
                 cp      '('
                 ; D-EVFERR: both these sites are Syntax error (2) on both
                 ; references, and BOTH LOOKED GREEN because ev_f_err leaves the
@@ -2201,8 +2193,7 @@ ev_f_varptr:
                 ; NOTHING left over separate them: `A=VARPTR` and `A=VARPTR(`
                 ; COMPLETED SILENTLY. Byte-neutral retargets.
                 jp      nz,ev_f_empty
-                inc     ix
-                call    ev_sp
+                call    ixsp                ; D-IXSP
                 call    is_letter           ; the argument must be a variable name
                 jp      nc,ev_f_empty
                 push    ix
@@ -2367,8 +2358,7 @@ vptr_unset:
 ; basic/graphics.asm; `IF !G8_RESIDENT` selects the stub below instead.
     IF !G8_RESIDENT
 ev_f_base:
-                inc     ix                  ; skip the BASE token
-                call    ev_sp
+                call    ixsp                ; D-IXSP
                 cp      '('
                 ; D-EVFERR: retargeted with the five LIVE sites even though this
                 ; stub is NOT ASSEMBLED (G8_RESIDENT equ 1, sysvars.inc) -- the
@@ -2500,3 +2490,21 @@ evsp_close:
 arga_widen:
                 ld      hl,ARGA
                 jp      widen_rhs_operand
+
+; --- ixsp: step the evaluator cursor, then skip blanks ----------------------
+; D-IXSP. `inc ix / call ev_sp` stood at SIXTEEN sites -- ten in expr.asm, six in
+; str-engine.asm -- 5 B each. It was ranked ELEVENTH until D-IXSIZE corrected the
+; sizer: `inc ix` is DD 23, two bytes, and the sweep had been pricing it as one.
+;
+; \U0001f7e2 FRAME-NEUTRAL AND FLAG-TRANSPARENT. `ret` after `call ev_sp` disturbs
+; neither A nor the flags, so every site sees exactly what it saw open-coded --
+; nine of them go straight on to `cp '('`, and the rest to `call relop_bit`,
+; `push ix`, `call is_letter` or `call str_eval_ix`. Nothing here jumps outward,
+; so unlike evsp_close there is no frame to discard.
+; ⚠️ SIXTEEN SITES, FIFTEEN LIVE: expr.asm's is inside `IF !G8_RESIDENT`, which is
+; OFF in the shipping build, so it costs nothing and saves nothing. Checked
+; BEFORE building this time -- it is what made D-EVSPCLOSE's prediction miss.
+ixsp:
+                inc     ix
+                call    ev_sp
+                ret
