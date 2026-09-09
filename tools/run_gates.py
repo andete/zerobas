@@ -85,6 +85,7 @@ abort-acceptance interval-trap-acceptance clearpool-acceptance
 stackpool-acceptance trapdepth-acceptance trapsvc-acceptance ctlcross-acceptance ctllim-acceptance
 ramfree-acceptance txtceil-acceptance
 cursor-acceptance time-acceptance namspc-acceptance arrdim-acceptance
+asciidigit-acceptance
 arylv-acceptance badfnum-acceptance beep-acceptance binfre-acceptance
 cassave-acceptance castail-acceptance deffn-acceptance direct-ctrl-acceptance
 dskmsg-acceptance editverb-acceptance fldary-acceptance fldwidth-acceptance

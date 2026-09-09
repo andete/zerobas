@@ -788,6 +788,26 @@ namegate-acceptance: repack-machine $(DISK_TEST_DSK)
 nameord-acceptance: repack-machine
 	python3 probes/basic/basic_probe_namend.py
 
+# --- D-ASCIIDIGIT: the ASCII-digit evaluator gap, held on TWO verbs -----------
+# A numeric constant after an ASCII-parsed `AS` survives the crunch as ASCII on
+# BOTH machines (D-CRUNCHBYTES read the stored program bytes off each), the
+# reference evaluates it, and zerobas's `eval` has no ASCII-digit factor path --
+# so it answers Syntax error. `OPEN "TS.DAT" AS 1` is the member that matters:
+# the `#` is OPTIONAL after OPEN's `AS` (our own oo_parse_as_chan says so), so
+# this is idiomatic BASIC that works on the reference and fails here.
+#
+# 🎯 THE CONTROLS ARE WHAT MAKE THE FAILING COLUMN THE ASCII DIGIT AND NOTHING
+# ELSE ABOUT OPEN: the same open with `#`, and the same open with a VARIABLE in
+# that position, both agree. `FIELD`'s number comes BEFORE its `AS`, so it is
+# predicted OUT of the class and carried as a row rather than as an argument.
+#
+# Both divergences are PINNED BY FACE: a fix that lands makes this gate RED and
+# tells you to delete the pin, which is the only way a closed divergence cannot
+# rot into a silently-carried one. ONE REFERENCE (Disk BASIC; a diskless VG-8020
+# cannot express these verbs). Repack-only; oracle-dependent.
+asciidigit-acceptance: repack-machine $(DISK_TEST_DSK)
+	python3 probes/basic/basic_probe_asciidigit.py --gate
+
 catterm-acceptance: repack-machine
 	python3 probes/basic/basic_probe_catterm.py
 
@@ -3222,6 +3242,7 @@ clean:
         bdos-cbios-selfcheck audit-citations basic-reloc deadcode repack-main repack-boot \
         repack-machine diskbasic-acceptance-repack string-acceptance time-acceptance \
         battery-membership-check fixture-integrity-check diskmap ram-claim-check \
+        asciidigit-acceptance \
         build-assert-check \
         interval-trap-acceptance \
         stackpool-acceptance trapdepth-acceptance trapsvc-acceptance ctlcross-acceptance ctllim-acceptance \

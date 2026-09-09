@@ -434,7 +434,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:12644 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:12675 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -599,7 +599,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:3097 (T-6FE392)8 (T-529ABE)` from `TODO.md:11581 (T-529ABE)`: a
+      `TODO.md:3097 (T-6FE392)8 (T-529ABE)` from `TODO.md:11612 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -3735,7 +3735,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:11581 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:11612 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -5651,15 +5651,46 @@ list. **When a slice lands, grep this list for what it just shipped.**
       park to the main ROM's read, across `call_strheap`'s `CALSLT`. The single
       writer is the argument for it; a row is the proof, and the build is what
       would produce one.
-      💰 **PRICE: NOT GUESSED, AND THAT IS THE POINT.** With the obstacle gone
-      the arm may land inside the 20 B standing budget, in which case it ships
-      without asking; if it does not, it is a 🙋 spend against a page-1 wall that
-      must be read from a clean tree at the time, not quoted from here.
-      🤖 AUTONOMOUS — the mechanism is measured on both machines, the class has
-      two members and a control that stays out of it, and the fix has one home.
-      What is left is the `sh_val_parse` contract change and its price.
-      program in the corpus renames with a numeric operand. The scouting the 🔭
-      asked for is DONE; what is left is the call.
+      📐 **THE DESIGN, READ OUT OF `ev_f` 2026-09-09 — AND IT NEEDS NO SUB-ROM
+      CHANGE AT ALL.** An ASCII digit reaches `ev_f_var` today: `$35` clears both
+      `cp INT_DIGIT_BASE` and `cp $1B`, falls through, fails `is_letter`, and
+      lands on `ev_f_missop`. The arm goes exactly there.
+      🎯 **THE TRICK THAT REMOVES THE SUB-ROM HALF: BUILD A FAKE DESCRIPTOR.** Op 13
+      reads `(STRPTR)` as `[len][ptr]`. Point `STRPTR` at a 3-byte scratch holding
+      the cursor and a length, and the existing tenant runs unmodified — no new
+      op, no alternate entry, no contract change. Then read the value back the way
+      `ev_ff_val` already does (`SH_ERR`, `SH_LEN` as FACTYP, `SH_PTR`) and
+      **advance `IX` from `TKSRCSAVE`**.
+      ⚠️ **THE LENGTH IS THE ONE JUDGEMENT.** `TKVALEND` bounds the scan, and
+      program text is `$00`-terminated per line while `tk_float` stops at the first
+      non-numeric byte, so an over-long length is stopped by the data rather than
+      the bound. Cheap and probably right — and exactly the kind of "probably" that
+      earns a row rather than a comment.
+      💰 **PRICE: STILL NOT GUESSED, BUT THE SHAPE SAYS IT IS OVER THE CAP.** The
+      arm is a digit test plus the descriptor set-up, the tenant call, the error
+      and type decode and the cursor advance — comfortably more than 20 B of main
+      page 1, so it is a 🙋 spend, not a standing-budget drop-in. Page 1 read
+      **142 B free from a clean tree on 2026-09-09**; re-read it at pick-up rather
+      than trusting that figure.
+      🟢 **AND THE DIVERGENCE IS HELD NOW, WHATEVER HE DECIDES: `make
+      asciidigit-acceptance`**
+      ([`probes/basic/basic_probe_asciidigit.py`](probes/basic/basic_probe_asciidigit.py)),
+      collected by `make gates`. Five rows, both divergences PINNED BY FACE, three
+      controls that keep the failing column honest — the `#` form, the variable
+      form, and `FIELD` as the predicted non-member. A fix that lands makes this
+      gate RED and tells the next reader to delete the pin, which is the only way
+      a closed divergence cannot rot into a silently-carried one.
+      ⚠️ **THE PREVIOUS MARKER LINE SAID *"what is left is the `sh_val_parse`
+      contract change"* AND IS STRUCK** — that contract change was refuted the same
+      day (D-TKSRCSAVE, above): `tk_float` already publishes the cursor. Removed
+      rather than left standing, because `make todo-marker-check` reads a second
+      canonical marker in one block as AMBIGUOUS, and it is right to: this item
+      has one open question, not two.
+      🎯 The scouting the older 🔭 asked for is DONE; what is left is the call.
+      🙋 NEEDS-JOOST — over the 20 B cap, and the only thing still open here.
+      `OPEN "file" AS 1` is idiomatic BASIC that works on the reference and is a
+      Syntax error here; the design is read out of the code, needs no sub-ROM
+      change, and `make asciidigit-acceptance` holds both rows either way.
 
 - [x] ✅ **A TRAP HANDLER LEFT WITHOUT ITS `RETURN` IS PERMANENTLY DEAD — AND
       THAT IS FAITHFUL** ~~; WHAT IS NOT IS THE SIX-EVENT CAP~~ — **the cap half
