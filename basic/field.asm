@@ -787,6 +787,24 @@ gp_defrec:
                 ld      de,1
 gp_haverec:
                 ld      (GP_RECNO),de
+                ; 🔴 D-GETREC: RECORD 0 IS `Illegal function call`, AND TRAPPABLE.
+                ; `GET#1,0` and `PUT#1,0` are ERR 5 on the CF-3300; here they reached
+                ; fat_rand_get's own zero test, whose failure returns CF to gp_fin's
+                ; `jp c,load_error` — which PRINTS and does not raise, so a program
+                ; guarding its disk I/O with ON ERROR was told nothing went wrong.
+                ; Same class as D-SAVETRAP, in a second verb pair.
+                ; 🎯 ONLY RECORD 0 IS FIXED HERE, AND THAT IS THE WHOLE POINT.
+                ; The reference's OTHER refusals (`,256`, `,300`, `,-1`, and `,2` on
+                ; a one-record file — all ERR 55) are bounded by END OF FILE, not by
+                ; a record cap: `PUT#1,256` is ACCEPTED there and extends the file,
+                ; and `GET#1,2` is refused though 2 is inside any cap. zerobas's
+                ; 1..255 test in randio-body.inc is a DIFFERENT RULE that coincides
+                ; on three rows. Record 0 is invalid whatever the file's length, so
+                ; it is the one part that can ship without settling the EOF bound
+                ; [[two-rules-that-coincide-on-every-row-you-have]].
+                ld      a,d
+                or      e
+                jp      z,gb_illegal        ; record 0 -> ERR 5, RAISED
                 push    hl                  ; guard cursor across select + disk op
                 ; the channel must be open RANDOM (FCH_MODES[ch] == 4). D-NOTOPEN2:
                 ; the old `cp 4` conflated THREE conditions the reference separates --
