@@ -74,6 +74,7 @@ def program(open_line, sig):
         # built from CHR$ so the signature is NOT in the program text
         '30 N$ = CHR$(81) + CHR$(90) + CHR$(88) + CHR$(74) + ".DAT"',
         '35 M$ = CHR$(113) + CHR$(122) + CHR$(120) + CHR$(106) + ".DAT"',
+        '36 P$ = CHR$(87) + CHR$(86) + CHR$(89) + CHR$(75) + ".DAT"',
         f'40 {open_line}',
         '45 PRINT "ZP"; 1; "PZ"',
         '50 D$ = ""',
@@ -88,6 +89,8 @@ def program(open_line, sig):
 
 
 LOWER = (0x71, 0x7A, 0x78)
+# a SECOND distinctive name, for the stride row: "WVY"
+SIG2 = (0x57, 0x56, 0x59)
 
 CASES = [
     ("f.open", program('OPEN N$ AS #1 LEN = 128', SIG),
@@ -115,6 +118,17 @@ CASES = [
                       SIG),
      "TWO channels, different names; scan for channel 1's signature AFTER "
      "channel 2 is open -- survives = per-channel, gone = one shared buffer"),
+    # \U0001f4d0 THE STRIDE ROW. f.two established that channel 1's name SURVIVES a
+    # second open, at $DEB6. That is retention, not a layout: it does not say
+    # whether the storage is an array with a per-channel stride or two unrelated
+    # cells. Open channel 1 with one signature and channel 2 with ANOTHER, then
+    # scan for CHANNEL 2's -- the distance between the two surviving addresses is
+    # the stride, and 11 would say it is the space-padded 8.3 field laid out per
+    # channel exactly as the 165 B design proposes.
+    ("f.stride", program('OPEN N$ AS #1 LEN = 128 : OPEN P$ AS #2 LEN = 128',
+                         SIG2),
+     "channel 1 = signature A, channel 2 = signature B; scan for B. The gap to "
+     "f.two's surviving address for A is the per-channel stride"),
 ]
 
 

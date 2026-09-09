@@ -434,7 +434,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:12364 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:12380 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -599,7 +599,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:3097 (T-6FE392)8 (T-529ABE)` from `TODO.md:11301 (T-529ABE)`: a
+      `TODO.md:3097 (T-6FE392)8 (T-529ABE)` from `TODO.md:11317 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -3735,7 +3735,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:11301 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:11317 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -9341,10 +9341,26 @@ list. **When a slice lands, grep this list for what it just shipped.**
         last — while **`$DEB6` SURVIVES**. So the reference really does retain a
         per-channel copy of the typed name, case intact, exactly as the
         behavioural rows forced.
-      ⚠️ **WHAT IS NOT ESTABLISHED**: the STRIDE. One surviving address proves
-      retention and survival across another open, not an 11 B × N array; pinning
-      the layout needs a row that opens two channels and scans for BOTH
-      signatures. Filed as the next measurement, not assumed.
+      📐 **AND THE STRIDE IS MEASURED TOO, SAME DAY
+      ([`.out`](scratchpad/fcbname_stride.out)).** Channel 1 opened with one
+      signature and channel 2 with ANOTHER, then scan for channel 2's: it
+      survives at **`$DEDB`**, against channel 1's **`$DEB6`**.
+      **`$DEDB − $DEB6 = $25 = 37 bytes`** — the per-channel stride, and 37 is
+      the classic Disk-BASIC **FCB** size. So the name is the 11-byte
+      space-padded 8.3 field inside a 37-byte per-channel block the machine keeps
+      for file I/O anyway.
+      🎯 **WHICH IS THE REAL COST ANSWER: THE REFERENCE GETS THE CHECK NEARLY
+      FREE.** It is not spending 165 B to refuse a duplicate open — it already
+      holds the typed name per channel because its FCB has a name field. Our
+      50-byte per-channel context block does not, so **our 165 B is storage the
+      reference never separately pays for.** The spend is faithful in BEHAVIOUR
+      and not in structure, and that is the trade in front of him.
+      ⚠️ **ONE LIMITATION, NAMED**: the no-open control is program-length
+      sensitive — its string-heap hits move between rows (`DB40 DB48 DB4D` vs
+      `DB16 DB1E DB23`) because the scanned programs differ in length. The `$DExx`
+      addresses are stable across every row and are what the reading rests on;
+      the `DBxx` band is heap and is not evidence
+      [[a-case-that-agrees-can-agree-for-the-wrong-reason]].
       🔴 **AND THE "PROTECTIVE, NOT COSMETIC" ARGUMENT IS WEAKER THAN I FILED
       IT.** Because the compare is case-SENSITIVE while the filesystem is not,
       the reference's own guard is defeated by changing case:

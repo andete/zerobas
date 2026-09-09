@@ -1,0 +1,8 @@
+  ran f.ctl            -> 'DB40 DB48 DB4D'
+  ran f.stride         -> 'DB16 DB1E DB23 DEDB EC55 F2B9 F569 F8 66'
+
+  f.ctl     'DB40 DB48 DB4D'
+      CONTROL: the identical program with NO file open. Every address here is the string heap or a parser scratch buffer and means nothing
+  f.stride  'DB16 DB1E DB23 DEDB EC55 F2B9 F569 F8 66'
+      channel 1 = signature A, channel 2 = signature B; scan for B. The gap to f.two's surviving address for A is the per-channel stride
+refcache: 0 hit, 2 miss, 2 stored
