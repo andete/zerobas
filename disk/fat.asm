@@ -954,8 +954,18 @@ fdc_div_nob:
 fdc_div_done:
                 ret
 
-; dskchg — disk-change status inquiry.
-; Fail with carry set until FDC driver lands.
+; dskchg — disk-change status inquiry ($4013).
+; Returns CF set: "cannot tell".
+; 🔴 THIS COMMENT READ "Fail with carry set until FDC driver lands" UNTIL
+; 2026-09-09 — and the FDC driver is RIGHT ABOVE IT (`fdc_div_*`, relocated here
+; from disk/driver.asm). The prerequisite it named landed long ago; the stub did
+; not move, so the reasoning outlived the reason and a reader would go looking for
+; a driver that is already there [[a-fix-falsifies-the-justification-beside-it]].
+; ⚠️ WHETHER THE STUB SHOULD STAY IS UNMEASURED, and this note does not claim it
+; should. "Cannot tell" is a legitimate answer for a driver that does not latch the
+; disk-change line, `diskbasic-acceptance` is 34/34 with it, and nothing in the
+; tree has yet asked what the reference answers here. That is a row nobody has
+; written, not a defect anybody has found.
 dskchg:
                 scf
                 ret
