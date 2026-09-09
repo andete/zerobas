@@ -410,7 +410,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:12015 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:12042 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -575,7 +575,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:2969 (T-6FE392)8 (T-529ABE)` from `TODO.md:10952 (T-529ABE)`: a
+      `TODO.md:2996 (T-6FE392)8 (T-529ABE)` from `TODO.md:10979 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -2398,6 +2398,33 @@ list. **When a slice lands, grep this list for what it just shipped.**
       success — register 0 alone carries the mode bits. The defence was never needed
       (nothing wrote), and it is the right shape regardless.
 
+- [x] ✅ **D-LVSPACE (2026-09-09): the l-value subscript space is CLEAN — and the
+      SPACE-AXIS SIGNATURE now has a measured hit rate**
+      ([`scratchpad/lvspace_probe.py`](scratchpad/lvspace_probe.py),
+      [`.out`](scratchpad/lvspace_run.out), 5 rows × 3 machines, **0 DIFF**).
+      `ex_let` tests for an array subscript with a bare `ld a,(hl) / cp '('` while
+      the `=` three lines below IS guarded by `call skip_spaces` — one statement,
+      two separator tests, one protected. `Q (3)=7`, `LET Q (3)=7`, `Q(3) =7` and
+      `Q (3) =7` all assign correctly on all three machines: `var_name_key` runs
+      immediately before the test and leaves HL past trailing spaces, so the site is
+      guarded by its NEIGHBOUR.
+      📏 **FOUR MEASUREMENTS NOW BOUND THE SIGNATURE, AND THE NUMBERS ARE THE
+      POINT.** *"`ld a,(hl)` immediately before a separator test, unguarded"* matches
+      **41** sites:
+      | sweep | sites asked | real |
+      |---|---|---|
+      | D-MIDSPACE (`ex_mid_stmt`) | 5 | **1** — and I predicted the other 4 |
+      | D-FNSPACE (`inc hl` subset) | 10 | **9** |
+      | D-NUMSPACE (numeric / DEF FN / array r-value) | 10 | 0 |
+      | D-LVSPACE (array l-value) | 5 | 0 |
+      🎯 **THE DISCRIMINATOR IS THE PRECEDING INSTRUCTION, NOT THE TEST.** Every real
+      defect was preceded by `inc hl`, which consumes nothing; every clean site was
+      preceded by a `call` (`eval`, `str_target_parse`, `var_name_key`) that leaves
+      HL past spaces. So the signature is worth **9 of 41**, and its `inc hl` subset
+      **9 of 10** — but the 10th (`str-engine.asm`'s `cp ')'`) is clean too, so even
+      that subset is a reading list rather than a defect list
+      [[a-mechanism-inferred-from-one-observation]].
+
 - [x] ✅ **D-LISTCOMMA (2026-09-09): a TRAILING SEPARATOR on a LIST-taking verb —
       CLASS MEASURED EMPTY, 7 rows × 3 machines, 0 DIFF**
       ([`scratchpad/listcomma_probe.py`](scratchpad/listcomma_probe.py),
@@ -3607,7 +3634,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:10952 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:10979 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

@@ -1,0 +1,14 @@
+  ctl     Q(3)=7         vg=ERR=0 Q3=7       cf=ERR=0 Q3=7       zb=ERR=0 Q3=7      
+  a.sp    Q (3)=7        vg=ERR=0 Q3=7       cf=ERR=0 Q3=7       zb=ERR=0 Q3=7      
+  a.let   LET Q (3)=7    vg=ERR=0 Q3=7       cf=ERR=0 Q3=7       zb=ERR=0 Q3=7      
+  a.eq    Q(3) =7        vg=ERR=0 Q3=7       cf=ERR=0 Q3=7       zb=ERR=0 Q3=7      
+  a.both  Q (3) =7       vg=ERR=0 Q3=7       cf=ERR=0 Q3=7       zb=ERR=0 Q3=7      
+
+=== 0 divergence(s): none ===
+=== Q3=7 the assignment landed · Q3=0 it went elsewhere · Q3=999 never ran ===
+   ctl     vg ('0', '7')   cf ('0', '7')   zb ('0', '7')
+   a.sp    vg ('0', '7')   cf ('0', '7')   zb ('0', '7')
+   a.let   vg ('0', '7')   cf ('0', '7')   zb ('0', '7')
+   a.eq    vg ('0', '7')   cf ('0', '7')   zb ('0', '7')
+   a.both  vg ('0', '7')   cf ('0', '7')   zb ('0', '7')
+refcache: 0 hit, 15 miss, 15 stored
