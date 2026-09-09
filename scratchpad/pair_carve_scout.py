@@ -135,13 +135,28 @@ def relative(run: tuple[str, ...]) -> bool:
 
 
 def isize(i: str) -> int:
-    """Crude Z80 sizing -- enough to rank, never to trust as a byte count."""
+    """Crude Z80 sizing -- enough to rank, never to trust as a byte count.
+
+    \U0001f534 IX/IY WERE UNDER-COUNTED, AND IN THE FILES THIS SWEEP RANKS MOST.
+    Found 2026-09-09 pricing `inc ix | call ev_sp | cp '('`: the sizer returned
+    1 for `inc ix`, which is DD 23 -- TWO bytes. IX is the evaluator's cursor, so
+    `inc ix` / `push ix` / `pop ix` / `ld a,(ix+0)` are dense in expr.asm and
+    str-engine.asm, exactly where the top rows come from. Every DD/FD form was
+    priced one byte short and some by two, so the RANKING was wrong, not just the
+    net -- the same class as the site-count sort this tool already had to fix
+    [[an-instrument-can-fail-the-way-the-thing-it-replaced-failed]].
+    """
+    if re.match(r"ld (ix|iy),", i):
+        return 4                            # DD 21 nn nn
+    if re.search(r"\((ix|iy)[+-]", i):
+        # DD/FD prefix + the base opcode + a displacement byte
+        return 3
+    if re.search(r"\b(ix|iy)\b", i):
+        return 2                            # DD/FD prefix + a 1-byte base
     if i.startswith(("call", "jp ")) and "(" not in i:
         return 3
     if i.startswith(("jr ", "djnz")):
         return 2
-    if re.match(r"ld (ix|iy),", i):
-        return 4
     if re.match(r"ld \(?[a-z]{1,2}\)?,\(?[a-z]{1,2}\)?$", i):
         return 1
     if re.match(r"ld (hl|de|bc),", i) or re.match(r"ld \([^)]*[$0-9][^)]*\),", i):
@@ -168,6 +183,12 @@ def selftest() -> int:
                      "tenant-escape guard would let a helper call cross into sub/")
     if isize("call skip_spaces") != 3 or isize("or a") != 1 or isize("ret") != 1:
         fails.append("the sizer disagrees with known encodings (call=3, or a=1, ret=1)")
+    for form, want in (("inc ix", 2), ("push ix", 2), ("pop iy", 2),
+                       ("ld ix,subrom_entry", 4), ("ld a,(ix+0)", 3),
+                       ("ld (iy+3),a", 3)):
+        if isize(form) != want:
+            fails.append(f"IX/IY sizing wrong: {form!r} -> {isize(form)}, want "
+                         f"{want} (a DD/FD prefix is a byte the ranking pays for)")
     # --- D-NGRAMCARVE: the WIDENED half needs its own arms, or the tool ships
     # a new capability that nothing has ever exercised.
     r3 = {"t3.asm": ["  ld a,d", "  or e", "  ret z", "lbl:",

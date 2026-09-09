@@ -1,0 +1,34 @@
+basic/ files swept: 43   (excluded as sub-included: 27)
+runs of 2..5 instructions, 8+ sites: 63
+
+  net sites   B  k  run
+   28     9   7  3  inc ix  |  call ev_sp  |  cp '('
+   26    16   5  2  inc ix  |  call ev_sp
+   20     9   6  2  call parse_disk_fcb  |  ld hl,(fn_resume)
+   14    10   5  2  call ev_sp  |  cp '('
+   12    17   4  2  call skip_spaces  |  or a
+    8    13   4  2  ld de,0  |  ret
+    5    10   4  4  inc hl  |  ld e,(hl)  |  inc hl  |  ld d,(hl)
+    5    10   4  2  call skip_spaces  |  cp eq_token
+    4     9   4  2  jp nz,stmt_error  |  inc hl
+    4     9   4  2  call var_str_type  |  or a
+    3     8   4  2  push hl  |  ld hl,(tkdexp)
+    3     8   4  2  push de  |  call skip_comma
+    3     8   4  2  ld hl,(strptr)  |  ld a,(hl)
+    3     8   4  2  ld a,(hl)  |  call upcase
+   -4    29   3  2  ld e,a  |  ld d,0   -- cannot win: a 3 B call is not cheaper
+   -4    26   3  2  or a  |  sbc hl,de   -- cannot win: a 3 B call is not cheaper
+   -4    20   3  2  push hl  |  pop ix   -- cannot win: a 3 B call is not cheaper
+   -4    20   3  3  ld e,(hl)  |  inc hl  |  ld d,(hl)   -- cannot win: a 3 B call is not cheaper
+   -4    15   3  3  inc hl  |  inc hl  |  inc hl   -- cannot win: a 3 B call is not cheaper
+   -4    14   3  2  push ix  |  pop hl   -- cannot win: a 3 B call is not cheaper
+   -4    13   3  2  ld a,(hl)  |  cp ')'   -- cannot win: a 3 B call is not cheaper
+   -4    10   3  2  ld d,0  |  ret   -- cannot win: a 3 B call is not cheaper
+   -4    10   3  3  inc hl  |  ld e,(hl)  |  inc hl   -- cannot win: a 3 B call is not cheaper
+   -4     9   3  2  ld a,2  |  ld (factyp),a   -- cannot win: a 3 B call is not cheaper
+   -4     9   3  2  ld a,(factyp)  |  cp 2   -- cannot win: a 3 B call is not cheaper
+
+14 run(s) can pay for themselves at 8+ sites.
+🔴 RUNS OVERLAP BY CONSTRUCTION: a 5-gram contains two 4-grams and three 3-grams, and all of them are listed. Their savings are NOT additive -- converting the longest one consumes the sites the shorter ones were counting. Take the top row, then RE-RUN.
+🔴 AND `sites` COUNTS SOURCE LINES, NOT ASSEMBLED ONES. D-EVSPCLOSE converted the top run's 8 sites and the wall moved by 7 sites' worth: one sat inside `IF !G8_RESIDENT`, a switch that is OFF in the shipping build, so it costs nothing and can save nothing. Reconcile the measured wall against sites x saving BEFORE believing a net -- an unexplained gap is where a mis-conversion hides.
+🔴 AND `net` IS A CEILING, NOT A PRICE. It assumes a helper that cannot fall through; one that can is cheaper, and the three hazards in this file's docstring are not priced at all. Read them before converting.
