@@ -1,0 +1,11 @@
+row                    vg8020        cf3300            zb
+o.alias                   503           503   ERR 6 AT 60
+o.alias.ctl               507           507   ERR 6 AT 60
+o.aliasnest               903           903  -?.?????????????E+62
+o.aliasnest.ctl           907           907  -?.?????????????E+62
+
+  o.alias: DIVERGENCE  zb='ERR 6 AT 60'  ref='503'
+  o.alias.ctl: DIVERGENCE  zb='ERR 6 AT 60'  ref='507'
+  o.aliasnest: DIVERGENCE  zb='-?.?????????????E+62'  ref='903'
+  o.aliasnest.ctl: DIVERGENCE  zb='-?.?????????????E+62'  ref='907'
+refcache: 8 hit, 4 miss, 4 stored, 8 replayed provenance

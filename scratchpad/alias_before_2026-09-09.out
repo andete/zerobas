@@ -1,0 +1,11 @@
+row                    vg8020        cf3300            zb
+o.alias                   503           503           505
+o.alias.ctl               507           507           507
+o.aliasnest               903           903           909
+o.aliasnest.ctl           907           907           907
+
+  o.alias: DIVERGENCE  zb='505'  ref='503'
+  o.alias.ctl: agree ('507')
+  o.aliasnest: DIVERGENCE  zb='909'  ref='903'
+  o.aliasnest.ctl: agree ('907')
+refcache: 0 hit, 12 miss, 12 stored

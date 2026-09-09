@@ -434,7 +434,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:12212 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:12248 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -599,7 +599,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:3097 (T-6FE392)8 (T-529ABE)` from `TODO.md:11149 (T-529ABE)`: a
+      `TODO.md:3097 (T-6FE392)8 (T-529ABE)` from `TODO.md:11185 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -3735,7 +3735,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:11149 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:11185 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -6421,9 +6421,40 @@ list. **When a slice lands, grep this list for what it just shipped.**
       has no XFAIL class and a knowingly-red row would redden a green battery.
       They reproduce from `scratchpad/deffn_alias_probe.py`; adding them is step 1
       of whichever fix is chosen.
-      🙋 NEEDS-JOOST — a call that is yours to make (page-3 RAM eviction below
-      LINEBUF, or accept one of two MEASURED divergences: fix top-level only for
-      −8 B and leave the nested row, or grow the shadow area ~+99 B of RAM).
+      🔴 **"FIX TOP-LEVEL ONLY FOR −8 B" IS REFUTED — BUILT AND MEASURED
+      2026-09-09 (Joost chose it: *"b first"*).** Deleting the *grow, never
+      shrink* does free space — **sub page 0 1313 → 1320 B, so 7 B, not 8, and in
+      the SUB ROM, not main page 1** — and it does not fix `o.alias`. It breaks
+      `DEF FN` outright:
+
+          row               vg8020   cf3300   zb BEFORE   zb WITH THE CUT
+          o.alias              503      503         505   ERR 6 AT 60
+          o.alias.ctl          507      507         507   ERR 6 AT 60
+          o.aliasnest          903      903         909   -?.?????????????E+62
+          o.aliasnest.ctl      907      907         907   -?.?????????????E+62
+
+      **Both CONTROLS go red**, which is what says this is not a partial fix but a
+      broken verb ([before](scratchpad/alias_before_2026-09-09.out),
+      [after](scratchpad/alias_after_2026-09-09.out),
+      [reverted](scratchpad/alias_revert_2026-09-09.out) — the baseline returns
+      byte-for-byte). Reverted; nothing shipped.
+      🎯 **AND THE TREE CONTRADICTED ITSELF IN WRITING, WITH THE COMMENT RIGHT.**
+      `sub/deffn.asm`'s `fn_enter` says the slot walk *"grows FN_FEND without ever
+      shrinking it"* and calls that **`o.nestsame`'s WHOLE POINT**; this item said
+      deleting the same four instructions was a clean −8 B win. Both were filed as
+      measured. The comment is the one that survived contact
+      [[a-fix-falsifies-the-justification-beside-it]].
+      📐 **WHY IT CANNOT BE THAT CHEAP.** `FN_FEND` is overloaded: it is the
+      visibility window `[FN_PAREA, FN_FEND)` **and** the "an FN call is in
+      progress" gate — `FN_FEND == low FN_PAREA` means *no call*, tested by
+      `sub/arrays.asm`, `sub/strheap.asm` and `basic/usr.asm`. Freezing it during
+      the walk therefore does not merely narrow scope, it tells the rest of the
+      interpreter no call is running. A real fix has to separate those two
+      meanings, which is bytes — so the honest option set is now **grow the shadow
+      area (~+99 B RAM) or accept BOTH divergences**, not three options.
+      🙋 NEEDS-JOOST — a call that is yours to make, and the cheap option you
+      picked is gone: page-3 RAM eviction below LINEBUF (~+99 B) to close both
+      rows, or accept both MEASURED divergences. The −8 B third way was not real.
 
 - [ ] ⚠️ **`DEF FN`: a STRING formal's shadow slot is not a GC root.** Filed
       2026-08-22 by D-DEFFN,
@@ -10993,7 +11024,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       scores 0 on the 156-line replacement corpus. Detail:
       `docs/spec-audit-citations-docs.md` §2.2.
       🤖 AUTONOMOUS — the reference or a gate settles it; finishable unattended (no his-decision signal found).
-- [ ] ⚠️ **Both check-5 allowlist entries need a HUMAN paper-trail confirm** —
+- [x] ✅ **Both check-5 allowlist entries needed a HUMAN paper-trail confirm — CONFIRMED** —
       `probes/lib/{omsx_repl,latch_check}.py` render C-BIOS instructions.
       `allowed-sources.md` grades C-BIOS **B/Conditional** ("we don't lift its
       code/expression"), which is a judgement `docs/clean-room-audit.md` reserves
@@ -11008,7 +11039,12 @@ list. **When a slice lands, grep this list for what it just shipped.**
       🙋. Neither a reference nor a gate can settle whether a C-BIOS listing is
       inside the B/Conditional grade; that is the paper trail, and the paper
       trail is his. Misfiling toward 🤖 is the expensive direction.
-      🙋 NEEDS-JOOST — a clean-room grading call the audit reserves for a human.
+      ✅ **CONFIRMED BY JOOST 2026-09-09: *"is okay"*.** Both `probes/lib`
+      renderings are inside C-BIOS's **B/Conditional** grade — the paper-trail
+      judgement `docs/clean-room-audit.md` reserves for a human is now made and
+      recorded here, which is the whole point of reserving it. The allowlist
+      entries in `tools/citations-listing-allow.txt` stand, and the tool is
+      correct to keep declining to make this call itself.
 - [ ] ⚠️ **`disk/runtime.asm:423` `int_h_body` awaits a HUMAN decision** — newly
       visible (D-NEGJUDGE) and acknowledged in `tools/citations-advisory-allow.txt`,
       not resolved. Its block attests in prose (*"the MSX1 standard,

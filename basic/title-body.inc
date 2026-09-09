@@ -46,5 +46,13 @@ banner_text:
                 ; ⚠️ The `ZB` prompt is deliberately NOT `Ok` and was left alone
                 ; (Joost, same call): it marks this as not-the-reference while
                 ; the charter work is unfinished.
+                ; 🟢 RE-ASKED AND RE-ANSWERED 2026-09-09, after six weeks of
+                ; convergence: **"ZB stays"**. So it is no longer a placeholder
+                ; waiting on the charter -- it is the prompt. Do not "fix" it to
+                ; `Ok` on the reasoning that the charter work has advanced; that
+                ; reasoning was put to him with the advance and the answer was
+                ; the same. The header text above is likewise our own content:
+                ; copying the reference's would be both a clean-room violation
+                ; and a false copyright claim (basic/PROVENANCE.md).
                 db      "clean-room MSX1 BASIC",13,10,13,10
                 db      0
