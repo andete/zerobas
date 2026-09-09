@@ -132,12 +132,26 @@ trapsvc_probe: int.six; gos.leak -- "a trap handler left without RETURN is perma
 # (basic_probe_nodisk.PINNED) to their exact values, so the gate goes RED if
 # either column changes -- a regression AND an unannounced fix both show.
 basic_probe_nodisk: k.mks; k.mkd; k.cvs; k.mki; k.cvi; v.dskf; v.cvistr; v.mkifld -- "SHOULD THE DISK-BASIC VERBS LIVE IN disk.rom BEHIND A HOOK"; 🙋 Joost, docs/spec-basic-nodisk.md
-# --- 2026-09-08: COLOR is not atomic (D-PARTIAL) -----------------------------
-# Filed under "🔴 AND THE D-DOMAIN FIX IS NOT COMPLETE — IT GOT THE ERROR CODE
-# RIGHT AND THE STATE WRONG". All four rows are the SAME defect seen at four
-# different exits from ex_color; the fix is priced complete (6 B page 1 + 16 B
-# low + 2 B RAM) and is 3 B over the page-1 wall, so it is measured-and-known
-# rather than measured-and-unnoticed. ⚠️ col.type carries a SECOND, unexplained
-# reading on top of the partial store: BAKCLR = 0, a value no argument asked
-# for. That reading is filed with the item, NOT explained.
-partial_probe: col.fgok; col.bgok; col.tail; col.type -- COLOR stores each component as it validates it; both references reject the statement atomically. Priced complete and blocked on a page-1 carve.
+# --- 2026-09-08: COLOR is not atomic (D-PARTIAL) -- RETIRED 2026-09-09 --------
+# 🔴 THE SEVENTH STALE PIN, AND THE FIX THAT ORPHANED IT WAS MINE, THE SAME
+# NIGHT. This pin was written by ce0adbcd, whose own subject line is "the fix I
+# built did not run" -- a filing-only commit that priced the repair at 3 B over
+# the page-1 wall. The carve landed hours later, ecf0c859 shipped the shadow
+# (clr_prep / clr_commit) and its message says "4 DIFF -> 0", and NOTHING came
+# back here. Re-measured 2026-09-09 from a clean tree
+# (`scratchpad/partial_pincheck.out`): all 12 rows agree, `0 divergence(s)`,
+# including all four pinned ones and the col.type BAKCLR=0 reading the note
+# below called unexplained.
+# 🎯 THE PIN'S OWN JUSTIFICATION IS WHAT WENT STALE, not just its verdict:
+# "blocked on a page-1 carve" was a WALL READING, and wall readings rot faster
+# than rows do. A pin whose reason is a COST needs re-reading the moment the
+# budget moves, and the budget moved five times that night (2 B -> 142 B).
+# The original note, unedited:
+# > Filed under "🔴 AND THE D-DOMAIN FIX IS NOT COMPLETE — IT GOT THE ERROR
+# > CODE RIGHT AND THE STATE WRONG". All four rows are the SAME defect seen at
+# > four different exits from ex_color; the fix is priced complete (6 B page 1 +
+# > 16 B low + 2 B RAM) and is 3 B over the page-1 wall, so it is
+# > measured-and-known rather than measured-and-unnoticed. ⚠️ col.type carries a
+# > SECOND, unexplained reading on top of the partial store: BAKCLR = 0, a value
+# > no argument asked for. That reading is filed with the item, NOT explained.
+# (no `partial_probe:` pin line -- the rows converged.)
