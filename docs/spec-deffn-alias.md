@@ -83,6 +83,63 @@ fix would trade a measured divergence for a *different* measured divergence
 slots ≈ **198 B** where 99 exist, and `FN_AREA` is bounded by `LINEBUF` — D-DEFFNEV
 already slid the area up against it.
 
+### 4.1 🔴 AND 18 IS THE WRONG NUMBER — THE REFERENCE HAS NO CEILING HERE (2026-09-09)
+
+The 198 B was derived from **one row at depth 2**. Joost authorised
+*"we need to match the reference"*, so the first thing to do with that
+authorisation was ask what the reference's ceiling actually is, rather than build
+to a number taken from a single measurement
+([`scratchpad/deffn_nestdepth_probe.py`](../scratchpad/deffn_nestdepth_probe.py),
+[`.out`](../scratchpad/deffn_nestdepth.out)). Nine formals at the innermost
+level, at nesting depths 1 to 4:
+
+| row | vg8020 | cf3300 | zb | what it asks |
+|---|---|---|---|---|
+| `d.n1` | 9 | 9 | 9 | nine formals at top level |
+| `d.n2` | 9 | 9 | 9 | …called from inside ONE outer FN |
+| `d.n3` | 9 | 9 | 9 | …from inside TWO |
+| `d.n4` | 9 | 9 | **ERR 7** 🔴 | …from inside THREE |
+
+**Both references answer 9 at every depth probed.** A fixed 18-slot area would
+close `o.alias` and `o.aliasnest` and then introduce a NEW ceiling of its own at
+some depth — which is *"a bigger number is a different wrong answer, not a fix"*,
+the exact reasoning `docs/spec-basic-trapsvc.md` §6 used, and §10 then had to
+**invert** when the references turned out to have no fixed array either.
+Building one here would be making that mistake a second time in the same tree.
+
+🟢 **AND `d.n4` IS A NEW DIVERGENCE WITH A ROW AT LAST.** zerobas's `ERR 7` at
+depth 4 is NOT the shadow area — it answers 9 at depth 3 *because it clobbers*,
+so nine slots always suffice however deep it goes. It is the `DEF FN` nesting cap
+of **three** that §19 (D-FNSTK) measured and called *"not a constant, it is the
+Z80 stack's address"*. That item had no differential row; this is one.
+
+### 4.2 ➡️ SO THE SHAPE IS A POOL FRAME, AND IT COSTS NO NEW RAM
+
+`ctl_alloc` (`basic/str-engine.asm`) already is a HIMEM-bounded allocator —
+`HL` = size in, frame base out, `CF=1` when it collides with `CTLLIM` — and
+D-CTLPOOL landed it precisely because the references allocate control frames from
+one pool rather than from fixed arrays. A `DEF FN` call's shadow frame is the
+same kind of object.
+
+* Each call allocates `formals × FN_SLOTSZ` from the pool, so the caller's frame
+  is never in the callee's way and **both alias rows close**.
+* Depth becomes HIMEM- and `CLEAR`-bounded like the references, which is also
+  the shape `d.n4` asks for.
+* It **frees** the 99 B `FN_PAREA` array instead of spending 99 more. Joost's
+  RAM authorisation is not needed.
+* `FN_FEND`'s two meanings — the visibility window *and* the "a call is in
+  progress" gate — separate naturally: the frame pointer is the window, and
+  "no frame allocated" is the gate. That is the exact overloading the −8 B
+  attempt proved cannot be skipped.
+
+⚠️ **THE COST IS ADDRESSING, AND IT IS NOT SMALL.** Slots are reached today by
+LOW BYTE against a fixed page (`ld h,high FN_PAREA`, `FN_SLOTP` is one byte); a
+pool frame is at an arbitrary 16-bit address, so the slot walk becomes 16-bit
+through `sub/deffn.asm`, the formal lookup in `sub/arrays.asm`, the GC root walk
+`sg_walk_fnframe` in `sub/strheap.asm`, and `basic/usr.asm`'s in-progress test.
+That is a slice, not an edit — and it is why this went back to Joost rather than
+being built under the authorisation he had already given for a different shape.
+
 ## 5. Why this is 🙋 and not 🤖
 
 Every remaining route spends **scarce page-3 RAM** or accepts one of two measured

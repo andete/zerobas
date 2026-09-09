@@ -1,0 +1,11 @@
+
+row           vg8020          cf3300              zb   what it asks
+d.n1               9               9               9   nine formals at top level (the o.p9 control)
+d.n2               9               9               9   ...called from inside ONE outer FN (the o.p9nest shape)
+d.n3               9               9               9   ...from inside TWO
+d.n4               9               9     ERR 7 AT 60   ...from inside THREE
+
+  every row that answers should answer 9 (the innermost formal I).
+  the DEEPEST row both references still answer is what sizes the area;
+  a reference that keeps answering says the area is not the shape.
+refcache: 0 hit, 12 miss, 12 stored

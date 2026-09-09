@@ -434,7 +434,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:12320 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:12364 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -599,7 +599,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:3097 (T-6FE392)8 (T-529ABE)` from `TODO.md:11257 (T-529ABE)`: a
+      `TODO.md:3097 (T-6FE392)8 (T-529ABE)` from `TODO.md:11301 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -3735,7 +3735,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:11257 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:11301 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -6468,8 +6468,52 @@ list. **When a slice lands, grep this list for what it just shipped.**
       📋 **STEP 1 IS THE ROWS**: the four `o.alias*` rows are deliberately not in
       `deffn-strict` (no XFAIL class, and a knowingly-red row reddens a green
       battery). They go in as the fix lands, not before.
-      🤖 AUTONOMOUS — the call is made; the RAM is authorised and the design is
-      named. What is left is building it.
+      🔴 **AND THE FIRST THING THE AUTHORISATION BOUGHT WAS A REFUTATION OF ITS
+      OWN NUMBER (2026-09-09, D-FNNESTDEPTH,
+      [`scratchpad/deffn_nestdepth_probe.py`](scratchpad/deffn_nestdepth_probe.py),
+      [`.out`](scratchpad/deffn_nestdepth.out)).** *"Match the reference"* makes
+      the reference's own ceiling the first question, and the ~198 B figure came
+      from ONE row at depth 2. Nine formals at the innermost level, depth 1..4:
+
+          row     vg8020  cf3300      zb   what it asks
+          d.n1         9       9       9   nine formals at top level
+          d.n2         9       9       9   ...called from inside ONE outer FN
+          d.n3         9       9       9   ...from inside TWO
+          d.n4         9       9   ERR 7   ...from inside THREE   🔴
+
+      **Both references answer 9 at every depth probed.** A fixed 18-slot area
+      closes these two rows and then invents a NEW ceiling of its own — *"a bigger
+      number is a different wrong answer, not a fix"*, which is word for word the
+      reasoning `spec-basic-trapsvc.md` §6 used and §10 had to **invert** when the
+      references turned out to have no fixed array either. Building one here
+      repeats that mistake in the same tree, three days later.
+      🟢 **AND `d.n4` IS A NEW DIVERGENCE WITH A ROW.** zerobas's ERR 7 at depth
+      4 is not the shadow area — it answers 9 at depth 3 *because it clobbers*, so
+      nine slots always suffice however deep it goes. It is the `DEF FN` nesting
+      cap of THREE that D-FNSTK measured and called *"not a constant, it is the
+      Z80 stack's address"*. That item had no differential row until now.
+      ➡️ **SO THE SHAPE IS A POOL FRAME, AND IT NEEDS NO NEW RAM AT ALL.**
+      `ctl_alloc` is already a HIMEM-bounded allocator (`basic/str-engine.asm`;
+      HL = size in, base out, CF=1 on collision) and D-CTLPOOL landed it exactly
+      because the references allocate control frames from one pool. A call's
+      shadow frame is the same object: allocate `formals × 11` per call, the
+      caller's frame is never in the way, **both alias rows close**, depth becomes
+      HIMEM/`CLEAR`-bounded as `d.n4` asks, and it **frees** the 99 B `FN_PAREA`
+      array instead of spending 99 more. `FN_FEND`'s two meanings separate for
+      free: the frame pointer is the window, "no frame" is the gate.
+      ⚠️ **THE COST IS ADDRESSING.** Slots are reached today by LOW BYTE against a
+      fixed page; a pool frame is at an arbitrary 16-bit address, so the walk goes
+      16-bit through `sub/deffn.asm`, the lookup in `sub/arrays.asm`, the GC root
+      walk `sg_walk_fnframe` in `sub/strheap.asm` and `basic/usr.asm`'s
+      in-progress test. A slice, not an edit.
+      🎯 **THE DECISION DID NOT CHANGE — THE SHAPE DID.** Joost authorised
+      ~99 B of page-3 RAM for a fixed array; the measurement says that array is
+      the wrong object, and the pool route is both MORE faithful to *"match the
+      reference"* and RAM-NEGATIVE, at the price of a wider change. Spending an
+      authorisation on a shape it was not given for is the thing to check first
+      [[a-priced-decline-is-a-claim-about-a-design]].
+      🙋 NEEDS-JOOST — the ~99 B array he authorised is refuted; the pool route
+      needs no RAM but is a slice across four files, and that is a bigger yes.
 
 - [ ] ⚠️ **`DEF FN`: a STRING formal's shadow slot is not a GC root.** Filed
       2026-08-22 by D-DEFFN,
