@@ -617,8 +617,7 @@ cp_loop:
                 ; DREQ=3: eval a float expression (angle / aspect) -> ARGA canonical
                 call    eval                ; HL advanced; value in FAC
                 ld      (GFX_DPTR),hl
-                ld      hl,ARGA
-                call    widen_rhs_operand   ; ARGA := canonical(value); tenant reads it
+                call    arga_widen          ; D-ARGAWIDEN
                 jr      cp_resume
 cp_req_coord:
                 call    parse_coord         ; BC=cx, DE=cy (STEP resolved), HL advanced

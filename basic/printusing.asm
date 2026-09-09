@@ -284,8 +284,7 @@ pu_do_number:
                 and     $C0                 ; bit6 `.` or bit7 `,` -- either one
                 jr      z,pu_num_int        ; needs the renderer, and `and` costs
                                             ; exactly what the old `bit 6,a` did
-                ld      hl,ARGA
-                call    widen_rhs_operand
+                call    arga_widen          ; D-ARGAWIDEN
                 call    round_and_finalize
 pu_num_flt:
                 ld      ix,SUBROM_ENTRY_BASE_P1 + 3*SUBROM_IDX_PUNUM

@@ -350,8 +350,7 @@ str_mkf:
                 cp      2
                 jr      z,mkf_sel           ; MKI$ needs no widen; DE is its value
                 push    de
-                ld      hl,ARGA
-                call    widen_rhs_operand   ; -> ARGA, which IS RAM and survives
+                call    arga_widen          ; D-ARGAWIDEN
                 pop     de
                 ld      a,(STRSCR)          ; the widen clobbered A
 mkf_sel:

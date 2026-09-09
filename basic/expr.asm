@@ -1902,8 +1902,7 @@ evmc_int:
                 call    evmc_arg_int        ; D-NGRAM19
                 ret     c                   ; malformed -> deferred
                 ret     z                   ; already int: INT(x)=x
-                ld      hl,ARGA
-                call    widen_rhs_operand   ; ARGA := FPNUM(x)
+                call    arga_widen          ; D-ARGAWIDEN
                 call    fp_trunc            ; CF set iff a fraction was dropped
                 jr      nc,evmc_int_pack
                 ld      a,(ARGA+FPNUM_SIGN)
@@ -1919,8 +1918,7 @@ evmc_fix:
                 call    evmc_arg_int        ; D-NGRAM19
                 ret     c                   ; malformed -> deferred
                 ret     z
-                ld      hl,ARGA
-                call    widen_rhs_operand
+                call    arga_widen          ; D-ARGAWIDEN
                 call    fp_trunc            ; CF ignored -- FIX never adjusts
                 jp      evconv_pack_same_type
 
@@ -1970,8 +1968,7 @@ evmc_cint:
 evmc_csng:
                 call    ev_mc_arg_checked   ; D-F2-4 gate
                 ret     nz                  ; malformed/empty arg -> deferred syntax error
-                ld      hl,ARGA
-                call    widen_rhs_operand
+                call    arga_widen          ; D-ARGAWIDEN
                 jp      round_single_and_pack
 
 ; --- evmc_cdbl: CDBL(x) -> widen to double, exact (spec §11.2's "double: ---
@@ -1980,8 +1977,7 @@ evmc_csng:
 evmc_cdbl:
                 call    ev_mc_arg_checked   ; D-F2-4 gate
                 ret     nz                  ; malformed/empty arg -> deferred syntax error
-                ld      hl,ARGA
-                call    widen_rhs_operand
+                call    arga_widen          ; D-ARGAWIDEN
                 jp      round_and_finalize
 
 ; --- evmc_sqr: SQR(x) -> non-negative square root, DOUBLE (math pack slice --
@@ -2049,8 +2045,7 @@ evmc_prologue:
                 call    ev_mc_arg_checked   ; D-F2-4 gate
                 ret     nz                  ; malformed/empty arg -> deferred syntax
                                             ; error (registers as the gate left them)
-                ld      hl,ARGA
-                call    widen_rhs_operand
+                call    arga_widen          ; D-ARGAWIDEN
                 cp      a                   ; force Z = "clean"; A untouched, and dead
                 ret
 
@@ -2484,3 +2479,24 @@ evsp_close:
                 inc     sp                  ; deferred error must return one frame
                                             ; further out, as it did before
                 jp      ev_f_empty
+
+; --- arga_widen: widen the live RHS into ARGA -------------------------------
+; D-ARGAWIDEN. `ld hl,ARGA / call widen_rhs_operand` stood at TWELVE sites --
+; arrays 2, expr 5, graphics 1, printusing 1, strvar 1, vars 2 -- 6 B each, the
+; n-gram sweep's top row once D-EVSPCLOSE consumed the one above it.
+;
+; \U0001f7e2 A TAIL JUMP, AND THAT IS WHAT MAKES IT EXACTLY EQUIVALENT. `call
+; arga_widen` pushes the return-to-site; the `jp` pushes nothing; so
+; `widen_rhs_operand` sees the SAME stack it saw when the sites called it
+; directly, and its own `jr widen_int_to` / `jp widen_fac_to` tails return to the
+; site unchanged. No frame is added, so unlike evsp_close there is nothing to
+; discard [[factoring-a-run-into-a-helper]].
+; ⚠️ All twelve sites are at TOP LEVEL -- checked, because D-EVSPCLOSE's eighth
+; site sat inside `IF !G8_RESIDENT` and could not pay. Here sites x saving must
+; reconcile against the wall exactly.
+; ⚠️ Sited at the END of the file for the same reason evsp_close is: an insertion
+; anywhere earlier stretches the `jr c,ev_f_digit` span that pasmo already
+; refused once.
+arga_widen:
+                ld      hl,ARGA
+                jp      widen_rhs_operand

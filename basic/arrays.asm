@@ -797,13 +797,11 @@ ary_store_write:
                 jr      z,asw_int
                 cp      4
                 jr      z,asw_single
-                ld      hl,ARGA
-                call    widen_rhs_operand
+                call    arga_widen          ; D-ARGAWIDEN
                 call    round_and_finalize
                 jr      asw_coerced
 asw_single:
-                ld      hl,ARGA
-                call    widen_rhs_operand
+                call    arga_widen          ; D-ARGAWIDEN
                 call    round_single_and_pack
                 jr      asw_coerced
 asw_int:

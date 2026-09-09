@@ -670,16 +670,14 @@ var_store_fac:
                 jr      z,vsf_int
                 cp      4
                 jr      z,vsf_single
-                ld      hl,ARGA
-                call    widen_rhs_operand   ; exact widen of the live RHS (int/single/
+                call    arga_widen          ; D-ARGAWIDEN
                                             ; double) into a 14-digit ARGA (float-
                                             ; arith.asm)
                 call    round_and_finalize  ; no-op round (guard digit is 0) + pack as
                                             ; double + FACTYP=8 + DE
                 jr      vsf_coerced
 vsf_single:
-                ld      hl,ARGA
-                call    widen_rhs_operand
+                call    arga_widen          ; D-ARGAWIDEN
                 call    round_single_and_pack ; 6-digit half-up round + pack as single +
                                               ; FACTYP=4 + DE
                 jr      vsf_coerced
