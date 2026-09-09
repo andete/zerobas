@@ -434,7 +434,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:12818 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:12858 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -599,7 +599,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:3097 (T-6FE392)8 (T-529ABE)` from `TODO.md:11755 (T-529ABE)`: a
+      `TODO.md:3137 (T-6FE392)8 (T-529ABE)` from `TODO.md:11795 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -2444,8 +2444,48 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `No RESUME in 900`, so every reference row came back `<none>` — which the
       summary printed as a divergence count. The raw screen is what settled it
       [[an-unnamed-outcome-reads-as-no-outcome]].
-      🤖 AUTONOMOUS — the references settle every row; what is missing is the
-      record-count bound, which is a design question the handler can answer.
+      🟢 **THE DESIGN ABOVE IS WRONG IN TWO PLACES, AND BOTH MAKE THE FIX
+      SMALLER — READ OUT OF `basic/randio-body.inc`, 2026-09-09.**
+      • **No `FAT_FILESIZE` comparison is needed: the detection already exists.**
+        `fat_rand_get` calls `frnd_locate`, which returns Cy beyond EOF, and the
+        code branches to `frg_eoffill` — *"beyond EOF -> spaces"*. zerobas is not
+        failing to notice; it is **padding on purpose**.
+      • **No new tenant error contract is needed either.** `sub/randio.asm`
+        already routes through `fp_stash_ok` / `fp_stash_err`, which write
+        **`DISKOP_STATUS` (0 ok / nonzero error)**, and `basic/files.asm` says of
+        that cell *"carries THREE dispositions back, because Cy cannot"*. The
+        channel exists and this very tenant already writes it; what is missing is
+        one distinguishable VALUE, not a contract.
+      🔴 **WHICH MADE ONE UNMEASURED QUESTION LOAD-BEARING, AND THE GUESS WOULD
+      HAVE BEEN WRONG** (D-GETSTRADDLE,
+      [`scratchpad/getstraddle_probe.py`](scratchpad/getstraddle_probe.py),
+      [`.out`](scratchpad/getstraddle.out)). `frg_eoffill` fires per PASS, and a
+      record can STRADDLE the end — start inside the file and finish past it.
+      Every out-of-range row D-GETREC has starts at or beyond EOF, so "refuse any
+      pass beyond EOF" and "refuse only a record that starts past EOF" agree on
+      all of them. A 14-byte file read at `LEN=10` separates them:
+
+          row          GET#1,n   cf3300   zb
+          g.in            1        0       0     bytes 0..9, entirely inside
+          g.straddle      2        0       0     starts inside, ends past EOF
+          g.past          3       55       0     entirely past          🔴
+
+      **The reference PADS a straddling record and refuses only one that starts
+      past EOF.** So the refusal is per-RECORD-START, not per-pass: report when
+      the FIRST pass is beyond EOF and KEEP `frg_eoffill` for the tail. The
+      simpler fix — treat any beyond-EOF pass as an error — would have broken
+      `g.straddle`, a row that agrees today
+      [[two-rules-that-coincide-on-every-row-you-have]].
+      📐 **SO THE REMAINING BUILD IS**: a first-pass marker in `fat_rand_get`, a
+      distinguishable `DISKOP_STATUS` value for "start past EOF", and `gp_fin`
+      reading it to raise **ERR 55** instead of `jp c,load_error`. Sub page 0 was
+      **1313 B free on 2026-09-08** and main page 1 **197 B on 2026-09-09**, after
+      three carves that evening — the price is no longer the obstacle, and neither
+      is the contract. ⚠️ Both are wall readings: re-run `make basic-reloc` from a
+      clean tree at pick-up rather than quoting either.
+      🤖 AUTONOMOUS — the design is now determined by measurement rather than
+      inferred: the detection exists, the status channel exists, and the
+      straddle/start distinction is a row rather than a guess.
 
 - [x] ✅ **D-PARTSTATE (2026-09-09): LIST verbs execute PARTIALLY on the reference
       TOO — and that BOUNDS D-PARTIAL. 5 rows × 3 machines, 0 DIFF**
@@ -3878,7 +3918,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:11755 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:11795 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
