@@ -434,7 +434,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:12928 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:12962 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -599,7 +599,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:3177 (T-6FE392)8 (T-529ABE)` from `TODO.md:11865 (T-529ABE)`: a
+      `TODO.md:3211 (T-6FE392)8 (T-529ABE)` from `TODO.md:11899 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -2372,7 +2372,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       🤖 AUTONOMOUS — the call is made (follow the VG-8020, on the capability
       argument, not the style ruling); what is left is pricing and building it.
 
-- [ ] 🔴 **D-GETREC (2026-09-09): `GET`/`PUT`'s RECORD ERRORS ARE UNTRAPPABLE HERE,
+- [x] ✅ **D-GETREC — CLOSED 2026-09-09, 6 DIFF → 0. `GET`/`PUT`'s RECORD ERRORS WERE UNTRAPPABLE,
       AND ZEROBAS'S RULE IS NOT THE REFERENCE'S RULE — 6 rows, MEASURED, NOT FIXED**
       ([`scratchpad/getrec_probe.py`](scratchpad/getrec_probe.py),
       [`.out`](scratchpad/getrec_sep.out)).
@@ -2524,8 +2524,42 @@ list. **When a slice lands, grep this list for what it just shipped.**
       🟢 **GATES**: `make gates` **117/117**, full emulator tier, plus all five
       battery-excluded targets re-run by hand: `diskbasic`, `fat-error`,
       `input-devices`, `lnblank-say`, `bdos`, all rc=0.
-      🤖 AUTONOMOUS — what is left is the record CAP (a `PUT` that extends), which
-      this block has always kept separate from the read bound.
+      🟢 **AND THE LAST THREE ROWS CLOSED TOO — D-GETEOF2, same evening. 6 DIFF
+      → 0, THE WHOLE SET** ([`.out`](scratchpad/getrec_after3.out)).
+
+          row      statement      cf3300   zb
+          g.ctl    GET#1,1           0      0
+          g.zero   GET#1,0           5      5
+          g.neg    GET#1,-1         55     55  ✅
+          g.256    GET#1,256        55     55  ✅
+          g.300    GET#1,300        55     55  ✅
+          g.two    GET#1,2          55     55
+          p.ctl    PUT#1,1           0      0
+          p.zero   PUT#1,0           5      5
+          p.256    PUT#1,256         0      0
+
+      🎯 **THE STOPGAP D-GETEOF SHIPPED WITH WAS THE THING TO REMOVE.** That fix
+      bounded the test to `recno <= 255` so `mul16`'s truncation could not bite —
+      correct, but it left the three out-of-cap rows to the tenant, which reports
+      them through `load_error` and PRINTS. `mul16sat` (`basic/expr.asm`, 26 B)
+      saturates to `$FFFF` instead, which is past any 16-bit file size **by
+      definition**, so every record number now gets the same EOF rule.
+      ⚠️ **SATURATION, NOT A WIDER PRODUCT, AND THAT IS THE WHOLE TRICK**: the only
+      question asked of the multiply is `offset >= size` with a 16-bit `size`, so
+      anything that overflows is past EOF and `$FFFF` answers it correctly without
+      a 32-bit compare. Record 300 at reclen 256 is 76800, low word **11264** —
+      "inside" any file bigger than 11 KB, which is the bug this replaces.
+      🟢 **`g.straddle` RE-CHECKED AND STILL AGREES** (0/0) — the row the whole
+      design turns on, re-run after the widening rather than assumed
+      ([`.out`](scratchpad/getstraddle_after2.out)).
+      📏 **Page 1 150 → 130 B** (2026-09-09, clean tree). **GATES**: `make gates`
+      **117/117** full emulator tier, plus all five battery-excluded targets by
+      hand, all rc=0.
+      ⚠️ **WHAT IS *NOT* CLOSED, AND IS NOT THIS ITEM**: `PUT` beyond the file end
+      still refuses where the reference EXTENDS. `p.256` AGREES here only because
+      both answer 0 — the reference extends the file and zerobas prints
+      `load_error` without raising, so the ERR column cannot separate them. That
+      is the cap-lifting change, and it needs a row that reads LOF, not ERR.
 
 - [x] ✅ **D-PARTSTATE (2026-09-09): LIST verbs execute PARTIALLY on the reference
       TOO — and that BOUNDS D-PARTIAL. 5 rows × 3 machines, 0 DIFF**
@@ -3958,7 +3992,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:11865 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:11899 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

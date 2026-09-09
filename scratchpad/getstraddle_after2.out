@@ -1,0 +1,7 @@
+  g.in        GET#1,1  cf=ERR=0     zb=ERR=0       bytes 0..9 -- entirely inside a 14-byte file
+  g.straddle  GET#1,2  cf=ERR=0     zb=ERR=0       bytes 10..19 -- STARTS inside, ENDS past EOF
+  g.past      GET#1,3  cf=ERR=55    zb=ERR=55      bytes 20..29 -- entirely past EOF
+
+  🟢 THE REFERENCE PADS A STRADDLING RECORD. So the EOF refusal is per-RECORD-START, not per-pass: `fat_rand_get` must report only when the FIRST pass is beyond EOF, and keep frg_eoffill for the tail.
+  zerobas answers 0 on the same row.
+refcache: 0 hit, 6 miss, 6 stored

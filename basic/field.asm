@@ -839,18 +839,14 @@ gp_doget:
                 ; above, `FCH_RECLENS` is a resident table, and `mul16` is a
                 ; resident multiply -- so the test happens BEFORE the tenant is
                 ; ever called and raises directly.
-                ; ⚠️ THE MULTIPLY BELOW TRUNCATES, SO ITS INPUT IS BOUNDED FIRST.
-                ; `mul16` returns the LOW 16 bits, and (recno-1)*reclen can exceed
-                ; that: recno 6555 at reclen 10 is 65540, whose low word is 4 --
-                ; which would read as INSIDE a 10-byte file and accept a record
-                ; that is nowhere near it. Restricting the test to recno <= 255
-                ; makes overflow impossible by construction (255 * 256 = 65280),
-                ; and costs nothing: `fat_rand_get` already refuses a nonzero
-                ; recno high byte itself, so those rows behave exactly as before
-                ; rather than being silently mis-accepted here.
-                ld      a,(GP_RECNO+1)
-                or      a
-                jr      nz,gp_get_go
+                ; ⚠️ THE MULTIPLY MUST NOT TRUNCATE, AND `mul16` DOES.
+                ; (recno-1)*reclen can exceed 16 bits -- record 300 at reclen 256
+                ; is 76800, low word 11264, which reads as INSIDE any file bigger
+                ; than 11 KB. D-GETEOF shipped with the test bounded to
+                ; recno <= 255 so overflow was impossible; D-GETEOF2 replaces that
+                ; bound with `mul16sat`, which saturates to $FFFF -- past any
+                ; 16-bit file size by definition -- so ALL record numbers get the
+                ; EOF rule instead of only the ones inside the tenant's own cap.
                 ld      hl,(FWR_BYTES+2)
                 ld      a,h
                 or      l
@@ -868,7 +864,7 @@ gp_doget:
                 ld      d,(hl)              ; DE = reclen (1..256)
                 ld      hl,(GP_RECNO)
                 dec     hl                  ; HL = recno - 1
-                call    mul16               ; HL = (recno-1) * reclen = byte offset
+                call    mul16sat            ; HL = (recno-1) * reclen, saturated
                 ld      de,(FWR_BYTES)
                 or      a
                 sbc     hl,de
