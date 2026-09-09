@@ -1,0 +1,26 @@
+  ran cf3300  o.as1     -> '0'
+  ran cf3300  o.ashash  -> '0'
+  ran cf3300  o.asvar   -> '0'
+  ran cf3300  f.field   -> '0'
+  ran cf3300  n.as5     -> '13'
+  ran zb      o.as1     -> '2'
+  ran zb      o.ashash  -> '0'
+  ran zb      o.asvar   -> '0'
+  ran zb      f.field   -> '0'
+  ran zb      n.as5     -> '2'
+
+  row        cf3300    zb   statement
+  o.as1           0     2   OPEN"TS.DAT"AS 1                         🔴 DIFF
+                    THE SUBJECT: a digit after OPEN's ASCII AS
+  o.ashash        0     0   OPEN"TS.DAT"AS #1                        ok
+                    CONTROL: the same open with `#` -- restarts the crunch
+  o.asvar         0     0   C = 1 : OPEN"TS.DAT"AS C                 ok
+                    CONTROL: a VARIABLE in the same position, which NAME shows works
+  f.field         0     0   OPEN"TS.DAT"AS #1 : FIELD #1, 20 AS A$   ok
+                    FIELD's number comes BEFORE its AS: predicted NOT in the class
+  n.as5          13     2   NAME"HI.TXT"AS 5                         🔴 DIFF
+                    the known member, as the positive control
+
+  DIFF 2/5  o.as1 n.as5
+  🔴 THE CLASS IS WIDER THAN NAME. `OPEN ... AS <digit>` is a supported form (the `#` is optional in our own parser) and it hits the same ASCII-digit gap -- so the fix belongs in eval, not in a verb.
+refcache: 0 hit, 10 miss, 10 stored

@@ -434,7 +434,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:12594 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:12624 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -599,7 +599,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:3097 (T-6FE392)8 (T-529ABE)` from `TODO.md:11531 (T-529ABE)`: a
+      `TODO.md:3097 (T-6FE392)8 (T-529ABE)` from `TODO.md:11561 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -3735,7 +3735,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:11531 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:11561 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -5604,10 +5604,40 @@ list. **When a slice lands, grep this list for what it just shipped.**
       first place a row went looking. **That is the next measurement, and it is a
       sweep, not a row**: find every context whose crunch leaves a digit as ASCII
       (the `PRINT"X";5` control shows a `;` does NOT), then ask `eval` for each.
-      🤖 AUTONOMOUS — the mechanism is measured on both machines and the fix has a
-      home (`ev_f`'s factor dispatch, an ASCII-digit arm). Scope it against the
-      wider class before pricing it: a per-verb patch would be the wrong shape if
-      the evaluator is the common cause.
+      🔴 **AND THE CLASS IS WIDER THAN `NAME` — MEASURED 2026-09-09 (D-ASCIIDIGIT,
+      [`scratchpad/asciidigit_probe.py`](scratchpad/asciidigit_probe.py),
+      [`.out`](scratchpad/asciidigit.out)). `OPEN` IS IN IT, AND THAT IS A REAL
+      PROGRAM'S BUG, NOT A CORNER.**
+
+          row        cf3300  zb   statement
+          o.as1           0   2   OPEN"TS.DAT"AS 1                  🔴 DIFF
+          o.ashash        0   0   OPEN"TS.DAT"AS #1                 ok
+          o.asvar         0   0   C = 1 : OPEN"TS.DAT"AS C          ok
+          f.field         0   0   ... FIELD #1, 20 AS A$            ok
+          n.as5          13   2   NAME"HI.TXT"AS 5                  🔴 DIFF (control)
+
+      **`OPEN "TS.DAT" AS 1` works on the reference and is a Syntax error here.**
+      The `#` is OPTIONAL after `OPEN`'s ASCII `AS` — our own parser says so
+      (`cp '#' / jr nz,oopac_num`, `oo_parse_as_chan`) — so the channel number
+      lands exactly where `NAME`'s operand does, and hits the same gap. This is
+      idiomatic BASIC, not a shape only a probe would type.
+      🎯 **THE SOURCE IS WHAT SAID WHERE TO LOOK**: three verbs parse `AS` as
+      verbatim ASCII — `FIELD`, `OPEN`, `NAME`. `FIELD`'s number comes BEFORE its
+      `AS`, so it is predicted out of the class, and `f.field` is that prediction
+      as a ROW rather than an argument. It held.
+      ➡️ **SO THE FIX IS ONE ASCII-DIGIT ARM IN `ev_f`, NOT A PATCH PER VERB** —
+      two verbs already, and any future ASCII-parsed keyword joins them for free.
+      📐 **A PARSER ALREADY EXISTS AND ITS CONTRACT IS THE OBSTACLE.**
+      `sh_val_parse` (sub-ROM op 13, `sub/strheap.asm`) is exactly this parse —
+      leading signed decimal, int/float, `&H`/`&O`/`&B` bases, with its refusals
+      already deferred through `ev_f_defer`. But it reads a STRING DESCRIPTOR and
+      reports `SH_LEN` as a FACTYP, **not as a consumed length**, and an `ev_f`
+      arm must advance `IX` past exactly the characters it ate. Giving it a
+      consumed-length out is the design step; that is why this is not a 20 B
+      standing-budget drop-in.
+      🤖 AUTONOMOUS — the mechanism is measured on both machines, the class has
+      two members and a control that stays out of it, and the fix has one home.
+      What is left is the `sh_val_parse` contract change and its price.
       program in the corpus renames with a numeric operand. The scouting the 🔭
       asked for is DONE; what is left is the call.
 
