@@ -434,7 +434,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:12624 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:12644 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -599,7 +599,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:3097 (T-6FE392)8 (T-529ABE)` from `TODO.md:11561 (T-529ABE)`: a
+      `TODO.md:3097 (T-6FE392)8 (T-529ABE)` from `TODO.md:11581 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -3735,7 +3735,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:11561 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:11581 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -5627,14 +5627,34 @@ list. **When a slice lands, grep this list for what it just shipped.**
       as a ROW rather than an argument. It held.
       ➡️ **SO THE FIX IS ONE ASCII-DIGIT ARM IN `ev_f`, NOT A PATCH PER VERB** —
       two verbs already, and any future ASCII-parsed keyword joins them for free.
-      📐 **A PARSER ALREADY EXISTS AND ITS CONTRACT IS THE OBSTACLE.**
-      `sh_val_parse` (sub-ROM op 13, `sub/strheap.asm`) is exactly this parse —
-      leading signed decimal, int/float, `&H`/`&O`/`&B` bases, with its refusals
-      already deferred through `ev_f_defer`. But it reads a STRING DESCRIPTOR and
-      reports `SH_LEN` as a FACTYP, **not as a consumed length**, and an `ev_f`
-      arm must advance `IX` past exactly the characters it ate. Giving it a
-      consumed-length out is the design step; that is why this is not a 20 B
-      standing-budget drop-in.
+      📐 **A PARSER ALREADY EXISTS**: `sh_val_parse` (sub-ROM op 13,
+      `sub/strheap.asm`) — leading signed decimal, int/float, `&H`/`&O`/`&B`
+      bases, refusals already deferred through `ev_f_defer`.
+      🔴 **AND THE OBSTACLE I FILED AGAINST IT DOES NOT EXIST — CORRECTED
+      2026-09-09 BY READING ONE MORE FILE.** I wrote that it *"reports `SH_LEN` as
+      a FACTYP, not as a consumed length"* and called adding one *"the design
+      step"*. `sh_val_parse` does not do the scanning: it delegates to
+      **`tk_float`** (`sub/tkfloat.asm`), the TOKENISER'S OWN number scanner, and
+      `tk_float` already publishes the advanced source cursor —
+      `ld (TKSRCSAVE),hl ; scanning is done -- park the source cursor`.
+      **Verified, not assumed**: `TKSRCSAVE` ($F067) and `TKVALEND` ($F064, *"0 =
+      unbounded"*) are both in the SHARED `basic/sysvars.inc`, so the main ROM can
+      read them, and `TKSRCSAVE` has exactly ONE writer in the tree
+      (`sub/tkfloat.asm:78`). The consumed length was there all along
+      [[a-priced-decline-is-a-claim-about-a-design]].
+      ➡️ **SO THE ARM IS SMALLER THAN FILED.** At `ev_f`: test for an ASCII digit,
+      publish the cursor and a bound, run the existing parse, read the value back
+      (`SH_PTR`, or FAC with `SH_LEN` as the FACTYP), and **advance `IX` from
+      `TKSRCSAVE`**. No sub-ROM contract change; at most a thin alternate entry
+      that takes a raw cursor instead of a string descriptor.
+      ⚠️ **ONE CLAIM HERE IS READ, NOT RUN**: that `TKSRCSAVE` survives from the
+      park to the main ROM's read, across `call_strheap`'s `CALSLT`. The single
+      writer is the argument for it; a row is the proof, and the build is what
+      would produce one.
+      💰 **PRICE: NOT GUESSED, AND THAT IS THE POINT.** With the obstacle gone
+      the arm may land inside the 20 B standing budget, in which case it ships
+      without asking; if it does not, it is a 🙋 spend against a page-1 wall that
+      must be read from a clean tree at the time, not quoted from here.
       🤖 AUTONOMOUS — the mechanism is measured on both machines, the class has
       two members and a control that stays out of it, and the fix has one home.
       What is left is the `sh_val_parse` contract change and its price.
