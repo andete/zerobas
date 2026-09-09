@@ -84,6 +84,30 @@ those.)
 
 | marker | meaning | n (2026-08-27) |
 |---|---|---|
+
+🔴 **AND THE MARKER'S *REASON* IS LARGELY BOILERPLATE — MEASURED 2026-09-09,
+WHEN JOOST ASKED FOR HIS OPEN QUESTIONS ONE BY ONE.** 45 open items carry a
+🙋/🔃 marker, and **20 of them carry one of seven canned phrases**, all applied by
+the same bulk commit `c93edf74` (*"mark every open item with who has to be
+there"*) — the same commit whose `--annotate` pass laundered two citations onto
+the wrong block:
+
+    6  ...(charter / scope)          4  ...(page-1 budget)
+    5  ...(retire / delete)          2  ...(refactor, no oracle)
+
+🎯 **SO A MARKER'S CATEGORY IS A GUESS ABOUT THE ITEM, NOT A STATEMENT FROM IT.**
+Three consequences seen the same hour: `int_h_body`, a clean-room paper-trail
+JUDGEMENT, is filed under *"(retire / delete)"*; two blocks of **218 and 213
+lines** carry the same trailing *"(retire / delete)"* that a 17-line block does,
+so the phrase cannot be describing either; and the emulated-time-budget item
+carries *"(user-visible product text)"*, which is not what it is about.
+➡️ **HOW TO READ THE QUEUE.** Count the markers, but never quote the marker's
+REASON without reading the block — and when summarising the queue for Joost,
+group by the DECISION, not by the marker. The 45 markers were six actual
+decisions.
+⚠️ Not fixed here: re-deriving 20 reasons by hand is a bigger job than the
+queue it serves, and a wrong reason is visible the moment anyone reads the
+block. Recorded so the count is never presented as 45 open questions again.
 | 🤖 **AUTONOMOUS** | the reference or a gate settles it; finishable unattended | **62** |
 | 🔭 **SCOUT-THEN-ASK** | the decision is Joost's, the measuring and pricing in front of it are not | **6** |
 | 🙋 **NEEDS-JOOST** | a call that is his: what to evict from a scarce page, a refactor with no oracle, a charter question, a retirement | **25** |
@@ -410,7 +434,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:12130 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:12212 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -575,7 +599,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:3021 (T-6FE392)8 (T-529ABE)` from `TODO.md:11067 (T-529ABE)`: a
+      `TODO.md:3097 (T-6FE392)8 (T-529ABE)` from `TODO.md:11149 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -2257,6 +2281,31 @@ list. **When a slice lands, grep this list for what it just shipped.**
       Filed as unmeasured rather than agreed; it needs a rig that can absorb a
       tape write, or a disk-path variant on the CF-3300.
 
+- [ ] 🔁 **STANDING BUDGET (Joost, 2026-09-09): SPEND UP TO 20 B OF MAIN
+      PAGE 1 ON A MEASURED DIVERGENCE WITHOUT ASKING.** Asked as *"do you want to
+      keep approving these one at a time, or give me a standing budget?"*;
+      answered **"yes, with the cap"**.
+      🎯 **WHAT THIS REPLACES.** Nine open items carried a 🙋 whose stated reason
+      was a byte price, and the price is the part that rots: main page 1 went from
+      **2 B to 142 B free** in the twenty-four hours to 2026-09-09 (five
+      instruction-pair carves, `make basic-reloc` from a clean tree). Items were
+      therefore sitting in his queue asking permission to spend three bytes out of
+      a hundred and forty-two [[repricing-page1-slice]].
+      📏 **THE RULE.** A fix that (a) closes a divergence MEASURED against at
+      least one reference and (b) costs ≤ 20 B of main page 1 ships without asking.
+      Over 20 B, or any spend of page-3 RAM, or a design change rather than a
+      byte spend — still 🙋.
+      ⚠️ **THE CAP IS AGAINST THE COMBINED WALL, NOT PAGE 1 ALONE.** Page 1 and
+      the page-0 low region are one contiguous image and `include` order alone
+      decides which a routine lands in, so a spend at the cap that pushes the low
+      region under is NOT within the cap — read BOTH figures
+      [[carve-routes-measured-shut]].
+      ⚠️ **AND RE-READ THE WALL, NEVER THIS PARAGRAPH.** The 142 B above is a
+      wall reading and will be wrong by the time anyone quotes it; `make
+      basic-reloc` from a clean tree is the only source
+      [[measure-the-wall-from-clean]].
+      🤖 AUTONOMOUS — the ruling is given; applying it is mine.
+
 - [ ] 🟡 **D-USING (2026-09-09): PRINT USING'S FORMAT VOCABULARY HAS THREE
       REFERENCE SPLITS, AND ZEROBAS FOLLOWS A DIFFERENT REFERENCE ON DIFFERENT
       ROWS — 14 rows × 3 machines, 0 DIFF but 3 REFS-SPLIT**
@@ -2294,7 +2343,34 @@ list. **When a slice lands, grep this list for what it just shipped.**
       observation and is NOT the basis of anything here; the measured fact is only
       that the CF-3300 raises ERR 5 where the VG-8020 renders
       [[a-mechanism-inferred-from-one-observation]].
-      🙋 NEEDS-JOOST — the `$$` split is a call under his own ruling, not a defect.
+      🔴 **AND THE FRAMING ABOVE IS WRONG — THIS IS NOT A PRESENTATIONAL
+      SPLIT AT ALL (2026-09-09, answering Joost's *"what makes the most sense
+      given the intent of the format string?"*).** The row is `$$###`, the
+      **floating-dollar** specifier, not a literal `$` in a fixed field. Read the
+      two faces again: the VG-8020 gives `[  $42]` — five columns, the two `$$`
+      positions reserved, one of them spent on a `$` that FLOATS to sit against
+      the number. The CF-3300 gives `[$$ 42]` — the two dollars echoed
+      **literally** and the number right-justified in the remaining three. The
+      CF-3300 does not implement the specifier.
+      🎯 **AND THE PROOF IS ONE ROW UP, IN THIS PROBE'S OWN TABLE.** `u.star`,
+      `USING"**###";42`, reads `***42` on **all three machines**. `**` and `$$`
+      are the same grammatical construct — a two-character prefix that reserves
+      its own positions and then fills or floats — and the CF-3300 implements
+      `**` correctly while echoing `$$`. That is not a house style; it is a
+      **missing case in the CF-3300's own vocabulary**, and its own `**` row is
+      what says so.
+      ➡️ **SO THE 09-04 STYLISTIC RULING IS THE WRONG INSTRUMENT AND WAS NOT
+      NEEDED.** This is a CAPABILITY split, which that ruling explicitly does not
+      cover, and it resolves the same way the other two rows already did: follow
+      the reference that IMPLEMENTS the specifier. `&` and `\   \` follow the
+      VG-8020 for exactly this reason; `$$` should too. The verb then has ONE
+      oracle, which was this item's actual finding.
+      ⚠️ **AND THAT MEANS ZEROBAS DOES NOT IMPLEMENT `$$` EITHER** — it emits
+      `$$ 42`, matching the CF-3300's gap rather than choosing a style. The work
+      is a real renderer change (reserve two, emit one, float it), not a constant,
+      so it is NOT inside the 20 B standing budget until it is priced.
+      🤖 AUTONOMOUS — the call is made (follow the VG-8020, on the capability
+      argument, not the style ruling); what is left is pricing and building it.
 
 - [ ] 🔴 **D-GETREC (2026-09-09): `GET`/`PUT`'s RECORD ERRORS ARE UNTRAPPABLE HERE,
       AND ZEROBAS'S RULE IS NOT THE REFERENCE'S RULE — 6 rows, MEASURED, NOT FIXED**
@@ -3659,7 +3735,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:11067 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:11149 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -8096,7 +8172,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       error check — weigh that against the bytes
       ([[rule-gated-structurally-has-no-knife]]).
       🙋 NEEDS-JOOST — a call that is yours to make (page-1 budget).
-- [ ] 📋 **THE PICKUP LIST IS 38/62 APPARATUS, AND THE REAL BASIC SURFACE IS 15
+- [x] ✅ **RETIRED 2026-09-09 (Joost: *"yes"*). THE PICKUP LIST IS 38/62 APPARATUS, AND THE REAL BASIC SURFACE IS 15
       ITEMS — SWEPT AND RANKED 2026-08-21.**
       [`docs/gapsweep-2026-08-21.md`](docs/gapsweep-2026-08-21.md). Commissioned
       after four consecutive 0-byte apparatus slices, against the charter
@@ -8150,7 +8226,13 @@ list. **When a slice lands, grep this list for what it just shipped.**
       (~15–17 B) has joined the queue.
       💰 0 ROM bytes; this is a reading. What it changes is which item is picked
       up next, and it already retired one (D-LINEMAX, above).
-      🙋 NEEDS-JOOST — a call that is yours to make (retire / delete).
+      ✅ **RETIRED 2026-09-09 — Joost said yes, and the block had already
+      condemned itself twice in its own text.** Every number in it is a dated
+      reading: the ranked candidate it named had SHIPPED, the "page 1 is back to
+      8 B" update is now **142 B**, and the paragraph says outright that *"a
+      pointer to a candidate rots the same way a wall does."* Kept in place
+      rather than deleted, because the lesson it paid for is the reason the
+      pick-up rules say re-verify at pickup [[a-ranked-candidate-rots-like-a-wall]].
 
 - [x] ⚠️ **THE THIRD TRAILING `SCREEN` ARGUMENT'S DOMAIN IS UNMEASURED.**
       Filed 2026-08-10 by D-SCRERR. Slot 1 (sprite size) is pinned to 0..3 and
@@ -12717,7 +12799,7 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       likely leaks into the sections around it.
       🤖 AUTONOMOUS — the reference or a gate settles it; finishable unattended (hand-corrected: the charter it contradicts is already settled).
 
-- [ ] **REGIONALISE THE REPACK BUILD** (filed 2026-07-29, S2 of the lean
+- [x] ✅ **REGIONALISE THE REPACK BUILD — RETIRED** (filed 2026-07-29, S2 of the lean
       retirement — user answer B: "note it, revisit later"). The shipped BASIC
       patch `zerobas-main-eu.ips/.bps` is **EU-only by construction**:
       [`tools/build_repacked_cbios.py`](tools/build_repacked_cbios.py) applies
@@ -12732,7 +12814,11 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       targets, and the CF-3300 oracle plus every standing gate already run
       EU-only. Revisit if a BR/JP user turns up, or when the repack tooling is
       next opened. Measured: [`docs/spec-lean-retire-s2-switch.md`](docs/spec-lean-retire-s2-switch.md) §2.1.
-      🙋 NEEDS-JOOST — a call that is yours to make (retire / delete).
+      ✅ **RETIRED 2026-09-09 (Joost: *"yes"*).** The block had already reasoned
+      its own answer — *"judged nominal for now... revisit if a BR/JP user turns
+      up"* — and was waiting only for someone to say so. The coverage loss stays
+      ON RECORD in the text above; what is retired is the open ACTION, not the
+      fact that `_BASIC` machines are EU-only.
 
 - [ ] **SLIM THE FILE-CHANNEL CONTEXT toward the reference** — ✅ **MEASURED
       2026-07-29; awaiting spec sign-off.**
