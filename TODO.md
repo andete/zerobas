@@ -434,7 +434,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:12898 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:12928 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -599,7 +599,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:3177 (T-6FE392)8 (T-529ABE)` from `TODO.md:11835 (T-529ABE)`: a
+      `TODO.md:3177 (T-6FE392)8 (T-529ABE)` from `TODO.md:11865 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -3958,7 +3958,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:11835 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:11865 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -7362,7 +7362,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       direct mode as NOT COVERED.
       ⛔ BLOCKED — neither of us can start it now (needs a fixture).
 
-- [ ] ⚠️ **BARE `RUN` INSIDE A RUNNING PROGRAM STILL RE-ENTERS THE LOOP NESTED —
+- [x] ✅ **BARE `RUN` INSIDE A RUNNING PROGRAM ~~STILL~~ RE-ENTERED THE LOOP NESTED — FIXED 2026-09-09 —
       R3, 0 B, AND THE ROW IS THE HARD PART (filed 2026-08-22 by D-RUNLINE §4).**
       `dr_stored`'s `jp run_prog` is the ONE arm D-RUNTAIL did not convert;
       `jp run_prog_top` is the whole fix and costs nothing.
@@ -7377,7 +7377,37 @@ list. **When a slice lands, grep this list for what it just shipped.**
       🎯 **A deferral honoured is worth more than one filed**: shipping a 0-byte
       behaviour change beside a measured one puts an unrowed claim inside a rowed
       slice. Backing it out cost 0 B, confirmed by rebuild.
-      ⛔ BLOCKED — neither of us can start it now (needs a fixture).
+      🟢 **UNBLOCKED AND SHIPPED 2026-09-09 (D-BARERUN,
+      [`scratchpad/barerun_probe.py`](scratchpad/barerun_probe.py),
+      [before](scratchpad/barerun.out), [after](scratchpad/barerun_after.out)).**
+      The blocker was a CAPABILITY claim — *"needs a fixture"* — and capability
+      claims rot exactly like wall readings. Re-read at pick-up, the fixture is
+      one idea away: **make the CORRECT behaviour visible instead of the wrong
+      one.** An endless `PRINT "X";` before the `RUN` turns *"restarts forever,
+      silently"* into a screen full of X, and turns the defect into an error
+      message among them.
+
+          row       vg8020         cf3300         zb before        zb after
+          s.bare    835 X, none    869 X, none    210 X + error    936 X, none ✅
+          c.goto    825 X, none    897 X, none    911 X, none      911 X, none
+
+      🎯 **`c.goto` IS THE CONTROL THIS ITEM ASKED FOR** — the SAME endless loop
+      reached by `GOTO` instead of `RUN`. It separates *"hangs correctly"* from
+      *"the harness captured nothing"*, the `<NO OUTPUT>`-means-two-things trap
+      the row had to avoid [[an-unnamed-outcome-reads-as-no-outcome]].
+      📏 **0 B, exactly as filed**: `jp run_prog` → `jp run_prog_top`; page 1
+      150 B and low 35 B on BOTH sides of the change (2026-09-09, clean tree).
+      🎯 **AND THE DEFERRAL WAS RIGHT TO BE HONOURED.** Backing it out in August
+      cost 0 B and kept an unrowed claim out of a rowed slice; the row it was
+      waiting for now exists, and it shows the claim was TRUE — 210 X's and a
+      bogus error where both references print on forever.
+      🟢 **GATES**: `make gates` **117/117**, full emulator tier, plus all five
+      battery-excluded targets re-run by hand, all rc=0.
+      ⚠️ **AND THE FILING OF THIS ENTRY FAILED SILENTLY THE FIRST TIME.** The edit
+      asserted `count == 1` on the ⛔ line and there are TWO identical ones in this
+      file, so it aborted and wrote nothing — while the commit message said it had
+      been written. The assertion did its job; I filtered its output away and did
+      not read it [[an-unnamed-outcome-reads-as-no-outcome]].
 
 - [x] 💰 **A DATA-ONLY SPAN STILL CONFERS FALLTHROUGH ON WHATEVER FOLLOWS IT**
       (filed 2026-08-22 by D-PROLOGUE, §12.5). `err_io: db "load",…` falls into
