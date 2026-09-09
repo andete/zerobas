@@ -80,6 +80,20 @@ CASES = [
     # reaching the operand and the cursor is the defect, not the face.
     ("name.exdiv", 'NAME"HI.TXT"AS 1/0',
      "does the SECOND fname_expr site re-drive the operand at all? 11 = yes, 2 = no"),
+    # \U0001f3af IS THE SECOND SITE REACHED AT ALL? The rows above only ever see it
+    # FAIL, and "declines wrongly" and "never runs" produce the same ERR. A
+    # well-formed STRING operand on an EXISTING old file is the one shape that
+    # must go all the way through. The probe renames HI.TXT to itself, on its own
+    # temp COPY of the image, so the fixture is untouched either way.
+    ("name.exok", 'NAME"HI.TXT"AS"HI.TXT"',
+     "well formed, old file EXISTS: does the second site complete? 0 = yes"),
+    # \U0001f3af CRUNCHED CONSTANT vs VARIABLE. `NAME 5 AS"X.DAT"` (name.old5) is the
+    # SAME crunched numeric constant through the FIRST fname_expr site and it
+    # answers 13, so a crunched constant is not inherently the problem -- but the
+    # two sites differ in where HL comes from, and this says whether the operand's
+    # SHAPE matters at the second one.
+    ("name.exvar", 'NAME"HI.TXT"AS A',
+     "a numeric VARIABLE, not a crunched constant, at the second site"),
 ]
 
 
@@ -95,6 +109,13 @@ PINNED = {
     # face defect: the fix is not "produce 13 here", it is "hand els_tc_common
     # the operand", after which 13 and 11 both fall out. One pin, one mechanism.
     "name.exdiv": ("11", "2"),
+    # \U0001f534 A SEPARATE, NEWLY FOUND DEFECT (2026-09-09) -- not the cursor one.
+    # `NAME"HI.TXT"AS"HI.TXT"` renames a file to a name that already exists. The
+    # CF-3300 refuses with ERR 65 `File already exists`; zerobas performs it and
+    # returns 0. The row was added to ask whether the SECOND fname_expr site is
+    # reached at all -- it is, and it completes -- and it answered a question
+    # nobody asked on the way [[a-coverage-row-whose-geometry-cannot-reach-the-case]].
+    "name.exok": ("65", "0"),
 }
 
 

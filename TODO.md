@@ -434,7 +434,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:12468 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:12495 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -599,7 +599,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:3097 (T-6FE392)8 (T-529ABE)` from `TODO.md:11405 (T-529ABE)`: a
+      `TODO.md:3097 (T-6FE392)8 (T-529ABE)` from `TODO.md:11432 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -3735,7 +3735,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:11405 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:11432 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -5479,9 +5479,36 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `make nameord-acceptance` (`probes/basic/basic_probe_namend.py`) measures
       `NAME"x"AS 5` on the diskless build against the VG-8020, which has no drive
       either. That prerequisite is done, not pending.
-      🤖 AUTONOMOUS — the price is spent, the remaining row is a measured cursor
-      defect with a gate and a knife-able row; what is left is reading what
-      `str_eval` leaves in HL on its non-string path at THIS call site.
+      🔴 **AND "CURSOR DEFECT" WAS TOO BROAD — NARROWED 2026-09-09 BY TWO MORE
+      ROWS, AND ONE OF THEM FOUND A DIFFERENT DEFECT.**
+
+          name.exvar  NAME"HI.TXT"AS A          cf 13  zb 13   ok
+          name.exok   NAME"HI.TXT"AS"HI.TXT"    cf 65  zb  0   pinned, NEW
+
+      • **`name.exvar` refutes the cursor reading.** A numeric VARIABLE at the
+        second `fname_expr` site answers **13, correctly**. So `els_tc_common`'s
+        `eval` DOES reach the operand there and `str_eval` DOES leave HL on it —
+        the thing the previous note said to go and read. What fails is the
+        **crunched numeric CONSTANT** (`5`, `1/0`), and the SAME crunched constant
+        through the FIRST site (`name.old5`) answers 13. Constant-at-site-2 is the
+        whole remaining case, which is a much smaller subject than "the cursor"
+        and does not match any explanation I had.
+      • **`name.exok` says the second site is reached AND completes** — it was
+        added only to establish that, because every other row sees the site FAIL
+        and *"declines wrongly"* and *"never runs"* produce the same ERR.
+      🟢 **AND IT FOUND A SEPARATE, UNFILED DIVERGENCE ON THE WAY.** Renaming a
+      file to a name that ALREADY EXISTS: the CF-3300 refuses with **ERR 65 `File
+      already exists`**; zerobas performs it and returns 0. That is a missing
+      duplicate-name check in `do_name`, nothing to do with operand faults, and it
+      is pinned so the gate stays honest about it
+      [[a-coverage-row-whose-geometry-cannot-reach-the-case]].
+      ⚠️ **THE ROWS ARE FIXTURE-SAFE**: `basic_probe_namegate.py` renames on its own
+      `tempfile.mkdtemp` COPY of `test720.dsk`, so `name.exok` renaming `HI.TXT`
+      to itself cannot reach the tracked image.
+      🤖 AUTONOMOUS — three pins, one mechanism each, and the open question is now
+      sharp: why does a CRUNCHED CONSTANT decline differently at the second
+      `fname_expr` site than at the first, when a VARIABLE does not? A knife on
+      `str_eval_no` is the next instrument, not more black-box rows.
       program in the corpus renames with a numeric operand. The scouting the 🔭
       asked for is DONE; what is left is the call.
 
