@@ -1,0 +1,14 @@
+  ran s.bare  vg8020  -> X*835  no error word
+  ran s.bare  cf3300  -> X*869  no error word
+  ran s.bare  zb      -> X*936  no error word
+  ran c.goto  vg8020  -> X*825  no error word
+  ran c.goto  cf3300  -> X*897  no error word
+  ran c.goto  zb      -> X*911  no error word
+
+  s.bare  vg8020= 835  cf3300= 869  zb= 936
+      THE SUBJECT: a bare RUN inside a running program
+  c.goto  vg8020= 825  cf3300= 897  zb= 911
+      CONTROL: the same endless loop reached by GOTO -- must be X's, no error
+
+  🟢 NO DIVERGENCE: zerobas loops silently too. Either the arm was converted since, or the nesting does not reach a visible fault on this shape -- read before believing the filed defect.
+refcache: 4 hit, 2 miss, 2 stored

@@ -1,0 +1,14 @@
+  ran s.bare  vg8020  -> X*835  no error word
+  ran s.bare  cf3300  -> X*869  no error word
+  ran s.bare  zb      -> X*210  ERROR: error
+  ran c.goto  vg8020  -> X*825  no error word
+  ran c.goto  cf3300  -> X*897  no error word
+  ran c.goto  zb      -> X*911  no error word
+
+  s.bare  vg8020= 835  cf3300= 869  zb= 210/error
+      THE SUBJECT: a bare RUN inside a running program
+  c.goto  vg8020= 825  cf3300= 897  zb= 911
+      CONTROL: the same endless loop reached by GOTO -- must be X's, no error
+
+  🔴 DIVERGENCE CONFIRMED: both references loop silently on a bare RUN; zerobas stops with 'error'. That is `dr_stored`'s `jp run_prog` entering the loop NESTED -- and `jp run_prog_top` is the 0-byte fix the item has been holding.
+refcache: 0 hit, 6 miss, 6 stored

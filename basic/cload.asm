@@ -243,7 +243,25 @@ do_run:
                 jr      run_prog_top        ; ...and run it (running is implicit), at
                                             ; TOP LEVEL -- see run_prog_top below
 dr_stored:
-                jp      run_prog            ; bare RUN: the stored program from the top.
+                jp      run_prog_top        ; bare RUN: the stored program from the top,
+                                            ; at TOP LEVEL like every sibling arm.
+                ; \U0001f7e2 D-BARERUN (2026-09-09): CONVERTED AT LAST, 0 B, AND THE ROW
+                ; IS WHAT UNBLOCKED IT. This arm stood ⛔ BLOCKED since 2026-08-22
+                ; on *"needs a fixture"*: a bare RUN CLEARS VARIABLES, so the
+                ; program restarts forever on the references too and there is no
+                ; value to read back. The fixture that works makes the CORRECT
+                ; behaviour visible instead of the wrong one -- an endless
+                ; `PRINT"X";` before the RUN, so "restarts forever, silently"
+                ; reads as a screen full of X and the defect reads as an error
+                ; message among them:
+                ;     s.bare   vg 835 X no error | cf 869 X no error | zb 210 X + error
+                ;     c.goto   vg 825 X         | cf 897 X          | zb 911 X
+                ; `c.goto` is the same endless loop reached by GOTO instead of RUN
+                ; -- the control that separates "hangs correctly" from "the
+                ; harness captured nothing", which is the trap this row had to
+                ; avoid [[an-unnamed-outcome-reads-as-no-outcome]].
+                ; The old note, which was right about everything except that the
+                ; fixture could not be built:
                                             ; ⚠️ STILL THE ONE ARM D-RUNTAIL DID NOT
                                             ; CONVERT, and D-RUNLINE deliberately left
                                             ; it that way. `jp run_prog_top` is the
