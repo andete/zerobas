@@ -434,7 +434,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:12510 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:12539 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -599,7 +599,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:3097 (T-6FE392)8 (T-529ABE)` from `TODO.md:11447 (T-529ABE)`: a
+      `TODO.md:3097 (T-6FE392)8 (T-529ABE)` from `TODO.md:11476 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -3735,7 +3735,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:11447 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:11476 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -5520,10 +5520,39 @@ list. **When a slice lands, grep this list for what it just shipped.**
       ⚠️ **THE ROWS ARE FIXTURE-SAFE**: `basic_probe_namegate.py` renames on its own
       `tempfile.mkdtemp` COPY of `test720.dsk`, so `name.exok` renaming `HI.TXT`
       to itself cannot reach the tracked image.
-      🤖 AUTONOMOUS — three pins, one mechanism each, and the open question is now
-      sharp: why does a CRUNCHED CONSTANT decline differently at the second
-      `fname_expr` site than at the first, when a VARIABLE does not? A knife on
-      `str_eval_no` is the next instrument, not more black-box rows.
+      🟢 **AND FOUR MORE ROWS MADE THE SIGNATURE EXACT (2026-09-09). IT IS THE
+      FIRST BYTE'S CLASS, AND NOTHING ELSE.** All five are ERR 13 on the
+      reference, so the reference column is also the control:
+
+          operand    zb   first byte
+          5           2   crunched numeric constant   🔴
+          55          2   crunched numeric constant   🔴
+          "  5"       2   crunched numeric constant   🔴  (two spaces: skip is fine)
+          1/0         2   crunched numeric constant   🔴
+          A          13   ASCII letter                ✅
+          AB         13   ASCII letter                ✅
+          -5         13   the MINUS token             ✅
+          (5)        13   ASCII `(`                   ✅
+
+      🎯 **THE OFFSET HYPOTHESIS IS DEAD, AND SO IS "THE DECLINE ARM".** `55` and
+      `AB` are both two bytes and go opposite ways, so no cursor offset explains
+      it; the double-space row rules out the skip. `-5` falls through
+      `str_eval_one` to `str_eval_no` exactly as `5` does — same arm — and works.
+      **The rule is: it fails iff the first non-space byte of the operand is a
+      crunched NUMERIC CONSTANT.** Behind a `-` or a `(` the same constant is
+      fine.
+      🧪 **HYPOTHESIS, NAMED AS ONE AND NOT MEASURED**: behind `-` or `(` the
+      constant is not the FIRST factor — the evaluator re-enters `ev_f` for it —
+      so what is broken may be the first-factor path for constants specifically,
+      at a point reached only after `fat_mount`/`fat_find` have called the sub-ROM.
+      `els_tc_common` reports ERR 2 off `ERRMARK`, which `ev_f_err` sets when the
+      first factor lookup finds nothing. That is one observation's worth of
+      mechanism and is written down to be attacked, not believed
+      [[a-mechanism-inferred-from-one-observation]].
+      🤖 AUTONOMOUS — five pins under two mechanisms, and the next instrument is
+      the code: `eval`'s first-factor path for a crunched constant, and what a
+      `subrom_call` leaves behind that it depends on. The rows are exhausted —
+      eight operand shapes now say the same thing.
       program in the corpus renames with a numeric operand. The scouting the 🔭
       asked for is DONE; what is left is the call.
 

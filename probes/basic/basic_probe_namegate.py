@@ -94,6 +94,28 @@ CASES = [
     # SHAPE matters at the second one.
     ("name.exvar", 'NAME"HI.TXT"AS A',
      "a numeric VARIABLE, not a crunched constant, at the second site"),
+    # \U0001f3af TRIANGULATING AN OFFSET. A crunched constant declines wrongly at the
+    # second site and a VARIABLE does not, which no "wrong cursor" story explains
+    # on its own: a cursor off by one would break the one-byte variable `A` too.
+    # These four vary the operand's stored LENGTH and its leading whitespace, so
+    # an offset shows up as a row that starts WORKING when the operand gets
+    # longer, and a whitespace bug shows up on the double-space row alone.
+    # Every one of them is ERR 13 on the reference -- a non-string operand -- so
+    # the reference column is also the control.
+    ("name.ex55", 'NAME"HI.TXT"AS 55',
+     "TWO-digit constant: does a longer operand start working?"),
+    ("name.exsp", 'NAME"HI.TXT"AS  5',
+     "the same constant behind TWO spaces: is the skip the defect?"),
+    ("name.exab", 'NAME"HI.TXT"AS AB',
+     "a TWO-character variable: the variable side of the same length axis"),
+    ("name.exneg", 'NAME"HI.TXT"AS -5',
+     "a constant behind a unary minus: an operand whose first byte is a TOKEN"),
+    # \U0001f3af THE DECLINE-ARM ROW. `(` is handled by str_eval_paren, a DIFFERENT
+    # arm of str_eval_one from the fall-through that a bare constant takes, and it
+    # declines a numeric subexpression too. If `(5)` works where `5` does not,
+    # what differs is the ARM the decline leaves by -- not the operand.
+    ("name.exparen", 'NAME"HI.TXT"AS (5)',
+     "a constant in PARENTHESES: declines through str_eval_paren, not the tail"),
 ]
 
 
@@ -126,6 +148,10 @@ PINNED = {
     # of ours" and prints em_unprintable, so ERR 65 needs a MESSAGE as well as a
     # check -- part of why it was deferred as "a later refinement".
     "name.exok": ("65", "0"),
+    # The same mechanism as name.ex5, at two more operand shapes. Pinned together
+    # because they are ONE defect: see the block comment on name.ex5.
+    "name.ex55": ("13", "2"),
+    "name.exsp": ("13", "2"),
 }
 
 
