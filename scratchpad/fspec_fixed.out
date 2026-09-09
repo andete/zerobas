@@ -1,4 +1,0 @@
-  File "/Users/joost/projects/zerobas/probes/basic/basic_probe_namspc.py", line 794
-    }NEGATIVE = ("z.kw", "z.miss")
-     ^^^^^^^^
-SyntaxError: invalid syntax

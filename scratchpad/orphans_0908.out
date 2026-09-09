@@ -1,4 +1,0 @@
-pins: 27   sweep corpus: 49 probe(s)
-🔴 1 ORPHANED PIN(S) — cited by no OPEN item, so this sweep never runs them and cannot see them go stale:
-     casfch_probe
-  Re-run each by hand; if its rows now agree, the pin leaves the set.

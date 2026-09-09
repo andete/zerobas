@@ -1,9 +1,0 @@
-CLEAR resets the ON ERROR handler — 3 machines, boot-per-case
-
-  A  10 ON ERROR GOTO 100 : 20 X=FNZ(1)            -> trapped
-  B  10 ON ERROR GOTO 100 : 15 CLEAR : 20 X=FNZ(1) -> NOT trapped
-
-             A: value               A: signal    B: value               B: signal
-  vg8020     'TRAPPED ERR 18 '      on signal    'TRAPPED ERR";ERR;"'   NEVER
-  cf3300     'TRAPPED ERR 18 '      on signal    'TRAPPED ERR";ERR;"'   NEVER
-  zb         'TRAPPED ERR 18 '      on signal    'TRAPPED ERR";ERR;"'   NEVER

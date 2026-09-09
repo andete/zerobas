@@ -1,7 +1,0 @@
-D-CITENAME audit: 42 markdown citation(s)
-   21  heading names no block (silent, by design)
-   13  no heading in scope
-    5  heading too short to identify
-    3  heading names a block some citation under it cites
-
-  no flags -- no citation sits under a heading that is another block's headline

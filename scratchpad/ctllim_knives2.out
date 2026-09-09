@@ -1,5 +1,0 @@
-=== baseline: the gate must be GREEN before a cut means anything
-  ROM 7d36a467 d549ebff 6bffac04 fe698e19
-  ctllim rc=2 rows=none   scratchpad/ctllim_knives/base.out
-INSTRUMENT FAULT: the gate is red BEFORE any cut.
-  restored sub/arrays.asm byte-identically

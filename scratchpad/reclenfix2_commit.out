@@ -1,2 +1,0 @@
-[main 864b1e27] D-RECLENFIX: the LEN= domain is 1..256 — the divergence closes, the validator's 6 bytes come back, and the Deferral pins announced it
- 8 files changed, 88 insertions(+), 58 deletions(-)

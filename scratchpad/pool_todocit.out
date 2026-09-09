@@ -1,9 +1,0 @@
-python3 tools/check_todo_citations.py
-selftest: GREEN control passes and a planted drift goes RED on TODO.md:218 (T-6FE392); NOT-A-CITATION suppresses 2 citation(s) there and nothing else ✅
-todo-citations: 48 citation(s) into TODO.md / docs/TODO-done.md across 19 file(s)
-   36 verified against the block id
-    9 link targets agreeing with their label
-    3 id-less (line existence only -- NOT verified):
-        TODO.md:151 -> TODO.md:3287
-        TODO.md:221 -> TODO.md:461
-        TODO.md:221 -> TODO.md:4618

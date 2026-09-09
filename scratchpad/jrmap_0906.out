@@ -1,6 +1,0 @@
-convertible ROM sites: 8
-  proposals (unique source match): 8  [page1 3, low 5]
-  skipped no-match: 0   skipped ambiguous: 0
-    $656E jp    -> bl_load_error        basic/pdfcb-body.inc:53
-    $7705 jp    -> do_break             basic/program.asm:735
-    $7C91 jp nz -> oe_badop             basic/program.asm:2410

@@ -1,2 +1,0 @@
-INSTRUMENT FAULT: no reading on ['zb/d.ctl20', 'zb/d.depth0', 'zb/d.depth1', 'zb/d.depth20'] -- NOT MEASURED, and not agreement. Check F (the handler-entry count) first.
-refcache: 2 hit, 1 miss, 1 stored

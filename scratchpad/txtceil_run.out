@@ -1,8 +1,0 @@
-txtceil: 1 row(s) outside the pool floor
-ok   c.fits     zb='stored=111 PRGEND=32880 floor=33469 head=589'   [POSITIVE CONTROL — a program with room must be STORED, or a bound that refuses everything reads green below]
-ok   p.n25      zb='stored=629 PRGEND=33398 floor=33469 head=71'   [the store must stop before the pool floor]
-ok   p.n40      zb='stored=629 PRGEND=33398 floor=33469 head=71'   [the store must stop before the pool floor]
-DIFF p.tight    zb='HIMEM=62336 want 33669, POOLSIZE=500 want 500'   🔴 NOT MEASURED: the CLEAR did not take, so every other number here is about an un-set-up machine
-ROWS: 4 printed, 4 scored — 3 within the pool floor, 1 not
-SIDE: zb only — `PRGEND <= HIMEM - POOLSIZE` is a claim about ZEROBAS's own map. The references reserve 293 + 267*MAXFILES below HIMEM against 12 + 50*MAXFILES here (D-HIMEMRES), so an FRE(0) comparison measures that architectural difference and not this rule.
-refcache: 0 hit, 4 miss, 4 stored

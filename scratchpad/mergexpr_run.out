@@ -1,6 +1,0 @@
-  m.lit     cf3300=      ERR 53  zb=      ERR 53   CONTROL: the literal form -- must be ERR 53 (File not found) on both
-  m.var     cf3300=      ERR 53  zb=       ERR 2   THE SUBJECT: a variable. 53 = evaluated; 2 = the quote test refused it
-  m.concat  cf3300=      ERR 53  zb=      ERR 56   an expression that is not a bare variable -- same question
-  k.var     cf3300=      ERR 53  zb=      ERR 53   CONTROL on zerobas's OWN expression path: KILL was converted by D-FNEXPR, so 53 on both, or fname_expr is broken generally
-
-=== 2 divergence(s): ['m.var', 'm.concat'] ===

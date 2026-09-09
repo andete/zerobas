@@ -1,2 +1,0 @@
-python3 tools/check_resident_abi.py build/basic-reloc.sym sub/basic-resident-abi.inc
-OK: sub/basic-resident-abi.inc matches a fresh regen from build/basic-reloc.sym (12 resident-ABI addresses, sub.rom is not stale)

@@ -1,5 +1,0 @@
-python3 probes/basic/basic_probe_subrom_boot.py
-page-0 CALSLT $0040 -> SUB_PING = $C0 (expect $C0): PASS
-page-1 CALSLT $4010 -> SUB_PING = $C1 (expect $C1): PASS
--------------------
-subrom S2a boot gate: PASS

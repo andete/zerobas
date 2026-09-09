@@ -1,3 +1,0 @@
-[main a2eddfe] Show D-CTLCROSS in a program a person would write, on all three machines
- 2 files changed, 97 insertions(+)
- create mode 100644 scratchpad/ctlpool_demo.py

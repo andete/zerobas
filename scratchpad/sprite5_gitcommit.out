@@ -1,9 +1,0 @@
-[main 14fd9a5] D-SPRITE5: PUT SPRITE's 5th-argument error is the statement boundary; place THEN raise -- -8 B carve, 3 DIFF -> 0
- 11 files changed, 491 insertions(+), 10 deletions(-)
- create mode 100644 docs/spec-basic-sprite5.md
- create mode 100644 scratchpad/sprite5_after.out
- create mode 100644 scratchpad/sprite5_before.out
- create mode 100644 scratchpad/sprite5_gates_run.out
- create mode 100644 scratchpad/sprite5_knives.out
- create mode 100644 scratchpad/sprite5_knives.py
- create mode 100644 scratchpad/sprite5_probe.py

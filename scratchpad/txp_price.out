@@ -1,5 +1,0 @@
-pasmo --bin basic/main.asm build/basic-reloc.rom build/basic-reloc.sym
-WARNING: 64KB limit passed inside instruction on line 435 of file basic/main.asm
-WARNING: Switching to 3 pass mode on line 827 of file basic/sysvars.inc
-ERROR: Relative jump out of range  on line 48 of file basic/program.asm
-make: *** [build/basic-reloc.sym] Error 1

@@ -1,6 +1,0 @@
-ctllim-acceptance
-  widest matrix : 3 cases
-  batched       :  153.0s  rc=0  14 rows
-  boot-per-case :  155.4s  rc=0  14 rows
-  batching is 1.0x faster
-  ✅ every row identical in both modes — CONVERTIBLE.

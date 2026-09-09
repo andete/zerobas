@@ -1,4 +1,0 @@
-convertible ROM sites: 11
-  proposals (unique source match): 11  [page1 1, low 10]
-  skipped no-match: 0   skipped ambiguous: 0
-    $6589 jp    -> bl_load_error        basic/pdfcb-body.inc:53
