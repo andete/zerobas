@@ -410,7 +410,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:11874 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:11901 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -575,7 +575,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:2828 (T-6FE392)8 (T-529ABE)` from `TODO.md:10811 (T-529ABE)`: a
+      `TODO.md:2855 (T-6FE392)8 (T-529ABE)` from `TODO.md:10838 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -2232,6 +2232,33 @@ list. **When a slice lands, grep this list for what it just shipped.**
       Filed as unmeasured rather than agreed; it needs a rig that can absorb a
       tape write, or a disk-path variant on the CF-3300.
 
+- [x] ✅ **D-PARTSTATE (2026-09-09): LIST verbs execute PARTIALLY on the reference
+      TOO — and that BOUNDS D-PARTIAL. 5 rows × 3 machines, 0 DIFF**
+      ([`scratchpad/partialstate_probe.py`](scratchpad/partialstate_probe.py),
+      [`.out`](scratchpad/partialstate_run.out)).
+      All three of tonight's serious defects were about RUN-TIME STATE rather than
+      the argument surface — D-MAXFTAIL (a `CLEAR` that ran before the tail was
+      rejected), D-SAVETRAP (a failure that printed instead of raising) and
+      D-PARTIAL (COLOR storing each component as it validated it) — so the question
+      was put to the verbs that mutate the world ITEM BY ITEM.
+      | row | vg8020 | cf3300 | zb |
+      |---|---|---|---|
+      | `DIM P(3),Q(-1)` | ERR 5, **P allocated** | ERR 5, **P allocated** | same ✅ |
+      | `ERASE P,Q` (Q undefined) | ERR 5, **P erased** | ERR 5, **P erased** | same ✅ |
+      🎯 **SO ATOMICITY IN THIS REFERENCE IS PER-STATEMENT-SHAPE, NOT A PRINCIPLE.**
+      `COLOR fg,bg,bd` is atomic — one statement setting components of one thing —
+      while `DIM a,b` and `ERASE a,b` are a SEQUENCE of independent acts and stop
+      where they fail. That retroactively justifies D-PARTIAL's fix being scoped to
+      COLOR rather than generalised: "make statements atomic" would have been a
+      REGRESSION here, and these rows are what say so
+      [[two-rules-that-coincide-on-every-row-you-have]].
+      🟢 **THE WITNESS IS A SECOND STATEMENT, NOT A VALUE.** Whether an array still
+      exists is not readable directly, but `DIM P(3)` on an existing array is
+      **ERR 10 Redimensioned array** and on a fresh one simply succeeds — so
+      "did the failed statement act?" becomes an error code. Two controls prove the
+      witness can say BOTH: `w.ctl` reads 10 (exists) and `e.ctl` reads 0 (gone).
+      A witness that can only ever say one thing is the failure mode this avoids.
+
 - [x] ✅ **D-VDPDOM (2026-09-09): `VDP(n)=` and `BASE(n)=` argument domains —
       CLASS MEASURED EMPTY, 7 rows × 3 machines, 0 DIFF**
       ([`scratchpad/vdpdom_probe.py`](scratchpad/vdpdom_probe.py),
@@ -3466,7 +3493,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:10811 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:10838 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

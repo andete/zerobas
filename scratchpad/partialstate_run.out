@@ -1,0 +1,14 @@
+  w.ctl    P(0)=0           vg=ERR=0 W=10       cf=ERR=0 W=10       zb=ERR=0 W=10      
+  w.ctl2   P(0)=0           vg=ERR=0 W=10       cf=ERR=0 W=10       zb=ERR=0 W=10      
+  d.part   DIM P(3),Q(-1)   vg=ERR=5 W=10       cf=ERR=5 W=10       zb=ERR=5 W=10      
+  e.part   ERASE P,Q        vg=ERR=5 W=0        cf=ERR=5 W=0        zb=ERR=5 W=0       
+  e.ctl    ERASE P          vg=ERR=0 W=0        cf=ERR=0 W=0        zb=ERR=0 W=0       
+
+=== 0 divergence(s): none ===
+=== W=10 the array EXISTS · W=0 it does NOT ===
+   w.ctl    vg ('0', '10')   cf ('0', '10')   zb ('0', '10')
+   w.ctl2   vg ('0', '10')   cf ('0', '10')   zb ('0', '10')
+   d.part   vg ('5', '10')   cf ('5', '10')   zb ('5', '10')
+   e.part   vg ('5', '0')   cf ('5', '0')   zb ('5', '0')
+   e.ctl    vg ('0', '0')   cf ('0', '0')   zb ('0', '0')
+refcache: 0 hit, 15 miss, 15 stored
