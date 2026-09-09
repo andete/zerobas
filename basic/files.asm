@@ -873,13 +873,17 @@ fnx_term:
 ; oo_parse_reclen — parse an optional "LEN = expr" record-size clause at (HL).
 ; LEN is the $FF $92 function token; '=' is EQ_TOKEN. Absent -> DE = 256 (the
 ; historical fixed record length), Cy = 0. Present -> DE = the evaluated record
-; length, validated to a power of two in 1..256; a non-tiling / out-of-range
-; value returns Cy = 1, which the caller raises as ILLEGAL FUNCTION CALL
-; (D-RECLEN2: measured ERR 5 on the CF-3300 for LEN=0/257/512, where this used to
-; answer Syntax error).
-; ⚠️ THE POWER-OF-TWO RULE IS NOT THE REFERENCE'S -- it accepts any 1..256 -- but
-; it IS load-bearing here until fat_rand_put/get can span two sectors. See
-; opr_lowbyte for the measurement that put it back.
+; length, validated to ANY value in 1..256; an out-of-range value returns Cy = 1,
+; which the caller raises as ILLEGAL FUNCTION CALL (D-RECLEN2: measured ERR 5 on
+; the CF-3300 for LEN=0/257/512, where this used to answer Syntax error).
+; 🔴 THIS HEADER SAID "validated to a power of two" AND CALLED THAT RULE
+; LOAD-BEARING UNTIL 2026-09-09, WHILE ITS OWN BODY TWENTY LINES BELOW SAID THE
+; OPPOSITE -- "✅ THE DOMAIN IS 1..256, AS THE REFERENCE'S IS (D-RECLENFIX,
+; 2026-09-06)". All three prerequisites the old text named have landed: D-MULREC
+; (mul_reclen was a shift), D-STRADDLE (put/get can span two sectors) and
+; D-RECLENFIX (the validator itself). A header and its body disagreeing on the
+; load-bearing rule is the shape that gets a reader to "optimise" against a
+; restriction the code no longer has [[a-fix-falsifies-the-justification-beside-it]].
 ; Clobbers A,BC,DE,HL.
 oo_parse_reclen:
                 call    skip_spaces

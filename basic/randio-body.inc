@@ -294,9 +294,15 @@ load_reclen:
 ; 🎯 SO THIS IS ONE OF THREE THINGS THE WIDENING NEEDS, and the only one that
 ; can be fixed and PROVEN with no disk risk at all. The other two are
 ; `fat_rand_put`/`fat_rand_get` spanning two sectors, and `oo_parse_reclen`'s
-; validator. Until those land nothing but a power of two reaches here, and for a
+; validator. ~~Until those land nothing but a power of two reaches here, and for a
 ; power of two shift-and-add gives bit-identical answers -- so this change moves
-; no shipped behaviour, which is precisely what makes it safe to land alone.
+; no shipped behaviour, which is precisely what makes it safe to land alone.~~
+; 🔴 THAT WAS TRUE WHEN WRITTEN AND IS NOT NOW (corrected 2026-09-09). BOTH other
+; fixes landed -- D-STRADDLE and D-RECLENFIX -- so **any r in 1..256 reaches here**
+; and the shift-and-add below is doing real work on values a shift would get
+; wrong. Do NOT reduce it to a shift on the strength of the struck sentence: at
+; r=100 a shift computes k*64, and PUT and GET would agree on that wrong offset
+; because they share this routine [[a-case-that-agrees-can-agree-for-the-wrong-reason]].
 ;
 ; Shift-and-add, LSB first: k <= 254 and r <= 256, so the product is <= 65024 and
 ; the running BC (k << bit) never exceeds 16 bits either.
