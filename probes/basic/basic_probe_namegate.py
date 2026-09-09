@@ -109,12 +109,22 @@ PINNED = {
     # face defect: the fix is not "produce 13 here", it is "hand els_tc_common
     # the operand", after which 13 and 11 both fall out. One pin, one mechanism.
     "name.exdiv": ("11", "2"),
-    # \U0001f534 A SEPARATE, NEWLY FOUND DEFECT (2026-09-09) -- not the cursor one.
-    # `NAME"HI.TXT"AS"HI.TXT"` renames a file to a name that already exists. The
-    # CF-3300 refuses with ERR 65 `File already exists`; zerobas performs it and
-    # returns 0. The row was added to ask whether the SECOND fname_expr site is
-    # reached at all -- it is, and it completes -- and it answered a question
-    # nobody asked on the way [[a-coverage-row-whose-geometry-cannot-reach-the-case]].
+    # `NAME"HI.TXT"AS"HI.TXT"` renames a file onto a name that already exists.
+    # The CF-3300 refuses with ERR 65 `File already exists`; zerobas performs it
+    # and returns 0. Added only to establish that the SECOND fname_expr site is
+    # REACHED and COMPLETES -- it is, and it does.
+    # \U0001f534 AND IT IS NOT A NEW FINDING, WHICH IS WHAT I FIRST CALLED IT. The
+    # tree already carried it in TWO places as a deliberate own-design gap:
+    # `basic/files.asm`'s ex_name header ("Divergences: no \"new already exists\"
+    # check (own design)") and PROVENANCE.md §NAME ("Divergences (own design,
+    # quarantined): no \"new name already exists\" check (a later refinement)").
+    # One grep would have said so. What this row DOES add is real but smaller: the
+    # quarantine was PROSE, asserted and never driven, and it is now a measured
+    # row with the reference's own face (65) beside ours (0)
+    # [[a-justification-parenthesis-is-an-unrun-claim]].
+    # ⚠️ NOTE FOR WHOEVER CLOSES IT: `sub/errmsg.asm` treats 65..255 as "not one
+    # of ours" and prints em_unprintable, so ERR 65 needs a MESSAGE as well as a
+    # check -- part of why it was deferred as "a later refinement".
     "name.exok": ("65", "0"),
 }
 

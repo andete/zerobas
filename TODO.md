@@ -434,7 +434,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:12495 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:12510 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -599,7 +599,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:3097 (T-6FE392)8 (T-529ABE)` from `TODO.md:11432 (T-529ABE)`: a
+      `TODO.md:3097 (T-6FE392)8 (T-529ABE)` from `TODO.md:11447 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -3735,7 +3735,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:11432 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:11447 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -5496,12 +5496,27 @@ list. **When a slice lands, grep this list for what it just shipped.**
       • **`name.exok` says the second site is reached AND completes** — it was
         added only to establish that, because every other row sees the site FAIL
         and *"declines wrongly"* and *"never runs"* produce the same ERR.
-      🟢 **AND IT FOUND A SEPARATE, UNFILED DIVERGENCE ON THE WAY.** Renaming a
-      file to a name that ALREADY EXISTS: the CF-3300 refuses with **ERR 65 `File
-      already exists`**; zerobas performs it and returns 0. That is a missing
-      duplicate-name check in `do_name`, nothing to do with operand faults, and it
-      is pinned so the gate stays honest about it
-      [[a-coverage-row-whose-geometry-cannot-reach-the-case]].
+      🔴 **AND I CALLED THAT ROW A NEW FINDING. IT IS NOT — CORRECTED
+      2026-09-09.** Renaming a file onto a name that ALREADY EXISTS: the CF-3300
+      refuses with **ERR 65 `File already exists`**, zerobas performs it and
+      returns 0. I filed and committed that as *"a separate, unfiled
+      divergence"*. The tree already carried it in TWO places as a deliberate
+      own-design gap — `basic/files.asm`'s `ex_name` header (*"Divergences: no
+      \"new already exists\" check (own design)"*) and `basic/PROVENANCE.md`
+      §NAME (*"Divergences (own design, quarantined): no \"new name already
+      exists\" check (a later refinement)"*). **One grep would have said so**, and
+      I asserted a relationship instead of checking it — the same shape as the
+      scoreboard correction and the citation subjects
+      [[a-justification-parenthesis-is-an-unrun-claim]].
+      🟢 **WHAT THE ROW DOES ADD IS REAL BUT SMALLER**: the quarantine was
+      PROSE — asserted, never driven, no row anywhere — and it is now a MEASURED
+      row carrying the reference's own face (65) beside ours (0). A quarantined
+      divergence with a row is a different object from one with a sentence
+      [[a-pinned-divergence-is-a-live-detector]].
+      ⚠️ **AND CLOSING IT NEEDS A MESSAGE, NOT JUST A CHECK**: `sub/errmsg.asm`
+      treats 65..255 as *"not one of ours"* and prints `em_unprintable`, so ERR 65
+      has no wording in this tree. That is part of why it was deferred as *"a
+      later refinement"*, and it is why this is not a 20 B budget spend.
       ⚠️ **THE ROWS ARE FIXTURE-SAFE**: `basic_probe_namegate.py` renames on its own
       `tempfile.mkdtemp` COPY of `test720.dsk`, so `name.exok` renaming `HI.TXT`
       to itself cannot reach the tracked image.
