@@ -1,0 +1,29 @@
+# 14 of 53 cited probe(s), serial, refcache OFF, 420s each
+  1/14  deffn_nestdepth_probe        rc=0         4.9s  🔴 NOTHING PARSED -- probe measured nothing, or format unknown
+          cites TODO.md:7075,7075
+  2/14  domain_probe                 rc=0        36.8s  clean: 22 parsed line(s), no divergence marker
+          cites TODO.md:5219,5219
+  3/14  donothing_probe              rc=0        11.7s  clean: 7 parsed line(s), no divergence marker
+          cites TODO.md:8552,8552
+  4/14  dski_probe                   rc=0         4.0s  --  no verdict channel BY DESIGN (declared): a measurement instrument, not an oracle. Its ROWS still need a human.
+          cites TODO.md:8552,8552
+  5/14  dskibytes_probe              rc=1         6.2s  DIVERGES 3/3  [0 known]
+          cites TODO.md:8552,8552
+  6/14  dskidrive_probe              rc=0         1.2s  --  no verdict channel BY DESIGN (declared): a measurement instrument, not an oracle. Its ROWS still need a human.
+          cites TODO.md:8552,8552
+  7/14  dskiform_probe               rc=0         2.0s  --  no verdict channel BY DESIGN (declared): a measurement instrument, not an oracle. Its ROWS still need a human.
+          cites TODO.md:8552,8552
+  8/14  dskilow_probe                rc=0         2.2s  🔴 NOTHING PARSED -- probe measured nothing, or format unknown
+          cites TODO.md:8552,8552
+  9/14  dskiwhere_probe              rc=0         5.8s  --  no verdict channel BY DESIGN (declared): a measurement instrument, not an oracle. Its ROWS still need a human.
+          cites TODO.md:8552,8552
+ 10/14  dupopen_probe                rc=0         9.7s  DIVERGES 6/11  s.same s.space s.newtwice s.modes s.seqsame s.reclaim  [6 known]  🔴 AND EXITS 0 -- invisible to any rc-only collector
+          cites TODO.md:10076,10076
+ 11/14  dupspan_probe                rc=0        45.2s  clean: 155 parsed line(s), no divergence marker
+          cites TODO.md:6872
+ 12/14  editline_probe               rc=0         1.4s  --  no verdict channel BY DESIGN (declared): a measurement instrument, not an oracle. Its ROWS still need a human.
+          cites TODO.md:12598,12598
+ 13/14  emptyop_probe                rc=0         8.0s  clean: 6 parsed line(s), no divergence marker
+          cites TODO.md:5219,5219
+ 14/14  extraarg_probe               rc=0        21.4s  clean: 14 parsed line(s), no divergence marker
+          cites TODO.md:5219,5219

@@ -88,7 +88,14 @@ def main() -> int:
             bad.append(lab)
         print(f"  {lab:<{w}}  {a:>7} {b:>5}   {stmt:<40} {'ok' if ok else '\U0001f534 DIFF'}")
         print(f"  {'':<{w}}          {why}")
-    print(f"\n  DIFF {len(bad)}/{len(CASES)}" + ("  " + " ".join(bad) if bad else ""))
+    # \U0001f534 THE SUMMARY CARRIES NO MARKER TOKEN, AND THAT IS NOT STYLE.
+    # `filed_row_sweep`'s MARKER includes `^\s*DIFF\s`, so a summary reading
+    # "  DIFF 2/5 ..." is counted as one more DIVERGENT ROW than the run has --
+    # this probe reported 2 rows and swept as 3. It is the THIRD time that exact
+    # phantom has been filed (`reclen_probe`'s `DIFF:`, `reclendom_probe`'s
+    # `DIFF total`), so the wording is load-bearing: say it without `DIFF`.
+    print(f"\n  rows diverging {len(bad)}/{len(CASES)}"
+          + ("  " + " ".join(bad) if bad else ""))
     if "o.as1" in bad:
         print("  \U0001f534 THE CLASS IS WIDER THAN NAME. `OPEN ... AS <digit>` is a "
               "supported form (the `#` is optional in our own parser) and it hits "

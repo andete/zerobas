@@ -1,0 +1,20 @@
+case                     vg8020         zb            
+one voice, no delay      -1 -1 -1 0     -1 -1 0 0        <-- DIFFER
+one voice, CLS           -1 -1 0 0      -1 -1 0 0     
+one voice, FOR 200       -1 -1 0 0      -1 -1 0 0     
+voice 2, no delay        -1 -1 -1 0     -1 0 -1 0        <-- DIFFER
+voice 2, FOR 200         -1 0 -1 0      -1 0 -1 0     
+voice 3 only, no delay   -1 -1 0 -1     -1 0 0 -1        <-- DIFFER
+two strings, no delay    -1 -1 -1 0     -1 -1 -1 0    
+three strings, nodelay   -1 -1 -1 -1    -1 -1 -1 -1   
+empty string, no delay   -1 0 0 0       -1 0 0 0      
+empty string, CLS        0 0 0 0        0 0 0 0       
+empty string, FOR 200    0 0 0 0        0 0 0 0       
+two empty, FOR 200       0 0 0 0        0 0 0 0       
+no PLAY at all           0 0 0 0        0 0 0 0       
+one voice, FOR 1         -1 -1 0 0      -1 -1 0 0     
+one voice, FOR 5         -1 -1 0 0      -1 -1 0 0     
+one voice, FOR 20        -1 -1 0 0      -1 -1 0 0     
+one voice, FOR 50        -1 -1 0 0      -1 -1 0 0     
+width: TIME for FOR 20   2              6                <-- DIFFER
+width: TIME for FOR 50   4              14               <-- DIFFER

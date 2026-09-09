@@ -1,0 +1,25 @@
+# 12 of 53 cited probe(s), serial, refcache OFF, 420s each
+  1/12  argtype_probe                rc=0        33.6s  clean: 22 parsed line(s), no divergence marker
+          cites TODO.md:5219,5219
+  2/12  asciidigit_probe             rc=0         3.7s  DIVERGES 3 marker(s) in 12 parsed line(s)  [0 known, 🔴 3 marker line(s) UNFILED -- read them]  🔴 AND EXITS 0 -- invisible to any rc-only collector
+          cites TODO.md:5219,5219
+  3/12  attr_probe                   rc=0         9.0s  clean: 5 parsed line(s), no divergence marker
+          cites TODO.md:8552,8552
+  4/12  auto_probe                   rc=0         8.9s  clean: 16 parsed line(s), no divergence marker
+          cites TODO.md:12680,12680
+  5/12  bareform_probe               rc=1        64.7s  DIVERGES 1 marker(s) in 49 parsed line(s)  [0 known, 🔴 1 marker line(s) UNFILED -- read them]
+          cites TODO.md:5219,5219
+  6/12  budget_probe                 rc=0        28.0s  --  no verdict channel BY DESIGN (declared): a measurement instrument, not an oracle. Its ROWS still need a human.
+          cites TODO.md:5060
+  7/12  chanface_probe               rc=0        14.0s  clean: 12 parsed line(s), no divergence marker
+          cites TODO.md:5219,5219
+  8/12  colontail_probe              rc=0        19.5s  clean: 24 parsed line(s), no divergence marker
+          cites TODO.md:5219,5219
+  9/12  copyverb_probe               rc=0         2.2s  --  no verdict channel BY DESIGN (declared): a measurement instrument, not an oracle. Its ROWS still need a human.
+          cites TODO.md:8552,8552
+ 10/12  crunchbytes_probe            rc=0         7.0s  clean: 6 parsed line(s), no divergence marker
+          cites TODO.md:5219,5219
+ 11/12  ctrlc_probe                  rc=0         2.6s  clean: 12 parsed line(s), no divergence marker
+          cites TODO.md:12680,12680
+ 12/12  deffn_alias_probe            rc=0         8.7s  DIVERGES 2 marker(s) in 2 parsed line(s)  [2 known]  🔴 AND EXITS 0 -- invisible to any rc-only collector
+          cites TODO.md:7075

@@ -1,0 +1,27 @@
+# 13 of 53 cited probe(s), serial, refcache OFF, 420s each
+  1/13  playfn_fixture_probe         rc=0        13.4s  DIVERGES 5 marker(s) in 0 parsed line(s)  [5 known, ⚠️ 1 known row(s) NO LONGER DIVERGING (empty string, no delay) -- the CVI shape, re-run and re-file]  🔴 AND EXITS 0 -- invisible to any rc-only collector
+          cites TODO.md:7402,7402
+  2/13  put3consume_probe            rc=0        13.3s  --  no verdict channel BY DESIGN (declared): a measurement instrument, not an oracle. Its ROWS still need a human.
+          cites TODO.md:10277,10277
+  3/13  putcost_probe                rc=0        94.3s  --  no verdict channel BY DESIGN (declared): a measurement instrument, not an oracle. Its ROWS still need a human.
+          cites TODO.md:10277,10277
+  4/13  putdomain_probe              rc=1        17.7s  DIVERGES 8 marker(s) in 18 parsed line(s)  [0 known, 🔴 8 marker line(s) UNFILED -- read them]
+          cites TODO.md:2699,2699
+  5/13  putio_probe                  rc=0         0.2s  --  no verdict channel BY DESIGN (declared): a measurement instrument, not an oracle. Its ROWS still need a human.
+          cites TODO.md:10277,10277
+  6/13  ramfree_probe                rc=0        49.0s  clean: 14 parsed line(s), no divergence marker
+          cites TODO.md:11813
+  7/13  reclen_probe                 rc=0        24.7s  DIVERGES 4/7  p.put3 p.same3 p.close3 p.trap3  [4 known]  🔴 AND EXITS 0 -- invisible to any rc-only collector
+          cites TODO.md:10277,10277
+  8/13  renum_probe                  rc=0        11.9s  clean: 32 parsed line(s), no divergence marker
+          cites TODO.md:12680,12680
+  9/13  rungap_probe                 rc=0        75.7s  --  no verdict channel BY DESIGN (declared): a measurement instrument, not an oracle. Its ROWS still need a human.
+          cites TODO.md:10277,10277
+ 10/13  tailjunk_probe               rc=0        39.4s  clean: 25 parsed line(s), no divergence marker
+          cites TODO.md:5219,5219
+ 11/13  trailblank_probe             rc=0         4.0s  clean: 6 parsed line(s), no divergence marker
+          cites TODO.md:14472
+ 12/13  trapstate_probe              rc=0         7.2s  --  no verdict channel BY DESIGN (declared): a measurement instrument, not an oracle. Its ROWS still need a human.
+          cites TODO.md:6261,6261
+ 13/13  wait_probe                   rc=0         3.2s  clean: 15 parsed line(s), no divergence marker
+          cites TODO.md:12680,12680

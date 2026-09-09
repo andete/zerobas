@@ -111,6 +111,14 @@ def main() -> int:
         print(f"    image wants: {want}")
         print(f"    machine has: {got}")
         print(f"    -> {match}")
+        # \U0001f534 PER-ROW `DIFF <label>`, THE SAME REMEDY D-RECLENV APPLIED TO
+        # `reclen_probe`. The `DIFF: n/m` summary below tells the sweep HOW MANY
+        # rows diverge but not WHICH, so a pin naming w.sec0/w.sec1/w.half2 could
+        # be neither confirmed nor go stale -- measured 2026-09-10, when exactly
+        # that pin read "3 known row(s) NO LONGER DIVERGING" while all three were
+        # still failing. An unvalidatable pin is worse than no pin.
+        if got != want:
+            print(f"DIFF {label}  wants={want}  has={got}")
 
     # `DIFF: n/m` is the summary line `filed_row_sweep.py` already parses. Without
     # it this probe SCORES (it returns 1 on a mismatch) but reports in a format the

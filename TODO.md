@@ -434,7 +434,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:13207 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:13245 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -599,7 +599,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:3404 (T-6FE392)8 (T-529ABE)` from `TODO.md:12144 (T-529ABE)`: a
+      `TODO.md:3442 (T-6FE392)8 (T-529ABE)` from `TODO.md:12182 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -1341,11 +1341,49 @@ list. **When a slice lands, grep this list for what it just shipped.**
       🔬 Both arms are selftested by planting: a fabricated orphan and a
       fabricated unnameable pin each go red and name themselves, and the
       committed file is judged by the same code that judges the plants.
-      🤖 AUTONOMOUS — what remains is the half no static gate can reach: a pin
-      whose rows have STOPPED diverging. That needs the sweep's own serial run
-      with the refcache off across all 53 probes, which is hours, not a battery
-      unit. Next pass should run it in slices (`--skip N --limit M`) rather than
-      waiting for a window big enough to do it whole.
+      ✅ **RUN IN FULL 2026-09-10 (D-FILEDSLICE) — ALL 53 PROBES, SERIAL,
+      REFCACHE OFF, IN FOUR SLICES**
+      ([1](scratchpad/filedrow_slice1.out), [2](scratchpad/filedrow_slice2.out),
+      [3](scratchpad/filedrow_slice3.out), [4](scratchpad/filedrow_slice4.out)).
+      ⏱️ **AND THE ESTIMATE ABOVE WAS WRONG BY AN ORDER OF MAGNITUDE — it is
+      ~20 MINUTES, not hours.** The 900 s per-probe timeout is a ceiling nothing
+      reaches; the slowest probe in the corpus is 94 s and the median is under
+      10. That mattered: "this needs a window we do not have" is why the run had
+      been deferred, and it was a guess about a cost nobody had measured.
+      🟢 **THE HEADLINE IS THE ONE THING NO STATIC GATE CAN REACH — A PIN WHOSE
+      ROWS STOPPED DIVERGING.** `playfn_fixture_probe`'s `empty string, no delay`
+      now reads `-1 0 0 0` on BOTH sides. Removed from the set, per the file's own
+      rule. ⚠️ **Confirmed TWICE before removal** — these are PLAY *timing* rows
+      and pulling a pin on a flake is worse than leaving it; two independent runs
+      give an identical divergence set
+      ([`.out`](scratchpad/playfn_recheck.out), [2](scratchpad/playfn_recheck2.out)).
+      🔴 **NO CAUSE IS CLAIMED**; the other three transient rows still differ, so
+      the class is not closed, only this member
+      [[a-mechanism-inferred-from-one-observation]].
+      🔴 **FOUR PROBES READ UNFILED — AND THREE WERE DEBT FROM THIS SESSION'S OWN
+      SLICES**, which is this entry's standing shape, *"the debt a new probe
+      leaves"*, recurring inside a single night. All adjudicated from the RUN:
+      `asciidigit_probe` (2), `putdomain_probe` (8), `dskibytes_probe` (3) and
+      `bareform_probe` (1, apparatus-bounded: both references read `<none>`
+      because `CLOAD` waits for tape). Two more had no verdict channel and are
+      now declared NO-VERDICT with their kind established from the probe rather
+      than the family name: `deffn_nestdepth_probe`, `dskilow_probe`.
+      🔴 **THE PHANTOM-SUMMARY BUG HAPPENED A THIRD TIME, IN MY OWN PROBE.**
+      `asciidigit_probe` printed `  DIFF 2/5 ...`, which `MARKER`'s `^\s*DIFF\s`
+      counts as one more divergent row than the run has — it reported 2 and swept
+      as 3. Same remedy as `reclen_probe`'s `DIFF:` and `reclendom_probe`'s
+      `DIFF total`: the summary now says `rows diverging`. **Three instances says
+      the wording is load-bearing and nothing enforces it.**
+      🎯 **AND VERIFYING THE PINS IS WHAT CAUGHT THE LAST ONE.** Re-run after
+      pinning, six of seven read `[N known]` — and `dskibytes_probe` read
+      `[0 known, ⚠️ 3 known row(s) NO LONGER DIVERGING]` **while all three rows
+      were still failing**. Its `DIFF: n/m` summary says how many diverge but not
+      WHICH, so the pin could be neither confirmed nor go stale. Fixed with
+      per-row `DIFF <label>` lines (D-RECLENV's remedy); now `[3 known]`.
+      **A pin is not filed until the sweep has been re-run and agrees.**
+      🤖 AUTONOMOUS — the corpus is 0 UNFILED / 0 NO-LONGER-DIVERGING as of
+      2026-09-10. Re-run it in slices after any session that adds probes; it
+      costs 20 minutes, and this pass shows the debt lands the same night.
 
 - [x] ✅ **D-OOMTAIL (2026-08-31): the two store-overflow exits share one
       body — +13 B main page 1.** `ctp_oom`'s seven-instruction tail was
@@ -4185,7 +4223,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:12144 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:12182 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

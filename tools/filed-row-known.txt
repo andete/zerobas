@@ -55,7 +55,20 @@ rungap_probe: NO-VERDICT -- measures the HARNESS (step held fixed while run_gap 
 deffn_alias_probe: o.alias; o.aliasnest -- "DEF FN: two formals of ONE call can alias"; the rows ARE the filing
 dupopen_probe: s.same; s.space; s.newtwice; s.modes; s.seqsame; s.reclaim -- "THE SAME FILE ON TWO CHANNELS IS ACCEPTED HERE AND REFUSED ON THE CF-3300". ⚠️ FILED IN PROSE BUT NEVER PINNED: D-DUPOPEN (2026-09-02) characterises all six rows by name in the entry, and the sweep reads THIS FILE, not prose -- so they read UNFILED for two days. The item prices the fix at 165 B of RAM (11 B x FCH_CEIL) and the cheap dirent route is refuted by s.case.
 keystr_probe: k.slot1; k.slot2; k.slot10; k.s1at2; k.none -- NOT-THIS-ONE `KEY n,"str"` (~160 B) + "defaults absent on cold boot"; DECLINED, not unnoticed
-playfn_fixture_probe: one voice, no delay; voice 2, no delay; voice 3 only, no delay; empty string, no delay; width: TIME for FOR 20; width: TIME for FOR 50 -- ⚠️ ONE LINE PER PROBE: the loader keys by probe name, so a SECOND line for the same probe silently REPLACES the first. These six rows belong to TWO different entries. Four are "PLAY(n) start-up window" -- the reference marks a voice active during PLAY's own start-up and zerobas settles instantly; `voice 3 only` and `empty string` are the same transient on another voice and on a string with NO NOTES AT ALL, which is the sharpest of the four. The two `width: TIME` rows are owned by "THE INTERPRETER IS 2.5-3.1x SLOWER THAN THE CF-3300" -- they are TIME readings (2 vs 6, 4 vs 14), not PLAY behaviour. 🔴 4 vs 14 is ~3.5x, ABOVE that entry's filed band even allowing TIME's +/-1 quantisation on small integers -- worth re-reading when it is next priced.
+playfn_fixture_probe: one voice, no delay; voice 2, no delay; voice 3 only, no delay; width: TIME for FOR 20; width: TIME for FOR 50 -- ⚠️ ONE LINE PER PROBE: the loader keys by probe name, so a SECOND line for the same probe silently REPLACES the first. These six rows belong to TWO different entries. Four are "PLAY(n) start-up window" -- the reference marks a voice active during PLAY's own start-up and zerobas settles instantly; `voice 3 only` and `empty string` are the same transient on another voice and on a string with NO NOTES AT ALL, which is the sharpest of the four. The two `width: TIME` rows are owned by "THE INTERPRETER IS 2.5-3.1x SLOWER THAN THE CF-3300" -- they are TIME readings (2 vs 6, 4 vs 14), not PLAY behaviour. 🔴 4 vs 14 is ~3.5x, ABOVE that entry's filed band even allowing TIME's +/-1 quantisation on small integers -- worth re-reading when it is next priced.
+# 🟢 2026-09-10 (D-FILEDSLICE): `empty string, no delay` REMOVED from
+# playfn_fixture_probe above -- it no longer diverges (`-1 0 0 0` on both sides,
+# no DIFFER), which is the file's own rule: "a known row that stops diverging
+# leaves the set". THIS IS THE CASE NO STATIC GATE CAN REACH, and the only
+# reason it was found is that the sweep was actually RUN
+# (scratchpad/playfn_recheck.out, scratchpad/playfn_recheck2.out).
+# ⚠️ CONFIRMED TWICE BEFORE REMOVAL, because these are PLAY TIMING rows and
+# removing a pin on a flake is worse than leaving it: two independent runs give
+# an IDENTICAL divergence set. The other three transient rows STILL differ, so
+# the class is not closed -- only this member of it.
+# 🔴 NO CAUSE IS CLAIMED. Something between 2026-09-05 and today made it
+# agree; naming a commit from one observation is the mechanism-from-one-reading
+# trap, and the row's agreement is the finding either way.
 keylist_probe: d.n1; d.n0; d.n10; d.n11; d.nneg; d.empty -- the SAME entry (`KEY n,"str"` AND `KEY LIST` ARE UNIMPLEMENTED): zerobas answers ERR 2 to every form while the references accept 1..10 and raise ERR 5 outside it. Measured and priced 2026-09-04 (D-KEYSCOUT2); the decision to implement is Joost's, so these are DECLINED-pending-decision, not unnoticed. Added by the slice that created them -- the sweep called them UNFILED within the hour, which is the debt a new probe leaves.
 # ngram13_probe: REMOVED 2026-09-02 -- d.body-l / d.lineno-l / d.body-res are
 # NO-ORACLE, not divergences, and the probe now says so itself (6 scored, 6
@@ -179,3 +192,16 @@ basic_probe_nodisk: k.mks; k.mkd; k.cvs; k.mki; k.cvi; v.dskf; v.cvistr; v.mkifl
 # > SECOND, unexplained reading on top of the partial store: BAKCLR = 0, a value
 # > no argument asked for. That reading is filed with the item, NOT explained.
 # (no `partial_probe:` pin line -- the rows converged.)
+
+# --- ADJUDICATED 2026-09-10 (D-FILEDSLICE), from the first full sweep run in
+# slices. Four probes read UNFILED; THREE OF THEM ARE DEBT FROM THIS SESSION'S
+# OWN SLICES, which is the shape this entry keeps recording -- "the debt a new
+# probe leaves". Each row below is adjudicated from the RUN, not from memory.
+asciidigit_probe: o.as1; n.as5 -- "EIGHT KEYWORDS THE REFERENCE TOKENISES AND ZEROBAS DOES NOT" / D-ASCIIDIGIT: `OPEN"TS.DAT"AS 1` and `NAME"HI.TXT"AS 5` are Syntax error here and work on the reference. 🙋 The `ev_f` ASCII-digit arm is over the 20 B budget and is Joost's call, so DECLINED-pending-decision, not unnoticed. Also pinned to exact values in probes/basic/basic_probe_asciidigit.py (rows 5, pinned 2), so a regression reddens `make asciidigit-acceptance` too
+putdomain_probe: r.255; r.256; r.257; r.300; l1.256; l1.32767; l1.32768; l1.65535 -- "D-PUTDOMAIN: THE REFERENCE'S RECORD OFFSETS ARE WIDER THAN 16 BITS"; 🙋 filed 2026-09-09 awaiting Joost's shape decision (u32 -> float, or LOF alone). r.255 is the live one: LOF reads -256 where the reference reads 65280, inside the domain this tree already supports
+dskibytes_probe: w.sec0; w.sec1; w.half2 -- "EIGHT KEYWORDS THE REFERENCE TOKENISES AND ZEROBAS DOES NOT": zerobas has no `DSKI$` at all, so the window reads zeros on all three rows. Not a wrong implementation -- an absent one, owned by that entry's decision
+bareform_probe: CLOAD -- "no row can carry a hang", the `LOAD"CAS:"` class. ⚠️ BOTH references read `<none>` here because `CLOAD` WAITS FOR TAPE; zerobas answers `legal`. The probe's own output says it: "an absence, not agreement, and each needs a reason". So this is apparatus-bounded, NOT a measured divergence, and pinning it says exactly that rather than letting it read as unnoticed
+# --- and the two with no verdict channel, kind established from the probe, not
+# from the family name (the file's standing rule).
+deffn_nestdepth_probe: NO-VERDICT -- D-FNNESTDEPTH measures how deep the REFERENCES will nest DEF FN calls before failing; a capacity figure, like trapdepth's `D`, with no zerobas comparison column
+dskilow_probe: NO-VERDICT -- its own header says it characterises WHERE the reference's DSKI$ sector lands below $C000; returns only 0 (ran) or 2 (instrument fault), never a differential
