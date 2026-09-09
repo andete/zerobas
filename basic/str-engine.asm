@@ -809,9 +809,7 @@ ev_str_arg:
                 jr      nc,esa_tmm          ; D-STRTM: evaluate FIRST, then defer
                 push    hl
                 pop     ix                  ; IX = cursor past the string operand
-                call    ev_sp
-                cp      ')'
-                jp      nz,ev_f_empty
+                call    evsp_close          ; D-EVSPCLOSE
                 inc     ix
                 jp      flt_int_result      ; LEN/ASC/VAL return ints even when a float
                                             ; is nested in the string arg (float.asm F1;

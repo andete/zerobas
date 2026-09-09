@@ -1031,9 +1031,7 @@ ev_ff_arg:
                 push    bc                  ; guard the selector across the eval
                 call    ev_logic            ; DE = argument (full expression)
                 pop     bc
-                call    ev_sp
-                cp      ')'
-                jp      nz,ev_f_empty       ; unclosed / extra arg -> ERR 2 (as above)
+                call    evsp_close          ; D-EVSPCLOSE
                 inc     ix
                 ; D-F2-2 A2: CHECKED int coercion for PEEK/INP (address domain) and
                 ; VPEEK (VRAM 0..16383) — the arg's FAC/FACTYP is still its own type
@@ -1419,9 +1417,7 @@ ev_ff_cv:
                 jr      nc,cvi_tmm      ; `jr` (D-SCRARITY carve): 1 B
                 push    hl
                 pop     ix                  ; IX = cursor past the string operand
-                call    ev_sp
-                cp      ')'
-                jp      nz,ev_f_empty       ; BUG C class: missing ')' -> deferred syntax err
+                call    evsp_close          ; D-EVSPCLOSE
                 inc     ix
                 ; --- D-MKHOOK: CVI/CVS/CVD belong to the DISK ROM ---------------
                 ; docs/spec-basic-nodisk.md §9. Sited AFTER the operand and the
@@ -1561,9 +1557,7 @@ ev_fre_num:
                 ld      (SH_OP),a
     ENDIF
 ev_fre_close:
-                call    ev_sp
-                cp      ')'
-                jp      nz,ev_f_empty       ; unclosed / second arg -> Syntax error
+                call    evsp_close          ; D-EVSPCLOSE
                 inc     ix
                 push    ix                  ; call_strheap clobbers IX (the cursor)
     IF CLEARPOOL
@@ -1745,9 +1739,7 @@ ev_mc_arg:
                                             ; the empty-parens gate (D-F2-3) uses.
                 inc     ix
                 call    ev_logic            ; DE = argument; FAC/FACTYP = its type
-                call    ev_sp
-                cp      ')'
-                jp      nz,ev_f_empty       ; D-F2-4: missing ')' (extra arg `f(x,y)` /
+                call    evsp_close          ; D-EVSPCLOSE
                                             ; unclosed `f(x`) -> deferred "syntax error"
                 inc     ix
                 ret
@@ -2276,9 +2268,7 @@ vptr_gottype:
                 inc     hl                  ; HL = value field (entry+3)
                 ex      de,hl               ; DE = the value-field address
 vptr_close:
-                call    ev_sp
-                cp      ')'
-                jp      nz,ev_f_empty       ; malformed close (incl. a consumed
+                call    evsp_close          ; D-EVSPCLOSE
                                             ; array subscript with no outer ')') ->
                                             ; the CHECKED deferred FPERR=4 syntax
                                             ; error, not the bare ERRMARK ev_f_err
@@ -2368,9 +2358,7 @@ vptr_unset:
                 ; through a second pass over the tail -- and that is precisely
                 ; the accident abort-chain-returns-into-caller records twice as
                 ; a measured failure. 8 B is the price of not repeating it.
-                call    ev_sp
-                cp      ')'
-                jp      nz,ev_f_empty       ; malformed close -> Syntax error (2)
+                call    evsp_close          ; D-EVSPCLOSE
                 ld      e,3
                 jp      ev_f_defer
 
@@ -2399,9 +2387,7 @@ ev_f_base:
                 jp      nz,ev_f_empty
                 inc     ix
                 call    ev_logic            ; evaluate + discard the index argument
-                call    ev_sp
-                cp      ')'
-                jp      nz,ev_f_empty
+                call    evsp_close          ; D-EVSPCLOSE
                 inc     ix
                 ld      a,$DD               ; BASE is descoped -> expression-error marker
                 ld      (ERRMARK),a
@@ -2460,3 +2446,41 @@ udiv_next:
                 dec     a
                 jr      nz,udiv_lp
                 ret
+
+; \U0001f534 SITED AT THE END OF THE FILE, AND THAT IS NOT ARBITRARY. Inserting it
+; beside `ev_f_empty` (its natural home) pushed `ev_f_digit` 11 B further from
+; the dispatch chain and pasmo refused: "Relative jump out of range on line 594".
+; The dispatch's `jr c,ev_f_digit` was already at its limit, so ANY insertion
+; between the two breaks it. An 11 B helper is not worth converting a `jr` to a
+; `jp` to make room for [[jrslice-slice]].
+; --- evsp_close: the closing-paren check every one-argument factor makes ----
+; D-EVSPCLOSE. `call ev_sp / cp ')' / jp nz,ev_f_empty` stood at EIGHT sites --
+; seven here and one in str-engine.asm -- 8 B each, found by the n-gram carve
+; sweep (scratchpad/pair_carve_scout.py) after it was widened past a
+; two-instruction window. The pair-only version could not see a three-instruction
+; run, and every row it could see said "cannot win: a 3 B call is not cheaper".
+;
+; 🔴 AND THE OBVIOUS FOLD IS WRONG, BECAUSE `ev_f_empty` RETURNS RATHER THAN
+; UNWINDING. It is a DEFERRED error: it stamps FPERR through penderr_set, falls
+; into ev_f_err for the $DD landmark, and ends `ld de,0 / ret` -- no
+; raise_error, no `ld sp,(SAVSTK)`. At the old sites that `ret` returned to the
+; FACTOR'S caller. Behind a `call` it would return to the SITE, which would then
+; execute its own next instruction (`inc ix` at six of the eight) as if the
+; expression had closed correctly [[factoring-a-run-into-a-helper]].
+; 🎯 SO THE HELPER DISCARDS ITS OWN FRAME BEFORE JUMPING OUT, and the stack then
+; looks exactly as it did at the old site.
+; ⚠️ `inc sp` TWICE, NOT `pop hl` OR `pop af`. Both pops are 1 B cheaper and both
+; change what the caller receives: the flags returned through this path are the
+; `cp ')'` NZ (penderr_set preserves the caller's flags across itself on
+; purpose), and DE=0 is the only value ev_f_err sets -- so a `pop af` would hand
+; callers garbage flags and a `pop hl` would clobber HL. Two `inc sp` touch no
+; register and no flag.
+evsp_close:
+                call    ev_sp
+                cp      ')'
+                ret     z                   ; closed: A=')' and Z set, exactly as
+                                            ; the open-coded sites left them
+                inc     sp                  ; discard OUR return address -- the
+                inc     sp                  ; deferred error must return one frame
+                                            ; further out, as it did before
+                jp      ev_f_empty

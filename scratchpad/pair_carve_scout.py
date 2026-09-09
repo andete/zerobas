@@ -238,6 +238,12 @@ def main() -> int:
           "three 3-grams, and all of them are listed. Their savings are NOT "
           "additive -- converting the longest one consumes the sites the shorter "
           "ones were counting. Take the top row, then RE-RUN.")
+    print("\U0001f534 AND `sites` COUNTS SOURCE LINES, NOT ASSEMBLED ONES. D-EVSPCLOSE "
+          "converted the top run's 8 sites and the wall moved by 7 sites' worth: "
+          "one sat inside `IF !G8_RESIDENT`, a switch that is OFF in the shipping "
+          "build, so it costs nothing and can save nothing. Reconcile the measured "
+          "wall against sites x saving BEFORE believing a net -- an unexplained "
+          "gap is where a mis-conversion hides.")
     print("\U0001f534 AND `net` IS A CEILING, NOT A PRICE. It assumes a helper that "
           "cannot fall through; one that can is cheaper, and the three hazards in "
           "this file's docstring are not priced at all. Read them before converting.")

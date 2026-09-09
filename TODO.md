@@ -434,7 +434,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:12707 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:12746 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -599,7 +599,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:3097 (T-6FE392)8 (T-529ABE)` from `TODO.md:11644 (T-529ABE)`: a
+      `TODO.md:3097 (T-6FE392)8 (T-529ABE)` from `TODO.md:11683 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -3705,6 +3705,45 @@ list. **When a slice lands, grep this list for what it just shipped.**
       place to contain its own subject. AST now.
       ✅ **DONE** — both halves.
 
+- [x] ✅ **D-EVSPCLOSE (2026-09-09): THE FIRST N-GRAM CARVE TAKEN —
+      `call ev_sp / cp ')' / jp nz,ev_f_empty` AT EIGHT SITES, +24 B MEASURED**
+      ([`scratchpad/ngram_carve.out`](scratchpad/ngram_carve.out) found it,
+      [`scratchpad/ngram_carve2.out`](scratchpad/ngram_carve2.out) is the re-run
+      with the row consumed). Joost: *"take the 31 B carve"*.
+      📏 **MEASURED FROM A CLEAN TREE, BOTH WALLS**: main page 1 **142 → 161 B**,
+      low region **12 → 17 B**. Combined **+24 B**.
+      🔴 **AND THE OBVIOUS FOLD WOULD HAVE BEEN WRONG.** `ev_f_empty` is a
+      DEFERRED error — it stamps `FPERR` through `penderr_set`, falls into
+      `ev_f_err` for the `$DD` landmark, and ends `ld de,0 / ret`. **No
+      `raise_error`, no `ld sp,(SAVSTK)`.** At the open-coded sites that `ret`
+      returned to the FACTOR'S caller; behind a `call` it would have returned to
+      the SITE, which would then run its own next instruction — `inc ix` at six of
+      the eight — as if the expression had closed correctly. A silent
+      wrong-answer, not a crash [[factoring-a-run-into-a-helper]].
+      🎯 **SO THE HELPER DISCARDS ITS OWN FRAME**: `inc sp` twice before
+      `jp ev_f_empty`, after which the stack is exactly what the old site had.
+      ⚠️ **`inc sp` TWICE, NOT `pop hl` OR `pop af`** — both pops are 1 B cheaper
+      and both change what the caller receives. `penderr_set` deliberately
+      preserves the caller's flags across itself, so the `cp ')'` NZ is part of
+      this path's contract; `pop af` would hand callers garbage flags and `pop hl`
+      would clobber HL. Two `inc sp` touch no register and no flag.
+      🔴 **THE PREDICTION WAS +29 AND THE WALL SAID +24 — AND THE 5 B IS
+      EXPLAINED, NOT SHRUGGED AT.** One of the eight sites sits inside
+      `IF !G8_RESIDENT`, a switch that is OFF in the shipping build, so it costs
+      nothing there and can save nothing. Seven live sites × 5 B − an 11 B helper
+      = **+24**, and the helper is exactly 11 B measured from the symbol table.
+      Everything reconciles; the sweep's `sites` column counts SOURCE lines, and
+      that caveat is now printed by the tool.
+      ⚠️ **SITED AT THE END OF `expr.asm`, AND NOT BY CHOICE.** Its natural home
+      beside `ev_f_empty` pushed `ev_f_digit` 11 B further from the dispatch chain
+      and pasmo refused — *"Relative jump out of range on line 594"*. That `jr`
+      was already at its limit, so ANY insertion between the two breaks it, and an
+      11 B helper is not worth converting a `jr` to a `jp` to make room for.
+      🟢 **GATES**: `make gates` **117/117** with the full emulator tier, plus all
+      five battery-excluded targets re-run BY HAND (D-EXCLROT — this touches a
+      shared evaluator leaf): `diskbasic`, `fat-error`, `input-devices`,
+      `lnblank-say`, `bdos`, all rc=0.
+
 - [ ] 💰 **A 4 B DUP-SPAN THE D-ONLIST FIX CREATED, AND ITS OWN KNIFE FOUND
       IT.** Filed 2026-08-26. `esn_notlineno`'s discriminator
       (`dec de / ld a,d / or e / jr …`) is **byte-identical to `esn_p1`'s own
@@ -3767,7 +3806,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:11644 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:11683 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
