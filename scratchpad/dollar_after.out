@@ -1,0 +1,31 @@
+  d.star    USING"**###";42     vg=[***42]        cf=[***42]        zb=[***42]       
+  d.basic   USING"$$###";42     vg=[  $42]        cf=[$$ 42]        zb=[  $42]          🟡 REFS-SPLIT
+  d.wide    USING"$$#####";42     vg=[    $42]      cf=[$$   42]      zb=[    $42]        🟡 REFS-SPLIT
+  d.full    USING"$$###";12345  vg=[%$12345]      cf=[$$%12345]     zb=[%$12345]        🟡 REFS-SPLIT
+  d.neg     USING"$$###";-42    vg=[ -$42]        cf=[$$-42]        zb=[ -$42]          🟡 REFS-SPLIT
+  d.dec     USING"$$##.##";3.5    vg=[  $3.50]      cf=[$$ 3.50]      zb=[  $3.50]        🟡 REFS-SPLIT
+  d.ovf     USING"$$#";1234   vg=[%$1234]       cf=[$$%1234]      zb=[%$1234]         🟡 REFS-SPLIT
+  d.one     USING"$###";42     vg=[$ 42]         cf=[$ 42]         zb=[$ 42]        
+  d.last    USING"##$";42     vg=[42$]          cf=[42$]          zb=[42$]         
+  d.trail   USING"###$$";42     vg=[ 42]          cf=[ 42$$]        zb=[ 42$$]          🟡 REFS-SPLIT
+  d.stardol USING"**$$###";42     vg=[$42$]         cf=[42$$]         zb=[****$42]        🟡 REFS-SPLIT
+  d.comma   USING"$$#####,";12345  vg=[ $12,345]     cf=[$$12,345]     zb=[ $12,345]       🟡 REFS-SPLIT
+  d.plus    USING"+$$###";42     vg=[  +$42]       cf=[+$$ 42]       zb=[  +$42]         🟡 REFS-SPLIT
+
+=== 0 DIFF: none ; 10 REFS-SPLIT: ['d.basic', 'd.wide', 'd.full', 'd.neg', 'd.dec', 'd.ovf', 'd.trail', 'd.stardol', 'd.comma', 'd.plus'] ===
+   d.star    vg '***42'   cf '***42'   zb '***42'
+   d.basic   vg '  $42'   cf '$$ 42'   zb '  $42'
+   d.wide    vg '    $42'   cf '$$   42'   zb '    $42'
+   d.full    vg '%$12345'   cf '$$%12345'   zb '%$12345'
+   d.neg     vg ' -$42'   cf '$$-42'   zb ' -$42'
+   d.dec     vg '  $3.50'   cf '$$ 3.50'   zb '  $3.50'
+   d.ovf     vg '%$1234'   cf '$$%1234'   zb '%$1234'
+   d.one     vg '$ 42'   cf '$ 42'   zb '$ 42'
+   d.last    vg '42$'   cf '42$'   zb '42$'
+   d.trail   vg ' 42'   cf ' 42$$'   zb ' 42$$'
+   d.stardol vg '$42$'   cf '42$$'   zb '****$42'
+   d.comma   vg ' $12,345'   cf '$$12,345'   zb ' $12,345'
+   d.plus    vg '  +$42'   cf '+$$ 42'   zb '  +$42'
+
+🎯 THE STATE FORK IS `d.stardol`: if the VG-8020 refuses or ignores `**$$`, the two prefixes are MUTUALLY EXCLUSIVE and `$$` can ride PU_FLAGS bit2 with one discriminator; if it honours both, they are independent and `$$` needs state PU_FLAGS does not have.
+refcache: 26 hit, 13 miss, 13 stored

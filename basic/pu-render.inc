@@ -32,6 +32,12 @@ pu_to_field:
                                             ; (trailing separator) is per-STATEMENT
                                             ; and must survive.
                 ld      (PU_FLAGS),a
+                xor     a
+                ld      (PU_TYPE),a         ; D-PUDOLLAR: bit2 is per-FIELD state
+                                            ; too, and this is the only place that
+                                            ; clears it -- ptf_num now PRESERVES
+                                            ; it, and the string exits overwrite
+                                            ; the whole byte with their type.
 ptf_scan:
                 ld      a,(PU_POS)
                 ld      b,a
@@ -70,6 +76,8 @@ ptf_notdot:
                 jp      z,ptf_back
                 cp      '*'
                 jp      z,ptf_star
+                cp      '$'
+                jp      z,ptf_dollar
                 cp      '+'
                 jp      z,ptf_plus
                 call    pchar               ; literal -> emit
@@ -245,6 +253,16 @@ ptf_num_tplus:
                 ld      (PU_FLAGS),a
                 inc     c
 ptf_num_fill:
+                ; D-PUDOLLAR: the two dollars count toward the width exactly as
+                ; the two asterisks do -- `$$###` with 42 is `  $42` on the
+                ; VG-8020, FIVE columns. Done BEFORE the PU_FLAGS load below
+                ; because that load's A is read again by `bit 3` and `bit 6`.
+                ld      a,(PU_TYPE)
+                and     $04
+                jr      z,ptf_num_nodol
+                inc     b
+                inc     b
+ptf_num_nodol:
                 ; D-PUSTAR: the two asterisks COUNT toward the field width --
                 ; measured, `PRINT USING"**##";5` is `***5`, four characters wide,
                 ; and `**##` with 1234 is `1234` with no fill at all.
@@ -275,8 +293,9 @@ ptf_num_w:
                 ld      (PU_W),a
                 ld      a,c
                 ld      (PU_POS),a
-                xor     a
-                ld      (PU_TYPE),a         ; numeric (also CF clear)
+                ld      a,(PU_TYPE)
+                and     $04                 ; numeric, KEEPING D-PUDOLLAR's bit2
+                ld      (PU_TYPE),a         ; (`and` clears CF, as `xor a` did)
                 ret
 ; --- ptf_star: `**` before a `#` run selects ASTERISK FILL (D-PUSTAR) --------
 ; docs/spec-basic-pufloat.md. Both characters are consumed and both count toward
@@ -313,6 +332,63 @@ ptf_star_lit:
                 ld      (PU_POS),a
                 jp      ptf_scan
 
+; --- ptf_dollar: `$$` before a `#` run selects the FLOATING DOLLAR ----------
+; docs/spec-basic-pudollar.md. The same grammatical construct as `**`: a
+; two-character prefix that reserves its own two columns and then acts on the
+; pad region. Both characters are consumed, both count toward the width, and the
+; emitter (sub/printusing.asm pu_emit_tenant) puts a `$` immediately before the
+; digits -- FLOATING against the number rather than fixed at the field's left
+; edge, which is the whole difference between `  $42` and `$$ 42`.
+; 🔴 THE CF-3300 DOES NOT IMPLEMENT THIS SPECIFIER, and that is a capability
+; reading rather than a house style: the SAME machine renders `**###`;42 as
+; `***42`, so it has the construct and is missing this member of it. Following
+; the VG-8020 here is therefore the ordinary "follow the reference that
+; implements it" call the `&` and `\   \` rows already took, NOT the 09-04
+; presentational-split ruling, which does not cover capability gaps.
+; ⚠️ A LONE `$` STAYS A LITERAL -- measured, and on BOTH references: `USING"$###"`
+; with 42 is `$ 42` on all three machines, and `USING"##$"` is `42$`. So is a
+; `$` at the very end of the format.
+; ⚠️ AND THE PAIR MUST BE FOLLOWED BY `#`, which `ptf_star` does NOT require of
+; itself. That is deliberate, not symmetry overlooked: `USING"###$$";42` reads
+; ` 42$$` here and ` 42` on the VG-8020 -- the reference CONSUMES a trailing
+; pair -- and that row is out of scope (see the spec §4). Requiring the `#`
+; keeps it exactly where it already was instead of moving it somewhere third.
+ptf_dollar:
+                ld      a,(PU_POS)
+                inc     a
+                ld      c,a                 ; C = index of the SECOND character
+                ld      a,(PU_FMTLEN)
+                cp      c
+                jr      z,ptf_dollar_lit    ; `$` was the last char -> literal
+                ld      e,c
+                ld      d,0
+                ld      hl,PU_FMT
+                add     hl,de
+                ld      a,(hl)
+                cp      '$'
+                jr      nz,ptf_dollar_lit   ; not a PAIR -> literal
+                inc     c                   ; C = index past BOTH dollars
+                ld      a,(PU_FMTLEN)
+                cp      c
+                jr      z,ptf_dollar_lit    ; the pair ends the format
+                inc     hl
+                ld      a,(hl)
+                cp      '#'
+                jr      nz,ptf_dollar_lit   ; not a numeric field -> literal
+                ld      a,(PU_TYPE)
+                or      $04
+                ld      (PU_TYPE),a
+                ld      a,c
+                ld      (PU_POS),a          ; past BOTH dollars
+                jp      ptf_scan
+ptf_dollar_lit:
+                ld      a,'$'
+                call    pchar
+                ld      a,(PU_POS)
+                inc     a
+                ld      (PU_POS),a
+                jp      ptf_scan
+
 ; --- ptf_plus: a LEADING `+` before a `#` run (D-PUSIGN) --------------------
 ; One character, consumed, and it counts toward the width. ⚠️ A `+` NOT followed
 ; by `#` stays a literal, so `PRINT USING"+A#";5` keeps its plus.
@@ -329,7 +405,18 @@ ptf_plus:
                 add     hl,de
                 ld      a,(hl)
                 cp      '#'
+                jr      z,ptf_plus_sign
+                ; D-PUDOLLAR: `+$$###` -- the sign specifier may be followed by
+                ; the FLOATING-DOLLAR prefix as well as by the run itself.
+                ; MEASURED, and it was a miss on the first build: the VG-8020
+                ; reads `+$$###`;42 as `  +$42`, six columns with the `+` inside
+                ; the field, where this file's `#`-only test made the `+` a
+                ; LITERAL and produced `+  $42` -- the same six characters in the
+                ; wrong order, which is exactly the kind of near-miss a column
+                ; count catches and an error code cannot.
+                cp      '$'
                 jr      nz,ptf_plus_lit
+ptf_plus_sign:
                 ld      a,(PU_FLAGS)
                 set     3,a                 ; sign present, LEADING (bit4 clear)
                 set     5,a                 ; and the character is `+`

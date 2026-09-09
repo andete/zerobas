@@ -154,7 +154,10 @@ pu_main:
                 pop     hl
                 jr      c,pu_endlist        ; (defensive: no field -> stop)
                 ld      a,(PU_TYPE)
-                or      a
+                and     $03                 ; D-PUDOLLAR: bit2 is a numeric-field
+                                            ; MODIFIER, not a type -- the whole
+                                            ; resident cost of the specifier is
+                                            ; this one byte (`or a` -> `and $03`)
                 jr      z,pu_mnum
                 call    pu_do_string
                 jr      pu_msep_chk

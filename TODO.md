@@ -434,7 +434,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:13037 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:13089 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -599,7 +599,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:3234 (T-6FE392)8 (T-529ABE)` from `TODO.md:11974 (T-529ABE)`: a
+      `TODO.md:3286 (T-6FE392)8 (T-529ABE)` from `TODO.md:12026 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -2306,9 +2306,10 @@ list. **When a slice lands, grep this list for what it just shipped.**
       [[measure-the-wall-from-clean]].
       🤖 AUTONOMOUS — the ruling is given; applying it is mine.
 
-- [ ] 🟡 **D-USING (2026-09-09): PRINT USING'S FORMAT VOCABULARY HAS THREE
+- [x] ✅ **D-USING (2026-09-09): PRINT USING'S FORMAT VOCABULARY HAS THREE
       REFERENCE SPLITS, AND ZEROBAS FOLLOWS A DIFFERENT REFERENCE ON DIFFERENT
-      ROWS — 14 rows × 3 machines, 0 DIFF but 3 REFS-SPLIT**
+      ROWS — CLOSED 2026-09-09 (D-PUDOLLAR): THE VERB HAS ONE ORACLE, AND ALL
+      THREE SPLITS ARE NOW GATED — 14 rows × 3 machines, 0 DIFF but 3 REFS-SPLIT**
       ([`scratchpad/using_probe.py`](scratchpad/using_probe.py),
       [`.out`](scratchpad/using_run.out),
       [codes](scratchpad/using_err.out)).
@@ -2369,8 +2370,59 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `$$ 42`, matching the CF-3300's gap rather than choosing a style. The work
       is a real renderer change (reserve two, emit one, float it), not a constant,
       so it is NOT inside the 20 B standing budget until it is priced.
-      🤖 AUTONOMOUS — the call is made (follow the VG-8020, on the capability
-      argument, not the style ruling); what is left is pricing and building it.
+      ✅ **BUILT 2026-09-09 — D-PUDOLLAR, [`docs/spec-basic-pudollar.md`](docs/spec-basic-pudollar.md).
+      8 of 8 in-scope rows now read the VG-8020's answer exactly**
+      ([`scratchpad/dollar_probe.py`](scratchpad/dollar_probe.py),
+      [before](scratchpad/dollar_run.out), [after](scratchpad/dollar_after.out)).
+      💰 **PRICED AND IT DISSOLVED: main page 1 130 → 129 B — ONE byte**, well
+      inside the standing 20 B budget. The whole specifier is a sub-ROM change
+      (1313 → 1184 B, 129 B) because `basic/pu-render.inc` is a page-0 tenant and
+      D-PUEMIT had already moved the pad+emit sub-side; the single resident byte
+      is `or a` → `and $03`. ⚠️ The pre-build estimate was ~60 sub-ROM bytes and
+      the measurement is 129 — short, and recorded as short.
+      🎯 **THE RULE IS ONE SENTENCE: the `$` is CONTENT, not padding.** It takes a
+      column from the VALUE, sits immediately before the digits and after any
+      sign, and the pair adds 2 to the width exactly as `**` does. `s.full`
+      (`$$###`;12345 → `%$12345`) is the row that proves the first half: the `$`
+      pushes six characters into a five-column field, so the ordinary overflow
+      branch fires and the `%` marker costs no code at all.
+      🔴 **AND THE FLAG HAS NO HOME — `PU_FLAGS` IS FULL** (bit0 trailing
+      separator, bit1 wrapped, bit2 `**`, bits3-5 the sign specifier, bit6 `.`,
+      bit7 `,` and D-PUEXP). It rides **`PU_TYPE` bit 2**, whose four field types
+      need only bits 0-1: the floating dollar is a MODIFIER on the numeric type,
+      not a type. Every reader masks — `and $03` for the type, `and $04` for the
+      flag. **No new page-3 RAM**, which is what kept this inside the budget.
+      🔬 **ONE PREDICTION MISS, CAUGHT BY A COLUMN COUNT.** `+$$###`;42 read
+      `+  $42` where the VG-8020 reads `  +$42` — the same six characters in the
+      wrong order, invisible to any error code. `ptf_plus` only accepted `#`
+      after the sign, so the `+` fell through to its literal path; it now accepts
+      the `$` prefix too. **This is why the witness is bracketed text and not a
+      code** [[an-unnamed-outcome-reads-as-no-outcome]].
+      🟢 **THE GATE NEEDED A CATEGORY IT DID NOT HAVE, AND ITS ABSENCE WAS
+      ALREADY COSTING TWO ROWS.** `basic_probe_pusing.py` scored only rows where
+      the two references AGREE; splits went to `NO_ORACLE`, printed and never
+      scored. Every `$$` row is a split, so pinning them needed a third category,
+      `CHOSEN`, naming the reference a documented call selected. 🔴 **`x.amp`
+      (`&`) and `x.slash` (`\   \`) have followed the VG-8020 since the verb was
+      written, on this same capability argument, and BOTH sat in `NO_ORACLE` —
+      shipped, deliberate behaviour no gate could redden.** They are `CHOSEN` now
+      too, so the extension pins **nine** rows, not the seven this change is
+      about. ⚠️ A row may join only if the choice is written where a person can
+      read it; a split resolved in a commit message is not resolved.
+      ⚠️ **TWO ROWS ARE OUT OF SCOPE AND ARE CARRIED, NOT DROPPED**
+      [[a-row-written-off-as-out-of-scope-leaves-the-bookkeeping]]. Both were
+      divergent before this change and neither is regressed by it:
+      • `s.trail` `###$$`;42 — vg ` 42`, cf/zb ` 42$$`. The reference CONSUMES a
+        trailing pair. This is why `ptf_dollar` requires a following `#` where
+        `ptf_star` requires nothing: without that test the row would move to a
+        third answer matching nobody.
+      • `s.stardol` `**$$###`;42 — vg `$42$`, cf `42$$`, zb `****$42`. Three
+        machines, three answers, and the VG's is FOUR columns where the two
+        prefixes reserve four. ➡️ **The next row to run is `**$###`** —
+        MS-BASIC's documented combined fill-and-float form is the only reading
+        offered so far that yields four columns, and it is a hypothesis from one
+        observation until that row exists
+        [[a-mechanism-inferred-from-one-observation]].
 
 - [x] ✅ **D-GETREC — CLOSED 2026-09-09, 6 DIFF → 0. `GET`/`PUT`'s RECORD ERRORS WERE UNTRAPPABLE,
       AND ZEROBAS'S RULE IS NOT THE REFERENCE'S RULE — 6 rows, MEASURED, NOT FIXED**
@@ -4015,7 +4067,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:11974 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:12026 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -12600,7 +12652,7 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       | `r.start` | `RENUM 100` | `7,120` |
       | `r.step` | `RENUM 100,,5` | `7,110` |
       | `r.goto` | `RENUM` (forward `GOTO`) | `5,40` |
-      | `d.one` | `DELETE 20` | `5,30` |
+      | `s.one` | `DELETE 20` | `5,30` |
       | `d.range` | `DELETE 20-30` | `0,0` |
       | `d.from` | `DELETE -20` | `u5,30` |
       🎯 **THE READOUT IS `(ERR, ERL)`, NOT A LISTING.** Diffing `LIST` across

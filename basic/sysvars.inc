@@ -3268,6 +3268,14 @@ PU_FMTLEN       equ     $EEF6   ; live format length (1)
 PU_POS          equ     $EEF7   ; current scan index into PU_FMT (1)
 PU_W            equ     $EEF8   ; current field width (1)
 PU_TYPE         equ     $EEF9   ; field type: 0 num #, 1 str &, 2 str !, 3 str \..\ (1)
+                                ; BIT2 = D-PUDOLLAR's floating `$`, a MODIFIER on
+                                ; the numeric type rather than a type of its own.
+                                ; It lives here because PU_FLAGS is FULL (bit0
+                                ; trailing separator, bit1 wrapped, bit2 `**`,
+                                ; bits3-5 the sign specifier, bit6 `.`, bit7 `,`
+                                ; and D-PUEXP) while PU_TYPE's four values need
+                                ; only bits 0-1. Every reader must therefore mask:
+                                ; `and $03` for the type, `and $04` for the flag.
 PU_FLAGS        equ     $EEFA   ; bit0 = trailing separator (suppress NL); bit1 = wrapped (1)
 PU_WP           equ     $EEFB   ; pu_fmt_int scratch write pointer (2) -- ALIASED by
                                 ; PU_COMMAS / PU_DEC below; see the block there

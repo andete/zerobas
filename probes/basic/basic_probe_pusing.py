@@ -133,6 +133,30 @@ CASES = [
     ("a.full",     'PRINT USING"**##";1234'),
     ("a.dot",      'PRINT USING"**#.##";1.5'),
 
+    # --- '$$' floating dollar (D-PUDOLLAR, docs/spec-basic-pudollar.md) ------
+    # ⚠️ `s.` FOR THE DOLLAR SIGN, BECAUSE `d.` IS TAKEN -- by D-PUDOT's 29
+    # DECIMAL rows. Written as `d.*` first, and the collision was silent in
+    # exactly the way that matters: `EXPECT` is a dict, so `d.neg` and `d.wide`
+    # OVERWROTE the decimal pins of the same name and the survey still printed
+    # "0 disagree". Check a row-name prefix is free the way a file name is
+    # [[check-the-name-is-free-before-cat-heredoc]].
+    # 🔴 THE REFERENCES SPLIT ON EVERY ONE OF THESE, and they are scored anyway
+    # -- see CHOSEN below. The CF-3300 does not implement the specifier; its own
+    # `a.basic` row is what says so, because `**` and `$$` are the same
+    # construct and it renders `**##`;5 correctly.
+    ("s.wide",     'PRINT USING"$$#####";42'),
+    ("s.full",     'PRINT USING"$$###";12345'),
+    ("s.neg",      'PRINT USING"$$###";-42'),
+    ("s.dec",      'PRINT USING"$$##.##";3.5'),
+    ("s.ovf",      'PRINT USING"$$#";1234'),
+    ("s.comma",    'PRINT USING"$$#####,";12345'),
+    ("s.plus",     'PRINT USING"+$$###";42'),
+    # ⚠️ THE TWO ROWS WHERE A LONE `$` MUST STAY A LITERAL. Both references
+    # AGREE on these, so they need no ruling -- they are the fence that stops a
+    # future widening of the recogniser from eating an ordinary currency sign.
+    ("s.one",      'PRINT USING"$###";42'),
+    ("s.last",     'PRINT USING"##$";42'),
+
     # --- '^^^^' exponential --------------------------------------------------
     ("e.basic",    'PRINT USING"##.##^^^^";1.5'),
     ("e.big",      'PRINT USING"#.#^^^^";1234'),
@@ -177,10 +201,54 @@ CASES = [
     ("x.dollar",   'PRINT USING"$$##";5'),
     ("x.amp",      'PRINT USING"&";"ABC"'),
     ("x.slash",    'PRINT USING"\\   \\";"ABCDE"'),
+    # 🔴 D-PUDOLLAR's TWO OUT-OF-SCOPE ROWS. The fix implements `$$` BEFORE a
+    # `#` run and nothing else, so these two stay divergent -- and they are
+    # carried here rather than left unwritten, because out of scope for the FIX
+    # is not out of scope for the DENOMINATOR
+    # [[a-row-written-off-as-out-of-scope-leaves-the-bookkeeping]].
+    #   s.trail    `###$$`;42   vg ` 42`      cf/zb ` 42$$`
+    #              -- the VG-8020 CONSUMES a trailing pair and emits nothing.
+    #   s.stardol  `**$$###`;42 vg `$42$`     cf `42$$`   zb `****$42`
+    #              -- three machines, three answers. The VG's is four columns
+    #              wide where both prefixes together reserve four, so it is
+    #              parsing something this file has not identified; the next row
+    #              to run is `**$###`, MS-BASIC's documented combined form.
+    ("s.trail",    'PRINT USING"###$$";42'),
+    ("s.stardol",  'PRINT USING"**$$###";42'),
 ]
 
-# rows whose two references DISAGREE: carried for the record, never scored
-NO_ORACLE = {"x.dollar", "x.amp", "x.slash"}
+# rows whose two references DISAGREE and where NOTHING has chosen between them:
+# carried for the record, never scored.
+NO_ORACLE = {"x.dollar", "s.trail", "s.stardol"}
+
+# 🎯 ROWS WHERE THE REFERENCES SPLIT AND A DOCUMENTED CALL SELECTS ONE OF THEM.
+# Until D-PUDOLLAR there was no such category, and its absence was a hole rather
+# than a simplification: `x.amp` and `x.slash` have followed the VG-8020 since
+# the verb was written -- on the same capability argument, the CF-3300 raises
+# ERR 5 on two string specifiers it does not implement -- and BOTH sat in
+# NO_ORACLE, i.e. shipped behaviour that no gate could redden.
+# ⚠️ AND THEY LEAVE NO_ORACLE WHEN THEY JOIN: a row in both sets makes the
+# survey's own "carried as NO-ORACLE" tally wrong, which is a readout claiming
+# less coverage than the file has.
+# ⚠️ A ROW BELONGS HERE ONLY IF THE CHOICE IS WRITTEN DOWN SOMEWHERE A PERSON
+# CAN READ. `$$` is docs/spec-basic-pudollar.md; the two string rows are
+# D-USING in TODO.md. A split resolved in a commit message is not resolved.
+# ⚠️ AND `x.dollar` IS DELIBERATELY *NOT* HERE. It is `$$##`;5, the same shape
+# as `s.wide`, and pinning both would gate one fact twice while reading as two;
+# it stays the NO-ORACLE row it has always been so the diff shows what changed.
+CHOSEN = {
+    "s.wide":   "vg8020",
+    "s.full":   "vg8020",
+    "s.neg":    "vg8020",
+    "s.dec":    "vg8020",
+    "s.ovf":    "vg8020",
+    "s.comma":  "vg8020",
+    "s.plus":   "vg8020",
+    "x.amp":    "vg8020",
+    "x.slash":  "vg8020",
+}
+assert not (set(CHOSEN) & {"s.trail", "s.stardol", "x.dollar"}), \
+    "a CHOSEN row cannot also be an unresolved split"
 
 
 def run(side, stmt):
@@ -252,6 +320,15 @@ EXPECT = {
     'a.neg'         : "'**-5'",
     'a.full'        : "'1234'",
     'a.dot'         : "'**1.50'",
+    's.wide'        : "'    $42'",
+    's.full'        : "'%$12345'",
+    's.neg'         : "' -$42'",
+    's.dec'         : "'  $3.50'",
+    's.ovf'         : "'%$1234'",
+    's.comma'       : "' $12,345'",
+    's.plus'        : "'  +$42'",
+    's.one'         : "'$ 42'",
+    's.last'        : "'42$'",
     'e.basic'       : "' 1.50E+00'",
     'e.big'         : "'0.1E+04'",
     'e.small'       : "'0.1E-02'",
@@ -272,6 +349,8 @@ EXPECT = {
     'e.sign'        : "'+15.00E-01'",
     'e.star'        : "'*150.00E-02'",
     'e.dot0'        : "' 2.E+00'",
+    'x.amp'         : "'ABC'",
+    'x.slash'       : "'ABCDE'",
 }
 
 # rows the references answer differently from each other are NOT in EXPECT at all
@@ -286,7 +365,10 @@ def survey(sides):
     agree = disagree = 0
     for lab, _ in CASES:
         vals = [res[s][lab] for s in sides]
-        if lab in NO_ORACLE:
+        if lab in CHOSEN:
+            tag = f"CHOSEN {CHOSEN[lab]} (refs split; the call is documented)"
+            agree += 1
+        elif lab in NO_ORACLE:
             tag = "NO-ORACLE (refs split; recorded, not scored)"
         elif len(sides) >= 2 and vals[0] == vals[1]:
             tag = "refs agree -> usable target"; agree += 1
@@ -331,8 +413,10 @@ def gate(side):
 def refresh():
     """Re-measure both references and rewrite the EXPECT block in this file."""
     res = survey(["vg8020", "cf3300"])
-    keep = [(l, res["vg8020"][l]) for l, _ in CASES
-            if l not in NO_ORACLE and res["vg8020"][l] == res["cf3300"][l]]
+    keep = [(l, res[CHOSEN[l]][l] if l in CHOSEN else res["vg8020"][l])
+            for l, _ in CASES
+            if l in CHOSEN
+            or (l not in NO_ORACLE and res["vg8020"][l] == res["cf3300"][l])]
     # ⚠️ `v` IS ALREADY A repr() -- run() returns repr(text) so a leading space
     # survives the readout. Writing it bare drops one quote layer and every pin
     # then mismatches by exactly those quotes, which reads as "all 67 rows

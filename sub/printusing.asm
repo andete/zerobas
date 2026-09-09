@@ -173,7 +173,7 @@ psh_done:
 ; `pchar` to the sub-local DETOKBUF append instead.
 ;
 ;   in   PU_NUM holds the rendered digits; PU_W the field width; PU_FLAGS bit2
-;        the asterisk fill
+;        the asterisk fill; PU_TYPE bit2 D-PUDOLLAR's floating `$`
 ;   out  DETOKBUF = pad + digits (or `%` + digits on overflow), 0-terminated
 pu_emit_tenant:
                 ld      de,DETOKBUF
@@ -188,6 +188,17 @@ pet_len:                                    ; one more thing to keep in step
                 inc     b
                 jr      pet_len
 pet_have:
+                ; D-PUDOLLAR: THE FLOATING `$` IS CONTENT, NOT PAD. Counting it
+                ; into the length here is what makes `$$###`;12345 read
+                ; `%$12345` on this machine as it does on the VG-8020: the `$`
+                ; pushes six characters into a five-column field, so the same
+                ; `jr c,pet_over` that serves every other overflow fires, and
+                ; the marker costs no code of its own.
+                ld      a,(PU_TYPE)
+                and     $04
+                jr      z,pet_nodol
+                inc     b
+pet_nodol:
                 ld      a,(PU_W)
                 sub     b                   ; pad = width - length
                 jr      c,pet_over          ; longer than the field -> `%`
@@ -209,6 +220,29 @@ pet_over:
                 call    pchar
 pet_body:
                 ld      hl,PU_NUM
+                ld      a,(PU_TYPE)
+                and     $04
+                jr      z,pet_cp
+                ; The `$` sits immediately before the DIGITS and AFTER any sign:
+                ; `$$###` with -42 is ` -$42` on the VG-8020, not ` $-42`. So a
+                ; leading sign character is emitted first and the `$` follows it.
+                ; ⚠️ `pet_over` FALLS THROUGH to here, which is why the overflow
+                ; form keeps its `$` too -- one path, not two.
+                ld      a,(hl)
+                cp      '-'
+                jr      z,pet_dol_sign
+                cp      '+'
+                jr      nz,pet_dol
+pet_dol_sign:
+                push    hl
+                call    pchar
+                pop     hl
+                inc     hl
+pet_dol:
+                ld      a,'$'
+                push    hl
+                call    pchar
+                pop     hl
 pet_cp:
                 ld      a,(hl)
                 or      a
