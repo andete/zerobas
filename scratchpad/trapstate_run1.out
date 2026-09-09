@@ -1,0 +1,12 @@
+
+verb   case      fires  ZTRAP        decoded  ENA  SVC
+KEY    CLEAR         1      0            OFF    0    0
+KEY    control       1      0            OFF    0    1
+Traceback (most recent call last):
+  File "/Users/joost/projects/zerobas/scratchpad/trapstate_probe.py", line 193, in <module>
+    raise SystemExit(main())
+                     ~~~~^^
+  File "/Users/joost/projects/zerobas/scratchpad/trapstate_probe.py", line 164, in main
+    print(f"{verb:6s} {case:9s} {r['cnt']:>5d} {r.get('aux', 0):>6d} "
+                                 ~^^^^^^^
+KeyError: 'cnt'

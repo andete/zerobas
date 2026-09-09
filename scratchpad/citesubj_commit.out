@@ -1,0 +1,2 @@
+[main 8f12763e] D-CITESUBJ: the proposed fix for "the gate never checks the SUBJECT" is a measured negative; a structural one ships instead
+ 10 files changed, 179 insertions(+), 24 deletions(-)

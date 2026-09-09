@@ -1,0 +1,46 @@
+row                             cf3300                          zb
+k.puttrap                 ERR 7 AT 60                 ERR 7 AT 60 
+k.put3                              OK                          OK
+k.mfwipes              <Out of memory>             <Out of memory>
+k.mfctl                   ERR 7 AT 30                 ERR 7 AT 30 
+x.l3p1                              OK                          OK
+x.l3p0                              OK                          OK
+x.l1p3                              OK                          OK
+x.l0p3                              OK                          OK
+x.l2p2                              OK                          OK
+p.put1                              OK                          OK
+p.put2                              OK                          OK
+p.put3                              OK                          OK
+p.same3                             OK                          OK
+p.close3                            OK                 <NO OUTPUT>
+p.trap3                             OK                          OK
+p.trap2                             OK                          OK
+ctl.128.r6                         BBB                 <NO OUTPUT>
+ctl.128.r5                         AAA                 <NO OUTPUT>
+ctl.128.r7                         CCC                 <NO OUTPUT>
+s.100.r1                           DDD                            
+s.100.r6                           BBB                 <NO OUTPUT>
+s.100.r5                           AAA                 <NO OUTPUT>
+s.100.r7                           CCC                 <NO OUTPUT>
+s.96.r6                            BBB                 <NO OUTPUT>
+
+🔴 p.put3 / p.same3 / p.close3 / p.trap3: zerobas prints NOTHING where the
+   CF-3300 answers OK. ~~the THIRD PUT of a session hangs, untrappably~~ --
+   WITHDRAWN (D-PUT3SLOW 2026-09-02): nothing hangs, every row completes at a
+   longer step. And D-PUTCOST (2026-09-06) then measured the work on the
+   guest's own TIME clock: 1.71 ticks/PUT here against 2.14 on the CF-3300,
+   and this exact three-PUT program runs in 6 ticks = 0.12 s. So it is not
+   slow EITHER, and what makes these rows blank at step=2.5 is UNKNOWN.
+   p.put1/p.put2/p.trap2 are the controls.
+   ⚠️ The zb ctl.128.* rows below are BLIND FOR THAT REASON (they write three
+   records), so they are NOT evidence about record layout.
+
+expect: ctl.* = BBB / AAA / CCC on the CF-3300 (the machinery works);
+        s.100.r6 is the whole question -- BBB means the reference straddles
+        correctly, anything else means its acceptance is not a model to copy.
+
+DIFF p.close3  cf3300='OK'  zb='<NO OUTPUT>'
+DIFF: 1/7  p.close3
+   the PUT-count subject rows only; controls p.put1/p.put2/p.trap2 are in that denominator and must stay green.
+⚠️ 7 row(s) BLIND ON zb AS A CONSEQUENCE of that hang (their programs issue 3+ PUTs), NOT independent divergences: ctl.128.r6 ctl.128.r5 ctl.128.r7 s.100.r6 s.100.r5 s.100.r7 s.96.r6
+   They are named rather than dropped -- an unscored row that vanishes from a report reads as coverage.

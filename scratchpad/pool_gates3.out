@@ -1,0 +1,65 @@
+python3 tools/install-repack-machine.py --merged build/zerobas-main-eu.rom --disk-rom build/disk.rom \
+	  --sub-rom build/sub.rom
+wrote C-BIOS_MSX1_EU_REPACK_DISK  (-> machine "C-BIOS_MSX1_EU_REPACK_DISK": merged repack ROM in slot 0, zerobas-disk in slot 3-1, zerobas-sub in slot 3-2)
+     /Users/joost/.openMSX/share/machines/C-BIOS_MSX1_EU_REPACK_DISK.xml
+python3 tools/install-repack-machine.py --merged build/zerobas-main-eu.rom --sub-rom build/sub.rom \
+	  --no-disk
+wrote C-BIOS_MSX1_EU_REPACK_NODISK  (-> machine "C-BIOS_MSX1_EU_REPACK_NODISK": merged repack ROM in slot 0, slot 3-1 EMPTY (diskless target), zerobas-sub in slot 3-2)
+     /Users/joost/.openMSX/share/machines/C-BIOS_MSX1_EU_REPACK_NODISK.xml
+python3 probes/basic/basic_probe_stackpool.py --gate \
+	        --zb-machine C-BIOS_MSX1_EU_REPACK_DISK 
+
+row            vg8020      cf3300          zb   statement
+c.base         4080 7      3311 7         8 7   (none)             no CLEAR at all -- the baseline
+c.clr200       4079 7      3310 7         8 7   CLEAR 200          small string space; the ladder's foot
+c.clr2200      3793 7      3024 7         8 7   CLEAR 2200         +2000 B of string space
+c.clr4200      3508 7      2738 7         8 7   CLEAR 4200         +4000 B -- the step must be LINEAR if shared
+c.himem        2195 7      2195 7         8 7   CLEAR 200,&HC000   HIMEM lowered outright
+
+bytes per frame, if the pool is shared:
+  vg8020   +2000 B costs   286 frames ( 7.0 B/frame), next +2000 costs   285 ( 7.0 B/frame)   SENSITIVE+LINEAR
+  cf3300   +2000 B costs   286 frames ( 7.0 B/frame), next +2000 costs   286 ( 7.0 B/frame)   SENSITIVE+LINEAR
+  zb       +2000 B costs     0 frames (  -- B/frame), next +2000 costs     0 (  -- B/frame)   INSENSITIVE
+
+c.himem: the two references agree EXACTLY (2195 7) with HIMEM pinned -- one HIMEM-bounded pool, not an array.
+
+zerobas: INSENSITIVE -- known-divergent, pinned (the control-frame-pool arc's headline acceptance).
+
+rows 5  red 0
+STACKPOOL: PASS
+refcache: 0 hit, 3 miss, 3 stored
+python3 probes/basic/basic_probe_trapdepth.py --gate \
+	        --zb-machine C-BIOS_MSX1_EU_REPACK_DISK 
+
+row              vg8020        cf3300            zb   note
+d.depth0       4071 7 0      3302 7 0         8 7 0   plain recursion depth, no trap at all
+d.depth1       4046 7 0      3277 7 0         8 7 0   ...after ONE abandoned dispatch
+d.depth20     4016 7 20     3247 7 20   <NO OUTPUT>   ...after TWENTY abandoned dispatches
+d.ctl20        4040 7 0      3271 7 0         8 7 0   the SAME program, trap unarmed -- the cost of 20 dispatches
+d.selfarm           9 0           9 0           9 0   GUARD: a handler that re-arms its OWN trap, then RETURNs
+
+  vg8020   20 abandoned dispatches cost  24 frames (1.20/dispatch)   reproduces §10
+  cf3300   20 abandoned dispatches cost  24 frames (1.20/dispatch)   reproduces §10
+
+d.depth0   known-divergent, pinned ('4071 7 0', '8 7 0')
+d.depth1   known-divergent, pinned ('4046 7 0', '8 7 0')
+d.depth20  known-divergent, pinned ('4016 7 20', '<NO OUTPUT>')
+d.ctl20    known-divergent, pinned ('4040 7 0', '8 7 0')
+d.selfarm  GUARD  all three must read '9 0': ok
+
+rows 5  pinned 4  guards 1  red 0
+TRAPDEPTH: PASS
+refcache: 0 hit, 3 miss, 3 stored
+python3 probes/basic/basic_probe_ctlcross.py --gate \
+	        --zb-machine C-BIOS_MSX1_EU_REPACK_DISK 
+
+row           vg8020   cf3300       zb   verdict
+x.ctl            1 0      1 0      1 0   ok   FOR opened INSIDE the sub -- nothing interleaves
+x.nxgos          0 1      0 1      1 0   known-divergent, pinned   NEXT inside a sub, FOR opened outside it
+x.nxdeep         0 1      0 1      1 0   known-divergent, pinned   NEXT I across [FOR J][GOSUB][FOR I]
+x.nxagain        0 1      0 1      2 0   known-divergent, pinned   the NEXT resumes the loop body = the GOSUB (R = entry count)
+x.retfor         1 1      1 1      1 1   ok   RETURN over an inner FOR, then NEXT J outside
+
+rows 5  pinned 3  red 0
+CTLCROSS: PASS
+refcache: 0 hit, 3 miss, 3 stored

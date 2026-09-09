@@ -1,0 +1,20 @@
+python3 probes/lib/latch_check.py
+latch-check: chget $118F  chget_wait $1194  trigger $1197
+latch-check: chget_char $11A2  window $11A3-$11AD
+  PASS  A  old injector, forced, predecessor  4 B  -> MANGLED (HL $FBF4)
+  PASS  A  old injector, forced, predecessor  8 B  -> MANGLED (HL $FBF8)
+  PASS  A  old injector, forced, predecessor 14 B  -> MANGLED (HL $FBFE)
+  PASS  B  key_proc,     forced, predecessor  4 B  -> DELIVERED
+  PASS  B  key_proc,     forced, predecessor  8 B  -> DELIVERED
+  PASS  B  key_proc,     forced, predecessor 14 B  -> DELIVERED
+  PASS  C  key_proc,     forced at $1194 (ld hl,(GETPNT))   -> DELIVERED
+  PASS  C  key_proc,     forced at $119B (rst $20)   -> DELIVERED
+  PASS  C  key_proc,     forced at $11A0 (jr chget_wait)   -> DELIVERED
+  PASS  D  D-LATCH injector, forced at $11A3 (push af) -> MANGLED (swallow 1, chain '4321', frozen body, no drain guard)
+  PASS  D  D-LATCH injector, forced at $11AD (ld (GETPNT),hl) -> MANGLED (swallow 1, chain '4321', frozen body, no drain guard)
+  PASS  D  D-LATCH injector, forced at $11AA (ld hl,KEYBUF (wrap)) -> MANGLED (swallow 1, chain '4321', frozen body, no drain guard)
+  PASS  E  key_proc,          forced at $11A3 (push af) -> DELIVERED (swallow 0, chain '54321', 3 deferrals)
+  PASS  E  key_proc,          forced at $11AD (ld (GETPNT),hl) -> DELIVERED (swallow 0, chain '54321', 3 deferrals)
+  PASS  E  key_proc,          forced at $11AA (ld hl,KEYBUF (wrap)) -> DELIVERED (swallow 0, chain '54321', 2 deferrals)
+  PASS  F  D-LATCH injector, forced at $11B0 (pop af) -> DELIVERED (swallow 0, chain '54321', frozen body, no drain guard)
+latch-check: 16/16 rows

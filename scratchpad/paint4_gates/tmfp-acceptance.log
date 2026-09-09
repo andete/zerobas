@@ -1,0 +1,63 @@
+python3 tools/install-repack-machine.py --merged build/zerobas-main-eu.rom --disk-rom build/disk.rom \
+	  --sub-rom build/sub.rom
+wrote C-BIOS_MSX1_EU_REPACK_DISK  (-> machine "C-BIOS_MSX1_EU_REPACK_DISK": merged repack ROM in slot 0, zerobas-disk in slot 3-1, zerobas-sub in slot 3-2)
+     /Users/joost/.openMSX/share/machines/C-BIOS_MSX1_EU_REPACK_DISK.xml
+python3 probes/basic/basic_probe_tmfp.py --gate \
+	         
+D-TMFP — of two pending faults, the one that happened FIRST wins   sides: vg8020, cf3300, zb
+==============================================================================
+ok   o.w.fp      vg8020=' 11 '  cf3300=' 11 '  zb=' 11 '
+ok   o.w.tm      vg8020=' 13 '  cf3300=' 13 '  zb=' 13 '
+ok   o.w.fp5     vg8020=' 5 '  cf3300=' 5 '  zb=' 5 '
+ok   o.w.tm5     vg8020=' 13 '  cf3300=' 13 '  zb=' 13 '
+ok   o.cl.fp     vg8020=' 11 '  cf3300=' 11 '  zb=' 11 '
+ok   o.cl.tm     vg8020=' 13 '  cf3300=' 13 '  zb=' 13 '
+ok   o.loc.str   vg8020=' 11 '  cf3300=' 11 '  zb=' 11 '
+ok   o.loc.fp    vg8020=' 11 '  cf3300=' 11 '  zb=' 11 '
+ok   o.loc.tm    vg8020=' 13 '  cf3300=' 13 '  zb=' 13 '
+ok   o.if.fp     vg8020=' 11 '  cf3300=' 11 '  zb=' 11 '
+ok   o.if.tm     vg8020=' 13 '  cf3300=' 13 '  zb=' 13 '
+ok   o.pr.fp     vg8020=' 11 '  cf3300=' 11 '  zb=' 11 '
+ok   o.pr.tm     vg8020=' 13 '  cf3300=' 13 '  zb=' 13 '
+ok   o.imp.fp    vg8020=' 11 '  cf3300=' 11 '  zb=' 11 '
+ok   o.imp.tm    vg8020=' 13 '  cf3300=' 13 '  zb=' 13 '
+ok   o.let.fp    vg8020=' 11 '  cf3300=' 11 '  zb=' 11 '
+ok   o.let.tm    vg8020=' 13 '  cf3300=' 13 '  zb=' 13 '
+ok   o.ary.fp    vg8020=' 11 '  cf3300=' 11 '  zb=' 11 '
+ok   o.ary.tm    vg8020=' 13 '  cf3300=' 13 '  zb=' 13 '
+ok   o.els.fp    vg8020=' 11 '  cf3300=' 11 '  zb=' 11 '
+ok   o.els.tm    vg8020=' 13 '  cf3300=' 13 '  zb=' 13 '
+ok   o.chan.fp   vg8020=' 11 '  cf3300=' 11 '  zb=' 11 '
+ok   o.chan.tm   vg8020=' 13 '  cf3300=' 13 '  zb=' 13 '
+ok   n.tm.w      vg8020=' 13 '  cf3300=' 13 '  zb=' 13 '   [NEGATIVE CONTROL — a type fault ALONE is still 13]
+ok   n.fp.w      vg8020=' 11 '  cf3300=' 11 '  zb=' 11 '   [POSITIVE CONTROL]
+ok   n.fp5.w     vg8020=' 5 '  cf3300=' 5 '  zb=' 5 '
+ok   n.tm.loc    vg8020=' 13 '  cf3300=' 13 '  zb=' 13 '   [POSITIVE CONTROL]
+ok   n.tm.if     vg8020=' 13 '  cf3300=' 13 '  zb=' 13 '
+ok   n.tm.let    vg8020=' 13 '  cf3300=' 13 '  zb=' 13 '
+ok   n.tm.ary    vg8020=' 13 '  cf3300=' 13 '  zb=' 13 '
+ok   n.fp.ary    vg8020=' 11 '  cf3300=' 11 '  zb=' 11 '   [NEGATIVE CONTROL — a numeric fault ALONE at the third hand-rolled copy]
+ok   n.tm.chan   vg8020=' 13 '  cf3300=' 13 '  zb=' 13 '   [NEGATIVE CONTROL — D-BADFNUM §6's row; TM-alone, cannot discriminate order]
+ok   n.fp.chan   vg8020=' 11 '  cf3300=' 11 '  zb=' 11 '
+ok   n.tm.pdl    vg8020=' 13 '  cf3300=' 13 '  zb=' 13 '   [NEGATIVE CONTROL — PDL defers to a TM-alone fault]
+ok   n.tm.rnd    vg8020=' 13 '  cf3300=' 13 '  zb=' 13 '   [NEGATIVE CONTROL — ev_mc_arg_checked's TM-alone half]
+ok   n.tm.hex    vg8020=' 13 '  cf3300=' 13 '  zb=' 13 '   [NEGATIVE CONTROL — HEX$'s TM-alone promotion]
+ok   n.tm.lof    vg8020=' 13 '  cf3300=' 13 '  zb=' 13 '   [NEGATIVE CONTROL — fch_check's string-channel test]
+ok   r.pdl       vg8020=' 11 '  cf3300=' 11 '  zb=' 11 '
+ok   r.rnd       vg8020=' 11 '  cf3300=' 11 '  zb=' 11 '
+ok   r.hex       vg8020=' 11 '  cf3300=' 11 '  zb=' 11 '
+ok   r.lof       vg8020=' 11 '  cf3300=' 11 '  zb=' 11 '
+ok   u.fp.w      vg8020='Division by zero in 10'  cf3300='Division by zero in 10'  zb='Division by zero in 10'   [POSITIVE CONTROL]
+ok   u.w.fp      vg8020='Division by zero in 10'  cf3300='Division by zero in 10'  zb='Division by zero in 10'
+ok   u.w.tm      vg8020='Type mismatch in 10'  cf3300='Type mismatch in 10'  zb='Type mismatch in 10'
+ok   u.w.fp5     vg8020='Illegal function call in 10'  cf3300='Illegal function call in 10'  zb='Illegal function call in 10'
+ok   u.loc.str   vg8020='Division by zero in 10'  cf3300='Division by zero in 10'  zb='Division by zero in 10'
+ok   u.let.fp    vg8020='Division by zero in 10'  cf3300='Division by zero in 10'  zb='Division by zero in 10'
+ok   u.ary.fp    vg8020='Division by zero in 10'  cf3300='Division by zero in 10'  zb='Division by zero in 10'
+ok   u.chan.fp   vg8020='Division by zero in 10'  cf3300='Division by zero in 10'  zb='Division by zero in 10'
+ok   u.tm.loc    vg8020='Type mismatch in 10'  cf3300='Type mismatch in 10'  zb='Type mismatch in 10'   [POSITIVE CONTROL]
+ROWS: 50 printed, 50 scored — 50 agree, 0 diverge, 0 deferred (not scored)
+==============================================================================
+50/50 readings agree (50 cases, 4 positive controls, 7 negative controls, 0 row(s) with no oracle, 0 DEFERRED row(s) measured but not scored)
+SIDES: vg8020,cf3300,zb — ON ERROR, ERR, WIDTH, CLEAR, LOCATE, IF, PRINT, PDL, RND and HEX$ are core MSX-BASIC, present on every MSX1, so BOTH references are legitimate oracles for those rows; the LOF rows depend on a file system and are expected to be measured, not necessarily oracled, on a cassette-only reference
+DENOMINATOR: (WHICH READER of the two deferred flags: the twelve check_expr_errors sites, reached here via WIDTH / CLEAR / LOCATE (eval_int16_checked), IF, PRINT (exp_num), PRINT's string-operand path (exps_notrel), PRINT # (eval_chan) and A$=<numeric> (els_tc_common); PLUS the two SEPARATE hand-rolled copies of the same ordering that a fix to check_expr_errors would not move at all -- check_expr_errors_popbc (ex_let) and ex_let_arr (arrays.asm); PLUS the four readers that test TMISMATCH and never test FPERR -- fch_check (files.asm, the string-channel test shared by all 12 file verbs), ev_ff_ckpdl and ev_mc_arg_checked (expr.asm), sfr_argok (str-engine.asm)) x (BOTH faults pending vs EACH ALONE, the second being the negative control that must not move) x (the ORDER the two faults occur in, which is the axis the filed item did not have: the SAME two faults concatenated both ways) x (WHICH numeric code: 11 from 1/0 vs 5 from SQR(-1), so the rule is about RANK and not about division) x (whether the caller's own stack cleanup survives the abort -- check_expr_errors_popbc pops a saved key, ex_let_arr pops [OFFSET] and [TYPE], exps_notrel balances an operand-start push) x (TRAPPED vs UNTRAPPED, the second reading the message TEXT, its line number, and whether it printed ONCE). The LOCATE argument-position, clamp and cursor axes are NOT re-measured here: they are `make locarg-acceptance` and `make missing-acceptance`, which are this slice's green control set.

@@ -1,0 +1,11 @@
+main-image source: 70 files scanned
+
+    9 x  ld a,0       -> xor a      (-1 B each; DIFFERS: ALL (xor a clobbers; ld a,0 preserves))
+          basic/cload.asm:795
+          basic/cload.asm:870
+          basic/detok.inc:314
+          basic/detok.inc:350
+          ... +5 more
+
+  ~9 B nominal IF every hit were flag-safe -- which is the whole question,
+  and this scan does NOT answer it. A CANDIDATE COUNT, not a carve.

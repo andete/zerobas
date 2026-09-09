@@ -1,0 +1,8 @@
+D-LOCARG — LOCATE's arguments are CHECKED COERCIONS   sides: zb
+==============================================================================
+--   u.bare       zb='Missing operand in 10'
+--   u.str        zb='Type mismatch in 10'
+ROWS: 2 printed, 0 scored — CHARACTERIZATION (one side)
+==============================================================================
+2 row(s) on zb — no agreement verdict from one side
+refcache: 0 hit, 1 miss, 1 stored

@@ -1,0 +1,11 @@
+
+side       PRGEND    HIMEM   POOL  floor=H-P  headroom   verdict
+vg8020          0    62336      0      62336     62336   🟢 inside the pool floor
+cf3300      65535    56951  65535      -8584    -74119   🔴 STORED 74119 B PAST THE FLOOR
+zb          32991    62336    300      62036     29045   🟢 inside the pool floor
+
+🎯 `PRGEND <= HIMEM - POOLSIZE` is a SELF-CONSISTENCY invariant: it needs
+   no oracle, and it holds whatever a machine reserves per file channel —
+   which is exactly what `crf-oom*` cannot say (D-HIMEMRES: 267 B/channel
+   there vs 50 here).
+refcache: 0 hit, 3 miss, 3 stored

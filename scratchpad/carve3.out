@@ -1,0 +1,53 @@
+D-NGRAM — exact repeated instruction sequences across basic/ + sub/ (21458 instructions)
+
+   B   n   x  each  shape
+--------------------------------------------------------------------------------------------
+  18   4   4     9  ⛔ [TAIL] ld a,$dd | ld (errmark),a | ld de,0 | ret
+                     ⛔ DECLINED — D-EVFERR: a new `jp ev_f_err` is a factor deciding to fail with NO error code, which measured wrong at all seven sites that made it (basic/expr.asm, beside ev_f_err)
+                     basic/expr.asm:725
+                     basic/expr.asm:2379
+                     basic/usr.asm:163
+                     basic/usr.asm:213
+  12   3   4     7  [TAIL] ld (errmark),a | ld de,0 | ret
+                     basic/expr.asm:726
+                     basic/expr.asm:2380
+                     basic/usr.asm:164
+                     basic/usr.asm:214
+  10   6   2    13  [TAIL] call skip_spaces | or a | ret z | cp colon | jp z,exec_stmt ...
+                     basic/print.asm:304
+                     basic/print.asm:388
+   9   4   2    12  [TAIL] call subrom_call | jp c,subrom_absent_error | ld hl,detokbuf | jp print_string
+                     basic/list.asm:260
+                     basic/printusing.asm:261
+   8   4   2    11  [TAIL] call subrom_call | pop ix | jp c,subrom_absent_error | jp fac_dbl_int16
+                     basic/expr.asm:2049
+                     basic/float-arith.asm:2036
+   8   5   2    11  [TAIL] ld (restore_line),hl | xor a | ld (datastate),a | pop hl | jp exec_stmt
+                     basic/program.asm:2119
+                     basic/program.asm:2134
+   8   7   2    11  [TAIL] ld c,a | ld b,0 | push hl | pop de | ld hl,fac ...
+                     basic/arrays.asm:826
+                     basic/vars.asm:707
+   7   4   2    10  [TAIL] ld b,0 | ld de,fac | ldir | jp flt_to_int16
+                     basic/arrays.asm:944
+                     basic/expr.asm:1458
+   7   4   2    10  [TAIL] ld a,(fp_opmode) | or a | jp z,fp_add | jp fp_sub
+                     basic/float-arith.asm:1795
+                     basic/float-arith.asm:1804
+   7   4   2    10  [TAIL] xor a | ld (de),a | ld hl,numbuf | jp print_string
+                     basic/list.asm:283
+                     basic/print.asm:427
+   7   5   2    10  [TAIL] pop hl | ld a,(fperr) | or a | jr nz,fp_runtime_error | jp exec_stmt
+                     basic/interp.asm:899
+                     basic/interp.asm:943
+   7   5   2    10  [TAIL] or a | ret z | cp colon | jp z,exec_stmt | jp exp_loop
+                     basic/print.asm:305
+                     basic/print.asm:389
+   7   6   2    10  [TAIL] ld b,0 | push hl | pop de | ld hl,fac | ldir ...
+                     basic/arrays.asm:827
+                     basic/vars.asm:708
+   7   6   2    10  [TAIL] ld (hl),'' | inc hl | xor a | ld (hl),a | ld hl,foutbuf ...
+                     basic/float.asm:140
+                     basic/float.asm:152
+
+485 positively-priced candidate(s) before dedup.

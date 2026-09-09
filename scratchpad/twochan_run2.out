@@ -1,0 +1,10 @@
+  t.solo  cf3300=<NO READING (only the echo matched)>  zb=     AAA,AAA,AAA
+  t.two   cf3300=<NO READING (only the echo matched)>  zb=     AAA,BBB,AAA
+
+row               cf3300               zb   verdict
+t.solo  <NO READING (only the echo matched)>      AAA,AAA,AAA   🔴 DIFF
+        CONTROL: one channel, no interleaving -- must read AAA,AAA,AAA
+t.two   <NO READING (only the echo matched)>      AAA,BBB,AAA   🔴 DIFF
+        THE ROW: interleaved. Z must be AAA -- BBB means #1 read #2's sector
+
+=== 2 divergence(s): ['t.solo', 't.two'] ===

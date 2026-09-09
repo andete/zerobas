@@ -1,0 +1,22 @@
+python3 tools/install-repack-machine.py --merged build/zerobas-main-eu.rom --disk-rom build/disk.rom \
+	  --sub-rom build/sub.rom
+wrote C-BIOS_MSX1_EU_REPACK_DISK  (-> machine "C-BIOS_MSX1_EU_REPACK_DISK": merged repack ROM in slot 0, zerobas-disk in slot 3-1, zerobas-sub in slot 3-2)
+     /Users/joost/.openMSX/share/machines/C-BIOS_MSX1_EU_REPACK_DISK.xml
+python3 tools/install-repack-machine.py --merged build/zerobas-main-eu.rom --sub-rom build/sub.rom \
+	  --no-disk
+wrote C-BIOS_MSX1_EU_REPACK_NODISK  (-> machine "C-BIOS_MSX1_EU_REPACK_NODISK": merged repack ROM in slot 0, slot 3-1 EMPTY (diskless target), zerobas-sub in slot 3-2)
+     /Users/joost/.openMSX/share/machines/C-BIOS_MSX1_EU_REPACK_NODISK.xml
+python3 probes/basic/basic_probe_fldary.py --gate \
+	        --only d.aryoor2 
+fldary: 1 reading(s) diverge
+D-FLDARY — an ARRAY ELEMENT as a FIELD / LSET / RSET target   sides: cf3300, zb
+==============================================================================
+DIFF d.aryoor2     cf3300='<UNREADABLE: ||||||||||||color   auto    goto    list    run>'  zb='<NO OUTPUT>'   [ONE REFERENCE ONLY (cf3300)]
+ROWS: 1 printed, 1 scored — 0 agree, 1 diverge, 0 without a reference
+==============================================================================
+0/1 readings match their reference (14 cases, 2 positive controls — one per ARM, 1 row(s) with ONE reference only)
+🔴 ORACLE STRENGTH: EVERY row here has ONE reference. FIELD / LSET / RSET are Disk BASIC, which a diskless VG-8020 cannot express — so the whole table rests on the National CF-3300 alone, a weaker claim than every row D-ARYLV rested on. Not upgraded anywhere.
+DENOMINATOR: (subscript FORM: literal / variable) x (RANK: 1-D / 2-D) x (VERB: FIELD / LSET / RSET), plus the out-of-range row at EACH parse site (whose oracle is an ERROR, not a value), plus the two IDENTITY rows the read hook forces — two elements of one array, and an element beside a scalar in ONE FIELD — plus one positive control PER ARM. The d.* rows measure ACCEPTANCE (the parse) and the s.*/r.* rows measure what the field HOLDS; that split is deliberate.
+NOT COVERED, named rather than implied: `RSET` as a distinct PARSE site (it shares lrset_common, so r.fldary measures the store's justify direction only); a subscript that is itself an array element (FIELD#1,10 AS A$(B(1))); FIELD overflow past the record length (unchecked today, unchanged here); ERASE of a fielded array (spec §5.4 — the ARYTAB-relative key goes stale under aeng_erase's compaction, a named limit with a price and NO ORACLE TAKEN); LSET/RSET on a non-FIELDed element (the separate slice-1-limit residual); and the SECOND reference, which does not exist for any row here.
+refcache: 0 hit, 2 miss, 2 stored
+make: *** [fldary-acceptance] Error 1

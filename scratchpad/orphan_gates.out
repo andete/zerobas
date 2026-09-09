@@ -1,0 +1,29 @@
+python3 tools/run_gates.py 
+=== warm-up (serial build of shared artifacts) ===
+
+== tape == (1 files scanned, 15 provenance-bearing)
+  clean — attestations present, no unattested forbidden source
+
+== listing shape == (1049 files swept, 2 allowlisted)
+  [allowed] probes/lib/latch_check.py:82: 2-line listing (5565467e6422) — C-BIOS, same window and same adjudication as the omsx_repl.py entry below: the two comment lines restate the chget_char boundaries this checker scores (D-LATCH2, docs/spec-probe-latch2.md). Surfaced only after knife K1b forced the comment leaders `; # //` into the prefix class — under the first cut this file was invisible, which is the whole reason that fix landed.
+  [allowed] probes/lib/omsx_repl.py:379: 3-line listing (edb676f694b2) — C-BIOS, not a proprietary reference ROM: allowed-sources.md grades C-BIOS source B/Conditional — a peer clean-room reimplementation under BSD-2 whose source this project already patches (cbios-repack/), and NOT the reference implementation zerobas reimplements. The run is 3 instructions of the keyboard-buffer path, in a docstring explaining the D-LATCH2 injection window (docs/spec-probe-latch2.md §5.5); the same docstring is explicit about the line it stays on ("locating chget in the reference needs a disassembly this project does not do"). Probe source, not shipped ROM source. Flagged for the human paper trail 2026-08-06 (D-DOCJUDGE §2.6) — a judgement docs/clean-room-audit.md reserves for a human, which is why it is written down here rather than decided by the tool.
+  clean — no unallowlisted decoded-instruction listings
+
+== hex-dump rows == (1049 files swept, 1 allowlisted)
+  [allowed] tools/audit_citations.py:428: hex-dump row (0c30593198a1) — The check's own synthetic self-test vector (_DUMP_VEC). INVENTED bytes — no provenance, no derivation, not decoded from anything — so recording it forbids nothing; a REAL positive vector would be the artifact this check refuses and would make the tool its own first finding. Unlike check 5's LISTING_LINE this rule is not anchored at line start (a dump lives inside a markdown table cell), so the vector is necessarily a hit on this file. That is turned into the canary rather than worked around: if this line stops matching, check 6 has gone blind and exits 2 rather than printing "clean".
+  clean — no unallowlisted hex-dump rows  (narrow by design: this is the dump ROW only, not the raw-byte class — docs/spec-audit-citations-bytes.md §3.1)
+
+ADVISORY: 4 section header(s) without an inline citation, all acknowledged — review candidates for the human paper trail, not gate failures. The SET is pinned (citations-advisory-allow.txt); the judgement is not.
+
+CLEAN (gating checks). The non-mechanical hop — 'is each cited probe genuinely black-box?' — still requires a human paper-trail pass.
+python3 tools/check_citation_paths.py
+citation-paths: 508 distinct scratchpad/ path(s) cited by 572 committed doc(s)
+
+UNTRACKED (1): commit it (`git add <path>`) — it is in a tracked class
+  scratchpad/casfch_orphan_recheck.out
+      cited by TODO.md
+
+FAIL: 1 of 508 cited scratchpad/ path(s) do not resolve in a fresh clone.
+make[1]: *** [basic-reloc] Error 1
+WARM-UP FAILED:
+make: *** [gates] Error 1

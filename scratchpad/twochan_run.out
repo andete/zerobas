@@ -1,0 +1,11 @@
+  t.solo  cf3300=";X$;",";Y$;",";Z$;"  zb=";X$;",";Y$;",";Z$;"
+  t.two   cf3300=";X$;",";Y$;",";Z$;"  zb=";X$;",";Y$;",";Z$;"
+
+row               cf3300               zb   verdict
+t.solo  ";X$;",";Y$;",";Z$;" ";X$;",";Y$;",";Z$;"   SAME
+        CONTROL: one channel, no interleaving -- must read AAA,AAA,AAA
+t.two   ";X$;",";Y$;",";Z$;" ";X$;",";Y$;",";Z$;"   SAME
+        THE ROW: interleaved. Z must be AAA -- BBB means #1 read #2's sector
+
+=== 0 divergence(s): none ===
+🟢 The shared buffer does not lose data on this interleaving: the reference's per-channel buffers buy correctness zerobas already has by other means.

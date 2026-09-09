@@ -1,0 +1,12 @@
+
+row           vg8020   cf3300       zb   verdict
+x.ctl            1 0      1 0      1 0   ok   FOR opened INSIDE the sub -- nothing interleaves
+x.nxgos          0 1      0 1      0 2   🔴 UNPINNED DIVERGENCE   NEXT inside a sub, FOR opened outside it
+x.nxdeep         0 1      0 1      1 0   🔴 UNPINNED DIVERGENCE   NEXT I across [FOR J][GOSUB][FOR I]
+x.nxagain        0 1      0 1      2 0   🔴 UNPINNED DIVERGENCE   the NEXT resumes the loop body = the GOSUB (R = entry count)
+x.retfor         1 1      1 1      1 1   ok   RETURN over an inner FOR, then NEXT J outside
+
+rows 5  pinned 0  red 3
+  🔴 A PIN MOVED. If the control-frame-pool arc landed, these rows getting FIXED is the news -- REMOVE the pin in the same commit; an un-updated pin is how a fixed row goes back to looking normal.
+CTLCROSS: RED (3)
+refcache: 2 hit, 1 miss, 1 stored

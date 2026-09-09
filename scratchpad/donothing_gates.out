@@ -1,0 +1,29 @@
+python3 tools/run_gates.py 
+=== warm-up (serial build of shared artifacts) ===
+python3 tools/check_sub_walls.py build/sub.rom build/sub.sym
+OK: sub ROM 32768 B, 'CD' @ $0000, 'S1' @ $4000, both wall labels inside their page and both pads verified
+    measure: sub page 0 free       = 1321 B ($0000-$3FFF, the callable-from-main island, __MEAS_SUB_P0_END @ 0x3ad7)
+    measure: sub page 1 free       = 798 B ($4000-$7FFF, the BIOS-visible island, __MEAS_SUB_P1_END @ 0x7ce2)
+python3 tools/check_disk_walls.py build/disk.rom
+OK: disk ROM 16384 B, mapped $4000-$7FFF, 69 pinned entry address(es) parsed from disk/*.asm
+    measure: disk free (0x00 runs >= 16 B) = 8910 B in 32 run(s)
+    the 6 largest, with the pin that bounds each:
+      $68BD-$75A4   3304 B fill   next pin $75A5   room-before-pin 3304 B
+      $5602-$5FE4   2531 B fill   next pin $5FE5   room-before-pin 2531 B
+      $50E3-$53A6    708 B fill   next pin $53A7   room-before-pin 708 B
+      $75A8-$77B7    528 B fill   next pin $77B8   room-before-pin 528 B
+      $4EE1-$4FB7    215 B fill   next pin $4FB8   room-before-pin 215 B
+      $5FE8-$607A    147 B fill   next pin $607B   room-before-pin 147 B
+    measure: largest usable hole = 3304 B at $68BD (bounded by $75A5)
+python3 tools/check_kwtable_identity.py build/basic-reloc.rom build/basic-reloc.sym build/sub.rom build/sub.sym
+FAIL: the sub-ROM `kwtable` is not the pinned table.
+       pinned : 1133 B  sha256 e1915ca9b5fdac46bd18e6dccbf997eb4496e441085acb35b7237987ca3087de
+       walked : 1151 B  sha256 b1266f99a73568bf8f3f4815f6dbed02010f432860a5ce443caab3c741ce417c
+       If you edited basic/kwtable.inc, this is expected — re-read the
+       diff, then update KWTABLE_SIZE/KWTABLE_SHA in this file to the
+       walked values above. If you did NOT, build/sub.rom does not hold
+       what the assembler produced: check tools/pad_rom.py's report and
+       rebuild from clean.
+make[1]: *** [basic-reloc] Error 1
+WARM-UP FAILED:
+make: *** [gates] Error 1

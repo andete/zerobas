@@ -1,0 +1,46 @@
+omsx_repl: 1 of 1 capture(s) MISSING on Philips_VG_8020 -- openMSX terminated ON ITS OWN (exit 1) after 1s wall, before its scheduled capture; the run wrote 0 line(s).  emulator said: Fatal error: No disk drive A present to put image '/tmp/zerobas/zb_at_a.ctl_vg8020.dsk' in.
+  a.ctl     POKE&HC000,0     vg=<none>    cf=no error  zb=no error    🟡 REFS-SPLIT
+omsx_repl: 1 of 1 capture(s) MISSING on Philips_VG_8020 -- openMSX terminated ON ITS OWN (exit 1) after 0s wall, before its scheduled capture; the run wrote 0 line(s).  emulator said: Fatal error: No disk drive A present to put image '/tmp/zerobas/zb_at_kill_vg8020.dsk' in.
+  kill      KILL 5           vg=<none>    cf=ERR 13    zb=ERR 13      🟡 REFS-SPLIT
+omsx_repl: 1 of 1 capture(s) MISSING on Philips_VG_8020 -- openMSX terminated ON ITS OWN (exit 1) after 0s wall, before its scheduled capture; the run wrote 0 line(s).  emulator said: Fatal error: No disk drive A present to put image '/tmp/zerobas/zb_at_name_vg8020.dsk' in.
+  name      NAME 5 AS "X"    vg=<none>    cf=ERR 13    zb=ERR 13      🟡 REFS-SPLIT
+omsx_repl: 1 of 1 capture(s) MISSING on Philips_VG_8020 -- openMSX terminated ON ITS OWN (exit 1) after 0s wall, before its scheduled capture; the run wrote 0 line(s).  emulator said: Fatal error: No disk drive A present to put image '/tmp/zerobas/zb_at_save_vg8020.dsk' in.
+  save      SAVE 5           vg=<none>    cf=ERR 13    zb=ERR 13      🟡 REFS-SPLIT
+omsx_repl: 1 of 1 capture(s) MISSING on Philips_VG_8020 -- openMSX terminated ON ITS OWN (exit 1) after 0s wall, before its scheduled capture; the run wrote 0 line(s).  emulator said: Fatal error: No disk drive A present to put image '/tmp/zerobas/zb_at_load_vg8020.dsk' in.
+  load      LOAD 5           vg=<none>    cf=ERR 13    zb=ERR 13      🟡 REFS-SPLIT
+omsx_repl: 1 of 1 capture(s) MISSING on Philips_VG_8020 -- openMSX terminated ON ITS OWN (exit 1) after 0s wall, before its scheduled capture; the run wrote 0 line(s).  emulator said: Fatal error: No disk drive A present to put image '/tmp/zerobas/zb_at_bload_vg8020.dsk' in.
+  bload     BLOAD 5          vg=<none>    cf=ERR 13    zb=ERR 13      🟡 REFS-SPLIT
+omsx_repl: 1 of 1 capture(s) MISSING on Philips_VG_8020 -- openMSX terminated ON ITS OWN (exit 1) after 0s wall, before its scheduled capture; the run wrote 0 line(s).  emulator said: Fatal error: No disk drive A present to put image '/tmp/zerobas/zb_at_open_vg8020.dsk' in.
+  open      OPEN 5 AS #1     vg=<none>    cf=ERR 13    zb=ERR 13      🟡 REFS-SPLIT
+omsx_repl: 1 of 1 capture(s) MISSING on Philips_VG_8020 -- openMSX terminated ON ITS OWN (exit 1) after 0s wall, before its scheduled capture; the run wrote 0 line(s).  emulator said: Fatal error: No disk drive A present to put image '/tmp/zerobas/zb_at_files_vg8020.dsk' in.
+  files     FILES 5          vg=<none>    cf=ERR 13    zb=ERR 13      🟡 REFS-SPLIT
+omsx_repl: 1 of 1 capture(s) MISSING on Philips_VG_8020 -- openMSX terminated ON ITS OWN (exit 1) after 0s wall, before its scheduled capture; the run wrote 0 line(s).  emulator said: Fatal error: No disk drive A present to put image '/tmp/zerobas/zb_at_play_vg8020.dsk' in.
+  play      PLAY 5           vg=<none>    cf=ERR 13    zb=ERR 13      🟡 REFS-SPLIT
+omsx_repl: 1 of 1 capture(s) MISSING on Philips_VG_8020 -- openMSX terminated ON ITS OWN (exit 1) after 0s wall, before its scheduled capture; the run wrote 0 line(s).  emulator said: Fatal error: No disk drive A present to put image '/tmp/zerobas/zb_at_draw_vg8020.dsk' in.
+  draw      DRAW 5           vg=<none>    cf=ERR 5     zb=ERR 5       🟡 REFS-SPLIT
+omsx_repl: 1 of 1 capture(s) MISSING on Philips_VG_8020 -- openMSX terminated ON ITS OWN (exit 1) after 0s wall, before its scheduled capture; the run wrote 0 line(s).  emulator said: Fatal error: No disk drive A present to put image '/tmp/zerobas/zb_at_lset_vg8020.dsk' in.
+  lset      LSET A$=5        vg=<none>    cf=ERR 13    zb=ERR 13      🟡 REFS-SPLIT
+omsx_repl: 1 of 1 capture(s) MISSING on Philips_VG_8020 -- openMSX terminated ON ITS OWN (exit 1) after 0s wall, before its scheduled capture; the run wrote 0 line(s).  emulator said: Fatal error: No disk drive A present to put image '/tmp/zerobas/zb_at_poke_vg8020.dsk' in.
+  poke      POKE "A",0       vg=<none>    cf=ERR 13    zb=ERR 13      🟡 REFS-SPLIT
+omsx_repl: 1 of 1 capture(s) MISSING on Philips_VG_8020 -- openMSX terminated ON ITS OWN (exit 1) after 0s wall, before its scheduled capture; the run wrote 0 line(s).  emulator said: Fatal error: No disk drive A present to put image '/tmp/zerobas/zb_at_vpoke_vg8020.dsk' in.
+  vpoke     VPOKE "A",0      vg=<none>    cf=ERR 13    zb=ERR 13      🟡 REFS-SPLIT
+omsx_repl: 1 of 1 capture(s) MISSING on Philips_VG_8020 -- openMSX terminated ON ITS OWN (exit 1) after 0s wall, before its scheduled capture; the run wrote 0 line(s).  emulator said: Fatal error: No disk drive A present to put image '/tmp/zerobas/zb_at_out_vg8020.dsk' in.
+  out       OUT "A",0        vg=<none>    cf=ERR 13    zb=ERR 13      🟡 REFS-SPLIT
+omsx_repl: 1 of 1 capture(s) MISSING on Philips_VG_8020 -- openMSX terminated ON ITS OWN (exit 1) after 0s wall, before its scheduled capture; the run wrote 0 line(s).  emulator said: Fatal error: No disk drive A present to put image '/tmp/zerobas/zb_at_locate_vg8020.dsk' in.
+  locate    LOCATE "A",0     vg=<none>    cf=ERR 13    zb=ERR 13      🟡 REFS-SPLIT
+omsx_repl: 1 of 1 capture(s) MISSING on Philips_VG_8020 -- openMSX terminated ON ITS OWN (exit 1) after 0s wall, before its scheduled capture; the run wrote 0 line(s).  emulator said: Fatal error: No disk drive A present to put image '/tmp/zerobas/zb_at_sound_vg8020.dsk' in.
+  sound     SOUND "A",0      vg=<none>    cf=ERR 13    zb=ERR 13      🟡 REFS-SPLIT
+omsx_repl: 1 of 1 capture(s) MISSING on Philips_VG_8020 -- openMSX terminated ON ITS OWN (exit 1) after 0s wall, before its scheduled capture; the run wrote 0 line(s).  emulator said: Fatal error: No disk drive A present to put image '/tmp/zerobas/zb_at_width_vg8020.dsk' in.
+  width     WIDTH "A"        vg=<none>    cf=ERR 13    zb=ERR 13      🟡 REFS-SPLIT
+omsx_repl: 1 of 1 capture(s) MISSING on Philips_VG_8020 -- openMSX terminated ON ITS OWN (exit 1) after 0s wall, before its scheduled capture; the run wrote 0 line(s).  emulator said: Fatal error: No disk drive A present to put image '/tmp/zerobas/zb_at_screen_vg8020.dsk' in.
+  screen    SCREEN "A"       vg=<none>    cf=ERR 13    zb=ERR 13      🟡 REFS-SPLIT
+omsx_repl: 1 of 1 capture(s) MISSING on Philips_VG_8020 -- openMSX terminated ON ITS OWN (exit 1) after 0s wall, before its scheduled capture; the run wrote 0 line(s).  emulator said: Fatal error: No disk drive A present to put image '/tmp/zerobas/zb_at_color_vg8020.dsk' in.
+  color     COLOR "A"        vg=<none>    cf=ERR 13    zb=ERR 13      🟡 REFS-SPLIT
+omsx_repl: 1 of 1 capture(s) MISSING on Philips_VG_8020 -- openMSX terminated ON ITS OWN (exit 1) after 0s wall, before its scheduled capture; the run wrote 0 line(s).  emulator said: Fatal error: No disk drive A present to put image '/tmp/zerobas/zb_at_maxfiles_vg8020.dsk' in.
+  maxfiles  MAXFILES="A"     vg=<none>    cf=ERR 13    zb=ERR 13      🟡 REFS-SPLIT
+omsx_repl: 1 of 1 capture(s) MISSING on Philips_VG_8020 -- openMSX terminated ON ITS OWN (exit 1) after 0s wall, before its scheduled capture; the run wrote 0 line(s).  emulator said: Fatal error: No disk drive A present to put image '/tmp/zerobas/zb_at_time_vg8020.dsk' in.
+  time      TIME="A"         vg=<none>    cf=ERR 13    zb=ERR 13      🟡 REFS-SPLIT
+omsx_repl: 1 of 1 capture(s) MISSING on Philips_VG_8020 -- openMSX terminated ON ITS OWN (exit 1) after 0s wall, before its scheduled capture; the run wrote 0 line(s).  emulator said: Fatal error: No disk drive A present to put image '/tmp/zerobas/zb_at_pset_vg8020.dsk' in.
+  pset      PSET("A",0)      vg=<none>    cf=ERR 13    zb=ERR 13      🟡 REFS-SPLIT
+
+🔴 THE CONTROL ERRORED ({'vg8020': None, 'cf3300': 0, 'zb': 0}) -- the rows below are measuring the form, not the type.

@@ -1,0 +1,5 @@
+pasmo --bin basic/main.asm build/basic-reloc.rom build/basic-reloc.sym
+WARNING: 64KB limit passed inside instruction on line 435 of file basic/main.asm
+WARNING: Switching to 3 pass mode on line 827 of file basic/sysvars.inc
+ERROR: Symbol 'BASIC_IMAGE_OVERRAN_8000_CEILING__TRIM_IT_OR_EVICT_TO_SUBROM' is undefined  on line 418 of file basic/main.asm
+make: *** [build/basic-reloc.sym] Error 1

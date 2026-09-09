@@ -1,0 +1,15 @@
+convertible ROM sites: 18
+  proposals (unique source match): 18  [page1 13, low 5]
+  skipped no-match: 0   skipped ambiguous: 0
+    $4AAA jp    -> str_eval_no          basic/strvar.asm:385
+    $4FFA jp nc -> cvi_tmm              basic/expr.asm:1392
+    $5663 jp z  -> exp_str              basic/print.asm:164
+    $6567 jp    -> bl_load_error        basic/pdfcb-body.inc:53
+    $68C1 jp c  -> dpl_eof              basic/cload.asm:999
+    $68F6 jp c  -> dpl_eof              basic/cload.asm:1043
+    $68FC jp c  -> dpl_eof              basic/cload.asm:1045
+    $6913 jp c  -> dpl_eof              basic/cload.asm:1060
+    $770B jp    -> do_break             basic/program.asm:735
+    $7BFD jp nc -> eon_notfound         basic/program.asm:2204
+    $7C00 jp    -> goto_take_bc         basic/program.asm:2205
+    $7C0D jp nc -> eon_notfound         basic/program.asm:2228

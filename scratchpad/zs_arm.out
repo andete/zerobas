@@ -1,0 +1,21 @@
+python3 tools/install-repack-machine.py --merged build/zerobas-main-eu.rom --disk-rom build/disk.rom \
+	  --sub-rom build/sub.rom
+wrote C-BIOS_MSX1_EU_REPACK_DISK  (-> machine "C-BIOS_MSX1_EU_REPACK_DISK": merged repack ROM in slot 0, zerobas-disk in slot 3-1, zerobas-sub in slot 3-2)
+     /Users/joost/.openMSX/share/machines/C-BIOS_MSX1_EU_REPACK_DISK.xml
+python3 tools/install-repack-machine.py --merged build/zerobas-main-eu.rom --sub-rom build/sub.rom \
+	  --no-disk
+wrote C-BIOS_MSX1_EU_REPACK_NODISK  (-> machine "C-BIOS_MSX1_EU_REPACK_NODISK": merged repack ROM in slot 0, slot 3-1 EMPTY (diskless target), zerobas-sub in slot 3-2)
+     /Users/joost/.openMSX/share/machines/C-BIOS_MSX1_EU_REPACK_NODISK.xml
+python3 probes/basic/basic_probe_locarg.py --gate \
+	        --only t.zero 
+locarg: 1 reading(s) diverge
+D-LOCARG — LOCATE's arguments are CHECKED COERCIONS   sides: vg8020, cf3300, zb
+==============================================================================
+DIFF t.zero       vg8020=' 0  0  0 '  cf3300=' 0  0  0 '  zb=' 0  0  7 '
+ROWS: 1 printed, 1 scored — 0 agree, 1 diverge, 0 deferred (not scored)
+==============================================================================
+0/1 readings agree (45 cases, 4 positive controls, 4 negative controls, 0 row(s) with no oracle, 0 DEFERRED row(s) measured but not scored)
+SIDES: vg8020,cf3300,zb — LOCATE, ON ERROR, ERR, CSRLIN and POS are core MSX-BASIC, present on every MSX1, so BOTH references are legitimate oracles for every row here
+DENOMINATOR: (WHICH argument: column / row / cursor, and each of them reached DIRECTLY or through an OMITTED earlier one) x (WHICH fault: in range, >255, negative, >int16, string, missing operand, a 4th argument, and a DEFERRED expression error) x (whether the deferred fault ALSO overflows int16 -- the discriminator between 'reported for the right reason' and 'reported because nothing overwrote it') x (WHICH deferred code: 11 from 1/0 vs 5 from SQR(-1), so the rule is about RANK and not about division) x (the CURSOR side effect on every row: unchanged on a domain error, applied before a 4th-argument rejection) x (TRAPPED vs UNTRAPPED, the second reading the message text, its line number, and whether it printed ONCE). The POSITION/clamp/omitted-argument axes are NOT re-measured here: they are `make missing-acceptance`, 214 recorded rows, which is this slice's green control set.
+refcache: 0 hit, 3 miss, 3 stored
+make: *** [locarg-acceptance] Error 1

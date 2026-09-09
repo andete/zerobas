@@ -1,0 +1,32 @@
+
+27 alias(es), 21 canonical(s); cutting each canonical to a bare `ret` and scoring with `make unit-test`
+
+  c16_gt                 observed         (2 aliases)
+  c16_lt                 observed         (3 aliases)
+  cpow_x0_pos            observed         (1 alias)
+  ctp_err_pop            🔴 NOT OBSERVED   (1 alias)
+  ctp_link_err           🔴 NOT OBSERVED   (1 alias)
+  dshr_allzero           observed         (1 alias)
+  ed_done                🔴 NOT OBSERVED   (1 alias)
+  elas_err               🔴 label not found in source
+  ers_undef              🔴 NOT OBSERVED   (2 aliases)
+  evmc_sqr_err           🔴 NOT OBSERVED   (1 alias)
+  ex_let_err             observed         (2 aliases)
+  g8_missing             observed         (1 alias)
+  gosub_stk_over         🔴 NOT OBSERVED   (1 alias)
+  nm_fail                🔴 NOT OBSERVED   (1 alias)
+  pl_typeerr             🔴 NOT OBSERVED   (1 alias)
+  print_string           observed         (1 alias)
+  sidr_done              observed         (1 alias)
+  sst_ok                 observed         (1 alias)
+  sst_overflow           🔴 NOT OBSERVED   (1 alias)
+  tm_raise               🔴 NOT OBSERVED   (1 alias)
+  vptr_none              observed         (2 aliases)
+
+observed by the HOST tests alone : 10 / 21
+not observed                     : 10  ['ctp_err_pop', 'ctp_link_err', 'ed_done', 'ers_undef', 'evmc_sqr_err', 'gosub_stk_over', 'nm_fail', 'pl_typeerr', 'sst_overflow', 'tm_raise']
+⚠️  neither (a result, not a green): {'elas_err': 'NO LABEL'}
+
+⚠️ A canonical the host tests do not reach may still be exercised by the
+   EMULATOR battery -- this run bounds the cheap half, it does not close the
+   question for the ones it leaves.

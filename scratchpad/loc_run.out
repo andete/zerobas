@@ -1,0 +1,20 @@
+
+==========================================================================
+APPARATUS FAILURE -- openMSX preflight: NOTHING WAS MEASURED
+==========================================================================
+  machine : National_CF-3300
+  config  : /Applications/openMSX.app/Contents/Resources/share/machines/National_CF-3300.xml
+
+  MISSING     True
+              argv names a cartridge/disk image that does not exist
+
+  FIX: make repack-machine        (rebuilds the ROMs AND reinstalls the
+                                   machine config that points at them)
+
+  A probe booted against this machine would report the absence of the
+  ROM as the absence of the FEATURE -- a whole class of cases failing
+  identically, which reads exactly like a catastrophic regression.
+  Refused instead of measured.  (docs/spec-probe-preflight.md)
+==========================================================================
+
+row             cf3300             zb   what it means

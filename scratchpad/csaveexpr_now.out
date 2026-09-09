@@ -1,0 +1,22 @@
+
+row                           vg8020                      cf3300                          zb
+c.lit          <NO READING> / silent       <NO READING> / silent       <NO READING> / silent   refs agree
+          CSAVE"P"   -- CONTROL: the literal form, accepted on all three
+s.var          <NO READING> / silent       <NO READING> / silent   <NO READING> / load error   refs agree  zb DIFF
+          CSAVE A$   -- THE SUBJECT: a string VARIABLE
+s.expr         <NO READING> / silent       <NO READING> / silent   <NO READING> / load error   refs agree  zb DIFF
+          CSAVE A$+""   -- a string EXPRESSION
+s.bare    <NO READING> / Missing operand  <NO READING> / Missing operand  <NO READING> / Missing operand   refs agree
+          CSAVE   -- CSAVE's OPTIONAL argument
+s.num     <NO READING> / Type mismatch  <NO READING> / Type mismatch   <NO READING> / load error   refs agree  zb DIFF
+          CSAVE 5   -- a NUMERIC operand
+s.speed   <NO READING> / Syntax error  <NO READING> / Syntax error  <NO READING> / Syntax error   refs agree
+          CSAVE,2   -- NO NAME but a speed -- the same csav_noname path
+s.colon   <NO READING> / Missing operand  <NO READING> / Missing operand  <NO READING> / Missing operand   refs agree
+          CSAVE:   -- no name, followed by a colon -- also csav_noname
+c.namesp       <NO READING> / silent       <NO READING> / silent       <NO READING> / silent   refs agree
+          CSAVE"P",2   -- CONTROL: name AND speed, the fully-formed case
+
+read: `trap / screen`. A NON-RAISING error reads `no trap / load error` --
+neither channel alone can say that, which is why both are printed.
+refcache: 0 hit, 48 miss, 48 stored

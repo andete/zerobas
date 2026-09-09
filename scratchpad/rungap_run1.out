@@ -1,0 +1,35 @@
+
+step held at 2.5 (the FAILING value) throughout; only run_gap moves.
+
+  3 PUTs on cf3300:
+    run_gap=  0.5             BBB   ok
+
+  3 PUTs on zb:
+    run_gap=  0.5     <NO OUTPUT>   
+    run_gap=  1.0     <NO OUTPUT>   
+    run_gap=  2.0     <NO OUTPUT>   
+    run_gap=  4.0             BBB   ok
+
+  1 PUT (control) on cf3300:
+    run_gap=  0.5             AAA   
+    run_gap=  1.0             AAA   
+    run_gap=  2.0             AAA   
+    run_gap=  4.0             AAA   
+    run_gap=  8.0             AAA   
+    run_gap= 16.0             AAA   
+
+  1 PUT (control) on zb:
+    run_gap=  0.5             AAA   
+    run_gap=  1.0             AAA   
+    run_gap=  2.0             AAA   
+    run_gap=  4.0             AAA   
+    run_gap=  8.0             AAA   
+    run_gap= 16.0             AAA   
+
+smallest run_gap that completes (emulated seconds):
+                           cf3300         zb
+    3 PUTs                    0.5        4.0
+    1 PUT (control)         >16.0      >16.0
+
+⚠️ at least one row never completed within 16.0s; those cells are BOUNDS, not measurements.
+refcache: 0 hit, 17 miss, 17 stored

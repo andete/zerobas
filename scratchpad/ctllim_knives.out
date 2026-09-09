@@ -1,0 +1,23 @@
+=== baseline: the gate must be GREEN before a cut means anything
+  ROM 7d36a467 aa2caa9c 6bffac04 fe698e19
+  ctllim rc=0 rows=none   scratchpad/ctllim_knives/base.out
+
+=== K-CL1: scv_alloc stops refreshing the floor
+  ROM 7d36a467 aa2caa9c 6bffac04 fe698e19  ->  7d36a467 9a79132c 6bffac04 fe698e19
+  gate rc=2  rows named none  want ['l.ary', 'l.ctl', 'l.scal']  🔴 WRONG   scratchpad/ctllim_knives/K-CL1.out
+
+=== K-CL2: ary_alloc stops refreshing the floor -- ONLY the DIM row may move
+  ROM 7d36a467 9a79132c 6bffac04 fe698e19  ->  7d36a467 3ae99f35 6bffac04 fe698e19
+  gate rc=0  rows named none  want ['l.ary']  🔴 WRONG   scratchpad/ctllim_knives/K-CL2.out
+
+=== K-CL3: the floor is never derived at all
+  ROM 7d36a467 3ae99f35 6bffac04 fe698e19  ->  7d36a467 d549ebff 6bffac04 fe698e19
+  gate rc=0  rows named none  want ['l.ary', 'l.ctl', 'l.scal']  🔴 WRONG   scratchpad/ctllim_knives/K-CL3.out
+
+=== verdict
+  K-CL1  want ['l.ary', 'l.ctl', 'l.scal']  got []  rc=2  🔴
+  K-CL2  want ['l.ary']  got []  rc=0  🔴
+  K-CL3  want ['l.ary', 'l.ctl', 'l.scal']  got []  rc=0  🔴
+🔴 A prediction missed. A red arm that stayed green means the gate cannot see a missing refresh; a green control that reddened means the row is not isolating the hook it names.
+KNIVES: RED (3 wrong, 0 fault(s))
+  restored sub/arrays.asm, sub/strheap.asm byte-identically

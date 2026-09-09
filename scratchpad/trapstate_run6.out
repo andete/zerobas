@@ -1,0 +1,13 @@
+
+verb   case      fires  ZTRAP          decoded  ENA  SVC
+KEY    CLEAR         1    255    no live entry    0    0   
+KEY    control       1    139    e17:SERVICING    0    1   
+KEY    returned      1    137           e17:ON    1    0   
+STRIG  CLEAR         1    255    no live entry    0    0   
+STRIG  control       1     27     e3:SERVICING    0    1   
+STRIG  returned      1     25            e3:ON    1    0   
+
+  KEY    CLEAR=     'no live entry' control=     'e17:SERVICING'   <-- CLEAR MOVED THE STATE
+  STRIG  CLEAR=     'no live entry' control=      'e3:SERVICING'   <-- CLEAR MOVED THE STATE
+
+=== CLEAR moved the trap state on: ['KEY', 'STRIG'] ===

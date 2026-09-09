@@ -1,0 +1,25 @@
+=== VRAM vg8020 (Philips_VG_8020, boot=8.0) ===
+  OK  circle   len=12288 raw_eq=True diff_nibbles=0
+  OK  line     len=12288 raw_eq=True diff_nibbles=0
+  OK  linebf   len=12288 raw_eq=True diff_nibbles=0
+  OK  circarc  len=12288 raw_eq=True diff_nibbles=0
+  OK  paint    len=12288 raw_eq=True diff_nibbles=0
+  VRAM vg8020: 0 raw-DIFF
+
+=== VRAM cf3300 (National_CF-3300, boot=14.0) ===
+  OK  circle   len=12288 raw_eq=True diff_nibbles=0
+  OK  line     len=12288 raw_eq=True diff_nibbles=0
+  OK  linebf   len=12288 raw_eq=True diff_nibbles=0
+  OK  circarc  len=12288 raw_eq=True diff_nibbles=0
+  OK  paint    len=12288 raw_eq=True diff_nibbles=0
+  VRAM cf3300: 0 raw-DIFF
+
+=== VRAM zb (C-BIOS_MSX1_EU_REPACK_DISK, boot=8.0) ===
+  OK  circle   len=12288 raw_eq=True diff_nibbles=0
+  OK  line     len=12288 raw_eq=True diff_nibbles=0
+  OK  linebf   len=12288 raw_eq=True diff_nibbles=0
+  OK  circarc  len=12288 raw_eq=True diff_nibbles=0
+  OK  paint    len=12288 raw_eq=True diff_nibbles=0
+  VRAM zb: 0 raw-DIFF
+
+TOTAL VRAM raw-DIFF across ['vg8020', 'cf3300', 'zb']: 0

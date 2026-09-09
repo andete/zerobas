@@ -1,0 +1,58 @@
+python3 tools/run_gates.py 
+=== warm-up (serial build of shared artifacts) ===
+warm-up 6s
+=== 45 units, J=8, lineerr in 8 shards, nice=0 solo=None ===
+  rc=0      2s  basic-reloc
+  rc=0      0s  subrom-abi-check
+  rc=0      1s  subrom-closure-check
+  rc=2     22s  unit-test
+  rc=0      0s  deadcode
+  rc=0      2s  wall-assertion-check
+  rc=0      0s  redundant-load-check
+  rc=0      1s  rowshape-check
+  rc=0      3s  injector-check
+  rc=0      0s  temp-root-check
+  rc=0      1s  preflight-check
+  rc=0      4s  latch-check
+  rc=0      4s  diskdep-check
+  rc=0      1s  switch-build-check
+  rc=0     28s  kwsweep
+  rc=0      0s  deffn-selftest
+  rc=0     33s  string-acceptance
+  rc=0     18s  str-domain-acceptance
+  rc=0     34s  strparen-acceptance
+  rc=0    151s  penderr-acceptance
+  rc=0     33s  missing-acceptance
+  rc=0     12s  error-acceptance
+  rc=0     64s  error-trap-acceptance
+  rc=0     67s  onerr0-acceptance
+  rc=0     93s  math-acceptance
+  rc=0     82s  float-acceptance
+  rc=0     35s  intarg-acceptance
+  rc=0     35s  logicops-acceptance
+  rc=0    180s  screenerr-acceptance
+  rc=0    129s  tmfp-acceptance
+  rc=0    169s  stmtpend-acceptance
+  rc=0     96s  array-acceptance
+  rc=0    111s  deffn-strict
+  rc=0    284s  graphics-acceptance
+  rc=0     52s  abort-acceptance
+  rc=0    136s  interval-trap-acceptance
+  rc=0     73s  clearpool-acceptance
+  rc=0    104s  lineerr#1/8
+  rc=0    104s  lineerr#2/8
+  rc=0    105s  lineerr#3/8
+  rc=0     95s  lineerr#4/8
+  rc=0     86s  lineerr#5/8
+  rc=0     85s  lineerr#6/8
+  rc=0     73s  lineerr#7/8
+  rc=0     66s  lineerr#8/8
+
+=== retrying 1 red unit(s) SERIALLY (flake vs real) ===
+  retry unit-test: rc 2->0  FLAKE (green on retry)
+
+=== wall 419s (6s build + 413s gates) ===
+GATES: 38/38 green
+recovered flakes (green on serial retry): unit-test
+hashes: 53cb0bd9 ae796ccb 83d18d11
+rc=0

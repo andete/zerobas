@@ -1,0 +1,24 @@
+
+row        vg8020   cf3300       zb   statement
+m.save         24       24       24   SAVE     refs agree   the filed row n.savebare
+m.load         24       24       24   LOAD     refs agree   the filed row n.loadbare
+m.bload        24       24       24   BLOAD    refs agree   the filed row n.bloadbare
+m.let          24       24       24   A$=      refs agree   D-MISS-1's LET mirror, named in the same entry
+m.letop        24       24       24   A$=+     refs agree   the second LET mirror
+c.syn           2        2        2   PRINT)   refs agree   CONTROL: a REAL syntax error
+c.ok            0        0        0   A=1      refs agree   CONTROL: no error at all -> 0
+b.n.emp        24       24       24   A=       refs agree   numeric LET RHS, EMPTY
+b.n.pl         24       24       24   A=+      refs agree   numeric LET RHS, `+` (has a unary form)
+b.n.mi         24       24       24   A=-      refs agree   numeric LET RHS, `-` (has a unary form)
+b.n.mul         2        2        2   A=*      refs agree   🎯 numeric LET RHS, `*` (NO unary form) -- separator
+b.n.div         2        2        2   A=/      refs agree   🎯 numeric LET RHS, `/` (NO unary form) -- separator
+b.s.mul         2        2        2   A$=*     refs agree   🎯 string LET RHS, `*` (NO unary form) -- separator
+b.n.uok         0        0        0   A=+1     refs agree   CONTROL: unary + WITH an operand must be legal -> 0
+b.n.trl        24       24       24   A=1+     refs agree   trailing BINARY `+` -- operand missing on the RIGHT
+b.n.trm        24       24       24   A=1*     refs agree   trailing BINARY `*` -- same shape, no unary form
+b.p.pl         24       24       24   PRINT +  refs agree   the FACTOR position, `+`
+b.p.mul         2        2        2   PRINT *  refs agree   the FACTOR position, `*`
+b.f.pl         24       24       24   SAVE +   refs agree   a FILESPEC position, `+`
+
+read: the CODE is what a message-table entry needs; the WORDING is already filed.
+refcache: 38 hit, 19 miss, 19 stored

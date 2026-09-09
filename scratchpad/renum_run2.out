@@ -1,0 +1,28 @@
+  c.base    None           vg8020=       7,20  cf3300=       7,20  zb=       7,20
+  r.plain   RENUM          vg8020=       7,30  cf3300=       7,30  zb=       7,30
+  r.start   RENUM 100      vg8020=      7,120  cf3300=      7,120  zb=      7,120
+  r.step    RENUM 100,,5   vg8020=      7,110  cf3300=      7,110  zb=      7,110
+  r.goto    RENUM          vg8020=       5,40  cf3300=       5,40  zb=       5,40
+  d.one     DELETE 20      vg8020=       5,30  cf3300=       5,30  zb=       5,30
+  d.range   DELETE 20-30   vg8020=        0,0  cf3300=        0,0  zb=        0,0
+  d.from    DELETE -20     vg8020=      u5,30  cf3300=      u5,30  zb=      u5,30
+
+row       command              vg8020      cf3300          zb   verdict
+c.base    None                   7,20        7,20        7,20   SAME
+          CONTROL: no command -- 7 at line 20
+r.plain   RENUM                  7,30        7,30        7,30   SAME
+          bare RENUM: 10/20/30/40/50, so 7 at 30
+r.start   RENUM 100             7,120       7,120       7,120   SAME
+          new start, default step 10 -> 7 at 120
+r.step    RENUM 100,,5          7,110       7,110       7,110   SAME
+          start AND step, read separately -> 7 at 110
+r.goto    RENUM                  5,40        5,40        5,40   SAME
+          a forward GOTO must be rewritten too
+d.one     DELETE 20              5,30        5,30        5,30   SAME
+          the ERROR 7 line goes -> 5 at 30
+d.range   DELETE 20-30            0,0         0,0         0,0   SAME
+          both error lines go -> no error at all
+d.from    DELETE -20            u5,30       u5,30       u5,30   SAME
+          everything up to 20 -- takes the handler
+
+=== 0 divergence(s): none ===

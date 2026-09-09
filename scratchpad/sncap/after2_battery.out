@@ -1,0 +1,20 @@
+=== warm-up (serial build of shared artifacts) ===
+warm-up 14s
+=== 13 units, J=6, lineerr in 8 shards, nice=0 solo=None ===
+  rc=0    208s  penderr-acceptance
+  rc=0    220s  screenerr-acceptance
+  rc=0    157s  tmfp-acceptance
+  rc=0    207s  stmtpend-acceptance
+  rc=0    126s  deffn-strict
+  rc=0    137s  lineerr#1/8
+  rc=0    127s  lineerr#2/8
+  rc=0    143s  lineerr#3/8
+  rc=0    133s  lineerr#4/8
+  rc=0    106s  lineerr#5/8
+  rc=0    103s  lineerr#6/8
+  rc=0    101s  lineerr#7/8
+  rc=0     89s  lineerr#8/8
+
+=== wall 356s (14s build + 342s gates) ===
+GATES: 6/6 green
+hashes: 41b8c4ed ae796ccb 7d27b871

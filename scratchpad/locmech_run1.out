@@ -1,0 +1,10 @@
+BASE (unmodified):
+    u.bare   'Missing operand in 10'
+    u.str    'Type mismatch in 10'
+
+K-LP1:   ROM 6c02d5d0 52d8a3cf 70c05175 f91f0d00  ->  f5c27f59 52d8a3cf 70c05175 77064ceb
+    u.bare   'Missing operand in 10'                    SAME  (predicted MOVE) 🔴 MISS
+    u.str    'Type mismatch in 10'                      SAME  (predicted SAME) OK
+
+K-LP2:   🔴 K-LP2: KNIFE INERT — the ROM did not change (f5c27f59 52d8a3cf 70c05175 77064ceb); the probe would measure the UNCUT machine, and any 'moved 0 rows' below would be meaningless
+K-LP2: 🔴 BUILD FAILED or ROM UNCHANGED — the cut is INERT, not 'reddened nothing'

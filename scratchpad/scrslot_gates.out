@@ -1,0 +1,58 @@
+python3 tools/run_gates.py 
+=== warm-up (serial build of shared artifacts) ===
+warm-up 10s
+=== refcache OFF for every unit: a gate measures, it never replays (docs/spec-refcache.md §7) ===
+=== emulator tier RUNS: probes/tests/tools or the Makefile changed ===
+=== 4 tree-mutating unit(s), SERIAL (they rewrite a shared tracked file) ===
+  rc=0              1s  switch-build-check
+  rc=0              6s  diskdep-check
+  rc=0              0s  wall-literal-check
+  rc=0             54s  selftest-check
+  (post-mutator refresh 10s -- the plants moved mtimes, so the pool would otherwise race a rebuild)
+=== 111 units, J=8, lineerr in 8 shards, nice=0 solo=None ===
+  rc=0              4s  basic-reloc
+  rc=0              0s  subrom-abi-check
+  rc=0              0s  diskrom-abi-check
+  rc=0              0s  rom-parts-check
+  rc=0              1s  subrom-closure-check
+  rc=0             33s  unit-test
+  rc=0              1s  deadcode
+  rc=2              4s  wall-assertion-check
+  rc=0              0s  ram-claim-check
+  rc=0              0s  redundant-load-check
+  rc=0              2s  rowshape-check
+  rc=0              6s  injector-check
+  rc=0              1s  temp-root-check
+  rc=0              2s  todo-citation-check
+  rc=0              2s  chokepoint-check
+  rc=0              0s  shared-body-check
+  rc=0              0s  probe-reach-check
+  rc=0              0s  battery-membership-check
+  rc=0              0s  fixture-integrity-check
+  rc=0              1s  preflight-check
+  rc=0              6s  latch-check
+  rc=0             30s  kwsweep
+  rc=0             17s  patch-freshness-check
+  rc=0              3s  refcache-check
+  rc=0              0s  knife-guard-check
+  rc=0              1s  knife-rom-guard-check
+  rc=0              0s  deffn-selftest
+  rc=0              1s  banner-acceptance
+  rc=0             37s  string-acceptance
+  rc=0             30s  str-domain-acceptance
+  rc=0             23s  strparen-acceptance
+  rc=0             83s  penderr-acceptance
+  rc=0             81s  missing-acceptance
+  rc=0             12s  error-acceptance
+  rc=0             91s  error-trap-acceptance
+  rc=0            133s  onerr0-acceptance
+  rc=0            164s  math-acceptance
+  rc=0            112s  float-acceptance
+  rc=0             56s  intarg-acceptance
+  rc=0             60s  logicops-acceptance
+  rc=0            313s  screenerr-acceptance
+  rc=0             73s  tmfp-acceptance
+  rc=0             86s  stmtpend-acceptance
+  rc=0            139s  array-acceptance
+  rc=0            170s  deffn-strict
+make: *** [gates] Terminated: 15

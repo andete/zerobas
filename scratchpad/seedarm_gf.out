@@ -1,0 +1,50 @@
+python3 tools/run_gates.py --static 
+=== warm-up (serial build of shared artifacts) ===
+warm-up 7s
+=== refcache OFF for every unit: a gate measures, it never replays (docs/spec-refcache.md §7) ===
+=== SKIPPING 78 emulator target(s): --static: the emulator tier was NOT run ===
+=== 4 tree-mutating unit(s), SERIAL (they rewrite a shared tracked file) ===
+  rc=0              1s  switch-build-check
+  rc=0              5s  diskdep-check
+  rc=0              0s  wall-literal-check
+  rc=0             47s  selftest-check
+  (post-mutator refresh 7s -- the plants moved mtimes, so the pool would otherwise race a rebuild)
+=== 32 units, J=8, lineerr in 8 shards, nice=0 solo=None ===
+  rc=0              3s  basic-reloc
+  rc=0              0s  subrom-abi-check
+  rc=0              0s  diskrom-abi-check
+  rc=0              0s  rom-parts-check
+  rc=0              1s  subrom-closure-check
+  rc=0             25s  unit-test
+  rc=0              0s  deadcode
+  rc=0              3s  wall-assertion-check
+  rc=0              0s  ram-claim-check
+  rc=0              0s  build-assert-check
+  rc=0              3s  needle-case-check
+  rc=0              0s  redundant-load-check
+  rc=0              1s  rowshape-check
+  rc=0              4s  injector-check
+  rc=0              1s  temp-root-check
+  rc=0              2s  todo-citation-check
+  rc=0              0s  todo-marker-check
+  rc=0              0s  deferral-pin-check
+  rc=0              1s  error-alphabet-check
+  rc=0              2s  chokepoint-check
+  rc=0              0s  shared-body-check
+  rc=0              0s  probe-reach-check
+  rc=0              0s  battery-membership-check
+  rc=0              0s  fixture-integrity-check
+  rc=0              1s  preflight-check
+  rc=0              3s  latch-check
+  rc=0             12s  kwsweep
+  rc=0             11s  patch-freshness-check
+  rc=0              2s  refcache-check
+  rc=0              0s  knife-guard-check
+  rc=0              1s  knife-rom-guard-check
+  rc=0              0s  deffn-selftest
+
+=== wall 32s (7s build + 25s gates) ===
+GATES: 36/36 green [STATIC TIER ONLY]
+  ⚠️  78 EMULATOR TARGET(S) NOT RUN — --static: the emulator tier was NOT run
+  ⚠️  this is NOT a full battery; `make gates-full` to force one
+hashes: bd950846 8abf090a 6c5345c2 70c05175

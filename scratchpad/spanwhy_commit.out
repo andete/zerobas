@@ -1,0 +1,3 @@
+[main 2b180f36] D-SPANWHY: the span reader's four Nones now name themselves — and the sweep the entry asked for is not expressible
+ 3 files changed, 169 insertions(+), 10 deletions(-)
+ create mode 100644 tests/test_span_reader.py

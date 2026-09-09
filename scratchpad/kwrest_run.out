@@ -1,0 +1,17 @@
+  k.ctl      ran clean                CONTROL: no new verb at all -- must read 7
+  k.dskostm  ran clean                DSKO$ statement form, as kwsweep writes it
+  k.dskofun  ERR 2                    DSKO$ function form -- the shape DSKI$ turned out to need
+  k.attr     ERR 5                    ATTR$ -- kwsweep calls it MSX-DOS2-era
+  k.cmd      ERR 5                    CMD -- kwsweep calls it a vendor hook, side effects unknown
+  k.setpw    ERR 5                    SET with an argument
+  k.setbare  ERR 5                    SET bare -- is the keyword itself enough to parse?
+  k.ipl      ERR 5                    IPL -- writes a boot sector, hence the private image
+
+🎯 RAN CLEAN: ['k.dskostm']
+   SYNTAX ERROR (the form does not exist): ['k.dskofun']
+   OTHER ERROR FACES: ['k.attr=ERR5', 'k.cmd=ERR5', 'k.setpw=ERR5', 'k.setbare=ERR5', 'k.ipl=ERR5']
+   NEVER CAME BACK: NONE
+
+This probe CHARACTERISES the reference's surface. It does not score zerobas,
+which has none of these keywords (D-KWPIN), and it does not claim to know what
+any of them DOES.

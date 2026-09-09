@@ -1,0 +1,71 @@
+D-NGRAM — exact repeated instruction sequences across basic/ + sub/ (21485 instructions)
+
+   B   n   x  each  shape
+--------------------------------------------------------------------------------------------
+  18   4   4     9  ⛔ [TAIL] ld a,$dd | ld (errmark),a | ld de,0 | ret
+                     ⛔ DECLINED — D-EVFERR: a new `jp ev_f_err` is a factor deciding to fail with NO error code, which measured wrong at all seven sites that made it (basic/expr.asm, beside ev_f_err)
+                     basic/expr.asm:725
+                     basic/expr.asm:2377
+                     basic/usr.asm:163
+                     basic/usr.asm:213
+  16   3   6     7  ⛔ [sub] push de | call push_lhs_frame | call set_factyp_int_ret
+                     ⛔ DECLINED — D-NGRAM (2026-08-29): a FIXED-SIZE FRAME PROTOCOL -- a helper's return address lands INSIDE the frame, and the tail-jump form that avoids that cannot carry the FACTYP reset, because push_lhs_frame captures FACTYP into the frame (basic/float-arith.asm, beside push_lhs_frame)
+                     basic/expr.asm:248
+                     basic/expr.asm:348
+                     basic/expr.asm:360
+                     basic/expr.asm:420
+  16   3   5     7  [TAIL] ld (strptr),hl | pop hl | jp str_eval_ok
+                     basic/str-engine.asm:352
+                     basic/str-engine.asm:1084
+                     basic/str-engine.asm:1644
+                     basic/strvar.asm:405
+  16   4   5     8  ⛔ [sub] inc ix | push de | call push_lhs_frame | call set_factyp_int_ret
+                     ⛔ DECLINED — D-NGRAM (2026-08-29): the same frame protocol -- see basic/float-arith.asm beside push_lhs_frame
+                     basic/expr.asm:347
+                     basic/expr.asm:359
+                     basic/expr.asm:419
+                     basic/expr.asm:427
+  12   3   4     7  [TAIL] ld (errmark),a | ld de,0 | ret
+                     basic/expr.asm:726
+                     basic/expr.asm:2378
+                     basic/usr.asm:164
+                     basic/usr.asm:214
+  12   3   5     7  [sub] jp nz,ev_f_empty | inc ix | call ev_sp
+                     basic/expr.asm:1364
+                     basic/expr.asm:1502
+                     basic/expr.asm:2187
+                     basic/str-engine.asm:773
+  12   3   4     7  [TAIL] call penderr_set | ld de,0 | ret
+                     basic/expr.asm:2000
+                     basic/expr.asm:2134
+                     basic/float-arith.asm:2012
+                     basic/float-arith.asm:2080
+  12   4   5     7  [sub] call skip_spaces | or a | ret z | cp colon
+                     basic/interp.asm:989
+                     basic/print.asm:304
+                     basic/print.asm:388
+                     basic/save.asm:438
+  12  12   2    19  [sub] call ztrap_entry | pop de | inc hl | ld (hl),e | inc hl ...
+                     basic/program.asm:2827
+                     basic/program.asm:2952
+  11   3   4     8  [sub] call skip_spaces | call upcase | cp 'a'
+                     basic/field.asm:328
+                     basic/files.asm:1356
+                     basic/files.asm:1675
+                     basic/save.asm:294
+  11   9   2    18  [sub] push de | call skip_spaces | cp ',' | jp nz,vdp_err | inc hl ...
+                     basic/vdpio.asm:29
+                     basic/vdpio.asm:52
+  10   3   3    10  [sub] ld (diskop_op),a | ld ix,subrom_entry_base_p1+3*subrom_idx_fatprim | call subrom_call
+                     basic/fat.asm:194
+                     basic/fat.asm:235
+                     basic/fat.asm:325
+  10   4   3    10  [sub] call ev_mc_arg_checked | ret nz | ld hl,arga | call widen_rhs_operand
+                     basic/expr.asm:1946
+                     basic/expr.asm:1956
+                     basic/expr.asm:2026
+  10   5   2    13  [TAIL] ld hl,arga | xor a | ld de,32768 | call widen_uint_to | jp round_and_finalize
+                     basic/expr.asm:1824
+                     basic/float-arith.asm:2142
+
+513 positively-priced candidate(s) before dedup.

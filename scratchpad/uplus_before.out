@@ -1,0 +1,29 @@
+
+row            vg8020       cf3300           zb   statement
+c.plain  <NO READING> <NO READING> <NO READING>   A=1 / PRINT A   refs agree
+           CONTROL: no unary operator at all
+c.neg    <NO READING> <NO READING> <NO READING>   A=-1 / PRINT A   refs agree
+           CONTROL: unary MINUS, correct on all three
+f.let    <NO READING> <NO READING> <NO READING>   A=+1 / PRINT A   refs agree
+           the filed form
+f.var    <NO READING> <NO READING> <NO READING>   B=1:A=+B / PRINT A   refs agree
+           unary + on a VARIABLE
+f.paren  <NO READING> <NO READING> <NO READING>   A=(+1) / PRINT A   refs agree
+           inside parentheses
+f.bin    <NO READING> <NO READING> <NO READING>   A=1++2 / PRINT A   refs agree
+           binary + then unary +
+x.dbl    <NO READING> <NO READING> <NO READING>   A=++1 / PRINT A   refs agree
+           🔴 TWO unary pluses -- the identity arm re-enters ev_f
+x.mixed  <NO READING> <NO READING> <NO READING>   A=+-1 / PRINT A   refs agree
+           plus then minus
+x.pow    <NO READING> <NO READING> <NO READING>   A=+2^2 / PRINT A   refs agree
+           binding vs `^` (identity makes both readings 4)
+x.str    <NO READING> <NO READING> <NO READING>   A$="X":B$=+A$ / PRINT B$   refs agree
+           🔴 unary + on a STRING -- unmeasured, and the fix reaches it
+x.strlit <NO READING> <NO READING> <NO READING>   B$=+"X" / PRINT B$   refs agree
+           ...on a string LITERAL
+x.prstr  <NO READING> <NO READING> <NO READING>   A$="X" / PRINT +A$   refs agree
+           ...in the PRINT factor position
+
+0 row(s) where zerobas differs from the CF-3300.
+refcache: 0 hit, 36 miss, 36 stored

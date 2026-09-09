@@ -1,0 +1,3 @@
+[main 7dc2a9a0] D-SCRARITY: SCREEN's argument list stops at five — and the filed row could not say which rule that is
+ 10 files changed, 213 insertions(+), 26 deletions(-)
+ create mode 100644 scratchpad/scrarity_probe.py

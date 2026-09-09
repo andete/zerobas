@@ -1,0 +1,11 @@
+  row t.survive -- A before the statement is 42; ERR is the trapped code
+
+  vg8020   A= 42  ERR= 0
+  cf3300   A= 42  ERR= 0
+  zb       A=  0  ERR= 0
+
+  42 -> rejected BEFORE executing: no CLEAR, variables intact, error
+        trappable.   0 -> MAXFILES ran, its CLEAR wiped the variables,
+        and the trap it also disarmed could not catch what came next.
+
+🔴 CONFIRMED: zerobas wiped the variables where neither reference did.

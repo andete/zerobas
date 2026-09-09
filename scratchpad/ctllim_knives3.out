@@ -1,0 +1,22 @@
+=== baseline: the gate must be GREEN before a cut means anything
+  ROM 7d36a467 aa2caa9c 6bffac04 fe698e19
+  ctllim rc=0 rows=none   scratchpad/ctllim_knives/base.out
+
+=== K-CL1: scv_alloc stops refreshing -- l.ary is GREEN, its own DIM refreshes last
+  ROM 7d36a467 aa2caa9c 6bffac04 fe698e19  ->  7d36a467 9a79132c 6bffac04 fe698e19
+  gate rc=1  rows named ['l.ctl', 'l.scal']  want ['l.ctl', 'l.scal']  ok   scratchpad/ctllim_knives/K-CL1.out
+
+=== K-CL2: ary_alloc stops refreshing the floor -- ONLY the DIM row may move
+  ROM 7d36a467 9a79132c 6bffac04 fe698e19  ->  7d36a467 3ae99f35 6bffac04 fe698e19
+  gate rc=1  rows named ['l.ary']  want ['l.ary']  ok   scratchpad/ctllim_knives/K-CL2.out
+
+=== K-CL3: BOTH allocator hooks removed -- the floor never moves off its reset value
+  ROM 7d36a467 3ae99f35 6bffac04 fe698e19  ->  7d36a467 ca979252 6bffac04 fe698e19
+  gate rc=1  rows named ['l.ary', 'l.ctl', 'l.scal']  want ['l.ary', 'l.ctl', 'l.scal']  ok   scratchpad/ctllim_knives/K-CL3.out
+
+=== verdict
+  K-CL1  want ['l.ctl', 'l.scal']  got ['l.ctl', 'l.scal']  rc=1  ok
+  K-CL2  want ['l.ary']  got ['l.ary']  rc=1  ok
+  K-CL3  want ['l.ary', 'l.ctl', 'l.scal']  got ['l.ary', 'l.ctl', 'l.scal']  rc=1  ok
+KNIVES: PASS
+  restored sub/arrays.asm byte-identically

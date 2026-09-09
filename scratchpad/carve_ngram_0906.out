@@ -1,0 +1,76 @@
+D-NGRAM — exact repeated instruction sequences across basic/ + sub/ (21485 instructions)
+
+   B   n   x  each  shape
+--------------------------------------------------------------------------------------------
+ 266   3  46     9  [sub] ld hl,arga | call widen_fac_to | ld hl,arga
+                     sub/fp_atan.asm:144
+                     sub/fp_atan.asm:158
+                     sub/fp_atan.asm:233
+                     sub/fp_atan.asm:270
+ 191   6  14    18  [sub] ld de,argb | call fat_copy18 | call fp_mul | ld hl,arga | call widen_fac_to ...
+                     sub/fp_atan.asm:141
+                     sub/fp_atan.asm:304
+                     sub/fp_atan.asm:325
+                     sub/fp_exp.asm:341
+ 164   5  15    15  [sub] call fat_copy18 | call fp_mul | ld hl,arga | call widen_fac_to | ld hl,arga
+                     sub/fp_atan.asm:142
+                     sub/fp_atan.asm:305
+                     sub/fp_atan.asm:326
+                     sub/fp_exp.asm:342
+ 146   9  26     9  [sub] inc sp | inc sp | inc sp | inc sp | inc sp ...
+                     sub/arrays.asm:866
+                     sub/arrays.asm:867
+                     sub/arrays.asm:868
+                     sub/arrays.asm:869
+ 122   4  15    12  [sub] call fp_mul | ld hl,arga | call widen_fac_to | ld hl,arga
+                     sub/fp_atan.asm:143
+                     sub/fp_atan.asm:306
+                     sub/fp_atan.asm:327
+                     sub/fp_exp.asm:343
+ 116   3  21     9  [sub] ld hl,math_a | ld de,arga | call fat_copy18
+                     sub/fp_atan.asm:213
+                     sub/fp_atan.asm:244
+                     sub/fp_atan.asm:256
+                     sub/fp_atan.asm:276
+  86   4  11    12  [sub] call fp_sub | ld hl,arga | call widen_fac_to | ld hl,arga
+                     sub/fp_atan.asm:269
+                     sub/fp_atan.asm:360
+                     sub/fp_exp.asm:352
+                     sub/fp_log.asm:166
+  80   5   8    15  [sub] call fat_copy18 | call fp_add | ld hl,arga | call widen_fac_to | ld hl,arga
+                     sub/fp_atan.asm:155
+                     sub/fp_atan.asm:281
+                     sub/fp_atan.asm:343
+                     sub/fp_exp.asm:447
+  77   4  10    12  [sub] call fp_add | ld hl,arga | call widen_fac_to | ld hl,arga
+                     sub/fp_atan.asm:157
+                     sub/fp_atan.asm:282
+                     sub/fp_atan.asm:344
+                     sub/fp_exp.asm:448
+  77   4  10    12  [sub] call fat_copy18 | ld hl,math_a | ld de,arga | call fat_copy18
+                     sub/fp_atan.asm:274
+                     sub/fp_atan.asm:319
+                     sub/fp_exp.asm:348
+                     sub/fp_log.asm:171
+  77   4  10    12  [sub] call widen_fac_to | ld hl,arga | ld de,argb | call fat_copy18
+                     sub/fp_atan.asm:284
+                     sub/fp_exp.asm:345
+                     sub/fp_exp.asm:367
+                     sub/fp_exp.asm:439
+  74   3  14     9  [sub] ld hl,arga | ld de,math_a | call fat_copy18
+                     sub/fp_atan.asm:204
+                     sub/fp_atan.asm:235
+                     sub/fp_atan.asm:294
+                     sub/fp_exp.asm:193
+  71   6   6    18  [sub] ld de,argb | call fat_copy18 | call fp_add | ld hl,arga | call widen_fac_to ...
+                     sub/fp_atan.asm:154
+                     sub/fp_atan.asm:280
+                     sub/fp_atan.asm:342
+                     sub/fp_exp.asm:462
+  71   6   6    18  [sub] ld de,arga | call fsq_copy18 | call fp_sub | ld hl,arga | call widen_fac_to ...
+                     sub/fp_sqrt.asm:452
+                     sub/fp_sqrt.asm:472
+                     sub/fp_sqrt.asm:517
+                     sub/fp_sqrt.asm:538
+
+2084 positively-priced candidate(s) before dedup.

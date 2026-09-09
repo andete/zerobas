@@ -1,0 +1,160 @@
+python3 tools/install-repack-machine.py --merged build/zerobas-main-eu.rom --disk-rom build/disk.rom \
+	  --sub-rom build/sub.rom
+wrote C-BIOS_MSX1_EU_REPACK_DISK  (-> machine "C-BIOS_MSX1_EU_REPACK_DISK": merged repack ROM in slot 0, zerobas-disk in slot 3-1, zerobas-sub in slot 3-2)
+     /Users/joost/.openMSX/share/machines/C-BIOS_MSX1_EU_REPACK_DISK.xml
+python3 probes/basic/basic_probe_interval_trap.py \
+	   
+ref = Philips_VG_8020
+zb  = C-BIOS_MSX1_EU_REPACK_DISK
+
+PASS  [ref] A1_n1                    cnt= 34 err=0 period=    1.0 (span=30) j1= 2905 j2= 2935 aux=  0 aux2=  0 aux3= 88 t=64
+PASS  [ref] A1_n1                    fires, and never faster than its period
+PASS  [zb ] A1_n1                    cnt=132 err=0 period=  1.833 (span=30) j1= 2917 j2= 2972 aux=  0 aux2=  0 aux3=  0 t=64
+PASS  [zb ] A1_n1                    fires, and never faster than its period
+PASS  [zb ] A1_n1                    == ref on err
+PASS  [ref] A2_n5                    cnt= 68 err=0 period=  4.983 (span=60) j1= 3664 j2= 3963 aux=  0 aux2=  0 aux3=  0 t=81
+PASS  [ref] A2_n5                    period == 5
+PASS  [zb ] A2_n5                    cnt= 69 err=0 period=    5.0 (span=60) j1= 3652 j2= 3952 aux=  0 aux2=  0 aux3=  0 t=82
+PASS  [zb ] A2_n5                    period == 5
+PASS  [ref] A3_n10                   cnt= 34 err=0 period=  9.967 (span=30) j1= 3669 j2= 3968 aux=  0 aux2=  0 aux3=  0 t=81
+PASS  [ref] A3_n10                   period == 10
+PASS  [zb ] A3_n10                   cnt= 34 err=0 period=  9.933 (span=30) j1= 3658 j2= 3956 aux=  0 aux2=  0 aux3=  0 t=82
+PASS  [zb ] A3_n10                   period == 10
+PASS  [ref] A4_n20                   cnt= 17 err=0 period=   20.0 (span=16) j1= 3679 j2= 3999 aux=  0 aux2=  0 aux3=  0 t=81
+PASS  [ref] A4_n20                   period == 20
+PASS  [zb ] A4_n20                   cnt= 17 err=0 period= 19.938 (span=16) j1= 3667 j2= 3986 aux=  0 aux2=  0 aux3=  0 t=82
+PASS  [zb ] A4_n20                   period == 20
+PASS  [ref] D0_n0                    cnt=  0 err=5 period=      0 (span=10) j1=    0 j2=    0 aux=  0 aux2=  0 aux3=  0 t=79
+PASS  [zb ] D0_n0                    cnt=  0 err=5 period=      0 (span=10) j1=    0 j2=    0 aux=  0 aux2=  0 aux3=  0 t=79
+PASS  [zb ] D0_n0                    == ref on cnt,err
+PASS  [ref] D1_n255                  cnt=  0 err=0 period=      0 (span=10) j1=    0 j2=    0 aux=  0 aux2=  0 aux3=  0 t=79
+PASS  [zb ] D1_n255                  cnt=  0 err=0 period=      0 (span=10) j1=    0 j2=    0 aux=  0 aux2=  0 aux3=  0 t=79
+PASS  [zb ] D1_n255                  == ref on cnt,err
+PASS  [ref] D2_n256                  cnt=  0 err=0 period=      0 (span=10) j1=    0 j2=    0 aux=  0 aux2=  0 aux3=  0 t=79
+PASS  [zb ] D2_n256                  cnt=  0 err=0 period=      0 (span=10) j1=    0 j2=    0 aux=  0 aux2=  0 aux3=  0 t=79
+PASS  [zb ] D2_n256                  == ref on cnt,err
+PASS  [ref] D3_n32767                cnt=  0 err=0 period=      0 (span=10) j1=    0 j2=    0 aux=  0 aux2=  0 aux3=  0 t=79
+PASS  [zb ] D3_n32767                cnt=  0 err=0 period=      0 (span=10) j1=    0 j2=    0 aux=  0 aux2=  0 aux3=  0 t=79
+PASS  [zb ] D3_n32767                == ref on cnt,err
+PASS  [ref] D4_n32768                cnt=  0 err=0 period=      0 (span=10) j1=    0 j2=    0 aux=  0 aux2=  0 aux3=  0 t=79
+PASS  [zb ] D4_n32768                cnt=  0 err=0 period=      0 (span=10) j1=    0 j2=    0 aux=  0 aux2=  0 aux3=  0 t=79
+PASS  [zb ] D4_n32768                == ref on cnt,err
+PASS  [ref] D5_n65535                cnt=  0 err=0 period=      0 (span=10) j1=    0 j2=    0 aux=  0 aux2=  0 aux3=  0 t=79
+PASS  [zb ] D5_n65535                cnt=  0 err=0 period=      0 (span=10) j1=    0 j2=    0 aux=  0 aux2=  0 aux3=  0 t=79
+PASS  [zb ] D5_n65535                == ref on cnt,err
+PASS  [ref] D6_nneg                  cnt=  0 err=0 period=      0 (span=10) j1=    0 j2=    0 aux=  0 aux2=  0 aux3=  0 t=79
+PASS  [zb ] D6_nneg                  cnt=  0 err=0 period=      0 (span=10) j1=    0 j2=    0 aux=  0 aux2=  0 aux3=  0 t=79
+PASS  [zb ] D6_nneg                  == ref on cnt,err
+PASS  [ref] D7_nfrac                 cnt= 28 err=0 period=   20.0 (span=25) j1= 3679 j2= 4179 aux=  0 aux2=  0 aux3=  0 t=86
+PASS  [ref] D7_nfrac                 period == 20
+PASS  [zb ] D7_nfrac                 cnt= 28 err=0 period=   20.0 (span=25) j1= 3667 j2= 4167 aux=  0 aux2=  0 aux3=  0 t=86
+PASS  [zb ] D7_nfrac                 period == 20
+PASS  [zb ] D7_nfrac                 == ref on err
+PASS  [ref] D8_nexpr                 cnt= 23 err=0 period=    7.0 (span=20) j1= 3816 j2= 3956 aux=  0 aux2=  0 aux3=  0 t=82
+PASS  [ref] D8_nexpr                 period == 7
+PASS  [zb ] D8_nexpr                 cnt= 24 err=0 period=    7.0 (span=20) j1= 3807 j2= 3947 aux=  0 aux2=  0 aux3=  0 t=82
+PASS  [zb ] D8_nexpr                 period == 7
+PASS  [zb ] D8_nexpr                 == ref on err
+PASS  [ref] D9_n65536                cnt=  0 err=6 period=      0 (span=10) j1=    0 j2=    0 aux=  0 aux2=  0 aux3=  0 t=79
+PASS  [zb ] D9_n65536                cnt=  0 err=6 period=      0 (span=10) j1=    0 j2=    0 aux=  0 aux2=  0 aux3=  0 t=79
+PASS  [zb ] D9_n65536                == ref on cnt,err
+PASS  [ref] D10_nm32768              cnt=  0 err=0 period=      0 (span=10) j1=    0 j2=    0 aux=  0 aux2=  0 aux3=  0 t=79
+PASS  [zb ] D10_nm32768              cnt=  0 err=0 period=      0 (span=10) j1=    0 j2=    0 aux=  0 aux2=  0 aux3=  0 t=79
+PASS  [zb ] D10_nm32768              == ref on cnt,err
+PASS  [ref] D11_nm32769              cnt=  0 err=6 period=      0 (span=10) j1=    0 j2=    0 aux=  0 aux2=  0 aux3=  0 t=79
+PASS  [zb ] D11_nm32769              cnt=  0 err=6 period=      0 (span=10) j1=    0 j2=    0 aux=  0 aux2=  0 aux3=  0 t=79
+PASS  [zb ] D11_nm32769              == ref on cnt,err
+PASS  [ref] D12_n255_long            cnt=  2 err=0 period=      0 (span=2) j1= 3914 j2=    0 aux=  0 aux2=  0 aux3=  0 t=89
+PASS  [ref] D12_n255_long            fires at all
+PASS  [zb ] D12_n255_long            cnt=  2 err=0 period=      0 (span=2) j1= 3902 j2=    0 aux=  0 aux2=  0 aux3=  0 t=89
+PASS  [zb ] D12_n255_long            fires at all
+PASS  [zb ] D12_n255_long            == ref on err
+PASS  [ref] D13_nm65531              cnt=  0 err=6 period=      0 (span=60) j1=    0 j2=    0 aux=  0 aux2=  0 aux3=  0 t=79
+PASS  [zb ] D13_nm65531              cnt=  0 err=6 period=      0 (span=60) j1=    0 j2=    0 aux=  0 aux2=  0 aux3=  0 t=79
+PASS  [zb ] D13_nm65531              == ref on cnt,err
+PASS  [ref] B_armed_not_on           cnt=  0 err=0 period=      0 (span=10) j1=    0 j2=    0 aux=  0 aux2=  0 aux3=  0 t=73
+PASS  [zb ] B_armed_not_on           cnt=  0 err=0 period=      0 (span=10) j1=    0 j2=    0 aux=  0 aux2=  0 aux3=  0 t=73
+PASS  [zb ] B_armed_not_on           == ref on cnt,err
+PASS  [ref] C1_off                   cnt=  0 err=0 period=      0 (span=10) j1=    0 j2=    0 aux=  0 aux2=  0 aux3=  0 t=76
+PASS  [zb ] C1_off                   cnt=  0 err=0 period=      0 (span=10) j1=    0 j2=    0 aux=  0 aux2=  0 aux3=  0 t=76
+PASS  [zb ] C1_off                   == ref on cnt,err
+PASS  [ref] C2_stop                  cnt=  0 err=0 period=      0 (span=10) j1=    0 j2=    0 aux=  0 aux2=  0 aux3=  0 t=76
+PASS  [zb ] C2_stop                  cnt=  0 err=0 period=      0 (span=10) j1=    0 j2=    0 aux=  0 aux2=  0 aux3=  0 t=76
+PASS  [zb ] C2_stop                  == ref on cnt,err
+PASS  [ref] E_no_handler             cnt=  0 err=0 period=      0 (span=10) j1=    0 j2=    0 aux=  0 aux2=  0 aux3=  0 t=49
+PASS  [zb ] E_no_handler             cnt=  0 err=0 period=      0 (span=10) j1=    0 j2=    0 aux=  0 aux2=  0 aux3=  0 t=49
+PASS  [zb ] E_no_handler             == ref on cnt,err
+PASS  [ref] G_stop_latch             cnt=  2 err=0 period=      0 (span=10) j1= 5829 j2=    0 aux=  1 aux2=  0 aux3=  0 t=119
+PASS  [zb ] G_stop_latch             cnt=  2 err=0 period=      0 (span=10) j1= 5793 j2=    0 aux=  1 aux2=  0 aux3=  0 t=120
+PASS  [zb ] G_stop_latch             == ref on cnt,err,aux
+PASS  [ref] H_off_latch              cnt=  1 err=0 period=      0 (span=10) j1= 5885 j2=    0 aux=  1 aux2=  0 aux3=  0 t=119
+PASS  [zb ] H_off_latch              cnt=  1 err=0 period=      0 (span=10) j1= 5839 j2=    0 aux=  1 aux2=  0 aux3=  0 t=119
+PASS  [zb ] H_off_latch              == ref on cnt,err,aux
+PASS  [ref] P_on_reloads             cnt=  2 err=0 period=      0 (span=10) j1= 4814 j2=    0 aux=  0 aux2=  0 aux3=  0 t=102
+PASS  [zb ] P_on_reloads             cnt=  2 err=0 period=      0 (span=10) j1= 4802 j2=    0 aux=  0 aux2=  0 aux3=  0 t=102
+PASS  [zb ] P_on_reloads             == ref on cnt,err,aux
+PASS  [ref] P2_rearm_reloads         cnt=  1 err=0 period=      0 (span=10) j1= 4913 j2=    0 aux=  0 aux2=  0 aux3=  0 t=102
+PASS  [zb ] P2_rearm_reloads         cnt=  1 err=0 period=      0 (span=10) j1= 4898 j2=    0 aux=  0 aux2=  0 aux3=  0 t=102
+PASS  [zb ] P2_rearm_reloads         == ref on cnt,err,aux,aux2
+PASS  [ref] S_starves_main           cnt=  7 err=0 period=   47.2 (span=5) j1= 3124 j2= 3360 aux=  0 aux2=  0 aux3=  0 t=69
+PASS  [ref] S_starves_main           gap >> n (no catch-up)
+PASS  [zb ] S_starves_main           cnt=  7 err=0 period=  186.6 (span=5) j1= 3269 j2= 4202 aux=  0 aux2=  0 aux3=  0 t=85
+PASS  [zb ] S_starves_main           gap >> n (no catch-up)
+PASS  [zb ] S_starves_main           == ref on err,aux3
+PASS  [ref] S2_fast_control          cnt=  6 err=0 period=   20.0 (span=5) j1= 2924 j2= 3024 aux=  0 aux2=  0 aux3= 88 t=64
+PASS  [ref] S2_fast_control          period == 20
+PASS  [zb ] S2_fast_control          cnt=  6 err=0 period=   20.0 (span=5) j1= 2936 j2= 3036 aux=  0 aux2=  0 aux3= 88 t=64
+PASS  [zb ] S2_fast_control          period == 20
+PASS  [zb ] S2_fast_control          == ref on err,aux3
+PASS  [ref] S3_from_fire_or_return   cnt=  6 err=0 period=  300.0 (span=5) j1= 3404 j2= 4904 aux=  0 aux2=  0 aux3= 88 t=99
+PASS  [ref] S3_from_fire_or_return   period == 300
+PASS  [zb ] S3_from_fire_or_return   cnt=  6 err=0 period=  300.0 (span=5) j1= 3549 j2= 5049 aux=  0 aux2=  0 aux3= 88 t=102
+PASS  [zb ] S3_from_fire_or_return   period == 300
+PASS  [zb ] S3_from_fire_or_return   == ref on err,aux3
+PASS  [ref] G2_stop_release          cnt=  1 err=0 period=      0 (span=10) j1= 6920 j2=    0 aux=  2 aux2=  0 aux3=  0 t=140
+PASS  [zb ] G2_stop_release          cnt=  1 err=0 period=      0 (span=10) j1= 6854 j2=    0 aux=  2 aux2=  0 aux3=  0 t=140
+PASS  [zb ] G2_stop_release          == ref on cnt,err,aux
+PASS  [ref] H3_off_reloads           cnt=  1 err=0 period=      0 (span=10) j1= 6667 j2=    0 aux=  2 aux2=  0 aux3=  0 t=135
+PASS  [zb ] H3_off_reloads           cnt=  1 err=0 period=      0 (span=10) j1= 6595 j2=    0 aux=  2 aux2=  0 aux3=  0 t=136
+PASS  [zb ] H3_off_reloads           == ref on cnt,err,aux
+PASS  [ref] H2_off_release           cnt=  0 err=0 period=      0 (span=10) j1= 6467 j2=    0 aux=  2 aux2=  0 aux3=  0 t=140
+PASS  [zb ] H2_off_release           cnt=  0 err=0 period=      0 (span=10) j1= 6396 j2=    0 aux=  2 aux2=  0 aux3=  0 t=140
+PASS  [zb ] H2_off_release           == ref on cnt,err,aux
+PASS  [ref] L_syn_noline             cnt=  0 err=0 period=      0 (span=10) j1=    0 j2=    0 aux=  0 aux2=  0 aux3=  0 t=28
+PASS  [zb ] L_syn_noline             cnt=  0 err=0 period=      0 (span=10) j1=    0 j2=    0 aux=  0 aux2=  0 aux3=  0 t=28
+PASS  [zb ] L_syn_noline             == ref on cnt,err
+PASS  [ref] R_bare_disarms           cnt=  0 err=0 period=      0 (span=10) j1= 4271 j2=    0 aux=  6 aux2=  0 aux3=  0 t=91
+PASS  [ref] R_bare_disarms           armed fires
+PASS  [zb ] R_bare_disarms           cnt=  0 err=0 period=      0 (span=10) j1= 4254 j2=    0 aux=  6 aux2=  0 aux3=  0 t=91
+PASS  [zb ] R_bare_disarms           armed fires
+PASS  [zb ] R_bare_disarms           == ref on err,aux2
+PASS  [ref] R2_rearm                 cnt=  7 err=0 period=      0 (span=10) j1= 4987 j2=    0 aux=  6 aux2=  0 aux3=  7 t=103
+PASS  [ref] R2_rearm                 armed fires
+PASS  [ref] R2_rearm                 re-arm resumes
+PASS  [zb ] R2_rearm                 cnt=  6 err=0 period=      0 (span=10) j1= 4981 j2=    0 aux=  6 aux2=  0 aux3=  6 t=103
+PASS  [zb ] R2_rearm                 armed fires
+PASS  [zb ] R2_rearm                 re-arm resumes
+PASS  [zb ] R2_rearm                 == ref on err,aux2
+PASS  [ref] J_syn_on_goto            cnt=  0 err=2 period=      0 (span=10) j1=    0 j2=    0 aux=  0 aux2=  0 aux3=  0 t=28
+PASS  [zb ] J_syn_on_goto            cnt=  0 err=2 period=      0 (span=10) j1=    0 j2=    0 aux=  0 aux2=  0 aux3=  0 t=28
+PASS  [zb ] J_syn_on_goto            == ref on cnt,err
+PASS  [ref] K_syn_bare               cnt=  0 err=2 period=      0 (span=10) j1=    0 j2=    0 aux=  0 aux2=  0 aux3=  0 t=28
+PASS  [zb ] K_syn_bare               cnt=  0 err=2 period=      0 (span=10) j1=    0 j2=    0 aux=  0 aux2=  0 aux3=  0 t=28
+PASS  [zb ] K_syn_bare               == ref on cnt,err
+PASS  [ref] M_undef_line             cnt=  0 err=8 period=      0 (span=10) j1=    0 j2=    0 aux=  0 aux2=  0 aux3=  0 t=28
+PASS  [zb ] M_undef_line             cnt=  0 err=8 period=      0 (span=10) j1=    0 j2=    0 aux=  0 aux2=  0 aux3=  0 t=28
+PASS  [zb ] M_undef_line             == ref on cnt,err
+PASS  [ref] N_syn_no_eq              cnt=  0 err=2 period=      0 (span=10) j1=    0 j2=    0 aux=  0 aux2=  0 aux3=  0 t=28
+PASS  [zb ] N_syn_no_eq              cnt=  0 err=2 period=      0 (span=10) j1=    0 j2=    0 aux=  0 aux2=  0 aux3=  0 t=28
+PASS  [zb ] N_syn_no_eq              == ref on cnt,err
+PASS  [ref] O_syn_junk               cnt=  0 err=2 period=      0 (span=10) j1=    0 j2=    0 aux=  0 aux2=  0 aux3=  0 t=28
+PASS  [zb ] O_syn_junk               cnt=  0 err=2 period=      0 (span=10) j1=    0 j2=    0 aux=  0 aux2=  0 aux3=  0 t=28
+PASS  [zb ] O_syn_junk               == ref on cnt,err
+PASS  [ref] Q_noline_then            cnt=  0 err=0 period=      0 (span=10) j1=    0 j2=    0 aux= 77 aux2=  0 aux3=  0 t=28
+PASS  [zb ] Q_noline_then            cnt=  0 err=0 period=      0 (span=10) j1=    0 j2=    0 aux= 77 aux2=  0 aux3=  0 t=28
+PASS  [zb ] Q_noline_then            == ref on cnt,err,aux
+PASS  [ref] Q2_on_then               cnt=  0 err=0 period=      0 (span=10) j1=    0 j2=    0 aux= 77 aux2=  0 aux3=  0 t=28
+PASS  [zb ] Q2_on_then               cnt=  0 err=0 period=      0 (span=10) j1=    0 j2=    0 aux= 77 aux2=  0 aux3=  0 t=28
+PASS  [zb ] Q2_on_then               == ref on cnt,err,aux
+
+ALL PASS

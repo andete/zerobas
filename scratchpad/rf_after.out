@@ -1,0 +1,32 @@
+python3 tools/install-repack-machine.py --merged build/zerobas-main-eu.rom --disk-rom build/disk.rom \
+	  --sub-rom build/sub.rom
+wrote C-BIOS_MSX1_EU_REPACK_DISK  (-> machine "C-BIOS_MSX1_EU_REPACK_DISK": merged repack ROM in slot 0, zerobas-disk in slot 3-1, zerobas-sub in slot 3-2)
+     /Users/joost/.openMSX/share/machines/C-BIOS_MSX1_EU_REPACK_DISK.xml
+python3 tools/install-repack-machine.py --merged build/zerobas-main-eu.rom --sub-rom build/sub.rom \
+	  --no-disk
+wrote C-BIOS_MSX1_EU_REPACK_NODISK  (-> machine "C-BIOS_MSX1_EU_REPACK_NODISK": merged repack ROM in slot 0, slot 3-1 EMPTY (diskless target), zerobas-sub in slot 3-2)
+     /Users/joost/.openMSX/share/machines/C-BIOS_MSX1_EU_REPACK_NODISK.xml
+python3 probes/basic/basic_probe_ramfree.py --gate 
+
+watching 5 declared FREE-RAM span(s):
+    $E05A..$E080     38 B
+    $E080..$E0B8     56 B
+    $E20D..$E21F     18 B
+    $E238..$E240      8 B
+    $EA3E..$EA92     84 B
+
+  OK   ctl.poke  1 1 1 1 1                every span saw its one poked byte
+  OK   ctl.pool  0 0 0 0 0 16             the pool moved (16 B) and no declared span did
+  OK   base.none 0 0 0 0 0                clean
+  OK   n.for8    0 0 0 0 0                clean
+  OK   n.deep    0 0 0 0 0                clean
+  OK   n.crunch  0 0 0 0 0                clean
+  OK   s.paint   0 0 0 0 0                clean
+  OK   s.draw    0 0 0 0 0                clean
+  OK   s.play    0 0 0 0 0                clean
+  OK   s.str     0 0 0 0 0                clean
+  OK   s.files   0 0 0 0 0                clean
+
+rows 11  red 0
+RAMFREE: PASS
+refcache: 9 hit, 2 miss, 2 stored

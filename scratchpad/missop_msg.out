@@ -1,0 +1,13 @@
+
+row       vg8020                 cf3300                 zb                      statement
+q.save    Missing operand        Missing operand        Missing operand         SAVE      refs agree  the filed row n.savebare
+q.load    Missing operand        Missing operand        Missing operand         LOAD      refs agree  the filed row n.loadbare
+q.bload   Missing operand        Missing operand        Missing operand         BLOAD     refs agree  the filed row n.bloadbare
+q.let     Missing operand        Missing operand        Missing operand         A$=       refs agree  D-MISS-1's LET mirror
+q.letop   Missing operand        Missing operand        Syntax error            A$=+      refs agree  🔴 zb DIFF  the mirror that reads ERR 2 here against 24 there
+d.err24   Missing operand        Missing operand        Missing operand         ERROR 24  refs agree  🎯 the MESSAGE TABLE alone -- no verb involved
+d.err2    Syntax error           Syntax error           Syntax error            ERROR 2   refs agree  CONTROL: a message all three certainly have
+c.ok      <EMPTY>                <EMPTY>                <EMPTY>                 A=1       refs agree  CONTROL: no error -- must print nothing
+
+read d.err24 FIRST: it separates 'the table lacks the message' from 'the verb raises a different code'.
+refcache: 0 hit, 24 miss, 24 stored

@@ -1,0 +1,13 @@
+base ROM 323d8daf dd98db58 9a96945d 543879fc
+  base lfl-inp    'PROG    .BAS \\r\\nPROG2   .BAS \\r\\n'
+  base lfl-inpb   '<nothing>'
+  base lfl-wild   'PROG    .BAS \\r\\nPROG2   .BAS \\r\\n'
+  base lfl-all    'TEST    .BIN \\r\\nHI      .TXT \\r\\nPROG    .BIN \\r\\nPROG    .BAS \\r\\nPROG2   .BAS \\r\\n'
+  base lfl-sink   'TEST    .BIN \\r\\nHI      .TXT \\r\\nPROG    .BIN \\r\\nPROG    .BAS \\r\\nPROG2   .BAS \\r\\n'
+  base lfl-ctlp   'CTL\\r\\n'
+  base lfl-ctlf   'TEST    .BIN HI      .TXT PROG    .BIN / PROG    .BAS PROG2   .BAS'
+
+  🔴 K-FG1: KNIFE INERT — the ROM did not change (323d8daf dd98db58 9a96945d 543879fc); the probe would measure the UNCUT machine, and any 'moved 0 rows' below would be meaningless
+  K-FG1 DID NOT REACH THE ROM -- score discarded
+
+restore: 323d8daf dd98db58 9a96945d 543879fc -> 323d8daf dd98db58 9a96945d 543879fc  BYTE-IDENTICAL

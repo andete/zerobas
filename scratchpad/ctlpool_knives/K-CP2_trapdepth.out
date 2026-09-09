@@ -1,0 +1,21 @@
+
+row              vg8020        cf3300            zb   note
+d.depth0       4071 7 0      3302 7 0      2889 7 0   plain recursion depth, no trap at all
+d.depth1       4046 7 0      3277 7 0      2868 7 0   ...after ONE abandoned dispatch
+d.depth20     4016 7 20     3247 7 20     2834 7 20   ...after TWENTY abandoned dispatches
+d.ctl20        4040 7 0      3271 7 0      2862 7 0   the SAME program, trap unarmed -- the cost of 20 dispatches
+d.selfarm           9 0           9 0           9 0   GUARD: a handler that re-arms its OWN trap, then RETURNs
+
+  vg8020   20 abandoned dispatches cost  24 frames (1.20/dispatch)   reproduces §10
+  cf3300   20 abandoned dispatches cost  24 frames (1.20/dispatch)   reproduces §10
+  zb       20 abandoned dispatches cost  28 frames (1.40/dispatch)   leaks, like both references
+
+d.depth0   ref pinned '4071 7 0'; zb '2889 7 0' (>= 1000, a pool)
+d.depth1   ref pinned '4046 7 0'; zb '2868 7 0' (>= 1000, a pool)
+d.depth20  ref pinned '4016 7 20'; zb '2834 7 20' (>= 1000, a pool)
+d.ctl20    ref pinned '4040 7 0'; zb '2862 7 0' (>= 1000, a pool)
+d.selfarm  GUARD  all three must read '9 0': ok
+
+rows 5  pinned 4  guards 1  red 0
+TRAPDEPTH: PASS
+refcache: 2 hit, 1 miss, 1 stored

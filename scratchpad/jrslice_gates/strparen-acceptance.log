@@ -1,0 +1,28 @@
+python3 tools/install-repack-machine.py --merged build/zerobas-main-eu.rom --disk-rom build/disk.rom \
+	  --sub-rom build/sub.rom
+wrote C-BIOS_MSX1_EU_REPACK_DISK  (-> machine "C-BIOS_MSX1_EU_REPACK_DISK": merged repack ROM in slot 0, zerobas-disk in slot 3-1, zerobas-sub in slot 3-2)
+     /Users/joost/.openMSX/share/machines/C-BIOS_MSX1_EU_REPACK_DISK.xml
+python3 probes/basic/basic_probe_strparen.py --gate \
+	         
+D-STRPAREN — `(A$)` in every string context   sides: vg8020, cf3300, zb
+==============================================================================
+ok   p.let       vg8020='Q'  cf3300='Q'  zb='Q'
+ok   p.cat1      vg8020='QZ'  cf3300='QZ'  zb='QZ'
+ok   p.cat2      vg8020='ZQ'  cf3300='ZQ'  zb='ZQ'
+ok   p.nest      vg8020='Q'  cf3300='Q'  zb='Q'
+ok   p.inner     vg8020='QZ'  cf3300='QZ'  zb='QZ'
+ok   p.lit       vg8020='Z'  cf3300='Z'  zb='Z'
+ok   p.print     vg8020='Q'  cf3300='Q'  zb='Q'
+ok   p.if        vg8020='Y'  cf3300='Y'  zb='Y'
+ok   p.len       vg8020=' 1 '  cf3300=' 1 '  zb=' 1 '
+ok   p.mid       vg8020='Q'  cf3300='Q'  zb='Q'
+ok   p.left      vg8020='Q'  cf3300='Q'  zb='Q'
+ok   p.numlet    vg8020='<Type mismatch>'  cf3300='<Type mismatch>'  zb='<Type mismatch>'
+ok   p.numif     vg8020='Y'  cf3300='Y'  zb='Y'
+ok   p.ctl       vg8020='Q'  cf3300='Q'  zb='Q'   [POSITIVE CONTROL]
+ok   p.numctl    vg8020=' 5 '  cf3300=' 5 '  zb=' 5 '   [POSITIVE CONTROL]
+ok   p.numprint  vg8020=' 6 '  cf3300=' 6 '  zb=' 6 '   [POSITIVE CONTROL]
+ROWS: 16 printed, 16 scored — 16 agree, 0 diverge, 0 without a reference, 0 deferred (not scored)
+==============================================================================
+16/16 readings match their reference (16 cases, 3 positive controls, 0 DEFERRED row(s) measured but not scored)
+DENOMINATOR: (the CONTEXT the parenthesised string operand stands in: a LET to a `$` target, a `+` concat on either side, NESTED parens, a parenthesised EXPRESSION, a parenthesised LITERAL, a PRINT item, an IF comparison, and the argument of LEN / MID$ / LEFT$) x (what the context DISPATCHES on: str_eval directly, a peek that never reaches it, or a function's own argument parse). Every row carries the unparenthesised or NUMERIC form of its own dispatcher as a control. NOT COVERED: parenthesised strings in RSET/LSET/FIELD, in a DATA body, as a filename (that is `f.paren` in basic_probe_namspc.py, the row this battery grew out of), or nested more than two deep.

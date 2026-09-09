@@ -1,0 +1,17 @@
+  cf3300 captured
+  zb captured
+
+row           cf3300         zb   (negative = trapped ERR)
+d.ctl              0          0
+    CONTROL: no DSKI$ anywhere -- must read 7
+d.len              0          0
+    LEN of one sector read -- 512 is impossible in an MSX string
+d.byte0           -5         -5
+    first byte of sector 0, checkable against the image on disk
+d.err9             0         -9
+    sector past the end of a 720 KB disk -- negative = the trapped ERR
+d.drv9           -62          0
+    a drive that does not exist -- negative = the trapped ERR
+
+🔴 THE CONTROL DID NOT READ 7 -- the fence or the typing is broken and every row above is void.
+refcache: 0 hit, 2 miss, 2 stored

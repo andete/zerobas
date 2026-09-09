@@ -1,0 +1,98 @@
+python3 tools/install-repack-machine.py --merged build/zerobas-main-eu.rom --disk-rom build/disk.rom \
+	  --sub-rom build/sub.rom
+wrote C-BIOS_MSX1_EU_REPACK_DISK  (-> machine "C-BIOS_MSX1_EU_REPACK_DISK": merged repack ROM in slot 0, zerobas-disk in slot 3-1, zerobas-sub in slot 3-2)
+     /Users/joost/.openMSX/share/machines/C-BIOS_MSX1_EU_REPACK_DISK.xml
+python3 tools/install-repack-machine.py --merged build/zerobas-main-eu.rom --sub-rom build/sub.rom \
+	  --no-disk
+wrote C-BIOS_MSX1_EU_REPACK_NODISK  (-> machine "C-BIOS_MSX1_EU_REPACK_NODISK": merged repack ROM in slot 0, slot 3-1 EMPTY (diskless target), zerobas-sub in slot 3-2)
+     /Users/joost/.openMSX/share/machines/C-BIOS_MSX1_EU_REPACK_NODISK.xml
+python3 probes/basic/basic_probe_screenerr.py --gate \
+	         
+    capture-on-signal: 204 on signal, 0 fell back to the scheduled budget   ⚠️ 68 REPLAYED from the refcache -- not measured on this run   [signalled at 30.6-69.0 emulated s]
+D-SCRERR — SCREEN's mode is a CHECKED BYTE, checked BEFORE the mode is applied    sides: vg8020, cf3300, zb
+==============================================================================
+ok   d.0         vg8020=' 0 , 0 '  cf3300=' 0 , 0 '  zb=' 0 , 0 '
+ok   d.1         vg8020=' 0 , 1 '  cf3300=' 0 , 1 '  zb=' 0 , 1 '
+ok   d.2         vg8020=' 0 , 2 '  cf3300=' 0 , 2 '  zb=' 0 , 2 '   [NEGATIVE CONTROL — the M instrument: a clean mode IS applied]
+ok   d.3         vg8020=' 0 , 3 '  cf3300=' 0 , 3 '  zb=' 0 , 3 '
+ok   d.4         vg8020=' 5 , 1 '  cf3300=' 5 , 1 '  zb=' 5 , 1 '
+ok   d.5         vg8020=' 5 , 1 '  cf3300=' 5 , 1 '  zb=' 5 , 1 '
+ok   d.neg1      vg8020=' 5 , 1 '  cf3300=' 5 , 1 '  zb=' 5 , 1 '
+ok   d.rel       vg8020=' 5 , 1 '  cf3300=' 5 , 1 '  zb=' 5 , 1 '
+ok   d.rel0      vg8020=' 0 , 0 '  cf3300=' 0 , 0 '  zb=' 0 , 0 '   [NEGATIVE CONTROL — the same syntax as d.rel, a LEGAL value]
+ok   d.255       vg8020=' 5 , 1 '  cf3300=' 5 , 1 '  zb=' 5 , 1 '
+ok   d.256       vg8020=' 5 , 1 '  cf3300=' 5 , 1 '  zb=' 5 , 1 '
+ok   d.32767     vg8020=' 5 , 1 '  cf3300=' 5 , 1 '  zb=' 5 , 1 '
+ok   d.32768     vg8020=' 6 , 1 '  cf3300=' 6 , 1 '  zb=' 6 , 1 '
+ok   d.m32768    vg8020=' 5 , 1 '  cf3300=' 5 , 1 '  zb=' 5 , 1 '
+ok   d.m32769    vg8020=' 6 , 1 '  cf3300=' 6 , 1 '  zb=' 6 , 1 '
+ok   d.70000     vg8020=' 6 , 1 '  cf3300=' 6 , 1 '  zb=' 6 , 1 '
+ok   d.frac1     vg8020=' 0 , 1 '  cf3300=' 0 , 1 '  zb=' 0 , 1 '   [NEGATIVE CONTROL — truncate and round agree at 1.4]
+ok   d.frac2     vg8020=' 0 , 1 '  cf3300=' 0 , 1 '  zb=' 0 , 1 '
+ok   d.frac3     vg8020=' 0 , 3 '  cf3300=' 0 , 3 '  zb=' 0 , 3 '
+ok   d.str       vg8020=' 13 , 1 '  cf3300=' 13 , 1 '  zb=' 13 , 1 '
+ok   d.strv      vg8020=' 13 , 1 '  cf3300=' 13 , 1 '  zb=' 13 , 1 '
+ok   a.bare      vg8020=' 24 , 1 '  cf3300=' 24 , 1 '  zb=' 24 , 1 '
+ok   a.col       vg8020=' 24 , 1 '  cf3300=' 24 , 1 '  zb=' 24 , 1 '
+ok   a.c1        vg8020=' 0 , 1 '  cf3300=' 0 , 1 '  zb=' 0 , 1 '
+ok   a.c2        vg8020=' 0 , 1 '  cf3300=' 0 , 1 '  zb=' 0 , 1 '
+ok   a.c3        vg8020=' 0 , 1 '  cf3300=' 0 , 1 '  zb=' 0 , 1 '
+ok   a.m1        vg8020=' 0 , 2 '  cf3300=' 0 , 2 '  zb=' 0 , 2 '
+ok   a.m2        vg8020=' 0 , 2 '  cf3300=' 0 , 2 '  zb=' 0 , 2 '
+ok   a.trail     vg8020=' 24 , 2 '  cf3300=' 24 , 2 '  zb=' 24 , 2 '
+ok   a.conly     vg8020=' 24 , 1 '  cf3300=' 24 , 1 '  zb=' 24 , 1 '
+ok   a.c2trail   vg8020=' 24 , 2 '  cf3300=' 24 , 2 '  zb=' 24 , 2 '
+ok   a.colarg    vg8020=' 24 , 2 '  cf3300=' 24 , 2 '  zb=' 24 , 2 '
+ok   a.spr       vg8020=' 0 , 1 '  cf3300=' 0 , 1 '  zb=' 0 , 1 '
+ok   a.sprbad    vg8020=' 5 , 1 '  cf3300=' 5 , 1 '  zb=' 5 , 1 '
+ok   a.sprneg    vg8020=' 5 , 1 '  cf3300=' 5 , 1 '  zb=' 5 , 1 '
+ok   a.sprbig    vg8020=' 6 , 1 '  cf3300=' 6 , 1 '  zb=' 6 , 1 '
+ok   a.clk       vg8020=' 0 , 1 '  cf3300=' 0 , 1 '  zb=' 0 , 1 '
+ok   a.sprskip   vg8020=' 0 , 2 '  cf3300=' 0 , 2 '  zb=' 0 , 2 '
+ok   a.sprslot1  vg8020=' 0 , 2 '  cf3300=' 0 , 2 '  zb=' 0 , 2 '   [NEGATIVE CONTROL — the size witness on the slot that IS the size]
+ok   a.clk300    vg8020=' 5 , 1 '  cf3300=' 5 , 1 '  zb=' 5 , 1 '
+ok   a.clkbig    vg8020=' 6 , 1 '  cf3300=' 6 , 1 '  zb=' 6 , 1 '
+ok   t.b1        vg8020=' 0 , 1 '  cf3300=' 0 , 1 '  zb=' 0 , 1 '
+ok   t.b2        vg8020=' 0 , 1 '  cf3300=' 0 , 1 '  zb=' 0 , 1 '
+ok   t.b0        vg8020=' 5 , 1 '  cf3300=' 5 , 1 '  zb=' 5 , 1 '
+DIFF t.b3        vg8020=' 5 , 1 '  cf3300=' 5 , 1 '  zb=' 0 , 1 '
+ok   t.b300      vg8020=' 5 , 1 '  cf3300=' 5 , 1 '  zb=' 5 , 1 '
+ok   t.bneg      vg8020=' 5 , 1 '  cf3300=' 5 , 1 '  zb=' 5 , 1 '
+ok   t.bbig      vg8020=' 6 , 1 '  cf3300=' 6 , 1 '  zb=' 6 , 1 '
+ok   t.p0        vg8020=' 0 , 1 '  cf3300=' 0 , 1 '  zb=' 0 , 1 '
+ok   t.p1        vg8020=' 0 , 1 '  cf3300=' 0 , 1 '  zb=' 0 , 1 '
+ok   t.p2        vg8020=' 0 , 1 '  cf3300=' 0 , 1 '  zb=' 0 , 1 '
+ok   t.p300      vg8020=' 5 , 1 '  cf3300=' 5 , 1 '  zb=' 5 , 1 '
+ok   t.s6        vg8020=' 2 , 1 '  cf3300=' 2 , 1 '  zb=' 2 , 1 '
+ok   t.s6omit    vg8020=' 2 , 1 '  cf3300=' 2 , 1 '  zb=' 2 , 1 '
+ok   t.s5omit    vg8020=' 24 , 1 '  cf3300=' 24 , 1 '  zb=' 24 , 1 '
+ok   t.s7        vg8020=' 2 , 1 '  cf3300=' 2 , 1 '  zb=' 2 , 1 '
+ok   o.dz0       vg8020=' 11 , 1 '  cf3300=' 11 , 1 '  zb=' 11 , 1 '
+ok   o.dz        vg8020=' 11 , 1 '  cf3300=' 11 , 1 '  zb=' 11 , 1 '
+ok   o.s5        vg8020=' 5 , 1 '  cf3300=' 5 , 1 '  zb=' 5 , 1 '
+ok   o.ov        vg8020=' 6 , 1 '  cf3300=' 6 , 1 '  zb=' 6 , 1 '
+ok   o.tm        vg8020=' 13 , 1 '  cf3300=' 13 , 1 '  zb=' 13 , 1 '
+ok   o.arg2      vg8020=' 11 , 2 '  cf3300=' 11 , 2 '  zb=' 11 , 2 '
+ok   o.strarg    vg8020=' 13 , 2 '  cf3300=' 13 , 2 '  zb=' 13 , 2 '
+ok   o.dzov      vg8020=' 11 , 1 '  cf3300=' 11 , 1 '  zb=' 11 , 1 '
+ok   o.5ov       vg8020=' 5 , 1 '  cf3300=' 5 , 1 '  zb=' 5 , 1 '
+ok   n.zork      vg8020=' 2 , 1 '  cf3300=' 2 , 1 '  zb=' 2 , 1 '   [NEGATIVE CONTROL — a syntax error outside SCREEN stays ERR 2]
+ok   n.dzw       vg8020=' 11 , 1 '  cf3300=' 11 , 1 '  zb=' 11 , 1 '   [NEGATIVE CONTROL — one numeric fault at a checking reader]
+ok   n.tmw       vg8020=' 13 , 1 '  cf3300=' 13 , 1 '  zb=' 13 , 1 '   [NEGATIVE CONTROL — a type fault at a checking reader is 13]
+ok   u.rel       vg8020='Illegal function call in 20'  cf3300='Illegal function call in 20'  zb='Illegal function call in 20'
+ok   u.neg1      vg8020='Illegal function call in 20'  cf3300='Illegal function call in 20'  zb='Illegal function call in 20'
+ok   u.4         vg8020='Illegal function call in 20'  cf3300='Illegal function call in 20'  zb='Illegal function call in 20'
+ok   u.256       vg8020='Illegal function call in 20'  cf3300='Illegal function call in 20'  zb='Illegal function call in 20'
+ok   u.70000     vg8020='Overflow in 20'  cf3300='Overflow in 20'  zb='Overflow in 20'
+ok   u.dz0       vg8020='Division by zero in 20'  cf3300='Division by zero in 20'  zb='Division by zero in 20'
+ok   u.dz        vg8020='Division by zero in 20'  cf3300='Division by zero in 20'  zb='Division by zero in 20'
+ok   u.zork      vg8020='Syntax error in 20'  cf3300='Syntax error in 20'  zb='Syntax error in 20'   [NEGATIVE CONTROL — the untrapped reading itself]
+ROWS: 76 printed, 76 scored — 75 agree, 1 diverge, 0 deferred (not scored)
+==============================================================================
+75/76 readings agree (76 cases, 4 positive controls, 8 negative controls, 0 row(s) with no oracle, 0 DEFERRED row(s) measured but not scored)
+READING: trapped rows are `[ ERR , SCRMOD ]` — the error code and the screen mode the statement LEFT BEHIND, captured in the handler over a `SCREEN 1` seed. Untrapped rows are the clipped screen tail of `RUN`.
+SIDES: vg8020,cf3300,zb — SCREEN, ON ERROR, ERR, RESUME, PEEK and WIDTH are core MSX-BASIC, present on every MSX1, so BOTH references are legitimate oracles for every row here
+DENOMINATOR: (WHAT `ex_screen` accepts as a mode) x (WHAT IT HAS ALREADY DONE by the time it refuses). The routine has exactly TWO argument positions that reach a value -- the mode and the trailing-argument loop -- and exactly ONE side effect, the `CHGMOD` between them, so the ordering axis is two-valued and fully swept by the o.* rows rather than sampled. The VALUE axis is the one with a real population: an MSX1 accepts 0..3, so the denominator is every boundary the coercion from a FLOAT expression to that range can be asked about -- the mode edges (3/4/5), the byte edges (255/256), the int16 edges (32767/32768, -32768/-32769), past int16 (70000), the sign (-1, and `(1<5)` so the reject cannot be blamed on unary minus), the fractional boundary in BOTH directions (1.4/1.6, and 3.6 where truncate-vs-round changes the ERROR CODE and not just the mode), and a string (literal and variable). Crossed with the four deferred fault codes 11/6/5/13 in the mode position and one in a trailing one. The ARGUMENT-LIST axis is swept structurally, not sampled: bare, statement-terminated, mode omitted, one and two middles omitted, a trailing comma, and the sprite-size argument in and out of ITS domain -- which is every path through ex_screen's `scr_extra` loop. NOT swept: what each mode DOES once set (the graphics gates own that), and the sprite size's persistence across a later bare SCREEN (spec-basic-graphics-g7).
+screenerr: 1 reading(s) diverge [+0 rotted deferred face(s)]
+refcache: 76 hit, 152 miss, 152 stored, 68 replayed provenance
+make: *** [screenerr-acceptance] Error 1

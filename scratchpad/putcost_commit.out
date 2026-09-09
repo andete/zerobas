@@ -1,0 +1,3 @@
+[main 56bad492] D-PUTCOST: PUT is not slower either — the per-PUT cost measured on the guest's own clock, and the performance framing goes the way the hang did
+ 5 files changed, 230 insertions(+), 15 deletions(-)
+ create mode 100644 scratchpad/putcost_probe.py

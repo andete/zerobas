@@ -1,0 +1,11 @@
+
+row           vg8020   cf3300       zb   verdict
+x.ctl            1 0      1 0      1 0   ok   FOR opened INSIDE the sub -- nothing interleaves
+x.nxgos          0 1      0 1      0 1   ok   NEXT inside a sub, FOR opened outside it
+x.nxdeep         0 1      0 1      0 1   ok   NEXT I across [FOR J][GOSUB][FOR I]
+x.nxagain        0 1      0 1      0 1   ok   the NEXT resumes the loop body = the GOSUB (R = entry count)
+x.retfor         1 1      1 1      1 1   ok   RETURN over an inner FOR, then NEXT J outside
+
+rows 5  pinned 0  red 0
+CTLCROSS: PASS
+refcache: 2 hit, 1 miss, 1 stored

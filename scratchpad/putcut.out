@@ -1,0 +1,25 @@
+=== D-PUTCUT: power cut between a RANDOM PUT and its CLOSE ===
+
+program (the two arms differ only by line 45):
+    10 OPEN"R.DAT"AS#1 LEN=16
+    20 FIELD#1,16 AS A$
+    30 LSET A$="ZEROBAS-RECORD1"
+    40 PUT#1,1
+    50 POKE&HD005,&HA5
+    60 GOTO 60
+    45 CLOSE#1                <- present in the CONTROL arm only
+
+  zerobas  clean CLOSE     entry PRESENT  size=16  clus=3  FAT=EOC  record bytes on disk: YES
+  zerobas  CUT after PUT   entry PRESENT  size=16  clus=3  FAT=EOC  record bytes on disk: YES
+  CF-3300  clean CLOSE     entry PRESENT  size=16  clus=3  FAT=EOC  record bytes on disk: YES
+Traceback (most recent call last):
+  File "/Users/joost/projects/zerobas/scratchpad/putcut_probe.py", line 168, in <module>
+    sys.exit(main())
+             ~~~~^^
+  File "/Users/joost/projects/zerobas/scratchpad/putcut_probe.py", line 152, in main
+    print(f"  {label:8} {arm:14}  {fmt(results[(label, arm)])}")
+                                   ~~~^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/joost/projects/zerobas/scratchpad/putcut_probe.py", line 135, in fmt
+    fat = ("free" if f == 0 else "EOC" if f >= 0xFF8 else f"-> {f}")
+                                          ^^^^^^^^^^
+TypeError: '>=' not supported between instances of 'NoneType' and 'int'

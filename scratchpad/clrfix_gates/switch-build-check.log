@@ -1,0 +1,11 @@
+python3 tools/check_switch_builds.py
+baseline (all switches on): assembles
+
+PASS  G6_RESIDENT equ 0
+PASS  G7_RESIDENT equ 0
+PASS  G8_RESIDENT equ 0
+PASS  I1_RESIDENT equ 0
+PASS  TRAPS_T3 equ 0
+PASS  TRAPS_T4 equ 0
+
+SWITCHES: 6 of 6 assemble with the switch off

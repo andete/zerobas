@@ -1,0 +1,65 @@
+python3 tools/run_gates.py 
+=== warm-up (serial build of shared artifacts) ===
+warm-up 6s
+=== 45 units, J=8, lineerr in 8 shards, nice=0 solo=None ===
+  rc=0      2s  basic-reloc
+  rc=0      0s  subrom-abi-check
+  rc=0      1s  subrom-closure-check
+  rc=0     22s  unit-test
+  rc=0      0s  deadcode
+  rc=2      2s  wall-assertion-check
+  rc=0      0s  redundant-load-check
+  rc=0      1s  rowshape-check
+  rc=0      3s  injector-check
+  rc=0      0s  temp-root-check
+  rc=0      1s  preflight-check
+  rc=0      4s  latch-check
+  rc=0      3s  diskdep-check
+  rc=0      1s  switch-build-check
+  rc=0     29s  kwsweep
+  rc=0      0s  deffn-selftest
+  rc=0     33s  string-acceptance
+  rc=0     19s  str-domain-acceptance
+  rc=0     35s  strparen-acceptance
+  rc=0    169s  penderr-acceptance
+  rc=0     42s  missing-acceptance
+  rc=0     13s  error-acceptance
+  rc=0     63s  error-trap-acceptance
+  rc=0     69s  onerr0-acceptance
+  rc=0     98s  math-acceptance
+  rc=0     91s  float-acceptance
+  rc=0     41s  intarg-acceptance
+  rc=0     32s  logicops-acceptance
+  rc=0    194s  screenerr-acceptance
+  rc=0    138s  tmfp-acceptance
+  rc=0    174s  stmtpend-acceptance
+  rc=0    116s  array-acceptance
+  rc=0    117s  deffn-strict
+  rc=2   1170s  graphics-acceptance
+  rc=0     56s  abort-acceptance
+  rc=0    146s  interval-trap-acceptance
+  rc=0     75s  clearpool-acceptance
+  rc=0    113s  lineerr#1/8
+  rc=0    113s  lineerr#2/8
+  rc=0    111s  lineerr#3/8
+  rc=0    100s  lineerr#4/8
+  rc=1   1040s  lineerr#5/8
+  rc=1   1039s  lineerr#6/8
+  rc=1    982s  lineerr#7/8
+  rc=1    971s  lineerr#8/8
+
+=== retrying 6 red unit(s) SERIALLY (flake vs real) ===
+  retry wall-assertion-check: rc 2->2  REAL (still red)
+  retry graphics-acceptance: rc 2->0  FLAKE (green on retry)
+  retry lineerr#5/8: rc 1->0  FLAKE (green on retry)
+  retry lineerr#6/8: rc 1->1  REAL (still red)
+  retry lineerr#7/8: rc 1->0  FLAKE (green on retry)
+  retry lineerr#8/8: rc 1->1  REAL (still red)
+
+=== wall 3509s (6s build + 3503s gates) ===
+GATES: 36/38 green  (lineerr shard FAILED)
+RED: wall-assertion-check
+recovered flakes (green on serial retry): graphics-acceptance lineerr#5/8 lineerr#7/8
+hashes: 350db281 33ba143a eced167f
+make: *** [gates] Error 1
+rc=2

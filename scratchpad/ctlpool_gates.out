@@ -1,0 +1,142 @@
+python3 tools/run_gates.py 
+=== warm-up (serial build of shared artifacts) ===
+warm-up 7s
+=== refcache OFF for every unit: a gate measures, it never replays (docs/spec-refcache.md §7) ===
+=== emulator tier RUNS: ROM images differ from the last green battery ===
+=== 4 tree-mutating unit(s), SERIAL (they rewrite a shared tracked file) ===
+  rc=0              1s  switch-build-check
+  rc=0              5s  diskdep-check
+  rc=0              0s  wall-literal-check
+  rc=0             44s  selftest-check
+  (post-mutator refresh 7s -- the plants moved mtimes, so the pool would otherwise race a rebuild)
+=== 108 units, J=8, lineerr in 8 shards, nice=0 solo=None ===
+  rc=0              3s  basic-reloc
+  rc=0              0s  subrom-abi-check
+  rc=0              0s  diskrom-abi-check
+  rc=0              0s  rom-parts-check
+  rc=0              1s  subrom-closure-check
+  rc=2             22s  unit-test
+  rc=0              0s  deadcode
+  rc=0              3s  wall-assertion-check
+  rc=0              0s  redundant-load-check
+  rc=0              1s  rowshape-check
+  rc=0              4s  injector-check
+  rc=0              0s  temp-root-check
+  rc=0              1s  todo-citation-check
+  rc=0              2s  chokepoint-check
+  rc=0              0s  shared-body-check
+  rc=0              0s  probe-reach-check
+  rc=0              0s  battery-membership-check
+  rc=0              0s  fixture-integrity-check
+  rc=0              1s  preflight-check
+  rc=0              4s  latch-check
+  rc=0             18s  kwsweep
+  rc=0             12s  patch-freshness-check
+  rc=0              2s  refcache-check
+  rc=0              0s  knife-guard-check
+  rc=0              1s  knife-rom-guard-check
+  rc=0              0s  deffn-selftest
+  rc=0              0s  banner-acceptance
+  rc=0             36s  string-acceptance
+  rc=0             18s  str-domain-acceptance
+  rc=0             11s  strparen-acceptance
+  rc=0             42s  penderr-acceptance
+  rc=0             45s  missing-acceptance
+  rc=0             12s  error-acceptance
+  rc=0             67s  error-trap-acceptance
+  rc=0             94s  onerr0-acceptance
+  rc=0            108s  math-acceptance
+  rc=0             91s  float-acceptance
+  rc=0             43s  intarg-acceptance
+  rc=0             34s  logicops-acceptance
+  rc=0            181s  screenerr-acceptance
+  rc=0             50s  tmfp-acceptance
+  rc=0             53s  stmtpend-acceptance
+  rc=0            113s  array-acceptance
+  rc=0            124s  deffn-strict
+  rc=0            356s  graphics-acceptance
+  rc=0             53s  abort-acceptance
+  rc=0            144s  interval-trap-acceptance
+  rc=0             78s  clearpool-acceptance
+  rc=0            112s  stackpool-acceptance
+  rc=0            154s  trapdepth-acceptance
+  rc=0             74s  ctlcross-acceptance
+  rc=0             12s  cursor-acceptance
+  rc=0             70s  time-acceptance
+  rc=0            231s  namspc-acceptance
+  rc=0             90s  arrdim-acceptance
+  rc=0             62s  arylv-acceptance
+  rc=0             56s  badfnum-acceptance
+  rc=0              9s  beep-acceptance
+  rc=0             25s  binfre-acceptance
+  rc=0             20s  cassave-acceptance
+  rc=0             75s  castail-acceptance
+  rc=0            123s  deffn-acceptance
+  rc=0             43s  direct-ctrl-acceptance
+  rc=0             11s  dskmsg-acceptance
+  rc=0             69s  editverb-acceptance
+  rc=0             27s  fldary-acceptance
+  rc=0             88s  fldwidth-acceptance
+  rc=0             24s  forvar-acceptance
+  rc=0             52s  gicini-acceptance
+  rc=0              1s  graphics-floor-acceptance
+  rc=0            146s  ifsem-acceptance
+  rc=0              9s  input-acceptance
+  rc=0             54s  nodisk-acceptance
+  rc=0             75s  pusing-acceptance
+  rc=0             43s  catterm-acceptance
+  rc=0             19s  catusr-acceptance
+  rc=0             13s  nameord-acceptance
+  rc=0              4s  namegate-acceptance
+  rc=0             41s  inputary-acceptance
+  rc=0            144s  key-trap-acceptance
+  rc=0             59s  linemax-acceptance
+  rc=0            132s  lnblank-acceptance
+  rc=0             38s  locarg-acceptance
+  rc=0             43s  lof-acceptance
+  rc=0             77s  lptverb-acceptance
+  rc=0             53s  lrvar-acceptance
+  rc=0             56s  lvfix-acceptance
+  rc=0             23s  nxary-acceptance
+  rc=0             21s  nxlist-acceptance
+  rc=0             30s  play-acceptance
+  rc=0             10s  play-trace-acceptance
+  rc=0             18s  readvar-acceptance
+  rc=0              9s  runtail-acceptance
+  rc=0             23s  sound-acceptance
+  rc=0             65s  sprite-trap-acceptance
+  rc=2             54s  stop-trap-acceptance
+  rc=0            142s  strig-trap-acceptance
+  rc=0              0s  subrom-acceptance
+  rc=0             62s  tgtspc-acceptance
+  rc=0             79s  width-acceptance
+  rc=0            103s  lineerr#1/8
+  rc=0            101s  lineerr#2/8
+  rc=0             97s  lineerr#3/8
+  rc=0             94s  lineerr#4/8
+  rc=1             89s  lineerr#5/8
+  rc=1             88s  lineerr#6/8
+  rc=1             65s  lineerr#7/8
+  rc=1             37s  lineerr#8/8
+
+=== retrying 6 red unit(s) SERIALLY (flake vs real) ===
+  retry unit-test: rc 2->2  REAL (still red)
+  retry stop-trap-acceptance: rc 2->2  REAL (still red)
+  retry lineerr#5/8: rc 1->0  FLAKE (green on retry)
+  retry lineerr#6/8: rc 1->0  FLAKE (green on retry)
+  retry lineerr#7/8: rc 1->0  FLAKE (green on retry)
+  retry lineerr#8/8: rc 1->0  FLAKE (green on retry)
+
+=== wall 1194s (7s build + 1187s gates) ===
+GATES: 103/105 green
+RED: unit-test stop-trap-acceptance
+recovered flakes (green on serial retry): lineerr#5/8 lineerr#6/8 lineerr#7/8 lineerr#8/8
+🔴 BATTERY FAILED ON A POOL WRITE: 2 TRACKED FILE(S) WERE WRITTEN DURING THE PARALLEL POOL. The gate tally above is about the gates; this is about the tree they ran on — 40+ units read these while they changed, and a torn read has no witness of its own.
+     tests/test_control_flow.py
+       running at the write: key-trap-acceptance, lineerr#1/8, lnblank-acceptance, sprite-trap-acceptance, stop-trap-acceptance, strig-trap-acceptance, tgtspc-acceptance, width-acceptance
+     tests/test_traps.py
+       running at the write: lineerr#2/8, lineerr#3/8, lineerr#4/8, lineerr#5/8, lineerr#6/8, lineerr#7/8, lineerr#8/8, strig-trap-acceptance
+     → re-run each named unit ALONE and diff the tree, then put the offender in MUTATORS. A legitimately regenerated path goes in REGENERATED, with its reason.
+hashes: fe698e19 aa2caa9c 7d36a467 6bffac04
+🔴 THE BATTERY LEFT 2 TRACKED FILE(S) DIRTY that were clean when it started -- a plant that was not restored: tests/test_control_flow.py tests/test_traps.py
+make: *** [gates] Error 1

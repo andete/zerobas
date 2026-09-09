@@ -1,0 +1,72 @@
+python3 tools/install-repack-machine.py --merged build/zerobas-main-eu.rom --disk-rom build/disk.rom \
+	  --sub-rom build/sub.rom
+wrote C-BIOS_MSX1_EU_REPACK_DISK  (-> machine "C-BIOS_MSX1_EU_REPACK_DISK": merged repack ROM in slot 0, zerobas-disk in slot 3-1, zerobas-sub in slot 3-2)
+     /Users/joost/.openMSX/share/machines/C-BIOS_MSX1_EU_REPACK_DISK.xml
+python3 tools/install-repack-machine.py --merged build/zerobas-main-eu.rom --sub-rom build/sub.rom \
+	  --no-disk
+wrote C-BIOS_MSX1_EU_REPACK_NODISK  (-> machine "C-BIOS_MSX1_EU_REPACK_NODISK": merged repack ROM in slot 0, slot 3-1 EMPTY (diskless target), zerobas-sub in slot 3-2)
+     /Users/joost/.openMSX/share/machines/C-BIOS_MSX1_EU_REPACK_NODISK.xml
+python3 probes/basic/basic_probe_fldwidth.py --gate \
+	         
+fldwidth: 0 reading(s) diverge [+2 rotted deferred face(s)]
+D-FLDWIDTH — what a FIELD width may BE, and what FIELD does when it isn't   sides: cf3300, zb
+==============================================================================
+ok   c.lit       cf3300=' 10 '  zb=' 10 '   [POSITIVE CONTROL]   [ONE REFERENCE ONLY (cf3300) — Disk BASIC]
+ok   c.two       cf3300=' 5  7 '  zb=' 5  7 '   [POSITIVE CONTROL]   [ONE REFERENCE ONLY (cf3300) — Disk BASIC]
+ok   c.lset      cf3300='AB   '  zb='AB   '   [POSITIVE CONTROL]   [ONE REFERENCE ONLY (cf3300) — Disk BASIC]
+ok   c.wsp       cf3300=' 10 '  zb=' 10 '   [ONE REFERENCE ONLY (cf3300) — Disk BASIC]
+ok   c.wsp2      cf3300=' 5  7 '  zb=' 5  7 '   [ONE REFERENCE ONLY (cf3300) — Disk BASIC]
+ok   n.pct       cf3300=' 10 '  zb=' 10 '   [ONE REFERENCE ONLY (cf3300) — Disk BASIC]
+ok   n.bang      cf3300=' 10 '  zb=' 10 '   [ONE REFERENCE ONLY (cf3300) — Disk BASIC]
+ok   n.hash      cf3300=' 10 '  zb=' 10 '   [ONE REFERENCE ONLY (cf3300) — Disk BASIC]
+ok   n.paren     cf3300=' 10 '  zb=' 10 '   [ONE REFERENCE ONLY (cf3300) — Disk BASIC]
+ok   n.expr      cf3300=' 10 '  zb=' 10 '   [ONE REFERENCE ONLY (cf3300) — Disk BASIC]
+ok   n.mul       cf3300=' 10 '  zb=' 10 '   [ONE REFERENCE ONLY (cf3300) — Disk BASIC]
+ok   n.ary       cf3300=' 10 '  zb=' 10 '   [ONE REFERENCE ONLY (cf3300) — Disk BASIC]
+ok   n.fn        cf3300=' 10 '  zb=' 10 '   [ONE REFERENCE ONLY (cf3300) — Disk BASIC]
+ok   n.val       cf3300=' 10 '  zb=' 10 '   [ONE REFERENCE ONLY (cf3300) — Disk BASIC]
+ok   s.var       cf3300='<Type mismatch>'  zb='<Type mismatch>'   [ONE REFERENCE ONLY (cf3300) — Disk BASIC]
+ok   s.lit       cf3300='<Type mismatch>'  zb='<Type mismatch>'   [ONE REFERENCE ONLY (cf3300) — Disk BASIC]
+ok   s.ary       cf3300='<Type mismatch>'  zb='<Type mismatch>'   [ONE REFERENCE ONLY (cf3300) — Disk BASIC]
+ok   s.fn        cf3300='<Type mismatch>'  zb='<Type mismatch>'   [ONE REFERENCE ONLY (cf3300) — Disk BASIC]
+ok   s.join      cf3300='<Type mismatch>'  zb='<Type mismatch>'   [ONE REFERENCE ONLY (cf3300) — Disk BASIC]
+ok   s.joinctl   cf3300='<Type mismatch>'  zb='<Type mismatch>'   [POSITIVE CONTROL]   [ONE REFERENCE ONLY (cf3300) — Disk BASIC]
+ok   d.zero      cf3300=' 0 '  zb=' 0 '   [ONE REFERENCE ONLY (cf3300) — Disk BASIC]
+ok   d.neg       cf3300='<Illegal function call>'  zb='<Illegal function call>'   [ONE REFERENCE ONLY (cf3300) — Disk BASIC]
+ok   d.256       cf3300='<Illegal function call>'  zb='<Illegal function call>'   [ONE REFERENCE ONLY (cf3300) — Disk BASIC]
+ok   d.257       cf3300='<Illegal function call>'  zb='<Illegal function call>'   [ONE REFERENCE ONLY (cf3300) — Disk BASIC]
+ok   d.big       cf3300='<Overflow>'  zb='<Overflow>'   [ONE REFERENCE ONLY (cf3300) — Disk BASIC]
+ok   d.frac      cf3300=' 10 '  zb=' 10 '   [ONE REFERENCE ONLY (cf3300) — Disk BASIC]
+ok   d.sum       cf3300='<FIELD overflow>'  zb='<FIELD overflow>'   [ONE REFERENCE ONLY (cf3300) — Disk BASIC]
+ok   d.sum1      cf3300='<FIELD overflow>'  zb='<FIELD overflow>'   [ONE REFERENCE ONLY (cf3300) — Disk BASIC]
+ok   d.sumok     cf3300=' 200  56 '  zb=' 200  56 '   [POSITIVE CONTROL]   [ONE REFERENCE ONLY (cf3300) — Disk BASIC]
+ok   r.openctl   cf3300='OK'  zb='OK'   [ONE REFERENCE ONLY (cf3300) — Disk BASIC]
+ok   r.ok        cf3300=' 64 '  zb=' 64 '   [ONE REFERENCE ONLY (cf3300) — Disk BASIC]
+ok   r.over      cf3300='<FIELD overflow>'  zb='<FIELD overflow>'   [ONE REFERENCE ONLY (cf3300) — Disk BASIC]
+ok   r.mid       cf3300='<FIELD overflow>'  zb='<FIELD overflow>'   [ONE REFERENCE ONLY (cf3300) — Disk BASIC]
+.... r.sum       cf3300='<FIELD overflow>'  zb='<FIELD overflow>'   [DEFERRED — ran TWO questions together (a non-tiling LEN=100 AND the running total); split into r.len100 + r.sum128, which are scored. Kept as the record of a row whose MISS was the finding]   🔴 FACE ROTTED: zb: pinned '<Illegal function call>', now '<FIELD overflow>'
+.... r.len100    cf3300='OK'  zb='OK'   [DEFERRED — a NON-TILING `LEN=` is `OK` on the CF-3300 and `Illegal function call` here (it read `Syntax error` when this was filed; D-RECLENDOM re-measured it as ERR 5 on 2026-09-04). oo_parse_reclen demands a power of two so records tile the 512-byte sector. A SEPARATE defect, filed in TODO.md; NOT part of the ERR-50 rule and not fixed by it]   🔴 FACE ROTTED: zb: pinned '<Illegal function call>', now 'OK'
+ok   r.sum128    cf3300='<FIELD overflow>'  zb='<FIELD overflow>'   [ONE REFERENCE ONLY (cf3300) — Disk BASIC]
+ok   d.div       cf3300='<Division by zero>'  zb='<Division by zero>'   [ONE REFERENCE ONLY (cf3300) — Disk BASIC]
+ok   ch.str      cf3300='<Type mismatch>'  zb='<Type mismatch>'   [ONE REFERENCE ONLY (cf3300) — Disk BASIC]
+ok   ch.expr     cf3300=' 10 '  zb=' 10 '   [POSITIVE CONTROL]   [ONE REFERENCE ONLY (cf3300) — Disk BASIC]
+ok   m.str2      cf3300='<Type mismatch>'  zb='<Type mismatch>'   [ONE REFERENCE ONLY (cf3300) — Disk BASIC]
+ok   m.trap      cf3300=' 13  5 '  zb=' 13  5 '   [ONE REFERENCE ONLY (cf3300) — Disk BASIC]
+ok   m.neg2      cf3300='<Illegal function call>'  zb='<Illegal function call>'   [ONE REFERENCE ONLY (cf3300) — Disk BASIC]
+ok   t.num       cf3300='<Type mismatch>'  zb='<Type mismatch>'   [ONE REFERENCE ONLY (cf3300) — Disk BASIC]
+ok   t.numctl    cf3300='<Type mismatch>'  zb='<Type mismatch>'   [POSITIVE CONTROL]   [ONE REFERENCE ONLY (cf3300) — Disk BASIC]
+ok   t.noas      cf3300='<Syntax error>'  zb='<Syntax error>'   [NEGATIVE CONTROL — the reference REFUSES this]   [ONE REFERENCE ONLY (cf3300) — Disk BASIC]
+ok   t.nonm      cf3300='<Syntax error>'  zb='<Syntax error>'   [NEGATIVE CONTROL — the reference REFUSES this]   [ONE REFERENCE ONLY (cf3300) — Disk BASIC]
+ok   o.wt        cf3300='<Type mismatch>'  zb='<Type mismatch>'   [ONE REFERENCE ONLY (cf3300) — Disk BASIC]
+ok   o.dt        cf3300='<Illegal function call>'  zb='<Illegal function call>'   [ONE REFERENCE ONLY (cf3300) — Disk BASIC]
+ok   o.chan      cf3300='<Bad file number>'  zb='<Bad file number>'   [ONE REFERENCE ONLY (cf3300) — Disk BASIC]
+ROWS: 49 printed, 47 scored — 47 agree, 0 diverge, 0 without a reference, 2 deferred (not scored)
+==============================================================================
+47/47 readings match their reference (49 cases, 7 positive controls, 2 negative controls, 47 row(s) with ONE reference only, 0 row(s) without a reference, 0 row(s) where the references disagree, 2 DEFERRED row(s) measured but not scored)
+🔴 ORACLE STRENGTH IS NOT UNIFORM: every `FIELD`/`LSET` row is Disk BASIC, which a diskless VG-8020 cannot express — they rest on the CF-3300 ALONE. Only `s.joinctl` can have two references.
+DENOMINATOR: (WHAT TYPE the width expression has: an integer literal, a `%`/`!`/`#` scalar, a parenthesised unsuffixed name, a numeric array element, a `+`/`*` expression, a numeric FUNCTION of a string (LEN) and of a literal (VAL) -- against a string VARIABLE, a string LITERAL, a string ARRAY ELEMENT, a string FUNCTION, and the unsuffixed name that D-NAMSPC's name scan JOINS with the following `AS` into a string reference) x (WHAT DOMAIN: 0, negative, past the BYTE ex_field keeps (256/257), past int16 (70000), a non-integer (10.7 -- truncate or round), and a RUNNING TOTAL past the 256-byte record) x (WHICH SURFACE: the width, the CHANNEL's own unchecked eval, the TARGET's type test, and the SECOND item of a multi-item list, which is where a per-item check and a once-at-entry one differ) x (WHICH ERROR and IN WHAT ORDER: two competing faults in one statement, width-vs-target and channel-vs-width). Every group carries the WORKING form of its own fixture as its positive control, and every accepting row reads the WIDTH BACK rather than printing OK. NOT COVERED: `GET`/`PUT` record I-O through a bad field; a `LEN=` record length other than the 256-byte default; `FIELD` on a CAS: channel; and message WORDING (D-MSGEXACT's surface -- the error-name match here is case-insensitive).
+🔴 DEFERRED FACE(S) ROTTED — a deferral is a PIN, not a note (D-DEFERPIN). The row still may not be scored; what moved is the reading the deferral's REASON is written about:
+    r.sum  zb: pinned '<Illegal function call>', now '<FIELD overflow>'
+    r.len100  zb: pinned '<Illegal function call>', now 'OK'
+refcache: 0 hit, 98 miss, 98 stored
+make: *** [fldwidth-acceptance] Error 1

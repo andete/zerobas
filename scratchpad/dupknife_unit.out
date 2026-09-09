@@ -1,0 +1,300 @@
+python3 tests/run.py
+Traceback (most recent call last):
+  File "/Users/joost/projects/zerobas/tests/test_control_flow.py", line 270, in <module>
+    sys.exit(1 if run() else 0)
+                  ~~~^^
+  File "/Users/joost/projects/zerobas/tests/test_control_flow.py", line 261, in run
+    fails = fn(Machine(ROM, SYM, rom_base=BASIC_BASE), fails)
+  File "/Users/joost/projects/zerobas/tests/test_control_flow.py", line 148, in test_for_next_step
+    run_program(m, [
+    ~~~~~~~~~~~^^^^^
+        (10, "T=0"),
+        ^^^^^^^^^^^^
+    ...<2 lines>...
+        (40, "NEXT"),
+        ^^^^^^^^^^^^^
+    ])
+    ^^
+  File "/Users/joost/projects/zerobas/tests/test_control_flow.py", line 95, in run_program
+    m.call("run_prog")
+    ~~~~~~^^^^^^^^^^^^
+  File "/Users/joost/projects/zerobas/tests/msxtest.py", line 286, in call
+    raise RuntimeError(f"runaway: {steps} steps, PC={cpu.pc:#06x}")
+RuntimeError: runaway: 2000001 steps, PC=0x4d7a
+Traceback (most recent call last):
+  File "/Users/joost/projects/zerobas/tests/test_float.py", line 588, in <module>
+    raise SystemExit(run())
+                     ~~~^^
+  File "/Users/joost/projects/zerobas/tests/test_float.py", line 581, in run
+    fails += run_f2(m, s, ck)
+             ~~~~~~^^^^^^^^^^
+  File "/Users/joost/projects/zerobas/tests/test_float.py", line 301, in run_f2
+    got, err = do_op("fp_div", a, b)
+               ~~~~~^^^^^^^^^^^^^^^^
+  File "/Users/joost/projects/zerobas/tests/test_float.py", line 247, in do_op
+    m.call(routine)
+    ~~~~~~^^^^^^^^^
+  File "/Users/joost/projects/zerobas/tests/msxtest.py", line 286, in call
+    raise RuntimeError(f"runaway: {steps} steps, PC={cpu.pc:#06x}")
+RuntimeError: runaway: 2000001 steps, PC=0x32ec
+isolated build artifacts: /tmp/zerobas/unit-vkrk2wiu
+PASS  test_arrays.py
+PASS  test_beep.py
+FAIL  test_control_flow.py
+=== FOR/NEXT (named) ===
+PASS  FOR I=1 TO 5 sum: got 15
+
+=== FOR/NEXT (STEP, bare) ===
+PASS  test_echo_oracle.py
+FAIL  test_expr.py
+PASS  '2+3*4'
+PASS  '(2+3)*4'
+PASS  '10-3-2'
+PASS  '7\\2'
+PASS  '7 MOD 3'
+PASS  '-5'
+PASS  '3*-2'
+PASS  '&HFF'
+PASS  '&H10'
+PASS  '&O17'
+PASS  '5>3'
+FAIL  '3>5'  want 0x0000 got 0xffff
+PASS  '5=5'
+PASS  '5<3'
+PASS  '5<=5'
+PASS  '5>=3'
+PASS  '5<>5'
+PASS  '-1<0'
+PASS  'NOT 0'
+PASS  '(1=1)AND(2=2)'
+PASS  '(1=1)OR(1=2)'
+PASS  '(1=1)XOR(1=1)'
+PASS  '5/0 result=0'
+PASS  '5/0 FPERR=2'
+PASS  'VPEEK(&H1234) result'
+PASS  'VPEEK RDVRM HL=0x1234'
+PASS  'INP(&HAB) result'
+PASS  'INP port=0x00AB'
+
+1 CASE(S) FAILED
+PASS  test_fat_alloc_cluster.py
+PASS  test_fat_alloc_hint.py
+PASS  test_fat_dir_create.py
+PASS  test_fat_find.py
+PASS  test_fat_have_free_cluster.py
+PASS  test_fat_next_cluster.py
+PASS  test_fat_read_file_sector.py
+PASS  test_fat_write_fat_entry.py
+PASS  test_field.py
+FAIL  test_float.py
+# --- encode matrix: tokenise(literal;) -> crunched bytes (sub-ROM crunch) ---
+PASS  tokenise('0';) bytes: got b'\x11' want b'\x11'
+PASS  tokenise('0';) resume: got b';\x00' want b';\x00'
+PASS  tokenise('9';) bytes: got b'\x1a' want b'\x1a'
+PASS  tokenise('9';) resume: got b';\x00' want b';\x00'
+PASS  tokenise('10';) bytes: got b'\x0f\n' want b'\x0f\n'
+PASS  tokenise('10';) resume: got b';\x00' want b';\x00'
+PASS  tokenise('255';) bytes: got b'\x0f\xff' want b'\x0f\xff'
+PASS  tokenise('255';) resume: got b';\x00' want b';\x00'
+PASS  tokenise('256';) bytes: got b'\x1c\x00\x01' want b'\x1c\x00\x01'
+PASS  tokenise('256';) resume: got b';\x00' want b';\x00'
+PASS  tokenise('32767';) bytes: got b'\x1c\xff\x7f' want b'\x1c\xff\x7f'
+PASS  tokenise('32767';) resume: got b';\x00' want b';\x00'
+PASS  tokenise('32768';) bytes: got b'\x1dE2v\x80' want b'\x1dE2v\x80'
+PASS  tokenise('32768';) resume: got b';\x00' want b';\x00'
+PASS  tokenise('65535';) bytes: got b'\x1dEeSP' want b'\x1dEeSP'
+PASS  tokenise('65535';) resume: got b';\x00' want b';\x00'
+PASS  tokenise('999999';) bytes: got b'\x1dF\x99\x99\x99' want b'\x1dF\x99\x99\x99'
+PASS  tokenise('999999';) resume: got b';\x00' want b';\x00'
+PASS  tokenise('1000000';) bytes: got b'\x1fG\x10\x00\x00\x00\x00\x00\x00' want b'\x1fG\x10\x00\x00\x00\x00\x00\x00'
+PASS  tokenise('1000000';) resume: got b';\x00' want b';\x00'
+PASS  tokenise('9999999';) bytes: got b'\x1fG\x99\x99\x99\x90\x00\x00\x00' want b'\x1fG\x99\x99\x99\x90\x00\x00\x00'
+PASS  tokenise('9999999';) resume: got b';\x00' want b';\x00'
+PASS  tokenise('.5';) bytes: got b'\x1d@P\x00\x00' want b'\x1d@P\x00\x00'
+PASS  tokenise('.5';) resume: got b';\x00' want b';\x00'
+PASS  tokenise('0.5';) bytes: got b'\x1d@P\x00\x00' want b'\x1d@P\x00\x00'
+PASS  tokenise('0.5';) resume: got b';\x00' want b';\x00'
+PASS  tokenise('1.5';) bytes: got b'\x1dA\x15\x00\x00' want b'\x1dA\x15\x00\x00'
+PASS  tokenise('1.5';) resume: got b';\x00' want b';\x00'
+PASS  tokenise('1.';) bytes: got b'\x1dA\x10\x00\x00' want b'\x1dA\x10\x00\x00'
+PASS  tokenise('1.';) resume: got b';\x00' want b';\x00'
+PASS  tokenise('3.14159';) bytes: got b'\x1dA1AY' want b'\x1dA1AY'
+PASS  tokenise('3.14159';) resume: got b';\x00' want b';\x00'
+PASS  tokenise('3.1415926';) bytes: got b'\x1fA1AY&\x00\x00\x00' want b'\x1fA1AY&\x00\x00\x00'
+PASS  tokenise('3.1415926';) resume: got b';\x00' want b';\x00'
+PASS  tokenise('.000001';) bytes: got b'\x1d;\x10\x00\x00' want b'\x1d;\x10\x00\x00'
+PASS  tokenise('.000001';) resume: got b';\x00' want b';\x00'
+PASS  tokenise('1234567';) bytes: got b'\x1fG\x124Vp\x00\x00\x00' want b'\x1fG\x124Vp\x00\x00\x00'
+PASS  tokenise('1234567';) resume: got b';\x00' want b';\x00'
+PASS  tokenise('1e5';) bytes: got b'\x1dF\x10\x00\x00' want b'\x1dF\x10\x00\x00'
+PASS  tokenise('1e5';) resume: got b';\x00' want b';\x00'
+PASS  tokenise('1e10';) bytes: got b'\x1dK\x10\x00\x00' want b'\x1dK\x10\x00\x00'
+PASS  tokenise('1e10';) resume: got b';\x00' want b';\x00'
+PASS  tokenise('1e-3';) bytes: got b'\x1d>\x10\x00\x00' want b'\x1d>\x10\x00\x00'
+PASS  tokenise('1e-3';) resume: got b';\x00' want b';\x00'
+PASS  tokenise('1d5';) bytes: got b'\x1fF\x10\x00\x00\x00\x00\x00\x00' want b'\x1fF\x10\x00\x00\x00\x00\x00\x00'
+PASS  tokenise('1d5';) resume: got b';\x00' want b';\x00'
+PASS  tokenise('1e62';) bytes: got b'\x1d\x7f\x10\x00\x00' want b'\x1d\x7f\x10\x00\x00'
+PASS  tokenise('1e62';) resume: got b';\x00' want b';\x00'
+PASS  tokenise('1e-63';) bytes: got b'\x1d\x02\x10\x00\x00' want b'\x1d\x02\x10\x00\x00'
+PASS  tokenise('1e-63';) resume: got b';\x00' want b';\x00'
+PASS  tokenise('1e-64';) bytes: got b'\x1d\x01\x10\x00\x00' want b'\x1d\x01\x10\x00\x00'
+PASS  tokenise('1e-64';) resume: got b';\x00' want b';\x00'
+PASS  tokenise('1e-65';) bytes: got b'\x1d\x00\x10\x00\x00' want b'\x1d\x00\x10\x00\x00'
+PASS  tokenise('1e-65';) resume: got b';\x00' want b';\x00'
+PASS  tokenise('1!';) bytes: got b'\x1dA\x10\x00\x00' want b'\x1dA\x10\x00\x00'
+PASS  tokenise('1!';) resume: got b';\x00' want b';\x00'
+PASS  tokenise('1#';) bytes: got b'\x1fA\x10\x00\x00\x00\x00\x00\x00' want b'\x1fA\x10\x00\x00\x00\x00\x00\x00'
+PASS  tokenise('1#';) resume: got b';\x00' want b';\x00'
+PASS  tokenise('32767#';) bytes: got b'\x1fE2vp\x00\x00\x00\x00' want b'\x1fE2vp\x00\x00\x00\x00'
+PASS  tokenise('32767#';) resume: got b';\x00' want b';\x00'
+PASS  tokenise('1234567!';) bytes: got b'\x1dG\x124W' want b'\x1dG\x124W'
+PASS  tokenise('1234567!';) resume: got b';\x00' want b';\x00'
+PASS  tokenise('1234565!';) bytes: got b'\x1dG\x124W' want b'\x1dG\x124W'
+PASS  tokenise('1234565!';) resume: got b';\x00' want b';\x00'
+PASS  tokenise('1234575!';) bytes: got b'\x1dG\x124X' want b'\x1dG\x124X'
+PASS  tokenise('1234575!';) resume: got b';\x00' want b';\x00'
+PASS  tokenise('9999995!';) bytes: got b'\x1dG\x10\x00\x00' want b'\x1dG\x10\x00\x00'
+PASS  tokenise('9999995!';) resume: got b';\x00' want b';\x00'
+PASS  tokenise('9999999999999999';) bytes: got b'\x1fQ\x10\x00\x00\x00\x00\x00\x00' want b'\x1fQ\x10\x00\x00\x00\x00\x00\x00'
+PASS  tokenise('9999999999999999';) resume: got b';\x00' want b';\x00'
+PASS  tokenise('0!';) bytes: got b'\x1d\x00\x00\x00\x00' want b'\x1d\x00\x00\x00\x00'
+PASS  tokenise('0!';) resume: got b';\x00' want b';\x00'
+PASS  tokenise('0#';) bytes: got b'\x1f\x00\x00\x00\x00\x00\x00\x00\x00' want b'\x1f\x00\x00\x00\x00\x00\x00\x00\x00'
+PASS  tokenise('0#';) resume: got b';\x00' want b';\x00'
+PASS  tokenise('.0';) bytes: got b'\x1d\x00\x00\x00\x00' want b'\x1d\x00\x00\x00\x00'
+PASS  tokenise('.0';) resume: got b';\x00' want b';\x00'
+PASS  tokenise('1%';) bytes: got b'\x12' want b'\x12'
+PASS  tokenise('1%';) resume: got b';\x00' want b';\x00'
+PASS  tokenise('100%';) bytes: got b'\x0fd' want b'\x0fd'
+PASS  tokenise('100%';) resume: got b';\x00' want b';\x00'
+PASS  tokenise('30000%';) bytes: got b'\x1c0u' want b'\x1c0u'
+PASS  tokenise('30000%';) resume: got b';\x00' want b';\x00'
+# --- crunch-time overflow: TKOVF set, line rejected ---
+PASS  tokenise('1e63') sets TKOVF: got 6 want 6
+PASS  tokenise('65535%') sets TKOVF: got 6 want 6
+# --- format matrix: flt_out(FAC,FACTYP) -> printed string (resident) ---
+PASS  flt_out(FAC=41 15 00 00,FACTYP=4): got ' 1.5 ' want ' 1.5 '
+PASS  flt_out(FAC=C1 15 00 00,FACTYP=4): got '-1.5 ' want '-1.5 '
+PASS  flt_out(FAC=40 50 00 00,FACTYP=4): got ' .5 ' want ' .5 '
+PASS  flt_out(FAC=41 10 00 00,FACTYP=4): got ' 1 ' want ' 1 '
+PASS  flt_out(FAC=47 12 34 57,FACTYP=4): got ' 1234570 ' want ' 1234570 '
+PASS  flt_out(FAC=47 10 00 00,FACTYP=4): got ' 1000000 ' want ' 1000000 '
+FAIL  flt_out(FAC=3E 10 00 00,FACTYP=4): got ' .001 ' want ' 1E-03 '
+PASS  flt_out(FAC=58 60 23 00,FACTYP=4): got ' 6.023E+23 ' want ' 6.023E+23 '
+PASS  flt_out(FAC=00 00 00 00,FACTYP=4): got ' 0 ' want ' 0 '
+PASS  flt_out(FAC=41 12 34 56 78 90 00 00,FACTYP=8): got ' 1.23456789 ' want ' 1.23456789 '
+PASS  flt_out(FAC=51 10 00 00 00 00 00 00,FACTYP=8): got ' 1E+16 ' want ' 1E+16 '
+PASS  flt_out(FAC=52 12 34 56 78 90 12 35,FACTYP=8): got ' 1.2345678901235E+17 ' want ' 1.2345678901235E+17 '
+# --- flt_to_int16: TRUNCATING, address domain (spec §10.3, F2) ---
+PASS  flt_to_int16(FAC=41 15 00 00,FACTYP=4): got 1 want 1
+PASS  flt_to_int16(FAC=41 24 00 00,FACTYP=4): got 2 want 2
+PASS  flt_to_int16(FAC=41 25 00 00,FACTYP=4): got 2 want 2
+PASS  flt_to_int16(FAC=C1 25 00 00,FACTYP=4): got 65534 want 65534
+PASS  flt_to_int16(FAC=49 00 00 00 00 00 00 00,FACTYP=8): got 0 want 0
+PASS  flt_to_int16(FAC=45 32 76 74,FACTYP=4): got 32767 want 32767
+PASS  flt_to_int16(FAC=45 32 76 76,FACTYP=4): got 32767 want 32767
+PASS  flt_to_int16(FAC=45 40 00 00,FACTYP=4): got 40000 want 40000
+PASS  flt_to_int16(FAC=45 65 53 50,FACTYP=4): got 65535 want 65535
+PASS  flt_to_int16(FAC=45 65 53 55,FACTYP=4): got 0 want 0
+PASS  flt_to_int16(FAC=45 99 99 99,FACTYP=4): got 0 want 0
+PASS  flt_to_int16(FAC=C5 32 76 80,FACTYP=4): got 32768 want 32768
+PASS  flt_to_int16(FAC=C5 32 76 85,FACTYP=4): got 32768 want 32768
+PASS  flt_to_int16(FAC=C5 32 76 89,FACTYP=4): got 32768 want 32768
+PASS  flt_to_int16(FAC=C5 32 76 90,FACTYP=4): got 0 want 0
+PASS  flt_to_int16(FAC=00 00 00 00,FACTYP=4): got 0 want 0
+PASS  flt_to_int16(FAC=45 40 00 05,FACTYP=4): got 40001 want 40001
+# --- flt_neg ---
+PASS  flt_neg flips the sign bit: got 193 want 193
+PASS  flt_neg is its own inverse: got 65 want 65
+PASS  flt_neg exempts the value-0 lead byte: got 0 want 0
+# --- FACTYP leak through function factors (F1 review live-catch) ---
+PASS  PEEK(float 40000) returns the peeked byte: got 123 want 123
+PASS  ...and resets FACTYP to int: got 2 want 2
+PASS  (1.5) keeps FACTYP=4 (parens preserve floatness): got 4 want 4
+PASS  (1.5) still yields the truncated int in DE: got 1 want 1
+# --- F2: fp_add / fp_sub (spec §10.2) ---
+PASS  fp_add(1,5E-14): got Decimal('1.0000000000001') want Decimal('1.0000000000001')
+PASS  fp_add(1,5E-14) FPERR: got 0 want 0
+PASS  fp_add(1,4E-14): got Decimal('1.0000000000000') want Decimal('1')
+PASS  fp_add(1,4E-14) FPERR: got 0 want 0
+PASS  fp_add(1,-1E-15): got Decimal('1.0000000000000') want Decimal('1')
+PASS  fp_add(1,-1E-15) FPERR: got 0 want 0
+PASS  fp_add(99999999999999,1): got Decimal('100000000000000') want Decimal('1E+14')
+PASS  fp_add(99999999999999,1) FPERR: got 0 want 0
+PASS  fp_add(1E+62,0): got Decimal('1.000000000000000000000000000000000000000E+62') want Decimal('1E+62')
+PASS  fp_add(1E+62,0) FPERR: got 0 want 0
+PASS  fp_add(123456,0.5): got Decimal('123456.50000000') want Decimal('123456.5')
+PASS  fp_add(123456,0.5) FPERR: got 0 want 0
+PASS  fp_add(1000000,1): got Decimal('1000001.0000000') want Decimal('1000001')
+PASS  fp_add(1000000,1) FPERR: got 0 want 0
+PASS  fp_sub(2.00001,1.000005): got Decimal('1.0000050000000') want Decimal('1.000005')
+PASS  fp_sub(2.00001,1.000005) FPERR: got 0 want 0
+PASS  fp_sub(0,0): got Decimal('0') want Decimal('0')
+PASS  fp_sub(0,0) FPERR: got 0 want 0
+# --- F2: fp_add/fp_sub overflow (spec §10.2) ---
+PASS  fp_add(9e62,9e62) FPERR=overflow: got 1 want 1
+# --- F2: fp_mul (spec §10.2) ---
+PASS  fp_mul(3125,625): got Decimal('1953125.0000000') want Decimal('1953125')
+PASS  fp_mul(3125,625) FPERR: got 0 want 0
+PASS  fp_mul(123456,654321): got Decimal('80779853376.000') want Decimal('80779853376')
+PASS  fp_mul(123456,654321) FPERR: got 0 want 0
+PASS  fp_mul(9E+61,9): got Decimal('8.100000000000000000000000000000000000000E+62') want Decimal('8.1E+62')
+PASS  fp_mul(9E+61,9) FPERR: got 0 want 0
+PASS  fp_mul(1E-32,1E-32): got Decimal('1.0000000000000E-64') want Decimal('1E-64')
+PASS  fp_mul(1E-32,1E-32) FPERR: got 0 want 0
+PASS  fp_mul(2.5,1.0000000000001): got Decimal('2.5000000000003') want Decimal('2.5000000000003')
+PASS  fp_mul(2.5,1.0000000000001) FPERR: got 0 want 0
+PASS  fp_mul(2e62,4) FPERR=overflow (63+1=64, pre-check): got 1 want 1
+PASS  fp_mul(1e-33,1e-32) -> 0 (underflow, silent): got Decimal('0') want Decimal('0')
+PASS  fp_mul(1e-33,1e-32) FPERR: got 0 want 0
+# --- F2: fp_div (spec §10.2) ---
+PASS  test_fren_collision.py
+PASS  test_gdate.py
+PASS  test_getdpb.py
+PASS  test_graphics.py
+PASS  test_harness_guard.py
+PASS  test_input.py
+PASS  test_key_drain_guard.py
+PASS  test_list.py
+PASS  test_mid_stmt.py
+PASS  test_msgenc.py
+PASS  test_msgsub.py
+PASS  test_open_len.py
+PASS  test_play_frame_sim.py
+PASS  test_play_parse.py
+PASS  test_poke.py
+PASS  test_print.py
+PASS  test_printusing.py
+PASS  test_probe_report.py
+PASS  test_program.py
+PASS  test_rand_straddle.py
+PASS  test_rdblk_randrecord.py
+PASS  test_repl.py
+PASS  test_rrnd_8bit_limit.py
+PASS  test_screen.py
+PASS  test_sound.py
+PASS  test_span_reader.py
+PASS  test_statements.py
+PASS  test_stmt_dispatch.py
+PASS  test_str_compare.py
+PASS  test_str_engine.py
+PASS  test_str_fn.py
+PASS  test_str_verbs.py
+PASS  test_strvar.py
+PASS  test_tape.py
+PASS  test_tokenise.py
+PASS  test_traps.py
+PASS  test_usr.py
+PASS  test_vars.py
+PASS  test_vdpio.py
+PASS  test_wildcard.py
+PASS  test_wrblk_body_e2e.py
+PASS  test_wrblk_cursor.py
+PASS  test_wrblk_extend.py
+PASS  test_wrblk_fsize.py
+PASS  test_wrrnd_extend.py
+PASS  test_wrseq_position.py
+
+3/61 FILE(S) FAILED: test_control_flow.py, test_expr.py, test_float.py
+make: *** [unit-test] Error 1

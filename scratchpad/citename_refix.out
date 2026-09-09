@@ -1,0 +1,2 @@
+selftest: GREEN control passes and a planted drift goes RED on TODO.md:413 (T-A55F3D); NOT-A-CITATION suppresses 1 citation(s) there and nothing else; D-CITESUBJ fires on two docs naming different blocks and not on agreement ✅
+--fix: rewrote 5 line number(s) from the block id; re-run to confirm

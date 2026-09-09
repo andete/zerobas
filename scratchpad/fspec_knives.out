@@ -1,0 +1,22 @@
+=== baseline: rebuild first, then the gate must be GREEN
+  ROM 35377711 f980489f 99a63f2e 496da3db
+  namspc rc=0  DIFF rows none   scratchpad/fspec_knives/base.out
+
+=== K-FS1: a full name rejects again instead of starting the extension
+  ROM 35377711 f980489f 99a63f2e 496da3db  ->  35377711 3222a1be 99a63f2e 496da3db
+  rc=1  DIFF rows ['m.both', 'm.long', 'w.savelong', 'w.savenodot', 'w.savepos']   ok   scratchpad/fspec_knives/K-FS1.out
+
+=== K-FS2: the '.' test moves before the full test -- leftovers read as a 2nd dot
+  ROM 35377711 3222a1be 99a63f2e 496da3db  ->  35377711 45ea3c92 99a63f2e 496da3db
+  rc=1  DIFF rows ['m.both', 'm.long', 'w.savelong', 'w.savenodot', 'w.savepos']   ok   scratchpad/fspec_knives/K-FS2.out
+
+=== K-FS3: a malformed name goes back to load_error's print-and-return
+  ROM 35377711 45ea3c92 99a63f2e 496da3db  ->  d5bf2309 f980489f 99a63f2e 7c756e5a
+  rc=1  DIFF rows ['m.dot', 'm.dotdot', 'm.empty', 'm.twodot', 'v.k2dot', 'v.kempty', 'v.l2dot', 'v.lempty', 'v.o2dot', 'v.oempty', 'v.s2dot', 'v.sempty']   ok   scratchpad/fspec_knives/K-FS3.out
+
+=== verdict
+  K-FS1  ok  want 5 rows, got 5
+  K-FS2  ok  want 5 rows, got 5
+  K-FS3  ok  want 12 rows, got 12
+KNIVES: PASS
+  restored basic/fcbname-body.inc, basic/pdfcb-body.inc byte-identically

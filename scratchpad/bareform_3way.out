@@ -1,0 +1,15 @@
+  REM       vg=legal     cf=legal     zb=legal    
+  KILL      vg=ERR 5     cf=ERR 24    zb=ERR 24      🟡 REFS-SPLIT
+  NAME      vg=ERR 5     cf=ERR 24    zb=ERR 24      🟡 REFS-SPLIT
+  FIELD     vg=ERR 5     cf=ERR 24    zb=ERR 24      🟡 REFS-SPLIT
+  LSET      vg=ERR 5     cf=ERR 2     zb=ERR 2       🟡 REFS-SPLIT
+  RSET      vg=ERR 5     cf=ERR 2     zb=ERR 2       🟡 REFS-SPLIT
+  CLOAD     vg=<none>    cf=<none>    zb=legal       🔴 DIFF
+  COLOR     vg=ERR 24    cf=ERR 24    zb=legal       🔴 DIFF
+  KEY       vg=ERR 24    cf=ERR 24    zb=ERR 2       🔴 DIFF
+
+=== 3 divergence(s): ['CLOAD', 'COLOR', 'KEY'] ===
+    REFS-SPLIT (5): ['KILL', 'NAME', 'FIELD', 'LSET', 'RSET'] -- the two references disagree, so
+    zerobas cannot be scored on these. Most are Disk-BASIC verbs and the VG-8020
+    has no disk ROM.
+    🔴 ['CLOAD'] produced NO reading on a side -- an absence, not agreement, and each needs a reason [[an-unnamed-outcome-reads-as-no-outcome]].

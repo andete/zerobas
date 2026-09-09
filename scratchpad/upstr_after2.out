@@ -1,0 +1,29 @@
+
+row            vg8020       cf3300           zb   statement
+c.plain          ok 1         ok 1         ok 1   A=1 / PRINT A   refs agree
+           CONTROL: no unary operator at all
+c.neg           ok -1        ok -1        ok -1   A=-1 / PRINT A   refs agree
+           CONTROL: unary MINUS, correct on all three
+f.let            ok 1         ok 1         ok 1   A=+1 / PRINT A   refs agree
+           the filed form
+f.var            ok 1         ok 1         ok 1   B=1:A=+B / PRINT A   refs agree
+           unary + on a VARIABLE
+f.paren          ok 1         ok 1         ok 1   A=(+1) / PRINT A   refs agree
+           inside parentheses
+f.bin            ok 3         ok 3         ok 3   A=1++2 / PRINT A   refs agree
+           binary + then unary +
+x.dbl            ok 1         ok 1         ok 1   A=++1 / PRINT A   refs agree
+           🔴 TWO unary pluses -- the identity arm re-enters ev_f
+x.mixed         ok -1        ok -1        ok -1   A=+-1 / PRINT A   refs agree
+           plus then minus
+x.pow            ok 4         ok 4         ok 4   A=+2^2 / PRINT A   refs agree
+           binding vs `^` (identity makes both readings 4)
+x.str            ok X         ok X         ok X   A$="X":B$=+A$ / PRINT B$   refs agree
+           🔴 unary + on a STRING -- unmeasured, and the fix reaches it
+x.strlit         ok X         ok X         ok X   B$=+"X" / PRINT B$   refs agree
+           ...on a string LITERAL
+x.prstr          ok X         ok X         ok X   A$="X" / PRINT +A$   refs agree
+           ...in the PRINT factor position
+
+0 row(s) where zerobas differs from the CF-3300.
+refcache: 24 hit, 12 miss, 12 stored

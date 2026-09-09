@@ -1,0 +1,22 @@
+
+row              vg8020        cf3300            zb   note
+d.depth0       4071 7 0      3302 7 0         8 7 0   plain recursion depth, no trap at all
+d.depth1       4046 7 0      3277 7 0         8 7 0   ...after ONE abandoned dispatch
+d.depth20     4016 7 20     3247 7 20   <NO OUTPUT>   ...after TWENTY abandoned dispatches
+d.ctl20        4040 7 0      3271 7 0         8 7 0   the SAME program, trap unarmed -- the cost of 20 dispatches
+d.selfarm           9 0           9 0           9 0   GUARD: a handler that re-arms its OWN trap, then RETURNs
+
+  vg8020   20 abandoned dispatches cost  24 frames (1.20/dispatch)   reproduces §10
+  cf3300   20 abandoned dispatches cost  24 frames (1.20/dispatch)   reproduces §10
+
+d.depth0   known-divergent, pinned ('4071 7 0', '8 7 0')
+d.depth1   known-divergent, pinned ('4046 7 0', '8 7 0')
+d.depth20  known-divergent, pinned ('4016 7 20', '<NO OUTPUT>')
+d.ctl20    known-divergent, pinned ('4040 7 0', '8 7 0')
+d.selfarm  GUARD  all three must read '9 0': ok
+
+rows 5  pinned 4  guards 1  red 0
+TRAPDEPTH: PASS
+
+
+rc=0  wall=52s

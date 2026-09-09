@@ -1,0 +1,33 @@
+python3 tools/install-repack-machine.py --merged build/zerobas-main-eu.rom --disk-rom build/disk.rom \
+	  --sub-rom build/sub.rom
+wrote C-BIOS_MSX1_EU_REPACK_DISK  (-> machine "C-BIOS_MSX1_EU_REPACK_DISK": merged repack ROM in slot 0, zerobas-disk in slot 3-1, zerobas-sub in slot 3-2)
+     /Users/joost/.openMSX/share/machines/C-BIOS_MSX1_EU_REPACK_DISK.xml
+python3 tools/install-repack-machine.py --merged build/zerobas-main-eu.rom --sub-rom build/sub.rom \
+	  --no-disk
+wrote C-BIOS_MSX1_EU_REPACK_NODISK  (-> machine "C-BIOS_MSX1_EU_REPACK_NODISK": merged repack ROM in slot 0, slot 3-1 EMPTY (diskless target), zerobas-sub in slot 3-2)
+     /Users/joost/.openMSX/share/machines/C-BIOS_MSX1_EU_REPACK_NODISK.xml
+python3 probes/basic/basic_probe_stop_trap.py  \
+	  
+--- ASSERTED cases: zerobas == VG-8020, robust across 2 trials ---
+PASS  [ref] A_on_fires       [{'flag': 1, 'ran': 1, 'done': 1}, {'flag': 1, 'ran': 1, 'done': 1}] (want all flag=1, ran=1, done=1)
+PASS  [zb ] A_on_fires       [{'flag': 1, 'ran': 1, 'done': 1}, {'flag': 1, 'ran': 1, 'done': 1}] (want all flag=1, ran=1, done=1, == ref [1, 1])
+PASS  [ref] B_armed_off      [{'flag': 0, 'ran': 1, 'done': 1}, {'flag': 0, 'ran': 1, 'done': 1}] (want all flag=0, ran=1, done=1)
+PASS  [zb ] B_armed_off      [{'flag': 0, 'ran': 1, 'done': 1}, {'flag': 0, 'ran': 1, 'done': 1}] (want all flag=0, ran=1, done=1, == ref [0, 0])
+PASS  [ref] B2_stop_off      [{'flag': 0, 'ran': 1, 'done': 1}, {'flag': 0, 'ran': 1, 'done': 1}] (want all flag=0, ran=1, done=1)
+PASS  [zb ] B2_stop_off      [{'flag': 0, 'ran': 1, 'done': 1}, {'flag': 0, 'ran': 1, 'done': 1}] (want all flag=0, ran=1, done=1, == ref [0, 0])
+PASS  [ref] C_handler_baseline [{'flag': 1, 'ran': 1, 'done': 1}, {'flag': 1, 'ran': 1, 'done': 1}] (want all flag=1, ran=1, done=1)
+PASS  [zb ] C_handler_baseline [{'flag': 1, 'ran': 1, 'done': 1}, {'flag': 1, 'ran': 1, 'done': 1}] (want all flag=1, ran=1, done=1, == ref [1, 1])
+PASS  [ref] C2_press_in_handler_latches [{'flag': 2, 'ran': 1, 'done': 1}, {'flag': 2, 'ran': 1, 'done': 1}] (want all flag=2, ran=1, done=1)
+PASS  [zb ] C2_press_in_handler_latches [{'flag': 2, 'ran': 1, 'done': 1}, {'flag': 2, 'ran': 1, 'done': 1}] (want all flag=2, ran=1, done=1, == ref [2, 2])
+PASS  [ref] F_bare_gosub_disarms [{'flag': 0, 'ran': 1, 'done': 1}, {'flag': 0, 'ran': 1, 'done': 1}] (want all flag=0, ran=1, done=1)
+PASS  [zb ] F_bare_gosub_disarms [{'flag': 0, 'ran': 1, 'done': 1}, {'flag': 0, 'ran': 1, 'done': 1}] (want all flag=0, ran=1, done=1, == ref [0, 0])
+
+--- the RE-ARM property (per-machine, NOT an equality differential) ---
+PASS  [ref] E_rearm_under_held_key_refires [{'flag': 122, 'ran': 1, 'done': 1}, {'flag': 122, 'ran': 1, 'done': 1}] (want all flag>=2, ran=1, done=1) -- per-machine
+PASS  [zb ] E_rearm_under_held_key_refires [{'flag': 33, 'ran': 1, 'done': 1}, {'flag': 33, 'ran': 1, 'done': 1}] (want all flag>=2, ran=1, done=1) -- per-machine
+
+--- D_interruptible: fire then hold -> handler aborts (differential) ---
+PASS  [ref] D_interruptible  [{'flag': 2, 'ran': 1, 'done': 1}, {'flag': 2, 'ran': 1, 'done': 1}] (want ran=1, done=1)
+PASS  [zb ] D_interruptible  [{'flag': 2, 'ran': 1, 'done': 1}, {'flag': 2, 'ran': 1, 'done': 1}] (want ran=1, done=1, == ref [2, 2]) -- differential
+
+ALL PASS

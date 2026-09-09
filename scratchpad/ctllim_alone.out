@@ -1,0 +1,29 @@
+python3 tools/install-repack-machine.py --merged build/zerobas-main-eu.rom --disk-rom build/disk.rom \
+	  --sub-rom build/sub.rom
+wrote C-BIOS_MSX1_EU_REPACK_DISK  (-> machine "C-BIOS_MSX1_EU_REPACK_DISK": merged repack ROM in slot 0, zerobas-disk in slot 3-1, zerobas-sub in slot 3-2)
+     /Users/joost/.openMSX/share/machines/C-BIOS_MSX1_EU_REPACK_DISK.xml
+python3 tools/install-repack-machine.py --merged build/zerobas-main-eu.rom --sub-rom build/sub.rom \
+	  --no-disk
+wrote C-BIOS_MSX1_EU_REPACK_NODISK  (-> machine "C-BIOS_MSX1_EU_REPACK_NODISK": merged repack ROM in slot 0, slot 3-1 EMPTY (diskless target), zerobas-sub in slot 3-2)
+     /Users/joost/.openMSX/share/machines/C-BIOS_MSX1_EU_REPACK_NODISK.xml
+python3 probes/basic/basic_probe_ctllim.py --gate \
+	        --zb-machine C-BIOS_MSX1_EU_REPACK_DISK 
+
+row             vg8020          cf3300              zb   what it does
+l.ctl         4051 0 7        3282 0 7        2840 0 7   CONTROL: five scalars, no bulk allocation
+l.ary         3715 0 7        2946 0 7        2547 0 7   DIM A(300), filled, then the pool driven down
+l.scal        3800 0 7        3031 0 7        2621 0 7   60 scalars -- the OTHER allocator
+
+reads `[depth  corrupted-cells  ERR]`  -- S must be 0 everywhere
+
+does an allocation COST depth? (the floor must rise with ARYEND)
+  vg8020     4051 frames bare ->   3715 with DIM A(300)   cost   336   ok
+  cf3300     3282 frames bare ->   2946 with DIM A(300)   cost   336   ok
+  zb         2840 frames bare ->   2547 with DIM A(300)   cost   293   ok
+
+rows 3  red 0
+CTLLIM: PASS
+refcache: 0 hit, 3 miss, 3 stored
+real 156.63
+user 95.14
+sys 112.11

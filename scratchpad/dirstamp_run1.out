@@ -1,0 +1,53 @@
+\n=== BASE (unmodified) ===
+  base n.same1 on zb (want AAA):
+    run_gap=  0.5             AAA   ok
+
+  base n.same2 on zb (want BBB):
+    run_gap=  0.5             BBB   ok
+
+  base n.same3 on zb (want CCC):
+    run_gap=  0.5     <NO OUTPUT>   
+    run_gap=  1.0     <NO OUTPUT>   
+    run_gap=  1.5     <NO OUTPUT>   
+    run_gap=  2.0     <NO OUTPUT>   
+    run_gap=  3.0             CCC   ok
+
+  base n.same4 on zb (want DDD):
+    run_gap=  0.5     <NO OUTPUT>   
+    run_gap=  1.0     <NO OUTPUT>   
+    run_gap=  1.5     <NO OUTPUT>   
+    run_gap=  2.0     <NO OUTPUT>   
+    run_gap=  3.0     <NO OUTPUT>   
+    run_gap=  4.0             DDD   ok
+
+K-DS1:   ROM 6c5345c2 8abf090a 70c05175 bd950846  ->  6c5345c2 70e38fd9 70c05175 bd950846
+  K-DS1 n.same1 on zb (want AAA):
+    run_gap=  0.5             AAA   ok
+
+  K-DS1 n.same2 on zb (want BBB):
+    run_gap=  0.5             BBB   ok
+
+  K-DS1 n.same3 on zb (want CCC):
+    run_gap=  0.5     <NO OUTPUT>   
+    run_gap=  1.0     <NO OUTPUT>   
+    run_gap=  1.5     <NO OUTPUT>   
+    run_gap=  2.0     <NO OUTPUT>   
+    run_gap=  3.0             CCC   ok
+
+  K-DS1 n.same4 on zb (want DDD):
+    run_gap=  0.5     <NO OUTPUT>   
+    run_gap=  1.0     <NO OUTPUT>   
+    run_gap=  1.5     <NO OUTPUT>   
+    run_gap=  2.0     <NO OUTPUT>   
+    run_gap=  3.0     <NO OUTPUT>   
+    run_gap=  4.0             DDD   ok
+
+==================================================================
+  row            base    K-DS1   smallest run_gap that completes
+  n.same1         0.5      0.5
+  n.same2         0.5      0.5
+  n.same3         3.0      3.0
+  n.same4         4.0      4.0
+
+\🔴 cutting the stamp changed nothing measurable: the candidate is REFUTED and D-PUTIO's last standing explanation is gone.
+refcache: 13 hit, 13 miss, 13 stored

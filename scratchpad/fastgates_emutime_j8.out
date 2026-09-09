@@ -1,0 +1,62 @@
+=== warm-up (serial build of shared artifacts) ===
+warm-up rc=0  7s
+=== parallel phase: 44 units, J=8, lineerr in 8 shards, isolate=False ===
+  rc=0      2s  basic-reloc
+  rc=0      0s  subrom-abi-check
+  rc=0      1s  subrom-closure-check
+  rc=0     23s  unit-test
+  rc=0      0s  deadcode
+  rc=0      2s  wall-assertion-check
+  rc=0      0s  redundant-load-check
+  rc=0      1s  rowshape-check
+  rc=0      3s  injector-check
+  rc=0      1s  preflight-check
+  rc=0      4s  latch-check
+  rc=0      3s  diskdep-check
+  rc=0      1s  switch-build-check
+  rc=0     28s  kwsweep
+  rc=0      0s  deffn-selftest
+  rc=0     37s  string-acceptance
+  rc=0     19s  str-domain-acceptance
+  rc=0     42s  strparen-acceptance
+  rc=0    184s  penderr-acceptance
+  rc=0     43s  missing-acceptance
+  rc=0     12s  error-acceptance
+  rc=0     69s  error-trap-acceptance
+  rc=0     75s  onerr0-acceptance
+  rc=0    101s  math-acceptance
+  rc=0     88s  float-acceptance
+  rc=0     46s  intarg-acceptance
+  rc=0     36s  logicops-acceptance
+  rc=0    194s  screenerr-acceptance
+  rc=0    149s  tmfp-acceptance
+  rc=0    186s  stmtpend-acceptance
+  rc=0    105s  array-acceptance
+  rc=0    124s  deffn-strict
+  rc=0    455s  graphics-acceptance
+  rc=0     53s  abort-acceptance
+  rc=0    133s  interval-trap-acceptance
+  rc=0     64s  clearpool-acceptance
+  rc=0    119s  lineerr#1/8
+  rc=0    115s  lineerr#2/8
+  rc=0    115s  lineerr#3/8
+  rc=0    112s  lineerr#4/8
+  rc=0    112s  lineerr#5/8
+  rc=0    101s  lineerr#6/8
+  rc=0     83s  lineerr#7/8
+  rc=0     84s  lineerr#8/8
+
+=== TOTAL wall 580s  (warm 7s + parallel 573s) ===
+lineerr-acceptance (sharded): PASS (8 shards)
+GATES: 37/38 green
+=== slowest units ===
+    455s  graphics-acceptance  (rc=0)
+    194s  screenerr-acceptance  (rc=0)
+    186s  stmtpend-acceptance  (rc=0)
+    184s  penderr-acceptance  (rc=0)
+    149s  tmfp-acceptance  (rc=0)
+    133s  interval-trap-acceptance  (rc=0)
+=== hashes ===
+  41b8c4ed  build/basic-reloc.rom
+  1922eaa0  build/sub.rom
+  7d27b871  build/zerobas-main-eu.rom

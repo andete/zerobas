@@ -1,0 +1,24 @@
+
+watching 5 declared FREE-RAM span(s):
+    $E058..$E080     40 B
+    $E080..$E0B8     56 B
+    $E20D..$E21F     18 B
+    $E238..$E240      8 B
+    $EA3A..$EA92     88 B
+
+  OK   ctl.poke  1 1 1 1 1                every span saw its one poked byte
+  OK   ctl.pool  0 0 0 0 0 16             the pool moved (16 B) and no declared span did
+  OK   base.none 0 0 0 0 0                clean
+  OK   n.for8    0 0 0 0 0                clean
+  OK   n.deep    0 0 0 0 0                clean
+  OK   n.crunch  0 0 0 0 0                clean
+  OK   s.paint   0 0 0 0 0                clean
+  OK   s.draw    0 0 0 0 0                clean
+  OK   s.play    0 0 0 0 0                clean
+  FAIL s.str     E 8                      🔴 NOT MEASURED (the row never printed its tally)
+  OK   s.files   0 0 0 0 0                clean
+
+rows 11  red 1
+  A declared-free window that MOVES is a false claim: the span is in use by something no name covers, or a cell below it extends up into it -- which is exactly what ram-claim-check cannot see.
+RAMFREE: RED (1)
+refcache: 2 hit, 9 miss, 9 stored

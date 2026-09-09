@@ -1,0 +1,21 @@
+  vg8020 captured
+  cf3300 captured
+  zb captured
+
+=== x.noup — BASELINE: the two-row screen is built and NOTHING is re-entered. The payload is PRINTED text, never executed, so no number appears anywhere. This is what 'the re-entry did not happen' looks like.
+  vg8020   r00:  Ok | r01:  PRINT STRING$(40,"'");"A=A+1:PRINT A" | r03:  ''''''''''''''''''''''''''''''''''''' | r04:  '''A=A+1:PRINT A | r05:  Ok | r23:  color  auto   goto   list   run
+  cf3300   r00: Ok | r01: PRINT STRING$(40,"'");"A=A+1:PRINT A" | r02: ''''''''''''''''''''''''''''''''''''''' | r03: 'A=A+1:PRINT A | r04: Ok | r23: color   auto    goto    list    run
+  zb       r00: ZBPRINT STRING$(40,"'");"A=A+1:PRINT A" | r02: ''''''''''''''''''''''''''''''''''''''' | r03: 'A=A+1:PRINT A | r04: ZB
+
+=== x.reenter — cursor UP x2 onto the PAYLOAD row, Enter -- 'A' printed => row 1 alone; echo + Ok with NO number => rows 0+1 taken together and REM'd
+  vg8020   r00:  Ok | r01:  PRINT STRING$(40,"'");"A=A+1:PRINT A" | r03:  ''''''''''''''''''''''''''''''''''''' | r04:  '''A=A+1:PRINT A | r05:  Ok | r23:  color  auto   goto   list   run
+  cf3300   r00: Ok | r01: PRINT STRING$(40,"'");"A=A+1:PRINT A" | r02: ''''''''''''''''''''''''''''''''''''''' | r03: 'A=A+1:PRINT A | r04: Ok | r23: color   auto    goto    list    run
+  zb       r00: ZBPRINT STRING$(40,"'");"A=A+1:PRINT A" | r02: ''''''''''''''''''''''''''''''''''''''' | r03: 'A=A+1:PRINT A | r04: ZB | r05: ZB
+
+=== x.typedwrap — CONTROL on the mechanism: the SAME two-row shape produced by TYPING one long line instead of by PRINT. D-EDITSCOUT measured this re-executes from either row; it must still, or the apparatus moved
+  vg8020   r00:  Ok | r01:  A=A+1:PRINT A:REM ................... | r02:  ........... | r03:   1 | r04:  Undefined line number | r05:  Ok | r23:  color  auto   goto   list   run
+  cf3300   r00: Ok | r01: A=A+1:PRINT A:REM ..................... | r02: ......... | r03:  1 | r04: Undefined line number | r05: Ok | r23: color   auto    goto    list    run
+  zb       r00: ZBA=A+1:PRINT A:REM ................... | r01: ........... | r02:  1 | r03: ZB | r04: ZB
+
+Read the SCREENS, not a tally: this probe reports, it does not score. The apostrophe row is the subject; `Ok` with no number is a REM'd re-entry and is NOT the same outcome as no re-entry at all.
+refcache: 0 hit, 3 miss, 3 stored

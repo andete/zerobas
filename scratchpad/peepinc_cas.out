@@ -1,0 +1,40 @@
+python3 tools/install-repack-machine.py --merged build/zerobas-main-eu.rom --disk-rom build/disk.rom \
+	  --sub-rom build/sub.rom
+wrote C-BIOS_MSX1_EU_REPACK_DISK  (-> machine "C-BIOS_MSX1_EU_REPACK_DISK": merged repack ROM in slot 0, zerobas-disk in slot 3-1, zerobas-sub in slot 3-2)
+     /Users/joost/.openMSX/share/machines/C-BIOS_MSX1_EU_REPACK_DISK.xml
+python3 tools/install-repack-machine.py --merged build/zerobas-main-eu.rom --sub-rom build/sub.rom \
+	  --no-disk
+wrote C-BIOS_MSX1_EU_REPACK_NODISK  (-> machine "C-BIOS_MSX1_EU_REPACK_NODISK": merged repack ROM in slot 0, slot 3-1 EMPTY (diskless target), zerobas-sub in slot 3-2)
+     /Users/joost/.openMSX/share/machines/C-BIOS_MSX1_EU_REPACK_NODISK.xml
+python3 probes/basic/basic_probe_cassave.py --gate \
+	        --sides vg8020,cf3300,zb \
+	         \
+	        --repeat 1
+D-CASSAVE — what FORMAT each cassette SAVE verb writes   sides: vg8020, cf3300, zb
+==============================================================================
+ok   sav-cas               vg8020='<nothing>'  cf3300='<nothing>'  zb='<nothing>'
+ok   sav-cas:id            vg8020='EA'  cf3300='EA'  zb='EA'
+ok   sav-cas:name          vg8020='PA    '  cf3300='PA    '  zb='PA    '
+ok   sav-cas:text          vg8020='10 REM ZQ8 / 20 REM ZQ9'  cf3300='10 REM ZQ8 / 20 REM ZQ9'  zb='10 REM ZQ8 / 20 REM ZQ9'   [CONTROL]
+ok   sav-cas:alive         vg8020='ZQ6'  cf3300='ZQ6'  zb='ZQ6'   [CONTROL]
+ok   sav-cas-a             vg8020='<nothing>'  cf3300='<nothing>'  zb='<nothing>'
+ok   sav-cas-a:id          vg8020='EA'  cf3300='EA'  zb='EA'
+ok   sav-cas-a:name        vg8020='PB    '  cf3300='PB    '  zb='PB    '
+ok   sav-cas-a:text        vg8020='10 REM ZQ8 / 20 REM ZQ9'  cf3300='10 REM ZQ8 / 20 REM ZQ9'  zb='10 REM ZQ8 / 20 REM ZQ9'   [CONTROL]
+ok   sav-cas-a:alive       vg8020='ZQ6'  cf3300='ZQ6'  zb='ZQ6'   [CONTROL]
+ok   csave                 vg8020='<nothing>'  cf3300='<nothing>'  zb='<nothing>'
+ok   csave:id              vg8020='D3'  cf3300='D3'  zb='D3'
+ok   csave:name            vg8020='PC    '  cf3300='PC    '  zb='PC    '
+ok   csave:text            vg8020=' ZQ8 /  ZQ9'  cf3300=' ZQ8 /  ZQ9'  zb=' ZQ8 /  ZQ9'   [CONTROL]
+ok   csave:alive           vg8020='ZQ6'  cf3300='ZQ6'  zb='ZQ6'   [CONTROL]
+ok   sav-cas-bare          vg8020='<nothing>'  cf3300='<nothing>'  zb='<nothing>'
+ok   sav-cas-bare:id       vg8020='EA'  cf3300='EA'  zb='EA'
+ok   sav-cas-bare:name     vg8020='      '  cf3300='      '  zb='      '
+ok   sav-cas-bare:text     vg8020='10 REM ZQ8 / 20 REM ZQ9'  cf3300='10 REM ZQ8 / 20 REM ZQ9'  zb='10 REM ZQ8 / 20 REM ZQ9'   [CONTROL]
+ok   sav-cas-bare:alive    vg8020='ZQ6'  cf3300='ZQ6'  zb='ZQ6'   [CONTROL]
+ROWS: 20 printed, 20 scored — 20 agree, 0 diverge
+==============================================================================
+20/20 readings agree (4 cases, 8 positive controls)
+SIDES: vg8020,cf3300,zb — every MSX1 has a CASSETTE PORT, so the VG-8020 is a full reference here
+READ OFF THE TAPE, not off the screen: every verb here prints nothing whatever it writes, so each row records to a fresh `cassetteplayer new` WAV and probes/lib/cas_decode.py decodes it
+refcache: 0 hit, 12 miss, 12 stored

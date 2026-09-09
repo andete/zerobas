@@ -1,0 +1,6 @@
+row             cf3300             zb   what it means
+s.seq         26,26,26          0,0,0   SEQUENTIAL: the filed observation, extended to two reads
+r.get            0,3,7          0,0,0   RANDOM: where LOC is DEFINED -- expect 0,3,7 if it is the record number
+w.put            0,4,0          0,0,0   the WRITE side: PUT record 4, then read LOC back
+
+⚠️  NO VERDICT COLUMN ON PURPOSE. zerobas has no LOC, so this is not a differential — it is a CHARACTERISATION of the reference, so that the deferral in TODO.md rests on a measurement instead of on one sequential-file reading.

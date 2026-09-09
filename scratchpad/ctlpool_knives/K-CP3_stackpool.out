@@ -1,0 +1,2 @@
+INSTRUMENT FAULT: no reading on ['zb/c.base', 'zb/c.clr200', 'zb/c.clr2200', 'zb/c.clr4200', 'zb/c.himem'] -- no verdict. ⚠️ Check the CLEAR/ON ERROR order first (see the docstring): CLEAR resets the error vector and the overflow then goes untrapped.
+refcache: 2 hit, 1 miss, 1 stored

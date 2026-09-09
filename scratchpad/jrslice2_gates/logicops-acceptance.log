@@ -1,0 +1,338 @@
+python3 tools/install-repack-machine.py --merged build/zerobas-main-eu.rom --disk-rom build/disk.rom \
+	  --sub-rom build/sub.rom
+wrote C-BIOS_MSX1_EU_REPACK_DISK  (-> machine "C-BIOS_MSX1_EU_REPACK_DISK": merged repack ROM in slot 0, zerobas-disk in slot 3-1, zerobas-sub in slot 3-2)
+     /Users/joost/.openMSX/share/machines/C-BIOS_MSX1_EU_REPACK_DISK.xml
+python3 probes/basic/basic_probe_logicops.py --gate \
+	        --zb-machine C-BIOS_MSX1_EU_REPACK_DISK 
+# 226 two-sided -> Philips_VG_8020 + C-BIOS_MSX1_EU_REPACK_DISK
+
+=== CALIBRATION (implemented operators, ref vs zerobas must AGREE) ===
+PASS  sem    0 AND 0                            ref=       0  zb=       0
+PASS  sem    0 AND -1                           ref=       0  zb=       0
+PASS  sem    -1 AND 0                           ref=       0  zb=       0
+PASS  sem    -1 AND -1                          ref=      -1  zb=      -1
+PASS  sem    12 AND 10                          ref=       8  zb=       8
+PASS  sem    1 AND 0                            ref=       0  zb=       0
+PASS  sem    0 OR 0                             ref=       0  zb=       0
+PASS  sem    0 OR -1                            ref=      -1  zb=      -1
+PASS  sem    -1 OR 0                            ref=      -1  zb=      -1
+PASS  sem    -1 OR -1                           ref=      -1  zb=      -1
+PASS  sem    12 OR 10                           ref=      14  zb=      14
+PASS  sem    1 OR 0                             ref=       1  zb=       1
+PASS  sem    0 XOR 0                            ref=       0  zb=       0
+PASS  sem    0 XOR -1                           ref=      -1  zb=      -1
+PASS  sem    -1 XOR 0                           ref=      -1  zb=      -1
+PASS  sem    -1 XOR -1                          ref=       0  zb=       0
+PASS  sem    12 XOR 10                          ref=       6  zb=       6
+PASS  sem    1 XOR 0                            ref=       1  zb=       1
+PASS  sem    0 EQV 0                            ref=      -1  zb=      -1
+PASS  sem    0 EQV -1                           ref=       0  zb=       0
+PASS  sem    -1 EQV 0                           ref=       0  zb=       0
+PASS  sem    -1 EQV -1                          ref=      -1  zb=      -1
+PASS  sem    12 EQV 10                          ref=      -7  zb=      -7
+PASS  sem    1 EQV 0                            ref=      -2  zb=      -2
+PASS  sem    0 IMP 0                            ref=      -1  zb=      -1
+PASS  sem    0 IMP -1                           ref=      -1  zb=      -1
+PASS  sem    -1 IMP 0                           ref=       0  zb=       0
+PASS  sem    -1 IMP -1                          ref=      -1  zb=      -1
+PASS  sem    12 IMP 10                          ref=      -5  zb=      -5
+PASS  sem    1 IMP 0                            ref=      -2  zb=      -2
+PASS  sem    NOT 0                              ref=      -1  zb=      -1
+PASS  sem    NOT -1                             ref=       0  zb=       0
+PASS  sem    NOT 1                              ref=      -2  zb=      -2
+PASS  sem    NOT 12                             ref=     -13  zb=     -13
+PASS  prec   0 AND 0 OR -1                      ref=      -1  zb=      -1
+PASS  prec   (0 AND 0) OR -1                    ref=      -1  zb=      -1
+PASS  prec   0 AND (0 OR -1)                    ref=       0  zb=       0
+PASS  prec   0 AND 0 XOR -1                     ref=      -1  zb=      -1
+PASS  prec   (0 AND 0) XOR -1                   ref=      -1  zb=      -1
+PASS  prec   0 AND (0 XOR -1)                   ref=       0  zb=       0
+PASS  prec   0 AND 0 EQV 0                      ref=      -1  zb=      -1
+PASS  prec   (0 AND 0) EQV 0                    ref=      -1  zb=      -1
+PASS  prec   0 AND (0 EQV 0)                    ref=       0  zb=       0
+PASS  prec   0 AND 0 IMP 0                      ref=      -1  zb=      -1
+PASS  prec   (0 AND 0) IMP 0                    ref=      -1  zb=      -1
+PASS  prec   0 AND (0 IMP 0)                    ref=       0  zb=       0
+PASS  prec   -1 OR 0 AND 0                      ref=      -1  zb=      -1
+PASS  prec   (-1 OR 0) AND 0                    ref=       0  zb=       0
+PASS  prec   -1 OR (0 AND 0)                    ref=      -1  zb=      -1
+PASS  prec   -1 OR 0 XOR -1                     ref=       0  zb=       0
+PASS  prec   (-1 OR 0) XOR -1                   ref=       0  zb=       0
+PASS  prec   -1 OR (0 XOR -1)                   ref=      -1  zb=      -1
+PASS  prec   -1 OR 0 EQV 0                      ref=       0  zb=       0
+PASS  prec   (-1 OR 0) EQV 0                    ref=       0  zb=       0
+PASS  prec   -1 OR (0 EQV 0)                    ref=      -1  zb=      -1
+PASS  prec   -1 OR 0 IMP 0                      ref=       0  zb=       0
+PASS  prec   (-1 OR 0) IMP 0                    ref=       0  zb=       0
+PASS  prec   -1 OR (0 IMP 0)                    ref=      -1  zb=      -1
+PASS  prec   -1 XOR 0 AND 0                     ref=      -1  zb=      -1
+PASS  prec   (-1 XOR 0) AND 0                   ref=       0  zb=       0
+PASS  prec   -1 XOR (0 AND 0)                   ref=      -1  zb=      -1
+PASS  prec   -1 XOR 0 OR -1                     ref=       0  zb=       0
+PASS  prec   (-1 XOR 0) OR -1                   ref=      -1  zb=      -1
+PASS  prec   -1 XOR (0 OR -1)                   ref=       0  zb=       0
+PASS  prec   1 XOR 0 EQV 1                      ref=      -1  zb=      -1
+PASS  prec   (1 XOR 0) EQV 1                    ref=      -1  zb=      -1
+PASS  prec   1 XOR (0 EQV 1)                    ref=      -1  zb=      -1
+PASS  prec   -1 XOR 0 IMP -1                    ref=      -1  zb=      -1
+PASS  prec   (-1 XOR 0) IMP -1                  ref=      -1  zb=      -1
+PASS  prec   -1 XOR (0 IMP -1)                  ref=       0  zb=       0
+PASS  prec   0 EQV 0 AND 0                      ref=      -1  zb=      -1
+PASS  prec   (0 EQV 0) AND 0                    ref=       0  zb=       0
+PASS  prec   0 EQV (0 AND 0)                    ref=      -1  zb=      -1
+PASS  prec   0 EQV 0 OR -1                      ref=       0  zb=       0
+PASS  prec   (0 EQV 0) OR -1                    ref=      -1  zb=      -1
+PASS  prec   0 EQV (0 OR -1)                    ref=       0  zb=       0
+PASS  prec   1 EQV 0 XOR 1                      ref=      -1  zb=      -1
+PASS  prec   (1 EQV 0) XOR 1                    ref=      -1  zb=      -1
+PASS  prec   1 EQV (0 XOR 1)                    ref=      -1  zb=      -1
+PASS  prec   0 EQV 0 IMP -1                     ref=      -1  zb=      -1
+PASS  prec   (0 EQV 0) IMP -1                   ref=      -1  zb=      -1
+PASS  prec   0 EQV (0 IMP -1)                   ref=       0  zb=       0
+PASS  prec   0 IMP 0 AND 0                      ref=      -1  zb=      -1
+PASS  prec   (0 IMP 0) AND 0                    ref=       0  zb=       0
+PASS  prec   0 IMP (0 AND 0)                    ref=      -1  zb=      -1
+PASS  prec   1 IMP 0 OR 1                       ref=      -1  zb=      -1
+PASS  prec   (1 IMP 0) OR 1                     ref=      -1  zb=      -1
+PASS  prec   1 IMP (0 OR 1)                     ref=      -1  zb=      -1
+PASS  prec   0 IMP 0 XOR -1                     ref=      -1  zb=      -1
+PASS  prec   (0 IMP 0) XOR -1                   ref=       0  zb=       0
+PASS  prec   0 IMP (0 XOR -1)                   ref=      -1  zb=      -1
+PASS  prec   0 IMP 0 EQV 0                      ref=      -1  zb=      -1
+PASS  prec   (0 IMP 0) EQV 0                    ref=       0  zb=       0
+PASS  prec   0 IMP (0 EQV 0)                    ref=      -1  zb=      -1
+PASS  assoc  1 AND 0 AND 1                      ref=       0  zb=       0
+PASS  assoc  (1 AND 0) AND 1                    ref=       0  zb=       0
+PASS  assoc  1 AND (0 AND 1)                    ref=       0  zb=       0
+PASS  assoc  1 OR 0 OR 1                        ref=       1  zb=       1
+PASS  assoc  (1 OR 0) OR 1                      ref=       1  zb=       1
+PASS  assoc  1 OR (0 OR 1)                      ref=       1  zb=       1
+PASS  assoc  1 XOR 0 XOR 1                      ref=       0  zb=       0
+PASS  assoc  (1 XOR 0) XOR 1                    ref=       0  zb=       0
+PASS  assoc  1 XOR (0 XOR 1)                    ref=       0  zb=       0
+PASS  assoc  1 EQV 0 EQV 1                      ref=       0  zb=       0
+PASS  assoc  (1 EQV 0) EQV 1                    ref=       0  zb=       0
+PASS  assoc  1 EQV (0 EQV 1)                    ref=       0  zb=       0
+PASS  assoc  0 IMP 0 IMP 0                      ref=       0  zb=       0
+PASS  assoc  (0 IMP 0) IMP 0                    ref=       0  zb=       0
+PASS  assoc  0 IMP (0 IMP 0)                    ref=      -1  zb=      -1
+PASS  domain 2.7 EQV 0                          ref=      -3  zb=      -3
+PASS  domain 2.5 EQV 0                          ref=      -3  zb=      -3
+PASS  domain 3.5 EQV 0                          ref=      -4  zb=      -4
+PASS  domain 1.5 EQV 0                          ref=      -2  zb=      -2
+PASS  domain 2.2 EQV 0                          ref=      -3  zb=      -3
+PASS  domain -2.7 EQV 0                         ref=       1  zb=       1
+PASS  domain -2.5 EQV 0                         ref=       1  zb=       1
+PASS  domain -2.2 EQV 0                         ref=       1  zb=       1
+PASS  domain 32767 IMP 0                        ref=  -32768  zb=  -32768
+PASS  domain 32768 IMP 0                        ref=ERR:[|Overflow  zb=ERR:[|Overflow
+PASS  domain 32767.4 EQV 0                      ref=  -32768  zb=  -32768
+PASS  domain 32767.6 EQV 0                      ref=  -32768  zb=  -32768
+PASS  domain -32768 EQV 0                       ref=   32767  zb=   32767
+PASS  domain -32769 EQV 0                       ref=ERR:[|Overflow  zb=ERR:[|Overflow
+PASS  domain 1E10 EQV 1                         ref=ERR:[|Overflow  zb=ERR:[|Overflow
+PASS  domain "A" EQV 1                          ref=ERR:[|Type mismatch  zb=ERR:[|Type mismatch
+PASS  domain 1 EQV "A"                          ref=ERR:[|Type mismatch  zb=ERR:[|Type mismatch
+PASS  domain &HF0F0 IMP &H0FF0                  ref=    4095  zb=    4095
+PASS  mixed  1 = 1 IMP 1 = 0                    ref=       0  zb=       0
+PASS  mixed  (1 = 1) IMP (1 = 0)                ref=       0  zb=       0
+PASS  mixed  1 = (1 IMP 1) = 0                  ref=      -1  zb=      -1
+PASS  mixed  1 IMP 2 + 3                        ref=      -1  zb=      -1
+PASS  mixed  1 IMP (2 + 3)                      ref=      -1  zb=      -1
+PASS  mixed  (1 IMP 2) + 3                      ref=       1  zb=       1
+PASS  mixed  1 EQV 2 + 3                        ref=      -5  zb=      -5
+PASS  mixed  1 EQV (2 + 3)                      ref=      -5  zb=      -5
+PASS  mixed  (1 EQV 2) + 3                      ref=      -1  zb=      -1
+PASS  mixed  NOT 1 IMP 2                        ref=       3  zb=       3
+PASS  mixed  (NOT 1) IMP 2                      ref=       3  zb=       3
+PASS  mixed  NOT (1 IMP 2)                      ref=       1  zb=       1
+PASS  mixed  NOT 1 EQV 2                        ref=       3  zb=       3
+PASS  mixed  (NOT 1) EQV 2                      ref=       3  zb=       3
+PASS  mixed  NOT (1 EQV 2)                      ref=       3  zb=       3
+PASS  mixed  1 = 1 XOR 1 = 0                    ref=      -1  zb=      -1
+PASS  mixed  (1 = 1) XOR (1 = 0)                ref=      -1  zb=      -1
+PASS  mixed  1 = (1 XOR 1) = 0                  ref=      -1  zb=      -1
+PASS  mixed  1 OR 2 + 3                         ref=       5  zb=       5
+PASS  mixed  1 OR (2 + 3)                       ref=       5  zb=       5
+PASS  mixed  (1 OR 2) + 3                       ref=       6  zb=       6
+PASS  mixed  NOT 1 AND 3                        ref=       2  zb=       2
+PASS  mixed  (NOT 1) AND 3                      ref=       2  zb=       2
+PASS  mixed  NOT (1 AND 3)                      ref=      -2  zb=      -2
+PASS  mixed  NOT 1 OR 2                         ref=      -2  zb=      -2
+PASS  mixed  (NOT 1) OR 2                       ref=      -2  zb=      -2
+PASS  mixed  NOT (1 OR 2)                       ref=      -4  zb=      -4
+PASS  mixed  NOT 1 XOR 2                        ref=      -4  zb=      -4
+PASS  mixed  (NOT 1) XOR 2                      ref=      -4  zb=      -4
+PASS  mixed  NOT (1 XOR 2)                      ref=      -4  zb=      -4
+PASS  mixed  0 AND 0 OR 0 XOR 0 EQV 0 IMP 1     ref=       1  zb=       1
+PASS  mixed  ((((0 AND 0) OR 0) XOR 0) EQV 0) IMP 1 ref=       1  zb=       1
+PASS  mixed  0 AND (0 OR (0 XOR (0 EQV (0 IMP 1)))) ref=       0  zb=       0
+PASS  relchain 1 = 0 = 0                          ref=      -1  zb=      -1
+PASS  relchain 1 = 1 = 1                          ref=       0  zb=       0
+PASS  relchain 3 = 3 = -1                         ref=      -1  zb=      -1
+PASS  relchain 1 < 2 = -1                         ref=      -1  zb=      -1
+PASS  relchain 1 = (1 XOR 1) = 0                  ref=      -1  zb=      -1
+PASS  relchain 1 = (1 IMP 1) = 0                  ref=      -1  zb=      -1
+PASS  relchain 1 = 1 = 1 = 1                      ref=       0  zb=       0
+PASS  relchain (1 = 0) = 0                        ref=      -1  zb=      -1
+PASS  relchain "A" + 1                            ref=ERR:[|Type mismatch  zb=ERR:[|Type mismatch
+PASS  relchain "A" - 1                            ref=ERR:[|Type mismatch  zb=ERR:[|Type mismatch
+PASS  relchain "A" * 2                            ref=ERR:[|Type mismatch  zb=ERR:[|Type mismatch
+PASS  relchain "A" / 2                            ref=ERR:[|Type mismatch  zb=ERR:[|Type mismatch
+PASS  relchain "A" ^ 2                            ref=ERR:[|Type mismatch  zb=ERR:[|Type mismatch
+PASS  relchain "A" AND 1                          ref=ERR:[|Type mismatch  zb=ERR:[|Type mismatch
+PASS  relchain "A" OR 1                           ref=ERR:[|Type mismatch  zb=ERR:[|Type mismatch
+PASS  relchain "A" XOR 1                          ref=ERR:[|Type mismatch  zb=ERR:[|Type mismatch
+PASS  relchain "A" EQV 1                          ref=ERR:[|Type mismatch  zb=ERR:[|Type mismatch
+PASS  relchain "A" IMP 1                          ref=ERR:[|Type mismatch  zb=ERR:[|Type mismatch
+PASS  relchain "A" MOD 2                          ref=ERR:[|Type mismatch  zb=ERR:[|Type mismatch
+PASS  relchain "A" \ 2                            ref=ERR:[|Type mismatch  zb=ERR:[|Type mismatch
+PASS  relchain "A" 1                              ref=     A 1  zb=     A 1
+PASS  relchain "A" = "A"                          ref=      -1  zb=      -1
+PASS  relchain "A" + "B"                          ref=      AB  zb=      AB
+PASS  relchain 1 AND "A"                          ref=ERR:[|Type mismatch  zb=ERR:[|Type mismatch
+PASS  relchain 1 EQV "A"                          ref=ERR:[|Type mismatch  zb=ERR:[|Type mismatch
+PASS  relchain PRINT "[";X;"]"                    ref=      -1  zb=      -1
+PASS  relchain PRINT "[";X;"]"                    ref=      99  zb=      99
+PASS  relchain PRINT "[";Y;"]"                    ref=       1  zb=       1
+PASS  relchain PRINT "[";Y;"]"                    ref=      99  zb=      99
+PASS  relchain PRINT "[";A$ AND 1;"]"             ref=ERR:[|Type mismatch  zb=ERR:[|Type mismatch
+PASS  relchain PRINT "[";A$ = "Q";"]"             ref=      -1  zb=      -1
+PASS  relchain PRINT "[";A$;"]"                   ref=       Q  zb=       Q
+PASS  relchain RUN                                ref=      -1  zb=      -1
+--- calibration: 193/193 agree
+
+=== BATTERY 1 -- SEMANTICS (ROM truth table; model is a column, not a judge) ===
+  0 AND 0                ->        0   model        0  =
+  0 AND -1               ->        0   model        0  =
+  -1 AND 0               ->        0   model        0  =
+  -1 AND -1              ->       -1   model       -1  =
+  12 AND 10              ->        8   model        8  =
+  1 AND 0                ->        0   model        0  =
+  0 OR 0                 ->        0   model        0  =
+  0 OR -1                ->       -1   model       -1  =
+  -1 OR 0                ->       -1   model       -1  =
+  -1 OR -1               ->       -1   model       -1  =
+  12 OR 10               ->       14   model       14  =
+  1 OR 0                 ->        1   model        1  =
+  0 XOR 0                ->        0   model        0  =
+  0 XOR -1               ->       -1   model       -1  =
+  -1 XOR 0               ->       -1   model       -1  =
+  -1 XOR -1              ->        0   model        0  =
+  12 XOR 10              ->        6   model        6  =
+  1 XOR 0                ->        1   model        1  =
+  0 EQV 0                ->       -1   model       -1  =
+  0 EQV -1               ->        0   model        0  =
+  -1 EQV 0               ->        0   model        0  =
+  -1 EQV -1              ->       -1   model       -1  =
+  12 EQV 10              ->       -7   model       -7  =
+  1 EQV 0                ->       -2   model       -2  =
+  0 IMP 0                ->       -1   model       -1  =
+  0 IMP -1               ->       -1   model       -1  =
+  -1 IMP 0               ->        0   model        0  =
+  -1 IMP -1              ->       -1   model       -1  =
+  12 IMP 10              ->       -5   model       -5  =
+  1 IMP 0                ->       -2   model       -2  =
+  NOT 0                  ->       -1   model       -1  =
+  NOT -1                 ->        0   model        0  =
+  NOT 1                  ->       -2   model       -2  =
+  NOT 12                 ->      -13   model      -13  =
+
+=== BATTERY 2 -- PRECEDENCE (verdict from three MEASURED values) ===
+  AND/OR         (0, 0, -1)                         bare=     -1 L=     -1 R=      0   AND                bare=-1 matches L
+  AND/XOR        (0, 0, -1)                         bare=     -1 L=     -1 R=      0   AND                bare=-1 matches L
+  AND/EQV        (0, 0, 0)                          bare=     -1 L=     -1 R=      0   AND                bare=-1 matches L
+  AND/IMP        (0, 0, 0)                          bare=     -1 L=     -1 R=      0   AND                bare=-1 matches L
+  OR/AND         (-1, 0, 0)                         bare=     -1 L=      0 R=     -1   AND                bare=-1 matches R
+  OR/XOR         (-1, 0, -1)                        bare=      0 L=      0 R=     -1   OR                 bare=0 matches L
+  OR/EQV         (-1, 0, 0)                         bare=      0 L=      0 R=     -1   OR                 bare=0 matches L
+  OR/IMP         (-1, 0, 0)                         bare=      0 L=      0 R=     -1   OR                 bare=0 matches L
+  XOR/AND        (-1, 0, 0)                         bare=     -1 L=      0 R=     -1   AND                bare=-1 matches R
+  XOR/OR         (-1, 0, -1)                        bare=      0 L=     -1 R=      0   OR                 bare=0 matches R
+  XOR/EQV        (1, 0, 1)                          bare=     -1 L=     -1 R=     -1   UNOBSERVABLE       L == R == -1  (model predicted UNOBSERVABLE)
+  XOR/IMP        (-1, 0, -1)                        bare=     -1 L=     -1 R=      0   XOR                bare=-1 matches L
+  EQV/AND        (0, 0, 0)                          bare=     -1 L=      0 R=     -1   AND                bare=-1 matches R
+  EQV/OR         (0, 0, -1)                         bare=      0 L=     -1 R=      0   OR                 bare=0 matches R
+  EQV/XOR        (1, 0, 1)                          bare=     -1 L=     -1 R=     -1   UNOBSERVABLE       L == R == -1  (model predicted UNOBSERVABLE)
+  EQV/IMP        (0, 0, -1)                         bare=     -1 L=     -1 R=      0   EQV                bare=-1 matches L
+  IMP/AND        (0, 0, 0)                          bare=     -1 L=      0 R=     -1   AND                bare=-1 matches R
+  IMP/OR         (1, 0, 1)                          bare=     -1 L=     -1 R=     -1   UNOBSERVABLE       L == R == -1  (model predicted UNOBSERVABLE)
+  IMP/XOR        (0, 0, -1)                         bare=     -1 L=      0 R=     -1   XOR                bare=-1 matches R
+  IMP/EQV        (0, 0, 0)                          bare=     -1 L=      0 R=     -1   EQV                bare=-1 matches R
+
+=== BATTERY 3 -- ASSOCIATIVITY (verdict from three MEASURED values) ===
+  AND            (1, 0, 1)                          bare=      0 L=      0 R=      0   UNOBSERVABLE       L == R == 0  (model predicted UNOBSERVABLE)
+  OR             (1, 0, 1)                          bare=      1 L=      1 R=      1   UNOBSERVABLE       L == R == 1  (model predicted UNOBSERVABLE)
+  XOR            (1, 0, 1)                          bare=      0 L=      0 R=      0   UNOBSERVABLE       L == R == 0  (model predicted UNOBSERVABLE)
+  EQV            (1, 0, 1)                          bare=      0 L=      0 R=      0   UNOBSERVABLE       L == R == 0  (model predicted UNOBSERVABLE)
+  IMP            (0, 0, 0)                          bare=      0 L=      0 R=     -1   IMP                bare=0 matches L
+
+=== BATTERY 5 -- LAYER BOUNDARIES (verdict from three MEASURED values) ===
+  rel-vs-imp     1 = 1 IMP 1 = 0                    bare=      0 L=      0 R=     -1   L: claimed order   bare=0 matches L
+  arith-vs-imp   1 IMP 2 + 3                        bare=     -1 L=     -1 R=      1   L: claimed order   bare=-1 matches L
+  arith-vs-eqv   1 EQV 2 + 3                        bare=     -5 L=     -5 R=     -1   L: claimed order   bare=-5 matches L
+  not-vs-imp     NOT 1 IMP 2                        bare=      3 L=      3 R=      1   L: claimed order   bare=3 matches L
+  not-vs-eqv     NOT 1 EQV 2                        bare=      3 L=      3 R=      3   UNOBSERVABLE       L == R == 3
+  cal-rel-vs-xor 1 = 1 XOR 1 = 0                    bare=     -1 L=     -1 R=     -1   UNOBSERVABLE       L == R == -1
+  cal-arith-vs-or 1 OR 2 + 3                         bare=      5 L=      5 R=      6   L: claimed order   bare=5 matches L
+  cal-not-vs-and NOT 1 AND 3                        bare=      2 L=      2 R=     -2   L: claimed order   bare=2 matches L
+  cal-not-vs-or  NOT 1 OR 2                         bare=     -2 L=     -2 R=     -4   L: claimed order   bare=-2 matches L
+  cal-not-vs-xor NOT 1 XOR 2                        bare=     -4 L=     -4 R=     -4   UNOBSERVABLE       L == R == -4
+  chain-all      0 AND 0 OR 0 XOR 0 EQV 0 IMP 1     bare=      1 L=      1 R=      0   L: claimed order   bare=1 matches L
+
+=== BATTERY 4 -- INT16 DOMAIN (the ROM dictates; no model) ===
+  round-2.7        2.7 EQV 0                -> -3
+  round-2.5        2.5 EQV 0                -> -3
+  round-3.5        3.5 EQV 0                -> -4
+  round-1.5        1.5 EQV 0                -> -2
+  round-2.2        2.2 EQV 0                -> -3
+  round-neg-2.7    -2.7 EQV 0               -> 1
+  round-neg-2.5    -2.5 EQV 0               -> 1
+  round-neg-2.2    -2.2 EQV 0               -> 1
+  hi-bound         32767 IMP 0              -> -32768
+  over-bound       32768 IMP 0              -> ERR:[|Overflow
+  hi-frac-lo       32767.4 EQV 0            -> -32768
+  hi-frac-hi       32767.6 EQV 0            -> -32768
+  lo-bound         -32768 EQV 0             -> 32767
+  under-bound      -32769 EQV 0             -> ERR:[|Overflow
+  huge             1E10 EQV 1               -> ERR:[|Overflow
+  string-lhs       "A" EQV 1                -> ERR:[|Type mismatch
+  string-rhs       1 EQV "A"                -> ERR:[|Type mismatch
+  hex              &HF0F0 IMP &H0FF0        -> 4095
+
+=== BATTERY 6 -- RECORDED DIVERGENCES (chained relationals; string LHS) ===
+  same     eq-eq-false    1 = 0 = 0              ref=        -1   zb=        -1
+  same     eq-eq-true     1 = 1 = 1              ref=         0   zb=         0
+  same     eq-eq-neg      3 = 3 = -1             ref=        -1   zb=        -1
+  same     lt-eq          1 < 2 = -1             ref=        -1   zb=        -1
+  same     via-xor        1 = (1 XOR 1) = 0      ref=        -1   zb=        -1
+  same     via-imp        1 = (1 IMP 1) = 0      ref=        -1   zb=        -1
+  same     triple         1 = 1 = 1 = 1          ref=         0   zb=         0
+  same     with-parens    (1 = 0) = 0            ref=        -1   zb=        -1
+  same     str-op-plus    "A" + 1                ref=ERR:[|Type mismatch   zb=ERR:[|Type mismatch
+  same     str-op-minus   "A" - 1                ref=ERR:[|Type mismatch   zb=ERR:[|Type mismatch
+  same     str-op-star    "A" * 2                ref=ERR:[|Type mismatch   zb=ERR:[|Type mismatch
+  same     str-op-slash   "A" / 2                ref=ERR:[|Type mismatch   zb=ERR:[|Type mismatch
+  same     str-op-pow     "A" ^ 2                ref=ERR:[|Type mismatch   zb=ERR:[|Type mismatch
+  same     str-op-and     "A" AND 1              ref=ERR:[|Type mismatch   zb=ERR:[|Type mismatch
+  same     str-op-or      "A" OR 1               ref=ERR:[|Type mismatch   zb=ERR:[|Type mismatch
+  same     str-op-xor     "A" XOR 1              ref=ERR:[|Type mismatch   zb=ERR:[|Type mismatch
+  same     str-op-eqv     "A" EQV 1              ref=ERR:[|Type mismatch   zb=ERR:[|Type mismatch
+  same     str-op-imp     "A" IMP 1              ref=ERR:[|Type mismatch   zb=ERR:[|Type mismatch
+  same     str-op-mod     "A" MOD 2              ref=ERR:[|Type mismatch   zb=ERR:[|Type mismatch
+  same     str-op-idiv    "A" \ 2                ref=ERR:[|Type mismatch   zb=ERR:[|Type mismatch
+  same     str-juxt       "A" 1                  ref=       A 1   zb=       A 1
+  same     str-relop      "A" = "A"              ref=        -1   zb=        -1
+  same     str-concat     "A" + "B"              ref=        AB   zb=        AB
+  same     str-rhs-and    1 AND "A"              ref=ERR:[|Type mismatch   zb=ERR:[|Type mismatch
+  same     str-rhs-eqv    1 EQV "A"              ref=ERR:[|Type mismatch   zb=ERR:[|Type mismatch
+  same     assign-chain   PRINT "[";X;"]"        ref=        -1   zb=        -1
+  same     assign-str-op  PRINT "[";X;"]"        ref=        99   zb=        99
+  same     if-chain       PRINT "[";Y;"]"        ref=         1   zb=         1
+  same     if-str-op      PRINT "[";Y;"]"        ref=        99   zb=        99
+  same     strvar-op      PRINT "[";A$ AND 1;"]" ref=ERR:[|Type mismatch   zb=ERR:[|Type mismatch
+  same     strvar-relop   PRINT "[";A$ = "Q";"]" ref=        -1   zb=        -1
+  same     strvar-print   PRINT "[";A$;"]"       ref=         Q   zb=         Q
+  same     chain-in-prog  RUN                    ref=        -1   zb=        -1
+
+OK

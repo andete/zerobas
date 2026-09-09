@@ -1,0 +1,22 @@
+=== baseline
+  ROM 35377711 45a2f30a 99a63f2e 496da3db
+  namspc rc=0, 7 row(s), DIFF none   scratchpad/fspecchar_knives/base.out
+
+=== K-FC1: the control-band test removed -- only the control row may move
+  ROM 35377711 45a2f30a 99a63f2e 496da3db  ->  35377711 0fa3684e 99a63f2e 496da3db
+  rc=1  DIFF ['m.ctlchar']   ok   scratchpad/fspecchar_knives/K-FC1.out
+
+=== K-FC2: the separator table emptied -- the controls must still be refused
+  ROM 35377711 0fa3684e 99a63f2e 496da3db  ->  35377711 b9547626 99a63f2e 496da3db
+  rc=1  DIFF ['f.fileslit', 'm.gtchar', 'm.hi80', 'm.long']   🔴 extra=['f.fileslit', 'm.gtchar', 'm.hi80', 'm.long'] missing=['m.ffchar', 'm.sepchar']   scratchpad/fspecchar_knives/K-FC2.out
+
+=== K-FC3: rewritten as a high-bit test -- m.hi80 is the row that forbids this
+  ROM 35377711 b9547626 99a63f2e 496da3db  ->  35377711 019baf7e 99a63f2e 496da3db
+  rc=1  DIFF ['m.ctlchar', 'm.hi80', 'm.sepchar']   🔴 extra=['m.ctlchar'] missing=[]   scratchpad/fspecchar_knives/K-FC3.out
+
+=== verdict
+  K-FC1  want ['m.ctlchar']  got ['m.ctlchar']  ok
+  K-FC2  want ['m.ffchar', 'm.sepchar']  got ['f.fileslit', 'm.gtchar', 'm.hi80', 'm.long']  🔴
+  K-FC3  want ['m.hi80', 'm.sepchar']  got ['m.ctlchar', 'm.hi80', 'm.sepchar']  🔴
+KNIVES: RED (2 wrong, 0 fault(s))
+  restored basic/fcbname-body.inc byte-identically

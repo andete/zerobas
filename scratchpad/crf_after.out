@@ -1,0 +1,35 @@
+SELF-HEAL: re-running 4 suspect row(s) boot-per-case -- a batched mangle reads exactly like a divergence, and --repeat cannot tell them apart.
+  ⚠️ GATING rows needing the heal (a batched mangle, or a real divergence -- read the healed value below):
+      crf-oomctl    batched: vg8020= 99  0  | cf3300= 99  0  | zb=<none>
+      crf-oom       batched: vg8020= 20  0  | cf3300= 20  0  | zb=<none>
+      crf-oomsay    batched: vg8020=Out of memory | cf3300=Out of memory | zb=<NO ECHO>
+      crf-oomlst    batched: vg8020=99 REM Z | cf3300=99 REM Z | zb=<NO ECHO>
+
+label         battery  vg8020        cf3300        zb           
+crf-oomctl^   crf       99  0         99  0        <none>       
+              typed    ['A=PEEK(&HF676)+256*PEEK(&HF677)', 'CLEAR 300,A+1000', '99 REM Z', 'PRINT"[";PEEK(63157);PEEK(63158);"]"']
+crf-oom       crf       20  0         20  0        <none>       
+              typed    ['A=PEEK(&HF676)+256*PEEK(&HF677)', 'CLEAR 300,A+1000', '99 REM Z', '20 REM BBBBBBBBBBBBBBBBBBBBBBBBBB', 'PRINT"[";PEEK(63157);PEEK(63158);"]"']
+crf-oomsay    crf      Out of memory Out of memory <NO ECHO>    
+              typed    ['A=PEEK(&HF676)+256*PEEK(&HF677)', 'CLEAR 300,A+1000', '99 REM Z', '20 REM BBBBBBBBBBBBBBBBBBBBBBBBBB']
+crf-oomlst    crf      99 REM Z      99 REM Z      <NO ECHO>    
+              typed    ['A=PEEK(&HF676)+256*PEEK(&HF677)', 'CLEAR 300,A+1000', '99 REM Z', '20 REM BBBBBBBBBBBBBBBBBBBBBBBBBB', 'LIST']
+
+^ = two-sided control (T and S predict the SAME bytes)   * = informational, non-gating
+
+ALLOWLIST FAILURE -- KNOWN_DIVERGE no longer describes zerobas:
+  crf-oomsay: zerobas now reads '<NO ECHO>', filed as '<nothing listed>' -- the allowlist no longer describes the defect
+  crf-oomlst: zerobas now reads '<NO ECHO>', filed as '20 REM BBBBBBBBBBBBBBBBBBBBBBBBBB|99 REM Z' -- the allowlist no longer describes the defect
+
+0/4 gating rows agree across ['vg8020', 'cf3300', 'zb'] (2 of them allowlisted as KNOWN_DIVERGE, pinned to their exact value)
+
+DIVERGENT:
+  crf-oomctl
+      vg8020    99  0 
+      cf3300    99  0 
+      zb       <none>
+  crf-oom
+      vg8020    20  0 
+      cf3300    20  0 
+      zb       <none>
+refcache: 3 hit, 3 miss, 3 stored

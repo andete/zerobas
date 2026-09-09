@@ -1,0 +1,27 @@
+
+row        vg8020         cf3300         zb              statement
+c.plain    ok             ok             ok              SCREEN 1           refs agree
+           CONTROL: the bare mode, no trailing list
+c.one      ok             ok             ok              SCREEN 1,1         refs agree
+           CONTROL: slot 2 present (sprite size 1)
+c.trail    ERR 24         ERR 24         ERR 24          SCREEN 1,          refs agree
+           CONTROL: a comma promising nothing -- the ERR 24 rule the separator leans on
+a.s5val    ok             ok             ok              SCREEN 1,,,,1      refs agree
+           CONTROL: 5 slots, 5th PRESENT -- inside the bound, must be accepted
+a.s5omit   ERR 24         ERR 24         ERR 24          SCREEN 1,,,,       refs agree
+           CONTROL: 5 slots, 5th EMPTY -- inside the bound, so this reads the promise rule alone
+a.s6val    ERR 2          ERR 2          ok              SCREEN 1,,,,,1     refs agree  🔴 zb DIFF
+           the FILED row: 6 slots, 6th present -- ERR 2 on both refs, accepted here. BOTH rules fire
+a.s6omit   ERR 2          ERR 2          ERR 24          SCREEN 1,,,,,      refs agree  🔴 zb DIFF
+           🎯 THE SEPARATOR: 6 slots, 6th EMPTY. 2 = the bound counts COMMAS; 24 = it counts VALUES and the promise rule answers instead
+a.s7val    ERR 2          ERR 2          ERR 2           SCREEN 1,,,,,,1    refs agree
+           7 slots, 7th present -- both rules fire again; here to show the bound does not un-fire
+b.b1       ok             ok             ok              SCREEN 1,,,1       refs agree
+           CONTROL (D-SCRSLOT): baud 1 accepted
+b.b0       ERR 5          ERR 5          ok              SCREEN 1,,,0       refs agree  🔴 zb DIFF
+           the filed slot-3 row: ERR 5 there, accepted here
+b.b3       ERR 5          ERR 5          ok              SCREEN 1,,,3       refs agree  🔴 zb DIFF
+           ...and its upper twin
+
+4 row(s) where zerobas differs from the CF-3300: ['a.s6val', 'a.s6omit', 'b.b0', 'b.b3']
+refcache: 22 hit, 11 miss, 11 stored

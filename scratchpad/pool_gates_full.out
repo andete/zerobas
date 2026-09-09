@@ -1,0 +1,133 @@
+python3 tools/run_gates.py 
+=== warm-up (serial build of shared artifacts) ===
+warm-up 8s
+=== refcache OFF for every unit: a gate measures, it never replays (docs/spec-refcache.md §7) ===
+=== emulator tier RUNS: probes/tests/tools or the Makefile changed ===
+=== 4 tree-mutating unit(s), SERIAL (they rewrite a shared tracked file) ===
+  rc=0              1s  switch-build-check
+  rc=0              5s  diskdep-check
+  rc=0              0s  wall-literal-check
+  rc=0             45s  selftest-check
+  (post-mutator refresh 7s -- the plants moved mtimes, so the pool would otherwise race a rebuild)
+=== 108 units, J=8, lineerr in 8 shards, nice=0 solo=None ===
+  rc=0              3s  basic-reloc
+  rc=0              0s  subrom-abi-check
+  rc=0              0s  diskrom-abi-check
+  rc=0              0s  rom-parts-check
+  rc=0              1s  subrom-closure-check
+  rc=0             23s  unit-test
+  rc=0              0s  deadcode
+  rc=0              3s  wall-assertion-check
+  rc=0              0s  redundant-load-check
+  rc=0              1s  rowshape-check
+  rc=0              4s  injector-check
+  rc=0              0s  temp-root-check
+  rc=2              1s  todo-citation-check
+  rc=0              2s  chokepoint-check
+  rc=0              0s  shared-body-check
+  rc=0              0s  probe-reach-check
+  rc=0              0s  battery-membership-check
+  rc=0              0s  fixture-integrity-check
+  rc=0              1s  preflight-check
+  rc=0              4s  latch-check
+  rc=0             18s  kwsweep
+  rc=0             12s  patch-freshness-check
+  rc=0              1s  refcache-check
+  rc=0              0s  knife-guard-check
+  rc=0              1s  knife-rom-guard-check
+  rc=0              0s  deffn-selftest
+  rc=0              0s  banner-acceptance
+  rc=0             36s  string-acceptance
+  rc=0             18s  str-domain-acceptance
+  rc=0             11s  strparen-acceptance
+  rc=0             53s  penderr-acceptance
+  rc=0             45s  missing-acceptance
+  rc=0             12s  error-acceptance
+  rc=0             67s  error-trap-acceptance
+  rc=0             93s  onerr0-acceptance
+  rc=0            109s  math-acceptance
+  rc=0            100s  float-acceptance
+  rc=0             43s  intarg-acceptance
+  rc=0             33s  logicops-acceptance
+  rc=0            191s  screenerr-acceptance
+  rc=0             42s  tmfp-acceptance
+  rc=0             62s  stmtpend-acceptance
+  rc=0            114s  array-acceptance
+  rc=0            127s  deffn-strict
+  rc=0            383s  graphics-acceptance
+  rc=0             54s  abort-acceptance
+  rc=0            158s  interval-trap-acceptance
+  rc=0             87s  clearpool-acceptance
+  rc=0            132s  stackpool-acceptance
+  rc=0            151s  trapdepth-acceptance
+  rc=0             77s  ctlcross-acceptance
+  rc=0             14s  cursor-acceptance
+  rc=0             80s  time-acceptance
+  rc=0            241s  namspc-acceptance
+  rc=0            104s  arrdim-acceptance
+  rc=0             69s  arylv-acceptance
+  rc=0             60s  badfnum-acceptance
+  rc=0              4s  beep-acceptance
+  rc=0             19s  binfre-acceptance
+  rc=0             27s  cassave-acceptance
+  rc=0             77s  castail-acceptance
+  rc=0            125s  deffn-acceptance
+  rc=0             45s  direct-ctrl-acceptance
+  rc=0             11s  dskmsg-acceptance
+  rc=0             75s  editverb-acceptance
+  rc=0             31s  fldary-acceptance
+  rc=0             95s  fldwidth-acceptance
+  rc=0             24s  forvar-acceptance
+  rc=0             51s  gicini-acceptance
+  rc=0              5s  graphics-floor-acceptance
+  rc=0            151s  ifsem-acceptance
+  rc=0              8s  input-acceptance
+  rc=0             63s  nodisk-acceptance
+  rc=0             76s  pusing-acceptance
+  rc=0             44s  catterm-acceptance
+  rc=0             14s  catusr-acceptance
+  rc=0             19s  nameord-acceptance
+  rc=0             12s  namegate-acceptance
+  rc=0             43s  inputary-acceptance
+  rc=0            140s  key-trap-acceptance
+  rc=0             61s  linemax-acceptance
+  rc=0            137s  lnblank-acceptance
+  rc=0             45s  locarg-acceptance
+  rc=0             43s  lof-acceptance
+  rc=0             85s  lptverb-acceptance
+  rc=0             52s  lrvar-acceptance
+  rc=0             56s  lvfix-acceptance
+  rc=0             23s  nxary-acceptance
+  rc=0             24s  nxlist-acceptance
+  rc=0             30s  play-acceptance
+  rc=0             11s  play-trace-acceptance
+  rc=0             21s  readvar-acceptance
+  rc=0             11s  runtail-acceptance
+  rc=0             29s  sound-acceptance
+  rc=0             67s  sprite-trap-acceptance
+  rc=0             56s  stop-trap-acceptance
+  rc=0            145s  strig-trap-acceptance
+  rc=0              0s  subrom-acceptance
+  rc=0             66s  tgtspc-acceptance
+  rc=0             66s  width-acceptance
+  rc=0            105s  lineerr#1/8
+  rc=0            105s  lineerr#2/8
+  rc=0            104s  lineerr#3/8
+  rc=0            102s  lineerr#4/8
+  rc=0            101s  lineerr#5/8
+  rc=0             99s  lineerr#6/8
+  rc=0             97s  lineerr#7/8
+  rc=0             65s  lineerr#8/8
+
+=== retrying 1 red unit(s) SERIALLY (flake vs real) ===
+  retry todo-citation-check: rc 2->2  REAL (still red)
+
+=== wall 766s (8s build + 758s gates) ===
+GATES: 104/105 green
+RED: todo-citation-check
+🔴 BATTERY FAILED ON A POOL WRITE: 1 TRACKED FILE(S) WERE WRITTEN DURING THE PARALLEL POOL. The gate tally above is about the gates; this is about the tree they ran on — 40+ units read these while they changed, and a torn read has no witness of its own.
+     TODO.md
+       running at the write: lineerr#1/8, lineerr#2/8, lineerr#3/8, lineerr#4/8, lineerr#5/8, lineerr#6/8, lineerr#7/8, strig-trap-acceptance
+     → re-run each named unit ALONE and diff the tree, then put the offender in MUTATORS. A legitimately regenerated path goes in REGENERATED, with its reason.
+hashes: 4379e3a0 a357bbd2 02e7e81b 9155d772
+make: *** [gates] Error 1

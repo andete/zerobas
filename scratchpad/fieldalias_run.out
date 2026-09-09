@@ -1,0 +1,10 @@
+  cf3300  ['AAAAAAAA', 'AAAAAAAA', 'ZZZZZZZZ']
+  zb      ['AAAAAAAA', 'ZZZZZZZZ', 'ZZZZZZZZ']
+
+field                                  cf3300         zb   verdict
+P$ (F$ after its own GET)            AAAAAAAA   AAAAAAAA   SAME
+Q$ (F$ after a GET on #2)  🎯 THE READING   AAAAAAAA   ZZZZZZZZ   🔴 DIFF
+R$ (G$ after GET #2)       control   ZZZZZZZZ   ZZZZZZZZ   SAME
+
+=== 1 divergence(s): ['Q$'] ===
+🔴 FIELD variables ALIAS across channels. This does NOT reopen the 267 B — it means FIELD needs its own backing, a much smaller thing than a per-channel sector buffer.

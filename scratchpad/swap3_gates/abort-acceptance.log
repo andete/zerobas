@@ -1,0 +1,58 @@
+python3 tools/install-repack-machine.py --merged build/zerobas-main-eu.rom --disk-rom build/disk.rom \
+	  --sub-rom build/sub.rom
+wrote C-BIOS_MSX1_EU_REPACK_DISK  (-> machine "C-BIOS_MSX1_EU_REPACK_DISK": merged repack ROM in slot 0, zerobas-disk in slot 3-1, zerobas-sub in slot 3-2)
+     /Users/joost/.openMSX/share/machines/C-BIOS_MSX1_EU_REPACK_DISK.xml
+python3 probes/basic/basic_probe_abort_depth.py --gate \
+	        --zb-machine C-BIOS_MSX1_EU_REPACK_DISK 
+PASS  ctl_value           PRINT "[";LEN("abc");"]"         SAME
+PASS  ctl_abort           PRINT "[";ASC("");"]"            SAME
+PASS  boot_first          PRINT "[";ASC("");"]"            SAME
+PASS  width_ill           WIDTH 300                        SAME
+PASS  width_ovf           WIDTH 99999                      SAME
+PASS  space_neg           PRINT "[";SPACE$(-1);"]"         SAME
+PASS  space_ovf           PRINT "[";SPACE$(99999);"]"      SAME
+PASS  string_neg          PRINT "[";STRING$(-1,65);"]"     SAME
+PASS  string_ovf          PRINT "[";STRING$(99999,65);"]"  SAME
+PASS  string_chr          PRINT "[";STRING$(5,256);"]"     SAME
+PASS  on_ill              ON 256 GOTO 10                   SAME
+PASS  on_ovf              ON 99999 GOTO 10                 SAME
+PASS  stick_ill           PRINT "[";STICK(9);"]"           SAME
+PASS  strig_ill           PRINT "[";STRIG(9);"]"           SAME
+PASS  vpeek_neg           PRINT "[";VPEEK(-1);"]"          SAME
+PASS  vpeek_ill           PRINT "[";VPEEK(16384);"]"       SAME
+PASS  peek_ovf            PRINT "[";PEEK(99999);"]"        SAME
+PASS  inp_ovf             PRINT "[";INP(99999);"]"         SAME
+PASS  vpoke_ill           VPOKE 16384,0                    SAME
+PASS  tenant_ary          DIM Q(3):PRINT "[";Q(9);"]"      SAME
+PASS  tenant_after        RUN                              SAME
+PASS  run_suffix          RUN                              SAME
+PASS  run_below           RUN                              SAME
+PASS  cont_falloff        CONT                             SAME
+PASS  cont_end            CONT                             SAME
+PASS  cont_after_end_stmt CONT                             SAME
+PASS  cont_gosub_live     CONT                             SAME
+PASS  cont_for_live       CONT                             SAME
+PASS  cont_rest_of_line   CONT:PRINT "[";9;"]"             SAME
+PASS  cont_ctl_run        RUN                              SAME
+PASS  cont_ctl_goto       GOTO 20                          SAME
+PASS  cont2_end_next      CONT                             SAME
+PASS  cont2_end_rest      CONT                             SAME
+PASS  cont2_falloff       CONT                             SAME
+PASS  cont2_twice         CONT                             SAME
+PASS  cont2_thrice        CONT                             SAME
+PASS  cont2_err           CONT                             SAME
+PASS  cont2_err_mid       CONT                             SAME
+PASS  cont2_err_twice     CONT                             SAME
+PASS  cont2_err22         CONT                             SAME
+PASS  cont2_typed_stop    CONT                             SAME
+PASS  cont2_typed_end     CONT                             SAME
+PASS  cont2_typed_err     CONT                             SAME
+PASS  cont2_typed_keep    CONT                             SAME
+PASS  cont2_restop        CONT                             SAME
+PASS  cont2_norun         CONT                             SAME
+PASS  cont2_new           CONT                             SAME
+PASS  cont2_end_only      CONT                             SAME
+PASS  cont2_ctl_stop      CONT                             SAME
+
+49/49 rows agree with the reference
+ALL PASS

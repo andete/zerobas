@@ -1,0 +1,50 @@
+canon: 30 messages, from sub/errmsg.asm
+probes with a <NO OUTPUT> bucket: 103
+  classify by MESSAGE TEXT (the subject): 39
+  classify by code / span / VRAM:         64
+
+coverage of the canon: min 1  median 5  max 30
+COMPLETE readouts: 1 of 39
+
+sentinels that do NOT carry the text they could not name: 84 of 103
+   1/30  scratchpad/circmiss_probe.py
+   1/30  scratchpad/filed_row_sweep.py
+   1/30  scratchpad/missop_err_probe.py
+   1/30  scratchpad/missop_probe.py
+   1/30  scratchpad/numstr_probe.py
+   1/30  scratchpad/strtm_probe.py
+   1/30  scratchpad/unnamed_outcome_sweep.py
+   2/30  probes/basic/basic_probe_ctlcross.py
+   2/30  scratchpad/mc_layout_probe.py
+   2/30  scratchpad/ntwall_probe.py
+   2/30  scratchpad/ntwall_sep.py
+   2/30  scratchpad/paintmc_probe.py
+   2/30  scratchpad/point3_recheck.py
+   2/30  scratchpad/s3_scout_probe.py
+   3/30  probes/basic/basic_probe_readvar.py
+   4/30  probes/basic/basic_probe_inputary.py
+   4/30  scratchpad/deffn_int_probe.py
+   5/30  probes/basic/basic_probe_arylv.py
+   5/30  probes/basic/basic_probe_forvar.py
+   5/30  probes/basic/basic_probe_nxary.py
+   5/30  probes/basic/basic_probe_nxlist.py
+   5/30  probes/lib/errmsg_alphabet.py
+   6/30  probes/basic/basic_probe_deffn.py
+   6/30  probes/basic/basic_probe_lvsites.py
+   6/30  scratchpad/deffn_scout.py
+   7/30  probes/basic/basic_probe_lvfix.py
+   7/30  scratchpad/seam_classify.py
+   7/30  scratchpad/sprite5_probe.py
+   8/30  probes/basic/basic_probe_fldary.py
+   8/30  probes/basic/basic_probe_strparen.py
+   9/30  probes/basic/basic_probe_tgtspc.py
+  10/30  probes/basic/basic_probe_namspc.py
+  11/30  scratchpad/circmiss_sib2.py
+  11/30  scratchpad/clrfix_probe.py
+  11/30  scratchpad/himdom_probe.py
+  11/30  scratchpad/paint4_probe.py
+  11/30  scratchpad/swap3_probe.py
+  29/30  probes/basic/basic_probe_lrvar.py
+  30/30  probes/basic/basic_probe_fldwidth.py
+
+the WIDEST list in the tree still cannot name 0 of them, e.g. []

@@ -1,0 +1,816 @@
+Depending: src/basic.asm
+Depending: src/disk.asm
+Depending: src/music.asm
+Depending: src/logo_msx2+.asm
+Depending: src/logo_msx2.asm
+Depending: src/logo_msx1.asm
+Depending: src/sub.asm
+Depending: src/main_msx2+_br.asm
+Depending: src/main_msx2+_jp.asm
+Depending: src/main_msx2+_eu.asm
+Depending: src/main_msx2+.asm
+Depending: src/main_msx2_br.asm
+Depending: src/main_msx2_jp.asm
+Depending: src/main_msx2_eu.asm
+Depending: src/main_msx2.asm
+Depending: src/main_msx1_br.asm
+Depending: src/main_msx1_jp.asm
+Depending: src/main_msx1_eu.asm
+Depending: src/main_msx1.asm
+Depending: src/basic_tables.asm
+Depending: src/debug.asm
+Depending: src/hardware.asm
+Depending: src/systemvars.asm
+Depending: src/hooks.asm
+Depending: src/logo.asm
+Depending: src/video.asm
+Depending: src/slot.asm
+Depending: src/util.asm
+Depending: src/main.asm
+Depending: src/scancodes_jp.asm
+Depending: src/scancodes_de.asm
+Depending: src/scancodes_fr.asm
+Depending: src/scancodes_uk.asm
+Depending: src/scancodes_us.asm
+Depending: src/locale.asm
+Creating: derived/asm/version.asm
+Depending: derived/asm/version.asm
+Depending: src/font.asm
+Depending: src/inlin.asm
+Depending: src/chput.asm
+Depending: src/font_us.asm
+Depending: src/font_br.asm
+Depending: src/font_jp.asm
+Assembling: src/main_msx1_eu.asm
+WARNING: Var AMPLTX is never used on line 896 of file systemvars.asm
+WARNING: Var ARG is never used on line 601 of file systemvars.asm
+WARNING: Var ARG_ is never used on line 350 of file systemvars.asm
+WARNING: Var ARYTA2 is never used on line 560 of file systemvars.asm
+WARNING: Var ARYTAB is never used on line 517 of file systemvars.asm
+WARNING: Var ASPCT1 is never used on line 272 of file systemvars.asm
+WARNING: Var ASPCT2 is never used on line 278 of file systemvars.asm
+WARNING: Var ASPECT is never used on line 696 of file systemvars.asm
+WARNING: Var AUTINC is never used on line 472 of file systemvars.asm
+WARNING: Var AUTLIN is never used on line 469 of file systemvars.asm
+WARNING: Var AVCSAV is never used on line 816 of file systemvars.asm
+WARNING: Var BASROM is never used on line 920 of file systemvars.asm
+WARNING: Var BRDATR is never used on line 1093 of file systemvars.asm
+WARNING: Var BUF is never used on line 340 of file systemvars.asm
+WARNING: Var BUFMIN is never used on line 336 of file systemvars.asm
+WARNING: Var CAPST is never used on line 1069 of file systemvars.asm
+WARNING: Var CASPRV is never used on line 1092 of file systemvars.asm
+WARNING: Var CDUMMY is never used on line 349 of file systemvars.asm
+WARNING: Var CENCNT is never used on line 700 of file systemvars.asm
+WARNING: Var CHRCNT is never used on line 822 of file systemvars.asm
+WARNING: Var CLIKSW is never used on line 151 of file systemvars.asm
+WARNING: Var CLINEF is never used on line 706 of file systemvars.asm
+WARNING: Var CLMLST is never used on line 70 of file systemvars.asm
+WARNING: Var CNPNTS is never used on line 709 of file systemvars.asm
+WARNING: Var CNSDFG is never used on line 164 of file systemvars.asm
+WARNING: Var CONLO is never used on line 406 of file systemvars.asm
+WARNING: Var CONSAV is never used on line 397 of file systemvars.asm
+WARNING: Var CONTXT is never used on line 382 of file systemvars.asm
+WARNING: Var CONTYP is never used on line 402 of file systemvars.asm
+WARNING: Var CPCNT is never used on line 717 of file systemvars.asm
+WARNING: Var CPCNT8 is never used on line 721 of file systemvars.asm
+WARNING: Var CPLOTF is never used on line 714 of file systemvars.asm
+WARNING: Var CRCSUM is never used on line 724 of file systemvars.asm
+WARNING: Var CS120 is never used on line 243 of file systemvars.asm
+WARNING: Var CS240 is never used on line 251 of file systemvars.asm
+WARNING: Var CSAVEA is never used on line 735 of file systemvars.asm
+WARNING: Var CSAVEM is never used on line 738 of file systemvars.asm
+WARNING: Var CSCLXY is never used on line 732 of file systemvars.asm
+WARNING: Var CSTCNT is never used on line 728 of file systemvars.asm
+WARNING: Var CURLIN is never used on line 324 of file systemvars.asm
+WARNING: Var CXOFF is never used on line 741 of file systemvars.asm
+WARNING: Var CYOFF is never used on line 744 of file systemvars.asm
+WARNING: Var DAC is never used on line 595 of file systemvars.asm
+WARNING: Var DATLIN is never used on line 447 of file systemvars.asm
+WARNING: Var DATPTR is never used on line 524 of file systemvars.asm
+WARNING: Var DECCNT is never used on line 584 of file systemvars.asm
+WARNING: Var DECTM2 is never used on line 583 of file systemvars.asm
+WARNING: Var DECTMP is never used on line 582 of file systemvars.asm
+WARNING: Var DEFTBL is never used on line 529 of file systemvars.asm
+WARNING: Var DIMFLG is never used on line 361 of file systemvars.asm
+WARNING: Var DISPADDR is never used on line 40 of file main.asm
+WARNING: Var DONUM is never used on line 378 of file systemvars.asm
+WARNING: Var DORES is never used on line 374 of file systemvars.asm
+WARNING: Var DOT is never used on line 486 of file systemvars.asm
+WARNING: Var DPPAGE is never used on line 812 of file systemvars.asm
+WARNING: Var DRVINF is never used on line 840 of file systemvars.asm
+WARNING: Var DRWANG is never used on line 1099 of file systemvars.asm
+WARNING: Var DRWFLG is never used on line 1098 of file systemvars.asm
+WARNING: Var DSCTMP is never used on line 430 of file systemvars.asm
+WARNING: Var DX is never used on line 345 of file systemvars.asm
+WARNING: Var DY is never used on line 346 of file systemvars.asm
+WARNING: Var ENDBUF is never used on line 354 of file systemvars.asm
+WARNING: Var ENDFOR is never used on line 444 of file systemvars.asm
+WARNING: Var ENDPRG is never used on line 283 of file systemvars.asm
+WARNING: Var ENSTOP is never used on line 916 of file systemvars.asm
+WARNING: Var ENVLPX is never used on line 902 of file systemvars.asm
+WARNING: Var ENVPRX is never used on line 897 of file systemvars.asm
+WARNING: Var ERRFLG is never used on line 287 of file systemvars.asm
+WARNING: Var ERRLIN is never used on line 483 of file systemvars.asm
+WARNING: Var ERRTXT is never used on line 491 of file systemvars.asm
+WARNING: Var FBUFFR is never used on line 581 of file systemvars.asm
+WARNING: Var FILNAM is never used on line 631 of file systemvars.asm
+WARNING: Var FILNM2 is never used on line 634 of file systemvars.asm
+WARNING: Var FILTAB is never used on line 615 of file systemvars.asm
+WARNING: Var FLBMEM is never used on line 1089 of file systemvars.asm
+WARNING: Var FLKINP is never used on line 455 of file systemvars.asm
+WARNING: Var FNKFLG is never used on line 940 of file systemvars.asm
+WARNING: Var FNKSWI is never used on line 936 of file systemvars.asm
+WARNING: Var FRCNEW is never used on line 215 of file systemvars.asm
+WARNING: Var FRETOP is never used on line 435 of file systemvars.asm
+WARNING: Var FUNACT is never used on line 571 of file systemvars.asm
+WARNING: Var GXPOS is never used on line 1094 of file systemvars.asm
+WARNING: Var GYPOS is never used on line 1095 of file systemvars.asm
+WARNING: Var G_LOF is never used on line 194 of file hooks.asm
+WARNING: Var HEADER is never used on line 265 of file systemvars.asm
+WARNING: Var HIGH_ is never used on line 261 of file systemvars.asm
+WARNING: Var HOLD is never used on line 600 of file systemvars.asm
+WARNING: Var HOLD2 is never used on line 599 of file systemvars.asm
+WARNING: Var HOLD8 is never used on line 598 of file systemvars.asm
+WARNING: Var H_ATTR is never used on line 115 of file hooks.asm
+WARNING: Var H_BAKU is never used on line 203 of file hooks.asm
+WARNING: Var H_BEXT is never used on line 375 of file hooks.asm
+WARNING: Var H_BINL is never used on line 170 of file hooks.asm
+WARNING: Var H_BINS is never used on line 167 of file hooks.asm
+WARNING: Var H_BUFL is never used on line 339 of file hooks.asm
+WARNING: Var H_CLEA is never used on line 225 of file hooks.asm
+WARNING: Var H_CMD is never used on line 106 of file hooks.asm
+WARNING: Var H_COMP is never used on line 306 of file hooks.asm
+WARNING: Var H_COPY is never used on line 103 of file hooks.asm
+WARNING: Var H_CRDO is never used on line 240 of file hooks.asm
+WARNING: Var H_CRUN is never used on line 270 of file hooks.asm
+WARNING: Var H_CRUS is never used on line 273 of file hooks.asm
+WARNING: Var H_CVD is never used on line 142 of file hooks.asm
+WARNING: Var H_CVI is never used on line 136 of file hooks.asm
+WARNING: Var H_CVS is never used on line 139 of file hooks.asm
+WARNING: Var H_DEVN is never used on line 215 of file hooks.asm
+WARNING: Var H_DGET is never used on line 176 of file hooks.asm
+WARNING: Var H_DIRD is never used on line 261 of file hooks.asm
+WARNING: Var H_DSKC is never used on line 243 of file hooks.asm
+WARNING: Var H_DSKF is never used on line 109 of file hooks.asm
+WARNING: Var H_DSKI is never used on line 112 of file hooks.asm
+WARNING: Var H_DSKO is never used on line 88 of file hooks.asm
+WARNING: Var H_DSPC is never used on line 42 of file hooks.asm
+WARNING: Var H_DSPF is never used on line 48 of file hooks.asm
+WARNING: Var H_EOF is never used on line 197 of file hooks.asm
+WARNING: Var H_ERAC is never used on line 45 of file hooks.asm
+WARNING: Var H_ERAF is never used on line 51 of file hooks.asm
+WARNING: Var H_ERRF is never used on line 252 of file hooks.asm
+WARNING: Var H_ERRO is never used on line 360 of file hooks.asm
+WARNING: Var H_ERRP is never used on line 249 of file hooks.asm
+WARNING: Var H_EVAL is never used on line 321 of file hooks.asm
+WARNING: Var H_FIEL is never used on line 124 of file hooks.asm
+WARNING: Var H_FILE is never used on line 173 of file hooks.asm
+WARNING: Var H_FILO is never used on line 179 of file hooks.asm
+WARNING: Var H_FINE is never used on line 267 of file hooks.asm
+WARNING: Var H_FING is never used on line 327 of file hooks.asm
+WARNING: Var H_FINI is never used on line 264 of file hooks.asm
+WARNING: Var H_FINP is never used on line 309 of file hooks.asm
+WARNING: Var H_FPOS is never used on line 200 of file hooks.asm
+WARNING: Var H_FRET is never used on line 348 of file hooks.asm
+WARNING: Var H_FRME is never used on line 315 of file hooks.asm
+WARNING: Var H_FRQI is never used on line 342 of file hooks.asm
+WARNING: Var H_GEND is never used on line 218 of file hooks.asm
+WARNING: Var H_GETP is never used on line 145 of file hooks.asm
+WARNING: Var H_GONE is never used on line 294 of file hooks.asm
+WARNING: Var H_INDS is never used on line 182 of file hooks.asm
+WARNING: Var H_INIP is never used on line 61 of file hooks.asm
+WARNING: Var H_INLI is never used on line 82 of file hooks.asm
+WARNING: Var H_IPL is never used on line 100 of file hooks.asm
+WARNING: Var H_ISFL is never used on line 234 of file hooks.asm
+WARNING: Var H_ISMI is never used on line 330 of file hooks.asm
+WARNING: Var H_ISRE is never used on line 277 of file hooks.asm
+WARNING: Var H_KEYC is never used on line 66 of file hooks.asm
+WARNING: Var H_KILL is never used on line 97 of file hooks.asm
+WARNING: Var H_KYEA is never used on line 70 of file hooks.asm
+WARNING: Var H_LIST is never used on line 336 of file hooks.asm
+WARNING: Var H_LOC is never used on line 191 of file hooks.asm
+WARNING: Var H_LOPD is never used on line 228 of file hooks.asm
+WARNING: Var H_LSET is never used on line 118 of file hooks.asm
+WARNING: Var H_MAIN is never used on line 258 of file hooks.asm
+WARNING: Var H_MERG is never used on line 161 of file hooks.asm
+WARNING: Var H_MKDS is never used on line 133 of file hooks.asm
+WARNING: Var H_MKIS is never used on line 127 of file hooks.asm
+WARNING: Var H_MKSS is never used on line 130 of file hooks.asm
+WARNING: Var H_NAME is never used on line 94 of file hooks.asm
+WARNING: Var H_NEWS is never used on line 291 of file hooks.asm
+WARNING: Var H_NODE is never used on line 209 of file hooks.asm
+WARNING: Var H_NOFO is never used on line 152 of file hooks.asm
+WARNING: Var H_NOTR is never used on line 285 of file hooks.asm
+WARNING: Var H_NTFL is never used on line 158 of file hooks.asm
+WARNING: Var H_NTFN is never used on line 281 of file hooks.asm
+WARNING: Var H_NTPL is never used on line 318 of file hooks.asm
+WARNING: Var H_NULO is never used on line 155 of file hooks.asm
+WARNING: Var H_OKNO is never used on line 324 of file hooks.asm
+WARNING: Var H_ONGO is never used on line 85 of file hooks.asm
+WARNING: Var H_PARD is never used on line 206 of file hooks.asm
+WARNING: Var H_PLAY is never used on line 372 of file hooks.asm
+WARNING: Var H_POSD is never used on line 212 of file hooks.asm
+WARNING: Var H_PRGE is never used on line 246 of file hooks.asm
+WARNING: Var H_PRTF is never used on line 303 of file hooks.asm
+WARNING: Var H_PTRG is never used on line 351 of file hooks.asm
+WARNING: Var H_READ is never used on line 255 of file hooks.asm
+WARNING: Var H_RETU is never used on line 300 of file hooks.asm
+WARNING: Var H_RSET is never used on line 121 of file hooks.asm
+WARNING: Var H_RSLF is never used on line 185 of file hooks.asm
+WARNING: Var H_SAVD is never used on line 188 of file hooks.asm
+WARNING: Var H_SAVE is never used on line 164 of file hooks.asm
+WARNING: Var H_SCNE is never used on line 345 of file hooks.asm
+WARNING: Var H_SCRE is never used on line 369 of file hooks.asm
+WARNING: Var H_SETF is never used on line 148 of file hooks.asm
+WARNING: Var H_SETS is never used on line 91 of file hooks.asm
+WARNING: Var H_SNGF is never used on line 288 of file hooks.asm
+WARNING: Var H_TRMN is never used on line 312 of file hooks.asm
+WARNING: Var H_WIDT is never used on line 333 of file hooks.asm
+WARNING: Var INTCNT is never used on line 1030 of file systemvars.asm
+WARNING: Var INTFLG is never used on line 1012 of file systemvars.asm
+WARNING: Var INTVAL is never used on line 1025 of file systemvars.asm
+WARNING: Var KANAMD is never used on line 1083 of file systemvars.asm
+WARNING: Var KANAST is never used on line 1079 of file systemvars.asm
+WARNING: Var KBFMIN is never used on line 328 of file systemvars.asm
+WARNING: Var KBUF is never used on line 332 of file systemvars.asm
+WARNING: Var LASTSTAC is never used on line 41 of file main.asm
+WARNING: Var LFPROG is never used on line 772 of file systemvars.asm
+WARNING: Var LIMPNT is never used on line 959 of file systemvars.asm
+WARNING: Var LOCAL_BASIC_JP is never used on line 115 of file hardware.asm
+WARNING: Var LOCAL_CHSET_KO is never used on line 95 of file hardware.asm
+WARNING: Var LOCAL_DATE_MDY is never used on line 102 of file hardware.asm
+WARNING: Var LOCAL_DATE_YMD is never used on line 101 of file hardware.asm
+WARNING: Var LOGOPR is never used on line 836 of file systemvars.asm
+WARNING: Var LOHADR is never used on line 757 of file systemvars.asm
+WARNING: Var LOHCNT is never used on line 760 of file systemvars.asm
+WARNING: Var LOHDIR is never used on line 754 of file systemvars.asm
+WARNING: Var LOHMSK is never used on line 751 of file systemvars.asm
+WARNING: Var LOWLIM is never used on line 1034 of file systemvars.asm
+WARNING: Var LOW_ is never used on line 256 of file systemvars.asm
+WARNING: Var L_OP is never used on line 351 of file systemvars.asm
+WARNING: Var MAXDEL is never used on line 685 of file systemvars.asm
+WARNING: Var MAXFIL is never used on line 612 of file systemvars.asm
+WARNING: Var MAXUPD is never used on line 199 of file systemvars.asm
+WARNING: Var MCLFLG is never used on line 785 of file systemvars.asm
+WARNING: Var MCLLEN is never used on line 862 of file systemvars.asm
+WARNING: Var MCLPTR is never used on line 865 of file systemvars.asm
+WARNING: Var MCLSEX is never used on line 904 of file systemvars.asm
+WARNING: Var MCLSTX is never used on line 903 of file systemvars.asm
+WARNING: Var MCLTAB is never used on line 781 of file systemvars.asm
+WARNING: Var MEMSIZ is never used on line 410 of file systemvars.asm
+WARNING: Var METREX is never used on line 889 of file systemvars.asm
+WARNING: Var MINDEL is never used on line 684 of file systemvars.asm
+WARNING: Var MINUPD is never used on line 203 of file systemvars.asm
+WARNING: Var MLTCOL is never used on line 135 of file systemvars.asm
+WARNING: Var MODE is never used on line 828 of file systemvars.asm
+WARNING: Var MODEL_MSX2 is never used on line 85 of file hardware.asm
+WARNING: Var MODEL_MSX2P is never used on line 86 of file hardware.asm
+WARNING: Var MOVCNT is never used on line 766 of file systemvars.asm
+WARNING: Var MUSICF is never used on line 874 of file systemvars.asm
+WARNING: Var NLONLY is never used on line 638 of file systemvars.asm
+WARNING: Var NOFUNS is never used on line 564 of file systemvars.asm
+WARNING: Var NOTELX is never used on line 899 of file systemvars.asm
+WARNING: Var NTICSX is never used on line 894 of file systemvars.asm
+WARNING: Var NTMSXP is never used on line 301 of file systemvars.asm
+WARNING: Var NULBUF is never used on line 618 of file systemvars.asm
+WARNING: Var NX is never used on line 347 of file systemvars.asm
+WARNING: Var NY is never used on line 348 of file systemvars.asm
+WARNING: Var OCTAVX is never used on line 898 of file systemvars.asm
+WARNING: Var OLDLIN is never used on line 506 of file systemvars.asm
+WARNING: Var OLDTXT is never used on line 509 of file systemvars.asm
+WARNING: Var ONEFLG is never used on line 500 of file systemvars.asm
+WARNING: Var ONELIN is never used on line 495 of file systemvars.asm
+WARNING: Var ONGSBF is never used on line 943 of file systemvars.asm
+WARNING: Var PADX is never used on line 1018 of file systemvars.asm
+WARNING: Var PADY is never used on line 1015 of file systemvars.asm
+WARNING: Var PARM1 is never used on line 542 of file systemvars.asm
+WARNING: Var PARM2 is never used on line 551 of file systemvars.asm
+WARNING: Var PDIREC is never used on line 769 of file systemvars.asm
+WARNING: Var PLYCNT is never used on line 877 of file systemvars.asm
+WARNING: Var PRMDRV is never used on line 545 of file systemvars.asm
+WARNING: Var PRMFLG is never used on line 555 of file systemvars.asm
+WARNING: Var PRMLEN is never used on line 538 of file systemvars.asm
+WARNING: Var PRMLN2 is never used on line 548 of file systemvars.asm
+WARNING: Var PRMSTK is never used on line 535 of file systemvars.asm
+WARNING: Var PROCNM is never used on line 1136 of file systemvars.asm
+WARNING: Var PRSCNT is never used on line 850 of file systemvars.asm
+WARNING: Var PRTFLG is never used on line 295 of file systemvars.asm
+WARNING: Var PTRFLG is never used on line 462 of file systemvars.asm
+WARNING: Var QLENGX is never used on line 893 of file systemvars.asm
+WARNING: Var QUEBAK is never used on line 803 of file systemvars.asm
+WARNING: Var QUEUEN is never used on line 868 of file systemvars.asm
+WARNING: Var RAWPRT is never used on line 308 of file systemvars.asm
+WARNING: Var RG25SAV is never used on line 1163 of file systemvars.asm
+WARNING: Var RG2SAV is never used on line 170 of file systemvars.asm
+WARNING: Var RG3SAV is never used on line 171 of file systemvars.asm
+WARNING: Var RG4SAV is never used on line 172 of file systemvars.asm
+WARNING: Var RG5SAV is never used on line 173 of file systemvars.asm
+WARNING: Var RG6SAV is never used on line 174 of file systemvars.asm
+WARNING: Var RG7SAV is never used on line 175 of file systemvars.asm
+WARNING: Var RG8SAV is never used on line 1149 of file systemvars.asm
+WARNING: Var RNDX is never used on line 604 of file systemvars.asm
+WARNING: Var ROMA is never used on line 825 of file systemvars.asm
+WARNING: Var RS2IQ is never used on line 809 of file systemvars.asm
+WARNING: Var RTC_ADDR is never used on line 55 of file hardware.asm
+WARNING: Var RTC_DATA is never used on line 56 of file hardware.asm
+WARNING: Var RTPROG is never used on line 775 of file systemvars.asm
+WARNING: Var RTYCNT is never used on line 1008 of file systemvars.asm
+WARNING: Var RUNBNF is never used on line 1100 of file systemvars.asm
+WARNING: Var RUNFLG is never used on line 625 of file systemvars.asm
+WARNING: Var SAVEND is never used on line 644 of file systemvars.asm
+WARNING: Var SAVENT is never used on line 1101 of file systemvars.asm
+WARNING: Var SAVSP is never used on line 853 of file systemvars.asm
+WARNING: Var SAVSTK is never used on line 480 of file systemvars.asm
+WARNING: Var SAVTXT is never used on line 476 of file systemvars.asm
+WARNING: Var SAVVOL is never used on line 859 of file systemvars.asm
+WARNING: Var SKPCNT is never used on line 763 of file systemvars.asm
+WARNING: Var SLTWRK is never used on line 1130 of file systemvars.asm
+WARNING: Var SP_REGS is never used on line 42 of file main.asm
+WARNING: Var STREND is never used on line 521 of file systemvars.asm
+WARNING: Var SUBFLG is never used on line 452 of file systemvars.asm
+WARNING: Var SWPTMP is never used on line 575 of file systemvars.asm
+WARNING: Var SX is never used on line 343 of file systemvars.asm
+WARNING: Var SY is never used on line 344 of file systemvars.asm
+WARNING: Var SYSFLAGS is never used on line 58 of file hardware.asm
+WARNING: Var TEMP3 is never used on line 438 of file systemvars.asm
+WARNING: Var TEMP8 is never used on line 441 of file systemvars.asm
+WARNING: Var TEMP9 is never used on line 568 of file systemvars.asm
+WARNING: Var TEMPOX is never used on line 900 of file systemvars.asm
+WARNING: Var TEMPPT is never used on line 421 of file systemvars.asm
+WARNING: Var TEMPST is never used on line 426 of file systemvars.asm
+WARNING: Var TONPRX is never used on line 895 of file systemvars.asm
+WARNING: Var TRCFLG is never used on line 578 of file systemvars.asm
+WARNING: Var TRPTBL is never used on line 1005 of file systemvars.asm
+WARNING: Var TXTCOL is never used on line 77 of file systemvars.asm
+WARNING: Var TXTTAB is never used on line 417 of file systemvars.asm
+WARNING: Var USRTAB is never used on line 51 of file systemvars.asm
+WARNING: Var VALTYP is never used on line 369 of file systemvars.asm
+WARNING: Var VARTAB is never used on line 513 of file systemvars.asm
+WARNING: Var VCBB is never used on line 882 of file systemvars.asm
+WARNING: Var VCBC is never used on line 884 of file systemvars.asm
+WARNING: Var VCXLEN is never used on line 890 of file systemvars.asm
+WARNING: Var VCXPTR is never used on line 891 of file systemvars.asm
+WARNING: Var VCXSTP is never used on line 892 of file systemvars.asm
+WARNING: Var VDP_PALT is never used on line 43 of file hardware.asm
+WARNING: Var VDP_REGS is never used on line 44 of file hardware.asm
+WARNING: Var VLZADR is never used on line 316 of file systemvars.asm
+WARNING: Var VLZDAT is never used on line 320 of file systemvars.asm
+WARNING: Var VOLUMX is never used on line 901 of file systemvars.asm
+WARNING: Var WINWID is never used on line 1035 of file systemvars.asm
+WARNING: Var XSAVE is never used on line 832 of file systemvars.asm
+WARNING: Var YSAVE is never used on line 835 of file systemvars.asm
+WARNING: Var bigfil is never used on line 1364 of file video.asm
+WARNING: Var chknew is never used on line 1350 of file video.asm
+WARNING: Var chkram_pslot_end is never used on line 736 of file main.asm
+WARNING: Var clrspr_attr_spritemode2 is never used on line 521 of file video.asm
+WARNING: Var fetchc_text is never used on line 2286 of file video.asm
+WARNING: Var grpprt_text is never used on line 1343 of file video.asm
+WARNING: Var idbyt1 is never used on line 105 of file main.asm
+WARNING: Var idbyt2 is never used on line 116 of file main.asm
+WARNING: Var joy_end is never used on line 2329 of file main.asm
+WARNING: Var mapxy_text is never used on line 2275 of file video.asm
+WARNING: Var nrdvrm is never used on line 1460 of file video.asm
+WARNING: Var nwrvrm is never used on line 1473 of file video.asm
+WARNING: Var print_debug_hexword is never used on line 87 of file debug.asm
+WARNING: Var romid is never used on line 127 of file main.asm
+WARNING: Var scalxy_text is never used on line 2232 of file video.asm
+WARNING: Var scode_tbl_code is never used on line 59 of file scancodes_us.asm
+WARNING: Var scode_tbl_graph is never used on line 43 of file scancodes_us.asm
+WARNING: Var scode_tbl_shift_code is never used on line 67 of file scancodes_us.asm
+WARNING: Var scode_tbl_shift_graph is never used on line 51 of file scancodes_us.asm
+WARNING: Var search_roms_no is never used on line 915 of file main.asm
+WARNING: Var stack_error is never used on line 2984 of file main.asm
+WARNING: Var str_proginfo_length is never used on line 3140 of file main.asm
+WARNING: Var subrom is never used on line 2927 of file main.asm
+WARNING: Var vdp_dr is never used on line 63 of file main.asm
+WARNING: Var vdp_dw is never used on line 65 of file main.asm
+WARNING: Var vdpsta is never used on line 1490 of file video.asm
+WARNING: Var wrtvdp_nosav is never used on line 99 of file video.asm
+WARNING: Var wrtvdp_sav is never used on line 94 of file video.asm
+Depending: src/basic.asm
+Depending: src/disk.asm
+Depending: src/music.asm
+Depending: src/logo_msx2+.asm
+Depending: src/logo_msx2.asm
+Depending: src/logo_msx1.asm
+Depending: src/sub.asm
+Depending: src/main_msx2+_br.asm
+Depending: src/main_msx2+_jp.asm
+Depending: src/main_msx2+_eu.asm
+Depending: src/main_msx2+.asm
+Depending: src/main_msx2_br.asm
+Depending: src/main_msx2_jp.asm
+Depending: src/main_msx2_eu.asm
+Depending: src/main_msx2.asm
+Depending: src/main_msx1_br.asm
+Depending: src/main_msx1_jp.asm
+Depending: src/main_msx1_eu.asm
+Depending: src/main_msx1.asm
+Depending: src/basic_tables.asm
+Depending: src/debug.asm
+Depending: src/hardware.asm
+Depending: src/systemvars.asm
+Depending: src/hooks.asm
+Depending: src/logo.asm
+Depending: src/video.asm
+Depending: src/slot.asm
+Depending: src/util.asm
+Depending: src/main.asm
+Depending: src/statements.asm
+Depending: src/scancodes_jp.asm
+Depending: src/scancodes_de.asm
+Depending: src/scancodes_fr.asm
+Depending: src/scancodes_uk.asm
+Depending: src/scancodes_us.asm
+Depending: src/locale.asm
+Creating: derived/asm/version.asm
+Depending: derived/asm/version.asm
+Depending: src/font.asm
+Depending: src/inlin.asm
+Depending: src/chput.asm
+Depending: src/font_us.asm
+Depending: src/font_br.asm
+Depending: src/font_jp.asm
+Assembling: src/main_msx1_eu.asm
+WARNING: Var AMPLTX is never used on line 896 of file systemvars.asm
+WARNING: Var ARG is never used on line 601 of file systemvars.asm
+WARNING: Var ARG_ is never used on line 350 of file systemvars.asm
+WARNING: Var ARYTA2 is never used on line 560 of file systemvars.asm
+WARNING: Var ARYTAB is never used on line 517 of file systemvars.asm
+WARNING: Var ASPCT1 is never used on line 272 of file systemvars.asm
+WARNING: Var ASPCT2 is never used on line 278 of file systemvars.asm
+WARNING: Var ASPECT is never used on line 696 of file systemvars.asm
+WARNING: Var AUTINC is never used on line 472 of file systemvars.asm
+WARNING: Var AUTLIN is never used on line 469 of file systemvars.asm
+WARNING: Var AVCSAV is never used on line 816 of file systemvars.asm
+WARNING: Var BASROM is never used on line 920 of file systemvars.asm
+WARNING: Var BRDATR is never used on line 1093 of file systemvars.asm
+WARNING: Var BUF is never used on line 340 of file systemvars.asm
+WARNING: Var BUFMIN is never used on line 336 of file systemvars.asm
+WARNING: Var CAPST is never used on line 1069 of file systemvars.asm
+WARNING: Var CASPRV is never used on line 1092 of file systemvars.asm
+WARNING: Var CDUMMY is never used on line 349 of file systemvars.asm
+WARNING: Var CENCNT is never used on line 700 of file systemvars.asm
+WARNING: Var CHRCNT is never used on line 822 of file systemvars.asm
+WARNING: Var CLIKSW is never used on line 151 of file systemvars.asm
+WARNING: Var CLINEF is never used on line 706 of file systemvars.asm
+WARNING: Var CLMLST is never used on line 70 of file systemvars.asm
+WARNING: Var CNPNTS is never used on line 709 of file systemvars.asm
+WARNING: Var CNSDFG is never used on line 164 of file systemvars.asm
+WARNING: Var CONLO is never used on line 406 of file systemvars.asm
+WARNING: Var CONSAV is never used on line 397 of file systemvars.asm
+WARNING: Var CONTXT is never used on line 382 of file systemvars.asm
+WARNING: Var CONTYP is never used on line 402 of file systemvars.asm
+WARNING: Var CPCNT is never used on line 717 of file systemvars.asm
+WARNING: Var CPCNT8 is never used on line 721 of file systemvars.asm
+WARNING: Var CPLOTF is never used on line 714 of file systemvars.asm
+WARNING: Var CRCSUM is never used on line 724 of file systemvars.asm
+WARNING: Var CS120 is never used on line 243 of file systemvars.asm
+WARNING: Var CS240 is never used on line 251 of file systemvars.asm
+WARNING: Var CSAVEA is never used on line 735 of file systemvars.asm
+WARNING: Var CSAVEM is never used on line 738 of file systemvars.asm
+WARNING: Var CSCLXY is never used on line 732 of file systemvars.asm
+WARNING: Var CSTCNT is never used on line 728 of file systemvars.asm
+WARNING: Var CURLIN is never used on line 324 of file systemvars.asm
+WARNING: Var CXOFF is never used on line 741 of file systemvars.asm
+WARNING: Var CYOFF is never used on line 744 of file systemvars.asm
+WARNING: Var DAC is never used on line 595 of file systemvars.asm
+WARNING: Var DATLIN is never used on line 447 of file systemvars.asm
+WARNING: Var DATPTR is never used on line 524 of file systemvars.asm
+WARNING: Var DECCNT is never used on line 584 of file systemvars.asm
+WARNING: Var DECTM2 is never used on line 583 of file systemvars.asm
+WARNING: Var DECTMP is never used on line 582 of file systemvars.asm
+WARNING: Var DEFTBL is never used on line 529 of file systemvars.asm
+WARNING: Var DIMFLG is never used on line 361 of file systemvars.asm
+WARNING: Var DISPADDR is never used on line 40 of file main.asm
+WARNING: Var DONUM is never used on line 378 of file systemvars.asm
+WARNING: Var DORES is never used on line 374 of file systemvars.asm
+WARNING: Var DOT is never used on line 486 of file systemvars.asm
+WARNING: Var DPPAGE is never used on line 812 of file systemvars.asm
+WARNING: Var DRVINF is never used on line 840 of file systemvars.asm
+WARNING: Var DRWANG is never used on line 1099 of file systemvars.asm
+WARNING: Var DRWFLG is never used on line 1098 of file systemvars.asm
+WARNING: Var DSCTMP is never used on line 430 of file systemvars.asm
+WARNING: Var DX is never used on line 345 of file systemvars.asm
+WARNING: Var DY is never used on line 346 of file systemvars.asm
+WARNING: Var ENDBUF is never used on line 354 of file systemvars.asm
+WARNING: Var ENDFOR is never used on line 444 of file systemvars.asm
+WARNING: Var ENDPRG is never used on line 283 of file systemvars.asm
+WARNING: Var ENSTOP is never used on line 916 of file systemvars.asm
+WARNING: Var ENVLPX is never used on line 902 of file systemvars.asm
+WARNING: Var ENVPRX is never used on line 897 of file systemvars.asm
+WARNING: Var ERRFLG is never used on line 287 of file systemvars.asm
+WARNING: Var ERRLIN is never used on line 483 of file systemvars.asm
+WARNING: Var ERRTXT is never used on line 491 of file systemvars.asm
+WARNING: Var FBUFFR is never used on line 581 of file systemvars.asm
+WARNING: Var FILNAM is never used on line 631 of file systemvars.asm
+WARNING: Var FILNM2 is never used on line 634 of file systemvars.asm
+WARNING: Var FILTAB is never used on line 615 of file systemvars.asm
+WARNING: Var FLBMEM is never used on line 1089 of file systemvars.asm
+WARNING: Var FLKINP is never used on line 455 of file systemvars.asm
+WARNING: Var FNKFLG is never used on line 940 of file systemvars.asm
+WARNING: Var FNKSWI is never used on line 936 of file systemvars.asm
+WARNING: Var FRCNEW is never used on line 215 of file systemvars.asm
+WARNING: Var FRETOP is never used on line 435 of file systemvars.asm
+WARNING: Var FUNACT is never used on line 571 of file systemvars.asm
+WARNING: Var GXPOS is never used on line 1094 of file systemvars.asm
+WARNING: Var GYPOS is never used on line 1095 of file systemvars.asm
+WARNING: Var G_LOF is never used on line 194 of file hooks.asm
+WARNING: Var HEADER is never used on line 265 of file systemvars.asm
+WARNING: Var HIGH_ is never used on line 261 of file systemvars.asm
+WARNING: Var HOLD is never used on line 600 of file systemvars.asm
+WARNING: Var HOLD2 is never used on line 599 of file systemvars.asm
+WARNING: Var HOLD8 is never used on line 598 of file systemvars.asm
+WARNING: Var H_ATTR is never used on line 115 of file hooks.asm
+WARNING: Var H_BAKU is never used on line 203 of file hooks.asm
+WARNING: Var H_BEXT is never used on line 375 of file hooks.asm
+WARNING: Var H_BINL is never used on line 170 of file hooks.asm
+WARNING: Var H_BINS is never used on line 167 of file hooks.asm
+WARNING: Var H_BUFL is never used on line 339 of file hooks.asm
+WARNING: Var H_CLEA is never used on line 225 of file hooks.asm
+WARNING: Var H_CMD is never used on line 106 of file hooks.asm
+WARNING: Var H_COMP is never used on line 306 of file hooks.asm
+WARNING: Var H_COPY is never used on line 103 of file hooks.asm
+WARNING: Var H_CRDO is never used on line 240 of file hooks.asm
+WARNING: Var H_CRUN is never used on line 270 of file hooks.asm
+WARNING: Var H_CRUS is never used on line 273 of file hooks.asm
+WARNING: Var H_CVD is never used on line 142 of file hooks.asm
+WARNING: Var H_CVI is never used on line 136 of file hooks.asm
+WARNING: Var H_CVS is never used on line 139 of file hooks.asm
+WARNING: Var H_DEVN is never used on line 215 of file hooks.asm
+WARNING: Var H_DGET is never used on line 176 of file hooks.asm
+WARNING: Var H_DIRD is never used on line 261 of file hooks.asm
+WARNING: Var H_DSKC is never used on line 243 of file hooks.asm
+WARNING: Var H_DSKF is never used on line 109 of file hooks.asm
+WARNING: Var H_DSKI is never used on line 112 of file hooks.asm
+WARNING: Var H_DSKO is never used on line 88 of file hooks.asm
+WARNING: Var H_DSPC is never used on line 42 of file hooks.asm
+WARNING: Var H_DSPF is never used on line 48 of file hooks.asm
+WARNING: Var H_EOF is never used on line 197 of file hooks.asm
+WARNING: Var H_ERAC is never used on line 45 of file hooks.asm
+WARNING: Var H_ERAF is never used on line 51 of file hooks.asm
+WARNING: Var H_ERRF is never used on line 252 of file hooks.asm
+WARNING: Var H_ERRO is never used on line 360 of file hooks.asm
+WARNING: Var H_ERRP is never used on line 249 of file hooks.asm
+WARNING: Var H_EVAL is never used on line 321 of file hooks.asm
+WARNING: Var H_FIEL is never used on line 124 of file hooks.asm
+WARNING: Var H_FILE is never used on line 173 of file hooks.asm
+WARNING: Var H_FILO is never used on line 179 of file hooks.asm
+WARNING: Var H_FINE is never used on line 267 of file hooks.asm
+WARNING: Var H_FING is never used on line 327 of file hooks.asm
+WARNING: Var H_FINI is never used on line 264 of file hooks.asm
+WARNING: Var H_FINP is never used on line 309 of file hooks.asm
+WARNING: Var H_FPOS is never used on line 200 of file hooks.asm
+WARNING: Var H_FRET is never used on line 348 of file hooks.asm
+WARNING: Var H_FRME is never used on line 315 of file hooks.asm
+WARNING: Var H_FRQI is never used on line 342 of file hooks.asm
+WARNING: Var H_GEND is never used on line 218 of file hooks.asm
+WARNING: Var H_GETP is never used on line 145 of file hooks.asm
+WARNING: Var H_GONE is never used on line 294 of file hooks.asm
+WARNING: Var H_INDS is never used on line 182 of file hooks.asm
+WARNING: Var H_INIP is never used on line 61 of file hooks.asm
+WARNING: Var H_INLI is never used on line 82 of file hooks.asm
+WARNING: Var H_IPL is never used on line 100 of file hooks.asm
+WARNING: Var H_ISFL is never used on line 234 of file hooks.asm
+WARNING: Var H_ISMI is never used on line 330 of file hooks.asm
+WARNING: Var H_ISRE is never used on line 277 of file hooks.asm
+WARNING: Var H_KEYC is never used on line 66 of file hooks.asm
+WARNING: Var H_KILL is never used on line 97 of file hooks.asm
+WARNING: Var H_KYEA is never used on line 70 of file hooks.asm
+WARNING: Var H_LIST is never used on line 336 of file hooks.asm
+WARNING: Var H_LOC is never used on line 191 of file hooks.asm
+WARNING: Var H_LOPD is never used on line 228 of file hooks.asm
+WARNING: Var H_LSET is never used on line 118 of file hooks.asm
+WARNING: Var H_MAIN is never used on line 258 of file hooks.asm
+WARNING: Var H_MERG is never used on line 161 of file hooks.asm
+WARNING: Var H_MKDS is never used on line 133 of file hooks.asm
+WARNING: Var H_MKIS is never used on line 127 of file hooks.asm
+WARNING: Var H_MKSS is never used on line 130 of file hooks.asm
+WARNING: Var H_NAME is never used on line 94 of file hooks.asm
+WARNING: Var H_NEWS is never used on line 291 of file hooks.asm
+WARNING: Var H_NODE is never used on line 209 of file hooks.asm
+WARNING: Var H_NOFO is never used on line 152 of file hooks.asm
+WARNING: Var H_NOTR is never used on line 285 of file hooks.asm
+WARNING: Var H_NTFL is never used on line 158 of file hooks.asm
+WARNING: Var H_NTFN is never used on line 281 of file hooks.asm
+WARNING: Var H_NTPL is never used on line 318 of file hooks.asm
+WARNING: Var H_NULO is never used on line 155 of file hooks.asm
+WARNING: Var H_OKNO is never used on line 324 of file hooks.asm
+WARNING: Var H_ONGO is never used on line 85 of file hooks.asm
+WARNING: Var H_PARD is never used on line 206 of file hooks.asm
+WARNING: Var H_PLAY is never used on line 372 of file hooks.asm
+WARNING: Var H_POSD is never used on line 212 of file hooks.asm
+WARNING: Var H_PRGE is never used on line 246 of file hooks.asm
+WARNING: Var H_PRTF is never used on line 303 of file hooks.asm
+WARNING: Var H_PTRG is never used on line 351 of file hooks.asm
+WARNING: Var H_READ is never used on line 255 of file hooks.asm
+WARNING: Var H_RETU is never used on line 300 of file hooks.asm
+WARNING: Var H_RSET is never used on line 121 of file hooks.asm
+WARNING: Var H_RSLF is never used on line 185 of file hooks.asm
+WARNING: Var H_SAVD is never used on line 188 of file hooks.asm
+WARNING: Var H_SAVE is never used on line 164 of file hooks.asm
+WARNING: Var H_SCNE is never used on line 345 of file hooks.asm
+WARNING: Var H_SCRE is never used on line 369 of file hooks.asm
+WARNING: Var H_SETF is never used on line 148 of file hooks.asm
+WARNING: Var H_SETS is never used on line 91 of file hooks.asm
+WARNING: Var H_SNGF is never used on line 288 of file hooks.asm
+WARNING: Var H_TRMN is never used on line 312 of file hooks.asm
+WARNING: Var H_WIDT is never used on line 333 of file hooks.asm
+WARNING: Var INTCNT is never used on line 1030 of file systemvars.asm
+WARNING: Var INTFLG is never used on line 1012 of file systemvars.asm
+WARNING: Var INTVAL is never used on line 1025 of file systemvars.asm
+WARNING: Var KANAMD is never used on line 1083 of file systemvars.asm
+WARNING: Var KANAST is never used on line 1079 of file systemvars.asm
+WARNING: Var KBFMIN is never used on line 328 of file systemvars.asm
+WARNING: Var KBUF is never used on line 332 of file systemvars.asm
+WARNING: Var LASTSTAC is never used on line 41 of file main.asm
+WARNING: Var LFPROG is never used on line 772 of file systemvars.asm
+WARNING: Var LIMPNT is never used on line 959 of file systemvars.asm
+WARNING: Var LOCAL_BASIC_JP is never used on line 115 of file hardware.asm
+WARNING: Var LOCAL_CHSET_KO is never used on line 95 of file hardware.asm
+WARNING: Var LOCAL_DATE_MDY is never used on line 102 of file hardware.asm
+WARNING: Var LOCAL_DATE_YMD is never used on line 101 of file hardware.asm
+WARNING: Var LOGOPR is never used on line 836 of file systemvars.asm
+WARNING: Var LOHADR is never used on line 757 of file systemvars.asm
+WARNING: Var LOHCNT is never used on line 760 of file systemvars.asm
+WARNING: Var LOHDIR is never used on line 754 of file systemvars.asm
+WARNING: Var LOHMSK is never used on line 751 of file systemvars.asm
+WARNING: Var LOWLIM is never used on line 1034 of file systemvars.asm
+WARNING: Var LOW_ is never used on line 256 of file systemvars.asm
+WARNING: Var L_OP is never used on line 351 of file systemvars.asm
+WARNING: Var MAXDEL is never used on line 685 of file systemvars.asm
+WARNING: Var MAXFIL is never used on line 612 of file systemvars.asm
+WARNING: Var MAXUPD is never used on line 199 of file systemvars.asm
+WARNING: Var MCLFLG is never used on line 785 of file systemvars.asm
+WARNING: Var MCLLEN is never used on line 862 of file systemvars.asm
+WARNING: Var MCLPTR is never used on line 865 of file systemvars.asm
+WARNING: Var MCLSEX is never used on line 904 of file systemvars.asm
+WARNING: Var MCLSTX is never used on line 903 of file systemvars.asm
+WARNING: Var MCLTAB is never used on line 781 of file systemvars.asm
+WARNING: Var MEMSIZ is never used on line 410 of file systemvars.asm
+WARNING: Var METREX is never used on line 889 of file systemvars.asm
+WARNING: Var MINDEL is never used on line 684 of file systemvars.asm
+WARNING: Var MINUPD is never used on line 203 of file systemvars.asm
+WARNING: Var MLTCOL is never used on line 135 of file systemvars.asm
+WARNING: Var MODE is never used on line 828 of file systemvars.asm
+WARNING: Var MODEL_MSX2 is never used on line 85 of file hardware.asm
+WARNING: Var MODEL_MSX2P is never used on line 86 of file hardware.asm
+WARNING: Var MOVCNT is never used on line 766 of file systemvars.asm
+WARNING: Var MUSICF is never used on line 874 of file systemvars.asm
+WARNING: Var NLONLY is never used on line 638 of file systemvars.asm
+WARNING: Var NOFUNS is never used on line 564 of file systemvars.asm
+WARNING: Var NOTELX is never used on line 899 of file systemvars.asm
+WARNING: Var NTICSX is never used on line 894 of file systemvars.asm
+WARNING: Var NTMSXP is never used on line 301 of file systemvars.asm
+WARNING: Var NULBUF is never used on line 618 of file systemvars.asm
+WARNING: Var NX is never used on line 347 of file systemvars.asm
+WARNING: Var NY is never used on line 348 of file systemvars.asm
+WARNING: Var OCTAVX is never used on line 898 of file systemvars.asm
+WARNING: Var OLDLIN is never used on line 506 of file systemvars.asm
+WARNING: Var OLDTXT is never used on line 509 of file systemvars.asm
+WARNING: Var ONEFLG is never used on line 500 of file systemvars.asm
+WARNING: Var ONELIN is never used on line 495 of file systemvars.asm
+WARNING: Var ONGSBF is never used on line 943 of file systemvars.asm
+WARNING: Var PADX is never used on line 1018 of file systemvars.asm
+WARNING: Var PADY is never used on line 1015 of file systemvars.asm
+WARNING: Var PARM1 is never used on line 542 of file systemvars.asm
+WARNING: Var PARM2 is never used on line 551 of file systemvars.asm
+WARNING: Var PDIREC is never used on line 769 of file systemvars.asm
+WARNING: Var PLYCNT is never used on line 877 of file systemvars.asm
+WARNING: Var PRMDRV is never used on line 545 of file systemvars.asm
+WARNING: Var PRMFLG is never used on line 555 of file systemvars.asm
+WARNING: Var PRMLEN is never used on line 538 of file systemvars.asm
+WARNING: Var PRMLN2 is never used on line 548 of file systemvars.asm
+WARNING: Var PRMSTK is never used on line 535 of file systemvars.asm
+WARNING: Var PROCNM is never used on line 1136 of file systemvars.asm
+WARNING: Var PRSCNT is never used on line 850 of file systemvars.asm
+WARNING: Var PRTFLG is never used on line 295 of file systemvars.asm
+WARNING: Var PTRFLG is never used on line 462 of file systemvars.asm
+WARNING: Var QLENGX is never used on line 893 of file systemvars.asm
+WARNING: Var QUEBAK is never used on line 803 of file systemvars.asm
+WARNING: Var QUEUEN is never used on line 868 of file systemvars.asm
+WARNING: Var RAWPRT is never used on line 308 of file systemvars.asm
+WARNING: Var RG25SAV is never used on line 1163 of file systemvars.asm
+WARNING: Var RG2SAV is never used on line 170 of file systemvars.asm
+WARNING: Var RG3SAV is never used on line 171 of file systemvars.asm
+WARNING: Var RG4SAV is never used on line 172 of file systemvars.asm
+WARNING: Var RG5SAV is never used on line 173 of file systemvars.asm
+WARNING: Var RG6SAV is never used on line 174 of file systemvars.asm
+WARNING: Var RG7SAV is never used on line 175 of file systemvars.asm
+WARNING: Var RG8SAV is never used on line 1149 of file systemvars.asm
+WARNING: Var RNDX is never used on line 604 of file systemvars.asm
+WARNING: Var ROMA is never used on line 825 of file systemvars.asm
+WARNING: Var RS2IQ is never used on line 809 of file systemvars.asm
+WARNING: Var RTC_ADDR is never used on line 55 of file hardware.asm
+WARNING: Var RTC_DATA is never used on line 56 of file hardware.asm
+WARNING: Var RTPROG is never used on line 775 of file systemvars.asm
+WARNING: Var RTYCNT is never used on line 1008 of file systemvars.asm
+WARNING: Var RUNBNF is never used on line 1100 of file systemvars.asm
+WARNING: Var RUNFLG is never used on line 625 of file systemvars.asm
+WARNING: Var SAVEND is never used on line 644 of file systemvars.asm
+WARNING: Var SAVENT is never used on line 1101 of file systemvars.asm
+WARNING: Var SAVSP is never used on line 853 of file systemvars.asm
+WARNING: Var SAVSTK is never used on line 480 of file systemvars.asm
+WARNING: Var SAVTXT is never used on line 476 of file systemvars.asm
+WARNING: Var SAVVOL is never used on line 859 of file systemvars.asm
+WARNING: Var SKPCNT is never used on line 763 of file systemvars.asm
+WARNING: Var SLTWRK is never used on line 1130 of file systemvars.asm
+WARNING: Var SP_REGS is never used on line 42 of file main.asm
+WARNING: Var STREND is never used on line 521 of file systemvars.asm
+WARNING: Var SUBFLG is never used on line 452 of file systemvars.asm
+WARNING: Var SWPTMP is never used on line 575 of file systemvars.asm
+WARNING: Var SX is never used on line 343 of file systemvars.asm
+WARNING: Var SY is never used on line 344 of file systemvars.asm
+WARNING: Var SYSFLAGS is never used on line 58 of file hardware.asm
+WARNING: Var TEMP3 is never used on line 438 of file systemvars.asm
+WARNING: Var TEMP8 is never used on line 441 of file systemvars.asm
+WARNING: Var TEMP9 is never used on line 568 of file systemvars.asm
+WARNING: Var TEMPOX is never used on line 900 of file systemvars.asm
+WARNING: Var TEMPPT is never used on line 421 of file systemvars.asm
+WARNING: Var TEMPST is never used on line 426 of file systemvars.asm
+WARNING: Var TONPRX is never used on line 895 of file systemvars.asm
+WARNING: Var TRCFLG is never used on line 578 of file systemvars.asm
+WARNING: Var TRPTBL is never used on line 1005 of file systemvars.asm
+WARNING: Var TXTCOL is never used on line 77 of file systemvars.asm
+WARNING: Var TXTTAB is never used on line 417 of file systemvars.asm
+WARNING: Var USRTAB is never used on line 51 of file systemvars.asm
+WARNING: Var VALTYP is never used on line 369 of file systemvars.asm
+WARNING: Var VARTAB is never used on line 513 of file systemvars.asm
+WARNING: Var VCBB is never used on line 882 of file systemvars.asm
+WARNING: Var VCBC is never used on line 884 of file systemvars.asm
+WARNING: Var VCXLEN is never used on line 890 of file systemvars.asm
+WARNING: Var VCXPTR is never used on line 891 of file systemvars.asm
+WARNING: Var VCXSTP is never used on line 892 of file systemvars.asm
+WARNING: Var VDP_PALT is never used on line 43 of file hardware.asm
+WARNING: Var VDP_REGS is never used on line 44 of file hardware.asm
+WARNING: Var VLZADR is never used on line 316 of file systemvars.asm
+WARNING: Var VLZDAT is never used on line 320 of file systemvars.asm
+WARNING: Var VOLUMX is never used on line 901 of file systemvars.asm
+WARNING: Var WINWID is never used on line 1035 of file systemvars.asm
+WARNING: Var XSAVE is never used on line 832 of file systemvars.asm
+WARNING: Var YSAVE is never used on line 835 of file systemvars.asm
+WARNING: Var bigfil is never used on line 1364 of file video.asm
+WARNING: Var chknew is never used on line 1350 of file video.asm
+WARNING: Var chkram_pslot_end is never used on line 736 of file main.asm
+WARNING: Var clrspr_attr_spritemode2 is never used on line 521 of file video.asm
+WARNING: Var fetchc_text is never used on line 2286 of file video.asm
+WARNING: Var grpprt_text is never used on line 1343 of file video.asm
+WARNING: Var idbyt1 is never used on line 105 of file main.asm
+WARNING: Var idbyt2 is never used on line 116 of file main.asm
+WARNING: Var joy_end is never used on line 2329 of file main.asm
+WARNING: Var mapxy_text is never used on line 2275 of file video.asm
+WARNING: Var multiple is never used on line 37 of file statements.asm
+WARNING: Var nrdvrm is never used on line 1460 of file video.asm
+WARNING: Var nwrvrm is never used on line 1473 of file video.asm
+WARNING: Var print_debug_hexword is never used on line 87 of file debug.asm
+WARNING: Var rombas is never used on line 54 of file statements.asm
+WARNING: Var romid is never used on line 127 of file main.asm
+WARNING: Var scalxy_text is never used on line 2232 of file video.asm
+WARNING: Var scode_tbl_code is never used on line 59 of file scancodes_us.asm
+WARNING: Var scode_tbl_graph is never used on line 43 of file scancodes_us.asm
+WARNING: Var scode_tbl_shift_code is never used on line 67 of file scancodes_us.asm
+WARNING: Var scode_tbl_shift_graph is never used on line 51 of file scancodes_us.asm
+WARNING: Var search_roms_no is never used on line 915 of file main.asm
+WARNING: Var stack_error is never used on line 2970 of file main.asm
+WARNING: Var str_proginfo_length is never used on line 3126 of file main.asm
+WARNING: Var subrom is never used on line 2913 of file main.asm
+WARNING: Var vdp_dr is never used on line 63 of file main.asm
+WARNING: Var vdp_dw is never used on line 65 of file main.asm
+WARNING: Var vdpsta is never used on line 1490 of file video.asm
+WARNING: Var wrtvdp_nosav is never used on line 99 of file video.asm
+WARNING: Var wrtvdp_sav is never used on line 94 of file video.asm
+  git -C /Users/joost/projects/cbios worktree add -q --detach /tmp/zerobas/cbios-repack-slt0atno v0.29-3-gb5ad9cb
+  git -C /tmp/zerobas/cbios-repack-slt0atno apply /Users/joost/projects/zerobas/cbios-repack/eu-drop-statements.patch
+  git -C /tmp/zerobas/cbios-repack-slt0atno apply /Users/joost/projects/zerobas/cbios-repack/key-trap-hook.patch
+  make -s -C /tmp/zerobas/cbios-repack-slt0atno derived/bin/cbios_main_msx1_eu.rom
+OK: repacked C-BIOS -> /Users/joost/projects/zerobas/build/cbios_main_msx1_eu-repacked.rom  (sha1 557aed9352cf8367eabb9a3cc081c83252579ab9)
+  git -C /tmp/zerobas/cbios-repack-slt0atno checkout -q -- .
+  make -s -C /tmp/zerobas/cbios-repack-slt0atno clean
+  make -s -C /tmp/zerobas/cbios-repack-slt0atno derived/bin/cbios_main_msx1_eu.rom
+OK: pristine C-BIOS -> /Users/joost/projects/zerobas/build/cbios_main_msx1_eu-pristine.rom  (sha1 baf2e9c69252fd9b350b488d89c71887b9d05eec)
+  git -C /Users/joost/projects/cbios worktree remove --force /tmp/zerobas/cbios-repack-slt0atno
+WARNING: 64KB limit passed inside instruction on line 435 of file /Users/joost/projects/zerobas/basic/main.asm
+WARNING: Switching to 3 pass mode on line 827 of file basic/sysvars.inc
+ERROR: Symbol 'BASIC_IMAGE_OVERRAN_8000_CEILING__TRIM_IT_OR_EVICT_TO_SUBROM' is undefined  on line 418 of file /Users/joost/projects/zerobas/basic/main.asm
+building repacked + pristine C-BIOS from the pinned tag...
+  /opt/homebrew/opt/python@3.14/bin/python3.14 /Users/joost/projects/zerobas/tools/build_repacked_cbios.py --cbios /Users/joost/projects/cbios -o /Users/joost/projects/zerobas/build/cbios_main_msx1_eu-repacked.rom --pristine /Users/joost/projects/zerobas/build/cbios_main_msx1_eu-pristine.rom
+assembling relocated BASIC ($2812) + tape...
+  pasmo --bin /Users/joost/projects/zerobas/basic/main.asm /Users/joost/projects/zerobas/build/basic-reloc.rom
+Traceback (most recent call last):
+  File "/Users/joost/projects/zerobas/tools/build_patches.py", line 274, in <module>
+    raise SystemExit(main())
+                     ~~~~^^
+  File "/Users/joost/projects/zerobas/tools/build_patches.py", line 263, in main
+    build_main(args.cbios, args.out_dir)
+    ~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/joost/projects/zerobas/tools/build_patches.py", line 230, in build_main
+    run([PASMO, "--bin", os.path.join(REPO, "basic", "main.asm"), reloc])
+    ~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/joost/projects/zerobas/tools/build_patches.py", line 60, in run
+    subprocess.run(omsx_preflight.guarded(cmd), check=True, **kw)
+    ~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/homebrew/Cellar/python@3.14/3.14.7/Frameworks/Python.framework/Versions/3.14/lib/python3.14/subprocess.py", line 578, in run
+    raise CalledProcessError(retcode, process.args,
+                             output=stdout, stderr=stderr)
+subprocess.CalledProcessError: Command '['pasmo', '--bin', '/Users/joost/projects/zerobas/basic/main.asm', '/Users/joost/projects/zerobas/build/basic-reloc.rom']' returned non-zero exit status 1.
+make: *** [build/zerobas-main-eu.rom] Error 1

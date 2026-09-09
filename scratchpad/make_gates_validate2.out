@@ -1,0 +1,54 @@
+python3 tools/run_gates.py 
+=== warm-up (serial build of shared artifacts) ===
+warm-up 13s
+=== 44 units, J=8, lineerr in 8 shards, nice=15 solo=['graphics-acceptance'] ===
+  rc=2    766s  graphics-acceptance
+  rc=0      5s  basic-reloc
+  rc=0      0s  subrom-abi-check
+  rc=0      2s  subrom-closure-check
+  rc=0     45s  unit-test
+  rc=0      1s  deadcode
+  rc=0      5s  wall-assertion-check
+  rc=0      0s  redundant-load-check
+  rc=0      4s  rowshape-check
+  rc=0      8s  injector-check
+  rc=0      2s  preflight-check
+  rc=0     13s  latch-check
+  rc=0      7s  diskdep-check
+  rc=0      2s  switch-build-check
+  rc=0     54s  kwsweep
+  rc=0      0s  deffn-selftest
+  rc=0     70s  string-acceptance
+  rc=0     32s  str-domain-acceptance
+  rc=0     67s  strparen-acceptance
+  rc=0    266s  penderr-acceptance
+  rc=0     64s  missing-acceptance
+  rc=0     20s  error-acceptance
+  rc=0    102s  error-trap-acceptance
+  rc=0    102s  onerr0-acceptance
+  rc=0    148s  math-acceptance
+  rc=2    112s  float-acceptance
+  rc=0     61s  intarg-acceptance
+  rc=0     61s  logicops-acceptance
+  rc=0    272s  screenerr-acceptance
+  rc=0    215s  tmfp-acceptance
+  rc=0    270s  stmtpend-acceptance
+  rc=0    136s  array-acceptance
+  rc=0    179s  deffn-strict
+  rc=0     78s  abort-acceptance
+  rc=0    192s  interval-trap-acceptance
+  rc=0     94s  clearpool-acceptance
+  rc=0    171s  lineerr#1/8
+  rc=0    159s  lineerr#2/8
+  rc=0    166s  lineerr#3/8
+  rc=0    161s  lineerr#4/8
+  rc=0    152s  lineerr#5/8
+  rc=0    146s  lineerr#6/8
+  rc=0    118s  lineerr#7/8
+  rc=0    124s  lineerr#8/8
+
+=== wall 779s (13s build + 766s gates) ===
+GATES: 35/37 green
+RED: graphics-acceptance float-acceptance
+hashes: 41b8c4ed 1922eaa0 7d27b871
+make: *** [gates] Error 1

@@ -1,0 +1,23 @@
+=== D-FSPECCHAR: which bytes does a filespec refuse? ===
+
+  byte   why                                          cf3300                 zb                    
+  $41   A  -- CONTROL: a plain letter must be ACCEPTED <File not found>       <File not found>      
+  $2A   *  -- CONTROL: the wildcard every FILES row uses OK                     OK                    
+  $10   DLE -- mid-range control, does the whole $01-$1F band behave alike? <Bad file name>        <File not found>        🔴 DIFF
+  $22   "                                            <Bad file name>        <Bad file name>       
+  $24   $                                            <File not found>       <File not found>      
+  $25   %                                            <File not found>       <File not found>      
+  $27   '                                            <File not found>       <File not found>      
+  $29   )                                            <File not found>       <File not found>      
+  $3E   >  -- the partner of the accepted '<'        <File not found>       <File not found>      
+  $40   @                                            <File not found>       <File not found>      
+  $5E   ^                                            <File not found>       <File not found>      
+  $5F   _                                            <File not found>       <File not found>      
+  $60   `                                            <File not found>       <File not found>      
+  $7B   {                                            <File not found>       <File not found>      
+  $7D   }                                            <File not found>       <File not found>      
+  $7F   DEL                                          <File not found>       <File not found>      
+
+1 byte(s) diverge of 16 swept (2 of them controls that must not).
+   $10 DLE -- mid-range control, does the whole $01-$1F band behave alike? cf3300=<Bad file name>        zb=<File not found>
+refcache: 0 hit, 32 miss, 32 stored

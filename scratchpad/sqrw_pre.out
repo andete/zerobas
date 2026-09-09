@@ -1,0 +1,81 @@
+    capture-on-signal: 165 on signal, 0 fell back to the scheduled budget   ⚠️ 1 REPLAYED from the refcache -- not measured on this run   [signalled at 25.6-2619.6 emulated s]
+D-PENDERR — first-error-wins is a property of the WRITE          sides: vg8020, cf3300, zb
+==============================================================================
+FAIL n.tm.loc     zb='                                                                               1                                       3                                                                               '   [POSITIVE CONTROL]
+        wanted ' 13 '
+
+*** A POSITIVE CONTROL FAILED, so nothing below it was measured.
+    n.tm.loc = the TRAPPED reading itself, on an ordinary type fault (13).
+    n.dz.w   = an ordinary numeric fault reports its OWN code (11).
+    u.tm.loc = the UNTRAPPED reading -- ONE message, naming its line.
+    u.dz.w   = an untrapped numeric fault, the OTHER message.
+    🔴 Every control is a SINGLE-fault row, so a control failure cannot be
+    this slice's claim being wrong -- it is the apparatus.
+    🔴 CLASSIFY BY WHICH SIDE FAILED: red on a REFERENCE is a broken fixture
+    (report it, score nothing); red on zb is an ordinary divergence that
+    belongs in the row set, not in the control set.
+    Check build/*.rom, `make repack-machine` and `make latch-check`, THEN
+    re-read the rows. Exit 2 (not 1) = the instrument was broken.
+.... o.nn.dz5     vg8020=' 11 '  cf3300=' 11 '  zb=' 11 '   (not scored)
+.... o.nn.5dz     vg8020=' 5 '  cf3300=' 5 '  zb=' 11 '   (not scored)
+.... o.nn.dzov    vg8020=' 11 '  cf3300=' 11 '  zb=' 11 '   (not scored)
+.... o.nn.ovdz    vg8020=' 6 '  cf3300=' 6 '  zb=' 6 '   (not scored)
+.... o.nn.5ov     vg8020=' 5 '  cf3300=' 5 '  zb=' 6 '   (not scored)
+.... o.nn.ov5     vg8020=' 6 '  cf3300=' 6 '  zb=' 6 '   (not scored)
+.... o.nn.let     vg8020=' 11 '  cf3300=' 11 '  zb=' 11 '   (not scored)
+.... o.nn.tel     vg8020=' 5 '  cf3300=' 5 '  zb=' 11 '   (not scored)
+.... o.nn.ary     vg8020=' 11 '  cf3300=' 11 '  zb=' 11 '   (not scored)
+.... o.nn.yra     vg8020=' 5 '  cf3300=' 5 '  zb=' 11 '   (not scored)
+.... o.nn.pr      vg8020=' 11 '  cf3300=' 11 '  zb=' 11 '   (not scored)
+.... o.nn.rp      vg8020=' 5 '  cf3300=' 5 '  zb=' 11 '   (not scored)
+.... o.sub.dzex   vg8020=' 11 '  cf3300=' 11 '  zb=' 11 '   (not scored)
+.... o.sub.exdz   vg8020=' 6 '  cf3300=' 6 '  zb=' 6 '   (not scored)
+.... o.sub.dzpw   vg8020=' 11 '  cf3300=' 11 '  zb=' 11 '   (not scored)
+.... o.sub.pwdz   vg8020=' 6 '  cf3300=' 6 '  zb=' 6 '   (not scored)
+.... o.sub.5ex    vg8020=' 5 '  cf3300=' 5 '  zb=' 6 '   (not scored)
+.... o.tm.tmfp    vg8020=' 13 '  cf3300=' 13 '  zb=' 13 '   (not scored)
+.... o.tm.fptm    vg8020=' 11 '  cf3300=' 11 '  zb=' 11 '   (not scored)
+.... o.tm.tm5     vg8020=' 13 '  cf3300=' 13 '  zb=' 13 '   (not scored)
+.... o.tm.5tm     vg8020=' 5 '  cf3300=' 5 '  zb=' 13 '   (not scored)
+.... o.tm.tmov    vg8020=' 13 '  cf3300=' 13 '  zb=' 13 '   (not scored)
+.... o.tm.ovtm    vg8020=' 6 '  cf3300=' 6 '  zb=' 6 '   (not scored)
+.... o.tm.tmex    vg8020=' 13 '  cf3300=' 13 '  zb=' 13 '   (not scored)
+.... o.tm.let     vg8020=' 13 '  cf3300=' 13 '  zb=' 13 '   (not scored)
+.... o.tm.ary     vg8020=' 13 '  cf3300=' 13 '  zb=' 13 '   (not scored)
+.... o.pt.sin     vg8020=' 11 '  cf3300=' 11 '  zb=' 11 '   (not scored)
+.... o.pt.sqr     vg8020=' 11 '  cf3300=' 11 '  zb=' 11 '   (not scored)
+.... o.pt.left    vg8020=' 11 '  cf3300=' 11 '  zb=' 11 '   (not scored)
+.... r.hex        vg8020=' 11 '  cf3300=' 11 '  zb=' 11 '   (not scored)
+.... r.oct        vg8020=' 11 '  cf3300=' 11 '  zb=' 11 '   (not scored)
+.... r.str        vg8020=' 11 '  cf3300=' 11 '  zb=' 11 '   (not scored)
+.... r.hexp       vg8020=' 11 '  cf3300=' 11 '  zb=' 11 '   (not scored)
+.... r.hex.tm     vg8020=' 13 '  cf3300=' 13 '  zb=' 13 '   (not scored)
+.... r.hex.nn     vg8020=' 11 '  cf3300=' 11 '  zb=' 11 '   (not scored)
+.... w.lof.dz     vg8020=' 11 '  cf3300=' 11 '  zb=' 11 '   (not scored)
+.... w.lof.5      vg8020=' 5 '  cf3300=' 5 '  zb=' 59 '   (not scored)
+.... w.eof.dz     vg8020=' 11 '  cf3300=' 11 '  zb=' 11 '   (not scored)
+.... w.chan.dz    vg8020=' 11 '  cf3300=' 11 '  zb=' 11 '   (not scored)
+.... w.pdl.dz     vg8020=' 11 '  cf3300=' 11 '  zb=' 11 '   (not scored)
+.... w.pdl.5      vg8020=' 5 '  cf3300=' 5 '  zb=' 0 '   (not scored)
+.... n.dz.w       vg8020=' 11 '  cf3300=' 11 '  zb=' 11 '   (not scored)
+.... n.5.w        vg8020=' 5 '  cf3300=' 5 '  zb='                                                                               0                                                                               '   (not scored)
+.... n.ov.w       vg8020=' 6 '  cf3300=' 6 '  zb='                                                                               6                                                                               '   (not scored)
+.... n.ex.w       vg8020=' 6 '  cf3300=' 6 '  zb='                                                                               6                                                                               '   (not scored)
+.... n.pw.w       vg8020=' 6 '  cf3300=' 6 '  zb='                                                                               6                                                                               '   (not scored)
+.... n.tm.w       vg8020=' 13 '  cf3300=' 13 '  zb='                                                                               1                                       3                                                                               '   (not scored)
+.... n.tm.loc     vg8020=' 13 '  cf3300=' 13 '  zb='                                                                               1                                       3                                                                               '   (not scored)
+.... n.tm.pdl     vg8020=' 13 '  cf3300=' 13 '  zb='                                                                               1                                       3                                                                               '   (not scored)
+.... n.tm.rnd     vg8020=' 13 '  cf3300=' 13 '  zb='                                                                               1                                       3                                                                               '   (not scored)
+.... n.tm.hex     vg8020=' 13 '  cf3300=' 13 '  zb='                                                                               1                                       3                                                                               '   (not scored)
+.... n.tm.lof     vg8020=' 13 '  cf3300=' 13 '  zb='                                                                               1                                       3                                                                               '   (not scored)
+.... n.tm.chan    vg8020=' 13 '  cf3300=' 13 '  zb='                                                                               1                                       3                                                                               '   (not scored)
+.... n.ok.w       vg8020=' 0 '  cf3300=' 0 '  zb=' 0 '   (not scored)
+.... n.ok.pdl     vg8020=' 0 '  cf3300=' 0 '  zb=' 0 '   (not scored)
+.... u.dz.w       vg8020='Division by zero in 10'  cf3300='Division by zero in 10'  zb='Division by zero in 10'   (not scored)
+.... u.nn.dz5     vg8020='Division by zero in 10'  cf3300='Division by zero in 10'  zb='Division by zero in 10'   (not scored)
+.... u.nn.5dz     vg8020='Illegal function call in 10'  cf3300='Illegal function call in 10'  zb='Division by zero in 10'   (not scored)
+.... u.sub.dzex   vg8020='Division by zero in 10'  cf3300='Division by zero in 10'  zb='Division by zero in 10'   (not scored)
+.... u.tm.tmfp    vg8020='Type mismatch in 10'  cf3300='Type mismatch in 10'  zb='Type mismatch in 10'   (not scored)
+.... u.tm.loc     vg8020='Type mismatch in 10'  cf3300='Type mismatch in 10'  zb='Type mismatch in 10'   (not scored)
+ROWS: 62 printed, 0 scored — NOT MEASURED (a positive control failed)
+refcache: 2 hit, 4 miss, 4 stored, 1 replayed provenance

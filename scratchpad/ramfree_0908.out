@@ -1,0 +1,15 @@
+  FAIL ctl.self    $EA92+110 changed='ERR";ERR;"' want=1
+  FAIL ctl.forstk  $EA3A+8   changed='0' want=>0
+  FAIL base.none   $EA92+110 changed='ERR";ERR;"' want=0
+  OK   n.for8      $EA92+110 changed='0' want=0
+  FAIL n.for9      $EA92+110 changed='";D;"' want=0
+  FAIL n.gosub     $EA92+110 changed='ERR";ERR;"' want=0
+  FAIL n.crunch    $EA92+110 changed='ERR";ERR;"' want=0
+  OK   s.paint     $EA92+110 changed='0' want=0
+  FAIL s.draw      $EA92+110 changed='<NO OUTPUT>' want=0
+  FAIL s.play      $EA92+110 changed='ERR";ERR;"' want=0
+  FAIL s.str       $EA92+110 changed='ERR";ERR;"' want=0
+  OK   s.disk      $EA92+110 changed='0' want=0
+  FAIL s.files     $EA92+110 changed='ERR";ERR;"' want=0
+  OK   ctl.diskfail $EA92+110 changed='ERR 99' want=ERR 99
+done — 4/14 rows as expected

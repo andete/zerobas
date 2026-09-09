@@ -1,0 +1,23 @@
+BASE (unmodified):
+    u.bare   'Missing operand in 10'
+    u.str    'Type mismatch in 10'
+    (45 rows read in total)
+
+K-LP1:   ROM 6c02d5d0 52d8a3cf 70c05175 f91f0d00  ->  f5c27f59 52d8a3cf 70c05175 77064ceb
+    u.bare   'Missing operand in 10'                    SAME  (predicted MOVE) 🔴 MISS
+    u.str    'Type mismatch in 10'                      SAME  (predicted SAME) OK
+    ALL rows that moved (1 of 45): ['u.trail']
+
+K-LP2:   ROM f5c27f59 52d8a3cf 70c05175 77064ceb  ->  ad949601 52d8a3cf 70c05175 d12be95a
+    u.bare   '<NO READING>'                             MOVE  (predicted MOVE) OK
+    u.str    '<NO READING>'                             MOVE  (predicted MOVE) OK
+    ALL rows that moved (45 of 45): ['t.bare', 't.c.256', 't.c.b5div', 't.c.div', 't.c.neg', 't.c.ov', 't.c.ovdiv', 't.c.ovsqr', 't.c.sqr', 't.c.str', 't.colon', 't.four', 't.ok', 't.ok3', 't.om.ovdiv', 't.om.r256', 't.om.u256', 't.omitb', 't.omitc', 't.omitr', 't.omitr2', 't.r.256', 't.r.neg', 't.r.ov', 't.r.ovdiv', 't.r.str', 't.tmfp', 't.trailc', 't.trailu', 't.u.256', 't.u.ov', 't.u.ovdiv', 't.u.str', 't.zero', 'u.256', 'u.bare', 'u.div', 'u.neg', 'u.ok', 'u.ov', 'u.ovdiv', 'u.r256', 'u.str', 'u.trail', 'u.u256']
+
+K-LP3:   ROM ad949601 52d8a3cf 70c05175 d12be95a  ->  211002c3 52d8a3cf 70c05175 bdf0d021
+    u.bare   'Missing operand in 10'                    SAME  (predicted SAME) OK
+    u.str    'Type mismatch in 10'                      SAME  (predicted SAME) OK
+    ALL rows that moved (0 of 45): — none —
+
+======================================================================
+🔴 1 prediction(s) MISSED: ['K-LP1/u.bare']
+   The filed hypothesis is NOT established by this run. Read the rows above and narrow §3.2 to what they support.

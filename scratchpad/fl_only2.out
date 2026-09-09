@@ -1,0 +1,20 @@
+PASS  a=.5                     ref: 1D 40 50 00
+PASS  a=0.5                    ref: 1D 40 50 00
+PASS  a=1.5                    ref: 1D 41 15 00
+PASS  a=1.                     ref: 1D 41 10 00
+PASS  a=1.0                    ref: 1D 41 10 00
+PASS  a=3.14159                ref: 1D 41 31 41 59 00
+PASS  a=3.1415926              ref: 1F 41 31 41 59 26 00
+PASS  a=0.1                    ref: 1D 40 10 00
+PASS  a=.000001                ref: 1D 3B 10 00
+PASS  a=123456.7               ref: 1F 46 12 34 56 70 00
+PASS  a=1234567.8              ref: 1F 47 12 34 56 78 00
+PASS  a=1.5e2                  ref: 1D 43 15 00
+PASS  a=2.5e-10                ref: 1D 37 25 00
+PASS  a=1.5d-3                 ref: 1F 3E 15 00
+PASS  a=1.5!                   ref: 1D 41 15 00
+PASS  a=1.5#                   ref: 1F 41 15 00
+PASS  a=.0                     ref: 1D 00
+
+ALL PASS (17 cases) — float-literal crunch is byte-identical
+refcache: 0 hit, 2 miss, 2 stored

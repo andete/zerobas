@@ -1,0 +1,20 @@
+python3 tools/wall_assertion_check.py
+== live walls ==
+   page-0 low region free = 10 B
+   page-1 free = 53 B
+   sub page 0 free = 2563 B
+   sub page 1 free = 1617 B
+
+== denominator ==
+   101 open item(s) in TODO.md; 14 mention a free-space figure
+
+== UNDATED FREE-SPACE ASSERTIONS (gating) ==
+   TODO.md:363  💰 **THE `jp`->`jr` PEEPHOLE SEAM — 51 B BANKED 2026-08-24 (D-JRSLICE),
+       :388  [UNDATED      ] 69 B  |  🔴 **REMAINDER, ~69 B, NEEDS ADDRESS-PRECISE MAPPING:** the 68 page-1 sites
+
+   1 item(s), 1 figure(s).
+   UNDATED       -> add the date it was taken (or `at <commit>`);
+                    a dated reading then STANDS AS TAKEN.
+   PRESENT-TENSE -> say "was N B on <date>", not "is now N B". A date
+                    beside a present-tense claim does not retract it.
+make: *** [wall-assertion-check] Error 1

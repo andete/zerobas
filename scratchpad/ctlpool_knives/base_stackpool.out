@@ -1,0 +1,20 @@
+
+row            vg8020      cf3300          zb   statement
+c.base         4080 7      3311 7      2866 7   (none)             no CLEAR at all -- the baseline
+c.clr200       4079 7      3310 7      2865 7   CLEAR 200          small string space; the ladder's foot
+c.clr2200      3793 7      3024 7      2615 7   CLEAR 2200         +2000 B of string space
+c.clr4200      3508 7      2738 7      2365 7   CLEAR 4200         +4000 B -- the step must be LINEAR if shared
+c.himem        2195 7      2195 7      2000 7   CLEAR 200,&HC000   HIMEM lowered outright
+
+bytes per frame, if the pool is shared:
+  vg8020   +2000 B costs   286 frames ( 7.0 B/frame), next +2000 costs   285 ( 7.0 B/frame)   SENSITIVE+LINEAR
+  cf3300   +2000 B costs   286 frames ( 7.0 B/frame), next +2000 costs   286 ( 7.0 B/frame)   SENSITIVE+LINEAR
+  zb       +2000 B costs   250 frames ( 8.0 B/frame), next +2000 costs   250 ( 8.0 B/frame)   SENSITIVE+LINEAR
+
+c.himem: the two references agree EXACTLY (2195 7) with HIMEM pinned -- one HIMEM-bounded pool, not an array.
+
+zerobas: SENSITIVE+LINEAR -- agrees with both references on the MODEL (the depth and the rate are per-machine, and ungated).
+
+rows 5  red 0
+STACKPOOL: PASS
+refcache: 3 hit, 0 miss

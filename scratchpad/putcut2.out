@@ -1,0 +1,21 @@
+=== D-PUTCUT: power cut between a RANDOM PUT and its CLOSE ===
+
+program (the two arms differ only by line 45):
+    10 OPEN"R.DAT"AS#1 LEN=16
+    20 FIELD#1,16 AS A$
+    30 LSET A$="ZEROBAS-RECORD1"
+    40 PUT#1,1
+    50 POKE&HD005,&HA5
+    60 GOTO 60
+    45 CLOSE#1                <- present in the CONTROL arm only
+
+  zerobas  clean CLOSE     entry PRESENT  size=16  clus=3  FAT=EOC  record bytes on disk: YES
+  zerobas  CUT after PUT   entry PRESENT  size=16  clus=3  FAT=EOC  record bytes on disk: YES
+  CF-3300  clean CLOSE     entry PRESENT  size=16  clus=3  FAT=EOC  record bytes on disk: YES
+  CF-3300  CUT after PUT   entry PRESENT but clus=0 (points at NOTHING)  size=0  no chain, no data
+
+=== the matrix, read as the filing asks
+  zerobas  cut vs clean: IDENTICAL — the CLOSE changes nothing on disk
+  CF-3300  cut vs clean: DIFFER
+
+  after the cut, zerobas vs CF-3300: 🔴 DIFFER

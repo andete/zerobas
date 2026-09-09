@@ -1,0 +1,29 @@
+namspc: 5 reading(s) diverge
+D-NAMSPC — a SPACE inside a variable reference's NAME / before its suffix   sides: vg8020, cf3300, zb
+==============================================================================
+DIFF m.long      vg8020='<NO DISK ON THIS SIDE>'  cf3300='0 entries + <File not found>'  zb='0 entries + <Bad file name>'   [ONE REFERENCE ONLY (cf3300) — Disk BASIC]
+ok   m.longext   vg8020='<NO DISK ON THIS SIDE>'  cf3300='0 entries + <File not found>'  zb='0 entries + <File not found>'   [ONE REFERENCE ONLY (cf3300) — Disk BASIC]
+DIFF m.both      vg8020='<NO DISK ON THIS SIDE>'  cf3300='0 entries + <File not found>'  zb='0 entries + <Bad file name>'   [ONE REFERENCE ONLY (cf3300) — Disk BASIC]
+ok   m.twodot    vg8020='<NO DISK ON THIS SIDE>'  cf3300='0 entries + <Bad file name>'  zb='0 entries + <Bad file name>'   [ONE REFERENCE ONLY (cf3300) — Disk BASIC]
+ok   m.empty     vg8020='<NO DISK ON THIS SIDE>'  cf3300='0 entries + <Bad file name>'  zb='0 entries + <Bad file name>'   [ONE REFERENCE ONLY (cf3300) — Disk BASIC]
+ok   m.dot       vg8020='<NO DISK ON THIS SIDE>'  cf3300='0 entries + <Bad file name>'  zb='0 entries + <Bad file name>'   [ONE REFERENCE ONLY (cf3300) — Disk BASIC]
+ok   m.dotdot    vg8020='<NO DISK ON THIS SIDE>'  cf3300='0 entries + <Bad file name>'  zb='0 entries + <Bad file name>'   [ONE REFERENCE ONLY (cf3300) — Disk BASIC]
+ok   v.kempty    vg8020='<NO DISK ON THIS SIDE>'  cf3300='<Bad file name>'  zb='<Bad file name>'   [ONE REFERENCE ONLY (cf3300) — Disk BASIC]
+ok   v.k2dot     vg8020='<NO DISK ON THIS SIDE>'  cf3300='<Bad file name>'  zb='<Bad file name>'   [ONE REFERENCE ONLY (cf3300) — Disk BASIC]
+ok   v.lempty    vg8020='<NO DISK ON THIS SIDE>'  cf3300='<Bad file name>'  zb='<Bad file name>'   [ONE REFERENCE ONLY (cf3300) — Disk BASIC]
+ok   v.l2dot     vg8020='<NO DISK ON THIS SIDE>'  cf3300='<Bad file name>'  zb='<Bad file name>'   [ONE REFERENCE ONLY (cf3300) — Disk BASIC]
+ok   v.sempty    vg8020='<NO DISK ON THIS SIDE>'  cf3300='<Bad file name>'  zb='<Bad file name>'   [ONE REFERENCE ONLY (cf3300) — Disk BASIC]
+ok   v.s2dot     vg8020='<NO DISK ON THIS SIDE>'  cf3300='<Bad file name>'  zb='<Bad file name>'   [ONE REFERENCE ONLY (cf3300) — Disk BASIC]
+ok   v.oempty    vg8020='<NO DISK ON THIS SIDE>'  cf3300='<Bad file name>'  zb='<Bad file name>'   [ONE REFERENCE ONLY (cf3300) — Disk BASIC]
+ok   v.o2dot     vg8020='<NO DISK ON THIS SIDE>'  cf3300='<Bad file name>'  zb='<Bad file name>'   [ONE REFERENCE ONLY (cf3300) — Disk BASIC]
+DIFF w.savelong  vg8020='<NO DISK ON THIS SIDE>'  cf3300='6 entries + OK'  zb='0 entries + <Bad file name>'   [ONE REFERENCE ONLY (cf3300) — Disk BASIC]
+ok   w.saveext   vg8020='<NO DISK ON THIS SIDE>'  cf3300='6 entries + OK'  zb='6 entries + OK'   [ONE REFERENCE ONLY (cf3300) — Disk BASIC]
+ok   w.savefit   vg8020='<NO DISK ON THIS SIDE>'  cf3300='6 entries + OK'  zb='6 entries + OK'   [ONE REFERENCE ONLY (cf3300) — Disk BASIC]
+DIFF w.savepos   vg8020='<NO DISK ON THIS SIDE>'  cf3300='1 entries + OK'  zb='0 entries + <Bad file name>'   [ONE REFERENCE ONLY (cf3300) — Disk BASIC]
+DIFF w.savenodot  vg8020='<NO DISK ON THIS SIDE>'  cf3300='0 entries + <File not found>'  zb='0 entries + <Bad file name>'   [ONE REFERENCE ONLY (cf3300) — Disk BASIC]
+ROWS: 20 printed, 20 scored — 15 agree, 5 diverge, 0 without a reference, 0 deferred (not scored)
+==============================================================================
+15/20 readings match their reference (127 cases, 21 positive controls, 2 negative controls, 20 row(s) with ONE reference only, 0 row(s) without a reference, 0 row(s) where the references disagree, 4 DEFERRED row(s) measured but not scored)
+🔴 ORACLE STRENGTH IS NOT UNIFORM: the `z.fld*` rows are Disk BASIC, which a diskless VG-8020 cannot express — they rest on the CF-3300 ALONE. Every other row here has two references.
+DENOMINATOR: (WHERE the space falls inside a reference: before the 2nd LETTER, before a DIGIT, before each of the four type suffixes `% ! # $`, MORE THAN ONCE, and between two names run together) x (the POSITION the reference stands in: r-value expression, LET target, IF condition, FOR, NEXT, DIM, an array element lvalue, READ, SWAP -- none of which except NEXT/READ reaches tgt_parse), plus whether the space SURVIVES THE CRUNCH at all (t.*, read from the stored line bytes, which is what says whether the fix belongs in the tokeniser or the parser), plus what the TWO-CHARACTER KEY does with a space in the middle (r.three / r.run / a.sig), plus the KEYWORD constraint (t.kw / t.and / t.abs / k.and / k.abs: this tokeniser matches keywords at every position mid-identifier, so a spaced name can be crunched into a TOKEN before any parser sees it, and z.kw is the RUNTIME negative control that says a name so tokenised must STAY refused), plus the converse row that says the joined name is a DIFFERENT variable and not tolerated junk (z.miss), plus the TRAILING-space set (w.*) that is green BEFORE and must stay green AFTER. Every spaced row carries the CONTIGUOUS form of its own fixture as its positive control. NOT COVERED: a TAB or other whitespace byte; DIRECT mode (TODO.md's `dir-name` residual); a space inside a DEF FN name or a line-number list; `RSET` and the FIELD family (D-TGTSPC's nine lvalue surfaces already carry the `(` position and share one parse site).
+refcache: 0 hit, 40 miss, 40 stored

@@ -1,0 +1,10 @@
+
+verb   case      fires  ZTRAP          decoded  ENA  SVC
+KEY    CLEAR         1    255    no live entry    0    0   
+KEY    control       1    139    e17:SERVICING    0    1   (expected e8)
+STOP   CLEAR        -1    255    no live entry    0    0   
+STOP   control      -1    255    no live entry    0    0   
+STRIG  CLEAR       240    255    no live entry   15   15   
+STRIG  control     240    255    no live entry   15   15   
+
+🔴 INSTRUMENT FAULT: [('STOP', 'CLEAR'), ('STOP', 'control'), ('STRIG', 'CLEAR'), ('STRIG', 'control')] did not reach done with err==0. Every state byte above is void, INCLUDING the ones that decoded to something sensible.

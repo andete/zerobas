@@ -1,0 +1,26 @@
+row          cf3300       zb       statement   -- expectation
+r.0               5        5    ok  OPEN"TS.DAT"AS #1 LEN=0:CLOSE   -- LEN=0
+r.1               0        0    ok  OPEN"TS.DAT"AS #1 LEN=1:CLOSE   -- LEN=1
+r.2               0        0    ok  OPEN"TS.DAT"AS #1 LEN=2:CLOSE   -- LEN=2
+r.3               0        0    ok  OPEN"TS.DAT"AS #1 LEN=3:CLOSE   -- LEN=3
+r.7               0        0    ok  OPEN"TS.DAT"AS #1 LEN=7:CLOSE   -- LEN=7
+r.100             0        0    ok  OPEN"TS.DAT"AS #1 LEN=100:CLOSE   -- LEN=100
+r.127             0        0    ok  OPEN"TS.DAT"AS #1 LEN=127:CLOSE   -- LEN=127
+r.128             0        0    ok  OPEN"TS.DAT"AS #1 LEN=128:CLOSE   -- LEN=128
+r.255             0        0    ok  OPEN"TS.DAT"AS #1 LEN=255:CLOSE   -- LEN=255
+r.256             0        0    ok  OPEN"TS.DAT"AS #1 LEN=256:CLOSE   -- LEN=256
+r.257             5        5    ok  OPEN"TS.DAT"AS #1 LEN=257:CLOSE   -- LEN=257
+r.300             5        5    ok  OPEN"TS.DAT"AS #1 LEN=300:CLOSE   -- LEN=300
+r.512             5        5    ok  OPEN"TS.DAT"AS #1 LEN=512:CLOSE   -- LEN=512
+r.1000            5        5    ok  OPEN"TS.DAT"AS #1 LEN=1000:CLOSE   -- LEN=1000
+r.32767           5        5    ok  OPEN"TS.DAT"AS #1 LEN=32767:CLOSE   -- LEN=32767
+r.neg             5        5    ok  OPEN"TS.DAT"AS #1 LEN=-1:CLOSE   -- negative
+c.plain           0        0    ok  OPEN"TS.DAT"AS #1:CLOSE   -- CONTROL: no LEN at all -> must be 0
+f.100             0        0    ok  OPEN"TS.DAT"AS #1 LEN=100:FIELD #1,100 AS A$:CLOSE   -- FIELD the whole record
+f.128             0        0    ok  OPEN"TS.DAT"AS #1 LEN=128:FIELD #1,128 AS A$:CLOSE   -- the tiling twin of f.100
+f.over           50       50    ok  OPEN"TS.DAT"AS #1 LEN=100:FIELD #1,101 AS A$:CLOSE   -- one byte past the record
+p.100             0        0    ok  OPEN"TS.DAT"AS #1 LEN=100:FIELD #1,100 AS A$:LSET A$="x":PUT #1,1:CLOSE   -- and actually WRITE one
+ctl.div0         11       11    ok  KILL 1/0   -- CONTROL: must read ERR 11, and NOT ctl.kill5
+ctl.kill5        13       13    ok  KILL 5   -- CONTROL: must read ERR 13, and NOT ctl.div0
+rows diverging: 0 of 23
+refcache: 0 hit, 2 miss, 2 stored

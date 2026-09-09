@@ -1,0 +1,33 @@
+  ran zb      d.50000   '6 SAME'
+  ran zb      d.40000   '6 SAME'
+  ran zb      d.32768   '6 SAME'
+  ran zb      d.32767   '0 ->32767'
+  ran zb      d.65535   '6 SAME'
+  ran zb      d.65536   '6 SAME'
+  ran zb      d.70000   '6 SAME'
+  ran zb      d.hffff   '0 ->65535'
+  ran zb      d.neg1    '0 ->65535'
+  ran zb      d.h8000   '0 ->32768'
+  ran zb      d.hd000   '0 ->53248'
+  ran zb      d.zero    '0 ->0'
+  ran zb      d.one     '0 ->1'
+  ran zb      d.h4000   '0 ->16384'
+  ran zb      d.h8050   '0 ->32848'
+
+  d.50000  zb='6 SAME'   (zb only)
+  d.40000  zb='6 SAME'   (zb only)
+  d.32768  zb='6 SAME'   (zb only)
+  d.32767  zb='0 ->32767'   (zb only)
+  d.65535  zb='6 SAME'   (zb only)
+  d.65536  zb='6 SAME'   (zb only)
+  d.70000  zb='6 SAME'   (zb only)
+  d.hffff  zb='0 ->65535'   (zb only)
+  d.neg1   zb='0 ->65535'   (zb only)
+  d.h8000  zb='0 ->32768'   (zb only)
+  d.hd000  zb='0 ->53248'   (zb only)
+  d.zero   zb='0 ->0'   (zb only)
+  d.one    zb='0 ->1'   (zb only)
+  d.h4000  zb='0 ->16384'   (zb only)
+  d.h8050  zb='0 ->32848'   (zb only)
+
+ROWS: 15 printed, 0 scored -- 0 DIFF

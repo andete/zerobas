@@ -1,0 +1,41 @@
+# 20 of 20 cited probe(s), serial, refcache OFF, 900s each
+  1/20  budget_probe                 rc=0        23.8s  --  no verdict channel BY DESIGN (declared): a measurement instrument, not an oracle. Its ROWS still need a human.
+          cites TODO.md:3676
+  2/20  casfch_probe                 rc=1         2.8s  DIVERGES 6 marker(s) in 6 parsed line(s)  [0 known, 🔴 6 marker line(s) UNFILED -- read them]
+          cites TODO.md:9732
+  3/20  deffn_alias_probe            rc=0         7.7s  DIVERGES 2 marker(s) in 2 parsed line(s)  [2 known]  🔴 AND EXITS 0 -- invisible to any rc-only collector
+          cites TODO.md:4714
+  4/20  dupopen_probe                rc=0         9.6s  DIVERGES 6/11  s.same s.space s.newtwice s.modes s.seqsame s.reclaim  [6 known]  🔴 AND EXITS 0 -- invisible to any rc-only collector
+          cites TODO.md:6789,6789
+  5/20  dupspan_probe                rc=0        44.8s  clean: 155 parsed line(s), no divergence marker
+          cites TODO.md:4546
+  6/20  interpspeed_probe            rc=0        51.9s  --  no verdict channel BY DESIGN (declared): a measurement instrument, not an oracle. Its ROWS still need a human.
+          cites TODO.md:3235,3235
+  7/20  keylist_probe                rc=0        12.1s  DIVERGES 6 marker(s) in 6 parsed line(s)  [6 known]  🔴 AND EXITS 0 -- invisible to any rc-only collector
+          cites TODO.md:2796,2796
+  8/20  keystr_probe                 rc=0         9.7s  DIVERGES 5 marker(s) in 41 parsed line(s)  [5 known]  🔴 AND EXITS 0 -- invisible to any rc-only collector
+          cites TODO.md:2796
+  9/20  ngram14_probe                rc=1        29.7s  DIVERGES 9/18  r.atn r.exphuge x.m100 x.m200 x.m1e30 x.m150 x.m170 x.m180 x.p100  [9 known]
+          cites TODO.md:1951
+ 10/20  ntwall_probe                 rc=0       160.0s  DIVERGES 6 marker(s) in 44 parsed line(s)  [6 known]  🔴 AND EXITS 0 -- invisible to any rc-only collector
+          cites TODO.md:6071
+ 11/20  open2_probe                  rc=0        17.4s  DIVERGES 1/18  e.same2  [1 known]  🔴 AND EXITS 0 -- invisible to any rc-only collector
+          cites TODO.md:6789
+ 12/20  playfn_fixture_probe         rc=0        11.9s  DIVERGES 6 marker(s) in 0 parsed line(s)  [6 known]  🔴 AND EXITS 0 -- invisible to any rc-only collector
+          cites TODO.md:4951,4951
+ 13/20  put3consume_probe            rc=0        13.2s  --  no verdict channel BY DESIGN (declared): a measurement instrument, not an oracle. Its ROWS still need a human.
+          cites TODO.md:6935,6935
+ 14/20  ramfree_probe                rc=1        33.3s  DIVERGES 10 marker(s) in 14 parsed line(s)  [9 known, 🔴 1 marker line(s) UNFILED -- read them]
+          cites TODO.md:8024,8024,8024
+ 15/20  reclen_probe                 rc=0        26.4s  DIVERGES 4/7  p.put3 p.same3 p.close3 p.trap3  [4 known]  🔴 AND EXITS 0 -- invisible to any rc-only collector
+          cites TODO.md:6935
+ 16/20  reclendom_probe              rc=0         4.8s  🔴 NOTHING PARSED -- probe measured nothing, or format unknown
+          cites TODO.md:7151,7151,7151
+ 17/20  trailblank_probe             rc=0         6.6s  clean: 6 parsed line(s), no divergence marker
+          cites TODO.md:9986
+ 18/20  trapdepth_probe              rc=0        46.9s  DIVERGES 4 marker(s) in 4 parsed line(s)  [0 known, 🔴 4 marker line(s) UNFILED -- read them]  🔴 AND EXITS 0 -- invisible to any rc-only collector
+          cites TODO.md:3934,3934
+ 19/20  trapsvc_probe                rc=0        18.4s  clean: 21 parsed line(s), no divergence marker
+          cites TODO.md:3934
+ 20/20  uplus_probe                  rc=0        14.5s  DIVERGES 3 marker(s) in 3 parsed line(s)  [3 known]  🔴 AND EXITS 0 -- invisible to any rc-only collector
+          cites TODO.md:5368

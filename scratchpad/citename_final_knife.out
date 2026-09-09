@@ -1,0 +1,12 @@
+D-CITENAME audit: 41 markdown citation(s)
+   21  heading names no block (silent, by design)
+   13  no heading in scope
+    5  heading too short to identify
+    1  heading names a block some citation under it cites
+    1  FLAGGED (heading group)
+
+🔴 1 FLAGGED HEADING(S). Each is an IDENTIFICATION, not a similarity: the heading IS some block's headline, and NOTHING cited under it points at that block.
+
+  docs/gapsweep-2026-08-21.md: heading 'A line store is bounded by the constant `TXTMAX`, not by HIMEM'
+    names      : TODO.md (T-E0B04B) 🔴 A LINE STORE IS BOUNDED BY THE CONSTANT TXTMAX, NO
+    :110 cites  : TODO.md:8012 (T-B22650) ⚠️ A STORED DATA LITERAL CHARGES THE STRING PO

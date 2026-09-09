@@ -1,0 +1,134 @@
+python3 tools/run_gates.py 
+=== warm-up (serial build of shared artifacts) ===
+warm-up 7s
+=== refcache OFF for every unit: a gate measures, it never replays (docs/spec-refcache.md §7) ===
+=== emulator tier RUNS: ROM images differ from the last green battery ===
+=== 4 tree-mutating unit(s), SERIAL (they rewrite a shared tracked file) ===
+  rc=0              1s  switch-build-check
+  rc=0              5s  diskdep-check
+  rc=0              0s  wall-literal-check
+  rc=0             44s  selftest-check
+  (post-mutator refresh 7s -- the plants moved mtimes, so the pool would otherwise race a rebuild)
+=== 117 units, J=8, lineerr in 8 shards, nice=0 solo=None ===
+  rc=0              3s  basic-reloc
+  rc=0              0s  subrom-abi-check
+  rc=0              0s  diskrom-abi-check
+  rc=0              0s  rom-parts-check
+  rc=0              1s  subrom-closure-check
+  rc=0             26s  unit-test
+  rc=0              0s  deadcode
+  rc=0              3s  wall-assertion-check
+  rc=0              0s  ram-claim-check
+  rc=0              0s  build-assert-check
+  rc=0              3s  needle-case-check
+  rc=0              0s  redundant-load-check
+  rc=0              1s  rowshape-check
+  rc=0              4s  injector-check
+  rc=0              1s  temp-root-check
+  rc=0              2s  todo-citation-check
+  rc=0              0s  todo-marker-check
+  rc=0              0s  deferral-pin-check
+  rc=0              1s  error-alphabet-check
+  rc=0              2s  chokepoint-check
+  rc=0              0s  shared-body-check
+  rc=0              0s  probe-reach-check
+  rc=0              0s  battery-membership-check
+  rc=0              0s  fixture-integrity-check
+  rc=0              1s  preflight-check
+  rc=0              4s  latch-check
+  rc=0             19s  kwsweep
+  rc=0             11s  patch-freshness-check
+  rc=0              2s  refcache-check
+  rc=0              0s  knife-guard-check
+  rc=0              1s  knife-rom-guard-check
+  rc=0              0s  deffn-selftest
+  rc=0              0s  banner-acceptance
+  rc=0             37s  string-acceptance
+  rc=0             19s  str-domain-acceptance
+  rc=0             12s  strparen-acceptance
+  rc=0             43s  penderr-acceptance
+  rc=0             46s  missing-acceptance
+  rc=0             12s  error-acceptance
+  rc=0             67s  error-trap-acceptance
+  rc=0             91s  onerr0-acceptance
+  rc=0            110s  math-acceptance
+  rc=0             87s  float-acceptance
+  rc=0             42s  intarg-acceptance
+  rc=0             35s  logicops-acceptance
+  rc=0            232s  screenerr-acceptance
+  rc=0             48s  tmfp-acceptance
+  rc=0             53s  stmtpend-acceptance
+  rc=0            112s  array-acceptance
+  rc=0            124s  deffn-strict
+  rc=0            368s  graphics-acceptance
+  rc=0             54s  abort-acceptance
+  rc=0            139s  interval-trap-acceptance
+  rc=0             87s  clearpool-acceptance
+  rc=0            129s  stackpool-acceptance
+  rc=0            162s  trapdepth-acceptance
+  rc=0             74s  ctlcross-acceptance
+  rc=0            391s  ctllim-acceptance
+  rc=0            406s  ramfree-acceptance
+  rc=0             18s  txtceil-acceptance
+  rc=0             12s  cursor-acceptance
+  rc=0             88s  time-acceptance
+  rc=0            286s  namspc-acceptance
+  rc=0             94s  arrdim-acceptance
+  rc=0             44s  arylv-acceptance
+  rc=0             55s  badfnum-acceptance
+  rc=0              7s  beep-acceptance
+  rc=0             22s  binfre-acceptance
+  rc=0             19s  cassave-acceptance
+  rc=0             75s  castail-acceptance
+  rc=0            122s  deffn-acceptance
+  rc=0             49s  direct-ctrl-acceptance
+  rc=0              8s  dskmsg-acceptance
+  rc=0             82s  editverb-acceptance
+  rc=0             30s  fldary-acceptance
+  rc=0             92s  fldwidth-acceptance
+  rc=0             25s  forvar-acceptance
+  rc=0             45s  gicini-acceptance
+  rc=0              0s  graphics-floor-acceptance
+  rc=0            140s  ifsem-acceptance
+  rc=0              8s  input-acceptance
+  rc=0             54s  nodisk-acceptance
+  rc=0             75s  pusing-acceptance
+  rc=0             41s  catterm-acceptance
+  rc=0             19s  catusr-acceptance
+  rc=0             18s  nameord-acceptance
+  rc=0              6s  namegate-acceptance
+  rc=0             36s  inputary-acceptance
+  rc=0            137s  key-trap-acceptance
+  rc=0             54s  linemax-acceptance
+  rc=0            140s  lnblank-acceptance
+  rc=0             38s  locarg-acceptance
+  rc=0             43s  lof-acceptance
+  rc=0             84s  lptverb-acceptance
+  rc=0             57s  lrvar-acceptance
+  rc=0             60s  lvfix-acceptance
+  rc=0             21s  nxary-acceptance
+  rc=0             27s  nxlist-acceptance
+  rc=0             25s  play-acceptance
+  rc=0             10s  play-trace-acceptance
+  rc=0             22s  readvar-acceptance
+  rc=0              7s  runtail-acceptance
+  rc=0             23s  sound-acceptance
+  rc=0             71s  sprite-trap-acceptance
+  rc=0             54s  stop-trap-acceptance
+  rc=0            132s  strig-trap-acceptance
+  rc=0              0s  subrom-acceptance
+  rc=0             64s  tgtspc-acceptance
+  rc=0             77s  width-acceptance
+  rc=0            104s  lineerr#1/8
+  rc=0            106s  lineerr#2/8
+  rc=0            109s  lineerr#3/8
+  rc=0            101s  lineerr#4/8
+  rc=0             95s  lineerr#5/8
+  rc=0             91s  lineerr#6/8
+  rc=0             80s  lineerr#7/8
+  rc=0             59s  lineerr#8/8
+
+=== wall 853s (7s build + 846s gates) ===
+GATES: 114/114 green
+hashes: bd950846 8abf090a 6c5345c2 70c05175
+recorded: this full green battery is now the baseline a future skip must prove itself against

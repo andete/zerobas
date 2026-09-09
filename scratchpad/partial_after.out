@@ -1,0 +1,7 @@
+  p.ctl      COLOR 7,4,4    vg=FORCLR=7 ERR=0     cf=FORCLR=7 ERR=0     zb=FORCLR=0 ERR=2       🔴 DIFF
+  col.fgok   COLOR 7,99     vg=FORCLR=15 ERR=5    cf=FORCLR=15 ERR=5    zb=FORCLR=0 ERR=2       🔴 DIFF
+  col.bgok   COLOR 7,8,99   vg=FORCLR=15 ERR=5    cf=FORCLR=15 ERR=5    zb=FORCLR=0 ERR=2       🔴 DIFF
+  col.fgbad  COLOR 99,8     vg=FORCLR=15 ERR=5    cf=FORCLR=15 ERR=5    zb=FORCLR=0 ERR=2       🔴 DIFF
+
+🔴 THE CONTROL DID NOT SET FORCLR=7 ({'vg8020': ('7', '0'), 'cf3300': ('7', '0'), 'zb': ('0', '2')}) -- the probe is not reading the cell it thinks it is, and no row below means anything.
+refcache: 0 hit, 12 miss, 12 stored

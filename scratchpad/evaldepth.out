@@ -1,0 +1,14 @@
+
+row            vg8020        cf3300            zb   what it asks
+e.ctl             0 0           0 0           0 0   CONTROL: both reads at the SAME depth -- must be 0
+e.fn4           100 0         100 0       22781 7   four extra DEF FN levels
+e.paren       28676 2       23291 2       22906 2   eight nested parentheses   🔴 REFS SPLIT
+
+reads `[FRE(0)@shallow - FRE(0)@deep   ERR]`
+  >0 -> the EVALUATOR's own nesting comes out of the FRE(0) pool too,
+        so on that machine CLEAR bounds evaluator depth as well
+  0  -> the evaluator recurses somewhere FRE(0) cannot see
+
+  vg8020   control        0 0  ok
+  cf3300   control        0 0  ok
+  zb       control        0 0  ok

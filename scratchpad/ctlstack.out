@@ -1,0 +1,27 @@
+
+row                            vg8020                      cf3300                          zb   what it asks
+o.base        61800 61600 32946 61800     56415 56215 32946 56415                 0 62336 0 0   no CLEAR -- the baseline
+o.clr2200     61800 59600 32956 61800     56415 54215 32956 56415                 0 62336 0 0   +2000 B of string space
+o.clr4200     61800 57600 32956 61800     56415 52215 32956 56415                 0 62336 0 0   +4000 B -- linear?
+o.himem       48616 48416 32959 48617     48616 48416 32959 48617                 0 62336 0 0   MEMSIZ set outright
+o.gap                      4067 28651                  3298 23266                     8 62336   depth reached, and STKTOP-STREND
+
+  o.base/o.clr*/o.himem read `[MEMSIZ STKTOP STREND FRETOP]`
+  o.gap reads `[depth  STKTOP-STREND]`
+
+Does CLEAR move STKTOP?  (a stack bounded by the string space must)
+  vg8020   STKTOP 61600 -> 59600 -> 57600   steps +2000 / +2000
+  cf3300   STKTOP 56215 -> 54215 -> 52215   steps +2000 / +2000
+  zb       STKTOP 62336 -> 62336 -> 62336   steps +0 / +0
+
+Does CLEAR n,&HC000 set MEMSIZ to 49152?
+  vg8020   MEMSIZ 48616  STKTOP 48416  no
+  cf3300   MEMSIZ 48616  STKTOP 48416  no
+  zb       MEMSIZ 0  STKTOP 62336  no
+
+🎯 Bytes per frame, from ADDRESSES -- does it agree with §11's 7.0?
+  vg8020   depth  4067   STKTOP-STREND  28651 B   => 7.0 B/frame
+  cf3300   depth  3298   STKTOP-STREND  23266 B   => 7.1 B/frame
+  zb       depth     8   STKTOP-STREND  62336 B   => 7792.0 B/frame
+  §11 measured 7.0 B/frame from the CLEAR ladder alone. Two independent
+  routes to one number = the frames are in the STKTOP..STREND gap.

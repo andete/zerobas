@@ -1,0 +1,34 @@
+  ran zb      o.nolist      -> '2 0'
+  ran zb      o.nolistsub   -> '2 0'
+  ran zb      o.zeronolist  -> '0 1'
+  ran zb      o.overnolist  -> '0 1'
+  ran zb      o.short       -> '0 1'
+  ran zb      o.zero        -> '0 1'
+  ran zb      o.trail1      -> '2 0'
+  ran zb      o.trail0      -> '0 1'
+  ran zb      o.badafter    -> '2 0'
+  ran zb      o.n2trail     -> '2 0'
+  ran zb      o.n5trail     -> '0 1'
+  ran zb      o.n2short     -> '0 1'
+  ran zb      o.n2ok        -> '0 2'
+  ran zb      o.ok          -> '0 2'
+  ran zb      o.gosubok     -> '0 2'
+
+  o.nolist      zb='2 0'   (zb only)
+  o.nolistsub   zb='2 0'   (zb only)
+  o.zeronolist  zb='0 1'   (zb only)
+  o.overnolist  zb='0 1'   (zb only)
+  o.short       zb='0 1'   (zb only)
+  o.zero        zb='0 1'   (zb only)
+  o.trail1      zb='2 0'   (zb only)
+  o.trail0      zb='0 1'   (zb only)
+  o.badafter    zb='2 0'   (zb only)
+  o.n2trail     zb='2 0'   (zb only)
+  o.n5trail     zb='0 1'   (zb only)
+  o.n2short     zb='0 1'   (zb only)
+  o.n2ok        zb='0 2'   (zb only)
+  o.ok          zb='0 2'   (zb only)
+  o.gosubok     zb='0 2'   (zb only)
+
+  0 scored, 0 DIFF, 15 not measured
+    capture-on-signal: 15 on signal, 0 fell back to the scheduled budget   [signalled at 38.1-38.1 emulated s]

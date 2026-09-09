@@ -1,0 +1,147 @@
+python3 tools/install-repack-machine.py --merged build/zerobas-main-eu.rom --disk-rom build/disk.rom \
+	  --sub-rom build/sub.rom
+wrote C-BIOS_MSX1_EU_REPACK_DISK  (-> machine "C-BIOS_MSX1_EU_REPACK_DISK": merged repack ROM in slot 0, zerobas-disk in slot 3-1, zerobas-sub in slot 3-2)
+     /Users/joost/.openMSX/share/machines/C-BIOS_MSX1_EU_REPACK_DISK.xml
+python3 tools/install-repack-machine.py --merged build/zerobas-main-eu.rom --sub-rom build/sub.rom \
+	  --no-disk
+wrote C-BIOS_MSX1_EU_REPACK_NODISK  (-> machine "C-BIOS_MSX1_EU_REPACK_NODISK": merged repack ROM in slot 0, slot 3-1 EMPTY (diskless target), zerobas-sub in slot 3-2)
+     /Users/joost/.openMSX/share/machines/C-BIOS_MSX1_EU_REPACK_NODISK.xml
+python3 probes/basic/basic_probe_floatlit.py --zb-machine C-BIOS_MSX1_EU_REPACK_DISK 
+PASS  a=0                      ref: 11 00
+PASS  a=9                      ref: 1A 00
+PASS  a=10                     ref: 0F 0A 00
+PASS  a=255                    ref: 0F FF 00
+PASS  a=256                    ref: 1C 00
+PASS  a=32767                  ref: 1C FF 7F 00
+PASS  a=32768                  ref: 1D 45 32 76 80 00
+PASS  a=40000                  ref: 1D 45 40 00
+PASS  a=65535                  ref: 1D 45 65 53 50 00
+PASS  a=65536                  ref: 1D 45 65 53 60 00
+PASS  a=99999                  ref: 1D 45 99 99 90 00
+PASS  a=999999                 ref: 1D 46 99 99 99 00
+PASS  a=1000000                ref: 1F 47 10 00
+PASS  a=9999999                ref: 1F 47 99 99 99 90 00
+PASS  a=10000000               ref: 1F 48 10 00
+PASS  a=99999999               ref: 1F 48 99 99 99 99 00
+PASS  a=123456789012345678     ref: 1F 52 12 34 56 78 90 12 35 00
+PASS  a=.5                     ref: 1D 40 50 00
+PASS  a=0.5                    ref: 1D 40 50 00
+PASS  a=1.5                    ref: 1D 41 15 00
+PASS  a=1.                     ref: 1D 41 10 00
+PASS  a=1.0                    ref: 1D 41 10 00
+PASS  a=3.14159                ref: 1D 41 31 41 59 00
+PASS  a=3.1415926              ref: 1F 41 31 41 59 26 00
+PASS  a=0.1                    ref: 1D 40 10 00
+PASS  a=.000001                ref: 1D 3B 10 00
+PASS  a=123456.7               ref: 1F 46 12 34 56 70 00
+PASS  a=1234567.8              ref: 1F 47 12 34 56 78 00
+PASS  a=1234567                ref: 1F 47 12 34 56 70 00
+PASS  a=1234564                ref: 1F 47 12 34 56 40 00
+PASS  a=9999995                ref: 1F 47 99 99 99 50 00
+PASS  a=1e5                    ref: 1D 46 10 00
+PASS  a=1e10                   ref: 1D 4B 10 00
+PASS  a=1.5e2                  ref: 1D 43 15 00
+PASS  a=1e-3                   ref: 1D 3E 10 00
+PASS  a=2.5e-10                ref: 1D 37 25 00
+PASS  a=1d5                    ref: 1F 46 10 00
+PASS  a=1.5d-3                 ref: 1F 3E 15 00
+PASS  a=1e38                   ref: 1D 67 10 00
+PASS  a=1e62                   ref: 1D 7F 10 00
+PASS  a=1e63                   ref: <rejected>  [both rejected]
+PASS  a=1e64                   ref: <rejected>  [both rejected]
+PASS  a=1e-63                  ref: 1D 02 10 00
+PASS  a=1e-64                  ref: 1D 01 10 00
+PASS  a=1e-65                  ref: 1D 00
+PASS  a=1!                     ref: 1D 41 10 00
+PASS  a=1#                     ref: 1F 41 10 00
+PASS  a=32767#                 ref: 1F 45 32 76 70 00
+PASS  a=1.5!                   ref: 1D 41 15 00
+PASS  a=1.5#                   ref: 1F 41 15 00
+PASS  a=100000!                ref: 1D 46 10 00
+PASS  a=1234567!               ref: 1D 47 12 34 57 00
+PASS  a=65535%                 ref: <rejected>  [both rejected]
+PASS  a=1234565!               ref: 1D 47 12 34 57 00
+PASS  a=1234575!               ref: 1D 47 12 34 58 00
+PASS  a=123456789012345        ref: 1F 4F 12 34 56 78 90 12 35 00
+PASS  a=1234567890123455       ref: 1F 50 12 34 56 78 90 12 35 00
+PASS  a=9999995!               ref: 1D 47 10 00
+PASS  a=9999999999999999       ref: 1F 51 10 00
+PASS  a=0!                     ref: 1D 00
+PASS  a=0#                     ref: 1F 00
+PASS  a=.0                     ref: 1D 00
+PASS  a=0e0                    ref: 1D 00
+PASS  a=1%                     ref: 12 00
+PASS  a=100%                   ref: 0F 64 00
+PASS  a=30000%                 ref: 1C 30 75 00
+
+ALL PASS (66 cases) — float-literal crunch is byte-identical
+refcache: 1 hit, 1 miss, 1 stored
+python3 probes/basic/basic_probe_float_fmt.py --zb-machine C-BIOS_MSX1_EU_REPACK_DISK 
+FAIL  0                      ref: [ 0 ]
+                              zb : []
+FAIL  5                      ref: [ 5 ]
+                              zb : []
+FAIL  -5                     ref: [-5 ]
+                              zb : []
+FAIL  32767                  ref: [ 32767 ]
+                              zb : <no capture>
+PASS  -32768                 ref: [-32768 ]
+PASS  1.5                    ref: [ 1.5 ]
+PASS  -1.5                   ref: [-1.5 ]
+PASS  .5                     ref: [ .5 ]
+PASS  -.5                    ref: [-.5 ]
+PASS  0.1                    ref: [ .1 ]
+PASS  1.0                    ref: [ 1 ]
+PASS  1.50                   ref: [ 1.5 ]
+PASS  2!                     ref: [ 2 ]
+PASS  100000!                ref: [ 100000 ]
+PASS  1e5                    ref: [ 100000 ]
+PASS  3.14159                ref: [ 3.14159 ]
+PASS  3.141592               ref: [ 3.141592 ]
+PASS  1234567!               ref: [ 1234570 ]
+PASS  9999995!               ref: [ 1000000 ]
+PASS  999999!                ref: [ 999999 ]
+PASS  1000000!               ref: [ 1000000 ]
+PASS  1e6                    ref: [ 1000000 ]
+PASS  9999990!               ref: [ 9999990 ]
+PASS  .01                    ref: [ .01 ]
+PASS  .001                   ref: [ 1E-03 ]
+PASS  .0001                  ref: [ 1E-04 ]
+PASS  1e-3                   ref: [ 1E-03 ]
+PASS  6.023e23               ref: [ 6.023E+23 ]
+PASS  1e-9                   ref: [ 1E-09 ]
+PASS  -1e10                  ref: [-10000000000 ]
+PASS  2.5e-10                ref: [ 2.5E-10 ]
+PASS  1#                     ref: [ 1 ]
+PASS  1.5#                   ref: [ 1.5 ]
+PASS  0.1#                   ref: [ .1 ]
+PASS  1.23456789#            ref: [ 1.23456789 ]
+PASS  1.2345678901234#       ref: [ 1.2345678901234 ]
+PASS  123456789012345678     ref: [ 1.2345678901235E+17 ]
+PASS  1d16                   ref: [ 1E+16 ]
+PASS  1.5d-3                 ref: [ 1.5E-03 ]
+PASS  1e10#                  ref: <no capture>  [both rejected]
+PASS  -1.23456789012345#     ref: [-1.2345678901235 ]
+PASS  1e62                   ref: [ 1E+62 ]
+PASS  1e-64                  ref: [ 1E-64 ]
+PASS  1d62                   ref: [ 1E+62 ]
+PASS  1d-64                  ref: [ 1E-64 ]
+PASS  1e13                   ref: [ 10000000000000 ]
+PASS  1e14                   ref: [ 1E+14 ]
+PASS  1e15                   ref: [ 1E+15 ]
+PASS  9.9e13                 ref: [ 99000000000000 ]
+PASS  1d13                   ref: [ 10000000000000 ]
+PASS  1d14                   ref: [ 1E+14 ]
+PASS  1d15                   ref: [ 1E+15 ]
+PASS  1d-2                   ref: [ .01 ]
+PASS  1d-3                   ref: [ 1E-03 ]
+PASS  .0123                  ref: [ .0123 ]
+PASS  .00123                 ref: [ 1.23E-03 ]
+PASS  99999999999999#        ref: [ 99999999999999 ]
+PASS  0!                     ref: [ 0 ]
+PASS  0#                     ref: [ 0 ]
+PASS  .0                     ref: [ 0 ]
+
+SOME FAILED
+refcache: 2 hit, 4 miss, 4 stored
+make: *** [float-acceptance] Error 1

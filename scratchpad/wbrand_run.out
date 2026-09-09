@@ -1,0 +1,21 @@
+  cf3300  ['AAAAAAAA', 'AAAAAAAA', 'ZZZZZZZZ']
+  zb      ['<empty>', '<empty>', '<empty>']
+
+field                                  cf3300         zb   verdict
+P$ (F$ after its own GET)            AAAAAAAA    <empty>   🔴 DIFF
+Q$ (F$ after a GET on #2)  🎯 THE READING   AAAAAAAA    <empty>   🔴 DIFF
+R$ (G$ after GET #2)       control   ZZZZZZZZ    <empty>   🔴 DIFF
+
+=== 3 divergence(s): ['P$', 'Q$', 'R$'] ===
+🔴 FIELD variables ALIAS across channels. This does NOT reopen the 267 B — it means FIELD needs its own backing, a much smaller thing than a per-channel sector buffer.
+--- write side ---
+  w.two  cf3300=    11111111/22222222  zb=      <empty>/<empty>
+  w.seq  cf3300=    11111111/22222222  zb=    11111111/22222222
+
+row           TFC / TFD  cf3300                    zb   verdict
+w.two         11111111/22222222       <empty>/<empty>   🔴 DIFF
+       TWO channels open, both FIELDed, then both written
+w.seq         11111111/22222222     11111111/22222222   SAME
+       CONTROL: one channel at a time -- must be 11111111 / 22222222
+
+=== 1 divergence(s): ['w.two'] ===

@@ -71,6 +71,15 @@ CASES = [
     # new-name operand at all". `HI.TXT` EXISTS on test720.dsk, so the lookup
     # succeeds and only the second cause can still produce a non-type face.
     ("name.ex5",  'NAME"HI.TXT"AS 5', "DISCRIMINATOR: old file EXISTS -- separates lookup-first from never-faults"),
+    # \U0001f3af THE SECOND DISCRIMINATOR, and it asks about the FIX rather than the
+    # rule. name.ex5's ERR 2 is els_tc_common reporting "the re-drive found no
+    # operand" -- but that has two causes too: `eval` never ran, or it ran and
+    # parsed nothing. A DIVIDING operand separates them. `KILL 1/0` already
+    # answers 11 on both machines (ctl.div0), so if this site's re-drive works at
+    # all, `AS 1/0` must answer 11 here too; if it answers 2, the re-drive is not
+    # reaching the operand and the cursor is the defect, not the face.
+    ("name.exdiv", 'NAME"HI.TXT"AS 1/0',
+     "does the SECOND fname_expr site re-drive the operand at all? 11 = yes, 2 = no"),
 ]
 
 
@@ -78,6 +87,14 @@ PINNED = {
     # row: (cf3300, zerobas) -- the CURRENT truth, measured 2026-09-04.
     "name.ex5": ("13", "2"),   # D-NAMEORD's open half: els_tc_common's re-drive
                                # reports "no operand" -> ERR 2 where 13 is due.
+    # \U0001f534 THE SAME DEFECT, AND THIS ROW IS WHAT NAMES IT (2026-09-09).
+    # `KILL 1/0` answers 11 on both machines, so the re-drive tail WORKS -- the
+    # operand's own fault wins wherever `eval` actually reaches the operand.
+    # Through NAME's SECOND fname_expr site the identical operand answers 2, so
+    # `eval` is not reaching it at all. That makes this a CURSOR defect, not a
+    # face defect: the fix is not "produce 13 here", it is "hand els_tc_common
+    # the operand", after which 13 and 11 both fall out. One pin, one mechanism.
+    "name.exdiv": ("11", "2"),
 }
 
 

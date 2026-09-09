@@ -1,0 +1,16 @@
+
+row             vg8020          cf3300              zb   what it does
+l.ctl         4051 0 7        3282 0 7        2840 0 7   CONTROL: five scalars, no bulk allocation
+l.ary         3715 0 7        2946 0 7        2547 0 7   DIM A(300), filled, then the pool driven down
+l.scal        3800 0 7        3031 0 7        2621 0 7   60 scalars -- the OTHER allocator
+
+reads `[depth  corrupted-cells  ERR]`  -- S must be 0 everywhere
+
+does an allocation COST depth? (the floor must rise with ARYEND)
+  vg8020     4051 frames bare ->   3715 with DIM A(300)   cost   336   ok
+  cf3300     3282 frames bare ->   2946 with DIM A(300)   cost   336   ok
+  zb         2840 frames bare ->   2547 with DIM A(300)   cost   293   ok
+
+rows 3  red 0
+CTLLIM: PASS
+refcache: 2 hit, 1 miss, 1 stored

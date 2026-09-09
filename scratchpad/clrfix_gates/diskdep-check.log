@@ -1,0 +1,2 @@
+python3 tools/check_disk_deps.py 
+65 make target(s) run a probe needing test720.dsk; 65 declare $(DISK_TEST_DSK), 0 do not

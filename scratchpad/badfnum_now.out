@@ -1,0 +1,107 @@
+python3 tools/install-repack-machine.py --merged build/zerobas-main-eu.rom --disk-rom build/disk.rom \
+	  --sub-rom build/sub.rom
+wrote C-BIOS_MSX1_EU_REPACK_DISK  (-> machine "C-BIOS_MSX1_EU_REPACK_DISK": merged repack ROM in slot 0, zerobas-disk in slot 3-1, zerobas-sub in slot 3-2)
+     /Users/joost/.openMSX/share/machines/C-BIOS_MSX1_EU_REPACK_DISK.xml
+python3 tools/install-repack-machine.py --merged build/zerobas-main-eu.rom --sub-rom build/sub.rom \
+	  --no-disk
+wrote C-BIOS_MSX1_EU_REPACK_NODISK  (-> machine "C-BIOS_MSX1_EU_REPACK_NODISK": merged repack ROM in slot 0, slot 3-1 EMPTY (diskless target), zerobas-sub in slot 3-2)
+     /Users/joost/.openMSX/share/machines/C-BIOS_MSX1_EU_REPACK_NODISK.xml
+ZEROBAS_BASIC_MACHINE=C-BIOS_MSX1_EU_REPACK_DISK \
+	  python3 probes/disk/diskbasic_probe_badfnum.py --gate \
+	         
+case             typed                                      ref        zb       dir  note
+ctl_syntax       OPEM "HI.TXT" FOR INPUT AS #1           SYNTAX    SYNTAX         -  
+ctl_ch1_open     OPEN "HI.TXT" FOR INPUT AS #1:PRINT         26        26         -  
+ctl_pr1_closed   PRINT #1,"X"                               FNO       FNO         -  
+ctl_mf2_ch2      MAXFILES=2:PRINT #2,"X"                    FNO       FNO         -  
+prw_c0           PRINT #0,"X"                               FNO       FNO         -  
+pru_c0           PRINT #0,USING "!";"X"                     FNO       FNO         -  
+inp_c0           INPUT #0,A$                                FNO       FNO         -  
+lin_c0           LINE INPUT #0,A$                           FNO       FNO         -  
+clo_c0           CLOSE #0:PRINT 7                             7         7         -  
+opn_c0           OPEN "HI.TXT" FOR INPUT AS #0:PRINT        BFN       BFN         -  
+fld_c0           FIELD #0,10 AS A$:PRINT 7                  FNO       FNO         -  
+get_c0           GET #0,1:PRINT 7                           FNO       FNO         -  
+put_c0           PUT #0,1:PRINT 7                           FNO       FNO         -  
+ind_c0           A$=INPUT$(3,#0):PRINT 7                    FNO       FNO         -  
+eof_c0           PRINT EOF(0)                               FNO       FNO         -  
+lof_c0           PRINT LOF(0)                               FNO       FNO         -  
+prw_c2           PRINT #2,"X"                               BFN       BFN         -  
+pru_c2           PRINT #2,USING "!";"X"                     BFN       BFN         -  
+inp_c2           INPUT #2,A$                                BFN       BFN         -  
+lin_c2           LINE INPUT #2,A$                           BFN       BFN         -  
+clo_c2           CLOSE #2:PRINT 7                           BFN       BFN         -  
+opn_c2           OPEN "HI.TXT" FOR INPUT AS #2:PRINT        BFN       BFN         -  
+fld_c2           FIELD #2,10 AS A$:PRINT 7                  BFN       BFN         -  
+get_c2           GET #2,1:PRINT 7                           BFN       BFN         -  
+put_c2           PUT #2,1:PRINT 7                           BFN       BFN         -  
+ind_c2           A$=INPUT$(3,#2):PRINT 7                    BFN       BFN         -  
+eof_c2           PRINT EOF(2)                               BFN       BFN         -  
+lof_c2           PRINT LOF(2)                               BFN       BFN         -  
+prw_c16          PRINT #16,"X"                              BFN       BFN         -  
+pru_c16          PRINT #16,USING "!";"X"                    BFN       BFN         -  
+inp_c16          INPUT #16,A$                               BFN       BFN         -  
+lin_c16          LINE INPUT #16,A$                          BFN       BFN         -  
+clo_c16          CLOSE #16:PRINT 7                          BFN       BFN         -  
+opn_c16          OPEN "HI.TXT" FOR INPUT AS #16:PRINT       BFN       BFN         -  
+fld_c16          FIELD #16,10 AS A$:PRINT 7                 BFN       BFN         -  
+get_c16          GET #16,1:PRINT 7                          BFN       BFN         -  
+put_c16          PUT #16,1:PRINT 7                          BFN       BFN         -  
+ind_c16          A$=INPUT$(3,#16):PRINT 7                   BFN       BFN         -  
+eof_c16          PRINT EOF(16)                              BFN       BFN         -  
+lof_c16          PRINT LOF(16)                              BFN       BFN         -  
+prw_c256         PRINT #256,"X"                             IFC       IFC         -  
+pru_c256         PRINT #256,USING "!";"X"                   IFC       IFC         -  
+inp_c256         INPUT #256,A$                              IFC       IFC         -  
+lin_c256         LINE INPUT #256,A$                         IFC       IFC         -  
+clo_c256         CLOSE #256:PRINT 7                         IFC       IFC         -  
+opn_c256         OPEN "HI.TXT" FOR INPUT AS #256:PRIN       IFC       IFC         -  
+fld_c256         FIELD #256,10 AS A$:PRINT 7                IFC       IFC         -  
+get_c256         GET #256,1:PRINT 7                         IFC       IFC         -  
+put_c256         PUT #256,1:PRINT 7                         IFC       IFC         -  
+ind_c256         A$=INPUT$(3,#256):PRINT 7                  IFC       IFC         -  
+eof_c256         PRINT EOF(256)                             IFC       IFC         -  
+lof_c256         PRINT LOF(256)                             IFC       IFC         -  
+prw_cneg         PRINT #-1,"X"                              IFC       IFC         -  
+pru_cneg         PRINT #-1,USING "!";"X"                    IFC       IFC         -  
+inp_cneg         INPUT #-1,A$                               IFC       IFC         -  
+lin_cneg         LINE INPUT #-1,A$                          IFC       IFC         -  
+clo_cneg         CLOSE #-1:PRINT 7                          IFC       IFC         -  
+opn_cneg         OPEN "HI.TXT" FOR INPUT AS #-1:PRINT       IFC       IFC         -  
+fld_cneg         FIELD #-1,10 AS A$:PRINT 7                 IFC       IFC         -  
+get_cneg         GET #-1,1:PRINT 7                          IFC       IFC         -  
+put_cneg         PUT #-1,1:PRINT 7                          IFC       IFC         -  
+ind_cneg         A$=INPUT$(3,#-1):PRINT 7                   IFC       IFC         -  
+eof_cneg         PRINT EOF(-1)                              IFC       IFC         -  
+lof_cneg         PRINT LOF(-1)                              IFC       IFC         -  
+prw_ctm          PRINT #A$,"X"                             TMIS      TMIS         -  
+pru_ctm          PRINT #A$,USING "!";"X"                   TMIS      TMIS         -  
+inp_ctm          INPUT #A$,A$                              TMIS      TMIS         -  
+lin_ctm          LINE INPUT #A$,A$                         TMIS      TMIS         -  
+clo_ctm          CLOSE #A$:PRINT 7                         TMIS      TMIS         -  
+opn_ctm          OPEN "HI.TXT" FOR INPUT AS #A$:PRINT      TMIS      TMIS         -  
+fld_ctm          FIELD #A$,10 AS A$:PRINT 7                TMIS      TMIS         -  
+get_ctm          GET #A$,1:PRINT 7                         TMIS      TMIS         -  
+put_ctm          PUT #A$,1:PRINT 7                         TMIS      TMIS         -  
+ind_ctm          A$=INPUT$(3,#A$):PRINT 7                  TMIS      TMIS         -  
+eof_ctm          PRINT EOF(A$)                             TMIS      TMIS         -  
+lof_ctm          PRINT LOF(A$)                             TMIS      TMIS         -  
+trap_prw0        RUN                                         59        59         -  
+trap_prw2        RUN                                         52        52         -  
+trap_prw256      RUN                                          5         5         -  
+trap_get2        RUN                                         52        52         -  
+trap_clo2        RUN                                         52        52         -  
+trap_lof0        RUN                                         59        59         -  
+trap_lof2        RUN                                         52        52         -  
+trap_lof1        RUN                                         59        59         -  
+edge_flt_prw     PRINT #1.7,"X"                             FNO       FNO         -  
+edge_flt_lof     PRINT LOF(1.7)                             FNO       FNO         -  
+edge_ovf         PRINT #99999*99999,"X"                     OVF       OVF         -  
+edge_c255        PRINT #255,"X"                             BFN       BFN         -  
+edge_c1_eof      PRINT EOF(1)                               FNO       FNO         -  
+edge_mf2_clo     MAXFILES=2:CLOSE #2:PRINT 7                  7         7         -  
+edge_mf2_lof     MAXFILES=2:PRINT LOF(2)                    FNO       FNO         -  
+k0_trapped       RUN                                         52        52         7  
+k0_control       RUN                                          0         0         7  
+
+93 cases, 0 mangled, 0 oracle drift, 0 unfiled divergence, 0 without an oracle lock

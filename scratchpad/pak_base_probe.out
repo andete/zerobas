@@ -1,0 +1,19 @@
+  ran zb      pa.color  '0 9'
+  ran zb      pa.plain  '0 15'
+  ran zb      pa.nopnt  '0 4'
+  ran zb      pa.4comma '2 9'
+  ran zb      pa.4arg   '2 9'
+  ran zb      pa.4colon '2 9'
+  ran zb      pa.3comma '24 4'
+  ran zb      pa.ccomma '2 4'
+
+  pa.color   zb='0 9'   (zb only)
+  pa.plain   zb='0 15'   (zb only)
+  pa.nopnt   zb='0 4'   (zb only)
+  pa.4comma  zb='2 9'   (zb only)
+  pa.4arg    zb='2 9'   (zb only)
+  pa.4colon  zb='2 9'   (zb only)
+  pa.3comma  zb='24 4'   (zb only)
+  pa.ccomma  zb='2 4'   (zb only)
+
+ROWS: 8 printed, 0 scored -- 0 DIFF

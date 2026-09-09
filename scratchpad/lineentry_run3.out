@@ -1,0 +1,10 @@
+
+typed 6 line(s); comparing against the LISTING
+
+  cf3300 step=4.5    ok   6/6 line(s) match
+  zb step=2.5        ok   6/6 line(s) match
+  zb step=5.0        ok   6/6 line(s) match
+  zb step=8.0        ok   6/6 line(s) match
+
+🟢 the program arrives INTACT at every step, including the failing one — so line entry is REFUTED and the cause is still unknown.
+refcache: 0 hit, 4 miss, 4 stored

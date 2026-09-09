@@ -1,0 +1,4 @@
+[main 65018e8b] D-STRADDLE: fat_rand_put/get span two sectors — and the witness came first, and failed exactly as predicted
+ 7 files changed, 423 insertions(+), 22 deletions(-)
+ create mode 100644 scratchpad/straddle_predictions.md
+ create mode 100644 tests/test_rand_straddle.py

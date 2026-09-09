@@ -1,0 +1,80 @@
+python3 tools/install-repack-machine.py --merged build/zerobas-main-eu.rom --disk-rom build/disk.rom \
+	  --sub-rom build/sub.rom
+wrote C-BIOS_MSX1_EU_REPACK_DISK  (-> machine "C-BIOS_MSX1_EU_REPACK_DISK": merged repack ROM in slot 0, zerobas-disk in slot 3-1, zerobas-sub in slot 3-2)
+     /Users/joost/.openMSX/share/machines/C-BIOS_MSX1_EU_REPACK_DISK.xml
+python3 tools/install-repack-machine.py --merged build/zerobas-main-eu.rom --sub-rom build/sub.rom \
+	  --no-disk
+wrote C-BIOS_MSX1_EU_REPACK_NODISK  (-> machine "C-BIOS_MSX1_EU_REPACK_NODISK": merged repack ROM in slot 0, slot 3-1 EMPTY (diskless target), zerobas-sub in slot 3-2)
+     /Users/joost/.openMSX/share/machines/C-BIOS_MSX1_EU_REPACK_NODISK.xml
+python3 probes/basic/basic_probe_penderr.py --gate \
+	         
+    capture-on-signal: 165 on signal, 0 fell back to the scheduled budget   ⚠️ 1 REPLAYED from the refcache -- not measured on this run   [signalled at 25.6-2619.6 emulated s]
+D-PENDERR — first-error-wins is a property of the WRITE          sides: vg8020, cf3300, zb
+==============================================================================
+ok   o.nn.dz5     vg8020=' 11 '  cf3300=' 11 '  zb=' 11 '
+ok   o.nn.5dz     vg8020=' 5 '  cf3300=' 5 '  zb=' 5 '
+ok   o.nn.dzov    vg8020=' 11 '  cf3300=' 11 '  zb=' 11 '
+ok   o.nn.ovdz    vg8020=' 6 '  cf3300=' 6 '  zb=' 6 '
+ok   o.nn.5ov     vg8020=' 5 '  cf3300=' 5 '  zb=' 5 '
+ok   o.nn.ov5     vg8020=' 6 '  cf3300=' 6 '  zb=' 6 '
+ok   o.nn.let     vg8020=' 11 '  cf3300=' 11 '  zb=' 11 '
+ok   o.nn.tel     vg8020=' 5 '  cf3300=' 5 '  zb=' 5 '
+ok   o.nn.ary     vg8020=' 11 '  cf3300=' 11 '  zb=' 11 '
+ok   o.nn.yra     vg8020=' 5 '  cf3300=' 5 '  zb=' 5 '
+ok   o.nn.pr      vg8020=' 11 '  cf3300=' 11 '  zb=' 11 '
+ok   o.nn.rp      vg8020=' 5 '  cf3300=' 5 '  zb=' 5 '
+ok   o.sub.dzex   vg8020=' 11 '  cf3300=' 11 '  zb=' 11 '
+ok   o.sub.exdz   vg8020=' 6 '  cf3300=' 6 '  zb=' 6 '
+ok   o.sub.dzpw   vg8020=' 11 '  cf3300=' 11 '  zb=' 11 '
+ok   o.sub.pwdz   vg8020=' 6 '  cf3300=' 6 '  zb=' 6 '
+ok   o.sub.5ex    vg8020=' 5 '  cf3300=' 5 '  zb=' 5 '
+ok   o.tm.tmfp    vg8020=' 13 '  cf3300=' 13 '  zb=' 13 '
+ok   o.tm.fptm    vg8020=' 11 '  cf3300=' 11 '  zb=' 11 '
+ok   o.tm.tm5     vg8020=' 13 '  cf3300=' 13 '  zb=' 13 '
+ok   o.tm.5tm     vg8020=' 5 '  cf3300=' 5 '  zb=' 5 '
+ok   o.tm.tmov    vg8020=' 13 '  cf3300=' 13 '  zb=' 13 '
+ok   o.tm.ovtm    vg8020=' 6 '  cf3300=' 6 '  zb=' 6 '
+ok   o.tm.tmex    vg8020=' 13 '  cf3300=' 13 '  zb=' 13 '
+ok   o.tm.let     vg8020=' 13 '  cf3300=' 13 '  zb=' 13 '
+ok   o.tm.ary     vg8020=' 13 '  cf3300=' 13 '  zb=' 13 '
+ok   o.pt.sin     vg8020=' 11 '  cf3300=' 11 '  zb=' 11 '
+ok   o.pt.sqr     vg8020=' 11 '  cf3300=' 11 '  zb=' 11 '
+ok   o.pt.left    vg8020=' 11 '  cf3300=' 11 '  zb=' 11 '
+ok   r.hex        vg8020=' 11 '  cf3300=' 11 '  zb=' 11 '
+ok   r.oct        vg8020=' 11 '  cf3300=' 11 '  zb=' 11 '
+ok   r.str        vg8020=' 11 '  cf3300=' 11 '  zb=' 11 '
+ok   r.hexp       vg8020=' 11 '  cf3300=' 11 '  zb=' 11 '
+ok   r.hex.tm     vg8020=' 13 '  cf3300=' 13 '  zb=' 13 '
+ok   r.hex.nn     vg8020=' 11 '  cf3300=' 11 '  zb=' 11 '
+ok   w.lof.dz     vg8020=' 11 '  cf3300=' 11 '  zb=' 11 '
+ok   w.lof.5      vg8020=' 5 '  cf3300=' 5 '  zb=' 5 '
+ok   w.eof.dz     vg8020=' 11 '  cf3300=' 11 '  zb=' 11 '
+ok   w.chan.dz    vg8020=' 11 '  cf3300=' 11 '  zb=' 11 '
+ok   w.pdl.dz     vg8020=' 11 '  cf3300=' 11 '  zb=' 11 '
+ok   w.pdl.5      vg8020=' 5 '  cf3300=' 5 '  zb=' 5 '
+ok   n.dz.w       vg8020=' 11 '  cf3300=' 11 '  zb=' 11 '   [NEGATIVE CONTROL — one numeric fault, no order to get right]
+ok   n.5.w        vg8020=' 5 '  cf3300=' 5 '  zb=' 5 '   [NEGATIVE CONTROL — the SQR code alone]
+ok   n.ov.w       vg8020=' 6 '  cf3300=' 6 '  zb=' 6 '   [NEGATIVE CONTROL — the overflow code alone]
+ok   n.ex.w       vg8020=' 6 '  cf3300=' 6 '  zb=' 6 '   [NEGATIVE CONTROL — the sub-ROM EXP tenant's code alone]
+ok   n.pw.w       vg8020=' 6 '  cf3300=' 6 '  zb=' 6 '   [NEGATIVE CONTROL — the sub-ROM pow tenant's code alone]
+ok   n.tm.w       vg8020=' 13 '  cf3300=' 13 '  zb=' 13 '   [NEGATIVE CONTROL — a type fault alone is still 13]
+ok   n.tm.loc     vg8020=' 13 '  cf3300=' 13 '  zb=' 13 '   [POSITIVE CONTROL]
+ok   n.tm.pdl     vg8020=' 13 '  cf3300=' 13 '  zb=' 13 '   [NEGATIVE CONTROL — ev_ff_ckpdl, widened but single-fault]
+ok   n.tm.rnd     vg8020=' 13 '  cf3300=' 13 '  zb=' 13 '   [NEGATIVE CONTROL — ev_mc_arg_checked's collapsed test]
+ok   n.tm.hex     vg8020=' 13 '  cf3300=' 13 '  zb=' 13 '   [NEGATIVE CONTROL — sfr_argok's deleted promotion, same answer]
+ok   n.tm.lof     vg8020=' 13 '  cf3300=' 13 '  zb=' 13 '   [NEGATIVE CONTROL — fch_check, widened but single-fault]
+ok   n.tm.chan    vg8020=' 13 '  cf3300=' 13 '  zb=' 13 '   [NEGATIVE CONTROL — eval_chan, widened but single-fault]
+ok   n.ok.w       vg8020=' 0 '  cf3300=' 0 '  zb=' 0 '   [NEGATIVE CONTROL — NO fault at all: penderr_set must not invent one]
+ok   n.ok.pdl     vg8020=' 0 '  cf3300=' 0 '  zb=' 0 '   [NEGATIVE CONTROL — a clean PDL still runs its domain check]
+ok   u.dz.w       vg8020='Division by zero in 10'  cf3300='Division by zero in 10'  zb='Division by zero in 10'   [POSITIVE CONTROL]
+ok   u.nn.dz5     vg8020='Division by zero in 10'  cf3300='Division by zero in 10'  zb='Division by zero in 10'
+ok   u.nn.5dz     vg8020='Illegal function call in 10'  cf3300='Illegal function call in 10'  zb='Illegal function call in 10'
+ok   u.sub.dzex   vg8020='Division by zero in 10'  cf3300='Division by zero in 10'  zb='Division by zero in 10'
+ok   u.tm.tmfp    vg8020='Type mismatch in 10'  cf3300='Type mismatch in 10'  zb='Type mismatch in 10'
+ok   u.tm.loc     vg8020='Type mismatch in 10'  cf3300='Type mismatch in 10'  zb='Type mismatch in 10'   [POSITIVE CONTROL]
+ROWS: 61 printed, 61 scored — 61 agree, 0 diverge, 0 deferred (not scored)
+==============================================================================
+61/61 readings agree (61 cases, 4 positive controls, 13 negative controls, 0 row(s) with no oracle, 0 DEFERRED row(s) measured but not scored)
+SIDES: vg8020,cf3300,zb — ON ERROR, ERR, WIDTH, LOCATE, PRINT, PDL, RND, SQR, EXP, `^` and HEX$/OCT$/STR$ are core MSX-BASIC, present on every MSX1, so BOTH references are legitimate oracles for those rows; the LOF/EOF rows depend on a file system and are expected to be measured, not necessarily oracled, on a cassette-only reference
+DENOMINATOR: (WHICH WRITER of the pending-error cell reaches it first: the tree has TWENTY-FOUR stores into FPERR -- twenty-one in the main ROM (float-arith fp_div / check_preexp_bounds / fac_to_int_go / cpow's div0 and illegal-fn arms / sdivmod_zerocheck, str-engine's five heap-OOM and too-complex arms plus str_arg_empty and str_heap_oom_error, expr's ev_f_defer and evmc_sqr/log/exp error tails, arrays' ary_engine_call map, and type_mismatch_set) and THREE in sub-ROM page-1 tenants (fp_pow x2, fp_exp), plus exec_stmt's per-statement CLEAR -- which D-STMTPEND has since turned into the statement-boundary READER, so the cell is now cleared by record_errline on the way out of a raise rather than at the top of every statement (docs/spec-basic-stmtpend.md §3); the one-lifetime-per-statement invariant this denominator rests on is unchanged, and is now proved by that test instead of imposed by a store. Reachable-in-one-statement pairs are what this probe samples: div0, SQR-domain, overflow, the two tenant-raised overflows, a parse-time deferred syntax error, and the type fault) x (the ORDER the two faults occur in -- the SAME pair concatenated both ways, which is the whole axis) x (WHICH READER surfaces it: eval_int16_checked via WIDTH, ex_let via check_expr_errors_popbc, ex_let_arr, exp_num, eval_chan, fch_check, ev_ff_ckpdl, ev_mc_arg_checked -- the fourteen that used to test two cells and now test one) x (TRAPPED vs UNTRAPPED, the second reading the message TEXT, its line, and whether it printed ONCE). The type/numeric pair itself is NOT re-derived here beyond the o.tm.* regression rows: that is `make tmfp-acceptance` (50 rows), which together with `make width-acceptance` (94, holding dfe-tmfp) and `make locarg-acceptance` (45) is this slice's green control set.
+refcache: 2 hit, 4 miss, 4 stored, 1 replayed provenance

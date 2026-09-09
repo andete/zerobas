@@ -1,0 +1,51 @@
+  REM       vg=legal     zb=legal    
+  POKE      vg=ERR 24    zb=ERR 24   
+  VPOKE     vg=ERR 24    zb=ERR 24   
+  OUT       vg=ERR 24    zb=ERR 24   
+  WAIT      vg=ERR 24    zb=ERR 24   
+  LOCATE    vg=ERR 24    zb=ERR 24   
+  SOUND     vg=ERR 24    zb=ERR 24   
+  PSET      vg=ERR 2     zb=ERR 2    
+  PRESET    vg=ERR 2     zb=ERR 2    
+  LINE      vg=ERR 2     zb=ERR 2    
+  CIRCLE    vg=ERR 2     zb=ERR 2    
+  PAINT     vg=ERR 2     zb=ERR 2    
+  DRAW      vg=ERR 5     zb=ERR 5    
+  PLAY      vg=ERR 24    zb=ERR 24   
+  DIM       vg=ERR 2     zb=ERR 2    
+  ERASE     vg=ERR 2     zb=ERR 2    
+  SWAP      vg=ERR 2     zb=ERR 2    
+  DEFINT    vg=ERR 2     zb=ERR 2    
+  GOTO      vg=ERR 2     zb=ERR 2    
+  GOSUB     vg=ERR 2     zb=ERR 2    
+  RESUME    vg=<none>    zb=<none>   
+  READ      vg=ERR 2     zb=ERR 2    
+  WIDTH     vg=ERR 24    zb=ERR 24   
+  LPRINT    vg=<none>    zb=<none>   
+  CALL      vg=ERR 2     zb=ERR 2    
+  BLOAD     vg=ERR 24    zb=ERR 24   
+  BSAVE     vg=ERR 24    zb=ERR 24   
+  SAVE      vg=ERR 24    zb=ERR 24   
+  LOAD      vg=ERR 24    zb=ERR 24   
+  MERGE     vg=ERR 24    zb=ERR 24   
+  KILL      vg=ERR 5     zb=ERR 24      🔴 DIFF
+  NAME      vg=ERR 5     zb=ERR 24      🔴 DIFF
+  OPEN      vg=ERR 24    zb=ERR 24   
+  FIELD     vg=ERR 5     zb=ERR 24      🔴 DIFF
+  GET       vg=ERR 24    zb=ERR 24   
+  PUT       vg=ERR 24    zb=ERR 24   
+  LSET      vg=ERR 5     zb=ERR 2       🔴 DIFF
+  RSET      vg=ERR 5     zb=ERR 2       🔴 DIFF
+  CLOAD     vg=<none>    zb=legal       🔴 DIFF
+  CSAVE     vg=ERR 24    zb=ERR 24   
+  DELETE    vg=ERR 5     zb=ERR 5    
+  SCREEN    vg=ERR 24    zb=ERR 24   
+  COLOR     vg=ERR 24    zb=legal       🔴 DIFF
+  KEY       vg=ERR 24    zb=ERR 2       🔴 DIFF
+  MOTOR     vg=legal     zb=legal    
+  CLOSE     vg=legal     zb=legal    
+  BEEP      vg=legal     zb=legal    
+  CLEAR     vg=legal     zb=legal    
+
+=== 8 divergence(s): ['KILL', 'NAME', 'FIELD', 'LSET', 'RSET', 'CLOAD', 'COLOR', 'KEY'] ===
+    🔴 ['RESUME', 'LPRINT', 'CLOAD'] produced NO reading on a side -- that is an absence, not agreement, and each needs a reason before it is read as anything [[an-unnamed-outcome-reads-as-no-outcome]].

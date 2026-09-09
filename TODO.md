@@ -434,7 +434,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:12439 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:12468 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -599,7 +599,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:3097 (T-6FE392)8 (T-529ABE)` from `TODO.md:11376 (T-529ABE)`: a
+      `TODO.md:3097 (T-6FE392)8 (T-529ABE)` from `TODO.md:11405 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -3735,7 +3735,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:11376 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:11405 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -4766,7 +4766,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       rather than pinning a copy, so it re-verified the NEW text
       (`PRESENT 'clean-room MSX-BASIC implementation'`) on the same run. A gate
       that derives its expectation instead of freezing one costs nothing here.
-- [ ] 🔴 **`NAME "old" AS <non-string>` DIVERGES TWICE, AND `NAME` IS THE VERB
+- [ ] 🔴 **`NAME "old" AS <non-string>` DIVERGES ~~TWICE~~ ONCE, AND `NAME` IS THE VERB
       D-FNEXPR2's OWN PLAN NAMED AND ITS MEASUREMENT SKIPPED.** Measured
       2026-08-26 by D-TODOSWEEP tranche 65
       ([`scratchpad/sweep_tranche65.py`](scratchpad/sweep_tranche65.py),
@@ -5452,7 +5452,36 @@ list. **When a slice lands, grep this list for what it just shipped.**
       Unmeasured — the reference always has a drive.
       ⚠️ The two rows are still in **NO GATE**. ONE REFERENCE (Disk BASIC; a
       diskless VG-8020 cannot express `NAME`).
-      🙋 **NEEDS-JOOST — PRICED, YOURS TO SPEND.** 6 B for two rows on a verb no
+      ✅ **AND THE 6 B WAS SPENT FIVE DAYS AGO — RE-VERIFIED 2026-09-09.** The
+      reorder this item asks for LANDED on 2026-09-04 (D-NAMEORD; `basic/files.asm`
+      says so at the site, *"the new name is now evaluated AFTER the old file is
+      located"*). `make namegate-acceptance` today:
+
+          name.as5   NAME"X.DAT"AS 5     cf 53   zb 53   ok
+          name.ex5   NAME"HI.TXT"AS 5    cf 13   zb  2   pinned
+
+      **So it diverges ONCE, not twice**, and the headline above is the fourth
+      number in this block to outlive its own fix. The ORDER is right; only the
+      FACE is wrong [[a-priced-decline-is-a-claim-about-a-design]].
+      🔴 **AND THE REMAINING ROW IS A CURSOR DEFECT, NOT A FACE DEFECT — NEW
+      ROW, 2026-09-09.** `name.exdiv` (`NAME"HI.TXT"AS 1/0`) reads **cf 11 vs
+      zb 2**. `KILL 1/0` already answers **11 on both** (`ctl.div0`), so
+      `els_tc_common`'s tail works wherever `eval` actually reaches the operand —
+      the operand's own fault wins. Through NAME's SECOND `fname_expr` site the
+      identical operand answers 2, which is that routine reporting *"the re-drive
+      found no operand"*. **`eval` is not reaching the operand at all.**
+      🎯 **WHICH CHANGES WHAT THE FIX IS.** Not *"produce ERR 13 here"* — hand
+      `els_tc_common` the operand, and 13 and 11 both fall out, from the tail that
+      already ships. Both rows are pinned under ONE mechanism in
+      `basic_probe_namegate.py`; the row that names it is new and CAN fail (it was
+      RED before it was pinned).
+      ⚠️ **THE DISKLESS SIDE-EFFECT THIS ITEM WORRIED ABOUT IS ALREADY GATED** —
+      `make nameord-acceptance` (`probes/basic/basic_probe_namend.py`) measures
+      `NAME"x"AS 5` on the diskless build against the VG-8020, which has no drive
+      either. That prerequisite is done, not pending.
+      🤖 AUTONOMOUS — the price is spent, the remaining row is a measured cursor
+      defect with a gate and a knife-able row; what is left is reading what
+      `str_eval` leaves in HL on its non-string path at THIS call site.
       program in the corpus renames with a numeric operand. The scouting the 🔭
       asked for is DONE; what is left is the call.
 
