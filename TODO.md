@@ -410,7 +410,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:11901 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:11942 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -575,7 +575,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:2855 (T-6FE392)8 (T-529ABE)` from `TODO.md:10838 (T-529ABE)`: a
+      `TODO.md:2896 (T-6FE392)8 (T-529ABE)` from `TODO.md:10879 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -2232,6 +2232,47 @@ list. **When a slice lands, grep this list for what it just shipped.**
       Filed as unmeasured rather than agreed; it needs a rig that can absorb a
       tape write, or a disk-path variant on the CF-3300.
 
+- [ ] 🔴 **D-GETREC (2026-09-09): `GET`/`PUT`'s RECORD ERRORS ARE UNTRAPPABLE HERE,
+      AND ZEROBAS'S RULE IS NOT THE REFERENCE'S RULE — 6 rows, MEASURED, NOT FIXED**
+      ([`scratchpad/getrec_probe.py`](scratchpad/getrec_probe.py),
+      [`.out`](scratchpad/getrec_sep.out)).
+      `ex_get` came LAST when all 135 handlers were ranked by comment density.
+      Reading it end to end: the record number is `eval`'d and stored RAW, and —
+      per D-VDPDOM's rule, read the CONSUMER — `fat_rand_get`
+      ([`basic/randio-body.inc`](basic/randio-body.inc)) rejects a nonzero HIGH
+      byte and a zero low byte, i.e. it enforces **1..255**.
+      | row | cf3300 | zb |
+      |---|---|---|
+      | `GET#1,0` | **ERR 5** | ERR 0, `load error` printed |
+      | `GET#1,-1` / `,256` / `,300` | **ERR 55** | ERR 0, `load error` printed |
+      | `GET#1,2` (past EOF) | **ERR 55** | ERR 0, `load error` printed |
+      | `PUT#1,0` | **ERR 5** | ERR 0, `load error` printed |
+      | `PUT#1,256` | **ERR 0 — performs it** | ERR 0 |
+      🔴 **TWO DEFECTS, AND THE SECOND ONE ALMOST GOT A WRONG FIX.**
+      **(1)** Every refusal here goes through `gp_fin`'s `jp c,load_error`, which
+      PRINTS and does not raise — so a program guarding its disk I/O with
+      `ON ERROR` is told nothing went wrong. Same class as D-SAVETRAP, in a second
+      verb pair.
+      **(2)** 🎯 **ZEROBAS'S 1..255 CAP IS A DIFFERENT RULE THAT COINCIDES ON THREE
+      ROWS.** `PUT#1,256` is **accepted** on the reference — it extends the file —
+      so the cap is not a PUT rule; and `GET#1,2` is **ERR 55**, and 2 is inside any
+      cap, so it is not a GET cap either. **The reference bounds GET by END OF FILE
+      and does not bound PUT.** I had written "the 1..255 cap is faithful" into the
+      probe's summary before `g.two` existed; the separating row is what caught it,
+      and the line is corrected in place [[two-rules-that-coincide-on-every-row-you-have]].
+      ➡️ **NOT FIXED, DELIBERATELY.** Making the codes trappable is the easy half
+      (5 for record 0, 55 otherwise, at `gp_common` where the value is already in
+      DE). The hard half is that the *right* bound is the file's record count,
+      which `gp_common` does not have — that is a DESIGN step, not a byte price,
+      and shipping the cap-shaped version would encode the wrong rule permanently.
+      ⚠️ **AND THE FIRST RUN OF THIS PROBE PUBLISHED FOUR DIVERGENCES THAT WERE ITS
+      OWN BUG.** `900 E=ERR` with no `RESUME` made the CF-3300 die with
+      `No RESUME in 900`, so every reference row came back `<none>` — which the
+      summary printed as a divergence count. The raw screen is what settled it
+      [[an-unnamed-outcome-reads-as-no-outcome]].
+      🤖 AUTONOMOUS — the references settle every row; what is missing is the
+      record-count bound, which is a design question the handler can answer.
+
 - [x] ✅ **D-PARTSTATE (2026-09-09): LIST verbs execute PARTIALLY on the reference
       TOO — and that BOUNDS D-PARTIAL. 5 rows × 3 machines, 0 DIFF**
       ([`scratchpad/partialstate_probe.py`](scratchpad/partialstate_probe.py),
@@ -3493,7 +3534,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:10838 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:10879 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
