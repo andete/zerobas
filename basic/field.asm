@@ -819,6 +819,61 @@ gp_haverec:
                 call    fat_rand_put
                 jr      gp_fin
 gp_doget:
+                ; 🔴 D-GETEOF: A RECORD THAT *STARTS* AT OR PAST EOF IS `Input past
+                ; end` (ERR 55) ON THE REFERENCE, AND WAS SILENT SUCCESS HERE.
+                ; `GET#1,3` on a 14-byte file at LEN=10 reads ERR 55 on the
+                ; CF-3300 and 0 here (D-GETREC row `g.past`).
+                ; 🎯 AND THE BOUND IS THE RECORD'S START, NOT ANY BYTE OF IT.
+                ; D-GETSTRADDLE measured the separating case the filed design had
+                ; guessed at: `GET#1,2` on that same file -- bytes 10..19, so it
+                ; STARTS inside and ENDS past -- is **accepted and padded** on the
+                ; reference. Refusing on "any part past EOF" would have broken a
+                ; row that agrees today [[two-rules-that-coincide-on-every-row-you-have]].
+                ; ⚠️ GET ONLY. `PUT` past the end EXTENDS the file on the reference
+                ; (`PUT#1,256` is ERR 0 there), so this must not sit above the
+                ; mode split.
+                ; 🟢 AND IT IS RESIDENT, WHICH IS WHY IT COSTS NO CONTRACT CHANGE.
+                ; The filed design wanted a new tenant status byte to tell "past
+                ; EOF" from an I/O error, because `gp_fin` sees only Cy. It is not
+                ; needed: `FWR_BYTES` is page-3 RAM bound by the `fch_select`
+                ; above, `FCH_RECLENS` is a resident table, and `mul16` is a
+                ; resident multiply -- so the test happens BEFORE the tenant is
+                ; ever called and raises directly.
+                ; ⚠️ THE MULTIPLY BELOW TRUNCATES, SO ITS INPUT IS BOUNDED FIRST.
+                ; `mul16` returns the LOW 16 bits, and (recno-1)*reclen can exceed
+                ; that: recno 6555 at reclen 10 is 65540, whose low word is 4 --
+                ; which would read as INSIDE a 10-byte file and accept a record
+                ; that is nowhere near it. Restricting the test to recno <= 255
+                ; makes overflow impossible by construction (255 * 256 = 65280),
+                ; and costs nothing: `fat_rand_get` already refuses a nonzero
+                ; recno high byte itself, so those rows behave exactly as before
+                ; rather than being silently mis-accepted here.
+                ld      a,(GP_RECNO+1)
+                or      a
+                jr      nz,gp_get_go
+                ld      hl,(FWR_BYTES+2)
+                ld      a,h
+                or      l
+                jr      nz,gp_get_go        ; file > 64 KB: recno <= 255 and
+                                            ; reclen <= 256 cap the offset at
+                                            ; 65024, so it is inside by construction
+                ld      a,(GP_CHAN)
+                add     a,a                 ; channel * 2 (word index), the same
+                ld      e,a                 ; inline read ex_field uses above
+                ld      d,0
+                ld      hl,FCH_RECLENS
+                add     hl,de
+                ld      e,(hl)
+                inc     hl
+                ld      d,(hl)              ; DE = reclen (1..256)
+                ld      hl,(GP_RECNO)
+                dec     hl                  ; HL = recno - 1
+                call    mul16               ; HL = (recno-1) * reclen = byte offset
+                ld      de,(FWR_BYTES)
+                or      a
+                sbc     hl,de
+                jr      nc,gp_past_eof      ; offset >= size -> starts at/past EOF
+gp_get_go:
                 call    fat_rand_get
 gp_fin:
                 pop     hl
@@ -827,6 +882,10 @@ gp_fin:
 gp_dev:
                 ld      a,58                ; sequential i/o only (LPT:/CRT:)
                 jr      gp_raise
+gp_past_eof:
+                ld      a,55                ; `Input past end` -- RAISED, so ON ERROR
+                jr      gp_raise            ; sees it (no `pop hl`: raise_error
+                                            ; resets SP, exactly as gp_dev/gp_bfm)
 gp_bfm:
                 ld      a,61                ; bad file mode (disk, not RANDOM)
 gp_raise:

@@ -1,0 +1,13 @@
+  g.ctl   GET#1,1     cf=ERR=0      zb=ERR=0        CONTROL: the record just written
+  g.zero  GET#1,0     cf=ERR=5      zb=ERR=5        record 0 -- below the base
+  g.neg   GET#1,-1    cf=ERR=55     zb=ERR=0        🔴 DIFF   record -1
+  g.256   GET#1,256   cf=ERR=55     zb=ERR=0        🔴 DIFF   the FIRST record past this tree's 1..255 cap
+  g.300   GET#1,300   cf=ERR=55     zb=ERR=0        🔴 DIFF   well past the cap
+  g.two   GET#1,2     cf=ERR=55     zb=ERR=55       inside the cap, PAST EOF -- the separator
+  p.ctl   PUT#1,1     cf=ERR=0      zb=ERR=0        CONTROL: PUT to the record just written
+  p.zero  PUT#1,0     cf=ERR=5      zb=ERR=5        PUT record 0
+  p.256   PUT#1,256   cf=ERR=0      zb=ERR=0        PUT past the cap
+
+=== 3 divergence(s) against the CF-3300: ['g.neg', 'g.256', 'g.300'] ===
+  🎯 THE RULE, SEPARATED: `GET#1,2` (inside any cap, past EOF) = ERR 55; `PUT#1,256` (past any cap) = ERR 0. So the reference bounds GET by END OF FILE, not by a record cap, and does not bound PUT at all. zerobas's 1..255 test in fat_rand_get is a DIFFERENT RULE that happens to agree on three of these rows.
+refcache: 0 hit, 18 miss, 18 stored

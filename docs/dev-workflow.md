@@ -109,6 +109,51 @@ its brief **must** state, up front:
 
 Then audit what it lands (`make audit-citations` on the diff, then a paper trail).
 
+## Running the overnight loop — pacing (Joost, 2026-09-09)
+
+**The wakeup is a safety net, not a pacemaker.** The autonomous `/loop` is driven
+by `ScheduleWakeup`, and the temptation is to do ONE todo item per tick and then
+sleep until the next. That sets the night's throughput by a timer rather than by
+the work: a 20-minute battery followed by a 25-minute idle wakeup is roughly half
+the wall clock spent on nothing.
+
+**The only real gate is the battery, and it is not a timer.** A backgrounded
+`make gates` re-invokes the session when it finishes, so the loop should be
+driven by that completion, not by a clock. The shape is:
+
+* finish an item, `make gates`, commit, push — then **start the next item in the
+  same turn**; do not end the turn to "wait";
+* while a battery runs, do the next item's READING and DESIGN (this is the
+  pipeline rule the statement-review tier already states: *battery time is the
+  next verb's reading time*) — but **never write a tracked file while a battery
+  is running**, because four gate units plant defects in tracked files and
+  restore them on exit;
+* end the turn only when genuinely blocked: a long battery with nothing left to
+  read, a question only Joost can answer, or context getting long;
+* when you do end it, set `ScheduleWakeup` **long** (3600 s). It catches a turn
+  that ended unexpectedly; it does not drive the loop.
+
+🎯 **A short wakeup is a symptom.** If a 20-minute delay feels necessary, the
+answer is almost always "background it and keep working" — the harness will wake
+the session when the run lands.
+
+### The two layers, and what each is for
+
+| layer | what it catches | what it cannot do |
+|---|---|---|
+| `ScheduleWakeup` | nothing by itself — it is the loop's own continuation | **one-shot and per-turn**: a turn that ends without re-arming kills the loop *silently* |
+| `CronCreate` backstop | a turn that ended without re-arming | fires only while the REPL is **idle**, so it cannot interrupt a genuinely stuck turn |
+
+⚠️ **Neither layer is a watchdog in the process sense.** Both are scheduled
+prompts. Nothing here can kill a hung command — that is what backgrounding every
+long run with `> file 2>&1` and reading the rc is for.
+
+⚠️ **`CronList`/`CronDelete` only reach jobs created in the CURRENT session**, and
+a cron job is session-only and auto-expires after 7 days. A backstop created in
+an earlier session keeps firing and is invisible to `CronList` here — which is
+confusing exactly when you are trying to work out why the loop is or is not
+alive.
+
 ## Build
 
 ```sh

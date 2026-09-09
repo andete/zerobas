@@ -434,7 +434,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:12858 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:12898 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -599,7 +599,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:3137 (T-6FE392)8 (T-529ABE)` from `TODO.md:11795 (T-529ABE)`: a
+      `TODO.md:3177 (T-6FE392)8 (T-529ABE)` from `TODO.md:11835 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -2483,9 +2483,49 @@ list. **When a slice lands, grep this list for what it just shipped.**
       three carves that evening — the price is no longer the obstacle, and neither
       is the contract. ⚠️ Both are wall readings: re-run `make basic-reloc` from a
       clean tree at pick-up rather than quoting either.
-      🤖 AUTONOMOUS — the design is now determined by measurement rather than
-      inferred: the detection exists, the status channel exists, and the
-      straddle/start distinction is a row rather than a guess.
+      🟢 **SHIPPED 2026-09-09 (D-GETEOF): `GET` PAST END OF FILE IS ERR 55,
+      RAISED — 6 DIFF → 3.**
+      ([`before`](scratchpad/getstraddle.out), [`after`](scratchpad/getstraddle_after.out),
+      [`getrec`](scratchpad/getrec_after2.out))
+
+          row          statement           cf3300   zb before   zb after
+          g.two        GET#1,2 past EOF      55         0          55  ✅
+          g.in         GET#1,1 inside         0         0           0
+          g.straddle   GET#1,2 straddling     0         0           0
+          g.past       GET#1,3 past EOF      55         0          55  ✅
+
+      🔴 **AND MY OWN "the detection already exists" NOTE WAS WRONG, ONE READ
+      LATER.** `frg_eoffill` fires when the SECTOR is beyond the cluster chain —
+      not when the record is beyond the file LENGTH. On a 14-byte file every
+      record up to 512 bytes lives in sector 0, so `frnd_locate` succeeds and
+      nothing was detected at all. The file-length comparison the original filing
+      asked for was needed after all.
+      🟢 **BUT THE TENANT CONTRACT CHANGE WAS NOT.** `FWR_*` is page-3 RAM
+      *"visible from both sides"* and `fch_select` binds it; `FCH_RECLENS` is a
+      resident table `ex_field` already indexes inline; `mul16` is a resident
+      multiply. So the test sits in `gp_common` BEFORE the tenant is called and
+      raises directly — no status byte, no new selector, no sub-ROM change. The
+      hard half of the filing dissolved; the easy half turned out to be the real
+      one.
+      ⚠️ **THE MULTIPLY TRUNCATES, SO ITS INPUT IS BOUNDED FIRST.** `mul16` returns
+      the low 16 bits and `(recno-1)*reclen` can exceed them — recno 6555 at
+      reclen 10 is 65540, low word **4**, which would read as INSIDE a 10-byte
+      file. The test is restricted to `recno <= 255`, where 255 × 256 = 65280
+      cannot overflow. `fat_rand_get` already refuses a nonzero recno high byte
+      itself, so those rows behave exactly as before rather than being silently
+      mis-accepted [[a-derived-constant-falsified-from-another-file]].
+      📏 **PRICE: main page 1 197 → 150 B** (2026-09-09, clean tree). Three carves
+      the same evening funded it — that is what the n-gram route was for.
+      ⚠️ **THE THREE REMAINING ROWS ARE ONE CLASS**: `,-1`, `,256`, `,300` are all
+      recno > 255, refused by the tenant and reported through `load_error`, which
+      PRINTS. They belong to the cap-lifting change this block already separates
+      (`PUT#1,256` is accepted on the reference and EXTENDS the file), and were
+      deliberately not touched here.
+      🟢 **GATES**: `make gates` **117/117**, full emulator tier, plus all five
+      battery-excluded targets re-run by hand: `diskbasic`, `fat-error`,
+      `input-devices`, `lnblank-say`, `bdos`, all rc=0.
+      🤖 AUTONOMOUS — what is left is the record CAP (a `PUT` that extends), which
+      this block has always kept separate from the read bound.
 
 - [x] ✅ **D-PARTSTATE (2026-09-09): LIST verbs execute PARTIALLY on the reference
       TOO — and that BOUNDS D-PARTIAL. 5 rows × 3 machines, 0 DIFF**
@@ -3918,7 +3958,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:11795 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:11835 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
