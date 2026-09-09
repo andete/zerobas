@@ -1,0 +1,10 @@
+  vg8020   amp     ERR=0
+  vg8020   slash   ERR=0
+  vg8020   dollar  ERR=0
+  cf3300   amp     ERR=5
+  cf3300   slash   ERR=5
+  cf3300   dollar  ERR=0
+  zb       amp     ERR=0
+  zb       slash   ERR=0
+  zb       dollar  ERR=0
+refcache: 0 hit, 9 miss, 9 stored

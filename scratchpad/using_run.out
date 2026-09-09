@@ -1,0 +1,31 @@
+  u.int     USING"###";42        vg=[ 42]          cf=[ 42]          zb=[ 42]         
+  u.ovf     USING"###";12345     vg=[%12345]       cf=[%12345]       zb=[%12345]      
+  u.dec     USING"##.##";3.14159   vg=[ 3.14]        cf=[ 3.14]        zb=[ 3.14]       
+  u.round   USING"##.#";2.35      vg=[ 2.4]         cf=[ 2.4]         zb=[ 2.4]        
+  u.plus    USING"+###";42        vg=[ +42]         cf=[ +42]         zb=[ +42]        
+  u.minus   USING"###-";-42       vg=[ 42-]         cf=[ 42-]         zb=[ 42-]        
+  u.star    USING"**###";42        vg=[***42]        cf=[***42]        zb=[***42]       
+  u.dollar  USING"$$###";42        vg=[  $42]        cf=[$$ 42]        zb=[$$ 42]          🟡 REFS-SPLIT
+  u.comma   USING"#####,";12345     vg=[12,345]       cf=[12,345]       zb=[12,345]      
+  u.expo    USING"##.##^^^^";123.456   vg=[ 1.23E+02]    cf=[ 1.23E+02]    zb=[ 1.23E+02]   
+  u.lit     USING"X#Y";5         vg=[X5Y]          cf=[X5Y]          zb=[X5Y]         
+  u.bang    USING"!";"ABC"     vg=[A]            cf=[A]            zb=[A]           
+  u.amp     USING"&";"ABC"     vg=[ABC]          cf=<none>         zb=[ABC]            🟡 REFS-SPLIT
+  u.slash   USING"\   \";"ABCDE"   vg=[ABCDE]        cf=<none>         zb=[ABCDE]          🟡 REFS-SPLIT
+
+=== 0 divergence(s): none ===
+   u.int     vg ' 42'   cf ' 42'   zb ' 42'
+   u.ovf     vg '%12345'   cf '%12345'   zb '%12345'
+   u.dec     vg ' 3.14'   cf ' 3.14'   zb ' 3.14'
+   u.round   vg ' 2.4'   cf ' 2.4'   zb ' 2.4'
+   u.plus    vg ' +42'   cf ' +42'   zb ' +42'
+   u.minus   vg ' 42-'   cf ' 42-'   zb ' 42-'
+   u.star    vg '***42'   cf '***42'   zb '***42'
+   u.dollar  vg '  $42'   cf '$$ 42'   zb '$$ 42'
+   u.comma   vg '12,345'   cf '12,345'   zb '12,345'
+   u.expo    vg ' 1.23E+02'   cf ' 1.23E+02'   zb ' 1.23E+02'
+   u.lit     vg 'X5Y'   cf 'X5Y'   zb 'X5Y'
+   u.bang    vg 'A'   cf 'A'   zb 'A'
+   u.amp     vg 'ABC'   cf None   zb 'ABC'
+   u.slash   vg 'ABCDE'   cf None   zb 'ABCDE'
+refcache: 0 hit, 42 miss, 42 stored

@@ -410,7 +410,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:11950 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:11989 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -575,7 +575,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:2904 (T-6FE392)8 (T-529ABE)` from `TODO.md:10887 (T-529ABE)`: a
+      `TODO.md:2943 (T-6FE392)8 (T-529ABE)` from `TODO.md:10926 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -2232,6 +2232,45 @@ list. **When a slice lands, grep this list for what it just shipped.**
       Filed as unmeasured rather than agreed; it needs a rig that can absorb a
       tape write, or a disk-path variant on the CF-3300.
 
+- [ ] 🟡 **D-USING (2026-09-09): PRINT USING'S FORMAT VOCABULARY HAS THREE
+      REFERENCE SPLITS, AND ZEROBAS FOLLOWS A DIFFERENT REFERENCE ON DIFFERENT
+      ROWS — 14 rows × 3 machines, 0 DIFF but 3 REFS-SPLIT**
+      ([`scratchpad/using_probe.py`](scratchpad/using_probe.py),
+      [`.out`](scratchpad/using_run.out),
+      [codes](scratchpad/using_err.out)).
+      `ex_print_using` is the largest thinly-commented handler in the tree — 251
+      lines at 0.49 comments per line — which is what the density ranking picked it
+      out for. The vocabulary is a DENOMINATOR, so the rows enumerate it rather than
+      hunting corners: `#`, `.`, `+`, trailing `-`, `**`, `$$`, `,`, `^^^^`, literal
+      text, `!`, `&`, `\ \`.
+      ✅ **ELEVEN OF FOURTEEN AGREE ON ALL THREE MACHINES**, including the `%`
+      overflow marker, rounding at the last place, asterisk fill, comma grouping and
+      the exponential form. The implementation is broadly right.
+      | row | vg8020 | cf3300 | zb |
+      |---|---|---|---|
+      | `USING"&";"ABC"` | `ABC` | **ERR 5** | `ABC` — follows **VG** |
+      | `USING"\   \";"ABCDE"` | `ABCDE` | **ERR 5** | `ABCDE` — follows **VG** |
+      | `USING"$$###";42` | `[  $42]` | `[$$ 42]` | `[$$ 42]` — follows **CF** |
+      🎯 **THE INCONSISTENCY IS THE FINDING.** Two string specifiers the CF-3300
+      REFUSES are implemented here (matching the VG-8020), while the one
+      presentational split is resolved the CF-3300's way. That is an outcome, not an
+      intent — nothing chose it — but it means the verb currently has no single
+      oracle.
+      ➡️ **JOOST'S STANDING RULING APPEARS TO SETTLE `$$`** — *"a purely
+      presentational reference split ships the VG value on BOTH targets"*
+      [[oracle-split-prefer-vg8020]] — and where the `$` lands in a fixed-width
+      field is presentational. That would make `$$###`;42 render `  $42`. **Not done
+      here**: the ruling is his, floating-`$` is a real change to the renderer
+      rather than a constant, and applying a ruling by analogy at 3am is how a
+      decision gets made by accident. Flagged for him with the measurement attached.
+      ⚠️ **AND THE TWO `ERR 5` ROWS ARE PROBABLY NOT A STYLE SPLIT AT ALL** — a
+      Japanese machine renders `\` as the yen sign, so the CF-3300 may not
+      recognise the string-field delimiter. That is a HYPOTHESIS from one
+      observation and is NOT the basis of anything here; the measured fact is only
+      that the CF-3300 raises ERR 5 where the VG-8020 renders
+      [[a-mechanism-inferred-from-one-observation]].
+      🙋 NEEDS-JOOST — the `$$` split is a call under his own ruling, not a defect.
+
 - [ ] 🔴 **D-GETREC (2026-09-09): `GET`/`PUT`'s RECORD ERRORS ARE UNTRAPPABLE HERE,
       AND ZEROBAS'S RULE IS NOT THE REFERENCE'S RULE — 6 rows, MEASURED, NOT FIXED**
       ([`scratchpad/getrec_probe.py`](scratchpad/getrec_probe.py),
@@ -3542,7 +3581,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:10887 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:10926 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
