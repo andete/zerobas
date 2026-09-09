@@ -693,8 +693,7 @@ expect_comma_eval:
 sv_tenant:
                 ld      (SV_OP),a
                 ld      ix,SUBROM_ENTRY_BASE_P1 + 3*SUBROM_IDX_SAVE
-                call    subrom_call
-                jp      c,subrom_absent_error
+                call    sc_call             ; D-SCCALL: tenant call + absent raise
                 ld      a,(SV_STAT)
                 or      a
                 jp      nz,load_error       ; the tenant hit sv_load_error: report ONCE

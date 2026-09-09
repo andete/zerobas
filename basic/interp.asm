@@ -961,6 +961,33 @@ ex_let_str:
                 call    str_set_key         ; A$[key] := descriptor (clamped)
                 jr      fp_stmt_done        ; D-CARVE3 (-7 B, main page 1)
 
+; --- sc_call: subrom_call, and raise if the sub-ROM is absent -------------
+; 💰 D-SCCALL, the fifth instruction pair. `call subrom_call` /
+; `jp c,subrom_absent_error` — every marshalled call into a sub-ROM tenant —
+; stood at SIXTEEN sites, SIX bytes each, so a 3-byte `call sc_call` saves **3 B
+; per site**: the largest per-site saving of the five pairs.
+; 🎯 SITED IN PAGE 1 THOUGH BOTH CALLEES LIVE LOW. subrom_call and
+; subrom_absent_error are in basic/subromcall.asm, a low-region include, and the
+; helper could sit beside them — but 15 of the 16 sites are in page 1 and LOW is
+; the scarce wall (9 B against 104 B). Putting the 7 bytes in page 1 turns the one
+; low site into a +3 B gain instead of a −4 B loss. Which region a helper lives in
+; is a reading of today's split, not a property of the helper.
+; ⚠️ It adds ONE stack frame while subrom_call runs its CALSLT. The absent path
+; never returns (subrom_absent_error raises, and raise_error resets SP), and the
+; present path returns through this `ret` with subrom_call's registers and flags
+; untouched — which is the whole contract the 16 sites already relied on.
+; 🔴 THIS BODY ATE ITSELF ON THE FIRST RUN — FOR THE SECOND TIME IN ONE NIGHT.
+; The script writes the helper and THEN sweeps for the pair, and the helper's body
+; IS the pair, so it became `sc_call: call sc_call / ret`: infinite recursion, in
+; the routine 16 sites had just been pointed at. `skip_comma` did exactly this
+; hours earlier and the docstring of the sweep tool WARNS about it — a warning is
+; not a guard. Caught both times by the same arithmetic: 16 pairs removed against
+; 17 calls added [[a-mechanical-fix-can-break-a-different-invariant]].
+sc_call:
+                call    subrom_call
+                jp      c,subrom_absent_error
+                ret
+
 ; --- skip_comma: skip_spaces, then "is it a comma?" ------------------------
 ; 💰 D-SKIPCOMMA. `call skip_spaces` / `cp ','` stood open-coded at FORTY-TWO
 ; sites across 16 files — 5 bytes each, against 3 for a call, so every site nets
@@ -1760,8 +1787,7 @@ ex_resume:
 ; absent (never on the merged machine).
 res_next:
                 ld      ix,SUBROM_ENTRY_BASE_P1 + 3*SUBROM_IDX_SCANSTMT
-                call    subrom_call
-                jp      c,subrom_absent_error ; reduced build w/o sub-ROM (never on
+                call    sc_call             ; reduced build w/o sub-ROM (never on
                                             ; the merged machine, which always ships it)
                 ld      hl,(SSE_OUT)        ; next statement -- CURLINE already correct
                 ld      a,h

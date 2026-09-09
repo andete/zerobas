@@ -406,8 +406,7 @@ ccn_set:
 ; files.asm merge_cas/oo_dev_cas) are unchanged, they already just test CF.
 cas_open_match:
                 ld      ix,SUBROM_ENTRY_BASE_P1 + 3*SUBROM_IDX_CASMATCH
-                call    subrom_call
-                jp      c,subrom_absent_error
+                call    sc_call             ; D-SCCALL: tenant call + absent raise
                 ld      a,(CM_STATUS)
                 or      a
                 ret     z                   ; matched -> CF clear

@@ -1053,8 +1053,7 @@ str_set_key:
                 ld      (SH_OP),a           ; op = 12 (VAR_STORE) -- unchanged
                                             ; sub-side body copy
                 ld      ix,SUBROM_ENTRY_BASE_P0 + 3*SUBROM_IDX_STRHEAP
-                call    subrom_call
-                jp      c,subrom_absent_error
+                call    sc_call             ; D-SCCALL: tenant call + absent raise
                 pop     hl                  ; [SAVED_TEMPTOP]
                 ld      (TEMPTOP),hl        ; release the H1 snapshot
                 ld      a,(SH_ERR)

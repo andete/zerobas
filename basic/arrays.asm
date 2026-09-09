@@ -511,8 +511,7 @@ apc_release:
 ; across SUBROM_ENTRY_BASE_P1+3*SUBROM_IDX_SQR.
 ary_engine_call:
                 ld      ix,SUBROM_ENTRY_BASE_P0 + 3*SUBROM_IDX_ARY
-                call    subrom_call
-                jp      c,subrom_absent_error
+                call    sc_call             ; D-SCCALL: tenant call + absent raise
                 ld      a,(ARY_ERR)
                 or      a
                 ret     z

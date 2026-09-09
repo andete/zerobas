@@ -649,8 +649,7 @@ lrset_notfld:
 ; fld_lookup carve made one document earlier.
 lrset_store:
                 ld      ix,SUBROM_ENTRY_BASE_P0 + 3*SUBROM_IDX_LRSETST
-                call    subrom_call         ; no args, no result, cannot fail
-                jp      c,subrom_absent_error
+                call    sc_call             ; no args, no result, cannot fail
                 ret
 
 ; ===========================================================================
@@ -693,8 +692,7 @@ fld_lookup:
                 call    fch_select          ; FSECTOR_BUF = this channel's record buffer
                 pop     hl                  ; HL = entry (the tenant's only arg)
                 ld      ix,SUBROM_ENTRY_BASE_P0 + 3*SUBROM_IDX_FLDLOOK
-                call    subrom_call         ; fills FLD_DESC/RVDESC, sets STRPTR
-                jp      c,subrom_absent_error
+                call    sc_call             ; fills FLD_DESC/RVDESC, sets STRPTR
                 scf                         ; fielded
                 ret
 

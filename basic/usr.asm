@@ -251,8 +251,7 @@ ex_deftype:
                 ; through DEFT_PTR, since CALSLT clobbers the registers.
                 ld      (DEFT_PTR),hl
                 ld      ix,SUBROM_ENTRY_BASE_P0 + 3*SUBROM_IDX_DEFTYPE
-                call    subrom_call
-                jp      c,subrom_absent_error
+                call    sc_call             ; D-SCCALL: tenant call + absent raise
                 ld      a,(DEFT_STATUS)
                 or      a
                 jp      nz,stmt_error       ; malformed mnemonic / empty or reversed range

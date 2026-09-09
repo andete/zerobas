@@ -365,8 +365,7 @@ new_kw:         db      "NEW",0
 ; way out (the same reason fatprim_bounce reloads DISKOP_HL/DISKOP_A).
 parse_lineno:
                 ld      ix,SUBROM_ENTRY_BASE_P1 + 3*SUBROM_IDX_PARSELN
-                call    subrom_call         ; HL = the first digit, in
-                jp      c,subrom_absent_error   ; reduced build w/o sub-ROM (never on
+                call    sc_call             ; reduced build w/o sub-ROM (never on
                                             ; the merged machine, which always ships it)
                 ld      bc,(PLN_NUM)        ; the parsed number ($FFFF if it saturated)
                 ld      hl,(PLN_PTR)        ; LINEBUF pointer at the body
@@ -1215,8 +1214,7 @@ le_call_op:
                 ld      (LE_OP),a
 le_call:
                 ld      ix,SUBROM_ENTRY_BASE_P1 + 3*SUBROM_IDX_LINEEDIT
-                call    subrom_call
-                jp      c,subrom_absent_error
+                call    sc_call             ; D-SCCALL: tenant call + absent raise
                 ld      a,(LE_STATUS)
                 or      a
                 ret
@@ -1225,8 +1223,7 @@ relink:
                 ld      a,1                 ; LE_OP_RELINK
                 ld      (LE_OP),a
                 ld      ix,SUBROM_ENTRY_BASE_P1 + 3*SUBROM_IDX_LINEEDIT
-                call    subrom_call
-                jp      c,subrom_absent_error
+                call    sc_call             ; D-SCCALL: tenant call + absent raise
                 ret
 
 ; --- ex_delete: DELETE [<lo>][-[<hi>]] ---------------------------------------
