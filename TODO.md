@@ -434,7 +434,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:12563 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:12594 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -599,7 +599,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:3097 (T-6FE392)8 (T-529ABE)` from `TODO.md:11500 (T-529ABE)`: a
+      `TODO.md:3097 (T-6FE392)8 (T-529ABE)` from `TODO.md:11531 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -3735,7 +3735,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:11500 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:11531 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -5570,13 +5570,44 @@ list. **When a slice lands, grep this list for what it just shipped.**
       reached the stamp and the 2 is the operand fault after all. Both controls
       held, which is what makes *"still there"* mean anything. A branch closed by
       measurement rather than by confidence.
-      🤖 AUTONOMOUS — five pins under two mechanisms. **The next instrument is
-      cheap and is NOT more error rows: PEEK the stored program bytes.** Compare
-      how `5` is crunched in `NAME"HI.TXT"AS 5` against `NAME 5 AS"X.DAT"`, which
-      answers 13 through the same `fname_expr`. If the crunch emits a different
-      constant form after `AS`, the whole first-byte signature falls out of it and
-      no evaluator reading is needed; if the bytes are identical, that is what
-      finally forces the difference into `eval`'s first-factor path.
+      🟢 **ROOT CAUSE FOUND, 2026-09-09 (D-CRUNCHBYTES,
+      [`scratchpad/crunchbytes_probe.py`](scratchpad/crunchbytes_probe.py),
+      [zb](scratchpad/crunchbytes.out), [cf3300](scratchpad/crunchbytes_cf.out)) —
+      AND IT IS NOT WHERE THE LAST FOUR TICKS WERE LOOKING.** PEEK the stored
+      program from `TXTTAB` and read the line record:
+
+          NAME"HI.TXT"AS 5     D3 22 48 49 2E 54 58 54 22 41 53 20 **35** 00
+          NAME 5 AS"X.DAT"     D3 20 **16** 20 41 53 22 58 2E 44 41 54 22 00
+          NAME"HI.TXT"AS A     D3 22 ... 22 41 53 20 **41** 00
+          NAME"HI.TXT"AS -5    D3 22 ... 22 41 53 20 **F2 16** 00
+          NAME"HI.TXT"AS (5)   D3 22 ... 22 41 53 20 **28 16 29** 00
+
+      🎯 **THE FAILING OPERAND IS NOT A CRUNCHED CONSTANT AT ALL — IT IS ASCII
+      `$35`, the character `5`.** Every WORKING shape carries either a crunched
+      constant (`16`, behind `F2` or `28`) or a letter that is a variable name
+      (`41`). `AS` is stored as plain ASCII `41 53` — it is not a keyword token in
+      this tree — and a digit after it survives the crunch verbatim. That is why
+      the signature looked like "the first byte's class": it was.
+      🔴 **AND I WAS ONE STEP FROM FILING THE WRONG ROOT CAUSE.** The obvious
+      conclusion — *"our tokeniser fails to crunch after `AS`"* — is REFUTED by
+      running the same dump on the CF-3300: **its bytes are identical on all six
+      rows, byte for byte, `41 53 20 35` included.** The crunch is FAITHFUL. A
+      one-sided dump would have read as a tokeniser bug and sent the fix into the
+      wrong file [[a-mechanism-inferred-from-one-observation]].
+      ➡️ **SO THE DEFECT IS IN `eval`: IT HAS NO ASCII-DIGIT FACTOR PATH.** Both
+      machines store `$35` there; the reference evaluates it and answers ERR 13,
+      ours reaches `ev_f_err`, sets `ERRMARK` and answers ERR 2. MSX BASIC's crunch
+      emits BOTH forms depending on context and its evaluator accepts both; zerobas
+      dispatches on the crunched constant tokens only.
+      ⚠️ **WHICH PREDICTS A MUCH WIDER CLASS THAN `NAME`.** Anywhere an ASCII digit
+      survives the crunch, this evaluator cannot read it. `NAME` is simply the
+      first place a row went looking. **That is the next measurement, and it is a
+      sweep, not a row**: find every context whose crunch leaves a digit as ASCII
+      (the `PRINT"X";5` control shows a `;` does NOT), then ask `eval` for each.
+      🤖 AUTONOMOUS — the mechanism is measured on both machines and the fix has a
+      home (`ev_f`'s factor dispatch, an ASCII-digit arm). Scope it against the
+      wider class before pricing it: a per-verb patch would be the wrong shape if
+      the evaluator is the common cause.
       program in the corpus renames with a numeric operand. The scouting the 🔭
       asked for is DONE; what is left is the call.
 

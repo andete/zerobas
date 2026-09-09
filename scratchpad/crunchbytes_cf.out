@@ -1,0 +1,30 @@
+  side: cf3300 (National_CF-3300)
+  ran c.as5    -> '13800A00D32248492E545854224153203500338014005420'  (3 group(s))
+  ran c.old5   -> '13800A00D3201620415322582E4441542200338014005420'  (3 group(s))
+  ran c.asa    -> '13800A00D32248492E545854224153204100338014005420'  (3 group(s))
+  ran c.asneg  -> '14800A00D32248492E54585422415320F216003480140054'  (3 group(s))
+  ran c.asparen -> '15800A00D32248492E545854224153202816290035801400'  (3 group(s))
+  ran c.printlit -> '0C800A00912258223B16002C8014005420EF20FF97280C76'  (3 group(s))
+
+  c.as5     NAME"HI.TXT"AS 5    
+            13 80 0A 00 D3 22 48 49 2E 54 58 54 22 41 53 20 35 00 33 80 14 00 54 20
+            THE SUBJECT: the constant that answers ERR 2
+  c.old5    NAME 5 AS"X.DAT"    
+            13 80 0A 00 D3 20 16 20 41 53 22 58 2E 44 41 54 22 00 33 80 14 00 54 20
+            the SAME constant at the FIRST site, which answers 13
+  c.asa     NAME"HI.TXT"AS A    
+            13 80 0A 00 D3 22 48 49 2E 54 58 54 22 41 53 20 41 00 33 80 14 00 54 20
+            the variable that answers 13 at the SECOND site
+  c.asneg   NAME"HI.TXT"AS -5   
+            14 80 0A 00 D3 22 48 49 2E 54 58 54 22 41 53 20 F2 16 00 34 80 14 00 54
+            the `-`-led constant, which also answers 13
+  c.asparen  NAME"HI.TXT"AS (5)  
+            15 80 0A 00 D3 22 48 49 2E 54 58 54 22 41 53 20 28 16 29 00 35 80 14 00
+            PREDICTION: 28 16 29 -- a token restarts the crunch
+  c.printlit  PRINT"X";5          
+            0C 80 0A 00 91 22 58 22 3B 16 00 2C 80 14 00 54 20 EF 20 FF 97 28 0C 76
+            PREDICTION: is it the LITERAL, not NAME? 5 should be ASCII 35
+
+  The record is [link:2][lineno:2][crunched tokens...][00].
+  c.as5 vs c.old5 identical tail? NO -- they differ
+refcache: 0 hit, 6 miss, 6 stored
