@@ -410,7 +410,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:12042 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:12060 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -575,7 +575,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:2996 (T-6FE392)8 (T-529ABE)` from `TODO.md:10979 (T-529ABE)`: a
+      `TODO.md:2996 (T-6FE392)8 (T-529ABE)` from `TODO.md:10997 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -3634,7 +3634,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:10979 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:10997 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -6018,6 +6018,24 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `scratchpad/region_sizes.py` prints per-include sizes split by region,
       which is how `poke.asm`+`sound.asm` were picked. **Run `make basic-reloc`
       — it prints all four walls; never quote this line.**
+      🔁 **RE-PRICED 2026-09-09, AND THE PREMISE HAS DISSOLVED.** This item asks for
+      a budget ruling from a world with **2 B** of page 1. That figure was honest
+      when taken and is now 35× off: two instruction-pair carves the same night —
+      D-INCSKIP (`inc hl`+`call skip_spaces`, 50 sites) and D-SKIPCOMMA
+      (`call skip_spaces`+`cp ','`, 42 sites) — took main page 1 to **72 B** and the
+      low region to **4 B** (both read 2026-09-09), after spending 14 B on
+      D-FLOWTAIL, 9 B on D-PARTIAL,
+      9 B on D-FNSPACE and 5 B on D-GETREC0 (`make basic-reloc` from clean,
+      2026-09-09). Four slices shipped out of that budget in one night.
+      ➡️ **AND THE ROUTE IS REPEATABLE, WHICH IS THE PART THAT CHANGES THE
+      QUESTION.** `clone_scout` cannot see an instruction PAIR — it ranks
+      label-blocks — so the pair grep is a carve source nothing else looks at, and
+      it still lists `pop hl`+`jp exec_stmt` (22 sites) and `inc hl`+`call eval`
+      (17) unconverted. "The next slice has to carve one first" is no longer a
+      constraint; it is a two-minute grep [[carve-routes-measured-shut]].
+      ⚠️ **THE MARKER IS LEFT AS HIS.** Re-pricing a stale cost is mine to do and
+      is done; deciding whether a budget item still needs him is not, so nothing is
+      re-marked here — only the figure it rests on is corrected.
       🙋 NEEDS-JOOST — a call that is yours to make (page-1 budget).
 - [ ] ⚠️ **D-DUPSPAN2 shipped 28 aliases with NO per-site row set.** Filed
       2026-08-22, [`docs/spec-basic-dupspan2.md`](docs/spec-basic-dupspan2.md)
