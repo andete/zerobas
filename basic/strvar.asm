@@ -418,8 +418,7 @@ str_inputd:
                                             ; accept `LEFT$ ("AB",1)`
                 cp      '('
                 jp      nz,str_eval_no
-                inc     hl
-                call    eval                ; DE = n (byte count); HL advanced past it
+                call    inc_eval            ; DE = n (byte count); HL advanced past it
                 ld      a,e
                 ld      (INDLR_N),a         ; target count (low byte; n <= 255)
                 call    skip_comma          ; D-FNSPACE: Z iff ',' — and it
@@ -431,8 +430,7 @@ str_inputd:
                 ld      a,(hl)
                 cp      '#'                 ; file form requires '#f'
                 jp      nz,str_eval_no
-                inc     hl
-                call    eval                ; DE = channel f; HL advanced
+                call    inc_eval            ; DE = channel f; HL advanced
                 ld      a,(hl)
                 cp      ')'
                 jp      nz,str_eval_no

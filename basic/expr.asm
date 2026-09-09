@@ -30,6 +30,20 @@
 ; Cursor lives in IX throughout, which frees HL/DE/BC for arithmetic. The public
 ; wrapper converts to/from the caller's HL convention.
 
+; --- inc_eval: `inc hl` then eval, as ONE call -----------------------------
+; 💰 D-INCEVAL, the fourth instruction pair. `inc hl` / `call eval` — a handler
+; stepping past its own token and evaluating what follows — stood at SEVENTEEN
+; sites, 4 bytes each. This label is ONE byte and FALLS THROUGH into `eval`, so
+; each site becomes a 3-byte `call inc_eval`: **-1 B per site**.
+; 🟢 SAFE BECAUSE NOTHING FALLS INTO `eval` FROM ABOVE: it is the first code in
+; expr.asm, and the file included before it (strvar.asm) ends in an unconditional
+; `ret`. Both halves were checked before the byte went in — the include order is
+; what makes the second half a question at all.
+; 🎯 `call inc_eval` returns to the SITE, not here: the fall-through means eval's
+; own `ret` unwinds to whoever called inc_eval, exactly as `call eval` did.
+inc_eval:
+                inc     hl
+
 ; --- eval: HL = cursor in -> DE = value, HL advanced past the expression -----
 ; Preserves the caller's IX. Clobbers A, BC, DE, HL.
 eval:

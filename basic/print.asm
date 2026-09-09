@@ -589,8 +589,7 @@ exp_pad:
 ; Overflow and not an Illegal function call -- and ERR 5 (Illegal function call)
 ; in-int16 but negative or >255. Both abort; neither returns.
 exp_pos_arg:
-                inc     hl                  ; past the TAB(/SPC( token
-                call    eval                ; DE = argument, HL advanced
+                call    inc_eval            ; DE = argument, HL advanced
                 call    get_byte_arg        ; A = n, or abort (ERR 6 / ERR 5)
                 push    af
                 call    skip_spaces

@@ -904,8 +904,7 @@ ex_let:
                 call    skip_spaces
                 cp      EQ_TOKEN            ; '=' crunches to $EF (spec §4)
                 jr      nz,ex_let_err
-                inc     hl
-                call    eval                ; DE = value, HL = cursor (BC clobbered)
+                call    inc_eval            ; DE = value, HL = cursor (BC clobbered)
                 call    check_expr_errors_popbc  ; D-2/D-F2-1 (below): discards the
                 pop     bc                  ; BC = key
                 push    hl                  ; guard cursor across the store
@@ -1653,8 +1652,7 @@ err_unprintable:                            ; D-MSGENC (§4.4): 20 B -> 13 B. No
 ; disk codes 50..69 (`ERROR 52` -> `Bad file number` there), which is S-FCH-2's
 ; open item, not this one. HL enters on the ERROR token. Clobbers A, DE, HL.
 ex_error:
-                inc     hl                  ; past the ERROR token
-                call    eval                ; DE = code, HL advanced (unused past here)
+                call    inc_eval            ; DE = code, HL advanced (unused past here)
                 ld      a,d
                 or      a                   ; high byte set -> value >255 or negative ->
                 jr      nz,ee_illegal       ;   out of the 1..255 domain -> illegal fn

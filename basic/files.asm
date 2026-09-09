@@ -900,8 +900,7 @@ opr_have:
                 call    inc_skip           ; past $92
                 cp      EQ_TOKEN            ; '='
                 jr      nz,opr_bad
-                inc     hl
-                call    eval                ; DE = record length, HL past it
+                call    inc_eval            ; DE = record length, HL past it
                 ld      a,d
                 or      a
                 jr      z,opr_lowbyte       ; D=0 -> reclen 1..255

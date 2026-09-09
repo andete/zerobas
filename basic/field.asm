@@ -779,8 +779,7 @@ gp_nochan:
                 ; optional ", recno" (else default record 1)
                 call    skip_comma
                 jr      nz,gp_defrec
-                inc     hl
-                call    eval                ; DE = record number
+                call    inc_eval            ; DE = record number
                 jr      gp_haverec
 gp_defrec:
                 ld      de,1

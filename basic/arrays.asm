@@ -876,8 +876,7 @@ ex_let_arr:
                 call    skip_spaces
                 cp      EQ_TOKEN
                 jp      nz,ela_err
-                inc     hl
-                call    eval                ; DE=RHS value, HL=cursor advanced
+                call    inc_eval            ; DE=RHS value, HL=cursor advanced
                 ld      a,(FPERR)           ; D-PENDERR: the THIRD hand-rolled copy of the
                 or      a                   ; TMISMATCH-then-FPERR ordering stood here and
                 jp      nz,ela_abort_fp     ; is now one test (-7 B, low region). A type

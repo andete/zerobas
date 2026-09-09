@@ -1727,16 +1727,14 @@ ex_for:
                 call    skip_spaces
                 cp      EQ_TOKEN            ; '=' -> $EF
                 jp      nz,stmt_error
-                inc     hl
-                call    eval                ; DE = initial value, HL advanced
+                call    inc_eval            ; DE = initial value, HL advanced
                 push    hl                  ; guard cursor across for_set
                 call    for_set             ; var := initial value
                 pop     hl
                 call    skip_spaces
                 cp      TO_TOKEN           ; TO -> $D9
                 jp      nz,stmt_error
-                inc     hl
-                call    eval                ; DE = limit
+                call    inc_eval            ; DE = limit
                 ld      (FOR_CUR+3),de      ; frame[3..4] = limit
                 call    skip_spaces
                 ; D-NXARY: the default is loaded FIRST and eval overwrites it, so the
@@ -1748,8 +1746,7 @@ ex_for:
                 ld      de,1                ; default step = +1
                 cp      STEP_TOKEN         ; STEP -> $DC (optional)
                 jr      nz,ef_havestep
-                inc     hl
-                call    eval                ; DE = step
+                call    inc_eval            ; DE = step
 ef_havestep:
                 ld      (FOR_CUR+5),de      ; frame[5..6] = step
                 ld      (FOR_CUR+9),hl      ; frame[9..10] = resume ptr (loop body)
@@ -2850,8 +2847,7 @@ ex_strig_stmt:
                 call    inc_skip           ; past the STRIG selector byte
                 cp      '('
                 jp      nz,trap_syntax
-                inc     hl
-                call    eval                ; DE = n; HL past the expression
+                call    inc_eval            ; DE = n; HL past the expression
                 call    get_byte_arg        ; A = E = n (ERR 6 > int16, ERR 5 > 255/neg)
                 cp      5                   ; triggers 0..4
                 jp      nc,strig_illegal    ; STRIG(5..255) -> ERR 5
@@ -2969,8 +2965,7 @@ eokey_store:
 ; simply produces its next repeat delivery -- there is no spurious edge to
 ; suppress, and T2's whole seed-decision block disappears (§2).
 ex_key_stmt:
-                inc     hl                  ; past the '('
-                call    eval                ; DE = n; HL past the expression
+                call    inc_eval            ; DE = n; HL past the expression
                 call    get_byte_arg        ; A = E = n (ERR 6 > int16, ERR 5 > 255/neg)
                 dec     a                   ; 1..10 -> slot 0..9; KEY(0) wraps to 255
                 cp      10

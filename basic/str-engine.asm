@@ -1024,8 +1024,7 @@ str_fn_str:
                                             ; accept `LEFT$ ("AB",1)`
                 cp      '('
                 jr      nz,str_arg_empty
-                inc     hl
-                call    eval                ; DE = n
+                call    inc_eval            ; DE = n
                 ld      a,(hl)
                 cp      ')'
                 jr      nz,str_arg_empty
@@ -1628,8 +1627,7 @@ str_fn_space:
                                             ; accept `LEFT$ ("AB",1)`
                 cp      '('
                 jp      nz,str_arg_empty
-                inc     hl
-                call    eval                ; DE = n; HL advanced
+                call    inc_eval            ; DE = n; HL advanced
                 ld      a,(hl)
                 cp      ')'
                 jp      nz,str_arg_empty
@@ -1701,8 +1699,7 @@ str_fn_string:
                                             ; drive never reaches ev_ff_strnum's deferred
                                             ; error, so a bare str_eval_no INFINITE-LOOPED
                                             ; (screen fills with " 0"). Defer FPERR=4 here.
-                inc     hl
-                call    eval                ; DE = n; HL advanced (IX preserved)
+                call    inc_eval            ; DE = n; HL advanced (IX preserved)
                 call    get_byte_arg        ; D-F2-2 stage B: STRING$ count is a byte 0..255
                                             ; (>int16 ERR 6, 256.. ERR 5, negative ERR 5) —
                                             ; replaces the clamp + D-3 negative hang-fix

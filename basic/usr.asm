@@ -79,8 +79,7 @@ ex_def:
                 call    skip_spaces
                 cp      EQ_TOKEN            ; '=' crunches to $EF
                 jp     nz,ex_def_err
-                inc     hl
-                call    eval                ; DE = entry address, HL = cursor
+                call    inc_eval            ; DE = entry address, HL = cursor
                 pop     af                  ; A = index
                 push    hl                  ; guard cursor across the store
                 call    usr_setslot         ; USRTAB[index] = DE
