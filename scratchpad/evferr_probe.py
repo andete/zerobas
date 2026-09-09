@@ -3,7 +3,17 @@
 # SPDX-License-Identifier: 0BSD
 """D-EVFERR — the FIVE live `ev_f_err` jump sites, each with its SEPARATOR row.
 
-TODO.md:5383 (T-BDB99C) filed this as "ev_f_err's OTHER SEVEN JUMP SITES", with two rows
+🔴 THE ORIGINAL CITATION HERE POINTED AT THE WRONG BLOCK. It read
+`TODO.md:5358 (T-BDB99C)`, which is the D-TRAPSVC item and has     NOT-A-CITATION
+nothing to do with `ev_f_err`; the id was attached mechanically in 2026-08-27's
+archive split FROM WHATEVER BLOCK SAT AT THAT LINE, and a stale line number was
+laundered into a confident wrong id. Found 2026-09-09 only because closing the
+trapsvc item renamed its block. The real subject is `T-52206B` in
+docs/TODO-done.md (line 587 today), which filed it as "ev_f_err's OTHER SEVEN
+JUMP SITES" -- written without a line number on purpose: the citation checker
+resolves a `TODO-done.md:NNN` relative to the CITING FILE's directory, so no
+spelling of it reaches docs/ from scratchpad/.
+That block records two rows
 LIVE and five rows AGREEING. This probe exists because an agreeing row has to
 name its SECOND CAUSE OF GREEN before "agrees" is a reading about the SITE:
 

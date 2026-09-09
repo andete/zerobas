@@ -103,7 +103,22 @@ ramfree_probe: ctl.self; base.none; n.for9; n.gosub; n.crunch; s.draw; s.play; s
 # 🔴 FOURTH STALE PIN FOUND ON 2026-09-02 (after onerrarm, open2, reclen) and the
 # first one the sweep could never have caught: see the ORPHAN check below.
 reclen_probe: p.put3; p.same3; p.close3; p.trap3 -- ⚠️ RECLASSIFIED 2026-09-02 (D-PUT3SLOW): NOT a hang and NOT a correctness divergence. Every one of these PASSES with the CORRECT answer at a 5 s step; they read blank only at the probe's 2.5 s default. What is left is the general 2.5-3.1x interpreter slowdown (D-INTERPSPEED), which Joost's standing sequencing puts BEHIND correctness. Pinned so the sweep stays quiet, but do not count them as correctness debt. (D-PUT3, docs/spec-basic-put3.md); the rows ARE the filing. Pinnable only from 2026-09-02, when D-RECLENV gave the probe a verdict channel -- before that the sweep read it as "NOTHING PARSED" and could adjudicate nothing. ⚠️ The ten `k./x./ctl./s.` rows are NOT pinned and must not be: they read blank on zb as a CONSEQUENCE of this same hang (their programs issue 3+ PUTs), so pinning them would file ten defects where there is one.
-trapsvc_probe: int.six; gos.leak -- "a trap handler left without RETURN is permanently dead; the six-event cap is not faithful" §4/§6
+# --- 2026-09-09: trapsvc_probe RETIRED -- THE EIGHTH STALE PIN, and the biggest.
+# The pin read: int.six; gos.leak -- "a trap handler left without RETURN is
+# permanently dead; the six-event cap is not faithful" §4/§6.
+# 🟢 BOTH ROWS CLOSED, and the whole 7-row set now agrees on all three machines
+# (scratchpad/trapsvc_pincheck.out; docs/spec-basic-trapsvc.md §20).
+# 🔴 CLOSED BY D-CTLPOOL ON 2026-09-04, WHICH WAS NOT AIMING AT THEM. The two
+# numbers these rows read -- TRAPSTK_MAX=6 and GOSUB_DEPTH=8 -- were two fixed
+# arrays; §17's control-frame pool retired TRAPSTK outright (ct_svc_full with it,
+# "one arm, not two") and moved the GOSUB depth to ~2800. int.six needs 9 and
+# gos.leak needs 12; both now reach them.
+# 🎯 THE PIN OUTLIVED ITS SUBJECT BY FIVE DAYS, and so did the spec section
+# that DECLINED the fix and the TODO item that was 🙋 on its price. A decline rots
+# faster than the row it declines, because the row at least gets re-run when
+# somebody re-runs the probe -- and this set is now GATED (make trapsvc-acceptance,
+# probes/basic/basic_probe_trapsvc.py), which is the only thing that stops the
+# next side effect from being invisible in the other direction.
 # oomtail_probe: REMOVED 2026-09-02 -- `d.oom` and `d.oom-l` now AGREE
 # (`<nothing>` / `<NO ECHO>` on both machines; the probe is 0/3 DIFF). Found by
 # the NEW `--check-orphans` check, within a minute of it existing: the pin was

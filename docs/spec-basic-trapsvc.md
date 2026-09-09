@@ -66,8 +66,14 @@ tell them apart. Every row below reads `B` = 1.
 | `int.resume` | **THE SUBJECT** — a trapped error in the handler, left via `RESUME <line>`, so `RETURN` is never reached | `1 0` | `1 0` | **`1 0`** |
 | `int.resnext` | **THE SEPARATOR** — same fault, `RESUME NEXT`, which lands *on* the `RETURN` | `1 1` | `1 1` | **`1 1`** |
 | `int.goto` | the same abandonment with **no error anywhere**: a plain `GOTO` out of the handler | `1 0` | `1 0` | **`1 0`** |
-| `int.six` | seven leak-and-re-arm cycles: `N` = cycles that fired, `E` = last ERR | `9 18` | `9 18` | **`6 18`** 🔴 |
-| `gos.leak` | the GOSUB-depth separator, **no trap in it at all** | `12 0` | `12 0` | **`8 7`** 🔴 |
+| `int.six` | seven leak-and-re-arm cycles: `N` = cycles that fired, `E` = last ERR | `9 18` | `9 18` | ~~`6 18`~~ → **`9 18`** ✅ |
+| `gos.leak` | the GOSUB-depth separator, **no trap in it at all** | `12 0` | `12 0` | ~~`8 7`~~ → **`12 0`** ✅ |
+
+✅ **THE TWO 🔴 ROWS CLOSED. Re-measured 2026-09-09, 7 of 7 agree on all three
+machines** (`scratchpad/trapsvc_pincheck.out`), and §20 below is what happened:
+D-CTLPOOL retired the two fixed arrays these rows were reading, five days
+earlier, without anything aiming at them. The struck cells are the 2026-08-23
+reading and are kept because §4–§6 are written against them.
 
 ### 3.1 The answer
 
@@ -170,6 +176,16 @@ mechanism is what explains it, which is a small independent confirmation of §4.
 ---
 
 ## 6. 💰 The divergence, priced — and DECLINED
+
+> 🔴 **MOOT SINCE 2026-09-04, AND NOBODY NOTICED FOR FIVE DAYS (§20).** Every
+> one of the three options below is about `TRAPSTK`, and §17's control-frame pool
+> **retired that array outright** — `ct_svc_full` with it, "one arm, not two"
+> (`basic/traps.asm`). The divergence this section declined to fix no longer
+> exists: `int.six` and `gos.leak` both agree with the references now. The
+> section is kept unedited below because it is the reasoning §10 then inverted,
+> and because **the decline outliving its data structure is the finding** — a
+> price is a wall reading, and §6's opening sentence ("main page 1 is ~2 B free")
+> had already rotted twice before the subject itself went away.
 
 Main page 1 is ~2 B free. Three candidate fixes:
 
@@ -978,3 +994,93 @@ HIMEM would be inside memory the user has just reserved — the exact accident
 mostly the FN machinery. The 20 % above is arithmetic from the save size, not a
 measurement of the rest, and it is the number to check first if this is picked
 up — a cheaper win may be hiding in the evaluator's own frame.
+
+---
+
+## 20. ✅ D-TRAPSVCGATE — the set CLOSED, by a fix that was not aiming at it, and now has a gate
+
+**2026-09-09.** All seven rows re-run from a clean tree
+([`scratchpad/trapsvc_pincheck.out`](../scratchpad/trapsvc_pincheck.out)):
+
+| row | VG-8020 | CF-3300 | zerobas | was (2026-08-23) |
+|---|---|---|---|---|
+| `int.ctl` | `1 1` | `1 1` | `1 1` | `1 1` |
+| `int.one` | `1 1` | `1 1` | `1 1` | `1 1` |
+| `int.resume` | `1 0` | `1 0` | `1 0` | `1 0` |
+| `int.resnext` | `1 1` | `1 1` | `1 1` | `1 1` |
+| `int.goto` | `1 0` | `1 0` | `1 0` | `1 0` |
+| `int.six` | `9 18` | `9 18` | **`9 18`** | `6 18` 🔴 |
+| `gos.leak` | `12 0` | `12 0` | **`12 0`** | `8 7` 🔴 |
+
+**7 of 7 agree on all three machines. §4's answer is unchanged and §6's
+divergence is gone.**
+
+### What closed it, and why that is the uncomfortable part
+
+Nothing was aimed at these rows. §17's control-frame pool landed on **2026-09-04**
+to fix a `GOSUB` depth of 8, and in doing so it retired `TRAPSTK` — and
+`ct_svc_full` with it, *"one arm, not two"* (`basic/traps.asm`). Both of the two
+caps these rows were reading went away as a side effect. The `int.six` row needs
+9 and the old machine could reach 6; the `gos.leak` row needs 12 and the old
+machine could reach 8.
+
+🔴 **AND THE PAPERWORK DID NOT MOVE FOR FIVE DAYS.** §6 went on declining a fix,
+ranking three options that are every one of them about `TRAPSTK`;
+`tools/filed-row-known.txt` went on pinning `int.six; gos.leak` as live
+divergences; and `TODO.md` carried the item as 🙋 NEEDS-JOOST, blocked on a
+~25–30 B price. All three were describing a data structure that no longer
+existed. **A decline rots faster than the row it declines**, because the row at
+least gets re-run when someone re-runs the probe.
+
+### The gate: `make trapsvc-acceptance`
+
+[`probes/basic/basic_probe_trapsvc.py`](../probes/basic/basic_probe_trapsvc.py),
+promoted out of `scratchpad/trapsvc_probe.py` and collected by `make gates`
+alongside the three control-frame-pool gates. Contract:
+
+* **One pin per row, serving both references** — they agree on all seven, and a
+  row where they did not agree would not be a want. A side that leaves its pin
+  is reported as an **oracle drift**, never as a zerobas finding, and suppresses
+  every verdict in the run.
+* **The arming guard is checked before any verdict.** The first number of each
+  two-window row is `B` = "the trap fired at all"; a row reading `0 0` agrees
+  with nothing, it is blind. That is the 2026-08-23 fault, promoted into an arm.
+* **A `<NO OUTPUT>` is an instrument fault, rc 2.** Every row prints its fence
+  unconditionally, so a blank is the program not finishing.
+* `--selftest` drives the verdict logic, the typed-echo fence trap and the
+  blind-row arm with no emulator (11 checks).
+
+### 🔴 The second knife had been inert-by-anchor since the pool landed
+
+`scratchpad/trapsvc_calib.py` re-run on the post-pool build
+([`.out`](../scratchpad/trapsvc_calib_2026-09-09.out)):
+
+* **K-TR1 EXACT** — `or ZTS_ON` → `or ZTS_SERVICING` moves exactly
+  `{int.ctl, int.one, int.resnext}` and leaves the other four, with the ROM
+  hashes moving on `basic-reloc.rom` + `zerobas-main-eu.rom` only and the source
+  restored byte-identical. **The row set has teeth on today's build**, which is
+  the evidence a green gate needs.
+* **K-TR2 aborted on its anchor** (`anchor matched 0x`). Its 2026-08-23 anchor
+  carried the comment `; pop the service record`, and D-CTLPOOL moved that
+  comment to the `ld (TSP),de` line above. The knife had been **inert by anchor
+  since the day the pool landed**, and the only reason that is a finding rather
+  than a silent hole is the `assert`
+  [[a-knife-can-be-inert-because-the-build-did-not-happen]].
+* **Re-anchored on the `ld hl,TRAPSVC` / `dec (hl)` PAIR, its prediction
+  inverted, and the new prediction held**: it moves **nothing**
+  (`scratchpad/trapsvc_predictions.md`, written before the run). Pre-pool it bit
+  because an un-decremented count reached `TRAPSTK_MAX = 6` and `ct_svc_full`
+  raised ERR 7. What is left of `TRAPSVC` is one gate in `ex_return` — call
+  `trap_return_check` only when non-zero — and a count stuck non-zero makes that
+  call happen *more* often, where §17's pointer identity
+  `TSP + TRAP_FRAME == GSP` declines it.
+
+⚠️ **SO AN "EXACT" ON K-TR2 IS A MEASUREMENT, NOT AN ARM.** An empty predicted
+set can be satisfied by a knife that does nothing *and* by a build that never
+happened; only the ROM-hash guard separates them, and it is why the hash check
+is in the harness. The teeth under these seven rows are **K-TR1's alone**, and
+the calibration's original claim — *"the two knives are separated by `int.one`"*,
+one testing the re-enable and the other the count — **no longer describes this
+machine.** Post-pool there is one mechanism under these rows, not two. K-TR2 is
+kept because a future change that makes the count load-bearing again would move
+it, and it would then read MISS.

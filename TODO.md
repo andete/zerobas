@@ -410,7 +410,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:12085 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:12130 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -575,7 +575,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:3021 (T-6FE392)8 (T-529ABE)` from `TODO.md:11022 (T-529ABE)`: a
+      `TODO.md:3021 (T-6FE392)8 (T-529ABE)` from `TODO.md:11067 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -3659,7 +3659,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:11022 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:11067 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -5380,8 +5380,10 @@ list. **When a slice lands, grep this list for what it just shipped.**
       program in the corpus renames with a numeric operand. The scouting the 🔭
       asked for is DONE; what is left is the call.
 
-- [ ] 🔴 **A TRAP HANDLER LEFT WITHOUT ITS `RETURN` IS PERMANENTLY DEAD — AND
-      THAT IS FAITHFUL; WHAT IS NOT IS THE SIX-EVENT CAP.** Measured 2026-08-23,
+- [x] ✅ **A TRAP HANDLER LEFT WITHOUT ITS `RETURN` IS PERMANENTLY DEAD — AND
+      THAT IS FAITHFUL** ~~; WHAT IS NOT IS THE SIX-EVENT CAP~~ — **the cap half
+      is REFUTED: there is no six-event cap any more, see the closure at the
+      bottom of this block.** Measured 2026-08-23,
       D-TRAPSVC, [`docs/spec-basic-trapsvc.md`](docs/spec-basic-trapsvc.md) §4/§6
       (`scratchpad/trapsvc_probe.py`, 7 rows x 3 machines, 2 knives EXACT).
       `RESUME <line>` **and** a plain `GOTO` out of an `ON INTERVAL` handler kill
@@ -5449,7 +5451,50 @@ list. **When a slice lands, grep this list for what it just shipped.**
       of them makes a trap SILENTLY dead — so this stays 🙋. A price rots like a
       wall; re-read it before quoting a decline that rests on it. The two cheaper designs are rejected on principle in
       §6 — one of them makes the trap *silently* dead.
-      🙋 NEEDS-JOOST — a call that is yours to make (charter / scope).
+      ✅ **CLOSED 2026-09-09 (D-TRAPSVCGATE,
+      [`docs/spec-basic-trapsvc.md`](docs/spec-basic-trapsvc.md) §20,
+      [`scratchpad/trapsvc_pincheck.out`](scratchpad/trapsvc_pincheck.out)) —
+      AND NOT BY ANYTHING THAT WAS AIMING AT IT.** All seven rows re-run from a
+      clean tree: **7 of 7 agree on all three machines.** `int.six` `6 18` →
+      **`9 18`**, `gos.leak` `8 7` → **`12 0`**.
+      🔴 **D-CTLPOOL DID IT ON 2026-09-04, FIVE DAYS BEFORE ANYONE LOOKED.** The
+      two numbers these rows read were two fixed arrays — `TRAPSTK_MAX` = 6 and
+      `GOSUB_DEPTH` = 8 — and §17's control-frame pool **retired `TRAPSTK`
+      outright**, `ct_svc_full` with it (*"one arm, not two"*,
+      `basic/traps.asm`), and moved the GOSUB depth to ~2800. `int.six` needs 9;
+      `gos.leak` needs 12; both are reachable now.
+      🎯 **SO EVERYTHING ABOVE THIS LINE WAS DESCRIBING A DATA STRUCTURE THAT NO
+      LONGER EXISTED.** §6's three priced options are every one of them about
+      `TRAPSTK`. The 🙋 above rested on *"~25–30 B of main page 1"* — a price
+      that had already rotted twice in this very block, in both directions —
+      and then the thing it was pricing went away. **A DECLINE ROTS FASTER THAN
+      THE ROW IT DECLINES**, because the row at least gets re-run when somebody
+      re-runs the probe; nothing re-runs a paragraph
+      [[a-fix-falsifies-the-justification-beside-it]] [[repricing-page1-slice]].
+      🟢 **AND THE SET IS GATED NOW — `make trapsvc-acceptance`**
+      ([`probes/basic/basic_probe_trapsvc.py`](probes/basic/basic_probe_trapsvc.py)),
+      collected by `make gates` beside the three control-frame-pool gates. This
+      block's own last complaint was *"the two rows are still in NO GATE"*. One
+      pin per row serving BOTH references (they agree on all seven, so a side
+      that leaves its pin is an **oracle drift**, not a zerobas finding); the
+      **arming guard** — `B` = "the trap fired at all" — checked before any
+      verdict, so a blind `0 0` row can never read as agreement; `<NO OUTPUT>`
+      is rc 2; `--selftest` drives the whole verdict path with no emulator.
+      🔴 **AND THE SECOND KNIFE HAD BEEN INERT-BY-ANCHOR SINCE THE POOL LANDED**
+      ([`scratchpad/trapsvc_calib_2026-09-09.out`](scratchpad/trapsvc_calib_2026-09-09.out)).
+      **K-TR1 re-ran EXACT** — it moves exactly `{int.ctl, int.one, int.resnext}`
+      on today's build, which is the teeth a green gate needs. **K-TR2 aborted on
+      its anchor**: it matched the comment `; pop the service record`, which
+      D-CTLPOOL moved one line up. Re-anchored on the `ld hl,TRAPSVC` / `dec (hl)`
+      PAIR, its prediction **inverted** — post-pool the count is not load-bearing,
+      only §17's pointer identity is — and the new prediction (**moves nothing**,
+      written down before the run in `scratchpad/trapsvc_predictions.md`) held.
+      ⚠️ **AN "EXACT" ON AN EMPTY PREDICTION IS A MEASUREMENT, NOT AN ARM** — a
+      knife that does nothing and a build that never happened score identically,
+      and only the ROM-hash guard separates them. The teeth here are K-TR1's
+      alone, and the calibration's *"two knives separated by `int.one`"* claim no
+      longer describes this machine
+      [[a-knife-can-be-inert-because-the-build-did-not-happen]].
 
 - [ ] ⚠️ **KEY / STRIG / SPRITE / STOP were NOT run against the D-TRAPSVC rows.**
       2026-08-23, [`docs/spec-basic-trapsvc.md`](docs/spec-basic-trapsvc.md) §7.

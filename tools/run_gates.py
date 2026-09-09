@@ -82,7 +82,7 @@ onerr0-acceptance math-acceptance float-acceptance intarg-acceptance
 logicops-acceptance lineerr-acceptance screenerr-acceptance tmfp-acceptance
 stmtpend-acceptance array-acceptance deffn-strict graphics-acceptance
 abort-acceptance interval-trap-acceptance clearpool-acceptance
-stackpool-acceptance trapdepth-acceptance ctlcross-acceptance ctllim-acceptance
+stackpool-acceptance trapdepth-acceptance trapsvc-acceptance ctlcross-acceptance ctllim-acceptance
 ramfree-acceptance txtceil-acceptance
 cursor-acceptance time-acceptance namspc-acceptance arrdim-acceptance
 arylv-acceptance badfnum-acceptance beep-acceptance binfre-acceptance

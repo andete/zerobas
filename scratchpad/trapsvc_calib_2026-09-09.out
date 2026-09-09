@@ -1,0 +1,31 @@
+== clean build, baseline ==
+baseline roms={'basic-reloc.rom': '9168d2b0', 'sub.rom': '760789a8', 'zerobas-main-eu.rom': 'c4c369c2'}
+baseline rows={'int.ctl': '1 1', 'int.one': '1 1', 'int.resume': '1 0', 'int.resnext': '1 1', 'int.goto': '1 0', 'int.six': '9 18', 'gos.leak': '12 0'}
+
+== K-TR1  the SERVICING -> ON auto-resume value ==
+  roms={'basic-reloc.rom': 'e578fabb', 'sub.rom': '760789a8', 'zerobas-main-eu.rom': 'cf36f3be'}
+  MOVED  int.ctl    '1 1' -> '1 0'
+  MOVED  int.one    '1 1' -> '1 0'
+  same   int.resume '1 0' -> '1 0'
+  MOVED  int.resnext '1 1' -> '1 0'
+  same   int.goto   '1 0' -> '1 0'
+  same   int.six    '9 18' -> '9 18'
+  same   gos.leak   '12 0' -> '12 0'
+  => EXACT  moved=['int.ctl', 'int.one', 'int.resnext'] want=['int.ctl', 'int.one', 'int.resnext']
+
+== K-TR2  the TRAPSVC decrement (post-pool: the count, not the cap) ==
+  roms={'basic-reloc.rom': 'c059ef39', 'sub.rom': '760789a8', 'zerobas-main-eu.rom': 'a33cf9fc'}
+  same   int.ctl    '1 1' -> '1 1'
+  same   int.one    '1 1' -> '1 1'
+  same   int.resume '1 0' -> '1 0'
+  same   int.resnext '1 1' -> '1 1'
+  same   int.goto   '1 0' -> '1 0'
+  same   int.six    '9 18' -> '9 18'
+  same   gos.leak   '12 0' -> '12 0'
+  => EXACT  moved=[] want=[]
+
+restored roms={'basic-reloc.rom': '9168d2b0', 'sub.rom': '760789a8', 'zerobas-main-eu.rom': 'c4c369c2'}
+
+2/2 knife rows EXACT
+  EXACT  K-TR1  the SERVICING -> ON auto-resume value   moved=['int.ctl', 'int.one', 'int.resnext'] want=['int.ctl', 'int.one', 'int.resnext']
+  EXACT  K-TR2  the TRAPSVC decrement (post-pool: the count, not the cap)   moved=[] want=[]

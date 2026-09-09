@@ -45,10 +45,24 @@ KNIVES = [
      "                or      ZTS_ON              ; SERVICING -> ON (auto-resume)\n",
      "                or      ZTS_SERVICING       ; K-TR1\n",
      {"int.ctl", "int.one", "int.resnext"}),
-    ("K-TR2  the TRAPSVC decrement (the service record is never popped)",
-     "                dec     (hl)                ; pop the service record\n",
-     "                nop                         ; K-TR2\n",
-     {"int.ctl", "int.resnext"}),
+    # 🔴 RE-ANCHORED 2026-09-09. The 2026-08-23 anchor carried the comment
+    # "; pop the service record", which D-CTLPOOL moved up to the `ld (TSP),de`
+    # line -- so this knife matched 0 sites and the run ABORTED on the assert.
+    # It was INERT-BY-ANCHOR from the day the pool landed, and only said so
+    # because the assert is there. Anchor on the PAIR now, not on a comment.
+    # 🎯 AND ITS PREDICTION INVERTED WITH THE ANCHOR. It used to move
+    # {int.ctl, int.resnext} because an un-decremented count reached
+    # TRAPSTK_MAX=6 and ct_svc_full raised ERR 7; that arm is retired with the
+    # array. What is left of TRAPSVC is one gate in ex_return ("call
+    # trap_return_check only when non-zero"), and a count stuck non-zero makes
+    # that call happen MORE often, never less -- where the pool's pointer
+    # identity TSP + TRAP_FRAME == GSP declines it. So the COUNT is no longer
+    # load-bearing for these seven rows and the empty set is the prediction.
+    # scratchpad/trapsvc_predictions.md carries it, written before the run.
+    ("K-TR2  the TRAPSVC decrement (post-pool: the count, not the cap)",
+     "                ld      hl,TRAPSVC\n                dec     (hl)\n",
+     "                ld      hl,TRAPSVC\n                nop\n",
+     set()),
 ]
 
 

@@ -199,6 +199,26 @@ def scan(files, root=ROOT):
 # a false positive. A 46% advisory is one nobody reads
 # [[an-instrument-can-fail-the-way-the-thing-it-replaced-failed]]. Not shipped;
 # recorded so the next person does not re-derive it.
+#
+# ⚠️ 2026-09-09: THE PREMISE OF THAT FALSE-POSITIVE RATE TOOK TWO MORE.
+# "The four known-bad citations are already repointed" is what makes every flag
+# above a false positive, and the set was not closed: closing the D-TRAPSVC item
+# renamed its block, and the rename exposed TWO citations that had been pointing
+# at it while talking about something else entirely -- scratchpad/evferr_probe.py
+# (subject: ev_f_err's seven jump sites, really T-52206B in docs/TODO-done.md)
+# and docs/spec-basic-graphics.md (subject: the Phase-3 graphics charter item,
+# really T-E40465 there). Both were repointed in the same commit.
+# 🎯 THE MECHANISM IS THIS FILE'S OWN --annotate: it attaches an id FROM THE
+# BLOCK AT THAT LINE, so a citation whose line had already drifted -- and every
+# line drifted in 2026-08-27's 12577 -> 3874 archive split -- gets a CONFIDENT
+# WRONG ID, after which --fix keeps rewriting the line to match it. A stale
+# citation is laundered into a precise one, and from then on nothing can see it:
+# the id resolves, the line agrees, and only a human reading both ends notices.
+# 🔴 SO THE 46% WAS MEASURED AGAINST A CORPUS ASSUMED CLEAN. The count is not
+# re-derived here -- two more known-bad out of 46 does not make a 46% advisory
+# readable -- but the reason for NOT shipping it is now weaker than it reads
+# above, and the next person weighing it should re-measure the denominator first
+# rather than inherit this paragraph [[a-ranked-candidate-rots-like-a-wall]].
 SUBJ_TOK = re.compile(r"`[^`\n]{2,40}`|\"[^\"\n]{2,40}\"|\b[A-Z][A-Z0-9_$]{3,}\b")
 
 

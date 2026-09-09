@@ -1328,6 +1328,31 @@ ctlcross-acceptance: repack-machine
 	python3 probes/basic/basic_probe_ctlcross.py --gate \
 	        --zb-machine $(REPACK_MACHINE) $(if $(ONLY),--only '$(ONLY)',)
 
+# --- D-TRAPSVC: the trap-abandonment semantics, gated at last -----------------
+# "Does leaving a trap handler WITHOUT its RETURN kill that trap?" -- YES, on all
+# three machines, and that is FAITHFUL (docs/spec-basic-trapsvc.md §4).
+# `int.resnext` is what makes it a mechanism: the same program, same fault, same
+# trap, ONE KEYWORD apart, and it keeps the trap alive on all three.
+#
+# 🔴 THIS SET HAD TWO DIVERGENT ROWS UNTIL D-CTLPOOL CLOSED THEM BY ACCIDENT.
+# `int.six` read `6 18` and `gos.leak` `8 7` because zerobas had two fixed arrays
+# (TRAPSTK_MAX = 6, GOSUB_DEPTH = 8) where the references have one HIMEM-bounded
+# pool; §17 retired TRAPSTK outright and both caps went with it. Nothing was
+# aiming at these rows, nothing was holding them, and the spec's §6 went on
+# declining a fix for a data structure that no longer existed. Seven rows made
+# green by a side effect are seven rows a gate has to own.
+#
+# The two references AGREE on every row, so ONE pin serves both and a side that
+# leaves it is an ORACLE DRIFT, reported as such and never as a zerobas finding.
+# ⚠️ The FIRST number of every two-window row is the arming guard, checked before
+# any verdict: a row reading 0 because the trap never armed is a different fact
+# from one reading 0 because the trap DIED. `--selftest` drives that arm, the
+# typed-echo fence trap and the drift split with no emulator.
+# Repack-only; oracle-dependent. `make trapsvc-acceptance ONLY=resume` to scope.
+trapsvc-acceptance: repack-machine
+	python3 probes/basic/basic_probe_trapsvc.py --gate \
+	        --zb-machine $(REPACK_MACHINE) $(if $(ONLY),--only '$(ONLY)',)
+
 # --- D-CTLLIM: the pool's collision floor is a STORED derivation ---------------
 # spec-basic-trapsvc.md §17 shipped `CTLLIM` (= ARYEND+2) as a CACHE, against
 # strheap_floor's own "DERIVED, NEVER STORED" rule, because deriving it needs an
@@ -3199,7 +3224,7 @@ clean:
         battery-membership-check fixture-integrity-check diskmap ram-claim-check \
         build-assert-check \
         interval-trap-acceptance \
-        stackpool-acceptance trapdepth-acceptance ctlcross-acceptance ctllim-acceptance \
+        stackpool-acceptance trapdepth-acceptance trapsvc-acceptance ctlcross-acceptance ctllim-acceptance \
         ramfree-acceptance txtceil-acceptance \
         input-acceptance error-acceptance error-trap-acceptance stop-trap-acceptance strig-trap-acceptance key-trap-acceptance sprite-trap-acceptance intarg-acceptance abort-acceptance direct-ctrl-acceptance sound-acceptance play-acceptance play-trace-acceptance beep-acceptance float-acceptance math-acceptance subrom-acceptance \
         subrom-inttest subrom-abi-check subrom-closure-check \
