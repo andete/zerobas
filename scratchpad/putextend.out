@@ -1,0 +1,7 @@
+  p.ctl    PUT#1,1     cf=[E L]=0 256      zb=[E L]=0 256        CONTROL: the record just written -- LOF must be 256 on both
+  p.three  PUT#1,3     cf=[E L]=0 768      zb=[E L]=0 768        three records in: extends to 768, or refuses and stays 256
+  p.256    PUT#1,256   cf=[E L]=0 65536    zb=[E L]=0 256        past this tree's 1..255 cap -- the row that read as agreement
+
+  p.three: LOF agrees at 768 -- no extension divergence here.
+  🔴 p.256: the reference grew the file to 65536; zerobas left it at 256. The ERR columns were EQUAL -- only LOF separates them, which is the whole point of this probe.
+refcache: 0 hit, 6 miss, 6 stored
