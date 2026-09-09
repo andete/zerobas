@@ -146,7 +146,16 @@ reclen_probe: p.put3; p.same3; p.close3; p.trap3 -- ⚠️ RECLASSIFIED 2026-09-
 # 🎯 UNLIKE EVERY OTHER ENTRY HERE, THESE ARE ALSO PINNED IN THE PROBE ITSELF
 # (basic_probe_nodisk.PINNED) to their exact values, so the gate goes RED if
 # either column changes -- a regression AND an unannounced fix both show.
-basic_probe_nodisk: k.mks; k.mkd; k.cvs; k.mki; k.cvi; v.dskf; v.cvistr; v.mkifld -- "SHOULD THE DISK-BASIC VERBS LIVE IN disk.rom BEHIND A HOOK"; 🙋 Joost, docs/spec-basic-nodisk.md
+# 🔴 AND IT IS INVISIBLE TO `--check-orphans`, WHICH IS WHY IT MUST SAY SO.
+# That scan names pins with `([a-z0-9_]+_probe):` and this one does not end in
+# `_probe`; `CITE` only matches `scratchpad/<x>_probe.py` and this one lives in
+# `probes/basic/`. So it is in neither the corpus nor the orphan report -- a
+# permanent blind spot, found 2026-09-09 by `check_filed_pins.py` printing the
+# two pin counts side by side and them differing by one. It is HARMLESS here
+# only because of the line above: the rows are pinned to exact values in the
+# probe and gated by `make nodisk-acceptance`. `NOT-IN-SWEEP` declares that,
+# and any FUTURE pin the scan cannot name goes red without it.
+basic_probe_nodisk: k.mks; k.mkd; k.cvs; k.mki; k.cvi; v.dskf; v.cvistr; v.mkifld -- "SHOULD THE DISK-BASIC VERBS LIVE IN disk.rom BEHIND A HOOK"; 🙋 Joost, docs/spec-basic-nodisk.md; NOT-IN-SWEEP (validated by `make nodisk-acceptance` + basic_probe_nodisk.PINNED, not by filed_row_sweep)
 # --- 2026-09-08: COLOR is not atomic (D-PARTIAL) -- RETIRED 2026-09-09 --------
 # 🔴 THE SEVENTH STALE PIN, AND THE FIX THAT ORPHANED IT WAS MINE, THE SAME
 # NIGHT. This pin was written by ce0adbcd, whose own subject line is "the fix I

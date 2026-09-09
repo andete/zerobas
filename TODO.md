@@ -434,7 +434,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:13165 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:13207 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -599,7 +599,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:3362 (T-6FE392)8 (T-529ABE)` from `TODO.md:12102 (T-529ABE)`: a
+      `TODO.md:3404 (T-6FE392)8 (T-529ABE)` from `TODO.md:12144 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -1301,9 +1301,51 @@ list. **When a slice lands, grep this list for what it just shipped.**
       file I was reading was **my own `tail -22`**, not the run: the probe's
       output had gone to `scratchpad/ntwall_rerun.out`, 115 lines, where all six
       are present and agreeing [[a-readout-blind-to-its-own-subject]].
-      🤖 AUTONOMOUS — what remains is keeping the file honest as entries close,
-      and the sweep now says so itself when one rots; the 11 above are the
-      standing to-do.
+      ✅ **THE 11 STANDING MARKERS ARE ALL RESOLVED — RE-VERIFIED 2026-09-09,
+      AND SIX OF THEM WERE ALREADY STALE WHEN I READ THEM.**
+      • `trapdepth_probe`'s 4 — read 2026-09-05, all four FALSE (recorded above).
+      • `casfch_probe`'s 6 — pin REMOVED 2026-09-08: *"`i.inp` and `i.byte` no
+        longer diverge"*. The probe has since left the corpus with its citing
+        item, so a re-run would not have found them either.
+      • `ramfree_probe`'s 1 — **measured today**
+        ([`scratchpad/filedrow_ramfree.out`](scratchpad/filedrow_ramfree.out)):
+        `clean: 14 parsed line(s), no divergence marker`. Gone.
+      ⚠️ **The corpus has grown 20 → 53 probes since that list was written**, so
+      "the next thing to read" had rotted the way a ranked candidate does
+      [[a-ranked-candidate-rots-like-a-wall]]. Re-run before acting on any list
+      in this block.
+      🟢 **AND THE ENTRY'S OWN NAMED DEBT IS PAID — D-PINGATE, `make
+      filed-pin-check`** ([`tools/check_filed_pins.py`](tools/check_filed_pins.py)).
+      This block's verdict was *"the rule is not carried by anything that runs:
+      closing an item does not touch `tools/filed-row-known.txt`, and only
+      `--check-orphans` notices, and only when someone runs it."* There is now a
+      caller in the battery. 🎯 **The CHECK is not new** — it is
+      `filed_row_sweep.check_orphans()`, which found all three historical stalls;
+      the gate IMPORTS the sweep rather than reimplementing it, so "the corpus"
+      has one definition and not two free to drift.
+      🔴 **AND PRINTING TWO COUNTS SIDE BY SIDE FOUND A BLIND SPOT INSIDE THE
+      INSTRUMENT.** `check_orphans()` names pins with `([a-z0-9_]+_probe):` and
+      `known_rows()` with `": " in line` — **24 vs 25**. The odd one is
+      `basic_probe_nodisk`: it does not end in `_probe`, and `CITE` only matches
+      `scratchpad/<x>_probe.py` while it lives in `probes/basic/`. So it is in
+      **neither the corpus nor the orphan report** — a pin that could never be
+      called stale, inside the instrument built to make exactly that loud.
+      🎯 **It is harmless TODAY and that is not the point**: its rows are also
+      pinned to exact values in `basic_probe_nodisk.PINNED` and gated by `make
+      nodisk-acceptance`, which the file itself says. The hazard is that the
+      exclusion was SILENT, so the next such pin gets the blind spot without the
+      belt and braces. The gate now reconciles the two scans and reddens on any
+      pin the orphan scan cannot NAME unless its line declares `NOT-IN-SWEEP`
+      with what validates it instead
+      [[a-coverage-row-whose-geometry-cannot-reach-the-case]].
+      🔬 Both arms are selftested by planting: a fabricated orphan and a
+      fabricated unnameable pin each go red and name themselves, and the
+      committed file is judged by the same code that judges the plants.
+      🤖 AUTONOMOUS — what remains is the half no static gate can reach: a pin
+      whose rows have STOPPED diverging. That needs the sweep's own serial run
+      with the refcache off across all 53 probes, which is hours, not a battery
+      unit. Next pass should run it in slices (`--skip N --limit M`) rather than
+      waiting for a window big enough to do it whole.
 
 - [x] ✅ **D-OOMTAIL (2026-08-31): the two store-overflow exits share one
       body — +13 B main page 1.** `ctp_oom`'s seven-instruction tail was
@@ -4143,7 +4185,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:12102 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:12144 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

@@ -3191,6 +3191,23 @@ todo-marker-check:
 deferral-pin-check:
 	python3 tools/check_deferral_pins.py
 
+# D-PINGATE. `tools/filed-row-known.txt` -- the filed-row adjudication set -- had
+# NO GATE, and the entry that owns it said so: "the rule is not carried by
+# anything that runs: closing an item does not touch tools/filed-row-known.txt,
+# and only --check-orphans notices, and only when someone runs it." It recorded
+# that failing three times, once leaving `reqcomma_probe` pinned as outstanding
+# correctness debt for a day after its rows had stopped diverging.
+# 🎯 The CHECK is not new -- it is filed_row_sweep.check_orphans(), which found
+# all three. What was missing was a caller in the battery, and this is it. The
+# gate IMPORTS the sweep rather than reimplementing it, so there is one
+# definition of "the corpus" and not two free to drift.
+# ⚠️ It reads files only; it cannot tell a pin whose rows STOPPED diverging from
+# one whose rows still diverge -- that is the sweep's own arm and costs a full
+# serial run with the refcache off.
+# <1 s, read-only, no emulator.
+filed-pin-check:
+	python3 tools/check_filed_pins.py
+
 # D-ALPHAGATE. A probe classifies error text against a literal alphabet, and
 # anything absent used to fall through to `<NO OUTPUT>` -- which routes the row to
 # "without a reference", a sentence about the MACHINE for a fault in the PROBE.
@@ -3287,7 +3304,7 @@ clean:
         badfnum-characterize badfnum-acceptance \
         deffn-acceptance deffn-selftest probe-sides-selftest deffn-strict switch-build-check \
         msgexact-gate msgexact-relock preflight-check latch-check injector-check \
-        omsx-diag-teeth temp-root-check shared-body-check probe-reach-check citation-check todo-citation-check todo-marker-check deferral-pin-check error-alphabet-check \
+        omsx-diag-teeth temp-root-check shared-body-check probe-reach-check citation-check todo-citation-check todo-marker-check deferral-pin-check error-alphabet-check filed-pin-check \
         chokepoint-check banner-acceptance wall-literal-check \
         patch-freshness-check gates clean
 
