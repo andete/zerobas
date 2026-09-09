@@ -1,0 +1,16 @@
+  ran f.open           -> 'DB40 DB48 DB4D DEB6 EC35 F2B9 F569 F8 66'
+  ran f.ctl            -> 'DB40 DB48 DB4D EC35'
+  ran f.lower.upsig    -> 'DB40 DB48 DB4D EC35 F2B9 F5B3'
+  ran f.lower.losig    -> 'DB2B DB33 DB38 DEB6 F569 F866'
+
+  f.open         'DB40 DB48 DB4D DEB6 EC35 F2B9 F569 F8 66'
+      UPPER-case name open on #1; scan for the UPPER signature
+  f.ctl          'DB40 DB48 DB4D EC35'
+      CONTROL: the identical program with NO file open. Every address here is the string heap or a parser scratch buffer and means nothing
+  f.lower.upsig  'DB40 DB48 DB4D EC35 F2B9 F5B3'
+      lower-case name open; scan for the UPPER signature -- a hit means the stored form IS case-folded, which the behavioural rows say it is not
+  f.lower.losig  'DB2B DB33 DB38 DEB6 F569 F866'
+      lower-case name open; scan for the LOWER signature -- where it is kept verbatim
+
+  open-only addresses (the evidence): ['66', 'F8', 'DEB6', 'F2B9', 'F569']
+refcache: 0 hit, 4 miss, 4 stored

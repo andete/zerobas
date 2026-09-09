@@ -1,0 +1,13 @@
+  ran f.open           -> 'DB40 DB48 DB4D DEB6 EC35 F2B9 F569 F8 66'
+  ran f.ctl            -> 'DB40 DB48 DB4D EC35'
+  ran f.two            -> 'DB40 DB48 DB4D DEB6 EC35 F5B3'
+
+  f.open  'DB40 DB48 DB4D DEB6 EC35 F2B9 F569 F8 66'
+      UPPER-case name open on #1; scan for the UPPER signature
+  f.ctl   'DB40 DB48 DB4D EC35'
+      CONTROL: the identical program with NO file open. Every address here is the string heap or a parser scratch buffer and means nothing
+  f.two   'DB40 DB48 DB4D DEB6 EC35 F5B3'
+      TWO channels, different names; scan for channel 1's signature AFTER channel 2 is open -- survives = per-channel, gone = one shared buffer
+
+  open-only addresses (the evidence): ['DEB6', 'F2B9', 'F569', 'F866']
+refcache: 2 hit, 1 miss, 1 stored

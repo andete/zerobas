@@ -434,7 +434,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:12248 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:12320 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -599,7 +599,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:3097 (T-6FE392)8 (T-529ABE)` from `TODO.md:11185 (T-529ABE)`: a
+      `TODO.md:3097 (T-6FE392)8 (T-529ABE)` from `TODO.md:11257 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -3735,7 +3735,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:11185 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:11257 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -6452,9 +6452,24 @@ list. **When a slice lands, grep this list for what it just shipped.**
       interpreter no call is running. A real fix has to separate those two
       meanings, which is bytes — so the honest option set is now **grow the shadow
       area (~+99 B RAM) or accept BOTH divergences**, not three options.
-      🙋 NEEDS-JOOST — a call that is yours to make, and the cheap option you
-      picked is gone: page-3 RAM eviction below LINEBUF (~+99 B) to close both
-      rows, or accept both MEASURED divergences. The −8 B third way was not real.
+      ✅ **DECIDED 2026-09-09 (Joost, after the refutation): *"we need to match
+      the reference"*.** So it is the shadow-area growth — **~+99 B of page-3 RAM
+      below `LINEBUF`**, giving the caller's and the callee's frames room to
+      coexist — and BOTH rows close: `o.alias` 505 → 503 and `o.aliasnest`
+      909 → 903. Accepting the divergences is off the table.
+      📐 **WHAT THE SLICE HAS TO DO.** `FN_AREA` is exactly nine slots
+      (`((LINEBUF - FN_PAREA)/11)*11`) and the reference gives nine formals to a
+      NESTED call too, which zerobas matches *precisely because it clobbers* — so
+      two coexisting frames need ~198 B where 99 exist. `fn_enter` must stop
+      resetting `FN_SLOTP` to slot 0 and allocate above the caller's frame
+      instead, and `FN_FEND`'s two meanings (the visibility window AND the "a
+      call is in progress" gate, `FN_FEND == low FN_PAREA`) have to be separated
+      — that is what the −8 B attempt proved cannot be skipped.
+      📋 **STEP 1 IS THE ROWS**: the four `o.alias*` rows are deliberately not in
+      `deffn-strict` (no XFAIL class, and a knowingly-red row reddens a green
+      battery). They go in as the fix lands, not before.
+      🤖 AUTONOMOUS — the call is made; the RAM is authorised and the design is
+      named. What is left is building it.
 
 - [ ] ⚠️ **`DEF FN`: a STRING formal's shadow slot is not a GC root.** Filed
       2026-08-22 by D-DEFFN,
@@ -9258,9 +9273,48 @@ list. **When a slice lands, grep this list for what it just shipped.**
       Storing the parsed name per channel is **11 B × `FCH_CEIL` (15) = 165 B of
       page-3 RAM**, plus the compare. ⚠️ **RAM HAS NO GATE** — `wall-assertion-
       check` covers ROM only — so this is not a wall you can read.
+      🟢 **AND THE REFERENCE'S OWN RAM NOW SAYS THE SAME THING — MEASURED
+      2026-09-09 (D-FCBNAME, [`scratchpad/fcbname_scan.py`](scratchpad/fcbname_scan.py),
+      [`.out`](scratchpad/fcbname_scan.out), [two-channel](scratchpad/fcbname_two.out)).**
+      🔴 **AND IT EXISTS BECAUSE I FILED AN INFERENCE WHERE A MEASUREMENT WAS
+      AVAILABLE.** I wrote that whether the name lives in a dedicated field or an
+      FCB *"we cannot see — it is a black-box oracle"*. Joost, in four words:
+      *"you can see RAM, no?"* We can. `PEEK` is part of the reference's
+      observable surface and this tree already reads it that way
+      (`dskiwhere_probe.py`, `ramfree_probe.py`). Black-box means we do not
+      disassemble the ROM; it never meant we cannot watch the machine's RAM.
+      📏 **WHAT THE SCAN FOUND.** Open a file whose name is built from `CHR$` (so
+      the literal is not in the program text), then have the machine scan
+      `$C000..$FFFF` for it. Against a no-open control, four addresses are
+      open-only: **`$DEB6` `$F2B9` `$F569` `$F866`**.
+      • **`$F2B9` holds the UPPER-CASED form even when the name is typed in lower
+        case** — that is the directory-lookup copy, and it is why `q.upcase`
+        finds `zz2.dat` as `ZZ2.DAT`.
+      • **`$DEB6`, `$F569`, `$F866` hold it VERBATIM**, case preserved.
+      • 🎯 **AND THE SEPARATING ROW: open a SECOND channel with a different
+        name, then look for the FIRST name again.** `$F2B9`, `$F569` and `$F866`
+        are GONE — shared parse/FCB scratch, overwritten by whichever open ran
+        last — while **`$DEB6` SURVIVES**. So the reference really does retain a
+        per-channel copy of the typed name, case intact, exactly as the
+        behavioural rows forced.
+      ⚠️ **WHAT IS NOT ESTABLISHED**: the STRIDE. One surviving address proves
+      retention and survival across another open, not an 11 B × N array; pinning
+      the layout needs a row that opens two channels and scans for BOTH
+      signatures. Filed as the next measurement, not assumed.
+      🔴 **AND THE "PROTECTIVE, NOT COSMETIC" ARGUMENT IS WEAKER THAN I FILED
+      IT.** Because the compare is case-SENSITIVE while the filesystem is not,
+      the reference's own guard is defeated by changing case:
+
+          10 MAXFILES = 2
+          20 OPEN "TS.DAT" AS #1
+          30 OPEN "ts.dat" AS #2      ' succeeds; two channels, one file
+
+      So 165 B buys a faithful reproduction of a guard with a hole in it. That is
+      still the charter answer — but it is not the safety answer I implied
+      [[a-justification-parenthesis-is-an-unrun-claim]].
       🙋 **NEEDS-JOOST — the measuring is DONE, the spend is yours.** 165 B of
-      RAM to make zerobas refuse what it currently permits. Worth noting it is
-      protective and not cosmetic: two channels writing one file corrupts it.
+      RAM to make zerobas refuse what it currently permits, mirroring a
+      per-channel verbatim name the reference is now measured to keep.
       [[deffn-ramhunt-slice]]
 
 - [x] 🟢 **(superseded, kept for its row work) A SECOND DISK `OPEN` RAISES A
@@ -11045,7 +11099,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       recorded here, which is the whole point of reserving it. The allowlist
       entries in `tools/citations-listing-allow.txt` stand, and the tool is
       correct to keep declining to make this call itself.
-- [ ] ⚠️ **`disk/runtime.asm:423` `int_h_body` awaits a HUMAN decision** — newly
+- [ ] ⚠️ **`disk/runtime.asm:423` `int_h_body` — HUMAN DECISION TAKEN, deletion queued** — newly
       visible (D-NEGJUDGE) and acknowledged in `tools/citations-advisory-allow.txt`,
       not resolved. Its block attests in prose (*"the MSX1 standard,
       BIOS-agnostic"*) but names no document; the finding it restates is
@@ -11055,7 +11109,25 @@ list. **When a slice lands, grep this list for what it just shipped.**
       to delete the dead body the header itself calls `SUPERSEDED` — a judgement
       the tool declines to make. Detail:
       `docs/spec-audit-citations-negation.md` §2.5.
-      🙋 NEEDS-JOOST — a call that is yours to make (retire / delete).
+      ✅ **ANSWERED 2026-09-09 (Joost): *"as long as we have proof via the oracle
+      we can remove the stale ref"* — AND THE PROOF IS THERE.**
+      `disk/docs/provider-oracle-scope.md` §8.70's **O-2** is not prose: it is a
+      `pctrace --arm 0xDDAE --stock` reading of the stock machine showing its
+      `$0038` handler save registers, switch to a private stack, and **inter-slot
+      CALSLT to the main-ROM KEYINT** (`$0038` → body `$0C3C`), which calls
+      **H.KEYI `$FD9A`** + **H.TIMI `$FD9F`**. That is exactly what
+      `int_h_body`'s header attests to without citing, taken FROM THE ORACLE.
+      ⚠️ **SO THE DELETION IS AUTHORISED, AND IT IS NOT A DOC EDIT.** The header
+      says the body is kept *"(net-zero, no address shift) pending removal"* —
+      removing it MOVES the disk ROM's layout, and the Tier-2 DOS-boot suite
+      (`bdos-acceptance`) is the one battery exclusion that still runs in NO
+      battery, so its green rots and must be re-run by hand
+      [[a-mechanical-fix-can-break-a-different-invariant]]. Doing it at the tail
+      of a long session, on the riskiest file in the tree, is how a silent
+      Tier-2 regression ships.
+      🤖 AUTONOMOUS — the decision is made and the oracle proof is named
+      (§8.70 O-2). The slice: cite §8.70 in the header, delete the superseded
+      body, then `make gates` AND `make bdos-acceptance` by hand.
 - [ ] ⚠️ **`lof-acceptance` intermittent oracle drift — two sightings, nothing
       since.** Sighting 3 has not occurred across EIGHT consecutive slices
       (D-PINDATA, D-INJSINK, D-ROMJUDGE, D-DSKJUDGE, D-CITEJUDGE, D-DOCJUDGE,
