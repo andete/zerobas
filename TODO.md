@@ -434,7 +434,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:13688 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:13716 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -599,7 +599,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:3480 (T-6FE392)8 (T-529ABE)` from `TODO.md:12625 (T-529ABE)`: a
+      `TODO.md:3480 (T-6FE392)8 (T-529ABE)` from `TODO.md:12653 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -4311,7 +4311,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:12625 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:12653 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -9886,6 +9886,34 @@ list. **When a slice lands, grep this list for what it just shipped.**
       mutation, so they are not vacuous** and do not belong in the re-file pile on
       that ground. 13 further rows moved (`circ_ovf_*`, `ell_ovf_*`, `clampS_*`),
       so the arm is emphatically not inert; ROM restored byte-identical.
+      🟢 **M-PSETPLOT, SAME DAY — EXACT, AND IT ARMS THREE MORE NEVER-REDDENED
+      ROWS** ([`scratchpad/psetplot_knife.py`](scratchpad/psetplot_knife.py),
+      [`.out`](scratchpad/psetplot_knife.out)). M-PLOTCLIP's failed prediction
+      said where to look, and `basic/graphics.asm`'s own comment said it outright:
+      the resident's `jp nc,exec_stmt` *"IS WHAT MAKES GFX_OP=1'S ALIASED
+      MARSHALLING SAFE"* — the tenant's op-1 arm reads `GXPOS`/`GYPOS` **LOW
+      BYTE** on the guarantee that this branch already refused everything else.
+      Remove it and an off-screen `PSET` plots at the wrapped coordinate, which is
+      exactly the address these rows read (`PSET(300,100)` → (44,100)).
+
+          predicted MOVE  clip_noop_x300 clip_noop_xneg clip_noop_y192   3/3 ✅
+          predicted HOLD  clip_alloff off_ok clip_offscr_ok clip_neg_ok
+                          empty bare_b offscreen pset_offscr_ok          8/8 ✅
+          rows moved in total                                            3
+
+      🎯 **THE STRUCTURAL FACT, AND IT IS WHY 35 ARMS MISSED THEM: PSET AND
+      LINE/CIRCLE/DRAW CLIP IN DIFFERENT PLACES.** PSET is refused in the
+      RESIDENT, before the tenant is called; the others are clipped inside it at
+      `gfx_plot_cur`. **A cut at one site cannot move rows that belong to the
+      other**, and every one of the 35 aimed at neither
+      [[a-coverage-row-whose-geometry-cannot-reach-the-case]].
+      🟢 **AND THE BRANCH NOW HAS A ROW THAT NOTICES WHEN IT GOES.** Its own
+      comment calls it *"an invariant one instruction wide"* and warns "DO NOT
+      MOVE THE TENANT CALL ABOVE THIS TEST" — until today nothing in the battery
+      would have caught its removal.
+      ➡️ **`clip_alloff` HELD UNDER BOTH CUTS**, tenant and resident, so
+      `LINE(300,300)-(400,400)` is refused at a THIRD site — a whole-segment line
+      clipper — which is the next arm and is now named rather than guessed.
       💰 **REVISED AGAIN: the nine are 1 done + 6 measured-hard + 2 that are LIVE
       detectors after all.** The six remain the open question this entry already
       asked — whether an error-code-only acceptance row is worth six synthesised

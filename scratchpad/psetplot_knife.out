@@ -1,0 +1,8 @@
+base ROMs 2acb539258e8   389 rows read
+M-PSETPLOT: roms=f85f4be6f2d4   3 row(s) moved in total
+  predicted-to-MOVE that moved : ['clip_noop_x300', 'clip_noop_xneg', 'clip_noop_y192']  (3/3)
+  predicted-to-HOLD that held  : ['bare_b', 'clip_alloff', 'clip_neg_ok', 'clip_offscr_ok', 'empty', 'off_ok', 'offscreen', 'pset_offscr_ok']  (8/8)
+  other rows moved             : 0  []
+
+🟢 EXACT
+restored 2acb539258e8 (base 2acb539258e8) OK
