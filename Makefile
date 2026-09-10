@@ -3180,6 +3180,15 @@ citation-check:
 todo-citation-check:
 	python3 tools/check_todo_citations.py
 
+# tiers: Joost's priority-tier table, compactly, whenever he asks (D-TIERS,
+# 2026-09-10). Reads the 🎚️ tag on every open TODO item and the keyword
+# denominator in basic/kwtable.inc. `ARGS=--keywords` for the per-keyword view,
+# `ARGS=--all` to include APPARATUS/BUDGET/STANDING/OTHER. The per-keyword
+# SCORED column is step (c) of that item and does not exist yet -- the tool
+# says so in its footer rather than letting a blank read as verified.
+tiers:
+	python3 tools/tier_table.py $(ARGS)
+
 # D-MARKGATE. TODO.md's header states "EVERY OPEN ITEM CARRIES A PICK-UP MARKER"
 # and until 2026-09-05 the only thing that could check it lived in scratchpad and
 # NOTHING RAN IT -- so it had failed silently on 2026-08-27, on 2026-09-01 and
@@ -3287,7 +3296,7 @@ banner-acceptance: repack-machine
 clean:
 	rm -rf $(BUILD)
 
-.PHONY: all disk sub patches tape-patches machines machines-oracle install \
+.PHONY: all disk sub patches tape-patches machines machines-oracle install tiers \
         test-dsk unit-test coverage probe bdos-acceptance diskbasic-acceptance \
         bdos-cbios-selfcheck audit-citations basic-reloc deadcode repack-main repack-boot \
         repack-machine diskbasic-acceptance-repack string-acceptance time-acceptance \

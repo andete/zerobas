@@ -5082,7 +5082,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       faithful include speed?" is answered.
       🙋 **NEEDS-JOOST** on the charter question (does faithful include speed?);
       🤖 the non-repack comparison in §5 is autonomous and comes first.
-      🎚️ TIER 4 — on-par speed: the whole interpreter is 2.5–3.8× slower (TIER 2, reasonable time, is met)
+      🎚️ TIER 4 — on-par speed: the whole interpreter is 2.5–3.8× slower (TIER 2, reasonable time, is met) — measured on `FOR` `GOTO` `WHILE`, arithmetic and strings
       🤖 AUTONOMOUS — the charter half is ANSWERED (the STANDING sequencing of
       2026-09-02: speed is a real defect), so what remains under it is measurable work.
       ⚠️ **RANKED LAST BY THAT SAME RULING** — every open DIVERGENCE outranks it, so
@@ -7726,7 +7726,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       extension + sub message + the raise sites). Under the standing ≤20 B
       main-page-1 budget it ships on this measurement; over it, this flips to 🙋
       with the number rather than a shrug.
-      🎚️ TIER 3 — common error: a forgotten disk; the verb prints, does not trap, and RUNS ON
+      🎚️ TIER 3 — common error: a forgotten disk; the verb prints, does not trap, and RUNS ON — `NAME` `KILL` `FILES` `LOAD` `SAVE`
       🎯 **RULED (Joost, 2026-09-10): add ERR 70 — and *"maybe add an ERR extension
       mechanism in Disk ROM, maybe look if there is a hook for that"*.** So the
       first step is a READ, not a write: does this tree's error printer have (or
@@ -9855,7 +9855,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       targets into range. Shipping only some of the four is worse than
       shipping none — it leaves `CRUNCH_DIFF_PINNED` half-stale and the class
       inconsistent.
-      🎚️ TIER 1 — happy path: eight keywords the reference tokenises are MISSING
+      🎚️ TIER 1 — happy path: eight keywords the reference tokenises are MISSING — `DSKI$` `DSKO$` `COPY` `SET` `ATTR$` `IPL` `CMD` `LOC`
       🤖 AUTONOMOUS — the reference settles every token, and the pin is built.
 
 - [ ] 📌 **`basic_probe_kwsweep.py` PRINTS ROWS NO RUNNER CAN PARSE, AND ITS
@@ -12067,7 +12067,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       TAPION always fails and the right face is unmeasured. **Separating those
       two callers is the design question**, and it must not be assumed to be a
       rename [[a-filed-blocker-can-name-the-wrong-obstacle]].
-      🎚️ TIER 3 — common error: `load error` printed rather than raised, residual sites (same class as the empty-drive item)
+      🎚️ TIER 3 — common error: `load error` printed rather than raised, residual sites (same class as the empty-drive item) — `LOAD` `BLOAD` `SAVE` `MERGE` `KILL` `NAME`
       ~~🔭 SCOUT-THEN-ASK — the decision is yours; the measuring and pricing in front of it are not (refactor, no oracle, but unpriced/unmeasured first).~~ (re-marked 2026-09-10, see below)
       🎯 **RULED (Joost, 2026-09-10): add ERR 70 — and *"maybe add an ERR extension
       mechanism in Disk ROM, maybe look if there is a hook for that"*.** So the
@@ -13407,7 +13407,7 @@ architecture and write code. Each step is independently oracle-validatable.
          above; the VG-8020 is diskless so can't exercise it functionally.
       Low-value + low-use; revisit once Phase-3 strings exist. (Was assumed a thin
       DSKIO wrapper; the oracle proved otherwise — 2026-06-22.)
-      🎚️ TIER 1 — happy path: `DSKI$`/`DSKO$` are MISSING keywords (deferred by decision)
+      🎚️ TIER 1 — happy path: `DSKI$`/`DSKO$` are MISSING keywords (ruled IN, 2026-09-10)
       ~~🙋 NEEDS-JOOST — a call that is yours to make (charter / scope).~~ (re-marked 2026-09-10, see below)
       - [x] **`MKI$(n)` + `CVI(s$)`** — DONE (basic/strvar.asm + basic/expr.asm). The
             integer conversion pair: MKI$ packs a 16-bit int into a 2-byte LE string
@@ -14030,7 +14030,7 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       `WAIT`, `FRE`, full `CLEAR` semantics are not re-measured here.
       **All of these are now measured, not estimated** — see the keyword sweep
       item directly below.
-      🎚️ TIER 1 — happy path: editor keywords (`RENUM`, `AUTO`, …) MISSING
+      🎚️ TIER 1 — happy path: editor keywords — by its own 2026-09-07 measure `WAIT` alone plus full `CLEAR` semantics; `RENUM` `AUTO` `DELETE` crunch only
       ~~🙋 NEEDS-JOOST — a call that is yours to make (retire / delete).~~ (re-marked 2026-09-10, see below)
       🎯 **RULED (Joost, 2026-09-10): implement the remainder — missing keywords are TIER 1, and
       *"the basic line and screen editor should also be in the list"* (its own
@@ -14344,7 +14344,7 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
         programs that used to have ~15 KB of string space now get 200 unless
         they say otherwise. The full acceptance corpus was re-run, not just this
         slice's gate.
-      🎚️ TIER 1 — happy path: the measured keyword-completeness remainder
+      🎚️ TIER 1 — happy path: the measured keyword-completeness remainder (`make kwsweep` prints it; overlaps the eight above — `COPY` `SET` `ATTR$` `IPL` `CMD` `LOC` `DSKI$` `DSKO$`)
       ⛔ BLOCKED — neither of us can start it now (needs a fixture).
 
 - [ ] **`LOAD"CAS:"` ACCEPTS A TOKENISED TAPE; the reference does not return.**
