@@ -434,7 +434,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:13544 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:13580 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -599,7 +599,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:3442 (T-6FE392)8 (T-529ABE)` from `TODO.md:12481 (T-529ABE)`: a
+      `TODO.md:3442 (T-6FE392)8 (T-529ABE)` from `TODO.md:12517 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -4273,7 +4273,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:12481 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:12517 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -6608,8 +6608,44 @@ list. **When a slice lands, grep this list for what it just shipped.**
       ran. (3) Diagnosed only by running the same Tcl standalone **with stderr
       visible** (`_launch` sends both streams to `DEVNULL`), where it wrote a
       perfect table — which located the fault in the plumbing, not the script.
-      🤖 AUTONOMOUS — the conversion is 4 of 4 and the state question is answered;
-      what is left is the SPRITE re-dispatch mechanism, in the code.
+      🔴 **CORRECTION, SAME DAY, BEFORE ANY OF THE ABOVE IS BUILT ON: THE SPRITE
+      DIVERGENCE NO LONGER EXISTS.** Adding the handler's fire counter `$D000`
+      beside the state showed **fires = 1 in ALL THREE cases**, never advancing —
+      so the run whose state I had just tabulated was a run in which the defect
+      did not occur. Re-running the ORIGINAL 2×2 settles it
+      ([`scratchpad/clrtrapstk_sprite_recheck.out`](scratchpad/clrtrapstk_sprite_recheck.out)):
+      **`CLEAR, still SERVICING` reads 1 vs 1, and the whole 2×2 reports 0
+      divergences**, where 2026-08-26 read **1 vs 250 (SATURATED)**.
+      🎯 **SO THE STATE TABLE WAS RIGHT AND MY FRAMING OF IT WAS WRONG.** I wrote
+      *"the divergence is somewhere else entirely"* and *"the next question is
+      what re-dispatches SPRITE"*. There is no divergence and nothing to
+      re-dispatch: SPRITE now behaves like `KEY` and `STRIG` at both the count and
+      the state level, which is why the entry read OFF with both counters zero.
+      **`7d0a6f3f`'s conclusion is withdrawn; its measurement stands.**
+      ⚠️ **AND THE ENTRY CARRIED "SPRITE DIVERGES" AS A LIVE FACT FOR FIFTEEN
+      DAYS** — through every ROM change since — while the whole shape of this
+      block ("SPRITE diverges, STOP and STRIG do not", "one of four") rested on
+      it. A filed divergence rots exactly like a wall reading
+      [[a-ranked-candidate-rots-like-a-wall]].
+      🔴 **AND IT WAS STRUCTURALLY INVISIBLE, WHICH IS THE FINDING WORTH KEEPING.**
+      `filed_row_sweep`'s corpus comes from `CITE`, which matches
+      `scratchpad/<name>_probe.py` — and **four of the five `clrtrapstk_*.py` do
+      not end in `_probe`**, so the sweep has never run them and could never
+      report their rows stale. Measured: **21 scratch files carry a divergence
+      verdict in code, are cited by an open TODO item, and lie outside the
+      sweep's reach**; five of those are `*_knives.py` (which move rows on
+      purpose), so ~16 are instruments nothing re-runs.
+      🎯 **THIS IS THE SAME REGEX BLIND SPOT D-PINGATE FOUND ON THE PIN SIDE
+      TONIGHT** (`basic_probe_nodisk`, unnameable by the orphan scan) — the other
+      half of one bug: the pin side is now gated, the PROBE side is not.
+      ➡️ **The cheap fix is a NAME, not a regex**: renaming `clrtrapstk_sprite.py`
+      → `clrtrapstk_sprite_probe.py` would put it in the corpus. Widening `CITE`
+      instead would pull every cited scratch file in, knives included, and change
+      what the sweep means. **Not done here** — it is a rename across cited paths
+      and needs its own slice.
+      🤖 AUTONOMOUS — the conversion is 4 of 4, the state question is answered, and
+      the divergence that kept this open is closed. What remains is the corpus
+      blind spot above.
 
 - [ ] 💰 **MAIN PAGE 1 WAS 1 B FREE ON 2026-08-23 AT `4db8010` — NOTHING LANDS
       THERE WITHOUT FUNDING FIRST.** Filed as its OWN open item because this

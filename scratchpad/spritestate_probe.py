@@ -62,6 +62,13 @@ import clrtrapstk_sprite as S                                     # noqa: E402
 
 ZTRAP, ENTSZ, NENT = 0xE1D1, 3, 18
 TRAPENA, TRAPSVC = 0xE20B, 0xE20C
+# \U0001f3af THE FIRE COUNTER, SAMPLED BESIDE THE STATE. The first cut dumped the
+# trap table alone and showed the entry OFF with both counters zero -- while the
+# 2x2 says the handler ran 250 times. Those two readings cannot be placed against
+# each other without a common clock, so `$D000` (the handler's own counter, per
+# basic_probe_sprite_trap) is now in every row. WHEN the fires happen relative to
+# the `CLEAR` is the whole question, and only a shared time series can answer it.
+CNT = 0xD000
 ZTI_SPRITE = 2
 NAMES = (["INTERVAL", "STOP", "SPRITE"]
          + [f"STRIG{n}" for n in range(5)] + [f"KEY{n}" for n in range(1, 11)])
@@ -82,7 +89,7 @@ def dump_proc(path: str, every: float = 2.0) -> str:
         f"  set row {{}}\n"
         f"  foreach a {{{addrs}}} {{ lappend row [debug read memory $a] }}\n"
         f"  puts $f \"[machine_info time] [debug read memory {TRAPENA}]"
-        f" [debug read memory {TRAPSVC}] $row\"\n"
+        f" [debug read memory {TRAPSVC}] [debug read memory {CNT}] $row\"\n"
         f"  close $f\n"
         f"  after time {every:g} zbtrapdump\n"
         f"}}")
@@ -94,10 +101,10 @@ def read_dump(path: str):
         return rows
     for ln in open(path, errors="replace"):
         f = ln.split()
-        if len(f) < 3 + NENT:
+        if len(f) < 4 + NENT:
             continue
-        rows.append((float(f[0]), int(f[1]), int(f[2]),
-                     [int(x) for x in f[3:3 + NENT]]))
+        rows.append((float(f[0]), int(f[1]), int(f[2]), int(f[3]),
+                     [int(x) for x in f[4:4 + NENT]]))
     return rows
 
 
@@ -136,22 +143,26 @@ def summarise(label, rows):
         print(f"  {label:24s} \U0001f534 NO DUMP — the Tcl never wrote; nothing "
               f"is concluded from this row.")
         return None
-    # The SPRITE entry's distinct states over the run, in order of first sight.
+    # The SPRITE entry's distinct states over the run, in order of first sight,
+    # each stamped with the fire count at the moment it was first seen -- so a
+    # state and the firing that goes with it are read on ONE clock.
     seq, seen = [], set()
-    for _, _, _, ent in rows:
+    for t, _, _, cnt, ent in rows:
         f = face(ent[ZTI_SPRITE])
         if f not in seen:
             seen.add(f)
-            seq.append(f)
-    last_t, ena, svc, ent = rows[-1]
+            seq.append(f"{f}@t={t:.0f},cnt={cnt}")
+    first_t, _, _, first_cnt, _ = rows[0]
+    last_t, ena, svc, cnt, ent = rows[-1]
     others = {NAMES[i]: face(ent[i]) for i in range(NENT)
               if i != ZTI_SPRITE and (ent[i] & 3) != 0}
-    print(f"  {label:24s} {len(rows):3d} samples to emulated {last_t:6.1f}s"
-          f"   SPRITE saw: {' -> '.join(seq)}")
+    print(f"  {label:24s} {len(rows):3d} samples, emulated {first_t:.0f}s.."
+          f"{last_t:.0f}s   fires {first_cnt} -> {cnt}")
+    print(f"  {'':24s} SPRITE saw: {' -> '.join(seq)}")
     print(f"  {'':24s} final: SPRITE={face(ent[ZTI_SPRITE])}  "
           f"TRAPENA={ena} TRAPSVC={svc}"
           + (f"  other live: {others}" if others else "  (no other entry live)"))
-    return ent[ZTI_SPRITE], ena, svc
+    return ent[ZTI_SPRITE], ena, svc, first_cnt, cnt
 
 
 def main() -> int:
@@ -169,7 +180,7 @@ def main() -> int:
     live = out["CLEAR, still SERVICING"]
     if live is None:
         return 2
-    st, ena, svc = live
+    st, ena, svc, first_cnt, cnt = live
     print("\U0001f3af THE READING: after a `CLEAR` taken while the SPRITE trap "
           f"was SERVICING, its entry is **{face(st)}** with TRAPENA={ena}, "
           f"TRAPSVC={svc}.")
@@ -181,8 +192,19 @@ def main() -> int:
         print("   KEY and STRIG were left OFF with both counters zero "
               "(D-TRAPSTATE). SPRITE is NOT, which locates the divergence in the "
               "entry's survival across `CLEAR` rather than in the fire count.")
-    print("\n⚠️ This observes the STATE. The CAUSE is a question for the code and "
-          "is deliberately not inferred here.")
+    print(f"\n\U0001f3af AND THE FIRE COUNT IS THE OTHER HALF: the handler had "
+          f"already run {first_cnt} time(s) at the FIRST sample and {cnt} by the "
+          f"last.")
+    if cnt == first_cnt:
+        print("   It does not advance while the entry is OFF — so the 250 fires "
+              "the 2x2 counted happened BEFORE this window, and the `CLEAR` cell "
+              "is not counting post-CLEAR dispatches at all.")
+    else:
+        print("   It ADVANCES with the entry reading OFF and TRAPENA=0 — which is "
+              "the dispatch path the entry cannot explain, and the thing to find "
+              "in the code.")
+    print("\n⚠️ This observes STATE and COUNT. The CAUSE is a question for the "
+          "code and is deliberately not inferred here.")
     return 0
 
 

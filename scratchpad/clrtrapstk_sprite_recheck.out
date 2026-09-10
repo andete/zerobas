@@ -1,0 +1,16 @@
+case                       side     fires  2nd  ERR done TRAPSVC TRAPENA
+CLEAR, still SERVICING     vg8020       1    1    0    1       -       -
+CLEAR, still SERVICING     zb           1    1    0    1       0       0
+CLEAR, trap killed         vg8020       1    1    0    1       -       -
+CLEAR, trap killed         zb           1    1    0    1       0       0
+no-CLEAR, still SERVICING  vg8020       1    1    0    1       -       -
+no-CLEAR, still SERVICING  zb           1    1    0    1       1       0
+no-CLEAR (control)         vg8020       1    1    0    1       -       -
+no-CLEAR (control)         zb           1    1    0    1       1       0
+
+  CLEAR, still SERVICING     vg8020=  1  zb=  1
+  CLEAR, trap killed         vg8020=  1  zb=  1
+  no-CLEAR (control)         vg8020=  1  zb=  1
+  no-CLEAR, still SERVICING  vg8020=  1  zb=  1
+
+=== 0 divergence(s): none ===

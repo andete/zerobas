@@ -1,15 +1,21 @@
 D-SPRSTATE — SPRITE's trap state across CLEAR, read from the debugger
 
-  CLEAR, still SERVICING   300 samples to emulated  724.0s   SPRITE saw: OFF
+  CLEAR, still SERVICING   300 samples, emulated 126s..724s   fires 1 -> 1
+                           SPRITE saw: OFF@t=126,cnt=1
                            final: SPRITE=OFF  TRAPENA=0 TRAPSVC=0  (no other entry live)
 
-  no-CLEAR (control)       300 samples to emulated  724.0s   SPRITE saw: SERVICING+PEND
+  no-CLEAR (control)       300 samples, emulated 126s..724s   fires 1 -> 1
+                           SPRITE saw: SERVICING+PEND@t=126,cnt=1
                            final: SPRITE=SERVICING+PEND  TRAPENA=0 TRAPSVC=1  (no other entry live)
 
-  CLEAR, trap killed       300 samples to emulated  724.0s   SPRITE saw: OFF
+  CLEAR, trap killed       300 samples, emulated 126s..724s   fires 1 -> 1
+                           SPRITE saw: OFF@t=126,cnt=1
                            final: SPRITE=OFF  TRAPENA=0 TRAPSVC=0  (no other entry live)
 
 🎯 THE READING: after a `CLEAR` taken while the SPRITE trap was SERVICING, its entry is **OFF** with TRAPENA=0, TRAPSVC=0.
    That MATCHES what D-TRAPSTATE read for KEY and STRIG (entry wiped OFF, both counters zero) — so the divergence is NOT the entry surviving the CLEAR, and the mechanism lies elsewhere.
 
-⚠️ This observes the STATE. The CAUSE is a question for the code and is deliberately not inferred here.
+🎯 AND THE FIRE COUNT IS THE OTHER HALF: the handler had already run 1 time(s) at the FIRST sample and 1 by the last.
+   It does not advance while the entry is OFF — so the 250 fires the 2x2 counted happened BEFORE this window, and the `CLEAR` cell is not counting post-CLEAR dispatches at all.
+
+⚠️ This observes STATE and COUNT. The CAUSE is a question for the code and is deliberately not inferred here.
