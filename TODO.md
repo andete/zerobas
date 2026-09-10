@@ -434,7 +434,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:13857 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:13880 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -599,7 +599,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:3600 (T-6FE392)8 (T-529ABE)` from `TODO.md:12794 (T-529ABE)`: a
+      `TODO.md:3623 (T-6FE392)8 (T-529ABE)` from `TODO.md:12817 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -1202,12 +1202,35 @@ list. **When a slice lands, grep this list for what it just shipped.**
       🎯 **THE PER-SIDE PIN FORMAT IS WHAT MAKES THAT POSSIBLE**, and it turns out
       to matter: "is this row pinnable?" is the wrong question — **"which SIDES of
       it are measurements?"** is the right one, and the answer can be "some".
-      ➡️ **REMAINING: 5 rows, one probe — `playfn_fixture`.** ⚠️ It needs the
-      `reclen` judgement first: its rows are PLAY **timing** readings, and one of
-      them had to be confirmed twice before its pin could be retired earlier
-      today. If its faces prove step-dependent the honest outcome is to DECLINE
-      them and say so, which would close this half at **41 pinned + 9 declined
-      with reasons = 50 accounted for**.
+      ✅ **BATCH 5 CLOSES THE SCORED-ROW HALF: 44 PINNED + 6 DECLINED WITH
+      REASONS = 50 ACCOUNTED FOR. Knife 10/10.**
+      `playfn_fixture`'s five split on the `reclen` criterion, and the split is
+      the tree's OWN caveat rather than my judgement:
+      • **3 PINNED** — `one voice, no delay`, `voice 2, no delay`,
+        `voice 3 only, no delay`. Their faces are `PLAY(n)` **STATE vectors**
+        (−1/0 per voice), deterministic, and **byte-identical across the two
+        independent runs taken earlier today** before anything was pinned.
+      • **2 DECLINED** — the two `width: TIME` rows.
+        [`tools/filed-row-known.txt`](tools/filed-row-known.txt) already records
+        them as *"TIME readings (2 vs 6, 4 vs 14), not PLAY behaviour"* and warns
+        that 4-vs-14 sits above the filed interpreter-speed band *"even allowing
+        TIME's ±1 quantisation on small integers"*. A face pinned on a quantised
+        timing reading fires whenever the quantum lands the other way.
+      🎯 **THE CRITERION, STATED ONCE FOR WHOEVER PINS THE NEXT ONE: pin a face
+      only where the face is a MEASUREMENT.** A timing reading, a capture
+      outcome, or an absence is a property of the APPARATUS, and pinning it
+      manufactures a flaky red that teaches people to ignore the gate. Six rows
+      failed that test — `reclen`'s four (blank at 2.5 s, correct at 5 s) and
+      these two — and every one is declined IN WRITING rather than left as a gap
+      the next reader mistakes for unfinished work.
+      📏 **FINAL TALLY**: 60 scored pinned rows → 10 already covered
+      (`basic_probe_nodisk` 8, `asciidigit` via its gate twin 2) + **44 newly
+      face-pinned across 9 probes** + **6 declined with a written reason**.
+      🔬 **KNIFE 10/10** ([`scratchpad/facepin_knife.py`](scratchpad/facepin_knife.py),
+      [`.out`](scratchpad/facepin_knife.out)) — one arm per probe, each requiring
+      **exactly rc=2** and the row NAMED, each followed by a restore control that
+      requires the drift report to be GONE. The design question this entry opened
+      on 2026-09-04 is closed.
 
 - [ ] 🔬 **THE FILED-ROW DENOMINATOR WAS UNREADABLE FOR A THIRD OF ITS CORPUS, AND
       A ROTTED PROBE HID IN THE SAME BUCKET (2026-09-08, D-FRSKIND).** A full run of
@@ -4431,7 +4454,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:12794 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:12817 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

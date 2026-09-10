@@ -68,6 +68,11 @@ ARMS = [
     # HALF-PINNED: only the zb side is a measurement here, so only it is armed.
     ("scratchpad/bareform_probe.py",
      '"CLOAD": {"zb": "legal"}', '"CLOAD": {"zb": "ERR 2"}', "CLOAD"),
+    # A PLAY(n) STATE vector -- one voice flipped is the smallest real drift.
+    ("scratchpad/playfn_fixture_probe.py",
+     '"one voice, no delay":    {"ref": "-1 -1 -1 0", "zb": "-1 -1 0 0"}',
+     '"one voice, no delay":    {"ref": "-1 -1 -1 0", "zb": "-1 -1 -1 0"}',
+     "one voice, no delay"),
 ]
 
 
@@ -112,7 +117,7 @@ def main() -> int:
             print(f"\U0001f534 {path}: STILL reports drift after restore "
                   f"(rc={rc2}) -- the red above may be the probe, not the pin")
             ok = False
-    print("\n" + ("\U0001f7e2 ALL NINE PINS HAVE TEETH" if ok
+    print("\n" + ("\U0001f7e2 ALL TEN PINS HAVE TEETH" if ok
                   else "\U0001f534 AT LEAST ONE PIN IS INERT"))
     return 0 if ok else 1
 

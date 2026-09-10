@@ -82,10 +82,51 @@ CASES = [
 ]
 # the two `width:` rows print TIME, not PLAY(n) -- swap the value expression.
 WIDTH_V = "TIME"
+# --- D-FACEPIN: the FACE, and only the rows whose face is a MEASUREMENT ------
+# 🔴 A FILED FACE ROTS WITHOUT THE ROW CEASING TO DIVERGE. Same shape as
+# `basic_probe_nodisk.PINNED`: pin the VALUES, RED on drift in EITHER direction.
+# 🟢 THE THREE PLAY-TRANSIENT ROWS ARE PINNED. Their faces are `PLAY(n)` STATE
+# vectors (-1/0 per voice), deterministic, and byte-identical across two
+# independent runs on 2026-09-10.
+# 🔴 THE TWO `width: TIME` ROWS ARE DELIBERATELY NOT PINNED, on this tree's own
+# caveat: `tools/filed-row-known.txt` records them as "TIME readings (2 vs 6, 4
+# vs 14), not PLAY behaviour" and warns that 4-vs-14 sits above the filed
+# interpreter-speed band "even allowing TIME's +/-1 quantisation on small
+# integers". A face pinned on a quantised timing reading fires whenever the
+# quantum lands the other way -- a flaky red, which is worse than no pin. Same
+# judgement as `reclen`'s four [[apparatus-is-part-of-the-measurement]].
+PINNED = {
+    # measured 2026-09-10, and confirmed byte-identical on a second run before
+    # pinning -- these are the rows the sweep called "5 known", minus the two
+    # timing rows above.
+    "one voice, no delay":    {"ref": "-1 -1 -1 0", "zb": "-1 -1 0 0"},
+    "voice 2, no delay":      {"ref": "-1 -1 -1 0", "zb": "-1 0 -1 0"},
+    "voice 3 only, no delay": {"ref": "-1 -1 0 -1", "zb": "-1 0 0 -1"},
+}
+
 print(f"{'case':24} {'vg8020':14} {'zb':14}")
+_seen = {}
 for name, setup, delay in CASES:
     val = WIDTH_V if name.startswith("width:") else None
     r = run(REF, setup, delay, val)
     z = run(ZB, setup, delay, val)
     flag = "" if r == z else "   <-- DIFFER"
     print(f"{name:24} {str(r):14} {str(z):14}{flag}")
+    _seen[name] = {"ref": str(r), "zb": str(z)}
+
+_drift = []
+for _lbl, _want in PINNED.items():
+    for _side, _face in _want.items():
+        if _lbl not in _seen:
+            continue                      # row not run; that is not a drift
+        _got = _seen[_lbl][_side]
+        if _got != _face:
+            _drift.append(f"{_lbl}[{_side}]: pinned {_face!r}, measured {_got!r}")
+if _drift:
+    print("\n\U0001f534 PINNED FACE DRIFT -- the row may still diverge, but NOT to "
+          "the face this tree has filed:")
+    for _d in _drift:
+        print(f"     {_d}")
+    print("  Re-read the owning entry: either the behaviour moved, or the "
+          "filing was wrong when it was written.")
+    raise SystemExit(2)

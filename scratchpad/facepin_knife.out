@@ -7,5 +7,6 @@ PASS  dskibytes_probe.py         mutated pin -> rc=2 (want 2), names w.sec0: Tru
 PASS  putdomain_probe.py         mutated pin -> rc=2 (want 2), names r.255: True
 PASS  ngram14_probe.py           mutated pin -> rc=2 (want 2), names r.atn: True
 PASS  bareform_probe.py          mutated pin -> rc=2 (want 2), names CLOAD: True
+PASS  playfn_fixture_probe.py    mutated pin -> rc=2 (want 2), names one voice, no delay: True
 
-🟢 ALL NINE PINS HAVE TEETH
+🟢 ALL TEN PINS HAVE TEETH
