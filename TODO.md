@@ -143,6 +143,21 @@ measure. **The pick rule for the loop:** lowest tier with an autonomous gap
 first; within a tier, the most-used keyword first; TIER 5 and apparatus only
 when TIERS 1–4 are clean or blocked on Joost.
 
+🎯 **RULED 2026-09-10 (Joost, item by item — the rulings are on the blocks).**
+Every TIER 1 item is now 🤖; every TIER 5 item is PARKED until TIERS 1–4 are
+clean and its order is a joint pass; the ROM-budget items carve freely under the
+20 B rule and the three stale wall items are closed; apparatus stays as classed.
+**THE TIER 1 PICK ORDER, most-used first** (a proposal from the rule, not a
+ruling — argue with it by reading the blocks; recount with the `🎚️` tags):
+
+  0. the per-keyword table — the instrument that generates the rest of this list
+  1. the line / screen editor (Joost: *"should also be in the list"*)
+  2. the missing keywords: the eight the reference tokenises, the
+     keyword-completeness remainder, `KEY n,"str"` / `KEY LIST`, the editor
+     keywords, `DSKI$` / `DSKO$`
+  3. `LOF` −256 / `PUT` past record 255 — the u32 → float shape
+  4. the string-`FN` GC-root scout (🔭)
+
 **RE-CHECKED 2026-09-01: 116 open blocks, 116 markers, 0 unmarked.** 🔴 **AND THAT SENTENCE
 IS THE PROBLEM, NOT THE PROOF — IT WAS TRUE ONLY OF THE RULE THAT WROTE IT.**
 Re-run 2026-09-05 by [`tools/check_todo_markers.py`](tools/check_todo_markers.py):
@@ -464,7 +479,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:14229 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:14350 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -630,7 +645,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:3688 (T-6FE392)8 (T-529ABE)` from `TODO.md:13159 (T-529ABE)`: a
+      `TODO.md:3718 (T-6FE392)8 (T-529ABE)` from `TODO.md:13271 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -2327,7 +2342,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       means (cycles against the reference? wall time? both machines?). That is an
       arc, not a slice — and it is the column with the least behind it today.
       🎚️ STANDING — the tier framework's denominator (see the 🎚️ legend at the top of this section)
-      🙋 **NEEDS-JOOST** — parked at his request on 2026-09-10. The recommendation
+      ~~🙋 **NEEDS-JOOST** — parked at his request on 2026-09-10. The recommendation~~ (re-marked 2026-09-10, see below)
       on the table when it was parked: **build column 1 alone**, via the `subject:`
       tag, and ship one column that is true rather than three where two are
       decoration.
@@ -2341,6 +2356,11 @@ list. **When a slice lands, grep this list for what it just shipped.**
       tagging every open item (done). What is still his call: **(c)** building
       column 1 via the `subject:` tag and making it the loop's pick list, TIER 1
       first, `LOF` −256 as the first row off it.
+      🎯 **RULED (Joost, 2026-09-10): build it — step (c) is approved.** Column 1 via a
+      `subject:` tag per gate row, over the 155-entry `kwtable.inc` denominator
+      plus the missing keywords; it becomes the loop's pick list, TIER 1 first.
+      The line/screen editor is on that list by his instruction.
+      🤖 AUTONOMOUS — the denominator and the tag are mechanical; finishable unattended (ruled 2026-09-10).
 
 - [ ] 📊 **THE CORRECTNESS SCOREBOARD — WHAT "FULL CORRECTNESS" ACTUALLY
       REQUIRES, 2026-09-02.** Built the moment Joost's sequencing (below) made
@@ -3016,7 +3036,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       happen to have [[two-rules-that-coincide-on-every-row-you-have]]. The u32
       path is what BOTH halves need: `LOF`'s readout and `PUT`'s offset domain.
       🎚️ TIER 1 — happy path: `LOF` returns −256 for any file ≥ 32 KB on a path this tree supports (`r.255`); the `PUT` past-record-255 half is TIER 5
-      🙋 **NEEDS-JOOST** — over the 20 B standing budget, and a design call
+      ~~🙋 **NEEDS-JOOST** — over the 20 B standing budget, and a design call~~ (re-marked 2026-09-10, see below)
       rather than a carve. Three questions, in the order they bite:
       1. Is a **u32 → float** conversion the shape you want (it would also serve
          `LOF` past 64 KB, `LOC`, and any future `DSKF` widening), or should
@@ -3034,6 +3054,16 @@ list. **When a slice lands, grep this list for what it just shipped.**
       is only the shape — so this block carries ONE marker, the 🙋 above. (It
       first carried a trailing 🤖 as well, and `todo-marker-check` read the block
       as unclassified: two canonical markers is ambiguous, not "both true".)
+      🎯 **RULED (Joost, 2026-09-10): DO WHAT THE REFERENCE DOES.** He asked *"how does the
+      reference handle it?"* — the measured answer is in this block's own table:
+      `LOF` comes back as a FLOAT carrying the true byte length (65536 / 65792 /
+      76800, none of them 16-bit values) and `PUT#1,257` / `PUT#1,300` succeed, so
+      its offsets are 32-bit. That is question 1's first option — a **u32 → float**
+      helper serving `LOF` (and `LOC`/`DSKF`) plus a 32-bit `(recno-1)*reclen` for
+      `PUT` — taken as the shape; the budget question (2) is answered by the
+      ruling itself, and (3) is moot because the partial fix is not built.
+      TIER 1: `r.255`'s −256 is a live wrong answer on a supported path.
+      🤖 AUTONOMOUS — the reference settles the shape (float `LOF`, 32-bit offsets); finishable unattended (ruled 2026-09-10).
 
 - [x] ✅ **D-PARTSTATE (2026-09-09): LIST verbs execute PARTIALLY on the reference
       TOO — and that BOUNDS D-PARTIAL. 5 rows × 3 machines, 0 DIFF**
@@ -4120,6 +4150,8 @@ list. **When a slice lands, grep this list for what it just shipped.**
       slice-prefixed form (`K-NG1`, `K-SL4`) for new knives**, already the
       majority convention.
       🎚️ APPARATUS — knife tags
+      🔁 **RULED (Joost, 2026-09-10): stays as classed** — not before TIERS 1–4 unless it
+      blocks a keyword tier; still his call when it is picked.
       🙋 NEEDS-JOOST — worth doing only if the traceability is wanted for its own
       sake; I do not think it pays for itself.
 
@@ -4178,9 +4210,12 @@ list. **When a slice lands, grep this list for what it just shipped.**
       trap); `els_tc_common` (**4 B, measured 2026-08-28**, but it is a LOW →
       page 1 region trade, not a carve).
       🎚️ BUDGET — 2 B carve
-      🙋 NEEDS-JOOST — Q1 only (page-1 budget was the WRONG reason on the filing:
+      ~~🙋 NEEDS-JOOST — Q1 only (page-1 budget was the WRONG reason on the filing:~~ (re-marked 2026-09-10, see below)
       a carve frees bytes. The real call is whether to depend on `raise_error`
       resetting SP).
+      🎯 **RULED (Joost, 2026-09-10): carve freely under the standing ≤20 B rule.** BUDGET;
+      picked when a keyword tier needs the bytes.
+      🤖 AUTONOMOUS — a carve under the standing rule (ruled 2026-09-10).
 
 - [ ] 🙋 **THE STALL WATCHDOG NOW HAS A REAL DISCRIMINATOR (D-STALLRATE,
       2026-09-10) — BUT `run_gates.py` STILL CALLS A CONTENDED UNIT *REAL*.** Filed 2026-08-26 by D-DRAWOP; the
@@ -4302,6 +4337,8 @@ list. **When a slice lands, grep this list for what it just shipped.**
       printing what `run_cases` actually returned instead of guessing a fourth
       time [[a-readout-blind-to-its-own-subject]].
       🎚️ APPARATUS — stall watchdog
+      🔁 **RULED (Joost, 2026-09-10): stays as classed** — not before TIERS 1–4 unless it
+      blocks a keyword tier; still his call when it is picked.
       🙋 **NEEDS-JOOST** — what remains is a design call, not a measurement.
       `run_gates.py`
       still calls a unit REAL when it fails twice, and the rate is now available
@@ -4525,7 +4562,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:13159 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:13271 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -4594,10 +4631,12 @@ list. **When a slice lands, grep this list for what it just shipped.**
       of main page 1 (read `make basic-reloc`; it was 8 B free 2026-09-04) plus
       the sub-side body. Everything the fix needs is measured.
       🎚️ TIER 1 — happy path: `KEY n,"str"` and `KEY LIST` are MISSING keywords
-      🙋 NEEDS-JOOST — everything the fix needs is measured; what is left is a
+      ~~🙋 NEEDS-JOOST — everything the fix needs is measured; what is left is a~~ (re-marked 2026-09-10, see below)
       main page-1 spend (the dated figure is on the 🔭 line above — read the wall
       with `make basic-reloc`, never from here), and spends are his. That 🔭 line
       said exactly this and was invisible to the old marker readout.
+      🎯 **RULED (Joost, 2026-09-10): *"missing keywords obviously need to be implemented."*** TIER 1.
+      🤖 AUTONOMOUS — implement; the references settle the behaviour (ruled 2026-09-10).
 
 - [x] 🔴 **D-TODOSWEEP'S OWN ELEVEN PROBES RE-IMPLEMENT THE `[...]` READER, WHICH
       IS THE TRAP THE ITEM BELOW DESCRIBES.** Filed 2026-08-26 by D-TODOSWEEP
@@ -4957,6 +4996,9 @@ list. **When a slice lands, grep this list for what it just shipped.**
       🙋 NEEDS A DECISION — the mechanism (partition vs merge) is Joost's call; the
       measurements are done.
       🎚️ TIER 5 — `DEF FN` nesting cap / stack placement (architecture)
+      🔁 **PARKED (Joost, 2026-09-10): every TIER 5 item waits until TIERS 1–4 are clean, and
+      *"when we get to TIER 5, we'll have to do a prioritization together"* —
+      the TIER 5 order is a joint pass, not the loop's pick.
       🙋 NEEDS-JOOST — partition vs merge is his call, in the block's own words.
 
 - [ ] 🐌 **THE INTERPRETER IS 2.5–3.8× SLOWER THAN THE CF-3300 — ON EVERYTHING,
@@ -5133,7 +5175,10 @@ list. **When a slice lands, grep this list for what it just shipped.**
       RED only when an operation is significantly slower than BOTH references,
       never when it is faster.
       🎚️ TIER 4 — on-par speed: `PAINT` 2×
-      🙋 NEEDS-JOOST — a call that is yours to make (charter / scope).
+      ~~🙋 NEEDS-JOOST — a call that is yours to make (charter / scope).~~ (re-marked 2026-09-10, see below)
+      🎯 **RULED (Joost, 2026-09-10): *"follow the scheme"* — TIER 4, so it is picked only
+      once TIERS 1–3 are clean; then it is autonomous.
+      🤖 AUTONOMOUS — after TIERS 1–3 (ruled 2026-09-10); the references settle the target.
 - [ ] 🔬 **THE HARNESS'S WALL TIME HAS A ~5.7 s PERIODIC STALL THAT COSTS ~50 % OF
       AN EMULATOR GATE — AND IT MUST BE RE-MEASURED ON AN IDLE HOST BEFORE ANYONE
       ACTS ON IT.** Measured 2026-08-25, `scratchpad/harness_walltime.py`
@@ -5514,6 +5559,8 @@ list. **When a slice lands, grep this list for what it just shipped.**
       from one reading is how this file has been wrong before
       [[a-mechanism-inferred-from-one-observation]].
       🎚️ APPARATUS — emulated-time budgets
+      🔁 **RULED (Joost, 2026-09-10): stays as classed** — not before TIERS 1–4 unless it
+      blocks a keyword tier; still his call when it is picked.
       🙋 **NEEDS-JOOST** — the last ask is a gate, and it has a real price.
       `scratchpad/settle_audit.py` is a WRAPPER: it re-runs a whole probe under
       instrumentation, so gating it over `basic_probe_graphics` adds a unit the
@@ -6530,6 +6577,9 @@ list. **When a slice lands, grep this list for what it just shipped.**
       has one open question, not two.
       🎯 The scouting the older 🔭 asked for is DONE; what is left is the call.
       🎚️ TIER 5 — `NAME old AS <non-string>` type fault
+      🔁 **PARKED (Joost, 2026-09-10): every TIER 5 item waits until TIERS 1–4 are clean, and
+      *"when we get to TIER 5, we'll have to do a prioritization together"* —
+      the TIER 5 order is a joint pass, not the loop's pick.
       🙋 NEEDS-JOOST — over the 20 B cap, and the only thing still open here.
       `OPEN "file" AS 1` is idiomatic BASIC that works on the reference and is a
       Syntax error here; the design is read out of the code, needs no sub-ROM
@@ -6942,7 +6992,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       the divergence that kept this open is closed. What remains is the corpus
       blind spot above.
 
-- [ ] 💰 **MAIN PAGE 1 WAS 1 B FREE ON 2026-08-23 AT `4db8010` — NOTHING LANDS
+- [x] 💰 **MAIN PAGE 1 WAS 1 B FREE ON 2026-08-23 AT `4db8010` — NOTHING LANDS
       THERE WITHOUT FUNDING FIRST.** Filed as its OWN open item because this
       section's preamble says exactly what happens to a residual written up
       inside a `- [x]` block: it is accurate, dated and invisible. D-PAINTMISS
@@ -6964,9 +7014,15 @@ list. **When a slice lands, grep this list for what it just shipped.**
       label beat both the inline raiser (5 B) and widening the jumps (+4 B).
       Check for an existing label before writing one.
       🎚️ BUDGET — page-1 wall
+      ✅ **CLOSED (Joost, 2026-09-10): a stale wall reading is not an open item.** The
+      figure this block rests on (page 1 at 1–2 B free, 2026-08-23) was 129 B
+      on 2026-09-09 and has moved many times since; the standing rule is *read
+      the wall with `make basic-reloc` from a clean tree*, never a number from
+      here. Whatever carve routes it lists live on in
+      [[carve-routes-measured-shut]] and the scouts; nothing else is owed.
       🙋 NEEDS-JOOST — a call that is yours to make (no oracle can settle it).
 
-- [ ] 📏 **CARVE SCOUT 2026-08-24 — TWO OF THE THREE FUNDING ROUTES FOR MAIN
+- [x] 📏 **CARVE SCOUT 2026-08-24 — TWO OF THE THREE FUNDING ROUTES FOR MAIN
       PAGE 1 ARE MEASURED SHUT.** Measurement only, no byte moved
       ([`docs/spec-carve-scout-2026-08.md`](docs/spec-carve-scout-2026-08.md)).
       Read this BEFORE opening any slice that needs main page-1 bytes.
@@ -6997,6 +7053,12 @@ list. **When a slice lands, grep this list for what it just shipped.**
       ⚠️ `tools/carve_scout.py --census` prints nothing and exits 0 without
       `--files` (documented, but it is the 0-byte-report-at-rc-0 shape).
       🎚️ BUDGET — carve scout
+      ✅ **CLOSED (Joost, 2026-09-10): a stale wall reading is not an open item.** The
+      figure this block rests on (page 1 at 1–2 B free, 2026-08-23) was 129 B
+      on 2026-09-09 and has moved many times since; the standing rule is *read
+      the wall with `make basic-reloc` from a clean tree*, never a number from
+      here. Whatever carve routes it lists live on in
+      [[carve-routes-measured-shut]] and the scouts; nothing else is owed.
       🙋 NEEDS-JOOST — a call that is yours to make (page-1 budget).
 
 - [ ] ⚠️ **AN UNNAMED OUTCOME READS AS NO OUTCOME, AND THE FIX MOVES THE HOLE
@@ -7258,6 +7320,8 @@ list. **When a slice lands, grep this list for what it just shipped.**
       3 B per slot of RAM; popping the record when a frame is abandoned costs
       main page-1 bytes. Both are budget decisions.
       🎚️ APPARATUS — unwitnessable guard
+      🔁 **RULED (Joost, 2026-09-10): stays as classed** — not before TIERS 1–4 unless it
+      blocks a keyword tier; still his call when it is picked.
       🔭 SCOUT-THEN-ASK — measured and isolated 2026-08-26; the FIX costs bytes, which is yours to spend.
 
 - [ ] ⚠️ **DEF FN's knife roster is EIGHT, and eight is a candidate roster, not a
@@ -7359,7 +7423,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       extend. Re-ranking them is still owed, but not for the label-block reason.
       🎚️ BUDGET — carve tool
       🤖 AUTONOMOUS — the reference or a gate settles it; finishable unattended (tool fixed + calibrated 2026-08-26; the ranked groups extend by zero).
-- [ ] ⚠️ **Main page 1 is 2 B free and the low region 17 B, at
+- [x] ⚠️ **Main page 1 is 2 B free and the low region 17 B, at
       `031184d9`/`34bb8554` (2026-08-23).** Filed by D-DEFFNLAND. The next slice
       that adds a byte to page 1 has to carve one first or promote again;
       `scratchpad/region_sizes.py` prints per-include sizes split by region,
@@ -7384,6 +7448,12 @@ list. **When a slice lands, grep this list for what it just shipped.**
       is done; deciding whether a budget item still needs him is not, so nothing is
       re-marked here — only the figure it rests on is corrected.
       🎚️ BUDGET — page-1 wall
+      ✅ **CLOSED (Joost, 2026-09-10): a stale wall reading is not an open item.** The
+      figure this block rests on (page 1 at 1–2 B free, 2026-08-23) was 129 B
+      on 2026-09-09 and has moved many times since; the standing rule is *read
+      the wall with `make basic-reloc` from a clean tree*, never a number from
+      here. Whatever carve routes it lists live on in
+      [[carve-routes-measured-shut]] and the scouts; nothing else is owed.
       🙋 NEEDS-JOOST — a call that is yours to make (page-1 budget).
 - [ ] ⚠️ **D-DUPSPAN2 shipped 28 aliases with NO per-site row set.** Filed
       2026-08-22, [`docs/spec-basic-dupspan2.md`](docs/spec-basic-dupspan2.md)
@@ -7603,6 +7673,9 @@ list. **When a slice lands, grep this list for what it just shipped.**
       cheapest lever at 6 — and the FN ceiling of 10 stops the ramp long before
       32 temps. The two are the same wall.
       🎚️ TIER 5 — nested `FN` beyond depth 10
+      🔁 **PARKED (Joost, 2026-09-10): every TIER 5 item waits until TIERS 1–4 are clean, and
+      *"when we get to TIER 5, we'll have to do a prioritization together"* —
+      the TIER 5 order is a joint pass, not the loop's pick.
       🙋 NEEDS-JOOST — a call that is yours to make: the fix is a frame-SHAPE
       change to a load-bearing verb (save one slot, not the live prefix), not a
       byte spend, so it is outside the standing ≤20 B measured-divergence budget.
@@ -7654,6 +7727,14 @@ list. **When a slice lands, grep this list for what it just shipped.**
       main-page-1 budget it ships on this measurement; over it, this flips to 🙋
       with the number rather than a shrug.
       🎚️ TIER 3 — common error: a forgotten disk; the verb prints, does not trap, and RUNS ON
+      🎯 **RULED (Joost, 2026-09-10): add ERR 70 — and *"maybe add an ERR extension
+      mechanism in Disk ROM, maybe look if there is a hook for that"*.** So the
+      first step is a READ, not a write: does this tree's error printer have (or
+      can it cheaply get) a hook for codes it does not host, the way the MSX
+      architecture routes Disk-ROM error text through a hook (a PUBLISHED
+      interface — the reference is still not disassembled)? If yes, ERR 70 and
+      every future disk code live in the disk ROM's ~8.9 KB of free space and
+      cost main page 1 nothing. Price both routes; TIER 3.
       🤖 AUTONOMOUS — the reference or a gate settles it; finishable unattended (measured 2026-09-10; the fix is a costing away).
 
 - [ ] ⚠️ **A probe with an honest `rc` that NO battery collects is not an oracle.**
@@ -7787,6 +7868,8 @@ list. **When a slice lands, grep this list for what it just shipped.**
       runtime-budget call (one tape probe is ~4 min against a ~460 s battery).
       The measuring in front of it is DONE.
       🎚️ APPARATUS — uncollected probes
+      🔁 **RULED (Joost, 2026-09-10): stays as classed** — not before TIERS 1–4 unless it
+      blocks a keyword tier; still his call when it is picked.
       🙋 NEEDS-JOOST — (a) is done; (b), which of the 104 earn a battery slot, is a
       runtime-budget call and the measuring in front of it is finished.
 
@@ -7917,6 +8000,9 @@ list. **When a slice lands, grep this list for what it just shipped.**
       authorisation on a shape it was not given for is the thing to check first
       [[a-priced-decline-is-a-claim-about-a-design]].
       🎚️ TIER 5 — `DEF FN` formals aliasing
+      🔁 **PARKED (Joost, 2026-09-10): every TIER 5 item waits until TIERS 1–4 are clean, and
+      *"when we get to TIER 5, we'll have to do a prioritization together"* —
+      the TIER 5 order is a joint pass, not the loop's pick.
       🙋 NEEDS-JOOST — the ~99 B array he authorised is refuted; the pool route
       needs no RAM but is a slice across four files, and that is a bigger yes.
 
@@ -7951,6 +8037,9 @@ list. **When a slice lands, grep this list for what it just shipped.**
       D-FNALIAS** — `fn_enter` resets `FN_SLOTP` and stacks the caller — so both
       want frames that coexist in the shadow area, which needs page-3 RAM.
       🎚️ TIER 1 (latent) — happy path: a string `FN` formal is not a GC root, so a GC mid-call corrupts a program that did nothing wrong
+      🎯 **RULED (Joost, 2026-09-10): scout first.** The 🔭 stands — measure whether a GC
+      mid-call actually corrupts a string `FN` result on this tree, then bring the
+      fix shape. TIER 1 (latent).
       🙋 NEEDS-JOOST — the RESIDUAL only (page-3 RAM below LINEBUF, shared with
       D-FNALIAS). The live-frame half is shipped and gated.
 
@@ -8165,6 +8254,9 @@ list. **When a slice lands, grep this list for what it just shipped.**
       🟢 `no PLAY at all` reads `0 0 0 0` on both — the resting state is shared,
       so every row above is read against a real zero.
       🎚️ TIER 5 — `PLAY(n)` transient
+      🔁 **PARKED (Joost, 2026-09-10): every TIER 5 item waits until TIERS 1–4 are clean, and
+      *"when we get to TIER 5, we'll have to do a prioritization together"* —
+      the TIER 5 order is a joint pass, not the loop's pick.
       🙋 **NEEDS-JOOST — and the measurement argues for DECLINING.** The window is
       unobservable to any program that executes one statement first; the gate rows
       already accommodate it explicitly (`SETTLE`); and reproducing it means
@@ -8183,7 +8275,10 @@ list. **When a slice lands, grep this list for what it just shipped.**
       **DECLINED at 2 B.** 🔴 **A span is byte-identical without being ENTERED
       the same way**; the sweep cannot see this and says so.
       🎚️ BUDGET — 2 B carve family
-      🙋 NEEDS-JOOST — a call that is yours to make (charter / scope).
+      ~~🙋 NEEDS-JOOST — a call that is yours to make (charter / scope).~~ (re-marked 2026-09-10, see below)
+      🎯 **RULED (Joost, 2026-09-10): carve freely under the standing ≤20 B rule.** BUDGET;
+      picked when a keyword tier needs the bytes.
+      🤖 AUTONOMOUS — a carve under the standing rule (ruled 2026-09-10).
 
 - [ ] ⚠️ **A linear predecessor walk stops at `ENDIF` and calls it an
       instruction.** Filed 2026-08-22 by D-DUPSPAN,
@@ -11860,6 +11955,9 @@ list. **When a slice lands, grep this list for what it just shipped.**
       program text means `MID$(A$,1,1)="X"` writes into the PROGRAM. Unpriced,
       and it is a design question (store-by-reference), not a byte question.
       🎚️ TIER 5 — `DATA` literal string-pool accounting (`FRE` differs)
+      🔁 **PARKED (Joost, 2026-09-10): every TIER 5 item waits until TIERS 1–4 are clean, and
+      *"when we get to TIER 5, we'll have to do a prioritization together"* —
+      the TIER 5 order is a joint pass, not the loop's pick.
       🙋 NEEDS-JOOST — a call that is yours to make (refactor, no oracle).
 - [ ] 🟡 **`load error` IS PRINTED, NOT RAISED — ✅ FIXED AT ALL SIX MISSING-FILE
       VERBS (D-LOADERR-FIX 2026-08-20, 16 B; D-BLNF 2026-08-21, `BLOAD`, 4 B main
@@ -11970,7 +12068,16 @@ list. **When a slice lands, grep this list for what it just shipped.**
       two callers is the design question**, and it must not be assumed to be a
       rename [[a-filed-blocker-can-name-the-wrong-obstacle]].
       🎚️ TIER 3 — common error: `load error` printed rather than raised, residual sites (same class as the empty-drive item)
-      🔭 SCOUT-THEN-ASK — the decision is yours; the measuring and pricing in front of it are not (refactor, no oracle, but unpriced/unmeasured first).
+      ~~🔭 SCOUT-THEN-ASK — the decision is yours; the measuring and pricing in front of it are not (refactor, no oracle, but unpriced/unmeasured first).~~ (re-marked 2026-09-10, see below)
+      🎯 **RULED (Joost, 2026-09-10): add ERR 70 — and *"maybe add an ERR extension
+      mechanism in Disk ROM, maybe look if there is a hook for that"*.** So the
+      first step is a READ, not a write: does this tree's error printer have (or
+      can it cheaply get) a hook for codes it does not host, the way the MSX
+      architecture routes Disk-ROM error text through a hook (a PUBLISHED
+      interface — the reference is still not disassembled)? If yes, ERR 70 and
+      every future disk code live in the disk ROM's ~8.9 KB of free space and
+      cost main page 1 nothing. Price both routes; TIER 3.
+      🤖 AUTONOMOUS — the CF-3300 settles the disposition (ERR 70, measured by D-NMFAIL); finishable unattended (ruled 2026-09-10).
 - [ ] 🔴 **Two type-code namespaces share the value `1`** — the published `DEFTBL`
       string code and zerobas's own variable-chain string tag. D-DEFSTR fixed the
       three sites that crossed them (one was a live memory corruption) but the two
@@ -11980,6 +12087,8 @@ list. **When a slice lands, grep this list for what it just shipped.**
 
 **Apparatus / gate limits (each is a stated limit, not a filed defect)**
       🎚️ OTHER — internal type-code namespaces (architecture)
+      🔁 **RULED (Joost, 2026-09-10): stays as classed** — not before TIERS 1–4 unless it
+      blocks a keyword tier; still his call when it is picked.
       🙋 NEEDS-JOOST — a call that is yours to make (refactor, no oracle).
 
 - [x] 🟢 **`badfnum-acceptance` REPORTED `1 unfiled divergence` AND NEVER SAID
@@ -12086,6 +12195,9 @@ list. **When a slice lands, grep this list for what it just shipped.**
       sane, decided case by case. Today's answer was "faithful" and it improved
       BOTH; this row is the one where it would not.
       🎚️ TIER 5 — `FIELD` + `VAL` descriptor binding corner
+      🔁 **PARKED (Joost, 2026-09-10): every TIER 5 item waits until TIERS 1–4 are clean, and
+      *"when we get to TIER 5, we'll have to do a prioritization together"* —
+      the TIER 5 order is a joint pass, not the loop's pick.
       🙋 NEEDS-JOOST — the measuring is done (9 rows, both machines, mechanism
       identified); what is left is whether to reproduce a silent aliasing bug.
 - [x] 🟢 **THE REFERENCE PRINTS A DISK-ROM BANNER LINE AND ZEROBAS PRINTS NONE.**
@@ -13296,7 +13408,7 @@ architecture and write code. Each step is independently oracle-validatable.
       Low-value + low-use; revisit once Phase-3 strings exist. (Was assumed a thin
       DSKIO wrapper; the oracle proved otherwise — 2026-06-22.)
       🎚️ TIER 1 — happy path: `DSKI$`/`DSKO$` are MISSING keywords (deferred by decision)
-      🙋 NEEDS-JOOST — a call that is yours to make (charter / scope).
+      ~~🙋 NEEDS-JOOST — a call that is yours to make (charter / scope).~~ (re-marked 2026-09-10, see below)
       - [x] **`MKI$(n)` + `CVI(s$)`** — DONE (basic/strvar.asm + basic/expr.asm). The
             integer conversion pair: MKI$ packs a 16-bit int into a 2-byte LE string
             ($FF$AE, string result, in str_eval); CVI is the inverse ($FF$A8, numeric
@@ -13336,6 +13448,9 @@ architecture and write code. Each step is independently oracle-validatable.
             and a file round-trips on each fresh disk (disk_probe_format.py).
 - `CALL SYSTEM` **[out]** — exit to MSX-DOS = the DOS-boot path (Tier-2 sub-track).
 - `CALL CHDRV` etc. **[out]** — Disk BASIC v2/v3 additions, beyond DOS1-class 1.0.
+      🎯 **RULED (Joost, 2026-09-10): *"DSKI$ DSKO$ should also be implemented"* — no longer
+      deferred. TIER 1 (missing keywords).
+      🤖 AUTONOMOUS — implement; the CF-3300 is the oracle (ruled 2026-09-10; the VG-8020 has no drive).
 
 ### Carried oracle — Tier-2 provider (DOS1; a distinct DOS-boot sub-track)
 The only Phase-2 thread still genuinely open: a real **MSX-DOS 1** filesystem host
@@ -13696,6 +13811,8 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       `INS`/`HOME`/`CTRL`+key and the r23 function-key row, and whether a tenant may
       read VRAM from inside. The 0.6–0.9 KB figure remains the 2026-07-11 estimate.
       🎚️ TIER 1 — happy path: the SCREEN EDITOR is how every MSX program is typed and edited
+      🎯 **RULED (Joost, 2026-09-10): *"the basic line and screen editor should also be in
+      the list"* — explicitly on the TIER 1 pick list.
       🤖 AUTONOMOUS — the reference or a gate settles it; finishable unattended (no his-decision signal found).
 - [ ] **Editor / program management** — ~~`RENUM`, `AUTO`,
       `TRON`/`TROFF`, `SWAP`, `WAIT`, `FRE`~~ **`WAIT` ALONE**, full `CLEAR`
@@ -13914,7 +14031,11 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       **All of these are now measured, not estimated** — see the keyword sweep
       item directly below.
       🎚️ TIER 1 — happy path: editor keywords (`RENUM`, `AUTO`, …) MISSING
-      🙋 NEEDS-JOOST — a call that is yours to make (retire / delete).
+      ~~🙋 NEEDS-JOOST — a call that is yours to make (retire / delete).~~ (re-marked 2026-09-10, see below)
+      🎯 **RULED (Joost, 2026-09-10): implement the remainder — missing keywords are TIER 1, and
+      *"the basic line and screen editor should also be in the list"* (its own
+      item, the screen-editor REPL, is TIER 1 and autonomous).
+      🤖 AUTONOMOUS — implement; the references settle the behaviour (ruled 2026-09-10).
 
 - [ ] **Keyword-completeness gaps — the measured remainder of MSX1 BASIC.**
       **The coverage denominator now exists** (2026-07-26,
@@ -15351,6 +15472,8 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       its contents. ⚠️ Also note the entry field ORDER may differ from the
       reference's — unmeasured. A separate slice, not a ride-along.
       🎚️ OTHER — architecture
+      🔁 **RULED (Joost, 2026-09-10): stays as classed** — not before TIERS 1–4 unless it
+      blocks a keyword tier; still his call when it is picked.
       🔭 SCOUT-THEN-ASK — the decision is yours; the measuring and pricing in front of it are not (refactor, no oracle, but unpriced/unmeasured first).
 
 - [ ] **HOW MUCH OF THE 311-BYTE `NO-ORACLE` BUCKET IS A POINTER?** Filed
@@ -15420,6 +15543,9 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       it. One-sided by construction — the cell is zerobas's own private one and
       has no reference column.
       🎚️ TIER 5 — `VALTYP` at cold boot (declined)
+      🔁 **PARKED (Joost, 2026-09-10): every TIER 5 item waits until TIERS 1–4 are clean, and
+      *"when we get to TIER 5, we'll have to do a prioritization together"* —
+      the TIER 5 order is a joint pass, not the loop's pick.
       🙋 NEEDS-JOOST — a call that is yours to make (charter / scope).
 
 - [ ] ⚠️ **THE `--say` SURFACE IS STILL UN-GATED OUTSIDE `ONLY=lnrd-`.** Split
