@@ -434,7 +434,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:13354 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:13404 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -599,7 +599,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:3442 (T-6FE392)8 (T-529ABE)` from `TODO.md:12291 (T-529ABE)`: a
+      `TODO.md:3442 (T-6FE392)8 (T-529ABE)` from `TODO.md:12341 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -4223,7 +4223,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:12291 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:12341 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -11980,8 +11980,9 @@ list. **When a slice lands, grep this list for what it just shipped.**
       reading about the item**; the remaining four deserve the same one-line test
       before anyone prices them [[a-justification-parenthesis-is-an-unrun-claim]].
 
-- [ ] ⚠️ **A SCRATCH PROBE THAT NEEDS A DISK MUST MOUNT ONE, AND THE FAILURE
-      READS AS A LANGUAGE RULE.** Filed 2026-08-22,
+- [x] ✅ **A SCRATCH PROBE THAT NEEDS A DISK MUST MOUNT ONE, AND THE FAILURE
+      READS AS A LANGUAGE RULE — CLASS MEASURED EMPTY AND GATED 2026-09-10
+      (D-DISKMOUNT).** Filed 2026-08-22,
       [`docs/deffn-ramhunt-2026-08-22.md`](docs/deffn-ramhunt-2026-08-22.md)
       §5.6. Booting `C-BIOS_MSX1_EU_REPACK_DISK` without `diska=` made
       `OPEN"TS.TXT"FOR OUTPUT AS #1` answer **ERR 59**, which is exactly what a
@@ -11990,7 +11991,56 @@ list. **When a slice lands, grep this list for what it just shipped.**
       fixture — [[test-disk-mutation-gotcha]]). 🔴 And an OPEN can fail *without
       raising* (it printed `load error` and carried on), so a disk row must
       READ BACK what it wrote rather than trust that it ran.
-      ⛔ BLOCKED — neither of us can start it now (needs a fixture).
+      🟢 **THE LIBRARY HALF WAS ALREADY BUILT; THE MISSING HALF WAS THE
+      DENOMINATOR.** `probe_sides.diska()` hands an image only to a machine that
+      has a drive, and `require_disk()` refuses outright for a probe whose rows
+      are meaningless without one — both gated by `probe-sides-selftest`. Nobody
+      had ever counted how many scratch probes still type a drive verb with no
+      image mounted. **Measured: 558 scratch probes — 509 type no drive verb, 46
+      type one AND mount, 3 excused with a reason, 0 UNMOUNTED**
+      ([`scratchpad/diskmount_scan.out`](scratchpad/diskmount_scan.out)).
+      ➡️ **GATED: `make disk-mount-check`**
+      ([`tools/check_disk_mount.py`](tools/check_disk_mount.py)), static tier,
+      <1 s, collected (113 of 119 acceptance targets). The class is empty; this
+      keeps it empty for the next probe written at 3am.
+      🔴 **AND THE INSTRUMENT WAS WRONG TWICE BEFORE IT WAS RIGHT — BOTH TIMES IN
+      THE WAY ITS OWN DOCSTRING HAD ALREADY WARNED ABOUT.**
+      • **Cut 1 was textual: 29 hits, most of them PROSE.** `fatverb_knives`,
+        `filesguard_knife` and `ngram12_knives` matched the word `FILES` or
+        `LOAD"file"` inside their own docstrings; `bareform_probe` matched a
+        PYTHON LIST of keyword names. Fixed by parsing with `ast` and testing
+        only string literals that are NOT docstrings.
+      • **Cut 2 still read 15, and seven were the real shape — wrongly.**
+        `dupopen`, `open2`, `reclen`, `reclen2`, `put1after`, `puttime` and
+        `dskfslow` all type `OPEN"TS.DAT"AS #1 LEN=128` with no `diska` anywhere
+        in the file — and they mount correctly, through `basic_probe_fldwidth`,
+        whose `"dsk"` row tag selects a config that hands `run_cases` a writable
+        copy. Fixed by FOLLOWING IMPORTS one level.
+      🎯 **Reading one hit is what found that, and the caveat was already written
+      when I did.** *"a probe that mounts through a helper not spelled `diska`"*
+      was in the docstring from the first cut, and I still had to go and look
+      [[an-instrument-can-fail-the-way-the-thing-it-replaced-failed]].
+      🔬 **Five selftest arms, and S4/S5 CAUGHT A REAL BUG IN THE GATE.** The
+      stale-excuse arm compared the allowlist against whatever corpus was
+      scanned, so a temp corpus reported all three excuses stale and the control
+      arms went red. Scoped to the real `scratchpad/`. Arms: the live corpus is
+      clean; a planted `OPEN"TS.DAT"` with no mount goes RED; **the same file
+      with a `diska=` goes green again** (which is what proves the arm keys on
+      the MOUNTING and not merely on the verb); and a device channel (`LPT:`) is
+      not a drive verb.
+      ⚠️ **The three excused files are named with the reason read out of each**:
+      a knife's own verdict MESSAGE, a `KILL 5` Type-mismatch row (numeric
+      argument, raises before any drive access), and prose in a non-docstring
+      string. The set may shrink freely; it grows only in a visible diff.
+      🔴 **AND THE BLOCKER WAS THE SAME BOILERPLATE AGAIN — THIRD IN THREE
+      TICKS.** *"⛔ BLOCKED — neither of us can start it now (needs a fixture)"*
+      while `disk/test720.dsk` has existed throughout and the helpers were
+      already shipped. **FOUR open items still carry that sentence** (counted
+      2026-09-10, per open block and not per raw grep — the closed entries quote
+      it in their prose, so a `grep -c` over the file reads high): the stall
+      watchdog, the emulated-time budgets, 2-Tier2-a, and keyword-completeness.
+      Three ⛔ items opened in three ticks were all already actionable; these four
+      have not been tested and are the standing shortlist.
 
 - [ ] ⚠️ **`check_probe_preflight.py` carries the IDENTICAL `SCAN_DIRS`** — the
       denominator D-INJJUDGE derived for `injector-check` was left hand-listed

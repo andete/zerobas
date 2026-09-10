@@ -3223,6 +3223,24 @@ deferral-pin-check:
 filed-pin-check:
 	python3 tools/check_filed_pins.py
 
+# D-DISKMOUNT. Booting a DISK machine without `diska=` makes
+# `OPEN"TS.TXT"FOR OUTPUT AS #1` answer ERR 59 -- which is exactly what a
+# channel-ceiling violation looks like, so THE APPARATUS FAULT READS AS A
+# LANGUAGE RULE and the probe reports a BASIC finding that does not exist.
+# 🎯 The library half was already built (`probe_sides.diska()` /
+# `require_disk()`); what was missing was the DENOMINATOR. Measured 2026-09-10:
+# of 558 scratch probes, 509 type no drive verb, 46 type one AND mount, 3 are
+# excused with a reason, and **0 are unmounted**. The class is empty; this keeps
+# it that way for the next probe written at 3am.
+# ⚠️ It is a TEXTUAL shortlist and says so on every run: it parses with `ast` so
+# docstring prose cannot trip it, and follows one level of imports so a probe
+# that mounts through `basic_probe_fldwidth` is not a false hit -- both of which
+# were false positives it actually produced before they were fixed.
+# <1 s, read-only, no emulator.
+disk-mount-check:
+	python3 tools/check_disk_mount.py --selftest
+	python3 tools/check_disk_mount.py
+
 # D-ALPHAGATE. A probe classifies error text against a literal alphabet, and
 # anything absent used to fall through to `<NO OUTPUT>` -- which routes the row to
 # "without a reference", a sentence about the MACHINE for a fault in the PROBE.
@@ -3319,7 +3337,7 @@ clean:
         badfnum-characterize badfnum-acceptance \
         deffn-acceptance deffn-selftest probe-sides-selftest deffn-strict switch-build-check \
         msgexact-gate msgexact-relock preflight-check latch-check injector-check \
-        omsx-diag-teeth temp-root-check shared-body-check probe-reach-check citation-check todo-citation-check todo-marker-check deferral-pin-check error-alphabet-check filed-pin-check \
+        omsx-diag-teeth temp-root-check shared-body-check probe-reach-check citation-check todo-citation-check todo-marker-check deferral-pin-check error-alphabet-check filed-pin-check disk-mount-check \
         chokepoint-check banner-acceptance wall-literal-check \
         patch-freshness-check gates clean
 

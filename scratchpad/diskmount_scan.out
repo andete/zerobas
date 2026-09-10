@@ -1,0 +1,4 @@
+disk-mount: 558 scratch .py — no drive verb 509, drive verb AND mounts 46, excused 3, 🔴 unmounted 0
+  none — every scratch probe that types a drive verb mounts an image, or is excused with a reason.
+
+⚠️  TEXTUAL SHORTLIST, NOT A VERDICT: a hit may be a verb inside a docstring, or a probe that mounts through a helper not spelled `diska`. Read the line before believing it.
