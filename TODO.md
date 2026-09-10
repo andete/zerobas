@@ -434,7 +434,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:13908 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:13935 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -599,7 +599,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:3623 (T-6FE392)8 (T-529ABE)` from `TODO.md:12845 (T-529ABE)`: a
+      `TODO.md:3623 (T-6FE392)8 (T-529ABE)` from `TODO.md:12872 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -4454,7 +4454,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:12845 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:12872 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -7365,6 +7365,33 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unobserved"*), so an inert knife would manufacture the very result the run
       exists to report. The runner hashes the images around every build and
       reports `INERT (ROM unchanged)` as its own outcome now.
+      ✅ **D-DUPOBS2 (2026-09-10): THE EMULATOR HALF IS STARTED, AND THE SCORER
+      IS CHEAPER THAN THE ENTRY ASSUMED**
+      ([`scratchpad/dupobs_emu.py`](scratchpad/dupobs_emu.py),
+      [`.out`](scratchpad/dupobs_emu.out)).
+      🎯 **A RED IS CONCLUSIVE AND A GREEN IS NOT — so the suites are tried
+      CHEAPEST FIRST and the ladder STOPS at the first red.** The entry priced
+      this at "~7 min each" assuming the whole battery is the scorer; measured
+      costs from the last full battery make the ladder
+      `error` 12 s → `missing` 45 s → `penderr` 54 s → `error-trap` 68 s, so an
+      observed site can cost as little as **12 seconds** instead of a battery.
+      📏 **FIRST SLICE, 4 of the 11: `ed_done` is OBSERVED (by
+      `missing-acceptance`).** `ctp_err_pop`, `ctp_link_err` and `elas_err` are
+      still green against the ladder.
+      ⚠️ **AND THE ASYMMETRY IS IN THE VERDICT, NOT HIDDEN IN IT**: "still green"
+      means **not observed by THESE FOUR SUITES**, not "unobserved by the
+      battery" — that needs the whole battery, and reporting the second as the
+      first is precisely the over-claim this entry has caught in its own earlier
+      cuts twice.
+      🔴 **THE INERT-CUT GUARD MATTERS MORE HERE THAN ANYWHERE**: a green arm IS
+      the finding, so a cut that never reached the ROM manufactures the exact
+      answer the run exists to report. Every arm hashes the images around its
+      build and reports `INERT (ROM unchanged)` as its own outcome.
+      ➡️ **RUNNING TOTAL: 11 of 21 canonicals observed** (10 host-side by
+      `make unit-test`, 1 by the ladder); 3 narrowed to ladder-green; **7 not yet
+      run** — `ers_undef`, `evmc_sqr_err`, `gosub_stk_over`, `nm_fail`,
+      `pl_typeerr`, `sst_overflow`, `tm_raise`. The runner takes canonical names
+      as arguments, so the rest go in slices.
       🤖 AUTONOMOUS — the reference or a gate settles it; finishable unattended (roster + count fixed 2026-08-26; the 21 knives remain, now priced).
 
 - [ ] ⚠️ **A probe with an honest `rc` that NO battery collects is not an oracle.**

@@ -1,0 +1,12 @@
+D-DUPOBS2: 4 canonical(s), ladder ['error-acceptance', 'missing-acceptance', 'penderr-acceptance', 'error-trap-acceptance']
+
+  ctp_err_pop      🔴 not observed by the ladder
+  ctp_link_err     🔴 not observed by the ladder
+  ed_done          observed by missing-acceptance
+  elas_err         🔴 not observed by the ladder
+
+=== 1/4 newly OBSERVED by the ladder ===
+  observed:     ed_done
+  still green:  ctp_err_pop, ctp_link_err, elas_err
+
+⚠️ 'still green' means NOT OBSERVED BY THESE FOUR SUITES. It does not mean unobserved by the battery -- that needs the whole battery, and saying otherwise would be the over-claim this entry keeps catching in its own earlier cuts.
