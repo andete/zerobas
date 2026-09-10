@@ -187,6 +187,81 @@ def kw_gaps(its, kws):
     return {k: v for k, v in gaps.items() if v}    # a plain dict: a lookup must not CREATE a key
 
 
+# The tier a keyword has REACHED, from the open gaps alone: an open TIER n item
+# naming it means it has not reached n, so it stands at n-1 (0 = happy path
+# broken or keyword missing). No open gap means NO KNOWN GAP -- not a tier. The
+# "reached" column becomes a measurement only when gate rows declare their
+# keyword (step (c)); until then this is the honest ceiling on what is known.
+REACHED = {1: "0 — happy path broken or keyword MISSING", 2: "1 — happy path only",
+           3: "2 — common errors not handled", 4: "3 — slower than the reference",
+           5: "4 — only exhaustive error handling open",
+           "kwgap": "GAP kwsweep sees that NO open item files (DIVERGENT/MISSING)",
+           "kw1": "1 — happy path reached, scored by kwsweep"}
+GROUP_ORDER = ["kwgap", 1, 2, 3, 4, 5, "kw1", None]
+
+
+KWSWEEP_PIN = os.path.join(ROOT, "build", "kwsweep-verdicts.json")
+
+
+def stmt_keyword(stmt, kwset):
+    """The keyword a kwsweep row is ABOUT: the first keyword token in its crunch
+    statement (`a=abs(-5)` -> ABS, `a$=mid$("hi",1,1)` -> MID$, `A=1` -> None)."""
+    for w in WORD.findall(stmt.upper()):
+        if w in kwset:
+            return w
+    return None
+
+
+def kwsweep_evidence(kws, path=KWSWEEP_PIN):
+    """keyword -> kwsweep verdict from the last battery's pin, or {} if none.
+    WEAK rows are excluded, as kwsweep's own tally excludes them."""
+    try:
+        import json
+        with open(path, encoding="utf-8") as fh:
+            pin = json.load(fh)
+    except (OSError, ValueError):
+        return {}
+    kwset = set(kws)
+    out = {}
+    for key, r in pin.get("rows", {}).items():
+        if r.get("weak"):
+            continue
+        kw = stmt_keyword(r.get("stmt", ""), kwset)
+        if kw and kw not in out:
+            out[kw] = r["verdict"]
+    return out
+
+
+def keyword_tiers(its, kws, evidence=None):
+    """keyword -> (worst open tier 1..5 or None, sorted item lines, evidence).
+
+    `evidence` is the kwsweep verdict for the keyword, if any. It only ever
+    speaks for a keyword with NO open item: a SUPPORTED verdict there is
+    "TIER 1 reached (kwsweep)"; a DIVERGENT/MISSING verdict there is a gap
+    nobody has filed, and is printed as exactly that."""
+    gaps = kw_gaps(its, kws)
+    ev = kwsweep_evidence(kws) if evidence is None else evidence
+    out = {}
+    for kw in kws:
+        if kw in gaps:
+            worst = min(TIERS.index(t) for t, _ in gaps[kw]) + 1
+            out[kw] = (worst, sorted({l for _, l in gaps[kw]}), ev.get(kw))
+        else:
+            out[kw] = (None, [], ev.get(kw))
+    return out
+
+
+def reached_group(g, e):
+    """The bucket a keyword prints under, from its gap tier and its evidence."""
+    if g is not None:
+        return g                                  # 1..5: stuck below that tier
+    if e == "SUPPORTED":
+        return "kw1"                              # TIER 1 reached, by kwsweep
+    if e in ("DIVERGENT", "MISSING", "SILENT-GAP", "EXTRA"):
+        return "kwgap"                            # a gap kwsweep sees and nobody filed
+    return None                                   # no known gap, no evidence
+
+
 def fmt_items(its, kws, tiers_only=True, width=70):
     """Keyword FIRST, prose last (Joost, 2026-09-10: "I would expect the keyword
     to be prominent, now I have to find it in the item prose")."""
@@ -216,20 +291,24 @@ def fmt_items(its, kws, tiers_only=True, width=70):
     return "\n".join(out)
 
 
-def fmt_keywords(gaps, kws):
+def fmt_keywords(its, kws, evidence=None):
+    kt = keyword_tiers(its, kws, evidence)
+    groups = defaultdict(list)
+    for kw, (g, _, e) in kt.items():
+        groups[reached_group(g, e)].append(kw)
     out = []
-    by_tier = defaultdict(list)
-    for kw in kws:
-        if kw in gaps:
-            worst = min(gaps[kw], key=lambda p: TIERS.index(p[0]))[0]
-            by_tier[worst].append((kw, sorted({ln for _, ln in gaps[kw]})))
-    for t in TIERS:
-        if by_tier[t]:
-            cells = ", ".join(f"{kw}({','.join(map(str, lns))})" for kw, lns in by_tier[t])
-            out.append(f"{t:7} {len(by_tier[t]):3}  {cells}")
-    none = [kw for kw in kws if kw not in gaps]
-    out.append(f"\nno open gap {len(none):3}  of {len(kws)} — NOT verified: no open item names them; "
-               "step (c)'s `subject:` tag is what turns this into a scored column")
+    for g in GROUP_ORDER:
+        if g is None or not groups[g]:
+            continue
+        out.append(f"{REACHED[g]:58} {len(groups[g]):3}  " + " ".join(sorted(groups[g])))
+    none = sorted(groups[None])
+    out.append(f"{'no known gap (NOT a tier -- no item, no kwsweep row)':58} {len(none):3}  " + " ".join(none))
+    out.append("")
+    ev_n = sum(1 for _, (_, _, e) in kt.items() if e)
+    out.append(f"kwsweep evidence: {ev_n} keyword(s) from {KWSWEEP_PIN if ev_n else 'NO PIN -- run make kwsweep (it runs in every battery)'}")
+    out.append(f"{len(kws)} keywords. A keyword with no open item and no kwsweep row has NO KNOWN GAP, "
+               "which is not a reached tier: the reached column is measured only when gate rows "
+               "declare their keyword (step (c)).")
     return "\n".join(out)
 
 
@@ -261,19 +340,34 @@ def fmt_markdown(its, kws):
         out.append(f"| {t} | {meaning[t]} | {counts.get(t, 0)} |")
     out += ["", f"{len(its)} open items in all; {sum(counts.get(c, 0) for c in CLASSES)} are "
             "apparatus, ROM budget, standing rulings or other (not keyword work).", "",
-            "## Keywords with a known open gap, by worst tier", "",
-            "| tier | n | keywords (TODO.md line) |", "|---|---|---|"]
-    gaps = kw_gaps(its, kws)
-    by_tier = defaultdict(list)
-    for kw in kws:
-        if kw in gaps:
-            worst = min(gaps[kw], key=lambda p: TIERS.index(p[0]))[0]
-            by_tier[worst].append(f"`{kw}` ({', '.join(str(l) for l in sorted({ln for _, ln in gaps[kw]}))})")
-    for t in TIERS:
-        if by_tier[t]:
-            out.append(f"| {t} | {len(by_tier[t])} | {', '.join(by_tier[t])} |")
-    none = [kw for kw in kws if kw not in gaps]
-    out += ["", f"**{len(none)} of {len(kws)} keywords have no open gap.** " + FOOTER, "",
+            "## Every keyword and its tier", "",
+            "`reached` is the tier the keyword stands at today, from the open gaps: an open "
+            "TIER n item naming it means it has not reached n. **'No known gap' is not a tier.**", "",
+            "| reached | n | keywords |", "|---|---|---|"]
+    kt = keyword_tiers(its, kws)
+    groups = defaultdict(list)
+    for kw, (g, _, e) in kt.items():
+        groups[reached_group(g, e)].append(kw)
+    for g in GROUP_ORDER:
+        if g is None or not groups[g]:
+            continue
+        out.append(f"| {REACHED[g]} | {len(groups[g])} | " + " ".join(f"`{k}`" for k in sorted(groups[g])) + " |")
+    none = sorted(groups[None])
+    out.append(f"| no known gap (no item, no kwsweep row — unverified) | {len(none)} | " + " ".join(f"`{k}`" for k in none) + " |")
+    out += ["", FOOTER, "", "### Alphabetical", "", "| keyword | reached | evidence |", "|---|---|---|"]
+    for kw in sorted(kws):
+        g, lines, e = kt[kw]
+        grp = reached_group(g, e)
+        if grp is None:
+            out.append(f"| `{kw}` | no known gap | — |")
+        elif grp == "kw1":
+            out.append(f"| `{kw}` | 1 | kwsweep SUPPORTED |")
+        elif grp == "kwgap":
+            out.append(f"| `{kw}` | GAP, unfiled | kwsweep {e} and no open item |")
+        else:
+            out.append(f"| `{kw}` | {REACHED[g].split(' — ')[0]} | open TIER {g} item, TODO.md {', '.join(map(str, lines))}"
+                       + (f"; kwsweep {e}" if e else "") + " |")
+    out += ["",
             "## Open items, keyword first", "",
             "| keyword | tier | who | what is open | TODO.md |", "|---|---|---|---|---|"]
     kwset = set(kws)
@@ -311,8 +405,8 @@ def main(argv=None):
     print(f"  {'open':10} {len(its):3}    keywords: {len(kws)} "
           f"({len(kwtable_keywords())} in kwtable.inc + {len(kws) - len(kwtable_keywords())} filed as missing)")
     if a.keywords:
-        print("\nKEYWORDS with an OPEN item naming them, by worst tier (item lines in brackets):\n")
-        print(fmt_keywords(kw_gaps(its, kws), kws))
+        print("\nEVERY KEYWORD, by the tier it has reached (from the open gaps):\n")
+        print(fmt_keywords(its, kws))
     else:
         print(fmt_items(its, kws, tiers_only=not a.all))
         if not a.all:
@@ -359,7 +453,8 @@ def selftest():
     arm("S6 `DEF FN` yields both keywords", g.get("DEF") == {("TIER 5", 9)} and g.get("FN") == {("TIER 5", 9)})
     arm("S7 unbackticked English words (AND, KEY) do NOT match", "AND" not in g and "KEY" not in g)
     arm("S8 a keyword with no item is absent from gaps, present in the footer",
-        "ZZZ" not in g and "no open gap   4  of 8" in fmt_keywords(g, kws))
+        "ZZZ" not in g and "no known gap (NOT a tier -- no item, no kwsweep row)" in fmt_keywords(its, kws)
+        and fmt_keywords(its, kws).split("\n")[-1].startswith("8 keywords"))
     arm("S9 summary counts UNTAGGED separately", ("UNTAGGED", 1) in summary(its))
     arm("S11 a keyword named only in the BODY does not count", "CLEAR" not in g)
     arm("S10 the real kwtable parses to 150+ keywords", len(kwtable_keywords()) >= 150)
@@ -376,10 +471,21 @@ def selftest():
     arm("S18 a tag that declares nothing falls back to the headline", item_keywords(its[2], set(kws)) == ["DEF", "FN"])
     arm("S15 an item's keywords are sorted and the tier-kind prefix is stripped from its prose",
         item_keywords(its[0], set(kws)) == ["LOF", "PUT"] and what_is_open(its[0]) == "`LOF` and `PUT#1,255`")
+    kt = keyword_tiers(its, kws, evidence={"ZZZ": "SUPPORTED", "AND": "DIVERGENT", "LOF": "SUPPORTED"})
+    arm("S19 a keyword's reached tier is one below its worst open gap; no gap is None",
+        kt["LOF"][:2] == (1, [2]) and kt["DEF"][:2] == (5, [9]) and kt["ZZZ"][:2] == (None, []))
+    arm("S21 kwsweep evidence upgrades a no-gap keyword to reached-1, surfaces an unfiled gap, and never overrides an open item",
+        reached_group(*kt["ZZZ"][::2]) == "kw1" and reached_group(*kt["AND"][::2]) == "kwgap"
+        and reached_group(*kt["LOF"][::2]) == 1)
+    arm("S22 a kwsweep row's keyword is the first keyword token of its statement",
+        stmt_keyword("a=abs(-5)", {"ABS", "A"} - {"A"}) == "ABS" and stmt_keyword('a$=mid$("hi",1,1)', {"MID$"}) == "MID$"
+        and stmt_keyword("A=1", {"ABS"}) is None)
+    arm("S20 the full list names every keyword exactly once", sorted(kt) == sorted(kws))
     md = fmt_markdown(its, kws)
     arm("S14 markdown carries the summary, the keyword rows and the honesty footer",
         "| TIER 1 | works correctly in the happy path | 1 |" in md
-        and "`LOF` (2)" in md and "not \"verified\"" in md
+        and "| `LOF` | 0 | open TIER 1 item, TODO.md 2 |" in md and "| `ZZZ` | no known gap | — |" in md
+        and "not \"verified\"" in md
         and "| `LOF`, `PUT` | TIER 1 | 🤖 | `LOF` and `PUT#1,255` | 2 |" in md)
     print("selftest:", "GREEN" if ok else "🔴 RED")
     return 0 if ok else 2

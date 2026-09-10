@@ -4640,7 +4640,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       🔭 **ONLY THE IMPLEMENTATION DECISION IS LEFT** — whether to spend the ~7 B
       of main page 1 (read `make basic-reloc`; it was 8 B free 2026-09-04) plus
       the sub-side body. Everything the fix needs is measured.
-      🎚️ TIER 1 — happy path: `KEY n,"str"` and `KEY LIST` are MISSING keywords
+      🎚️ TIER 1 — happy path: `KEY` — its `n,"str"` assignment form and its LIST form are MISSING (the keyword is KEY; LIST itself is fine)
       ~~🙋 NEEDS-JOOST — everything the fix needs is measured; what is left is a~~ (re-marked 2026-09-10, see below)
       main page-1 spend (the dated figure is on the 🔭 line above — read the wall
       with `make basic-reloc`, never from here), and spends are his. That 🔭 line

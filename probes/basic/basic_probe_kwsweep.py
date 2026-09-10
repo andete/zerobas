@@ -750,6 +750,31 @@ def main() -> int:
         f"{len(skipped)} crunch-only word(s) carry no support reading and are "
         f"printed but not scored"))
 
+    # ---- D-TIERS (2026-09-10): a machine-readable pin for `make tiers` --------
+    # Every row here IS a keyword, so this run is the first per-keyword
+    # evidence the tier table can read without running an emulator. Written
+    # to build/ (regenerated, never tracked) and ONLY when the ROMs held still
+    # for the whole run -- a discarded report must not leave a pin behind.
+    if fp_before == fp_after:
+        import json
+        import time as _time
+        stmt = {key: st for key, st, *_ in rows}
+        pin = {"written": _time.strftime("%Y-%m-%d %H:%M:%S"),
+               "rom_fingerprint": fp_after,
+               "rows": {key: {"verdict": s[0],
+                              "weak": notes[key].startswith("WEAK:"),
+                              "stmt": stmt[key]}
+                        for key, s in executed}}
+        _root = _os.path.dirname(_os.path.dirname(_os.path.dirname(_os.path.abspath(__file__))))
+        pin_path = _os.path.join(_root, "build", "kwsweep-verdicts.json")
+        try:
+            _os.makedirs(_os.path.dirname(pin_path), exist_ok=True)
+            with open(pin_path, "w", encoding="utf-8") as fh:
+                json.dump(pin, fh, indent=1, sort_keys=True)
+            print(f"pin: {len(pin['rows'])} row verdict(s) -> {pin_path}")
+        except OSError as e:
+            print(f"pin: NOT written ({e}) -- `make tiers` will show no kwsweep evidence")
+
     if fp_before != fp_after:
         print("\n*** APPARATUS WARNING — the ROMs changed DURING this run:")
         print(f"      before: {fp_before}")
