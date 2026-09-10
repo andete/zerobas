@@ -94,9 +94,27 @@ def value(scr):
     return None
 
 
+# --- D-FACEPIN: the FACE, not just the row label ----------------------------
+# 🔴 A FILED FACE ROTS WITHOUT THE ROW CEASING TO DIVERGE. `filed_row_sweep`
+# calls a row that still diverges -- but to a DIFFERENT face -- `known`, and it
+# reads green. Same shape as `basic_probe_nodisk.PINNED`: pin the VALUES, RED on
+# drift in EITHER direction.
+# 🎯 HERE THE FACE IS WHAT THE MACHINE HOLDS, not a verdict word. zerobas has no
+# `DSKI$` at all, so the window it never fills reads zeros -- and `w.half2`'s 1s
+# are the pre-existing contents, not a partial transfer. Pinning `has` is what
+# would notice `DSKI$` starting to write something.
+PINNED = {
+    # measured 2026-09-10
+    "w.sec0":  "0 0 0 0 0 0 0 0",
+    "w.sec1":  "0 0 0 0 0 0 0 0",
+    "w.half2": "1 1 1 1 1 1 1 1",
+}
+
+
 def main() -> int:
     ok = True
     bad = 0
+    seen = {}
     for label, prog, sector, off, note in CASES:
         raw = "".join(omsx_repl.run_cases(
             CF, [("direct", ["NEW"] + prog + ["RUN"])], batch=False,
@@ -119,12 +137,28 @@ def main() -> int:
         # still failing. An unvalidatable pin is worse than no pin.
         if got != want:
             print(f"DIFF {label}  wants={want}  has={got}")
+        seen[label] = got
 
     # `DIFF: n/m` is the summary line `filed_row_sweep.py` already parses. Without
     # it this probe SCORES (it returns 1 on a mismatch) but reports in a format the
     # sweep cannot read, so it landed in "NOTHING PARSED" beside probes that have
     # no verdict at all -- and a rotted instrument hid in that same bucket.
     print(f"DIFF: {sum(1 for _ in ()) + bad}/{len(CASES)}")
+
+    drift = []
+    for lbl, face in PINNED.items():
+        if lbl not in seen:
+            continue                      # row not run; not a drift
+        if str(seen[lbl]) != face:
+            drift.append(f"{lbl}: pinned {face!r}, measured {str(seen[lbl])!r}")
+    if drift:
+        print("\n\U0001f534 PINNED FACE DRIFT -- the row may still diverge, but "
+              "NOT to the face this tree has filed:")
+        for d in drift:
+            print(f"     {d}")
+        print("  Re-read the owning entry: either the behaviour moved, or the "
+              "filing was wrong when it was written.")
+        return 2
     print("\n" + ("\U0001f3af THE LANDING ADDRESS IS ESTABLISHED, NOT INFERRED."
                   if ok else
                   "\U0001f534 AT LEAST ONE ROW DID NOT MATCH -- read the rows above; "

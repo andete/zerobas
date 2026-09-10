@@ -434,7 +434,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:13799 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:13817 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -599,7 +599,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:3542 (T-6FE392)8 (T-529ABE)` from `TODO.md:12736 (T-529ABE)`: a
+      `TODO.md:3560 (T-6FE392)8 (T-529ABE)` from `TODO.md:12754 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -1145,11 +1145,29 @@ list. **When a slice lands, grep this list for what it just shipped.**
       restore returns to rc=0, so the red is the pin biting and not the probe
       breaking. A pin that cannot redden reads exactly like a correct one on a
       green run.
-      ➡️ **REMAINING: 36 rows across 7 probes** — `dupopen` 6, `ngram14` 9,
-      `putdomain` 8, `reclen` 4, `dskibytes` 3, `playfn_fixture` 5, `bareform` 1.
-      Each needs its faces MEASURED first, exactly as these four were; pinning
-      from a filing rather than from a run is how the five instances above
-      happened in the first place.
+      ✅ **BATCH 2 (same day): `dupopen` 6 + `dskibytes` 3 — 23 of 50 pinned.**
+      Both RE-MEASURED at pin time rather than pinned from the readings taken
+      earlier the same night: `dupopen`'s six all read `<File already open>` vs
+      `OK`, `dskibytes`'s three read the zeros and 1s zerobas holds where the
+      image has FAT12 bytes. Faces intact in both.
+      🎯 **`dskibytes` PINS WHAT THE MACHINE HOLDS, NOT A VERDICT WORD** — zerobas
+      has no `DSKI$`, so the window it never fills reads zeros, and `w.half2`'s 1s
+      are pre-existing contents rather than a partial transfer. Pinning `has` is
+      what would notice `DSKI$` starting to write something.
+      🔬 **KNIFE NOW 6/6** ([`.out`](scratchpad/facepin_knife.out)), and two
+      things in it were wrong first:
+      • **It asserted `rc != 0`, which would have passed `dskibytes` for free** —
+        that probe ALREADY exits 1 on its own DIFF verdict (3/3 rows differ by
+        design), so "non-zero" is its resting state. The arm now requires
+        **exactly 2**, and the restore control checks for the ABSENCE of a drift
+        report rather than `rc == 0`.
+      • **The mutant was derived by a substitution chain** (`'"0'→'"9'` etc.),
+        which cannot address `dupopen` at all: it pins `"zb": "OK"` **six times**,
+        so no bare literal is unique. Each arm now names its own find/replace.
+      ➡️ **REMAINING: 27 rows across 5 probes** — `ngram14` 9, `putdomain` 8,
+      `playfn_fixture` 5, `reclen` 4, `bareform` 1. Each needs its faces MEASURED
+      first, exactly as these six were; pinning from a filing rather than from a
+      run is how the five instances above happened in the first place.
 
 - [ ] 🔬 **THE FILED-ROW DENOMINATOR WAS UNREADABLE FOR A THIRD OF ITS CORPUS, AND
       A ROTTED PROBE HID IN THE SAME BUCKET (2026-09-08, D-FRSKIND).** A full run of
@@ -4373,7 +4391,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:12736 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:12754 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

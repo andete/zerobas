@@ -100,4 +100,43 @@ for label, _, _ in CASES:
     if not same: diff.append(label)
     print(f"{label:<{w}}  " + "  ".join(f"{v:>24}" for v in vals)
           + f"   {'SAME' if same else 'DIFF'}")
+
+# --- D-FACEPIN: the FACE, not just the row label ----------------------------
+# 🔴 A FILED FACE ROTS WITHOUT THE ROW CEASING TO DIVERGE, AND NOTHING DETECTS
+# THAT. `filed_row_sweep` calls a row that still diverges -- but now to a
+# DIFFERENT face -- `known`, and it reads green. TODO.md records five instances.
+# 🎯 Same shape as `basic_probe_nodisk.PINNED` and D-DEFERPIN: pin the VALUES,
+# RED on drift in EITHER direction. ⚠️ Keyed by SIDE NAME, never by position --
+# `sides` is argv here, so a positional pin would compare the wrong machine.
+PINNED = {
+    # measured 2026-09-10. The filing is "THE SAME FILE ON TWO CHANNELS is
+    # accepted here and refused on the CF-3300" -- these six are that sentence.
+    # The CONTROLS (a.ch2only, d.ts2ch1, t.seq1, n.nomaxf) are deliberately NOT
+    # pinned: they are the fixture check, not the finding.
+    "s.same":     {"cf3300": "<File already open>", "zb": "OK"},
+    "s.space":    {"cf3300": "<File already open>", "zb": "OK"},
+    "s.newtwice": {"cf3300": "<File already open>", "zb": "OK"},
+    "s.modes":    {"cf3300": "<File already open>", "zb": "OK"},
+    "s.seqsame":  {"cf3300": "<File already open>", "zb": "OK"},
+    "s.reclaim":  {"cf3300": "<File already open>", "zb": "OK"},
+}
+
+_drift = []
+for _lbl, _want in PINNED.items():
+    for _side, _face in _want.items():
+        if _side not in res:
+            continue                      # side not run; that is not a drift
+        _got = str(res[_side].get(_lbl))
+        if _got != _face:
+            _drift.append(f"{_lbl}[{_side}]: pinned {_face!r}, measured {_got!r}")
+
 print(f"\nDIFF: {len(diff)}/{len(CASES)}  " + " ".join(diff))
+
+if _drift:
+    print("\n\U0001f534 PINNED FACE DRIFT -- the row may still diverge, but NOT to "
+          "the face this tree has filed:")
+    for _d in _drift:
+        print(f"     {_d}")
+    print("  Re-read the owning entry: either the behaviour moved, or the "
+          "filing was wrong when it was written.")
+    raise SystemExit(2)
