@@ -434,7 +434,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:13580 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:13613 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -599,7 +599,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:3442 (T-6FE392)8 (T-529ABE)` from `TODO.md:12517 (T-529ABE)`: a
+      `TODO.md:3442 (T-6FE392)8 (T-529ABE)` from `TODO.md:12550 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -4273,7 +4273,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:12517 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:12550 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -6398,7 +6398,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       not by a measurement. The device-driven harnesses exist
       (`basic_probe_key_trap.py`, T2/T4 probes) if the argument is ever attacked.
       ✅ **THE CODE ARGUMENT IS NOW A MEASUREMENT — ON `SPRITE`, 2026-08-26**
-      ([`scratchpad/clrtrapstk_sprite.py`](scratchpad/clrtrapstk_sprite.py),
+      ([`scratchpad/clrtrapstk_sprite_probe.py`](scratchpad/clrtrapstk_sprite_probe.py),
       [`scratchpad/clrtrapstk_sprite.out`](scratchpad/clrtrapstk_sprite.out)).
       🎯 **THE `CLEAR`/`TRAPSTK` DEFECT MEASURED THE SAME DAY IS A DISCRIMINATOR
       FOR EXACTLY THIS CLAIM**: it lives in `trap_return_check`, the routine the
@@ -6439,7 +6439,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `SPRITE` was taken first because a sprite collision is reachable from pure
       BASIC, so it needed no device at all. ~~**1 of 4 converted.**~~
       🟢 **`STOP` CONVERTED 2026-09-05 — 2 of 4 — AND IT DOES NOT REPRODUCE**
-      ([`scratchpad/clrtrapstk_stop.py`](scratchpad/clrtrapstk_stop.py),
+      ([`scratchpad/clrtrapstk_stop_probe.py`](scratchpad/clrtrapstk_stop_probe.py),
       [`.out`](scratchpad/clrtrapstk_stop.out)). Same 2×2, driven through
       `basic_probe_stop_trap.run()` (imported, not copied — a second copy would
       sit outside `make latch-check` and re-open the delivery race that gate
@@ -6470,7 +6470,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       that *"the index is a parameter, so all five behave alike"* is too strong:
       two verbs through the same routine gave different answers.
       🟢 **`STRIG` CONVERTED THE SAME DAY — 3 of 4 — AND IT AGREES TOO**
-      ([`scratchpad/clrtrapstk_strig.py`](scratchpad/clrtrapstk_strig.py),
+      ([`scratchpad/clrtrapstk_strig_probe.py`](scratchpad/clrtrapstk_strig_probe.py),
       [`.out`](scratchpad/clrtrapstk_strig.out)). Same 2×2 plus the same positive
       control, through `basic_probe_strig_trap.run()` (imported; trigger 0 IS the
       SPACE key, matrix row 8 bit 0). All four cells **1/1**, `c.twofire` **2/2**.
@@ -6487,7 +6487,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       the SPRITE divergence is still NOT established and is deliberately not
       guessed at** [[a-mechanism-inferred-from-one-observation]].
       🟢 **`KEY` CONVERTED THE SAME DAY — 4 of 4, THE CONVERSION IS COMPLETE, AND
-      IT AGREES** ([`scratchpad/clrtrapstk_key.py`](scratchpad/clrtrapstk_key.py),
+      IT AGREES** ([`scratchpad/clrtrapstk_key_probe.py`](scratchpad/clrtrapstk_key_probe.py),
       [`.out`](scratchpad/clrtrapstk_key.out)). Same 2×2, same positive control,
       through `basic_probe_key_trap.run()` (imported; F1 is matrix row 6 bit 5).
       All four cells **1/1**, `c.twofire` **2/2**. The windows are
@@ -6638,11 +6638,44 @@ list. **When a slice lands, grep this list for what it just shipped.**
       🎯 **THIS IS THE SAME REGEX BLIND SPOT D-PINGATE FOUND ON THE PIN SIDE
       TONIGHT** (`basic_probe_nodisk`, unnameable by the orphan scan) — the other
       half of one bug: the pin side is now gated, the PROBE side is not.
-      ➡️ **The cheap fix is a NAME, not a regex**: renaming `clrtrapstk_sprite.py`
-      → `clrtrapstk_sprite_probe.py` would put it in the corpus. Widening `CITE`
-      instead would pull every cited scratch file in, knives included, and change
-      what the sweep means. **Not done here** — it is a rename across cited paths
-      and needs its own slice.
+      ✅ **DONE 2026-09-10 (D-CLRTRAPNAME): THE FOUR ARE RENAMED AND IN THE
+      CORPUS.** `clrtrapstk_{sprite,key,stop,strig}.py` →
+      `clrtrapstk_{…}_probe.py` via `git mv`, with all five reference sites
+      updated (this file, `spritestate_probe.py`'s import,
+      `clrtrapstk_stop_probe.py`'s own header, `basic_probe_trapsvc.py`,
+      `basic_probe_sprite_trap.py`). **Sweep corpus 53 → 57**;
+      `check_citation_paths` reads 611 cited paths, all resolving.
+      🟢 **AND THE SWEEP THEN ADJUDICATED THEM: all four `clean`, 0 UNFILED, 0 NO
+      LONGER DIVERGING** ([`.out`](scratchpad/filedrow_clrtrapstk.out)) — which is
+      the point of the rename and not a formality: SPRITE's closure is now
+      something an instrument reports, rather than something a person has to
+      remember to re-run.
+      💰 **AND IT COSTS ALMOST NOTHING, MEASURED** — the four run in 6–11 s each
+      in the sweep, and `clrtrapstk_sprite_probe.py` alone times at **4.5 s** for
+      eight boots. That is consistent with tonight's own D-STALLRATE reading
+      (openMSX unthrottled at ~400×, an ordinary case living 0.9 wall seconds),
+      and it settles the choice: **renaming was right, and the cost objection to a
+      wider corpus does not apply to probes this cheap.**
+      ⚠️ **One captured gate-run log (`ctrlc_gates2.out`, 2026-09-07) still names
+      the OLD path, deliberately**: editing evidence to match a later rename would
+      falsify the record. 🔴 It is named WITHOUT its `scratchpad/` prefix on
+      purpose — `check_citation_paths` treats a prefixed path as a CITATION and
+      requires it to resolve in a fresh clone, and that log is untracked and is
+      not evidence for anything here. Committing an unrelated 6.5 KB log to
+      satisfy a name-drop would be the wrong fix; the gate was right to ask.
+      🔴 **AND THE BULK RENAME ATE THE SENTENCE THAT PROPOSED IT.** The script
+      that updated the five reference sites rewrote this very paragraph —
+      *"renaming `clrtrapstk_sprite.py` → `clrtrapstk_sprite_probe.py`"* became
+      *"renaming X → X"*, a sentence saying nothing. The follow-up edit then
+      asserted on the ORIGINAL wording, fired, and wrote nothing. **The assertion
+      is what caught it**; a `replace()` with no count check would have left the
+      nonsense in place and reported success
+      [[an-unnamed-outcome-reads-as-no-outcome]].
+      ➡️ **The class is not empty**: ~16 other cited, divergence-emitting scratch
+      files remain outside the sweep by name (5 more are knives, which move rows
+      on purpose and do not belong in it). This slice took the four carrying a
+      LIVE filed finding; the rest want the same treatment, file by file, with the
+      same adjudication run after each.
       🤖 AUTONOMOUS — the conversion is 4 of 4, the state question is answered, and
       the divergence that kept this open is closed. What remains is the corpus
       blind spot above.

@@ -1,0 +1,9 @@
+# 4 of 57 cited probe(s), serial, refcache OFF, 900s each
+  1/4  clrtrapstk_key_probe         rc=0         6.1s  clean: 10 parsed line(s), no divergence marker
+          cites TODO.md:6393,6393
+  2/4  clrtrapstk_sprite_probe      rc=0         8.5s  clean: 8 parsed line(s), no divergence marker
+          cites TODO.md:6393,6393
+  3/4  clrtrapstk_stop_probe        rc=0         8.6s  clean: 10 parsed line(s), no divergence marker
+          cites TODO.md:6393,6393
+  4/4  clrtrapstk_strig_probe       rc=0        11.1s  clean: 10 parsed line(s), no divergence marker
+          cites TODO.md:6393,6393

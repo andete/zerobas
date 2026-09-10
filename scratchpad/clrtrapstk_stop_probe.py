@@ -7,7 +7,7 @@ TODO.md's "`KEY / STRIG / SPRITE / STOP` were NOT run against the D-TRAPSVC rows
 records the four non-INTERVAL traps as covered by a CODE argument -- *"they share
 `check_traps`, `ct_find`, `set_state` and `trap_return_check` verbatim; the index
 is a parameter"* -- and not by a measurement. `SPRITE` was converted 2026-08-26
-(`scratchpad/clrtrapstk_sprite.py`) because a sprite collision needs no device.
+(`scratchpad/clrtrapstk_sprite_probe.py`) because a sprite collision needs no device.
 This is `STOP`, which does: it needs Ctrl-STOP on the real key matrix.
 
 🎯 THE APPARATUS ALREADY EXISTS AND IS IMPORTED, NOT COPIED.

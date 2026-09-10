@@ -22,7 +22,7 @@ different ways, and both were found by reading rather than by anything running.
 `ON SPRITE GOSUB` is unimplemented on the zerobas side (D-G7-4 left
 `SPRITE ON/OFF/STOP` a no-op)". IT FIRES. `basic/sprtrap-body.inc` is included
 via `basic/subromcall.asm`, `ZTI_SPRITE` is a live ZTRAP index, and
-`scratchpad/clrtrapstk_sprite.py` measured ONE fire on the VG-8020 and one on
+`scratchpad/clrtrapstk_sprite_probe.py` measured ONE fire on the VG-8020 and one on
 zerobas across three control cases -- plus a divergence in the fourth, which is
 a statement about `trap_return_check` and not about SPRITE being absent.
 The conclusion (not yet gated) still stands; the reason for it does not.

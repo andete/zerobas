@@ -58,7 +58,7 @@ sys.path.insert(0, os.path.join(ROOT, "probes", "basic"))
 import basic_probe_sprite_trap as SP                              # noqa: E402
 import probe_sides                                                # noqa: E402
 import probe_tmp                                                  # noqa: E402
-import clrtrapstk_sprite as S                                     # noqa: E402
+import clrtrapstk_sprite_probe as S                                     # noqa: E402
 
 ZTRAP, ENTSZ, NENT = 0xE1D1, 3, 18
 TRAPENA, TRAPSVC = 0xE20B, 0xE20C

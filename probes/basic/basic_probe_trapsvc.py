@@ -49,7 +49,7 @@ nothing and it is what makes a future regression legible instead of blank.
 ON INTERVAL is the instrument because it is the ONLY self-firing MSX1 trap --
 KEY/STRIG/SPRITE/STOP need a human -- and all five share `check_traps` and
 `trap_return_check` verbatim (the index is a parameter). `SPRITE` was measured
-against the same 2x2 on 2026-08-26 (`scratchpad/clrtrapstk_sprite.py`), which is
+against the same 2x2 on 2026-08-26 (`scratchpad/clrtrapstk_sprite_probe.py`), which is
 what turned that code argument into a measurement.
 """
 from __future__ import annotations
