@@ -3182,8 +3182,10 @@ todo-citation-check:
 
 # tiers: Joost's priority-tier table, compactly, whenever he asks (D-TIERS,
 # 2026-09-10). Reads the 🎚️ tag on every open TODO item and the keyword
-# denominator in basic/kwtable.inc. `ARGS=--keywords` for the per-keyword view,
-# `ARGS=--all` to include APPARATUS/BUDGET/STANDING/OTHER. The per-keyword
+# denominator in basic/kwtable.inc plus the keywords filed as missing.
+# `ARGS=--keywords` for the per-keyword view, `ARGS=--all` to include
+# APPARATUS/BUDGET/STANDING/OTHER, `ARGS=--markdown` for the same table as a
+# status page (the go-public form, Joost 2026-09-10). The per-keyword
 # SCORED column is step (c) of that item and does not exist yet -- the tool
 # says so in its footer rather than letting a blank read as verified.
 tiers:
