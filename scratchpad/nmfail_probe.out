@@ -1,0 +1,10 @@
+D-NMFAIL: a drive with NO image mounted; ON ERROR reports ERR and ERL
+
+  DIFF n.name   NAME "A.BAS" AS "B.BAS"  cf3300=[n.name ERR 70 AT 20 ]    zb=[n.name NO ERROR]       
+  DIFF k.kill   KILL "A.BAS"             cf3300=[k.kill ERR 70 AT 20 ]    zb=[k.kill NO ERROR]       
+  DIFF f.files  FILES                    cf3300=[f.files ERR 70 AT 20 ]   zb=[f.files NO ERROR]      
+  DIFF l.load   LOAD "A.BAS"             cf3300=[l.load ERR 70 AT 20 ]    zb=[l.load NO ERROR]       
+  DIFF s.save   SAVE "A.BAS"             cf3300=[s.save ERR 70 AT 20 ]    zb=[s.save NO ERROR]       
+
+=== 5 row(s) where zerobas differs from the CF-3300: ['n.name', 'k.kill', 'f.files', 'l.load', 's.save'] ===
+refcache: 0 hit, 2 miss, 2 stored

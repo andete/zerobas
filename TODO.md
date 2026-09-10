@@ -434,7 +434,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:14058 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:14106 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -599,7 +599,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:3623 (T-6FE392)8 (T-529ABE)` from `TODO.md:12995 (T-529ABE)`: a
+      `TODO.md:3623 (T-6FE392)8 (T-529ABE)` from `TODO.md:13043 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -4454,7 +4454,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:12995 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:13043 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -7516,6 +7516,54 @@ list. **When a slice lands, grep this list for what it just shipped.**
       🙋 NEEDS-JOOST — a call that is yours to make: the fix is a frame-SHAPE
       change to a load-bearing verb (save one slot, not the live prefix), not a
       byte spend, so it is outside the standing ≤20 B measured-divergence budget.
+
+- [ ] 🔴 **A DISK VERB ON AN EMPTY DRIVE IS NOT TRAPPABLE AND DOES NOT STOP —
+      FIVE VERBS, MEASURED.** Opened 2026-09-10 by D-NMFAIL
+      ([`scratchpad/nmfail_probe.py`](scratchpad/nmfail_probe.py),
+      [`.out`](scratchpad/nmfail_probe.out); control
+      [`scratchpad/nmfail_ctl.py`](scratchpad/nmfail_ctl.py)). Drive present, no
+      image mounted, `ON ERROR GOTO 900` armed:
+
+          NAME / KILL / FILES / LOAD / SAVE
+            CF-3300   `Disk offline`, ERR = 70, ERL = 20, TRAPPED, program STOPS
+            zerobas   prints `load error`, ON ERROR never fires, ERR never set,
+                      and THE NEXT LINE RUNS
+
+      🎯 **THIS DISCHARGES ONE OF THE FOUR D-DUPOBS2 HOLES**: `nm_fail` is the
+      `fat_mount` failure exit ([`basic/files.asm:1799`](basic/files.asm:1799))
+      and it IS reachable from BASIC — it was never unreachable, only ungated.
+      🔴 **AND IT RETIRES A "NOT MEASURED" THAT HAD BEEN STANDING SINCE
+      D-DKNAME.** `basic/files.asm` justified leaving the mount on `load_error`
+      by calling the class *"unmeasured on the reference"*. It is measured now,
+      and the answer is that the reference is trappable and aborting where
+      zerobas is neither — corrected in place
+      [[a-fix-falsifies-the-justification-beside-it]].
+      ⚠️ **`load_error` ITSELF MUST NOT BE RE-POINTED.**
+      [`basic/bload.asm:203`](basic/bload.asm:203) is the CASSETTE failure path
+      under the same label, so a fix sited on the shared tail would move tape
+      behaviour it was never measured against
+      [[a-shared-tail-is-not-a-decision]]. The fix belongs at the disk mount
+      sites.
+      📏 **WHAT IT COSTS IS THE OPEN QUESTION, AND IT IS NOT ZERO LIKE ERR 53
+      WAS.** `df_notfound` was 5 B *because the message already shipped*.
+      **ERR 70 does not exist in this tree**: `sub/errmsg.asm`'s `em_table` stops
+      at 64, so this needs a new row, a new string, an `err_msgtab` extension in
+      the main ROM, and the raise at each site.
+      🔴 **THE FIRST TWO CUTS OF THIS PROBE BOTH MIS-READ, THE SAME WAY, AND
+      THE SECOND ONE WAS WRITTEN THE SAME DAY I FILED THE LESSON.** `rfind("[")`
+      is a whole-screen search, and these programs `CLS` before printing, so
+      there is no `RUN` echo left to anchor on either — a case that fails to
+      print leaves the PREVIOUS case's fence looking like an answer, and five
+      rows came back with row 1's `[NO ERROR]`. Each fence CARRIES ITS OWN ROW
+      NAME now and the probe exits 2 rather than adjudicate if a reading belongs
+      to another row. The `load error` text was invisible to the fenced readout
+      as well — the raw-glass control is what found it, which is why that control
+      exists [[apparatus-is-part-of-the-measurement]].
+      ➡️ **NEXT**: price the ERR 70 addition exactly (main `err_msgtab`
+      extension + sub message + the raise sites). Under the standing ≤20 B
+      main-page-1 budget it ships on this measurement; over it, this flips to 🙋
+      with the number rather than a shrug.
+      🤖 AUTONOMOUS — the reference or a gate settles it; finishable unattended (measured 2026-09-10; the fix is a costing away).
 
 - [ ] ⚠️ **A probe with an honest `rc` that NO battery collects is not an oracle.**
       Opened 2026-08-27 by D-WALLIT,

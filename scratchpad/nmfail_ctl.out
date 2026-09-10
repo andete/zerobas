@@ -1,0 +1,11 @@
+=== cf3300 (National_CF-3300), diska=None
+    | Disk offline in 20|
+    | Ok|
+    | color   auto    goto    list    run|
+
+=== zb (C-BIOS_MSX1_EU_REPACK_DISK), diska=None
+    | load error|
+    | <<END>>|
+    | ZB|
+
+refcache: 0 hit, 2 miss, 2 stored

@@ -1781,8 +1781,19 @@ do_name:
 ; a SHARED exit for the fat_mount failure AND the fat_find miss, so re-pointing
 ; it would have moved a disk-offline NAME to a trappable ERR 53 on no reading at
 ; all — the same conflation D-DSKMSG found in do_kill. The mount keeps
-; load_error (the quarantined no-disk / mount / I-O class, unmeasured on the
-; reference), and only the miss becomes reference-exact.
+; load_error (the quarantined no-disk / mount / I-O class), and only the miss
+; becomes reference-exact.
+; \U0001f534 "UNMEASURED ON THE REFERENCE" WAS TRUE UNTIL 2026-09-10 AND IS NOW
+; FALSE (D-NMFAIL, scratchpad/nmfail_probe.py + nmfail_ctl.py). With a drive
+; and NO image the CF-3300 answers `Disk offline`, ERR reads **70**, ON ERROR
+; TRAPS it and the program STOPS -- measured for NAME, KILL, FILES, LOAD and
+; SAVE alike. zerobas prints `load error` and RUNS ON: the next line executes,
+; ON ERROR never fires, and ERR is never set. So the quarantine's premise is
+; gone; what stands in its place is a cost question, because ERR 70 does not
+; exist in this tree at all (sub/errmsg.asm's em_table stops at 64).
+; \u26a0\ufe0f AND load_error ITSELF MUST NOT BE RE-POINTED: basic/bload.asm's
+; CASSETTE failure path is the same label, so a fix belongs at the disk mount
+; sites, not at the shared tail [[a-shared-tail-is-not-a-decision]].
 ;
 ; ⚠️ STILL CONFLATED, said out loud: fat_find's own contract is `Cy = 1 not
 ; found / error` — it does `ret c` on a read_sector FDC failure mid-scan — so an
