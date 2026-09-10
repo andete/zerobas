@@ -279,114 +279,102 @@ load_reclen:
                 ld      (GP_RECLEN),de
                 ret
 
-; mul_reclen — HL := HL * GP_RECLEN. Clobbers A,DE (BC is preserved).
-;
-; 🔴 THIS USED TO BE A SHIFT, AND THE SHIFT IS WHY THE `LEN=` DOMAIN IS STILL
-; POWERS OF TWO. The old body doubled HL while halving r until r == 1 -- exactly
-; `HL * 2^floor(log2 r)` -- correct for a power of two and silently wrong for
-; everything else: at r=100 it computed **×64**, so record 6 landed at
-; within=320 instead of 500. `tests/test_open_len.py` is what caught that when
-; D-RECLEN2 tried to widen the domain in 2026-08-30, because it checks
-; `frnd_calc` against an INDEPENDENTLY derived offset; the emulator rows could
-; not, since `PUT` and `GET` share the arithmetic and agree on the same wrong
-; answer [[a-case-that-agrees-can-agree-for-the-wrong-reason]].
-;
-; 🎯 SO THIS IS ONE OF THREE THINGS THE WIDENING NEEDS, and the only one that
-; can be fixed and PROVEN with no disk risk at all. The other two are
-; `fat_rand_put`/`fat_rand_get` spanning two sectors, and `oo_parse_reclen`'s
-; validator. ~~Until those land nothing but a power of two reaches here, and for a
-; power of two shift-and-add gives bit-identical answers -- so this change moves
-; no shipped behaviour, which is precisely what makes it safe to land alone.~~
-; 🔴 THAT WAS TRUE WHEN WRITTEN AND IS NOT NOW (corrected 2026-09-09). BOTH other
-; fixes landed -- D-STRADDLE and D-RECLENFIX -- so **any r in 1..256 reaches here**
-; and the shift-and-add below is doing real work on values a shift would get
-; wrong. Do NOT reduce it to a shift on the strength of the struck sentence: at
-; r=100 a shift computes k*64, and PUT and GET would agree on that wrong offset
-; because they share this routine [[a-case-that-agrees-can-agree-for-the-wrong-reason]].
-;
-; Shift-and-add, LSB first: k <= 254 and r <= 256, so the product is <= 65024 and
-; the running BC (k << bit) never exceeds 16 bits either.
+; mul_reclen — A:HL := HL * GP_RECLEN, a 24-bit product. Clobbers A,DE (BC is
+; preserved).
+; 🔴 D-PUTU32 (2026-09-10): THE PRODUCT IS 24 BITS, NOT 16. The 16-bit
+; shift-and-add this replaces accumulated k*reclen with a plain `add hl,bc` and
+; wrapped SILENTLY past 65535 -- that wrap was the whole reason PUT and GET
+; refused record numbers above 255 (D-PUTDOMAIN), while the CF-3300 serves
+; PUT#1,257 (offset 65536) and PUT#1,300 (76544). recno now arrives as an
+; unsigned 16-bit DE from the evaluator, so k is 0..65534 and, with reclen
+; 1..256, the product is < 2^24.
+; TWO CASES, because reclen is 1..256 and 256 does not fit the 8-bit multiplier:
+;   reclen == 256:  the product is k << 8, moved by bytes.
+;   reclen  < 256:  8 iterations MSB-first over reclen's bits with the
+;                   multiplicand FIXED in BC and the product doubling in A:HL --
+;                   the LSB-first form would need a 24-bit shifting multiplicand
+;                   and there is no register for its top byte.
 mul_reclen:
-                ld      de,(GP_RECLEN)      ; DE = r, the multiplier
                 push    bc                  ; the header promised A,DE only
                 ld      b,h
-                ld      c,l                 ; BC = k, the multiplicand
-                ld      hl,0                ; HL = product
-mr_loop:
-                ld      a,e
-                and     1                   ; r bit 0 set -> add this partial
-                jr      z,mr_skip
-                add     hl,bc
-mr_skip:
-                sla     c
-                rl      b                   ; BC <<= 1
-                srl     d
-                rr      e                   ; r >>= 1
+                ld      c,l                 ; BC = k, the multiplicand (fixed)
+                ld      de,(GP_RECLEN)      ; DE = r
                 ld      a,d
-                or      e
-                jr      nz,mr_loop          ; r exhausted -> done
+                or      a
+                jr      z,mr_lt256
+                ld      a,b                 ; r == 256: A:HL = k << 8
+                ld      h,c
+                ld      l,0
+                pop     bc
+                ret
+mr_lt256:                                   ; A = 0 here; E = r (1..255)
+                ld      h,a
+                ld      l,a                 ; A:HL = 0
+                ld      d,8                 ; 8 bits of r, MSB-first
+mr_loop:
+                add     hl,hl               ; A:HL <<= 1 ...
+                rla                         ;   (bit 15 of HL -> CF -> bit 0 of A;
+                                            ;   A's own top bit is beyond 24 bits)
+                sla     e                   ; r's top bit -> CF
+                jr      nc,mr_skip
+                add     hl,bc               ; A:HL += k
+                adc     a,0
+mr_skip:
+                dec     d
+                jr      nz,mr_loop
                 pop     bc
                 ret
 
 ; frnd_calc — split GP_RECNO into GP_SEC (file sector index) + GP_WITHIN (byte
-; offset within the 512-byte sector). byteoffset = (recno-1) * reclen; GP_SEC =
-; byteoffset >> 9; GP_WITHIN = byteoffset & 511. recno is 1..255 and reclen <= 256,
-; so byteoffset <= 254*256 = 65024 (fits 16 bits). Clobbers A,DE,HL.
-; 🎯 THE SPLIT ITSELF IS GENERAL OVER THE WHOLE 16-BIT RANGE (D-PUTDOMAIN,
-; 2026-09-09): `ld l,h / ld h,0 / srl l` is exactly `byteoffset >> 9` for any
-; byteoffset 0..65535, and `ld a,h / and 1` is exactly `& 511`. Nothing here
-; caps anything. **The 16-bit bound comes from `mul_reclen` above**, which
-; accumulates `k * reclen` with a plain `add hl,bc` and wraps SILENTLY -- that,
-; and not this routine, is what a wider record domain would have to address.
-; ⚠️ THE ARITHMETIC HERE IS GENERAL SINCE `mul_reclen` stopped being a shift; what
-; still requires a power of two is `fat_rand_put`/`fat_rand_get`, whose overlay is
-; a single `ldir` that cannot cross a sector boundary. The sentence that stood
-; here — ~~"reclen tiles the sector (power of two 1..256), so a record never
-; straddles two sectors"~~ — described the CONSEQUENCE of the validator, not a
-; property of this routine, and it will be wrong the day the validator widens.
+; offset within the 512-byte sector). byteoffset = (recno-1) * reclen, a 24-bit
+; value from mul_reclen (A:HL); GP_SEC = byteoffset >> 9; GP_WITHIN = byteoffset
+; & 511. GP_SEC stays 16-bit by construction: a 720 KB disk has 1440 sectors, so
+; any offset that fits the disk shifts to under 2^16. D-PUTU32 (2026-09-10)
+; replaced the 16-bit split; the previous comment here recorded that the 16-bit
+; bound "comes from mul_reclen above, which wraps SILENTLY" -- it did, and now
+; neither routine caps anything. Clobbers A,DE,HL.
 frnd_calc:
                 call    load_reclen         ; GP_RECLEN = this channel's record size
                 ld      hl,(GP_RECNO)
-                dec     hl                  ; HL = k (0..254)
-                call    mul_reclen          ; HL = k * reclen = byte offset in file
-                ; GP_WITHIN = HL & 0x01FF (low 9 bits)
+                dec     hl                  ; HL = k (0..65534)
+                call    mul_reclen          ; A:HL = k * reclen, the byte offset
+                push    af                  ; [offset bits 16..23]
                 ld      a,h
                 and     1
                 ld      d,a
                 ld      e,l
-                ld      (GP_WITHIN),de
-                ; GP_SEC = HL >> 9 = (HL >> 8) >> 1
+                ld      (GP_WITHIN),de      ; GP_WITHIN = offset & 511
+                pop     af
                 ld      l,h
-                ld      h,0                 ; HL = HL >> 8
-                srl     l                   ; HL = HL >> 9 -- H stays 0 for EVERY
-                                            ; 16-bit byteoffset, since 65535>>9
-                                            ; is 127. D-PUTDOMAIN: this line read
-                                            ; "(H stays 0; byteoffset < 32768)"
-                                            ; and that precondition does not
-                                            ; exist -- it was cited as the
-                                            ; blocker on lifting PUT's 1..255 cap
-                                            ; and cost the item a filing cycle.
+                ld      h,a                 ; HL = offset >> 8 (bytes 1..2 of the 24)
+                srl     h
+                rr      l                   ; HL = offset >> 9
                 ld      (GP_SEC),hl
                 ret
 
 ; fat_rand_put — write the record buffer (FSECTOR_BUF[0..256)) to record GP_RECNO.
 ;   out: Cy = 0 ok; Cy = 1 = disk full / I/O error / record out of range.
 fat_rand_put:
-                ld      a,(GP_RECNO+1)      ; recno high byte must be 0 (recno <= 255)
-                or      a
-                jp      nz,frp_err          ; `jp`: the two-pass body below pushed
-                ld      a,(GP_RECNO)        ; frp_err out of jr range (D-STRADDLE)
-                or      a
-                jp      z,frp_err           ; record 0 invalid
+                ; D-PUTU32: no high-byte cap any more -- the reference serves record
+                ; 257 and beyond, and the 24-bit offset math reaches it. Record 0
+                ; stays invalid (ERR 5 on the CF-3300, D-GETREC).
+                ld      hl,(GP_RECNO)
+                ld      a,h
+                or      l
+                jp      z,frp_err           ; `jp`: the two-pass body below pushed
+                                            ; frp_err out of jr range (D-STRADDLE)
                 call    frnd_calc           ; GP_SEC, GP_WITHIN
-                ; old_nsec = ceil(FWR_BYTES_lo16 / 512) = (size + 511) >> 9
+                ; old_nsec = ceil(FWR_BYTES / 512) = (size + 511) >> 9, over the
+                ; 4-byte size (D-PUTU32: it used to read the low 16 bits only)
                 ld      hl,(FWR_BYTES)
                 ld      de,511
                 add     hl,de
-                ld      a,h
-                srl     a
-                ld      l,a
-                ld      h,0
+                ld      a,(FWR_BYTES+2)
+                adc     a,0                 ; A:HL = size + 511 (< 2^24 on a 720 KB disk)
+                ld      l,h
+                ld      h,a
+                srl     h
+                rr      l                   ; HL = (size + 511) >> 9
                 ld      (GP_OLDNSEC),hl
                 ; 🎯 D-STRADDLE: A RECORD THAT CROSSES A SECTOR BOUNDARY IS WRITTEN
                 ; IN TWO PASSES. The body below used to be straight-line and its
@@ -479,19 +467,24 @@ frp_err:
                 scf
                 ret
 
-; frnd_update_size — FWR_BYTES = max(FWR_BYTES, GP_RECNO*reclen). recno<=255 and
-; reclen<=256, so the new size is <= 65280 and the high 2 bytes are 0. GP_RECLEN was
-; loaded by the frnd_calc that precedes every fat_rand_put. Clobbers A,DE,HL.
+; frnd_update_size — FWR_BYTES = max(FWR_BYTES, GP_RECNO*reclen), over the 4-byte
+; size: the candidate is mul_reclen's 24-bit A:HL (D-PUTU32; it used to assume
+; recno <= 255 and zero the high word). GP_RECLEN was loaded by the frnd_calc
+; that precedes every fat_rand_put. Clobbers A,DE,HL.
 frnd_update_size:
-                ld      hl,(GP_RECNO)       ; recno (high byte 0 -- callers checked <=255)
-                call    mul_reclen          ; HL = recno * reclen (candidate new size)
-                push    hl                  ; save the candidate
-                ld      de,(FWR_BYTES)
+                ld      hl,(GP_RECNO)
+                call    mul_reclen          ; A:HL = recno * reclen (candidate new size)
+                push    hl                  ; [candidate low word]
+                ex      de,hl               ; DE = candidate low word
+                ld      hl,(FWR_BYTES)
                 or      a
-                sbc     hl,de               ; new - current
-                pop     hl                  ; HL = candidate again (flags from sbc survive)
-                ret     c                   ; new < current -> keep
-                ret     z                   ; equal -> keep
+                sbc     hl,de               ; current_low - candidate_low
+                ld      hl,(FWR_BYTES+2)
+                ld      d,0
+                ld      e,a                 ; DE = candidate high word (0:A)
+                sbc     hl,de               ; current_high - candidate_high - borrow
+                pop     hl                  ; HL = candidate low word (flags survive)
+                ret     nc                  ; current >= candidate -> keep
                 ld      (FWR_BYTES),hl      ; grow to recno*reclen
                 ; D-LOF §4c: keep LOF's size field in step. MEASURED on the
                 ; CF-3300 (docs/lof-cf3300-characterization.md §3): after
@@ -500,7 +493,8 @@ frnd_update_size:
                 ; refuted "LOF reads the directory". A RANDOM PUT moves the field
                 ; live; a sequential PRINT # does NOT (and must not).
                 ld      (FAT_FILESIZE),hl
-                ld      hl,0
+                ld      h,0
+                ld      l,a                 ; HL = the candidate's high word
                 ld      (FWR_BYTES+2),hl
                 ld      (FAT_FILESIZE+2),hl
                 ret
@@ -509,11 +503,9 @@ frnd_update_size:
 ;   out: Cy = 0 ok; Cy = 1 = I/O error / record out of range. A record beyond the
 ;        file end is returned as spaces (lenient).
 fat_rand_get:
-                ld      a,(GP_RECNO+1)
-                or      a
-                jr      nz,frg_err
-                ld      a,(GP_RECNO)
-                or      a
+                ld      hl,(GP_RECNO)       ; D-PUTU32: record 0 only; no 255 cap
+                ld      a,h
+                or      l
                 jr      z,frg_err
                 call    frnd_calc
                 ; 🎯 D-STRADDLE: THE READ SPANS TWO SECTORS TOO, and its failure is

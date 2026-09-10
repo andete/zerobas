@@ -489,7 +489,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:14414 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:14433 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -655,7 +655,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:3753 (T-6FE392)8 (T-529ABE)` from `TODO.md:13335 (T-529ABE)`: a
+      `TODO.md:3772 (T-6FE392)8 (T-529ABE)` from `TODO.md:13354 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -3006,7 +3006,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       [[a-justification-parenthesis-is-an-unrun-claim]].
       ➡️ **The cap-lifting itself is now the item below.**
 
-- [ ] 🙋 **D-PUTDOMAIN (2026-09-09): THE REFERENCE'S RECORD OFFSETS ARE WIDER
+- [x] 🙋 **D-PUTDOMAIN (2026-09-09): THE REFERENCE'S RECORD OFFSETS ARE WIDER
       THAN 16 BITS, SO LIFTING `PUT`'s CAP IS A 32-BIT CHANGE — AND THE PROBE
       FOUND A SECOND, LIVE DEFECT INSIDE THE DOMAIN WE ALREADY SUPPORT**
       ([`scratchpad/putdomain_probe.py`](scratchpad/putdomain_probe.py),
@@ -3098,7 +3098,26 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `(recno-1)*reclen` and a 16-bit `GP_SEC`, so `r.256`+ and `l1.256`+ still
       refuse; `randio-body.inc` is main-resident and the arithmetic wants to go
       sub-side. TIER 1 (the reference serves record 257; this tree refuses it).
-      🤖 AUTONOMOUS — the reference settles the shape (32-bit offsets); finishable unattended (LOF half shipped 2026-09-10; PUT half next).
+      ✅ **THE `PUT` HALF SHIPPED THE SAME NIGHT (D-PUTU32) — THE ITEM IS CLOSED.**
+      All ten [`scratchpad/putdomain_probe.py`](scratchpad/putdomain_probe.py)
+      rows match the CF-3300 ([`.out`](scratchpad/putdomain_put2.out)): `PUT#1,256`
+      → LOF 65536, `PUT#1,257` → 65792, `PUT#1,300` → 76800, and at LEN=1 records
+      256, 32767, 32768 and 65535. `mul_reclen` returns a 24-bit product; `frnd_calc`
+      splits it (`GP_SEC` stays 16-bit by construction — 1440 sectors on a 720 KB
+      disk); the two `GP_RECNO+1 == 0` caps are gone (record 0 stays ERR 5);
+      `GP_OLDNSEC` and `frnd_update_size` run over the 4-byte size.
+      🔴 **AND THIS BLOCK'S "`randio-body.inc` IS MAIN-RESIDENT TODAY" WAS STALE.**
+      It is included only by `sub/randio.asm` — sub-ROM page 1 already — so the
+      question it raised (*"is moving the arithmetic sub-side on the table?"*) had
+      been answered before it was asked. Cost: sub page 1 798 → 789 B (9 B); main
+      page 1 untouched at 89 B (`make basic-reloc`, clean tree).
+      📏 Host-side first: `tests/test_rand_straddle.py` gained (256, 257), (1, 65535)
+      and (256, 300) — sectors 128 / 127 / 149 match the independent model and
+      nothing lands above `FWBUF+512`. ⚠️ Then the first machine run read `<none>`
+      for exactly the rows that used to be refused — not a hang: the probe gave them
+      the 45 s budget that fitted a refusal while `r.255` carried 240 s, the
+      apparatus shape its own header names. Budgets are 300 s now.
+      🤖 CLOSED 2026-09-10 — both halves shipped and pinned; the reference settled every row.
 
 - [x] ✅ **D-PARTSTATE (2026-09-09): LIST verbs execute PARTIALLY on the reference
       TOO — and that BOUNDS D-PARTIAL. 5 rows × 3 machines, 0 DIFF**
@@ -4597,7 +4616,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:13335 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:13354 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

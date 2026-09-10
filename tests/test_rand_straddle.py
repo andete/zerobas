@@ -112,7 +112,12 @@ def run():
     CHAN = 1
     GUARD = 64                  # bytes ABOVE FWBUF+512 that must stay untouched
 
+    # D-PUTU32 (2026-09-10): records whose byte offset needs more than 16 bits.
+    # (256, 257) is offset 65536 -- sector 128, within 0 -- the exact boundary the
+    # CF-3300 serves and the 16-bit mul_reclen wrapped to 0; (1, 65535) is the
+    # largest record number the evaluator hands over, offset 65534.
     for reclen, recno, straddles in [(256, 1, False), (256, 2, False), (256, 3, False),
+                                     (256, 257, False), (1, 65535, False), (256, 300, False),
                                      (100, 1, False), (100, 5, False),
                                      (100, 6, True), (100, 7, False),
                                      (7, 74, True), (255, 3, True)]:

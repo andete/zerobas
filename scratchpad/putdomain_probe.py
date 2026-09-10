@@ -72,45 +72,35 @@ FIXTURE = os.path.join(ROOT, "disk", "test720.dsk")
 # probe refuse the whole table. A timing parameter that is uniform across rows
 # doing wildly different amounts of work is an apparatus defect, not a setting
 # [[apparatus-is-part-of-the-measurement]].
+# D-PUTU32 (2026-09-10): the rows past the old cap are SERVED now, so they do
+# the long version too -- the 45 s that fitted a refusal read <none> for all four
+# on the first run after the fix. 300 s, like r.255's 240.
 CASES = [
     ("r.ctl",    "",        "1",     0,     "CONTROL: default reclen 256 -> LOF 256", 45.0),
     ("r.255",    "",        "255",   65024, "the last record inside today's cap", 240.0),
-    ("r.256",    "",        "256",   65280, "past the cap; offset STILL fits 16 bits", 45.0),
-    ("r.257",    "",        "257",   65536, "\U0001f3af the 16-bit offset BOUNDARY", 45.0),
-    ("r.300",    "",        "300",   76544, "well past the boundary", 45.0),
+    ("r.256",    "",        "256",   65280, "past the cap; offset STILL fits 16 bits", 300.0),
+    ("r.257",    "",        "257",   65536, "\U0001f3af the 16-bit offset BOUNDARY", 300.0),
+    ("r.300",    "",        "300",   76544, "well past the boundary", 300.0),
     ("l1.ctl",   " LEN=1",  "1",     0,     "CONTROL: reclen 1 -> LOF 1", 45.0),
     ("l1.256",   " LEN=1",  "256",   255,   "past the cap, offset only 255", 45.0),
     ("l1.32767", " LEN=1",  "32767", 32766, "the largest MSX integer", 45.0),
     ("l1.32768", " LEN=1",  "32768", 32767, "past the SIGNED range -- a different rule", 45.0),
-    ("l1.65535", " LEN=1",  "65535", 65534, "offset fits 16 bits; the number does not", 45.0),
+    ("l1.65535", " LEN=1",  "65535", 65534, "offset fits 16 bits; the number does not", 300.0),
 ]
 
 
 # --- D-FACEPIN: the FACE, not just the row label ----------------------------
 # 🔴 A FILED FACE ROTS WITHOUT THE ROW CEASING TO DIVERGE. `filed_row_sweep`
 # calls a row that still diverges -- but to a DIFFERENT face -- `known`, and it
-# reads green. Same shape as `basic_probe_nodisk.PINNED`: pin the VALUES, RED on
-# drift in EITHER direction. ⚠️ Keyed by SIDE NAME, never by column position.
-# 🎯 THE FACE HERE IS `E L` -- the trapped ERR and LOF TOGETHER -- because the
-# whole point of this probe is that ERR alone cannot separate "did it" from
-# "declined quietly". Pinning only the ERR would pin the blind half.
-# ⚠️ `r.255`'s zb face is **0 -256**, and that is the FINDING, not a typo: 65280
-# read back through a signed 16-bit LOF. If it ever becomes 65280 the defect is
-# fixed, and this pin going RED is how somebody finds out.
-PINNED = {
-    # measured 2026-09-10, RE-MEASURED at pin time rather than carried from the
-    # run that filed the entry. CONTROLS r.ctl / l1.ctl are deliberately NOT
-    # pinned: they are the fixture check, and the probe already refuses the whole
-    # table when either fails.
-    "r.255":     {"cf3300": "0 65280", "zb": "0 65280"},   # D-LOFU32 2026-09-10: was "0 -256"
-    "r.256":     {"cf3300": "0 65536", "zb": "0 256"},
-    "r.257":     {"cf3300": "0 65792", "zb": "0 256"},
-    "r.300":     {"cf3300": "0 76800", "zb": "0 256"},
-    "l1.256":    {"cf3300": "0 256",   "zb": "0 1"},
-    "l1.32767":  {"cf3300": "0 32767", "zb": "0 1"},
-    "l1.32768":  {"cf3300": "0 32768", "zb": "0 1"},
-    "l1.65535":  {"cf3300": "0 65535", "zb": "0 1"},
-}
+# reads green. Same shape as `basic_probe_nodisk.# \U0001f3af D-PUTU32 (2026-09-10): THE PINS LEFT THE SET. Every row above now
+# agrees with the CF-3300 -- LOF as a double (D-LOFU32) and records past 255
+# served (D-PUTU32) -- and D-PUTDOMAIN is closed, so `filed-pin-check` reported
+# this probe's pins as ORPHANED: cited by no open item, never re-run by the
+# sweep. Its rule is "re-run by hand; if the rows now agree, the pin leaves the
+# set". They agree (scratchpad/putdomain_put2.out, all ten rows). An EMPTY pin
+# table keeps the drift readout alive for the day a row diverges again, and
+# takes this probe out of the orphan roster.
+PINNED: dict = {}
 
 
 def main() -> int:
