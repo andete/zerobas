@@ -137,14 +137,27 @@ def summary(its):
 
 
 def item_keywords(it, kwset):
-    """The keywords an item is ABOUT: backticked in its headline or 🎚️ line,
-    sorted, so two items about the same set list it identically."""
-    found = set()
-    for tok in TICK.findall(it["head"] + " " + it["tag"]):
-        for w in WORD.findall(tok):
-            if w in kwset:
-                found.add(w)
-    return sorted(found)
+    """The keywords an item is ABOUT, sorted so two items about the same set
+    list it identically.
+
+    🎯 A DECLARATION BEATS AN INFERENCE. If the 🎚️ line backticks any keyword,
+    or says "no single keyword", it is the item's declared subject and the
+    headline is NOT scanned -- the same rule step (c)'s `subject:` tag will
+    apply to rows. Only an item whose 🎚️ line declares nothing falls back to
+    its headline. (The stack item's headline names `DEF FN` as the SYMPTOM; the
+    finding is every expression, and the union rule kept filing it under the
+    symptom.)"""
+    def scan(text):
+        found = set()
+        for tok in TICK.findall(text):
+            for w in WORD.findall(tok):
+                if w in kwset:
+                    found.add(w)
+        return sorted(found)
+    declared = scan(it["tag"])
+    if declared or "no single keyword" in it["tag"]:
+        return declared
+    return scan(it["head"])
 
 
 # the 🎚️ prose without its tier-kind prefix ("happy path: ", "common error: ")
@@ -313,7 +326,7 @@ def selftest():
     fake = """## Open — x
 - [ ] 🔴 **`LOF` RETURNS −256 FOR A BIG FILE — and `PUT#1,255`
       extends it.** see also `CLEAR` in passing.
-      🎚️ TIER 1 — happy path: `LOF`
+      🎚️ TIER 1 — happy path: `LOF` and `PUT#1,255`
       🤖 AUTONOMOUS — x.
 - [ ] ⚠️ **A GATE THING** the word AND and KEY appear here unbackticked.
       🎚️ APPARATUS — gates
@@ -354,13 +367,20 @@ def selftest():
     arm("S12 no KNOWN_MISSING keyword has landed in kwtable.inc (else delete it from the list)"
         + (f" -- LANDED: {landed}" if landed else ""), not landed)
     arm("S13 the denominator is kwtable + the missing set", len(keywords()) == len(kwtable_keywords()) + len(KNOWN_MISSING))
+    its[2]["tag"] = "TIER 5 — depth (no single keyword)"
+    arm("S16 a tag that says 'no single keyword' overrides a headline that names one",
+        item_keywords(its[2], set(kws)) == [])
+    its[2]["tag"] = "TIER 5 — `DIM` depth"
+    arm("S17 a tag that declares a keyword wins over the headline's", item_keywords(its[2], set(kws + ["DIM"])) == ["DIM"])
+    its[2]["tag"] = "TIER 5 — depth"
+    arm("S18 a tag that declares nothing falls back to the headline", item_keywords(its[2], set(kws)) == ["DEF", "FN"])
     arm("S15 an item's keywords are sorted and the tier-kind prefix is stripped from its prose",
-        item_keywords(its[0], set(kws)) == ["LOF", "PUT"] and what_is_open(its[0]) == "`LOF`")
+        item_keywords(its[0], set(kws)) == ["LOF", "PUT"] and what_is_open(its[0]) == "`LOF` and `PUT#1,255`")
     md = fmt_markdown(its, kws)
     arm("S14 markdown carries the summary, the keyword rows and the honesty footer",
         "| TIER 1 | works correctly in the happy path | 1 |" in md
         and "`LOF` (2)" in md and "not \"verified\"" in md
-        and "| `LOF`, `PUT` | TIER 1 | 🤖 | `LOF` | 2 |" in md)
+        and "| `LOF`, `PUT` | TIER 1 | 🤖 | `LOF` and `PUT#1,255` | 2 |" in md)
     print("selftest:", "GREEN" if ok else "🔴 RED")
     return 0 if ok else 2
 
