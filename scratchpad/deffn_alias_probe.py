@@ -52,3 +52,37 @@ for l in labels:
         print(f"  {l}: DIVERGENCE  zb={vals['zb']!r}  ref={list(refs.values())[0]!r}")
     elif refs:
         print(f"  {l}: agree ({list(refs.values())[0]!r})")
+
+# --- D-FACEPIN: the FACE, not just the row label ----------------------------
+# 🔴 A FILED FACE ROTS WITHOUT THE ROW CEASING TO DIVERGE, AND NOTHING DETECTS
+# THAT. `filed_row_sweep` adjudicates a divergent row as known / unfiled / no
+# longer diverging -- so a row that still diverges but to a DIFFERENT face is
+# `known`, and reads green. TODO.md records five instances, each found by hand.
+# 🎯 Same shape as `basic_probe_nodisk.PINNED` and D-DEFERPIN: pin the VALUES and
+# go RED on drift in EITHER direction. ⚠️ Keyed by SIDE NAME, never by column
+# position -- the side list is an argv option, so a positional pin would compare
+# the wrong machine without saying so.
+PINNED = {
+    # measured 2026-09-10. The filing is "two formals of ONE call can alias";
+    # the CONTROLS (o.alias.ctl 507, o.aliasnest.ctl 907) agree on all three and
+    # are deliberately NOT pinned here -- they are the probe's own fixture check.
+    "o.alias":     {"vg8020": "503", "cf3300": "503", "zb": "505"},
+    "o.aliasnest": {"vg8020": "903", "cf3300": "903", "zb": "909"},
+}
+
+_drift = []
+for _lbl, _want in PINNED.items():
+    for _side, _face in _want.items():
+        if _side not in res:
+            continue                      # side not run; that is not a drift
+        _got = str(res[_side].get(_lbl))
+        if _got != _face:
+            _drift.append(f"{_lbl}[{_side}]: pinned {_face!r}, measured {_got!r}")
+if _drift:
+    print("\n\U0001f534 PINNED FACE DRIFT -- the row may still diverge, but NOT to "
+          "the face this tree has filed:")
+    for _d in _drift:
+        print(f"     {_d}")
+    print("  Re-read the owning entry before touching anything: either the "
+          "behaviour moved, or the filing was wrong when it was written.")
+    raise SystemExit(2)

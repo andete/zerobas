@@ -106,6 +106,22 @@ def face(cap):
     return "<NO OUTPUT>"
 
 
+# --- D-FACEPIN: the FACE, not just the row label ----------------------------
+# 🔴 A FILED FACE ROTS WITHOUT THE ROW CEASING TO DIVERGE, AND NOTHING DETECTS
+# THAT. `filed_row_sweep` calls a row that still diverges -- but now to a
+# DIFFERENT face -- `known`, and it reads green. TODO.md records five instances.
+# 🎯 Same shape as `basic_probe_nodisk.PINNED` and D-DEFERPIN: pin the VALUES,
+# RED on drift in EITHER direction. ⚠️ Keyed by SIDE NAME, never by position.
+PINNED = {
+    # measured 2026-09-10; the filing is "defaults absent on cold boot" -- the
+    # references carry the default KEY strings, zerobas carries zeros.
+    "k.slot1":  {"vg8020": "0 90 81 88 0", "cf3300": "0 90 81 88 0", "zb": "0 0 0 0 0"},
+    "k.slot2":  {"vg8020": "0 90 81 88 0", "cf3300": "0 90 81 88 0", "zb": "0 0 0 0 0"},
+    "k.slot10": {"vg8020": "0 90 81 88 0", "cf3300": "0 90 81 88 0", "zb": "0 0 0 0 0"},
+    "k.s1at2":  {"vg8020": "0 97 117 116 111", "cf3300": "0 97 117 116 111", "zb": "0 0 0 0 0"},
+    "k.none":   {"vg8020": "0 99 111 108 111", "cf3300": "0 99 111 108 111", "zb": "0 0 0 0 0"},
+}
+
 def main():
     only, sides = None, ["vg8020", "cf3300", "zb"]
     for a in sys.argv[1:]:
@@ -145,6 +161,24 @@ def main():
             line += "   ✅"
         print(line)
     print()
+    drift = []
+    for lbl, want in PINNED.items():
+        for side, want_face in want.items():
+            if side not in faces or lbl not in faces.get(side, {}):
+                continue                  # side or row not run; not a drift
+            got = str(faces[side][lbl])
+            if got != want_face:
+                drift.append(f"{lbl}[{side}]: pinned {want_face!r}, "
+                             f"measured {got!r}")
+    if drift:
+        print("\U0001f534 PINNED FACE DRIFT -- the row may still diverge, but "
+              "NOT to the face this tree has filed:")
+        for d in drift:
+            print(f"     {d}")
+        print("  Re-read the owning entry: either the behaviour moved, or the "
+              "filing was wrong when it was written.")
+        print(tally.line())
+        return 2
     print(tally.line())
     return 0
 

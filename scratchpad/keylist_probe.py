@@ -79,13 +79,34 @@ def run_list(side, setup):
     return " | ".join(ls) if ls else "<NO OUTPUT>"
 
 
+# --- D-FACEPIN: the FACE, not just the row label ----------------------------
+# 🔴 A FILED FACE ROTS WITHOUT THE ROW CEASING TO DIVERGE, AND NOTHING DETECTS
+# THAT. `filed_row_sweep` calls a row that still diverges -- but now to a
+# DIFFERENT face -- `known`, and it reads green. TODO.md records five instances.
+# 🎯 Same shape as `basic_probe_nodisk.PINNED` and D-DEFERPIN: pin the VALUES,
+# RED on drift in EITHER direction. ⚠️ Keyed by SIDE NAME, never by position --
+# `sides` is argv here, so a positional pin would compare the wrong machine.
+PINNED = {
+    # measured 2026-09-10; the filing is "zerobas answers ERR 2 to every form
+    # while the references accept 1..10 and raise ERR 5 outside it". 0 = accepted.
+    "d.n1":    {"vg8020": "0", "cf3300": "0", "zb": "2"},
+    "d.n0":    {"vg8020": "5", "cf3300": "5", "zb": "2"},
+    "d.n10":   {"vg8020": "0", "cf3300": "0", "zb": "2"},
+    "d.n11":   {"vg8020": "5", "cf3300": "5", "zb": "2"},
+    "d.nneg":  {"vg8020": "5", "cf3300": "5", "zb": "2"},
+    "d.empty": {"vg8020": "0", "cf3300": "0", "zb": "2"},
+}
+
+
 def main():
     sides = (sys.argv[1] if len(sys.argv) > 1 else "vg8020,cf3300,zb").split(",")
     w = 9
     print(f"\n--- the `n` domain and the empty string (printed value = ERR, 0 = accepted)")
     print(f"{'row':<{w}}  " + "  ".join(f"{s:>10}" for s in sides))
+    seen = {}
     for lab, stmt in ERRCASES:
         vals = [run_err(s, stmt) for s in sides]
+        seen[lab] = dict(zip(sides, vals))
         tag = "refs agree" if vals[0] == vals[1] else "🔴 REFS DISAGREE"
         print(f"{lab:<{w}}  " + "  ".join(f"{v:>10}" for v in vals) + f"   {tag}"
               + ("" if vals[1] == vals[2] else "   zb DIFF"))
@@ -94,6 +115,23 @@ def main():
         for s in sides:
             print(f"{lab:<{w}}  {s:<8}  {run_list(s, setup)}")
         print()
+    drift = []
+    for lbl, want in PINNED.items():
+        for side, want_face in want.items():
+            if lbl not in seen or side not in seen[lbl]:
+                continue                  # row or side not run; not a drift
+            got = str(seen[lbl][side])
+            if got != want_face:
+                drift.append(f"{lbl}[{side}]: pinned {want_face!r}, "
+                             f"measured {got!r}")
+    if drift:
+        print("\n\U0001f534 PINNED FACE DRIFT -- the row may still diverge, but "
+              "NOT to the face this tree has filed:")
+        for d in drift:
+            print(f"     {d}")
+        print("  Re-read the owning entry: either the behaviour moved, or the "
+              "filing was wrong when it was written.")
+        return 2
     print("done")
 
 

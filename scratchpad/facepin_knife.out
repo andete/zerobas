@@ -1,0 +1,6 @@
+PASS  open2_probe.py             mutated pin -> rc=2, names e.same2: True
+PASS  deffn_alias_probe.py       mutated pin -> rc=2, names o.alias: True
+PASS  keystr_probe.py            mutated pin -> rc=2, names k.slot1: True
+PASS  keylist_probe.py           mutated pin -> rc=2, names d.n1: True
+
+🟢 ALL FOUR PINS HAVE TEETH

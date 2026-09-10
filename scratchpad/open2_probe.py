@@ -94,8 +94,44 @@ for label, _, _ in CASES:
         diff.append(label)
     print(f"{label:<{w}}  " + "  ".join(f"{v:>22}" for v in vals)
           + f"   {'SAME' if same else 'DIFF'}")
+
+# --- D-FACEPIN: the FACE, not just the row label ----------------------------
+# 🔴 A FILED FACE ROTS WITHOUT THE ROW CEASING TO DIVERGE, AND NOTHING DETECTS
+# THAT. `filed_row_sweep` adjudicates each divergent row as known / unfiled / no
+# longer diverging -- so a row that still diverges but now diverges to a
+# DIFFERENT face is `known`, and reads green. TODO.md records five instances of
+# exactly that, each found by hand while picking an item up.
+# 🎯 The cure is the shape `basic_probe_nodisk.PINNED` and D-DEFERPIN already
+# use: pin the VALUES, and go RED on drift in EITHER direction -- a face that
+# changed, a row that stopped diverging, or a row that stopped being emitted.
+# ⚠️ Keyed by SIDE NAME, never by column position: the side list is an argv
+# option here, so a positional pin would silently compare the wrong machine.
+PINNED = {
+    # measured 2026-09-10; the filing says "accepted here and refused on the
+    # CF-3300", and these are the two values that make that sentence true.
+    "e.same2": {"cf3300": "<File already open>", "zb": "OK"},
+}
+
+drift = []
+for _lbl, _want in PINNED.items():
+    for _side, _face in _want.items():
+        if _side not in res:
+            continue                      # that side was not run; not a drift
+        _got = str(res[_side].get(_lbl))
+        if _got != _face:
+            drift.append(f"{_lbl}[{_side}]: pinned {_face!r}, measured {_got!r}")
+
 print(f"\nDIFF: {len(diff)}/{len(CASES)}  " + " ".join(diff))
 print("🎯 a.ch2only / d.ts2ch1 / t.seq1 are the CONTROLS -- one channel, every"
       " shape,\n   green on both. n.nomaxf is `Bad file number` on both (the"
       " default ceiling is 1),\n   which is what says MAXFILES=2 is doing its"
       " job and the fixture is sound.")
+
+if drift:
+    print("\n\U0001f534 PINNED FACE DRIFT -- the row may still diverge, but NOT to "
+          "the face this tree has filed:")
+    for d in drift:
+        print(f"     {d}")
+    print("  Re-read the owning entry before touching anything: either the "
+          "behaviour moved, or the filing was wrong when it was written.")
+    raise SystemExit(2)

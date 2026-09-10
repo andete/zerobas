@@ -434,7 +434,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:13775 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:13799 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -599,7 +599,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:3518 (T-6FE392)8 (T-529ABE)` from `TODO.md:12712 (T-529ABE)`: a
+      `TODO.md:3542 (T-6FE392)8 (T-529ABE)` from `TODO.md:12736 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -1126,6 +1126,30 @@ list. **When a slice lands, grep this list for what it just shipped.**
       class is real — this entry records five instances — and 36 rows are still
       unchecked and unpinned. What the sample buys is URGENCY: no face in it has
       rotted, so this is worth doing properly rather than in a hurry.
+      ✅ **AND THE FIRST 14 ARE NOW PINNED (D-FACEPIN, 2026-09-10) — the four
+      probes whose faces were measured above, so nothing was pinned from memory.**
+      `open2_probe` 1 · `deffn_alias_probe` 2 · `keystr_probe` 5 ·
+      `keylist_probe` 6. Each carries a `PINNED` dict of exact values and exits
+      **2** naming the row when one drifts, the shape `basic_probe_nodisk` and
+      D-DEFERPIN already use.
+      🎯 **KEYED BY SIDE NAME, NEVER BY COLUMN POSITION.** `sides` is an argv
+      option in three of the four, so a positional pin would compare the wrong
+      machine and say nothing about it.
+      🟢 **AND IT ALSO FIXES THE EXIT-0 HALF FOR THOSE ROWS.** `open2_probe` had
+      no exit path at all — it is one of the "prints divergences and exits 0"
+      family the sweep flags. A drifted face now reaches an rc the sweep already
+      prints.
+      🔬 **KNIFE 4/4** ([`scratchpad/facepin_knife.py`](scratchpad/facepin_knife.py),
+      [`.out`](scratchpad/facepin_knife.out)): one pinned face corrupted per
+      probe → **rc=2 and the row named**, every time; and each probe RE-RUN after
+      restore returns to rc=0, so the red is the pin biting and not the probe
+      breaking. A pin that cannot redden reads exactly like a correct one on a
+      green run.
+      ➡️ **REMAINING: 36 rows across 7 probes** — `dupopen` 6, `ngram14` 9,
+      `putdomain` 8, `reclen` 4, `dskibytes` 3, `playfn_fixture` 5, `bareform` 1.
+      Each needs its faces MEASURED first, exactly as these four were; pinning
+      from a filing rather than from a run is how the five instances above
+      happened in the first place.
 
 - [ ] 🔬 **THE FILED-ROW DENOMINATOR WAS UNREADABLE FOR A THIRD OF ITS CORPUS, AND
       A ROTTED PROBE HID IN THE SAME BUCKET (2026-09-08, D-FRSKIND).** A full run of
@@ -4349,7 +4373,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:12712 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:12736 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
