@@ -136,6 +136,25 @@ def summary(its):
     return rows
 
 
+def item_keywords(it, kwset):
+    """The keywords an item is ABOUT: backticked in its headline or 🎚️ line,
+    sorted, so two items about the same set list it identically."""
+    found = set()
+    for tok in TICK.findall(it["head"] + " " + it["tag"]):
+        for w in WORD.findall(tok):
+            if w in kwset:
+                found.add(w)
+    return sorted(found)
+
+
+# the 🎚️ prose without its tier-kind prefix ("happy path: ", "common error: ")
+KIND = re.compile(r"^(happy path|common error|on-par speed|reasonable time|[a-z][^:`]{0,40}): ")
+
+
+def what_is_open(it):
+    return KIND.sub("", it["tag"]).strip() or it["head"]
+
+
 def kw_gaps(its, kws):
     """keyword -> sorted set of (tier, line) for open items naming it in a backtick."""
     kwset = set(kws)
@@ -150,27 +169,37 @@ def kw_gaps(its, kws):
         # block measured. An item's SUBJECT is its headline, and the 🎚️ line is
         # where an item declares the keywords it is about: that line IS the
         # item-level `subject:` tag, and step (c) extends the same idea to rows.
-        for tok in TICK.findall(it["head"] + " " + it["tag"]):
-            for w in WORD.findall(tok):
-                if w in kwset:
-                    gaps[w].add((base_tier(it["tier"]), it["line"]))
+        for w in item_keywords(it, kwset):
+            gaps[w].add((base_tier(it["tier"]), it["line"]))
     return {k: v for k, v in gaps.items() if v}    # a plain dict: a lookup must not CREATE a key
 
 
-def fmt_items(its, tiers_only=True, width=78):
+def fmt_items(its, kws, tiers_only=True, width=70):
+    """Keyword FIRST, prose last (Joost, 2026-09-10: "I would expect the keyword
+    to be prominent, now I have to find it in the item prose")."""
+    kwset = set(kws)
     keep = [it for it in its if (base_tier(it["tier"]) in TIERS) or not tiers_only]
     order = TIERS + CLASSES + ["UNTAGGED"]
-    keep.sort(key=lambda it: (order.index(base_tier(it["tier"])), it["line"]))
-    out, last = [], None
+    rows = []
     for it in keep:
+        k = item_keywords(it, kwset)
+        rows.append((order.index(base_tier(it["tier"])), k[0] if k else "~", it["line"], it, k))
+    rows.sort(key=lambda r: r[:3])
+    # the keyword column is the point of the view, so it is never truncated:
+    # sized to the longest list in THIS run (the first cut cut "ATTR$ CMD COPY
+    # DSKI$ D" at 22 characters, which defeats the reason the column exists)
+    kwcol = max([len(" ".join(k)) for *_, k in rows] + [1])
+    out, last = [], None
+    for _, _, _, it, k in rows:
         t = base_tier(it["tier"])
         if t != last:
             out.append(f"\n{t}")
             last = t
-        h = it["head"]
-        if len(h) > width:
-            h = h[:width - 1] + "…"
-        out.append(f"  {it['marker']} {it['line']:>6}  {h}")
+        kw = " ".join(k) or "—"
+        w = what_is_open(it)
+        if len(w) > width:
+            w = w[:width - 1] + "…"
+        out.append(f"  {kw:{kwcol}} {it['marker']} {it['line']:>6}  {w}")
     return "\n".join(out)
 
 
@@ -232,12 +261,19 @@ def fmt_markdown(its, kws):
             out.append(f"| {t} | {len(by_tier[t])} | {', '.join(by_tier[t])} |")
     none = [kw for kw in kws if kw not in gaps]
     out += ["", f"**{len(none)} of {len(kws)} keywords have no open gap.** " + FOOTER, "",
-            "## Open keyword-tier items", "", "| tier | marker | line | item |", "|---|---|---|---|"]
-    keep = [it for it in its if base_tier(it["tier"]) in TIERS]
-    keep.sort(key=lambda it: (TIERS.index(base_tier(it["tier"])), it["line"]))
-    for it in keep:
-        h = it["head"].replace("|", "\\|")
-        out.append(f"| {base_tier(it['tier'])} | {it['marker']} | {it['line']} | {h} |")
+            "## Open items, keyword first", "",
+            "| keyword | tier | who | what is open | TODO.md |", "|---|---|---|---|---|"]
+    kwset = set(kws)
+    rows = []
+    for it in its:
+        if base_tier(it["tier"]) in TIERS:
+            k = item_keywords(it, kwset)
+            rows.append((TIERS.index(base_tier(it["tier"])), k[0] if k else "~", it["line"], it, k))
+    rows.sort(key=lambda r: r[:3])
+    for _, _, _, it, k in rows:
+        kw = ", ".join(f"`{x}`" for x in k) or "—"
+        w = what_is_open(it).replace("|", "\\|")
+        out.append(f"| {kw} | {base_tier(it['tier'])} | {it['marker']} | {w} | {it['line']} |")
     return "\n".join(out) + "\n"
 
 
@@ -265,7 +301,7 @@ def main(argv=None):
         print("\nKEYWORDS with an OPEN item naming them, by worst tier (item lines in brackets):\n")
         print(fmt_keywords(kw_gaps(its, kws), kws))
     else:
-        print(fmt_items(its, tiers_only=not a.all))
+        print(fmt_items(its, kws, tiers_only=not a.all))
         if not a.all:
             print(f"\n({sum(1 for it in its if base_tier(it['tier']) not in TIERS)} "
                   "APPARATUS/BUDGET/STANDING/OTHER items hidden — `--all` shows them; "
@@ -318,10 +354,13 @@ def selftest():
     arm("S12 no KNOWN_MISSING keyword has landed in kwtable.inc (else delete it from the list)"
         + (f" -- LANDED: {landed}" if landed else ""), not landed)
     arm("S13 the denominator is kwtable + the missing set", len(keywords()) == len(kwtable_keywords()) + len(KNOWN_MISSING))
+    arm("S15 an item's keywords are sorted and the tier-kind prefix is stripped from its prose",
+        item_keywords(its[0], set(kws)) == ["LOF", "PUT"] and what_is_open(its[0]) == "`LOF`")
     md = fmt_markdown(its, kws)
     arm("S14 markdown carries the summary, the keyword rows and the honesty footer",
         "| TIER 1 | works correctly in the happy path | 1 |" in md
-        and "`LOF` (2)" in md and "not \"verified\"" in md)
+        and "`LOF` (2)" in md and "not \"verified\"" in md
+        and "| `LOF`, `PUT` | TIER 1 | 🤖 | `LOF` | 2 |" in md)
     print("selftest:", "GREEN" if ok else "🔴 RED")
     return 0 if ok else 2
 

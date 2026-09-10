@@ -136,6 +136,16 @@ nothing at TIERS 1–4 is autonomous. **Count the tiers, never quote a count:**
 headline on 2026-09-10 — argue with it by reading the block, and re-tag when an
 item's residual changes tier (an item filed at TIER 5 whose fix turns out to
 break a happy path is TIER 1).
+🏗️ **AN ARCHITECTURE ITEM IS TAGGED AT THE LOWEST TIER ANY SYMPTOM OF IT CAN
+PRODUCE — AND WHEN THAT IS UNMEASURED, IT IS SCOUTED, NOT PARKED** (Joost,
+2026-09-10, reading the table: *"some of the tier 5 ones seem fundamental/urgent,
+like 'THE Z80 STACK IS IN THE WRONG PLACE'"*). The `DEF FN` cap is that item's
+only MEASURED symptom, but the same stack carries every expression's recursion;
+whether an ordinary nested formula hits the floor is one ramp probe away
+(`scratchpad/parennest_probe.py`), and the answer is the tag.
+**Answered the same hour: TIER 1.** Depth 16 parentheses wrecks the machine,
+16 nested `ABS` is a bogus ERR 50, 12 nested string functions crash; both
+references are fine to 32. The rule paid for itself on its first use.
 **What this supersedes:** the 2026-09-02 sequencing ruling below, in part — see
 its tail. **What it does not change:** the standing ≤20 B budget, style splits
 to the VG-8020, diskless as an official target, and every rule about HOW to
@@ -479,7 +489,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:14350 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:14389 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -645,7 +655,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:3718 (T-6FE392)8 (T-529ABE)` from `TODO.md:13271 (T-529ABE)`: a
+      `TODO.md:3728 (T-6FE392)8 (T-529ABE)` from `TODO.md:13310 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -4562,7 +4572,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:13271 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:13310 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -4995,11 +5005,40 @@ list. **When a slice lands, grep this list for what it just shipped.**
       save size, not a measurement of the rest.
       🙋 NEEDS A DECISION — the mechanism (partition vs merge) is Joost's call; the
       measurements are done.
-      🎚️ TIER 5 — `DEF FN` nesting cap / stack placement (architecture)
-      🔁 **PARKED (Joost, 2026-09-10): every TIER 5 item waits until TIERS 1–4 are clean, and
-      *"when we get to TIER 5, we'll have to do a prioritization together"* —
-      the TIER 5 order is a joint pass, not the loop's pick.
-      🙋 NEEDS-JOOST — partition vs merge is his call, in the block's own words.
+      🔴 **SCOUTED 2026-09-10 (D-PARENNEST) — AND IT IS TIER 1, NOT 5.** Joost,
+      reading the tier table: *"some of the tier 5 ones seem fundamental/urgent,
+      like this one."* The `DEF FN` cap was the only MEASURED symptom; the same
+      stack carries every expression's recursion, and a three-ladder ramp
+      ([`scratchpad/parennest_probe.py`](scratchpad/parennest_probe.py),
+      [`.out`](scratchpad/parennest_probe2.out); fresh boot per case, control
+      row passing) reads:
+
+          PRINT ((((1+1)+1)…)   depth 12  13 ✓    depth 16  SCREEN GARBAGE — the machine is WRECKED
+                                                   depth 32  no output after the echo
+          ABS(ABS(…1…))         depth 12   1 ✓    depth 16  ERR 50 "FIELD overflow" — a nonsense error
+          LEN(CHR$(ASC(…)))     depth  8   1 ✓    depth 12  CRASH (echo only)   depth 16  ERR 35
+          both references       17 / 33 / 1 / 1 at every depth tried, up to 32
+
+      ⚠️ Neither ERR 50 nor ERR 35 is RAISED anywhere on an expression path —
+      no `ld a,50` / `ld a,35` exists in `basic/` or `sub/` outside FIELD, and 35
+      is not a code this tree defines at all. The trap is reporting a byte the
+      evaluator never set: consistent with the recursion having overwritten what
+      the trap reads, and recorded as a READING, not a mechanism
+      [[a-mechanism-inferred-from-one-observation]].
+      A LEGAL 16-DEEP FORMULA CORRUPTS THE MACHINE. A bare expression has no
+      floor the way `FN` has `FN_STK_FLOOR`; the recursion walks straight down
+      through the 234 B into claimed RAM. That is a happy-path wrong answer of
+      the worst kind, so the tag is TIER 1 by measurement, the PARKED line below
+      is struck, and the 🙋 (partition vs merge) is the most urgent decision on
+      the list.
+      ⚠️ The first run of the ramp (batch mode) lost every zb row from p16 on
+      INCLUDING a control that had passed earlier in the same batch — the
+      signature of a hang poisoning the cases after it. The readout refused to
+      adjudicate; a fresh boot per case made each row its own machine.
+      🎚️ TIER 1 — happy path: a legal expression WRECKS THE MACHINE at 16 nested parentheses and 12 nested string functions, where both references print the value; `DEF FN`'s cap is the mild symptom of the same misplaced `SP`
+      ~~🔁 PARKED (Joost, 2026-09-10): every TIER 5 item waits until TIERS 1–4 are clean~~
+      — UN-PARKED the same day: TIER 1 by the measurement above.
+      🙋 NEEDS-JOOST — partition vs merge is his call, in the block's own words; TIER 1, so first in line.
 
 - [ ] 🐌 **THE INTERPRETER IS 2.5–3.8× SLOWER THAN THE CF-3300 — ON EVERYTHING,
       NOT ON ONE VERB — AND IT REFRAMES EVERY OTHER SPEED ITEM.**
@@ -7672,7 +7711,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       per temp against a 255-character line, so `DEF FN` was picked as the
       cheapest lever at 6 — and the FN ceiling of 10 stops the ramp long before
       32 temps. The two are the same wall.
-      🎚️ TIER 5 — nested `FN` beyond depth 10
+      🎚️ TIER 5 — nested `FN` beyond depth 10 (a symptom of the misplaced `SP`, whose cause item is TIER 1 by D-PARENNEST — this row stays the mild face of it)
       🔁 **PARKED (Joost, 2026-09-10): every TIER 5 item waits until TIERS 1–4 are clean, and
       *"when we get to TIER 5, we'll have to do a prioritization together"* —
       the TIER 5 order is a joint pass, not the loop's pick.
@@ -7726,7 +7765,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       extension + sub message + the raise sites). Under the standing ≤20 B
       main-page-1 budget it ships on this measurement; over it, this flips to 🙋
       with the number rather than a shrug.
-      🎚️ TIER 3 — common error: a forgotten disk; the verb prints, does not trap, and RUNS ON — `NAME` `KILL` `FILES` `LOAD` `SAVE`
+      🎚️ TIER 3 — common error: a forgotten disk: `NAME` `KILL` `FILES` `LOAD` `SAVE` print `load error`, do not trap, and RUN ON
       🎯 **RULED (Joost, 2026-09-10): add ERR 70 — and *"maybe add an ERR extension
       mechanism in Disk ROM, maybe look if there is a hook for that"*.** So the
       first step is a READ, not a write: does this tree's error printer have (or
@@ -9855,7 +9894,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       targets into range. Shipping only some of the four is worse than
       shipping none — it leaves `CRUNCH_DIFF_PINNED` half-stale and the class
       inconsistent.
-      🎚️ TIER 1 — happy path: eight keywords the reference tokenises are MISSING — `DSKI$` `DSKO$` `COPY` `SET` `ATTR$` `IPL` `CMD` `LOC`
+      🎚️ TIER 1 — happy path: eight keywords the reference tokenises are MISSING: `DSKI$` `DSKO$` `COPY` `SET` `ATTR$` `IPL` `CMD` `LOC`
       🤖 AUTONOMOUS — the reference settles every token, and the pin is built.
 
 - [ ] 📌 **`basic_probe_kwsweep.py` PRINTS ROWS NO RUNNER CAN PARSE, AND ITS
@@ -11150,7 +11189,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       So 165 B buys a faithful reproduction of a guard with a hole in it. That is
       still the charter answer — but it is not the safety answer I implied
       [[a-justification-parenthesis-is-an-unrun-claim]].
-      🎚️ TIER 5 — same file open on two channels
+      🎚️ TIER 5 — `OPEN` of the same file on two channels is accepted here, refused on the CF-3300
       🙋 **NEEDS-JOOST — the measuring is DONE, the spend is yours.** 165 B of
       RAM to make zerobas refuse what it currently permits, mirroring a
       per-channel verbatim name the reference is now measured to keep.
@@ -12067,7 +12106,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       TAPION always fails and the right face is unmeasured. **Separating those
       two callers is the design question**, and it must not be assumed to be a
       rename [[a-filed-blocker-can-name-the-wrong-obstacle]].
-      🎚️ TIER 3 — common error: `load error` printed rather than raised, residual sites (same class as the empty-drive item) — `LOAD` `BLOAD` `SAVE` `MERGE` `KILL` `NAME`
+      🎚️ TIER 3 — common error: `load error` printed rather than raised at `LOAD` `BLOAD` `SAVE` `MERGE` `KILL` `NAME` — residual sites, same class as the empty-drive item
       ~~🔭 SCOUT-THEN-ASK — the decision is yours; the measuring and pricing in front of it are not (refactor, no oracle, but unpriced/unmeasured first).~~ (re-marked 2026-09-10, see below)
       🎯 **RULED (Joost, 2026-09-10): add ERR 70 — and *"maybe add an ERR extension
       mechanism in Disk ROM, maybe look if there is a hook for that"*.** So the
@@ -14344,7 +14383,7 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
         programs that used to have ~15 KB of string space now get 200 unless
         they say otherwise. The full acceptance corpus was re-run, not just this
         slice's gate.
-      🎚️ TIER 1 — happy path: the measured keyword-completeness remainder (`make kwsweep` prints it; overlaps the eight above — `COPY` `SET` `ATTR$` `IPL` `CMD` `LOC` `DSKI$` `DSKO$`)
+      🎚️ TIER 1 — happy path: the measured keyword-completeness remainder — `make kwsweep` prints it; today it overlaps the eight: `COPY` `SET` `ATTR$` `IPL` `CMD` `LOC` `DSKI$` `DSKO$`
       ⛔ BLOCKED — neither of us can start it now (needs a fixture).
 
 - [ ] **`LOAD"CAS:"` ACCEPTS A TOKENISED TAPE; the reference does not return.**

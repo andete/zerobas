@@ -1,0 +1,25 @@
+D-PARENNEST: nested-expression depth, three ladders, fenced by row name
+
+  p08   vg8020=[9               ]  cf3300=[9               ]  zb=[9               ]
+  p12   vg8020=[13              ]  cf3300=[13              ]  zb=[13              ]
+  p16   vg8020=[17              ]  cf3300=[17              ]  zb=[<NO OWN FENCE>  ]
+  p20   vg8020=[21              ]  cf3300=[21              ]  zb=[<NO OWN FENCE>  ]
+  p24   vg8020=[25              ]  cf3300=[25              ]  zb=[<NO OWN FENCE>  ]
+  p28   vg8020=[29              ]  cf3300=[29              ]  zb=[<NO OWN FENCE>  ]
+  p32   vg8020=[33              ]  cf3300=[33              ]  zb=[<UNTERMINATED>  ]
+  f08   vg8020=[1               ]  cf3300=[1               ]  zb=[<NO OWN FENCE>  ]
+  f12   vg8020=[1               ]  cf3300=[1               ]  zb=[<NO OWN FENCE>  ]
+  f16   vg8020=[1               ]  cf3300=[1               ]  zb=[<NO OWN FENCE>  ]
+  f20   vg8020=[1               ]  cf3300=[1               ]  zb=[<NO OWN FENCE>  ]
+  f24   vg8020=[1               ]  cf3300=[1               ]  zb=[<NO OWN FENCE>  ]
+  f28   vg8020=[1               ]  cf3300=[1               ]  zb=[<NO OWN FENCE>  ]
+  f32   vg8020=[1               ]  cf3300=[1               ]  zb=[<NO OWN FENCE>  ]
+  s04   vg8020=[1               ]  cf3300=[1               ]  zb=[<NO OWN FENCE>  ]
+  s08   vg8020=[1               ]  cf3300=[1               ]  zb=[<NO OWN FENCE>  ]
+  s12   vg8020=[1               ]  cf3300=[1               ]  zb=[<NO OWN FENCE>  ]
+  s16   vg8020=[1               ]  cf3300=[1               ]  zb=[<NO OWN FENCE>  ]
+  s18   vg8020=[1               ]  cf3300=[1               ]  zb=[<NO OWN FENCE>  ]
+  p08r  vg8020=[9               ]  cf3300=[9               ]  zb=[<NO OWN FENCE>  ]
+
+🔴 THE READOUT'S CONTROL FAILED -- p08r must read 9 on every side. Nothing above is adjudicated.
+refcache: 0 hit, 3 miss, 3 stored

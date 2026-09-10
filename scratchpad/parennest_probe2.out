@@ -1,0 +1,32 @@
+D-PARENNEST: nested-expression depth, three ladders, fenced by row name
+
+  p08   vg8020=[9               ]  cf3300=[9               ]  zb=[9               ]
+  p12   vg8020=[13              ]  cf3300=[13              ]  zb=[13              ]
+  p16   vg8020=[17              ]  cf3300=[17              ]  zb=[<NO OWN FENCE>  ]
+        zb glass:   x  x    p  x  0H@@ @@@  x  x p /   `  p    0    `         @@@@p /           p  p            x  x /   x     @@ @H0       x      P
+  p20   vg8020=[21              ]  cf3300=[21              ]  zb=[<NO OWN FENCE>  ]
+        zb glass:   x  x    p  x  0H@@ @@@  x  x p /   `  p    0    `         @@@@p /           p  p            x  x /   x     @@ @H0       x      P
+  p24   vg8020=[25              ]  cf3300=[25              ]  zb=[<NO OWN FENCE>  ]
+        zb glass:   x  x    p  x  0H@@ @@@  x  x p /   `  p    0    `         @@@@p /           p  p            x  x /   x     @@ @H0       x      P
+  p28   vg8020=[29              ]  cf3300=[29              ]  zb=[<NO OWN FENCE>  ]
+        zb glass:   x  x    p  x  0H@@ @@@  x  x p /   `  p    0    `         @@@@p /           p  p            x  x /   x     @@ @H0       x      P
+  p32   vg8020=[33              ]  cf3300=[33              ]  zb=[<UNTERMINATED>  ]
+        zb glass:  [p32
+  f08   vg8020=[1               ]  cf3300=[1               ]  zb=[1               ]
+  f12   vg8020=[1               ]  cf3300=[1               ]  zb=[1               ]
+  f16   vg8020=[1               ]  cf3300=[1               ]  zb=[ERR 50 AT 20    ]
+  f20   vg8020=[1               ]  cf3300=[1               ]  zb=[ERR 50 AT 20    ]
+  f24   vg8020=[1               ]  cf3300=[1               ]  zb=[ERR 50 AT 20    ]
+  f28   vg8020=[1               ]  cf3300=[1               ]  zb=[ERR 50 AT 20    ]
+  f32   vg8020=[1               ]  cf3300=[1               ]  zb=[ERR 50 AT 20    ]
+  s04   vg8020=[1               ]  cf3300=[1               ]  zb=[1               ]
+  s08   vg8020=[1               ]  cf3300=[1               ]  zb=[1               ]
+  s12   vg8020=[1               ]  cf3300=[1               ]  zb=[<UNTERMINATED>  ]
+        zb glass:  [s12
+  s16   vg8020=[1               ]  cf3300=[1               ]  zb=[ERR 35 AT 20    ]
+  s18   vg8020=[1               ]  cf3300=[1               ]  zb=[ERR 35 AT 20    ]
+  p08r  vg8020=[9               ]  cf3300=[9               ]  zb=[9               ]
+
+✅ readout control passes (p08r = 9 on all three sides)
+=== 13 row(s) where zerobas differs from BOTH or either reference: ['p16', 'p20', 'p24', 'p28', 'p32', 'f16', 'f20', 'f24', 'f28', 'f32', 's12', 's16', 's18'] ===
+refcache: 0 hit, 3 miss, 3 stored
