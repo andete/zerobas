@@ -13,7 +13,7 @@ for both. Expectations are the CF-3300's measured faces; `--survey` re-reads it.
     s.seq   sequential: LOC before / after 5 B / after 10 B   -> 26,26,26
     r.get   random: GET #1,3 then GET #1,7                    -> 0,3,7
     w.put   random: PUT #1,4                                  -> 0,4,0
-    t.two   two random channels: GET #1,3 / GET #2,5, then LOC(1);LOC(2) -> 3,5
+    t.two   two random channels: GET #1,3 / GET #2,5 (LEN=8 -- PROG.BIN is 57 B), then LOC(1);LOC(2) -> 3,5
 
 Every row mounts its OWN copy of disk/test720.dsk (w.put creates a file;
 "it only reads" is an assumption, not a guarantee -- D-LOCSEM's rule).
@@ -45,15 +45,17 @@ CASES = [
                '40 LSET F$="x":PUT #1,4:B=LOC(1)', '50 CLOSE',
                '60 PRINT"[w.put";0;",";B;",";0;"]":END', '90 PRINT"[w.put ERR";ERR;"]":END']),
     ("t.two", ['10 ON ERROR GOTO 90', '15 MAXFILES=2', '20 OPEN"TEST.BIN"AS #1 LEN=128',
-               '25 OPEN"PROG.BIN"AS #2 LEN=128', '30 GET #1,3:GET #2,5',
+               '25 OPEN"PROG.BIN"AS #2 LEN=8', '30 GET #1,3:GET #2,5',
                '70 PRINT"[t.two";LOC(1);",";LOC(2);"]":END', '90 PRINT"[t.two ERR";ERR;"]":END']),
 ]
 EXPECT = {"s.seq": "26 , 26 , 26", "r.get": "0 , 3 , 7", "w.put": "0 , 4 , 0", "t.two": "3 , 5"}
-# \U0001f534 t.two cannot be GATED yet: a second concurrent disk OPEN raises a spurious
-# ERR 2 on this tree (D-OPEN2, docs/spec-basic-open2.md), so the row reads
-# `ERR 2` here for a reason that is not LOC's. It is printed, and it is what
-# flips to `ok` when D-OPEN2 lands -- the NEXT_GATE set below is where it moves.
-NEXT_GATE = {"t.two"}
+# t.two is GATED since 2026-09-11. It was filed as blocked by D-OPEN2 (a second
+# concurrent disk OPEN raised ERR 2); D-OPEN2 closed by measurement the same day
+# and the row STILL read no fence -- because it was mis-authored: channel 2 opened
+# PROG.BIN (57 B) with LEN=128 and asked for record 5, which is `Input past end`
+# on the CF-3300 too. A row that cannot reach its own face on the oracle gates
+# nothing; LEN=8 puts record 5 at offset 32, inside the file, on both machines.
+NEXT_GATE = set()
 
 
 def fence(tag, cap):

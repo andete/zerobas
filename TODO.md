@@ -489,7 +489,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:14520 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:14543 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -655,7 +655,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:3772 (T-6FE392)8 (T-529ABE)` from `TODO.md:13427 (T-529ABE)`: a
+      `TODO.md:3772 (T-6FE392)8 (T-529ABE)` from `TODO.md:13450 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -4616,7 +4616,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:13427 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:13450 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -9962,7 +9962,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       targets into range. Shipping only some of the four is worse than
       shipping none — it leaves `CRUNCH_DIFF_PINNED` half-stale and the class
       inconsistent.
-      🎚️ TIER 1 — happy path: eight keywords the reference tokenises are MISSING: `DSKI$` `DSKO$` `COPY` `SET` `ATTR$` `IPL` `CMD` `LOC`
+      🎚️ TIER 1 — happy path: of the eight keywords the reference tokenises, still MISSING here: `DSKI$` `DSKO$` `COPY` (`SET` `ATTR$` `IPL` `CMD` tokenise-then-ERR-5 as the reference does; `LOC` shipped 2026-09-11)
       🤖 AUTONOMOUS — the reference settles every token, and the pin is built.
 
 - [x] 🔴 **`LOC(#n)` IS A MISSING KEYWORD WITH ITS ORACLE MEASURED, AND IT WAS
@@ -9997,13 +9997,18 @@ list. **When a slice lands, grep this list for what it just shipped.**
       match — `LOCATE` crunched as `LOC`+`ATE` and every suite with a `LOCATE`
       control fell over. A row must follow every longer word it prefixes
       [[kwsweep-msx1-denominator]].
-      ⚠️ `t.two` (two random channels, each LOC its own — the row the per-channel
-      shape exists for) is printed but NOT gated: a second concurrent disk `OPEN`
-      raises D-OPEN2's spurious ERR 2 on this tree; it flips to gated when that
-      item lands. 🔴 Page 1 is at 4 B: the next page-1 item carves first.
+      ✅ `t.two` (two random channels, each LOC its own — the row the per-channel
+      shape exists for) is GATED since 2026-09-11. It was filed as blocked by
+      D-OPEN2; D-OPEN2 closed by measurement and the row STILL had no face — it
+      was mis-authored: channel 2 opened `PROG.BIN` (57 B) with `LEN=128` and
+      asked for record 5, `Input past end` on the CF-3300 too. A typing test of
+      `30 GET #1,3:GET #2,5` and three variants took every line — the tokeniser
+      was never involved. Row now uses `LEN=8` on channel 2 (record 5 at offset
+      32, inside the file) and reads `3 , 5` on both machines.
+      🔴 Page 1 is at 14 B (two carves since): the next page-1 item carves first.
       🤖 AUTONOMOUS — the CF-3300 settles every row; the shape is settled by the standing ruling (promoted 2026-09-10).
 
-- [ ] 🔴 **A SECOND CONCURRENT DISK `OPEN` IS `Syntax error` — 9 OF 13 ROWS DIFF,
+- [x] 🔴 **A SECOND CONCURRENT DISK `OPEN` IS `Syntax error` — 9 OF 13 ROWS DIFF,
       AND IT WAS INVISIBLE TOO (D-OPEN2, nested under `MAXFILES`).** Promoted
       2026-09-10 (D-NESTED) from the `MAXFILES` sub-item, whose own text says
       *"DONE EXCEPT FOR TWO OPEN DISK CHANNELS"*: device+device, device+disk and
@@ -10012,6 +10017,24 @@ list. **When a slice lands, grep this list for what it just shipped.**
       Two files open at once is how a program copies, merges or logs — a happy
       path, not an edge. The residual and its price are in the nested block.
       🎚️ TIER 1 — happy path: `OPEN` — a second concurrent DISK channel refuses where the CF-3300 serves it
+      ✅ **CLOSED BY MEASUREMENT 2026-09-11 — THE DIVERGENCE IS GONE.** D-OPEN2's
+      own probe ([`scratchpad/open2_probe.py`](scratchpad/open2_probe.py), refcache
+      off, [`.out`](scratchpad/open2_now.out)) reads **17 of 18 rows SAME** on
+      today's tree: two disk channels in every combination the spec listed —
+      random/random either order, sequential/sequential, mixed, no `LEN=`,
+      `MAXFILES=3`, two sequential with `PRINT#` to both — all `OK` on both
+      machines. The one DIFF left is `e.same2` (the SAME file on two channels:
+      `File already open` on the CF-3300, `OK` here), which is its own TIER 5
+      item and not this one's. A breakpoint rig on `fch_ctx_addr`
+      ([`scratchpad/open2_rig.py`](scratchpad/open2_rig.py)) showed the second
+      open's context save running with `FCH_ACTIVE=1`, `MAXF=2` and returning
+      clean before the program printed OK.
+      🔴 **WHICH COMMIT FIXED IT IS NOT ESTABLISHED** — the spec measured the red on
+      2026-08-30 and the pool floor / channel-table reservation moved under it
+      since (D-CLP, D-CTLPOOL, `strheap_varceil`); that is a reading about the
+      interval, not a bisect. And I built the rig BEFORE re-running the probe —
+      the first tool call on a filed divergence is its own probe
+      [[a-justification-parenthesis-is-an-unrun-claim]].
       🤖 AUTONOMOUS — the CF-3300 settles the rows (promoted 2026-09-10).
 
 - [ ] 📌 **`basic_probe_kwsweep.py` PRINTS ROWS NO RUNNER CAN PARSE, AND ITS
@@ -14514,7 +14537,7 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
         programs that used to have ~15 KB of string space now get 200 unless
         they say otherwise. The full acceptance corpus was re-run, not just this
         slice's gate.
-      🎚️ TIER 1 — happy path: the measured keyword-completeness remainder — `make kwsweep` prints it; today it overlaps the eight: `COPY` `SET` `ATTR$` `IPL` `CMD` `LOC` `DSKI$` `DSKO$`
+      🎚️ TIER 1 — happy path: the measured keyword-completeness remainder — `make kwsweep` prints it; today it overlaps the eight; still open there: `COPY` `DSKI$` `DSKO$`
       ⛔ BLOCKED — neither of us can start it now (needs a fixture).
 
 - [ ] **`LOAD"CAS:"` ACCEPTS A TOKENISED TAPE; the reference does not return.**
