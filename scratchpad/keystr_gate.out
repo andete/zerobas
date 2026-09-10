@@ -1,0 +1,25 @@
+python3 tools/install-repack-machine.py --merged build/zerobas-main-eu.rom --disk-rom build/disk.rom \
+	  --sub-rom build/sub.rom
+wrote C-BIOS_MSX1_EU_REPACK_DISK  (-> machine "C-BIOS_MSX1_EU_REPACK_DISK": merged repack ROM in slot 0, zerobas-disk in slot 3-1, zerobas-sub in slot 3-2)
+     /Users/joost/.openMSX/share/machines/C-BIOS_MSX1_EU_REPACK_DISK.xml
+python3 tools/install-repack-machine.py --merged build/zerobas-main-eu.rom --sub-rom build/sub.rom \
+	  --no-disk
+wrote C-BIOS_MSX1_EU_REPACK_NODISK  (-> machine "C-BIOS_MSX1_EU_REPACK_NODISK": merged repack ROM in slot 0, slot 3-1 EMPTY (diskless target), zerobas-sub in slot 3-2)
+     /Users/joost/.openMSX/share/machines/C-BIOS_MSX1_EU_REPACK_NODISK.xml
+python3 probes/basic/basic_probe_keystr.py
+--- the n domain and the empty string (ERR printed; 0 = accepted)
+  ok   d.n1     KEY 1,"X"                    zb='0'    want='0'  
+  ok   d.n0     KEY 0,"X"                    zb='5'    want='5'  
+  ok   d.n10    KEY 10,"X"                   zb='0'    want='0'  
+  ok   d.n11    KEY 11,"X"                   zb='5'    want='5'  
+  ok   d.nneg   KEY -1,"X"                   zb='5'    want='5'  
+  ok   d.empty  KEY 1,""                     zb='0'    want='0'  
+  ok   d.ctl    A=1                          zb='0'    want='0'  
+--- KEY LIST
+  ok   l.cold   zb=['color', 'auto', 'goto', 'list', 'run', 'color 15,4,4', 'cload"', 'cont', 'list.', 'run']
+  ok   l.plant  zb=['ZQX', 'auto', 'goto', 'list', 'run', 'color 15,4,4', 'cload"', 'cont', 'list.', 'run']
+  ok   l.trunc  zb=['ABCDEFGHIJKLMNO', 'auto', 'goto', 'list', 'run', 'color 15,4,4', 'cload"', 'cont', 'list.', 'run']
+  ok   l.empty  zb=['', 'auto', 'goto', 'list', 'run', 'color 15,4,4', 'cload"', 'cont', 'list.', 'run']
+
+11 rows, 0 diverge: none
+refcache: 0 hit, 1 miss, 1 stored

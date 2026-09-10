@@ -339,7 +339,62 @@ ex_key:
                 jr      z,key_off
                 cp      ON_TOKEN
                 jr      z,key_on
-                jp      stmt_error          ; KEY <n>,"str" / KEY LIST unsupported
+                ; --- D-KEYSTR (2026-09-10): KEY LIST and KEY n,"str" -------------
+                ; Both were `Syntax error` here and work on both references
+                ; (D-MISSOP3's r.keyok, D-KEYSCOUT2's eleven rows). The body is
+                ; the SUBROM_IDX_KEYSTR tenant; what stays here is the parse:
+                ; LIST, or n (1..10 -> else ERR 5, measured) `,` string -- staged
+                ; into STRSCR by fname_expr, the same [len][bytes] contract NAME
+                ; and OPEN use. IX is the token pointer: guarded, as evmc_sqr.
+                cp      LIST_TOKEN
+                jr      nz,key_store
+                inc     hl                  ; past LIST
+                push    hl
+                ld      a,255
+                jr      key_call
+key_store:
+                call    eval_byte_arg       ; A = n, 0..255 (ERR 6 / ERR 5 outside)
+                or      a
+                jp      z,gb_illegal        ; KEY 0,   -> ERR 5 (measured)
+                cp      11
+                jp      nc,gb_illegal       ; KEY 11,  -> ERR 5 (measured)
+                ; 🔴 NOT into KEYARG yet: it aliases WIDIG, the fp widening
+                ; scratch, and the STRING may widen a number on its way in
+                ; (`KEY 1,STR$(5)`). The slot rides the stack across the string
+                ; evaluation; an error inside it resets SP, so the push is
+                ; harmless on every refusal path.
+                push    af                  ; [n]
+                call    skip_comma
+                jp      nz,stmt_error       ; KEY n without `,`: unmeasured, refuse
+                inc     hl                  ; skip_comma stops ON the comma (its
+                                            ; callers follow it with inc_eval);
+                                            ; the first cut handed the comma to
+                                            ; str_eval and every store read ERR 2
+                call    fname_expr          ; STRSCR+1 := the bytes, `"`-terminated;
+                                            ; FN_RESUME set. \U0001f534 It does NOT
+                                            ; write the length byte -- parse_disk_fcb
+                                            ; stops on the quote -- and the tenant
+                                            ; reading STRSCR+0 got a stale count:
+                                            ; every store carried a trailing `"`.
+                ld      hl,(STRPTR)         ; the descriptor is [len][ptr]: stage
+                ld      a,(hl)              ; the TRUE length where the tenant
+                ld      (STRSCR),a          ; reads it (a CHR$(34) inside stays exact)
+                ld      hl,(FN_RESUME)
+                pop     af                  ; A = n
+                push    hl                  ; [resume]
+key_call:
+                ld      (KEYARG),a
+                push    ix
+                ld      ix,SUBROM_ENTRY_BASE_P0 + 3*SUBROM_IDX_KEYSTR
+                call    sc_call             ; D-SCCALL: tenant call + absent raise
+                pop     ix
+                ; The tenant leaves DETOKBUF printable after EVERY op -- LIST's
+                ; ten lines, or a lone NUL -- so the drain is unconditional and
+                ; costs no branch (the D-PUEMIT shape: render sub-side, drain
+                ; through the resident print_string).
+                ld      hl,DETOKBUF
+                call    print_string
+                jp      pop_exec            ; D-POPEXEC: pop hl + exec_stmt
 key_off:
                 inc     hl                  ; past OFF
                 push    hl

@@ -3792,6 +3792,11 @@ FP_LHSVAL       equ     $F0E4   ; combine_*: the LHS operand's plain int16 value
 FP_TMP_B        equ     $F0E6   ; combine_*: the RHS operand's plain int16 value,
                                 ; stashed so it survives a widen_* call (2)
 FP_RSIGN        equ     $F0E8   ; signed_div_de_bc/signed_mod_de_bc: result sign (1)
+KEYARG          equ     $F0E9   ; D-KEYSTR: main -> keystr_tenant op/slot (0 =
+                                ; defaults, 1..10 = store, 255 = LIST). ALIASES
+                                ; WIDIG below: that is fp widening scratch, dead
+                                ; by the time a statement calls the tenant, and
+                                ; a KEY statement widens nothing after it. (1)
 WIDIG           equ     $F0E9   ; widen_int_to: binary->BCD digit scratch, up to
                                 ; 5 decimal digits (32768 max magnitude) (5)
 MUL_I           equ     $F0EE   ; fp_mul: outer-loop digit index i, 13 downto 0;
@@ -4314,6 +4319,11 @@ SUBROM_IDX_PLAY_PARSE equ 14    ; play_parse_tenant (sub/playparse.asm): the aud
                                 ; MML string into its VOICxQ ring buffer, sets MUSICF
                                 ; LAST. Only ex_play (basic/play.asm) computes
                                 ; IX = SUBROM_ENTRY_BASE_P1 + 3*SUBROM_IDX_PLAY_PARSE.
+SUBROM_IDX_KEYSTR    equ 18     ; keystr_tenant (sub/keystr.asm): KEY n,"str",
+                                ; KEY LIST, and the ten measured function-key
+                                ; defaults at cold boot (D-KEYSTR). PAGE 0: RAM
+                                ; in, RAM out; its only calls, pchar and
+                                ; print_crlf, are main page 1. Op in KEYARG.
 SUBROM_IDX_LOFU32    equ 17     ; lofu32_tenant (sub/lofu32.asm): LOF's 32-bit
                                 ; FAT_FILESIZE -> ARGA as an unpacked FPNUM, for
                                 ; ev_ff_lof to pack as a double (D-LOFU32). PAGE

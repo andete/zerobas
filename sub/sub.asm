@@ -227,6 +227,11 @@ sub_p0_table:
                                                 ;   packs. A funding carve: the
                                                 ;   main-side form cost 98 B of
                                                 ;   page 1.
+                jp      keystr_tenant           ; index 18 (SUBROM_IDX_KEYSTR): KEY
+                                                ;   n,"str" / KEY LIST / the ten
+                                                ;   measured defaults at cold boot
+                                                ;   (D-KEYSTR). RAM in, RAM out;
+                                                ;   pchar/print_crlf are page 1.
 
 
 ; --- Page-0 PING (S2a boot-gate tenant) -----------------------------------
@@ -352,6 +357,8 @@ sis_spin:
                 include "deffn.asm"
 ; --- LOF's 32-bit size -> ARGA (D-LOFU32 funding carve) -----------------------
                 include "lofu32.asm"
+; --- KEY n,"str" / KEY LIST / function-key defaults (D-KEYSTR) ----------------
+                include "keystr.asm"
 
 ; --- sub-local is_letter (byte-identical own-design clone) ------------------
 ; The resident copy stays in the main ROM (basic/interp.asm) for the rest of the

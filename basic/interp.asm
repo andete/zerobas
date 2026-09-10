@@ -132,6 +132,20 @@ init:
                 call    init_filechan       ; no open channel; PRINT dest = screen
                 call    new_prog            ; empty stored program (Step B)
                 call    init_ext_roms       ; run the boot-scan INITs C-BIOS skips
+                ; D-KEYSTR (2026-09-10): the ten function-key defaults, COLD BOOT
+                ; ONLY -- the references keep a KEY n,"str" across NEW/RUN/CLEAR.
+                ; zerobas read `0 0 0 0` at every slot before this; the image is
+                ; the VG-8020's, measured byte for byte (sub/keystr.asm).
+                ; 🔴 AFTER init_ext_roms, NOT BEFORE: that is where
+                ; try_sub_slot decides SUBSLOT_OK. The first cut called the tenant
+                ; from the top of init, when SUBSLOT_OK was still power-on RAM
+                ; garbage -- subrom_call took the garbage as "present", handed a
+                ; garbage slot id to CALSLT, and the machine never reached the
+                ; prompt (the gate's control row read BLIND). Order is the fix.
+                xor     a
+                ld      (KEYARG),a
+                ld      ix,SUBROM_ENTRY_BASE_P0 + 3*SUBROM_IDX_KEYSTR
+                call    subrom_call         ; absent sub-ROM: the slots stay clear
                                             ; (e.g. zerobas-disk in slot 3-1) since
                                             ; our own INIT never returns to the scan
                 ; D-CTLPOOL: NOW the control pool can be sized. clear_vars called

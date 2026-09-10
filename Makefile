@@ -201,7 +201,7 @@ SUB_PARTS := sub/equates.inc sub/deftype.asm sub/tkfloat.asm sub/fp_sqrt.asm sub
              basic/fatiocreate-body.inc basic/fatiow-body.inc \
              sub/circleparse.asm sub/errmsg.asm sub/lineno.asm \
              sub/readdata.asm basic/readdata-body.inc basic/tokskip-body.inc \
-             sub/beep.asm sub/lofu32.asm sub/title.asm basic/title-body.inc \
+             sub/beep.asm sub/lofu32.asm sub/keystr.asm sub/title.asm basic/title-body.inc \
              sub/playparse.asm sub/graphics.asm \
              sub/math-coeffs.inc basic/sysvars.inc basic/kwtable.inc \
              basic/tokenise.inc basic/detok.inc \
@@ -1978,6 +1978,14 @@ runtail-acceptance: repack-machine $(DISK_TEST_DSK)
 # NO DISK, no cassette — five boots of the plain machine.
 runline-acceptance: repack-machine
 	python3 probes/basic/basic_probe_runline.py
+
+# --- KEY n,"str" / KEY LIST / the function-key defaults (D-KEYSTR) -------------
+# Ten rows on the plain machine: the n domain (1..10, ERR 5 outside), the empty
+# string, and KEY LIST after a cold boot / a plant / a 20-char store / an empty
+# store. Expectations are the two references' measured faces (they agree on
+# every row; F6 ships the VG-8020 value by the standing style ruling).
+keystr-acceptance: repack-machine
+	python3 probes/basic/basic_probe_keystr.py
 
 # --- what a machine prints AFTER RUN"CAS:x" / LOAD"CAS:x",R -------------------
 # D-CASTAIL: docs/spec-basic-castail.md, measured in

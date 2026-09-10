@@ -1,0 +1,24 @@
+--- the n domain and the empty string (ERR printed; 0 = accepted)
+  ok   d.n1     KEY 1,"X"                    zb='0'    want='0'  vg8020='0'  cf3300='0'
+  ok   d.n0     KEY 0,"X"                    zb='5'    want='5'  vg8020='5'  cf3300='5'
+  ok   d.n10    KEY 10,"X"                   zb='0'    want='0'  vg8020='0'  cf3300='0'
+  ok   d.n11    KEY 11,"X"                   zb='5'    want='5'  vg8020='5'  cf3300='5'
+  ok   d.nneg   KEY -1,"X"                   zb='5'    want='5'  vg8020='5'  cf3300='5'
+  ok   d.empty  KEY 1,""                     zb='0'    want='0'  vg8020='0'  cf3300='0'
+  ok   d.ctl    A=1                          zb='0'    want='0'  vg8020='0'  cf3300='0'
+--- KEY LIST
+  ok   l.cold   zb=['color', 'auto', 'goto', 'list', 'run', 'color 15,4,4', 'cload"', 'cont', 'list.', 'run']
+                vg8020=['color', 'auto', 'goto', 'list', 'run', 'color 15,4,4', 'cload"', 'cont', 'list.', 'run']
+                cf3300=['color', 'auto', 'goto', 'list', 'run', 'color 15,4,7', 'cload"', 'cont', 'list.', 'run']
+  ok   l.plant  zb=['ZQX', 'auto', 'goto', 'list', 'run', 'color 15,4,4', 'cload"', 'cont', 'list.', 'run']
+                vg8020=['ZQX', 'auto', 'goto', 'list', 'run', 'color 15,4,4', 'cload"', 'cont', 'list.', 'run']
+                cf3300=['ZQX', 'auto', 'goto', 'list', 'run', 'color 15,4,7', 'cload"', 'cont', 'list.', 'run']
+  ok   l.trunc  zb=['ABCDEFGHIJKLMNO', 'auto', 'goto', 'list', 'run', 'color 15,4,4', 'cload"', 'cont', 'list.', 'run']
+                vg8020=['ABCDEFGHIJKLMNO', 'auto', 'goto', 'list', 'run', 'color 15,4,4', 'cload"', 'cont', 'list.', 'run']
+                cf3300=['ABCDEFGHIJKLMNO', 'auto', 'goto', 'list', 'run', 'color 15,4,7', 'cload"', 'cont', 'list.', 'run']
+  ok   l.empty  zb=['', 'auto', 'goto', 'list', 'run', 'color 15,4,4', 'cload"', 'cont', 'list.', 'run']
+                vg8020=['', 'auto', 'goto', 'list', 'run', 'color 15,4,4', 'cload"', 'cont', 'list.', 'run']
+                cf3300=['', 'auto', 'goto', 'list', 'run', 'color 15,4,7', 'cload"', 'cont', 'list.', 'run']
+
+11 rows, 0 diverge: none
+refcache: 3 hit, 0 miss

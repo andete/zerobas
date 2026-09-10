@@ -188,3 +188,36 @@ Only the decision, plus one question the measuring surfaced: **F6's default is
 machine-specific**, so does zerobas ship the CF-3300 value on the disk build and
 the VG-8020 value on the diskless one (faithful to each target's oracle, but two
 different ROMs), or one value everywhere?
+
+
+## D-KEYDEF (2026-09-10) — the exact 160 bytes, and the fix that ships them
+
+§"`KEY LIST` cannot show trailing spaces or a CR" asked for a PEEK read of the
+whole area. [`scratchpad/keydef_probe.py`](../scratchpad/keydef_probe.py)
+([`.out`](../scratchpad/keydef_probe.out)) reads all 160 bytes at `$F87F` on both
+references after a cold boot. **They agree on every byte except F6.**
+
+| slot | VG-8020 bytes (stride 16, NUL-padded) | as text |
+|---|---|---|
+| F1 | `99 111 108 111 114 32 0…` | `color␠` |
+| F2 | `97 117 116 111 32 0…` | `auto␠` |
+| F3 | `103 111 116 111 32 0…` | `goto␠` |
+| F4 | `108 105 115 116 32 0…` | `list␠` |
+| F5 | `114 117 110 13 0…` | `run` CR |
+| F6 | `99 111 108 111 114 32 49 53 44 52 44 52 13 0…` | `color 15,4,4` CR — **CF-3300: `…,7`** |
+| F7 | `99 108 111 97 100 34 0…` | `cload"` |
+| F8 | `99 111 110 116 13 0…` | `cont` CR |
+| F9 | `108 105 115 116 46 13 30 30 0…` | `list.` CR `$1E` `$1E` |
+| F10 | `12 114 117 110 13 0…` | `$0C` `run` CR |
+
+The tails the LIST scout could not see: `run` and `cont` end in a CR (which is
+what makes them execute), F9 carries two `$1E` (cursor-up) after its CR, F10
+starts with a form feed. zerobas read `0` at all 160 bytes on the same boot.
+
+**Shipped as D-KEYSTR**: this image is data in [`sub/keystr.asm`](../sub/keystr.asm)
+(the VG-8020 bytes on both targets — the standing style ruling), copied to
+`$F87F` once from `init` (cold boot only); `KEY n,"str"` stores the staged
+string into slot n (cleared first, truncated to 15); `KEY LIST` prints the ten
+slots up to their NUL. Gate: `make keystr-acceptance`. Cost, read from a clean
+tree: main page 1 89 → 24 B, sub page 0 1100 → 839 B — never quote these,
+run `make basic-reloc`.
