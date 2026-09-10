@@ -1,0 +1,19 @@
+D-SSTOVF: 4 depth(s), longest line 61 chars
+
+  n01  
+       vg8020  |  Ok /   PRINT LEN(FNB$(A$)) /   Undefined user function /   Ok|
+       cf3300  | Ok /  PRINT LEN(FNB$(A$)) /  Undefined user function /  Ok|
+       zb      | Illegal direct /  ZBPRINT LEN(FNB$(A$)) /  Undefined user function /  ZB|
+  n02  
+       vg8020  |  Ok /   PRINT LEN(FNB$(FNB$(A$))) /   Undefined user function /   Ok|
+       cf3300  | Ok /  PRINT LEN(FNB$(FNB$(A$))) /  Undefined user function /  Ok|
+       zb      | Illegal direct /  ZBPRINT LEN(FNB$(FNB$(A$))) /  Undefined user function /  ZB|
+  n04  
+       vg8020  |  Ok /   PRINT LEN(FNB$(FNB$(FNB$(FNB$(A$))))) /   Undefined user function /   Ok|
+       cf3300  | Ok /  PRINT LEN(FNB$(FNB$(FNB$(FNB$(A$))))) /  Undefined user function /  Ok|
+       zb      | Illegal direct /  ZBPRINT LEN(FNB$(FNB$(FNB$(FNB$(A$))))) /  Undefined user function /  ZB|
+  n08  
+       vg8020  |  PRINT LEN(FNB$(FNB$(FNB$(FNB$(FNB$(FN /   B$(FNB$(FNB$(A$))))))))) /   Undefined user function /   Ok|
+       cf3300  | PRINT LEN(FNB$(FNB$(FNB$(FNB$(FNB$(FNB$ /  (FNB$(FNB$(A$))))))))) /  Undefined user function /  Ok|
+       zb      | ZBPRINT LEN(FNB$(FNB$(FNB$(FNB$(FNB$(FN /  B$(FNB$(FNB$(A$))))))))) /  Undefined user function /  ZB|
+refcache: 0 hit, 3 miss, 3 stored

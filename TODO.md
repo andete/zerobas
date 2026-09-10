@@ -434,7 +434,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:14002 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:14058 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -599,7 +599,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:3623 (T-6FE392)8 (T-529ABE)` from `TODO.md:12939 (T-529ABE)`: a
+      `TODO.md:3623 (T-6FE392)8 (T-529ABE)` from `TODO.md:12995 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -4454,7 +4454,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:12939 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:12995 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -7460,6 +7460,62 @@ list. **When a slice lands, grep this list for what it just shipped.**
       why it cannot be reached from BASIC. The per-site row set for the other 27
       aliases is still owed separately.
       🤖 AUTONOMOUS — the reference or a gate settles it; finishable unattended (roster + count fixed 2026-08-26; the 21 knives remain, now priced).
+
+- [ ] 🔴 **NESTED `FN` GIVES OUT AT DEPTH 10; BOTH REFERENCES ANSWER 30.**
+      Opened 2026-09-10 by D-FNNEST, measured on the machine
+      ([`scratchpad/fnnest4_probe.py`](scratchpad/fnnest4_probe.py),
+      [`.out`](scratchpad/fnnest4_probe.out)). The identical typed program
+
+          10 A$="X" : 20 DEF FNB$(X$)=X$ : 30 PRINT LEN(FNB$(FNB$(...A$...)))
+
+      answers `1` on the VG-8020 and the CF-3300 at nesting depth 11, 12 and 30,
+      and `Out of memory in 30` on zerobas from depth **11**. Depth 10 passes on
+      all three. A flat expression with twelve NON-nested `FN` calls is fine
+      everywhere, so the quantity is DEPTH, not call count.
+      🎯 **THE MECHANISM IS IN THE SOURCE AND IT IS QUADRATIC.** `fn_enter`
+      ([`basic/deffn.asm:171`](basic/deffn.asm:171)) saves the LIVE part of the
+      shadow-parameter area on the Z80 stack and refuses below `FN_STK_FLOOR`
+      (`$F200`, ~384 B under the measured `$F380` stack base). The live part is
+      every outer frame's slots at `FN_SLOTSZ` = 11 B each, so depth n costs
+      ~11·n²/2 bytes of stack. Depth 30 would want kilobytes: **moving the floor
+      cannot close this**, and a fix means saving only the slot the callee
+      overwrites instead of the whole live prefix.
+      ✅ **PINNED FROM BELOW, NOT LEFT AS PROSE**: `b.nest10` is now a row in
+      `deffn-acceptance`/`deffn-strict` (73 DEF FN rows, 0 divergent, 11 controls
+      green), so the ceiling can only ever move UP. The divergent depths are
+      deliberately NOT rows — `deffn-strict` requires every subject row to match
+      and is green, and a known-red row would commit a red gate.
+      🔴 **AND IT FALSIFIED A COMMENT THAT WAS LOAD-BEARING FOR THE FLOOR.**
+      `basic/sysvars.inc` said *"NOT AN ORACLE FIGURE. The references' own limit
+      is unmeasured"*. It is measured now, and the answer is that the floor sits
+      BELOW both references rather than merely unpinned against them — corrected
+      in place [[a-fix-falsifies-the-justification-beside-it]]. ⚠️ What is still
+      unmeasured is the references' ceiling ABOVE 30: the 255-character BASIC
+      line stopped the ramp, not a reference error.
+      🔴 **TWO OF MY OWN READINGS WERE WITHDRAWN GETTING HERE, BOTH FROM ONE
+      PROBE DEFECT.** `scratchpad/fnnest2_probe.py` scored a case by searching
+      the WHOLE flat screen dump for `Out of memory` before looking anywhere
+      else; in BATCH mode the screen is not cleared between cases, so it read the
+      PREVIOUS case's error as this case's answer. That made a flat 12-call
+      expression look like a failure, which made me read the cap as call COUNT,
+      which made me suspect an ERR 7 surviving `NEW`. The A/B
+      ([`scratchpad/fnleak_probe.py`](scratchpad/fnleak_probe.py)) put that on
+      the machine and **refuted it** — alone, after a failed program and after a
+      successful one all answer 12. The readout is anchored after the last `RUN`
+      now and carries its own control row (`n10r`, a passing depth re-run with
+      the previous case's error still on the glass)
+      [[readout-blind-to-its-own-subject]].
+      ⚠️ **THIS SLICE DID NOT REACH WHAT IT WENT LOOKING FOR.** It started as an
+      attempt to reach `sst_overflow`, one of the four D-DUPOBS2 sites no
+      behavioural gate touches ([`scratchpad/sstovf_probe.py`](scratchpad/sstovf_probe.py)).
+      `sst_overflow` is STILL unreached: the temp-descriptor stack is
+      `TEMPD` = 32 deep and every construct that snapshots costs 8–13 characters
+      per temp against a 255-character line, so `DEF FN` was picked as the
+      cheapest lever at 6 — and the FN ceiling of 10 stops the ramp long before
+      32 temps. The two are the same wall.
+      🙋 NEEDS-JOOST — a call that is yours to make: the fix is a frame-SHAPE
+      change to a load-bearing verb (save one slot, not the live prefix), not a
+      byte spend, so it is outside the standing ≤20 B measured-divergence budget.
 
 - [ ] ⚠️ **A probe with an honest `rc` that NO battery collects is not an oracle.**
       Opened 2026-08-27 by D-WALLIT,

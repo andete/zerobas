@@ -1,0 +1,14 @@
+D-FNNEST: nested FN depth, anchored readout (n10r = the readout's control)
+
+  n08    vg8020=[1                     ]  cf3300=[1                     ]  zb=[1                     ]
+  n09    vg8020=[1                     ]  cf3300=[1                     ]  zb=[1                     ]
+  n10    vg8020=[1                     ]  cf3300=[1                     ]  zb=[1                     ]
+  n11    vg8020=[1                     ]  cf3300=[1                     ]  zb=[Out of memory in 30   ]
+  n12    vg8020=[1                     ]  cf3300=[1                     ]  zb=[Out of memory in 30   ]
+  n36    vg8020=[1                     ]  cf3300=[1                     ]  zb=[Out of memory in 30   ]
+  n10r   vg8020=[1                     ]  cf3300=[1                     ]  zb=[1                     ]
+
+✅ readout control passes: n10r reads 1 on all three sides with an `Out of memory` from n12 still on the glass.
+
+=== 3 row(s) where zerobas differs from BOTH references: ['n11', 'n12', 'n36'] ===
+refcache: 0 hit, 3 miss, 3 stored

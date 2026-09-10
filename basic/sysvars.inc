@@ -3608,10 +3608,16 @@ FN_BLK          equ     FN_CELLS + FN_AREA  ; the whole frame, cells first
 ; clear of every private sysvar (the highest is the SQRT block around $F194) and
 ; leaves ~384 B below the $F380 stack base tests/msxtest.py and the runaway
 ; sweep both measure.
-; ⚠️ NOT AN ORACLE FIGURE. The references' own limit is unmeasured -- b.recurse
-; says ERR 7, not at what depth. What IS pinned is that the LEGAL depths in the
-; row set (2, at b.nested / o.nestsame / z.addr2i) work and unbounded recursion
-; does not.
+; \U0001f534 "THE REFERENCES' OWN LIMIT IS UNMEASURED" WAS TRUE UNTIL 2026-09-10
+; AND IS NOW FALSE (D-FNNEST, scratchpad/fnnest4_probe.py). Measured, with the
+; readout carrying its own control row: both references answer a nesting chain of
+; depth 11, 12 and 30 correctly, and THIS floor stops zerobas at 10 -- depth 11
+; is `Out of memory in 30`. So the floor is not merely unpinned against the
+; references, it is BELOW them, and the gap is not closable by moving $F200: the
+; save is the whole LIVE parameter prefix, which makes the stack cost O(n^2) in
+; depth, so depth 30 would want kilobytes. What IS pinned from below is b.nest10.
+; ⚠️ The references' own ceiling is still unmeasured ABOVE 30 -- the 255-character
+; BASIC line is what stopped the ramp, not a reference error.
 FN_STK_FLOOR    equ     $F200
 ; ⚠️ THE ASSERTS SHIP WITH THE ALLOCATION, NOT AFTER IT. The last RAM obstacle
 ; this verb hit was a BUILD ERROR rather than a probe reading garbage out of the

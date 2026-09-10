@@ -1,0 +1,11 @@
+D-FNNEST: s.. sequential-in-one-expression, L.. one call per statement, num.. numeric FN
+
+  s08     vg8020=[8                     ]  cf3300=[8                     ]  zb=[8                     ]
+  s09     vg8020=[9                     ]  cf3300=[9                     ]  zb=[9                     ]
+  s10     vg8020=[10                    ]  cf3300=[10                    ]  zb=[10                    ]
+  s11     vg8020=[11                    ]  cf3300=[11                    ]  zb=[11                    ]
+  s12     vg8020=[12                    ]  cf3300=[12                    ]  zb=[12                    ]
+  L200    vg8020=[1                     ]  cf3300=[1                     ]  zb=[<nothing after RUN>   ]
+  num10   vg8020=[20                    ]  cf3300=[20                    ]  zb=[20                    ]
+  num12   vg8020=[24                    ]  cf3300=[24                    ]  zb=[24                    ]
+refcache: 0 hit, 3 miss, 3 stored

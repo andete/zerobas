@@ -1,0 +1,8 @@
+D-FNLEAK: does an ERR 7 survive NEW and poison the next program?
+
+  a.alone       vg8020=[12                    ]  cf3300=[12                    ]  zb=[12                    ]
+  b.after_fail  vg8020=[12                    ]  cf3300=[12                    ]  zb=[12                    ]
+  c.after_ok    vg8020=[12                    ]  cf3300=[12                    ]  zb=[12                    ]
+
+🔴 NO CARRY-OVER: all three agree, so the fnnest2/fnnest3 disagreement has a DIFFERENT cause and the reading is withdrawn.
+refcache: 0 hit, 3 miss, 3 stored

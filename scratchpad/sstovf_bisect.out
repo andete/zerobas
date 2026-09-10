@@ -1,0 +1,15 @@
+D-FNNEST: 12 case(s)  (n.. = plain, c.. = after CLEAR 2000)
+
+  n05    vg8020=[1                         ]  cf3300=[1                         ]  zb=[1                         ]
+  n06    vg8020=[1                         ]  cf3300=[1                         ]  zb=[1                         ]
+  n07    vg8020=[1                         ]  cf3300=[1                         ]  zb=[1                         ]
+  n08    vg8020=[1                         ]  cf3300=[1                         ]  zb=[1                         ]
+  n10    vg8020=[1                         ]  cf3300=[1                         ]  zb=[1                         ]
+  n12    vg8020=[1                         ]  cf3300=[1                         ]  zb=[Out of memory             ]
+  n14    vg8020=[1                         ]  cf3300=[1                         ]  zb=[Out of memory             ]
+  n15    vg8020=[1                         ]  cf3300=[1                         ]  zb=[Out of memory             ]
+  n16    vg8020=[1                         ]  cf3300=[1                         ]  zb=[Out of memory             ]
+  c16    vg8020=[1                         ]  cf3300=[1                         ]  zb=[Out of memory             ]
+  c24    vg8020=[1                         ]  cf3300=[1                         ]  zb=[Out of memory             ]
+  c36    vg8020=[1                         ]  cf3300=[1                         ]  zb=[Out of memory             ]
+refcache: 0 hit, 3 miss, 3 stored

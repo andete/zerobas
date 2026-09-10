@@ -1,0 +1,43 @@
+D-SSTOVF: 10 depth(s), longest line 3 chars
+
+  n01  
+       vg8020  |  30 PRINT LEN(FNB$(A$)) /   RUN /    1 /   Ok|
+       cf3300  | 30 PRINT LEN(FNB$(A$)) /  RUN /   1 /  Ok|
+       zb      | ZB30 PRINT LEN(FNB$(A$)) /  ZBRUN /   1 /  ZB|
+  n04  
+       vg8020  |  ))) /   RUN /    1 /   Ok|
+       cf3300  | ) /  RUN /   1 /  Ok|
+       zb      | ))) /  ZBRUN /   1 /  ZB|
+  n16  
+       vg8020  |  ) /   RUN /    1 /   Ok|
+       cf3300  | FNB$(FNB$(FNB$(A$))))))))))))))))) /  RUN /   1 /  Ok|
+       zb      | $(FNB$(FNB$(FNB$(A$))))))))))))))))) /  ZBRUN /  Out of memory in 30 /  ZB|
+  n24  
+       vg8020  |  )))))))))))) /   RUN /    1 /   Ok|
+       cf3300  | )))) /  RUN /   1 /  Ok|
+       zb      | )))))) /  ZBRUN /  Out of memory in 30 /  ZB|
+  n28  
+       vg8020  |  FNB$(A$))))))))))))))))))))))))))))) /   RUN /    1 /   Ok|
+       cf3300  | )))))))))))))))))))))))))))) /  RUN /   1 /  Ok|
+       zb      | $))))))))))))))))))))))))))))) /  ZBRUN /  Out of memory in 30 /  ZB|
+  n30  
+       vg8020  |  ))))))))))) /   RUN /    1 /   Ok|
+       cf3300  | ) /  RUN /   1 /  Ok|
+       zb      | ))) /  ZBRUN /  Out of memory in 30 /  ZB|
+  n31  
+       vg8020  |  ))))))))))))))))) /   RUN /    1 /   Ok|
+       cf3300  | ))))))) /  RUN /   1 /  Ok|
+       zb      | ))))))))) /  ZBRUN /  Out of memory in 30 /  ZB|
+  n32  
+       vg8020  |  ))))))))))))))))))))))) /   RUN /    1 /   Ok|
+       cf3300  | ))))))))))))) /  RUN /   1 /  Ok|
+       zb      | ))))))))))))))) /  ZBRUN /  Out of memory in 30 /  ZB|
+  n33  
+       vg8020  |  ))))))))))))))))))))))))))))) /   RUN /    1 /   Ok|
+       cf3300  | ))))))))))))))))))) /  RUN /   1 /  Ok|
+       zb      | ))))))))))))))))))))) /  ZBRUN /  Out of memory in 30 /  ZB|
+  n36  
+       vg8020  |  )))))))))) /   RUN /    1 /   Ok|
+       cf3300  | ))))))))))))))))))))))))))))))))))))) /  RUN /   1 /  Ok|
+       zb      | A$))))))))))))))))))))))))))))))))))))) /  ZBRUN /  Out of memory in 30 /  ZB|
+refcache: 0 hit, 3 miss, 3 stored

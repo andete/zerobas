@@ -1,0 +1,10 @@
+D-FNNEST: n.. nested, s.. sequential (same call count, depth 1)
+
+  n09        vg8020=[1                     ]  cf3300=[1                     ]  zb=[1                     ]
+  n10        vg8020=[1                     ]  cf3300=[1                     ]  zb=[1                     ]
+  n11        vg8020=[1                     ]  cf3300=[1                     ]  zb=[Out of memory         ]
+  n12        vg8020=[1                     ]  cf3300=[1                     ]  zb=[Out of memory         ]
+  s12        vg8020=[12                    ]  cf3300=[12                    ]  zb=[Out of memory         ]
+  s16        vg8020=[16                    ]  cf3300=[16                    ]  zb=[Out of memory         ]
+  b.recurse  vg8020=[color  auto   goto   list   run]  cf3300=[color   auto    goto    list    run]  zb=[Out of memory         ]
+refcache: 0 hit, 3 miss, 3 stored

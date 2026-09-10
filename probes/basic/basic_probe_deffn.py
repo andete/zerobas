@@ -84,6 +84,15 @@ CASES = {
     'b.ctl'             : (['X=5'], 'X+1'),
     'b.forward'         : (['GOTO 60', 'DEF FNA(X)=X+1'], 'FNA(2)'),
     'b.nested'          : (['DEF FNA(X)=X+1', 'DEF FNB(X)=FNA(X)*2'], 'FNB(3)'),
+    # 🎯 D-FNNEST: THE CEILING PINNED FROM BELOW. Nesting depth 10 is the
+    # deepest chain zerobas answers; 11 is `ERR 7 AT 60` while both
+    # references answer 1 at 11, 12 and 30 (scratchpad/fnnest4_probe.py).
+    # The divergent depths CANNOT go in this row set -- `deffn-strict`
+    # requires every subject row to match and is green, so a known-red row
+    # would commit a red gate. What goes here is the RATCHET: 10 must keep
+    # working, so the ceiling can only ever move UP.
+    'b.nest10'          : (['A$="X"', 'DEF FNB$(X$)=X$'],
+                           'LEN(' + 'FNB$(' * 10 + 'A$' + ')' * 10 + ')'),
     'b.noarg'           : (['DEF FNA=7'], 'FNA'),
     'b.param'           : (['X=5:DEF FNA(X)=X+1', 'Y=FNA(2)'], 'Y;X'),
     'b.paramnew'        : (['DEF FNA(Q)=Q+1', 'Y=FNA(7)'], 'Y;Q'),
@@ -205,6 +214,7 @@ WANT = {
     'b.ctl'             : '6',   # scout-round3
     'b.forward'         : 'ERR 18 AT 60',   # scout-round3
     'b.nested'          : '8',   # scout-round3
+    'b.nest10'          : '1',   # D-FNNEST 2026-09-10, both refs
     'b.noarg'           : '7',   # scout-round3
     'b.param'           : '3 5',   # scout-round3
     'b.paramnew'        : '8 0',   # scout-round3
