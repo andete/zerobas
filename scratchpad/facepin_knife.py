@@ -55,6 +55,12 @@ ARMS = [
      '"s.same":     {"cf3300": "<File already open>", "zb": "MUTANT"}', "s.same"),
     ("scratchpad/dskibytes_probe.py",
      '"w.sec0":  "0 0 0 0 0 0 0 0"', '"w.sec0":  "9 0 0 0 0 0 0 0"', "w.sec0"),
+    # r.255's pinned zb face is "0 -256" -- the signed-LOF defect itself. The
+    # mutant is a plausible CORRECT value, so this arm also demonstrates the pin
+    # firing in the direction that matters: the day the defect is FIXED.
+    ("scratchpad/putdomain_probe.py",
+     '"r.255":     {"cf3300": "0 65280", "zb": "0 -256"}',
+     '"r.255":     {"cf3300": "0 65280", "zb": "0 65280"}', "r.255"),
 ]
 
 
@@ -99,7 +105,7 @@ def main() -> int:
             print(f"\U0001f534 {path}: STILL reports drift after restore "
                   f"(rc={rc2}) -- the red above may be the probe, not the pin")
             ok = False
-    print("\n" + ("\U0001f7e2 ALL SIX PINS HAVE TEETH" if ok
+    print("\n" + ("\U0001f7e2 ALL SEVEN PINS HAVE TEETH" if ok
                   else "\U0001f534 AT LEAST ONE PIN IS INERT"))
     return 0 if ok else 1
 

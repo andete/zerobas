@@ -434,7 +434,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:13817 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:13840 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -599,7 +599,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:3560 (T-6FE392)8 (T-529ABE)` from `TODO.md:12754 (T-529ABE)`: a
+      `TODO.md:3583 (T-6FE392)8 (T-529ABE)` from `TODO.md:12777 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -1164,10 +1164,33 @@ list. **When a slice lands, grep this list for what it just shipped.**
       • **The mutant was derived by a substitution chain** (`'"0'→'"9'` etc.),
         which cannot address `dupopen` at all: it pins `"zb": "OK"` **six times**,
         so no bare literal is unique. Each arm now names its own find/replace.
-      ➡️ **REMAINING: 27 rows across 5 probes** — `ngram14` 9, `putdomain` 8,
-      `playfn_fixture` 5, `reclen` 4, `bareform` 1. Each needs its faces MEASURED
-      first, exactly as these six were; pinning from a filing rather than from a
-      run is how the five instances above happened in the first place.
+      ✅ **BATCH 3 (same day): `putdomain` 8 — 31 of 50 pinned, knife 7/7.**
+      Re-measured at pin time. The face pinned is **`E L` — the trapped ERR and
+      LOF together** — because this probe exists precisely because ERR alone
+      cannot separate "did it" from "declined quietly"; pinning only the ERR
+      would pin the blind half.
+      🎯 **`r.255`'s zb face is pinned as `0 -256`, and that is the FINDING, not
+      a typo** — 65280 read back through a signed 16-bit `LOF`. Its knife arm
+      mutates it to the plausible CORRECT value (`0 65280`), so the arm also
+      demonstrates the pin firing **in the direction that matters: the day the
+      defect is fixed**, which is when a stale filing would otherwise go quiet.
+      🔴 **AND `reclen`'s FOUR ARE DELIBERATELY NOT PINNED — its face is an
+      APPARATUS OUTCOME, not a measurement.** All four read
+      `cf3300='OK'  zb='<NO OUTPUT>'`, and this file's own note explains why:
+      *"D-PUT3SLOW: all four PASS with the CORRECT answer at a 5 s step; blank
+      only at 2.5 s"*. The blank is the STEP, not the machine. Pinning it would
+      manufacture a flaky red that goes off whenever the host is busy — worse
+      than no pin, and exactly the confusion this entry exists to prevent.
+      🎯 **SO THE 50 HAS A CEILING, AND IT IS NOT 50.** A row is face-pinnable
+      only when its face is a MEASUREMENT; rows whose face is a timing or
+      capture outcome must be excluded and SAID to be excluded, or the next
+      person reads the gap as unfinished work
+      [[apparatus-is-part-of-the-measurement]].
+      ➡️ **REMAINING: 15 pinnable rows across 3 probes** — `ngram14` 9,
+      `playfn_fixture` 5, `bareform` 1 — **plus `reclen`'s 4 declined above**.
+      ⚠️ `playfn_fixture` needs the same judgement before pinning: its rows are
+      PLAY TIMING readings, and one of them already had to be confirmed twice
+      before its pin could be retired earlier today.
 
 - [ ] 🔬 **THE FILED-ROW DENOMINATOR WAS UNREADABLE FOR A THIRD OF ITS CORPUS, AND
       A ROTTED PROBE HID IN THE SAME BUCKET (2026-09-08, D-FRSKIND).** A full run of
@@ -4391,7 +4414,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:12754 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:12777 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

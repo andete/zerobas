@@ -86,6 +86,33 @@ CASES = [
 ]
 
 
+# --- D-FACEPIN: the FACE, not just the row label ----------------------------
+# 🔴 A FILED FACE ROTS WITHOUT THE ROW CEASING TO DIVERGE. `filed_row_sweep`
+# calls a row that still diverges -- but to a DIFFERENT face -- `known`, and it
+# reads green. Same shape as `basic_probe_nodisk.PINNED`: pin the VALUES, RED on
+# drift in EITHER direction. ⚠️ Keyed by SIDE NAME, never by column position.
+# 🎯 THE FACE HERE IS `E L` -- the trapped ERR and LOF TOGETHER -- because the
+# whole point of this probe is that ERR alone cannot separate "did it" from
+# "declined quietly". Pinning only the ERR would pin the blind half.
+# ⚠️ `r.255`'s zb face is **0 -256**, and that is the FINDING, not a typo: 65280
+# read back through a signed 16-bit LOF. If it ever becomes 65280 the defect is
+# fixed, and this pin going RED is how somebody finds out.
+PINNED = {
+    # measured 2026-09-10, RE-MEASURED at pin time rather than carried from the
+    # run that filed the entry. CONTROLS r.ctl / l1.ctl are deliberately NOT
+    # pinned: they are the fixture check, and the probe already refuses the whole
+    # table when either fails.
+    "r.255":     {"cf3300": "0 65280", "zb": "0 -256"},
+    "r.256":     {"cf3300": "0 65536", "zb": "0 256"},
+    "r.257":     {"cf3300": "0 65792", "zb": "0 256"},
+    "r.300":     {"cf3300": "0 76800", "zb": "0 256"},
+    "l1.256":    {"cf3300": "0 256",   "zb": "0 1"},
+    "l1.32767":  {"cf3300": "0 32767", "zb": "0 1"},
+    "l1.32768":  {"cf3300": "0 32768", "zb": "0 1"},
+    "l1.65535":  {"cf3300": "0 65535", "zb": "0 1"},
+}
+
+
 def main() -> int:
     tmp = tempfile.mkdtemp(prefix="putdomain-")
     out = {}
@@ -143,6 +170,23 @@ def main() -> int:
         print("\n  \U0001f534 CONTROL FAILED -- no row below is readable:")
         for b in bad:
             print(f"     {b}")
+        return 2
+
+    drift = []
+    for lbl, want in PINNED.items():
+        for side, face in want.items():
+            if lbl not in out or side not in out[lbl]:
+                continue                  # row or side not run; not a drift
+            got = str(out[lbl][side])
+            if got != face:
+                drift.append(f"{lbl}[{side}]: pinned {face!r}, measured {got!r}")
+    if drift:
+        print("\n\U0001f534 PINNED FACE DRIFT -- the row may still diverge, but "
+              "NOT to the face this tree has filed:")
+        for d in drift:
+            print(f"     {d}")
+        print("  Re-read the owning entry: either the behaviour moved, or the "
+              "filing was wrong when it was written.")
         return 2
 
     dis = [t for t, *_ in CASES if out[t]["cf3300"] != out[t]["zb"]]
