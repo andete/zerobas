@@ -1,0 +1,15 @@
+D-DUPOBS2: 7 canonical(s), ladder ['error-acceptance', 'missing-acceptance', 'penderr-acceptance', 'error-trap-acceptance']
+
+  ers_undef        observed by error-trap-acceptance
+  evmc_sqr_err     observed by error-acceptance
+  gosub_stk_over   🔴 not observed by the ladder
+  nm_fail          🔴 not observed by the ladder
+  pl_typeerr       🔴 not observed by the ladder
+  sst_overflow     🔴 not observed by the ladder
+  tm_raise         🔴 not observed by the ladder
+
+=== 2/7 newly OBSERVED by the ladder ===
+  observed:     ers_undef, evmc_sqr_err
+  still green:  gosub_stk_over, nm_fail, pl_typeerr, sst_overflow, tm_raise
+
+⚠️ 'still green' means NOT OBSERVED BY THESE FOUR SUITES. It does not mean unobserved by the battery -- that needs the whole battery, and saying otherwise would be the over-claim this entry keeps catching in its own earlier cuts.

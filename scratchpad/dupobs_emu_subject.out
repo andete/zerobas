@@ -1,0 +1,12 @@
+D-DUPOBS2: 4 canonical(s), SUBJECT-matched ladders
+
+  pl_typeerr       🔴 not observed by its subject suites
+  tm_raise         🔴 not observed by its subject suites
+  sst_overflow     🔴 not observed by its subject suites
+  gosub_stk_over   observed by stackpool-acceptance
+
+=== 1/4 newly OBSERVED by the ladder ===
+  observed:     gosub_stk_over
+  still green:  pl_typeerr, tm_raise, sst_overflow
+
+⚠️ 'still green' means NOT OBSERVED BY THESE FOUR SUITES. It does not mean unobserved by the battery -- that needs the whole battery, and saying otherwise would be the over-claim this entry keeps catching in its own earlier cuts.

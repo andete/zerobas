@@ -434,7 +434,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:13935 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:13954 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -599,7 +599,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:3623 (T-6FE392)8 (T-529ABE)` from `TODO.md:12872 (T-529ABE)`: a
+      `TODO.md:3623 (T-6FE392)8 (T-529ABE)` from `TODO.md:12891 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -4454,7 +4454,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:12872 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:12891 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -7387,11 +7387,30 @@ list. **When a slice lands, grep this list for what it just shipped.**
       the finding, so a cut that never reached the ROM manufactures the exact
       answer the run exists to report. Every arm hashes the images around its
       build and reports `INERT (ROM unchanged)` as its own outcome.
-      ➡️ **RUNNING TOTAL: 11 of 21 canonicals observed** (10 host-side by
-      `make unit-test`, 1 by the ladder); 3 narrowed to ladder-green; **7 not yet
-      run** — `ers_undef`, `evmc_sqr_err`, `gosub_stk_over`, `nm_fail`,
-      `pl_typeerr`, `sst_overflow`, `tm_raise`. The runner takes canonical names
-      as arguments, so the rest go in slices.
+      📏 **ALL ELEVEN NOW RUN — 14 of 21 CANONICALS OBSERVED.** The generic
+      ladder took `ed_done` (`missing`), `ers_undef` (`error-trap`) and
+      `evmc_sqr_err` (`error` — 12 s, the cheapest rung).
+      🎯 **A SECOND, SUBJECT-MATCHED PASS took one more**: the names say what each
+      tail is about, so the cheapest suite that plausibly drives it goes first.
+      `gosub_stk_over` fell to `stackpool-acceptance`. ⚠️ A matched ladder is a
+      NARROWER claim, not a broader one — still-green after its own subject's
+      suites is worth more than a generic green, and still is not "unobserved".
+      🔴 **SEVEN REMAIN GREEN, AND THEY ARE NOT ALL THE SAME STRENGTH**:
+      • **five have had their subject pass** — `pl_typeerr` (sound, tmfp),
+        `tm_raise` (tmfp, intarg, logicops), `sst_overflow` (stackpool,
+        stmtpend), `elas_err` (array, clearpool), `nm_fail` (namspc);
+      • **two have not**, because their ladder is the expensive one:
+        `ctp_err_pop` and `ctp_link_err` want `clearpool` 87 s + `ctllim` **391
+        s**, so ~8 min each worst case.
+      🔴 **AND THE RUNNER'S OWN FOOTNOTE WAS WRONG FOR ONE RUN.** It said "NOT
+      OBSERVED BY THESE FOUR SUITES" unconditionally, while a subject ladder is
+      one to three. A verdict line that miscounts its own denominator is the same
+      fault this entry keeps finding in the things it measures
+      [[a-readout-blind-to-its-own-subject]]. Fixed to name the ladder it
+      actually ran.
+      ➡️ **NEXT**: the two `ctp_*` subject passes, then the full battery for
+      whatever survives — which is the only scorer that can turn "still green"
+      into "unobserved".
       🤖 AUTONOMOUS — the reference or a gate settles it; finishable unattended (roster + count fixed 2026-08-26; the 21 knives remain, now priced).
 
 - [ ] ⚠️ **A probe with an honest `rc` that NO battery collects is not an oracle.**

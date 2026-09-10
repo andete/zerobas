@@ -46,8 +46,31 @@ import dupobs_knives as D                                         # noqa: E402
 UNOBSERVED = ["ctp_err_pop", "ctp_link_err", "ed_done", "elas_err", "ers_undef",
               "evmc_sqr_err", "gosub_stk_over", "nm_fail", "pl_typeerr",
               "sst_overflow", "tm_raise"]
+SUBJECT_PASS = False
 LADDER = ["error-acceptance", "missing-acceptance", "penderr-acceptance",
           "error-trap-acceptance"]
+
+# \U0001f3af SECOND PASS: a SUBJECT-MATCHED ladder for the ones the generic four
+# could not reach. The names say what each tail is about, so the cheapest suite
+# that plausibly drives it goes first -- and a red is still conclusive, so the
+# ordering only affects cost, never the verdict. Times are from the last full
+# battery, measured rather than guessed:
+#   sound 27s · logicops 32s · tmfp 48s · stmtpend 60s · clearpool 87s
+#   array 116s · stackpool 130s · namspc 297s · ctllim 391s
+# ⚠️ A MATCHED LADDER IS A NARROWER CLAIM, NOT A BROADER ONE. If a site is still
+# green after its own subject's suites, that is worth more than a generic green
+# -- but it is still "not observed by THESE", and the full battery remains the
+# only thing that can say "unobserved" flatly.
+SUBJECT = {
+    "gosub_stk_over": ["stackpool-acceptance", "ctllim-acceptance"],
+    "sst_overflow":   ["stackpool-acceptance", "stmtpend-acceptance"],
+    "ctp_err_pop":    ["clearpool-acceptance", "ctllim-acceptance"],
+    "ctp_link_err":   ["clearpool-acceptance", "ctllim-acceptance"],
+    "pl_typeerr":     ["sound-acceptance", "tmfp-acceptance"],
+    "tm_raise":       ["tmfp-acceptance", "intarg-acceptance", "logicops-acceptance"],
+    "nm_fail":        ["namspc-acceptance"],
+    "elas_err":       ["array-acceptance", "clearpool-acceptance"],
+}
 
 
 def sh(cmd, log):
@@ -57,13 +80,18 @@ def sh(cmd, log):
 
 
 def main() -> int:
-    only = sys.argv[1:] or UNOBSERVED
+    global SUBJECT_PASS
+    args = sys.argv[1:]
+    SUBJECT_PASS = "--subject" in args
+    only = [a for a in args if a != "--subject"] or UNOBSERVED
     bad = [c for c in only if c not in UNOBSERVED]
     if bad:
         print(f"\U0001f534 {bad} are not in the eleven this run is about; "
               f"refusing rather than silently scoring something else.")
         return 2
-    print(f"D-DUPOBS2: {len(only)} canonical(s), ladder {LADDER}\n")
+    print(f"D-DUPOBS2: {len(only)} canonical(s), "
+          + (f"SUBJECT-matched ladders\n" if SUBJECT_PASS
+             else f"ladder {LADDER}\n"))
     res = {}
     for c in only:
         hit = D.find_label(c)
@@ -86,8 +114,11 @@ def main() -> int:
                 res[c] = "\U0001f534 INERT (ROM unchanged)"
                 print(f"  {c:16} \U0001f534 INERT -- the cut never reached the ROM")
                 continue
-            verdict = "\U0001f534 not observed by the ladder"
-            for suite in LADDER:
+            rungs = (SUBJECT.get(c, []) if SUBJECT_PASS
+                     else LADDER)
+            verdict = ("\U0001f534 not observed by "
+                       + ("its subject suites" if SUBJECT_PASS else "the ladder"))
+            for suite in rungs:
                 rc = sh(f"caffeinate -i -s make {suite}",
                         probe_tmp.tmp(f"d2_{c}_{suite}.log"))
                 if rc:
@@ -102,7 +133,13 @@ def main() -> int:
     print(f"\n=== {len(obs)}/{len(only)} newly OBSERVED by the ladder ===")
     print("  observed:     " + (", ".join(obs) or "none"))
     print("  still green:  " + (", ".join(c for c in res if c not in obs) or "none"))
-    print("\n⚠️ 'still green' means NOT OBSERVED BY THESE FOUR SUITES. It does "
+    # \U0001f534 THE FOOTNOTE USED TO SAY "THESE FOUR SUITES" UNCONDITIONALLY,
+    # and the subject pass runs ladders of ONE to THREE. A verdict line that
+    # miscounts its own denominator is the same fault this entry keeps finding
+    # in the things it measures [[a-readout-blind-to-its-own-subject]].
+    which = ("its own subject suites" if SUBJECT_PASS
+             else f"these {len(LADDER)} suites")
+    print(f"\n⚠️ 'still green' means NOT OBSERVED BY {which.upper()}. It does "
           "not mean unobserved by the battery -- that needs the whole battery, "
           "and saying otherwise would be the over-claim this entry keeps "
           "catching in its own earlier cuts.")
