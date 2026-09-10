@@ -434,7 +434,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:13322 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:13354 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -599,7 +599,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:3442 (T-6FE392)8 (T-529ABE)` from `TODO.md:12259 (T-529ABE)`: a
+      `TODO.md:3442 (T-6FE392)8 (T-529ABE)` from `TODO.md:12291 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -4223,7 +4223,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:12259 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:12291 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -11925,8 +11925,9 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `gates`. [[a-ranked-candidate-rots-like-a-wall]]
       ~~🤖 AUTONOMOUS — the reference or a gate settles it; finishable unattended (no his-decision signal found).~~
 
-- [ ] 🔴 **THE `[...]` READOUT FAMILY IS DEFENDED BY ACCIDENT IN EVERY SCRATCH
-      PROBE.** Filed 2026-08-22 by the D-DEFFN RAM hunt,
+- [x] ✅ **THE `[...]` READOUT FAMILY WAS DEFENDED BY ACCIDENT IN EVERY SCRATCH
+      PROBE — DEFENDED ON PURPOSE 2026-09-10 (D-BRLAST), 6 PROBES, 0 READINGS
+      MOVED.** Filed 2026-08-22 by the D-DEFFN RAM hunt,
       [`docs/deffn-ramhunt-2026-08-22.md`](docs/deffn-ramhunt-2026-08-22.md)
       §5.3. `BR.search` returns the FIRST `[...]` on screen, which is the ECHO of
       the typed `PRINT"[";V;"]"` line — a reading shaped like a result. The
@@ -11946,7 +11947,38 @@ list. **When a slice lands, grep this list for what it just shipped.**
       today. A bare filename would have orphaned them silently. Remedy is
       `findall()[-1]` (the program's own output is always the last bracket) or
       the shipped `CLS`; pick one and apply it to the family.
-      ⛔ BLOCKED — neither of us can start it now (needs a fixture).
+      ✅ **APPLIED TO THE WHOLE FAMILY, AND THE REMEDY WAS ALREADY IN THE TREE.**
+      `ramfree_probe.py` — the probe whose rows this item says failed — had
+      already been fixed to read `BR.findall(cap)[-1]`, with a comment saying
+      *"THE **LAST** BRACKET, NEVER THE FIRST"*. One member of the family carried
+      the cure and the other six still had the disease. They now share
+      `_last_bracket(BR, cap)`, which returns a MATCH so every `.group(1)` call
+      site is untouched: `paintmc_probe`, `dupspan_probe`, `s3_scout_probe`,
+      `point3_recheck`, `mc_layout_probe`, `deffn_scout`.
+      🟢 **AND NOTHING MOVED — MEASURED, NOT ASSUMED.** Every one of the six was
+      run before and after (`git stash` for the before-state) and the outputs are
+      **byte-identical** once the `refcache:` accounting line is excluded — that
+      line differs only because the after-runs populated the cache the
+      before-runs then hit. So the fix is a no-op on today's fixtures, exactly as
+      this entry predicted: the closing `SCREEN 0` really was clearing the echo.
+      🎯 **WHICH IS THE POINT — A LATENT HAZARD IS STILL A HAZARD.** The defence
+      was a property of the FIXTURES, not of the readout, so it would have
+      vanished the first time someone wrote a row that never leaves SCREEN 0.
+      ⚠️ **AND THE CLASS BIT AGAIN THE SAME NIGHT, IN A NEW PROBE.**
+      D-RUNLINE2's first readout typed `PRINT "ZQ";` as a marker and read what
+      followed it — with the trailing `;` the cursor stays mid-line, so the ECHO
+      of the next typed line lands there and the reading was `ZQRUN`. Same shape,
+      different mechanism: **the echo of what you typed is not a result**
+      [[a-readout-blind-to-its-own-subject]].
+      🔴 **THE BLOCKER WAS BOILERPLATE, AND IT IS NOT ONLY THIS ITEM'S.** The
+      sentence *"⛔ BLOCKED — neither of us can start it now (needs a fixture)"*
+      appears VERBATIM on **six** open items, with *"(needs an idle host)"* on two
+      more — across unrelated subjects. This entry named its own remedy two lines
+      above the blocker (*"Remedy is `findall()[-1]` … pick one and apply it to
+      the family"*), which needs no fixture at all, and R2's identical sentence
+      was refuted the same night. **A blocker written from a template is not a
+      reading about the item**; the remaining four deserve the same one-line test
+      before anyone prices them [[a-justification-parenthesis-is-an-unrun-claim]].
 
 - [ ] ⚠️ **A SCRATCH PROBE THAT NEEDS A DISK MUST MOUNT ONE, AND THE FAILURE
       READS AS A LANGUAGE RULE.** Filed 2026-08-22,

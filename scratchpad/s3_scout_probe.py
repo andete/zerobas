@@ -81,6 +81,26 @@ CASES = [
 ]
 
 BR = re.compile(r"\[([^\]]*)\]")
+
+def _last_bracket(rx, text):
+    """🔴 THE **LAST** `[...]`, NEVER THE FIRST (D-BRLAST, 2026-09-10).
+
+    `rx.search` returns the FIRST bracket on screen, and that is the ECHO of the
+    typed line `PRINT"[";V;"]"` -- itself a `[...]` -- so it yields `";V;"`, an
+    artifact shaped like a reading. This family was protected only by accident:
+    every fixture here enters a graphics mode, and the closing `SCREEN 0` clears
+    the echo away. A fixture that never leaves SCREEN 0 has no defence at all,
+    which is exactly how `ramfree_probe`'s rows failed -- and it looked like a
+    property of those workouts rather than of the readout.
+
+    The program's own output is always the LAST bracket printed. Returns a match
+    object so `.group(1)` keeps working at the call sites.
+    """
+    m = None
+    for m in rx.finditer(text):
+        pass
+    return m
+
 ERR = re.compile(r"^\s*([A-Z][A-Za-z' ]+ error|Illegal function call|Overflow|"
                  r"Out of memory|Type mismatch|Subscript out of range)", re.M)
 
@@ -88,7 +108,7 @@ ERR = re.compile(r"^\s*([A-Z][A-Za-z' ]+ error|Illegal function call|Overflow|"
 def face(cap: str | None) -> str:
     if cap is None:
         return "<NO CAPTURE>"
-    m = BR.search(cap)
+    m = _last_bracket(BR, cap)
     if m:
         return m.group(1).strip() or "<empty>"
     e = ERR.search(cap)

@@ -350,6 +350,26 @@ ORDER.update({
 })
 
 BR = re.compile(r"\[([^\]]*)\]")
+
+def _last_bracket(rx, text):
+    """🔴 THE **LAST** `[...]`, NEVER THE FIRST (D-BRLAST, 2026-09-10).
+
+    `rx.search` returns the FIRST bracket on screen, and that is the ECHO of the
+    typed line `PRINT"[";V;"]"` -- itself a `[...]` -- so it yields `";V;"`, an
+    artifact shaped like a reading. This family was protected only by accident:
+    every fixture here enters a graphics mode, and the closing `SCREEN 0` clears
+    the echo away. A fixture that never leaves SCREEN 0 has no defence at all,
+    which is exactly how `ramfree_probe`'s rows failed -- and it looked like a
+    property of those workouts rather than of the readout.
+
+    The program's own output is always the LAST bracket printed. Returns a match
+    object so `.group(1)` keeps working at the call sites.
+    """
+    m = None
+    for m in rx.finditer(text):
+        pass
+    return m
+
 # 🔴 THE `^`-ANCHOR MADE THIS REGEX STRUCTURALLY UNABLE TO SEE ITS SUBJECT, and
 # it failed by returning a VALUE. omsx_repl hands back the 24 screen rows
 # CONCATENATED WITH NO NEWLINE, so `re.M`'s `^` can only ever match at offset 0
@@ -490,7 +510,7 @@ ORDER.update({
 def face(cap):
     if cap is None:
         return "<NO CAPTURE>"
-    m = BR.search("".join(cap))
+    m = _last_bracket(BR, "".join(cap))
     if m:
         return " ".join(m.group(1).split()) or "<empty>"
     e = ERRRE.search("".join(cap))
