@@ -1,0 +1,20 @@
+  r.ctl      RUN       want=ABC  vg=[ABC]   cf=[ABC]   zb=[ABC]  
+             CONTROL: bare RUN starts at the top
+  r.20       RUN 20    want=BC   vg=[BC]    cf=[BC]    zb=[BC]   
+             🎯 THE SUBJECT: a line number at the PROMPT
+  r.30       RUN 30    want=C    vg=[C]     cf=[C]     zb=[C]    
+             a second line number -- one row could be luck
+  r.nospace  RUN20     want=BC   vg=[BC]    cf=[BC]    zb=[BC]   
+             no space: never took the fast path, even before D-RUNARG
+  r.colon    RUN 20:   want=BC   vg=[BC]    cf=[BC]    zb=[BC]   
+             a trailing colon, which `dl_bare` treats as bare
+
+=== 0 divergence(s): none ===
+   r.ctl      vg 'ABC'   cf 'ABC'   zb 'ABC'
+   r.20       vg 'BC'   cf 'BC'   zb 'BC'
+   r.30       vg 'C'   cf 'C'   zb 'C'
+   r.nospace  vg 'BC'   cf 'BC'   zb 'BC'
+   r.colon    vg 'BC'   cf 'BC'   zb 'BC'
+
+🟢 R2's FILED CLAIM IS REFUTED: `RUN 20` at the prompt agrees with both references, so D-RUNARG already closed it and the entry is stale rather than outstanding.
+refcache: 15 hit, 0 miss

@@ -434,7 +434,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:13277 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:13322 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -599,7 +599,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:3442 (T-6FE392)8 (T-529ABE)` from `TODO.md:12214 (T-529ABE)`: a
+      `TODO.md:3442 (T-6FE392)8 (T-529ABE)` from `TODO.md:12259 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -4223,7 +4223,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:12214 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:12259 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -7610,8 +7610,9 @@ list. **When a slice lands, grep this list for what it just shipped.**
       any failed target, and the first reading nearly recorded "still voided" when
       the probe had in fact exited 1.
 
-- [ ] 💰 **`RUN <lineno>` IN DIRECT MODE IS STILL THE OLD BEHAVIOUR — R2, ONE
-      RULE AT A SECOND SITE (filed 2026-08-22 by D-RUNLINE §4).** `RUN 20` typed
+- [x] ✅ **`RUN <lineno>` IN DIRECT MODE IS ~~STILL THE OLD BEHAVIOUR~~ — R2
+      CLOSED 2026-09-10 (D-RUNLINE2): THE DEFECT WAS ALREADY FIXED, THE ENTRY
+      WAS STALE, AND THE FIX WAS UNROWED (filed 2026-08-22 by D-RUNLINE §4).** `RUN 20` typed
       at the PROMPT never reaches `do_run`: `dispatch_line` runs `is_cmd` against
       the **raw `LINEBUF`, before `tokenise`**, so direct mode never sees `$0E`
       and `dl_run` still ignores the number. 🔴 **GUARDING ONE INSTANCE OF A
@@ -7625,7 +7626,51 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `dir-*` battery that types lines straight at the REPL, so the row is a port
       of an existing fixture kind. `namspc`'s own DENOMINATOR already names
       direct mode as NOT COVERED.
-      ⛔ BLOCKED — neither of us can start it now (needs a fixture).
+      🟢 **BOTH BLOCKERS WERE DEAD, AND SO WAS THE DEFECT — MEASURED, 5 rows ×
+      3 machines, 0 DIFF** ([`scratchpad/runline2_probe.py`](scratchpad/runline2_probe.py),
+      [`.out`](scratchpad/runline2.out)).
+      | row | typed | vg8020 | cf3300 | zb |
+      |---|---|---|---|---|
+      | `r.ctl` | `RUN` | ABC | ABC | ABC |
+      | `r.20` | `RUN 20` | BC | BC | **BC** |
+      | `r.30` | `RUN 30` | C | C | C |
+      | `r.nospace` | `RUN20` | BC | BC | BC |
+      | `r.colon` | `RUN 20:` | BC | BC | BC |
+      🎯 **`basic/program.asm`'s `dl_bare` HEADER HAD THE ANSWER ALL ALONG.**
+      D-RUNARG replaced `is_cmd`'s delimiter test as the "takes no argument"
+      test — *"only the bare form belongs on the fast path; everything else is
+      crunched and reaches `do_run` as a statement"* — and it landed AFTER this
+      entry was filed. The entry and the code comment contradicted each other for
+      nineteen days and nothing reconciled them.
+      💰 **The two filed blockers cost nothing to refute.** *"needs a fixture"* —
+      the entry's own next line already said the instrument is not the obstacle,
+      and `basic_probe_lnblank.py`'s `dir-*` battery types straight at the REPL.
+      *"~15–17 B against 8 B free (2026-08-22)"* — a WALL READING, and page 1 was
+      **129 B** free on 2026-09-10. Both are the shape R3 records one entry
+      below: **a capability claim rots exactly like a wall reading**
+      [[a-justification-parenthesis-is-an-unrun-claim]].
+      🟢 **THE FIX WAS UNROWED, WHICH IS THE REAL RESIDUAL — NOW GATED: `make
+      runline-acceptance`**
+      ([`probes/basic/basic_probe_runline.py`](probes/basic/basic_probe_runline.py)),
+      5 rows, collected (117 → 118 acceptance targets, 112 collected).
+      `namspc`'s denominator names DIRECT MODE as not covered, so nothing else
+      would have caught a regression of D-RUNARG either.
+      🔬 **KNIFE K-RL1 EXACT** ([`scratchpad/runline_knife.py`](scratchpad/runline_knife.py),
+      [`.out`](scratchpad/runline_knife.out)) — a gate whose rows have never been
+      red would report `5/5 PASS` just as happily if it had gone blind. Returning
+      CF set unconditionally from `dl_bare` restores the pre-D-RUNARG behaviour;
+      **`r.20` `r.30` `r.colon` move and `r.ctl` `r.nospace` HOLD**, which is the
+      asymmetry that makes it evidence: `RUN20` never matches `is_cmd` so the cut
+      cannot reach it, and a bare `RUN` already ran from the top.
+      🔴 **THE READOUT WAS WRONG TWICE BEFORE IT WAS RIGHT, AND THE CONTROL
+      CAUGHT IT BOTH TIMES.** Round 1 typed a `PRINT "ZQ";` marker before the RUN
+      — the trailing `;` leaves the cursor mid-line, so the ECHO of the next typed
+      line lands there (`ZQRUN`) and the letters never follow it. Round 2 anchored
+      on line starts, but **the capture has NO NEWLINES**: it is a flat 40-column
+      dump, each row space-padded and concatenated. Both rounds read `<none>`
+      everywhere and `r.ctl` refused the table. Fixed by PRINTING THE RAW STRING
+      and looking at it, instead of guessing the format a third time
+      [[a-readout-blind-to-its-own-subject]].
 
 - [x] ✅ **BARE `RUN` INSIDE A RUNNING PROGRAM ~~STILL~~ RE-ENTERED THE LOOP NESTED — FIXED 2026-09-09 —
       R3, 0 B, AND THE ROW IS THE HARD PART (filed 2026-08-22 by D-RUNLINE §4).**

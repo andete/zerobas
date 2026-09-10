@@ -1,0 +1,4 @@
+base ROMs 2acb539258e8  {'r.ctl': "'ABC'", 'r.20': "'BC'", 'r.30': "'C'", 'r.nospace': "'BC'", 'r.colon': "'BC'"}
+K-RL1: roms=77762bfacfed  moved=['r.20', 'r.30', 'r.colon']
+       want=['r.20', 'r.30', 'r.colon']  held=['r.ctl', 'r.nospace']  PASS
+restored 2acb539258e8 (base 2acb539258e8) OK

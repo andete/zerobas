@@ -1964,6 +1964,21 @@ runtail-acceptance: repack-machine $(DISK_TEST_DSK)
 	        $(if $(ONLY),--only '$(ONLY)',) \
 	        --repeat $(if $(REPEAT),$(REPEAT),1)
 
+# --- `RUN <lineno>` AT THE PROMPT (D-RUNLINE2) --------------------------------
+# `dispatch_line`'s fast path for the REPL's own bare RUN used `is_cmd`, which
+# matches on a DELIMITER -- right for telling RUN from RUNNER, wrong as a "takes
+# no argument" test. Before D-RUNARG, `RUN 20` typed at the prompt ran from the
+# TOP: a SILENT WRONG PROGRAM RUN, the class this project ranks worst.
+# 🔴 THAT FIX WAS UNROWED until 2026-09-10. TODO.md's R2 still carried the defect
+# as open and ⛔ BLOCKED; measuring it found all five rows already agreeing on
+# all three machines. `namspc`'s denominator names DIRECT MODE as not covered, so
+# no other battery would have caught a regression either.
+# 🎯 The LETTERS are the reading (`ABC` / `BC` / `C`): an ERR column cannot tell
+# "started at the top" from "started where it was asked".
+# NO DISK, no cassette — five boots of the plain machine.
+runline-acceptance: repack-machine
+	python3 probes/basic/basic_probe_runline.py
+
 # --- what a machine prints AFTER RUN"CAS:x" / LOAD"CAS:x",R -------------------
 # D-CASTAIL: docs/spec-basic-castail.md, measured in
 # docs/castail-msx1-characterization.md. Closes docs/spec-basic-runtail.md §9 --
@@ -3278,7 +3293,7 @@ clean:
         lnblank-characterize lnblank-acceptance lnblank-echo lnblank-say-acceptance \
         editverb-acceptance lptverb-characterize lptverb-acceptance \
         dskmsg-characterize dskmsg-acceptance \
-        runtail-characterize runtail-acceptance \
+        runtail-characterize runtail-acceptance runline-acceptance \
         castail-characterize castail-acceptance \
         cassave-characterize cassave-acceptance \
         readvar-characterize readvar-acceptance \
