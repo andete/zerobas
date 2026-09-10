@@ -126,6 +126,18 @@ def base_tier(t):
     return t.split(" (")[0]
 
 
+NESTED = re.compile(r"^[ \t]+- \[ \] ")
+
+
+def nested_open(text):
+    """Indented `- [ ]` lines: open work INSIDE a block, which the marker gate,
+    the 🎚️ tags and this table all key on top-level items and therefore cannot
+    see. 2026-09-10: `LOC(#n)` (a missing keyword with its oracle measured) and
+    the second-disk-channel residual under `MAXFILES` both sat here while the
+    keyword view called LOC "no known gap". Reported, never silently counted."""
+    return [(k + 1, l.strip()[6:80]) for k, l in enumerate(text.split("\n")) if NESTED.match(l)]
+
+
 def summary(its):
     counts = defaultdict(int)
     for it in its:
@@ -402,6 +414,12 @@ def main(argv=None):
     print("PRIORITY TIERS — open items in TODO.md (recounted now, never quoted)\n")
     for t, n in summary(its):
         print(f"  {t:10} {n:3}")
+    nest = nested_open(open(TODO, encoding="utf-8").read())
+    if nest:
+        print(f"  \u26a0\ufe0f {len(nest)} NESTED open checkbox(es) carry no tier and no marker -- "
+              "read them; a keyword they name is NOT 'no known gap':")
+        for ln, head in nest:
+            print(f"       {ln:>6}  {head}")
     print(f"  {'open':10} {len(its):3}    keywords: {len(kws)} "
           f"({len(kwtable_keywords())} in kwtable.inc + {len(kws) - len(kwtable_keywords())} filed as missing)")
     if a.keywords:
@@ -458,6 +476,8 @@ def selftest():
     arm("S9 summary counts UNTAGGED separately", ("UNTAGGED", 1) in summary(its))
     arm("S11 a keyword named only in the BODY does not count", "CLEAR" not in g)
     arm("S10 the real kwtable parses to 150+ keywords", len(kwtable_keywords()) >= 150)
+    arm("S23 a nested `- [ ]` is reported with its line, a top-level one is not",
+        nested_open("- [ ] top\n      - [ ] **inner** x\n- [x] done\n") == [(2, "**inner** x")])
     landed = [k for k in KNOWN_MISSING if k in kwtable_keywords()]
     arm("S12 no KNOWN_MISSING keyword has landed in kwtable.inc (else delete it from the list)"
         + (f" -- LANDED: {landed}" if landed else ""), not landed)

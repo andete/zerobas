@@ -219,5 +219,5 @@ starts with a form feed. zerobas read `0` at all 160 bytes on the same boot.
 `$F87F` once from `init` (cold boot only); `KEY n,"str"` stores the staged
 string into slot n (cleared first, truncated to 15); `KEY LIST` prints the ten
 slots up to their NUL. Gate: `make keystr-acceptance`. Cost, read from a clean
-tree: main page 1 89 → 24 B, sub page 0 1100 → 839 B — never quote these,
+tree: main page 1 89 → 13 B, sub page 0 1100 → 820 B — never quote these,
 run `make basic-reloc`.

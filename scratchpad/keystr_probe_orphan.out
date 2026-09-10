@@ -1,0 +1,34 @@
+  ran vg8020  k.slot1   -> '0 90 81 88 0'
+  ran vg8020  k.slot2   -> '0 90 81 88 0'
+  ran vg8020  k.slot10  -> '0 90 81 88 0'
+  ran vg8020  k.s1at2   -> '0 97 117 116 111'
+  ran vg8020  k.none    -> '0 99 111 108 111'
+  ran vg8020  k.smoke   -> '0 1 2 3 4'
+  ran cf3300  k.slot1   -> '0 90 81 88 0'
+  ran cf3300  k.slot2   -> '0 90 81 88 0'
+  ran cf3300  k.slot10  -> '0 90 81 88 0'
+  ran cf3300  k.s1at2   -> '0 97 117 116 111'
+  ran cf3300  k.none    -> '0 99 111 108 111'
+  ran cf3300  k.smoke   -> '0 1 2 3 4'
+  ran zb      k.slot1   -> '0 90 81 88 0'
+  ran zb      k.slot2   -> '0 90 81 88 0'
+  ran zb      k.slot10  -> '0 90 81 88 0'
+  ran zb      k.s1at2   -> '0 97 117 116 111'
+  ran zb      k.none    -> '0 99 111 108 111'
+  ran zb      k.smoke   -> '0 1 2 3 4'
+
+  k.slot1   vg8020='0 90 81 88 0'  cf3300='0 90 81 88 0'  zb='0 90 81 88 0'   ✅
+  k.slot2   vg8020='0 90 81 88 0'  cf3300='0 90 81 88 0'  zb='0 90 81 88 0'   ✅
+  k.slot10  vg8020='0 90 81 88 0'  cf3300='0 90 81 88 0'  zb='0 90 81 88 0'   ✅
+  k.s1at2   vg8020='0 97 117 116 111'  cf3300='0 97 117 116 111'  zb='0 97 117 116 111'   ✅
+  k.none    vg8020='0 99 111 108 111'  cf3300='0 99 111 108 111'  zb='0 99 111 108 111'   ✅
+  k.smoke   vg8020='0 1 2 3 4'  cf3300='0 1 2 3 4'  zb='0 1 2 3 4'   ✅
+
+🔴 PINNED FACE DRIFT -- the row may still diverge, but NOT to the face this tree has filed:
+     k.slot1[zb]: pinned '0 0 0 0 0', measured '0 90 81 88 0'
+     k.slot2[zb]: pinned '0 0 0 0 0', measured '0 90 81 88 0'
+     k.slot10[zb]: pinned '0 0 0 0 0', measured '0 90 81 88 0'
+     k.s1at2[zb]: pinned '0 0 0 0 0', measured '0 97 117 116 111'
+     k.none[zb]: pinned '0 0 0 0 0', measured '0 99 111 108 111'
+  Re-read the owning entry: either the behaviour moved, or the filing was wrong when it was written.
+    capture-on-signal: 18 on signal, 0 fell back to the scheduled budget   [signalled at 29.1-50.4 emulated s]

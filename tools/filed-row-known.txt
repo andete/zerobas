@@ -54,7 +54,6 @@ rungap_probe: NO-VERDICT -- measures the HARNESS (step held fixed while run_gap 
 
 deffn_alias_probe: o.alias; o.aliasnest -- "DEF FN: two formals of ONE call can alias"; the rows ARE the filing
 dupopen_probe: s.same; s.space; s.newtwice; s.modes; s.seqsame; s.reclaim -- "THE SAME FILE ON TWO CHANNELS IS ACCEPTED HERE AND REFUSED ON THE CF-3300". ⚠️ FILED IN PROSE BUT NEVER PINNED: D-DUPOPEN (2026-09-02) characterises all six rows by name in the entry, and the sweep reads THIS FILE, not prose -- so they read UNFILED for two days. The item prices the fix at 165 B of RAM (11 B x FCH_CEIL) and the cheap dirent route is refuted by s.case.
-keystr_probe: k.slot1; k.slot2; k.slot10; k.s1at2; k.none -- NOT-THIS-ONE `KEY n,"str"` (~160 B) + "defaults absent on cold boot"; DECLINED, not unnoticed
 playfn_fixture_probe: one voice, no delay; voice 2, no delay; voice 3 only, no delay; width: TIME for FOR 20; width: TIME for FOR 50 -- ⚠️ ONE LINE PER PROBE: the loader keys by probe name, so a SECOND line for the same probe silently REPLACES the first. These six rows belong to TWO different entries. Four are "PLAY(n) start-up window" -- the reference marks a voice active during PLAY's own start-up and zerobas settles instantly; `voice 3 only` and `empty string` are the same transient on another voice and on a string with NO NOTES AT ALL, which is the sharpest of the four. The two `width: TIME` rows are owned by "THE INTERPRETER IS 2.5-3.1x SLOWER THAN THE CF-3300" -- they are TIME readings (2 vs 6, 4 vs 14), not PLAY behaviour. 🔴 4 vs 14 is ~3.5x, ABOVE that entry's filed band even allowing TIME's +/-1 quantisation on small integers -- worth re-reading when it is next priced.
 # 🟢 2026-09-10 (D-FILEDSLICE): `empty string, no delay` REMOVED from
 # playfn_fixture_probe above -- it no longer diverges (`-1 0 0 0` on both sides,
@@ -69,7 +68,6 @@ playfn_fixture_probe: one voice, no delay; voice 2, no delay; voice 3 only, no d
 # 🔴 NO CAUSE IS CLAIMED. Something between 2026-09-05 and today made it
 # agree; naming a commit from one observation is the mechanism-from-one-reading
 # trap, and the row's agreement is the finding either way.
-keylist_probe: d.n1; d.n0; d.n10; d.n11; d.nneg; d.empty -- the SAME entry (`KEY n,"str"` AND `KEY LIST` ARE UNIMPLEMENTED): zerobas answers ERR 2 to every form while the references accept 1..10 and raise ERR 5 outside it. Measured and priced 2026-09-04 (D-KEYSCOUT2); the decision to implement is Joost's, so these are DECLINED-pending-decision, not unnoticed. Added by the slice that created them -- the sweep called them UNFILED within the hour, which is the debt a new probe leaves.
 # ngram13_probe: REMOVED 2026-09-02 -- d.body-l / d.lineno-l / d.body-res are
 # NO-ORACLE, not divergences, and the probe now says so itself (6 scored, 6
 # agree, 0 diverge, 3 NO-ORACLE). A truncated store's last line has no `$00`

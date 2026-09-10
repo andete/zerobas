@@ -489,7 +489,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:14433 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:14501 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -655,7 +655,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:3772 (T-6FE392)8 (T-529ABE)` from `TODO.md:13354 (T-529ABE)`: a
+      `TODO.md:3772 (T-6FE392)8 (T-529ABE)` from `TODO.md:13408 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -4608,7 +4608,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       🤖 AUTONOMOUS — the sweep is the deliverable and the 4 B this item filed
       stays not-worth-taking. The candidates it found are the follow-on.
 
-- [ ] 🔴 **`KEY n,"str"` AND `KEY LIST` ARE UNIMPLEMENTED — A WELL-FORMED
+- [x] 🔴 **`KEY n,"str"` AND `KEY LIST` ARE UNIMPLEMENTED — A WELL-FORMED
       STATEMENT IS `Syntax error` HERE AND SILENT ON BOTH REFERENCES.** Filed
       2026-08-26 by D-MISSOP3. `KEY1,"X"` reads **0 / 0 / 2**: both references
       complete it, zerobas refuses it. [`basic/screen.asm`](basic/screen.asm):294
@@ -4616,7 +4616,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:13354 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:13408 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -4690,6 +4690,30 @@ list. **When a slice lands, grep this list for what it just shipped.**
       with `make basic-reloc`, never from here), and spends are his. That 🔭 line
       said exactly this and was invisible to the old marker readout.
       🎯 **RULED (Joost, 2026-09-10): *"missing keywords obviously need to be implemented."*** TIER 1.
+      ✅ **SHIPPED 2026-09-10 (D-KEYSTR) — BOTH FORMS WORK AND THE DEFAULTS ARE
+      PRESENT AT COLD BOOT; 11 rows on all three machines agree
+      (`make keystr-acceptance`, [`probes/basic/basic_probe_keystr.py`](probes/basic/basic_probe_keystr.py)).**
+      The ten defaults are a MEASUREMENT ([`scratchpad/keydef_probe.py`](scratchpad/keydef_probe.py),
+      all 160 bytes on both references; they differ only at F6, and the VG-8020
+      value ships on both targets by the standing style ruling). Shape: a page-0
+      tenant, `SUBROM_IDX_KEYSTR` = 18 ([`sub/keystr.asm`](sub/keystr.asm)) —
+      the image, the store (cleared slot, truncated to the measured 15) and LIST
+      rendered into `DETOKBUF` for the resident drain (the D-PUEMIT shape); the
+      resident half is the parse. Cost from a clean tree: **main page 1 89 → 13 B
+      (76 B)**, sub page 0 1100 → 820 B — well over the ~7 B this block priced,
+      which counted the dispatch alone; D-PDFCBRESUME carved 20 B back the same
+      hour.
+      🔴 **THREE CUTS TO GET THERE, EACH CAUGHT BY THE GATE'S OWN CONTROL ROW:**
+      the cold-boot copy sat ABOVE `init_ext_roms` and ran against power-on
+      garbage in `SUBSLOT_OK` (the machine never reached the prompt); the tenant's
+      `pchar` is the sub-side DETOKBUF appender, not the resident printer; and
+      `fname_expr` stages `"`-terminated bytes without a length byte, so every
+      store carried a trailing quote until the length was taken from the
+      descriptor. `KEY LIST` renders control bytes as blanks — measured on both
+      references (F10's `$0C` shows as a space; F5/F8/F9's CR and `$1E` vanish).
+      ⚠️ And this filing is a commit LATER than the code: the shell chain that
+      carried it died in a parse error before the edit ran, and the "closed" line
+      I acted on had never been printed. Read the output; do not remember it.
       🤖 AUTONOMOUS — implement; the references settle the behaviour (ruled 2026-09-10).
 
 - [x] 🔴 **D-TODOSWEEP'S OWN ELEVEN PROBES RE-IMPLEMENT THE `[...]` READER, WHICH
@@ -9941,6 +9965,36 @@ list. **When a slice lands, grep this list for what it just shipped.**
       🎚️ TIER 1 — happy path: eight keywords the reference tokenises are MISSING: `DSKI$` `DSKO$` `COPY` `SET` `ATTR$` `IPL` `CMD` `LOC`
       🤖 AUTONOMOUS — the reference settles every token, and the pin is built.
 
+- [ ] 🔴 **`LOC(#n)` IS A MISSING KEYWORD WITH ITS ORACLE MEASURED, AND IT WAS
+      INVISIBLE — A NESTED CHECKBOX INSIDE A PHASE-2 BLOCK.** Promoted 2026-09-10
+      (D-NESTED) from the `LOC(#n)` sub-item under "Direct sector access"
+      (its text stays there, with a pointer here). D-LOCSEM measured the CF-3300
+      ([`scratchpad/loc_probe.py`](scratchpad/loc_probe.py)): on a RANDOM file
+      `LOC` reads the record number exactly (`GET #1,3` / `GET #1,7` → `0,3,7`;
+      `PUT #1,4` → `0,4,0`), on a SEQUENTIAL file it is constant at the file
+      size (`26,26,26`). zerobas has no `LOC`: `LOC(1)` parses as an array
+      reference and auto-dims. The nested block framed the shape as a call for
+      Joost — the cheap one (`GP_RECNO`, a single global, ~15–20 B, right for
+      ONE open random file) or the faithful one (per-channel record numbers,
+      written at GET/PUT). His 2026-09-10 rulings answer it: *"missing keywords
+      obviously need to be implemented"* and, for `LOF`/`PUT`, *"do what the
+      reference does"* — the reference is right with two files open, so the
+      per-channel shape is the one to build. ⚠️ One oracle only (the VG-8020 is
+      diskless). ⚠️ Page 1 is the wall; read it with `make basic-reloc`.
+      🎚️ TIER 1 — happy path: `LOC` is a MISSING keyword (parses as an array); per-channel record number, measured on the CF-3300
+      🤖 AUTONOMOUS — the CF-3300 settles every row; the shape is settled by the standing ruling (promoted 2026-09-10).
+
+- [ ] 🔴 **A SECOND CONCURRENT DISK `OPEN` IS `Syntax error` — 9 OF 13 ROWS DIFF,
+      AND IT WAS INVISIBLE TOO (D-OPEN2, nested under `MAXFILES`).** Promoted
+      2026-09-10 (D-NESTED) from the `MAXFILES` sub-item, whose own text says
+      *"DONE EXCEPT FOR TWO OPEN DISK CHANNELS"*: device+device, device+disk and
+      disk+device all work, so the table and the ceiling are right and only the
+      disk+disk case refuses ([`docs/spec-basic-open2.md`](docs/spec-basic-open2.md)).
+      Two files open at once is how a program copies, merges or logs — a happy
+      path, not an edge. The residual and its price are in the nested block.
+      🎚️ TIER 1 — happy path: `OPEN` — a second concurrent DISK channel refuses where the CF-3300 serves it
+      🤖 AUTONOMOUS — the CF-3300 settles the rows (promoted 2026-09-10).
+
 - [ ] 📌 **`basic_probe_kwsweep.py` PRINTS ROWS NO RUNNER CAN PARSE, AND ITS
       EXIT-2 PATH PRINTS A DIFFERENT TABLE ENTIRELY.** Found 2026-08-07 by
       D-ROWSHAPE's walk ([`docs/spec-probe-rowshape.md`](docs/spec-probe-rowshape.md)
@@ -13359,7 +13413,7 @@ architecture and write code. Each step is independently oracle-validatable.
             and the on-disk `OUT.TXT` is **byte-identical to the real CF-3300**
             (`b"hello world\r\n\x1a"`, `disk_probe_filewrite.py` differential). See
             basic/PROVENANCE.md §file channel — sequential write.
-      - [ ] 🔴 **`MAXFILES` + the multi-channel table** — **DONE EXCEPT FOR TWO
+      - [ ] 🔴 **`MAXFILES` + the multi-channel table** ➡️ *the two-disk-channel residual is a top-level TIER 1 item since 2026-09-10 (D-NESTED)* — **DONE EXCEPT FOR TWO
             OPEN DISK CHANNELS** (measured 2026-08-30, D-OPEN2,
             [`docs/spec-basic-open2.md`](docs/spec-basic-open2.md), 9 DIFF of 13):
             a second concurrent DISK `OPEN` is `Syntax error`. Device+device,
@@ -13437,7 +13491,7 @@ architecture and write code. Each step is independently oracle-validatable.
             cluster count via a sector-cached FAT scan; $FF$A6 oracle-locked;
             `PRINT DSKF(0)`=707 matches a direct FAT12 count AND the real CF-3300
             (`disk_probe_dskf.py`). See PROVENANCE §DSKF.
-      - [ ] **`LOC(#n)`** — ~~deferred: CF-3300 `LOC(1)` returns 26 (file size) both
+      - [ ] **`LOC(#n)`** ➡️ *promoted to a top-level TIER 1 item 2026-09-10 (D-NESTED); this text stays as its record* — ~~deferred: CF-3300 `LOC(1)` returns 26 (file size) both
             before and after a read; sequential-file semantics unclear, so not
             cargo-culted.~~ **`LFILES`** — printer-bound (LPT), no device in zerobas.
             Both observed + documented in PROVENANCE §LOC / LFILES.
@@ -13897,7 +13951,7 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       🎯 **RULED (Joost, 2026-09-10): *"the basic line and screen editor should also be in
       the list"* — explicitly on the TIER 1 pick list.
       🤖 AUTONOMOUS — the reference or a gate settles it; finishable unattended (no his-decision signal found).
-- [ ] **Editor / program management** — ~~`RENUM`, `AUTO`,
+- [x] **Editor / program management** — ~~`RENUM`, `AUTO`,
       `TRON`/`TROFF`, `SWAP`, `WAIT`, `FRE`~~ **`WAIT` ALONE**, full `CLEAR`
       semantics
       🟢 **THE BUCKET IS DOWN TO ONE WORD, MEASURED 2026-09-07 (D-WAITGAP).**
@@ -14113,11 +14167,25 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       `WAIT`, `FRE`, full `CLEAR` semantics are not re-measured here.
       **All of these are now measured, not estimated** — see the keyword sweep
       item directly below.
-      🎚️ TIER 1 — happy path: editor keywords — by its own 2026-09-07 measure `WAIT` alone plus full `CLEAR` semantics; `RENUM` `AUTO` `DELETE` crunch only
+      🎚️ TIER 1 — happy path: `CLEAR` — the block's own tail says every other word in this bucket has shipped (`WAIT` 2026-09-07; `RENUM` `AUTO` `DELETE` have bodies; `TRON` `TROFF` `SWAP` `FRE` SUPPORTED); what is left is "full CLEAR semantics", which nothing here re-measured
       ~~🙋 NEEDS-JOOST — a call that is yours to make (retire / delete).~~ (re-marked 2026-09-10, see below)
       🎯 **RULED (Joost, 2026-09-10): implement the remainder — missing keywords are TIER 1, and
       *"the basic line and screen editor should also be in the list"* (its own
       item, the screen-editor REPL, is TIER 1 and autonomous).
+      ✅ **CLOSED 2026-09-10 (D-EDITBUCKET): THE LAST RESIDUAL WAS ALREADY
+      MEASURED, ON TWO SUITES.** This bucket's own tail says everything in it
+      shipped except *"full `CLEAR` semantics … not re-measured here"* — and
+      nothing anywhere names what that phrase still owes. It is owed by nothing:
+      `CLEAR n` (the string-space half) is pinned by `clearpool-acceptance` —
+      sizes 0…4000 and a fraction, `FRE("")` after each, seven hold rows and the
+      independence rows — and `CLEAR n,addr` (the memory-top half) by D-HIMRANGE
+      ([`docs/spec-basic-himrange.md`](docs/spec-basic-himrange.md) §1, five
+      measured bands: ERR 6 / ERR 5 / accepted / ERR 7 / ERR 5, gated per §6).
+      A residual that no probe, doc or block can name is a sentence, not work.
+      ⚠️ `basic/clear.asm`'s header still said *"there is NO string heap … the
+      <string-space> argument is accepted and evaluated, then ignored"* — false
+      since D-CLP; corrected in the same commit
+      [[a-fix-falsifies-the-justification-beside-it]].
       🤖 AUTONOMOUS — implement; the references settle the behaviour (ruled 2026-09-10).
 
 - [ ] **Keyword-completeness gaps — the measured remainder of MSX1 BASIC.**

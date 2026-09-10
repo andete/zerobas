@@ -16,11 +16,16 @@
 ; DEFtbl) — the MS-BASIC / MSX-BASIC semantics: CLEAR frees the variable space,
 ; not just resizes the heap.
 ;
-; zerobas's memory model is deliberately minimal: there is NO string heap, and
-; the RAM layout is fixed (variables live in VARTAB; BLOAD loads to fixed
-; regions per sysvars.inc). So:
-;   - the <string-space> argument is accepted and evaluated, then ignored —
-;     there is no heap to size yet; and
+; 🔴 THE FIVE LINES BELOW WERE TRUE UNTIL D-CLP AND ARE NOW FALSE: there IS a
+; string pool, `CLEAR n` sizes it (POOLSIZE; clearpool-acceptance pins FRE("")
+; after every size 0..4000), and the HIMEM half two bullets down moves under
+; D-HIMRANGE's five measured bands. Kept, struck, so the next reader sees what
+; changed (D-EDITBUCKET 2026-09-10) [[a-fix-falsifies-the-justification-beside-it]]:
+; ~~zerobas's memory model is deliberately minimal: there is NO string heap, and~~
+; ~~the RAM layout is fixed (variables live in VARTAB; BLOAD loads to fixed~~
+; ~~regions per sysvars.inc). So:~~
+; ~~  - the <string-space> argument is accepted and evaluated, then ignored —~~
+; ~~    there is no heap to size yet; and~~
 ;   - the <memory-top> argument is recorded in the documented HIMEM sysvar
 ;     ($FC4A), CLEAR's real home for the ceiling, so it is honoured as far as
 ;     the current model allows.
