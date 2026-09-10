@@ -434,7 +434,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:13454 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:13498 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -599,7 +599,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:3442 (T-6FE392)8 (T-529ABE)` from `TODO.md:12391 (T-529ABE)`: a
+      `TODO.md:3442 (T-6FE392)8 (T-529ABE)` from `TODO.md:12435 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -4273,7 +4273,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:12391 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:12435 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -5145,8 +5145,10 @@ list. **When a slice lands, grep this list for what it just shipped.**
       above.
       🤖 AUTONOMOUS — the reference or a gate settles it; finishable unattended (both halves differentialled 2026-08-26; the standing gate remains).
 
-- [ ] ⚡ ~~**THE REAL GATE-SUITE LEVER IS THE EMULATED-TIME BUDGETS**~~ (original
-      framing, kept for the reasoning it carries)
+- [ ] 🙋 ~~**THE REAL GATE-SUITE LEVER IS THE EMULATED-TIME BUDGETS**~~ (original
+      framing, kept for the reasoning it carries) — **THE TWO-KNOBS RESIDUAL WAS
+      SHIPPED THE DAY THIS WAS FILED; ONLY THE RED-IF-THIN GATE IS LEFT
+      (re-measured 2026-09-10, D-SETTLEROT)**
       ⚠️ **PARTLY SUPERSEDED by the sentinel item above** — a sentinel capture
       makes per-case budget tuning unnecessary for every case that reaches its
       sentinel. What survives regardless: the **two knobs are conflated** (below),
@@ -5222,7 +5224,49 @@ list. **When a slice lands, grep this list for what it just shipped.**
       not the ones the pre-fix corpus had.
 
 **Language / verb surface**
-      ⛔ BLOCKED — neither of us can start it now (needs an idle host).
+      ✅ **THE "SEPARATE KNOB" THIS ENTRY ASKS FOR IS `run_gap`, AND IT HAS
+      EXISTED SINCE 2026-08-24 — THE DAY THE ENTRY WAS FILED.** The residual reads
+      *"`step` DOES DOUBLE DUTY … the cut needs a SEPARATE knob defaulting to
+      `step` (hence inert)"*; `probes/lib/omsx_repl.py` already carries it, in the
+      past tense: *"`step` USED TO DO DOUBLE DUTY, AND THAT WAS THE EXPENSIVE
+      MISTAKE … `run_gap` separates them"*, measured **capture BYTE-IDENTICAL,
+      2.9s → 0.5s on the VG-8020 (5.5×) and 1.9s → 0.5s on zerobas (3.6×)**. It is
+      a MINIMUM and never pulls a capture earlier — a first cut that assigned
+      `t = t_run + run_gap` outright discarded an explicit `@WAIT`, and the
+      byte-identical check caught it.
+      ✅ **AND THE PAYOFF WAS COLLECTED, NOT JUST MADE AVAILABLE.**
+      `basic_probe_graphics.py` says so at its own budget: *"🔴 PASSED AS
+      `run_gap`, NOT `step`, SINCE 2026-08-24 — and that one word is"* the
+      difference, with `run_gap=PAINT_STEP` at every call site (18 uses). The
+      entry's *"what survives regardless: the two knobs are conflated"* has been
+      false for seventeen days.
+      📏 **MARGINS RE-MEASURED 2026-09-10 ON AN IDLE HOST**
+      ([`scratchpad/settle_audit_20260910.out`](scratchpad/settle_audit_20260910.out)),
+      because the recorded audit is dated 2026-08-25 and the ROM has moved many
+      times since — including tonight. **🔴 still moving at capture: 0 · 🟠 settled
+      in the last 10%: 0 · tightest margin 56.2% (1.41/2.50 s) on the VG-8020**,
+      and `graphics-acceptance` itself PASSes. The tightest figure is *unchanged*
+      from the 08-25 run, which is the reassuring half.
+      ⚠️ **BUT THE SAMPLED SET MOVED, 773 → 424 CASES, AND I AM NOT EXPLAINING
+      IT.** A margin audit whose DENOMINATOR halved is not obviously the same
+      audit; the run also printed `capture-on-signal: 0 on signal, 0 fell back to
+      the 90s budget`, so the sentinel path contributed nothing this time. ➡️ The
+      next thing to read is WHICH cases stopped being sampled — a cause guessed
+      from one reading is how this file has been wrong before
+      [[a-mechanism-inferred-from-one-observation]].
+      🙋 **NEEDS-JOOST** — the last ask is a gate, and it has a real price.
+      `scratchpad/settle_audit.py` is a WRAPPER: it re-runs a whole probe under
+      instrumentation, so gating it over `basic_probe_graphics` adds a unit the
+      size of `graphics-acceptance`, which the last battery measured at **380 s**
+      — a tent-pole, roughly doubled. Three ways out, and the choice is yours:
+      (a) gate it over the PAINT rows only, where the non-default budgets live;
+      (b) gate the whole thing and accept ~380 s;
+      (c) leave it a hand-run instrument and re-run it after any budget change —
+      which is a habit, and this file's own history says a habit is not a control.
+      🔴 **THE BLOCKER WAS FALSE — FOURTH IN FOUR TICKS.** *"needs an idle host"*
+      guarded work that was already shipped, plus a re-measurement that wants a
+      quiet host and had one. Every ⛔ item opened this session carried the same
+      templated sentence and none of them survived contact.
 
 - [x] 🟢 **TEN `tests/_tmp.py` ARTIFACT NAMES ARE SHARED BY 2–4 FILES, AND
       `tp()`'s FALLBACK BASE IS THE *SHARED* ROOT.** Found 2026-08-26 while
