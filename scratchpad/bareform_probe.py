@@ -82,6 +82,26 @@ def value(scr):
     return None
 
 
+# --- D-FACEPIN: the FACE, not just the row label, AND ONLY THE HALF THAT IS A
+# --- MEASUREMENT -------------------------------------------------------------
+# 🔴 A FILED FACE ROTS WITHOUT THE ROW CEASING TO DIVERGE. Same shape as
+# `basic_probe_nodisk.PINNED`: pin the VALUES, RED on drift in EITHER direction.
+# 🎯 BUT `CLOAD`'s REFERENCE SIDES ARE AN ABSENCE, NOT A READING. Both read
+# `<none>` because `CLOAD` WAITS FOR TAPE and the capture window closes on a
+# machine that is still blocked -- this probe says so itself, two lines below
+# the table: "produced NO reading on a side -- an absence, not agreement".
+# Pinning `<none>` would assert that the HARNESS goes on failing to read, which
+# is a claim about the apparatus and not about the machine
+# [[an-unnamed-outcome-reads-as-no-outcome]].
+# 🟢 THE `zb` SIDE *IS* A MEASUREMENT: zerobas answers `legal` where the
+# references cannot be read at all. So this row is HALF-PINNED -- which the
+# per-side pin format allows and which is the honest shape for it. If zerobas
+# ever starts blocking too, this goes red and somebody looks.
+PINNED = {
+    "CLOAD": {"zb": "legal"},        # measured 2026-09-10; refs deliberately unpinned
+}
+
+
 def main() -> int:
     # `--only A,B,C` re-runs a subset. A divergence is one measurement until it is
     # taken twice, and re-running 49 verbs to confirm 8 is 82 wasted boots.
@@ -121,6 +141,24 @@ def main() -> int:
     dis = [k for k, v in out.items()
            if v["vg8020"] == v["cf3300"] and v["zb"] != v["cf3300"]]
     blank = [k for k, v in out.items() if any(v[s_] is None for s_ in SIDES)]
+    drift = []
+    for lbl, want in PINNED.items():
+        for side, face in want.items():
+            if lbl not in out or side not in out[lbl]:
+                continue                  # row or side not run; not a drift
+            v = out[lbl][side]
+            got = "<none>" if v is None else ("legal" if v == 0 else f"ERR {v}")
+            if got != face:
+                drift.append(f"{lbl}[{side}]: pinned {face!r}, measured {got!r}")
+    if drift:
+        print("\n\U0001f534 PINNED FACE DRIFT -- the row may still diverge, but "
+              "NOT to the face this tree has filed:")
+        for d in drift:
+            print(f"     {d}")
+        print("  Re-read the owning entry: either the behaviour moved, or the "
+              "filing was wrong when it was written.")
+        return 2
+
     print(f"\n=== {len(dis)} divergence(s): {dis or 'none'} ===")
     print(f"    REFS-SPLIT ({len(split)}): {split or 'none'} -- the two references "
           f"disagree, so\n    zerobas cannot be scored on these. Most are "

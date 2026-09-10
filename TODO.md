@@ -434,7 +434,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:13840 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:13857 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -599,7 +599,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:3583 (T-6FE392)8 (T-529ABE)` from `TODO.md:12777 (T-529ABE)`: a
+      `TODO.md:3600 (T-6FE392)8 (T-529ABE)` from `TODO.md:12794 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -1186,11 +1186,28 @@ list. **When a slice lands, grep this list for what it just shipped.**
       capture outcome must be excluded and SAID to be excluded, or the next
       person reads the gap as unfinished work
       [[apparatus-is-part-of-the-measurement]].
-      ➡️ **REMAINING: 15 pinnable rows across 3 probes** — `ngram14` 9,
-      `playfn_fixture` 5, `bareform` 1 — **plus `reclen`'s 4 declined above**.
-      ⚠️ `playfn_fixture` needs the same judgement before pinning: its rows are
-      PLAY TIMING readings, and one of them already had to be confirmed twice
-      before its pin could be retired earlier today.
+      ✅ **BATCH 4 (same day): `ngram14` 9 + `bareform` 1 — 41 of 50, knife 9/9.**
+      🎯 **`ngram14`'S NINE ARE LAST-DIGIT FLOAT FACES, WHICH IS PRECISELY WHY
+      THEY NEED PINNING**: `.78539816339745` against `…46` is ONE character, and
+      any check coarser than the literal string calls the row green while the
+      mathpack drifts under it. Its knife arm mutates exactly that digit.
+      🟢 **AND `bareform`'s `CLOAD` IS HALF-PINNED — the first row where only ONE
+      SIDE is a measurement.** Both references read `<none>` because `CLOAD`
+      **waits for tape** and the capture window closes on a machine still
+      blocked; the probe says so itself, two lines below its table (*"an absence,
+      not agreement"*). Pinning `<none>` would assert the HARNESS goes on failing
+      to read — a claim about the apparatus, not the machine. The `zb` side IS a
+      measurement (`legal` where the references cannot be read at all), so that
+      half is pinned and the reference halves are deliberately left out.
+      🎯 **THE PER-SIDE PIN FORMAT IS WHAT MAKES THAT POSSIBLE**, and it turns out
+      to matter: "is this row pinnable?" is the wrong question — **"which SIDES of
+      it are measurements?"** is the right one, and the answer can be "some".
+      ➡️ **REMAINING: 5 rows, one probe — `playfn_fixture`.** ⚠️ It needs the
+      `reclen` judgement first: its rows are PLAY **timing** readings, and one of
+      them had to be confirmed twice before its pin could be retired earlier
+      today. If its faces prove step-dependent the honest outcome is to DECLINE
+      them and say so, which would close this half at **41 pinned + 9 declined
+      with reasons = 50 accounted for**.
 
 - [ ] 🔬 **THE FILED-ROW DENOMINATOR WAS UNREADABLE FOR A THIRD OF ITS CORPUS, AND
       A ROTTED PROBE HID IN THE SAME BUCKET (2026-09-08, D-FRSKIND).** A full run of
@@ -4414,7 +4431,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:12777 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:12794 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

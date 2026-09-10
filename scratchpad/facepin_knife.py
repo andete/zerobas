@@ -61,6 +61,13 @@ ARMS = [
     ("scratchpad/putdomain_probe.py",
      '"r.255":     {"cf3300": "0 65280", "zb": "0 -256"}',
      '"r.255":     {"cf3300": "0 65280", "zb": "0 65280"}', "r.255"),
+    # A LAST-DIGIT face: the mutant differs in one character, which is the whole
+    # reason this row needs a pin at all.
+    ("scratchpad/ngram14_probe.py",
+     '"zb": ".78539816339746"', '"zb": ".78539816339745"', "r.atn"),
+    # HALF-PINNED: only the zb side is a measurement here, so only it is armed.
+    ("scratchpad/bareform_probe.py",
+     '"CLOAD": {"zb": "legal"}', '"CLOAD": {"zb": "ERR 2"}', "CLOAD"),
 ]
 
 
@@ -105,7 +112,7 @@ def main() -> int:
             print(f"\U0001f534 {path}: STILL reports drift after restore "
                   f"(rc={rc2}) -- the red above may be the probe, not the pin")
             ok = False
-    print("\n" + ("\U0001f7e2 ALL SEVEN PINS HAVE TEETH" if ok
+    print("\n" + ("\U0001f7e2 ALL NINE PINS HAVE TEETH" if ok
                   else "\U0001f534 AT LEAST ONE PIN IS INERT"))
     return 0 if ok else 1
 

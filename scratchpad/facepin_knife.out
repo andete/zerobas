@@ -5,5 +5,7 @@ PASS  keylist_probe.py           mutated pin -> rc=2 (want 2), names d.n1: True
 PASS  dupopen_probe.py           mutated pin -> rc=2 (want 2), names s.same: True
 PASS  dskibytes_probe.py         mutated pin -> rc=2 (want 2), names w.sec0: True
 PASS  putdomain_probe.py         mutated pin -> rc=2 (want 2), names r.255: True
+PASS  ngram14_probe.py           mutated pin -> rc=2 (want 2), names r.atn: True
+PASS  bareform_probe.py          mutated pin -> rc=2 (want 2), names CLOAD: True
 
-🟢 ALL SEVEN PINS HAVE TEETH
+🟢 ALL NINE PINS HAVE TEETH

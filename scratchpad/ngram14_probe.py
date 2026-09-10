@@ -60,7 +60,52 @@ add('ctl.str',   [], '"AB"+"CD"')
 
 D.CASES.update(CASES)
 sides = (sys.argv[1] if len(sys.argv) > 1 else "vg8020,cf3300,zb").split(",")
+
+# --- D-FACEPIN: the FACE, not just the row label ----------------------------
+# 🔴 A FILED FACE ROTS WITHOUT THE ROW CEASING TO DIVERGE. `filed_row_sweep`
+# calls a row that still diverges -- but to a DIFFERENT face -- `known`, and it
+# reads green. Same shape as `basic_probe_nodisk.PINNED`: pin the VALUES, RED on
+# drift in EITHER direction. ⚠️ Keyed by SIDE NAME, never by column position.
+# 🎯 THESE ARE LAST-DIGIT FLOAT FACES, WHICH IS EXACTLY WHY THEY NEED PINNING:
+# `.78539816339745` against `...46` is one digit, and any check coarser than the
+# literal string would call the row green while the mathpack drifted.
+PINNED = {
+    # measured 2026-09-10, re-measured at pin time. The §12.9-adjudicated
+    # negative-EXP carve-out plus the last-digit mathpack rows.
+    "r.atn":     {"vg8020": ".78539816339745", "cf3300": ".78539816339745",
+                  "zb": ".78539816339746"},
+    "r.exphuge": {"vg8020": "ERR 6 AT 60", "cf3300": "ERR 6 AT 60", "zb": "0"},
+    "x.m100":    {"vg8020": "3.7200759760309E-44",
+                  "cf3300": "3.7200759760309E-44",
+                  "zb": "3.7200759760208E-44"},
+    "x.m200":    {"vg8020": "ERR 6 AT 60", "cf3300": "ERR 6 AT 60", "zb": "0"},
+    "x.m1e30":   {"vg8020": "ERR 6 AT 60", "cf3300": "ERR 6 AT 60", "zb": "0"},
+    "x.m150":    {"vg8020": "ERR 6 AT 60", "cf3300": "ERR 6 AT 60", "zb": "0"},
+    "x.m170":    {"vg8020": "ERR 6 AT 60", "cf3300": "ERR 6 AT 60", "zb": "0"},
+    "x.m180":    {"vg8020": "ERR 6 AT 60", "cf3300": "ERR 6 AT 60", "zb": "0"},
+    "x.p100":    {"vg8020": "2.6881171418087E+43",
+                  "cf3300": "2.6881171418087E+43",
+                  "zb": "2.6881171418161E+43"},
+}
+
 res = {s: D.run_side(s, ORDER) for s in sides}
+
+_drift = []
+for _lbl, _want in PINNED.items():
+    for _side, _face in _want.items():
+        if _side not in res:
+            continue                      # side not run; that is not a drift
+        _got = str(res[_side].get(_lbl))
+        if _got != _face:
+            _drift.append(f"{_lbl}[{_side}]: pinned {_face!r}, measured {_got!r}")
+if _drift:
+    print("\U0001f534 PINNED FACE DRIFT -- the row may still diverge, but NOT to "
+          "the face this tree has filed:")
+    for _d in _drift:
+        print(f"     {_d}")
+    print("  Re-read the owning entry: either the behaviour moved, or the "
+          "filing was wrong when it was written.")
+    raise SystemExit(2)
 w = max(len(l) for l in ORDER)
 print(f"{'row':<{w}}  " + "  ".join(f"{s:>22}" for s in sides) + "   verdict")
 diff, blind = [], []
