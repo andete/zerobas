@@ -154,8 +154,7 @@ dl_cas_close:
 ; tokenised program from disk, then run it iff ,R was given (LOAD"name",R = load
 ; and run; standard MSX behaviour).
 dl_is_disk:
-                call    parse_disk_fcb      ; build DISK_FCB; HL -> closing '"'
-                ld      hl,(FN_RESUME)      ; D-FNEXPR2: resume past the EXPRESSION
+                call    pdfcb_resume      ; build DISK_FCB; HL -> closing '"'
                 call    pcr_noquote         ; ,R tail only -- no quote in the text
                 jr      c,load_error
                 call    disk_prog_load      ; load the tokenised program into TXTBASE
@@ -232,8 +231,7 @@ do_run:
                 ; dev_cmp advances HL past a matched prefix and restores it on a miss,
                 ; so the disk path below still sees HL at the filename start.
                 jr      z,dr_is_cas         ; matched "CAS:" -> tape program run
-                call    parse_disk_fcb      ; build DISK_FCB; HL -> closing '"'
-                ld      hl,(FN_RESUME)      ; D-FNRUN: resume past the EXPRESSION --
+                call    pdfcb_resume      ; build DISK_FCB; HL -> closing '"'
                 call    pcr_noquote         ; the only '"' is fname_expr's own
                 jp      c,load_error
                 call    disk_prog_load      ; load the tokenised program into TXTBASE

@@ -168,9 +168,7 @@ df_slotok:
                 jr      z,df_nofilespec     ; `FILES:...` -> ditto
                 call    fname_expr          ; the filespec is an EXPRESSION; HL ->
                                             ; the staged '"'-terminated copy
-                call    parse_disk_fcb      ; DISK_FCB_NAME = 8.3 wildcard pattern
-                ld      hl,(FN_RESUME)      ; resume past the EXPRESSION, not past
-                                            ; a quote in the staging buffer
+                call    pdfcb_resume      ; DISK_FCB_NAME = 8.3 wildcard pattern
                 ld      a,1
                 ld      (FILES_HASPAT),a
 df_nofilespec:
@@ -323,9 +321,7 @@ do_open:
                 ld      de,dev_cas
                 call    dev_cmp
                 jp      z,oo_dev_cas
-                call    parse_disk_fcb      ; build DISK_FCB_NAME; HL -> closing '"'
-                ld      hl,(FN_RESUME)      ; resume past the EXPRESSION, not past
-                                            ; a quote in the staging buffer
+                call    pdfcb_resume      ; build DISK_FCB_NAME; HL -> closing '"'
                 call    skip_spaces
                 cp      FOR_TOKEN           ; FOR
                 jr      nz,oo_random        ; no FOR clause -> RANDOM mode (OPEN..AS #n)
@@ -843,6 +839,21 @@ dev_crt:        db      "CRT:",0
 ; the contract is stated once, enforced once, and costs -9 B rather than +12.
 ; ⚠️ do_files keeps its own, and not out of caution: it READS the skipped byte
 ; to decide whether there is an argument at all.
+; --- pdfcb_resume: parse_disk_fcb, then HL := FN_RESUME -------------------------
+; 💰 D-PDFCBRESUME (2026-09-10): `call parse_disk_fcb` / `ld hl,(FN_RESUME)`
+; stood at NINE sites (cload x2, files x5, save x2), all main page 1, 6 B each,
+; against 3 for a call: 9 x 3 saved less this 7-byte body = 20 B of page 1 --
+; found by the instruction-PAIR scan D-INCSKIP opened (clone_scout ranks label
+; blocks and cannot see a pair), when D-KEYSTR left page 1 at 13 B. Every site
+; resumes past the whole EXPRESSION rather than past a quote in the staging
+; buffer (D-FNEXPR2), which is what the second instruction has always meant.
+; Sited HERE and not in pdfcb-body.inc: that body is included in three places.
+; Same contract as parse_disk_fcb (raises on a bad name; clobbers A,B,C,DE,HL).
+pdfcb_resume:
+                call    parse_disk_fcb
+                ld      hl,(FN_RESUME)
+                ret
+
 fname_expr:
                 call    skip_spaces         ; 🔴 D-FNEXPR2: **INSIDE**, and it was a
                                             ; defect that it was not. See the
@@ -1605,8 +1616,7 @@ ex_kill:
                 jr      do_kill
 do_kill:
                 call    fname_expr          ; D-FNEXPR: a string EXPRESSION
-                call    parse_disk_fcb      ; build DISK_FCB_NAME (8.3 wildcard pattern)
-                ld      hl,(FN_RESUME)      ; resume past the expression
+                call    pdfcb_resume      ; build DISK_FCB_NAME (8.3 wildcard pattern)
                 ld      a,(DISKSLOT_OK)
                 or      a
                 jp      z,load_error
@@ -1674,8 +1684,7 @@ ex_name:
                 jr      do_name
 do_name:
                 call    fname_expr          ; D-FNEXPR: OLD name, a string EXPRESSION
-                call    parse_disk_fcb      ; old -> DISK_FCB_NAME
-                ld      hl,(FN_RESUME)      ; resume past the expression
+                call    pdfcb_resume      ; old -> DISK_FCB_NAME
                 ; "AS" (verbatim ASCII)
                 call    skip_spaces
                 call    upcase
@@ -1957,9 +1966,7 @@ ex_merge:
                 ld      de,dev_cas
                 call    dev_cmp
                 jr      z,merge_cas         ; matched "CAS:" -> tape merge (HL past prefix)
-                call    parse_disk_fcb      ; build DISK_FCB_NAME; HL -> closing '"'
-                ld      hl,(FN_RESUME)      ; resume past the EXPRESSION, not past a
-                                            ; quote in the staging buffer
+                call    pdfcb_resume      ; build DISK_FCB_NAME; HL -> closing '"'
                 ld      a,(DISKSLOT_OK)
                 or      a
                 jp      z,load_error

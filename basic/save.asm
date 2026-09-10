@@ -128,11 +128,7 @@ do_bsave:
                 jr      z,bsv_is_cas        ; matched "CAS:" -> tape (HL past the prefix)
 bsv_is_disk:
                 ; HL = filename start (after the quote); build the FCB.
-                call    parse_disk_fcb      ; build DISK_FCB; HL -> closing '"'
-                ld      hl,(FN_RESUME)      ; ✅ D-FNEXPR2: resume past the whole
-                                            ; EXPRESSION. The '"' parse_disk_fcb
-                                            ; stopped on is the one fname_expr
-                                            ; appended to STRSCR, not program text.
+                call    pdfcb_resume      ; build DISK_FCB; HL -> closing '"'
                 ; --- ,start ------------------------------------------------
                 call    expect_comma_eval   ; DE = start, HL advanced
                 ld      (CURPTR),de         ; CURPTR = start (the source walk cursor)
@@ -202,8 +198,7 @@ do_save:
                 ; above). Identical contract; the push/pop pair is dev_cmp's now.
                 jr      z,sav_is_cas        ; matched "CAS:" -> tape (HL past the prefix)
 sav_is_disk:
-                call    parse_disk_fcb      ; build DISK_FCB; HL -> closing '"'
-                ld      hl,(FN_RESUME)      ; D-FNEXPR2: resume past the EXPRESSION
+                call    pdfcb_resume      ; build DISK_FCB; HL -> closing '"'
                 ; --- optional ,A -> ASCII listing save; else tokenised ------
                 call    skip_comma
                 jr      z,sav_ascii_flag    ; SAVE"name",<flag> -> check for ,A
