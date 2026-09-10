@@ -5035,7 +5035,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       INCLUDING a control that had passed earlier in the same batch — the
       signature of a hang poisoning the cases after it. The readout refused to
       adjudicate; a fresh boot per case made each row its own machine.
-      🎚️ TIER 1 — happy path: a legal expression WRECKS THE MACHINE at 16 nested parentheses and 12 nested string functions, where both references print the value; `DEF FN`'s cap is the mild symptom of the same misplaced `SP`
+      🎚️ TIER 1 — happy path: EVERY expression — a legal formula WRECKS THE MACHINE at 16 nested parentheses and 12 nested string functions, where both references print the value; the FN nesting cap is the mild symptom of the same misplaced SP (no single keyword: the evaluator's recursion)
       ~~🔁 PARKED (Joost, 2026-09-10): every TIER 5 item waits until TIERS 1–4 are clean~~
       — UN-PARKED the same day: TIER 1 by the measurement above.
       🙋 NEEDS-JOOST — partition vs merge is his call, in the block's own words; TIER 1, so first in line.
