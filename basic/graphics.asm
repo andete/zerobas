@@ -1111,8 +1111,7 @@ spr_assign:
                 or      a
                 jp      z,gfx_err5          ; SPRITE$= in SCREEN 0 -> ERR 5
                 call    spr_parse_index     ; GFX_SN = n; HL past ')'
-                call    skip_spaces
-                cp      EQ_TOKEN
+                call    skip_eq             ; D-SKIPEQ: skip_spaces + cp EQ_TOKEN
                 jp      nz,gfx_syntax       ; `SPRITE$(0)` with no `=` -> ERR 2
                 inc     hl
                 call    str_eval            ; STRPTR -> [len][ptr]; CF=1 iff a string
@@ -1467,8 +1466,7 @@ g8_assign:
                 inc     hl                  ; past the VDP / BASE token
                 call    g8_open_paren       ; DE = n, HL past ')'
                 ld      (GFX_G8N),de
-                call    skip_spaces
-                cp      EQ_TOKEN
+                call    skip_eq             ; D-SKIPEQ: skip_spaces + cp EQ_TOKEN
                 jp      nz,gfx_syntax       ; `VDP(0)` alone / `VDP(0),1` -> ERR 2
                 call    inc_skip
                 or      a

@@ -76,8 +76,7 @@ ex_def:
                 inc     hl                  ; past USR
                 call    usr_index           ; A = vector index 0..9 (HL advanced)
                 push    af                  ; save index across '=' + eval
-                call    skip_spaces
-                cp      EQ_TOKEN            ; '=' crunches to $EF
+                call    skip_eq             ; '=' crunches to $EF
                 jp     nz,ex_def_err
                 call    inc_eval            ; DE = entry address, HL = cursor
                 pop     af                  ; A = index

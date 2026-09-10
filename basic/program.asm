@@ -1721,8 +1721,7 @@ ex_for:
                                             ; f.defstr, both references). The test is on
                                             ; the RESOLVED type, not on the `$` char,
                                             ; because f.defstr says the rule is.
-                call    skip_spaces
-                cp      EQ_TOKEN            ; '=' -> $EF
+                call    skip_eq             ; '=' -> $EF
                 jp      nz,stmt_error
                 call    inc_eval            ; DE = initial value, HL advanced
                 push    hl                  ; guard cursor across for_set
@@ -2742,8 +2741,7 @@ ei_done:
 ; POKE and `TIME=n` use, which is why the TIME slice landed first.
 ; n = 0 is the one addition: ERR 5, not ERR 6.
 ex_on_interval:
-                call    skip_spaces
-                cp      EQ_TOKEN
+                call    skip_eq             ; D-SKIPEQ: skip_spaces + cp EQ_TOKEN
                 jp      nz,trap_syntax      ; `ON INTERVAL GOSUB 800` -> ERR 2
                 inc     hl
                 call    eval_addr           ; DE = n (checked address domain)

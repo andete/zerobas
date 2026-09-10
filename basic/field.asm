@@ -524,8 +524,7 @@ lrs_haveeq:
                 ; 19 B of `=` parse + str_eval + error tail. That sharing is where
                 ; D-LRVAR's byte budget comes from (spec §4.2).
                 pop     hl                  ; restore cursor
-                call    skip_spaces
-                cp      EQ_TOKEN            ; '='
+                call    skip_eq             ; '='
                 jp      nz,stmt_error
                 ; --- D-LSETTM: THE DECLINE HAS TWO CAUSES AND THE CF-3300
                 ; --- ANSWERS THEM DIFFERENTLY (docs/spec-basic-lsettm.md).

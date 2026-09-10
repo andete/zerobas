@@ -915,8 +915,7 @@ ex_let:
                                             ; (e.g. A%=A#: the A# factor would leave
                                             ; VARTYPE=8, mis-storing A% as double)
                 push    bc                  ; save key across '=' + eval
-                call    skip_spaces
-                cp      EQ_TOKEN            ; '=' crunches to $EF (spec §4)
+                call    skip_eq             ; '=' crunches to $EF (spec §4)
                 jr      nz,ex_let_err
                 call    inc_eval            ; DE = value, HL = cursor (BC clobbered)
                 call    check_expr_errors_popbc  ; D-2/D-F2-1 (below): discards the
@@ -954,8 +953,7 @@ ex_let_str:
                                             ; sibling of ex_let's own numeric
                                             ; '(' peek right above
                 push    bc                  ; save key across '=' + str_eval
-                call    skip_spaces
-                cp      EQ_TOKEN            ; '=' -> $EF
+                call    skip_eq             ; '=' -> $EF
                 jr      nz,ex_let_err
                 call    str_eval_next       ; D-NGRAM11: past '=', STRPTR -> RHS
                                             ; descriptor, HL advanced, CF=ok
@@ -1024,6 +1022,16 @@ sc_call:
 skip_comma:
                 call    skip_spaces
                 cp      ','
+                ret
+; --- skip_eq: skip_spaces, then "is it `=`?" -- Z iff EQ_TOKEN is next -----------
+; 💰 D-SKIPEQ (2026-09-11): the pair stood at TEN sites (eight on page 1),
+; 5 B each against 3 for a call: 10 x 2 saved less this 6-byte body = 14 B, ~10 of
+; them page 1. Same flags contract as skip_comma; every caller branches on NZ.
+; Appended AFTER the sweep that pointed the sites here, for the reason skip_comma's
+; own header records.
+skip_eq:
+                call    skip_spaces
+                cp      EQ_TOKEN
                 ret
 
 ; 🔁 DEMOTED BACK TO PAGE 1, 2026-09-08 (D-REBALANCE). It was PROMOTED

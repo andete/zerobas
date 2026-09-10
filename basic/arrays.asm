@@ -870,8 +870,7 @@ ex_let_arr:
                                             ; (page-1); HL=cursor preserved
                 ld      a,(ARY_TYPE)
                 push    af                  ; [TYPE]
-                call    skip_spaces
-                cp      EQ_TOKEN
+                call    skip_eq             ; D-SKIPEQ: skip_spaces + cp EQ_TOKEN
                 jp      nz,ela_err
                 call    inc_eval            ; DE=RHS value, HL=cursor advanced
                 ld      a,(FPERR)           ; D-PENDERR: the THIRD hand-rolled copy of the
@@ -1032,8 +1031,7 @@ ex_let_arr_str:
                 call    ary_snapshot_offset ; §13a: push [OFFSET] -- guarded
                                             ; across str_eval exactly like the
                                             ; old [ADDR] push (see header)
-                call    skip_spaces
-                cp      EQ_TOKEN
+                call    skip_eq             ; D-SKIPEQ: skip_spaces + cp EQ_TOKEN
                 jp      nz,elas_err
                 call    str_eval_next       ; D-NGRAM11: past '=', STRPTR -> RHS
                                             ; descriptor, HL advanced, CF=ok
