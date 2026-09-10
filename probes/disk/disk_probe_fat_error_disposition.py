@@ -392,6 +392,18 @@ VERB_CONTROLS = {
         want=("AABB",),                       # APPEND kept AA and added BB
         absent=(),
         dir_present=b"AP      TXT", dir_absent=None,
+        # 🎯 D-FATSIZE: THE SIZE IS THE WITNESS THAT NEEDS NO SECOND VERB, and it
+        # is DISCRIMINATING rather than decorative. `AA\r\n` + `BB\r\n` + the
+        # `$1A` EOF marker is 9; an APPEND that behaved like OUTPUT would have
+        # truncated to `BB\r\n` + EOF = 5. So this number separates the two
+        # outcomes on its own, and it does so from the directory sector -- §8.6's
+        # gap (2) was that the readback goes through OPEN FOR INPUT, a second
+        # verb whose failure marks this row NOT MEASURED for a reason that is not
+        # APPEND's.
+        # ⚠️ MEASURED, NOT DERIVED: reasoning it out gives 8, because the EOF byte
+        # is easy to forget. The probe printed `dir size 9` in observe-only mode
+        # first and the pin was written from that.
+        dir_size=9,
         guards="append-missing",
     ),
     "merge-alive": dict(
@@ -445,6 +457,42 @@ assert {v for *_, v in CASES if v} == set(VERB_CONTROLS), \
 SRC_DSK = os.path.join(os.path.dirname(os.path.dirname(
     os.path.dirname(os.path.abspath(__file__)))), "disk", "test720.dsk")
 MUST_NOT_EXIST = b"NOSUCH  DAT"
+
+
+def dir_sizes(dsk_path: str):
+    """{11-byte name: size in bytes} from the FAT12 root directory, or None.
+
+    🎯 D-FATSIZE: THE SIZE IS THE EVIDENCE `append-alive` ACTUALLY WANTS.
+    APPEND's distinguishing property is that it KEEPS what was there and adds to
+    it -- an APPEND that behaved like OUTPUT would truncate. Today the row proves
+    that by re-reading the file through `OPEN FOR INPUT`, which is a SECOND VERB:
+    §8.6's gap (2), where a break in OPEN/INPUT marks this row NOT MEASURED for a
+    reason that is not APPEND's. The directory entry carries the length already,
+    32 bytes from the same sector `dir_names` is walking, and it answers the
+    question without asking another verb anything.
+    ⚠️ It does NOT replace the readback. The readback proves the BYTES are right;
+    the size proves the file GREW. Two witnesses of one claim, and the coupling
+    now costs only the weaker one if OPEN/INPUT breaks.
+    """
+    try:
+        with open(dsk_path, "rb") as fh:
+            d = fh.read()
+    except OSError:
+        return None
+    if len(d) < 512 or struct.unpack("<H", d[11:13])[0] != 512:
+        return None
+    res = struct.unpack("<H", d[14:16])[0]
+    nfat, nroot = d[16], struct.unpack("<H", d[17:19])[0]
+    spf = struct.unpack("<H", d[22:24])[0]
+    root = (res + nfat * spf) * 512
+    out = {}
+    for i in range(nroot):
+        e = d[root + i * 32: root + i * 32 + 32]
+        if len(e) < 32 or e[0] == 0:
+            break
+        if e[0] != 0xE5 and not (e[11] & 0x18):
+            out[bytes(e[:11])] = struct.unpack("<I", e[28:32])[0]
+    return out
 
 
 def dir_names(dsk_path: str):
@@ -580,6 +628,7 @@ def main() -> int:
     # second instrument for BOTH the per-verb controls (did the rename reach the
     # sector?) and `append-missing` (was the file created anyway?).
     names = dir_names(dsk)
+    sizes = dir_sizes(dsk) or {}
 
     # --- the per-verb controls (D-FEVERB §2.2), screen AND directory ----------
     vok = {}
@@ -596,9 +645,19 @@ def main() -> int:
                  if vc["dir_present"] else None)
         dabs = (names is not None and vc["dir_absent"] not in names
                 if vc["dir_absent"] else None)
-        vok[k] = scr and dpres is not False and dabs is not False
+        # D-FATSIZE: the SIZE witness. `None` means "not applicable" for this
+        # control, exactly like dir_present/dir_absent above -- never "passed".
+        want_sz = vc.get("dir_size")
+        got_sz = sizes.get(vc["dir_present"]) if vc["dir_present"] else None
+        dsz = None if want_sz is None else (got_sz == want_sz)
+        vok[k] = (scr and dpres is not False and dabs is not False
+                  and dsz is not False)
+        szinfo = ""
+        if vc["dir_present"] and got_sz is not None:
+            szinfo = (f"  dir size {got_sz}"
+                      + ("" if want_sz is None else f" (want {want_sz})"))
         print(f"  {'PASS' if vok[k] else 'FAIL'}  {k:14} {vc['shown']:38} "
-              f"-> {got[:60]!r}   [VERB CONTROL for {vc['guards']}]")
+              f"-> {got[:60]!r}{szinfo}   [VERB CONTROL for {vc['guards']}]")
         nrows += 1
         if not vok[k]:
             # ⚠️ EVERY FIELD HERE IS OPTIONAL, AND THIS BRANCH ONLY RUNS WHEN THE

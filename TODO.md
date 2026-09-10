@@ -434,7 +434,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:13880 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:13908 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -599,7 +599,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:3623 (T-6FE392)8 (T-529ABE)` from `TODO.md:12817 (T-529ABE)`: a
+      `TODO.md:3623 (T-6FE392)8 (T-529ABE)` from `TODO.md:12845 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -4454,7 +4454,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:12817 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:12845 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -8925,6 +8925,34 @@ list. **When a slice lands, grep this list for what it just shipped.**
       ⚠️ **Gap (2) is DEMONSTRATED, not fixed**: `merge-alive`/`append-alive`
       still lean on a second verb. Rebuilding them to stand alone is separate
       work and is not done here.
+      ✅ **`append-alive` NOW HAS A SECOND WITNESS THAT NEEDS NO SECOND VERB —
+      D-FATSIZE, 2026-09-10.** The FAT12 root entry carries the file LENGTH 32
+      bytes from the sector `dir_names` was already walking, so `dir_sizes()`
+      reads it for nothing, and `append-alive` asserts **9**.
+      🎯 **AND THE NUMBER IS DISCRIMINATING, NOT DECORATIVE**: `AA\r\n` +
+      `BB\r\n` + the `$1A` EOF marker is 9, where an APPEND that behaved like
+      OUTPUT would have truncated to `BB\r\n` + EOF = **5**. The size separates
+      the two outcomes by itself, from the directory — which is exactly what gap
+      (2) said the row lacked, since its readback goes through `OPEN FOR INPUT`.
+      ⚠️ **MEASURED, NOT DERIVED — reasoning it out gives 8.** The EOF byte is
+      easy to forget, so the witness was wired OBSERVE-ONLY first, the probe
+      printed `dir size 9`, and the pin was written from that reading.
+      🔬 **TEETH SHOWN**: mutating the pin to 5 — the truncating-APPEND value —
+      gives `rc=2` and `FAIL append-alive … dir size 9 (want 5)` **while the
+      screen witness still reads `AABB`**. So the size caught what the readback
+      could not, which is the case for keeping BOTH rather than swapping one for
+      the other.
+      🔴 **`merge-alive` GETS NO SUCH WITNESS, AND THE REASON IS STRUCTURAL.** Its
+      file is 12 bytes — but that 12 is `SAVE",A"`'s OUTPUT, so the size cannot
+      witness MERGE at all; it witnesses the verb the row is trying not to depend
+      on. Decoupling it needs an ASCII-saved `.BAS` **on the fixture image**
+      (`MERGE"A:PROG.BAS"` was already refused during D-FATVERB's scouting — the
+      fixture's copy is TOKENISED and MERGE raises `Syntax error`), and that is a
+      `tools/make_test_dsk.py` change touching every disk probe. Named with its
+      blast radius rather than left as "separate work".
+      📏 `fat-error-acceptance` is battery-EXCLUDED, so it was re-run BY HAND
+      three times here — observe-only, pinned, and knifed — **20 rows printed, 11
+      scored, ALL PASS** on the pinned run.
       🤖 AUTONOMOUS — the reference or a gate settles it; finishable unattended (no his-decision signal found).
 - [ ] 📌 **`file:LINE` CITATIONS ARE UNMAINTAINED AND BROADLY ROTTED — ONLY
       31% OF THEM WERE STILL CORRECT, AND NO GATE READS ONE.** Filed 2026-08-19
