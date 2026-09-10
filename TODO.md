@@ -434,7 +434,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:13245 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:13277 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -599,7 +599,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:3442 (T-6FE392)8 (T-529ABE)` from `TODO.md:12182 (T-529ABE)`: a
+      `TODO.md:3442 (T-6FE392)8 (T-529ABE)` from `TODO.md:12214 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -4223,7 +4223,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:12182 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:12214 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -11520,6 +11520,38 @@ list. **When a slice lands, grep this list for what it just shipped.**
       literal) and produced a tidy table calling all 86 probes uncollected. The
       floors exist because the instrument failed that way inside this slice
       [[an-instrument-can-fail-the-way-the-thing-it-replaced-failed]].
+      🔁 **D-EXCLROT2 (2026-09-10): ALL FIVE RE-MEASURED, AND THE ROTATION ARM
+      IS NOW GATED — the 2026-09-08 pass had covered FOUR of the five.**
+      `lnblank-say-acceptance` was skipped, so its green dated **2026-09-02** and
+      stood for EIGHT DAYS across every ROM move in between — including four that
+      evening — while the four that WERE re-run each carried a confident fresh
+      date. Nothing noticed, because a manual rotation is only visible as
+      incomplete if someone reads all five entries side by side.
+      ✅ Re-run tonight, owed by this session's slices (D-GETEOF and three carves
+      touched `basic/expr.asm`, a **shared evaluator leaf**; D-PUDOLLAR moved
+      page 1): **bdos 12/12 · diskbasic 34/34 · fat-error 20 printed / 11 scored
+      ALL PASS · input-devices 50 cases ALL PASS · lnblank-say 208/208** against the
+      ROM built from commit `06f571a9`. (The four ROM hashes `make gates`
+      prints are deliberately NOT quoted here: four 8-hex groups in a row are
+      indistinguishable from a hex dump of a binary, and the clean-room audit
+      reddens on them — correctly, since it cannot tell ours from a reference
+      ROM's. Naming the commit carries the same fact and keeps the rule sharp.)
+      🔴 **AND THE COUNTS ARE THE READING, NOT THE EXIT CODES.** All five returned
+      `rc=0` — the one channel that cannot be trusted for these suites, several of
+      which print divergences and exit 0 (the D-FILEDROT class). Every figure
+      above came out of the run's own summary line.
+      ➡️ **GATED, and deliberately only the half that is FREE.**
+      `battery-membership-check` grows a `rotation()` arm: every exclusion
+      claiming `MEASURED GREEN` must share the newest re-measure date, and a
+      straggler is named. 🎯 **Whether a recorded green is STALE against today's
+      ROM is NOT checked here** — settling that costs a real re-run of all five,
+      and taxing every ROM-moving commit with it is a decision with a price. What
+      *is* free is whether the five agree on when they were last measured, and
+      that is the failure that actually happened.
+      🔬 Selftested both ways (S5/S6): the live tree agrees on one date, and an
+      entry dragged back to an older one goes RED **and exits 1** — checked as an
+      exit code, not as printed text, because a gate that prints red and returns
+      0 is the very class this block's neighbours keep finding.
 
 - [x] 🟢 **`X=TAB(5)` OUTSIDE A `PRINT` GIVES `Missing operand` WHERE BOTH
       REFERENCES SAY `Syntax error` — AND `cursor-acceptance`'s KNOWN-RED

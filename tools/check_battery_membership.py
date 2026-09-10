@@ -91,6 +91,53 @@ def exclusions(path: str) -> dict[str, str]:
     return out
 
 
+# An exclusion that claims a suite is GREEN carries the date it was measured.
+# Entries without this phrase (the `citation-check` alias) are not suites and are
+# not held to a rotation.
+MEASURED = "MEASURED GREEN"
+DATE = re.compile(r"\d{4}-\d{2}-\d{2}")
+
+
+def rotation(exc: dict) -> int:
+    """🔴 A MANUAL ROTATION IS ONLY VISIBLE AS INCOMPLETE IF SOMEONE READS EVERY
+    ENTRY SIDE BY SIDE — so nothing saw the 2026-09-08 pass cover FOUR of the
+    five. `lnblank-say-acceptance` was skipped, and its green stood from
+    2026-09-02 for eight days across every ROM move in between, while the four
+    that WERE re-run each carried a confident fresh date.
+
+    🎯 THIS ARM CHECKS WHAT IS FREE TO KEEP RIGHT, NOT WHAT IS EXPENSIVE.
+    Whether the recorded green is STALE against today's ROM cannot be settled
+    here — that costs a real re-run of all five, and making every ROM-moving
+    commit pay it is a decision with a price. Whether the five AGREE on when
+    they were last measured costs nothing, and it is the failure that actually
+    happened: re-running them together is one command, and a straggler is a
+    typo away from invisible."""
+    dated = {t: max(DATE.findall(r), default=None)
+             for t, r in exc.items() if MEASURED in r}
+    if not dated:
+        return 0
+    if any(d is None for d in dated.values()):
+        missing = sorted(t for t, d in dated.items() if d is None)
+        print(f"🔴 {len(missing)} exclusion(s) claim {MEASURED} with no date: "
+              + " ".join(missing))
+        return 1
+    newest = max(dated.values())
+    behind = sorted(t for t, d in dated.items() if d != newest)
+    if not behind:
+        print(f"   (all {len(dated)} measured exclusion(s) last re-measured "
+              f"{newest} — the rotation covered every one)")
+        return 0
+    print(f"🔴 THE EXCLUSION ROTATION IS INCOMPLETE — {len(behind)} of "
+          f"{len(dated)} were not re-measured with the others (newest is "
+          f"{newest}):")
+    for t in behind:
+        print(f"     {t}  last measured {dated[t]}")
+    print("     → an excluded target runs in NO battery, so its green is a "
+          "snapshot. Re-run these together and date them together; a straggler "
+          "is invisible beside four fresh dates.")
+    return 1
+
+
 def check(root=ROOT) -> int:
     src = open(os.path.join(root, "tools", "run_gates.py")).read()
     mk = open(os.path.join(root, "Makefile")).read()
@@ -130,6 +177,7 @@ def check(root=ROOT) -> int:
         print(f"⚠️  {len(stale)} exclusion(s) name a target that IS collected now "
               f"— delete the line: " + " ".join(stale))
         rc = max(rc, 1)
+    rc = max(rc, rotation(exc))
     unreviewed = sum(1 for t, r in exc.items()
                      if t in targets and r.startswith("UNREVIEWED"))
     if unreviewed:
@@ -172,6 +220,17 @@ def selftest() -> int:
         'STATIC = """basic-reloc"""\nEMULATOR = """deadcode"""\n')
     arm("S4 a degenerate battery parse REFUSES (rc 2), never reports a finding",
         check(tmp) == 2)
+    # --- S5/S6: the rotation arm, planted BOTH ways (D-EXCLROT2) -------------
+    # 🔴 The live tree passing S1 does not prove this arm looks at anything: it
+    # would also pass if `rotation()` were `return 0`. So one entry is dragged
+    # back to an older date and must be NAMED.
+    live = exclusions(EXCL)
+    arm("S5 the live exclusions agree on one re-measure date", rotation(live) == 0)
+    behind = dict(live)
+    victim = next(t for t, r in behind.items() if MEASURED in r)
+    behind[victim] = DATE.sub("2001-01-01", behind[victim])
+    arm("S6 an entry left behind by the rotation goes RED",
+        rotation(behind) == 1)
     shutil.rmtree(tmp, ignore_errors=True)
     print("selftest:", "GREEN" if ok else "🔴 RED")
     return 0 if ok else 1
