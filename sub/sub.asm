@@ -221,6 +221,12 @@ sub_p0_table:
                                                 ;   into DETOKBUF for the resident
                                                 ;   stub to drain (D-PUEMIT). Evicted
                                                 ;   to buy back main page 1.
+                jp      lofu32_tenant           ; index 17 (SUBROM_IDX_LOFU32): LOF's
+                                                ;   32-bit size -> ARGA (D-LOFU32).
+                                                ;   RAM in, RAM out; the caller
+                                                ;   packs. A funding carve: the
+                                                ;   main-side form cost 98 B of
+                                                ;   page 1.
 
 
 ; --- Page-0 PING (S2a boot-gate tenant) -----------------------------------
@@ -344,6 +350,8 @@ sis_spin:
 ; callee, is inlined here in 5 B.
                 include "lrsetst.asm"
                 include "deffn.asm"
+; --- LOF's 32-bit size -> ARGA (D-LOFU32 funding carve) -----------------------
+                include "lofu32.asm"
 
 ; --- sub-local is_letter (byte-identical own-design clone) ------------------
 ; The resident copy stays in the main ROM (basic/interp.asm) for the rest of the

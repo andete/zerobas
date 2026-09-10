@@ -1279,7 +1279,20 @@ ev_ff_eof:                                  ; EOF(n): -1 at end of the input fil
                 ret
 ev_ff_lof:                                  ; LOF(n): length of open input file n
                 ; Select channel n so FAT_FILESIZE (set by fat_find at OPEN, part of
-                ; the per-channel state span) belongs to it; return its low 16 bits.
+                ; the per-channel state span) belongs to it.
+                ; 🔴 D-LOFU32 (2026-09-10): THE RESULT IS A DOUBLE CARRYING THE
+                ; WHOLE 32-BIT SIZE, NOT "its low 16 bits". `ld de,(FAT_FILESIZE) /
+                ; ret` handed the size back as an INTEGER, so a 65280-byte file read
+                ; **-256** (D-PUTDOMAIN's r.255 -- inside the supported domain, a
+                ; live wrong answer) and anything past 65535 was truncated. Measured
+                ; on the CF-3300: LOF(1) after PUT#1,300 prints 76800, and LOF(1)/7
+                ; prints 10971.428571429 -- 14 significant digits, a DOUBLE
+                ; (scratchpad/loftype_probe.py). Joost ruled "do what the reference
+                ; does"; this is the u32 -> float half, the PUT offset half is
+                ; separate. The dispatcher's flt_int_result above already set
+                ; FACTYP=2, and this tail overrides it -- the same "publish a
+                ; float, refresh DE via flt_to_int16" shape evconv_pack_same_type
+                ; keeps for every ev_f_* factor.
                 call    fch_check           ; D-BADFNUM: 5 / 59 / 52 -- see ev_ff_eof
                                             ; above, including why channel 0 never
                                             ; reaches the class test
@@ -1287,8 +1300,36 @@ ev_ff_lof:                                  ; LOF(n): length of open input file 
                 jp      nc,ev_f_ifc         ; D-EVFERR: ERR 5, as ev_ff_eof above
                 ld      a,e
                 call    fch_select
-                ld      de,(FAT_FILESIZE)
+                ld      hl,(FAT_FILESIZE)   ; DE:HL = the size, unsigned 32-bit
+                ld      de,(FAT_FILESIZE+2)
+                ld      a,h
+                or      l
+                or      d
+                or      e
+                jr      nz,lof_nz
+                ld      (FAC),a             ; 0: the int 0 flt_int_result already typed
+                ld      de,0                ; (A is 0 here)
                 ret
+lof_nz:
+                ; The digit work is the SUBROM_IDX_LOFU32 tenant (sub/lofu32.asm):
+                ; the resident form of it cost 98 B of page 1 (129 -> 31 B free,
+                ; measured), so only the call, the pack and the tail stay here.
+                ; 🔴 IX IS THE EVALUATOR'S TOKEN POINTER HERE (fn_call: "in: IX ->
+                ; the FN token"), and subrom_call takes the entry address IN IX and
+                ; CALSLT clobbers it. The first tenant cut left IX pointing at the
+                ; sub-ROM table, the evaluator resumed parsing there, and every
+                ; `PRINT LOF(1)` on the machine read `Syntax error` -- while the
+                ; resident cut, which never touched IX, was correct. Four bytes.
+                push    ix
+                ld      ix,SUBROM_ENTRY_BASE_P0 + 3*SUBROM_IDX_LOFU32
+                call    subrom_call         ; ARGA := the size, unpacked; CF=1 iff
+                pop     ix                  ;   the sub-ROM is absent (flags survive)
+                jp      c,subrom_absent_error ; reduced build w/o sub-ROM, as evmc_sqr
+                call    arga_pack_fac       ; ARGA -> FAC as a double (14 digits, exact)
+                ld      a,8
+                ld      (FACTYP),a
+                jp      flt_to_int16        ; refresh DE: the silent address-domain
+                                            ; contract every ev_f_* tail keeps
 
 ; fch_mode_class — the shared channel-mode classifier. A = FCH_MODES[E]; raises
 ; ERR 59 "file not open" if that is 0; CF set if E is a disk file channel

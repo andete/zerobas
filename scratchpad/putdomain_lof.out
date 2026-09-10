@@ -1,0 +1,25 @@
+  r.ctl     PUT#1,1              off=     0  cf=[E L]=0 256          zb=[E L]=0 256         
+            CONTROL: default reclen 256 -> LOF 256
+  r.255     PUT#1,255            off= 65024  cf=[E L]=0 65280        zb=[E L]=0 65280       
+            the last record inside today's cap
+  r.256     PUT#1,256            off= 65280  cf=[E L]=0 65536        zb=[E L]=0 256            🔴 DIFF
+            past the cap; offset STILL fits 16 bits
+  r.257     PUT#1,257            off= 65536  cf=[E L]=0 65792        zb=[E L]=0 256            🔴 DIFF
+            🎯 the 16-bit offset BOUNDARY
+  r.300     PUT#1,300            off= 76544  cf=[E L]=0 76800        zb=[E L]=0 256            🔴 DIFF
+            well past the boundary
+  l1.ctl    PUT#1,1      LEN=1   off=     0  cf=[E L]=0 1            zb=[E L]=0 1           
+            CONTROL: reclen 1 -> LOF 1
+  l1.256    PUT#1,256    LEN=1   off=   255  cf=[E L]=0 256          zb=[E L]=0 1              🔴 DIFF
+            past the cap, offset only 255
+  l1.32767  PUT#1,32767  LEN=1   off= 32766  cf=[E L]=0 32767        zb=[E L]=0 1              🔴 DIFF
+            the largest MSX integer
+  l1.32768  PUT#1,32768  LEN=1   off= 32767  cf=[E L]=0 32768        zb=[E L]=0 1              🔴 DIFF
+            past the SIGNED range -- a different rule
+  l1.65535  PUT#1,65535  LEN=1   off= 65534  cf=[E L]=0 65535        zb=[E L]=0 1              🔴 DIFF
+            offset fits 16 bits; the number does not
+
+🔴 PINNED FACE DRIFT -- the row may still diverge, but NOT to the face this tree has filed:
+     r.255[zb]: pinned '0 -256', measured '0 65280'
+  Re-read the owning entry: either the behaviour moved, or the filing was wrong when it was written.
+refcache: 0 hit, 20 miss, 20 stored

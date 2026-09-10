@@ -1,0 +1,25 @@
+  r.ctl     PUT#1,1              off=     0  cf=[E L]=0 36.571428571429 zb=[E L]=0 36.571428571429
+            CONTROL: default reclen 256 -> LOF 256
+  r.255     PUT#1,255            off= 65024  cf=[E L]=0 9325.7142857143 zb=[E L]=0 -36.571428571429   🔴 DIFF
+            the last record inside today's cap
+  r.256     PUT#1,256            off= 65280  cf=[E L]=0 9362.2857142857 zb=[E L]=0 36.571428571429   🔴 DIFF
+            past the cap; offset STILL fits 16 bits
+  r.257     PUT#1,257            off= 65536  cf=[E L]=0 9398.8571428571 zb=[E L]=0 36.571428571429   🔴 DIFF
+            🎯 the 16-bit offset BOUNDARY
+  r.300     PUT#1,300            off= 76544  cf=[E L]=0 10971.428571429 zb=[E L]=0 36.571428571429   🔴 DIFF
+            well past the boundary
+  l1.ctl    PUT#1,1      LEN=1   off=     0  cf=[E L]=0 .14285714285714 zb=[E L]=0 .14285714285714
+            CONTROL: reclen 1 -> LOF 1
+  l1.256    PUT#1,256    LEN=1   off=   255  cf=[E L]=0 36.571428571429 zb=[E L]=0 .14285714285714   🔴 DIFF
+            past the cap, offset only 255
+  l1.32767  PUT#1,32767  LEN=1   off= 32766  cf=[E L]=0 4681         zb=[E L]=0 .14285714285714   🔴 DIFF
+            the largest MSX integer
+  l1.32768  PUT#1,32768  LEN=1   off= 32767  cf=[E L]=0 4681.1428571429 zb=[E L]=0 .14285714285714   🔴 DIFF
+            past the SIGNED range -- a different rule
+  l1.65535  PUT#1,65535  LEN=1   off= 65534  cf=[E L]=0 9362.1428571429 zb=[E L]=0 .14285714285714   🔴 DIFF
+            offset fits 16 bits; the number does not
+
+  🔴 CONTROL FAILED -- no row below is readable:
+     r.ctl LOF is not 256 (cf=36.571428571429, zb=36.571428571429) -- the default reclen moved
+     l1.ctl LOF is not 1 (cf=0.14285714285714, zb=0.14285714285714) -- LEN=1 did not take, so every l1. row is secretly a reclen-256 row
+refcache: 0 hit, 20 miss, 20 stored

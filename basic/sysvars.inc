@@ -4314,6 +4314,10 @@ SUBROM_IDX_PLAY_PARSE equ 14    ; play_parse_tenant (sub/playparse.asm): the aud
                                 ; MML string into its VOICxQ ring buffer, sets MUSICF
                                 ; LAST. Only ex_play (basic/play.asm) computes
                                 ; IX = SUBROM_ENTRY_BASE_P1 + 3*SUBROM_IDX_PLAY_PARSE.
+SUBROM_IDX_LOFU32    equ 17     ; lofu32_tenant (sub/lofu32.asm): LOF's 32-bit
+                                ; FAT_FILESIZE -> ARGA as an unpacked FPNUM, for
+                                ; ev_ff_lof to pack as a double (D-LOFU32). PAGE
+                                ; 0: RAM in, RAM out, nothing to marshal.
 SUBROM_IDX_PUEMIT    equ 16     ; pu_emit_tenant (sub/printusing.asm): PRINT USING's
                                 ; numeric PAD + EMIT, built into DETOKBUF for the
                                 ; resident stub to drain (D-PUEMIT). PAGE-0 index

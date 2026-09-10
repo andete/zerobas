@@ -1,50 +1,15 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
 # SPDX-License-Identifier: 0BSD
-r"""D-PUTDOMAIN — where does the REFERENCE stop accepting a record number?
+r"""D-LOFTYPE — is the reference's LOF single or double precision?
 
-D-GETREC closed `GET`'s half and left `PUT`'s cap as the residual, filed with a
-blocker: *"`frnd_calc`'s sector math is documented as assuming
-`byteoffset < 32768`, so lifting the cap is not a constant change."*
-
-\U0001f534 THAT BLOCKER DOES NOT SURVIVE READING THE CODE. `frnd_calc`'s sector
-split is
-
-    ld l,h / ld h,0     ; HL = byteoffset >> 8
-    srl l               ; HL = byteoffset >> 9   <- "(H stays 0; byteoffset < 32768)"
-
-and the parenthetical is wrong twice over. H stays 0 because `byteoffset >> 9` is
-at most `65535 >> 9 = 127` for ANY 16-bit byteoffset — not because the offset is
-under 32768 — and there is no such precondition anywhere in the routine.
-`GP_WITHIN`'s `ld a,h / and 1` is general for the same reason. The blocker was a
-claim about a COMMENT, and the comment describes a limit the code does not have
-[[a-justification-parenthesis-is-an-unrun-claim]].
-
-\U0001f3af SO THE REAL BOUND IS ELSEWHERE, AND IT IS `mul_reclen`: it accumulates
-`k * reclen` in 16 bits with a plain `add hl,bc` and wraps SILENTLY. The domain
-`frnd_calc` can serve is therefore *every record whose byte offset fits 16 bits*
-— which at the default reclen 256 is records 1..256, one PAST the 1..255 cap and
-exactly the `p.256` row D-PUTEXTEND found divergent.
-
-⚠️ BUT "WHAT THIS TREE COULD SERVE" IS NOT "WHAT THE REFERENCE DOES", AND ONLY
-THE SECOND ONE IS THE TARGET. Widening to the 16-bit offset limit is a guess
-about the contract unless the reference is asked where IT stops. These rows ask:
-
-  * at reclen 256, `257` is the first record whose offset (65536) does NOT fit 16
-    bits. If the reference serves it, its offsets are wider than 16 bits and the
-    fix is bounded by something else entirely.
-  * at reclen 1 the offset stays tiny while the record NUMBER runs past the
-    signed-integer range, which separates "the offset overflowed" from "the
-    record number is out of range" — two rules that coincide at reclen 256
-    [[two-rules-that-coincide-on-every-row-you-have]].
-
-\U0001f534 THE WITNESS IS `LOF`, NOT `ERR`, for D-PUTEXTEND's reason: this tree
-reports a refused `PUT` through `gp_fin`'s `jp c,load_error`, which PRINTS
-without raising, so ERR stays 0 on both sides of a real divergence. Both numbers
-are read; only LOF can separate "did it" from "declined quietly".
-
-⚠️ NEEDS-DISK: the VG-8020 has no drive, so the CF-3300 is the oracle. Every row
-writes, so every row gets its own copy of the fixture.
+A copy of scratchpad/putdomain_probe.py with ONE change: line 300 prints
+LOF(1)/7 instead of LOF(1). 76800/7 = 10971.428571428571...; a SINGLE prints
+7 significant digits (10971.43), a DOUBLE prints 14 (10971.428571429). That
+decides which pack ev_ff_lof's u32->float path uses (arga_pack_single vs
+arga_pack_fac) -- measured on the CF-3300, the only side with a drive AND a
+correct LOF. Nothing else in the copy is touched, so its fixture, timing and
+readout are exactly the ones that measured the -256.
 """
 from __future__ import annotations
 
@@ -102,7 +67,7 @@ PINNED = {
     # run that filed the entry. CONTROLS r.ctl / l1.ctl are deliberately NOT
     # pinned: they are the fixture check, and the probe already refuses the whole
     # table when either fails.
-    "r.255":     {"cf3300": "0 65280", "zb": "0 65280"},   # D-LOFU32 2026-09-10: was "0 -256"
+    "r.255":     {"cf3300": "0 65280", "zb": "0 -256"},
     "r.256":     {"cf3300": "0 65536", "zb": "0 256"},
     "r.257":     {"cf3300": "0 65792", "zb": "0 256"},
     "r.300":     {"cf3300": "0 76800", "zb": "0 256"},
@@ -129,7 +94,7 @@ def main() -> int:
                  "900 E = ERR : RESUME 300",
                  # LOF BEFORE CLOSE -- asking a closed channel is a different
                  # question, and D-PUTEXTEND already paid for that lesson.
-                 '300 L = LOF(1) : CLOSE #1 : PRINT "ZQ";E;L;"QZ" : END']
+                 '300 L = LOF(1)/7 : CLOSE #1 : PRINT "ZQ";E;L;"QZ" : END']
             raw = "".join(omsx_repl.run_cases(
                 c["machine"], [("direct", list(c["reset"]) + p + ["RUN"])],
                 batch=False, reset=(), boot=c["boot"], step=4.0, run_gap=gap,

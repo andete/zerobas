@@ -489,7 +489,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:14389 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:14414 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -655,7 +655,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:3728 (T-6FE392)8 (T-529ABE)` from `TODO.md:13310 (T-529ABE)`: a
+      `TODO.md:3753 (T-6FE392)8 (T-529ABE)` from `TODO.md:13335 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -3045,7 +3045,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `r.255` and leaves `r.257` wrong — two rules that coincide on the rows we
       happen to have [[two-rules-that-coincide-on-every-row-you-have]]. The u32
       path is what BOTH halves need: `LOF`'s readout and `PUT`'s offset domain.
-      🎚️ TIER 1 — happy path: `LOF` returns −256 for any file ≥ 32 KB on a path this tree supports (`r.255`); the `PUT` past-record-255 half is TIER 5
+      🎚️ TIER 1 — happy path: `PUT` refuses records whose offset needs more than 16 bits (`r.256`+), which the reference serves; the `LOF` half shipped 2026-09-10 (D-LOFU32)
       ~~🙋 **NEEDS-JOOST** — over the 20 B standing budget, and a design call~~ (re-marked 2026-09-10, see below)
       rather than a carve. Three questions, in the order they bite:
       1. Is a **u32 → float** conversion the shape you want (it would also serve
@@ -3073,7 +3073,32 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `PUT` — taken as the shape; the budget question (2) is answered by the
       ruling itself, and (3) is moot because the partial fix is not built.
       TIER 1: `r.255`'s −256 is a live wrong answer on a supported path.
-      🤖 AUTONOMOUS — the reference settles the shape (float `LOF`, 32-bit offsets); finishable unattended (ruled 2026-09-10).
+      ✅ **THE `LOF` HALF SHIPPED 2026-09-10 (D-LOFU32).** `ev_ff_lof` returns the
+      whole 32-bit size as a DOUBLE: `r.255` reads **65280** on zerobas, matching
+      the CF-3300, and `lof-acceptance` is 45/45. The reference's type was
+      measured first — `LOF(1)/7` prints `10971.428571429`, fourteen digits, a
+      double ([`scratchpad/loftype_probe.py`](scratchpad/loftype_probe.py)).
+      📏 **TWO SHAPES BUILT, ONE SHIPPED.** The resident form (digits peeled in
+      `expr.asm`) cost **98 B** of main page 1 (129 → 31 B, clean tree). The
+      shipped form is a page-0 sub-ROM tenant, `SUBROM_IDX_LOFU32` = 17
+      ([`sub/lofu32.asm`](sub/lofu32.asm)): main page 1 **129 → 89 B (40 B)** for
+      the checks, the zero case, the guarded call, the pack and the tail; sub
+      page 0 1184 → 1100 B. Over the standing 20 B rule, spent under this item's
+      ruling; read the wall with `make basic-reloc`, never from here.
+      🔴 **THE FIRST TENANT CUT ANSWERED `Syntax error` TO EVERY `LOF`** while the
+      resident cut was correct. Not the table (slot 17 → `lofu32_tenant`, bytes
+      checked), not a stale ROM (the machine XML points at `build/sub.rom`), not
+      the arithmetic (identical). `subrom_call` takes its entry address IN IX and
+      CALSLT clobbers it — and IX is the evaluator's token pointer inside a
+      function. The tree's own rule (`arrays.asm`: *"the caller must guard any
+      live IX (e.g. the text cursor)"*): `push ix` / `pop ix` around the call,
+      CF surviving to `subrom_absent_error`, as `evmc_sqr` does
+      [[a-scratch-register-that-was-the-callers-value]].
+      ➡️ **WHAT STAYS OPEN IS THE `PUT` HALF**: `mul_reclen`'s 16-bit
+      `(recno-1)*reclen` and a 16-bit `GP_SEC`, so `r.256`+ and `l1.256`+ still
+      refuse; `randio-body.inc` is main-resident and the arithmetic wants to go
+      sub-side. TIER 1 (the reference serves record 257; this tree refuses it).
+      🤖 AUTONOMOUS — the reference settles the shape (32-bit offsets); finishable unattended (LOF half shipped 2026-09-10; PUT half next).
 
 - [x] ✅ **D-PARTSTATE (2026-09-09): LIST verbs execute PARTIALLY on the reference
       TOO — and that BOUNDS D-PARTIAL. 5 rows × 3 machines, 0 DIFF**
@@ -4572,7 +4597,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:13310 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:13335 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
