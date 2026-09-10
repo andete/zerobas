@@ -225,6 +225,10 @@ RSET_TOKEN      equ     $B9     ; RSET v$ = s$ — right-justify s$ into fielded
 ; MSX2 TH Table 2.20). Evaluated in basic/expr.asm ev_f_ff.
 EOF_TOKEN       equ     $AB     ; EOF(#n)  -> -1 at end of the input file, else 0
 LOF_TOKEN       equ     $AD     ; LOF(#n)  -> length of the open file in bytes
+LOC_TOKEN       equ     $AC     ; LOC(#n)  -> record number of the last GET/PUT on a
+                                ; RANDOM channel; the file size on a sequential
+                                ; one (D-LOC, measured on the CF-3300: D-LOCSEM).
+                                ; $FF $AC, oracle-taken by kwsweep's crunch pin.
 DSKF_TOKEN      equ     $A6     ; DSKF(d)  -> free clusters on the drive (=free KB)
 ; Random-access conversion functions (Phase 2c). $FF-prefixed function tokens,
 ; oracle-locked to the VG-8020 crunch (MKI$=$FF$AE, CVI=$FF$A8; MSX2 TH Table 2.20).
@@ -3338,7 +3342,15 @@ FLD_DESC        equ     $EF00   ; transient fielded-read descriptor [len][bytes:
 ; ⚠️ D-FCH §3.2: with FCH_CEIL=15 the repack array is 32 B and would run over
 ; GP_RECLEN/OO_RECLEN_CHAN/FILES_HASPAT/CAS_WANT at $F006..; it moves into the
 ; same freed $EA00 page-3 window as FCH_MODES.
-FCH_RECLENS     equ     $EA10   ; 32 B ($EA10..$EA2F); $EA92..$EAFF free (110 B)
+FCH_RECLENS     equ     $EA10   ; 32 B ($EA10..$EA2F). ~~$EA92..$EAFF free (110 B)~~
+                                ; \U0001f534 STALE SINCE D-DEFFN: $EA9C..$EB00 is FN_PAREA
+                                ; (rammap_sweep). A comment claiming free RAM is a
+                                ; claim; the band below was ASKED of the machine.
+FCH_RECNOS      equ     $EA40   ; 32 B: per-channel record number of the last GET/PUT
+                                ; (word, 1-based, 0 = none yet) -- what LOC(#n) reads on a
+                                ; RANDOM channel (D-LOC). Written beside GP_RECNO in
+                                ; basic/field.asm; a single global there was right for
+                                ; ONE open random file and wrong with two.
                                 ; ⚠️ THIS LINE READ "$EA39..$EAFF free" UNTIL
                                 ; D-FORVAR, AND IT WAS ONE BYTE STALE: D-LPTVERB
                                 ; took $EA39 for LPTPOS and never updated it. A
@@ -3530,7 +3542,7 @@ GP_LEFT         equ     $EA3C   ; record bytes still to move (2) -> ends $EA3E
 ; it — FOR nests to depth 9, GOSUB, crunch, PAINT, DRAW, PLAY, the string heap,
 ; disk I/O and FILES — all leaving it at 0 bytes changed (D-RAMFIX).
 CLR_SAVE        equ     $EA3E   ; fg+bg, in flight across a COLOR statement (2)
-; FREE-RAM $EA40..$EA92  the rest of the retired FOR_STK (82 B), same arc
+; FREE-RAM $EA60..$EA92   (D-LOC took $EA40..$EA5F for FCH_RECNOS, 2026-09-11; asked of the machine first)
 FOR_STK_END     equ     $EA92   ; RETIRED AS A STACK; the literal survives ONLY as
                                 ; FN_BASE's anchor below, which must not move.
 ; --- DEF FN: the parameter (shadow) area -----------------------------------

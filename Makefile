@@ -2135,6 +2135,12 @@ lof-acceptance: repack-machine $(DISK_TEST_DSK)
 	  python3 probes/disk/diskbasic_probe_lof.py --gate \
 	        $(if $(ONLY),--only '$(ONLY)',) $(if $(V),-v,)
 
+# --- LOC(#n): record number on a RANDOM channel, file size on a sequential one,
+# PER CHANNEL (D-LOC). The rows are D-LOCSEM's CF-3300 measurements plus the
+# two-channel row the shape exists for. Each row mounts its own fixture copy.
+loc-acceptance: repack-machine $(DISK_TEST_DSK)
+	ZEROBAS_BASIC_MACHINE=$(REPACK_MACHINE) python3 probes/disk/diskbasic_probe_loc.py
+
 # --- D-BADFNUM: the REJECTED-channel-number grid ------------------------------
 # docs/spec-basic-badfnum-channel-class.md. 12 channel-taking verbs x 5 channel
 # classes, SWEPT rather than sampled, plus 4 controls, 8 trappability rows and 10

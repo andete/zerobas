@@ -783,6 +783,9 @@ gp_defrec:
                 ld      de,1
 gp_haverec:
                 ld      (GP_RECNO),de
+                ; D-LOC: the per-channel copy of this number (FCH_RECNOS[GP_CHAN]) is
+                ; written SUB-SIDE in frnd_calc (basic/randio-body.inc, sub page 1):
+                ; here it cost 14 B of main page 1 and the image overran $8000.
                 ; 🔴 D-GETREC: RECORD 0 IS `Illegal function call`, AND TRAPPABLE.
                 ; `GET#1,0` and `PUT#1,0` are ERR 5 on the CF-3300; here they reached
                 ; fat_rand_get's own zero test, whose failure returns CF to gp_fin's

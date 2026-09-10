@@ -65,6 +65,22 @@
 ; FWR_DIRSEC/OFF = dir entry), and fills the record buffer with spaces.
 ;   out: Cy = 0 ok; Cy = 1 mount / dir-full / I/O error.
 fat_rand_open:
+                ; D-LOC: FCH_RECNOS[channel] := 0 on every random OPEN. The CF-3300
+                ; reads LOC = 0 on a fresh channel before any GET/PUT (D-LOCSEM r.get:
+                ; 0,3,7); a fresh zerobas boot read -1 there -- power-on garbage, since
+                ; the table is RAM nobody had written. oo_random stashes the channel in
+                ; OO_RECLEN_CHAN before it calls here; sub-side because main page 1 has
+                ; 4 B. Re-OPEN after CLOSE reading 0 is the same rule, unmeasured.
+                ld      a,(OO_RECLEN_CHAN)
+                ld      l,a
+                ld      h,0
+                add     hl,hl
+                ld      de,FCH_RECNOS
+                add     hl,de
+                xor     a
+                ld      (hl),a
+                inc     hl
+                ld      (hl),a
                 call    fat_mount
                 ret     c
                 ld      hl,DISK_FCB_NAME
@@ -335,6 +351,21 @@ mr_skip:
 ; neither routine caps anything. Clobbers A,DE,HL.
 frnd_calc:
                 call    load_reclen         ; GP_RECLEN = this channel's record size
+                ; D-LOC: FCH_RECNOS[GP_CHAN] := GP_RECNO, the per-channel record number
+                ; LOC(#n) reads (basic/expr.asm ev_ff_loc). Sited here, sub page 1,
+                ; because every random GET/PUT passes through this calc and the
+                ; resident form overran main page 1 by ~12 B. GP_CHAN and GP_RECNO
+                ; are page-3 cells, always mapped.
+                ld      a,(GP_CHAN)
+                ld      l,a
+                ld      h,0
+                add     hl,hl
+                ld      de,FCH_RECNOS
+                add     hl,de
+                ld      de,(GP_RECNO)
+                ld      (hl),e
+                inc     hl
+                ld      (hl),d
                 ld      hl,(GP_RECNO)
                 dec     hl                  ; HL = k (0..65534)
                 call    mul_reclen          ; A:HL = k * reclen, the byte offset

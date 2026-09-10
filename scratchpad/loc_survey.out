@@ -1,0 +1,6 @@
+  ok   s.seq  zb='26 , 26 , 26'   want='26 , 26 , 26'  cf3300='26 , 26 , 26'
+  ok   r.get  zb='0 , 3 , 7'      want='0 , 3 , 7'  cf3300='0 , 3 , 7'
+  ok   w.put  zb='0 , 4 , 0'      want='0 , 4 , 0'  cf3300='0 , 4 , 0'
+  wait t.two  zb=None             want='3 , 5'  (blocked by D-OPEN2, not gated)
+4 rows, 0 diverge: none
+refcache: 0 hit, 8 miss, 8 stored

@@ -393,7 +393,6 @@ CRUNCH_DIFF_PINNED = {
     "dski": "DSKI$  -> $EA",
     "dsko": "DSKO$  -> $D1",
     "copy": "COPY   -> $D6",
-    "loc":  "LOC    -> $FF $AC (two-byte function token)",
 }
 # 🎯 `LFILES` IS THE CONTROL THAT MAKES THIS A LIST AND NOT A CLASS: it is
 # a Disk-BASIC word too, it IS in kwtable.inc, and it crunches SAME. So "zerobas

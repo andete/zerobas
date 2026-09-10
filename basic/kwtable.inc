@@ -652,6 +652,10 @@ kwtable:
                 ; DETOKENISER that has to keep the namespaces apart, so the slice
                 ; carries LIST round-trip cases.
                 db      6,"LOCATE",1,LOCATE_TOKEN                ; $D8
+                db      3,"LOC",2,PEEK_PREFIX,LOC_TOKEN    ; D-LOC: $FF $AC, oracle-taken.
+                                                    ; AFTER LOCATE, never before: match_kw takes the
+                                                    ; FIRST prefix match, and "LOC" ahead of "LOCATE"
+                                                    ; crunched LOCATE as LOC+ATE (11 gates red, 2026-09-11)
     IF SWAP_RESIDENT
                 db      4,"SWAP",1,SWAP_TOKEN                    ; $A4
     ENDIF

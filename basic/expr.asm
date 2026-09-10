@@ -1001,6 +1001,7 @@ ev_ff_argtab:
                 db      INP_TOKEN           ; $90
                 db      EOF_TOKEN           ; $AB
                 db      LOF_TOKEN           ; $AD
+                db      LOC_TOKEN           ; $AC  (D-LOC)
                 db      DSKF_TOKEN          ; $A6
                 db      POS_TOKEN           ; $91  (cursor cluster; arg DISCARDED)
                 db      LPOS_TOKEN          ; $9C  (D-LPTVERB; arg DISCARDED too)
@@ -1122,7 +1123,11 @@ ev_ff_ckdone:
                 cp      EOF_TOKEN
                 jr      z,ev_ff_eof
                 cp      LOF_TOKEN
-                jr      z,ev_ff_lof
+                jp      z,ev_ff_lof         ; `jp` since D-LOC: the LOC test below
+                                            ; sits between this and its target
+                cp      LOC_TOKEN
+                jp      z,ev_ff_loc         ; `jp`: ev_ff_loc's body sits past jr range,
+                                            ; exactly the ev_ff_dskf landmine below
                 cp      DSKF_TOKEN
                 ; Landmine (spec §9.5, recurred from I1): the I2 dispatch rows just
                 ; below push ev_ff_dskf out of jr range, so it takes a jp here
@@ -1296,6 +1301,7 @@ ev_ff_lof:                                  ; LOF(n): length of open input file 
                 call    fch_check           ; D-BADFNUM: 5 / 59 / 52 -- see ev_ff_eof
                                             ; above, including why channel 0 never
                                             ; reaches the class test
+ev_ff_lof_checked:                          ; D-LOC joins here for a sequential channel
                 call    fch_mode_class      ; device/cassette channels have no length
                 jp      nc,ev_f_ifc         ; D-EVFERR: ERR 5, as ev_ff_eof above
                 ld      a,e
@@ -1330,6 +1336,29 @@ lof_nz:
                 ld      (FACTYP),a
                 jp      flt_to_int16        ; refresh DE: the silent address-domain
                                             ; contract every ev_f_* tail keeps
+
+ev_ff_loc:                                  ; LOC(n): D-LOC (2026-09-10)
+                ; Measured on the CF-3300 (D-LOCSEM, scratchpad/loc_probe.py): on a
+                ; RANDOM channel LOC is the record number of the last GET/PUT
+                ; (`GET #1,3` / `GET #1,7` -> 0,3,7; `PUT #1,4` -> 0,4,0); on a
+                ; SEQUENTIAL channel it is constant at the FILE SIZE across reads
+                ; (26,26,26) -- i.e. LOF's value. So: mode 4 (RANDOM) reads the
+                ; per-channel FCH_RECNOS word; any other open mode falls into
+                ; ev_ff_lof below. Same channel checks as LOF; the closed/device
+                ; faces are LOF's, unmeasured for LOC and stated as such.
+                call    fch_check           ; D-BADFNUM: 5 / 59 / 52, as LOF
+                call    fch_modes_ptr       ; HL = &FCH_MODES[E]
+                ld      a,(hl)
+                cp      4                   ; RANDOM (basic/files.asm: mode = 4)
+                jr      nz,ev_ff_lof_checked ; sequential/device: LOC == LOF
+                ld      hl,FCH_RECNOS
+                ld      d,0
+                add     hl,de
+                add     hl,de               ; HL = &FCH_RECNOS[E]
+                ld      e,(hl)
+                inc     hl
+                ld      d,(hl)              ; DE = the record number (int result)
+                ret
 
 ; fch_mode_class — the shared channel-mode classifier. A = FCH_MODES[E]; raises
 ; ERR 59 "file not open" if that is 0; CF set if E is a disk file channel

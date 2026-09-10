@@ -85,7 +85,7 @@ stmtpend-acceptance array-acceptance deffn-strict graphics-acceptance
 abort-acceptance interval-trap-acceptance clearpool-acceptance
 stackpool-acceptance trapdepth-acceptance trapsvc-acceptance ctlcross-acceptance ctllim-acceptance
 ramfree-acceptance txtceil-acceptance
-runline-acceptance keystr-acceptance
+runline-acceptance keystr-acceptance loc-acceptance
 cursor-acceptance time-acceptance namspc-acceptance arrdim-acceptance
 asciidigit-acceptance
 arylv-acceptance badfnum-acceptance beep-acceptance binfre-acceptance
