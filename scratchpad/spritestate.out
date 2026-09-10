@@ -1,0 +1,15 @@
+D-SPRSTATE — SPRITE's trap state across CLEAR, read from the debugger
+
+  CLEAR, still SERVICING   300 samples to emulated  724.0s   SPRITE saw: OFF
+                           final: SPRITE=OFF  TRAPENA=0 TRAPSVC=0  (no other entry live)
+
+  no-CLEAR (control)       300 samples to emulated  724.0s   SPRITE saw: SERVICING+PEND
+                           final: SPRITE=SERVICING+PEND  TRAPENA=0 TRAPSVC=1  (no other entry live)
+
+  CLEAR, trap killed       300 samples to emulated  724.0s   SPRITE saw: OFF
+                           final: SPRITE=OFF  TRAPENA=0 TRAPSVC=0  (no other entry live)
+
+🎯 THE READING: after a `CLEAR` taken while the SPRITE trap was SERVICING, its entry is **OFF** with TRAPENA=0, TRAPSVC=0.
+   That MATCHES what D-TRAPSTATE read for KEY and STRIG (entry wiped OFF, both counters zero) — so the divergence is NOT the entry surviving the CLEAR, and the mechanism lies elsewhere.
+
+⚠️ This observes the STATE. The CAUSE is a question for the code and is deliberately not inferred here.

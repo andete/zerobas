@@ -434,7 +434,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:13498 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:13544 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -599,7 +599,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:3442 (T-6FE392)8 (T-529ABE)` from `TODO.md:12435 (T-529ABE)`: a
+      `TODO.md:3442 (T-6FE392)8 (T-529ABE)` from `TODO.md:12481 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -4273,7 +4273,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:12435 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:12481 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -6563,7 +6563,53 @@ list. **When a slice lands, grep this list for what it just shipped.**
       n=1..10"* was the wrong half of a two-file disagreement
       [[two-sections-of-one-doc-disagreed]]. Corrected in place beside the
       original, 0 bytes.
-      🤖 AUTONOMOUS — the reference or a gate settles it; finishable unattended (SPRITE measured 2026-08-26; KEY/STRIG/STOP still argued).
+      ✅ **THE SPRITE STATE IS READ AT LAST — D-SPRSTATE, 2026-09-10 — AND IT
+      REFUTES THIS ENTRY'S OWN INFERENCE**
+      ([`scratchpad/spritestate_probe.py`](scratchpad/spritestate_probe.py),
+      [`.out`](scratchpad/spritestate.out)).
+      🎯 **STOP ASKING THE GUEST.** D-TRAPSTATE read `ZTRAP` with BASIC `PEEK`s,
+      which needs the program to reach a reporting line — exactly what the
+      starvation prevents, and exactly why this was left unmeasured. openMSX's
+      DEBUGGER has no such problem: a self-rescheduling `after time` proc dumps
+      all 18 entries plus `TRAPENA`/`TRAPSVC` on the EMULATED clock, no matter
+      what the guest is doing. **300 samples per case, to emulated 724 s.**
+      | case | SPRITE entry | TRAPENA | TRAPSVC |
+      |---|---|---|---|
+      | `CLEAR`, still SERVICING | **OFF** | 0 | 0 |
+      | no-`CLEAR` (control) | **SERVICING+PEND** | 0 | 1 |
+      | `CLEAR`, trap killed | OFF | 0 | 0 |
+      🔴 **SO "ITS ENTRY IS NOT LEFT OFF" IS FALSE.** This entry inferred that
+      from the fire count — *"SPRITE re-fires 250× through the same `CLEAR`, so
+      its entry is NOT left OFF: the verbs differ at the level of STATE"* — and
+      flagged it as an inference. Measured, the entry **is** wiped to OFF with
+      both counters zero, which is precisely what D-TRAPSTATE read for `KEY` and
+      `STRIG`. The three verbs agree at the state level; the divergence is
+      somewhere else entirely [[a-mechanism-inferred-from-one-observation]].
+      🟢 **THE CONTROL IS WHAT MAKES THAT A READING.** Without `CLEAR` the same
+      sampler sees `SERVICING+PEND` with `TRAPSVC=1` at the same instants, so an
+      `OFF` is the machine's answer and not a sampler that cannot see a live
+      entry — the `aux`-sentinel trap D-TRAPSTATE fell into one level along.
+      ⚠️ **BOUNDED: THE TRANSITION ITSELF WAS NOT OBSERVED.** The first sample
+      lands after the program is already underway (throttle off), so what is read
+      is the SETTLED state, not the `SERVICING` → `OFF` edge. That is enough to
+      refute "not left OFF" and not enough to time the wipe.
+      ➡️ **WHAT REMAINS IS NARROWER THAN IT WAS**: the 250 fires happen with the
+      entry OFF and both counters zero, so the next question is what re-arms or
+      re-dispatches SPRITE without going through the entry — a question for the
+      CODE, deliberately not guessed here.
+      🔬 **THREE APPARATUS FAULTS ON THE WAY, EACH CAUGHT BY A REFUSAL RATHER
+      THAN BY ME.** (1) Driving it through `omsx_repl.run_cases` with a
+      hand-picked `step` got *"boot-per-case delivery was mangled; nothing was
+      measured"* — the machine stored 201, 305, 4010 where 20, 30, 40 were typed.
+      Fixed by IMPORTING `basic_probe_sprite_trap`'s `_INJECT_TCL` / `_schedule`
+      / `_launch` rather than inventing timing. (2) `_launch` **owns its
+      `out_path` and `os.unlink`s it**, so handing it the dump path deleted the
+      dump and every row read `NO DUMP` — indistinguishable from Tcl that never
+      ran. (3) Diagnosed only by running the same Tcl standalone **with stderr
+      visible** (`_launch` sends both streams to `DEVNULL`), where it wrote a
+      perfect table — which located the fault in the plumbing, not the script.
+      🤖 AUTONOMOUS — the conversion is 4 of 4 and the state question is answered;
+      what is left is the SPRITE re-dispatch mechanism, in the code.
 
 - [ ] 💰 **MAIN PAGE 1 WAS 1 B FREE ON 2026-08-23 AT `4db8010` — NOTHING LANDS
       THERE WITHOUT FUNDING FIRST.** Filed as its OWN open item because this
