@@ -1,0 +1,25 @@
+row                         cf3300                      zb
+a.ch2only                       OK                      OK   SAME
+d.ts2ch1                        OK                      OK   SAME
+t.seq1                          OK                      OK   SAME
+b.1then2                        OK                      OK   SAME
+c.2then1                        OK                      OK   SAME
+g.nolen2                        OK                      OK   SAME
+h.mf3                           OK                      OK   SAME
+t.seq2                          OK                      OK   SAME
+t.seq1rnd2                      OK                      OK   SAME
+t.rnd1seq2                      OK                      OK   SAME
+t.seqwrite                      OK                      OK   SAME
+e.same2        <File already open>                      OK   DIFF
+n.nomaxf         <Bad file number>       <Bad file number>   SAME
+v.1dev                          OK                      OK   SAME
+v.2dev                          OK                      OK   SAME
+v.dev1dsk2                      OK                      OK   SAME
+v.dsk1dev2                      OK                      OK   SAME
+v.devbare                       OK                      OK   SAME
+
+DIFF: 1/18  e.same2
+🎯 a.ch2only / d.ts2ch1 / t.seq1 are the CONTROLS -- one channel, every shape,
+   green on both. n.nomaxf is `Bad file number` on both (the default ceiling is 1),
+   which is what says MAXFILES=2 is doing its job and the fixture is sound.
+refcache: 0 hit, 36 miss, 36 stored

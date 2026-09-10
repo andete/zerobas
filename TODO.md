@@ -434,7 +434,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:13737 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:13775 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -599,7 +599,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:3480 (T-6FE392)8 (T-529ABE)` from `TODO.md:12674 (T-529ABE)`: a
+      `TODO.md:3518 (T-6FE392)8 (T-529ABE)` from `TODO.md:12712 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -1088,6 +1088,44 @@ list. **When a slice lands, grep this list for what it just shipped.**
       diverges but to a different face is still `known` to `filed_row_sweep`, and
       that is the design question this entry opened. Pinning 10 deferrals does
       not touch the 54 pinned divergent rows. **The item stays open for that.**
+      💰 **PRICED AT LAST, 2026-09-10 (D-FACEPRICE) — the entry's own "Not
+      priced" is now a number.** Counted from
+      [`tools/filed-row-known.txt`](tools/filed-row-known.txt), excluding the
+      declared NO-VERDICT probes:
+
+          probes with SCORED pinned divergent rows        13   (60 rows)
+            already carry an exact-value pin
+              basic_probe_nodisk       PINNED               8 rows
+              asciidigit               via its GATE TWIN
+                                       basic_probe_asciidigit.PINNED   2 rows
+            NO face pin anywhere      11 probes            50 rows
+
+      🎯 **SO THE REMAINING WORK IS 50 ROWS ACROSS 11 PROBES, AND THE TEMPLATE
+      ALREADY EXISTS THREE TIMES** — `basic_probe_nodisk`'s `PINNED`,
+      `basic_probe_asciidigit`'s, and D-DEFERPIN's `probe_report.Deferral` for the
+      deferral half. It is per-probe mechanical work, not a missing design; the
+      design question this entry opened has been answered by those three.
+      ⚠️ **AND `asciidigit` IS THE SHAPE TO WATCH**: the pinned probe is the
+      SCRATCHPAD one, while the pin that would catch drift lives in its GATE twin.
+      Coverage exists, but not at the probe the sweep names — so a count taken off
+      the pin file alone reads 2 rows worse than the tree is.
+      🟢 **AND THE BACKLOG IS LATENT, NOT BURNING — SPOT-CHECKED 14 OF THE 50
+      TODAY, ALL FACES INTACT** (`open2` 1, `deffn_alias` 2, `keystr` 5,
+      `keylist` 6; [`.out`](scratchpad/open2_recheck.out),
+      [`.out`](scratchpad/deffnalias_recheck.out),
+      [`.out`](scratchpad/keystr_recheck.out),
+      [`.out`](scratchpad/keylist_recheck.out)):
+      • `e.same2` — `<File already open>` on the CF-3300, `OK` here: matches
+        *"accepted here and refused on the CF-3300"*.
+      • `o.alias` 505 vs 503, `o.aliasnest` 909 vs 903, **both controls agreeing**.
+      • `keystr` all five: refs carry the default strings, zerobas all-zero —
+        *"defaults absent on cold boot"*.
+      • `keylist` all six: refs `0 5 0 5 5 0`, zerobas `2` throughout — *"ERR 2 to
+        every form while the references accept 1..10 and raise ERR 5 outside"*.
+      ⚠️ **THAT IS A 28% SAMPLE AND A NEGATIVE RESULT, NOT A CLEAN BILL.** The
+      class is real — this entry records five instances — and 36 rows are still
+      unchecked and unpinned. What the sample buys is URGENCY: no face in it has
+      rotted, so this is worth doing properly rather than in a hurry.
 
 - [ ] 🔬 **THE FILED-ROW DENOMINATOR WAS UNREADABLE FOR A THIRD OF ITS CORPUS, AND
       A ROTTED PROBE HID IN THE SAME BUCKET (2026-09-08, D-FRSKIND).** A full run of
@@ -4311,7 +4349,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:12674 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:12712 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
