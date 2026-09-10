@@ -434,7 +434,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:13954 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:14002 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -599,7 +599,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:3623 (T-6FE392)8 (T-529ABE)` from `TODO.md:12891 (T-529ABE)`: a
+      `TODO.md:3623 (T-6FE392)8 (T-529ABE)` from `TODO.md:12939 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -4454,7 +4454,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:12891 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:12939 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -7408,9 +7408,57 @@ list. **When a slice lands, grep this list for what it just shipped.**
       fault this entry keeps finding in the things it measures
       [[a-readout-blind-to-its-own-subject]]. Fixed to name the ladder it
       actually ran.
-      ➡️ **NEXT**: the two `ctp_*` subject passes, then the full battery for
-      whatever survives — which is the only scorer that can turn "still green"
-      into "unobserved".
+      ✅ **CLOSED 2026-09-10 — ALL 21 SCORED TO THE CEILING THAT EXISTS:
+      17 OBSERVED, 4 NOT** ([`scratchpad/dupobs_emu.py --battery`](scratchpad/dupobs_emu.py),
+      [`.out`](scratchpad/dupobs_emu_battery.out)). The two `ctp_*` subject
+      ladders ran first and both stayed green (`clearpool` 87 s + `ctllim` 391 s
+      each), so all seven survivors went to the battery pass.
+
+          observed by the EMULATOR TIER   elas_err     fldwidth-acceptance
+                                          pl_typeerr   graphics + play
+                                          tm_raise     time + play
+          NOT OBSERVED by any behavioural unit the battery has
+                                          ctp_err_pop  ctp_link_err
+                                          nm_fail      sst_overflow
+
+      🔴 **AND THE FILED NEXT STEP ABOVE NAMED THE WRONG SCORER — USING IT
+      WOULD HAVE ANSWERED THIS ITEM WRONGLY, IN THE DIRECTION THAT CLOSES IT.**
+      *"the full battery … is the only scorer that can turn 'still green' into
+      'unobserved'"* is false: `patch-freshness-check` compares the committed
+      `.ips`/`.bps` against the built ROM, so **any** cut reddens it by
+      construction. Measured, not reasoned — with `ctp_err_pop` cut,
+      `make patch-freshness-check` returns **rc=2**, and green again once
+      restored. A `gates-full` pass would have marked all seven "observed" via a
+      gate that reads ROM BYTES rather than behaviour. So the scorer is the
+      **emulator tier only** (81 units; the 39 static ones excluded, and the list
+      is taken from `run_gates.STATIC` itself rather than re-typed — one
+      denominator). That is a ceiling, not a shortcut: "still green" here means
+      no behavioural gate in the battery reaches the site.
+      🔴 **THE FIRST BATTERY RUN COULD NOT NAME ITS OWN RED.** The verdict
+      said `observed by the EMULATOR TIER` and stopped — the ladder pass can name
+      its suite because it runs one at a time, and this pass runs 81 at once into
+      a `probe_tmp` log that is deleted at exit. An unnamed outcome reads as no
+      outcome [[an-unnamed-outcome-reads-as-no-outcome]]; the runner parses
+      `run_gates`' own `RED:` line now, and **that fix is what produced the
+      finding below** — without it the run would have reported three anonymous
+      reds and hidden it.
+      🎯 **THE SUBJECT-MATCHED LADDER WENT 1 FOR 4, AND THE THREE MISSES WERE
+      NOT NEAR MISSES.** The heuristic is *the name says what the tail is about*:
+      • `elas_err` → its ladder was `array`, `clearpool`; the unit that sees it is
+        **`fldwidth-acceptance`**;
+      • `pl_typeerr` → ladder `sound`, `tmfp`; seen by **`graphics` + `play`**;
+      • `tm_raise` → ladder `tmfp`, `intarg`, `logicops`; seen by **`time` + `play`**.
+      Only `gosub_stk_over` → `stackpool-acceptance` was predicted. A shared
+      error tail is reached from wherever its callers are, and its NAME describes
+      the error it raises, not the statement that raises it
+      [[a-shared-tail-is-not-a-decision]]. **A subject ladder is a cost
+      optimisation, never evidence** — a green one says less than it looks.
+      ➡️ **WHAT THE 4 LEAVE OWED IS THE ITEM'S ORIGINAL POINT**, not a new
+      question: `ctp_err_pop`, `ctp_link_err`, `nm_fail` and `sst_overflow` are
+      exactly *"a site nothing exercises [that] stays green through any mistake
+      made to it"*. Each needs a row that reaches it, or a written decline saying
+      why it cannot be reached from BASIC. The per-site row set for the other 27
+      aliases is still owed separately.
       🤖 AUTONOMOUS — the reference or a gate settles it; finishable unattended (roster + count fixed 2026-08-26; the 21 knives remain, now priced).
 
 - [ ] ⚠️ **A probe with an honest `rc` that NO battery collects is not an oracle.**

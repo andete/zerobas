@@ -47,6 +47,7 @@ UNOBSERVED = ["ctp_err_pop", "ctp_link_err", "ed_done", "elas_err", "ers_undef",
               "evmc_sqr_err", "gosub_stk_over", "nm_fail", "pl_typeerr",
               "sst_overflow", "tm_raise"]
 SUBJECT_PASS = False
+BATTERY_PASS = False
 LADDER = ["error-acceptance", "missing-acceptance", "penderr-acceptance",
           "error-trap-acceptance"]
 
@@ -73,6 +74,42 @@ SUBJECT = {
 }
 
 
+# \U0001f534 THE FULL BATTERY IS THE WRONG SCORER FOR THIS KNIFE, AND USING IT
+# WOULD HAVE ANSWERED THE ITEM WRONGLY. `make gates-full` includes the STATIC
+# tier, and `patch-freshness-check` compares the committed `.ips`/`.bps` against
+# the ROM -- so ANY cut reddens it. MEASURED, not reasoned: with `ctp_err_pop`
+# cut, `make patch-freshness-check` returns **rc=2**, and it is green again once
+# the cut is restored. Scoring with the full battery would therefore have marked
+# all seven remaining canonicals "observed" via a gate that reads ROM BYTES
+# rather than behaviour -- completing the item with a false answer and no sign
+# of it [[a-coverage-row-whose-geometry-cannot-reach-the-case]].
+# 🎯 So the battery pass runs the EMULATOR TIER ONLY, and it takes the list from
+# `run_gates.py` itself rather than re-typing it -- one denominator.
+def emulator_only_cmd():
+    import importlib.util
+    spec = importlib.util.spec_from_file_location(
+        "run_gates", os.path.join(ROOT, "tools", "run_gates.py"))
+    rg = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(rg)
+    return ("python3 tools/run_gates.py --no-retry --exclude "
+            + ",".join(rg.STATIC))
+
+
+# `run_gates.py` prints one `RED: <unit> <unit> ...` line. Parse THAT rather
+# than counting non-zero rc lines -- it is the same denominator the battery
+# itself reports, and a retry that recovers a flake is already excluded from it.
+def red_units(log):
+    try:
+        txt = open(log, encoding="utf-8", errors="replace").read()
+    except OSError:
+        return "UNREADABLE LOG -- the red cannot be named"
+    for ln in txt.split("\n"):
+        if ln.startswith("RED:"):
+            names = ln[4:].split()
+            return f"{len(names)} unit(s) -- " + " ".join(names)
+    return "no RED: line in the log -- rc was non-zero for another reason"
+
+
 def sh(cmd, log):
     with open(log, "w") as fh:
         return subprocess.call(cmd, shell=True, cwd=ROOT, stdout=fh,
@@ -80,17 +117,20 @@ def sh(cmd, log):
 
 
 def main() -> int:
-    global SUBJECT_PASS
+    global SUBJECT_PASS, BATTERY_PASS
     args = sys.argv[1:]
     SUBJECT_PASS = "--subject" in args
-    only = [a for a in args if a != "--subject"] or UNOBSERVED
+    BATTERY_PASS = "--battery" in args
+    only = [a for a in args if not a.startswith("--")] or UNOBSERVED
     bad = [c for c in only if c not in UNOBSERVED]
     if bad:
         print(f"\U0001f534 {bad} are not in the eleven this run is about; "
               f"refusing rather than silently scoring something else.")
         return 2
     print(f"D-DUPOBS2: {len(only)} canonical(s), "
-          + (f"SUBJECT-matched ladders\n" if SUBJECT_PASS
+          + ("scored by the EMULATOR TIER (the static tier is EXCLUDED)\n"
+             if BATTERY_PASS
+             else "SUBJECT-matched ladders\n" if SUBJECT_PASS
              else f"ladder {LADDER}\n"))
     res = {}
     for c in only:
@@ -114,16 +154,30 @@ def main() -> int:
                 res[c] = "\U0001f534 INERT (ROM unchanged)"
                 print(f"  {c:16} \U0001f534 INERT -- the cut never reached the ROM")
                 continue
-            rungs = (SUBJECT.get(c, []) if SUBJECT_PASS
-                     else LADDER)
-            verdict = ("\U0001f534 not observed by "
-                       + ("its subject suites" if SUBJECT_PASS else "the ladder"))
-            for suite in rungs:
-                rc = sh(f"caffeinate -i -s make {suite}",
-                        probe_tmp.tmp(f"d2_{c}_{suite}.log"))
-                if rc:
-                    verdict = f"observed by {suite}"
-                    break                 # a red is conclusive; stop the ladder
+            if BATTERY_PASS:
+                log = probe_tmp.tmp(f"d2_{c}_battery.log")
+                rc = sh("caffeinate -i -s " + emulator_only_cmd(), log)
+                # \U0001f534 "OBSERVED BY THE EMULATOR TIER" NAMES NO OUTCOME.
+                # The ladder pass can say `observed by missing-acceptance`
+                # because it runs one suite at a time; the battery pass runs 81
+                # at once and threw the log away on exit, so the first run of
+                # this mode reported a red it could not name -- and the NAME is
+                # the payload, because it says which suite the SUBJECT ladder
+                # should have contained [[an-unnamed-outcome-reads-as-no-output]].
+                verdict = ("\U0001f534 NOT OBSERVED by the emulator tier"
+                           if not rc else
+                           "observed by the EMULATOR TIER: " + red_units(log))
+            else:
+                rungs = (SUBJECT.get(c, []) if SUBJECT_PASS else LADDER)
+                verdict = ("\U0001f534 not observed by "
+                           + ("its subject suites" if SUBJECT_PASS
+                              else "the ladder"))
+                for suite in rungs:
+                    rc = sh(f"caffeinate -i -s make {suite}",
+                            probe_tmp.tmp(f"d2_{c}_{suite}.log"))
+                    if rc:
+                        verdict = f"observed by {suite}"
+                        break             # a red is conclusive; stop the ladder
             res[c] = verdict
             print(f"  {c:16} {verdict}")
         finally:
@@ -137,12 +191,28 @@ def main() -> int:
     # and the subject pass runs ladders of ONE to THREE. A verdict line that
     # miscounts its own denominator is the same fault this entry keeps finding
     # in the things it measures [[a-readout-blind-to-its-own-subject]].
-    which = ("its own subject suites" if SUBJECT_PASS
-             else f"these {len(LADDER)} suites")
-    print(f"\n⚠️ 'still green' means NOT OBSERVED BY {which.upper()}. It does "
-          "not mean unobserved by the battery -- that needs the whole battery, "
-          "and saying otherwise would be the over-claim this entry keeps "
-          "catching in its own earlier cuts.")
+    if BATTERY_PASS:
+        # \U0001f534 AND THE FULL BATTERY IS NOT AVAILABLE AS THE SCORER, WHICH
+        # THE ENTRY'S FILED NEXT STEP ASSUMED IT WAS. `patch-freshness-check`
+        # compares the committed .ips/.bps against the built ROM, so ANY cut
+        # reddens it: measured, with `ctp_err_pop` cut it returns rc=2, and
+        # green again once restored. Scoring with `make gates-full` would have
+        # marked every remaining canonical "observed" via a gate that reads ROM
+        # BYTES rather than behaviour -- the whole roster answered wrongly, in
+        # the direction that closes the item. So the ceiling here is the
+        # emulator tier, and it is a ceiling, not a shortcut.
+        print("\n⚠️ 'still green' means NOT OBSERVED BY THE WHOLE EMULATOR TIER"
+              " -- every behavioural unit the battery has. It is NOT 'unobserved"
+              " by the battery': the static tier is excluded on purpose, because"
+              " `patch-freshness-check` reddens on ANY cut by construction and"
+              " would score every site observed for free.")
+    else:
+        which = ("its own subject suites" if SUBJECT_PASS
+                 else f"these {len(LADDER)} suites")
+        print(f"\n⚠️ 'still green' means NOT OBSERVED BY {which.upper()}. It "
+              "does not mean unobserved by the battery -- that needs the whole "
+              "battery, and saying otherwise would be the over-claim this entry "
+              "keeps catching in its own earlier cuts.")
     return 0
 
 

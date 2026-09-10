@@ -1,0 +1,15 @@
+D-DUPOBS2: 7 canonical(s), scored by the EMULATOR TIER (the static tier is EXCLUDED)
+
+  ctp_err_pop      🔴 NOT OBSERVED by the emulator tier
+  ctp_link_err     🔴 NOT OBSERVED by the emulator tier
+  elas_err         observed by the EMULATOR TIER: 1 unit(s) -- fldwidth-acceptance
+  nm_fail          🔴 NOT OBSERVED by the emulator tier
+  pl_typeerr       observed by the EMULATOR TIER: 2 unit(s) -- graphics-acceptance play-acceptance
+  sst_overflow     🔴 NOT OBSERVED by the emulator tier
+  tm_raise         observed by the EMULATOR TIER: 2 unit(s) -- time-acceptance play-acceptance
+
+=== 3/7 newly OBSERVED by the ladder ===
+  observed:     elas_err, pl_typeerr, tm_raise
+  still green:  ctp_err_pop, ctp_link_err, nm_fail, sst_overflow
+
+⚠️ 'still green' means NOT OBSERVED BY THE WHOLE EMULATOR TIER -- every behavioural unit the battery has. It is NOT 'unobserved by the battery': the static tier is excluded on purpose, because `patch-freshness-check` reddens on ANY cut by construction and would score every site observed for free.
