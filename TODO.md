@@ -434,7 +434,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:13613 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:13688 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -599,7 +599,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:3442 (T-6FE392)8 (T-529ABE)` from `TODO.md:12550 (T-529ABE)`: a
+      `TODO.md:3480 (T-6FE392)8 (T-529ABE)` from `TODO.md:12625 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -2113,6 +2113,44 @@ list. **When a slice lands, grep this list for what it just shipped.**
       💰 **UNPRICED.** Six specifiers over a float formatter; needs its own slice
       and its own rows before any byte.
       🤖 AUTONOMOUS — the references settle every row; the price is the open part.
+
+- [ ] 🙋 **A PER-KEYWORD TABLE (implementation · error handling · performance) —
+      PARKED BY JOOST 2026-09-10, WITH THE FEASIBILITY MEASURED.** Asked for as
+      three columns over every BASIC keyword. The row denominator is solid —
+      **155 entries in [`basic/kwtable.inc`](basic/kwtable.inc)** plus the ~8 the
+      reference tokenises and zerobas does not — but the three columns are not
+      remotely equal, and a three-column table invites reading them as if they
+      were [[an-instrument-can-fail-the-way-the-thing-it-replaced-failed]].
+      🔴 **THREE NAIVE VERSIONS OF THE IMPLEMENTATION COLUMN WERE BUILT AND ALL
+      THREE COLLAPSED, IN THE SAME DIRECTION — 100%:**
+      | attempt | result | why it is wrong |
+      |---|---|---|
+      | grep probe sources for the keyword | 155/155 | `AND` scored 91 — an English word in DOCSTRINGS |
+      | typed BASIC literals only (`ast`, docstrings excluded) | 155/155 | still 100% |
+      | exclude the dominant suite | 148/155 | `basic_probe_lnblank.py` **types all 155 keywords**, for blank-line handling, not semantics |
+      🎯 **SO "IS THIS KEYWORD TYPED SOMEWHERE" IS ~100% AND MEANS NOTHING.** The
+      column anyone actually wants is *"is this keyword's behaviour
+      DIFFERENTIALLY SCORED, by a row that goes red if it breaks"* — and that
+      needs to know **which row is ABOUT which keyword**, which nothing records.
+      ➡️ **THE UNLOCK IS A ONE-LINE `subject:` TAG PER GATE ROW**, naming the
+      keyword the row exists to test. Mechanical, bounded, and it would sharpen
+      the filed-row sweep for free. `kwsweep` is a partial head start: 55 rows,
+      **37 scored**, 18 crunch-only.
+      📏 **COLUMN 2 CAN BE COVERAGE, NEVER COMPLETENESS.** **70/155 (45%)** of
+      keywords are typed inside an error-scoped suite; `missing-acceptance` covers
+      21 verbs and the rest (`lineerr`, `penderr`, `onerr0`) are CROSS-CUTTING,
+      not per-verb. Nobody has enumerated the error SURFACE of a keyword, so
+      "how complete" has no denominator to be a fraction of.
+      🔴 **COLUMN 3 HAS NO DATA AT ALL.** `interpspeed_probe` measures **8
+      synthetic rows** (FOR/GOTO/WHILE/arith/str), not keywords, and the only
+      filed figure is a whole-interpreter band of 2.5–3.8×. A per-keyword accuracy
+      column needs a new benchmark harness AND a decision about what "accurate"
+      means (cycles against the reference? wall time? both machines?). That is an
+      arc, not a slice — and it is the column with the least behind it today.
+      🙋 **NEEDS-JOOST** — parked at his request on 2026-09-10. The recommendation
+      on the table when it was parked: **build column 1 alone**, via the `subject:`
+      tag, and ship one column that is true rather than three where two are
+      decoration.
 
 - [ ] 📊 **THE CORRECTNESS SCOREBOARD — WHAT "FULL CORRECTNESS" ACTUALLY
       REQUIRES, 2026-09-02.** Built the moment Joost's sequencing (below) made
@@ -4273,7 +4311,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:12550 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:12625 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -9815,6 +9853,43 @@ list. **When a slice lands, grep this list for what it just shipped.**
       genuinely more expensive than filed, and worth asking whether an
       error-code-only acceptance row is the right shape before writing six of
       them.** 2 to be re-filed under the arc mask.
+      🔬 **M-PLOTCLIP, 2026-09-10: THE ONE ARM 35 MUTATIONS NEVER TRIED — CUT
+      THE CLIP SO IT STOPS CLIPPING**
+      ([`scratchpad/plotclip_knife.py`](scratchpad/plotclip_knife.py),
+      [`.out`](scratchpad/plotclip_knife.out)). `gfx_plot_cur`'s three bare `ret`s
+      become `nop`s, so an off-screen coordinate is plotted instead of dropped.
+      Of the 35 arms in [`scratchpad/gate_blindness.json`](scratchpad/gate_blindness.json)
+      only `M-YBOUND` touches that routine, and it NARROWS the bound (`cp 192` →
+      `cp 191`) — narrowing keeps off-screen plots clipped, so a row asserting
+      "off-screen draws nothing" correctly never moved. `M-CLAMPX`/`M-CLAMPY`
+      sound like the site and are not: they cut `gfx_clamp_coords`.
+      🟢 **RESULT 1 — THE SIX ERROR-CODE ROWS HELD, 6 of 6.** `off_ok`,
+      `clip_offscr_ok`, `clip_neg_ok`, `empty`, `bare_b`, `offscreen` all unmoved
+      under the strongest cut available at their own clip site. **The "needs a
+      check SYNTHESISED" verdict above is now MEASURED rather than inferred from
+      walking the code** — removing the clip changes what is drawn and raises
+      nothing, and a row that reads only the error code cannot see it.
+      🔴 **RESULT 2 — MY PREDICTION FAILED, 0 of 4, AND THAT IS THE USEFUL HALF.**
+      I predicted the four PIXEL clip rows (`clip_noop_x300`, `clip_noop_xneg`,
+      `clip_noop_y192`, `clip_alloff`) would move, reasoning that they read the
+      pixel plane and assert an off-screen plot changes nothing. They did not.
+      **So they are not about `gfx_plot_cur` at all**: their coordinates are
+      refused earlier, by the RESIDENT's own off-screen decision
+      ([`basic/graphics.asm:101`](basic/graphics.asm:101)), and never reach the
+      tenant. ➡️ Their arm is a cut that makes an off-screen PSET **plot** — not
+      one that makes it raise, which is why `M-PSETOFF` left them quiet too
+      [[a-coverage-row-whose-geometry-cannot-reach-the-case]].
+      🎯 **RESULT 3 — `arc_ovf_r260` AND `arc_ovf_wrap300` MOVED, WHICH REFUTES
+      THE PARAGRAPH ABOVE.** This entry records them as *"ONE-SIDED DETECTORS…
+      blank on BOTH machines now, and a both-blank row is vacuous"*. The battery
+      is green at base, so a moved row went PASS → FAIL: **they detect this
+      mutation, so they are not vacuous** and do not belong in the re-file pile on
+      that ground. 13 further rows moved (`circ_ovf_*`, `ell_ovf_*`, `clampS_*`),
+      so the arm is emphatically not inert; ROM restored byte-identical.
+      💰 **REVISED AGAIN: the nine are 1 done + 6 measured-hard + 2 that are LIVE
+      detectors after all.** The six remain the open question this entry already
+      asked — whether an error-code-only acceptance row is worth six synthesised
+      checks — now with evidence that no cheaper arm exists at the clip site.
       🤖 AUTONOMOUS — the reference or a gate settles it; finishable unattended (no his-decision signal found).
 
 - [x] 🔴 **PHASE Q3's CONTROL SHARES ITS SUBJECT'S STATEMENT, SO THE PAIR CANNOT

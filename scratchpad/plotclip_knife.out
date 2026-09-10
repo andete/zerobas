@@ -1,0 +1,8 @@
+base ROMs 2acb539258e8   389 rows read
+M-PLOTCLIP: roms=c34d78ce4442   15 row(s) moved in total
+  predicted-to-MOVE that moved : []  (0/4)
+  predicted-to-HOLD that held  : ['bare_b', 'clip_neg_ok', 'clip_offscr_ok', 'empty', 'off_ok', 'offscreen']  (6/6)
+  other rows moved             : 15  ['arc_ovf_r260', 'arc_ovf_wrap300', 'arcmask_a137', 'circ_ovf_r284', 'circ_ovf_r300', 'circ_ovfc_r200', 'circ_ovfc_r255', 'clampS_start', 'clampS_wide', 'ell_a01r255', 'ell_ovf_a05r528', 'ell_ovf_a2r528']
+
+🔴 NOT EXACT — the four pixel clip rows are NOT falsifiable by a cut at the routine they are about, and the six error-code rows held.
+restored 2acb539258e8 (base 2acb539258e8) OK
