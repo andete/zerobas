@@ -956,7 +956,8 @@ def _rm(path: str) -> None:
 
 def _why_missing(machine: str, got: int, want: int, killer: str | None,
                  rc: int, elapsed: float, out_lines: int, err_path: str,
-                 hb_emu: float | None = None) -> str:
+                 hb_emu: float | None = None,
+                 hb_rate: float | None = None) -> str:
     """ONE line naming WHY a capture is missing -- the evidence the run already
     held and used to throw away.
 
@@ -1019,13 +1020,29 @@ def _why_missing(machine: str, got: int, want: int, killer: str | None,
             # already in this message and is the strongest liveness signal there
             # is: the runs that provoked this had written 1886, 90 and 88 lines.
             emu = (f"last beat at emulated {hb_emu:.1f}s"
-                   f" ({hb_emu / elapsed:.3f}x realtime)"
+                   f" ({hb_emu / elapsed:.3f}x over the whole run)"
                    if hb_emu is not None and hb_emu == hb_emu and elapsed > 0
                    else "no emulated instant was recorded")
-            cause += (f"  ({emu}; a host-clock deadline CANNOT separate a frozen"
-                      f" emulator from one starved of CPU -- read that figure and"
-                      f" the line count below together, and check host load"
-                      f" before calling this REAL)")
+            # 🎯 D-STALLRATE: THE FIGURE THAT ACTUALLY SEPARATES THEM. The rate
+            # over the FINAL beat interval says what emulation was doing in the
+            # moment before it went quiet; the whole-run average above cannot,
+            # because a fast boot then a freeze averages to the same place as a
+            # slow crawl throughout.
+            if hb_rate is None:
+                rate = ("fewer than two beats arrived, so there is no final"
+                        " interval to rate -- this run was killed during boot")
+            elif hb_rate < 0.05:
+                rate = (f"the final beat interval ran at {hb_rate:.3f}x realtime"
+                        f" -- emulation was ALREADY CRAWLING when the beats"
+                        f" stopped, which is what a STARVED host looks like")
+            else:
+                rate = (f"the final beat interval ran at {hb_rate:.3f}x realtime"
+                        f" -- emulation was HEALTHY and then stopped, which is"
+                        f" what a genuine freeze or crash looks like")
+            cause += (f"  ({emu}; {rate}; a host-clock deadline CANNOT by itself"
+                      f" separate a frozen emulator from one starved of CPU --"
+                      f" read those figures and the line count below together,"
+                      f" and check host load before calling this REAL)")
     elif rc:
         sig = f"signal {-rc}" if rc < 0 else f"exit {rc}"
         cause = (f"openMSX terminated ON ITS OWN ({sig}) after {elapsed:.0f}s "
@@ -1166,6 +1183,24 @@ def _run_batch(machine: str, cases: list[tuple[str, list[str]]], *,
         start = time.time()
         last_beat = now = start             # wall time of the most recent heartbeat
         last_mtime = None                   # (`now` pre-bound: the loop may not run)
+        # 🔴 D-STALLRATE: KEEP THE LAST **TWO** BEATS, VALUE AND WALL TIME. Until
+        # now the loop watched only the file's MTIME and the kill message read the
+        # file's CONTENT once, at the end -- so it could report the last emulated
+        # instant but not whether emulation was ADVANCING when the beats stopped.
+        # D-STALLSLOW's first cut tried to get that from the single last value via
+        # a rate threshold and its own falsification vector killed it: 12.4
+        # emulated seconds in 947 wall is 0.013x, plainly advancing and plainly
+        # below any line drawn there. The LAST value cannot separate "froze at
+        # 12.4s" from "starved at 12.4s". Two consecutive beats can: they give the
+        # INSTANTANEOUS emulation rate in the moment before the beats stopped.
+        #   ~1x then silence  -> the emulator was healthy and then stopped: a
+        #                        genuine freeze or crash, and the kill is REAL.
+        #   ~0.01x then silence -> it was already crawling: the host was starving
+        #                        it, and the kill is contention, not a defect.
+        # ⚠️ THE WHOLE-RUN AVERAGE ALREADY IN THE MESSAGE CANNOT DO THIS. It
+        # divides the last instant by total wall, so a fast boot followed by a
+        # freeze and a slow crawl throughout average to similar figures.
+        beats: list[tuple[float, float]] = []   # (emulated instant, wall time)
         while proc.poll() is None:
             time.sleep(0.05)
             now = time.time()
@@ -1175,6 +1210,13 @@ def _run_batch(machine: str, cases: list[tuple[str, list[str]]], *,
                 m = None
             if m is not None and m != last_mtime:
                 last_mtime, last_beat = m, now
+                try:
+                    v = float(open(hb).read().strip() or "nan")
+                except (OSError, ValueError):
+                    v = float("nan")
+                if v == v:                       # not NaN
+                    beats.append((v, now))
+                    del beats[:-2]               # only the last two are ever read
             if now - last_beat > stall_s or now - start > abscap_s:
                 break
         timed_out = proc.poll() is None
@@ -1199,6 +1241,14 @@ def _run_batch(machine: str, cases: list[tuple[str, list[str]]], *,
             except (OSError, ValueError):
                 pass
             os.unlink(hb)
+        # D-STALLRATE: the instantaneous rate over the FINAL beat interval, or
+        # None when fewer than two beats ever arrived (a run killed during boot
+        # has no interval, and saying so is better than dividing by zero).
+        hb_rate = None
+        if len(beats) == 2:
+            d_emu, d_wall = beats[1][0] - beats[0][0], beats[1][1] - beats[0][1]
+            if d_wall > 0:
+                hb_rate = d_emu / d_wall
 
         caps: dict[int, str] = {}
         delivered: dict[int, list[int]] = {}
@@ -1272,7 +1322,7 @@ def _run_batch(machine: str, cases: list[tuple[str, list[str]]], *,
                         caps[int(m.group(1))] = m.group(2)
         if len(caps) < len(cases):
             why = _why_missing(machine, len(caps), len(cases), killer, rc, elapsed,
-                               out_lines, err, hb_emu)
+                               out_lines, err, hb_emu, hb_rate)
             if timed_out and not caps:
                 raise SystemExit(why)
             sys.stderr.write(why + "\n")

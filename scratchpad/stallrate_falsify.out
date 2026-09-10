@@ -1,0 +1,6 @@
+D-STALLRATE falsification
+  A2 PASS: 0.013x renders STARVED and no-rate renders the boot case (RENDERING only — A1 is what proves the measurement).
+  A1: SIGSTOPped pid 24781; waiting for the stall watchdog...
+  A1 PASS: a real stall kill, and its message carries the final beat interval reading HEALTHY — the read fires at a real kill site.
+
+GREEN: A1 PASS, A2 PASS

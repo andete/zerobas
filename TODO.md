@@ -434,7 +434,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:13404 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:13454 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -599,7 +599,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:3442 (T-6FE392)8 (T-529ABE)` from `TODO.md:12341 (T-529ABE)`: a
+      `TODO.md:3442 (T-6FE392)8 (T-529ABE)` from `TODO.md:12391 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -3932,8 +3932,8 @@ list. **When a slice lands, grep this list for what it just shipped.**
       a carve frees bytes. The real call is whether to depend on `raise_error`
       resetting SP).
 
-- [ ] ⚠️ **THE STALL WATCHDOG NO LONGER MIS-ASSERTS, BUT `run_gates.py` STILL
-      CALLS A CONTENDED UNIT *REAL*.** Filed 2026-08-26 by D-DRAWOP; the
+- [ ] 🙋 **THE STALL WATCHDOG NOW HAS A REAL DISCRIMINATOR (D-STALLRATE,
+      2026-09-10) — BUT `run_gates.py` STILL CALLS A CONTENDED UNIT *REAL*.** Filed 2026-08-26 by D-DRAWOP; the
       diagnostic half FIXED the same day by D-STALLSLOW (`a897bcd`), the
       classifier half OPEN. The message used to assert *"a stall is a FROZEN OR
       CRASHED emulator, NOT A SLOW ONE"*. `probes/lib/omsx_repl.py`:981 appends that clause
@@ -4008,7 +4008,57 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `ZEROBAS_OMSX_STALL=2` did **not** kill, so nothing proves the READ happens
       at a real kill site — only that the parse and the message are right. **An
       arm that passes because it never fired is not an arm.**
-      ⛔ BLOCKED — neither of us can start it now (needs an idle host).
+      ✅ **BOTH FILED RESIDUALS ARE DONE — D-STALLRATE, 2026-09-10**
+      ([`scratchpad/stallrate_falsify.py`](scratchpad/stallrate_falsify.py),
+      [`.out`](scratchpad/stallrate_falsify.out)).
+      🟢 **(1) THE DELTA EXISTS NOW.** The watchdog kept only the heartbeat's
+      MTIME and read its CONTENT once, at the end — so it could report the last
+      emulated instant but never whether emulation was ADVANCING when the beats
+      stopped. It now keeps the last **two** beats (value and wall time) and the
+      kill message carries the **instantaneous rate over the final beat
+      interval**: `~1x then silence` is a genuine freeze, `~0.01x then silence`
+      is a starved host. ⚠️ The whole-run average already in the message cannot
+      do this — it divides the last instant by total wall, so a fast boot then a
+      freeze averages to the same place as a slow crawl throughout. That is
+      exactly why D-STALLSLOW's rate-THRESHOLD cut failed: 12.4 emulated seconds
+      in 947 wall is 0.013x, plainly advancing and plainly below any line drawn
+      on a single value.
+      🟢 **(2) THE ARM THAT "PASSES BECAUSE IT NEVER FIRED" NOW FIRES.** A1 forces
+      a **real** stall kill by `SIGSTOP`-ing the emulator — its event loop stops
+      dead while the process stays alive, which is precisely the state the
+      watchdog exists to detect — and asserts the kill message carries the rate
+      field. It also makes a falsifiable prediction and meets it: a SIGSTOPped
+      emulator was healthy right up to the signal, so the final interval must
+      read **HEALTHY**, not crawling. A2 covers the RENDERING only (0.013x →
+      STARVED, no rate → the boot case) and says so, because rendering is the
+      half A1 exists to go beyond.
+      🎯 **AND THE MEASUREMENT EXPLAINS THE MYSTERY THE ENTRY RECORDED.** It said
+      *"forcing a real kill with `ZEROBAS_OMSX_STALL=2` did not kill"* and left
+      that unexplained. **openMSX here runs UNTHROTTLED at roughly 400x**: an
+      ordinary case lives **0.9 wall seconds** (measured; 900 emulated seconds
+      costs 2.1s, 20000 costs 45.2s). There was never a process to stall. Not a
+      bug in the watchdog — an emulator that had already exited. Wall life is
+      bought with EMULATED work, and `run_gap=20000` buys the ~45s the arm needs.
+      🔴 **THE BLOCKER — *"needs an idle host"* — WAS FALSE, AND EXACTLY BACKWARDS.**
+      It needs a SIGNAL, and a QUIET host makes it easier, not harder: the whole
+      point is to stop the emulator deterministically instead of waiting for
+      contention to do it by accident. Fourth boilerplate ⛔ refuted in four ticks.
+      ⚠️ **AND IT TOOK FOUR ATTEMPTS, THREE OF THEM GUESSES.** The pid vanished
+      (that was `omsx_preflight`'s own short-lived openMSX); then no stable pid
+      appeared; then the run finished in 1.1s having spawned nothing at all —
+      because `probe_refcache` reads `ZEROBAS_REFCACHE` at MODULE level and I set
+      it inside the function, so the case was **served from cache**. `omsx_repl`
+      documents that same trap at its hit path (D-CACHEPRE). It was settled by
+      printing what `run_cases` actually returned instead of guessing a fourth
+      time [[a-readout-blind-to-its-own-subject]].
+      🙋 **NEEDS-JOOST** — what remains is a design call, not a measurement.
+      `run_gates.py`
+      still calls a unit REAL when it fails twice, and the rate is now available
+      to it. Teaching the classifier to read it would change GATE VERDICTS — and
+      an auto-FLAKE on a low rate can mask a real defect on a loaded host, which
+      is the 2026-08-25 failure mode inverted. **Joost's call**: should the retry
+      consult the rate, or should it only PRINT it beside the verdict and leave
+      the judgement human?
 
 - [x] ⚠️ **FIVE MORE NON-ATOMIC PUBLISHES INTO THE SHARED openMSX TREE, AND NO
       GATE WOULD SEE A SIXTH.** Filed 2026-08-26 by D-MACHXML
@@ -4223,7 +4273,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:12341 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:12391 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
