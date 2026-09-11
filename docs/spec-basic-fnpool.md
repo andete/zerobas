@@ -56,6 +56,34 @@ link, `CSP := that frame's prevCSP`, `FNSP := 0`. One loop, no new cell.
 `FNSP` load and a zero test — the same shape the live-frame walk's `FN_FEND`
 test already had.
 
+## 3b. 🔴 IT DOES NOT FIT IN MAIN PAGE 1 — AND THE ROUTE THAT WORKS IS A TENANT
+
+Measured before writing a line of it (2026-09-11): main page 1 has **1 byte**
+free and the low region 4. The pool version of `fn_call` is ~+8 B over the stack
+version it replaces (the `ld hl,0 / add hl,sp / sbc / cp / ld sp,hl` dance goes,
+the header write and `ctl_alloc` call come), `fn_leave` ~+4, and §3's abort
+unwind is a ~26 B chain walk in `raise_error`. ~38 B against 1.
+
+A fresh measured sequence scan offers at most ~16 B, all of it in the candidates
+a previous slice already REJECTED on frame grounds (`push_lhs_frame` pops its own
+return address; `evsp_close` discards a frame) — so the ordinary carve route is
+shut for this one [[carve-routes-measured-shut]].
+
+🎯 **The whole frame machinery is RAM arithmetic, which makes it page-0-tenant
+legal.** It touches `FN_BASE`, `CSP`, `CTLLIM`, `FNSP` — page-3 RAM, no BIOS, no
+main page 1 — and sub page 0 has **790 B** free. So the shape is
+`fn_frame_tenant` (SUBROM_IDX_FNFRAME) with three ops: **save** (allocate from
+the pool by the same `CSP`/`CTLLIM` arithmetic `ctl_alloc` does, write the
+header, copy the prefix in), **restore** (copy back, pop the chain, restore
+`CSP`), **unwind** (the abort walk). Main keeps three ~8 B stubs where ~88 B of
+code stands today, so page 1 **GAINS ~60 B** — which is also what the SP
+relocation will need for its own `CLEAR`-following re-anchor.
+
+⚠️ The tenant must not call `ctl_alloc` itself (main's low region is unreachable
+from a page-0 tenant): it does the two compares against `CSP` and `CTLLIM`
+in-line, which is ~15 B of the 790 it has. And it runs under DI with main page 0
+switched out, so it must touch nothing but RAM — which is all it touches.
+
 ## 4. Gates
 
 * `deffn-strict`'s existing four GC rows, plus `n.outer` / `n.outer.ctl` from
