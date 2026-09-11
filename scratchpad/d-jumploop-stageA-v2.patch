@@ -1,0 +1,337 @@
+diff --git a/basic/cload.asm b/basic/cload.asm
+index fe5bf3af..48d6bfad 100644
+--- a/basic/cload.asm
++++ b/basic/cload.asm
+@@ -132,7 +132,7 @@ dl_cas_close:
+                                             ; expression and take only the ,R tail
+                 jr      c,load_error
+                 call    do_tape_prog        ; load the tokenised program off tape
+-                ret     c                   ; D-CASTAIL defect B (docs/spec-basic-
++                jp      c,rp_after  ; D-CASTAIL defect B (docs/spec-basic-
+                                             ; castail.md §3.2): the tape load FAILED and
+                                             ; has already reported. LOAD"CAS:x",R must
+                                             ; not then run whatever was resident -- both
+@@ -140,7 +140,7 @@ dl_cas_close:
+                                             ; (characterization §4, cas-loadr-brk-res)
+                 ld      a,(RUNFLAG)          ; ,R ? -> run it; else back to the REPL
+                 or      a
+-                ret     z
++                jp      z,rp_after
+                 jr      run_prog_top        ; RUN the loaded program -- at TOP LEVEL,
+                                             ; never nested (§3.1, and see run_prog_top)
+ 
+@@ -158,7 +158,7 @@ dl_is_disk:
+                 call    pcr_noquote         ; ,R tail only -- no quote in the text
+                 jr      c,load_error
+                 call    disk_prog_load      ; load the tokenised program into TXTBASE
+-                ret     c                   ; D-RUNTAIL defect B (docs/spec-basic-
++                jp      c,rp_after  ; D-RUNTAIL defect B (docs/spec-basic-
+                                             ; runtail.md §3.2): the load FAILED and has
+                                             ; already reported. LOAD"missing",R must not
+                                             ; then run whatever was resident -- the
+@@ -167,7 +167,7 @@ dl_is_disk:
+                 ; ,R ? -> run the freshly loaded program; else back to the REPL.
+                 ld      a,(RUNFLAG)
+                 or      a
+-                ret     z
++                jp      z,rp_after
+                 jr      run_prog_top        ; RUN the loaded program (program.asm) --
+                                             ; at TOP LEVEL, never nested (§3.1)
+ 
+@@ -235,7 +235,7 @@ do_run:
+                 call    pcr_noquote         ; the only '"' is fname_expr's own
+                 jp      c,load_error
+                 call    disk_prog_load      ; load the tokenised program into TXTBASE
+-                ret     c                   ; D-RUNTAIL defect B: the load FAILED and has
++                jp      c,rp_after  ; D-RUNTAIL defect B: the load FAILED and has
+                                             ; already reported -- RUN"missing" must run
+                                             ; NOTHING, not the resident program
+                 jr      run_prog_top        ; ...and run it (running is implicit), at
+@@ -312,7 +312,7 @@ dr_cas_close:
+                 jp      c,load_error
+                 call    do_tape_prog        ; load the program off tape (tokenised OR
+                                             ; $EA ASCII — do_tape_prog's 3-way dispatch)
+-                ret     c                   ; D-CASTAIL defect B: the load FAILED and has
++                jp      c,rp_after  ; D-CASTAIL defect B: the load FAILED and has
+                                             ; already reported -- RUN"CAS:x" must run
+                                             ; NOTHING, not the resident program
+                 jr      run_prog_top        ; ...and run it, at TOP LEVEL -- see
+diff --git a/basic/interp.asm b/basic/interp.asm
+index 8c5aa718..179ce67b 100644
+--- a/basic/interp.asm
++++ b/basic/interp.asm
+@@ -495,7 +495,7 @@ exec_stmt:
+                                             ; (Fable review 2026-07-16). DE is dead on entry.
+                 call    skip_spaces         ; leading spaces are skipped (spec §5)
+                 or      a
+-                ret     z                   ; end of line -> back to the prompt
++                jp      z,rp_after  ; end of line -> back to the prompt
+                 ; The dispatch is a TABLE SEARCH (D-KW-2). The 69-entry `cp`/`jp z`
+                 ; chain this replaces charged 5 B per statement token before it did
+                 ; anything, and the MISSING-class slice does not fit behind it
+@@ -846,7 +846,7 @@ ex_end:
+                 ld      (ONEFLG),a
+                 jp      end_line_end        ; ENDFLAG := 1; the run stops
+ ex_rem:
+-                ret                         ; rest of line is a comment -> done
++                jp      rp_after    ; rest of line is a comment -> done
+ ex_data:                                    ; DATA is a no-op at run time: skip its
+                 inc     hl                  ; verbatim body up to ':' or EOL, then
+                 ld      c,0                 ; continue with the next statement.
+@@ -857,7 +857,7 @@ ex_data:                                    ; DATA is a no-op at run time: skip
+ exd_lp:
+                 ld      a,(hl)
+                 or      a
+-                ret     z                   ; end of line
++                jp      z,rp_after  ; end of line
+                 cp      '"'
+                 jr      nz,exd_nq
+                 ld      a,c
+@@ -1823,7 +1823,7 @@ ex_resume:
+                 ld      (ONEFLG),a          ; leaving the handler -- CURLINE needs no
+                                             ; touch here (rp_goto sets it from GOTOTGT
+                                             ; the moment the branch below executes)
+-                jr      goto_resolve        ; shares find_line_bc + the undef check +
++                jr      goto_resolve_line   ; shares find_line_bc + the undef check +
+                                             ; GOTOTGT/GOTOFLAG + ret with GOTO's own
+                                             ; tail (program.asm) -- BC already holds
+                                             ; the target line number, exactly what
+@@ -2031,7 +2031,18 @@ ex_goto_at:
+ ; not need), reusing find_line_bc + the undef check + the GOTOTGT/GOTOFLAG
+ ; set + ret verbatim. A zero-cost label: GOTO's own bytes/behaviour here are
+ ; completely unchanged.
+-goto_resolve:
++; 🔴 SPLIT BY D-JUMPLOOP, AND IT IS THE ONLY SITE THAT NEEDED IT. This tail has
++; TWO kinds of user: `ex_goto` falls in and `ex_resume` jumps in, so their `ret`
++; LEAVES `exec` and must become a jump -- while `basic/cload.asm:299` CALLS it
++; (RUN <line>) and needs the `ret`. One `ret`, two meanings
++; [[a-shared-tail-is-not-a-decision]]. The arming body keeps its `ret` for the
++; caller; the statement paths come through the wrapper. Every OTHER exec exit sits
++; in a label nothing calls -- checked against all 670 `call` targets in the tree,
++; not discovered by tripping over it.
++goto_resolve_line:                          ; STATEMENT form: arm, then end the line
++                call    goto_resolve
++                jp      rp_after
++goto_resolve:                               ; CALLED form: arm and RETURN
+                 call    find_line_bc        ; CF set + HL = line addr if found
+                 jr      nc,ex_goto_undef
+                 ld      (GOTOTGT),hl
+@@ -2094,7 +2105,7 @@ if_branch:
+ if_false:
+                 call    if_skip_to_else     ; scan to ELSE token or end of line
+                 or      a
+-                ret     z                   ; no ELSE -> line done
++                jp      z,rp_after  ; no ELSE -> line done
+                 call    inc_skip           ; past the ELSE ($A1) token
+                 cp      LINENO_TOKEN
+                 jr      z,if_branch
+diff --git a/basic/print.asm b/basic/print.asm
+index c4421627..d54e083c 100644
+--- a/basic/print.asm
++++ b/basic/print.asm
+@@ -304,7 +304,7 @@ exp_semi:
+ exp_stmt_end:
+                 call    skip_spaces
+                 or      a
+-                ret     z                   ; trailing ';' at EOL -> no newline
++                jp      z,rp_after  ; trailing ';' at EOL -> no newline
+                 cp      COLON
+                 jp      z,exec_stmt         ; trailing ';' before ':' -> no newline
+                 jp      exp_loop
+diff --git a/basic/printusing.asm b/basic/printusing.asm
+index bd6d024a..94f7f18e 100644
+--- a/basic/printusing.asm
++++ b/basic/printusing.asm
+@@ -188,7 +188,7 @@ pu_skipnl:
+                 call    skip_spaces
+                 cp      COLON
+                 jp      z,exec_stmt         ; HL on ':' -> step into the next statement
+-                ret
++                jp      rp_after
+ 
+ ; D-PUSING: pu_literal_only / pu_lo_skip / pu_lo_end DELETED (30 B). They
+ ; implemented "a format with no field char is literal text: emit it, swallow any
+diff --git a/basic/program.asm b/basic/program.asm
+index 90077e36..be9e1548 100644
+--- a/basic/program.asm
++++ b/basic/program.asm
+@@ -594,7 +594,23 @@ rp_trapchk:                                 ; interrupt-trap dispatch point (T1)
+                 call    nz,check_traps      ; HL = stmt ptr; CF=1 -> fired, CURLINE=handler
+                 jr      c,rp_lp             ; fired: run the handler line fresh (RESUMEFLAG=0)
+ rp_run:
+-                call    exec                ; run line (may set flags or hand off)
++                ; 🔴 A JUMP, NOT A CALL (D-SPMERGE cut 2, Joost's ruling; spec §8).
++                ; `call exec` left the line executor's return address on the stack
++                ; for the WHOLE line, so any frame a statement allocated landed
++                ; below it and the end-of-line `ret` popped the frame instead. A
++                ; `ret` needs a stack word; the merge needs ZERO words above the
++                ; frontier at a statement boundary. So `exec` is jumped to, and
++                ; every path that used to `ret` out of it now jumps to `rp_after`.
++                jp      exec                ; run line (may set flags or hand off)
++
++; --- end_line_end: ENDFLAG := 1, and the line is over -----------------------
++; Six handlers share this -- END, LIST/LLIST, DELETE, RENUM and AUTO's stop. It
++; sits HERE so it FALLS THROUGH into rp_after instead of jumping to it: the one
++; exit that costs nothing, and the commonest of the six.
++end_line_end:
++                ld      a,1
++                ld      (ENDFLAG),a
++rp_after:                                   ; every exit from `exec` lands here
+                 ld      a,(ENDFLAG)
+                 or      a
+                 ret     nz                  ; END / STOP
+@@ -623,20 +639,6 @@ rp_goto:
+                                             ; the build failed, which is why the probe
+                                             ; never ran on a stale machine.)
+ 
+-; --- end_line_end: ENDFLAG := 1, and the line is over -----------------------
+-; D-JUMPLOOP step 1 (docs/spec-basic-spmerge.md §8.3). FIVE handlers ended with
+-; some spelling of `ld a,1 / ld (ENDFLAG),a / ret` -- END, LIST/LLIST, DELETE,
+-; RENUM and AUTO's stop -- 5 to 6 bytes each for one idea. They now share this,
+-; at 3 bytes a site.
+-; 🎯 IT IS A CARVE AND A PRECONDITION AT THE SAME TIME. Stage A has to turn every
+-; `ret` that leaves `exec` into a jump, because a `ret` needs a stack word and the
+-; merge needs ZERO words above the frontier at a statement boundary (§8.1). Five
+-; such `ret`s just became ONE, so the conversion that follows has five fewer sites
+-; to get right -- which is worth more than the bytes.
+-end_line_end:
+-                ld      a,1
+-                ld      (ENDFLAG),a
+-                ret                         ; -> stage A turns THIS into `jp rp_after`
+ ; --- derive_directf: DIRECTF := "the line CURLINE names is the TYPED one" ----
+ ; Clobbers A (and the flags). Everything else is preserved -- rp_exec calls it
+ ; with the resume pointer live in HL.
+@@ -1610,7 +1612,7 @@ ret_frame_bare:
+ set_resumeflag_ret:
+                 ld      a,1
+                 ld      (RESUMEFLAG),a
+-                ret
++                jp      rp_after
+ ex_ret_under:
+                 ; D-FORRET: there is no GOSUB frame, so the reference's walk runs the
+                 ; whole stack and discards EVERY open FOR before it gives up and
+@@ -1964,7 +1966,7 @@ nx_again:
+                 ld      a,1
+                 ld      (RESUMEFLAG),a
+                 pop     bc                  ; discard the post-NEXT cursor
+-                ret
++                jp      rp_after
+ nx_end:
+                 pop     hl                  ; frame base -> pop the frame
+                 ld      de,FOR_FRAME        ; D-CTLPOOL: the pool descends, so
+@@ -2257,7 +2259,7 @@ eon_gosub:
+ ; `ret` that leaves `exec`, and both ends appeared in it three lines apart in shape.
+ ; A dup-span sweep could not see it -- the bodies differ in one opcode.
+ goto_take_bc:
+-                jp      goto_resolve
++                jp      goto_resolve_line   ; the STATEMENT form: arm, then end the line
+ 
+ ; --- eon_seek_nth: find Nth $0E entry in an ON...GOTO/GOSUB target list ------
+ ; in:  HL = first token after the GOTO/GOSUB token, DE = N (1-based index)
+diff --git a/basic/save.asm b/basic/save.asm
+index 5abd27fd..44dfc179 100644
+--- a/basic/save.asm
++++ b/basic/save.asm
+@@ -321,7 +321,7 @@ cas_ascii_save:
+                 xor     a
+                 ld      (PRDEST),a          ; restore the screen sink
+                 ld      (PRDEV),a           ; restore the default (disk) device
+-                ret                         ; back to the REPL
++                jp      rp_after    ; back to the REPL
+ 
+ ; cas_write_ea_header — write the $EA cassette header block for the file named in
+ ; TSV_NAME: TAPOON(long leader) + 10x $EA (ASCII id) + 6-char name (tape_name_emit)
+@@ -693,4 +693,4 @@ sv_tenant:
+                 or      a
+                 jr      nz,disk_error       ; the tenant hit sv_load_error: report ONCE --
+                                             ; ERR 70 on an empty drive (D-DISKERR), else `load error`
+-                ret
++                jp      rp_after
+diff --git a/basic/sv-diskwr.inc b/basic/sv-diskwr.inc
+index 005f89e5..bdf65e55 100644
+--- a/basic/sv-diskwr.inc
++++ b/basic/sv-diskwr.inc
+@@ -90,4 +90,15 @@ disk_putbyte:
+ disk_write_end:
+                 call    fat_io_close
+                 jp      c,sv_load_error
+-                ret                         ; back to the prompt
++    IF SUB_BUILD
++                ret                         ; sub side: back to the tenant's caller
++    ELSE
++                ; 🔴 THE ONE EXEC EXIT THAT CANNOT SIMPLY BECOME A JUMP. sub/save.asm
++                ; includes this file, so this `ret` is compiled into BOTH ROMs and
++                ; means two different things: on the main side it ends the BASIC line
++                ; (the engines tail-`jp` here), on the sub side it returns to the
++                ; tenant's caller -- and rp_after does not exist in the sub ROM. So
++                ; the split is the build gate this file already uses once, not a
++                ; change to the three callers, two of which are shared includes too.
++                jp      rp_after            ; main side: the line is over
++    ENDIF
+diff --git a/scratchpad/execexit_scout.py b/scratchpad/execexit_scout.py
+index 5db1b828..01f192e9 100644
+--- a/scratchpad/execexit_scout.py
++++ b/scratchpad/execexit_scout.py
+@@ -48,8 +48,16 @@ for rel in SRC:
+                 if re.match(r"^[a-z_]\w*:", L[j]) and j > i: break
+ if tbl: handlers = tbl
+ 
+-STOP_JP = {"exec", "exec_stmt", "pop_exec", "raise_error", "stmt_error",
+-           "rp_lp", "rp_exec", "rp_break", "repl"}
++# 🔴 THE RUN LOOP IS NOT A HANDLER, AND THE FIRST CUT WALKED INTO IT. `ex_run`
++# jumps into the loop, so the scout followed it and reported `rp_run`'s own
++# `ret nz` -- the one that returns to the REPL when ENDFLAG is set after `exec`
++# -- as an exec EXIT. Converting that is a BUG, and the same trap caught
++# `e21_no_resume` (basic/arrays.asm), reached from rp_lp at LOOP depth: its `ret`
++# means "back to the prompt", so sending it to rp_after makes the loop run on.
++# Every rp_* entry is the loop, never a handler tail, so the walk stops at all.
++STOP_JP = {"exec", "exec_stmt", "pop_exec", "raise_error", "stmt_error", "repl",
++           "rp_lp", "rp_exec", "rp_break", "rp_run", "rp_goto", "rp_trapchk",
++           "rp_resume", "rp_after", "e21_no_resume", "cont_record"}
+ 
+ # 🔴 A LABEL THAT IS ALSO A `call` TARGET IS AMBIGUOUS, AND THE FIRST CUT OF THIS
+ # SCOUT REPORTED 38 SITES BECAUSE IT IGNORED THAT. `pch_done` came back as an exec
+@@ -66,6 +74,7 @@ CONTROL = re.compile(r"^\s*(ret|jp|jr|call)\b\s*(.*)$", re.I)
+ found = collections.defaultdict(set)
+ 
+ ambig = collections.defaultdict(set)
++tailjump = collections.defaultdict(set)
+ 
+ def walk(start, origin, seen):
+     stack = [(start, False)]
+@@ -102,6 +111,15 @@ def walk(start, origin, seen):
+                 if not cond: break
+                 continue
+             if re.match(r"^[A-Za-z_]\w*$", tgt) and tgt in label:
++                # 🔴 THE ACTIONABLE SITE IS THE JUMP, NOT THE `ret`. A statement path
++                # that tail-jumps into a label something else CALLS cannot have that
++                # label's `ret` converted -- the `ret` serves both users. The fix is
++                # here: `call helper` + `jp rp_after`. Reporting the helper's `ret`
++                # (which the first cut did) points at the one line that must NOT
++                # change, which is why `exp_nl_ret: jp print_crlf` was dismissed as a
++                # false positive and then cost a whole battery.
++                if tgt in CALLED and not tainted:
++                    tailjump[(rel, j)].add((origin, tgt))
+                 stack.append((tgt, tainted or tgt in CALLED))
+             if not cond: break
+ 
+@@ -116,6 +134,13 @@ for (rel, ln), origins in sorted(found.items()):
+           + (f" (+{len(o)-4})" if len(o) > 4 else ""))
+ print(f"\nBYTE COST if each becomes `jp rp_after`: +{2*len(found)} B "
+       f"(a conditional `ret cc` -> `jp cc,rp_after` is +1, so this is an upper bound)")
++print(f"\n{len(tailjump)} TAIL-JUMP(s) from a statement path into a label something "
++      f"CALLS -- the JUMP is what changes (`call X` + `jp rp_after`), never the `ret`:")
++for (rel, ln), who in sorted(tailjump.items()):
++    w = sorted(who)
++    print(f"  {rel}:{ln:<6} {lines[rel][ln-1].split(';')[0].strip():<26} "
++          f"-> {w[0][1]}  (from {', '.join(sorted({o for o, _ in w}))[:44]})")
++
+ print(f"\n{len(ambig)} AMBIGUOUS site(s) -- reached only through a label that is also a "
+       f"`call` target, so the `ret` may belong to that call. NOT counted above; each "
+       f"needs reading:")
+diff --git a/zerobas-main-eu.bps b/zerobas-main-eu.bps
+index f0aabd63..7c245049 100644
+Binary files a/zerobas-main-eu.bps and b/zerobas-main-eu.bps differ
+diff --git a/zerobas-main-eu.ips b/zerobas-main-eu.ips
+index 76b152f9..b65b8edd 100644
+Binary files a/zerobas-main-eu.ips and b/zerobas-main-eu.ips differ

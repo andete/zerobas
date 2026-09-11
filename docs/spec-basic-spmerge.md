@@ -276,3 +276,82 @@ is jump-only despite sharing the idiom. **One split, not a class of them.**
 is "the run loop stops returning across a statement", so it must land with the
 battery at 128/128 and the nine `parennest` pins UNMOVED. A pin that flips during
 stage A means something other than the conversion happened.
+
+## 9. Cut 2, RE-RULED: `ctl_alloc` relocates the live block (2026-09-11)
+
+§8's jump loop was ruled on an estimate of ~50 B. **Building it measured ~93 B and
+the ruling changed.**
+
+### 9.1 What the jump loop actually cost, and what §8 missed
+
+39 B bought the 19 confirmed `ret` exits (applied, builds, saved as
+[`scratchpad/d-jumploop-stageA-v2.patch`](../scratchpad/d-jumploop-stageA-v2.patch)).
+The remaining ~54 B is nine wrappers, because **41 statement paths leave `exec` by
+TAIL-JUMPING into a shared helper** rather than by `ret`:
+
+| helper | `call` sites | tail-jumps |
+|---|---|---|
+| `load_error` | 1 | **29** |
+| `print_crlf` | 6 | 5 |
+| `print_msg` | 4 | 5 |
+| six others | 1–2 each | 1–2 each |
+
+Each helper's `ret` serves real callers, so it cannot be converted; the fix has to
+sit at the jump (`call helper` + `jp rp_after`), one 6 B wrapper per helper.
+
+🔴 **§8.3a's "one split, not a class" WAS WRONG, and the audit that produced it was
+blind by construction.** It checked every confirmed `ret` site's enclosing label
+against the tree's 670 `call` targets — a sound test for `ret` sites, and it says
+nothing about JUMP sites. `exp_nl_ret: jp print_crlf` is how PRINT ends a line and
+never appeared in it.
+
+🔴 **AND THE FAILURE MODE IS SILENT.** With `jp exec` nothing is pushed, so a
+missed exit's `ret` pops the REPL's own return address and lands at the prompt.
+The program looks like it worked. `CONT` merely stopped recording its resume
+point: 12 suites red, no crash anywhere, and the trace showed the run loop simply
+never regaining control after a `PRINT`.
+
+### 9.2 The shape ruled instead
+
+Keep `call exec`. `ctl_alloc` moves the live block out of the frame's way:
+
+    the live block is [SP, CSP)      -- and CSP - SP is SMALL
+    1. base := CSP - size ; refuse if base < CTLLIM
+    2. copy [SP, CSP) down by `size`   (forward copy; dest < src, no overlap hazard)
+    3. SP := SP - size ; CSP := base
+    4. the frame occupies [base, oldCSP), and HL := base
+
+No `ret` ever crosses a frame, because everything that could `ret` moved down with
+it. Zero exit conversions; one routine changes.
+
+### 9.3 🔴 I ARGUED AGAINST THIS ON A COST MODEL THAT WAS WRONG
+
+§7 rejected option (2) as *"an `ldir` of the WHOLE live stack on every
+`GOSUB`/`FOR`/trap push — O(depth), in the hot path, inside the one fix whose
+entire purpose is to let the evaluator recurse deeply"*, and I repeated it when
+the fork was put to Joost.
+
+**It is not the whole live stack.** Frames are only ever pushed at a STATEMENT
+BOUNDARY, where the expression evaluator has already unwound — so the block
+between `SP` and the frontier is the statement handler's own chain and nothing
+else. Read at the two main-ROM callers: `gosub_push` holds `push bc` + `push hl` +
+its own return + `ctl_alloc`'s return above the continuation, about ten bytes. The
+copy is bounded by the handler's depth, not by the recursion depth the merge
+exists to enable, and it does not grow as expressions get deeper.
+
+The "adjust every absolute saved `SP`" objection also shrinks: `SAVSTK` is
+captured at the loop/REPL anchor, ABOVE the frontier, so a block moving below it
+does not touch it.
+
+⚠️ So ~10 B was optimistic in the other direction — the room check plus the copy is
+nearer 25–30 B. Still one routine against ~93 B over sixty sites.
+
+### 9.4 Order of work
+
+1. `ctl_alloc` as §9.2, with `CSP` still the frontier and `SP` still C-BIOS's —
+   behaviour-identical, because the copy is a no-op until `SP` lives in the region.
+   The battery must stay 128/128 and the nine pins UNMOVED.
+2. Then move `SP` into the region at the safe point (§3), which is the cut that
+   flips the pins.
+3. The trap record (`basic/traps.asm:372`) is the third `ctl_alloc` caller and
+   fires from the ISR seam; its stack shape needs its own reading before step 2.

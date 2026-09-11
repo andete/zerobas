@@ -48,8 +48,16 @@ for rel in SRC:
                 if re.match(r"^[a-z_]\w*:", L[j]) and j > i: break
 if tbl: handlers = tbl
 
-STOP_JP = {"exec", "exec_stmt", "pop_exec", "raise_error", "stmt_error",
-           "rp_lp", "rp_exec", "rp_break", "repl"}
+# 🔴 THE RUN LOOP IS NOT A HANDLER, AND THE FIRST CUT WALKED INTO IT. `ex_run`
+# jumps into the loop, so the scout followed it and reported `rp_run`'s own
+# `ret nz` -- the one that returns to the REPL when ENDFLAG is set after `exec`
+# -- as an exec EXIT. Converting that is a BUG, and the same trap caught
+# `e21_no_resume` (basic/arrays.asm), reached from rp_lp at LOOP depth: its `ret`
+# means "back to the prompt", so sending it to rp_after makes the loop run on.
+# Every rp_* entry is the loop, never a handler tail, so the walk stops at all.
+STOP_JP = {"exec", "exec_stmt", "pop_exec", "raise_error", "stmt_error", "repl",
+           "rp_lp", "rp_exec", "rp_break", "rp_run", "rp_goto", "rp_trapchk",
+           "rp_resume", "rp_after", "e21_no_resume", "cont_record"}
 
 # 🔴 A LABEL THAT IS ALSO A `call` TARGET IS AMBIGUOUS, AND THE FIRST CUT OF THIS
 # SCOUT REPORTED 38 SITES BECAUSE IT IGNORED THAT. `pch_done` came back as an exec
@@ -66,6 +74,7 @@ CONTROL = re.compile(r"^\s*(ret|jp|jr|call)\b\s*(.*)$", re.I)
 found = collections.defaultdict(set)
 
 ambig = collections.defaultdict(set)
+tailjump = collections.defaultdict(set)
 
 def walk(start, origin, seen):
     stack = [(start, False)]
@@ -102,6 +111,15 @@ def walk(start, origin, seen):
                 if not cond: break
                 continue
             if re.match(r"^[A-Za-z_]\w*$", tgt) and tgt in label:
+                # 🔴 THE ACTIONABLE SITE IS THE JUMP, NOT THE `ret`. A statement path
+                # that tail-jumps into a label something else CALLS cannot have that
+                # label's `ret` converted -- the `ret` serves both users. The fix is
+                # here: `call helper` + `jp rp_after`. Reporting the helper's `ret`
+                # (which the first cut did) points at the one line that must NOT
+                # change, which is why `exp_nl_ret: jp print_crlf` was dismissed as a
+                # false positive and then cost a whole battery.
+                if tgt in CALLED and not tainted:
+                    tailjump[(rel, j)].add((origin, tgt))
                 stack.append((tgt, tainted or tgt in CALLED))
             if not cond: break
 
@@ -116,6 +134,13 @@ for (rel, ln), origins in sorted(found.items()):
           + (f" (+{len(o)-4})" if len(o) > 4 else ""))
 print(f"\nBYTE COST if each becomes `jp rp_after`: +{2*len(found)} B "
       f"(a conditional `ret cc` -> `jp cc,rp_after` is +1, so this is an upper bound)")
+print(f"\n{len(tailjump)} TAIL-JUMP(s) from a statement path into a label something "
+      f"CALLS -- the JUMP is what changes (`call X` + `jp rp_after`), never the `ret`:")
+for (rel, ln), who in sorted(tailjump.items()):
+    w = sorted(who)
+    print(f"  {rel}:{ln:<6} {lines[rel][ln-1].split(';')[0].strip():<26} "
+          f"-> {w[0][1]}  (from {', '.join(sorted({o for o, _ in w}))[:44]})")
+
 print(f"\n{len(ambig)} AMBIGUOUS site(s) -- reached only through a label that is also a "
       f"`call` target, so the `ret` may belong to that call. NOT counted above; each "
       f"needs reading:")
