@@ -1223,8 +1223,7 @@ relink:
                 ld      a,1                 ; LE_OP_RELINK
                 ld      (LE_OP),a
                 ld      ix,SUBROM_ENTRY_BASE_P1 + 3*SUBROM_IDX_LINEEDIT
-                call    sc_call             ; D-SCCALL: tenant call + absent raise
-                ret
+                jp      sc_call             ; D-SCCALL: tenant call + absent raise
 
 ; --- ex_delete: DELETE [<lo>][-[<hi>]] ---------------------------------------
 ; docs/spec-basic-delete.md, measured in docs/delete-msx1-characterization.md.

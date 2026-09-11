@@ -648,8 +648,7 @@ lrset_notfld:
 ; fld_lookup carve made one document earlier.
 lrset_store:
                 ld      ix,SUBROM_ENTRY_BASE_P0 + 3*SUBROM_IDX_LRSETST
-                call    sc_call             ; no args, no result, cannot fail
-                ret
+                jp      sc_call     ; no args, no result, cannot fail
 
 ; ===========================================================================
 ; fld_lookup — READ hook for str_eval's variable path.

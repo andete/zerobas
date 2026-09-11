@@ -43,6 +43,14 @@ def main() -> int:
     cfg = probe_sides.sides("zb")["zb"]
     log = probe_tmp.tmp("speedprof.log")
     n = int(secs / 0.005)
+    # 🔴 SAMPLE ONLY WHILE THE PROGRAM IS ACTUALLY RUNNING. The first two tables this
+    # rig produced were both dominated by `$11A0` at 54-68% and both were ARTEFACTS:
+    # the window outlived the program, and every sample after it landed on the READY
+    # prompt's HALT. That read as "62.4% of the loop is BIOS/ISR" and sent a whole
+    # slice after `BREAKX`, which turned out to be worth 0.3% (D-BRKFRAME). So the
+    # program now RAISES A MARKER in the free RAM at MARK for exactly its own run, the
+    # sampler records it beside each PC, and out-of-run samples are DISCARDED, not
+    # averaged in. The rig REFUSES a window that mostly missed.
     prologue = (f'set ::pf [open "{log}" w]\n'
                 f'proc samp {{}} {{ puts $::pf [reg PC] }}\n'
                 f'for {{set i 0}} {{$i < {n}}} {{incr i}} {{ after time [expr {{{start} + $i * 0.005}}] samp }}\n'
@@ -51,13 +59,52 @@ def main() -> int:
     cap = omsx_repl.run_cases(cfg["machine"], [("sp", lines)], batch=False, boot=cfg["boot"], reset=cfg["reset"],
                               prologue=(prologue,), run_gap=secs + 5)[0] or ""
     i = cap.rfind("[sp"); print("jiffies:", cap[i:cap.find("]", i) + 1] if i >= 0 else "<none>")
-    pcs = [int(x) for x in open(log).read().split() if x.strip().isdigit()]
+    raw = [int(x) for x in open(log).read().split() if x.strip().isdigit()]
+    # 🔴 DISCARD THE IDLE TAIL. The first two tables this rig produced were both
+    # dominated by a single BIOS PC at 54-68% and both were ARTEFACTS: the window
+    # outlived the program and every later sample landed on the READY prompt's HALT,
+    # which is ONE PC and so symbolises as one enormous BIOS entry. That read as
+    # "62.4% of the loop is BIOS/ISR" and sent a slice after `BREAKX`, which a direct
+    # A/B then measured at 0.3% (D-BRKFRAME). Idle is a CONSTANT PC, and running code
+    # never is, so a long constant run at either END of the sequence is the prompt:
+    # trim it, say how much was trimmed, and REFUSE what is left if it is too thin.
+    # (A marker byte POKEd from BASIC was tried first and is NOT the fix: the Tcl side
+    # never saw it. The POKE is fine -- `POKE &HE21F,7` reads back 7 on zerobas and on
+    # the CF-3300 -- so the suspect is `debug read memory 0xE21F`, left OPEN and not
+    # asserted, because the guard below needs no marker at all.)
+    # Idle is not a CONSTANT PC -- the prompt cycles a few addresses around its
+    # HALT -- so contiguity is the wrong test and a trim on it finds nothing. What
+    # idle IS: one BIOS PC holding a share no executing code ever holds. In a window
+    # that fits the run, $11A0 does not reach the top SIXTEEN; in one that overruns
+    # by half, it is 54.6% on its own. So: take the most-sampled PC, and if it is
+    # BIOS and >=15%, it is the prompt -- drop those samples and say so out loud.
+    top_pc, top_n = collections.Counter(raw).most_common(1)[0]
+    idle = top_pc if (top_pc < 0x2812 and top_n >= 0.15 * len(raw)) else None
+    pcs = [pc for pc in raw if pc != idle] if idle is not None else raw
+    if idle is None:
+        print(f"idle check: no single BIOS PC over 15% — the window fits the run "
+              f"(top PC ${top_pc:04X}, {100 * top_n / len(raw):.1f}%)")
+    else:
+        print(f"⚠️  IDLE DISCARDED: ${idle:04X} held {100 * top_n / len(raw):.1f}% of "
+              f"{len(raw)} samples — that is the READY prompt, not the program.")
+        print(f"    The window OVERRAN the run by about that much. {len(pcs)} samples "
+              f"kept; narrow start/secs to measure the run alone.")
+    if len(pcs) < 200:
+        print("=" * 74)
+        print("APPARATUS FAILURE -- the window missed the program: NOTHING MEASURED")
+        print("=" * 74)
+        print(f"  window : {start}s .. {start + secs}s, {len(raw)} samples, {len(pcs)} in the run")
+        print(f"  the run: {cap[cap.rfind('[sp'):].split(']')[0] + ']' if '[sp' in cap else '<never finished>'} frames")
+        print("  Move the start/secs arguments inside the run, or make the program")
+        print("  longer, and re-run. Refused instead of measured.")
+        return 1
     syms = load_syms(os.path.join(REPO, "build", "basic-reloc.sym"))
     hist = collections.Counter(); region = collections.Counter()
     for pc in pcs:
         region["bios/low" if pc < 0x4000 else "page1" if pc < 0x8000 else "ram"] += 1
         hist[("BIOS/ISR" if pc < 0x2812 else symbolise(syms, pc)) if pc < 0x8000 else f"RAM ${pc:04X}"] += 1
-    tot = len(pcs); print(f"samples: {tot}  regions: {dict(region)}")
+    tot = len(pcs)
+    print(f"samples: {tot} in-run of {len(raw)} taken  regions: {dict(region)}")
     for name, c in hist.most_common(25):
         print(f"  {100*c/tot:5.1f}%  {c:5}  {name}")
     bios = [pc for pc in pcs if pc < 0x2812]

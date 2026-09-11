@@ -1871,8 +1871,7 @@ ecpst_zero:
 evmc_arg_int:
                 call    ev_mc_arg_checked   ; D-F2-4 gate
                 jr      nz,eai_bad          ; malformed/empty -> deferred syntax error
-                call    factyp_is2
-                ret                         ; CF clear; Z = already an int
+                jp      factyp_is2  ; CF clear; Z = already an int
 eai_bad:
                 scf
                 ret
@@ -1947,8 +1946,7 @@ evsgn_pos:
 evsgn_zero:
                 ld      de,0
 evsgn_settype:
-                call    set_factyp2
-                ret
+                jp      set_factyp2
 
 ; --- evmc_int: INT(x) -> floor toward -infinity, same FACTYP as x (spec ----
 ; §9.1). fp_trunc (float-arith.asm) truncates toward 0; if a fraction was
@@ -2612,8 +2610,7 @@ factyp_is2:
 ; BEFORE building this time -- it is what made D-EVSPCLOSE's prediction miss.
 ixsp:
                 inc     ix
-                call    ev_sp
-                ret
+                jp      ev_sp
 
 ; --- mul16sat: HL = HL * DE, SATURATED to $FFFF on 16-bit overflow ----------
 ; D-GETEOF2. `mul16` returns the low 16 bits, which is fine for every caller

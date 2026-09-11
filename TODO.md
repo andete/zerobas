@@ -489,7 +489,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:15005 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:15044 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -655,7 +655,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:3806 (T-6FE392)8 (T-529ABE)` from `TODO.md:13791 (T-529ABE)`: a
+      `TODO.md:3806 (T-6FE392)8 (T-529ABE)` from `TODO.md:13830 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -4650,7 +4650,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:13791 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:13830 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -5316,6 +5316,11 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `es_scan` falls to 7.9 %; ~20 % is BIOS (`BREAKX` per statement, which the
       reference pays too). A token-keyed jump table would cost 256 B of page 1,
       which has 1 B free — not a candidate until a carve pays for it.
+      🔴 **THE `BREAKX` HALF OF THAT SENTENCE IS REFUTED** (D-BRKFRAME below,
+      2026-09-11): the per-statement Ctrl-STOP poll was REMOVED outright and the
+      loop got **0.3 %** faster, which is inside the harness's own ±4-frame
+      variance. The BIOS share it was credited with was the READY prompt's `HALT`,
+      sampled after the program had ended. The rest of the reading stands.
       🔴 **THE FIRST THREE PROFILES WERE OF THE WRONG WINDOW** — the harness types
       the program through the first ~20 s of emulated time, so a window opening at
       12 s profiled the tokeniser, and a `db` table (`ev_ff_argtab_len`) symbolised
@@ -5360,6 +5365,40 @@ list. **When a slice lands, grep this list for what it just shipped.**
       operator. Keeping a working form across a chained expression is a change to
       the arithmetic core with real rounding risk — not started, and the float
       suites are what would have to hold it.
+      🔴 **THE CTRL-STOP POLL IS NOT THE COST, AND THE PROFILE THAT SAID IT WAS
+      WAS READING THE PROMPT (D-BRKFRAME, [`docs/spec-basic-breakframe.md`](docs/spec-basic-breakframe.md),
+      2026-09-11). REFUTED, NO CODE SHIPPED.** Two things in it are measured and
+      keep: **`INTFLG` ($FC9B) is dead on this target** — a write watchpoint under
+      injected Ctrl-STOP caught the CF-3300's ISR maintaining it (12 writes,
+      `$036A`/`$036D`/`$03B6`) and C-BIOS writing it **once, at boot, from
+      `$0F24`** — so the reference's own break mechanism cannot be copied; and
+      **`NEWKEY` IS maintained, identically on both** (`$FF $FF` → `$FD $EF` →
+      `$FF $FF` across the same injection), so a two-bit-test poll is available.
+      It was built (+7 B, one shared tail) and **bought 0.2–0.9 %, at or below the
+      instrument's own noise** — the profiler reported 1052 frames for the very
+      build this table measures at 1056. Reverted; the 7 B carve raised to pay for
+      it was kept.
+      🔬 **THE RIG NOW REFUSES TO AVERAGE IDLE IN.** `$11A0` is the prompt's
+      `HALT`; a 40 s window over a 21 s program put **54.6 %** of all samples on
+      that one address and read as *"62.4 % of the loop is BIOS/ISR"*. Same loop,
+      a window that fits: `$11A0` is **absent from the top sixteen** and BIOS/ISR
+      is **23.6 %**. Two guards were tried and rejected before one worked — a
+      BASIC-POKEd run marker, which read 0 % in-run for a window that plainly
+      overlapped — an apparatus failing the way the thing it replaced failed — and
+      a constant-PC trim (idle is not one PC). ⚠️ I first wrote that the POKE had
+      taken the machine down, then ran it: `POKE &HE21F,7` reads back `7` on
+      zerobas AND on the CF-3300, so the write is fine and the SAMPLER's read is
+      the suspect. Left open, not asserted; nothing shipped depends on it. Shipped: the
+      most-sampled PC, if BIOS and ≥ 15 %, is the prompt — dropped, with a loud
+      `⚠️ IDLE DISCARDED` line. Knifed on the bad window; it recovers the good
+      window's table. [[an-instrument-can-fail-the-way-the-thing-it-replaced-failed]]
+      ➡️ **NEXT, AND IT IS NOT DISPATCH AND NOT BIOS.** The corrected profile of an
+      **empty** `FOR I=1 TO 9000:NEXT` — no arithmetic in the program text at all —
+      is **`d10_lp` + `d10_skip` 17.5 %**, the `wsrc_unpack` family **~15 %**,
+      `dtw_lp` 5.7 %, `NEXT` itself only 2.6 %. The loop variable is a 14-digit BCD
+      double (faithful — D-MULZERO's `B=7`), so every `NEXT` runs the whole
+      pack/unpack pipeline. **A divide-by-ten loop being the largest single entry
+      in a loop that only ever adds 1 is the next thing to explain.**
       🎚️ TIER 4 — on-par speed: the interpreter is 2.5–3.8× slower (TIER 2, reasonable time, is met) — 17–26 % of it came back on 2026-09-11 (D-SPEEDPROF); measured on `FOR` `GOTO` `WHILE`, arithmetic and strings
       🤖 AUTONOMOUS — the charter half is ANSWERED (the STANDING sequencing of
       2026-09-02: speed is a real defect), so what remains under it is measurable work.

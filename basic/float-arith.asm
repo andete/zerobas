@@ -1391,8 +1391,7 @@ evc_check:
 ; sites collapse to one call each here. Clobbers as fac_to_int_strict, +A.
 fac_to_int_strict_reset:
                 call    fac_to_int_strict
-                call    set_factyp2
-                ret
+                jp      set_factyp2
 
 ; =============================================================================
 ; Widening loaders (spec §1 bullet 1)
@@ -1629,8 +1628,7 @@ plap_ret:
 ; mul's int-fast-path success returns (the result value is already in DE).
 ; Clobbers A.
 set_factyp_int_ret:
-                call    set_factyp2
-                ret
+                jp      set_factyp2
 
 ; --- widen_lhs_operand: HL = dest FPNUM base. Dispatches on LHS_FACTYP to --
 ; either widen_int_to(FP_LHSVAL) or widen_lhsframe_to. Clobbers as whichever
