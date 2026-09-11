@@ -70,6 +70,30 @@ dskio_calslt:
                 ld      ix,DSKIO_ENTRY      ; standard DSKIO entry ($4010)
                 pop     af                  ; restore A=drive and the direction CY
                 call    CALSLT              ; cross-slot DSKIO; returns DSKIO's CY/A/B
+                ; D-DISKERR (docs/spec-basic-diskerr.md): DSKIO's error byte (published:
+                ; 0 write protected, 2 not ready, 4 CRC, 6 seek, 8 record not found,
+                ; 10 write fault, 12 other) becomes the MSX ERR code the verb raises --
+                ; 70 `Disk offline`, 68 `Disk write protected`, else 69 `Disk I/O
+                ; error` -- and a successful transfer clears it, so a later non-DSKIO
+                ; failure in the same verb keeps its own face.
+                jr      c,dc_fail
+                xor     a
+                ld      (DISKOP_ERR),a      ; CY clear: no code pending
+                ret
+dc_fail:
+                push    af
+                ld      c,70                ; not ready (2) -> Disk offline
+                cp      2
+                jr      z,dc_map
+                ld      c,68                ; write protected (0) -> Disk write protected
+                or      a
+                jr      z,dc_map
+                ld      c,69                ; anything else -> Disk I/O error
+dc_map:
+                ld      a,c
+                ld      (DISKOP_ERR),a
+                pop     af
+                scf
                 ret
 
 ; read_sector — read one logical sector into a buffer via cross-slot DSKIO.

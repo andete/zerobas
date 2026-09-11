@@ -3142,6 +3142,9 @@ H_FILE          equ     $FE7B   ; FILES handler
 H_DSKO          equ     $FDF4   ; DSKO$ handler (D-DSKIO; the standard slot, claimed by hk_present)
 H_DSKI          equ     $FE17   ; DSKI$ handler (D-DSKIO)
 H_COPY          equ     $FE08   ; COPY handler (D-COPY; the standard slot)
+H_ERRP          equ     $FEFD   ; error-print hook (D-DISKERR): the errmsg tenant offers a code it
+                                ; does not host to this cell with A = ERR; the disk ROM claims it
+                                ; and prints the disk codes (68..70) it hosts, CF=1 when it did
 ; --- the KEY-trap fn-key hook (interrupt-traps T3, docs/spec-traps-t3-key.md §4) ---
 ; NOT a standard MSX hook: it is added by OUR C-BIOS patch
 ; (cbios-repack/key-trap-hook.patch) because no published hook can see the current
@@ -3554,7 +3557,11 @@ RL_ROW0         equ     $E094   ; the row where input began (1-based; 0 once scr
 RL_COL0         equ     $E095   ; the column where input began, after any prompt (1)
 RL_LAST         equ     $E096   ; the logical line's last row at Enter (1)
 RL_KEY          equ     $E097   ; main -> tenant: the key CHGET returned (main waits in CHGET, as before) (1)
-; FREE-RAM $E098..$E0B8  the rest of the pre-D-FORVAR FOR stack, free since it relocated (D-COPY took $E080..$E090)
+; D-DISKERR (docs/spec-basic-diskerr.md): the MSX ERR code of the LAST DSKIO failure,
+; mapped by dskio_calslt (2 not ready -> 70, 0 write protected -> 68, else 69), cleared
+; by every successful DSKIO and at every disk tenant's entry; disk_error raises it.
+DISKOP_ERR      equ     $E098   ; tenant -> main: ERR code of the last DSKIO failure, 0 = none (1)
+; FREE-RAM $E099..$E0B8  the rest of the pre-D-FORVAR FOR stack, free since it relocated (D-COPY took $E080..$E090)
 ; --- D-STRADDLE: the random-record PASS cursor (2026-09-06) -----------------
 ; A record whose span crosses a 512-byte sector boundary is written in TWO
 ; passes, and these two words are the state that has to survive `frnd_locate`,

@@ -489,7 +489,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:14755 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:14778 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -655,7 +655,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:3772 (T-6FE392)8 (T-529ABE)` from `TODO.md:13542 (T-529ABE)`: a
+      `TODO.md:3772 (T-6FE392)8 (T-529ABE)` from `TODO.md:13564 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -4616,7 +4616,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:13542 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:13564 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -7787,7 +7787,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       change to a load-bearing verb (save one slot, not the live prefix), not a
       byte spend, so it is outside the standing ≤20 B measured-divergence budget.
 
-- [ ] 🔴 **A DISK VERB ON AN EMPTY DRIVE IS NOT TRAPPABLE AND DOES NOT STOP —
+- [x] 🔴 **A DISK VERB ON AN EMPTY DRIVE IS NOT TRAPPABLE AND DOES NOT STOP —
       FIVE VERBS, MEASURED.** Opened 2026-09-10 by D-NMFAIL
       ([`scratchpad/nmfail_probe.py`](scratchpad/nmfail_probe.py),
       [`.out`](scratchpad/nmfail_probe.out); control
@@ -7833,7 +7833,25 @@ list. **When a slice lands, grep this list for what it just shipped.**
       extension + sub message + the raise sites). Under the standing ≤20 B
       main-page-1 budget it ships on this measurement; over it, this flips to 🙋
       with the number rather than a shrug.
-      🎚️ TIER 3 — common error: a forgotten disk: `NAME` `KILL` `FILES` `LOAD` `SAVE` print `load error`, do not trap, and RUN ON
+      ✅ **SHIPPED 2026-09-11 (D-DISKERR, [`docs/spec-basic-diskerr.md`](docs/spec-basic-diskerr.md),
+      `make nodiskerr-acceptance`, 11 rows).** The hook question answered itself
+      in the MSX work area: `H_ERRP` ($FEFD) is the error-print hook. The errmsg
+      tenant offers a code it does not host to that cell; the disk ROM claims it
+      and prints 68/69/70 from a table in its own free space (`Disk write
+      protected` / `Disk I/O error` / `Disk offline`, measured on the CF-3300);
+      unclaimed, main prints `Unprintable error` — the VG-8020's own answer to
+      `ERROR 70`. The code comes from `dskio_calslt` mapping DSKIO's published
+      error byte into `DISKOP_ERR` (2 → 70, 0 → 68, else 69; cleared by every
+      good transfer and at every disk tenant's entry), and a 9 B `disk_error`
+      raises it at the post-tenant DSKIO exits — `load_error` itself, the
+      cassette tail, untouched. All five verbs, and `DSKI$`/`DSKO$`/`COPY`, now
+      read `ERR 70 AT 20`, trapped, stopped. 🔴 `DSKO$` needed one more thing:
+      with no medium the emulated FDC accepts a WRITE and completes clean (a read
+      completes NOT READY), so the driver's write path now tests the seek's
+      NOT READY bit before offering data — a breakpoint inside its poll loop
+      had shown the write failing, which the plain runs (3/3 clean) refuted. Walls: main page 1 11 → 1 B, sub
+      page 1 115 → 67 B. D-DSKNODISK closes with it.
+      🎚️ TIER 3 — common error: a forgotten disk is `Disk offline`, trappable, and stops — shipped 2026-09-11
       🎯 **RULED (Joost, 2026-09-10): add ERR 70 — and *"maybe add an ERR extension
       mechanism in Disk ROM, maybe look if there is a hook for that"*.** So the
       first step is a READ, not a write: does this tree's error printer have (or
@@ -7842,7 +7860,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       interface — the reference is still not disassembled)? If yes, ERR 70 and
       every future disk code live in the disk ROM's ~8.9 KB of free space and
       cost main page 1 nothing. Price both routes; TIER 3.
-      🤖 AUTONOMOUS — the reference or a gate settles it; finishable unattended (measured 2026-09-10; the fix is a costing away).
+      🤖 AUTONOMOUS — shipped 2026-09-11 (D-DISKERR); the CF-3300 settled every row.
 
 - [ ] ⚠️ **A probe with an honest `rc` that NO battery collects is not an oracle.**
       Opened 2026-08-27 by D-WALLIT,
@@ -12230,7 +12248,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       *"when we get to TIER 5, we'll have to do a prioritization together"* —
       the TIER 5 order is a joint pass, not the loop's pick.
       🙋 NEEDS-JOOST — a call that is yours to make (refactor, no oracle).
-- [ ] 🟡 **`load error` IS PRINTED, NOT RAISED — ✅ FIXED AT ALL SIX MISSING-FILE
+- [x] 🟡 **`load error` IS PRINTED, NOT RAISED — ✅ FIXED AT ALL SIX MISSING-FILE
       VERBS (D-LOADERR-FIX 2026-08-20, 16 B; D-BLNF 2026-08-21, `BLOAD`, 4 B main
       + 12 B sub). WHAT REMAINS IS ONE ROW AND IT IS A DIFFERENT FACE.**
       [`docs/loaderr-fix-notes.md`](docs/loaderr-fix-notes.md).
@@ -12338,7 +12356,11 @@ list. **When a slice lands, grep this list for what it just shipped.**
       TAPION always fails and the right face is unmeasured. **Separating those
       two callers is the design question**, and it must not be assumed to be a
       rename [[a-filed-blocker-can-name-the-wrong-obstacle]].
-      🎚️ TIER 3 — common error: `load error` printed rather than raised at `LOAD` `BLOAD` `SAVE` `MERGE` `KILL` `NAME` — residual sites, same class as the empty-drive item
+      ✅ **THE REMAINING FACE SHIPPED WITH D-DISKERR (2026-09-11)** — the empty-drive
+      exit of every disk verb raises the mapped DSKIO code (`ERR 70` here) through
+      `disk_error`; `load_error` itself stays the cassette face. See the D-NMFAIL
+      block for the mechanism and [`docs/spec-basic-diskerr.md`](docs/spec-basic-diskerr.md).
+      🎚️ TIER 3 — common error: `load error` printed rather than raised — the disk half shipped 2026-09-11 (D-DISKERR)
       ~~🔭 SCOUT-THEN-ASK — the decision is yours; the measuring and pricing in front of it are not (refactor, no oracle, but unpriced/unmeasured first).~~ (re-marked 2026-09-10, see below)
       🎯 **RULED (Joost, 2026-09-10): add ERR 70 — and *"maybe add an ERR extension
       mechanism in Disk ROM, maybe look if there is a hook for that"*.** So the
@@ -12348,7 +12370,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       interface — the reference is still not disassembled)? If yes, ERR 70 and
       every future disk code live in the disk ROM's ~8.9 KB of free space and
       cost main page 1 nothing. Price both routes; TIER 3.
-      🤖 AUTONOMOUS — the CF-3300 settles the disposition (ERR 70, measured by D-NMFAIL); finishable unattended (ruled 2026-09-10).
+      🤖 AUTONOMOUS — shipped 2026-09-11 (D-DISKERR).
 - [ ] 🔴 **Two type-code namespaces share the value `1`** — the published `DEFTBL`
       string code and zerobas's own variable-chain string tag. D-DEFSTR fixed the
       three sites that crossed them (one was a live memory corruption) but the two
@@ -13710,7 +13732,8 @@ architecture and write code. Each step is independently oracle-validatable.
       too (the buffer here is `FSECTOR_BUF`, and `$F351` says so) — the
       pointer-driven `dir`/`boot` rows of `dskio-acceptance` are the
       machine-independent reading, and they converge.
-      🔴 **RESIDUAL, TIER 3 (D-DSKNODISK): with NO DISK IN THE DRIVE the CF-3300
+      ✅ **D-DSKNODISK CLOSED BY D-DISKERR (2026-09-11): `d.dski`/`d.dsko` read `ERR 70 AT 20` in `nodiskerr-acceptance`.** The residual as filed:
+      🔴 (was) RESIDUAL, TIER 3 (D-DSKNODISK): with NO DISK IN THE DRIVE the CF-3300
       answers `ERR 70` (Disk offline) to both; here `DSKI$` raises ERR 2 (the
       `load_error` exit taken INSIDE an expression surfaces as a Syntax error)
       and `DSKO$` raises nothing.** Measured, not fixed: ERR 70 is the item
@@ -14749,7 +14772,7 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
         programs that used to have ~15 KB of string space now get 200 unless
         they say otherwise. The full acceptance corpus was re-run, not just this
         slice's gate.
-      🎚️ TIER 1 — happy path: the measured keyword-completeness remainder — `make kwsweep` prints it; today it overlaps the eight; none of the eight is open there any more (`LOC`, `DSKI$`, `DSKO$`, `COPY` shipped 2026-09-11) — what remains of this item is the fixture, not a keyword
+      🎚️ TIER 1 — happy path: the measured keyword-completeness remainder — the kwsweep target prints it; every one of the eight shipped by 2026-09-11 (D-LOC, D-DSKIO, D-COPY) and what remains of this item is the FIXTURE it is blocked on, not a keyword (this line names none on purpose: the tier table reads a backticked word here as an open gap)
       ⛔ BLOCKED — neither of us can start it now (needs a fixture).
 
 - [ ] **`LOAD"CAS:"` ACCEPTS A TOKENISED TAPE; the reference does not return.**

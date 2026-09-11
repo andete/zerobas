@@ -59,6 +59,7 @@
 bload_tenant:
                 xor     a
                 ld      (BL_STAT),a         ; assume success; load_error flips it
+                ld      (DISKOP_ERR),a      ; D-DISKERR: no DSKIO failure pending yet
                 ld      hl,(BL_PTR)         ; token cursor (from the resident stub)
                 ei                          ; the tape path needs a live ISR; htimi_guard
                                             ; makes that safe while page 1 is ours

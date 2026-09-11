@@ -80,7 +80,9 @@ do_bload:
                 or      a
                 jr      z,load_handoff      ; plain BLOAD returns; ,R jumps to EXECPTR
                 cp      1
-                jp      z,load_error        ; the tenant hit load_error; report once here
+                jp      z,disk_error        ; the tenant hit load_error: ERR 70 on an empty drive
+                                            ; (D-DISKERR), else `load error` -- the tape path has
+                                            ; no DSKIO and keeps its face
                 jp      raise_error         ; A = the tenant's ERR code — never returns
 
 ; parse_disk_fcb stays RESIDENT even though the verb around it left: nine callers

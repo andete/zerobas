@@ -119,6 +119,20 @@ ex_copy:
                 jp      z,gb_illegal        ; 3: refused -> ERR 5
                 jp      kill_status         ; 0 / 1 / 2 exactly as KILL decodes them
 
+; --- disk_error: raise the last DSKIO failure's code, else the old face --------
+; D-DISKERR (docs/spec-basic-diskerr.md). Every post-tenant DSKIO-failure exit of
+; the disk verbs comes here instead of load_error: with a code pending (the disk
+; tenant's dskio_calslt mapped it -- 70 for an empty drive) it is RAISED, so ON
+; ERROR traps it, ERR/ERL read it and the program STOPS, as the CF-3300 does
+; (D-NMFAIL measured all five verbs); with none pending (a bad BPB after a
+; successful read, an absent sub-ROM) the `load error` face is unchanged. The
+; cassette exits keep load_error itself [[a-shared-tail-is-not-a-decision]].
+disk_error:
+                ld      a,(DISKOP_ERR)
+                or      a
+                jp      nz,raise_error
+                jp      load_error
+
 ex_files:
                 push    hl                  ; ⚠️ HL IS THE STATEMENT CURSOR HERE and
                 ld      hl,H_FILE           ; the gate needs it for the hook address;
@@ -217,7 +231,7 @@ df_nofilespec:
                 or      a
                 jr      z,df_notfound
                 dec     a
-                jp      nz,load_error
+                jp      nz,disk_error       ; D-DISKERR: 2 = mount / DSKIO -> the mapped code
                 jp      exec_stmt
 ; df_notfound — R-LF4 + R-LF6: a filespec that matches nothing prints `File not
 ; found`, on the SCREEN, for LFILES *and* for FILES. Measured on the CF-3300 for
@@ -288,7 +302,7 @@ df_or_loaderr:
                 ld      a,(DISKOP_OP)
                 cp      DISKOP_SEL_FAT_FIND
                 jr      z,df_notfound
-                jp      load_error
+                jp      disk_error          ; D-DISKERR: a DSKIO failure raises its code
 
 ; ===========================================================================
 ; Sequential file channel (Phase 2). A SINGLE open channel, layered on the
@@ -1680,7 +1694,7 @@ kill_status:                            ; D-COPY shares this decode (0/1/2)
                 or      a
                 jp      z,df_notfound       ; 0 = nothing matched -> ERR 53
                 dec     a
-                jp      nz,load_error       ; 2 = mount / DSKIO error
+                jp      nz,disk_error       ; 2 = mount / DSKIO error -> the mapped code (D-DISKERR)
                 jp      exec_stmt
 
 ; --- NAME "old" AS "new" — rename a file -----------------------------------
@@ -1841,7 +1855,7 @@ nm_notfound:
 ; two different dispositions: nm_fail is the mount/no-disk failure above, nm_fail2
 ; the stamp tenant's I-O error (or an absent sub-ROM) below.
 nm_fail:
-                jp      load_error
+                jp      disk_error          ; D-DISKERR: ERR 70 on an empty drive, as the CF-3300
 ; D-DUPSPAN2: an ALIAS, not a second copy -- byte-identical to nm_fail,
 ; and POSITION-INDEPENDENT by tools/dupspan_indep.py (terminates, no
 ; escaping relative jump, not entered by fallthrough, same ROM region).
@@ -2041,7 +2055,7 @@ merge_cas:
                 jp      exec_stmt
 mc_ioerr:
                 pop     hl
-                jp      load_error
+                jp      disk_error          ; D-DISKERR
 
 ; --- ascii_read_lines — read a line-numbered ASCII (SAVE",A") program from the
 ; ALREADY-OPEN fat_io sequential stream, tokenising + storing each line via

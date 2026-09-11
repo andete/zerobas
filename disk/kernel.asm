@@ -2160,6 +2160,68 @@ hkm_copy:
 ; Table-driven so init.asm costs ONE call: the pad before its $41EF pin is 31 B
 ; and seven inline installs need 45. docs/spec-basic-nodisk.md §9.
 ; Clobbers A, BC, DE, HL.
+; --- hk_errp: print the disk error codes this ROM hosts (D-DISKERR) ---------
+; Layout source: MSX2 Technical Handbook §2 (the hook table -- H.ERRP $FEFD is the
+; error-print hook a disk ROM claims; CALLF stub layout as install_hook) and the
+; BIOS entry list (CHPUT $00A2). Texts: black-box CF-3300 (`ERROR 68/69/70`).
+; Reached from the errmsg tenant's H_ERRP call with A = ERR code, for codes main
+; does not host. Prints the text through CHPUT (BIOS, page 0) and returns CF=1;
+; a code that is not ours returns CF=0 and main prints `Unprintable error`.
+; Texts measured on the CF-3300 (`ERROR 68/69/70` in a program): `Disk write
+; protected`, `Disk I/O error`, `Disk offline`.
+hk_errp:
+                ld      hl, dk_errtab
+hke_lp:
+                ld      b, (hl)             ; the row's code; 0 ends the table
+                inc     hl
+                ld      e, (hl)
+                inc     hl
+                ld      d, (hl)
+                inc     hl
+                ld      c, a
+                ld      a, b
+                or      a
+                jr      z, hke_no
+                cp      c
+                ld      a, c
+                jr      nz, hke_lp
+                ex      de, hl
+hke_pr:
+                ld      a, (hl)
+                inc     hl
+                or      a
+                scf                         ; printed: CF=1 (SCF leaves Z alone)
+                ret     z
+                call    CHPUT
+                jr      hke_pr
+hke_no:
+                or      a                   ; CF=0: not ours
+                ret
+dk_errtab:
+                db      68
+                dw      dk_e68
+                db      69
+                dw      dk_e69
+                db      70
+                dw      dk_e70
+                db      0
+dk_e68:         db      "Disk write protected", 0
+dk_e69:         db      "Disk I/O error", 0
+dk_e70:         db      "Disk offline", 0
+
+; --- fdc_wp_chkrdy: the write path's NOT READY test (D-DISKERR) --------------
+; Source: WD2793 data sheet via MSX2 Technical Handbook (type-I status bit 7 =
+; NOT READY); the read command reports it on its own, the write command with no
+; medium is accepted and completes clean on the emulated FDC (measured, 3/3), so
+; the write path asks the seek's status first. Out: CY, A = 2 (not ready) / NC.
+fdc_wp_chkrdy:
+                ld      a, (FDC_STATUS)
+                and     ST_NOTRDY
+                ret     z
+                ld      a, 2
+                scf
+                ret
+
 install_basic_hooks:
                 ld      hl, FSECTOR_BUF     ; D-DSKIO: publish the DSKI$/DSKO$ buffer at the
                 ld      (DSKBUF_PTR), hl    ; cell the MSX idiom PEEKs (docs/spec-basic-dskio.md)
@@ -2199,6 +2261,7 @@ hook_tab:
                 dw      H_DSKO, hk_present   ; D-DSKIO: both bodies are a sub-ROM tenant,
                 dw      H_DSKI, hk_present   ; the hook buys the diskless ERR 5
                 dw      H_COPY, hk_present   ; D-COPY: same shape
+                dw      H_ERRP, hk_errp      ; D-DISKERR: the disk codes' messages live HERE
                 dw      0
 
 ; --- install_hook: write one 5-byte CALLF stub into a hook slot -------------

@@ -227,6 +227,12 @@ fdc_wp_attempt:
                 ld      a, CMD_SEEK
                 ld      (FDC_STATUS), a
                 call    fdc_wait_ready
+                ; D-DISKERR (docs/spec-basic-diskerr.md): an EMPTY drive must fail a
+                ; write the way it fails a read -- the seek's type-I status carries
+                ; NOT READY; the body is in the kernel's corridor (this span has 7 B
+                ; before the $4462 pin).
+                call    fdc_wp_chkrdy   ; CY, A=2 when the drive is not ready
+                jp      c, fdc_wp_fail
                 ; issue write-sector and transfer the data
                 ld      a, c
                 ld      (FDC_SECTOR), a

@@ -67,6 +67,8 @@
 ; through CALSLT untouched by subrom_call -- survive intact into whichever
 ; primitive body gets picked.
 fatprim_tenant:
+                xor     a
+                ld      (DISKOP_ERR),a      ; D-DISKERR: no DSKIO failure pending yet
                 ld      a,(DISKOP_OP)
                 ld      c,a
                 ld      b,0                 ; BC = op (0..14)

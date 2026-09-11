@@ -2257,4 +2257,4 @@ dsk_drv_ok:
                 ld      a,(DISKOP_STATUS)
                 or      a
                 ret     z
-                jp      load_error          ; DSKIO error
+                jp      disk_error          ; DSKIO error -> its code (D-DISKERR)

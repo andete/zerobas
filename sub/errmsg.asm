@@ -67,6 +67,20 @@ em_scan:
                 inc     hl                  ;    walk both find and step.
                 jr      z,em_print
                 djnz    em_scan
+                ; D-DISKERR: not one of ours -- offer it to H_ERRP first. The disk ROM
+                ; claims that hook and prints the codes IT hosts (68..70), CF=1 when it
+                ; did; a diskless machine leaves the cell a bare `ret`, CF clear, and
+                ; the code prints as `Unprintable error` -- the VG-8020's own answer to
+                ; `ERROR 70`. Joost's "ERR extension mechanism in the Disk ROM": every
+                ; future disk code lives there, and main page 1 pays nothing.
+                ld      hl,H_ERRP
+                ld      de,em_back
+                push    de
+                ld      a,(ERRFLG)
+                or      a                   ; CF clear = not handled
+                jp      (hl)
+em_back:
+                ret     c                   ; the disk ROM printed it
                 ld      de,em_unprintable   ; not one of ours -- 26..49, 65..255, and
                                             ; anything else main routes here. It
                                             ; CANNOT decline (see the header), so it

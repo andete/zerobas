@@ -58,6 +58,8 @@
 ; fatprim TENANT wrapper (which does read DISKOP_OP, in its own value namespace)
 ; is not on this path: this tenant calls the primitive BODIES directly.
 dirverb_tenant:
+                xor     a
+                ld      (DISKOP_ERR),a      ; D-DISKERR: no DSKIO failure pending yet
                 ld      a,(DISKOP_OP)
                 or      a
                 jp      z,tnt_kill              ; DISKOP_SEL_KILL = 0

@@ -69,6 +69,8 @@
 ; the same place on success.
 save_tenant:
                 xor     a
+                ld      (DISKOP_ERR),a      ; D-DISKERR: no DSKIO failure pending yet
+                xor     a
                 ld      (SV_STAT),a         ; assume success; sv_load_error flips it
                 ld      a,(SV_OP)
                 ei                          ; the tape engines need a live ISR;

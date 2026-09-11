@@ -52,6 +52,7 @@ H_KILL          equ     $FDFE   ; KILL
 H_DSKO          equ     $FDF4   ; DSKO$ (D-DSKIO)
 H_DSKI          equ     $FE17   ; DSKI$ (D-DSKIO)
 H_COPY          equ     $FE08   ; COPY (D-COPY)
+H_ERRP          equ     $FEFD   ; error-print hook (D-DISKERR): this ROM prints ERR 68..70
 DSKBUF_PTR      equ     $F351   ; word -> the DSKI$/DSKO$ sector buffer; the disk ROM writes it
                                 ; at init (basic/sysvars.inc has the same cell and the reading)
 FSECTOR_BUF     equ     $E5C0   ; the buffer it names: basic/sysvars.inc's FSECTOR_BUF, mirrored

@@ -2153,6 +2153,10 @@ copy-acceptance: repack-machine $(DISK_TEST_DSK)
 screditor-acceptance: repack-machine
 	ZEROBAS_BASIC_MACHINE=$(REPACK_MACHINE) python3 probes/basic/basic_probe_screditor.py
 
+# --- D-DISKERR: an empty drive is ERR 70 (docs/spec-basic-diskerr.md) ---------------
+nodiskerr-acceptance: repack-machine $(DISK_TEST_DSK)
+	ZEROBAS_BASIC_MACHINE=$(REPACK_MACHINE) python3 probes/disk/diskbasic_probe_nodiskerr.py
+
 # --- D-BADFNUM: the REJECTED-channel-number grid ------------------------------
 # docs/spec-basic-badfnum-channel-class.md. 12 channel-taking verbs x 5 channel
 # classes, SWEPT rather than sampled, plus 4 controls, 8 trappability rows and 10
@@ -3216,6 +3220,11 @@ todo-citation-check:
 # says so in its footer rather than letting a blank read as verified.
 tiers:
 	python3 tools/tier_table.py $(ARGS)
+
+# The same table as a FILE -- docs/tier-status.md, the page to open (or publish).
+# Generated; regenerate after any TODO.md edit, never hand-edit.
+tiers-md:
+	python3 tools/tier_table.py --keywords --markdown > docs/tier-status.md
 
 # D-MARKGATE. TODO.md's header states "EVERY OPEN ITEM CARRIES A PICK-UP MARKER"
 # and until 2026-09-05 the only thing that could check it lived in scratchpad and

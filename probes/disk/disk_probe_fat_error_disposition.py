@@ -240,6 +240,15 @@ MOUNT_CASES = [
 # rather than passing on two rows of silence.
 MOUNT_LIVE = ("mount-live", "PRINT 6*7", "42")
 
+# ✅ D-DISKERR, 2026-09-11 (docs/spec-basic-diskerr.md): the EMPTY-DRIVE face is
+# MEASURED on the CF-3300 now -- `Disk offline`, ERR 70, trapped, the program
+# stops (D-NMFAIL: NAME/KILL/FILES/LOAD/SAVE; then BLOAD/MERGE/DSKI$/DSKO$/COPY)
+# -- and zerobas raises it through disk_error. So the MOUNT arm's pin moves from
+# zerobas's own `load error` to the reference-exact text, in the same commit as
+# the code, exactly as the missing-file pins did. The arm's PURPOSE is unchanged:
+# the no-disk answer must still DIFFER from the mounted twin's `File not found`.
+MOUNT_WANT = "Disk offline"
+
 assert {t for _, _, t in MOUNT_CASES} <= {k for k, *_ in CASES}, \
     "a MOUNT_CASES twin names a row that is not in CASES"
 
@@ -732,7 +741,7 @@ def main() -> int:
             raws[[c[0] for c in CASES].index(twin)],
             [c[1] for c in CASES][[c[0] for c in CASES].index(twin)])
         mtails[key] = got
-        pinned = WANT in (tail or "")
+        pinned = MOUNT_WANT in (tail or "")
         if not mlive_ok:
             print(f"  ....  {key:14} {line:38} -> {got[:60]!r}"
                   f"   NOT MEASURED (liveness failed)")
@@ -742,9 +751,9 @@ def main() -> int:
             mscored += 1
             ok = False
             print(f"  FAIL  {key:14} {line:38} -> {got[:60]!r}"
-                  f"   [MOUNT arm, pinned {WANT!r}]")
+                  f"   [MOUNT arm, pinned {MOUNT_WANT!r}]")
             nrows += 1
-            print(f"        want {WANT!r} at an EMPTY DRIVE -- this row exists "
+            print(f"        want {MOUNT_WANT!r} at an EMPTY DRIVE -- this row exists "
                   f"because K-KILL2/K-NAME2 reddened nothing without it")
             continue
         differs = (tail or "") != (twin_tail or "")

@@ -689,7 +689,8 @@ sv_tenant:
                 ld      (SV_OP),a
                 ld      ix,SUBROM_ENTRY_BASE_P1 + 3*SUBROM_IDX_SAVE
                 call    sc_call             ; D-SCCALL: tenant call + absent raise
-                ld      a,(SV_STAT)
+                ld      a,(SV_STAT)         ; D-DISKERR: a DSKIO failure raises its code below
                 or      a
-                jp      nz,load_error       ; the tenant hit sv_load_error: report ONCE
+                jp      nz,disk_error       ; the tenant hit sv_load_error: report ONCE --
+                                            ; ERR 70 on an empty drive (D-DISKERR), else `load error`
                 ret
