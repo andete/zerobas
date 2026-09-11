@@ -23,6 +23,11 @@ ERAFNK          equ     $00CC   ; erase the function-key display line (KEY OFF)
 DSPFNK          equ     $00CF   ; display the function-key line (KEY ON)
 CSRX            equ     $F3DD   ; cursor column (1-based); C-BIOS sysvars / PRINT comma zones
 CSRY            equ     $F3DC   ; cursor row (1-based); the CSRLIN pseudo-variable reads it
+CRTCNT          equ     $F3B1   ; number of text rows on the screen (MSX work area; D-SCREDIT)
+NAMBAS          equ     $F922   ; name-table base of the current text mode (MSX work area; D-SCREDIT)
+LINTTB          equ     $FBB2   ; per-row continuation table, one byte per row: 0 = the row
+                                ; continues onto the next (MSX work area; D-SCREDIT measured that
+                                ; C-BIOS keeps it on this machine)
 ; BREAKX: test the Ctrl-STOP key combination by directly scanning keyboard matrix
 ; row 6 (no side effects, no ISR dependency). CF set on return = Ctrl-STOP held,
 ; CF clear = not held. Source: MSX Assembly Page BIOS call list / MSX2 Technical
@@ -3541,7 +3546,15 @@ SL_CEIL         equ     $E058   ; store_line: the VARIABLE-region ceiling the
 COPY_SRC        equ     $E080   ; the source's 11-byte 8.3 name field
 COPY_CLUS       equ     $E08B   ; the source's first cluster (word)
 COPY_LEFT       equ     $E08D   ; bytes still to copy (4-byte LE)
-; FREE-RAM $E091..$E0B8  the rest of the pre-D-FORVAR FOR stack, free since it relocated (D-COPY took $E080..$E090)
+; D-SCREDIT (docs/spec-basic-screditor.md): read_line's marshalling to the readline
+; tenant, 6 B from the same band.
+RL_HL           equ     $E091   ; main -> tenant: the write cursor (LINEBUF, or AUTO's preset) (2)
+RL_STAT         equ     $E093   ; tenant -> main: 0 = Enter, $FF = Ctrl-STOP / Ctrl-C (1)
+RL_ROW0         equ     $E094   ; the row where input began (1-based; 0 once scrolled off) (1)
+RL_COL0         equ     $E095   ; the column where input began, after any prompt (1)
+RL_LAST         equ     $E096   ; the logical line's last row at Enter (1)
+RL_KEY          equ     $E097   ; main -> tenant: the key CHGET returned (main waits in CHGET, as before) (1)
+; FREE-RAM $E098..$E0B8  the rest of the pre-D-FORVAR FOR stack, free since it relocated (D-COPY took $E080..$E090)
 ; --- D-STRADDLE: the random-record PASS cursor (2026-09-06) -----------------
 ; A record whose span crosses a 512-byte sector boundary is written in TWO
 ; passes, and these two words are the state that has to survive `frnd_locate`,
@@ -4523,6 +4536,9 @@ SUBROM_IDX_PUNUM     equ 24     ; pu_num_tenant (sub/punum.asm): PRINT USING's
                                 ; numeric renderer (D-PUNUM). PAGE 1, because it
                                 ; calls flt_fmt in the main LOW region -- and
                                 ; because main page 1 had 32 B free.
+SUBROM_IDX_READLINE  equ 25     ; readline_tenant (sub/readline.asm): the screen
+                                ; editor's line reader -- main's read_line/rl_loop
+                                ; are a stub since D-SCREDIT (docs/spec-basic-screditor.md)
 SUBROM_IDX_PARSELN   equ 23     ; parseln_tenant (sub/lineno.asm): the ASCII
                                 ; line-number scanner `dl_store` runs once per
                                 ; typed/loaded numbered line (D-EVLNO, docs/

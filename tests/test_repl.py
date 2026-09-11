@@ -1,16 +1,17 @@
 # Copyright (c) 2026 Joost Yervante Damad
 # SPDX-License-Identifier: 0BSD
-"""Unit test: the keyboard line editor `read_line` (repl.asm), no emulator.
+"""Unit test: the keyboard line editor `read_line` (repl.asm + sub/readline.asm), no emulator.
 
 Tier-2: CHGET is trapped to feed a scripted key sequence, CHPUT is captured to
-check the echo. read_line edits keystrokes into LINEBUF (0-terminated) with
-Backspace ($08) / DEL ($7F) erase and Enter ($0D) to finish; sub-$20 control
-characters are ignored.
+check the echo AND applied to a fake 40x24 screen at the cursor cells (CSRY/CSRX,
+the documented work area), RDVRM is trapped to read that screen back. Since
+D-SCREDIT (docs/spec-basic-screditor.md) Enter reads the LOGICAL LINE under the
+cursor out of VRAM -- a typo fixed with cursor-left lands in the buffer, a line
+that wraps (LINTTB marks the continuation) reads back whole -- so the buffer is
+what the SCREEN shows, not the keystrokes.
 
-Oracle: the documented editor behaviour in repl.asm (erase-left on $08/$7F,
-ignore other control chars, terminate on Enter with a CR/LF echo). The buffer
-contents are the typed printable characters; the echo is those characters then
-CR,LF.
+Oracle: the references (both agree on every gated row of screditor-acceptance);
+here the fake screen models what C-BIOS's CHPUT does with each byte.
 """
 
 import os
@@ -40,20 +41,61 @@ def build():
                    capture_output=True)
 
 
+COLS, ROWS = 40, 24
+
+
 def feed(m, keys):
-    """Drive read_line with a scripted key stream; return (LINEBUF bytes, echo)."""
+    """Drive read_line with a scripted key stream over a fake screen; return
+    (LINEBUF bytes, echo)."""
     seq = list(keys)
     st = {"i": 0}
+    screen = bytearray(b" " * (COLS * ROWS))
+    sym = m.sym
+    # the work-area cells the tenant reads: cursor at row 1 col 1, WIDTH 40,
+    # 24 rows, SCREEN 0, name table at 0, every row ends a line, no AUTO
+    m.poke(sym["CSRY"], b"\x01"); m.poke(sym["CSRX"], b"\x01")
+    m.poke(sym["LINLEN"], bytes([COLS])); m.poke(sym["CRTCNT"], bytes([ROWS]))
+    m.poke(sym["SCRMOD"], b"\x00"); m.poke_w(sym["NAMBAS"], 0)
+    m.poke(sym["LINTTB"], b"\x01" * ROWS); m.poke(sym["RL_AUTO"], b"\x00")
 
     def chget(mm):
         mm.cpu.a = seq[st["i"]]
         st["i"] += 1
 
+    echo = []
+
+    def chput(mm):
+        """What C-BIOS does with the byte: move the cursor or write the screen."""
+        a = mm.cpu.a
+        echo.append(a)
+        y, x = mm.mem[sym["CSRY"]], mm.mem[sym["CSRX"]]
+        if a == 13: x = 1
+        elif a == 10 or a == 0x1F: y = min(ROWS, y + 1)
+        elif a == 8 or a == 0x1D: x = max(1, x - 1)
+        elif a == 0x1C: x += 1
+        elif a == 0x1E: y = max(1, y - 1)
+        elif a >= 32:
+            if x > COLS:                       # the pending wrap: a new row, marked as a continuation
+                mm.mem[sym["LINTTB"] + y - 1] = 0
+                y, x = y + 1, 1
+            screen[(y - 1) * COLS + x - 1] = a
+            x += 1
+        mm.mem[sym["CSRY"]], mm.mem[sym["CSRX"]] = y, x
+
+    def rdvrm(mm):
+        mm.cpu.a = screen[mm.cpu.hl]
+
+    def chsns(mm):
+        """ZF set = nothing waiting: main's read_line polls this before each key."""
+        if st["i"] < len(seq): mm.cpu.f &= ~0x40
+        else: mm.cpu.f |= 0x40
+
     m.trap("CHGET", chget)
-    echo = m.capture_chput()
+    m.trap("CHSNS", chsns)
+    m.trap("CHPUT", chput)
+    m.trap("RDVRM", rdvrm)
     m.call("read_line")
     base = m.sym["LINEBUF"]
-    # read LINEBUF up to its 0 terminator
     end = base
     while m.mem[end] != 0:
         end += 1
@@ -91,6 +133,14 @@ def run():
 
     # Empty line: just Enter -> empty buffer, CR/LF echo only.
     case("just Enter", b"\r", b"", b"\r\n")
+
+    # D-SCREDIT: a typo fixed with cursor-left is what the SCREEN shows -- A=2,
+    # not A=12 (the cursor byte reaches CHPUT and the row is read back).
+    case("'A=1' <left> '2'", b"A=1\x1d2\r", b"A=2", b"A=1\x1d2\r\n")
+
+    # D-SCREDIT: a line that wraps reads back WHOLE -- the continuation mark the
+    # wrap leaves in LINTTB joins the two rows into one logical line.
+    case("45 chars, wrapped", b"x" * 45 + b"\r", b"x" * 45)
 
     print()
     print("ALL PASS — read_line edits/echoes per the documented editor contract"

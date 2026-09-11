@@ -199,7 +199,7 @@ SUB_PARTS := sub/equates.inc sub/deftype.asm sub/tkfloat.asm sub/fp_sqrt.asm sub
              sub/save.asm basic/sv-bsvdisk.inc basic/sv-bsvcas.inc basic/sv-savdisk.inc \
              basic/sv-tsb.inc basic/sv-tputw.inc basic/sv-tne.inc basic/sv-diskwr.inc \
              basic/fatiocreate-body.inc basic/fatiow-body.inc \
-             sub/circleparse.asm sub/errmsg.asm sub/lineno.asm \
+             sub/circleparse.asm sub/errmsg.asm sub/lineno.asm sub/readline.asm \
              sub/readdata.asm basic/readdata-body.inc basic/tokskip-body.inc \
              sub/beep.asm sub/lofu32.asm sub/keystr.asm sub/title.asm basic/title-body.inc \
              sub/playparse.asm sub/graphics.asm \
@@ -2148,6 +2148,10 @@ dskio-acceptance: repack-machine $(DISK_TEST_DSK)
 # --- D-COPY: COPY "src" TO "dst" (docs/spec-basic-copy.md) ------------------------
 copy-acceptance: repack-machine $(DISK_TEST_DSK)
 	ZEROBAS_BASIC_MACHINE=$(REPACK_MACHINE) python3 probes/disk/diskbasic_probe_copy.py
+
+# --- D-SCREDIT: the screen editor's happy path (docs/spec-basic-screditor.md) ------
+screditor-acceptance: repack-machine
+	ZEROBAS_BASIC_MACHINE=$(REPACK_MACHINE) python3 probes/basic/basic_probe_screditor.py
 
 # --- D-BADFNUM: the REJECTED-channel-number grid ------------------------------
 # docs/spec-basic-badfnum-channel-class.md. 12 channel-taking verbs x 5 channel

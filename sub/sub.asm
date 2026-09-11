@@ -660,6 +660,13 @@ sub_p1_table:
                                                 ;   region -- the first PRINT USING
                                                 ;   tenant that is not pure RAM.
 
+                jp      readline_tenant         ; index 25 (SUBROM_IDX_READLINE): the
+                                                ;   screen editor's line reader (D-SCREDIT,
+                                                ;   sub/readline.asm). PAGE 1 because it
+                                                ;   blocks in CHGET and reads VRAM through
+                                                ;   RDVRM -- BIOS, page 0 -- under EI, the
+                                                ;   bload/save precedent.
+
 
 ; --- Page-1 PING (S2a boot-gate tenant) -----------------------------------
 ; Proves a CALSLT to $4010 mapped slot 3-2 into PAGE 1 (main BASIC switched out,
@@ -847,6 +854,10 @@ sub_p1_ping:
 ; to the $0038 vector. Marshals BC/HL through PLN_NUM/PLN_PTR.
                 include "lineno.asm"
                 include "punum.asm"
+; readline_tenant (index 25, sub/readline.asm): the screen editor's line reader,
+; D-SCREDIT. Main's read_line became a stub; the keyboard loop, the cursor keys
+; and the VRAM read of the logical line under the cursor live here.
+                include "readline.asm"
 
 ; --- pad page 1 to the 32 KB ($8000) end -----------------------------------
 ; __MEAS_SUB_P1_END: page-1 free space is $8000 - __MEAS_SUB_P1_END. Same

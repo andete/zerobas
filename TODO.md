@@ -489,7 +489,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:14673 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:14755 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -14038,7 +14038,7 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       reference fires them there is UNMEASURED — so the conservative answer is
       gated in at one RAM load rather than changed as a side effect. Spec §6 names
       the characterization that closes it.
-- [ ] **Screen-editor REPL** — real MSX BASIC does not use a sequential prompt
+- [x] **Screen-editor REPL** — real MSX BASIC does not use a sequential prompt
       loop; Enter reads the *current cursor line from VRAM* (not a dedicated
       input buffer), so the user can cursor-up to any visible output, edit it
       in place, and re-enter it. Needs cursor-key handling and VDP line-readback.
@@ -14119,7 +14119,89 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       ⚠️ **STILL UNPRICED, UNCHANGED BY THIS:** the byte cost of the VRAM reader,
       `INS`/`HOME`/`CTRL`+key and the r23 function-key row, and whether a tenant may
       read VRAM from inside. The 0.6–0.9 KB figure remains the 2026-07-11 estimate.
-      🎚️ TIER 1 — happy path: the SCREEN EDITOR is how every MSX program is typed and edited
+      ✅ **THE HAPPY PATH SHIPPED 2026-09-11 (D-SCREDIT, [`docs/spec-basic-screditor.md`](docs/spec-basic-screditor.md),
+      `make screditor-acceptance`, 10 rows, three sides).** The scout's one
+      "not zero" cost measured ZERO: the reference's per-row continuation
+      bookkeeping is the published `LINTTB` table ($FBB2: zero = the row
+      continues), and **C-BIOS's `CHPUT` already keeps it on the zerobas
+      machine** — zero on a wrapped `PRINT` row, non-zero on a `VPOKE`d one,
+      shifted with every scroll — except for the wrap that itself scrolls the
+      screen, where C-BIOS drops the mark (the reference keeps it); the reader
+      writes that one mark when a typed character wraps on the bottom row.
+      Two new faces the gate carries besides D-EDITLINE's rows: **`e.left`** —
+      `A=1`, cursor-left, `2`, Enter reads `A=2` on both references and `12`
+      here (a typo fixed with the cursor: the everyday case) — and **`e.csr`**,
+      a two-row line that prints `CSRLIN` when re-entered from its first row:
+      `2` everywhere, the cursor moved below its LAST row before it ran.
+      🔴 **A CURSOR-UP COUNT FROM THE PROMPT IS NOT MACHINE-NEUTRAL** — zerobas's
+      `ZB` prompt costs one row per typed line where the references' `Ok` costs
+      two, so `↑↑` lands on different lines; the gate builds its screens from a
+      program and navigates with HOME + DOWN × n (spec §2). Here: `read_line`
+      waits in main and calls `readline_tenant` (sub page 1, index 25) once per
+      key; the tenant echoes the cursor
+      keys through `CHPUT`, records the row/column where input began (the
+      `FSTPOS` rule — zerobas's `ZB` prompt, `INPUT`'s `? ` and `AUTO`'s number
+      are excluded on that row; a re-entered REPL row skips its `ZB`), follows
+      the start row up through scrolls, and on Enter walks `LINTTB` to the
+      logical line's first row, reads it row by row out of the name table
+      (`RDVRM`), strips trailing blanks and moves the cursor below its last row.
+      `INPUT` with a wrapped answer at the bottom row (`i.wrap`, 45 chars, the
+      prompt excluded) agrees on all three sides before and after. Cost: main
+      page 1 5 → 11 B (the eviction funded itself), sub page 1 496 → 135 B, 7 B
+      of RAM from the D-FORVAR band.
+      🔴 **A PAGE-1 TENANT MUST NOT WAIT**: the first cut blocked in `CHGET`, and
+      `htimi_guard` skips the PLAY/trap seam while a page-1 tenant is mapped —
+      music stopped at the prompt (`play-trace` red on every row). The wait is in
+      main now — INSIDE `CHGET`, as it always was, so the harness's injector
+      latch (`latch-check`) still sees the wait it models — and the tenant is
+      handed one key per call in `RL_KEY`.
+      🔴 **A FIRST READING WAS TAKEN INSIDE A `PRINT` THAT HAD SCROLLED THE SCREEN
+      AGAIN** — the `LINTTB` values after a bottom-row wrap were off by a row and
+      said both machines dropped the mark; captured into variables first, the
+      reference keeps it and only C-BIOS drops it. The apparatus is part of the
+      measurement, again.
+      🔴 **AND THE SAME BLIND SPOT POISONS OLDER ROWS**: every output line that
+      wraps at the row above the bottom and then scrolls leaves a stale
+      "continues" mark that C-BIOS's shift then walks UP the screen, so the
+      prompt row after a screen-filling `LIST` read as part of the listing
+      (`linemax`'s `list-max`). The prompt always opens a fresh line, so
+      `read_line` now sets the two stale entries to "ends" at entry when the
+      cursor is on the bottom row; rows further up can still carry stale marks —
+      re-entering an OLD line that once wrapped at the bottom may join a
+      neighbour (TIER 5, filed below; the faithful cure is bookkeeping in the
+      output path, exactly the cost the scout named and only for those two rows).
+      🎯 **AND THE PROMPT AFTER A GRAPHICS PROGRAM READS ITS LINE IN SCREEN 0** —
+      measured on both references (the prompt after `SCREEN 2:END`, and `INPUT`
+      inside SCREEN 2, both read in mode 0 with a wrapping line intact); zerobas
+      stayed in SCREEN 2, where C-BIOS's rows are 32 wide and a wrapped line read
+      back garbled (graphics phase M lost a line). `txt_mode` (`INITXT` when
+      `SCRMOD` ≠ 0) runs before the prompt and at `read_line` entry.
+      🎯 **AND ONE TIMING RACE SURFACED ELSEWHERE (D-PLAYEMPTY):** `gicini`'s
+      `m.empty` — `PLAY""` then `PEEK(&HFB3F)` in the same program — read 1 where
+      the references read 0. `PLAY` set the voice's `MUSICF` bit for an EMPTY
+      string and only the next ISR tick cleared it; the row had been green
+      because `RUN`'s dispatch left a tick pending at the PLAY tenant's `EI`, and
+      the editor's own tenant call now consumes that tick first. A write-
+      watchpoint on `$FB3F` (set at the tenant, cleared at `psv_end`) and a
+      `JIFFY` check (interrupts live at RUN time) separated the two readings.
+      `pt_vloop` drops a voice with an empty string from the commit mask: no
+      queue, no bit — which is what the reference's immediate 0 says.
+      🔴 **C-BIOS's SCROLL NEVER REWRITES THE LAST TWO `LINTTB` ENTRIES** (a
+      write-watchpoint showed the reader's own wrap mark at [22] copied into
+      [21] by every scroll and never replaced), so from the first wrapped line
+      typed at the bottom on, every Enter spliced the row above the prompt into
+      the read — ten battery suites red at once, each from its eighth case on.
+      `rl_botfix` writes the two stale entries after each scroll the reader
+      causes. A whole class failing identically was, again, one cell.
+      🔴 **AND `sub/readline.asm` WAS NOT IN `SUB_PARTS`** — two builds shipped the
+      first tenant unchanged; the wall reading that could not have stayed the same
+      (sub page 1: 144 B twice) was the tell, exactly as D-PUDOT's note warned.
+      ⚠️ Later tiers, filed here: `INS` mode, `DEL` mid-row, `CTRL`+key, the
+      function-key row and `SELECT`; a program `PRINT` that wraps on the bottom
+      row loses its continuation mark on C-BIOS (re-entering it takes the last
+      row alone), and older rows can carry stale "continues" marks after scrolls
+      (D-LINTTBSTALE: the two entries C-BIOS never rewrites, and their upward walk); cursor keys inside `INPUT` across rows.
+      🎚️ TIER 1 — happy path: the SCREEN EDITOR — typing, fixing a line with the cursor, re-entering a visible line — shipped 2026-09-11
       🎯 **RULED (Joost, 2026-09-10): *"the basic line and screen editor should also be in
       the list"* — explicitly on the TIER 1 pick list.
       🤖 AUTONOMOUS — the reference or a gate settles it; finishable unattended (no his-decision signal found).

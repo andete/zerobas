@@ -60,6 +60,8 @@ repl:
                 ld      a,(CSRX)            ; CSRX is 1-BASED, so 1 == column 0 ==
                 dec     a                   ; already at the start of a line
                 call    nz,print_crlf       ; mid-row -> open a line first
+                call    txt_mode            ; D-SCREDIT: the prompt after a graphics program is
+                                            ; read in SCREEN 0 on both references
                 ld      hl,prompt_text
                 call    print_string
                 call    read_line           ; LINEBUF <- typed line (ASCII, 0-term)
@@ -98,81 +100,75 @@ print_string:
 read_line:
                 ld      hl,LINEBUF
 rl_loop:
-                push    hl
+                ; D-SCREDIT (docs/spec-basic-screditor.md): the line reader is the
+                ; readline tenant (sub/readline.asm, page 1) -- cursor keys reach
+                ; CHPUT, Enter reads the LOGICAL LINE under the cursor out of VRAM.
+                ; The WAIT stays here, in main, inside CHGET with interrupts
+                ; live: a page-1 tenant blocking in CHGET would starve PLAY and
+                ; the traps (htimi_guard skips their seam while page 1 is not
+                ; main-ROM), so the tenant is handed one key per call in RL_KEY
+                ; and never waits. HL rides in
+                ; through RL_HL; CF (set = Ctrl-STOP / Ctrl-C) rides back through
+                ; RL_STAT, since a carry cannot cross subrom_call.
+                ld      (RL_HL),hl
+                call    txt_mode            ; INPUT inside SCREEN 2 reads its line in SCREEN 0 too (measured)
+                ld      a,(CSRY)
+                ld      (RL_ROW0),a         ; where input begins: the FSTPOS rule
+                ld      a,(CSRX)
+                ld      (RL_COL0),a
+                ; C-BIOS's scroll never rewrites the last two LINTTB entries
+                ; (D-SCREDIT, write-watchpoint), so after any output that wrapped
+                ; at the row above the bottom and then scrolled, the row above the
+                ; prompt still reads "continues" and Enter would splice it into the
+                ; line (linemax's list-max: a LIST that filled the screen). The
+                ; prompt always opens a FRESH line, so on the bottom row both
+                ; entries are set to "ends" here; the tenant's own wraps re-mark.
+                ld      a,(CRTCNT)
+                ld      hl,CSRY
+                cp      (hl)
+                jr      nz,rl_wait          ; not on the bottom row: the table is C-BIOS's own
+                ld      hl,LINTTB-2
+                ld      e,a
+                ld      d,0
+                add     hl,de
+                ld      (hl),1              ; the row above the prompt ended a line
+                inc     hl
+                ld      (hl),1              ; and so does the prompt row, until it wraps
+rl_wait:
                 ld      a,(RL_AUTO)
                 or      a
-                jr      z,rl_get            ; REPL: block in CHGET as before
-                ; R-AU8: an AUTO session may NOT block. Ctrl-STOP is not a
-                ; character and never arrives through CHGET, so a blocking read
-                ; can only be left by typing something -- the session would be
-                ; unbreakable. CHSNS says whether a key is waiting; BREAKX scans
-                ; the key matrix directly, which is the only thing that can see it.
-rl_poll:
+                jr      z,rl_get            ; REPL: block in CHGET, as it always did
+rl_poll:                                    ; R-AU8: an AUTO session may NOT block
                 call    BREAKX              ; CF set = Ctrl-STOP is down
-                jp     c,rl_break
+                ret     c
                 call    CHSNS               ; ZF set = nothing waiting yet
                 jr      z,rl_poll
 rl_get:
-                call    CHGET               ; wait for a key -> A
-                ; D-CTRLC: Ctrl-C ($03) ABORTS the line on both references -- it is
-                ; not one of the control chars the `cp 32` below silently drops.
-                ; Measured (scratchpad/auto_probe.py): typing PRINT"ZC";<^C>1;"CZ"
-                ; and Enter prints nothing on VG-8020 and CF-3300; zerobas printed
-                ; `1`. This test sits BEFORE the `pop hl` because rl_break is
-                ; lgb_eof, which pops the HL that rl_loop pushed.
-                cp      3
-                jp      z,rl_break
-                pop     hl
-                cp      13                  ; Enter -> finish
-                jr      z,rl_enter
-                cp      8                   ; Backspace -> erase
-                jr      z,rl_bs
-                cp      $7F                 ; DEL (Mac Backspace via C-BIOS) -> erase
-                jr      z,rl_bs
-                cp      32                  ; ignore other control chars
-                jr      c,rl_loop
-                ld      b,a                 ; hold the char
-                ld      a,l                 ; bounds: keep the last byte free for the
-                cp      (LINEBUF+LINEMAX-1) & $FF  ; Enter terminator, so a full line's 0
-                jr      nc,rl_loop          ;  lands inside LINEBUF (not TOKBUF). LINEBUF
-                                            ;  is one page ($E1xx), so the low byte suffices.
-                ld      (hl),b
-                inc     hl
-                ld      a,b
-                push    hl
-                call    CHPUT               ; echo (CHGET does not echo)
-                pop     hl
-                jr      rl_loop
-rl_bs:
-                ld      a,l
-                cp      LINEBUF & $FF
-                jr      z,rl_loop           ; at start -> nothing to erase
-                dec     hl
-                push    hl
-                ld      a,8                 ; back, blank, back: erase on screen
-                call    CHPUT
-                ld      a,32
-                call    CHPUT
-                ld      a,8
-                call    CHPUT
-                pop     hl
-                jr      rl_loop
-; D-XREG: an ALIAS across the low <-> page-1 boundary. Byte-identical to
-; lgb_eof and POSITION-INDEPENDENT (tools/dupspan_indep.py), and the
-; REGION question -- is this label reached from a tenant whose mapping
-; switches the target page OUT? -- is answered by scratchpad/crossreg_probe.py
-; and GATED by check_tenant_closure.py, whose K-XR1 knife proves it can see an
-; `equ` (it resolves addresses from the sym, not from the source form).
-rl_break        equ     lgb_eof
-rl_enter:
-                ld      (hl),0              ; terminate the line
-                ld      a,13                ; echo CR/LF
-                call    CHPUT
-                ld      a,10
-                call    CHPUT
-                or      a                   ; CF CLEAR = a normal Enter finish.
-                ret                         ; CHPUT makes no flag guarantee, and
-                                            ; ex_auto branches on this carry.
+                call    CHGET               ; the WAIT is here, in main, inside CHGET:
+                ld      (RL_KEY),a          ; interrupts live (PLAY, the traps), and the
+                                            ; harness's injector latch (latch-check) sees
+                                            ; the same wait it always modelled
+                ld      ix,SUBROM_ENTRY_BASE_P1 + 3*SUBROM_IDX_READLINE
+                call    subrom_call         ; one key
+                jp      c,subrom_absent_error
+                ld      a,(RL_STAT)
+                ld      hl,(RL_HL)          ; HL = the end of the text (AUTO's empty test)
+                or      a
+                jr      z,rl_wait           ; 0: more keys
+                rla                         ; 1 -> CF clear (Enter); $FF -> CF set (break)
+                ret
+
+; --- txt_mode: to SCREEN 0 if a graphics mode is up (D-SCREDIT) ---------------
+; Measured on both references (docs/spec-basic-screditor.md §7): the prompt after
+; a SCREEN 2 program and an INPUT inside one read their line in SCREEN 0 (SCRMOD
+; 0, a 46-char line intact); zerobas stayed in SCREEN 2, where C-BIOS's rows are
+; 32 wide and a wrapping line read back garbled (graphics-acceptance phase M lost
+; its second program's third line). INITXT clears the screen and homes the cursor.
+txt_mode:
+                ld      a,(SCRMOD)
+                or      a
+                ret     z
+                jp      INITXT
 
 prompt_text:
                 db      "ZB",0

@@ -54,6 +54,26 @@ pt_vloop:
                 ld      a,(AUDIO_VMASK)
                 and     c                   ; is this voice present?
                 jr      z,pt_vnext
+                ; D-PLAYEMPTY (2026-09-11, gicini m.empty): an EMPTY string queues
+                ; nothing, and the reference's MUSICF reads 0 right after `PLAY""`.
+                ; Here the voice's bit was set and cleared only by the next ISR
+                ; tick -- a race the row won for months because RUN left a tick
+                ; pending at the tenant's EI, and lost once the screen editor's
+                ; own tenant call consumed that tick first. Drop the voice from
+                ; the commit mask instead: no queue, no bit.
+                push    bc
+                call    pt_vcb_ix           ; IX = VCB base (preserves B)
+                ld      a,(ix+VCX_VCXLEN)
+                pop     bc
+                or      a
+                jr      nz,pt_vparse
+                ld      a,c
+                cpl
+                ld      hl,AUDIO_VMASK
+                and     (hl)
+                ld      (hl),a              ; this voice is not in the commit
+                jr      pt_vnext
+pt_vparse:
                 push    bc                  ; pt_voice reuses B (source count) + clobbers C
                 call    pt_voice            ; parse voice B -> its VOICxQ; CF=1 on error
                 pop     bc
