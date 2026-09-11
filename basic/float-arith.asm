@@ -1456,20 +1456,25 @@ wsrc_mbytes_ok:
                 ld      de,(WSRC)
                 inc     de                  ; DE -> source's mantissa byte 0
 wsrc_unpack:
+                ; D-MULZERO follow-on: C holds the byte across the nibble split, where
+                ; `push af` / `pop af` used to -- 21 T-states per mantissa byte, and
+                ; this loop runs 63 times per `X=I*2+1` (9.1 operands x 7 bytes,
+                ; measured with a breakpoint counter). Same instruction count, same
+                ; bytes; the low region has none to spare.
                 ld      a,(de)
-                push    af
-                and     $F0
+                ld      c,a
                 rrca
                 rrca
                 rrca
                 rrca
-                ld      (hl),a
-                inc     hl
-                inc     de
-                pop     af
                 and     $0F
                 ld      (hl),a
                 inc     hl
+                ld      a,c
+                and     $0F
+                ld      (hl),a
+                inc     hl
+                inc     de
                 djnz    wsrc_unpack
                 push    hl                  ; save the dest write cursor across the
                                             ; re-read below (its own indirection needs

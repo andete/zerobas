@@ -489,7 +489,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:14987 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:15005 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -655,7 +655,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:3806 (T-6FE392)8 (T-529ABE)` from `TODO.md:13773 (T-529ABE)`: a
+      `TODO.md:3806 (T-6FE392)8 (T-529ABE)` from `TODO.md:13791 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -4650,7 +4650,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:13773 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:13791 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -5342,6 +5342,24 @@ list. **When a slice lands, grep this list for what it just shipped.**
       table because *"a BASIC multiply statement runs this at most 196 times once,
       not in a hot loop"* — the profiled loop calls it ~392 000 times. Corrected
       in place, not deleted [[a-fix-falsifies-the-justification-beside-it]].
+      🟢 **AND THE UNPACK LOOP DROPPED ITS `push af`/`pop af` (same bytes, the low
+      region has 0 free): `X=I*2` 1837 → **1818**, `X=I*2+1` 2165 → **2140**.**
+      Small by design — the loop is 10.4 % of the profile and this is ~13 % of the
+      loop. **Cumulative for that row tonight: 3553 → 2140, −40 %.**
+      📏 **AND THE CALL COUNTS SAY WHERE THE REST IS**, measured with a breakpoint
+      counter over 20 iterations of `X=I*2+1`: `fp_mul` **1.0**/iteration,
+      `fp_add` **1.0**, `round_and_finalize` **4.0**, `digit_mul` **20.3** (was up
+      to 196), `widen_src` **9.1 — one per operand, every one with B=7**.
+      🎯 **B=7 ON ALL OF THEM MEANS EVERY OPERAND IS A 14-DIGIT DOUBLE, AND THAT IS
+      FAITHFUL** — MSX BASIC's default variable type IS double precision, so the
+      reference does the same BCD work and is simply faster at it. The tempting
+      *"compute singles as singles"* win does not exist; measured before it could
+      be proposed.
+      ➡️ **WHAT REMAINS IS STRUCTURAL**: one widen per OPERAND means a value just
+      computed is packed by `round_and_finalize` and unpacked again for the next
+      operator. Keeping a working form across a chained expression is a change to
+      the arithmetic core with real rounding risk — not started, and the float
+      suites are what would have to hold it.
       🎚️ TIER 4 — on-par speed: the interpreter is 2.5–3.8× slower (TIER 2, reasonable time, is met) — 17–26 % of it came back on 2026-09-11 (D-SPEEDPROF); measured on `FOR` `GOTO` `WHILE`, arithmetic and strings
       🤖 AUTONOMOUS — the charter half is ANSWERED (the STANDING sequencing of
       2026-09-02: speed is a real defect), so what remains under it is measurable work.

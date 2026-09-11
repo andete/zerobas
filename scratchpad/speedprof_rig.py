@@ -17,7 +17,15 @@ def load_syms(path):
     out = []
     for line in open(path, encoding="utf-8", errors="replace"):
         m = re.match(r"(\w+)\s+EQU\s+0?([0-9A-Fa-f]+)H", line)
-        if m and not m.group(1).isupper(): out.append((int(m.group(2), 16), m.group(1)))   # ALL-CAPS names are equates (cells, constants), not code
+        if not m: continue
+        v, name = int(m.group(2), 16), m.group(1)
+        # 🔴 AN EQU IS NOT AN ADDRESS. `ev_ff_argtab_len equ $ - ev_ff_argtab` is a
+        # LENGTH (~12), and it symbolised every BIOS sample near $000C -- it came
+        # back as the profile's top entry twice before I read what it was. Keep only
+        # symbols inside the ROM image; anything below the org is BIOS/RAM, and the
+        # region tally already says which.
+        if name.isupper() or v < 0x2812: continue
+        out.append((v, name))
     return sorted(out)
 
 def symbolise(syms, pc):
@@ -48,7 +56,7 @@ def main() -> int:
     hist = collections.Counter(); region = collections.Counter()
     for pc in pcs:
         region["bios/low" if pc < 0x4000 else "page1" if pc < 0x8000 else "ram"] += 1
-        hist[symbolise(syms, pc) if pc < 0x8000 else f"RAM ${pc:04X}"] += 1
+        hist[("BIOS/ISR" if pc < 0x2812 else symbolise(syms, pc)) if pc < 0x8000 else f"RAM ${pc:04X}"] += 1
     tot = len(pcs); print(f"samples: {tot}  regions: {dict(region)}")
     for name, c in hist.most_common(25):
         print(f"  {100*c/tot:5.1f}%  {c:5}  {name}")
