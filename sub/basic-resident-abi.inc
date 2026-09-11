@@ -12,14 +12,14 @@
 
 fp_add equ 03479H
 fp_sub equ 0352BH
-fp_mul equ 03566H
-fp_div equ 0364DH
-fp_cmp equ 036EFH
+fp_mul equ 03568H
+fp_div equ 03652H
+fp_cmp equ 036F4H
 dig15_iszero equ 032B9H
 arga_pack_fac equ 033B2H
-widen_fac_to equ 03820H
-widen_uint_to equ 03B70H
+widen_fac_to equ 03825H
+widen_uint_to equ 03B75H
 flt_to_int16 equ 03268H
-vars_reset equ 03D3DH
+vars_reset equ 03D42H
 penderr_set equ 0285EH
 flt_fmt equ 030B5H
