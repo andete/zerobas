@@ -850,7 +850,7 @@ sg_walk_fnframe:
 sgw_fn_lp:
                 ld      a,(FN_FEND)
                 cp      l
-                ret     z                   ; walked the whole live frame
+                jr      z,sgw_fn_live_done  ; live frame done -> the SAVED ones (D-FNPOOL)
                 push    hl                  ; [ENTRY]
                 inc     hl
                 inc     hl                  ; -> type field (entry+2)
@@ -865,6 +865,56 @@ sgw_fn_skip:
                 add     a,l
                 ld      l,a
                 jr      sgw_fn_lp
+sgw_fn_live_done:
+                ; D-FNPOOL: ...and now the SAVED frames, which is the whole point
+                ; of moving them into the pool. Each is [prevFNSP:2][size:1][prefix],
+                ; and the prefix is a copy of FN_BASE, so its parameter area runs
+                ; from prefix+FN_CELLS to prefix+size -- the same slot loop, a
+                ; different base and end. An outer call's string formal is a root
+                ; from here on (D-FNGCNEST measured it corrupting: `qLMNO`).
+                ld      hl,(FNSP)
+sgw_fnf_lp:
+                ld      a,h
+                or      l
+                ret     z                   ; the chain is walked
+                ld      e,(hl)
+                inc     hl
+                ld      d,(hl)              ; DE = prevFNSP
+                inc     hl
+                ld      c,(hl)              ; C = size
+                inc     hl                  ; HL -> the saved prefix
+                push    de                  ; [prev]
+                ld      a,c
+                sub     FN_CELLS            ; A = the parameter area's length
+                jr      z,sgw_fnf_next
+                jr      c,sgw_fnf_next
+                ld      b,a                 ; B = bytes of slots to walk
+                ld      de,FN_CELLS
+                add     hl,de               ; HL -> the frame's first slot
+sgw_fnf_slot:
+                push    bc
+                push    hl                  ; [ENTRY]
+                inc     hl
+                inc     hl                  ; -> type field
+                ld      a,(hl)
+                cp      1
+                jr      nz,sgw_fnf_skip
+                inc     hl                  ; -> descriptor
+                call    sg_visit            ; visits [len][ptr]; preserves HL
+sgw_fnf_skip:
+                pop     hl
+                ld      de,FN_SLOTSZ
+                add     hl,de
+                pop     bc
+                ld      a,b
+                sub     FN_SLOTSZ
+                jr      c,sgw_fnf_next
+                jr      z,sgw_fnf_next
+                ld      b,a
+                jr      sgw_fnf_slot
+sgw_fnf_next:
+                pop     hl                  ; HL = prevFNSP
+                jr      sgw_fnf_lp
 ; --- sg_walk_scalars: the unified scalar chain [PRGEND+2, ARYTAB) --------
 ; (arrays slice-4c §3b, REPLACES sg_walk_strtab). Every entry is
 ; [name0][name1][type][value...]; a type==1 (string) entry's value is the
@@ -1780,6 +1830,15 @@ sfv_have:
 ; docs/spec-basic-interpspeed.md measures.
 ; Clobbers everything (tenant convention).
 sh_ctl_reset:
+                ; D-FNPOOL: no FN call is live across a NEW / RUN / CLEAR, and FNSP
+                ; is power-on garbage until something writes it -- `sg_walk_fnframe`
+                ; WALKS that chain now, so an unzeroed cell is a wild read on the
+                ; first GC of a fresh machine (measured: the nested-FN row went from
+                ; a wrong answer to a dead machine, while the same nesting without a
+                ; collection stayed correct). It is zeroed HERE rather than in
+                ; clear_vars because main page 1 had five bytes and this needs six.
+                ld      hl,0
+                ld      (FNSP),hl
                 call    strheap_varceil     ; HL = the pool top (= reference STKTOP)
                 ld      (CTLTOP),hl
                 ld      (CSP),hl

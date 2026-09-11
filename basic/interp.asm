@@ -1390,6 +1390,28 @@ raise_error:
                 ; rerr_msg below reloads it from (ERRFLG).
                 ld      a,low FN_PAREA
                 ld      (FN_FEND),a
+                ; D-FNPOOL: the frame itself is in the POOL now, and nothing
+                ; unwinds `fn_leave` on this path -- so the frames would stand
+                ; until the next RUN/CLEAR and `FRE(0)` would shrink after a
+                ; trapped error, which the reference does not do. The tenant
+                ; walks the chain and restores the frontier; it returns at once
+                ; when no FN call is live, so this costs one CALSLT per error.
+                ; 🔴 AND IT IS GUARDED, BECAUSE THE ERROR PATH MUST NOT CROSS A
+                ; SLOT WHEN IT HAS NOTHING TO DO. Unconditional, this CALSLT moved
+                ; four PINNED rows of parennest-acceptance from a (wrong) `ERR 50`
+                ; to a DEAD MACHINE: those rows reach `raise_error` with the stack
+                ; already wrecked by the recursion this very item is about, and a
+                ; slot crossing needs stack the wrecked machine no longer has.
+                ; Knifed, not deduced -- removing the call restored all nine pins.
+                ; FNSP's HIGH byte is zero exactly when no FN call is live (a live
+                ; frame is a pool address), so the guard is three bytes.
+                ld      a,(FNSP+1)
+                or      a
+                jr      z,rerr_nofn
+                ld      l,FNF_UNWIND
+                ld      ix,SUBROM_ENTRY_BASE_P0 + 3*SUBROM_IDX_DEFFN
+                call    subrom_call         ; absent sub-ROM: nothing to unwind
+rerr_nofn:
                 call    record_errline
                 ; resolve the abort-fallback message FIRST (into HL), THEN decide
                 ; trap vs abort in the shared raise_error_hl tail. Message-first so

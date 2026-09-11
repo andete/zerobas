@@ -10,16 +10,16 @@
 ; main ROM, read out of our own build's symbol file. Nothing here is derived
 ; from a disassembly or byte-copy of any reference ROM.
 
-fp_add equ 0347AH
-fp_sub equ 0352CH
-fp_mul equ 03567H
-fp_div equ 0364EH
-fp_cmp equ 036F0H
-dig15_iszero equ 032BAH
-arga_pack_fac equ 033B3H
-widen_fac_to equ 03821H
-widen_uint_to equ 03B71H
-flt_to_int16 equ 03269H
-vars_reset equ 03D3EH
+fp_add equ 03479H
+fp_sub equ 0352BH
+fp_mul equ 03566H
+fp_div equ 0364DH
+fp_cmp equ 036EFH
+dig15_iszero equ 032B9H
+arga_pack_fac equ 033B2H
+widen_fac_to equ 03820H
+widen_uint_to equ 03B70H
+flt_to_int16 equ 03268H
+vars_reset equ 03D3DH
 penderr_set equ 0285EH
-flt_fmt equ 030B6H
+flt_fmt equ 030B5H

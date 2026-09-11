@@ -231,7 +231,7 @@ df_nofilespec:
                 or      a
                 jr      z,df_notfound
                 dec     a
-                jp      nz,disk_error       ; D-DISKERR: 2 = mount / DSKIO -> the mapped code
+                jr      nz,disk_error       ; D-DISKERR: 2 = mount / DSKIO -> the mapped code
                 jp      exec_stmt
 ; df_notfound — R-LF4 + R-LF6: a filespec that matches nothing prints `File not
 ; found`, on the SCREEN, for LFILES *and* for FILES. Measured on the CF-3300 for
@@ -302,7 +302,7 @@ df_or_loaderr:
                 ld      a,(DISKOP_OP)
                 cp      DISKOP_SEL_FAT_FIND
                 jr      z,df_notfound
-                jp      disk_error          ; D-DISKERR: a DSKIO failure raises its code
+                jr      disk_error          ; D-DISKERR: a DSKIO failure raises its code
 
 ; ===========================================================================
 ; Sequential file channel (Phase 2). A SINGLE open channel, layered on the

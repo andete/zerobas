@@ -12,10 +12,13 @@ floor, while ~22 KB of the free gap the reference's `STKTOP` points into sits
 unused below `CTLTOP`.
 
 🔴 THIS SHIPS **GREEN WITH THE DEFECT PINNED**, which is the tree's rule for a
-measured divergence: every diverging depth carries the face zerobas gives TODAY,
-so a regression (a shallower cap, a different wrong answer) is RED, and the fix
-flips each pin to the reference's value IN THE SAME COMMIT AS THE CODE. A gate
-that is simply red would be turned off; a pinned one keeps measuring.
+measured divergence — but pinned to the CLASS ("this depth does not produce the
+value both references produce"), not to the exact wrong answer, because past the
+cap the answer is whatever byte the corrupted recursion left behind and it moves
+when unrelated code moves. The SHALLOW rows are unpinned and expect the real
+value, so a cap that gets WORSE is red there; the deep rows go red the day they
+start answering correctly, which is the fix landing and is exactly when the pin
+must be booked.
 
 ⚠️ ONE ROW PER BOOT, never batch: a case that WRECKS the machine poisons every
 later case in the same boot -- the first cut of the scout lost every row after
@@ -56,15 +59,21 @@ CASES = ([(f"p{n:02d}", prog(f"p{n:02d}", parens(n)), str(n + 1)) for n in (8, 1
          + [(f"s{n:02d}", prog(f"s{n:02d}", strnest(n)), "1") for n in (4, 8, 12, 16)]
          + [("p08r", prog("p08r", parens(8)), "9")])           # the readout's own control
 
-# What zerobas answers TODAY (measured 2026-09-10, re-measured 2026-09-11 on the
-# post-D-SPEEDPROF tree: unchanged). `None` = the machine never printed anything
-# again -- it is dead, not wrong. Each entry is a DEFECT, not an accepted
-# deviation: D-SPMERGE flips it to the reference's value.
-PINNED = {
-    "p16": None, "p20": None, "p24": None, "p32": None,
-    "f16": "ERR 50 AT 20", "f24": "ERR 50 AT 20", "f32": "ERR 50 AT 20",
-    "s12": None, "s16": "ERR 35 AT 20",
-}
+# The depths where zerobas is WRECKED today. Each is a DEFECT, not an accepted
+# deviation: D-SPMERGE makes them answer the reference's value, and the row goes
+# RED the day that happens, so the fix cannot land unbooked.
+#
+# 🔴 PINNED TO THE CLASS, NOT TO THE FACE, AND THAT IS A MEASUREMENT. The first
+# cut pinned the exact answers (`ERR 50`, `ERR 35`, `None`). They are NOISE: past
+# the cap the trap reports whatever byte the corrupted recursion left in ERRFLG,
+# and two unrelated changes on 2026-09-11 -- adding a CALSLT to the error path,
+# then adding three bytes in front of it -- moved the same rows through
+# `ERR 50` -> dead -> `ERR 34` -> `ERR 244` without touching the evaluator at
+# all. A pin that a byte of code motion can move is not a pin
+# [[a-mechanism-inferred-from-one-observation]]. What IS stable, and what the
+# item is about, is that these depths do not produce the value both references
+# produce -- so that is what is pinned.
+WRECKED = {"p16", "p20", "p24", "p32", "f16", "f24", "f32", "s12", "s16"}
 
 
 def face(cap, tag):
@@ -102,10 +111,10 @@ def main() -> int:
     bad, drift = [], []
     for tag, _, want in CASES:
         g = got["zb"][tag]
-        if tag in PINNED:
-            ok = g == PINNED[tag]
-            note = (f"PINNED DEFECT {PINNED[tag]!r}" if ok
-                    else f"🔴 DRIFT from the pinned defect {PINNED[tag]!r}")
+        if tag in WRECKED:
+            ok = g != want                      # still broken: the pinned state
+            note = (f"PINNED DEFECT (wrecked; face {g!r} is noise)" if ok
+                    else f"🟢 FIXED — it answers {want!r} now: FLIP THIS PIN")
             if not ok:
                 drift.append(tag)
         else:
@@ -116,11 +125,11 @@ def main() -> int:
         extra = ("  " + "  ".join(f"{s}={got[s][tag]!r}" for s in ("vg8020", "cf3300"))
                  if a.survey else "")
         print(f"  {'ok  ' if ok else 'DIFF'} {tag:5} zb={g!r:16} {note}{extra}")
-    print(f"\n{len(CASES)} rows, {len(PINNED)} pinned defect(s) (D-SPMERGE flips them), "
+    print(f"\n{len(CASES)} rows, {len(WRECKED)} pinned defect(s) (D-SPMERGE flips them), "
           f"{len(bad)} unpinned divergence(s), {len(drift)} drift(s)")
     if drift:
-        print("  🔴 a PINNED row moved: either the fix landed (flip the pin in the "
-              "same commit) or the cap got worse -- read it, do not re-pin blind")
+        print("  🟢 a PINNED row ANSWERS CORRECTLY now — the fix landed: move it out "
+              "of WRECKED in the same commit as the code, so the gate keeps it")
     return 1 if (bad or drift) else 0
 
 

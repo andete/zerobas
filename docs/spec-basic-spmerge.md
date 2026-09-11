@@ -78,3 +78,27 @@ Consequences to design against, each of them a way to get this wrong:
 ⚠️ Not claimed: that the 22 KB is all usable — `CTLLIM` rises with every `DIM`,
 which is the point of the collision check. Only that the evaluator's 234 B is not
 the size of the free gap and never was.
+
+## 5. The relocation's own byte budget — measured 2026-09-11, after D-FNPOOL
+
+`repl:` is the one safe site (entered `jp repl`, "read/eval loop (never
+returns)"), and `basic/repl.asm` is INCLUDED AFTER `__MEAS_LOW_END`, so it is
+main page 1 — which has **3 bytes** free with D-FNPOOL landed.
+
+The site needs ~8:
+
+        ld      hl,(CSP)        ; 3   the pool's live frontier, re-read every line
+        ld      a,h             ; 1   ...so CLEAR / RUN / NEW are followed for free
+        or      l               ; 1
+        jr      z,rp_nosp       ; 2   pool not live yet (cold boot, before ctl_reset)
+        ld      sp,hl           ; 1
+
+🔴 **AND IT CANNOT BE HIDDEN IN A `call`.** A helper in the low region (5 B free)
+would have its return address on the OLD stack and `ret` would pop from the NEW
+one; the pop-into-HL / `jp (hl)` dance that fixes it costs ~12 B there. Both
+regions are short, and they share one budget.
+
+➡️ So the next slice in this arc is **a carve, not the relocation** — the same
+route that has funded three slices tonight (measured sequence scan, then Route D,
+which renews after every insertion). ~10 B of main page 1 buys the relocation
+AND its `CLEAR`-following re-anchor.

@@ -3561,7 +3561,17 @@ RL_KEY          equ     $E097   ; main -> tenant: the key CHGET returned (main w
 ; mapped by dskio_calslt (2 not ready -> 70, 0 write protected -> 68, else 69), cleared
 ; by every successful DSKIO and at every disk tenant's entry; disk_error raises it.
 DISKOP_ERR      equ     $E098   ; tenant -> main: ERR code of the last DSKIO failure, 0 = none (1)
-; FREE-RAM $E099..$E0B8  the rest of the pre-D-FORVAR FOR stack, free since it relocated (D-COPY took $E080..$E090)
+; D-FNPOOL (docs/spec-basic-fnpool.md): `DEF FN` frames come from the CONTROL POOL
+; now, not from below `SP`, so a nested call's saved formals are ADDRESSABLE and
+; the GC can walk them (the live-frame walk alone left an outer call's string
+; formal reachable from nothing -- measured wrong: `qLMNO` for `qABCD`).
+; Frame layout, at the address ctl_alloc's arithmetic returns:
+;     [prevFNSP:2][size:1][the saved FN_BASE prefix: size]
+; so one past the frame IS the CSP the call started with -- the restore needs no
+; second cell, and the abort unwind walks the chain to the outermost.
+FNSP            equ     $E099   ; newest FN frame's address, 0 = no FN call live (2)
+FN_FST          equ     $E09B   ; tenant -> main: 0 = frame saved, 1 = pool full -> ERR 7 (1)
+; FREE-RAM $E09C..$E0B8  the rest of the pre-D-FORVAR FOR stack, free since it relocated (D-COPY took $E080..$E090, D-FNPOOL $E099..$E09B)
 ; --- D-STRADDLE: the random-record PASS cursor (2026-09-06) -----------------
 ; A record whose span crosses a 512-byte sector boundary is written in TWO
 ; passes, and these two words are the state that has to survive `frnd_locate`,
@@ -4235,6 +4245,17 @@ RND_K           equ     MULPROD+19  ; output normalisation: count of leading
                                 ; rare all-zero guard, §15.4 step 3) (1)
 JIFFY           equ     $FC9E   ; MSX software clock, bumped by the timer ISR (MSX2 TH work area)
 ; Dispatch ABI (mirror of sub/equates.inc — the append-only page-0 entry table).
+; D-FNPOOL: the three FRAME ops ride in the DEF FN tenant (sub/deffn.asm, page 0)
+; rather than taking an index of their own -- it is the FN tenant already, its
+; dispatch is on L, and the ops touch nothing but page-3 RAM.
+; 🔴 OUTSIDE THE `IFNDEF` BELOW, DELIBERATELY. That guard exists so the SUB build
+; can reuse sub/equates.inc's copies of the index numbers -- which means the sub
+; build SKIPS the whole guarded block, and an equate placed inside it is invisible
+; to every tenant. These are op codes a tenant READS, so they live out here.
+FNF_SAVE        equ $F0     ; L: allocate a pool frame, copy the FN_BASE prefix into it
+FNF_RESTORE     equ $F1     ; L: copy the newest frame back, pop the chain, restore CSP
+FNF_UNWIND      equ $F2     ; L: an abort left frames standing -- reclaim them all
+
 ; IX = SUBROM_ENTRY_BASE_P0 + 3*index selects a tenant; never renumber an index.
 ; IFNDEF-guarded: sub.asm includes BOTH this and sub/equates.inc (which defines
 ; these first), so the guard lets the sub build reuse those and the main build

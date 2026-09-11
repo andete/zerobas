@@ -177,28 +177,24 @@ fn_call:
                 ; the runaway sweep's measured base of $F380 with a deepest
                 ; ordinary excursion of 90 B). At top level the live part is
                 ; ZERO, so a plain `FNA(2)` costs 5 bytes of stack, not 102.
-                ld      a,(FN_FEND)
-                sub     low FN_PAREA
-                add     a,FN_CELLS          ; + FN_FEND/FN_SLOTP/FN_RTYPE, which
-                ld      c,a                 ; sit BELOW the area so ONE contiguous
-                ld      b,0                 ; copy from FN_BASE carries both
-                ld      hl,0
-                add     hl,sp
+                ; D-FNPOOL (docs/spec-basic-fnpool.md, ruled by Joost 2026-09-11):
+                ; the frame comes from the CONTROL POOL now, not from below `SP`,
+                ; so a nested call's saved formals are ADDRESSABLE and the GC walks
+                ; them. `SP` is not touched at all any more -- which is also what
+                ; lets the stack's base move (D-SPMERGE): this routine's `cp high
+                ; FN_STK_FLOOR` was an ABSOLUTE $F2 against `SP`, and it would have
+                ; answered ERR 7 to every FN call the moment the base relocated.
+                ; The body is a page-0 tenant op because main page 1 had ONE byte
+                ; free; ERR 7 now comes from the pool's own collision.
+                push    ix                  ; IX is the caller's cursor; subrom_call
+                ld      l,FNF_SAVE          ; takes IX as the ENTRY and clobbers it
+                ld      ix,SUBROM_ENTRY_BASE_P0 + 3*SUBROM_IDX_DEFFN
+                call    subrom_call
+                pop     ix
+                jp      c,subrom_absent_error
+                ld      a,(FN_FST)
                 or      a
-                sbc     hl,bc               ; HL = the reserved block
-                ld      a,h
-                cp      high FN_STK_FLOOR
-                jp      c,fn_deep           ; ERR 7 -- `DEF FNA(X)=FNA(X)` is Out
-                                            ; of memory on both references
-                                            ; (b.recurse), and a floor is the
-                                            ; only thing between that answer and
-                                            ; a wrecked stack
-                ld      sp,hl
-                ex      de,hl               ; DE -> the reserved block
-                ld      hl,FN_BASE
-                push    bc                  ; [size] -- pushed BELOW the block so
-                                            ; fn_leave meets it first
-                ldir
+                jr      nz,fn_deep          ; the pool is full -> ERR 7, as before
 
 ; ===========================================================================
 ; D-DEFFNEV: THE PARSE IS A SUB PAGE-0 TENANT, AND WHAT IS LEFT HERE IS A
@@ -367,19 +363,17 @@ fn_fin:
 ; `DEFINT A-Z` or a `%` on the function's own name, and it read as a plausible
 ; number rather than as damage.
 fn_leave:
-                pop     bc                  ; [size]; SP now = the block base
-                push    de                  ; [result] -- ldir needs DE
+                ; D-FNPOOL: the frame is in the pool, so nothing on the Z80 stack
+                ; belongs to it -- `fn_call`'s own return address is still exactly
+                ; where it was, and this `ret` uses it. DE (the result) and HL (the
+                ; cursor) are this routine's contract and CALSLT clobbers both.
+                push    de                  ; [result]
                 push    hl                  ; [cursor]
-                ld      hl,4
-                add     hl,sp               ; HL -> the saved block
-                ld      de,FN_BASE
-                ldir                        ; HL ends one past the block...
-                pop     de                  ; DE = the cursor
-                pop     bc                  ; BC = the result
-                ld      sp,hl               ; ...which IS the pre-call SP
-                ex      de,hl               ; HL = the cursor
-                ld      d,b
-                ld      e,c                 ; DE = the result, intact
+                ld      l,FNF_RESTORE
+                ld      ix,SUBROM_ENTRY_BASE_P0 + 3*SUBROM_IDX_DEFFN
+                call    subrom_call         ; absent cannot happen here: the SAVE
+                pop     hl                  ; already errored if it were
+                pop     de
                 ret
 
 ; --- the one error tail left --------------------------------------------

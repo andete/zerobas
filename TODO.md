@@ -489,7 +489,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:14889 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:14913 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -655,7 +655,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:3806 (T-6FE392)8 (T-529ABE)` from `TODO.md:13675 (T-529ABE)`: a
+      `TODO.md:3806 (T-6FE392)8 (T-529ABE)` from `TODO.md:13699 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -4650,7 +4650,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:13675 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:13699 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -8230,7 +8230,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       🙋 NEEDS-JOOST — the ~99 B array he authorised is refuted; the pool route
       needs no RAM but is a slice across four files, and that is a bigger yes.
 
-- [ ] ⚠️ **`DEF FN`: a STRING formal's shadow slot is not a GC root.** Filed
+- [x] ⚠️ **`DEF FN`: a STRING formal's shadow slot is not a GC root.** Filed
       2026-08-22 by D-DEFFN,
       [`docs/deffn-impl-2026-08-22.md`](docs/deffn-impl-2026-08-22.md) §8. The
       slot holds a `[len][ptr]` descriptor and `strheap_gc`'s walk enumerates
@@ -8307,6 +8307,30 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `FNSP` must be unwound there (one cell, or re-derived from `CSP`) or a frame
       leaks until the next `RUN`/`CLEAR`.
       🤖 AUTONOMOUS — the shape is ruled (Joost, 2026-09-11: the control-frame pool) and the measurements are done.
+      🟢 **SHIPPED 2026-09-11 (D-FNPOOL, [`docs/spec-basic-fnpool.md`](docs/spec-basic-fnpool.md)) —
+      `n.outer` READS `qABCD` ON ALL THREE MACHINES.** Joost ruled the shape the
+      same day (*"go for 2 control-frame pool"*): the frame is
+      `[prevFNSP:2][size:1][the saved prefix]` taken from the control pool, so one
+      past it IS the `CSP` the call started with and `sg_walk_fnframe` walks the
+      `FNSP` chain after the live frame — an outer call's string formal is a GC
+      root at last. `fn_deep`'s hand-rolled `cp high FN_STK_FLOOR` is gone (ERR 7
+      from the pool's own collision, the same answer), `FN_STK_FLOOR` retires, and
+      **`SP` is not touched at all any more** — which is what unblocks D-SPMERGE,
+      whose relocation that absolute `$F2` compare would have broken on every FN
+      call. The three ops ride in the existing DEF FN tenant (sub page 0) because
+      main page 1 had ONE byte and the inline version needs ~38.
+      🔴 **THREE THINGS THE MACHINE SAID, NOT THE DESIGN:** `FNSP` is power-on
+      garbage and the collector now WALKS it (the first GC of a fresh machine was
+      a wild read — zeroed in `sh_ctl_reset`, not `clear_vars`, because page 1 had
+      five bytes and that needed six); the abort unwind must be GUARDED, because
+      unconditional its CALSLT killed four `parennest` rows outright — they reach
+      `raise_error` with the stack already wrecked and a slot crossing needs stack
+      they no longer have (knifed: removing the call restored all nine pins); and
+      `parennest`'s pins are pinned to the CLASS now, not the face, because past
+      the cap the trap reports whatever byte the corruption left and two unrelated
+      changes walked the same rows through `ERR 50` → dead → `ERR 34` → `ERR 244`.
+      ➡️ **NEXT IN THE ARC: D-SPMERGE** — the base into the gap, Joost's MERGE
+      ruling, with the nine `parennest` pins as its subject.
       🎚️ TIER 1 (latent) — happy path: a string `FN` formal is not a GC root, so a GC mid-call corrupts a program that did nothing wrong (measured live 2026-09-11: nested string FN + a collection = wrong text)
       🎯 **RULED (Joost, 2026-09-10): scout first** — DONE 2026-09-11, see 🔭 above. The original wording: measure whether a GC
       mid-call actually corrupts a string `FN` result on this tree, then bring the

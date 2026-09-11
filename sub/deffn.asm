@@ -64,6 +64,12 @@
 ; --- the phase dispatch ----------------------------------------------------
 deffn_tenant:
                 ld      a,l                 ; the servicer's answer, in a register
+                cp      FNF_SAVE            ; D-FNPOOL: the three FRAME ops, which are
+                jp      z,fnf_save          ; not part of the call phase machine at all
+                cp      FNF_RESTORE         ; -- they ride here because this is the FN
+                jp      z,fnf_restore       ; tenant and they touch only page-3 RAM
+                cp      FNF_UNWIND
+                jp      z,fnf_unwind
                 or      a
                 jp      z,dfn_start         ; nothing asked yet: a fresh call
                 cp      $83
@@ -443,4 +449,131 @@ dfn_deftbl:
                 add     hl,de
                 ld      a,(hl)
                 pop     hl
+                ret
+
+; ===========================================================================
+; D-FNPOOL — the `DEF FN` frame lives in the CONTROL POOL (docs/spec-basic-fnpool.md)
+;
+; 🔴 WHY IT MOVED. `fn_call` used to reserve its block BELOW `SP` and `ldir` the
+; live `FN_BASE` prefix into it. `strheap_gc`'s `sg_walk_fnframe` walks
+; [FN_PAREA, FN_FEND) -- the LIVE frame -- and can never address a block under
+; `SP`, so during a NESTED call an outer string formal's body was reachable from
+; nothing the collector walks. Measured, not deduced (D-FNGCNEST, 2026-09-11):
+; `DEF FNI$(T$)=LEFT$(STR$(FRE(""))+X$+X$,0)+T$` called from `DEF FNO$(S$)=FNI$("q")+S$`
+; returns `qLMNO` here where both references return `qABCD`; the same nesting with
+; no collection in the inner body agrees everywhere.
+;
+; 🎯 JOOST RULED THE SHAPE (2026-09-11): the pool, not a page-3 shadow band. The
+; pool descends from `CTLTOP` = `strheap_varceil()` -- the reference's published
+; `STKTOP` -- is sized by `CLEAR`, and already refuses on collision with the
+; variable region at `CTLLIM`. So `fn_deep`'s hand-rolled `FN_STK_FLOOR` compare
+; is gone and ERR 7 comes from the pool's own collision, the same answer from the
+; same measurement (`DEF FNA(X)=FNA(X)` is Out of memory on both references).
+;
+; 🔴 AND IT IS HERE, NOT IN MAIN, BECAUSE IT DID NOT FIT. Main page 1 had ONE byte
+; free and the inline pool version needs ~38; a fresh measured sequence scan
+; offered at most 16, all of it in candidates a previous slice had already
+; rejected on frame grounds. The machinery is pure page-3 RAM arithmetic -- no
+; BIOS, no main page 1 -- so it is page-0-tenant legal, and this island had 790 B.
+;
+; Frame, at the address the allocation returns:
+;     [prevFNSP:2][size:1][the saved FN_BASE prefix: size bytes]
+; One past the frame IS the `CSP` the call started with, so the restore needs no
+; second cell and the abort unwind walks the chain to the outermost frame.
+;
+; CLEAN-ROOM: original code; `CSP`/`CTLLIM`/`CTLTOP` are this project's own pool
+; (docs/spec-basic-trapsvc.md §11-§17), the FN frame is its own design. No
+; reference-ROM disassembly.
+
+; --- fnf_save: allocate a frame and copy the live prefix into it ------------
+; The allocation is `ctl_alloc`'s arithmetic done here, because main's low region
+; is unreachable from a page-0 tenant: refuse if `CSP` would wrap or the base
+; would fall below `CTLLIM`. Out: FN_FST = 0 saved / 1 pool full (main raises 7).
+fnf_save:
+                ld      a,(FN_FEND)
+                sub     low FN_PAREA
+                add     a,FN_CELLS          ; A = the live prefix's size
+                ld      c,a
+                ld      b,0                 ; BC = size
+                push    bc
+                ld      hl,(CSP)
+                or      a
+                sbc     hl,bc
+                dec     hl
+                dec     hl
+                dec     hl                  ; HL = base = CSP - (size + 3)
+                jr      c,fnf_full          ; CSP wrapped: the pool is not live
+                ld      de,(CTLLIM)
+                push    hl
+                or      a
+                sbc     hl,de
+                pop     hl
+                jr      c,fnf_full          ; base below the floor: collided
+                ld      (CSP),hl
+                ld      de,(FNSP)
+                ld      (FNSP),hl           ; this frame is the newest
+                ld      (hl),e
+                inc     hl
+                ld      (hl),d              ; [prevFNSP]
+                inc     hl
+                pop     bc
+                ld      (hl),c              ; [size]
+                inc     hl
+                ex      de,hl               ; DE = the prefix's destination
+                ld      hl,FN_BASE
+                ldir
+                xor     a
+                ld      (FN_FST),a          ; 0 = saved
+                ret
+fnf_full:
+                pop     bc
+                ld      a,1
+                ld      (FN_FST),a          ; 1 = pool full -> main raises ERR 7
+                ret
+
+; --- fnf_restore: the newest frame back into FN_BASE, and the pool with it ---
+; HL ends one past the frame, which IS the `CSP` this call started with.
+fnf_restore:
+                ld      hl,(FNSP)
+                ld      a,h
+                or      l
+                ret     z                   ; nothing live: a no-op, never an error
+                ld      e,(hl)
+                inc     hl
+                ld      d,(hl)              ; DE = prevFNSP
+                inc     hl
+                ld      c,(hl)              ; C = size
+                ld      b,0
+                inc     hl                  ; HL -> the saved prefix
+                ld      (FNSP),de
+                ld      de,FN_BASE
+                ldir
+                ld      (CSP),hl            ; one past the frame = the old CSP
+                ret
+
+; --- fnf_unwind: an abort left frames standing; reclaim every one -----------
+; `raise_error` resets `FN_FEND` but never runs `fn_leave`, so without this the
+; pool would keep the frames until the next `RUN`/`CLEAR` -- visible as `FRE(0)`
+; shrinking after a trapped error, which the reference does not do. An FN body is
+; an EXPRESSION, so no `GOSUB`/`FOR` frame can sit above an FN frame: the
+; outermost frame's end is the frontier to restore, and the walk finds it.
+fnf_unwind:
+                ld      hl,(FNSP)
+fnf_uw_lp:
+                ld      a,h
+                or      l
+                jr      z,fnf_uw_done
+                ld      e,(hl)
+                inc     hl
+                ld      d,(hl)              ; DE = prevFNSP
+                inc     hl
+                ld      c,(hl)
+                ld      b,0
+                inc     hl
+                add     hl,bc               ; HL = one past THIS frame
+                ld      (CSP),hl            ; the outermost writes last, and wins
+                ex      de,hl
+                jr      fnf_uw_lp
+fnf_uw_done:
+                ld      (FNSP),hl           ; HL = 0 here
                 ret
