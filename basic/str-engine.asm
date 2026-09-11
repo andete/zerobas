@@ -89,13 +89,18 @@ ctl_alloc:
                 sbc     hl,de               ; HL = the frame's base
                 jr      c,ca_full           ; CSP wrapped -> refuse (an
                                             ; uninitialised pool cannot push)
-                ld      de,(CTLLIM)         ; the variable region's first free byte
-                push    hl
-                sbc     hl,de               ; (CF is clear from the jr above)
-                pop     hl
+                ld      bc,(CTLLIM)         ; the variable region's first free byte
+                sbc     hl,bc               ; (CF is clear from the jr above)
                 jr      c,ca_full           ; base < floor -> collided
-                ld      (CSP),hl
-                ret                         ; CF = 0 -- the sbc left NC
+                add     hl,bc               ; HL = the base again. `add` back rather
+                                            ; than push/pop -- the relocation this
+                                            ; tail-jumps to moves the stack out from
+                                            ; under itself, so nothing of ours may be
+                                            ; sitting on it.
+                ld      (CSP),hl            ; the frontier IS the frame's base
+                jp      ctl_reloc           ; -> main page 1, which has the room; a
+                                            ; TAIL jump, so its `ret` goes to OUR
+                                            ; caller and no extra word rides the stack
 ca_full:
                 scf
                 ret

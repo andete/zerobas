@@ -1780,6 +1780,68 @@ ef_havestep:
 ; The NAME and every call site survive; un-alias here for a distinct face.
 ef_over         equ     gosub_stk_over
 
+; --- ctl_reloc: move the live block out of the new frame's way --------------
+; D-SPMERGE cut 2 (docs/spec-basic-spmerge.md §9), reached by a TAIL jump from
+; ctl_alloc (basic/str-engine.asm), which has already set CSP to the frame's base.
+;   in:  HL = the base (== the new frontier), DE = the frame size
+;   out: HL = the base, CF = 0, and `ret` goes to ctl_alloc's OWN caller
+;
+; Once `SP` lives in this region a frame would otherwise land BELOW whatever return
+; addresses are in flight, and the next `ret` would pop the frame. So the block
+; between `SP` and the frontier moves down by `size` and the frame takes the space
+; it vacated: nothing that can `ret` is left above the frame.
+;
+; 🎯 THE BLOCK IS SMALL, AND THAT IS THE WHOLE ARGUMENT. Frames are only ever
+; pushed at a STATEMENT BOUNDARY, where the expression evaluator has already
+; unwound -- so this is the statement handler's own chain (gosub_push's `push bc`
+; / `push hl`, a return address or two), about ten bytes, and it does NOT grow as
+; expressions get deeper. §9.3 records that the first reading of this called it an
+; O(depth) copy of the whole stack, and that reading was wrong.
+;
+; 🔴 SITED IN PAGE 1, NOT BESIDE ctl_alloc. The low region had 4 B free and this is
+; ~40; page 1 had 48. The two regions share one budget but have SEPARATE ceilings,
+; and the split costs one `jp` because the jump is a TAIL -- a `call` here would
+; put a return address on the very stack this routine relocates.
+ctl_reloc:
+                add     hl,de               ; HL = the OLD frontier
+                ld      b,h
+                ld      c,l
+                ld      hl,0
+                add     hl,sp               ; HL = SP
+                ld      a,c
+                sub     l
+                ld      c,a
+                ld      a,b
+                sbc     a,h
+                ld      b,a                 ; BC = frontier - SP = the block length
+                jr      c,ctr_done          ; 🔴 SP is ABOVE the frontier: the machine
+                                            ; stack and the pool are still disjoint, so
+                                            ; there is nothing between them to move.
+                                            ; TRUE FOR EVERY CALL until the `SP`
+                                            ; relocation lands (§9.4 step 3) -- which is
+                                            ; what makes this step behaviour-identical,
+                                            ; and why it needs a unit test rather than
+                                            ; the battery to be witnessed at all.
+                ld      a,b
+                or      c
+                jr      z,ctr_done          ; empty block -- `ldir` with BC=0 copies
+                                            ; 65536 bytes
+                or      a
+                sbc     hl,de               ; HL = SP - size = where the block goes
+                ld      sp,hl               ; ⚠️ SP MOVES BEFORE THE COPY. `ld sp,de`
+                                            ; is not a Z80 instruction (HL/IX/IY only),
+                                            ; so the destination has to be in HL here.
+                                            ; `ldir` never touches SP; the window this
+                                            ; opens is §9's DI note, for step 3.
+                ex      de,hl               ; DE = destination
+                add     hl,de               ; HL = source (destination + size == SP)
+                ldir                        ; forward copy; destination < source, so the
+                                            ; overlap runs the safe way
+ctr_done:
+                ld      hl,(CSP)            ; the frame's base
+                or      a                   ; CF = 0
+                ret
+
 ; --- ex_next: NEXT [<var>] ---------------------------------------------------
 ; Step the loop variable of the matching FOR frame, test against the limit, and
 ; either resume at the frame's body (loop continues) or pop the frame and run on
