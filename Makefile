@@ -2153,6 +2153,11 @@ copy-acceptance: repack-machine $(DISK_TEST_DSK)
 screditor-acceptance: repack-machine
 	ZEROBAS_BASIC_MACHINE=$(REPACK_MACHINE) python3 probes/basic/basic_probe_screditor.py
 
+# --- D-PARENNEST: how deep may an ordinary expression nest? The TIER 1 stack
+# defect's own gate -- green with nine faces PINNED, and D-SPMERGE flips them.
+parennest-acceptance: repack-machine
+	ZEROBAS_BASIC_MACHINE=$(REPACK_MACHINE) python3 probes/basic/basic_probe_parennest.py
+
 # --- D-DISKERR: an empty drive is ERR 70 (docs/spec-basic-diskerr.md) ---------------
 nodiskerr-acceptance: repack-machine $(DISK_TEST_DSK)
 	ZEROBAS_BASIC_MACHINE=$(REPACK_MACHINE) python3 probes/disk/diskbasic_probe_nodiskerr.py

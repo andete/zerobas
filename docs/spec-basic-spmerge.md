@@ -1,0 +1,80 @@
+# `SP` moves into the pool's region — the MERGE (D-SPMERGE)
+
+Ruled by Joost 2026-09-11: *"for the SP, the only real option is MERGE, it is the
+most compatible one"*, and **first in the queue**: *"the stack fix we decided on
+earlier should be the first thing to actually fix next"*. The defect it closes is
+TIER 1 — a legal 16-deep parenthesised formula WRECKS the machine (D-PARENNEST:
+screen garbage at depth 16, `ERR 50` from a path that raises no 50, crash at
+string depth 12) where both references print the value to depth 32.
+
+## 1. The measurement that makes the size of the problem plain (2026-09-11)
+
+Read from the running machine (`PEEK` of the published cells):
+
+| | address | |
+|---|---|---|
+| `CTLTOP` / `CSP` (empty pool) | **$D906** | = `strheap_varceil()` = the reference's `STKTOP` (§14.4) |
+| after `CLEAR 2000` | **$D1FE** | the top moves with `CLEAR`, exactly as the reference's does |
+| `CTLLIM` (= ARYEND+2) | **$80CB** | the variable/array region's first free byte |
+| the Z80 stack | ~**$F2EA**, floor $F200 | **234 B** of headroom — and `basic/` sets `SP` nowhere |
+
+**~22 KB of free RAM sits between `CTLLIM` and `CTLTOP`**, and the evaluator
+recurses in 234 bytes above it. That is the whole defect in two numbers.
+
+## 2. What MERGE has to mean here
+
+The reference's observable contract (§11, measured three ways): control frames
+and the machine stack come from ONE region bounded by HIMEM; depth responds to
+`CLEAR` and to HIMEM; ~7 B per frame; nothing is ever "reclaimed" because `SP`
+simply moves. So the invariant is
+
+    at every statement boundary:   SP == CSP
+    control frames occupy          [CSP, CTLTOP)
+    the machine stack descends     [CTLLIM, CSP)
+
+A `GOSUB` frame therefore costs the evaluator exactly its own size, and a deep
+expression is bounded by `CSP − CTLLIM` — which is what "the same pool" means
+observably, and what `stackpool-acceptance`'s rows already pin for the reference.
+
+## 3. Where `SP` may move — the part that is not free
+
+🔴 **`exec` is CALLED, not jumped to** (`basic/program.asm:597`: `call exec` per
+line), so `SP` at `exec_stmt`'s top carries a live return address and a
+per-statement `ld sp,(CSP)` would discard the line loop's return. The safe points
+are the two that already anchor `SAVSTK` — the direct-mode anchor
+(`program.asm:64`) and the run anchor (`:429`) — because the trap path
+(`ld sp,(SAVSTK)`) already treats those as places the machine JUMPS back to
+rather than returns to.
+
+Consequences to design against, each of them a way to get this wrong:
+1. **`ctl_alloc` must keep `SP` and `CSP` together.** At a `GOSUB`, `SP` is a few
+   return addresses below `CSP`; lowering `SP` to the new `CSP` is safe only when
+   the frame is larger than that delta, which is not guaranteed. The frame push
+   therefore happens at the statement boundary's known depth, or `ctl_alloc`
+   performs the pop-return-address / allocate / re-push dance `fn_call` already
+   does today.
+2. **Freeing raises `SP`**, which discards live return addresses by construction —
+   legal only where the code path afterwards JUMPS (`jp exec_stmt`) instead of
+   returning. `RETURN` and `NEXT` already end that way; every free site must be
+   re-read against that rule, not assumed.
+3. **`SAVSTK` is re-anchored whenever `SP` moves**, or the trap unwinds to an
+   address that is no longer in the region.
+4. **`CLEAR n,addr` moves `CTLTOP`**, so the relocation must re-read `CSP` after
+   every `clear_vars`, never cache a boot value — the `$D000` accident of §17 is
+   exactly the cached form of this.
+
+## 4. Order of work
+
+1. **The subject gets a gate first.** `D-PARENNEST`'s ramp is a scratchpad scout;
+   it becomes `parennest-acceptance` with the diverging depths PINNED to today's
+   faces, so the defect has a standing row and the fix flips pins in the same
+   commit as the code (the tree's rule for a measured divergence).
+2. Then the relocation, against that gate plus the pool's existing contract
+   (`stackpool`, `ctlpool`, `ctlcross`, `ctllim`, `trapdepth`, `trapsvc`).
+3. Then `DEF FN`'s frames move to the same region (D-FNPOOL, ruled the same day),
+   which is where the GC-root fix lives; §19's "how much of the ~78 B/level is
+   evaluator recursion vs FN machinery" is re-measured after that, not before.
+
+⚠️ Not claimed: that the 22 KB is all usable — `CTLLIM` rises with every `DIM`,
+which is the point of the collision check. Only that the evaluator's 234 B is not
+the size of the free gap and never was.

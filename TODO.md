@@ -489,7 +489,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:14833 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:14889 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -655,7 +655,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:3772 (T-6FE392)8 (T-529ABE)` from `TODO.md:13619 (T-529ABE)`: a
+      `TODO.md:3806 (T-6FE392)8 (T-529ABE)` from `TODO.md:13675 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -2370,7 +2370,41 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `subject:` tag per gate row, over the 155-entry `kwtable.inc` denominator
       plus the missing keywords; it becomes the loop's pick list, TIER 1 first.
       The line/screen editor is on that list by his instruction.
-      🤖 AUTONOMOUS — the denominator and the tag are mechanical; finishable unattended (ruled 2026-09-10).
+      🟢 **STEP (c) HAS ITS DENOMINATOR AT LAST — MEASURED, NOT SCANNED (D-KWCOVER,
+      2026-09-11, [`docs/spec-basic-kwcover.md`](docs/spec-basic-kwcover.md),
+      `make kwcover`).** Joost: *"given that we have so many keywords still at 'no
+      known gap' shouldn't we identify their status first before picking up new
+      work?"* The capture rides on a normal battery run — `omsx_repl.run_cases`,
+      the one chokepoint every probe types through, appends each typed line tagged
+      with its suite — so the question "which keywords does the battery actually
+      run?" is answered by the battery running, not by reading the probes.
+      **46 193 typed lines, 82 emulator suites, battery 126/126 green:**
+          typed by SOMETHING                          **159 / 159**
+          typed by a BEHAVIOURAL suite                **157** (`lnblank-acceptance` sweeps all 159 by design)
+          sweep-only                                  **2**  — `BSAVE` `CALL`
+          THIN (0 or 1 behavioural suite)             **27** — the risk list below
+      `ATN ATTR$ BASE BSAVE CALL CLOAD CMD COLOR COS CSAVE CSNG CVD DELETE DSKF
+      FIX GET INKEY$ INP IPL LOG PAD RESTORE SET SGN TAN VDP VPOKE`
+      🎯 **SO "NO KNOWN GAP" NEVER MEANT "NOTHING RUNS IT"** — it meant no row is
+      known to SCORE it, and the gap is 27 keywords, not 105. Several of the thin
+      rows are visibly APPARATUS rather than subject: `VPOKE` appears only as the
+      screen editor's setup line, `GET` only inside a `LOC` readout, `PAD` only in
+      a blank-sweep line.
+      🔴 **THREE SOURCE SCANS CAME FIRST AND ALL THREE WERE WRONG** — matching the
+      probes' Python strings for BASIC scored English prose (`AND` "exercised by
+      125 suites", an EMPTY unexercised set), and tightening it then LOST real rows
+      (`KILL "A.BAS"` keeps no token once its literal is stripped; an English
+      word-boundary rule loses `FORI=0TO39:VPOKE160+I,39:NEXT`, because MSX needs
+      no spaces). Each returned a plausible table
+      [[an-instrument-can-fail-the-way-the-thing-it-replaced-failed]].
+      ➡️ **NEXT, AND NOW AFFORDABLE:** exercised ≠ verified. The capture says which
+      suites to re-run per keyword, so a handler can be disabled by patching the
+      BUILT ROM (seconds, no rebuild) and only its 1–4 suites re-run; keywords with
+      disjoint suite sets can be knifed in the same ROM. A keyword whose handler
+      can be disabled with the battery still green is BLIND, and that is the row
+      list [[gateblind-slice]]. Spec §2.
+      🤖 AUTONOMOUS — the instrument is built and the list is measured.
+      🤖 AUTONOMOUS — the denominator is MEASURED now (D-KWCOVER); the subject tags are the remainder.
 
 - [ ] 📊 **THE CORRECTNESS SCOREBOARD — WHAT "FULL CORRECTNESS" ACTUALLY
       REQUIRES, 2026-09-02.** Built the moment Joost's sequencing (below) made
@@ -4616,7 +4650,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:13619 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:13675 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -5121,7 +5155,29 @@ list. **When a slice lands, grep this list for what it just shipped.**
       ⚠️ FIRST MEASUREMENT, unchanged by the ruling: how much of the ~78 B/level is
       evaluator recursion vs FN machinery — and the FN half is about to leave the
       stack anyway (the pool ruling above), so re-measure after that lands.
-      🤖 AUTONOMOUS — the mechanism is ruled (Joost, 2026-09-11: MERGE); the measurements are done.
+      🟢 **THE DEFECT HAS A STANDING GATE SINCE 2026-09-11 — `parennest-acceptance`**
+      ([`probes/basic/basic_probe_parennest.py`](probes/basic/basic_probe_parennest.py)),
+      16 rows on one boot each (a wrecked machine poisons every later case in the
+      same boot), GREEN with **nine faces PINNED**: `p16/p20/p24/p32` print nothing
+      ever again, `f16/f24/f32` answer `ERR 50`, `s12` dies, `s16` answers `ERR 35`
+      — while both references answer to depth 32. D-SPMERGE flips those pins to the
+      references' values in the same commit as the code; a pin that moves on its own
+      is RED either way (a fix nobody booked, or a cap that got worse).
+      📏 **AND THE SIZE OF THE GAP IS MEASURED (2026-09-11):** `CTLTOP`=`CSP`=**$D906**
+      (= `strheap_varceil()`, the reference's `STKTOP`; `CLEAR 2000` moves it to
+      $D1FE, as the reference's moves), `CTLLIM`=**$80CB** — so **~22 KB of free RAM
+      lies between them**, while the evaluator recurses in the **234 B** above
+      $F200. That is the whole defect in two numbers, and the design is
+      [`docs/spec-basic-spmerge.md`](docs/spec-basic-spmerge.md) §2's invariant:
+      `SP == CSP` at every statement boundary, frames in `[CSP, CTLTOP)`, the stack
+      descending into `[CTLLIM, CSP)`.
+      🔴 **THE RELOCATION IS NOT A ONE-LINER AND THE SPEC SAYS WHY**: `exec` is
+      CALLED per line (`basic/program.asm:597`), so a per-statement `ld sp,(CSP)`
+      discards the run loop's return; the safe points are the two that already
+      anchor `SAVSTK`, and every free site that RAISES `SP` is legal only where the
+      path afterwards JUMPS (`jp exec_stmt`) instead of returning. Four hazards are
+      enumerated in §3 — that is the next slice's checklist, not a caveat.
+      🤖 AUTONOMOUS — the mechanism is ruled (Joost, 2026-09-11: MERGE); the measurements and the gate are done.
 
 - [ ] 🐌 **THE INTERPRETER IS 2.5–3.8× SLOWER THAN THE CF-3300 — ON EVERYTHING,
       NOT ON ONE VERB — AND IT REFRAMES EVERY OTHER SPEED ITEM.**
