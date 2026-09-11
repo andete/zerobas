@@ -59,20 +59,22 @@ CASES = ([(f"p{n:02d}", prog(f"p{n:02d}", parens(n)), str(n + 1)) for n in (8, 1
          + [(f"s{n:02d}", prog(f"s{n:02d}", strnest(n)), "1") for n in (4, 8, 12, 16)]
          + [("p08r", prog("p08r", parens(8)), "9")])           # the readout's own control
 
-# The depths where zerobas is WRECKED today. Each is a DEFECT, not an accepted
-# deviation: D-SPMERGE makes them answer the reference's value, and the row goes
-# RED the day that happens, so the fix cannot land unbooked.
+# The depths where zerobas is WRECKED. Each is a DEFECT, not an accepted
+# deviation, and the row goes RED the day it answers correctly so the fix cannot
+# land unbooked.
 #
-# 🔴 PINNED TO THE CLASS, NOT TO THE FACE, AND THAT IS A MEASUREMENT. The first
-# cut pinned the exact answers (`ERR 50`, `ERR 35`, `None`). They are NOISE: past
-# the cap the trap reports whatever byte the corrupted recursion left in ERRFLG,
-# and two unrelated changes on 2026-09-11 -- adding a CALSLT to the error path,
-# then adding three bytes in front of it -- moved the same rows through
-# `ERR 50` -> dead -> `ERR 34` -> `ERR 244` without touching the evaluator at
-# all. A pin that a byte of code motion can move is not a pin
-# [[a-mechanism-inferred-from-one-observation]]. What IS stable, and what the
-# item is about, is that these depths do not produce the value both references
-# produce -- so that is what is pinned.
+# 🔴 D-SPMERGE's FIRST CUT FLIPPED ALL NINE AND WAS STILL WRONG (2026-09-11).
+# `ld sp,(CSP)` at `repl:` made p32 read 33, f32 read 1, s16 read 1 -- every
+# value both references give -- and took THIRTY-TWO other suites down with it,
+# because `ctl_alloc` allocates DOWNWARD FROM `CSP`: with the stack based there
+# too, the first `GOSUB`/`FOR`/trap frame lands inside live stack. These rows
+# going green is necessary and nowhere near sufficient, which is exactly why the
+# battery runs before a pin is flipped.
+#
+# 🔴 PINNED TO THE CLASS, NOT TO THE FACE. Past the cap the trap reports whatever
+# byte the corrupted recursion left in ERRFLG, and unrelated code motion walked
+# the same rows through `ERR 50` -> dead -> `ERR 34` -> `ERR 244`. What is stable
+# is that these depths do not produce the value both references produce.
 WRECKED = {"p16", "p20", "p24", "p32", "f16", "f24", "f32", "s12", "s16"}
 
 

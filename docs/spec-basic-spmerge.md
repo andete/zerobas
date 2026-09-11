@@ -102,3 +102,40 @@ regions are short, and they share one budget.
 route that has funded three slices tonight (measured sequence scan, then Route D,
 which renews after every insertion). ~10 B of main page 1 buys the relocation
 AND its `CLEAR`-following re-anchor.
+
+## 6. 🔴 THE FIRST CUT FLIPPED ALL NINE PINS AND WAS STILL WRONG (2026-09-11)
+
+`ld sp,(CSP)` at `repl:` — four bytes, the site §3 argues for — made every
+wrecked depth answer the reference's value (`p32` = 33, `f32` = 1, `s16` = 1)
+**and took thirty-two other suites down with it**: `stackpool`, `ctlcross`,
+`trapdepth`, `trapsvc`, `ctllim`, `forvar`, `nxary`, `nxlist`, the trap suites,
+`float`, `array`, `graphics`… Reverted; all three of the worst-hit are green
+again and the nine pins are back.
+
+**The cause is in §2's own arithmetic, and I had it backwards.** `ctl_alloc`
+allocates **downward from `CSP`**:
+
+        HL = CSP − size ; refuse if HL < CTLLIM ; CSP = HL
+
+With the stack BASED at `CSP`, the interpreter is already some tens of bytes
+below it by the time a statement runs — so the first `GOSUB`/`FOR`/trap frame is
+handed out **inside live stack**, and the two consumers write over each other on
+the very first push. The spec's own sentence "frames the pool already holds sit
+above `CSP`" is true of frames ALREADY allocated and says nothing about the next
+one, which is the only one that matters.
+
+**So MERGE has one frontier, and it must be `SP` itself.** The shape that works:
+
+* `ctl_alloc` allocates from `SP`, not from a separate `CSP` the stack has
+  already run past: pop its own return address, `HL = SP − size`, refuse on
+  `CTLLIM`, `ld sp,hl`, push the return address back, `ret`.
+* `CSP` becomes a mirror of `SP` for the existing readers (`GSP`/`FSP`/`TSP`
+  comparisons, `strheap_varceil`'s ceiling test, `FRE`).
+* Every free site (`RETURN`, a named `NEXT`, the trap pop, `fn_leave`) raises
+  `SP` as well as `CSP` — legal only where the path afterwards JUMPS
+  (`jp exec_stmt`), which §3 already required and which those sites already do.
+
+That is a multi-site slice against the pool's whole contract, not a four-byte
+patch, and it is what the next attempt implements. The nine pins stay pinned
+until it lands: **rows going green is necessary and nowhere near sufficient**,
+which is why the battery runs before a pin is flipped.
