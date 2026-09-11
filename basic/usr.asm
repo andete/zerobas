@@ -158,8 +158,7 @@ ev_usr_err:
                 pop     af                  ; discard saved index
                 ld      a,$DD               ; expression-error marker (cf. ev_f_err)
                 ld      (ERRMARK),a
-                ld      de,0
-                ret
+                jp      ret_de0
 
 ; --- ev_usr_index: optional USR number 0..9 from the IX stream -------------
 ; ⚠️ THE DEFAULT ARM IS usr_index's, NOT A COPY (D-DEFTYPETOK funding trim).
@@ -208,8 +207,7 @@ usr_undef:
                 pop     ix                  ; restore the cursor
                 ld      a,$DD               ; expression-error marker
                 ld      (ERRMARK),a
-                ld      de,0
-                ret
+                jp      ret_de0
 
 ; --- ex_deftype: DEFINT|DEFSNG|DEFDBL|DEFSTR <ranges> ----------------------
 ; (repack build only; docs/spec-basic-float-core.md §11.1) HL -> the statement's

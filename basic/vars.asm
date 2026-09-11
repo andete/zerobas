@@ -612,8 +612,7 @@ var_load_fac:
                 ; ⚠️ IT COMES BACK THE DAY A CONSUMER READS FAC WITHOUT RE-PACKING,
                 ; and `MKS$`/`MKD$` are exactly that consumer -- see
                 ; docs/spec-basic-faczero.md §5.
-                ld      de,0
-                ret
+                jp      ret_de0
 ; D-DUPSPAN2: an ALIAS, not a second copy -- byte-identical to vptr_none,
 ; and POSITION-INDEPENDENT by tools/dupspan_indep.py (terminates, no
 ; escaping relative jump, not entered by fallthrough, same ROM region).

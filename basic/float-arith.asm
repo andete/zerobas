@@ -126,6 +126,20 @@ d10_skip:
 ; Low-level digit-array helpers (own design)
 ; =============================================================================
 
+; --- ret_de0: DE := 0, then return -- the shared zero-result tail -----------
+; `ld de,0` + `ret` stood at FOURTEEN main-ROM sites, 4 B each, as the "no value /
+; zero" return. A `jp` here is 3 B: -14 B of sites against 4 B of helper.
+; 🎯 SITED IN THE LOW REGION ON PURPOSE. Eight of the fourteen users are page-1
+; files and page 1 is the ceiling every slice fights, so the helper pays its 4 B
+; out of the other half of the budget. The two regions share one total but have
+; SEPARATE ceilings, which is what makes the placement worth a sentence.
+; ⚠️ FLAG-TRANSPARENT, and that is load-bearing: neither `ld de,0` nor `jp` writes
+; F, so a caller returning CF/Z set BEFORE the old `ld de,0` still returns it.
+; Nothing that touches flags may be added here.
+ret_de0:
+                ld      de,0
+                ret
+
 ; --- dig15_zero15: zero-fill the 15-byte digit array at (HL). HL preserved. --
 ; Clobbers A, B.
 dig15_zero15:
@@ -641,8 +655,7 @@ rsp_zero_ok:
                 call    fac_zero_mantissa   ; D-FACZERO: and the mantissa too
                 ld      a,4
                 ld      (FACTYP),a
-                ld      de,0
-                ret
+                jp      ret_de0
 
 ; =============================================================================
 ; fp_add / fp_sub — double BCD add/subtract (spec §10.2)
@@ -1949,8 +1962,7 @@ cpow_x0_pos:
                                             ; fp_* underflow jumps to.
                 ld      a,8
                 ld      (FACTYP),a
-                ld      de,0
-                ret
+                jp      ret_de0
 cpow_x_nonzero:
                 ; --- 3) classify y (ARGB record; no fp_* calls needed) -----
                 ld      hl,(ARGB+FPNUM_DEXP)
@@ -2036,8 +2048,7 @@ cpow_frac:
                 ; call-and-return-zero is shared [[a-shared-tail-is-not-a-decision]].
 penderr_de0:
                 call    penderr_set         ; illegal function call
-                ld      de,0
-                ret
+                jp      ret_de0
 cpow_frac_ok:
                 ld      a,$80
                 ld      (MATH_J),a          ; bit7 = 1 (frac path)

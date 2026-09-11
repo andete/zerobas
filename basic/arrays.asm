@@ -947,8 +947,7 @@ eva_deferred:
                 push    hl
                 pop     ix                  ; IX = cursor (ev_f_var's contract even on
                                             ; a deferred error)
-                ld      de,0                ; matches ev_f_err's own convention
-                ret
+                jp      ret_de0     ; matches ev_f_err's own convention
 
 ; =============================================================================
 ; Arrays slice 3 — STRING arrays (docs/spec-basic-arrays-slice3-strings.md).

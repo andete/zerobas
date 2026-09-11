@@ -457,8 +457,7 @@ str_temp_alloc:
                                             ; without. The tenant still hands back
                                             ; a valid (neutralised) slot here.
                 ld      hl,(SH_PTR)
-                ld      de,0
-                ret
+                jp      ret_de0
 sta_ok:
                 ld      hl,(SH_PTR)
                 ld      de,(SH_PTR2)
@@ -468,8 +467,7 @@ sta_overflow:
                 call    penderr_set         ; "String formula too complex"
                 ld      hl,STR_EMPTY        ; no slot was reserved -- STR_EMPTY is
                                             ; always a safe, never-a-GC-root fallback
-                ld      de,0
-                ret
+                jp      ret_de0
 
 ; --- str_snapshot_to_temp: STRPTR -> some source descriptor (anywhere) -----
 ; push a NEW temp-stack entry OWNING a fresh heap-copied body, and repoint

@@ -38,11 +38,24 @@
 ;        gfx_absent owns that exit (defensive: the merged ROM always ships it).
 ; ⚠️ A SHARED TAIL IS A LABEL, NOT A DECISION: a change here serves all three
 ; verbs. PAINT alone reads GFX_POVF afterwards, and that stays at ITS site.
+; --- gfx_tenant: IX := the graphics tenant, then cross into it --------------
+; The two-instruction preamble `ld ix,<graphics entry>` + `call subrom_call` stood
+; at FIVE sites, 7 B each, for one idea. `jp` (not `call`) into subrom_call, so its
+; own `ret` returns to OUR caller and every site keeps its `call`/CF contract
+; unchanged: CF=1 iff the sub-ROM is absent.
+; 🎯 WHY THIS PAIR AND NOT A HOTTER ONE: the added `call` layer costs 17 T against a
+; slot crossing that already costs hundreds. The two commonest pairs in the tree
+; (`ld a,(hl)`/`or a`, 33 sites, and `ld e,a`/`ld d,0`, 31) were MEASURED to sit in
+; expr.asm and float-arith.asm -- the hot interpreter core the speed item is about
+; -- so they were left alone. A carve is not free just because it is mechanical.
+gfx_tenant:
+                ld      ix,SUBROM_ENTRY_BASE_P0 + 3*SUBROM_IDX_GRAPHICS
+                jp      subrom_call         ; CF=1 iff the sub-ROM is absent (no call made)
+
 gfx_call:
                 ld      (GFX_OP),a
                 push    hl                  ; guard the token cursor -- CALSLT clobbers HL
-                ld      ix,SUBROM_ENTRY_BASE_P0 + 3*SUBROM_IDX_GRAPHICS
-                call    subrom_call         ; CF=1 iff the sub-ROM is absent (no call made)
+                call    gfx_tenant  ; CF=1 iff the sub-ROM is absent (no call made)
                 pop     hl
                 jp      c,gfx_absent        ; defensive: merged ROM always ships the tenant
                 ret
@@ -147,8 +160,7 @@ ev_f_point:
                 ld      (GFX_PTY),a
                 ld      a,2                 ; GFX_OP = 2 -> tenant point read
                 ld      (GFX_OP),a
-                ld      ix,SUBROM_ENTRY_BASE_P0 + 3*SUBROM_IDX_GRAPHICS
-                call    subrom_call         ; CF=1 iff absent
+                call    gfx_tenant  ; CF=1 iff absent
                 jr      c,pt_offscreen      ; defensive: treat an absent tenant as off-screen
                 ld      a,(GFX_RES)         ; tenant result: pixel colour 0..15
                 ld      e,a
@@ -646,8 +658,7 @@ cp_done:
                 jp      nz,raise_error      ; the tenant's ERR code (ERR 2/5/6 sites)
                 ld      a,4                 ; GFX_OP = 4 -> tenant CIRCLE geometry
                 ld      (GFX_OP),a
-                ld      ix,SUBROM_ENTRY_BASE_P0 + 3*SUBROM_IDX_GRAPHICS
-                call    subrom_call
+                call    gfx_tenant
                 jp      c,gfx_absent
                 ld      hl,(GFX_DPTR)       ; continue the statement stream after CIRCLE
                 jp      exec_stmt
@@ -971,8 +982,7 @@ ex_draw:
                 xor     a
                 ld      (GFX_DRESUME),a     ; the first entry is a fresh parse
 gdw_call:
-                ld      ix,SUBROM_ENTRY_BASE_P0 + 3*SUBROM_IDX_GRAPHICS
-                call    subrom_call         ; CF=1 iff the sub-ROM is absent
+                call    gfx_tenant  ; CF=1 iff the sub-ROM is absent
                 jr      c,gdw_absent
                 ld      a,(GFX_DREQ)
                 or      a
@@ -1189,8 +1199,7 @@ spr_tenant:
                 ld      (GFX_OP),a
                 xor     a
                 ld      (GFX_RES),a         ; 0 = no error; the tenant sets 5 on a domain miss
-                ld      ix,SUBROM_ENTRY_BASE_P0 + 3*SUBROM_IDX_GRAPHICS
-                call    subrom_call         ; CF=1 iff the sub-ROM is absent (clobbers all --
+                call    gfx_tenant  ; CF=1 iff the sub-ROM is absent (clobbers all --
                                             ; every caller guards its own cursor)
                 jp      c,gfx_absent        ; defensive: merged ROM always ships it
                 ld      a,(GFX_RES)

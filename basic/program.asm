@@ -2248,13 +2248,16 @@ eon_gosub:
 ; ⚠️ THIS IS NOW A SHARED TAIL, AND A SHARED TAIL IS A LABEL, NOT A DECISION: a
 ; change sited here serves ALL THREE verbs (GOSUB, ON..GOTO, ON..GOSUB). Anything
 ; that should apply to only one of them belongs at that site, above the jump.
+; 🔴 AND IT WAS THE SAME ROUTINE TWICE. `goto_resolve` (basic/interp.asm) is this
+; code instruction for instruction -- `find_line_bc`, the undefined-line exit, the
+; GOTOTGT/GOTOFLAG arm, `ret` -- differing only in `jr nc` where reach allowed it.
+; Two labels, one behaviour, 15 B and 14 B, and D-NGRAM5 had already carved THIS
+; site once without anyone noticing the other copy.
+; 🎯 FOUND BY COUNTING `ret`s, NOT BY LOOKING FOR DUPLICATES: D-JUMPLOOP lists every
+; `ret` that leaves `exec`, and both ends appeared in it three lines apart in shape.
+; A dup-span sweep could not see it -- the bodies differ in one opcode.
 goto_take_bc:
-                call    find_line_bc        ; CF set + HL = the line's address
-                jp      nc,ex_goto_undef
-                ld      (GOTOTGT),hl
-                ld      a,1
-                ld      (GOTOFLAG),a
-                ret
+                jp      goto_resolve
 
 ; --- eon_seek_nth: find Nth $0E entry in an ON...GOTO/GOSUB target list ------
 ; in:  HL = first token after the GOTO/GOSUB token, DE = N (1-based index)

@@ -750,8 +750,7 @@ ev_f_err:                                   ; the SILENT landmark -- and as of D
                                             ; the seven sites that had made it.
                 ld      a,$DD               ; expression error marker
                 ld      (ERRMARK),a
-                ld      de,0
-                ret
+                jp      ret_de0
 
 ; --- ev_f_errfn / ev_f_erlfn: ERR / ERL -> DE (error-handling S2a, docs/ ---
 ; spec-basic-error-handling-s2a-packet.md §3/(f)). Single-byte value tokens,
@@ -1311,8 +1310,7 @@ ev_ff_lof_checked:                          ; D-LOC joins here for a sequential 
                 or      e
                 jr      nz,lof_nz
                 ld      (FAC),a             ; 0: the int 0 flt_int_result already typed
-                ld      de,0                ; (A is 0 here)
-                ret
+                jp      ret_de0     ; (A is 0 here)
 lof_nz:
                 ; The digit work is the SUBROM_IDX_LOFU32 tenant (sub/lofu32.asm):
                 ; the resident form of it cost 98 B of page 1 (129 -> 31 B free,
@@ -1850,8 +1848,7 @@ ecpst_dbl:
 ecpst_zero:
                 xor     a
                 ld      (FAC),a
-                ld      de,0
-                ret
+                jp      ret_de0
 
 
 ; --- evmc_arg_int: the math-verb argument gate, and "is it already an int?" ---
@@ -2355,8 +2352,7 @@ vptr_arr:
                                             ; error (eva_deferred convention; the
                                             ; statement aborts at check_expr_errors)
 vptr_none:
-                ld      de,0                ; no address (deferred error -> 0)
-                ret                         ; repack: FPERR already set on every path
+                jp      ret_de0     ; repack: FPERR already set on every path
                                             ; that reaches here (an ary_op0_resolve
                                             ; error), so return the deferred 0 -- no
                                             ; ')' check (it could only raise a masking
@@ -2431,8 +2427,7 @@ ev_f_base:
                 inc     ix
                 ld      a,$DD               ; BASE is descoped -> expression-error marker
                 ld      (ERRMARK),a
-                ld      de,0                ; ...and a 0 result (no fabricated address)
-                ret
+                jp      ret_de0     ; ...and a 0 result (no fabricated address)
     ENDIF
 
 ; --- mul16: HL = (HL * DE) low 16 bits -------------------------------------
