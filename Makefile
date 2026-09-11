@@ -3226,6 +3226,17 @@ tiers:
 tiers-md:
 	python3 tools/tier_table.py --keywords --markdown > docs/tier-status.md
 
+# D-KWCOVER: which of the 159 keywords does the collected battery actually TYPE?
+# The capture rides on a normal battery run -- `omsx_repl.run_cases` appends every
+# typed line, tagged with its suite -- and the report refuses without one, because
+# three scans of the probe sources each returned a plausible wrong answer first.
+kwcover:
+	ZEROBAS_KWCOVER=$(PWD)/build/kwcover.tsv $(MAKE) gates
+	python3 tools/kwcover.py
+
+kwcover-report:
+	python3 tools/kwcover.py $(ARGS)
+
 # D-MARKGATE. TODO.md's header states "EVERY OPEN ITEM CARRIES A PICK-UP MARKER"
 # and until 2026-09-05 the only thing that could check it lived in scratchpad and
 # NOTHING RAN IT -- so it had failed silently on 2026-08-27, on 2026-09-01 and

@@ -489,7 +489,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:14778 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:14833 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -655,7 +655,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:3772 (T-6FE392)8 (T-529ABE)` from `TODO.md:13564 (T-529ABE)`: a
+      `TODO.md:3772 (T-6FE392)8 (T-529ABE)` from `TODO.md:13619 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -4616,7 +4616,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:13564 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:13619 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -5106,7 +5106,22 @@ list. **When a slice lands, grep this list for what it just shipped.**
       🎚️ TIER 1 — happy path: EVERY expression — a legal formula WRECKS THE MACHINE at 16 nested parentheses and 12 nested string functions, where both references print the value; the FN nesting cap is the mild symptom of the same misplaced SP (no single keyword: the evaluator's recursion)
       ~~🔁 PARKED (Joost, 2026-09-10): every TIER 5 item waits until TIERS 1–4 are clean~~
       — UN-PARKED the same day: TIER 1 by the measurement above.
-      🙋 NEEDS-JOOST — partition vs merge is his call, in the block's own words; TIER 1, so first in line.
+      🎯 **RULED (Joost, 2026-09-11): MERGE — *"the only real option, it is the most
+      compatible one"*.** One descending region holds the Z80 stack AND the control
+      frames, as the references do: §14.4 already measured that
+      `strheap_varceil()` IS the reference's published `STKTOP`, so `SP` moves to
+      the address zerobas already computes, and the pool's frames live in the same
+      range rather than beside it. What this decides, in order: (1) `SP` follows
+      `CLEAR`/`CLEAR n,addr` and `RUN`, never the boot — the `$D000` accident of
+      §17 is exactly a boot-fixed stack above a later HIMEM; (2) the relocation
+      happens only where no live return address is in flight (cold boot,
+      `clear_vars`, the run-loop's `SAVSTK` anchor); (3) `CSP`/`GSP`/`FSP`/`TSP`
+      and the `[CSP,FSP)` floor rule are re-expressed against the real `SP`, which
+      is the work, and §12's `x.*` rows are the contract that must not move.
+      ⚠️ FIRST MEASUREMENT, unchanged by the ruling: how much of the ~78 B/level is
+      evaluator recursion vs FN machinery — and the FN half is about to leave the
+      stack anyway (the pool ruling above), so re-measure after that lands.
+      🤖 AUTONOMOUS — the mechanism is ruled (Joost, 2026-09-11: MERGE); the measurements are done.
 
 - [ ] 🐌 **THE INTERPRETER IS 2.5–3.8× SLOWER THAN THE CF-3300 — ON EVERYTHING,
       NOT ON ONE VERB — AND IT REFRAMES EVERY OTHER SPEED ITEM.**
@@ -5189,7 +5204,35 @@ list. **When a slice lands, grep this list for what it just shipped.**
       faithful include speed?" is answered.
       🙋 **NEEDS-JOOST** on the charter question (does faithful include speed?);
       🤖 the non-repack comparison in §5 is autonomous and comes first.
-      🎚️ TIER 4 — on-par speed: the whole interpreter is 2.5–3.8× slower (TIER 2, reasonable time, is met) — measured on `FOR` `GOTO` `WHILE`, arithmetic and strings
+      🟢 **PROFILED, AND TWO DISPATCH FIXES LANDED — EVERY MEASURED ROW IS 17–26 %
+      FASTER FOR ZERO BYTES (D-SPEEDPROF, [`docs/spec-basic-speedprof.md`](docs/spec-basic-speedprof.md),
+      2026-09-11).** The item had a ratio and a refuted cause but no profile; a
+      PC-sampling rig ([`scratchpad/speedprof_rig.py`](scratchpad/speedprof_rig.py))
+      puts **16.9 %** of a bare `FOR`/`NEXT` loop in `es_scan`, the statement-table
+      walk, where `NEXT` was the **65th of 90** entries at 3 B of walk each — and
+      an ASSIGNMENT, the commonest statement of all, had no entry and walked the
+      whole table before reaching the `is_letter` fallback. Fixed: the hot twelve
+      move to the front of `stmt_table` (a permutation, 0 B) and `exec_stmt` tests
+      the letter range FIRST (`sub 'A' / cp 26 / jp c,ex_let`; the fallback's own
+      test is gone, net 0 B). Measured, two identical runs each:
+          `FOR I=1 TO 2000:NEXT`              623 → **507** (−18.6 %, 3.12× → **2.54×**)
+          `I=0:FOR J=1 TO 2000:I=I+1:NEXT`   1728 → **1415** (−18.1 %, 3.00× → **2.46×**)
+          `FOR I=1 TO 500:A$="AB"+"CD":NEXT`  303 → **225** (−25.7 %)
+          `I=I+1:IF I<2000 THEN 10` ×2000     1840 → **1529** (−16.9 %)
+      🔴 **THE LETTER TEST NOW RUNS BEFORE THE TABLE**, so no entry's token byte may
+      lie in `$41..$5A` — none does today, and `tests/test_stmt_dispatch.py`
+      asserts it rather than trusting the reading.
+      ➡️ **WHERE THE REST IS**: with real arithmetic the float pack dominates
+      (`fpm_inner` 15.4 %, `fpm_reduce_done` 12.0 %, `digit_mul` 6.6 %) and
+      `es_scan` falls to 7.9 %; ~20 % is BIOS (`BREAKX` per statement, which the
+      reference pays too). A token-keyed jump table would cost 256 B of page 1,
+      which has 1 B free — not a candidate until a carve pays for it.
+      🔴 **THE FIRST THREE PROFILES WERE OF THE WRONG WINDOW** — the harness types
+      the program through the first ~20 s of emulated time, so a window opening at
+      12 s profiled the tokeniser, and a `db` table (`ev_ff_argtab_len`) symbolised
+      at 65 % because the symboliser accepted ALL-CAPS equates as code. Both fixed
+      in the rig [[apparatus-is-part-of-the-measurement]].
+      🎚️ TIER 4 — on-par speed: the interpreter is 2.5–3.8× slower (TIER 2, reasonable time, is met) — 17–26 % of it came back on 2026-09-11 (D-SPEEDPROF); measured on `FOR` `GOTO` `WHILE`, arithmetic and strings
       🤖 AUTONOMOUS — the charter half is ANSWERED (the STANDING sequencing of
       2026-09-02: speed is a real defect), so what remains under it is measurable work.
       ⚠️ **RANKED LAST BY THAT SAME RULING** — every open DIVERGENCE outranks it, so
@@ -8196,15 +8239,27 @@ list. **When a slice lands, grep this list for what it just shipped.**
       abort path would need to unwind `FNSP` to its value at statement start
       (one more cell, or re-derive it from CSP) — that is the one real cost the
       pool shape adds, and it is unmeasured.
-      🙋 NEEDS-JOOST — **which shape: the pool (no shadow area, one 2 B cell) or
-      the page-3 shadow area the residual filed?** The scout you ruled is done;
-      the pool shape is my recommendation and it is autonomous once chosen.
+      🎯 **RULED (Joost, 2026-09-11): the CONTROL-FRAME POOL — option 2.** `fn_call`
+      stops reserving its block below `SP` and takes it from the pool (`ctl_alloc`),
+      chained through one new 2 B cell (`FNSP`); `sg_walk_fnframe` walks that chain
+      after the live frame, so an OUTER frame's string formal is a GC root at last
+      (the scout above measured it corrupting: `qLMNO` vs `qABCD` on both
+      references). `fn_deep`'s hand-rolled `FN_STK_FLOOR` test becomes the pool's
+      own collision (ERR 7 either way), and D-FNALIAS (TIER 5) rides on the same
+      frames. No page-3 shadow band is needed — the one real cost is the abort
+      path: an error inside an FN body resets `SP` without running `fn_leave`, so
+      `FNSP` must be unwound there (one cell, or re-derived from `CSP`) or a frame
+      leaks until the next `RUN`/`CLEAR`.
+      🤖 AUTONOMOUS — the shape is ruled (Joost, 2026-09-11: the control-frame pool) and the measurements are done.
       🎚️ TIER 1 (latent) — happy path: a string `FN` formal is not a GC root, so a GC mid-call corrupts a program that did nothing wrong (measured live 2026-09-11: nested string FN + a collection = wrong text)
-      🎯 **RULED (Joost, 2026-09-10): scout first.** The 🔭 stands — measure whether a GC
+      🎯 **RULED (Joost, 2026-09-10): scout first** — DONE 2026-09-11, see 🔭 above. The original wording: measure whether a GC
       mid-call actually corrupts a string `FN` result on this tree, then bring the
       fix shape. TIER 1 (latent).
-      🙋 NEEDS-JOOST — the RESIDUAL only (page-3 RAM below LINEBUF, shared with
-      D-FNALIAS). The live-frame half is shipped and gated.
+      ✅ **THE RESIDUAL'S 🙋 IS ANSWERED (Joost, 2026-09-11): the pool, not the
+      page-3 band** — so "page-3 RAM below LINEBUF, shared with D-FNALIAS" is no
+      longer what this needs; `FNSP` is 2 B and the frames come from `ctl_alloc`
+      (see the ruling above and [`docs/spec-basic-fnpool.md`](docs/spec-basic-fnpool.md)).
+      The live-frame half has been shipped and gated since 2026-08-27.
 
 - [x] 💰 **THE GENERIC ERROR-LAYER SEAM: per-verb error checks that duplicate a
       layer that already exists — a carve AND a correctness seam.** Opened

@@ -371,6 +371,16 @@ def tracked_dirty():
                   if f not in REGENERATED)
 
 
+def kwcover_env(name):
+    """D-KWCOVER: tag this unit's typed-line capture with its suite name, so the
+    coverage analyser can say WHICH gate runs a keyword and not merely that one
+    does. Returns None (inherit) unless the capture is armed, so the battery's
+    normal environment is untouched."""
+    if not os.environ.get("ZEROBAS_KWCOVER"):
+        return None
+    return dict(os.environ, ZEROBAS_KWCOVER_TAG=name)
+
+
 def sh(argv, log, env=None):
     # guarded() is a no-op passthrough here (argv is make/python3/nice, never a
     # -machine openMSX launch -- those live guarded inside the probes), but it is
@@ -529,7 +539,7 @@ def main():
               f"(they rewrite a shared tracked file) ===", flush=True)
         for g in run_mut:
             t0 = time.time()
-            rc = sh(["make", g], f"{OUT}/{g}.log")
+            rc = sh(["make", g], f"{OUT}/{g}.log", env=kwcover_env(g))
             dt = time.time() - t0
             mut_results.append((g, rc, dt, None))
             print(f"  rc={rc:<3d} {dt:12.0f}s  {g}", flush=True)
@@ -585,7 +595,7 @@ def main():
         idx, (name, argv) = idx_unit
         log = f"{OUT}/{name.replace('/', '_').replace('#', '_')}.log"
         s = time.time()
-        rc = sh(argv, log)
+        rc = sh(argv, log, env=kwcover_env(name))
         e = time.time()
         windows[name] = (s, e)
         return name, rc, e - s, (skipped_reason(log) if rc == 0 else None)

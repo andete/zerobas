@@ -332,6 +332,19 @@ def check_build(src_name, tag, rom_base):
                      f"entry is unreachable (linear search takes the first)")
     if 0 in toks:
         fails.append("a $00 token is in the table; $00 is the terminator")
+    # 🔴 D-LETFIRST (2026-09-11, docs/spec-basic-speedprof.md): `exec_stmt` tests
+    # the LETTER RANGE before it walks this table, so a token byte in $41..$5A
+    # would be silently shadowed by the assignment path -- the statement would
+    # execute as `LET <that byte>…`. None is today (COLON $3A, the CALL
+    # abbreviation `'_'` $5F, every keyword token >= $80, PEEK_PREFIX $FF); this
+    # asserts it against the ASSEMBLED table rather than trusting the reading.
+    shadowed = sorted(t for t in toks if 0x41 <= t <= 0x5A)
+    if shadowed:
+        fails.append(
+            "token(s) " + ", ".join(f"${t:02X}" for t in shadowed) +
+            " lie in $41..$5A, which exec_stmt's D-LETFIRST range test reaches "
+            "FIRST: the statement would run as an assignment. Move the token, or "
+            "put the table walk back in front of the letter test.")
     unresolved = [(t, a) for t, a in table if a not in names]
     for t, a in unresolved:
         fails.append(f"token ${t:02X} -> ${a:04X}, which is not any ex_* label "

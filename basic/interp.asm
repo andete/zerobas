@@ -511,6 +511,14 @@ exec_stmt:
                 ; against `(hl)` in place needs no register at all, so B and C stay
                 ; untouched too, and `ld a,(hl)` restores A from the cursor for
                 ; nothing. tests/test_stmt_dispatch.py asserts all three.
+                ; D-LETFIRST (2026-09-11, docs/spec-basic-speedprof.md): an ASSIGNMENT
+                ; is the commonest statement and it never sits in the table -- it used
+                ; to walk every entry and hit the fallback. A = the statement byte here
+                ; (skip_spaces / or a / ret z above), and tokenised text carries its
+                ; identifiers upper-cased, so a range test is the whole letter test.
+                sub     'A'
+                cp      26
+                jp      c,ex_let            ; a letter: assignment, no table walk
                 ld      de,stmt_table
 es_scan:
                 ld      a,(de)
@@ -535,10 +543,7 @@ es_hit:
                 ld      a,(hl)              ; contract is HL = cursor, A = the token
                 push    de                  ; ... and the address goes via the stack,
                 ret                         ; since HL is spoken for.
-es_noentry:
-                ld      a,(hl)              ; the search left A = 0 (the terminator)
-                call    is_letter           ; bare letter -> assignment
-                jp      c,ex_let
+es_noentry:                                 ; a letter never reaches here (D-LETFIRST)
                 jp      stmt_error
 
 ; --- stmt_table: statement token -> handler (D-KW-2) -------------------------
@@ -555,8 +560,33 @@ es_noentry:
 ; outgrew `jr`'s reach in the repack build; a table has no reach, so the pair
 ; collapses to one unconditional entry.
 stmt_table:
+                ; D-STMTORDER (2026-09-11, docs/spec-basic-speedprof.md): the HOT statements
+                ; first. A PC-sampling profile put 17% of a bare FOR/NEXT loop in this
+                ; walk -- NEXT was the 65th entry. A pure permutation, 0 B.
                 db      COLON
                 dw      ex_sep    ; ':' separator / empty statement
+                db      NEXT_TOKEN
+                dw      ex_next
+                db      FOR_TOKEN
+                dw      ex_for
+                db      IF_TOKEN
+                dw      ex_if
+                db      GOTO_TOKEN
+                dw      ex_goto
+                db      GOSUB_TOKEN
+                dw      ex_gosub
+                db      RETURN_TOKEN
+                dw      ex_return
+                db      PRINT_TOKEN
+                dw      ex_print
+                db      ON_TOKEN
+                dw      ex_on
+                db      LET_TOKEN
+                dw      ex_letkw
+                db      ELSE_TOKEN
+                dw      ex_rem    ; reached after a true THEN clause -> done
+                db      END_TOKEN
+                dw      ex_end
                 db      WAIT_TOKEN
                 dw      ex_wait
                 db      BLOAD_TOKEN
@@ -650,8 +680,6 @@ stmt_table:
                 dw      ex_deftype
                 db      DEFDBL_TOKEN
                 dw      ex_deftype
-                db      PRINT_TOKEN
-                dw      ex_print
                 db      CLS_TOKEN
                 dw      ex_cls
                 db      SCREEN_TOKEN
@@ -672,30 +700,10 @@ stmt_table:
                 dw      ex_read
                 db      RESTORE_TOKEN
                 dw      ex_restore
-                db      GOTO_TOKEN
-                dw      ex_goto
-                db      GOSUB_TOKEN
-                dw      ex_gosub
-                db      ON_TOKEN
-                dw      ex_on
-                db      RETURN_TOKEN
-                dw      ex_return
-                db      FOR_TOKEN
-                dw      ex_for
-                db      NEXT_TOKEN
-                dw      ex_next
-                db      IF_TOKEN
-                dw      ex_if
-                db      END_TOKEN
-                dw      ex_end
                 db      STOP_TOKEN
                 dw      ex_stop
                 db      CONT_TOKEN
                 dw      ex_cont
-                db      ELSE_TOKEN
-                dw      ex_rem    ; reached after a true THEN clause -> done
-                db      LET_TOKEN
-                dw      ex_letkw
                 db      PEEK_PREFIX
                 dw      ex_ff_stmt    ; $FF -> MID$ / STRIG starting a statement
                 db      DIM_TOKEN

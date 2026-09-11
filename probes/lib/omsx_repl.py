@@ -1649,6 +1649,31 @@ def run_batch(machine: str, cases: list[tuple[str, list[str]]], *,
 _PREFLIGHTED: set = set()
 
 
+def _kwcover_log(machine, cases):
+    """D-KWCOVER: with $ZEROBAS_KWCOVER set, append every line this call TYPES to
+    that file, tagged with the suite ($ZEROBAS_KWCOVER_TAG, set by the Makefile
+    recipe) and the case label. The keyword-coverage question -- which of the 159
+    keywords does the collected battery actually run? -- was first attacked by
+    scanning the probes' Python strings for BASIC, and three rounds of heuristics
+    still scored English prose and Z80 assembly as BASIC (`AND` "exercised by 125
+    suites", the UNEXERCISED set empty). The only honest source for what the
+    battery runs is the battery running, and this is the one function it all goes
+    through, so the capture is two lines here instead of a guess per string.
+    Costs nothing when the variable is unset [[apparatus-is-part-of-the-measurement]].
+    """
+    path = os.environ.get("ZEROBAS_KWCOVER")
+    if not path:
+        return
+    tag = os.environ.get("ZEROBAS_KWCOVER_TAG", "?")
+    try:
+        with open(path, "a", encoding="utf-8") as fh:
+            for label, lines in cases:
+                for ln in lines:
+                    fh.write(f"{tag}\t{machine}\t{label}\t{ln}\n")
+    except OSError:
+        pass                        # a capture that cannot write must not break a gate
+
+
 def run_cases(machine: str, cases: list[tuple[str, list[str]]], **kw):
     """D-REFCACHE wrapper around `_run_cases_impl` (the real body, below).
 
@@ -1663,6 +1688,7 @@ def run_cases(machine: str, cases: list[tuple[str, list[str]]], **kw):
     passes it. (Getting that wrong would only ever cause a miss, never a wrong
     hit -- but a cache that misses on equivalent calls is not worth having.)
     """
+    _kwcover_log(machine, cases)
     # 🔬 $ZB_BATCH FORCES A MODE, FOR THE CONVERSION CONTROL (D-BATCH2).
     # `batch=False` is passed by 35 of the tree's 60 emulator probes -- the
     # docstring calls it "the historical default" -- and it dominates the
