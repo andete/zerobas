@@ -489,7 +489,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:15044 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:15080 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -655,7 +655,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:3806 (T-6FE392)8 (T-529ABE)` from `TODO.md:13830 (T-529ABE)`: a
+      `TODO.md:3823 (T-6FE392)8 (T-529ABE)` from `TODO.md:13866 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -2630,6 +2630,23 @@ list. **When a slice lands, grep this list for what it just shipped.**
       reading time.** Only emulator rows and tracked-file edits serialize
       behind a running battery; the read-and-review phase runs in parallel,
       with notes in /tmp until the battery lands.
+      🎯 **AND JOOST SHARPENED THE ORDER (2026-09-11):** *"we still need to get rid
+      of the 'no known gap' items in the table, so we have more known tier-ed
+      work."* Said while ruling the D-SPMERGE jump loop, i.e. **this ranks directly
+      AFTER that slice and ABOVE picking further TIER 4 speed work.** The reason is
+      the queue itself: TIER 1 is down to the stack item, TIER 2 and TIER 3 are
+      EMPTY, so the binding constraint stops being *"fix the next defect"* and
+      becomes *"find out what is actually broken"*. A **"no known gap"** row is not
+      a keyword that is fine — it is a keyword nobody has attributed evidence to,
+      and converting one either yields a tiered defect or retires honestly.
+      ➡️ **THE MISSING HALF IS ATTRIBUTION, AND BOTH LEVERS EXIST:** `subject:` tags
+      on gate rows, and the runtime keyword-coverage capture (`ZEROBAS_KWCOVER` in
+      [`probes/lib/omsx_repl.py`](probes/lib/omsx_repl.py) +
+      [`tools/kwcover.py`](tools/kwcover.py), `make kwcover`), which says which
+      suites TYPE each keyword. 🔴 **EXERCISED IS NOT VERIFIED** — a keyword a suite
+      merely types is not one any row SCORES, so the capture picks the suites and a
+      mutation sweep per keyword is what actually converts the row. Never quote the
+      remaining count from here: `make tiers ARGS=--keywords`.
       🎚️ STANDING — ruling
       🤖 AUTONOMOUS — kwsweep's keyword list is the denominator; work through
       it verb by verb, cheapest-context verbs first, and file what each review
@@ -4650,7 +4667,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:13830 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:13866 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -5105,8 +5122,9 @@ list. **When a slice lands, grep this list for what it just shipped.**
       ⚠️ **FIRST THING TO MEASURE IF PICKED UP:** how much of the ~78 B/level is
       evaluator recursion vs FN machinery. The 20 % above is arithmetic from the
       save size, not a measurement of the rest.
-      🙋 NEEDS A DECISION — the mechanism (partition vs merge) is Joost's call; the
-      measurements are done.
+      ~~🙋 NEEDS A DECISION — the mechanism (partition vs merge) is Joost's call; the
+      measurements are done.~~ — ANSWERED 2026-09-11: MERGE (see the ruling below),
+      and the allocation fork under it is answered too.
       🔴 **SCOUTED 2026-09-10 (D-PARENNEST) — AND IT IS TIER 1, NOT 5.** Joost,
       reading the tier table: *"some of the tier 5 ones seem fundamental/urgent,
       like this one."* The `DEF FN` cap was the only MEASURED symptom; the same
@@ -5209,8 +5227,26 @@ list. **When a slice lands, grep this list for what it just shipped.**
       to `ctl_alloc` and the free sites, and every absolute saved `SP` (`SAVSTK` at
       least) moves with it; **(3)** a dynamic reserve, which is partition wearing
       merge's clothes. My read: (2) is cheaper and reversible, (1) is faithful.
-      🙋 NEEDS-JOOST — (1) or (2). Everything up to this point is measured and the
-      tree is green; this is the next fork and it is his call, as the shape was.
+      🎯 **RULED (Joost, 2026-09-11): (1) — MAKE THE RUN LOOP A JUMP LOOP.** Asked
+      which way out, he took the faithful one over the local one. 🔴 **AND IT GOES
+      AGAINST WHAT I HAD FILED** (*"(2) is cheaper and reversible"*), because
+      putting the two side by side to ask the question is what showed (2)'s real
+      price: an `ldir` of the WHOLE live stack on every `GOSUB`/`FOR`/trap push —
+      O(depth), in the hot path, inside the one fix whose entire purpose is to let
+      the evaluator recurse deeply — plus every absolute saved `SP` (`SAVSTK`, and
+      whatever an audit turns up, which is the unbounded part) left stale. (1) pays
+      once, in structure, and then `SP == CSP` at every statement boundary is TRUE
+      rather than maintained.
+      ➡️ **SO THE SLICE IS:** turn `rp_run`'s `call exec`
+      ([`basic/program.asm:597`](basic/program.asm:597)) into a jump, which is what
+      `END`/`STOP`/`CONT`/`RESUME` have to be re-expressed against, THEN `ctl_alloc`
+      allocating from `SP` with the pop-return-address dance, `CSP` mirroring it for
+      the existing readers, and every free site raising `SP` where the path already
+      jumps. §3's four hazards are the checklist; the nine `parennest` pins flip in
+      the same commit as the code, and cut 1 is the standing proof that those nine
+      going green is necessary and nowhere near sufficient.
+      🤖 AUTONOMOUS — both forks (shape, then allocation) are ruled; what remains is
+      measured work against a green tree.
 
 - [ ] 🐌 **THE INTERPRETER IS 2.5–3.8× SLOWER THAN THE CF-3300 — ON EVERYTHING,
       NOT ON ONE VERB — AND IT REFRAMES EVERY OTHER SPEED ITEM.**
