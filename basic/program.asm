@@ -622,6 +622,21 @@ rp_goto:
                                             ; behaviour. (The assembler CAUGHT it and
                                             ; the build failed, which is why the probe
                                             ; never ran on a stale machine.)
+
+; --- end_line_end: ENDFLAG := 1, and the line is over -----------------------
+; D-JUMPLOOP step 1 (docs/spec-basic-spmerge.md §8.3). FIVE handlers ended with
+; some spelling of `ld a,1 / ld (ENDFLAG),a / ret` -- END, LIST/LLIST, DELETE,
+; RENUM and AUTO's stop -- 5 to 6 bytes each for one idea. They now share this,
+; at 3 bytes a site.
+; 🎯 IT IS A CARVE AND A PRECONDITION AT THE SAME TIME. Stage A has to turn every
+; `ret` that leaves `exec` into a jump, because a `ret` needs a stack word and the
+; merge needs ZERO words above the frontier at a statement boundary (§8.1). Five
+; such `ret`s just became ONE, so the conversion that follows has five fewer sites
+; to get right -- which is worth more than the bytes.
+end_line_end:
+                ld      a,1
+                ld      (ENDFLAG),a
+                ret                         ; -> stage A turns THIS into `jp rp_after`
 ; --- derive_directf: DIRECTF := "the line CURLINE names is the TYPED one" ----
 ; Clobbers A (and the flags). Everything else is preserved -- rp_exec calls it
 ; with the resume pointer live in HL.
@@ -1268,9 +1283,7 @@ ex_delete:
                 ; (rp_run, above) and BEFORE it dereferences CURLINE, which
                 ; matters here more than it does for END: the text this statement
                 ; just memmoved is where CURLINE points.
-                inc     a                   ; -> 1
-                ld      (ENDFLAG),a
-                ret
+                jp      end_line_end        ; -> 1, and the run stops
 
 ; --- ex_renum: RENUM [<new>][,[<old>][,<inc>]] (D-EDITVERB) -------------------
 ; docs/spec-basic-editverb.md §3.2, measured in
@@ -1323,9 +1336,7 @@ exr_done:
                 ; RENUM is not a program EDIT in the sense DELETE is: no byte
                 ; changes length, so nothing the variables or the CONT point
                 ; address has moved.
-                ld      a,1
-                ld      (ENDFLAG),a
-                ret
+                jp      end_line_end
 
 ; The two halves of the report. Plain ASCII rather than the D-MSGENC pool: the
 ; pool encodes whole messages and this one has two NUMBERS spliced into it, so
@@ -1424,9 +1435,7 @@ exa_ok:
 exa_stop:
                 xor     a
                 ld      (RL_AUTO),a         ; the prompt blocks again
-                inc     a
-                ld      (ENDFLAG),a         ; R-AU9: AUTO ends the line and the run
-                ret
+                jp      end_line_end        ; R-AU9: AUTO ends the line and the run
 
 ; --- gosub_push: push a bounds-checked GOSUB return frame (repack golf) -------
 ; D-CTLPOOL: the 8-byte frame is [CURLINE:2][resume-ptr:2][prevGSP:2][prevFSP:2],

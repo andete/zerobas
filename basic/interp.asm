@@ -844,9 +844,7 @@ ex_end:
                 ; handler (spec §2 c4b/c6).
                 xor     a
                 ld      (ONEFLG),a
-                inc     a                   ; -> 1
-                ld      (ENDFLAG),a
-                ret
+                jp      end_line_end        ; ENDFLAG := 1; the run stops
 ex_rem:
                 ret                         ; rest of line is a comment -> done
 ex_data:                                    ; DATA is a no-op at run time: skip its

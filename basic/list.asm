@@ -131,9 +131,7 @@ exl_walk:
                 ; ⚠️ AND UNLIKE ex_delete, CONTVALID IS *NOT* CLEARED: R-LS8, LIST
                 ; is not a program edit, and lse-cont (whose CONT must still resume,
                 ; reading 5 like its control) is the row that gates the difference.
-                ld      a,1
-                ld      (ENDFLAG),a
-                ret
+                jp      end_line_end
 
 ; --- lst_setall / list_all: the WHOLE program ------------------------------
 ; 🔴 list_walk HAS THREE CALLERS AND A LIST RANGE MUST NOT LEAK INTO TWO OF THEM
