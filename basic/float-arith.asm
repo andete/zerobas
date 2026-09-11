@@ -776,12 +776,23 @@ fp_sub:
 ; the binding constraint here — a BASIC multiply statement runs this at most
 ; 196 times once, not in a hot loop). Preserves B, HL. Clobbers C, D, E.
 digit_mul:
-                ld      d,a                 ; D = i (countdown)
-                ld      e,c                 ; E = j (addend)
+                ; D-MULZERO (2026-09-11): count down J, not I -- i*j is symmetric, and
+                ; the two operands are NOT symmetric in practice. The outer loop walks
+                ; ARGA (the variable: `X=I*2` has up to 9 in a digit), the inner walks
+                ; ARGB (the literal: ONE non-zero digit and thirteen zeros). Counting
+                ; the inner digit makes `*2` two iterations instead of up to nine, and
+                ; gives j=0 an early-out that the old shape could not have: it spun i
+                ; times adding zero, thirteen times per pass. Two bytes, and the
+                ; header's "not in a hot loop" was the claim this refutes -- 392,000
+                ; calls in the loop D-SPEEDPROF profiled.
+                ld      d,c                 ; D = j (countdown)
+                ld      e,a                 ; E = i (addend)
                 ld      c,0                 ; C = accumulator
+                or      a
+                ret     z                   ; i=0 -> A is already 0
                 ld      a,d
                 or      a
-                ret     z                   ; i=0 -> C is already 0
+                ret     z                   ; j=0 -> the product is 0, and A is it
 dmul_lp:
                 ld      a,c
                 add     a,e
@@ -865,6 +876,15 @@ fpm_outer:
                 ld      d,0
                 add     hl,de
                 ld      a,(hl)
+                ; D-MULZERO (2026-09-11): a ZERO multiplicand digit contributes
+                ; nothing from a 14-digit pass, and there is no carry to propagate
+                ; because every partial product is 0 -- so skip the whole pass.
+                ; `FOR I=1 TO 2000:X=I*2:NEXT` costs 2719 jiffies of marginal time
+                ; here against the CF-3300's 577 (4.7x, the interpreter's single
+                ; biggest constant -- D-SPEEDPROF's profile puts ~47% of that loop
+                ; in this multiply), and I is 1-4 significant digits of 14.
+                or      a
+                jr      z,fpm_outer_next
                 ld      (MUL_ADIG),a
                 ld      a,(MUL_I)
                 add     a,(MULPROD & $FF)+14 ; bug fix: MUL_PP = MULPROD+MUL_I+14, not

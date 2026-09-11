@@ -489,7 +489,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:14966 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:14987 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -655,7 +655,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:3806 (T-6FE392)8 (T-529ABE)` from `TODO.md:13752 (T-529ABE)`: a
+      `TODO.md:3806 (T-6FE392)8 (T-529ABE)` from `TODO.md:13773 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -4650,7 +4650,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:13752 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:13773 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -5321,6 +5321,27 @@ list. **When a slice lands, grep this list for what it just shipped.**
       12 s profiled the tokeniser, and a `db` table (`ev_ff_argtab_len`) symbolised
       at 65 % because the symboliser accepted ALL-CAPS equates as code. Both fixed
       in the rig [[apparatus-is-part-of-the-measurement]].
+      🟢 **THE BIGGEST REMAINING CONSTANT WAS THE FLOAT MULTIPLY, AND IT IS 43 %
+      SMALLER (D-MULZERO, 2026-09-11).** D-SPEEDPROF left a profile and no cause;
+      decomposing the arithmetic row by component found it (marginal jiffies over
+      the bare loop, zb / CF-3300): `X=I` 575/162 **3.6×**, `X=I+1` 902/380
+      **2.4×**, **`X=I*2` 2719/577 — 4.7×**, `X=2*3` 546/339 **1.6×**. Not
+      dispatch, not the int path: the float MULTIPLY, which the profile puts at
+      ~47 % of that loop (`fpm_inner` 17.7 %, `fpm_reduce_done` 12.8 %,
+      `digit_mul` 7.1 %, `dmul_lp` 5.3 %).
+      **Two zero-skips, five bytes, no new table:** `fpm_outer` skips a whole
+      14-digit pass when the multiplicand digit is 0 (every partial product is 0
+      and no carry can propagate — `I` is 1–4 significant digits of 14), and
+      `digit_mul` counts down **J** instead of I — `i*j` is symmetric, the
+      operands are not, and counting the inner digit makes `*2` two iterations
+      instead of up to nine while giving `j=0` an early-out the old shape could
+      not have (it spun i times adding zero, thirteen times per pass).
+          `X=I*2`    3226 → **1837** jiffies (−43 %), ratio **4.7× → 2.3×**
+          `X=I*2+1`  3553 → **2165** (−39 %), ratio 3.55× → **2.16×**
+      🔴 **AND IT REFUTES THE ROUTINE'S OWN HEADER**, which rejected a lookup
+      table because *"a BASIC multiply statement runs this at most 196 times once,
+      not in a hot loop"* — the profiled loop calls it ~392 000 times. Corrected
+      in place, not deleted [[a-fix-falsifies-the-justification-beside-it]].
       🎚️ TIER 4 — on-par speed: the interpreter is 2.5–3.8× slower (TIER 2, reasonable time, is met) — 17–26 % of it came back on 2026-09-11 (D-SPEEDPROF); measured on `FOR` `GOTO` `WHILE`, arithmetic and strings
       🤖 AUTONOMOUS — the charter half is ANSWERED (the STANDING sequencing of
       2026-09-02: speed is a real defect), so what remains under it is measurable work.
