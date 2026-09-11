@@ -194,7 +194,10 @@ fn_call:
                 jp      c,subrom_absent_error
                 ld      a,(FN_FST)
                 or      a
-                jr      nz,fn_deep          ; the pool is full -> ERR 7, as before
+                jp      nz,gosub_stk_over   ; the pool is full -> ERR 7, as before --
+                                            ; D-SPMERGE's carve: `fn_deep` was a bare
+                                            ; `jp gosub_stk_over` with this as its one
+                                            ; caller, so the label and its 3 bytes go
 
 ; ===========================================================================
 ; D-DEFFNEV: THE PARSE IS A SUB PAGE-0 TENANT, AND WHAT IS LEFT HERE IS A
@@ -383,12 +386,9 @@ fn_leave:
 ; tenth formal was reached -- so each is now a code in FN_TYP that the servicer's
 ; own `ld a,(FN_TYP) / jp raise_error` raises. Three tails, thirteen bytes, and
 ; `make deadcode` is what would have caught them had they been left behind.
-; ⚠️ ERR 7 STAYS, because it is the ONE disposition the tenant cannot reach: the
-; Z80-stack floor is tested in fn_enter above, before any tenant call, and SP is
-; not something a routine under CALSLT may move.
-fn_deep:
-                jp      gosub_stk_over      ; ERR 7 -- `DEF FNA(X)=FNA(X)` is Out
-                                            ; of memory on both references
-                                            ; (b.recurse), and a floor is the only
-                                            ; thing between that answer and a
-                                            ; wrecked stack
+; ⚠️ ERR 7 STAYS, and since D-FNPOOL it is the POOL's disposition, not a
+; hand-rolled floor's: `ctl_alloc`'s own collision with `CTLLIM` is what refuses
+; `DEF FNA(X)=FNA(X)`, which is Out of memory on both references (b.recurse).
+; The `fn_deep` label that used to sit here was a bare `jp gosub_stk_over` with
+; exactly one caller, so D-SPMERGE's carve spent it: the caller jumps straight
+; to `gosub_stk_over` and these three bytes fund the stack base's relocation.

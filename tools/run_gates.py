@@ -66,7 +66,7 @@ WARM = ["repack-machine", "basic-reloc", "subrom-abi-check", "disk/test720.dsk"]
 # 2026-08-28 over a full battery: 19 static units = 65 serial-seconds, 31
 # emulator units = 2870. The entire cost of a battery is the emulator tier, and
 # both of that day's real reds came out of the static one.
-STATIC = """basic-reloc subrom-abi-check diskrom-abi-check rom-parts-check subrom-closure-check unit-test deadcode
+STATIC = """basic-reloc deps-check subrom-abi-check diskrom-abi-check rom-parts-check subrom-closure-check unit-test deadcode
 wall-assertion-check ram-claim-check build-assert-check needle-case-check redundant-load-check rowshape-check injector-check
 temp-root-check todo-citation-check todo-marker-check deferral-pin-check error-alphabet-check chokepoint-check wall-literal-check
 filed-pin-check disk-mount-check

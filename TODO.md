@@ -489,7 +489,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:14913 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:14933 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -655,7 +655,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:3806 (T-6FE392)8 (T-529ABE)` from `TODO.md:13699 (T-529ABE)`: a
+      `TODO.md:3806 (T-6FE392)8 (T-529ABE)` from `TODO.md:13719 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -4650,7 +4650,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:13699 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:13719 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -10217,6 +10217,26 @@ list. **When a slice lands, grep this list for what it just shipped.**
       32, inside the file) and reads `3 , 5` on both machines.
       🔴 Page 1 is at 14 B (two carves since): the next page-1 item carves first.
       🤖 AUTONOMOUS — the CF-3300 settles every row; the shape is settled by the standing ruling (promoted 2026-09-10).
+
+- [x] 🔴 **NINE `basic/` SOURCES WERE NOT PREREQUISITES OF THE MAIN IMAGE — AN EDIT
+      TO ANY OF THEM REBUILT NOTHING (D-DEPS, 2026-09-11).** Found by a carve that
+      reported no saving: retiring `fn_deep` removes 2 net bytes, and
+      `make basic-reloc` reported page-1 free UNCHANGED with the image
+      byte-identical — which is what a build that did not happen looks like.
+      `basic/deffn.asm` was not in `DEPS`, so make had no reason to reassemble;
+      the others were `keytrap.asm` `playsvc.asm` `subrom-boot.asm`
+      `pdfcb-body.inc` `title-body.inc` `sprtrap-body.inc` `fiawalked-body.inc`
+      `kwtable.inc`. 🟢 **`make deps-check` PROVES THE LIST NOW** — it derives the
+      required set from `basic/main.asm`'s own `include` lines, fails naming what
+      is absent, is knifed (drop one and it goes red naming it) and is collected
+      by the static tier.
+      🎯 **NOTHING SHIPPED STALE, CHECKED NOT ASSUMED**: D-FNPOOL also touched
+      `basic/sysvars.inc`, which IS listed, so its build was triggered — verified
+      by reassembling the committed sources and reproducing the committed
+      `zerobas-main-eu.bps/.ips` byte for byte. That was luck, not a rule.
+      🎚️ APPARATUS — it blocks TIER 1 work (the SP relocation's carve measured as
+      a no-op because of it), which is why it was taken now.
+      🤖 AUTONOMOUS — mechanical, and the gate is what closes it.
 
 - [x] 💰 **D-PAIRCARVE2 (2026-09-11): FOUR MORE SEQUENCE HELPERS, SIZES MEASURED
       BY ASSEMBLING EACH CANDIDATE — main page 1 5 → 27 B, low 9 → 41 B.**

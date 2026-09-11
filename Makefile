@@ -61,6 +61,15 @@ SRC   := basic/main.asm
 # (SQR/ATN/EXP/LOG are $FF-prefixed function tokens, reached via kwtable, not
 # tk_notkw's single-char operator chain) -- without this, an edit to either
 # file could silently ship a stale basic.rom/sub.rom.
+# 🔴 EVERY basic/ SOURCE main.asm INCLUDES BELONGS HERE, AND NINE DID NOT (D-DEPS,
+# 2026-09-11). `basic/deffn.asm` was missing, so an edit to it alone rebuilt
+# NOTHING: the carve that retired `fn_deep` reported page-1 free UNCHANGED and
+# the image byte-identical, which is what a build that did not happen looks like.
+# The slice that came before it was saved only by also touching `sysvars.inc`,
+# which IS listed -- luck, not a rule. Checked after the fix: a forced rebuild of
+# the committed sources reproduces the committed patch bytes exactly, so nothing
+# shipped stale; `make deps-check` now proves the list instead of trusting it.
+# Same class as the sub-ROM's SUB_PARTS, third occurrence [[makefile-subparts-stale-tenant]].
 DEPS  := basic/interp.asm basic/initext.asm basic/title.asm basic/repl.asm \
          basic/vars.asm basic/strvar.asm basic/str-engine.asm basic/expr.asm basic/poke.asm basic/vdpio.asm \
          basic/clear.asm basic/usr.asm basic/time.asm basic/print.asm basic/screen.asm basic/list.asm \
@@ -78,6 +87,9 @@ DEPS  := basic/interp.asm basic/initext.asm basic/title.asm basic/repl.asm \
          basic/sv-tputw.inc basic/sv-tne.inc basic/sv-diskwr.inc \
          basic/fatiocreate-body.inc basic/fatiow-body.inc \
          basic/readdata-body.inc basic/tokskip-body.inc \
+         basic/deffn.asm basic/keytrap.asm basic/playsvc.asm basic/subrom-boot.asm \
+         basic/pdfcb-body.inc basic/title-body.inc basic/sprtrap-body.inc \
+         basic/fiawalked-body.inc basic/kwtable.inc \
          basic/sysvars.inc
 
 # zerobas-disk: a standalone 16 KB disk-interface ROM (not an IPS patch). Lives
@@ -3228,6 +3240,18 @@ tiers:
 
 # The same table as a FILE -- docs/tier-status.md, the page to open (or publish).
 # Generated; regenerate after any TODO.md edit, never hand-edit.
+# D-DEPS: the DEPS list above, proved rather than trusted -- every basic/ file
+# main.asm includes must be a prerequisite, or an edit to it rebuilds nothing.
+deps-check:
+	@python3 -c "import re,sys;\
+inc=set(re.findall(r'include\s+\"(basic/[^\"]+)\"', open('basic/main.asm').read()));\
+mk=open('Makefile').read();\
+dep=set(re.findall(r'(basic/[A-Za-z0-9_.-]+)', mk[mk.index('DEPS  :='):mk.index('DEPS  :=')+4000]));\
+miss=sorted(inc-dep-{'basic/main.asm'});\
+print('deps-check: %d include(s) in basic/main.asm, %d listed' % (len(inc), len(inc)-len(miss)));\
+print('\n'.join('  MISSING FROM DEPS: '+m for m in miss)) if miss else print('  every included source is a prerequisite');\
+sys.exit(1 if miss else 0)"
+
 tiers-md:
 	python3 tools/tier_table.py --keywords --markdown > docs/tier-status.md
 
