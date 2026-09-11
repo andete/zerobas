@@ -489,7 +489,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:14648 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:14673 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -655,7 +655,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:3772 (T-6FE392)8 (T-529ABE)` from `TODO.md:13523 (T-529ABE)`: a
+      `TODO.md:3772 (T-6FE392)8 (T-529ABE)` from `TODO.md:13542 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -4616,7 +4616,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:13523 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:13542 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -9587,7 +9587,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       🎚️ APPARATUS — citations
       🤖 AUTONOMOUS — the reference or a gate settles it; finishable unattended (no his-decision signal found).
 
-- [ ] 🔴 **EIGHT KEYWORDS THE REFERENCE TOKENISES AND ZEROBAS DOES NOT — AND
+- [x] 🔴 **EIGHT KEYWORDS THE REFERENCE TOKENISES AND ZEROBAS DOES NOT — AND
       `make kwsweep` WAS GREEN ON ALL EIGHT.** Measured 2026-09-07 (D-KWPIN,
       [`scratchpad/kwsweep_pin.out`](scratchpad/kwsweep_pin.out)).
       | word | reference token | in `kwtable.inc`? |
@@ -10000,7 +10000,26 @@ list. **When a slice lands, grep this list for what it just shipped.**
       targets into range. Shipping only some of the four is worse than
       shipping none — it leaves `CRUNCH_DIFF_PINNED` half-stale and the class
       inconsistent.
-      🎚️ TIER 1 — happy path: of the eight keywords the reference tokenises, still MISSING here: `COPY` (`SET` `ATTR$` `IPL` `CMD` tokenise-then-ERR-5 as the reference does; `LOC`, `DSKI$`, `DSKO$` shipped 2026-09-11)
+      ✅ **`COPY` SHIPPED 2026-09-11 (D-COPY, [`docs/spec-basic-copy.md`](docs/spec-basic-copy.md),
+      `make copy-acceptance`, 8 rows) — THE EIGHTH OF THE EIGHT, AND THE CLASS IS
+      CLOSED.** Faces measured on the CF-3300: a plain copy lands the source's
+      bytes under the new name; an existing destination is silently OVERWRITTEN
+      (`c.exist` → HI.TXT's 26 bytes replace PROG.BAS's 16); 2048 B copies whole;
+      wildcard source, self-copy and a missing `TO` are all `ERR 5` (the
+      one-argument form parses and is refused); a missing source is `ERR 53`.
+      Crunch from the VG-8020's own program text: `COPY` = $D6 and `TO` inside
+      the line is `TO_TOKEN` — one byte to test. Here: `ex_copy` (low region)
+      parses src → dirverb op 6 stashes it (`DISK_FCB_NAME` is the only 8.3
+      buffer) → `TO_TOKEN` → dst → op 7; `tnt_copy` finds the source FIRST (its
+      `fat_find` records the dir-entry location the destination's create must
+      own), stashes first cluster + size, deletes an old destination, creates,
+      resets the write cursor as `fat_io_create` does, reopens the source and
+      moves it a sector at a time through the one shared `FSECTOR_BUF`. The gate
+      reads the copied file's BYTES back from the image with a host-side FAT12
+      reader — a verb that made the entry and wrote nothing cannot pass. RAM:
+      17 B at `$E080` from the band D-FORVAR freed. `fname_fcb` is a helper now
+      (KILL, NAME, COPY ×2).
+      🎚️ TIER 1 — happy path: the eight are ALL present now (`SET` `ATTR$` `IPL` `CMD` tokenise-then-ERR-5 as the reference does; `LOC`, `DSKI$`, `DSKO$`, `COPY` shipped 2026-09-11)
       🤖 AUTONOMOUS — the reference settles every token, and the pin is built.
 
 - [x] 🔴 **`LOC(#n)` IS A MISSING KEYWORD WITH ITS ORACLE MEASURED, AND IT WAS
@@ -13685,6 +13704,12 @@ architecture and write code. Each step is independently oracle-validatable.
       gained `k.dski`/`h.dsko` (ERR 5 on both diskless sides). Cost: main page 1
       43 → 5 B, low region 75 → 9 B (the D-PAIRCARVE budget, spent the same
       night), sub page 1 756 → 719 B, kwtable +16 B (re-pinned).
+      🎯 **THE EIGHT SCOUTS' PINS LEFT `filed-row-known.txt` WHEN THE EIGHT-KEYWORDS
+      ITEM CLOSED (D-COPY)** — seven re-ran clean; `dskibytes_probe` still reads
+      DIFF because it PEEKs $EB00, the REFERENCE's landing address, on zerobas
+      too (the buffer here is `FSECTOR_BUF`, and `$F351` says so) — the
+      pointer-driven `dir`/`boot` rows of `dskio-acceptance` are the
+      machine-independent reading, and they converge.
       🔴 **RESIDUAL, TIER 3 (D-DSKNODISK): with NO DISK IN THE DRIVE the CF-3300
       answers `ERR 70` (Disk offline) to both; here `DSKI$` raises ERR 2 (the
       `load_error` exit taken INSIDE an expression surfaces as a Syntax error)
@@ -14642,7 +14667,7 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
         programs that used to have ~15 KB of string space now get 200 unless
         they say otherwise. The full acceptance corpus was re-run, not just this
         slice's gate.
-      🎚️ TIER 1 — happy path: the measured keyword-completeness remainder — `make kwsweep` prints it; today it overlaps the eight; still open there: `COPY` (`DSKI$` `DSKO$` shipped 2026-09-11, D-DSKIO)
+      🎚️ TIER 1 — happy path: the measured keyword-completeness remainder — `make kwsweep` prints it; today it overlaps the eight; none of the eight is open there any more (`LOC`, `DSKI$`, `DSKO$`, `COPY` shipped 2026-09-11) — what remains of this item is the fixture, not a keyword
       ⛔ BLOCKED — neither of us can start it now (needs a fixture).
 
 - [ ] **`LOAD"CAS:"` ACCEPTS A TOKENISED TAPE; the reference does not return.**

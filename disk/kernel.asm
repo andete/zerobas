@@ -2198,6 +2198,7 @@ hook_tab:
                 dw      H_FILE, hk_present
                 dw      H_DSKO, hk_present   ; D-DSKIO: both bodies are a sub-ROM tenant,
                 dw      H_DSKI, hk_present   ; the hook buys the diskless ERR 5
+                dw      H_COPY, hk_present   ; D-COPY: same shape
                 dw      0
 
 ; --- install_hook: write one 5-byte CALLF stub into a hook slot -------------

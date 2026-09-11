@@ -300,6 +300,7 @@ ATTR_TOKEN      equ     $E9     ; ATTR$ — tokenised, then ERR 5 (no function)
 DSKI_TOKEN      equ     $EA     ; DSKI$(d,s): read sector s into the buffer at (DSKBUF_PTR);
                                 ; the VALUE is the empty string (D-DSKIO, oracle crunch 2026-09-11)
 DSKO_TOKEN      equ     $D1     ; DSKO$ d,s: write that buffer to sector s (statement only)
+COPY_TOKEN      equ     $D6     ; COPY "src" TO "dst" (D-COPY; the last of the eight)
 REM_TOKEN       equ     $8F     ; spec-tokens-statements.md; swallows rest of line
 POKE_TOKEN      equ     $98     ; spec-tokens-statements.md
 ; PEEK is a *function* token: a $FF prefix followed by a second byte.
@@ -2892,6 +2893,8 @@ DISKOP_SEL_FILES                equ 2   ; dirverb: FILES  -> screen, packed rows
 DISKOP_SEL_LFILES               equ 3   ; dirverb: LFILES -> printer, one per line
 DISKOP_SEL_DSKO                 equ 4   ; dirverb: DSKO$ -- (DSKBUF_PTR) -> sector FWR_DIRSEC (D-DSKIO)
 DISKOP_SEL_DSKI                 equ 5   ; dirverb: DSKI$ -- sector FWR_DIRSEC -> (DSKBUF_PTR)
+DISKOP_SEL_COPYSTASH            equ 6   ; dirverb: COPY's first half -- DISK_FCB_NAME -> COPY_SRC (D-COPY)
+DISKOP_SEL_COPY                 equ 7   ; dirverb: COPY's body -- COPY_SRC -> DISK_FCB_NAME, sector by sector
 
 ; --- Line-editor tenant ABI (SUBROM_IDX_LINEEDIT, docs/spec-eviction-g4-
 ; space.md §4, carve #2): reuses the SAME DISKOP_OP/DISKOP_STATUS RAM cells,
@@ -3133,6 +3136,7 @@ H_KILL          equ     $FDFE   ; KILL handler
 H_FILE          equ     $FE7B   ; FILES handler
 H_DSKO          equ     $FDF4   ; DSKO$ handler (D-DSKIO; the standard slot, claimed by hk_present)
 H_DSKI          equ     $FE17   ; DSKI$ handler (D-DSKIO)
+H_COPY          equ     $FE08   ; COPY handler (D-COPY; the standard slot)
 ; --- the KEY-trap fn-key hook (interrupt-traps T3, docs/spec-traps-t3-key.md §4) ---
 ; NOT a standard MSX hook: it is added by OUR C-BIOS patch
 ; (cbios-repack/key-trap-hook.patch) because no published hook can see the current
@@ -3531,7 +3535,13 @@ SL_CEIL         equ     $E058   ; store_line: the VARIABLE-region ceiling the
                                 ; reads 0 of 40 bytes changed. A map is a reading;
                                 ; that is a measurement.
 ; FREE-RAM $E05A..$E080  the rest of the retired GOSUB_STK
-; FREE-RAM $E080..$E0B8  the pre-D-FORVAR FOR stack, free since it relocated
+; D-COPY (2026-09-11): COPY "src" TO "dst" keeps the SOURCE name and what fat_find
+; said about it across the destination's delete/create, which reuse DISK_FCB_NAME
+; and clobber FAT_FIRSTCLUS/FAT_FILESIZE. 17 B from the band below.
+COPY_SRC        equ     $E080   ; the source's 11-byte 8.3 name field
+COPY_CLUS       equ     $E08B   ; the source's first cluster (word)
+COPY_LEFT       equ     $E08D   ; bytes still to copy (4-byte LE)
+; FREE-RAM $E091..$E0B8  the rest of the pre-D-FORVAR FOR stack, free since it relocated (D-COPY took $E080..$E090)
 ; --- D-STRADDLE: the random-record PASS cursor (2026-09-06) -----------------
 ; A record whose span crosses a 512-byte sector boundary is written in TWO
 ; passes, and these two words are the state that has to survive `frnd_locate`,

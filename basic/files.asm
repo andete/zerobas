@@ -102,6 +102,23 @@ dirverb_op:
                 ld      ix,SUBROM_ENTRY_BASE_P1 + 3*SUBROM_IDX_DIRVERB
                 jp      subrom_call
 
+; --- COPY "src" TO "dst" — the run half (D-COPY) -----------------------------------
+; copy_parse (low region) did the gate and both names; this runs dirverb op 7
+; and decodes STATUS: 0 source not found -> ERR 53, 1 copied, 2 mount / full /
+; I-O -> load_error -- KILL's own tail, shared -- and 3 (self-copy, wildcard
+; source) -> ERR 5.
+ex_copy:
+                call    copy_parse          ; HL = the cursor after the destination
+                ld      a,DISKOP_SEL_COPY
+                push    hl
+                call    dirverb_op
+                pop     hl
+                jp      c,load_error        ; sub-ROM absent
+                ld      a,(DISKOP_STATUS)
+                cp      3
+                jp      z,gb_illegal        ; 3: refused -> ERR 5
+                jp      kill_status         ; 0 / 1 / 2 exactly as KILL decodes them
+
 ex_files:
                 push    hl                  ; ⚠️ HL IS THE STATEMENT CURSOR HERE and
                 ld      hl,H_FILE           ; the gate needs it for the hook address;
@@ -1625,8 +1642,8 @@ ex_kill:
                 inc     hl                  ; HL -> bytes after the KILL token
                 jr      do_kill
 do_kill:
-                call    fname_expr          ; D-FNEXPR: a string EXPRESSION
-                call    pdfcb_resume      ; build DISK_FCB_NAME (8.3 wildcard pattern)
+                call    fname_fcb          ; D-FNEXPR: a string EXPRESSION
+                                           ; build DISK_FCB_NAME (8.3 wildcard pattern)
                 ld      a,(DISKSLOT_OK)
                 or      a
                 jp      z,load_error
@@ -1658,6 +1675,7 @@ do_kill:
                 ; trappable ERR 53 with no reading behind it. The tenant now
                 ; separates the mount (STATUS = 2) exactly as tnt_files does, and
                 ; these two lines are the head half of that: +4 B, not 0.
+kill_status:                            ; D-COPY shares this decode (0/1/2)
                 ld      a,(DISKOP_STATUS)
                 or      a
                 jp      z,df_notfound       ; 0 = nothing matched -> ERR 53
@@ -1691,8 +1709,8 @@ ex_name:
                 inc     hl                  ; HL -> bytes after the NAME token
                 jr      do_name
 do_name:
-                call    fname_expr          ; D-FNEXPR: OLD name, a string EXPRESSION
-                call    pdfcb_resume      ; old -> DISK_FCB_NAME
+                call    fname_fcb          ; D-FNEXPR: OLD name, a string EXPRESSION
+                                           ; old -> DISK_FCB_NAME
                 ; "AS" (verbatim ASCII)
                 call    skip_spaces
                 call    upcase

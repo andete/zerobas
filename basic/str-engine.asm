@@ -2183,6 +2183,42 @@ ex_dsko:
                 call    dsk_core
                 jp      exec_stmt
 
+; --- copy_parse: COPY's parse half (D-COPY) ----------------------------------------
+; docs/spec-basic-copy.md. Measured on the CF-3300: a plain copy lands the source's
+; bytes under the new name; an EXISTING destination is silently overwritten; a
+; missing source is ERR 53; a wildcard source, a self-copy and a missing `TO`
+; clause are all ERR 5 (the one-argument form PARSES and is refused, not ERR 2).
+; `TO` arrives as TO_TOKEN -- the VG-8020 crunches it inside a COPY line too.
+; Hook gate BEFORE the parse, as every disk verb: the diskless answer is ERR 5.
+; The source name is parsed first and STASHED by the tenant (DISK_FCB_NAME is the
+; only 8.3 buffer and the destination reuses it). In: HL at the byte after the
+; COPY token. Out: HL = the cursor after the destination, DISK_FCB_NAME = dst,
+; COPY_SRC = src. The run half is ex_copy (basic/files.asm, page 1): the two
+; regions share one budget and neither had room for the whole verb.
+copy_parse:
+                push    hl
+                ld      hl,H_COPY
+                call    chan_gate           ; unclaimed -> ERR 5, trappable
+                pop     hl
+                inc     hl                  ; HL -> bytes after the COPY token
+                call    fname_fcb           ; src -> DISK_FCB_NAME (8.3, '*' -> '?')
+                ld      a,DISKOP_SEL_COPYSTASH
+                push    hl
+                call    dirverb_op          ; -> COPY_SRC (CF not read here: the
+                pop     hl                  ; body's call answers the same question)
+                call    skip_spaces
+                cp      TO_TOKEN
+                jp      nz,gb_illegal       ; no `TO`: ERR 5 (measured), not ERR 2
+                inc     hl
+                jp      fname_fcb           ; dst -> DISK_FCB_NAME; tail-call
+; --- fname_fcb: fname_expr, then pdfcb_resume (D-COPY) ------------------------------
+; The pair stood at KILL and NAME already; COPY brings two more sites. Same
+; contract as the pair: HL = the cursor after the name expression, DISK_FCB_NAME
+; = the 8.3 field.
+fname_fcb:
+                call    fname_expr
+                jp      pdfcb_resume
+
 ; --- dsk_core: the shared half of DSKO$ d,s and DSKI$(d,s) (D-DSKIO) -----------
 ; docs/spec-basic-dskio.md §3. In: A = the dirverb-tenant op (4 write / 5 read),
 ; DE = the hook cell (H_DSKO / H_DSKI), HL = the cursor at `d`. The op is parked

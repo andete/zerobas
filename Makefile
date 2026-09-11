@@ -2145,6 +2145,10 @@ loc-acceptance: repack-machine $(DISK_TEST_DSK)
 dskio-acceptance: repack-machine $(DISK_TEST_DSK)
 	ZEROBAS_BASIC_MACHINE=$(REPACK_MACHINE) python3 probes/disk/diskbasic_probe_dskio.py
 
+# --- D-COPY: COPY "src" TO "dst" (docs/spec-basic-copy.md) ------------------------
+copy-acceptance: repack-machine $(DISK_TEST_DSK)
+	ZEROBAS_BASIC_MACHINE=$(REPACK_MACHINE) python3 probes/disk/diskbasic_probe_copy.py
+
 # --- D-BADFNUM: the REJECTED-channel-number grid ------------------------------
 # docs/spec-basic-badfnum-channel-class.md. 12 channel-taking verbs x 5 channel
 # classes, SWEPT rather than sampled, plus 4 controls, 8 trappability rows and 10

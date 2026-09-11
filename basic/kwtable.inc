@@ -97,6 +97,7 @@ kwtable:
                 ; word; DSKF is not a prefix of either.
                 db      5,"DSKI$",1,DSKI_TOKEN               ; $EA, function only
                 db      5,"DSKO$",1,DSKO_TOKEN               ; $D1, statement only
+                db      4,"COPY",1,COPY_TOKEN                ; D-COPY: $D6 (oracle crunch), prefixes nothing longer
                 ; Random-access conversions (Phase 2c). $FF-prefixed function tokens
                 ; (MKI$=$FF$AE returns a string — the '$' is PART of the keyword, unlike
                 ; INPUT$; CVI=$FF$A8 returns a number). Oracle-locked to the VG-8020.

@@ -1,3 +1,9 @@
+# 2026-09-11 (D-COPY): the eight scouts of the eight keywords (dski*, copyverb, kwrest) left this file --
+# their owning item closed with all eight shipped, each was re-run by hand with the refcache off, and a
+# NO-VERDICT characterisation of the reference has nothing left to pin once the verb exists here.
+# dskibytes_probe still read DIFF on the re-run, and that is its WINDOW, not a defect: it PEEKs $EB00, the
+# reference's landing address, on zerobas too -- where the buffer is FSECTOR_BUF and the word at $F351 says so;
+# dskio-acceptance's `dir`/`boot` rows read the buffer THROUGH that pointer and converge on both machines.
 # filed_row_sweep.py adjudication: which DIVERGENT rows a filed TODO.md item
 # already owns.  Format:   <probe>: <row>; <row>; ... -- <why / where filed>
 #
@@ -36,12 +42,6 @@ put3consume_probe: NO-VERDICT -- cluster/LOF values under an explicit "read:" no
 # record. Verified per probe from its `return` statements, not assumed from the
 # family name: dskibytes and maxfilestail are in the SAME arcs and DO score, so
 # they are deliberately NOT here.
-dski_probe: NO-VERDICT -- DSKI$'s value-face, drive check and sector non-check on the CF-3300; its own output says it characterises the reference and does not score zerobas
-dskidrive_probe: NO-VERDICT -- LEN readings for DSKI$ drives 0/1/2; returns 0 unconditionally, the drive-2 block being itself the reading
-dskiform_probe: NO-VERDICT -- which DSKI$ FORMS parse (function vs statement); reports the surface, no zerobas verdict
-dskiwhere_probe: NO-VERDICT -- page-checksum scan for where a sector lands; prints moved pages, and D-DSKIBYTES is what adjudicates them
-copyverb_probe: NO-VERDICT -- COPY's four faces on the CF-3300; states in its own output that it characterises and does not score
-kwrest_probe: NO-VERDICT -- the surface of the five remaining pinned keywords; ERR faces on the reference, zerobas has none of them to compare
 editline_probe: NO-VERDICT -- screen dumps of the screen-editor re-entry rows; reports, does not score
 # --- 2026-09-08, second pass: the six D-FRSKIND deliberately left unknown. Kind
 # established from EVIDENCE per probe, not from the family name -- five have no
@@ -198,9 +198,7 @@ basic_probe_nodisk: k.mks; k.mkd; k.cvs; k.mki; k.cvi; v.dskf; v.cvistr; v.mkifl
 # OWN SLICES, which is the shape this entry keeps recording -- "the debt a new
 # probe leaves". Each row below is adjudicated from the RUN, not from memory.
 asciidigit_probe: o.as1; n.as5 -- "EIGHT KEYWORDS THE REFERENCE TOKENISES AND ZEROBAS DOES NOT" / D-ASCIIDIGIT: `OPEN"TS.DAT"AS 1` and `NAME"HI.TXT"AS 5` are Syntax error here and work on the reference. 🙋 The `ev_f` ASCII-digit arm is over the 20 B budget and is Joost's call, so DECLINED-pending-decision, not unnoticed. Also pinned to exact values in probes/basic/basic_probe_asciidigit.py (rows 5, pinned 2), so a regression reddens `make asciidigit-acceptance` too
-dskibytes_probe: w.sec0; w.sec1; w.half2 -- "EIGHT KEYWORDS THE REFERENCE TOKENISES AND ZEROBAS DOES NOT": zerobas has no `DSKI$` at all, so the window reads zeros on all three rows. Not a wrong implementation -- an absent one, owned by that entry's decision
 bareform_probe: CLOAD -- "no row can carry a hang", the `LOAD"CAS:"` class. ⚠️ BOTH references read `<none>` here because `CLOAD` WAITS FOR TAPE; zerobas answers `legal`. The probe's own output says it: "an absence, not agreement, and each needs a reason". So this is apparatus-bounded, NOT a measured divergence, and pinning it says exactly that rather than letting it read as unnoticed
 # --- and the two with no verdict channel, kind established from the probe, not
 # from the family name (the file's standing rule).
 deffn_nestdepth_probe: NO-VERDICT -- D-FNNESTDEPTH measures how deep the REFERENCES will nest DEF FN calls before failing; a capacity figure, like trapdepth's `D`, with no zerobas comparison column
-dskilow_probe: NO-VERDICT -- its own header says it characterises WHERE the reference's DSKI$ sector lands below $C000; returns only 0 (ran) or 2 (instrument fault), never a differential

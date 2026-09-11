@@ -606,6 +606,8 @@ stmt_table:
                 dw      ex_name
                 db      DSKO_TOKEN
                 dw      ex_dsko     ; DSKO$ d,s (D-DSKIO)
+                db      COPY_TOKEN
+                dw      ex_copy     ; COPY src TO dst (D-COPY)
                 db      MAX_TOKEN
                 dw      ex_maxfiles    ; MAX FILES = n
                 db      FIELD_TOKEN

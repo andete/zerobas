@@ -116,6 +116,7 @@ EXPECTED = [
     ('KILL_TOKEN', 'ex_kill'),
     ('NAME_TOKEN', 'ex_name'),
     ('DSKO_TOKEN', 'ex_dsko'),       # D-DSKIO 2026-09-11: DSKO$ d,s
+    ('COPY_TOKEN', 'ex_copy'),       # D-COPY 2026-09-11: COPY src TO dst
     ('MAX_TOKEN', 'ex_maxfiles'),
     ('FIELD_TOKEN', 'ex_field'),
     ('LSET_TOKEN', 'ex_lset'),

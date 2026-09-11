@@ -88,6 +88,7 @@ CASES = [
     ("h.open",   'OPEN"X"FOR OUTPUT AS#1'),
     ("k.dski",   'PRINT LEN(DSKI$(0,0))'),      # D-DSKIO: ERR 5 on both, before any parse
     ("h.dsko",   'DSKO$ 0,0'),
+    ("h.copy",   'COPY"A"TO"B"'),            # D-COPY: ERR 5 on both diskless sides
 ]
 
 # Rows that MUST agree with the oracle. A red here is a plain defect.
