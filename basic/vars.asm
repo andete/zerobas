@@ -345,8 +345,8 @@ tp_set:
 ; in:  BC = key (scalar targets only), DE = the value, (TGT_ADDR) per tgt_parse.
 ; Clobbers everything. Both arms coerce into the target's own resolved type.
 tgt_store_num:
-                ld      a,2
-                ld      (FACTYP),a          ; DE is a plain int16 (F3: the store widens
+                call    set_factyp2
+                                           ; DE is a plain int16 (F3: the store widens
                                             ; it per the target's type, e.g. double)
                 ld      hl,(TGT_ADDR)
                 ld      a,h
@@ -921,8 +921,8 @@ for_get:
                 jp      var_load_fac        ; all three (FAC/FACTYP=type, DE=int16 tail)
 for_set:
                 ld      bc,(FOR_CUR)
-                ld      a,2
-                ld      (FACTYP),a          ; FOR/NEXT always hand for_set a plain int16
+                call    set_factyp2
+                                           ; FOR/NEXT always hand for_set a plain int16
                                             ; value -- tag it so var_store_fac's target
                                             ; coercion widens DE via widen_int_to instead
                                             ; of misreading FAC

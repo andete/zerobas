@@ -309,10 +309,9 @@ str_mks:        ld      c,4
                 jr      str_mkf
 str_mkd:        ld      c,8
 str_mkf:
-                call    inc_skip            ; D-FNSPACE: past the name AND any
+                call    inc_skip_paren     ; D-FNSPACE: past the name AND any
                                             ; spaces before '(' — both references
                                             ; accept `LEFT$ ("AB",1)`
-                cp      '('
                 jr      nz,str_eval_no
                 inc     hl
                 push    bc                  ; C (the width) across the argument eval
@@ -412,10 +411,9 @@ str_eval_maybe_inputd:
                 dec     hl                  ; not INPUT$ -> restore, not a string operand
                 jp      str_eval_no
 str_inputd:
-                call    inc_skip            ; D-FNSPACE: past the name AND any
+                call    inc_skip_paren     ; D-FNSPACE: past the name AND any
                                             ; spaces before '(' — both references
                                             ; accept `LEFT$ ("AB",1)`
-                cp      '('
                 jp      nz,str_eval_no
                 call    inc_eval            ; DE = n (byte count); HL advanced past it
                 ld      a,e

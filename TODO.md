@@ -489,7 +489,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:14543 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:14558 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -655,7 +655,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:3772 (T-6FE392)8 (T-529ABE)` from `TODO.md:13450 (T-529ABE)`: a
+      `TODO.md:3772 (T-6FE392)8 (T-529ABE)` from `TODO.md:13465 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -4616,7 +4616,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:13450 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:13465 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -10008,6 +10008,21 @@ list. **When a slice lands, grep this list for what it just shipped.**
       🔴 Page 1 is at 14 B (two carves since): the next page-1 item carves first.
       🤖 AUTONOMOUS — the CF-3300 settles every row; the shape is settled by the standing ruling (promoted 2026-09-10).
 
+- [x] 💰 **D-PAIRCARVE (2026-09-11): SIX INSTRUCTION-PAIR HELPERS — main page 1
+      14 → 43 B, low region 39 → 75 B.** Page 1 stood at 14 B with `DSKI$`/`DSKO$`
+      (TIER 1) needing a parse and a stub there, so the pair route
+      [[carve-routes-measured-shut]] was run again from a fresh adjacent-pair
+      scan of the main sources (every `*-body.inc` that `sub/` also includes
+      excluded): `inc_skip_paren` (10 sites), `ixsp_paren` (9), `set_factyp2`
+      (8), `factyp_is2` (8), `fatprim_op` (3 triples) and `dirverb_op` (2
+      triples), plus `ev_ff_dskf`'s open-coded hook call replaced by
+      `chan_gate`. 40 sites rewritten by one script that printed each one
+      ([`scratchpad/paircarve.py`](scratchpad/paircarve.py)); every helper
+      returns the A and flags the open-coded pair left. Measured +65 B against a
+      62–69 B paper estimate; full battery 122/122 and the five excluded
+      targets re-run by hand (a shared evaluator leaf moved).
+      🎚️ BUDGET — a carve; it serves the TIER 1 `DSKI$`/`DSKO$` item.
+
 - [x] 🔴 **A SECOND CONCURRENT DISK `OPEN` IS `Syntax error` — 9 OF 13 ROWS DIFF,
       AND IT WAS INVISIBLE TOO (D-OPEN2, nested under `MAXFILES`).** Promoted
       2026-09-10 (D-NESTED) from the `MAXFILES` sub-item, whose own text says
@@ -13455,7 +13470,7 @@ architecture and write code. Each step is independently oracle-validatable.
             and the on-disk `OUT.TXT` is **byte-identical to the real CF-3300**
             (`b"hello world\r\n\x1a"`, `disk_probe_filewrite.py` differential). See
             basic/PROVENANCE.md §file channel — sequential write.
-      - [ ] 🔴 **`MAXFILES` + the multi-channel table** ➡️ *the two-disk-channel residual is a top-level TIER 1 item since 2026-09-10 (D-NESTED)* — **DONE EXCEPT FOR TWO
+      - [x] 🔴 **`MAXFILES` + the multi-channel table** ➡️ *the two-disk-channel residual was a top-level TIER 1 item from 2026-09-10 (D-NESTED) and CLOSED BY MEASUREMENT 2026-09-11 (D-OPEN2: 17 of 18 rows SAME; the one left, `e.same2`, is its own TIER 5 item) — so this record is done too* — **DONE EXCEPT FOR TWO
             OPEN DISK CHANNELS** (measured 2026-08-30, D-OPEN2,
             [`docs/spec-basic-open2.md`](docs/spec-basic-open2.md), 9 DIFF of 13):
             a second concurrent DISK `OPEN` is `Syntax error`. Device+device,
@@ -13533,7 +13548,7 @@ architecture and write code. Each step is independently oracle-validatable.
             cluster count via a sector-cached FAT scan; $FF$A6 oracle-locked;
             `PRINT DSKF(0)`=707 matches a direct FAT12 count AND the real CF-3300
             (`disk_probe_dskf.py`). See PROVENANCE §DSKF.
-      - [ ] **`LOC(#n)`** ➡️ *promoted to a top-level TIER 1 item 2026-09-10 (D-NESTED); this text stays as its record* — ~~deferred: CF-3300 `LOC(1)` returns 26 (file size) both
+      - [x] **`LOC(#n)`** ➡️ *promoted to a top-level TIER 1 item 2026-09-10 (D-NESTED) and SHIPPED 2026-09-11 (D-LOC, `loc-acceptance`, all four rows incl. `t.two` gated); this text stays as its record* — ~~deferred: CF-3300 `LOC(1)` returns 26 (file size) both
             before and after a read; sequential-file semantics unclear, so not
             cargo-culted.~~ **`LFILES`** — printer-bound (LPT), no device in zerobas.
             Both observed + documented in PROVENANCE §LOC / LFILES.

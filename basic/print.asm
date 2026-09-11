@@ -227,8 +227,7 @@ exp_num:
                 call    eval                ; numeric expression -> DE = value
                 call    check_expr_errors   ; D-2/D-F2-1 (interp.asm): abort the whole
                                             ; line before the newline/next item
-                ld      a,(FACTYP)          ; §9.4: exp_num dispatches on FACTYP after eval
-                cp      2
+                call    factyp_is2         ; §9.4: exp_num dispatches on FACTYP after eval
                 jr      nz,exp_num_float
                 push    hl                  ; print_number divides the value in HL,
                 call    print_number        ;  clobbering the token cursor — guard it

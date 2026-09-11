@@ -763,8 +763,7 @@ ev_ff_strnum:
                 ; the mirror-image reason: at that instant the argument has NOT been
                 ; evaluated, so the mismatch armed FIRST and BLOCKED the real fault.
                 ; Same code, same mechanism, opposite side of the evaluation.
-                call    ixsp                ; D-IXSP
-                cp      '('
+                call    ixsp_paren         ; D-IXSP
                 jr      nz,evff_strnum_tm   ; malformed: no argument to evaluate
                 inc     ix
                 call    ev_e                ; the argument, numerically -- it arms its
@@ -779,8 +778,7 @@ evff_strnum_tm:
 ; other factor error. Entered with IX on the function selector byte. UNCHANGED
 ; from pre-4a (format-agnostic — it only ever hands off to str_eval).
 ev_str_arg:
-                call    ixsp                ; D-IXSP
-                cp      '('
+                call    ixsp_paren         ; D-IXSP
                 jp      nz,ev_f_empty
                 call    ixsp                ; D-IXSP
                 ; empty string-argument (LEN()/ASC()/VAL(), or a trailing ','):
@@ -990,10 +988,9 @@ str_func_ff:
 ; In-domain behaviour is unchanged, coercion included: the reference truncates
 ; toward zero BEFORE checking, so CHR$(255.9) and CHR$(-0.5) are legal.
 str_fn_chr:
-                call    inc_skip            ; D-FNSPACE: past the name AND any
+                call    inc_skip_paren     ; D-FNSPACE: past the name AND any
                                             ; spaces before '(' — both references
                                             ; accept `LEFT$ ("AB",1)`
-                cp      '('
                 jr      nz,str_arg_empty
                 inc     hl
                 call    eval_byte_arg       ; DE = n, 0..255 (or aborts); HL advanced
@@ -1014,10 +1011,9 @@ str_fn_chr:
 ; pu_fmt_int (NUMBUF = "[-]digits",0, B = digit count) — no perturbation of the
 ; existing PRINT/USING paths (they keep their own entry points).
 str_fn_str:
-                call    inc_skip            ; D-FNSPACE: past the name AND any
+                call    inc_skip_paren     ; D-FNSPACE: past the name AND any
                                             ; spaces before '(' — both references
                                             ; accept `LEFT$ ("AB",1)`
-                cp      '('
                 jr      nz,str_arg_empty
                 call    inc_eval            ; DE = n
                 ld      a,(hl)
@@ -1033,8 +1029,8 @@ str_fn_str:
                 ; 🟢 PRINT's own formatter was already right (the ctl.* rows in
                 ; scratchpad/strflt_probe.py are green), so the defect is HERE and
                 ; the fix is to reuse it rather than to write a second one.
-                ld      a,(FACTYP)          ; §9.4: dispatch after eval, exactly as
-                cp      2                   ; print.asm's exp_num does
+                call    factyp_is2         ; §9.4: dispatch after eval, exactly as
+                                           ; print.asm's exp_num does
                 jr      nz,sfs_float
                 ld      c,0                 ; C = leading-space count
                 bit     7,d                 ; sign of n
@@ -1139,10 +1135,9 @@ str_arg_empty:
 ; Contrast sas_decline below, whose pop IS witnessed -- a DECLINE is not an
 ; error; the caller RETRIES the operand numerically, and that retry is visible.
 str_arg_open:
-                call    inc_skip            ; D-FNSPACE: past the name AND any
+                call    inc_skip_paren     ; D-FNSPACE: past the name AND any
                                             ; spaces before '(' — both references
                                             ; accept `LEFT$ ("AB",1)`
-                cp      '('
                 jr      nz,sao_empty
                 inc     hl
                 ld      a,(hl)              ; empty first arg -> deferred syntax error
@@ -1336,10 +1331,9 @@ ex_mid_stmt:                                ; (traps T2) entered with HL already
                 ld      a,(hl)
                 cp      MIDD_TOKEN          ; must be MID$ ($83); any other $FF here is
                 jp      nz,stmt_error       ; not a statement
-                call    inc_skip            ; D-FNSPACE: past the name AND any
+                call    inc_skip_paren     ; D-FNSPACE: past the name AND any
                                             ; spaces before '(' — both references
                                             ; accept `LEFT$ ("AB",1)`
-                cp      '('
                 jp      nz,stmt_error
                 inc     hl                  ; HL -> target var name
                 call    str_target_parse    ; string-var target: type-check, parse,
@@ -1526,10 +1520,9 @@ str_fn_bin:
                 ld      a,14                ; op = 14 (BIN_BUILD; 8 is sh_fill)
 str_fn_radix:
                 ld      c,a                 ; C = the build op
-                call    inc_skip            ; D-FNSPACE: past the name AND any
+                call    inc_skip_paren     ; D-FNSPACE: past the name AND any
                                             ; spaces before '(' — both references
                                             ; accept `LEFT$ ("AB",1)`
-                cp      '('
                 jp      nz,str_arg_empty
                 inc     hl
                 push    bc                  ; guard the op across eval
@@ -1617,10 +1610,9 @@ shxf_overflow   equ     sst_overflow
 ; str_min_bc (A=STRMAX ceiling, BC=n), exactly like LEFT$/RIGHT$/MID$'s count clamp.
 ; Length is known upfront -> allocate once, fill directly.
 str_fn_space:
-                call    inc_skip            ; D-FNSPACE: past the name AND any
+                call    inc_skip_paren     ; D-FNSPACE: past the name AND any
                                             ; spaces before '(' — both references
                                             ; accept `LEFT$ ("AB",1)`
-                cp      '('
                 jp      nz,str_arg_empty
                 call    inc_eval            ; DE = n; HL advanced
                 ld      a,(hl)
@@ -1685,10 +1677,9 @@ sfi_empty:
 ; token (Group B), unlike the $FF-prefixed Group A verbs above. Length known
 ; upfront -> allocate once, fill directly.
 str_fn_string:
-                call    inc_skip            ; D-FNSPACE: past the name AND any
+                call    inc_skip_paren     ; D-FNSPACE: past the name AND any
                                             ; spaces before '(' — both references
                                             ; accept `LEFT$ ("AB",1)`
-                cp      '('
                 jp      nz,str_arg_empty    ; BUG C class (Fable 2026-07-17): STRING$ is a
                                             ; SINGLE-byte token ($E3) -> its malformed re-
                                             ; drive never reaches ev_ff_strnum's deferred
@@ -1778,8 +1769,7 @@ sfg_reject2:
 ; by then, and is bridged back into IX only right before the return, so ev_f's
 ; "IX = cursor advanced past the call" convention still holds.
 ev_f_instr:
-                call    ixsp                ; D-IXSP
-                cp      '('
+                call    ixsp_paren         ; D-IXSP
                 jp      nz,ev_f_empty       ; BUG C class: INSTR without '(' -> deferred
                                             ; syntax error (was silent ev_f_err)
                 call    ixsp                ; D-IXSP

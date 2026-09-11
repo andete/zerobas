@@ -91,6 +91,17 @@ cg_back:
                 ld      a,5                 ; Illegal function call -- TRAPPABLE,
                 jp      raise_error         ; which is what the reference gives
 
+; --- dirverb_op: run dirverb-tenant op A ------------------------------------
+; 💰 D-PAIRCARVE (2026-09-11): the `ld (DISKOP_OP),a` / `ld ix,...DIRVERB` /
+; `call subrom_call` triple stood at two clean sites (KILL, NAME), 10 B each; a
+; call is 3. The FILES site keeps a `push hl` between the store and the call and
+; stays open-coded. Returns what subrom_call returns: CF=1 iff the sub-ROM is
+; absent. Clobbers IX, as subrom_call does.
+dirverb_op:
+                ld      (DISKOP_OP),a
+                ld      ix,SUBROM_ENTRY_BASE_P1 + 3*SUBROM_IDX_DIRVERB
+                jp      subrom_call
+
 ex_files:
                 push    hl                  ; ⚠️ HL IS THE STATEMENT CURSOR HERE and
                 ld      hl,H_FILE           ; the gate needs it for the hook address;
@@ -1631,9 +1642,7 @@ do_kill:
                 ; three-way disposition (docs/spec-evict-diskfile-cluster.md §12,
                 ; widened to three by D-DSKMSG — sub/dirverb.asm's tnt_kill).
                 ld      a,DISKOP_SEL_KILL
-                ld      (DISKOP_OP),a
-                ld      ix,SUBROM_ENTRY_BASE_P1 + 3*SUBROM_IDX_DIRVERB
-                call    subrom_call
+                call    dirverb_op
                 pop     hl                  ; restore text cursor
                 jp      c,load_error        ; sub-ROM absent -> error
                 ; D-DSKMSG (docs/spec-basic-dskmsg.md §4), R-DK1: the CF-3300
@@ -1771,9 +1780,7 @@ do_name:
                 ; by the resident fat_mount+fat_find above) and DISK_FCB_NAME (the
                 ; new 8.3 name) are already marshalled in page-3 RAM (spec §12).
                 ld      a,DISKOP_SEL_NAME_STAMP
-                ld      (DISKOP_OP),a
-                ld      ix,SUBROM_ENTRY_BASE_P1 + 3*SUBROM_IDX_DIRVERB
-                call    subrom_call
+                call    dirverb_op
                 jr      c,nm_fail2          ; sub-ROM absent -> error
                 ld      a,(DISKOP_STATUS)
                 or      a

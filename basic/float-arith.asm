@@ -1304,8 +1304,7 @@ fac_to_int_strict:
                 xor     a
 fac_to_int_go:
                 ld      (CVT_MODE),a
-                ld      a,(FACTYP)
-                cp      2
+                call    factyp_is2
                 ret     z
                 call    domain_convert_core
                 ret     nc
@@ -1375,8 +1374,7 @@ evc_check:
 ; sites collapse to one call each here. Clobbers as fac_to_int_strict, +A.
 fac_to_int_strict_reset:
                 call    fac_to_int_strict
-                ld      a,2
-                ld      (FACTYP),a
+                call    set_factyp2
                 ret
 
 ; =============================================================================
@@ -1591,8 +1589,8 @@ pop_lhs_and_probe:
                 ; on the Z80, so no need to reload it from RAM
                 cp      2
                 jr      nz,plap_ret         ; NZ -> mismatch; ZF stays clear below
-                ld      a,(FACTYP)
-                cp      2                   ; ZF set iff both int
+                call    factyp_is2
+                                           ; ZF set iff both int
 plap_ret:
                 ld      hl,(PLF_RA2)        ; does not affect flags
                 push    hl                  ; restore our caller's (combine_*'s
@@ -1609,8 +1607,7 @@ plap_ret:
 ; mul's int-fast-path success returns (the result value is already in DE).
 ; Clobbers A.
 set_factyp_int_ret:
-                ld      a,2
-                ld      (FACTYP),a
+                call    set_factyp2
                 ret
 
 ; --- widen_lhs_operand: HL = dest FPNUM base. Dispatches on LHS_FACTYP to --
@@ -1632,8 +1629,7 @@ wlo_float:
 ; Clobbers as whichever it calls.
 widen_rhs_operand:
                 push    hl
-                ld      a,(FACTYP)
-                cp      2
+                call    factyp_is2
                 pop     hl
                 jr      nz,wro_float
                 jr      widen_int_to
@@ -2054,8 +2050,7 @@ cpow_dispatch:
 combine_cmp:
                 call    pop_lhs_and_probe
                 jr      nz,ccmp_float
-                ld      a,2
-                ld      (FACTYP),a
+                call    set_factyp2
                 ld      hl,(FP_LHSVAL)
                 jp      cmp16_bits          ; tail call: A = relation bit
 ccmp_float:
@@ -2065,8 +2060,7 @@ ccmp_float:
                 ld      e,a                 ; E = relation bit (DE is dead here —
                                             ; ev_rel overwrites DE with the -1/0
                                             ; result right after the intersect)
-                ld      a,2
-                ld      (FACTYP),a
+                call    set_factyp2
                 pop     bc
                 ld      a,e
                 ret

@@ -1000,6 +1000,14 @@ sc_call:
                 jp      c,subrom_absent_error
                 ret
 
+; --- inc_skip_paren: inc_skip, then "is it `(`?" -- Z iff '(' is next ----------
+; 💰 D-PAIRCARVE (2026-09-11): the pair stood at TEN sites, 5 B each against 3 for
+; a call: 10 x 2 saved less this 6-byte body = 14 B. Same flags contract as
+; skip_comma: A = the byte, Z iff it is '(' -- every caller branches on NZ.
+inc_skip_paren:
+                call    inc_skip
+                cp      '('
+                ret
 ; --- skip_comma: skip_spaces, then "is it a comma?" ------------------------
 ; 💰 D-SKIPCOMMA. `call skip_spaces` / `cp ','` stood open-coded at FORTY-TWO
 ; sites across 16 files — 5 bytes each, against 3 for a call, so every site nets
@@ -2021,8 +2029,7 @@ ex_if:
                 ; false). FACTYP<>2 -> substitute DE := 0/1 from FAC's lead
                 ; byte (whole lead byte 0 <=> value 0, spec §9.1), so the
                 ; existing D/E tests below stay the only truthiness judges.
-                ld      a,(FACTYP)
-                cp      2
+                call    factyp_is2
                 jr      z,exif_truth_ok
                 ld      de,0
                 ld      a,(FAC)

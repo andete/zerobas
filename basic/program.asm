@@ -2839,8 +2839,7 @@ eostr_store:
 ; trappable ERR 2 (Q10). `STRIG(0)ON` unspaced is legal (S4) -- free, since the
 ; crunched form has no space to skip.
 ex_strig_stmt:
-                call    inc_skip           ; past the STRIG selector byte
-                cp      '('
+                call    inc_skip_paren     ; past the STRIG selector byte
                 jp      nz,trap_syntax
                 call    inc_eval            ; DE = n; HL past the expression
                 call    get_byte_arg        ; A = E = n (ERR 6 > int16, ERR 5 > 255/neg)

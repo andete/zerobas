@@ -50,8 +50,8 @@ eval:
                 push    ix
                 push    hl
                 pop     ix                  ; IX = cursor
-                ld      a,2
-                ld      (FACTYP),a          ; §9.4: eval() sets FACTYP=2 (int) on entry
+                call    set_factyp2
+                                           ; §9.4: eval() sets FACTYP=2 (int) on entry
                 call    ev_logic            ; lowest precedence layer
                 push    ix
                 pop     hl                  ; HL = cursor (advanced)
@@ -932,8 +932,7 @@ ev_f_neg:
                 push    af                  ; carry P/V across the FACTYP read --
                                             ; `cp 2` overwrites it with parity
                 ex      de,hl
-                ld      a,(FACTYP)
-                cp      2
+                call    factyp_is2
                 jr      nz,evfn_flt
                 pop     af
                 ret     po                  ; int, no overflow -> DE is the answer
@@ -1016,8 +1015,7 @@ ev_ff_argtab:
 ev_ff_argtab_len equ    $ - ev_ff_argtab
 ev_ff_arg:
                 ld      c,a                 ; C = selector (survives the parse)
-                call    ixsp                ; D-IXSP
-                cp      '('
+                call    ixsp_paren         ; D-IXSP
                 ; Residual found by the I1 differential (spec §3): a MISSING
                 ; argument list -- `PRINT PEEK`, `PRINT STICK`, `PEEK 100` --
                 ; silently evaluated to 0 here, where the reference raises a
@@ -1407,15 +1405,16 @@ ev_ff_dskf:                                 ; DSKF(d): free clusters on the driv
                 ; almost no main-side body to begin with -- the work is already a
                 ; sub-ROM tenant -- so the hook buys exactly one thing: a diskless
                 ; build REFUSES instead of answering 0.
+                ; 💰 D-PAIRCARVE (2026-09-11): this used to open-code the hook
+                ; call (the same 11 B chan_gate now shares), then `jp nc,ev_f_ifc`.
+                ; chan_gate raises ERR 5 itself when nobody claimed the hook --
+                ; the same `Illegal function call` the nodisk gate's `v.dskf` row
+                ; pins, raised at once rather than deferred -- so the diskless
+                ; refusal is unchanged and the IX guard shrinks to one pair.
                 push    ix
                 ld      hl,H_DSKF
-                ld      de,dskf_back
-                push    de
-                or      a
-                jp      (hl)
-dskf_back:
+                call    chan_gate           ; no disk ROM -> Illegal function call
                 pop     ix
-                jp      nc,ev_f_ifc         ; no disk ROM -> Illegal function call
                 ; The drive arg (DE) is ignored (single drive). Returns the count
                 ; of free FAT entries — = free KB on a 1 KB/cluster 720 KB volume.
                 ; CALSLT (inside fat_count_free) clobbers IX/IY, and IX is the
@@ -1451,8 +1450,7 @@ ev_ff_cv:
                 ; resulting descriptor. (IX is reloaded from str_eval's advanced HL, so
                 ; an inner eval clobbering IX is harmless.) Entered with IX on the
                 ; CVI selector byte.
-                call    ixsp                ; D-IXSP
-                cp      '('
+                call    ixsp_paren         ; D-IXSP
                 jp      nz,ev_f_empty       ; BUG C class (Fable 2026-07-17): CVI missing
                                             ; '(' -> deferred syntax error (was silent
                                             ; ev_f_err -> " 0"); ref = Syntax error
@@ -1585,8 +1583,7 @@ cvi_tmm:
 ; gap and CLEAR's string-space argument is discarded, so BOTH forms answer with
 ; that gap. Computed sub-side (op 15) because the array-region walk lives there.
 ev_ff_fre:
-                call    ixsp                ; D-IXSP
-                cp      '('
+                call    ixsp_paren         ; D-IXSP
                 jp      nz,ev_f_empty       ; bare FRE -> deferred syntax error
                 call    ixsp                ; D-IXSP
                 push    ix                  ; guard the cursor for the numeric retry:
@@ -1794,8 +1791,7 @@ evmc_total_tab:
 ; to decide its own result type (spec §9.1's "same FACTYP as x" / int-result
 ; columns). IX advanced past ')'. Clobbers as ev_xor.
 ev_mc_arg:
-                call    ixsp                ; D-IXSP
-                cp      '('
+                call    ixsp_paren         ; D-IXSP
                 jp      nz,ev_f_empty       ; D-F2-4: missing '(' (bare fn / operator- or
                                             ; space-separated) -> deferred FPERR=4 "syntax
                                             ; error", NOT the silent ev_f_err. Same chokepoint
@@ -1877,8 +1873,7 @@ ecpst_zero:
 evmc_arg_int:
                 call    ev_mc_arg_checked   ; D-F2-4 gate
                 jr      nz,eai_bad          ; malformed/empty -> deferred syntax error
-                ld      a,(FACTYP)
-                cp      2
+                call    factyp_is2
                 ret                         ; CF clear; Z = already an int
 eai_bad:
                 scf
@@ -1954,8 +1949,7 @@ evsgn_pos:
 evsgn_zero:
                 ld      de,0
 evsgn_settype:
-                ld      a,2
-                ld      (FACTYP),a
+                call    set_factyp2
                 ret
 
 ; --- evmc_int: INT(x) -> floor toward -infinity, same FACTYP as x (spec ----
@@ -2253,8 +2247,7 @@ evmc_exp_overflow:
 ; on read, which is what ev_f_arr does and what the references do; the oracle
 ; here covers the unset SCALAR only, and the fix is scoped to it.
 ev_f_varptr:
-                call    ixsp                ; D-IXSP
-                cp      '('
+                call    ixsp_paren         ; D-IXSP
                 ; D-EVFERR: both these sites are Syntax error (2) on both
                 ; references, and BOTH LOOKED GREEN because ev_f_err leaves the
                 ; cursor UNADVANCED -- `A=VARPTR 5` / `A=VARPTR(5)` answered 2
@@ -2428,8 +2421,7 @@ vptr_unset:
 ; basic/graphics.asm; `IF !G8_RESIDENT` selects the stub below instead.
     IF !G8_RESIDENT
 ev_f_base:
-                call    ixsp                ; D-IXSP
-                cp      '('
+                call    ixsp_paren         ; D-IXSP
                 ; D-EVFERR: retargeted with the five LIVE sites even though this
                 ; stub is NOT ASSEMBLED (G8_RESIDENT equ 1, sysvars.inc) -- the
                 ; `IF !G8_RESIDENT` arm must stay correct for
@@ -2560,6 +2552,30 @@ evsp_close:
 arga_widen:
                 ld      hl,ARGA
                 jp      widen_rhs_operand
+
+; --- ixsp_paren: ixsp, then "is it `(`?" -- Z iff '(' is next ----------------
+; 💰 D-PAIRCARVE (2026-09-11): NINE live sites went straight from `call ixsp` to
+; `cp '('` (ixsp's own header counted them); 5 B each against 3 for a call:
+; 9 x 2 saved less this 6-byte body = 12 B. A and the flags are exactly what the
+; open-coded pair left.
+ixsp_paren:
+                call    ixsp
+                cp      '('
+                ret
+
+; --- set_factyp2 / factyp_is2: the two FACTYP idioms as calls ------------------
+; 💰 D-PAIRCARVE (2026-09-11): `ld a,2` + `ld (FACTYP),a` stood at EIGHT sites and
+; `ld a,(FACTYP)` + `cp 2` at EIGHT more, 5 B each against 3 for a call:
+; 16 x 2 saved less two 5/6-byte bodies = 21 B. set_factyp2 returns with A = 2,
+; as the pair did; factyp_is2 returns A = FACTYP and Z iff it is 2.
+set_factyp2:
+                ld      a,2
+                ld      (FACTYP),a
+                ret
+factyp_is2:
+                ld      a,(FACTYP)
+                cp      2
+                ret
 
 ; --- ixsp: step the evaluator cursor, then skip blanks ----------------------
 ; D-IXSP. `inc ix / call ev_sp` stood at SIXTEEN sites -- ten in expr.asm, six in

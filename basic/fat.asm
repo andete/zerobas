@@ -191,9 +191,7 @@ fat_dir_update:
 ; Reloading HL/A on BOTH paths is not new behaviour: every old shim's error tail
 ; did the same two loads before its `scf`.
 fatprim_bounce:
-                ld      (DISKOP_OP),a
-                ld      ix,SUBROM_ENTRY_BASE_P1 + 3*SUBROM_IDX_FATPRIM
-                call    subrom_call
+                call    fatprim_op
                 ret     c                   ; sub-ROM absent -> Cy=1
                 ld      a,(DISKOP_STATUS)
                 or      a                   ; Z iff success; ALSO clears Cy
@@ -232,9 +230,7 @@ fatprim_bounce:
 ; only) so this shim does not fabricate one.
 fat_count_free:
                 ld      a,DISKOP_SEL_FAT_COUNT_FREE
-                ld      (DISKOP_OP),a
-                ld      ix,SUBROM_ENTRY_BASE_P1 + 3*SUBROM_IDX_FATPRIM
-                call    subrom_call
+                call    fatprim_op
                 jp     c,fcfs_absent
                 ld      de,(FAT_WRTMP2)
                 ret
@@ -322,9 +318,8 @@ fia_walk:
 ; only has to make the call and clear carry.
 fia_walked:
                 ld      a,DISKOP_SEL_FIA_WALKED
-                ld      (DISKOP_OP),a
-                ld      ix,SUBROM_ENTRY_BASE_P1 + 3*SUBROM_IDX_FATPRIM
-                call    subrom_call         ; CF=1 iff the sub-ROM is absent
+                call    fatprim_op
+                                           ; CF=1 iff the sub-ROM is absent
                 ret     c
                 or      a                   ; success: Cy = 0, like the body
                 ret
@@ -357,3 +352,13 @@ fia_empty:
 ; list and no dispatch table, and basic/main.asm's whole closure contained ONE
 ; mention of the name — this definition. The sub build keeps its own body
 ; (basic/fat-delete-body.inc, included only by sub/) and both its callers.
+
+; --- fatprim_op: run fatprim-tenant op A ------------------------------------
+; 💰 D-PAIRCARVE (2026-09-11): the `ld (DISKOP_OP),a` / `ld ix,...FATPRIM` /
+; `call subrom_call` triple stood at THREE sites above, 10 B each against 3 for a
+; call: 3 x 7 saved less this 10-byte body = 11 B. Returns what subrom_call
+; returns: CF=1 iff the sub-ROM is absent. Clobbers IX, as subrom_call does.
+fatprim_op:
+                ld      (DISKOP_OP),a
+                ld      ix,SUBROM_ENTRY_BASE_P1 + 3*SUBROM_IDX_FATPRIM
+                jp      subrom_call
