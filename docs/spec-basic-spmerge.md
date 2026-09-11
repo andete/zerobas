@@ -181,3 +181,98 @@ detail:
 ⚠️ Not started. (1) and (2) are both real; (2) looks cheaper and is reversible,
 (1) is what the reference does. This is the point where the arc needs a decision
 rather than another cut.
+
+## 8. Cut 2 is RULED (1), and here is what (1) actually costs (2026-09-11)
+
+Joost, asked which way out of §7: **the jump loop**, over the `ldir` shift. So
+`exec` must never be returned from — at a statement boundary the stack has to hold
+frames and nothing else.
+
+### 8.1 `ret` cannot survive, and the reason is one sentence
+
+A `ret` needs a stack word. At the statement boundary we need ZERO stack words
+above the frontier. So every path that leaves `exec` becomes a jump. Four ways
+around it were tried on paper and all fail on the same wall:
+
+* **Stash the return address in RAM at `exec`'s entry.** The exits still execute
+  `ret`, which now pops a frame.
+* **Push a sentinel for the exits to `ret` to.** That sentinel IS the two bytes the
+  frame lands under. Identical to today.
+* **Defer the frame push to the boundary** (the §3.1 "known depth" option). The
+  LINE boundary is too late — `FOR I=1 TO 3:NEXT` needs `NEXT` to see the frame the
+  same line pushed — and the STATEMENT boundary is inside `exec`, where the return
+  address is still live. Same wall.
+* **Re-base `SP := CSP` per line and allocate from `SP`.** The frame lands below
+  `exec`'s return address, and the end-of-line `ret` pops the frame. This is cut
+  1's bug wearing a different hat.
+
+### 8.2 The site list is MEASURED, not guessed
+
+[`scratchpad/execexit_scout.py`](../scratchpad/execexit_scout.py) walks the source
+from all 90 `stmt_table` handlers, following jumps, not descending into calls, and
+reports every `ret` reachable at the handler's own depth.
+
+🔴 **Its first cut said 38 sites and was wrong**, in this tree's most familiar way:
+it counted `pch_done` — the tail of a CALLED helper — as an `exec` exit with
+TWENTY-FIVE origins, because it had jumped into a label that is also a `call`
+target. Hardened with a taint rule (any chain through a `call` target is
+AMBIGUOUS, reported separately and not counted) and a bar on crossing into `sub/`
+(a main-ROM `jp` cannot land there; a same-named label is a collision):
+
+| | count | note |
+|---|---|---|
+| **confirmed exits** | **25** | each `ret`/`ret cc` is 1 B and becomes a 3 B jump: **+50 B** |
+| ambiguous | 12 | reached only through a `call` target; each needs reading. The five read so far (`load_commit_prog`, `verify_error`, `cont_record`, `sv_tenant`, `load_handoff`) are ordinary subroutines whose `ret` serves their caller — false positives |
+
+Against **12 B free** (page 1 10, low region 2, one budget).
+
+### 8.3 What makes it affordable: the exits are mostly a repeated idiom
+
+Eight of the confirmed sites are literally `ld a,1` / `ld (FLAG),a` / `ret` — 6 B —
+and become a 3 B `jp` to one shared tail per flag: **−3 B each**, not +2. The
+already-existing `set_resumeflag_ret` is the same idiom spotted once before. So
+the conversion is a CONSOLIDATION that partly funds itself, and the carve to find
+is the remainder, not the full +50.
+
+### 8.3a 🔴 THE HARD CASE: A SHARED TAIL THAT IS BOTH CALLED AND TAIL-JUMPED
+
+`goto_resolve` (`basic/interp.asm:2036`) is the GOTO/RESUME/IF tail — `find_line_bc`,
+the undefined-line check, then `ld (GOTOTGT),hl` / `ld a,1` / `ld (GOTOFLAG),a` /
+`ret`. It appears in BOTH scout lists, confirmed and ambiguous, and that is not a
+bug in the scout: `ex_goto` reaches it by `jr`, so its `ret` leaves `exec` — and
+`basic/cload.asm:299` does `call goto_resolve`, so the same `ret` also returns to
+a caller. Converting it to a jump breaks the call; leaving it breaks the merge.
+
+This is [[a-shared-tail-is-not-a-decision]] in its exact form, and it decides the
+shape of the conversion: a tail with both kinds of user needs SPLITTING — the
+arming body, then two entries, one ending `ret` for callers and one ending
+`jp rp_after` for the statement paths. **Every one of the 25 confirmed sites must
+be checked for a `call` on the same label before it is converted**, not just the
+12 the taint rule already flagged.
+
+🟢 **AND THAT CHECK IS DONE: `goto_resolve` IS THE ONLY ONE.** Cross-referencing
+each confirmed site's enclosing label against all 670 `call` targets in the tree:
+24 of 25 sit in labels nothing ever calls (`ex_end`, `ex_rem`, `exd_lp`,
+`if_false`, `exl_walk`, `exp_stmt_end`, `pu_skipnl`, `rp_run`, `ex_delete`,
+`exr_done`, `exa_stop`, `set_resumeflag_ret`, `nx_again`, `goto_take_bc`,
+`dl_cas_close`, `dl_is_disk`, `do_run`, `dr_cas_close`, `cas_ascii_save`,
+`sv_tenant`, `disk_write_end`), so their `ret` has exactly one meaning and becomes
+a jump with no reasoning required. `goto_take_bc` is NOT a second hard case — it
+is jump-only despite sharing the idiom. **One split, not a class of them.**
+
+### 8.4 Order, and the knife
+
+1. Shared exit tails (`end_line_end` / `_goto` / `_resume`), which is a carve.
+2. Convert the 25 confirmed sites.
+3. Read the 12 ambiguous ones.
+4. 🔬 **KNIFE**: build once with `rp_run` pushing a POISON address before
+   `jp exec`. Any exit nobody converted lands on it and is named by the suite that
+   trips it, instead of popping a frame and corrupting the machine silently. The
+   battery is the denominator; a green battery with the poison in place is the
+   evidence that the site list is complete.
+5. Only then stage B — `ctl_alloc` from `SP`, `CSP` as the mirror, the free sites.
+
+⚠️ Stage A changes NO stack behaviour: `SP` still never moves. Its whole content
+is "the run loop stops returning across a statement", so it must land with the
+battery at 128/128 and the nine `parennest` pins UNMOVED. A pin that flips during
+stage A means something other than the conversion happened.
