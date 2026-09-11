@@ -139,3 +139,45 @@ That is a multi-site slice against the pool's whole contract, not a four-byte
 patch, and it is what the next attempt implements. The nine pins stay pinned
 until it lands: **rows going green is necessary and nowhere near sufficient**,
 which is why the battery runs before a pin is flipped.
+
+## 7. What cut 2 actually costs — the constraint that decides it (2026-09-11)
+
+§6 named the shape: one frontier, and it must be `SP`. Reading every site that
+would have to change turns that into a concrete constraint, and it is not about
+`ctl_alloc` at all.
+
+**A frame allocated by lowering `SP` cannot be crossed by a `ret`.** The moment
+`ctl_alloc` does `ld sp,hl`, every return address already on the stack sits ABOVE
+the new frontier, and the next `ret` pops the frame's bytes instead. The
+allocation dance (pop the return address, allocate, push it back) fixes
+`ctl_alloc`'s OWN return — it cannot fix its callers'. And the callers are:
+
+| site | shape today | crossable? |
+|---|---|---|
+| `gosub_push` (`ex_gosub`) | `call gosub_push` → `jr c` → `jp goto_take_bc` | no — but it tail-calls cleanly: `jp gosub_push`, ending `jp goto_take_bc` / `jp gosub_stk_over` |
+| the `FOR` push | `call ctl_alloc` → `ldir` → `jp pop_exec` | already jump-tailed |
+| the trap record (`traps.asm`) | `call ctl_alloc` → … | reachable from the ISR seam; needs its own reading |
+| 🔴 **`exec`** | **`rp_run: call exec`** (`basic/program.asm:597`) | **no.** The run loop CALLS the line executor, so `exec`'s return address is on the stack for the whole line — and any frame a statement allocates lands below it. `exec`'s `ret` at end of line then pops across the frame. |
+
+So the merge's real precondition is that **the run loop stops returning across a
+statement's frame**. Three ways out, and the choice is a design decision, not a
+detail:
+
+1. **Make the run loop a jump loop** — `exec` reached by `jp`, END/STOP/CONT and
+   the error paths re-entering through `SAVSTK` as the traps already do. Faithful
+   to how the reference is structured, and the reason its GOSUB depth is bounded
+   by RAM rather than by an array. Touches the run loop, END/STOP, CONT, RESUME.
+2. **Allocate by SHIFTING the live stack down** — `ctl_alloc` `ldir`s the live
+   block down by `size` and places the frame in the vacated top, so every pending
+   return address stays contiguous below it and no `ret` ever crosses anything.
+   Costs one short `ldir` per `GOSUB`/`FOR`/trap push (tens of bytes) and requires
+   adjusting every ABSOLUTE saved `SP` — `SAVSTK` at least — by the same `size`.
+   Localised to `ctl_alloc` plus the free sites; the interpreter is untouched.
+3. **A dynamic reserve** — keep the pool where it is and base the stack a
+   computed distance below `CTLTOP`, sized from `CLEAR`. This is partition wearing
+   merge's clothes: depth would respond to `CLEAR` and HIMEM, which is the
+   measured property, but the two consumers would not actually share.
+
+⚠️ Not started. (1) and (2) are both real; (2) looks cheaper and is reversible,
+(1) is what the reference does. This is the point where the arc needs a decision
+rather than another cut.

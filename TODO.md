@@ -489,7 +489,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:14951 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:14966 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -655,7 +655,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:3806 (T-6FE392)8 (T-529ABE)` from `TODO.md:13737 (T-529ABE)`: a
+      `TODO.md:3806 (T-6FE392)8 (T-529ABE)` from `TODO.md:13752 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -4650,7 +4650,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:13737 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:13752 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -5195,7 +5195,22 @@ list. **When a slice lands, grep this list for what it just shipped.**
       🎯 **AND IT IS WHY THE PINS EXIST**: nine rows going green is NECESSARY AND
       NOWHERE NEAR SUFFICIENT. With only the gate to go on, this would have shipped
       as a fix.
-      🤖 AUTONOMOUS — the mechanism is ruled (Joost, 2026-09-11: MERGE); the measurements, the gate and cut 1's refutation are done.
+      📏 **CUT 2 IS SPECCED AND NOT STARTED — AND WHAT STOPS IT IS THE RUN LOOP,
+      NOT `ctl_alloc` (§7).** A frame allocated by lowering `SP` cannot be crossed
+      by a `ret`: the allocation dance fixes `ctl_alloc`'s own return, never its
+      callers'. Read site by site, `gosub_push` tail-calls cleanly and the `FOR`
+      push is already jump-tailed — but **`rp_run` does `call exec`**
+      ([`basic/program.asm:597`](basic/program.asm:597)), so the line executor's
+      return address is on the stack for the whole line and any frame a statement
+      allocates lands below it. Three ways out, and it is a decision, not a detail:
+      **(1)** make the run loop a JUMP loop (what the reference's structure
+      implies; touches END/STOP/CONT/RESUME); **(2)** allocate by SHIFTING the live
+      stack down by `size` with an `ldir`, so no `ret` ever crosses a frame — local
+      to `ctl_alloc` and the free sites, and every absolute saved `SP` (`SAVSTK` at
+      least) moves with it; **(3)** a dynamic reserve, which is partition wearing
+      merge's clothes. My read: (2) is cheaper and reversible, (1) is faithful.
+      🙋 NEEDS-JOOST — (1) or (2). Everything up to this point is measured and the
+      tree is green; this is the next fork and it is his call, as the shape was.
 
 - [ ] 🐌 **THE INTERPRETER IS 2.5–3.8× SLOWER THAN THE CF-3300 — ON EVERYTHING,
       NOT ON ONE VERB — AND IT REFRAMES EVERY OTHER SPEED ITEM.**
