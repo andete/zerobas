@@ -2210,7 +2210,7 @@ copy_parse:
                 cp      TO_TOKEN
                 jp      nz,gb_illegal       ; no `TO`: ERR 5 (measured), not ERR 2
                 inc     hl
-                jp      fname_fcb           ; dst -> DISK_FCB_NAME; tail-call
+                jr      fname_fcb           ; dst -> DISK_FCB_NAME; tail-call
 ; --- fname_fcb: fname_expr, then pdfcb_resume (D-COPY) ------------------------------
 ; The pair stood at KILL and NAME already; COPY brings two more sites. Same
 ; contract as the pair: HL = the cursor after the name expression, DISK_FCB_NAME
