@@ -96,3 +96,4 @@ var_name_key     CLOBBER  returns A = the RESOLVED TYPE (VARTYPE), HL past the n
 # must KEEP MATCHING rather than merely suppress.
 check_vartype_num CLOBBER returns A = (VARTYPE)
 eval_byte_arg    CLOBBER  returns A = E, the evaluated byte
+dsk_core         CLOBBER  ok exit returns A = 0 (DISKOP_STATUS, the only value that reaches `ret z`)

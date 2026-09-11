@@ -1,5 +1,5 @@
 import re,glob,os,sys
-REPO="/Users/joost/projects/zerobas"; os.chdir(REPO)
+HERE=os.path.dirname(os.path.abspath(__file__)); REPO=os.path.dirname(HERE); os.chdir(REPO)   # chokepoint ROOT rule: never a hardcoded path
 subinc=set()
 for p in glob.glob("sub/*.asm"):
     for m in re.finditer(r'include\s+"?([^"\s]+)"?', open(p).read()): subinc.add(os.path.basename(m.group(1)))

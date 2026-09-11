@@ -69,7 +69,7 @@ WORD = re.compile(r"[A-Z][A-Z]*\$?")   # a trailing $ is part of STR$/MID$; a # 
 # probe-row list keyed by lowercase row names, and the coverage doc is prose),
 # so the missing set is listed HERE and the selftest fails the day one of them
 # shows up in kwtable -- the list self-corrects instead of rotting.
-KNOWN_MISSING = ["COPY", "DSKI$", "DSKO$"]     # LOC landed 2026-09-11 (D-LOC); S12 said so     # TODO.md, "EIGHT KEYWORDS THE REFERENCE TOKENISES"
+KNOWN_MISSING = ["COPY"]     # LOC, DSKI$, DSKO$ landed 2026-09-11 (D-LOC, D-DSKIO); S12 said so     # TODO.md, "EIGHT KEYWORDS THE REFERENCE TOKENISES"
 
 
 def kwtable_keywords(path=KWTABLE):

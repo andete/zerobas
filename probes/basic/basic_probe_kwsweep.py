@@ -390,8 +390,6 @@ SKIP_EXEC = {k for k, _, ex, _, _ in SWEEP if ex is None}
 # three are reserved in plain MSX BASIC and the VG-8020 is a perfectly good oracle
 # for them (scratchpad/donothing_probe.py, four sides).
 CRUNCH_DIFF_PINNED = {
-    "dski": "DSKI$  -> $EA",
-    "dsko": "DSKO$  -> $D1",
     "copy": "COPY   -> $D6",
 }
 # 🎯 `LFILES` IS THE CONTROL THAT MAKES THIS A LIST AND NOT A CLASS: it is

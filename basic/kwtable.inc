@@ -91,6 +91,12 @@ kwtable:
                 db      3,"EOF",2,PEEK_PREFIX,EOF_TOKEN
                 db      3,"LOF",2,PEEK_PREFIX,LOF_TOKEN
                 db      4,"DSKF",2,PEEK_PREFIX,DSKF_TOKEN
+                ; D-DSKIO (2026-09-11): direct sector access, SINGLE-BYTE tokens both
+                ; (measured from the VG-8020's own program text: `A$=DSKI$(0,7):DSKO$ 0,7`
+                ; crunches to 41 24 EF EA 28 .. 3A D1 20 ..). Neither prefixes a longer
+                ; word; DSKF is not a prefix of either.
+                db      5,"DSKI$",1,DSKI_TOKEN               ; $EA, function only
+                db      5,"DSKO$",1,DSKO_TOKEN               ; $D1, statement only
                 ; Random-access conversions (Phase 2c). $FF-prefixed function tokens
                 ; (MKI$=$FF$AE returns a string — the '$' is PART of the keyword, unlike
                 ; INPUT$; CVI=$FF$A8 returns a number). Oracle-locked to the VG-8020.

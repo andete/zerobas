@@ -2161,3 +2161,54 @@ ers_mismatch:
                 pop     hl                  ; discard [LHStemp] (bare-LHS entry: IX already
                                             ; = cursor from the relop reads above)
                 jr      type_mismatch_set
+
+; --- DSKO$ d,s — write the sector buffer to sector s (D-DSKIO) ---------------
+; docs/spec-basic-dskio.md. The parse and the tenant call are dsk_core below,
+; shared with DSKI$ (basic/strvar.asm). Both stubs sit in the low region because
+; page 1 had 43 B; the two regions share one budget.
+ex_dsko:
+                inc     hl                  ; HL -> bytes after the DSKO$ token
+                ld      a,DISKOP_SEL_DSKO
+                ld      de,H_DSKO
+                call    dsk_core
+                jp      exec_stmt
+
+; --- dsk_core: the shared half of DSKO$ d,s and DSKI$(d,s) (D-DSKIO) -----------
+; docs/spec-basic-dskio.md §3. In: A = the dirverb-tenant op (4 write / 5 read),
+; DE = the hook cell (H_DSKO / H_DSKI), HL = the cursor at `d`. The op is parked
+; on the stack across the parse because an argument may itself run a disk tenant
+; (`DSKO$ 0,LOF(1)`) through DISKOP_OP. The hook gate comes BEFORE the parse: the
+; diskless VG-8020 answers ERR 5 to `DSKO$ 0` where the CF-3300 answers ERR 2.
+; `drive` is a byte -- 0 and 1 both name the one drive; 2.. is `Bad drive name`
+; (ERR 62), measured on the reference with DSKI$(3,0) -- then `,`, then `sector`
+; as an int16 into FWR_DIRSEC, the sector-number word the dirverb tenant already
+; owns for NAME. The tenant moves one sector between (DSKBUF_PTR) and the disk;
+; a DSKIO failure lands in load_error. Out: HL = the cursor after `s`.
+dsk_core:
+                push    af                  ; the tenant op, across the parse
+                push    hl                  ; HL IS THE STATEMENT CURSOR (see ex_kill)
+                ex      de,hl               ; HL = the hook cell
+                call    chan_gate           ; unclaimed -> ERR 5, trappable
+                pop     hl
+                call    eval_byte_arg       ; A = E = drive (0..255, else ERR 5)
+                cp      2
+                jr      c,dsk_drv_ok
+                ld      a,62                ; Bad drive name
+                jp      raise_error
+dsk_drv_ok:
+                call    skip_comma
+                jp      nz,stmt_error
+                inc     hl
+                call    eval_int16_checked  ; DE = sector
+                ld      (FWR_DIRSEC),de
+                pop     af                  ; the op again
+                push    hl                  ; guard the cursor across CALSLT
+                push    ix                  ; and IX -- DSKI$ runs inside the evaluator
+                call    dirverb_op
+                pop     ix
+                pop     hl
+                jp      c,load_error        ; sub-ROM absent
+                ld      a,(DISKOP_STATUS)
+                or      a
+                ret     z
+                jp      load_error          ; DSKIO error

@@ -2161,6 +2161,8 @@ hkm_copy:
 ; and seven inline installs need 45. docs/spec-basic-nodisk.md §9.
 ; Clobbers A, BC, DE, HL.
 install_basic_hooks:
+                ld      hl, FSECTOR_BUF     ; D-DSKIO: publish the DSKI$/DSKO$ buffer at the
+                ld      (DSKBUF_PTR), hl    ; cell the MSX idiom PEEKs (docs/spec-basic-dskio.md)
                 ld      hl, hook_tab
 ibh_lp:
                 ld      c, (hl)             ; the hook cell
@@ -2194,6 +2196,8 @@ hook_tab:
                 dw      H_NAME, hk_present
                 dw      H_KILL, hk_present
                 dw      H_FILE, hk_present
+                dw      H_DSKO, hk_present   ; D-DSKIO: both bodies are a sub-ROM tenant,
+                dw      H_DSKI, hk_present   ; the hook buys the diskless ERR 5
                 dw      0
 
 ; --- install_hook: write one 5-byte CALLF stub into a hook slot -------------

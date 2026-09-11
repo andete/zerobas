@@ -489,7 +489,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:14558 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:14628 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -655,7 +655,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:3772 (T-6FE392)8 (T-529ABE)` from `TODO.md:13465 (T-529ABE)`: a
+      `TODO.md:3772 (T-6FE392)8 (T-529ABE)` from `TODO.md:13503 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -4616,7 +4616,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:13465 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:13503 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -8143,7 +8143,45 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `n.outer` → zb `q75AB` vs ref `qABCD`, control green. **Same root cause as
       D-FNALIAS** — `fn_enter` resets `FN_SLOTP` and stacks the caller — so both
       want frames that coexist in the shadow area, which needs page-3 RAM.
-      🎚️ TIER 1 (latent) — happy path: a string `FN` formal is not a GC root, so a GC mid-call corrupts a program that did nothing wrong
+      🔭 **SCOUTED 2026-09-11 (D-FNGCNEST) — IT BITES ON TODAY'S TREE, AND THE
+      SHAPE THAT NEEDS NO SHADOW AREA IS BELOW.** `n.outer` re-run
+      ([`scratchpad/deffn_gcnest_probe.py`](scratchpad/deffn_gcnest_probe.py),
+      [`.out`](scratchpad/gcnest_now.out)): zb **`qLMNO`** vs `qABCD` on BOTH
+      references, `n.outer.ctl` (same nesting, no collection) `qABCD` on all
+      three. So a string `FN` whose body calls another string `FN` that collects
+      returns the wrong text — `S$` was read from a slot whose descriptor was
+      saved on the Z80 stack and pointed at a body the collection moved. A happy
+      path (nested string functions plus ordinary string traffic), not an edge.
+      🎯 **THE MECHANISM IS THE SAVE, NOT THE WALK.** `fn_call`
+      ([`basic/deffn.asm`](basic/deffn.asm)) reserves a block BELOW `SP` and
+      `ldir`s the whole `FN_BASE` prefix into it; `fn_leave` copies it back.
+      `sg_walk_fnframe` walks `[FN_PAREA, FN_FEND)` — the live frame — and can
+      never address a block under `SP`. The filed cure ("frames that coexist in
+      the shadow area, page-3 RAM") is one shape; there is another that needs
+      NO page-3 RAM beyond one pointer cell:
+      **park the saved prefix in the control-frame pool.** The pool (D-CTLPOOL)
+      already descends from `CTLTOP` into the variable/string gap, already sizes
+      itself by `CLEAR`, and already refuses on collision at `CTLLIM`. An FN
+      frame there is `[prevFNSP:2][size:1][the block]`, chained through a new
+      `FNSP` cell (2 B; page $E0 has 72 B free since D-FORVAR); `fn_call` becomes
+      `ctl_alloc` + the same `ldir`, `fn_leave` the reverse, `fn_deep`'s
+      hand-rolled `FN_STK_FLOOR` check becomes the pool's own collision (ERR 7
+      either way), and `sg_walk_fnframe` walks the chain after the live frame
+      (~30 B of sub page 0, which has ~800 B). D-FNALIAS (formals aliasing, TIER 5)
+      wants the same frames and would ride along.
+      ⚠️ Priced so far: `ctl_alloc` is in the low region and `fn_call` in main
+      page 1, so the call is free of any tenant boundary. An FN body is an
+      expression, so no `FOR`/`GOSUB` frame can ever sit ABOVE an FN frame —
+      except through an ERROR inside the body: the abort resets SP to SAVSTK
+      and never runs `fn_leave`, so a pool frame would be LEAKED (CSP left
+      below it until RUN/CLEAR) where the stack shape simply discards it. The
+      abort path would need to unwind `FNSP` to its value at statement start
+      (one more cell, or re-derive it from CSP) — that is the one real cost the
+      pool shape adds, and it is unmeasured.
+      🙋 NEEDS-JOOST — **which shape: the pool (no shadow area, one 2 B cell) or
+      the page-3 shadow area the residual filed?** The scout you ruled is done;
+      the pool shape is my recommendation and it is autonomous once chosen.
+      🎚️ TIER 1 (latent) — happy path: a string `FN` formal is not a GC root, so a GC mid-call corrupts a program that did nothing wrong (measured live 2026-09-11: nested string FN + a collection = wrong text)
       🎯 **RULED (Joost, 2026-09-10): scout first.** The 🔭 stands — measure whether a GC
       mid-call actually corrupts a string `FN` result on this tree, then bring the
       fix shape. TIER 1 (latent).
@@ -9962,7 +10000,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       targets into range. Shipping only some of the four is worse than
       shipping none — it leaves `CRUNCH_DIFF_PINNED` half-stale and the class
       inconsistent.
-      🎚️ TIER 1 — happy path: of the eight keywords the reference tokenises, still MISSING here: `DSKI$` `DSKO$` `COPY` (`SET` `ATTR$` `IPL` `CMD` tokenise-then-ERR-5 as the reference does; `LOC` shipped 2026-09-11)
+      🎚️ TIER 1 — happy path: of the eight keywords the reference tokenises, still MISSING here: `COPY` (`SET` `ATTR$` `IPL` `CMD` tokenise-then-ERR-5 as the reference does; `LOC`, `DSKI$`, `DSKO$` shipped 2026-09-11)
       🤖 AUTONOMOUS — the reference settles every token, and the pin is built.
 
 - [x] 🔴 **`LOC(#n)` IS A MISSING KEYWORD WITH ITS ORACLE MEASURED, AND IT WAS
@@ -13585,7 +13623,7 @@ architecture and write code. Each step is independently oracle-validatable.
             sub-item inside a block that already carries its own marker, and a
             second one there reads as an ambiguous item to
             `make todo-marker-check` rather than as a scoped question.
-- [ ] **Direct sector access — INVESTIGATED, DEFERRED to Phase 3** — `DSKI$` (fn,
+- [x] **Direct sector access — INVESTIGATED, DEFERRED to Phase 3** — `DSKI$` (fn,
       $EA) / `DSKO$` (stmt, $D1). Tokens oracle-confirmed real (VG-8020 crunch), but
       NOT a clean "sector ↔ string" pair, and blocked on three counts:
       1. **Obscure semantics.** Black-box CF-3300: `A$=DSKI$(0,0)` succeeds but
@@ -13601,7 +13639,39 @@ architecture and write code. Each step is independently oracle-validatable.
          above; the VG-8020 is diskless so can't exercise it functionally.
       Low-value + low-use; revisit once Phase-3 strings exist. (Was assumed a thin
       DSKIO wrapper; the oracle proved otherwise — 2026-06-22.)
-      🎚️ TIER 1 — happy path: `DSKI$`/`DSKO$` are MISSING keywords (ruled IN, 2026-09-10)
+      ✅ **SHIPPED 2026-09-11 (D-DSKIO, [`docs/spec-basic-dskio.md`](docs/spec-basic-dskio.md),
+      `make dskio-acceptance`, 5 rows, both machines).** The three counts above
+      were all wrong in the same way — they read a black box that was never
+      opened. Measured on the CF-3300 with a Tcl write-watchpoint RAM dump
+      ([`scratchpad/dskio_scout.py`](scratchpad/dskio_scout.py)): `DSKI$(d,s)`
+      evaluates to the EMPTY string (its descriptor points at a ROM constant,
+      $6B4F) and puts the sector in the disk ROM's buffer at **$EB95**, whose
+      address is the word at **$F351** — the MSX idiom `PEEK(&HF351)+256*PEEK(&HF352)`,
+      measured rather than remembered; `DSKO$ d,s` writes that buffer back
+      (`POKE` the first byte, `DSKO$ 0,7`, and `FILES` lists `XEST    .BIN` —
+      on the disk, read from the host side, not only on the screen). So (1) the
+      semantics are not obscure, (2) no 512-byte string is ever needed, (3) the
+      CF-3300 IS a clean oracle for both. Tokens from the VG-8020's own program
+      text: `DSKI$` = **$EA** and `DSKO$` = **$D1**, single bytes both (the
+      old note's "$FF-prefixed function" reading was the DSKF shape, not this).
+      Here: `dsk_core` (low region) parses `drive` (0/1; 2.. is ERR 62 as the
+      reference says) and `sector` into `FWR_DIRSEC`, gates on `H_DSKO`/`H_DSKI`
+      BEFORE the parse (the diskless VG-8020 says ERR 5 to `DSKO$ 0` where the
+      CF-3300 says ERR 2 — measured), then dirverb-tenant ops 4/5 move the
+      sector between `(DSKBUF_PTR)` and the disk; `DSKBUF_PTR` = $F351 names
+      `FSECTOR_BUF` and is written by the disk ROM's `install_basic_hooks`
+      ($F34D..$F358 asked of the machine first: 12 planted bytes survived a
+      two-channel/KILL/FILES/DSKF/string/DEF FN workload). `nodisk-acceptance`
+      gained `k.dski`/`h.dsko` (ERR 5 on both diskless sides). Cost: main page 1
+      43 → 5 B, low region 75 → 9 B (the D-PAIRCARVE budget, spent the same
+      night), sub page 1 756 → 719 B, kwtable +16 B (re-pinned).
+      🔴 **RESIDUAL, TIER 3 (D-DSKNODISK): with NO DISK IN THE DRIVE the CF-3300
+      answers `ERR 70` (Disk offline) to both; here `DSKI$` raises ERR 2 (the
+      `load_error` exit taken INSIDE an expression surfaces as a Syntax error)
+      and `DSKO$` raises nothing.** Measured, not fixed: ERR 70 is the item
+      Joost ruled to add ("add ERR 70, maybe an ERR extension mechanism in the
+      Disk ROM"), and this is its first concrete customer.
+      🎚️ TIER 1 — happy path: `DSKI$` `DSKO$` shipped; the no-disk face is TIER 3 (D-DSKNODISK)
       ~~🙋 NEEDS-JOOST — a call that is yours to make (charter / scope).~~ (re-marked 2026-09-10, see below)
       - [x] **`MKI$(n)` + `CVI(s$)`** — DONE (basic/strvar.asm + basic/expr.asm). The
             integer conversion pair: MKI$ packs a 16-bit int into a 2-byte LE string
@@ -13644,7 +13714,7 @@ architecture and write code. Each step is independently oracle-validatable.
 - `CALL CHDRV` etc. **[out]** — Disk BASIC v2/v3 additions, beyond DOS1-class 1.0.
       🎯 **RULED (Joost, 2026-09-10): *"DSKI$ DSKO$ should also be implemented"* — no longer
       deferred. TIER 1 (missing keywords).
-      🤖 AUTONOMOUS — implement; the CF-3300 is the oracle (ruled 2026-09-10; the VG-8020 has no drive).
+      🤖 AUTONOMOUS — shipped 2026-09-11 (D-DSKIO); the CF-3300 was the oracle, the VG-8020 the diskless one.
 
 ### Carried oracle — Tier-2 provider (DOS1; a distinct DOS-boot sub-track)
 The only Phase-2 thread still genuinely open: a real **MSX-DOS 1** filesystem host
@@ -14552,7 +14622,7 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
         programs that used to have ~15 KB of string space now get 200 unless
         they say otherwise. The full acceptance corpus was re-run, not just this
         slice's gate.
-      🎚️ TIER 1 — happy path: the measured keyword-completeness remainder — `make kwsweep` prints it; today it overlaps the eight; still open there: `COPY` `DSKI$` `DSKO$`
+      🎚️ TIER 1 — happy path: the measured keyword-completeness remainder — `make kwsweep` prints it; today it overlaps the eight; still open there: `COPY` (`DSKI$` `DSKO$` shipped 2026-09-11, D-DSKIO)
       ⛔ BLOCKED — neither of us can start it now (needs a fixture).
 
 - [ ] **`LOAD"CAS:"` ACCEPTS A TOKENISED TAPE; the reference does not return.**

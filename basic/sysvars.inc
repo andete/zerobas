@@ -297,6 +297,9 @@ CMD_TOKEN       equ     $D7     ; CMD — tokenised, then ERR 5 (no verb)
 ; ERR 2. Nothing extra is spent on it.
 ; 🟢 Oracle-sourced like its three neighbours, pinned in CRUNCH_DIFF_PINNED.
 ATTR_TOKEN      equ     $E9     ; ATTR$ — tokenised, then ERR 5 (no function)
+DSKI_TOKEN      equ     $EA     ; DSKI$(d,s): read sector s into the buffer at (DSKBUF_PTR);
+                                ; the VALUE is the empty string (D-DSKIO, oracle crunch 2026-09-11)
+DSKO_TOKEN      equ     $D1     ; DSKO$ d,s: write that buffer to sector s (statement only)
 REM_TOKEN       equ     $8F     ; spec-tokens-statements.md; swallows rest of line
 POKE_TOKEN      equ     $98     ; spec-tokens-statements.md
 ; PEEK is a *function* token: a $FF prefix followed by a second byte.
@@ -2753,6 +2756,14 @@ EOC             equ     $0FFF   ; end-of-chain marker we write (Microsoft FAT §
 ; disk.asm's SECTOR_BUF/WBUF split). Placed at $E5C0/$E7C0 — above basic-core RAM
 ; and the old disk-ROM DTA region, in 64 KB page-3 RAM.
 FSECTOR_BUF     equ     $E5C0   ; file data / read sector buffer ($E5C0..$E7BF)
+; D-DSKIO (docs/spec-basic-dskio.md): the word a program reads to find DSKI$'s
+; sector -- the MSX idiom PEEK(&HF351)+256*PEEK(&HF352), MEASURED on the CF-3300
+; (its buffer is at $EB95 behind the same cell). Here it names FSECTOR_BUF and is
+; written once by the disk ROM's install_basic_hooks (disk/kernel.asm), so a
+; diskless build never touches it. $F34D..$F358 was ASKED of the machine on
+; 2026-09-11 (12 planted bytes survived a two-channel/KILL/FILES/DSKF/string/DEF FN
+; workload) and lies below the sysvar sweep's $F380 floor.
+DSKBUF_PTR      equ     $F351   ; word -> the DSKI$/DSKO$ sector buffer (2)
 FWBUF           equ     $E7C0   ; FAT/dir metadata sector buffer ($E7C0..$E9BF)
 ; FAT12 geometry, filled by fat_mount from the on-disk BPB (own-choice free RAM in
 ; page $E9 above the buffers).
@@ -2879,6 +2890,8 @@ DISKOP_SEL_NAME_STAMP           equ 1   ; dirverb: NAME's read+overwrite+write
 ; between the head's store and the tenant's return.
 DISKOP_SEL_FILES                equ 2   ; dirverb: FILES  -> screen, packed rows
 DISKOP_SEL_LFILES               equ 3   ; dirverb: LFILES -> printer, one per line
+DISKOP_SEL_DSKO                 equ 4   ; dirverb: DSKO$ -- (DSKBUF_PTR) -> sector FWR_DIRSEC (D-DSKIO)
+DISKOP_SEL_DSKI                 equ 5   ; dirverb: DSKI$ -- sector FWR_DIRSEC -> (DSKBUF_PTR)
 
 ; --- Line-editor tenant ABI (SUBROM_IDX_LINEEDIT, docs/spec-eviction-g4-
 ; space.md §4, carve #2): reuses the SAME DISKOP_OP/DISKOP_STATUS RAM cells,
@@ -3118,6 +3131,8 @@ H_CVD           equ     $FE49   ; CVD handler
 H_NAME          equ     $FDF9   ; NAME handler   (channel verbs, D-CHANHOOK)
 H_KILL          equ     $FDFE   ; KILL handler
 H_FILE          equ     $FE7B   ; FILES handler
+H_DSKO          equ     $FDF4   ; DSKO$ handler (D-DSKIO; the standard slot, claimed by hk_present)
+H_DSKI          equ     $FE17   ; DSKI$ handler (D-DSKIO)
 ; --- the KEY-trap fn-key hook (interrupt-traps T3, docs/spec-traps-t3-key.md §4) ---
 ; NOT a standard MSX hook: it is added by OUR C-BIOS patch
 ; (cbios-repack/key-trap-hook.patch) because no published hook can see the current

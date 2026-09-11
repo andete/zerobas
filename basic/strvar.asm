@@ -91,6 +91,8 @@ str_eval_one:
                 jp      z,str_fn_string     ; single-byte reserved word, not $FF-prefixed)
                 cp      INKEY_TOKEN         ; $EC -> INKEY$ (no args; single-byte reserved word)
                 jp      z,str_fn_inkey
+                cp      DSKI_TOKEN          ; $EA -> DSKI$(d,s) (D-DSKIO; single-byte, value "")
+                jp      z,str_dski
                 cp      FN_TOKEN            ; $DE -> FN<name>$[(args)] (D-DEFFN).
                 jp      z,str_ev_fn         ; DECLINES a numeric FN, exactly as
                                             ; str_eval_paren declines `(A+1)`
@@ -525,3 +527,24 @@ sidr_done:
 ; Arrays slice-4a: the repack print_strval lives in the low region (basic/
 ; str-engine.asm) — page 1 is byte-full; print.asm reaches it by in-slot
 ; call. strscr_desc / pu_deref_body live there too.
+
+; --- DSKI$(d,s): read sector s into the buffer; the VALUE is "" (D-DSKIO) -------
+; Reached from str_eval_one on the single-byte DSKI_TOKEN; dsk_core is in the
+; low region (basic/str-engine.asm). The reference returns
+; the empty string (its descriptor points at a ROM constant) and leaves the data
+; in the buffer named by DSKBUF_PTR; this does the same with STRSCR at length 0.
+str_dski:
+                call    inc_skip_paren      ; past the name and any blanks: '(' ?
+                jp      nz,str_eval_no
+                inc     hl
+                ld      a,DISKOP_SEL_DSKI
+                ld      de,H_DSKI
+                call    dsk_core            ; HL = the cursor after `s`
+                ld      a,(hl)
+                cp      ')'
+                jp      nz,str_eval_no
+                inc     hl                  ; HL past ')'
+                push    hl                  ; the cursor past the operand, for str_pub_ok
+                xor     a
+                ld      (STRSCR),a          ; length 0: the empty string
+                jp      str_mkf_desc

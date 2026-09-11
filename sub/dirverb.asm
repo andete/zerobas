@@ -65,6 +65,10 @@ dirverb_tenant:
                 jp      z,tnt_files             ; 2 -> FILES  (screen)
                 cp      DISKOP_SEL_LFILES
                 jp      z,tnt_files             ; 3 -> LFILES (printer)
+                cp      DISKOP_SEL_DSKO
+                jp      z,tnt_dsko              ; 4 -> DSKO$ (D-DSKIO)
+                cp      DISKOP_SEL_DSKI
+                jp      z,tnt_dski              ; 5 -> DSKI$
                 ; fall through -> DISKOP_SEL_NAME_STAMP = 1
 
 ; --- NAME "old" AS "new": stamp the new 8.3 name over the located dir entry --
@@ -133,6 +137,27 @@ dvk_loop:
 dvk_done:
                 ld      a,c
                 ld      (DISKOP_STATUS),a       ; deleted-any (0 = none)
+                ret
+
+; --- DSKO$ / DSKI$: one sector between (DSKBUF_PTR) and sector FWR_DIRSEC ------
+; D-DSKIO, docs/spec-basic-dskio.md §3. The head parsed drive and sector; the
+; buffer is whatever DSKBUF_PTR names (FSECTOR_BUF, written at disk-ROM init).
+; No mount and no BPB: a raw sector needs neither, and the reference reads
+; sector 9999 without complaint. STATUS = 0 ok, $FF = DSKIO error.
+tnt_dsko:
+                call    dsk_regs
+                call    fatprim_write_sector    ; sub-local primitive body
+                jr      dsk_status
+tnt_dski:
+                call    dsk_regs
+                call    read_sector             ; sub-local primitive body
+dsk_status:
+                sbc     a,a                     ; CF -> $FF, clear -> 0
+                ld      (DISKOP_STATUS),a
+                ret
+dsk_regs:
+                ld      de,(FWR_DIRSEC)         ; the sector
+                ld      hl,(DSKBUF_PTR)         ; the buffer
                 ret
 
 ; ===========================================================================

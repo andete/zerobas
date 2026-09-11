@@ -604,6 +604,8 @@ stmt_table:
                 dw      ex_kill
                 db      NAME_TOKEN
                 dw      ex_name
+                db      DSKO_TOKEN
+                dw      ex_dsko     ; DSKO$ d,s (D-DSKIO)
                 db      MAX_TOKEN
                 dw      ex_maxfiles    ; MAX FILES = n
                 db      FIELD_TOKEN
