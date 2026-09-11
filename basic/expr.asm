@@ -1015,7 +1015,7 @@ ev_ff_argtab:
 ev_ff_argtab_len equ    $ - ev_ff_argtab
 ev_ff_arg:
                 ld      c,a                 ; C = selector (survives the parse)
-                call    ixsp_paren         ; D-IXSP
+                call    ixsp_paren_req     ; D-IXSP
                 ; Residual found by the I1 differential (spec §3): a MISSING
                 ; argument list -- `PRINT PEEK`, `PRINT STICK`, `PEEK 100` --
                 ; silently evaluated to 0 here, where the reference raises a
@@ -1023,7 +1023,6 @@ ev_ff_arg:
                 ; INP / EOF / LOF alike). Same BUG C class, and same cure, as the
                 ; CVI missing-'(' fix below: defer the syntax error via ev_f_empty
                 ; so the statement's check_expr_errors aborts.
-                jp      nz,ev_f_empty
                 inc     ix
                 push    bc                  ; guard the selector across the eval
                 call    ev_logic            ; DE = argument (full expression)
@@ -1450,8 +1449,8 @@ ev_ff_cv:
                 ; resulting descriptor. (IX is reloaded from str_eval's advanced HL, so
                 ; an inner eval clobbering IX is harmless.) Entered with IX on the
                 ; CVI selector byte.
-                call    ixsp_paren         ; D-IXSP
-                jp      nz,ev_f_empty       ; BUG C class (Fable 2026-07-17): CVI missing
+                call    ixsp_paren_req     ; D-IXSP
+                                           ; BUG C class (Fable 2026-07-17): CVI missing
                                             ; '(' -> deferred syntax error (was silent
                                             ; ev_f_err -> " 0"); ref = Syntax error
                 call    ixsp                ; D-IXSP
@@ -1583,8 +1582,8 @@ cvi_tmm:
 ; gap and CLEAR's string-space argument is discarded, so BOTH forms answer with
 ; that gap. Computed sub-side (op 15) because the array-region walk lives there.
 ev_ff_fre:
-                call    ixsp_paren         ; D-IXSP
-                jp      nz,ev_f_empty       ; bare FRE -> deferred syntax error
+                call    ixsp_paren_req     ; D-IXSP
+                                           ; bare FRE -> deferred syntax error
                 call    ixsp                ; D-IXSP
                 push    ix                  ; guard the cursor for the numeric retry:
                 call    str_eval_ix         ; a STRING argument? (repack str_eval
@@ -1791,8 +1790,8 @@ evmc_total_tab:
 ; to decide its own result type (spec §9.1's "same FACTYP as x" / int-result
 ; columns). IX advanced past ')'. Clobbers as ev_xor.
 ev_mc_arg:
-                call    ixsp_paren         ; D-IXSP
-                jp      nz,ev_f_empty       ; D-F2-4: missing '(' (bare fn / operator- or
+                call    ixsp_paren_req     ; D-IXSP
+                                           ; D-F2-4: missing '(' (bare fn / operator- or
                                             ; space-separated) -> deferred FPERR=4 "syntax
                                             ; error", NOT the silent ev_f_err. Same chokepoint
                                             ; the empty-parens gate (D-F2-3) uses.
@@ -1838,8 +1837,7 @@ ev_mc_arg_checked:
 ; other ev_f_* factor tail keeps. Shared by evmc_int/evmc_fix. Clobbers A, B,
 ; C, D, E, H, L.
 evconv_pack_same_type:
-                ld      hl,ARGA+FPNUM_DIG
-                call    dig15_iszero
+                call    arga_dig_iszero
                 jr      z,ecpst_zero
                 ld      a,(FACTYP)
                 cp      8
@@ -2147,8 +2145,7 @@ evmc_log:
                 ld      a,(ARGA+FPNUM_SIGN)
                 or      a
                 jr      nz,evmc_log_err
-                ld      hl,ARGA+FPNUM_DIG
-                call    dig15_iszero
+                call    arga_dig_iszero
                 jr      z,evmc_log_err
                 ld      hl,SUBROM_ENTRY_BASE_P1 + 3*SUBROM_IDX_LOG
                 jr      evmc_dispatch
@@ -2247,7 +2244,7 @@ evmc_exp_overflow:
 ; on read, which is what ev_f_arr does and what the references do; the oracle
 ; here covers the unset SCALAR only, and the fix is scoped to it.
 ev_f_varptr:
-                call    ixsp_paren         ; D-IXSP
+                call    ixsp_paren_req     ; D-IXSP
                 ; D-EVFERR: both these sites are Syntax error (2) on both
                 ; references, and BOTH LOOKED GREEN because ev_f_err leaves the
                 ; cursor UNADVANCED -- `A=VARPTR 5` / `A=VARPTR(5)` answered 2
@@ -2255,7 +2252,6 @@ ev_f_varptr:
                 ; the expression layer saying nothing at all. The rows with
                 ; NOTHING left over separate them: `A=VARPTR` and `A=VARPTR(`
                 ; COMPLETED SILENTLY. Byte-neutral retargets.
-                jp      nz,ev_f_empty
                 call    ixsp                ; D-IXSP
                 call    is_letter           ; the argument must be a variable name
                 jp      nc,ev_f_empty
@@ -2421,7 +2417,7 @@ vptr_unset:
 ; basic/graphics.asm; `IF !G8_RESIDENT` selects the stub below instead.
     IF !G8_RESIDENT
 ev_f_base:
-                call    ixsp_paren         ; D-IXSP
+                call    ixsp_paren_req     ; D-IXSP
                 ; D-EVFERR: retargeted with the five LIVE sites even though this
                 ; stub is NOT ASSEMBLED (G8_RESIDENT equ 1, sysvars.inc) -- the
                 ; `IF !G8_RESIDENT` arm must stay correct for
@@ -2431,7 +2427,6 @@ ev_f_base:
                 ; its own inline ERRMARK body", but G8 retired that years of
                 ; slices ago -- the shipping ev_f_base is graphics.asm:1292 and
                 ; raises gfx_syntax. Right conclusion, dead reasoning.
-                jp      nz,ev_f_empty
                 inc     ix
                 call    ev_logic            ; evaluate + discard the index argument
                 call    evsp_close          ; D-EVSPCLOSE
@@ -2553,6 +2548,31 @@ arga_widen:
                 ld      hl,ARGA
                 jp      widen_rhs_operand
 
+; --- ixsp_paren_req / tgt_parse_req / arga_dig_iszero: D-PAIRCARVE2 ----------
+; 💰 (2026-09-11) Three more sequences from a scan whose sizes were MEASURED by
+; assembling each candidate with pasmo, not estimated:
+;   call ixsp_paren + jp nz,ev_f_empty        8 sites, 6 B each
+;   call tgt_parse  + jp nz,fp_runtime_error  6 sites, 6 B each
+;   ld hl,ARGA+FPNUM_DIG + call dig15_iszero  7 sites, 6 B each
+; ixsp_paren_req: `(` is REQUIRED -- Z returns as the pair did; NZ discards this
+; helper's own return address (`inc sp` twice, evsp_close's precedent: no
+; register, no flag) and jumps to ev_f_empty, whose deferred error then returns
+; ONE FRAME FURTHER OUT exactly as the open-coded `jp` did. tgt_parse_req: the
+; NZ exit is fp_runtime_error, which is `jr raise_error` -- an ABORT that resets
+; SP -- so no frame fix is needed. arga_dig_iszero: dig15_iszero preserves HL,
+; so the caller sees HL = ARGA+FPNUM_DIG and Z as before -- and it lives in the
+; LOW region (basic/str-engine.asm): float-arith's callers are in the resident
+; closure that sub page-1 tenants reach, and check_tenant_closure said so.
+ixsp_paren_req:
+                call    ixsp_paren
+                ret     z
+                inc     sp
+                inc     sp
+                jp      ev_f_empty
+tgt_parse_req:
+                call    tgt_parse
+                ret     z
+                jp      fp_runtime_error
 ; --- ixsp_paren: ixsp, then "is it `(`?" -- Z iff '(' is next ----------------
 ; 💰 D-PAIRCARVE (2026-09-11): NINE live sites went straight from `call ixsp` to
 ; `cp '('` (ixsp's own header counted them); 5 B each against 3 for a call:

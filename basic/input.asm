@@ -80,7 +80,7 @@ inpc_dispatch:
                 ; HL -> the first variable. Branch on the read mode.
                 ld      a,(FCH_RDMODE)
                 or      a
-                jp      nz,inpc_line        ; LINE INPUT -> whole line into one $-var
+                jr      nz,inpc_line        ; LINE INPUT -> whole line into one $-var
                 ; --- INPUT: comma-separated variable list ---
                 push    hl                  ; [stack: varstart] — survives every ?redo
 inpc_reread:
@@ -99,11 +99,11 @@ inpc_vloop:
                 or      a
                 jr      nz,inpc_vstr
                 ; --- numeric variable ---
-                call    tgt_parse           ; D-ARYLV: BC = key, HL past the whole
+                call    tgt_parse_req      ; D-ARYLV: BC = key, HL past the whole
                                             ; reference, (TGT_ADDR) = element address or
                                             ; 0; (VARTYPE) = the resolved type (F3).
                                             ; A already holds the mode (0) it wants.
-                jp      nz,fp_runtime_error ; a bad subscript raises the ARRAY engine's
+                                           ; a bad subscript raises the ARRAY engine's
                                             ; own error. [varstart] is still on the
                                             ; stack and that is FINE: fre_abort_low does
                                             ; `ld sp,(SAVSTK)` as its own first act
@@ -124,10 +124,10 @@ inpc_vloop:
                 jr      inpc_after
 inpc_vstr:
                 ; --- string variable ---
-                call    tgt_parse           ; D-ARYLV: BC = key, HL past the whole
+                call    tgt_parse_req      ; D-ARYLV: BC = key, HL past the whole
                                             ; reference, (TGT_ADDR) per above; A already
                                             ; holds the mode (1) it wants
-                jp      nz,fp_runtime_error ; same depth-independent abort as the numeric
+                                           ; same depth-independent abort as the numeric
                                             ; arm above
                 push    bc
                 push    hl

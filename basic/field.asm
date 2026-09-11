@@ -198,8 +198,8 @@ fldf_next:
 ;      for an element). A failed array resolve does NOT return (spec §5.3).
 ; Clobbers A,BC,DE (and HL, which is the advanced cursor).
 tgt_parse_fld:
-                call    tgt_parse           ; BC=key, (TGT_ADDR)=elem addr or 0
-                jp      nz,fp_runtime_error ; FPERR already mapped by
+                call    tgt_parse_req      ; BC=key, (TGT_ADDR)=elem addr or 0
+                                           ; FPERR already mapped by
                                             ; ary_op0_resolve -> the reference's
                                             ; own `Subscript out of range`.
                                             ; 🎯 FALSIFIABLE here, unlike D-LVFIX's

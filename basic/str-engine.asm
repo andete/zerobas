@@ -33,6 +33,22 @@
 ; str_snapshot_to_temp.
 ; ===========================================================================
 
+; --- arga_dig_iszero: HL := ARGA+FPNUM_DIG, then dig15_iszero (D-PAIRCARVE2) ----
+; 💰 The pair stood at SEVEN sites, 6 B each against 3 for a call. dig15_iszero
+; preserves HL, so the caller sees HL = ARGA+FPNUM_DIG and Z exactly as the
+; open-coded pair left them. Low region, not page 1: two of the sites are in the
+; resident closure sub page-1 tenants reach (check_tenant_closure).
+arga_dig_iszero:
+                ld      hl,ARGA+FPNUM_DIG
+                jp      dig15_iszero
+
+; --- sh_call_op: SH_OP := A, then call_strheap (D-PAIRCARVE2, 2026-09-11) -----
+; 💰 The pair stood at SIX sites, 6 B each against 3 for a call. Same contract as
+; call_strheap: clobbers A, IX; returns with the tenant's results in RAM.
+sh_call_op:
+                ld      (SH_OP),a
+                jr      call_strheap
+
 ; --- call_strheap: dispatch to the string-heap tenant (SUBROM_IDX_STRHEAP) -
 ; Shared tail every SH_* glue wrapper below funnels through (13 call sites)
 ; instead of repeating "ld ix,.. / call subrom_call / jp c,subrom_absent_
@@ -429,8 +445,7 @@ lpt_flush:
 str_temp_alloc:
                 ld      (SH_LEN),a
                 ld      a,3
-                ld      (SH_OP),a           ; op = 3 (TEMP_ALLOC)
-                call    call_strheap
+                call    sh_call_op         ; op = 3 (TEMP_ALLOC)
                 ld      a,(SH_ERR)
                 or      a
                 jr      z,sta_ok
@@ -586,8 +601,7 @@ sct_loop:
                 push    hl                  ; [R]
                 push    de                  ; [R][cursor]
                 ld      a,2
-                ld      (SH_OP),a           ; op = 2 (APPEND)
-                call    call_strheap
+                call    sh_call_op         ; op = 2 (APPEND)
                 ld      a,(SH_ERR)
                 or      a
                 jr      nz,sct_append_err   ; heap OOM / overflow -> [R][cursor]
@@ -778,8 +792,7 @@ evff_strnum_tm:
 ; other factor error. Entered with IX on the function selector byte. UNCHANGED
 ; from pre-4a (format-agnostic — it only ever hands off to str_eval).
 ev_str_arg:
-                call    ixsp_paren         ; D-IXSP
-                jp      nz,ev_f_empty
+                call    ixsp_paren_req     ; D-IXSP
                 call    ixsp                ; D-IXSP
                 ; empty string-argument (LEN()/ASC()/VAL(), or a trailing ','):
                 ; the same missing-operand syntax error as ev_f's ')'/',' gate
@@ -1440,8 +1453,7 @@ ems_close:
                                             ; a scalar target comes back verbatim
                 ld      (SH_DEST),hl        ; A$ descriptor address
                 ld      a,9
-                ld      (SH_OP),a           ; op = 9 (MID_STORE)
-                call    call_strheap
+                call    sh_call_op         ; op = 9 (MID_STORE)
                 ld      a,(SH_ERR)
                 cp      3
                 jr      z,ems_range         ; range error (n<1/n>255/n>La)
@@ -1769,8 +1781,8 @@ sfg_reject2:
 ; by then, and is bridged back into IX only right before the return, so ev_f's
 ; "IX = cursor advanced past the call" convention still holds.
 ev_f_instr:
-                call    ixsp_paren         ; D-IXSP
-                jp      nz,ev_f_empty       ; BUG C class: INSTR without '(' -> deferred
+                call    ixsp_paren_req     ; D-IXSP
+                                           ; BUG C class: INSTR without '(' -> deferred
                                             ; syntax error (was silent ev_f_err)
                 call    ixsp                ; D-IXSP
                 call    str_eval_ix            ; CF set -> a$ (2-arg form); STRPTR->desc
@@ -1863,8 +1875,7 @@ efi_p_ok:
                 ld      (SH_DEST),hl        ; b$ temp descriptor address
                 ld      (SH_P),bc           ; p
                 ld      a,11
-                ld      (SH_OP),a           ; op = 11 (INSTR_SEARCH)
-                call    call_strheap
+                call    sh_call_op         ; op = 11 (INSTR_SEARCH)
                 ld      de,(SH_PTR)         ; DE = result (1-based match / 0)
                 pop     ix                  ; IX = cursor (bridge back to ev_f's convention)
                 jp      flt_int_result      ; INSTR returns an int even when a float rode
@@ -1974,8 +1985,7 @@ str_cmp_bits:
                 ld      (SH_SRC),hl
                 ld      (SH_DEST),de
                 ld      a,10
-                ld      (SH_OP),a           ; op = 10 (CMP)
-                call    call_strheap
+                call    sh_call_op         ; op = 10 (CMP)
                 ld      a,(SH_LEN)          ; A = 1/2/4 relation bits (the
                                             ; tenant reuses SH_LEN as CMP's
                                             ; 1-byte result field)

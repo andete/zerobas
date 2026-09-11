@@ -1833,8 +1833,8 @@ nx_head:
                 call    var_str_type        ; A = mode (0 num / 1 str); HL NOT advanced.
                                             ; The $ arm must pick the STRING array --
                                             ; a.stroob, and a.str agrees WITHOUT it
-                call    tgt_parse           ; BC=key, (VARTYPE)=type, (TGT_ADDR)=elem
-                jp      nz,fp_runtime_error ; Subscript out of range -- a.oob/a.rank
+                call    tgt_parse_req      ; BC=key, (VARTYPE)=type, (TGT_ADDR)=elem
+                                           ; Subscript out of range -- a.oob/a.rank
                 call    for_key             ; FOR_CUR[0..2] = (BC, VARTYPE)
                 ; ⚠️ AND THAT SENTENCE IS ONLY TRUE ON THE SCALAR PATH. On the array
                 ; path BC and (VARTYPE) are whatever ary_op0_resolve left behind, so
@@ -2022,11 +2022,11 @@ exr_lp:
                 call    var_str_type        ; A = 1 iff the name carries a '$' (or its
                 ld      (RDV_MODE),a        ; DEFtbl default is a string) -- and that
                                             ; is exactly the DATA-item read mode
-                call    tgt_parse           ; D-ARYLV: BC = key, HL past the whole
+                call    tgt_parse_req      ; D-ARYLV: BC = key, HL past the whole
                                             ; reference, (TGT_ADDR) = element address or
                                             ; 0; (VARTYPE) = the resolved type (F3).
                                             ; A already holds the mode tgt_parse wants.
-                jp      nz,fp_runtime_error ; a bad subscript aborts with the ARRAY
+                                           ; a bad subscript aborts with the ARRAY
                                             ; engine's own error (`READ A(9)` on
                                             ; `DIM A(3)` is Subscript out of range on
                                             ; both references, NOT Syntax error --

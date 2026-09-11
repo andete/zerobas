@@ -241,7 +241,7 @@ do_run:
                 jr      run_prog_top        ; ...and run it (running is implicit), at
                                             ; TOP LEVEL -- see run_prog_top below
 dr_stored:
-                jp      run_prog_top        ; bare RUN: the stored program from the top,
+                jr      run_prog_top        ; bare RUN: the stored program from the top,
                                             ; at TOP LEVEL like every sibling arm.
                 ; \U0001f7e2 D-BARERUN (2026-09-09): CONVERTED AT LAST, 0 B, AND THE ROW
                 ; IS WHAT UNBLOCKED IT. This arm stood ⛔ BLOCKED since 2026-08-22

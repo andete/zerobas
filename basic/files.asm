@@ -1262,8 +1262,7 @@ ifc_zero:
 fch_ctx_addr:
                 ld      (SH_LEN),a          ; the channel number (1-based)
                 ld      a,18
-                ld      (SH_OP),a           ; op 18 = channel block address
-                call    call_strheap
+                call    sh_call_op         ; op 18 = channel block address
                 ld      hl,(SH_PTR)
                 ret
 

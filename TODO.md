@@ -489,7 +489,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:14628 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:14648 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -655,7 +655,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:3772 (T-6FE392)8 (T-529ABE)` from `TODO.md:13503 (T-529ABE)`: a
+      `TODO.md:3772 (T-6FE392)8 (T-529ABE)` from `TODO.md:13523 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -4616,7 +4616,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:13503 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:13523 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -10045,6 +10045,26 @@ list. **When a slice lands, grep this list for what it just shipped.**
       32, inside the file) and reads `3 , 5` on both machines.
       🔴 Page 1 is at 14 B (two carves since): the next page-1 item carves first.
       🤖 AUTONOMOUS — the CF-3300 settles every row; the shape is settled by the standing ruling (promoted 2026-09-10).
+
+- [x] 💰 **D-PAIRCARVE2 (2026-09-11): FOUR MORE SEQUENCE HELPERS, SIZES MEASURED
+      BY ASSEMBLING EACH CANDIDATE — main page 1 5 → 27 B, low 9 → 41 B.**
+      D-DSKIO spent D-PAIRCARVE to the byte and `COPY` (TIER 1, the last
+      missing keyword) needs a parse and a stub on page 1. The scan ranked 2-
+      and 3-instruction sequences by count × (bytes − 3) with the bytes measured
+      by running each candidate through pasmo — the first pass's estimator had
+      priced 3-byte pairs as savings. `ixsp_paren_req` (8 sites),
+      `tgt_parse_req` (6), `arga_dig_iszero` (7), `sh_call_op` (6); 27 sites
+      rewritten by one script that printed each one
+      ([`scratchpad/paircarve2.py`](scratchpad/paircarve2.py)). 🎯 Two ranked
+      candidates REJECTED on reading: `evsp_close`+`inc ix` (its error path
+      returns a frame further out, which a helper would move) and anything with
+      `push_lhs_frame` (pops its own return address; a prior slice already said
+      no). 🔴 `check_tenant_closure` caught `arga_dig_iszero` on page 1 with
+      two callers in the resident closure — it lives in the low region now.
+      Route D re-run after: 5 proposals, 2 out of range on the new layout and
+      reverted, 3 kept. Full battery green; the five excluded targets re-run by
+      hand (shared evaluator leaves moved).
+      🎚️ BUDGET — a carve; it serves the TIER 1 `COPY` item.
 
 - [x] 💰 **D-PAIRCARVE (2026-09-11): SIX INSTRUCTION-PAIR HELPERS — main page 1
       14 → 43 B, low region 39 → 75 B.** Page 1 stood at 14 B with `DSKI$`/`DSKO$`

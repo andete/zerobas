@@ -382,7 +382,7 @@ str_target_parse:
                                             ; FIRST thing the statement does, so no
                                             ; fault can already be pending for it
                                             ; to override.
-                call    tgt_parse           ; D-ARYLV: BC = key, HL past the
+                call    tgt_parse_req      ; D-ARYLV: BC = key, HL past the
                                             ; reference, (TGT_ADDR) = element addr
                 ; 🔴 D-N9BAIL (docs/spec-basic-ngram9.md §4, settled 2026-08-29):
                 ; THIS BAIL IS LOAD-BEARING AND THE 9 B CARVE IS DECLINED. It was
@@ -402,7 +402,7 @@ str_target_parse:
                 ; tp_ary, ahead of tp_set's `ld (TGT_ADDR),de`) -- a stale address
                 ; from whichever target was resolved last.
                 ; [[a-case-that-agrees-can-agree-for-the-wrong-reason]]
-                jp      nz,fp_runtime_error ; a deferred fault from the subscript
+                                           ; a deferred fault from the subscript
                 ret
 
 ; --- req_operand: a value is REQUIRED at the cursor (D-NGRAM2) -------------

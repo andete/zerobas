@@ -470,8 +470,7 @@ apf_lp:
 ; ALREADY all-zero (genuine zero result, or fp_mul/fp_div's underflow/
 ; div-by-zero shortcuts) skips rounding and the bound check entirely.
 round_and_finalize:
-                ld      hl,ARGA+FPNUM_DIG
-                call    dig15_iszero
+                call    arga_dig_iszero
                 jp     z,raf_zero_ok
                 ld      a,(ARGA+FPNUM_DIG+14)
                 cp      5
@@ -590,8 +589,7 @@ ar6_lp:
 ; harmless wrinkle here since FPERR=1 makes the caller (var_store_fac) drop
 ; the store unconditionally, so nothing ever reads that stale FACTYP=8).
 round_single_and_pack:
-                ld      hl,ARGA+FPNUM_DIG
-                call    dig15_iszero
+                call    arga_dig_iszero
                 jr      z,rsp_zero_ok
                 ld      a,(ARGA+FPNUM_DIG+6)   ; the 7th digit is the round digit
                 cp      5
@@ -1080,8 +1078,7 @@ fpd_loop_done:
 ; falling to a magnitude compare (dexp, then digits). Clobbers A, B, C, D, E,
 ; H, L.
 fp_cmp:
-                ld      hl,ARGA+FPNUM_DIG
-                call    dig15_iszero
+                call    arga_dig_iszero
                 jr      z,fcmp_a_zero
                 ld      hl,ARGB+FPNUM_DIG
                 call    dig15_iszero
@@ -1913,8 +1910,7 @@ combine_pow:
                 jp      round_and_finalize  ; FAC:=1.0 double, FACTYP:=8, DE
 cpow_y_nonzero:
                 ; --- 2) x == 0: y>0 -> 0 ; y<0 -> Division by zero ---------
-                ld      hl,ARGA+FPNUM_DIG
-                call    dig15_iszero
+                call    arga_dig_iszero
                 jr      nz,cpow_x_nonzero
                 ld      a,(ARGB+FPNUM_SIGN)
                 or      a
@@ -2286,8 +2282,8 @@ fpt_none:
                 or      a
                 ret
 fpt_allfrac:
-                ld      hl,ARGA+FPNUM_DIG
-                call    dig15_iszero        ; ZF set iff ARGA was already the canonical
+                call    arga_dig_iszero
+                                           ; ZF set iff ARGA was already the canonical
                                             ; zero (0 flags no fraction was dropped)
                 push    af
                 ld      hl,ARGA+FPNUM_DIG
