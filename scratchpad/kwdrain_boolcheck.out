@@ -1,0 +1,6 @@
+inp.value   240
+inp.ge0     -1
+inp.gt0     -1
+stub.ge0    -1
+vdp.value   240
+stub.vdp    0

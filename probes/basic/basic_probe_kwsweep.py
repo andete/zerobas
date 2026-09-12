@@ -256,7 +256,16 @@ SWEEP: list[tuple[str, str, str | None, str, str]] = [
     ("vpeek",   'a=vpeek(0)',         'VPOKE 0,7:PRINT"[";VPEEK(0);"]"',      "direct", "D-KWDRAIN"),
     ("vpoke",   'vpoke 0,1',          'VPOKE 0,9:PRINT"[";VPEEK(0);"]"',      "direct", "D-KWDRAIN"),
     ("vdpkw",   'a=vdp(1)',           'PRINT"[";VDP(1)>0;"]"',                "direct", "D-KWDRAIN"),
-    ("inpkw",   'a=inp(168)',         'PRINT"[";INP(&HA8)>=0;"]"',            "direct", "D-KWDRAIN"),
+    # 🔴 `>0`, NOT `>=0`, AND THAT IS A FIX TO MY OWN ROW. The first cut asked
+    # `INP(&HA8)>=0`, which an ABSENT INP passes too: the word would parse as an
+    # undefined array, `INP(&HA8)` would be element 0, and `0>=0` is TRUE.
+    # Measured (scratchpad/kwdrain_boolcheck.py): INP(&HA8) reads 240, the stub
+    # shape ZZQ(0)>=0 reads -1 -- identical to the real answer. `>0` separates
+    # them, because the stub gives 0. The VALUE itself cannot be asserted: &HA8
+    # is the primary slot register and its content is a machine-layout fact, so
+    # zerobas and the VG-8020 may legitimately differ. `vdpkw` was checked the
+    # same way and is sound as written: VDP(1) reads 240 against the stub's 0.
+    ("inpkw",   'a=inp(168)',         'PRINT"[";INP(&HA8)>0 ;"]"',            "direct", "D-KWDRAIN"),
     ("outkw",   'out 160,7',          'OUT &HA0,7:PRINT"[8]"',                "direct", "D-KWDRAIN"),
     # 🔴 `WAIT` HAS NO ROW HERE, AND THE FIRST ATTEMPT IS WHY. `WAIT port,mask
     # [,xor]` blocks until ((INP(port) XOR xor) AND mask) <> 0, so a mask of 0 can
@@ -278,6 +287,16 @@ SWEEP: list[tuple[str, str, str | None, str, str]] = [
     # reach, and the claim is retracted where it was made.
     ("widthkw", 'width 37',    'WIDTH 37:PRINT"[W";PEEK(-3152);"]"',  "direct",
      "NOECHO:[W WIDTH reformats the screen and takes the echo with it; the row reads LINLEN ($F3B0 = -3152) back, so a WIDTH that parses and does nothing still fails. absent => syntax error => no marker at all."),
+    # 🔴 `KEY` HAS NO ROW, AND THE ATTEMPT THAT PASSED IS WHY. A `keykw` row
+    # reading CRTCNT ($F3B1) after `KEY OFF` came back SUPPORTED / match on both
+    # machines -- and it was BLIND. Measured directly
+    # (scratchpad/kwdrain_keyblind.py): CRTCNT reads 24 with KEY OFF and 24
+    # WITHOUT it, on zerobas AND on the VG-8020, so a KEY that parsed and did
+    # nothing would have passed the row identically. A green verdict is not
+    # evidence that the readback MOVES [[a-case-that-agrees-can-agree-for-the-wrong-reason]].
+    # The honest readback is the function-key buffer, but FNKSTR is not declared
+    # in basic/sysvars.inc and the standard $F87F would be an unverified
+    # constant. KEY stays unattributed until one of those is settled.
     ("colorkw",  'color 7',    'COLOR 7:PRINT"[O";PEEK(-3095);"]"',              "direct",
      "NOECHO:[O COLOR repaints the whole screen, echo included. Reads FORCLR "
      "($F3E9 = -3095) back, and uses 7 rather than the DEFAULT 15 on purpose: "
