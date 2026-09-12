@@ -489,7 +489,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:15610 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:15627 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -655,7 +655,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:4225 (T-6FE392)8 (T-529ABE)` from `TODO.md:14396 (T-529ABE)`: a
+      `TODO.md:4242 (T-6FE392)8 (T-529ABE)` from `TODO.md:14413 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -3036,6 +3036,23 @@ list. **When a slice lands, grep this list for what it just shipped.**
       output goes to the log, not the screen), so an LLIST that did nothing would pass
       too; and `RENUM` in a ONE-LINE program renumbers 10 to 10, which changes nothing
       observable — it needs a two-line program and a `LIST` read-back.
+      🟢 **STEP 4k: `PDL` attributed** — and the row uses the VALUE, not the error:
+      `PDL(0)` is out of range and raises Illegal function call while a stub answers
+      0, which WOULD separate, but `PDL(1)` reads **255 on both machines** against a
+      stub's 0, and a value differential says more than an error one
+      ([`scratchpad/kwdrain_pdlchk.py`](scratchpad/kwdrain_pdlchk.py)).
+      🔴 **AND `INKEY$` / `INPUT` / `GET` ARE NOT BLOCKED BY THE MACHINE — THEY ARE
+      BLOCKED BY THE ROW FORMAT.** The harness HAS a race-immune key injector
+      (`omsx_repl.key_proc()`, which writes at `GETPNT` and never moves it,
+      documented against the D-LATCH delivery race and measured 100% -> 0%), and
+      `basic_probe_key_trap.py` / `basic_probe_interval_trap.py` both drive it. But it
+      arrives as a PROLOGUE plus an `after time` schedule, and a kwsweep row has no
+      per-row prologue hook. So attributing them needs that hook, not a cleverer
+      expression — a smaller and much better-defined job than step (c).
+      ⚠️ **`RENUM` STAYS OUT for a reason measured this tick too**: it STOPS the
+      program (both machines print `[A]` then `Ok`), so a trailing `LIST` in the same
+      stored run never executes and the renumbering cannot be read back from inside
+      one case.
       ➡️ **STEP (c) IS STILL NOT BUILT AND IS STILL THE CEILING** for words no
       kwsweep row can reach — but it is now a SMALLER set than batch 4 claimed, and
       its real cost is on the record: a `subject:` tag must mean *"a row whose verdict
@@ -5069,7 +5086,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:14396 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:14413 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

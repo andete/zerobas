@@ -402,6 +402,12 @@ SWEEP: list[tuple[str, str, str | None, str, str]] = [
     # ⚠️ PDL IS STILL OUT: PDL(13) raises Illegal function call, but the STUB shape
     # also errors there (subscript out of range), so the two separate only by error
     # PHRASE. PDL(0) should separate cleanly -- measure it before writing the row.
+    # 🎯 PDL USES THE VALUE, NOT THE ERROR. `PDL(0)` is out of range and raises
+    # Illegal function call while a stub answers 0, which WOULD separate -- but
+    # `PDL(1)` reads 255 on BOTH machines against a stub's 0, and a value
+    # differential says more than an error one (scratchpad/kwdrain_pdlchk.py).
+    ("pdlkw",     'a=pdl(1)',    'PRINT"[";PDL(1);"]"',       "direct",
+     "D-KWDRAIN: 255 on both; an absent PDL parses as an array and reads 0"),
     ("padkw",     'a=pad(0)',    'PRINT"[";PAD(9);"]"',     "direct",
      "D-KWDRAIN: 9 is outside PAD's range -> Illegal function call; an undefined array auto-dims to 10 and answers 0"),
     ("attrkw",    'a$=attr$',    'PRINT"[";ATTR$;"]"',      "direct",
