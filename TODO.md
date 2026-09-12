@@ -489,7 +489,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:15540 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:15593 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -655,7 +655,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:4155 (T-6FE392)8 (T-529ABE)` from `TODO.md:14326 (T-529ABE)`: a
+      `TODO.md:4208 (T-6FE392)8 (T-529ABE)` from `TODO.md:14379 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -2667,6 +2667,41 @@ list. **When a slice lands, grep this list for what it just shipped.**
       🤖 AUTONOMOUS — the reference is the oracle and the divergence is already
       measured; what remains is the read-back above and the fix.
 
+- [ ] 🔴 **`CONT` IN A PROGRAM LOSES ITS LINE NUMBER: `Can't CONTINUE` HERE,
+      `Can't CONTINUE in 10` ON THE REFERENCE.** Found 2026-09-12 by D-KWDRAIN while
+      sweeping the program verbs for D-NEWSTMT's class
+      ([`scratchpad/kwdrain_contsuffix.py`](scratchpad/kwdrain_contsuffix.py),
+      [readings](scratchpad/kwdrain_contsuffix.out)).
+      | | zerobas | VG-8020 |
+      |---|---|---|
+      | `CONT` at the PROMPT | `Can't CONTINUE` | `Can't CONTINUE` ✅ agree |
+      | `CONT` inside a program | **`Can't CONTINUE`** | **`Can't CONTINUE in 10`** |
+      | control, `DELETE 99` in a program | `Illegal function call in 10` | same ✅ |
+      🎯 **THE CONTROL IS WHAT NARROWS IT**: zerobas's ordinary error path DOES attach
+      ` in <line>` — the same run proves it — so this is the `Can't CONTINUE` RAISE,
+      not the line-attribution machinery.
+      🎯 **AND THE CAUSE IS ALREADY WRITTEN DOWN AT THE SITE**
+      ([`basic/program.asm:1188`](basic/program.asm:1188)): that path sets `ERRFLG`
+      and falls to `print_msg` INSTEAD of `raise_error`, deliberately, because
+      *"routing it through raise_error's trap branch would jump into a finished
+      program from the prompt."* That reasoning is correct for the PROMPT case, where
+      there is no line to name; it was never re-examined for the PROGRAM case, which
+      is where the reference differs. A fix has to keep the prompt behaviour and add
+      the suffix only when `DIRECTF` says a program is running — and must not
+      re-introduce the trap-arm jump the comment warns about.
+      ⚠️ **`LIST` `LLIST` `DELETE` `RENUM` `AUTO` WERE SWEPT AT THE SAME TIME AND
+      AGREE** ([readings](scratchpad/kwdrain_progverbs.out)) — `LIST` in a program
+      lists identically, `DELETE 99` raises `Illegal function call in 10` on both,
+      `RENUM`/`AUTO` behave alike. So D-NEWSTMT's missing-`stmt_table`-entry defect
+      was NOT a class: every other program verb already had its entry, and `NEW` was
+      the only one reachable solely from `dispatch_line`'s pre-tokenise match.
+      🎚️ TIER 5 — the error IS raised and is the right error; what differs is the
+      line attribution on `CONT`
+      🙋 NEEDS-JOOST — TIER 5, and the fix touches a path whose comment records a
+      DELIBERATE design choice (`print_msg` instead of `raise_error`, to keep the
+      prompt case from jumping into a finished program), so it is worth his eye
+      before it is changed rather than a quiet edit.
+
 - [ ] 🔁 **STANDING TIER (Joost, 2026-08-31): WHEN THE 🤖 QUEUE DRAINS, REVIEW
       EACH STATEMENT'S IMPLEMENTATION IN FULL, one verb at a time.** The
       calibration: PLAY was picked at RANDOM for review and yielded D-MUSICF (a
@@ -2966,6 +3001,24 @@ list. **When a slice lands, grep this list for what it just shipped.**
       function call, but the STUB shape errors there too (subscript out of range), so
       the two separate only by error PHRASE. `PDL(0)` should separate cleanly —
       measure before writing the row.
+      🟢 **STEP 4i: 40 -> 39**, evidence 106 -> 107 — and the interesting part is WHY
+      `NEW` needed a row AFTER its defect was fixed.
+      🔴 **A FIX SILENTLY UN-ATTRIBUTES ITS OWN KEYWORD.** Attribution comes from
+      **OPEN** items, so the moment D-NEWSTMT was closed, `NEW` fell straight back
+      into "no known gap" — the table cannot tell *"investigated, fixed, and now
+      correct"* from *"nobody ever looked"*. A kwsweep row is what HOLDS the ground a
+      fix won, and `newkw` now carries the defect's own shape: `PRINT"[A]":NEW`, which
+      before the fix would have read `Syntax error in 10` on the zb side.
+      ⚠️ **THIS APPLIES TO EVERY DEFECT THIS DRAIN EVER CLOSES**, so closing an item
+      without leaving a row behind quietly gives the keyword back to the unattributed
+      pile [[a-row-written-off-as-out-of-scope-leaves-the-bookkeeping]].
+      🎯 **AND THE PROGRAM-VERB SWEEP FOUND D-NEWSTMT WAS NOT A CLASS**
+      ([readings](scratchpad/kwdrain_progverbs.out)): `LIST` in a program lists
+      identically, `DELETE 99` raises `Illegal function call in 10` on both,
+      `RENUM`/`AUTO` behave alike — every other program verb already had its
+      `stmt_table` entry. `NEW` was the only one reachable solely from
+      `dispatch_line`'s pre-tokenise match. The sweep did surface `CONT`'s missing
+      line number, filed separately as TIER 5.
       ➡️ **STEP (c) IS STILL NOT BUILT AND IS STILL THE CEILING** for words no
       kwsweep row can reach — but it is now a SMALLER set than batch 4 claimed, and
       its real cost is on the record: a `subject:` tag must mean *"a row whose verdict
@@ -4999,7 +5052,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:14326 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:14379 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

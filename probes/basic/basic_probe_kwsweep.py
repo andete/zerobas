@@ -425,6 +425,19 @@ SWEEP: list[tuple[str, str, str | None, str, str]] = [
      'ON ERROR GOTO 30:ERROR 7:PRINT"[U";A;"]":END:A=5:RESUME NEXT', "stored", "D-KWDRAIN: the handler RESUMEs NEXT and control reaches the PRINT; without it nothing prints"),
     ("defintkw",  'defint a',         
      'DEFINT A:A=1.7:PRINT"[";A;"]"',                           "direct", "D-KWDRAIN: 1, not 1.7 -- a DEFINT that parses and does nothing still prints 1.7"),
+
+    # ---------------------------------------------- D-KWDRAIN step 4i (2026-09-12)
+    # 🔴 NEW GETS A ROW *BECAUSE ITS DEFECT WAS FIXED*, which is not as odd as it
+    # sounds. Attribution comes from OPEN items, so the moment D-NEWSTMT closed, the
+    # keyword fell straight back into "no known gap" -- the table cannot tell
+    # "investigated and now correct" from "nobody ever looked". A row is what holds
+    # the ground a fix won.
+    # The exec is the defect's own shape: before the fix it printed [A] and then
+    # `Syntax error in 10`; now it prints [A] and stops, like the reference.
+    ("newkw",     'new',
+     'PRINT"[A]":NEW',                                       "stored",
+     "D-KWDRAIN: the D-NEWSTMT shape -- [A] then a clean stop; before the fix "
+     "this row would have carried `Syntax error in 10` on the zb side"),
     ("gosubkw",   'gosub 20',     
      'A=0:GOSUB 20:PRINT"[G";A;"]":END:A=7:RETURN',         "stored", "D-KWDRAIN: the subroutine sets A=7; no GOSUB, no output"),
     ("returnkw",  'return',       

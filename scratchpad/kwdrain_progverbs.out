@@ -1,0 +1,14 @@
+zb      list    (no error)             [A]":LIST ZBRUN [A] 10 PRINT"[A]":LIST ZB 
+zb      llist   (no error)              ZB10 PRINT"[A]":LLIST ZBRUN [A] 
+zb      delete  Illegal function cal    ZBRUN [A] Illegal function call in 10 ZB 
+zb      renum   (no error)              ZB10 PRINT"[A]":RENUM ZBRUN [A] ZB 
+zb      auto    (no error)              ZB10 PRINT"[A]":AUTO ZBRUN [A] 10* 
+zb      cont    (no error)             INT"[A]":CONT ZBRUN [A] Can't CONTINUE ZB 
+zb      run     (no error)              ZB10 PRINT"[A]":END ZBRUN [A] ZB 
+vg8020  list    (no error)             INT"[A]":LIST Ok color auto goto list run 
+vg8020  llist   (no error)             ]":LLIST RUN [A] color auto goto list run 
+vg8020  delete  Illegal function cal   on call in 10 Ok color auto goto list run 
+vg8020  renum   (no error)             RENUM RUN [A] Ok color auto goto list run 
+vg8020  auto    (no error)             AUTO RUN [A] 10* color auto goto list run 
+vg8020  cont    (no error)             ONTINUE in 10 Ok color auto goto list run 
+vg8020  run     (no error)             ":END RUN [A] Ok color auto goto list run 

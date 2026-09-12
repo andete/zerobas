@@ -1,0 +1,6 @@
+zb      direct.cont  "Can't CONTINUE"
+zb      prog.cont    "Can't CONTINUE"
+zb      prog.ifc     'Illegal function call in 10'
+vg8020  direct.cont  "Can't CONTINUE"
+vg8020  prog.cont    "Can't CONTINUE in 10"
+vg8020  prog.ifc     'Illegal function call in 10'
