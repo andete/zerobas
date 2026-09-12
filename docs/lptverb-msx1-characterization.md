@@ -229,7 +229,7 @@ D-LFILES (§4.1).
 | # | rule | evidence |
 |---|---|---|
 | **R-LF1** | 🎯 `LFILES` is **not** `FILES` with the sink moved. The screen form packs **three entries per row**; the printer form is **one entry per line**, each `NAME    .EXT ` followed by CR/LF. | `FILES` → `'TEST    .BIN HI      .TXT PROG    .BIN / PROG    .BAS PROG2   .BAS'`; `LFILES` → `'TEST    .BIN \r\nHI      .TXT \r\n…'` |
-| **R-LF2** | The entry itself keeps the 8.3 layout and a **trailing space** after the extension. | `'PROG    .BAS \r\n'` |
+| **R-LF2** | The entry itself keeps the 8.3 layout and a **trailing space** after the extension. 🔴 **WIDENED 2026-09-12 (D-DFEND): the trailing space is on the SCREEN too**, where this tree had it as a separator emitted BEFORE the next field. Row by row the two are identical; they differ only in where the cursor RESTS, which is the one place a 40-column scrape reads them apart. | `'PROG    .BAS \r\n'`; screen `POS(0)` = 19 after `FILES"PROG.BIN"`, 31 after a bare listing, on both machines |
 | **R-LF3** | A filespec argument filters, with wildcards. | `LFILES"*.BAS"` → `PROG.BAS` and `PROG2.BAS` only |
 | **R-LF4** | 🔴 No match prints **nothing to the printer** and `File not found` **to the screen**. | `LFILES"NOSUCH.XXX"` → empty log (`lfl-none`) + `File not found` (`lfl-noneb`) |
 | **R-LF5** | The screen sink is restored for the next statement. | `LFILES:PRINT"SCR"` → the log holds the listing only |

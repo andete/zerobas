@@ -252,9 +252,17 @@ mode branches, all of which cost **sub-ROM** bytes:
   printer path *simpler*, and the wrap arithmetic reads the screen cursor and the
   screen width, neither of which a printer moves.
 * **the terminator (R-LF2).** Printer: each entry is followed by `' '` then CR
-  then LF. Screen: nothing per entry, and `df_end`'s `CSRX != 1` test terminates
-  the final line as today. The printer path skips that test — every entry has
-  already ended its own line.
+  then LF. ~~Screen: nothing per entry, and `df_end`'s `CSRX != 1` test
+  terminates the final line as today.~~
+  🔴 **BOTH SCREEN CLAUSES RETRACTED 2026-09-12 (D-DFEND), and they were claims
+  about THIS CODE, not about the reference.** The CF-3300 emits the trailing
+  space on the SCREEN too — it is a trailing space, not a separator emitted
+  before the next field — and it does **not** terminate the final line. The two
+  arrangements are indistinguishable row by row and differ only where the cursor
+  comes to REST: column 19 after `FILES"PROG.BIN"` and 31 after a bare five-entry
+  listing, against 18 and 30 for the separator form and a whole row further for
+  the terminator ([readings](../scratchpad/kwdrain_dfend_after.out)). The printer
+  still skips the terminator — every entry has already ended its own line.
 
 `DISKOP_STATUS` carries three states back: **0** nothing matched (→ ERR 53),
 **1** ok, **2** mount/DSKIO error (→ `load_error`, today's disposition).
@@ -265,11 +273,26 @@ mode branches, all of which cost **sub-ROM** bytes:
   cannot reach `pchar` anyway. R-LF5 ("the screen sink is restored for the next
   statement") therefore holds **by construction**, which is also why it has no
   knife — §5 says so rather than inventing a cut that would pass.
-* **`LPTPOS` is not maintained by `LFILES`.** The printer column belongs to
-  `pchar`'s sink, which this path does not use. Every `LFILES` entry ends with
-  CR/LF, so the head is at column 0 when the statement ends and the R-LP16 flush
-  at command level is a no-op either way. No row measures it; recorded as a
-  choice, like the lone-LF rule in `basic/sysvars.inc`.
+* ~~**`LPTPOS` is not maintained by `LFILES`.** ... Every `LFILES` entry ends
+  with CR/LF, so the head is at column 0 when the statement ends and the R-LP16
+  flush at command level is a no-op either way. No row measures it~~
+  🔴 **RETRACTED 2026-09-12 (D-DFEND). The premise is true and the conclusion
+  does not follow.** The head is at column 0 when the statement ends **only if
+  nothing PARKED it mid-line first**. `LPRINT"AB";` then `LFILES` read `LPOS` **2**
+  here against **0** on the CF-3300, and R-LP16's flush then put two extra bytes
+  on the printer (79 against 77) — so the choice was observable in both the
+  returned value and the byte stream
+  ([`scratchpad/kwdrain_lfflush.py`](../scratchpad/kwdrain_lfflush.py),
+  [readings](../scratchpad/kwdrain_lfflush.out), with the head-at-rest and the
+  flush-alone arms agreeing on both machines).
+  ⚠️ **"No row measures it" IS THE PART THAT MADE THIS SAFE TO WRITE, and it was
+  true when written.** A choice whose only guard is the absence of a row is one
+  nobody revisits until a row appears [[a-justification-parenthesis-is-an-unrun-claim]].
+  🟢 **`df_end` now zeroes `LPTPOS` — but ONLY when the walk emitted an entry.**
+  On a no-match both machines print `File not found`, send nothing to the printer
+  and leave the head parked, so R-LP16 must still fire; an unconditional store
+  would have fixed one arm and broken that one. `DISKOP_STATUS` already carries
+  the condition.
 * **The tenant emits under DI.** `subrom_call` wraps the call, so `CHPUT` for a
   whole directory listing now runs with interrupts off where it previously ran
   with them on. `errmsg_tenant` and `title_tenant` already do exactly this, and
@@ -335,7 +358,7 @@ scoring every cut a CUT (D-LPTVERB §6.7.4).
 | **K1** | `kwtable.inc`'s `"LFILES"` → `"LFILEZ"` — the word stops crunching, and nothing is orphaned | `lfl-all`, `lfl-wild`, `lfl-noneb`, `lfl-sink` | `lfl-ctlf`, `lfl-ctlp`, `lfl-nonef` — `FILES` is untouched — and ⚠️ `lfl-none`, which reads `<nothing printed>` either way and is the row that CANNOT tell an absent verb from a correct one |
 | **K2** | `tf_out` always calls `CHPUT` (layout kept, sink not) | `lfl-all`, `lfl-wild`, `lfl-sink` → empty log | `lfl-ctlf`, `lfl-ctlp`, `lfl-none`, `lfl-noneb`, `lfl-nonef` — the knife that isolates the SINK from the LAYOUT |
 | **K3** | the printer path takes the screen separator/wrap branch (R-LF1's knife — D-LPTVERB's unrun K8, re-aimed onto the design that actually shipped) | `lfl-all`, `lfl-wild`, `lfl-sink` → three-per-row on the printer | the same five as K2 — the knife that says a sink re-point alone would NOT have passed |
-| **K4** | drop the `' '` before the CR/LF (R-LF2) | `lfl-all`, `lfl-wild`, `lfl-sink` | the same five — same RED set as K3 by construction, a FINER claim over it |
+| **K4** | drop the `' '` before the CR/LF (R-LF2) | `lfl-all`, `lfl-wild`, `lfl-sink` | the same five — same RED set as K3 by construction, a FINER claim over it. 🔴 **D-DFEND (2026-09-12) MOVED WHAT THIS CUTS**: the space is now emitted on BOTH sinks from one site, so the same cut also takes the SCREEN's inter-entry space and the kwsweep `files` row with it — a WIDER red set than when this knife was written, and the knife is stronger for it, not stale |
 | **K5** | the tenant ignores `FILES_HASPAT` and emits every entry (R-LF3) | `lfl-wild`, `lfl-none`, `lfl-noneb`, `lfl-nonef` | `lfl-all`, `lfl-ctlp`, `lfl-sink` — and ⚠️ `lfl-ctlf`, which lists everything anyway |
 | **K6** | `df_notfound` → `jp load_error` (R-LF4/R-LF6's message) | `lfl-noneb`, `lfl-nonef` → `load error` | `lfl-none` (the log is empty either way — the pair that proves a printer-log row is blind to half its rule), `lfl-all`, `lfl-wild`, both controls |
 | **K7** | the tenant seeds `DISKOP_STATUS` from `FILES_HASPAT` no longer — always 0 | *nothing in this battery* | everything — ⚠️ **this is a PREDICTED MISS, written down as one**: §2.4's arm needs an empty-directory fixture the battery does not have. Recorded as an unexercised arm rather than left implicit |
