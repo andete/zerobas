@@ -1,0 +1,17 @@
+=== zb
+  mk      -     |  zerobas Disk BASIC ZB10 OPEN"N.BAS"FOR OUTPUT AS#1 ZB20 PRINT#1,"100 END" ZB30 CLOSE ZBRUN ZB 
+  load    -     |  ZBNEW ZB10 POKE&HD002,0 ZB20 LOAD"PROG.BAS" ZB30 POKE&HD002,55 ZBRUN Syntax error in 49924 ZB 
+  load?   0     | ROG.BAS" ZB30 POKE&HD002,55 ZBRUN Syntax error in 49924 ZBPRINT"[L";PEEK(&HD002);"]" [L 0 ] ZB 
+  merge   0     | ;PEEK(&HD002);"]" [L 0 ] ZBNEW ZB10 POKE&HD002,0 ZB20 MERGE"N.BAS" ZB30 POKE&HD002,55 ZBRUN ZB 
+  merge?  55    | OKE&HD002,0 ZB20 MERGE"N.BAS" ZB30 POKE&HD002,55 ZBRUN ZBPRINT"[M";PEEK(&HD002);"]" [M 55 ] ZB 
+  runf    55    | EEK(&HD002);"]" [M 55 ] ZBNEW ZB10 POKE&HD002,0 ZB20 RUN"PROG.BAS" ZB30 POKE&HD002,55 ZBRUN ZB 
+  runf?   123   | E&HD002,0 ZB20 RUN"PROG.BAS" ZB30 POKE&HD002,55 ZBRUN ZBPRINT"[R";PEEK(&HD002);"]" [R 123 ] ZB 
+=== cf3300
+  mk      -     | Ok 10 OPEN"N.BAS"FOR OUTPUT AS#1 20 PRINT#1,"100 END" 30 CLOSE RUN Ok color auto goto list run 
+  load    -     |  Ok NEW Ok 10 POKE&HD002,0 20 LOAD"PROG.BAS" 30 POKE&HD002,55 RUN Ok color auto goto list run 
+  load?   0     |  Ok PRINT"[L";PEEK(&HD002);"]" [L 0 ] Ok color auto goto list run 
+  merge   -     |  Ok NEW Ok 10 POKE&HD002,0 20 MERGE"N.BAS" 30 POKE&HD002,55 RUN Ok color auto goto list run 
+  merge?  0     |  Ok PRINT"[M";PEEK(&HD002);"]" [M 0 ] Ok color auto goto list run 
+  runf    -     |  Ok NEW Ok 10 POKE&HD002,0 20 RUN"PROG.BAS" 30 POKE&HD002,55 RUN Ok color auto goto list run 
+  runf?   123   |  Ok PRINT"[R";PEEK(&HD002);"]" [R 123 ] Ok color auto goto list run 
+refcache: 0 hit, 2 miss, 2 stored

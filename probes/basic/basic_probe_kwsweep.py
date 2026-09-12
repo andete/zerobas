@@ -946,12 +946,16 @@ SWEEP: list[tuple[str, str, str | None, str, str]] = [
      "goes, so a KILL that merely parsed reads 0. The victim is PROG2.BAS, which no "
      "other row in this sweep opens."),
     ("merge",   'merge"x"',
-     'OPEN"N.BAS"FOR OUTPUT AS#1:PRINT#1,"100 END":CLOSE:MERGE"N.BAS":PRINT"[M1]"', "stored",
-     "NEEDS-DISK: " "🔴 EXPECTED DIVERGENT, AND IT IS THE FINDING: the CF-3300 "
-     "RETURNS TO COMMAND LEVEL on MERGE — the statement after it never runs — while "
-     "zerobas carries on. Measured three ways (scratchpad/kwdrain_mergechk.py): the "
-     "merge LANDS on both (LIST 100 shows the merged line on each), only the "
-     "control flow differs. Filed in TODO.md."),
+     'OPEN"N.BAS"FOR OUTPUT AS#1:PRINT#1,"100 END":CLOSE:PRINT"[M0]":MERGE"N.BAS":PRINT"[M1]"', "stored",
+     "NEEDS-DISK: " "MERGE RETURNS TO COMMAND LEVEL, so the row reads `[M0]` and "
+     "NOT `[M1]`: the marker before it proves the statement stream got there, the "
+     "absent one after it is the behaviour. 🔴 THE `[M0]` IS WHY THIS IS NOT AN "
+     "EMPTY-TAIL ROW. Until D-MERGERET it read DIVERGENT with `[M1]` on the zb side; "
+     "green at `` on both would have been agreement with nothing named, and a "
+     "regression would print `[M0]|[M1]` here [[an-unnamed-outcome-reads-as-no-outcome]]. "
+     "What the row still cannot see is that the merge LANDED — that is unobservable "
+     "inside one case precisely because the statement after it never runs, and "
+     "scratchpad/kwdrain_mergechk.out reads `LIST 100` on both machines instead."),
     ("lset",    'lset a$="x"',
      'OPEN"R.DAT"AS#1:FIELD#1,4 AS A$:LSET A$="B":A=ASC(A$):CLOSE#1:PRINT"[";A;"]"', "stored",
      "NEEDS-DISK: " "LEFT justification inside a FIELDed buffer: 66 = ASC(\"B\") in "

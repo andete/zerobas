@@ -1,0 +1,638 @@
+python3 tools/install-repack-machine.py --merged build/zerobas-main-eu.rom --disk-rom build/disk.rom \
+	  --sub-rom build/sub.rom
+wrote C-BIOS_MSX1_EU_REPACK_DISK  (-> machine "C-BIOS_MSX1_EU_REPACK_DISK": merged repack ROM in slot 0, zerobas-disk in slot 3-1, zerobas-sub in slot 3-2)
+     /Users/joost/.openMSX/share/machines/C-BIOS_MSX1_EU_REPACK_DISK.xml
+python3 tools/install-repack-machine.py --merged build/zerobas-main-eu.rom --sub-rom build/sub.rom \
+	  --no-disk
+wrote C-BIOS_MSX1_EU_REPACK_NODISK  (-> machine "C-BIOS_MSX1_EU_REPACK_NODISK": merged repack ROM in slot 0, slot 3-1 EMPTY (diskless target), zerobas-sub in slot 3-2)
+     /Users/joost/.openMSX/share/machines/C-BIOS_MSX1_EU_REPACK_NODISK.xml
+python3 probes/basic/basic_probe_kwsweep.py \
+	        --zb-machine C-BIOS_MSX1_EU_REPACK_DISK 
+build under measurement: git=14c4cfac zerobas-main-eu.rom=4b8ab7997c91 sub.rom=0fabb2c45707 disk.rom=fc5ed2de76d7
+
+==============================================================================
+LAYER 1 — CRUNCH (tokenisation only; NOT a support answer)
+==============================================================================
+SAME   abs       a=abs(-5)
+SAME   int       a=int(1.7)
+SAME   len       a=len("ab")
+SAME   chr       a$=chr$(65)
+SAME   mid       a$=mid$("hi",1,1)
+SAME   instr     a=instr("ab","b")
+SAME   hex       a$=hex$(255)
+SAME   sqr       a=sqr(9)
+SAME   peek      a=peek(0)
+SAME   varptr    a=varptr(b)
+SAME   stick     a=stick(0)
+SAME   erase     erase a
+SAME   swapctl   a=1
+SAME   asc       a=asc("A")
+SAME   cint      a=cint(1.7)
+SAME   cdbl      a=cdbl(1)
+SAME   csng      a=csng(1.5)
+SAME   fix       a=fix(-1.7)
+SAME   sgn       a=sgn(-3)
+SAME   sin       a=sin(0)
+SAME   cos       a=cos(0)
+SAME   tan       a=tan(0)
+SAME   atn       a=atn(1)
+SAME   exp       a=exp(1)
+SAME   log       a=log(1)
+SAME   mod       a=7 mod 3
+SAME   notop     a=not 0
+SAME   andop     a=5 and 3
+SAME   orop      a=5 or 3
+SAME   xorop     a=5 xor 3
+SAME   oct       a$=oct$(8)
+SAME   left      a$=left$("abc",2)
+SAME   right     a$=right$("abc",2)
+SAME   str       a$=str$(5)
+SAME   stringf   a$=string$(3,"x")
+SAME   space     a$=space$(3)
+SAME   csrlind   a=csrlin
+SAME   let       let a=5
+SAME   rem       rem x
+SAME   rnd       a=rnd(1)
+SAME   cvi       a=cvi("ab")
+SAME   using     using "##"
+SAME   then      then a=1
+SAME   elsekw    else a=1
+SAME   tokw      to 5
+SAME   stepkw    step 2
+SAME   offkw     off
+SAME   ifkw      if 1 then a=2
+SAME   nextkw    next i
+SAME   clearkw   clear 100
+SAME   dimkw     dim a(2)
+SAME   beep      beep
+SAME   sound     sound 7,255
+SAME   vpeek     a=vpeek(0)
+SAME   vpoke     vpoke 0,1
+SAME   vdpkw     a=vdp(1)
+SAME   inpkw     a=inp(168)
+SAME   outkw     out 160,7
+SAME   pokekw    poke 0,1
+SAME   widthkw   width 37
+SAME   circlekw  circle(50,50),10
+SAME   drawkw    draw"c15r5"
+SAME   spritekw  sprite on
+SAME   basekw    a=base(2)
+SAME   pdlkw     a=pdl(1)
+SAME   padkw     a=pad(0)
+SAME   attrkw    a$=attr$
+SAME   stopkw    stop
+SAME   maxkw     max
+SAME   strigkw   a=strig(0)
+SAME   onkw      on error goto 20
+SAME   errorkw   error 7
+SAME   errkw     a=err
+SAME   erlkw     a=erl
+SAME   resumekw  resume next
+SAME   defintkw  defint a
+SAME   listkw    list
+SAME   deletekw  delete 99
+SAME   newkw     new
+SAME   gosubkw   gosub 20
+SAME   returnkw  return
+SAME   endkw     end
+SAME   readkw    read q
+SAME   restorekw restore
+SAME   psetkw    pset(1,1)
+SAME   presetkw  preset(1,1)
+SAME   pointkw   a=point(1,1)
+SAME   linekw    line(1,1)-(5,1)
+SAME   colorkw   color 7
+SAME   clskw     cls
+SAME   locate    locate 10,0
+SAME   csrlin    a=csrlin
+SAME   pos       a=pos(0)
+SAME   tab       print tab(5);"x"
+SAME   spc       print spc(5);"x"
+SAME   swap      swap a,b
+SAME   fre       a=fre(0)
+SAME   tron      tron
+SAME   troff     troff
+SAME   renum     renum
+SAME   delete    delete 10
+SAME   auto      auto
+SAME   defsng    defsng a
+SAME   defdbl    defdbl a
+SAME   defstr    defstr a
+SAME   deffn     def fna(x)=x+1
+SAME   eqv       a=5 eqv 3
+SAME   imp       a=5 imp 3
+SAME   lprint    lprint"x"
+SAME   llist     llist
+SAME   lpos      a=lpos(0)
+SAME   motor     motor on
+SAME   time      time=0
+SAME   timetick  a=time
+SAME   interval  interval on
+SAME   mki       a$=mki$(1)
+SAME   mks       a$=mks$(1)
+SAME   mkd       a$=mkd$(1)
+SAME   cvs       a=cvs("abcd")
+SAME   cvd       a=cvd("abcdefgh")
+SAME   usrkw     a=usr(0)
+SAME   screenkw  screen 2
+SAME   keykw     key 1,"x"
+SAME   waitkw    wait 0,1
+SAME   lposkw    a=lpos(0)
+SAME   lprintkw  lprint"x"
+SAME   dskf      a=dskf(0)
+SAME   files     files
+SAME   lof       a=lof(1)
+SAME   eof       a=eof(1)
+SAME   bload     bload"x"
+SAME   close     close
+SAME   bsave     bsave"x",0,1
+SAME   save      save"x"
+SAME   kill      kill"x"
+SAME   merge     merge"x"
+SAME   lset      lset a$="x"
+SAME   rset      rset a$="x"
+SAME   runkw     run 20
+SAME   dski      a$=dski$(0,0)
+SAME   dsko      dsko$0,0
+SAME   copy      copy"a:x"to"a:y"
+SAME   set       set password
+SAME   attr      a$=attr$(0)
+SAME   ipl       ipl
+SAME   cmd       cmd"x"
+SAME   lfiles    lfiles
+SAME   loc       a=loc(1)
+SAME   bin       a$=bin$(5)
+SAME   wait      wait 0,0
+SAME   inputdol  a$=input$(1)
+
+==============================================================================
+LAYER 2 — SUPPORT (the load-bearing layer)
+==============================================================================
+DIVERGENT   ! WEAK  csrlin    PRINT:PRINT:PRINT"[";CSRLIN;"]"
+            ref  [value] '||[ 4 ]'
+            zb   [value] '||[ 3 ]'
+            WEAK: absent => variable CSRLIN reads 0; real => the (non-zero) cursor row -- but the VALUE is ambient scroll state, so only the non-zero-ness is a reading. Scored WEAK for the reason the block above gives, and measured 2026-09-07 (D-WAITGAP, scratchpad/csrlin_probe.py): on THIS row the two REFERENCES disagree with EACH OTHER -- vg8020 11, cf3300 8, zb 10 -- in one batch, so it cannot score anything by construction. Anchored with CLS all three agree everywhere (CLS 0/0/0, CLS:PRINT 1/1/1, CLS:PRINT:PRINT 2/2/2) and CSRLIN is correct: LOCATE 0,5 -> 5, 0,10 -> 10, 0,0 -> 0 on all three, which is the decisive form because a set row admits no scroll history.
+SUPPORTED     abs       PRINT"[";ABS(-5);"]"
+            ref  [value] '[ 5 ]'
+SUPPORTED     int       PRINT"[";INT(1.7);"]"
+            ref  [value] '[ 1 ]'
+SUPPORTED     len       PRINT"[";LEN("ab");"]"
+            ref  [value] '[ 2 ]'
+SUPPORTED     chr       PRINT"[";CHR$(65);"]"
+            ref  [value] '[A]'
+SUPPORTED     mid       PRINT"[";MID$("hi",2,1);"]"
+            ref  [value] '[i]'
+SUPPORTED     instr     PRINT"[";INSTR("ab","b");"]"
+            ref  [value] '[ 2 ]'
+SUPPORTED     hex       PRINT"[";HEX$(255);"]"
+            ref  [value] '[FF]'
+SUPPORTED     sqr       PRINT"[";SQR(9);"]"
+            ref  [value] '[ 3 ]'
+SUPPORTED     peek      PRINT"[";PEEK(0)>=0;"]"
+            ref  [value] '[-1 ]'
+SUPPORTED     varptr    B=1:PRINT"[";VARPTR(B)>0;"]"
+            ref  [value] '[ 0 ]'
+SUPPORTED     stick     PRINT"[";STICK(0);"]"
+            ref  [value] '[ 0 ]'
+SUPPORTED     erase     DIM Q(2):ERASE Q:PRINT"[ok]"
+            ref  [value] '[ok]'
+SUPPORTED     swapctl   A=1:PRINT"[";A;"]"
+            ref  [value] '[ 1 ]'
+SUPPORTED     asc       PRINT"[";ASC("A");"]"
+            ref  [value] '[ 65 ]'
+SUPPORTED     cint      PRINT"[";CINT(1.7);"]"
+            ref  [value] '[ 1 ]'
+SUPPORTED     cdbl      PRINT"[";CDBL(1)/3;"]"
+            ref  [value] '[ .33333333333333 ]'
+SUPPORTED     csng      PRINT"[";CSNG(1.5);"]"
+            ref  [value] '[ 1.5 ]'
+SUPPORTED     fix       PRINT"[";FIX(-1.7);"]"
+            ref  [value] '[-1 ]'
+SUPPORTED     sgn       PRINT"[";SGN(-3);"]"
+            ref  [value] '[-1 ]'
+SUPPORTED     sin       PRINT"[";SIN(0);"]"
+            ref  [value] '[ 0 ]'
+SUPPORTED     cos       PRINT"[";COS(0);"]"
+            ref  [value] '[ 1 ]'
+SUPPORTED     tan       PRINT"[";TAN(0);"]"
+            ref  [value] '[ 0 ]'
+SUPPORTED     atn       PRINT"[";INT(ATN(1)*1000);"]"
+            ref  [value] '[ 785 ]'
+SUPPORTED     exp       PRINT"[";INT(EXP(1)*1000);"]"
+            ref  [value] '[ 2718 ]'
+SUPPORTED     log       PRINT"[";LOG(1);"]"
+            ref  [value] '[ 0 ]'
+SUPPORTED     mod       PRINT"[";7 MOD 3;"]"
+            ref  [value] '[ 1 ]'
+SUPPORTED     notop     PRINT"[";NOT 0;"]"
+            ref  [value] '[-1 ]'
+SUPPORTED     andop     PRINT"[";5 AND 3;"]"
+            ref  [value] '[ 1 ]'
+SUPPORTED     orop      PRINT"[";5 OR 3;"]"
+            ref  [value] '[ 7 ]'
+SUPPORTED     xorop     PRINT"[";5 XOR 3;"]"
+            ref  [value] '[ 6 ]'
+SUPPORTED     oct       PRINT"[";OCT$(8);"]"
+            ref  [value] '[10]'
+SUPPORTED     left      PRINT"[";LEFT$("abc",2);"]"
+            ref  [value] '[ab]'
+SUPPORTED     right     PRINT"[";RIGHT$("abc",2);"]"
+            ref  [value] '[bc]'
+SUPPORTED     str       PRINT"[";STR$(5);"]"
+            ref  [value] '[ 5]'
+SUPPORTED     stringf   PRINT"[";STRING$(3,"x");"]"
+            ref  [value] '[xxx]'
+SUPPORTED     space     PRINT"[";LEN(SPACE$(3));"]"
+            ref  [value] '[ 3 ]'
+SUPPORTED     csrlind   A=CSRLIN:PRINT:PRINT"[";CSRLIN-A;"]"
+            ref  [value] '|[ 1 ]'
+SUPPORTED     let       LET A=5:PRINT"[";A;"]"
+            ref  [value] '[ 5 ]'
+SUPPORTED     rem       PRINT"[";1;"]":REM z
+            ref  [value] '[ 1 ]'
+SUPPORTED     rnd       PRINT"[";RND(1)<1;"]"
+            ref  [value] '[-1 ]'
+SUPPORTED     cvi       PRINT"[";CVI(MKI$(7));"]"
+            ref  [value] '[ 7 ]'
+SUPPORTED     using     PRINT USING"##";7
+            ref  [value] '7'
+SUPPORTED     then      IF 2>1 THEN PRINT"[3]"
+            ref  [value] '[3]'
+SUPPORTED     elsekw    IF 0 THEN PRINT 1 ELSE PRINT"[8]"
+            ref  [value] '[8]'
+SUPPORTED     tokw      FOR I=1 TO 3:NEXT:PRINT"[";I;"]"
+            ref  [value] '[ 4 ]'
+SUPPORTED     stepkw    FOR I=1TO5STEP2:NEXT:PRINT"[";I;"]"
+            ref  [value] '[ 7 ]'
+SUPPORTED     offkw     INTERVAL OFF:PRINT"[9]"
+            ref  [value] '[9]'
+SUPPORTED     ifkw      IF 3>2 THEN PRINT"[4]"
+            ref  [value] '[4]'
+SUPPORTED     nextkw    FOR I=1 TO 2:NEXT:PRINT"[";I;"]"
+            ref  [value] '[ 3 ]'
+SUPPORTED     clearkw   CLEAR 100:PRINT"[5]"
+            ref  [value] '[5]'
+SUPPORTED     dimkw     DIM D(2):D(1)=5:PRINT"[";D(1);"]"
+            ref  [value] '[ 5 ]'
+SUPPORTED     beep      BEEP:PRINT"[6]"
+            ref  [value] '[6]'
+SUPPORTED     sound     SOUND 7,255:PRINT"[7]"
+            ref  [value] '[7]'
+SUPPORTED     vpeek     VPOKE 0,7:PRINT"[";VPEEK(0);"]"
+            ref  [value] '[ 7 ]'
+SUPPORTED     vpoke     VPOKE 0,9:PRINT"[";VPEEK(0);"]"
+            ref  [value] '[ 9 ]'
+SUPPORTED     vdpkw     PRINT"[";VDP(1)>0;"]"
+            ref  [value] '[-1 ]'
+SUPPORTED     inpkw     PRINT"[";INP(&HA8)>0 ;"]"
+            ref  [value] '[-1 ]'
+SUPPORTED     outkw     OUT &HA0,7:PRINT"[8]"
+            ref  [value] '[8]'
+SUPPORTED     pokekw    POKE-8192,7:PRINT"[";PEEK(-8192);"]"
+            ref  [value] '[ 7 ]'
+SUPPORTED     widthkw   WIDTH 37:PRINT"[W";PEEK(-3152);"]"
+            ref  [value] '[W 37 ]'
+SUPPORTED     circlekw  SCREEN2:CIRCLE(50,50),10,15:A=POINT(60,50):SCREEN0:PRINT"[Q";A;"]"
+            ref  [value] '[Q 15 ]'
+SUPPORTED     drawkw    SCREEN2:PSET(10,10),15:DRAW"C15R5":A=POINT(14,10):SCREEN0:PRINT"[D";A;"]"
+            ref  [value] '[D 15 ]'
+SUPPORTED     spritekw  SCREEN2:SPRITE$(0)=STRING$(8,255):A=ASC(SPRITE$(0)):SCREEN0:PRINT"[Z";A;"]"
+            ref  [value] '[Z 255 ]'
+SUPPORTED     basekw    PRINT"[";BASE(2);"]"
+            ref  [value] '[ 2048 ]'
+SUPPORTED     pdlkw     PRINT"[";PDL(1);"]"
+            ref  [value] '[ 255 ]'
+SUPPORTED     padkw     PRINT"[";PAD(9);"]"
+            ref  [error:illegal function call] '[|Illegal function call'
+SUPPORTED     attrkw    PRINT"[";ATTR$;"]"
+            ref  [error:illegal function call] '[|Illegal function call'
+SUPPORTED     stopkw    PRINT"[T1]":STOP
+            ref  [value] '[T1]|Break in 10'
+SUPPORTED     maxkw     PRINT"[";MAX;"]"
+            ref  [error:syntax error] '[|Syntax error'
+SUPPORTED     strigkw   PRINT"[";STRIG(5);"]"
+            ref  [error:illegal function call] '[|Illegal function call'
+SUPPORTED     onkw      ON ERROR GOTO 20:ERROR 7:END:PRINT"[R";ERR;ERL;"]":END
+            ref  [value] '[R 7  10 ]'
+SUPPORTED     errorkw   ON ERROR GOTO 20:ERROR 7:END:PRINT"[R";ERR;ERL;"]":END
+            ref  [value] '[R 7  10 ]'
+SUPPORTED     errkw     ON ERROR GOTO 20:ERROR 7:END:PRINT"[R";ERR;ERL;"]":END
+            ref  [value] '[R 7  10 ]'
+SUPPORTED     erlkw     ON ERROR GOTO 20:ERROR 7:END:PRINT"[R";ERR;ERL;"]":END
+            ref  [value] '[R 7  10 ]'
+SUPPORTED     resumekw  ON ERROR GOTO 30:ERROR 7:PRINT"[U";A;"]":END:A=5:RESUME NEXT
+            ref  [value] '[U 0 ]'
+SUPPORTED     defintkw  DEFINT A:A=1.7:PRINT"[";A;"]"
+            ref  [value] '[ 1 ]'
+SUPPORTED     listkw    PRINT"[A]":LIST
+            ref  [value] '[A]|10 PRINT"[A]":LIST'
+SUPPORTED     deletekw  PRINT"[A]":DELETE 99
+            ref  [error:illegal function call] '[A]|Illegal function call in 10'
+SUPPORTED     newkw     PRINT"[A]":NEW
+            ref  [value] '[A]'
+SUPPORTED     gosubkw   A=0:GOSUB 20:PRINT"[G";A;"]":END:A=7:RETURN
+            ref  [value] '[G 7 ]'
+SUPPORTED     returnkw  A=0:GOSUB 20:PRINT"[H";A;"]":END:A=7:RETURN
+            ref  [value] '[H 7 ]'
+SUPPORTED     endkw     A=0:GOSUB 20:PRINT"[J";A;"]":END:A=7:RETURN
+            ref  [value] '[J 7 ]'
+SUPPORTED     readkw    READ Q:RESTORE:READ R:PRINT"[E";Q+R;"]":END:DATA 3
+            ref  [value] '[E 6 ]'
+SUPPORTED     restorekw READ Q:RESTORE:READ R:PRINT"[F";Q+R;"]":END:DATA 3
+            ref  [value] '[F 6 ]'
+SUPPORTED     psetkw    SCREEN2:PSET(1,1),15:A=POINT(1,1):SCREEN0:PRINT"[S";A;"]"
+            ref  [value] '[S 15 ]'
+SUPPORTED     presetkw  SCREEN2:PSET(1,1),15:PRESET(1,1):A=POINT(1,1):SCREEN0:PRINT"[R";A;"]"
+            ref  [value] '[R 4 ]'
+SUPPORTED     pointkw   SCREEN2:PSET(1,1),15:A=POINT(1,1):SCREEN0:PRINT"[T";A;"]"
+            ref  [value] '[T 15 ]'
+SUPPORTED     linekw    SCREEN2:LINE(1,1)-(5,1),15:A=POINT(3,1):SCREEN0:PRINT"[L";A;"]"
+            ref  [value] '[L 15 ]'
+SUPPORTED     colorkw   COLOR 7:PRINT"[O";PEEK(-3095);"]"
+            ref  [value] '[O 7 ]'
+SUPPORTED     clskw     CLS:PRINT"[C";CSRLIN;"]"
+            ref  [value] '[C 0 ]'
+SUPPORTED     locate    LOCATE 10:PRINT"[X]"
+            ref  [value] '[X]'
+SUPPORTED     pos       PRINT"    ";:PRINT"[";POS(0);"]"
+            ref  [value] '[ 5 ]'
+SUPPORTED     tab       PRINT"[";TAB(5);"X]"
+            ref  [value] '[    X]'
+SUPPORTED     spc       PRINT"[";SPC(5);"X]"
+            ref  [value] '[     X]'
+SUPPORTED     swap      A=1:B=2:SWAP A,B:PRINT"[";A;B;"]"
+            ref  [value] '[ 2  1 ]'
+SUPPORTED     fre       PRINT"[";FRE(0)>1000;"]"
+            ref  [value] '[-1 ]'
+SUPPORTED     tron      TRON:TROFF:PRINT"[ok]"
+            ref  [value] '[ok]'
+SUPPORTED     troff     TROFF:PRINT"[ok]"
+            ref  [value] '[ok]'
+SUPPORTED     defsng    DEFSNG A:A=1.5:PRINT"[";A;"]"
+            ref  [value] '[ 1.5 ]'
+SUPPORTED     defdbl    DEFDBL A:A=1.5:PRINT"[";A;"]"
+            ref  [value] '[ 1.5 ]'
+SUPPORTED     defstr    DEFSTR A:A="x":PRINT"[";A;"]"
+            ref  [value] '[x]'
+SUPPORTED     deffn     DEF FNA(X)=X+1:PRINT"[";FNA(2);"]"
+            ref  [value] '[ 3 ]'
+SUPPORTED     eqv       PRINT"[";5 EQV 3;"]"
+            ref  [value] '[-7 ]'
+SUPPORTED     imp       PRINT"[";5 IMP 3;"]"
+            ref  [value] '[-5 ]'
+SUPPORTED     motor     MOTOR OFF:PRINT"[ok]"
+            ref  [value] '[ok]'
+SUPPORTED   ! WEAK  time      T=TIME:PRINT"[";TIME>=T;"]"
+            ref  [value] '[-1 ]'
+            zb   [value] '[-1 ]'
+            WEAK: absent => variable TI, always 0, and `0>=0` is STILL true, so this row passes on a machine with no TIME. The `timetick` row is the real test.
+SUPPORTED     timetick  T=TIME:FOR I=1 TO 400:NEXT:PRINT"[";TIME>T;"]"
+            ref  [value] '[-1 ]'
+SUPPORTED     mki       PRINT"[";LEN(MKI$(1));"]"
+            ref  [value] '[ 2 ]'
+SUPPORTED     mks       PRINT"[";LEN(MKS$(1));"]"
+            ref  [value] '[ 4 ]'
+SUPPORTED     mkd       PRINT"[";LEN(MKD$(1));"]"
+            ref  [value] '[ 8 ]'
+SUPPORTED     cvs       PRINT"[";CVS(MKS$(1));"]"
+            ref  [value] '[ 1 ]'
+SUPPORTED     cvd       PRINT"[";CVD(MKD$(1));"]"
+            ref  [value] '[ 1 ]'
+SUPPORTED     usrkw     POKE-8192,&HC9:DEFUSR=-8192:A=USR(7):PRINT"[U";A;"]"
+            ref  [value] '[U 7 ]'
+SUPPORTED     screenkw  SCREEN2:A=PEEK(&HFCAF):SCREEN0:PRINT"[G";A;"]"
+            ref  [value] '[G 2 ]'
+SUPPORTED     keykw     KEY 1,"ZZQ":KEY LIST
+            ref  [value] 'ZZQ|auto|goto|list|run|color 15,4,4|cload"|cont|list.|run'
+SUPPORTED     waitkw    WAIT &HA8,&HFF:PRINT"[Y1]"
+            ref  [value] '[Y1]'
+SUPPORTED     lposkw    LPRINT"ABC";:PRINT"[P";LPOS(0);"]"
+            ref  [value] '[P 3 ]'
+SUPPORTED     lprintkw  LPRINT"ABC";:PRINT"[P";LPOS(0);"]"
+            ref  [value] '[P 3 ]'
+SUPPORTED     dskf      PRINT"[";DSKF(1);"]"
+            ref  [value] '[ 707 ]'
+SUPPORTED     files     FILES"HI.TXT":PRINT"[8]"
+            ref  [value] 'HI      .TXT [8]'
+SUPPORTED     lof       OPEN"HI.TXT"FOR INPUT AS#1:A=LOF(1):CLOSE#1:PRINT"[";A;"]"
+            ref  [value] '[ 26 ]'
+SUPPORTED     eof       OPEN"HI.TXT"FOR INPUT AS#1:A$=INPUT$(26,#1):A=EOF(1):CLOSE#1:PRINT"[";A;"]"
+            ref  [value] '[-1 ]'
+SUPPORTED     bload     POKE&HC000,7:BLOAD"PROG.BIN":A=PEEK(&HC000):PRINT"[";A;"]"
+            ref  [value] '[ 62 ]'
+SUPPORTED     close     OPEN"W.TXT"FOR OUTPUT AS#1:PRINT#1,"ABC":CLOSE#1:OPEN"W.TXT"FOR INPUT AS#1:A=LOF(1):CLOSE#1:PRINT"[";A;"]"
+            ref  [value] '[ 6 ]'
+SUPPORTED     bsave     POKE&HC800,99:BSAVE"O.BIN",&HC800,&HC800:POKE&HC800,7:BLOAD"O.BIN":A=PEEK(&HC800):PRINT"[";A;"]"
+            ref  [value] '[ 99 ]'
+SUPPORTED     save      A=1:SAVE"S.BAS":OPEN"S.BAS"FOR INPUT AS#1:A=LOF(1):CLOSE#1:PRINT"[";A;"]"
+            ref  [value] '[ 68 ]'
+SUPPORTED     kill      A=DSKF(1):KILL"PROG2.BAS":B=DSKF(1):PRINT"[";B-A;"]"
+            ref  [value] '[ 1 ]'
+SUPPORTED     merge     OPEN"N.BAS"FOR OUTPUT AS#1:PRINT#1,"100 END":CLOSE:PRINT"[M0]":MERGE"N.BAS":PRINT"[M1]"
+            ref  [value] '[M0]'
+SUPPORTED     lset      OPEN"R.DAT"AS#1:FIELD#1,4 AS A$:LSET A$="B":A=ASC(A$):CLOSE#1:PRINT"[";A;"]"
+            ref  [value] '[ 66 ]'
+SUPPORTED     rset      OPEN"R.DAT"AS#1:FIELD#1,4 AS A$:RSET A$="B":A=ASC(A$):CLOSE#1:PRINT"[";A;"]"
+            ref  [value] '[ 32 ]'
+SUPPORTED     runkw     POKE&HE001,0:POKE&HE001,PEEK(&HE001)+1:IF PEEK(&HE001)<2 THEN RUN 20:PRINT"[";PEEK(&HE001);"]"
+            ref  [value] '[ 2 ]'
+SUPPORTED     dski      A$=DSKI$(0,7):B=PEEK(&HF351)+256*PEEK(&HF352):A=PEEK(B):PRINT"[";A;"]"
+            ref  [value] '[ 84 ]'
+SUPPORTED     dsko      A$=DSKI$(0,7):B=PEEK(&HF351)+256*PEEK(&HF352):POKE B,88:DSKO$0,7:A$=DSKI$(0,0):A$=DSKI$(0,7):A=PEEK(B):PRINT"[";A;"]"
+            ref  [value] '[ 88 ]'
+SUPPORTED     copy      COPY"HI.TXT" TO "H2.TXT":OPEN"H2.TXT"FOR INPUT AS#1:A=LOF(1):CLOSE#1:PRINT"[";A;"]"
+            ref  [value] '[ 26 ]'
+SUPPORTED     set       SET PASSWORD
+            ref  [error:illegal function call] 'Illegal function call in 10'
+SUPPORTED     ipl       IPL
+            ref  [error:illegal function call] 'Illegal function call in 10'
+SUPPORTED     cmd       CMD"X"
+            ref  [error:illegal function call] 'Illegal function call in 10'
+SUPPORTED     lfiles    LPRINT"AB";:LFILES:PRINT"[P";LPOS(0);"]"
+            ref  [value] '[P 0 ]'
+SUPPORTED     loc       OPEN"HI.TXT"FOR INPUT AS#1:A$=INPUT$(10,#1):A=LOC(1):CLOSE#1:PRINT"[";A;"]"
+            ref  [value] '[ 26 ]'
+SUPPORTED     bin       PRINT"[";BIN$(5);"]"
+            ref  [value] '[101]'
+
+==============================================================================
+COMBINED — tokenised? x observable consequence
+==============================================================================
+word       crunch  support     consequence
+------------------------------------------------------------------------------
+abs        present SUPPORTED   match
+int        present SUPPORTED   match
+len        present SUPPORTED   match
+chr        present SUPPORTED   match
+mid        present SUPPORTED   match
+instr      present SUPPORTED   match
+hex        present SUPPORTED   match
+sqr        present SUPPORTED   match
+peek       present SUPPORTED   match
+varptr     present SUPPORTED   match
+stick      present SUPPORTED   match
+erase      present SUPPORTED   match
+swapctl    present SUPPORTED   match
+asc        present SUPPORTED   match
+cint       present SUPPORTED   match
+cdbl       present SUPPORTED   match
+csng       present SUPPORTED   match
+fix        present SUPPORTED   match
+sgn        present SUPPORTED   match
+sin        present SUPPORTED   match
+cos        present SUPPORTED   match
+tan        present SUPPORTED   match
+atn        present SUPPORTED   match
+exp        present SUPPORTED   match
+log        present SUPPORTED   match
+mod        present SUPPORTED   match
+notop      present SUPPORTED   match
+andop      present SUPPORTED   match
+orop       present SUPPORTED   match
+xorop      present SUPPORTED   match
+oct        present SUPPORTED   match
+left       present SUPPORTED   match
+right      present SUPPORTED   match
+str        present SUPPORTED   match
+stringf    present SUPPORTED   match
+space      present SUPPORTED   match
+csrlind    present SUPPORTED   match
+let        present SUPPORTED   match
+rem        present SUPPORTED   match
+rnd        present SUPPORTED   match
+cvi        present SUPPORTED   match
+using      present SUPPORTED   match
+then       present SUPPORTED   match
+elsekw     present SUPPORTED   match
+tokw       present SUPPORTED   match
+stepkw     present SUPPORTED   match
+offkw      present SUPPORTED   match
+ifkw       present SUPPORTED   match
+nextkw     present SUPPORTED   match
+clearkw    present SUPPORTED   match
+dimkw      present SUPPORTED   match
+beep       present SUPPORTED   match
+sound      present SUPPORTED   match
+vpeek      present SUPPORTED   match
+vpoke      present SUPPORTED   match
+vdpkw      present SUPPORTED   match
+inpkw      present SUPPORTED   match
+outkw      present SUPPORTED   match
+pokekw     present SUPPORTED   match
+widthkw    present SUPPORTED   match
+circlekw   present SUPPORTED   match
+drawkw     present SUPPORTED   match
+spritekw   present SUPPORTED   match
+basekw     present SUPPORTED   match
+pdlkw      present SUPPORTED   match
+padkw      present SUPPORTED   match
+attrkw     present SUPPORTED   match
+stopkw     present SUPPORTED   match
+maxkw      present SUPPORTED   match
+strigkw    present SUPPORTED   match
+onkw       present SUPPORTED   match
+errorkw    present SUPPORTED   match
+errkw      present SUPPORTED   match
+erlkw      present SUPPORTED   match
+resumekw   present SUPPORTED   match
+defintkw   present SUPPORTED   match
+listkw     present SUPPORTED   match
+deletekw   present SUPPORTED   match
+newkw      present SUPPORTED   match
+gosubkw    present SUPPORTED   match
+returnkw   present SUPPORTED   match
+endkw      present SUPPORTED   match
+readkw     present SUPPORTED   match
+restorekw  present SUPPORTED   match
+psetkw     present SUPPORTED   match
+presetkw   present SUPPORTED   match
+pointkw    present SUPPORTED   match
+linekw     present SUPPORTED   match
+colorkw    present SUPPORTED   match
+clskw      present SUPPORTED   match
+locate     present SUPPORTED   match
+csrlin     present DIVERGENT   ref '||[ 4 ]' vs zb '||[ 3 ]'
+pos        present SUPPORTED   match
+tab        present SUPPORTED   match
+spc        present SUPPORTED   match
+swap       present SUPPORTED   match
+fre        present SUPPORTED   match
+tron       present SUPPORTED   match
+troff      present SUPPORTED   match
+renum      present not-run     crunch-only — support UNKNOWN
+delete     present not-run     crunch-only — support UNKNOWN
+auto       present not-run     crunch-only — support UNKNOWN
+defsng     present SUPPORTED   match
+defdbl     present SUPPORTED   match
+defstr     present SUPPORTED   match
+deffn      present SUPPORTED   match
+eqv        present SUPPORTED   match
+imp        present SUPPORTED   match
+lprint     present not-run     crunch-only — support UNKNOWN
+llist      present not-run     crunch-only — support UNKNOWN
+lpos       present not-run     crunch-only — support UNKNOWN
+motor      present SUPPORTED   match
+time       present SUPPORTED   match
+timetick   present SUPPORTED   match
+interval   present not-run     crunch-only — support UNKNOWN
+mki        present SUPPORTED   match
+mks        present SUPPORTED   match
+mkd        present SUPPORTED   match
+cvs        present SUPPORTED   match
+cvd        present SUPPORTED   match
+usrkw      present SUPPORTED   match
+screenkw   present SUPPORTED   match
+keykw      present SUPPORTED   match
+waitkw     present SUPPORTED   match
+lposkw     present SUPPORTED   match
+lprintkw   present SUPPORTED   match
+dskf       present SUPPORTED   match
+files      present SUPPORTED   match
+lof        present SUPPORTED   match
+eof        present SUPPORTED   match
+bload      present SUPPORTED   match
+close      present SUPPORTED   match
+bsave      present SUPPORTED   match
+save       present SUPPORTED   match
+kill       present SUPPORTED   match
+merge      present SUPPORTED   match
+lset       present SUPPORTED   match
+rset       present SUPPORTED   match
+runkw      present SUPPORTED   match
+dski       present SUPPORTED   match
+dsko       present SUPPORTED   match
+copy       present SUPPORTED   match
+set        present SUPPORTED   match
+attr       present not-run     crunch-only — support UNKNOWN
+ipl        present SUPPORTED   match
+cmd        present SUPPORTED   match
+lfiles     present SUPPORTED   match
+loc        present SUPPORTED   match
+bin        present SUPPORTED   match
+wait       present not-run     crunch-only — support UNKNOWN
+inputdol   present not-run     crunch-only — support UNKNOWN
+
+==============================================================================
+NOT EXECUTED — 10 words, crunch-only. Reasons below; these are
+COVERAGE HOLES IN THIS PROBE, not evidence of support.
+==============================================================================
+  renum     renumbers the stored program; harmless but needs a program to be visible
+  delete    deletes stored lines — would eat the batch's own program
+  auto      INTERACTIVE: enters auto-line-number mode and swallows all following input
+  lprint    LSTOUT not hang-safe with no printer plugged
+  llist     same LSTOUT hazard
+  lpos      same LSTOUT hazard
+  interval  needs a stored ON INTERVAL=n GOSUB program + a timed window; covered by probes/basic/basic_probe_interval_trap.py (T5 slice), not duplicated here
+  attr      NEEDS-DISK: MSX-DOS2-era; measured for the record
+  wait      can spin forever — never executed in a batch
+  inputdol  BLOCKS waiting for a keypress
+
+==============================================================================
+SUMMARY  SUPPORTED=139  WEAK(excluded)=2
+         executed 141 / 151 words; 10 crunch-only
+==============================================================================
+ROWS: 151 printed, 141 scored — 10 crunch-only word(s) carry no support reading and are printed but not scored
+pin: 141 row verdict(s) -> /Users/joost/projects/zerobas/build/kwsweep-verdicts.json
+
+=== CRUNCH PIN — words the reference tokenises and zerobas does not ===
+refcache: 5 hit, 8 miss, 8 stored

@@ -1,0 +1,17 @@
+=== zb
+  mk       -     | bas Disk BASIC ZB10 OPEN"N.BAS"FOR OUTPUT AS#1 ZB20 PRINT#1,"100 END" ZB30 CLOSE ZBRUN ZB 
+  d.load   -     | 1 ZB20 PRINT#1,"100 END" ZB30 CLOSE ZBRUN ZBPOKE&HD002,0:LOAD"PROG.BAS":POKE&HD00 2,55 ZB 
+  d.load?  0     | ZBRUN ZBPOKE&HD002,0:LOAD"PROG.BAS":POKE&HD00 2,55 ZBPRINT"[L";PEEK(&HD002);"]" [L 0 ] ZB 
+  d.merg   0     | 00 2,55 ZBPRINT"[L";PEEK(&HD002);"]" [L 0 ] ZBPOKE&HD002,0:MERGE"N.BAS":POKE&HD002, 55 ZB 
+  d.merg?  55    | [L 0 ] ZBPOKE&HD002,0:MERGE"N.BAS":POKE&HD002, 55 ZBPRINT"[M";PEEK(&HD002);"]" [M 55 ] ZB 
+  d.new    55    | ":POKE&HD002, 55 ZBPRINT"[M";PEEK(&HD002);"]" [M 55 ] ZBPOKE&HD002,0:NEW:POKE&HD002,55 ZB 
+  d.new?   0     | D002);"]" [M 55 ] ZBPOKE&HD002,0:NEW:POKE&HD002,55 ZBPRINT"[N";PEEK(&HD002);"]" [N 0 ] ZB 
+=== cf3300
+  mk       -     |  OPEN"N.BAS"FOR OUTPUT AS#1 20 PRINT#1,"100 END" 30 CLOSE RUN Ok color auto goto list run 
+  d.load   -     |  Ok POKE&HD002,0:LOAD"PROG.BAS":POKE&HD002, 55 Ok color auto goto list run 
+  d.load?  0     |  Ok PRINT"[L";PEEK(&HD002);"]" [L 0 ] Ok color auto goto list run 
+  d.merg   -     |  Ok POKE&HD002,0:MERGE"N.BAS":POKE&HD002,55 Ok color auto goto list run 
+  d.merg?  0     |  Ok PRINT"[M";PEEK(&HD002);"]" [M 0 ] Ok color auto goto list run 
+  d.new    -     |  Ok POKE&HD002,0:NEW:POKE&HD002,55 Ok color auto goto list run 
+  d.new?   0     |  Ok PRINT"[N";PEEK(&HD002);"]" [N 0 ] Ok color auto goto list run 
+refcache: 0 hit, 2 miss, 2 stored

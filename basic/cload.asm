@@ -140,7 +140,16 @@ dl_cas_close:
                                             ; (characterization §4, cas-loadr-brk-res)
                 ld      a,(RUNFLAG)          ; ,R ? -> run it; else back to the REPL
                 or      a
-                ret     z
+                jp      z,end_line_end      ; 🔴 D-MERGERET: `ret z` RESUMED THE
+                                            ; STATEMENT STREAM, and after a LOAD the
+                                            ; program that stream belongs to IS GONE.
+                                            ; See the disk arm below for the measured
+                                            ; face; this arm is the same code and is
+                                            ; changed by the same reasoning, with NO
+                                            ; row -- nothing in this tree can PLAY a
+                                            ; tape (only record one), which D-KWTAPE
+                                            ; measured. Named as unmeasured rather
+                                            ; than left inconsistent with its twin.
                 jr      run_prog_top        ; RUN the loaded program -- at TOP LEVEL,
                                             ; never nested (§3.1, and see run_prog_top)
 
@@ -165,9 +174,21 @@ dl_is_disk:
                                             ; CF-3300 prints its message and stops
                                             ; (characterization §4, loadr-miss-res)
                 ; ,R ? -> run the freshly loaded program; else back to the REPL.
+                ; 🔴 D-MERGERET (2026-09-12): "BACK TO THE REPL" IS WHAT THE COMMENT
+                ; SAID AND NOT WHAT `ret z` DID. A `ret` hands control back to the
+                ; exec loop, which carries on with the next statement -- of a program
+                ; this very statement has just REPLACED. Inside a running program
+                ; `10 POKE&HD002,0 / 20 LOAD"PROG.BAS" / 30 POKE&HD002,55` answered
+                ; `Syntax error in 49924` -- a line number read out of whatever now
+                ; sits under the stale cursor -- where the CF-3300 answers a clean
+                ; `Ok` (scratchpad/kwdrain_cmdlevel.out). `end_line_end` is the tail
+                ; END, NEW, LIST, DELETE, RENUM and AUTO already share.
+                ; 🎯 DIRECT MODE ALREADY AGREED (0 on both) and still does: the same
+                ; flag is what `NEW` sets, and a typed `NEW:POKE` measures 0 on both
+                ; machines (scratchpad/kwdrain_cmddirect.out).
                 ld      a,(RUNFLAG)
                 or      a
-                ret     z
+                jp      z,end_line_end
                 jr      run_prog_top        ; RUN the loaded program (program.asm) --
                                             ; at TOP LEVEL, never nested (§3.1)
 

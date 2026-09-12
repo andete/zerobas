@@ -489,7 +489,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:15945 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:15970 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -655,7 +655,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:4560 (T-6FE392)8 (T-529ABE)` from `TODO.md:14731 (T-529ABE)`: a
+      `TODO.md:4585 (T-6FE392)8 (T-529ABE)` from `TODO.md:14756 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -2702,33 +2702,62 @@ list. **When a slice lands, grep this list for what it just shipped.**
       prompt case from jumping into a finished program), so it is worth his eye
       before it is changed rather than a quiet edit.
 
-- [ ] 🔴 **`MERGE` INSIDE A RUNNING PROGRAM CARRIES ON HERE AND RETURNS TO
-      COMMAND LEVEL ON THE REFERENCE.** Found 2026-09-12 by D-KWDISK, the first
-      run of the kwsweep disk rows after the test image was finally mounted
-      ([`scratchpad/kwdrain_mergechk.py`](scratchpad/kwdrain_mergechk.py),
-      [readings](scratchpad/kwdrain_mergechk.out),
-      [CF-3300](scratchpad/kwdrain_mergechk_cf.out)).
-      | stored program, then `RUN` | zerobas | CF-3300 |
-      |---|---|---|
-      | `10..30` write `100 A=7:RETURN` to a file, `40 MERGE"N.BAS"`, `50 PRINT"[M1]"` | `[M1]` — **line 50 RAN** | nothing — line 50 never ran |
-      | `PRINT A` afterwards (the merged line's variable) | — | `0`, i.e. the program stopped at 40 |
-      | `LIST 100` afterwards | `100 A=7:RETURN` | `100 A=7:RETURN` ✅ agree |
-      🎯 **THE MERGE ITSELF IS FINE ON BOTH SIDES AND THAT IS WHAT NARROWS IT.** The
-      merged line lands, byte for byte, on each machine; the divergence is purely
-      CONTROL FLOW after the statement. So this is not the disk path, the tokeniser
-      or the line store — it is what `MERGE` does with the interpreter's cursor when
-      `DIRECTF` says a program is running.
-      🎯 **AND IT IS THE SAME SHAPE AS D-NEWSTMT**, which this drain produced a day
-      earlier: a program-context behaviour of a verb whose direct-mode behaviour was
-      never in doubt. `LOAD` is the obvious neighbour to sweep at the same time — it
-      shares the "return to command level" contract — and `RUN"file"` is the third.
-      ⚠️ **THE VG-8020 HAS NO VOTE**: `MERGE` needs a disk here (the tape form is a
-      separate path), so the CF-3300 is the oracle [[oracle-split-prefer-vg8020]] does
-      not apply — this is a Disk-BASIC capability split, not a presentational one.
-      🎚️ TIER 1 — happy path: an overlay loader that `MERGE`s and expects to stop is
-      ordinary MSX BASIC, and here it runs on into whatever follows
-      🤖 AUTONOMOUS — the oracle is measured and the kwsweep `merge` row already
-      holds the ground (it reads DIVERGENT until this is fixed).
+- [x] ✅ **D-MERGERET (2026-09-12): `MERGE` AND `LOAD` BOTH FAILED TO RETURN TO
+      COMMAND LEVEL — and the sweep the item asked for is what found the SECOND
+      one, which is the worse of the two.** 5 arms → 0, **+4 B of main page 1**
+      (11 → 7 B free, `rm -rf build && make basic-reloc`; low 0 B and sub page 1
+      68 B unmoved) — inside the standing 20 B budget for a measured divergence.
+      | in a running program | before | after | CF-3300 |
+      |---|---|---|---|
+      | `LOAD"PROG.BAS"` | **`Syntax error in 49924`** | clean `Ok` | clean `Ok` |
+      | `MERGE"N.BAS"`, then `POKE` | the POKE RAN (55) | stops (0) | stops (0) |
+      | `RUN"PROG.BAS"` (control) | loaded program ran (123) | 123 | 123 ✅ agreed all along |
+      | typed `MERGE"N.BAS":POKE` | the POKE RAN (55) | stops (0) | stops (0) |
+      | typed `LOAD"PROG.BAS":POKE` (control) | 0 | 0 | 0 ✅ agreed all along |
+      🔴 **`LOAD`'S FACE WAS A GARBAGE LINE NUMBER, AND ONLY THE SWEEP COULD HAVE
+      SEEN IT.** `ret z` handed control back to the exec loop, which carried on with
+      the next statement — of a program that statement had just REPLACED. The
+      interpreter then read a "line number" out of whatever sat under the stale
+      cursor: **49924**. The item was filed about `MERGE` alone; sweeping `LOAD` and
+      `RUN"file"` beside it was the instruction D-DFEND earned, and it paid twice
+      [[a-shared-tail-is-not-a-decision]].
+      🎯 **AND `RUN"file"` IS THE CONTROL THAT MAKES THE CLASS A CLASS AND NOT A
+      SWEEP OF EVERYTHING.** It shares the same contract, it AGREED on both machines
+      before the fix, and it still does — so "every verb that loads something is
+      broken" is refuted by the row set rather than by argument.
+      🎯 **THE COMMENT WAS RIGHT AND THE CODE WAS NOT.** `do_load`'s own line read
+      *"; ,R ? -> run the freshly loaded program; else back to the REPL"* — and
+      `ret z` does not go back to the REPL, it resumes the statement stream. The
+      prose described the intent for as long as the defect lived beside it.
+      🎯 **THE FIX IS THE TAIL SIX OTHER VERBS ALREADY SHARE**: `end_line_end`
+      (`ENDFLAG := 1`), used by END, NEW, LIST, DELETE, RENUM and AUTO. `ex_new` is
+      the live precedent in BOTH modes — a typed `NEW:POKE` reads 0 on the CF-3300
+      and here, which is what said this tail is right for direct mode too.
+      🔴 **DIRECT MODE WAS MEASURED BEFORE THE RUN-MODE FIX, NOT AFTER.** A fix
+      aimed at a program can silently change a typed line; the readings say `LOAD`
+      already agreed there (0 on both) and `MERGE` diverged there TOO, so the one
+      change fixes both modes and the control that could have been broken was
+      checked first ([`scratchpad/kwdrain_cmddirect.py`](scratchpad/kwdrain_cmddirect.py),
+      [readings](scratchpad/kwdrain_cmddirect.out)).
+      ⚠️ **THE TWO TAPE ARMS ARE CHANGED WITH NO ROW, AND SAID SO IN THE CODE.**
+      `LOAD"CAS:"` and `MERGE"CAS:"` are the same code as their disk twins and carry
+      the same defect by construction, but nothing in this tree can PLAY a tape —
+      only record one (D-KWTAPE measured that). Named as unmeasured rather than left
+      inconsistent with a twin that was fixed.
+      🟢 **THE KWSWEEP `merge` ROW WENT GREEN AND WAS STRENGTHENED IN THE SAME
+      BREATH.** It had read DIVERGENT with `[M1]` on the zb side; after the fix both
+      sides would have read an EMPTY tail, which is agreement with nothing named. It
+      now prints `[M0]` BEFORE the verb, so the row reads `[M0]` and the absence of
+      `[M1]` is the behaviour — and a regression prints `[M0]|[M1]`
+      [[an-unnamed-outcome-reads-as-no-outcome]]. What it still cannot see is that
+      the merge LANDED, which is unobservable inside one case precisely because the
+      statement after it never runs; `LIST 100` on both machines is the reading that
+      covers it.
+      🟢 **AND THE WHOLE SWEEP IS NOW CLEAN FOR THE FIRST TIME: `DIVERGENT=0`**,
+      139 SUPPORTED ([readings](scratchpad/mergeret_full.out)). The only non-green
+      row left is the pre-existing WEAK `csrlin`, whose own note records CSRLIN
+      measured CORRECT.
+      🎚️ TIER 1 — happy path, both verbs
 
 - [x] ✅ **D-DFEND (2026-09-12): BOTH SINKS ENDED THE DIRECTORY WALK WRONG, IN
       OPPOSITE DIRECTIONS — `FILES` on the SCREEN and `LFILES` on the PRINTER,
@@ -5400,7 +5429,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:14731 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:14756 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

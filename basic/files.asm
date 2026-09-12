@@ -2007,7 +2007,16 @@ ex_merge:
                 call    ascii_read_lines    ; tokenise+store each line; CF set = bad line
                 pop     hl                  ; restore the text cursor
                 jp      c,stmt_error        ; non-numbered line -> "Direct statement in file"
-                jp      exec_stmt
+                ; 🔴 D-MERGERET (2026-09-12): MERGE RETURNS TO COMMAND LEVEL, and
+                ; `jp exec_stmt` carried on instead -- in BOTH modes. In a program,
+                ; `20 MERGE"N.BAS" / 30 POKE&HD002,55` left 55 here and 0 on the
+                ; CF-3300; typed, `MERGE"N.BAS":POKE&HD002,55` did the same
+                ; (scratchpad/kwdrain_cmdlevel.out, scratchpad/kwdrain_cmddirect.out).
+                ; 🎯 THE MERGE ITSELF WAS NEVER WRONG: the merged line lands byte for
+                ; byte on both machines and `LIST 100` agrees. Only the cursor did.
+                ; `end_line_end` is the shared tail; `ex_new` is the live precedent,
+                ; and its typed `NEW:POKE` reads 0 on both machines.
+                jp      end_line_end
 mrg_ioerr:
                 pop     hl
                 jp      df_or_loaderr       ; D-LOADERR: `File not found` when the
@@ -2045,7 +2054,11 @@ merge_cas:
                 call    cas_ascii_drive     ; read + tokenise + store each line; CF=bad line
                 pop     hl                  ; restore the text cursor
                 jp      c,stmt_error        ; non-numbered line -> "Direct statement in file"
-                jp      exec_stmt
+                jp      end_line_end        ; D-MERGERET: the tape arm of the same
+                                            ; contract as the disk arm above. NO ROW
+                                            ; -- nothing here can PLAY a tape — so it
+                                            ; is changed by the disk arm's reasoning
+                                            ; and named as unmeasured.
 mc_ioerr:
                 pop     hl
                 jp      disk_error          ; D-DISKERR
