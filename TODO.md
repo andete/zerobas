@@ -489,7 +489,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:15415 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:15435 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -655,7 +655,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:4030 (T-6FE392)8 (T-529ABE)` from `TODO.md:14201 (T-529ABE)`: a
+      `TODO.md:4050 (T-6FE392)8 (T-529ABE)` from `TODO.md:14221 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -2841,6 +2841,26 @@ list. **When a slice lands, grep this list for what it just shipped.**
       was checked through `stmt_keyword` — **0 credit no keyword**, so `SPRITE` was
       the only one. The check is three lines and belongs in the probe's own selftest
       if this happens again.
+      🟢 **STEP 4e: 57 -> 52**, evidence 90 -> 95 — `GOSUB RETURN END READ RESTORE`.
+      🔴 **AND THE "MULTI-LINE" BLOCKER WAS NEVER REAL EITHER**, which is the second
+      ceiling this drain has talked itself into and then measured away.
+      `omsx_repl.as_stored` SPLITS a `:`-joined exec into numbered lines 10/20/…,
+      packing statements greedily into ≤34-char bodies — so a "one-line" row is
+      already a multi-line program, and these words needed the line numbers worked
+      out rather than a new mechanism. Verified by printing the packing BEFORE writing
+      a row and then running it
+      ([`scratchpad/kwdrain_multiline.py`](scratchpad/kwdrain_multiline.py),
+      [readings](scratchpad/kwdrain_multiline.out), both machines):
+      `A=0:GOSUB 20:…:END:A=7:RETURN` packs to `10 A=0:GOSUB 20:PRINT…:END` /
+      `20 A=7:RETURN` and answers 7.
+      🎯 **A CONTROL IS WHAT MAKES THE `RESTORE` ROW MEAN ANYTHING**: a single `READ Q`
+      answers 3 and the row answers 6, so the second `READ` really did re-read the
+      same `DATA` — which is only true if `RESTORE` reset the pointer. Without that
+      control the row would pass on any two reads.
+      ⚠️ **`ON` IS NOT THERE**: its two-target form packs badly — the greedy packer
+      swallows both subroutines into line 20 — and padding statements to force a
+      boundary would make the row about the PACKER instead of the keyword.
+      🎯 **AUDIT RE-RUN: 99 pin rows, 0 crediting no keyword.**
       ➡️ **STEP (c) IS STILL NOT BUILT AND IS STILL THE CEILING** for words no
       kwsweep row can reach — but it is now a SMALLER set than batch 4 claimed, and
       its real cost is on the record: a `subject:` tag must mean *"a row whose verdict
@@ -4874,7 +4894,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:14201 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:14221 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

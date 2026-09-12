@@ -346,6 +346,32 @@ SWEEP: list[tuple[str, str, str | None, str, str]] = [
      "NOECHO:[Z writes the pattern to VRAM and reads it back: 255 round-trips, "
      "a stub reads 0 and SCREEN 0 raises Illegal function call"),
     ("basekw",    'a=base(2)',         'PRINT"[";BASE(2);"]"',               "direct", "D-KWDRAIN"),
+
+    # ---------------------------------------------- D-KWDRAIN step 4e (2026-09-12)
+    # 🎯 THE MULTI-LINE WORDS, AND THEY WERE NEVER BLOCKED EITHER. `as_stored`
+    # SPLITS a `:`-joined line into numbered lines 10/20/... , packing statements
+    # greedily into <=34-char bodies -- so a "one-line" exec is already a
+    # multi-line program, and GOSUB/RETURN/READ/RESTORE only needed the line
+    # numbers to be worked out rather than guessed. Verified by printing the
+    # packing before writing a row, and by running it (scratchpad/
+    # kwdrain_multiline.py, both machines): `A=0:GOSUB 20:...:END:A=7:RETURN`
+    # packs to `10 A=0:GOSUB 20:PRINT...:END` / `20 A=7:RETURN` and answers 7.
+    # 🔴 THE CONTROL IS WHAT MAKES THE RESTORE ROW MEAN ANYTHING: a single
+    # `READ Q` answers 3, and the row answers 6 -- so the second READ really did
+    # re-read the same DATA, which is only true if RESTORE reset the pointer.
+    # ⚠️ `ON` IS NOT HERE: its two-target form packs badly -- the greedy packer
+    # swallows both subroutines into line 20 -- and padding statements to force a
+    # boundary would make the row about the packer instead of the keyword.
+    ("gosubkw",   'gosub 20',     
+     'A=0:GOSUB 20:PRINT"[G";A;"]":END:A=7:RETURN',         "stored", "D-KWDRAIN: the subroutine sets A=7; no GOSUB, no output"),
+    ("returnkw",  'return',       
+     'A=0:GOSUB 20:PRINT"[H";A;"]":END:A=7:RETURN',         "stored", "D-KWDRAIN: A is 7 only because RETURN came back to the PRINT"),
+    ("endkw",     'end',          
+     'A=0:GOSUB 20:PRINT"[J";A;"]":END:A=7:RETURN',         "stored", "D-KWDRAIN: END keeps the subroutine from being fallen into"),
+    ("readkw",    'read q',       
+     'READ Q:RESTORE:READ R:PRINT"[E";Q+R;"]":END:DATA 3',  "stored", "D-KWDRAIN: reads 3 from the DATA on the second line"),
+    ("restorekw", 'restore',      
+     'READ Q:RESTORE:READ R:PRINT"[F";Q+R;"]":END:DATA 3',  "stored", "D-KWDRAIN: 6 needs the pointer RESET: without RESTORE the second READ runs out of DATA"),
     ("psetkw",   'pset(1,1)',      
      'SCREEN2:PSET(1,1),15:A=POINT(1,1):SCREEN0:PRINT"[S";A;"]"',   "stored",
      "NOECHO:[S PSET draws, POINT reads it back: 4 blank vs 15 drawn"),
