@@ -391,8 +391,17 @@ the FRONTIER, which returns to the same address every time.
 |---|---|---|
 | 50 | `[51]` | `[51]` |
 | 200 | `[201]` | `[201]` |
-| **400** | **`NO OUTPUT`** | `[401]` |
+| 400 | `[401]` | `[401]` |
 | **800** | **`NO OUTPUT`** | `[801]` |
+
+🔴 **THE 400 ROW IS A CORRECTION, AND THE ERROR WAS MINE.** The first run of this
+table reported 400 blank as well, at the suite's own `step=5.0, cap_gap=45.0`. Re-run
+at `step=20.0, cap_gap=180.0` it prints `[401]` on the SAME build: 400 was the
+CAPTURE BUDGET, not the drain — this program is about five times the work of the
+`FOR`/`NEXT` control, on a machine already 2.5–3.8× slower than the reference, and a
+row that runs out of budget prints exactly like a row that died
+[[an-unnamed-outcome-reads-as-no-outcome]]. The defect is unchanged and 800 still
+dies with the window wide open; only the threshold moves.
 
 The subagent's independent run of the same class put the death at GOSUB #360 with
 `Syntax error in 63784` and 8 B drained per `RETURN`, which lands inside the
@@ -456,9 +465,54 @@ copy at the statement handler's own depth instead of the program's, and makes
 `raise_error_hl`'s `(SAVSTK)`-vs-`(CSP)` question moot because the two coincide by
 construction.
 
-💰 **10 B of main page 1, which is at 0 B free** — so this needs an ABSOLUTE carve,
-not the standing 20 B budget; `jr_mapper.py` offers 2 B today. A 3 B page-1 + 12 B
-low split via a helper is the fallback if the carve comes up short.
+### 10.4a 🟢 BUILT AND VERIFIED ON A SCAFFOLD (2026-09-12)
+
+The re-base is written and measured. It sits at the TOP of `rp_lp`, above the
+`RESUMEFLAG` test, so all four entries — `rp_run`'s fallthrough, `rp_goto`, the
+trap-fired branch and `rp_resume` — pass through it.
+
+⚠️ **IT WAS MEASURED ON A SCAFFOLDED BUILD, WHICH IS A DIFFERENT MACHINE**
+[[a-scaffolded-build-is-a-different-machine]]: `SWAP_RESIDENT equ 0` evicts SWAP to
+the sub ROM and frees 154 B of page 1, which is where the 10 B came from. The switch
+is back at 1 and the real build OVERRUNS by exactly those 10 B — the assembler
+refuses with `BASIC_IMAGE_OVERRAN_8000_CEILING`, so nothing ran on a stale machine.
+
+📏 **THE DRAIN IS GONE, on the same program and the same wide window**
+([before](scratchpad/spmerge_drain_before.out) vs
+[after](scratchpad/spmerge_drain_after.out)):
+
+| iterations | before | after | VG-8020 |
+|---|---|---|---|
+| 50 / 200 / 400 | `[51]` `[201]` `[401]` | same | same |
+| **800** | **`NO OUTPUT`** | **`[801]`** | `[801]` |
+
+🎯 **AND THE MECHANISM IS WITNESSED DIRECTLY, not inferred from the output.** A
+breakpoint at `rp_lp` logging every 25th pass
+([`scratchpad/spmerge_rplp_trace.out`](scratchpad/spmerge_rplp_trace.out)) reads
+`SP=D8F9 CSP=D8FB SAVSTK=D8F9 gap=2` at hit 25 and the IDENTICAL triple at hit 4000
+— the gap never moves across the whole run, where before it fell by the frame size
+on every cycle.
+
+💰 **WHAT IS LEFT IS ONLY THE CARVE: 10 B of main page 1, at 0 B free.** The two
+halves that fit:
+  * `repl:`'s own re-base is **8 B** (`ld hl,(CSP)` + the zero test + `ld sp,hl`) and
+    is now mostly redundant — typed lines route through this same loop, so `rp_lp`
+    re-bases them too. 🔴 **DO NOT DELETE IT OUTRIGHT**: `repl` is entered by `jp`
+    and never returns, so its discard is what reclaims a line that FAILS before ever
+    reaching the loop (a syntax error at the prompt). Shrinking it to a bare
+    `ld sp,(CSP)` keeps the discard and drops only the cold-boot zero guard — **4 B**,
+    and whether that guard is dead is a measurement (does `CSP` read non-zero at the
+    first prompt?), not a judgement.
+  * `jr_mapper.py` finds **2 B** on 2026-09-12: `$4F5E jp z -> ev_ff_lof`
+    ([`basic/expr.asm:1121`](basic/expr.asm:1121)) and `$65BF jp -> bl_load_error`
+    (`basic/pdfcb-body.inc:53` — ⚠️ a `*-body.inc`, so check whether `sub/` includes
+    it before touching it).
+  * The remainder from the pair scout, whose best live candidates on 2026-09-12 are
+    `jp nz,stmt_error | inc hl` (11 sites, net 6 B) and
+    `inc hl | ld e,(hl) | inc hl | ld d,(hl)` (10 sites, net 5 B).
+The whole slice is preserved at
+[`scratchpad/d-spmerge-step4.patch`](scratchpad/d-spmerge-step4.patch) — the merge
+plus the re-base, which SUPERSEDES `d-spmerge-step3k.patch` as the baseline.
 🔴 **AND `fnf_save` STILL NEEDS §10.2's HALF** regardless: it allocates from a
 page-0 tenant that never reaches `ctl_reloc`. The subagent implemented and verified
 that arm — `trapsvc-acceptance` PASS on all seven rows, `deffn-acceptance` 0/73

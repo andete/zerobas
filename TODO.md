@@ -489,7 +489,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:15138 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:15159 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -655,7 +655,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:3823 (T-6FE392)8 (T-529ABE)` from `TODO.md:13924 (T-529ABE)`: a
+      `TODO.md:3823 (T-6FE392)8 (T-529ABE)` from `TODO.md:13945 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -4667,7 +4667,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:13924 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:13945 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -5263,12 +5263,23 @@ list. **When a slice lands, grep this list for what it just shipped.**
       and the 256 B reserve cannot see it because the reserve is measured at the
       frontier, which returns to the same address every time.
       📏 **MEASURED, on `FOR`/`GOSUB`/`RETURN`/`NEXT` with no traps, no errors and
-      no `FN`** ([`scratchpad/spmerge_gosubdrain.py`](scratchpad/spmerge_gosubdrain.py),
-      [readings](scratchpad/spmerge_gosubdrain.out)): 50 and 200 iterations print,
-      **400 and 800 print NOTHING**, where the VG-8020 prints all four. The
-      subagent's independent run puts the death at GOSUB #360 with 8 B drained per
-      `RETURN` — inside that window. The copy also grows with the gap, so the cost
-      is O(n²) in frames, not the O(1) §9.3 argued for.
+      no `FN`** ([`scratchpad/spmerge_gosubdrain.py`](scratchpad/spmerge_gosubdrain.py)):
+      50, 200 and 400 iterations print, **800 prints NOTHING**, where the VG-8020
+      prints all four. 🔴 **THE FIRST RUN OF THIS TABLE ALSO REPORTED 400 BLANK AND
+      THAT WAS MY ERROR** — at the suite's `step=5.0, cap_gap=45.0` the 400 row runs
+      out of CAPTURE BUDGET and prints exactly like a row that died; re-run at
+      `step=20.0, cap_gap=180.0` the same build prints `[401]`. The defect is
+      unchanged, 800 still dies with the window wide open, only the threshold moved.
+      🟢 **AND THE FIX IS BUILT AND VERIFIED (2026-09-12), ON A SCAFFOLD.** The
+      `rp_lp` re-base makes 800 print `[801]`, equal to the VG-8020 on all four rows
+      ([before](scratchpad/spmerge_drain_before.out) vs
+      [after](scratchpad/spmerge_drain_after.out)), and the mechanism is witnessed
+      directly rather than inferred: a breakpoint logging every 25th pass through the
+      loop reads `SP=D8F9 CSP=D8FB SAVSTK=D8F9 gap=2` at hit 25 and the IDENTICAL
+      triple at hit 4000 ([`scratchpad/spmerge_rplp_trace.out`](scratchpad/spmerge_rplp_trace.out)).
+      ⚠️ **THE SCAFFOLD IS `SWAP_RESIDENT equ 0`** (SWAP evicted to the sub ROM, 154 B
+      of page 1 freed) — a DIFFERENT MACHINE, reverted; the real build overruns by
+      exactly 10 B and the assembler refuses, so nothing ran stale.
       🔴 **AND `deffn-acceptance` WAS GREEN THROUGH ALL OF IT.** The second cause is
       [`sub/deffn.asm:492`](sub/deffn.asm:492) `fnf_save`, which hand-rolls
       `ctl_alloc`'s arithmetic (its header says why: a page-0 tenant cannot reach
@@ -5292,9 +5303,19 @@ list. **When a slice lands, grep this list for what it just shipped.**
       invariant holds on every path in; it removes the drain wherever a frame is
       freed and by whom, bounds the copy at the handler's own depth, and makes
       `raise_error_hl`'s `(SAVSTK)`-vs-`(CSP)` question moot.
-      💰 **10 B of main page 1, which was at 0 B free on 2026-09-12 — so this needs
-      an ABSOLUTE CARVE**, not the standing 20 B budget (`jr_mapper.py` offered 2 B
-      on 2026-09-12); 3 B page 1 + 12 B low via a helper is the fallback. `fnf_save` needs its own arm regardless, at
+      💰 **ALL THAT REMAINS IS THE CARVE: 10 B of main page 1, which was at 0 B free
+      on 2026-09-12.** Two halves fit: `repl:`'s own re-base is 8 B and now mostly
+      redundant (typed lines route through this same loop) — 🔴 but NOT deletable
+      outright, because `repl` is entered by `jp` and never returns, so its discard is
+      what reclaims a line that FAILS before reaching the loop; shrinking it to a bare
+      `ld sp,(CSP)` keeps the discard and drops only the cold-boot zero guard, 4 B, and
+      whether that guard is dead is a MEASUREMENT (does `CSP` read non-zero at the
+      first prompt?). Plus `jr_mapper.py`'s 2 B on 2026-09-12 (`basic/expr.asm:1121`,
+      and `basic/pdfcb-body.inc:53` — ⚠️ a `*-body.inc`, check `sub/` first). The
+      remainder from the pair scout: `jp nz,stmt_error | inc hl` (11 sites, net 6 B)
+      or `inc hl | ld e,(hl) | inc hl | ld d,(hl)` (10 sites, net 5 B).
+      📦 **BASELINE MOVED:** [`scratchpad/d-spmerge-step4.patch`](scratchpad/d-spmerge-step4.patch)
+      is the merge PLUS the verified re-base, and supersedes `d-spmerge-step3k.patch`. `fnf_save` needs its own arm regardless, at
       **63 B of sub page 0** (590 → 527 free as measured 2026-09-12, 0 B main),
       verified by the subagent
       (`trapsvc-acceptance` PASS 7/7, `deffn-acceptance` denominator restored) and
