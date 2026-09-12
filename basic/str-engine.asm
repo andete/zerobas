@@ -92,6 +92,22 @@ ctl_alloc:
                 ld      bc,(CTLLIM)         ; the variable region's first free byte
                 sbc     hl,bc               ; (CF is clear from the jr above)
                 jr      c,ca_full           ; base < floor -> collided
+                ; 🔴 AND THE FLOOR NEEDS A MARGIN NOW THAT `SP` IS IN HERE. Before the
+                ; merge the only thing below the frontier was nothing at all, so
+                ; `base >= CTLLIM` was the whole test. Now the MACHINE STACK lives
+                ; below it: the evaluator descends from `CSP` on every expression, so
+                ; a frontier resting exactly on `CTLLIM` puts the next expression
+                ; INSIDE the arrays.
+                ; MEASURED without this (ctllim-acceptance): `l.ary` drove the pool to
+                ; 2515 frames and reported 18 CORRUPTED CELLS, and `l.ctl`/`l.scal`
+                ; printed NOTHING AT ALL -- the stack had reached the interpreter's own
+                ; state and taken the machine with it. The suite read that as "CTLLIM
+                ; stale-LOW", which is what this corruption looks like from outside;
+                ; the floor is correct and the reservation was missing.
+                ; HL is base-CTLLIM here, so one byte of it is the whole test.
+                ld      a,h
+                cp      high CTL_STACK_MARGIN
+                jr      c,ca_full           ; less than the reserve left -> pool full
                 add     hl,bc               ; HL = the base again. `add` back rather
                                             ; than push/pop -- the relocation this
                                             ; tail-jumps to moves the stack out from
@@ -2092,8 +2108,7 @@ type_mismatch_set:
                                             ; not a second flag. Written direct, not
                                             ; via penderr_set: FPERR is provably 0 on
                                             ; this path (the `ret nz` above tested it).
-                ld      a,$DD               ; expression-error marker (ev_f_err convention)
-                ld      (ERRMARK),a
+                call    errmark_expr; expression-error marker (ev_f_err convention)
                 ret
 
 ; --- ev_rel_str: the string-compare path of ev_rel --------------------------

@@ -489,7 +489,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:15189 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:15201 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -655,7 +655,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:3823 (T-6FE392)8 (T-529ABE)` from `TODO.md:13975 (T-529ABE)`: a
+      `TODO.md:3823 (T-6FE392)8 (T-529ABE)` from `TODO.md:13987 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -4667,7 +4667,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:13975 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:13987 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -5095,7 +5095,19 @@ list. **When a slice lands, grep this list for what it just shipped.**
       Any probe that arms `ON ERROR` before a `CLEAR` reads `<NO OUTPUT>`.
       🏗️ ARC — its own slice, its own knives, per verb (GOSUB/RETURN, FOR/NEXT, traps) plus the CLEAR interaction.
 
-- [ ] 🏗️ **THE Z80 STACK IS IN THE WRONG PLACE, AND THE `DEF FN` CAP IS THE
+- [x] ✅ **THE Z80 STACK WAS IN THE WRONG PLACE — SHIPPED 2026-09-12, THE MERGE
+      LANDED AND THE TIER 1 DEFECT IS FIXED.** The evaluator now recurses into the
+      whole ~22 KB region instead of the 234 B island above $F200, and all nine
+      `parennest` pins flip to the references' values IN THE SHIPPING COMMIT:
+      `p16/p20/p24/p32` print 17/21/25/33, `f16/f24/f32` and `s12/s16` print 1 —
+      16 rows, `WRECKED` EMPTY, 0 drift. Battery **128/128** plus the five
+      battery-excluded targets by hand; `trapsvc` PASS 7/7, `deffn` 0 of 73 with
+      86 rows SCORED, `array` 146/146, and a plain `FOR/GOSUB/RETURN/NEXT` runs to
+      800 iterations equal to the VG-8020. Page-1 2 B free, low 0 B, sub page 0
+      525 B (2026-09-12). The whole arc, including the three things it got wrong and
+      measured its way out of, is
+      [`docs/spec-basic-spmerge.md`](docs/spec-basic-spmerge.md) §10.
+      🏗️ **THE Z80 STACK IS IN THE WRONG PLACE, AND THE `DEF FN` CAP IS THE
       SYMPTOM.** Opened 2026-09-04 out of D-EVALDEPTH/D-CTLPOOL (D-FNSTK,
       [`docs/spec-basic-trapsvc.md`](docs/spec-basic-trapsvc.md) §19).
       `DEF FN` nesting caps at **3** here against the references' ≥4 at 25 B/level
@@ -5155,7 +5167,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       INCLUDING a control that had passed earlier in the same batch — the
       signature of a hang poisoning the cases after it. The readout refused to
       adjudicate; a fresh boot per case made each row its own machine.
-      🎚️ TIER 1 — happy path: EVERY expression — a legal formula WRECKS THE MACHINE at 16 nested parentheses and 12 nested string functions, where both references print the value; the FN nesting cap is the mild symptom of the same misplaced SP (no single keyword: the evaluator's recursion)
+      ~~🎚️ TIER 1 — happy path: EVERY expression — a legal formula WRECKS THE MACHINE at 16 nested parentheses and 12 nested string functions~~ — ✅ FIXED 2026-09-12, the pins flip in the shipping commit
       ~~🔁 PARKED (Joost, 2026-09-10): every TIER 5 item waits until TIERS 1–4 are clean~~
       — UN-PARKED the same day: TIER 1 by the measurement above.
       🎯 **RULED (Joost, 2026-09-11): MERGE — *"the only real option, it is the most

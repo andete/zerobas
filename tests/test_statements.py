@@ -54,6 +54,18 @@ def run_prog_cap(m, lines):
     m.trap("BREAKX", lambda mm: setattr(mm.cpu, "f", mm.cpu.f & ~0x01))
     for b in ("CHGMOD", "CHGCLR", "CLS", "ERAFNK", "DSPFNK"):
         m.trap(b, lambda mm: None)
+    # 🔴 D-SPMERGE step 4: `rp_lp` re-bases the machine stack on the pool
+    # frontier (`ld sp,(CSP)`) on every pass -- that is what makes the pool's
+    # free sites symmetric. On a real machine `ctl_reset` publishes `CSP` at
+    # cold boot before anything runs (MEASURED 2026-09-12: ctl_reset at t=2.641
+    # and t=2.656, first `repl` at t=2.713 with CSP=D906 already), but it
+    # derives the value through a SUB-ROM call this harness does not have, so
+    # here it only gets as far as its own `CSP := 0` -- and `ld sp,(CSP)` then
+    # takes SP to 0 and the CPU runs away. Standing in for the boot is the same
+    # fix D-TXTCEIL made for `SL_CEIL`: supply what the machine publishes. The
+    # value only has to sit in the harness's stack band [0x8000,0xf380].
+    m.trap("ctl_reset", lambda mm: (mm.poke_w(mm.sym["CSP"], 0xF000),
+                                       mm.poke_w(mm.sym["CTLLIM"], 0x8000)))
     out = m.capture_chput()
     m.call("new_prog")
     for lineno, body in lines:

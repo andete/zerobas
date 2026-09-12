@@ -29,6 +29,33 @@
 ; points (CHGET, CHPUT). No disassembly.
 
 repl:
+                ; --- D-SPMERGE cut 2 step 3: BASE THE MACHINE STACK IN THE POOL --
+                ; docs/spec-basic-spmerge.md §3/§9.4. Until now `SP` was whatever
+                ; C-BIOS left it at ($F2EA), ~234 B above its floor and nowhere near
+                ; the ~22 KB of free RAM the pool descends through -- which is why a
+                ; LEGAL 16-deep parenthesised expression WRECKED the machine while
+                ; both references answer to depth 32.
+                ;
+                ; 🔴 SITED HERE AND NOWHERE ELSE. `repl` is entered by `jp` only
+                ; (basic/interp.asm and the `jr repl` below) and never returns, so
+                ; discarding the stack here discards nothing live. Every other
+                ; candidate has a return address in flight -- §3 is the list.
+                ; 🎯 RE-READ, NEVER CACHED. `CLEAR n,addr` moves `CTLTOP` and so
+                ; moves `CSP`; reading it on every pass through the prompt is what
+                ; makes the stack follow `CLEAR`/`RUN`/`NEW` for free, and a cached
+                ; boot value is exactly the `$D000` accident of §17.
+                ; ⚠️ Frames may be LIVE here -- a `Break` leaves the GOSUB/FOR frames
+                ; standing so `CONT` can resume -- so this bases the stack at the
+                ; FRONTIER, below them, not at `CTLTOP`.
+                ; 🔴 THE COLD-BOOT ZERO GUARD IS DEAD AND THAT IS MEASURED, NOT
+                ; ARGUED (2026-09-12, D-SPMERGE step 5). It used to read `CSP` into
+                ; HL and skip the move when it was zero, "pool not live yet, before
+                ; ctl_reset". A breakpoint on both routines from a COLD BOOT says
+                ; ctl_reset runs TWICE, at t=2.641 and t=2.656, and the first `repl`
+                ; entry is at t=2.713 with `CSP=D906` already -- so the guarded arm
+                ; cannot be taken, and every other entry here is a `jp` from a
+                ; running machine. 4 B, which is where step 4's re-base is paid for.
+                ; BISECT step 5: repl re-base removed entirely
                 ; --- D-LPTVERB R-LP16: flush a partial PRINTER line -------------
                 ; MEASURED, and it took three rows to establish: `LPRINT"A";`
                 ; leaves a trailing CR/LF in the printer log, while

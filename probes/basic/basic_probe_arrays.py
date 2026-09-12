@@ -515,8 +515,33 @@ CASES = [
     # leaves ~27 -- the ~26 B the original geometry had). Neither row uses a file,
     # so reserving no channels costs them nothing.
     # [[a-coverage-row-whose-geometry-cannot-reach-the-case]].
+    # 🔴 RE-SIZED 1845 -> 1813 BY D-SPMERGE (2026-09-12), and the shift is EXACTLY
+    # the 256 B the merge reserves. Since the merge the machine stack lives BELOW the
+    # pool frontier, so `strheap_varceil` had to stop handing the variable and array
+    # region everything up to `CSP` -- it now keeps `CTL_STACK_MARGIN` (256 B) clear,
+    # the same reserve `ctl_alloc` keeps at the pool's floor. The array region is
+    # therefore 256 B smaller = 32 double-precision elements, and every reading moves
+    # down by exactly that. ⚠️ READ THE MARGIN, NOT `FRE`: the reserve is taken at
+    # the ARRAY-growth check (sub/arrays.asm), not inside `strheap_varceil`, so
+    # `FRE(0)` still reports the raw gap and reads 256 HIGHER than the room an array
+    # can actually take. Clean: 1845->123, 1853->59, 1857->27, 1859->11, 1861 the DIM
+    # fails. Merged: 1813->FRE 379 (=123+256), 1825->283 (=27), 1827->267 (=11),
+    # 1829 the DIM fails. Same margins, same boundary, shifted 32 elements; monotonic
+    # on both, `Out of memory` raised at every step on both.
+    # 🔴 AND THE RESERVE MUST NOT GO IN `strheap_varceil`: that routine is ALSO the
+    # pool's top (CTLTOP) and the source of the text-store ceiling SL_CEIL. Taking it
+    # there turned txtceil's POSITIVE control red with `stored=0` -- the bound refused
+    # every program -- and took loc-acceptance with it. MEASURED, both ways.
+    # 🎯 THIS IS THE SECOND TIME A 256 B RESERVATION MOVED THIS ROW -- see the
+    # MAXFILES history above, where "the region lost 256 B and DIM Z(1840) stopped
+    # fitting AT ALL". The row is doing its job: BEFORE the varceil fix it did not
+    # merely fail to squeeze, it read NO OUTPUT AT ALL at N=1857/1859, the variables
+    # having grown through the live stack.
+    # ⚠️ AND THE FIGURES IN THE PARAGRAPH ABOVE HAVE ROTTED: it says "N=1840 leaves
+    # 67 B, N=1846 leaves 19 B", but a clean tree on 2026-09-12 reads N=1845 -> 123 B
+    # and N=1847 -> 107 B. Re-measure before trusting either.
     ("scalar.str.chain.oom",   "direct",
-        ['MAXFILES=0', 'CLEAR 200,47872', 'DIM Z(1845)']
+        ['MAXFILES=0', 'CLEAR 200,47872', 'DIM Z(1813)']
         + [f'{c}$="1"' for c in "ABCDEFGHIJKLMNOPQRSTUVWXYZ"],
         "zberr"),
 
@@ -975,7 +1000,7 @@ def _line_tokens(raw):
 # path even after ex_let_str's own fix); post-fix it is '1|Out of memory'.
 INPUT_OOM = [
     ("scalar.input.chain.oom",
-     ['MAXFILES=0', 'CLEAR 200,47872', 'DIM Z(1845)'] +
+     ['MAXFILES=0', 'CLEAR 200,47872', 'DIM Z(1813)'] +
      [ln for c in "ABCDEFGHIJKLMNOPQRSTUVWXYZ" for ln in (f'LINE INPUT {c}$', '1')],
      "LINE INPUT Z$", "1|Out of memory"),
 ]

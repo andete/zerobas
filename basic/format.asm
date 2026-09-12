@@ -70,8 +70,7 @@ exc_name:
                 ; ⚠️ COLON MUST STILL PASS: `CALL FORMAT:PRINT 1` is accepted on
                 ; both references, so this requires end-of-STATEMENT, not
                 ; end-of-line. That row is why the test is not a bare `or a`.
-                call    skip_spaces         ; returns A = (HL) -- no reload
-                or      a
+                call    skipsp_test ; returns A = (HL) -- no reload
                 jr      z,exc_go
                 cp      COLON
                 jp      nz,stmt_error

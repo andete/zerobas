@@ -779,8 +779,7 @@ ep_parse_b:
                 ; both are ERR 24 on both references. ⚠️ NOT the `cp ','` arm
                 ; three lines down: a THIRD comma is a fourth argument and is
                 ; ERR 2, measured (od2.b16c / od3.b15c, D-PAINTBORD).
-                call    skip_spaces
-                or      a
+                call    skipsp_test
                 jr      z,ep_missing        ; dangling comma -> ERR 24
                 cp      COLON
                 jr      z,ep_missing
@@ -1484,8 +1483,7 @@ g8_assign:
                 jr      z,g8_missing
                 call    g8_num_operand      ; DE = value (ERR 13 on a string)
                 ld      (GFX_G8V),de
-                call    skip_spaces
-                or      a
+                call    skipsp_test
                 jr      z,g8_run
                 cp      ':'
                 jp      nz,gfx_syntax       ; `VDP(0)=1,2` -> a TRAPPABLE ERR 2, not the

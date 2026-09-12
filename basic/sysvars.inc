@@ -3498,6 +3498,22 @@ FOR_CUR         equ     $E045   ; scratch: a working copy of one FOR frame (11),
 ; D-CTLPOOL: $E050.. held GOSUB_STK (8 x 6 B). The array is retired; these six
 ; bytes are the pool's own pointers and $E058..$E080 is FREE.
 CSP             equ     $E050   ; the pool's allocation frontier, descending (2)
+; --- CTL_STACK_MARGIN: what the pool leaves for the MACHINE STACK ------------
+; D-SPMERGE cut 2. `SP` now descends from the pool's frontier, so the frontier
+; cannot be allowed down to `CTLLIM` -- the next expression the evaluator
+; parses would run below it and into the arrays. `ctl_alloc` refuses once fewer
+; than this many bytes separate the frame's base from the floor.
+; ⚠️ A LANGUAGE-VISIBLE CONSTANT: it is the difference between the GOSUB depth
+; this reports and the depth the references report (4051 on the VG-8020, 3282 on
+; the CF-3300, against ~26-32 KB of gap), so it costs about 130 frames out of
+; several thousand. Sized against the deepest expression the battery drives --
+; `parennest` at 32 nested parentheses and 16 nested string functions -- with
+; room to spare, because the failure mode when it is too small is silent memory
+; corruption, not an error.
+CTL_STACK_MARGIN equ    256    ; MEASURED: ctllim-acceptance is green at this size
+                               ; and 1024 costs ~130 frames of GOSUB depth for
+                               ; nothing. One PAGE, so both users can subtract it
+                               ; with a single `dec h` / test it with `cp high`.
 CTLTOP          equ     $E052   ; the pool's TOP = strheap_varceil(), cached (2)
 TSP             equ     $E054   ; newest trap SERVICE record; valid iff TRAPSVC != 0 (2)
 CTLLIM          equ     $E056   ; the pool's collision FLOOR = ARYEND+2 (2). Written

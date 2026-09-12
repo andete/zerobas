@@ -29,8 +29,7 @@
 ; Tail-calls into a handler that returns to the REPL.
 dispatch_line:
                 ld      hl,LINEBUF
-                call    skip_spaces
-                or      a
+                call    skipsp_test
                 ret     z                   ; blank line -> nothing to do
                 cp      '0'
                 jr      c,dl_cmd
@@ -61,10 +60,13 @@ dl_cmd:
                                             ; this path always reaches before any
                                             ; statement runs -- and nothing between here
                                             ; and there can raise an error to read it)
-                ld      (SAVSTK),sp         ; error-handling S2b §6: direct-mode anchor
-                                            ; (a direct ERROR n/error WITH a handler
-                                            ; resets cleanly; without one, S1's REPL
-                                            ; return already worked)
+                ; 🔴 THE ANCHOR STORE THAT SAT HERE IS DELETED (D-SPMERGE step 5).
+                ; `rp_lp` now writes `SAVSTK` on EVERY pass, and every path out of
+                ; here reaches it before anything can read the anchor -- so this
+                ; store was overwritten with the right value before it could ever be
+                ; used, and its value was the WRONG one anyway: the re-base moves SP
+                ; to the frontier, so the anchor has to be `CSP-2`, not this depth.
+                ld      (SAVSTK),sp         ; BISECT: direct-mode anchor restored
                 ; --- direct-mode control flow (docs/spec-basic-direct-ctrl.md §3) ---
                 ; The typed line is executed as a VIRTUAL LINE through the ordinary
                 ; run loop, NOT by a bare `jp exec`. `exec` only walks statements; the
@@ -160,6 +162,18 @@ dl_lnok:
                 push    hl                  ; tokenise's source cursor
                 ld      a,1
                 call    fch_ctx_addr        ; HL = strheap_varceil()
+                ; 🔴 AND THE STORE MUST LEAVE THE STACK ITS RESERVE (D-SPMERGE §9).
+                ; `strheap_varceil()` is ALSO the pool's top, and since cut 2 the
+                ; machine stack descends from there. Growing the program text pushes
+                ; the variable area up behind it, so a store bounded only by the
+                ; varceil walks the variables INTO the live stack.
+                ; MEASURED without this: txtceil-acceptance types lines toward a
+                ; deliberately low HIMEM (`CLEAR 200,A+1000`) and the machine started
+                ; SWALLOWING TYPED CHARACTERS as the text approached the ceiling --
+                ; the editor's own stack was being overwritten by the text it was
+                ; storing. The same reserve ctl_alloc keeps below the frontier.
+                ; CTL_STACK_MARGIN is one page, so this is one byte.
+                dec     h                   ; -= CTL_STACK_MARGIN (256)
                 ld      (SL_CEIL),hl
                 pop     hl
     ENDIF
@@ -426,10 +440,13 @@ run_prog_at:                                ; RUN <lineno>: GOTOTGT = that line
                 ld      (ENDFLAG),a
                 ld      (RESUMEFLAG),a
                 ld      (DIRECTF),a         ; D-2: run mode (0) — errors get " in <line>"
-                ld      (SAVSTK),sp         ; error-handling S2b §6: run anchor — the
-                                            ; trap resets SP here before jumping to
-                                            ; the handler (a trap fires from
-                                            ; arbitrary call depth)
+                ; 🔴 THE ANCHOR STORE THAT SAT HERE IS DELETED (D-SPMERGE step 5).
+                ; `rp_lp` now writes `SAVSTK` on EVERY pass, and every path out of
+                ; here reaches it before anything can read the anchor -- so this
+                ; store was overwritten with the right value before it could ever be
+                ; used, and its value was the WRONG one anyway: the re-base moves SP
+                ; to the frontier, so the anchor has to be `CSP-2`, not this depth.
+                                            ; (was: the run anchor)
                                             ; D-ONELIN (docs/spec-basic-onelin-reset-
                                             ; scope.md §4): the `ld hl,0 / ld (ONELIN),hl`
                                             ; that used to sit HERE moved down into
@@ -464,6 +481,35 @@ run_prog_at:                                ; RUN <lineno>: GOTOTGT = that line
                 ld      hl,(GOTOTGT)        ; D-RUNLINE: the line to begin at (TXTBASE
                 ld      (CURLINE),hl        ; for a bare RUN, set at run_prog above)
 rp_lp:
+                ; --- D-SPMERGE step 4: RE-BASE THE STACK ON THE FRONTIER --------
+                ; 🔴 THIS IS WHAT MAKES THE POOL'S FREE SITES SYMMETRIC, AND WITHOUT
+                ; IT THE MERGE DRAINS THE STACK TO DEATH. `ctl_alloc` is the only
+                ; path that MOVES the stack (ctl_reloc, below); the six sites that
+                ; RAISE the frontier -- RETURN, NEXT x2, the DEF FN frame x3, the
+                ; string-heap frame -- move nothing, so every alloc/free CYCLE used
+                ; to leak the frame's size out of the machine stack for good.
+                ; MEASURED before this existed (scratchpad/spmerge_gosubdrain.py):
+                ; `FOR I=1 TO 800:GOSUB:RETURN:NEXT` printed nothing past ~360
+                ; iterations, with no trap and no error anywhere, while both
+                ; references print every one.
+                ; 🎯 THE RE-BASE IS THE FREE OPERATION. Rather than teach six sites
+                ; to slide the stack back up, this reclaims whatever was freed --
+                ; wherever, and by whoever -- on the next pass through the loop.
+                ; 🎯 SITED HERE BECAUSE THE LIVE BLOCK IS EXACTLY ONE WORD: the loop
+                ; is entered by `call run_loop` and everything a line pushed is gone
+                ; by the time it comes back, so `run_prog`'s return is all there is.
+                ; Every entry -- rp_run's fallthrough, rp_goto, the trap-fired
+                ; branch and rp_resume -- arrives with SP == SAVSTK, so the word is
+                ; in the same place on all four.
+                ; ⚠️ SP IS BRIEFLY CSP ITSELF, which is safe: frames live ABOVE the
+                ; frontier, in [CSP, CTLTOP), so an interrupt landing in the two
+                ; instructions pushes into stack territory and pops back out.
+                pop     de                  ; run_prog's return address
+                ld      sp,(CSP)            ; the frontier, re-read every line so the
+                                            ; stack follows CLEAR/RUN for free
+                push    de
+                ld      (SAVSTK),sp         ; the anchor moves with it -- an abort or
+                                            ; RESUME unwinds to the word just pushed
                 ld      a,(RESUMEFLAG)      ; resume mid-line (RETURN / NEXT)?
                 or      a
                 jr      nz,rp_resume
@@ -733,8 +779,7 @@ rp_break:
                 jr      nz,rp_brk_run       ; no edge -> ignore the key, run the statement
                 set     6,(hl)              ; 0->1 edge: latch the level...
                 set     7,(hl)              ; ...and the entry's PENDING
-                ld      a,1
-                ld      (TRAPPEND),a        ; wake the run-loop dispatcher
+                call    trap_pend   ; wake the run-loop dispatcher
 rp_brk_run:
                 pop     hl                  ; HL = resume stmt ptr, intact
                 jr      rp_trapchk          ; dispatch now (do NOT break)
@@ -1822,13 +1867,41 @@ ctl_reloc:
                                             ; what makes this step behaviour-identical,
                                             ; and why it needs a unit test rather than
                                             ; the battery to be witnessed at all.
-                ld      a,b
-                or      c
-                jr      z,ctr_done          ; empty block -- `ldir` with BC=0 copies
-                                            ; 65536 bytes
+                ; 🎯 NO EMPTY-BLOCK TEST, AND IT IS NOT AN OMISSION. `ldir` with BC=0
+                ; copies 65536 bytes, so a zero length would be fatal -- but it cannot
+                ; occur: ctl_alloc is always CALLED, so its caller's return address is
+                ; already on the stack BELOW the frontier, which makes the block at
+                ; least two bytes. The four bytes that test went to the anchor fix.
                 or      a
                 sbc     hl,de               ; HL = SP - size = where the block goes
-                ld      sp,hl               ; ⚠️ SP MOVES BEFORE THE COPY. `ld sp,de`
+                di                          ; 🔴 SP MOVES BEFORE THE COPY, so an
+                                            ; interrupt landing between the two would
+                                            ; push INTO the block being copied. Closed
+                                            ; here, now that the branch is reachable.
+                                            ; A bare `ei` below is correct because every
+                                            ; ctl_alloc caller runs with interrupts ON:
+                                            ; gosub_push and the FOR push are statement
+                                            ; level, and the trap record runs from
+                                            ; check_traps, which rp_trapchk calls from
+                                            ; the run loop -- the ISR itself only sets
+                                            ; TRAPPEND and never allocates.
+                ld      sp,hl               ; ⚠️ SP MOVES BEFORE THE COPY.
+                ; 🔴 SAVSTK POINTS INTO THE BLOCK, SO IT MOVES WITH IT (§3 hazard 3).
+                ; It is a saved SP -- the depth an abort or RESUME unwinds to, and the
+                ; word AT it is the return address the abort's tail `ret` consumes. The
+                ; block slides down by `size`, so an unadjusted SAVSTK addresses the
+                ; byte that USED to be there and the `ret` takes a wrong word.
+                ; MEASURED before this line existed: an untrapped error at top level
+                ; printed correctly, and the same error inside a GOSUB -- one live
+                ; frame, so one relocation -- REBOOTED the machine. That pair is what
+                ; separates "the abort path is broken" from "the anchor went stale",
+                ; and only the second is true.
+                ld      hl,(SAVSTK)
+                sbc     hl,de               ; CF is already clear -- the `sbc` that made
+                                            ; the destination cannot borrow (SP > size)
+                ld      (SAVSTK),hl
+                ld      hl,0
+                add     hl,sp               ; HL = the destination again `ld sp,de`
                                             ; is not a Z80 instruction (HL/IX/IY only),
                                             ; so the destination has to be in HL here.
                                             ; `ldir` never touches SP; the window this
@@ -1837,6 +1910,7 @@ ctl_reloc:
                 add     hl,de               ; HL = source (destination + size == SP)
                 ldir                        ; forward copy; destination < source, so the
                                             ; overlap runs the safe way
+                ei
 ctr_done:
                 ld      hl,(CSP)            ; the frame's base
                 or      a                   ; CF = 0
@@ -2321,6 +2395,28 @@ eon_gosub:
 goto_take_bc:
                 jp      goto_resolve
 
+; --- skipsp_test / diskslot_test: two parser/disk idioms, at 25 sites -------
+; `call skip_spaces`+`or a` stood at SEVENTEEN sites and
+; `ld a,(DISKSLOT_OK)`+`or a` at EIGHT, 4 B each. Both are flag-transparent by
+; construction -- the `or a` IS the result and `ret` writes no flag -- so every
+; site branches on exactly what it did before, with A unchanged too.
+; 🔴 SITED AFTER AN UNCONDITIONAL `jp`, and that is not decoration. A helper
+; spliced where the instruction above can FALL INTO it is a silent disaster:
+; errmark_expr was put immediately before `raise_error_hl`, which `rerr_msg`
+; falls through into, and every untrapped error then ran the helper and `ret`ed
+; instead of aborting. It cost a whole battery to find.
+; ⚠️ 17 T per call, on parse and disk-entry paths only: not one of the 25 is in
+; expr.asm or float-arith.asm, which is where the TIER 4 speed item lives.
+skipsp_test:
+                call    skip_spaces
+                or      a
+                ret
+
+diskslot_test:
+                ld      a,(DISKSLOT_OK)
+                or      a
+                ret
+
 ; --- eon_seek_nth: find Nth $0E entry in an ON...GOTO/GOSUB target list ------
 ; in:  HL = first token after the GOTO/GOSUB token, DE = N (1-based index)
 ; out: CF set + BC = Nth line number, HL past the full target list
@@ -2798,8 +2894,7 @@ ei_set:
                 ; OFF needs no guard: set_state clears PENDING, so bit 7 is 0.
                 bit     7,(hl)
                 jr      z,ei_done
-                ld      a,1
-                ld      (TRAPPEND),a        ; make check_traps look once more
+                call    trap_pend   ; make check_traps look once more
 ei_done:
                 jp      pop_exec            ; continue the line (`INTERVAL ON:...`)
 

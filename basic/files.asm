@@ -174,8 +174,7 @@ do_files:
                 ; still stands ahead of the `push hl` further down.
                 push    af                  ; the DISKOP_SEL_* op, across the parse
                 ; (1) a disk-ROM slot must have been recorded by the INIT scan.
-                ld      a,(DISKSLOT_OK)
-                or      a
+                call    diskslot_test
                 jr      nz,df_slotok
                 pop     af                  ; balance before the returning abort
                 jp      load_error
@@ -457,8 +456,7 @@ oo_setmode:
                 ld      a,(OO_RECLEN_CHAN)
                 ld      e,a
                 ld      d,0                 ; restore DE = channel for the rest of do_open
-                ld      a,(DISKSLOT_OK)
-                or      a
+                call    diskslot_test
                 jr      z,oo_nodisk         ; no disk -> fail BEFORE claiming a slot
                 ; claim the channel's slot (saving any OTHER active channel) so the
                 ; engine globals belong to this channel before fat_io_* fills them.
@@ -627,8 +625,7 @@ oodv_fn:
                 inc     hl
 oodv_as:
                 call    oo_parse_as_chan    ; shared "AS [#]n" + ceiling check; DE = ch
-                call    skip_spaces         ; only a terminator may follow (no LEN=)
-                or      a
+                call    skipsp_test ; only a terminator may follow (no LEN=)
                 jr      z,oodv_ok
                 cp      COLON
                 jr      nz,oo_fail_syn
@@ -704,8 +701,7 @@ oocas_out:
 oocas_setmode:
                 ld      (OO_DEVTYPE),a      ; remember the CAS mode across the AS/#n parse
                 call    oo_parse_as_chan    ; shared "AS [#]n" + ceiling check; DE = ch
-                call    skip_spaces         ; only a terminator may follow (no LEN=)
-                or      a
+                call    skipsp_test ; only a terminator may follow (no LEN=)
                 jr      z,oocas_argsok
                 cp      COLON
                 jp      nz,oo_fail_syn
@@ -1658,8 +1654,7 @@ ex_kill:
 do_kill:
                 call    fname_fcb          ; D-FNEXPR: a string EXPRESSION
                                            ; build DISK_FCB_NAME (8.3 wildcard pattern)
-                ld      a,(DISKSLOT_OK)
-                or      a
+                call    diskslot_test
                 jp      z,load_error
                 push    hl                  ; guard text cursor across CALSLT
                 ; wildcard delete: fat_delete finds + frees + $E5-marks the FIRST
@@ -1775,8 +1770,7 @@ do_name:
                 ; reasoning about STRSCR's span is still true and still useful if
                 ; anything is ever staged there again.
                 ld      (FN_RESUME),hl      ; park the cursor: the new-name text
-                ld      a,(DISKSLOT_OK)
-                or      a
+                call    diskslot_test
                 jp      z,load_error
                 ; find the OLD file first (records FWR_DIRSEC/FWR_DIROFF). The
                 ; text cursor no longer needs guarding across CALSLT -- it lives
@@ -2005,8 +1999,7 @@ ex_merge:
                 call    dev_cmp
                 jr      z,merge_cas         ; matched "CAS:" -> tape merge (HL past prefix)
                 call    pdfcb_resume      ; build DISK_FCB_NAME; HL -> closing '"'
-                ld      a,(DISKSLOT_OK)
-                or      a
+                call    diskslot_test
                 jp      z,load_error
                 push    hl                  ; guard the text cursor across the merge
                 call    fat_io_open         ; mount + find + prime the sequential read
@@ -2154,8 +2147,7 @@ mrg_storeline:
                 ld      hl,(MRG_PTR)
                 ld      (hl),0              ; terminate the accumulated line
                 ld      hl,LINEBUF
-                call    skip_spaces
-                or      a
+                call    skipsp_test
                 jr      z,msl_ok            ; blank line -> skip
                 cp      '0'
                 jr      c,msl_err

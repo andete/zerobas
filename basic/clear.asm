@@ -207,9 +207,36 @@ clr_h_store:
                 ld      (HIMEM),de          ; record CLEAR's ceiling
 clr_done:
                 push    hl                  ; clear_vars clobbers HL; guard the
+                ; 🔴 CLEAR MOVES THE POOL'S FRONTIER, AND SINCE D-SPMERGE THE MACHINE
+                ; STACK IS BASED ON IT (docs/spec-basic-spmerge.md §9). A bigger string
+                ; pool drops `strheap_varceil()`, so after the wipe the stack is left
+                ; sitting ABOVE the new frontier -- inside the pool CLEAR just enlarged
+                ; -- and the next string allocation writes straight over it.
+                ; MEASURED, on `CLEAR 4000:FORI=1TO5:A$=STRING$(250,65):NEXT`: before
+                ; CLEAR SP=D902/CSP=D906; after it SP=D8FE but CSP=CA2E, a 3.7 KB drop,
+                ; with HIMEM at F380 -- so SP sat squarely inside the new pool. One
+                ; allocation later SP read 0038. The FOR frame is what made it fatal
+                ; rather than merely wrong: NEXT then looped on a corrupted frame, so
+                ; the machine HUNG instead of crashing, and six suites reported it as
+                ; "no output".
+                ; 🎯 `repl:` already re-bases SP at the prompt, which is exactly why
+                ; splitting the CLEAR onto its own line hid this for so long.
+                ld      hl,(CSP)            ; the frontier BEFORE the wipe
+                push    hl
                 call    clear_vars          ; statement cursor across the wipe
                 call    vars_reset          ; arrays slice-1 (§9.6) + slice-4b (§3b):
                                             ; CLEAR wipes any live scalars/arrays too;
                                             ; PRGEND is already valid here (a program
                                             ; may already exist)
+                pop     hl                  ; the OLD frontier
+                ld      de,(CSP)            ; the NEW one
+                or      a
+                sbc     hl,de               ; HL = how far the frontier FELL
+                jr      c,clr_nomove        ; it ROSE (a smaller pool): the stack is
+                                            ; still below it, so nothing to do -- and a
+                                            ; negative delta would wrap ctl_reloc
+                ex      de,hl               ; DE = the delta, HL = the new frontier --
+                call    ctl_reloc           ; exactly ctl_reloc's contract, so the block
+                                            ; move, SP and SAVSTK all come for free
+clr_nomove:
                 jp      pop_exec            ; HL = cursor; run the next statement

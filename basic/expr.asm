@@ -748,8 +748,7 @@ ev_f_err:                                   ; the SILENT landmark -- and as of D
                                             ; a factor deciding to fail with NO error
                                             ; code, which measured wrong at every one of
                                             ; the seven sites that had made it.
-                ld      a,$DD               ; expression error marker
-                ld      (ERRMARK),a
+                call    errmark_expr; expression error marker
                 jp      ret_de0
 
 ; --- ev_f_errfn / ev_f_erlfn: ERR / ERL -> DE (error-handling S2a, docs/ ---
@@ -1121,6 +1120,13 @@ ev_ff_ckdone:
                 cp      LOF_TOKEN
                 jp      z,ev_ff_lof         ; `jp` since D-LOC: the LOC test below
                                             ; sits between this and its target
+                                            ; ⚠️ D-SPMERGE step 5 tried `jr` here on
+                                            ; jr_mapper's 2026-09-12 proposal and the
+                                            ; ASSEMBLER REFUSED: out of range. The
+                                            ; proposal was measured on the tree BEFORE
+                                            ; this slice's carve moved the layout --
+                                            ; Route D renews on insertion, and it
+                                            ; UN-renews the same way.
                 cp      LOC_TOKEN
                 jp      z,ev_ff_loc         ; `jp`: ev_ff_loc's body sits past jr range,
                                             ; exactly the ev_ff_dskf landmine below
@@ -2425,8 +2431,7 @@ ev_f_base:
                 call    ev_logic            ; evaluate + discard the index argument
                 call    evsp_close          ; D-EVSPCLOSE
                 inc     ix
-                ld      a,$DD               ; BASE is descoped -> expression-error marker
-                ld      (ERRMARK),a
+                call    errmark_expr; BASE is descoped -> expression-error marker
                 jp      ret_de0     ; ...and a 0 result (no fabricated address)
     ENDIF
 

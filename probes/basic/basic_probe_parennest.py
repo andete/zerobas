@@ -59,23 +59,23 @@ CASES = ([(f"p{n:02d}", prog(f"p{n:02d}", parens(n)), str(n + 1)) for n in (8, 1
          + [(f"s{n:02d}", prog(f"s{n:02d}", strnest(n)), "1") for n in (4, 8, 12, 16)]
          + [("p08r", prog("p08r", parens(8)), "9")])           # the readout's own control
 
-# The depths where zerobas is WRECKED. Each is a DEFECT, not an accepted
-# deviation, and the row goes RED the day it answers correctly so the fix cannot
-# land unbooked.
+# 🟢 THE PINS ARE FLIPPED -- D-SPMERGE CUT 2 LANDED (2026-09-11). Every depth here
+# now answers the value both references give: p16/p20/p24/p32 read 17/21/25/33,
+# f16/f24/f32 read 1, s12/s16 read 1. The set below is EMPTY and every row is
+# scored against the reference, so a cap that ever comes back is RED on its own
+# row -- which is what this file is for now that the defect is gone.
 #
-# 🔴 D-SPMERGE's FIRST CUT FLIPPED ALL NINE AND WAS STILL WRONG (2026-09-11).
-# `ld sp,(CSP)` at `repl:` made p32 read 33, f32 read 1, s16 read 1 -- every
-# value both references give -- and took THIRTY-TWO other suites down with it,
-# because `ctl_alloc` allocates DOWNWARD FROM `CSP`: with the stack based there
-# too, the first `GOSUB`/`FOR`/trap frame lands inside live stack. These rows
-# going green is necessary and nowhere near sufficient, which is exactly why the
-# battery runs before a pin is flipped.
-#
-# 🔴 PINNED TO THE CLASS, NOT TO THE FACE. Past the cap the trap reports whatever
-# byte the corrupted recursion left in ERRFLG, and unrelated code motion walked
-# the same rows through `ERR 50` -> dead -> `ERR 34` -> `ERR 244`. What is stable
-# is that these depths do not produce the value both references produce.
-WRECKED = {"p16", "p20", "p24", "p32", "f16", "f24", "f32", "s12", "s16"}
+# 🔴 AND THE FIRST CUT FLIPPED ALL NINE TOO, AND WAS STILL WRONG (same day). A
+# bare `ld sp,(CSP)` at `repl:` produced exactly these sixteen values and took
+# THIRTY-TWO other suites down with it, because `ctl_alloc` allocates DOWNWARD
+# FROM `CSP`: with the stack based there as well, the first `GOSUB`/`FOR`/trap
+# frame landed inside live stack. What makes the second cut different is NOT this
+# file -- it is `ctl_reloc` (basic/program.asm), which moves the live block out of
+# the frame's way. These rows going green was necessary and nowhere near
+# sufficient, and the full battery plus the five excluded targets is what actually
+# decided it. Keep this paragraph: it is the reason nobody should read a green
+# parennest as the fix.
+WRECKED: set[str] = set()
 
 
 def face(cap, tag):

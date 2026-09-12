@@ -62,6 +62,19 @@ htimi_service:
 ; VBLANK, DI, register-transparent. Fast-out when no trap is ON (the common case).
 ; For each armed event source, set the entry's PENDING bit + raise TRAPPEND so the
 ; run-loop dispatcher wakes. T2: STRIG 0..4 (the only polled source on MSX1).
+; --- trap_pend: raise TRAPPEND, at five sites ------------------------------
+; `ld a,1` + `ld (TRAPPEND),a` stood at five sites, 5 B each -- the three event
+; sources, rp_break's STOP latch and ei_set. Flag-transparent (neither `ld` nor
+; `ret` writes F), so every site keeps whatever flags it had, and A is left
+; holding 1 exactly as before.
+; ⚠️ TWO OF THE FIVE ARE INSIDE `event_poll`, i.e. the H.TIMI ISR path, whose
+; contract is REGISTER TRANSPARENCY -- satisfied here because the helper touches
+; only A, which event_poll's own entry `push af` has already saved.
+trap_pend:
+                ld      a,1
+                ld      (TRAPPEND),a
+                ret
+
 event_poll:
                 push    af                  ; register-transparent on ALL paths (the
                                             ; H.TIMI contract) — the fast-out MUST NOT
@@ -155,8 +168,7 @@ ep_live:
                 jr      z,ep_ivl_done       ; OFF (00) -> elapse silently, do not latch
                 ld      hl,ZTRAP
                 set     7,(hl)              ; PENDING
-                ld      a,1
-                ld      (TRAPPEND),a        ; wake the run-loop dispatcher
+                call    trap_pend   ; wake the run-loop dispatcher
 ep_ivl_done:
     ENDIF
                 ; --- STRIG 0..4 (entries ZTI_STRIG0..+4): joystick trigger edges ---
@@ -198,8 +210,7 @@ ep_strig_down:
                 jr      nz,ep_strig_next    ; still held since last frame -> no edge
                 set     6,(hl)              ; 0->1 edge: latch the level...
                 set     7,(hl)              ; ...and the entry's PENDING
-                ld      a,1
-                ld      (TRAPPEND),a        ; wake the run-loop dispatcher
+                call    trap_pend   ; wake the run-loop dispatcher
 ep_strig_next:
                 inc     hl
                 inc     hl
@@ -456,7 +467,6 @@ trap_return_check:
                 ld      a,(hl)
                 and     ZTS_PENDING         ; re-latched during the handler?
                 ret     z
-                ld      a,1
-                ld      (TRAPPEND),a         ; yes -> fire again at the next boundary
+                call    trap_pend   ; yes -> fire again at the next boundary
                 ret
 

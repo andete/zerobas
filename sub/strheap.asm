@@ -427,6 +427,16 @@ svc_ctl:
                 ld      a,d
                 or      e
                 ret     z                   ; CSP not initialised yet -> unchanged
+                ; ⚠️ NO STACK RESERVE HERE, AND THAT IS DELIBERATE (D-SPMERGE step 6).
+                ; The merge does need `CTL_STACK_MARGIN` kept clear below the
+                ; frontier, but NOT in this routine: `strheap_varceil()` is ALSO the
+                ; pool's TOP (`CTLTOP`, basic/program.asm) and the source of the
+                ; program-text store ceiling `SL_CEIL`, so a reserve taken here moves
+                ; the whole map. MEASURED: a `dec d` on this line turned txtceil's
+                ; POSITIVE control red with `stored=0` -- the bound refused every
+                ; program, exactly what that control exists to catch -- and took
+                ; loc-acceptance with it. The reserve belongs at the two ARRAY-growth
+                ; consumers in sub/arrays.asm, and that is where it now is.
                 push    hl
                 or      a
                 sbc     hl,de

@@ -538,7 +538,65 @@ converted, then went out of range the moment another 4 B was freed.
 and 1 NOT MEASURED**, matching the clean baseline exactly; the GOSUB sweep
 `[51]/[201]/[401]/[801]`, equal to the VG-8020 at every depth. Battery **126/128**.
 
-🔴 **AND IT IS NOT COMMITTED, BECAUSE OF ONE ROW.** `array-acceptance`'s
+### 10.4c 🟢 STEP 6: THE ARRAY CEILING HAD TO RESERVE THE STACK — AND WHERE
+
+One row held the slice back, and it was right to. The history below is kept because
+the FIRST reading of it was wrong twice.
+
+🔴 **THE DEFECT.** `strheap_varceil` clamps the variable/array ceiling to `CSP`, the
+pool's live frontier — correct before the merge, and catastrophic after it, because
+since the merge **the machine stack lives BELOW `CSP`**. A ceiling AT the frontier
+lets the array region grow straight through the live stack. The routine's own note
+had already named the gap: the pool's `ctl_alloc` check "is only one side of it".
+
+📏 **CLEAN AND MERGED, SAME INPUTS** (`MAXFILES=0` / `CLEAR 200,47872` / `DIM Z(N)`
+then 26 scalar assignments,
+[readings](scratchpad/spmerge_squeeze_bisect.out)):
+
+| N | clean | merged, before the fix |
+|---|---|---|
+| 1845 | 123 B, `Out of memory` | 123 B, **no OOM** |
+| 1855 | 43 B, `Out of memory` | **2526 B**, no OOM |
+| 1857 | 27 B, `Out of memory` | **no reading at all** |
+| 1859 | 11 B, `Out of memory` | **no reading at all** |
+| 1861 | the `DIM` fails | the `DIM` fails |
+
+Clean is monotonic and raises the error at every step; merged went non-monotonic and
+**died**. So this was a regression the merge introduced, not a row whose geometry had
+rotted — and re-sizing it to a passing value would have been fixing the test to match
+a defect. 🔴 **MY FIRST READING SAID THE OPPOSITE** ("under the merge the geometry
+leaves 123 B instead of ~26, so it needs a re-size"): both builds read 123 B at
+N=1845, the probe's own "~27 B" comment had rotted, and clean's real 27 B point is
+N=1857. Walking the CLEAN boundary is what separated the two.
+
+🔴 **AND THE FIX'S LOCATION IS THE WHOLE LESSON.** The reserve went into
+`strheap_varceil` first — one byte, `dec d`, exactly the right idea. It turned
+`txtceil`'s **POSITIVE control** red with `stored=0`: the bound refused every
+program, which is precisely what that control exists to catch, and it took
+`loc-acceptance` with it. `strheap_varceil()` is **also** the pool's top (`CTLTOP`)
+and the source of the program-text store ceiling `SL_CEIL`, so a reserve taken there
+moves the whole map [[a-mechanical-fix-can-break-a-different-invariant]]. The same
+instruction two sites over — `dec h` after each `call strheap_varceil` in
+[`sub/arrays.asm`](sub/arrays.asm) — bounds only the array growth it is about.
+**2 B of sub page 0**, `txtceil` and `loc` green, `array` 146/146.
+
+📏 **AFTER THE FIX THE MERGED BUILD REPRODUCES CLEAN EXACTLY, shifted by 32 elements
+— 256 B at 8 B per double, the reserve itself**: 1813 → 123 B of margin, 1821 → 59,
+1825 → 27, 1827 → 11, 1829 the `DIM` fails. Both `DIM Z(1845)` sites in
+[`probes/basic/basic_probe_arrays.py`](probes/basic/basic_probe_arrays.py) re-size to
+**1813** on that mechanism. ⚠️ `FRE(0)` reads **256 high** — the reserve sits at the
+check, not in the ceiling — so merged N=1813 reports 379, which is clean's 123 plus
+the margin. Read the margin, never `FRE`.
+
+🟢 **LANDED: battery 128/128**, the five battery-excluded targets green by hand,
+`parennest` 16 rows with `WRECKED` empty and 0 drift, `trapsvc` PASS 7/7, `deffn`
+0 of 73 with **86 rows SCORED**, `array` 146/146, the GOSUB sweep
+`[51]/[201]/[401]/[801]` equal to the VG-8020. Page-1 2 B free, low 0 B, sub page 0
+525 B, all measured 2026-09-12.
+
+### 10.4d (historical) the row as it blocked the slice
+
+🔴 **AND IT WAS NOT COMMITTED, BECAUSE OF ONE ROW.** `array-acceptance`'s
 `scalar.str.chain.oom` is a byte-precise squeeze — `MAXFILES=0` / `CLEAR 200,47872` /
 `DIM Z(1845)` sized to leave ~26 B, then 26 string assignments to force the OOM. Under
 the merge the same geometry leaves **123 B** and the chain completes with no OOM at

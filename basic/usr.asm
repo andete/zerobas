@@ -156,8 +156,7 @@ ev_usr:
                 jr      usr_call            ; perform the call (preserves IX) -> DE
 ev_usr_err:
                 pop     af                  ; discard saved index
-                ld      a,$DD               ; expression-error marker (cf. ev_f_err)
-                ld      (ERRMARK),a
+                call    errmark_expr; expression-error marker (cf. ev_f_err)
                 jp      ret_de0
 
 ; --- ev_usr_index: optional USR number 0..9 from the IX stream -------------
@@ -205,8 +204,7 @@ usr_ret:
                 ret
 usr_undef:
                 pop     ix                  ; restore the cursor
-                ld      a,$DD               ; expression-error marker
-                ld      (ERRMARK),a
+                call    errmark_expr; expression-error marker
                 jp      ret_de0
 
 ; --- ex_deftype: DEFINT|DEFSNG|DEFDBL|DEFSTR <ranges> ----------------------

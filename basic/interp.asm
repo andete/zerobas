@@ -174,8 +174,7 @@ init:
                 ; never reaches BASIC.
                 ; ⚠️ Gated on DISKSLOT_OK: no disk ROM, no line, no CALSLT into a
                 ; slot nothing was found in.
-                ld      a,(DISKSLOT_OK)
-                or      a
+                call    diskslot_test
                 jr      z,init_no_diskbanner
                 ld      a,(DISKSLOT)
                 ld      d,a
@@ -424,8 +423,7 @@ str_target_parse:
 ; LABEL at any site, which would make the span byte-identical without being
 ; ENTERED the same way. There is none. (scratchpad/ngram_sweep.py --main.)
 req_operand:
-                call    skip_spaces
-                or      a
+                call    skipsp_test
                 jp      z,loc_missing       ; the slot ENDS here -> ERR 24
                 cp      COLON
                 jp      z,loc_missing       ; `... :` likewise -> ERR 24
@@ -493,8 +491,7 @@ exec_stmt:
                                             ; token buffer) -- clobbering it made every
                                             ; statement dispatch on $E3D4 -> syntax error
                                             ; (Fable review 2026-07-16). DE is dead on entry.
-                call    skip_spaces         ; leading spaces are skipped (spec §5)
-                or      a
+                call    skipsp_test ; leading spaces are skipped (spec §5)
                 ret     z                   ; end of line -> back to the prompt
                 ; The dispatch is a TABLE SEARCH (D-KW-2). The 69-entry `cp`/`jp z`
                 ; chain this replaces charged 5 B per statement token before it did
@@ -1155,8 +1152,7 @@ stmt_bare_end:
 stmt_error:
                 xor     a                   ; an error mid-PRINT# must reach the
                 ld      (PRDEST),a          ; screen, not the half-written file
-                ld      a,$DD               ; distinct from BLOAD's $EE tape error
-                ld      (ERRMARK),a
+                call    errmark_expr; distinct from BLOAD's $EE tape error
                 ; D-STMTPEND: A SYNTAX ERROR MUST NOT OUTRANK A FAULT THAT
                 ; ALREADY HAPPENED. `FOR I=0*(1/0) STEP 2` reaches here with
                 ; the division-by-zero code live, and reported `Syntax error`
@@ -1468,6 +1464,26 @@ raise_error_hl:
                 or      e
                 jr      z,ra_abort           ; no handler armed -> abort with HL's message
                 ; take the trap (HL message discarded -- a trap prints nothing):
+                ; 🔴 UNWIND TO THE FRONTIER, NOT TO THE ANCHOR (D-SPMERGE §9). This was
+                ; `ld sp,(SAVSTK)`, and with the machine stack merged into the pool that
+                ; lands ABOVE the live frames -- the trap's own GOSUB frame and its
+                ; service record, both allocated by the dispatch a moment ago -- so the
+                ; handler's first push walks straight into them.
+                ; 🎯 AND THIS BRANCH MAY DO IT WHERE fre_abort_low MAY NOT, which is the
+                ; whole distinction: the abort RETURNS through the anchor (its print
+                ; tail's `ret` IS the end-of-RUN exit reached early, and the frontier has
+                ; no return address at it), while this branch JUMPS -- it sets CURLINE
+                ; and lets the run loop enter the handler, so nothing needs an address at
+                ; the new SP. Changing both alike REBOOTED the machine on every untrapped
+                ; error; only this one may move.
+
+                ; ⚠️ LEFT AS THE ANCHOR, AND THAT IS A MEASURED DECISION. Changing it
+                ; to `(CSP)` masks ONE trapsvc row when the merge is on (3 failing
+                ; rows -> 2) -- but with the merge OFF it BREAKS a row that otherwise
+                ; passes, so it is wrong in itself, not merely insufficient. A trace
+                ; also shows SAVSTK = CSP - 2 exactly at the fault, i.e. the anchor is
+                ; where the run loop's `call exec` return lives, which is what the
+                ; later `ret` needs. The residual trap failures are NOT this target.
                 ld      sp,(SAVSTK)          ; §6: unwind to the run-loop-clean depth
                 ld      hl,(CURLINE)         ; capture the resume context (§4) via HL, so DE
                 ld      (ERRRESUME),hl       ; keeps ONELIN for the CURLINE store below
@@ -2043,6 +2059,26 @@ ex_goto_undef:
                 ld      (ERRMARK),a
                 ld      a,8                 ; ERR 8: undefined line number
                 jp      raise_error
+
+; --- errmark_expr: the expression-error landmark, at six sites -------------
+; `ld a,$DD` + `ld (ERRMARK),a` (the ev_f_err convention) stood at SIX error
+; paths, 5 B each. All six are COLD -- they run once, on the way to raising an
+; error -- so the 17 T a `call` adds is invisible, which is why THIS pair was
+; taken and the hot ones in the float core were not. A is left holding $DD and no
+; flag is written, so every site is unchanged.
+;
+; 🔴 SITED AFTER AN UNCONDITIONAL `jp`, AND THAT IS THE WHOLE POINT. The first cut
+; put this block immediately above `raise_error_hl` -- which `rerr_msg` FALLS
+; THROUGH INTO once it has resolved the message. Every untrapped error then ran
+; `ld a,$DD / ld (ERRMARK),a / ret` instead of the abort: no message, no "Break",
+; just a silent return, and it looked exactly like the SP merge had broken error
+; handling. A helper may only be spliced where the instruction above it cannot
+; reach it -- `interp.asm`'s own `pop_exec` note makes the same point about
+; `exec`, one screen away.
+errmark_expr:
+                ld      a,$DD
+                ld      (ERRMARK),a
+                ret
 ; D-MSGMIGRATE: err_line's TEXT is sub-ROM-hosted (em_line, ERRFLG = 8).
 ; ex_goto_undef above reaches it through raise_error, so ERRFLG is set for it.
 

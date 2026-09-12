@@ -426,8 +426,7 @@ cas_fb_lp:
 ; abort discipline (a `jp load_error` here would `ret` back and save anyway).
 ; In:  HL -> bytes after the closing '"'.   Out: CF=0 ok (HL advanced), CF=1 bad.
 csav_speed:
-                call    skip_spaces
-                or      a
+                call    skipsp_test
                 ret     z                   ; end of statement -> no speed (CF=0)
                 cp      COLON
                 ret     z                   ; ':' separator -> no speed
@@ -459,8 +458,7 @@ csav_sp_apply:
                 ; only picks the active word here -- and leaves HL (the text cursor)
                 ; untouched. DE = the selected reference LOW word.
                 ld      (ACT_LOW),de        ; active LOW = the selected rate
-                call    skip_spaces         ; HL is past the speed (eval advanced it)
-                or      a
+                call    skipsp_test ; HL is past the speed (eval advanced it)
                 ret     z                   ; clean end -> CF=0
                 cp      COLON
                 ret     z
@@ -476,8 +474,7 @@ csav_sp_err:
 ; name is parsed; a bare CSAVE (no name) uses a 6-space name. The optional
 ; ,speed clause is honoured in BOTH forms -- CSAVE"n",2 and the no-name CSAVE,2.
 do_csave:
-                call    skip_spaces
-                or      a
+                call    skipsp_test
                 jr      z,csav_noname       ; bare CSAVE -> Missing operand
                 cp      COLON
                 jr      z,csav_noname       ; `CSAVE:` -> Missing operand

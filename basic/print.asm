@@ -148,8 +148,7 @@ exp_hash_go:
                 jp      z,ex_print_using
                 ; fall through into the shared item loop
 exp_loop:
-                call    skip_spaces
-                or      a
+                call    skipsp_test
                 jp      z,exp_nl_ret        ; end of line -> newline, done (repack:
                                             ; the F2 driver checks pushed this out of
                                             ; jr range, see below)
@@ -302,8 +301,7 @@ exp_semi:
                 ; 🎯 D-CARVE3: canonical PRINT item-list terminator -- end of
                 ; statement, `:` or another item. Both PRINT arms share it.
 exp_stmt_end:
-                call    skip_spaces
-                or      a
+                call    skipsp_test
                 ret     z                   ; trailing ';' at EOL -> no newline
                 cp      COLON
                 jp      z,exec_stmt         ; trailing ';' before ':' -> no newline

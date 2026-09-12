@@ -159,8 +159,7 @@ pcr_noquote:
                 xor     a
                 ld      (RUNFLAG),a         ; default: no ,R handoff
                 ld      (VRAM_FLAG),a       ; default: RAM load
-                call    skip_spaces
-                or      a
+                call    skipsp_test
                 jr      z,pcr_ok            ; end of statement -> plain load
                 cp      COLON
                 jr      z,pcr_ok            ; statement separator -> plain load

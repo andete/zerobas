@@ -218,8 +218,7 @@ dl_is_disk:
 do_run:
                 xor     a
                 ld      (CAS_VERIFY),a      ; RUN"CAS:" is a real load, never verify
-                call    skip_spaces         ; A = the first non-space byte
-                or      a
+                call    skipsp_test ; A = the first non-space byte
                 jr      z,dr_stored         ; end of statement -> bare RUN
                 cp      COLON
                 jr      z,dr_stored         ; `RUN : ...`      -> bare RUN
@@ -963,8 +962,7 @@ cig_eof:
 ; which calls load_error and sets CF itself.
 disk_prog_load:
                 ; (1) disk ROM slot must have been recorded by the INIT scan.
-                ld      a,(DISKSLOT_OK)
-                or      a
+                call    diskslot_test
                 jp      z,dpl_err           ; no disk ROM at all: NO primitive has
                                             ; run, so DISKOP_OP would be stale --
                                             ; and dpl_err is the SAFE tail now
@@ -1244,8 +1242,7 @@ ascii_load:
 autoexec_run:
                 ; (1) no disk ROM recorded by the INIT scan -> silent skip (same
                 ; gate disk_prog_load uses).
-                ld      a,(DISKSLOT_OK)
-                or      a
+                call    diskslot_test
                 ret     z
                 ; (2) stage the upcased 11-byte 8.3 name at DISK_FCB_NAME.
                 ld      hl,autoexec_name

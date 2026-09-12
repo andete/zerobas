@@ -141,8 +141,7 @@ puf_copied:
                 call    req_operand         ; `PRINT USING"##";` -> ERR 24
 ; --- main loop: one value per field, cycling the format ---------------------
 pu_main:
-                call    skip_spaces
-                or      a
+                call    skipsp_test
                 jr      z,pu_endlist        ; end of line
                 cp      COLON
                 jr      z,pu_endlist        ; next statement
