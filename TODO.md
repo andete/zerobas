@@ -489,7 +489,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:15321 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:15351 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -655,7 +655,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:3936 (T-6FE392)8 (T-529ABE)` from `TODO.md:14107 (T-529ABE)`: a
+      `TODO.md:3966 (T-6FE392)8 (T-529ABE)` from `TODO.md:14137 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -2748,10 +2748,40 @@ list. **When a slice lands, grep this list for what it just shipped.**
       READ-TO-CLEAR and would disturb the BIOS interrupt handler. "No known gap" is
       the honest state for it until a safe row exists — better than a row that passes
       for the wrong reason [[a-case-that-agrees-can-agree-for-the-wrong-reason]].
-      ⚠️ **`CLS` `SCREEN` `COLOR` `WIDTH` WERE HELD BACK DELIBERATELY**: this sweep
-      anchors its capture on the ECHOED COMMAND, and the `locate` row above is the
-      standing proof that a feature which moves or clears the display destroys the
-      probe's own anchor. They need their own handling, not a hopeful row.
+      ~~⚠️ `CLS` `SCREEN` `COLOR` `WIDTH` WERE HELD BACK DELIBERATELY: this sweep
+      anchors its capture on the ECHOED COMMAND … They need their own handling~~
+      🔴 **RETRACTED 2026-09-12 (step 4a) — THAT WAS THE ANCHOR'S LIMIT, NOT THE
+      WORDS'.** Batch 3 filed it as "these words cannot take a kwsweep row at all",
+      and batch 4 repeated it as a structural ceiling. Both were wrong: the `arrays`
+      and `deffn` suites have ALWAYS run `CLS:PRINT"[";…` and read the bracketed
+      marker straight off the screen. `marker_tail` in
+      [`basic_probe_kwsweep.py`](probes/basic/basic_probe_kwsweep.py) now captures
+      from a unique per-row marker (note prefix `NOECHO:<tag>`; a stale screen reads
+      `?nomarker`, a REFUSAL rather than a pass), and **`CLS` `WIDTH` `COLOR` are
+      attributed: 68 -> 65**, evidence 79 -> 82
+      ([readings](scratchpad/kwdrain_step4a.out)). Battery 128/128.
+      🔴 **TWO THINGS COST A ROW EACH TO GET RIGHT.** (1) FIRST-MATCH WAS WRONG: the
+      exec line PRINTS the marker, so the marker text also sits in the ECHOED
+      COMMAND — on the side whose echo survives (`WIDTH 37` reformats but does not
+      clear on the reference) first-match captured command+answer while the other
+      captured the answer alone, and the row read DIVERGENT with **both sides having
+      printed `[W 37 ]`**. `marker_tail` takes the LAST matching row, because output
+      always follows the echo. (2) MY FIRST `CLS` ROW SCORED THE PARSE, NOT THE
+      BEHAVIOUR — a bare `[C1]` that a `CLS` doing nothing would print just as
+      happily; it now reads `CSRLIN` back (the cursor is home after a real clear),
+      and `COLOR` uses 7 rather than the DEFAULT 15 for exactly the same reason
+      [[a-case-that-agrees-can-agree-for-the-wrong-reason]].
+      ⚠️ **`SCREEN` AND `KEY` ARE DEFERRED WITH REASONS, not overlooked**: `SCREEN`'s
+      only discriminating value is a MODE CHANGE, and `SCREEN 1` is 32 columns while
+      this capture parses a 40-column screen — the row would break the reader it
+      depends on. `KEY`'s natural readback is `FNKSTR`, which is **not in
+      `basic/sysvars.inc`**; guessing the standard `$F87F` would be building on an
+      unverified constant [[a-derived-constant-falsified-from-another-file]].
+      ➡️ **STEP (c) IS STILL NOT BUILT AND IS STILL THE CEILING** for words no
+      kwsweep row can reach — but it is now a SMALLER set than batch 4 claimed, and
+      its real cost is on the record: a `subject:` tag must mean *"a row whose verdict
+      MOVES when this keyword breaks"*, and proving that per keyword is a mutation +
+      rebuild + full battery, ~15 minutes each.
       ➡️ **NEXT BATCHES, cheapest context first:** the remaining pure/near-pure words
       (`RND` `MAX` `CVI` `LSET` `RSET` `POINT` `USING` `THEN` `ELSE` `TO` `STEP` `OFF`),
       then statement-shaped ones (`IF` `ON` `GOSUB` `RETURN` `NEXT` `READ` `RESTORE`
@@ -4780,7 +4810,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:14107 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:14137 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

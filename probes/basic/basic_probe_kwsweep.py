@@ -269,6 +269,36 @@ SWEEP: list[tuple[str, str, str | None, str, str]] = [
     # "no known gap" is the honest state for it until a safe row exists.
     ("pokekw",  'poke 0,1',           'POKE-8192,7:PRINT"[";PEEK(-8192);"]"', "direct", "D-KWDRAIN"),
 
+    # ---------------------------------------------- D-KWDRAIN step 4a (2026-09-12)
+    # 🔴 A CORRECTION TO WHAT BATCH 3 FILED. I wrote that the display verbs "cannot
+    # take a kwsweep row at all" because they destroy the echo this sweep anchors
+    # on. That was the ANCHOR's limit, not the words': `marker_tail` above captures
+    # from a unique per-row marker instead, which is what the arrays and deffn
+    # suites have always done with `CLS:PRINT"[";...`. So the words come back in
+    # reach, and the claim is retracted where it was made.
+    ("widthkw", 'width 37',    'WIDTH 37:PRINT"[W";PEEK(-3152);"]"',  "direct",
+     "NOECHO:[W WIDTH reformats the screen and takes the echo with it; the row reads LINLEN ($F3B0 = -3152) back, so a WIDTH that parses and does nothing still fails. absent => syntax error => no marker at all."),
+    ("colorkw",  'color 7',    'COLOR 7:PRINT"[O";PEEK(-3095);"]"',              "direct",
+     "NOECHO:[O COLOR repaints the whole screen, echo included. Reads FORCLR "
+     "($F3E9 = -3095) back, and uses 7 rather than the DEFAULT 15 on purpose: "
+     "a COLOR that parsed and did nothing would leave 15 there and the row "
+     "would pass on the default. absent => syntax error, no marker."),
+    # ⚠️ `SCREEN` AND `KEY` ARE NOT HERE YET, each for a stated reason rather
+    # than an oversight. SCREEN: the only value that discriminates is a mode
+    # CHANGE, and `SCREEN 1` is 32 columns while this capture parses a 40-column
+    # screen -- the row would break the reader it depends on. KEY: the natural
+    # readback is the function-key buffer, whose address (FNKSTR) is NOT in
+    # basic/sysvars.inc, and guessing the standard $F87F would be building on an
+    # unverified constant. Both need a measurement first.
+    ("clskw",    'cls',        'CLS:PRINT"[C";CSRLIN;"]"',            "direct",
+     "NOECHO:[C CLS erases the echo by definition -- the exact row the old "
+     "echo-anchored capture could never hold. 🔴 AND IT READS CSRLIN BACK ON "
+     "PURPOSE: the first cut printed a bare [C1], which a CLS that PARSED AND "
+     "DID NOTHING would have printed just as happily -- scoring the parse and "
+     "calling it the behaviour. After a real CLS the cursor is home, so the "
+     "row reads 0; leave the screen alone and it reads wherever the echo left "
+     "it. absent => syntax error, no marker at all."),
+
     # -------------------------------------------------- suspected MISSING words
     # Console / cursor. All three fail the same way if absent: the word parses as
     # a numeric variable (0) or an array, so the probe must make 0 the WRONG
@@ -548,15 +578,65 @@ def tokens(raw: str | None) -> bytes | None:
     return b[4:] if len(b) >= 5 else None
 
 
-def classify(raw: str | None, cmdline: str) -> tuple[str, str]:
+def marker_tail(raw: str | None, marker: str) -> str | None:
+    """Rows from the one carrying `marker` to the closing prompt, '|'-joined.
+
+    🔴 THE ECHO-FREE CAPTURE, AND WHY IT HAS TO EXIST (D-KWDRAIN step 4a).
+    `screen_tail` anchors on the ECHOED COMMAND, which is why every row in this
+    sweep had to leave the display alone: `CLS`, `SCREEN`, `WIDTH` and `COLOR`
+    erase or move the echo, so the capture reported ?noecho and the word could
+    never be attributed at all. I filed that as "these words cannot take a
+    kwsweep row" -- WRONG: it was this probe's choice of anchor, not a limit.
+    Other suites (arrays, deffn) have always run `CLS:PRINT"[";...` and read the
+    bracketed marker straight off the screen.
+    ⚠️ THE MARKER MUST BE UNIQUE PER ROW. Without the echo there is nothing to
+    prove the text came from THIS case rather than surviving from the last one,
+    so each NOECHO row prints its own tag and this function matches that tag --
+    a stale screen then reads as ?nomarker, which is a refusal, not a pass.
+    """
+    if raw is None:
+        return None
+    rows = [raw[r * omsx_repl.COLS:(r + 1) * omsx_repl.COLS].strip()
+            for r in range(omsx_repl.ROWS)]
+    # 🔴 THE **LAST** MATCHING ROW, NOT THE FIRST, AND THAT COST A ROW TO LEARN.
+    # The exec line prints the marker, so the marker text is also inside the
+    # ECHOED COMMAND. On a machine whose echo SURVIVES the row's own feature
+    # (`WIDTH 37` reformats but does not clear on the reference) a first-match
+    # anchored on the echo and captured the command plus the answer, while the
+    # side whose echo was gone captured the answer alone -- and the row came back
+    # DIVERGENT with BOTH sides having printed `[W 37 ]`. The output always
+    # follows the echo, so the last match is the answer on both.
+    idx = next((i for i in range(len(rows) - 1, -1, -1) if marker in rows[i]), None)
+    if idx is None:
+        return None
+    out: list[str] = []
+    for r in rows[idx:]:
+        if r in omsx_repl.PROMPTS:
+            break
+        out.append(r)
+    while out and out[-1] == "":
+        out.pop()
+    return "|".join(out)
+
+
+def classify(raw: str | None, cmdline: str,
+             marker: str | None = None) -> tuple[str, str]:
     """(outcome_class, text) for one executed case.
 
     class is "value" (ran, printed something), "error:<phrase>", or "?<reason>".
     Comparing the CLASS first is what makes the sweep readable across zerobas's
-    lowercase error wording."""
-    tail = omsx_repl.screen_tail(raw, cmdline)
-    if tail is None:
-        return ("?noecho", "")
+    lowercase error wording.
+
+    `marker` selects the echo-free capture for rows whose own feature destroys
+    the echo -- see marker_tail."""
+    if marker is not None:
+        tail = marker_tail(raw, marker)
+        if tail is None:
+            return ("?nomarker", "")
+    else:
+        tail = omsx_repl.screen_tail(raw, cmdline)
+        if tail is None:
+            return ("?noecho", "")
     low = tail.lower()
     for phrase in ERROR_WORDS:
         if phrase in low:
@@ -761,10 +841,15 @@ def main() -> int:
                                    reset=("NEW", "CLS"), capture="screen")
             zb_raws = omsx_repl.run_cases(args.zb_machine, specs, batch=batch,
                                           reset=("NEW", "CLS"), capture="screen")
-            for (key, _, line, mode, _), rr, zr in zip(ex_rows, ref_raws, zb_raws):
+            for (key, _, line, mode, rnote), rr, zr in zip(ex_rows, ref_raws, zb_raws):
                 cmd = "RUN" if mode == "stored" else line
-                rc, rt = classify(rr, cmd)
-                zc, zt = classify(zr, cmd)
+                # NOECHO:<tag> -- this row's own feature erases or moves the
+                # echoed command, so it is captured by its unique marker instead
+                # (see marker_tail). Everything else keeps the echo anchor.
+                mk = (rnote.split(":", 2)[1].split()[0]
+                      if rnote.startswith("NOECHO:") else None)
+                rc, rt = classify(rr, cmd, mk)
+                zc, zt = classify(zr, cmd, mk)
                 cs = results[key].get("crunch", (None,))[0]
                 note = next(n for k, _, _, _, n in rows if k == key)
                 if note.startswith("NEEDS-DISK:") and rc.startswith("?"):
