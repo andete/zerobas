@@ -285,17 +285,48 @@ df_nextent:
                 ld      (FAT_DIRREM),hl
                 jr      df_secloop
 df_end:
-                ; SCREEN: terminate the final line if we stopped mid-line
-                ; (CSRX != column 1). PRINTER: nothing to do — R-LF1 says every
-                ; entry already ended its own line, and CSRX is the SCREEN cursor,
-                ; which a printer does not move.
+                ; 🔴 D-DFEND (2026-09-12): BOTH SINKS ENDED THE WALK WRONG, IN
+                ; OPPOSITE DIRECTIONS — the statement's two halves, one tail.
+                ;
+                ; SCREEN: this used to terminate the final line when CSRX was not
+                ; column 1. The CF-3300 does NOT: measured three ways
+                ; (scratchpad/kwdrain_fileseol.out, scratchpad/kwdrain_dfend.out)
+                ; `FILES"HI.TXT"`, `FILES"PROG.BIN"` and a bare five-entry `FILES`
+                ; all leave the cursor WHERE THE LAST ENTRY ENDED — column 18/19/31
+                ; on the reference against column 0 of the next row here. The
+                ; entries, the 8.3 padding and the three-per-row wrap agree
+                ; exactly; only this one CR/LF did not. It is invisible from the
+                ; prompt (`Ok` starts a fresh row either way), which is why it
+                ; stood: it shows the moment a PROGRAM prints after `FILES`.
+                ;
+                ; PRINTER: the head column now goes back to 0, which
+                ; docs/spec-basic-lfiles.md §3.3 recorded as deliberately NOT done
+                ; — *"every LFILES entry ends with CR/LF, so the head is at column
+                ; 0 when the statement ends and the R-LP16 flush at command level
+                ; is a no-op either way. No row measures it."* The premise is true
+                ; and the conclusion does not follow: the head is at column 0 when
+                ; the statement ends only if nothing PARKED it mid-line first.
+                ; `LPRINT"AB";` then `LFILES` reads LPOS 2 here against 0 on the
+                ; CF-3300, and R-LP16 then puts two extra bytes on the printer
+                ; (79 against 77) [[a-justification-parenthesis-is-an-unrun-claim]].
+                ;
+                ; 🔴 AND THE STORE IS CONDITIONAL BECAUSE THE UNCONDITIONAL ONE WAS
+                ; MEASURED WRONG BEFORE IT WAS WRITTEN. `df_end` is reached whether
+                ; or not the walk emitted anything, and on a no-match BOTH machines
+                ; print `File not found`, send NOTHING to the printer, and leave the
+                ; head parked — the R-LP16 flush must still fire, and both logs read
+                ; 4 B. Zeroing unconditionally would have fixed the emitting arm and
+                ; broken the empty one [[two-rules-that-coincide-on-every-row-you-have]].
+                ; DISKOP_STATUS is 1 exactly when df_do_emit ran, and `dec a` leaves
+                ; the 0 the store needs, so the condition costs one byte.
                 ld      a,(DISKOP_OP)
                 cp      DISKOP_SEL_LFILES
-                ret     z
-                ld      a,(CSRX)
-                dec     a
-                ret     z
-                jp      df_crlf
+                ret     nz                      ; SCREEN: leave the cursor put
+                ld      a,(DISKOP_STATUS)
+                dec     a                       ; 1 = at least one entry emitted
+                ret     nz                      ; nothing emitted -> head never moved
+                ld      (LPTPOS),a              ; A is 0 here
+                ret
 tf_ioerr:
                 ld      a,2
                 ld      (DISKOP_STATUS),a       ; -> the head does load_error
@@ -334,19 +365,27 @@ df_emit:
                 dec     a                       ; 0-based column (0 = line start)
                 or      a
                 jr      z,de_field              ; first field on the line
-                ; not at line start: does " " + a 12-char field still fit?
+                ; not at line start: does a 12-char field + its trailing space
+                ; still fit?
+                ; 🔴 D-DFEND: THE SPACE IS NO LONGER A SEPARATOR EMITTED *BEFORE*
+                ; THE NEXT FIELD. It is a TRAILING space, shared with the printer
+                ; (see R-LF2 at the tail) -- because the two arrangements are
+                ; indistinguishable ROW BY ROW and differ at the one place the
+                ; reference could be read: where the cursor comes to REST. After
+                ; `FILES"PROG.BIN"` the CF-3300 sits at column 19 and this sat at
+                ; 18; after a bare five-entry listing, 26 against 25
+                ; (scratchpad/kwdrain_dfend.out, three widths' worth of arms).
+                ; The `cp 13` is DELIBERATELY UNCHANGED: requiring field+space to
+                ; fit is what keeps the trailing space from landing past the last
+                ; column and wrapping the cursor itself, and it reproduces the
+                ; reference's three-per-row at LINLEN 40 and two-per-row at the
+                ; pinned WIDTH 29 exactly as the separator form did.
                 ld      b,a                     ; B = current 0-based column
                 ld      a,(LINLEN)
                 sub     b                       ; A = columns left on this line
-                cp      13                      ; need 1 (space) + 12 (field)
-                jr      nc,de_sep               ; room -> print the separating space
+                cp      13                      ; need 12 (field) + 1 (its space)
+                jr      nc,de_field             ; room -> emit the field here
                 call    df_crlf                 ; no room -> wrap to a new line
-                jr      de_field
-de_sep:
-                push    hl
-                ld      a,' '
-                call    df_out
-                pop     hl
 de_field:
                 ; 8 name chars (raw, already upper-case + space-padded on disk)
                 ld      b,8
@@ -373,16 +412,19 @@ de_ext:
                 pop     hl
                 inc     hl
                 djnz    de_ext
-                ; R-LF2: on the PRINTER the entry carries a TRAILING SPACE after
-                ; the extension, and then ends its line. On the screen it carries
-                ; neither — the space there is a SEPARATOR emitted BEFORE the next
-                ; field (de_sep), which is not the same byte in the same place, and
-                ; knife K4 is the row that says so.
-                ld      a,(DISKOP_OP)
-                cp      DISKOP_SEL_LFILES
-                ret     nz
+                ; R-LF2, WIDENED BY D-DFEND: the trailing space is now emitted on
+                ; BOTH sinks; only the CR/LF after it stays printer-only. The old
+                ; rule ("on the screen it carries neither -- the space there is a
+                ; SEPARATOR emitted BEFORE the next field") described this code and
+                ; not the reference: measured, the CF-3300's screen cursor rests one
+                ; column PAST the last entry, which is the trailing space. Knife K4
+                ; must move with it -- it pinned the arrangement, and the
+                ; arrangement is what changed.
                 ld      a,' '
                 call    df_out
+                ld      a,(DISKOP_OP)
+                cp      DISKOP_SEL_LFILES
+                ret     nz                      ; SCREEN: no CR/LF, the reference ends here
                 ; fall through -> CR/LF
 
 ; df_crlf — end the current line on the active sink. This is print_crlf's body;

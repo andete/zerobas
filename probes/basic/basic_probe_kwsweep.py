@@ -177,26 +177,36 @@ def _printer_plug() -> tuple[str, ...]:
     return (f"set printerlogfilename {{{fh.name}}}", "plug printerport logger")
 
 
-def _row_rig(note: str) -> str:
-    """Which RIG a row needs: a mounted disk, a plugged printer, or nothing.
-
-    ⚠️ ONE TAG PER ROW TODAY. `lfiles` will be the first row that needs BOTH, and
-    generalising this before there is a row to test it on would be a guess."""
-    if note.startswith("NEEDS-DISK:"):
-        return "disk"
-    if note.startswith("NEEDS-PRINTER:"):
-        return "printer"
-    return "plain"
+_RIG_TAGS = {"NEEDS-DISK:": "disk", "NEEDS-PRINTER:": "printer"}
 
 
-def _rig_kwargs(rig: str) -> dict:
-    """The run_cases kwargs that rig needs -- a FRESH image or log per call, so
-    two machines never share one."""
-    if rig == "disk":
-        return dict(DISK_TIMING, diska=_disk_image())
-    if rig == "printer":
-        return dict(prologue=_printer_plug())
-    return {}
+def _row_rigs(note: str) -> tuple[str, ...]:
+    """Every rig a row needs, as a stable tuple (the capture group key).
+
+    🟢 GENERALISED BY THE ROW THAT NEEDED IT, not ahead of it: `lfiles` walks a
+    DISK and prints to a PRINTER, and the single-tag form could not express it.
+    The tags are a PREFIX RUN of the note -- the first token that is not a known
+    tag is where the prose starts -- so a note reads
+    `"NEEDS-DISK: " "NEEDS-PRINTER: " "why this row..."`."""
+    rigs = []
+    for tok in note.split():
+        rig = _RIG_TAGS.get(tok)
+        if rig is None:
+            break
+        rigs.append(rig)
+    return tuple(rigs)
+
+
+def _rig_kwargs(rigs: tuple[str, ...]) -> dict:
+    """The run_cases kwargs those rigs need -- a FRESH image and a FRESH log per
+    call, so two machines never share one."""
+    kw: dict = {}
+    if "disk" in rigs:
+        kw.update(DISK_TIMING)
+        kw["diska"] = _disk_image()
+    if "printer" in rigs:
+        kw["prologue"] = _printer_plug()
+    return kw
 
 
 def _drop_rig_temps() -> None:
@@ -1008,7 +1018,22 @@ SWEEP: list[tuple[str, str, str | None, str, str]] = [
      "sight. Same Syntax-error differential as `set`."),
     ("cmd",     'cmd"x"',        'CMD"X"',      "stored",
      "NEEDS-DISK: " "the third refuse-on-sight word; ERR 5 on both references."),
-    ("lfiles",  "lfiles",        None, "direct", "NEEDS-DISK: " "printer-bound (LSTOUT hazard); tracked in TODO"),
+    # 🟢 THE FIRST TWO-TAG ROW, and D-DFEND is what earned it: `LFILES` walks a
+    # DISK and prints to a PRINTER, which is why `_row_rigs` returns a tuple.
+    # 🎯 AND IT HOLDS THE GROUND A FIX WON. `LFILES` did not zero LPTPOS, so with
+    # the head PARKED mid-line this read 2 where the CF-3300 read 0 (and R-LP16
+    # then put two extra bytes on the printer). Closing that item would hand the
+    # keyword straight back to the unattributed pile -- attribution comes from OPEN
+    # items -- so the row carries the defect's own shape
+    # [[a-row-written-off-as-out-of-scope-leaves-the-bookkeeping]].
+    # ⚠️ THE `LPRINT` IS NOT DECORATION: with the head already at 0, LPOS reads 0
+    # whether or not LFILES touches it, which is the blind row this replaced.
+    ("lfiles",  "lfiles",
+     'LPRINT"AB";:LFILES:PRINT"[P";LPOS(0);"]"',     "stored",
+     "NEEDS-DISK: " "NEEDS-PRINTER: " "the printer head goes back to column 0 "
+     "because every entry ended its own line -- 0 on both machines since D-DFEND, "
+     "2 before it. A no-match LFILES must NOT zero it (both machines leave the "
+     "head parked and let R-LP16 flush), which is why the store is conditional."),
     ("loc",     "a=loc(1)",
      'OPEN"HI.TXT"FOR INPUT AS#1:A$=INPUT$(10,#1):A=LOC(1):CLOSE#1:PRINT"[";A;"]"', "stored",
      "NEEDS-DISK: " "26 on BOTH machines — LOC answers in BYTES here, and it "
@@ -1301,7 +1326,7 @@ def main() -> int:
     # A Disk-BASIC verb on a diskless reference measures the absence of a disk
     # ROM, not the absence of a language feature — see DISK_MACHINE.
     def ref_machine_for(note: str) -> str:
-        return args.disk_machine if note.startswith("NEEDS-DISK:") else args.machine
+        return args.disk_machine if "disk" in _row_rigs(note) else args.machine
 
     # 🔴 D-KWORACLE (2026-09-03): THE SECOND REFERENCE WAS NEVER BOOTED IN TIME,
     # AND ALL FIVE OF ITS WITH-ORACLE ROWS CAME BACK EMPTY. `run_cases` defaults
@@ -1335,12 +1360,12 @@ def main() -> int:
         out: list[str | None] = [None] * len(specs)
         keys: list[tuple[str, str]] = []
         for r in sel_rows:
-            k = (machine_for(r[4]), _row_rig(r[4]))
+            k = (machine_for(r[4]), _row_rigs(r[4]))
             if k not in keys:
                 keys.append(k)
         for mach, rig in keys:
             idx = [i for i, r in enumerate(sel_rows)
-                   if (machine_for(r[4]), _row_rig(r[4])) == (mach, rig)]
+                   if (machine_for(r[4]), _row_rigs(r[4])) == (mach, rig)]
             mkw = dict(kw)
             mkw["boot"] = MACH_BOOT.get(mach, 8.0)
             pre = MACH_RESET_PRE.get(mach, ())
@@ -1399,7 +1424,7 @@ def main() -> int:
                 zc, zt = classify(zr, cmd, mk)
                 cs = results[key].get("crunch", (None,))[0]
                 note = next(n for k, _, _, _, n in rows if k == key)
-                if note.startswith("NEEDS-DISK:") and rc.startswith("?"):
+                if "disk" in _row_rigs(note) and rc.startswith("?"):
                     # The oracle for this row is the disk-equipped reference, and
                     # it produced nothing readable. Refuse to compare rather than
                     # silently fall back to the diskless default and call the

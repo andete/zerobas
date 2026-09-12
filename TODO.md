@@ -2730,72 +2730,68 @@ list. **When a slice lands, grep this list for what it just shipped.**
       🤖 AUTONOMOUS — the oracle is measured and the kwsweep `merge` row already
       holds the ground (it reads DIVERGENT until this is fixed).
 
-- [ ] 🔴 **`FILES` ENDS ITS LISTING WITH A NEWLINE THE REFERENCE DOES NOT EMIT.**
-      Found 2026-09-12 by D-KWDISK: the kwsweep `files` row came back DIVERGENT on
-      the ROW BOUNDARY, not on the text — `HI      .TXT [8]` on one screen row
-      against `HI      .TXT` then `[8]` on two
-      ([`scratchpad/kwdrain_fileseol.py`](scratchpad/kwdrain_fileseol.py),
-      [readings](scratchpad/kwdrain_fileseol.out), both machines, per screen row).
-      | after the listing | zerobas | CF-3300 |
-      |---|---|---|
-      | `FILES"HI.TXT":PRINT"<B>"` | `<B>` on the NEXT row | `<B>` on the SAME row, after the entry |
-      | `FILES"HI.TXT"` then `CSRLIN`,`POS(0)` | row+1, column 5 | SAME row, column 18 |
-      | `FILES` (5 entries) then `CSRLIN`,`POS(0)` | row+1, column 5 | SAME row, column 31 |
-      | the entries themselves, and the 3-per-row column layout | identical ✅ | identical ✅ |
-      🎯 **EVERYTHING ELSE ABOUT THE LISTING AGREES**, which is what makes this a
-      one-line fix rather than a formatting review: same names, same 8.3 padding, same
-      three-entries-per-row wrap, same order. Only the cursor's resting place differs
-      — zerobas emits a trailing CRLF after the last entry, the reference leaves the
-      cursor where the last entry ended.
-      ⚠️ **IT IS INVISIBLE FROM THE PROMPT**, which is presumably why it has stood:
-      `Ok` starts on a fresh row either way, so a human typing `FILES` sees the same
-      screen. It only shows when a PROGRAM prints after `FILES`.
-      ⚠️ **`LFILES` IS UNMEASURED HERE** and shares the walk (docs/spec-basic-lfiles.md);
-      check it in the same fix rather than assuming it follows.
-      🎚️ TIER 1 — happy path: `FILES` followed by a `PRINT` is ordinary, and the
-      output lands on a different row than on the reference
-      🤖 AUTONOMOUS — the oracle is measured per screen row and the kwsweep `files`
-      row holds the ground until it is fixed.
-
-- [ ] 🔴 **`LFILES` DOES NOT ZERO THE PRINTER COLUMN, AND THE CHOICE THAT SAYS SO
-      CARRIES A JUSTIFICATION THAT IS FALSE IN THE ONE CASE THAT MATTERS.**
-      Found 2026-09-12 by D-KWDRAIN while re-verifying the printer-log blocker
-      ([`scratchpad/kwdrain_lfflush.py`](scratchpad/kwdrain_lfflush.py),
-      [readings](scratchpad/kwdrain_lfflush.out), one boot per arm so every
-      printer log is its own).
-      | arm | zerobas | CF-3300 |
-      |---|---|---|
-      | `LPRINT"AB";` then `LFILES`, then `LPOS(0)` | **`2`**, log **79 B**, ends `\r\n\r\n` | `0`, log 77 B, ends `\r\n` |
-      | `LFILES` with the head at rest | `0`, log 75 B | `0`, log 75 B ✅ agree |
-      | `LPRINT"AB";` with NO `LFILES` (R-LP16 alone) | `2`, log 4 B | `2`, log 4 B ✅ agree |
-      🎯 **BOTH CONTROLS AGREE, WHICH IS WHAT PINS THE CAUSE** to `LFILES` with a
-      PARKED head rather than to `LFILES`, to `LPRINT`, or to the R-LP16 flush.
-      🔴 **AND THE FILED REASONING IS WHERE THE REAL LESSON IS.**
-      [`docs/spec-basic-lfiles.md`](docs/spec-basic-lfiles.md) §3.3 records
-      *"`LPTPOS` is not maintained by `LFILES`"* as a deliberate choice, justified by:
-      *"Every `LFILES` entry ends with CR/LF, so the head is at column 0 when the
-      statement ends and the R-LP16 flush at command level is a no-op either way.
-      **No row measures it.**"* The premise is true and the conclusion does not
-      follow — the head is at column 0 when the statement ends **only if nothing
-      parked it mid-line first**. Park it and R-LP16 fires here and does not there,
-      so the divergence is TWO bytes in the printer stream as well as the `LPOS`
-      value [[a-justification-parenthesis-is-an-unrun-claim]].
-      ⚠️ **"NO ROW MEASURES IT" WAS THE PART THAT MADE IT SAFE TO WRITE, and it was
-      true when written.** A choice whose only guard is the absence of a row is a
-      choice nobody will revisit until a row appears
+- [x] ✅ **D-DFEND (2026-09-12): BOTH SINKS ENDED THE DIRECTORY WALK WRONG, IN
+      OPPOSITE DIRECTIONS — `FILES` on the SCREEN and `LFILES` on the PRINTER,
+      one tail, 4 arms → 0, and **8 BYTES OF SUB PAGE 1 BACK** (60 → 68 B free,
+      `rm -rf build && make basic-reloc`; main page 1 11 B and low 0 B unmoved).
+      Filed as two TIER 1 items; they turned out to be one statement's two halves,
+      which is exactly what the handoff said to rule in or out before touching
+      either. `FILES` and `LFILES` share `do_files` and the `tnt_files` walk
+      entirely — only the sink and the layout branch on `DISKOP_OP` — so both
+      defects lived in `df_end` / `df_emit`
+      ([`sub/dirverb.asm`](sub/dirverb.asm)).
+      | arm | before | after | CF-3300 |
+      |---|---|---|---|
+      | `FILES"PROG.BIN"` then `POS(0)` | next row, col 6 | **col 19** | col 19 |
+      | bare 5-entry `FILES` then `POS(0)` | next row, col 5 | **col 31** | col 31 |
+      | `LPRINT"AB";:LFILES` then `LPOS(0)` | `2`, log 79 B `\r\n\r\n` | **`0`, log 77 B `\r\n`** | `0`, log 77 B |
+      | `LPRINT"AB";:LFILES"NOSUCH.XYZ"` (control) | ERR 53, log 4 B | ERR 53, log 4 B | ERR 53, log 4 B |
+      🔴 **THE SCREEN HALF WAS TWO CHANGES, NOT ONE, AND THE FIRST ONE LOOKED
+      FINISHED.** Dropping `df_end`'s terminating CR/LF moved the cursor from the
+      next row onto the entry's row — and left it at column 18 where the reference
+      sits at 19. The remaining column is a TRAILING SPACE: the reference emits the
+      separator AFTER each field, this emitted it BEFORE the next one, and the two
+      arrangements are indistinguishable ROW BY ROW. They differ only where the
+      cursor comes to REST, which is the one place a 40-column scrape can read them
+      apart [[rows-going-green-is-not-the-fix]].
+      🔴 **AND THE PRINTER STORE IS CONDITIONAL BECAUSE THE UNCONDITIONAL ONE WAS
+      MEASURED WRONG BEFORE IT WAS WRITTEN.** `df_end` runs whether or not the walk
+      emitted anything; on a no-match BOTH machines print `File not found`, send
+      nothing to the printer and leave the head parked, so R-LP16's flush must still
+      fire and both logs read 4 B. Zeroing `LPTPOS` unconditionally would have fixed
+      the emitting arm and broken the empty one — one measurement, taken because the
+      arm existed and not because anything pointed at it
+      [[two-rules-that-coincide-on-every-row-you-have]].
+      🎯 **`DISKOP_STATUS` ALREADY CARRIED THE CONDITION** (1 = at least one entry
+      emitted) and `dec a` leaves the 0 the store needs, so the guard costs one byte
+      against the nine the separator rewrite saved.
+      🔴 **THE SPEC PARAGRAPH THIS FALSIFIES IS INVERTED WHERE IT STANDS, NOT
+      DELETED.** [`docs/spec-basic-lfiles.md`](docs/spec-basic-lfiles.md) §3.3
+      recorded *"`LPTPOS` is not maintained by `LFILES` ... the head is at column 0
+      when the statement ends and the R-LP16 flush at command level is a no-op
+      either way. **No row measures it.**"* The premise is true and the conclusion
+      does not follow — the head is at column 0 only if nothing PARKED it first —
+      and "no row measures it" is what made the choice safe to write. R-LF2 in
+      [`docs/lptverb-msx1-characterization.md`](docs/lptverb-msx1-characterization.md)
+      moves with it: the trailing space is now emitted on BOTH sinks
+      [[a-fix-falsifies-the-justification-beside-it]].
+      🟢 **AND THE GROUND IS HELD BY A ROW, because a fix silently un-attributes its
+      own keyword.** `files` was already a kwsweep row and flips DIVERGENT → green
+      in this commit; `lfiles` gets one now — the sweep's **first TWO-TAG row**
+      (`NEEDS-DISK:` *and* `NEEDS-PRINTER:`), which is what generalised `_row_rig`
+      into `_row_rigs` returning a tuple. The `LPRINT"AB";` in it is not decoration:
+      with the head already at 0, `LPOS` reads 0 whether or not `LFILES` touches it
       [[a-row-written-off-as-out-of-scope-leaves-the-bookkeeping]].
-      ➡️ **THE FIX IS LIKELY ONE STORE**: zero `LPTPOS` where `LFILES` finishes, the
-      way the CF-3300 evidently does. Re-read §3.3's *"the printer column belongs to
-      `pchar`'s sink, which this path does not use"* first — the tenant does not go
-      through `pchar`, so the store has to be made by the statement itself.
-      ⚠️ **CHECK `FILES` AT THE SAME TIME**: the screen half of this pair is already
-      filed above (`FILES` emits a trailing newline the reference does not), and a
-      single walk that ends differently on the two sinks is the obvious common cause
-      worth ruling in or out before either is changed.
-      🎚️ TIER 1 — happy path: no error is involved, the sequence is legal, and both
-      the returned `LPOS` value and the bytes on the printer differ
-      🤖 AUTONOMOUS — the oracle is measured with two agreeing controls; what
-      remains is the store and a row that holds it.
+      ⚠️ **`lptverb-acceptance` (46/46) AND `dskmsg-acceptance` (15/15) WERE RUN
+      FIRST, BEFORE THE BATTERY**, because they are the suites that pin these exact
+      bytes; both were already green, since their printer rows had always compared
+      against the CF-3300's trailing-space form.
+      ⚠️ **ONE UNMEASURED EDGE, STATED RATHER THAN CLAIMED**: at a `WIDTH` where a
+      field would end exactly on the last column, the trailing space would land past
+      it. The `cp 13` test (field + its space must fit) is deliberately UNCHANGED
+      for that reason, and it reproduces three-per-row at LINLEN 40 and the pinned
+      two-per-row at `WIDTH 29`; no row measures a width where it could bite.
+      🎚️ TIER 1 — happy path, both halves closed
 
 - [ ] 🔁 **STANDING TIER (Joost, 2026-08-31): WHEN THE 🤖 QUEUE DRAINS, REVIEW
       EACH STATEMENT'S IMPLEMENTATION IN FULL, one verb at a time.** The

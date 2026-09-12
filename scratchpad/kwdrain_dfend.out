@@ -1,0 +1,9 @@
+=== zb
+  lf.none  log=  4 B b'AB\r\n'           AB"; | ZB20 LFILES"NOSUCH.XYZ" | ZB30 PRINT"[P";LPOS(0);"]" | ZBRUN | File not found in 20 | ZB
+  lf.mid   log= 79 B b'   .BAS \r\n\r\n'  SIC | ZBNEW | ZB10 LPRINT"AB"; | ZB20 LFILES | ZB30 PRINT"[P";LPOS(0);"]" | ZBRUN | [P 2 ] | ZB
+  f.one    log=  0 B b''                 FILES"PROG.BIN" | ZB20 PRINT"[P";CSRLIN;",";POS(0);"]" | ZBRUN | PROG    .BIN | [P 9 , 6 ] | ZB
+=== cf3300
+  lf.none  log=  4 B b'AB\r\n'           0 PRINT"[P";LPOS(0);"]" | RUN | File not found in 20 | Ok | color   auto    goto    list    run
+  lf.mid   log= 77 B b'G2   .BAS \r\n'    20 LFILES | 30 PRINT"[P";LPOS(0);"]" | RUN | [P 0 ] | Ok | color   auto    goto    list    run
+  f.one    log=  0 B b''                 RLIN;",";POS(0);"]" | RUN | PROG    .BIN [P 6 , 19 ] | Ok | color   auto    goto    list    run
+refcache: 0 hit, 6 miss, 6 stored
