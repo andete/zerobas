@@ -389,6 +389,25 @@ SWEEP: list[tuple[str, str, str | None, str, str]] = [
     #   machines (no printer attached), so neither can be scored from here; and
     #   LEN(INKEY$) is 0 with no key pressed, which is exactly what a stub returns.
     #   INKEY$ needs injected keystrokes, not a cleverer expression.
+
+    # ---------------------------------------------- D-KWDRAIN step 4h (2026-09-12)
+    # More words that separate through an ERROR, each measured on both machines
+    # first (scratchpad/kwdrain_misc2.py). ATTR$ is the interesting one: bare use
+    # raises ILLEGAL FUNCTION CALL rather than a Syntax error, which settles the
+    # open question of whether it is an MSX1 BASIC token at all -- it is.
+    # 🔴 `NEW` GOT NO ROW BECAUSE IT GOT AN ITEM: `10 NEW` + RUN is
+    # `Syntax error in 10` here and `Ok` on the VG-8020, with `CLEAR` in the same
+    # position accepted on both. That is filed as a TIER 1 defect in TODO.md, which
+    # attributes the keyword far better than a permanently-divergent row would.
+    # ⚠️ PDL IS STILL OUT: PDL(13) raises Illegal function call, but the STUB shape
+    # also errors there (subscript out of range), so the two separate only by error
+    # PHRASE. PDL(0) should separate cleanly -- measure it before writing the row.
+    ("padkw",     'a=pad(0)',    'PRINT"[";PAD(9);"]"',     "direct",
+     "D-KWDRAIN: 9 is outside PAD's range -> Illegal function call; an undefined array auto-dims to 10 and answers 0"),
+    ("attrkw",    'a$=attr$',    'PRINT"[";ATTR$;"]"',      "direct",
+     "D-KWDRAIN: bare ATTR$ raises Illegal function call -- so the word IS a token here; an undefined string variable prints empty instead"),
+    ("stopkw",    'stop',        'PRINT"[T1]":STOP',        "stored",
+     "D-KWDRAIN: prints then Break in 10 on both machines; without STOP there is no Break"),
     ("maxkw",     'max',               'PRINT"[";MAX;"]"',                     "direct",
      "D-KWDRAIN: bare MAX is a Syntax error on a real machine; a stub prints 0"),
     ("strigkw",   'a=strig(0)',        'PRINT"[";STRIG(5);"]"',                "direct",

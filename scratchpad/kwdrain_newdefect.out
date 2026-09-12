@@ -1,0 +1,8 @@
+zb      new.tail    ZB10 PRINT"[N1]":NEW ZBRUN [N1] Syntax error in 10 ZB 
+zb      new.alone   ZB10 NEW ZBRUN Syntax error in 10 ZB 
+zb      new.then    ZB10 PRINT"[N2]":NEW:PRINT"[N3]" ZBRUN [N2] Syntax error in 10 ZB 
+zb      clear.ctl   ZB10 PRINT"[N4]":CLEAR ZBRUN [N4] ZB 
+vg8020  new.tail    Ok 10 PRINT"[N1]":NEW RUN [N1] Ok color auto goto list run 
+vg8020  new.alone   Ok 10 NEW RUN Ok color auto goto list run 
+vg8020  new.then   k 10 PRINT"[N2]":NEW:PRINT"[N3]" RUN [N2] Ok color auto goto list run 
+vg8020  clear.ctl   Ok 10 PRINT"[N4]":CLEAR RUN [N4] Ok color auto goto list run 
