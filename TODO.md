@@ -489,7 +489,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:15293 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:15321 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -655,7 +655,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:3908 (T-6FE392)8 (T-529ABE)` from `TODO.md:14079 (T-529ABE)`: a
+      `TODO.md:3936 (T-6FE392)8 (T-529ABE)` from `TODO.md:14107 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -2639,8 +2639,36 @@ list. **When a slice lands, grep this list for what it just shipped.**
       becomes *"find out what is actually broken"*. A **"no known gap"** row is not
       a keyword that is fine — it is a keyword nobody has attributed evidence to,
       and converting one either yields a tiered defect or retires honestly.
-      ➡️ **THE MISSING HALF IS ATTRIBUTION, AND BOTH LEVERS EXIST:** `subject:` tags
-      on gate rows, and the runtime keyword-coverage capture (`ZEROBAS_KWCOVER` in
+      🔴 **CORRECTION 2026-09-12 (D-KWDRAIN batch 4): ONE OF THE TWO LEVERS BELOW
+      DOES NOT EXIST.** The sentence "both levers exist" was filed without checking
+      the first one. [`tools/tier_table.py`](tools/tier_table.py)'s own docstring calls
+      the per-gate-row `subject:` tag *"the `subject:` tag per gate row that step (c)
+      WILL add"*, and a sweep of `probes/` finds **zero** such tags — every hit for
+      "subject:" is the English word in prose ([measured](scratchpad/kwdrain_levers.out)).
+      So `kwsweep` rows are the ONLY working attribution path today
+      [[a-justification-parenthesis-is-an-unrun-claim]].
+      🎯 **AND THAT CEILING IS REAL, NOT COSMETIC.** `WIDTH` has an entire dedicated
+      suite ([`probes/basic/basic_probe_width.py`](probes/basic/basic_probe_width.py))
+      and still reads as "no known gap", because nothing connects a suite that SCORES
+      a keyword to the keyword it scores. Same for the graphics verbs and the input
+      devices, which have suites of their own.
+      ⚠️ **DO NOT REACH FOR "IS IT TYPED SOMEWHERE" TO CLOSE THAT GAP** — re-measured
+      2026-09-12 and it is ~100 %: **all 68** of the then-remaining "no known gap"
+      words are typed by at least one probe (`ON` by 131 of them, `RUN` by 107,
+      `SCREEN` by 81). The parked per-keyword-table block had already measured exactly
+      this and concluded it means nothing; the re-measurement only confirms the
+      denominator is worthless for attribution [[a-case-that-agrees-can-agree-for-the-wrong-reason]].
+      ➡️ **SO THE DRAIN HAS A STRUCTURAL CEILING, and the remaining words are the ones
+      above it:** display verbs (`CLS` `SCREEN` `COLOR` `WIDTH` `KEY`) cannot take a
+      kwsweep row at all, because the sweep anchors on the echoed command and they
+      destroy that anchor; `GOSUB`/`RETURN`/`ON`/`CONT` need MULTI-LINE programs the
+      row format cannot express; `WAIT` needs a non-blocking port that does not exist
+      safely (batch 3). Finishing those needs **step (c)** — a `subject:` tag that lets
+      an existing suite claim its keyword — which is now the highest-value apparatus
+      work this order implies, and it is apparatus that BLOCKS the order itself.
+      ➡️ **THE LEVER THAT DOES EXIST is the runtime keyword-coverage capture**
+      — ~~`subject:` tags on gate rows~~ (step (c), NOT BUILT, see the correction
+      above), and the runtime keyword-coverage capture (`ZEROBAS_KWCOVER` in
       [`probes/lib/omsx_repl.py`](probes/lib/omsx_repl.py) +
       [`tools/kwcover.py`](tools/kwcover.py), `make kwcover`), which says which
       suites TYPE each keyword. 🔴 **EXERCISED IS NOT VERIFIED** — a keyword a suite
@@ -4752,7 +4780,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:14079 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:14107 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

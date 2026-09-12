@@ -1,0 +1,13 @@
+D-KWDRAIN batch 4 -- the two attribution levers, measured 2026-09-12
+
+lever 1, `subject:` tag per gate row (step (c)): DOES NOT EXIST.
+  tools/tier_table.py docstring: 'the subject: tag per gate row that step (c) WILL add'
+  grep 'subject:' across probes/: 10 hits, every one the English word in prose
+
+lever 2, 'is the keyword typed somewhere': EXISTS AND IS WORTHLESS for attribution.
+  no-known-gap keywords: 68
+  typed by >=1 probe   : 68  (i.e. 100%)
+  typed by NO probe    : 0
+  most-typed           : ON(131), RUN(107), CONT(96), ERR(92), NEW(84), ERROR(81), SCREEN(81), READ(78), END(66), LINE(56)
+
+=> kwsweep rows are the only working attribution path today.
