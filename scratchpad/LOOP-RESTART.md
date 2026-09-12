@@ -6,54 +6,51 @@ session and the loop resumes exactly where it stopped.
 
 ## Where things stand
 
-* Tree CLEAN and pushed at `0de7219d`. Recount everything — never quote a number
+* Tree CLEAN and pushed at `150f1541`. Recount everything — never quote a number
   from this file.
-* 🔴 **TIER 1 BEFORE ANYTHING ELSE**, then the drain ruling (Joost, 2026-09-12:
-  "no known gap" to ZERO before TIER 4). Four TIER 1 items came OUT of the drain,
-  which is the ruling working.
-* 🟢 **D-DFEND CLOSED TWO OF THEM.** `make tiers` to recount; do not quote.
+* 🟢 **EVERY TIER 1 THE DRAIN PRODUCED IS CLOSED**: `NEW`, `FILES`, `LFILES`,
+  `MERGE` — and `LOAD`, which only the MERGE sweep could have found. `make tiers`
+  to recount; do not quote.
+* 🟢 **THE WHOLE KWSWEEP IS CLEAN FOR THE FIRST TIME: `DIVERGENT=0`.** The only
+  non-green row is the pre-existing WEAK `csrlin`, whose own note records CSRLIN
+  measured CORRECT.
 
 ## What shipped this session
 
 * **D-SPMERGE / D-NEWSTMT** (earlier): the stack into the control-frame pool;
-  `NEW` in a program.
-* **D-KWDISK** (`89f43985`): kwsweep mounts a writable private copy of
-  `disk/test720.dsk` on BOTH sides. "no known gap" 36 -> 16.
+  `NEW` as a statement.
+* **D-KWDISK** (`89f43985`): kwsweep mounts the test image on BOTH sides. 36 -> 16.
 * **D-KWRIG** (`0579b2f8`): `NEEDS-PRINTER:` joins `NEEDS-DISK:`. 16 -> 10.
 * **D-KWTAPE** (`59937b12`): 10 -> 9, by a FILED defect rather than a row.
-* **D-DFEND** (`c0bd895e`, docs `0de7219d`): `FILES` and `LFILES` were ONE
-  statement's two halves — 4 arms -> 0, **8 bytes of sub page 1 back**, and the
-  sweep's first TWO-TAG row (`NEEDS-DISK:` + `NEEDS-PRINTER:`).
+* **D-DFEND** (`c0bd895e`, docs `0de7219d`): `FILES`+`LFILES` were ONE tail.
+  **8 B of sub page 1 back**; the sweep's first TWO-TAG row.
+* **D-MERGERET** (`631157c0`, patches `150f1541`): `MERGE` *and* `LOAD` failed to
+  return to command level. **+4 B of main page 1** (11 -> 7 free, inside the
+  standing 20 B budget).
 
-## The next item — `MERGE`, and it is the LAST drain-produced TIER 1
+## The next item — the TIER 1 UMBRELLA, and its numbers are the first thing to fix
 
-**`MERGE` inside a running program carries on here; the CF-3300 returns to
-command level.** The merge itself LANDS identically on both (`LIST 100` shows the
-merged line on each), so the divergence is purely what the statement does with the
-interpreter's cursor when `DIRECTF` says a program is running. Measured three ways
-(`scratchpad/kwdrain_mergechk.out`, `scratchpad/kwdrain_mergechk_cf.out`), and the
-kwsweep `merge` row reads DIVERGENT until it is fixed — it is the only DIVERGENT
-row in the whole sweep.
-🎯 **SWEEP `LOAD` AND `RUN"file"` WITH IT** — same "return to command level"
-contract, and D-DFEND is the standing lesson that two verbs filed separately can
-be one tail.
-⚠️ **LEAVE A ROW BEHIND**: attribution comes from OPEN items, so closing this
-without a kwsweep row hands `MERGE` straight back to the unattributed pile. The
-row already exists and will simply go green — check that it does, and that it goes
-green for the RIGHT reason.
+`make tiers` shows ONE TIER 1 left: **"Keyword-completeness gaps — the measured
+remainder of MSX1 BASIC"**, marked ⛔. It is the drain's own parent, and the drain
+has falsified its headline: it still says *"of **162** MSX1 reserved words,
+**124** tokenise and **34** are genuinely absent"*. `kwtable.inc` has a different
+count and the sweep now scores far more than 124.
+🔴 **READ IT TO ITS END AND RE-VERIFY THE ⛔ BEFORE BELIEVING IT** — twelve
+blockers were re-checked this session and ten were stale.
+⚠️ **THE ITEM ITSELF WARNS ABOUT EXACTLY THIS FAILURE** (the `TAB(` story: a claim
+of "already faithful" that a differential agreed with for the wrong reason), so
+leaving its own counts stale is the same defect one level up.
 
 ## The drain after that — NINE words, two blockers MEASURED REAL
 
-* `LLIST` — the program STOPS at it on both machines, so nothing reaches the
-  screen; direct mode has no program to list. Its printed bytes are identical on
-  both. Needs the `screen_printer` capture (written already in
-  `basic_probe_lptverb.py`) plus BOOT-PER-CASE: the log accumulates.
-  🟢 **`_row_rigs` IS READY FOR IT** — D-DFEND generalised it to a tuple and
-  `lfiles` proves the two-tag path works.
-* `CLOAD` `CSAVE` — the rig RECORDS and nothing in this tree PLAYS
-  (`cassetteplayer insert` appears nowhere under `probes/`). `cas_decode` is
-  WAV->bytes only. 🔴 **`TIME` DOES NOT ADVANCE DURING A TAPE SAVE** (interrupts
-  off) — 4 jiffies for a ~6 s recording, and the no-CSAVE control reads the same.
+* `LLIST` — the program STOPS at it on both machines; direct mode has no program
+  to list. Its printed bytes are identical on both. Needs the `screen_printer`
+  capture (already in `basic_probe_lptverb.py`) plus BOOT-PER-CASE: the log
+  accumulates. 🟢 **`_row_rigs` IS READY** — D-DFEND made it a tuple and `lfiles`
+  proves the two-tag path.
+* `CLOAD` `CSAVE` — the rig RECORDS and nothing here PLAYS (`cassetteplayer
+  insert` appears nowhere under `probes/`). 🔴 **`TIME` DOES NOT ADVANCE DURING A
+  TAPE SAVE** (interrupts off) — the no-CSAVE control reads the same.
 * `INKEY$` `INPUT` `GET` — the key injector's TIMING, a harness change; must not
   reopen D-LATCH.
 * `AUTO` `RENUM` need a row FORMAT, not a rig; `CALL` needs an extension that is
@@ -113,4 +110,4 @@ a pattern that appears in the polling command.
 
 Paste this into a fresh session:
 
-    /loop continue autonomously on zerobas — 🔴 TIER 1 BEFORE ANYTHING ELSE, then resume draining "no known gap" to ZERO (Joost's 2026-09-12 ruling, which outranks TIER 4). Read scratchpad/LOOP-RESTART.md FIRST, then the item's own block in TODO.md to its END. Run `make tiers`; recount keywords with `python3 tools/tier_table.py --keywords` — never quote a count. THIS SLICE: `MERGE` inside a running program carries on here where the CF-3300 RETURNS TO COMMAND LEVEL. The merge itself lands identically on both (LIST 100 shows the merged line on each), so the divergence is what the statement does with the interpreter's cursor when DIRECTF says a program is running — measured in scratchpad/kwdrain_mergechk.out and scratchpad/kwdrain_mergechk_cf.out. 🎯 SWEEP `LOAD` AND `RUN"file"` WITH IT: same "return to command level" contract, and D-DFEND is the standing lesson that two verbs filed separately can be ONE tail. ⚠️ The kwsweep `merge` row is the only DIVERGENT row in the sweep and must go green FOR THE RIGHT REASON — leave it in place, because attribution comes from OPEN items and closing the item without a row hands MERGE back to the unattributed pile. Re-verify any filed claim before building on it. Standing rules: full `make gates` before each commit and never commit red (a docs-only change gets a ~45 s static-tier run — the harness skips the emulator tier itself and says so); after a `--fix` of todo-citation-check re-run every gate that READS TODO.md; `rm -rf build && make basic-reloc` for any wall figure, and BACK UP build/kwsweep-verdicts.json first — a clean build deletes the pin tier_table reads; `test -e <path> && exit 1` before any `cat >` heredoc; stage explicit paths, `git add -A` banned, `git status --short` first; commit message to a FILE with `git commit -F`; commit AND push after each fix without asking; never write a tracked file while a battery runs; re-run the five battery-excluded targets by hand after any slice touching a shared leaf; NEVER poll with a pattern that matches the polling command itself — use the background task's own completion notification; READ the output of every edit script.
+    /loop continue autonomously on zerobas — 🔴 TIER 1 BEFORE ANYTHING ELSE, then resume draining "no known gap" to ZERO (Joost's 2026-09-12 ruling, which outranks TIER 4). Read scratchpad/LOOP-RESTART.md FIRST, then the item's own block in TODO.md to its END. Run `make tiers`; recount keywords with `python3 tools/tier_table.py --keywords` — never quote a count. THIS SLICE: the ONE remaining TIER 1, the "Keyword-completeness gaps" UMBRELLA item, which is the drain's own parent and is marked ⛔. Its headline still says "of 162 MSX1 reserved words, 124 tokenise and 34 are genuinely absent" — numbers this session's drain has falsified. 🔴 RE-VERIFY THE ⛔ BEFORE BELIEVING IT: twelve blockers were re-checked this session and ten were stale. Correct its counts from `tools/tier_table.py --keywords` and `make kwsweep` rather than from any file, and say what the item's exit criterion NOW is. ⚠️ The item itself warns about exactly this failure — the `TAB(` story, a claim of "already faithful" that a differential agreed with for the wrong reason — so leaving its own counts stale is that defect one level up. Then resume the drain: nine words (AUTO CALL CLOAD CSAVE GET INKEY$ INPUT LLIST RENUM), with LLIST the cheapest (the `screen_printer` capture already exists in basic_probe_lptverb.py and `_row_rigs` is already a tuple). Standing rules: full `make gates` before each commit and never commit red (a docs-only change gets a ~45 s static-tier run — the harness skips the emulator tier itself and says so); 🔴 AFTER ANY basic/ OR sub/ CHANGE, `git status --short` WILL SHOW zerobas-main-eu.ips/.bps REFRESHED BY THE BUILD — stage them with the commit, because patch-freshness-check can only see the omission one commit LATER; after a `--fix` of todo-citation-check re-run every gate that READS TODO.md; `rm -rf build && make basic-reloc` for any wall figure, and BACK UP build/kwsweep-verdicts.json first — a clean build deletes the pin tier_table reads; `test -e <path> && exit 1` before any `cat >` heredoc; stage explicit paths, `git add -A` banned; commit message to a FILE with `git commit -F`; commit AND push after each fix without asking; never write a tracked file while a battery runs; re-run the five battery-excluded targets by hand after any slice touching a shared leaf; NEVER poll with a pattern that matches the polling command itself — use the background task's own completion notification; READ the output of every edit script.
