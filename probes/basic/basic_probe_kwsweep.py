@@ -362,6 +362,31 @@ SWEEP: list[tuple[str, str, str | None, str, str]] = [
     # ⚠️ `ON` IS NOT HERE: its two-target form packs badly -- the greedy packer
     # swallows both subroutines into line 20 -- and padding statements to force a
     # boundary would make the row about the packer instead of the keyword.
+
+    # ---------------------------------------------- D-KWDRAIN step 4f (2026-09-12)
+    # The error-handling cluster, four keywords off ONE program: line 10 arms the
+    # handler and raises, line 20 reports. Measured on both machines before the rows
+    # were written (scratchpad/kwdrain_errhand.py): ERR reads 7 and ERL reads 10, so
+    # the row carries the CODE and the LINE, not just "something was trapped".
+    # 🎯 RESUME NEEDED ITS OWN PROGRAM, and the packer decided its shape: the greedy
+    # split puts the handler alone on line 30 as `RESUME NEXT`, which resumes at the
+    # statement after the one that raised -- the PRINT on line 20. So the row prints
+    # at all ONLY because RESUME returned control; drop RESUME and the program ends
+    # in the handler with nothing on screen.
+    # ⚠️ DEFINT's row asserts 1, NOT 1.7: a DEFINT that parses and does nothing would
+    # still print 1.7, so the row sees the COERCION rather than the parse.
+    ("onkw",      'on error goto 20', 
+     'ON ERROR GOTO 20:ERROR 7:END:PRINT"[R";ERR;ERL;"]":END',  "stored", "D-KWDRAIN: ON in its ON ERROR form"),
+    ("errorkw",   'error 7',          
+     'ON ERROR GOTO 20:ERROR 7:END:PRINT"[R";ERR;ERL;"]":END',  "stored", "D-KWDRAIN: ERROR 7 is what raises it"),
+    ("errkw",     'a=err',            
+     'ON ERROR GOTO 20:ERROR 7:END:PRINT"[R";ERR;ERL;"]":END',  "stored", "D-KWDRAIN: ERR reads 7, the code raised"),
+    ("erlkw",     'a=erl',            
+     'ON ERROR GOTO 20:ERROR 7:END:PRINT"[R";ERR;ERL;"]":END',  "stored", "D-KWDRAIN: ERL reads 10, the line that raised"),
+    ("resumekw",  'resume next',      
+     'ON ERROR GOTO 30:ERROR 7:PRINT"[U";A;"]":END:A=5:RESUME NEXT', "stored", "D-KWDRAIN: the handler RESUMEs NEXT and control reaches the PRINT; without it nothing prints"),
+    ("defintkw",  'defint a',         
+     'DEFINT A:A=1.7:PRINT"[";A;"]"',                           "direct", "D-KWDRAIN: 1, not 1.7 -- a DEFINT that parses and does nothing still prints 1.7"),
     ("gosubkw",   'gosub 20',     
      'A=0:GOSUB 20:PRINT"[G";A;"]":END:A=7:RETURN',         "stored", "D-KWDRAIN: the subroutine sets A=7; no GOSUB, no output"),
     ("returnkw",  'return',       

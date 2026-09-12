@@ -489,7 +489,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:15435 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:15456 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -655,7 +655,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:4050 (T-6FE392)8 (T-529ABE)` from `TODO.md:14221 (T-529ABE)`: a
+      `TODO.md:4071 (T-6FE392)8 (T-529ABE)` from `TODO.md:14242 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -2861,6 +2861,27 @@ list. **When a slice lands, grep this list for what it just shipped.**
       swallows both subroutines into line 20 — and padding statements to force a
       boundary would make the row about the PACKER instead of the keyword.
       🎯 **AUDIT RE-RUN: 99 pin rows, 0 crediting no keyword.**
+      🟢 **STEP 4f: 52 -> 46**, evidence 95 -> 101 — `ON ERROR ERR ERL RESUME DEFINT`.
+      Four of them come off ONE program: line 10 arms the handler and raises, line 20
+      reports, and **`ERR` reads 7 while `ERL` reads 10**
+      ([`scratchpad/kwdrain_errhand.py`](scratchpad/kwdrain_errhand.py),
+      [readings](scratchpad/kwdrain_errhand.out), both machines) — so the row carries
+      the CODE and the LINE, not merely "something was trapped".
+      🎯 **`RESUME` NEEDED ITS OWN PROGRAM AND THE PACKER CHOSE ITS SHAPE**: the greedy
+      split leaves the handler alone on line 30 as `RESUME NEXT`, which resumes at the
+      statement after the one that raised — the PRINT on line 20. The row prints at
+      all ONLY because RESUME returned control. `DEFINT`'s row asserts **1, not 1.7**,
+      so it sees the COERCION rather than the parse.
+      🔴 **AND THE AUDIT TOOL ITSELF WAS WRONG, which is worth more than the six.** The
+      earlier "0 rows credit no keyword" was computed with an ad-hoc regex over
+      `kwtable.inc` that admitted **`A`** as a keyword — so `a=err` looked like it
+      credited `A`, and a genuinely uncreditable row was hidden behind the same false
+      positive. Re-run through the table's OWN loader
+      (`tier_table.kwtable_keywords()`): 105 rows, **exactly one** credits nothing —
+      `swapctl`, stmt `a=1`, which is the pre-existing *"control (bare assign)"* row
+      and is SUPPOSED to name no keyword. 101 distinct keywords credited.
+      ⚠️ **THE RULE: AUDIT WITH THE CONSUMER'S OWN PARSER, NEVER A RE-IMPLEMENTATION**
+      [[an-instrument-can-fail-the-way-the-thing-it-replaced-failed]].
       ➡️ **STEP (c) IS STILL NOT BUILT AND IS STILL THE CEILING** for words no
       kwsweep row can reach — but it is now a SMALLER set than batch 4 claimed, and
       its real cost is on the record: a `subject:` tag must mean *"a row whose verdict
@@ -4894,7 +4915,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:14221 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:14242 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
