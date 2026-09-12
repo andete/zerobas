@@ -79,8 +79,11 @@ _sys.path.insert(0, _os.path.join(
     _os.path.dirname(_os.path.dirname(_os.path.abspath(__file__))), "lib"))  # shared infra
 
 import argparse
+import atexit
 import hashlib
+import shutil
 import subprocess
+import tempfile
 
 import omsx_repl  # typing-free KEYBUF-injection REPL driver
 import probe_report  # 🔴 D-KWFOOT: I3 -- every exit path that prints
@@ -98,15 +101,71 @@ MACHINE = "Philips_VG_8020"
 # attributing the difference to zerobas. Rows tagged NEEDS-DISK: get their
 # reference capture from this machine instead.
 #
-# STATUS 2026-07-26: this machine does NOT yet yield a readable SCREEN-0 capture
-# under omsx_repl — a trivial `PRINT 1+1` comes back as VRAM pattern garbage, so
-# it is presumably still in the boot/logo video mode when the capture fires, or
-# needs a longer boot than the shared default. Until that is chased down, the
-# NEEDS-DISK rows report NO-ORACLE rather than a verdict: the probe declines to
-# answer instead of answering from the wrong machine. Chasing it is cheap and
-# worthwhile, but the MK/CV family it gates is ALREADY tracked as deferred in
-# TODO.md, so it blocks no finding in this sweep.
+# 🟢 STATUS 2026-09-12 (D-KWDISK): THE ORACLE READS, AND THE NOTE THAT SAID IT
+# DOES NOT IS RETRACTED HERE. The 2026-07-26 filing — "does NOT yet yield a
+# readable SCREEN-0 capture ... reports NO-ORACLE rather than a verdict" — was
+# already falsified by D-KWORACLE's `MACH_BOOT` / `MACH_RESET_PRE` fix below (a
+# 14 s boot and a `SCREEN 0`), which is what `mki` `mks` `mkd` `cvs` `cvd` `cvi`
+# now return real verdicts through. The sentence survived the fix that killed it
+# [[a-fix-falsifies-the-justification-beside-it]]; NO-ORACLE is still the answer
+# when the capture really is unreadable, but that is now an exception, not the
+# expected state.
 DISK_MACHINE = "National_CF-3300"
+
+# 🔴 AND THE SECOND HALF OF THE SAME BLOCKER: A DISK-EQUIPPED MACHINE WITH NO
+# DISK IN IT. Until 2026-09-12 this file named neither `diska` nor an image, so
+# every Disk-BASIC row was measured on two machines with an EMPTY drive — which
+# is why `DSKF(0)` read 0 and got filed as "reads 0, exactly what a stub reads".
+# It reads 707 with the image in. The fixture was never missing: `disk/test720.dsk`
+# (`make test-dsk`, tools/make_test_dsk.py) carries TEST.BIN, HI.TXT, PROG.BIN,
+# PROG.BAS and PROG2.BAS with known contents, and `ramfree-acceptance` has mounted
+# it for months [[a-justification-parenthesis-is-an-unrun-claim]].
+# ⚠️ A PRIVATE COPY PER RUN, NEVER THE ORIGINAL: `kill` deletes a file, `copy`,
+# `save`, `bsave` and `close` add one, and `dsko` rewrites the first byte of the
+# root directory. The image is generated, so `make kwsweep` must declare
+# `$(DISK_TEST_DSK)` — `diskdep-check` refuses a target that names it without.
+DISK_TEST_DSK = _os.path.join(
+    _os.path.dirname(_os.path.dirname(_os.path.dirname(
+        _os.path.abspath(__file__)))), "disk", "test720.dsk")
+
+# 🔴 THE DISK ROWS NEED TIME, AND THE FAILURE LOOKS EXACTLY LIKE A REFUSAL.
+# At the shared default (`cap_gap` 2.5) every WRITING row came back BLANK on the
+# CF-3300 — no marker, no error, no prompt — which reads as "the reference
+# declines this verb" and would have published five divergences that are pure
+# apparatus. The capture was simply firing before a real FAT write finished.
+# Measured: at `cap_gap` 8 the reference still blanks on all five; at 12/3.5 both
+# machines answer; 20/5 is the proven setting and the cost is EMULATED time, not
+# wall time. Applied to the NEEDS-DISK group only [[apparatus-is-part-of-the-measurement]].
+DISK_TIMING = dict(step=5.0, cap_gap=20.0, timeout=900.0)
+
+
+def _disk_image() -> str:
+    """A writable private copy of the test image, mounted for ONE machine's run.
+
+    Each side gets its own, so a row that writes on zerobas cannot change what
+    the reference reads two rows later -- the two runs must see the same disk
+    evolve the same way, which they only do if neither can touch the other's."""
+    fh = tempfile.NamedTemporaryFile(suffix=".dsk", delete=False)
+    fh.close()
+    shutil.copy(DISK_TEST_DSK, fh.name)
+    if not _DISK_TEMPS:
+        atexit.register(_drop_disk_images)
+    _DISK_TEMPS.append(fh.name)
+    return fh.name
+
+
+def _drop_disk_images() -> None:
+    """Remove every private copy. `atexit`, not a `finally`: a run that dies
+    inside the emulator must not leave 720 KB images behind, and this file has
+    several early `return`s between the first mount and the report."""
+    while _DISK_TEMPS:
+        try:
+            _os.unlink(_DISK_TEMPS.pop())
+        except OSError:
+            pass
+
+
+_DISK_TEMPS: list[str] = []
 TXTTAB = 0xF676   # sysvar: 2-byte LE pointer to the BASIC text base (both machines)
 
 # Widest direct-mode exec line whose prompt echo still fits ONE SCREEN-0 row, so
@@ -689,17 +748,142 @@ SWEEP: list[tuple[str, str, str | None, str, str]] = [
     ("cvd",     'a=cvd("abcdefgh")', 'PRINT"[";CVD(MKD$(1));"]"', "direct",
      "NEEDS-DISK: " "absent => syntax error; real => 1"),
 
-    # Disk-BASIC surface. Sector I/O and the destructive/interactive ones are
-    # crunch-only ON PURPOSE — see SKIP_EXEC.
-    ("dski",    'a$=dski$(0,0)', None, "direct", "NEEDS-DISK: " "raw sector READ — needs a disk, out of scope here"),
-    ("dsko",    "dsko$0,0",      None, "direct", "NEEDS-DISK: " "raw sector WRITE — DESTRUCTIVE, never executed"),
-    ("copy",    'copy"a:x"to"a:y"', None, "direct", "NEEDS-DISK: " "file copy — needs a disk fixture"),
-    ("set",     'set password',  None, "direct", "NEEDS-DISK: " "Disk-BASIC SET — needs a disk fixture"),
+    # ------------------------------------------------ D-KWDISK (2026-09-12)
+    # The file-and-channel verbs, which had no row for one reason only: nothing
+    # was in the drive. `DSKF(0)` reading 0 was filed as "exactly what a stub
+    # reads"; with the image mounted it reads 707, and the coincidence that hid
+    # the verb is gone [[a-case-that-agrees-can-agree-for-the-wrong-reason]].
+    # 🎯 EVERY READBACK WAS MEASURED BEFORE THE ROW WAS WRITTEN, on BOTH machines
+    # (scratchpad/kwdrain_diskfinal.py, scratchpad/kwdrain_diskslow.py), and two
+    # candidate rows were thrown away for being blind: a `CLOSE` row that reopened
+    # channel 1 passed WITHOUT the close (zerobas lets #1 be reopened), and a
+    # `FILES` row reading CSRLIN read 1 on zerobas and 0 on the CF-3300 because
+    # the CF-3300 shows the function-key line and its screen is a row shorter —
+    # the MACHINES, not the verb [[readout-blind-to-its-own-subject]].
+    ("dskf",    "a=dskf(0)",
+     'PRINT"[";DSKF(1);"]"',                         "stored",
+     "NEEDS-DISK: " "707 free KB on the 720 KB fixture, against a stub's 0. This is "
+     "the row the empty drive was hiding: DSKF is not a stub and never was."),
+    ("files",   "files",
+     'FILES"HI.TXT":PRINT"[8]"',                     "stored",
+     "NEEDS-DISK: " "the LISTING is the behaviour, and it is inside the compared "
+     "text: the tail reads `HI      .TXT` then the marker, so a FILES that printed "
+     "nothing, or named the wrong entry, fails on text even though the marker is "
+     "there. Absent => syntax error => no marker at all."),
+    ("lof",     "a=lof(1)",
+     'OPEN"HI.TXT"FOR INPUT AS#1:A=LOF(1):CLOSE#1:PRINT"[";A;"]"', "stored",
+     "NEEDS-DISK: " "26 — HI.TXT's exact length, which only a real directory walk "
+     "produces; a stub reads 0."),
+    ("eof",     "a=eof(1)",
+     'OPEN"HI.TXT"FOR INPUT AS#1:A$=INPUT$(26,#1):A=EOF(1):CLOSE#1:PRINT"[";A;"]"', "stored",
+     "NEEDS-DISK: " "-1 AFTER the whole file is consumed. 🔴 THE READ IS THE ROW: "
+     "measured, EOF(1) is 0 on the same channel before the INPUT$ and -1 after, so "
+     "this moves with the channel rather than answering a constant. A stub reads 0 "
+     "— which is the BEFORE value, so the row had to be the after one."),
+    ("bload",   'bload"x"',
+     'POKE&HC000,7:BLOAD"PROG.BIN":A=PEEK(&HC000):PRINT"[";A;"]"', "stored",
+     "NEEDS-DISK: " "PROG.BIN is a real BSAVE binary loading at $C000 whose first "
+     "byte is $3E (62); the cell is poked to 7 first, so the row reads what the "
+     "LOAD put there and not what was already in RAM."),
+    ("close",   "close",
+     'OPEN"W.TXT"FOR OUTPUT AS#1:PRINT#1,"ABC":CLOSE#1:OPEN"W.TXT"FOR INPUT AS#1:A=LOF(1):CLOSE#1:PRINT"[";A;"]"', "stored",
+     "NEEDS-DISK: " "the FLUSH is the readback: 6 bytes are on the disk only because "
+     "the channel was closed. 🔴 THE BLIND SHAPE WAS MEASURED — the same row with "
+     "the CLOSE removed reads 0, not an error, because zerobas allows #1 to be "
+     "reopened; a `reopen succeeds` row would have passed without the close."),
+    ("bsave",   'bsave"x",0,1',
+     'POKE&HC800,99:BSAVE"O.BIN",&HC800,&HC800:POKE&HC800,7:BLOAD"O.BIN":A=PEEK(&HC800):PRINT"[";A;"]"', "stored",
+     "NEEDS-DISK: " "a ROUND TRIP through the disk: save 99, overwrite the cell with "
+     "7, load it back, read 99. A BSAVE that wrote nothing leaves 7."),
+    ("save",    'save"x"',
+     'A=1:SAVE"S.BAS":OPEN"S.BAS"FOR INPUT AS#1:A=LOF(1):CLOSE#1:PRINT"[";A;"]"', "stored",
+     "NEEDS-DISK: " "the saved program's own length, read back through a channel: 68 "
+     "on BOTH machines, which also says the tokenised on-disk form agrees byte for "
+     "byte. A SAVE that wrote nothing leaves no file and the OPEN raises."),
+    ("kill",    'kill"x"',
+     'A=DSKF(1):KILL"PROG2.BAS":B=DSKF(1):PRINT"[";B-A;"]"', "stored",
+     "NEEDS-DISK: " "the FREED SPACE is the behaviour — 1 KB back after the file "
+     "goes, so a KILL that merely parsed reads 0. The victim is PROG2.BAS, which no "
+     "other row in this sweep opens."),
+    ("merge",   'merge"x"',
+     'OPEN"N.BAS"FOR OUTPUT AS#1:PRINT#1,"100 END":CLOSE:MERGE"N.BAS":PRINT"[M1]"', "stored",
+     "NEEDS-DISK: " "🔴 EXPECTED DIVERGENT, AND IT IS THE FINDING: the CF-3300 "
+     "RETURNS TO COMMAND LEVEL on MERGE — the statement after it never runs — while "
+     "zerobas carries on. Measured three ways (scratchpad/kwdrain_mergechk.py): the "
+     "merge LANDS on both (LIST 100 shows the merged line on each), only the "
+     "control flow differs. Filed in TODO.md."),
+    ("lset",    'lset a$="x"',
+     'OPEN"R.DAT"AS#1:FIELD#1,4 AS A$:LSET A$="B":A=ASC(A$):CLOSE#1:PRINT"[";A;"]"', "stored",
+     "NEEDS-DISK: " "LEFT justification inside a FIELDed buffer: 66 = ASC(\"B\") in "
+     "byte 1. Its pair `rset` reads 32 in the same byte, so the two rows separate "
+     "from each other and not merely from a stub."),
+    ("rset",    'rset a$="x"',
+     'OPEN"R.DAT"AS#1:FIELD#1,4 AS A$:RSET A$="B":A=ASC(A$):CLOSE#1:PRINT"[";A;"]"', "stored",
+     "NEEDS-DISK: " "RIGHT justification: byte 1 is a SPACE (32), not the \"B\" that "
+     "`lset` puts there."),
+    # 🎯 `runkw` IS NOT A DISK ROW and is deliberately not tagged: `RUN` is plain
+    # MSX BASIC and the VG-8020 is its proper oracle. It sat in "no known gap"
+    # because RUN CLEARS VARIABLES, so no expression can carry a count across the
+    # restart — the flag has to live in RAM, and $E001 is the cell next to the one
+    # `pokekw` already writes. Pass 1 increments 0 -> 1 and takes the branch; pass 2
+    # increments to 2 and prints it. A RUN that did nothing prints 1.
+    # ⚠️ `RUN 20` NAMES A LINE `as_stored` CHOSE. The packing was printed before the
+    # row was written (10 POKE 0 / 20 increment / 30 IF..THEN RUN 20 / 40 PRINT),
+    # and it is the same dependence the `gosub` and `resume` rows already carry.
+    ("runkw",   "run 20",
+     'POKE&HE001,0:POKE&HE001,PEEK(&HE001)+1:IF PEEK(&HE001)<2 THEN RUN 20:PRINT"[";PEEK(&HE001);"]"',
+     "stored", "D-KWDISK"),
+
+    # --------------------------------- D-KWDISK, the pre-existing rows (2026-09-12)
+    # Disk-BASIC surface, EXECUTED at last. Every "needs a disk fixture" note
+    # below was true of the probe, not of the tree: the fixture has existed and
+    # been mounted by other gates for months, and this file simply never named
+    # it. The rows now run against a private copy of disk/test720.dsk on BOTH
+    # sides (see DISK_TEST_DSK), so the reference and zerobas hold the SAME disk.
+    # 🎯 ORDER IS PART OF THE ROW SET, not presentation: `dsko` rewrites the first
+    # byte of the root directory and `kill` deletes a file, so every row that
+    # READS the fixture is placed ahead of every row that changes it, and the two
+    # sides walk the identical sequence [[apparatus-is-part-of-the-measurement]].
+    # 🔴 STORED MODE THROUGHOUT, and not for width: a DIRECT-mode `BLOAD` eats the
+    # rest of its line (measured — `BLOAD"PROG.BIN":A=PEEK(&HC000):PRINT…` printed
+    # nothing at all), so the readback has to be on a LATER numbered line. The
+    # packing is `as_stored`'s, checked before each row was written.
+    ("dski",    'a$=dski$(0,0)',
+     'A$=DSKI$(0,7):B=PEEK(&HF351)+256*PEEK(&HF352):A=PEEK(B):PRINT"[";A;"]"', "stored",
+     "NEEDS-DISK: " "raw sector READ: sector 7 is the root directory, whose first "
+     "entry is TEST.BIN, so the buffer's first byte is ASC(\"T\") = 84. The buffer "
+     "ADDRESS is read through $F351 rather than pinned — it is $EB95 on the "
+     "CF-3300 and $E5C0 on zerobas BY DESIGN (docs/spec-basic-dskio.md). Control: "
+     "the same read WITHOUT the DSKI$ gives 254, so the row moves."),
+    ("dsko",    "dsko$0,0",
+     'A$=DSKI$(0,7):B=PEEK(&HF351)+256*PEEK(&HF352):POKE B,88:DSKO$0,7:A$=DSKI$(0,0):A$=DSKI$(0,7):A=PEEK(B):PRINT"[";A;"]"', "stored",
+     "NEEDS-DISK: " "raw sector WRITE, and it is a ROUND TRIP: poke the buffer to "
+     "\"X\", write sector 7, read a DIFFERENT sector to flush the buffer, read 7 "
+     "back. 88 only if the bytes reached the disk. DESTRUCTIVE to the root "
+     "directory, which is why it is the LAST reading row in this block."),
+    ("copy",    'copy"a:x"to"a:y"',
+     'COPY"HI.TXT" TO "H2.TXT":OPEN"H2.TXT"FOR INPUT AS#1:A=LOF(1):CLOSE#1:PRINT"[";A;"]"', "stored",
+     "NEEDS-DISK: " "the COPY's own length read back through a channel: 26, HI.TXT's "
+     "size. A COPY that created an empty file reads 0."),
+    ("set",     'set password',  "SET PASSWORD", "stored",
+     "NEEDS-DISK: " "ERR 5 on every machine with a disk ROM and on the diskless "
+     "VG-8020 too (D-DONOTHING3) — the handler refuses ON SIGHT. That IS the "
+     "differential: an absent SET parses `SET PASSWORD` as a variable and a name, "
+     "which is a Syntax error, not an Illegal function call."),
     ("attr",    'a$=attr$(0)',   None, "direct", "NEEDS-DISK: " "MSX-DOS2-era; measured for the record"),
-    ("ipl",     "ipl",           None, "direct", "NEEDS-DISK: " "boot-sector write — DESTRUCTIVE, never executed"),
-    ("cmd",     'cmd"x"',        None, "direct", "vendor hook; unknown side effects"),
+    ("ipl",     "ipl",           "IPL", "stored",
+     "NEEDS-DISK: " "MEASURED, not assumed to be destructive: `IPL` is Illegal "
+     "function call on the CF-3300 as well as on zerobas — the boot-sector write "
+     "the old note feared needs MSX-DOS2, and this machine refuses the word on "
+     "sight. Same Syntax-error differential as `set`."),
+    ("cmd",     'cmd"x"',        'CMD"X"',      "stored",
+     "NEEDS-DISK: " "the third refuse-on-sight word; ERR 5 on both references."),
     ("lfiles",  "lfiles",        None, "direct", "NEEDS-DISK: " "printer-bound (LSTOUT hazard); tracked in TODO"),
-    ("loc",     "a=loc(1)",      None, "direct", "NEEDS-DISK: " "needs an open channel; tracked in TODO §File-position"),
+    ("loc",     "a=loc(1)",
+     'OPEN"HI.TXT"FOR INPUT AS#1:A$=INPUT$(10,#1):A=LOC(1):CLOSE#1:PRINT"[";A;"]"', "stored",
+     "NEEDS-DISK: " "26 on BOTH machines — LOC answers in BYTES here, and it "
+     "answers the same after 10 bytes as after none, so the row scores the "
+     "FUNCTION and not a position. An absent LOC auto-dims an array and reads 0."),
     ("bin",     "a$=bin$(5)",
      'PRINT"[";BIN$(5);"]"',                         "direct",
      "absent => syntax error; real => 101"),
@@ -1009,9 +1193,13 @@ def main() -> int:
     MACH_BOOT = {"National_CF-3300": 14.0}
     MACH_RESET_PRE = {"National_CF-3300": ("", "SCREEN 0")}
 
-    def ref_capture(specs, sel_rows, **kw):
+    def ref_capture(specs, sel_rows, mount: bool = True, **kw):
         """Capture `specs` on the reference, splitting the batch by which
-        reference machine each row needs, then re-interleaving in row order."""
+        reference machine each row needs, then re-interleaving in row order.
+
+        The disk-equipped reference gets the test image and the slower disk
+        timings (`mount=False` for the crunch layer, which stores a line and
+        never runs it, so no row there can touch a disk)."""
         out: list[str | None] = [None] * len(specs)
         for mach in sorted({ref_machine_for(r[4]) for r in sel_rows}):
             idx = [i for i, r in enumerate(sel_rows) if ref_machine_for(r[4]) == mach]
@@ -1020,7 +1208,32 @@ def main() -> int:
             pre = MACH_RESET_PRE.get(mach, ())
             if pre:
                 mkw["reset"] = pre + tuple(kw.get("reset", ()))
+            if mount and mach == args.disk_machine:
+                mkw.update(DISK_TIMING)
+                mkw["diska"] = _disk_image()
             got = omsx_repl.run_cases(mach, [specs[i] for i in idx], batch=batch, **mkw)
+            for i, g in zip(idx, got):
+                out[i] = g
+        return out
+
+    def zb_capture(specs, sel_rows, mount: bool = True, **kw):
+        """The same split on the SUBJECT side, and it is not optional: zerobas's
+        Disk-BASIC rows need the same image mounted and the same timings, or the
+        sweep compares a reference holding a disk against a zerobas holding none
+        -- which is the mirror image of the machines-not-languages mistake this
+        file's header records."""
+        out: list[str | None] = [None] * len(specs)
+        for want_disk in (False, True):
+            idx = [i for i, r in enumerate(sel_rows)
+                   if r[4].startswith("NEEDS-DISK:") == want_disk]
+            if not idx:
+                continue
+            mkw = dict(kw)
+            if want_disk and mount:
+                mkw.update(DISK_TIMING)
+                mkw["diska"] = _disk_image()
+            got = omsx_repl.run_cases(args.zb_machine, [specs[i] for i in idx],
+                                      batch=batch, **mkw)
             for i, g in zip(idx, got):
                 out[i] = g
         return out
@@ -1028,7 +1241,7 @@ def main() -> int:
     # ---- Layer 1: CRUNCH ---------------------------------------------------
     if args.layer in ("crunch", "both"):
         specs = [("direct", [f"1 {body}"]) for _, body, _, _, _ in rows]
-        ref_raws = ref_capture(specs, rows, reset=("NEW",),
+        ref_raws = ref_capture(specs, rows, mount=False, reset=("NEW",),
                                capture=("stored_line", TXTTAB))
         zb_raws = omsx_repl.run_cases(args.zb_machine, specs, batch=batch,
                                       reset=("NEW",),
@@ -1052,8 +1265,8 @@ def main() -> int:
                               else [line]))
             ref_raws = ref_capture(specs, ex_rows,
                                    reset=("NEW", "CLS"), capture="screen")
-            zb_raws = omsx_repl.run_cases(args.zb_machine, specs, batch=batch,
-                                          reset=("NEW", "CLS"), capture="screen")
+            zb_raws = zb_capture(specs, ex_rows,
+                                 reset=("NEW", "CLS"), capture="screen")
             for (key, _, line, mode, rnote), rr, zr in zip(ex_rows, ref_raws, zb_raws):
                 cmd = "RUN" if mode == "stored" else line
                 # NOECHO:<tag> -- this row's own feature erases or moves the

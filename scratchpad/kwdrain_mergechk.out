@@ -1,0 +1,14 @@
+=== zb
+  after   |  zerobas Disk BASIC ZB10 OPEN"N.BAS"FOR OUTPUT AS#1 ZB20 PRINT#1,"100 A=7:RETURN" ZB30 CLOSE ZB40 MERGE"N.BAS" ZB50 PRINT"[M1]" ZBRUN [M1] RETURN without GOSUB in 100 ZB 
+  landed  | OPEN"N.BAS"FOR OUTPUT AS#1 ZB20 PRINT#1,"100 A=7:RETURN" ZB30 CLOSE ZB40 MERGE"N.BAS" ZB50 PRINT"[M1]" ZBRUN [M1] RETURN without GOSUB in 100 ZBPRINT"[M";A;"]" [M 7 ] ZB 
+  listed  |  ZB20 PRINT#1,"100 A=7:RETURN" ZB30 CLOSE ZB40 MERGE"N.BAS" ZB50 PRINT"[M1]" ZBRUN [M1] RETURN without GOSUB in 100 ZBPRINT"[M";A;"]" [M 7 ] ZBLIST 100 100 A=7:RETURN ZB 
+  direct  | 100 A=7:RETURN" ZB30 CLOSE ZB40 MERGE"N.BAS" ZB50 PRINT"[M1]" ZBRUN [M1] RETURN without GOSUB in 100 ZBPRINT"[M";A;"]" [M 7 ] ZBLIST 100 100 A=7:RETURN ZBMERGE"N.BAS" ZB 
+  gosub   | thout GOSUB in 100 ZBPRINT"[M";A;"]" [M 7 ] ZBLIST 100 100 A=7:RETURN ZBMERGE"N.BAS" ZB10 GOSUB 100 ZB20 PRINT"[M";A;"]" ZBRUN [M 7 ] [M1] RETURN without GOSUB in 100 ZB 
+🔴 omsx_repl: NOT CACHING National_CF-3300 -- all 12 echo slots read BLIND/mode (SCRMOD != 0): the capture is not the text plane. The readings below are returned as measured, but they are a scrape of the wrong VRAM plane, not the text screen. A stock MSX1 boots SCREEN 1; this module's scrape assumes SCREEN 0 (40 cols at 0x0000), so a machine whose `reset` does not put it there reads the pattern generator table as if it were text.
+=== cf3300
+  after   | 0` `0 `0 0` p p h p P HHpHH 0H H0 PHHHP p p p p 8 ` p p p h p p p p PP P P p @ p@@@@@p P p p p p P @ p x x p p h h p p ( h h p ` p 0 `@@HP`PH ` p p p h h x @@ @@H0 h P P 
+  landed  | 0` `0 `0 0` p p h p P HHpHH 0H H0 PHHHP p p p p 8 ` p p p h p p p p PP P P p @ p@@@@@p P p p p p P @ p x x p p h h p p ( h h p ` p 0 `@@HP`PH ` p p p h h x @@ @@H0 h P P 
+  listed  | 0` `0 `0 0` p p h p P HHpHH 0H H0 PHHHP p p p p 8 ` p p p h p p p p PP P P p @ p@@@@@p P p p p p P @ p x x p p h h p p ( h h p ` p 0 `@@HP`PH ` p p p h h x @@ @@H0 h P P 
+  direct  | 0` `0 `0 0` p p h p P HHpHH 0H H0 PHHHP p p p p 8 ` p p p h p p p p PP P P p @ p@@@@@p P p p p p P @ p x x p p h h p p ( h h p ` p 0 `@@HP`PH ` p p p h h x @@ @@H0 h P P 
+  gosub   | 0` `0 `0 0` p p h p P HHpHH 0H H0 PHHHP p p p p 8 ` p p p h p p p p PP P P p @ p@@@@@p P p p p p P @ p x x p p h h p p ( h h p ` p 0 `@@HP`PH ` p p p h h x @@ @@H0 h P P 
+refcache: 0 hit, 2 miss, 1 stored

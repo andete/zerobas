@@ -1,0 +1,4 @@
+  after   |  Ok 10 OPEN"N.BAS"FOR OUTPUT AS#1 20 PRINT#1,"100 A=7:RETURN" 30 CLOSE 40 MERGE"N.BAS" 50 PRINT"[M1]" RUN Ok color auto goto list run 
+  landed  |  Ok PRINT"[M";A;"]" [M 0 ] Ok color auto goto list run 
+  listed  |  Ok LIST 100 100 A=7:RETURN Ok color auto goto list run 
+refcache: 0 hit, 1 miss, 1 stored

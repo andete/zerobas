@@ -1,0 +1,10 @@
+=== zb
+  bl.same   0      |  ZB10 POKE&HC000,7:BLOAD"PROG.BIN":A=PEE K(&HC000) ZB20 PRINT"[X";A;"]" ZBRUN [X 0 ] ZB 
+  bs.same   0      |  ZB10 POKE&HC800,99:BSAVE"P.BIN",&HC800, &HC800:POKE&HC800,7 ZB20 BLOAD"P.BIN":A=PEEK(&HC800) ZB30 PRINT"[X";A;"]" ZBRUN [X 0 ] ZB 
+  close.no  0      |  ZBOPEN"Y.TXT"FOR OUTPUT AS#1:PRINT#1,"A BC":OPEN"Y.TXT"FOR INPUT AS#1:A=LOF(1): CLOSE:PRINT"[X";A;"]" [X 0 ] ZB 
+  dsko.rt   88     |  ZB10 A$=DSKI$(0,7):B=PEEK(&HF351)+256*P EEK(&HF352) ZB20 POKE B,88:DSKO$0,7 ZB30 A$=DSKI$(0,0):A$=DSKI$(0,7) ZB40 A=PEEK(B):PRINT"[X";A;"]" ZBRUN [X 88 ] ZB 
+  merge.a   9      |  ZB10 A=1 ZB20 SAVE"M.BAS",A ZB30 MERGE"M.BAS" ZB40 PRINT"[X9]" ZBRUN [X9] ZB 
+  run.n     2      |  ZB10 POKE&HE001,0 ZB20 POKE&HE001,PEEK(&HE001)+1 ZB30 IF PEEK(&HE001)>1 THEN PRINT"[X";P EEK(&HE001);"]":END ZB40 RUN 20 ZBRUN [X 2 ] ZB 
+  ipl       NONE   |  ZBIPL Illegal function call ZB 
+  lpos      0      |  ZBPRINT"[X";LPOS(0);"]" [X 0 ] ZB 
+refcache: 0 hit, 1 miss, 1 stored

@@ -1055,7 +1055,12 @@ dexp5-pin: repack-machine
 # Non-zero exit means the APPARATUS failed (control group, or the ROMs changed
 # mid-run), not that coverage regressed. Repack-only + oracle-dependent (boots
 # openMSX; needs your VG-8020 reference ROM); NOT part of `unit-test`.
-kwsweep: repack-machine
+# ⚠️ NEEDS $(DISK_TEST_DSK) since D-KWDISK (2026-09-12): the Disk-BASIC rows mount
+# a WRITABLE PRIVATE COPY of the test image on BOTH sides, and `diskdep-check`
+# refuses a target that names the image without declaring it -- it is generated,
+# not tracked. Without it every disk verb measured an EMPTY drive, which is how
+# `DSKF(0)` came to be filed as reading 0 "exactly like a stub".
+kwsweep: repack-machine $(DISK_TEST_DSK)
 	python3 probes/basic/basic_probe_kwsweep.py \
 	        --zb-machine $(REPACK_MACHINE) $(if $(ONLY),--only '$(ONLY)',)
 

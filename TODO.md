@@ -489,7 +489,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:15689 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:15803 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -655,7 +655,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:4304 (T-6FE392)8 (T-529ABE)` from `TODO.md:14475 (T-529ABE)`: a
+      `TODO.md:4418 (T-6FE392)8 (T-529ABE)` from `TODO.md:14589 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -2702,6 +2702,61 @@ list. **When a slice lands, grep this list for what it just shipped.**
       prompt case from jumping into a finished program), so it is worth his eye
       before it is changed rather than a quiet edit.
 
+- [ ] 🔴 **`MERGE` INSIDE A RUNNING PROGRAM CARRIES ON HERE AND RETURNS TO
+      COMMAND LEVEL ON THE REFERENCE.** Found 2026-09-12 by D-KWDISK, the first
+      run of the kwsweep disk rows after the test image was finally mounted
+      ([`scratchpad/kwdrain_mergechk.py`](scratchpad/kwdrain_mergechk.py),
+      [readings](scratchpad/kwdrain_mergechk.out),
+      [CF-3300](scratchpad/kwdrain_mergechk_cf.out)).
+      | stored program, then `RUN` | zerobas | CF-3300 |
+      |---|---|---|
+      | `10..30` write `100 A=7:RETURN` to a file, `40 MERGE"N.BAS"`, `50 PRINT"[M1]"` | `[M1]` — **line 50 RAN** | nothing — line 50 never ran |
+      | `PRINT A` afterwards (the merged line's variable) | — | `0`, i.e. the program stopped at 40 |
+      | `LIST 100` afterwards | `100 A=7:RETURN` | `100 A=7:RETURN` ✅ agree |
+      🎯 **THE MERGE ITSELF IS FINE ON BOTH SIDES AND THAT IS WHAT NARROWS IT.** The
+      merged line lands, byte for byte, on each machine; the divergence is purely
+      CONTROL FLOW after the statement. So this is not the disk path, the tokeniser
+      or the line store — it is what `MERGE` does with the interpreter's cursor when
+      `DIRECTF` says a program is running.
+      🎯 **AND IT IS THE SAME SHAPE AS D-NEWSTMT**, which this drain produced a day
+      earlier: a program-context behaviour of a verb whose direct-mode behaviour was
+      never in doubt. `LOAD` is the obvious neighbour to sweep at the same time — it
+      shares the "return to command level" contract — and `RUN"file"` is the third.
+      ⚠️ **THE VG-8020 HAS NO VOTE**: `MERGE` needs a disk here (the tape form is a
+      separate path), so the CF-3300 is the oracle [[oracle-split-prefer-vg8020]] does
+      not apply — this is a Disk-BASIC capability split, not a presentational one.
+      🎚️ TIER 1 — happy path: an overlay loader that `MERGE`s and expects to stop is
+      ordinary MSX BASIC, and here it runs on into whatever follows
+      🤖 AUTONOMOUS — the oracle is measured and the kwsweep `merge` row already
+      holds the ground (it reads DIVERGENT until this is fixed).
+
+- [ ] 🔴 **`FILES` ENDS ITS LISTING WITH A NEWLINE THE REFERENCE DOES NOT EMIT.**
+      Found 2026-09-12 by D-KWDISK: the kwsweep `files` row came back DIVERGENT on
+      the ROW BOUNDARY, not on the text — `HI      .TXT [8]` on one screen row
+      against `HI      .TXT` then `[8]` on two
+      ([`scratchpad/kwdrain_fileseol.py`](scratchpad/kwdrain_fileseol.py),
+      [readings](scratchpad/kwdrain_fileseol.out), both machines, per screen row).
+      | after the listing | zerobas | CF-3300 |
+      |---|---|---|
+      | `FILES"HI.TXT":PRINT"<B>"` | `<B>` on the NEXT row | `<B>` on the SAME row, after the entry |
+      | `FILES"HI.TXT"` then `CSRLIN`,`POS(0)` | row+1, column 5 | SAME row, column 18 |
+      | `FILES` (5 entries) then `CSRLIN`,`POS(0)` | row+1, column 5 | SAME row, column 31 |
+      | the entries themselves, and the 3-per-row column layout | identical ✅ | identical ✅ |
+      🎯 **EVERYTHING ELSE ABOUT THE LISTING AGREES**, which is what makes this a
+      one-line fix rather than a formatting review: same names, same 8.3 padding, same
+      three-entries-per-row wrap, same order. Only the cursor's resting place differs
+      — zerobas emits a trailing CRLF after the last entry, the reference leaves the
+      cursor where the last entry ended.
+      ⚠️ **IT IS INVISIBLE FROM THE PROMPT**, which is presumably why it has stood:
+      `Ok` starts on a fresh row either way, so a human typing `FILES` sees the same
+      screen. It only shows when a PROGRAM prints after `FILES`.
+      ⚠️ **`LFILES` IS UNMEASURED HERE** and shares the walk (docs/spec-basic-lfiles.md);
+      check it in the same fix rather than assuming it follows.
+      🎚️ TIER 1 — happy path: `FILES` followed by a `PRINT` is ordinary, and the
+      output lands on a different row than on the reference
+      🤖 AUTONOMOUS — the oracle is measured per screen row and the kwsweep `files`
+      row holds the ground until it is fixed.
+
 - [ ] 🔁 **STANDING TIER (Joost, 2026-08-31): WHEN THE 🤖 QUEUE DRAINS, REVIEW
       EACH STATEMENT'S IMPLEMENTATION IN FULL, one verb at a time.** The
       calibration: PLAY was picked at RANDOM for review and yielded D-MUSICF (a
@@ -3124,10 +3179,69 @@ list. **When a slice lands, grep this list for what it just shipped.**
       they are blocked on `basic_probe_kwsweep.py` NOT MOUNTING THE IMAGE (it names
       neither `diska` nor `DISK_TEST_DSK` today). That is the next slice, and it is
       threading an existing fixture into an existing probe, not new apparatus.
-      ⚠️ **THE PATTERN IS NOW THREE FOR THREE: every blocker examined this session
+      🟢 **D-KWDISK, 2026-09-12: 36 -> 16, evidence 110 -> 130 — TWENTY WORDS, AND
+      THE WHOLE SLICE WAS MOUNTING A FIXTURE THAT WAS ALREADY THERE.**
+      `DSKF BLOAD BSAVE CLOSE CMD COPY DSKI$ DSKO$ EOF FILES IPL KILL LOC LOF LSET
+      MERGE RSET RUN SAVE SET` ([readings](scratchpad/kwdisk_full.out), full sweep;
+      [the new rows alone](scratchpad/kwdisk_only.out)).
+      [`basic_probe_kwsweep.py`](probes/basic/basic_probe_kwsweep.py) now mounts a
+      WRITABLE PRIVATE COPY of `disk/test720.dsk` on BOTH sides for the NEEDS-DISK
+      group, and `make kwsweep` declares `$(DISK_TEST_DSK)` (`diskdep-check` green,
+      74/74).
+      🔴 **AND THE FIRST RUN PAID FOR ITSELF WITH TWO TIER 1 DEFECTS**, filed above:
+      `MERGE` inside a program carries on here and returns to command level on the
+      reference, and `FILES` ends its listing with a newline the reference does not
+      emit. Both were invisible while the drive was empty — which is the whole
+      argument for Joost's ruling.
+      🔴 **`DSKF(0)` READING 0 WAS NEVER A STUB READING — IT WAS AN EMPTY DRIVE.**
+      Batch 4 filed *"`DSKF(0)` reads 0 — exactly what a stub reads (no disk is
+      inserted, so the honest answer coincides with the blind one)"* and drew the
+      conclusion that the read-only disk verbs do not separate. With the image in,
+      `DSKF(1)` reads **707**. The parenthesis named the cause and the conclusion
+      still went the wrong way [[a-justification-parenthesis-is-an-unrun-claim]].
+      🔴 **THE CAPTURE GAP IS PART OF THE MEASUREMENT, AND ITS FAILURE LOOKS LIKE A
+      REFUSAL.** At the shared default (`cap_gap` 2.5) every WRITING row came back
+      BLANK on the CF-3300 — no marker, no error, no prompt — which reads as *"the
+      reference declines this verb"* and would have published five divergences that
+      are pure apparatus. A real FAT write simply takes longer than the capture
+      waited. Measured: 8 still blanks all five, 12/3.5 answers, 20/5 is what shipped,
+      and the cost is EMULATED time, not wall time
+      ([readings](scratchpad/kwdrain_diskslow.out)) [[apparatus-is-part-of-the-measurement]].
+      🎯 **TWO CANDIDATE ROWS WERE THROWN AWAY FOR BEING BLIND, which is the standard
+      working rather than a near miss.** A `CLOSE` row that reopened channel 1 passed
+      WITHOUT the close (zerobas lets #1 be reopened, so the readback never moved); it
+      became the FLUSH instead — 6 bytes are on the disk only because the channel was
+      closed, and the same row without it measures 0. And a `FILES` row reading
+      `CSRLIN` read 1 on zerobas and 0 on the CF-3300 *because the CF-3300 shows the
+      function-key line and its screen is a row shorter* — the MACHINES, not the verb
+      [[readout-blind-to-its-own-subject]]. (The row that replaced it found the real
+      divergence, on the row BOUNDARY rather than the text.)
+      🔴 **A DIRECT-MODE `BLOAD` EATS THE REST OF ITS LINE**, measured — the readback
+      after it printed nothing at all, on both machines — so those rows are
+      `mode="stored"` with the readback on a LATER numbered line, and `as_stored`'s
+      packing was printed before each row was written rather than assumed.
+      🎯 **`RUN` CAME OUT OF THE SAME BATCH AND NEEDS NO DISK AT ALL.** It sat in the
+      list because RUN CLEARS VARIABLES, so no expression can carry a count across the
+      restart: the flag has to live in RAM. `POKE`ing the cell next to the one
+      `pokekw` already uses, `RUN <line>` re-enters and the second pass prints 2 where
+      a RUN that did nothing prints 1.
+      🎯 **AUDIT RE-RUN THROUGH THE CONSUMER'S OWN PARSER: 134 pin rows, exactly ONE
+      credits no keyword** (`swapctl`, the intentional bare-assign control), **130
+      distinct keywords credited.** And the WHOLE sweep summary was read, not just the
+      new verdicts: `DIVERGENT=2 SUPPORTED=130`, no collateral — the `AUTO` lesson
+      checked rather than remembered.
+      ➡️ **WHAT IS LEFT IS 16 WORDS AND FIVE BLOCKERS**: `INKEY$` `INPUT` `GET` (the
+      harness timing change), `LLIST` `LPOS` `LPRINT` `LFILES` (a printer-log reader),
+      `CLOAD` `CSAVE` (a tape rig), `AUTO` `RENUM` (line-entry mode / a read-back the
+      row format cannot express), `KEY` `SCREEN` `WAIT` `CALL` `USR` (each with a
+      filed, measured reason above). None is blocked on an idea; each is blocked on a
+      named piece of apparatus, and the disk one has just been shown to be the kind
+      that is already built.
+      ⚠️ **THE PATTERN IS NOW FOUR FOR FOUR: every blocker examined this session
       was stale** — the display verbs' "cannot take a row", the multi-line words'
-      "cannot be expressed", and now these two. Re-verify a blocker BEFORE believing
-      it; that is cheaper than any of the work it was hiding.
+      "cannot be expressed", the two named above, and the disk fixture itself, which
+      needed a `diska=` argument and a bigger capture gap. Re-verify a blocker BEFORE
+      believing it; that is cheaper than any of the work it was hiding.
       🎚️ STANDING — ruling
       🤖 AUTONOMOUS — kwsweep's keyword list is the denominator; work through
       it verb by verb, cheapest-context verbs first, and file what each review
@@ -5148,7 +5262,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:14475 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:14589 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

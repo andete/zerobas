@@ -1,0 +1,27 @@
+=== zb (C-BIOS_MSX1_EU_REPACK_DISK)  disk=YES
+  dskf.1      707      
+  dskf.0      707      
+  lof         26       zbopen
+  loc         26       zbopen
+  eof.start   0        zbopen
+  eof.end     -1       zbopen
+  close.reop  26       zbopen
+  close.ctl   26       zbopen
+  bload.ctl   7        
+  bload       NONE     
+  dski.ctl    254      
+  dski.dir    84       
+  dski.boot   235      
+  files.ctl   0        
+  files       2        
+  bsave.rt    NONE     
+  save.lof    69       
+  copy        NONE     
+  kill.dskf   NONE     
+  lset        66       zbopen
+  rset        32       zbopen
+  rset.4      66       zbopen
+  set         NONE     zbset password illegal function call
+  cmd         NONE     illegal function call
+  attr        NONE     illegal function call
+refcache: 0 hit, 1 miss, 1 stored

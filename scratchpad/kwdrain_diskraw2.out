@@ -1,0 +1,14 @@
+=== zb
+  bload.st   62     |  ZB10 POKE&HC000,7 ZB20 BLOAD"PROG.BIN" ZB30 A=PEEK(&HC000):PRINT"[X";A;"]" ZBRUN [X 62 ] ZB 
+  bsave.st   99     |  ZB10 POKE&HC800,99 ZB20 BSAVE"O.BIN",&HC800,&HC800 ZB30 POKE&HC800,7 ZB40 BLOAD"O.BIN" ZB50 A=PEEK(&HC800):PRINT"[X";A;"]" ZBRUN [X 99 ] ZB 
+  loc.0      26     |  ZBOPEN"HI.TXT"FOR INPUT AS#1:A=LOC(1):C LOSE#1:PRINT"[X";A;"]" [X 26 ] ZB 
+  loc.10     26     |  ZBOPEN"HI.TXT"FOR INPUT AS#1:A$=INPUT$( 10,#1):A=LOC(1):CLOSE#1:PRINT"[X";A;"]" [X 26 ] ZB 
+  close.flu  6      |  ZBOPEN"W.TXT"FOR OUTPUT AS#1:PRINT#1,"A BC":CLOSE#1:OPEN"W.TXT"FOR INPUT AS#1:A =LOF(1):CLOSE#1:PRINT"[X";A;"]" [X 6 ] ZB 
+  close.ctl  NONE   |  ZBOPEN"V.TXT"FOR OUTPUT AS#1:PRINT#1,"A BC":OPEN"V.TXT"FOR INPUT AS#2:A=LOF(2): CLOSE:PRINT"[X";A;"]" Bad file number ZB 
+  copy.lof   NONE   |  ZBCOPY"HI.TXT" TO "H2.TXT":OPEN"H2.TXT" FOR INPUT AS#1:A=LOF(1):CLOSE#1:PRINT"[ X";A;"]" 
+  copy.ns    NONE   |  ZBCOPY"HI.TXT"TO"H3.TXT":OPEN"H3.TXT"FO R INPUT AS#1:A=LOF(1):CLOSE#1:PRINT"[X" ;A;"]" 
+  kill.d     NONE   |  ZBA=DSKF(1):KILL"PROG2.BAS":B=DSKF(1):P RINT"[X";B-A;"]" 
+  kill.ctl   0      |  ZBA=DSKF(1):B=DSKF(1):PRINT"[X";B-A;"]" [X 0 ] ZB 
+  merge      255    |  ZB10 PRINT"[X1]" ZB20 MERGE"PROG.BAS" ZBRUN [X1] Syntax error in 20 ZBPRINT"[X";PEEK(&HD002);"]" [X 255 ] ZB 
+  run.file   123    |  ZB10 POKE&HD002,0 ZB20 RUN"PROG.BAS" ZBRUN ZBPRINT"[X";PEEK(&HD002);"]" [X 123 ] ZB 
+refcache: 0 hit, 1 miss, 1 stored

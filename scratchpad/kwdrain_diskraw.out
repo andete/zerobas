@@ -1,0 +1,10 @@
+--- bload     ZBBLOAD"PROG.BIN":A=PEEK(&HC000):PRINT" [X";A;"]" ZB 
+--- bloadA    ZBBLOAD"A:PROG.BIN":A=PEEK(&HC000):PRIN T"[X";A;"]" ZB 
+--- bsave     ZBBSAVE"O.BIN",&HC800,&HC800 ZB 
+--- bsave2    ZBPOKE&HC800,99:BSAVE"O.BIN",&HC800,&HC 80F:PRINT"[X9]" ZB 
+--- copy      ZBCOPY"HI.TXT" TO "H2.TXT":PRINT"[X9]" [X9] ZB 
+--- kill      ZBKILL"TEST.BIN":PRINT"[X9]" [X9] ZB 
+--- kill2     ZBA=DSKF(1):KILL"TEST.BIN":B=DSKF(1):PR INT"[X";B-A;"]" File not found ZB 
+--- loc2      ZBOPEN"TEST.BIN"FOR INPUT AS#1:A$=INPUT $(200,#1):A=LOC(1):CLOSE#1:PRINT"[X";A; "]" File not found ZB 
+--- loc0      ZBOPEN"TEST.BIN"FOR INPUT AS#1:A=LOC(1) :CLOSE#1:PRINT"[X";A;"]" File not found ZB 
+refcache: 0 hit, 1 miss, 1 stored

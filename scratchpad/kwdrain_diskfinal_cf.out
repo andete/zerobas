@@ -1,0 +1,23 @@
+=== cf3300 (National_CF-3300)
+  dskf   -1     |  Ok 10 PRINT"[";DSKF(1)>0;"]" RUN [-1 ] Ok color auto goto list run 
+  dskfv  707    |  Ok 10 PRINT"[";DSKF(1);"]" RUN [ 707 ] Ok color auto goto list run 
+  lof    26     |  Ok 10 OPEN"HI.TXT"FOR INPUT AS#1 20 A=LOF(1):CLOSE#1:PRINT"[";A;"]" RUN [ 26 ] Ok color auto goto list run 
+  loc    26     | "FOR INPUT AS#1 20 A$=INPUT$(10,#1):A=LOC(1):CLOSE#1 30 PRINT"[";A;"]" RUN [ 26 ] Ok color auto goto list run 
+  eof    -1     | T"FOR INPUT AS#1 20 A$=INPUT$(26,#1):A=EOF(1):CLOSE#1 30 PRINT"[";A;"]" RUN [-1 ] Ok color auto goto list run 
+  files  0      |  HI .TXT [F 0 ] Ok color auto goto list run 
+  dski   84     | I$(0,7) 20 B=PEEK(&HF351)+256*PEEK(&HF352) 30 A=PEEK(B):PRINT"[";A;"]" RUN [ 84 ] Ok color auto goto list run 
+  bload  62     |  Ok 10 POKE&HC000,7:BLOAD"PROG.BIN" 20 A=PEEK(&HC000):PRINT"[";A;"]" RUN [ 62 ] Ok color auto goto list run 
+  runkw  2      | &HE001)+1 30 IF PEEK(&HE001)<2 THEN RUN 20 40 PRINT"[";PEEK(&HE001);"]" RUN [ 2 ] Ok color auto goto list run 
+  close  NONE   | #1,"ABC":CLOSE#1 30 OPEN"W.TXT"FOR INPUT AS#1:A=LOF(1) 40 CLOSE#1:PRINT"[";A;"]" RUN color auto goto list run 
+  bsave  NONE   | BIN",&HC800,&HC800 30 POKE&HC800,7:BLOAD"O.BIN" 40 A=PEEK(&HC800):PRINT"[";A;"]" RUN color auto goto list run 
+  save   NONE   |  A=1:SAVE"S.BAS" 20 OPEN"S.BAS"FOR INPUT AS#1:A=LOF(1) 30 CLOSE#1:PRINT"[";A;"]" RUN color auto goto list run 
+  lset   66     | S#1:FIELD#1,4 AS A$ 20 LSET A$="B":A=ASC(A$):CLOSE#1 30 PRINT"[";A;"]" RUN [ 66 ] Ok color auto goto list run 
+  rset   32     | S#1:FIELD#1,4 AS A$ 20 RSET A$="B":A=ASC(A$):CLOSE#1 30 PRINT"[";A;"]" RUN [ 32 ] Ok color auto goto list run 
+  copy   NONE   | XT" TO "H2.TXT" 20 OPEN"H2.TXT"FOR INPUT AS#1 30 A=LOF(1):CLOSE#1:PRINT"[";A;"]" RUN color auto goto list run 
+  kill   NONE   |  Ok 10 A=DSKF(1):KILL"PROG2.BAS" 20 B=DSKF(1):PRINT"[";B-A;"]" RUN color auto goto list run 
+  merge  NONE   | #1 20 PRINT#1,"100 A=7:RETURN":CLOSE 30 MERGE"N.BAS":GOSUB 100 40 PRINT"[";A;"]" RUN color auto goto list run 
+  dsko   88     | 88:DSKO$0,7:A$=DSKI$(0,0) 40 A$=DSKI$(0,7):A=PEEK(B) 50 PRINT"[";A;"]" RUN [ 88 ] Ok color auto goto list run 
+  setkw  NONE   |  Ok 10 SET PASSWORD RUN Illegal function call in 10 Ok color auto goto list run 
+  cmdkw  NONE   |  Ok 10 CMD"X" RUN Illegal function call in 10 Ok color auto goto list run 
+  iplkw  NONE   |  Ok 10 IPL RUN Illegal function call in 10 Ok color auto goto list run 
+refcache: 0 hit, 1 miss, 1 stored

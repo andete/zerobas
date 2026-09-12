@@ -1,0 +1,19 @@
+=== zb
+  close   6      | TXT"FOR OUTPUT AS#1 ZB20 PRINT#1,"ABC":CLOSE#1 ZB30 OPEN"W.TXT"FOR INPUT AS#1:A=LOF(1) ZB40 CLOSE#1:PRINT"[";A;"]" ZBRUN [ 6 ] ZB 
+  bsave   99     | 0 POKE&HC800,99 ZB20 BSAVE"O.BIN",&HC800,&HC800 ZB30 POKE&HC800,7:BLOAD"O.BIN" ZB40 A=PEEK(&HC800):PRINT"[";A;"]" ZBRUN [ 99 ] ZB 
+  save    68     |  ZB10 A=1:SAVE"S.BAS" ZB20 OPEN"S.BAS"FOR INPUT AS#1:A=LOF(1) ZB30 CLOSE#1:PRINT"[";A;"]" ZBRUN [ 68 ] ZB 
+  copy    26     |  ZB10 COPY"HI.TXT" TO "H2.TXT" ZB20 OPEN"H2.TXT"FOR INPUT AS#1 ZB30 A=LOF(1):CLOSE#1:PRINT"[";A;"]" ZBRUN [ 26 ] ZB 
+  kill    1      |  ZB10 A=DSKF(1):KILL"PROG2.BAS" ZB20 B=DSKF(1):PRINT"[";B-A;"]" ZBRUN [ 1 ] ZB 
+  merge   7      | OPEN"N.BAS"FOR OUTPUT AS#1 ZB20 PRINT#1,"100 A=7:RETURN":CLOSE ZB30 MERGE"N.BAS":GOSUB 100 ZB40 PRINT"[";A;"]":END ZBRUN [ 7 ] ZB 
+  filesm  NONE   |  ZB10 FILES"NOSUCH.XYZ" ZBRUN File not found in 10 ZB 
+  filesh  8      |  ZB10 FILES"HI.TXT":PRINT"[8]" ZBRUN HI .TXT [8] ZB 
+=== cf3300
+  close   6      | #1 20 PRINT#1,"ABC":CLOSE#1 30 OPEN"W.TXT"FOR INPUT AS#1:A=LOF(1) 40 CLOSE#1:PRINT"[";A;"]" RUN [ 6 ] Ok color auto goto list run 
+  bsave   99     | 0 BSAVE"O.BIN",&HC800,&HC800 30 POKE&HC800,7:BLOAD"O.BIN" 40 A=PEEK(&HC800):PRINT"[";A;"]" RUN [ 99 ] Ok color auto goto list run 
+  save    68     |  Ok 10 A=1:SAVE"S.BAS" 20 OPEN"S.BAS"FOR INPUT AS#1:A=LOF(1) 30 CLOSE#1:PRINT"[";A;"]" RUN [ 68 ] Ok color auto goto list run 
+  copy    26     |  COPY"HI.TXT" TO "H2.TXT" 20 OPEN"H2.TXT"FOR INPUT AS#1 30 A=LOF(1):CLOSE#1:PRINT"[";A;"]" RUN [ 26 ] Ok color auto goto list run 
+  kill    1      |  Ok 10 A=DSKF(1):KILL"PROG2.BAS" 20 B=DSKF(1):PRINT"[";B-A;"]" RUN [ 1 ] Ok color auto goto list run 
+  merge   NONE   | FOR OUTPUT AS#1 20 PRINT#1,"100 A=7:RETURN":CLOSE 30 MERGE"N.BAS":GOSUB 100 40 PRINT"[";A;"]":END RUN Ok color auto goto list run 
+  filesm  NONE   |  Ok 10 FILES"NOSUCH.XYZ" RUN File not found in 10 Ok color auto goto list run 
+  filesh  8      |  Ok 10 FILES"HI.TXT":PRINT"[8]" RUN HI .TXT [8] Ok color auto goto list run 
+refcache: 0 hit, 2 miss, 2 stored
