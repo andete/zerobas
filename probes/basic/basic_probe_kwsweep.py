@@ -312,6 +312,40 @@ SWEEP: list[tuple[str, str, str | None, str, str]] = [
     # ⚠️ PSET AND POINT ARE COUPLED and the rows say so: POINT can only read what
     # something drew, so `pointkw` moves if EITHER breaks. It is still worth a row --
     # a POINT that parses as an array reads 0, which neither 4 nor 15 can be.
+    # ---------------------------------------------- D-KWDRAIN step 4d (2026-09-12)
+    # 🎯 EVERY READBACK BELOW WAS MEASURED BEFORE THE ROW WAS WRITTEN
+    # (scratchpad/kwdrain_gfx2.py, both machines agreeing), and the measurement
+    # changed two of them:
+    #   CIRCLE  rim POINT(60,50) = 15 while the CENTRE reads 4 -- so the row sees a
+    #           real circle and not a filled blob.
+    #   DRAW    POINT(14,10) = 15 after `C15R5` from (10,10); blank is 4.
+    #   BASE    BASE(2) = 2048 and BASE(10) = 6144 -- but 🔴 BASE(0) IS 0, which is
+    #           exactly what a stub returns, so the obvious argument would have made
+    #           a BLIND row. The row uses BASE(2).
+    # 🟢 SPRITE'S NO-OUTPUT WAS DIAGNOSED, NOT GUESSED AT
+    # (scratchpad/kwdrain_spritechk.py): `SPRITE$(0)=...` raises ILLEGAL FUNCTION
+    # CALL in SCREEN 0 -- sprites need a graphics screen -- which is why the first
+    # form printed nothing at all. In SCREEN 2 the round-trip works: ASC reads back
+    # 255 and LEN reads 8. The row below therefore writes the pattern to VRAM and
+    # reads it back through SPRITE$, so it moves if either half stops working.
+    ("circlekw",  'circle(50,50),10', 
+     'SCREEN2:CIRCLE(50,50),10,15:A=POINT(60,50):SCREEN0:PRINT"[Q";A;"]"', "stored",
+     "NOECHO:[Q rim pixel is 15, centre is 4 -- a filled or absent circle fails"),
+    ("drawkw",    'draw"c15r5"',      
+     'SCREEN2:PSET(10,10),15:DRAW"C15R5":A=POINT(14,10):SCREEN0:PRINT"[D";A;"]"', "stored",
+     "NOECHO:[D reads 4 pixels right of the start: blank is 4, drawn is 15"),
+    # 🔴 THE CRUNCH IS `sprite on`, NOT `sprite$(0)=...`, AND THE FIRST CUT TAUGHT
+    # ME WHY. tier_table's WORD regex keeps a trailing `$` (so STR$ and MID$ match),
+    # which makes `sprite$(0)="x"` tokenise to SPRITE$ -- and the kwtable keyword is
+    # SPRITE. The row reported SUPPORTED and credited NOTHING: four rows went in and
+    # the evidence count rose by three. `sprite on` names SPRITE first and is real
+    # BASIC besides.
+    ("spritekw",  'sprite on',
+     'SCREEN2:SPRITE$(0)=STRING$(8,255):A=ASC(SPRITE$(0)):SCREEN0:PRINT"[Z";A;"]"',
+     "stored",
+     "NOECHO:[Z writes the pattern to VRAM and reads it back: 255 round-trips, "
+     "a stub reads 0 and SCREEN 0 raises Illegal function call"),
+    ("basekw",    'a=base(2)',         'PRINT"[";BASE(2);"]"',               "direct", "D-KWDRAIN"),
     ("psetkw",   'pset(1,1)',      
      'SCREEN2:PSET(1,1),15:A=POINT(1,1):SCREEN0:PRINT"[S";A;"]"',   "stored",
      "NOECHO:[S PSET draws, POINT reads it back: 4 blank vs 15 drawn"),

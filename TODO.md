@@ -489,7 +489,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:15390 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:15415 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -655,7 +655,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:4005 (T-6FE392)8 (T-529ABE)` from `TODO.md:14176 (T-529ABE)`: a
+      `TODO.md:4030 (T-6FE392)8 (T-529ABE)` from `TODO.md:14201 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -2816,6 +2816,31 @@ list. **When a slice lands, grep this list for what it just shipped.**
       ⚠️ **`PSET` AND `POINT` ARE COUPLED and the rows say so**: `POINT` can only read
       what something drew, so `pointkw` moves if EITHER breaks. It still earns a row —
       a `POINT` that parses as an array reads 0, which neither 4 nor 15 can be.
+      🟢 **STEP 4d: 61 -> 58**, evidence 86 -> 89 — `CIRCLE DRAW BASE SPRITE`
+      ([readings](scratchpad/kwdrain_gfx2.out)). Measuring each readback BEFORE
+      writing the row changed two of them, which is the whole point of the standard:
+      🔴 **`BASE(0)` READS 0 — EXACTLY WHAT A STUB RETURNS**, so the obvious argument
+      would have produced a blind row; the row uses `BASE(2)` (2048, and `BASE(10)`
+      is 6144). And `CIRCLE`'s row reads the RIM at 15 while the CENTRE reads 4, so it
+      sees a real circle rather than a filled blob.
+      🟢 **`SPRITE`'s NO-OUTPUT WAS DIAGNOSED, NOT GUESSED AT**
+      ([`scratchpad/kwdrain_spritechk.py`](scratchpad/kwdrain_spritechk.py)):
+      `SPRITE$(0)=…` raises **Illegal function call in SCREEN 0** — sprites need a
+      graphics screen — which is why the first form printed nothing on BOTH machines
+      and looked like a broken probe. In SCREEN 2 the round-trip works (`ASC` 255,
+      `LEN` 8), so the row writes the pattern to VRAM and reads it back and moves if
+      either half breaks.
+      🔴 **AND A THIRD SILENT-FAILURE MODE: A ROW CAN REPORT `SUPPORTED` AND CREDIT
+      NOTHING.** The `SPRITE` row's crunch was `sprite$(0)="x"`, and
+      [`tools/tier_table.py`](tools/tier_table.py)'s `WORD` regex KEEPS a trailing `$`
+      (so `STR$`/`MID$` match) — which tokenises it to `SPRITE$`, while the kwtable
+      keyword is `SPRITE`. The row went green, the keyword stayed in "no known gap",
+      and **the only signal was the evidence count rising by three when four rows went
+      in**. Crunch changed to `sprite on`; 58 -> 57, evidence 89 -> 90.
+      🎯 **AUDITED RATHER THAN ASSUMED:** every one of the **94** rows now in the pin
+      was checked through `stmt_keyword` — **0 credit no keyword**, so `SPRITE` was
+      the only one. The check is three lines and belongs in the probe's own selftest
+      if this happens again.
       ➡️ **STEP (c) IS STILL NOT BUILT AND IS STILL THE CEILING** for words no
       kwsweep row can reach — but it is now a SMALLER set than batch 4 claimed, and
       its real cost is on the record: a `subject:` tag must mean *"a row whose verdict
@@ -4849,7 +4874,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:14176 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:14201 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
