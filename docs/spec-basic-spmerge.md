@@ -463,8 +463,12 @@ low split via a helper is the fallback if the carve comes up short.
 page-0 tenant that never reaches `ctl_reloc`. The subagent implemented and verified
 that arm — `trapsvc-acceptance` PASS on all seven rows, `deffn-acceptance` 0/73
 with the denominator restored — at **63 B of sub page 0** (590 → 527 free), 0 B of
-main. It is not committed: it is only correct WITH the merge, and would relocate an
-unrelated region without it.
+main. It is **preserved as a patch, not applied** —
+[`scratchpad/d-spmerge-fnfsave.patch`](scratchpad/d-spmerge-fnfsave.patch), which
+`git apply --check`s clean against the tree at `55450e28` — because it is only
+correct WITH the merge: without `SP` in the region it would relocate an unrelated
+block. It also tests the reserve where **SP would land**, not at the frontier,
+because `FN` recursion grows the stack about 4× faster than it grows the pool.
 
 ### 10.5 Side finding, not part of this arc
 

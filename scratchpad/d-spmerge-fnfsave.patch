@@ -1,0 +1,109 @@
+diff --git a/sub/deffn.asm b/sub/deffn.asm
+index 61849d0f..ae179d56 100644
+--- a/sub/deffn.asm
++++ b/sub/deffn.asm
+@@ -487,29 +487,94 @@ dfn_deftbl:
+ 
+ ; --- fnf_save: allocate a frame and copy the live prefix into it ------------
+ ; The allocation is `ctl_alloc`'s arithmetic done here, because main's low region
+-; is unreachable from a page-0 tenant: refuse if `CSP` would wrap or the base
+-; would fall below `CTLLIM`. Out: FN_FST = 0 saved / 1 pool full (main raises 7).
++; is unreachable from a page-0 tenant: refuse if `CSP` would wrap, the base
++; would fall below `CTLLIM`, or fewer than `CTL_STACK_MARGIN` bytes would be left
++; above the floor. Out: FN_FST = 0 saved / 1 pool full (main raises 7).
++;
++; 🔴 AND SINCE D-SPMERGE IT IS `ctl_reloc`'S CONTRACT TOO, NOT JUST `ctl_alloc`'S.
++; The machine stack is based at the frontier (basic/repl.asm), so the block
++; [SP, CSP) is LIVE: it holds every return address since the run loop's `call
++; exec`, and at its top the word `SAVSTK` anchors -- run_prog's own return. A
++; frame taken at `CSP - (size+3)` and `ldir`ed into place landed on exactly those
++; bytes. MEASURED (trapsvc int.resume, 2026-09-12): the write to (SAVSTK) came
++; from THIS routine's `ldir`, PC=$3753 in sub page 0, with SP 60 bytes below;
++; the program then ran to END and its `ret` popped an FN cell, $FFFF -> `rst 38`
++; -> reboot. A plain `PRINT FNA(1)` with no trap anywhere did the same. So the
++; block slides down by the frame, SP and SAVSTK with it, exactly as ctl_reloc
++; does for GOSUB/FOR/trap frames. No `di`/`ei`: a page-0 tenant runs under DI.
+ fnf_save:
+                 ld      a,(FN_FEND)
+                 sub     low FN_PAREA
+                 add     a,FN_CELLS          ; A = the live prefix's size
+                 ld      c,a
+                 ld      b,0                 ; BC = size
+-                push    bc
++                push    bc                  ; [size] -- rides the block below
++                inc     bc
++                inc     bc
++                inc     bc                  ; BC = size + 3 = the whole frame
+                 ld      hl,(CSP)
+                 or      a
+-                sbc     hl,bc
+-                dec     hl
+-                dec     hl
+-                dec     hl                  ; HL = base = CSP - (size + 3)
++                sbc     hl,bc               ; HL = base = CSP - (size + 3)
+                 jr      c,fnf_full          ; CSP wrapped: the pool is not live
+                 ld      de,(CTLLIM)
+-                push    hl
++                or      a
++                sbc     hl,de               ; HL = base - CTLLIM
++                jr      c,fnf_full          ; base below the floor: collided
++                add     hl,de               ; HL = base again
++                ; 🔴 THE RESERVE IS TESTED WHERE `SP` WOULD LAND, NOT AT THE FRONTIER.
++                ; ctl_alloc's `CTL_STACK_MARGIN` sits on the frame's base because a
++                ; GOSUB/FOR/trap frame is pushed at a statement boundary, where the
++                ; stack is a few words deep. An FN call is MID-EXPRESSION and it
++                ; RECURSES: `DEF FNA(X)=FNA(X)` costs 13 B of pool and ~50 B of
++                ; machine stack per level, so the stack reaches the arrays long
++                ; before the frontier does. MEASURED (deffn b.recurse): tested at the
++                ; frontier, that row read <NO OUTPUT> where both references answer
++                ; ERR 7; tested here, ERR 7. In the merged world SP < base, so this
++                ; test implies the base one; the floor test above stays for the
++                ; disjoint case (autoexec before the REPL has based the stack).
++                push    hl                  ; [base]
++                ld      hl,0
++                add     hl,sp
++                or      a
++                sbc     hl,bc               ; HL = where SP would land
++                sbc     hl,de               ; ... minus the floor (CF was clear)
++                jr      c,fnf_full1         ; below it
++                ld      a,h
++                cp      high CTL_STACK_MARGIN
++fnf_full1:      pop     hl                  ; HL = base (pop keeps the flags)
++                jr      c,fnf_full          ; less than the stack's reserve left
++                ld      (CSP),hl            ; the frontier IS the frame's base
++                ; --- slide the live stack block down by the frame (ctl_reloc) ---
++                ld      hl,0
++                add     hl,sp
++                ex      de,hl               ; DE = SP = the block's bottom
++                ld      hl,(CSP)
++                add     hl,bc               ; HL = the OLD frontier = the block's top
+                 or      a
+                 sbc     hl,de
++                jr      c,fnf_nomove        ; SP above the pool (autoexec before the
++                                            ; REPL has based it): disjoint, no move
++                ld      hl,(SAVSTK)
++                or      a
++                sbc     hl,bc
++                ld      (SAVSTK),hl         ; the anchor points into the block
++                ex      de,hl               ; HL = SP
++                ld      d,h
++                ld      e,l                 ; DE = source
++                or      a
++                sbc     hl,bc               ; HL = destination = SP - frame
++                ld      sp,hl               ; SP moves BEFORE the copy
++                ex      de,hl               ; HL = source, DE = destination
++                push    hl                  ; below the destination: safe
++                ld      hl,(CSP)
++                or      a
++                sbc     hl,de               ; length = base - destination
++                ld      b,h                 ;        = old frontier - source
++                ld      c,l
+                 pop     hl
+-                jr      c,fnf_full          ; base below the floor: collided
+-                ld      (CSP),hl
++                ldir                        ; destination < source: forward is safe
++fnf_nomove:
++                ld      hl,(CSP)            ; HL = base
+                 ld      de,(FNSP)
+                 ld      (FNSP),hl           ; this frame is the newest
+                 ld      (hl),e
