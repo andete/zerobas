@@ -1,0 +1,29 @@
+=== zb  printer=PLUGGED
+  lpos.rest  0      |  [X 0 ] ZB 
+  lpos.3     3      |  [X 3 ] ZB 
+  lpos.7     7      |  [X 7 ] ZB 
+omsx_repl: MIS-DELIVERED case 2 on C-BIOS_MSX1_EU_REPACK_DISK: typed 10,20, machine stored 10 -- line(s) [20] never entered (the screen editor rejected a mangled echo). Body: ['LPRINT"ABCDEFG";', 'PRINT"[X";LPOS(0);"]"']
+omsx_repl: MIS-ECHOED case 2 on C-BIOS_MSX1_EU_REPACK_DISK (slot 13): typed '10 LPRINT"ABCDEFG";', machine echoed '";' -- 17 leading char(s) swallowed, and the screen lost nothing, so no clear or scroll erased them. The line was delivered mangled (docs/spec-probe-echo.md). Body: ['LPRINT"ABCDEFG";', 'PRINT"[X";LPOS(0);"]"']
+            screen: ['ZB10 LPRINT"ABC";:PRINT"[X";LPOS(0);"]"', 'ZBRUN']
+omsx_repl: MIS-ECHOED case 2 on C-BIOS_MSX1_EU_REPACK_DISK (slot 14): typed '20 PRINT"[X";LPOS(0);"]"', machine echoed 'PRINT"[X";LPOS(0);"]"' -- 3 leading char(s) swallowed, and the screen lost nothing, so no clear or scroll erased them. The line was delivered mangled (docs/spec-probe-echo.md). Body: ['LPRINT"ABCDEFG";', 'PRINT"[X";LPOS(0);"]"']
+            screen: ['ZB10 LPRINT"ABC";:PRINT"[X";LPOS(0);"]"', 'ZBRUN']
+            -> re-running that case boot-per-case
+=== zb  printer=none
+  lpos.rest  0      |  [X 0 ] ZB 
+  lpos.3     NONE   |  
+  lpos.7     NONE   |  
+=== vg8020  printer=PLUGGED
+  lpos.rest  0      |  [X 0 ] Ok color auto goto list run 
+  lpos.3     3      |  [X 3 ] Ok color auto goto list run 
+  lpos.7     7      |  [X 7 ] Ok color auto goto list run 
+omsx_repl: MIS-DELIVERED case 2 on Philips_VG_8020: typed 10,20, machine stored 10 -- line(s) [20] never entered (the screen editor rejected a mangled echo). Body: ['LPRINT"ABCDEFG";', 'PRINT"[X";LPOS(0);"]"']
+omsx_repl: MIS-ECHOED case 2 on Philips_VG_8020 (slot 13): typed '10 LPRINT"ABCDEFG";', machine echoed '";' -- 17 leading char(s) swallowed, and the screen lost nothing, so no clear or scroll erased them. The line was delivered mangled (docs/spec-probe-echo.md). Body: ['LPRINT"ABCDEFG";', 'PRINT"[X";LPOS(0);"]"']
+            screen: ['Ok', '10 LPRINT"ABC";:PRINT"[X";LPOS(0);"]"', 'RUN', 'color  auto   goto   list   run']
+omsx_repl: MIS-ECHOED case 2 on Philips_VG_8020 (slot 14): typed '20 PRINT"[X";LPOS(0);"]"', machine echoed 'PRINT"[X";LPOS(0);"]"' -- 3 leading char(s) swallowed, and the screen lost nothing, so no clear or scroll erased them. The line was delivered mangled (docs/spec-probe-echo.md). Body: ['LPRINT"ABCDEFG";', 'PRINT"[X";LPOS(0);"]"']
+            screen: ['Ok', '10 LPRINT"ABC";:PRINT"[X";LPOS(0);"]"', 'RUN', 'color  auto   goto   list   run']
+            -> re-running that case boot-per-case
+=== vg8020  printer=none
+  lpos.rest  0      |  [X 0 ] Ok color auto goto list run 
+  lpos.3     NONE   |  color auto goto list run 
+  lpos.7     NONE   |  color auto goto list run 
+refcache: 0 hit, 4 miss, 4 stored

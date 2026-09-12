@@ -1,0 +1,9 @@
+=== zb
+  wait.a8ff  1      |  ZB10 WAIT &HA8,&HFF:PRINT"[X1]" ZBRUN [X1] ZB 
+  wait.a9ff  2      |  ZB10 WAIT &HA9,&HFF:PRINT"[X2]" ZBRUN [X2] ZB 
+  wait.0     3      |  ZB10 WAIT &HA8,0:PRINT"[X3]" ZBRUN 
+=== vg8020
+  wait.a8ff  1      |  Ok 10 WAIT &HA8,&HFF:PRINT"[X1]" RUN [X1] Ok color auto goto list run 
+  wait.a9ff  2      |  Ok 10 WAIT &HA9,&HFF:PRINT"[X2]" RUN [X2] Ok color auto goto list run 
+  wait.0     3      |  Ok 10 WAIT &HA8,0:PRINT"[X3]" RUN color auto goto list run 
+refcache: 0 hit, 2 miss, 2 stored

@@ -489,7 +489,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:15803 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:15866 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -655,7 +655,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:4418 (T-6FE392)8 (T-529ABE)` from `TODO.md:14589 (T-529ABE)`: a
+      `TODO.md:4481 (T-6FE392)8 (T-529ABE)` from `TODO.md:14652 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -3237,11 +3237,74 @@ list. **When a slice lands, grep this list for what it just shipped.**
       filed, measured reason above). None is blocked on an idea; each is blocked on a
       named piece of apparatus, and the disk one has just been shown to be the kind
       that is already built.
-      ⚠️ **THE PATTERN IS NOW FOUR FOR FOUR: every blocker examined this session
+      🟢 **D-KWRIG, 2026-09-12: 16 -> 10, evidence 130 -> 136 — `USR` `SCREEN` `KEY`
+      `WAIT` `LPOS` `LPRINT`, and every one of the six had a FILED blocker that was
+      stale** ([readings](scratchpad/kwrig_full.out), full sweep;
+      [the new rows](scratchpad/kwrig_only.out)).
+      🔴 **`SCREEN`: *"its only discriminating value is a MODE CHANGE, and SCREEN 1 is
+      32 columns while this capture parses a 40-column screen — the row would break
+      the reader it depends on."* True, and beside the point: nothing makes the row
+      STAY in the mode. `SCRMOD` **is** declared (`$FCAF`, basic/sysvars.inc), so the
+      row switches, reads 2, comes back to SCREEN 0 and prints — the shape the
+      graphics rows have used since step 4c.
+      🔴 **`KEY`: the FNKSTR reasoning was right and incomplete.** Guessing `$F87F`
+      would still be an unverified constant; `KEY LIST` puts the definitions ON THE
+      SCREEN and needs no constant at all. The ten defaults are byte-identical on both
+      machines, so the only difference the row can show is the `ZZQ` it assigns
+      itself.
+      🔴 **`USR`: "machine code to call" — one POKEd `$C9` IS machine code.** A bare
+      RET leaves DAC alone, so `USR(7)` returns 7 on both machines against the stub
+      shape's 0.
+      🔴 **`WAIT` IS BACK, AND BATCH 3'S OWN BLOCKING ROW IS NOW ITS CONTROL.**
+      `WAIT p,m` returns when `INP(p) AND m` is non-zero, so the mask comes from a
+      MEASURED port — `INP(&HA8)` reads 240 on zerobas AND the VG-8020 — and the row
+      was PROVED to return before it existed
+      ([`scratchpad/kwdrain_waitchk.py`](scratchpad/kwdrain_waitchk.py),
+      [readings](scratchpad/kwdrain_waitchk.out)). Batch 3's `mask 0` form is the
+      control in that same run and still returns NOTHING, which is what says the
+      machine really blocks.
+      ⚠️ **AND WHAT THE `WAIT` ROW CANNOT SEE IS SAID IN THE ROW**: a WAIT that parsed
+      and returned immediately passes it. WAIT has no observable but blocking, so the
+      row scores ABSENCE (a missing WAIT makes the statement a Syntax error) and the
+      blocking is scored by a control that can never be a sweep row because it does
+      not come back [[a-case-that-agrees-can-agree-for-the-wrong-reason]].
+      🟢 **`LPOS`/`LPRINT`: the printer log was never needed for THESE two.** The
+      filed blocker — *"a reader for the PRINTER LOG (the output never reaches the
+      screen)"* — is true of the printed TEXT and false of the head COLUMN, which
+      `LPOS(0)` returns to the screen. Batch 4g measured bare `LPOS(0)` as 0 against a
+      stub's 0 and stopped there; the readback simply had to be MOVED first, and
+      `LPRINT"ABC";` moves it to 3 on both machines
+      ([`scratchpad/kwdrain_lptchk.py`](scratchpad/kwdrain_lptchk.py),
+      [readings](scratchpad/kwdrain_lptchk.out)).
+      🔴 **THE PRINTER IS A RIG, AND ITS ABSENCE IS A HANG, NOT A BLANK** — measured in
+      the same run with the plug removed: both rows produce NO OUTPUT AT ALL on both
+      machines. So `NEEDS-PRINTER:` joins `NEEDS-DISK:` as a row tag, the two capture
+      splitters collapsed into ONE function (the subject side needs the same rig as
+      the reference — two near-copies is how the sweep came to compare a reference
+      holding a disk against a zerobas holding none), and `_row_rig` names what each
+      row needs.
+      ⚠️ **`LLIST` AND `LFILES` ARE NOT IN THIS BATCH and the reason is specific**:
+      their subject IS the printed text, so they need the `screen_printer` capture
+      ([`probes/basic/basic_probe_lptverb.py`](probes/basic/basic_probe_lptverb.py)
+      already has it) plus boot-per-case, because the log ACCUMULATES and a batched
+      row reads its predecessors' output as its own. That is the slice that should
+      generalise `_row_rig` to a row needing BOTH tags, which `lfiles` will be the
+      first to do.
+      ➡️ **TEN LEFT: `AUTO` `CALL` `CLOAD` `CSAVE` `GET` `INKEY$` `INPUT` `LFILES`
+      `LLIST` `RENUM`.** Three clusters, each with named apparatus: the printer LOG
+      (`LLIST` `LFILES`), the TAPE rig (`CLOAD` `CSAVE` — and it EXISTS:
+      `cassetteplayer new` + [`probes/lib/cas_decode.py`](probes/lib/cas_decode.py),
+      driven by nine `basic_probe_cas*` suites, so re-verify that blocker too), and
+      the key INJECTOR timing (`INKEY$` `INPUT` `GET`). `AUTO` and `RENUM` are the
+      two that need a row FORMAT rather than a rig, and `CALL` needs an extension
+      that is safe to invoke.
+      ⚠️ **THE PATTERN IS NOW TEN FOR TEN: every blocker examined this session
       was stale** — the display verbs' "cannot take a row", the multi-line words'
-      "cannot be expressed", the two named above, and the disk fixture itself, which
-      needed a `diska=` argument and a bigger capture gap. Re-verify a blocker BEFORE
-      believing it; that is cheaper than any of the work it was hiding.
+      "cannot be expressed", the CF-3300 oracle, the disk fixture (which needed a
+      `diska=` argument and a bigger capture gap), and then `SCREEN`'s mode, `KEY`'s
+      missing constant, `USR`'s machine code, `WAIT`'s port, and the printer log
+      `LPOS`/`LPRINT` never needed. Re-verify a blocker BEFORE believing it; that is
+      cheaper than any of the work it was hiding, and it has not once been wrong.
       🎚️ STANDING — ruling
       🤖 AUTONOMOUS — kwsweep's keyword list is the denominator; work through
       it verb by verb, cheapest-context verbs first, and file what each review
@@ -5262,7 +5325,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:14589 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:14652 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

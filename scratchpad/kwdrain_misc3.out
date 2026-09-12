@@ -1,0 +1,77 @@
+=== zb (C-BIOS_MSX1_EU_REPACK_DISK)
+  usr        7      |  ZB10 POKE-8192,&HC9:DEFUSR=-8192 ZB20 A=USR(7):PRINT"[X";A;"]" ZBRUN [X 7 ] ZB 
+  usr.stub   0      |  ZB10 POKE-8192,&HC9:A=ZZQ(7) ZB20 PRINT"[X";A;"]" ZBRUN [X 0 ] ZB 
+  scrmod.0   0      |  ZB10 A=PEEK(&HFCAF):PRINT"[X";A;"]" ZBRUN [X 0 ] ZB 
+  scrmod.2   2      |  [X 2 ] ZB 
+  inp.a8     240    |  ZB10 PRINT"[X";INP(&HA8);"]" ZBRUN [X 240 ] ZB 
+  inp.a2     191    |  ZB10 OUT&HA0,14:PRINT"[X";INP(&HA2);"]" ZBRUN [X 191 ] ZB 
+  inp.a9     255    |  ZB10 PRINT"[X";INP(&HA9);"]" ZBRUN [X 255 ] ZB 
+  --- key.list
+       0 | ZB10 KEY LIST|
+       1 | ZBRUN|
+       2 | color|
+       3 | auto|
+       4 | goto|
+       5 | list|
+       6 | run|
+       7 | color 15,4,4|
+       8 | cload"|
+       9 | cont|
+      10 | list.|
+      11 |  run|
+      12 | ZB|
+  --- key.set
+       0 | ZB10 KEY 1,"ZZQ":KEY LIST|
+       1 | ZBRUN|
+       2 | ZZQ|
+       3 | auto|
+       4 | goto|
+       5 | list|
+       6 | run|
+       7 | color 15,4,4|
+       8 | cload"|
+       9 | cont|
+      10 | list.|
+      11 |  run|
+      12 | ZB|
+=== vg8020 (Philips_VG_8020)
+  usr        7      | 8192,&HC9:DEFUSR=-8192 20 A=USR(7):PRINT"[X";A;"]" RUN [X 7 ] Ok color auto goto list run 
+  usr.stub   0      |  Ok 10 POKE-8192,&HC9:A=ZZQ(7) 20 PRINT"[X";A;"]" RUN [X 0 ] Ok color auto goto list run 
+  scrmod.0   0      |  Ok 10 A=PEEK(&HFCAF):PRINT"[X";A;"]" RUN [X 0 ] Ok color auto goto list run 
+  scrmod.2   2      |  [X 2 ] Ok color auto goto list run 
+  inp.a8     240    |  Ok 10 PRINT"[X";INP(&HA8);"]" RUN [X 240 ] Ok color auto goto list run 
+  inp.a2     191    |  Ok 10 OUT&HA0,14:PRINT"[X";INP(&HA2);"]" RUN [X 191 ] Ok color auto goto list run 
+  inp.a9     255    |  Ok 10 PRINT"[X";INP(&HA9);"]" RUN [X 255 ] Ok color auto goto list run 
+  --- key.list
+       0 |  Ok|
+       1 |  10 KEY LIST|
+       2 |  RUN|
+       3 |  color|
+       4 |  auto|
+       5 |  goto|
+       6 |  list|
+       7 |  run|
+       8 |  color 15,4,4|
+       9 |  cload"|
+      10 |  cont|
+      11 |  list.|
+      12 |   run|
+      13 |  Ok|
+      23 |  color  auto   goto   list   run|
+  --- key.set
+       0 |  Ok|
+       1 |  10 KEY 1,"ZZQ":KEY LIST|
+       2 |  RUN|
+       3 |  ZZQ|
+       4 |  auto|
+       5 |  goto|
+       6 |  list|
+       7 |  run|
+       8 |  color 15,4,4|
+       9 |  cload"|
+      10 |  cont|
+      11 |  list.|
+      12 |   run|
+      13 |  Ok|
+      23 |  ZZQ    auto   goto   list   run|
+refcache: 0 hit, 2 miss, 2 stored

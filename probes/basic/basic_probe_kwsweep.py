@@ -154,6 +154,64 @@ def _disk_image() -> str:
     return fh.name
 
 
+# 🔴 THE PRINTER IS A RIG TOO, AND ITS ABSENCE IS A HANG, NOT A BLANK.
+# Measured (scratchpad/kwdrain_lptchk.py): with a printer PLUGGED, `LPOS(0)`
+# reads 0 at rest, 3 after `LPRINT"ABC";` and 7 after seven bytes, IDENTICALLY on
+# zerobas and the VG-8020. With NOTHING on the port the same rows produce no
+# output at all -- the LSTOUT hazard the TODO warned about is real, and it is why
+# the plug is load-bearing rather than decoration.
+# 🎯 AND THE LOG IS NOT NEEDED FOR THESE TWO. `LPOS` is the head's COLUMN and it
+# reaches the SCREEN, so the filed blocker ("a reader for the PRINTER LOG -- the
+# output never reaches the screen") is true of the printed TEXT and not of these
+# rows. `LLIST` and `LFILES` DO need the log (their subject is the text), and the
+# slice that adds a `screen_printer` capture group is the one to take them.
+def _printer_plug() -> tuple[str, ...]:
+    """The openMSX prologue that puts a logging printer on the port, with a
+    private log file. The log is never READ here -- only its existence keeps the
+    port ready, so `LPRINT` cannot block."""
+    fh = tempfile.NamedTemporaryFile(suffix=".prn", delete=False)
+    fh.close()
+    if not _RIG_TEMPS:
+        atexit.register(_drop_rig_temps)
+    _RIG_TEMPS.append(fh.name)
+    return (f"set printerlogfilename {{{fh.name}}}", "plug printerport logger")
+
+
+def _row_rig(note: str) -> str:
+    """Which RIG a row needs: a mounted disk, a plugged printer, or nothing.
+
+    ⚠️ ONE TAG PER ROW TODAY. `lfiles` will be the first row that needs BOTH, and
+    generalising this before there is a row to test it on would be a guess."""
+    if note.startswith("NEEDS-DISK:"):
+        return "disk"
+    if note.startswith("NEEDS-PRINTER:"):
+        return "printer"
+    return "plain"
+
+
+def _rig_kwargs(rig: str) -> dict:
+    """The run_cases kwargs that rig needs -- a FRESH image or log per call, so
+    two machines never share one."""
+    if rig == "disk":
+        return dict(DISK_TIMING, diska=_disk_image())
+    if rig == "printer":
+        return dict(prologue=_printer_plug())
+    return {}
+
+
+def _drop_rig_temps() -> None:
+    """Remove every private printer log, on the same `atexit` reasoning as the
+    disk images."""
+    while _RIG_TEMPS:
+        try:
+            _os.unlink(_RIG_TEMPS.pop())
+        except OSError:
+            pass
+
+
+_RIG_TEMPS: list[str] = []
+
+
 def _drop_disk_images() -> None:
     """Remove every private copy. `atexit`, not a `finally`: a run that dies
     inside the emulator must not leave 720 KB images behind, and this file has
@@ -748,6 +806,78 @@ SWEEP: list[tuple[str, str, str | None, str, str]] = [
     ("cvd",     'a=cvd("abcdefgh")', 'PRINT"[";CVD(MKD$(1));"]"', "direct",
      "NEEDS-DISK: " "absent => syntax error; real => 1"),
 
+    # -------------------------------------------- D-KWRIG (2026-09-12)
+    # FOUR WORDS WHOSE FILED BLOCKER WAS A CONSTANT OR A MODE, and all four were
+    # stale. Re-verified before being believed, which is now five sessions running
+    # (scratchpad/kwdrain_misc3.py, both machines).
+    # 🔴 `SCREEN` was filed as *"its only discriminating value is a MODE CHANGE,
+    # and SCREEN 1 is 32 columns while this capture parses a 40-column screen --
+    # the row would break the reader it depends on."* True, and beside the point:
+    # nothing makes the row STAY in the mode. `SCRMOD` ($FCAF) IS declared in
+    # basic/sysvars.inc, so the row switches, reads, comes back and prints from
+    # SCREEN 0 -- the shape the graphics rows have used since step 4c.
+    # 🔴 `KEY` was filed as blocked because FNKSTR is NOT in basic/sysvars.inc and
+    # guessing $F87F would build on an unverified constant. That reasoning stands;
+    # what it missed is that `KEY LIST` puts the definitions ON THE SCREEN, which
+    # needs no constant at all. Measured: the ten defaults agree on both machines,
+    # so the only difference the row can see is the one it makes.
+    # 🔴 `USR` was filed as needing "machine code to call". One POKEd $C9 is
+    # machine code: a bare RET leaves DAC alone, so USR returns its argument.
+    ("usrkw",    "a=usr(0)",
+     'POKE-8192,&HC9:DEFUSR=-8192:A=USR(7):PRINT"[U";A;"]"',   "stored",
+     "D-KWRIG: the POKEd byte is a RET, so USR(7) returns 7 -- and the stub shape "
+     "measures 0 (an undefined array subscripted by 7), so the row separates on a "
+     "VALUE. $E000 is the cell `pokekw` already uses."),
+    ("screenkw", "screen 2",
+     'SCREEN2:A=PEEK(&HFCAF):SCREEN0:PRINT"[G";A;"]"',          "stored",
+     "NOECHO:[G SCRMOD ($FCAF, DECLARED in basic/sysvars.inc) reads 2 inside "
+     "SCREEN 2 and 0 in text mode, on both machines -- so the row sees the MODE "
+     "and not merely that the statement parsed, and it reads the mode BEFORE "
+     "returning to SCREEN 0 because a graphics screen cannot be scraped as text."),
+    ("keykw",    'key 1,"x"',
+     'KEY 1,"ZZQ":KEY LIST',                                    "stored",
+     "D-KWRIG: `KEY LIST` prints all ten definitions and the row compares the "
+     "WHOLE listing: the ten defaults are identical on both machines, so the only "
+     "difference either side can show is `ZZQ` in slot 1 -- which is there only if "
+     "the assignment happened. No FNKSTR constant is needed or guessed."),
+    # 🔴 `WAIT` IS BACK, AND THE ROW THAT BLOCKED FOR EVER IS WHY IT LOOKS LIKE
+    # THIS. Batch 3 wrote `WAIT &HA9,0`, read mask 0 as "already true", and the
+    # row never returned. `WAIT p,m` returns when `INP(p) AND m` is non-zero, so
+    # the mask has to be chosen from a MEASURED port: INP(&HA8) reads 240 on
+    # zerobas AND on the VG-8020 (scratchpad/kwdrain_misc3.out), and &HFF is
+    # satisfied by any non-zero read. PROVED TO RETURN before this row existed
+    # (scratchpad/kwdrain_waitchk.py), with batch 3's own mask-0 form as the
+    # control -- it still returns NOTHING, which is what says the machine really
+    # blocks and this WAIT is not a no-op.
+    # ⚠️ WHAT THE ROW CANNOT SEE, said out loud: a WAIT that parsed and returned
+    # immediately passes it. WAIT has no observable but blocking, so the row scores
+    # ABSENCE (a missing WAIT makes `WAIT &HA8,&HFF` a Syntax error) and the
+    # blocking itself is scored by that control, which can never be a sweep row
+    # because it does not come back [[a-case-that-agrees-can-agree-for-the-wrong-reason]].
+    ("waitkw",   "wait 0,1",
+     'WAIT &HA8,&HFF:PRINT"[Y1]"',                              "stored",
+     "D-KWRIG: mask &HFF against a port measured at 240 on both machines"),
+
+    # --- the printer pair. They need a PLUGGED printer (NEEDS-PRINTER:), and that
+    # tag is not decoration: with nothing on the port both rows produce NO OUTPUT
+    # AT ALL on both machines -- the LSTOUT hang, measured
+    # (scratchpad/kwdrain_lptchk.out).
+    ("lposkw",   "a=lpos(0)",
+     'LPRINT"ABC";:PRINT"[P";LPOS(0);"]"',                      "stored",
+     "NEEDS-PRINTER: " "the head COLUMN, which reaches the screen even though the "
+     "printed text does not: 0 at rest, 3 after three bytes, 7 after seven, the "
+     "same on both machines. 🔴 THE `LPRINT` IS THE ROW: batch 4g measured bare "
+     "`LPOS(0)` as 0 against a stub's 0 and left the word unattributed for exactly "
+     "that reason -- the readback had to be MOVED before it could be read."),
+    ("lprintkw", 'lprint"x"',
+     'LPRINT"ABC";:PRINT"[P";LPOS(0);"]"',                      "stored",
+     "NEEDS-PRINTER: " "the same measurement from the other end, and deliberately "
+     "the SAME exec line: `LPOS` is the only readback either word has from the "
+     "screen, so the pair is coupled exactly as `pset`/`point` are. It moves if "
+     "EITHER breaks, and 3 is a byte COUNT -- an LPRINT that emitted nothing "
+     "leaves the head at 0. `LLIST` and `LFILES` are NOT here: their subject is "
+     "the printed TEXT, which needs the log capture."),
+
     # ------------------------------------------------ D-KWDISK (2026-09-12)
     # The file-and-channel verbs, which had no row for one reason only: nothing
     # was in the drive. `DSKF(0)` reading 0 was filed as "exactly what a stub
@@ -1193,50 +1323,41 @@ def main() -> int:
     MACH_BOOT = {"National_CF-3300": 14.0}
     MACH_RESET_PRE = {"National_CF-3300": ("", "SCREEN 0")}
 
-    def ref_capture(specs, sel_rows, mount: bool = True, **kw):
-        """Capture `specs` on the reference, splitting the batch by which
-        reference machine each row needs, then re-interleaving in row order.
+    def capture(machine_for, specs, sel_rows, mount: bool = True, **kw):
+        """Capture `specs`, split by (machine, RIG) and re-interleaved in row
+        order. ONE function for both sides on purpose: the subject side needs the
+        same disk and the same printer as the reference, and two near-copies is
+        how the sweep came to compare a reference holding a disk against a
+        zerobas holding none.
 
-        The disk-equipped reference gets the test image and the slower disk
-        timings (`mount=False` for the crunch layer, which stores a line and
-        never runs it, so no row there can touch a disk)."""
+        `mount=False` is the crunch layer, which stores a line and never runs it,
+        so no row there can reach a disk or a printer."""
         out: list[str | None] = [None] * len(specs)
-        for mach in sorted({ref_machine_for(r[4]) for r in sel_rows}):
-            idx = [i for i, r in enumerate(sel_rows) if ref_machine_for(r[4]) == mach]
+        keys: list[tuple[str, str]] = []
+        for r in sel_rows:
+            k = (machine_for(r[4]), _row_rig(r[4]))
+            if k not in keys:
+                keys.append(k)
+        for mach, rig in keys:
+            idx = [i for i, r in enumerate(sel_rows)
+                   if (machine_for(r[4]), _row_rig(r[4])) == (mach, rig)]
             mkw = dict(kw)
             mkw["boot"] = MACH_BOOT.get(mach, 8.0)
             pre = MACH_RESET_PRE.get(mach, ())
             if pre:
                 mkw["reset"] = pre + tuple(kw.get("reset", ()))
-            if mount and mach == args.disk_machine:
-                mkw.update(DISK_TIMING)
-                mkw["diska"] = _disk_image()
+            if mount:
+                mkw.update(_rig_kwargs(rig))
             got = omsx_repl.run_cases(mach, [specs[i] for i in idx], batch=batch, **mkw)
             for i, g in zip(idx, got):
                 out[i] = g
         return out
 
-    def zb_capture(specs, sel_rows, mount: bool = True, **kw):
-        """The same split on the SUBJECT side, and it is not optional: zerobas's
-        Disk-BASIC rows need the same image mounted and the same timings, or the
-        sweep compares a reference holding a disk against a zerobas holding none
-        -- which is the mirror image of the machines-not-languages mistake this
-        file's header records."""
-        out: list[str | None] = [None] * len(specs)
-        for want_disk in (False, True):
-            idx = [i for i, r in enumerate(sel_rows)
-                   if r[4].startswith("NEEDS-DISK:") == want_disk]
-            if not idx:
-                continue
-            mkw = dict(kw)
-            if want_disk and mount:
-                mkw.update(DISK_TIMING)
-                mkw["diska"] = _disk_image()
-            got = omsx_repl.run_cases(args.zb_machine, [specs[i] for i in idx],
-                                      batch=batch, **mkw)
-            for i, g in zip(idx, got):
-                out[i] = g
-        return out
+    def ref_capture(specs, sel_rows, **kw):
+        return capture(ref_machine_for, specs, sel_rows, **kw)
+
+    def zb_capture(specs, sel_rows, **kw):
+        return capture(lambda note: args.zb_machine, specs, sel_rows, **kw)
 
     # ---- Layer 1: CRUNCH ---------------------------------------------------
     if args.layer in ("crunch", "both"):

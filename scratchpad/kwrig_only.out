@@ -1,0 +1,67 @@
+python3 tools/install-repack-machine.py --merged build/zerobas-main-eu.rom --disk-rom build/disk.rom \
+	  --sub-rom build/sub.rom
+wrote C-BIOS_MSX1_EU_REPACK_DISK  (-> machine "C-BIOS_MSX1_EU_REPACK_DISK": merged repack ROM in slot 0, zerobas-disk in slot 3-1, zerobas-sub in slot 3-2)
+     /Users/joost/.openMSX/share/machines/C-BIOS_MSX1_EU_REPACK_DISK.xml
+python3 tools/install-repack-machine.py --merged build/zerobas-main-eu.rom --sub-rom build/sub.rom \
+	  --no-disk
+wrote C-BIOS_MSX1_EU_REPACK_NODISK  (-> machine "C-BIOS_MSX1_EU_REPACK_NODISK": merged repack ROM in slot 0, slot 3-1 EMPTY (diskless target), zerobas-sub in slot 3-2)
+     /Users/joost/.openMSX/share/machines/C-BIOS_MSX1_EU_REPACK_NODISK.xml
+python3 probes/basic/basic_probe_kwsweep.py \
+	        --zb-machine C-BIOS_MSX1_EU_REPACK_DISK --only 'usrkw,screenkw,keykw,waitkw,lposkw,lprintkw,dskf,mki'
+build under measurement: git=89f43985 zerobas-main-eu.rom=2af90b3a5e8c sub.rom=48f7da4f2e06 disk.rom=fc5ed2de76d7
+
+==============================================================================
+LAYER 1 — CRUNCH (tokenisation only; NOT a support answer)
+==============================================================================
+SAME   mki       a$=mki$(1)
+SAME   usrkw     a=usr(0)
+SAME   screenkw  screen 2
+SAME   keykw     key 1,"x"
+SAME   waitkw    wait 0,1
+SAME   lposkw    a=lpos(0)
+SAME   lprintkw  lprint"x"
+SAME   dskf      a=dskf(0)
+
+==============================================================================
+LAYER 2 — SUPPORT (the load-bearing layer)
+==============================================================================
+SUPPORTED     mki       PRINT"[";LEN(MKI$(1));"]"
+            ref  [value] '[ 2 ]'
+SUPPORTED     usrkw     POKE-8192,&HC9:DEFUSR=-8192:A=USR(7):PRINT"[U";A;"]"
+            ref  [value] '[U 7 ]'
+SUPPORTED     screenkw  SCREEN2:A=PEEK(&HFCAF):SCREEN0:PRINT"[G";A;"]"
+            ref  [value] '[G 2 ]'
+SUPPORTED     keykw     KEY 1,"ZZQ":KEY LIST
+            ref  [value] 'ZZQ|auto|goto|list|run|color 15,4,4|cload"|cont|list.|run'
+SUPPORTED     waitkw    WAIT &HA8,&HFF:PRINT"[Y1]"
+            ref  [value] '[Y1]'
+SUPPORTED     lposkw    LPRINT"ABC";:PRINT"[P";LPOS(0);"]"
+            ref  [value] '[P 3 ]'
+SUPPORTED     lprintkw  LPRINT"ABC";:PRINT"[P";LPOS(0);"]"
+            ref  [value] '[P 3 ]'
+SUPPORTED     dskf      PRINT"[";DSKF(1);"]"
+            ref  [value] '[ 707 ]'
+
+==============================================================================
+COMBINED — tokenised? x observable consequence
+==============================================================================
+word       crunch  support     consequence
+------------------------------------------------------------------------------
+mki        present SUPPORTED   match
+usrkw      present SUPPORTED   match
+screenkw   present SUPPORTED   match
+keykw      present SUPPORTED   match
+waitkw     present SUPPORTED   match
+lposkw     present SUPPORTED   match
+lprintkw   present SUPPORTED   match
+dskf       present SUPPORTED   match
+
+==============================================================================
+SUMMARY  SUPPORTED=8
+         executed 8 / 8 words; 0 crunch-only
+==============================================================================
+ROWS: 8 printed, 8 scored — 0 crunch-only word(s) carry no support reading and are printed but not scored
+pin: 8 row verdict(s) -> /Users/joost/projects/zerobas/build/kwsweep-verdicts.json
+
+=== CRUNCH PIN — words the reference tokenises and zerobas does not ===
+refcache: 0 hit, 10 miss, 10 stored
