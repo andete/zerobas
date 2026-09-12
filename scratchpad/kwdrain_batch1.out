@@ -1,0 +1,5 @@
+            WEAK: absent => variable TI, always 0, and `0>=0` is STILL true, so this row passes on a machine with no TIME. The `timetick` row is the real test.
+csrlin     present DIVERGENT   ref '||[ 4 ]' vs zb '||[ 3 ]'
+SUMMARY  SUPPORTED=61  WEAK(excluded)=2
+no known gap (NOT a tier -- no item, no kwsweep row)        88  ATTR$ AUTO BASE BEEP BLOAD BSAVE CALL CIRCLE CLEAR CLOAD CLOSE CLS CMD COLOR CONT COPY CSAVE CVI DEFINT DELETE DIM DRAW DSKF DSKI$ DSKO$ ELSE END EOF ERL ERR ERROR FILES GET GOSUB IF INKEY$ INP INPUT IPL KEY KILL LFILES LINE LIST LLIST LOC LOF LPOS LPRINT LSET MAX MERGE NEW NEXT OFF ON OUT PAD PDL POINT POKE PRESET PSET READ RENUM RESTORE RESUME RETURN RND RSET RUN SAVE SCREEN SET SOUND SPRITE STEP STOP STRIG THEN TO USING USR VDP VPEEK VPOKE WAIT WIDTH
+kwsweep evidence: 59 keyword(s) from /Users/joost/projects/zerobas/build/kwsweep-verdicts.json

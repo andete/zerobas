@@ -150,6 +150,61 @@ SWEEP: list[tuple[str, str, str | None, str, str]] = [
     ("erase",   "erase a",            'DIM Q(2):ERASE Q:PRINT"[ok]"',    "direct", "control"),
     ("swapctl", "a=1",                'A=1:PRINT"[";A;"]"',              "direct", "control (bare assign)"),
 
+    # ------------------------------------------------- D-KWDRAIN coverage rows
+    # 🎯 JOOST'S STANDING ORDER (2026-09-11): *"get rid of the 'no known gap'
+    # items in the table, so we have more known tier-ed work."* A "no known gap"
+    # keyword is NOT one that is fine -- it is one nobody has attributed evidence
+    # to, and with TIER 2 and TIER 3 empty the binding constraint stopped being
+    # "fix the next defect" and became "find out what is actually broken".
+    # These rows carry the CHEAPEST-CONTEXT verbs: pure functions and operators,
+    # one differential each, no device and no file state. Each exec line prints a
+    # value the reference must match, so the row SCORES rather than merely
+    # exercising [[exercised-is-not-verified]].
+    # 🔴 NOT "control": a control that comes back unsupported means the APPARATUS
+    # is lying and voids the run. These are the words under test, so an
+    # unsupported one here has to read as a FINDING instead.
+    # ⚠️ Fractional rows (ATN, EXP, CDBL(1)/3) are deliberate -- formatting and
+    # precision are exactly where a clean-room mathpack diverges, and a row that
+    # only ever prints 0 or 1 cannot see it.
+    ("asc",     'a=asc("A")',         'PRINT"[";ASC("A");"]"',         "direct", "D-KWDRAIN"),
+    ("cint",    'a=cint(1.7)',        'PRINT"[";CINT(1.7);"]"',        "direct", "D-KWDRAIN"),
+    ("cdbl",    'a=cdbl(1)',          'PRINT"[";CDBL(1)/3;"]"',        "direct", "D-KWDRAIN"),
+    ("csng",    'a=csng(1.5)',        'PRINT"[";CSNG(1.5);"]"',        "direct", "D-KWDRAIN"),
+    ("fix",     'a=fix(-1.7)',        'PRINT"[";FIX(-1.7);"]"',        "direct", "D-KWDRAIN"),
+    ("sgn",     'a=sgn(-3)',          'PRINT"[";SGN(-3);"]"',          "direct", "D-KWDRAIN"),
+    ("sin",     'a=sin(0)',           'PRINT"[";SIN(0);"]"',           "direct", "D-KWDRAIN"),
+    ("cos",     'a=cos(0)',           'PRINT"[";COS(0);"]"',           "direct", "D-KWDRAIN"),
+    ("tan",     'a=tan(0)',           'PRINT"[";TAN(0);"]"',           "direct", "D-KWDRAIN"),
+    ("atn",     'a=atn(1)',           'PRINT"[";INT(ATN(1)*1000);"]"', "direct", "D-KWDRAIN"),
+    ("exp",     'a=exp(1)',           'PRINT"[";INT(EXP(1)*1000);"]"', "direct", "D-KWDRAIN"),
+    ("log",     'a=log(1)',           'PRINT"[";LOG(1);"]"',           "direct", "D-KWDRAIN"),
+    ("mod",     'a=7 mod 3',          'PRINT"[";7 MOD 3;"]"',          "direct", "D-KWDRAIN"),
+    ("notop",   'a=not 0',            'PRINT"[";NOT 0;"]"',            "direct", "D-KWDRAIN"),
+    ("andop",   'a=5 and 3',          'PRINT"[";5 AND 3;"]"',          "direct", "D-KWDRAIN"),
+    ("orop",    'a=5 or 3',           'PRINT"[";5 OR 3;"]"',           "direct", "D-KWDRAIN"),
+    ("xorop",   'a=5 xor 3',          'PRINT"[";5 XOR 3;"]"',          "direct", "D-KWDRAIN"),
+    ("oct",     'a$=oct$(8)',         'PRINT"[";OCT$(8);"]"',          "direct", "D-KWDRAIN"),
+    ("left",    'a$=left$("abc",2)',  'PRINT"[";LEFT$("abc",2);"]"',   "direct", "D-KWDRAIN"),
+    ("right",   'a$=right$("abc",2)', 'PRINT"[";RIGHT$("abc",2);"]"',  "direct", "D-KWDRAIN"),
+    ("str",     'a$=str$(5)',         'PRINT"[";STR$(5);"]"',          "direct", "D-KWDRAIN"),
+    ("stringf", 'a$=string$(3,"x")',  'PRINT"[";STRING$(3,"x");"]"',   "direct", "D-KWDRAIN"),
+    ("space",   'a$=space$(3)',       'PRINT"[";LEN(SPACE$(3));"]"',   "direct", "D-KWDRAIN"),
+    # 🔴 CSRLIN GETS A SECOND ROW, AND THE FIRST ONE IS WHY. The original
+    # `csrlin` row is scored WEAK, and `tools/tier_table.py` EXCLUDES weak rows
+    # from evidence -- so CSRLIN's DIVERGENT verdict (ref `[ 4 ]` vs zb `[ 3 ]`)
+    # counts as nothing and the keyword reads as "no known gap", i.e. a measured
+    # divergence that the attribution table cannot see
+    # [[an-unnamed-outcome-reads-as-no-outcome]]. That divergence is an ARTIFACT
+    # of absolute cursor geometry against the echoed prompt, not a defect: the
+    # weak row's own note records CSRLIN measured CORRECT on 2026-09-07
+    # (D-WAITGAP -- LOCATE 0,5 -> 5, 0,10 -> 10) and all three sides answering 2
+    # to CLS:PRINT:PRINT. So this row reads the DELTA across two PRINTs, which is
+    # what the three machines agree on, and which a stub still fails: an absent
+    # CSRLIN parses as a variable and gives 0-0 = 0, not 2.
+    ("csrlind", 'a=csrlin',           'A=CSRLIN:PRINT:PRINT"[";CSRLIN-A;"]"', "direct", "D-KWDRAIN"),
+    ("let",     'let a=5',            'LET A=5:PRINT"[";A;"]"',        "direct", "D-KWDRAIN"),
+    ("rem",     'rem x',              'PRINT"[";1;"]":REM z',          "direct", "D-KWDRAIN"),
+
     # -------------------------------------------------- suspected MISSING words
     # Console / cursor. All three fail the same way if absent: the word parses as
     # a numeric variable (0) or an array, so the probe must make 0 the WRONG

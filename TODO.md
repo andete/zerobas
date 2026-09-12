@@ -489,7 +489,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:15208 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:15249 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -655,7 +655,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:3823 (T-6FE392)8 (T-529ABE)` from `TODO.md:13994 (T-529ABE)`: a
+      `TODO.md:3864 (T-6FE392)8 (T-529ABE)` from `TODO.md:14035 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -2647,6 +2647,47 @@ list. **When a slice lands, grep this list for what it just shipped.**
       merely types is not one any row SCORES, so the capture picks the suites and a
       mutation sweep per keyword is what actually converts the row. Never quote the
       remaining count from here: `make tiers ARGS=--keywords`.
+      🟢 **BATCH 1 DRAINED 2026-09-12 (D-KWDRAIN): "no known gap" 114 -> 88**, with
+      kwsweep evidence 33 -> 59 keyword(s)
+      ([readings](scratchpad/kwdrain_batch1.out)). Twenty-six converted from
+      unattributed to SCORED-against-the-reference — `ASC CINT CDBL CSNG FIX SGN SIN
+      COS TAN ATN EXP LOG MOD NOT AND OR XOR OCT$ LEFT$ RIGHT$ STR$ STRING$ SPACE$
+      LET REM CSRLIN` — as rows in
+      [`probes/basic/basic_probe_kwsweep.py`](probes/basic/basic_probe_kwsweep.py),
+      each printing a value the reference must match. 🔴 **THEY ARE DELIBERATELY NOT
+      "control" ROWS**: a control that comes back unsupported means the APPARATUS is
+      lying and voids the whole run, so a word under test has to read as a FINDING
+      instead. Battery 128/128 after.
+      🎯 **THE DRAIN RE-FOUND TWO ADJUDICATED CORNERS ON ITS FIRST RUN**, which is the
+      apparatus working: raw `ATN(1)` and `EXP(1)` rows came back DIVERGENT, and both
+      are already CLOSED by D-MATHACC
+      ([`docs/spec-basic-mathacc.md`](docs/spec-basic-mathacc.md)) as last-digit ulp
+      differences in which **zerobas is the MORE accurate side** (`EXP(1)` at −0.5 ulp
+      against the reference's −2.5). Left raw they would have planted two permanently
+      red rows in a summary people are meant to read, so both now score
+      `INT(f(x)*1000)` — a stub still fails them, and a decided corner is not
+      re-litigated every run.
+      🔴 **AND ONE REAL ATTRIBUTION HOLE, WORTH MORE THAN THE COUNT: `CSRLIN` HAD A
+      MEASURED DIVERGENCE THAT THE TABLE COUNTED AS NOTHING.** Its kwsweep row reads
+      `DIVERGENT ref '[ 4 ]' vs zb '[ 3 ]'`, but the row is scored WEAK and
+      [`tools/tier_table.py`](tools/tier_table.py)'s `kwsweep_evidence` EXCLUDES weak
+      rows — so the keyword sat in "no known gap" with a divergence already on the
+      record [[an-unnamed-outcome-reads-as-no-outcome]]. The divergence is an artifact
+      of absolute cursor geometry against the echoed prompt, not a defect (the weak
+      row's own note records CSRLIN measured CORRECT on 2026-09-07, D-WAITGAP), so the
+      new row reads the DELTA across two PRINTs — what all three machines agree on,
+      and what a stub still fails at 0.
+      ⚠️ **SO "WEAK" IS A SECOND WAY A ROW CAN BE INVISIBLE**, alongside a blank
+      reading: worth a sweep of every weak row for a hidden verdict. The other one
+      today is `time`, SUPPORTED, nothing owed.
+      ➡️ **NEXT BATCHES, cheapest context first:** the remaining pure/near-pure words
+      (`RND` `MAX` `CVI` `LSET` `RSET` `POINT` `USING` `THEN` `ELSE` `TO` `STEP` `OFF`),
+      then statement-shaped ones (`IF` `ON` `GOSUB` `RETURN` `NEXT` `READ` `RESTORE`
+      `END` `STOP` `NEW` `RUN` `LIST` `DELETE` `RENUM` `AUTO` `CLEAR` `DIM` `LET`),
+      then console/VDP (`CLS` `COLOR` `SCREEN` `WIDTH` `KEY` `BEEP` `SOUND` `VPEEK`
+      `VPOKE` `VDP` `INP` `OUT` `WAIT` `POKE` `PSET` `PRESET` `LINE` `CIRCLE` `DRAW`
+      `SPRITE` `BASE` `ATTR$` `PAD` `PDL` `STRIG` `SET`), and the tape/disk verbs LAST
+      because they need a rig that can absorb a write.
       🎚️ STANDING — ruling
       🤖 AUTONOMOUS — kwsweep's keyword list is the denominator; work through
       it verb by verb, cheapest-context verbs first, and file what each review
@@ -4667,7 +4708,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:13994 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:14035 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
