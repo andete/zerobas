@@ -718,12 +718,22 @@ SWEEP: list[tuple[str, str, str | None, str, str]] = [
     ("troff",   "troff",
      'TROFF:PRINT"[ok]"',                            "direct",
      "absent => syntax error"),
+    # 🔴 D-KWFOOT2 (2026-09-13): FOUR CRUNCH-ONLY ROWS WERE REMOVED FROM THIS FILE,
+    # AND THE REASON IS THE FOOTER THEY DISTORTED. `lprint` `lpos` `delete` `wait`
+    # each gained an EXECUTED twin (`lprintkw` `lposkw` `deletekw` `waitkw`) as the
+    # D-KWDRAIN batches went in, and the crunch-only originals stayed beside them.
+    # Layer 1 lost nothing: `lprint` and `lpos` had crunch bodies BYTE-IDENTICAL to
+    # their twins', and `delete 10` / `wait 0,0` differ from `delete 99` / `wait 0,1`
+    # only in a numeric literal, which tokenises to the same keyword byte.
+    # ⚠️ WHAT THEY COST WAS THE PROBE'S OWN HONESTY. The footer counts crunch-only
+    # ROWS, and a reader reads that as "keywords with no support evidence". Those
+    # are different numbers -- only `tier_table --keywords` computes the second --
+    # and the gap between them grew by one every time a batch added a twin without
+    # retiring its original [[readout-blind-to-its-own-subject]].
+    # 🎯 WHAT IS LEFT HERE IS GENUINELY UNEXECUTED, each for a measured reason.
     ("renum",   "renum",
      None,                                           "direct",
      "renumbers the stored program; harmless but needs a program to be visible"),
-    ("delete",  "delete 10",
-     None,                                           "direct",
-     "deletes stored lines — would eat the batch's own program"),
     ("auto",    "auto",
      None,                                           "direct",
      "INTERACTIVE: enters auto-line-number mode and swallows all following input"),
@@ -765,9 +775,7 @@ SWEEP: list[tuple[str, str, str | None, str, str]] = [
     # so a divergence here is statement-surface only. Printer is UNPLUGGED in the
     # harness by default and LSTOUT is NOT hang-safe unplugged (openmsx-printer-
     # pluggable), so these are crunch-only — executing LPRINT could wedge the run.
-    ("lprint",  'lprint"x"',   None, "direct", "LSTOUT not hang-safe with no printer plugged"),
     ("llist",   "llist",       None, "direct", "same LSTOUT hazard"),
-    ("lpos",    "a=lpos(0)",   None, "direct", "same LSTOUT hazard"),
 
     # Cassette / misc statements.
     ("motor",   "motor on",
@@ -1046,10 +1054,6 @@ SWEEP: list[tuple[str, str, str | None, str, str]] = [
     ("bin",     "a$=bin$(5)",
      'PRINT"[";BIN$(5);"]"',                         "direct",
      "absent => syntax error; real => 101"),
-
-    # WAIT: `WAIT p,a` spins until ((INP(p) XOR x) AND a) <> 0 — with the wrong
-    # operand it NEVER RETURNS and wedges the whole batch. Crunch-only.
-    ("wait",    "wait 0,0",      None, "direct", "can spin forever — never executed in a batch"),
 
     # Keyboard INPUT$(n) — blocks for n keypresses. Crunch-only; the channel form
     # INPUT$(n,#f) already ships.

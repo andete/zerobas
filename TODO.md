@@ -489,7 +489,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:15970 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:16019 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -15661,10 +15661,22 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       **The coverage denominator now exists** (2026-07-26,
       [`docs/kwsweep-msx1-coverage.md`](docs/kwsweep-msx1-coverage.md), probe
       [`probes/basic/basic_probe_kwsweep.py`](probes/basic/basic_probe_kwsweep.py),
-      `make kwsweep`): of **162** MSX1 reserved words, **124 tokenise** and
-      **34 are genuinely absent** (38 lack a `kwtable.inc` entry; 3 of those —
-      `DEFSNG`/`DEFDBL`/`DEFSTR` — work anyway via `DEF_TOKEN` + literal ASCII,
-      and 1 is `INTERVAL`, which needs no token).
+      `make kwsweep`).
+      🔴 **THE HEADLINE THAT STOOD HERE — *"of 162 MSX1 reserved words, 124
+      tokenise and 34 are genuinely absent"* — IS A 2026-07-27 SNAPSHOT, AND THIS
+      ITEM'S OWN `TAB(` STORY IS THE REASON THAT MATTERS.** That story is about a
+      claim of *"already faithful (NO work)"* that a differential agreed with for
+      the wrong reason; a stale tally in the item that tells it is the same defect
+      one level up. 🔴 **AND A COUNT IN PROSE IS UNRUNNABLE BY CONSTRUCTION** — it
+      cannot go red when it stops being true, which is why the replacement is a
+      COMMAND and not a number:
+      * `python3 tools/tier_table.py --keywords` (or `make tiers ARGS=--keywords`)
+        — the `kwtable.inc` denominator, the per-keyword reached tier, and the
+        **"no known gap"** list, computed through the consumer's own parser.
+      * `make kwsweep` — the two-layer measurement itself, whose summary line
+        carries SUPPORTED / DIVERGENT / MISSING / SILENT-GAP and the crunch-only
+        exclusions with their reasons.
+      **Never quote either from here** [[a-justification-parenthesis-is-an-unrun-claim]].
       **Why a sweep existed at all:** `TIME` and `TAB(` were both found *by
       accident*, six days apart, with the same silent shape — the word parses as
       an ordinary variable, nothing errors, the program computes the wrong
@@ -15691,20 +15703,32 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
         calls onto one table — neither of them SWAP's own code). Gated by
         `make missing-acceptance` at **214/214 as recorded**.
         `DEF FN`/`FN` stays out — it is an arc, not a slice (D-MC-3).
-      - **NO-ORACLE (5).** `MKI$` `MKS$` `MKD$` `CVS` `CVD` — the MK/CV family
-        lives in Disk BASIC, so a **diskless** VG-8020 reference measures the
-        absence of a disk ROM, not of a language feature. The probe routes these
-        to `National_CF-3300`, which does not yet give a readable SCREEN-0
-        capture under `omsx_repl`; until it does they report `NO-ORACLE` rather
-        than answering from the wrong machine. Blocks nothing —
-        `MKS$`/`MKD$`/`CVS`/`CVD` are already deferred under the float pack.
-      - **18 crunch-only** — destructive (`DSKO$`, `IPL`), interactive (`AUTO`,
+      - ~~**NO-ORACLE (5).** `MKI$` `MKS$` `MKD$` `CVS` `CVD` ... the probe routes
+        these to `National_CF-3300`, which does not yet give a readable SCREEN-0
+        capture under `omsx_repl`~~ 🟢 **DEAD (D-KWORACLE, 2026-09-03): the
+        oracle READS.** A 14 s boot and a `SCREEN 0` prologue were the whole
+        fix; all five, plus `CVI` added later, return real verdicts against that
+        machine. The class is EMPTY.
+      - ~~**18 crunch-only** — destructive (`DSKO$`, `IPL`), interactive (`AUTO`,
         `INPUT$(n)`), non-terminating (`WAIT`), printer-bound with the known
         unplugged-`LSTOUT` hang hazard (`LPRINT`, `LLIST`, `LPOS`, `LFILES`),
-        disk-fixture-dependent (`COPY`, `SET`, `ATTR$`, `DSKI$`, `LOC`), or
-        covered elsewhere (`INTERVAL` → the T5 slice probe). These are coverage
-        holes **in the probe**, listed in its output with reasons rather than
-        silently dropped.
+        disk-fixture-dependent (`COPY`, `SET`, `ATTR$`, `DSKI$`, `LOC`)~~
+        🟢 **MOSTLY DEAD (D-KWDISK / D-KWRIG / D-KWTAPE, 2026-09-12), and every
+        category above was a claim about the PROBE rather than about the verb:**
+        `DSKO$` is a round trip through a private copy of the image, `IPL` is
+        `Illegal function call` on the CF-3300 too (it was never destructive
+        here), `COPY` `SET` `DSKI$` `LOC` `ATTR$` all execute against the mounted
+        fixture, `WAIT` has a mask chosen from a measured port, and `LPRINT`/
+        `LPOS` read the head COLUMN back off the SCREEN with a plugged printer —
+        the LSTOUT hang is real and is what the `NEEDS-PRINTER:` rig exists for.
+        🔴 **WHAT SURVIVES IS `AUTO`, `INPUT$(n)`, `LLIST` and `RENUM`**, each
+        with a measured reason recorded in the drain block, not a suspected one.
+        ⚠️ **AND THE PROBE'S OWN "NOT EXECUTED — N words, crunch-only" FOOTER
+        OVERSTATES THE HOLE**: several of those rows are SUPERSEDED by executed
+        rows added beside them (`lprint`/`lpos`/`delete`/`wait` each have a
+        `*kw` twin), so the row count and the count of keywords with no support
+        evidence are different numbers. The second one is the honest one and only
+        `tier_table --keywords` computes it [[readout-blind-to-its-own-subject]].
       - ⚠️ **`INPUT$` is the one to watch:** it crunches *identically* to the
         reference (`INPUT` is a keyword and `$` follows), so layer 1 says
         "present" while support is untested — the exact `INTERVAL` shape. Open
@@ -15964,8 +15988,33 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
         programs that used to have ~15 KB of string space now get 200 unless
         they say otherwise. The full acceptance corpus was re-run, not just this
         slice's gate.
-      🎚️ TIER 1 — happy path: the measured keyword-completeness remainder — the kwsweep target prints it; every one of the eight shipped by 2026-09-11 (D-LOC, D-DSKIO, D-COPY) and what remains of this item is the FIXTURE it is blocked on, not a keyword (this line names none on purpose: the tier table reads a backticked word here as an open gap)
-      ⛔ BLOCKED — neither of us can start it now (needs a fixture).
+      🔴 **THE ⛔ IS DEAD, AND THE FIXTURE IT NAMED HAD EXISTED ALL ALONG
+      (2026-09-12, D-KWDISK).** This item was held closed by *"needs a fixture"*;
+      the fixture is `disk/test720.dsk`, generated by `tools/make_test_dsk.py`,
+      mounted through `probe_sides.diska()` and used by `ramfree-acceptance` for
+      months. `basic_probe_kwsweep.py` simply never named it. Mounting a WRITABLE
+      PRIVATE COPY on both sides took one slice and moved twenty keywords.
+      ⚠️ **ELEVEN OF THIRTEEN BLOCKERS RE-CHECKED IN THAT SESSION WERE STALE** —
+      re-verifying is cheaper than the work a blocker hides, every time so far.
+      ➡️ **SO THE EXIT CRITERION IS NOW RUNNABLE, WHICH IS THE POINT.** The three
+      classes this item was opened for are EMPTY and stay empty:
+      **SILENT-GAP**, **MISSING** and — since 2026-09-12 — **DIVERGENT**, the
+      whole sweep's first clean run. What is left is not a defect but an ABSENCE
+      OF EVIDENCE: the keywords `tier_table --keywords` lists under **"no known
+      gap"**, each with no open item and no kwsweep row.
+      📏 **DONE = that list is EMPTY.** Run the command; do not read a number here.
+      🎚️ TIER 1 — happy path: the measured keyword-completeness remainder, now an
+      ABSENCE OF EVIDENCE rather than a measured defect — the three defect classes
+      are empty and what is left is the unattributed list (this line names no
+      keyword on purpose: the tier table reads a backticked word here as an open gap)
+      ⚠️ **THE TIER IS KEPT DELIBERATELY, and the reason is the only thing that
+      justifies it**: Joost's 2026-09-12 ruling is that an unattributed keyword can
+      HIDE a happy-path defect, and four did — `NEW`, `FILES`, `LFILES` and `MERGE`
+      all came out of the "no known gap" list, and `LOAD` came out of the sweep one
+      of them earned. Re-tiering on "nothing is measured broken" would be the same
+      reasoning the drain has refuted four times. When the list empties, THAT is
+      when the tier is the question to re-ask — with Joost.
+      🤖 AUTONOMOUS — drain the list; the apparatus it needs is built.
 
 - [ ] **`LOAD"CAS:"` ACCEPTS A TOKENISED TAPE; the reference does not return.**
       Found 2026-08-03 by D-DOTGAPS (§1.2). With only a $D3 file on the tape the
