@@ -1,0 +1,21 @@
+=== zb  TAPE
+  csave      0       |  [T 0 ] ZB 
+  csave.ctl  0       |  [T 0 ] ZB 
+  csave.raw  4       |  [T 4 ] ZB 
+      recorded WAV: 269280 bytes
+=== zb  PRINTER (disk=yes)
+  llist      NONE    |  ZB 
+  llist.ctl  2       |  [P 2 ] ZB 
+  lfiles     2       |  [P 2 ] ZB 
+      printer log: 133 bytes
+=== vg8020  TAPE
+  csave      NONE    |  color auto goto list run 
+  csave.ctl  0       |  [T 0 ] Ok color auto goto list run 
+  csave.raw  NONE    |  color auto goto list run 
+      recorded WAV: 954600 bytes
+=== vg8020  PRINTER (disk=no)
+  llist      NONE    |  Ok color auto goto list run 
+  llist.ctl  2       |  [P 2 ] Ok color auto goto list run 
+  lfiles     NONE    |  Illegal function call in 10 Ok color auto goto list run 
+      printer log: 58 bytes
+refcache: 0 hit, 4 miss, 4 stored

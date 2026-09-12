@@ -489,7 +489,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:15866 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:15945 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -655,7 +655,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:4481 (T-6FE392)8 (T-529ABE)` from `TODO.md:14652 (T-529ABE)`: a
+      `TODO.md:4560 (T-6FE392)8 (T-529ABE)` from `TODO.md:14731 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -2757,6 +2757,46 @@ list. **When a slice lands, grep this list for what it just shipped.**
       🤖 AUTONOMOUS — the oracle is measured per screen row and the kwsweep `files`
       row holds the ground until it is fixed.
 
+- [ ] 🔴 **`LFILES` DOES NOT ZERO THE PRINTER COLUMN, AND THE CHOICE THAT SAYS SO
+      CARRIES A JUSTIFICATION THAT IS FALSE IN THE ONE CASE THAT MATTERS.**
+      Found 2026-09-12 by D-KWDRAIN while re-verifying the printer-log blocker
+      ([`scratchpad/kwdrain_lfflush.py`](scratchpad/kwdrain_lfflush.py),
+      [readings](scratchpad/kwdrain_lfflush.out), one boot per arm so every
+      printer log is its own).
+      | arm | zerobas | CF-3300 |
+      |---|---|---|
+      | `LPRINT"AB";` then `LFILES`, then `LPOS(0)` | **`2`**, log **79 B**, ends `\r\n\r\n` | `0`, log 77 B, ends `\r\n` |
+      | `LFILES` with the head at rest | `0`, log 75 B | `0`, log 75 B ✅ agree |
+      | `LPRINT"AB";` with NO `LFILES` (R-LP16 alone) | `2`, log 4 B | `2`, log 4 B ✅ agree |
+      🎯 **BOTH CONTROLS AGREE, WHICH IS WHAT PINS THE CAUSE** to `LFILES` with a
+      PARKED head rather than to `LFILES`, to `LPRINT`, or to the R-LP16 flush.
+      🔴 **AND THE FILED REASONING IS WHERE THE REAL LESSON IS.**
+      [`docs/spec-basic-lfiles.md`](docs/spec-basic-lfiles.md) §3.3 records
+      *"`LPTPOS` is not maintained by `LFILES`"* as a deliberate choice, justified by:
+      *"Every `LFILES` entry ends with CR/LF, so the head is at column 0 when the
+      statement ends and the R-LP16 flush at command level is a no-op either way.
+      **No row measures it.**"* The premise is true and the conclusion does not
+      follow — the head is at column 0 when the statement ends **only if nothing
+      parked it mid-line first**. Park it and R-LP16 fires here and does not there,
+      so the divergence is TWO bytes in the printer stream as well as the `LPOS`
+      value [[a-justification-parenthesis-is-an-unrun-claim]].
+      ⚠️ **"NO ROW MEASURES IT" WAS THE PART THAT MADE IT SAFE TO WRITE, and it was
+      true when written.** A choice whose only guard is the absence of a row is a
+      choice nobody will revisit until a row appears
+      [[a-row-written-off-as-out-of-scope-leaves-the-bookkeeping]].
+      ➡️ **THE FIX IS LIKELY ONE STORE**: zero `LPTPOS` where `LFILES` finishes, the
+      way the CF-3300 evidently does. Re-read §3.3's *"the printer column belongs to
+      `pchar`'s sink, which this path does not use"* first — the tenant does not go
+      through `pchar`, so the store has to be made by the statement itself.
+      ⚠️ **CHECK `FILES` AT THE SAME TIME**: the screen half of this pair is already
+      filed above (`FILES` emits a trailing newline the reference does not), and a
+      single walk that ends differently on the two sinks is the obvious common cause
+      worth ruling in or out before either is changed.
+      🎚️ TIER 1 — happy path: no error is involved, the sequence is legal, and both
+      the returned `LPOS` value and the bytes on the printer differ
+      🤖 AUTONOMOUS — the oracle is measured with two agreeing controls; what
+      remains is the store and a row that holds it.
+
 - [ ] 🔁 **STANDING TIER (Joost, 2026-08-31): WHEN THE 🤖 QUEUE DRAINS, REVIEW
       EACH STATEMENT'S IMPLEMENTATION IN FULL, one verb at a time.** The
       calibration: PLAY was picked at RANDOM for review and yielded D-MUSICF (a
@@ -3298,8 +3338,47 @@ list. **When a slice lands, grep this list for what it just shipped.**
       the key INJECTOR timing (`INKEY$` `INPUT` `GET`). `AUTO` and `RENUM` are the
       two that need a row FORMAT rather than a rig, and `CALL` needs an extension
       that is safe to invoke.
-      ⚠️ **THE PATTERN IS NOW TEN FOR TEN: every blocker examined this session
-      was stale** — the display verbs' "cannot take a row", the multi-line words'
+      🔴 **D-KWTAPE, 2026-09-12: THE FIRST BLOCKERS THAT SURVIVED RE-VERIFICATION —
+      and the tick still produced a TIER 1 defect, filed above (`LFILES` does not
+      zero `LPTPOS`).** Eleven blockers have been re-checked this session; these are
+      the first two that held, and both hold for a reason that is now MEASURED rather
+      than asserted.
+      🔴 **`CSAVE`: THE TAPE RIG EXISTS AND RECORDS; NOTHING IN THIS TREE PLAYS.**
+      `cassetteplayer new` + [`probes/lib/cas_decode.py`](probes/lib/cas_decode.py)
+      is a RECORDER — a grep for `cassetteplayer insert` across `probes/` finds
+      nothing — so `CSAVE` can write a tape kwsweep cannot read, and `CLOAD` has no
+      tape to read at all. A playable fixture (the cassette equivalent of
+      `disk/test720.dsk`) would need a bytes→WAV encoder this tree does not have;
+      `cas_decode` only goes the other way.
+      🔴 **AND THE CHEAP IDEA THAT WOULD HAVE HIDDEN IT: `TIME` DOES NOT ADVANCE
+      DURING A CASSETTE SAVE.** A save takes seconds of tape, so the obvious
+      screen-visible readback is the JIFFY delta — measured, the delta is **4** for a
+      recording of 269 280 WAV bytes (~6 s), because the tape write runs with
+      INTERRUPTS OFF ([`scratchpad/kwdrain_tapechk.py`](scratchpad/kwdrain_tapechk.py),
+      [readings](scratchpad/kwdrain_tapechk.out)). The control — the same row with no
+      `CSAVE` — reads the same 0, so the row would have AGREED on both machines while
+      seeing nothing [[a-case-that-agrees-can-agree-for-the-wrong-reason]].
+      🔴 **`LLIST`: THE PROGRAM STOPS, so the statement after it never runs** — on
+      BOTH machines, which is why the first attempt read `NONE` and looked like a
+      broken probe. In DIRECT mode there is no program to list, so the log is empty
+      for the opposite reason. Its printed output IS byte-identical on both (54 B,
+      the same bytes), so the verb is fine; what it has no path to is a SCREEN
+      readback. `LLIST` needs the `screen_printer` capture, and that conclusion is
+      now a measurement rather than a guess.
+      ⚠️ **THE `LPOS`-AFTER-THE-VERB TRICK WAS TRIED AND IS BLIND FOR `LFILES`** —
+      and being blind is what UNCOVERED the defect: the row reads 2 on zerobas
+      (unchanged) where it reads 0 on the CF-3300, which is not a blind row at all
+      but a divergent one. The readback that could not score the keyword scored the
+      machine instead.
+      ➡️ **SO THE HONEST SHAPE OF WHAT IS LEFT** is: one capture (`screen_printer`,
+      already written in
+      [`probes/basic/basic_probe_lptverb.py`](probes/basic/basic_probe_lptverb.py))
+      unlocks `LLIST` and `LFILES`; one ENCODER (bytes→WAV) plus a fixture unlocks
+      `CLOAD`, and `CSAVE` needs the WAV read back; the key injector's timing unlocks
+      `INKEY$` `INPUT` `GET`; `AUTO` and `RENUM` need a row FORMAT; `CALL` needs an
+      extension that is safe to invoke. None of these is hidden any more.
+      ⚠️ **THE PATTERN WAS TEN FOR TEN AND IS NOW TEN OF TWELVE — the tape and
+      the printer log HELD.** Every other blocker examined this session — the display verbs' "cannot take a row", the multi-line words'
       "cannot be expressed", the CF-3300 oracle, the disk fixture (which needed a
       `diska=` argument and a bigger capture gap), and then `SCREEN`'s mode, `KEY`'s
       missing constant, `USR`'s machine code, `WAIT`'s port, and the printer log
@@ -5325,7 +5404,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:14652 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:14731 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

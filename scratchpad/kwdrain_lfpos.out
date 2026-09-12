@@ -1,0 +1,13 @@
+=== zb
+  d.ctl     tail='[P 2 ]'                     log=  4 B b'AB\r\n'
+  d.llist   tail=None                         log=  4 B b'AB\r\n'
+  d.lfiles  tail=None                         log= 79 B b'ABTEST    .BIN \r\nHI      .TXT \r\nPROG    .BIN \r\nPROG    .BAS \r\nPROG2   '
+  d.lfbare  tail='[P 0 ]'                     log= 75 B b'TEST    .BIN \r\nHI      .TXT \r\nPROG    .BIN \r\nPROG    .BAS \r\nPROG2   .B'
+  d.lpr2    tail='[P 0 ]'                     log=  4 B b'AB\r\n'
+=== cf3300
+  d.ctl     tail='[P 2 ]'                     log=  4 B b'AB\r\n'
+  d.llist   tail=''                           log=  4 B b'AB\r\n'
+  d.lfiles  tail=None                         log= 77 B b'ABTEST    .BIN \r\nHI      .TXT \r\nPROG    .BIN \r\nPROG    .BAS \r\nPROG2   '
+  d.lfbare  tail='[P 0 ]'                     log= 75 B b'TEST    .BIN \r\nHI      .TXT \r\nPROG    .BIN \r\nPROG    .BAS \r\nPROG2   .B'
+  d.lpr2    tail='[P 0 ]'                     log=  4 B b'AB\r\n'
+refcache: 0 hit, 10 miss, 10 stored

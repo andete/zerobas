@@ -1,0 +1,9 @@
+=== zb (C-BIOS_MSX1_EU_REPACK_DISK)
+  lf.mid   LPOS=2     log= 79 B  tail=b'G2   .BAS \r\n\r\n'
+  lf.rest  LPOS=0     log= 75 B  tail=b'ROG2   .BAS \r\n'
+  ctl.mid  LPOS=2     log=  4 B  tail=b'AB\r\n'
+=== cf3300 (National_CF-3300)
+  lf.mid   LPOS=0     log= 77 B  tail=b'ROG2   .BAS \r\n'
+  lf.rest  LPOS=0     log= 75 B  tail=b'ROG2   .BAS \r\n'
+  ctl.mid  LPOS=2     log=  4 B  tail=b'AB\r\n'
+refcache: 0 hit, 6 miss, 6 stored

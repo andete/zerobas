@@ -1,0 +1,11 @@
+=== zb
+  ctl     LPOS=2     log=  4 B  b'AB\r\n'
+  llist   LPOS=NONE  log= 54 B  b'AB10 LPRINT"AB";\r\n20 LLIST\r\n30 PRINT"[P";LPOS(0);"]"\r\n'
+  lfiles  LPOS=2     log= 79 B  b'ABTEST    .BIN \r\nHI      .TXT \r\nPROG    .BIN \r\nPROG    .BAS \r\nPROG2   .BAS \r\n\r\n'
+  lfdir   LPOS=0     log= 75 B  b'TEST    .BIN \r\nHI      .TXT \r\nPROG    .BIN \r\nPROG    .BAS \r\nPROG2   .BAS \r\n'
+=== vg8020
+  ctl     LPOS=2     log=  4 B  b'AB\r\n'
+  llist   LPOS=NONE  log= 54 B  b'AB10 LPRINT"AB";\r\n20 LLIST\r\n30 PRINT"[P";LPOS(0);"]"\r\n'
+  lfiles  LPOS=NONE  log=  4 B  b'AB\r\n'
+  lfdir   LPOS=NONE  log=  0 B  b''
+refcache: 0 hit, 8 miss, 8 stored
