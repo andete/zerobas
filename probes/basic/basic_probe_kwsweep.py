@@ -375,6 +375,25 @@ SWEEP: list[tuple[str, str, str | None, str, str]] = [
     # in the handler with nothing on screen.
     # ⚠️ DEFINT's row asserts 1, NOT 1.7: a DEFINT that parses and does nothing would
     # still print 1.7, so the row sees the COERCION rather than the parse.
+
+    # ---------------------------------------------- D-KWDRAIN step 4g (2026-09-12)
+    # 🎯 TWO WORDS THAT SEPARATE THROUGH AN ERROR, WHICH IS STILL A DIFFERENTIAL.
+    # Measured on both machines first (scratchpad/kwdrain_misc1.py):
+    #   MAX bare      -> Syntax error on a real machine, `0` on a stub (an unknown
+    #                    word is just a variable), so the row proves MAX is TOKENISED
+    #                    rather than parsed as a name.
+    #   STRIG(5)      -> Illegal function call (the valid range is 0..4), while an
+    #                    undefined array STRIG(5) auto-dims and answers 0.
+    # ⚠️ AND THREE THAT DO NOT SEPARATE, left unattributed rather than papered over:
+    #   LPOS(0) reads 0 and a stub reads 0; LPRINT produced NO OUTPUT AT ALL on both
+    #   machines (no printer attached), so neither can be scored from here; and
+    #   LEN(INKEY$) is 0 with no key pressed, which is exactly what a stub returns.
+    #   INKEY$ needs injected keystrokes, not a cleverer expression.
+    ("maxkw",     'max',               'PRINT"[";MAX;"]"',                     "direct",
+     "D-KWDRAIN: bare MAX is a Syntax error on a real machine; a stub prints 0"),
+    ("strigkw",   'a=strig(0)',        'PRINT"[";STRIG(5);"]"',                "direct",
+     "D-KWDRAIN: 5 is out of STRIG's 0..4 range -> Illegal function call; an "
+     "undefined array auto-dims and answers 0"),
     ("onkw",      'on error goto 20', 
      'ON ERROR GOTO 20:ERROR 7:END:PRINT"[R";ERR;ERL;"]":END',  "stored", "D-KWDRAIN: ON in its ON ERROR form"),
     ("errorkw",   'error 7',          
