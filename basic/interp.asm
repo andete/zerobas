@@ -594,6 +594,10 @@ stmt_table:
                 dw      ex_load
                 db      RUN_TOKEN
                 dw      ex_run
+                db      NEW_TOKEN           ; D-NEWSTMT: NEW is a STATEMENT too --
+                dw      ex_new              ; without this a program reaching NEW
+                                            ; got `Syntax error`, where the
+                                            ; reference erases and stops
                 db      BSAVE_TOKEN
                 dw      ex_bsave
                 db      SAVE_TOKEN

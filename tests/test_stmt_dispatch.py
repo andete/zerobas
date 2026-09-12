@@ -99,6 +99,15 @@ EXPECTED = [
     ('CLOAD_TOKEN', 'ex_cload'),
     ('LOAD_TOKEN', 'ex_load'),
     ('RUN_TOKEN', 'ex_run'),
+    # 🔴 D-NEWSTMT (2026-09-12) — ADDED ON PURPOSE, which is what this gate asked
+    # to be told. NEW was NOT in the pre-refactor chain because it was never a
+    # statement here at all: it was reachable only from dispatch_line's
+    # pre-tokenise match of the bare word, so a PROGRAM that reached `NEW` fell
+    # through to `Syntax error in <line>` while the reference erased and stopped
+    # (MEASURED on the VG-8020: `10 PRINT"[A]":NEW` + `20 LIST` prints `[A]`, then
+    # nothing). The pre-tokenise match is gone with it, so this entry is now the
+    # ONLY path to NEW and serves the prompt and a program alike.
+    ('NEW_TOKEN', 'ex_new'),
     ('BSAVE_TOKEN', 'ex_bsave'),
     ('SAVE_TOKEN', 'ex_save'),
     ('FILES_TOKEN', 'ex_files'),

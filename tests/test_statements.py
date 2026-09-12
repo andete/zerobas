@@ -117,6 +117,20 @@ def run():
         print(f"{'PASS' if ok else 'FAIL'}  {label}: got {got!r}"
               + ("" if ok else f"  want {want!r}"))
 
+    # --- NEW as a STATEMENT (D-NEWSTMT, 2026-09-12) --------------------------
+    # 🔴 THE REGRESSION GATE FOR A DEFECT THE DRAIN FOUND. `stmt_table` had RUN and
+    # CLEAR but no NEW_TOKEN, so a PROGRAM reaching `NEW` fell through to a Syntax
+    # error while the reference ran it: MEASURED on the VG-8020, `10 PRINT"[A]":NEW`
+    # prints `[A]` then `Ok`, and a following `20 LIST` prints NOTHING -- so NEW
+    # erases the program AND stops. This row pins the printing half, which is the
+    # half that was silently wrong: before the fix the capture stopped at the error.
+    # ⚠️ It does NOT pin the erase -- this harness runs `run_prog` over a program it
+    # poked in itself, so "the text area is empty afterwards" is a different
+    # assertion and belongs with the machine-level rows, not here.
+    check('PRINT then NEW', run_prog_cap(Machine(ROM, SYM, rom_base=BASIC_BASE),
+                                         [(10, 'PRINT "A":NEW')]),
+          b"A\r\n")
+
     # --- PRINT (ex_print): documented MSX integer format + separators --------
     # Non-negative number: leading space (sign slot) + digits + trailing space.
     check("PRINT 42", run_prog_cap(Machine(ROM, SYM, rom_base=BASIC_BASE), [(10, "PRINT 42")]),

@@ -489,7 +489,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:15505 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:15540 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -655,7 +655,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:4120 (T-6FE392)8 (T-529ABE)` from `TODO.md:14291 (T-529ABE)`: a
+      `TODO.md:4155 (T-6FE392)8 (T-529ABE)` from `TODO.md:14326 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -2605,8 +2605,43 @@ list. **When a slice lands, grep this list for what it just shipped.**
       keyword is at TIER 4 or better".
       🎚️ STANDING — ruling, SUPERSEDED IN PART 2026-09-10 (see the tail of this block)
 
-- [ ] 🔴 **`NEW` INSIDE A RUNNING PROGRAM IS A SYNTAX ERROR HERE AND RUNS ON THE
-      REFERENCE.** Found 2026-09-12 by D-KWDRAIN, which is what the drain is for:
+- [x] ✅ **`NEW` INSIDE A RUNNING PROGRAM — FIXED 2026-09-12 (D-NEWSTMT), AND THE
+      FIX PAYS FOR ITSELF.** 🎯 **THE CAUSE WAS STRUCTURAL:** `stmt_table`
+      ([`basic/interp.asm`](basic/interp.asm)) carried `RUN` and `CLEAR` but **no
+      `NEW_TOKEN` entry at all** — `NEW` was reachable ONLY from `dispatch_line`'s
+      PRE-TOKENISE match of the bare word, which is exactly why a PROGRAM reaching it
+      fell through to `Syntax error` while the `CLEAR` control in the same position
+      worked. `NEW_TOKEN` now dispatches to `ex_new`
+      ([`basic/program.asm`](basic/program.asm)), sited immediately above
+      `end_line_end` so the stop is a FALL-THROUGH: `call clear_vars` / `call
+      new_prog` / into `ENDFLAG := 1`.
+      🔴 **THE SECOND MEASUREMENT SHAPED THE FIX.** The item demanded it before any
+      code: on the VG-8020 `10 PRINT"[A]":NEW` with `20 LIST` prints `[A]` then `Ok`
+      and **NO LISTING** — so `NEW` ERASES the program AND STOPS, and line 20 never
+      runs. A fix that merely stopped raising the error would have left `exec`
+      walking erased text [[a-justification-parenthesis-is-an-unrun-claim]].
+      💰 **BYTE-NEGATIVE: page 1 went 2 B -> 11 B free (2026-09-12).** Once `NEW`
+      dispatched like every other statement the pre-tokenise fast path was dead, so
+      removing it plus `dl_new` and `new_kw` freed 16 B against the fix's 7 — and one
+      implementation now serves the prompt and a program alike.
+      🟢 **VERIFIED ON THE MACHINE:** program `NEW` prints and stops with no error, a
+      following `LIST` never runs, and at the prompt `NEW` still clears variables
+      (`A=5` -> `[ 0 ]`) and wipes the program. Battery **128/128** plus all five
+      battery-excluded targets by hand (this slice touches shared leaves).
+      🔪 **TWO GATES, ONE OF WHICH CAUGHT ME.** A KNIFED row in
+      [`tests/test_statements.py`](tests/test_statements.py) — disabling the table
+      entry makes it fail with the EXACT original signature
+      `A\r\nSyntax error in 10\r\n`. And
+      [`tests/test_stmt_dispatch.py`](tests/test_stmt_dispatch.py), which pins the
+      table against an INDEPENDENT expectation, flagged the addition as `UNEXPECTED
+      entry $94 -> ex_new` and asked to be told if it was deliberate; now declared,
+      91 entries all dispatching — and that gate EXECUTES each entry, so `ex_new` is
+      proven reachable by real Z80 code rather than merely present in a table.
+      ⚠️ **THE CF-3300 SIDE IS STILL UNMEASURED** — its boot-per-case delivery was
+      mangled on every attempt and the apparatus REFUSED rather than measuring, which
+      is correct. The VG-8020 is the oracle this was fixed against.
+      ~~🔴 `NEW` INSIDE A RUNNING PROGRAM IS A SYNTAX ERROR HERE AND RUNS ON THE
+      REFERENCE.~~ Found 2026-09-12 by D-KWDRAIN, which is what the drain is for:
       converting a "no known gap" word either into a tiered defect or into an honest
       retirement, and this one is a defect
       ([`scratchpad/kwdrain_newdefect.py`](scratchpad/kwdrain_newdefect.py),
@@ -4964,7 +4999,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:14291 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:14326 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

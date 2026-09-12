@@ -42,12 +42,14 @@ dl_cmd:
                 jp      c,dl_run            ; the REPL's own (D-RUNARG below).
                                             ; `jp`, not `jr`: dl_bare's body pushed
                                             ; dl_run out of relative range.
-                ld      de,new_kw
-                call    is_cmd
-                jp      c,dl_new            ; ⚠️ `jp`, not `jr`: D-TXTCEIL's bytes
-                                            ; at dl_lnok pushed dl_new out of
-                                            ; relative range -- the same thing the
-                                            ; two comments above record for dl_run.
+                ; 🔴 THE PRE-TOKENISE `NEW` MATCH IS GONE (D-NEWSTMT, 2026-09-12).
+                ; It existed because NEW had no `stmt_table` entry, so the only way
+                ; to reach it was to spot the bare word BEFORE crunching -- which is
+                ; exactly why a PROGRAM reaching NEW got `Syntax error`. Now that
+                ; NEW_TOKEN dispatches to `ex_new` like every other statement, a
+                ; typed `NEW` crunches and executes down the SAME path a program
+                ; takes, and one implementation serves both. The bytes this frees
+                ; are what pays for the table entry and the handler.
                 ; direct mode: crunch the whole line and execute it now
                 ld      hl,LINEBUF
                 ld      de,TOKBUF
@@ -315,12 +317,6 @@ dl_bare:
 
 dl_run:
                 jr      run_prog
-dl_new:
-                ; NEW clears ALL variables (VARTAB / DEFtbl / strings), not just
-                ; the stored program — MS-BASIC semantics. LOAD's own new_prog
-                ; calls stay variable-safe.
-                call    clear_vars
-                jr      new_prog
 
 ; --- is_cmd: does the word at (HL) match the uppercase template at (DE)? ------
 ; CF set iff (HL) case-folds to the 0-terminated template AND the next input
@@ -361,7 +357,6 @@ ic_yes:
                 ret
 
 run_kw:         db      "RUN",0
-new_kw:         db      "NEW",0
 
 ; --- parse_lineno: the resident stub for the sub-ROM line-number scanner ------
 ; D-EVLNO (docs/spec-rom-region-evict-lineno.md): the 73 B body -- the whole
@@ -679,6 +674,23 @@ rp_goto:
 ; merge needs ZERO words above the frontier at a statement boundary (§8.1). Five
 ; such `ret`s just became ONE, so the conversion that follows has five fewer sites
 ; to get right -- which is worth more than the bytes.
+; --- ex_new: NEW as a STATEMENT, not just a direct-mode command --------------
+; 🔴 D-NEWSTMT (2026-09-12): `stmt_table` had RUN and CLEAR but NO `NEW_TOKEN`, so
+; a PROGRAM that reached `NEW` fell through to `Syntax error in <line>` while the
+; reference ran it. MEASURED on the VG-8020 (scratchpad/kwdrain_newdefect.py):
+; `10 NEW` answers `Ok`, and `10 PRINT"[A]":NEW` / `20 LIST` prints `[A]` then
+; `Ok` with NO LISTING -- so NEW ERASES the program AND STOPS, and line 20 never
+; runs. That second reading is why this sets ENDFLAG: a fix that merely stopped
+; raising the error would leave `exec` walking a program that no longer exists.
+; ⚠️ SITED IMMEDIATELY ABOVE `end_line_end` SO THE STOP IS A FALL-THROUGH, not a
+; `jp` -- 3 bytes, in a region that had 2 free.
+ex_new:
+                call    clear_vars          ; NEW clears variables too (dl_new's
+                                            ; own comment: MS-BASIC semantics)
+                call    new_prog            ; then the stored program itself
+                                            ; falls into end_line_end: ENDFLAG := 1,
+                                            ; so the run loop returns to the REPL
+                                            ; instead of walking erased text
 end_line_end:
                 ld      a,1
                 ld      (ENDFLAG),a
