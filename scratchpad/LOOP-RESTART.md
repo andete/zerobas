@@ -6,46 +6,55 @@ session and the loop resumes exactly where it stopped.
 
 ## Where things stand
 
-* Tree CLEAN and pushed at `0579b2f8`. Recount everything — never quote a number
+* Tree CLEAN and pushed at `59937b12`. Recount everything — never quote a number
   from this file.
 * 🔴 **JOOST'S RULING (2026-09-12): the "no known gap" list is drained to ZERO
-  before TIER 4 is picked up.** A keyword with no evidence can hide a TIER 1
-  defect, and three now have — `NEW`, then `MERGE` and `FILES` out of the disk
-  slice.
-* **TIER 1 = 3** after this session (recount: `make tiers`). Two are the D-KWDISK
-  findings below; the third is the pre-existing fixture-blocked one.
+  before TIER 4.** A keyword with no evidence can hide a TIER 1 defect, and FOUR
+  now have: `NEW`, then `MERGE`, `FILES` and `LFILES`.
+* 🔴 **AND THE ORDER ON TOP OF IT (the hourly backstop's own wording): TIER 1
+  BEFORE ANYTHING ELSE.** There are now four open TIER 1 items and nine words
+  left, so the next tick FIXES, it does not drain.
 
 ## What shipped this session
 
 * **D-SPMERGE / D-NEWSTMT** (earlier): the stack moved into the control-frame
-  pool, and `NEW` in a program stopped being a Syntax error.
-* **D-KWDISK** (`89f43985`): `basic_probe_kwsweep.py` mounts a WRITABLE PRIVATE
-  copy of `disk/test720.dsk` on BOTH sides. 36 -> 16. Twenty words.
+  pool; `NEW` in a program stopped being a Syntax error.
+* **D-KWDISK** (`89f43985`): kwsweep mounts a writable private copy of
+  `disk/test720.dsk` on BOTH sides. 36 -> 16, twenty words.
 * **D-KWRIG** (`0579b2f8`): `NEEDS-PRINTER:` joins `NEEDS-DISK:`, the two capture
-  splitters collapse into one `capture()`, and `_row_rig` names what a row needs.
-  16 -> 10. Six words: `USR SCREEN KEY WAIT LPOS LPRINT`.
+  splitters collapse into one `capture()`. 16 -> 10, six words.
+* **D-KWTAPE** (`59937b12`): 10 -> 9, and NOT by a row — by a filed defect.
 
-## Two TIER 1 defects the drain produced — both FILED, neither FIXED
+## The four open TIER 1 items — FIX THESE FIRST
 
-* **`MERGE` in a running program carries on here; the CF-3300 returns to command
-  level.** The merge itself lands identically on both. `LOAD` and `RUN"file"`
-  share the contract and should be swept with the fix.
-* **`FILES` ends its listing with a newline the reference does not emit.** Same
-  names, same wrap, same padding — only the cursor's resting place.
+1. **`FILES` ends its listing with a newline the reference does not emit** (the
+   SCREEN sink).
+2. **`LFILES` does not zero `LPTPOS`** (the PRINTER sink): park the head with
+   `LPRINT"AB";` and zerobas reads `LPOS` 2 / 79 log bytes where the CF-3300
+   reads 0 / 77. Both controls agree. `docs/spec-basic-lfiles.md` §3.3 records
+   this as a CHOICE whose justification — "the head is at column 0 when the
+   statement ends ... no row measures it" — is false once something parks it.
+   🎯 **(1) AND (2) ARE PLAUSIBLY ONE WALK ENDING DIFFERENTLY ON TWO SINKS. Rule
+   that in or out BEFORE changing either.**
+3. **`MERGE` in a running program carries on; the CF-3300 returns to command
+   level.** The merge itself lands identically on both. Sweep `LOAD` and
+   `RUN"file"` with the fix — same contract.
+4. The pre-existing fixture-blocked one (read it; do not assume).
 
-## The next slice
+## The drain after the fixes — NINE words, and two blockers now MEASURED REAL
 
-Ten words left: `AUTO CALL CLOAD CSAVE GET INKEY$ INPUT LFILES LLIST RENUM`.
-Three clusters, each with named apparatus, and **the tape one is the next to
-re-verify because it looks already built**:
-
-* `LLIST` `LFILES` — the printer LOG. `basic_probe_lptverb.py` already has the
-  `screen_printer` capture; it needs BOOT-PER-CASE (the log accumulates) and a
-  row that needs BOTH tags, which is what generalises `_row_rig`.
-* `CLOAD` `CSAVE` — a tape rig, and one EXISTS: `cassetteplayer new` +
-  `probes/lib/cas_decode.py`, driven by nine `basic_probe_cas*` suites.
-* `INKEY$` `INPUT` `GET` — the key injector's TIMING, a harness change
-  (`run_cases` must expose the per-case run time); must not reopen D-LATCH.
+* `LLIST` — the program STOPS at it on both machines, so nothing reaches the
+  screen; direct mode has no program to list. Its printed bytes are identical on
+  both (54 B). Needs the `screen_printer` capture (already written in
+  `basic_probe_lptverb.py`) plus BOOT-PER-CASE: the log accumulates.
+* `CLOAD` `CSAVE` — the rig RECORDS and nothing in this tree PLAYS
+  (`cassetteplayer insert` appears nowhere under `probes/`). `cas_decode` is
+  WAV->bytes only, so a playable fixture needs an encoder that does not exist.
+  🔴 **AND THE CHEAP IDEA IS DEAD: `TIME` DOES NOT ADVANCE DURING A TAPE SAVE**
+  (interrupts off) — 4 jiffies for a ~6 s recording, and the no-CSAVE control
+  reads the same.
+* `INKEY$` `INPUT` `GET` — the key injector's TIMING, a harness change; must not
+  reopen D-LATCH.
 * `AUTO` `RENUM` need a row FORMAT, not a rig; `CALL` needs an extension that is
   safe to invoke.
 
@@ -103,4 +112,4 @@ a pattern that appears in the polling command.
 
 Paste this into a fresh session:
 
-    /loop continue autonomously on D-KWDRAIN — drain "no known gap" to ZERO, Joost's 2026-09-12 ruling, which outranks the TIER 4 speed items. Read scratchpad/LOOP-RESTART.md FIRST for the full state, then TODO.md's "no known gap" block to its END. Recount with `python3 tools/tier_table.py --keywords` — never quote a count. TEN WORDS LEFT: AUTO CALL CLOAD CSAVE GET INKEY$ INPUT LFILES LLIST RENUM. THIS SLICE: the TAPE pair (CLOAD/CSAVE) — RE-VERIFY the "needs a tape rig" blocker FIRST, because the rig looks already built (`cassetteplayer new` + probes/lib/cas_decode.py, driven by nine basic_probe_cas* suites); if it is, add a `NEEDS-TAPE:` rig alongside NEEDS-DISK/NEEDS-PRINTER in `_row_rig` (basic_probe_kwsweep.py), which is the same shape the printer rig took. Then LLIST/LFILES, which need the `screen_printer` capture from basic_probe_lptverb.py, BOOT-PER-CASE (the log accumulates across a batch and a batched row reads its predecessors' output as its own), and the first row that needs TWO tags — that row is what generalises `_row_rig`. Every row must clear the FIVE silent-failure modes in LOOP-RESTART.md, prove its readback MOVES before the row is kept, and after adding rows READ THE WHOLE SWEEP SUMMARY. Re-verify any blocker before believing it: TEN for ten were stale this session. Standing rules: full `make gates` before each commit and never commit red; after a `--fix` of todo-citation-check re-run every gate that READS TODO.md rather than the whole battery; `make basic-reloc` from a CLEAN tree for any wall figure; `test -e <path> && exit 1` before any `cat >` heredoc; stage explicit paths, `git add -A` banned, `git status --short` first; commit message to a FILE with `git commit -F`; commit AND push after each fix without asking; never write a tracked file while a battery runs; NEVER poll with a pattern that matches the polling command itself — use the background task's own completion notification; READ the output of every edit script.
+    /loop continue autonomously on zerobas — 🔴 TIER 1 BEFORE ANYTHING ELSE, then resume draining "no known gap" to ZERO (Joost's 2026-09-12 ruling, which outranks TIER 4). Read scratchpad/LOOP-RESTART.md FIRST, then the item's own block in TODO.md to its END. Run `make tiers`; recount keywords with `python3 tools/tier_table.py --keywords` — never quote a count. THIS SLICE: the `FILES` / `LFILES` pair, which are plausibly ONE walk ending differently on two sinks — rule that in or out BEFORE changing either. `FILES` emits a trailing newline to the SCREEN that the reference does not; `LFILES` does not zero `LPTPOS`, so `LPOS` reads 2 where the CF-3300 reads 0 and R-LP16's flush puts two extra bytes on the printer. Both are measured with agreeing controls (scratchpad/kwdrain_fileseol.out, scratchpad/kwdrain_lfflush.out). 🔴 docs/spec-basic-lfiles.md §3.3 records the LPTPOS behaviour as a deliberate CHOICE — read that paragraph and INVERT the conclusion rather than deleting the analysis, and leave a gate row behind or the keyword falls straight back into the unattributed pile. Re-verify any filed claim before building on it. Standing rules: full `make gates` before each commit and never commit red; after a `--fix` of todo-citation-check re-run every gate that READS TODO.md rather than the whole battery; `make basic-reloc` from a CLEAN tree for any wall figure; `test -e <path> && exit 1` before any `cat >` heredoc; stage explicit paths, `git add -A` banned, `git status --short` first; commit message to a FILE with `git commit -F`; commit AND push after each fix without asking; never write a tracked file while a battery runs; NEVER poll with a pattern that matches the polling command itself — use the background task's own completion notification; READ the output of every edit script.
