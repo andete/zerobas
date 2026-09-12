@@ -489,7 +489,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:16019 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:16066 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -655,7 +655,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:4585 (T-6FE392)8 (T-529ABE)` from `TODO.md:14756 (T-529ABE)`: a
+      `TODO.md:4632 (T-6FE392)8 (T-529ABE)` from `TODO.md:14803 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -3402,6 +3402,53 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `CLOAD`, and `CSAVE` needs the WAV read back; the key injector's timing unlocks
       `INKEY$` `INPUT` `GET`; `AUTO` and `RENUM` need a row FORMAT; `CALL` needs an
       extension that is safe to invoke. None of these is hidden any more.
+      🟢 **D-KWLOG, 2026-09-13: `LLIST` ATTRIBUTED — and the blocker was a CAPTURE,
+      not the hazard it was filed under** ([readings](scratchpad/kwlog_full.out),
+      full sweep; [the row alone](scratchpad/kwlog_only.out)).
+      🔴 **THE FILED REASON WAS "printer-bound with the known unplugged-`LSTOUT`
+      hang hazard", AND THAT HAZARD IS REAL AND WAS NEVER THE BLOCKER.** The plug
+      answers it (D-KWRIG). What kept `LLIST` unscored is that its ONLY output is
+      the printer: the program STOPS at it on BOTH machines so nothing reaches the
+      screen, and in direct mode there is no program to list — an empty log, for
+      the opposite reason. Its printed bytes were IDENTICAL on both all along
+      ([`scratchpad/kwdrain_llistchk.py`](scratchpad/kwdrain_llistchk.py),
+      [readings](scratchpad/kwdrain_llistchk.out)).
+      🟢 **`NEEDS-LOG:` IS THE THIRD RIG, and it is a CAPTURE rather than a
+      device**: it implies the printer plug and then READS the log. `_row_rigs`
+      was already a tuple (D-DFEND) and `lfiles` already proved the two-tag path,
+      so the slice added a reading, not a mechanism.
+      🔴 **IT FORCES BOOT-PER-CASE, AND THAT IS NOT A PREFERENCE.** openMSX holds
+      the log open and never truncates it, so batched, every case captures the
+      WHOLE log and each row reads its predecessors' output as its own — D-BATCH2
+      measured exactly that on
+      [`basic_probe_lptverb.py`](probes/basic/basic_probe_lptverb.py) and **both
+      modes still exited 0**, so no exit status can catch it.
+      🔴 **THE CLASS COMES FROM THE SCREEN AND ONLY THE TEXT FROM THE LOG**, and a
+      row that scored the screen half would compare two blank screens and call it
+      agreement. A missing keyword answers `Syntax error` on the SCREEN and prints
+      nothing at all, which is the differential
+      [[an-unnamed-outcome-reads-as-no-outcome]].
+      🔴 **AND THE FIRST CUT READ `?noecho` ON BOTH SIDES**, because BOTH halves of
+      a `screen_printer` capture are HEX — the screen half does not come back
+      decoded the way a plain `screen` capture does. That was UNREADABLE and
+      therefore honest, but only because the echo guard exists: with the anchor
+      gone there is nothing to compare, and two blank readings would otherwise
+      have agreed. (`basic_probe_lptverb.py` never hits this — its screen
+      batteries take the DEFAULT capture and only its printer battery takes this
+      one; checked before anything was claimed about it.)
+      🎯 **THE PROGRAM BEING LISTED IS THE ROW'S OWN**, which makes the expected
+      text something CHOSEN rather than hoped for: the row is `LLIST:REM ZQ8` and
+      the log reads `10 LLIST:REM ZQ8\r\n` byte for byte on both. The `:REM ZQ8` is
+      there on purpose — a listing that printed only the line number, or mangled
+      the token spacing, fails a row that asserted the verb's own name alone.
+      🔴 **THE BLIND SHAPE WAS MEASURED FIRST**: the same program WITHOUT the
+      `LLIST` leaves the log EMPTY on both machines, so the reading exists only
+      because the verb ran.
+      ➡️ **EIGHT LEFT, AND THE WHOLE PRINTER CLUSTER IS NOW CLOSED** — `LPRINT`
+      and `LPOS` by D-KWRIG, `LFILES` by D-DFEND, `LLIST` here. What remains is
+      the tape pair (nothing plays a tape), the key-injector three (harness
+      timing), and `AUTO`/`RENUM`/`CALL`, which need a row FORMAT or a safe
+      extension rather than a rig. Recount with `make tiers ARGS=--keywords`.
       ⚠️ **THE PATTERN WAS TEN FOR TEN AND IS NOW TEN OF TWELVE — the tape and
       the printer log HELD.** Every other blocker examined this session — the display verbs' "cannot take a row", the multi-line words'
       "cannot be expressed", the CF-3300 oracle, the disk fixture (which needed a
@@ -5429,7 +5476,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:14756 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:14803 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

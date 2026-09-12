@@ -1,0 +1,9 @@
+=== zb
+  llist.bare  log= 10 B b'10 LLIST\r\n'                          screen-tail='as Disk BASIC ZBNEW ZB10 LLIST ZBRUN ZB '
+  llist.rem   log= 18 B b'10 LLIST:REM ZQ8\r\n'                  screen-tail='BASIC ZBNEW ZB10 LLIST:REM ZQ8 ZBRUN ZB '
+  ctl.noverb  log=  0 B b''                                      screen-tail=' Disk BASIC ZBNEW ZB10 REM ZQ8 ZBRUN ZB '
+=== cf3300
+  llist.bare  log= 10 B b'10 LLIST\r\n'                          screen-tail='0 LLIST RUN Ok color auto goto list run '
+  llist.rem   log= 18 B b'10 LLIST:REM ZQ8\r\n'                  screen-tail='REM ZQ8 RUN Ok color auto goto list run '
+  ctl.noverb  log=  0 B b''                                      screen-tail='REM ZQ8 RUN Ok color auto goto list run '
+refcache: 0 hit, 6 miss, 6 stored

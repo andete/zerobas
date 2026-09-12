@@ -165,19 +165,32 @@ def _disk_image() -> str:
 # output never reaches the screen") is true of the printed TEXT and not of these
 # rows. `LLIST` and `LFILES` DO need the log (their subject is the text), and the
 # slice that adds a `screen_printer` capture group is the one to take them.
-def _printer_plug() -> tuple[str, ...]:
-    """The openMSX prologue that puts a logging printer on the port, with a
-    private log file. The log is never READ here -- only its existence keeps the
-    port ready, so `LPRINT` cannot block."""
+def _printer_log() -> str:
+    """A private printer log file for one machine's run."""
     fh = tempfile.NamedTemporaryFile(suffix=".prn", delete=False)
     fh.close()
     if not _RIG_TEMPS:
         atexit.register(_drop_rig_temps)
     _RIG_TEMPS.append(fh.name)
-    return (f"set printerlogfilename {{{fh.name}}}", "plug printerport logger")
+    return fh.name
 
 
-_RIG_TAGS = {"NEEDS-DISK:": "disk", "NEEDS-PRINTER:": "printer"}
+def _printer_plug(path: str) -> tuple[str, ...]:
+    """The openMSX prologue that puts a logging printer on the port. For a
+    `NEEDS-PRINTER:` row the log is never READ -- only its existence keeps the
+    port ready, so `LPRINT` cannot block. A `NEEDS-LOG:` row reads it."""
+    return (f"set printerlogfilename {{{path}}}", "plug printerport logger")
+
+
+# 🟢 D-KWLOG (2026-09-13): `NEEDS-LOG:` IS THE THIRD RIG, and it is a CAPTURE
+# rather than a device -- it implies the printer plug and then READS the log
+# instead of merely keeping the port ready. `LLIST` is why: measured, the program
+# STOPS at it on both machines so nothing reaches the screen, direct mode has no
+# program to list, and its printed bytes are IDENTICAL on both. The verb is fine;
+# what it lacked was a path from the verb to a reading
+# (scratchpad/kwdrain_llistchk.out).
+_RIG_TAGS = {"NEEDS-DISK:": "disk", "NEEDS-PRINTER:": "printer",
+             "NEEDS-LOG:": "log"}
 
 
 def _row_rigs(note: str) -> tuple[str, ...]:
@@ -199,13 +212,24 @@ def _row_rigs(note: str) -> tuple[str, ...]:
 
 def _rig_kwargs(rigs: tuple[str, ...]) -> dict:
     """The run_cases kwargs those rigs need -- a FRESH image and a FRESH log per
-    call, so two machines never share one."""
+    call, so two machines never share one.
+
+    🔴 `log` FORCES BOOT-PER-CASE, and that is not a preference. openMSX holds the
+    log open and never truncates it, so BATCHED every case captures the whole log
+    and each row would read its predecessors' output as its own -- D-BATCH2
+    measured exactly that on `basic_probe_lptverb.py` and both modes still exited
+    0, so no exit status can catch it. `batch` is returned here as a kwarg and
+    popped by `capture()`."""
     kw: dict = {}
     if "disk" in rigs:
         kw.update(DISK_TIMING)
         kw["diska"] = _disk_image()
-    if "printer" in rigs:
-        kw["prologue"] = _printer_plug()
+    if "printer" in rigs or "log" in rigs:
+        path = _printer_log()
+        kw["prologue"] = _printer_plug(path)
+        if "log" in rigs:
+            kw["capture"] = ("screen_printer", path)
+            kw["batch"] = False
     return kw
 
 
@@ -775,7 +799,24 @@ SWEEP: list[tuple[str, str, str | None, str, str]] = [
     # so a divergence here is statement-surface only. Printer is UNPLUGGED in the
     # harness by default and LSTOUT is NOT hang-safe unplugged (openmsx-printer-
     # pluggable), so these are crunch-only — executing LPRINT could wedge the run.
-    ("llist",   "llist",       None, "direct", "same LSTOUT hazard"),
+    # 🟢 D-KWLOG (2026-09-13): `LLIST` EXECUTES AT LAST, and the blocker was a
+    # CAPTURE rather than a hazard. The LSTOUT hazard is real and is what the plug
+    # answers; what kept the verb unscored is that its ONLY output is the printer,
+    # and the program STOPS at it on both machines so nothing reaches the screen
+    # (direct mode has no program to list at all -- an empty log, for the opposite
+    # reason). Measured on both: the log reads `10 LLIST:REM ZQ8\r\n`, byte for
+    # byte (scratchpad/kwdrain_llistchk.out).
+    # 🎯 THE PROGRAM BEING LISTED IS THE ROW'S OWN, which is what makes the
+    # expected text something chosen rather than hoped for -- and `:REM ZQ8` is in
+    # it on purpose: a listing that printed only the line number, or mangled the
+    # token spacing, fails a row that asserted the verb's own name alone.
+    # 🔴 THE BLIND SHAPE WAS MEASURED: the same program WITHOUT the `LLIST`
+    # (`10 REM ZQ8`) leaves the log EMPTY on both machines, so the reading exists
+    # only because the verb ran.
+    ("llist",   "llist",       "LLIST:REM ZQ8",  "stored",
+     "NEEDS-LOG: " "the listing itself, off the printer log -- the row's own "
+     "stored program. Absent => Syntax error on the SCREEN and an empty log, which "
+     "is why the CLASS comes from the screen and only the TEXT from the log."),
 
     # Cassette / misc statements.
     ("motor",   "motor on",
@@ -1179,8 +1220,30 @@ def marker_tail(raw: str | None, marker: str) -> str | None:
     return "|".join(out)
 
 
+def printer_text(raw: str | None) -> str:
+    """The PRINTER half of a `screen_printer` capture, with CR and LF VISIBLE.
+
+    The framing is part of the answer -- `X\\r\\n` is the rule and `X` is not --
+    so it may not be stripped. Same decode as `basic_probe_lptverb.prn_reading`.
+    ⚠️ THE SEPARATOR IS THE FIRST `7c` (a literal `|` byte), so a SCREEN that
+    contains the two characters `7c` would split in the wrong place. No row here
+    types them, and the lptverb suite has relied on the same rule since D-EDITVERB."""
+    if raw is None:
+        return "<NO CAPTURE>"
+    _, _, prn = raw.partition("7c")
+    if not prn:
+        return "<nothing printed>"
+    try:
+        b = bytes.fromhex(prn)
+    except ValueError:
+        return "<BAD CAPTURE>"
+    return "".join({13: "\\r", 10: "\\n"}.get(c, chr(c) if 32 <= c < 127 else
+                                              f"\\x{c:02x}") for c in b)
+
+
 def classify(raw: str | None, cmdline: str,
-             marker: str | None = None) -> tuple[str, str]:
+             marker: str | None = None,
+             log: bool = False) -> tuple[str, str]:
     """(outcome_class, text) for one executed case.
 
     class is "value" (ran, printed something), "error:<phrase>", or "?<reason>".
@@ -1188,7 +1251,33 @@ def classify(raw: str | None, cmdline: str,
     lowercase error wording.
 
     `marker` selects the echo-free capture for rows whose own feature destroys
-    the echo -- see marker_tail."""
+    the echo -- see marker_tail.
+
+    🔴 `log` IS THE ROW SAYING WHICH HALF IT SCORES, and a `screen_printer`
+    capture has two. The CLASS still comes from the SCREEN -- a keyword the
+    machine does not have answers `Syntax error` there and prints nothing at all,
+    which is the differential -- while the TEXT compared becomes the printer log.
+    Scoring the screen half of a log row would compare two blank screens and call
+    it agreement [[an-unnamed-outcome-reads-as-no-outcome]]."""
+    if log:
+        # 🔴 BOTH HALVES OF A `screen_printer` CAPTURE ARE HEX, including the
+        # screen one -- `__hex_v` does not come back decoded the way a plain
+        # "screen" capture does. The first cut passed the raw half straight to
+        # screen_tail and every row read `?noecho` on BOTH sides, which is
+        # UNREADABLE and therefore honest, but only because the guard existed:
+        # with the echo anchor gone there is nothing to compare and two blank
+        # readings would otherwise have agreed [[an-unnamed-outcome-reads-as-no-outcome]].
+        # (`basic_probe_lptverb.py` never hits this: its screen batteries take the
+        # DEFAULT capture and only its printer battery takes this one.)
+        half, _, _ = raw.partition("7c") if raw is not None else ("", "", "")
+        try:
+            screen = bytes.fromhex(half).decode("latin-1") if half else ""
+        except ValueError:
+            screen = ""
+        cls, txt = classify(screen or None, cmdline, marker)
+        if cls.startswith("?") or cls.startswith("error"):
+            return (cls, txt)
+        return ("value", printer_text(raw))
     if marker is not None:
         tail = marker_tail(raw, marker)
         if tail is None:
@@ -1381,7 +1470,10 @@ def main() -> int:
                 mkw["reset"] = pre + tuple(kw.get("reset", ()))
             if mount:
                 mkw.update(_rig_kwargs(rig))
-            got = omsx_repl.run_cases(mach, [specs[i] for i in idx], batch=batch, **mkw)
+            # a rig may force its own delivery mode (see _rig_kwargs: `log` needs
+            # boot-per-case or every row reads its predecessors' printer output)
+            got = omsx_repl.run_cases(mach, [specs[i] for i in idx],
+                                      batch=mkw.pop("batch", batch), **mkw)
             for i, g in zip(idx, got):
                 out[i] = g
         return out
@@ -1428,8 +1520,9 @@ def main() -> int:
                 # (see marker_tail). Everything else keeps the echo anchor.
                 mk = (rnote.split(":", 2)[1].split()[0]
                       if rnote.startswith("NOECHO:") else None)
-                rc, rt = classify(rr, cmd, mk)
-                zc, zt = classify(zr, cmd, mk)
+                islog = "log" in _row_rigs(rnote)
+                rc, rt = classify(rr, cmd, mk, log=islog)
+                zc, zt = classify(zr, cmd, mk, log=islog)
                 cs = results[key].get("crunch", (None,))[0]
                 note = next(n for k, _, _, _, n in rows if k == key)
                 if "disk" in _row_rigs(note) and rc.startswith("?"):
