@@ -6,7 +6,7 @@ session and the loop resumes exactly where it stopped.
 
 ## Where things stand
 
-* Tree CLEAN and pushed at `3c0cdc03`. Recount everything — never quote a number
+* Tree CLEAN and pushed at `ca271f77`. Recount everything — never quote a number
   from this file.
 * 🟢 **EVERY TIER 1 THE DRAIN PRODUCED IS CLOSED** (`NEW` `FILES` `LFILES`
   `MERGE`, plus `LOAD` which only the MERGE sweep could have found), and **the
@@ -22,27 +22,34 @@ session and the loop resumes exactly where it stopped.
   (`0579b2f8`) the printer rig · **D-KWTAPE** (`59937b12`) a filed defect instead
   of a row · **D-DFEND** (`c0bd895e`) `FILES`+`LFILES` were ONE tail, −8 B sub
   page 1 · **D-MERGERET** (`631157c0`) `MERGE` *and* `LOAD`, +4 B main page 1 ·
-  **D-KWUMB** (`b4177c61`) the umbrella item.
+  **D-KWUMB** (`b4177c61`) the umbrella item · **D-KWLOG** (`ca271f77`)
+  `NEEDS-LOG:`, the third rig — a CAPTURE rather than a device — and `LLIST`.
 
-## The next slice — the drain, and `LLIST` is the cheapest
+## The next slice — `GET` and `CALL`, the two that need NO new apparatus
 
-**NINE words: `AUTO CALL CLOAD CSAVE GET INKEY$ INPUT LLIST RENUM`.**
+**EIGHT words: `AUTO CALL CLOAD CSAVE GET INKEY$ INPUT RENUM`.** The printer
+cluster is closed (D-KWRIG, D-DFEND, D-KWLOG). Of the eight, two look reachable
+with the rigs already built — **measure before believing either**:
 
-* **`LLIST` FIRST.** Measured: the program STOPS at it on both machines, so
-  nothing reaches the screen, and direct mode has no program to list. Its printed
-  bytes are IDENTICAL on both (54 B, same bytes) — the verb is fine; what it
-  lacks is a screen path. It needs the `screen_printer` capture (already written
-  in `basic_probe_lptverb.py`) and BOOT-PER-CASE, because the log ACCUMULATES and
-  a batched row reads its predecessors' output as its own (D-BATCH2).
-  🟢 **`_row_rigs` IS READY** — D-DFEND made it a tuple and the `lfiles` row
-  proves the two-tag path works. What is new is a per-rig CAPTURE, not a new rig.
-* `CLOAD` `CSAVE` — the rig RECORDS and nothing here PLAYS (`cassetteplayer
-  insert` appears nowhere under `probes/`). 🔴 `TIME` DOES NOT ADVANCE DURING A
-  TAPE SAVE (interrupts off); the no-CSAVE control reads the same.
-* `INKEY$` `INPUT` `GET` — the key injector's TIMING, a harness change; must not
-  reopen D-LATCH.
-* `AUTO` `RENUM` need a row FORMAT, not a rig; `CALL` needs an extension that is
-  safe to invoke.
+* **`GET` — MSX1's `GET` is the RANDOM-FILE record read (`GET #n[,record]`), not
+  a keyboard verb.** `PUT` already ships (it sits at TIER 3, "slower than the
+  reference"), and the disk rig is mounted, so a round trip is expressible in one
+  row: `OPEN ... AS#1`, `FIELD`, `LSET`, `PUT`, then `GET` the record back and
+  read the field. 🔴 **PROVE THE READBACK MOVES**: read the field BEFORE the GET
+  as the blind shape, or a row that never re-read anything passes.
+* **`CALL` — the question is whether an UNKNOWN extension separates.** `CALL ZZQ`
+  on a real Disk BASIC may answer something other than `Syntax error`; a machine
+  with no `CALL` answers `Syntax error`. If the two coincide the row is blind and
+  `CALL` stays out, WITH the measurement filed. ⚠️ Do NOT reach for `CALL SYSTEM`
+  or `CALL FORMAT` — one exits to DOS and one formats the disk.
+
+The other six each need apparatus, all named and measured:
+`CLOAD`/`CSAVE` a tape PLAYER (nothing here plays one; and `TIME` does not advance
+during a tape save, so the cheap readback is dead); `INKEY$`/`INPUT`/`GET`'s
+keyboard cousins the key injector's TIMING (a harness change, must not reopen
+D-LATCH); `AUTO` a case slot that survives line-entry mode; `RENUM` a read-back the
+row format cannot express — it STOPS the program, so no statement after it runs,
+and the printer log cannot help because a `LLIST` after it never executes.
 
 ## 🔴 Two staging traps, both paid for on 2026-09-12/13
 
@@ -108,4 +115,4 @@ a pattern that appears in the polling command.
 
 Paste this into a fresh session:
 
-    /loop continue autonomously on zerobas — 🔴 TIER 1 BEFORE ANYTHING ELSE, then drain "no known gap" to ZERO (Joost's 2026-09-12 ruling, which outranks TIER 4). Read scratchpad/LOOP-RESTART.md FIRST, then the item's own block in TODO.md to its END. Run `make tiers`; recount keywords with `python3 tools/tier_table.py --keywords` — never quote a count. THIS SLICE: `LLIST`, the cheapest of the nine left. It is NOT blocked on an idea: measured, the program STOPS at it on BOTH machines (so nothing reaches the screen) and direct mode has no program to list, while its PRINTED bytes are identical on both — the verb is fine and what it lacks is a screen path. Give kwsweep a per-rig CAPTURE: `screen_printer` (already written in probes/basic/basic_probe_lptverb.py) plus BOOT-PER-CASE, because the printer log ACCUMULATES across a batch and a batched row reads its predecessors' output as its own (D-BATCH2 — do not "optimise" that to batch=True). `_row_rigs` is ALREADY a tuple and the `lfiles` row proves the two-tag path, so what is new is the capture, not a rig. ⚠️ classify()/screen_tail assume a SCREEN capture — the printer capture returns screen+log, so the comparison has to name which half it is scoring. Every row must clear the FIVE silent-failure modes in LOOP-RESTART.md, prove its readback MOVES before the row is kept, and after adding rows READ THE WHOLE SWEEP SUMMARY. Re-verify any blocker before believing it: eleven of thirteen were stale. Standing rules: full `make gates` before each commit and never commit red; 🔴 AFTER ANY basic/ OR sub/ CHANGE stage zerobas-main-eu.ips/.bps WITH the commit (patch-freshness-check only sees the omission one commit LATER); 🔴 `check_todo_citations.py --fix` REWRITES EVERY DOC THAT CITES A MOVED BLOCK, not just TODO.md — read `git status --short` as a LIST, because that gate compares the working tree and stays green either way; after a `--fix` re-run every gate that READS TODO.md; `rm -rf build && make basic-reloc` for any wall figure, and BACK UP build/kwsweep-verdicts.json first — a clean build deletes the pin tier_table reads; `test -e <path> && exit 1` before any `cat >` heredoc; stage explicit paths, `git add -A` banned; commit message to a FILE with `git commit -F`; commit AND push after each fix without asking; never write a tracked file while a battery runs; re-run the five battery-excluded targets by hand after any slice touching a shared leaf; NEVER poll with a pattern that matches the polling command itself — use the background task's own completion notification; READ the output of every edit script.
+    /loop continue autonomously on zerobas — 🔴 TIER 1 BEFORE ANYTHING ELSE, then drain "no known gap" to ZERO (Joost's 2026-09-12 ruling, which outranks TIER 4). Read scratchpad/LOOP-RESTART.md FIRST, then the item's own block in TODO.md to its END. Run `make tiers`; recount keywords with `python3 tools/tier_table.py --keywords` — never quote a count. THIS SLICE: `GET` and `CALL`, the two of the eight that need NO new apparatus. 🔴 MSX1's `GET` is the RANDOM-FILE record read (`GET #n[,record]`), NOT a keyboard verb — `PUT` already ships and the disk rig is mounted, so a round trip fits one row: OPEN AS#1, FIELD, LSET, PUT, then GET the record back and read the field. PROVE THE READBACK MOVES — read the field BEFORE the GET as the blind shape, or a row that never re-read anything passes. For `CALL`, measure whether an UNKNOWN extension (`CALL ZZQ`) separates from a machine that has no CALL at all: both may answer `Syntax error`, in which case the row is BLIND and CALL stays out WITH the measurement filed. ⚠️ Never `CALL SYSTEM` or `CALL FORMAT` — one exits to DOS, one formats the disk. Every row must clear the FIVE silent-failure modes in LOOP-RESTART.md, prove its readback MOVES before the row is kept, and after adding rows READ THE WHOLE SWEEP SUMMARY. Re-verify any blocker before believing it. Standing rules: full `make gates` before each commit and never commit red; 🔴 AFTER ANY basic/ OR sub/ CHANGE stage zerobas-main-eu.ips/.bps WITH the commit (patch-freshness-check only sees the omission one commit LATER); 🔴 `check_todo_citations.py --fix` REWRITES EVERY DOC THAT CITES A MOVED BLOCK — it touched FIVE files beyond TODO.md last time; read `git status --short` as a LIST, because that gate compares the working tree and stays green either way; after a `--fix` re-run every gate that READS TODO.md; `rm -rf build && make basic-reloc` for any wall figure, and BACK UP build/kwsweep-verdicts.json first — a clean build deletes the pin tier_table reads; `test -e <path> && exit 1` before any `cat >` heredoc; stage explicit paths, `git add -A` banned; commit message to a FILE with `git commit -F`; commit AND push after each fix without asking; never write a tracked file while a battery runs; re-run the five battery-excluded targets by hand after any slice touching a shared leaf; NEVER poll with a pattern that matches the polling command itself — use the background task's own completion notification; READ the output of every edit script.
