@@ -489,7 +489,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:15627 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:15649 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -655,7 +655,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:4242 (T-6FE392)8 (T-529ABE)` from `TODO.md:14413 (T-529ABE)`: a
+      `TODO.md:4264 (T-6FE392)8 (T-529ABE)` from `TODO.md:14435 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -3053,6 +3053,28 @@ list. **When a slice lands, grep this list for what it just shipped.**
       program (both machines print `[A]` then `Ok`), so a trailing `LIST` in the same
       stored run never executes and the renumbering cannot be read back from inside
       one case.
+      🎯 **WHERE THE DRAIN NOW STANDS, AND WHY IT SLOWS: 114 -> 36 (2026-09-12), and
+      EVERY REMAINING WORD IS BLOCKED BY A NAMED PIECE OF APPARATUS, not by a missing
+      idea.** The read-only disk verbs were measured this tick
+      ([`scratchpad/kwdrain_diskchk.py`](scratchpad/kwdrain_diskchk.py),
+      [readings](scratchpad/kwdrain_diskchk.out)) and none separate as written:
+      **`DSKF(0)` reads 0 — exactly what a stub reads** (no disk is inserted, so the
+      honest answer coincides with the blind one), `LOF`/`LOC`/`EOF` produce nothing
+      without an open file, and `CLOSE` prints whether or not it does anything.
+      | what is left | what unblocks it |
+      |---|---|
+      | `INKEY$` `INPUT` `GET` | a PER-ROW PROLOGUE hook — the injector already exists and works |
+      | the tape/disk verbs | a rig with a MOUNTED disk of known contents that can absorb a write |
+      | `LLIST` `LPOS` `LPRINT` | a reader for the PRINTER LOG (the output never reaches the screen) |
+      | `AUTO` | a case slot that survives line-entry mode, or last position in the sweep |
+      | `RENUM` | a read-back the stored-row format cannot express (RENUM stops the program) |
+      | `USR` `CALL` | machine code to call |
+      | `SCREEN` `KEY` `WAIT` | filed reasons above, each measured |
+      | the suites that ALREADY score a keyword | **step (c)** |
+      ⚠️ **SO THE CHEAP HALF OF JOOST'S ORDER IS DONE.** What remains is apparatus
+      work with known shapes and known costs — worth ranking against TIER-4 speed
+      work rather than grinding on, and the per-row prologue hook is the smallest of
+      them by a wide margin.
       ➡️ **STEP (c) IS STILL NOT BUILT AND IS STILL THE CEILING** for words no
       kwsweep row can reach — but it is now a SMALLER set than batch 4 claimed, and
       its real cost is on the record: a `subject:` tag must mean *"a row whose verdict
@@ -5086,7 +5108,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:14413 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:14435 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
