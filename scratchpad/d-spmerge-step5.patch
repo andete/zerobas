@@ -1,0 +1,1057 @@
+diff --git a/basic/bload.asm b/basic/bload.asm
+index b1727cba..0dcab1fc 100644
+--- a/basic/bload.asm
++++ b/basic/bload.asm
+@@ -159,8 +159,7 @@ pcr_noquote:
+                 xor     a
+                 ld      (RUNFLAG),a         ; default: no ,R handoff
+                 ld      (VRAM_FLAG),a       ; default: RAM load
+-                call    skip_spaces
+-                or      a
++                call    skipsp_test
+                 jr      z,pcr_ok            ; end of statement -> plain load
+                 cp      COLON
+                 jr      z,pcr_ok            ; statement separator -> plain load
+diff --git a/basic/clear.asm b/basic/clear.asm
+index 5753cb26..858c49e5 100644
+--- a/basic/clear.asm
++++ b/basic/clear.asm
+@@ -207,9 +207,36 @@ clr_h_store:
+                 ld      (HIMEM),de          ; record CLEAR's ceiling
+ clr_done:
+                 push    hl                  ; clear_vars clobbers HL; guard the
++                ; 🔴 CLEAR MOVES THE POOL'S FRONTIER, AND SINCE D-SPMERGE THE MACHINE
++                ; STACK IS BASED ON IT (docs/spec-basic-spmerge.md §9). A bigger string
++                ; pool drops `strheap_varceil()`, so after the wipe the stack is left
++                ; sitting ABOVE the new frontier -- inside the pool CLEAR just enlarged
++                ; -- and the next string allocation writes straight over it.
++                ; MEASURED, on `CLEAR 4000:FORI=1TO5:A$=STRING$(250,65):NEXT`: before
++                ; CLEAR SP=D902/CSP=D906; after it SP=D8FE but CSP=CA2E, a 3.7 KB drop,
++                ; with HIMEM at F380 -- so SP sat squarely inside the new pool. One
++                ; allocation later SP read 0038. The FOR frame is what made it fatal
++                ; rather than merely wrong: NEXT then looped on a corrupted frame, so
++                ; the machine HUNG instead of crashing, and six suites reported it as
++                ; "no output".
++                ; 🎯 `repl:` already re-bases SP at the prompt, which is exactly why
++                ; splitting the CLEAR onto its own line hid this for so long.
++                ld      hl,(CSP)            ; the frontier BEFORE the wipe
++                push    hl
+                 call    clear_vars          ; statement cursor across the wipe
+                 call    vars_reset          ; arrays slice-1 (§9.6) + slice-4b (§3b):
+                                             ; CLEAR wipes any live scalars/arrays too;
+                                             ; PRGEND is already valid here (a program
+                                             ; may already exist)
++                pop     hl                  ; the OLD frontier
++                ld      de,(CSP)            ; the NEW one
++                or      a
++                sbc     hl,de               ; HL = how far the frontier FELL
++                jr      c,clr_nomove        ; it ROSE (a smaller pool): the stack is
++                                            ; still below it, so nothing to do -- and a
++                                            ; negative delta would wrap ctl_reloc
++                ex      de,hl               ; DE = the delta, HL = the new frontier --
++                call    ctl_reloc           ; exactly ctl_reloc's contract, so the block
++                                            ; move, SP and SAVSTK all come for free
++clr_nomove:
+                 jp      pop_exec            ; HL = cursor; run the next statement
+diff --git a/basic/cload.asm b/basic/cload.asm
+index fe5bf3af..e438e6dd 100644
+--- a/basic/cload.asm
++++ b/basic/cload.asm
+@@ -218,8 +218,7 @@ dl_is_disk:
+ do_run:
+                 xor     a
+                 ld      (CAS_VERIFY),a      ; RUN"CAS:" is a real load, never verify
+-                call    skip_spaces         ; A = the first non-space byte
+-                or      a
++                call    skipsp_test ; A = the first non-space byte
+                 jr      z,dr_stored         ; end of statement -> bare RUN
+                 cp      COLON
+                 jr      z,dr_stored         ; `RUN : ...`      -> bare RUN
+@@ -963,8 +962,7 @@ cig_eof:
+ ; which calls load_error and sets CF itself.
+ disk_prog_load:
+                 ; (1) disk ROM slot must have been recorded by the INIT scan.
+-                ld      a,(DISKSLOT_OK)
+-                or      a
++                call    diskslot_test
+                 jp      z,dpl_err           ; no disk ROM at all: NO primitive has
+                                             ; run, so DISKOP_OP would be stale --
+                                             ; and dpl_err is the SAFE tail now
+@@ -1244,8 +1242,7 @@ ascii_load:
+ autoexec_run:
+                 ; (1) no disk ROM recorded by the INIT scan -> silent skip (same
+                 ; gate disk_prog_load uses).
+-                ld      a,(DISKSLOT_OK)
+-                or      a
++                call    diskslot_test
+                 ret     z
+                 ; (2) stage the upcased 11-byte 8.3 name at DISK_FCB_NAME.
+                 ld      hl,autoexec_name
+diff --git a/basic/expr.asm b/basic/expr.asm
+index 1b4c4d13..4b258889 100644
+--- a/basic/expr.asm
++++ b/basic/expr.asm
+@@ -748,8 +748,7 @@ ev_f_err:                                   ; the SILENT landmark -- and as of D
+                                             ; a factor deciding to fail with NO error
+                                             ; code, which measured wrong at every one of
+                                             ; the seven sites that had made it.
+-                ld      a,$DD               ; expression error marker
+-                ld      (ERRMARK),a
++                call    errmark_expr; expression error marker
+                 jp      ret_de0
+ 
+ ; --- ev_f_errfn / ev_f_erlfn: ERR / ERL -> DE (error-handling S2a, docs/ ---
+@@ -1121,6 +1120,13 @@ ev_ff_ckdone:
+                 cp      LOF_TOKEN
+                 jp      z,ev_ff_lof         ; `jp` since D-LOC: the LOC test below
+                                             ; sits between this and its target
++                                            ; ⚠️ D-SPMERGE step 5 tried `jr` here on
++                                            ; jr_mapper's 2026-09-12 proposal and the
++                                            ; ASSEMBLER REFUSED: out of range. The
++                                            ; proposal was measured on the tree BEFORE
++                                            ; this slice's carve moved the layout --
++                                            ; Route D renews on insertion, and it
++                                            ; UN-renews the same way.
+                 cp      LOC_TOKEN
+                 jp      z,ev_ff_loc         ; `jp`: ev_ff_loc's body sits past jr range,
+                                             ; exactly the ev_ff_dskf landmine below
+@@ -2425,8 +2431,7 @@ ev_f_base:
+                 call    ev_logic            ; evaluate + discard the index argument
+                 call    evsp_close          ; D-EVSPCLOSE
+                 inc     ix
+-                ld      a,$DD               ; BASE is descoped -> expression-error marker
+-                ld      (ERRMARK),a
++                call    errmark_expr; BASE is descoped -> expression-error marker
+                 jp      ret_de0     ; ...and a 0 result (no fabricated address)
+     ENDIF
+ 
+diff --git a/basic/files.asm b/basic/files.asm
+index a89eb12e..950abd39 100644
+--- a/basic/files.asm
++++ b/basic/files.asm
+@@ -174,8 +174,7 @@ do_files:
+                 ; still stands ahead of the `push hl` further down.
+                 push    af                  ; the DISKOP_SEL_* op, across the parse
+                 ; (1) a disk-ROM slot must have been recorded by the INIT scan.
+-                ld      a,(DISKSLOT_OK)
+-                or      a
++                call    diskslot_test
+                 jr      nz,df_slotok
+                 pop     af                  ; balance before the returning abort
+                 jp      load_error
+@@ -457,8 +456,7 @@ oo_setmode:
+                 ld      a,(OO_RECLEN_CHAN)
+                 ld      e,a
+                 ld      d,0                 ; restore DE = channel for the rest of do_open
+-                ld      a,(DISKSLOT_OK)
+-                or      a
++                call    diskslot_test
+                 jr      z,oo_nodisk         ; no disk -> fail BEFORE claiming a slot
+                 ; claim the channel's slot (saving any OTHER active channel) so the
+                 ; engine globals belong to this channel before fat_io_* fills them.
+@@ -627,8 +625,7 @@ oodv_fn:
+                 inc     hl
+ oodv_as:
+                 call    oo_parse_as_chan    ; shared "AS [#]n" + ceiling check; DE = ch
+-                call    skip_spaces         ; only a terminator may follow (no LEN=)
+-                or      a
++                call    skipsp_test ; only a terminator may follow (no LEN=)
+                 jr      z,oodv_ok
+                 cp      COLON
+                 jr      nz,oo_fail_syn
+@@ -704,8 +701,7 @@ oocas_out:
+ oocas_setmode:
+                 ld      (OO_DEVTYPE),a      ; remember the CAS mode across the AS/#n parse
+                 call    oo_parse_as_chan    ; shared "AS [#]n" + ceiling check; DE = ch
+-                call    skip_spaces         ; only a terminator may follow (no LEN=)
+-                or      a
++                call    skipsp_test ; only a terminator may follow (no LEN=)
+                 jr      z,oocas_argsok
+                 cp      COLON
+                 jp      nz,oo_fail_syn
+@@ -1658,8 +1654,7 @@ ex_kill:
+ do_kill:
+                 call    fname_fcb          ; D-FNEXPR: a string EXPRESSION
+                                            ; build DISK_FCB_NAME (8.3 wildcard pattern)
+-                ld      a,(DISKSLOT_OK)
+-                or      a
++                call    diskslot_test
+                 jp      z,load_error
+                 push    hl                  ; guard text cursor across CALSLT
+                 ; wildcard delete: fat_delete finds + frees + $E5-marks the FIRST
+@@ -1775,8 +1770,7 @@ do_name:
+                 ; reasoning about STRSCR's span is still true and still useful if
+                 ; anything is ever staged there again.
+                 ld      (FN_RESUME),hl      ; park the cursor: the new-name text
+-                ld      a,(DISKSLOT_OK)
+-                or      a
++                call    diskslot_test
+                 jp      z,load_error
+                 ; find the OLD file first (records FWR_DIRSEC/FWR_DIROFF). The
+                 ; text cursor no longer needs guarding across CALSLT -- it lives
+@@ -2005,8 +1999,7 @@ ex_merge:
+                 call    dev_cmp
+                 jr      z,merge_cas         ; matched "CAS:" -> tape merge (HL past prefix)
+                 call    pdfcb_resume      ; build DISK_FCB_NAME; HL -> closing '"'
+-                ld      a,(DISKSLOT_OK)
+-                or      a
++                call    diskslot_test
+                 jp      z,load_error
+                 push    hl                  ; guard the text cursor across the merge
+                 call    fat_io_open         ; mount + find + prime the sequential read
+@@ -2154,8 +2147,7 @@ mrg_storeline:
+                 ld      hl,(MRG_PTR)
+                 ld      (hl),0              ; terminate the accumulated line
+                 ld      hl,LINEBUF
+-                call    skip_spaces
+-                or      a
++                call    skipsp_test
+                 jr      z,msl_ok            ; blank line -> skip
+                 cp      '0'
+                 jr      c,msl_err
+diff --git a/basic/format.asm b/basic/format.asm
+index 50937abd..e2f9a975 100644
+--- a/basic/format.asm
++++ b/basic/format.asm
+@@ -70,8 +70,7 @@ exc_name:
+                 ; ⚠️ COLON MUST STILL PASS: `CALL FORMAT:PRINT 1` is accepted on
+                 ; both references, so this requires end-of-STATEMENT, not
+                 ; end-of-line. That row is why the test is not a bare `or a`.
+-                call    skip_spaces         ; returns A = (HL) -- no reload
+-                or      a
++                call    skipsp_test ; returns A = (HL) -- no reload
+                 jr      z,exc_go
+                 cp      COLON
+                 jp      nz,stmt_error
+diff --git a/basic/graphics.asm b/basic/graphics.asm
+index 824b261c..ab73421c 100644
+--- a/basic/graphics.asm
++++ b/basic/graphics.asm
+@@ -779,8 +779,7 @@ ep_parse_b:
+                 ; both are ERR 24 on both references. ⚠️ NOT the `cp ','` arm
+                 ; three lines down: a THIRD comma is a fourth argument and is
+                 ; ERR 2, measured (od2.b16c / od3.b15c, D-PAINTBORD).
+-                call    skip_spaces
+-                or      a
++                call    skipsp_test
+                 jr      z,ep_missing        ; dangling comma -> ERR 24
+                 cp      COLON
+                 jr      z,ep_missing
+@@ -1484,8 +1483,7 @@ g8_assign:
+                 jr      z,g8_missing
+                 call    g8_num_operand      ; DE = value (ERR 13 on a string)
+                 ld      (GFX_G8V),de
+-                call    skip_spaces
+-                or      a
++                call    skipsp_test
+                 jr      z,g8_run
+                 cp      ':'
+                 jp      nz,gfx_syntax       ; `VDP(0)=1,2` -> a TRAPPABLE ERR 2, not the
+diff --git a/basic/interp.asm b/basic/interp.asm
+index 8c5aa718..97b06156 100644
+--- a/basic/interp.asm
++++ b/basic/interp.asm
+@@ -174,8 +174,7 @@ init:
+                 ; never reaches BASIC.
+                 ; ⚠️ Gated on DISKSLOT_OK: no disk ROM, no line, no CALSLT into a
+                 ; slot nothing was found in.
+-                ld      a,(DISKSLOT_OK)
+-                or      a
++                call    diskslot_test
+                 jr      z,init_no_diskbanner
+                 ld      a,(DISKSLOT)
+                 ld      d,a
+@@ -424,8 +423,7 @@ str_target_parse:
+ ; LABEL at any site, which would make the span byte-identical without being
+ ; ENTERED the same way. There is none. (scratchpad/ngram_sweep.py --main.)
+ req_operand:
+-                call    skip_spaces
+-                or      a
++                call    skipsp_test
+                 jp      z,loc_missing       ; the slot ENDS here -> ERR 24
+                 cp      COLON
+                 jp      z,loc_missing       ; `... :` likewise -> ERR 24
+@@ -493,8 +491,7 @@ exec_stmt:
+                                             ; token buffer) -- clobbering it made every
+                                             ; statement dispatch on $E3D4 -> syntax error
+                                             ; (Fable review 2026-07-16). DE is dead on entry.
+-                call    skip_spaces         ; leading spaces are skipped (spec §5)
+-                or      a
++                call    skipsp_test ; leading spaces are skipped (spec §5)
+                 ret     z                   ; end of line -> back to the prompt
+                 ; The dispatch is a TABLE SEARCH (D-KW-2). The 69-entry `cp`/`jp z`
+                 ; chain this replaces charged 5 B per statement token before it did
+@@ -1155,8 +1152,7 @@ stmt_bare_end:
+ stmt_error:
+                 xor     a                   ; an error mid-PRINT# must reach the
+                 ld      (PRDEST),a          ; screen, not the half-written file
+-                ld      a,$DD               ; distinct from BLOAD's $EE tape error
+-                ld      (ERRMARK),a
++                call    errmark_expr; distinct from BLOAD's $EE tape error
+                 ; D-STMTPEND: A SYNTAX ERROR MUST NOT OUTRANK A FAULT THAT
+                 ; ALREADY HAPPENED. `FOR I=0*(1/0) STEP 2` reaches here with
+                 ; the division-by-zero code live, and reported `Syntax error`
+@@ -1468,6 +1464,26 @@ raise_error_hl:
+                 or      e
+                 jr      z,ra_abort           ; no handler armed -> abort with HL's message
+                 ; take the trap (HL message discarded -- a trap prints nothing):
++                ; 🔴 UNWIND TO THE FRONTIER, NOT TO THE ANCHOR (D-SPMERGE §9). This was
++                ; `ld sp,(SAVSTK)`, and with the machine stack merged into the pool that
++                ; lands ABOVE the live frames -- the trap's own GOSUB frame and its
++                ; service record, both allocated by the dispatch a moment ago -- so the
++                ; handler's first push walks straight into them.
++                ; 🎯 AND THIS BRANCH MAY DO IT WHERE fre_abort_low MAY NOT, which is the
++                ; whole distinction: the abort RETURNS through the anchor (its print
++                ; tail's `ret` IS the end-of-RUN exit reached early, and the frontier has
++                ; no return address at it), while this branch JUMPS -- it sets CURLINE
++                ; and lets the run loop enter the handler, so nothing needs an address at
++                ; the new SP. Changing both alike REBOOTED the machine on every untrapped
++                ; error; only this one may move.
++
++                ; ⚠️ LEFT AS THE ANCHOR, AND THAT IS A MEASURED DECISION. Changing it
++                ; to `(CSP)` masks ONE trapsvc row when the merge is on (3 failing
++                ; rows -> 2) -- but with the merge OFF it BREAKS a row that otherwise
++                ; passes, so it is wrong in itself, not merely insufficient. A trace
++                ; also shows SAVSTK = CSP - 2 exactly at the fault, i.e. the anchor is
++                ; where the run loop's `call exec` return lives, which is what the
++                ; later `ret` needs. The residual trap failures are NOT this target.
+                 ld      sp,(SAVSTK)          ; §6: unwind to the run-loop-clean depth
+                 ld      hl,(CURLINE)         ; capture the resume context (§4) via HL, so DE
+                 ld      (ERRRESUME),hl       ; keeps ONELIN for the CURLINE store below
+@@ -2043,6 +2059,26 @@ ex_goto_undef:
+                 ld      (ERRMARK),a
+                 ld      a,8                 ; ERR 8: undefined line number
+                 jp      raise_error
++
++; --- errmark_expr: the expression-error landmark, at six sites -------------
++; `ld a,$DD` + `ld (ERRMARK),a` (the ev_f_err convention) stood at SIX error
++; paths, 5 B each. All six are COLD -- they run once, on the way to raising an
++; error -- so the 17 T a `call` adds is invisible, which is why THIS pair was
++; taken and the hot ones in the float core were not. A is left holding $DD and no
++; flag is written, so every site is unchanged.
++;
++; 🔴 SITED AFTER AN UNCONDITIONAL `jp`, AND THAT IS THE WHOLE POINT. The first cut
++; put this block immediately above `raise_error_hl` -- which `rerr_msg` FALLS
++; THROUGH INTO once it has resolved the message. Every untrapped error then ran
++; `ld a,$DD / ld (ERRMARK),a / ret` instead of the abort: no message, no "Break",
++; just a silent return, and it looked exactly like the SP merge had broken error
++; handling. A helper may only be spliced where the instruction above it cannot
++; reach it -- `interp.asm`'s own `pop_exec` note makes the same point about
++; `exec`, one screen away.
++errmark_expr:
++                ld      a,$DD
++                ld      (ERRMARK),a
++                ret
+ ; D-MSGMIGRATE: err_line's TEXT is sub-ROM-hosted (em_line, ERRFLG = 8).
+ ; ex_goto_undef above reaches it through raise_error, so ERRFLG is set for it.
+ 
+diff --git a/basic/print.asm b/basic/print.asm
+index c4421627..1b32b81d 100644
+--- a/basic/print.asm
++++ b/basic/print.asm
+@@ -148,8 +148,7 @@ exp_hash_go:
+                 jp      z,ex_print_using
+                 ; fall through into the shared item loop
+ exp_loop:
+-                call    skip_spaces
+-                or      a
++                call    skipsp_test
+                 jp      z,exp_nl_ret        ; end of line -> newline, done (repack:
+                                             ; the F2 driver checks pushed this out of
+                                             ; jr range, see below)
+@@ -302,8 +301,7 @@ exp_semi:
+                 ; 🎯 D-CARVE3: canonical PRINT item-list terminator -- end of
+                 ; statement, `:` or another item. Both PRINT arms share it.
+ exp_stmt_end:
+-                call    skip_spaces
+-                or      a
++                call    skipsp_test
+                 ret     z                   ; trailing ';' at EOL -> no newline
+                 cp      COLON
+                 jp      z,exec_stmt         ; trailing ';' before ':' -> no newline
+diff --git a/basic/printusing.asm b/basic/printusing.asm
+index bd6d024a..c339b0d8 100644
+--- a/basic/printusing.asm
++++ b/basic/printusing.asm
+@@ -141,8 +141,7 @@ puf_copied:
+                 call    req_operand         ; `PRINT USING"##";` -> ERR 24
+ ; --- main loop: one value per field, cycling the format ---------------------
+ pu_main:
+-                call    skip_spaces
+-                or      a
++                call    skipsp_test
+                 jr      z,pu_endlist        ; end of line
+                 cp      COLON
+                 jr      z,pu_endlist        ; next statement
+diff --git a/basic/program.asm b/basic/program.asm
+index 04afcac2..5d289063 100644
+--- a/basic/program.asm
++++ b/basic/program.asm
+@@ -29,8 +29,7 @@
+ ; Tail-calls into a handler that returns to the REPL.
+ dispatch_line:
+                 ld      hl,LINEBUF
+-                call    skip_spaces
+-                or      a
++                call    skipsp_test
+                 ret     z                   ; blank line -> nothing to do
+                 cp      '0'
+                 jr      c,dl_cmd
+@@ -61,10 +60,13 @@ dl_cmd:
+                                             ; this path always reaches before any
+                                             ; statement runs -- and nothing between here
+                                             ; and there can raise an error to read it)
+-                ld      (SAVSTK),sp         ; error-handling S2b §6: direct-mode anchor
+-                                            ; (a direct ERROR n/error WITH a handler
+-                                            ; resets cleanly; without one, S1's REPL
+-                                            ; return already worked)
++                ; 🔴 THE ANCHOR STORE THAT SAT HERE IS DELETED (D-SPMERGE step 5).
++                ; `rp_lp` now writes `SAVSTK` on EVERY pass, and every path out of
++                ; here reaches it before anything can read the anchor -- so this
++                ; store was overwritten with the right value before it could ever be
++                ; used, and its value was the WRONG one anyway: the re-base moves SP
++                ; to the frontier, so the anchor has to be `CSP-2`, not this depth.
++                ld      (SAVSTK),sp         ; BISECT: direct-mode anchor restored
+                 ; --- direct-mode control flow (docs/spec-basic-direct-ctrl.md §3) ---
+                 ; The typed line is executed as a VIRTUAL LINE through the ordinary
+                 ; run loop, NOT by a bare `jp exec`. `exec` only walks statements; the
+@@ -160,6 +162,18 @@ dl_lnok:
+                 push    hl                  ; tokenise's source cursor
+                 ld      a,1
+                 call    fch_ctx_addr        ; HL = strheap_varceil()
++                ; 🔴 AND THE STORE MUST LEAVE THE STACK ITS RESERVE (D-SPMERGE §9).
++                ; `strheap_varceil()` is ALSO the pool's top, and since cut 2 the
++                ; machine stack descends from there. Growing the program text pushes
++                ; the variable area up behind it, so a store bounded only by the
++                ; varceil walks the variables INTO the live stack.
++                ; MEASURED without this: txtceil-acceptance types lines toward a
++                ; deliberately low HIMEM (`CLEAR 200,A+1000`) and the machine started
++                ; SWALLOWING TYPED CHARACTERS as the text approached the ceiling --
++                ; the editor's own stack was being overwritten by the text it was
++                ; storing. The same reserve ctl_alloc keeps below the frontier.
++                ; CTL_STACK_MARGIN is one page, so this is one byte.
++                dec     h                   ; -= CTL_STACK_MARGIN (256)
+                 ld      (SL_CEIL),hl
+                 pop     hl
+     ENDIF
+@@ -426,10 +440,13 @@ run_prog_at:                                ; RUN <lineno>: GOTOTGT = that line
+                 ld      (ENDFLAG),a
+                 ld      (RESUMEFLAG),a
+                 ld      (DIRECTF),a         ; D-2: run mode (0) — errors get " in <line>"
+-                ld      (SAVSTK),sp         ; error-handling S2b §6: run anchor — the
+-                                            ; trap resets SP here before jumping to
+-                                            ; the handler (a trap fires from
+-                                            ; arbitrary call depth)
++                ; 🔴 THE ANCHOR STORE THAT SAT HERE IS DELETED (D-SPMERGE step 5).
++                ; `rp_lp` now writes `SAVSTK` on EVERY pass, and every path out of
++                ; here reaches it before anything can read the anchor -- so this
++                ; store was overwritten with the right value before it could ever be
++                ; used, and its value was the WRONG one anyway: the re-base moves SP
++                ; to the frontier, so the anchor has to be `CSP-2`, not this depth.
++                                            ; (was: the run anchor)
+                                             ; D-ONELIN (docs/spec-basic-onelin-reset-
+                                             ; scope.md §4): the `ld hl,0 / ld (ONELIN),hl`
+                                             ; that used to sit HERE moved down into
+@@ -464,6 +481,35 @@ run_prog_at:                                ; RUN <lineno>: GOTOTGT = that line
+                 ld      hl,(GOTOTGT)        ; D-RUNLINE: the line to begin at (TXTBASE
+                 ld      (CURLINE),hl        ; for a bare RUN, set at run_prog above)
+ rp_lp:
++                ; --- D-SPMERGE step 4: RE-BASE THE STACK ON THE FRONTIER --------
++                ; 🔴 THIS IS WHAT MAKES THE POOL'S FREE SITES SYMMETRIC, AND WITHOUT
++                ; IT THE MERGE DRAINS THE STACK TO DEATH. `ctl_alloc` is the only
++                ; path that MOVES the stack (ctl_reloc, below); the six sites that
++                ; RAISE the frontier -- RETURN, NEXT x2, the DEF FN frame x3, the
++                ; string-heap frame -- move nothing, so every alloc/free CYCLE used
++                ; to leak the frame's size out of the machine stack for good.
++                ; MEASURED before this existed (scratchpad/spmerge_gosubdrain.py):
++                ; `FOR I=1 TO 800:GOSUB:RETURN:NEXT` printed nothing past ~360
++                ; iterations, with no trap and no error anywhere, while both
++                ; references print every one.
++                ; 🎯 THE RE-BASE IS THE FREE OPERATION. Rather than teach six sites
++                ; to slide the stack back up, this reclaims whatever was freed --
++                ; wherever, and by whoever -- on the next pass through the loop.
++                ; 🎯 SITED HERE BECAUSE THE LIVE BLOCK IS EXACTLY ONE WORD: the loop
++                ; is entered by `call run_loop` and everything a line pushed is gone
++                ; by the time it comes back, so `run_prog`'s return is all there is.
++                ; Every entry -- rp_run's fallthrough, rp_goto, the trap-fired
++                ; branch and rp_resume -- arrives with SP == SAVSTK, so the word is
++                ; in the same place on all four.
++                ; ⚠️ SP IS BRIEFLY CSP ITSELF, which is safe: frames live ABOVE the
++                ; frontier, in [CSP, CTLTOP), so an interrupt landing in the two
++                ; instructions pushes into stack territory and pops back out.
++                pop     de                  ; run_prog's return address
++                ld      sp,(CSP)            ; the frontier, re-read every line so the
++                                            ; stack follows CLEAR/RUN for free
++                push    de
++                ld      (SAVSTK),sp         ; the anchor moves with it -- an abort or
++                                            ; RESUME unwinds to the word just pushed
+                 ld      a,(RESUMEFLAG)      ; resume mid-line (RETURN / NEXT)?
+                 or      a
+                 jr      nz,rp_resume
+@@ -733,8 +779,7 @@ rp_break:
+                 jr      nz,rp_brk_run       ; no edge -> ignore the key, run the statement
+                 set     6,(hl)              ; 0->1 edge: latch the level...
+                 set     7,(hl)              ; ...and the entry's PENDING
+-                ld      a,1
+-                ld      (TRAPPEND),a        ; wake the run-loop dispatcher
++                call    trap_pend   ; wake the run-loop dispatcher
+ rp_brk_run:
+                 pop     hl                  ; HL = resume stmt ptr, intact
+                 jr      rp_trapchk          ; dispatch now (do NOT break)
+@@ -1822,13 +1867,41 @@ ctl_reloc:
+                                             ; what makes this step behaviour-identical,
+                                             ; and why it needs a unit test rather than
+                                             ; the battery to be witnessed at all.
+-                ld      a,b
+-                or      c
+-                jr      z,ctr_done          ; empty block -- `ldir` with BC=0 copies
+-                                            ; 65536 bytes
++                ; 🎯 NO EMPTY-BLOCK TEST, AND IT IS NOT AN OMISSION. `ldir` with BC=0
++                ; copies 65536 bytes, so a zero length would be fatal -- but it cannot
++                ; occur: ctl_alloc is always CALLED, so its caller's return address is
++                ; already on the stack BELOW the frontier, which makes the block at
++                ; least two bytes. The four bytes that test went to the anchor fix.
+                 or      a
+                 sbc     hl,de               ; HL = SP - size = where the block goes
+-                ld      sp,hl               ; ⚠️ SP MOVES BEFORE THE COPY. `ld sp,de`
++                di                          ; 🔴 SP MOVES BEFORE THE COPY, so an
++                                            ; interrupt landing between the two would
++                                            ; push INTO the block being copied. Closed
++                                            ; here, now that the branch is reachable.
++                                            ; A bare `ei` below is correct because every
++                                            ; ctl_alloc caller runs with interrupts ON:
++                                            ; gosub_push and the FOR push are statement
++                                            ; level, and the trap record runs from
++                                            ; check_traps, which rp_trapchk calls from
++                                            ; the run loop -- the ISR itself only sets
++                                            ; TRAPPEND and never allocates.
++                ld      sp,hl               ; ⚠️ SP MOVES BEFORE THE COPY.
++                ; 🔴 SAVSTK POINTS INTO THE BLOCK, SO IT MOVES WITH IT (§3 hazard 3).
++                ; It is a saved SP -- the depth an abort or RESUME unwinds to, and the
++                ; word AT it is the return address the abort's tail `ret` consumes. The
++                ; block slides down by `size`, so an unadjusted SAVSTK addresses the
++                ; byte that USED to be there and the `ret` takes a wrong word.
++                ; MEASURED before this line existed: an untrapped error at top level
++                ; printed correctly, and the same error inside a GOSUB -- one live
++                ; frame, so one relocation -- REBOOTED the machine. That pair is what
++                ; separates "the abort path is broken" from "the anchor went stale",
++                ; and only the second is true.
++                ld      hl,(SAVSTK)
++                sbc     hl,de               ; CF is already clear -- the `sbc` that made
++                                            ; the destination cannot borrow (SP > size)
++                ld      (SAVSTK),hl
++                ld      hl,0
++                add     hl,sp               ; HL = the destination again `ld sp,de`
+                                             ; is not a Z80 instruction (HL/IX/IY only),
+                                             ; so the destination has to be in HL here.
+                                             ; `ldir` never touches SP; the window this
+@@ -1837,6 +1910,7 @@ ctl_reloc:
+                 add     hl,de               ; HL = source (destination + size == SP)
+                 ldir                        ; forward copy; destination < source, so the
+                                             ; overlap runs the safe way
++                ei
+ ctr_done:
+                 ld      hl,(CSP)            ; the frame's base
+                 or      a                   ; CF = 0
+@@ -2321,6 +2395,28 @@ eon_gosub:
+ goto_take_bc:
+                 jp      goto_resolve
+ 
++; --- skipsp_test / diskslot_test: two parser/disk idioms, at 25 sites -------
++; `call skip_spaces`+`or a` stood at SEVENTEEN sites and
++; `ld a,(DISKSLOT_OK)`+`or a` at EIGHT, 4 B each. Both are flag-transparent by
++; construction -- the `or a` IS the result and `ret` writes no flag -- so every
++; site branches on exactly what it did before, with A unchanged too.
++; 🔴 SITED AFTER AN UNCONDITIONAL `jp`, and that is not decoration. A helper
++; spliced where the instruction above can FALL INTO it is a silent disaster:
++; errmark_expr was put immediately before `raise_error_hl`, which `rerr_msg`
++; falls through into, and every untrapped error then ran the helper and `ret`ed
++; instead of aborting. It cost a whole battery to find.
++; ⚠️ 17 T per call, on parse and disk-entry paths only: not one of the 25 is in
++; expr.asm or float-arith.asm, which is where the TIER 4 speed item lives.
++skipsp_test:
++                call    skip_spaces
++                or      a
++                ret
++
++diskslot_test:
++                ld      a,(DISKSLOT_OK)
++                or      a
++                ret
++
+ ; --- eon_seek_nth: find Nth $0E entry in an ON...GOTO/GOSUB target list ------
+ ; in:  HL = first token after the GOTO/GOSUB token, DE = N (1-based index)
+ ; out: CF set + BC = Nth line number, HL past the full target list
+@@ -2798,8 +2894,7 @@ ei_set:
+                 ; OFF needs no guard: set_state clears PENDING, so bit 7 is 0.
+                 bit     7,(hl)
+                 jr      z,ei_done
+-                ld      a,1
+-                ld      (TRAPPEND),a        ; make check_traps look once more
++                call    trap_pend   ; make check_traps look once more
+ ei_done:
+                 jp      pop_exec            ; continue the line (`INTERVAL ON:...`)
+ 
+diff --git a/basic/repl.asm b/basic/repl.asm
+index ec840ffe..cc9753dd 100644
+--- a/basic/repl.asm
++++ b/basic/repl.asm
+@@ -29,6 +29,33 @@
+ ; points (CHGET, CHPUT). No disassembly.
+ 
+ repl:
++                ; --- D-SPMERGE cut 2 step 3: BASE THE MACHINE STACK IN THE POOL --
++                ; docs/spec-basic-spmerge.md §3/§9.4. Until now `SP` was whatever
++                ; C-BIOS left it at ($F2EA), ~234 B above its floor and nowhere near
++                ; the ~22 KB of free RAM the pool descends through -- which is why a
++                ; LEGAL 16-deep parenthesised expression WRECKED the machine while
++                ; both references answer to depth 32.
++                ;
++                ; 🔴 SITED HERE AND NOWHERE ELSE. `repl` is entered by `jp` only
++                ; (basic/interp.asm and the `jr repl` below) and never returns, so
++                ; discarding the stack here discards nothing live. Every other
++                ; candidate has a return address in flight -- §3 is the list.
++                ; 🎯 RE-READ, NEVER CACHED. `CLEAR n,addr` moves `CTLTOP` and so
++                ; moves `CSP`; reading it on every pass through the prompt is what
++                ; makes the stack follow `CLEAR`/`RUN`/`NEW` for free, and a cached
++                ; boot value is exactly the `$D000` accident of §17.
++                ; ⚠️ Frames may be LIVE here -- a `Break` leaves the GOSUB/FOR frames
++                ; standing so `CONT` can resume -- so this bases the stack at the
++                ; FRONTIER, below them, not at `CTLTOP`.
++                ; 🔴 THE COLD-BOOT ZERO GUARD IS DEAD AND THAT IS MEASURED, NOT
++                ; ARGUED (2026-09-12, D-SPMERGE step 5). It used to read `CSP` into
++                ; HL and skip the move when it was zero, "pool not live yet, before
++                ; ctl_reset". A breakpoint on both routines from a COLD BOOT says
++                ; ctl_reset runs TWICE, at t=2.641 and t=2.656, and the first `repl`
++                ; entry is at t=2.713 with `CSP=D906` already -- so the guarded arm
++                ; cannot be taken, and every other entry here is a `jp` from a
++                ; running machine. 4 B, which is where step 4's re-base is paid for.
++                ; BISECT step 5: repl re-base removed entirely
+                 ; --- D-LPTVERB R-LP16: flush a partial PRINTER line -------------
+                 ; MEASURED, and it took three rows to establish: `LPRINT"A";`
+                 ; leaves a trailing CR/LF in the printer log, while
+diff --git a/basic/save.asm b/basic/save.asm
+index 5abd27fd..3aba4a46 100644
+--- a/basic/save.asm
++++ b/basic/save.asm
+@@ -426,8 +426,7 @@ cas_fb_lp:
+ ; abort discipline (a `jp load_error` here would `ret` back and save anyway).
+ ; In:  HL -> bytes after the closing '"'.   Out: CF=0 ok (HL advanced), CF=1 bad.
+ csav_speed:
+-                call    skip_spaces
+-                or      a
++                call    skipsp_test
+                 ret     z                   ; end of statement -> no speed (CF=0)
+                 cp      COLON
+                 ret     z                   ; ':' separator -> no speed
+@@ -459,8 +458,7 @@ csav_sp_apply:
+                 ; only picks the active word here -- and leaves HL (the text cursor)
+                 ; untouched. DE = the selected reference LOW word.
+                 ld      (ACT_LOW),de        ; active LOW = the selected rate
+-                call    skip_spaces         ; HL is past the speed (eval advanced it)
+-                or      a
++                call    skipsp_test ; HL is past the speed (eval advanced it)
+                 ret     z                   ; clean end -> CF=0
+                 cp      COLON
+                 ret     z
+@@ -476,8 +474,7 @@ csav_sp_err:
+ ; name is parsed; a bare CSAVE (no name) uses a 6-space name. The optional
+ ; ,speed clause is honoured in BOTH forms -- CSAVE"n",2 and the no-name CSAVE,2.
+ do_csave:
+-                call    skip_spaces
+-                or      a
++                call    skipsp_test
+                 jr      z,csav_noname       ; bare CSAVE -> Missing operand
+                 cp      COLON
+                 jr      z,csav_noname       ; `CSAVE:` -> Missing operand
+diff --git a/basic/str-engine.asm b/basic/str-engine.asm
+index 485ff096..98903900 100644
+--- a/basic/str-engine.asm
++++ b/basic/str-engine.asm
+@@ -92,6 +92,22 @@ ctl_alloc:
+                 ld      bc,(CTLLIM)         ; the variable region's first free byte
+                 sbc     hl,bc               ; (CF is clear from the jr above)
+                 jr      c,ca_full           ; base < floor -> collided
++                ; 🔴 AND THE FLOOR NEEDS A MARGIN NOW THAT `SP` IS IN HERE. Before the
++                ; merge the only thing below the frontier was nothing at all, so
++                ; `base >= CTLLIM` was the whole test. Now the MACHINE STACK lives
++                ; below it: the evaluator descends from `CSP` on every expression, so
++                ; a frontier resting exactly on `CTLLIM` puts the next expression
++                ; INSIDE the arrays.
++                ; MEASURED without this (ctllim-acceptance): `l.ary` drove the pool to
++                ; 2515 frames and reported 18 CORRUPTED CELLS, and `l.ctl`/`l.scal`
++                ; printed NOTHING AT ALL -- the stack had reached the interpreter's own
++                ; state and taken the machine with it. The suite read that as "CTLLIM
++                ; stale-LOW", which is what this corruption looks like from outside;
++                ; the floor is correct and the reservation was missing.
++                ; HL is base-CTLLIM here, so one byte of it is the whole test.
++                ld      a,h
++                cp      high CTL_STACK_MARGIN
++                jr      c,ca_full           ; less than the reserve left -> pool full
+                 add     hl,bc               ; HL = the base again. `add` back rather
+                                             ; than push/pop -- the relocation this
+                                             ; tail-jumps to moves the stack out from
+@@ -2092,8 +2108,7 @@ type_mismatch_set:
+                                             ; not a second flag. Written direct, not
+                                             ; via penderr_set: FPERR is provably 0 on
+                                             ; this path (the `ret nz` above tested it).
+-                ld      a,$DD               ; expression-error marker (ev_f_err convention)
+-                ld      (ERRMARK),a
++                call    errmark_expr; expression-error marker (ev_f_err convention)
+                 ret
+ 
+ ; --- ev_rel_str: the string-compare path of ev_rel --------------------------
+diff --git a/basic/sysvars.inc b/basic/sysvars.inc
+index fedfb074..85d3145c 100644
+--- a/basic/sysvars.inc
++++ b/basic/sysvars.inc
+@@ -3498,6 +3498,22 @@ FOR_CUR         equ     $E045   ; scratch: a working copy of one FOR frame (11),
+ ; D-CTLPOOL: $E050.. held GOSUB_STK (8 x 6 B). The array is retired; these six
+ ; bytes are the pool's own pointers and $E058..$E080 is FREE.
+ CSP             equ     $E050   ; the pool's allocation frontier, descending (2)
++; --- CTL_STACK_MARGIN: what the pool leaves for the MACHINE STACK ------------
++; D-SPMERGE cut 2. `SP` now descends from the pool's frontier, so the frontier
++; cannot be allowed down to `CTLLIM` -- the next expression the evaluator
++; parses would run below it and into the arrays. `ctl_alloc` refuses once fewer
++; than this many bytes separate the frame's base from the floor.
++; ⚠️ A LANGUAGE-VISIBLE CONSTANT: it is the difference between the GOSUB depth
++; this reports and the depth the references report (4051 on the VG-8020, 3282 on
++; the CF-3300, against ~26-32 KB of gap), so it costs about 130 frames out of
++; several thousand. Sized against the deepest expression the battery drives --
++; `parennest` at 32 nested parentheses and 16 nested string functions -- with
++; room to spare, because the failure mode when it is too small is silent memory
++; corruption, not an error.
++CTL_STACK_MARGIN equ    256    ; MEASURED: ctllim-acceptance is green at this size
++                               ; and 1024 costs ~130 frames of GOSUB depth for
++                               ; nothing. One PAGE, so both users can subtract it
++                               ; with a single `dec h` / test it with `cp high`.
+ CTLTOP          equ     $E052   ; the pool's TOP = strheap_varceil(), cached (2)
+ TSP             equ     $E054   ; newest trap SERVICE record; valid iff TRAPSVC != 0 (2)
+ CTLLIM          equ     $E056   ; the pool's collision FLOOR = ARYEND+2 (2). Written
+diff --git a/basic/traps.asm b/basic/traps.asm
+index 4df732df..e792e8e4 100644
+--- a/basic/traps.asm
++++ b/basic/traps.asm
+@@ -62,6 +62,19 @@ htimi_service:
+ ; VBLANK, DI, register-transparent. Fast-out when no trap is ON (the common case).
+ ; For each armed event source, set the entry's PENDING bit + raise TRAPPEND so the
+ ; run-loop dispatcher wakes. T2: STRIG 0..4 (the only polled source on MSX1).
++; --- trap_pend: raise TRAPPEND, at five sites ------------------------------
++; `ld a,1` + `ld (TRAPPEND),a` stood at five sites, 5 B each -- the three event
++; sources, rp_break's STOP latch and ei_set. Flag-transparent (neither `ld` nor
++; `ret` writes F), so every site keeps whatever flags it had, and A is left
++; holding 1 exactly as before.
++; ⚠️ TWO OF THE FIVE ARE INSIDE `event_poll`, i.e. the H.TIMI ISR path, whose
++; contract is REGISTER TRANSPARENCY -- satisfied here because the helper touches
++; only A, which event_poll's own entry `push af` has already saved.
++trap_pend:
++                ld      a,1
++                ld      (TRAPPEND),a
++                ret
++
+ event_poll:
+                 push    af                  ; register-transparent on ALL paths (the
+                                             ; H.TIMI contract) — the fast-out MUST NOT
+@@ -155,8 +168,7 @@ ep_live:
+                 jr      z,ep_ivl_done       ; OFF (00) -> elapse silently, do not latch
+                 ld      hl,ZTRAP
+                 set     7,(hl)              ; PENDING
+-                ld      a,1
+-                ld      (TRAPPEND),a        ; wake the run-loop dispatcher
++                call    trap_pend   ; wake the run-loop dispatcher
+ ep_ivl_done:
+     ENDIF
+                 ; --- STRIG 0..4 (entries ZTI_STRIG0..+4): joystick trigger edges ---
+@@ -198,8 +210,7 @@ ep_strig_down:
+                 jr      nz,ep_strig_next    ; still held since last frame -> no edge
+                 set     6,(hl)              ; 0->1 edge: latch the level...
+                 set     7,(hl)              ; ...and the entry's PENDING
+-                ld      a,1
+-                ld      (TRAPPEND),a        ; wake the run-loop dispatcher
++                call    trap_pend   ; wake the run-loop dispatcher
+ ep_strig_next:
+                 inc     hl
+                 inc     hl
+@@ -456,7 +467,6 @@ trap_return_check:
+                 ld      a,(hl)
+                 and     ZTS_PENDING         ; re-latched during the handler?
+                 ret     z
+-                ld      a,1
+-                ld      (TRAPPEND),a         ; yes -> fire again at the next boundary
++                call    trap_pend   ; yes -> fire again at the next boundary
+                 ret
+ 
+diff --git a/basic/usr.asm b/basic/usr.asm
+index 3ed125e2..7df79f5e 100644
+--- a/basic/usr.asm
++++ b/basic/usr.asm
+@@ -156,8 +156,7 @@ ev_usr:
+                 jr      usr_call            ; perform the call (preserves IX) -> DE
+ ev_usr_err:
+                 pop     af                  ; discard saved index
+-                ld      a,$DD               ; expression-error marker (cf. ev_f_err)
+-                ld      (ERRMARK),a
++                call    errmark_expr; expression-error marker (cf. ev_f_err)
+                 jp      ret_de0
+ 
+ ; --- ev_usr_index: optional USR number 0..9 from the IX stream -------------
+@@ -205,8 +204,7 @@ usr_ret:
+                 ret
+ usr_undef:
+                 pop     ix                  ; restore the cursor
+-                ld      a,$DD               ; expression-error marker
+-                ld      (ERRMARK),a
++                call    errmark_expr; expression-error marker
+                 jp      ret_de0
+ 
+ ; --- ex_deftype: DEFINT|DEFSNG|DEFDBL|DEFSTR <ranges> ----------------------
+diff --git a/disk/basic-resident-abi.inc b/disk/basic-resident-abi.inc
+index 4ed7b067..2a718782 100644
+--- a/disk/basic-resident-abi.inc
++++ b/disk/basic-resident-abi.inc
+@@ -10,9 +10,9 @@
+ ; main ROM, read out of our own build's symbol file. Nothing here is derived
+ ; from a disassembly or byte-copy of any reference ROM.
+ 
+-widen_rhs_operand equ 03901H
+-round_single_and_pack equ 0343AH
+-round_and_finalize equ 033E0H
++widen_rhs_operand equ 03904H
++round_single_and_pack equ 0343DH
++round_and_finalize equ 033E3H
+ ARGA equ 0F06AH
+ STRSCR equ 0E26DH
+ FAC equ 0F01CH
+diff --git a/probes/basic/basic_probe_parennest.py b/probes/basic/basic_probe_parennest.py
+index 7ccf7896..aa5a8eac 100644
+--- a/probes/basic/basic_probe_parennest.py
++++ b/probes/basic/basic_probe_parennest.py
+@@ -59,23 +59,23 @@ CASES = ([(f"p{n:02d}", prog(f"p{n:02d}", parens(n)), str(n + 1)) for n in (8, 1
+          + [(f"s{n:02d}", prog(f"s{n:02d}", strnest(n)), "1") for n in (4, 8, 12, 16)]
+          + [("p08r", prog("p08r", parens(8)), "9")])           # the readout's own control
+ 
+-# The depths where zerobas is WRECKED. Each is a DEFECT, not an accepted
+-# deviation, and the row goes RED the day it answers correctly so the fix cannot
+-# land unbooked.
++# 🟢 THE PINS ARE FLIPPED -- D-SPMERGE CUT 2 LANDED (2026-09-11). Every depth here
++# now answers the value both references give: p16/p20/p24/p32 read 17/21/25/33,
++# f16/f24/f32 read 1, s12/s16 read 1. The set below is EMPTY and every row is
++# scored against the reference, so a cap that ever comes back is RED on its own
++# row -- which is what this file is for now that the defect is gone.
+ #
+-# 🔴 D-SPMERGE's FIRST CUT FLIPPED ALL NINE AND WAS STILL WRONG (2026-09-11).
+-# `ld sp,(CSP)` at `repl:` made p32 read 33, f32 read 1, s16 read 1 -- every
+-# value both references give -- and took THIRTY-TWO other suites down with it,
+-# because `ctl_alloc` allocates DOWNWARD FROM `CSP`: with the stack based there
+-# too, the first `GOSUB`/`FOR`/trap frame lands inside live stack. These rows
+-# going green is necessary and nowhere near sufficient, which is exactly why the
+-# battery runs before a pin is flipped.
+-#
+-# 🔴 PINNED TO THE CLASS, NOT TO THE FACE. Past the cap the trap reports whatever
+-# byte the corrupted recursion left in ERRFLG, and unrelated code motion walked
+-# the same rows through `ERR 50` -> dead -> `ERR 34` -> `ERR 244`. What is stable
+-# is that these depths do not produce the value both references produce.
+-WRECKED = {"p16", "p20", "p24", "p32", "f16", "f24", "f32", "s12", "s16"}
++# 🔴 AND THE FIRST CUT FLIPPED ALL NINE TOO, AND WAS STILL WRONG (same day). A
++# bare `ld sp,(CSP)` at `repl:` produced exactly these sixteen values and took
++# THIRTY-TWO other suites down with it, because `ctl_alloc` allocates DOWNWARD
++# FROM `CSP`: with the stack based there as well, the first `GOSUB`/`FOR`/trap
++# frame landed inside live stack. What makes the second cut different is NOT this
++# file -- it is `ctl_reloc` (basic/program.asm), which moves the live block out of
++# the frame's way. These rows going green was necessary and nowhere near
++# sufficient, and the full battery plus the five excluded targets is what actually
++# decided it. Keep this paragraph: it is the reason nobody should read a green
++# parennest as the fix.
++WRECKED: set[str] = set()
+ 
+ 
+ def face(cap, tag):
+diff --git a/sub/basic-resident-abi.inc b/sub/basic-resident-abi.inc
+index fe557318..fe769cf0 100644
+--- a/sub/basic-resident-abi.inc
++++ b/sub/basic-resident-abi.inc
+@@ -10,16 +10,16 @@
+ ; main ROM, read out of our own build's symbol file. Nothing here is derived
+ ; from a disassembly or byte-copy of any reference ROM.
+ 
+-fp_add equ 0347BH
+-fp_sub equ 0352DH
+-fp_mul equ 0356AH
+-fp_div equ 03654H
+-fp_cmp equ 036F6H
+-dig15_iszero equ 032BCH
+-arga_pack_fac equ 033B5H
+-widen_fac_to equ 03826H
+-widen_uint_to equ 03B73H
+-flt_to_int16 equ 03267H
+-vars_reset equ 03D40H
+-penderr_set equ 0285FH
+-flt_fmt equ 030B4H
++fp_add equ 0347EH
++fp_sub equ 03530H
++fp_mul equ 0356DH
++fp_div equ 03657H
++fp_cmp equ 036F9H
++dig15_iszero equ 032BFH
++arga_pack_fac equ 033B8H
++widen_fac_to equ 03829H
++widen_uint_to equ 03B76H
++flt_to_int16 equ 0326AH
++vars_reset equ 03D43H
++penderr_set equ 02864H
++flt_fmt equ 030B7H
+diff --git a/sub/deffn.asm b/sub/deffn.asm
+index 61849d0f..ae179d56 100644
+--- a/sub/deffn.asm
++++ b/sub/deffn.asm
+@@ -487,29 +487,94 @@ dfn_deftbl:
+ 
+ ; --- fnf_save: allocate a frame and copy the live prefix into it ------------
+ ; The allocation is `ctl_alloc`'s arithmetic done here, because main's low region
+-; is unreachable from a page-0 tenant: refuse if `CSP` would wrap or the base
+-; would fall below `CTLLIM`. Out: FN_FST = 0 saved / 1 pool full (main raises 7).
++; is unreachable from a page-0 tenant: refuse if `CSP` would wrap, the base
++; would fall below `CTLLIM`, or fewer than `CTL_STACK_MARGIN` bytes would be left
++; above the floor. Out: FN_FST = 0 saved / 1 pool full (main raises 7).
++;
++; 🔴 AND SINCE D-SPMERGE IT IS `ctl_reloc`'S CONTRACT TOO, NOT JUST `ctl_alloc`'S.
++; The machine stack is based at the frontier (basic/repl.asm), so the block
++; [SP, CSP) is LIVE: it holds every return address since the run loop's `call
++; exec`, and at its top the word `SAVSTK` anchors -- run_prog's own return. A
++; frame taken at `CSP - (size+3)` and `ldir`ed into place landed on exactly those
++; bytes. MEASURED (trapsvc int.resume, 2026-09-12): the write to (SAVSTK) came
++; from THIS routine's `ldir`, PC=$3753 in sub page 0, with SP 60 bytes below;
++; the program then ran to END and its `ret` popped an FN cell, $FFFF -> `rst 38`
++; -> reboot. A plain `PRINT FNA(1)` with no trap anywhere did the same. So the
++; block slides down by the frame, SP and SAVSTK with it, exactly as ctl_reloc
++; does for GOSUB/FOR/trap frames. No `di`/`ei`: a page-0 tenant runs under DI.
+ fnf_save:
+                 ld      a,(FN_FEND)
+                 sub     low FN_PAREA
+                 add     a,FN_CELLS          ; A = the live prefix's size
+                 ld      c,a
+                 ld      b,0                 ; BC = size
+-                push    bc
++                push    bc                  ; [size] -- rides the block below
++                inc     bc
++                inc     bc
++                inc     bc                  ; BC = size + 3 = the whole frame
+                 ld      hl,(CSP)
+                 or      a
+-                sbc     hl,bc
+-                dec     hl
+-                dec     hl
+-                dec     hl                  ; HL = base = CSP - (size + 3)
++                sbc     hl,bc               ; HL = base = CSP - (size + 3)
+                 jr      c,fnf_full          ; CSP wrapped: the pool is not live
+                 ld      de,(CTLLIM)
+-                push    hl
++                or      a
++                sbc     hl,de               ; HL = base - CTLLIM
++                jr      c,fnf_full          ; base below the floor: collided
++                add     hl,de               ; HL = base again
++                ; 🔴 THE RESERVE IS TESTED WHERE `SP` WOULD LAND, NOT AT THE FRONTIER.
++                ; ctl_alloc's `CTL_STACK_MARGIN` sits on the frame's base because a
++                ; GOSUB/FOR/trap frame is pushed at a statement boundary, where the
++                ; stack is a few words deep. An FN call is MID-EXPRESSION and it
++                ; RECURSES: `DEF FNA(X)=FNA(X)` costs 13 B of pool and ~50 B of
++                ; machine stack per level, so the stack reaches the arrays long
++                ; before the frontier does. MEASURED (deffn b.recurse): tested at the
++                ; frontier, that row read <NO OUTPUT> where both references answer
++                ; ERR 7; tested here, ERR 7. In the merged world SP < base, so this
++                ; test implies the base one; the floor test above stays for the
++                ; disjoint case (autoexec before the REPL has based the stack).
++                push    hl                  ; [base]
++                ld      hl,0
++                add     hl,sp
++                or      a
++                sbc     hl,bc               ; HL = where SP would land
++                sbc     hl,de               ; ... minus the floor (CF was clear)
++                jr      c,fnf_full1         ; below it
++                ld      a,h
++                cp      high CTL_STACK_MARGIN
++fnf_full1:      pop     hl                  ; HL = base (pop keeps the flags)
++                jr      c,fnf_full          ; less than the stack's reserve left
++                ld      (CSP),hl            ; the frontier IS the frame's base
++                ; --- slide the live stack block down by the frame (ctl_reloc) ---
++                ld      hl,0
++                add     hl,sp
++                ex      de,hl               ; DE = SP = the block's bottom
++                ld      hl,(CSP)
++                add     hl,bc               ; HL = the OLD frontier = the block's top
+                 or      a
+                 sbc     hl,de
++                jr      c,fnf_nomove        ; SP above the pool (autoexec before the
++                                            ; REPL has based it): disjoint, no move
++                ld      hl,(SAVSTK)
++                or      a
++                sbc     hl,bc
++                ld      (SAVSTK),hl         ; the anchor points into the block
++                ex      de,hl               ; HL = SP
++                ld      d,h
++                ld      e,l                 ; DE = source
++                or      a
++                sbc     hl,bc               ; HL = destination = SP - frame
++                ld      sp,hl               ; SP moves BEFORE the copy
++                ex      de,hl               ; HL = source, DE = destination
++                push    hl                  ; below the destination: safe
++                ld      hl,(CSP)
++                or      a
++                sbc     hl,de               ; length = base - destination
++                ld      b,h                 ;        = old frontier - source
++                ld      c,l
+                 pop     hl
+-                jr      c,fnf_full          ; base below the floor: collided
+-                ld      (CSP),hl
++                ldir                        ; destination < source: forward is safe
++fnf_nomove:
++                ld      hl,(CSP)            ; HL = base
+                 ld      de,(FNSP)
+                 ld      (FNSP),hl           ; this frame is the newest
+                 ld      (hl),e
+diff --git a/tests/test_statements.py b/tests/test_statements.py
+index e17f4200..73638869 100644
+--- a/tests/test_statements.py
++++ b/tests/test_statements.py
+@@ -54,6 +54,18 @@ def run_prog_cap(m, lines):
+     m.trap("BREAKX", lambda mm: setattr(mm.cpu, "f", mm.cpu.f & ~0x01))
+     for b in ("CHGMOD", "CHGCLR", "CLS", "ERAFNK", "DSPFNK"):
+         m.trap(b, lambda mm: None)
++    # 🔴 D-SPMERGE step 4: `rp_lp` re-bases the machine stack on the pool
++    # frontier (`ld sp,(CSP)`) on every pass -- that is what makes the pool's
++    # free sites symmetric. On a real machine `ctl_reset` publishes `CSP` at
++    # cold boot before anything runs (MEASURED 2026-09-12: ctl_reset at t=2.641
++    # and t=2.656, first `repl` at t=2.713 with CSP=D906 already), but it
++    # derives the value through a SUB-ROM call this harness does not have, so
++    # here it only gets as far as its own `CSP := 0` -- and `ld sp,(CSP)` then
++    # takes SP to 0 and the CPU runs away. Standing in for the boot is the same
++    # fix D-TXTCEIL made for `SL_CEIL`: supply what the machine publishes. The
++    # value only has to sit in the harness's stack band [0x8000,0xf380].
++    m.trap("ctl_reset", lambda mm: (mm.poke_w(mm.sym["CSP"], 0xF000),
++                                       mm.poke_w(mm.sym["CTLLIM"], 0x8000)))
+     out = m.capture_chput()
+     m.call("new_prog")
+     for lineno, body in lines:
+diff --git a/tests/test_str_compare.py b/tests/test_str_compare.py
+index 4e0b1e89..7474549a 100644
+--- a/tests/test_str_compare.py
++++ b/tests/test_str_compare.py
+@@ -294,6 +294,18 @@ def run():
+     # on testing what they tested.
+             mm.poke_w(mm.sym["SL_CEIL"], mm.sym["TXTMAX"])
+             mm.call("store_line", bc=lineno, hl=TOKBUF)
++        # 🔴 D-SPMERGE step 4: `rp_lp` re-bases the machine stack on the pool
++        # frontier (`ld sp,(CSP)`) on every pass -- that is what makes the pool's
++        # free sites symmetric. On a real machine `ctl_reset` publishes `CSP` at
++        # cold boot before anything runs (MEASURED 2026-09-12: ctl_reset at t=2.641
++        # and t=2.656, first `repl` at t=2.713 with CSP=D906 already), but it
++        # derives the value through a SUB-ROM call this harness does not have, so
++        # here it only gets as far as its own `CSP := 0` -- and `ld sp,(CSP)` then
++        # takes SP to 0 and the CPU runs away. Standing in for the boot is the same
++        # fix D-TXTCEIL made for `SL_CEIL`: supply what the machine publishes. The
++        # value only has to sit in the harness's stack band [0x8000,0xf380].
++        mm.trap("ctl_reset", lambda mm: (mm.poke_w(mm.sym["CSP"], 0xF000),
++                                           mm.poke_w(mm.sym["CTLLIM"], 0x8000)))
+         mm.call("run_prog")
+         return mm, bytes(out)
+ 

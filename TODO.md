@@ -489,7 +489,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:15159 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:15189 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -655,7 +655,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:3823 (T-6FE392)8 (T-529ABE)` from `TODO.md:13945 (T-529ABE)`: a
+      `TODO.md:3823 (T-6FE392)8 (T-529ABE)` from `TODO.md:13975 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -4667,7 +4667,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:13945 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:13975 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -5314,8 +5314,38 @@ list. **When a slice lands, grep this list for what it just shipped.**
       and `basic/pdfcb-body.inc:53` — ⚠️ a `*-body.inc`, check `sub/` first). The
       remainder from the pair scout: `jp nz,stmt_error | inc hl` (11 sites, net 6 B)
       or `inc hl | ld e,(hl) | inc hl | ld d,(hl)` (10 sites, net 5 B).
-      📦 **BASELINE MOVED:** [`scratchpad/d-spmerge-step4.patch`](scratchpad/d-spmerge-step4.patch)
-      is the merge PLUS the verified re-base, and supersedes `d-spmerge-step3k.patch`. `fnf_save` needs its own arm regardless, at
+      📦 **BASELINE MOVED AGAIN (2026-09-12):**
+      [`scratchpad/d-spmerge-step5.patch`](scratchpad/d-spmerge-step5.patch) is the
+      merge + the re-base + the carve + the `fnf_save` arm + the two harness fixes,
+      and supersedes step4 and step3k.
+      🟢 **THE CARVE IS DONE AND CAME OUT OF CODE THE RE-BASE MADE DEAD** (§10.4b):
+      `repl:`'s whole re-base, 8 B — MEASURED safe, a breakpoint over 23 prompt
+      entries including 20 deliberately-failing lines reads `SP=CSP gap=0` every
+      time, because the error unwind self-levels through `SAVSTK` — plus the RUN
+      anchor's 4 B. 🔴 The DIRECT-MODE anchor is NOT redundant and stays: deleting it
+      moved `deffn`'s `d.def`/`d.defrun` to the wrong error, and restoring it alone
+      fixed them. Result on 2026-09-12: **page-1 2 B free, sub page 0 527 B**.
+      🟢 **THE TIER 1 DEFECT IS FIXED ON THE REAL BUILD** — `parennest` 16 rows with
+      `WRECKED` EMPTY, 0 divergence, 0 drift, no scaffold. `trapsvc` PASS 7/7;
+      `deffn` 0 of 73 with 86 rows SCORED (the clean baseline); the GOSUB sweep equal
+      to the VG-8020 at all four depths. Battery **126/128**.
+      🔴 **NOT COMMITTED — ONE ROW BLOCKS IT.** `array-acceptance`'s
+      `scalar.str.chain.oom` is a byte-precise squeeze that now leaves 123 B instead
+      of ~26, so it no longer reaches its case; but walking N toward the new boundary
+      ([readings](scratchpad/spmerge_squeeze_bisect.out)) shows `FRE` NON-MONOTONIC
+      and **N=1857 and N=1859 producing NO OUTPUT AT ALL** — the machine dies instead
+      of raising ERR 7, which is exactly what this row exists to catch. Re-sizing it
+      to a passing value would be fixing the test to match a defect.
+      ⚠️ **FIRST THING NEXT: walk the CLEAN tree's boundary the same way.** The row
+      passes on clean at N=1845 only because that leaves ~26 B THERE, nowhere near
+      clean's own boundary — so the two are not the same experiment, and "the merge
+      introduced this" is UNPROVEN until clean is walked too.
+      ⚠️ **AND THE UNIT-TEST RED IS ALREADY FIXED IN THE PATCH:** `test_statements.py`
+      and `test_str_compare.py` call `run_prog` directly on zeroed RAM, where
+      `ctl_reset` only gets as far as its own `CSP := 0` (it derives the real value
+      through a sub-ROM call the harness lacks), so `ld sp,(CSP)` took SP to 0. Both
+      now trap `ctl_reset` and publish the cell — the same fix D-TXTCEIL made for
+      `SL_CEIL`, and what the harness's own runaway message directs. `fnf_save` needs its own arm regardless, at
       **63 B of sub page 0** (590 → 527 free as measured 2026-09-12, 0 B main),
       verified by the subagent
       (`trapsvc-acceptance` PASS 7/7, `deffn-acceptance` denominator restored) and

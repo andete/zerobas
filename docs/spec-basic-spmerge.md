@@ -510,6 +510,61 @@ halves that fit:
   * The remainder from the pair scout, whose best live candidates on 2026-09-12 are
     `jp nz,stmt_error | inc hl` (11 sites, net 6 B) and
     `inc hl | ld e,(hl) | inc hl | ld d,(hl)` (10 sites, net 5 B).
+### 10.4b THE CARVE, AS SHIPPED — AND THE ONE ROW THAT STOPS IT (2026-09-12)
+
+**The 10 B came out of code the re-base itself made dead**, so no pair conversion
+was needed:
+
+| carve | B | how it was settled |
+|---|---|---|
+| `repl:`'s whole re-base | **8** | MEASURED: a breakpoint at `repl` over 23 prompt entries, 20 of them deliberately-failing lines (`FOR`, `NEXT X`, `PRINT )`, `GOTO`), reads `SP=D906=CSP gap=0` EVERY time — the error unwind self-levels through `SAVSTK`, so the prompt needs no re-base of its own. Hit #1 is the cold-boot C-BIOS `SP=F2EC`, before anything has re-based. |
+| the RUN anchor, `basic/program.asm:429` | **4** | `rp_lp` rewrites `SAVSTK` on every pass before anything can read it |
+| the direct-mode anchor, `basic/program.asm:64` | **KEPT** | 🔴 I was WRONG that this one was redundant. Deleting it moved `deffn`'s `d.def`/`d.defrun` from `Undefined user function` to `Illegal direct`; restoring it alone took the suite back to 0 of 73. A direct-mode error unwinds back to the REPL, and `rp_lp`'s re-based anchor points into the LOOP. |
+
+12 B carved against 10 B spent: **page-1 2 B free, low 0 B, sub page 0 527 B** with
+the `fnf_save` arm in. Whole slice:
+[`scratchpad/d-spmerge-step5.patch`](scratchpad/d-spmerge-step5.patch).
+
+⚠️ **ROUTE D UN-RENEWS EXACTLY AS IT RENEWS.** `jr_mapper.py` proposed
+`basic/expr.asm:1121` and the ASSEMBLER REFUSED IT — *relative jump out of range* —
+because the proposal was measured before this slice moved the layout. Re-run after
+the carve it proposes the SAME site again, so its range model and the assembler
+disagree; that is an instrument bug worth its own item. `basic/pdfcb-body.inc:53`
+converted, then went out of range the moment another 4 B was freed.
+
+🟢 **GREEN ON THE REAL BUILD (no scaffold):** `parennest` 16 rows, `WRECKED` empty,
+0 divergence, 0 drift — **the TIER 1 defect is fixed**; `trapsvc` PASS 7/7 including
+`int.resnext`/`int.resume`/`int.six`; `deffn` 0 of 73 divergent with **86 rows SCORED
+and 1 NOT MEASURED**, matching the clean baseline exactly; the GOSUB sweep
+`[51]/[201]/[401]/[801]`, equal to the VG-8020 at every depth. Battery **126/128**.
+
+🔴 **AND IT IS NOT COMMITTED, BECAUSE OF ONE ROW.** `array-acceptance`'s
+`scalar.str.chain.oom` is a byte-precise squeeze — `MAXFILES=0` / `CLEAR 200,47872` /
+`DIM Z(1845)` sized to leave ~26 B, then 26 string assignments to force the OOM. Under
+the merge the same geometry leaves **123 B** and the chain completes with no OOM at
+all, so at first reading this is only the row's own
+[[a-coverage-row-whose-geometry-cannot-reach-the-case]] class, needing a re-size.
+**It is not.** Walking N toward the new boundary
+([`scratchpad/spmerge_squeeze_bisect.out`](scratchpad/spmerge_squeeze_bisect.out)):
+
+| `DIM Z(N)` | `FRE(0)` after it | the 26-assignment chain |
+|---|---|---|
+| 1845 | 123 | completes, no OOM |
+| 1855 | 2526 | completes, no OOM |
+| **1857** | **no reading at all** | **no reading at all** |
+| **1859** | **no reading at all** | **no reading at all** |
+| 1861 | 14899 (the `DIM` itself failed) | completes |
+
+`FRE` is not monotonic in N, and two values in the middle of the range produce NO
+OUTPUT — the machine dies rather than raising ERR 7. That is the very failure this
+row exists to catch, so re-sizing it to a value that happens to pass would be fixing
+the test to match a defect.
+⚠️ **WHAT IS NOT YET MEASURED, and is the first thing to do next:** whether the CLEAN
+tree also dies at ITS OWN boundary. The row passes on clean at N=1845 because that
+value leaves ~26 B there, which is nowhere near clean's boundary — so these two are
+NOT the same experiment, and until the clean boundary is walked the same way, "the
+merge introduced this" is unproven.
+
 The whole slice is preserved at
 [`scratchpad/d-spmerge-step4.patch`](scratchpad/d-spmerge-step4.patch) — the merge
 plus the re-base, which SUPERSEDES `d-spmerge-step3k.patch` as the baseline.
