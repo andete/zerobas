@@ -434,6 +434,31 @@ SWEEP: list[tuple[str, str, str | None, str, str]] = [
     # the ground a fix won.
     # The exec is the defect's own shape: before the fix it printed [A] and then
     # `Syntax error in 10`; now it prints [A] and stops, like the reference.
+
+    # ---------------------------------------------- D-KWDRAIN step 4j (2026-09-12)
+    # The program verbs, written from shapes ALREADY MEASURED on both machines in
+    # the D-NEWSTMT sweep (scratchpad/kwdrain_progverbs.py) rather than guessed.
+    # ⚠️ AND TWO OF THAT SWEEP'S VERBS GET NO ROW, because agreeing with the
+    # reference is not the same as being SEEN by a row:
+    #   LLIST -- both machines print only [A] (the printer output goes to the log,
+    #            not the screen), so an LLIST that did nothing would pass too.
+    #   RENUM -- both print [A] then Ok, and in a ONE-LINE program renumbering 10
+    #            to 10 changes nothing observable. It needs a two-line program and
+    #            a LIST read-back; measure that before writing the row.
+    ("listkw",    'list',       
+     'PRINT"[A]":LIST',                                     "stored",
+     "D-KWDRAIN: the LISTING itself is the discriminator -- a LIST that did nothing would leave only [A] on the screen"),
+    ("deletekw",  'delete 99',  
+     'PRINT"[A]":DELETE 99',                                "stored",
+     "D-KWDRAIN: Illegal function call in 10 on both (line 99 does not exist); an absent DELETE is a Syntax error, a different class"),
+    # 🔴 `AUTO` HAS NO ROW, AND THE ATTEMPT DAMAGED EVERY ROW AFTER IT. A row
+    # `PRINT"[A]":AUTO` scored the verb correctly -- both machines print [A] then
+    # the `10*` line-entry prompt -- but AUTO LEAVES THE MACHINE IN LINE-ENTRY
+    # MODE, so it swallowed the input of the cases that followed: the sweep went
+    # from 0 divergent to DIVERGENT=22 + UNREADABLE=1, twenty-one of them
+    # collateral. A row is not free of the session it runs in
+    # [[the-apparatus-is-part-of-the-measurement]]. Attributing AUTO needs a form
+    # that exits line-entry mode, or a case of its own at the END of the sweep.
     ("newkw",     'new',
      'PRINT"[A]":NEW',                                       "stored",
      "D-KWDRAIN: the D-NEWSTMT shape -- [A] then a clean stop; before the fix "
