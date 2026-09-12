@@ -297,6 +297,33 @@ SWEEP: list[tuple[str, str, str | None, str, str]] = [
     # The honest readback is the function-key buffer, but FNKSTR is not declared
     # in basic/sysvars.inc and the standard $F87F would be an unverified
     # constant. KEY stays unattributed until one of those is settled.
+
+    # ---------------------------------------------- D-KWDRAIN step 4c (2026-09-12)
+    # The graphics verbs, reachable at last. Two things had to combine: the
+    # echo-free capture above (SCREEN 0/2 destroys the echo), and doing the READBACK
+    # BEFORE returning to text mode -- a SCREEN 2 screen cannot be read as 40-column
+    # text at all, so the row draws, reads POINT into a variable, goes back to
+    # SCREEN 0 and only then prints its marker.
+    # 🎯 THE READBACK IS MEASURED FIRST, as the standard now requires
+    # (scratchpad/kwdrain_gfxcheck.py, both machines agreeing): POINT reads 4 on a
+    # blank SCREEN 2, 15 after `PSET ,15`, and 4 again after PRESET. So each row
+    # below moves when its own verb stops working, rather than passing on a value
+    # that was already there.
+    # ⚠️ PSET AND POINT ARE COUPLED and the rows say so: POINT can only read what
+    # something drew, so `pointkw` moves if EITHER breaks. It is still worth a row --
+    # a POINT that parses as an array reads 0, which neither 4 nor 15 can be.
+    ("psetkw",   'pset(1,1)',      
+     'SCREEN2:PSET(1,1),15:A=POINT(1,1):SCREEN0:PRINT"[S";A;"]"',   "stored",
+     "NOECHO:[S PSET draws, POINT reads it back: 4 blank vs 15 drawn"),
+    ("presetkw", 'preset(1,1)',    
+     'SCREEN2:PSET(1,1),15:PRESET(1,1):A=POINT(1,1):SCREEN0:PRINT"[R";A;"]"', "stored",
+     "NOECHO:[R PRESET must UNDO the PSET: 15 if it does nothing, 4 if it works"),
+    ("pointkw",  'a=point(1,1)',   
+     'SCREEN2:PSET(1,1),15:A=POINT(1,1):SCREEN0:PRINT"[T";A;"]"',   "stored",
+     "NOECHO:[T POINT as the subject: a stub parses as an array and reads 0, not 15"),
+    ("linekw",   'line(1,1)-(5,1)',
+     'SCREEN2:LINE(1,1)-(5,1),15:A=POINT(3,1):SCREEN0:PRINT"[L";A;"]"', "stored",
+     "NOECHO:[L reads a pixel in the MIDDLE of the span, so an endpoint-only LINE fails too"),
     ("colorkw",  'color 7',    'COLOR 7:PRINT"[O";PEEK(-3095);"]"',              "direct",
      "NOECHO:[O COLOR repaints the whole screen, echo included. Reads FORCLR "
      "($F3E9 = -3095) back, and uses 7 rather than the DEFAULT 15 on purpose: "

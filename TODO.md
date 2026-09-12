@@ -489,7 +489,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:15374 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:15390 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -655,7 +655,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:3989 (T-6FE392)8 (T-529ABE)` from `TODO.md:14160 (T-529ABE)`: a
+      `TODO.md:4005 (T-6FE392)8 (T-529ABE)` from `TODO.md:14176 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -2800,6 +2800,22 @@ list. **When a slice lands, grep this list for what it just shipped.**
       ⚠️ **THE LESSON GENERALISES BEYOND THIS SWEEP:** a BOOLEAN row whose predicate
       is true of ZERO cannot see a missing keyword, because a missing keyword IS zero
       here [[a-case-that-agrees-can-agree-for-the-wrong-reason]] [[readout-blind-to-its-own-subject]].
+      🟢 **STEP 4c: THE GRAPHICS VERBS ARE REACHABLE — 65 -> 61**, evidence 82 -> 86,
+      `PSET PRESET POINT LINE` attributed. Two things had to combine: the echo-free
+      capture (SCREEN 0/2 destroys the echo) and doing the READBACK BEFORE returning
+      to text mode, because a SCREEN 2 screen cannot be read as 40-column text at
+      all — so each row draws, reads `POINT` into a variable, returns to `SCREEN 0`
+      and only then prints its marker.
+      🎯 **READBACK MEASURED FIRST, as the standard now requires**
+      ([`scratchpad/kwdrain_gfxcheck.py`](scratchpad/kwdrain_gfxcheck.py),
+      [readings](scratchpad/kwdrain_gfxcheck.out), both machines agreeing): `POINT`
+      reads **4** on a blank SCREEN 2, **15** after `PSET ,15`, and **4** again after
+      `PRESET`; `LINE`'s row reads a pixel in the MIDDLE of the span and gets 15, so
+      an endpoint-only LINE would fail it too. Each row moves when its own verb stops
+      working rather than passing on a value that was already there.
+      ⚠️ **`PSET` AND `POINT` ARE COUPLED and the rows say so**: `POINT` can only read
+      what something drew, so `pointkw` moves if EITHER breaks. It still earns a row —
+      a `POINT` that parses as an array reads 0, which neither 4 nor 15 can be.
       ➡️ **STEP (c) IS STILL NOT BUILT AND IS STILL THE CEILING** for words no
       kwsweep row can reach — but it is now a SMALLER set than batch 4 claimed, and
       its real cost is on the record: a `subject:` tag must mean *"a row whose verdict
@@ -4833,7 +4849,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:14160 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:14176 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
