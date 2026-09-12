@@ -355,3 +355,122 @@ nearer 25–30 B. Still one routine against ~93 B over sixty sites.
    flips the pins.
 3. The trap record (`basic/traps.asm:372`) is the third `ctl_alloc` caller and
    fires from the ISR seam; its stack shape needs its own reading before step 2.
+
+## 10. 🔴 THE MERGE AS BUILT IS ASYMMETRIC, AND IT BREAKS THE HAPPY PATH
+
+§9 shipped as step 3 and seven of nine affected suites went green. **That reading
+was wrong, and the two red trap suites were never the real defect.** A fable
+subagent was dispatched to investigate them deeply (Joost, 2026-09-12); it named
+two independent causes, and BOTH re-verified here before anything was built on
+them.
+
+### 10.1 The relocation is ONE-WAY — proved by reading, then measured
+
+`ctl_alloc` is the only path that relocates: it lowers `CSP` and tail-jumps to
+`ctl_reloc`, which slides the live block `[SP, CSP)` down by the frame's size.
+But the frontier is RAISED — a frame freed — at **six other sites that do not
+move the stack at all**:
+
+| site | what frees there |
+|---|---|
+| [`basic/program.asm:1623`](basic/program.asm:1623), [`:1653`](basic/program.asm:1653) | `RETURN`, the GOSUB frame |
+| [`basic/program.asm:1949`](basic/program.asm:1949), [`:2034`](basic/program.asm:2034) | `NEXT` closing inner frames |
+| [`sub/deffn.asm:512`](sub/deffn.asm:512), [`:551`](sub/deffn.asm:551), [`:574`](sub/deffn.asm:574) | the `DEF FN` frame |
+| [`sub/strheap.asm:1844`](sub/strheap.asm:1844) | the string-heap frame |
+
+So every alloc/free CYCLE lowers `SP` by the frame's size and never raises it
+back. The gap `CSP - SP` grows monotonically for the life of the program, and
+`ctl_alloc`'s 256-byte reserve cannot see it, because the reserve is measured at
+the FRONTIER, which returns to the same address every time.
+
+🎯 **MEASURED, and it is not a trap corner — it is `FOR`/`GOSUB`/`RETURN`/`NEXT`**
+([`scratchpad/spmerge_gosubdrain.py`](scratchpad/spmerge_gosubdrain.py),
+[readings](scratchpad/spmerge_gosubdrain.out)). No traps, no errors, no `FN`:
+
+| iterations | zb + step3k patch | VG-8020 |
+|---|---|---|
+| 50 | `[51]` | `[51]` |
+| 200 | `[201]` | `[201]` |
+| **400** | **`NO OUTPUT`** | `[401]` |
+| **800** | **`NO OUTPUT`** | `[801]` |
+
+The subagent's independent run of the same class put the death at GOSUB #360 with
+`Syntax error in 63784` and 8 B drained per `RETURN`, which lands inside the
+200–400 window measured here. **The merge as built is a TIER 1 regression, worse
+than the defect it fixes.** The copy also grows with the gap, so the cost is
+O(n²) in the number of frames, not the O(1) §9.3 argued for.
+
+### 10.2 `fnf_save` does `ctl_alloc`'s arithmetic and skips `ctl_reloc`'s half
+
+[`sub/deffn.asm:492`](sub/deffn.asm:492) hand-rolls the allocation — its own header
+says so, *"`ctl_alloc`'s arithmetic done here, because main's low region is
+unreachable from a page-0 tenant"* — and then `ldir`s the FN prefix into the
+region it just claimed ([`sub/deffn.asm:524`](sub/deffn.asm:524)). Under the merge
+that region IS the live stack block `[SP, CSP)`, so the copy lands on top of the
+newest pushed words, including `run_prog`'s return word at the `SAVSTK` anchor.
+
+The subagent's watchpoint caught the write with the writer named: `PC=$3753`, the
+byte after the `ED B0` in the SUB ROM's `fnf_save`, `HL=EA9A` = `FN_BASE+8`,
+`DE=D8F9` = the anchor. The BIOS-ISR-at-`$18E6` reading recorded in earlier ticks
+was **post-mortem**: `ret nz` popped the FN cell `FFFF`, the machine took `RST 38`,
+and the ISR pushes logged there are the crash, not its cause.
+
+### 10.3 🔴 AND `deffn-acceptance` WAS GREEN THROUGH ALL OF IT
+
+The reason §10.2 survived five ticks undetected is that its own gate cannot see
+it. Same target, same `rc=0`, same headline
+([clean](scratchpad/spmerge_deffn_clean.out) vs
+[patched](scratchpad/spmerge_deffn_patched.out)):
+
+| | rows SCORED | `NOT MEASURED` | verdict printed |
+|---|---|---|---|
+| clean tree | **86** | 1 | `0 of 73 DEF FN rows still divergent` |
+| step3k patch | **33** | **55** | `0 of 73 DEF FN rows still divergent` |
+
+54 rows stopped answering and the suite reported the same green line, because a
+blank reading is excluded from scoring rather than counted against it. **The
+scored DENOMINATOR is the signal and nothing watches it**
+[[an-unnamed-outcome-reads-as-no-outcome]] [[gateblind-slice]]. `deffn-acceptance`
+was also not among the nine suites this arc was re-running, so even its collapsed
+denominator went unread.
+
+### 10.4 What the design has to become
+
+The re-based frontier is the free operation, and the fix is to stop trying to make
+alloc and free symmetric one site at a time:
+
+**At the statement loop `rp_lp`, where the live block is exactly ONE WORD, re-base
+the stack to the frontier every statement:**
+
+    pop     de
+    ld      sp,(CSP)
+    push    de
+    ld      (SAVSTK),sp
+
+All six entries to `rp_lp` ([`basic/program.asm:606`](basic/program.asm:606),
+`:614`, `:624`, `:630`, `:1123`,
+[`basic/interp.asm:1508`](basic/interp.asm:1508)) arrive with `SP == SAVSTK`, so
+the invariant holds on every path in. This removes the drain (a freed frame is
+reclaimed at the next statement, wherever it was freed and by whom), bounds the
+copy at the statement handler's own depth instead of the program's, and makes
+`raise_error_hl`'s `(SAVSTK)`-vs-`(CSP)` question moot because the two coincide by
+construction.
+
+💰 **10 B of main page 1, which is at 0 B free** — so this needs an ABSOLUTE carve,
+not the standing 20 B budget; `jr_mapper.py` offers 2 B today. A 3 B page-1 + 12 B
+low split via a helper is the fallback if the carve comes up short.
+🔴 **AND `fnf_save` STILL NEEDS §10.2's HALF** regardless: it allocates from a
+page-0 tenant that never reaches `ctl_reloc`. The subagent implemented and verified
+that arm — `trapsvc-acceptance` PASS on all seven rows, `deffn-acceptance` 0/73
+with the denominator restored — at **63 B of sub page 0** (590 → 527 free), 0 B of
+main. It is not committed: it is only correct WITH the merge, and would relocate an
+unrelated region without it.
+
+### 10.5 Side finding, not part of this arc
+
+An oversized `CLEAR n` (one that puts `CTLTOP` below `CTLLIM`; ERR 7 on the
+reference) is accepted here, and the patch's CLEAR arm
+([`basic/clear.asm:207`](basic/clear.asm:207)) then relocates the stack below the
+floor — `CTLLIM=8027` with the block moved to `$68B0`, a dead machine. The
+acceptance of the oversized `CLEAR` is a pre-existing gap the merge only makes
+louder.

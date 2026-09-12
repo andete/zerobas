@@ -1,0 +1,107 @@
+python3 tools/install-repack-machine.py --merged build/zerobas-main-eu.rom --disk-rom build/disk.rom \
+	  --sub-rom build/sub.rom
+wrote C-BIOS_MSX1_EU_REPACK_DISK  (-> machine "C-BIOS_MSX1_EU_REPACK_DISK": merged repack ROM in slot 0, zerobas-disk in slot 3-1, zerobas-sub in slot 3-2)
+     /Users/joost/.openMSX/share/machines/C-BIOS_MSX1_EU_REPACK_DISK.xml
+python3 tools/install-repack-machine.py --merged build/zerobas-main-eu.rom --sub-rom build/sub.rom \
+	  --no-disk
+wrote C-BIOS_MSX1_EU_REPACK_NODISK  (-> machine "C-BIOS_MSX1_EU_REPACK_NODISK": merged repack ROM in slot 0, slot 3-1 EMPTY (diskless target), zerobas-sub in slot 3-2)
+     /Users/joost/.openMSX/share/machines/C-BIOS_MSX1_EU_REPACK_NODISK.xml
+python3 probes/basic/basic_probe_deffn.py --gate \
+	         
+    capture-on-signal: 28 on signal, 49 fell back to the scheduled budget   ⚠️ 2 REPLAYED from the refcache -- not measured on this run   [signalled at 56.1-88.1 emulated s]
+      ⚠️ NEVER SIGNALLED (captured on the budget, as before this conversion): zb:b.nest10, zb:b.nested, zb:b.noarg, zb:b.param, zb:b.paramnew, zb:b.recurse, zb:b.redef, zb:b.str, zb:b.two, zb:o.actualfirst, zb:o.argnoarg, zb:o.clearwipe.ctl, zb:o.clearwipe3, zb:o.defint, zb:o.defint.ctl, zb:o.defintbang, zb:o.defstr, zb:o.dynaddr, zb:o.dynorder, zb:o.dynscope, zb:o.dynself, zb:o.errrestore, zb:o.fnbang, zb:o.fnpct, zb:o.gcroot, zb:o.gcroot.ctla, zb:o.gcroot.ctln, zb:o.global, zb:o.ifthen, zb:o.namespace, zb:o.nestsame, zb:o.numstr, zb:o.outer.ctl, zb:o.outerabs, zb:o.outerafter, zb:o.outerbefore, zb:o.outernoarg, zb:o.p3, zb:o.p5, zb:o.p8, zb:o.p9, zb:o.quotedcolon, zb:o.realcell, zb:o.runtwice, zb:o.stmtcolon, zb:o.suffn, zb:o.sufformal, zb:o.twocalls, zb:o.varptr
+PASS b.ctl            ref='6'  zb='6'
+ok   b.forward        ref='ERR 18 AT 60'  zb='ERR 18 AT 60'
+.... b.nest10         ref='1'  zb='<NO OUTPUT>'  (NOT MEASURED -- blank reading)
+.... b.nested         ref='8'  zb='<NO OUTPUT>'  (NOT MEASURED -- blank reading)
+.... b.noarg          ref='7'  zb='<NO OUTPUT>'  (NOT MEASURED -- blank reading)
+.... b.param          ref='3 5'  zb='<NO OUTPUT>'  (NOT MEASURED -- blank reading)
+.... b.paramnew       ref='8 0'  zb='<NO OUTPUT>'  (NOT MEASURED -- blank reading)
+.... b.recurse        ref='ERR 7 AT 60'  zb='<NO OUTPUT>'  (NOT MEASURED -- blank reading)
+.... b.redef          ref='3'  zb='<NO OUTPUT>'  (NOT MEASURED -- blank reading)
+.... b.str            ref='hi!'  zb='<NO OUTPUT>'  (NOT MEASURED -- blank reading)
+.... b.two            ref='5'  zb='<NO OUTPUT>'  (NOT MEASURED -- blank reading)
+ok   b.undef          ref='ERR 18 AT 60'  zb='ERR 18 AT 60'
+PASS d.ctl            ref='6'  zb='6'
+.... d.def            ref='<Undefined user function>'  zb='<NO OUTPUT>'  (NOT MEASURED -- blank reading)
+ok   d.defonly        ref='<Illegal direct>'  zb='<Illegal direct>'
+.... d.defrun         ref='<Undefined user function>'  zb='<NO OUTPUT>'  (NOT MEASURED -- blank reading)
+PASS d.defusr         ref='OK'  zb='OK'
+PASS d.let            ref='OK'  zb='OK'
+ok   d.sameline       ref='<Illegal direct>'  zb='<Illegal direct>'
+.... o.actualfirst    ref='60'  zb='<NO OUTPUT>'  (NOT MEASURED -- blank reading)
+.... o.argnoarg       ref='7 1'  zb='<NO OUTPUT>'  (NOT MEASURED -- blank reading)
+ok   o.aryformal      ref='ERR 2 AT 60'  zb='ERR 2 AT 60'
+ok   o.badname        ref='ERR 2 AT 20'  zb='ERR 2 AT 20'
+ok   o.barecall       ref='ERR 2 AT 60'  zb='ERR 2 AT 60'
+.... o.clearwipe.ctl  ref='3'  zb='<NO OUTPUT>'  (NOT MEASURED -- blank reading)
+.... o.clearwipe3     ref='<Undefined user function>'  zb='<NO OUTPUT>'  (NOT MEASURED -- blank reading)
+PASS o.ctl            ref='6'  zb='6'
+PASS o.ctl2           ref='6'  zb='6'
+.... o.defint         ref='2'  zb='<NO OUTPUT>'  (NOT MEASURED -- blank reading)
+.... o.defint.ctl     ref='2.5'  zb='<NO OUTPUT>'  (NOT MEASURED -- blank reading)
+.... o.defintbang     ref='2.5'  zb='<NO OUTPUT>'  (NOT MEASURED -- blank reading)
+.... o.defstr         ref='hi!'  zb='<NO OUTPUT>'  (NOT MEASURED -- blank reading)
+.... o.dynaddr        ref='5'  zb='<NO OUTPUT>'  (NOT MEASURED -- blank reading)
+.... o.dynorder       ref='5'  zb='<NO OUTPUT>'  (NOT MEASURED -- blank reading)
+.... o.dynscope       ref='5'  zb='<NO OUTPUT>'  (NOT MEASURED -- blank reading)
+.... o.dynself        ref='205'  zb='<NO OUTPUT>'  (NOT MEASURED -- blank reading)
+ok   o.errfend13      ref='5 13'  zb='5 13'
+ok   o.errfend18      ref='5 18'  zb='5 18'
+.... o.errrestore     ref='5 11'  zb='<NO OUTPUT>'  (NOT MEASURED -- blank reading)
+.... o.fnbang         ref='2.5'  zb='<NO OUTPUT>'  (NOT MEASURED -- blank reading)
+.... o.fnpct          ref='2'  zb='<NO OUTPUT>'  (NOT MEASURED -- blank reading)
+.... o.gcroot         ref='ABCD'  zb='<NO OUTPUT>'  (NOT MEASURED -- blank reading)
+.... o.gcroot.ctla    ref='ABCD'  zb='<NO OUTPUT>'  (NOT MEASURED -- blank reading)
+.... o.gcroot.ctln    ref='ABCD'  zb='<NO OUTPUT>'  (NOT MEASURED -- blank reading)
+PASS o.gcroot.ctlv    ref='ABCD'  zb='ABCD'
+.... o.global         ref='5'  zb='<NO OUTPUT>'  (NOT MEASURED -- blank reading)
+ok   o.ifnot          ref='ERR 18 AT 60'  zb='ERR 18 AT 60'
+.... o.ifthen         ref='3'  zb='<NO OUTPUT>'  (NOT MEASURED -- blank reading)
+ok   o.lazybody       ref='OK'  zb='OK'
+ok   o.lazydiv        ref='OK'  zb='OK'
+.... o.namespace      ref='9 3'  zb='<NO OUTPUT>'  (NOT MEASURED -- blank reading)
+.... o.nestsame       ref='7'  zb='<NO OUTPUT>'  (NOT MEASURED -- blank reading)
+ok   o.noeq           ref='OK'  zb='OK'
+.... o.numstr         ref='ERR 13 AT 60'  zb='<NO OUTPUT>'  (NOT MEASURED -- blank reading)
+.... o.outer.ctl      ref='2'  zb='<NO OUTPUT>'  (NOT MEASURED -- blank reading)
+.... o.outerabs       ref='2'  zb='<NO OUTPUT>'  (NOT MEASURED -- blank reading)
+.... o.outerafter     ref='2'  zb='<NO OUTPUT>'  (NOT MEASURED -- blank reading)
+.... o.outerbefore    ref='2'  zb='<NO OUTPUT>'  (NOT MEASURED -- blank reading)
+.... o.outernoarg     ref='3'  zb='<NO OUTPUT>'  (NOT MEASURED -- blank reading)
+ok   o.p10            ref='ERR 5 AT 60'  zb='ERR 5 AT 60'
+ok   o.p11            ref='ERR 5 AT 60'  zb='ERR 5 AT 60'
+ok   o.p12            ref='ERR 5 AT 60'  zb='ERR 5 AT 60'
+ok   o.p16            ref='ERR 5 AT 60'  zb='ERR 5 AT 60'
+.... o.p3             ref='1'  zb='<NO OUTPUT>'  (NOT MEASURED -- blank reading)
+.... o.p5             ref='1'  zb='<NO OUTPUT>'  (NOT MEASURED -- blank reading)
+.... o.p8             ref='1'  zb='<NO OUTPUT>'  (NOT MEASURED -- blank reading)
+.... o.p9             ref='1'  zb='<NO OUTPUT>'  (NOT MEASURED -- blank reading)
+.... o.quotedcolon    ref='a:Q'  zb='<NO OUTPUT>'  (NOT MEASURED -- blank reading)
+.... o.realcell       ref='5'  zb='<NO OUTPUT>'  (NOT MEASURED -- blank reading)
+PASS o.realcell.ctl   ref='5'  zb='5'
+.... o.runtwice       ref='3'  zb='<NO OUTPUT>'  (NOT MEASURED -- blank reading)
+.... o.sameaddr       ref='30327'  zb='<NO OUTPUT>'  (NOT MEASURED -- blank reading)
+.... o.stmtcolon      ref='3 9'  zb='<NO OUTPUT>'  (NOT MEASURED -- blank reading)
+ok   o.strnum         ref='ERR 13 AT 60'  zb='ERR 13 AT 60'
+ok   o.strnumx        ref='5 13'  zb='5 13'
+.... o.suffn          ref='3'  zb='<NO OUTPUT>'  (NOT MEASURED -- blank reading)
+.... o.sufformal      ref='3'  zb='<NO OUTPUT>'  (NOT MEASURED -- blank reading)
+ok   o.toofew         ref='ERR 2 AT 60'  zb='ERR 2 AT 60'
+ok   o.toomany        ref='ERR 2 AT 60'  zb='ERR 2 AT 60'
+.... o.twocalls       ref='7'  zb='<NO OUTPUT>'  (NOT MEASURED -- blank reading)
+ok   o.twofault       ref='ERR 2 AT 20'  zb='ERR 2 AT 20'
+ok   o.undefarg       ref='ERR 18 AT 60'  zb='ERR 18 AT 60'
+.... o.varptr         ref='2'  zb='<NO OUTPUT>'  (NOT MEASURED -- blank reading)
+PASS o.varptr.ctl     ref='5'  zb='5'
+.... z.addr           ref='-2325'  zb='<NO OUTPUT>'  (NOT MEASURED -- blank reading)
+--   z.addr.ctl       ref='-32679'  zb='-32679'  (own-design RAM layout; see PREDICATE)
+.... z.addr2          ref='-2325'  zb='<NO OUTPUT>'  (NOT MEASURED -- blank reading)
+.... z.addr2i         ref='-2325'  zb='<NO OUTPUT>'  (NOT MEASURED -- blank reading)
+ok   z.p10def         ref='OK'  zb='OK'
+.... claim:o.sameaddr  zb:o.sameaddr='<NO OUTPUT>'  NOT MEASURED -- o.sameaddr is not a number here (VARPTR(formal) differs from VARPTR(variable))
+.... claim:z.addr2    zb:z.addr2='<NO OUTPUT>'  zb:z.addr2i='<NO OUTPUT>'  NOT MEASURED -- z.addr2,z.addr2i is not a number here (the shadow cell does not move with nesting)
+.... claim:z.addr     zb:z.addr='<NO OUTPUT>'  zb:z.addr.ctl='-32679'  NOT MEASURED -- z.addr is not a number here (the shadow is not the variable's own cell)
+ROWS: 92 printed, 33 scored — 0 of 73 DEF FN rows still divergent; 0 of 11 controls failed
+NOT MEASURED: b.nest10, b.nested, b.noarg, b.param, b.paramnew, b.recurse, b.redef, b.str, b.two, d.def, d.defrun, o.actualfirst, o.argnoarg, o.clearwipe.ctl, o.clearwipe3, o.defint, o.defint.ctl, o.defintbang, o.defstr, o.dynaddr, o.dynorder, o.dynscope, o.dynself, o.errrestore, o.fnbang, o.fnpct, o.gcroot, o.gcroot.ctla, o.gcroot.ctln, o.global, o.ifthen, o.namespace, o.nestsame, o.numstr, o.outer.ctl, o.outerabs, o.outerafter, o.outerbefore, o.outernoarg, o.p3, o.p5, o.p8, o.p9, o.quotedcolon, o.realcell, o.runtwice, o.sameaddr, o.stmtcolon, o.suffn, o.sufformal, o.twocalls, o.varptr, z.addr, z.addr2, z.addr2i
+refcache: 2 hit, 87 miss, 87 stored, 2 replayed provenance

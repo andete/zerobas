@@ -489,7 +489,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:15080 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:15138 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -655,7 +655,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:3823 (T-6FE392)8 (T-529ABE)` from `TODO.md:13866 (T-529ABE)`: a
+      `TODO.md:3823 (T-6FE392)8 (T-529ABE)` from `TODO.md:13924 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -4667,7 +4667,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:13866 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:13924 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -5245,8 +5245,66 @@ list. **When a slice lands, grep this list for what it just shipped.**
       jumps. §3's four hazards are the checklist; the nine `parennest` pins flip in
       the same commit as the code, and cut 1 is the standing proof that those nine
       going green is necessary and nowhere near sufficient.
-      🤖 AUTONOMOUS — both forks (shape, then allocation) are ruled; what remains is
-      measured work against a green tree.
+      🔴 **CUT 2 STEP 3 IS BUILT AND IT IS A TIER 1 REGRESSION — WORSE THAN THE
+      DEFECT IT FIXES (2026-09-12).** The patch flips all nine `parennest` pins and
+      seven of nine affected suites read green, and that reading was wrong. Joost
+      ruled *"investigate deeply with a fable agent"* on the two red trap suites;
+      the subagent named two independent causes and **both were re-verified here
+      before anything was built on them**
+      ([`docs/spec-basic-spmerge.md`](docs/spec-basic-spmerge.md) §10).
+      🎯 **THE RELOCATION IS ONE-WAY.** `ctl_alloc` is the only path that moves the
+      stack; the frontier is RAISED at **six other sites that move nothing** —
+      `RETURN` ([`basic/program.asm:1623`](basic/program.asm:1623),
+      [`:1653`](basic/program.asm:1653)), `NEXT`
+      ([`:1949`](basic/program.asm:1949), [`:2034`](basic/program.asm:2034)), the
+      `DEF FN` frame ([`sub/deffn.asm:512`](sub/deffn.asm:512), `:551`, `:574`) and
+      the string-heap frame ([`sub/strheap.asm:1844`](sub/strheap.asm:1844)). Every
+      alloc/free CYCLE drains the frame's size out of the machine stack for good,
+      and the 256 B reserve cannot see it because the reserve is measured at the
+      frontier, which returns to the same address every time.
+      📏 **MEASURED, on `FOR`/`GOSUB`/`RETURN`/`NEXT` with no traps, no errors and
+      no `FN`** ([`scratchpad/spmerge_gosubdrain.py`](scratchpad/spmerge_gosubdrain.py),
+      [readings](scratchpad/spmerge_gosubdrain.out)): 50 and 200 iterations print,
+      **400 and 800 print NOTHING**, where the VG-8020 prints all four. The
+      subagent's independent run puts the death at GOSUB #360 with 8 B drained per
+      `RETURN` — inside that window. The copy also grows with the gap, so the cost
+      is O(n²) in frames, not the O(1) §9.3 argued for.
+      🔴 **AND `deffn-acceptance` WAS GREEN THROUGH ALL OF IT.** The second cause is
+      [`sub/deffn.asm:492`](sub/deffn.asm:492) `fnf_save`, which hand-rolls
+      `ctl_alloc`'s arithmetic (its header says why: a page-0 tenant cannot reach
+      main's low region) and then `ldir`s the FN prefix into what is now LIVE STACK.
+      It survived five ticks because its own gate cannot see it: same `rc=0`, same
+      *"0 of 73 DEF FN rows still divergent"*, while the rows actually SCORED
+      collapsed from **86 to 33** and `NOT MEASURED` went from **1 to 55**
+      ([clean](scratchpad/spmerge_deffn_clean.out) vs
+      [patched](scratchpad/spmerge_deffn_patched.out)). A blank reading is excluded
+      from scoring instead of counted against it, so **the scored DENOMINATOR is the
+      signal and nothing watches it** [[an-unnamed-outcome-reads-as-no-outcome]].
+      `deffn-acceptance` was also not in the nine suites this arc re-ran.
+      🎯 **THE BIOS-ISR-AT-`$18E6` READING WAS POST-MORTEM, NOT THE CAUSE** — `ret nz`
+      popped an FN cell, the machine took `RST 38`, and the logged ISR pushes are the
+      crash. Four ticks of hunting "which instruction raises SP to the frontier"
+      were hunting the wrong half: nothing raises SP, and that IS the bug.
+      ➡️ **THE FIX IS TO STOP MAKING ALLOC AND FREE SYMMETRIC SITE BY SITE** and let
+      the re-based frontier BE the free operation: at `rp_lp`, where the live block
+      is exactly one word, `pop de / ld sp,(CSP) / push de / ld (SAVSTK),sp` every
+      statement. All six entries to `rp_lp` arrive with `SP == SAVSTK`, so the
+      invariant holds on every path in; it removes the drain wherever a frame is
+      freed and by whom, bounds the copy at the handler's own depth, and makes
+      `raise_error_hl`'s `(SAVSTK)`-vs-`(CSP)` question moot.
+      💰 **10 B of main page 1, which was at 0 B free on 2026-09-12 — so this needs
+      an ABSOLUTE CARVE**, not the standing 20 B budget (`jr_mapper.py` offered 2 B
+      on 2026-09-12); 3 B page 1 + 12 B low via a helper is the fallback. `fnf_save` needs its own arm regardless, at
+      **63 B of sub page 0** (590 → 527 free as measured 2026-09-12, 0 B main),
+      verified by the subagent
+      (`trapsvc-acceptance` PASS 7/7, `deffn-acceptance` denominator restored) and
+      NOT committed, because it is only correct WITH the merge.
+      ⚠️ **SIDE FINDING, pre-existing:** an oversized `CLEAR n` that puts `CTLTOP`
+      below `CTLLIM` is accepted here (ERR 7 on the reference), and the patch's CLEAR
+      arm then relocates the stack below the floor — a dead machine. §10.5.
+      🤖 AUTONOMOUS — the shape and allocation forks are ruled and the two causes are
+      NAMED and re-verified; what remains is the carve that pays for the `rp_lp`
+      re-base, then the `fnf_save` arm in the same commit.
 
 - [ ] 🐌 **THE INTERPRETER IS 2.5–3.8× SLOWER THAN THE CF-3300 — ON EVERYTHING,
       NOT ON ONE VERB — AND IT REFRAMES EVERY OTHER SPEED ITEM.**
