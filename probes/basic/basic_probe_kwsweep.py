@@ -238,6 +238,37 @@ SWEEP: list[tuple[str, str, str | None, str, str]] = [
     ("clearkw", 'clear 100',          'CLEAR 100:PRINT"[5]"',                 "direct", "D-KWDRAIN"),
     ("dimkw",   'dim a(2)',           'DIM D(2):D(1)=5:PRINT"[";D(1);"]"',    "direct", "D-KWDRAIN"),
 
+    # ------------------------------------------------ D-KWDRAIN batch 3 (2026-09-12)
+    # The raw-I/O and sound words. Every exec here is chosen to leave the SCREEN
+    # ALONE: this sweep anchors its capture on the echoed command, and the `locate`
+    # row above is the standing proof that a feature which moves or clears the
+    # display destroys the probe's own anchor. So no CLS, no SCREEN, no COLOR and no
+    # WIDTH in this batch -- those need their own handling, not a hopeful row.
+    # ⚠️ THE WRITES ARE DELIBERATELY AIMED AT HARMLESS TARGETS: VRAM 0 is the glyph
+    # for character 0, `OUT &HA0` selects a PSG register without writing one,
+    # `SOUND 7,255` is the mixer with every channel OFF, `WAIT &HA9,0` masks to zero
+    # so the condition is true immediately and cannot hang, and the POKE goes to
+    # -8192 ($E000), inside zerobas's own RAM rather than the work area.
+    # 🎯 EACH ONE READS BACK WHAT IT WROTE where it can (VPOKE/VPEEK, POKE/PEEK), so
+    # a stub that silently accepts the statement still fails the row.
+    ("beep",    'beep',               'BEEP:PRINT"[6]"',                      "direct", "D-KWDRAIN"),
+    ("sound",   'sound 7,255',        'SOUND 7,255:PRINT"[7]"',               "direct", "D-KWDRAIN"),
+    ("vpeek",   'a=vpeek(0)',         'VPOKE 0,7:PRINT"[";VPEEK(0);"]"',      "direct", "D-KWDRAIN"),
+    ("vpoke",   'vpoke 0,1',          'VPOKE 0,9:PRINT"[";VPEEK(0);"]"',      "direct", "D-KWDRAIN"),
+    ("vdpkw",   'a=vdp(1)',           'PRINT"[";VDP(1)>0;"]"',                "direct", "D-KWDRAIN"),
+    ("inpkw",   'a=inp(168)',         'PRINT"[";INP(&HA8)>=0;"]"',            "direct", "D-KWDRAIN"),
+    ("outkw",   'out 160,7',          'OUT &HA0,7:PRINT"[8]"',                "direct", "D-KWDRAIN"),
+    # 🔴 `WAIT` HAS NO ROW HERE, AND THE FIRST ATTEMPT IS WHY. `WAIT port,mask
+    # [,xor]` blocks until ((INP(port) XOR xor) AND mask) <> 0, so a mask of 0 can
+    # NEVER be satisfied: the row `WAIT &HA9,0:PRINT"[9]"` -- written believing
+    # mask 0 meant "already true" -- blocks for ever BY DEFINITION, and zerobas
+    # returning no output was it behaving CORRECTLY. Attributing WAIT needs a port
+    # whose condition is satisfiable without blocking, and the obvious candidate
+    # (the VDP status port, whose bit 7 sets every frame) is read-to-clear and
+    # would disturb the BIOS interrupt handler. Left unattributed on purpose --
+    # "no known gap" is the honest state for it until a safe row exists.
+    ("pokekw",  'poke 0,1',           'POKE-8192,7:PRINT"[";PEEK(-8192);"]"', "direct", "D-KWDRAIN"),
+
     # -------------------------------------------------- suspected MISSING words
     # Console / cursor. All three fail the same way if absent: the word parses as
     # a numeric variable (0) or an array, so the probe must make 0 the WRONG

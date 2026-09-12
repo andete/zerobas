@@ -489,7 +489,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:15271 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:15293 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -655,7 +655,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:3886 (T-6FE392)8 (T-529ABE)` from `TODO.md:14057 (T-529ABE)`: a
+      `TODO.md:3908 (T-6FE392)8 (T-529ABE)` from `TODO.md:14079 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -2702,6 +2702,28 @@ list. **When a slice lands, grep this list for what it just shipped.**
       NEEDS-DISK rows report `NO-ORACLE` because the CF-3300 capture was unreadable
       (STATUS 2026-07-26). The oracle READS — `mki` `mks` `mkd` `cvs` `cvd` and the
       new `cvi` all return real verdicts [[a-fix-falsifies-the-justification-beside-it]].
+      🟢 **BATCH 3, 2026-09-12: 76 -> 68**, evidence 71 -> 79, eight converted —
+      `BEEP SOUND VPEEK VPOKE VDP INP OUT POKE`
+      ([readings](scratchpad/kwdrain_batch3.out)). Battery 128/128 after. Every write
+      aims at a harmless target (VRAM 0 is character 0's glyph, `OUT &HA0` selects a
+      PSG register without writing one, `SOUND 7,255` is the mixer with all channels
+      OFF, the POKE goes to $E000 inside zerobas's own RAM) and reads back what it
+      wrote where it can, so a stub that silently ACCEPTS the statement still fails.
+      🔴 **AND ONE ROW I WROTE WAS WRONG, NOT THE ROM — WORTH MORE THAN THE EIGHT.**
+      `WAIT &HA9,0:PRINT"[9]"` came back DIVERGENT with zerobas printing nothing, and
+      that was zerobas behaving CORRECTLY: `WAIT port,mask[,xor]` blocks until
+      `((INP(port) XOR xor) AND mask) <> 0`, so a mask of 0 can NEVER be satisfied and
+      the row blocks for ever BY DEFINITION. I had read mask 0 as "already true". The
+      row is REMOVED and the reason filed where it would have gone.
+      ⚠️ **SO `WAIT` STAYS UNATTRIBUTED ON PURPOSE**: the only obvious non-blocking
+      port is the VDP status register, whose bit 7 sets every frame but which is
+      READ-TO-CLEAR and would disturb the BIOS interrupt handler. "No known gap" is
+      the honest state for it until a safe row exists — better than a row that passes
+      for the wrong reason [[a-case-that-agrees-can-agree-for-the-wrong-reason]].
+      ⚠️ **`CLS` `SCREEN` `COLOR` `WIDTH` WERE HELD BACK DELIBERATELY**: this sweep
+      anchors its capture on the ECHOED COMMAND, and the `locate` row above is the
+      standing proof that a feature which moves or clears the display destroys the
+      probe's own anchor. They need their own handling, not a hopeful row.
       ➡️ **NEXT BATCHES, cheapest context first:** the remaining pure/near-pure words
       (`RND` `MAX` `CVI` `LSET` `RSET` `POINT` `USING` `THEN` `ELSE` `TO` `STEP` `OFF`),
       then statement-shaped ones (`IF` `ON` `GOSUB` `RETURN` `NEXT` `READ` `RESTORE`
@@ -4730,7 +4752,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:14057 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:14079 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
