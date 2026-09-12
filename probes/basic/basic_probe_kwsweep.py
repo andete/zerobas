@@ -205,6 +205,39 @@ SWEEP: list[tuple[str, str, str | None, str, str]] = [
     ("let",     'let a=5',            'LET A=5:PRINT"[";A;"]"',        "direct", "D-KWDRAIN"),
     ("rem",     'rem x',              'PRINT"[";1;"]":REM z',          "direct", "D-KWDRAIN"),
 
+    # ------------------------------------------------ D-KWDRAIN batch 2 (2026-09-12)
+    # 🔴 THE SYNTAX PARTICLES NEEDED A TRICK, AND IT IS LEGITIMATE. `tier_table.py`
+    # credits a row to the FIRST keyword token in its CRUNCH body, and THEN / ELSE /
+    # TO / STEP / OFF / USING can never be first in valid BASIC -- so on the obvious
+    # spelling they could never be attributed at all, however well they work. The
+    # crunch body is CRUNCHED AND NEVER EXECUTED (see the header contract), so these
+    # rows put the particle first in the crunch -- which is exactly what Layer 1 is
+    # for, checking that the word tokenises -- while the exec line drives it in real
+    # syntax. `then a=1` crunches; `IF 2>1 THEN PRINT"[3]"` is what runs.
+    # ⚠️ RND IS SCORED FOR EXISTENCE AND RANGE, NOT FOR ITS SEQUENCE. `RND(1)<1` is
+    # true on any conforming implementation and false on a stub (an absent RND parses
+    # as a variable, making `RND(1)` a subscript). Whether zerobas's PRNG SEQUENCE
+    # matches the reference's is a separate question this row does not ask, and
+    # filing it as answered here would be the "agrees for the wrong reason" trap.
+    ("rnd",     'a=rnd(1)',           'PRINT"[";RND(1)<1;"]"',                "direct", "D-KWDRAIN"),
+    ("cvi",      'a=cvi("ab")',        'PRINT"[";CVI(MKI$(7));"]"',              "direct",
+     "NEEDS-DISK: " "absent => syntax error; real => 7. 🔴 TAGGED AFTER THE FACT: "
+     "written untagged it came back EXTRA -- ref `Illegal function call` vs zb "
+     "`[ 7 ]` -- which is EXACTLY the mis-attribution this file's header "
+     "describes, a diskless VG-8020 measured against zerobas's disk-equipped "
+     "build and the difference blamed on zerobas. The rest of the MK/CV family "
+     "was already tagged; this row simply had not been."),
+    ("using",   'using "##"',         'PRINT USING"##";7',                    "direct", "D-KWDRAIN"),
+    ("then",    'then a=1',           'IF 2>1 THEN PRINT"[3]"',               "direct", "D-KWDRAIN"),
+    ("elsekw",  'else a=1',           'IF 0 THEN PRINT 1 ELSE PRINT"[8]"',    "direct", "D-KWDRAIN"),
+    ("tokw",    'to 5',               'FOR I=1 TO 3:NEXT:PRINT"[";I;"]"',     "direct", "D-KWDRAIN"),
+    ("stepkw",  'step 2',             'FOR I=1TO5STEP2:NEXT:PRINT"[";I;"]"',  "direct", "D-KWDRAIN"),
+    ("offkw",   'off',                'INTERVAL OFF:PRINT"[9]"',              "direct", "D-KWDRAIN"),
+    ("ifkw",    'if 1 then a=2',      'IF 3>2 THEN PRINT"[4]"',               "direct", "D-KWDRAIN"),
+    ("nextkw",  'next i',             'FOR I=1 TO 2:NEXT:PRINT"[";I;"]"',     "direct", "D-KWDRAIN"),
+    ("clearkw", 'clear 100',          'CLEAR 100:PRINT"[5]"',                 "direct", "D-KWDRAIN"),
+    ("dimkw",   'dim a(2)',           'DIM D(2):D(1)=5:PRINT"[";D(1);"]"',    "direct", "D-KWDRAIN"),
+
     # -------------------------------------------------- suspected MISSING words
     # Console / cursor. All three fail the same way if absent: the word parses as
     # a numeric variable (0) or an array, so the probe must make 0 the WRONG

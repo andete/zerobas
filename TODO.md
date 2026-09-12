@@ -489,7 +489,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:15249 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:15271 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -655,7 +655,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:3864 (T-6FE392)8 (T-529ABE)` from `TODO.md:14035 (T-529ABE)`: a
+      `TODO.md:3886 (T-6FE392)8 (T-529ABE)` from `TODO.md:14057 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -2680,6 +2680,28 @@ list. **When a slice lands, grep this list for what it just shipped.**
       ⚠️ **SO "WEAK" IS A SECOND WAY A ROW CAN BE INVISIBLE**, alongside a blank
       reading: worth a sweep of every weak row for a hidden verdict. The other one
       today is `time`, SUPPORTED, nothing owed.
+      🟢 **BATCH 2, 2026-09-12: 88 -> 76**, kwsweep evidence 59 -> 71, twelve more
+      converted — `RND CVI USING THEN ELSE TO STEP OFF IF NEXT CLEAR DIM`
+      ([readings](scratchpad/kwdrain_batch2.out)). Battery 128/128 after.
+      🔴 **THE SYNTAX PARTICLES COULD NEVER HAVE BEEN ATTRIBUTED ON THE OBVIOUS
+      SPELLING.** `tools/tier_table.py` credits a row to the FIRST keyword token in
+      its CRUNCH body, and `THEN` `ELSE` `TO` `STEP` `OFF` `USING` can never be first
+      in valid BASIC — so however well they work they would have sat in "no known
+      gap" for ever, a hole in the ATTRIBUTION MECHANISM rather than in the ROM. The
+      crunch body is crunched and NEVER EXECUTED (the probe's own header contract), so
+      these rows put the particle first there — which is exactly what Layer 1 tests,
+      that the word tokenises — while the exec line drives it in real syntax.
+      🔴 **AND `CVI` WALKED STRAIGHT INTO THE PROBE'S OWN DOCUMENTED TRAP.** Written
+      untagged it came back `EXTRA` — ref `Illegal function call` vs zb `[ 7 ]` —
+      which is precisely the mis-attribution
+      [`basic_probe_kwsweep.py`](probes/basic/basic_probe_kwsweep.py)'s header
+      describes: a DISKLESS VG-8020 measured against zerobas's disk-equipped build,
+      with the difference blamed on zerobas. The rest of the MK/CV family was already
+      tagged `NEEDS-DISK:`; that row simply had not been. Tagged, it matches.
+      🟢 **THAT ALSO FALSIFIED THE PROBE'S OWN STATUS NOTE, now corrected**: it said
+      NEEDS-DISK rows report `NO-ORACLE` because the CF-3300 capture was unreadable
+      (STATUS 2026-07-26). The oracle READS — `mki` `mks` `mkd` `cvs` `cvd` and the
+      new `cvi` all return real verdicts [[a-fix-falsifies-the-justification-beside-it]].
       ➡️ **NEXT BATCHES, cheapest context first:** the remaining pure/near-pure words
       (`RND` `MAX` `CVI` `LSET` `RSET` `POINT` `USING` `THEN` `ELSE` `TO` `STEP` `OFF`),
       then statement-shaped ones (`IF` `ON` `GOSUB` `RETURN` `NEXT` `READ` `RESTORE`
@@ -4708,7 +4730,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:14035 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:14057 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
