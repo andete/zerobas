@@ -54,6 +54,9 @@ def keywords_in(line, kws):
     return hits
 
 
+import sys
+
+
 def main() -> int:
     if not os.path.exists(CAP):
         print(f"kwcover: no capture at {CAP}.\n"
@@ -74,6 +77,25 @@ def main() -> int:
             by_kw[kw].add(tag); rows_by_kw.setdefault(kw, f"{tag}:{label}  {text[:60]}")
     allk = sorted(set(kws))
     unex = [k for k in allk if not by_kw[k]]
+    # 🔴 REFUSE A DEGENERATE CAPTURE (D-KWCOVERFLOOR 2026-09-13). The capture only
+    # exists while the battery's EMULATOR tier runs, and a normal `make gates`
+    # skips those 88 targets when the ROMs and probe sources are byte-identical to
+    # the last green run. Measured: such a run collected 754 lines from 3 suites,
+    # and this report printed "EXERCISED 153 / UNEXERCISED 6" from it -- a
+    # plausible table naming CONT, LOAD, NAME, PAINT, PLAY and VAL as untyped by
+    # anything, every one of which a full battery types. A reference capture is
+    # ~46 000 lines from 82 suites, so a tenth of the suites is not a thin run, it
+    # is a different measurement [[an-instrument-can-fail-the-way-the-thing-it-replaced-failed]].
+    SUITE_FLOOR = 40
+    if len(suites) < SUITE_FLOOR:
+        print(f"D-KWCOVER: REFUSING -- the capture holds {lines} typed line(s) from "
+              f"only {len(suites)} suite(s), below the floor of {SUITE_FLOOR}.",
+              file=sys.stderr)
+        print("  The battery almost certainly SKIPPED its emulator tier; the capture "
+              "exists only while those targets run.", file=sys.stderr)
+        print("  Re-run with `make kwcover` (which forces gates-full). NOTHING WAS "
+              "MEASURED -- do not read a keyword list from this run.", file=sys.stderr)
+        return 2
     print(f"D-KWCOVER: {lines} typed line(s) captured from {len(suites)} suite(s); "
           f"{len(allk)} keywords\n")
     print(f"  EXERCISED   {len(allk) - len(unex):3}  at least one collected suite types it")

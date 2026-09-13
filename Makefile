@@ -3264,8 +3264,13 @@ tiers-md:
 # The capture rides on a normal battery run -- `omsx_repl.run_cases` appends every
 # typed line, tagged with its suite -- and the report refuses without one, because
 # three scans of the probe sources each returned a plausible wrong answer first.
+# 🔴 gates-FULL, not gates (D-KWCOVERFLOOR 2026-09-13): a normal battery SKIPS its
+# emulator tier when the ROMs and probe sources are byte-identical to the last
+# green run, and the capture only exists while those 88 targets execute. Riding a
+# skipped battery collected 754 lines from 3 suites and the report printed a
+# plausible "6 UNEXERCISED" table from it.
 kwcover:
-	ZEROBAS_KWCOVER=$(PWD)/build/kwcover.tsv $(MAKE) gates
+	ZEROBAS_KWCOVER=$(PWD)/build/kwcover.tsv $(MAKE) gates-full
 	python3 tools/kwcover.py
 
 kwcover-report:

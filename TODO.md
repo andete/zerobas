@@ -489,7 +489,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:16828 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:16902 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -655,7 +655,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:5234 (T-6FE392)8 (T-529ABE)` from `TODO.md:15531 (T-529ABE)`: a
+      `TODO.md:5256 (T-6FE392)8 (T-529ABE)` from `TODO.md:15553 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -2370,6 +2370,28 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `subject:` tag per gate row, over the 155-entry `kwtable.inc` denominator
       plus the missing keywords; it becomes the loop's pick list, TIER 1 first.
       The line/screen editor is on that list by his instruction.
+      🔴 **D-KWCOVERFLOOR (2026-09-13): `make kwcover` RODE A SKIPPED BATTERY AND
+      THE REPORT PRINTED A CONFIDENT, FALSE TABLE.** The capture exists only while
+      the battery's 88 EMULATOR targets run, and a normal `make gates` skips those
+      when the ROMs and probe sources are byte-identical to the last green run —
+      which they were. It collected **754 typed lines from 3 suites** and reported
+      `EXERCISED 153 / UNEXERCISED 6`, naming `CONT` `LOAD` `NAME` `PAINT` `PLAY`
+      `VAL` as typed by nothing in the battery. **A full run types all six.**
+      | | typed lines | suites | verdict |
+      |---|---|---|---|
+      | the skipped run | 754 | 3 | `UNEXERCISED 6` — every one false |
+      | the full run, same day | **46 813** | **83** | `UNEXERCISED 0` |
+      ➡️ **FIXED BOTH ENDS**: the `kwcover` target now forces `gates-full`, and
+      `tools/kwcover.py` **REFUSES** below a 40-suite floor with "NOTHING WAS
+      MEASURED — do not read a keyword list from this run" instead of printing one.
+      The refusal was verified against the exact capture that fooled it.
+      ⚠️ **THE ENTRY THAT BUILT THIS CAPTURE SAID ITS STRENGTH WAS THAT IT "RIDES ON
+      A NORMAL BATTERY RUN"** — the question "which keywords does the battery run?"
+      answered by the battery running rather than by reading the probes. That is
+      still true and still the right design; what it missed is that a battery is
+      allowed to DECLINE to run, and a capture with no producer looks exactly like a
+      measurement with a small answer
+      [[an-instrument-can-fail-the-way-the-thing-it-replaced-failed]].
       🟢 **STEP (c) HAS ITS DENOMINATOR AT LAST — MEASURED, NOT SCANNED (D-KWCOVER,
       2026-09-11, [`docs/spec-basic-kwcover.md`](docs/spec-basic-kwcover.md),
       `make kwcover`).** Joost: *"given that we have so many keywords still at 'no
@@ -6078,7 +6100,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:15531 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:15553 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -16802,7 +16824,60 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       survived contact with a measurement. The pattern is worth more than the
       drain: a blocker is written down at the moment of most confusion about a
       problem, and then it is never re-read against what was learned afterwards.
-      🙋 **SO THE TIER IS NOW THE QUESTION, EXACTLY AS THIS ITEM SAID IT WOULD BE.**
+      🎯 **RULED (Joost, 2026-09-13): "keep it TIER 1 — step (c) is worth
+      building."** Both halves answered. The tier STAYS despite nothing under it
+      being measured broken, which is the conservative reading and the one the
+      drain's own record supports: re-tiering on "nothing is measured broken" is the
+      reasoning that would have hidden `NEW`, `FILES`, `LFILES` and `MERGE`.
+      ➡️ **AND THE EXIT CRITERION MOVES ON, it does not disappear.** "The list is
+      empty" is DONE and stays done; what this item is now open for is **step (c)**,
+      which upgrades the evidence from *a row exists for this keyword* to *a row
+      whose verdict MOVES when this keyword breaks*.
+      📏 **DONE = every keyword's attribution is MUTATION-PROVEN, and the BLIND ones
+      are filed.** Run the instrument; do not read a number here.
+      🎯 **RE-AIMED THE SAME HOUR (Joost, 2026-09-13): *"instead of trying to match
+      existing tests on keywords, it would make more sense to just add more tests
+      for each keyword proving the tier"* — and he is right, on evidence this
+      session produced.**
+      | | writes a row per keyword | matches existing suites (the filed step (c)) |
+      |---|---|---|
+      | finds defects | **five TIER 1 this session** — `NEW` `FILES` `LFILES` `MERGE`, and `LOAD`, which only the `MERGE` row could have found | **none, by construction** — it certifies coverage that already exists |
+      | what it proves | the keyword's BEHAVIOUR against the reference, at its tier | only that *a total failure of the handler is noticed* — the spec says so itself |
+      | apparatus needed | none: four rigs already exist | a keyword→dispatch map, a ROM patcher, per-keyword suite selection |
+      | BLIND keywords | n/a | still need a row written afterwards — **you pay twice** |
+      🔴 **AND THE "THIS KEYWORD CANNOT TAKE A ROW" OBJECTION IS EMPIRICALLY DEAD**:
+      twelve blockers re-verified across the drain, twelve stale, including *the
+      display verbs cannot take a kwsweep row* and *the multi-line words cannot be
+      expressed in one row*. Both got rows.
+      ➡️ **SO THE `subject:` TAG IS NOT BUILT — THE ROW IS THE ATTRIBUTION.** Step
+      (c) as filed is retired in favour of rows, and what survives of it is the
+      KNIFE, demoted from a per-keyword mechanism to a **sampling spot-check**
+      answering *"is this row load-bearing?"* — which is the question the five
+      silent-failure modes actually raise. Rows can go green while seeing nothing:
+      five did this session and `CSAVE` nearly made it six, scoring SUPPORTED on an
+      EMPTY capture.
+      📏 **DONE = every keyword has a row that OBSERVES it, and a sample of rows is
+      knife-proven load-bearing.** Run the instruments; do not read a number here.
+      ~~ **THE MECHANISM IS ALREADY SPECIFIED AND NEEDS NO DESIGN** (D-KWCOVER
+      spec §2): `make kwcover` says which suites TYPE each keyword — 159/159 typed,
+      27 THIN — so the candidate set per keyword is 1–4 suites, not 82. A handler is
+      then disabled by patching the **BUILT ROM** (seconds, no rebuild) and only
+      those suites re-run; keywords with disjoint suite sets can be knifed in the
+      same ROM. **A keyword whose handler can be disabled with its suites still
+      GREEN is BLIND**, and that is the row list.~~ — RETIRED as the primary
+      mechanism by the re-aim above; kept as the sampling spot-check.
+      ⚠️ **EXERCISED IS NOT VERIFIED, and the drain just proved why at row level**:
+      five silent-failure modes shipped green rows this session, and a sixth nearly
+      did (`CSAVE` scored SUPPORTED on an EMPTY capture — two machines agreeing that
+      nothing happened). Mutation is the general cure for exactly that class, which
+      is what makes step (c) worth its price rather than bookkeeping.
+      💰 **PRICED BEFORE IT WAS APPROVED**: ~15 minutes per keyword as a mutation +
+      rebuild + full battery — but the spec's ROM-patch route removes the rebuild
+      and the disjoint-set batching removes most of the battery, which is where the
+      real saving is. Measure the per-keyword cost on the first one before assuming
+      either figure.
+      ~~ **SO THE TIER IS NOW THE QUESTION, EXACTLY AS THIS ITEM SAID IT WOULD BE.**~~ — ANSWERED, see above.
+      
       The three defect classes are empty (SILENT-GAP, MISSING, DIVERGENT), the
       unattributed list is empty, and the item asked for the tier to be re-asked
       WITH JOOST at this point rather than re-tiered autonomously. Two things need
@@ -16821,9 +16896,8 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       of them earned. Re-tiering on "nothing is measured broken" would be the same
       reasoning the drain has refuted four times. When the list empties, THAT is
       when the tier is the question to re-ask — with Joost.
-      🙋 NEEDS-JOOST — THE DRAIN IS DONE (the list is empty). What is left is
-      the question this item reserved for him: does it stay TIER 1, and is step
-      (c) worth its measured price? No autonomous work remains here.
+      🤖 AUTONOMOUS — Joost ruled both halves on 2026-09-13: the tier STAYS and
+      step (c) IS worth building. The drain is done; step (c) is the open work.
 
 - [ ] **`LOAD"CAS:"` ACCEPTS A TOKENISED TAPE; the reference does not return.**
       Found 2026-08-03 by D-DOTGAPS (§1.2). With only a $D3 file on the tape the
