@@ -6,7 +6,7 @@ session and the loop resumes exactly where it stopped.
 
 ## Where things stand
 
-* Tree CLEAN and pushed at `1a777438`. Recount everything — never quote a number
+* Tree CLEAN and pushed at `448e2b29`. Recount everything — never quote a number
   from this file.
 * 🟢 **EVERY TIER 1 THE DRAIN PRODUCED IS CLOSED** (`NEW` `FILES` `LFILES`
   `MERGE`, plus `LOAD` which only the MERGE sweep could have found), and **the
@@ -32,39 +32,46 @@ session and the loop resumes exactly where it stopped.
   and `INPUT` (`INPUT #n` reads a file), each filed next to a word with a real
   blocker and inheriting it by adjacency. Check the shape before the blocker.
 
-## The next slice — `CLOAD`, and the rig it needs ALREADY EXISTS
+## Where the drain stands — THREE words, and a decision that is Joost's
 
-**THREE words: `CLOAD CSAVE INKEY$`.**
+`CLOAD CSAVE INKEY$`. Each needs APPARATUS rather than a cleverer row, and that is
+filed as **its own 🙋 NEEDS-JOOST item** in TODO.md (it was briefly inside the
+autonomous drain block, and `todo-marker-check` rightly refused an item carrying
+two markers). The prices are in that item. What the drain already bought is beside
+them, so the price is judged against something: **four TIER 1 defects came out of
+this list** — `NEW` `FILES` `LFILES` `MERGE` — plus `LOAD`, which only the `MERGE`
+sweep could have found.
 
-🔴 **FIRST, A CORRECTION I OWE THE NEXT READER: "nothing in this tree plays a
-tape" was MY claim, filed twice, and it is FALSE.** The measurement was a grep for
-`cassetteplayer insert` under `probes/`, which is not how this tree mounts a tape:
-it uses the openMSX command-line flag **`-cassetteplayer <file>`**, in
-`basic_probe_cas_options.py`, `basic_probe_cas_ascii.py` and
-`basic_probe_cas_verbs.py`, all of which LOAD programs off tape today. And
-**`probes/lib/cas_encode.py` is the encoder** — `build_cas_basic(name, program)`
-synthesises a playable `.cas`. Eleven of thirteen stale blockers tonight were
-inherited; this one I wrote. **A blocker is only as good as the string it was
-measured with.**
+## The next slice — the CLOAD ORACLE, which is a MEASUREMENT, not a build
 
-➡️ **SO THE TAPE PAIR IS BLOCKED ON A READBACK, NOT A RIG:**
+🔴 **`CLOAD`'S BLOCKER HAS MOVED THREE TIMES UNDER MEASUREMENT** and the current
+one is the only one left standing:
 
-* **`CLOAD`** replaces the program and returns to COMMAND LEVEL, so nothing in the
-  same case can observe it — exactly `LOAD`'s shape, and `LOAD` is attributed by
-  an OPEN ITEM rather than a row. Two routes, both real: (a) a capture that reads
-  the STORED PROGRAM back (Layer 1 already uses `("stored_line", TXTTAB)`, so the
-  capture exists — it has never been used by Layer 2), or (b) an open item naming
-  what `basic_probe_cas_options.py` already measures.
-  🎯 **(a) IS THE SAME SHAPE `NEEDS-LOG:` TOOK FOR `LLIST`** — a per-rig CAPTURE,
-  with the CLASS from the screen and the TEXT from the other half. That worked.
-* **`CSAVE`**'s output is the recording, which needs the WAV decode
-  `basic_probe_cassave.py` already does — a third capture, same shape.
-* **`INKEY$`** is the one genuine keyboard block: the injector's TIMING, a harness
-  change, and it must not reopen D-LATCH.
+| filed as | measured |
+|---|---|
+| "nothing in this tree PLAYS a tape" | FALSE — `-cassetteplayer` mounts one; `cas_encode.build_cas_basic` makes the `.cas` |
+| "no READBACK — it returns to command level" | FALSE — **`Found:ZQ` reaches the SCREEN**; no new capture needed |
+| *(open)* | **the VG-8020 does not read the fixture.** zerobas prints `Found:ZQ`; the reference prints nothing and never reaches a prompt |
 
-⚠️ **WHEN THESE THREE ARE THE ONLY ONES LEFT, THE QUESTION CHANGES** from "how" to
-"is the capture worth it" — and that is Joost's to answer, with the prices above
-on the table, not a decision to take silently in a loop tick.
+⚠️ **NOT TIMING AND NOT A MISSING PORT** — `cap_gap` 60 and 150 are identical, and
+the VG-8020 config carries `<CassettePort/>` like the repack machine. And every
+cassette probe in this tree runs on the REPACK MACHINE ONLY (its own header says
+so), so this has never been asked before.
+➡️ **SEPARATE THE TWO CAUSES, cheapest first**: (a) an openMSX setting the repack
+machine has and the VG-8020 does not — compare the two machine XMLs and the
+cassette-related settings the cas probes set; (b) the fixture is built to zerobas's
+reading of the `.cas` format and a real BIOS wants something else — in which case
+that is a FINDING ABOUT THE FORMAT, not about the verb, and worth more than the
+keyword. A tape WRITTEN BY ZEROBAS (`basic_probe_cassave.py` records one) fed to
+the VG-8020 separates them in one run.
+🔴 **THE TAPE POSITION IS STATE THAT SURVIVES A CASE** — the `AUTO` lesson again.
+Batched, a second `CLOAD` reads `load error` because the first consumed the tape,
+and one poisoned VG-8020 run showed the same stale screen for every case INCLUDING
+THE CONTROL. Boot per case, one fresh tape each.
+
+⚠️ **THE OTHER TWO STAY PARKED** unless Joost rules: `CSAVE` needs a WAV-decode
+capture and `INKEY$` needs the key injector's timing exposed to a row — a harness
+change, and D-LATCH/D-LATCH2 are the races it must not reopen.
 
 ## 🔴 Two staging traps, both paid for on 2026-09-12/13
 
@@ -130,4 +137,4 @@ a pattern that appears in the polling command.
 
 Paste this into a fresh session:
 
-    /loop continue autonomously on zerobas — 🔴 TIER 1 BEFORE ANYTHING ELSE, then drain "no known gap" to ZERO (Joost's 2026-09-12 ruling, which outranks TIER 4). Read scratchpad/LOOP-RESTART.md FIRST, then the item's own block in TODO.md to its END. Run `make tiers`; recount keywords with `python3 tools/tier_table.py --keywords` — never quote a count. THREE WORDS LEFT: CLOAD CSAVE INKEY$. THIS SLICE: `CLOAD`, and the rig it needs ALREADY EXISTS — `-cassetteplayer <file>` mounts a playable tape (basic_probe_cas_options.py, basic_probe_cas_ascii.py, basic_probe_cas_verbs.py all load off tape today) and probes/lib/cas_encode.py's `build_cas_basic(name, program)` synthesises the `.cas`. 🔴 I FILED "nothing in this tree plays a tape" TWICE AND IT IS FALSE — the grep was for `cassetteplayer insert`, which is not how this tree mounts one. What actually blocks CLOAD is a READBACK: it replaces the program and returns to COMMAND LEVEL, so nothing in the same case observes it — exactly LOAD's shape. Two routes, both real: (a) a per-rig CAPTURE that reads the STORED PROGRAM back — Layer 1 already uses `("stored_line", TXTTAB)`, so the capture exists and Layer 2 has never used it, and this is the same shape `NEEDS-LOG:` took for LLIST (class from the screen, text from the other half); or (b) an open item naming what basic_probe_cas_options.py already measures. Pick ONE and say why. ⚠️ Prove the readback MOVES before keeping the row, clear the FIVE silent-failure modes in LOOP-RESTART.md, and after adding rows READ THE WHOLE SWEEP SUMMARY. ⚠️ `auto` MUST STAY LAST IN SWEEP — a banner comment says so; anything appended after it inherits the line-entry poisoning. 🎚️ WHEN ONLY CLOAD/CSAVE/INKEY$ REMAIN, THE QUESTION IS NO LONGER "how" BUT "is the capture worth it" — that is Joost's call, so put the prices in TODO.md and say so rather than deciding it in a loop tick. Standing rules: full `make gates` before each commit and never commit red; 🔴 AFTER ANY basic/ OR sub/ CHANGE stage zerobas-main-eu.ips/.bps WITH the commit; 🔴 `check_todo_citations.py --fix` REWRITES EVERY DOC THAT CITES A MOVED BLOCK — five files beyond TODO.md every time; read `git status --short` as a LIST; after a `--fix` re-run every gate that READS TODO.md; `rm -rf build && make basic-reloc` for any wall figure, and BACK UP build/kwsweep-verdicts.json first; `test -e <path> && exit 1` before any `cat >` heredoc; stage explicit paths, `git add -A` banned; commit message to a FILE with `git commit -F`; commit AND push after each fix without asking; never write a tracked file while a battery runs; re-run the five battery-excluded targets by hand after any slice touching a shared leaf; NEVER poll with a pattern that matches the polling command itself — use the background task's own completion notification; READ the output of every edit script.
+    /loop continue autonomously on zerobas — 🔴 TIER 1 BEFORE ANYTHING ELSE, then drain "no known gap" to ZERO (Joost's 2026-09-12 ruling, which outranks TIER 4). Read scratchpad/LOOP-RESTART.md FIRST, then the item's own block in TODO.md to its END. Run `make tiers`; recount keywords with `python3 tools/tier_table.py --keywords` — never quote a count. THREE WORDS LEFT and they are a 🙋 NEEDS-JOOST item now: CLOAD CSAVE INKEY$ each need APPARATUS rather than a row, and the prices are in that item. THIS SLICE IS THE ONE THAT IS STILL A MEASUREMENT: why does the VG-8020 not read the tape fixture? zerobas prints `Found:ZQ` off a mounted `.cas`; the reference prints nothing and never reaches a prompt. NOT timing (cap_gap 60 and 150 are identical) and NOT a missing port (its config carries `<CassettePort/>`) — both already checked. Separate the two remaining causes, cheapest first: (a) an openMSX setting the repack machine has and the VG-8020 does not — compare the machine XMLs and whatever the cas probes set; (b) the fixture is built to zerobas's reading of the `.cas` format and a real BIOS wants something else, which would be a FINDING ABOUT THE FORMAT and worth more than the keyword. A tape WRITTEN BY ZEROBAS (basic_probe_cassave.py records one) fed to the VG-8020 separates them in one run. 🔴 THE TAPE POSITION SURVIVES A CASE — boot per case, one fresh tape each; batched, a second CLOAD reads `load error` because the first consumed the tape, and a poisoned run shows the same stale screen for every case INCLUDING THE CONTROL. ⚠️ If it turns out to need real apparatus rather than a setting, STOP and leave it to Joost with the price written down — do not build it in a loop tick. ⚠️ `auto` MUST STAY LAST IN SWEEP (banner comment says so). Standing rules: full `make gates` before each commit and never commit red; an item may carry only ONE marker — todo-marker-check refuses 🙋 and 🤖 together; 🔴 AFTER ANY basic/ OR sub/ CHANGE stage zerobas-main-eu.ips/.bps WITH the commit; 🔴 `check_todo_citations.py --fix` REWRITES EVERY DOC THAT CITES A MOVED BLOCK — five files beyond TODO.md every time; read `git status --short` as a LIST; after a `--fix` re-run every gate that READS TODO.md; `rm -rf build && make basic-reloc` for any wall figure, and BACK UP build/kwsweep-verdicts.json first; `test -e <path> && exit 1` before any `cat >` heredoc; stage explicit paths, `git add -A` banned; commit message to a FILE with `git commit -F`; commit AND push after each fix without asking; never write a tracked file while a battery runs; re-run the five battery-excluded targets by hand after any slice touching a shared leaf; NEVER poll with a pattern that matches the polling command itself — use the background task's own completion notification; READ the output of every edit script.
