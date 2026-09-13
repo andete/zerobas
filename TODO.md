@@ -489,7 +489,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:16213 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:16273 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -655,7 +655,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:4779 (T-6FE392)8 (T-529ABE)` from `TODO.md:14950 (T-529ABE)`: a
+      `TODO.md:4839 (T-6FE392)8 (T-529ABE)` from `TODO.md:15010 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -3596,6 +3596,42 @@ list. **When a slice lands, grep this list for what it just shipped.**
       (`basic_probe_cassave.py` already does it, out of kwsweep's reach).
       **Both are now questions about a CAPTURE, like `LLIST` was — and `NEEDS-LOG:`
       is the precedent for adding one.**
+      🔴 **D-KWCLOAD, 2026-09-13: `CLOAD`'S BLOCKER HAS NOW MOVED THREE TIMES UNDER
+      MEASUREMENT, and where it ended up is not where any of the filings put it.**
+      Each step was cheap and each one killed the previous answer:
+      | filed as | measured |
+      |---|---|
+      | "nothing in this tree PLAYS a tape" | FALSE — `-cassetteplayer` mounts one and three cas probes load off tape today; `cas_encode.build_cas_basic` synthesises the `.cas` |
+      | "no READBACK — it returns to command level" | FALSE — **`Found:ZQ` reaches the SCREEN.** No new capture is needed at all |
+      | *(new)* | 🔴 **THE VG-8020 DOES NOT READ THE FIXTURE.** zerobas prints `Found:ZQ`; the reference prints nothing and never returns to a prompt |
+      🟢 **THE READBACK IS THE INTERESTING HALF AND IT IS FREE.** MSX BASIC prints
+      `Found:<name>` while it searches a tape, so `CLOAD"ZQ"` against a mounted
+      fixture is screen-visible on the subject side — the `NEEDS-LOG:`-style capture
+      this was going to need is not needed
+      ([`scratchpad/kwdrain_cloadchk.py`](scratchpad/kwdrain_cloadchk.py),
+      [readings](scratchpad/kwdrain_cloadchk.out)).
+      🔴 **AND THE TAPE POSITION IS STATE THAT SURVIVES A CASE** — the `AUTO` lesson
+      in another costume. Batched, the second `CLOAD` answered `load error` because
+      the first had already consumed the tape, and the first VG-8020 run was
+      unusable with ALL THREE cases showing one stale screen **including the
+      control**, which is the tell that the run and not the verb had failed. Boot
+      per case, one fresh tape each
+      ([readings](scratchpad/kwdrain_cloadchk2.out)).
+      ⚠️ **THE REFERENCE SIDE IS NOT A TIMING PROBLEM AND NOT A MISSING PORT**, both
+      checked because both are the cheap explanations: at `cap_gap` 60 **and** 150
+      the VG-8020 screen is unchanged ([readings](scratchpad/kwdrain_cloadchk3.out)),
+      and its openMSX config carries `<CassettePort/>` exactly as the repack machine
+      does. ⚠️ Note that EVERY cassette probe in this tree runs on the repack
+      machine only — its header says so — so whether the VG-8020 can read a tape
+      here has never been asked before now.
+      ➡️ **SO THE OPEN QUESTION IS AN ORACLE ONE**: either the fixture is built to
+      zerobas's reading of the `.cas` format and a real BIOS wants something else
+      (which would be a FINDING about the format, not about the verb), or the
+      VG-8020's tape path needs an openMSX setting the repack machine does not.
+      Separating those is the next measurement, and it is apparatus work.
+      ➡️ **THE LAST THREE ARE AN APPARATUS DECISION, NOT A METHOD ONE** — filed as
+      its own item below so it reaches the NEEDS-JOOST queue instead of hiding
+      inside an autonomous block.
       ⚠️ **THE PATTERN WAS TEN FOR TEN AND IS NOW TEN OF TWELVE — the tape and
       the printer log HELD.** Every other blocker examined this session — the display verbs' "cannot take a row", the multi-line words'
       "cannot be expressed", the CF-3300 oracle, the disk fixture (which needed a
@@ -3638,6 +3674,30 @@ list. **When a slice lands, grep this list for what it just shipped.**
       reaching it carries a valid start/end and would begin a real tape write.
       Filed as unmeasured rather than agreed; it needs a rig that can absorb a
       tape write, or a disk-path variant on the CF-3300.
+
+- [ ] 🙋 **THE LAST THREE UNATTRIBUTED KEYWORDS ARE AN APPARATUS PRICE, NOT A
+      METHOD — `CLOAD`, `CSAVE`, `INKEY$`.** Joost's 2026-09-12 ruling drains the
+      "no known gap" list to ZERO before TIER 4, and the drain has run from 114 to
+      these three. Every one of them now needs APPARATUS rather than a cleverer
+      row, and the ruling was about draining EVIDENCE — whether that evidence is
+      worth this much apparatus is a different question.
+      **Recount before reading any of this: `make tiers ARGS=--keywords`.**
+      | word | what it needs | what already exists |
+      |---|---|---|
+      | `CLOAD` | an ORACLE-side tape investigation — zerobas prints `Found:ZQ` off a mounted fixture, the VG-8020 prints nothing and never returns to a prompt (not timing, not a missing `<CassettePort/>`; both checked) | the rig, the `.cas` encoder, and a SCREEN-visible readback that needs no new capture |
+      | `CSAVE` | a WAV-DECODE capture in kwsweep — its only output is the recording | the decode itself, in [`basic_probe_cassave.py`](probes/basic/basic_probe_cassave.py); `NEEDS-LOG:` is the precedent for adding a per-rig capture |
+      | `INKEY$` | the key injector's TIMING exposed to a row — a HARNESS change | `omsx_repl.key_proc()`, race-immune and measured, driven by two trap probes |
+      ⚠️ **THE `INKEY$` ONE IS THE ONE TO BE CAREFUL WITH**: the timing lives inside
+      `run_cases` (`boot` + per-line `step`), a row cannot see it, and D-LATCH /
+      D-LATCH2 are the races a change there must not reopen.
+      🎯 **WHAT THE DRAIN HAS ALREADY BOUGHT, so the price is judged against
+      something**: four TIER 1 defects came out of this list — `NEW`, `FILES`,
+      `LFILES`, `MERGE` — plus `LOAD`, which only the `MERGE` sweep could have
+      found. The hit rate on the cheap words was high; these three are the
+      expensive tail.
+      🎚️ STANDING — ruling
+      🙋 NEEDS-JOOST — the question is "is the apparatus worth it", and three
+      different pieces of it, so it is his call rather than a loop tick's.
 
 - [ ] 🔁 **STANDING BUDGET (Joost, 2026-09-09): SPEND UP TO 20 B OF MAIN
       PAGE 1 ON A MEASURED DIVERGENCE WITHOUT ASKING.** Asked as *"do you want to
@@ -5623,7 +5683,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:14950 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:15010 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

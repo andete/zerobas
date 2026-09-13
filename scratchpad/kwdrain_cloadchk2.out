@@ -1,0 +1,7 @@
+=== zb
+  cload.named tail='Found:ZQ'     screen=version 0.1 | clean-room MSX1 BASIC | zerobas Disk BASIC | ZBNEW | ZB10 CLOAD"ZQ" | ZBRUN | Found:ZQ
+  ctl.noverb  tail='[N9]'         screen=sion 0.1 | clean-room MSX1 BASIC | zerobas Disk BASIC | ZBNEW | ZB10 PRINT"[N9]" | ZBRUN | [N9] | ZB
+=== vg8020
+  cload.named tail='|||||||||||||||color  auto   goto   list   run' screen= Microsoft | 28815 Bytes free | Ok | NEW | Ok | 10 CLOAD"ZQ" | RUN | color  auto   goto   list   run
+  ctl.noverb  tail='[N9]'         screen=8815 Bytes free | Ok | NEW | Ok | 10 PRINT"[N9]" | RUN | [N9] | Ok | color  auto   goto   list   run
+refcache: 0 hit, 4 miss, 4 stored

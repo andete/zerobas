@@ -1,0 +1,10 @@
+fixture: /tmp/zerobas/kwcload_6_sv7a0v/zq.cas (62 bytes), program = 10 PRINT"[Z9]"
+=== zb
+  cload.named tail='Found:ZQ'             screen=ZB10 CLOAD"ZQ" | ZBRUN | Found:ZQ
+  cload.bare  tail='load error'           screen=ZB10 CLOAD | ZBRUN | load error | ZB
+  ctl.noverb  tail='[N9]'                 screen=ZB10 PRINT"[N9]" | ZBRUN | [N9] | ZB
+=== vg8020
+  cload.named tail='||||||||||||||||||||color  auto   goto   list   run' screen=Ok | 10 CLOAD"ZQ" | RUN | color  auto   goto   list   run
+  cload.bare  tail='||||||||||||||||||||color  auto   goto   list   run' screen=Ok | 10 CLOAD | RUN | color  auto   goto   list   run
+  ctl.noverb  tail='||||||||||||||||||||color  auto   goto   list   run' screen=Ok | 10 CLOAD | RUN | color  auto   goto   list   run
+refcache: 0 hit, 2 miss, 2 stored

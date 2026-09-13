@@ -1,0 +1,5 @@
+vg8020 cap_gap=60.0   tail='|||||||||||||||color  auto   goto   list   run'
+      screen=osoft | 28815 Bytes free | Ok | NEW | Ok | 10 CLOAD"ZQ" | RUN | color  auto   goto   list   run
+vg8020 cap_gap=150.0  tail='|||||||||||||||color  auto   goto   list   run'
+      screen=osoft | 28815 Bytes free | Ok | NEW | Ok | 10 CLOAD"ZQ" | RUN | color  auto   goto   list   run
+refcache: 0 hit, 2 miss, 2 stored
