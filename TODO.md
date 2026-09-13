@@ -489,7 +489,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:17078 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:17097 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -655,7 +655,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:5256 (T-6FE392)8 (T-529ABE)` from `TODO.md:15729 (T-529ABE)`: a
+      `TODO.md:5256 (T-6FE392)8 (T-529ABE)` from `TODO.md:15748 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -6100,7 +6100,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:15729 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:15748 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -6953,6 +6953,25 @@ list. **When a slice lands, grep this list for what it just shipped.**
       already known at `sw_absent`**, where the missing-operand raise lives. Putting
       `ld hl,SW_TYPE1` + `ld a,(SW_TYPE)` + `cp (hl)` + `jp nz,type_mismatch_error`
       ahead of that raise is the whole change.
+      🟢 **FIXED THE SCOUT, AND ROUTE D IS NOW MEASURED EMPTY RATHER THAN WRONG
+      (D-JRFIX, 2026-09-13).** `scratchpad/jr_mapper.py` had **two independent
+      bugs**, and each of its two surviving proposals was killed by a different one
+      — which is why the pair looked plausible right up to the assembler:
+      | bug | what it did | the proposal it invented |
+      |---|---|---|
+      | the range test read `-126 <= disp <= 129` | a `jr` displacement is **-128..+127** | `$4F5C` → `ev_ff_lof` at **disp +129**, refused by pasmo |
+      | the ROM walk maps ONE image, the source line is in a **shared body** | in range here says nothing about the other ROM that includes it | `$65BC` → `bl_load_error` at disp +110 — comfortably in range in the main image, and the build still failed |
+      🎯 **THE SECOND RULE ALREADY EXISTED AND ROUTE D NEVER APPLIED IT**: the
+      instruction-pair route carries *"EXCLUDE any `*-body.inc` that `sub/` also
+      includes"* for exactly this reason. **In range in one image is not in range.**
+      ⚠️ **AND THE FORWARD BYTE IS DELIBERATELY NOT TAKEN**: converting a 3-byte `jp`
+      to a 2-byte `jr` shifts everything after the site down one, so a forward
+      target could stretch to +128 — but the same shift moves every OTHER proposal
+      in the pass, so the bound stays the assembler's own.
+      📏 **ROUTE D NOW PROPOSES ZERO CONVERSIONS**, which is the honest reading and
+      not a regression: both of its candidates were always unbuildable. ⚠️ **SO
+      EVERY "Route D" CITATION IN THIS FILE THAT TREATS IT AS A LIVE ROUTE IS NOW
+      STALE** — it is dry until code motion opens a site, and a re-run is cheap.
       🔴 **AND `jr_mapper` PROPOSES TWO SITES THE ASSEMBLER REFUSES — BOTH OF THEM.**
       Route D's only two candidates are `basic/expr.asm:1121` and
       `basic/pdfcb-body.inc:53`; converting either gives **`Relative jump out of

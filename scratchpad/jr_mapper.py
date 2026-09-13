@@ -83,13 +83,27 @@ while i < n:
         conv = False
         if mnem in CONVERTIBLE_JP:
             disp = tgt-(addr+2)
-            conv = (-126<=disp<=129) and (0<=tgt-BASE<n) and rom[tgt-BASE]!=0xC9
+            # 🔴 BUG 1, MEASURED 2026-09-13: this read `-126<=disp<=129`, and a `jr`
+            # displacement is -128..+127. It proposed $4F5C -> ev_ff_lof at disp
+            # +129, which pasmo rejects with `Relative jump out of range`. The
+            # bound is now the assembler's, conservatively: converting a 3-byte
+            # `jp` to a 2-byte `jr` shifts everything after the site down one, so a
+            # FORWARD target could stretch to +128 -- we do not take that byte,
+            # because the shift also moves every OTHER proposal in the same pass.
+            conv = (-128<=disp<=127) and (0<=tgt-BASE<n) and rom[tgt-BASE]!=0xC9
         rom_sites.append((addr,mnem,tgt,reg,o,conv))
     i += L
 
 # --- SOURCE walk: control-transfer lines with region+ordinal ---
 JLINE = re.compile(r'^(\s*)(jp|jr|call)\s+((?:z|nz|c|nc|pe|po|p|m)\s*,\s*)?([A-Za-z_]\w*)\s*(;.*)?$', re.I)
 src_index = {}      # (region_addr, mnem, target_label, ordinal) -> [(file,line,raw)]
+# 🔴 BUG 2, MEASURED THE SAME DAY: a `*-body.inc` is included by MORE THAN ONE
+# ROM, and this walk maps only the main image -- so $65BC -> bl_load_error read
+# +110, comfortably in range HERE, and the build still failed because the same
+# source line sits at a different address in the other ROM that includes it. The
+# instruction-pair route already carries this rule ("EXCLUDE any *-body.inc that
+# sub/ also includes"); Route D never did. In range in one image is not in range.
+SRC = [f for f in SRC if not f.endswith("-body.inc")]
 for f in SRC:
     cur_region = None
     ordc = collections.Counter()
