@@ -489,7 +489,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:17055 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:17078 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -655,7 +655,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:5256 (T-6FE392)8 (T-529ABE)` from `TODO.md:15706 (T-529ABE)`: a
+      `TODO.md:5256 (T-6FE392)8 (T-529ABE)` from `TODO.md:15729 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -6100,7 +6100,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:15706 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:15729 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -6946,6 +6946,29 @@ list. **When a slice lands, grep this list for what it just shipped.**
       something on the way to creating them answers first with `Illegal function
       call`. That is where to look — the order of "allocate the operand" against
       "check the two types agree".
+      📏 **PRICED THE SAME DAY AT TEN BYTES OF MAIN PAGE 1, WHICH HAD EIGHT — and
+      the carve that should have covered it does not exist.** The fix itself is
+      settled and small: `sw_operand` resolves an operand's type from its NAME (the
+      `$` suffix / DEFtbl) *before* it looks the variable up, so **both types are
+      already known at `sw_absent`**, where the missing-operand raise lives. Putting
+      `ld hl,SW_TYPE1` + `ld a,(SW_TYPE)` + `cp (hl)` + `jp nz,type_mismatch_error`
+      ahead of that raise is the whole change.
+      🔴 **AND `jr_mapper` PROPOSES TWO SITES THE ASSEMBLER REFUSES — BOTH OF THEM.**
+      Route D's only two candidates are `basic/expr.asm:1121` and
+      `basic/pdfcb-body.inc:53`; converting either gives **`Relative jump out of
+      range`**. The second one assembled briefly and only because the unfinished fix
+      was still in the image shifting addresses — it fails on its own. The scout has
+      been re-run against the current build and still lists both, so this is not a
+      stale reading, it is a wrong one: its range test disagrees with pasmo's.
+      ⚠️ **THAT MAKES ROUTE D UNUSABLE UNTIL THE SCOUT IS FIXED**, and it is the
+      route the tree reaches for first whenever page 1 is tight. Fixing
+      `scratchpad/jr_mapper.py` to agree with the assembler — or to VERIFY each
+      proposal by assembling it — is now the cheapest way to unblock this fix and
+      the next one like it [[an-instrument-can-fail-the-way-the-thing-it-replaced-failed]].
+      🎯 **NOTHING IS GUESSED HERE**: the fix compiles, the wall refuses it by
+      exactly two bytes, and both carve proposals were tried and rejected by the
+      assembler rather than by judgement. Main page 1 measured 8 B free and the low
+      region 0 B on 2026-09-13.
       🎚️ TIER 3 — common errors: the right error for a mistyped `SWAP A,B$`
       🤖 AUTONOMOUS — reproduced in one row, and the passing rows bound it tightly.
       ⚠️ **APPARATUS NOTE FOR EVERY FUTURE ROW: MSX VARIABLE NAMES ARE SIGNIFICANT
