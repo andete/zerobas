@@ -1,0 +1,13 @@
+=== vg8020
+   after RUN, READ again  < 8 > | Ok
+   CLEAR then READ        < 7 > | Ok
+   an EDIT then READ      < 7 > | Ok
+   RESTORE then READ      < 7 > | Ok
+=== zb
+   after RUN, READ again  < 8 > | ZB
+   CLEAR then READ        < 7 > | ZB
+   an EDIT then READ      < 7 > | ZB
+   RESTORE then READ      < 7 > | ZB
+
+READ IT AS: <7> the cursor RESET to the program top; <8> it kept position.
+refcache: 4 hit, 4 miss, 4 stored

@@ -1369,8 +1369,7 @@ eval_addr:
 ; fac_to_int_addr.
 eval_chan:
                 call    eval
-                ld      a,(FPERR)           ; D-PENDERR: was `ld a,(TMISMATCH)`, byte-for-
-                or      a                   ; byte. WIDENED, and deliberately: the coercion
+                call    fperr_test          ; D-FPCARVE: -1 B
                 jr      nz,evc_check        ; is skipped for ANY pending fault, not only a
                                             ; type one. It was only ever skipped to keep a
                                             ; hard-zeroed type-mismatch state from

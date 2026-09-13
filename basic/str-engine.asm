@@ -195,8 +195,7 @@ ctl_reset:
 ; that its NZ survives the write, and str-engine's sct_ae_set does `scf` after it.
 penderr_set:
                 push    af                  ; [the code + the CALLER's flags]
-                ld      a,(FPERR)
-                or      a
+                call    fperr_test          ; D-FPCARVE: -1 B
                 jr      nz,pes_pending      ; a fault is already pending: it happened
                                             ; FIRST, and first-error-wins keeps it
                 pop     af                  ; A = the code again, F = the caller's
@@ -2093,8 +2092,7 @@ str_cmp_bits:
 type_mismatch_set:
                 ld      de,0                ; the D-2 contract's hard 0 -- yielded
                                             ; on BOTH paths below
-                ld      a,(FPERR)
-                or      a
+                call    fperr_test          ; D-FPCARVE: -1 B
                 ld      a,1                 ; ⚠️ A=1 ON BOTH PATHS -- see below; `ld a,n`
                                             ; does not touch the flags, so the `ret nz`
                                             ; still tests FPERR

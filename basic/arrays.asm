@@ -308,6 +308,28 @@ err_no_resume:  db      "No RESUME",0
 ; the untouched fixed STRTAB pool and had to stay valid across a bare
 ; relink), but post-4c those descriptors are wiped by THIS SAME call's
 ; ARYTAB re-anchor, so nothing is lost by also freeing their bodies.
+; --- fperr_test: A = (FPERR), Z set iff no fault is pending -------------------
+; 🟢 D-FPCARVE (2026-09-13): `ld a,(FPERR)` + `or a` stood at NINE sites, four
+; bytes each, and every one of them wants the same two things: the byte in A and
+; the Z flag. A `call` is three bytes and `ret` does not touch flags, so each site
+; pays one byte and this routine costs five -- net -4 B, of which -3 B is in the
+; LOW REGION, the region D-READDIR's fix needs and which measured 1 B free on
+; 2026-09-13.
+; 🔴 IT LIVES IN PAGE 0 ON PURPOSE: `clear.asm` is a page-1 caller and the
+; line-editor tenant runs with main page 1 switched OUT, so a page-1 helper would
+; be unreachable from exactly the paths that need it -- the hazard div10 was
+; relocated for.
+; ⚠️ ONE SITE IS A TAIL CALL, not a `call`: the array-release path has just done
+; `ld sp,hl` so SP points AT its return address, and pushing a return there would
+; land inside the frame it just unwound. `jp fperr_test` reuses this routine's own
+; `ret` and saves two bytes instead of one.
+; Out: A = (FPERR), Z set iff zero.   Changes: AF only.
+fperr_test:
+                ld      a,(FPERR)
+                or      a
+                ret
+
+
 vars_reset:
                 ; D-ONELIN (docs/spec-basic-onelin-reset-scope.md §3/§4): clearing
                 ; the variable world DISARMS `ON ERROR`. MEASURED on the VG-8020,
@@ -325,6 +347,23 @@ vars_reset:
                 ; can reach on its own.
                 ld      hl,0
                 ld      (ONELIN),hl
+                ; 🔴 D-READDIR (2026-09-13): THE DATA CURSOR OBEYS THE SAME RULE and was
+                ; reset ONLY by RUN and RESTORE -- so before the first RUN it had never
+                ; been seeded at all, and a DIRECT-mode `READ` sought from an
+                ; uninitialised pointer: with `10 DATA 7` in the program it answered
+                ; `[ 0 ]` against the reference's `[ 7 ]` (a wrong VALUE with no error),
+                ; and with no DATA it said `Syntax error` where the reference says
+                ; `Out of DATA`.
+                ; 🎯 THE SITE IS MEASURED, not inherited from the ONELIN precedent above
+                ; (scratchpad/kwt3_datareset.py): the reference also resets on CLEAR and
+                ; on a program EDIT, where zerobas held position -- three divergences,
+                ; and RUN/NEW/CLEAR/MAXFILES/EDIT are exactly this routine's five callers.
+                ; 💰 STATE 3 RATHER THAN SEEDING RESTORE_LINE HERE: the full seed is ten
+                ; bytes and this region had five. 3 means "unpositioned, from the program
+                ; top"; `read_one_value` resolves it (sub ROM, which had room), so
+                ; RESTORE's own 0 + RESTORE_LINE contract is untouched.
+                ld      a,3
+                ld      (DATASTATE),a
                 call    heap_reset
                 ld      hl,(PRGEND)
                 inc     hl
@@ -474,8 +513,7 @@ apsub_close:
                 ld      (ARY_OP),a          ; [TYPE:OP] low  = E = op
                 ld      a,(ix+5)
                 ld      (ARY_TYPE),a        ; [TYPE:OP] high = D = type
-                ld      a,(FPERR)
-                or      a
+                call    fperr_test          ; D-FPCARVE: -1 B
                 jr      nz,apc_release      ; a subscript expression already failed —
                                             ; first-error-wins, no engine call
                 call    ary_engine_call     ; -> Z ok / NZ: FPERR already mapped+set
@@ -491,9 +529,7 @@ apc_release:
                 add     hl,sp
                 ld      sp,hl               ; SP -> the return address
                 ld      hl,(ARY_CUR)        ; HL = cursor past ')'
-                ld      a,(FPERR)           ; re-derive Z/NZ rather than preserving
-                or      a                   ; flags across the release: FPERR is
-                ret                         ; provably 0 at the engine call, so it is
+                jp      fperr_test          ; D-FPCARVE: tail call, -2 B
                                             ; non-zero here exactly when something
                                             ; failed — same verdict, no shadow
                                             ; registers, 4 bytes
@@ -811,8 +847,7 @@ asw_int:
                                             ; verbatim (DE must survive to the write-back)
 asw_coerced:
                 pop     hl                  ; element address restored
-                ld      a,(FPERR)
-                or      a
+                call    fperr_test          ; D-FPCARVE: -1 B
                 ret     nz                  ; coercion overflow -> drop the store
                 ld      a,(VS_TARGET_TYPE)
                 cp      2
@@ -873,8 +908,7 @@ ex_let_arr:
                 call    skip_eq             ; D-SKIPEQ: skip_spaces + cp EQ_TOKEN
                 jp      nz,ela_err
                 call    inc_eval            ; DE=RHS value, HL=cursor advanced
-                ld      a,(FPERR)           ; D-PENDERR: the THIRD hand-rolled copy of the
-                or      a                   ; TMISMATCH-then-FPERR ordering stood here and
+                call    fperr_test          ; D-FPCARVE: -1 B
                 jp      nz,ela_abort_fp     ; is now one test (-7 B, low region). A type
                                             ; fault reaches ela_abort_fp as FPERR_TYPEMM,
                                             ; and fp_runtime_error maps it to the same
@@ -1039,8 +1073,7 @@ ex_let_arr_str:
                                             ; syntax error (basic/missing.asm)
                                             ; ([OFFSET] still on the stack --
                                             ; elas_typecheck pops it, as elas_err did)
-                ld      a,(FPERR)           ; D-F2-1: a deferred error inside the RHS
-                or      a                   ; (HEX$ overflow, or a nested array
+                call    fperr_test          ; D-FPCARVE: -1 B
                 jp      nz,elas_abort_fp    ; subscript/bound error, §5.2) aborts
                                             ; here -- the SAME inline check
                                             ; ex_let_arr's own numeric RHS uses, NOT

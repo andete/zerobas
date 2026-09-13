@@ -1,0 +1,444 @@
+python3 tools/install-repack-machine.py --merged build/zerobas-main-eu.rom --disk-rom build/disk.rom \
+	  --sub-rom build/sub.rom
+wrote C-BIOS_MSX1_EU_REPACK_DISK  (-> machine "C-BIOS_MSX1_EU_REPACK_DISK": merged repack ROM in slot 0, zerobas-disk in slot 3-1, zerobas-sub in slot 3-2)
+     /Users/joost/.openMSX/share/machines/C-BIOS_MSX1_EU_REPACK_DISK.xml
+python3 tools/install-repack-machine.py --merged build/zerobas-main-eu.rom --sub-rom build/sub.rom \
+	  --no-disk
+wrote C-BIOS_MSX1_EU_REPACK_NODISK  (-> machine "C-BIOS_MSX1_EU_REPACK_NODISK": merged repack ROM in slot 0, slot 3-1 EMPTY (diskless target), zerobas-sub in slot 3-2)
+     /Users/joost/.openMSX/share/machines/C-BIOS_MSX1_EU_REPACK_NODISK.xml
+python3 probes/basic/basic_probe_lnblank.py --gate --say \
+	        --sides vg8020,cf3300,zb \
+	        --only lnrd-,kwgd-,lnrt-,dlt-,lst-,lse-,cln-,cle-,clp-,cld-,csv-,dsk-,crf- --repeat 1
+CAPABILITY-LOCKED dsk-ctl: measured on ['cf3300', 'zb'] only -- the VG-8020 has no disk interface, so `A:` is not a device there; the row gates cf3300 against zerobas.
+CAPABILITY-LOCKED dsk-load: measured on ['cf3300', 'zb'] only -- the VG-8020 has no disk interface, so `A:` is not a device there; the row gates cf3300 against zerobas.
+CAPABILITY-LOCKED dsk-mrg: measured on ['cf3300', 'zb'] only -- the VG-8020 has no disk interface, so `A:` is not a device there; the row gates cf3300 against zerobas.
+CAPABILITY-LOCKED dsk-savasc: measured on ['cf3300', 'zb'] only -- the VG-8020 has no disk interface, so `A:` is not a device there; the row gates cf3300 against zerobas.
+CAPABILITY-LOCKED dsk-savtok: measured on ['cf3300', 'zb'] only -- the VG-8020 has no disk interface, so `A:` is not a device there; the row gates cf3300 against zerobas.
+
+SELF-HEAL: re-running 2 suspect row(s) boot-per-case -- a batched mangle reads exactly like a divergence, and --repeat cannot tell them apart.
+  ⚠️ GATING rows needing the heal (a batched mangle, or a real divergence -- read the healed value below):
+      crf-oomsay    batched: vg8020=Out of memory | cf3300=Out of memory | zb=<nothing listed>
+      crf-oomlst    batched: vg8020=99 REM Z | cf3300=99 REM Z | zb=20 REM BBBBBBBBBBBBBBBBBBBBBBBBBB|99 REM Z
+
+label         battery  vg8020                                     cf3300                                     zb                                        
+lnrd-ctl^     lnrd      2  0                                       2  0                                       2  0                                     
+              typed    ['10 IF 0 THEN A=1 ELSE A=2', 'RUN', 'PRINT"[";A;ERR;"]"']
+lnrd-then^    lnrd      20  0                                      20  0                                      20  0                                    
+              typed    ['10 IF 1 THEN 20 ELSE 30', '20 A=20:END', '30 A=30:END', 'RUN', 'PRINT"[";A;ERR;"]"']
+lnrd-else     lnrd      30  0                                      30  0                                      30  0                                    
+              typed    ['10 IF 0 THEN 20 ELSE 30', '20 A=20:END', '30 A=30:END', 'RUN', 'PRINT"[";A;ERR;"]"']
+lnrd-erlctl^  lnrd      9  21                                      9  21                                      9  21                                    
+              typed    ['10 ON ERROR GOTO 40', '20 ERROR 7', '30 END', '40 A=9', 'RUN', 'PRINT"[";A;ERR;"]"']
+lnrd-erl^     lnrd      1  21                                      1  21                                      1  21                                    
+              typed    ['10 ON ERROR GOTO 40', '20 ERROR 7', '30 END', '40 IF ERL=20 THEN A=1', 'RUN', 'PRINT"[";A;ERR;"]"']
+lnrd-list^    lnrd      1  0                                       1  0                                       1  0                                     
+              typed    ['10 A=1:LIST 20:A=2', '20 REM', 'RUN', 'PRINT"[";A;ERR;"]"']
+lnrd-return   lnrd      30  0                                      30  0                                      30  0                                    
+              typed    ['10 GOSUB 40', '20 A=20:END', '30 A=30:END', '40 RETURN 30', 'RUN', 'PRINT"[";A;ERR;"]"']
+kwgd-ctl      kwgd      2                                          2                                          2                                        
+              typed    ['ZZTOP 10', 'PRINT"[";ERR;"]"']
+kwgd-delctl   kwgd      2  0                                       2  0                                       2  0                                     
+              typed    ['10 A=1', '20 A=2', 'RUN', 'PRINT"[";A;ERR;"]"']
+kwgd-delete   kwgd      1  0                                       1  0                                       1  0                                     
+              typed    ['10 A=1', '20 A=2', 'DELETE 20', 'RUN', 'PRINT"[";A;ERR;"]"']
+kwgd-renctl   kwgd      2  0                                       2  0                                       2  0                                     
+              typed    ['10 A=1', '20 A=2:END', 'GOTO 20', 'PRINT"[";A;ERR;"]"']
+kwgd-renum    kwgd      2  0                                       2  0                                       2  0                                     
+              typed    ['10 A=1', '20 A=2:END', 'RENUM 100', 'GOTO 110', 'PRINT"[";A;ERR;"]"']
+lnrt-ctl      lnrt      20  0                                      20  0                                      20  0                                    
+              typed    ['10 GOSUB 40', '20 A=A+20:END', '30 A=A+30:END', '40 RETURN', 'RUN', 'PRINT"[";A;ERR;"]"']
+lnrt-nogosctl lnrt      0  3                                       0  3                                       0  3                                     
+              typed    ['10 RETURN', '20 A=A+20:END', 'RUN', 'PRINT"[";A;ERR;"]"']
+lnrt-undctl   lnrt      0  8                                       0  8                                       0  8                                     
+              typed    ['10 GOSUB 99', '20 A=A+20:END', 'RUN', 'PRINT"[";A;ERR;"]"']
+lnrt-line     lnrt      30  0                                      30  0                                      30  0                                    
+              typed    ['10 GOSUB 40', '20 A=A+20:END', '30 A=A+30:END', '40 RETURN 30', 'RUN', 'PRINT"[";A;ERR;"]"']
+lnrt-back     lnrt      5  0                                       5  0                                       5  0                                     
+              typed    ['1 GOTO 10', '5 A=A+5:END', '10 GOSUB 40', '20 A=A+20:END', '40 RETURN 5', 'RUN', 'PRINT"[";A;ERR;"]"']
+lnrt-bcolon   lnrt      20  0                                      20  0                                      20  0                                    
+              typed    ['10 GOSUB 40', '20 A=A+20:END', '40 RETURN:A=A+7', 'RUN', 'PRINT"[";A;ERR;"]"']
+lnrt-pop      lnrt      30  3                                      30  3                                      30  3                                    
+              typed    ['10 GOSUB 40', '20 A=A+20:END', '30 A=A+30:RETURN', '40 RETURN 30', 'RUN', 'PRINT"[";A;ERR;"]"']
+lnrt-depth    lnrt      50  0                                      50  0                                      50  0                                    
+              typed    ['10 GOSUB 40', '20 A=A+20:END', '30 A=A+30:RETURN', '40 GOSUB 60:A=A+7:END', '60 RETURN 30', 'RUN', 'PRINT"[";A;ERR;"]"']
+lnrt-nogos    lnrt      0  3                                       0  3                                       0  3                                     
+              typed    ['10 RETURN 30', '20 A=A+20:END', '30 A=A+30:END', 'RUN', 'PRINT"[";A;ERR;"]"']
+lnrt-nogosbad lnrt      0  3                                       0  3                                       0  3                                     
+              typed    ['10 B=1:RETURN B', '20 A=A+20:END', 'RUN', 'PRINT"[";A;ERR;"]"']
+lnrt-nogosund lnrt      0  3                                       0  3                                       0  3                                     
+              typed    ['10 RETURN 99', '20 A=A+20:END', 'RUN', 'PRINT"[";A;ERR;"]"']
+lnrt-undef    lnrt      0  8                                       0  8                                       0  8                                     
+              typed    ['10 GOSUB 40', '20 A=A+20:END', '40 RETURN 99', 'RUN', 'PRINT"[";A;ERR;"]"']
+lnrt-undefp   lnrt      50  3                                      50  3                                      50  3                                    
+              typed    ['10 ON ERROR GOTO 50', '20 GOSUB 40', '30 A=A+3:END', '40 RETURN 99', '50 A=A+50:RETURN', 'RUN', 'PRINT"[";A;ERR;"]"']
+lnrt-varp     lnrt      50  3                                      50  3                                      50  3                                    
+              typed    ['10 ON ERROR GOTO 50', '20 GOSUB 40', '30 A=A+3:END', '40 B=1:RETURN B', '50 A=A+50:RETURN', 'RUN', 'PRINT"[";A;ERR;"]"']
+lnrt-zero     lnrt      0  8                                       0  8                                       0  8                                     
+              typed    ['10 GOSUB 40', '20 A=A+20:END', '40 RETURN 0', 'RUN', 'PRINT"[";A;ERR;"]"']
+lnrt-blank    lnrt      30  0                                      30  0                                      30  0                                    
+              typed    ['10 GOSUB 40', '20 A=A+20:END', '30 A=A+30:END', '40 RETURN 3 0', 'RUN', 'PRINT"[";A;ERR;"]"']
+lnrt-var      lnrt      0  2                                       0  2                                       0  2                                     
+              typed    ['10 GOSUB 40', '20 A=A+20:END', '30 A=A+30:END', '40 B=30:RETURN B', 'RUN', 'PRINT"[";A;ERR;"]"']
+lnrt-trail    lnrt      30  0                                      30  0                                      30  0                                    
+              typed    ['10 GOSUB 40', '20 A=A+20:END', '30 A=A+30:END', '40 RETURN 30:A=A+7', 'RUN', 'PRINT"[";A;ERR;"]"']
+lnrt-erlctl   lnrt      40  7                                      40  7                                      40  7                                    
+              typed    ['10 ON ERROR GOTO 50', '20 GOSUB 40', '30 END', '40 ERROR 7', '50 A=ERL:END', 'RUN', 'PRINT"[";A;ERR;"]"']
+lnrt-erlund   lnrt      40  8                                      40  8                                      40  8                                    
+              typed    ['10 ON ERROR GOTO 50', '20 GOSUB 40', '30 END', '40 RETURN 99', '50 A=ERL:END', 'RUN', 'PRINT"[";A;ERR;"]"']
+lnrt-erlvar   lnrt      40  2                                      40  2                                      40  2                                    
+              typed    ['10 ON ERROR GOTO 50', '20 GOSUB 40', '30 END', '40 B=1:RETURN B', '50 A=ERL:END', 'RUN', 'PRINT"[";A;ERR;"]"']
+lnrt-onerrctl lnrt      120  0                                     120  0                                     120  0                                   
+              typed    ['10 ON ERROR GOTO 50', '20 ERROR 7', '30 A=A+3:END', '50 A=A+50:RESUME 70', '70 A=A+70:END', 'RUN', 'PRINT"[";A;ERR;"]"']
+lnrt-onerr    lnrt      50  3                                      50  3                                      50  3                                    
+              typed    ['10 ON ERROR GOTO 50', '20 ERROR 7', '30 A=A+3:END', '50 A=A+50:RETURN 70', '70 A=A+70:END', 'RUN', 'PRINT"[";A;ERR;"]"']
+lnrt-retrap   lnrt      1  3                                       1  3                                       1  3                                     
+              typed    ['10 ON ERROR GOTO 50', '20 ERROR 7', '30 END', '50 A=A+1:IF A=2 THEN END', '60 RETURN 70', '70 ERROR 9', '80 END', 'RUN', 'PRINT"[";A;ERR;"]"']
+lnrt-dir      lnrt      0  3                                       0  3                                       0  3                                     
+              typed    ['10 A=A+10:END', '30 A=A+30:END', 'RETURN 30', 'PRINT"[";A;ERR;"]"']
+lnrt-leak     lnrt      204  0                                     204  0                                     204  0                                   
+              typed    ['10 ON ERROR GOTO 50', '20 A=A+1:IF A>200 THEN 30', '25 RETURN', '30 A=A+3:END', '50 RESUME 20', 'RUN', 'PRINT"[";A;ERR;"]"']
+lnrt-forret   lnrt      102  0  1                                  102  0  1                                  102  0  1                                
+              typed    ['10 ON ERROR GOTO 50', '20 FOR I=1 TO 3:RETURN:NEXT', '30 A=A+100:END', '50 A=A+1:RESUME NEXT', 'RUN', 'PRINT"[";A;ERR;I;"]"']
+lnrt-forerr   lnrt      103  0  4                                  103  0  4                                  103  0  4                                
+              typed    ['10 ON ERROR GOTO 50', '20 FOR I=1 TO 3:ERROR 7:NEXT', '30 A=A+100:END', '50 A=A+1:RESUME NEXT', 'RUN', 'PRINT"[";A;ERR;I;"]"']
+lnrt-forgsb   lnrt      1  0  7                                    1  0  7                                    1  0  7                                  
+              typed    ['10 ON ERROR GOTO 90', '20 GOSUB 200', '30 NEXT I', '40 END', '90 A=A+1:RESUME NEXT', '200 FOR I=7 TO 9', '210 RETURN', '220 GOTO 40', 'RUN', 'PRINT"[";A;ERR;I;"]"']
+lnrt-forgctl  lnrt      0  0  3                                    0  0  3                                    0  0  3                                  
+              typed    ['10 ON ERROR GOTO 90', '20 FOR I=1 TO 2', '30 GOSUB 200', '40 NEXT I', '50 END', '90 A=A+1:RESUME NEXT', '200 RETURN', 'RUN', 'PRINT"[";A;ERR;I;"]"']
+lnrt-forgdeep lnrt      1  0  7  4                                 1  0  7  4                                 1  0  7  4                               
+              typed    ['10 ON ERROR GOTO 90', '20 GOSUB 200', '30 NEXT I', '40 END', '90 A=A+1:RESUME NEXT', '200 FOR I=7 TO 9', '205 FOR J=4 TO 6', '210 RETURN', '220 GOTO 40', 'RUN', 'PRINT"[";A;ERR;I;J;"]"']
+lnrt-forgline lnrt      1  0  7                                    1  0  7                                    1  0  7                                  
+              typed    ['10 ON ERROR GOTO 90', '20 GOSUB 200', '30 NEXT I', '40 END', '90 A=A+1:RESUME NEXT', '200 FOR I=7 TO 9', '210 RETURN 30', '220 GOTO 40', 'RUN', 'PRINT"[";A;ERR;I;"]"']
+dlt-ctl       dlt       15  0                                      15  0                                      15  0                                    
+              typed    ['10 A=A+1', '20 A=A+2', '30 A=A+4', '40 A=A+8', 'RUN', 'PRINT"[";A;ERR;"]"']
+dlt-errctl    dlt       1  2                                       1  2                                       1  2                                     
+              typed    ['10 A=A+1', 'ZZTOP', 'RUN', 'PRINT"[";A;ERR;"]"']
+dlt-one       dlt       13  0                                      13  0                                      13  0                                    
+              typed    ['10 A=A+1', '20 A=A+2', '30 A=A+4', '40 A=A+8', 'DELETE 20', 'RUN', 'PRINT"[";A;ERR;"]"']
+dlt-miss      dlt       15  5                                      15  5                                      15  5                                    
+              typed    ['10 A=A+1', '20 A=A+2', '30 A=A+4', '40 A=A+8', 'DELETE 25', 'RUN', 'PRINT"[";A;ERR;"]"']
+dlt-zero      dlt       15  5                                      15  5                                      15  5                                    
+              typed    ['10 A=A+1', '20 A=A+2', '30 A=A+4', '40 A=A+8', 'DELETE 0', 'RUN', 'PRINT"[";A;ERR;"]"']
+dlt-rng       dlt       9  0                                       9  0                                       9  0                                     
+              typed    ['10 A=A+1', '20 A=A+2', '30 A=A+4', '40 A=A+8', 'DELETE 20-30', 'RUN', 'PRINT"[";A;ERR;"]"']
+dlt-lomiss    dlt       9  0                                       9  0                                       9  0                                     
+              typed    ['10 A=A+1', '20 A=A+2', '30 A=A+4', '40 A=A+8', 'DELETE 15-30', 'RUN', 'PRINT"[";A;ERR;"]"']
+dlt-himiss    dlt       15  5                                      15  5                                      15  5                                    
+              typed    ['10 A=A+1', '20 A=A+2', '30 A=A+4', '40 A=A+8', 'DELETE 20-35', 'RUN', 'PRINT"[";A;ERR;"]"']
+dlt-bothmiss  dlt       15  5                                      15  5                                      15  5                                    
+              typed    ['10 A=A+1', '20 A=A+2', '30 A=A+4', '40 A=A+8', 'DELETE 15-35', 'RUN', 'PRINT"[";A;ERR;"]"']
+dlt-same      dlt       13  0                                      13  0                                      13  0                                    
+              typed    ['10 A=A+1', '20 A=A+2', '30 A=A+4', '40 A=A+8', 'DELETE 20-20', 'RUN', 'PRINT"[";A;ERR;"]"']
+dlt-rev       dlt       15  5                                      15  5                                      15  5                                    
+              typed    ['10 A=A+1', '20 A=A+2', '30 A=A+4', '40 A=A+8', 'DELETE 30-20', 'RUN', 'PRINT"[";A;ERR;"]"']
+dlt-openlo    dlt       8  0                                       8  0                                       8  0                                     
+              typed    ['10 A=A+1', '20 A=A+2', '30 A=A+4', '40 A=A+8', 'DELETE -30', 'RUN', 'PRINT"[";A;ERR;"]"']
+dlt-openhi    dlt       15  5                                      15  5                                      15  5                                    
+              typed    ['10 A=A+1', '20 A=A+2', '30 A=A+4', '40 A=A+8', 'DELETE 20-', 'RUN', 'PRINT"[";A;ERR;"]"']
+dlt-none      dlt       15  5                                      15  5                                      15  5                                    
+              typed    ['10 A=A+1', '20 A=A+2', '30 A=A+4', '40 A=A+8', 'DELETE', 'RUN', 'PRINT"[";A;ERR;"]"']
+dlt-comma     dlt       15  2                                      15  2                                      15  2                                    
+              typed    ['10 A=A+1', '20 A=A+2', '30 A=A+4', '40 A=A+8', 'DELETE 10,30', 'RUN', 'PRINT"[";A;ERR;"]"']
+dlt-dot       dlt       7  0                                       7  0                                       7  0                                     
+              typed    ['10 A=A+1', '20 A=A+2', '30 A=A+4', '40 A=A+8', 'DELETE .', 'RUN', 'PRINT"[";A;ERR;"]"']
+dlt-all       dlt       0  0                                       0  0                                       0  0                                     
+              typed    ['10 A=A+1', '20 A=A+2', '30 A=A+4', '40 A=A+8', 'DELETE 10-40', 'RUN', 'PRINT"[";A;ERR;"]"']
+dlt-below     dlt       15  5                                      15  5                                      15  5                                    
+              typed    ['10 A=A+1', '20 A=A+2', '30 A=A+4', '40 A=A+8', 'DELETE 1-5', 'RUN', 'PRINT"[";A;ERR;"]"']
+dlt-above     dlt       15  5                                      15  5                                      15  5                                    
+              typed    ['10 A=A+1', '20 A=A+2', '30 A=A+4', '40 A=A+8', 'DELETE 60-70', 'RUN', 'PRINT"[";A;ERR;"]"']
+dlt-empty     dlt       5                                          5                                          5                                        
+              typed    ['DELETE 10', 'PRINT"[";ERR;"]"']
+dlt-vars      dlt       0  0                                       0  0                                       0  0                                     
+              typed    ['10 A=1', '20 B=2', 'RUN', 'DELETE 20', 'PRINT"[";A;ERR;"]"']
+dlt-varsctl   dlt       1  0                                       1  0                                       1  0                                     
+              typed    ['10 A=1', '20 B=2', 'RUN', 'PRINT"[";A;ERR;"]"']
+dlt-cont      dlt       0  17                                      0  17                                      0  17                                    
+              typed    ['10 A=1', '20 STOP', '30 A=A+4', 'RUN', 'DELETE 30', 'CONT', 'PRINT"[";A;ERR;"]"']
+dlt-contctl   dlt       5  0                                       5  0                                       5  0                                     
+              typed    ['10 A=1', '20 STOP', '30 A=A+4', 'RUN', 'CONT', 'PRINT"[";A;ERR;"]"']
+dlt-contbare  dlt       17                                         17                                         17                                       
+              typed    ['CONT', 'PRINT"[";ERR;"]"']
+dlt-inprog    dlt       0  0                                       0  0                                       0  0                                     
+              typed    ['10 A=A+1', '20 DELETE 40', '30 A=A+4', '40 A=A+8', 'RUN', 'PRINT"[";A;ERR;"]"']
+dlt-hipast    dlt       15  5                                      15  5                                      15  5                                    
+              typed    ['10 A=A+1', '20 A=A+2', '30 A=A+4', '40 A=A+8', 'DELETE 10-45', 'RUN', 'PRINT"[";A;ERR;"]"']
+dlt-hitop     dlt       15  5                                      15  5                                      15  5                                    
+              typed    ['10 A=A+1', '20 A=A+2', '30 A=A+4', '40 A=A+8', 'DELETE 10-65529', 'RUN', 'PRINT"[";A;ERR;"]"']
+dlt-lomid     dlt       11  0                                      11  0                                      11  0                                    
+              typed    ['10 A=A+1', '20 A=A+2', '30 A=A+4', '40 A=A+8', 'DELETE 25-30', 'RUN', 'PRINT"[";A;ERR;"]"']
+dlt-varsbad   dlt       1  5                                       1  5                                       1  5                                     
+              typed    ['10 A=1', '20 B=2', 'RUN', 'DELETE 25', 'PRINT"[";A;ERR;"]"']
+dlt-contbad   dlt       5  5                                       5  5                                       5  5                                     
+              typed    ['10 A=1', '20 STOP', '30 A=A+4', 'RUN', 'DELETE 35', 'CONT', 'PRINT"[";A;ERR;"]"']
+dlt-tail      dlt       0  0                                       0  0                                       0  0                                     
+              typed    ['10 A=A+1', '20 A=A+2', '30 A=A+4', '40 A=A+8', 'DELETE 20:B=9', 'PRINT"[";B;ERR;"]"']
+dlt-tailctl   dlt       9  0                                       9  0                                       9  0                                     
+              typed    ['10 A=A+1', '20 A=A+2', '30 A=A+4', '40 A=A+8', 'C=1:B=9', 'PRINT"[";B;ERR;"]"']
+dlt-dotedit   dlt       13  0                                      13  0                                      13  0                                    
+              typed    ['10 A=A+1', '20 A=A+2', '30 A=A+4', '40 A=A+8', '20 A=A+2', 'DELETE .', 'RUN', 'PRINT"[";A;ERR;"]"']
+lst-all       lst      10 REM A|20 REM B|30 REM C|40 REM D        10 REM A|20 REM B|30 REM C|40 REM D        10 REM A|20 REM B|30 REM C|40 REM D       
+              typed    ['10 REM A', '20 REM B', '30 REM C', '40 REM D', 'LIST']
+lst-one       lst      20 REM B                                   20 REM B                                   20 REM B                                  
+              typed    ['10 REM A', '20 REM B', '30 REM C', '40 REM D', 'LIST 20']
+lst-same      lst      20 REM B                                   20 REM B                                   20 REM B                                  
+              typed    ['10 REM A', '20 REM B', '30 REM C', '40 REM D', 'LIST 20-20']
+lst-rng       lst      20 REM B|30 REM C                          20 REM B|30 REM C                          20 REM B|30 REM C                         
+              typed    ['10 REM A', '20 REM B', '30 REM C', '40 REM D', 'LIST 20-30']
+lst-lomiss    lst      20 REM B|30 REM C                          20 REM B|30 REM C                          20 REM B|30 REM C                         
+              typed    ['10 REM A', '20 REM B', '30 REM C', '40 REM D', 'LIST 15-30']
+lst-himiss    lst      20 REM B|30 REM C                          20 REM B|30 REM C                          20 REM B|30 REM C                         
+              typed    ['10 REM A', '20 REM B', '30 REM C', '40 REM D', 'LIST 20-35']
+lst-bothmiss  lst      20 REM B|30 REM C                          20 REM B|30 REM C                          20 REM B|30 REM C                         
+              typed    ['10 REM A', '20 REM B', '30 REM C', '40 REM D', 'LIST 15-35']
+lst-hipast    lst      10 REM A|20 REM B|30 REM C|40 REM D        10 REM A|20 REM B|30 REM C|40 REM D        10 REM A|20 REM B|30 REM C|40 REM D       
+              typed    ['10 REM A', '20 REM B', '30 REM C', '40 REM D', 'LIST 10-45']
+lst-hitop     lst      10 REM A|20 REM B|30 REM C|40 REM D        10 REM A|20 REM B|30 REM C|40 REM D        10 REM A|20 REM B|30 REM C|40 REM D       
+              typed    ['10 REM A', '20 REM B', '30 REM C', '40 REM D', 'LIST 10-65529']
+lst-lomid     lst      30 REM C                                   30 REM C                                   30 REM C                                  
+              typed    ['10 REM A', '20 REM B', '30 REM C', '40 REM D', 'LIST 25-30']
+lst-miss      lst      <nothing listed>                           <nothing listed>                           <nothing listed>                          
+              typed    ['10 REM A', '20 REM B', '30 REM C', '40 REM D', 'LIST 25']
+lst-zero      lst      <nothing listed>                           <nothing listed>                           <nothing listed>                          
+              typed    ['10 REM A', '20 REM B', '30 REM C', '40 REM D', 'LIST 0']
+lst-below     lst      <nothing listed>                           <nothing listed>                           <nothing listed>                          
+              typed    ['10 REM A', '20 REM B', '30 REM C', '40 REM D', 'LIST 1-5']
+lst-above     lst      <nothing listed>                           <nothing listed>                           <nothing listed>                          
+              typed    ['10 REM A', '20 REM B', '30 REM C', '40 REM D', 'LIST 60-70']
+lst-rev       lst      <nothing listed>                           <nothing listed>                           <nothing listed>                          
+              typed    ['10 REM A', '20 REM B', '30 REM C', '40 REM D', 'LIST 30-20']
+lst-openlo    lst      10 REM A|20 REM B|30 REM C                 10 REM A|20 REM B|30 REM C                 10 REM A|20 REM B|30 REM C                
+              typed    ['10 REM A', '20 REM B', '30 REM C', '40 REM D', 'LIST -30']
+lst-openhi    lst      20 REM B|30 REM C|40 REM D                 20 REM B|30 REM C|40 REM D                 20 REM B|30 REM C|40 REM D                
+              typed    ['10 REM A', '20 REM B', '30 REM C', '40 REM D', 'LIST 20-']
+lst-comma     lst      Syntax error                               Syntax error                               Syntax error                              
+              typed    ['10 REM A', '20 REM B', '30 REM C', '40 REM D', 'LIST 10,30']
+lst-empty     lst      <nothing listed>                           <nothing listed>                           <nothing listed>                          
+              typed    ['LIST 10']
+lst-dot       lst      40 REM D                                   40 REM D                                   40 REM D                                  
+              typed    ['10 REM A', '20 REM B', '30 REM C', '40 REM D', 'LIST .']
+lse-ctl       lse       0                                          0                                          0                                        
+              typed    ['10 REM A', '20 REM B', '30 REM C', '40 REM D', 'LIST', 'PRINT"[";ERR;"]"']
+lse-rev       lse       0                                          0                                          0                                        
+              typed    ['10 REM A', '20 REM B', '30 REM C', '40 REM D', 'LIST 30-20', 'PRINT"[";ERR;"]"']
+lse-miss      lse       0                                          0                                          0                                        
+              typed    ['10 REM A', '20 REM B', '30 REM C', '40 REM D', 'LIST 25', 'PRINT"[";ERR;"]"']
+lse-himiss    lse       0                                          0                                          0                                        
+              typed    ['10 REM A', '20 REM B', '30 REM C', '40 REM D', 'LIST 20-35', 'PRINT"[";ERR;"]"']
+lse-above     lse       0                                          0                                          0                                        
+              typed    ['10 REM A', '20 REM B', '30 REM C', '40 REM D', 'LIST 60-70', 'PRINT"[";ERR;"]"']
+lse-comma     lse       2                                          2                                          2                                        
+              typed    ['10 REM A', '20 REM B', '30 REM C', '40 REM D', 'LIST 10,30', 'PRINT"[";ERR;"]"']
+lse-empty     lse       0                                          0                                          0                                        
+              typed    ['LIST 10', 'PRINT"[";ERR;"]"']
+lse-tail      lse       0  0                                       0  0                                       0  0                                     
+              typed    ['10 REM A', '20 REM B', '30 REM C', '40 REM D', 'LIST 20:B=9', 'PRINT"[";B;ERR;"]"']
+lse-tailctl   lse       9  0                                       9  0                                       9  0                                     
+              typed    ['10 REM A', '20 REM B', '30 REM C', '40 REM D', 'C=1:B=9', 'PRINT"[";B;ERR;"]"']
+lse-inprog    lse       1  0                                       1  0                                       1  0                                     
+              typed    ['10 A=A+1', '20 LIST 40', '30 A=A+4', '40 A=A+8', 'RUN', 'PRINT"[";A;ERR;"]"']
+lse-vars      lse       1  0                                       1  0                                       1  0                                     
+              typed    ['10 A=1', '20 B=2', 'RUN', 'LIST 20', 'PRINT"[";A;ERR;"]"']
+lse-cont      lse       5  0                                       5  0                                       5  0                                     
+              typed    ['10 A=1', '20 STOP', '30 A=A+4', 'RUN', 'LIST 30', 'CONT', 'PRINT"[";A;ERR;"]"']
+lse-contctl   lse       5  0                                       5  0                                       5  0                                     
+              typed    ['10 A=1', '20 STOP', '30 A=A+4', 'RUN', 'CONT', 'PRINT"[";A;ERR;"]"']
+lse-dotedit   lse      20 REM B                                   20 REM B                                   20 REM B                                  
+              typed    ['10 REM A', '20 REM B', '30 REM C', '40 REM D', '20 REM B', 'LIST .']
+cln-store     cln      40 REM D                                   40 REM D                                   40 REM D                                  
+              typed    ['10 REM A', '20 REM B', '30 REM C', '40 REM D', 'LIST .']
+cln-edit      cln      20 REM B                                   20 REM B                                   20 REM B                                  
+              typed    ['10 REM A', '20 REM B', '30 REM C', '40 REM D', '20 REM B', 'LIST .']
+cln-ins       cln      25 REM E                                   25 REM E                                   25 REM E                                  
+              typed    ['10 REM A', '20 REM B', '30 REM C', '40 REM D', '25 REM E', 'LIST .']
+cln-sdel      cln      <nothing listed>                           <nothing listed>                           <nothing listed>                          
+              typed    ['10 REM A', '20 REM B', '30 REM C', '40 REM D', '20', 'LIST .']
+cln-sdelctl   cln      10 REM A|30 REM C|40 REM D                 10 REM A|30 REM C|40 REM D                 10 REM A|30 REM C|40 REM D                
+              typed    ['10 REM A', '20 REM B', '30 REM C', '40 REM D', '20', 'LIST']
+cln-direct    cln      20 REM B                                   20 REM B                                   20 REM B                                  
+              typed    ['10 REM A', '20 REM B', '30 REM C', '40 REM D', '20 REM B', 'C=1', 'LIST .']
+cln-del       cln      20 REM B                                   20 REM B                                   20 REM B                                  
+              typed    ['10 REM A', '20 REM B', '30 REM C', '40 REM D', '20 REM B', 'DELETE 40', 'LIST .']
+cln-delctl    cln      10 REM A|20 REM B|30 REM C                 10 REM A|20 REM B|30 REM C                 10 REM A|20 REM B|30 REM C                
+              typed    ['10 REM A', '20 REM B', '30 REM C', '40 REM D', '20 REM B', 'DELETE 40', 'LIST']
+cln-list      cln      40 REM D                                   40 REM D                                   40 REM D                                  
+              typed    ['10 REM A', '20 REM B', '30 REM C', '40 REM D', '20 REM B', 'LIST 40', 'LIST .']
+cln-listrng   cln      30 REM C                                   30 REM C                                   30 REM C                                  
+              typed    ['10 REM A', '20 REM B', '30 REM C', '40 REM D', '20 REM B', 'LIST 10-30', 'LIST .']
+cln-listbare  cln      40 REM D                                   40 REM D                                   40 REM D                                  
+              typed    ['10 REM A', '20 REM B', '30 REM C', '40 REM D', '20 REM B', 'LIST', 'LIST .']
+cln-listmiss  cln      20 REM B                                   20 REM B                                   20 REM B                                  
+              typed    ['10 REM A', '20 REM B', '30 REM C', '40 REM D', '20 REM B', 'LIST 25', 'LIST .']
+cln-dotthen   cln      30 REM C                                   30 REM C                                   30 REM C                                  
+              typed    ['10 REM A', '20 REM B', '30 REM C', '40 REM D', '20 REM B', 'LIST .-30', 'LIST .']
+cln-clear     cln      20 REM B                                   20 REM B                                   20 REM B                                  
+              typed    ['10 REM A', '20 REM B', '30 REM C', '40 REM D', '20 REM B', 'CLEAR', 'LIST .']
+cln-runctl    cln      10 A=A+1                                   10 A=A+1                                   10 A=A+1                                  
+              typed    ['10 A=A+1', '20 A=A+2', '30 A=A+4', '10 A=A+1', 'LIST .']
+cln-run       cln      10 A=A+1                                   10 A=A+1                                   10 A=A+1                                  
+              typed    ['10 A=A+1', '20 A=A+2', '30 A=A+4', '10 A=A+1', 'RUN', 'LIST .']
+cln-err       cln      20 ERROR 7                                 20 ERROR 7                                 20 ERROR 7                                
+              typed    ['10 A=A+1', '20 ERROR 7', '30 A=A+4', '10 A=A+1', 'RUN', 'LIST .']
+cln-stop      cln      10 A=A+1                                   10 A=A+1                                   10 A=A+1                                  
+              typed    ['10 A=A+1', '20 STOP', '30 A=A+4', '10 A=A+1', 'RUN', 'LIST .']
+cln-cont      cln      10 A=A+1                                   10 A=A+1                                   10 A=A+1                                  
+              typed    ['10 A=A+1', '20 STOP', '30 A=A+4', '10 A=A+1', 'RUN', 'CONT', 'LIST .']
+cln-direrr    cln      20 REM B                                   20 REM B                                   20 REM B                                  
+              typed    ['10 REM A', '20 REM B', '30 REM C', '40 REM D', '20 REM B', 'ERROR 7', 'LIST .']
+cln-trap      cln      50 RESUME NEXT                             50 RESUME NEXT                             50 RESUME NEXT                            
+              typed    ['10 ON ERROR GOTO 50', '20 ERROR 7', '30 A=A+4', '50 RESUME NEXT', '10 ON ERROR GOTO 50', 'RUN', 'LIST .']
+cln-onerr     cln      10 ON ERROR GOTO 50                        10 ON ERROR GOTO 50                        10 ON ERROR GOTO 50                       
+              typed    ['10 ON ERROR GOTO 50', '20 A=A+2', '50 END', '10 ON ERROR GOTO 50', 'RUN', 'LIST .']
+cln-goto      cln      10 A=1                                     10 A=1                                     10 A=1                                    
+              typed    ['10 A=1', '20 GOTO 40', '30 A=3', '40 END', '10 A=1', 'RUN', 'LIST .']
+cln-trapend   cln      20 ERROR 7                                 20 ERROR 7                                 20 ERROR 7                                
+              typed    ['10 ON ERROR GOTO 50', '20 ERROR 7', '30 A=A+4', '50 END', '10 ON ERROR GOTO 50', 'RUN', 'LIST .']
+cln-reslin    cln      50 RESUME 30                               50 RESUME 30                               50 RESUME 30                              
+              typed    ['10 ON ERROR GOTO 50', '20 ERROR 7', '30 A=A+4', '50 RESUME 30', '10 ON ERROR GOTO 50', 'RUN', 'LIST .']
+cln-res15     cln      15 RESUME NEXT                             15 RESUME NEXT                             15 RESUME NEXT                            
+              typed    ['10 ON ERROR GOTO 15', '15 RESUME NEXT', '20 ERROR 7', '30 A=A+4', '10 ON ERROR GOTO 15', 'RUN', 'LIST .']
+cln-resend    cln      20 ERROR 7                                 20 ERROR 7                                 20 ERROR 7                                
+              typed    ['10 ON ERROR GOTO 50', '20 ERROR 7', '30 A=A+4:END', '50 RESUME NEXT', '10 ON ERROR GOTO 50', 'RUN', 'LIST .']
+cln-lo        cln      20 REM B|30 REM C|40 REM D                 20 REM B|30 REM C|40 REM D                 20 REM B|30 REM C|40 REM D                
+              typed    ['10 REM A', '20 REM B', '30 REM C', '40 REM D', '20 REM B', 'LIST .-']
+cln-hi        cln      10 REM A|20 REM B                          10 REM A|20 REM B                          10 REM A|20 REM B                         
+              typed    ['10 REM A', '20 REM B', '30 REM C', '40 REM D', '20 REM B', 'LIST -.']
+cln-both      cln      20 REM B                                   20 REM B                                   20 REM B                                  
+              typed    ['10 REM A', '20 REM B', '30 REM C', '40 REM D', '20 REM B', 'LIST .-.']
+cln-lonum     cln      20 REM B|30 REM C                          20 REM B|30 REM C                          20 REM B|30 REM C                         
+              typed    ['10 REM A', '20 REM B', '30 REM C', '40 REM D', '20 REM B', 'LIST .-30']
+cln-numhi     cln      10 REM A|20 REM B                          10 REM A|20 REM B                          10 REM A|20 REM B                         
+              typed    ['10 REM A', '20 REM B', '30 REM C', '40 REM D', '20 REM B', 'LIST 10-.']
+cln-rev       cln      <nothing listed>                           <nothing listed>                           <nothing listed>                          
+              typed    ['10 REM A', '20 REM B', '30 REM C', '40 REM D', '20 REM B', 'LIST 30-.']
+cln-blank     cln      20 REM B|30 REM C                          20 REM B|30 REM C                          20 REM B|30 REM C                         
+              typed    ['10 REM A', '20 REM B', '30 REM C', '40 REM D', '20 REM B', 'LIST . -30']
+cln-cold      cln      <nothing listed>                           <nothing listed>                           <nothing listed>                          
+              typed    ['LIST .']
+cln-coldctl   cln      <nothing listed>                           <nothing listed>                           <nothing listed>                          
+              typed    ['LIST 10']
+cle-ctl       cle       0                                          0                                          0                                        
+              typed    ['10 REM A', '20 REM B', '30 REM C', '40 REM D', '20 REM B', 'LIST .', 'PRINT"[";ERR;"]"']
+cle-cold      cle       0                                          0                                          0                                        
+              typed    ['LIST .', 'PRINT"[";ERR;"]"']
+cle-coldlist  cle       0                                          0                                          0                                        
+              typed    ['LIST 0', 'PRINT"[";ERR;"]"']
+cle-colddel   cle       5                                          5                                          5                                        
+              typed    ['DELETE .', 'PRINT"[";ERR;"]"']
+cle-colddel0  cle       5                                          5                                          5                                        
+              typed    ['DELETE 0', 'PRINT"[";ERR;"]"']
+cle-dctl      cle       15  0                                      15  0                                      15  0                                    
+              typed    ['10 A=A+1', '20 A=A+2', '30 A=A+4', '40 A=A+8', '20 A=A+2', 'RUN', 'PRINT"[";A;ERR;"]"']
+cle-donly     cle       13  0                                      13  0                                      13  0                                    
+              typed    ['10 A=A+1', '20 A=A+2', '30 A=A+4', '40 A=A+8', '20 A=A+2', 'DELETE .', 'RUN', 'PRINT"[";A;ERR;"]"']
+cle-dlo       cle       1  0                                       1  0                                       1  0                                     
+              typed    ['10 A=A+1', '20 A=A+2', '30 A=A+4', '40 A=A+8', '20 A=A+2', 'DELETE .-40', 'RUN', 'PRINT"[";A;ERR;"]"']
+cle-dhi       cle       12  0                                      12  0                                      12  0                                    
+              typed    ['10 A=A+1', '20 A=A+2', '30 A=A+4', '40 A=A+8', '20 A=A+2', 'DELETE 10-.', 'RUN', 'PRINT"[";A;ERR;"]"']
+cle-dboth     cle       13  0                                      13  0                                      13  0                                    
+              typed    ['10 A=A+1', '20 A=A+2', '30 A=A+4', '40 A=A+8', '20 A=A+2', 'DELETE .-.', 'RUN', 'PRINT"[";A;ERR;"]"']
+cle-drev      cle       15  5                                      15  5                                      15  5                                    
+              typed    ['10 A=A+1', '20 A=A+2', '30 A=A+4', '40 A=A+8', '20 A=A+2', 'DELETE 30-.', 'RUN', 'PRINT"[";A;ERR;"]"']
+cle-dgone     cle       13  5                                      13  5                                      13  5                                    
+              typed    ['10 A=A+1', '20 A=A+2', '30 A=A+4', '40 A=A+8', '20 A=A+2', 'DELETE 20', 'DELETE 10-.', 'RUN', 'PRINT"[";A;ERR;"]"']
+clp-cold      clp       0                                          0                                          0                                        
+              typed    ['Z=PEEK(&HF6B5)+256*PEEK(&HF6B6)', 'PRINT"[";Z;"]"']
+clp-store     clp       40                                         40                                         40                                       
+              typed    ['10 REM A', '20 REM B', '30 REM C', '40 REM D', 'Z=PEEK(&HF6B5)+256*PEEK(&HF6B6)', 'PRINT"[";Z;"]"']
+clp-edit      clp       20                                         20                                         20                                       
+              typed    ['10 REM A', '20 REM B', '30 REM C', '40 REM D', '20 REM B', 'Z=PEEK(&HF6B5)+256*PEEK(&HF6B6)', 'PRINT"[";Z;"]"']
+clp-ins       clp       25                                         25                                         25                                       
+              typed    ['10 REM A', '20 REM B', '30 REM C', '40 REM D', '25 REM E', 'Z=PEEK(&HF6B5)+256*PEEK(&HF6B6)', 'PRINT"[";Z;"]"']
+clp-sdel      clp       20                                         20                                         20                                       
+              typed    ['10 REM A', '20 REM B', '30 REM C', '40 REM D', '20', 'Z=PEEK(&HF6B5)+256*PEEK(&HF6B6)', 'PRINT"[";Z;"]"']
+clp-direct    clp       20                                         20                                         20                                       
+              typed    ['10 REM A', '20 REM B', '30 REM C', '40 REM D', '20 REM B', 'C=1', 'Z=PEEK(&HF6B5)+256*PEEK(&HF6B6)', 'PRINT"[";Z;"]"']
+clp-del       clp       20                                         20                                         20                                       
+              typed    ['10 REM A', '20 REM B', '30 REM C', '40 REM D', '20 REM B', 'DELETE 40', 'Z=PEEK(&HF6B5)+256*PEEK(&HF6B6)', 'PRINT"[";Z;"]"']
+clp-list      clp       40                                         40                                         40                                       
+              typed    ['10 REM A', '20 REM B', '30 REM C', '40 REM D', '20 REM B', 'LIST 40', 'Z=PEEK(&HF6B5)+256*PEEK(&HF6B6)', 'PRINT"[";Z;"]"']
+clp-clear     clp       20                                         20                                         20                                       
+              typed    ['10 REM A', '20 REM B', '30 REM C', '40 REM D', '20 REM B', 'CLEAR', 'Z=PEEK(&HF6B5)+256*PEEK(&HF6B6)', 'PRINT"[";Z;"]"']
+clp-new       clp       20                                         20                                         20                                       
+              typed    ['10 REM A', '20 REM B', '30 REM C', '40 REM D', '20 REM B', 'NEW', 'Z=PEEK(&HF6B5)+256*PEEK(&HF6B6)', 'PRINT"[";Z;"]"']
+clp-runctl    clp       10                                         10                                         10                                       
+              typed    ['10 A=A+1', '20 A=A+2', '30 A=A+4', '10 A=A+1', 'Z=PEEK(&HF6B5)+256*PEEK(&HF6B6)', 'PRINT"[";Z;"]"']
+clp-run       clp       10                                         10                                         10                                       
+              typed    ['10 A=A+1', '20 A=A+2', '30 A=A+4', '10 A=A+1', 'RUN', 'Z=PEEK(&HF6B5)+256*PEEK(&HF6B6)', 'PRINT"[";Z;"]"']
+clp-err       clp       20                                         20                                         20                                       
+              typed    ['10 A=A+1', '20 ERROR 7', '30 A=A+4', '10 A=A+1', 'RUN', 'Z=PEEK(&HF6B5)+256*PEEK(&HF6B6)', 'PRINT"[";Z;"]"']
+clp-stop      clp       10                                         10                                         10                                       
+              typed    ['10 A=A+1', '20 STOP', '30 A=A+4', '10 A=A+1', 'RUN', 'Z=PEEK(&HF6B5)+256*PEEK(&HF6B6)', 'PRINT"[";Z;"]"']
+clp-cont      clp       10                                         10                                         10                                       
+              typed    ['10 A=A+1', '20 STOP', '30 A=A+4', '10 A=A+1', 'RUN', 'CONT', 'Z=PEEK(&HF6B5)+256*PEEK(&HF6B6)', 'PRINT"[";Z;"]"']
+clp-untouch   clp       0                                          0                                          0                                        
+              typed    ['C=1', 'D=2', 'Z=PEEK(&HF6B5)+256*PEEK(&HF6B6)', 'PRINT"[";Z;"]"']
+clp-direrr    clp       20                                         20                                         20                                       
+              typed    ['10 REM A', '20 REM B', '30 REM C', '40 REM D', '20 REM B', 'ERROR 7', 'Z=PEEK(&HF6B5)+256*PEEK(&HF6B6)', 'PRINT"[";Z;"]"']
+clp-trap      clp       50                                         50                                         50                                       
+              typed    ['10 ON ERROR GOTO 50', '20 ERROR 7', '30 A=A+4', '50 RESUME NEXT', '10 ON ERROR GOTO 50', 'RUN', 'Z=PEEK(&HF6B5)+256*PEEK(&HF6B6)', 'PRINT"[";Z;"]"']
+clp-onerr     clp       10                                         10                                         10                                       
+              typed    ['10 ON ERROR GOTO 50', '20 A=A+2', '50 END', '10 ON ERROR GOTO 50', 'RUN', 'Z=PEEK(&HF6B5)+256*PEEK(&HF6B6)', 'PRINT"[";Z;"]"']
+clp-goto      clp       10                                         10                                         10                                       
+              typed    ['10 A=1', '20 GOTO 40', '30 A=3', '40 END', '10 A=1', 'RUN', 'Z=PEEK(&HF6B5)+256*PEEK(&HF6B6)', 'PRINT"[";Z;"]"']
+clp-gosub     clp       10                                         10                                         10                                       
+              typed    ['10 A=1', '20 GOSUB 40', '30 END', '40 RETURN', '10 A=1', 'RUN', 'Z=PEEK(&HF6B5)+256*PEEK(&HF6B6)', 'PRINT"[";Z;"]"']
+clp-trapend   clp       20                                         20                                         20                                       
+              typed    ['10 ON ERROR GOTO 50', '20 ERROR 7', '30 A=A+4', '50 END', '10 ON ERROR GOTO 50', 'RUN', 'Z=PEEK(&HF6B5)+256*PEEK(&HF6B6)', 'PRINT"[";Z;"]"']
+clp-reslin    clp       50                                         50                                         50                                       
+              typed    ['10 ON ERROR GOTO 50', '20 ERROR 7', '30 A=A+4', '50 RESUME 30', '10 ON ERROR GOTO 50', 'RUN', 'Z=PEEK(&HF6B5)+256*PEEK(&HF6B6)', 'PRINT"[";Z;"]"']
+clp-res15     clp       15                                         15                                         15                                       
+              typed    ['10 ON ERROR GOTO 15', '15 RESUME NEXT', '20 ERROR 7', '30 A=A+4', '10 ON ERROR GOTO 15', 'RUN', 'Z=PEEK(&HF6B5)+256*PEEK(&HF6B6)', 'PRINT"[";Z;"]"']
+clp-resend    clp       20                                         20                                         20                                       
+              typed    ['10 ON ERROR GOTO 50', '20 ERROR 7', '30 A=A+4:END', '50 RESUME NEXT', '10 ON ERROR GOTO 50', 'RUN', 'Z=PEEK(&HF6B5)+256*PEEK(&HF6B6)', 'PRINT"[";Z;"]"']
+cld-ctl^      cld       60  0                                      60  0                                      60  0                                    
+              typed    ['60 REM Y', 'PRINT"[";PEEK(63157);PEEK(63158);"]"']
+cld-asc       cld       40  0                                      40  0                                      40  0                                    
+              typed    ['60 REM Y', 'LOAD"CAS:DOTA"', '@WAIT20', 'PRINT"[";PEEK(63157);PEEK(63158);"]"']
+cld-desc      cld       10  0                                      10  0                                      10  0                                    
+              typed    ['60 REM Y', 'LOAD"CAS:DOTD"', '@WAIT35', 'PRINT"[";PEEK(63157);PEEK(63158);"]"']
+cld-mrg       cld       40  0                                      40  0                                      40  0                                    
+              typed    ['60 REM Y', 'MERGE"CAS:DOTA"', '@WAIT20', 'PRINT"[";PEEK(63157);PEEK(63158);"]"']
+cld-cload^    cld       60  0                                      60  0                                      60  0                                    
+              typed    ['60 REM Y', 'CLOAD"DOTT"', '@WAIT50', 'PRINT"[";PEEK(63157);PEEK(63158);"]"']
+cld-list      cld      40 REM D                                   40 REM D                                   40 REM D                                  
+              typed    ['60 REM Y', 'LOAD"CAS:DOTA"', '@WAIT20', 'LIST .']
+csv-ctl^      csv       5  0                                       5  0                                       5  0                                     
+              typed    ['10 REM A', '40 REM D', '5 REM E', '@WAIT20', 'PRINT"[";PEEK(63157);PEEK(63158);"]"']
+csv-asc       csv       40  0                                      40  0                                      40  0                                    
+              typed    ['10 REM A', '40 REM D', '5 REM E', 'SAVE"CAS:D",A', '@WAIT20', 'PRINT"[";PEEK(63157);PEEK(63158);"]"']
+csv-tok       csv       40  0                                      40  0                                      40  0                                    
+              typed    ['10 REM A', '40 REM D', '5 REM E', 'SAVE"CAS:E"', '@WAIT20', 'PRINT"[";PEEK(63157);PEEK(63158);"]"']
+csv-csave^    csv       5  0                                       5  0                                       5  0                                     
+              typed    ['10 REM A', '40 REM D', '5 REM E', 'CSAVE"F"', '@WAIT20', 'PRINT"[";PEEK(63157);PEEK(63158);"]"']
+dsk-ctl^      dsk      <no device on this side>                    5  0                                       5  0                                     
+              typed    ['10 REM A', '20 REM B', '30 REM C', '40 REM D', '5 REM E', 'PRINT"[";PEEK(63157);PEEK(63158);"]"']
+dsk-savasc    dsk      <no device on this side>                    40  0                                      40  0                                    
+              typed    ['10 REM A', '20 REM B', '30 REM C', '40 REM D', '5 REM E', 'SAVE"A:DOTX.BAS",A', 'PRINT"[";PEEK(63157);PEEK(63158);"]"']
+dsk-savtok^   dsk      <no device on this side>                    5  0                                       5  0                                     
+              typed    ['10 REM A', '20 REM B', '30 REM C', '40 REM D', '5 REM E', 'SAVE"A:DOTY.BAS"', 'PRINT"[";PEEK(63157);PEEK(63158);"]"']
+dsk-load      dsk      <no device on this side>                    40  0                                      40  0                                    
+              typed    ['10 REM A', '20 REM B', '30 REM C', '40 REM D', 'SAVE"A:DOTX.BAS",A', 'NEW', '60 REM Y', 'LOAD"A:DOTX.BAS"', 'PRINT"[";PEEK(63157);PEEK(63158);"]"']
+dsk-mrg       dsk      <no device on this side>                    40  0                                      40  0                                    
+              typed    ['10 REM A', '20 REM B', '30 REM C', '40 REM D', 'SAVE"A:DOTX.BAS",A', 'NEW', '60 REM Y', 'MERGE"A:DOTX.BAS"', 'PRINT"[";PEEK(63157);PEEK(63158);"]"']
+crf-ovrctl^   crf       10  0                                      10  0                                      10  0                                    
+              typed    ['10 REM A', 'PRINT"[";PEEK(63157);PEEK(63158);"]"']
+crf-ovr       crf       10  0                                      10  0                                      10  0                                    
+              typed    ['10 REM A', '65530 REM B', 'PRINT"[";PEEK(63157);PEEK(63158);"]"']
+crf-huge      crf       10  0                                      10  0                                      10  0                                    
+              typed    ['10 REM A', '99999 REM B', 'PRINT"[";PEEK(63157);PEEK(63158);"]"']
+crf-ovrsay    crf      Syntax error                               Syntax error                               Syntax error                              
+              typed    ['10 REM A', '65530 REM B']
+crf-oomctl^   crf       99  0                                      99  0                                      99  0                                    
+              typed    ['A=PEEK(&HF676)+256*PEEK(&HF677)', 'CLEAR 300,A+1000', '99 REM Z', 'PRINT"[";PEEK(63157);PEEK(63158);"]"']
+crf-oom       crf       20  0                                      20  0                                      20  0                                    
+              typed    ['A=PEEK(&HF676)+256*PEEK(&HF677)', 'CLEAR 300,A+1000', '99 REM Z', '20 REM BBBBBBBBBBBBBBBBBBBBBBBBBB', 'PRINT"[";PEEK(63157);PEEK(63158);"]"']
+crf-oomsay    crf      Out of memory                              Out of memory                              <nothing listed>                          
+              typed    ['A=PEEK(&HF676)+256*PEEK(&HF677)', 'CLEAR 300,A+1000', '99 REM Z', '20 REM BBBBBBBBBBBBBBBBBBBBBBBBBB']
+crf-oomlst    crf      99 REM Z                                   99 REM Z                                   20 REM BBBBBBBBBBBBBBBBBBBBBBBBBB|99 REM Z
+              typed    ['A=PEEK(&HF676)+256*PEEK(&HF677)', 'CLEAR 300,A+1000', '99 REM Z', '20 REM BBBBBBBBBBBBBBBBBBBBBBBBBB', 'LIST']
+
+^ = two-sided control (T and S predict the SAME bytes)   * = informational, non-gating
+
+208/208 gating rows agree across ['vg8020', 'cf3300', 'zb'] (2 of them allowlisted as KNOWN_DIVERGE, pinned to their exact value)
+refcache: 2 hit, 12 miss, 12 stored

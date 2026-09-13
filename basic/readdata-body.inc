@@ -32,8 +32,21 @@ read_one_value:
                 ld      a,(DATASTATE)
                 cp      2
                 jr      z,rov_none          ; exhausted
+                ; 🔴 D-READDIR: 3 = unpositioned FROM THE PROGRAM TOP, stored by
+                ; vars_reset (RUN, NEW, CLEAR/MAXFILES and every program EDIT). It is a
+                ; third state rather than a RESTORE_LINE seed because that seed costs ten
+                ; bytes in the LOW region, which had five, while this branch costs twelve
+                ; in the sub ROM, which had hundreds. RESTORE keeps its own contract:
+                ; state 0 with RESTORE_LINE naming the line it restored to.
+                cp      3
+                jr      z,rov_top
                 or      a
                 jr      nz,rov_at           ; already positioned
+                jr      rov_unpos
+rov_top:
+                ld      hl,TXTBASE
+                ld      (RESTORE_LINE),hl
+rov_unpos:
                 ; unpositioned: seek the first DATA item from RESTORE_LINE
                 ld      hl,(RESTORE_LINE)
                 ld      (DATALINE),hl

@@ -171,8 +171,7 @@ clr_himem:
                 ; exactly as -1 does yet is ACCEPTED on all three -- the domain is
                 ; a RANGE, not a sign (docs/spec-basic-clrfix.md STILL OPEN note).
                 call    eval_addr           ; DE = -32768..65535, FPERR=1 past it
-                ld      a,(FPERR)
-                or      a
+                call    fperr_test          ; D-FPCARVE: -1 B
                 jr      nz,clr_h_store      ; >=65536 overflow already pending -> ERR 6;
                                             ; skip the range check (DE is 0 here anyway)
                                             ; and HL is still the statement cursor.

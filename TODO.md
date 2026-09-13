@@ -489,7 +489,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:16996 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:17027 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -655,7 +655,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:5256 (T-6FE392)8 (T-529ABE)` from `TODO.md:15647 (T-529ABE)`: a
+      `TODO.md:5256 (T-6FE392)8 (T-529ABE)` from `TODO.md:15678 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -6100,7 +6100,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:15647 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:15678 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -6802,8 +6802,8 @@ list. **When a slice lands, grep this list for what it just shipped.**
       NAMED and re-verified; what remains is the carve that pays for the `rp_lp`
       re-base, then the `fnf_save` arm in the same commit.
 
-- [ ] 🔴 **`READ` IN DIRECT MODE IGNORES THE PROGRAM'S `DATA` AND SILENTLY READS
-      ZERO.** Found 2026-09-13 by D-KWT3's very first batch of TIER 3 rows — the
+- [x] 🟢 **`READ` IN DIRECT MODE IGNORED THE PROGRAM'S `DATA` AND SILENTLY READ
+      ZERO — FIXED.** Found 2026-09-13 by D-KWT3's very first batch of TIER 3 rows — the
       first error-path row written under Joost's "add more tests for each keyword
       proving the tier" ruling, and it found a happy-path defect on its first run.
       | direct-mode `READ ZV` | VG-8020 | zerobas |
@@ -6893,6 +6893,37 @@ list. **When a slice lands, grep this list for what it just shipped.**
       switched OUT — the same hazard `div10` was relocated to page 0 for, and an
       EDIT is one of the five resets that must happen. Either the store is page-0
       resident or each side needs its own copy.
+      🟢 **CLOSED 2026-09-13 — all three divergences, one fix, and the carve that
+      paid for it came out of a negative result filed hours earlier.**
+      | | before | now | VG-8020 |
+      |---|---|---|---|
+      | direct, `10 DATA 7` present | `[ 0 ]` | **`[ 7 ]`** | `[ 7 ]` |
+      | direct, no DATA | `Syntax error` | **`Out of DATA`** | `Out of DATA` |
+      | `CLEAR` then read | held | **reset** | reset |
+      | a program EDIT then read | held | **reset** | reset |
+      ([readings](scratchpad/readfix_datareset.out)) — and the stored-mode rows are
+      unchanged, which is the control: `Out of DATA in 10`, `in 20` mid-statement,
+      `[ 7 ]` when there is enough.
+      🎯 **THE FIX IS `vars_reset` STORING DATASTATE = 3**, a third state meaning
+      *unpositioned, from the program top*, resolved by `read_one_value`. The full
+      seed — `DATASTATE` **and** `RESTORE_LINE = TXTBASE` — is ten bytes and the low
+      region had five; the state byte is five there and twelve in the SUB ROM, which
+      had hundreds. **RESTORE's own contract is untouched**: it still stores 0 with
+      `RESTORE_LINE` naming its line, so the two unpositioned kinds stay distinct.
+      💰 **D-FPCARVE PAID FOR IT, AND IT IS THIS MORNING'S REJECT.** D-LOWCARVE
+      ranked `ld a,(FPERR)`+`or a` and declined it as **thin** — ~3 B, not worth
+      taking for a ~3 % speed win. At nine sites of four bytes each, against a
+      five-byte helper, it is **−4 B (−3 B in the low region)**, and thin is exactly
+      the right size for a five-byte fix. The low region went 1 B → 5 B free and
+      back to 0 B.
+      ⚠️ **ONE SITE IS A TAIL CALL, NOT A CALL, AND THAT IS LOAD-BEARING**: the
+      array-release path has just executed `ld sp,hl` so SP points AT its return
+      address, and pushing a return there would land inside the frame it just
+      unwound. `jp fperr_test` reuses the helper's own `ret` — and saves two bytes
+      rather than one, which is why the carve beat its own estimate.
+      🔬 **WHY NO SUITE EVER SAW IT**: they all `RUN`, and `RUN` seeds the cursor.
+      The defect lived entirely in the state BEFORE the first `RUN` — which is the
+      state a person is in when they type at the prompt.
       🎚️ TIER 1 — happy path: `READ` at the prompt reads the wrong value silently
       🤖 AUTONOMOUS — the defect is measured, narrow and reproducible in one row.
 
