@@ -1,0 +1,12 @@
+outliers after the first leader: 61
+first 20 indices: [8010, 8085, 8090, 8108, 8190, 8192, 8198, 8216, 8298, 8363, 8369, 8378, 8384, 8405, 8411, 8416, 8437, 8442, 8444, 8462]
+gap histogram (half-periods between consecutive outliers):
+      gap    2 :   9 times
+      gap    5 :   5 times
+      gap    6 :   5 times
+      gap   18 :   4 times
+      gap    9 :   4 times
+      gap   15 :   4 times
+      gap   21 :   3 times
+      gap   82 :   2 times
+refcache: 0 hit, 1 miss, 1 stored

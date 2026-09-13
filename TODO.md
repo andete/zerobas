@@ -489,7 +489,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:16488 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:16511 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -655,7 +655,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:5054 (T-6FE392)8 (T-529ABE)` from `TODO.md:15225 (T-529ABE)`: a
+      `TODO.md:5077 (T-6FE392)8 (T-529ABE)` from `TODO.md:15248 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -3885,6 +3885,29 @@ list. **When a slice lands, grep this list for what it just shipped.**
       🟢 **OUR OWN READER IS UNAFFECTED**: `cassave-acceptance` and
       `castail-acceptance` are green with the compensation in, which is what says
       this is safe to carry while the rest is worked out.
+      🔴 **D-CASSYM, 2026-09-13: THE RESTRUCTURE WAS TRIED AND DID NOT HELP — two
+      more hypotheses dead, and the tree keeps the two-constant version because it
+      MEASURES BETTER.**
+      | tried | result |
+      |---|---|
+      | emit the bit's last cycle from a MERGE POINT so both arms share one tail (0 B, one constant instead of two, strictly simpler code) | `Found:ZQ` still, load still incomplete, and **46 between-tone half-periods against the committed version's 38** ([readings](scratchpad/kwdrain_symsweep.out)) |
+      | the residual is the 8th data bit of each byte, whose `djnz` is not taken so its tail differs | **REFUTED**: the outliers are not periodic at the byte rate. Gaps between consecutive outliers are 2, 5, 6, 9, 15, 18, 21 half-periods — scattered WITHIN bytes ([readings](scratchpad/kwdrain_outlierspace.out)) |
+      ➡️ **SO THE RESIDUAL IS NOT ONE STRUCTURAL SITE**, which is what the merge-point
+      fix assumed. Equalising the two bit arms was sound reasoning and the
+      measurement did not reward it; the code is REVERTED rather than kept for
+      elegance, because 38 beats 46 and neither completes the load.
+      ⚠️ **AND THAT MAKES THE NEXT INSTRUMENT THE POINT, not the next edit.** Every
+      reading so far infers timing from the RECORDED WAV, which is the writer's
+      output convolved with whatever openMSX's cassette port does. A cycle-accurate
+      trace of the writer against the emulator's own clock — T-states between
+      consecutive `out (PPI_REGS)` instructions — would say directly which emissions
+      are late and by how much, instead of leaving it to be inferred from a
+      histogram. That is the next slice, and it is a different kind of work from
+      another constant or another branch.
+      🎯 **WHAT IS ALREADY WON AND SHOULD NOT BE RE-DERIVED**: the mechanism (per-bit
+      tail inside the last half-period), the three compensation sites, the byte
+      boundary being the one that made the name decode, and HANG → `Found:ZQ`. Six
+      hypotheses are now dead and listed in this item.
       🎚️ TIER 1 — happy path: `CSAVE` / `SAVE"CAS:"` is ordinary MSX BASIC, and what
       it produces cannot be loaded on the machine it is meant for
       🤖 AUTONOMOUS — the matrix is measured with controls in both directions; what
@@ -5898,7 +5921,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:15225 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:15248 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
