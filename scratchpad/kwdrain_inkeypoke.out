@@ -1,0 +1,7 @@
+vg8020   RUN | [A 1 ] | Ok | color  auto   goto   list   run
+zb       ZB40 A$=INKEY$:PRINT"[";A$;LEN(A$);"]" | ZBRUN | [A 1 ] | ZB
+
+READ IT AS: `[A 1 ]` => a real keystroke reached INKEY$ with no injector
+timing at all, and the row is a plain stored row. `[ 0 ]` => the buffer
+poke does not reach INKEY$ and the filed harness change stands.
+refcache: 0 hit, 2 miss, 2 stored

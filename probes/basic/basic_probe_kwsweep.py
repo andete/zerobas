@@ -1109,6 +1109,25 @@ SWEEP: list[tuple[str, str, str | None, str, str]] = [
      "printed as it reads: a hang and a silent no-op look identical at the `Ok` "
      "prompt, which is exactly how D-CASTAIL2 hid for four slices. Absent => "
      "syntax error."),
+    # 🟢 D-KWINKEY: THE LAST WORD ON THE DRAIN, and its filed blocker was wrong.
+    # `INKEY$` was held back as needing a HARNESS change — a key had to arrive
+    # after the machine consumed `RUN` and before the statement read it, a moment
+    # computed inside run_cases from `boot` + per-line `step` that a row cannot
+    # see, with the D-LATCH/D-LATCH2 races as what such a change must not reopen.
+    # 🎯 BUT A KEY DOES NOT HAVE TO BE TYPED TO BE WAITING. The BIOS type-ahead
+    # buffer is ordinary MSX work area (KEYBUF $FBF0, the GETPNT/PUTPNT cursors,
+    # empty when equal) and BASIC can POKE it: the program stuffs one character,
+    # sets the cursors one apart, and reads a REAL keystroke with no injector
+    # timing anywhere. Measured `[A 1 ]` on both machines
+    # (scratchpad/kwdrain_inkeypoke.py) — and the value separates from a stub,
+    # which answers `[ 0 ]` exactly as an unstuffed buffer does.
+    # ⚠️ STORED, AND THAT IS LOAD-BEARING: in direct mode the harness delivers the
+    # NEXT line through this very buffer, which would overwrite the stuffed
+    # character. Nothing competes for it during RUN.
+    ("inkey",   'a$=inkey$',
+     'POKE&HFBF0,65:POKE&HF3FA,&HF0:POKE&HF3FB,&HFB:POKE&HF3F8,&HF1:'
+     'POKE&HF3F9,&HFB:A$=INKEY$:PRINT"[";A$;LEN(A$);"]"',  "stored",
+     "absent => the buffer stays stuffed and INKEY$ reads nothing; real => [A 1 ]"),
     ("csave",   'csave"zq"',  'PRINT"[Z9]":CSAVE"ZQ"',  "stored",
      "NEEDS-BLANKTAPE: " "NOFURN: " "🔴 THE ROW READS THE TAPE, NOT THE SCREEN, "
      "and that is measured: every screen form of this row scored SUPPORTED on an "

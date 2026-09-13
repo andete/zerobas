@@ -489,7 +489,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:16668 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:16702 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -16652,6 +16652,38 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       OF EVIDENCE: the keywords `tier_table --keywords` lists under **"no known
       gap"**, each with no open item and no kwsweep row.
       📏 **DONE = that list is EMPTY.** Run the command; do not read a number here.
+      🟢 **THE LIST IS EMPTY — 2026-09-13, D-KWINKEY. `tier_table --keywords` now
+      reports `no known gap ... 0`, which is this item's own stated exit criterion.**
+      Joost's 2026-09-12 ruling is satisfied: 114 → 0, with every keyword carrying
+      either an open item or a kwsweep row that observes it.
+      🔴 **AND THE LAST WORD'S BLOCKER WAS WRONG, like eleven before it.** `INKEY$`
+      was filed as needing a HARNESS change — a key had to arrive after the machine
+      consumed `RUN` and before the statement read it, a moment computed inside
+      `run_cases` from `boot` + per-line `step` that a row cannot see, with
+      D-LATCH/D-LATCH2 as the races such a change must not reopen. All true, and
+      all beside the point: **a key does not have to be TYPED to be waiting.** The
+      BIOS type-ahead buffer is ordinary MSX work area — `KEYBUF` $FBF0 with the
+      `GETPNT`/`PUTPNT` cursors, empty when equal — so the program stuffs one
+      character, sets the cursors one apart, and `INKEY$` returns a REAL keystroke
+      with no injector timing anywhere. Measured `[A 1 ]` on both machines
+      ([`scratchpad/kwdrain_inkeypoke.py`](scratchpad/kwdrain_inkeypoke.py)),
+      against the `[ 0 ]` an unstuffed buffer and a stub both give.
+      ⚠️ **STORED, AND THAT IS LOAD-BEARING**: in direct mode the harness delivers
+      the next line through that very buffer and would overwrite the stuffed
+      character. Nothing competes for it during `RUN` — which is why the blocker
+      looked real from the direct-mode side it was filed from.
+      🎯 **TWELVE BLOCKERS RE-VERIFIED ACROSS THIS DRAIN, TWELVE STALE.** Not one
+      survived contact with a measurement. The pattern is worth more than the
+      drain: a blocker is written down at the moment of most confusion about a
+      problem, and then it is never re-read against what was learned afterwards.
+      🙋 **SO THE TIER IS NOW THE QUESTION, EXACTLY AS THIS ITEM SAID IT WOULD BE.**
+      The three defect classes are empty (SILENT-GAP, MISSING, DIVERGENT), the
+      unattributed list is empty, and the item asked for the tier to be re-asked
+      WITH JOOST at this point rather than re-tiered autonomously. Two things need
+      his call: whether this stays TIER 1 now that nothing under it is measured
+      broken, and whether the remaining apparatus gap — **step (c)**, a `subject:`
+      tag meaning "a row whose verdict MOVES when this keyword breaks" — is worth
+      its measured price of a mutation + rebuild + full battery per keyword.
       🎚️ TIER 1 — happy path: the measured keyword-completeness remainder, now an
       ABSENCE OF EVIDENCE rather than a measured defect — the three defect classes
       are empty and what is left is the unattributed list (this line names no
@@ -16663,7 +16695,9 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       of them earned. Re-tiering on "nothing is measured broken" would be the same
       reasoning the drain has refuted four times. When the list empties, THAT is
       when the tier is the question to re-ask — with Joost.
-      🤖 AUTONOMOUS — drain the list; the apparatus it needs is built.
+      🙋 NEEDS-JOOST — THE DRAIN IS DONE (the list is empty). What is left is
+      the question this item reserved for him: does it stay TIER 1, and is step
+      (c) worth its measured price? No autonomous work remains here.
 
 - [ ] **`LOAD"CAS:"` ACCEPTS A TOKENISED TAPE; the reference does not return.**
       Found 2026-08-03 by D-DOTGAPS (§1.2). With only a $D3 file on the tape the

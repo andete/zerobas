@@ -8,13 +8,28 @@ session and the loop resumes exactly where it stopped.
 
 Recount everything — never quote a number from this file.
 
-* 🟢 **THE TAPE TIER 1 IS CLOSED.** A tape zerobas saves now loads on a real MSX;
-  the interop matrix is green in all four cells with the `[P9]` prompt witness.
-* 🟢 **THE DRAIN IS DOWN TO `CSAVE` AND `INKEY$`** — `CLOAD` was attributed by
-  D-KWTAPE2's `NEEDS-TAPE:` rig. The whole kwsweep is `DIVERGENT=0`.
-* The one remaining TIER 1 is the keyword-completeness umbrella itself, and its
-  exit criterion is that list being EMPTY. Run `make tiers` and
-  `python3 tools/tier_table.py --keywords`.
+* 🟢 **THE DRAIN IS DONE. `tier_table --keywords` reports `no known gap ... 0`**,
+  which was the keyword-completeness item's own stated exit criterion. 114 → 0.
+  Every keyword now carries an open item or a kwsweep row that observes it, and
+  the three defect classes (SILENT-GAP, MISSING, DIVERGENT) are all empty.
+* 🟢 **THE TAPE TIER 1 IS CLOSED** — a tape zerobas saves loads on a real MSX.
+* 🙋 **NO AUTONOMOUS TIER 1 WORK REMAINS.** The one TIER 1 item left is the
+  keyword umbrella, now marked NEEDS-JOOST by its own instruction: it reserved
+  the tier question for him once the list emptied. He also has step (c) to price.
+* ➡️ **SO THE NEXT PICK IS TIER 3/4**, by the priority tiers — run `make tiers`
+  and take the lowest tier with a 🤖 marker. Do NOT re-tier the umbrella.
+
+## Twelve blockers re-verified, twelve stale
+
+Not one survived contact with a measurement. `INKEY$` was the last and the most
+convincing: filed as needing a HARNESS change to time a keystroke against
+D-LATCH/D-LATCH2 — all true, and beside the point, because **a key does not have
+to be TYPED to be waiting.** The BIOS type-ahead buffer is ordinary work area and
+BASIC can POKE it.
+
+➡️ **A blocker is written down at the moment of most confusion about a problem,
+and then never re-read against what was learned afterwards.** Re-verifying has
+been cheaper than the work it was hiding every single time.
 
 ## What the tape arc cost, and the rule it earned
 
@@ -35,18 +50,16 @@ where the leader was not the binding constraint), and the between-tone-outlier
 histogram never predicted the outcome — the cleanest recording ever produced read
 the WORST. **A refutation is only as general as the build it was measured on.**
 
-## The next slice — `INKEY$`, the last word on the list
+## The next slice — TIER 3/4, and the umbrella is NOT it
 
-`CSAVE` is attributed (D-KWTAPE3: `NEEDS-BLANKTAPE:`, a capture that decodes the
-recording back to bytes). **`INKEY$` is all that is left**, and it was always
-named the one to do last: it needs the key injector's TIMING exposed to a row,
-and it must not reopen D-LATCH/D-LATCH2. Read those two before designing the row.
+The drain is finished and the umbrella is 🙋 NEEDS-JOOST by its own instruction.
+Run `make tiers` and take the lowest tier carrying a 🤖 marker. TIER 4 currently
+holds the interpreter-speed items (`FOR`/`GOTO` 2.5–3.8× slower, `PAINT` 2×,
+`PUT`), which were parked UNDER the drain by Joost's 2026-09-12 ruling — that
+ruling is now satisfied, so they are the live work.
 
-⚠️ **THE TAPE ROWS COST FOUR WRONG READINGS BEFORE ONE RIGHT ONE**, every one of
-them GREEN or honestly UNREADABLE, never a wrong answer: an empty capture, a tail
-appended as ASCII to a capture that was never split, a tail appended as HEX to a
-capture that comes back DECODED, and a missing fixture agreeing with a missing
-fixture. **Read what the row SAW, not the verdict it printed.**
+⚠️ **Before starting any of them, re-read the item to its END and re-verify its
+blocker.** Twelve for twelve this session.
 
 ## Five ways a kwsweep row can pass while seeing NOTHING
 
@@ -236,4 +249,4 @@ a pattern that appears in the polling command.
 
 Paste this into a fresh session:
 
-    /loop continue autonomously on zerobas — 🔴 TIER 1 BEFORE ANYTHING ELSE. Read scratchpad/LOOP-RESTART.md FIRST, then the item's own block in TODO.md to its END. Run `make tiers`; recount keywords with `python3 tools/tier_table.py --keywords` — never quote a count. THE LAST TIER 1 IS THE KEYWORD-COMPLETENESS UMBRELLA and its exit criterion is the "no known gap" list being EMPTY. IT IS DOWN TO ONE WORD: INKEY$. THIS SLICE: attribute INKEY$ and CLOSE THE UMBRELLA. It was always named the one to do last because it needs the key injector's TIMING exposed to a kwsweep row — read D-LATCH and D-LATCH2 in TODO.md FIRST and do not reopen them. The four rigs that already exist are the design vocabulary: NEEDS-DISK: and NEEDS-PRINTER: mount a DEVICE, NEEDS-LOG: and NEEDS-BLANKTAPE: are CAPTURES that read an artefact the screen never shows. If INKEY$ needs a fifth shape, say which of those it is. ⚠️ EVERY NEW ROW MUST CLEAR THE FIVE SILENT-FAILURE MODES listed in LOOP-RESTART.md, and the tape rows cost FOUR wrong readings before one right one — every one of them GREEN or honestly UNREADABLE, never a wrong answer: an empty capture, a tail appended as ASCII to a capture that was never split, a tail appended as HEX to a capture that comes back DECODED, and a missing fixture agreeing with a missing fixture. READ WHAT THE ROW SAW, NOT THE VERDICT IT PRINTED, and after adding rows read the WHOLE sweep summary. 🎯 THE RULE THE TAPE ARC EARNED: when a consumer hangs, DIFF THE BYTES AGAINST OUR OWN ENCODER BEFORE THEORISING ABOUT TIMING — four slices went into a waveform when the defect was seven missing $00 bytes. 🔴 RE-VERIFY EVERY BLOCKER BEFORE BELIEVING IT, and note that TWO refutations were themselves retracted this session — a refutation is only as general as the build it was measured on. Standing rules: full `make gates` before each commit and never commit red; STAGE EVERYTHING BEFORE THE BATTERY AND WRITE NOTHING WHILE IT RUNS; an item may carry only ONE marker; 🔴 `check_todo_citations.py --fix` REWRITES EVERY DOC THAT CITES A MOVED BLOCK — five files beyond TODO.md every time; read `git status --short` as a LIST; after a `--fix` re-run every gate that READS TODO.md; `rm -rf build && make basic-reloc` for any wall figure, and BACK UP build/kwsweep-verdicts.json first; `test -e <path> && exit 1` before any `cat >` heredoc; stage explicit paths, `git add -A` banned; commit message to a FILE with `git commit -F`; commit AND push after each fix without asking; never write a tracked file while a battery runs; re-run the five battery-excluded targets by hand after any slice touching a shared leaf; NEVER poll with a pattern that matches the polling command itself — use the background task's own completion notification; READ the output of every edit script.
+    /loop continue autonomously on zerobas — 🔴 READ scratchpad/LOOP-RESTART.md FIRST, then the item's own block in TODO.md to its END. Run `make tiers`; recount keywords with `python3 tools/tier_table.py --keywords` — never quote a count. 🟢 THE KEYWORD DRAIN IS DONE: `no known gap` is 0, which was the umbrella item's own exit criterion, and the tape TIER 1 is closed. 🙋 NO AUTONOMOUS TIER 1 WORK REMAINS — the one TIER 1 item left is the keyword umbrella, now NEEDS-JOOST by its own instruction (it reserved the tier question for him once the list emptied, and he also has step (c) to price). DO NOT re-tier it and do not pick it up. ➡️ SO TAKE THE LOWEST TIER CARRYING A 🤖 MARKER — TIER 4 currently holds the interpreter-speed items (FOR/GOTO 2.5–3.8× slower than the reference, PAINT 2×, PUT), which Joost's 2026-09-12 ruling parked UNDER the drain; that ruling is now satisfied, so they are the live work. ⚠️ RE-READ THE ITEM TO ITS END AND RE-VERIFY ITS BLOCKER BEFORE STARTING — twelve blockers were re-verified this session and twelve were stale, INKEY$ being the last: filed as needing a harness change to time a keystroke against D-LATCH/D-LATCH2, when a key does not have to be TYPED to be waiting (the BIOS type-ahead buffer is ordinary work area and BASIC can POKE it). A blocker is written down at the moment of most confusion and then never re-read against what was learned afterwards. 🎯 AND THE RULE THE TAPE ARC EARNED: when a consumer hangs, DIFF THE BYTES AGAINST OUR OWN ENCODER BEFORE THEORISING ABOUT TIMING — four slices went into a waveform when the defect was seven missing $00 bytes. ⚠️ For any speed work: `make basic-reloc` from a CLEAN tree for any wall figure, and BACK UP build/kwsweep-verdicts.json first. Standing rules: full `make gates` before each commit and never commit red; STAGE EVERYTHING BEFORE THE BATTERY AND WRITE NOTHING WHILE IT RUNS; an item may carry only ONE marker; 🔴 `check_todo_citations.py --fix` REWRITES EVERY DOC THAT CITES A MOVED BLOCK — five files beyond TODO.md every time; read `git status --short` as a LIST; after a `--fix` re-run every gate that READS TODO.md; `test -e <path> && exit 1` before any `cat >` heredoc; stage explicit paths, `git add -A` banned; commit message to a FILE with `git commit -F`; commit AND push after each fix without asking; re-run the five battery-excluded targets by hand after any slice touching a shared leaf; NEVER poll with a pattern that matches the polling command itself — use the background task's own completion notification; READ the output of every edit script.
