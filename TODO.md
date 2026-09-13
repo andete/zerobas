@@ -489,7 +489,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:17148 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:17169 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -655,7 +655,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:5256 (T-6FE392)8 (T-529ABE)` from `TODO.md:15799 (T-529ABE)`: a
+      `TODO.md:5256 (T-6FE392)8 (T-529ABE)` from `TODO.md:15820 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -6100,7 +6100,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:15799 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:15820 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -7044,6 +7044,27 @@ list. **When a slice lands, grep this list for what it just shipped.**
       2026-09-13. `DSKF`'s work is ALREADY a tenant reached through `H_DSKF`, so
       its argument check is a natural candidate to travel with it rather than to
       sit in the caller.
+      🎯 **THE FIX'S EXACT SHAPE ALREADY EXISTS IN THIS TREE — and its constant is
+      NOT the one `DSKF` needs, which is the trap to avoid.** `dsk_core`
+      (`basic/str-engine.asm`) validates the drive for `DSKI$`/`DSKO$` with
+      `cp 2` / `jr c,ok` / `ld a,62` / `jp raise_error`, and its comment records the
+      measurement behind it: *"0 and 1 both name the one drive; 2.. is `Bad drive
+      name` (ERR 62), measured on the reference with `DSKI$(3,0)`"*.
+      | verb | accepted on the CF-3300 | first rejected |
+      |---|---|---|
+      | `DSKI$` / `DSKO$` | 0, 1 | **2** |
+      | `DSKF` | 0, 1, **2** (2 prompts for the phantom `B:`) | **3** |
+      🔴 **SO THE TWO VERBS DISAGREE ON THE REFERENCE, AND COPYING `dsk_core`'S
+      `cp 2` WOULD SHIP A WRONG BOUND THAT LOOKS RIGHT** — it would reject `DSKF(2)`,
+      which the reference answers. The pattern is reusable; the constant is not.
+      `DSKF` wants `cp 3`.
+      💰 **STILL BLOCKED, AND NOW PRICED AGAINST THE REAL SHAPE**: `ld a,e` / `cp 3`
+      / `jr c` / `ld a,62` / `jp raise_error` is ten bytes in `basic/expr.asm`, main
+      page 1, which measured 8 B free on 2026-09-13 — and `ev_ff_dskf` receives the
+      argument in DE from the caller, so whether the high half needs testing depends
+      on how that argument is evaluated (`eval_byte_arg` limits to 0..255; an int16
+      path would not). **Check which one feeds it before sizing the fix**, because
+      that is the difference between ten bytes and fourteen.
       🎚️ TIER 3 — common errors: a bad drive letter is the legend's own example
       🤖 AUTONOMOUS — measured, bounded by its passing rows, and the fix is an
       argument check rather than a redesign.
