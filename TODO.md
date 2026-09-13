@@ -489,7 +489,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:16971 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:16996 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -655,7 +655,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:5256 (T-6FE392)8 (T-529ABE)` from `TODO.md:15622 (T-529ABE)`: a
+      `TODO.md:5256 (T-6FE392)8 (T-529ABE)` from `TODO.md:15647 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -6100,7 +6100,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:15622 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:15647 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -6868,6 +6868,31 @@ list. **When a slice lands, grep this list for what it just shipped.**
       named, the correct SITE is measured rather than guessed, and two further
       divergences (`CLEAR`, EDIT) that no existing suite covers are now on the
       record with it.
+      📏 **THE FIX IS PRICED TO THE BYTE NOW, AND THE ASYMMETRY IS THE WHOLE
+      PROBLEM (2026-09-13).** `read_one_value`'s body was EVICTED to the sub ROM —
+      `basic/readdata-body.inc` is included by `sub/readdata.asm` and by nothing
+      else — and on 2026-09-13 the sub ROM measured **525 B free in page 0**
+      against the low region's **1 B**. So the BRANCH logic is nearly free and only
+      the RESET STORE is expensive, and the store is the half that must live in
+      `vars_reset`, in the low region.
+      | shape | low-region cost | verdict |
+      |---|---|---|
+      | `xor a`+`ld (DATASTATE),a`+`ld hl,TXTBASE`+`ld (RESTORE_LINE),hl` | 10 B | refused by the build |
+      | a third `DATASTATE` value: `ld a,3`+`ld (DATASTATE),a` | 5 B | short by 4 |
+      | reuse the existing `ld hl,0` and store `ld (DATASTATE),hl` — zeroing DATASTATE and the byte above it, which is DATAPTR's low half and meaningless while unpositioned | **three bytes** | short by 2 |
+      ➡️ **SO THE SLICE IS A 2–5 BYTE LOW-REGION CARVE, not a design question.**
+      D-LOWCARVE's pair scan ranked two candidates it declined for being thin —
+      `ld a,(FPERR)`+`or a` at 8 sites and `push hl`+`ld hl,(TKDEXP)` at 8, each
+      netting about 3 B after the helper's own five. **Thin is exactly right at this
+      size**: one of them alone pays for the cheapest shape above, where neither was
+      worth taking for a ~3 % speed win.
+      ⚠️ **AND THE SUB-ROM TENANT IS THE CONSTRAINT THAT RULES OUT THE OBVIOUS
+      DODGE**: a shared `data_unpos` helper in main page 1 (which measured 7 B free on
+      2026-09-13)
+      would be unreachable from the line-editor tenant, which runs with main page 1
+      switched OUT — the same hazard `div10` was relocated to page 0 for, and an
+      EDIT is one of the five resets that must happen. Either the store is page-0
+      resident or each side needs its own copy.
       🎚️ TIER 1 — happy path: `READ` at the prompt reads the wrong value silently
       🤖 AUTONOMOUS — the defect is measured, narrow and reproducible in one row.
 
