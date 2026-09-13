@@ -204,12 +204,28 @@ def kw_gaps(its, kws):
 # broken or keyword missing). No open gap means NO KNOWN GAP -- not a tier. The
 # "reached" column becomes a measurement only when gate rows declare their
 # keyword (step (c)); until then this is the honest ceiling on what is known.
-REACHED = {1: "0 — happy path broken or keyword MISSING", 2: "1 — happy path only",
-           3: "2 — common errors not handled", 4: "3 — slower than the reference",
-           5: "4 — only exhaustive error handling open",
-           "kwgap": "GAP kwsweep sees that NO open item files (DIVERGENT/MISSING)",
-           "kw1": "1 — happy path reached, scored by kwsweep",
-           "kw3": "3 — common errors reached too, scored by a PROVES-T3 row"}
+# 🔴 TIER 0 = NO TIER ESTABLISHED (Joost, 2026-09-13: "let's call no tier
+# established tier 0 to make it clear"). EVERY keyword in this tree is TIER 0
+# today, and the text after it says only what is KNOWN AGAINST it -- an open item,
+# a gap the sweep sees, or how many rows agree. None of that is attainment:
+# attainment needs BREADTH (enough agreement points to cover a verb's real forms)
+# and NON-VACUITY (a mutation check showing the rows would go red if it broke),
+# and no keyword has been shown to have either. The old labels read as a ladder
+# ("1 — happy path only") and implied a rung had been climbed.
+REACHED = {1: "TIER 0 — open TIER 1 item (happy path broken or keyword MISSING)",
+           2: "TIER 0 — open TIER 2 item (works, but not in reasonable time)",
+           3: "TIER 0 — open TIER 3 item (a common error situation is wrong)",
+           4: "TIER 0 — open TIER 4 item (slower than the reference)",
+           5: "TIER 0 — open TIER 5 item (an exhaustive error case is wrong)",
+           "kwgap": "TIER 0 — a gap kwsweep SEES that no open item files (DIVERGENT/MISSING)",
+           # 🔴 NOT TIERS (Joost, 2026-09-13: "kwsweep SUPPORTED is not evidence
+           # for tier 1"). A SUPPORTED verdict says zerobas and the reference
+           # produced the same output FOR ONE INPUT. That is one agreement point,
+           # not a reached tier -- and agreement can be vacuous: `CSAVE` once
+           # scored SUPPORTED on an EMPTY capture, and four of the five
+           # silent-failure modes are ways two machines agree about nothing.
+           "kw1": "TIER 0 — no known gap; ONE happy-path row agrees",
+           "kw3": "TIER 0 — no known gap; a happy-path AND an error row agree"}
 GROUP_ORDER = ["kwgap", 1, 2, 3, 4, 5, "kw1", "kw3", None]
 
 
@@ -354,13 +370,25 @@ def fmt_keywords(its, kws, evidence=None):
     return "\n".join(out)
 
 
-FOOTER = ("**\"No open gap\" is not \"verified\".** It means no open TODO item names the "
-          "keyword; the column that would mean something — is the keyword's behaviour "
-          "differentially scored by a row that goes red if it breaks — is step (c) of the "
-          "per-keyword-table item and does not exist yet.")
+FOOTER = ("**\"No open gap\" is not \"verified\", and a kwsweep verdict is NOT a reached "
+          "tier** (Joost, 2026-09-13). `SUPPORTED` "
+          "means zerobas and the reference produced the same output *for one input* — one "
+          "agreement point. It is not \"the happy path works\", and agreement can be "
+          "vacuous: `CSAVE` once scored SUPPORTED on an empty capture, and four of the "
+          "five silent-failure modes are ways two machines agree about nothing. "
+          "**Every row above is TIER 0**: nothing is established. An open TIER n item says a "
+          "defect is FILED at n, not that n-1 was reached; a row that agrees is one agreement "
+          "point. Establishing a tier needs BREADTH — agreement points covering a verb's real "
+          "forms, not one expression — AND NON-VACUITY, a mutation check showing those rows go "
+          "red if the keyword breaks. Neither has been demonstrated for any keyword.")
 
 
-def fmt_markdown(its, kws):
+def fmt_markdown(its, kws, evidence=None, t3=None):
+    """🔴 `evidence`/`t3` are INJECTABLE because S14 was not hermetic: it built its
+    markdown from the LIVE build/kwsweep-verdicts.json, so the expected `LOF` row
+    changed the moment a sweep re-ran and gave LOF a verdict (it gained a
+    `; kwsweep SUPPORTED` suffix). The test had been passing on the pin's contents,
+    not on the formatter's behaviour [[an-instrument-can-fail-the-way-the-thing-it-replaced-failed]]."""
     """The same table as a document -- the go-public status page in embryo.
 
     Joost, 2026-09-10: *"this table will also be very valuable if we eventually
@@ -383,11 +411,12 @@ def fmt_markdown(its, kws):
     out += ["", f"{len(its)} open items in all; {sum(counts.get(c, 0) for c in CLASSES)} are "
             "apparatus, ROM budget, standing rulings or other (not keyword work).", "",
             "## Every keyword and its tier", "",
-            "`reached` is the tier the keyword stands at today, from the open gaps: an open "
-            "TIER n item naming it means it has not reached n. **'No known gap' is not a tier.**", "",
-            "| reached | n | keywords |", "|---|---|---|"]
-    kt = keyword_tiers(its, kws)
-    t3 = kwsweep_t3(kws)
+            "**Every keyword is TIER 0: no tier is established for any of them.** The text "
+            "beside each says only what is KNOWN AGAINST it — an open item at tier n, a gap "
+            "the sweep sees, or how many rows agree. None of that is attainment.", "",
+            "| established tier, and what is known against it | n | keywords |", "|---|---|---|"]
+    kt = keyword_tiers(its, kws, evidence)
+    t3 = kwsweep_t3(kws) if t3 is None else t3
     groups = defaultdict(list)
     for kw, (g, _, e) in kt.items():
         groups[reached_group(g, e, kw in t3)].append(kw)
@@ -402,13 +431,19 @@ def fmt_markdown(its, kws):
         g, lines, e = kt[kw]
         grp = reached_group(g, e, kw in t3)
         if grp is None:
-            out.append(f"| `{kw}` | no known gap | — |")
+            out.append(f"| `{kw}` | TIER 0 | no known gap, no row |")
         elif grp == "kw1":
-            out.append(f"| `{kw}` | 1 | kwsweep SUPPORTED |")
+            out.append(f"| `{kw}` | TIER 0 | no known gap; 1 row agrees |")
+        elif grp == "kw3":
+            # D-KWT3: the rung above kw1 -- a SECOND row, scoring an error
+            # situation. `g` is None for both, so this arm must come before the
+            # one below, which indexes REACHED by the GAP tier.
+            out.append(f"| `{kw}` | TIER 0 | no known gap; 2 rows agree (happy + error) |")
         elif grp == "kwgap":
             out.append(f"| `{kw}` | GAP, unfiled | kwsweep {e} and no open item |")
         else:
-            out.append(f"| `{kw}` | {REACHED[g].split(' — ')[0]} | open TIER {g} item, TODO.md {', '.join(map(str, lines))}"
+            # the cell is always TIER 0 now; what varies is the text beside it
+            out.append(f"| `{kw}` | TIER 0 | open TIER {g} item, TODO.md {', '.join(map(str, lines))}"
                        + (f"; kwsweep {e}" if e else "") + " |")
     out += ["",
             "## Open items, keyword first", "",
@@ -532,12 +567,17 @@ def selftest():
         stmt_keyword("a=abs(-5)", {"ABS", "A"} - {"A"}) == "ABS" and stmt_keyword('a$=mid$("hi",1,1)', {"MID$"}) == "MID$"
         and stmt_keyword("A=1", {"ABS"}) is None)
     arm("S20 the full list names every keyword exactly once", sorted(kt) == sorted(kws))
-    md = fmt_markdown(its, kws)
+    md = fmt_markdown(its, kws, evidence={}, t3=set())
+    _s14 = [("summary row", "| TIER 1 | works correctly in the happy path | 1 |" in md),
+            ("LOF row", "| `LOF` | TIER 0 | open TIER 1 item, TODO.md 2 |" in md),
+            ("ZZZ row", "| `ZZZ` | TIER 0 | no known gap, no row |" in md),
+            ("honesty footer", "not \"verified\"" in md),
+            ("open-items row", "| `LOF`, `PUT` | TIER 1 | 🤖 | `LOF` and `PUT#1,255` | 2 |" in md)]
+    for _n, _c in _s14:
+        if not _c:
+            print("   S14 clause failed:", _n)
     arm("S14 markdown carries the summary, the keyword rows and the honesty footer",
-        "| TIER 1 | works correctly in the happy path | 1 |" in md
-        and "| `LOF` | 0 | open TIER 1 item, TODO.md 2 |" in md and "| `ZZZ` | no known gap | — |" in md
-        and "not \"verified\"" in md
-        and "| `LOF`, `PUT` | TIER 1 | 🤖 | `LOF` and `PUT#1,255` | 2 |" in md)
+        all(c for _, c in _s14))
     print("selftest:", "GREEN" if ok else "🔴 RED")
     return 0 if ok else 2
 

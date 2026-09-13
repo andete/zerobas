@@ -126,6 +126,17 @@ ORDER.** Set after a night whose three commits were all TIER 5 or apparatus:
 | **TIER 4** | faster than or on par with the reference | the baseline is NOT 1.0 (D-INTERPSPEED §4) |
 | **TIER 5** | handles every error situation correctly | nesting depth 11, `+$$###`, string-temp-stack overflow, which of two errors wins |
 
+🎯 **RULED (Joost, 2026-09-13), TWO STANDING ANSWERS:**
+1. **`kwsweep` MAY SIT AT `DIVERGENT > 0`.** The number means *unfixed defects
+   the sweep can see*, and a filed row is NOT pinned back to zero — pinning
+   would hide exactly what the row exists to show. A rising count is a new
+   finding; a steady one is the backlog.
+2. **"WOULD A 1985 LISTING PLAUSIBLY HIT THIS?" GOVERNS BYTES, not just
+   rows.** It was already the TIER 3 legend's test for what to WRITE A ROW
+   about; it is now also the test for whether an obscure error case earns
+   scarce ROM. An item that fails it is RE-TIERED or RETIRED rather than left
+   open forever against a wall it will never be worth crossing.
+
 **Every open item carries a `🎚️` line** naming its tier — or, for items that are
 not about a keyword at all, its class: **APPARATUS** (gates, probes, tooling),
 **BUDGET** (ROM bytes), **STANDING** (a ruling, not work), **OTHER** (DOS
@@ -489,7 +500,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:17169 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:17227 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -655,7 +666,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:5256 (T-6FE392)8 (T-529ABE)` from `TODO.md:15820 (T-529ABE)`: a
+      `TODO.md:5267 (T-6FE392)8 (T-529ABE)` from `TODO.md:15878 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -6100,7 +6111,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:15820 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:15878 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -6988,7 +6999,17 @@ list. **When a slice lands, grep this list for what it just shipped.**
       exactly two bytes, and both carve proposals were tried and rejected by the
       assembler rather than by judgement. Main page 1 measured 8 B free and the low
       region 0 B on 2026-09-13.
-      🎚️ TIER 3 — common errors: the right error for a mistyped `SWAP A,B$`
+      🎚️ **RE-TIERED 3 → 5 ON 2026-09-13, applying Joost's own ballpark to this
+      item.** Reaching it needs **two never-assigned variables of mismatched types
+      in one `SWAP`** — a listing that swaps has assigned them first, and with the
+      variables DEFINED zerobas is already correct. And the shape is the TIER 5
+      legend's own example, word for word: *which of two applicable errors wins*.
+      Both applicable errors ARE raised; only the choice between them differs.
+      ⚠️ **NOT RETIRED, AND THE DISTINCTION MATTERS**: the measurement stands, the
+      fix is written and costs ten bytes of main page 1, and if a page-1 eviction
+      ever makes bytes cheap this is a two-minute job. It is parked at the tier its
+      likelihood deserves, not deleted for being inconvenient.
+      🎚️ TIER 5 — every error: which of two applicable errors wins for `SWAP A,B$`
       🤖 AUTONOMOUS — reproduced in one row, and the passing rows bound it tightly.
       ⚠️ **APPARATUS NOTE FOR EVERY FUTURE ROW: MSX VARIABLE NAMES ARE SIGNIFICANT
       TO TWO CHARACTERS.** `ZQ9` and `ZQ7` are the SAME variable, and the control
@@ -7065,6 +7086,43 @@ list. **When a slice lands, grep this list for what it just shipped.**
       on how that argument is evaluated (`eval_byte_arg` limits to 0..255; an int16
       path would not). **Check which one feeds it before sizing the fix**, because
       that is the difference between ten bytes and fourteen.
+      🔬 **SIZED AGAINST THE REAL ARGUMENT PATH, AND IT IS FOURTEEN BYTES, NOT TEN
+      (2026-09-13).** `DSKF` is in `ev_ff_argtab`, so its argument is evaluated by
+      `ev_logic` into a full **int16** DE — not a byte. The high half therefore has
+      to be tested too, and the ten-byte shape estimated from `dsk_core` was sized
+      against a path that had already narrowed the value.
+      🎯 **AND THERE IS A BETTER HOME THAN A HAND-ROLLED TEST**: `ev_ff_arg` already
+      runs a per-selector CHECKED-domain dispatch, and `DSKF` is explicitly excluded
+      from it — the source says *"PEEK/VPEEK/INP/EOF/LOF/DSKF: no byte domain"*.
+      `STICK` 0..2, `STRIG` 0..4, `PDL` 1..12 and `PAD` 0..7 all join it through
+      `get_byte_arg`, which is exactly the right coercion (ERR 6 outside int16, ERR 5
+      negative or >255) and leaves only the per-function bound to test.
+      | the fix, joining that dispatch | bytes |
+      |---|---|
+      | `cp DSKF_TOKEN` / `jr z,ev_ff_ckdskf` in the dispatch | 4 |
+      | `call get_byte_arg` / `cp 3` / `jr c,ev_ff_ckdone` | 7 |
+      | `jp bad_drive_error` — a NEW LABEL on `dsk_core`'s existing `ld a,62` / `jp raise_error`, so the raise is shared rather than copied | 3 |
+      💰 **FOURTEEN AGAINST TEN AVAILABLE**: main page 1 measured 8 B free on
+      2026-09-13, plus **2 B that `ev_ff_dskf` can give up on its own** — it does
+      `push ix` / `call chan_gate` / `pop ix` and then immediately `push ix` again,
+      with only comments between, so one pop/push pair is dead. **Still four short.**
+      ⚠️ **AND `DSKF(300)` IS UNMEASURED ON THE REFERENCE.** Joining the dispatch
+      makes `get_byte_arg` decide it (ERR 5 or ERR 6); a hand-rolled high-half test
+      would decide it differently. **Measure that row before choosing**, or the fix
+      picks a behaviour by accident — which is how the `ignored (single drive)`
+      comment became a defect in the first place.
+      🔴 **AND THE LISTING-PLAUSIBLE CASE IS DRIVE 2, NOT DRIVE 9 — measured
+      2026-09-13, which is what keeps this item at TIER 3 under Joost's ballpark.**
+      The row that found the defect used `DSKF(9)`, and a 1985 listing would not.
+      But `DSKF(2)` is an owner of a single-drive machine asking about `B:`, which is
+      thoroughly ordinary — and there the two machines differ in KIND:
+      | `DSKF(2)` | CF-3300 | zerobas |
+      |---|---|---|
+      | | prompts `Insert diskette for drive B: and strike a key when ready` **and waits** | 🔴 returns `< 707 >` at once |
+      🎯 So the defect a person actually meets is not a missing error message — it is
+      **a free-space figure invented for a disk that was never inserted.** The fix's
+      bound (`drive <= 2`) is unchanged; its JUSTIFICATION is now this row rather
+      than the out-of-range one.
       🎚️ TIER 3 — common errors: a bad drive letter is the legend's own example
       🤖 AUTONOMOUS — measured, bounded by its passing rows, and the fix is an
       argument check rather than a redesign.
