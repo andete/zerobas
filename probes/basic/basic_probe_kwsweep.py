@@ -999,6 +999,34 @@ SWEEP: list[tuple[str, str, str | None, str, str]] = [
     ("cvd",     'a=cvd("abcdefgh")', 'PRINT"[";CVD(MKD$(1));"]"', "direct",
      "NEEDS-DISK: " "absent => syntax error; real => 1"),
 
+    # 🌱 D-KWBREADTH batch 2 (2026-09-13) — THE MK/CV FAMILY IS THE THINNEST
+    # COVERAGE IN THE TREE, AND THAT IS MEASURED, NOT GUESSED. `make kwcover`
+    # over a full 83-suite / 46 969-line capture reports CVD at 2 suites and
+    # MKI$/MKS$/MKD$/CVS at 3 — and the only non-kwsweep suite that types any of
+    # them is `lnblank-acceptance`, which types them as TOKENISER subjects
+    # (`20 CALL X`, `20 CALLX5`) and never EXECUTES one. So each of these words
+    # has exactly ONE scoring row, and these rows add the forms it cannot reach.
+    ("cvi_b",   'a=cvi(mki$(-1))',
+     'A=CVI(MKI$(-1)):B=CVI(MKI$(32767)):PRINT"[";A;B;"]"', "stored",
+     "NEEDS-DISK: " "THE SIGN AND THE 16-BIT EXTREME. The `cvi` row round-trips "
+     "7, whose high byte is 0 and whose sign bit is clear — neither a byte swap "
+     "nor a sign error can show there. -1 and 32767 separate both. STORED "
+     "because the direct form is 43 columns, and 37 was already too many."),
+    ("cvs_b",   'a=cvs(mks$(1.5))',
+     'PRINT"[";CVS(MKS$(1.5));"]"', "direct",
+     "NEEDS-DISK: " "A FRACTION. The `cvs` row round-trips 1, which survives "
+     "almost any mantissa packing; 1.5 needs a real one."),
+    ("cvd_b",   'a=cvd(mkd$(.1))',
+     'PRINT"[";CVD(MKD$(.1));"]"', "direct",
+     "NEEDS-DISK: " "a fraction with NO exact binary form, on the DOUBLE path — "
+     "the 8-byte pack, not the 4-byte one."),
+    ("mki_b",   'a=asc(mki$(258))',
+     'PRINT"[";ASC(MKI$(258));"]"', "direct",
+     "NEEDS-DISK: " "MKI$'s CONTENT, NOT ITS LENGTH. The `mki` row scores "
+     "LEN(MKI$(1))=2 — which a stub returning two zero bytes passes. 258 is "
+     "$0102, so both of its bytes are non-zero and ASC reads whichever end the "
+     "pack puts first; a disagreement here is a real finding, not a blind row."),
+
     # -------------------------------------------- D-KWRIG (2026-09-12)
     # FOUR WORDS WHOSE FILED BLOCKER WAS A CONSTANT OR A MODE, and all four were
     # stale. Re-verified before being believed, which is now five sessions running

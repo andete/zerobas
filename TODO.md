@@ -160,6 +160,45 @@ and fails in company is precisely why the whole sweep summary gets read**, and
 why `ONLY=` is a debugging aid rather than a verdict. Both `VPOKE` rows are
 stored-mode now and the reason is recorded ON THE ROW, where the next author
 meets it.
+🌱 **BREADTH BATCH 2 (D-KWBREADTH, 2026-09-13) — AND THIS TIME THE TARGETS
+WERE MEASURED, NOT GUESSED.** Batch 1 was aimed by intuition and landed on the
+WELL-covered end: `make kwcover` over a full **83-suite / 46 969-line** capture
+(0 of 159 keywords UNEXERCISED) puts `STR$` at 18 suites, `MID$` 14, `STRING$`
+13, `HEX$` 10, `OCT$` 7, `INSTR` 6, `RND` 5. The planned batch-2 list was every
+one of those. 🎯 **THE THIN END IS EIGHT KEYWORDS TYPED BY `kwsweep` PLUS
+EXACTLY ONE OTHER SUITE — `ATTR$ BSAVE CALL CMD CVD DELETE IPL SET` — AND THAT
+ONE SUITE IS `lnblank-acceptance` FOR ALL EIGHT, WHICH TYPES THEM AS TOKENISER
+SUBJECTS (`20 CALL X`, `20 CALLX5`, `20 CALL X+5`) AND NEVER EXECUTES ONE.** So
+those eight have ONE scoring row each; the MK/CV family sits just above at 3-4
+suites with the same shape, and its existing rows have a visible reach limit:
+`CVI(MKI$(7))` uses a value whose high byte is 0 and whose sign bit is clear,
+so neither a byte swap nor a sign error can show; `CVS(MKS$(1))` and
+`CVD(MKD$(1))` use a value that survives almost any mantissa packing; and
+`LEN(MKI$(1))=2`, `LEN(MKS$(1))=4`, `LEN(MKD$(1))=8` **are all passed by a stub
+that returns the right number of ZERO bytes.**
+| row | reading | the form it adds |
+|---|---|---|
+| `cvi_b` | `[-1  32767 ]` | the SIGN and the 16-bit EXTREME, neither reachable through 7 |
+| `cvs_b` | `[ 1.5 ]` | a FRACTION, on the 4-byte single pack |
+| `cvd_b` | `[ .1 ]` | a fraction with NO exact binary form, on the 8-byte double pack |
+| `mki_b` | `[ 2 ]` | MKI$'s **CONTENT** where its own row scores only LENGTH; 258 is `$0102`, so both bytes are non-zero and the reading confirms the little-endian order `basic/sysvars.inc:252` documents |
+🔪 **THREE OF THE FOUR ARE KNIFE-PROVEN LOAD-BEARING** (`CVI`, `CVS`, `CVD` all
+went MISSING with the selector cut) — a real improvement on batch 1, where
+`SGN`/`FIX`/`COS` were all unmeasurable. Sweep: `DIVERGENT=2 SUPPORTED=188`,
+the two divergences still the expected `swap_t3`/`dskf_t3` pair.
+🔬 **AND `MKI$`'s REFUSAL IS THE FIRST CONCRETE LEAD ON THE 30**: the knife
+reports *0 `cp $AE` sites with an `ev_*` target, 0 occurrences in
+`ev_ff_argtab`*, and `basic/sysvars.inc:250` says why in prose written long
+before the knife existed — **MKI$ is evaluated in `basic/strvar.asm` because it
+returns a STRING**. The third cut shape is not one mystery, it is the
+STRING-RETURNING function path, and that is a searchable target rather than a
+tally.
+📏 **THE PER-KEYWORD COST, WHICH IS THE NUMBER THAT DECIDES WHETHER THIS SCALES
+TO 159**: one full sweep and one knife invocation covered the WHOLE batch, so
+machine time is per-BATCH, not per-keyword, and amortises away. The irreducible
+cost is DESIGN — read the existing row, then find a form it cannot reach — and
+that is minutes per keyword and does not parallelise onto the machine. **So
+breadth scales, and the binding constraint is authorship, not wall time.**
 🔴 **`PAD` IS THE FIRST GENUINELY BLIND ROW, AND THE REASON GENERALISES: ITS
 OBSERVATION IS AN ERROR (2026-09-13).** The row is `PRINT PAD(9)` —
 deliberately out of range, so a real `PAD` raises `Illegal function call`
@@ -718,7 +757,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:17445 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:17484 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -884,7 +923,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:5485 (T-6FE392)8 (T-529ABE)` from `TODO.md:16096 (T-529ABE)`: a
+      `TODO.md:5524 (T-6FE392)8 (T-529ABE)` from `TODO.md:16135 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -6329,7 +6368,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:16096 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:16135 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
