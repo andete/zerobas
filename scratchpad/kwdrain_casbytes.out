@@ -1,0 +1,22 @@
+=== clean-room .cas: 2 block(s) after 2 sync marker(s)
+  .cas block 0           16 bytes
+    0000  D3 D3 D3 D3 D3 D3 D3 D3 D3 D3 5A 51 20 20 20 20 |..........ZQ    |
+  .cas block 1           30 bytes
+    0000  0D 80 0A 00 91 22 5B 5A 39 5D 22 00 00 00 00 00 |....."[Z9]".....|
+    0010  00 00 00 00 00 00 00 00 00 00 00 00 00 00       |..............|
+=== the tokenised program image the .cas carries
+  program                14 bytes
+    0000  0D 80 0A 00 91 22 5B 5A 39 5D 22 00 00 00       |....."[Z9]"...|
+  zb wrote               37 bytes
+    0000  D3 D3 D3 D3 D3 D3 D3 D3 D3 D3 5A 51 20 20 20 20 |..........ZQ    |
+    0010  0D 80 0A 00 91 22 5B 5A 39 5D 22 00 00 00 00 00 |....."[Z9]".....|
+    0020  00 00 00 00 00                                  |.....|
+      trailing $00 bytes after the last non-zero: 10
+      program image is 14 bytes, so the TAIL is 7 beyond it
+  vg8020 wrote           37 bytes
+    0000  D3 D3 D3 D3 D3 D3 D3 D3 D3 D3 5A 51 20 20 20 20 |..........ZQ    |
+    0010  0D 80 0A 00 91 22 5B 5A 39 5D 22 00 00 00 00 00 |....."[Z9]".....|
+    0020  00 00 00 00 00                                  |.....|
+      trailing $00 bytes after the last non-zero: 10
+      program image is 14 bytes, so the TAIL is 7 beyond it
+refcache: 0 hit, 2 miss, 2 stored

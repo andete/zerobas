@@ -66,5 +66,23 @@ tsb_next:
                 ld      (TSV_PTR),hl
                 jr      tsb_data
 tsb_fin:
+                ; 🔴 D-CASTAIL2: A BASIC DATA BLOCK ENDS WITH SEVEN $00 BYTES, and
+                ; we wrote NONE -- which is why a real MSX could read our header and
+                ; then never finish the load. Measured, not assumed: decoding the
+                ; reference machine's OWN recorded CSAVE of the same program gives 7
+                ; trailing zeros past the program image, and our tape stopped dead at
+                ; it (scratchpad/kwdrain_casbytes.out). The reference's CLOAD keeps
+                ; reading past the image for that terminator; with no carrier left to
+                ; read it hangs, which looks identical to a timing failure and is
+                ; what sent four slices after the waveform.
+                ld      a,7
+                ld      (TSV_CNT),a
+tsb_tail:
+                xor     a
+                call    TAPOUT
+                jp      c,sv_load_error
+                ld      hl,TSV_CNT
+                dec     (hl)                ; TAPOUT clobbers all; reload each pass
+                jr      nz,tsb_tail
                 call    TAPOOF              ; end of data block; motor off
                 ret                         ; back to the REPL

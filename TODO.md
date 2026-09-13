@@ -489,7 +489,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:16568 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:16607 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -655,7 +655,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:5134 (T-6FE392)8 (T-529ABE)` from `TODO.md:15305 (T-529ABE)`: a
+      `TODO.md:5173 (T-6FE392)8 (T-529ABE)` from `TODO.md:15344 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -3724,10 +3724,49 @@ list. **When a slice lands, grep this list for what it just shipped.**
       Filed as unmeasured rather than agreed; it needs a rig that can absorb a
       tape write, or a disk-path variant on the CF-3300.
 
-- [ ] 🔴 **A TAPE ZEROBAS SAVES CANNOT BE LOADED ON A REAL MSX — THE BYTES ARE
-      RIGHT AND THE SIGNAL IS NOT.** Found 2026-09-13 by D-CASORACLE while building
+- [x] 🟢 **A TAPE ZEROBAS SAVES CANNOT BE LOADED ON A REAL MSX — CLOSED; AND THE
+      DIAGNOSIS IN THIS TITLE WAS BACKWARDS.** Found 2026-09-13 by D-CASORACLE while building
       the tape oracle the keyword drain asked for. The VG-8020 **HANGS** searching a
       tape zerobas wrote; every other direction works.
+      🟢 **CLOSED 2026-09-13 by D-CASTAIL2, and the title above was WRONG IN ITS
+      SECOND HALF: the signal was fine, the BYTES were short.** A BASIC data block
+      ends with SEVEN $00 bytes and we wrote NONE. The reference's `CLOAD` reads
+      past the program image for that terminator, finds no carrier left, and waits
+      forever — which on screen is indistinguishable from a timing failure, and is
+      what sent four slices after the waveform.
+      🎯 **THE REFERENCE MACHINE ANSWERED IT IN ONE READING**, the same way it
+      answered the timing: decode ITS OWN recorded `CSAVE` of the same program and
+      lay the bytes beside ours ([`scratchpad/kwdrain_casbytes.py`](scratchpad/kwdrain_casbytes.py),
+      [readings](scratchpad/kwdrain_casbytes.out)). It wrote 37 bytes, we wrote 30,
+      and the 7 missing ones were all `$00` at the very end. The clean-room `.cas`
+      the VG loads happily carries the same tail — **the oracle had been sitting in
+      `cas_encode.build_cas_basic` the whole time**, which is the lesson: our own
+      encoder already encoded the right answer and no probe had ever diffed the
+      WRITER against it.
+      | | header + name | program image | tail |
+      |---|---|---|---|
+      | VG-8020's own tape | 16 B | 14 B | **7 × `$00`** |
+      | zerobas was | 16 B | 14 B | **none** |
+      | zerobas now | 16 B | 14 B | 7 × `$00` — byte-identical to the reference |
+      ✅ **THE INTEROP MATRIX IS NOW GREEN IN ALL FOUR CELLS**: the VG-8020 loads a
+      tape zerobas wrote, with the `[P9]` prompt witness and a screen identical to
+      the clean-room `.cas` control row ([readings](scratchpad/kwdrain_wavread_tail.out)).
+      🔴 **WHAT THIS COST, AND THE RULE IT EARNS: FOUR SLICES OF TIMING WORK FOR A
+      MISSING CONSTANT, because the first measurement I ever took was of the SIGNAL.**
+      The symptom (a load that never returns) is produced by both causes, and I
+      ranked them by which was more interesting rather than which was cheaper to
+      check. Diffing the emitted BYTES against our own encoder costs one probe and
+      no theory, and it should have come first. ➡️ **When a reader hangs, compare
+      the BYTES before the WAVEFORM** — the format is finite and checkable; timing
+      is an open-ended space that will always absorb another hypothesis.
+      🟢 **THE TIMING WORK IS NOT WASTED AND SHOULD NOT BE RE-OPENED**: D-CASDUTY's
+      waveform correction stands on its own oracle (the reference's own half-periods,
+      matched to +2 T) and D-CASTAIL2 was measured ON TOP of it. Whether the tail
+      alone would have sufficed on the OLD lopsided waveform is untested and not
+      worth testing — both now match the reference, which is the standard this
+      project holds itself to.
+      ➡️ **UNBLOCKED BY THIS**: `CSAVE`'s kwsweep row, which was deliberately held
+      back because this defect WAS its subject.
       | reader ＼ writer | VG-8020 tape | zerobas tape |
       |---|---|---|
       | **zerobas** | `Found:ZQ` ✅ | `Found:ZQ` ✅ |
@@ -5978,7 +6017,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:15305 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:15344 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
