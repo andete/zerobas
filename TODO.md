@@ -236,6 +236,32 @@ when you want a result**. `omsx_repl` REFUSED TO CACHE IT AND SAID WHY rather th
 handing back a plausible string. `basic_probe_kwsweep.py:1872` already records that
 these two tables disagreeing "is what let this sit"; this probe reproduced that
 exact failure by not reusing the one that exists.
+🌾 **BREADTH BATCH 4 (D-KWBREADTH, 2026-09-14) — AND THE SCREEN THAT FOUND IT IS
+THE REUSABLE PART.** Two row shapes predict an untouched behaviour far better than
+any coverage RANK: **(a) a row that scores an ERROR leaves the SUCCESS path
+untouched; (b) a row that scores a LENGTH or an EXISTENCE leaves the CONTENT
+untouched** — which is exactly what `MKI$` turned out to be in batch 2.
+⚠️ **AND THE SCREEN ITSELF OVER-FLAGGED, THE SAME WAY THE KNIFE DID.** A regex
+looking for `LEN(` named `inkey` a candidate; the row is
+`PRINT"[";A$;LEN(A$);"]"` → `[A 1 ]` and prints the CONTENT as well. **Every
+candidate was then confirmed by READING its row, not by trusting the filter** —
+the third time in one night that my own instrument drew a line I nearly reported
+as a property of the tree.
+| row | reading | what the old row could not reach |
+|---|---|---|
+| `using_b` | `[3.15]` | `##` needs no fraction, no point placement and no rounding; `#.##` needs all three, and 3.146 must ROUND to 3.15, not truncate to 3.14 |
+| `mks_b` | `[ 65 ]` | MKS$'s CONTENT — `LEN(MKS$(1))=4` is passed by a stub returning four ZERO bytes; 1.5 packs as `65 21 0 0`, measured on the CF-3300 |
+| `mkd_b` | `[ 65 ]` | the same reading on the 8-byte DOUBLE pack |
+| `input_b` | `[Hello]` | the BYTES, not the COUNT — `LEN(A$)=24` is passed by a read returning 24 BLANKS; `HI.TXT` is `"Hello from zerobas-disk!"` (`tools/make_test_dsk.py`) |
+🔪 **THREE OF THE FOUR ARE KNIFE-PROVEN LOAD-BEARING** (`MKS$`, `MKD$`, `INPUT`).
+⚠️ **`USING` IS UNMEASURABLE, AND FOR A STRUCTURAL REASON WORTH RECORDING: token
+`$E4` IS NOT IN `stmt_table` AT ALL** — `USING` is a MODIFIER of `PRINT`, not a
+dispatched statement, so the statement cut cannot reach it by construction, the
+way `ELSE` and `TO` cannot. That is a THIRD unconnectable-by-construction shape
+beside `CALL`/`MAX` (reservedness) and it is a property of the language, not a
+gap in the knife.
+📏 Sweep `DIVERGENT=2 SUPPORTED=192`, the two divergences still the expected
+`swap_t3`/`dskf_t3` pair, no `UNREADABLE`.
 🔪 **D-KWSTRCUT — THE THIRD CUT SHAPE, AND A FIRST VERSION OF IT THAT WAS WORSE
 THAN THE GAP IT CLOSED (2026-09-13).** `basic/sysvars.inc:250` named the shape in
 prose written long before the knife existed: **MKI$ is evaluated in
@@ -904,7 +930,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:17631 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:17657 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -1070,7 +1096,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:5671 (T-6FE392)8 (T-529ABE)` from `TODO.md:16282 (T-529ABE)`: a
+      `TODO.md:5697 (T-6FE392)8 (T-529ABE)` from `TODO.md:16308 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -6515,7 +6541,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:16282 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:16308 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

@@ -506,6 +506,13 @@ SWEEP: list[tuple[str, str, str | None, str, str]] = [
      "build and the difference blamed on zerobas. The rest of the MK/CV family "
      "was already tagged; this row simply had not been."),
     ("using",   'using "##"',         'PRINT USING"##";7',                    "direct", "D-KWDRAIN"),
+    # 🌾 D-KWBREADTH batch 4: the `using` row covers ONE format string, and `##`
+    # is the one that needs no fraction, no rounding and no sign. `#.##` needs all
+    # three -- 3.146 must round to 3.15, not truncate to 3.14.
+    ("using_b", 'using "#.##"',
+     'PRINT"[";:PRINT USING"#.##";3.146;:PRINT"]"',                      "stored",
+     "D-KWDRAIN: the FRACTIONAL field, where `##` cannot reach -- placement of "
+     "the point AND the rounding of the discarded digit"),
     ("then",    'then a=1',           'IF 2>1 THEN PRINT"[3]"',               "direct", "D-KWDRAIN"),
     ("elsekw",  'else a=1',           'IF 0 THEN PRINT 1 ELSE PRINT"[8]"',    "direct", "D-KWDRAIN"),
     ("tokw",    'to 5',               'FOR I=1 TO 3:NEXT:PRINT"[";I;"]"',     "direct", "D-KWDRAIN"),
@@ -992,8 +999,16 @@ SWEEP: list[tuple[str, str, str | None, str, str]] = [
      "NEEDS-DISK: " "control for the MK/CV family — MKI$ ships in zerobas"),
     ("mks",     'a$=mks$(1)',   'PRINT"[";LEN(MKS$(1));"]"',  "direct",
      "NEEDS-DISK: " "absent => syntax error; real => 4"),
+    ("mks_b",   'a=asc(mks$(1.5))', 'PRINT"[";ASC(MKS$(1.5));"]"', "direct",
+     "NEEDS-DISK: " "MKS$'s CONTENT, where its own row scores only LENGTH -- and "
+     "`LEN(MKS$(1))=4` is passed by a stub returning four ZERO bytes. 1.5 packs "
+     "as 65 21 0 0, MEASURED on the CF-3300 and equal to PEEK(VARPTR(A!)) for "
+     "A!=1.5 (basic/str-engine.asm), so the exponent byte reads 65."),
     ("mkd",     'a$=mkd$(1)',   'PRINT"[";LEN(MKD$(1));"]"',  "direct",
      "NEEDS-DISK: " "absent => syntax error; real => 8"),
+    ("mkd_b",   'a=asc(mkd$(1.5))', 'PRINT"[";ASC(MKD$(1.5));"]"', "direct",
+     "NEEDS-DISK: " "the same content reading on the 8-byte DOUBLE pack, whose "
+     "row likewise scores only LENGTH."),
     ("cvs",     'a=cvs("abcd")', 'PRINT"[";CVS(MKS$(1));"]"', "direct",
      "NEEDS-DISK: " "absent => syntax error; real => 1"),
     ("cvd",     'a=cvd("abcdefgh")', 'PRINT"[";CVD(MKD$(1));"]"', "direct",
@@ -1340,6 +1355,12 @@ SWEEP: list[tuple[str, str, str | None, str, str]] = [
      'OPEN"HI.TXT"FOR INPUT AS#1:INPUT#1,A$:CLOSE#1:PRINT"[I";LEN(A$);"]"',
      "stored",
      "NEEDS-DISK: " "the FILE form: 24 = the fixture line's length, 0 without it"),
+    ("input_b",  "input#1,a$",
+     'OPEN"HI.TXT"FOR INPUT AS#1:INPUT#1,A$:CLOSE#1:PRINT"[";LEFT$(A$,5);"]"',
+     "stored",
+     "NEEDS-DISK: " "the BYTES, not the COUNT. `inputkw` scores LEN(A$)=24, which "
+     "a read returning 24 BLANKS passes just as well as the real line; HI.TXT is "
+     "\"Hello from zerobas-disk!\" (tools/make_test_dsk.py), so this reads Hello."),
 
     # ------------------------------------------------ D-KWGET (2026-09-13)
     # 🟢 `GET` IS NOT A KEYBOARD VERB, and the name is the whole reason it sat
