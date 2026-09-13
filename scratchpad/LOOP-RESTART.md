@@ -6,7 +6,7 @@ session and the loop resumes exactly where it stopped.
 
 ## Where things stand
 
-* Tree CLEAN and pushed at `448e2b29`. Recount everything — never quote a number
+* Tree CLEAN and pushed at `4036a9c4`. Recount everything — never quote a number
   from this file.
 * 🟢 **EVERY TIER 1 THE DRAIN PRODUCED IS CLOSED** (`NEW` `FILES` `LFILES`
   `MERGE`, plus `LOAD` which only the MERGE sweep could have found), and **the
@@ -32,46 +32,51 @@ session and the loop resumes exactly where it stopped.
   and `INPUT` (`INPUT #n` reads a file), each filed next to a word with a real
   blocker and inheriting it by adjacency. Check the shape before the blocker.
 
-## Where the drain stands — THREE words, and a decision that is Joost's
+## 🛑 THE LOOP STOPPED HERE, AND WHY — read this before taking any item
 
-`CLOAD CSAVE INKEY$`. Each needs APPARATUS rather than a cleverer row, and that is
-filed as **its own 🙋 NEEDS-JOOST item** in TODO.md (it was briefly inside the
-autonomous drain block, and `todo-marker-check` rightly refused an item carrying
-two markers). The prices are in that item. What the drain already bought is beside
-them, so the price is judged against something: **four TIER 1 defects came out of
-this list** — `NEW` `FILES` `LFILES` `MERGE` — plus `LOAD`, which only the `MERGE`
-sweep could have found.
+The drain ran **114 → 3** and then hit a wall that is a DECISION, not a puzzle.
+`CLOAD CSAVE INKEY$` each need APPARATUS rather than a cleverer row, and that is
+filed as its own **🙋 NEEDS-JOOST** item in TODO.md with the prices in a table.
 
-## The next slice — the CLOAD ORACLE, which is a MEASUREMENT, not a build
+🔴 **A TICK THAT FINDS NOTHING ELSE PERMITTED SHOULD REPORT AND STOP, NOT BUILD.**
+The standing order allows apparatus "if it blocks the drain ruling" — these three
+do, so the letter of it permits building them. The reason not to is that they are
+THREE SEPARATE pieces of apparatus for THREE words, after a run whose cheap words
+had a very high hit rate and whose expensive tail does not. That is a
+value judgement about Joost's project, and it is his.
 
-🔴 **`CLOAD`'S BLOCKER HAS MOVED THREE TIMES UNDER MEASUREMENT** and the current
-one is the only one left standing:
+## What the drain bought, so the price has something to be judged against
 
-| filed as | measured |
+**Four TIER 1 defects came out of this list** — `NEW`, `FILES`, `LFILES`, `MERGE` —
+plus `LOAD`, which only the `MERGE` sweep could have found. All are FIXED. The
+kwsweep is clean for the first time (`DIVERGENT=0`), and TIER 1 is down to the
+umbrella item whose own exit criterion is this list reaching zero.
+
+## The last measurement, finished: `CLOAD` has NO ORACLE here
+
+| run | result |
 |---|---|
-| "nothing in this tree PLAYS a tape" | FALSE — `-cassetteplayer` mounts one; `cas_encode.build_cas_basic` makes the `.cas` |
-| "no READBACK — it returns to command level" | FALSE — **`Found:ZQ` reaches the SCREEN**; no new capture needed |
-| *(open)* | **the VG-8020 does not read the fixture.** zerobas prints `Found:ZQ`; the reference prints nothing and never reaches a prompt |
+| zb `CSAVE"ZQ"` → 124 486-byte WAV, then zb `CLOAD"ZQ"` | **`Found:ZQ`** — the control |
+| zb `LOAD"CAS:ZQ"` on the same tape | **`Found:ZQ`** |
+| VG-8020, both verbs, same tape | nothing, no prompt |
+| CF-3300, both verbs, same tape | nothing, no prompt |
 
-⚠️ **NOT TIMING AND NOT A MISSING PORT** — `cap_gap` 60 and 150 are identical, and
-the VG-8020 config carries `<CassettePort/>` like the repack machine. And every
-cassette probe in this tree runs on the REPACK MACHINE ONLY (its own header says
-so), so this has never been asked before.
-➡️ **SEPARATE THE TWO CAUSES, cheapest first**: (a) an openMSX setting the repack
-machine has and the VG-8020 does not — compare the two machine XMLs and the
-cassette-related settings the cas probes set; (b) the fixture is built to zerobas's
-reading of the `.cas` format and a real BIOS wants something else — in which case
-that is a FINDING ABOUT THE FORMAT, not about the verb, and worth more than the
-keyword. A tape WRITTEN BY ZEROBAS (`basic_probe_cassave.py` records one) fed to
-the VG-8020 separates them in one run.
-🔴 **THE TAPE POSITION IS STATE THAT SURVIVES A CASE** — the `AUTO` lesson again.
-Batched, a second `CLOAD` reads `load error` because the first consumed the tape,
-and one poisoned VG-8020 run showed the same stale screen for every case INCLUDING
-THE CONTROL. Boot per case, one fresh tape each.
+🟢 The fixture and `cas_encode.py` are exonerated three ways; it is not
+`CLOAD`-specific; the CF-3300 was tried because D-KWORACLE is the precedent.
+⚠️ **ONE UNTESTED DIFFERENCE**: the cassette probes pass `-cassetteplayer` on the
+openMSX COMMAND LINE and run on the repack machine only; these runs used the Tcl
+prologue `run_cases` supports. Testing the command-line form against a REFERENCE
+means going around `run_cases` — apparatus, and the reason this stopped.
 
-⚠️ **THE OTHER TWO STAY PARKED** unless Joost rules: `CSAVE` needs a WAV-decode
-capture and `INKEY$` needs the key injector's timing exposed to a row — a harness
-change, and D-LATCH/D-LATCH2 are the races it must not reopen.
+## If Joost says "build it", the order is
+
+1. **`CLOAD`/`CSAVE`'s oracle** — try `-cassetteplayer` against a reference outside
+   `run_cases`; if that works, both words likely fall together, and the readback is
+   already free (`Found:<name>` reaches the screen).
+2. **`CSAVE`'s WAV-decode capture** — `basic_probe_cassave.py` has the decode;
+   `NEEDS-LOG:` is the precedent for a per-rig capture.
+3. **`INKEY$`'s injector timing** — a HARNESS change, and D-LATCH/D-LATCH2 are the
+   races it must not reopen. Do this one last.
 
 ## 🔴 Two staging traps, both paid for on 2026-09-12/13
 
@@ -137,4 +142,4 @@ a pattern that appears in the polling command.
 
 Paste this into a fresh session:
 
-    /loop continue autonomously on zerobas — 🔴 TIER 1 BEFORE ANYTHING ELSE, then drain "no known gap" to ZERO (Joost's 2026-09-12 ruling, which outranks TIER 4). Read scratchpad/LOOP-RESTART.md FIRST, then the item's own block in TODO.md to its END. Run `make tiers`; recount keywords with `python3 tools/tier_table.py --keywords` — never quote a count. THREE WORDS LEFT and they are a 🙋 NEEDS-JOOST item now: CLOAD CSAVE INKEY$ each need APPARATUS rather than a row, and the prices are in that item. THIS SLICE IS THE ONE THAT IS STILL A MEASUREMENT: why does the VG-8020 not read the tape fixture? zerobas prints `Found:ZQ` off a mounted `.cas`; the reference prints nothing and never reaches a prompt. NOT timing (cap_gap 60 and 150 are identical) and NOT a missing port (its config carries `<CassettePort/>`) — both already checked. Separate the two remaining causes, cheapest first: (a) an openMSX setting the repack machine has and the VG-8020 does not — compare the machine XMLs and whatever the cas probes set; (b) the fixture is built to zerobas's reading of the `.cas` format and a real BIOS wants something else, which would be a FINDING ABOUT THE FORMAT and worth more than the keyword. A tape WRITTEN BY ZEROBAS (basic_probe_cassave.py records one) fed to the VG-8020 separates them in one run. 🔴 THE TAPE POSITION SURVIVES A CASE — boot per case, one fresh tape each; batched, a second CLOAD reads `load error` because the first consumed the tape, and a poisoned run shows the same stale screen for every case INCLUDING THE CONTROL. ⚠️ If it turns out to need real apparatus rather than a setting, STOP and leave it to Joost with the price written down — do not build it in a loop tick. ⚠️ `auto` MUST STAY LAST IN SWEEP (banner comment says so). Standing rules: full `make gates` before each commit and never commit red; an item may carry only ONE marker — todo-marker-check refuses 🙋 and 🤖 together; 🔴 AFTER ANY basic/ OR sub/ CHANGE stage zerobas-main-eu.ips/.bps WITH the commit; 🔴 `check_todo_citations.py --fix` REWRITES EVERY DOC THAT CITES A MOVED BLOCK — five files beyond TODO.md every time; read `git status --short` as a LIST; after a `--fix` re-run every gate that READS TODO.md; `rm -rf build && make basic-reloc` for any wall figure, and BACK UP build/kwsweep-verdicts.json first; `test -e <path> && exit 1` before any `cat >` heredoc; stage explicit paths, `git add -A` banned; commit message to a FILE with `git commit -F`; commit AND push after each fix without asking; never write a tracked file while a battery runs; re-run the five battery-excluded targets by hand after any slice touching a shared leaf; NEVER poll with a pattern that matches the polling command itself — use the background task's own completion notification; READ the output of every edit script.
+    /loop continue autonomously on zerobas — 🛑 READ THE STOP CONDITION AT THE TOP OF scratchpad/LOOP-RESTART.md FIRST. The "no known gap" drain ran 114 -> 3 and the last three words (CLOAD CSAVE INKEY$) are a 🙋 NEEDS-JOOST item: each needs APPARATUS rather than a row, the prices are in that item, and a tick that finds nothing else permitted should REPORT AND STOP rather than build them. Only pick work up again if Joost has ruled, or if `make tiers` shows something new at TIER 1/2/3. Run `make tiers`; recount keywords with `python3 tools/tier_table.py --keywords` — never quote a count. ⚠️ `auto` MUST STAY LAST IN SWEEP (banner comment says so). Standing rules if there IS work: full `make gates` before each commit and never commit red; an item may carry only ONE marker (todo-marker-check refuses 🙋 and 🤖 together); 🔴 AFTER ANY basic/ OR sub/ CHANGE stage zerobas-main-eu.ips/.bps WITH the commit; 🔴 `check_todo_citations.py --fix` REWRITES EVERY DOC THAT CITES A MOVED BLOCK — five files beyond TODO.md every time; read `git status --short` as a LIST; after a `--fix` re-run every gate that READS TODO.md; `rm -rf build && make basic-reloc` for any wall figure, and BACK UP build/kwsweep-verdicts.json first; `test -e <path> && exit 1` before any `cat >` heredoc; stage explicit paths, `git add -A` banned; commit message to a FILE with `git commit -F`; commit AND push after each fix without asking; never write a tracked file while a battery runs; re-run the five battery-excluded targets by hand after any slice touching a shared leaf; NEVER poll with a pattern that matches the polling command itself — use the background task's own completion notification; READ the output of every edit script.
