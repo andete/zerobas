@@ -87,15 +87,103 @@ def run_row(row):
             return line.split()[0]
     return "NO-VERDICT"
 
-TARGETS = [("POKE", "poke"), ("VPOKE", "vpoke"), ("SOUND", "sound"),
-           ("RESTORE", "restorekw"), ("ERASE", "erase"), ("SWAP", "swapctl")]
-if len(sys.argv) > 1:
+WEAK = {}
+
+
+def enumerate_targets():
+    """Every statement keyword in stmt_table, paired with the kwsweep row that
+    claims it -- read from the TABLE and from the SWEEP, never hand-listed.
+
+    🔴 THE KEYWORD-PER-ROW MAPPING IMPORTS `tier_table.stmt_keyword`, the
+    CONSUMER'S OWN parser. An ad-hoc regex here would be silent-failure mode 4:
+    the last one admitted a bare `A` as a keyword and hid a real miss. The table
+    ends at a $00 token, which `es_scan` itself uses as its sentinel."""
+    sys.path.insert(0, os.path.join(ROOT, "tools"))
+    sys.path.insert(0, os.path.join(ROOT, "probes", "basic"))
+    import tier_table
+    import basic_probe_kwsweep as sweep
+    kwset = set(tier_table.kwtable_keywords())
+    # 🔴 TOKEN BYTES COLLIDE between statement tokens and the $FF-prefixed FUNCTION
+    # selectors, so scanning sysvars.inc's `<NAME>_TOKEN equ` lines maps a byte to
+    # whichever equate comes first -- the dry run listed EXP, SIN, ATN and ASC as
+    # statements. kwtable.inc is authoritative and says which is which: an entry
+    # `db len,"NAME",1,TOK` is a ONE-BYTE statement token, while `db len,"NAME",2,
+    # PEEK_PREFIX,TOK` is a function.
+    eq = {}
+    for m in re.finditer(r"^(\w+)\s+equ\s+\$([0-9A-Fa-f]+)",
+                         io.open(os.path.join(ROOT, "basic", "sysvars.inc"),
+                                 encoding="utf-8").read(), re.M):
+        eq[m.group(1)] = int(m.group(2), 16)
+    tok2kw = {}
+    for m in re.finditer(r'db\s+\d+,"([^"]+)",1,(\w+)',
+                         io.open(os.path.join(ROOT, "basic", "kwtable.inc"),
+                                 encoding="utf-8").read()):
+        t = eq.get(m.group(2))
+        if t is not None:
+            tok2kw[t] = m.group(1)
+    # keyword -> the row that is ABOUT it. Several rows can credit one keyword --
+    # `PRINT TAB(..)` credits PRINT -- so prefer a row whose KEY names the keyword
+    # and fall back to the first crediting row, rather than taking sweep order.
+    kw2row, kw2any = {}, {}
+    for row in sweep.SWEEP:
+        key, body = row[0], row[1]
+        if row[2] is None:                      # crunch-only: nothing to knife
+            continue
+        kw = tier_table.stmt_keyword(body, kwset)
+        if not kw:
+            continue
+        # 🔴 A `WEAK:` ROW IS ALREADY EXCLUDED FROM THE SWEEP'S OWN TALLY, so the
+        # knife must not report it as a discovery. Measured 2026-09-13: the `time`
+        # row came back SUPPORTED under the knife and its note ALREADY said why --
+        # "absent => variable TI, always 0, and `0>=0` is STILL true". The knife
+        # rediscovering a documented weakness is a good sign for the knife and NOT
+        # a new finding; labelling it BLIND would double-count a known one.
+        note = row[4] if len(row) > 4 else ""
+        WEAK[key] = note.startswith("WEAK:")
+        kw2any.setdefault(kw, key)
+        base = kw.lower().rstrip("$")
+        if kw not in kw2row and (key == base or key.startswith(base)):
+            kw2row[kw] = key
+    for kw, key in kw2any.items():
+        kw2row.setdefault(kw, key)
+    rom = io.open(ROM, "rb").read()
+    base = syms()["stmt_table"]
+    out, i = [], 0
+    while True:
+        tok = rom[base + i * 3]
+        if tok == 0:
+            break
+        kw = tok2kw.get(tok)
+        if kw and kw in kw2row:
+            # 🔴 CARRY THE TOKEN. It was re-derived later from the keyword NAME as
+            # `<NAME>_TOKEN`, which cannot work for `DSKO$` / `DSKI$` / `ATTR$` --
+            # the `$` is not an identifier character -- and the run EXITED on the
+            # first one instead of skipping it, losing the remaining 51 keywords.
+            # The enumeration already resolved the byte; nothing should look it up
+            # a second time by a different route.
+            out.append((kw, kw2row[kw], tok))
+        i += 1
+    return out, i
+
+TARGETS = None
+if len(sys.argv) > 1 and sys.argv[1] == "--list":
+    tg, n = enumerate_targets()
+    print(f"stmt_table holds {n} entries; {len(tg)} have a kwsweep row to knife\n")
+    for kw, row, tok in tg:
+        print("   %-10s %-12s $%02X" % (kw, row, tok))
+    sys.exit(0)
+if len(sys.argv) > 1 and sys.argv[1] == "--all":
+    TARGETS, _ = enumerate_targets()
+elif len(sys.argv) > 1:
     TARGETS = [tuple(a.split(":")) for a in sys.argv[1:]]
+else:
+    TARGETS = [("POKE", "pokekw", 0x98), ("VPOKE", "vpoke", 0xC6)]
+if TARGETS and len(TARGETS[0]) == 2:        # explicit KW:row pairs on the command line
+    TARGETS = [(k, r, token_of(k)) for k, r in TARGETS]
 
 dead = syms()["stmt_error"]
 print("knife: statement handlers -> stmt_error $%04X; a row still SUPPORTED is BLIND\n" % dead)
-for kw, row in TARGETS:
-    tok = token_of(kw)
+for kw, row, tok in TARGETS:
     before = knife_guard.hashes()
     off, orig = plant(tok, dead)
     try:
@@ -106,6 +194,7 @@ for kw, row in TARGETS:
         rom[off:off + 2] = orig
         io.open(ROM, "wb").write(bytes(rom))
         install()
-    flag = "LOAD-BEARING" if v != "SUPPORTED" else "🔴 BLIND"
+    flag = ("LOAD-BEARING" if v != "SUPPORTED"
+            else "WEAK (already excluded)" if WEAK.get(row) else "🔴 BLIND")
     print("  %-8s row %-10s knifed -> %-12s %s" % (kw, row, v, flag))
     sys.stdout.flush()

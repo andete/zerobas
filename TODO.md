@@ -133,6 +133,43 @@ An open TIER n item says a defect is FILED at n, **not** that n−1 was reached;
 a row that agrees is ONE AGREEMENT POINT. Neither is attainment, so the table
 no longer prints a ladder: every row reads TIER 0 and the text beside it says
 only what is KNOWN AGAINST the keyword.
+📏 **THE FULL STATEMENT SWEEP IS IN: 77 keywords, and NO ROW IS VACUOUS
+(D-KWKNIFE, 2026-09-13, [readings](scratchpad/kwknife_all.out)).** Every
+statement keyword in `stmt_table` that has a kwsweep row was knifed — its
+dispatch entry cut in the built ROM, the machine re-installed, its row re-run.
+| | n | |
+|---|---|---|
+| **CONNECTED** — the row noticed | **72** | MISSING, UNREADABLE or DIVERGENT |
+| did not notice | 5 | and every one has a reason its own row already states |
+🎯 **THE FIVE ARE NOT FIVE BAD ROWS**, which is the whole point of reading what
+the row saw instead of the verdict it printed:
+| keyword | why the cut changed nothing |
+|---|---|
+| `VDP` `BASE` `MAX` | the row exercises the **FUNCTION** form (`VDP(1)`, `BASE(2)`, `MAX` as a value) while the knife cut the **STATEMENT** entry — the wrong path was cut, and the function cut is the next slice |
+| `CALL` | the row tests **RESERVEDNESS** by design — `CALL=1` must be a Syntax error — and never dispatches |
+| `TIME` | **already tagged `WEAK:`** by the sweep and excluded from its own tally |
+🟢 **AND THE `TIME` ROW IS THE BEST VALIDATION THIS INSTRUMENT COULD HAVE GOT.**
+Its note, written long before the knife existed, says: *"absent => variable TI,
+always 0, and `0>=0` is STILL true, so this row passes on a machine with no
+TIME."* The knife rediscovered that weakness by cutting the ROM, with no
+knowledge of the note — a human judgement and a mechanical one agreeing by
+completely different routes. The knife now reads the `WEAK:` tag and reports
+such a row as *already excluded* rather than as a discovery, because
+double-counting a known weakness would inflate its own findings.
+⚠️ **WHAT THIS DOES AND DOES NOT SAY.** It says 72 rows are CONNECTED to their
+keyword: a total failure of the handler is noticed. It does **not** say any
+keyword is correct, and it does not touch BREADTH — one connected row is still
+one expression. Both halves are needed and only one is now measured.
+🔬 **TWO SELF-INFLICTED FAULTS ON THE WAY, both caught by the `--list` dry run
+or by counting the output**: token bytes COLLIDE between statement tokens and
+the `$FF` function selectors, so reading `sysvars.inc` equates listed `EXP`
+`SIN` `ATN` `ASC` as statements (`kwtable.inc` is authoritative: `db len,
+"NAME",1,TOK` is a statement, `…,2,PEEK_PREFIX,TOK` a function); and the first
+full run **stopped at keyword 27 of 77** because a second token lookup by NAME
+cannot spell `DSKO$`, and it exited rather than skipping. **Its 26-line tally
+looked exactly like a finished measurement** — a partial sweep and a complete
+one differ by nothing visible in the summary, so the count of result lines is
+now checked against the dry run's total.
 🔪 **THE NON-VACUITY HALF IS BUILT AND HAS ITS FIRST READING (D-KWKNIFE,
 2026-09-13, [`scratchpad/kwknife.py`](scratchpad/kwknife.py),
 [readings](scratchpad/kwknife.out)).** Cut a statement's dispatch entry in the
@@ -562,7 +599,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:17289 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:17326 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -728,7 +765,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:5329 (T-6FE392)8 (T-529ABE)` from `TODO.md:15940 (T-529ABE)`: a
+      `TODO.md:5366 (T-6FE392)8 (T-529ABE)` from `TODO.md:15977 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -6173,7 +6210,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:15940 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:15977 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
