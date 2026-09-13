@@ -133,6 +133,33 @@ An open TIER n item says a defect is FILED at n, **not** that n−1 was reached;
 a row that agrees is ONE AGREEMENT POINT. Neither is attainment, so the table
 no longer prints a ladder: every row reads TIER 0 and the text beside it says
 only what is KNOWN AGAINST the keyword.
+🌱 **BREADTH BEGINS (D-KWBREADTH batch 1, 2026-09-13) — the OTHER half of what
+establishing a tier needs, and the half no keyword has.**
+| row | reading | the form it adds |
+|---|---|---|
+| `sgn_b` | `[-1 0 1]` | all THREE sign branches — a row taking only `SGN(5)` passes on an implementation that never returns −1 |
+| `fix_b` | `[-2 2]` | truncation toward zero on BOTH signs, where `FIX` and `INT` differ |
+| `cos_b` | `[ 1 ]` | the exact point of the cosine |
+| `vpoke_b` | `[ 7 ]` | the **LAST** byte of a 16 KB VRAM, where the existing row uses address 0 — an off-by-one in the address path shows here and nowhere else |
+| `vpoke_b2` | `[ 255 ]` | the maximum byte VALUE, where the existing row writes 9 |
+🎯 **EVERY READING IS A VALUE, NOT AN ERROR** (mode 6, learned from `PAD` the
+same day), and none is 0 on both sides, which would merely trade mode 6 for
+mode 2. **`vpoke_b` is KNIFE-PROVEN CONNECTED** — breadth that would notice a
+break, not another agreement point.
+⚠️ **AND THE LIMIT, SO FIVE ROWS DO NOT READ AS FIVE EQUAL PIECES OF
+EVIDENCE**: `SGN`, `FIX` and `COS` are among the **30 keywords the knife
+REFUSES** — the math and string groups dispatch through a third shape it
+cannot reach — so their connectedness is UNMEASURABLE until that cut exists.
+Their rows are breadth; they are not yet breadth that is known to bite.
+🔬 **AND A REUSABLE LESSON: THE 38-COLUMN GUARD MEASURES THE TYPED LINE, BUT
+WHAT WRAPS IS THE LINE PLUS WHATEVER THE SCREEN ALREADY HOLDS.** `vpoke_b2`
+cleared the guard at 37 characters, PASSED when run alone, and lost its echo
+anchor entirely once other rows had run before it — `UNREADABLE`, with the
+reference showing a wrap pipe (`|[ 255 ]`). **A row that passes in isolation
+and fails in company is precisely why the whole sweep summary gets read**, and
+why `ONLY=` is a debugging aid rather than a verdict. Both `VPOKE` rows are
+stored-mode now and the reason is recorded ON THE ROW, where the next author
+meets it.
 🔴 **`PAD` IS THE FIRST GENUINELY BLIND ROW, AND THE REASON GENERALISES: ITS
 OBSERVATION IS AN ERROR (2026-09-13).** The row is `PRINT PAD(9)` —
 deliberately out of range, so a real `PAD` raises `Illegal function call`
@@ -691,7 +718,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:17418 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:17445 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -857,7 +884,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:5458 (T-6FE392)8 (T-529ABE)` from `TODO.md:16069 (T-529ABE)`: a
+      `TODO.md:5485 (T-6FE392)8 (T-529ABE)` from `TODO.md:16096 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -6302,7 +6329,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:16069 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:16096 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

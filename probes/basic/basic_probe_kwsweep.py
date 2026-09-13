@@ -1234,6 +1234,30 @@ SWEEP: list[tuple[str, str, str | None, str, str]] = [
      "NEEDS-DISK: " "PROVES-T3: " "Type mismatch — MKI$ converts a NUMBER"),
     ("dskf_t3", 'a=dskf(9)',   'PRINT DSKF(9)',        "direct",
      "NEEDS-DISK: " "PROVES-T3: " "a drive letter that does not exist"),
+    # 🎚️ D-KWBREADTH BATCH 1 — the OTHER half of establishing a tier. A keyword
+    # with one agreeing row has one agreement point; these cover a verb's FORMS.
+    # ⚠️ Every reading here is a VALUE, not an error (silent-failure mode 6, learned
+    # from PAD: a row reading an ERROR cannot tell a working feature from a
+    # differently-failing one), and no reading is 0 on both sides, which would
+    # merely trade mode 6 for mode 2.
+    ("sgn_b",   'a=sgn(-5)',   'PRINT"[";SGN(-5);SGN(0);SGN(5);"]"',   "direct",
+     "BREADTH: all THREE branches of the sign test in one reading — a row that "
+     "took only SGN(5) would pass on an implementation that never returns -1"),
+    ("fix_b",   'a=fix(-2.7)', 'PRINT"[";FIX(-2.7);FIX(2.7);"]"',      "direct",
+     "BREADTH: truncation toward zero on BOTH signs — the half a single positive "
+     "argument cannot see, and where FIX and INT differ"),
+    ("cos_b",   'a=cos(0)',    'PRINT"[";COS(0);"]"',                  "direct",
+     "BREADTH: the exact point of the cosine, 1 — a value reading, and not 0"),
+    ("vpoke_b", 'vpoke 16383,7', 'VPOKE 16383,7:PRINT"[";VPEEK(16383);"]"', "stored",
+     "BREADTH: the LAST byte of an MSX1's 16 KB VRAM, where the existing row uses "
+     "address 0 — an off-by-one in the address path shows here and nowhere else"),
+    ("vpoke_b2", 'vpoke 100,255', 'VPOKE 100,255:PRINT"[";VPEEK(100);"]"', "stored",
+     "BREADTH: the maximum byte VALUE, where the existing row writes 9. ⚠️ STORED "
+     "BECAUSE IT PASSED ALONE AND FAILED IN COMPANY: at 37 chars it clears the "
+     "38-column guard, yet the reference's capture wraps (`|[ 255 ]`) and zerobas "
+     "lost its echo anchor entirely once other rows had run before it. The guard "
+     "measures the TYPED line; what wraps is the line plus whatever the screen "
+     "already holds."),
     ("close",   "close",
      'OPEN"W.TXT"FOR OUTPUT AS#1:PRINT#1,"ABC":CLOSE#1:OPEN"W.TXT"FOR INPUT AS#1:A=LOF(1):CLOSE#1:PRINT"[";A;"]"', "stored",
      "NEEDS-DISK: " "the FLUSH is the readback: 6 bytes are on the disk only because "
