@@ -489,7 +489,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:16802 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:16828 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -655,7 +655,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:5234 (T-6FE392)8 (T-529ABE)` from `TODO.md:15505 (T-529ABE)`: a
+      `TODO.md:5234 (T-6FE392)8 (T-529ABE)` from `TODO.md:15531 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -6078,7 +6078,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:15505 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:15531 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -7067,6 +7067,32 @@ list. **When a slice lands, grep this list for what it just shipped.**
       instance one that zero-fills the destination first and then unpacks only up to
       the last non-zero byte — trades ~340 T of fill against ~500 T of skipping and
       may not be worth it either. Price that before hunting bytes again.**
+      🔴 **AND THE CHEAPER SHAPE IS REFUTED BY ARITHMETIC BEFORE ANY CODE (same
+      day): PRE-ZEROING THE DESTINATION IS SLOWER THAN WHAT IT REPLACES.** The
+      appeal was that it removes the pad correction; the flaw is that it does not
+      remove the SCAN, which is where the bytes actually go. Per `widen_src` call,
+      at the post-D-NEXTSKIP loop's ~83 T per mantissa byte:
+      | shape | T-states |
+      |---|---|
+      | today: unpack all 7 bytes | 7 × 83 = **581** |
+      | backward scan + unpack 2 + pad fix | 168 + 166 + ~20 = **354** |
+      | zero-fill 14 + scan + unpack 2 | 364 + 168 + 166 = **698** — *worse than today* |
+      ➡️ **SO THE ONLY SHAPE THAT PAYS IS THE ~10 B ONE, AND IT BUYS ~3 %**: 227 T
+      saved per call is ~450 T of a ~15 000 T empty `NEXT` (two calls) and ~2 070 T
+      of a ~64 000 T `X=I*2+1` iteration (9.1 calls, D-MULZERO's count). Real, above
+      the ±4-frame noise, and **not worth an absolute carve at today's prices** —
+      D-LOWCARVE found the three cheap routes shut.
+      🎯 **THE HONEST SUMMARY OF THE `FOR`/`NEXT` LINE, so it is not re-opened by
+      instinct**: the cost is the BCD↔binary round trip, the 14-digit double that
+      forces it is FAITHFUL (D-MULZERO's `B=7`), the dispatch and BIOS explanations
+      are both refuted (D-SPEEDPROF, D-BRKFRAME), and what remains is ~3 % behind a
+      carve that does not exist. **This line is parked on price, not on ignorance.**
+      ⚠️ The one structural idea still unpriced is the item's own: a value just
+      computed is packed by `round_and_finalize` and unpacked again for the next
+      operator, so keeping a working form across a chained expression would remove
+      whole widen/pack pairs rather than shaving one. That is an arithmetic-core
+      change with real rounding risk and the float suites are what would have to
+      hold it — a project, not a slice.
       🎚️ TIER 4 — on-par speed: the interpreter is 2.5–3.8× slower (TIER 2, reasonable time, is met) — 17–26 % of it came back on 2026-09-11 (D-SPEEDPROF); measured on `FOR` `GOTO` `WHILE`, arithmetic and strings
       🤖 AUTONOMOUS — the charter half is ANSWERED (the STANDING sequencing of
       2026-09-02: speed is a real defect), so what remains under it is measurable work.
