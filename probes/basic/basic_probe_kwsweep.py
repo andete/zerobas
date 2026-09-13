@@ -1160,6 +1160,26 @@ SWEEP: list[tuple[str, str, str | None, str, str]] = [
      "PROVES-T3: " "Subscript out of range, the commonest array fault of all"),
     ("read_t3", 'read zv',     'READ ZV',              "direct",
      "PROVES-T3: " "Out of DATA — a READ with no DATA statement anywhere"),
+    # 🎚️ D-KWT3 BATCH 2 — same filter: the error a 1985 listing would plausibly
+    # hit. Batch 1's READ row found a TIER 1 defect, so these are written to
+    # DISAGREE if they can, not to confirm.
+    ("chr_t3",  'a$=chr$(256)', 'PRINT CHR$(256)',      "direct",
+     "PROVES-T3: " "Illegal function call past the byte range — the classic "
+     "off-by-one on a character loop"),
+    ("mid_t3",  'a$=mid$("ab",0)', 'PRINT MID$("AB",0)', "direct",
+     "PROVES-T3: " "Illegal function call on a ZERO start position, where BASIC "
+     "counts from 1"),
+    ("log_t3",  'a=log(0)',    'PRINT LOG(0)',          "direct",
+     "PROVES-T3: " "Illegal function call on the domain edge, not a maths result"),
+    ("str_t3",  'a$=string$(300,"a")', 'PRINT STRING$(300,"A")', "direct",
+     "PROVES-T3: " "past the 255-character string limit"),
+    ("goto_t3", 'goto 9999',   'GOTO 9999',             "direct",
+     "PROVES-T3: " "Undefined line number — the commonest fault in a mistyped "
+     "listing"),
+    ("next_t3", 'next',        'NEXT',                  "direct",
+     "PROVES-T3: " "NEXT without FOR"),
+    ("ret_t3",  'return',      'RETURN',                "direct",
+     "PROVES-T3: " "RETURN without GOSUB"),
     ("close",   "close",
      'OPEN"W.TXT"FOR OUTPUT AS#1:PRINT#1,"ABC":CLOSE#1:OPEN"W.TXT"FOR INPUT AS#1:A=LOF(1):CLOSE#1:PRINT"[";A;"]"', "stored",
      "NEEDS-DISK: " "the FLUSH is the readback: 6 bytes are on the disk only because "
