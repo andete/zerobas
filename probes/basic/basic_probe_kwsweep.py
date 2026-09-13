@@ -543,6 +543,19 @@ SWEEP: list[tuple[str, str, str | None, str, str]] = [
     # 🎯 EACH ONE READS BACK WHAT IT WROTE where it can (VPOKE/VPEEK, POKE/PEEK), so
     # a stub that silently accepts the statement still fails the row.
     ("beep",    'beep',               'BEEP:PRINT"[6]"',                      "direct", "D-KWDRAIN"),
+    # 🌾 D-KWBREADTH batch 7: `beep` prints a CONSTANT MARKER, and BEEP's effect
+    # turns out to be observable through the PSG after all (scratchpad/
+    # beepobs_probe.py, all three machines): the MIXER at rest reads 184, a
+    # `SOUND 7,255` leaves 191 ($BF, the write masked), and a BEEP after it puts
+    # the mixer back to 184. So 184-here-vs-191-there is BEEP's own doing.
+    # 🔴 THE FIRST RUN OF THAT PROBE COULD NOT SEE IT, because its control read
+    # register 8 while the change was in register 7 -- A CONTROL AIMED AT THE WRONG
+    # CELL EXCLUDES NOTHING, and 184 would have been read as "nothing happened".
+    # ⚠️ And the row leaves the machine AS IT FOUND IT: 184 IS the at-rest value.
+    ("beep_b",  'beep',
+     'SOUND 7,255:BEEP:OUT&HA0,7:PRINT"[";INP(&HA2);"]"',                     "stored",
+     "D-KWDRAIN: BEEP's EFFECT, not its existence -- it restores the PSG mixer, "
+     "so this reads 184 where the same program without the BEEP reads 191"),
     ("sound",   'sound 7,255',        'SOUND 7,255:PRINT"[7]"',               "direct", "D-KWDRAIN"),
     # 🌾 D-KWBREADTH batch 6: `sound` writes PSG register 7 and prints a CONSTANT
     # MARKER, so it scores that the word ran and nothing about what landed. The PSG

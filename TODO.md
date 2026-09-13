@@ -304,6 +304,37 @@ are observable and one mechanism served both rows.
 8-bit cell **and because the MIXER is left exactly as it was — nothing is made
 audible, and nothing is left changed for the rows that follow** (the `AUTO`
 lesson: a row that mutates machine state is a row that can poison its neighbours).
+🌾 **BREADTH BATCH 7 (D-KWBREADTH, 2026-09-14) — `BEEP` IS OBSERVABLE TOO, AND
+THE CONSTANT-MARKER SCREEN IS NOW COMPLETE.** `beep_b` reads `[ 184 ]`,
+**knife-proven LOAD-BEARING**; sweep `DIVERGENT=2 SUPPORTED=197`.
+| case (`scratchpad/beepobs_probe.py`, all three machines) | PSG reg 7 |
+|---|---|
+| at rest — no `SOUND`, no `BEEP` | **184** |
+| `SOUND 7,255`, no `BEEP` | **191** (`$BF`, the write masked) |
+| `SOUND 7,255` **then** `BEEP` | **184** — BEEP put the mixer back |
+🔴 **AND THE FIRST RUN OF THAT PROBE COULD NOT SEE IT: ITS CONTROL READ REGISTER 8
+WHILE THE CHANGE WAS IN REGISTER 7.** `184` would have been read as *"nothing
+happened"*, and the only thing separating that from the truth was a no-BEEP
+reading OF THE SAME CELL. **A CONTROL AIMED AT THE WRONG CELL EXCLUDES NOTHING** —
+the `a-case-that-agrees-can-agree-for-the-wrong-reason` rule, applied to the
+CONTROL rather than to the case.
+📋 **THE CONSTANT-MARKER CLASSIFICATION, FINISHED — so the next author does not
+re-derive it.** Four rows gained an EFFECT reading (`clearkw`→`clear_b`,
+`locate`→`locate_b`, `sound`→`sound_b`, `outkw`→`out_b`, plus `beep`→`beep_b`);
+the rest are blocked, **and every reason was already written in this file**:
+| row | why the marker is the honest limit |
+|---|---|
+| `renum` | its own note: *"RENUM stops the program, so nothing after it runs in the same case"* |
+| `waitkw` | its own note: the first attempt BLOCKED FOR EVER BY DEFINITION (mask 0 can never satisfy `((INP(port) XOR xor) AND mask) <> 0`), and zerobas's silence was CORRECT. The one satisfiable port (VDP status bit 7) is READ-TO-CLEAR and would disturb the BIOS interrupt handler |
+| `newkw` `deletekw` | program mutators; `DELETE` was MEASURED to terminate the program silently |
+| `listkw` | `LIST` prints the PROGRAM while the row's own typed source is already on screen — ambiguous BY CONSTRUCTION |
+| `stopkw` `files` `merge` `csave` | the marker sits before a halt or an I/O side effect with no readback in this harness |
+🎯 **THIRTEEN BREADTH ROWS ACROSS SEVEN BATCHES, AND THE SCREEN THAT FOUND THEM IS
+THE DELIVERABLE**: a row scoring an **ERROR** leaves the SUCCESS path untouched; a
+row scoring a **LENGTH or EXISTENCE** leaves the CONTENT untouched; a row scoring a
+**CONSTANT MARKER** leaves the EFFECT untouched. ⚠️ **And every screen over-flags,
+so each candidate is confirmed by READING its row** — a `LEN(` regex nominated
+`inkey`, whose row prints `A$` as well.
 🔪 **D-KWSTRCUT — THE THIRD CUT SHAPE, AND A FIRST VERSION OF IT THAT WAS WORSE
 THAN THE GAP IT CLOSED (2026-09-13).** `basic/sysvars.inc:250` named the shape in
 prose written long before the knife existed: **MKI$ is evaluated in
@@ -972,7 +1003,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:17699 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:17730 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -1138,7 +1169,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:5739 (T-6FE392)8 (T-529ABE)` from `TODO.md:16350 (T-529ABE)`: a
+      `TODO.md:5770 (T-6FE392)8 (T-529ABE)` from `TODO.md:16381 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -6583,7 +6614,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:16350 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:16381 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
