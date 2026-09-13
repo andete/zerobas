@@ -1,0 +1,10 @@
+  per NEXT, from (220-20) iterations:
+    div10                    2.61   (n=20: 33, n=220: 555)
+    widen_uint_to            1.00   (n=20: 21, n=220: 221)
+    widen_int_to             1.00   (n=20: 21, n=220: 221)
+    wsrc_unpack             14.00   (n=20: 287, n=220: 3087)
+    round_and_finalize       1.00   (n=20: 21, n=220: 221)
+    fp_add                   0.00   (n=20: 0, n=220: 0)
+    cmp16_bits               3.00   (n=20: 62, n=220: 662)
+    exec_stmt                2.00   (n=20: 44, n=220: 444)
+refcache: 0 hit, 2 miss, 2 stored
