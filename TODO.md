@@ -489,7 +489,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:16511 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:16568 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -655,7 +655,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:5077 (T-6FE392)8 (T-529ABE)` from `TODO.md:15248 (T-529ABE)`: a
+      `TODO.md:5134 (T-6FE392)8 (T-529ABE)` from `TODO.md:15305 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -3776,7 +3776,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       re-runs them.** Each looked obvious and each is dead:
       | hypothesis | how it died |
       |---|---|
-      | the LEADER is too short (4000 vs the reference's ~15 360 cycles) | rebuilt at 8 000 and 16 000 cycles: the WAV reaches 456 904 B against the reference's 467 322, and the VG **still hangs** ([`scratchpad/kwdrain_leaderfix.py`](scratchpad/kwdrain_leaderfix.py), [readings](scratchpad/kwdrain_leaderfix.out)) |
+      | ~~the LEADER is too short (4000 vs the reference's ~15 360 cycles)~~ 🔴 **RETRACTED BY D-CASDUTY — true, and this test could not see it: it ran on the LOPSIDED writer, where the leader was not the binding constraint** | rebuilt at 8 000 and 16 000 cycles: the WAV reaches 456 904 B against the reference's 467 322, and the VG **still hangs** ([`scratchpad/kwdrain_leaderfix.py`](scratchpad/kwdrain_leaderfix.py), [readings](scratchpad/kwdrain_leaderfix.out)) |
       | the INTER-BLOCK silence is missing (the reference has one 1.12 s gap; we have none) | spliced 1.1 s into zerobas's own tape at the block boundary — **still hangs** ([readings](scratchpad/kwdrain_wavsplice.out)) |
       | the LEADING silence is missing (reference 0.567 s, ours 2 samples) | spliced 2.0 s on the front — **still hangs** ([readings](scratchpad/kwdrain_wavlead2.out)) |
       | the MOUNT FORM (Tcl prologue vs `-cassetteplayer`) | both forms agree on all three machines ([readings](scratchpad/kwdrain_casmount.out)) |
@@ -3885,6 +3885,63 @@ list. **When a slice lands, grep this list for what it just shipped.**
       🟢 **OUR OWN READER IS UNAFFECTED**: `cassave-acceptance` and
       `castail-acceptance` are green with the compensation in, which is what says
       this is safe to carry while the rest is worked out.
+      🟢 **D-CASDUTY, 2026-09-13: THE WRITER'S WAVEFORM NOW MATCHES THE REFERENCE
+      ON EVERY AXIS WE CAN MEASURE — and the data block STILL fails, so this item
+      stays open. What closed is the guessing.**
+      🔬 **THE INSTRUMENT IS THE RESULT** ([`scratchpad/kwdrain_castrace.py`](scratchpad/kwdrain_castrace.py),
+      [before](scratchpad/kwdrain_castrace.out), [after](scratchpad/kwdrain_castrace3.out)). Every earlier reading in this
+      item inferred the writer's timing from a RECORDED WAV — the writer convolved
+      with the emulated cassette port and quantised to 44.1 kHz. A watchpoint on
+      the PPI control register logs both edges of every cassette cycle against
+      openMSX's own clock, and **the VG-8020 runs the same `CSAVE` through the same
+      watchpoint**, so the two waveforms compare directly in T-STATES:
+      | | short HI / LO | long HI / LO |
+      |---|---|---|
+      | VG-8020 | 740 / 756 (+16) | 1492 / 1476 (−16) |
+      | zerobas was | 720 / 779 (**+59**) | 1448 / 1554 (**+106**) |
+      | zerobas now | 748 / 750 (+2) | 1504 / 1498 (−6) |
+      The reference's high half is EXACTLY 740 in all 19532 short cycles and ours
+      was EXACTLY 720 in all 6368: **the variation is entirely in the LOW half on
+      both machines**, because that is the half the `ret` and the caller's next
+      `call` run inside. The full-cycle periods already agreed (1499 vs 1496) — what
+      was wrong was the SPLIT, by four times the reference's own asymmetry. The fix
+      is `CAS_DUTY`, subtracted from the low half of EVERY cycle, plus tone counts
+      solved from the fitted cost `half = 14·count + b` (14 T per `djnz`, not 13 —
+      M1 contention). **Predicted 748/750 and 1504/1498 before the change and
+      re-traced to exactly those figures afterwards.**
+      🔴 **AND THE METRIC I HAD BEEN OPTIMISING IS REFUTED.** The recording is now
+      the cleanest it has ever been — between-tone half-periods down to 13 from
+      ~38–50, distribution near-identical to the reference — and on its own **that
+      build reads WORSE**: the VG stopped decoding the header entirely. Waveform
+      fidelity does not predict the outcome, so no future slice should tune against
+      the histogram alone.
+      🔬 **A FOUR-POINT BISECT SAID WHICH CHANGE DID IT**, one variable at a time,
+      because the first attempt bundled three:
+      | build | short cycle | duty skew | leader | header |
+      |---|---|---|---|---|
+      | HEAD | 1499 T | +59 | 4000 | `Found:ZQ` |
+      | tone constants only | 1527 T | +59 | 4000 | `Found:ZQ` |
+      | + duty correction | 1484 T | +16 | 4000 | **nothing** |
+      | duty correction alone | 1456 T | +16 | 4000 | **nothing** |
+      | duty + standard leader | 1498 T | +2 | 16000 | `Found:ZQ` |
+      🔴 **SO "LEADER LENGTH IS DEAD" IS RETRACTED — it was tested against a
+      DIFFERENT WRITER.** Rebuilding the leader at 8000/16000 refuted nothing about
+      the corrected waveform, because that test ran on the lopsided one. The two
+      constants are COUPLED: with the reference-matching duty behind a 4000-cycle
+      leader the VG cannot lock at all; behind 16000 it locks and reads the name.
+      A refutation is only as general as the build it was measured on.
+      🟢 **AND THAT EXPOSED A PLAIN STANDARDS DEFECT, independent of this item**:
+      our header lengths were **4000 / 2000 where the MSX standard is 16000 / 4000**
+      — deliberately not the documented value, per the provenance note, and that
+      deliberate choice is what broke interop. A leader length is a contract with
+      the other machine's reader, not a free implementation choice; `tape/PROVENANCE.md`
+      now says so.
+      ➡️ **WHAT REMAINS**: the header decodes, the DATA block does not, with the
+      waveform, both tone periods and both header lengths all matching the
+      reference. That points away from timing entirely and toward the data block's
+      CONTENT or FRAMING — its length, its checksum, its trailing flush — which is
+      the first thing the next slice should compare, byte for byte, against the
+      clean-room `.cas` the VG loads happily.
       🔴 **D-CASSYM, 2026-09-13: THE RESTRUCTURE WAS TRIED AND DID NOT HELP — two
       more hypotheses dead, and the tree keeps the two-constant version because it
       MEASURES BETTER.**
@@ -5921,7 +5978,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:15248 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:15305 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

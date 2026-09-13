@@ -1,0 +1,15 @@
+vg8020  (39545 half-periods)
+   short HI  n=19532  mode=740    740 x19532
+   short LO  n=19530  mode=756    756 x19227 757 x166 745 x47
+   long  HI  n=241    mode=1492   1492 x241
+   long  LO  n=241    mode=1476   1476 x132 1487 x51 1470 x21
+   short duty skew LO-HI = +16 T   (full cycle 1496 T)
+   long  duty skew LO-HI = -16 T   (full cycle 2968 T)
+zb  (13091 half-periods)
+   short HI  n=6368   mode=734    734 x6368
+   short LO  n=6366   mode=750    750 x6060 728 x122 720 x60
+   long  HI  n=178    mode=1490   1490 x178
+   long  LO  n=178    mode=1470   1470 x83 1467 x47 1420 x18
+   short duty skew LO-HI = +16 T   (full cycle 1484 T)
+   long  duty skew LO-HI = -20 T   (full cycle 2960 T)
+refcache: 0 hit, 2 miss, 2 stored

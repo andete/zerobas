@@ -94,43 +94,61 @@ CASW_0:         equ     $0A             ; PPI BSR command: Port C bit 5 := 0
 MOTOR_ON:       equ     $08             ; PPI BSR command: Port C bit 4 := 0 (motor on)
 MOTOR_OFF:      equ     $09             ; PPI BSR command: Port C bit 4 := 1 (motor off)
 
-; djnz half-period iteration counts. NOT copied loop counts: each is COMPUTED by
-; inverting the documented FSK frequency through the cas_cycle half-period cost.
-; One half takes ~(26 + 14.4*C) T-states (the 14.4/iter + 26 fixed overhead is
-; measured from openMSX as a black box -- an oracle observation, never a ROM
-; listing), so on the 3.579545 MHz Z80 a target tone f_FSK needs
-;     C = round( ( 3579545 / (2*f_FSK) - 26 ) / 14.4 ).
-; That yields 50/102 for 1200 baud's 2400/1200 Hz and 24/50 for 2400 baud's
-; 4800/2400 Hz (each within 0.1 of an integer; confirmed by round-trip). 2400 baud
-; is the same two tones up one octave -- its low tone (2400 Hz) equals 1200 baud's
-; high tone -- so CAS_LHALF24 == CAS_HHALF. See PROVENANCE.md.
-CAS_HHALF:      equ     50              ; 1200 baud high tone ~2400 Hz half cycle
-CAS_LHALF:      equ     102             ; 1200 baud low  tone ~1200 Hz half cycle
+; djnz half-period iteration counts. NOT copied loop counts, and since D-CASDUTY
+; no longer computed from the documented tone either: each is SOLVED from a
+; direct measurement of the reference machine's own waveform.
+; 🔬 THE INSTRUMENT (scratchpad/kwdrain_castrace.py): a watchpoint on the PPI
+; control register logs both edges of every cassette cycle against openMSX's own
+; clock, and the VG-8020 runs the same CSAVE through the same watchpoint -- two
+; half-period sequences in T-STATES, with no recording in between. Every earlier
+; reading in this defect came from a recorded WAV, which is the writer convolved
+; with the cassette port and quantised to 44.1 kHz; that is why they could rank
+; two builds and never say WHICH emission was late.
+;
+;                 short tone HI / LO      long tone HI / LO
+;   VG-8020         740 / 756  (+16)       1492 / 1476  (-16)
+;   zerobas was     720 / 779  (+59)       1448 / 1554  (+106)
+;   zerobas now     748 / 750  ( +2)       1504 / 1498  (  -6)
+;
+; The reference's high half is EXACTLY 740 in all 19532 short cycles and ours was
+; EXACTLY 720 in all 6368: the variation is entirely in the LOW half, on both
+; machines, because that is the half the `ret` and the caller's next `call` run
+; inside. Full-cycle periods already agreed (1499 against 1496) -- what was wrong
+; was the SPLIT, by about four times the reference's own asymmetry.
+; 🔬 THE MODEL THE TRACE FITS, which is what makes these solved and not swept: a
+; djnz iteration costs 14 T (not 13 -- M1 contention), a high half carries 20 T of
+; overhead and a plain low half 92 T, so half = 14*count + b. Two tones at two
+; counts (50 -> 720 and 102 -> 1448) determine both figures with nothing over.
+; A bit's LAST low half carries the per-bit tail as well, b = 210.
+;   CAS_HHALF  52 -> 748 high, 52-CAS_DUTY = 47 -> 750 low
+;   CAS_LHALF 106 -> 1504 high, and 106-CAS_BITCOMP0 = 92 -> 1498 for a '0' bit
+;   52-CAS_BITCOMP = 39 -> 756 for a '1' bit's last cycle and the byte boundary
+; ⚠️ ITERATIONS, NOT SAMPLES: a tail is a fixed T-state cost, so the same count is
+; right at both bauds. Each must stay BELOW the smallest half-period count in use
+; (CAS_HHALF24 = 24) or the subtraction would wrap.
+; ⚠️ 2400 BAUD IS NOT MEASURED against an oracle -- the trace above is a 1200-baud
+; CSAVE. Only the identity CAS_LHALF24 == CAS_HHALF is carried up to it.
+; 🔴 THE DUTY FIX AND THE LEADER LENGTH ARE COUPLED, MEASURED, AND NOT OBVIOUS:
+; with the reference-matching duty and the OLD 4000-cycle leader the VG-8020
+; stops decoding our header entirely -- worse than the lopsided waveform it
+; replaced. The standard 16000-cycle leader restores it. Shorten CAS_LONGLEN and
+; this waveform stops being readable; the two constants must move together.
+CAS_HHALF:      equ     52              ; 1200 baud high tone ~2400 Hz half cycle
+CAS_LHALF:      equ     106             ; 1200 baud low  tone ~1200 Hz half cycle
 CAS_HHALF24:    equ     24              ; 2400 baud high tone ~4800 Hz half cycle
-CAS_LHALF24:    equ     50              ; 2400 baud low  tone ~2400 Hz half cycle
+CAS_LHALF24:    equ     CAS_HHALF       ; 2400's low tone IS 1200's high tone --
+                                        ; an identity, so it cannot drift apart
 
-CAS_LONGLEN:    equ     4000            ; long header (new file), full hi-freq cycles
-CAS_SHORTLEN:   equ     2000            ; short header (between blocks)
-; 🔴 D-CASCOMP: THE PER-BIT LOOP RUNS WHILE THE OUTPUT LINE IS STILL LOW, so its
-; cost lands INSIDE the last half-period of every bit and stretches it. Measured
-; against the VG-8020 on a recorded tape: a `0` bit reads `18 20` where the
-; reference reads `18 19`, and a `1` bit reads `9 9 9 11` where the reference
-; reads `9 9 9 9` -- and inside a `1` the FIRST cycle is clean, which is what
-; places the cost at the BIT boundary rather than in cas_cycle (a tight djnz pair,
-; constant by construction). 11 is past the midpoint between the two tones, so a
-; threshold derived from the leader cannot classify it and a real BIOS hangs;
-; OUR reader's adaptive threshold tolerates it, which is why every tape gate in
-; this tree passed. scratchpad/kwdrain_wavseq.out.
-; ⚠️ ITERATIONS, NOT SAMPLES: the tail is a fixed T-state cost, so the same count
-; is right at both bauds. It must stay BELOW the smallest half-period count in
-; use (CAS_HHALF24 = 24) or the subtraction would wrap.
-; 🔴 TWO CONSTANTS, BECAUSE THE TWO BIT PATHS HAVE DIFFERENT TAILS — measured,
-; not computed: with ONE value at 12 the reference decoded the header name
-; (`Found:ZQ`) and the residual outliers were almost all `17` on the LONG tone,
-; i.e. the `0` path over-compensated by about a sample. The `0` tail is genuinely
-; shorter than the `1`/stop-bit tail. scratchpad/kwdrain_outlierpos.out.
-CAS_BITCOMP:    equ     12              ; '1' bit and the stop-bit/byte boundary
-CAS_BITCOMP0:   equ     6               ; '0' bit: a shorter tail than the others
+CAS_LONGLEN:    equ     16000           ; long header (new file), full hi-freq cycles
+CAS_SHORTLEN:   equ     4000            ; short header (between blocks)
+; The three low-half corrections, each solved from the model above against the
+; reference's own figures. CAS_DUTY applies to EVERY cycle (the ret/call
+; overhead); the other two additionally absorb the per-bit tail on the two bit
+; paths, which differ because the '0' and '1' arms reach the next cycle
+; differently.
+CAS_DUTY:       equ     5               ; every low half: ret + the caller's call
+CAS_BITCOMP:    equ     13              ; '1' bit and the stop-bit/byte boundary
+CAS_BITCOMP0:   equ     14              ; '0' bit: its own tail, its own figure
 CAS_FLUSHLEN:   equ     32              ; trailing carrier cycles flushed at TAPOOF
 
 ; TAPION lock: skip CAS_SKIP edges to clear the motor-restart spin-up, then
@@ -313,7 +331,9 @@ cas_cycle:
 cas_cycle_h:    djnz    cas_cycle_h
                 ld      a,CASW_0
                 out     (PPI_REGS),a
-                ld      b,c
+                ld      a,c
+                sub     CAS_DUTY        ; D-CASDUTY: the ret/call overhead lands
+                ld      b,a             ; in the low half of EVERY cycle
 cas_cycle_l:    djnz    cas_cycle_l
                 ret
 
