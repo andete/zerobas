@@ -489,7 +489,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:16105 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:16144 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -655,7 +655,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:4671 (T-6FE392)8 (T-529ABE)` from `TODO.md:14842 (T-529ABE)`: a
+      `TODO.md:4710 (T-6FE392)8 (T-529ABE)` from `TODO.md:14881 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -3488,6 +3488,45 @@ list. **When a slice lands, grep this list for what it just shipped.**
       timing, and a case slot that survives line-entry mode), and `RENUM` (a
       read-back the row format cannot express: it STOPS the program, so no
       statement after it runs and an `LLIST` after it never executes either).
+      🟢 **D-KWINP, 2026-09-13: `INPUT` and `RENUM` attributed — 6 → 4** — and
+      `INPUT` is the SECOND word found to be in this list for its NAME rather than
+      a gap ([readings](scratchpad/kwinp_full.out), full sweep).
+      🔴 **`INPUT` SAT WITH `INKEY$` AS THOUGH IT SHARED THE KEYBOARD BLOCKER.**
+      `INPUT #n, var` reads a FILE and needs no keystroke at all. The fixture's own
+      `HI.TXT` holds `Hello from zerobas-disk!` + CRLF, so the length is **24** on
+      both machines and the same row with the `INPUT#` removed reads **0**
+      ([`scratchpad/kwdrain_inputauto2.py`](scratchpad/kwdrain_inputauto2.py),
+      [readings](scratchpad/kwdrain_inputauto2.out)).
+      ⚠️ **THE KEYBOARD FORM IS STILL UNSCORED and the row does not pretend
+      otherwise** — `INPUT "prompt";A$` blocks, and that stays with `INKEY$` in the
+      injector-timing group.
+      🟢 **`RENUM`'S FILED REASON WAS TRUE AND NOT THE ONLY ROUTE.** "Needs a
+      program to be visible" is right about a positive read-back — it stops the
+      program, so nothing after it runs — but `RENUM 100` on a one-line program
+      answers `Undefined line 100 in 10` on zerobas AND the CF-3300, byte for byte,
+      while an ABSENT `RENUM` parses the line as a name followed by a number and
+      answers `Syntax error`.
+      ⚠️ **WHAT THAT ROW CANNOT SEE IS IN THE ROW**: it does not prove the
+      renumbering, only that the verb parsed its argument and went LOOKING for a
+      line — which a do-nothing `RENUM` would not do.
+      🔴 **AND `AUTO`'S FILED BLOCKER IS WRONG — THE REAL ONE IS DIFFERENT AND
+      MEASURED.** The filing says it is interactive and "swallows all following
+      input", and that is solvable: put it LAST and there are no neighbours to
+      poison. Proved by sacrificing two rows to it — the harness flagged BOTH as
+      MIS-DELIVERED and then REFUSED on the CF-3300 rather than reporting garbage,
+      which is the apparatus working ([readings](scratchpad/kwdrain_inputauto.out)).
+      With nothing behind it the verb SCORES: both machines print the `100`
+      line-entry prompt.
+      ⚠️ **WHAT ACTUALLY BLOCKS IT IS THAT LINE-ENTRY MODE LEAVES NO PROMPT.**
+      `screen_tail` runs to the closing prompt, and there isn't one — so on the
+      CF-3300 the tail drags in twenty blank rows and the **function-key display**,
+      which zerobas does not show. The row would read DIVERGENT for a
+      machine-configuration reason, exactly like the `FILES`/`CSRLIN` row this
+      drain already threw away [[readout-blind-to-its-own-subject]]. Attributing
+      `AUTO` needs a way to EXIT line-entry mode (a Ctrl-C injection) or a tail
+      rule that stops before the furniture — not a case slot.
+      ➡️ **FOUR LEFT: `AUTO CLOAD CSAVE INKEY$`** — one screen-furniture problem,
+      the tape pair (nothing plays a tape), and one genuine keyboard block.
       ⚠️ **THE PATTERN WAS TEN FOR TEN AND IS NOW TEN OF TWELVE — the tape and
       the printer log HELD.** Every other blocker examined this session — the display verbs' "cannot take a row", the multi-line words'
       "cannot be expressed", the CF-3300 oracle, the disk fixture (which needed a
@@ -5515,7 +5554,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:14842 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:14881 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

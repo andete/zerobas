@@ -1,0 +1,19 @@
+omsx_repl: ORACLES DISAGREE on C-BIOS_MSX1_EU_REPACK_DISK: stored-program oracle flags [5, 6], echo oracle flags {}. Both repairs still run. Cases only one oracle sees are EXPECTED where the other is structurally blind (spec §5): direct mode and `RUN` are echo-only; a case typed in SCREEN 2, and any line whose own execution clears the screen, are stored-only.
+omsx_repl: MIS-DELIVERED case 5 on C-BIOS_MSX1_EU_REPACK_DISK: typed 10, machine stored 10,100,110,120,13010 -- line(s) n/a never entered (the screen editor rejected a mangled echo). Body: ['PRINT"[B1]"']
+            -> re-running that case boot-per-case
+omsx_repl: MIS-DELIVERED case 6 on C-BIOS_MSX1_EU_REPACK_DISK: typed 10, machine stored 10,100,110,120,140,150,160,170,13010,18010 -- line(s) n/a never entered (the screen editor rejected a mangled echo). Body: ['PRINT"[B2]"']
+            -> re-running that case boot-per-case
+=== zb
+  inp.file  tail='[I 24 ]'
+  inp.ctl   tail='[I 0 ]'
+  ren.tail  tail='Undefined line 100 in 10'
+  ren.ctl   tail=''
+  auto.row  tail='100'
+  blast1    tail='[B1]'
+  blast2    tail='[B2]'
+omsx_repl: ORACLES DISAGREE on National_CF-3300: stored-program oracle flags [5, 6], echo oracle flags {}. Both repairs still run. Cases only one oracle sees are EXPECTED where the other is structurally blind (spec §5): direct mode and `RUN` are echo-only; a case typed in SCREEN 2, and any line whose own execution clears the screen, are stored-only.
+omsx_repl: MIS-DELIVERED case 5 on National_CF-3300: typed 10, machine stored 10,110,120,130,140,15010 -- line(s) n/a never entered (the screen editor rejected a mangled echo). Body: ['PRINT"[B1]"']
+            -> re-running that case boot-per-case
+omsx_repl: APPARATUS FAILURE -- boot-per-case delivery was mangled; nothing was measured.
+  MIS-DELIVERED case 0 on National_CF-3300: typed 10, machine stored <none> -- line(s) [10] never entered (the screen editor rejected a mangled echo). Body: ['PRINT"[B1]"']
+refcache: 0 hit, 1 miss, 1 stored

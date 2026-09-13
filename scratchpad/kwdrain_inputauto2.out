@@ -1,0 +1,15 @@
+=== zb
+  inp.file  tail='[I 24 ]'
+  inp.ctl   tail='[I 0 ]'
+  ren.100   tail='Undefined line 100 in 10'
+  ren.bare  tail=''
+  ren.ctl   tail='[R3]'
+  auto.row  tail='100'
+=== cf3300
+  inp.file  tail='[I 24 ]'
+  inp.ctl   tail='[I 0 ]'
+  ren.100   tail='Undefined line 100 in 10'
+  ren.bare  tail=''
+  ren.ctl   tail='[R3]'
+  auto.row  tail='100||||||||||||||||||||color   auto    goto    list    run'
+refcache: 0 hit, 2 miss, 2 stored

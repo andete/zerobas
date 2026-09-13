@@ -755,9 +755,19 @@ SWEEP: list[tuple[str, str, str | None, str, str]] = [
     # and the gap between them grew by one every time a batch added a twin without
     # retiring its original [[readout-blind-to-its-own-subject]].
     # 🎯 WHAT IS LEFT HERE IS GENUINELY UNEXECUTED, each for a measured reason.
-    ("renum",   "renum",
-     None,                                           "direct",
-     "renumbers the stored program; harmless but needs a program to be visible"),
+    # 🟢 D-KWINP (2026-09-13): `RENUM` EXECUTES. Its filed reason — "renumbers the
+    # stored program; harmless but needs a program to be visible" — was true and
+    # not the only route: `RENUM 100` on a one-line program answers
+    # `Undefined line 100 in 10` on zerobas AND the CF-3300, byte for byte, while
+    # an ABSENT `RENUM` parses `RENUM 100` as a name followed by a number and
+    # answers `Syntax error` (scratchpad/kwdrain_inputauto2.out).
+    # ⚠️ WHAT THE ROW CANNOT SEE, said out loud: it does NOT prove the renumbering
+    # itself. It proves the verb parsed its argument and went LOOKING for a line —
+    # which a do-nothing RENUM would not do — and no more. A positive read-back
+    # needs a `LIST` after it, and RENUM stops the program, so nothing after it
+    # runs in the same case.
+    ("renum",   "renum 100",   'RENUM 100:PRINT"[R1]"',   "stored",
+     "D-KWINP: `Undefined line 100 in 10` on both machines; absent => Syntax error"),
     ("auto",    "auto",
      None,                                           "direct",
      "INTERACTIVE: enters auto-line-number mode and swallows all following input"),
@@ -1014,6 +1024,21 @@ SWEEP: list[tuple[str, str, str | None, str, str]] = [
      'OPEN"R.DAT"AS#1:FIELD#1,4 AS A$:RSET A$="B":A=ASC(A$):CLOSE#1:PRINT"[";A;"]"', "stored",
      "NEEDS-DISK: " "RIGHT justification: byte 1 is a SPACE (32), not the \"B\" that "
      "`lset` puts there."),
+    # ------------------------------------------------ D-KWINP (2026-09-13)
+    # 🟢 `INPUT` IS THE SECOND WORD IN THIS LIST FOR ITS NAME RATHER THAN A GAP,
+    # after `GET`. It sat with `INKEY$` as though it shared the keyboard blocker;
+    # `INPUT #n, var` reads a FILE and needs no keystroke at all. The fixture's own
+    # `HI.TXT` holds `Hello from zerobas-disk!` + CRLF, so the length is 24 on both
+    # machines and the same row with the `INPUT#` removed reads 0
+    # (scratchpad/kwdrain_inputauto2.out).
+    # ⚠️ THE KEYBOARD FORM IS STILL UNSCORED and this row does not pretend
+    # otherwise — `INPUT "prompt";A$` blocks, and that is the injector-timing
+    # group's problem, shared with `INKEY$`.
+    ("inputkw",  "input#1,a$",
+     'OPEN"HI.TXT"FOR INPUT AS#1:INPUT#1,A$:CLOSE#1:PRINT"[I";LEN(A$);"]"',
+     "stored",
+     "NEEDS-DISK: " "the FILE form: 24 = the fixture line's length, 0 without it"),
+
     # ------------------------------------------------ D-KWGET (2026-09-13)
     # 🟢 `GET` IS NOT A KEYBOARD VERB, and the name is the whole reason it sat
     # unattributed: MSX1's `GET` is the RANDOM-FILE record read (`GET #n[,record]`).
