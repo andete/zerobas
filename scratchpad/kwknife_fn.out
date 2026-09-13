@@ -1,0 +1,5 @@
+knife: statement handlers -> stmt_error $4300; a row still SUPPORTED is BLIND
+
+  VDP      row vdpkw      0 `cp $C8` site(s) with an ev_* target — refusing
+  BASE     row basekw     0 `cp $C9` site(s) with an ev_* target — refusing
+  TIME     row time       0 `cp $CB` site(s) with an ev_* target — refusing

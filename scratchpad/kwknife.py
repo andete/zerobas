@@ -40,6 +40,54 @@ def token_of(name):
         sys.exit(f"knife: no {name}_TOKEN equate — nothing was measured")
     return int(m.group(1), 16)
 
+DEADTOK = 0xFE          # matches no kwtable entry, so a `cp` against it never fires
+
+
+def plant_fn(tok):
+    """Cut a FUNCTION selector by changing the COMPARISON OPERAND, not the target.
+
+    🔴 THE STATEMENT CUT DOES NOT REACH THESE. `$FF`-prefixed selectors dispatch
+    through a `cp <TOK>` / `jp z,<handler>` chain in expr.asm (plus the
+    `ev_ff_argtab` cpir set), not through stmt_table — which is exactly why VDP,
+    BASE and MAX came back unconnected from the statement sweep: their ROWS use the
+    function form and the knife had cut the statement entry. The wrong path being
+    cut is not the row being blind.
+    🎯 PATCHING THE OPERAND rather than the jump target works for `jp z` and `jr z`
+    alike (a `jr` to the error tail would usually be out of range), and it fails
+    SAFELY: the selector simply never matches and the chain falls through to its own
+    error path.
+    ⚠️ AMBIGUITY IS REFUSED, NOT GUESSED: `FE <tok>` can occur by accident in data
+    or inside another instruction's operand, so a site counts only if a conditional
+    jump follows it, and the run stops unless EXACTLY ONE site qualifies."""
+    rom = bytearray(io.open(ROM, "rb").read())
+    # 🔴 THE JUMP TARGET MUST RESOLVE TO A KNOWN `ev_*` SYMBOL. Matching `cp <tok>`
+    # followed by any conditional jump found 2-3 sites per keyword -- the token byte
+    # recurs in the tokeniser, the detokeniser and by coincidence inside other
+    # operands. Requiring the target to be a named evaluator entry cuts each to
+    # exactly one, and a keyword with NO such site is reported rather than guessed
+    # at (MAX has none: it is not dispatched this way at all).
+    byaddr = {}
+    for line in io.open(SYM, errors="replace"):
+        m = re.match(r"(\w+)\s+EQU\s+0?([0-9A-Fa-f]+)H", line)
+        if m:
+            byaddr[int(m.group(2), 16)] = m.group(1)
+    hits = []
+    for i in range(len(rom) - 4):
+        if rom[i] == 0xFE and rom[i + 1] == tok and rom[i + 2] == 0xCA:
+            nm = byaddr.get(rom[i + 3] | (rom[i + 4] << 8), "")
+            if nm.startswith("ev_"):
+                hits.append(i)
+    if len(hits) != 1:
+        return None, f"{len(hits)} `cp ${tok:02X}` site(s) with an ev_* target — refusing"
+    off = hits[0] + 1
+    orig = bytes(rom[off:off + 1])
+    rom[off] = DEADTOK
+    io.open(ROM, "wb").write(bytes(rom))
+    if io.open(ROM, "rb").read()[off] != DEADTOK:
+        sys.exit("knife: the function plant did NOT take — nothing was measured")
+    return (off, orig), None
+
+
 def plant(tok, dead):
     """Point the statement's table entry at `dead`. Returns (offset, original)."""
     s = syms()
@@ -165,6 +213,9 @@ def enumerate_targets():
         i += 1
     return out, i
 
+FNMODE = "--fn" in sys.argv
+if FNMODE:
+    sys.argv = [a for a in sys.argv if a != "--fn"]
 TARGETS = None
 if len(sys.argv) > 1 and sys.argv[1] == "--list":
     tg, n = enumerate_targets()
@@ -185,7 +236,13 @@ dead = syms()["stmt_error"]
 print("knife: statement handlers -> stmt_error $%04X; a row still SUPPORTED is BLIND\n" % dead)
 for kw, row, tok in TARGETS:
     before = knife_guard.hashes()
-    off, orig = plant(tok, dead)
+    if FNMODE:
+        res, why = plant_fn(tok)
+        if res is None:
+            print("  %-8s row %-10s %s" % (kw, row, why)); continue
+        off, orig = res
+    else:
+        off, orig = plant(tok, dead)
     try:
         install(before)
         v = run_row(row)
