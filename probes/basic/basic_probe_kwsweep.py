@@ -1014,6 +1014,40 @@ SWEEP: list[tuple[str, str, str | None, str, str]] = [
      'OPEN"R.DAT"AS#1:FIELD#1,4 AS A$:RSET A$="B":A=ASC(A$):CLOSE#1:PRINT"[";A;"]"', "stored",
      "NEEDS-DISK: " "RIGHT justification: byte 1 is a SPACE (32), not the \"B\" that "
      "`lset` puts there."),
+    # ------------------------------------------------ D-KWGET (2026-09-13)
+    # 🟢 `GET` IS NOT A KEYBOARD VERB, and the name is the whole reason it sat
+    # unattributed: MSX1's `GET` is the RANDOM-FILE record read (`GET #n[,record]`).
+    # `PUT` already ships and the disk rig is mounted, so the round trip fits one
+    # row — and the BLIND SHAPE is inside the same reading rather than beside it.
+    # 🔴 THE BUFFER IS OVERWRITTEN BETWEEN THE PUT AND THE GET, and BOTH values are
+    # printed: 90 is the "Z" that overwrote it, 66 is the "B" the GET brought back
+    # off the disk. A `GET` that parsed and did nothing reads `90 90` — measured,
+    # that is exactly what the same row without the GET gives on both machines
+    # (scratchpad/kwdrain_getcall.out).
+    ("getkw",    "get#1,1",
+     'OPEN"R.DAT"AS#1:FIELD#1,4 AS A$:LSET A$="B":PUT#1,1:LSET A$="Z":A=ASC(A$):GET#1,1:B=ASC(A$):CLOSE#1:PRINT"[G";A;B;"]"',
+     "stored",
+     "NEEDS-DISK: " "a PUT/GET round trip through a FIELDed record: 90 then 66, "
+     "where a GET that did nothing reads 90 then 90."),
+    # 🔴 `CALL` SCORES RESERVEDNESS AND NOTHING MORE, and that limit is the row.
+    # The obvious form is blind: `CALL ZZQ`, bare `CALL` and the ABSENT-keyword
+    # shape `ZZQQ ZZQ` ALL answer `Syntax error` on zerobas, the CF-3300 and the
+    # VG-8020 alike, so an unknown extension cannot separate a machine that has
+    # the verb from one that does not. What separates them is D-DONOTHING3's
+    # trick: a RESERVED word cannot be a variable. `CALL=1` is a Syntax error on
+    # all three machines while the stub shape `ZZQQ=1` assigns and prints
+    # (scratchpad/kwdrain_callres.out).
+    # ⚠️ SO THE ROW CANNOT SEE WHETHER ANY EXTENSION WORKS. The two that exist on
+    # this hardware are `CALL SYSTEM` and `CALL FORMAT` — one exits to DOS and one
+    # formats the disk — so neither is invokable from a sweep, and saying that is
+    # better than a row that passes for the wrong reason
+    # [[a-case-that-agrees-can-agree-for-the-wrong-reason]].
+    # 🎯 NOT A DISK ROW: `CALL` is reserved on the diskless VG-8020 too, which is
+    # what makes the VG-8020 its proper oracle.
+    ("callkw",   "call zzq",  'CALL=1:PRINT"[C1]"',   "stored",
+     "D-KWGET: reservedness only — Syntax error on all three machines where the "
+     "stub shape assigns and prints"),
+
     # 🎯 `runkw` IS NOT A DISK ROW and is deliberately not tagged: `RUN` is plain
     # MSX BASIC and the VG-8020 is its proper oracle. It sat in "no known gap"
     # because RUN CLEARS VARIABLES, so no expression can carry a count across the

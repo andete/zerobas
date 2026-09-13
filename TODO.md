@@ -489,7 +489,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:16066 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:16105 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -655,7 +655,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:4632 (T-6FE392)8 (T-529ABE)` from `TODO.md:14803 (T-529ABE)`: a
+      `TODO.md:4671 (T-6FE392)8 (T-529ABE)` from `TODO.md:14842 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -3449,6 +3449,45 @@ list. **When a slice lands, grep this list for what it just shipped.**
       the tape pair (nothing plays a tape), the key-injector three (harness
       timing), and `AUTO`/`RENUM`/`CALL`, which need a row FORMAT or a safe
       extension rather than a rig. Recount with `make tiers ARGS=--keywords`.
+      🟢 **D-KWGET, 2026-09-13: `GET` and `CALL` attributed — 8 → 6, and neither
+      needed apparatus** ([readings](scratchpad/kwget_full.out), full sweep).
+      🔴 **`GET` IS NOT A KEYBOARD VERB, and the name is the whole reason it sat in
+      this list.** MSX1's `GET` is the RANDOM-FILE record read (`GET #n[,record]`).
+      `PUT` already ships and the disk rig has been mounted since D-KWDISK, so the
+      round trip fits ONE row — and the blind shape is INSIDE the same reading
+      rather than beside it: the FIELDed buffer is overwritten to `"Z"` between the
+      `PUT` and the `GET`, and both values are printed. `90` then `66` is a real
+      re-read; `90` then `90` is what a `GET` that parsed and did nothing gives,
+      measured on both machines with the GET removed
+      ([`scratchpad/kwdrain_getcall.py`](scratchpad/kwdrain_getcall.py),
+      [readings](scratchpad/kwdrain_getcall.out)).
+      ⚠️ **THREE OF THE SIX WORDS LEFT ARE IN THAT LIST FOR A NAME, NOT A GAP** —
+      `INKEY$` and `INPUT` really are keyboard-blocked, but `GET` never was, and
+      nothing in the filing said which kind it was. Worth a glance at the other
+      five before assuming each needs what its neighbour needs.
+      🔴 **`CALL` SCORES RESERVEDNESS AND NOTHING MORE, and that limit IS the
+      finding.** The obvious form is BLIND: `CALL ZZQ`, bare `CALL` and the
+      absent-keyword shape `ZZQQ ZZQ` all answer `Syntax error` on zerobas, the
+      CF-3300 and the VG-8020 alike, so an unknown extension cannot separate a
+      machine that HAS the verb from one that does not. What separates them is
+      D-DONOTHING3's trick — a reserved word cannot be a variable: `CALL=1` is a
+      Syntax error on all three while the stub shape `ZZQQ=1` assigns and prints
+      ([`scratchpad/kwdrain_callres.py`](scratchpad/kwdrain_callres.py),
+      [readings](scratchpad/kwdrain_callres.out)).
+      ⚠️ **SO THE ROW CANNOT SEE WHETHER ANY EXTENSION WORKS**, and it says so in
+      its own comment. The two that exist on this hardware are `CALL SYSTEM` and
+      `CALL FORMAT` — one exits to DOS, one formats the disk — so neither is
+      invokable from a sweep. A row that scores less than the whole verb, with the
+      shortfall named, beats a row that passes for the wrong reason
+      [[a-case-that-agrees-can-agree-for-the-wrong-reason]].
+      🎯 **`CALL` IS RESERVED ON THE DISKLESS VG-8020 TOO**, which is what makes
+      the VG-8020 its oracle rather than the CF-3300 — the same shape as `SET`,
+      `IPL` and `CMD` in D-DONOTHING3.
+      ➡️ **SIX LEFT: `AUTO CLOAD CSAVE INKEY$ INPUT RENUM`** — the tape pair
+      (nothing plays a tape), the keyboard pair plus `AUTO` (the key injector's
+      timing, and a case slot that survives line-entry mode), and `RENUM` (a
+      read-back the row format cannot express: it STOPS the program, so no
+      statement after it runs and an `LLIST` after it never executes either).
       ⚠️ **THE PATTERN WAS TEN FOR TEN AND IS NOW TEN OF TWELVE — the tape and
       the printer log HELD.** Every other blocker examined this session — the display verbs' "cannot take a row", the multi-line words'
       "cannot be expressed", the CF-3300 oracle, the disk fixture (which needed a
@@ -5476,7 +5515,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:14803 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:14842 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

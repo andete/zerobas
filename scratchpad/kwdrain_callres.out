@@ -1,0 +1,13 @@
+=== zb
+  call.res  tail='Syntax error in 10'
+  call.ctl  tail='[C 1 ]'
+  call.us   tail='Syntax error in 10'
+=== cf3300
+  call.res  tail='Syntax error in 10'
+  call.ctl  tail='[C 1 ]'
+  call.us   tail='Syntax error in 10'
+=== vg8020
+  call.res  tail='Syntax error in 10'
+  call.ctl  tail='[C 1 ]'
+  call.us   tail='Syntax error in 10'
+refcache: 0 hit, 3 miss, 3 stored

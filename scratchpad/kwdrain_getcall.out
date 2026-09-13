@@ -1,0 +1,19 @@
+=== zb
+  get.rt     tail='[G 90  66 ]'
+  get.ctl    tail='[G 90  90 ]'
+  call.zzq   tail='Syntax error in 10'
+  call.bare  tail='Syntax error in 10'
+  call.stub  tail='Syntax error in 10'
+=== cf3300
+  get.rt     tail='[G 90  66 ]'
+  get.ctl    tail='[G 90  90 ]'
+  call.zzq   tail='Syntax error in 10'
+  call.bare  tail='Syntax error in 10'
+  call.stub  tail='Syntax error in 10'
+=== vg8020
+  get.rt     tail='Bad file name in 10'
+  get.ctl    tail='Bad file name in 10'
+  call.zzq   tail='Syntax error in 10'
+  call.bare  tail='Syntax error in 10'
+  call.stub  tail='Syntax error in 10'
+refcache: 0 hit, 3 miss, 3 stored
