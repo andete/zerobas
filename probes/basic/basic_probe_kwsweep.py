@@ -768,9 +768,6 @@ SWEEP: list[tuple[str, str, str | None, str, str]] = [
     # runs in the same case.
     ("renum",   "renum 100",   'RENUM 100:PRINT"[R1]"',   "stored",
      "D-KWINP: `Undefined line 100 in 10` on both machines; absent => Syntax error"),
-    ("auto",    "auto",
-     None,                                           "direct",
-     "INTERACTIVE: enters auto-line-number mode and swallows all following input"),
 
     # D-DEFTYPETOK (2026-08-19): DEFSNG/DEFDBL/DEFSTR now have whole-word
     # kwtable.inc rows and single-byte tokens of their own ($AD/$AE/$AB, beside
@@ -1158,6 +1155,27 @@ SWEEP: list[tuple[str, str, str | None, str, str]] = [
     # Keyboard INPUT$(n) — blocks for n keypresses. Crunch-only; the channel form
     # INPUT$(n,#f) already ships.
     ("inputdol", 'a$=input$(1)', None, "direct", "BLOCKS waiting for a keypress"),
+
+    # ========================================================================
+    # 🔴 `auto` IS LAST IN THIS LIST AND MUST STAY LAST. IT IS NOT SORTED HERE,
+    # IT IS PLACED HERE. `AUTO` leaves the machine in LINE-ENTRY MODE, which
+    # swallows whatever is typed next: when it sat mid-list it scored ITSELF
+    # correctly and took TWENTY-ONE unrelated rows down with it (D-KWDRAIN step
+    # 4j, DIVERGENT=22 + UNREADABLE=1, all but one pure collateral). Anything
+    # appended after this line inherits that [[apparatus-is-part-of-the-measurement]].
+    # 🟢 AND THE FILED BLOCKER WAS THE POISONING, WHICH POSITION SOLVES. What
+    # actually stood in the way is that line-entry mode prints NO CLOSING PROMPT,
+    # so the ordinary tail runs to the bottom of the screen and collects the
+    # CF-3300's function-key display — hence `NOFURN:` and `screen_tail_nofurn`.
+    # 🎯 THE READING IS THE LINE-ENTRY PROMPT ITSELF: both machines answer `100`,
+    # the number AUTO was asked to start at. An absent `AUTO` parses `AUTO 100` as
+    # a name followed by a number and answers `Syntax error`; an `AUTO` that
+    # parsed and did nothing prints no prompt at all.
+    # ========================================================================
+    ("auto",    "auto 100",     "AUTO 100",     "stored",
+     "NOFURN: " "the line-entry prompt `100` on both machines. LAST ROW BY "
+     "PLACEMENT: it leaves the machine in line-entry mode, which eats whatever "
+     "follows."),
 ]
 
 # Rows deliberately not executed, with the reason surfaced in the report. Named
@@ -1279,6 +1297,44 @@ def marker_tail(raw: str | None, marker: str) -> str | None:
     return "|".join(out)
 
 
+def screen_tail_nofurn(raw: str | None, cmdline: str) -> str | None:
+    """`screen_tail` with the LAST screen row discarded.
+
+    🔴 THE LAST ROW IS MACHINE FURNITURE, NOT OUTPUT, and only one row has ever
+    needed to say so: `AUTO` leaves the machine in LINE-ENTRY MODE, which never
+    prints a closing prompt — so the ordinary tail runs to the bottom of the
+    screen and collects the CF-3300's FUNCTION-KEY DISPLAY, which zerobas does not
+    show. The row then reads DIVERGENT for a machine-configuration reason, exactly
+    like the `FILES`/`CSRLIN` row this sweep already threw away
+    [[readout-blind-to-its-own-subject]].
+    🎯 `basic_probe_lptverb.screen_rows` DOES THE SAME `[:-1]` FOR THE SAME
+    REASON, in its own words: "Row 24 is the SCREEN-0 function-key display, which
+    both references show and zerobas does not; left in, every row would diverge for
+    a reason unrelated to the subject."
+    ⚠️ POSITION, NEVER CONTENT. The obvious rule — drop a row that reads
+    `color auto goto list run` — is wrong here: this sweep's own `keykw` row
+    REWRITES that line to `ZZQ auto goto list run`.
+    ⚠️ AND IT IS KWSWEEP-LOCAL ON PURPOSE. `omsx_repl.screen_tail` is a shared
+    leaf; one row does not justify changing what every other probe reads. The echo
+    anchor is still the harness's own `_echo_idx`, so the two differ in the row set
+    and in nothing else."""
+    if raw is None:
+        return None
+    rows = [raw[r * omsx_repl.COLS:(r + 1) * omsx_repl.COLS].strip()
+            for r in range(omsx_repl.ROWS)][:-1]
+    idx = omsx_repl._echo_idx(rows, cmdline)
+    if idx is None:
+        return None
+    out: list[str] = []
+    for r in rows[idx + 1:]:
+        if r in omsx_repl.PROMPTS:
+            break
+        out.append(r)
+    while out and out[-1] == "":
+        out.pop()
+    return "|".join(out)
+
+
 def printer_text(raw: str | None) -> str:
     """The PRINTER half of a `screen_printer` capture, with CR and LF VISIBLE.
 
@@ -1302,7 +1358,7 @@ def printer_text(raw: str | None) -> str:
 
 def classify(raw: str | None, cmdline: str,
              marker: str | None = None,
-             log: bool = False) -> tuple[str, str]:
+             log: bool = False, nofurn: bool = False) -> tuple[str, str]:
     """(outcome_class, text) for one executed case.
 
     class is "value" (ran, printed something), "error:<phrase>", or "?<reason>".
@@ -1342,7 +1398,7 @@ def classify(raw: str | None, cmdline: str,
         if tail is None:
             return ("?nomarker", "")
     else:
-        tail = omsx_repl.screen_tail(raw, cmdline)
+        tail = (screen_tail_nofurn if nofurn else omsx_repl.screen_tail)(raw, cmdline)
         if tail is None:
             return ("?noecho", "")
     low = tail.lower()
@@ -1580,8 +1636,9 @@ def main() -> int:
                 mk = (rnote.split(":", 2)[1].split()[0]
                       if rnote.startswith("NOECHO:") else None)
                 islog = "log" in _row_rigs(rnote)
-                rc, rt = classify(rr, cmd, mk, log=islog)
-                zc, zt = classify(zr, cmd, mk, log=islog)
+                nofurn = rnote.startswith("NOFURN:")
+                rc, rt = classify(rr, cmd, mk, log=islog, nofurn=nofurn)
+                zc, zt = classify(zr, cmd, mk, log=islog, nofurn=nofurn)
                 cs = results[key].get("crunch", (None,))[0]
                 note = next(n for k, _, _, _, n in rows if k == key)
                 if "disk" in _row_rigs(note) and rc.startswith("?"):

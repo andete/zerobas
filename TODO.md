@@ -489,7 +489,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:16144 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:16184 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -655,7 +655,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:4710 (T-6FE392)8 (T-529ABE)` from `TODO.md:14881 (T-529ABE)`: a
+      `TODO.md:4750 (T-6FE392)8 (T-529ABE)` from `TODO.md:14921 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -3527,6 +3527,46 @@ list. **When a slice lands, grep this list for what it just shipped.**
       rule that stops before the furniture — not a case slot.
       ➡️ **FOUR LEFT: `AUTO CLOAD CSAVE INKEY$`** — one screen-furniture problem,
       the tape pair (nothing plays a tape), and one genuine keyboard block.
+      🟢 **D-KWAUTO, 2026-09-13: `AUTO` attributed — 4 → 3, and the row that taught
+      "read the WHOLE sweep summary" is the one that proves the rule held**
+      ([readings](scratchpad/kwauto_full.out), full sweep: **zero** DIVERGENT and
+      **zero** apparatus warnings, where the first `AUTO` attempt produced
+      DIVERGENT=22 + UNREADABLE=1).
+      🔴 **THE FILED BLOCKER AND THE REAL ONE WERE DIFFERENT PROBLEMS.** The filing
+      — *"INTERACTIVE: enters auto-line-number mode and swallows all following
+      input"* — describes the POISONING, and position solves that: the row is now
+      LAST in `SWEEP` and there is nothing behind it to eat. Proved before it was
+      believed, by sacrificing two rows to it: the harness flagged both
+      MIS-DELIVERED and then REFUSED on the CF-3300 rather than reporting garbage
+      ([readings](scratchpad/kwdrain_inputauto.out)).
+      🔴 **WHAT ACTUALLY STOOD IN THE WAY: LINE-ENTRY MODE PRINTS NO CLOSING
+      PROMPT.** `screen_tail` runs to the prompt, so with none it runs to the
+      bottom of the screen and collects the CF-3300's **function-key display**,
+      which zerobas does not show — the row would have read DIVERGENT for a
+      machine-configuration reason, exactly the `FILES`/`CSRLIN` row this drain
+      already threw away [[readout-blind-to-its-own-subject]].
+      🟢 **`NOFURN:` + `screen_tail_nofurn` IS THE FIX, AND IT IS KWSWEEP-LOCAL ON
+      PURPOSE.** `omsx_repl.screen_tail` is a shared leaf; one row does not justify
+      changing what every other probe reads. The echo anchor is still the harness's
+      own `_echo_idx`, so the two differ in the ROW SET and in nothing else, and
+      [`basic_probe_lptverb.py`](probes/basic/basic_probe_lptverb.py)'s
+      `screen_rows` already does the same `[:-1]` with the same justification.
+      ⚠️ **POSITION, NEVER CONTENT.** The obvious rule — drop a row reading
+      `color auto goto list run` — is wrong in this very file: the `keykw` row
+      REWRITES that line to `ZZQ auto goto list run`.
+      🎯 **THE READING IS THE LINE-ENTRY PROMPT ITSELF**: `100` on both machines,
+      the number `AUTO` was asked to start at. An absent `AUTO` parses `AUTO 100`
+      as a name followed by a number and answers `Syntax error`; an `AUTO` that
+      parsed and did nothing prints no prompt at all.
+      ⚠️ **AND THE PLACEMENT IS LOAD-BEARING, SO IT IS WRITTEN AS A FENCE** — a
+      banner comment above the row says it is placed, not sorted, and that anything
+      appended after it inherits the poisoning.
+      ➡️ **THREE LEFT: `CLOAD` `CSAVE` `INKEY$`** — the tape pair, which need a
+      tape the emulator can PLAY (nothing in this tree does; `cas_decode` is
+      WAV→bytes only, and a fixture would have to be RECORDED by driving one
+      openMSX pass with `CSAVE`, the cassette twin of `tools/make_test_dsk.py`),
+      and the one genuine keyboard block, which needs the injector's TIMING and
+      must not reopen D-LATCH.
       ⚠️ **THE PATTERN WAS TEN FOR TEN AND IS NOW TEN OF TWELVE — the tape and
       the printer log HELD.** Every other blocker examined this session — the display verbs' "cannot take a row", the multi-line words'
       "cannot be expressed", the CF-3300 oracle, the disk fixture (which needed a
@@ -5554,7 +5594,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:14881 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:14921 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
