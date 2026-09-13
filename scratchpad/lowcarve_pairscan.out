@@ -1,0 +1,20 @@
+low-region files scanned: 11
+top adjacent instruction pairs (count, then the pair):
+   16  ld (hl),a                    inc hl                        e.g. basic/float.asm:132
+   14  inc hl                       push hl                       e.g. basic/str-engine.asm:365
+   13  scf                          ret                           e.g. basic/str-engine.asm:122
+   13  or a                         ret z                         e.g. basic/str-engine.asm:412
+   11  ld a,(hl)                    or a                          e.g. basic/str-engine.asm:369
+   11  ld a,(hl)                    cp ')'                        e.g. basic/str-engine.asm:1030
+   11  or a                         ret                           e.g. basic/str-engine.asm:1192
+   10  ld e,a                       ld d,0                        e.g. basic/str-engine.asm:883
+    9  or a                         sbc hl,de                     e.g. basic/str-engine.asm:89
+    8  ld a,(FPERR)                 or a                          e.g. basic/str-engine.asm:199
+    8  ld a,b                       or a                          e.g. basic/str-engine.asm:411
+    8  push hl                      ld hl,(TKDEXP)                e.g. basic/float.asm:163
+    7  push hl                      pop ix                        e.g. basic/str-engine.asm:838
+    7  pop hl                       pop bc                        e.g. basic/str-engine.asm:1564
+    6  ld a,d                       or e                          e.g. basic/str-engine.asm:1105
+    6  ld (de),a                    inc de                        e.g. basic/str-engine.asm:1112
+    6  ex de,hl                     pop hl                        e.g. basic/input.asm:373
+    6  rrca                         rrca                          e.g. basic/float.asm:90
