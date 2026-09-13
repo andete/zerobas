@@ -1467,23 +1467,33 @@ wsrc_dexp_ok:
 wsrc_mbytes_ok:
                 ld      de,(WSRC)
                 inc     de                  ; DE -> source's mantissa byte 0
+                ld      c,$0F               ; D-NEXTCOST: the nibble mask, hoisted
 wsrc_unpack:
-                ; D-MULZERO follow-on: C holds the byte across the nibble split, where
-                ; `push af` / `pop af` used to -- 21 T-states per mantissa byte, and
-                ; this loop runs 63 times per `X=I*2+1` (9.1 operands x 7 bytes,
-                ; measured with a breakpoint counter). Same instruction count, same
-                ; bytes; the low region has none to spare.
+                ; 🔬 D-NEXTCOST (2026-09-13): C HOLDS THE MASK, NOT THE BYTE, and the
+                ; byte is RE-READ for its low nibble. `and c` is one byte where
+                ; `and $0F` is two, and it costs 4 T against 7, so dropping the stash
+                ; pays for the second read twice over: -3 B in the loop (+2 for the
+                ; hoist, net -1 in a region measured 0 B free on 2026-09-13) and
+                ; ~7 T per mantissa byte.
+                ; 🎯 WHY THIS LOOP: D-NEXTCOST counted it at FOURTEEN iterations per
+                ; empty `NEXT` -- two widen_src calls of seven bytes each -- because
+                ; the loop variable is a faithful 14-digit BCD double that for_get
+                ; unpacks and for_set repacks every iteration. It is ~15 % of an empty
+                ; FOR/NEXT profile (scratchpad/nextcost_counts.out).
+                ; ⚠️ The earlier `push af`/`pop af` this replaces was already removed
+                ; by D-MULZERO's follow-on; C was its stand-in and is now free for the
+                ; mask. `widen_src` documents C as clobbered and nothing after the
+                ; loop reads it (zero_fill touches only A, B, HL).
                 ld      a,(de)
-                ld      c,a
                 rrca
                 rrca
                 rrca
                 rrca
-                and     $0F
+                and     c
                 ld      (hl),a
                 inc     hl
-                ld      a,c
-                and     $0F
+                ld      a,(de)
+                and     c
                 ld      (hl),a
                 inc     hl
                 inc     de

@@ -489,7 +489,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:16742 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:16772 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -655,7 +655,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:5234 (T-6FE392)8 (T-529ABE)` from `TODO.md:15445 (T-529ABE)`: a
+      `TODO.md:5234 (T-6FE392)8 (T-529ABE)` from `TODO.md:15475 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -6078,7 +6078,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:15445 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:15475 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -7007,6 +7007,36 @@ list. **When a slice lands, grep this list for what it just shipped.**
       digit, which is exactly D-MULZERO's zero-skip shape and may be affordable.
       **(b) is the one to price first** because it is the bigger entry and may cost
       nothing. Neither is started; a carve pays for either.
+      🟢 **D-NEXTSKIP (2026-09-13): THE UNPACK LOOP PAYS FOR ITSELF — −1 B, AND THE
+      SPEED WIN IT WAS TRIED FOR DOES NOT EXIST.** Reported as a CARVE, because that
+      is what it measured as.
+      🔬 **WHAT WAS TRIED FIRST AND PRICED BY THE ASSEMBLER**: the zero-byte skip
+      shape (b) above — `or a` / `jr z` past the nibble split, since a loop counter
+      leaves five or six of seven mantissa bytes zero. **+3 B, and the build refused
+      it** with `STRING_ENGINE_OVERRAN_4000_HEADER__LOW_REGION_FULL`. The region's
+      own assertion is the honest pricer; no estimate was needed.
+      🎯 **SO THE LOOP WAS MADE TO PAY FOR IT.** It stashed the source byte in `C`
+      and masked with a 2-byte immediate twice; now `C` holds the MASK and the byte
+      is RE-READ for its low nibble. `and c` is one byte where `and $0F` is two and
+      costs 4 T against 7, so dropping the stash pays for the second read twice
+      over: **−3 B inside the loop, +2 for the hoist, net −1 B** and ~7 T per
+      mantissa byte. `widen_src` already documents `C` as clobbered and nothing
+      after the loop reads it (`zero_fill` touches only A, B, HL).
+      🔴 **AND THE SPEED IS A NULL RESULT, MEASURED NOT ASSUMED**: `FOR I=1 TO
+      2000:NEXT` reads **507 jiffies — the same figure as before the change** — and
+      the arithmetic row 2136 against 2140, inside the harness's own ±4-frame
+      variance ([readings](scratchpad/nextskip_speed.out)). ~7 T on 14 mantissa
+      bytes is ~100 T against a ~15 000 T iteration: **0.7 %, below the noise
+      floor**, exactly as the T-state arithmetic predicted before the run.
+      ➡️ **WHY IT SHIPS ANYWAY, AND THE DISTINCTION MATTERS**: D-BRKFRAME's poll
+      COST 7 B for no measurable speed and was reverted; this SAVES a byte for no
+      measurable speed, in the region this item names as the blocker for the real
+      fix. It is a carve, and carves are what the next optimisation needs.
+      📏 **WHAT THE REAL FIX WOULD COST, now priced**: skipping ONE zero byte saves
+      ~11 T for 3 B — not worth it. Skipping the REST of the loop once the remaining
+      source bytes are zero is worth ~500 T per call (~4 % of a `NEXT` across both
+      widen_src calls) but needs a backward scan and a corrected pad count, ~10 B.
+      **That is the slice, and it needs a ~10 B carve in the low region.**
       🎚️ TIER 4 — on-par speed: the interpreter is 2.5–3.8× slower (TIER 2, reasonable time, is met) — 17–26 % of it came back on 2026-09-11 (D-SPEEDPROF); measured on `FOR` `GOTO` `WHILE`, arithmetic and strings
       🤖 AUTONOMOUS — the charter half is ANSWERED (the STANDING sequencing of
       2026-09-02: speed is a real defect), so what remains under it is measurable work.
