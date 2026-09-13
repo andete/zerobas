@@ -82,6 +82,26 @@ shipped again this session as `CSAVE`:
 Plus: **a FIX silently un-attributes its own keyword** — attribution comes from
 OPEN items, so leave a row behind when closing a defect.
 
+## 🔴 AN EDIT SCRIPT NEVER SHARES A BACKGROUNDED COMMAND WITH A BATTERY
+
+Learned 2026-09-13, and it cost two silent failures. Batteries are backgrounded
+because they are slow; an edit script is foregrounded because **its output is the
+only proof it worked**. Bundled together, the script's `AssertionError` scrolled
+past under a green battery tail and TWO TODO.md filings were reported as landed
+when neither had — the D-TIER0 ruling-and-lesson block and the D-KWKNIFE block.
+The second was a cascade: its anchor was text the first would have created.
+
+⚠️ **The anchor that failed was self-inflicted too**: that block had been
+DE-INDENTED for the legend section and the later anchor still carried the item
+indentation. An anchor copied from what you MEANT to write is not an anchor.
+
+➡️ **Run the edit, READ its output, and only then start the battery.** After any
+filing, `grep` the file for the text you think you added: the assert proves the
+anchor matched, the grep proves the write landed. (This very rule needed two
+attempts — its own first anchor matched TWICE, because the file embeds the whole
+restart command and every heading appears in both halves.)
+
+
 ## 🔴 Re-verify every blocker before believing it
 
 **TEN FOR TEN**, plus the two retractions above. The display verbs' "cannot take a

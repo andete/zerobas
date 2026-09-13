@@ -126,6 +126,68 @@ ORDER.** Set after a night whose three commits were all TIER 5 or apparatus:
 | **TIER 4** | faster than or on par with the reference | the baseline is NOT 1.0 (D-INTERPSPEED §4) |
 | **TIER 5** | handles every error situation correctly | nesting depth 11, `+$$###`, string-temp-stack overflow, which of two errors wins |
 
+🎯 **RULED (Joost, 2026-09-13): "kwsweep SUPPORTED is not evidence for tier 1",
+then "let's call no tier established tier 0 to make it clear" — and, shown the
+BROAD reading, "yes, this is what I mean indeed". EVERY KEYWORD IS TIER 0.**
+An open TIER n item says a defect is FILED at n, **not** that n−1 was reached;
+a row that agrees is ONE AGREEMENT POINT. Neither is attainment, so the table
+no longer prints a ladder: every row reads TIER 0 and the text beside it says
+only what is KNOWN AGAINST the keyword.
+🔪 **THE NON-VACUITY HALF IS BUILT AND HAS ITS FIRST READING (D-KWKNIFE,
+2026-09-13, [`scratchpad/kwknife.py`](scratchpad/kwknife.py),
+[readings](scratchpad/kwknife.out)).** Cut a statement's dispatch entry in the
+BUILT ROM, re-install, re-run only that keyword's kwsweep row: a row still
+`SUPPORTED` with the handler dead is **BLIND**.
+| keyword | row | knifed verdict | |
+|---|---|---|---|
+| `POKE` `VPOKE` `SOUND` `RESTORE` `ERASE` `SWAP` | their happy rows | all **MISSING** | ✅ connected, 6 of 6 |
+🎯 **AND THE CLAIM IS DELIBERATELY SMALL, because D-TIER0's lesson is one day
+old**: the knife cuts the DISPATCH ENTRY, so the keyword becomes
+undispatchable — a TOTAL failure. A row that notices a total failure is
+**CONNECTED** to its keyword. It is NOT thereby shown to notice a SUBTLE one,
+and `docs/spec-basic-kwcover.md` §2 says exactly that: *"Not claimed: that a
+green sweep means the keyword is CORRECT. It means a total failure of its
+handler is noticed."* So this closes the **vacuity** question and leaves the
+**breadth** question untouched — both are needed to establish a tier.
+🔬 **WHY THE TABLE ENTRY AND NOT THE HANDLER**: handlers are shared (a shared
+tail is a label, not a decision — `ev_f_err` had eight jumps and only one was
+the subject), so cutting a handler can disable keywords the run never names.
+A `db token / dw handler` entry belongs to exactly one keyword.
+⚠️ **THE PLANT IS READ BACK BEFORE EVERY RUN.** An unplanted knife and a
+keyword with nothing to find report identically, which is how thirteen runners
+shipped inert [[a-knife-can-be-inert-because-the-build-did-not-happen]]. The
+ROM bytes are verified after writing and the run REFUSES if they are not what
+was written.
+📏 **THE SCALING NUMBER, which is what decides whether this reaches 159**: about
+a minute per keyword — one ROM patch, one re-install, one single-row sweep, no
+rebuild. ⚠️ **STATEMENT keywords only**: the `$FF` FUNCTION selectors dispatch
+through a `cp`/`jr` chain in `expr.asm`, not a table, so they need a different
+cut and are not covered by this reading.
+📏 **WHAT WOULD ESTABLISH A TIER, so this is a state with an exit and not a
+permanent disclaimer**: (a) **BREADTH** — agreement points covering a verb's
+real FORMS (argument shapes, optional clauses, modes, direct vs stored), not
+one expression; and (b) **NON-VACUITY** — a mutation spot-check showing those
+rows go RED if the keyword breaks. Both, together. (b) is the knife, demoted
+from primary attribution (it finds no defects) but exactly right for vacuity
+and cheap on a SAMPLE.
+🔴 **HOW THE WRONG READING GOT IN, because it is a class and not a typo.** The
+tool inferred "reached" from the ABSENCE of a filed defect — a fair
+bookkeeping device, and its own source said so: *"the 'reached' column becomes
+a measurement only when gate rows declare their keyword; until then this is
+the honest ceiling on what is known."* Then the drain filled the unattributed
+column and the group was labelled **`"1 — happy path reached, scored by
+kwsweep"`**. That single label merged absence-of-evidence with
+presence-of-evidence, and the caveat two hundred lines above it was never read
+against it. `kw3` was then added BY SYMMETRY, inheriting the flaw.
+⚠️ **AND THE RULE THAT WOULD HAVE CAUGHT IT WAS ALREADY IN THIS FILE, APPLIED
+ONE LEVEL TOO LOW**: *a case that agrees can agree for the wrong reason* was
+checked on every new ROW all session — `CSAVE` agreeing on an EMPTY capture,
+four wrong readings before one right one — while the COLUMN that aggregates
+those rows quietly promoted agreement to attainment. **An instrument can be
+careful per-measurement and still overclaim in aggregate, and the aggregate
+label is the one people read.**
+🎚️ **AND A COUNTABLE GOAL MADE IT FEEL LIKE PROGRESS**: the drain's 114 → 0 was
+a real number that really went down. What was wrong was never the count.
 🎯 **RULED (Joost, 2026-09-13), TWO STANDING ANSWERS:**
 1. **`kwsweep` MAY SIT AT `DIVERGENT > 0`.** The number means *unfixed defects
    the sweep can see*, and a filed row is NOT pinned back to zero — pinning
@@ -500,7 +562,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:17227 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:17289 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -666,7 +728,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:5267 (T-6FE392)8 (T-529ABE)` from `TODO.md:15878 (T-529ABE)`: a
+      `TODO.md:5329 (T-6FE392)8 (T-529ABE)` from `TODO.md:15940 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -6111,7 +6173,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:15878 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:15940 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
