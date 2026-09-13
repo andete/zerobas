@@ -1,0 +1,5 @@
+zb       recorded   580924 B | ZBNEW | ZBCLOAD"ZQ" | load error | ZBPRINT"[P9]" | [P9] | ZB
+omsx_repl: APPARATUS FAILURE -- boot-per-case delivery was mangled; nothing was measured.
+  MIS-ECHOED case 0 on Philips_VG_8020 (slot 5): typed 'PRINT"[P9]"', machine echoed '9]"' -- 8 leading char(s) swallowed, and the screen lost nothing, so no clear or scroll erased them. The line was delivered mangled (docs/spec-probe-echo.md). Body: ['NEW', '10 PRINT"[Z9]"', 'CSAVE"ZQ"', '@WAIT30', 'NEW', 'CLOAD"ZQ"', 'PRINT"[P9]"']
+            screen: ['MSX BASIC version 1.0', 'Copyright 1983 by Microsoft', '28815 Bytes free', 'Ok', 'NEW', 'Ok', '10 PRINT"[Z9]"', 'CSAVE"ZQ"', 'Ok', 'NEW', 'Ok', 'CLOAD"ZQ"', 'color  auto   goto   list   run']
+refcache: 0 hit, 1 miss, 1 stored

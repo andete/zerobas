@@ -88,6 +88,7 @@ import tempfile
 _sys.path.insert(0, _os.path.join(
     _os.path.dirname(_os.path.dirname(_os.path.abspath(__file__))), "disk"))  # bas_tokenise
 
+import cas_decode  # reads the recording back -- the NEEDS-BLANKTAPE: capture
 import cas_encode  # the clean-room .cas encoder -- the NEEDS-TAPE: fixture
 from bas_tokenise import make_multiline_program
 import omsx_repl  # typing-free KEYBUF-injection REPL driver
@@ -162,6 +163,7 @@ def _disk_image() -> str:
 # Tape rows are the slowest in the sweep; see _rig_kwargs for why these figures
 # and not the disk ones [[apparatus-is-part-of-the-measurement]].
 TAPE_TIMING = dict(step=5.0, cap_gap=90.0, timeout=1200.0)
+TAPE_MARK = "\x00TAPE\x00"
 TAPE_NAME = "ZQ"
 TAPE_PROGRAM = make_multiline_program([(10, 'PRINT"[Z9]"')], 0x8001)
 
@@ -180,6 +182,42 @@ def _tape_fixture() -> str:
         atexit.register(_drop_tape_temps)
     _TAPE_TEMPS.append(fh.name)
     return fh.name
+
+
+def _tape_blank() -> str:
+    """A path for a BLANK recording tape. openMSX's `cassetteplayer new` creates
+    the file itself, so this hands back a name that does NOT exist yet -- for this
+    rig the fixture IS the absence."""
+    fh = tempfile.NamedTemporaryFile(suffix=".wav", delete=False)
+    fh.close()
+    _os.unlink(fh.name)
+    if not _TAPE_TEMPS:
+        atexit.register(_drop_tape_temps)
+    _TAPE_TEMPS.append(fh.name)
+    return fh.name
+
+
+def _tape_readback(path: str) -> str:
+    """The BYTES on the recorded tape, as one hex string -- this rig's reading.
+
+    🔴 IT IS DECODED IN PYTHON, NOT HEXED THROUGH Tcl like the printer log: a
+    recording is ~580 KB, and the `screen_printer` capture would push more than a
+    megabyte of hex per case through the control socket. The probe created the
+    file, so it can simply read it."""
+    # 🔴 AN ABSENT TAPE IS AN APPARATUS FAILURE, NOT A READING, and it must not be
+    # allowed to look like one: the first cut RETURNED "<no tape written>" and the
+    # row scored SUPPORTED because both sides returned it -- two missing fixtures
+    # agreeing with each other. (The cause was this rig recovering the path by
+    # slicing its own Tcl string at the wrong offset.)
+    if not _os.path.exists(path):
+        raise SystemExit(
+            "kwsweep: APPARATUS FAILURE -- the NEEDS-BLANKTAPE: rig recorded no "
+            f"tape at {path}. `cassetteplayer new` did not create it, so nothing "
+            "was measured; do not read the row's verdict.")
+    data, _info = cas_decode.decode_file(path, stop_bits=1)
+    if not data:
+        return "<tape unreadable>"
+    return " ".join("%02X" % c for c in data)
 
 
 def _drop_tape_temps() -> None:
@@ -234,7 +272,8 @@ def _printer_plug(path: str) -> tuple[str, ...]:
 # and no row needs one yet, because CSAVE turns out to have no screen-observable
 # consequence at all (see the item): that rig arrives with the row that uses it.
 _RIG_TAGS = {"NEEDS-DISK:": "disk", "NEEDS-PRINTER:": "printer",
-             "NEEDS-LOG:": "log", "NEEDS-TAPE:": "tape"}
+             "NEEDS-LOG:": "log", "NEEDS-TAPE:": "tape",
+             "NEEDS-BLANKTAPE:": "tapew"}
 
 
 # A flag tag is a prefix tag that selects no apparatus -- it changes how the
@@ -289,6 +328,18 @@ def _rig_kwargs(rigs: tuple[str, ...]) -> dict:
         if "log" in rigs:
             kw["capture"] = ("screen_printer", path)
             kw["batch"] = False
+    if "tapew" in rigs:
+        # 🔴 CSAVE'S OUTPUT NEVER REACHES THE SCREEN -- it reaches the TAPE, which
+        # is the same shape `LLIST` had and the same answer: read the artefact,
+        # not the display. Boot-per-case for the same reason the printer log needs
+        # it, and with a bonus this rig gets for free: `cassetteplayer new`
+        # re-creates the file each boot, so every case records onto a FRESH tape
+        # instead of appending to its predecessors'.
+        kw.update(TAPE_TIMING)
+        path = _tape_blank()
+        kw["prologue"] = (f"cassetteplayer new {{{path}}}",)
+        kw["batch"] = False
+        kw["_tape_path"] = path
     if "tape" in rigs:
         # Both tape rigs are SLOW by construction: a 16000-cycle leader is ~7 s of
         # emulated time before a single byte moves, and a search reads the whole
@@ -1058,6 +1109,13 @@ SWEEP: list[tuple[str, str, str | None, str, str]] = [
      "printed as it reads: a hang and a silent no-op look identical at the `Ok` "
      "prompt, which is exactly how D-CASTAIL2 hid for four slices. Absent => "
      "syntax error."),
+    ("csave",   'csave"zq"',  'PRINT"[Z9]":CSAVE"ZQ"',  "stored",
+     "NEEDS-BLANKTAPE: " "NOFURN: " "🔴 THE ROW READS THE TAPE, NOT THE SCREEN, "
+     "and that is measured: every screen form of this row scored SUPPORTED on an "
+     "EMPTY capture (D-KWTAPE2) because CSAVE prints nothing and ends the program. "
+     "The reading is the recording DECODED BACK TO BYTES -- header id, name and "
+     "the program image with its 7-byte terminator, the very thing D-CASTAIL2 "
+     "fixed. `[Z9]` on the screen half additionally says the program ran at all."),
     ("close",   "close",
      'OPEN"W.TXT"FOR OUTPUT AS#1:PRINT#1,"ABC":CLOSE#1:OPEN"W.TXT"FOR INPUT AS#1:A=LOF(1):CLOSE#1:PRINT"[";A;"]"', "stored",
      "NEEDS-DISK: " "the FLUSH is the readback: 6 bytes are on the disk only because "
@@ -1435,7 +1493,7 @@ def printer_text(raw: str | None) -> str:
 
 def classify(raw: str | None, cmdline: str,
              marker: str | None = None,
-             log: bool = False, nofurn: bool = False) -> tuple[str, str]:
+             log: bool | str = False, nofurn: bool = False) -> tuple[str, str]:
     """(outcome_class, text) for one executed case.
 
     class is "value" (ran, printed something), "error:<phrase>", or "?<reason>".
@@ -1451,6 +1509,15 @@ def classify(raw: str | None, cmdline: str,
     which is the differential -- while the TEXT compared becomes the printer log.
     Scoring the screen half of a log row would compare two blank screens and call
     it agreement [[an-unnamed-outcome-reads-as-no-outcome]]."""
+    if log == "tape":
+        # The screen says the program RAN (its class), the tape says what CSAVE
+        # actually wrote (the text compared) -- the same division of labour as a
+        # printer-log row, minus the hex, because this capture is not hex.
+        screen, _, tape = (raw or "").partition(TAPE_MARK)
+        cls, _ = classify(screen, cmdline, marker, log=False, nofurn=nofurn)
+        if cls.startswith("?"):
+            return (cls, "")
+        return (cls, tape or "<no tape reading>")
     if log:
         # 🔴 BOTH HALVES OF A `screen_printer` CAPTURE ARE HEX, including the
         # screen one -- `__hex_v` does not come back decoded the way a plain
@@ -1664,8 +1731,22 @@ def main() -> int:
                 mkw.update(_rig_kwargs(rig))
             # a rig may force its own delivery mode (see _rig_kwargs: `log` needs
             # boot-per-case or every row reads its predecessors' printer output)
+            tape_out = mkw.pop("_tape_path", None)
+            if tape_out is not None:
+                assert len(idx) == 1, (
+                    "a NEEDS-BLANKTAPE: group holds ONE row: the rig re-creates "
+                    "one tape per boot, so only the last case's recording survives")
             got = omsx_repl.run_cases(mach, [specs[i] for i in idx],
                                       batch=mkw.pop("batch", batch), **mkw)
+            if tape_out is not None:
+                # 🔴 A MARKER, NOT `screen_printer`'s `7c`: this rig takes the
+                # DEFAULT capture, which comes back DECODED, while both halves of a
+                # `screen_printer` capture are hex. Appending hex to decoded text
+                # made `bytes.fromhex` fail and the row read `?noecho` on both
+                # sides -- honest, but only because that guard exists. A NUL cannot
+                # appear in a 40x24 screen scrape, so the split is unambiguous.
+                got = [(g or "") + TAPE_MARK + _tape_readback(tape_out)
+                       for g in got]
             for i, g in zip(idx, got):
                 out[i] = g
         return out
@@ -1712,7 +1793,13 @@ def main() -> int:
                 # (see marker_tail). Everything else keeps the echo anchor.
                 mk = (rnote.split(":", 2)[1].split()[0]
                       if rnote.startswith("NOECHO:") else None)
-                islog = "log" in _row_rigs(rnote)
+                rrigs = _row_rigs(rnote)
+                # `tapew` reads its artefact through the same two-half split as the
+                # printer log, for the same reason: the verb's output is not on the
+                # screen. The second half is the reading; the screen half only says
+                # the program ran.
+                islog = ("tape" if "tapew" in rrigs
+                         else ("log" in rrigs))
                 nofurn = "NOFURN:" in _row_prefix_tags(rnote)
                 rc, rt = classify(rr, cmd, mk, log=islog, nofurn=nofurn)
                 zc, zt = classify(zr, cmd, mk, log=islog, nofurn=nofurn)

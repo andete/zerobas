@@ -489,7 +489,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:16638 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:16668 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -655,7 +655,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:5204 (T-6FE392)8 (T-529ABE)` from `TODO.md:15375 (T-529ABE)`: a
+      `TODO.md:5234 (T-6FE392)8 (T-529ABE)` from `TODO.md:15405 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -3728,6 +3728,36 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DIAGNOSIS IN THIS TITLE WAS BACKWARDS.** Found 2026-09-13 by D-CASORACLE while building
       the tape oracle the keyword drain asked for. The VG-8020 **HANGS** searching a
       tape zerobas wrote; every other direction works.
+      🟢 **D-KWTAPE3 (2026-09-13): `CSAVE` IS ATTRIBUTED BY READING THE TAPE — the
+      "no known gap" list is down to ONE word, `INKEY$`.** `NEEDS-BLANKTAPE:` is
+      the fifth rig and the second CAPTURE rather than a device: openMSX records
+      onto a fresh tape, and the row's reading is that recording DECODED BACK TO
+      BYTES.
+      ```
+      D3 x10 | 5A 51 20 20 20 20 | 13 80 0A 00 91 22 5B 5A 39 5D 22 3A 9A 22 5A 51 22 00 | 00 00 | 00 x7
+      header    name "ZQ    "      the tokenised PRINT"[Z9]":CSAVE"ZQ"              end     D-CASTAIL2's terminator
+      ```
+      — identical on both machines, and it is the only row in the sweep that
+      exercises what D-CASTAIL2 fixed. Boot-per-case comes free with the rig:
+      `cassetteplayer new` re-creates the file each boot, so every case records
+      onto a fresh tape instead of appending to its predecessors'.
+      🔴 **FOUR WAYS THIS ROW WENT GREEN WHILE SEEING NOTHING, all caught before it
+      shipped and all the SAME failure wearing different clothes**:
+      | the row read | why it agreed about nothing |
+      |---|---|
+      | `''` | CSAVE prints nothing and ends the program — no screen witness exists (D-KWTAPE2) |
+      | `'[Z9]'` | the tape half was appended as plain ASCII to a capture the splitter never split — silently dropped |
+      | `?noecho` both sides | appended HEX to a capture that comes back DECODED — only a `screen_printer` capture is hex |
+      | `'<no tape written>'` | the rig recovered its own path by slicing its Tcl string at the wrong offset, so no tape existed |
+      ⚠️ **THE LAST ONE IS THE INSTRUCTIVE ONE**: a missing fixture agreeing with a
+      missing fixture scored SUPPORTED, because the absence was reported as a
+      READING. It now raises an apparatus failure instead
+      [[an-instrument-can-fail-the-way-the-thing-it-replaced-failed]].
+      🎯 **AND EVERY ONE OF THE FOUR WAS CAUGHT BY LOOKING AT THE VALUE, not at the
+      verdict.** All four printed `SUPPORTED` or an honest `UNREADABLE`; none of
+      them printed a wrong answer. The sweep's own rule — read the whole summary,
+      then read what the row actually SAW — is what separated them, and it is worth
+      more than the row.
       🟢 **D-KWTAPE2 (2026-09-13): `CLOAD` IS ATTRIBUTED — the drain's "no known
       gap" list is down to `CSAVE` and `INKEY$`.** `NEEDS-TAPE:` is the fourth rig
       (after disk, printer and log): a clean-room `.cas` carrying one known program,
@@ -6048,7 +6078,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:15375 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:15405 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
