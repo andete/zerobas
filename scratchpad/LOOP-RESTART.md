@@ -6,7 +6,7 @@ session and the loop resumes exactly where it stopped.
 
 ## Where things stand
 
-* Tree CLEAN and pushed at `4036a9c4`. Recount everything — never quote a number
+* Tree CLEAN and pushed at `ad7334af`. Recount everything — never quote a number
   from this file.
 * 🟢 **EVERY TIER 1 THE DRAIN PRODUCED IS CLOSED** (`NEW` `FILES` `LFILES`
   `MERGE`, plus `LOAD` which only the MERGE sweep could have found), and **the
@@ -32,51 +32,48 @@ session and the loop resumes exactly where it stopped.
   and `INPUT` (`INPUT #n` reads a file), each filed next to a word with a real
   blocker and inheriting it by adjacency. Check the shape before the blocker.
 
-## 🛑 THE LOOP STOPPED HERE, AND WHY — read this before taking any item
+## Where things stand — JOOST RULED, and the oracle work found a TIER 1
 
-The drain ran **114 → 3** and then hit a wall that is a DECISION, not a puzzle.
-`CLOAD CSAVE INKEY$` each need APPARATUS rather than a cleverer row, and that is
-filed as its own **🙋 NEEDS-JOOST** item in TODO.md with the prices in a table.
+Joost answered the 🙋 item with **"make the 3 missing oracles"**. The first one
+paid immediately and not as expected: building it exposed a TIER 1 defect and
+retired the 🙋 blocker for `CLOAD` entirely.
 
-🔴 **A TICK THAT FINDS NOTHING ELSE PERMITTED SHOULD REPORT AND STOP, NOT BUILD.**
-The standing order allows apparatus "if it blocks the drain ruling" — these three
-do, so the letter of it permits building them. The reason not to is that they are
-THREE SEPARATE pieces of apparatus for THREE words, after a run whose cheap words
-had a very high hit rate and whose expensive tail does not. That is a
-value judgement about Joost's project, and it is his.
+* 🟢 **`CLOAD`'s oracle is DONE.** `omsx_repl.run_cases` takes `cassette=` (the
+  `-cassetteplayer` seam every cas probe used and none could reach through the
+  harness). The VG-8020 reads a clean-room `.cas` — the earlier "no oracle" was a
+  FIXTURE that was itself the defect. A `NEEDS-TAPE:` kwsweep rig is now small.
+* 🔴 **NEW TIER 1: a tape zerobas writes cannot be read by a real MSX.** Filed with
+  the full matrix; `CSAVE`'s kwsweep row should wait for the fix, because the
+  defect IS its subject.
+* `INKEY$` is untouched — still the injector's timing, still the one to do last.
 
-## What the drain bought, so the price has something to be judged against
+## The next slice — the tape-writer COMPENSATION, and it is well specified
 
-**Four TIER 1 defects came out of this list** — `NEW`, `FILES`, `LFILES`, `MERGE` —
-plus `LOAD`, which only the `MERGE` sweep could have found. All are FIXED. The
-kwsweep is clean for the first time (`DIVERGENT=0`), and TIER 1 is down to the
-umbrella item whose own exit criterion is this list reaching zero.
+**MECHANISM CONFIRMED**: the per-bit loop overhead lands inside the LAST
+half-period of every bit.
 
-## The last measurement, finished: `CLOAD` has NO ORACLE here
+| bit | VG-8020 | zerobas |
+|---|---|---|
+| `0` (one low-tone cycle) | `18 19` | `18` **`20`** |
+| `1` (two high-tone cycles) | `9 9 9 9` | `9 9 9` **`11`** |
 
-| run | result |
-|---|---|
-| zb `CSAVE"ZQ"` → 124 486-byte WAV, then zb `CLOAD"ZQ"` | **`Found:ZQ`** — the control |
-| zb `LOAD"CAS:ZQ"` on the same tape | **`Found:ZQ`** |
-| VG-8020, both verbs, same tape | nothing, no prompt |
-| CF-3300, both verbs, same tape | nothing, no prompt |
+Inside a `1` bit the FIRST cycle is clean, so it is the BIT boundary, not
+`cas_cycle` (a tight `djnz` pair, constant by construction). The stretch is ~2
+samples ≈ 160 T-states ≈ 12 `djnz` iterations against `CAS_HHALF` = 50 — about a
+quarter of a short half, enough to push `9` to `11`, above the midpoint between the
+tones and unclassifiable by a threshold derived from the leader.
 
-🟢 The fixture and `cas_encode.py` are exonerated three ways; it is not
-`CLOAD`-specific; the CF-3300 was tried because D-KWORACLE is the precedent.
-⚠️ **ONE UNTESTED DIFFERENCE**: the cassette probes pass `-cassetteplayer` on the
-openMSX COMMAND LINE and run on the repack machine only; these runs used the Tcl
-prologue `run_cases` supports. Testing the command-line form against a REFERENCE
-means going around `run_cases` — apparatus, and the reason this stopped.
-
-## If Joost says "build it", the order is
-
-1. **`CLOAD`/`CSAVE`'s oracle** — try `-cassetteplayer` against a reference outside
-   `run_cases`; if that works, both words likely fall together, and the readback is
-   already free (`Found:<name>` reaches the screen).
-2. **`CSAVE`'s WAV-decode capture** — `basic_probe_cassave.py` has the decode;
-   `NEEDS-LOG:` is the precedent for a per-rig capture.
-3. **`INKEY$`'s injector timing** — a HARNESS change, and D-LATCH/D-LATCH2 are the
-   races it must not reopen. Do this one last.
+➡️ **THE FIX**: shorten the trailing low half of each bit by the per-bit overhead
+so the total stays correct — a `cas_cycle_last` variant taking a reduced count,
+with the leader loop keeping the uncompensated one (the leader measures clean).
+⚠️ **Byte cost unmeasured** — the tape ROM is its own region; price it first.
+⚠️ **FOUR HYPOTHESES ARE ALREADY DEAD** and are in the item: leader length (rebuilt
+to the reference's own), inter-block silence (spliced), leading silence (spliced),
+mount form. Do not re-run them.
+🎯 **THE TEST IS DECISIVE AND WRITTEN**: `scratchpad/kwdrain_wavread.py` (the VG
+reads a tape zerobas wrote, with a prompt witness) and
+`scratchpad/kwdrain_wavhist.py`, which must come back CLEANLY BIMODAL — nothing
+between the tones, which is what the reference produces.
 
 ## 🔴 Two staging traps, both paid for on 2026-09-12/13
 
@@ -142,4 +139,4 @@ a pattern that appears in the polling command.
 
 Paste this into a fresh session:
 
-    /loop continue autonomously on zerobas — 🛑 READ THE STOP CONDITION AT THE TOP OF scratchpad/LOOP-RESTART.md FIRST. The "no known gap" drain ran 114 -> 3 and the last three words (CLOAD CSAVE INKEY$) are a 🙋 NEEDS-JOOST item: each needs APPARATUS rather than a row, the prices are in that item, and a tick that finds nothing else permitted should REPORT AND STOP rather than build them. Only pick work up again if Joost has ruled, or if `make tiers` shows something new at TIER 1/2/3. Run `make tiers`; recount keywords with `python3 tools/tier_table.py --keywords` — never quote a count. ⚠️ `auto` MUST STAY LAST IN SWEEP (banner comment says so). Standing rules if there IS work: full `make gates` before each commit and never commit red; an item may carry only ONE marker (todo-marker-check refuses 🙋 and 🤖 together); 🔴 AFTER ANY basic/ OR sub/ CHANGE stage zerobas-main-eu.ips/.bps WITH the commit; 🔴 `check_todo_citations.py --fix` REWRITES EVERY DOC THAT CITES A MOVED BLOCK — five files beyond TODO.md every time; read `git status --short` as a LIST; after a `--fix` re-run every gate that READS TODO.md; `rm -rf build && make basic-reloc` for any wall figure, and BACK UP build/kwsweep-verdicts.json first; `test -e <path> && exit 1` before any `cat >` heredoc; stage explicit paths, `git add -A` banned; commit message to a FILE with `git commit -F`; commit AND push after each fix without asking; never write a tracked file while a battery runs; re-run the five battery-excluded targets by hand after any slice touching a shared leaf; NEVER poll with a pattern that matches the polling command itself — use the background task's own completion notification; READ the output of every edit script.
+    /loop continue autonomously on zerobas — 🔴 TIER 1 BEFORE ANYTHING ELSE. Read scratchpad/LOOP-RESTART.md FIRST, then the item's own block in TODO.md to its END. Run `make tiers`; recount keywords with `python3 tools/tier_table.py --keywords` — never quote a count. THIS SLICE: the TAPE-WRITER COMPENSATION. A tape zerobas writes cannot be read by a real MSX, and the MECHANISM IS CONFIRMED: the per-bit loop overhead lands inside the LAST half-period of every bit (`0` reads `18 20` against the reference's `18 19`; `1` reads `9 9 9 11` against `9 9 9 9`), which is above the midpoint between the tones and unclassifiable by a threshold derived from the leader. Inside a `1` bit the FIRST cycle is clean, so it is the BIT boundary, not `cas_cycle` — a tight `djnz` pair, constant by construction. THE FIX: shorten the trailing low half of each bit by the per-bit overhead (~2 samples ≈ 160 T-states ≈ 12 `djnz` iterations, against CAS_HHALF = 50) so the total stays correct — a `cas_cycle_last` variant taking a reduced count, with the leader loop keeping the uncompensated one, because the leader measures clean. ⚠️ PRICE THE TAPE ROM FIRST: it is its own region and the byte cost is unmeasured. ⚠️ FOUR HYPOTHESES ARE ALREADY DEAD and are in the item — leader length (rebuilt to the reference's own length), inter-block silence (spliced in), leading silence (spliced in), mount form. DO NOT re-run them. 🎯 THE TEST IS WRITTEN AND DECISIVE: scratchpad/kwdrain_wavread.py (the VG-8020 reads a tape zerobas wrote, with a prompt witness — `PRINT"[P9]"` after the CLOAD, because a hang and a silent completion look identical without it) and scratchpad/kwdrain_wavhist.py, which must come back CLEANLY BIMODAL with nothing between the tones. ⚠️ tape.asm changes rebuild the MAIN ROM, so stage zerobas-main-eu.ips/.bps WITH the commit — patch-freshness-check only sees the omission one commit LATER. Standing rules: full `make gates` before each commit and never commit red; an item may carry only ONE marker; 🔴 `check_todo_citations.py --fix` REWRITES EVERY DOC THAT CITES A MOVED BLOCK — five files beyond TODO.md every time; read `git status --short` as a LIST; after a `--fix` re-run every gate that READS TODO.md; `rm -rf build && make basic-reloc` for any wall figure, and BACK UP build/kwsweep-verdicts.json first; `test -e <path> && exit 1` before any `cat >` heredoc; stage explicit paths, `git add -A` banned; commit message to a FILE with `git commit -F`; commit AND push after each fix without asking; never write a tracked file while a battery runs; re-run the five battery-excluded targets by hand after any slice touching a shared leaf; NEVER poll with a pattern that matches the polling command itself — use the background task's own completion notification; READ the output of every edit script.
