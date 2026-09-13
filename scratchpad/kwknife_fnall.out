@@ -1,0 +1,49 @@
+knife: statement handlers -> stmt_error $4300; a row still SUPPORTED is BLIND
+
+  EOF      row eof        knifed -> MISSING      LOAD-BEARING
+  LOF      row lof        knifed -> DIVERGENT    LOAD-BEARING
+  DSKF     row dskf       knifed -> DIVERGENT    LOAD-BEARING
+  MKI$     row mki        0 `cp $AE` site(s) with an ev_* target — refusing / 0 occurrence(s) in ev_ff_argtab — refusing
+  CVI      row cvi        knifed -> MISSING      LOAD-BEARING
+  MKS$     row mks        0 `cp $AF` site(s) with an ev_* target — refusing / 0 occurrence(s) in ev_ff_argtab — refusing
+  MKD$     row mkd        0 `cp $B0` site(s) with an ev_* target — refusing / 0 occurrence(s) in ev_ff_argtab — refusing
+  CVS      row cvs        knifed -> MISSING      LOAD-BEARING
+  CVD      row cvd        knifed -> MISSING      LOAD-BEARING
+  PEEK     row peek       knifed -> MISSING      LOAD-BEARING
+  ELSE     row elsekw     0 `cp $A1` site(s) with an ev_* target — refusing / 0 occurrence(s) in ev_ff_argtab — refusing
+  VPEEK    row vpeek      knifed -> MISSING      LOAD-BEARING
+  INP      row inpkw      knifed -> MISSING      LOAD-BEARING
+  POS      row pos        knifed -> MISSING      LOAD-BEARING
+  LPOS     row lposkw     knifed -> MISSING      LOAD-BEARING
+  LEN      row len        0 `cp $92` site(s) with an ev_* target — refusing / 0 occurrence(s) in ev_ff_argtab — refusing
+  LEFT$    row left       0 `cp $81` site(s) with an ev_* target — refusing / 0 occurrence(s) in ev_ff_argtab — refusing
+  RIGHT$   row right      0 `cp $82` site(s) with an ev_* target — refusing / 0 occurrence(s) in ev_ff_argtab — refusing
+  MID$     row mid        0 `cp $83` site(s) with an ev_* target — refusing / 0 occurrence(s) in ev_ff_argtab — refusing
+  STR$     row str        0 `cp $93` site(s) with an ev_* target — refusing / 0 occurrence(s) in ev_ff_argtab — refusing
+  ASC      row asc        0 `cp $95` site(s) with an ev_* target — refusing / 0 occurrence(s) in ev_ff_argtab — refusing
+  CHR$     row chr        0 `cp $96` site(s) with an ev_* target — refusing / 0 occurrence(s) in ev_ff_argtab — refusing
+  HEX$     row hex        0 `cp $9B` site(s) with an ev_* target — refusing / 0 occurrence(s) in ev_ff_argtab — refusing
+  OCT$     row oct        0 `cp $9A` site(s) with an ev_* target — refusing / 0 occurrence(s) in ev_ff_argtab — refusing
+  BIN$     row bin        0 `cp $9D` site(s) with an ev_* target — refusing / 0 occurrence(s) in ev_ff_argtab — refusing
+  FRE      row fre        knifed -> MISSING      LOAD-BEARING
+  SPACE$   row space      0 `cp $99` site(s) with an ev_* target — refusing / 0 occurrence(s) in ev_ff_argtab — refusing
+  ABS      row abs        0 `cp $86` site(s) with an ev_* target — refusing / 0 occurrence(s) in ev_ff_argtab — refusing
+  SGN      row sgn        0 `cp $84` site(s) with an ev_* target — refusing / 0 occurrence(s) in ev_ff_argtab — refusing
+  INT      row int        0 `cp $85` site(s) with an ev_* target — refusing / 0 occurrence(s) in ev_ff_argtab — refusing
+  FIX      row fix        0 `cp $A1` site(s) with an ev_* target — refusing / 0 occurrence(s) in ev_ff_argtab — refusing
+  CINT     row cint       0 `cp $9E` site(s) with an ev_* target — refusing / 0 occurrence(s) in ev_ff_argtab — refusing
+  CSNG     row csng       0 `cp $9F` site(s) with an ev_* target — refusing / 0 occurrence(s) in ev_ff_argtab — refusing
+  CDBL     row cdbl       0 `cp $A0` site(s) with an ev_* target — refusing / 0 occurrence(s) in ev_ff_argtab — refusing
+  SQR      row sqr        0 `cp $87` site(s) with an ev_* target — refusing / 0 occurrence(s) in ev_ff_argtab — refusing
+  ATN      row atn        0 `cp $8E` site(s) with an ev_* target — refusing / 0 occurrence(s) in ev_ff_argtab — refusing
+  EXP      row exp        0 `cp $8B` site(s) with an ev_* target — refusing / 0 occurrence(s) in ev_ff_argtab — refusing
+  LOG      row log        0 `cp $8A` site(s) with an ev_* target — refusing / 0 occurrence(s) in ev_ff_argtab — refusing
+  SIN      row sin        0 `cp $89` site(s) with an ev_* target — refusing / 0 occurrence(s) in ev_ff_argtab — refusing
+  COS      row cos        0 `cp $8C` site(s) with an ev_* target — refusing / 0 occurrence(s) in ev_ff_argtab — refusing
+  TAN      row tan        0 `cp $8D` site(s) with an ev_* target — refusing / 0 occurrence(s) in ev_ff_argtab — refusing
+  RND      row rnd        0 `cp $88` site(s) with an ev_* target — refusing / 0 occurrence(s) in ev_ff_argtab — refusing
+  STICK    row stick      knifed -> MISSING      LOAD-BEARING
+  STRIG    row strigkw    knifed -> DIVERGENT    LOAD-BEARING
+  PDL      row pdlkw      knifed -> DIVERGENT    LOAD-BEARING
+  PAD      row padkw      knifed -> SUPPORTED    🔴 BLIND
+  LOC      row loc        knifed -> DIVERGENT    LOAD-BEARING

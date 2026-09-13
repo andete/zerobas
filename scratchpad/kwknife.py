@@ -161,11 +161,27 @@ def record(kw, row, verdict, mode):
         pin = {"rows": {}}
     pin["written"] = time.strftime("%Y-%m-%d %H:%M:%S")
     pin["rom_fingerprint"] = knife_guard.hashes()
-    pin.setdefault("rows", {})[kw] = {
-        "row": row, "verdict": verdict, "mode": mode,
-        "connected": verdict != "SUPPORTED", "weak": bool(WEAK.get(row))}
+    # 🔴 CONNECTED IS "ANY CUT NOTICED", NOT "THE LAST CUT NOTICED". A keyword can
+    # have both a statement and a function dispatch, and its ROW exercises only one
+    # of them -- so the other cut legitimately changes nothing. Measured 2026-09-13:
+    # the function sweep proved BASE, TIME and VDP connected, then the statement
+    # sweep overwrote their entries with its own SUPPORTED result and the pin
+    # reported them unconnected. Per-mode verdicts are kept and `connected` is their
+    # OR, so sweep ORDER can no longer change the answer.
+    row_rec = pin.setdefault("rows", {}).setdefault(
+        kw, {"row": row, "modes": {}, "weak": bool(WEAK.get(row))})
+    row_rec["row"] = row
+    row_rec["weak"] = row_rec.get("weak") or bool(WEAK.get(row))
+    row_rec.setdefault("modes", {})[mode] = verdict
+    row_rec["connected"] = any(v != "SUPPORTED" for v in row_rec["modes"].values())
+    row_rec["verdict"] = verdict
     os.makedirs(os.path.dirname(PIN), exist_ok=True)
-    json.dump(pin, open(PIN, "w", encoding="utf-8"), indent=1, sort_keys=True)
+    # 🔴 CLOSE THE FILE. `json.dump(..., open(...))` leaves the handle to the
+    # garbage collector: `open(...,"w")` truncates AT ONCE, so an unflushed buffer
+    # means the next read finds an empty file, the merge silently restarts from
+    # scratch, and a pin that held 77 keywords comes back holding 12.
+    with open(PIN, "w", encoding="utf-8") as fh:
+        json.dump(pin, fh, indent=1, sort_keys=True)
 
 
 def enumerate_targets():
@@ -243,6 +259,69 @@ def enumerate_targets():
         i += 1
     return out, i
 
+def enumerate_fn_targets():
+    """Every FUNCTION keyword (a 2-byte `$FF <sel>` token in kwtable.inc) paired
+    with the kwsweep row that claims it.
+
+    🔴 TWO DISPATCH SHAPES, TWO CUTS. Most selectors are tested by a `cp <SEL>` /
+    `jp z,<handler>` chain in expr.asm, which `plant_fn` cuts by changing the
+    comparison operand. The single-numeric-argument group instead lives in
+    `ev_ff_argtab` and is matched by `cpir` — there is no `cp` to patch, so the cut
+    is the TABLE BYTE itself. A keyword reachable by neither is reported, never
+    guessed at."""
+    tg, _ = enumerate_targets()          # reuse the row mapping; ignore its stmt list
+    sys.path.insert(0, os.path.join(ROOT, "tools"))
+    sys.path.insert(0, os.path.join(ROOT, "probes", "basic"))
+    import tier_table
+    import basic_probe_kwsweep as sweep
+    kwset = set(tier_table.kwtable_keywords())
+    kw2row = {}
+    for row in sweep.SWEEP:
+        key, body = row[0], row[1]
+        if row[2] is None:
+            continue
+        kw = tier_table.stmt_keyword(body, kwset)
+        if not kw:
+            continue
+        WEAK[key] = (row[4] if len(row) > 4 else "").startswith("WEAK:")
+        base = kw.lower().rstrip("$")
+        if kw not in kw2row and (key == base or key.startswith(base)):
+            kw2row[kw] = key
+        kw2row.setdefault(kw, key)
+    eq = {}
+    for m in re.finditer(r"^(\w+)\s+equ\s+\$([0-9A-Fa-f]+)",
+                         io.open(os.path.join(ROOT, "basic", "sysvars.inc"),
+                                 encoding="utf-8").read(), re.M):
+        eq[m.group(1)] = int(m.group(2), 16)
+    out = []
+    for m in re.finditer(r'db\s+\d+,"([^"]+)",2,\w+,(\w+)',
+                         io.open(os.path.join(ROOT, "basic", "kwtable.inc"),
+                                 encoding="utf-8").read()):
+        kw, sel = m.group(1), eq.get(m.group(2))
+        if sel is not None and kw in kw2row:
+            out.append((kw, kw2row[kw], sel))
+    return out
+
+
+def plant_argtab(tok):
+    """Cut a cpir-dispatched selector by removing its byte from `ev_ff_argtab`."""
+    st = syms().get("ev_ff_argtab")
+    ln = syms().get("ev_ff_argtab_len")
+    if st is None or ln is None:
+        return None, "no ev_ff_argtab symbols"
+    rom = bytearray(io.open(ROM, "rb").read())
+    where = [st + i for i in range(ln) if rom[st + i] == tok]
+    if len(where) != 1:
+        return None, f"{len(where)} occurrence(s) in ev_ff_argtab — refusing"
+    off = where[0]
+    orig = bytes(rom[off:off + 1])
+    rom[off] = DEADTOK
+    io.open(ROM, "wb").write(bytes(rom))
+    if io.open(ROM, "rb").read()[off] != DEADTOK:
+        sys.exit("knife: the argtab plant did NOT take — nothing was measured")
+    return (off, orig), None
+
+
 FNMODE = "--fn" in sys.argv
 if FNMODE:
     sys.argv = [a for a in sys.argv if a != "--fn"]
@@ -253,7 +332,10 @@ if len(sys.argv) > 1 and sys.argv[1] == "--list":
     for kw, row, tok in tg:
         print("   %-10s %-12s $%02X" % (kw, row, tok))
     sys.exit(0)
-if len(sys.argv) > 1 and sys.argv[1] == "--all":
+if len(sys.argv) > 1 and sys.argv[1] == "--allfn":
+    TARGETS = enumerate_fn_targets()
+    FNMODE = True
+elif len(sys.argv) > 1 and sys.argv[1] == "--all":
     TARGETS, _ = enumerate_targets()
 elif len(sys.argv) > 1:
     TARGETS = [tuple(a.split(":")) for a in sys.argv[1:]]
@@ -302,8 +384,10 @@ for kw, row, tok in TARGETS:
     before = knife_guard.hashes()
     if FNMODE:
         res, why = plant_fn(tok)
-        if res is None:
-            print("  %-8s row %-10s %s" % (kw, row, why)); continue
+        if res is None:                      # no `cp` site: try the cpir table
+            res, why2 = plant_argtab(tok)
+            if res is None:
+                print("  %-8s row %-10s %s / %s" % (kw, row, why, why2)); continue
         off, orig = res
     else:
         off, orig = plant(tok, dead)
@@ -312,7 +396,15 @@ for kw, row, tok in TARGETS:
         v = run_row(row)
     finally:
         rom = bytearray(io.open(ROM, "rb").read())
-        rom[off:off + 2] = orig
+        # 🔴 len(orig), NOT 2. The statement cut saves TWO bytes (the `dw`) and the
+        # function/argtab cuts save ONE, so a hard-coded 2 replaced two bytes with
+        # one -- SHORTENING the ROM and shifting every byte after it. Measured
+        # 2026-09-13: the first function sweep cut EOF on a clean ROM and every
+        # keyword after it was measured on a corrupted one, which is why PEEK was
+        # reported missing from ev_ff_argtab when it is that table's FIRST byte.
+        before_len = len(rom)
+        rom[off:off + len(orig)] = orig
+        assert len(rom) == before_len, "restore changed the ROM length"
         io.open(ROM, "wb").write(bytes(rom))
         install()
     record(kw, row, v, "fn" if FNMODE else "stmt")
