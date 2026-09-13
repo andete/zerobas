@@ -6,7 +6,7 @@ session and the loop resumes exactly where it stopped.
 
 ## Where things stand
 
-* Tree CLEAN and pushed at `c6215324`. Recount everything — never quote a number
+* Tree CLEAN and pushed at `1a777438`. Recount everything — never quote a number
   from this file.
 * 🟢 **EVERY TIER 1 THE DRAIN PRODUCED IS CLOSED** (`NEW` `FILES` `LFILES`
   `MERGE`, plus `LOAD` which only the MERGE sweep could have found), and **the
@@ -26,39 +26,45 @@ session and the loop resumes exactly where it stopped.
   `NEEDS-LOG:`, the third rig — a CAPTURE rather than a device — and `LLIST` ·
   **D-KWGET** (`a7dbb7d4`) `GET` (a random-file read, not a keyboard verb) and
   `CALL` (reservedness only, with the shortfall named) · **D-KWINP** (`c6215324`)
-  `INPUT`'s FILE form and `RENUM`.
+  `INPUT`'s FILE form and `RENUM` · **D-KWAUTO** (`21481b1a`) `AUTO`, placed LAST
+  with a kwsweep-local tail rule · **the D-KWTAPE retraction** (`1a777438`).
 * 🔴 **TWICE NOW A WORD WAS IN THE LIST FOR ITS NAME**: `GET` (a random-file read)
   and `INPUT` (`INPUT #n` reads a file), each filed next to a word with a real
   blocker and inheriting it by adjacency. Check the shape before the blocker.
 
-## The next slice — `AUTO`, and its filed blocker is the WRONG one
+## The next slice — `CLOAD`, and the rig it needs ALREADY EXISTS
 
-**FOUR words: `AUTO CLOAD CSAVE INKEY$`.** Every one now has a measured blocker
-rather than a suspected one, and `AUTO`'s is the cheapest — but it is NOT the one
-on file.
+**THREE words: `CLOAD CSAVE INKEY$`.**
 
-* **`AUTO` — the filing says "interactive: swallows all following input". Solved:
-  put it LAST and there are no neighbours to poison.** Proved by sacrificing two
-  rows to it — the harness flagged both MIS-DELIVERED and then REFUSED on the
-  CF-3300 rather than reporting garbage. With nothing behind it the verb SCORES:
-  both machines print the `100` line-entry prompt.
-  🔴 **WHAT ACTUALLY BLOCKS IT: line-entry mode leaves NO PROMPT.** `screen_tail`
-  runs to the closing prompt and there isn't one, so the CF-3300's tail drags in
-  twenty blank rows and the FUNCTION-KEY DISPLAY, which zerobas does not show —
-  DIVERGENT for a machine-configuration reason, exactly the `FILES`/`CSRLIN` row
-  this drain already threw away.
-  ➡️ **THE FIX IS A KWSWEEP-LOCAL TAIL RULE**, e.g. a row tag that drops the last
-  screen row. `basic_probe_lptverb.screen_rows` does exactly that (`[:-1]`) with
-  exactly this justification. ⚠️ **DO NOT change `omsx_repl.screen_tail`** — it is
-  a shared leaf with a wide blast radius, and one row does not justify it.
-  ⚠️ A text rule cannot identify the furniture: `keykw` REWRITES that line to
-  `ZZQ auto goto list run`, so match the POSITION, never the content.
-* `CLOAD` `CSAVE` — need a tape the emulator can PLAY. `cassetteplayer insert`
-  appears nowhere under `probes/`; `cas_decode` is WAV→bytes only. A fixture could
-  be RECORDED by driving one openMSX pass with `CSAVE` and keeping the WAV (the
-  cassette twin of `tools/make_test_dsk.py`) — a real slice, not a quick one.
-* `INKEY$` — the genuine keyboard block; the injector's TIMING, and it must not
-  reopen D-LATCH.
+🔴 **FIRST, A CORRECTION I OWE THE NEXT READER: "nothing in this tree plays a
+tape" was MY claim, filed twice, and it is FALSE.** The measurement was a grep for
+`cassetteplayer insert` under `probes/`, which is not how this tree mounts a tape:
+it uses the openMSX command-line flag **`-cassetteplayer <file>`**, in
+`basic_probe_cas_options.py`, `basic_probe_cas_ascii.py` and
+`basic_probe_cas_verbs.py`, all of which LOAD programs off tape today. And
+**`probes/lib/cas_encode.py` is the encoder** — `build_cas_basic(name, program)`
+synthesises a playable `.cas`. Eleven of thirteen stale blockers tonight were
+inherited; this one I wrote. **A blocker is only as good as the string it was
+measured with.**
+
+➡️ **SO THE TAPE PAIR IS BLOCKED ON A READBACK, NOT A RIG:**
+
+* **`CLOAD`** replaces the program and returns to COMMAND LEVEL, so nothing in the
+  same case can observe it — exactly `LOAD`'s shape, and `LOAD` is attributed by
+  an OPEN ITEM rather than a row. Two routes, both real: (a) a capture that reads
+  the STORED PROGRAM back (Layer 1 already uses `("stored_line", TXTTAB)`, so the
+  capture exists — it has never been used by Layer 2), or (b) an open item naming
+  what `basic_probe_cas_options.py` already measures.
+  🎯 **(a) IS THE SAME SHAPE `NEEDS-LOG:` TOOK FOR `LLIST`** — a per-rig CAPTURE,
+  with the CLASS from the screen and the TEXT from the other half. That worked.
+* **`CSAVE`**'s output is the recording, which needs the WAV decode
+  `basic_probe_cassave.py` already does — a third capture, same shape.
+* **`INKEY$`** is the one genuine keyboard block: the injector's TIMING, a harness
+  change, and it must not reopen D-LATCH.
+
+⚠️ **WHEN THESE THREE ARE THE ONLY ONES LEFT, THE QUESTION CHANGES** from "how" to
+"is the capture worth it" — and that is Joost's to answer, with the prices above
+on the table, not a decision to take silently in a loop tick.
 
 ## 🔴 Two staging traps, both paid for on 2026-09-12/13
 
@@ -124,4 +130,4 @@ a pattern that appears in the polling command.
 
 Paste this into a fresh session:
 
-    /loop continue autonomously on zerobas — 🔴 TIER 1 BEFORE ANYTHING ELSE, then drain "no known gap" to ZERO (Joost's 2026-09-12 ruling, which outranks TIER 4). Read scratchpad/LOOP-RESTART.md FIRST, then the item's own block in TODO.md to its END. Run `make tiers`; recount keywords with `python3 tools/tier_table.py --keywords` — never quote a count. THIS SLICE: `AUTO`, whose FILED blocker is the wrong one. The filing says "interactive: swallows all following input" — solved by putting it LAST, proved by sacrificing two rows to it (the harness flagged both MIS-DELIVERED and REFUSED on the CF-3300 rather than reporting garbage). With nothing behind it the verb SCORES: both machines print the `100` line-entry prompt. 🔴 WHAT ACTUALLY BLOCKS IT is that line-entry mode leaves NO PROMPT, so `screen_tail` runs to the end of the screen and the CF-3300's tail drags in twenty blank rows and the FUNCTION-KEY DISPLAY that zerobas does not show — DIVERGENT for a machine-configuration reason, the same shape as the `FILES`/`CSRLIN` row this drain already threw away. ➡️ Fix it with a KWSWEEP-LOCAL tail rule (a row tag that drops the last screen row); `basic_probe_lptverb.screen_rows` does exactly that with exactly this justification. ⚠️ DO NOT change `omsx_repl.screen_tail` — shared leaf, wide blast radius, one row does not justify it. ⚠️ Match the POSITION, never the content: `keykw` rewrites that line to `ZZQ auto goto list run`. 🔴 AND PUT THE ROW LAST IN `SWEEP`, with a comment saying why, or it takes its neighbours down. Every row must clear the FIVE silent-failure modes in LOOP-RESTART.md and after adding rows READ THE WHOLE SWEEP SUMMARY — especially this one, which is the row that taught that rule. Standing rules: full `make gates` before each commit and never commit red; 🔴 AFTER ANY basic/ OR sub/ CHANGE stage zerobas-main-eu.ips/.bps WITH the commit; 🔴 `check_todo_citations.py --fix` REWRITES EVERY DOC THAT CITES A MOVED BLOCK — five files beyond TODO.md, three times running; read `git status --short` as a LIST; after a `--fix` re-run every gate that READS TODO.md; `rm -rf build && make basic-reloc` for any wall figure, and BACK UP build/kwsweep-verdicts.json first; `test -e <path> && exit 1` before any `cat >` heredoc; stage explicit paths, `git add -A` banned; commit message to a FILE with `git commit -F`; commit AND push after each fix without asking; never write a tracked file while a battery runs; re-run the five battery-excluded targets by hand after any slice touching a shared leaf; NEVER poll with a pattern that matches the polling command itself — use the background task's own completion notification; READ the output of every edit script.
+    /loop continue autonomously on zerobas — 🔴 TIER 1 BEFORE ANYTHING ELSE, then drain "no known gap" to ZERO (Joost's 2026-09-12 ruling, which outranks TIER 4). Read scratchpad/LOOP-RESTART.md FIRST, then the item's own block in TODO.md to its END. Run `make tiers`; recount keywords with `python3 tools/tier_table.py --keywords` — never quote a count. THREE WORDS LEFT: CLOAD CSAVE INKEY$. THIS SLICE: `CLOAD`, and the rig it needs ALREADY EXISTS — `-cassetteplayer <file>` mounts a playable tape (basic_probe_cas_options.py, basic_probe_cas_ascii.py, basic_probe_cas_verbs.py all load off tape today) and probes/lib/cas_encode.py's `build_cas_basic(name, program)` synthesises the `.cas`. 🔴 I FILED "nothing in this tree plays a tape" TWICE AND IT IS FALSE — the grep was for `cassetteplayer insert`, which is not how this tree mounts one. What actually blocks CLOAD is a READBACK: it replaces the program and returns to COMMAND LEVEL, so nothing in the same case observes it — exactly LOAD's shape. Two routes, both real: (a) a per-rig CAPTURE that reads the STORED PROGRAM back — Layer 1 already uses `("stored_line", TXTTAB)`, so the capture exists and Layer 2 has never used it, and this is the same shape `NEEDS-LOG:` took for LLIST (class from the screen, text from the other half); or (b) an open item naming what basic_probe_cas_options.py already measures. Pick ONE and say why. ⚠️ Prove the readback MOVES before keeping the row, clear the FIVE silent-failure modes in LOOP-RESTART.md, and after adding rows READ THE WHOLE SWEEP SUMMARY. ⚠️ `auto` MUST STAY LAST IN SWEEP — a banner comment says so; anything appended after it inherits the line-entry poisoning. 🎚️ WHEN ONLY CLOAD/CSAVE/INKEY$ REMAIN, THE QUESTION IS NO LONGER "how" BUT "is the capture worth it" — that is Joost's call, so put the prices in TODO.md and say so rather than deciding it in a loop tick. Standing rules: full `make gates` before each commit and never commit red; 🔴 AFTER ANY basic/ OR sub/ CHANGE stage zerobas-main-eu.ips/.bps WITH the commit; 🔴 `check_todo_citations.py --fix` REWRITES EVERY DOC THAT CITES A MOVED BLOCK — five files beyond TODO.md every time; read `git status --short` as a LIST; after a `--fix` re-run every gate that READS TODO.md; `rm -rf build && make basic-reloc` for any wall figure, and BACK UP build/kwsweep-verdicts.json first; `test -e <path> && exit 1` before any `cat >` heredoc; stage explicit paths, `git add -A` banned; commit message to a FILE with `git commit -F`; commit AND push after each fix without asking; never write a tracked file while a battery runs; re-run the five battery-excluded targets by hand after any slice touching a shared leaf; NEVER poll with a pattern that matches the polling command itself — use the background task's own completion notification; READ the output of every edit script.
