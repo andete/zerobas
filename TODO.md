@@ -260,8 +260,55 @@ the math group, and **seven string functions — `BIN$ HEX$ LEFT$ MID$ OCT$ RIGH
 SPACE$` — that HAVE `str_fn_*` symbols and yet present ZERO `cp`/`jr z` sites.**
 Only the `MKI$`/`MKS$`/`MKD$` trio uses the explicit comparison chain
 (`str_eval_maybe_mki`); the rest are reached from inside `str_func_ff` by a shape
-that is neither of the three. **That is a FOURTH shape, and it is a searchable
-target in one named routine rather than a tally of failures.**
+that is neither of the three. ~~That is a FOURTH shape~~ — **RETRACTED THE SAME
+NIGHT, see D-KWSTRCUT2: there is no fourth shape. MY OWN GUARD DREW THAT LINE.**
+🔧 **D-KWSTRCUT2 — THREE ITERATIONS ON ONE RULE, AND EVERY SYMMETRIC-LOOKING
+WIDENING BROKE SOMETHING (2026-09-13).** Only the narrowest rule the ACTUAL CODE
+justifies survived, and each wrong version was caught by MEASURING, never by
+reasoning about the change — which is the only reason none of them shipped.
+| attempt | what it did | what it broke |
+|---|---|---|
+| widen `ev_`+`str_` across both opcodes | reached MKI$ | reported `INT` and `PEEK` **BLIND** when both are fine |
+| tie `str_` to `jr z` only | fixed INT/PEEK | falsely REFUSED seven string functions — and I read that as a FOURTH dispatch shape |
+| untie both | fixed the seven | reintroduced the false BLIND for `PEEK` |
+🔴 **(i) AN MSX TOKEN BYTE LIVES IN TWO NAMESPACES** — `$xx` as a statement token,
+`$FF $xx` as a function selector — **and the same byte names DIFFERENT keywords in
+each.** `INPUT_TOKEN equ $85` sits beside `INT_TOKEN equ $85`; `sysvars.inc:2361`
+reads *"`DEF_TOKEN equ $97` ; PEEK's $97 is the 2nd byte after `$FF`"*. A raw `cp`
+byte search cannot tell them apart.
+🔴 **(ii) WHEN A SET SPLITS SUSPICIOUSLY CLEANLY, CHECK WHETHER YOUR OWN
+INSTRUMENT DREW THE LINE.** `str_func_ff` (`basic/str-engine.asm:991`) tests every
+selector with the SAME `cp <TOK>` chain; it reaches `CHR$`/`STR$` by `jr z` and
+`LEFT$`/`RIGHT$`/`MID$`/`HEX$`/`OCT$`/`BIN$`/`SPACE$` by `jp z`, purely a matter of
+which targets sit inside a RELATIVE jump's reach. The five that passed were exactly
+the `jr z` ones and the seven that refused were exactly the `jp z` ones. **That
+split was my filter, and I filed it as a property of the interpreter.**
+🔴 **(iii) AND THE ASYMMETRY IS REAL, SO THE RULE IS ASYMMETRIC.** `PEEK` (`$97`)
+has exactly ONE `cp`-site: a `jr z` to **`ev_ff_ckaddr`, a SHARED ADDRESS-CHECK
+HELPER, not PEEK's evaluator.** Rejected, `plant_fn` declines and PEEK falls
+through to the `ev_ff_argtab` cpir cut — which IS its dispatch, and cuts
+correctly. Accepted, the knife cuts the shared helper, PEEK keeps working, and the
+row is called BLIND. [[a-shared-tail-is-not-a-decision]] in a new place. So:
+**`ev_*` via `jp z` ONLY** (expr.asm's chain is a `jp z` chain by construction —
+`plant_fn`'s own opening note says a `jr` to the error tail would usually be out of
+range, so an `ev_` symbol reached by `jr z` is a HELPER, not a selector), and
+**`str_*` via EITHER opcode but only for the 12 string-returning selectors.**
+Verified simultaneously: PEEK load-bearing via argtab, `LEFT$`/`MID$`/`SPACE$` via
+`jp z`+`str_`, `MKI$` via `jr z`+`str_`, `INT` refusing honestly.
+🔧 **AND THE CLI WAS POISONING THE PIN WITH KEYS NOTHING READS.** It takes the
+EQUATE STEM (`LEFTD`, because the equate is `LEFTD_TOKEN`) while `tier_table`
+matches pin keys against KWTABLE words (`LEFT$`) — so a run left
+`BIND HEXD LEFTD MIDD OCTD RIGHTD SPACED` in the pin: **entries contributing NO
+evidence for the keyword they were measured for, while still inflating the row
+count `knife_connected`'s own floor reads.** Normalised at the source
+(`_kwtable_name`), and the new sweep is checked for stem-named keys rather than
+trusted.
+📏 **THE DENOMINATOR, from the pin alone, every key a kwtable word, fingerprint
+matching the live ROMs: 106 KNIFED, 103 CONNECTED, 3 NOT** — `CALL` and `MAX`
+unconnectable by construction, `PAD` blind. **18 refuse**, and they are now ONE
+coherent family rather than a mixed bag: `ABS ASC ATN CDBL CINT COS CSNG ELSE EXP
+FIX INT LEN LOG RND SGN SIN SQR TAN`. Against the remembered `94/91/30` that
+**+12 connected, −12 refused** is the whole string group arriving at once.
 🔴 **`PAD` IS THE FIRST GENUINELY BLIND ROW, AND THE REASON GENERALISES: ITS
 OBSERVATION IS AN ERROR (2026-09-13).** The row is `PRINT PAD(9)` —
 deliberately out of range, so a real `PAD` raises `Illegal function call`
@@ -820,7 +867,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:17547 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:17594 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -986,7 +1033,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:5587 (T-6FE392)8 (T-529ABE)` from `TODO.md:16198 (T-529ABE)`: a
+      `TODO.md:5634 (T-6FE392)8 (T-529ABE)` from `TODO.md:16245 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -6431,7 +6478,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:16198 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:16245 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

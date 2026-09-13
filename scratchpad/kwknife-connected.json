@@ -29,6 +29,15 @@
    "verdict": "MISSING",
    "weak": false
   },
+  "BIN$": {
+   "connected": true,
+   "modes": {
+    "fn": "MISSING"
+   },
+   "row": "bin",
+   "verdict": "MISSING",
+   "weak": false
+  },
   "BLOAD": {
    "connected": true,
    "modes": {
@@ -344,6 +353,15 @@
    "verdict": "DIVERGENT",
    "weak": false
   },
+  "HEX$": {
+   "connected": true,
+   "modes": {
+    "fn": "MISSING"
+   },
+   "row": "hex",
+   "verdict": "MISSING",
+   "weak": false
+  },
   "IF": {
    "connected": true,
    "modes": {
@@ -396,6 +414,15 @@
    },
    "row": "kill_t3",
    "verdict": "DIVERGENT",
+   "weak": false
+  },
+  "LEFT$": {
+   "connected": true,
+   "modes": {
+    "fn": "MISSING"
+   },
+   "row": "left",
+   "verdict": "MISSING",
    "weak": false
   },
   "LET": {
@@ -515,6 +542,15 @@
    "verdict": "MISSING",
    "weak": false
   },
+  "MID$": {
+   "connected": true,
+   "modes": {
+    "fn": "MISSING"
+   },
+   "row": "mid",
+   "verdict": "MISSING",
+   "weak": false
+  },
   "MKD$": {
    "connected": true,
    "modes": {
@@ -566,6 +602,15 @@
     "stmt": "MISSING"
    },
    "row": "nextkw",
+   "verdict": "MISSING",
+   "weak": false
+  },
+  "OCT$": {
+   "connected": true,
+   "modes": {
+    "fn": "MISSING"
+   },
+   "row": "oct",
    "verdict": "MISSING",
    "weak": false
   },
@@ -713,6 +758,15 @@
    "verdict": "MISSING",
    "weak": false
   },
+  "RIGHT$": {
+   "connected": true,
+   "modes": {
+    "fn": "MISSING"
+   },
+   "row": "right",
+   "verdict": "MISSING",
+   "weak": false
+  },
   "RSET": {
    "connected": true,
    "modes": {
@@ -764,6 +818,15 @@
     "stmt": "MISSING"
    },
    "row": "sound",
+   "verdict": "MISSING",
+   "weak": false
+  },
+  "SPACE$": {
+   "connected": true,
+   "modes": {
+    "fn": "MISSING"
+   },
+   "row": "space",
    "verdict": "MISSING",
    "weak": false
   },
@@ -896,5 +959,5 @@
    "weak": false
   }
  },
- "written": "2026-09-13 23:29:25"
+ "written": "2026-09-13 23:58:05"
 }

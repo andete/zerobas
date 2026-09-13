@@ -129,19 +129,43 @@ def plant_fn(tok, kw=""):
         if rom[i] != 0xFE or rom[i + 1] != tok:
             continue
         op = rom[i + 2]
-        if op == 0xCA:                      # jp z,nn — the expr.asm selector chain
+        # ⚠️ THE OPCODE IS NOT THE GUARD — THE KEYWORD IS (D-KWSTRCUT2). Tying
+        # `str_*` to `jr z` alone looked conservative and was simply wrong about
+        # the code: `str_func_ff` (basic/str-engine.asm:991) tests its selectors
+        # with the SAME `cp <TOK>` chain, reaching CHR$ and STR$ by `jr z` and
+        # LEFT$/RIGHT$/MID$/HEX$/OCT$/BIN$/SPACE$ by `jp z` — purely a matter of
+        # which targets sit within a relative jump's reach. So the five that got
+        # through were exactly the `jr z` ones and the seven that refused were
+        # exactly the `jp z` ones, and that had NOTHING to do with dispatch shape.
+        # The namespace collision is held off by `strok` (a string-returning
+        # selector, from kwtable.inc), which the opcode restriction never helped
+        # with: INT is not string-returning, so no `str_*` target is admitted for
+        # it under either opcode.
+        if op == 0xCA:                      # jp z,nn
             tgt = rom[i + 3] | (rom[i + 4] << 8)
-            ok = byaddr.get(tgt, "").startswith("ev_")
-        elif op == 0x28 and strok:          # jr z,d — the strvar.asm string chain
+        elif op == 0x28:                    # jr z,d (relative)
             d = rom[i + 3]
             tgt = (i + 4) + (d - 256 if d > 127 else d)
-            ok = byaddr.get(tgt, "").startswith("str_")
         else:
             continue
+        nm = byaddr.get(tgt, "")
+        # 🔴 `jr z` IS UNTIED FOR THE STRING CHAIN ONLY, AND PEEK IS WHY. Untying
+        # it for `ev_` targets too looked like symmetry and reintroduced the very
+        # false BLIND this guard exists to stop. PEEK ($97) has exactly ONE
+        # `cp`-site: a `jr z` to `ev_ff_ckaddr` — a SHARED ADDRESS-CHECK HELPER,
+        # not PEEK's own evaluator. Rejected, `plant_fn` declines and PEEK falls
+        # through to the `ev_ff_argtab` cpir cut, which IS its dispatch and cuts
+        # correctly. Accepted, the knife cuts the shared helper, PEEK keeps working,
+        # and the run calls the row BLIND. [[a-shared-tail-is-not-a-decision]]
+        # The expr.asm selector chain is a `jp z` chain BY CONSTRUCTION (this
+        # function's own opening note: a `jr` to the error tail would usually be out
+        # of range), so an `ev_` symbol reached by `jr z` is a helper, not a
+        # selector. `str_func_ff` genuinely uses BOTH, which is the whole asymmetry.
+        ok = (nm.startswith("ev_") and op == 0xCA) or (strok and nm.startswith("str_"))
         if ok:
             hits.append(i)
     if len(hits) != 1:
-        shape = "ev_* (jp z)" + ("/str_* (jr z)" if strok else "")
+        shape = "ev_*" + ("/str_*" if strok else "")
         return None, (f"{len(hits)} `cp ${tok:02X}` site(s) with a {shape} "
                       f"target — refusing")
     off = hits[0] + 1
@@ -413,8 +437,37 @@ elif len(sys.argv) > 1:
     TARGETS = [tuple(a.split(":")) for a in sys.argv[1:]]
 else:
     TARGETS = [("POKE", "pokekw", 0x98), ("VPOKE", "vpoke", 0xC6)]
+def _kwtable_name(tok, fallback):
+    """The name `kwtable.inc` gives a function selector, e.g. $81 -> "LEFT$".
+
+    🔴 THE CLI TAKES THE EQUATE STEM AND THE PIN MUST NOT. The equate for LEFT$ is
+    `LEFTD_TOKEN`, so the command line says `LEFTD:left` — and recording that stem
+    wrote a key NOTHING reads: `tier_table` matches pin keys against kwtable
+    keywords, where the word is `LEFT$`. Measured 2026-09-13: a CLI run left
+    BIND/HEXD/LEFTD/MIDD/OCTD/RIGHTD/SPACED in the pin beside the real names —
+    seven entries contributing no evidence to the keyword they were measured for,
+    while still inflating the row count that `knife_connected`'s floor reads. A pin
+    key is a keyword or it is noise, so the name is normalised at the source."""
+    for m in re.finditer(r'db\s+\d+,"([^"]+)",2,\w+,(\w+)',
+                         io.open(os.path.join(ROOT, "basic", "kwtable.inc"),
+                                 encoding="utf-8").read()):
+        if syms_equ().get(m.group(2)) == tok:
+            return m.group(1)
+    return fallback
+
+
+def syms_equ():
+    eq = {}
+    for m in re.finditer(r"^(\w+)\s+equ\s+\$([0-9A-Fa-f]+)",
+                         io.open(os.path.join(ROOT, "basic", "sysvars.inc"),
+                                 encoding="utf-8").read(), re.M):
+        eq[m.group(1)] = int(m.group(2), 16)
+    return eq
+
+
 if TARGETS and len(TARGETS[0]) == 2:        # explicit KW:row pairs on the command line
-    TARGETS = [(k, r, token_of(k)) for k, r in TARGETS]
+    TARGETS = [(_kwtable_name(token_of(k), k) if FNMODE else k, r, token_of(k))
+               for k, r in TARGETS]
 
 # 🔴 THE KNIFE DESTROYS THE PIN IT DEPENDS ON, unless this guard exists. Each cut
 # runs `basic_probe_kwsweep --only <row>`, and the sweep WRITES
