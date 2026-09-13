@@ -208,8 +208,9 @@ REACHED = {1: "0 — happy path broken or keyword MISSING", 2: "1 — happy path
            3: "2 — common errors not handled", 4: "3 — slower than the reference",
            5: "4 — only exhaustive error handling open",
            "kwgap": "GAP kwsweep sees that NO open item files (DIVERGENT/MISSING)",
-           "kw1": "1 — happy path reached, scored by kwsweep"}
-GROUP_ORDER = ["kwgap", 1, 2, 3, 4, 5, "kw1", None]
+           "kw1": "1 — happy path reached, scored by kwsweep",
+           "kw3": "3 — common errors reached too, scored by a PROVES-T3 row"}
+GROUP_ORDER = ["kwgap", 1, 2, 3, 4, 5, "kw1", "kw3", None]
 
 
 KWSWEEP_PIN = os.path.join(ROOT, "build", "kwsweep-verdicts.json")
@@ -244,6 +245,32 @@ def kwsweep_evidence(kws, path=KWSWEEP_PIN):
     return out
 
 
+def kwsweep_t3(kws, path=KWSWEEP_PIN):
+    """The keywords a SUPPORTED `PROVES-T3:` row speaks for.
+
+    🎚️ TIER 3 is "handles the most common error situations", and a row that
+    declares `PROVES-T3:` is claiming to exercise one — a claim the sweep then
+    SCORES against the reference like any other row. A row that merely exists
+    proves TIER 1; this is the rung above it, and it is separate evidence rather
+    than a stronger reading of the same row (D-KWT3, Joost 2026-09-13: "add more
+    tests for each keyword proving the tier")."""
+    try:
+        import json
+        with open(path, encoding="utf-8") as fh:
+            pin = json.load(fh)
+    except (OSError, ValueError):
+        return set()
+    kwset = set(kws)
+    out = set()
+    for _key, r in pin.get("rows", {}).items():
+        if r.get("weak") or r.get("proves") != "T3" or r.get("verdict") != "SUPPORTED":
+            continue
+        kw = stmt_keyword(r.get("stmt", ""), kwset)
+        if kw:
+            out.add(kw)
+    return out
+
+
 def keyword_tiers(its, kws, evidence=None):
     """keyword -> (worst open tier 1..5 or None, sorted item lines, evidence).
 
@@ -263,12 +290,14 @@ def keyword_tiers(its, kws, evidence=None):
     return out
 
 
-def reached_group(g, e):
+def reached_group(g, e, t3=False):
     """The bucket a keyword prints under, from its gap tier and its evidence."""
     if g is not None:
         return g                                  # 1..5: stuck below that tier
     if e == "SUPPORTED":
-        return "kw1"                              # TIER 1 reached, by kwsweep
+        # A PROVES-T3 row is the rung above a happy-path row: same keyword, a
+        # SECOND row that scored an ERROR situation against the reference.
+        return "kw3" if t3 else "kw1"
     if e in ("DIVERGENT", "MISSING", "SILENT-GAP", "EXTRA"):
         return "kwgap"                            # a gap kwsweep sees and nobody filed
     return None                                   # no known gap, no evidence
@@ -305,9 +334,10 @@ def fmt_items(its, kws, tiers_only=True, width=70):
 
 def fmt_keywords(its, kws, evidence=None):
     kt = keyword_tiers(its, kws, evidence)
+    t3 = kwsweep_t3(kws)
     groups = defaultdict(list)
     for kw, (g, _, e) in kt.items():
-        groups[reached_group(g, e)].append(kw)
+        groups[reached_group(g, e, kw in t3)].append(kw)
     out = []
     for g in GROUP_ORDER:
         if g is None or not groups[g]:
@@ -357,9 +387,10 @@ def fmt_markdown(its, kws):
             "TIER n item naming it means it has not reached n. **'No known gap' is not a tier.**", "",
             "| reached | n | keywords |", "|---|---|---|"]
     kt = keyword_tiers(its, kws)
+    t3 = kwsweep_t3(kws)
     groups = defaultdict(list)
     for kw, (g, _, e) in kt.items():
-        groups[reached_group(g, e)].append(kw)
+        groups[reached_group(g, e, kw in t3)].append(kw)
     for g in GROUP_ORDER:
         if g is None or not groups[g]:
             continue
@@ -369,7 +400,7 @@ def fmt_markdown(its, kws):
     out += ["", FOOTER, "", "### Alphabetical", "", "| keyword | reached | evidence |", "|---|---|---|"]
     for kw in sorted(kws):
         g, lines, e = kt[kw]
-        grp = reached_group(g, e)
+        grp = reached_group(g, e, kw in t3)
         if grp is None:
             out.append(f"| `{kw}` | no known gap | — |")
         elif grp == "kw1":

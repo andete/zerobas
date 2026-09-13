@@ -1,0 +1,13 @@
+=== vg8020
+   direct, no DATA        Out of DATA | Ok | color  auto   goto   list   run
+   direct, DATA present   [ 7 ] | Ok | color  auto   goto   list   run
+   stored, no DATA        Out of DATA in 10 | Ok | color  auto   goto   list   run
+   stored, DATA runs out  Out of DATA in 20 | Ok | color  auto   goto   list   run
+   stored, DATA enough    [ 7 ] | Ok | color  auto   goto   list   run
+=== zb
+   direct, no DATA        ZBREAD ZV | Syntax error | ZB
+   direct, DATA present   ZBPRINT"[";ZV;"]" | [ 0 ] | ZB
+   stored, no DATA        ZBRUN | Out of DATA in 10 | ZB
+   stored, DATA runs out  ZBRUN | Out of DATA in 20 | ZB
+   stored, DATA enough    ZBRUN | [ 7 ] | ZB
+refcache: 0 hit, 10 miss, 10 stored

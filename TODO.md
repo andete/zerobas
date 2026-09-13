@@ -489,7 +489,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:16902 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:16932 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -655,7 +655,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:5256 (T-6FE392)8 (T-529ABE)` from `TODO.md:15553 (T-529ABE)`: a
+      `TODO.md:5256 (T-6FE392)8 (T-529ABE)` from `TODO.md:15583 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -6100,7 +6100,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:15553 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:15583 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -6801,6 +6801,36 @@ list. **When a slice lands, grep this list for what it just shipped.**
       🤖 AUTONOMOUS — the shape and allocation forks are ruled and the two causes are
       NAMED and re-verified; what remains is the carve that pays for the `rp_lp`
       re-base, then the `fnf_save` arm in the same commit.
+
+- [ ] 🔴 **`READ` IN DIRECT MODE IGNORES THE PROGRAM'S `DATA` AND SILENTLY READS
+      ZERO.** Found 2026-09-13 by D-KWT3's very first batch of TIER 3 rows — the
+      first error-path row written under Joost's "add more tests for each keyword
+      proving the tier" ruling, and it found a happy-path defect on its first run.
+      | direct-mode `READ ZV` | VG-8020 | zerobas |
+      |---|---|---|
+      | `10 DATA 7` in the program | `[ 7 ]` | 🔴 **`[ 0 ]` — silently wrong** |
+      | no `DATA` anywhere | `Out of DATA` | 🔴 `Syntax error` |
+      🎯 **THE WRONG VALUE IS THE DEFECT; THE WRONG ERROR IS A SYMPTOM OF THE SAME
+      CAUSE.** A silent `0` where the reference reads `7` is the worst class this
+      file ranks — no error, no diagnostic, a plausible-looking answer.
+      ✅ **AND IT IS NARROW, WHICH IS MEASURED, NOT ASSUMED**
+      ([`scratchpad/kwt3_readchk.py`](scratchpad/kwt3_readchk.py),
+      [readings](scratchpad/kwt3_readchk.out)): in a STORED program zerobas matches
+      the reference exactly — `Out of DATA in 10` with no data, `Out of DATA in 20`
+      when it runs out mid-statement, and `[ 7 ]` when there is enough. `READ`'s
+      out-of-data path and its DATA walk are both fine. **Only the DIRECT-mode entry
+      is broken**, which is why every existing suite missed it: they all `RUN`.
+      ➡️ **THE SHAPE TO LOOK AT FIRST**: direct mode has no current line, so whatever
+      `READ` uses as its DATA cursor origin (`DATPTR` and the restore-to-`TXTTAB`
+      path) is the suspect — it likely starts from a cursor that is never seeded
+      when the statement is executed outside a program, reads the terminator, and
+      returns 0 rather than raising.
+      ⚠️ **RE-VERIFY THE `Syntax error` HALF SEPARATELY** when fixing: it may be the
+      same uninitialised cursor reaching a non-DATA byte, or a genuinely different
+      direct-mode parse path. The two cells above are one hypothesis, not one
+      measurement [[a-justification-parenthesis-is-an-unrun-claim]].
+      🎚️ TIER 1 — happy path: `READ` at the prompt reads the wrong value silently
+      🤖 AUTONOMOUS — the defect is measured, narrow and reproducible in one row.
 
 - [ ] 🐌 **THE INTERPRETER IS 2.5–3.8× SLOWER THAN THE CF-3300 — ON EVERYTHING,
       NOT ON ONE VERB — AND IT REFRAMES EVERY OTHER SPEED ITEM.**

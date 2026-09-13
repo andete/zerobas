@@ -278,7 +278,17 @@ _RIG_TAGS = {"NEEDS-DISK:": "disk", "NEEDS-PRINTER:": "printer",
 
 # A flag tag is a prefix tag that selects no apparatus -- it changes how the
 # SCREEN is read, not what is plugged in.
-_FLAG_TAGS = ("NOFURN:",)
+# 🟢 D-KWT3 (2026-09-13, Joost: "add more tests for each keyword proving the
+# tier"): `PROVES-T3:` is a row DECLARING WHAT IT PROVES, not what it needs.
+# tier_table's own source says the reached column "becomes a measurement only when
+# gate rows declare their keyword" -- this is that declaration, made by a row we
+# WROTE rather than inferred from a suite we hope is load-bearing.
+# 🎚️ TIER 3 is "handles the most common error situations", and the legend's own
+# test is the filter: *would a 1985 magazine listing plausibly hit this?* -- Type
+# mismatch, Illegal function call on a bad argument, Subscript out of range,
+# Division by zero, Out of DATA, File not found. Not nesting depth 11; that is
+# TIER 5 and does not belong on one of these rows.
+_FLAG_TAGS = ("NOFURN:", "PROVES-T3:")
 
 
 def _row_prefix_tags(note: str) -> tuple[str, ...]:
@@ -1135,6 +1145,21 @@ SWEEP: list[tuple[str, str, str | None, str, str]] = [
      "The reading is the recording DECODED BACK TO BYTES -- header id, name and "
      "the program image with its 7-byte terminator, the very thing D-CASTAIL2 "
      "fixed. `[Z9]` on the screen half additionally says the program ran at all."),
+    # 🎚️ D-KWT3 BATCH 1 — the TIER 3 rung: each row is a SECOND row for a keyword
+    # that already has a happy-path one, scoring the error a 1985 magazine listing
+    # would plausibly hit. The legend's own test picked them, one per error class.
+    ("sqr_t3",  'a=sqr(-1)',   'PRINT SQR(-1)',        "direct",
+     "PROVES-T3: " "Illegal function call on a bad ARGUMENT — the domain error, "
+     "not a syntax one"),
+    ("asc_t3",  'a=asc("")',   'PRINT ASC("")',        "direct",
+     "PROVES-T3: " "Illegal function call on the EMPTY string, the classic "
+     "off-by-one when a listing walks a string to its end"),
+    ("left_t3", 'a$=left$(5,1)', 'PRINT LEFT$(5,1)',   "direct",
+     "PROVES-T3: " "Type mismatch — a NUMBER where the string argument goes"),
+    ("dim_t3",  'dim zz(2)',   'DIM ZZ(2):ZZ(9)=1',    "direct",
+     "PROVES-T3: " "Subscript out of range, the commonest array fault of all"),
+    ("read_t3", 'read zv',     'READ ZV',              "direct",
+     "PROVES-T3: " "Out of DATA — a READ with no DATA statement anywhere"),
     ("close",   "close",
      'OPEN"W.TXT"FOR OUTPUT AS#1:PRINT#1,"ABC":CLOSE#1:OPEN"W.TXT"FOR INPUT AS#1:A=LOF(1):CLOSE#1:PRINT"[";A;"]"', "stored",
      "NEEDS-DISK: " "the FLUSH is the readback: 6 bytes are on the disk only because "
@@ -1935,6 +1960,9 @@ def main() -> int:
                "rom_fingerprint": fp_after,
                "rows": {key: {"verdict": s[0],
                               "weak": notes[key].startswith("WEAK:"),
+                              # what the row CLAIMS to prove; absent = TIER 1 only
+                              "proves": ("T3" if "PROVES-T3:" in
+                                         _row_prefix_tags(notes[key]) else None),
                               "stmt": stmt[key]}
                         for key, s in executed}}
         _root = _os.path.dirname(_os.path.dirname(_os.path.dirname(_os.path.abspath(__file__))))
