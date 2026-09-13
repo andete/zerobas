@@ -489,7 +489,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:16411 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:16444 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -655,7 +655,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:4977 (T-6FE392)8 (T-529ABE)` from `TODO.md:15148 (T-529ABE)`: a
+      `TODO.md:5010 (T-6FE392)8 (T-529ABE)` from `TODO.md:15181 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -3804,10 +3804,43 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `cas_decode.auto_threshold` is adaptive and tolerant, which is exactly why
       every existing tape gate reads these bytes back perfectly
       [[a-case-that-agrees-can-agree-for-the-wrong-reason]].
-      ⚠️ **STILL A LEAD, NOT A CAUSE.** What it does not yet say is WHERE the jitter
-      comes from — the candidates are `cas_cycle`'s loop overhead varying with the
-      data pattern, and the first half-period after a tone change (a counter reload).
-      The next slice should instrument the writer rather than guess a fifth time.
+      ⚠️ ~~**STILL A LEAD, NOT A CAUSE**~~ — 🟢 **RESOLVED THE SAME DAY, and one of
+      the two named candidates was right**: it is the per-bit loop overhead, not the
+      first half-period after a tone change. See below.
+      🟢 **MECHANISM CONFIRMED 2026-09-13 — the jitter is the PER-BIT LOOP OVERHEAD
+      landing inside the last half-period of every bit**
+      ([`scratchpad/kwdrain_wavseq.py`](scratchpad/kwdrain_wavseq.py),
+      [readings](scratchpad/kwdrain_wavseq.out)). The half-period SEQUENCE just past
+      the leader says it without inference:
+      | bit | VG-8020 | zerobas |
+      |---|---|---|
+      | `0` (one low-tone cycle) | `18 19` | `18` **`20`** |
+      | `1` (two high-tone cycles) | `9 9 9 9` | `9 9 9` **`11`** |
+      🎯 **IT IS THE BIT BOUNDARY, NOT THE CYCLE.** Inside a `1` bit the FIRST cycle
+      is clean (`9 9 9`) and only the SECOND is stretched — so the extra time is not
+      in `cas_cycle`, which is a tight `djnz` pair and constant by construction. It
+      is the code that runs BETWEEN bits while the output line still holds its last
+      level: `pop bc` / `pop af` / `djnz` / `rra` / `push af` / `push bc` / `jr` /
+      `call cas_short|cas_long` / `call cas_cycle`.
+      📏 **THE SIZE FITS THE MECHANISM**: the stretch is ~2 samples at 44 100 Hz
+      ≈ 160 T-states ≈ 12 `djnz` iterations, and one half-period is `CAS_HHALF` = 50
+      iterations ≈ 9 samples. So the overhead is about a quarter of a short half —
+      enough to push `9` to `11`, which is above the midpoint between the tones and
+      therefore unclassifiable by a threshold derived from the leader.
+      ➡️ **THE FIX IS A COMPENSATION ON THE LAST CYCLE OF EACH BIT**, not a new
+      constant: the trailing low half must be SHORTENED by the per-bit overhead so
+      the total stays correct. A `cas_cycle_last` variant taking a reduced count is
+      the obvious shape; the leader loop keeps the uncompensated one, which matches
+      the measurement that the leader is already clean.
+      ⚠️ **AND THE TEST IS DECISIVE AND ALREADY WRITTEN**: "the VG-8020 reads a tape
+      zerobas wrote" is a pass/fail with a prompt witness
+      ([`scratchpad/kwdrain_wavread.py`](scratchpad/kwdrain_wavread.py)), and
+      `run_cases(cassette=…)` makes it one probe. Re-run
+      [`scratchpad/kwdrain_wavhist.py`](scratchpad/kwdrain_wavhist.py) after the fix:
+      the success criterion is a CLEANLY BIMODAL histogram, nothing between the
+      tones, which is what the reference produces.
+      ⚠️ **BYTE COST IS UNMEASURED** — the tape ROM is its own region and this slice
+      did not price it. Measure before cutting.
       🎚️ TIER 1 — happy path: `CSAVE` / `SAVE"CAS:"` is ordinary MSX BASIC, and what
       it produces cannot be loaded on the machine it is meant for
       🤖 AUTONOMOUS — the matrix is measured with controls in both directions; what
@@ -5821,7 +5854,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:15148 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:15181 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
