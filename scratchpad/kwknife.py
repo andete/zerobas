@@ -126,6 +126,9 @@ def install(before=None):
         sys.exit("knife: the installed images did NOT move -- nothing was measured")
     return after
 
+SWEEP_PIN = os.path.join(ROOT, "build", "kwsweep-verdicts.json")
+
+
 def run_row(row):
     r = subprocess.run([sys.executable, os.path.join(ROOT, "probes", "basic", "basic_probe_kwsweep.py"),
                         "--zb-machine", "C-BIOS_MSX1_EU_REPACK_DISK", "--only", row],
@@ -136,6 +139,33 @@ def run_row(row):
     return "NO-VERDICT"
 
 WEAK = {}
+PIN = os.path.join(ROOT, "build", "kwknife-connected.json")
+
+
+def record(kw, row, verdict, mode):
+    """MERGE this keyword's reading into build/kwknife-connected.json.
+
+    🔴 A PIN, NOT A PARSE OF MY OWN CONSOLE OUTPUT. `tier_table` reads
+    build/kwsweep-verdicts.json the same way, and a reader that scrapes a report's
+    prose breaks the moment the report is reworded — the tree has been bitten by
+    instruments that re-implement a consumer's parser. MERGED rather than
+    overwritten so a statement sweep and a later `--fn` run accumulate instead of
+    replacing one another.
+    ⚠️ The ROM fingerprint rides along: a pin whose fingerprint no longer matches
+    the built ROM describes a machine that no longer exists, and the reader says so
+    rather than quietly reporting stale connectedness."""
+    import json, time
+    try:
+        pin = json.load(open(PIN, encoding="utf-8"))
+    except (OSError, ValueError):
+        pin = {"rows": {}}
+    pin["written"] = time.strftime("%Y-%m-%d %H:%M:%S")
+    pin["rom_fingerprint"] = knife_guard.hashes()
+    pin.setdefault("rows", {})[kw] = {
+        "row": row, "verdict": verdict, "mode": mode,
+        "connected": verdict != "SUPPORTED", "weak": bool(WEAK.get(row))}
+    os.makedirs(os.path.dirname(PIN), exist_ok=True)
+    json.dump(pin, open(PIN, "w", encoding="utf-8"), indent=1, sort_keys=True)
 
 
 def enumerate_targets():
@@ -232,6 +262,40 @@ else:
 if TARGETS and len(TARGETS[0]) == 2:        # explicit KW:row pairs on the command line
     TARGETS = [(k, r, token_of(k)) for k, r in TARGETS]
 
+# 🔴 THE KNIFE DESTROYS THE PIN IT DEPENDS ON, unless this guard exists. Each cut
+# runs `basic_probe_kwsweep --only <row>`, and the sweep WRITES
+# build/kwsweep-verdicts.json every run — so a single-row invocation replaces the
+# whole-battery pin with ONE row. Measured 2026-09-13: after a knife session the
+# pin held exactly `vdpkw`, and `tier_table` (which reads that pin for evidence)
+# silently lost every other keyword's verdict. The pin is saved before the first
+# cut and restored after the last, whatever happens in between.
+_sweep_pin_backup = None
+if os.path.exists(SWEEP_PIN):
+    _sweep_pin_backup = io.open(SWEEP_PIN, "rb").read()
+import atexit
+@atexit.register
+def _restore_sweep_pin():
+    if _sweep_pin_backup is not None:
+        io.open(SWEEP_PIN, "wb").write(_sweep_pin_backup)
+
+
+@atexit.register
+def _force_clean_rom():
+    """🔴 A KNIFE'S WRITE DEFEATS `make`'s UP-TO-DATE CHECK, and that is worse than
+    it sounds. Writing build/zerobas-main-eu.rom makes the artifact NEWER than its
+    sources, so a later `make repack-machine` does nothing and the tree keeps a
+    KNIFED machine while every command reports success. Measured 2026-09-13: after
+    an interrupted run the installed main ROM was 63721706 where a clean build
+    gives e3dbed36, and `make repack-machine` would not replace it. The battery's
+    own fingerprint line was the only thing that showed it.
+    So the ROM is DELETED and rebuilt at exit -- once per session, not per cut --
+    and the machine re-installed from those canonical bytes."""
+    try:
+        os.remove(ROM)
+    except OSError:
+        pass
+    subprocess.run(["make", "repack-machine"], cwd=ROOT, capture_output=True)
+
 dead = syms()["stmt_error"]
 print("knife: statement handlers -> stmt_error $%04X; a row still SUPPORTED is BLIND\n" % dead)
 for kw, row, tok in TARGETS:
@@ -251,6 +315,7 @@ for kw, row, tok in TARGETS:
         rom[off:off + 2] = orig
         io.open(ROM, "wb").write(bytes(rom))
         install()
+    record(kw, row, v, "fn" if FNMODE else "stmt")
     flag = ("LOAD-BEARING" if v != "SUPPORTED"
             else "WEAK (already excluded)" if WEAK.get(row) else "🔴 BLIND")
     print("  %-8s row %-10s knifed -> %-12s %s" % (kw, row, v, flag))

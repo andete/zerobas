@@ -225,11 +225,33 @@ REACHED = {1: "TIER 0 — open TIER 1 item (happy path broken or keyword MISSING
            # scored SUPPORTED on an EMPTY capture, and four of the five
            # silent-failure modes are ways two machines agree about nothing.
            "kw1": "TIER 0 — no known gap; ONE happy-path row agrees",
-           "kw3": "TIER 0 — no known gap; a happy-path AND an error row agree"}
-GROUP_ORDER = ["kwgap", 1, 2, 3, 4, 5, "kw1", "kw3", None]
+           "kw1c": "TIER 0 — no known gap; ONE row agrees, and it is CONNECTED "
+                   "(a knife cut makes it notice)",
+           "kw3": "TIER 0 — no known gap; a happy-path AND an error row agree",
+           "kw3c": "TIER 0 — no known gap; two rows agree, and the keyword is "
+                   "CONNECTED (a knife cut makes it notice)"}
+GROUP_ORDER = ["kwgap", 1, 2, 3, 4, 5, "kw1", "kw1c", "kw3", "kw3c", None]
 
 
 KWSWEEP_PIN = os.path.join(ROOT, "build", "kwsweep-verdicts.json")
+KNIFE_PIN = os.path.join(ROOT, "build", "kwknife-connected.json")
+
+
+def knife_connected(path=KNIFE_PIN):
+    """The keywords a knife cut has shown a row NOTICES (D-KWKNIFE).
+
+    🔴 CONNECTED IS NOT VERIFIED. The cut disables the keyword's dispatch
+    entirely, so a row that notices is CONNECTED to it — a total failure is seen.
+    It says nothing about whether a SUBTLE defect would be, and nothing about
+    BREADTH. Read as attainment it would repeat exactly the mistake TIER 0 exists
+    to correct."""
+    try:
+        import json
+        with open(path, encoding="utf-8") as fh:
+            pin = json.load(fh)
+    except (OSError, ValueError):
+        return set()
+    return {kw for kw, r in pin.get("rows", {}).items() if r.get("connected")}
 
 
 def stmt_keyword(stmt, kwset):
@@ -306,14 +328,16 @@ def keyword_tiers(its, kws, evidence=None):
     return out
 
 
-def reached_group(g, e, t3=False):
+def reached_group(g, e, t3=False, conn=False):
     """The bucket a keyword prints under, from its gap tier and its evidence."""
     if g is not None:
         return g                                  # 1..5: stuck below that tier
     if e == "SUPPORTED":
         # A PROVES-T3 row is the rung above a happy-path row: same keyword, a
         # SECOND row that scored an ERROR situation against the reference.
-        return "kw3" if t3 else "kw1"
+        if t3:
+            return "kw3c" if conn else "kw3"
+        return "kw1c" if conn else "kw1"
     if e in ("DIVERGENT", "MISSING", "SILENT-GAP", "EXTRA"):
         return "kwgap"                            # a gap kwsweep sees and nobody filed
     return None                                   # no known gap, no evidence
@@ -351,9 +375,10 @@ def fmt_items(its, kws, tiers_only=True, width=70):
 def fmt_keywords(its, kws, evidence=None):
     kt = keyword_tiers(its, kws, evidence)
     t3 = kwsweep_t3(kws)
+    conn = knife_connected()
     groups = defaultdict(list)
     for kw, (g, _, e) in kt.items():
-        groups[reached_group(g, e, kw in t3)].append(kw)
+        groups[reached_group(g, e, kw in t3, kw in conn)].append(kw)
     out = []
     for g in GROUP_ORDER:
         if g is None or not groups[g]:
@@ -383,7 +408,7 @@ FOOTER = ("**\"No open gap\" is not \"verified\", and a kwsweep verdict is NOT a
           "red if the keyword breaks. Neither has been demonstrated for any keyword.")
 
 
-def fmt_markdown(its, kws, evidence=None, t3=None):
+def fmt_markdown(its, kws, evidence=None, t3=None, connected=None):
     """🔴 `evidence`/`t3` are INJECTABLE because S14 was not hermetic: it built its
     markdown from the LIVE build/kwsweep-verdicts.json, so the expected `LOF` row
     changed the moment a sweep re-ran and gave LOF a verdict (it gained a
@@ -417,9 +442,10 @@ def fmt_markdown(its, kws, evidence=None, t3=None):
             "| established tier, and what is known against it | n | keywords |", "|---|---|---|"]
     kt = keyword_tiers(its, kws, evidence)
     t3 = kwsweep_t3(kws) if t3 is None else t3
+    conn = knife_connected() if connected is None else connected
     groups = defaultdict(list)
     for kw, (g, _, e) in kt.items():
-        groups[reached_group(g, e, kw in t3)].append(kw)
+        groups[reached_group(g, e, kw in t3, kw in conn)].append(kw)
     for g in GROUP_ORDER:
         if g is None or not groups[g]:
             continue
@@ -429,11 +455,15 @@ def fmt_markdown(its, kws, evidence=None, t3=None):
     out += ["", FOOTER, "", "### Alphabetical", "", "| keyword | reached | evidence |", "|---|---|---|"]
     for kw in sorted(kws):
         g, lines, e = kt[kw]
-        grp = reached_group(g, e, kw in t3)
+        grp = reached_group(g, e, kw in t3, kw in conn)
         if grp is None:
             out.append(f"| `{kw}` | TIER 0 | no known gap, no row |")
         elif grp == "kw1":
             out.append(f"| `{kw}` | TIER 0 | no known gap; 1 row agrees |")
+        elif grp == "kw1c":
+            out.append(f"| `{kw}` | TIER 0 | no known gap; 1 row agrees, connected |")
+        elif grp == "kw3c":
+            out.append(f"| `{kw}` | TIER 0 | no known gap; 2 rows agree, connected |")
         elif grp == "kw3":
             # D-KWT3: the rung above kw1 -- a SECOND row, scoring an error
             # situation. `g` is None for both, so this arm must come before the
@@ -567,7 +597,7 @@ def selftest():
         stmt_keyword("a=abs(-5)", {"ABS", "A"} - {"A"}) == "ABS" and stmt_keyword('a$=mid$("hi",1,1)', {"MID$"}) == "MID$"
         and stmt_keyword("A=1", {"ABS"}) is None)
     arm("S20 the full list names every keyword exactly once", sorted(kt) == sorted(kws))
-    md = fmt_markdown(its, kws, evidence={}, t3=set())
+    md = fmt_markdown(its, kws, evidence={}, t3=set(), connected=set())
     _s14 = [("summary row", "| TIER 1 | works correctly in the happy path | 1 |" in md),
             ("LOF row", "| `LOF` | TIER 0 | open TIER 1 item, TODO.md 2 |" in md),
             ("ZZZ row", "| `ZZZ` | TIER 0 | no known gap, no row |" in md),
