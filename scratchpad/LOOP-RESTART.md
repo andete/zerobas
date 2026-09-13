@@ -6,7 +6,7 @@ session and the loop resumes exactly where it stopped.
 
 ## Where things stand
 
-* Tree CLEAN and pushed at `a7dbb7d4`. Recount everything — never quote a number
+* Tree CLEAN and pushed at `c6215324`. Recount everything — never quote a number
   from this file.
 * 🟢 **EVERY TIER 1 THE DRAIN PRODUCED IS CLOSED** (`NEW` `FILES` `LFILES`
   `MERGE`, plus `LOAD` which only the MERGE sweep could have found), and **the
@@ -25,31 +25,40 @@ session and the loop resumes exactly where it stopped.
   **D-KWUMB** (`b4177c61`) the umbrella item · **D-KWLOG** (`ca271f77`)
   `NEEDS-LOG:`, the third rig — a CAPTURE rather than a device — and `LLIST` ·
   **D-KWGET** (`a7dbb7d4`) `GET` (a random-file read, not a keyboard verb) and
-  `CALL` (reservedness only, with the shortfall named).
+  `CALL` (reservedness only, with the shortfall named) · **D-KWINP** (`c6215324`)
+  `INPUT`'s FILE form and `RENUM`.
+* 🔴 **TWICE NOW A WORD WAS IN THE LIST FOR ITS NAME**: `GET` (a random-file read)
+  and `INPUT` (`INPUT #n` reads a file), each filed next to a word with a real
+  blocker and inheriting it by adjacency. Check the shape before the blocker.
 
-## The next slice — `INPUT`, and it is the SAME TRAP `GET` was
+## The next slice — `AUTO`, and its filed blocker is the WRONG one
 
-**SIX words: `AUTO CLOAD CSAVE INKEY$ INPUT RENUM`.**
+**FOUR words: `AUTO CLOAD CSAVE INKEY$`.** Every one now has a measured blocker
+rather than a suspected one, and `AUTO`'s is the cheapest — but it is NOT the one
+on file.
 
-🔴 **D-KWGET'S LESSON, AND IT POINTS STRAIGHT AT THE NEXT ONE: a word can be in
-this list for its NAME rather than for a gap.** `GET` had been sitting beside
-`INKEY$` and `INPUT` as though it shared their keyboard blocker; MSX1's `GET` is
-the RANDOM-FILE record read and needed no keyboard at all.
-
-* **`INPUT` HAS A FILE FORM — `INPUT #n, var` — which needs no keystroke**, and
-  the disk rig is mounted. `OPEN"HI.TXT"FOR INPUT AS#1 : INPUT#1,A$` reads the
-  fixture's line; `HI.TXT` is `Hello from zerobas-disk!` + CRLF, so `LEN(A$)` is a
-  value a stub cannot produce. **MEASURE IT FIRST** — and prove the readback
-  moves, e.g. against the same row with the `INPUT#` removed.
-  ⚠️ The crunch body must START with the keyword (`input#1,a$`) or the row credits
-  nothing — `tier_table.stmt_keyword` takes the FIRST keyword token.
-* `INKEY$` is genuinely keyboard-blocked and stays with the injector-timing group.
-* `CLOAD` `CSAVE` — nothing here PLAYS a tape; `TIME` does not advance during a
-  save, so the cheap readback is dead too.
-* `AUTO` — needs a case slot that survives line-entry mode, or LAST position in
-  the sweep. It took 21 unrelated rows down with it once.
-* `RENUM` — a read-back the row format cannot express: it STOPS the program, so
-  no statement after it runs and an `LLIST` after it never executes either.
+* **`AUTO` — the filing says "interactive: swallows all following input". Solved:
+  put it LAST and there are no neighbours to poison.** Proved by sacrificing two
+  rows to it — the harness flagged both MIS-DELIVERED and then REFUSED on the
+  CF-3300 rather than reporting garbage. With nothing behind it the verb SCORES:
+  both machines print the `100` line-entry prompt.
+  🔴 **WHAT ACTUALLY BLOCKS IT: line-entry mode leaves NO PROMPT.** `screen_tail`
+  runs to the closing prompt and there isn't one, so the CF-3300's tail drags in
+  twenty blank rows and the FUNCTION-KEY DISPLAY, which zerobas does not show —
+  DIVERGENT for a machine-configuration reason, exactly the `FILES`/`CSRLIN` row
+  this drain already threw away.
+  ➡️ **THE FIX IS A KWSWEEP-LOCAL TAIL RULE**, e.g. a row tag that drops the last
+  screen row. `basic_probe_lptverb.screen_rows` does exactly that (`[:-1]`) with
+  exactly this justification. ⚠️ **DO NOT change `omsx_repl.screen_tail`** — it is
+  a shared leaf with a wide blast radius, and one row does not justify it.
+  ⚠️ A text rule cannot identify the furniture: `keykw` REWRITES that line to
+  `ZZQ auto goto list run`, so match the POSITION, never the content.
+* `CLOAD` `CSAVE` — need a tape the emulator can PLAY. `cassetteplayer insert`
+  appears nowhere under `probes/`; `cas_decode` is WAV→bytes only. A fixture could
+  be RECORDED by driving one openMSX pass with `CSAVE` and keeping the WAV (the
+  cassette twin of `tools/make_test_dsk.py`) — a real slice, not a quick one.
+* `INKEY$` — the genuine keyboard block; the injector's TIMING, and it must not
+  reopen D-LATCH.
 
 ## 🔴 Two staging traps, both paid for on 2026-09-12/13
 
@@ -115,4 +124,4 @@ a pattern that appears in the polling command.
 
 Paste this into a fresh session:
 
-    /loop continue autonomously on zerobas — 🔴 TIER 1 BEFORE ANYTHING ELSE, then drain "no known gap" to ZERO (Joost's 2026-09-12 ruling, which outranks TIER 4). Read scratchpad/LOOP-RESTART.md FIRST, then the item's own block in TODO.md to its END. Run `make tiers`; recount keywords with `python3 tools/tier_table.py --keywords` — never quote a count. THIS SLICE: `INPUT`, and it is the SAME TRAP `GET` was. 🔴 A WORD CAN BE IN THIS LIST FOR ITS NAME RATHER THAN FOR A GAP: `GET` sat beside `INKEY$` and `INPUT` as though it shared their keyboard blocker, and MSX1's `GET` is the random-file record read. `INPUT` has a FILE form — `INPUT #n, var` — that needs no keystroke, and the disk rig is mounted: `OPEN"HI.TXT"FOR INPUT AS#1 : INPUT#1,A$` reads the fixture's line (`Hello from zerobas-disk!` + CRLF), so `LEN(A$)` is a value a stub cannot produce. MEASURE IT FIRST and prove the readback MOVES — e.g. against the same row with the `INPUT#` removed. ⚠️ The crunch body must START with the keyword (`input#1,a$`) or the row credits nothing: `tier_table.stmt_keyword` takes the FIRST keyword token. Then look at the remaining five the same way before assuming each needs what its neighbour needs. Every row must clear the FIVE silent-failure modes in LOOP-RESTART.md and after adding rows READ THE WHOLE SWEEP SUMMARY. Standing rules: full `make gates` before each commit and never commit red; 🔴 AFTER ANY basic/ OR sub/ CHANGE stage zerobas-main-eu.ips/.bps WITH the commit (patch-freshness-check only sees the omission one commit LATER); 🔴 `check_todo_citations.py --fix` REWRITES EVERY DOC THAT CITES A MOVED BLOCK — five files beyond TODO.md, twice running; read `git status --short` as a LIST; after a `--fix` re-run every gate that READS TODO.md; `rm -rf build && make basic-reloc` for any wall figure, and BACK UP build/kwsweep-verdicts.json first; `test -e <path> && exit 1` before any `cat >` heredoc; stage explicit paths, `git add -A` banned; commit message to a FILE with `git commit -F`; commit AND push after each fix without asking; never write a tracked file while a battery runs; re-run the five battery-excluded targets by hand after any slice touching a shared leaf; NEVER poll with a pattern that matches the polling command itself — use the background task's own completion notification; READ the output of every edit script.
+    /loop continue autonomously on zerobas — 🔴 TIER 1 BEFORE ANYTHING ELSE, then drain "no known gap" to ZERO (Joost's 2026-09-12 ruling, which outranks TIER 4). Read scratchpad/LOOP-RESTART.md FIRST, then the item's own block in TODO.md to its END. Run `make tiers`; recount keywords with `python3 tools/tier_table.py --keywords` — never quote a count. THIS SLICE: `AUTO`, whose FILED blocker is the wrong one. The filing says "interactive: swallows all following input" — solved by putting it LAST, proved by sacrificing two rows to it (the harness flagged both MIS-DELIVERED and REFUSED on the CF-3300 rather than reporting garbage). With nothing behind it the verb SCORES: both machines print the `100` line-entry prompt. 🔴 WHAT ACTUALLY BLOCKS IT is that line-entry mode leaves NO PROMPT, so `screen_tail` runs to the end of the screen and the CF-3300's tail drags in twenty blank rows and the FUNCTION-KEY DISPLAY that zerobas does not show — DIVERGENT for a machine-configuration reason, the same shape as the `FILES`/`CSRLIN` row this drain already threw away. ➡️ Fix it with a KWSWEEP-LOCAL tail rule (a row tag that drops the last screen row); `basic_probe_lptverb.screen_rows` does exactly that with exactly this justification. ⚠️ DO NOT change `omsx_repl.screen_tail` — shared leaf, wide blast radius, one row does not justify it. ⚠️ Match the POSITION, never the content: `keykw` rewrites that line to `ZZQ auto goto list run`. 🔴 AND PUT THE ROW LAST IN `SWEEP`, with a comment saying why, or it takes its neighbours down. Every row must clear the FIVE silent-failure modes in LOOP-RESTART.md and after adding rows READ THE WHOLE SWEEP SUMMARY — especially this one, which is the row that taught that rule. Standing rules: full `make gates` before each commit and never commit red; 🔴 AFTER ANY basic/ OR sub/ CHANGE stage zerobas-main-eu.ips/.bps WITH the commit; 🔴 `check_todo_citations.py --fix` REWRITES EVERY DOC THAT CITES A MOVED BLOCK — five files beyond TODO.md, three times running; read `git status --short` as a LIST; after a `--fix` re-run every gate that READS TODO.md; `rm -rf build && make basic-reloc` for any wall figure, and BACK UP build/kwsweep-verdicts.json first; `test -e <path> && exit 1` before any `cat >` heredoc; stage explicit paths, `git add -A` banned; commit message to a FILE with `git commit -F`; commit AND push after each fix without asking; never write a tracked file while a battery runs; re-run the five battery-excluded targets by hand after any slice touching a shared leaf; NEVER poll with a pattern that matches the polling command itself — use the background task's own completion notification; READ the output of every edit script.
