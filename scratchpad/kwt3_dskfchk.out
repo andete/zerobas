@@ -1,5 +1,46 @@
-=== cf3300       < 707 > | Ok | PRINT"<";DSKF(9);">" | < | Bad drive name | Ok | color   auto    goto    list    run
-=== zb           ZBPRINT"<";DSKF(0);">" | < 707 > | ZBPRINT"<";DSKF(1);">" | < 707 > | ZBPRINT"<";DSKF(9);">" | < 707 > | ZB
+=== cf3300
+      PRINT"<";DSKF(0);">"
+      < 707 >
+      Ok
+      PRINT"<";DSKF(1);">"
+      < 707 >
+      Ok
+      PRINT"<";DSKF(3);">"
+      <
+      Bad drive name
+      Ok
+      PRINT"<";DSKF(4);">"
+      <
+      Bad drive name
+      Ok
+      PRINT"<";DSKF(8);">"
+      <
+      Bad drive name
+      Ok
+      PRINT"<";DSKF(9);">"
+      <
+      Bad drive name
+      Ok
+      color   auto    goto    list    run
+=== zb
+      zerobas version 0.1
+      clean-room MSX1 BASIC
+      zerobas Disk BASIC
+      ZBNEW
+      ZBNEW
+      ZBPRINT"<";DSKF(0);">"
+      < 707 >
+      ZBPRINT"<";DSKF(1);">"
+      < 707 >
+      ZBPRINT"<";DSKF(3);">"
+      < 707 >
+      ZBPRINT"<";DSKF(4);">"
+      < 707 >
+      ZBPRINT"<";DSKF(8);">"
+      < 707 >
+      ZBPRINT"<";DSKF(9);">"
+      < 707 >
+      ZB
 
 READ IT AS: drives 0,1,2,3,9 in order. The reference's boundary is the
 subject; a figure where it says `Bad drive name` is the defect.
