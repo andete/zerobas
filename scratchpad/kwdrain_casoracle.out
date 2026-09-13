@@ -1,0 +1,7 @@
+step 1  zb CSAVE -> 124486 WAV bytes
+        screen= | zerobas Disk BASIC | ZBNEW | ZB10 PRINT"[Z9]" | ZBCSAVE"ZQ" | ZBPRINT"[W9]" | [W9] | ZB
+step 2  zb re-reads its own tape
+        screen=| clean-room MSX1 BASIC | zerobas Disk BASIC | ZBNEW | ZBNEW | ZBCLOAD"ZQ" | Found:ZQ | ZB
+step 3  vg8020 reads the SAME tape
+        screen= 28815 Bytes free | Ok | NEW | Ok | NEW | Ok | CLOAD"ZQ" | color  auto   goto   list   run
+refcache: 0 hit, 3 miss, 3 stored

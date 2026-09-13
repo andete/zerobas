@@ -1,0 +1,5 @@
+tape written: 124486 bytes
+vg8020 LOAD"CAS:ZQ"                ytes free | Ok | NEW | Ok | NEW | Ok | LOAD"CAS:ZQ" | color  auto   goto   list   run
+vg8020 CLOAD"ZQ"  (known-failing)  5 Bytes free | Ok | NEW | Ok | NEW | Ok | CLOAD"ZQ" | color  auto   goto   list   run
+zb     LOAD"CAS:ZQ" (control)      room MSX1 BASIC | zerobas Disk BASIC | ZBNEW | ZBNEW | ZBLOAD"CAS:ZQ" | Found:ZQ | ZB
+refcache: 0 hit, 4 miss, 4 stored
