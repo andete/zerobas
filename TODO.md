@@ -489,7 +489,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:16932 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:16971 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -655,7 +655,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:5256 (T-6FE392)8 (T-529ABE)` from `TODO.md:15583 (T-529ABE)`: a
+      `TODO.md:5256 (T-6FE392)8 (T-529ABE)` from `TODO.md:15622 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -6100,7 +6100,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:15583 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:15622 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -6829,6 +6829,45 @@ list. **When a slice lands, grep this list for what it just shipped.**
       same uninitialised cursor reaching a non-DATA byte, or a genuinely different
       direct-mode parse path. The two cells above are one hypothesis, not one
       measurement [[a-justification-parenthesis-is-an-unrun-claim]].
+      🔬 **DIAGNOSED AND SITED THE SAME DAY, AND IT IS THREE DIVERGENCES, NOT ONE
+      (D-READDIR, 2026-09-13).** The cause is not in `READ` at all: **`DATASTATE`
+      and `RESTORE_LINE` are reset by `RUN` and `RESTORE` and by nothing else**, so
+      before the first `RUN` the cursor has never been seeded and a direct-mode
+      `READ` seeks from an uninitialised pointer.
+      🎯 **ASKED THE REFERENCE WHERE THE RESET BELONGS** rather than inferring it
+      ([`scratchpad/kwt3_datareset.py`](scratchpad/kwt3_datareset.py),
+      [readings](scratchpad/kwt3_datareset.out)) — read one item to position the
+      cursor, do one thing, read again; `7` means it reset, `8` means it held:
+      | | VG-8020 | zerobas |
+      |---|---|---|
+      | after `RUN`, read again | `8` | `8` ✅ |
+      | **`CLEAR` then read** | `7` | 🔴 `8` |
+      | **a program EDIT then read** | `7` | 🔴 `8` |
+      | `RESTORE` then read | `7` | `7` ✅ |
+      ➡️ **SO THE DATA CURSOR OBEYS THE RULE `vars_reset` ALREADY EXISTS TO EXPRESS**
+      — the reference resets it whenever the variable world resets: RUN, NEW,
+      CLEAR/MAXFILES and every program EDIT, which is exactly that routine's five
+      callers. `ONELIN` was moved there for the identical reason and its comment
+      states the identical five-caller argument; this is the same rule, measured
+      independently rather than assumed from the precedent.
+      💰 **AND IT IS BLOCKED ON TEN LOW-REGION BYTES, WHICH IS WHY NO CODE SHIPPED
+      YET.** The seed is `xor a` + `ld (DATASTATE),a` + `ld hl,TXTBASE` +
+      `ld (RESTORE_LINE),hl`, and `vars_reset` lives in `basic/arrays.asm`, in the
+      LOW region — which the build refuses to overrun
+      (`STRING_ENGINE_OVERRAN_4000_HEADER__LOW_REGION_FULL`). Deleting the now-
+      redundant copy at the `RUN` site frees the same ten bytes **in page 1, not in
+      the low region**, so it does not pay for it; D-LOWCARVE measured the three
+      cheap carve routes shut there the same day.
+      ⚠️ **A CHEAPER SHAPE MAY EXIST AND SHOULD BE PRICED FIRST**: a third
+      `DATASTATE` value meaning *unpositioned, from the program top* would let
+      `vars_reset` store one constant (`ld a,3` + `ld (DATASTATE),a`, five bytes)
+      and move the `TXTBASE` default into `read_one_value`'s existing unpositioned
+      branch, where the `RESTORE_LINE` load already is. Price that against the
+      carve before hunting bytes.
+      🎯 **WHAT IS ALREADY WON**: the defect is reproduced in one row, the cause is
+      named, the correct SITE is measured rather than guessed, and two further
+      divergences (`CLEAR`, EDIT) that no existing suite covers are now on the
+      record with it.
       🎚️ TIER 1 — happy path: `READ` at the prompt reads the wrong value silently
       🤖 AUTONOMOUS — the defect is measured, narrow and reproducible in one row.
 
