@@ -1,0 +1,5 @@
+vg8020   467322 B  10.60s  halfperiods=39545   short=2393Hz long=183Hz  decoded 37 bytes
+        first 24 decoded bytes: d3d3d3d3d3d3d3d3d3d35a51202020200d800a0091225b5a
+zb       124486 B   2.82s  halfperiods=13091   short=2385Hz long=1169Hz  decoded 30 bytes
+        first 24 decoded bytes: d3d3d3d3d3d3d3d3d3d35a51202020200d800a0091225b5a
+refcache: 0 hit, 2 miss, 2 stored

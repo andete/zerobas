@@ -1,0 +1,5 @@
+vg8020  recorded  467322 bytes   [W9] | Ok | color  auto   goto   list   run
+vg8020  reads its OWN tape:  Ok | CLOAD"ZQ" | Found:ZQ | color  auto   goto   list   run
+zb      recorded  124486 bytes   ZBPRINT"[W9]" | [W9] | ZB
+zb      reads its OWN tape:  Found:ZQ | ZBPRINT"[P9]" | [P9] | ZB
+refcache: 0 hit, 4 miss, 4 stored

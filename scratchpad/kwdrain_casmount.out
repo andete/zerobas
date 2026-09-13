@@ -1,0 +1,8 @@
+clean-room .cas fixture: 62 bytes
+vg8020  cmdline   CLOAD   Ok | CLOAD"ZQ" | Found:ZQ | color  auto   goto   list   run
+vg8020  prologue  CLOAD   Ok | CLOAD"ZQ" | Found:ZQ | color  auto   goto   list   run
+cf3300  cmdline   CLOAD  | CLOAD"ZQ" | Found:ZQ | color   auto    goto    list    run
+cf3300  prologue  CLOAD  | CLOAD"ZQ" | Found:ZQ | color   auto    goto    list    run
+zb      cmdline   CLOAD   zerobas Disk BASIC | ZBNEW | ZBNEW | ZBCLOAD"ZQ" | Found:ZQ
+zb      prologue  CLOAD   zerobas Disk BASIC | ZBNEW | ZBNEW | ZBCLOAD"ZQ" | Found:ZQ
+refcache: 0 hit, 6 miss, 6 stored

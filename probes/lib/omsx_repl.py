@@ -1061,6 +1061,7 @@ def _run_batch(machine: str, cases: list[tuple[str, list[str]]], *,
                hold_secs: float = 12.0, prologue: tuple[str, ...] = (),
                timeout: float = 240.0, omsx: str | None = None,
                cart: str | None = None, diska: str | None = None,
+               cassette: str | None = None,
                stall: float | None = None, abscap: float | None = None,
                settle_n: int = 0, settle_out: dict | None = None,
                sentinel: tuple[int, int] | None = None,
@@ -1149,6 +1150,17 @@ def _run_batch(machine: str, cases: list[tuple[str, list[str]]], *,
             cmd += ["-cart", cart]
         if diska:
             cmd += ["-diska", diska]
+        if cassette:
+            # 🔴 D-CASORACLE (2026-09-13): THE COMMAND-LINE FORM, AND IT IS NOT THE
+            # SAME AS THE Tcl ONE. A tape mounted from a `prologue` with
+            # `cassetteplayer <file>` is read by zerobas's repack machine and by
+            # NEITHER reference: VG-8020 and CF-3300, `CLOAD` and `LOAD"CAS:"`, on a
+            # clean-room `.cas` AND on a WAV zerobas recorded itself, all silent
+            # (scratchpad/kwdrain_casoracle*.out). Every cassette probe in this tree
+            # passes `-cassetteplayer` HERE instead -- and every one of them runs on
+            # the repack machine only, so the difference had never been tested
+            # against a reference. This is that seam, added so it can be.
+            cmd += ["-cassetteplayer", cassette]
         cmd += ["-command", "set renderer none; set sound_driver null", "-script", tcl]
 
         # 🔴 openMSX's OWN OUTPUT USED TO GO TO `DEVNULL`, AND SO DID THE ONE
@@ -1816,6 +1828,7 @@ def _run_cases_impl(machine: str, cases: list[tuple[str, list[str]]], *,
               boot: float = 8.0, step: float = 2.5, cap_gap: float = 2.5,
               timeout: float | None = None, omsx: str | None = None,
               cart: str | None = None, diska: str | None = None,
+              cassette: str | None = None,
               verify_delivery: bool = True,
               run_gap: float | None = None,
               sentinel: tuple[int, int] | None = None,
@@ -1855,7 +1868,7 @@ def _run_cases_impl(machine: str, cases: list[tuple[str, list[str]]], *,
     """
     kw = dict(boot=boot, step=step, cap_gap=cap_gap, capture=capture,
               hold_secs=hold_secs, prologue=prologue,
-              omsx=omsx, cart=cart, diska=diska, run_gap=run_gap,
+              omsx=omsx, cart=cart, diska=diska, cassette=cassette, run_gap=run_gap,
               sentinel=sentinel, sentinel_capture=sentinel_capture)
     if settle_out is not None:
         kw["settle_out"] = settle_out

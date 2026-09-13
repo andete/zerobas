@@ -489,7 +489,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:16307 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:16374 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -655,7 +655,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:4873 (T-6FE392)8 (T-529ABE)` from `TODO.md:15044 (T-529ABE)`: a
+      `TODO.md:4940 (T-6FE392)8 (T-529ABE)` from `TODO.md:15111 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -3663,9 +3663,24 @@ list. **When a slice lands, grep this list for what it just shipped.**
       PROLOGUE, which `omsx_repl.run_cases` supports. The prologue demonstrably
       works for zerobas. Testing the command-line form against a REFERENCE means
       going around `run_cases`, which is apparatus — and that is where this stops.
-      ➡️ **SO `CLOAD` AND `CSAVE` HAVE NO ORACLE HERE**, which is the same shape the
-      MK/CV family had before D-KWORACLE and is a rig fact rather than a keyword
-      one. It is recorded in the 🙋 item rather than chased in a loop tick.
+      ~~➡️ **SO `CLOAD` AND `CSAVE` HAVE NO ORACLE HERE**~~
+      🔴 **RETRACTED THE SAME DAY (D-CASORACLE), AND THE REASON IS THE BEST PART:
+      THE "FIXTURE" I WAS MEASURING WITH WAS THE DEFECT.** The VG-8020 reads a
+      clean-room `.cas` perfectly (`Found:ZQ`), so the oracle was there all along.
+      Every run that concluded "no oracle" had fed the reference a tape ZEROBAS
+      RECORDED — which is precisely the artifact a real BIOS cannot read, filed
+      above as a TIER 1 defect. **The broken subject was standing in for the
+      instrument**, so the instrument was blamed
+      [[an-instrument-can-fail-the-way-the-thing-it-replaced-failed]].
+      ⚠️ **THAT IS TWO WRONG BLOCKERS I FILED IN ONE NIGHT ON THIS ONE VERB** — "no
+      tape player" (a grep for the wrong string) and "no oracle" (a fixture that was
+      itself the bug). Both were re-verified away within the hour by someone
+      re-running them, which is the whole argument for the re-verify rule.
+      ⚠️ **AND ONE REAL CONSTRAINT SURVIVES**: on the reference the `.cas` reads in
+      DIRECT mode and NOT in `stored` mode (`10 CLOAD"ZQ"` + `RUN` prints nothing
+      there while zerobas prints `Found:ZQ`). A `CLOAD` row must be direct-mode —
+      and whether that stored-mode difference is itself a divergence is unmeasured
+      and NOT claimed here.
       ⚠️ **THE PATTERN WAS TEN FOR TEN AND IS NOW TEN OF TWELVE — the tape and
       the printer log HELD.** Every other blocker examined this session — the display verbs' "cannot take a row", the multi-line words'
       "cannot be expressed", the CF-3300 oracle, the disk fixture (which needed a
@@ -3709,6 +3724,58 @@ list. **When a slice lands, grep this list for what it just shipped.**
       Filed as unmeasured rather than agreed; it needs a rig that can absorb a
       tape write, or a disk-path variant on the CF-3300.
 
+- [ ] 🔴 **A TAPE ZEROBAS SAVES CANNOT BE LOADED ON A REAL MSX — THE BYTES ARE
+      RIGHT AND THE SIGNAL IS NOT.** Found 2026-09-13 by D-CASORACLE while building
+      the tape oracle the keyword drain asked for. The VG-8020 **HANGS** searching a
+      tape zerobas wrote; every other direction works.
+      | reader ＼ writer | VG-8020 tape | zerobas tape |
+      |---|---|---|
+      | **zerobas** | `Found:ZQ` ✅ | `Found:ZQ` ✅ |
+      | **VG-8020** | `Found:ZQ` ✅ | 🔴 **hangs — no `Found:`, and the statement never returns** |
+      🎯 **THE HANG IS DISTINGUISHED FROM SILENCE BY A PROMPT WITNESS**, not
+      inferred: the row is `CLOAD"ZQ" : PRINT"[P9]"`, and `[P9]` prints in all three
+      working cells and never in the failing one — at `cap_gap` 90 **and** 300
+      ([`scratchpad/kwdrain_wavread.py`](scratchpad/kwdrain_wavread.py),
+      [readings](scratchpad/kwdrain_wavread.out)).
+      🎯 **AND THE HARNESS IS EXONERATED BY ITS OWN CONTROL**: the VG-8020 records
+      467 322 bytes and reads that back perfectly, so openMSX's record→play round
+      trip is sound ([readings](scratchpad/kwdrain_wavctl.out)). A clean-room `.cas`
+      of the same program reads on BOTH machines. Only one cell of the matrix fails.
+      🔴 **THE CONTENT IS BYTE-IDENTICAL AND THE WAVEFORM IS NOT** — decoded with
+      this tree's own [`probes/lib/cas_decode.py`](probes/lib/cas_decode.py)
+      ([`scratchpad/kwdrain_wavleader.py`](scratchpad/kwdrain_wavleader.py),
+      [readings](scratchpad/kwdrain_wavleader.out)):
+      | | first 24 decoded bytes | length | short tone | long tone |
+      |---|---|---|---|---|
+      | VG-8020 | `d3…d3 5a 51 20 20 20 20 0d 80 0a 00 91 22 5b 5a` | **10.60 s** | 2393 Hz | **183 Hz** |
+      | zerobas | **the same bytes** | **2.82 s** | 2385 Hz | **1169 Hz** |
+      ➡️ **SO THE FORMAT IS RIGHT AND THE SYNC STRUCTURE IS NOT.** The `1`-bit tone
+      matches (2393 vs 2385 Hz); what differs is the LONG half-period average —
+      183 Hz against 1169 Hz — i.e. the reference's tape carries long low-frequency
+      stretches that zerobas's does not, and is nearly 4× as long for the same
+      one-line program. That is the LEADER / inter-block gap, and this tree already
+      knows why it matters:
+      [`basic_probe_cas_leader_budget.py`](probes/basic/basic_probe_cas_leader_budget.py)
+      documents that a BIOS re-locks with `TAPION` during that leader. A leader too
+      short to lock onto is exactly a search that never completes.
+      ⚠️ **HYPOTHESIS, NOT YET THE FIX**: the numbers above say "leader/gap", and
+      the fix slice must MEASURE which — header tone length, inter-block gap, or
+      both — before changing a byte.
+      🔴 **WHY NO GATE CAUGHT IT, WHICH IS WORTH MORE THAN THE DEFECT.** Every
+      cassette suite in this tree decodes the recording with OUR decoder and asserts
+      the BYTES — and the bytes are right. `basic_probe_cassave.py` compares file
+      TYPE ids, names and payload; nothing ever asked a REAL BIOS to read what we
+      write. The suites agree for the wrong reason
+      [[a-case-that-agrees-can-agree-for-the-wrong-reason]]
+      [[an-instrument-can-fail-the-way-the-thing-it-replaced-failed]].
+      ➡️ **THE ROW THAT WOULD HAVE CAUGHT IT IS NOW CHEAP**: `omsx_repl.run_cases`
+      takes `cassette=` since this slice, so "zerobas writes a tape, a REFERENCE
+      reads it" is one probe — and it is the arm to add with the fix.
+      🎚️ TIER 1 — happy path: `CSAVE` / `SAVE"CAS:"` is ordinary MSX BASIC, and what
+      it produces cannot be loaded on the machine it is meant for
+      🤖 AUTONOMOUS — the matrix is measured with controls in both directions; what
+      remains is finding which part of the sync structure is short, and fixing it.
+
 - [ ] 🙋 **THE LAST THREE UNATTRIBUTED KEYWORDS ARE AN APPARATUS PRICE, NOT A
       METHOD — `CLOAD`, `CSAVE`, `INKEY$`.** Joost's 2026-09-12 ruling drains the
       "no known gap" list to ZERO before TIER 4, and the drain has run from 114 to
@@ -3718,8 +3785,8 @@ list. **When a slice lands, grep this list for what it just shipped.**
       **Recount before reading any of this: `make tiers ARGS=--keywords`.**
       | word | what it needs | what already exists |
       |---|---|---|
-      | `CLOAD` | 🔴 **AN ORACLE.** Measured 2026-09-13: NEITHER reference reads a tape in this rig — VG-8020 and CF-3300, `CLOAD` and `LOAD"CAS:"`, on a tape zerobas wrote AND on a clean-room `.cas`, while zerobas reads both. The one untested difference is the `-cassetteplayer` COMMAND-LINE form the cas probes use, which means going around `run_cases` | the rig, the `.cas` encoder, and a SCREEN-visible readback (`Found:<name>`) that needs no new capture |
-      | `CSAVE` | the same missing ORACLE, plus a WAV-DECODE capture in kwsweep — its only output is the recording | the decode itself, in [`basic_probe_cassave.py`](probes/basic/basic_probe_cassave.py); `NEEDS-LOG:` is the precedent for a per-rig capture |
+      | `CLOAD` | 🟢 **NOTHING — THE ORACLE EXISTS.** The VG-8020 reads a clean-room `.cas` (`Found:ZQ`) in DIRECT mode; the earlier "no oracle" was a fixture that was itself the tape-write defect. A `NEEDS-TAPE:` rig is now a small job | the rig, `cas_encode.build_cas_basic`, `run_cases(cassette=…)` added this slice, and a screen-visible readback needing no capture |
+      | `CSAVE` | a WAV-DECODE capture in kwsweep — its only output is the recording. 🔴 **AND ITS SUBJECT IS NOW A FILED TIER 1 DEFECT**, so the row should be written WITH that fix, not before it | the decode, in [`basic_probe_cassave.py`](probes/basic/basic_probe_cassave.py); `NEEDS-LOG:` is the precedent for a per-rig capture |
       | `INKEY$` | the key injector's TIMING exposed to a row — a HARNESS change | `omsx_repl.key_proc()`, race-immune and measured, driven by two trap probes |
       ⚠️ **THE `INKEY$` ONE IS THE ONE TO BE CAREFUL WITH**: the timing lives inside
       `run_cases` (`boot` + per-line `step`), a row cannot see it, and D-LATCH /
@@ -5717,7 +5784,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:15044 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:15111 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

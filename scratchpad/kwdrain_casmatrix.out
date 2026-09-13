@@ -1,0 +1,11 @@
+zerobas-written WAV: 124486 bytes
+
+vg8020  cas  direct  " | Found:ZQ | color  auto   goto   list   run
+vg8020  cas  stored  AD"ZQ" | RUN | color  auto   goto   list   run
+vg8020  wav  direct   | CLOAD"ZQ" | color  auto   goto   list   run
+vg8020  wav  stored  AD"ZQ" | RUN | color  auto   goto   list   run
+zb      cas  direct  BASIC | ZBNEW | ZBNEW | ZBCLOAD"ZQ" | Found:ZQ
+zb      cas  stored  Disk BASIC | ZB10 CLOAD"ZQ" | ZBRUN | Found:ZQ
+zb      wav  direct   | ZBNEW | ZBNEW | ZBCLOAD"ZQ" | Found:ZQ | ZB
+zb      wav  stored  BASIC | ZB10 CLOAD"ZQ" | ZBRUN | Found:ZQ | ZB
+refcache: 0 hit, 9 miss, 9 stored

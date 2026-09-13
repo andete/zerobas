@@ -1,0 +1,8 @@
+vg8020  wrote  467322 bytes
+zb      wrote  124486 bytes
+
+zb      reads vg8020  tape:  ZBNEW | ZBCLOAD"ZQ" | Found:ZQ
+zb      reads zb      tape:  ZBPRINT"[P9]" | [P9] | ZB
+vg8020  reads vg8020  tape:  CLOAD"ZQ" | Found:ZQ | color  auto   goto   list   run
+vg8020  reads zb      tape:  Ok | CLOAD"ZQ" | color  auto   goto   list   run
+refcache: 0 hit, 6 miss, 6 stored
