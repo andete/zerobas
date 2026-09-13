@@ -489,7 +489,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:16184 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:16213 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -655,7 +655,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:4750 (T-6FE392)8 (T-529ABE)` from `TODO.md:14921 (T-529ABE)`: a
+      `TODO.md:4779 (T-6FE392)8 (T-529ABE)` from `TODO.md:14950 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -3368,7 +3368,10 @@ list. **When a slice lands, grep this list for what it just shipped.**
       zero `LPTPOS`).** Eleven blockers have been re-checked this session; these are
       the first two that held, and both hold for a reason that is now MEASURED rather
       than asserted.
-      🔴 **`CSAVE`: THE TAPE RIG EXISTS AND RECORDS; NOTHING IN THIS TREE PLAYS.**
+      🔴 ~~**`CSAVE`: THE TAPE RIG EXISTS AND RECORDS; NOTHING IN THIS TREE PLAYS.**~~
+      **RETRACTED 2026-09-13 — see the correction below; it plays, and the encoder
+      exists.** The paragraph is kept because its OTHER half (the `TIME` finding)
+      stands.**
       `cassetteplayer new` + [`probes/lib/cas_decode.py`](probes/lib/cas_decode.py)
       is a RECORDER — a grep for `cassetteplayer insert` across `probes/` finds
       nothing — so `CSAVE` can write a tape kwsweep cannot read, and `CLOAD` has no
@@ -3567,6 +3570,32 @@ list. **When a slice lands, grep this list for what it just shipped.**
       openMSX pass with `CSAVE`, the cassette twin of `tools/make_test_dsk.py`),
       and the one genuine keyboard block, which needs the injector's TIMING and
       must not reopen D-LATCH.
+      🔴 **CORRECTION 2026-09-13 (D-KWAUTO tick): "NOTHING IN THIS TREE PLAYS A
+      TAPE" IS FALSE, AND I FILED IT TWICE.** D-KWTAPE recorded it as a MEASURED
+      blocker; the measurement was a grep for `cassetteplayer insert` under
+      `probes/`, which is not how this tree mounts a tape. It mounts one as an
+      openMSX COMMAND-LINE flag — `-cassetteplayer <file>` — in
+      [`basic_probe_cas_options.py`](probes/basic/basic_probe_cas_options.py),
+      [`basic_probe_cas_ascii.py`](probes/basic/basic_probe_cas_ascii.py) and
+      [`basic_probe_cas_verbs.py`](probes/basic/basic_probe_cas_verbs.py), all of
+      which LOAD programs off tape today.
+      🔴 **AND THE ENCODER EXISTS TOO.** The same filing said *"`cas_decode` is
+      WAV→bytes only, so a playable fixture would need an encoder this tree does
+      not have"*. [`probes/lib/cas_encode.py`](probes/lib/cas_encode.py) is that
+      encoder — `build_cas_basic(name, program)` synthesises a playable `.cas` from
+      a tokenised program, clean-room, with every constant traced.
+      ⚠️ **THIS IS THE ELEVENTH-OF-THIRTEEN PATTERN WITH MY OWN NAME ON IT.** Every
+      stale blocker this session was inherited; this one I wrote, two ticks ago,
+      from a grep that asked the wrong question. A blocker is only as good as the
+      string it was measured with [[an-instrument-can-fail-the-way-the-thing-it-replaced-failed]].
+      ➡️ **SO THE TAPE PAIR IS BLOCKED ON A READBACK, NOT A RIG** — and that is a
+      different and smaller claim. `CLOAD` replaces the program and returns to
+      COMMAND LEVEL, so nothing in the same case can observe it; that is exactly
+      `LOAD`'s shape, and `LOAD` is attributed by an OPEN ITEM rather than a row.
+      `CSAVE`'s output is the recording, which needs the WAV decode
+      (`basic_probe_cassave.py` already does it, out of kwsweep's reach).
+      **Both are now questions about a CAPTURE, like `LLIST` was — and `NEEDS-LOG:`
+      is the precedent for adding one.**
       ⚠️ **THE PATTERN WAS TEN FOR TEN AND IS NOW TEN OF TWELVE — the tape and
       the printer log HELD.** Every other blocker examined this session — the display verbs' "cannot take a row", the multi-line words'
       "cannot be expressed", the CF-3300 oracle, the disk fixture (which needed a
@@ -5594,7 +5623,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:14921 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:14950 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
