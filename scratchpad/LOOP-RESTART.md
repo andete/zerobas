@@ -4,6 +4,108 @@ A `ScheduleWakeup` loop is SESSION-LOCAL and dies with the session. This file is
 the durable half: paste the command in `## The command` below into a fresh
 session and the loop resumes exactly where it stopped.
 
+## Where things stand (rewritten 2026-09-13)
+
+Recount everything — never quote a number from this file.
+
+* 🟢 **THE TAPE TIER 1 IS CLOSED.** A tape zerobas saves now loads on a real MSX;
+  the interop matrix is green in all four cells with the `[P9]` prompt witness.
+* 🟢 **THE DRAIN IS DOWN TO `CSAVE` AND `INKEY$`** — `CLOAD` was attributed by
+  D-KWTAPE2's `NEEDS-TAPE:` rig. The whole kwsweep is `DIVERGENT=0`.
+* The one remaining TIER 1 is the keyword-completeness umbrella itself, and its
+  exit criterion is that list being EMPTY. Run `make tiers` and
+  `python3 tools/tier_table.py --keywords`.
+
+## What the tape arc cost, and the rule it earned
+
+Four slices went into the WAVEFORM — duty cycle, tone periods, leader lengths,
+three refuted hypotheses — when the actual defect was **seven missing `$00`
+bytes** at the end of the data block. The oracle had been sitting in
+`cas_encode.build_cas_basic` the whole time: our own encoder already encoded the
+right answer and no probe had ever diffed the WRITER against it.
+
+➡️ **WHEN A CONSUMER HANGS, DIFF THE BYTES BEFORE THEORISING ABOUT TIMING.** A
+format is finite and checkable; timing is an open-ended space that will always
+absorb one more hypothesis. Both causes produce the identical symptom, and I
+ranked them by which was more interesting rather than which was cheaper to check.
+
+🔴 **AND TWO OF MY OWN REFUTATIONS WERE RETRACTED IN THE SAME ARC**: "leader
+length is dead" had been measured on a DIFFERENT build (the lopsided writer,
+where the leader was not the binding constraint), and the between-tone-outlier
+histogram never predicted the outcome — the cleanest recording ever produced read
+the WORST. **A refutation is only as general as the build it was measured on.**
+
+## The next slice — `CSAVE` needs a CAPTURE, not a device
+
+Measured, not assumed: `CSAVE` has NO screen-observable consequence. Its row was
+written, run and withdrawn before it shipped — `CSAVE"ZQ":PRINT"[S9]"` prints the
+marker on NEITHER machine (it ends its line), and as two stored lines it still
+prints nothing (it ends the PROGRAM). Both forms scored SUPPORTED on an EMPTY
+capture: two machines agreeing that nothing happened, wearing a green verdict.
+
+➡️ The shape is exactly `LLIST`'s: `NEEDS-LOG:` reads the printer log because the
+verb's output never reaches the screen. `CSAVE`'s output reaches the TAPE. So the
+row is a BLANK-tape rig (`cassetteplayer new`) plus a capture that decodes the
+recording with `cas_decode` and compares the BYTES. That row is also the only one
+that would exercise what D-CASTAIL2 fixed. The blank-tape rig is deliberately not
+in the tree yet — it arrives with the row that uses it.
+
+`INKEY$` is last: it needs the key injector's TIMING exposed to a row, and must
+not reopen D-LATCH/D-LATCH2.
+
+## Five ways a kwsweep row can pass while seeing NOTHING
+
+Every one of these SHIPPED a green row before being caught, and mode 1 nearly
+shipped again this session as `CSAVE`:
+
+1. **A readback that never moves** — `KEY` via CRTCNT read 24 with `KEY OFF` and
+   24 without. `scratchpad/kwdrain_discrim.py`.
+2. **A predicate true of ZERO** — an absent keyword parses as an undefined array
+   and reads 0, so `INP(&HA8)>=0` passed exactly like the real answer. The same
+   trap hides in an ARGUMENT: `BASE(0)` and `DSKF(0)` are honestly 0.
+3. **A crunch that names no keyword** — `tier_table`'s WORD regex keeps a
+   trailing `$`, so `sprite$(0)=…` credited nothing while reporting SUPPORTED.
+4. **An audit that re-implements the consumer's parser** — IMPORT
+   `tier_table.kwtable_keywords()`; expect exactly ONE row crediting nothing.
+5. **A row that leaves the machine in a MODE THAT EATS THE NEXT CASE** — `AUTO`
+   scored itself correctly and took 21 unrelated rows down with it. After adding
+   any row, read the WHOLE sweep summary, not just the new verdict.
+
+Plus: **a FIX silently un-attributes its own keyword** — attribution comes from
+OPEN items, so leave a row behind when closing a defect.
+
+## 🔴 Re-verify every blocker before believing it
+
+**TEN FOR TEN**, plus the two retractions above. The display verbs' "cannot take a
+row", the multi-line words', the CF-3300 NO-ORACLE claim, the disk fixture,
+`SCREEN`'s mode, `KEY`'s missing constant, `USR`'s "machine code to call",
+`WAIT`'s port, and the printer log `LPOS`/`LPRINT`. Re-verifying has been cheaper
+than the work it was hiding every single time.
+
+⚠️ **A WAITER THAT MATCHES ITSELF**: `until ! pgrep -f run_gates.py; do sleep;
+done` in the background NEVER EXITS — the waiter's own command line contains the
+pattern. Use the background task's completion notification.
+
+## Two staging traps
+
+* **After any `basic/`, `sub/` or `tape/` change the build refreshes the patch
+  pairs** — stage them WITH that commit; `patch-freshness-check` can only see the
+  omission ONE COMMIT LATER, and it names the exact `make` target.
+* **`check_todo_citations.py --fix` rewrites EVERY document citing a moved TODO
+  block**, five files beyond TODO.md every time. It compares the WORKING TREE, so
+  it is green before and after while a stale citation ships in HEAD.
+
+## Open for Joost — do not pick up
+
+* The `CONT` item (TIER 5): inside a program zerobas prints `Can't CONTINUE`
+  where the reference prints `Can't CONTINUE in 10`. A DELIBERATE choice recorded
+  at `basic/program.asm:1188`.
+* Ranking the remaining apparatus blockers (AUTO's line-entry mode, keystroke
+  injection, step (c)).
+
+## The command` below into a fresh
+session and the loop resumes exactly where it stopped.
+
 ## Where things stand
 
 * Tree CLEAN and pushed at `ad7334af`. Recount everything — never quote a number
@@ -139,4 +241,4 @@ a pattern that appears in the polling command.
 
 Paste this into a fresh session:
 
-    /loop continue autonomously on zerobas — 🔴 TIER 1 BEFORE ANYTHING ELSE. Read scratchpad/LOOP-RESTART.md FIRST, then the item's own block in TODO.md to its END. Run `make tiers`; recount keywords with `python3 tools/tier_table.py --keywords` — never quote a count. THIS SLICE: the TAPE-WRITER COMPENSATION. A tape zerobas writes cannot be read by a real MSX, and the MECHANISM IS CONFIRMED: the per-bit loop overhead lands inside the LAST half-period of every bit (`0` reads `18 20` against the reference's `18 19`; `1` reads `9 9 9 11` against `9 9 9 9`), which is above the midpoint between the tones and unclassifiable by a threshold derived from the leader. Inside a `1` bit the FIRST cycle is clean, so it is the BIT boundary, not `cas_cycle` — a tight `djnz` pair, constant by construction. THE FIX: shorten the trailing low half of each bit by the per-bit overhead (~2 samples ≈ 160 T-states ≈ 12 `djnz` iterations, against CAS_HHALF = 50) so the total stays correct — a `cas_cycle_last` variant taking a reduced count, with the leader loop keeping the uncompensated one, because the leader measures clean. ⚠️ PRICE THE TAPE ROM FIRST: it is its own region and the byte cost is unmeasured. ⚠️ FOUR HYPOTHESES ARE ALREADY DEAD and are in the item — leader length (rebuilt to the reference's own length), inter-block silence (spliced in), leading silence (spliced in), mount form. DO NOT re-run them. 🎯 THE TEST IS WRITTEN AND DECISIVE: scratchpad/kwdrain_wavread.py (the VG-8020 reads a tape zerobas wrote, with a prompt witness — `PRINT"[P9]"` after the CLOAD, because a hang and a silent completion look identical without it) and scratchpad/kwdrain_wavhist.py, which must come back CLEANLY BIMODAL with nothing between the tones. ⚠️ tape.asm changes rebuild the MAIN ROM, so stage zerobas-main-eu.ips/.bps WITH the commit — patch-freshness-check only sees the omission one commit LATER. Standing rules: full `make gates` before each commit and never commit red; an item may carry only ONE marker; 🔴 `check_todo_citations.py --fix` REWRITES EVERY DOC THAT CITES A MOVED BLOCK — five files beyond TODO.md every time; read `git status --short` as a LIST; after a `--fix` re-run every gate that READS TODO.md; `rm -rf build && make basic-reloc` for any wall figure, and BACK UP build/kwsweep-verdicts.json first; `test -e <path> && exit 1` before any `cat >` heredoc; stage explicit paths, `git add -A` banned; commit message to a FILE with `git commit -F`; commit AND push after each fix without asking; never write a tracked file while a battery runs; re-run the five battery-excluded targets by hand after any slice touching a shared leaf; NEVER poll with a pattern that matches the polling command itself — use the background task's own completion notification; READ the output of every edit script.
+    /loop continue autonomously on zerobas — 🔴 TIER 1 BEFORE ANYTHING ELSE. Read scratchpad/LOOP-RESTART.md FIRST, then the item's own block in TODO.md to its END. Run `make tiers`; recount keywords with `python3 tools/tier_table.py --keywords` — never quote a count. THE LAST TIER 1 IS THE KEYWORD-COMPLETENESS UMBRELLA and its exit criterion is the "no known gap" list being EMPTY; it is down to CSAVE and INKEY$. THIS SLICE: CSAVE. It has NO screen-observable consequence and that is MEASURED — its row was written, run and withdrawn before shipping: `CSAVE"ZQ":PRINT"[S9]"` prints the marker on NEITHER machine (CSAVE ends its line) and as two stored lines it still prints nothing (it ends the PROGRAM), both scoring SUPPORTED on an EMPTY capture, which is two machines agreeing that nothing happened. So CSAVE needs a CAPTURE, not a device, exactly like LLIST: add a BLANK-tape rig (`cassetteplayer new`, the opposite fixture to NEEDS-TAPE:'s prepared one) plus a capture that decodes the recording with probes/lib/cas_decode.py and compares the BYTES — the same shape as NEEDS-LOG:, which reads the printer log because the verb's output never reaches the screen. That row is also the only one that exercises what D-CASTAIL2 fixed. INKEY$ is LAST: it needs the key injector's TIMING exposed to a row and must not reopen D-LATCH/D-LATCH2. ⚠️ EVERY NEW ROW MUST CLEAR THE FIVE SILENT-FAILURE MODES listed in this file, and mode 1 nearly shipped again as CSAVE — after adding rows READ THE WHOLE SWEEP SUMMARY, not just the new verdict. 🎯 THE RULE THE TAPE ARC EARNED, worth applying beyond tape: when a consumer hangs, DIFF THE BYTES AGAINST OUR OWN ENCODER BEFORE THEORISING ABOUT TIMING — four slices went into a waveform when the defect was seven missing $00 bytes and the oracle was sitting in cas_encode.build_cas_basic the whole time. 🔴 RE-VERIFY EVERY BLOCKER BEFORE BELIEVING IT, and note that TWO refutations were themselves retracted this session — a refutation is only as general as the build it was measured on. Standing rules: full `make gates` before each commit and never commit red; STAGE EVERYTHING BEFORE THE BATTERY AND WRITE NOTHING WHILE IT RUNS; an item may carry only ONE marker; 🔴 `check_todo_citations.py --fix` REWRITES EVERY DOC THAT CITES A MOVED BLOCK — five files beyond TODO.md every time; read `git status --short` as a LIST; after a `--fix` re-run every gate that READS TODO.md; `rm -rf build && make basic-reloc` for any wall figure, and BACK UP build/kwsweep-verdicts.json first; `test -e <path> && exit 1` before any `cat >` heredoc; stage explicit paths, `git add -A` banned; commit message to a FILE with `git commit -F`; commit AND push after each fix without asking; never write a tracked file while a battery runs; re-run the five battery-excluded targets by hand after any slice touching a shared leaf; NEVER poll with a pattern that matches the polling command itself — use the background task's own completion notification; READ the output of every edit script.

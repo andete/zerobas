@@ -1,0 +1,43 @@
+python3 tools/install-repack-machine.py --merged build/zerobas-main-eu.rom --disk-rom build/disk.rom \
+	  --sub-rom build/sub.rom
+wrote C-BIOS_MSX1_EU_REPACK_DISK  (-> machine "C-BIOS_MSX1_EU_REPACK_DISK": merged repack ROM in slot 0, zerobas-disk in slot 3-1, zerobas-sub in slot 3-2)
+     /Users/joost/.openMSX/share/machines/C-BIOS_MSX1_EU_REPACK_DISK.xml
+python3 tools/install-repack-machine.py --merged build/zerobas-main-eu.rom --sub-rom build/sub.rom \
+	  --no-disk
+wrote C-BIOS_MSX1_EU_REPACK_NODISK  (-> machine "C-BIOS_MSX1_EU_REPACK_NODISK": merged repack ROM in slot 0, slot 3-1 EMPTY (diskless target), zerobas-sub in slot 3-2)
+     /Users/joost/.openMSX/share/machines/C-BIOS_MSX1_EU_REPACK_NODISK.xml
+python3 probes/basic/basic_probe_kwsweep.py \
+	        --zb-machine C-BIOS_MSX1_EU_REPACK_DISK --only 'cload,csave'
+build under measurement: git=4ac23e96 zerobas-main-eu.rom=15ee616b1e9d sub.rom=974f164c70cb disk.rom=fc5ed2de76d7
+
+==============================================================================
+LAYER 1 — CRUNCH (tokenisation only; NOT a support answer)
+==============================================================================
+SAME   cload     cload"zq"
+SAME   csave     csave"zq"
+
+==============================================================================
+LAYER 2 — SUPPORT (the load-bearing layer)
+==============================================================================
+SUPPORTED     cload     CLOAD"ZQ"
+            ref  [value] 'Found:ZQ'
+SUPPORTED     csave     A$="TAPEWITNESS":CSAVE"ZQ":PRINT"[S9]"
+            ref  [value] ''
+
+==============================================================================
+COMBINED — tokenised? x observable consequence
+==============================================================================
+word       crunch  support     consequence
+------------------------------------------------------------------------------
+cload      present SUPPORTED   match
+csave      present SUPPORTED   match
+
+==============================================================================
+SUMMARY  SUPPORTED=2
+         executed 2 / 2 words; 0 crunch-only
+==============================================================================
+ROWS: 2 printed, 2 scored — 0 crunch-only word(s) carry no support reading and are printed but not scored
+pin: 2 row verdict(s) -> /Users/joost/projects/zerobas/build/kwsweep-verdicts.json
+
+=== CRUNCH PIN — words the reference tokenises and zerobas does not ===
+refcache: 3 hit, 4 miss, 4 stored

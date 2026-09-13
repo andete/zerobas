@@ -85,6 +85,11 @@ import shutil
 import subprocess
 import tempfile
 
+_sys.path.insert(0, _os.path.join(
+    _os.path.dirname(_os.path.dirname(_os.path.abspath(__file__))), "disk"))  # bas_tokenise
+
+import cas_encode  # the clean-room .cas encoder -- the NEEDS-TAPE: fixture
+from bas_tokenise import make_multiline_program
 import omsx_repl  # typing-free KEYBUF-injection REPL driver
 import probe_report  # 🔴 D-KWFOOT: I3 -- every exit path that prints
                       # rows ends with a POSITIVE statement of what it measured
@@ -154,6 +159,41 @@ def _disk_image() -> str:
     return fh.name
 
 
+# Tape rows are the slowest in the sweep; see _rig_kwargs for why these figures
+# and not the disk ones [[apparatus-is-part-of-the-measurement]].
+TAPE_TIMING = dict(step=5.0, cap_gap=90.0, timeout=1200.0)
+TAPE_NAME = "ZQ"
+TAPE_PROGRAM = make_multiline_program([(10, 'PRINT"[Z9]"')], 0x8001)
+
+
+def _tape_fixture() -> str:
+    """A PREPARED tape for a reading row: a clean-room `.cas` carrying one known
+    program under a known name, fresh per machine like the disk images.
+
+    🎯 The program prints a MARKER, so a row can do more than reach `Ok`: the
+    reference announces `Found:ZQ` on the screen as it reads, which is the
+    machine's own witness that the verb did something and not merely parsed."""
+    fh = tempfile.NamedTemporaryFile(suffix=".cas", delete=False)
+    fh.write(cas_encode.build_cas_basic(TAPE_NAME, TAPE_PROGRAM))
+    fh.close()
+    if not _TAPE_TEMPS:
+        atexit.register(_drop_tape_temps)
+    _TAPE_TEMPS.append(fh.name)
+    return fh.name
+
+
+def _drop_tape_temps() -> None:
+    """Same `atexit` reasoning as the disk images and the printer logs."""
+    while _TAPE_TEMPS:
+        try:
+            _os.unlink(_TAPE_TEMPS.pop())
+        except OSError:
+            pass
+
+
+_TAPE_TEMPS: list[str] = []
+
+
 # 🔴 THE PRINTER IS A RIG TOO, AND ITS ABSENCE IS A HANG, NOT A BLANK.
 # Measured (scratchpad/kwdrain_lptchk.py): with a printer PLUGGED, `LPOS(0)`
 # reads 0 at rest, 3 after `LPRINT"ABC";` and 7 after seven bytes, IDENTICALLY on
@@ -189,8 +229,33 @@ def _printer_plug(path: str) -> tuple[str, ...]:
 # program to list, and its printed bytes are IDENTICAL on both. The verb is fine;
 # what it lacked was a path from the verb to a reading
 # (scratchpad/kwdrain_llistchk.out).
+# 🟢 D-KWTAPE2: `NEEDS-TAPE:` mounts a PREPARED tape carrying a known program.
+# A WRITING row would need the opposite fixture -- a blank tape openMSX creates --
+# and no row needs one yet, because CSAVE turns out to have no screen-observable
+# consequence at all (see the item): that rig arrives with the row that uses it.
 _RIG_TAGS = {"NEEDS-DISK:": "disk", "NEEDS-PRINTER:": "printer",
-             "NEEDS-LOG:": "log"}
+             "NEEDS-LOG:": "log", "NEEDS-TAPE:": "tape"}
+
+
+# A flag tag is a prefix tag that selects no apparatus -- it changes how the
+# SCREEN is read, not what is plugged in.
+_FLAG_TAGS = ("NOFURN:",)
+
+
+def _row_prefix_tags(note: str) -> tuple[str, ...]:
+    """The prefix run of tags on a note, rig and flag tags in any order.
+
+    🔴 THIS EXISTS BECAUSE `NOFURN:` WAS TESTED WITH `startswith` and the tape
+    rows are the first to need a rig tag AND a flag: `NEEDS-TAPE: NOFURN: ...`
+    silently lost the flag, and the row it lost it on diverged only in the
+    reference's function-key line -- a furniture difference reported as a defect."""
+    out = []
+    for tok in note.split():
+        if tok in _RIG_TAGS or tok in _FLAG_TAGS:
+            out.append(tok)
+        else:
+            break
+    return tuple(out)
 
 
 def _row_rigs(note: str) -> tuple[str, ...]:
@@ -201,13 +266,7 @@ def _row_rigs(note: str) -> tuple[str, ...]:
     The tags are a PREFIX RUN of the note -- the first token that is not a known
     tag is where the prose starts -- so a note reads
     `"NEEDS-DISK: " "NEEDS-PRINTER: " "why this row..."`."""
-    rigs = []
-    for tok in note.split():
-        rig = _RIG_TAGS.get(tok)
-        if rig is None:
-            break
-        rigs.append(rig)
-    return tuple(rigs)
+    return tuple(_RIG_TAGS[t] for t in _row_prefix_tags(note) if t in _RIG_TAGS)
 
 
 def _rig_kwargs(rigs: tuple[str, ...]) -> dict:
@@ -230,6 +289,13 @@ def _rig_kwargs(rigs: tuple[str, ...]) -> dict:
         if "log" in rigs:
             kw["capture"] = ("screen_printer", path)
             kw["batch"] = False
+    if "tape" in rigs:
+        # Both tape rigs are SLOW by construction: a 16000-cycle leader is ~7 s of
+        # emulated time before a single byte moves, and a search reads the whole
+        # tape. The disk timings are nowhere near enough, and at the default
+        # cap_gap both rows come back BLANK -- which reads as a refusal.
+        kw.update(TAPE_TIMING)
+        kw["cassette"] = _tape_fixture()
     return kw
 
 
@@ -981,6 +1047,17 @@ SWEEP: list[tuple[str, str, str | None, str, str]] = [
      "NEEDS-DISK: " "PROG.BIN is a real BSAVE binary loading at $C000 whose first "
      "byte is $3E (62); the cell is poked to 7 first, so the row reads what the "
      "LOAD put there and not what was already in RAM."),
+    # 🟢 D-KWTAPE2: THE LAST TWO WORDS OF THE DRAIN THAT HAD A MACHINE ANSWER.
+    # Both waited on apparatus, and both blockers turned out to be real and then
+    # to fall: `CLOAD` needed a tape mountable through the harness (`run_cases`
+    # took `cassette=` only from D-CASORACLE on), and `CSAVE` needed the defect
+    # that WAS its subject fixed first (D-CASTAIL2 -- until then a passing row
+    # would have certified a tape no real MSX could load).
+    ("cload",   'cload"zq"',  'CLOAD"ZQ"',  "direct",
+     "NEEDS-TAPE: " "NOFURN: " "🎯 THE MACHINE'S OWN `Found:ZQ` IS THE WITNESS, "
+     "printed as it reads: a hang and a silent no-op look identical at the `Ok` "
+     "prompt, which is exactly how D-CASTAIL2 hid for four slices. Absent => "
+     "syntax error."),
     ("close",   "close",
      'OPEN"W.TXT"FOR OUTPUT AS#1:PRINT#1,"ABC":CLOSE#1:OPEN"W.TXT"FOR INPUT AS#1:A=LOF(1):CLOSE#1:PRINT"[";A;"]"', "stored",
      "NEEDS-DISK: " "the FLUSH is the readback: 6 bytes are on the disk only because "
@@ -1636,7 +1713,7 @@ def main() -> int:
                 mk = (rnote.split(":", 2)[1].split()[0]
                       if rnote.startswith("NOECHO:") else None)
                 islog = "log" in _row_rigs(rnote)
-                nofurn = rnote.startswith("NOFURN:")
+                nofurn = "NOFURN:" in _row_prefix_tags(rnote)
                 rc, rt = classify(rr, cmd, mk, log=islog, nofurn=nofurn)
                 zc, zt = classify(zr, cmd, mk, log=islog, nofurn=nofurn)
                 cs = results[key].get("crunch", (None,))[0]

@@ -489,7 +489,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:16607 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:16638 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -655,7 +655,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:5173 (T-6FE392)8 (T-529ABE)` from `TODO.md:15344 (T-529ABE)`: a
+      `TODO.md:5204 (T-6FE392)8 (T-529ABE)` from `TODO.md:15375 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -3728,6 +3728,37 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DIAGNOSIS IN THIS TITLE WAS BACKWARDS.** Found 2026-09-13 by D-CASORACLE while building
       the tape oracle the keyword drain asked for. The VG-8020 **HANGS** searching a
       tape zerobas wrote; every other direction works.
+      🟢 **D-KWTAPE2 (2026-09-13): `CLOAD` IS ATTRIBUTED — the drain's "no known
+      gap" list is down to `CSAVE` and `INKEY$`.** `NEEDS-TAPE:` is the fourth rig
+      (after disk, printer and log): a clean-room `.cas` carrying one known program,
+      built by our own encoder and mounted through `run_cases(cassette=)`, with its
+      own timings because a 16000-cycle leader is ~7 s of emulated time before a
+      single byte moves and the disk figures come back BLANK.
+      🎯 **THE ROW HAS A REAL WITNESS AND NOT AN `Ok`**: the machine prints
+      `Found:ZQ` itself as it reads, so a hang and a silent no-op stop looking
+      alike — which is precisely how D-CASTAIL2 hid for four slices.
+      🔴 **`CSAVE` HAS NO SCREEN-OBSERVABLE CONSEQUENCE, AND THAT IS MEASURED, NOT
+      ASSUMED.** Its row was written, run, and **withdrawn before it shipped**:
+      | form tried | what the machines showed |
+      |---|---|
+      | `CSAVE"ZQ":PRINT"[S9]"` direct | the marker printed on NEITHER machine — CSAVE ends its line |
+      | `A$=…:CSAVE"ZQ"` / `PRINT"[S9]"` as two stored lines | still nothing: CSAVE ends the PROGRAM, not just the line |
+      Both forms scored **SUPPORTED on an empty capture** — the two machines
+      agreeing that nothing happened, which is silent-failure mode 1 ("a readback
+      that never moves") wearing a green verdict. A row like that would have
+      certified `CSAVE` while observing none of it.
+      ➡️ **SO `CSAVE` NEEDS A CAPTURE, NOT A DEVICE — exactly the shape `LLIST`
+      needed.** `NEEDS-LOG:` reads the printer log file because the verb's output
+      never reaches the screen; `CSAVE`'s output never reaches the screen either,
+      it reaches the TAPE. The row is a blank-tape rig plus a capture that decodes
+      the recording (`cas_decode`) and compares the resulting BYTES — which is also
+      the only row that would exercise what D-CASTAIL2 fixed. The blank-tape rig is
+      deliberately NOT in the tree yet: it arrives with the row that uses it.
+      ⚠️ **AND ONE APPARATUS BUG FELL OUT OF THIS**: `NOFURN:` was tested with
+      `startswith`, so a row carrying a rig tag AND the flag silently lost the flag.
+      The tape rows are the first to need both, and the loss showed up as a
+      divergence that was really the reference's function-key line. Prefix tags are
+      now scanned once, rigs and flags together, in any order.
       🟢 **CLOSED 2026-09-13 by D-CASTAIL2, and the title above was WRONG IN ITS
       SECOND HALF: the signal was fine, the BYTES were short.** A BASIC data block
       ends with SEVEN $00 bytes and we wrote NONE. The reference's `CLOAD` reads
@@ -6017,7 +6048,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:15344 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:15375 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
