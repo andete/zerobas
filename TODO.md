@@ -489,7 +489,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:17027 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:17055 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -655,7 +655,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:5256 (T-6FE392)8 (T-529ABE)` from `TODO.md:15678 (T-529ABE)`: a
+      `TODO.md:5256 (T-6FE392)8 (T-529ABE)` from `TODO.md:15706 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -6100,7 +6100,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:15678 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:15706 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -6926,6 +6926,34 @@ list. **When a slice lands, grep this list for what it just shipped.**
       state a person is in when they type at the prompt.
       🎚️ TIER 1 — happy path: `READ` at the prompt reads the wrong value silently
       🤖 AUTONOMOUS — the defect is measured, narrow and reproducible in one row.
+
+- [ ] 🔴 **`SWAP` OF TWO UNDEFINED VARIABLES OF DIFFERENT TYPES RAISES THE WRONG
+      ERROR** — `Illegal function call` where both references say `Type mismatch`.
+      Found 2026-09-13 by D-KWT3 batch 3, the second defect the TIER 3 rows have
+      produced.
+      ✅ **AND `SWAP`'S TYPE CHECK ITSELF IS FINE, WHICH IS MEASURED, NOT ASSUMED**
+      ([`scratchpad/kwt3_swapchk.py`](scratchpad/kwt3_swapchk.py),
+      [readings](scratchpad/kwt3_swapchk.out)):
+      | | VG-8020 | zerobas |
+      |---|---|---|
+      | num,str — both variables UNDEFINED | `Type mismatch` | 🔴 `Illegal function call` |
+      | str,num — undefined, order reversed | `Type mismatch` | 🔴 `Illegal function call` |
+      | num,str — both DEFINED first | `Type mismatch` | ✅ `Type mismatch` |
+      | `%` against `!` | `Type mismatch` | ✅ `Type mismatch` |
+      | both numeric / both string | swaps | ✅ swaps |
+      ➡️ **SO THE FAULT IS ON THE CREATE PATH, NOT THE COMPARE PATH.** When the
+      variables already exist the types are compared correctly; when they do not,
+      something on the way to creating them answers first with `Illegal function
+      call`. That is where to look — the order of "allocate the operand" against
+      "check the two types agree".
+      🎚️ TIER 3 — common errors: the right error for a mistyped `SWAP A,B$`
+      🤖 AUTONOMOUS — reproduced in one row, and the passing rows bound it tightly.
+      ⚠️ **APPARATUS NOTE FOR EVERY FUTURE ROW: MSX VARIABLE NAMES ARE SIGNIFICANT
+      TO TWO CHARACTERS.** `ZQ9` and `ZQ7` are the SAME variable, and the control
+      row in this probe read `[ 2  2 ]` where a reader expecting three-character
+      names would predict `[ 2  1 ]`. Both machines agreed, so nothing was
+      misjudged — but a row that distinguishes two variables must not spell them
+      with a shared two-character prefix.
 
 - [ ] 🐌 **THE INTERPRETER IS 2.5–3.8× SLOWER THAN THE CF-3300 — ON EVERYTHING,
       NOT ON ONE VERB — AND IT REFRAMES EVERY OTHER SPEED ITEM.**

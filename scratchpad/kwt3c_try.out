@@ -1,0 +1,72 @@
+python3 tools/install-repack-machine.py --merged build/zerobas-main-eu.rom --disk-rom build/disk.rom \
+	  --sub-rom build/sub.rom
+wrote C-BIOS_MSX1_EU_REPACK_DISK  (-> machine "C-BIOS_MSX1_EU_REPACK_DISK": merged repack ROM in slot 0, zerobas-disk in slot 3-1, zerobas-sub in slot 3-2)
+     /Users/joost/.openMSX/share/machines/C-BIOS_MSX1_EU_REPACK_DISK.xml
+python3 tools/install-repack-machine.py --merged build/zerobas-main-eu.rom --sub-rom build/sub.rom \
+	  --no-disk
+wrote C-BIOS_MSX1_EU_REPACK_NODISK  (-> machine "C-BIOS_MSX1_EU_REPACK_NODISK": merged repack ROM in slot 0, slot 3-1 EMPTY (diskless target), zerobas-sub in slot 3-2)
+     /Users/joost/.openMSX/share/machines/C-BIOS_MSX1_EU_REPACK_NODISK.xml
+python3 probes/basic/basic_probe_kwsweep.py \
+	        --zb-machine C-BIOS_MSX1_EU_REPACK_DISK --only 'instr_t3,poke_t3,peek_t3,sgn_t3,abs_t3,rest_t3,erase_t3,swap_t3,space_t3'
+build under measurement: git=f3ba5caa zerobas-main-eu.rom=e3dbed366d26 sub.rom=bf1c245daaf2 disk.rom=a01dabda5043
+
+==============================================================================
+LAYER 1 — CRUNCH (tokenisation only; NOT a support answer)
+==============================================================================
+SAME   instr_t3  a=instr(0,"ab","a")
+SAME   poke_t3   poke 70000,0
+SAME   peek_t3   a=peek(70000)
+SAME   sgn_t3    a=sgn("a")
+SAME   abs_t3    a=abs("a")
+SAME   rest_t3   restore 9999
+SAME   erase_t3  erase zq9
+SAME   swap_t3   swap zq9,zq8$
+SAME   space_t3  a$=space$(300)
+
+==============================================================================
+LAYER 2 — SUPPORT (the load-bearing layer)
+==============================================================================
+DIVERGENT     swap_t3   SWAP ZQ9,ZQ8$
+            ref  [error:type mismatch] 'Type mismatch'
+            zb   [error:illegal function call] 'Illegal function call'
+SUPPORTED     instr_t3  PRINT INSTR(0,"AB","A")
+            ref  [error:illegal function call] 'Illegal function call'
+SUPPORTED     poke_t3   POKE 70000,0
+            ref  [error:overflow] 'Overflow'
+SUPPORTED     peek_t3   PRINT PEEK(70000)
+            ref  [error:overflow] 'Overflow'
+SUPPORTED     sgn_t3    PRINT SGN("A")
+            ref  [error:type mismatch] 'Type mismatch'
+SUPPORTED     abs_t3    PRINT ABS("A")
+            ref  [error:type mismatch] 'Type mismatch'
+SUPPORTED     rest_t3   RESTORE 9999
+            ref  [error:undefined line] 'Undefined line number'
+SUPPORTED     erase_t3  ERASE ZQ9
+            ref  [error:illegal function call] 'Illegal function call'
+SUPPORTED     space_t3  PRINT SPACE$(300)
+            ref  [error:illegal function call] 'Illegal function call'
+
+==============================================================================
+COMBINED — tokenised? x observable consequence
+==============================================================================
+word       crunch  support     consequence
+------------------------------------------------------------------------------
+instr_t3   present SUPPORTED   match
+poke_t3    present SUPPORTED   match
+peek_t3    present SUPPORTED   match
+sgn_t3     present SUPPORTED   match
+abs_t3     present SUPPORTED   match
+rest_t3    present SUPPORTED   match
+erase_t3   present SUPPORTED   match
+swap_t3    present DIVERGENT   ref 'Type mismatch' vs zb 'Illegal function call'
+space_t3   present SUPPORTED   match
+
+==============================================================================
+SUMMARY  DIVERGENT=1  SUPPORTED=8
+         executed 9 / 9 words; 0 crunch-only
+==============================================================================
+ROWS: 9 printed, 9 scored — 0 crunch-only word(s) carry no support reading and are printed but not scored
+pin: 9 row verdict(s) -> /Users/joost/projects/zerobas/build/kwsweep-verdicts.json
+
+=== CRUNCH PIN — words the reference tokenises and zerobas does not ===
+refcache: 0 hit, 4 miss, 4 stored

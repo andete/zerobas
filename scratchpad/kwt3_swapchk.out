@@ -1,0 +1,15 @@
+=== vg8020
+   undefined num,str    Type mismatch | Ok
+   undefined str,num    Type mismatch | Ok
+   DEFINED num,str      Type mismatch | Ok
+   both numeric (ok)    [ 2  2 ] | Ok
+   both string (ok)     [BB] | Ok
+   int vs single        Type mismatch | Ok
+=== zb
+   undefined num,str    Illegal function call | ZB
+   undefined str,num    Illegal function call | ZB
+   DEFINED num,str      Type mismatch | ZB
+   both numeric (ok)    [ 2  2 ] | ZB
+   both string (ok)     [BB] | ZB
+   int vs single        Type mismatch | ZB
+refcache: 0 hit, 12 miss, 12 stored

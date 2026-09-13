@@ -1180,6 +1180,29 @@ SWEEP: list[tuple[str, str, str | None, str, str]] = [
      "PROVES-T3: " "NEXT without FOR"),
     ("ret_t3",  'return',      'RETURN',                "direct",
      "PROVES-T3: " "RETURN without GOSUB"),
+    # 🎚️ D-KWT3 BATCH 3. The display verbs (SCREEN/COLOR/WIDTH/LOCATE) are held
+    # back deliberately: their happy rows already need NOFURN/NOECHO because they
+    # destroy the echo anchor, and an error row on top of that is two apparatus
+    # questions at once. CLEAR is held back for the other reason — a row that
+    # resets the variable world can eat the cases after it (mode 5).
+    ("instr_t3", 'a=instr(0,"ab","a")', 'PRINT INSTR(0,"AB","A")', "direct",
+     "PROVES-T3: " "Illegal function call on a ZERO start position"),
+    ("poke_t3", 'poke 70000,0', 'POKE 70000,0',        "direct",
+     "PROVES-T3: " "past the 16-bit address space"),
+    ("peek_t3", 'a=peek(70000)', 'PRINT PEEK(70000)',  "direct",
+     "PROVES-T3: " "the same overflow on the reading side"),
+    ("sgn_t3",  'a=sgn("a")',  'PRINT SGN("A")',       "direct",
+     "PROVES-T3: " "Type mismatch — a STRING where the number goes"),
+    ("abs_t3",  'a=abs("a")',  'PRINT ABS("A")',       "direct",
+     "PROVES-T3: " "Type mismatch on the commonest numeric function of all"),
+    ("rest_t3", 'restore 9999', 'RESTORE 9999',        "direct",
+     "PROVES-T3: " "Undefined line number — RESTORE to a line that is not there"),
+    ("erase_t3", 'erase zq9',  'ERASE ZQ9',            "direct",
+     "PROVES-T3: " "erasing an array that was never DIMmed"),
+    ("swap_t3", 'swap zq9,zq8$', 'SWAP ZQ9,ZQ8$',      "direct",
+     "PROVES-T3: " "Type mismatch — swapping a number with a string"),
+    ("space_t3", 'a$=space$(300)', 'PRINT SPACE$(300)', "direct",
+     "PROVES-T3: " "past the 255-character string limit"),
     ("close",   "close",
      'OPEN"W.TXT"FOR OUTPUT AS#1:PRINT#1,"ABC":CLOSE#1:OPEN"W.TXT"FOR INPUT AS#1:A=LOF(1):CLOSE#1:PRINT"[";A;"]"', "stored",
      "NEEDS-DISK: " "the FLUSH is the readback: 6 bytes are on the disk only because "
