@@ -1,0 +1,6 @@
+vg8020  leading silence: 25021 samples (0.567 s)
+zb      leading silence: 2 samples (0.000 s)
+spliced 2.0 s of leading silence: 212685 bytes (was 124486)
+arm 1  zerobas tape, untouched   : | NEW | Ok | CLOAD"ZQ" | color  auto   goto   list   run
+arm 2  + 2 s LEADING silence     : | NEW | Ok | CLOAD"ZQ" | color  auto   goto   list   run
+refcache: 0 hit, 4 miss, 4 stored

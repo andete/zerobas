@@ -489,7 +489,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:16374 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:16411 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -655,7 +655,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:4940 (T-6FE392)8 (T-529ABE)` from `TODO.md:15111 (T-529ABE)`: a
+      `TODO.md:4977 (T-6FE392)8 (T-529ABE)` from `TODO.md:15148 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -3758,9 +3758,10 @@ list. **When a slice lands, grep this list for what it just shipped.**
       [`basic_probe_cas_leader_budget.py`](probes/basic/basic_probe_cas_leader_budget.py)
       documents that a BIOS re-locks with `TAPION` during that leader. A leader too
       short to lock onto is exactly a search that never completes.
-      ⚠️ **HYPOTHESIS, NOT YET THE FIX**: the numbers above say "leader/gap", and
-      the fix slice must MEASURE which — header tone length, inter-block gap, or
-      both — before changing a byte.
+      ⚠️ ~~**HYPOTHESIS**: the numbers above say "leader/gap"~~ — 🔴 **REFUTED THE
+      SAME DAY by the table below**: the leader was rebuilt to the reference's own
+      length and both silences were spliced in, and the reference still hangs. The
+      gap is real and is not what breaks the read.
       🔴 **WHY NO GATE CAUGHT IT, WHICH IS WORTH MORE THAN THE DEFECT.** Every
       cassette suite in this tree decodes the recording with OUR decoder and asserts
       the BYTES — and the bytes are right. `basic_probe_cassave.py` compares file
@@ -3771,6 +3772,42 @@ list. **When a slice lands, grep this list for what it just shipped.**
       ➡️ **THE ROW THAT WOULD HAVE CAUGHT IT IS NOW CHEAP**: `omsx_repl.run_cases`
       takes `cassette=` since this slice, so "zerobas writes a tape, a REFERENCE
       reads it" is one probe — and it is the arm to add with the fix.
+      🔴 **FOUR HYPOTHESES MEASURED AND REFUTED, 2026-09-13 — recorded so nobody
+      re-runs them.** Each looked obvious and each is dead:
+      | hypothesis | how it died |
+      |---|---|
+      | the LEADER is too short (4000 vs the reference's ~15 360 cycles) | rebuilt at 8 000 and 16 000 cycles: the WAV reaches 456 904 B against the reference's 467 322, and the VG **still hangs** ([`scratchpad/kwdrain_leaderfix.py`](scratchpad/kwdrain_leaderfix.py), [readings](scratchpad/kwdrain_leaderfix.out)) |
+      | the INTER-BLOCK silence is missing (the reference has one 1.12 s gap; we have none) | spliced 1.1 s into zerobas's own tape at the block boundary — **still hangs** ([readings](scratchpad/kwdrain_wavsplice.out)) |
+      | the LEADING silence is missing (reference 0.567 s, ours 2 samples) | spliced 2.0 s on the front — **still hangs** ([readings](scratchpad/kwdrain_wavlead2.out)) |
+      | the MOUNT FORM (Tcl prologue vs `-cassetteplayer`) | both forms agree on all three machines ([readings](scratchpad/kwdrain_casmount.out)) |
+      ⚠️ **SO THE "leader / inter-block gap" READING FILED ABOVE IS RETRACTED BY ITS
+      OWN FOLLOW-UP.** It was drawn from the long-half-period average (183 Hz vs
+      1169 Hz), which is a real difference and is the GAP — and the gap turns out
+      not to be what the BIOS chokes on.
+      🟢 **THE LIVE LEAD IS TIMING JITTER, AND IT IS THE FIRST THING THAT SEPARATES
+      THE TWO SIGNALS RATHER THAN THEIR ARRANGEMENT**
+      ([`scratchpad/kwdrain_wavhist.py`](scratchpad/kwdrain_wavhist.py),
+      [readings](scratchpad/kwdrain_wavhist.out)) — a histogram of half-period
+      durations, gaps excluded:
+      | duration | VG-8020 | zerobas |
+      |---|---|---|
+      | 8 samples | 2 | **563** |
+      | 9 / 10 (the `1` tone) | 30 670 / 8 390 | 8 639 / 3 439 |
+      | **11, 12, 13** | **0** | **67 / 18 / 9** |
+      | **17** | **0** | **19** |
+      | 18 / 19 / 20 (the `0` tone) | 324 / 154 / 4 | 159 / 30 / 148 |
+      ➡️ **THE REFERENCE IS CLEANLY BIMODAL AND WE ARE NOT.** 113 of our
+      half-periods land BETWEEN the two tones, where the reference has none, and our
+      `0` tone is spread across 17–20 where the reference sits at 18–19. A BIOS
+      derives its 0/1 threshold from the leader and then classifies each half-period;
+      values in the middle are the ones it cannot classify. Our own
+      `cas_decode.auto_threshold` is adaptive and tolerant, which is exactly why
+      every existing tape gate reads these bytes back perfectly
+      [[a-case-that-agrees-can-agree-for-the-wrong-reason]].
+      ⚠️ **STILL A LEAD, NOT A CAUSE.** What it does not yet say is WHERE the jitter
+      comes from — the candidates are `cas_cycle`'s loop overhead varying with the
+      data pattern, and the first half-period after a tone change (a counter reload).
+      The next slice should instrument the writer rather than guess a fifth time.
       🎚️ TIER 1 — happy path: `CSAVE` / `SAVE"CAS:"` is ordinary MSX BASIC, and what
       it produces cannot be loaded on the machine it is meant for
       🤖 AUTONOMOUS — the matrix is measured with controls in both directions; what
@@ -5784,7 +5821,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:15111 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:15148 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

@@ -1,0 +1,7 @@
+=== vg8020  half-periods=39545   max=49246   (a data LONG is ~19 samples)
+    half-periods over 40 samples: 1  [(31257, 49246)]
+    total time in those: 1.12 s of 9.48 s
+=== zb      half-periods=13091   max=20      (a data LONG is ~19 samples)
+    half-periods over 40 samples: 0  []
+    total time in those: 0.00 s of 2.82 s
+refcache: 0 hit, 2 miss, 2 stored

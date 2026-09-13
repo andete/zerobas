@@ -1,0 +1,5 @@
+long=4000   short=2000    wav= 124486 B  VG HANGS  Ok | CLOAD"ZQ" | color  auto   goto   list   run
+long=8000   short=4000    wav= 235292 B  VG HANGS  Ok | CLOAD"ZQ" | color  auto   goto   list   run
+long=16000  short=8000    wav= 456904 B  VG HANGS  Ok | CLOAD"ZQ" | color  auto   goto   list   run
+tape.asm restored to its committed value and rebuilt
+refcache: 0 hit, 6 miss, 6 stored

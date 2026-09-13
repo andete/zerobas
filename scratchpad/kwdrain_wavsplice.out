@@ -1,0 +1,6 @@
+leader runs (kind short, count, first half-period index): [(True, 8000, 0), (True, 4072, 8530)]
+splice point: half-period 8530 -> sample 80431 of 124441 (1.82s)
+spliced tape: 172995 bytes (was 124486)
+arm 1  zerobas tape, untouched : k | NEW | Ok | CLOAD"ZQ" | color  auto   goto   list   run
+arm 2  + 1.1 s silence spliced : k | NEW | Ok | CLOAD"ZQ" | color  auto   goto   list   run
+refcache: 0 hit, 3 miss, 3 stored

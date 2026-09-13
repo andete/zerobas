@@ -1,0 +1,9 @@
+=== vg8020  framerate=44100  half-periods=39545  threshold=13.5 samples
+    first 30 half-period durations (samples): [10, 9, 10, 9, 9, 9, 10, 9, 9, 9, 9, 9, 10, 9, 9, 9, 10, 9, 9, 9, 9, 10, 9, 9, 9, 10, 9, 9, 9, 9]
+    first 12 runs (kind, count): [('short', 30719), ('LONG', 2), ('short', 8), ('LONG', 4), ('short', 4), ('LONG', 2), ('short', 16), ('LONG', 2), ('short', 8), ('LONG', 4), ('short', 4), ('LONG', 2)]
+    runs longer than 200 half-periods: [('short', 30719), ('short', 7679)]
+=== zb  framerate=44100  half-periods=13091  threshold=13.5 samples
+    first 30 half-period durations (samples): [9, 9, 10, 9, 9, 9, 10, 9, 9, 9, 9, 10, 9, 9, 9, 10, 9, 9, 9, 10, 9, 9, 9, 10, 9, 9, 9, 10, 9, 9]
+    first 12 runs (kind, count): [('short', 8000), ('LONG', 2), ('short', 8), ('LONG', 4), ('short', 4), ('LONG', 2), ('short', 16), ('LONG', 2), ('short', 8), ('LONG', 4), ('short', 4), ('LONG', 2)]
+    runs longer than 200 half-periods: [('short', 8000), ('short', 4072)]
+refcache: 0 hit, 2 miss, 2 stored
