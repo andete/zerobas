@@ -1,0 +1,5 @@
+leaders (count, start index): [(8000, 0), (4072, 8530)]
+header data: 8000..8530 | inter-block leader at 8530 | data block from 12602
+between-tone outliers: 54 total, by region: Counter({'DATA-block': 31, 'HEADER-data': 20, 'leader2': 2, 'leader1': 1})
+first 12: [(7999, 12, 'leader1'), (8190, 17, 'HEADER-data'), (8226, 17, 'HEADER-data'), (8262, 17, 'HEADER-data'), (8264, 17, 'HEADER-data'), (8300, 17, 'HEADER-data'), (8336, 17, 'HEADER-data'), (8342, 17, 'HEADER-data'), (8359, 11, 'HEADER-data'), (8360, 17, 'HEADER-data'), (8378, 17, 'HEADER-data'), (8417, 17, 'HEADER-data')]
+refcache: 0 hit, 1 miss, 1 stored

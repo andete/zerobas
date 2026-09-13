@@ -1,0 +1,5 @@
+comp=13  between-tone half-periods=85    VG no     Skip : Q  @ | color  auto   goto   list   run
+comp=14  between-tone half-periods=107   VG no     Skip : Q@ | color  auto   goto   list   run
+comp=15  between-tone half-periods=139   VG no     CLOAD"ZQ" | color  auto   goto   list   run
+tape.asm restored to CAS_BITCOMP=12 and rebuilt
+refcache: 0 hit, 6 miss, 6 stored

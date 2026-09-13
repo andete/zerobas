@@ -111,6 +111,26 @@ CAS_LHALF24:    equ     50              ; 2400 baud low  tone ~2400 Hz half cycl
 
 CAS_LONGLEN:    equ     4000            ; long header (new file), full hi-freq cycles
 CAS_SHORTLEN:   equ     2000            ; short header (between blocks)
+; 🔴 D-CASCOMP: THE PER-BIT LOOP RUNS WHILE THE OUTPUT LINE IS STILL LOW, so its
+; cost lands INSIDE the last half-period of every bit and stretches it. Measured
+; against the VG-8020 on a recorded tape: a `0` bit reads `18 20` where the
+; reference reads `18 19`, and a `1` bit reads `9 9 9 11` where the reference
+; reads `9 9 9 9` -- and inside a `1` the FIRST cycle is clean, which is what
+; places the cost at the BIT boundary rather than in cas_cycle (a tight djnz pair,
+; constant by construction). 11 is past the midpoint between the two tones, so a
+; threshold derived from the leader cannot classify it and a real BIOS hangs;
+; OUR reader's adaptive threshold tolerates it, which is why every tape gate in
+; this tree passed. scratchpad/kwdrain_wavseq.out.
+; ⚠️ ITERATIONS, NOT SAMPLES: the tail is a fixed T-state cost, so the same count
+; is right at both bauds. It must stay BELOW the smallest half-period count in
+; use (CAS_HHALF24 = 24) or the subtraction would wrap.
+; 🔴 TWO CONSTANTS, BECAUSE THE TWO BIT PATHS HAVE DIFFERENT TAILS — measured,
+; not computed: with ONE value at 12 the reference decoded the header name
+; (`Found:ZQ`) and the residual outliers were almost all `17` on the LONG tone,
+; i.e. the `0` path over-compensated by about a sample. The `0` tail is genuinely
+; shorter than the `1`/stop-bit tail. scratchpad/kwdrain_outlierpos.out.
+CAS_BITCOMP:    equ     12              ; '1' bit and the stop-bit/byte boundary
+CAS_BITCOMP0:   equ     6               ; '0' bit: a shorter tail than the others
 CAS_FLUSHLEN:   equ     32              ; trailing carrier cycles flushed at TAPOOF
 
 ; TAPION lock: skip CAS_SKIP edges to clear the motor-restart spin-up, then
@@ -295,6 +315,30 @@ cas_cycle_h:    djnz    cas_cycle_h
                 out     (PPI_REGS),a
                 ld      b,c
 cas_cycle_l:    djnz    cas_cycle_l
+                ret
+
+;--------------------------------
+; cas_cycle_last: cas_cycle for the FINAL cycle of a data bit -- the low half is
+; shortened by E because the per-bit tail (pop/pop/djnz/rra/push/push/jr/call)
+; runs after the line goes low and before the next cycle raises it, so that time
+; is part of THIS half-period whether we count it or not.
+; In: C = half-period count, E = the tail to subtract (CAS_BITCOMP/CAS_BITCOMP0).
+; TAPOUT's BIOS contract is "Changes: all", so E is ours to use.
+; 🎯 ONLY the final cycle of a bit: a `1` bit's first cycle is followed by a bare
+; `call cas_cycle` and measures clean, and the LEADER loop measures clean too --
+; both keep the uncompensated routine, which is what the measurement says they
+; should. Input/Output/Changes as cas_cycle.
+cas_cycle_last:
+                ld      a,CASW_1
+                out     (PPI_REGS),a
+                ld      b,c
+cas_cyl_h:      djnz    cas_cyl_h
+                ld      a,CASW_0
+                out     (PPI_REGS),a
+                ld      a,c
+                sub     e               ; E = this path's tail, set by the caller
+                ld      b,a
+cas_cyl_l:      djnz    cas_cyl_l
                 ret
 
 ;================================
@@ -593,12 +637,14 @@ tapout_bit:
                 push    bc              ; preserve bit counter (cas_cycle uses B)
                 jr      c,tapout_one
                 call    cas_long        ; '0' bit: one low-freq cycle
-                call    cas_cycle
+                ld      e,CAS_BITCOMP0
+                call    cas_cycle_last  ; D-CASCOMP: the bit's LAST cycle
                 jr      tapout_next
 tapout_one:
                 call    cas_short       ; '1' bit: two high-freq cycles
-                call    cas_cycle
-                call    cas_cycle
+                call    cas_cycle       ; first cycle: measures clean, uncompensated
+                ld      e,CAS_BITCOMP
+                call    cas_cycle_last  ; D-CASCOMP: the bit's LAST cycle
 tapout_next:
                 pop     bc
                 pop     af
@@ -607,7 +653,13 @@ tapout_next:
                 call    cas_cycle
                 call    cas_cycle
                 call    cas_cycle
-                call    cas_cycle
+                ; 🔴 D-CASCOMP: THE BYTE BOUNDARY IS A TAIL TOO, and a bigger one
+                ; than a bit boundary -- this cycle is followed by `or a`, `ret`,
+                ; and the NEXT tapout's `di` / `push af` / `call cas_long` before
+                ; any line change. Compensating only the bit boundaries left the
+                ; reference DECODING but garbling the name; this is the other site.
+                ld      e,CAS_BITCOMP
+                call    cas_cycle_last
                 or      a               ; CF = 0: success
                 ret
 

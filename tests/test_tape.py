@@ -301,12 +301,21 @@ def test_tapout_tone_sequence(m, fails):
 
 def test_tapout_cycle_count(m, fails):
     """tapout cycle count = 1 (start) + sum(2 if bit else 1) + 4 (stop)
-    = 13 + popcount(byte) — verifies '0'=1 cycle, '1'=2 cycles, 2-stop framing."""
+    = 13 + popcount(byte) — verifies '0'=1 cycle, '1'=2 cycles, 2-stop framing.
+
+    🔴 BOTH EMITTERS ARE COUNTED, AND THAT IS THE POINT (D-CASCOMP). The final
+    cycle of each bit — and of the stop-bit run — goes through `cas_cycle_last`,
+    which shortens its low half by the tail that follows it. That changes WHICH
+    routine emits a cycle and not HOW MANY are emitted, so the invariant this test
+    protects is unchanged; a counter that watched only `cas_cycle` would report
+    4 where 13 are emitted and call a correct waveform broken."""
     s = m.sym
     m.poke(s["CASBAUD"], 0x00)                # 1200 (only affects djnz length)
     for byte in (0x00, 0xFF, 0x01, 0xA5, 0x41):
         count = [0]
-        m.trap("cas_cycle", lambda mm, count=count: count.__setitem__(0, count[0] + 1))
+        bump = lambda mm, count=count: count.__setitem__(0, count[0] + 1)
+        m.trap("cas_cycle", bump)
+        m.trap("cas_cycle_last", bump)
         m.call("tapout", a=byte)
         want = 13 + bin(byte).count("1")
         ok = count[0] == want

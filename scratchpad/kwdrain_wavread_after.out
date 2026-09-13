@@ -1,0 +1,6 @@
+zerobas-written WAV: 124028 bytes
+vg8020 .cas  (control)   Ok | PRINT"[P9]" | [P9] | Ok | color  auto   goto   list   run
+vg8020 WAV   gap 90      NEW | Ok | CLOAD"ZQ" | Skip :  @ @@ | color  auto   goto   list   run
+vg8020 WAV   gap 300     NEW | Ok | CLOAD"ZQ" | Skip :  @ @@ | color  auto   goto   list   run
+zb     WAV   (control)   ZBCLOAD"ZQ" | Found:ZQ | ZBPRINT"[P9]" | [P9] | ZB
+refcache: 0 hit, 5 miss, 5 stored

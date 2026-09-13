@@ -489,7 +489,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:16444 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:16488 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -655,7 +655,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:5010 (T-6FE392)8 (T-529ABE)` from `TODO.md:15181 (T-529ABE)`: a
+      `TODO.md:5054 (T-6FE392)8 (T-529ABE)` from `TODO.md:15225 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -3841,6 +3841,50 @@ list. **When a slice lands, grep this list for what it just shipped.**
       tones, which is what the reference produces.
       ⚠️ **BYTE COST IS UNMEASURED** — the tape ROM is its own region and this slice
       did not price it. Measure before cutting.
+      🟡 **D-CASCOMP, 2026-09-13: THE COMPENSATION IS IN AND THE DEFECT IS NOT
+      CLOSED — a real MSX now DECODES the tape's header and still cannot finish the
+      load.** The item stays OPEN, and the progress is recorded because the
+      remaining failure is localised, not because it is done.
+      | state | what the VG-8020 does with a tape zerobas wrote |
+      |---|---|
+      | before | **HANGS** — no output, `CLOAD` never returns |
+      | bit boundaries compensated | `Skip :  @ @@` — a header is READ, the name garbles |
+      | + byte boundary compensated | `Skip : Q  @` → **`Found:ZQ`** — the name decodes |
+      | now | `Found:ZQ`, then the **DATA block** still fails; the load never completes |
+      🟢 **THE FIX IS `cas_cycle_last`**: for the final cycle of a bit the low half
+      is shortened by the tail that follows it, because that tail runs while the
+      line is still low and is part of that half-period whether it is counted or
+      not. **+18 B of the tape ROM**, and the region grew from `$09EE..$0C84` to
+      `$09EE..$0C96` — the patch region is derived from `tape_end`, so the build's
+      own verifier re-checked it and reports **free in all 12 C-BIOS ROMs**.
+      🔴 **THREE SITES, AND THE THIRD IS THE ONE THAT MOVED THE NAME**: the `0`
+      bit's only cycle, the `1` bit's SECOND cycle (its first measures clean and
+      keeps the uncompensated routine, as does the leader), and — added after the
+      name still garbled — the final STOP-BIT cycle, where the tail is the return
+      plus the next `tapout`'s whole preamble. Compensating bit boundaries alone was
+      not enough; the BYTE boundary is a bigger tail than any bit boundary.
+      🔴 **TWO CONSTANTS, BECAUSE THE PATHS ARE NOT SYMMETRIC** — and they were
+      measured, not computed. A single value of 12 left the residual outliers almost
+      all at `17` on the LONG tone, i.e. the `0` path over-compensated; it now
+      carries `CAS_BITCOMP0` = 6 against 12 for the others. 🔴 **MY T-STATE
+      ARITHMETIC PUT THE `0` TAIL AT ~13 ITERATIONS AND THE MEASUREMENT SAYS ~6** —
+      the emulator was right and the paper was wrong.
+      ⚠️ **AND THE TUNING HAS PLATEAUED**, which is the useful negative result:
+      sweeping `CAS_BITCOMP` over 9–14 and `CAS_BITCOMP0` over 4–8 leaves ~38–50
+      half-periods between the tones in every combination
+      ([readings](scratchpad/kwdrain_compsweep2.out),
+      [and](scratchpad/kwdrain_comp0sweep.out),
+      [and](scratchpad/kwdrain_compsweep3.out)), and the load never completes. A
+      fixed subtraction cannot equalise a tail that varies with BOTH the current bit
+      and the NEXT one (`jr c` taken vs not, `jr tapout_next` on one path only).
+      ➡️ **SO THE NEXT SLICE IS A RESTRUCTURE, NOT A CONSTANT**: make every bit's
+      tail IDENTICAL — one path shape, so one compensation is exact — rather than
+      compensating two paths approximately. The remaining outliers are located:
+      31 in the DATA block, 20 in the HEADER data, 3 in the leaders
+      ([readings](scratchpad/kwdrain_outlierpos.out)).
+      🟢 **OUR OWN READER IS UNAFFECTED**: `cassave-acceptance` and
+      `castail-acceptance` are green with the compensation in, which is what says
+      this is safe to carry while the rest is worked out.
       🎚️ TIER 1 — happy path: `CSAVE` / `SAVE"CAS:"` is ordinary MSX BASIC, and what
       it produces cannot be loaded on the machine it is meant for
       🤖 AUTONOMOUS — the matrix is measured with controls in both directions; what
@@ -5854,7 +5898,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:15181 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:15225 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

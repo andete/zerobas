@@ -1,0 +1,19 @@
+=== vg8020  half-period histogram (samples -> count), excluding gaps
+        8 samples ( 2756 Hz) :      2
+        9 samples ( 2450 Hz) :  30670
+       10 samples ( 2205 Hz) :   8390
+       18 samples ( 1225 Hz) :    324
+       19 samples ( 1160 Hz) :    154
+       20 samples ( 1102 Hz) :      4
+=== zb      half-period histogram (samples -> count), excluding gaps
+        8 samples ( 2756 Hz) :    571
+        9 samples ( 2450 Hz) :   8733
+       10 samples ( 2205 Hz) :   3398
+       11 samples ( 2004 Hz) :      2
+       12 samples ( 1837 Hz) :     20
+       13 samples ( 1696 Hz) :     11
+       17 samples ( 1297 Hz) :     40
+       18 samples ( 1225 Hz) :    280
+       19 samples ( 1160 Hz) :     18
+       20 samples ( 1102 Hz) :     18
+refcache: 0 hit, 2 miss, 2 stored
