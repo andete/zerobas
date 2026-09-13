@@ -88,7 +88,7 @@
    "modes": {
     "stmt": "MISSING"
    },
-   "row": "clearkw",
+   "row": "clear_b",
    "verdict": "MISSING",
    "weak": false
   },
@@ -482,10 +482,10 @@
   "LOCATE": {
    "connected": true,
    "modes": {
-    "stmt": "MISSING"
+    "stmt": "UNREADABLE"
    },
-   "row": "locate",
-   "verdict": "MISSING",
+   "row": "locate_b",
+   "verdict": "UNREADABLE",
    "weak": false
   },
   "LOF": {
@@ -959,5 +959,5 @@
    "weak": false
   }
  },
- "written": "2026-09-14 00:21:55"
+ "written": "2026-09-14 00:47:23"
 }

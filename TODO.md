@@ -262,6 +262,33 @@ beside `CALL`/`MAX` (reservedness) and it is a property of the language, not a
 gap in the knife.
 📏 Sweep `DIVERGENT=2 SUPPORTED=192`, the two divergences still the expected
 `swap_t3`/`dskf_t3` pair, no `UNREADABLE`.
+🌾 **BREADTH BATCH 5 (D-KWBREADTH, 2026-09-14) — THE CONSTANT-MARKER SHAPE, AND A
+THIRD DIVERGENCE THAT WAS NOT A DEFECT.** Screening every row (not just
+single-row keywords) found **twenty that print only a CONSTANT MARKER**: they
+score that the word RAN and nothing about what it DID. Some are legitimate — for
+`IF`/`THEN`/`ELSE` the marker's IDENTITY is which branch was taken — but where the
+effect is separately readable, the marker is the whole of the evidence.
+| row | reading | the effect its marker could not see |
+|---|---|---|
+| `clear_b` | `[ 1 ]` | `CLEAR` really RESETS variables — `A=5:CLEAR:A=A+1` reads 1, where a CLEAR that did nothing leaves 6. `clearkw` prints `[5]` |
+| `locate_b` | `[N 5 ]` | the **ROW** argument, read back through `CSRLIN`. `locate` sets only a COLUMN and scores the marker's INDENTATION |
+🔪 Both **knife-proven LOAD-BEARING**. Sweep back to `DIVERGENT=2 SUPPORTED=194`.
+🔴 **AND `locate_b` WALKED INTO A WARNING SITTING TWO ROWS AWAY FROM IT.** Written
+plainly it came back **DIVERGENT — and the VALUES AGREED**: ref `|||[ 5 ]` vs zb
+`||||[ 5 ]`, three wrap pipes against four. `LOCATE` MOVES THE CURSOR, so the blank
+lines ahead of the output depend on ambient screen state and **the row was
+measuring SCREEN GEOMETRY rather than the keyword.** The `csrlin` row below it
+already carries both the diagnosis (*"the VALUE is ambient scroll state"*) and the
+remedy (*"Anchored with CLS all three agree everywhere"*). 🎯 **A THIRD DIVERGENCE
+IS A NEW FINDING — AND THE FINDING WAS ABOUT MY ROW, NOT THE INTERPRETER.
+INVESTIGATE BEFORE FILING, ALWAYS: the values matching while the verdict says
+DIVERGENT is the signature of an APPARATUS difference.**
+⚠️ **AND THE `CLS` THEN COST THE ECHO — THE NEXT TRAP IN THE SAME CORNER.**
+Anchored but untagged, the row read `UNREADABLE ?noecho` on BOTH sides, because
+`CLS` erases the echoed command the capture keys on. `NOECHO:` exists for exactly
+that; the row is now captured by its own marker `[N` (the free one — `C D G L O Q
+R S T W Z` were taken). **Two fixes, each of which created the next problem, and
+both were already documented in this file by somebody who had met them.**
 🔪 **D-KWSTRCUT — THE THIRD CUT SHAPE, AND A FIRST VERSION OF IT THAT WAS WORSE
 THAN THE GAP IT CLOSED (2026-09-13).** `basic/sysvars.inc:250` named the shape in
 prose written long before the knife existed: **MKI$ is evaluated in
@@ -930,7 +957,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:17657 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:17684 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -1096,7 +1123,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:5697 (T-6FE392)8 (T-529ABE)` from `TODO.md:16308 (T-529ABE)`: a
+      `TODO.md:5724 (T-6FE392)8 (T-529ABE)` from `TODO.md:16335 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -6541,7 +6568,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:16308 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:16335 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

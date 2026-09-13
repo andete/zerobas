@@ -521,6 +521,12 @@ SWEEP: list[tuple[str, str, str | None, str, str]] = [
     ("ifkw",    'if 1 then a=2',      'IF 3>2 THEN PRINT"[4]"',               "direct", "D-KWDRAIN"),
     ("nextkw",  'next i',             'FOR I=1 TO 2:NEXT:PRINT"[";I;"]"',     "direct", "D-KWDRAIN"),
     ("clearkw", 'clear 100',          'CLEAR 100:PRINT"[5]"',                 "direct", "D-KWDRAIN"),
+    # 🌾 D-KWBREADTH batch 5: `clearkw` prints a CONSTANT MARKER, so it scores that
+    # the word RAN and nothing about what it DID. CLEAR's defining effect is that
+    # it resets variables; `A=A+1` after it reads 1 only if A really went to 0.
+    ("clear_b", 'clear',              'A=5:CLEAR:A=A+1:PRINT"[";A;"]"',        "direct",
+     "D-KWDRAIN: CLEAR's EFFECT, not its existence -- `[ 1 ]` proves A was reset "
+     "to 0; a CLEAR that did nothing leaves 6"),
     ("dimkw",   'dim a(2)',           'DIM D(2):D(1)=5:PRINT"[";D(1);"]"',    "direct", "D-KWDRAIN"),
 
     # ------------------------------------------------ D-KWDRAIN batch 3 (2026-09-12)
@@ -810,6 +816,27 @@ SWEEP: list[tuple[str, str, str | None, str, str]] = [
      'LOCATE 10:PRINT"[X]"',                         "direct",
      "absent => `LOCATE 10` is a bare word + juxtaposition => syntax error; "
      "real => `[X]` indented to column 10"),
+    # 🌾 D-KWBREADTH batch 5: the row above uses the ONE-argument form and reads the
+    # marker's INDENTATION. The ROW argument is untouched, and CSRLIN reads it back
+    # EXPLICITLY rather than by column-counting -- the form already recorded as
+    # decisive beside the `csrlin` row, because a SET row admits no scroll history.
+    # 🔴 AND IT MUST BE ANCHORED WITH `CLS`, WHICH THE `csrlin` ROW BELOW ALREADY
+    # SAYS IN SO MANY WORDS. Written without it this row came back DIVERGENT on its
+    # FIRST sweep -- and the VALUES AGREED: ref `|||[ 5 ]` vs zb `||||[ 5 ]`, three
+    # wrap pipes against four. `LOCATE` MOVES THE CURSOR, so the blank lines ahead
+    # of the output depend on ambient screen state and the row measures SCREEN
+    # GEOMETRY rather than the keyword. `csrlin`'s note carries both the diagnosis
+    # ("the VALUE is ambient scroll state") and the remedy ("Anchored with CLS all
+    # three agree everywhere") -- a warning sitting two rows away that this row
+    # walked straight into.
+    # ⚠️ AND THE `CLS` THEN COSTS THE ECHO, WHICH IS THE NEXT TRAP IN THE SAME
+    # CORNER: anchored but untagged, the row came back UNREADABLE `?noecho` on BOTH
+    # sides, because CLS erases the echoed command the capture keys on. `NOECHO:`
+    # exists for exactly that and the row is captured by its own unique marker.
+    ("locate_b", "locate 0,5",   'CLS:LOCATE 0,5:PRINT"[N";CSRLIN;"]"',       "direct",
+     "NOECHO:[N " "the ROW argument, read back through CSRLIN -- `[N 5 ]`. The "
+     "`locate` row sets only a COLUMN and scores the marker's indentation; CLS "
+     "anchors the cursor so this reads the ROW and not the scroll history."),
     ("csrlin",  "a=csrlin",
      # ⚠️ THIS ROW'S "DIVERGENT" IS A PROBE ARTIFACT, NOT A FAITHFULNESS BUG,
      # and it cannot be pinned here. CSRLIN is a POSITION, so with no leading
