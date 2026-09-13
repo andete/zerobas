@@ -234,7 +234,7 @@ GROUP_ORDER = ["kwgap", 1, 2, 3, 4, 5, "kw1", "kw1c", "kw3", "kw3c", None]
 
 
 KWSWEEP_PIN = os.path.join(ROOT, "build", "kwsweep-verdicts.json")
-KNIFE_PIN = os.path.join(ROOT, "build", "kwknife-connected.json")
+KNIFE_PIN = os.path.join(ROOT, "scratchpad", "kwknife-connected.json")
 
 
 def knife_connected(path=KNIFE_PIN):
@@ -244,14 +244,52 @@ def knife_connected(path=KNIFE_PIN):
     entirely, so a row that notices is CONNECTED to it — a total failure is seen.
     It says nothing about whether a SUBTLE defect would be, and nothing about
     BREADTH. Read as attainment it would repeat exactly the mistake TIER 0 exists
-    to correct."""
+    to correct.
+
+    🔴 AND THE READER NOW CHECKS THE FINGERPRINT THE WRITER RECORDS (D-KWPINLOSS
+    2026-09-13). `kwknife.record`'s own docstring promised that *"a pin whose
+    fingerprint no longer matches the built ROM describes a machine that no longer
+    exists, and the reader says so"* — and this reader did not read the field at
+    all. The writer's guarantee and the reader's behaviour were two sections of one
+    mechanism disagreeing on the load-bearing rule, with the docstring carrying the
+    half that was not implemented.
+    🔴 A DEGENERATE PIN IS REFUSED, NOT AVERAGED IN. Measured the same day: a
+    `make kwcover` run cleaned `build/`, where this pin then lived, and the 91-
+    keyword reading came back as ONE row — from which this function would have
+    returned a set of size 1 and the table would have printed a perfectly plausible
+    ladder. That is the `kwcover` SUITE_FLOOR failure exactly, so it gets the same
+    answer: refuse, say nothing was measured, and name the command that rebuilds it.
+    """
+    import hashlib, json
+    IMAGES = ("build/zerobas-main-eu.rom", "build/sub.rom", "build/disk.rom",
+              "build/basic-reloc.rom")
     try:
-        import json
         with open(path, encoding="utf-8") as fh:
             pin = json.load(fh)
     except (OSError, ValueError):
-        return set()
-    return {kw for kw, r in pin.get("rows", {}).items() if r.get("connected")}
+        return set()                        # no measurement, and none claimed
+    rows = pin.get("rows", {})
+    live = " ".join((hashlib.sha256(open(os.path.join(ROOT, p), "rb").read())
+                     .hexdigest()[:8] if os.path.exists(os.path.join(ROOT, p))
+                     else "ABSENT") for p in IMAGES)
+    if pin.get("rom_fingerprint") not in (None, live):
+        raise SystemExit(
+            f"tier_table: REFUSING the knife pin at {path} — it was measured "
+            f"against {pin.get('rom_fingerprint')} and the built ROMs "
+            f"are now {live}. It describes a machine that no longer "
+            f"exists. "
+            f"Re-run `python3 scratchpad/kwknife.py --all` and `--allfn`.")
+    ROW_FLOOR = 20
+    if 0 < len(rows) < ROW_FLOOR:
+        raise SystemExit(
+            f"tier_table: REFUSING the knife pin at {path} — it holds "
+            f"{len(rows)} row(s), below the floor of {ROW_FLOOR}. A full sweep "
+            f"covers the whole statement and function keyword sets, so a handful "
+            f"of rows is not a thin measurement, it is a DIFFERENT one (an ad-hoc "
+            f"debugging run, or a pin that was destroyed and partly rewritten). "
+            f"NOTHING IS CLAIMED CONNECTED — re-run `python3 "
+            f"scratchpad/kwknife.py --all` and `--allfn`.")
+    return {kw for kw, r in rows.items() if r.get("connected")}
 
 
 def stmt_keyword(stmt, kwset):

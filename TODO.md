@@ -199,6 +199,69 @@ machine time is per-BATCH, not per-keyword, and amortises away. The irreducible
 cost is DESIGN — read the existing row, then find a form it cannot reach — and
 that is minutes per keyword and does not parallelise onto the machine. **So
 breadth scales, and the binding constraint is authorship, not wall time.**
+🔪 **D-KWSTRCUT — THE THIRD CUT SHAPE, AND A FIRST VERSION OF IT THAT WAS WORSE
+THAN THE GAP IT CLOSED (2026-09-13).** `basic/sysvars.inc:250` named the shape in
+prose written long before the knife existed: **MKI$ is evaluated in
+`basic/strvar.asm` because it RETURNS A STRING.** The site at
+`basic/strvar.asm:284` was always there. Two assumptions in `plant_fn` hid it: it
+matched only opcode `$CA` (`jp z,nn`) and never the RELATIVE `jr z,d` (`$28`) the
+short string chain uses, and it accepted only `ev_*` targets, never the `str_*`
+evaluators.
+🔴 **THE UNGUARDED WIDENING THEN REPORTED `INT` AND `PEEK` AS BLIND, AND BOTH
+WERE FINE.** An MSX token byte lives in **TWO NAMESPACES** — `$xx` as a statement
+token, `$FF $xx` as a function selector — and the same byte names DIFFERENT
+keywords in each. The tree says so twice, in lines nobody had to discover:
+`INPUT_TOKEN equ $85` sits beside `INT_TOKEN equ $85`, and `sysvars.inc:2361`
+reads *"`DEF_TOKEN equ $97` ; PEEK's $97 is the 2nd byte after `$FF`"*. A raw
+`cp <tok>` BYTE search cannot tell them apart, so the widened rule handed `INT`
+the site belonging to `INPUT$` **in the string chain**. 🎯 **THAT IS NOT A MISS.
+A FALSE `BLIND` SAYS THE ROW IS DEFECTIVE ABOUT A ROW THAT IS FINE, SO AN HONEST
+REFUSAL IS STRICTLY BETTER THAN A CONFIDENT WRONG VERDICT** — the instrument
+failing the way the thing it replaced failed, one turn after being built.
+✅ **THE NARROWED RULE**, admitting the new shape on the tightest terms that still
+reach `MKI$`: `jp z` + `ev_*` is **UNCHANGED BYTE FOR BYTE**, so no prior reading
+moves; `jr z` + `str_*` is accepted ONLY for the **12 string-returning selectors**
+(`BIN$ CHR$ HEX$ LEFT$ MID$ MKD$ MKI$ MKS$ OCT$ RIGHT$ SPACE$ STR$`). ⚠️ And
+string-ness is **DERIVED FROM `basic/kwtable.inc`'s two-byte crunch form, NOT
+from how the caller spelled the keyword** — the CLI takes the equate stem (`MKI`,
+because the equate is `MKI_TOKEN`) while the table holds `MKI$`, so testing the
+argument would have made the guard depend on the ENTRY POINT: green from
+`--allfn`, refused from the command line, same keyword and same ROM.
+🔴 **D-KWPINLOSS — THE KNIFE PIN WAS DESTROYED AND NOTHING NOTICED.** It lived in
+gitignored `build/`, and a `make kwcover` run (which forces `gates-full`, and
+cleans) wiped it; the pin came back holding **ONE** row, from which
+`tier_table.knife_connected()` would have returned a set of size 1 and printed a
+perfectly plausible ladder. **TWO holes at once, and the first is the sharper
+one**: `kwknife.record`'s own docstring PROMISED that *"a pin whose fingerprint no
+longer matches the built ROM describes a machine that no longer exists, and the
+reader says so"* — **and the reader never read the field at all.** The writer's
+guarantee and the reader's behaviour were two halves of one mechanism disagreeing
+on the load-bearing rule, with the docstring carrying the half nobody had
+implemented. The second: no floor, so a DESTROYED pin is indistinguishable from a
+thin one.
+✅ **FIXED, AND THE FIX WAS VERIFIED BY RUNNING IT, NOT ASSUMED.** The pin moved
+to **TRACKED `scratchpad/kwknife-connected.json`** — `build/kwsweep-verdicts.json`
+may live in `build/` because EVERY battery regenerates it; **nothing regenerates
+the knife pin, and that asymmetry is what decides where a pin belongs.**
+`knife_connected()` now verifies the recorded fingerprint against the live ROMs
+and REFUSES below a 20-row floor, naming the command that rebuilds it — the same
+answer `kwcover`'s `SUITE_FLOOR` gives for the same failure.
+📏 **THE DENOMINATOR, RE-MEASURED FROM A DELETED PIN SO NOTHING CONTAMINATED
+SURVIVED THE OR-MERGE: 99 KNIFED, 96 CONNECTED, 3 NOT** — `CALL` and `MAX`
+UNCONNECTABLE BY CONSTRUCTION (their rows test that the word is RESERVED, which
+exercises the tokeniser, not a handler) and `PAD` BLIND (it needs simulated touch
+input). ⚠️ **The remembered "94 knifed, 91 connected, 30 refused" DID NOT SURVIVE
+to be compared against — which is precisely the weakness D-KWPINLOSS fixes.** The
+string cut is worth **five** keywords: `CHR$ MKD$ MKI$ MKS$ STR$`. ⚠️ `BASE`,
+`TIME` and `VDP` need EXPLICIT CLI runs: they are function-dispatched but carry
+ONE-byte tokens, and `--allfn` enumerates only the two-byte `kwtable` form.
+🔭 **AND THE NEXT LEAD IS NAMED RATHER THAN COUNTED.** 25 keywords still refuse:
+the math group, and **seven string functions — `BIN$ HEX$ LEFT$ MID$ OCT$ RIGHT$
+SPACE$` — that HAVE `str_fn_*` symbols and yet present ZERO `cp`/`jr z` sites.**
+Only the `MKI$`/`MKS$`/`MKD$` trio uses the explicit comparison chain
+(`str_eval_maybe_mki`); the rest are reached from inside `str_func_ff` by a shape
+that is neither of the three. **That is a FOURTH shape, and it is a searchable
+target in one named routine rather than a tally of failures.**
 🔴 **`PAD` IS THE FIRST GENUINELY BLIND ROW, AND THE REASON GENERALISES: ITS
 OBSERVATION IS AN ERROR (2026-09-13).** The row is `PRINT PAD(9)` —
 deliberately out of range, so a real `PAD` raises `Illegal function call`
@@ -757,7 +820,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:17484 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:17547 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -923,7 +986,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:5524 (T-6FE392)8 (T-529ABE)` from `TODO.md:16135 (T-529ABE)`: a
+      `TODO.md:5587 (T-6FE392)8 (T-529ABE)` from `TODO.md:16198 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -6368,7 +6431,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:16135 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:16198 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

@@ -1,0 +1,900 @@
+{
+ "rom_fingerprint": "e3dbed36 bf1c245d a01dabda 10650476",
+ "rows": {
+  "AUTO": {
+   "connected": true,
+   "modes": {
+    "stmt": "MISSING"
+   },
+   "row": "auto",
+   "verdict": "MISSING",
+   "weak": false
+  },
+  "BASE": {
+   "connected": true,
+   "modes": {
+    "fn": "MISSING",
+    "stmt": "SUPPORTED"
+   },
+   "row": "basekw",
+   "verdict": "MISSING",
+   "weak": false
+  },
+  "BEEP": {
+   "connected": true,
+   "modes": {
+    "stmt": "MISSING"
+   },
+   "row": "beep",
+   "verdict": "MISSING",
+   "weak": false
+  },
+  "BLOAD": {
+   "connected": true,
+   "modes": {
+    "stmt": "MISSING"
+   },
+   "row": "bload",
+   "verdict": "MISSING",
+   "weak": false
+  },
+  "BSAVE": {
+   "connected": true,
+   "modes": {
+    "stmt": "MISSING"
+   },
+   "row": "bsave",
+   "verdict": "MISSING",
+   "weak": false
+  },
+  "CALL": {
+   "connected": false,
+   "modes": {
+    "stmt": "SUPPORTED"
+   },
+   "row": "callkw",
+   "verdict": "SUPPORTED",
+   "weak": false
+  },
+  "CHR$": {
+   "connected": true,
+   "modes": {
+    "fn": "MISSING"
+   },
+   "row": "chr",
+   "verdict": "MISSING",
+   "weak": false
+  },
+  "CIRCLE": {
+   "connected": true,
+   "modes": {
+    "stmt": "UNREADABLE"
+   },
+   "row": "circlekw",
+   "verdict": "UNREADABLE",
+   "weak": false
+  },
+  "CLEAR": {
+   "connected": true,
+   "modes": {
+    "stmt": "MISSING"
+   },
+   "row": "clearkw",
+   "verdict": "MISSING",
+   "weak": false
+  },
+  "CLOAD": {
+   "connected": true,
+   "modes": {
+    "stmt": "MISSING"
+   },
+   "row": "cload",
+   "verdict": "MISSING",
+   "weak": false
+  },
+  "CLOSE": {
+   "connected": true,
+   "modes": {
+    "stmt": "MISSING"
+   },
+   "row": "close",
+   "verdict": "MISSING",
+   "weak": false
+  },
+  "CLS": {
+   "connected": true,
+   "modes": {
+    "stmt": "MISSING"
+   },
+   "row": "clskw",
+   "verdict": "MISSING",
+   "weak": false
+  },
+  "CMD": {
+   "connected": true,
+   "modes": {
+    "stmt": "DIVERGENT"
+   },
+   "row": "cmd",
+   "verdict": "DIVERGENT",
+   "weak": false
+  },
+  "COLOR": {
+   "connected": true,
+   "modes": {
+    "stmt": "MISSING"
+   },
+   "row": "colorkw",
+   "verdict": "MISSING",
+   "weak": false
+  },
+  "COPY": {
+   "connected": true,
+   "modes": {
+    "stmt": "MISSING"
+   },
+   "row": "copy",
+   "verdict": "MISSING",
+   "weak": false
+  },
+  "CSAVE": {
+   "connected": true,
+   "modes": {
+    "stmt": "NO-VERDICT"
+   },
+   "row": "csave",
+   "verdict": "NO-VERDICT",
+   "weak": false
+  },
+  "CVD": {
+   "connected": true,
+   "modes": {
+    "fn": "MISSING"
+   },
+   "row": "cvd",
+   "verdict": "MISSING",
+   "weak": false
+  },
+  "CVI": {
+   "connected": true,
+   "modes": {
+    "fn": "MISSING"
+   },
+   "row": "cvi",
+   "verdict": "MISSING",
+   "weak": false
+  },
+  "CVS": {
+   "connected": true,
+   "modes": {
+    "fn": "MISSING"
+   },
+   "row": "cvs",
+   "verdict": "MISSING",
+   "weak": false
+  },
+  "DEF": {
+   "connected": true,
+   "modes": {
+    "stmt": "MISSING"
+   },
+   "row": "deffn",
+   "verdict": "MISSING",
+   "weak": false
+  },
+  "DEFDBL": {
+   "connected": true,
+   "modes": {
+    "stmt": "MISSING"
+   },
+   "row": "defdbl",
+   "verdict": "MISSING",
+   "weak": false
+  },
+  "DEFINT": {
+   "connected": true,
+   "modes": {
+    "stmt": "MISSING"
+   },
+   "row": "defintkw",
+   "verdict": "MISSING",
+   "weak": false
+  },
+  "DEFSNG": {
+   "connected": true,
+   "modes": {
+    "stmt": "MISSING"
+   },
+   "row": "defsng",
+   "verdict": "MISSING",
+   "weak": false
+  },
+  "DEFSTR": {
+   "connected": true,
+   "modes": {
+    "stmt": "MISSING"
+   },
+   "row": "defstr",
+   "verdict": "MISSING",
+   "weak": false
+  },
+  "DELETE": {
+   "connected": true,
+   "modes": {
+    "stmt": "DIVERGENT"
+   },
+   "row": "deletekw",
+   "verdict": "DIVERGENT",
+   "weak": false
+  },
+  "DIM": {
+   "connected": true,
+   "modes": {
+    "stmt": "MISSING"
+   },
+   "row": "dimkw",
+   "verdict": "MISSING",
+   "weak": false
+  },
+  "DRAW": {
+   "connected": true,
+   "modes": {
+    "stmt": "UNREADABLE"
+   },
+   "row": "drawkw",
+   "verdict": "UNREADABLE",
+   "weak": false
+  },
+  "DSKF": {
+   "connected": true,
+   "modes": {
+    "fn": "DIVERGENT"
+   },
+   "row": "dskf",
+   "verdict": "DIVERGENT",
+   "weak": false
+  },
+  "DSKO$": {
+   "connected": true,
+   "modes": {
+    "stmt": "MISSING"
+   },
+   "row": "dsko",
+   "verdict": "MISSING",
+   "weak": false
+  },
+  "END": {
+   "connected": true,
+   "modes": {
+    "stmt": "MISSING"
+   },
+   "row": "endkw",
+   "verdict": "MISSING",
+   "weak": false
+  },
+  "EOF": {
+   "connected": true,
+   "modes": {
+    "fn": "MISSING"
+   },
+   "row": "eof",
+   "verdict": "MISSING",
+   "weak": false
+  },
+  "ERASE": {
+   "connected": true,
+   "modes": {
+    "stmt": "MISSING"
+   },
+   "row": "erase",
+   "verdict": "MISSING",
+   "weak": false
+  },
+  "ERROR": {
+   "connected": true,
+   "modes": {
+    "stmt": "DIVERGENT"
+   },
+   "row": "errorkw",
+   "verdict": "DIVERGENT",
+   "weak": false
+  },
+  "FILES": {
+   "connected": true,
+   "modes": {
+    "stmt": "MISSING"
+   },
+   "row": "files",
+   "verdict": "MISSING",
+   "weak": false
+  },
+  "FRE": {
+   "connected": true,
+   "modes": {
+    "fn": "MISSING"
+   },
+   "row": "fre",
+   "verdict": "MISSING",
+   "weak": false
+  },
+  "GET": {
+   "connected": true,
+   "modes": {
+    "stmt": "MISSING"
+   },
+   "row": "getkw",
+   "verdict": "MISSING",
+   "weak": false
+  },
+  "GOSUB": {
+   "connected": true,
+   "modes": {
+    "stmt": "MISSING"
+   },
+   "row": "gosubkw",
+   "verdict": "MISSING",
+   "weak": false
+  },
+  "GOTO": {
+   "connected": true,
+   "modes": {
+    "stmt": "DIVERGENT"
+   },
+   "row": "goto_t3",
+   "verdict": "DIVERGENT",
+   "weak": false
+  },
+  "IF": {
+   "connected": true,
+   "modes": {
+    "stmt": "MISSING"
+   },
+   "row": "ifkw",
+   "verdict": "MISSING",
+   "weak": false
+  },
+  "INP": {
+   "connected": true,
+   "modes": {
+    "fn": "MISSING"
+   },
+   "row": "inpkw",
+   "verdict": "MISSING",
+   "weak": false
+  },
+  "INPUT": {
+   "connected": true,
+   "modes": {
+    "stmt": "MISSING"
+   },
+   "row": "inputkw",
+   "verdict": "MISSING",
+   "weak": false
+  },
+  "IPL": {
+   "connected": true,
+   "modes": {
+    "stmt": "DIVERGENT"
+   },
+   "row": "ipl",
+   "verdict": "DIVERGENT",
+   "weak": false
+  },
+  "KEY": {
+   "connected": true,
+   "modes": {
+    "stmt": "MISSING"
+   },
+   "row": "keykw",
+   "verdict": "MISSING",
+   "weak": false
+  },
+  "KILL": {
+   "connected": true,
+   "modes": {
+    "stmt": "DIVERGENT"
+   },
+   "row": "kill_t3",
+   "verdict": "DIVERGENT",
+   "weak": false
+  },
+  "LET": {
+   "connected": true,
+   "modes": {
+    "stmt": "MISSING"
+   },
+   "row": "let",
+   "verdict": "MISSING",
+   "weak": false
+  },
+  "LFILES": {
+   "connected": true,
+   "modes": {
+    "stmt": "MISSING"
+   },
+   "row": "lfiles",
+   "verdict": "MISSING",
+   "weak": false
+  },
+  "LINE": {
+   "connected": true,
+   "modes": {
+    "stmt": "UNREADABLE"
+   },
+   "row": "linekw",
+   "verdict": "UNREADABLE",
+   "weak": false
+  },
+  "LIST": {
+   "connected": true,
+   "modes": {
+    "stmt": "MISSING"
+   },
+   "row": "listkw",
+   "verdict": "MISSING",
+   "weak": false
+  },
+  "LLIST": {
+   "connected": true,
+   "modes": {
+    "stmt": "MISSING"
+   },
+   "row": "llist",
+   "verdict": "MISSING",
+   "weak": false
+  },
+  "LOC": {
+   "connected": true,
+   "modes": {
+    "fn": "DIVERGENT"
+   },
+   "row": "loc",
+   "verdict": "DIVERGENT",
+   "weak": false
+  },
+  "LOCATE": {
+   "connected": true,
+   "modes": {
+    "stmt": "MISSING"
+   },
+   "row": "locate",
+   "verdict": "MISSING",
+   "weak": false
+  },
+  "LOF": {
+   "connected": true,
+   "modes": {
+    "fn": "DIVERGENT"
+   },
+   "row": "lof",
+   "verdict": "DIVERGENT",
+   "weak": false
+  },
+  "LPOS": {
+   "connected": true,
+   "modes": {
+    "fn": "MISSING"
+   },
+   "row": "lposkw",
+   "verdict": "MISSING",
+   "weak": false
+  },
+  "LPRINT": {
+   "connected": true,
+   "modes": {
+    "stmt": "MISSING"
+   },
+   "row": "lprintkw",
+   "verdict": "MISSING",
+   "weak": false
+  },
+  "LSET": {
+   "connected": true,
+   "modes": {
+    "stmt": "MISSING"
+   },
+   "row": "lset",
+   "verdict": "MISSING",
+   "weak": false
+  },
+  "MAX": {
+   "connected": false,
+   "modes": {
+    "stmt": "SUPPORTED"
+   },
+   "row": "maxkw",
+   "verdict": "SUPPORTED",
+   "weak": false
+  },
+  "MERGE": {
+   "connected": true,
+   "modes": {
+    "stmt": "MISSING"
+   },
+   "row": "merge",
+   "verdict": "MISSING",
+   "weak": false
+  },
+  "MKD$": {
+   "connected": true,
+   "modes": {
+    "fn": "MISSING"
+   },
+   "row": "mkd",
+   "verdict": "MISSING",
+   "weak": false
+  },
+  "MKI$": {
+   "connected": true,
+   "modes": {
+    "fn": "MISSING"
+   },
+   "row": "mki",
+   "verdict": "MISSING",
+   "weak": false
+  },
+  "MKS$": {
+   "connected": true,
+   "modes": {
+    "fn": "MISSING"
+   },
+   "row": "mks",
+   "verdict": "MISSING",
+   "weak": false
+  },
+  "MOTOR": {
+   "connected": true,
+   "modes": {
+    "stmt": "MISSING"
+   },
+   "row": "motor",
+   "verdict": "MISSING",
+   "weak": false
+  },
+  "NEW": {
+   "connected": true,
+   "modes": {
+    "stmt": "MISSING"
+   },
+   "row": "newkw",
+   "verdict": "MISSING",
+   "weak": false
+  },
+  "NEXT": {
+   "connected": true,
+   "modes": {
+    "stmt": "MISSING"
+   },
+   "row": "nextkw",
+   "verdict": "MISSING",
+   "weak": false
+  },
+  "ON": {
+   "connected": true,
+   "modes": {
+    "stmt": "MISSING"
+   },
+   "row": "onkw",
+   "verdict": "MISSING",
+   "weak": false
+  },
+  "OUT": {
+   "connected": true,
+   "modes": {
+    "stmt": "MISSING"
+   },
+   "row": "outkw",
+   "verdict": "MISSING",
+   "weak": false
+  },
+  "PAD": {
+   "connected": false,
+   "modes": {
+    "fn": "SUPPORTED"
+   },
+   "row": "padkw",
+   "verdict": "SUPPORTED",
+   "weak": false
+  },
+  "PDL": {
+   "connected": true,
+   "modes": {
+    "fn": "DIVERGENT"
+   },
+   "row": "pdlkw",
+   "verdict": "DIVERGENT",
+   "weak": false
+  },
+  "PEEK": {
+   "connected": true,
+   "modes": {
+    "fn": "MISSING"
+   },
+   "row": "peek",
+   "verdict": "MISSING",
+   "weak": false
+  },
+  "POKE": {
+   "connected": true,
+   "modes": {
+    "stmt": "MISSING"
+   },
+   "row": "pokekw",
+   "verdict": "MISSING",
+   "weak": false
+  },
+  "POS": {
+   "connected": true,
+   "modes": {
+    "fn": "MISSING"
+   },
+   "row": "pos",
+   "verdict": "MISSING",
+   "weak": false
+  },
+  "PRESET": {
+   "connected": true,
+   "modes": {
+    "stmt": "UNREADABLE"
+   },
+   "row": "presetkw",
+   "verdict": "UNREADABLE",
+   "weak": false
+  },
+  "PRINT": {
+   "connected": true,
+   "modes": {
+    "stmt": "MISSING"
+   },
+   "row": "tab",
+   "verdict": "MISSING",
+   "weak": false
+  },
+  "PSET": {
+   "connected": true,
+   "modes": {
+    "stmt": "UNREADABLE"
+   },
+   "row": "psetkw",
+   "verdict": "UNREADABLE",
+   "weak": false
+  },
+  "READ": {
+   "connected": true,
+   "modes": {
+    "stmt": "MISSING"
+   },
+   "row": "readkw",
+   "verdict": "MISSING",
+   "weak": false
+  },
+  "REM": {
+   "connected": true,
+   "modes": {
+    "stmt": "MISSING"
+   },
+   "row": "rem",
+   "verdict": "MISSING",
+   "weak": false
+  },
+  "RENUM": {
+   "connected": true,
+   "modes": {
+    "stmt": "DIVERGENT"
+   },
+   "row": "renum",
+   "verdict": "DIVERGENT",
+   "weak": false
+  },
+  "RESTORE": {
+   "connected": true,
+   "modes": {
+    "stmt": "MISSING"
+   },
+   "row": "restorekw",
+   "verdict": "MISSING",
+   "weak": false
+  },
+  "RESUME": {
+   "connected": true,
+   "modes": {
+    "stmt": "MISSING"
+   },
+   "row": "resumekw",
+   "verdict": "MISSING",
+   "weak": false
+  },
+  "RETURN": {
+   "connected": true,
+   "modes": {
+    "stmt": "MISSING"
+   },
+   "row": "returnkw",
+   "verdict": "MISSING",
+   "weak": false
+  },
+  "RSET": {
+   "connected": true,
+   "modes": {
+    "stmt": "MISSING"
+   },
+   "row": "rset",
+   "verdict": "MISSING",
+   "weak": false
+  },
+  "RUN": {
+   "connected": true,
+   "modes": {
+    "stmt": "MISSING"
+   },
+   "row": "runkw",
+   "verdict": "MISSING",
+   "weak": false
+  },
+  "SAVE": {
+   "connected": true,
+   "modes": {
+    "stmt": "MISSING"
+   },
+   "row": "save",
+   "verdict": "MISSING",
+   "weak": false
+  },
+  "SCREEN": {
+   "connected": true,
+   "modes": {
+    "stmt": "MISSING"
+   },
+   "row": "screenkw",
+   "verdict": "MISSING",
+   "weak": false
+  },
+  "SET": {
+   "connected": true,
+   "modes": {
+    "stmt": "DIVERGENT"
+   },
+   "row": "set",
+   "verdict": "DIVERGENT",
+   "weak": false
+  },
+  "SOUND": {
+   "connected": true,
+   "modes": {
+    "stmt": "MISSING"
+   },
+   "row": "sound",
+   "verdict": "MISSING",
+   "weak": false
+  },
+  "SPRITE": {
+   "connected": true,
+   "modes": {
+    "stmt": "UNREADABLE"
+   },
+   "row": "spritekw",
+   "verdict": "UNREADABLE",
+   "weak": false
+  },
+  "STICK": {
+   "connected": true,
+   "modes": {
+    "fn": "MISSING"
+   },
+   "row": "stick",
+   "verdict": "MISSING",
+   "weak": false
+  },
+  "STOP": {
+   "connected": true,
+   "modes": {
+    "stmt": "MISSING"
+   },
+   "row": "stopkw",
+   "verdict": "MISSING",
+   "weak": false
+  },
+  "STR$": {
+   "connected": true,
+   "modes": {
+    "fn": "MISSING"
+   },
+   "row": "str",
+   "verdict": "MISSING",
+   "weak": false
+  },
+  "STRIG": {
+   "connected": true,
+   "modes": {
+    "fn": "DIVERGENT"
+   },
+   "row": "strigkw",
+   "verdict": "DIVERGENT",
+   "weak": false
+  },
+  "SWAP": {
+   "connected": true,
+   "modes": {
+    "stmt": "MISSING"
+   },
+   "row": "swap",
+   "verdict": "MISSING",
+   "weak": false
+  },
+  "TIME": {
+   "connected": true,
+   "modes": {
+    "fn": "MISSING",
+    "stmt": "SUPPORTED"
+   },
+   "row": "time",
+   "verdict": "MISSING",
+   "weak": true
+  },
+  "TROFF": {
+   "connected": true,
+   "modes": {
+    "stmt": "MISSING"
+   },
+   "row": "troff",
+   "verdict": "MISSING",
+   "weak": false
+  },
+  "TRON": {
+   "connected": true,
+   "modes": {
+    "stmt": "MISSING"
+   },
+   "row": "tron",
+   "verdict": "MISSING",
+   "weak": false
+  },
+  "VDP": {
+   "connected": true,
+   "modes": {
+    "fn": "MISSING",
+    "stmt": "SUPPORTED"
+   },
+   "row": "vdpkw",
+   "verdict": "MISSING",
+   "weak": false
+  },
+  "VPEEK": {
+   "connected": true,
+   "modes": {
+    "fn": "MISSING"
+   },
+   "row": "vpeek",
+   "verdict": "MISSING",
+   "weak": false
+  },
+  "VPOKE": {
+   "connected": true,
+   "modes": {
+    "stmt": "MISSING"
+   },
+   "row": "vpoke",
+   "verdict": "MISSING",
+   "weak": false
+  },
+  "WAIT": {
+   "connected": true,
+   "modes": {
+    "stmt": "MISSING"
+   },
+   "row": "waitkw",
+   "verdict": "MISSING",
+   "weak": false
+  },
+  "WIDTH": {
+   "connected": true,
+   "modes": {
+    "stmt": "MISSING"
+   },
+   "row": "widthkw",
+   "verdict": "MISSING",
+   "weak": false
+  }
+ },
+ "written": "2026-09-13 23:29:25"
+}

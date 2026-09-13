@@ -43,7 +43,28 @@ def token_of(name):
 DEADTOK = 0xFE          # matches no kwtable entry, so a `cp` against it never fires
 
 
-def plant_fn(tok):
+def _string_selectors():
+    """Selectors whose kwtable entry names a STRING-returning function (`...$`).
+
+    These, and only these, dispatch through `basic/strvar.asm`, so these and only
+    these may be cut at a `jr z,str_*` site. Read from the two-byte crunch form
+    `db <n>,"NAME$",2,<prefix>,<TOKEN>` — the same rule `enumerate_fn_targets`
+    uses to decide a keyword is function-dispatched at all."""
+    eq = {}
+    for m in re.finditer(r"^(\w+)\s+equ\s+\$([0-9A-Fa-f]+)",
+                         io.open(os.path.join(ROOT, "basic", "sysvars.inc"),
+                                 encoding="utf-8").read(), re.M):
+        eq[m.group(1)] = int(m.group(2), 16)
+    out = set()
+    for m in re.finditer(r'db\s+\d+,"([^"]+)",2,\w+,(\w+)',
+                         io.open(os.path.join(ROOT, "basic", "kwtable.inc"),
+                                 encoding="utf-8").read()):
+        if m.group(1).endswith("$") and eq.get(m.group(2)) is not None:
+            out.add(eq[m.group(2)])
+    return out
+
+
+def plant_fn(tok, kw=""):
     """Cut a FUNCTION selector by changing the COMPARISON OPERAND, not the target.
 
     🔴 THE STATEMENT CUT DOES NOT REACH THESE. `$FF`-prefixed selectors dispatch
@@ -71,14 +92,58 @@ def plant_fn(tok):
         m = re.match(r"(\w+)\s+EQU\s+0?([0-9A-Fa-f]+)H", line)
         if m:
             byaddr[int(m.group(2), 16)] = m.group(1)
+    # 🔪 THE THIRD CUT SHAPE (D-KWSTRCUT 2026-09-13), and it was NOT a mystery —
+    # `basic/sysvars.inc:250` named it in prose written long before this knife
+    # existed: MKI$ is evaluated in `basic/strvar.asm` BECAUSE IT RETURNS A STRING.
+    # The site is real (`strvar.asm:284`), and TWO assumptions here hid it:
+    #   1. only `$CA` (`jp z,nn`) was matched, but the string chain is short enough
+    #      to use `jr z,d` ($28) — a RELATIVE target this code never resolved;
+    #   2. only an `ev_*` target was accepted, but the string evaluators are named
+    #      `str_*`.
+    # Both are widened, and NEITHER loosens the ambiguity rule: a site still counts
+    # only when a conditional jump follows AND its target resolves to a named
+    # evaluator entry, and the run still stops unless EXACTLY ONE site qualifies.
+    # 🔴 AND THE WIDENING IS NAMESPACE-GUARDED, BECAUSE THE FIRST ATTEMPT WAS NOT
+    # AND THAT WAS WORSE THAN THE GAP IT CLOSED. An MSX token byte lives in TWO
+    # namespaces: `$xx` as a statement token and `$FF $xx` as a function selector,
+    # and the same byte names DIFFERENT keywords in each. `basic/sysvars.inc` says
+    # so out loud in two places — `INPUT_TOKEN equ $85` beside `INT_TOKEN equ $85`,
+    # and `DEF_TOKEN equ $97 ; PEEK's $97 is the 2nd byte after $FF`. A raw
+    # `cp <tok>` byte search cannot tell them apart. Accepting `jr z` with any
+    # `ev_*`/`str_*` target handed INT the site belonging to INPUT$ in the STRING
+    # chain, and the run then reported INT as 🔴 BLIND — which does not merely miss,
+    # it DEFAMES a row that is fine. A false BLIND is worse than an honest refusal.
+    # So the new shape is admitted on the narrowest terms that still reach MKI$:
+    #   * `jp z` + `ev_*`  — unchanged, byte for byte, so no prior reading moves;
+    #   * `jr z` + `str_*` — ONLY for a keyword whose kwtable name ends in `$`,
+    #                        i.e. one that actually RETURNS a string and therefore
+    #                        actually dispatches through `basic/strvar.asm`.
+    # ⚠️ DERIVED FROM `kwtable.inc`, NOT FROM HOW THE CALLER SPELLED IT. The CLI
+    # takes the equate stem (`MKI`, because the equate is `MKI_TOKEN`) while the
+    # table holds the real name (`MKI$`), so testing the argument would have made
+    # the guard depend on which entry point was used — green from `--allfn`, a
+    # refusal from the command line, for the same keyword and the same ROM.
+    strok = tok in _string_selectors()
     hits = []
     for i in range(len(rom) - 4):
-        if rom[i] == 0xFE and rom[i + 1] == tok and rom[i + 2] == 0xCA:
-            nm = byaddr.get(rom[i + 3] | (rom[i + 4] << 8), "")
-            if nm.startswith("ev_"):
-                hits.append(i)
+        if rom[i] != 0xFE or rom[i + 1] != tok:
+            continue
+        op = rom[i + 2]
+        if op == 0xCA:                      # jp z,nn — the expr.asm selector chain
+            tgt = rom[i + 3] | (rom[i + 4] << 8)
+            ok = byaddr.get(tgt, "").startswith("ev_")
+        elif op == 0x28 and strok:          # jr z,d — the strvar.asm string chain
+            d = rom[i + 3]
+            tgt = (i + 4) + (d - 256 if d > 127 else d)
+            ok = byaddr.get(tgt, "").startswith("str_")
+        else:
+            continue
+        if ok:
+            hits.append(i)
     if len(hits) != 1:
-        return None, f"{len(hits)} `cp ${tok:02X}` site(s) with an ev_* target — refusing"
+        shape = "ev_* (jp z)" + ("/str_* (jr z)" if strok else "")
+        return None, (f"{len(hits)} `cp ${tok:02X}` site(s) with a {shape} "
+                      f"target — refusing")
     off = hits[0] + 1
     orig = bytes(rom[off:off + 1])
     rom[off] = DEADTOK
@@ -139,11 +204,18 @@ def run_row(row):
     return "NO-VERDICT"
 
 WEAK = {}
-PIN = os.path.join(ROOT, "build", "kwknife-connected.json")
+# 🔴 THE PIN LIVES IN `scratchpad/`, TRACKED, AND NOT IN `build/` — MEASURED
+# 2026-09-13 (D-KWPINLOSS). It sat in gitignored `build/` until a `make kwcover`
+# run (which forces gates-full, and cleans) DESTROYED it. The reading it held —
+# 94 keywords knifed, 91 connected — cost real machine time and was gone without
+# a word; the pin came back holding ONE row. `build/kwsweep-verdicts.json` may
+# live in `build/` because EVERY battery regenerates it. Nothing regenerates
+# this one, and that asymmetry is what decides where a pin belongs.
+PIN = os.path.join(ROOT, "scratchpad", "kwknife-connected.json")
 
 
 def record(kw, row, verdict, mode):
-    """MERGE this keyword's reading into build/kwknife-connected.json.
+    """MERGE this keyword's reading into scratchpad/kwknife-connected.json.
 
     🔴 A PIN, NOT A PARSE OF MY OWN CONSOLE OUTPUT. `tier_table` reads
     build/kwsweep-verdicts.json the same way, and a reader that scrapes a report's
@@ -383,7 +455,7 @@ print("knife: statement handlers -> stmt_error $%04X; a row still SUPPORTED is B
 for kw, row, tok in TARGETS:
     before = knife_guard.hashes()
     if FNMODE:
-        res, why = plant_fn(tok)
+        res, why = plant_fn(tok, kw)
         if res is None:                      # no `cp` site: try the cpir table
             res, why2 = plant_argtab(tok)
             if res is None:
