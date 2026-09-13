@@ -289,6 +289,21 @@ Anchored but untagged, the row read `UNREADABLE ?noecho` on BOTH sides, because
 that; the row is now captured by its own marker `[N` (the free one — `C D G L O Q
 R S T W Z` were taken). **Two fixes, each of which created the next problem, and
 both were already documented in this file by somebody who had met them.**
+🌾 **BREADTH BATCH 6 (D-KWBREADTH, 2026-09-14) — ONE READBACK PATH TURNED TWO
+CONSTANT MARKERS INTO VALUES.** `sound` writes PSG register 7 and prints `[7]`;
+`outkw` writes the PSG ADDRESS LATCH and prints `[8]`. Neither observes what
+landed — and I had written the PSG off as having no readback. **It has one:
+`OUT &HA0,<reg>` selects a register and `INP(&HA2)` reads it**, so both effects
+are observable and one mechanism served both rows.
+| row | reading | the effect its marker could not see |
+|---|---|---|
+| `sound_b` | `[ 123 ]` | the byte `SOUND` actually DELIVERED, read back out of the PSG |
+| `out_b` | `[ 77 ]` | the whole `OUT` → `INP` round trip through the DATA port; `outkw` writes only the ADDRESS latch and never reads it back |
+🔪 **Both knife-proven LOAD-BEARING.** Sweep `DIVERGENT=2 SUPPORTED=196`.
+⚠️ Register 0 (channel A fine tune) is used rather than 7 because it is a plain
+8-bit cell **and because the MIXER is left exactly as it was — nothing is made
+audible, and nothing is left changed for the rows that follow** (the `AUTO`
+lesson: a row that mutates machine state is a row that can poison its neighbours).
 🔪 **D-KWSTRCUT — THE THIRD CUT SHAPE, AND A FIRST VERSION OF IT THAT WAS WORSE
 THAN THE GAP IT CLOSED (2026-09-13).** `basic/sysvars.inc:250` named the shape in
 prose written long before the knife existed: **MKI$ is evaluated in
@@ -957,7 +972,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:17684 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:17699 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -1123,7 +1138,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:5724 (T-6FE392)8 (T-529ABE)` from `TODO.md:16335 (T-529ABE)`: a
+      `TODO.md:5739 (T-6FE392)8 (T-529ABE)` from `TODO.md:16350 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -6568,7 +6583,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:16335 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:16350 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

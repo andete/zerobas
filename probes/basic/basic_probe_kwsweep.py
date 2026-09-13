@@ -544,6 +544,16 @@ SWEEP: list[tuple[str, str, str | None, str, str]] = [
     # a stub that silently accepts the statement still fails the row.
     ("beep",    'beep',               'BEEP:PRINT"[6]"',                      "direct", "D-KWDRAIN"),
     ("sound",   'sound 7,255',        'SOUND 7,255:PRINT"[7]"',               "direct", "D-KWDRAIN"),
+    # 🌾 D-KWBREADTH batch 6: `sound` writes PSG register 7 and prints a CONSTANT
+    # MARKER, so it scores that the word ran and nothing about what landed. The PSG
+    # HAS a readback path -- `OUT &HA0,<reg>` selects, `INP(&HA2)` reads -- so the
+    # effect is observable after all. Register 0 (channel A fine tune) is used
+    # rather than 7 because it is a plain 8-bit cell and because the MIXER is left
+    # exactly as it was: nothing is made audible by this row.
+    ("sound_b", 'sound 0,123',
+     'SOUND 0,123:OUT&HA0,0:PRINT"[";INP(&HA2);"]"',                          "stored",
+     "D-KWDRAIN: SOUND's EFFECT, not its existence -- the byte is read back out "
+     "of the PSG. A SOUND that parsed and wrote nothing reads something else."),
     ("vpeek",   'a=vpeek(0)',         'VPOKE 0,7:PRINT"[";VPEEK(0);"]"',      "direct", "D-KWDRAIN"),
     ("vpoke",   'vpoke 0,1',          'VPOKE 0,9:PRINT"[";VPEEK(0);"]"',      "direct", "D-KWDRAIN"),
     ("vdpkw",   'a=vdp(1)',           'PRINT"[";VDP(1)>0;"]"',                "direct", "D-KWDRAIN"),
@@ -558,6 +568,13 @@ SWEEP: list[tuple[str, str, str | None, str, str]] = [
     # same way and is sound as written: VDP(1) reads 240 against the stub's 0.
     ("inpkw",   'a=inp(168)',         'PRINT"[";INP(&HA8)>0 ;"]"',            "direct", "D-KWDRAIN"),
     ("outkw",   'out 160,7',          'OUT &HA0,7:PRINT"[8]"',                "direct", "D-KWDRAIN"),
+    # 🌾 D-KWBREADTH batch 6: the row above writes the PSG ADDRESS latch and scores
+    # a marker; this one drives the whole OUT -> INP round trip through the DATA
+    # port, so the byte it wrote is the byte that is read.
+    ("out_b",   'out 161,77',
+     'OUT&HA0,0:OUT&HA1,77:OUT&HA0,0:PRINT"[";INP(&HA2);"]"',                 "stored",
+     "D-KWDRAIN: the value OUT actually DELIVERED, via the PSG's own readback. "
+     "The `outkw` row writes only the address latch and never reads it back."),
     # 🔴 `WAIT` HAS NO ROW HERE, AND THE FIRST ATTEMPT IS WHY. `WAIT port,mask
     # [,xor]` blocks until ((INP(port) XOR xor) AND mask) <> 0, so a mask of 0 can
     # NEVER be satisfied: the row `WAIT &HA9,0:PRINT"[9]"` -- written believing
