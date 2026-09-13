@@ -133,6 +133,34 @@ An open TIER n item says a defect is FILED at n, **not** that n−1 was reached;
 a row that agrees is ONE AGREEMENT POINT. Neither is attainment, so the table
 no longer prints a ladder: every row reads TIER 0 and the text beside it says
 only what is KNOWN AGAINST the keyword.
+🔴 **`PAD` IS THE FIRST GENUINELY BLIND ROW, AND THE REASON GENERALISES: ITS
+OBSERVATION IS AN ERROR (2026-09-13).** The row is `PRINT PAD(9)` —
+deliberately out of range, so a real `PAD` raises `Illegal function call`
+while an absent one auto-dims an array and prints 0. That discriminates
+**TOKENISED from NOT**. Cut `PAD`'s dispatch and the word is still tokenised,
+the fallback still errors, and **the row sees no difference**.
+➡️ **A ROW WHOSE READING IS AN ERROR CANNOT TELL A WORKING FEATURE FROM A
+DIFFERENTLY-FAILING ONE**, because the failure mode it is blind to produces
+the same error it is looking for. That is a sixth silent-failure shape and it
+is not in the list of five: the others are ways two machines agree about
+NOTHING, this is a way they agree about the WRONG THING.
+🔬 **AND THE OBVIOUS FIX IS MEASURED SHUT.** Reading a VALUE instead of an
+error would be immune — a cut turns a number into an error — but every
+in-range `PAD(0..7)` answers **0 on BOTH machines**, and an absent `PAD`
+answers 0 too ([readings](scratchpad/kwknife_padchk.out)). That is
+silent-failure mode 2 exactly, so a value row would be blind for the classic
+reason instead of this one.
+⚠️ **PLUGGING THE DEVICE IS NOT ENOUGH EITHER, ALSO MEASURED**: openMSX has a
+touchpad (`plug joyporta touchpad`, already used by
+`basic_probe_input_devices.py`) and with it plugged every `PAD(n)` still reads
+0 — an UNTOUCHED pad reports nothing, which is correct behaviour. A connected
+row therefore needs **SIMULATED TOUCH INPUT**, not merely a present device,
+and that is the apparatus this keyword is actually blocked on.
+🎯 **TWO INSTRUMENTS REACHED THIS INDEPENDENTLY**, which is why it is worth
+trusting: `make kwcover` had already shown `PAD` appearing only inside a
+blank-sweep line — coverage existing solely as someone else's setup — and the
+knife then found its row unmoved by cutting the dispatch. Neither knew of the
+other's finding.
 📏 **94 KEYWORDS MEASURED, 91 CONNECTED — and the earlier function numbers are
 RETRACTED, because they were taken on a corrupted ROM (2026-09-13).**
 | | n | |
@@ -663,7 +691,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:17390 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:17418 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -829,7 +857,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:5430 (T-6FE392)8 (T-529ABE)` from `TODO.md:16041 (T-529ABE)`: a
+      `TODO.md:5458 (T-6FE392)8 (T-529ABE)` from `TODO.md:16069 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -6274,7 +6302,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:16041 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:16069 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

@@ -79,6 +79,20 @@ shipped again this session as `CSAVE`:
    scored itself correctly and took 21 unrelated rows down with it. After adding
    any row, read the WHOLE sweep summary, not just the new verdict.
 
+🔴 **6. A ROW WHOSE READING IS AN ERROR CANNOT TELL A WORKING FEATURE FROM A
+DIFFERENTLY-FAILING ONE.** Added 2026-09-13 from `PAD`, and it is general. Modes
+1–5 are ways two machines agree about NOTHING; this is a way they agree about the
+WRONG THING. `PRINT PAD(9)` is out of range, so a real `PAD` errors while an
+absent one auto-dims an array and prints 0 — which discriminates TOKENISED from
+NOT. Cut `PAD`'s dispatch and the word is still tokenised, the fallback still
+errors, and the row sees no difference. **Prefer a VALUE reading over an ERROR
+reading wherever the reference offers one**: a cut turns a number into an error,
+which no error-reading row can see. ⚠️ And check the value is not 0 on both sides,
+or you have merely traded this mode for mode 2 — `PAD(0..7)` reads 0 on both
+machines even with openMSX's touchpad plugged, because an untouched pad correctly
+reports nothing.
+
+
 Plus: **a FIX silently un-attributes its own keyword** — attribution comes from
 OPEN items, so leave a row behind when closing a defect.
 
