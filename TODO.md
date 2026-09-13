@@ -489,7 +489,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:17097 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:17124 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -655,7 +655,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:5256 (T-6FE392)8 (T-529ABE)` from `TODO.md:15748 (T-529ABE)`: a
+      `TODO.md:5256 (T-6FE392)8 (T-529ABE)` from `TODO.md:15775 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -6100,7 +6100,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:15748 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:15775 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -6996,6 +6996,33 @@ list. **When a slice lands, grep this list for what it just shipped.**
       names would predict `[ 2  1 ]`. Both machines agreed, so nothing was
       misjudged — but a row that distinguishes two variables must not spell them
       with a shared two-character prefix.
+
+- [ ] 🔴 **`DSKF` ACCEPTS ANY DRIVE NUMBER AND SILENTLY RETURNS THE SAME FIGURE** —
+      `Bad drive name` on the reference, a free-space number here. Found 2026-09-13
+      by D-KWT3 batch 5, the third defect the TIER 3 rows have produced and the
+      second that answers with a plausible NUMBER rather than an error.
+      | `DSKF(n)` | CF-3300 | zerobas |
+      |---|---|---|
+      | 0 (current drive) | `707` | `707` ✅ |
+      | 1 (`A:`) | `707` | `707` ✅ |
+      | **9** | **`Bad drive name`** | 🔴 **`707`** |
+      ([`scratchpad/kwt3_dskfchk.py`](scratchpad/kwt3_dskfchk.py),
+      [readings](scratchpad/kwt3_dskfchk.out))
+      🎯 **THE RANGE CHECK IS MISSING ENTIRELY, NOT MERELY TOO WIDE** — and the
+      passing rows are what say so: zerobas answers **the same 707** for 0, 1 and 9,
+      so nothing is validating the argument at all rather than validating it against
+      a bound that is too generous. That distinguishes the fix: add the check, do
+      not widen one.
+      ⚠️ **THE REFERENCE'S OWN BOUNDARY IS NOT FULLY MAPPED, and one drive cannot be
+      probed the easy way**: on the CF-3300 `DSKF(2)` prints `Insert diskette for
+      drive B: and strike a key when ready` **and waits**, which ate the next typed
+      line and failed a run's echo check. A row that prompts is a row that eats its
+      successors (silent-failure mode 5), so drive 2 is excluded from the probe and
+      the fix must decide what a single-drive machine does with it — measure that
+      with a rig that can answer the prompt, not with a plain row.
+      🎚️ TIER 3 — common errors: a bad drive letter is the legend's own example
+      🤖 AUTONOMOUS — measured, bounded by its passing rows, and the fix is an
+      argument check rather than a redesign.
 
 - [ ] 🐌 **THE INTERPRETER IS 2.5–3.8× SLOWER THAN THE CF-3300 — ON EVERYTHING,
       NOT ON ONE VERB — AND IT REFRAMES EVERY OTHER SPEED ITEM.**

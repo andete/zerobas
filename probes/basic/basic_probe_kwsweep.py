@@ -1221,6 +1221,19 @@ SWEEP: list[tuple[str, str, str | None, str, str]] = [
      "PROVES-T3: " "past the PSG's 14 registers"),
     ("fn_t3",   'a=fnzz(1)',   'PRINT FNZZ(1)',        "direct",
      "PROVES-T3: " "calling a function no DEF FN ever defined"),
+    # 🎚️ D-KWT3 BATCH 5 — the DISK error rows, kept to four because the rig's
+    # timings make them the slowest in the sweep. The bad-file-number class is
+    # deliberately absent: badfnum-acceptance already owns it, and a row that
+    # duplicates a suite adds cost without adding evidence.
+    ("kill_t3", 'kill"nosuch.bas"', 'KILL"NOSUCH.BAS"', "direct",
+     "NEEDS-DISK: " "PROVES-T3: " "File not found — the error a listing hits when "
+     "the data disk is not the one in the drive"),
+    ("cvi_t3",  'a=cvi("a")',  'PRINT CVI("A")',       "direct",
+     "NEEDS-DISK: " "PROVES-T3: " "CVI wants two bytes and got one"),
+    ("mki_t3",  'a$=mki$("a")', 'PRINT MKI$("A")',     "direct",
+     "NEEDS-DISK: " "PROVES-T3: " "Type mismatch — MKI$ converts a NUMBER"),
+    ("dskf_t3", 'a=dskf(9)',   'PRINT DSKF(9)',        "direct",
+     "NEEDS-DISK: " "PROVES-T3: " "a drive letter that does not exist"),
     ("close",   "close",
      'OPEN"W.TXT"FOR OUTPUT AS#1:PRINT#1,"ABC":CLOSE#1:OPEN"W.TXT"FOR INPUT AS#1:A=LOF(1):CLOSE#1:PRINT"[";A;"]"', "stored",
      "NEEDS-DISK: " "the FLUSH is the readback: 6 bytes are on the disk only because "

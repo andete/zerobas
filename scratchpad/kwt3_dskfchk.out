@@ -1,0 +1,6 @@
+=== cf3300       < 707 > | Ok | PRINT"<";DSKF(9);">" | < | Bad drive name | Ok | color   auto    goto    list    run
+=== zb           ZBPRINT"<";DSKF(0);">" | < 707 > | ZBPRINT"<";DSKF(1);">" | < 707 > | ZBPRINT"<";DSKF(9);">" | < 707 > | ZB
+
+READ IT AS: drives 0,1,2,3,9 in order. The reference's boundary is the
+subject; a figure where it says `Bad drive name` is the defect.
+refcache: 0 hit, 2 miss, 2 stored

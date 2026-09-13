@@ -1,0 +1,52 @@
+python3 tools/install-repack-machine.py --merged build/zerobas-main-eu.rom --disk-rom build/disk.rom \
+	  --sub-rom build/sub.rom
+wrote C-BIOS_MSX1_EU_REPACK_DISK  (-> machine "C-BIOS_MSX1_EU_REPACK_DISK": merged repack ROM in slot 0, zerobas-disk in slot 3-1, zerobas-sub in slot 3-2)
+     /Users/joost/.openMSX/share/machines/C-BIOS_MSX1_EU_REPACK_DISK.xml
+python3 tools/install-repack-machine.py --merged build/zerobas-main-eu.rom --sub-rom build/sub.rom \
+	  --no-disk
+wrote C-BIOS_MSX1_EU_REPACK_NODISK  (-> machine "C-BIOS_MSX1_EU_REPACK_NODISK": merged repack ROM in slot 0, slot 3-1 EMPTY (diskless target), zerobas-sub in slot 3-2)
+     /Users/joost/.openMSX/share/machines/C-BIOS_MSX1_EU_REPACK_NODISK.xml
+python3 probes/basic/basic_probe_kwsweep.py \
+	        --zb-machine C-BIOS_MSX1_EU_REPACK_DISK --only 'kill_t3,cvi_t3,mki_t3,dskf_t3'
+build under measurement: git=94568c7a zerobas-main-eu.rom=e3dbed366d26 sub.rom=bf1c245daaf2 disk.rom=a01dabda5043
+
+==============================================================================
+LAYER 1 — CRUNCH (tokenisation only; NOT a support answer)
+==============================================================================
+SAME   kill_t3   kill"nosuch.bas"
+SAME   cvi_t3    a=cvi("a")
+SAME   mki_t3    a$=mki$("a")
+SAME   dskf_t3   a=dskf(9)
+
+==============================================================================
+LAYER 2 — SUPPORT (the load-bearing layer)
+==============================================================================
+DIVERGENT     dskf_t3   PRINT DSKF(9)
+            ref  [value] 'Bad drive name'
+            zb   [value] '707'
+SUPPORTED     kill_t3   KILL"NOSUCH.BAS"
+            ref  [error:file not found] 'File not found'
+SUPPORTED     cvi_t3    PRINT CVI("A")
+            ref  [error:illegal function call] 'Illegal function call'
+SUPPORTED     mki_t3    PRINT MKI$("A")
+            ref  [error:type mismatch] 'Type mismatch'
+
+==============================================================================
+COMBINED — tokenised? x observable consequence
+==============================================================================
+word       crunch  support     consequence
+------------------------------------------------------------------------------
+kill_t3    present SUPPORTED   match
+cvi_t3     present SUPPORTED   match
+mki_t3     present SUPPORTED   match
+dskf_t3    present DIVERGENT   ref 'Bad drive name' vs zb '707'
+
+==============================================================================
+SUMMARY  DIVERGENT=1  SUPPORTED=3
+         executed 4 / 4 words; 0 crunch-only
+==============================================================================
+ROWS: 4 printed, 4 scored — 0 crunch-only word(s) carry no support reading and are printed but not scored
+pin: 4 row verdict(s) -> /Users/joost/projects/zerobas/build/kwsweep-verdicts.json
+
+=== CRUNCH PIN — words the reference tokenises and zerobas does not ===
+refcache: 0 hit, 4 miss, 4 stored
