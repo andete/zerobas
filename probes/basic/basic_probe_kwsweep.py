@@ -858,6 +858,20 @@ SWEEP: list[tuple[str, str, str | None, str, str]] = [
      "calls leaves A at 0."),
     ("errorkw",   'error 7',          
      'ON ERROR GOTO 20:ERROR 7:END:PRINT"[R";ERR;ERL;"]":END',  "stored", "D-KWDRAIN: ERROR 7 is what raises it"),
+    # 🌾 D-KWBREADTH batch 20 — AXIS (g): counted across the file, EVERY `ERROR`
+    # raised is code 7, six times over, so every other code's own path is
+    # unexercised and an implementation that ignored the operand and always raised
+    # 7 would pass all six. 53 is `File not found`, unmistakably not 7.
+    # The packing is the same shape as the row above (line 10 raises, line 20
+    # handles) and was PRINTED before this row was written.
+    # 🎯 BOTH `ERR` AND `ERL` ARE READ, so the row separates "the right error" from
+    # "an error at the right line" -- either alone would agree for the wrong reason.
+    ("errorkw_b", 'error 53',
+     'ON ERROR GOTO 20:ERROR 53:END:PRINT"[I";ERR;ERL;"]":END',  "stored",
+     "D-KWDRAIN: a DIFFERENT error code, where all six existing rows raise 7 -- "
+     "`[I 53  10 ]`, MEASURED on both machines before this sentence was written. "
+     "ERR returns 53 and not 7, so the OPERAND is honoured rather than a fixed "
+     "code being raised; ERL pins it to line 10, the line that raised it."),
     ("errkw",     'a=err',            
      'ON ERROR GOTO 20:ERROR 7:END:PRINT"[R";ERR;ERL;"]":END',  "stored", "D-KWDRAIN: ERR reads 7, the code raised"),
     ("erlkw",     'a=erl',            
