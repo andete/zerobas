@@ -695,9 +695,30 @@ SWEEP: list[tuple[str, str, str | None, str, str]] = [
     ("circlekw",  'circle(50,50),10', 
      'SCREEN2:CIRCLE(50,50),10,15:A=POINT(60,50):SCREEN0:PRINT"[Q";A;"]"', "stored",
      "NOECHO:[Q rim pixel is 15, centre is 4 -- a filled or absent circle fails"),
+    # 🌾 D-KWBREADTH batch 10: the row above draws a FULL circle; the START/END arc
+    # arguments are untouched. This draws only the upper-right quadrant and reads
+    # TWO pixels, which is what makes it discriminating: a full circle gives 15 15,
+    # a correct arc gives 15 4, and an absent CIRCLE gives 4 4. Reading the OFF-arc
+    # pixel alone would have been blank-on-both-sides -- mode 2 -- because a CIRCLE
+    # that drew nothing leaves it blank too.
+    ("circlekw_b", 'circle(50,50),10,15,0,1.57',
+     'SCREEN2:CIRCLE(50,50),10,15,0,1.57:A=POINT(60,50):B=POINT(40,50):SCREEN0:PRINT"[F";A;B;"]"',
+     "stored",
+     "NOECHO:[F the ARC arguments -- start 0 (rightmost) to end 1.57 rad (top), so "
+     "(60,50) is ON the arc and (40,50) is not. 15 4 for an arc, 15 15 if the "
+     "start/end are parsed and discarded."),
     ("drawkw",    'draw"c15r5"',      
      'SCREEN2:PSET(10,10),15:DRAW"C15R5":A=POINT(14,10):SCREEN0:PRINT"[D";A;"]"', "stored",
      "NOECHO:[D reads 4 pixels right of the start: blank is 4, drawn is 15"),
+    # 🌾 D-KWBREADTH batch 10: the row above drives ONE direction command (`R`). A
+    # DRAW that implemented only R -- or that ignored the letter entirely and moved
+    # right -- passes it. `D` moves DOWN, so the pixel read is BELOW the start.
+    ("drawkw_b",  'draw"c15d5"',
+     'SCREEN2:PSET(10,10),15:DRAW"C15D5":A=POINT(10,14):SCREEN0:PRINT"[E";A;"]"',
+     "stored",
+     "NOECHO:[E a DIFFERENT direction command -- `D` draws DOWN, so this reads a "
+     "pixel below the start where the `R` row reads one to the right. 15 drawn, "
+     "4 blank."),
     # 🔴 THE CRUNCH IS `sprite on`, NOT `sprite$(0)=...`, AND THE FIRST CUT TAUGHT
     # ME WHY. tier_table's WORD regex keeps a trailing `$` (so STR$ and MID$ match),
     # which makes `sprite$(0)="x"` tokenise to SPRITE$ -- and the kwtable keyword is

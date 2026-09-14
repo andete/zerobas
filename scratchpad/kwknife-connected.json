@@ -79,7 +79,7 @@
    "modes": {
     "stmt": "UNREADABLE"
    },
-   "row": "circlekw",
+   "row": "circlekw_b",
    "verdict": "UNREADABLE",
    "weak": false
   },
@@ -250,7 +250,7 @@
    "modes": {
     "stmt": "UNREADABLE"
    },
-   "row": "drawkw",
+   "row": "drawkw_b",
    "verdict": "UNREADABLE",
    "weak": false
   },
@@ -977,5 +977,5 @@
    "weak": false
   }
  },
- "written": "2026-09-14 02:22:09"
+ "written": "2026-09-14 02:44:23"
 }

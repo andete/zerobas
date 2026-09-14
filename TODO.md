@@ -381,6 +381,18 @@ class of defect: an **ERROR** reading leaves the SUCCESS path untouched; a
 MARKER** leaves the EFFECT untouched; a **BOOLEAN** leaves the VALUE untouched;
 and **ONE ARGUMENT COUNT** leaves every other form untouched. ⚠️ Every one of them
 over-flags, so a candidate is confirmed by READING its row, never by the filter.
+🌾 **BREADTH BATCH 10 (D-KWBREADTH, 2026-09-14) — AXIS (e) ON THE GRAPHICS
+VERBS.** Both **knife-proven LOAD-BEARING**; sweep `DIVERGENT=2 SUPPORTED=205`.
+| row | reading | the form the old row could not reach |
+|---|---|---|
+| `drawkw_b` | `[E 15 ]` | a DIFFERENT direction command. `drawkw` drives only `R`, which a `DRAW` implementing just that one — or ignoring the letter and moving right — passes. `D` draws DOWN, so the pixel read is BELOW the start |
+| `circlekw_b` | `[F 15  4 ]` | the START/END **ARC** arguments. `circlekw` draws a FULL circle |
+🎯 **AND `circlekw_b` READS TWO PIXELS ON PURPOSE, WHICH IS WHAT MAKES IT
+DISCRIMINATING.** A full circle gives `15 15`, a correct arc `15 4`, an absent
+`CIRCLE` `4 4`. **Reading only the OFF-arc pixel would have been blank on both
+sides — mode 2 — because a `CIRCLE` that drew nothing leaves it blank too.** The
+on-arc pixel is what separates "the arc arguments were honoured" from "nothing was
+drawn at all", and without it the row would have agreed for the wrong reason.
 🔪 **D-KWSTRCUT — THE THIRD CUT SHAPE, AND A FIRST VERSION OF IT THAT WAS WORSE
 THAN THE GAP IT CLOSED (2026-09-13).** `basic/sysvars.inc:250` named the shape in
 prose written long before the knife existed: **MKI$ is evaluated in
@@ -1049,7 +1061,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:17776 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:17788 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -1215,7 +1227,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:5816 (T-6FE392)8 (T-529ABE)` from `TODO.md:16427 (T-529ABE)`: a
+      `TODO.md:5828 (T-6FE392)8 (T-529ABE)` from `TODO.md:16439 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -6660,7 +6672,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:16427 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:16439 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
