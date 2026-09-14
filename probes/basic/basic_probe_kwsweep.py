@@ -730,6 +730,20 @@ SWEEP: list[tuple[str, str, str | None, str, str]] = [
      "stored",
      "NOECHO:[Z writes the pattern to VRAM and reads it back: 255 round-trips, "
      "a stub reads 0 and SCREEN 0 raises Illegal function call"),
+    # 🌾 D-KWBREADTH batch 19 — AXIS (g): measured across the file, EVERY `SPRITE$`
+    # and `PUT SPRITE` uses SPRITE 0, so the pattern-table INDEX is a constant in
+    # all of them and an implementation that ignored it entirely would pass.
+    # 🎯 THE WRITE ORDER IS THE DISCRIMINATOR: sprite 3 is written FIRST and sprite
+    # 0 SECOND, then 3 is read back. Indexed correctly that returns 3's own byte;
+    # if the index is discarded both writes land in the same place and the read
+    # returns 0's. Writing 0 first would have made both answers identical.
+    ("spritekw_b", 'sprite$(3)=string$(8,222)',
+     'SCREEN2:SPRITE$(3)=STRING$(8,222):SPRITE$(0)=STRING$(8,111):A=ASC(SPRITE$(3)):SCREEN0:PRINT"[Y";A;"]"',
+     "stored",
+     "NOECHO:[Y the pattern-table INDEX, where every other sprite row uses 0: 222, "
+     "sprite 3's OWN byte, MEASURED on both machines before this sentence was "
+     "written. An index that were discarded would read 111, the byte sprite 0 was "
+     "given afterwards."),
     ("basekw",    'a=base(2)',         'PRINT"[";BASE(2);"]"',               "direct", "D-KWDRAIN"),
 
     # ---------------------------------------------- D-KWDRAIN step 4e (2026-09-12)

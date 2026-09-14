@@ -542,6 +542,21 @@ as it was found destroying the measurement it was there to protect.**
 🔬 Two behaviours measured along the way, identical on both machines and therefore
 faithful rather than defects: with a second channel open `LOF(1)` reads 0 where
 `lof` reads 26 with one, and a read from #1 while #2 is open returns nothing.
+🌾 **BREADTH BATCH 19 (D-KWBREADTH, 2026-09-14) — AXIS (g) CONTINUED, AND THE
+RANGES WERE MEASURED, NOT GUESSED.** Counting across the whole file: **every
+`SPRITE$` and `PUT SPRITE` uses SPRITE 0**, and **every `ERROR` raised is 7** — two
+ranges sampled at exactly one point. `spritekw_b` reads `[Y 222 ]`, **knife-proven
+LOAD-BEARING**; sweep `DIVERGENT=2 SUPPORTED=216`.
+🎯 **THE WRITE ORDER IS THE DISCRIMINATOR, AND GETTING IT BACKWARDS WOULD HAVE MADE
+THE ROW USELESS.** Sprite 3 is written FIRST and sprite 0 SECOND, then 3 is read
+back: indexed correctly that returns 3's own byte (222); if the index were
+discarded both writes would land in one place and the read would return 0's (111).
+**Writing 0 first would have made both answers identical** — the row would have
+agreed whether or not the pattern-table index worked at all.
+🔭 **`ERROR` is the remaining one-point range**: six rows raise code 7 and nothing
+raises any other, so every error code's own path is unexercised. Its rows use the
+`ON ERROR GOTO` + line-number shape, so a second code needs the packing printed
+first, as `ongoto` and `ongosub` did.
 🔪 **D-KWSTRCUT — THE THIRD CUT SHAPE, AND A FIRST VERSION OF IT THAT WAS WORSE
 THAN THE GAP IT CLOSED (2026-09-13).** `basic/sysvars.inc:250` named the shape in
 prose written long before the knife existed: **MKI$ is evaluated in
@@ -1210,7 +1225,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:17937 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:17952 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -1376,7 +1391,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:5977 (T-6FE392)8 (T-529ABE)` from `TODO.md:16588 (T-529ABE)`: a
+      `TODO.md:5992 (T-6FE392)8 (T-529ABE)` from `TODO.md:16603 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -6821,7 +6836,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:16588 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:16603 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
