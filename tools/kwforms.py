@@ -132,6 +132,74 @@ FORMS: dict[str, tuple[tuple[str, ...], str]] = {
         "This is deliberately a DIFFERENT SHAPE from PSET/PRESET -- positional "
         "omission rather than an optional trailing argument and a mode.",
     ),
+    "CHR$": (
+        ("code-to-char",),
+        "`CHR$(<code>)` -- one argument, one behaviour.",
+    ),
+    "HEX$": (
+        ("to-hex",),
+        "`HEX$(n)` -- one argument, one behaviour.",
+    ),
+    "OCT$": (
+        ("to-octal",),
+        "`OCT$(n)` -- one argument, one behaviour.",
+    ),
+    "BIN$": (
+        ("to-binary",),
+        "`BIN$(n)` -- one argument, one behaviour.",
+    ),
+    "STR$": (
+        ("number-to-string",),
+        "`STR$(n)` -- one argument, one behaviour. The leading space MSX prints for a non-negative number is part of the reading, not furniture.",
+    ),
+    "LEFT$": (
+        ("prefix",),
+        "`LEFT$(s,n)` -- two required arguments, one behaviour.",
+    ),
+    "RIGHT$": (
+        ("suffix",),
+        "`RIGHT$(s,n)` -- the mirror of LEFT$, one behaviour.",
+    ),
+    "CVI": (
+        ("string-to-int",),
+        "`CVI(s)` -- one argument, one behaviour, the reading half of MKI$. The rows read the VALUE back through a round trip, including -1 and 32767, so the sign and the top of the range are seen.",
+    ),
+    "CVS": (
+        ("string-to-single",),
+        "`CVS(s)` -- as CVI, for single precision; `cvs_b` reads 1.5 back, so the fraction is seen and not only an integer.",
+    ),
+    "CVD": (
+        ("string-to-double",),
+        "`CVD(s)` -- as CVI, for double precision; `cvd_b` reads .1 back.",
+    ),
+    "LET": (
+        ("assign",),
+        "`LET <var>=<expr>` -- one behaviour. MSX allows the keyword to be omitted, but that is the ABSENCE of this statement rather than a second form of it.",
+    ),
+    "REM": (
+        ("comment",),
+        "`REM <anything>` -- one behaviour: the rest of the line is skipped. The row's discriminator is that `REM z` raises NO error, which a REM that did not skip would.",
+    ),
+    "STOP": (
+        ("break",),
+        "`STOP` -- no arguments, one behaviour. The row's discriminator is the `Break in 10` message, not the marker before it.",
+    ),
+    "END": (
+        ("terminate",),
+        "`END` -- no arguments, one behaviour. The row puts statements AFTER the END that would change the answer if it did not stop, so a parsed-and-ignored END is visible.",
+    ),
+    "SPACE$": (
+        ("pad",),
+        "`SPACE$(n)` -- one argument, one behaviour. ⚠️ N=1 is earned by `space_b`, which reads the BYTES: the original row reads `LEN(SPACE$(3))`, and a LENGTH cannot see CONTENT.",
+    ),
+    "MKI$": (
+        ("int-to-string",),
+        "`MKI$(n)` -- one argument, one behaviour. ⚠️ Same axis: `mki` reads only the LENGTH, which any two bytes pass. `mki_b` reads both bytes of 258 = $0102, so the VALUE and the BYTE ORDER are seen.",
+    ),
+    "ERASE": (
+        ("free-array",),
+        "`ERASE <array>` -- one behaviour. ⚠️ The original row prints a constant `[ok]`; `erase_b` reads the EFFECT, which is that the name becomes free to DIM again.",
+    ),
     "LINE": (
         ("segment", "box", "filled-box", "step-relative", "omitted-start",
          "colour-default"),

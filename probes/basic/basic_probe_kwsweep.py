@@ -473,7 +473,7 @@ SWEEP: list[tuple[str, str, str | None, str, str]] = [
     ("abs",     "a=abs(-5)",          'PRINT"[";ABS(-5);"]"',            "direct", "control"),
     ("int",     "a=int(1.7)",         'PRINT"[";INT(1.7);"]"',           "direct", "control"),
     ("len",     'a=len("ab")',        'PRINT"[";LEN("ab");"]"',          "direct", "control"),
-    ("chr",     "a$=chr$(65)",        'PRINT"[";CHR$(65);"]"',           "direct", "control"),
+    ("chr",     "a$=chr$(65)",        'PRINT"[";CHR$(65);"]"',           "direct", "FORM:code-to-char control"),
     ("mid",     'a$=mid$("hi",1,1)',  'PRINT"[";MID$("hi",2,1);"]"',     "direct", "control"),
     ("instr",   'a=instr("ab","b")',  'PRINT"[";INSTR("ab","b");"]"',    "direct", "control"),
     # 🌾 D-KWBREADTH batch 9: the row above uses the TWO-argument form, and the only
@@ -483,7 +483,7 @@ SWEEP: list[tuple[str, str, str | None, str, str]] = [
     ("instr_b", 'a=instr(2,"aba","a")', 'PRINT"[";INSTR(2,"ABA","A");"]"',  "direct",
      "D-KWDRAIN: the 3-argument START form -- 3, not 1. A start that parses and is "
      "then ignored finds the FIRST A and reads 1."),
-    ("hex",     "a$=hex$(255)",       'PRINT"[";HEX$(255);"]"',          "direct", "control"),
+    ("hex",     "a$=hex$(255)",       'PRINT"[";HEX$(255);"]"',          "direct", "FORM:to-hex control"),
     ("sqr",     "a=sqr(9)",           'PRINT"[";SQR(9);"]"',             "direct", "control"),
     ("peek",    "a=peek(0)",          'PRINT"[";PEEK(0)>=0;"]"',         "direct", "control"),
     ("varptr",  "a=varptr(b)",        'B=1:PRINT"[";VARPTR(B)>0;"]"',    "direct", "control"),
@@ -506,6 +506,16 @@ SWEEP: list[tuple[str, str, str | None, str, str]] = [
      "cancels; A and B are created BEFORE the DIM so the array cannot move."),
     ("stick",   "a=stick(0)",         'PRINT"[";STICK(0);"]"',           "direct", "control"),
     ("erase",   "erase a",            'DIM Q(2):ERASE Q:PRINT"[ok]"',    "direct", "control"),
+    # 🌾 D-KWBATCH5: `erase` prints a CONSTANT `[ok]` -- the third screening axis,
+    # and an ERASE that parsed and did nothing prints it just as happily. The effect
+    # is that the name becomes FREE TO DIM AGAIN: without the ERASE the second DIM
+    # is `Redimensioned array`, and with it the array comes back fresh, so the
+    # element that held 5 reads 0.
+    ("erase_b", 'erase q',
+     'DIM Q(2):Q(1)=5:ERASE Q:DIM Q(2):PRINT"[";Q(1);"]"',               "stored",
+     "FORM:free-array the EFFECT: `[ 0 ]` -- the array was erased, re-dimmed and "
+     "came back cleared. An ERASE that did nothing makes the second DIM a "
+     "`Redimensioned array` error instead."),
     ("swapctl", "a=1",                'A=1:PRINT"[";A;"]"',              "direct", "control (bare assign)"),
 
     # ------------------------------------------------- D-KWDRAIN coverage rows
@@ -541,12 +551,21 @@ SWEEP: list[tuple[str, str, str | None, str, str]] = [
     ("andop",   'a=5 and 3',          'PRINT"[";5 AND 3;"]"',          "direct", "D-KWDRAIN"),
     ("orop",    'a=5 or 3',           'PRINT"[";5 OR 3;"]"',           "direct", "D-KWDRAIN"),
     ("xorop",   'a=5 xor 3',          'PRINT"[";5 XOR 3;"]"',          "direct", "D-KWDRAIN"),
-    ("oct",     'a$=oct$(8)',         'PRINT"[";OCT$(8);"]"',          "direct", "D-KWDRAIN"),
-    ("left",    'a$=left$("abc",2)',  'PRINT"[";LEFT$("abc",2);"]"',   "direct", "D-KWDRAIN"),
-    ("right",   'a$=right$("abc",2)', 'PRINT"[";RIGHT$("abc",2);"]"',  "direct", "D-KWDRAIN"),
-    ("str",     'a$=str$(5)',         'PRINT"[";STR$(5);"]"',          "direct", "D-KWDRAIN"),
+    ("oct",     'a$=oct$(8)',         'PRINT"[";OCT$(8);"]"',          "direct", "FORM:to-octal D-KWDRAIN"),
+    ("left",    'a$=left$("abc",2)',  'PRINT"[";LEFT$("abc",2);"]"',   "direct", "FORM:prefix D-KWDRAIN"),
+    ("right",   'a$=right$("abc",2)', 'PRINT"[";RIGHT$("abc",2);"]"',  "direct", "FORM:suffix D-KWDRAIN"),
+    ("str",     'a$=str$(5)',         'PRINT"[";STR$(5);"]"',          "direct", "FORM:number-to-string D-KWDRAIN"),
     ("stringf", 'a$=string$(3,"x")',  'PRINT"[";STRING$(3,"x");"]"',   "direct", "D-KWDRAIN"),
     ("space",   'a$=space$(3)',       'PRINT"[";LEN(SPACE$(3));"]"',   "direct", "D-KWDRAIN"),
+    # 🌾 D-KWBATCH5: A LENGTH CANNOT SEE CONTENT -- the second screening axis, and
+    # `space` reads `LEN(SPACE$(3))`, which a SPACE$ returning "xxx" passes. This
+    # reads the BYTES, first and last, so the padding has to actually be spaces and
+    # the string has to be spaces all the way through rather than one space and two
+    # of something else.
+    ("space_b", 'a$=space$(3)',
+     'A$=SPACE$(3):PRINT"[";ASC(A$);ASC(RIGHT$(A$,1));"]"',              "stored",
+     "FORM:pad the CONTENT, not the length -- `[ 32  32 ]`, the first byte and the "
+     "last, both the space character."),
     # 🔴 CSRLIN GETS A SECOND ROW, AND THE FIRST ONE IS WHY. The original
     # `csrlin` row is scored WEAK, and `tools/tier_table.py` EXCLUDES weak rows
     # from evidence -- so CSRLIN's DIVERGENT verdict (ref `[ 4 ]` vs zb `[ 3 ]`)
@@ -561,8 +580,8 @@ SWEEP: list[tuple[str, str, str | None, str, str]] = [
     # CSRLIN parses as a variable and gives 0-0 = 0, not 2.
     ("csrlind", 'a=csrlin',           'A=CSRLIN:PRINT:PRINT"[";CSRLIN-A;"]"', "direct",
      "FORM:row-read D-KWDRAIN"),
-    ("let",     'let a=5',            'LET A=5:PRINT"[";A;"]"',        "direct", "D-KWDRAIN"),
-    ("rem",     'rem x',              'PRINT"[";1;"]":REM z',          "direct", "D-KWDRAIN"),
+    ("let",     'let a=5',            'LET A=5:PRINT"[";A;"]"',        "direct", "FORM:assign D-KWDRAIN"),
+    ("rem",     'rem x',              'PRINT"[";1;"]":REM z',          "direct", "FORM:comment D-KWDRAIN"),
 
     # ------------------------------------------------ D-KWDRAIN batch 2 (2026-09-12)
     # 🔴 THE SYNTAX PARTICLES NEEDED A TRICK, AND IT IS LEGITIMATE. `tier_table.py`
@@ -596,7 +615,7 @@ SWEEP: list[tuple[str, str, str | None, str, str]] = [
      "`[ 7 ]` -- which is EXACTLY the mis-attribution this file's header "
      "describes, a diskless VG-8020 measured against zerobas's disk-equipped "
      "build and the difference blamed on zerobas. The rest of the MK/CV family "
-     "was already tagged; this row simply had not been."),
+     "FORM:string-to-int was already tagged; this row simply had not been."),
     ("using",   'using "##"',         'PRINT USING"##";7',                    "direct",
      "SUBJECT:PRINT_USING FORM:integer-field D-KWDRAIN"),
     # 🌾 D-KWBREADTH batch 4: the `using` row covers ONE format string, and `##`
@@ -674,9 +693,20 @@ SWEEP: list[tuple[str, str, str | None, str, str]] = [
     # ⚠️ And the row leaves the machine AS IT FOUND IT: 184 IS the at-rest value.
     ("beep_b",  'beep',
      'SOUND 7,255:BEEP:OUT&HA0,7:PRINT"[";INP(&HA2);"]"',                     "stored",
-     "FORM:no-argument D-KWDRAIN: BEEP's EFFECT, not its existence -- it restores "
-     "the PSG mixer, so this reads 184 where the same program without the BEEP "
-     "reads 191"),
+     "WEAK: " "D-KWBATCH5 DEMOTED THIS ROW: IT READS A TRANSIENT AND THE TWO "
+     "MACHINES DIFFER IN SPEED. The mixer is restored when the beep FINISHES, so "
+     "184 (sounding) vs 191 (finished) is a race between the beep and the OUT/INP "
+     "two statements later. Measured 2026-09-14: ALONE both machines read 184; in "
+     "the full sweep the reference reads 191 and zerobas 184, deterministically "
+     "over two runs -- zerobas is 2.5-3.8x slower (the open TIER 4 item), so it is "
+     "still sounding when the reference has stopped. The row was SUPPORTED for as "
+     "long as batching happened to put the same neighbours before it. "
+     "🎯 `beep_c` below reads a register BEEP does NOT put back, which has no such "
+     "race. THE ORIGINAL NOTE'S CLAIM IS STILL TRUE, it just is not SCOREABLE."),
+    ("beep_c",  'beep',
+     'SOUND 0,0:BEEP:OUT&HA0,0:PRINT"[";INP(&HA2);"]"',                     "stored",
+     "FORM:no-argument BEEP's effect on a register it does not have to put back "
+     "-- channel A's tone-period low byte, zeroed first."),
     ("sound",   'sound 7,255',        'SOUND 7,255:PRINT"[7]"',               "direct",
      "FORM:register-value D-KWDRAIN"),
     # 🌾 D-KWBREADTH batch 6: `sound` writes PSG register 7 and prints a CONSTANT
@@ -1012,7 +1042,7 @@ SWEEP: list[tuple[str, str, str | None, str, str]] = [
     ("attrkw",    'a$=attr$',    'PRINT"[";ATTR$;"]"',      "direct",
      "D-KWDRAIN: bare ATTR$ raises Illegal function call -- so the word IS a token here; an undefined string variable prints empty instead"),
     ("stopkw",    'stop',        'PRINT"[T1]":STOP',        "stored",
-     "D-KWDRAIN: prints then Break in 10 on both machines; without STOP there is no Break"),
+     "FORM:break D-KWDRAIN: prints then Break in 10 on both machines; without STOP there is no Break"),
     ("maxkw",     'max',               'PRINT"[";MAX;"]"',                     "direct",
      "D-KWDRAIN: bare MAX is a Syntax error on a real machine; a stub prints 0"),
     ("strigkw",   'a=strig(0)',        'PRINT"[";STRIG(5);"]"',                "direct",
@@ -1123,7 +1153,7 @@ SWEEP: list[tuple[str, str, str | None, str, str]] = [
     ("returnkw",  'return',       
      'A=0:GOSUB 20:PRINT"[H";A;"]":END:A=7:RETURN',         "stored", "D-KWDRAIN: A is 7 only because RETURN came back to the PRINT"),
     ("endkw",     'end',          
-     'A=0:GOSUB 20:PRINT"[J";A;"]":END:A=7:RETURN',         "stored", "D-KWDRAIN: END keeps the subroutine from being fallen into"),
+     'A=0:GOSUB 20:PRINT"[J";A;"]":END:A=7:RETURN',         "stored", "FORM:terminate D-KWDRAIN: END keeps the subroutine from being fallen into"),
     ("readkw",    'read q',       
      'READ Q:RESTORE:READ R:PRINT"[E";Q+R;"]":END:DATA 3',  "stored", "D-KWDRAIN: reads 3 from the DATA on the second line"),
     ("restorekw", 'restore',      
@@ -1625,6 +1655,17 @@ SWEEP: list[tuple[str, str, str | None, str, str]] = [
     # MKI$ is implemented on BOTH sides, so it separates those two readings.
     ("mki",     'a$=mki$(1)',   'PRINT"[";LEN(MKI$(1));"]"',  "direct",
      "NEEDS-DISK: " "control for the MK/CV family — MKI$ ships in zerobas"),
+    # 🌾 D-KWBATCH5: same axis. `mki` reads `LEN(MKI$(1))` = 2, which an MKI$
+    # returning two arbitrary bytes passes. 258 is $0102, so the two bytes are
+    # DIFFERENT and the row sees the VALUE **and the byte order**: little-endian is
+    # `[ 2  1 ]` and a big-endian store reads `[ 1  2 ]`.
+    ("mki_c",   'a$=mki$(258)',
+     'A$=MKI$(258):PRINT"[";ASC(A$);ASC(RIGHT$(A$,1));"]"',              "stored",
+     "NEEDS-DISK: " "FORM:int-to-string the BYTES and their ORDER -- 258 = $0102 "
+     "stored low byte "
+     "first, so `[ 2  1 ]`. `mki` reads only the LENGTH, which any two bytes pass, "
+     "and `mki_b` further down reads only the FIRST byte, so neither can see the "
+     "byte ORDER: a big-endian store reads `[ 1  2 ]` here and `[ 1 ]` there."),
     ("mks",     'a$=mks$(1)',   'PRINT"[";LEN(MKS$(1));"]"',  "direct",
      "NEEDS-DISK: " "absent => syntax error; real => 4"),
     ("mks_b",   'a=asc(mks$(1.5))', 'PRINT"[";ASC(MKS$(1.5));"]"', "direct",
@@ -1638,9 +1679,9 @@ SWEEP: list[tuple[str, str, str | None, str, str]] = [
      "NEEDS-DISK: " "the same content reading on the 8-byte DOUBLE pack, whose "
      "row likewise scores only LENGTH."),
     ("cvs",     'a=cvs("abcd")', 'PRINT"[";CVS(MKS$(1));"]"', "direct",
-     "NEEDS-DISK: " "absent => syntax error; real => 1"),
+     "NEEDS-DISK: " "FORM:string-to-single absent => syntax error; real => 1"),
     ("cvd",     'a=cvd("abcdefgh")', 'PRINT"[";CVD(MKD$(1));"]"', "direct",
-     "NEEDS-DISK: " "absent => syntax error; real => 1"),
+     "NEEDS-DISK: " "FORM:string-to-double absent => syntax error; real => 1"),
 
     # 🌱 D-KWBREADTH batch 2 (2026-09-13) — THE MK/CV FAMILY IS THE THINNEST
     # COVERAGE IN THE TREE, AND THAT IS MEASURED, NOT GUESSED. `make kwcover`
@@ -1665,7 +1706,8 @@ SWEEP: list[tuple[str, str, str | None, str, str]] = [
      "the 8-byte pack, not the 4-byte one."),
     ("mki_b",   'a=asc(mki$(258))',
      'PRINT"[";ASC(MKI$(258));"]"', "direct",
-     "NEEDS-DISK: " "MKI$'s CONTENT, NOT ITS LENGTH. The `mki` row scores "
+     "NEEDS-DISK: " "SUBJECT:MKI$ FORM:int-to-string MKI$'s CONTENT, NOT ITS "
+     "LENGTH. The `mki` row scores "
      "LEN(MKI$(1))=2 — which a stub returning two zero bytes passes. 258 is "
      "$0102, so both of its bytes are non-zero and ASC reads whichever end the "
      "pack puts first; a disagreement here is a real finding, not a blind row."),
@@ -2192,7 +2234,7 @@ SWEEP: list[tuple[str, str, str | None, str, str]] = [
      "any one of them does."),
     ("bin",     "a$=bin$(5)",
      'PRINT"[";BIN$(5);"]"',                         "direct",
-     "absent => syntax error; real => 101"),
+     "FORM:to-binary absent => syntax error; real => 101"),
 
     # Keyboard INPUT$(n) — blocks for n keypresses. Crunch-only; the channel form
     # INPUT$(n,#f) already ships.
@@ -2219,6 +2261,22 @@ SWEEP: list[tuple[str, str, str | None, str, str]] = [
      "PLACEMENT: it leaves the machine in line-entry mode, which eats whatever "
      "follows."),
 ]
+
+# 🔴 A DUPLICATE ROW KEY IS SILENT AND DESTRUCTIVE, AND NOTHING CHECKED FOR ONE
+# UNTIL D-KWBATCH5 (2026-09-14). A second `mki_b` was added beside an existing one
+# and the sweep RAN BOTH: they printed as two rows with the same name, and the pin
+# is a dict keyed by row, so whichever finished last SILENTLY REPLACED the other's
+# verdict. The same shape as `GOSUB:ongosub` overwriting GOSUB's good reading --
+# merged by key, with no witness that a merge happened.
+# 🎯 It is one line to make impossible, and the cost of not having it was a row
+# whose reading belonged to a different row entirely.
+_dups = sorted({k for k in (r[0] for r in SWEEP)
+                if [r[0] for r in SWEEP].count(k) > 1})
+if _dups:
+    raise AssertionError(
+        "SWEEP has duplicate row key(s): %s -- the pin is keyed by row, so one "
+        "verdict would silently replace the other" % " ".join(_dups))
+
 
 # Rows deliberately not executed, with the reason surfaced in the report. Named
 # explicitly so a reader can audit the exclusions instead of inferring them from

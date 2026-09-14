@@ -953,6 +953,53 @@ already.
 🔪 **ALL FIVE NEW ROWS KNIFE-PROVEN LOAD-BEARING**, and `POINT`/`CSRLIN` needed
 `kwknife.py --fn` — both were showing `connected=False` for no better reason than
 never having been cut in FUNCTION mode.
+⚡ **D-KWBATCH5 — SEVENTEEN KEYWORDS FOR FOUR NEW ROWS, AND A TIER 1 AWARD THAT
+TURNED OUT TO REST ON A RACE. FORTY KEYWORDS AT TIER 1.**
+🟢 **FOURTEEN NEEDED NO NEW ROW AT ALL** — `CHR$ HEX$ OCT$ BIN$ STR$ LEFT$ RIGHT$
+CVI CVS CVD LET REM STOP END`, each one argument (or none) and one behaviour, each
+with an existing row that already reads a VALUE a stub cannot fake. `endkw` puts
+statements AFTER the END that would change the answer if it did not stop; `stopkw`'s
+discriminator is the `Break in 10` message and not the marker before it; `rem`'s is
+that `REM z` raises NO error.
+🎚️ **THREE MORE NEEDED A ROW BECAUSE THE EXISTING ONE COULD NOT SEE WHAT IT
+CLAIMED** — all three of the same screening axes. `space` reads `LEN(SPACE$(3))`
+and **a LENGTH cannot see CONTENT**; `space_b` reads the first byte and the last,
+`[ 32  32 ]`. `mki` reads `LEN(MKI$(1))`, which any two bytes pass; `mki_c` reads
+both bytes of 258 = `$0102`, so the VALUE **and the byte order** are seen — a
+big-endian store reads `[ 1  2 ]`. `erase` prints a constant `[ok]`, and **a
+CONSTANT MARKER cannot see the EFFECT**; `erase_b` reads `[ 0 ]`, the array erased,
+re-dimmed and back cleared, where an ERASE that did nothing makes the second DIM a
+`Redimensioned array` error.
+🔴 **A DUPLICATE ROW KEY IS SILENT AND DESTRUCTIVE, AND NOTHING CHECKED FOR ONE.**
+My `mki_b` landed beside an existing `mki_b` and **the sweep ran BOTH**: two rows
+with one name, and the pin is a dict keyed by row, so whichever finished last would
+have SILENTLY REPLACED the other's verdict. Same shape as `GOSUB:ongosub`
+overwriting GOSUB's reading — merged by key with no witness. ✅ **A module-level
+guard now refuses to import a SWEEP with a duplicate key**, and the older row
+(crunch `a=asc(mki$(258))`, which derives to **ASC**) carries `SUBJECT:MKI$`, since
+its own note always said it was about MKI$.
+🔴 **AND `mki_c` CAUGHT THAT MKI$ IS DISK BASIC.** Written without a rig tag it ran
+against the diskless VG-8020 and came back EXTRA — reference `Illegal function
+call`, zerobas `[ 2  1 ]`. `NEEDS-DISK:` fixes it. A missing rig tag reads exactly
+like a divergence.
+🔴 **BEEP'S TIER 1 AWARD RESTED ON A ROW THAT READS A TRANSIENT — CAUGHT ONLY
+BECAUSE THIS BATCH MOVED IT.** `beep_b` scores the PSG mixer BEEP restores, 184
+sounding against 191 finished — **a race between the beep ending and the `OUT`/`INP`
+two statements later.** ALONE both machines read 184; in the full sweep the
+reference reads 191 and zerobas 184, **deterministically over two runs**, because
+zerobas is 2.5–3.8× slower (the open TIER 4 item) and is still sounding when the
+reference has stopped. **The row was SUPPORTED only for as long as batching happened
+to put the same neighbours before it**, and adding three rows elsewhere in the file
+changed that.
+✅ **DEMOTED TO `WEAK:` AND REPLACED, NOT PAPERED OVER.** `beep_c` reads a register
+BEEP does **not** put back — channel A's tone-period low byte, zeroed first, which
+BEEP leaves at **85** — so there is no race: `[ 85 ]` on both machines, in company,
+knife-proven LOAD-BEARING. BEEP keeps TIER 1 on evidence that does not depend on
+who finishes first. ⚠️ **THE ORIGINAL NOTE'S CLAIM IS STILL TRUE; IT JUST IS NOT
+SCOREABLE** — that is what `WEAK:` is for.
+🎯 **THIRD TIME TODAY THAT INTERPRETER SPEED LEAKED INTO A READING** (after `vdp_d`'s
+two loops and `timetick`'s forced boolean). **A row that measures a TRANSIENT is
+measuring the speed difference, not the keyword.**
 🔪 **D-KWSTRCUT — THE THIRD CUT SHAPE, AND A FIRST VERSION OF IT THAT WAS WORSE
 THAN THE GAP IT CLOSED (2026-09-13).** `basic/sysvars.inc:250` named the shape in
 prose written long before the knife existed: **MKI$ is evaluated in
@@ -1621,7 +1668,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:18348 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:18395 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -1787,7 +1834,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:6388 (T-6FE392)8 (T-529ABE)` from `TODO.md:16999 (T-529ABE)`: a
+      `TODO.md:6435 (T-6FE392)8 (T-529ABE)` from `TODO.md:17046 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -7232,7 +7279,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:16999 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:17046 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
