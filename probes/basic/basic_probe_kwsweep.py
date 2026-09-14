@@ -922,6 +922,26 @@ SWEEP: list[tuple[str, str, str | None, str, str]] = [
      'SCREEN2:PRESET(3,3),9:A=POINT(3,3):SCREEN0:PRINT"[M";A;"]"',  "stored",
      "NOECHO:[M PRESET with an explicit COLOUR -- 9. The `presetkw` row omits it "
      "and can only see that PRESET erases."),
+    # 🌾 D-KWBREADTH batch 15 — AXIS (f): `PAINT` and `PUT SPRITE` had NO ROW AS
+    # SUBJECT anywhere in the sweep. They appeared only inside other rows' setup
+    # lines, so kwcover counted them EXERCISED, the tier table credited the other
+    # keyword, and the knife could not reach them at all (it re-runs a keyword's OWN
+    # row). These give each one a row it is the SUBJECT of.
+    # PAINT: a box drawn with `LINE ,B` bounds the flood, and (15,15) is INTERIOR --
+    # a pixel only a FILL sets. Blank is 4.
+    ("paintkw",  'paint(15,15),15',
+     'SCREEN2:LINE(10,10)-(20,20),15,B:PAINT(15,15),15:A=POINT(15,15):SCREEN0:PRINT"[U";A;"]"',
+     "stored",
+     "NOECHO:[U the FLOOD -- (15,15) is inside the box and is set by nothing but "
+     "PAINT, so 15 filled against 4 blank."),
+    # PUT SPRITE: the SCREEN 2 sprite ATTRIBUTE table is at $1B00 (6912) and its
+    # first byte is the sprite's Y coordinate, so the write is read straight back
+    # out of VRAM. `spritekw` only round-trips SPRITE$, which is the PATTERN table.
+    ("putsprite", 'put sprite 0,(100,50),15,0',
+     'SCREEN2:SPRITE$(0)=STRING$(8,255):PUT SPRITE 0,(100,50),15,0:A=VPEEK(6912):SCREEN0:PRINT"[V";A;"]"',
+     "stored",
+     "NOECHO:[V the ATTRIBUTE write -- VPEEK($1B00) is the sprite's Y. `spritekw` "
+     "round-trips SPRITE$, which is the PATTERN table and a different store."),
     ("pointkw",  'a=point(1,1)',   
      'SCREEN2:PSET(1,1),15:A=POINT(1,1):SCREEN0:PRINT"[T";A;"]"',   "stored",
      "NOECHO:[T POINT as the subject: a stub parses as an array and reads 0, not 15"),

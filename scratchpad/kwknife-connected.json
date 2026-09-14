@@ -650,6 +650,15 @@
    "verdict": "SUPPORTED",
    "weak": false
   },
+  "PAINT": {
+   "connected": true,
+   "modes": {
+    "stmt": "UNREADABLE"
+   },
+   "row": "paintkw",
+   "verdict": "UNREADABLE",
+   "weak": false
+  },
   "PDL": {
    "connected": true,
    "modes": {
@@ -710,6 +719,15 @@
     "stmt": "UNREADABLE"
    },
    "row": "psetkw_b",
+   "verdict": "UNREADABLE",
+   "weak": false
+  },
+  "PUT": {
+   "connected": true,
+   "modes": {
+    "stmt": "UNREADABLE"
+   },
+   "row": "putsprite",
    "verdict": "UNREADABLE",
    "weak": false
   },
@@ -977,5 +995,5 @@
    "weak": false
   }
  },
- "written": "2026-09-14 04:16:01"
+ "written": "2026-09-14 04:38:06"
 }

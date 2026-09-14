@@ -472,6 +472,18 @@ file's own rule is that **every row which READS the fixture is placed ahead of
 every row that CHANGES it, so both sides walk the identical sequence**
 [[apparatus-is-part-of-the-measurement]]. A write row has to be PLACED, not just
 written.
+✅ **BREADTH BATCH 15 (D-KWBREADTH, 2026-09-14) — TWO OF THE FOUR UNATTRIBUTED
+KEYWORDS NOW HAVE ROWS THEY ARE THE SUBJECT OF.** Both **knife-proven
+LOAD-BEARING**, and both now appear in the pin where neither could before; sweep
+`DIVERGENT=2 SUPPORTED=211`.
+| row | reading | why it is the keyword's own |
+|---|---|---|
+| `paintkw` | `[U 15 ]` | a box drawn with `LINE ,B` bounds the flood and (15,15) is INTERIOR — a pixel **nothing but a FILL sets**, so 15 filled against 4 blank |
+| `putsprite` | `[V 50 ]` | the SCREEN 2 sprite ATTRIBUTE table at `$1B00` (6912), whose first byte is the sprite's Y — read straight back out of VRAM. `spritekw` round-trips `SPRITE$`, which is the **PATTERN** table and a different store |
+🎯 **Both readings match their notes exactly** — `[V 50 ]` confirms `$1B00` really
+is the attribute base and its first byte really is Y, so neither row repeats
+`varptr_b`'s false justification. `OPEN` and `FIELD` remain, and both need the disk
+fixture and a PLACEMENT decision rather than just a row.
 🔪 **D-KWSTRCUT — THE THIRD CUT SHAPE, AND A FIRST VERSION OF IT THAT WAS WORSE
 THAN THE GAP IT CLOSED (2026-09-13).** `basic/sysvars.inc:250` named the shape in
 prose written long before the knife existed: **MKI$ is evaluated in
@@ -1140,7 +1152,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:17867 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:17879 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -1306,7 +1318,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:5907 (T-6FE392)8 (T-529ABE)` from `TODO.md:16518 (T-529ABE)`: a
+      `TODO.md:5919 (T-6FE392)8 (T-529ABE)` from `TODO.md:16530 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -6751,7 +6763,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:16518 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:16530 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
