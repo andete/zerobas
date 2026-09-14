@@ -1099,10 +1099,29 @@ SWEEP: list[tuple[str, str, str | None, str, str]] = [
      "NOECHO:[P the BOX form -- (9,1) is a corner of the rectangle but not a point "
      "on the diagonal, so a discarded `,B` reads 4 instead of 15"),
     ("colorkw",  'color 7',    'COLOR 7:PRINT"[O";PEEK(-3095);"]"',              "direct",
-     "NOECHO:[O COLOR repaints the whole screen, echo included. Reads FORCLR "
+     "NOECHO:[O FORM:foreground COLOR repaints the whole screen, echo included. Reads FORCLR "
      "($F3E9 = -3095) back, and uses 7 rather than the DEFAULT 15 on purpose: "
      "a COLOR that parsed and did nothing would leave 15 there and the row "
      "would pass on the default. absent => syntax error, no marker."),
+    # 🎚️ D-KWTIER1: COLOR is `COLOR [fg][,bg][,border]`, so its three forms are the
+    # three POSITIONS -- and the interesting part is the OMISSION: the parser has to
+    # skip a position rather than shift the argument left. FORCLR/BAKCLR/BDRCLR are
+    # all declared ($F3E9/$F3EA/$F3EB), so each lands somewhere readable.
+    # 🎯 EACH ROW READS THE CELL IT MUST CHANGE **AND** FORCLR, WHICH IT MUST LEAVE:
+    # a parser that shifted `COLOR ,5` into the foreground would write 5 where 7
+    # must still stand, and reading only the changed cell could not see it.
+    # ⚠️ Restored to the MSX default `COLOR 15,4,4` AFTER the readout.
+    ("colorkw_b", 'color ,5',
+     'COLOR 7:COLOR ,5:A=PEEK(&HF3EA):B=PEEK(&HF3E9):PRINT"[3";A;B;"]":COLOR 15,4,4',
+     "stored",
+     "NOECHO:[3 FORM:background the BACKGROUND with the foreground OMITTED: "
+     "`[3 5  7 ]` -- background 5, and FORCLR still 7, so the omitted position was "
+     "SKIPPED and not shifted. MEASURED on both machines before this was written."),
+    ("colorkw_c", 'color ,,3',
+     'COLOR 7:COLOR ,,3:A=PEEK(&HF3EB):B=PEEK(&HF3E9):PRINT"[4";A;B;"]":COLOR 15,4,4',
+     "stored",
+     "NOECHO:[4 FORM:border the BORDER with BOTH earlier positions omitted: "
+     "`[4 3  7 ]` -- border 3, FORCLR still 7. MEASURED on both machines."),
     # ⚠️ `SCREEN` AND `KEY` ARE NOT HERE YET, each for a stated reason rather
     # than an oversight. SCREEN: the only value that discriminates is a mode
     # CHANGE, and `SCREEN 1` is 32 columns while this capture parses a 40-column

@@ -44,6 +44,15 @@ FORMS: dict[str, tuple[tuple[str, ...], str]] = {
         "form draws in the colour given, which is why both are forms and not one "
         "form sampled twice.",
     ),
+    "COLOR": (
+        ("foreground", "background", "border"),
+        "`COLOR [fg][,bg][,border]` -- three POSITIONS, and the form that matters "
+        "is the OMISSION: a parser that shifted `COLOR ,5` left would write the "
+        "background value into the foreground. Each lands in a declared cell "
+        "(FORCLR $F3E9, BAKCLR $F3EA, BDRCLR $F3EB), so all three are readable. "
+        "This is deliberately a DIFFERENT SHAPE from PSET/PRESET -- positional "
+        "omission rather than an optional trailing argument and a mode.",
+    ),
     "CLEAR": (
         ("bare", "string-space", "himem"),
         "MSX1 syntax is `CLEAR [<string space>[,<himem>]]`, so the whole surface is "
