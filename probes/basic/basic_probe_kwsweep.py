@@ -1211,7 +1211,7 @@ SWEEP: list[tuple[str, str, str | None, str, str]] = [
      "target and RETURN: 99. An ON that ignores the index gives 77, one that never "
      "calls leaves A at 0."),
     ("errorkw",   'error 7',          
-     'ON ERROR GOTO 20:ERROR 7:END:PRINT"[R";ERR;ERL;"]":END',  "stored", "D-KWDRAIN: ERROR 7 is what raises it"),
+     'ON ERROR GOTO 20:ERROR 7:END:PRINT"[R";ERR;ERL;"]":END',  "stored", "FORM:raise D-KWDRAIN: ERROR 7 is what raises it"),
     # 🌾 D-KWBREADTH batch 20 — AXIS (g): counted across the file, EVERY `ERROR`
     # raised is code 7, six times over, so every other code's own path is
     # unexercised and an implementation that ignored the operand and always raised
@@ -1225,13 +1225,13 @@ SWEEP: list[tuple[str, str, str | None, str, str]] = [
      "D-KWDRAIN: a DIFFERENT error code, where all six existing rows raise 7 -- "
      "`[I 53  10 ]`, MEASURED on both machines before this sentence was written. "
      "ERR returns 53 and not 7, so the OPERAND is honoured rather than a fixed "
-     "code being raised; ERL pins it to line 10, the line that raised it."),
+     "FORM:raise code being raised; ERL pins it to line 10, the line that raised it."),
     ("errkw",     'a=err',            
      'ON ERROR GOTO 20:ERROR 7:END:PRINT"[R";ERR;ERL;"]":END',  "stored", "D-KWDRAIN: ERR reads 7, the code raised"),
     ("erlkw",     'a=erl',            
      'ON ERROR GOTO 20:ERROR 7:END:PRINT"[R";ERR;ERL;"]":END',  "stored", "D-KWDRAIN: ERL reads 10, the line that raised"),
     ("resumekw",  'resume next',      
-     'ON ERROR GOTO 30:ERROR 7:PRINT"[U";A;"]":END:A=5:RESUME NEXT', "stored", "D-KWDRAIN: the handler RESUMEs NEXT and control reaches the PRINT; without it nothing prints"),
+     'ON ERROR GOTO 30:ERROR 7:PRINT"[U";A;"]":END:A=5:RESUME NEXT', "stored", "FORM:next D-KWDRAIN: the handler RESUMEs NEXT and control reaches the PRINT; without it nothing prints"),
     ("defintkw",  'defint a',         
      'DEFINT A:A=1.7:PRINT"[";A;"]"',                           "direct", "FORM:single-letter D-KWDRAIN: 1, not 1.7 -- a DEFINT that parses and does nothing still prints 1.7"),
     # 🌾 D-KWBATCH6: `ex_deftype` (basic/usr.asm:210) parses a comma-list of
@@ -1264,7 +1264,7 @@ SWEEP: list[tuple[str, str, str | None, str, str]] = [
     #            a LIST read-back; measure that before writing the row.
     ("listkw",    'list',       
      'PRINT"[A]":LIST',                                     "stored",
-     "D-KWDRAIN: the LISTING itself is the discriminator -- a LIST that did nothing would leave only [A] on the screen"),
+     "FORM:bare-list D-KWDRAIN: the LISTING itself is the discriminator -- a LIST that did nothing would leave only [A] on the screen"),
     ("deletekw",  'delete 99',  
      'PRINT"[A]":DELETE 99',                                "stored",
      "D-KWDRAIN: Illegal function call in 10 on both (line 99 does not exist); an absent DELETE is a Syntax error, a different class"),
@@ -1279,7 +1279,7 @@ SWEEP: list[tuple[str, str, str | None, str, str]] = [
     ("newkw",     'new',
      'PRINT"[A]":NEW',                                       "stored",
      "D-KWDRAIN: the D-NEWSTMT shape -- [A] then a clean stop; before the fix "
-     "this row would have carried `Syntax error in 10` on the zb side"),
+     "FORM:erase-program this row would have carried `Syntax error in 10` on the zb side"),
     ("gosubkw",   'gosub 20',     
      'A=0:GOSUB 20:PRINT"[G";A;"]":END:A=7:RETURN',         "stored", "FORM:call D-KWDRAIN: the subroutine sets A=7; no GOSUB, no output"),
     ("returnkw",  'return',       
@@ -1779,7 +1779,7 @@ SWEEP: list[tuple[str, str, str | None, str, str]] = [
     # (`10 REM ZQ8`) leaves the log EMPTY on both machines, so the reading exists
     # only because the verb ran.
     ("llist",   "llist",       "LLIST:REM ZQ8",  "stored",
-     "NEEDS-LOG: " "the listing itself, off the printer log -- the row's own "
+     "NEEDS-LOG: " "FORM:list-to-printer the listing itself, off the printer log -- the row's own "
      "stored program. Absent => Syntax error on the SCREEN and an empty log, which "
      "is why the CLASS comes from the screen and only the TEXT from the log."),
 
@@ -1968,7 +1968,7 @@ SWEEP: list[tuple[str, str, str | None, str, str]] = [
     # because it does not come back [[a-case-that-agrees-can-agree-for-the-wrong-reason]].
     ("waitkw",   "wait 0,1",
      'WAIT &HA8,&HFF:PRINT"[Y1]"',                              "stored",
-     "D-KWRIG: mask &HFF against a port measured at 240 on both machines"),
+     "FORM:port-mask D-KWRIG: mask &HFF against a port measured at 240 on both machines"),
 
     # --- the printer pair. They need a PLUGGED printer (NEEDS-PRINTER:), and that
     # tag is not decoration: with nothing on the port both rows produce NO OUTPUT
@@ -1984,7 +1984,7 @@ SWEEP: list[tuple[str, str, str | None, str, str]] = [
      "that reason -- the readback had to be MOVED before it could be read."),
     ("lprintkw", 'lprint"x"',
      'LPRINT"ABC";:PRINT"[P";LPOS(0);"]"',                      "stored",
-     "NEEDS-PRINTER: " "the same measurement from the other end, and deliberately "
+     "NEEDS-PRINTER: " "FORM:print-to-printer the same measurement from the other end, and deliberately "
      "the SAME exec line: `LPOS` is the only readback either word has from the "
      "screen, so the pair is coupled exactly as `pset`/`point` are. It moves if "
      "EITHER breaks, and 3 is a byte COUNT -- an LPRINT that emitted nothing "
@@ -2009,7 +2009,7 @@ SWEEP: list[tuple[str, str, str | None, str, str]] = [
      "the row the empty drive was hiding: DSKF is not a stub and never was."),
     ("files",   "files",
      'FILES"HI.TXT":PRINT"[8]"',                     "stored",
-     "NEEDS-DISK: " "the LISTING is the behaviour, and it is inside the compared "
+     "NEEDS-DISK: " "FORM:pattern the LISTING is the behaviour, and it is inside the compared "
      "text: the tail reads `HI      .TXT` then the marker, so a FILES that printed "
      "nothing, or named the wrong entry, fails on text even though the marker is "
      "there. Absent => syntax error => no marker at all."),
@@ -2456,7 +2456,7 @@ SWEEP: list[tuple[str, str, str | None, str, str]] = [
     # whether or not LFILES touches it, which is the blind row this replaced.
     ("lfiles",  "lfiles",
      'LPRINT"AB";:LFILES:PRINT"[P";LPOS(0);"]"',     "stored",
-     "NEEDS-DISK: " "NEEDS-PRINTER: " "the printer head goes back to column 0 "
+     "NEEDS-DISK: " "NEEDS-PRINTER: " "FORM:catalogue-to-printer the printer head goes back to column 0 "
      "because every entry ended its own line -- 0 on both machines since D-DFEND, "
      "2 before it. A no-match LFILES must NOT zero it (both machines leave the "
      "head parked and let R-LP16 flush), which is why the store is conditional."),

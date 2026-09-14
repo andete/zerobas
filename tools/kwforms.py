@@ -165,6 +165,42 @@ FORMS: dict[str, tuple[tuple[str, ...], str]] = {
         "This is deliberately a DIFFERENT SHAPE from PSET/PRESET -- positional "
         "omission rather than an optional trailing argument and a mode.",
     ),
+    "ERROR": (
+        ("raise",),
+        "ERROR <code> -- one behaviour: raise the code given. Its two rows raise 7 and 53 and read ERR *and* ERL back, so a handler that raised a constant, or lost the line number, is visible; they are the same form sampled twice.",
+    ),
+    "NEW": (
+        ("erase-program",),
+        "NEW -- no arguments, one behaviour. The row's discriminator is that the statement AFTER it is never reached and no error is raised: before D-NEWSTMT this row carried `Syntax error in 10`.",
+    ),
+    "LLIST": (
+        ("list-to-printer",),
+        "LLIST -- the printer sibling of LIST. One behaviour, and the reading is the LISTING ITSELF taken off the printer log rather than the screen, which is what separates it from LIST.",
+    ),
+    "LPRINT": (
+        ("print-to-printer",),
+        "LPRINT <list> -- one behaviour. The reading is LPOS, the head column, because the printed text never reaches the screen; a LPRINT that printed nothing leaves the head at 0.",
+    ),
+    "LFILES": (
+        ("catalogue-to-printer",),
+        "LFILES -- the directory to the printer. One behaviour, and the reading is that the head is back at column 0 because every entry ended its own line.",
+    ),
+    "LIST": (
+        ("bare-list", "single-line", "range"),
+        "LIST / LIST <line> / LIST <from>-<to> -- three behaviours: the whole program, one line, and a range. Only the bare form has a row; selecting WHICH lines to print is the part a bare LIST cannot exercise at all.",
+    ),
+    "FILES": (
+        ("bare", "pattern"),
+        "FILES [<pattern>] -- the whole directory or a filtered one. The existing row is the PATTERN form; the bare catalogue has no row, and a FILES that ignored its pattern would pass the row it has.",
+    ),
+    "WAIT": (
+        ("port-mask", "port-mask-xor"),
+        "WAIT <port>,<mask>[,<xor>] -- the optional third operand INVERTS the sense of the test, so a WAIT that parsed and dropped it would spin forever on exactly the inputs the two-argument form returns on.",
+    ),
+    "RESUME": (
+        ("next", "bare", "line"),
+        "RESUME / RESUME NEXT / RESUME <line> -- three DIFFERENT places to continue: the statement that failed, the one after it, and an explicit line. Only RESUME NEXT has a row, and re-running the failing statement is the form most likely to loop forever if it is wrong.",
+    ),
     "LOF": (
         ("length",),
         "LOF(<channel>) -- one argument, one behaviour. The row opens a fixture of known size and reads the length back, so a stub answering 0 fails.",

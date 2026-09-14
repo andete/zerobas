@@ -19413,6 +19413,28 @@ NEVER had a row — both of INPUT's rows drove the FILE form and belong to `INPU
 line on the comma into TWO variables. 🎯 **`LINE INPUT`'s reading is the
 discriminator:** `[1c A,B C]` keeps the comma AND the leading space, where `INPUT`
 would have split at the comma and eaten the space.
+⚡ **D-KWBATCH9 — FIVE MORE AWARDED WITH NO NEW ROWS, AND FOUR BARS AUTHORED THAT
+NAME WHAT IS MISSING. 80 of 167.**
+🟢 **`ERROR`, `NEW`, `LLIST`, `LPRINT`, `LFILES` AT N=1**, each already holding a
+row whose reading can FAIL: `ERROR`'s two rows raise 7 and 53 and read ERR **and**
+ERL back, so a handler raising a constant or losing the line number shows; `NEW`'s
+discriminator is that the statement after it is never reached AND no error is
+raised (before D-NEWSTMT that row carried `Syntax error in 10`); the three printer
+verbs read off the PRINTER LOG or through `LPOS`, because their output never
+reaches the screen at all.
+🔭 **AND FOUR BARS AUTHORED THAT AWARD NOTHING, WHICH IS THE POINT OF HAVING A
+BAR.** `LIST` 1/3 — selecting WHICH lines to print is the part a bare LIST cannot
+exercise. `FILES` 1/2 — the row is the PATTERN form, so a FILES that IGNORED its
+pattern would pass the only row it has. `WAIT` 1/2 — the optional third operand
+INVERTS the sense of the test, so a WAIT that dropped it would spin forever on
+exactly the inputs the two-argument form returns on. `RESUME` 1/3 — three different
+places to continue, and **re-running the failing statement is the form most likely
+to loop forever if it is wrong**, which is the one with no row.
+⛔ **`SET`, `IPL` and `CMD` ARE DELIBERATELY NOT AUTHORED.** All three are
+refuse-on-sight words here — `ERR 5` on both references — so they have no HAPPY
+PATH on this machine at all, and an N=1 meaning "refuses correctly" would be a
+TIER 5 reading wearing a TIER 1 label. ⛔ `MOTOR` likewise waits: its row prints a
+constant `[ok]`, which is the third screening axis.
       ⚠️ **`TXTMAX` IS NOW BOUNDED BY `DETOKBUF`, NOT BY FREE RAM** — at 1280 B
       it does not fit the 1024 B window, so `$BB00` is the stop until DETOKBUF
       is dealt with. Of D-LINEMAX's 1792 B, **1024 recovered, 768 still charged**.
