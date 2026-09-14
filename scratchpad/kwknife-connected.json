@@ -322,7 +322,7 @@
    "modes": {
     "fn": "MISSING"
    },
-   "row": "fre",
+   "row": "fre_b",
    "verdict": "MISSING",
    "weak": false
   },
@@ -912,13 +912,22 @@
    "verdict": "MISSING",
    "weak": false
   },
+  "VARPTR": {
+   "connected": true,
+   "modes": {
+    "fn": "MISSING"
+   },
+   "row": "varptr_b",
+   "verdict": "MISSING",
+   "weak": false
+  },
   "VDP": {
    "connected": true,
    "modes": {
     "fn": "MISSING",
     "stmt": "SUPPORTED"
    },
-   "row": "vdpkw",
+   "row": "vdp_b",
    "verdict": "MISSING",
    "weak": false
   },
@@ -959,5 +968,5 @@
    "weak": false
   }
  },
- "written": "2026-09-14 01:33:57"
+ "written": "2026-09-14 01:59:37"
 }

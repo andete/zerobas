@@ -424,6 +424,23 @@ SWEEP: list[tuple[str, str, str | None, str, str]] = [
     ("sqr",     "a=sqr(9)",           'PRINT"[";SQR(9);"]"',             "direct", "control"),
     ("peek",    "a=peek(0)",          'PRINT"[";PEEK(0)>=0;"]"',         "direct", "control"),
     ("varptr",  "a=varptr(b)",        'B=1:PRINT"[";VARPTR(B)>0;"]"',    "direct", "control"),
+    # 🌾 D-KWBREADTH batch 8: `VARPTR(B)>0` is a half-plane. The ABSOLUTE address is
+    # machine-dependent (RAM layouts differ), but a DELTA cancels the base: the
+    # element STRIDE of a numeric array is 8 on all three machines (MSX defaults to
+    # DOUBLE), measured in scratchpad/boolaxis_probe.py before this row was written.
+    # 🔴 AND `A=0:B=0` FIRST IS LOAD-BEARING, WHICH THE FIRST VERSION LEARNED THE
+    # HARD WAY. MSX stores SIMPLE variables BEFORE arrays, so creating B after
+    # taking A=VARPTR(Z(1)) MOVES THE ARRAY between the two reads: the row read
+    # `[-3 ]` instead of `[ 8 ]`, agreed on both machines, and was scored SUPPORTED
+    # with a note claiming a stride of 8 that its own reading contradicted. The
+    # SPLIT was mine -- forced by the 34-char body limit -- so the apparatus changed
+    # the thing it measured [[apparatus-is-part-of-the-measurement]]. Declaring both
+    # variables up front pins the array in place.
+    ("varptr_b", 'a=varptr(z(1))',
+     'A=0:B=0:DIM Z(4):A=VARPTR(Z(1)):B=VARPTR(Z(0)):PRINT"[";A-B;"]"',       "stored",
+     "D-KWDRAIN: VARPTR's arithmetic, not its non-zero-ness -- the array element "
+     "stride, 8 (MSX defaults to DOUBLE). A delta, so the machine-dependent base "
+     "cancels; A and B are created BEFORE the DIM so the array cannot move."),
     ("stick",   "a=stick(0)",         'PRINT"[";STICK(0);"]"',           "direct", "control"),
     ("erase",   "erase a",            'DIM Q(2):ERASE Q:PRINT"[ok]"',    "direct", "control"),
     ("swapctl", "a=1",                'A=1:PRINT"[";A;"]"',              "direct", "control (bare assign)"),
@@ -498,6 +515,17 @@ SWEEP: list[tuple[str, str, str | None, str, str]] = [
     # matches the reference's is a separate question this row does not ask, and
     # filing it as answered here would be the "agrees for the wrong reason" trap.
     ("rnd",     'a=rnd(1)',           'PRINT"[";RND(1)<1;"]"',                "direct", "D-KWDRAIN"),
+    # 🌾 D-KWBREADTH batch 8, AND IT ANSWERS THE QUESTION THE ROW ABOVE DECLINES.
+    # That note says whether zerobas's PRNG SEQUENCE matches the reference's is "a
+    # separate question this row does not ask". It is now MEASURED: `RND(negative)`
+    # reseeds deterministically (A=RND(-1):B=RND(-1) gives A=B on all three) and the
+    # value after the reseed is the SAME on all three -- INT(RND(-1)*10000) = 438 on
+    # the VG-8020, the CF-3300 and zerobas (scratchpad/boolaxis_probe.py).
+    ("rnd_b",   'a=rnd(-1)',
+     'A=RND(-1):PRINT"[";INT(A*10000);"]"',                                   "stored",
+     "D-KWDRAIN: the SEQUENCE, not the range -- `RND(1)<1` is true on any "
+     "conforming implementation. After a negative reseed the value is 438 on both "
+     "references and here, so the generator itself agrees."),
     ("cvi",      'a=cvi("ab")',        'PRINT"[";CVI(MKI$(7));"]"',              "direct",
      "NEEDS-DISK: " "absent => syntax error; real => 7. 🔴 TAGGED AFTER THE FACT: "
      "written untagged it came back EXTRA -- ref `Illegal function call` vs zb "
@@ -570,6 +598,14 @@ SWEEP: list[tuple[str, str, str | None, str, str]] = [
     ("vpeek",   'a=vpeek(0)',         'VPOKE 0,7:PRINT"[";VPEEK(0);"]"',      "direct", "D-KWDRAIN"),
     ("vpoke",   'vpoke 0,1',          'VPOKE 0,9:PRINT"[";VPEEK(0);"]"',      "direct", "D-KWDRAIN"),
     ("vdpkw",   'a=vdp(1)',           'PRINT"[";VDP(1)>0;"]"',                "direct", "D-KWDRAIN"),
+    # 🌾 D-KWBREADTH batch 8: a BOOLEAN reading scores only that a value falls in a
+    # half-plane, never the VALUE. `VDP(1)>0` is -1 for anything non-zero, so every
+    # wrong-but-non-zero register read passes it -- and the note beside the row
+    # already says the number is 240 against a stub's 0, so the value was known and
+    # simply not scored.
+    ("vdp_b",   'a=vdp(1)',           'PRINT"[";VDP(1);"]"',                  "direct",
+     "D-KWDRAIN: the VDP register's VALUE, not its non-zero-ness -- 240. The "
+     "`vdpkw` row's `>0` passes on any wrong non-zero read."),
     # 🔴 `>0`, NOT `>=0`, AND THAT IS A FIX TO MY OWN ROW. The first cut asked
     # `INP(&HA8)>=0`, which an ABSENT INP passes too: the word would parse as an
     # undefined array, `INP(&HA8)` would be element 0, and `0>=0` is TRUE.
@@ -927,6 +963,14 @@ SWEEP: list[tuple[str, str, str | None, str, str]] = [
     ("fre",     "a=fre(0)",
      'PRINT"[";FRE(0)>1000;"]"',                     "direct",
      "absent => array FRE(0)=0 => `0` (false); real => -1 (true)"),
+    # 🌾 D-KWBREADTH batch 8: `FRE(0)>1000` is a half-plane, and the ABSOLUTE figure
+    # legitimately differs (the CF-3300's disk ROM steals RAM the diskless VG-8020
+    # keeps). The COST of an allocation is a delta and agrees on all three: 99 bytes
+    # for a 10-element array. Measured before the row was written.
+    ("fre_b",   'a=fre(0)',
+     'A=FRE(0):DIM Z(9):B=FRE(0):PRINT"[";A-B;"]"',                           "stored",
+     "D-KWDRAIN: FRE tracking an ALLOCATION -- 99 bytes for DIM Z(9). A delta, so "
+     "the machine-dependent absolute free figure cancels."),
     ("tron",    "tron",
      "TRON:TROFF:PRINT\"[ok]\"",                     "direct",
      "absent => syntax error; real => accepted (trace toggled off again)"),

@@ -335,6 +335,38 @@ row scoring a **LENGTH or EXISTENCE** leaves the CONTENT untouched; a row scorin
 **CONSTANT MARKER** leaves the EFFECT untouched. ⚠️ **And every screen over-flags,
 so each candidate is confirmed by READING its row** — a `LEN(` regex nominated
 `inkey`, whose row prints `A$` as well.
+🌾 **BREADTH BATCH 8 (D-KWBREADTH, 2026-09-14) — THE FOURTH SCREENING AXIS: A
+BOOLEAN READING SCORES A HALF-PLANE, NEVER THE VALUE.** Six rows read `>0`,
+`>1000`, `<1` or `>=`, and `VDP(1)>0` is `-1` for ANY non-zero register read — the
+note beside it already said the number is **240**, so the value was known and
+simply not scored.
+| row | reading | what the half-plane hid |
+|---|---|---|
+| `vdp_b` | `[ 240 ]` | the register's VALUE; `>0` passes on any wrong non-zero read |
+| `varptr_b` | `[ 8 ]` | the array element STRIDE (MSX defaults to DOUBLE) |
+| `fre_b` | `[ 99 ]` | what `DIM Z(9)` COSTS |
+| `rnd_b` | `[ 438 ]` | the PRNG **SEQUENCE** |
+🎯 **AND `rnd_b` ANSWERS THE QUESTION THE `rnd` ROW EXPLICITLY DECLINES.** That
+note says whether zerobas's PRNG sequence matches the reference's is *"a separate
+question this row does not ask"*. **It is now measured: `RND(negative)` reseeds
+deterministically, and `INT(RND(-1)*10000)` is 438 on the VG-8020, the CF-3300 AND
+zerobas** — the generator itself agrees, not merely its range.
+⚠️ `VARPTR`, `FRE` and `RND`'s ABSOLUTE values are machine-dependent (RAM layouts
+differ; the CF-3300's disk ROM steals RAM the diskless VG-8020 keeps), so each row
+reads a **DELTA** and all four were measured in `scratchpad/boolaxis_probe.py`
+BEFORE any row was written. `VARPTR` and `FRE` are knife-proven LOAD-BEARING;
+**`RND` is among the 18 the knife refuses**, so its connectedness is unmeasurable.
+Sweep `DIVERGENT=2 SUPPORTED=201`.
+🔴 **AND `varptr_b` SHIPPED A FALSE JUSTIFICATION FOR ONE SWEEP, CAUGHT ONLY BY
+READING THE VALUE.** It read `[-3 ]`, not `[ 8 ]` — **and was scored SUPPORTED,
+because both machines agreed on −3.** The cause was MY OWN line-length split: MSX
+stores SIMPLE variables BEFORE arrays, so creating `B` after taking
+`A=VARPTR(Z(1))` **MOVED THE ARRAY between the two reads.** The 34-char body limit
+forced the split, and the split changed the thing being measured
+[[apparatus-is-part-of-the-measurement]]. `A=0:B=0` up front pins the array.
+**A row can agree across machines, pass its gate, and still contradict the note
+that justifies it — which is why the standing rule is READ WHAT THE ROW SAW, NOT
+THE VERDICT IT PRINTED.**
 🔪 **D-KWSTRCUT — THE THIRD CUT SHAPE, AND A FIRST VERSION OF IT THAT WAS WORSE
 THAN THE GAP IT CLOSED (2026-09-13).** `basic/sysvars.inc:250` named the shape in
 prose written long before the knife existed: **MKI$ is evaluated in
@@ -1003,7 +1035,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:17730 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:17762 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -1169,7 +1201,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:5770 (T-6FE392)8 (T-529ABE)` from `TODO.md:16381 (T-529ABE)`: a
+      `TODO.md:5802 (T-6FE392)8 (T-529ABE)` from `TODO.md:16413 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -6614,7 +6646,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:16381 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:16413 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
