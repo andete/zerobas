@@ -647,6 +647,26 @@ SWEEP: list[tuple[str, str, str | None, str, str]] = [
     ("orop",    'a=5 or 3',           'PRINT"[";5 OR 3;"]"',           "direct", "FORM:bitwise-or D-KWDRAIN"),
     ("xorop",   'a=5 xor 3',          'PRINT"[";5 XOR 3;"]"',          "direct", "FORM:bitwise-xor D-KWDRAIN"),
     ("oct",     'a$=oct$(8)',         'PRINT"[";OCT$(8);"]"',          "direct", "FORM:to-octal D-KWDRAIN"),
+    # 🌾 D-KWBARS: `VAL` had NO kwsweep row at all -- not a thin one, none -- and no
+    # authored bar. The bar comes from docs/spec-basic-val.md, which measured the
+    # reference across 40 shapes and named the five things VAL does: a signed
+    # INTEGER, a FRACTION, an EXPONENT, a RADIX PREFIX, and a PARTIAL PARSE that
+    # stops at the first byte it cannot use. ⚠️ `VAL` NEVER RAISES ON JUNK -- it
+    # returns 0 -- so a wrong answer here is SILENT, which is why each row reads a
+    # value no other form produces rather than checking that it did not error.
+    ("valkw",   'a=val("-12")',       'PRINT"[";VAL("-12");"]"',       "direct",
+     "FORM:integer the signed integer path"),
+    ("valkw_b", 'a=val("1.5")',       'PRINT"[";VAL("1.5");"]"',       "direct",
+     "FORM:fraction 1.5, not 1: the DECIMAL POINT. Truncating to the integer path "
+     "is what this row is for (docs/spec-basic-val.md \u00a72 measured exactly that)"),
+    ("valkw_c", 'a=val("1e3")',       'PRINT"[";VAL("1E3");"]"',       "direct",
+     "FORM:exponent 1000, not 1: the EXPONENT is consumed, not left as junk"),
+    ("valkw_d", 'a=val("&hff")',      'PRINT"[";VAL("&HFF");"]"',      "direct",
+     "FORM:radix-prefix 255: `&H` is a RADIX, and a scanner that only knows decimal "
+     "reads 0 here -- the silent wrong answer, not an error"),
+    ("valkw_e", 'a=val("12abc")',     'PRINT"[";VAL("12ABC");"]"',     "direct",
+     "FORM:partial-parse 12: the scan STOPS at the first byte it cannot use and "
+     "keeps what it had, where `VAL(\"ABC\")` is 0"),
     ("left",    'a$=left$("abc",2)',  'PRINT"[";LEFT$("abc",2);"]"',   "direct", "FORM:prefix D-KWDRAIN"),
     ("right",   'a$=right$("abc",2)', 'PRINT"[";RIGHT$("abc",2);"]"',  "direct", "FORM:suffix D-KWDRAIN"),
     ("str",     'a$=str$(5)',         'PRINT"[";STR$(5);"]"',          "direct", "FORM:number-to-string D-KWDRAIN"),
@@ -770,6 +790,23 @@ SWEEP: list[tuple[str, str, str | None, str, str]] = [
      "stored",
      "NOECHO:[1j FORM:goto the THEN-less form. `A=7` sits AFTER the jump on line 10 "
      "and must be skipped, so `[1j 0 ]`; an IF that fell through reads `[1j 7 ]`."),
+    # 🌾 D-KWBARS: `FOR` HAD NO ROW OF ITS OWN -- every FOR in this file is a
+    # NEXT row's apparatus, and a loop that runs is not the same claim as a loop
+    # whose TERMINATION was decided correctly. Three forms from the reference's
+    # syntax `FOR <var>=<a> TO <b> [STEP <c>]`: the IMPLIED step of 1, an explicit
+    # STEP, and a NEGATIVE step -- which is not a third operand but a REVERSED
+    # terminating comparison, the one a `>=` written as `<=` gets wrong.
+    ("forkw",   'for i=1 to 3',
+     'S=0:FOR I=1 TO 3:S=S+I:NEXT:PRINT"[";S;"]"',            "stored",
+     "FORM:ascending 6 = 1+2+3: every iteration ran and the loop STOPPED at 3"),
+    ("forkw_b", 'for i=1 to 9 step 4',
+     'S=0:FOR I=1 TO 9 STEP 4:S=S+I:NEXT:PRINT"[";S;"]"',     "stored",
+     "FORM:step 15 = 1+5+9: the INCREMENT is the operand, not 1, and the last "
+     "iteration is the one at 9 -- a STEP that was parsed and dropped reads 45"),
+    ("forkw_c", 'for i=3 to 1 step -1',
+     'S=0:FOR I=3 TO 1 STEP -1:S=S*10+I:NEXT:PRINT"[";S;"]"', "stored",
+     "FORM:negative-step 321: the comparison REVERSES with the sign of the step. "
+     "Run with the ascending test the body executes ONCE and reads 3"),
     ("nextkw",  'next i',             'FOR I=1 TO 2:NEXT:PRINT"[";I;"]"',     "direct", "FORM:bare D-KWDRAIN"),
     # D-KWBATCH7: NEXT has three forms and only the BARE one had a row.
     # `ex_next` parks 0 for a bare NEXT ("match the top frame") and `nx_comma`
@@ -1500,6 +1537,34 @@ SWEEP: list[tuple[str, str, str | None, str, str]] = [
      'A=0:GOSUB 20:PRINT"[H";A;"]":END:A=7:RETURN',         "stored", "FORM:bare D-KWDRAIN: A is 7 only because RETURN came back to the PRINT"),
     ("endkw",     'end',          
      'A=0:GOSUB 20:PRINT"[J";A;"]":END:A=7:RETURN',         "stored", "FORM:terminate D-KWDRAIN: END keeps the subroutine from being fallen into"),
+    # 🌾 D-KWBARS: `DATA` had no row either -- `readkw`/`restorekw` USE it, and
+    # their subject is the statement that consumes it. Four forms, and three of
+    # them are about where an ITEM ENDS: a numeric constant, a QUOTED string (whose
+    # `,` and `:` do NOT terminate it -- docs/spec-basic-datacolon.md found the
+    # missing quote state twice), an UNQUOTED string (which keeps internal spaces
+    # and is trimmed at the edges), and an EMPTY item, which reads as 0.
+    ("datakw",   'data 42',
+     'DATA 42:READ A:PRINT"[";A;"]"',                         "stored",
+     "FORM:numeric a numeric constant read back as a number. "
+     "\U0001f534 THE `DATA` COMES FIRST, AND THAT IS THE CONNECTEDNESS: with it after "
+     "the `END` the statement is NEVER EXECUTED -- READ finds the text by SCANNING "
+     "the program -- so cutting DATA's stmt_table entry moved nothing and the knife "
+     "read BLIND. Here the DATA statement is stepped over on the way to the READ, "
+     "so its handler is on the path [[a-shared-tail-is-not-a-decision]]."),
+    ("datakw_b", 'data "x,y"',
+     'DATA "X,Y":READ A$:PRINT"[";A$;"]"',                    "stored",
+     "FORM:quoted-string `[X,Y]`: the COMMA inside the quotes did not end the item. "
+     "A body scan with no quote state reads `X`, and the `:` AFTER the closing quote "
+     "still ends the statement"),
+    ("datakw_c", 'data a b',
+     'DATA A B:READ A$:PRINT"[";LEN(A$);A$;"]"',              "stored",
+     "FORM:unquoted-string LEN 3: an unquoted item keeps its INTERNAL space and is "
+     "trimmed only at the edges -- a scan that split on whitespace reads LEN 1, and "
+     "one that ran past the `:` read the whole rest of the line, TOKENS and all"),
+    ("datakw_d", 'data 1,,3',
+     'DATA 1,,3:READ A,B,C:PRINT"[";A;B;C;"]"',               "stored",
+     "FORM:empty-item the middle item is EMPTY and reads 0, and the THIRD still "
+     "reads 3 -- a scan that skipped the empty slot would read 3 into B"),
     ("readkw",    'read q',       
      'READ Q:RESTORE:READ R:PRINT"[E";Q+R;"]":END:DATA 3',  "stored", "FORM:read-data D-KWDRAIN: reads 3 from the DATA on the second line"),
     ("restorekw", 'restore',      
@@ -2004,6 +2069,23 @@ SWEEP: list[tuple[str, str, str | None, str, str]] = [
      "SUBJECT:DEF_FN FORM:numeric absent => syntax error; real => 3"),
     # D-KWPARTIAL: the RESULT TYPE is DEF FN's second form and not a detail -- a
     # string-valued FN needs a GC root the numeric one does not.
+    # 🌾 D-KWBARS: `FN` is the CALL side and `DEF FN` is the definition side; the
+    # two rows below the anchor define AND call, but their subject is the DEF FN
+    # statement, so cutting the FN dispatch in the evaluator is a cut neither can
+    # speak for. Two forms, mirroring DEF FN's own: a numeric function and a
+    # string-valued one, which return through different paths.
+    ("fnkw",   'a=fnb(5)',
+     'DEF FNB(X)=X*X:PRINT"[";FNB(5);"]"',                    "stored",
+     "SUBJECT:FN FORM:numeric 25: the ARGUMENT reached the body. A call that passed "
+     "0 reads 0, and one that returned the argument reads 5. "
+     "\U0001f534 STORED THOUGH IT FITS DIRECT, AND THE FIRST CUT PROVES WHY: `DEF FN` "
+     "is ILLEGAL DIRECT, so the direct form scored SUPPORTED on `Illegal direct` "
+     "from BOTH machines -- an agreement about nothing "
+     "[[a-case-that-agrees-can-agree-for-the-wrong-reason]]."),
+    ("fnkw_b", 'a$=fnt$("z")',
+     'DEF FNT$(X$)=X$+"?":PRINT"[";FNT$("Z");"]"',            "stored",
+     "SUBJECT:FN FORM:string-valued `Z?`: the string return path, which is a "
+     "different one from the numeric"),
     ("deffn_b", 'def fns$(x$)=x$+"!"',
      'DEF FNS$(X$)=X$+"!":PRINT"[";FNS$("A");"]"',    "stored",
      "SUBJECT:DEF_FN FORM:string-valued the STRING-valued definition, whose result "

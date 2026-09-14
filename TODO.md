@@ -19864,6 +19864,49 @@ cut and no AUTHORED FORM LIST at all** (`CALL` `CONT` `DATA` `DELETE` `DRAW` `FN
 them back — `blocks_tier1()` reads tier 1 only. **Authoring those bars from the
 reference's syntax is the next line of work**, and it is bookkeeping only where the
 existing rows already cover the bar.
+⚡ **D-KWBARS — FOUR UNRATED KEYWORDS GET A BAR, AND ONE OF THEM HANDS BACK A
+SHIPPED DEFECT. 135 of 163.**
+🟢 **`VAL` 5/5**, authored from `docs/spec-basic-val.md`, which measured the
+reference across 40 shapes: a signed INTEGER, a FRACTION, an EXPONENT, a RADIX
+PREFIX (`&H`/`&O`/`&B`) and a PARTIAL PARSE that stops at the first byte it cannot
+use. **VAL never raises on junk — it returns 0** — so every one of these is a
+SILENT wrong answer when it is missing. All five agree today; the 20 divergences
+that doc recorded in August are closed.
+🟢 **`FOR` 3/3.** Every `FOR` in the sweep was a `NEXT` row's apparatus, and a
+loop that runs is not the same claim as a loop whose TERMINATION was decided
+correctly. The implied step of 1 (`[ 6 ]`), an explicit `STEP 4` (`[ 15 ]`, where a
+STEP parsed and dropped reads 45) and a NEGATIVE step (`[ 321 ]`, where the
+ascending comparison runs the body once and reads 3).
+🟢 **`FN` 2/2**, the CALL side of `DEF FN`. 🔴 **`fnkw` IS STORED THOUGH IT
+FITS DIRECT, and the first cut says why: `DEF FN` IS ILLEGAL DIRECT, so the direct
+form scored SUPPORTED on `Illegal direct` from BOTH machines** — an agreement about
+nothing [[a-case-that-agrees-can-agree-for-the-wrong-reason]].
+🔴 **`DATA` 4/4 — AND IT TOOK A CODE FIX, FOUND BY THE KNIFE REPORTING BLIND.**
+Cutting `DATA`'s `stmt_table` entry moved nothing, because with the `DATA` after the
+`END` the statement is NEVER EXECUTED: READ finds the text by SCANNING the program.
+Putting the `DATA` FIRST — `DATA 42:READ A:PRINT A` — put the handler on the path,
+and the row came back **`Syntax error in 10` on zerobas where both references read
+42**.
+🔬 **ISOLATED IN `scratchpad/datacolon2_probe.py`, WITH A CONTROL, 6 rows:** the
+DATA-after-END shape agrees (the control), `DATA 5:PRINT` agrees (nothing READS),
+and every shape that READS an item out of a `DATA` with a statement after it fails
+— `DATA AB:READ A$` read **the whole rest of the line, TOKENS and all**, into `A$`.
+🎯 **THE PREMISE WAS RIGHT AND THE CONCLUSION WAS BACKWARDS.** The numeric arm
+of `read_one_value` carried *"the tokeniser ends a DATA body AT a ':' (tk_data_rest),
+so a stored body never contains one and this needs no ':' arm"*. The first half is
+true and is exactly **why** the arm is needed: the body ends at the `:`, so the byte
+the scan stops ON is that `:` — neither `,` nor NUL — and it fell into the TRAILING
+JUNK path. **D-DATACOLON fixed the tokeniser and the runtime SKIP and left the
+CONSUMER**; nothing had ever read an item out of such a DATA
+[[a-fix-falsifies-the-justification-beside-it]].
+💰 **+8 B, and they are SUB-ROM PAGE-0 bytes, not main page 1**: `readdata_tenant`
+lives there. `make basic-reloc` from a clean tree, 2026-09-15: **sub page 0 free
+513 B → 505 B**; page-1 free 8 B and the low region 0 B, both UNCHANGED. Two arms of
+four bytes each: `cp COLON / jr z,rov_seek` in the numeric path and
+`cp COLON / jr z,rovs_done` in the UNQUOTED string loop. ⚠️ **The QUOTED loop must
+NOT have it** — a `:` inside quotes is content (D-DATACOLON `d.qcolon`).
+🌱 **All four `DATA` rows now put the `DATA` FIRST**, so every one of them
+exercises the colon terminator and the execution path at once.
       ⚠️ **`TXTMAX` IS NOW BOUNDED BY `DETOKBUF`, NOT BY FREE RAM** — at 1280 B
       it does not fit the 1024 B window, so `$BB00` is the stop until DETOKBUF
       is dealt with. Of D-LINEMAX's 1792 B, **1024 recovered, 768 still charged**.

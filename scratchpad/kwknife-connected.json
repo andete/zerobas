@@ -1,5 +1,5 @@
 {
- "rom_fingerprint": "e3dbed36 bf1c245d a01dabda 10650476",
+ "rom_fingerprint": "e3dbed36 aad1886c a01dabda 10650476",
  "rows": {
   "ABS": {
    "connected": true,
@@ -277,6 +277,16 @@
    "verdict": "MISSING",
    "weak": false
   },
+  "DATA": {
+   "connected": true,
+   "modes": {
+    "stmt": "MISSING"
+   },
+   "row": "datakw",
+   "subject": "DATA",
+   "verdict": "MISSING",
+   "weak": false
+  },
   "DEF": {
    "connected": true,
    "modes": {
@@ -480,6 +490,26 @@
    },
    "row": "fix",
    "subject": "FIX",
+   "verdict": "MISSING",
+   "weak": false
+  },
+  "FN": {
+   "connected": true,
+   "modes": {
+    "fn": "MISSING"
+   },
+   "row": "fnkw",
+   "subject": "FN",
+   "verdict": "MISSING",
+   "weak": false
+  },
+  "FOR": {
+   "connected": true,
+   "modes": {
+    "stmt": "MISSING"
+   },
+   "row": "forkw",
+   "subject": "FOR",
    "verdict": "MISSING",
    "weak": false
   },
@@ -1296,6 +1326,16 @@
    "verdict": "MISSING",
    "weak": false
   },
+  "VAL": {
+   "connected": true,
+   "modes": {
+    "fn": "MISSING"
+   },
+   "row": "valkw",
+   "subject": "VAL",
+   "verdict": "MISSING",
+   "weak": false
+  },
   "VARPTR": {
    "connected": true,
    "modes": {
@@ -1423,6 +1463,12 @@
     "csng": "MISSING"
    }
   },
+  "DATA": {
+   "connected": true,
+   "rows": {
+    "datakw": "MISSING"
+   }
+  },
   "DEF FN": {
    "connected": true,
    "rows": {
@@ -1477,6 +1523,18 @@
    "connected": true,
    "rows": {
     "fix": "MISSING"
+   }
+  },
+  "FN": {
+   "connected": true,
+   "rows": {
+    "fnkw": "MISSING"
+   }
+  },
+  "FOR": {
+   "connected": true,
+   "rows": {
+    "forkw": "MISSING"
    }
   },
   "FRE": {
@@ -1731,6 +1789,12 @@
     "usrkw_b": "MISSING"
    }
   },
+  "VAL": {
+   "connected": true,
+   "rows": {
+    "valkw": "MISSING"
+   }
+  },
   "XOR": {
    "connected": true,
    "rows": {
@@ -1738,5 +1802,5 @@
    }
   }
  },
- "written": "2026-09-15 00:52:15"
+ "written": "2026-09-15 01:23:11"
 }

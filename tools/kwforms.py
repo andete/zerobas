@@ -530,6 +530,39 @@ FORMS: dict[str, tuple[tuple[str, ...], str]] = {
         ("fielded-record",),
         "GET #<channel>[,<record>] -- one behaviour, the random-file record read into the FIELD buffer. The row does a PUT/GET round trip so it reads the record back rather than merely that the statement parsed.",
     ),
+    "FOR": (
+        ("ascending", "step", "negative-step"),
+        "`FOR <var>=<a> TO <b> [STEP <c>]` -- the IMPLIED step of 1, an explicit "
+        "STEP, and a NEGATIVE step. The third is not a third operand: the sign of "
+        "the step REVERSES the terminating comparison, so a loop that tests `<=` "
+        "unconditionally runs a descending loop exactly once. Where the test HAPPENS "
+        "(at NEXT, so the body always runs at least once) belongs to NEXT's bar.",
+    ),
+    "FN": (
+        ("numeric", "string-valued"),
+        "`FN<name>(<args>)` is the CALL side of DEF FN, and it mirrors DEF FN's own "
+        "bar because the two return paths differ: a numeric function answers in the "
+        "float accumulator and a string-valued one through a descriptor.",
+    ),
+    "DATA": (
+        ("numeric", "quoted-string", "unquoted-string", "empty-item"),
+        "`DATA <constant>[,<constant>]...` -- and three of the four are about where "
+        "an ITEM ENDS. A numeric constant; a QUOTED string, inside which neither `,` "
+        "nor `:` terminates (docs/spec-basic-datacolon.md found the missing quote "
+        "state twice, once in the body scan and once in the skip); an UNQUOTED "
+        "string, which keeps internal spaces and is trimmed at the edges; and an "
+        "EMPTY item, which reads as 0 or the empty string rather than being skipped.",
+    ),
+    "VAL": (
+        ("integer", "fraction", "exponent", "radix-prefix", "partial-parse"),
+        "`VAL(<string>)` re-implements the tokeniser's numeric scanner over "
+        "arbitrary user text, and docs/spec-basic-val.md measured the reference "
+        "across 40 shapes: a signed INTEGER, a FRACTION, an EXPONENT (`E` or `D`), "
+        "a RADIX PREFIX (`&H`/`&O`/`&B`), and a PARTIAL PARSE that stops at the "
+        "first byte it cannot use. \u26a0\ufe0f VAL never raises on junk -- it returns 0 -- "
+        "so every one of these is a SILENT wrong answer when it is missing, which "
+        "is why they are forms and not error cases.",
+    ),
     "DEF USR": (
         ("default", "numbered"),
         "`DEF USR[<n>]=<address>` -- the digit selects WHICH of the ten user-routine "

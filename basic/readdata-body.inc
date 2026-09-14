@@ -71,11 +71,22 @@ rov_at:
                 call    skip_spaces
                 cp      ','                 ; another item in this DATA statement?
                 jr      z,rov_comma
-                or      a                   ; end of line ends the item too -- and it is
-                jr      z,rov_seek          ; the ONLY other legal terminator: the
-                                            ; tokeniser ends a DATA body AT a ':'
-                                            ; (tk_data_rest), so a stored body never
-                                            ; contains one and this needs no ':' arm
+                or      a                   ; end of line ends the item too
+                jr      z,rov_seek
+                ; 🔴 D-KWBARS: AND SO DOES A ':' -- THE PREMISE WAS RIGHT AND THE
+                ; CONCLUSION WAS BACKWARDS. This arm used to say "the tokeniser ends
+                ; a DATA body AT a ':' (tk_data_rest), so a stored body never
+                ; contains one and this needs no ':' arm". The first half is true and
+                ; is exactly WHY the arm is needed: the body ends at the ':', so the
+                ; byte the scan stops ON is that ':' -- which is neither ',' nor NUL,
+                ; so it fell into the TRAILING JUNK path below and
+                ; `DATA 42:READ A:PRINT A` answered `Syntax error in 10` where both
+                ; references read 42. D-DATACOLON fixed the tokeniser and the runtime
+                ; SKIP and left the CONSUMER; nothing had ever READ an item out of a
+                ; DATA statement with a statement after it
+                ; [[a-fix-falsifies-the-justification-beside-it]].
+                cp      COLON
+                jr      z,rov_seek          ; the DATA STATEMENT is over: seek the next
                 ; Anything else is TRAILING JUNK, i.e. the item was never a number
                 ; (`DATA HELLO` leaves data_parse_int sitting on the 'H'). Both
                 ; references answer Syntax error; report it and leave the cursor
@@ -139,6 +150,13 @@ rovs_lp:
                 jr      z,rovs_done
                 cp      ','                 ; the separator is NOT consumed here --
                 jr      z,rovs_done         ; the shared tail below steps over it
+                cp      COLON               ; D-KWBARS: and an UNQUOTED ':' ends the
+                jr      z,rovs_done         ; DATA STATEMENT, so it ends the item too.
+                                            ; Without it `DATA AB:READ A$` read the
+                                            ; whole rest of the line -- TOKENS and all
+                                            ; -- into A$. The QUOTED loop above must
+                                            ; NOT have this arm: a ':' inside quotes is
+                                            ; content (D-DATACOLON `d.qcolon`).
                 inc     hl
                 ld      c,a
                 call    rovs_put
