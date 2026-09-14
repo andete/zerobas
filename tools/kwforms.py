@@ -530,6 +530,30 @@ FORMS: dict[str, tuple[tuple[str, ...], str]] = {
         ("fielded-record",),
         "GET #<channel>[,<record>] -- one behaviour, the random-file record read into the FIELD buffer. The row does a PUT/GET round trip so it reads the record back rather than merely that the statement parsed.",
     ),
+    "DEF USR": (
+        ("default", "numbered"),
+        "`DEF USR[<n>]=<address>` -- the digit selects WHICH of the ten user-routine "
+        "vectors is written, so the numbered form stores to a DIFFERENT CELL. That "
+        "is the same split `USR`'s own bar makes, one level up: there it is which "
+        "vector is CALLED, here it is which vector is SET.",
+    ),
+    "ON INTERVAL GOSUB": (
+        ("arm", "disarm"),
+        "`ON INTERVAL=<n> GOSUB [<line>]` -- two behaviours, and the second is the "
+        "BARE one: docs/spec-traps-t5-interval.md \u00a71.6 measured that "
+        "`ON INTERVAL=10 GOSUB` with no line is ACCEPTED and CLEARS the handler "
+        "(`R_bare_disarms`: 6 fires before, 0 after). That is not `INTERVAL OFF` -- "
+        "the state byte and the handler link are independent -- so arming and "
+        "disarming are two different things this statement does. The period `n` is "
+        "an ARGUMENT, not a form.",
+    ),
+    "ON SPRITE GOSUB": (
+        ("arm", "disarm"),
+        "`ON SPRITE GOSUB [<line>]` -- the same two as ON INTERVAL, and measured the "
+        "same way: docs/spec-traps-t4-sprite.md \u00a71.4 `R_bare_disarms` has the bare "
+        "form clearing the handler slot while the state byte survives, so firing "
+        "stops without the trap being disabled.",
+    ),
     "MAX FILES": (
         ("set",),
         "MAXFILES=<n> -- one syntax and one behaviour: re-allocate the file-control "

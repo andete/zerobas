@@ -1247,6 +1247,55 @@ SWEEP: list[tuple[str, str, str | None, str, str]] = [
      "NOECHO:[K FORM:index-gosub the INDEX-SELECTED subroutine call. `ON 2` must reach the SECOND "
      "target and RETURN: 99. An ON that ignores the index gives 77, one that never "
      "calls leaves A at 0."),
+    # 🔴 `SUBJECT:ON_INTERVAL_GOSUB` IS MANDATORY AND `ON SPRITE GOSUB`'s IS NOT:
+    # `INTERVAL` IS NOT A KEYWORD TABLE ENTRY. It is a compound reserved word
+    # (`iv_seq` = INT + "ER" + VAL, basic/program.asm), so `stmt_subject` cannot
+    # see it in the crunch body and derived `ON GOSUB` -- crediting the INTERVAL
+    # trap's readings to a statement that already had its own row. Measured, not
+    # feared: the first knife run recorded them under `ON GOSUB`.
+    # 🌾 D-KWONTRAP: two of `ON`'s SIX trap composites get their first rows. Both
+    # are reachable from BASIC alone -- an INTERVAL fires on a timer and a SPRITE
+    # collision is caused by putting two sprites on top of each other -- where
+    # `ON KEY`, `ON STOP` and `ON STRIG` all need a KEY OR A TRIGGER PRESSED and
+    # wait on the injection rig.
+    # 🔴 THE WAIT LOOPS ARE `IF C=0 THEN <own line>` AND `IF TIME-T<30`, NEVER A
+    # `FOR`: the two machines differ in interpreter speed by 2.5-3.8x, so a
+    # counted loop measures the INTERPRETER and a frame count measures the FRAME.
+    # And nothing may follow the `IF` on its line -- a FALSE condition skips the
+    # REST OF THE LINE, not just the THEN -- so each is padded out to its own.
+    # ⚠️ `C>0` and not `C`, because the number of fires before the loop exits IS
+    # speed-dependent; whether any fire happened is not.
+    ("oninterval", 'on interval=10 gosub 40',
+     'C=0:ON INTERVAL=10 GOSUB 40:INTERVAL ON:IF C=0 THEN 20:PRINT"[1q";C>0;"]":END:W$="WWWWWW":C=C+1:RETURN',
+     "stored",
+     "SUBJECT:ON_INTERVAL_GOSUB FORM:arm the trap FIRED: -1. Arming is not "
+     "enabling, so `INTERVAL ON` is "
+     "there too; the loop exits only when the handler has run"),
+    # The bare form CLEARS THE HANDLER SLOT (docs/spec-traps-t5-interval.md §1.6,
+    # `R_bare_disarms`: 6 fires before, 0 after) -- and it is not the same thing as
+    # `INTERVAL OFF`, which is still ON here. 30 frames is THREE periods, so a
+    # `ON INTERVAL=n GOSUB` that parsed and kept the handler reads 3, not 0.
+    ("oninterval_b", 'on interval=10 gosub',
+     'C=0:ON INTERVAL=10 GOSUB 60:INTERVAL ON:IF C=0 THEN 20:ON INTERVAL=10 GOSUB:C=0:T=TIME:IF TIME-T<30 THEN 40:PRINT"[1r";C;"]":END:W$="WWWWWWWW":C=C+1:RETURN',
+     "stored",
+     "SUBJECT:ON_INTERVAL_GOSUB FORM:disarm 0 fires in THREE periods after the "
+     "bare form cleared the slot"),
+    # The sprite pair is the sprite-trap probe's own measured collision: ONE solid
+    # 8x8 pattern, two sprites four pixels apart at (100,100) and (104,100)
+    # (probes/basic/basic_probe_sprite_trap.py HIT). SCREEN 2 has no 40-column
+    # text to scrape, so both rows come back to SCREEN 0 before the PRINT and
+    # carry NOECHO.
+    ("onsprite", 'on sprite gosub 70',
+     'SCREEN2:SPRITE$(0)=STRING$(8,255):C=0:ON SPRITE GOSUB 70:SPRITE ON:PUTSPRITE0,(100,100),15,0:PUTSPRITE1,(104,100),15,0:IF C=0 THEN 50:W$="WWWWWWWWWWWWWW":SCREEN0:PRINT"[1s";C>0;"]":END:C=C+1:RETURN',
+     "stored",
+     "NOECHO:[1s FORM:arm two overlapping sprites collide and the handler runs: -1"),
+    ("onsprite_b", 'on sprite gosub',
+     'SCREEN2:SPRITE$(0)=STRING$(8,255):C=0:ON SPRITE GOSUB 90:SPRITE ON:PUTSPRITE0,(100,100),15,0:PUTSPRITE1,(104,100),15,0:IF C=0 THEN 50:W$="WWWWWWWWWWWWWW":ON SPRITE GOSUB:C=0:T=TIME:IF TIME-T<30 THEN 70:V$="VVVVVVVV":SCREEN0:PRINT"[1t";C;"]":END:W1=55:C=C+1:RETURN',
+     "stored",
+     "NOECHO:[1t FORM:disarm the sprites are STILL COLLIDING and SPRITE is still "
+     "ON -- 0 fires in 30 frames is the HANDLER SLOT being cleared "
+     "(docs/spec-traps-t4-sprite.md §1.4 `R_bare_disarms`), which a trap that "
+     "fires once per colliding frame makes unmissable: it would read ~30"),
     ("errorkw",   'error 7',          
      'ON ERROR GOTO 20:ERROR 7:END:PRINT"[R";ERR;ERL;"]":END',  "stored", "FORM:raise D-KWDRAIN: ERROR 7 is what raises it"),
     # 🌾 D-KWBREADTH batch 20 — AXIS (g): counted across the file, EVERY `ERROR`
@@ -2039,6 +2088,21 @@ SWEEP: list[tuple[str, str, str | None, str, str]] = [
     # the numbered form reaches a DIFFERENT ADDRESS -- not a second input to the
     # same behaviour. `DEFUSR1` must be set for it, which is the point: a USR that
     # ignored the digit would read vector 0 and answer whatever THAT holds.
+    # 🌾 D-KWONTRAP: `DEF USR` is a STATEMENT and the two rows above are `USR`'s --
+    # their subject is the function that READS the vector, so cutting `DEF`'s
+    # stmt_table entry is a cut neither of them can speak for. These two carry the
+    # same bodies under their own subject for exactly that reason: the reading is
+    # the same 7, and what it proves here is that the DEF USR STATEMENT is what put
+    # the address in the cell.
+    ("defusr",   'def usr=-8192',
+     'POKE-8192,&HC9:DEFUSR=-8192:A=USR(7):PRINT"[1u";A;"]"',   "stored",
+     "FORM:default the DEFAULT vector: the POKEd byte is a RET, so USR(7) returns 7 "
+     "only if DEF USR stored -8192 in vector 0"),
+    ("defusr_b", 'def usr1=-8192',
+     'POKE-8192,&HC9:DEFUSR1=-8192:A=USR1(7):PRINT"[1v";A;"]"', "stored",
+     "FORM:numbered the NUMBERED vector -- a DIFFERENT CELL. A DEF USR that ignored "
+     "the digit would write vector 0 and leave vector 1 undefined, which `USR1` "
+     "cannot then call"),
     ("usrkw_b",  'a=usr1(7)',
      'POKE-8192,&HC9:DEFUSR1=-8192:A=USR1(7):PRINT"[";A;"]"',  "stored",
      "FORM:numbered the NUMBERED vector: `DEFUSR1` points at an `ret` and `USR1(7)` "
@@ -2194,7 +2258,10 @@ SWEEP: list[tuple[str, str, str | None, str, str]] = [
     # in openkw_b: put it first and the tidy-up wipes the measurement.
     ("maxfiles", 'maxfiles=2',
      'A=7:MAXFILES=2:PRINT"[1p";A;"]":MAXFILES=1',              "stored",
-     "FORM:set the implicit CLEAR: 0, not the 7 assigned just before it"),
+     "SUBJECT:MAX_FILES FORM:set the implicit CLEAR: 0, not the 7 assigned just "
+     "before it. \U0001f534 THE SUBJECT TAG IS LOAD-BEARING: the crunch word is "
+     "`maxfiles=2`, ONE word, and `stmt_keyword` reads words -- so the row scored "
+     "for NOBODY until the tag named the composite the tokeniser splits it into."),
     ("eof",     "a=eof(1)",
      'OPEN"HI.TXT"FOR INPUT AS#1:A$=INPUT$(26,#1):A=EOF(1):CLOSE#1:PRINT"[";A;"]"', "stored",
      "NEEDS-DISK: " "-1 AFTER the whole file is consumed. 🔴 THE READ IS THE ROW: "

@@ -282,8 +282,8 @@
    "modes": {
     "stmt": "MISSING"
    },
-   "row": "deffn_b",
-   "subject": "DEF FN",
+   "row": "defusr_b",
+   "subject": "DEF USR",
    "verdict": "MISSING",
    "weak": false
   },
@@ -758,13 +758,13 @@
    "weak": false
   },
   "MAX": {
-   "connected": false,
+   "connected": true,
    "modes": {
-    "stmt": "SUPPORTED"
+    "stmt": "MISSING"
    },
-   "row": "maxkw",
-   "subject": "MAX",
-   "verdict": "SUPPORTED",
+   "row": "maxfiles",
+   "subject": "MAX FILES",
+   "verdict": "MISSING",
    "weak": false
   },
   "MERGE": {
@@ -880,11 +880,11 @@
   "ON": {
    "connected": true,
    "modes": {
-    "stmt": "DIVERGENT"
+    "stmt": "MISSING"
    },
-   "row": "onkw_b",
-   "subject": "ON ERROR GOTO",
-   "verdict": "DIVERGENT",
+   "row": "oninterval_b",
+   "subject": "ON INTERVAL GOSUB",
+   "verdict": "MISSING",
    "weak": false
   },
   "OPEN": {
@@ -1430,6 +1430,13 @@
     "deffn_b": "MISSING"
    }
   },
+  "DEF USR": {
+   "connected": true,
+   "rows": {
+    "defusr": "MISSING",
+    "defusr_b": "MISSING"
+   }
+  },
   "DSKI$": {
    "connected": true,
    "rows": {
@@ -1561,6 +1568,12 @@
     "maxkw": "SUPPORTED"
    }
   },
+  "MAX FILES": {
+   "connected": true,
+   "rows": {
+    "maxfiles": "MISSING"
+   }
+  },
   "MOD": {
    "connected": true,
    "rows": {
@@ -1590,6 +1603,20 @@
    "connected": true,
    "rows": {
     "ongoto": "MISSING"
+   }
+  },
+  "ON INTERVAL GOSUB": {
+   "connected": true,
+   "rows": {
+    "oninterval": "MISSING",
+    "oninterval_b": "MISSING"
+   }
+  },
+  "ON SPRITE GOSUB": {
+   "connected": true,
+   "rows": {
+    "onsprite": "UNREADABLE",
+    "onsprite_b": "UNREADABLE"
    }
   },
   "OR": {
@@ -1699,5 +1726,5 @@
    }
   }
  },
- "written": "2026-09-14 23:13:13"
+ "written": "2026-09-15 00:19:44"
 }

@@ -774,12 +774,18 @@ def _composite_section(kws, evidence=None, conn=None):
     what this tree implements would inflate itself by renaming. So they get their
     own section, and the rows that drive them are rendered HERE rather than being
     credited to whichever keyword happens to come first.
-    🔴 NONE OF THEM CAN REACH TIER 1 TODAY, and the reason is worth printing rather
-    than leaving as a blank: `knife_connected()` is keyed by the stmt_table entry a
-    cut removes, and a composite has no entry of its own to cut (`USING`'s token
-    $E4 is not in stmt_table at all). Until a composite-aware cut exists, the
-    non-vacuity half of the bar is unproven for every one of them -- which is a
-    missing instrument, not a passing grade."""
+    🔴 THIS DOCSTRING ONCE SAID "NONE OF THEM CAN REACH TIER 1 TODAY", and that was
+    true for about a day. The instrument it asked for already exists and is not a
+    composite-aware CUT at all: `knife_connected()` is keyed by the stmt_table entry
+    a cut removes, and a composite has none of its own -- but `record()` also files
+    the cut under the SUBJECT of the row that responded to it, so cutting `ON` or
+    `DEF` or `MAX` connects the composite its row is about. `USING`'s token $E4 is
+    not in stmt_table at all and `PRINT USING` is connected anyway, which is the
+    proof the keying was the only thing in the way.
+    ⚠️ What a composite still needs, and what the four TIER 0 rows below are short
+    of, is the ordinary bar: an AUTHORED form list and a row per form. `ON KEY`,
+    `ON STOP` and `ON STRIG` need a key or a trigger PRESSED, and `INPUT$` needs its
+    console form implemented -- none of that is an instrument problem."""
     try:
         import kwforms
     except ImportError:

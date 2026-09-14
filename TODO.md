@@ -19771,6 +19771,53 @@ of TIER 1. It is a missing cut shape, not a missing behaviour.
 ⚠️ **All five rows need EXACT NUMBERED LINES or an exact port value, and every
 packing was verified with `omsx_repl.as_stored` BEFORE the row ran** — the
 padding is long ASSIGNMENTS, never `REM`.
+⚡ **D-KWONTRAP — THE COMPOSITES WERE NEVER BLOCKED ON AN INSTRUMENT. 129 of
+163, and 15 of the 19 composite statements are at TIER 1.**
+🔴 **THE BLOCKER I FILED YESTERDAY WAS A SENTENCE IN A DOCSTRING, NOT A
+FACT.** `_composite_section` said *"none of them can reach TIER 1 today"* because
+`knife_connected()` is keyed by the `stmt_table` entry a cut removes and a
+composite has none of its own. **The instrument already existed**: `record()` also
+files a cut under the SUBJECT of the row that responded to it, so cutting `ON`,
+`DEF` or `MAX` connects the composite its row is about. `PRINT USING` — whose
+`USING` token is not in `stmt_table` **at all** — was already TIER 1, which is the
+proof the keying was the only thing in the way. ⚠️ **RE-VERIFY A BLOCKER BEFORE
+BUILDING ON IT** cost nothing here only because I read the rendered table instead
+of the docstring.
+🟢 **`MAX FILES` 1/1** — the row from D-KWRETRES, now CONNECTED by cutting
+`MAX`'s entry.
+🔴 **AND ITS `SUBJECT:` TAG IS LOAD-BEARING FOR A REASON WORTH KEEPING:**
+the crunch word is `maxfiles=2`, ONE word, and `stmt_keyword` reads WORDS — so the
+row scored for NOBODY until the tag named the composite the tokeniser splits it
+into.
+🟢 **`ON INTERVAL GOSUB` 2/2 and `ON SPRITE GOSUB` 2/2** — the two of `ON`'s
+six trap composites reachable from BASIC alone (a timer fires itself; a collision
+is caused by putting two sprites on top of each other). Each has an ARM row and a
+DISARM row, because the BARE form clears the handler slot while leaving the trap
+enabled — measured in both specs (`R_bare_disarms`). The sprite pair is the sprite
+-trap probe's own `HIT`: one solid 8x8 pattern at (100,100) and (104,100).
+🔴 **`INTERVAL` IS NOT A KEYWORD-TABLE ENTRY** — it is a compound reserved
+word (`iv_seq` = `INT` + `"ER"` + `VAL`), so `stmt_subject` could not see it and
+derived **`ON GOSUB`**, crediting the INTERVAL trap's readings to a statement that
+already had its own row. Measured, not feared: the first knife run recorded them
+there, and the pin had to be repaired by hand. Both rows now declare
+`SUBJECT:ON_INTERVAL_GOSUB`.
+🟢 **`DEF USR` 2/2.** `usrkw`/`usrkw_b` are `USR`'s rows — their subject is
+the FUNCTION that reads the vector, so cutting `DEF`'s entry is a cut neither can
+speak for. The two new rows carry the same bodies under their own subject for
+exactly that reason: what the reading proves here is that **the `DEF USR`
+STATEMENT is what put the address in the cell**.
+🔭 **FOUR COMPOSITES LEFT, AND NONE IS AN INSTRUMENT PROBLEM**: `ON KEY
+GOSUB`, `ON STOP GOSUB` and `ON STRIG GOSUB` need a KEY OR A TRIGGER PRESSED (the
+injection rig), and `INPUT$` needs its console form implemented. All three ON-trap
+bars are still UNAUTHORED — author them from the specs in the same slice that
+gives them rows, not before.
+🚧 **The `IF` in a wait loop must END ITS LINE.** A FALSE condition skips
+the REST OF THE LINE, not just the `THEN`, so `IF C=0 THEN 50:SCREEN0` never runs
+`SCREEN0`. Every wait loop here is padded out to its own line.
+⚠️ **And the loops count FRAMES, never ITERATIONS** — `IF C=0 THEN <own
+line>` and `IF TIME-T<30`, never a `FOR`: the two machines differ in interpreter
+speed by 2.5–3.8x, so a counted loop measures the INTERPRETER. For the same reason
+the arm rows read `C>0` and not `C`.
       ⚠️ **`TXTMAX` IS NOW BOUNDED BY `DETOKBUF`, NOT BY FREE RAM** — at 1280 B
       it does not fit the 1024 B window, so `$BB00` is the stop until DETOKBUF
       is dealt with. Of D-LINEMAX's 1792 B, **1024 recovered, 768 still charged**.
