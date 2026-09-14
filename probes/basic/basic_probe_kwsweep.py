@@ -1328,7 +1328,7 @@ SWEEP: list[tuple[str, str, str | None, str, str]] = [
      'SCREEN2:SPRITE$(0)=STRING$(8,255):PUT SPRITE 0,(100,50),15,0:A=VPEEK(6912):SCREEN0:PRINT"[V";A;"]"',
      "stored",
      "NOECHO:[V the ATTRIBUTE write -- VPEEK($1B00) is the sprite's Y. `spritekw` "
-     "round-trips SPRITE$, which is the PATTERN table and a different store."),
+     "FORM:position round-trips SPRITE$, which is the PATTERN table and a different store."),
     ("pointkw",  'a=point(1,1)',   
      'SCREEN2:PSET(1,1),15:A=POINT(1,1):SCREEN0:PRINT"[T";A;"]"',   "stored",
      "NOECHO:[T FORM:pixel-read POINT as the subject: a stub parses as an array and "
@@ -1525,10 +1525,10 @@ SWEEP: list[tuple[str, str, str | None, str, str]] = [
     # padding to column 5 — so compare the TEXT, and never a bare error code.
     ("tab",     'print tab(5);"x"',
      'PRINT"[";TAB(5);"X]"',                         "direct",
-     "absent => array TAB(5)=0 prints ` 0 `; real => pad to column 5"),
+     "FORM:tab-item absent => array TAB(5)=0 prints ` 0 `; real => pad to column 5"),
     ("spc",     'print spc(5);"x"',
      'PRINT"[";SPC(5);"X]"',                         "direct",
-     "absent => array SPC(5)=0 prints ` 0 `; real => 5 spaces"),
+     "FORM:spc-item absent => array SPC(5)=0 prints ` 0 `; real => 5 spaces"),
 
     # Program / editor management.
     ("swap",    "swap a,b",
@@ -1649,7 +1649,7 @@ SWEEP: list[tuple[str, str, str | None, str, str]] = [
     # direct-mode restriction, not the feature.
     ("deffn",   "def fna(x)=x+1",
      'DEF FNA(X)=X+1:PRINT"[";FNA(2);"]"',           "stored",
-     "absent => syntax error; real => 3"),
+     "SUBJECT:DEF_FN FORM:numeric absent => syntax error; real => 3"),
 
     # The two missing logical operators.
     ("eqv",     "a=5 eqv 3",
@@ -2187,6 +2187,26 @@ SWEEP: list[tuple[str, str, str | None, str, str]] = [
      "NEEDS-DISK: " "SUBJECT:GET_# FORM:fielded-record a PUT/GET round trip "
      "through a FIELDed record: 90 then 66, "
      "where a GET that did nothing reads 90 then 90."),
+    # D-KWSTMTDEN: `PUT #` IS ITS OWN STATEMENT AND `getkw` CANNOT SPEAK FOR IT.
+    # That row does a PUT/GET round trip on record 1 only, so a PUT # that ignored
+    # the record number entirely would pass it. This writes TWO records with
+    # DIFFERENT values and reads BOTH back, so the record number is part of the
+    # reading and not an assumption.
+    ("puthash", 'put#1,2',
+     'OPEN"Q.DAT"AS#1:FIELD#1,4 AS A$:LSET A$="K":PUT#1,1:LSET A$="Z":PUT#1,2:GET#1,1:A=ASC(A$):GET#1,2:B=ASC(A$):CLOSE#1:PRINT"[";A;B;"]"',
+     "stored",
+     "NEEDS-DISK: " "SUBJECT:PUT_# FORM:fielded-record `[ 75  90 ]` -- K in record "
+     "1 and Z in record 2, each read back from the record it was written to. A "
+     "PUT # that ignored the record number writes both to the same place and both "
+     "readings become Z."),
+    # D-KWSTMTDEN: `PRINT #` likewise -- Joost ruled bare PRINT, PRINT # and
+    # PRINT USING three different functions, and only the last two had any row.
+    ("printhash", 'print#1,"abc"',
+     'OPEN"P.TXT"FOR OUTPUT AS#1:PRINT#1,"ABC":CLOSE#1:OPEN"P.TXT"FOR INPUT AS#1:A$=INPUT$(3,#1):CLOSE#1:PRINT"[";A$;"]"',
+     "stored",
+     "NEEDS-DISK: " "SUBJECT:PRINT_# FORM:channel-write the BYTES that reached the "
+     "channel, read back through a second OPEN -- `[ABC]`. A PRINT # that wrote "
+     "nothing leaves an empty file and the read fails instead."),
     # 🔴 `CALL` SCORES RESERVEDNESS AND NOTHING MORE, and that limit is the row.
     # The obvious form is blind: `CALL ZZQ`, bare `CALL` and the ABSENT-keyword
     # shape `ZZQQ ZZQ` ALL answer `Syntax error` on zerobas, the CF-3300 and the

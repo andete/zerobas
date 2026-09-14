@@ -197,6 +197,7 @@
     "stmt": "MISSING"
    },
    "row": "deffn",
+   "subject": "DEF FN",
    "verdict": "MISSING",
    "weak": false
   },
@@ -758,8 +759,8 @@
    "modes": {
     "stmt": "MISSING"
    },
-   "row": "tab",
-   "subject": "PRINT",
+   "row": "printhash",
+   "subject": "PRINT #",
    "verdict": "MISSING",
    "weak": false
   },
@@ -778,6 +779,7 @@
     "stmt": "UNREADABLE"
    },
    "row": "putsprite",
+   "subject": "PUT SPRITE",
    "verdict": "UNREADABLE",
    "weak": false
   },
@@ -1046,6 +1048,12 @@
   }
  },
  "subjects": {
+  "DEF FN": {
+   "connected": true,
+   "rows": {
+    "deffn": "MISSING"
+   }
+  },
   "GET #": {
    "connected": true,
    "rows": {
@@ -1082,12 +1090,30 @@
     "tab": "MISSING"
    }
   },
+  "PRINT #": {
+   "connected": true,
+   "rows": {
+    "printhash": "MISSING"
+   }
+  },
   "PRINT USING": {
    "connected": true,
    "rows": {
     "using": "MISSING"
    }
+  },
+  "PUT #": {
+   "connected": true,
+   "rows": {
+    "puthash": "MISSING"
+   }
+  },
+  "PUT SPRITE": {
+   "connected": true,
+   "rows": {
+    "putsprite": "UNREADABLE"
+   }
   }
  },
- "written": "2026-09-14 15:10:43"
+ "written": "2026-09-14 15:39:42"
 }

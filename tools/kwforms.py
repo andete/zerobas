@@ -189,6 +189,26 @@ FORMS: dict[str, tuple[tuple[str, ...], str]] = {
         ("double-to-string",),
         "MKD$(n) -- as MKS$, for the 8-byte double encoding.",
     ),
+    "PUT #": (
+        ("fielded-record",),
+        "PUT #<channel>,<record> -- one behaviour, the random-file record WRITE. It is not covered by GET #'s row: that does a round trip on record 1 only, so a PUT # ignoring the record number would pass it. The row writes TWO records with different values and reads both back.",
+    ),
+    "PRINT #": (
+        ("channel-write",),
+        "PRINT #<channel>,<list> -- one behaviour. Joost ruled bare PRINT, PRINT # and PRINT USING three different functions; this is the channel one, and it reads the bytes back through a second OPEN so an empty file fails.",
+    ),
+    "PUT SPRITE": (
+        ("position", "colour-and-pattern"),
+        "PUT SPRITE <plane>,(<x>,<y>)[,<colour>[,<pattern>]] -- the attribute entry carries a POSITION and a colour/pattern pair, and they are different bytes of it. The existing row reads ONE byte of the attribute table, so it sees the position and nothing else; N=2 says so rather than letting one reading stand for the whole entry.",
+    ),
+    "DEF FN": (
+        ("numeric", "string-valued"),
+        "DEF FN<name>[(<args>)]=<expr> -- the RESULT TYPE is the second form and not a detail: a string-valued FN needs a GC root the numeric one does not (Joost ruled that root takes the control-frame pool), so the two are different machinery. Argument COUNT is repetition, not a form.",
+    ),
+    "PRINT": (
+        ("semicolon", "comma-zone", "trailing-suppress", "tab-item", "spc-item"),
+        "Bare PRINT -- five behaviours, and only the two PRINT ITEMS have rows. The separators are the rest: ; concatenates, , advances to the next 14-column zone, and a TRAILING separator suppresses the newline. WARNING: PRINT is the apparatus of almost every row in this sweep and is therefore constantly exercised and almost never the SUBJECT -- being used is not being measured.",
+    ),
     "ON GOTO": (
         ("index-goto",),
         "ON <expr> GOTO <line>[,<line>...] -- one behaviour: select the nth target by the expression's value. A longer target list is repetition of it. The row requires the SECOND target, so an ON that ignores the index and an ON that never jumps give two different wrong answers.",

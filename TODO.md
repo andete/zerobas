@@ -1141,6 +1141,40 @@ out, so the count carries the flaw openly instead of being quietly adjusted.
 ✅ Selftests **S31** (the statement set is exactly keywords − bare-formless ∪
 composites, each once) and **S32** (a composite CAN be awarded, and is refused for
 the same three reasons a keyword is).
+⚡ **D-KWSTMTDEN2 — SIX COMPOSITES AWARDED, AND THE SUBJECT SCAN FOUND THREE MORE
+READINGS SCORED FOR THE WRONG THING. 68 of 171.**
+🟢 **`PUT #` AND `PRINT #` GET ROWS OF THEIR OWN AND REACH TIER 1**, joining
+`GET #`, `INPUT #`, `ON GOTO` and `ON GOSUB`.
+🎯 **`getkw` COULD NOT SPEAK FOR `PUT #`, AND THE REASON IS WORTH THE ROW:** it
+round-trips record 1 only, so **a PUT # that ignored the record number entirely
+would pass it**. `puthash` writes TWO records with DIFFERENT values and reads BOTH
+back — `[ 75  90 ]`, K from record 1 and Z from record 2 — so the record number is
+part of the reading rather than an assumption. `printhash` reads the bytes back
+through a SECOND OPEN: `[ABC]`, where a PRINT # that wrote nothing leaves an empty
+file and the read fails instead.
+🔍 **AND THE SUBJECT SCAN PAID AGAIN — THREE MORE MIS-ATTRIBUTIONS.** `deffn`'s
+crunch body is `def fna(x)=x+1`, and **`FNA` is not the keyword `FN`**, so
+derivation stopped at `DEF` and the row scored for a token with no bare form at
+all. It now declares `SUBJECT:DEF_FN`, and `DEF FN` stands at **1/2** — the
+string-valued FN is the missing form, and it is not a detail: it needs a GC root
+the numeric one does not (Joost ruled that root takes the control-frame pool), so
+the two are different machinery.
+🔴 **BARE `PRINT` DROPS TO 2/5, AND THAT IS THE FINDING.** Its only two rows are
+the PRINT ITEMS (`TAB(`, `SPC(`); the SEPARATORS have never been scored — `;`
+concatenates, `,` advances to the next 14-column zone, and a TRAILING separator
+suppresses the newline. ⚠️ **PRINT IS THE APPARATUS OF ALMOST EVERY ROW IN THIS
+SWEEP AND IS THEREFORE CONSTANTLY EXERCISED AND ALMOST NEVER THE SUBJECT. BEING
+USED IS NOT BEING MEASURED** — the same confusion that let `LEN(MKI$(1))` stand in
+for MKI$'s content.
+🔭 **`PUT SPRITE` AT 1/2.** The attribute entry carries a POSITION and a
+colour/pattern pair in different bytes, and the existing row reads ONE byte of the
+attribute table — so it sees the position and nothing else. N=2 says so rather
+than letting one reading stand for the whole entry.
+📋 **STILL UNRATED, AND EACH FOR A NAMED REASON:** `DEF USR` and `LINE INPUT`
+have no row (LINE INPUT needs typed input, the same block as bare console
+`INPUT`), and the four remaining ON-traps (`ON KEY/STOP/SPRITE/STRIG GOSUB`) have
+dedicated acceptance suites but no kwsweep row — firing a trap inside a sweep row
+is apparatus this sweep does not have.
 🔪 **D-KWSTRCUT — THE THIRD CUT SHAPE, AND A FIRST VERSION OF IT THAT WAS WORSE
 THAN THE GAP IT CLOSED (2026-09-13).** `basic/sysvars.inc:250` named the shape in
 prose written long before the knife existed: **MKI$ is evaluated in
@@ -1809,7 +1843,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:18536 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:18570 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -1975,7 +2009,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:6576 (T-6FE392)8 (T-529ABE)` from `TODO.md:17187 (T-529ABE)`: a
+      `TODO.md:6610 (T-6FE392)8 (T-529ABE)` from `TODO.md:17221 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -7420,7 +7454,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:17187 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:17221 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
