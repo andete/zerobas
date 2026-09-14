@@ -408,6 +408,24 @@ GREEDILY into ≤34-char bodies**, so the targets merge into one line unless the
 statement lengths are chosen to prevent it. `runkw` is the precedent and its note
 says so out loud — *"`RUN 20` NAMES A LINE `as_stored` CHOSE … the packing was
 printed before the row was written"*. **A deliberate packing, not a quick row.**
+✅ **BREADTH BATCH 12 (D-KWBREADTH, 2026-09-14) — THE `ON` GAP IS CLOSED.**
+`ongoto` reads `[J99]`, **knife-proven LOAD-BEARING**; sweep
+`DIVERGENT=2 SUPPORTED=207`. The packing was PRINTED BEFORE THE ROW WAS WRITTEN,
+as `runkw`'s note prescribes:
+```
+10 ON 2 GOTO 20,30:PRINT"[J00]":END
+20 REM ZQ:PRINT"[J77]":END
+30 PRINT"[J99]":END
+```
+🎯 **THREE DISTINCT READINGS, WHICH IS WHAT MAKES IT DISCRIMINATING**: `[J99]` if
+the INDEX is honoured, `[J77]` if the `ON` jumps to the FIRST target whatever the
+index, `[J00]` if it never jumps at all. A two-way reading could not have
+separated "wrong target" from "no jump".
+⚠️ **The `REM ZQ` is LOAD-BEARING PACKING, not decoration** — without it the two
+handlers merge into one body and line 30 does not exist. And the targets read
+`20,30` rather than `30,40` **because that substitution preserves every statement
+LENGTH, so the packing is unchanged**; a longer target number would have re-packed
+the program underneath the row.
 🔪 **D-KWSTRCUT — THE THIRD CUT SHAPE, AND A FIRST VERSION OF IT THAT WAS WORSE
 THAN THE GAP IT CLOSED (2026-09-13).** `basic/sysvars.inc:250` named the shape in
 prose written long before the knife existed: **MKI$ is evaluated in
@@ -1076,7 +1094,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:17803 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:17821 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -1242,7 +1260,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:5843 (T-6FE392)8 (T-529ABE)` from `TODO.md:16454 (T-529ABE)`: a
+      `TODO.md:5861 (T-6FE392)8 (T-529ABE)` from `TODO.md:16472 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -6687,7 +6705,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:16454 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:16472 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

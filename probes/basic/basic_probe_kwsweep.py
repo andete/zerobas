@@ -806,6 +806,24 @@ SWEEP: list[tuple[str, str, str | None, str, str]] = [
      "undefined array auto-dims and answers 0"),
     ("onkw",      'on error goto 20', 
      'ON ERROR GOTO 20:ERROR 7:END:PRINT"[R";ERR;ERL;"]":END',  "stored", "D-KWDRAIN: ON in its ON ERROR form"),
+    # 🌾 D-KWBREADTH batch 12: `ON` HAS THREE FORMS AND THE ROW ABOVE COVERS ONLY
+    # `ON ERROR GOTO`. The INDEX-SELECTED jump -- the form a 1985 listing actually
+    # uses -- had no row at all. It needs SEPARATE numbered lines as targets, and
+    # `as_stored` packs statements GREEDILY into <=34-char bodies, so THE PACKING WAS
+    # PRINTED BEFORE THE ROW WAS WRITTEN, exactly as `runkw`'s note prescribes:
+    #     10 ON 2 GOTO 20,30:PRINT"[J00]":END
+    #     20 REM ZQ:PRINT"[J77]":END
+    #     30 PRINT"[J99]":END
+    # 🎯 THREE DISTINCT READINGS, WHICH IS WHAT MAKES IT DISCRIMINATING: `[J99]` if
+    # the INDEX is honoured, `[J77]` if the ON jumps to the FIRST target whatever
+    # the index, and `[J00]` if it falls through without jumping at all.
+    # ⚠️ The `REM ZQ` is load-bearing PACKING, not decoration: without it the two
+    # handlers merge into one body and line 30 does not exist.
+    ("ongoto",   'on 2 goto 20,30',
+     'ON 2 GOTO 20,30:PRINT"[J00]":END:REM ZQ:PRINT"[J77]":END:PRINT"[J99]":END',
+     "stored",
+     "NOECHO:[J the INDEX-SELECTED jump. `ON 2` must reach the SECOND target: "
+     "[J99]. An ON that ignores the index gives [J77], one that never jumps [J00]."),
     ("errorkw",   'error 7',          
      'ON ERROR GOTO 20:ERROR 7:END:PRINT"[R";ERR;ERL;"]":END',  "stored", "D-KWDRAIN: ERROR 7 is what raises it"),
     ("errkw",     'a=err',            
