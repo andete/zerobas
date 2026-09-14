@@ -238,6 +238,25 @@ WEAK = {}
 PIN = os.path.join(ROOT, "scratchpad", "kwknife-connected.json")
 
 
+def _row_subject(row):
+    """The STATEMENT a sweep row is about -- `tier_table.stmt_subject`, honouring a
+    row's own `SUBJECT:` tag. Returns None when it cannot be derived, so a pin
+    written without the sweep importable simply carries no subject rather than a
+    guess."""
+    try:
+        sys.path.insert(0, os.path.join(ROOT, "tools"))
+        sys.path.insert(0, os.path.join(ROOT, "probes", "basic"))
+        import tier_table, basic_probe_kwsweep as sweep
+        kwset = set(tier_table.kwtable_keywords())
+        for r in sweep.SWEEP:
+            if r[0] == row:
+                return tier_table.stmt_subject(r[1], kwset,
+                                               sweep.row_subject(r[4]))
+    except Exception:
+        return None
+    return None
+
+
 def record(kw, row, verdict, mode):
     """MERGE this keyword's reading into scratchpad/kwknife-connected.json.
 
@@ -271,6 +290,30 @@ def record(kw, row, verdict, mode):
     row_rec.setdefault("modes", {})[mode] = verdict
     row_rec["connected"] = any(v != "SUPPORTED" for v in row_rec["modes"].values())
     row_rec["verdict"] = verdict
+    # 🎚️ D-KWSTMTDEN (Joost, 2026-09-14: composites "should have the same TIER and
+    # tests"). THE PIN IS KEYED BY THE KEYWORD THIS RUN CUT, WHICH IS NOT ALWAYS
+    # THE STATEMENT THE ROW IS ABOUT. Cutting `ON` makes `ongoto` go red, and that
+    # row's subject is `ON GOTO` -- so the cut proves the COMPOSITE load-bearing,
+    # and the pin threw that away by recording only `ON`.
+    # 🔴 `USING` IS WHY THIS HAS TO EXIST AT ALL: its token $E4 is not in
+    # stmt_table, so `PRINT USING` can never be connected by cutting a keyword of
+    # its own. It can only ever be connected through the cut its own row responds
+    # to, which is exactly what this field records.
+    subj = _row_subject(row)
+    row_rec["subject"] = subj
+    # 🔴 AND THE SUBJECT ALSO GOES IN A MAP OF ITS OWN, BECAUSE `rows` IS KEYED BY
+    # KEYWORD AND THE LAST CUT WINS. Measured 2026-09-14: `ON:ongoto`,
+    # `ON:ongosub` and `ON:onkw` all write the key `ON`, so two of the three
+    # composites vanished; and `PRINT:using` OVERWROTE PRINT's own reading with
+    # `PRINT USING`'s -- the exact hazard `_warn_row_subject` warns about, now
+    # happening by design rather than by mistake.
+    # 🎯 A subject entry is never overwritten by a DIFFERENT subject, so one
+    # keyword can speak for several statements and each keeps its own verdict.
+    if subj:
+        subs = pin.setdefault("subjects", {})
+        rec = subs.setdefault(subj, {"rows": {}})
+        rec["rows"][row] = verdict
+        rec["connected"] = any(v != "SUPPORTED" for v in rec["rows"].values())
     os.makedirs(os.path.dirname(PIN), exist_ok=True)
     # 🔴 CLOSE THE FILE. `json.dump(..., open(...))` leaves the handle to the
     # garbage collector: `open(...,"w")` truncates AT ONCE, so an unflushed buffer
@@ -484,8 +527,14 @@ def _warn_row_subject(kw, row):
         kwset = set(tier_table.kwtable_keywords())
         for r in sweep.SWEEP:
             if r[0] == row:
-                subj = tier_table.stmt_keyword(r[1], kwset)
-                if subj and subj.rstrip("$") != kw.rstrip("$"):
+                # 🎚️ D-KWSTMTDEN: `stmt_subject`, not `stmt_keyword`. A row whose
+                # SUBJECT is a composite (`PRINT:using` -> `PRINT USING`) is a
+                # CORRECT pairing -- cutting PRINT is the only way that composite
+                # can be shown load-bearing -- and warning on it trained the eye
+                # to ignore the warning that matters.
+                subj = tier_table.stmt_subject(r[1], kwset,
+                                               sweep.row_subject(r[4]))
+                if subj and kw.rstrip("$") not in subj.split():
                     print(f"  \u26a0\ufe0f  row {row} is ABOUT {subj}, not {kw} -- a BLIND "
                           f"verdict here would be about the PAIRING, and the pin is "
                           f"merged BY KEYWORD so it would overwrite {kw}'s real "

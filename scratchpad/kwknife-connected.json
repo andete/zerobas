@@ -350,6 +350,7 @@
     "stmt": "MISSING"
    },
    "row": "getkw",
+   "subject": "GET #",
    "verdict": "MISSING",
    "weak": false
   },
@@ -404,7 +405,8 @@
    "modes": {
     "stmt": "MISSING"
    },
-   "row": "input_b",
+   "row": "inputkw",
+   "subject": "INPUT #",
    "verdict": "MISSING",
    "weak": false
   },
@@ -656,7 +658,8 @@
    "modes": {
     "stmt": "MISSING"
    },
-   "row": "ongoto",
+   "row": "onkw",
+   "subject": "ON ERROR GOTO",
    "verdict": "MISSING",
    "weak": false
   },
@@ -756,6 +759,7 @@
     "stmt": "MISSING"
    },
    "row": "tab",
+   "subject": "PRINT",
    "verdict": "MISSING",
    "weak": false
   },
@@ -1041,5 +1045,49 @@
    "weak": false
   }
  },
- "written": "2026-09-14 14:18:08"
+ "subjects": {
+  "GET #": {
+   "connected": true,
+   "rows": {
+    "getkw": "MISSING"
+   }
+  },
+  "INPUT #": {
+   "connected": true,
+   "rows": {
+    "inputkw": "MISSING"
+   }
+  },
+  "ON ERROR GOTO": {
+   "connected": true,
+   "rows": {
+    "onkw": "MISSING"
+   }
+  },
+  "ON GOSUB": {
+   "connected": true,
+   "rows": {
+    "ongosub": "MISSING"
+   }
+  },
+  "ON GOTO": {
+   "connected": true,
+   "rows": {
+    "ongoto": "MISSING"
+   }
+  },
+  "PRINT": {
+   "connected": true,
+   "rows": {
+    "tab": "MISSING"
+   }
+  },
+  "PRINT USING": {
+   "connected": true,
+   "rows": {
+    "using": "MISSING"
+   }
+  }
+ },
+ "written": "2026-09-14 15:10:43"
 }

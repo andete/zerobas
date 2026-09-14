@@ -299,7 +299,19 @@ def knife_connected(path=KNIFE_PIN):
             f"debugging run, or a pin that was destroyed and partly rewritten). "
             f"NOTHING IS CLAIMED CONNECTED — re-run `python3 "
             f"scratchpad/kwknife.py --all` and `--allfn`.")
-    return {kw for kw, r in rows.items() if r.get("connected")}
+    # 🎚️ D-KWSTMTDEN: a cut proves the STATEMENT its row is about load-bearing,
+    # not only the keyword that was cut. `ON GOTO` is connected because cutting
+    # `ON` made `ongoto` go red; `PRINT USING` can be connected NO OTHER WAY,
+    # since `USING`'s token is not in stmt_table to cut. Both names are returned,
+    # so a keyword does not lose connectedness by also speaking for a composite.
+    out = {kw for kw, r in rows.items() if r.get("connected")}
+    out |= {r["subject"] for r in rows.values()
+            if r.get("connected") and r.get("subject")}
+    # ⚠️ `rows` IS KEYED BY KEYWORD AND THE LAST CUT WINS, so its `subject` field
+    # holds only the most recent one. The `subjects` map is where a keyword that
+    # speaks for SEVERAL statements keeps them all -- ON alone speaks for three.
+    out |= {st for st, r in pin.get("subjects", {}).items() if r.get("connected")}
+    return out
 
 
 def composite_names():
@@ -573,6 +585,52 @@ def fmt_items(its, kws, tiers_only=True, width=70):
     return "\n".join(out)
 
 
+def statements(kws=None):
+    """The STATEMENT denominator: everything a user can actually WRITE.
+
+    🎚️ JOOST, 2026-09-14, of the composite section's "deliberately not in the
+    159-keyword denominator": *"why not? They should have the same TIER and
+    tests"*. He is right, and the exclusion was a PRESENTATION worry (splitting
+    `ON` into eight would "inflate the count by renaming") rather than a
+    correctness one.
+    🎯 THE 159 IS A **TOKEN** DENOMINATOR -- basic/kwtable.inc -- and `ON ERROR
+    GOTO` is ONE STATEMENT made of THREE tokens. Counting tokens is a proxy for
+    "how much of MSX BASIC works" and it breaks down exactly where composites
+    exist: it says `ON` is one thing to get right when it is eight.
+    So there are TWO denominators, each right for its own question, and neither
+    replaces the other:
+      * TOKEN (159, `keywords()`): is every token in the table implemented?
+        Guarded by selftest S20, which is NOT to be weakened to move a count.
+      * STATEMENT (this): how much of the LANGUAGE works? 159 minus the five
+        keywords with no bare statement form -- `DEF GET ON PUT USING`, which
+        would otherwise double-count against their own composites -- plus the
+        composite and channel statement names.
+    ⚠️ A STATED IMPRECISION RATHER THAN A HIDDEN ONE: this set still counts SYNTAX
+    PARTICLES (`THEN`, `TO`, `STEP`, `ELSE`, `AS`, `OFF`) as statements. They are
+    not. Removing them is re-tiering the keyword umbrella, which is ruled out, so
+    the count carries the flaw openly instead of being quietly adjusted."""
+    kws = keywords() if kws is None else kws
+    return sorted((set(kws) - set(no_bare_form())) | composite_names())
+
+
+def tier1_statements(stmts=None, conn=None, forms=None, kws=None):
+    """TIER 1 over the STATEMENT denominator -- composites included.
+
+    ⚠️ `forms` and the open-item lookup are still computed over the KEYWORD set,
+    because that is what the pin and TODO.md are keyed by; only the set being
+    AWARDED over changes."""
+    kws = keywords() if kws is None else kws
+    stmts = statements(kws) if stmts is None else stmts
+    conn = knife_connected() if conn is None else conn
+    forms = kwsweep_forms(kws) if forms is None else forms
+    out = set()
+    for st in stmts:
+        ok, _ = tier1_status(st, forms.get(st, set()), st in conn, False)
+        if ok:
+            out.add(st)
+    return out
+
+
 def tier1_keywords(kws, conn=None, forms=None):
     """The keywords Joost's TIER 1 rule awards, computed ONCE for every caller.
 
@@ -597,6 +655,7 @@ def fmt_keywords(its, kws, evidence=None):
     conn = knife_connected()
     t1 = {kw for kw in tier1_keywords(kws, conn) if kt.get(kw, (None,))[0] is None}
     nobare = no_bare_form()
+    forms = kwsweep_forms(kws)
     groups = defaultdict(list)
     for kw, (g, _, e) in kt.items():
         groups[reached_group(g, e, kw in t3, kw in conn, kw in t1,
@@ -656,21 +715,27 @@ def _composite_section(kws, evidence=None, conn=None):
     ev = kwsweep_evidence(kws) if evidence is None else evidence
     forms = kwsweep_forms(kws)
     conn = knife_connected() if conn is None else conn
+    awarded = tier1_statements(names, conn, forms, kws)
     out = ["", "## Composite and channel statements", "",
-           "**Not keywords, and deliberately not in the 159-keyword denominator** "
-           "(Joost, 2026-09-14: *\"one could consider the on + second keyword one "
-           "composite keyword requiring its own tests\"*, and *\"bare print and "
-           "print # and print using have a different function\"*). Each is a "
-           "statement with its own forms and its own N. **None can reach TIER 1 "
-           "yet**: the non-vacuity half of the bar is a knife cut of a `stmt_table` "
-           "entry, and a composite has no entry of its own — `USING`'s token is not "
-           "in `stmt_table` at all. That is a missing instrument, not a pass.", "",
-           "| statement | authored N | forms seen | rows agree | what is missing |",
+           "**First-class statements, counted in the STATEMENT denominator** "
+           "(Joost, 2026-09-14: *\"why not? They should have the same TIER and "
+           "tests\"*). Each has its own forms, its own N and its own tier, on the "
+           "same bar as a keyword. The earlier exclusion was a PRESENTATION worry "
+           "\u2014 that splitting `ON` into eight would inflate the count by "
+           "renaming \u2014 and that is not a reason to measure the wrong thing: "
+           "`ON ERROR GOTO` is ONE statement made of THREE tokens, so a TOKEN "
+           "count says `ON` is one thing to get right when it is eight.", "",
+           "\U0001f52a **CONNECTEDNESS COMES FROM THE CUT THE STATEMENT'S OWN ROW "
+           "RESPONDS TO**, not from a token of its own. Cutting `ON`'s dispatch "
+           "entry makes `ongoto` go red, and that row's subject is `ON GOTO`. "
+           "`PRINT USING` can be connected NO OTHER WAY \u2014 `USING`'s token is "
+           "not in `stmt_table` to cut.", "",
+           "| statement | reached | forms | rows agree | what is missing |",
            "|---|---|---|---|---|"]
     for n in names:
         need = kwforms.forms_for(n)
         seen = sorted(forms.get(n, set()))
-        agree = ev.get(n) or "—"
+        agree = ev.get(n) or "\u2014"
         miss = []
         if not need:
             miss.append("no authored form list (UNRATED)")
@@ -679,10 +744,11 @@ def _composite_section(kws, evidence=None, conn=None):
             if gap:
                 miss.append("missing " + " ".join(gap))
         if n not in conn:
-            miss.append("no composite cut — not knife-proven CONNECTED")
-        out.append(f"| `{n}` | {len(need) if need else '—'} | "
-                   f"{' '.join(f'`{f}`' for f in seen) or '—'} | {agree} | "
-                   f"{'; '.join(miss)} |")
+            miss.append("not knife-proven CONNECTED")
+        reached = "**TIER 1**" if n in awarded else "TIER 0"
+        nf = "%d/%d" % (len(seen), len(need)) if need else "\u2014"
+        out.append("| `%s` | %s | %s | %s | %s |"
+                   % (n, reached, nf, agree, "; ".join(miss) or "\u2014"))
     return out
 
 
@@ -699,6 +765,16 @@ def fmt_markdown(its, kws, evidence=None, t3=None, connected=None):
     _long_ time."* One source, two renderings; the honesty footer travels with
     both.
     """
+    # ⚠️ BOUND BEFORE THE DOCUMENT IS BUILT, because the denominator
+    # section prints counts derived from them. They used to be bound
+    # halfway down, which made that section an UnboundLocalError.
+    kt = keyword_tiers(its, kws, evidence)
+    t3 = kwsweep_t3(kws) if t3 is None else t3
+    conn = knife_connected() if connected is None else connected
+    t1 = {kw for kw in tier1_keywords(kws, conn) if kt.get(kw, (None,))[0] is None}
+    nobare = no_bare_form()
+    forms = kwsweep_forms(kws)
+
     out = ["# zerobas — priority-tier status", "",
            "Generated by `make tiers-md` from the `🎚️` tag on every open "
            "`TODO.md` item and the keyword table `basic/kwtable.inc` (plus the keywords "
@@ -713,17 +789,27 @@ def fmt_markdown(its, kws, evidence=None, t3=None, connected=None):
         out.append(f"| {t} | {meaning[t]} | {counts.get(t, 0)} |")
     out += ["", f"{len(its)} open items in all; {sum(counts.get(c, 0) for c in CLASSES)} are "
             "apparatus, ROM budget, standing rulings or other (not keyword work).", "",
+            "## Two denominators, and which question each answers", "",
+            "**TOKEN \u2014 %d** (`basic/kwtable.inc`): is every token in the table "
+            "implemented? That is what the per-keyword sections below count.\n"
+            "**STATEMENT \u2014 %d**: how much of the LANGUAGE works? The %d "
+            "keywords that have a bare statement form (`DEF`, `GET`, `ON`, `PUT` "
+            "and `USING` do not, and would double-count against their own "
+            "composites) plus the %d composite and channel statements. "
+            "**%d of them have reached TIER 1.**\n\n"
+            "\u26a0\ufe0f A stated imprecision rather than a hidden one: the statement set "
+            "still counts SYNTAX PARTICLES (`THEN`, `TO`, `STEP`, `ELSE`, `AS`, "
+            "`OFF`) as statements. They are not. Removing them means re-tiering "
+            "the keyword umbrella, which is ruled out, so the count carries the "
+            "flaw openly."
+            % (len(kws), len(statements(kws)),
+               len(set(kws) - set(no_bare_form())), len(composite_names()),
+               len(tier1_statements(statements(kws), conn, forms, kws))), "",
             "## Every keyword and its tier", "",
             "**Every keyword is TIER 0: no tier is established for any of them.** The text "
             "beside each says only what is KNOWN AGAINST it — an open item at tier n, a gap "
             "the sweep sees, or how many rows agree. None of that is attainment.", "",
             "| established tier, and what is known against it | n | keywords |", "|---|---|---|"]
-    kt = keyword_tiers(its, kws, evidence)
-    t3 = kwsweep_t3(kws) if t3 is None else t3
-    conn = knife_connected() if connected is None else connected
-    t1 = {kw for kw in tier1_keywords(kws, conn) if kt.get(kw, (None,))[0] is None}
-    nobare = no_bare_form()
-    forms = kwsweep_forms(kws)
     groups = defaultdict(list)
     for kw, (g, _, e) in kt.items():
         groups[reached_group(g, e, kw in t3, kw in conn, kw in t1,
@@ -953,6 +1039,24 @@ def selftest():
         and known_subject("PRINT USING", _kwset) is True
         and known_subject("PRINT #", _kwset) is True
         and known_subject("PRINT USNIG", _kwset) is False)
+    # 🎚️ D-KWSTMTDEN: the STATEMENT denominator, and the two selftests that keep
+    # it from drifting into the TOKEN one.
+    _st = statements(kws)
+    arm("S31 the statement set is the keywords MINUS the bare-formless PLUS the "
+        "composites, each exactly once",
+        len(_st) == len(set(_st))
+        and set(_st) == (set(kws) - set(no_bare_form())) | composite_names()
+        and not (set(_st) & set(no_bare_form()))
+        and composite_names() <= set(_st))
+    # 🔴 THE POINT OF THE WHOLE SLICE: before D-KWSTMTDEN a composite could not be
+    # awarded AT ALL, because the award iterated the keyword table and no composite
+    # is in it. A form list and a knife cut were not enough.
+    arm("S32 a COMPOSITE can be awarded, and is refused for the same three reasons "
+        "a keyword is",
+        tier1_status("ON GOTO", {"index-goto"}, True, False)[0] is True
+        and tier1_status("ON GOTO", {"index-goto"}, False, False)[0] is False
+        and tier1_status("ON GOTO", {"index-goto"}, True, True)[0] is False
+        and tier1_status("ON GOTO", set(), True, False)[0] is False)
     md = fmt_markdown(its, kws, evidence={}, t3=set(), connected=set())
     _s14 = [("summary row", "| TIER 1 | works correctly in the happy path | 1 |" in md),
             ("LOF row", "| `LOF` | TIER 0 | open TIER 1 item, TODO.md 2 |" in md),

@@ -1092,6 +1092,55 @@ which is the correct answer with nothing plugged in **and also exactly what a st
 returns** — a reading that cannot fail. `input-devices-acceptance` exercises them
 properly; the kwsweep denominator cannot, and a bar met by an unfailable row would
 be worse than no bar.
+⚡ **D-KWSTMTDEN — COMPOSITES BECOME FIRST-CLASS, AND THE DENOMINATOR MOVES**
+(Joost, 2026-09-14, of the tier doc's *"Not keywords, and deliberately not in the
+159-keyword denominator"*: **"why not? They should have the same TIER and
+tests"**).
+✅ **HE IS RIGHT, AND MY REASON WAS A PRESENTATION WORRY WEARING CORRECTNESS
+CLOTHES.** I excluded them because splitting `ON` into eight "would inflate the
+count by renaming" — which is a worry about how the sheet READS, not about what is
+true. If `PRINT USING` is a different function from `PRINT`, it is a separate thing
+that must work, with its own forms and its own tier.
+🎯 **THE 159 IS A *TOKEN* DENOMINATOR** (`basic/kwtable.inc`), and `ON ERROR
+GOTO` is ONE STATEMENT made of THREE tokens. Counting tokens is a proxy for "how
+much of MSX BASIC works" and it breaks down exactly where composites exist: **it
+says `ON` is one thing to get right when it is eight.**
+✅ **SO THERE ARE TWO DENOMINATORS, EACH RIGHT FOR ITS OWN QUESTION, AND NEITHER
+REPLACES THE OTHER.** TOKEN = **159**, guarded by selftest **S20** — *unchanged,
+and not weakened to move a count*. STATEMENT = **171** = the 154 keywords with a
+bare statement form (`DEF GET ON PUT USING` have none and would double-count
+against their own composites) plus the 17 composite and channel statements.
+🔪 **AND CONNECTEDNESS NOW COMES FROM THE CUT THE STATEMENT'S OWN ROW RESPONDS
+TO.** `knife_connected()` was keyed by KEYWORD, so a composite could never be
+connected. But the knife already proves the right thing per ROW: cutting `ON`'s
+dispatch entry makes `ongoto` go red, and that row's SUBJECT is `ON GOTO`.
+🔴 **`PRINT USING` IS WHY THIS HAD TO EXIST AT ALL** — `USING`'s token `$E4` is
+not in `stmt_table`, so it can be connected NO OTHER WAY than through the cut its
+own row responds to (`PRINT:using` → MISSING, LOAD-BEARING).
+🔴 **AND THE PIN COULD NOT HOLD THE ANSWER: `rows` IS KEYED BY KEYWORD AND THE
+LAST CUT WINS.** Measured: `ON:ongoto`, `ON:ongosub` and `ON:onkw` all write the key
+`ON`, so two of three composites vanished — and **`PRINT:using` OVERWROTE PRINT's
+own reading**, which is precisely the hazard `_warn_row_subject` exists to shout
+about, happening by design instead of by mistake. ✅ A `subjects` map beside
+`rows`, never overwritten by a DIFFERENT subject, so one keyword speaks for several
+statements and each keeps its verdict. PRINT's own row (`tab`) re-cut afterwards.
+🎯 **AND THE WARNING ITSELF WAS WRONG**: it used `stmt_keyword`, so it fired on
+`PRINT:using` — a CORRECT pairing — and training the eye to ignore a warning is
+worse than not having it. It speaks in SUBJECTS now.
+🟢 **FOUR COMPOSITES AWARDED ON THE SAME BAR AS A KEYWORD**: `ON GOTO`,
+`ON GOSUB`, `INPUT #`, `GET #`. **`ON ERROR GOTO` stands at 1/2** (missing the
+`ON ERROR GOTO 0` disable, which is the form a program uses to hand an error back
+to BASIC) and **`PRINT USING` at 2/5** — its format string is a small language and
+its field types are the forms: integer, fraction, sign, string, exponential.
+📊 **66 of 171 statements at TIER 1.** The count dropped against a bigger, truer
+denominator, the same way keying evidence by SUBJECT made the table read worse
+this morning. ⚠️ **A STATED IMPRECISION RATHER THAN A HIDDEN ONE:** the statement
+set still counts SYNTAX PARTICLES (`THEN TO STEP ELSE AS OFF`) as statements. They
+are not — but removing them is re-tiering the keyword umbrella, which is ⛔ ruled
+out, so the count carries the flaw openly instead of being quietly adjusted.
+✅ Selftests **S31** (the statement set is exactly keywords − bare-formless ∪
+composites, each once) and **S32** (a composite CAN be awarded, and is refused for
+the same three reasons a keyword is).
 🔪 **D-KWSTRCUT — THE THIRD CUT SHAPE, AND A FIRST VERSION OF IT THAT WAS WORSE
 THAN THE GAP IT CLOSED (2026-09-13).** `basic/sysvars.inc:250` named the shape in
 prose written long before the knife existed: **MKI$ is evaluated in
@@ -1760,7 +1809,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:18487 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:18536 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -1926,7 +1975,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:6527 (T-6FE392)8 (T-529ABE)` from `TODO.md:17138 (T-529ABE)`: a
+      `TODO.md:6576 (T-6FE392)8 (T-529ABE)` from `TODO.md:17187 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -7371,7 +7420,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:17138 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:17187 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

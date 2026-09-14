@@ -106,6 +106,11 @@ def subject_names() -> set[str]:
     return {name for _, name in COMPOSITES} | set(UNDERIVABLE)
 
 
+# 🎚️ COMPOSITE AND CHANNEL STATEMENTS ARE FIRST-CLASS (Joost, 2026-09-14: of the
+# tier doc's "deliberately not in the 159-keyword denominator" -- *"why not? They
+# should have the same TIER and tests"*). Their bars are authored here beside the
+# keywords', from the same source: the REFERENCE's syntax.
+
 # keyword -> (forms, why this is the set)
 FORMS: dict[str, tuple[tuple[str, ...], str]] = {
     "PSET": (
@@ -183,6 +188,30 @@ FORMS: dict[str, tuple[tuple[str, ...], str]] = {
     "MKD$": (
         ("double-to-string",),
         "MKD$(n) -- as MKS$, for the 8-byte double encoding.",
+    ),
+    "ON GOTO": (
+        ("index-goto",),
+        "ON <expr> GOTO <line>[,<line>...] -- one behaviour: select the nth target by the expression's value. A longer target list is repetition of it. The row requires the SECOND target, so an ON that ignores the index and an ON that never jumps give two different wrong answers.",
+    ),
+    "ON GOSUB": (
+        ("index-gosub",),
+        "ON <expr> GOSUB <line>[,...] -- the GOSUB sibling, and a SEPARATE statement rather than a form of ON GOTO: it must also RETURN. The row reaches the second target and returns, so a call that never returns is visible too.",
+    ),
+    "ON ERROR GOTO": (
+        ("on-error", "disable"),
+        "ON ERROR GOTO <line> installs a handler (the row tags it on-error) and ON ERROR GOTO 0 DISABLES error trapping -- two behaviours, and the disable is the one a program uses to hand an error back to BASIC. Only the install has a row.",
+    ),
+    "INPUT #": (
+        ("string-read",),
+        "INPUT #<channel>,<var> -- one behaviour. Joost ruled bare INPUT and INPUT # different functions, and they are: the console form waits on the keyboard, this one reads a channel. Both of its rows drive this one form; input_b is a better instrument for it, not a second form.",
+    ),
+    "GET #": (
+        ("fielded-record",),
+        "GET #<channel>[,<record>] -- one behaviour, the random-file record read into the FIELD buffer. The row does a PUT/GET round trip so it reads the record back rather than merely that the statement parsed.",
+    ),
+    "PRINT USING": (
+        ("integer-field", "fraction-field", "sign", "string-field", "exponential"),
+        "PRINT USING <format>;<list> -- the format string is a small language and its field types are the forms: the integer field #, the fractional field #.##, an explicit sign, the string fields ! and \\ \\, and the exponential ^^^^. Only the first two have rows. AUTHORED AT FIVE KNOWING THE TREE MEETS TWO: the bar is the reference's syntax, the same way LOCATE is 3/4 and VARPTR 1/2.",
     ),
     "BASE": (
         ("read", "write"),
