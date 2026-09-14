@@ -132,6 +132,46 @@ FORMS: dict[str, tuple[tuple[str, ...], str]] = {
         "This is deliberately a DIFFERENT SHAPE from PSET/PRESET -- positional "
         "omission rather than an optional trailing argument and a mode.",
     ),
+    "LOF": (
+        ("length",),
+        "LOF(<channel>) -- one argument, one behaviour. The row opens a fixture of known size and reads the length back, so a stub answering 0 fails.",
+    ),
+    "EOF": (
+        ("at-end",),
+        "EOF(<channel>) -- one argument, one behaviour. The row READS THE FILE TO ITS END FIRST, so the answer is -1 against the 0 a stub gives; asking EOF of a freshly opened file would have been 0 either way.",
+    ),
+    "LOC": (
+        ("position",),
+        "LOC(<channel>) -- one argument, one behaviour. The row consumes a known number of bytes first, so the position is a VALUE and not the 0 it starts at.",
+    ),
+    "KILL": (
+        ("delete-file",),
+        "KILL <file> -- one behaviour. The row reads DSKF BEFORE and AFTER and scores the DIFFERENCE, so it sees the space the file gave back rather than merely that the statement parsed.",
+    ),
+    "COPY": (
+        ("file-to-file",),
+        "COPY <src> TO <dst> -- one behaviour. The row opens the DESTINATION and reads its length, so a COPY that created nothing, or an empty file, fails.",
+    ),
+    "LSET": (
+        ("left-justify",),
+        "LSET <field>=<string> -- one behaviour, and the row reads the FIRST byte of the fielded buffer. That is what separates it from RSET: left-justified the first byte is the data, right-justified it is a pad space.",
+    ),
+    "RSET": (
+        ("right-justify",),
+        "RSET <field>=<string> -- the mirror of LSET, and the pair is what makes each row a reading: the same program with the other verb answers the other value.",
+    ),
+    "DSKO$": (
+        ("write-sector",),
+        "DSKO$ <drive>,<sector> -- one behaviour. The row POKEs a known byte into the sector buffer, writes, re-reads through a DIFFERENT sector to flush, and reads the byte back -- so it sees the write reach the medium.",
+    ),
+    "GOSUB": (
+        ("call",),
+        "GOSUB <line> -- one behaviour. The row's subroutine sets a variable the caller then prints, so a GOSUB that parsed and did not branch leaves 0.",
+    ),
+    "READ": (
+        ("read-data",),
+        "READ <var>[,<var>...] -- one behaviour; reading several variables is repetition of it, not a second form. The row reads, RESTOREs and reads again, scoring the SUM, so a READ that always returned the first item is still visible.",
+    ),
     "PEEK": (
         ("address-read",),
         "PEEK(<address>) -- one argument, one behaviour, the reading half of POKE. N=1 is earned by peek_b and not by peek, which asks PEEK(0)>=0 -- a BOOLEAN that is true of every possible byte.",

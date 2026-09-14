@@ -1215,13 +1215,13 @@ SWEEP: list[tuple[str, str, str | None, str, str]] = [
      "D-KWDRAIN: the D-NEWSTMT shape -- [A] then a clean stop; before the fix "
      "this row would have carried `Syntax error in 10` on the zb side"),
     ("gosubkw",   'gosub 20',     
-     'A=0:GOSUB 20:PRINT"[G";A;"]":END:A=7:RETURN',         "stored", "D-KWDRAIN: the subroutine sets A=7; no GOSUB, no output"),
+     'A=0:GOSUB 20:PRINT"[G";A;"]":END:A=7:RETURN',         "stored", "FORM:call D-KWDRAIN: the subroutine sets A=7; no GOSUB, no output"),
     ("returnkw",  'return',       
      'A=0:GOSUB 20:PRINT"[H";A;"]":END:A=7:RETURN',         "stored", "D-KWDRAIN: A is 7 only because RETURN came back to the PRINT"),
     ("endkw",     'end',          
      'A=0:GOSUB 20:PRINT"[J";A;"]":END:A=7:RETURN',         "stored", "FORM:terminate D-KWDRAIN: END keeps the subroutine from being fallen into"),
     ("readkw",    'read q',       
-     'READ Q:RESTORE:READ R:PRINT"[E";Q+R;"]":END:DATA 3',  "stored", "D-KWDRAIN: reads 3 from the DATA on the second line"),
+     'READ Q:RESTORE:READ R:PRINT"[E";Q+R;"]":END:DATA 3',  "stored", "FORM:read-data D-KWDRAIN: reads 3 from the DATA on the second line"),
     ("restorekw", 'restore',      
      'READ Q:RESTORE:READ R:PRINT"[F";Q+R;"]":END:DATA 3',  "stored", "D-KWDRAIN: 6 needs the pointer RESET: without RESTORE the second READ runs out of DATA"),
     ("psetkw",   'pset(1,1)',      
@@ -1915,7 +1915,7 @@ SWEEP: list[tuple[str, str, str | None, str, str]] = [
     ("lof",     "a=lof(1)",
      'OPEN"HI.TXT"FOR INPUT AS#1:A=LOF(1):CLOSE#1:PRINT"[";A;"]"', "stored",
      "NEEDS-DISK: " "26 — HI.TXT's exact length, which only a real directory walk "
-     "produces; a stub reads 0."),
+     "FORM:length produces; a stub reads 0."),
     # 🌾 D-KWBREADTH batch 18 — AXIS (g) ON THE FILE SIDE: every one of the 17 file
     # rows opens channel #1 and nothing ever opens a second, so the channel NUMBER
     # is a constant across all of them. MSX defaults MAXFILES to 1, so a second
@@ -1949,7 +1949,7 @@ SWEEP: list[tuple[str, str, str | None, str, str]] = [
      "NEEDS-DISK: " "-1 AFTER the whole file is consumed. 🔴 THE READ IS THE ROW: "
      "measured, EOF(1) is 0 on the same channel before the INPUT$ and -1 after, so "
      "this moves with the channel rather than answering a constant. A stub reads 0 "
-     "— which is the BEFORE value, so the row had to be the after one."),
+     "FORM:at-end — which is the BEFORE value, so the row had to be the after one."),
     ("bload",   'bload"x"',
      'POKE&HC000,7:BLOAD"PROG.BIN":A=PEEK(&HC000):PRINT"[";A;"]"', "stored",
      "NEEDS-DISK: " "PROG.BIN is a real BSAVE binary loading at $C000 whose first "
@@ -2127,7 +2127,7 @@ SWEEP: list[tuple[str, str, str | None, str, str]] = [
      'A=DSKF(1):KILL"PROG2.BAS":B=DSKF(1):PRINT"[";B-A;"]"', "stored",
      "NEEDS-DISK: " "the FREED SPACE is the behaviour — 1 KB back after the file "
      "goes, so a KILL that merely parsed reads 0. The victim is PROG2.BAS, which no "
-     "other row in this sweep opens."),
+     "FORM:delete-file other row in this sweep opens."),
     ("merge",   'merge"x"',
      'OPEN"N.BAS"FOR OUTPUT AS#1:PRINT#1,"100 END":CLOSE:PRINT"[M0]":MERGE"N.BAS":PRINT"[M1]"', "stored",
      "NEEDS-DISK: " "MERGE RETURNS TO COMMAND LEVEL, so the row reads `[M0]` and "
@@ -2143,11 +2143,11 @@ SWEEP: list[tuple[str, str, str | None, str, str]] = [
      'OPEN"R.DAT"AS#1:FIELD#1,4 AS A$:LSET A$="B":A=ASC(A$):CLOSE#1:PRINT"[";A;"]"', "stored",
      "NEEDS-DISK: " "LEFT justification inside a FIELDed buffer: 66 = ASC(\"B\") in "
      "byte 1. Its pair `rset` reads 32 in the same byte, so the two rows separate "
-     "from each other and not merely from a stub."),
+     "FORM:left-justify from each other and not merely from a stub."),
     ("rset",    'rset a$="x"',
      'OPEN"R.DAT"AS#1:FIELD#1,4 AS A$:RSET A$="B":A=ASC(A$):CLOSE#1:PRINT"[";A;"]"', "stored",
      "NEEDS-DISK: " "RIGHT justification: byte 1 is a SPACE (32), not the \"B\" that "
-     "`lset` puts there."),
+     "FORM:right-justify `lset` puts there."),
     # ------------------------------------------------ D-KWINP (2026-09-13)
     # 🟢 `INPUT` IS THE SECOND WORD IN THIS LIST FOR ITS NAME RATHER THAN A GAP,
     # after `GET`. It sat with `INKEY$` as though it shared the keyboard blocker;
@@ -2245,11 +2245,11 @@ SWEEP: list[tuple[str, str, str | None, str, str]] = [
      "NEEDS-DISK: " "raw sector WRITE, and it is a ROUND TRIP: poke the buffer to "
      "\"X\", write sector 7, read a DIFFERENT sector to flush the buffer, read 7 "
      "back. 88 only if the bytes reached the disk. DESTRUCTIVE to the root "
-     "directory, which is why it is the LAST reading row in this block."),
+     "FORM:write-sector directory, which is why it is the LAST reading row in this block."),
     ("copy",    'copy"a:x"to"a:y"',
      'COPY"HI.TXT" TO "H2.TXT":OPEN"H2.TXT"FOR INPUT AS#1:A=LOF(1):CLOSE#1:PRINT"[";A;"]"', "stored",
      "NEEDS-DISK: " "the COPY's own length read back through a channel: 26, HI.TXT's "
-     "size. A COPY that created an empty file reads 0."),
+     "FORM:file-to-file size. A COPY that created an empty file reads 0."),
     ("set",     'set password',  "SET PASSWORD", "stored",
      "NEEDS-DISK: " "ERR 5 on every machine with a disk ROM and on the diskless "
      "VG-8020 too (D-DONOTHING3) — the handler refuses ON SIGHT. That IS the "
@@ -2283,7 +2283,7 @@ SWEEP: list[tuple[str, str, str | None, str, str]] = [
      'OPEN"HI.TXT"FOR INPUT AS#1:A$=INPUT$(10,#1):A=LOC(1):CLOSE#1:PRINT"[";A;"]"', "stored",
      "NEEDS-DISK: " "26 on BOTH machines — LOC answers in BYTES here, and it "
      "answers the same after 10 bytes as after none, so the row scores the "
-     "FUNCTION and not a position. An absent LOC auto-dims an array and reads 0."),
+     "FORM:position FUNCTION and not a position. An absent LOC auto-dims an array and reads 0."),
     # 🌾 D-KWBREADTH batch 16 — AXIS (f): `OPEN` had NO ROW AS SUBJECT. It carries
     # `inputkw`, `lof`, `save` and the row above as APPARATUS, so kwcover counted it
     # EXERCISED, the tier table credited the OTHER keyword, and the knife could not
