@@ -632,6 +632,15 @@
    "verdict": "MISSING",
    "weak": false
   },
+  "OPEN": {
+   "connected": true,
+   "modes": {
+    "stmt": "MISSING"
+   },
+   "row": "openkw",
+   "verdict": "MISSING",
+   "weak": false
+  },
   "OUT": {
    "connected": true,
    "modes": {
@@ -995,5 +1004,5 @@
    "weak": false
   }
  },
- "written": "2026-09-14 04:38:06"
+ "written": "2026-09-14 05:01:11"
 }

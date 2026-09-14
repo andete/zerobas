@@ -1684,6 +1684,28 @@ SWEEP: list[tuple[str, str, str | None, str, str]] = [
      "NEEDS-DISK: " "26 on BOTH machines — LOC answers in BYTES here, and it "
      "answers the same after 10 bytes as after none, so the row scores the "
      "FUNCTION and not a position. An absent LOC auto-dims an array and reads 0."),
+    # 🌾 D-KWBREADTH batch 16 — AXIS (f): `OPEN` had NO ROW AS SUBJECT. It carries
+    # `inputkw`, `lof`, `save` and the row above as APPARATUS, so kwcover counted it
+    # EXERCISED, the tier table credited the OTHER keyword, and the knife could not
+    # reach it at all. Every existing use is `FOR INPUT`; this drives the untested
+    # `FOR OUTPUT` form and reads the file back.
+    # 🔴 PLACEMENT IS THE HARD PART, NOT THE ROW. This CREATES a file, and the
+    # D-KWDISK rule is that every row which READS the fixture sits ahead of every
+    # row that CHANGES it. `files` and `lfiles` LIST the directory and `dskf` reads
+    # FREE SPACE, so a new file would move all three -- which is why this sits after
+    # `loc`, the LAST disk row, and not beside the other writers
+    # [[apparatus-is-part-of-the-measurement]].
+    ("openkw",  'open"o.txt"for output as#1',
+     'OPEN"O.TXT"FOR OUTPUT AS#1:PRINT#1,"AB":CLOSE#1:OPEN"O.TXT"FOR INPUT AS#1:A=LOF(1):CLOSE#1:PRINT"[";A;"]"',
+     "stored",
+     "NEEDS-DISK: " "the FOR OUTPUT form, which every other use of OPEN in this "
+     "file lacks: create, write \"AB\", close, reopen FOR INPUT and read LOF. "
+     "🔴 THE READING IS 5, NOT THE 4 THIS NOTE FIRST CLAIMED -- \"AB\" plus CRLF "
+     "is four bytes and the file measures five on BOTH machines. The fifth is "
+     "consistent with the $1A EOF marker Disk BASIC appends on CLOSE, but that "
+     "byte has NOT been read back, so it is named as the likely cause and not as "
+     "a measured fact. What IS measured is 5, and an OPEN that created nothing "
+     "cannot be reopened at all."),
     ("bin",     "a$=bin$(5)",
      'PRINT"[";BIN$(5);"]"',                         "direct",
      "absent => syntax error; real => 101"),
