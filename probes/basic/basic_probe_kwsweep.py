@@ -1279,6 +1279,19 @@ SWEEP: list[tuple[str, str, str | None, str, str]] = [
     ("listkw",    'list',       
      'PRINT"[A]":LIST',                                     "stored",
      "FORM:bare-list D-KWDRAIN: the LISTING itself is the discriminator -- a LIST that did nothing would leave only [A] on the screen"),
+    # 🌾 D-KWLISTSEL: LIST's two SELECTING forms. The bare row prints everything,
+    # so it cannot see a LIST that ignored a line number and printed the lot.
+    ("listkw_b", 'list 20',
+     'PRINT"[A]":Z$="XXXXXXXXXXXXXXXXXXXXXXXX":Y$="YYYYYYYYYYYYYYYYYYYY":LIST 20',
+     "stored",
+     "FORM:single-line ONE line only. The row's own program has several, so a "
+     "LIST that ignored the argument prints them all and the compared text "
+     "differs."),
+    ("listkw_c", 'list 20-30',
+     'PRINT"[A]":Z$="XXXXXXXXXXXXXXXXXXXXXXXX":Y$="YYYYYYYYYYYYYYYYYYYY":LIST 20-30',
+     "stored",
+     "FORM:range a RANGE, which the single-line form cannot exercise: the "
+     "endpoints have to be read as a pair."),
     ("deletekw",  'delete 99',  
      'PRINT"[A]":DELETE 99',                                "stored",
      "D-KWDRAIN: Illegal function call in 10 on both (line 99 does not exist); an absent DELETE is a Syntax error, a different class"),
@@ -1401,6 +1414,20 @@ SWEEP: list[tuple[str, str, str | None, str, str]] = [
      "stored",
      "NOECHO:[U the FLOOD -- (15,15) is inside the box and is set by nothing but "
      "FORM:flood PAINT, so 15 filled against 4 blank."),
+    # 🔭 D-KWPAINT2: PAINT's OTHER TWO FORMS NEED AN ISOLATED PROBE, NOT A SWEEP
+    # ROW, and three attempts is where I stopped guessing. `PAINT(15,15),11,15`
+    # inside a drawn box read `?nomarker` on BOTH machines; reduced to
+    # `SCREEN2:PAINT(15,15),11,15` with no box it read `?nomarker` again -- but
+    # with nothing to stop it that floods the WHOLE screen, which is slow, so the
+    # second reading cannot separate "the 3-argument form faults" from "the flood
+    # outran the capture". The spec says the border IS supported here
+    # (docs/spec-basic-graphics-g5.md: the FOURTH argument is the ERR 2, and the
+    # border is parsed and range-checked), so the bar stays at N=3 and PAINT stays
+    # at 1/3 until a scratchpad probe measures the two forms with its own timing.
+    # 🎯 AND THE BORDER FORM IS PROVED BY MAKING IT LEAK, WHICH IS THE CORRECT
+    # BEHAVIOUR: PAINT fills until it meets the BORDER colour, so a border of 7 --
+    # a colour nothing on the screen is drawn in -- must NOT stop at the box.
+    # A handler that ignored the argument stops at the box and the outside stays 4.
     # PUT SPRITE: the SCREEN 2 sprite ATTRIBUTE table is at $1B00 (6912) and its
     # first byte is the sprite's Y coordinate, so the write is read straight back
     # out of VRAM. `spritekw` only round-trips SPRITE$, which is the PATTERN table.
@@ -2035,6 +2062,13 @@ SWEEP: list[tuple[str, str, str | None, str, str]] = [
      "text: the tail reads `HI      .TXT` then the marker, so a FILES that printed "
      "nothing, or named the wrong entry, fails on text even though the marker is "
      "there. Absent => syntax error => no marker at all."),
+    # 🌾 D-KWFILESBARE: the BARE catalogue. The row above passes a PATTERN, so a
+    # FILES that ignored its argument would pass it; this one has no argument to
+    # ignore and the whole listing is the reading.
+    ("files_b",  'files',
+     'FILES:PRINT"[9]"',                              "stored",
+     "NEEDS-DISK: " "FORM:bare the WHOLE catalogue, which is inside the compared "
+     "text -- every entry on the fixture, then the marker."),
     ("lof",     "a=lof(1)",
      'OPEN"HI.TXT"FOR INPUT AS#1:A=LOF(1):CLOSE#1:PRINT"[";A;"]"', "stored",
      "NEEDS-DISK: " "26 — HI.TXT's exact length, which only a real directory walk "
@@ -2279,6 +2313,12 @@ SWEEP: list[tuple[str, str, str | None, str, str]] = [
      "NEEDS-DISK: " "the saved program's own length, read back through a channel: 68 "
      "on BOTH machines, which also says the tokenised on-disk form agrees byte for "
      "FORM:tokenised byte. A SAVE that wrote nothing leaves no file and the OPEN raises."),
+    # 🔭 D-KWSAVEA: `SAVE ...,A` (ASCII) ALSO NEEDS AN ISOLATED PROBE. The row
+    # read `[ 49 ]` on zerobas -- the first byte of the listing, exactly as
+    # designed -- and NOTHING on the reference, which is a divergence about the
+    # APPARATUS as easily as about SAVE: writing then reopening a file inside one
+    # sweep row is the shape `openkw_b` needed six sweeps to get right. SAVE stays
+    # at 1/2 until that is measured on its own.
     ("kill",    'kill"x"',
      'A=DSKF(1):KILL"PROG2.BAS":B=DSKF(1):PRINT"[";B-A;"]"', "stored",
      "NEEDS-DISK: " "the FREED SPACE is the behaviour — 1 KB back after the file "

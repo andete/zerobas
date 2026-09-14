@@ -468,7 +468,8 @@
    "modes": {
     "stmt": "MISSING"
    },
-   "row": "files",
+   "row": "files_b",
+   "subject": "FILES",
    "verdict": "MISSING",
    "weak": false
   },
@@ -677,7 +678,8 @@
    "modes": {
     "stmt": "MISSING"
    },
-   "row": "listkw",
+   "row": "listkw_c",
+   "subject": "LIST",
    "verdict": "MISSING",
    "weak": false
   },
@@ -1457,6 +1459,12 @@
     "exp": "MISSING"
    }
   },
+  "FILES": {
+   "connected": true,
+   "rows": {
+    "files_b": "MISSING"
+   }
+  },
   "FIX": {
    "connected": true,
    "rows": {
@@ -1524,6 +1532,13 @@
    "rows": {
     "lineinput": "MISSING",
     "lineinput_b": "MISSING"
+   }
+  },
+  "LIST": {
+   "connected": true,
+   "rows": {
+    "listkw_b": "MISSING",
+    "listkw_c": "MISSING"
    }
   },
   "LOG": {
@@ -1675,5 +1690,5 @@
    }
   }
  },
- "written": "2026-09-14 21:16:54"
+ "written": "2026-09-14 21:45:07"
 }

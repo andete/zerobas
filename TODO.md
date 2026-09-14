@@ -19638,6 +19638,31 @@ SAME POINT** — bare `CLOSE` closes a channel it was NOT TOLD ABOUT, which is
 exactly what `CLOSE #n` cannot exercise — with none of the apparatus.
 ⚠️ *Same lesson as `openkw_b`, which cost six sweeps: when a row needs a rig to
 stand up, ask first whether a smaller row proves the same thing.*
+⚡ **D-KWLISTSEL — `LIST` AND `FILES` CLOSE THEIR PARTIALS. 119 of 163.**
+🟢 **`LIST` 3/3** — `LIST 20` reads `[A]|20 Z$="XXX..."` and `LIST 20-30` reads
+both lines, so SELECTING is measured and not just printing. ⚠️ **THE FIRST CUT OF
+BOTH LISTED NOTHING**, and the reason is the row: `PRINT"[A]":LIST 20` packs onto
+ONE numbered line, so **line 20 did not exist**. Padded to three lines, verified
+with `as_stored` first.
+🟢 **`FILES` 2/2** — the BARE catalogue, whose whole listing is inside the compared
+text. The existing row passes a PATTERN, so a FILES that IGNORED its argument
+would pass it; this one has no argument to ignore.
+🔭 **AND TWO ROWS WERE DROPPED RATHER THAN GUESSED AT A FOURTH TIME.**
+**`PAINT` stays 1/3.** `PAINT(15,15),11,15` inside a drawn box read `?nomarker` on
+BOTH machines; reduced to `SCREEN2:PAINT(15,15),11,15` with no box it read
+`?nomarker` again — **but with nothing to stop it that floods the WHOLE screen**,
+which is slow, so the second reading cannot separate *"the 3-argument form
+faults"* from *"the flood outran the capture"*. 🔴 **THE BAR STAYS AT N=3**: the
+spec is explicit that the border IS supported here (`spec-basic-graphics-g5.md` —
+the FOURTH argument is the ERR 2, and the border is parsed and range-checked), so
+this is a missing ROW, not a missing form.
+**`SAVE` stays 1/2.** Its `,A` row read `[ 49 ]` on zerobas — the first byte of the
+listing, exactly as designed — and NOTHING on the reference, which is a divergence
+about the APPARATUS as easily as about SAVE: writing then reopening a file inside
+one sweep row is the shape `openkw_b` needed six sweeps to get right.
+⚠️ **BOTH NEED AN ISOLATED `scratchpad/` PROBE WITH ITS OWN TIMING**, the way
+`clearhimem_probe.py` and `vdpie_probe.py` settled their questions. *Three
+guesses is where guessing stops.*
       ⚠️ **`TXTMAX` IS NOW BOUNDED BY `DETOKBUF`, NOT BY FREE RAM** — at 1280 B
       it does not fit the 1024 B window, so `$BB00` is the stop until DETOKBUF
       is dealt with. Of D-LINEMAX's 1792 B, **1024 recovered, 768 still charged**.
