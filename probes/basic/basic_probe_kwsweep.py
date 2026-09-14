@@ -867,6 +867,14 @@ SWEEP: list[tuple[str, str, str | None, str, str]] = [
     ("psetkw",   'pset(1,1)',      
      'SCREEN2:PSET(1,1),15:A=POINT(1,1):SCREEN0:PRINT"[S";A;"]"',   "stored",
      "NOECHO:[S PSET draws, POINT reads it back: 4 blank vs 15 drawn"),
+    # 🌾 D-KWBREADTH batch 11: the row above uses colour 15, the default foreground,
+    # so a PSET that IGNORED its colour argument and drew in the current foreground
+    # passes it. 7 is neither the foreground nor the blank 4, so this reads the
+    # COLOUR ARGUMENT rather than "something was drawn".
+    ("psetkw_b", 'pset(2,2),7',
+     'SCREEN2:PSET(2,2),7:A=POINT(2,2):SCREEN0:PRINT"[H";A;"]"',    "stored",
+     "NOECHO:[H a NON-DEFAULT colour -- 7. The `psetkw` row draws in 15, which is "
+     "also what a PSET that discarded its colour argument would leave."),
     ("presetkw", 'preset(1,1)',    
      'SCREEN2:PSET(1,1),15:PRESET(1,1):A=POINT(1,1):SCREEN0:PRINT"[R";A;"]"', "stored",
      "NOECHO:[R PRESET must UNDO the PSET: 15 if it does nothing, 4 if it works"),
