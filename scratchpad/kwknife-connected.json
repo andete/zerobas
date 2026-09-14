@@ -308,6 +308,15 @@
    "verdict": "DIVERGENT",
    "weak": false
   },
+  "FIELD": {
+   "connected": true,
+   "modes": {
+    "stmt": "MISSING"
+   },
+   "row": "fieldkw",
+   "verdict": "MISSING",
+   "weak": false
+  },
   "FILES": {
    "connected": true,
    "modes": {
@@ -1004,5 +1013,5 @@
    "weak": false
   }
  },
- "written": "2026-09-14 05:01:11"
+ "written": "2026-09-14 05:23:02"
 }

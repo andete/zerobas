@@ -500,6 +500,22 @@ fifth byte (the `$1A` EOF marker Disk BASIC appends on CLOSE) **as a cause that 
 NOT been read back** — because a green verdict says nothing about whether the
 justification beside it is true.
 🔭 **`FIELD` remains**, and needs the fixture plus the same placement care.
+✅ **BREADTH BATCH 17 (D-KWBREADTH, 2026-09-14) — `FIELD` CLOSES AXIS (f). ALL
+FOUR UNATTRIBUTED KEYWORDS NOW HAVE ROWS THEY ARE THE SUBJECT OF, AND ALL FOUR ARE
+IN THE PIN.** `fieldkw` reads `[WXYZ]`, **knife-proven LOAD-BEARING**; pin **112
+knifed, 109 CONNECTED, 3 not** (`CALL`, `MAX`, `PAD`), no junk keys; sweep
+`DIVERGENT=2 SUPPORTED=213`.
+The row is the RANDOM-access round trip: `OPEN … AS#1` with **no `FOR` clause**,
+`FIELD` binds a buffer slice, `LSET` fills it, `PUT` writes record 1 and `GET`
+reads it back. **The four verbs are load-bearing TOGETHER** — the reading fails if
+any one of them does — and it is placed after `loc` and `openkw` because it CREATES
+a file and `files`/`lfiles`/`dskf` must read the fixture first.
+🎯 **AND THE NOTE WAS WRITTEN FROM THE MEASUREMENT, NOT BEFORE IT.** The row
+shipped its first sweep with *"reading pending measurement"* in place of a number,
+and `[WXYZ]` was written in only once both machines had printed it. That is the
+direct answer to `openkw` claiming 4 where the file measured 5, and to `varptr_b`
+claiming a stride of 8 while reading −3: **a note that predicts is a note that can
+be wrong while every gate stays green.**
 🔪 **D-KWSTRCUT — THE THIRD CUT SHAPE, AND A FIRST VERSION OF IT THAT WAS WORSE
 THAN THE GAP IT CLOSED (2026-09-13).** `basic/sysvars.inc:250` named the shape in
 prose written long before the knife existed: **MKI$ is evaluated in
@@ -1168,7 +1184,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:17895 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:17911 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -1334,7 +1350,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:5935 (T-6FE392)8 (T-529ABE)` from `TODO.md:16546 (T-529ABE)`: a
+      `TODO.md:5951 (T-6FE392)8 (T-529ABE)` from `TODO.md:16562 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -6779,7 +6795,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:16546 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:16562 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

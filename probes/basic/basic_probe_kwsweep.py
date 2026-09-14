@@ -1706,6 +1706,20 @@ SWEEP: list[tuple[str, str, str | None, str, str]] = [
      "byte has NOT been read back, so it is named as the likely cause and not as "
      "a measured fact. What IS measured is 5, and an OPEN that created nothing "
      "cannot be reopened at all."),
+    # 🌾 D-KWBREADTH batch 17 — AXIS (f), THE LAST OF THE FOUR: `FIELD` had no row
+    # as subject either. RANDOM-access disk: `OPEN ... AS#1` with NO `FOR` clause,
+    # `FIELD` binds a buffer slice to a string variable, `LSET` fills it, `PUT`
+    # writes the record and `GET` reads it back. Placed here, after `loc` and
+    # `openkw`, because it CREATES a file and `files`/`lfiles`/`dskf` must read the
+    # fixture first.
+    ("fieldkw", 'field#1,4 as a$',
+     'OPEN"F.DAT"AS#1:FIELD#1,4 AS A$:LSET A$="WXYZ":PUT#1,1:GET#1,1:PRINT"[";A$;"]":CLOSE#1',
+     "stored",
+     "NEEDS-DISK: " "the random-access round trip -- FIELD binds, LSET fills, PUT "
+     "writes record 1 and GET reads it back: [WXYZ], MEASURED on both machines "
+     "before this sentence was written. A FIELD that bound nothing leaves A$ "
+     "empty, and the four verbs are load-bearing TOGETHER -- the reading fails if "
+     "any one of them does."),
     ("bin",     "a$=bin$(5)",
      'PRINT"[";BIN$(5);"]"',                         "direct",
      "absent => syntax error; real => 101"),
