@@ -19336,6 +19336,36 @@ asked its question of the selftest's FIXTURE `kws`, which holds three invented
 keywords and no particles at all, so **every clause would have passed vacuously**.
 It reads `kwtable_keywords()` now. *A selftest that cannot see its subject agrees
 with everything.*
+🔬 **D-KWOVERLAP — MEASURED: THE SUITES AND THE SWEEP ARE ORTHOGONAL, NOT
+REDUNDANT** (Joost, 2026-09-14, inverting my evidence question: *"maybe some of the
+kwsweep tests can replace tests in the suites?"*).
+📊 **47559 TYPED LINES FROM 83 SUITES** (`make kwcover`, `scratchpad/kwoverlap.py`).
+🎯 **THE DISTRIBUTION IS BIMODAL AND THERE IS NO MIDDLE BAND.** A suite types a
+statement either **hundreds** of times, because it IS that suite's subject
+(`width-acceptance` types `WIDTH` 981× and `SCREEN` 1087×, against kwsweep's two
+rows each; `math-acceptance` types `PRINT` 1350×), or **once or twice**, because it
+is APPARATUS inside a test of something else. **There is nothing in between for a
+sweep row to substitute for.**
+🔴 **AND THE 528 LOW-COUNT PAIRS ARE NOT THIN TESTS — THEY ARE NOT TESTS AT ALL.**
+Checked by READING THE LINES rather than the counts: `deffn-acceptance` types `ABS`
+once, in `DEF FNA(X)=ABS(0)+X`, where ABS is the BODY of the DEF FN under test;
+`ramfree-acceptance` types `LINE` to CONSUME VRAM before measuring free RAM;
+`gicini-acceptance` types `SCREEN 1:SCREEN 0` as setup; `array-acceptance` types
+`POKE` to PLANT the bytes it then reads as an array; `banner-acceptance` types
+`PRINT` as its READOUT. **Deleting any of those does not remove a test of that
+keyword — it breaks the test of a different one.**
+🎚️ **kwsweep IS 1488 OF THE 47559 LINES, ABOUT 3%**, and the two are different
+KINDS of instrument: the sweep is BREADTH (every statement, once or twice, each row
+designed to fail if that statement breaks) and the suites are DEPTH (one statement,
+hundreds of times, mostly error and geometry cases). **The battery is not carrying
+duplicate work that could be cut**, and my prior that "the overlap is thin" was
+right for the wrong reason — it is not that the numbers are small, it is that the
+two instruments never meet.
+🙋 **STILL OPEN AND NOT SETTLED BY THIS**: whether a dedicated acceptance suite may
+SUPPLY TIER 1 breadth. `input-devices-acceptance` properly exercises
+`STICK`/`STRIG`/`PDL` whose kwsweep rows read 0 — correct with nothing plugged in
+AND exactly what a stub returns, so they are not awarded. Joost answered a
+different question; this one waits.
       ⚠️ **`TXTMAX` IS NOW BOUNDED BY `DETOKBUF`, NOT BY FREE RAM** — at 1280 B
       it does not fit the 1024 B window, so `$BB00` is the stop until DETOKBUF
       is dealt with. Of D-LINEMAX's 1792 B, **1024 recovered, 768 still charged**.
