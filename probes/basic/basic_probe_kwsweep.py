@@ -580,13 +580,38 @@ SWEEP: list[tuple[str, str, str | None, str, str]] = [
     ("offkw",   'off',                'INTERVAL OFF:PRINT"[9]"',              "direct", "D-KWDRAIN"),
     ("ifkw",    'if 1 then a=2',      'IF 3>2 THEN PRINT"[4]"',               "direct", "D-KWDRAIN"),
     ("nextkw",  'next i',             'FOR I=1 TO 2:NEXT:PRINT"[";I;"]"',     "direct", "D-KWDRAIN"),
-    ("clearkw", 'clear 100',          'CLEAR 100:PRINT"[5]"',                 "direct", "D-KWDRAIN"),
+    ("clearkw", 'clear 100',          'CLEAR 100:PRINT"[5]"',                 "direct",
+     "D-KWDRAIN: FORM:string-space"),
     # 🌾 D-KWBREADTH batch 5: `clearkw` prints a CONSTANT MARKER, so it scores that
     # the word RAN and nothing about what it DID. CLEAR's defining effect is that
     # it resets variables; `A=A+1` after it reads 1 only if A really went to 0.
     ("clear_b", 'clear',              'A=5:CLEAR:A=A+1:PRINT"[";A;"]"',        "direct",
-     "D-KWDRAIN: CLEAR's EFFECT, not its existence -- `[ 1 ]` proves A was reset "
+     "D-KWDRAIN: FORM:bare CLEAR's EFFECT, not its existence -- `[ 1 ]` proves A was reset "
      "to 0; a CLEAR that did nothing leaves 6"),
+    # 🎚️ D-KWTIER1: CLEAR's THIRD form, `CLEAR n,himem`, sets the top of memory
+    # BASIC may use (`HIMEM`, $FC4A, declared in basic/sysvars.inc). MEASURED in
+    # scratchpad/clearhimem_probe.py on all three machines BEFORE this row existed,
+    # because it carries two hazards at once:
+    #   * it lowers a GLOBAL ceiling, so every row after it would run with less
+    #     memory unless the original is put back (the `AUTO` hazard, once 21 rows);
+    #   * `CLEAR` WIPES VARIABLES, so the original cannot be held in one (the
+    #     `MAXFILES` trap, where the restore destroyed the value it protected).
+    # 🎯 SO THE ORIGINAL IS PARKED IN RAM at $E003/$E004 -- ABOVE the lowered
+    # ceiling, where BASIC will not touch it ($E001 is runkw's, $E002
+    # deleterange_probe's) -- and the restore runs AFTER the readout.
+    # 🔬 AND THE READING IS THE **SET** VALUE, NOT THE RESTING ONE: at rest HIMEM is
+    # 62336 on the VG-8020 and here but 56951 on the CF-3300 (its disk ROM steals
+    # RAM), so a row reading the resting value would DIVERGE for a reason that is
+    # not a defect. 53248 (=$D000) is what all three read once it is SET.
+    # ⚠️ `CLEAR 100,B` rather than the 39-char expression: a single statement over
+    # 34 chars fits NEITHER mode, and the split form was measured to still see B --
+    # the argument is evaluated before the clear takes effect.
+    ("clear_c",  'clear 100,&hd000',
+     'POKE&HE003,PEEK(&HFC4A):POKE&HE004,PEEK(&HFC4B):CLEAR 100,&HD000:A=PEEK(&HFC4A)+256*PEEK(&HFC4B):PRINT"[";A;"]":B=PEEK(&HE003)+256*PEEK(&HE004):CLEAR 100,B',
+     "stored",
+     "D-KWDRAIN: FORM:himem the HIMEM form -- 53248, the ceiling it SET, measured "
+     "on all three machines. The resting value differs between the references and "
+     "is deliberately not what this reads."),
     ("dimkw",   'dim a(2)',           'DIM D(2):D(1)=5:PRINT"[";D(1);"]"',    "direct", "D-KWDRAIN"),
 
     # ------------------------------------------------ D-KWDRAIN batch 3 (2026-09-12)

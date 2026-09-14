@@ -37,6 +37,13 @@ FORMS: dict[str, tuple[tuple[str, ...], str]] = {
         "take a different address calculation there. The MSX2-only logical "
         "OPERATOR argument is deliberately NOT counted -- this is an MSX1 tree.",
     ),
+    "CLEAR": (
+        ("bare", "string-space", "himem"),
+        "MSX1 syntax is `CLEAR [<string space>[,<himem>]]`, so the whole surface is "
+        "three: the bare form (which resets variables), the string-space argument, "
+        "and the HIMEM ceiling. There is no fourth -- unlike PSET this verb has no "
+        "mode or coordinate dimension, which is why N is 3 here and 4 there.",
+    ),
 }
 
 

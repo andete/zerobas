@@ -604,6 +604,25 @@ key.** (2) The open-item clause: `keyword_tiers`' entry is a TUPLE
 `bool(entry)` marked every keyword as carrying an open item and reported PSET
 blocked by one it does not have. Only comparing against `PAINT`, which really does
 carry a TIER 4 item, exposed it. Both are now selftests (S26–S28).
+🎚️ **AND `CLEAR` IS THE SECOND, AT 3/3 FORMS** — `bare`, `string-space`, `himem`.
+Its N is **3 where PSET's is 4**, which is the rule working as ruled: `CLEAR` has no
+coordinate or mode dimension, so its whole surface is
+`CLEAR [<string space>[,<himem>]]`. Both new rows are knife-proven LOAD-BEARING;
+sweep `DIVERGENT=2 SUPPORTED=220`.
+🔬 **`clear_c` WAS MEASURED IN ISOLATION FIRST** (`scratchpad/clearhimem_probe.py`),
+because it carries TWO hazards at once: it lowers a GLOBAL ceiling, so every later
+row would run with less memory unless the original is restored (the `AUTO` hazard),
+and **`CLEAR` WIPES VARIABLES, so the original cannot be held in one** (the
+`MAXFILES` trap). The original is parked in RAM at `$E003/$E004` — **above the
+lowered ceiling, where BASIC will not touch it** — and the restore runs AFTER the
+readout.
+🎯 **AND THE ROW READS THE *SET* CEILING, NOT THE RESTING ONE.** At rest `HIMEM` is
+**62336** on the VG-8020 and here but **56951** on the CF-3300, whose disk ROM
+steals RAM — so a row reading the resting value would have DIVERGED for a reason
+that is not a defect. `53248` (`$D000`) is what all three read once it is SET.
+⚠️ The restore is `CLEAR 100,B` and not the 39-character expression: **a single
+statement over 34 chars fits NEITHER mode**, and the split form was MEASURED to
+still see `B` — the argument is evaluated before the clear takes effect.
 🔪 **D-KWSTRCUT — THE THIRD CUT SHAPE, AND A FIRST VERSION OF IT THAT WAS WORSE
 THAN THE GAP IT CLOSED (2026-09-13).** `basic/sysvars.inc:250` named the shape in
 prose written long before the knife existed: **MKI$ is evaluated in
@@ -1272,7 +1291,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:17999 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:18018 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -1438,7 +1457,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:6039 (T-6FE392)8 (T-529ABE)` from `TODO.md:16650 (T-529ABE)`: a
+      `TODO.md:6058 (T-6FE392)8 (T-529ABE)` from `TODO.md:16669 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -6883,7 +6902,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:16650 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:16669 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

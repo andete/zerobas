@@ -88,7 +88,7 @@
    "modes": {
     "stmt": "MISSING"
    },
-   "row": "clear_b",
+   "row": "clear_c",
    "verdict": "MISSING",
    "weak": false
   },
@@ -1013,5 +1013,5 @@
    "weak": false
   }
  },
- "written": "2026-09-14 07:41:17"
+ "written": "2026-09-14 08:10:48"
 }
