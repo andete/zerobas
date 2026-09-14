@@ -294,6 +294,25 @@ def knife_connected(path=KNIFE_PIN):
     return {kw for kw, r in rows.items() if r.get("connected")}
 
 
+def stmt_subject(stmt, kwset):
+    """The STATEMENT a crunch body is about: a composite name, else the keyword.
+
+    🎚️ D-KWCOMPOSITE (Joost, 2026-09-14). `stmt_keyword` below returns the FIRST
+    keyword token, which is the wrong granularity for a composite: `ON KEY GOSUB`
+    and `ON n GOTO` share nothing but a token, and `LINE INPUT` and
+    `LINE (x,y)-(x,y)` are different statements entirely -- so tiering the first
+    token would let a graphics row vouch for console input. It is also what let
+    `ON` reach TIER 1 on three rows speaking for three of its EIGHT composites.
+    ⚠️ The composite is matched over EVERY keyword in the body, not the first two
+    adjacent ones: `ON 2 GOTO 20,30` has an expression between its two keywords."""
+    try:
+        import kwforms
+    except ImportError:
+        return stmt_keyword(stmt, kwset)
+    words = [w for w in WORD.findall(stmt.upper()) if w in kwset]
+    return kwforms.composite_name(words) or stmt_keyword(stmt, kwset)
+
+
 def stmt_keyword(stmt, kwset):
     """The keyword a kwsweep row is ABOUT: the first keyword token in its crunch
     statement (`a=abs(-5)` -> ABS, `a$=mid$("hi",1,1)` -> MID$, `A=1` -> None)."""
@@ -345,7 +364,7 @@ def kwsweep_forms(kws, path=KWSWEEP_PIN):
     for key, r in pin.get("rows", {}).items():
         if r.get("weak") or r.get("verdict") != "SUPPORTED" or not r.get("form"):
             continue
-        kw = stmt_keyword(r.get("stmt", ""), kwset)
+        kw = stmt_subject(r.get("stmt", ""), kwset)
         if kw:
             out.setdefault(kw, set()).add(r["form"])
     return out

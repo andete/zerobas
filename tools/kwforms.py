@@ -27,6 +27,49 @@ input is worse than one that refuses.
 """
 from __future__ import annotations
 
+# 🎚️ COMPOSITE STATEMENTS (Joost, 2026-09-14: "one could consider the ON + second
+# keyword one composite keyword requiring its own tests"). `ON KEY GOSUB` and
+# `ON n GOTO` share nothing but a token; `LINE INPUT` and `LINE (x,y)-(x,y)` are
+# entirely different statements. Tiering the FIRST keyword of a statement would let
+# a graphics row vouch for console input, and it is what let `ON` reach TIER 1 on
+# three rows that spoke for three of its EIGHT composites.
+# 🔴 MOST SPECIFIC FIRST, AND THE ORDER IS LOAD-BEARING: `ON ERROR GOTO` must win
+# over `ON GOTO`, and `ON GOTO` must never match an `ON ERROR GOTO` body. Each
+# pattern is the set of keywords that must ALL appear; longer sets are tried first.
+# ⚠️ GROUNDED IN WHAT THIS TREE SHIPS, not in the MSX manual: every one below has a
+# handler here (the ON-traps are ex_on_key / ex_on_interval / ex_on_strig /
+# eos_common, basic/interp.asm:284).
+COMPOSITES: tuple[tuple[frozenset[str], str], ...] = tuple(
+    (frozenset(ws.split()), name) for ws, name in (
+        ("ON ERROR GOTO",   "ON ERROR GOTO"),
+        ("ON KEY GOSUB",    "ON KEY GOSUB"),
+        ("ON STOP GOSUB",   "ON STOP GOSUB"),
+        ("ON SPRITE GOSUB", "ON SPRITE GOSUB"),
+        ("ON STRIG GOSUB",  "ON STRIG GOSUB"),
+        ("ON INTERVAL GOSUB", "ON INTERVAL GOSUB"),
+        ("ON GOSUB",        "ON GOSUB"),
+        ("ON GOTO",         "ON GOTO"),
+        ("LINE INPUT",      "LINE INPUT"),
+        ("DEF FN",          "DEF FN"),
+        ("DEF USR",         "DEF USR"),
+        ("PUT SPRITE",      "PUT SPRITE"),
+        ("PRINT USING",     "PRINT USING"),
+    ))
+COMPOSITES = tuple(sorted(COMPOSITES, key=lambda e: -len(e[0])))
+
+
+def composite_name(words) -> str | None:
+    """The composite statement `words` names, or None.
+
+    `words` is the set of KEYWORDS a crunch body contains. The most specific
+    pattern wins, so `{ON, ERROR, GOTO}` is `ON ERROR GOTO` and never `ON GOTO`."""
+    ws = set(words)
+    for need, name in COMPOSITES:
+        if need <= ws:
+            return name
+    return None
+
+
 # keyword -> (forms, why this is the set)
 FORMS: dict[str, tuple[tuple[str, ...], str]] = {
     "PSET": (

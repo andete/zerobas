@@ -649,6 +649,44 @@ DIRECTIONS**: `PSET` and `PRESET` at 4 (an optional trailing argument, a STEP
 coordinate and a screen mode), `CLEAR` and `COLOR` at 3 (no coordinate and no mode;
 `COLOR`'s three are positional). A fixed N would have been wrong for two of the
 four — which is the ruling itself, demonstrated rather than argued.
+🔴 **RETRACTED THE SAME MORNING — `ON` WAS AWARDED TIER 1 AND THE AWARD WAS NOT
+SUPPORTED (D-KWCOMPOSITE, Joost 2026-09-14: *"one could consider the ON + second
+keyword one composite keyword requiring its own tests"*).** `ON ERROR GOTO`,
+`ON n GOTO`, `ON n GOSUB`, `ON KEY GOSUB`, `ON STOP GOSUB`, `ON INTERVAL=n GOSUB`,
+`ON SPRITE GOSUB` and `ON STRIG GOSUB` are **STATEMENTS IN THEIR OWN RIGHT**, not
+forms of one keyword — the traps have their own handlers (`ex_on_key`,
+`ex_on_interval`, `ex_on_strig`, `eos_common`, `basic/interp.asm:284`). **Three
+rows spoke for three of EIGHT composites and the table called it 3/3.**
+🎯 **THE ERROR NAMED: I COUNTED THE KEYWORD THAT *BEGINS* THE STATEMENT, NOT THE
+STATEMENT.** `stmt_keyword` returns the FIRST keyword token, which is the wrong
+granularity here — and it is not only `ON`: **`LINE INPUT` and `LINE (x,y)-(x,y)`
+share a token and are entirely different statements, so a GRAPHICS row would have
+vouched for CONSOLE INPUT.** Thirteen composites are implemented in this tree
+(`LINE INPUT` 35 mentions in `basic/`, `DEF FN` 79, `PRINT USING` 75, `PUT #` 44,
+`PRINT #` 40, `DEF USR` 19, `PUT SPRITE` 16, the five ON-traps 4–12 each), and the
+old model collapsed them into six parents. ⚠️ **`ON` REACHING TIER 1 "FOR FREE" WAS
+A SYMPTOM, NOT A BONUS — THE CHEAPNESS SHOULD HAVE BEEN THE TELL.**
+✅ **WITHDRAWN AND SPLIT.** The `ON` entry is gone from `tools/kwforms.py`, so it is
+UNRATED again; `stmt_subject()` matches an AUTHORED composite list MOST SPECIFIC
+FIRST (`ON ERROR GOTO` wins over `ON GOTO`, which never matches an `ON ERROR GOTO`
+body) over EVERY keyword in the body, since `ON 2 GOTO 20,30` has an expression
+between its two keywords. ON's three rows now attribute to **three different
+statements**, each holding ONE form and each correctly UNRATED. **Four keywords
+remain at TIER 1: `CLEAR`, `COLOR`, `PRESET`, `PSET`** — none of them composite,
+none affected.
+🔭 **AND A LIMIT MEASURED RATHER THAN CLAIMED: A COMPOSITE CANNOT YET BE AWARDED AT
+ALL.** `tier1_keywords()` iterates the 159-keyword table, and no composite is in
+it, so an authored form list for `ON GOTO` would still award nothing. Widening that
+set is the next slice and it touches the DENOMINATOR — including S20, *"the full
+list names every keyword exactly once"*. ⚠️ **DO NOT WEAKEN A SELFTEST TO MAKE A
+COUNT COME OUT.**
+🙋 **AND ONE QUESTION FOR JOOST RATHER THAN A GUESS: CAN A PARENT KEYWORD STILL
+TIER ON ITS OWN ONCE ITS COMPOSITES ARE SPLIT OUT?** Does bare `PRINT` tier
+independently of `PRINT #` and `PRINT USING`? The code today would award a parent
+if someone authored a form list for it, which is a default nobody chose. Related:
+`USING` is UNCONNECTABLE BY CONSTRUCTION (token `$E4` is not in `stmt_table`), yet
+`PRINT USING` is now a unit in its own right — so the connectedness clause has to
+be satisfied by the COMPOSITE's cut, not the second word's.
 🔪 **D-KWSTRCUT — THE THIRD CUT SHAPE, AND A FIRST VERSION OF IT THAT WAS WORSE
 THAN THE GAP IT CLOSED (2026-09-13).** `basic/sysvars.inc:250` named the shape in
 prose written long before the knife existed: **MKI$ is evaluated in
@@ -1317,7 +1355,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:18044 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:18082 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -1483,7 +1521,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:6084 (T-6FE392)8 (T-529ABE)` from `TODO.md:16695 (T-529ABE)`: a
+      `TODO.md:6122 (T-6FE392)8 (T-529ABE)` from `TODO.md:16733 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -6928,7 +6966,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:16695 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:16733 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

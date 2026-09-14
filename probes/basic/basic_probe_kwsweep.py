@@ -869,7 +869,7 @@ SWEEP: list[tuple[str, str, str | None, str, str]] = [
      "D-KWDRAIN: 5 is out of STRIG's 0..4 range -> Illegal function call; an "
      "undefined array auto-dims and answers 0"),
     ("onkw",      'on error goto 20', 
-     'ON ERROR GOTO 20:ERROR 7:END:PRINT"[R";ERR;ERL;"]":END',  "stored", "D-KWDRAIN: ON in its ON ERROR form"),
+     'ON ERROR GOTO 20:ERROR 7:END:PRINT"[R";ERR;ERL;"]":END',  "stored", "D-KWDRAIN: FORM:on-error ON in its ON ERROR form"),
     # 🌾 D-KWBREADTH batch 12: `ON` HAS THREE FORMS AND THE ROW ABOVE COVERS ONLY
     # `ON ERROR GOTO`. The INDEX-SELECTED jump -- the form a 1985 listing actually
     # uses -- had no row at all. It needs SEPARATE numbered lines as targets, and
@@ -886,7 +886,7 @@ SWEEP: list[tuple[str, str, str | None, str, str]] = [
     ("ongoto",   'on 2 goto 20,30',
      'ON 2 GOTO 20,30:PRINT"[J00]":END:REM ZQ:PRINT"[J77]":END:PRINT"[J99]":END',
      "stored",
-     "NOECHO:[J the INDEX-SELECTED jump. `ON 2` must reach the SECOND target: "
+     "NOECHO:[J FORM:index-goto the INDEX-SELECTED jump. `ON 2` must reach the SECOND target: "
      "[J99]. An ON that ignores the index gives [J77], one that never jumps [J00]."),
     # 🌾 D-KWBREADTH batch 13: the GOSUB sibling. `RETURN` lands back on line 10's
     # PRINT, so the handler's value is what gets read. THE PACKING WAS SEARCHED FOR,
@@ -903,7 +903,7 @@ SWEEP: list[tuple[str, str, str | None, str, str]] = [
     ("ongosub",  'on 2 gosub 30,40',
      'ON 2 GOSUB 30,40:PRINT"[K";A;"]":END:REM ZZZZZZZZZZZZZZZZZZZZZZ:A=77:RETURN:REM QQQQQQQQQQQQQQ:A=99:RETURN',
      "stored",
-     "NOECHO:[K the INDEX-SELECTED subroutine call. `ON 2` must reach the SECOND "
+     "NOECHO:[K FORM:index-gosub the INDEX-SELECTED subroutine call. `ON 2` must reach the SECOND "
      "target and RETURN: 99. An ON that ignores the index gives 77, one that never "
      "calls leaves A at 0."),
     ("errorkw",   'error 7',          
