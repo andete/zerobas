@@ -1037,6 +1037,35 @@ MISSING ROW.** `VARPTR(#n)` is recorded as DEFERRED in `docs/TODO-done.md`. Same
 shape as `LOCATE` at 3/4: **the bar comes from the reference's syntax, not from
 what we chose to build.** ⚠️ Its variable form is scored by `varptr_b` and NOT by
 `varptr`, which reads `VARPTR(B)>0` — a BOOLEAN, which cannot see the address.
+⚡ **D-KWBATCH7 — FIVE MORE FOR FOUR ROWS, AND THE DUPLICATE-KEY GUARD CAUGHT ME
+ONE BATCH AFTER I WROTE IT. FIFTY-TWO KEYWORDS AT TIER 1.**
+🔴 **I WROTE `mks_b` AND `mkd_b` AND THE IMPORT REFUSED — BOTH ALREADY EXISTED.**
+The guard added in D-KWBATCH5, for exactly this, fired on its author's next batch.
+🎯 **AND THE ROWS THAT EXISTED WERE THE ONES I WAS ABOUT TO DUPLICATE**: content
+readings of MKS$ and MKD$, mis-attributed to **ASC** because their crunch bodies
+are `a=asc(mks$(1.5))`. They now carry `SUBJECT:MKS$` / `SUBJECT:MKD$`, so both
+keywords reach TIER 1 **with no new row at all** — the third time the SUBJECT tag
+has recovered evidence that was already measured and scored for nobody (after
+`PRINT USING` and `MKI$`).
+⚠️ **THE LESSON IS NOT "CHECK THE KEY IS FREE", IT IS "CHECK WHETHER THE READING
+ALREADY EXISTS UNDER THE WRONG SUBJECT".** A duplicate key is the visible symptom;
+the invisible one is a row measuring the right thing and being counted for the
+wrong keyword.
+🟢 **`NEXT` AT N=3, AND THE SPLIT IS IN THE SOURCE.** `ex_next` parks 0 for a
+bare NEXT (take the TOP frame) and `nx_comma` parks 1 (`basic/program.asm`), so the
+named and comma-list forms take a DIFFERENT path through the frame search — a bare
+NEXT cannot exercise the matching at all. `nextkw_c` closes TWO frames with one
+`NEXT J,I` and reads `[ 3  3 ]`, where a list that closed only the first leaves the
+outer loop open and I at 1.
+🟢 **`BASE` AT N=2 — `BASE(n)` IS AN ASSIGNMENT TARGET TOO** (`ex_base_assign`,
+`basic/interp.asm`), exactly like `VDP(n)`, and every existing row read.
+⚠️ **THE WRITE ROW USES INDEX 5, NOT 2.** `BASE(2)` is the SCREEN 0 name table,
+and writing it **MOVES THE TEXT PLANE THE CAPTURE SCRAPES**; `BASE(5)` belongs to
+SCREEN 1, which is not on screen here, so the write is observable and harmless.
+The original value is put back either way. `[0r 6144 ]`.
+🟢 **`PEEK` HAD ONLY `PEEK(0)>=0`, A BOOLEAN TRUE OF EVERY POSSIBLE BYTE.** The
+byte PEEK reads back was already scored — by `pokekw`, whose SUBJECT is POKE.
+`peek_b`'s crunch body is `a=peek(-8192)`, so the reading is PEEK's: `[ 66 ]`.
 🔪 **D-KWSTRCUT — THE THIRD CUT SHAPE, AND A FIRST VERSION OF IT THAT WAS WORSE
 THAN THE GAP IT CLOSED (2026-09-13).** `basic/sysvars.inc:250` named the shape in
 prose written long before the knife existed: **MKI$ is evaluated in
@@ -1705,7 +1734,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:18432 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:18461 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -1871,7 +1900,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:6472 (T-6FE392)8 (T-529ABE)` from `TODO.md:17083 (T-529ABE)`: a
+      `TODO.md:6501 (T-6FE392)8 (T-529ABE)` from `TODO.md:17112 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -7316,7 +7345,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:17083 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:17112 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

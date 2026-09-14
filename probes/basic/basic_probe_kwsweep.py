@@ -502,7 +502,15 @@ SWEEP: list[tuple[str, str, str | None, str, str]] = [
      "FORM:search-from then ignored finds the FIRST A and reads 1."),
     ("hex",     "a$=hex$(255)",       'PRINT"[";HEX$(255);"]"',          "direct", "FORM:to-hex control"),
     ("sqr",     "a=sqr(9)",           'PRINT"[";SQR(9);"]"',             "direct", "control"),
-    ("peek",    "a=peek(0)",          'PRINT"[";PEEK(0)>=0;"]"',         "direct", "control"),
+    ("peek",    "a=peek(0)",          'PRINT"[";PEEK(0)>=0;"]"',         "direct", "FORM:address-read control"),
+    # D-KWBATCH7: `peek` reads `PEEK(0)>=0`, a BOOLEAN, which is the fourth
+    # screening axis and PEEK's only evidence. The byte PEEK reads back is scored
+    # by `pokekw` -- but that row's SUBJECT is POKE. This one's crunch body is
+    # `a=peek(-8192)`, so the reading is scored for PEEK.
+    ("peek_b",  'a=peek(-8192)',
+     'POKE-8192,66:PRINT"[";PEEK(-8192);"]"',        "direct",
+     "FORM:address-read the VALUE, not its non-negativity -- 66, the byte just "
+     "POKEd. `peek` asks `PEEK(0)>=0`, which is true of every possible byte."),
     ("varptr",  "a=varptr(b)",        'B=1:PRINT"[";VARPTR(B)>0;"]"',    "direct", "control"),
     # 🌾 D-KWBREADTH batch 8: `VARPTR(B)>0` is a half-plane. The ABSOLUTE address is
     # machine-dependent (RAM layouts differ), but a DELTA cancels the base: the
@@ -649,7 +657,20 @@ SWEEP: list[tuple[str, str, str | None, str, str]] = [
     ("stepkw",  'step 2',             'FOR I=1TO5STEP2:NEXT:PRINT"[";I;"]"',  "direct", "D-KWDRAIN"),
     ("offkw",   'off',                'INTERVAL OFF:PRINT"[9]"',              "direct", "D-KWDRAIN"),
     ("ifkw",    'if 1 then a=2',      'IF 3>2 THEN PRINT"[4]"',               "direct", "D-KWDRAIN"),
-    ("nextkw",  'next i',             'FOR I=1 TO 2:NEXT:PRINT"[";I;"]"',     "direct", "D-KWDRAIN"),
+    ("nextkw",  'next i',             'FOR I=1 TO 2:NEXT:PRINT"[";I;"]"',     "direct", "FORM:bare D-KWDRAIN"),
+    # D-KWBATCH7: NEXT has three forms and only the BARE one had a row.
+    # `ex_next` parks 0 for a bare NEXT ("match the top frame") and `nx_comma`
+    # parks 1 (basic/program.asm), so the named and comma-list forms take a
+    # DIFFERENT path through the frame search.
+    ("nextkw_b", 'next i',
+     'FOR I=1 TO 2:NEXT I:PRINT"[";I;"]"',           "direct",
+     "FORM:named the NAMED form, which must MATCH the frame rather than take the "
+     "top one."),
+    ("nextkw_c", 'next j,i',
+     'FOR I=1 TO 2:FOR J=1 TO 2:NEXT J,I:PRINT"[";I;J;"]"',  "stored",
+     "FORM:comma-list one NEXT closing TWO frames, innermost first. `[ 3  3 ]` -- "
+     "both loops ran to completion, where a comma list that closed only the first "
+     "leaves the outer loop open and I at 1."),
     ("clearkw", 'clear 100',          'CLEAR 100:PRINT"[5]"',                 "direct",
      "D-KWDRAIN: FORM:string-space"),
     # 🌾 D-KWBREADTH batch 5: `clearkw` prints a CONSTANT MARKER, so it scores that
@@ -999,7 +1020,19 @@ SWEEP: list[tuple[str, str, str | None, str, str]] = [
      "sprite 3's OWN byte, MEASURED on both machines before this sentence was "
      "written. An index that were discarded would read 111, the byte sprite 0 was "
      "given afterwards."),
-    ("basekw",    'a=base(2)',         'PRINT"[";BASE(2);"]"',               "direct", "D-KWDRAIN"),
+    ("basekw",    'a=base(2)',         'PRINT"[";BASE(2);"]"',               "direct", "FORM:read D-KWDRAIN"),
+    # D-KWBATCH7: `BASE(n)` is an assignment TARGET too -- `ex_base_assign`
+    # (basic/interp.asm:749) is a separate handler from the read selector, exactly
+    # like VDP(n). Every existing row reads.
+    # WARNING: index 5, not 2. BASE(2) is the SCREEN 0 name table and writing it
+    # MOVES THE TEXT PLANE the capture scrapes. BASE(5) belongs to SCREEN 1, which
+    # is not on screen here, so the write is observable and harmless. The original
+    # value is put back either way.
+    ("basekw_b", 'base(5)=6144',
+     'V=BASE(5):BASE(5)=&H1800:A=BASE(5):BASE(5)=V:PRINT"[0r";A;"]"',  "stored",
+     "NOECHO:[0r FORM:write the ASSIGNMENT form, which has its own handler. "
+     "`[0r 6144 ]` -- the value written, read back. An assignment that parsed and "
+     "dropped the value leaves the boot default here instead."),
 
     # ---------------------------------------------- D-KWDRAIN step 4e (2026-09-12)
     # 🎯 THE MULTI-LINE WORDS, AND THEY WERE NEVER BLOCKED EITHER. `as_stored`
@@ -1716,17 +1749,23 @@ SWEEP: list[tuple[str, str, str | None, str, str]] = [
      "and `mki_b` further down reads only the FIRST byte, so neither can see the "
      "byte ORDER: a big-endian store reads `[ 1  2 ]` here and `[ 1 ]` there."),
     ("mks",     'a$=mks$(1)',   'PRINT"[";LEN(MKS$(1));"]"',  "direct",
-     "NEEDS-DISK: " "absent => syntax error; real => 4"),
+     "NEEDS-DISK: " "FORM:single-to-string absent => syntax error; real => 4"),
+    # D-KWBATCH7: same axis as `mki` -- a LENGTH cannot see CONTENT, and 4 is what
+    # any four bytes read. The single-precision byte layout is not predicted here:
+    # the row prints the length AND the first byte, and what makes it a reading is
+    # that BOTH MACHINES MUST AGREE on the byte. A stub returning four zeros reads
+    # a different first byte from the real encoder.
     ("mks_b",   'a=asc(mks$(1.5))', 'PRINT"[";ASC(MKS$(1.5));"]"', "direct",
-     "NEEDS-DISK: " "MKS$'s CONTENT, where its own row scores only LENGTH -- and "
+     "NEEDS-DISK: " "SUBJECT:MKS$ FORM:single-to-string MKS$'s CONTENT, where its "
+     "own row scores only LENGTH -- and "
      "`LEN(MKS$(1))=4` is passed by a stub returning four ZERO bytes. 1.5 packs "
      "as 65 21 0 0, MEASURED on the CF-3300 and equal to PEEK(VARPTR(A!)) for "
      "A!=1.5 (basic/str-engine.asm), so the exponent byte reads 65."),
     ("mkd",     'a$=mkd$(1)',   'PRINT"[";LEN(MKD$(1));"]"',  "direct",
-     "NEEDS-DISK: " "absent => syntax error; real => 8"),
+     "NEEDS-DISK: " "FORM:double-to-string absent => syntax error; real => 8"),
     ("mkd_b",   'a=asc(mkd$(1.5))', 'PRINT"[";ASC(MKD$(1.5));"]"', "direct",
-     "NEEDS-DISK: " "the same content reading on the 8-byte DOUBLE pack, whose "
-     "row likewise scores only LENGTH."),
+     "NEEDS-DISK: " "SUBJECT:MKD$ FORM:double-to-string the same content reading "
+     "on the 8-byte DOUBLE pack, whose row likewise scores only LENGTH."),
     ("cvs",     'a=cvs("abcd")', 'PRINT"[";CVS(MKS$(1));"]"', "direct",
      "NEEDS-DISK: " "FORM:string-to-single absent => syntax error; real => 1"),
     ("cvd",     'a=cvd("abcdefgh")', 'PRINT"[";CVD(MKD$(1));"]"', "direct",

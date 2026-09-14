@@ -132,6 +132,26 @@ FORMS: dict[str, tuple[tuple[str, ...], str]] = {
         "This is deliberately a DIFFERENT SHAPE from PSET/PRESET -- positional "
         "omission rather than an optional trailing argument and a mode.",
     ),
+    "PEEK": (
+        ("address-read",),
+        "PEEK(<address>) -- one argument, one behaviour, the reading half of POKE. N=1 is earned by peek_b and not by peek, which asks PEEK(0)>=0 -- a BOOLEAN that is true of every possible byte.",
+    ),
+    "MKS$": (
+        ("single-to-string",),
+        "MKS$(n) -- one argument, one behaviour. The row does NOT predict the single-precision byte layout; it prints the length AND the first byte, and what makes that a reading is that both machines must agree on the byte. A length alone is what four arbitrary bytes read.",
+    ),
+    "MKD$": (
+        ("double-to-string",),
+        "MKD$(n) -- as MKS$, for the 8-byte double encoding.",
+    ),
+    "BASE": (
+        ("read", "write"),
+        "BASE(n) is both an expression and an assignment TARGET -- ex_base_assign (basic/interp.asm) is a separate handler from the read selector, exactly like VDP(n). WARNING: the write row uses index 5 and not 2. BASE(2) is the SCREEN 0 name table, and writing it MOVES THE TEXT PLANE the capture scrapes; BASE(5) belongs to SCREEN 1, which is not on screen.",
+    ),
+    "NEXT": (
+        ("bare", "named", "comma-list"),
+        "NEXT / NEXT <var> / NEXT <var>,<var> -- three behaviours, and the split is in the source: ex_next parks 0 for a bare NEXT (take the TOP frame) and nx_comma parks 1 (basic/program.asm), so the named and list forms take a different path through the frame search. A bare NEXT cannot exercise the matching at all.",
+    ),
     "MID$": (
         ("substring-3arg", "substring-to-end", "assign"),
         "MID$(s,n[,m]) reads, and MID$(A$,n,m)=s WRITES -- and the write is a SEPARATE handler (ex_mid_stmt, basic/str-engine.asm), so no read row reaches it. Three behaviours: the explicit length, the default length that runs to the end of the string, and the in-place replacement.",

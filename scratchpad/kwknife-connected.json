@@ -14,9 +14,9 @@
    "connected": true,
    "modes": {
     "fn": "MISSING",
-    "stmt": "SUPPORTED"
+    "stmt": "MISSING"
    },
-   "row": "basekw",
+   "row": "basekw_b",
    "verdict": "MISSING",
    "weak": false
   },
@@ -638,7 +638,7 @@
    "modes": {
     "stmt": "MISSING"
    },
-   "row": "nextkw",
+   "row": "nextkw_c",
    "verdict": "MISSING",
    "weak": false
   },
@@ -710,7 +710,7 @@
    "modes": {
     "fn": "MISSING"
    },
-   "row": "peek",
+   "row": "peek_b",
    "verdict": "MISSING",
    "weak": false
   },
@@ -1041,5 +1041,5 @@
    "weak": false
   }
  },
- "written": "2026-09-14 13:51:10"
+ "written": "2026-09-14 14:18:08"
 }
