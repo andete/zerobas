@@ -530,6 +530,15 @@ FORMS: dict[str, tuple[tuple[str, ...], str]] = {
         ("fielded-record",),
         "GET #<channel>[,<record>] -- one behaviour, the random-file record read into the FIELD buffer. The row does a PUT/GET round trip so it reads the record back rather than merely that the statement parsed.",
     ),
+    "MAX FILES": (
+        ("set",),
+        "MAXFILES=<n> -- one syntax and one behaviour: re-allocate the file-control "
+        "blocks. There is no bare MAX FILES and no second operand, so the bar is 1. "
+        "Its row scores the IMPLICIT CLEAR the re-allocation performs (measured, and "
+        "the trap that cost openkw_b four sweeps), which is what separates a MAXFILES "
+        "that RAN from one that only parsed; that a second channel then really exists "
+        "is shown independently by openkw_b's `AS#2`.",
+    ),
     "PRINT USING": (
         ("integer-field", "fraction-field", "sign", "string-field", "exponential"),
         "PRINT USING <format>;<list> -- the format string is a small language and its field types are the forms: the integer field #, the fractional field #.##, an explicit sign, the string fields ! and \\ \\, and the exponential ^^^^. Only the first two have rows. AUTHORED AT FIVE KNOWING THE TREE MEETS TWO: the bar is the reference's syntax, the same way LOCATE is 3/4 and VARPTR 1/2.",

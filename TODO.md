@@ -19735,6 +19735,42 @@ the numbered form reaches a DIFFERENT ADDRESS — not a second input to one
 behaviour. `DEFUSR1` points at a bare `ret` and `USR1(7)` returns its argument:
 `[ 7 ]`. **A USR that ignored the digit would read vector 0, which this row never
 sets.**
+⚡ **D-KWRETRES — `RESTORE`, `RETURN`, `WAIT` AND `RESUME` CLOSE THEIR
+PARTIALS, AND `MAX FILES` GETS ITS FIRST ROW. 125 of 163.**
+🟢 **`RESTORE` 2/2 and `RETURN` 2/2 — both LINE forms.** `restorekw_b`
+reads `[1k 7  11 ]`: the first `READ` takes line 30's `DATA 7`, `RESTORE 50` moves
+the pointer to line 50 and the second takes 11. **A bare `RESTORE` would read 7
+again and no `RESTORE` at all would read 9**, so 11 is reachable only by honouring
+the LINE. `returnkw_b` reads `[1l 5 ]`: `GOSUB 50` lands on `A=5:RETURN 40` and
+line 40 is the `PRINT`, while a bare `RETURN` would resume after the `GOSUB` and
+run line 30's `A=A+1` — 6, not 5.
+🟢 **`WAIT` 2/2 — the third operand, which INVERTS the test.** The same
+port the existing row uses carries it: `INP(&HA8)` is 240 on both machines, so its
+LOW NIBBLE is zero. `WAIT &HA8,&H0F` alone would spin **for ever**;
+`WAIT &HA8,&H0F,&H0F` returns at once because the xor turns those four zero bits
+into ones. **A `WAIT` that PARSED the xor and dropped it does not come back**, so
+the `[1m]` is the operand being APPLIED and not merely accepted.
+🟢 **`RESUME` 3/3 — the other two destinations.** `resumekw_b` (bare)
+repairs the cause in the handler (`B=9`) and reads `[1n 3 ]`: `SQR(B)` **ran a
+second time**. `RESUME NEXT` would skip it and print 0 — the value an unassigned
+`A` already has, which is exactly why the repaired value had to be non-zero.
+`resumekw_c` reads `[1o 7 ]`: the handler names line 40, and line 30's `A=8` sits
+between the failure and that `PRINT`, so `RESUME NEXT` reads 8 and only an
+honoured line number reads 7.
+🌱 **`MAX FILES` now has a bar (N=1, `MAXFILES=<n>` is the whole syntax) and
+a row.** `maxfiles` is disk-free and scores the part a parse-and-ignore cannot
+fake: the assignment **re-allocates the file-control blocks and performs an
+implicit CLEAR**, so the 7 assigned one statement earlier is gone — `[1p 0 ]`,
+where a `MAXFILES` that only parsed reads `[1p 7 ]`. That the second channel then
+really exists is shown independently by `openkw_b`'s `AS#2`.
+🔴 **AND IT IS STILL NOT AT TIER 1, FOR A REASON THAT IS NOW THE BIGGEST
+SINGLE BLOCKER LEFT: `knife_connected()` IS KEYED BY A `stmt_table` ENTRY AND A
+COMPOSITE HAS NONE TO CUT.** All **19** composite and channel statements sit
+behind that one missing instrument — nineteen of the 38 statements still short
+of TIER 1. It is a missing cut shape, not a missing behaviour.
+⚠️ **All five rows need EXACT NUMBERED LINES or an exact port value, and every
+packing was verified with `omsx_repl.as_stored` BEFORE the row ran** — the
+padding is long ASSIGNMENTS, never `REM`.
       ⚠️ **`TXTMAX` IS NOW BOUNDED BY `DETOKBUF`, NOT BY FREE RAM** — at 1280 B
       it does not fit the 1024 B window, so `$BB00` is the stop until DETOKBUF
       is dealt with. Of D-LINEMAX's 1792 B, **1024 recovered, 768 still charged**.

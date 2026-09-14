@@ -1269,6 +1269,25 @@ SWEEP: list[tuple[str, str, str | None, str, str]] = [
      'ON ERROR GOTO 20:ERROR 7:END:PRINT"[R";ERR;ERL;"]":END',  "stored", "FORM:error-line D-KWDRAIN: ERL reads 10, the line that raised"),
     ("resumekw",  'resume next',      
      'ON ERROR GOTO 30:ERROR 7:PRINT"[U";A;"]":END:A=5:RESUME NEXT', "stored", "FORM:next D-KWDRAIN: the handler RESUMEs NEXT and control reaches the PRINT; without it nothing prints"),
+    # 🌾 D-KWRETRES: RESUME's other two destinations. All three forms continue in a
+    # DIFFERENT place, so each needs a reading no other form can produce, and both
+    # rows below need EXACT NUMBERED LINES -- verified with `omsx_repl.as_stored`
+    # first, padded with long assignments because `REM` swallows the rest of its line.
+    #   bare: the handler REPAIRS the cause (B=9) and RESUME re-runs the statement
+    #   that failed, so `SQR(B)` succeeds the second time and A is 3. RESUME NEXT
+    #   would skip it and print 0 -- the value an unassigned A already has, which is
+    #   exactly why the repaired value has to be a NON-ZERO one.
+    ("resumekw_b", 'resume',
+     'ON ERROR GOTO 40:B=-1:W$="WWWWWWW":A=SQR(B):Y$="YYYYYYYYYYYYYYYYYYYY":PRINT"[1n";A;"]":END:V$="VVVVVVVV":B=9:RESUME',
+     "stored",
+     "SUBJECT:RESUME FORM:bare 3 means SQR(9) RAN: the failing statement was re-entered, not skipped"),
+    #   line: the handler names line 40, which is the PRINT. Line 30's `A=8` sits
+    #   between the failure and that PRINT, so RESUME NEXT reads 8 and only an
+    #   honoured LINE NUMBER reads the 7 assigned before the error.
+    ("resumekw_c", 'resume 40',
+     'ON ERROR GOTO 50:A=7:W$="WWWWWWWW":ERROR 7:Y$="YYYYYYYYYYYYYYYYYYYYY":A=8:U$="UUUUUUUUUUUUUUUUUUUUUUUUU":PRINT"[1o";A;"]":END:V$="VVVVVVVV":RESUME 40',
+     "stored",
+     "SUBJECT:RESUME FORM:line 7 not 8 -- control resumed AT line 40 and skipped the line in between"),
     ("defintkw",  'defint a',         
      'DEFINT A:A=1.7:PRINT"[";A;"]"',                           "direct", "FORM:single-letter D-KWDRAIN: 1, not 1.7 -- a DEFINT that parses and does nothing still prints 1.7"),
     # 🌾 D-KWBATCH6: `ex_deftype` (basic/usr.asm:210) parses a comma-list of
@@ -1340,6 +1359,27 @@ SWEEP: list[tuple[str, str, str | None, str, str]] = [
      'READ Q:RESTORE:READ R:PRINT"[E";Q+R;"]":END:DATA 3',  "stored", "FORM:read-data D-KWDRAIN: reads 3 from the DATA on the second line"),
     ("restorekw", 'restore',      
      'READ Q:RESTORE:READ R:PRINT"[F";Q+R;"]":END:DATA 3',  "stored", "FORM:bare D-KWDRAIN: 6 needs the pointer RESET: without RESTORE the second READ runs out of DATA"),
+    # 🌾 D-KWRETRES: the LINE forms of RESTORE and RETURN, each the second of two
+    # authored forms. Both need EXACT NUMBERED LINE TARGETS, and `as_stored` packs
+    # `:`-joined statements greedily into <=34-char bodies -- so the padding here is
+    # not decoration, it is what puts `DATA 11` on line 50 and the PRINT on line 40.
+    # Verified with `omsx_repl.as_stored` BEFORE the rows were written (the first cut
+    # of both LIST rows listed nothing because the line they named did not exist).
+    # Padding is long ASSIGNMENTS, never `REM`, which swallows the rest of its line.
+    #   restore: READ Q takes the first DATA (7, line 30); `RESTORE 50` then makes the
+    #   second READ take line 50's 11. A BARE RESTORE would read 7 again and no
+    #   RESTORE at all would read 9 -- so 11 is reachable only by honouring the LINE.
+    ("restorekw_b", 'restore 50',
+     'READ Q:RESTORE 50:READ R:PRINT"[1k";Q;R;"]":END:W$="WWWWWW":Y$="YYYYYYYYYYYYYYYYYYYYYY":DATA 7:V$="VVVVVVVVVVVVVVVVVVVVVV":DATA 9:DATA 11',
+     "stored",
+     "SUBJECT:RESTORE FORM:line the DATA pointer moves to line 50, not to the start (7) and not onwards (9)"),
+    #   return: GOSUB 50 lands on `A=5:RETURN 40`, and line 40 is the PRINT. A bare
+    #   RETURN would resume after the GOSUB -- line 20's padding, then line 30's
+    #   `A=A+1` -- and print 6. 5 is reachable only by honouring the LINE.
+    ("returnkw_b", 'return 40',
+     'A=0:GOSUB 50:Z$="XXXXXXXXXXXXXXXXXXXXXXXX":A=A+1:Y$="YYYYYYYYYYYYYYYYYYYYYYY":PRINT"[1l";A;"]":END:W$="WWWWWWWW":A=5:RETURN 40',
+     "stored",
+     "SUBJECT:RETURN FORM:line RETURN 40 skips the increment on line 30 that a bare RETURN would run"),
     ("psetkw",   'pset(1,1)',      
      'SCREEN2:PSET(1,1),15:A=POINT(1,1):SCREEN0:PRINT"[S";A;"]"',   "stored",
      "NOECHO:[S FORM:colour-explicit PSET draws, POINT reads it back: 4 blank vs 15 drawn"),
@@ -2050,6 +2090,18 @@ SWEEP: list[tuple[str, str, str | None, str, str]] = [
     ("waitkw",   "wait 0,1",
      'WAIT &HA8,&HFF:PRINT"[Y1]"',                              "stored",
      "FORM:port-mask D-KWRIG: mask &HFF against a port measured at 240 on both machines"),
+    # 🌾 D-KWRETRES: the THIRD operand, which INVERTS the sense of the test. The
+    # same measured port carries it: INP(&HA8) is 240 on both machines, so its LOW
+    # NIBBLE is zero -- `WAIT &HA8,&H0F` alone would spin FOR EVER, and
+    # `WAIT &HA8,&H0F,&H0F` returns at once because the xor turns those four zero
+    # bits into ones. That is the whole discrimination: a WAIT that PARSED the xor
+    # and dropped it does not come back, so the `[1m]` is the xor being APPLIED and
+    # not merely accepted. `ex_wait` (basic/vdpio.asm:72) does apply it, which is
+    # why this row is safe to run at all -- the row above scores absence, this one
+    # scores the operand.
+    ("waitkw_b", "wait 0,1,1",
+     'WAIT &HA8,&H0F,&H0F:PRINT"[1m]"',                         "stored",
+     "FORM:port-mask-xor the low nibble of 240 is 0, so only the xor can satisfy the mask"),
 
     # --- the printer pair. They need a PLUGGED printer (NEEDS-PRINTER:), and that
     # tag is not decoration: with nothing on the port both rows produce NO OUTPUT
@@ -2133,6 +2185,16 @@ SWEEP: list[tuple[str, str, str | None, str, str]] = [
      "so faithful rather than defects: with a second channel open `LOF(1)` reads 0 "
      "where the `lof` row reads 26 with one, and a read from #1 while #2 is open "
      "returns nothing -- which is why the observable here is #2 alone."),
+    # 🌾 D-KWRETRES: `MAX FILES` had no row of its own -- openkw_b USES it, but that
+    # row's subject is OPEN and its reading is OPEN's. This one is disk-free and
+    # scores the part a parse-and-ignore MAXFILES cannot fake: assigning MAXFILES
+    # RE-ALLOCATES the file-control blocks and performs an IMPLICIT CLEAR, so the 7
+    # assigned one statement earlier is gone. A MAXFILES that parsed and did nothing
+    # reads `[1p 7 ]`. The restore comes AFTER the PRINT for the same reason it does
+    # in openkw_b: put it first and the tidy-up wipes the measurement.
+    ("maxfiles", 'maxfiles=2',
+     'A=7:MAXFILES=2:PRINT"[1p";A;"]":MAXFILES=1',              "stored",
+     "FORM:set the implicit CLEAR: 0, not the 7 assigned just before it"),
     ("eof",     "a=eof(1)",
      'OPEN"HI.TXT"FOR INPUT AS#1:A$=INPUT$(26,#1):A=EOF(1):CLOSE#1:PRINT"[";A;"]"', "stored",
      "NEEDS-DISK: " "-1 AFTER the whole file is consumed. 🔴 THE READ IS THE ROW: "
