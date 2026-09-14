@@ -824,6 +824,24 @@ SWEEP: list[tuple[str, str, str | None, str, str]] = [
      "stored",
      "NOECHO:[J the INDEX-SELECTED jump. `ON 2` must reach the SECOND target: "
      "[J99]. An ON that ignores the index gives [J77], one that never jumps [J00]."),
+    # 🌾 D-KWBREADTH batch 13: the GOSUB sibling. `RETURN` lands back on line 10's
+    # PRINT, so the handler's value is what gets read. THE PACKING WAS SEARCHED FOR,
+    # not guessed -- the greedy packer merges handlers unless the padding before
+    # each one fills its body to the 34-char limit, and no padding below 22 chars
+    # does it:
+    #     10 ON 2 GOSUB 30,40:PRINT"[K";A;"]"
+    #     20 END:REM ZZZZZZZZZZZZZZZZZZZZZZ
+    #     30 A=77:RETURN:REM QQQQQQQQQQQQQQ
+    #     40 A=99:RETURN
+    # ⚠️ The two REM runs are LOAD-BEARING PACKING. The targets were re-written from
+    # the search's 20,30 to 30,40 only because both are FIVE characters, so the
+    # packing is bit-for-bit unchanged -- verified, not assumed.
+    ("ongosub",  'on 2 gosub 30,40',
+     'ON 2 GOSUB 30,40:PRINT"[K";A;"]":END:REM ZZZZZZZZZZZZZZZZZZZZZZ:A=77:RETURN:REM QQQQQQQQQQQQQQ:A=99:RETURN',
+     "stored",
+     "NOECHO:[K the INDEX-SELECTED subroutine call. `ON 2` must reach the SECOND "
+     "target and RETURN: 99. An ON that ignores the index gives 77, one that never "
+     "calls leaves A at 0."),
     ("errorkw",   'error 7',          
      'ON ERROR GOTO 20:ERROR 7:END:PRINT"[R";ERR;ERL;"]":END',  "stored", "D-KWDRAIN: ERROR 7 is what raises it"),
     ("errkw",     'a=err',            

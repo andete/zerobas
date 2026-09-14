@@ -426,6 +426,31 @@ handlers merge into one body and line 30 does not exist. And the targets read
 `20,30` rather than `30,40` **because that substitution preserves every statement
 LENGTH, so the packing is unchanged**; a longer target number would have re-packed
 the program underneath the row.
+✅ **BREADTH BATCH 13 (D-KWBREADTH, 2026-09-14) — `ON n GOSUB`, AND A KNIFE
+VERDICT THAT WAS ABOUT THE PAIRING.** `ongosub` reads `[K 99 ]`; the pin now holds
+**108 knifed, 105 CONNECTED, 3 not** (`CALL`, `MAX`, `PAD`). Sweep
+`DIVERGENT=2 SUPPORTED=208`. The packing was **SEARCHED FOR, not guessed** — the
+greedy packer merges the handlers unless the padding before each fills its body to
+the 34-char limit, and **no padding below 22 characters does it**:
+```
+10 ON 2 GOSUB 30,40:PRINT"[K";A;"]"
+20 END:REM ZZZZZZZZZZZZZZZZZZZZZZ
+30 A=77:RETURN:REM QQQQQQQQQQQQQQ
+40 A=99:RETURN
+```
+🔴 **AND `GOSUB:ongosub` CAME BACK 🔴 BLIND — WHICH WAS TRUE OF THE PAIRING, NOT OF
+THE ROW.** Cutting `ON` breaks it (LOAD-BEARING); cutting `GOSUB` changes nothing,
+because **`ON n GOSUB` IS DISPATCHED ENTIRELY BY `ON`'s HANDLER, WHICH CONSUMES THE
+`GOSUB` TOKEN INLINE** rather than going through `stmt_table`'s GOSUB entry. That
+is a fact about the interpreter, and a lesson about the instrument: **A BLIND
+VERDICT CAN MEAN "YOU CUT THE WRONG KEYWORD FOR THIS ROW".**
+🔴 **AND THE WRONG PAIR SILENTLY OVERWROTE A GOOD READING.** The pin is merged BY
+KEYWORD, so `GOSUB:ongosub` recorded GOSUB as `connected: False, row: 'ongosub'`,
+replacing the full sweep's correct `gosubkw` result — **a keyword flipped from
+connected to unconnected by a run that was never about it.** Repaired by re-knifing
+each keyword with its OWN row, and `kwknife.py` now **WARNS when a CLI pair names a
+row whose subject (`tier_table.stmt_keyword`) is a different keyword**, verified by
+running it on the pairing that caused it.
 🔪 **D-KWSTRCUT — THE THIRD CUT SHAPE, AND A FIRST VERSION OF IT THAT WAS WORSE
 THAN THE GAP IT CLOSED (2026-09-13).** `basic/sysvars.inc:250` named the shape in
 prose written long before the knife existed: **MKI$ is evaluated in
@@ -1094,7 +1119,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:17821 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:17846 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -1260,7 +1285,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:5861 (T-6FE392)8 (T-529ABE)` from `TODO.md:16472 (T-529ABE)`: a
+      `TODO.md:5886 (T-6FE392)8 (T-529ABE)` from `TODO.md:16497 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -6705,7 +6730,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:16472 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:16497 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

@@ -465,9 +465,41 @@ def syms_equ():
     return eq
 
 
+def _warn_row_subject(kw, row):
+    """Warn when a CLI pair names a row whose SUBJECT is a DIFFERENT keyword.
+
+    🔴 THE PIN IS MERGED BY KEYWORD, SO A WRONG PAIR OVERWRITES A GOOD READING.
+    Measured 2026-09-14: `GOSUB:ongosub` recorded GOSUB as connected=False with
+    row='ongosub', silently replacing the full sweep's correct `gosubkw` result --
+    because `ON n GOSUB` is dispatched ENTIRELY by ON's handler (it consumes the
+    GOSUB token inline) so cutting GOSUB's stmt_table entry changes nothing and the
+    run reports 🔴 BLIND. That verdict was about the PAIRING, not the row.
+    🎯 A BLIND VERDICT CAN MEAN "YOU CUT THE WRONG KEYWORD FOR THIS ROW". The row's
+    subject is what `tier_table.stmt_keyword` says it is, and a mismatch is worth
+    saying out loud rather than writing into the pin unremarked."""
+    try:
+        sys.path.insert(0, os.path.join(ROOT, "tools"))
+        sys.path.insert(0, os.path.join(ROOT, "probes", "basic"))
+        import tier_table, basic_probe_kwsweep as sweep
+        kwset = set(tier_table.kwtable_keywords())
+        for r in sweep.SWEEP:
+            if r[0] == row:
+                subj = tier_table.stmt_keyword(r[1], kwset)
+                if subj and subj.rstrip("$") != kw.rstrip("$"):
+                    print(f"  \u26a0\ufe0f  row {row} is ABOUT {subj}, not {kw} -- a BLIND "
+                          f"verdict here would be about the PAIRING, and the pin is "
+                          f"merged BY KEYWORD so it would overwrite {kw}'s real "
+                          f"reading")
+                return
+    except Exception:
+        return
+
+
 if TARGETS and len(TARGETS[0]) == 2:        # explicit KW:row pairs on the command line
     TARGETS = [(_kwtable_name(token_of(k), k) if FNMODE else k, r, token_of(k))
                for k, r in TARGETS]
+    for _k, _r in [(t[0], t[1]) for t in TARGETS]:
+        _warn_row_subject(_k, _r)
 
 # 🔴 THE KNIFE DESTROYS THE PIN IT DEPENDS ON, unless this guard exists. Each cut
 # runs `basic_probe_kwsweep --only <row>`, and the sweep WRITES
