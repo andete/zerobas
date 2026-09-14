@@ -857,6 +857,65 @@ stable for ~100 ticks.
 📊 **THIRTEEN KEYWORDS AT TIER 1** — `BEEP CLEAR CLS COLOR OUT POKE PRESET PSET
 SOUND TIME VDP VPOKE WIDTH`. Two batteries got the last nine of them; one battery
 each would have cost seven more.
+⚡ **D-KWBATCH3 — FIVE MORE, AND JOOST'S SUGGESTION CLOSES THE LIMIT `vdp_c`
+STATED.** `INP`, `TRON`, `TROFF`, `CIRCLE` and a strengthened `VDP` — **seventeen
+keywords at TIER 1**.
+🔴 **JOOST, 2026-09-14: *"if you choose a clever write, you can see the effects in
+the visual appearance of the screen"*.** He is right that the effect is reachable,
+and `vdp_c`'s stated limit — *no reader can see the chip* — was too pessimistic.
+⚠️ **IT IS NOT REACHABLE THROUGH THIS CAPTURE, THOUGH, AND THAT IS WORTH WRITING
+DOWN: `omsx_repl` SCRAPES VRAM `$0000` DIRECTLY**, so it reads the NAME TABLE and
+not the display. A blanked screen, a changed backdrop and even a moved name-table
+base all look identical to it. So the witness has to be something a **PROGRAM** can
+measure.
+🟢 **VDP REGISTER 1 BIT 5 IS THE FRAME-INTERRUPT ENABLE.** Clear it and the
+50/60 Hz interrupt stops, so JIFFY stops and **TIME FREEZES** — and nothing but the
+real chip can produce that. `vdp_d` reads `[0l 0 ]` on both machines: **zerobas's
+`VDP(n)=v` does reach the port**, not merely the RGnSAV mirror.
+🔴 **AND THE FIRST CUT OF THAT ROW REPORTED INTERPRETER SPEED AS A VDP
+DIVERGENCE.** It timed the loop TWICE — once with the interrupt off and once with
+it restored — as a guard against a loop too short to tick. That doubled the run,
+and zerobas is 2.5–3.8× slower (the open TIER 4 item), so the pair **outran the
+capture window**: the reference answered `[0l 0 -1 ]` and zerobas printed NOTHING
+AT ALL. 🎯 **THE APPARATUS WAS THE MEASUREMENT AGAIN.** Separated in
+`scratchpad/vdpie_probe.py` with five cases, each its own boot: the CONTROL shape
+answers on both, the MIRROR write lands on both (`[M 208 240 ]`), the machine
+SURVIVES the write and restores the register on both (`[S 240 ]`), and the
+SINGLE-loop shape reads `[1 0 ]` on both. ✅ **The guard now comes from another row
+— `timetick` runs the SAME 400 iterations with the interrupt ON and requires
+`TIME>T` — so "long enough to tick" is established there and not paid for here.**
+🔬 **TWO OF MY OWN ROWS WERE WRONG IN WAYS `SUPPORTED` CONCEALED, AND ONLY READING
+EACH READING ON ITS OWN CAUGHT THEM.**
+⚠️ **`tron_b` READ `[0k]` WITH NO TRACE — the same reading a DEAD TRON gives.**
+`as_stored` packed the whole exec onto ONE numbered line, and TRON switches the
+trace on *during* line 10, whose number has already been passed; with no line 20
+there was nothing left to trace. **The row could never have discriminated, and it
+scored SUPPORTED on both machines.** Fixed with a `REM` that forces a second line:
+`[20][30][0k]`. The REM is not padding for length, it is the line the trace has to
+reach.
+⚠️ **`troff_b`'s NOTE CLAIMED `[10][20][30][0g]` AND THE MEASUREMENT IS
+`[20][30][0g]`** — same cause for the missing `[10]`. The row IS discriminating
+(line 30 is traced because the number prints BEFORE the TROFF on it runs, and 40–50
+are not), but the note has been corrected to what was measured.
+🎚️ **`INP` HAD ONLY A BOOLEAN, THE FOURTH SCREENING AXIS.** `INP(&HA8)>0` passes on
+any wrong non-zero read — the same defect `vdp_b` fixed for `VDP`. `inp_b` drives a
+known byte out to PSG register 0 and reads it back: `[ 66 ]`. ⚠️ **Its CRUNCH BODY
+is `a=inp(&ha2)` so the reading is scored for INP** — `out_b` drives the same path
+but its subject is OUT.
+🎚️ **`TRON`/`TROFF` BOTH PRINTED A CONSTANT `[ok]`, THE THIRD SCREENING AXIS.** The
+effect is scrapeable: MSX TRON prints each line number in brackets as it executes,
+the way `listkw` scores the listing itself.
+🟢 **`CIRCLE` AT N=5** — `CIRCLE [STEP](x,y),r[,[c][,[start][,[end][,aspect]]]]`.
+Three new rows, each reading a pixel it must draw **and** one it must not:
+`circlekw_c` STEP `[0h 15  4 ]` (an ignored STEP centres on (20,20), which draws
+through (30,20) and leaves (60,50) blank — **both** readings move), `circlekw_d`
+aspect `[0i 15  4 ]` ((50,70) is exactly on the rim of the circle an ignored aspect
+would draw), `circlekw_e` default colour `[0j 11  4 ]` (the rim takes FORCLR and not
+a hardcoded 15, and the centre reading keeps a FILLED circle from passing).
+🔪 **ALL SEVEN NEW ROWS KNIFE-PROVEN LOAD-BEARING** — and `INP` needed
+`kwknife.py --fn`, because it is a FUNCTION: the statement-mode pair cut a
+`stmt_table` entry INP does not have and reported 🔴 BLIND. ⚠️ **A BLIND VERDICT CAN
+MEAN THE WRONG CUT SHAPE, NOT A BLIND ROW.**
 🔪 **D-KWSTRCUT — THE THIRD CUT SHAPE, AND A FIRST VERSION OF IT THAT WAS WORSE
 THAN THE GAP IT CLOSED (2026-09-13).** `basic/sysvars.inc:250` named the shape in
 prose written long before the knife existed: **MKI$ is evaluated in
@@ -1525,7 +1584,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:18252 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:18311 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -1691,7 +1750,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:6292 (T-6FE392)8 (T-529ABE)` from `TODO.md:16903 (T-529ABE)`: a
+      `TODO.md:6351 (T-6FE392)8 (T-529ABE)` from `TODO.md:16962 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -7136,7 +7195,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:16903 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:16962 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

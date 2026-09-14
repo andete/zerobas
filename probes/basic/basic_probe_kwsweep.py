@@ -717,6 +717,42 @@ SWEEP: list[tuple[str, str, str | None, str, str]] = [
      "handler (ex_vdp_assign) and which no read row reaches. `[0d 5  4 ]` -- two "
      "different values, so a stored constant or an ignored assignment is visible. "
      "Register 7 is the backdrop colour, which does not disturb the text plane."),
+    # 🌾 D-KWBATCH3, AND IT RETRACTS THE LIMIT THE ROW ABOVE STATES (Joost,
+    # 2026-09-14: *"if you choose a clever write, you can see the effects in the
+    # visual appearance of the screen"*). He is right that the effect is reachable;
+    # it is not reachable through THIS capture, which scrapes VRAM $0000 directly
+    # and therefore sees the NAME TABLE rather than the display -- a blanked
+    # screen, a changed backdrop and even a moved name-table base all read the same
+    # to it. So the row takes the same idea one step further and finds an effect a
+    # PROGRAM can measure.
+    # 🔴 VDP REGISTER 1 BIT 5 IS THE FRAME-INTERRUPT ENABLE. Clear it and the
+    # 50/60 Hz interrupt stops, so JIFFY stops and TIME FREEZES. Nothing but the
+    # real chip can produce that: a handler that stored the value in the RGnSAV
+    # mirror and never reached the port leaves the interrupt running and TIME
+    # advancing. This is the CHIP-side witness `vdp_c` cannot be.
+    # ⚠️ SAVE AND RESTORE THE REAL VALUE (`V AND 223`, then `VDP(1)=V`) rather than
+    # hardcoding $F0.
+    # 🔴 AND **ONE** LOOP, NOT TWO -- THE GUARD I FIRST BUILT INTO THIS ROW TURNED
+    # IT INTO A SPEED MEASUREMENT. A delay loop too short to tick would read A=0
+    # for a reason that has nothing to do with the VDP, so the first cut re-ran the
+    # same loop with the interrupt back on and required that TIME advanced. That
+    # doubled the run, and zerobas is 2.5-3.8x slower than the reference (the open
+    # TIER 4 item), so the pair outran the capture window: the reference answered
+    # `[0l 0 -1 ]` and zerobas printed NOTHING AT ALL, and the row reported
+    # INTERPRETER SPEED as a VDP divergence. Measured apart in
+    # scratchpad/vdpie_probe.py, where the single-loop shape reads `[1 0 ]` on BOTH
+    # machines -- the write does reach the chip on both.
+    # 🎯 THE GUARD COMES FROM ANOTHER ROW INSTEAD: `timetick` runs the SAME 400
+    # iterations with the interrupt ON and requires `TIME>T`, so "the loop is long
+    # enough to tick" is established there and does not have to be paid for here.
+    ("vdp_d",   'vdp(1)=208',
+     'V=VDP(1):VDP(1)=V AND 223:T=TIME:FOR I=1 TO 400:NEXT:A=TIME-T:VDP(1)=V:PRINT"[0l";A;"]"',
+     "stored",
+     "NOECHO:[0l FORM:write the write reaching the CHIP, not the mirror: clearing "
+     "VDP register 1 bit 5 stops the frame interrupt, so JIFFY stops and TIME "
+     "FREEZES. `[0l 0 ]` -- a handler that stored the value in the RGnSAV mirror "
+     "and never reached the port leaves the interrupt running and TIME advancing. "
+     "`timetick` is what proves 400 iterations DO tick when the interrupt is on."),
     # 🔴 `>0`, NOT `>=0`, AND THAT IS A FIX TO MY OWN ROW. The first cut asked
     # `INP(&HA8)>=0`, which an ABSENT INP passes too: the word would parse as an
     # undefined array, `INP(&HA8)` would be element 0, and `0>=0` is TRUE.
@@ -726,7 +762,18 @@ SWEEP: list[tuple[str, str, str | None, str, str]] = [
     # is the primary slot register and its content is a machine-layout fact, so
     # zerobas and the VG-8020 may legitimately differ. `vdpkw` was checked the
     # same way and is sound as written: VDP(1) reads 240 against the stub's 0.
-    ("inpkw",   'a=inp(168)',         'PRINT"[";INP(&HA8)>0 ;"]"',            "direct", "D-KWDRAIN"),
+    ("inpkw",   'a=inp(168)',         'PRINT"[";INP(&HA8)>0 ;"]"',            "direct",
+     "FORM:port-read D-KWDRAIN"),
+    # 🌾 D-KWBATCH3: THE ROW ABOVE IS A BOOLEAN AND CANNOT SEE THE VALUE -- the
+    # fourth screening axis, and INP had nothing else. `INP(&HA8)>0` passes on any
+    # wrong non-zero read, exactly the way `vdpkw`'s `>0` did before `vdp_b`.
+    # This drives a KNOWN byte out to the PSG and reads that byte back, so the
+    # reading is the value and not its non-zero-ness.
+    ("inp_b",   'a=inp(&ha2)',
+     'OUT&HA0,0:OUT&HA1,66:OUT&HA0,0:PRINT"[";INP(&HA2);"]"',                 "stored",
+     "FORM:port-read the VALUE, not its non-zero-ness -- 66, the byte just written "
+     "to PSG register 0. `out_b` drives the same path but its SUBJECT is OUT; this "
+     "row's crunch body is `a=inp(&ha2)`, so the reading is scored for INP."),
     ("outkw",   'out 160,7',          'OUT &HA0,7:PRINT"[8]"',                "direct",
      "FORM:port-value D-KWDRAIN"),
     # 🌾 D-KWBREADTH batch 6: the row above writes the PSG ADDRESS latch and scores
@@ -818,7 +865,8 @@ SWEEP: list[tuple[str, str, str | None, str, str]] = [
     # reads it back through SPRITE$, so it moves if either half stops working.
     ("circlekw",  'circle(50,50),10', 
      'SCREEN2:CIRCLE(50,50),10,15:A=POINT(60,50):SCREEN0:PRINT"[Q";A;"]"', "stored",
-     "NOECHO:[Q rim pixel is 15, centre is 4 -- a filled or absent circle fails"),
+     "NOECHO:[Q FORM:centre-radius rim pixel is 15, centre is 4 -- a filled or "
+     "absent circle fails"),
     # 🌾 D-KWBREADTH batch 10: the row above draws a FULL circle; the START/END arc
     # arguments are untouched. This draws only the upper-right quadrant and reads
     # TWO pixels, which is what makes it discriminating: a full circle gives 15 15,
@@ -828,9 +876,35 @@ SWEEP: list[tuple[str, str, str | None, str, str]] = [
     ("circlekw_b", 'circle(50,50),10,15,0,1.57',
      'SCREEN2:CIRCLE(50,50),10,15,0,1.57:A=POINT(60,50):B=POINT(40,50):SCREEN0:PRINT"[F";A;B;"]"',
      "stored",
-     "NOECHO:[F the ARC arguments -- start 0 (rightmost) to end 1.57 rad (top), so "
-     "(60,50) is ON the arc and (40,50) is not. 15 4 for an arc, 15 15 if the "
-     "start/end are parsed and discarded."),
+     "NOECHO:[F FORM:arc the ARC arguments -- start 0 (rightmost) to end 1.57 rad "
+     "(top), so (60,50) is ON the arc and (40,50) is not. 15 4 for an arc, 15 15 if "
+     "the start/end are parsed and discarded."),
+    # 🌾 D-KWBATCH3: the remaining three of CIRCLE's five forms. Grammar
+    # (basic/graphics.asm:564): `CIRCLE [STEP](x,y),r[,[c][,[start][,[end][,aspect]]]]`.
+    # 🎯 EACH ROW READS A PIXEL IT MUST DRAW **AND** ONE IT MUST NOT, because a
+    # single rim reading cannot tell "drawn in the right place" from "drawn at all".
+    ("circlekw_c", 'circle step(20,20),10,15',
+     'SCREEN2:PSET(30,30),15:CIRCLE STEP(20,20),10,15:A=POINT(60,50):B=POINT(30,20):SCREEN0:PRINT"[0h";A;B;"]"',
+     "stored",
+     "NOECHO:[0h FORM:step-relative STEP is relative to the LAST POINT, which the "
+     "PSET puts at (30,30), so the centre is (50,50) and (60,50) is on the rim. "
+     "`[0h 15  4 ]`: an ignored STEP centres on (20,20) instead, which draws "
+     "through (30,20) and leaves (60,50) blank -- both readings move."),
+    ("circlekw_d", 'circle(50,50),20,15,,,.5',
+     'SCREEN2:CIRCLE(50,50),20,15,,,.5:A=POINT(70,50):B=POINT(50,70):SCREEN0:PRINT"[0i";A;B;"]"',
+     "stored",
+     "NOECHO:[0i FORM:aspect the ASPECT argument halves the VERTICAL radius, so "
+     "the x rim stays at (70,50) and (50,70) -- exactly on the rim of the circle "
+     "an ignored aspect would draw -- falls outside the ellipse. `[0i 15  4 ]`; a "
+     "discarded aspect reads `15  15`. The first reading is what says a shape was "
+     "drawn at all, so the second cannot pass by drawing nothing."),
+    ("circlekw_e", 'circle(50,50),10',
+     'SCREEN2:COLOR 11:CIRCLE(50,50),10:A=POINT(60,50):B=POINT(50,50):SCREEN0:PRINT"[0j";A;B;"]":COLOR 15',
+     "stored",
+     "NOECHO:[0j FORM:colour-default the OMITTED colour, which must come from "
+     "FORCLR -- `COLOR 11` first, so `[0j 11  4 ]` proves the rim took the "
+     "foreground colour and not a hardcoded 15. The centre reading keeps a FILLED "
+     "circle from passing, the way the `circlekw` row does."),
     ("drawkw",    'draw"c15r5"',      
      'SCREEN2:PSET(10,10),15:DRAW"C15R5":A=POINT(14,10):SCREEN0:PRINT"[D";A;"]"', "stored",
      "NOECHO:[D reads 4 pixels right of the start: blank is 4, drawn is 15"),
@@ -1327,10 +1401,42 @@ SWEEP: list[tuple[str, str, str | None, str, str]] = [
      "the machine-dependent absolute free figure cancels."),
     ("tron",    "tron",
      "TRON:TROFF:PRINT\"[ok]\"",                     "direct",
-     "absent => syntax error; real => accepted (trace toggled off again)"),
+     "FORM:toggle absent => syntax error; real => accepted (trace toggled off "
+     "again)"),
     ("troff",   "troff",
      'TROFF:PRINT"[ok]"',                            "direct",
-     "absent => syntax error"),
+     "FORM:toggle absent => syntax error"),
+    # 🌾 D-KWBATCH3: BOTH ROWS ABOVE PRINT A CONSTANT `[ok]`, which is the THIRD
+    # screening axis -- a constant marker cannot see the EFFECT. A TRON that
+    # parsed and did nothing prints `[ok]` just as happily. The effect IS
+    # scrapeable: MSX TRON prints each line number in brackets as it executes, the
+    # way `listkw` scores the listing itself.
+    # 🔴 AND THE FIRST CUT OF THIS ROW COULD NOT DISCRIMINATE, WHILE SCORING
+    # SUPPORTED. Written as `TRON:A=1:B=2:PRINT"[0k]"` it packed onto ONE numbered
+    # line, and TRON switches the trace on DURING line 10 -- whose number has
+    # already been printed or not printed -- so with no line 20 there was nothing
+    # left to trace. It read `[0k]`, which is exactly what a dead TRON reads, and
+    # both machines agreed on it. 🎯 THE REM IS NOT PADDING FOR LENGTH, IT IS THE
+    # SECOND LINE the trace has to reach.
+    ("tron_b",  "tron",
+     'TRON:A=1:REM ZZZZZZZZZZZZZZZZZZZZZZZZZ:B=2:PRINT"[0k]"',   "stored",
+     "NOECHO:[0k FORM:toggle the TRACE ITSELF: with TRON live each line number is "
+     "printed before that line runs, so the capture reads the traced numbers ahead "
+     "of the marker where a TRON that parsed and did nothing reads `[0k]` alone. "
+     "Line 10 is never traced -- TRON turns on inside it."),
+    # 🎯 AND TROFF NEEDS A LINE **AFTER** THE TROFF, or the row cannot see it: the
+    # trace prints the number BEFORE executing the line, so the line carrying TROFF
+    # is traced either way. The REMs are padding that forces `as_stored` to split
+    # the statements across numbered lines -- it packs greedily into <=34-char
+    # bodies, so without them TROFF and the PRINT land on one line and there is
+    # nothing left to leave untraced.
+    ("troff_b", "troff",
+     'TRON:A=1:REM ZZZZZZZZZZZZZZZZZZZZZZZZZ:TROFF:B=2:REM QQQQQQQQQQQQQQQQQQQQQQ:PRINT"[0g]"',
+     "stored",
+     "NOECHO:[0g FORM:toggle the trace STOPPING. MEASURED `[20][30][0g]`: line 10 "
+     "is not traced because TRON turns on inside it, line 30 IS traced because the "
+     "number is printed BEFORE the TROFF on it runs, and lines 40-50 are not -- "
+     "where a TROFF that parsed and did nothing reads `[20][30][40][50][0g]`."),
     # 🔴 D-KWFOOT2 (2026-09-13): FOUR CRUNCH-ONLY ROWS WERE REMOVED FROM THIS FILE,
     # AND THE REASON IS THE FOOTER THEY DISTORTED. `lprint` `lpos` `delete` `wait`
     # each gained an EXECUTED twin (`lprintkw` `lposkw` `deletekw` `waitkw`) as the

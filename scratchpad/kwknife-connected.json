@@ -79,7 +79,7 @@
    "modes": {
     "stmt": "UNREADABLE"
    },
-   "row": "circlekw_b",
+   "row": "circlekw_e",
    "verdict": "UNREADABLE",
    "weak": false
   },
@@ -383,9 +383,10 @@
   "INP": {
    "connected": true,
    "modes": {
-    "fn": "MISSING"
+    "fn": "MISSING",
+    "stmt": "SUPPORTED"
    },
-   "row": "inpkw",
+   "row": "inp_b",
    "verdict": "MISSING",
    "weak": false
   },
@@ -944,7 +945,7 @@
    "modes": {
     "stmt": "MISSING"
    },
-   "row": "troff",
+   "row": "troff_b",
    "verdict": "MISSING",
    "weak": false
   },
@@ -953,7 +954,7 @@
    "modes": {
     "stmt": "MISSING"
    },
-   "row": "tron",
+   "row": "tron_b",
    "verdict": "MISSING",
    "weak": false
   },
@@ -972,7 +973,7 @@
     "fn": "MISSING",
     "stmt": "MISSING"
    },
-   "row": "vdp_c",
+   "row": "vdp_d",
    "verdict": "MISSING",
    "weak": false
   },
@@ -1013,5 +1014,5 @@
    "weak": false
   }
  },
- "written": "2026-09-14 11:51:24"
+ "written": "2026-09-14 12:23:31"
 }

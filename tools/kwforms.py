@@ -132,6 +132,34 @@ FORMS: dict[str, tuple[tuple[str, ...], str]] = {
         "This is deliberately a DIFFERENT SHAPE from PSET/PRESET -- positional "
         "omission rather than an optional trailing argument and a mode.",
     ),
+    "INP": (
+        ("port-read",),
+        "`INP(<port>)` -- one argument, one behaviour. N=1, and the row that earns "
+        "it is `inp_b`: the original `INP(&HA8)>0` is a BOOLEAN and passes on any "
+        "wrong non-zero read, which is the fourth screening axis and was INP's "
+        "only evidence.",
+    ),
+    "TRON": (
+        ("toggle",),
+        "`TRON` takes no arguments, so one form. The bar is met by `tron_b`, which "
+        "reads the TRACE ITSELF -- the original row printed a constant `[ok]` that "
+        "a TRON doing nothing prints just as happily (the third screening axis).",
+    ),
+    "TROFF": (
+        ("toggle",),
+        "`TROFF` likewise. ⚠️ Its row needs a line AFTER the TROFF, because the "
+        "trace prints a line number BEFORE executing that line -- so the line "
+        "carrying TROFF is traced whether or not TROFF works.",
+    ),
+    "CIRCLE": (
+        ("centre-radius", "arc", "step-relative", "aspect", "colour-default"),
+        "`CIRCLE [STEP](x,y),r[,[c][,[start][,[end][,aspect]]]]` (basic/graphics.asm). "
+        "Five behaviours: the plain circle, the start/end ARC, the STEP-relative "
+        "centre, the ASPECT that turns it into an ellipse, and the omitted colour "
+        "that must come from FORCLR. N is 5 and not 4 because the aspect changes "
+        "the SHAPE while the arc changes only which part is drawn -- a handler can "
+        "get either right and the other wrong.",
+    ),
     "POKE": (
         ("address-value",),
         "`POKE <address>,<value>` -- two REQUIRED arguments and no optional part, "
