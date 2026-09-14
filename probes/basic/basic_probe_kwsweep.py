@@ -503,7 +503,7 @@ SWEEP: list[tuple[str, str, str | None, str, str]] = [
     # non-zero answer.)
     ("abs",     "a=abs(-5)",          'PRINT"[";ABS(-5);"]"',            "direct", "FORM:magnitude control"),
     ("int",     "a=int(1.7)",         'PRINT"[";INT(1.7);"]"',           "direct", "FORM:floor control"),
-    ("len",     'a=len("ab")',        'PRINT"[";LEN("ab");"]"',          "direct", "control"),
+    ("len",     'a=len("ab")',        'PRINT"[";LEN("ab");"]"',          "direct", "FORM:length control"),
     ("chr",     "a$=chr$(65)",        'PRINT"[";CHR$(65);"]"',           "direct", "FORM:code-to-char control"),
     ("mid",     'a$=mid$("hi",1,1)',  'PRINT"[";MID$("hi",2,1);"]"',     "direct", "FORM:substring-3arg control"),
     # 🌾 D-KWBATCH6: MID$ HAS THREE FORMS AND ONLY THE THREE-ARGUMENT READ HAD A ROW.
@@ -590,23 +590,33 @@ SWEEP: list[tuple[str, str, str | None, str, str]] = [
     # ⚠️ Fractional rows (ATN, EXP, CDBL(1)/3) are deliberate -- formatting and
     # precision are exactly where a clean-room mathpack diverges, and a row that
     # only ever prints 0 or 1 cannot see it.
-    ("asc",     'a=asc("A")',         'PRINT"[";ASC("A");"]"',         "direct", "D-KWDRAIN"),
+    ("asc",     'a=asc("A")',         'PRINT"[";ASC("A");"]"',         "direct", "FORM:code-of D-KWDRAIN"),
     ("cint",    'a=cint(1.7)',        'PRINT"[";CINT(1.7);"]"',        "direct", "FORM:to-integer D-KWDRAIN"),
     ("cdbl",    'a=cdbl(1)',          'PRINT"[";CDBL(1)/3;"]"',        "direct", "FORM:to-double D-KWDRAIN"),
     ("csng",    'a=csng(1.5)',        'PRINT"[";CSNG(1.5);"]"',        "direct", "FORM:to-single D-KWDRAIN"),
     ("fix",     'a=fix(-1.7)',        'PRINT"[";FIX(-1.7);"]"',        "direct", "FORM:truncate D-KWDRAIN"),
     ("sgn",     'a=sgn(-3)',          'PRINT"[";SGN(-3);"]"',          "direct", "FORM:sign D-KWDRAIN"),
     ("sin",     'a=sin(0)',           'PRINT"[";SIN(0);"]"',           "direct", "D-KWDRAIN"),
-    ("cos",     'a=cos(0)',           'PRINT"[";COS(0);"]"',           "direct", "D-KWDRAIN"),
+    # 🔴 D-KWTRIGVAL: `SIN(0)` IS 0 AND SO IS A STUB. The row above reads the one
+    # argument whose answer a do-nothing function also gives -- the same axis as
+    # `PEEK(0)>=0` and `INP(&HA8)>0`. `COS(0)` is 1 and escapes it; SIN and TAN do
+    # not. Scaled by 1000 and truncated so the reading is an INTEGER both machines
+    # must agree on rather than a float rendering.
+    ("sin_b",   'a=sin(1)',   'PRINT"[";INT(SIN(1)*1000);"]"',  "direct",
+     "FORM:sine SIN at an argument where 0 is the WRONG answer -- 841."),
+    ("cos",     'a=cos(0)',           'PRINT"[";COS(0);"]"',           "direct", "FORM:cosine D-KWDRAIN"),
     ("tan",     'a=tan(0)',           'PRINT"[";TAN(0);"]"',           "direct", "D-KWDRAIN"),
-    ("atn",     'a=atn(1)',           'PRINT"[";INT(ATN(1)*1000);"]"', "direct", "D-KWDRAIN"),
+    ("tan_b",   'a=tan(1)',   'PRINT"[";INT(TAN(1)*1000);"]"',  "direct",
+     "FORM:tangent TAN at an argument where 0 is the WRONG answer -- 1557. "
+     "`TAN(0)` is 0, which a stub returns too."),
+    ("atn",     'a=atn(1)',           'PRINT"[";INT(ATN(1)*1000);"]"', "direct", "FORM:arctangent D-KWDRAIN"),
     ("exp",     'a=exp(1)',           'PRINT"[";INT(EXP(1)*1000);"]"', "direct", "FORM:exponential D-KWDRAIN"),
     ("log",     'a=log(1)',           'PRINT"[";LOG(1);"]"',           "direct", "FORM:logarithm D-KWDRAIN"),
-    ("mod",     'a=7 mod 3',          'PRINT"[";7 MOD 3;"]"',          "direct", "D-KWDRAIN"),
-    ("notop",   'a=not 0',            'PRINT"[";NOT 0;"]"',            "direct", "D-KWDRAIN"),
-    ("andop",   'a=5 and 3',          'PRINT"[";5 AND 3;"]"',          "direct", "D-KWDRAIN"),
-    ("orop",    'a=5 or 3',           'PRINT"[";5 OR 3;"]"',           "direct", "D-KWDRAIN"),
-    ("xorop",   'a=5 xor 3',          'PRINT"[";5 XOR 3;"]"',          "direct", "D-KWDRAIN"),
+    ("mod",     'a=7 mod 3',          'PRINT"[";7 MOD 3;"]"',          "direct", "FORM:modulo D-KWDRAIN"),
+    ("notop",   'a=not 0',            'PRINT"[";NOT 0;"]"',            "direct", "FORM:bitwise-not D-KWDRAIN"),
+    ("andop",   'a=5 and 3',          'PRINT"[";5 AND 3;"]"',          "direct", "FORM:bitwise-and D-KWDRAIN"),
+    ("orop",    'a=5 or 3',           'PRINT"[";5 OR 3;"]"',           "direct", "FORM:bitwise-or D-KWDRAIN"),
+    ("xorop",   'a=5 xor 3',          'PRINT"[";5 XOR 3;"]"',          "direct", "FORM:bitwise-xor D-KWDRAIN"),
     ("oct",     'a$=oct$(8)',         'PRINT"[";OCT$(8);"]"',          "direct", "FORM:to-octal D-KWDRAIN"),
     ("left",    'a$=left$("abc",2)',  'PRINT"[";LEFT$("abc",2);"]"',   "direct", "FORM:prefix D-KWDRAIN"),
     ("right",   'a$=right$("abc",2)', 'PRINT"[";RIGHT$("abc",2);"]"',  "direct", "FORM:suffix D-KWDRAIN"),
@@ -654,6 +664,10 @@ SWEEP: list[tuple[str, str, str | None, str, str]] = [
     # matches the reference's is a separate question this row does not ask, and
     # filing it as answered here would be the "agrees for the wrong reason" trap.
     ("rnd",     'a=rnd(1)',           'PRINT"[";RND(1)<1;"]"',                "direct", "D-KWDRAIN"),
+    # 🔴 D-KWTRIGVAL: `rnd`'s `RND(1)<1` IS A BOOLEAN and a stub returning 0
+    # satisfies it -- but `rnd_b` FURTHER DOWN ALREADY READS THE RESEEDED DRAW
+    # (438 on both references), so RND needed a TAG, not a row. The duplicate-key
+    # guard caught the row I was about to add, for the second time today.
     # 🌾 D-KWBREADTH batch 8, AND IT ANSWERS THE QUESTION THE ROW ABOVE DECLINES.
     # That note says whether zerobas's PRNG SEQUENCE matches the reference's is "a
     # separate question this row does not ask". It is now MEASURED: `RND(negative)`
@@ -664,7 +678,7 @@ SWEEP: list[tuple[str, str, str | None, str, str]] = [
      'A=RND(-1):PRINT"[";INT(A*10000);"]"',                                   "stored",
      "D-KWDRAIN: the SEQUENCE, not the range -- `RND(1)<1` is true on any "
      "conforming implementation. After a negative reseed the value is 438 on both "
-     "references and here, so the generator itself agrees."),
+     "FORM:reseeded-draw references and here, so the generator itself agrees."),
     ("cvi",      'a=cvi("ab")',        'PRINT"[";CVI(MKI$(7));"]"',              "direct",
      "NEEDS-DISK: " "absent => syntax error; real => 7. 🔴 TAGGED AFTER THE FACT: "
      "written untagged it came back EXTRA -- ref `Illegal function call` vs zb "
@@ -1755,10 +1769,10 @@ SWEEP: list[tuple[str, str, str | None, str, str]] = [
     # The two missing logical operators.
     ("eqv",     "a=5 eqv 3",
      'PRINT"[";5 EQV 3;"]"',                         "direct",
-     "absent => juxtaposition syntax error; real => -7"),
+     "FORM:equivalence absent => juxtaposition syntax error; real => -7"),
     ("imp",     "a=5 imp 3",
      'PRINT"[";5 IMP 3;"]"',                         "direct",
-     "absent => juxtaposition syntax error; real => -5"),
+     "FORM:implication absent => juxtaposition syntax error; real => -5"),
 
     # Printer surface. The LPTOUT device layer ships (zerobas-tape page-0 patch),
     # so a divergence here is statement-surface only. Printer is UNPLUGGED in the

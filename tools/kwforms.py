@@ -255,6 +255,62 @@ FORMS: dict[str, tuple[tuple[str, ...], str]] = {
         ("read-data",),
         "READ <var>[,<var>...] -- one behaviour; reading several variables is repetition of it, not a second form. The row reads, RESTOREs and reads again, scoring the SUM, so a READ that always returned the first item is still visible.",
     ),
+    "ASC": (
+        ("code-of",),
+        "ASC(a$) -- one argument, one behaviour: the code of the FIRST character.",
+    ),
+    "LEN": (
+        ("length",),
+        "LEN(a$) -- one argument, one behaviour.",
+    ),
+    "ATN": (
+        ("arctangent",),
+        "ATN(x) -- one argument, one behaviour. The row scales by 1000 and truncates so the reading is an INTEGER both machines must agree on rather than a float rendering.",
+    ),
+    "COS": (
+        ("cosine",),
+        "COS(x) -- one argument, one behaviour. COS(0) is 1, so unlike SIN and TAN its row escapes the argument where a do-nothing function gives the right answer.",
+    ),
+    "SIN": (
+        ("sine",),
+        "SIN(x) -- one argument, one behaviour. WARNING: SIN(0) is 0 and so is a stub, so N=1 is earned by sin_b at an argument where 0 is the WRONG answer.",
+    ),
+    "TAN": (
+        ("tangent",),
+        "TAN(x) -- as SIN, and for the same reason: TAN(0) is 0 too.",
+    ),
+    "RND": (
+        ("reseeded-draw",),
+        "RND(x) -- one behaviour. A NEGATIVE argument RESEEDS, which is what makes the draw reproducible, and rnd_b reads the value (438 on both references). The plain row asks only whether the result is under 1, which is true of any conforming implementation.",
+    ),
+    "MOD": (
+        ("modulo",),
+        "a MOD b -- one behaviour. It is an OPERATOR, not a statement, and it is kept in the statement denominator because it has a result to get right.",
+    ),
+    "AND": (
+        ("bitwise-and",),
+        "a AND b -- one behaviour, and a truth table to get right; the row reads 5 AND 3 = 1.",
+    ),
+    "OR": (
+        ("bitwise-or",),
+        "a OR b -- 5 OR 3 = 7.",
+    ),
+    "XOR": (
+        ("bitwise-xor",),
+        "a XOR b -- 5 XOR 3 = 6.",
+    ),
+    "EQV": (
+        ("equivalence",),
+        "a EQV b -- 5 EQV 3 = -7. Measurably indistinguishable from XOR in PRECEDENCE (logtab's own comment says the order between them is a free choice), but not in RESULT.",
+    ),
+    "IMP": (
+        ("implication",),
+        "a IMP b -- 5 IMP 3 = -5.",
+    ),
+    "NOT": (
+        ("bitwise-not",),
+        "NOT a -- unary and right-associative; NOT 0 = -1.",
+    ),
     "ABS": (
         ("magnitude",),
         "ABS(x) -- one argument, one behaviour.",

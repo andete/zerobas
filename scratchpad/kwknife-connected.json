@@ -13,33 +13,36 @@
    "weak": false
   },
   "AND": {
-   "connected": false,
+   "connected": true,
    "modes": {
+    "fn": "MISSING",
     "stmt": "SUPPORTED"
    },
    "row": "andop",
    "subject": "AND",
-   "verdict": "SUPPORTED",
+   "verdict": "MISSING",
    "weak": false
   },
   "ASC": {
-   "connected": false,
+   "connected": true,
    "modes": {
+    "fn": "MISSING",
     "stmt": "SUPPORTED"
    },
    "row": "asc",
    "subject": "ASC",
-   "verdict": "SUPPORTED",
+   "verdict": "MISSING",
    "weak": false
   },
   "ATN": {
-   "connected": false,
+   "connected": true,
    "modes": {
+    "fn": "MISSING",
     "stmt": "SUPPORTED"
    },
    "row": "atn",
    "subject": "ATN",
-   "verdict": "SUPPORTED",
+   "verdict": "MISSING",
    "weak": false
   },
   "AUTO": {
@@ -207,6 +210,16 @@
    "verdict": "MISSING",
    "weak": false
   },
+  "COS": {
+   "connected": true,
+   "modes": {
+    "fn": "MISSING"
+   },
+   "row": "cos",
+   "subject": "COS",
+   "verdict": "MISSING",
+   "weak": false
+  },
   "CSAVE": {
    "connected": true,
    "modes": {
@@ -371,6 +384,16 @@
    "verdict": "MISSING",
    "weak": false
   },
+  "EQV": {
+   "connected": true,
+   "modes": {
+    "fn": "MISSING"
+   },
+   "row": "eqv",
+   "subject": "EQV",
+   "verdict": "MISSING",
+   "weak": false
+  },
   "ERASE": {
    "connected": true,
    "modes": {
@@ -502,6 +525,16 @@
    "verdict": "MISSING",
    "weak": false
   },
+  "IMP": {
+   "connected": true,
+   "modes": {
+    "fn": "MISSING"
+   },
+   "row": "imp",
+   "subject": "IMP",
+   "verdict": "MISSING",
+   "weak": false
+  },
   "INP": {
    "connected": true,
    "modes": {
@@ -574,6 +607,16 @@
     "fn": "MISSING"
    },
    "row": "left",
+   "verdict": "MISSING",
+   "weak": false
+  },
+  "LEN": {
+   "connected": true,
+   "modes": {
+    "fn": "MISSING"
+   },
+   "row": "len",
+   "subject": "LEN",
    "verdict": "MISSING",
    "weak": false
   },
@@ -750,6 +793,16 @@
    "verdict": "MISSING",
    "weak": false
   },
+  "MOD": {
+   "connected": true,
+   "modes": {
+    "fn": "MISSING"
+   },
+   "row": "mod",
+   "subject": "MOD",
+   "verdict": "MISSING",
+   "weak": false
+  },
   "MOTOR": {
    "connected": true,
    "modes": {
@@ -774,6 +827,16 @@
     "stmt": "MISSING"
    },
    "row": "nextkw_c",
+   "verdict": "MISSING",
+   "weak": false
+  },
+  "NOT": {
+   "connected": true,
+   "modes": {
+    "fn": "MISSING"
+   },
+   "row": "notop",
+   "subject": "NOT",
    "verdict": "MISSING",
    "weak": false
   },
@@ -802,6 +865,16 @@
     "stmt": "MISSING"
    },
    "row": "openkw",
+   "verdict": "MISSING",
+   "weak": false
+  },
+  "OR": {
+   "connected": true,
+   "modes": {
+    "fn": "MISSING"
+   },
+   "row": "orop",
+   "subject": "OR",
    "verdict": "MISSING",
    "weak": false
   },
@@ -848,6 +921,7 @@
     "fn": "MISSING"
    },
    "row": "peek_b",
+   "subject": "PEEK",
    "verdict": "MISSING",
    "weak": false
   },
@@ -979,6 +1053,16 @@
    "verdict": "MISSING",
    "weak": false
   },
+  "RND": {
+   "connected": true,
+   "modes": {
+    "fn": "MISSING"
+   },
+   "row": "rnd",
+   "subject": "RND",
+   "verdict": "MISSING",
+   "weak": false
+  },
   "RSET": {
    "connected": true,
    "modes": {
@@ -1031,6 +1115,16 @@
    },
    "row": "sgn",
    "subject": "SGN",
+   "verdict": "MISSING",
+   "weak": false
+  },
+  "SIN": {
+   "connected": true,
+   "modes": {
+    "fn": "MISSING"
+   },
+   "row": "sin_b",
+   "subject": "SIN",
    "verdict": "MISSING",
    "weak": false
   },
@@ -1113,6 +1207,16 @@
     "stmt": "MISSING"
    },
    "row": "swap",
+   "verdict": "MISSING",
+   "weak": false
+  },
+  "TAN": {
+   "connected": true,
+   "modes": {
+    "fn": "MISSING"
+   },
+   "row": "tan_b",
+   "subject": "TAN",
    "verdict": "MISSING",
    "weak": false
   },
@@ -1208,6 +1312,16 @@
    "row": "widthkw_b",
    "verdict": "MISSING",
    "weak": false
+  },
+  "XOR": {
+   "connected": true,
+   "modes": {
+    "fn": "MISSING"
+   },
+   "row": "xorop",
+   "subject": "XOR",
+   "verdict": "MISSING",
+   "weak": false
   }
  },
  "subjects": {
@@ -1218,21 +1332,21 @@
    }
   },
   "AND": {
-   "connected": false,
+   "connected": true,
    "rows": {
-    "andop": "SUPPORTED"
+    "andop": "MISSING"
    }
   },
   "ASC": {
-   "connected": false,
+   "connected": true,
    "rows": {
-    "asc": "SUPPORTED"
+    "asc": "MISSING"
    }
   },
   "ATN": {
-   "connected": false,
+   "connected": true,
    "rows": {
-    "atn": "SUPPORTED"
+    "atn": "MISSING"
    }
   },
   "CDBL": {
@@ -1247,6 +1361,12 @@
     "cint": "MISSING"
    }
   },
+  "COS": {
+   "connected": true,
+   "rows": {
+    "cos": "MISSING"
+   }
+  },
   "CSNG": {
    "connected": true,
    "rows": {
@@ -1258,6 +1378,12 @@
    "rows": {
     "deffn": "MISSING",
     "deffn_b": "MISSING"
+   }
+  },
+  "EQV": {
+   "connected": true,
+   "rows": {
+    "eqv": "MISSING"
    }
   },
   "ERL": {
@@ -1290,6 +1416,12 @@
     "getkw": "MISSING"
    }
   },
+  "IMP": {
+   "connected": true,
+   "rows": {
+    "imp": "MISSING"
+   }
+  },
   "INPUT": {
    "connected": true,
    "rows": {
@@ -1310,6 +1442,12 @@
     "int": "MISSING"
    }
   },
+  "LEN": {
+   "connected": true,
+   "rows": {
+    "len": "MISSING"
+   }
+  },
   "LINE INPUT": {
    "connected": true,
    "rows": {
@@ -1321,6 +1459,18 @@
    "connected": true,
    "rows": {
     "log": "MISSING"
+   }
+  },
+  "MOD": {
+   "connected": true,
+   "rows": {
+    "mod": "MISSING"
+   }
+  },
+  "NOT": {
+   "connected": true,
+   "rows": {
+    "notop": "MISSING"
    }
   },
   "ON ERROR GOTO": {
@@ -1342,10 +1492,22 @@
     "ongoto": "MISSING"
    }
   },
+  "OR": {
+   "connected": true,
+   "rows": {
+    "orop": "MISSING"
+   }
+  },
   "PAD": {
    "connected": false,
    "rows": {
     "padkw": "SUPPORTED"
+   }
+  },
+  "PEEK": {
+   "connected": true,
+   "rows": {
+    "peek_b": "MISSING"
    }
   },
   "PRINT": {
@@ -1385,10 +1547,23 @@
     "putsprite_b": "UNREADABLE"
    }
   },
+  "RND": {
+   "connected": true,
+   "rows": {
+    "rnd": "MISSING"
+   }
+  },
   "SGN": {
    "connected": true,
    "rows": {
     "sgn": "MISSING"
+   }
+  },
+  "SIN": {
+   "connected": true,
+   "rows": {
+    "sin": "MISSING",
+    "sin_b": "MISSING"
    }
   },
   "SQR": {
@@ -1397,12 +1572,25 @@
     "sqr": "MISSING"
    }
   },
+  "TAN": {
+   "connected": true,
+   "rows": {
+    "tan": "MISSING",
+    "tan_b": "MISSING"
+   }
+  },
   "USR": {
    "connected": true,
    "rows": {
     "usrkw": "MISSING"
    }
+  },
+  "XOR": {
+   "connected": true,
+   "rows": {
+    "xorop": "MISSING"
+   }
   }
  },
- "written": "2026-09-14 18:53:19"
+ "written": "2026-09-14 19:26:18"
 }

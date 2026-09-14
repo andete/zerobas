@@ -19513,6 +19513,47 @@ SIN COS TAN RND` — `ev_ff_mathconv`'s own comment says they *"have no arm of t
 own: they fall into the table scan below"*), and the string/number pair
 (`ASC LEN` via `ev_ff_strnum`) plus `ATTR$ DSKI$ INKEY$ STRING$ CALL MAX`. **That
 is the next apparatus slice, and it gates twenty statements.**
+🔪 **D-KWOPCUT — THREE MORE CUT SHAPES, AND THE TWENTY ARE DOWN TO SIX.
+106 of 164 at TIER 1.**
+🔪 **FIFTH: the TRANSCENDENTAL TOKEN TABLE.** `ATN/SIN/COS/TAN/RND` have no `cp`
+arm of their own — `ev_ff_mathconv`'s own comment says so — and `evmc_total_scan`
+walks `evmc_total_tab`, five rows of `<selector token>, <entry low byte>`. The cut
+is the row's TOKEN, the same *patch what the comparison reads* idea as every other
+shape, and a miss falls through the function's own error path.
+🔪 **SIXTH: the OPERATOR PRECEDENCE TABLE.** `IMP EQV XOR OR AND` are not reached
+by a `cp` chain at all — the parser WALKS `logtab` (`db token, dw leaf`,
+`$00`-terminated, loosest first). Stride 3, and DEADTOK `$FE` is a safe poison
+there: it terminates nothing and matches nothing.
+🔪 **SEVENTH: a `cp` SITE WHOSE ENCLOSING ROUTINE IS NAMED FOR THE KEYWORD.** The
+standing rule is *"a conditional jump must follow, and its target must resolve to a
+named evaluator"*, and three real shapes satisfy NEITHER half: `MOD` is
+`cp MOD_TOKEN` / **`ret nz`** — no jump at all; `NOT` is `jr z,ev_not_do`, a `jr`,
+which the `ev_*` arm deliberately refuses after the PEEK lesson; `ASC`/`LEN` are
+`jr z,ev_ff_asc` / `jr z,ev_ff_len`. 🎯 **SO THE SITE IS IDENTIFIED BY WHERE IT
+LIVES INSTEAD OF WHERE IT GOES.**
+🔴 **AND THIS IS EXACTLY THE GUARD THE PEEK CASE NEEDED.** PEEK's lone `jr z` goes
+to `ev_ff_ckaddr`, a SHARED ADDRESS-CHECK HELPER inside `ev_ff_arg` — neither name
+contains "peek", so the shape declines and PEEK still falls through to the
+`ev_ff_argtab` cut that IS its dispatch. **Re-measured: PEEK still cuts correctly.**
+[[a-shared-tail-is-not-a-decision]]
+🔴 **`LEN` THEN REFUSED WITH *TWO* SITES NAMED FOR IT, AND REFUSING WAS RIGHT.**
+`$92`'s candidates were the real `jr z,ev_ff_len` and a byte coincidence beside
+**`ev_ff_argtab_len`** — a LENGTH EQUATE, not a routine, whose name ends in "len"
+by pure English. ✅ Ranked: **a jump TARGET naming the keyword outranks an
+enclosing symbol that merely contains it**, because only one of them is something
+the code JUMPS TO.
+🟢 **FOURTEEN AWARDED: `ASC LEN ATN COS SIN TAN RND MOD AND OR XOR EQV IMP NOT`.**
+⚠️ **THREE OF THEM NEEDED A ROW FIRST, ON THE OLDEST AXIS IN THE FILE: `SIN(0)` IS
+0 AND SO IS A STUB**, and `TAN(0)` likewise; `COS(0)` is 1 and escapes it. New rows
+read `SIN(1)*1000 -> 841` and `TAN(1)*1000 -> 1557`, scaled and truncated so the
+reading is an INTEGER both machines must agree on rather than a float rendering.
+🔴 **AND `RND` NEEDED ONLY A TAG — THE DUPLICATE-KEY GUARD CAUGHT THE ROW I WAS
+ABOUT TO ADD, FOR THE SECOND TIME TODAY.** `rnd_b` already reads the RESEEDED draw
+(438 on both references, since a negative argument reseeds and makes the sequence
+reproducible); `rnd`'s `RND(1)<1` is a BOOLEAN true of any conforming
+implementation. **Check whether the reading already exists before writing one.**
+🔭 **SIX STILL REFUSE ALL SEVEN SHAPES: `ATTR$ DSKI$ INKEY$ STRING$ CALL MAX`** —
+the next apparatus question, and a much smaller one than the twenty it started as.
       ⚠️ **`TXTMAX` IS NOW BOUNDED BY `DETOKBUF`, NOT BY FREE RAM** — at 1280 B
       it does not fit the 1024 B window, so `$BB00` is the stop until DETOKBUF
       is dealt with. Of D-LINEMAX's 1792 B, **1024 recovered, 768 still charged**.

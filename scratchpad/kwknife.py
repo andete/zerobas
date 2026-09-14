@@ -477,6 +477,156 @@ def plant_argtab(tok):
     return (off, orig), None
 
 
+def plant_totaltab(tok):
+    """🔪 THE FIFTH CUT SHAPE: the transcendentals' TOKEN-TABLE row (D-KWTOTALCUT
+    2026-09-14).
+
+    `ATN/SIN/COS/TAN/RND` have no `cp` arm of their own -- `ev_ff_mathconv`'s own
+    comment says so: *"they have no arm of their own: they fall into the table scan
+    below"*. `evmc_total_scan` walks `evmc_total_tab`, five rows of
+    `<selector token>, <low byte of the sub-ROM entry>`, and a miss falls through
+    to `ev_ff_strnum` and then `ev_f_err`.
+    🎯 SO THE CUT IS THE SAME IDEA AS EVERY OTHER ONE HERE: patch the byte the
+    comparison READS, never the target it jumps to. The row's token becomes
+    DEADTOK, the scan never matches, and the function fails through its own error
+    path -- no shared helper is disturbed and nothing else moves.
+    ⚠️ The row STRIDE is 2 and the table length is `EVMC_TOTAL_N`, taken from the
+    symbol rather than assumed, so a sixth row added later is cut correctly and a
+    table that moved is refused rather than mis-patched."""
+    st = syms().get("evmc_total_tab")
+    if st is None:
+        return None, "no evmc_total_tab symbol"
+    n = syms_equ().get("EVMC_TOTAL_N")
+    if n is None:
+        # the equate is an `equ` in expr.asm, not sysvars.inc -- read it there
+        m = re.search(r"^EVMC_TOTAL_N\s+equ\s+(\d+)",
+                      io.open(os.path.join(ROOT, "basic", "expr.asm"),
+                              encoding="utf-8").read(), re.M)
+        n = int(m.group(1)) if m else None
+    if not n:
+        return None, "no EVMC_TOTAL_N"
+    rom = bytearray(io.open(ROM, "rb").read())
+    where = [st + 2 * i for i in range(n) if rom[st + 2 * i] == tok]
+    if len(where) != 1:
+        return None, f"{len(where)} row(s) in evmc_total_tab — refusing"
+    off = where[0]
+    orig = bytes(rom[off:off + 1])
+    rom[off] = DEADTOK
+    io.open(ROM, "wb").write(bytes(rom))
+    if io.open(ROM, "rb").read()[off] != DEADTOK:
+        sys.exit("knife: the total-tab plant did NOT take — nothing was measured")
+    return (off, orig), None
+
+
+def _enclosing(off):
+    """The name of the symbol the ROM offset `off` sits inside -- the greatest
+    symbol address not past it. Used to decide whether a `cp <tok>` site BELONGS
+    to a keyword when no jump target can say so."""
+    best, bestn = -1, ""
+    for line in io.open(SYM, errors="replace"):
+        m = re.match(r"(\w+)\s+EQU\s+0?([0-9A-Fa-f]+)H", line)
+        if m:
+            a = int(m.group(2), 16)
+            if best < a <= off:
+                best, bestn = a, m.group(1)
+    return bestn
+
+
+def plant_cp_named(tok, kw):
+    """🔪 THE SIXTH CUT SHAPE: a `cp <tok>` whose ENCLOSING ROUTINE is named after
+    the keyword (D-KWOPCUT 2026-09-14).
+
+    🔴 THE EXISTING RULE IS "A CONDITIONAL JUMP MUST FOLLOW, AND ITS TARGET MUST
+    RESOLVE TO A NAMED EVALUATOR", and three real dispatch shapes satisfy neither
+    half:
+      * `MOD` is `cp MOD_TOKEN` / **`ret nz`** (basic/expr.asm, ev_mod_lp) -- no
+        jump at all;
+      * `NOT` is `cp NOT_TOKEN` / `jr z,ev_not_do` -- a `jr`, which the `ev_*` arm
+        deliberately refuses after the PEEK lesson;
+      * `ASC`/`LEN` are `jr z,ev_ff_asc` / `jr z,ev_ff_len` in `ev_ff_strnum`.
+    🎯 SO THE SITE IS IDENTIFIED BY WHERE IT LIVES INSTEAD OF WHERE IT GOES: the
+    enclosing symbol must NAME the keyword. `ev_mod_lp` names MOD, `ev_not` names
+    NOT, `ev_ff_strnum` does not name ASC -- but the JUMP TARGET does, so both are
+    accepted and either alone is enough.
+    🔴 AND THIS IS EXACTLY THE GUARD THE PEEK CASE NEEDED. PEEK's lone `jr z` goes
+    to `ev_ff_ckaddr`, a SHARED ADDRESS-CHECK HELPER, inside `ev_ff_arg` -- neither
+    name contains "peek", so this shape declines and PEEK still falls through to
+    the `ev_ff_argtab` cut that IS its dispatch. A shared tail is not a decision
+    [[a-shared-tail-is-not-a-decision]].
+    ⚠️ Tried LAST, after every narrower shape, so no existing reading can move."""
+    stem = kw.rstrip("$").lower()
+    if len(stem) < 2:
+        return None, "keyword stem too short to match a symbol"
+    rom = bytearray(io.open(ROM, "rb").read())
+    byaddr = {}
+    for line in io.open(SYM, errors="replace"):
+        m = re.match(r"(\w+)\s+EQU\s+0?([0-9A-Fa-f]+)H", line)
+        if m:
+            byaddr[int(m.group(2), 16)] = m.group(1)
+    hits = []
+    for i in range(len(rom) - 4):
+        if rom[i] != 0xFE or rom[i + 1] != tok:
+            continue
+        names = [_enclosing(i)]
+        op = rom[i + 2]
+        if op == 0xCA:
+            names.append(byaddr.get(rom[i + 3] | (rom[i + 4] << 8), ""))
+        elif op == 0x28:
+            d = rom[i + 3]
+            names.append(byaddr.get((i + 4) + (d - 256 if d > 127 else d), ""))
+        # 🔴 A JUMP TARGET NAMING THE KEYWORD OUTRANKS AN ENCLOSING SYMBOL THAT
+        # MERELY CONTAINS IT, and LEN is why. `$92`'s two candidate sites were the
+        # real one (`jr z,ev_ff_len`) and a byte coincidence sitting near
+        # `ev_ff_argtab_len` -- a LENGTH EQUATE, not a routine, whose name ends in
+        # "len" by pure English. Substring matching cannot tell those apart and
+        # correctly REFUSED rather than guess; ranking can, because only one of
+        # them is something the code JUMPS TO.
+        by_target = len(names) > 1 and names[1] and stem in names[1].lower()
+        if by_target or any(stem in n.lower() for n in names if n):
+            hits.append((i, by_target))
+    strong = [h for h in hits if h[1]]
+    hits = [h[0] for h in (strong or hits)]
+    if len(hits) != 1:
+        return None, (f"{len(hits)} `cp ${tok:02X}` site(s) named for {kw} "
+                      f"— refusing")
+    off = hits[0] + 1
+    orig = bytes(rom[off:off + 1])
+    rom[off] = DEADTOK
+    io.open(ROM, "wb").write(bytes(rom))
+    if io.open(ROM, "rb").read()[off] != DEADTOK:
+        sys.exit("knife: the named-cp plant did NOT take — nothing was measured")
+    return (off, orig), None
+
+
+def plant_logtab(tok):
+    """🔪 THE SEVENTH: the LOGICAL-OPERATOR precedence table (D-KWOPCUT).
+
+    `logtab` (basic/expr.asm) is `db token, dw leaf`, $00-terminated, loosest
+    first: IMP, EQV, XOR, OR, AND. The operators are not reached by a `cp` chain
+    at all -- the parser WALKS this table -- so the cut is the row's token byte,
+    the same "patch what the comparison reads" idea as every other shape here.
+    ⚠️ STRIDE 3, and the walk stops at a $00 token, so DEADTOK ($FE) is a safe
+    poison: it terminates nothing and matches nothing."""
+    st = syms().get("logtab")
+    if st is None:
+        return None, "no logtab symbol"
+    rom = bytearray(io.open(ROM, "rb").read())
+    where, i = [], 0
+    while i < 64 and rom[st + i] != 0x00:
+        if rom[st + i] == tok:
+            where.append(st + i)
+        i += 3
+    if len(where) != 1:
+        return None, f"{len(where)} row(s) in logtab — refusing"
+    off = where[0]
+    orig = bytes(rom[off:off + 1])
+    rom[off] = DEADTOK
+    io.open(ROM, "wb").write(bytes(rom))
+    if io.open(ROM, "rb").read()[off] != DEADTOK:
+        sys.exit("knife: the logtab plant did NOT take — nothing was measured")
+    return (off, orig), None
+
+
 FNMODE = "--fn" in sys.argv
 if FNMODE:
     sys.argv = [a for a in sys.argv if a != "--fn"]
@@ -630,8 +780,15 @@ for kw, row, tok in TARGETS:
         res, why = plant_fn(tok, kw)
         if res is None:                      # no `cp` site: try the cpir table
             res, why2 = plant_argtab(tok)
+        if res is None:                      # nor that: try the transcendental table
+            res, why3 = plant_totaltab(tok)
+        if res is None:                      # nor that: the operator precedence table
+            res, why4 = plant_logtab(tok)
+        if res is None:                      # LAST: a `cp` site NAMED for the keyword
+            res, why5 = plant_cp_named(tok, kw)
             if res is None:
-                print("  %-8s row %-10s %s / %s" % (kw, row, why, why2)); continue
+                print("  %-8s row %-10s %s / %s / %s / %s / %s"
+                      % (kw, row, why, why2, why3, why4, why5)); continue
         off, orig = res
     else:
         off, orig = plant(tok, dead)
