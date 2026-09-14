@@ -420,6 +420,13 @@ SWEEP: list[tuple[str, str, str | None, str, str]] = [
     ("chr",     "a$=chr$(65)",        'PRINT"[";CHR$(65);"]"',           "direct", "control"),
     ("mid",     'a$=mid$("hi",1,1)',  'PRINT"[";MID$("hi",2,1);"]"',     "direct", "control"),
     ("instr",   'a=instr("ab","b")',  'PRINT"[";INSTR("ab","b");"]"',    "direct", "control"),
+    # 🌾 D-KWBREADTH batch 9: the row above uses the TWO-argument form, and the only
+    # three-argument coverage is `instr_t3`, which passes an INVALID start of 0. The
+    # VALID start form is untested: `INSTR(2,"ABA","A")` must skip the first "A" and
+    # find the one at 3, where a start argument that is parsed and discarded says 1.
+    ("instr_b", 'a=instr(2,"aba","a")', 'PRINT"[";INSTR(2,"ABA","A");"]"',  "direct",
+     "D-KWDRAIN: the 3-argument START form -- 3, not 1. A start that parses and is "
+     "then ignored finds the FIRST A and reads 1."),
     ("hex",     "a$=hex$(255)",       'PRINT"[";HEX$(255);"]"',          "direct", "control"),
     ("sqr",     "a=sqr(9)",           'PRINT"[";SQR(9);"]"',             "direct", "control"),
     ("peek",    "a=peek(0)",          'PRINT"[";PEEK(0)>=0;"]"',         "direct", "control"),
@@ -848,6 +855,15 @@ SWEEP: list[tuple[str, str, str | None, str, str]] = [
     ("linekw",   'line(1,1)-(5,1)',
      'SCREEN2:LINE(1,1)-(5,1),15:A=POINT(3,1):SCREEN0:PRINT"[L";A;"]"', "stored",
      "NOECHO:[L reads a pixel in the MIDDLE of the span, so an endpoint-only LINE fails too"),
+    # 🌾 D-KWBREADTH batch 9: the row above draws a plain segment; the `,B` BOX form
+    # is untested. (9,1) is the box's TOP-RIGHT CORNER -- on the rectangle, and NOT
+    # on the diagonal a `,B`-ignoring LINE would draw between the same two points.
+    # So a LINE that parses `,B` and discards it reads 4 (blank) where a real box
+    # reads 15.
+    ("linekw_b", 'line(1,1)-(9,9),15,b',
+     'SCREEN2:LINE(1,1)-(9,9),15,B:A=POINT(9,1):SCREEN0:PRINT"[P";A;"]"', "stored",
+     "NOECHO:[P the BOX form -- (9,1) is a corner of the rectangle but not a point "
+     "on the diagonal, so a discarded `,B` reads 4 instead of 15"),
     ("colorkw",  'color 7',    'COLOR 7:PRINT"[O";PEEK(-3095);"]"',              "direct",
      "NOECHO:[O COLOR repaints the whole screen, echo included. Reads FORCLR "
      "($F3E9 = -3095) back, and uses 7 rather than the DEFAULT 15 on purpose: "

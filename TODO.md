@@ -367,6 +367,20 @@ forced the split, and the split changed the thing being measured
 **A row can agree across machines, pass its gate, and still contradict the note
 that justifies it — which is why the standing rule is READ WHAT THE ROW SAW, NOT
 THE VERDICT IT PRINTED.**
+🌾 **BREADTH BATCH 9 (D-KWBREADTH, 2026-09-14) — THE FIFTH AXIS: A ROW THAT
+EXERCISES ONE ARGUMENT COUNT OF A VERB THAT TAKES SEVERAL.**
+| row | reading | the form the old row could not reach |
+|---|---|---|
+| `instr_b` | `[ 3 ]` | the 3-argument START form. `instr` uses TWO args, and the only 3-arg coverage is `instr_t3`, which passes an **INVALID** start of 0 — so a start that is parsed and then DISCARDED finds the first `A` and reads 1 |
+| `linekw_b` | `[P 15 ]` | the `,B` **BOX** form. (9,1) is the rectangle's TOP-RIGHT CORNER and **not** a point on the diagonal a `,B`-ignoring `LINE` would draw between the same two endpoints, so a discarded `,B` reads 4 |
+🔪 Both **knife-proven LOAD-BEARING**. Sweep `DIVERGENT=2 SUPPORTED=203`.
+🎯 **NINETEEN BREADTH ROWS ACROSS NINE BATCHES, AND THE FIVE SCREENING AXES ARE
+THE DURABLE PART** — each names a SHAPE of row whose reading cannot see a whole
+class of defect: an **ERROR** reading leaves the SUCCESS path untouched; a
+**LENGTH or EXISTENCE** reading leaves the CONTENT untouched; a **CONSTANT
+MARKER** leaves the EFFECT untouched; a **BOOLEAN** leaves the VALUE untouched;
+and **ONE ARGUMENT COUNT** leaves every other form untouched. ⚠️ Every one of them
+over-flags, so a candidate is confirmed by READING its row, never by the filter.
 🔪 **D-KWSTRCUT — THE THIRD CUT SHAPE, AND A FIRST VERSION OF IT THAT WAS WORSE
 THAN THE GAP IT CLOSED (2026-09-13).** `basic/sysvars.inc:250` named the shape in
 prose written long before the knife existed: **MKI$ is evaluated in
@@ -1035,7 +1049,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:17762 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:17776 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -1201,7 +1215,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:5802 (T-6FE392)8 (T-529ABE)` from `TODO.md:16413 (T-529ABE)`: a
+      `TODO.md:5816 (T-6FE392)8 (T-529ABE)` from `TODO.md:16427 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -6646,7 +6660,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:16413 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:16427 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

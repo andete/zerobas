@@ -389,6 +389,15 @@
    "verdict": "MISSING",
    "weak": false
   },
+  "INSTR": {
+   "connected": true,
+   "modes": {
+    "fn": "MISSING"
+   },
+   "row": "instr_b",
+   "verdict": "MISSING",
+   "weak": false
+  },
   "IPL": {
    "connected": true,
    "modes": {
@@ -448,7 +457,7 @@
    "modes": {
     "stmt": "UNREADABLE"
    },
-   "row": "linekw",
+   "row": "linekw_b",
    "verdict": "UNREADABLE",
    "weak": false
   },
@@ -968,5 +977,5 @@
    "weak": false
   }
  },
- "written": "2026-09-14 01:59:37"
+ "written": "2026-09-14 02:22:09"
 }
