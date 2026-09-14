@@ -54,6 +54,7 @@ COMPOSITES: tuple[tuple[frozenset[str], str], ...] = tuple(
         ("DEF USR",         "DEF USR"),
         ("PUT SPRITE",      "PUT SPRITE"),
         ("PRINT USING",     "PRINT USING"),
+        ("MAX FILES",       "MAX FILES"),
     ))
 COMPOSITES = tuple(sorted(COMPOSITES, key=lambda e: -len(e[0])))
 
@@ -138,9 +139,19 @@ OPERATORS: frozenset[str] = frozenset(
 # "ERR 5 on every machine with a disk ROM and on the diskless VG-8020 too"
 # (D-DONOTHING3), `ipl` is "Illegal function call on the CF-3300 as well as on
 # zerobas", `cmd` is "the third refuse-on-sight word; ERR 5 on both references".
-REFUSE_ONLY: frozenset[str] = frozenset(("SET", "IPL", "CMD"))
+# ⚠️ `ATTR$` JOINED 2026-09-14 (D-KWSIX). `sysvars.inc` says it outright:
+# `ATTR_TOKEN equ $E9 ; ATTR$ — tokenised, then ERR 5 (no function)`, and the
+# row's own note agrees: *"bare ATTR$ raises Illegal function call -- so the word
+# IS a token here"*. Tokenised and refused is the same shape as SET/IPL/CMD.
+REFUSE_ONLY: frozenset[str] = frozenset(("SET", "IPL", "CMD", "ATTR$"))
 
-NO_BARE_FORM: frozenset[str] = frozenset(("DEF", "GET", "ON", "PUT", "USING"))
+# ⚠️ `MAX` JOINED 2026-09-14 (D-KWSIX): `MAX_TOKEN equ $CD ; MAX — 1st half of
+# MAXFILES (statement: MAX FILES = n)`, and kwtable holds `MAX` and `FILES` as
+# SEPARATE one-byte words. There is no bare `MAX` statement -- the row's note says
+# *"bare MAX is a Syntax error on a real machine"* -- so it is `ON`'s shape exactly,
+# and `MAX FILES` is the composite.
+NO_BARE_FORM: frozenset[str] = frozenset(
+    ("DEF", "GET", "ON", "PUT", "USING", "MAX"))
 
 
 def subject_names() -> set[str]:
@@ -254,6 +265,18 @@ FORMS: dict[str, tuple[tuple[str, ...], str]] = {
     "READ": (
         ("read-data",),
         "READ <var>[,<var>...] -- one behaviour; reading several variables is repetition of it, not a second form. The row reads, RESTOREs and reads again, scoring the SUM, so a READ that always returned the first item is still visible.",
+    ),
+    "DSKI$": (
+        ("read-sector",),
+        "DSKI$(<drive>,<sector>) -- one behaviour, the RAW SECTOR read. The row reads sector 7, the root directory, whose first entry is TEST.BIN, so the buffer's first byte is the code of T, 84 -- a value, not a length.",
+    ),
+    "STRING$": (
+        ("repeat",),
+        "STRING$(n,c) -- one behaviour: n copies of a character.",
+    ),
+    "INKEY$": (
+        ("poll-key",),
+        "INKEY$ -- no arguments, one behaviour: take one character from the keyboard buffer if there is one. WARNING: it does NOT block, which is why its row stuffs KEYBUF directly rather than waiting, and why the typed-response channel cannot be used for it.",
     ),
     "ASC": (
         ("code-of",),

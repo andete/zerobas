@@ -621,7 +621,7 @@ SWEEP: list[tuple[str, str, str | None, str, str]] = [
     ("left",    'a$=left$("abc",2)',  'PRINT"[";LEFT$("abc",2);"]"',   "direct", "FORM:prefix D-KWDRAIN"),
     ("right",   'a$=right$("abc",2)', 'PRINT"[";RIGHT$("abc",2);"]"',  "direct", "FORM:suffix D-KWDRAIN"),
     ("str",     'a$=str$(5)',         'PRINT"[";STR$(5);"]"',          "direct", "FORM:number-to-string D-KWDRAIN"),
-    ("stringf", 'a$=string$(3,"x")',  'PRINT"[";STRING$(3,"x");"]"',   "direct", "D-KWDRAIN"),
+    ("stringf", 'a$=string$(3,"x")',  'PRINT"[";STRING$(3,"x");"]"',   "direct", "FORM:repeat D-KWDRAIN"),
     ("space",   'a$=space$(3)',       'PRINT"[";LEN(SPACE$(3));"]"',   "direct", "D-KWDRAIN"),
     # 🌾 D-KWBATCH5: A LENGTH CANNOT SEE CONTENT -- the second screening axis, and
     # `space` reads `LEN(SPACE$(3))`, which a SPACE$ returning "xxx" passes. This
@@ -2099,7 +2099,7 @@ SWEEP: list[tuple[str, str, str | None, str, str]] = [
     ("inkey",   'a$=inkey$',
      'POKE&HFBF0,65:POKE&HF3FA,&HF0:POKE&HF3FB,&HFB:POKE&HF3F8,&HF1:'
      'POKE&HF3F9,&HFB:A$=INKEY$:PRINT"[";A$;LEN(A$);"]"',  "stored",
-     "absent => the buffer stays stuffed and INKEY$ reads nothing; real => [A 1 ]"),
+     "FORM:poll-key absent => the buffer stays stuffed and INKEY$ reads nothing; real => [A 1 ]"),
     ("csave",   'csave"zq"',  'PRINT"[Z9]":CSAVE"ZQ"',  "stored",
      "NEEDS-BLANKTAPE: " "NOFURN: " "🔴 THE ROW READS THE TAPE, NOT THE SCREEN, "
      "and that is measured: every screen form of this row scored SUPPORTED on an "
@@ -2434,7 +2434,7 @@ SWEEP: list[tuple[str, str, str | None, str, str]] = [
      "entry is TEST.BIN, so the buffer's first byte is ASC(\"T\") = 84. The buffer "
      "ADDRESS is read through $F351 rather than pinned — it is $EB95 on the "
      "CF-3300 and $E5C0 on zerobas BY DESIGN (docs/spec-basic-dskio.md). Control: "
-     "the same read WITHOUT the DSKI$ gives 254, so the row moves."),
+     "FORM:read-sector the same read WITHOUT the DSKI$ gives 254, so the row moves."),
     ("dsko",    "dsko$0,0",
      'A$=DSKI$(0,7):B=PEEK(&HF351)+256*PEEK(&HF352):POKE B,88:DSKO$0,7:A$=DSKI$(0,0):A$=DSKI$(0,7):A=PEEK(B):PRINT"[";A;"]"', "stored",
      "NEEDS-DISK: " "raw sector WRITE, and it is a ROUND TRIP: poke the buffer to "

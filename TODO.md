@@ -19554,6 +19554,38 @@ reproducible); `rnd`'s `RND(1)<1` is a BOOLEAN true of any conforming
 implementation. **Check whether the reading already exists before writing one.**
 🔭 **SIX STILL REFUSE ALL SEVEN SHAPES: `ATTR$ DSKI$ INKEY$ STRING$ CALL MAX`** —
 the next apparatus question, and a much smaller one than the twenty it started as.
+🔬 **D-KWSIX — THE SIX ANSWERED, AND FOUR OF THEM WERE NOT CUT PROBLEMS AT ALL.**
+**109 of 163 at TIER 1.**
+🟢 **`DSKI$`, `STRING$` and `INKEY$` NEEDED NOTHING NEW.** The SEVENTH shape added
+an hour earlier — *a `cp` site whose enclosing routine or jump target is named for
+the keyword* — already reaches them: their `cp <TOK>` sites sit in
+`basic/strvar.asm` inside routines named after them. ⚠️ **I WROTE A WIDENING FOR
+THEM AND IT ASSERTED OUT, AND THE RUN SUCCEEDED ANYWAY** — the edit never applied,
+which is how I learned it was not needed. *An edit script that refuses is cheaper
+than one that silently works.*
+🚫 **`ATTR$` IS A REFUSE-ON-SIGHT WORD AND THE EQUATE SAYS SO OUT LOUD**:
+`ATTR_TOKEN equ $E9 ; ATTR$ — tokenised, then ERR 5 (no function)`, and the row's
+own note agrees — *"bare ATTR$ raises Illegal function call"*. It joins
+`SET`/`IPL`/`CMD` in `REFUSE_ONLY` and leaves the STATEMENT denominator.
+🎯 **`MAX` HAS NO BARE FORM — IT IS `ON`'s SHAPE EXACTLY.** `MAX_TOKEN equ $CD ;
+MAX — 1st half of MAXFILES`, and `kwtable.inc` holds `MAX` and `FILES` as SEPARATE
+one-byte words. The row's note: *"bare MAX is a Syntax error on a real machine"*.
+So `MAX` joins `NO_BARE_FORM` and **`MAX FILES` becomes a composite statement**
+(UNRATED until it has a row of its own). **STATEMENT 164 → 163.**
+🔴 **AND `CALL` AND `MAX` BOTH SCORE *RESERVEDNESS*, NOT BEHAVIOUR** — which is why
+both came back 🔴 BLIND from a cut that WORKED. `callkw`'s exec is `CALL=1:...` and
+`maxkw`'s is `PRINT"[";MAX;"]"`, and **both are a Syntax error on all three
+machines**: cutting the handler cannot change a syntax error. ⚠️ **A BLIND VERDICT
+ON A ROW THAT SCORES RESERVEDNESS IS NOT A BLIND ROW — IT IS A ROW MEASURING THE
+TOKENISER.** `CALL <name>` needs an extension ROM the harness has no cartridge for,
+so its happy path is not reachable here at all; that is a named block, not a
+missing cut.
+🔭 **`ATTR$`'s CUT SITE IS STILL UNEXPLAINED AND DOES NOT MATTER YET.**
+`basic/expr.asm:547` is `cp ATTR_TOKEN` / `jp z,ev_f_attr` — a `jp z` to an `ev_*`
+symbol, which the FIRST shape should match — and the knife reports **ZERO** sites,
+not two. Left unchased because ATTR$ is refuse-only: it has no happy path to
+connect to. ⚠️ **Worth returning to if another `ev_*`-targeted keyword ever reports
+zero sites**, because the same cause would then be hiding a real cut.
       ⚠️ **`TXTMAX` IS NOW BOUNDED BY `DETOKBUF`, NOT BY FREE RAM** — at 1280 B
       it does not fit the 1024 B window, so `$BB00` is the stop until DETOKBUF
       is dealt with. Of D-LINEMAX's 1792 B, **1024 recovered, 768 still charged**.
