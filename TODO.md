@@ -19366,6 +19366,53 @@ SUPPLY TIER 1 breadth. `input-devices-acceptance` properly exercises
 `STICK`/`STRIG`/`PDL` whose kwsweep rows read 0 — correct with nothing plugged in
 AND exactly what a stub returns, so they are not awarded. Joost answered a
 different question; this one waits.
+⌨️ **D-KWRESPOND — THE TYPED-INPUT CHANNEL, AND IT FOUND A MISSING FORM ON ITS
+FIRST USE** (Joost, 2026-09-14: **"Build it"**). **75 of 167 statements at TIER 1.**
+🔴 **AND THE UNBLOCK I PROPOSED TO HIM WAS UNNECESSARY.** I offered to stuff
+`KEYBUF` ($FBF0) with `GETPNT`/`PUTPNT` from inside the stored program — apparatus
+INSIDE the program under test, which is exactly where this session kept getting
+bitten. **Reading `probes/basic/basic_probe_input.py` first showed it does nothing
+of the kind:** it types the response as a TRAILING RAW LINE AFTER `RUN`, the line
+editor consumes it in order, and by the time it is injected RUN is executing and
+the read is blocked — so the CR-terminated line lands in KEYBUF by itself and CHGET
+hands it over. **No POKEs, and a mechanism `input-acceptance` has been proving for
+months.** ⚠️ *Read the probe that already solved it before building the thing you
+proposed.*
+✅ **A `RESPOND:` TAG**, parsed like `FORM:`/`SUBJECT:` (`_` is a space, `|`
+separates responses). A row carrying it is built as a **DIRECT** case with its own
+numbered lines, `RUN`, then the responses — because `run_cases` appends `RUN`
+itself in stored mode and has no hook for anything after it. **Nothing in
+`omsx_repl` changed.**
+🔬 **THE CONTROL ROW RAN FIRST AND WAS THE WRONG SHAPE, WHICH IS WHY IT RAN
+FIRST.** Written with `INKEY$` it read `[0y]` on the reference and
+`[0y]|ZBZ|Syntax error` on zerobas: **INKEY$ DOES NOT BLOCK**, so the program
+finished before the response was typed and BASIC then tried to EXECUTE the response
+as a command. **The channel works only while a read is WAITING** — which is the
+whole mechanism, and the thing the control existed to pin. 🎯 And it also showed
+the channel's failure mode is LOUD (a stray command and a syntax error), not a
+silently wrong value.
+🔴 **REBUILT AROUND `INPUT$(1)`, A BLOCKING READ THAT IS NOT `INPUT` — AND THAT
+FOUND A GAP.** Reference `[0yZ]`, zerobas `Syntax error`: `str_inputd`
+(`basic/strvar.asm`) requires `,#f` — its own comment says *"file form requires
+'#f'"* — and falls to `str_eval_no` without it. **The CONSOLE form of `INPUT$` is
+not implemented here**, and `inputdol` had been CRUNCH-ONLY (exec `None`, note
+*"BLOCKS waiting for a keypress"*) since the day it was written, so it had never
+been executed at all.
+⚠️ **AND THE READING WAS SCORED FOR NOBODY UNTIL `INPUT$` BECAME A SUBJECT.**
+`basic/kwtable.inc` says it outright — for MKI$, *"the '$' is PART of the keyword,
+UNLIKE INPUT$"* — MSX tokenises `INPUT` and the `$` separately, so the table
+rightly holds only `INPUT`. But `INPUT$(n)` is a FUNCTION with its own evaluator
+and nothing to do with the INPUT STATEMENT, so crediting its gap to INPUT would
+attribute a function's defect to a statement. It is an UNDERIVABLE subject now,
+authored at N=2 (console, channel), standing at **0/2 with the console form
+MISSING**.
+🟢 **`INPUT` AT 3/3 AND `LINE INPUT` AT 2/2, BOTH AWARDED.** Bare console INPUT had
+NEVER had a row — both of INPUT's rows drove the FILE form and belong to `INPUT #`
+— so the console statement a 1985 listing uses most had never been measured.
+`[0zHELLO]` promptless, `[1a 42 ]` with a prompt, `[1b 3  4 ]` splitting ONE typed
+line on the comma into TWO variables. 🎯 **`LINE INPUT`'s reading is the
+discriminator:** `[1c A,B C]` keeps the comma AND the leading space, where `INPUT`
+would have split at the comma and eaten the space.
       ⚠️ **`TXTMAX` IS NOW BOUNDED BY `DETOKBUF`, NOT BY FREE RAM** — at 1280 B
       it does not fit the 1024 B window, so `$BB00` is the stop until DETOKBUF
       is dealt with. Of D-LINEMAX's 1792 B, **1024 recovered, 768 still charged**.

@@ -333,6 +333,37 @@ def row_form(note: str) -> str | None:
 # ⚠️ A DECLARED SUBJECT IS VALIDATED IN `tier_table.stmt_subject`, NOT HERE -- a
 # typo that named nothing would otherwise delete the row from its real keyword's
 # evidence while looking like a tag that worked.
+# ⌨️ D-KWRESPOND (Joost, 2026-09-14: *"Build it"*). BARE CONSOLE `INPUT "x";A$`
+# AND `LINE INPUT` HAD NEVER HAD A ROW, and the reason was the row format: the
+# harness types the numbered lines and `RUN` and then nothing, so a program that
+# blocks on the keyboard simply hangs there.
+# 🔴 AND THE UNBLOCK I PROPOSED WAS UNNECESSARY. I offered to stuff KEYBUF ($FBF0)
+# with GETPNT/PUTPNT from inside the stored program -- apparatus INSIDE the program
+# under test, which is exactly where this session kept getting bitten. Reading
+# `probes/basic/basic_probe_input.py` first showed it does nothing of the kind: it
+# types the response as a TRAILING RAW LINE AFTER `RUN`, and the line editor
+# consumes it in order, so by the time it is injected RUN is executing and the read
+# is blocked -- the CR-terminated line lands in KEYBUF by itself and CHGET hands it
+# to INPUT. No POKEs, and a mechanism `input-acceptance` has been proving for
+# months.
+# 🎯 SO A `RESPOND:` ROW IS BUILT AS A **DIRECT** CASE CARRYING ITS OWN NUMBERED
+# LINES, `RUN`, AND THE RESPONSES -- exactly the shape `basic_probe_input.spec`
+# returns -- because `run_cases` appends `RUN` itself in stored mode and has no
+# hook for anything after it. Nothing in omsx_repl changes.
+# ⚠️ `_` becomes a space and `|` separates responses, since a note token can hold
+# neither.
+_RESPOND_TAG = "RESPOND:"
+
+
+def row_respond(note: str) -> list[str] | None:
+    """The lines a row types AFTER `RUN`, or None. `RESPOND:42` -> ['42']."""
+    for tok in note.split():
+        if tok.startswith(_RESPOND_TAG) and len(tok) > len(_RESPOND_TAG):
+            return [p.replace("_", " ")
+                    for p in tok[len(_RESPOND_TAG):].split("|")]
+    return None
+
+
 _SUBJECT_TAG = "SUBJECT:"
 
 
@@ -2240,6 +2271,66 @@ SWEEP: list[tuple[str, str, str | None, str, str]] = [
      "`inputkw` scores LEN(A$)=24, which "
      "a read returning 24 BLANKS passes just as well as the real line; HI.TXT is "
      "\"Hello from zerobas-disk!\" (tools/make_test_dsk.py), so this reads Hello."),
+    # ⌨️ D-KWRESPOND: THE CONTROL ROW, AND IT COMES FIRST ON PURPOSE. Apparatus
+    # inside a measurement is where this session kept getting bitten, so before any
+    # row DEPENDS on the response channel, one row proves the channel itself
+    # delivers: `INKEY$` reads a single character straight out of the keyboard
+    # buffer, so if the trailing line never arrives this reads the empty string and
+    # the row says so instead of a later row failing for a reason nobody can see.
+    # 🔴 AND THE FIRST CONTROL ROW WAS THE WRONG SHAPE, WHICH IS WHY IT RAN FIRST.
+    # Written with `INKEY$` it read `[0y]` on the reference and `[0y]|ZBZ|Syntax
+    # error` on zerobas: INKEY$ DOES NOT BLOCK, so the program finished before the
+    # trailing line was typed and BASIC then tried to EXECUTE the response as a
+    # command. The channel works only while a read is WAITING -- which is the whole
+    # mechanism `basic_probe_input` relies on and the thing this row exists to pin.
+    # 🎯 `INPUT$(1)` BLOCKS FOR EXACTLY ONE CHARACTER, so it holds the program open
+    # until the response arrives. `INPUT$` is not in the keyword table, so this row
+    # scores for NOBODY -- which is what a control row should do.
+    # 🔴 AND ON ITS FIRST USE THE CHANNEL FOUND A MISSING FORM. `inputdol` above is
+    # CRUNCH-ONLY -- exec `None`, note "BLOCKS waiting for a keypress" -- because
+    # nothing could type a response, so `INPUT$(n)` had never been executed at all.
+    # Executed, the reference reads `[0yZ]` and zerobas answers `Syntax error`:
+    # `str_inputd` (basic/strvar.asm:415) requires `,#f` -- "file form requires
+    # '#f'" -- and falls to `str_eval_no` without it, so the CONSOLE form of
+    # `INPUT$` is not implemented here.
+    # 🎯 THIS ROW DOUBLES AS THE CHANNEL'S CONTROL ON THE REFERENCE SIDE: `INPUT$`
+    # is not `INPUT`, so `[0yZ]` proves the trailing line reaches a blocked read
+    # INDEPENDENTLY of the statement the console-INPUT rows below are measuring.
+    ("inputdol_b", 'a$=input$(1)',
+     'A$=INPUT$(1):PRINT"[0y";A$;"]"',                 "stored",
+     "NOECHO:[0y RESPOND:Z SUBJECT:INPUT$ the CONSOLE form of `INPUT$`, "
+     "measurable for the first "
+     "time now a response can be typed. ref `[0yZ]`, zb `Syntax error` -- the form "
+     "is MISSING here (str_inputd requires `,#f`). Filed."),
+    # ⌨️ D-KWRESPOND: bare CONSOLE INPUT, which has NEVER had a row -- both of
+    # INPUT's rows drive the FILE form and now belong to `INPUT #`.
+    ("inputcon", 'input a$',
+     'INPUT A$:PRINT"[0z";A$;"]"',                     "stored",
+     "NOECHO:[0z RESPOND:HELLO SUBJECT:INPUT FORM:no-prompt the CONSOLE form, "
+     "reading a string typed at the keyboard rather than out of a channel. "
+     "`[0zHELLO]`."),
+    ("inputcon_b", 'input "n";a',
+     'INPUT "N";A:PRINT"[1a";A;"]"',                   "stored",
+     "NOECHO:[1a RESPOND:42 SUBJECT:INPUT FORM:prompt the PROMPT form -- the "
+     "literal is printed before the read, which the promptless form cannot "
+     "exercise. `[1a 42 ]`."),
+    ("inputcon_c", 'input a,b',
+     'INPUT A,B:PRINT"[1b";A;B;"]"',                   "stored",
+     "NOECHO:[1b RESPOND:3,4 SUBJECT:INPUT FORM:multi-variable ONE typed line "
+     "split on the comma into TWO variables. `[1b 3  4 ]` -- a handler that read "
+     "the whole line into the first leaves B at 0."),
+    # ⌨️ D-KWRESPOND: `LINE INPUT` is a COMPOSITE and its whole point is that it
+    # does NOT split: commas and leading spaces are kept.
+    ("lineinput", 'line input a$',
+     'LINE INPUT A$:PRINT"[1c";A$;"]"',                "stored",
+     "NOECHO:[1c RESPOND:_A,B_C SUBJECT:LINE_INPUT FORM:whole-line the WHOLE line "
+     "including its commas AND its leading space, where `INPUT` would have split "
+     "at the comma and eaten the space. `[1c A,B C]`."),
+    ("lineinput_b", 'line input "q";a$',
+     'LINE INPUT "Q";A$:PRINT"[1d";A$;"]"',            "stored",
+     "NOECHO:[1d RESPOND:_X,Y SUBJECT:LINE_INPUT FORM:prompt the PROMPT form, "
+     "which prints the literal before the read. `[1d X,Y]` -- and the leading "
+     "space is still kept, so the prompt did not eat it."),
 
     # ------------------------------------------------ D-KWGET (2026-09-13)
     # 🟢 `GET` IS NOT A KEYBOARD VERB, and the name is the whole reason it sat
@@ -2922,9 +3013,20 @@ def main() -> int:
         ex_rows = [r for r in rows if r[2] is not None]
         if ex_rows:
             specs = []
-            for _, _, line, mode, _ in ex_rows:
-                specs.append((mode, omsx_repl.as_stored(line) if mode == "stored"
-                              else [line]))
+            for _, _, line, mode, _rnote in ex_rows:
+                _resp = row_respond(_rnote)
+                if _resp:
+                    # D-KWRESPOND: numbered lines + RUN + the responses, as a
+                    # DIRECT case, because run_cases appends RUN itself in stored
+                    # mode and nothing can follow it there.
+                    specs.append(("direct",
+                                  [f"{10 * (i + 1)} {b}" for i, b in
+                                   enumerate(omsx_repl.as_stored(line))]
+                                  + ["RUN"] + _resp))
+                else:
+                    specs.append((mode,
+                                  omsx_repl.as_stored(line) if mode == "stored"
+                                  else [line]))
             ref_raws = ref_capture(specs, ex_rows,
                                    reset=("NEW", "CLS"), capture="screen")
             zb_raws = zb_capture(specs, ex_rows,

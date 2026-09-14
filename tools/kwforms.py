@@ -86,6 +86,14 @@ UNDERIVABLE: tuple[str, ...] = (
     "INPUT #",
     "GET #",
     "PUT #",
+    # 🔴 `INPUT$` IS NOT A KEYWORD IN THE TOKEN TABLE AND MUST STILL BE A SUBJECT.
+    # basic/kwtable.inc says it outright: for MKI$ "the '$' is PART of the keyword,
+    # UNLIKE INPUT$" -- MSX tokenises `INPUT` and the `$` separately, so the table
+    # rightly holds only INPUT. But `INPUT$(n)` is a FUNCTION with its own
+    # evaluator (str_inputd, basic/strvar.asm) and nothing to do with the INPUT
+    # statement, so a reading of it scored for INPUT would be attributing a
+    # function's gap to a statement. Without this entry it scored for NOBODY.
+    "INPUT$",
 )
 
 
@@ -240,6 +248,24 @@ FORMS: dict[str, tuple[tuple[str, ...], str]] = {
     "ON ERROR GOTO": (
         ("on-error", "disable"),
         "ON ERROR GOTO <line> installs a handler (the row tags it on-error) and ON ERROR GOTO 0 DISABLES error trapping -- two behaviours, and the disable is the one a program uses to hand an error back to BASIC. Only the install has a row.",
+    ),
+    "INPUT$": (
+        ("console", "channel"),
+        "INPUT$(n) reads n characters from the KEYBOARD and INPUT$(n,#f) from a "
+        "CHANNEL -- two sources, two forms. WARNING: the console form is MISSING "
+        "here. str_inputd (basic/strvar.asm) requires `,#f` -- its own comment "
+        "says \"file form requires '#f'\" -- and falls to str_eval_no without it, "
+        "so `A$=INPUT$(1)` is a Syntax error where the reference returns the "
+        "keypress. Measured the moment the response channel made it executable at "
+        "all; the row had been CRUNCH-ONLY since it was written.",
+    ),
+    "INPUT": (
+        ("no-prompt", "prompt", "multi-variable"),
+        "Bare CONSOLE INPUT -- three behaviours: the promptless read, the PROMPT literal printed before it, and ONE typed line SPLIT on commas into SEVERAL variables. The channel form is a different statement (INPUT #), per Joost's ruling. WARNING: until D-KWRESPOND there was no row at all -- both of INPUT's rows drove the FILE form and belong to INPUT #, so the console statement a 1985 listing uses most had never been measured.",
+    ),
+    "LINE INPUT": (
+        ("whole-line", "prompt"),
+        "LINE INPUT [<prompt>;]<var> -- the whole point is that it does NOT split: commas and leading spaces are KEPT where INPUT would have split at the comma and eaten the space. That is the whole-line form; the prompt is the second.",
     ),
     "INPUT #": (
         ("string-read",),

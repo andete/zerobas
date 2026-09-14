@@ -406,8 +406,8 @@
    "modes": {
     "stmt": "MISSING"
    },
-   "row": "inputkw",
-   "subject": "INPUT #",
+   "row": "inputcon_c",
+   "subject": "INPUT",
    "verdict": "MISSING",
    "weak": false
   },
@@ -477,10 +477,11 @@
   "LINE": {
    "connected": true,
    "modes": {
-    "stmt": "UNREADABLE"
+    "stmt": "MISSING"
    },
-   "row": "linekw_f",
-   "verdict": "UNREADABLE",
+   "row": "lineinput_b",
+   "subject": "LINE INPUT",
+   "verdict": "MISSING",
    "weak": false
   },
   "LIST": {
@@ -1061,10 +1062,25 @@
     "getkw": "MISSING"
    }
   },
+  "INPUT": {
+   "connected": true,
+   "rows": {
+    "inputcon": "MISSING",
+    "inputcon_b": "MISSING",
+    "inputcon_c": "MISSING"
+   }
+  },
   "INPUT #": {
    "connected": true,
    "rows": {
     "inputkw": "MISSING"
+   }
+  },
+  "LINE INPUT": {
+   "connected": true,
+   "rows": {
+    "lineinput": "MISSING",
+    "lineinput_b": "MISSING"
    }
   },
   "ON ERROR GOTO": {
@@ -1124,5 +1140,5 @@
    }
   }
  },
- "written": "2026-09-14 16:06:28"
+ "written": "2026-09-14 17:15:20"
 }
