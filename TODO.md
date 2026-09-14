@@ -19703,7 +19703,22 @@ raised, both machines behave identically, and `spec-basic-graphics-g5.md` is
 explicit that the border is parsed and RANGE-CHECKED here. **PAINT stays at 1/3
 for want of a ROW, not a form**, and the next question — *"the border is not
 honoured so it floods"* versus *"PAINT is simply this slow in SCREEN 2"* — wants a
-much longer gap (`cap_gap=120`) or a far smaller filled region.
+measurement below.
+🔴 **AND IT IS NOT SPEED — MEASURED, NOT ASSUMED.** A TINY box,
+`LINE(10,10)-(14,14),15,B` (an interior of about FOUR PIXELS), with an explicit
+border EQUAL to the box colour, **does not complete either, on either machine**.
+A four-pixel bounded fill cannot be a timing problem.
+🛑 **SO THE STATE OF THE QUESTION IS:** `PAINT(x,y),C` with C different from
+what it is filling over does not complete through this harness — bounded or
+unbounded, with or without an explicit border, raising NO error — and **BOTH
+MACHINES DO IT IDENTICALLY**. That last part is what matters: **it cannot be a
+faithfulness defect, because the VG-8020 reference behaves the same.** It is a
+property of PAINT under emulation, or of the harness, and it is NOT a divergence.
+⚠️ **PAINT STAYS AT 1/3 AND ITS OTHER TWO FORMS ARE NOT MEASURABLE THROUGH THIS
+INSTRUMENT.** The one question the probe has NOT yet asked, and the place to
+start: **is the emulated machine still ALIVE after the PAINT?** Type a direct-mode
+command after `RUN` and see whether it answers — that separates *"the interpreter
+is stuck inside PAINT"* from *"the capture is looking in the wrong place"*.
       ⚠️ **`TXTMAX` IS NOW BOUNDED BY `DETOKBUF`, NOT BY FREE RAM** — at 1280 B
       it does not fit the 1024 B window, so `$BB00` is the stop until DETOKBUF
       is dealt with. Of D-LINEMAX's 1792 B, **1024 recovered, 768 still charged**.

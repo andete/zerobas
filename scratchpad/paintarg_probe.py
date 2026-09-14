@@ -47,11 +47,25 @@ separate. On BOTH machines:
                              NOT raising an error: it simply has not finished
                              30 seconds of capture gap later
 🎯 SO THE SWEEP'S `paintkw` ROW PASSES ONLY BECAUSE ITS FILL COLOUR EQUALS THE
-BOX COLOUR -- the fill stops on its first cell. Every row with a different fill
-colour, WITH OR WITHOUT an explicit border, outruns the capture. Whether that is
-"the border is not honoured so it floods the screen" or "PAINT is simply this slow
-in SCREEN 2" is the NEXT question and wants a much longer gap (try cap_gap=120)
-or a far smaller filled region.
+BOX COLOUR -- the fill stops on its first cell.
+
+🔴 AND IT IS **NOT SPEED**, WHICH THE OBVIOUS NEXT GUESS WOULD HAVE BEEN.
+Measured with a TINY box, `LINE(10,10)-(14,14),15,B` -- an interior of about FOUR
+PIXELS -- and an explicit border EQUAL to the box colour: it does NOT complete
+either, on either machine. A four-pixel bounded fill cannot be a timing problem.
+
+🛑 SO THE STATE OF THIS QUESTION IS: `PAINT(x,y),C` with C different from what
+it is filling over does not complete through this harness -- bounded or unbounded,
+with or without an explicit border, raising NO error -- and **BOTH MACHINES DO IT
+IDENTICALLY**. That last part is what matters: it cannot be a faithfulness defect,
+because the VG-8020 reference behaves the same. It is a property of PAINT under
+emulation, or of the harness, and it is NOT a divergence.
+⚠️ **PAINT THEREFORE STAYS AT 1/3 AND ITS OTHER TWO FORMS ARE NOT MEASURABLE
+THROUGH THIS INSTRUMENT.** Anyone returning to it should start by asking whether
+the emulated machine is still ALIVE after the PAINT (type a direct-mode command
+after RUN and see whether it answers) -- that separates "the interpreter is stuck
+in PAINT" from "the capture is looking in the wrong place", and it is the one
+question this probe has not yet asked.
 ⚠️ WHAT THIS DOES **NOT** SAY: it does not say the 3-argument form is broken.
 No error is raised, and docs/spec-basic-graphics-g5.md is explicit that the border
 is parsed and RANGE-CHECKED here. PAINT stays at 1/3 for want of a ROW, not a form.
