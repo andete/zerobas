@@ -474,7 +474,7 @@ def tier1_status(kw, forms_seen, connected, has_open_item):
         return False, "UNRATED — no authored form list"
     missing = [f for f in need if f not in forms_seen]
     if has_open_item:
-        return False, "an open TIER item stands against it"
+        return False, "an open TIER 1 item stands against it"
     if not connected:
         return False, "not knife-proven CONNECTED"
     if missing:
@@ -664,6 +664,25 @@ def tier1_statements(stmts=None, conn=None, forms=None, kws=None):
     return out
 
 
+def blocks_tier1(entry):
+    """Does this keyword_tiers entry hold an open item that blocks TIER 1?
+
+    🔴 ONLY A TIER **1** ITEM DOES, AND READING IT AS "ANY OPEN ITEM" WAS MY
+    MISTAKE (corrected 2026-09-14). Joost's rule says "no open item", and Joost's
+    TIER LADDER says what the tiers mean: HAPPY PATH -> REASONABLE TIME -> COMMON
+    ERRORS -> ON-PAR SPEED -> EVERY ERROR. **An item at tier n says tier n is not
+    reached. It says nothing about tier n-1.** A keyword that is SLOWER THAN THE
+    REFERENCE can have a perfect happy path -- the TIER 4 item on `FOR`/`GOTO`
+    says so in its own text: *"the interpreter is 2.5-3.8x slower (TIER 2,
+    reasonable time, is met)"*.
+    🎯 MEASURED COST OF THE MISTAKE: 15 statements were held out of TIER 1 by items
+    that are not about the happy path at all -- eleven at TIER 5 (an exhaustive
+    error case), three at TIER 4 (speed) and one at TIER 3 (a common error).
+    ⚠️ The tuple is `(tier, lines, evidence)` and `(None, [], 'SUPPORTED')` is
+    TRUTHY, so this reads the FIRST element -- the trap selftest S28 pins."""
+    return entry is not None and entry[0] == 1
+
+
 def tier1_keywords(kws, conn=None, forms=None):
     """The keywords Joost's TIER 1 rule awards, computed ONCE for every caller.
 
@@ -686,7 +705,8 @@ def fmt_keywords(its, kws, evidence=None):
     kt = keyword_tiers(its, kws, evidence)
     t3 = kwsweep_t3(kws)
     conn = knife_connected()
-    t1 = {kw for kw in tier1_keywords(kws, conn) if kt.get(kw, (None,))[0] is None}
+    t1 = {kw for kw in tier1_keywords(kws, conn)
+          if not blocks_tier1(kt.get(kw))}
     nobare = no_bare_form()
     parts = particles()
     forms = kwsweep_forms(kws)
@@ -805,7 +825,8 @@ def fmt_markdown(its, kws, evidence=None, t3=None, connected=None):
     kt = keyword_tiers(its, kws, evidence)
     t3 = kwsweep_t3(kws) if t3 is None else t3
     conn = knife_connected() if connected is None else connected
-    t1 = {kw for kw in tier1_keywords(kws, conn) if kt.get(kw, (None,))[0] is None}
+    t1 = {kw for kw in tier1_keywords(kws, conn)
+          if not blocks_tier1(kt.get(kw))}
     nobare = no_bare_form()
     parts = particles()
     forms = kwsweep_forms(kws)
@@ -1110,6 +1131,17 @@ def selftest():
         particles() <= _real
         and not (particles() & set(statements(_real)))
         and operators() <= set(statements(_real)))
+    # 🔴 AN ITEM AT TIER n BLOCKS TIER n, NOT TIER n-1 (corrected 2026-09-14).
+    # Reading "no open item" as "no open item AT ANY TIER" held 15 statements out
+    # of TIER 1 on items that say nothing about the happy path -- the TIER 4 item
+    # on FOR/GOTO says so in its own text: "TIER 2, reasonable time, is met".
+    arm("S34 only a TIER 1 item blocks TIER 1",
+        blocks_tier1((1, [7], "SUPPORTED")) is True
+        and blocks_tier1((3, [7], "SUPPORTED")) is False
+        and blocks_tier1((4, [7], "SUPPORTED")) is False
+        and blocks_tier1((5, [7], "SUPPORTED")) is False
+        and blocks_tier1((None, [], "SUPPORTED")) is False
+        and blocks_tier1(None) is False)
     md = fmt_markdown(its, kws, evidence={}, t3=set(), connected=set())
     _s14 = [("summary row", "| TIER 1 | works correctly in the happy path | 1 |" in md),
             ("LOF row", "| `LOF` | TIER 0 | open TIER 1 item, TODO.md 2 |" in md),

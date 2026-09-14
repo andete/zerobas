@@ -19435,6 +19435,37 @@ refuse-on-sight words here — `ERR 5` on both references — so they have no HA
 PATH on this machine at all, and an N=1 meaning "refuses correctly" would be a
 TIER 5 reading wearing a TIER 1 label. ⛔ `MOTOR` likewise waits: its row prints a
 constant `[ok]`, which is the third screening axis.
+🔴 **D-KWT1ITEM — I READ "NO OPEN ITEM" AS "NO OPEN ITEM AT ANY TIER", AND THAT
+WAS WRONG** (found 2026-09-14 while measuring what "all items at TIER 1" would
+actually take, after Joost said it *"should be within reach"*).
+🎯 **AN ITEM AT TIER n SAYS TIER n IS NOT REACHED. IT SAYS NOTHING ABOUT TIER
+n−1.** Joost's own ladder is HAPPY PATH → REASONABLE TIME → COMMON ERRORS → ON-PAR
+SPEED → EVERY ERROR, so a keyword that is SLOWER THAN THE REFERENCE can still have
+a perfect happy path — **and the TIER 4 item on `FOR`/`GOTO` says exactly that in
+its own text**: *"the interpreter is 2.5–3.8× slower (TIER 2, reasonable time, is
+met)"*. I had that sentence in front of me and still blocked TIER 1 on it.
+📊 **MEASURED COST: FIFTEEN STATEMENTS HELD OUT OF TIER 1 BY ITEMS THAT ARE NOT
+ABOUT THE HAPPY PATH** — eleven at TIER 5 (an exhaustive error case), three at
+TIER 4 (speed) and one at TIER 3 (a common error).
+✅ `blocks_tier1()` now reads the entry's FIRST element and compares it to **1**,
+and selftest **S34** pins that items at 3, 4 and 5 do NOT block. ⚠️ It reads
+`entry[0]`, not `bool(entry)` — the truthy-tuple trap S28 already records.
+⚠️ **THE CORRECTION AWARDS NOTHING BY ITSELF**, and that is worth saying: all
+fifteen ALSO have no authored bar, so they move from "blocked" to "unrated" and
+join the ordinary queue. **What it removes is a FALSE blocker**, which would have
+sent me implementing TIER 5 error cases to unlock TIER 1.
+📋 **AND THE HONEST ANSWER TO "ALL ITEMS AT TIER 1 SHOULD BE WITHIN REACH": 157 of
+167 ARE. TEN ARE NOT, AND NOT FOR WANT OF ROWS** — `LOCATE` (the cursor switch is
+parsed, domain-checked and then IGNORED, deviation O-3), `SCREEN` (the key click
+has no cell any row here can read), `VARPTR` (`VARPTR(#n)` is DEFERRED), `INPUT$`
+(the console form is MISSING — `str_inputd` requires `,#f`), `SET`/`IPL`/`CMD`
+(refuse-on-sight words with no happy path on this machine at all), and
+`STICK`/`STRIG`/`PDL` (their rows read 0, which is correct with nothing plugged in
+AND exactly what a stub returns — waiting on Joost's ruling about whether a
+dedicated suite may supply the breadth). **Four of those need CODE, three need a
+ruling, and three are not TIER 1 shaped at all.**
+📈 **OF THE 87 REMAINING, 63 ALREADY HAVE AN AGREEING ROW AND NEED ONLY A BAR** —
+the batch-8 shape, which awarded ten with no new rows. 14 need a row as well.
       ⚠️ **`TXTMAX` IS NOW BOUNDED BY `DETOKBUF`, NOT BY FREE RAM** — at 1280 B
       it does not fit the 1024 B window, so `$BB00` is the stop until DETOKBUF
       is dealt with. Of D-LINEMAX's 1792 B, **1024 recovered, 768 still charged**.
