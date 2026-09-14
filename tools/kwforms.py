@@ -132,6 +132,49 @@ FORMS: dict[str, tuple[tuple[str, ...], str]] = {
         "This is deliberately a DIFFERENT SHAPE from PSET/PRESET -- positional "
         "omission rather than an optional trailing argument and a mode.",
     ),
+    "LINE": (
+        ("segment", "box", "filled-box", "step-relative", "omitted-start",
+         "colour-default"),
+        "`LINE [[STEP](x1,y1)] - [STEP](x2,y2) [,[c][,B|BF]]` (basic/graphics.asm). "
+        "Six behaviours, and the three suffix forms really are three: a segment, an "
+        "outlined box and a FILLED box are different drawings between the same two "
+        "points. The first coordinate is OPTIONAL -- omitted, it continues from the "
+        "last point (GRPAC) -- which is a form no other graphics verb here has. "
+        "This is the widest N in the table and it should be: LINE has more distinct "
+        "shapes than any other MSX1 graphics statement.",
+    ),
+    "POINT": (
+        ("pixel-read",),
+        "`POINT(x,y)` -- one argument pair, one behaviour. The bar is met only "
+        "because `pointkw_b` reads a pixel that was NEVER set as well as one that "
+        "was: the original row read back the pixel it had just drawn, which a POINT "
+        "returning a constant passes.",
+    ),
+    "VPEEK": (
+        ("address-read",),
+        "`VPEEK(<vram address>)` -- one argument, one behaviour, the reading half "
+        "of VPOKE. The row writes a known byte with VPOKE and reads it back, so it "
+        "cannot pass on a constant.",
+    ),
+    "CSRLIN": (
+        ("row-read",),
+        "`CSRLIN` takes no argument and reports the cursor ROW -- one behaviour. "
+        "⚠️ N=1 is met by `csrlind`, which reads the DELTA across a PRINT rather "
+        "than the absolute row: the absolute value is ambient scroll state and the "
+        "unanchored row measured the boot banner, not the keyword.",
+    ),
+    "POS": (
+        ("column-read",),
+        "`POS(<dummy>)` reports the cursor COLUMN -- one behaviour. The row prints "
+        "four spaces first, so the answer is a known non-zero column and not the "
+        "0 an auto-dimmed array would give.",
+    ),
+    "LPOS": (
+        ("column-read",),
+        "`LPOS(<dummy>)` is the printer's head column, the same shape as POS. "
+        "🔴 THE `LPRINT` IS THE ROW: a bare `LPOS(0)` reads 0, which is exactly "
+        "what a stub reads, and that left the word unattributed once already.",
+    ),
     "INP": (
         ("port-read",),
         "`INP(<port>)` -- one argument, one behaviour. N=1, and the row that earns "

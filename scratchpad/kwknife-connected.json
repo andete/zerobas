@@ -155,6 +155,15 @@
    "verdict": "NO-VERDICT",
    "weak": false
   },
+  "CSRLIN": {
+   "connected": true,
+   "modes": {
+    "fn": "MISSING"
+   },
+   "row": "csrlind",
+   "verdict": "MISSING",
+   "weak": false
+  },
   "CVD": {
    "connected": true,
    "modes": {
@@ -467,7 +476,7 @@
    "modes": {
     "stmt": "UNREADABLE"
    },
-   "row": "linekw_b",
+   "row": "linekw_f",
    "verdict": "UNREADABLE",
    "weak": false
   },
@@ -694,6 +703,15 @@
    },
    "row": "peek",
    "verdict": "MISSING",
+   "weak": false
+  },
+  "POINT": {
+   "connected": true,
+   "modes": {
+    "fn": "UNREADABLE"
+   },
+   "row": "pointkw_b",
+   "verdict": "UNREADABLE",
    "weak": false
   },
   "POKE": {
@@ -1014,5 +1032,5 @@
    "weak": false
   }
  },
- "written": "2026-09-14 12:23:31"
+ "written": "2026-09-14 12:51:51"
 }

@@ -559,7 +559,8 @@ SWEEP: list[tuple[str, str, str | None, str, str]] = [
     # to CLS:PRINT:PRINT. So this row reads the DELTA across two PRINTs, which is
     # what the three machines agree on, and which a stub still fails: an absent
     # CSRLIN parses as a variable and gives 0-0 = 0, not 2.
-    ("csrlind", 'a=csrlin',           'A=CSRLIN:PRINT:PRINT"[";CSRLIN-A;"]"', "direct", "D-KWDRAIN"),
+    ("csrlind", 'a=csrlin',           'A=CSRLIN:PRINT:PRINT"[";CSRLIN-A;"]"', "direct",
+     "FORM:row-read D-KWDRAIN"),
     ("let",     'let a=5',            'LET A=5:PRINT"[";A;"]"',        "direct", "D-KWDRAIN"),
     ("rem",     'rem x',              'PRINT"[";1;"]":REM z',          "direct", "D-KWDRAIN"),
 
@@ -689,7 +690,8 @@ SWEEP: list[tuple[str, str, str | None, str, str]] = [
      "FORM:register-value D-KWDRAIN: SOUND's EFFECT, not its existence -- the byte "
      "is read back out of the PSG. A SOUND that parsed and wrote nothing reads "
      "something else."),
-    ("vpeek",   'a=vpeek(0)',         'VPOKE 0,7:PRINT"[";VPEEK(0);"]"',      "direct", "D-KWDRAIN"),
+    ("vpeek",   'a=vpeek(0)',         'VPOKE 0,7:PRINT"[";VPEEK(0);"]"',      "direct",
+     "FORM:address-read D-KWDRAIN"),
     ("vpoke",   'vpoke 0,1',          'VPOKE 0,9:PRINT"[";VPEEK(0);"]"',      "direct",
      "FORM:address-value D-KWDRAIN"),
     ("vdpkw",   'a=vdp(1)',           'PRINT"[";VDP(1)>0;"]"',                "direct",
@@ -1233,10 +1235,22 @@ SWEEP: list[tuple[str, str, str | None, str, str]] = [
      "round-trips SPRITE$, which is the PATTERN table and a different store."),
     ("pointkw",  'a=point(1,1)',   
      'SCREEN2:PSET(1,1),15:A=POINT(1,1):SCREEN0:PRINT"[T";A;"]"',   "stored",
-     "NOECHO:[T POINT as the subject: a stub parses as an array and reads 0, not 15"),
+     "NOECHO:[T FORM:pixel-read POINT as the subject: a stub parses as an array and "
+     "reads 0, not 15"),
+    # 🌾 D-KWBATCH4: THE ROW ABOVE READS ONLY A PIXEL THAT WAS SET, so a POINT that
+    # answered 15 to everything passes it. The second reading is a pixel nothing
+    # drew, which is the difference between "reads the plane" and "returns the
+    # colour it was just given".
+    ("pointkw_b", 'a=point(20,20)',
+     'SCREEN2:PSET(1,1),15:A=POINT(1,1):B=POINT(20,20):SCREEN0:PRINT"[0m";A;B;"]"',
+     "stored",
+     "NOECHO:[0m FORM:pixel-read `[0m 15  4 ]` -- the pixel that WAS set and one "
+     "that was not. A POINT returning a constant, or the last colour written, "
+     "passes `pointkw` and fails here."),
     ("linekw",   'line(1,1)-(5,1)',
      'SCREEN2:LINE(1,1)-(5,1),15:A=POINT(3,1):SCREEN0:PRINT"[L";A;"]"', "stored",
-     "NOECHO:[L reads a pixel in the MIDDLE of the span, so an endpoint-only LINE fails too"),
+     "NOECHO:[L FORM:segment reads a pixel in the MIDDLE of the span, so an "
+     "endpoint-only LINE fails too"),
     # 🌾 D-KWBREADTH batch 9: the row above draws a plain segment; the `,B` BOX form
     # is untested. (9,1) is the box's TOP-RIGHT CORNER -- on the rectangle, and NOT
     # on the diagonal a `,B`-ignoring LINE would draw between the same two points.
@@ -1244,8 +1258,43 @@ SWEEP: list[tuple[str, str, str | None, str, str]] = [
     # reads 15.
     ("linekw_b", 'line(1,1)-(9,9),15,b',
      'SCREEN2:LINE(1,1)-(9,9),15,B:A=POINT(9,1):SCREEN0:PRINT"[P";A;"]"', "stored",
-     "NOECHO:[P the BOX form -- (9,1) is a corner of the rectangle but not a point "
-     "on the diagonal, so a discarded `,B` reads 4 instead of 15"),
+     "NOECHO:[P FORM:box the BOX form -- (9,1) is a corner of the rectangle but not "
+     "a point on the diagonal, so a discarded `,B` reads 4 instead of 15"),
+    # 🌾 D-KWBATCH4: the remaining FOUR of LINE's six forms. Grammar
+    # (basic/graphics.asm:182): `LINE [[STEP](x1,y1)] - [STEP](x2,y2) [,[c][,B|BF]]`.
+    # 🎯 EVERY ONE READS A PIXEL IT MUST DRAW **AND** ONE IT MUST NOT, and the second
+    # reading is chosen to be where the WRONG interpretation would have drawn --
+    # not merely somewhere blank, which only proves the screen is not all 15.
+    # ⚠️ (7,3), NOT (5,5). The interior point has to be off the DIAGONAL as well as
+    # inside the rectangle, or a plain segment reads 15 there too and the row
+    # separates BF from `,B` but not from no box suffix at all.
+    ("linekw_c", 'line(1,1)-(9,9),15,bf',
+     'SCREEN2:LINE(1,1)-(9,9),15,BF:A=POINT(7,3):B=POINT(20,20):SCREEN0:PRINT"[0n";A;B;"]"',
+     "stored",
+     "NOECHO:[0n FORM:filled-box `BF` FILLS where `,B` draws the outline only. "
+     "(7,3) is INSIDE the rectangle, off its edges AND off the diagonal: `[0n 15  4 ]` "
+     "for a fill, 4 for a `,B` outline, and 4 for a bare segment -- so one reading "
+     "separates BF from BOTH."),
+    ("linekw_d", 'line step(0,0)-step(5,0),15',
+     'SCREEN2:PSET(10,10),15:LINE STEP(0,0)-STEP(5,0),15:A=POINT(13,10):B=POINT(3,0):SCREEN0:PRINT"[0o";A;B;"]"',
+     "stored",
+     "NOECHO:[0o FORM:step-relative both coordinates RELATIVE -- the first to the "
+     "last point (10,10), the second to the first. The span is (10,10)-(15,10), so "
+     "(13,10) is on it. `[0o 15  4 ]`: an ignored STEP draws (0,0)-(5,0) instead, "
+     "which puts 15 at (3,0) and leaves (13,10) blank -- BOTH readings move."),
+    ("linekw_e", 'line -(20,10),15',
+     'SCREEN2:PSET(10,10),15:LINE -(20,10),15:A=POINT(15,10):B=POINT(15,7):SCREEN0:PRINT"[0p";A;B;"]"',
+     "stored",
+     "NOECHO:[0p FORM:omitted-start the OMITTED first coordinate, which continues "
+     "from the last point (GRPAC) -- here (10,10), so the span is horizontal and "
+     "(15,10) is on it. `[0p 15  4 ]`: a start defaulting to (0,0) would draw the "
+     "diagonal (0,0)-(20,10), which passes through (15,7) and misses (15,10)."),
+    ("linekw_f", 'line(1,1)-(5,1)',
+     'SCREEN2:COLOR 11:LINE(1,1)-(5,1):A=POINT(3,1):B=POINT(3,10):SCREEN0:PRINT"[0q";A;B;"]":COLOR 15',
+     "stored",
+     "NOECHO:[0q FORM:colour-default the OMITTED colour, which must come from "
+     "FORCLR -- `COLOR 11` first, so `[0q 11  4 ]` proves the span took the "
+     "foreground colour and not a hardcoded 15."),
     ("colorkw",  'color 7',    'COLOR 7:PRINT"[O";PEEK(-3095);"]"',              "direct",
      "NOECHO:[O FORM:foreground COLOR repaints the whole screen, echo included. Reads FORCLR "
      "($F3E9 = -3095) back, and uses 7 rather than the DEFAULT 15 on purpose: "
@@ -1372,7 +1421,8 @@ SWEEP: list[tuple[str, str, str | None, str, str]] = [
      "no scroll history."),
     ("pos",     "a=pos(0)",
      'PRINT"    ";:PRINT"[";POS(0);"]"',             "direct",
-     "absent => array POS(0) auto-dims to 0; real => the (non-zero) column"),
+     "FORM:column-read absent => array POS(0) auto-dims to 0; real => the "
+     "(non-zero) column"),
 
     # The two PRINT-item pseudo-functions. THE `TAB(` TRAP: with TAB absent,
     # `PRINT TAB(5);"X"` prints ` 0 X` (array element 0 then X) instead of
@@ -1695,7 +1745,8 @@ SWEEP: list[tuple[str, str, str | None, str, str]] = [
     # (scratchpad/kwdrain_lptchk.out).
     ("lposkw",   "a=lpos(0)",
      'LPRINT"ABC";:PRINT"[P";LPOS(0);"]"',                      "stored",
-     "NEEDS-PRINTER: " "the head COLUMN, which reaches the screen even though the "
+     "NEEDS-PRINTER: " "FORM:column-read the head COLUMN, which reaches the screen "
+     "even though the "
      "printed text does not: 0 at rest, 3 after three bytes, 7 after seven, the "
      "same on both machines. 🔴 THE `LPRINT` IS THE ROW: batch 4g measured bare "
      "`LPOS(0)` as 0 against a stub's 0 and left the word unattributed for exactly "

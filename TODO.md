@@ -916,6 +916,43 @@ a hardcoded 15, and the centre reading keeps a FILLED circle from passing).
 `kwknife.py --fn`, because it is a FUNCTION: the statement-mode pair cut a
 `stmt_table` entry INP does not have and reported 🔴 BLIND. ⚠️ **A BLIND VERDICT CAN
 MEAN THE WRONG CUT SHAPE, NOT A BLIND ROW.**
+⚡ **D-KWBATCH4 — `LINE` AT N=6, THE WIDEST BAR IN THE TABLE, PLUS FIVE CHEAP
+ONES. TWENTY-THREE KEYWORDS AT TIER 1.**
+🟢 **`LINE [[STEP](x1,y1)] - [STEP](x2,y2) [,[c][,B|BF]]`** (`basic/graphics.asm`)
+— six behaviours, and the three suffix forms really are three: a segment, an
+OUTLINED box and a FILLED box are different drawings between the same two points.
+The first coordinate is OPTIONAL and continues from the last point (GRPAC), a form
+no other graphics verb here has. **N=6 is the widest in the table and it should
+be** — LINE has more distinct shapes than any other MSX1 graphics statement.
+🎯 **EVERY NEW ROW READS A PIXEL IT MUST DRAW *AND* ONE WHERE THE WRONG READING
+WOULD HAVE DRAWN** — not merely somewhere blank, which only proves the screen is
+not all 15. `linekw_d` STEP `[0o 15  4 ]`: an ignored STEP draws `(0,0)-(5,0)`, so
+(3,0) lights up and (13,10) goes dark — **both** readings move. `linekw_e`
+omitted start `[0p 15  4 ]`: a start defaulting to (0,0) draws the diagonal
+`(0,0)-(20,10)`, which passes through **(15,7)** and misses (15,10) — so the
+second reading is that diagonal, not empty space. `linekw_f` default colour
+`[0q 11  4 ]` from FORCLR.
+⚠️ **AND `linekw_c` USES (7,3), NOT (5,5), BECAUSE THE FIRST CHOICE WOULD HAVE
+SEPARATED `BF` FROM `,B` AND FROM NOTHING ELSE.** (5,5) is inside the rectangle but
+it is also ON THE DIAGONAL, so a bare segment reads 15 there too. (7,3) is inside,
+off the edges and off the diagonal: 15 for a fill, 4 for a `,B` outline **and** 4
+for a bare segment, so one reading separates BF from both.
+🎚️ **`POINT` NEEDED A SECOND READING TO EARN N=1.** `pointkw` reads back the pixel
+it had just drawn, which a POINT returning a constant — or the last colour written
+— passes. `pointkw_b` reads that pixel **and one nothing ever drew**:
+`[0m 15  4 ]`.
+🟢 **`VPEEK`, `CSRLIN`, `POS`, `LPOS` AT N=1 WITH NO NEW ROWS** — one argument (or
+none), one behaviour, and in each case the existing row already reads a VALUE that
+a stub cannot fake: VPEEK reads back a byte VPOKE just wrote; `csrlind` reads the
+DELTA across a PRINT rather than the absolute row (the absolute value is ambient
+scroll state, which once measured the boot banner instead of the keyword); POS
+prints four spaces first so the answer is a known non-zero column and not the 0 an
+auto-dimmed array gives; and **LPOS's row IS the `LPRINT`** — a bare `LPOS(0)`
+reads 0, exactly what a stub reads, and that left the word unattributed once
+already.
+🔪 **ALL FIVE NEW ROWS KNIFE-PROVEN LOAD-BEARING**, and `POINT`/`CSRLIN` needed
+`kwknife.py --fn` — both were showing `connected=False` for no better reason than
+never having been cut in FUNCTION mode.
 🔪 **D-KWSTRCUT — THE THIRD CUT SHAPE, AND A FIRST VERSION OF IT THAT WAS WORSE
 THAN THE GAP IT CLOSED (2026-09-13).** `basic/sysvars.inc:250` named the shape in
 prose written long before the knife existed: **MKI$ is evaluated in
@@ -1584,7 +1621,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:18311 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:18348 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -1750,7 +1787,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:6351 (T-6FE392)8 (T-529ABE)` from `TODO.md:16962 (T-529ABE)`: a
+      `TODO.md:6388 (T-6FE392)8 (T-529ABE)` from `TODO.md:16999 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -7195,7 +7232,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:16962 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:16999 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
