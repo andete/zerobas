@@ -474,15 +474,32 @@ SWEEP: list[tuple[str, str, str | None, str, str]] = [
     ("int",     "a=int(1.7)",         'PRINT"[";INT(1.7);"]"',           "direct", "control"),
     ("len",     'a=len("ab")',        'PRINT"[";LEN("ab");"]"',          "direct", "control"),
     ("chr",     "a$=chr$(65)",        'PRINT"[";CHR$(65);"]"',           "direct", "FORM:code-to-char control"),
-    ("mid",     'a$=mid$("hi",1,1)',  'PRINT"[";MID$("hi",2,1);"]"',     "direct", "control"),
-    ("instr",   'a=instr("ab","b")',  'PRINT"[";INSTR("ab","b");"]"',    "direct", "control"),
+    ("mid",     'a$=mid$("hi",1,1)',  'PRINT"[";MID$("hi",2,1);"]"',     "direct", "FORM:substring-3arg control"),
+    # 🌾 D-KWBATCH6: MID$ HAS THREE FORMS AND ONLY THE THREE-ARGUMENT READ HAD A ROW.
+    # The two-argument read runs to the END of the string, which is a different
+    # length computation, not a different input.
+    ("mid_b",   'a$=mid$("hello",3)',
+     'PRINT"[";MID$("hello",3);"]"',                  "direct",
+     "FORM:substring-to-end the TWO-argument form, which runs to the end of the "
+     "string -- `llo`. The three-argument row supplies the length, so it cannot "
+     "see a handler that computes the default one wrongly."),
+    # 🔴 AND MID$ IS ALSO A STATEMENT. `ex_mid_stmt` (basic/str-engine.asm:1359) is
+    # a SEPARATE handler from the function selector, so no read row reaches it --
+    # the same shape as VDP(n) and TIME.
+    ("mid_c",   'mid$(a$,2,3)="xyz"',
+     'A$="abcdef":MID$(A$,2,3)="XYZ":PRINT"[";A$;"]"',  "stored",
+     "FORM:assign the ASSIGNMENT statement, which has its own handler. Reading the "
+     "WHOLE string is the point: `aXYZef` shows the replaced span AND that the "
+     "bytes either side are untouched, where a handler that rebuilt the string "
+     "would pass a substring-only check."),
+    ("instr",   'a=instr("ab","b")',  'PRINT"[";INSTR("ab","b");"]"',    "direct", "FORM:search control"),
     # 🌾 D-KWBREADTH batch 9: the row above uses the TWO-argument form, and the only
     # three-argument coverage is `instr_t3`, which passes an INVALID start of 0. The
     # VALID start form is untested: `INSTR(2,"ABA","A")` must skip the first "A" and
     # find the one at 3, where a start argument that is parsed and discarded says 1.
     ("instr_b", 'a=instr(2,"aba","a")', 'PRINT"[";INSTR(2,"ABA","A");"]"',  "direct",
      "D-KWDRAIN: the 3-argument START form -- 3, not 1. A start that parses and is "
-     "then ignored finds the FIRST A and reads 1."),
+     "FORM:search-from then ignored finds the FIRST A and reads 1."),
     ("hex",     "a$=hex$(255)",       'PRINT"[";HEX$(255);"]"',          "direct", "FORM:to-hex control"),
     ("sqr",     "a=sqr(9)",           'PRINT"[";SQR(9);"]"',             "direct", "control"),
     ("peek",    "a=peek(0)",          'PRINT"[";PEEK(0)>=0;"]"',         "direct", "control"),
@@ -503,7 +520,7 @@ SWEEP: list[tuple[str, str, str | None, str, str]] = [
      'A=0:B=0:DIM Z(4):A=VARPTR(Z(1)):B=VARPTR(Z(0)):PRINT"[";A-B;"]"',       "stored",
      "D-KWDRAIN: VARPTR's arithmetic, not its non-zero-ness -- the array element "
      "stride, 8 (MSX defaults to DOUBLE). A delta, so the machine-dependent base "
-     "cancels; A and B are created BEFORE the DIM so the array cannot move."),
+     "FORM:variable cancels; A and B are created BEFORE the DIM so the array cannot move."),
     ("stick",   "a=stick(0)",         'PRINT"[";STICK(0);"]"',           "direct", "control"),
     ("erase",   "erase a",            'DIM Q(2):ERASE Q:PRINT"[ok]"',    "direct", "control"),
     # 🌾 D-KWBATCH5: `erase` prints a CONSTANT `[ok]` -- the third screening axis,
@@ -665,7 +682,15 @@ SWEEP: list[tuple[str, str, str | None, str, str]] = [
      "D-KWDRAIN: FORM:himem the HIMEM form -- 53248, the ceiling it SET, measured "
      "on all three machines. The resting value differs between the references and "
      "is deliberately not what this reads."),
-    ("dimkw",   'dim a(2)',           'DIM D(2):D(1)=5:PRINT"[";D(1);"]"',    "direct", "D-KWDRAIN"),
+    ("dimkw",   'dim a(2)',           'DIM D(2):D(1)=5:PRINT"[";D(1);"]"',    "direct", "FORM:one-dimensional D-KWDRAIN"),
+    # 🌾 D-KWBATCH6: the MULTI-dimensional form, where the subscripts have to be
+    # combined into one offset. `dimkw` uses a single subscript, which cannot see
+    # a stride computed the wrong way round.
+    ("dimkw_b", 'dim e(2,3)',
+     'DIM E(2,3):E(1,2)=7:PRINT"[";E(1,2);E(2,1);"]"',  "stored",
+     "FORM:multi-dimensional `[ 7  0 ]` -- the cell written and the cell with the "
+     "SUBSCRIPTS SWAPPED, which a row-major/column-major mix-up would light up "
+     "instead."),
 
     # ------------------------------------------------ D-KWDRAIN batch 3 (2026-09-12)
     # The raw-I/O and sound words. Every exec here is chosen to leave the SCREEN
@@ -1109,7 +1134,15 @@ SWEEP: list[tuple[str, str, str | None, str, str]] = [
     ("resumekw",  'resume next',      
      'ON ERROR GOTO 30:ERROR 7:PRINT"[U";A;"]":END:A=5:RESUME NEXT', "stored", "D-KWDRAIN: the handler RESUMEs NEXT and control reaches the PRINT; without it nothing prints"),
     ("defintkw",  'defint a',         
-     'DEFINT A:A=1.7:PRINT"[";A;"]"',                           "direct", "D-KWDRAIN: 1, not 1.7 -- a DEFINT that parses and does nothing still prints 1.7"),
+     'DEFINT A:A=1.7:PRINT"[";A;"]"',                           "direct", "FORM:single-letter D-KWDRAIN: 1, not 1.7 -- a DEFINT that parses and does nothing still prints 1.7"),
+    # 🌾 D-KWBATCH6: `ex_deftype` (basic/usr.asm:210) parses a comma-list of
+    # `letter` OR `letter-letter` RANGE items and rejects a reversed range, so the
+    # range is a second behaviour and not a second input. Each of the four rows
+    # below proves the range reached a letter the single-letter form never names.
+    ("defint_b", 'defint a-c',
+     'DEFINT A-C:C=1.7:PRINT"[";C;"]"',               "direct",
+     "FORM:letter-range the RANGE form -- `C` is covered only if `A-C` was expanded, "
+     "so `[ 1 ]` where an unexpanded range leaves C single-precision and prints 1.7."),
 
     # ---------------------------------------------- D-KWDRAIN step 4i (2026-09-12)
     # 🔴 NEW GETS A ROW *BECAUSE ITS DEFECT WAS FIXED*, which is not as odd as it
@@ -1555,11 +1588,27 @@ SWEEP: list[tuple[str, str, str | None, str, str]] = [
     # They are ordinary tokenising rows now; the three cases below are kept
     # because they gate the BEHAVIOUR, which is what they always gated.
     ("defsng",  "defsng a",
-     'DEFSNG A:A=1.5:PRINT"[";A;"]"',                "direct", "control"),
+     'DEFSNG A:A=1.5:PRINT"[";A;"]"',                "direct", "FORM:single-letter control"),
+    # ⚠️ DEFSNG's range row must make the default WRONG first: single precision is
+    # already the default, so `DEFSNG A-C` alone proves nothing. DEFINT first.
+    ("defsng_b", 'defsng a-c',
+     'DEFINT A-C:DEFSNG A-C:C=1.5:PRINT"[";C;"]"',    "stored",
+     "FORM:letter-range the RANGE form, measured against a DEFINT that made C an "
+     "integer first: `[ 1.5 ]` where an unexpanded range leaves C integer and "
+     "prints 1."),
     ("defdbl",  "defdbl a",
-     'DEFDBL A:A=1.5:PRINT"[";A;"]"',                "direct", "control"),
+     'DEFDBL A:A=1.5:PRINT"[";A;"]"',                "direct", "FORM:single-letter control"),
+    ("defdbl_b", 'defdbl a-c',
+     'DEFDBL A-C:C=1/3:PRINT"[";C;"]"',               "direct",
+     "FORM:letter-range the RANGE form. 1/3 is the discriminator, not 1.5: it "
+     "prints with SINGLE precision's digits unless C really became double, and "
+     "1.5 is exact in both."),
     ("defstr",  "defstr a",
-     'DEFSTR A:A="x":PRINT"[";A;"]"',                "direct", "control"),
+     'DEFSTR A:A="x":PRINT"[";A;"]"',                "direct", "FORM:single-letter control"),
+    ("defstr_b", 'defstr a-c',
+     'DEFSTR A-C:C="x":PRINT"[";C;"]"',               "direct",
+     "FORM:letter-range the RANGE form -- without it `C=\"x\"` is a Type mismatch, "
+     "so the reading is `x` against an ERROR and not against another value."),
 
     # User-defined functions.
     # STORED, not direct: the reference answers `Illegal direct` to a direct-mode

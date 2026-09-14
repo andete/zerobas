@@ -1000,6 +1000,43 @@ SCOREABLE** — that is what `WEAK:` is for.
 🎯 **THIRD TIME TODAY THAT INTERPRETER SPEED LEAKED INTO A READING** (after `vdp_d`'s
 two loops and `timetick`'s forced boolean). **A row that measures a TRANSIENT is
 measuring the speed difference, not the keyword.**
+⚡ **D-KWBATCH6 — SEVEN MORE FOR SEVEN ROWS, AND `VARPTR` MEASURES SHORT FOR A
+REASON THAT IS ON RECORD. FORTY-SEVEN KEYWORDS AT TIER 1.**
+🟢 **`MID$` AT N=3, AND THE THIRD FORM IS A STATEMENT.** `MID$(A$,n,m)=s` has
+its OWN handler (`ex_mid_stmt`, `basic/str-engine.asm`), which no read row reaches
+— the same shape as `VDP(n)=` and `TIME=`. `mid_c` reads the WHOLE string,
+`aXYZef`: the replaced span AND that the bytes either side are untouched, where a
+handler that rebuilt the string would pass a substring-only check. `mid_b` covers
+the TWO-argument read, which runs to the end of the string — a different length
+computation, not a different input.
+🔴 **AND `mid_c` COULD NOT BE KNIFE-PROVEN, WHICH IS A LIMIT OF THE INSTRUMENT
+AND IS SAID SO HERE RATHER THAN LEFT AS A GAP.** `MID$` is a two-byte function
+selector (`$FF $83`), so in STATEMENT position it is not in `stmt_table` and the
+statement cut reports 🔴 BLIND — the wrong-cut-shape verdict again. MID$ IS
+knife-connected, through `mid_b` in `--fn` mode; what is unproven is that
+`mid_c` specifically goes red when the assignment handler dies.
+🟢 **`DIM` AT N=2: THE MULTI-DIMENSIONAL FORM HAS TO COMBINE SUBSCRIPTS INTO ONE
+OFFSET**, which a single-subscript row cannot exercise at all. `dimkw_b` reads
+`[ 7  0 ]` — the written cell **and the cell with the subscripts SWAPPED**, which is
+where a row-major/column-major mix-up lights up instead.
+🟢 **`DEFINT`/`DEFSNG`/`DEFDBL`/`DEFSTR` AT N=2 EACH.** `ex_deftype`
+(`basic/usr.asm`) parses `letter` **or** `letter-letter` RANGE items and rejects a
+reversed one, so the range is a second behaviour; the comma LIST is repetition of
+those two, not a third form.
+⚠️ **TWO OF THE FOUR RANGE ROWS NEEDED A SETUP TO BE ABLE TO FAIL.**
+`DEFSNG A-C` alone proves nothing — single precision is already the default — so
+the row runs `DEFINT A-C` first and measures that DEFSNG undid it. And **`1/3` is
+DEFDBL's discriminator while `1.5` is not**: 1.5 is exact in single precision too,
+so only a value needing the extra digits shows the letter really became double
+(measured `.33333333333333`, fourteen digits).
+🟢 **`INSTR` AT N=2 WITH NO NEW ROW** — `instr_b` searches `ABA` for `A` from
+position 2, so a start that is parsed and IGNORED finds the FIRST `A` and reads 1
+instead of 3.
+🔭 **`VARPTR` STANDS AT 1/2, AND THE MISSING FORM IS DEFERRED WORK, NOT A
+MISSING ROW.** `VARPTR(#n)` is recorded as DEFERRED in `docs/TODO-done.md`. Same
+shape as `LOCATE` at 3/4: **the bar comes from the reference's syntax, not from
+what we chose to build.** ⚠️ Its variable form is scored by `varptr_b` and NOT by
+`varptr`, which reads `VARPTR(B)>0` — a BOOLEAN, which cannot see the address.
 🔪 **D-KWSTRCUT — THE THIRD CUT SHAPE, AND A FIRST VERSION OF IT THAT WAS WORSE
 THAN THE GAP IT CLOSED (2026-09-13).** `basic/sysvars.inc:250` named the shape in
 prose written long before the knife existed: **MKI$ is evaluated in
@@ -1668,7 +1705,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:18395 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:18432 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -1834,7 +1871,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:6435 (T-6FE392)8 (T-529ABE)` from `TODO.md:17046 (T-529ABE)`: a
+      `TODO.md:6472 (T-6FE392)8 (T-529ABE)` from `TODO.md:17083 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -7279,7 +7316,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:17046 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:17083 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

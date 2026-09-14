@@ -205,7 +205,7 @@
    "modes": {
     "stmt": "MISSING"
    },
-   "row": "defdbl",
+   "row": "defdbl_b",
    "verdict": "MISSING",
    "weak": false
   },
@@ -214,7 +214,7 @@
    "modes": {
     "stmt": "MISSING"
    },
-   "row": "defintkw",
+   "row": "defint_b",
    "verdict": "MISSING",
    "weak": false
   },
@@ -223,7 +223,7 @@
    "modes": {
     "stmt": "MISSING"
    },
-   "row": "defsng",
+   "row": "defsng_b",
    "verdict": "MISSING",
    "weak": false
   },
@@ -232,7 +232,7 @@
    "modes": {
     "stmt": "MISSING"
    },
-   "row": "defstr",
+   "row": "defstr_b",
    "verdict": "MISSING",
    "weak": false
   },
@@ -250,7 +250,7 @@
    "modes": {
     "stmt": "MISSING"
    },
-   "row": "dimkw",
+   "row": "dimkw_b",
    "verdict": "MISSING",
    "weak": false
   },
@@ -575,8 +575,17 @@
    "modes": {
     "fn": "MISSING"
    },
-   "row": "mid",
+   "row": "mid_b",
    "verdict": "MISSING",
+   "weak": false
+  },
+  "MIDD": {
+   "connected": false,
+   "modes": {
+    "stmt": "SUPPORTED"
+   },
+   "row": "mid_c",
+   "verdict": "SUPPORTED",
    "weak": false
   },
   "MKD$": {
@@ -1032,5 +1041,5 @@
    "weak": false
   }
  },
- "written": "2026-09-14 13:23:41"
+ "written": "2026-09-14 13:51:10"
 }

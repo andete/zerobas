@@ -132,6 +132,38 @@ FORMS: dict[str, tuple[tuple[str, ...], str]] = {
         "This is deliberately a DIFFERENT SHAPE from PSET/PRESET -- positional "
         "omission rather than an optional trailing argument and a mode.",
     ),
+    "MID$": (
+        ("substring-3arg", "substring-to-end", "assign"),
+        "MID$(s,n[,m]) reads, and MID$(A$,n,m)=s WRITES -- and the write is a SEPARATE handler (ex_mid_stmt, basic/str-engine.asm), so no read row reaches it. Three behaviours: the explicit length, the default length that runs to the end of the string, and the in-place replacement.",
+    ),
+    "INSTR": (
+        ("search", "search-from"),
+        "INSTR([start,]s1,s2) -- with and without the start position, which is a different search and not a different input: instr_b searches 'ABA' for 'A' from 2, so a start that is parsed and IGNORED finds the FIRST A and reads 1 instead of 3.",
+    ),
+    "DIM": (
+        ("one-dimensional", "multi-dimensional"),
+        "DIM <name>(<bounds>) -- one subscript or several. The multi-dimensional form has to COMBINE the subscripts into one offset, which the single-subscript form cannot exercise at all; the row reads the written cell AND the one with the subscripts SWAPPED.",
+    ),
+    "DEFINT": (
+        ("single-letter", "letter-range"),
+        "DEFINT <letter>|<letter>-<letter>[,...] -- ex_deftype (basic/usr.asm) parses range items and rejects a reversed one, so the range is a second behaviour. The comma LIST is repetition of these two, not a third form.",
+    ),
+    "DEFSNG": (
+        ("single-letter", "letter-range"),
+        "As DEFINT. WARNING: its range row must make the default WRONG first -- single precision is already the default, so DEFSNG A-C alone proves nothing. The row runs DEFINT A-C first and then measures that DEFSNG A-C undid it.",
+    ),
+    "DEFDBL": (
+        ("single-letter", "letter-range"),
+        "As DEFINT. WARNING: 1/3 is the discriminator and 1.5 is not -- 1.5 is exact in single precision too, so only a value needing the extra digits shows that the letter really became double. Measured .33333333333333, fourteen digits.",
+    ),
+    "DEFSTR": (
+        ("single-letter", "letter-range"),
+        "As DEFINT. Its range row reads a VALUE against an ERROR: without the range the assignment to C is a Type mismatch.",
+    ),
+    "VARPTR": (
+        ("variable", "file-channel"),
+        "VARPTR(<var>) and VARPTR(#<n>). AUTHORED AT 2 KNOWING THIS TREE CAN ONLY MEET 1: VARPTR(#n) is recorded as DEFERRED (docs/TODO-done.md), so VARPTR stands at 1/2 the way LOCATE stands at 3/4. The bar comes from the reference's syntax, not from what we chose to build. The variable form is scored by varptr_b and NOT by varptr, which reads VARPTR(B)>0 -- a BOOLEAN, which cannot see the address.",
+    ),
     "CHR$": (
         ("code-to-char",),
         "`CHR$(<code>)` -- one argument, one behaviour.",
