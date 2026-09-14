@@ -19678,6 +19678,32 @@ hazard arriving in a scratchpad probe), and not slowness (`cap_gap=25.0`,
 `run_cases`' defaults resemble it. ⚠️ **A PROBE WHOSE CONTROL FAILS MEASURES
 NOTHING, AND SAYING SO IS THE WHOLE VALUE OF HAVING HAD A CONTROL** — without it
 I would now be reporting that PAINT's 3-argument form faults on both machines.
+✅ **AND THE PROBE NOW WORKS — THE FAULT WAS THE *REPORTING*, NOT THE CAPTURE.**
+I was slicing `raw[-76:]`, the BOTTOM of a 24×40 screen dump, and **`SCREEN 0`
+HOMES THE CURSOR**, so these cases print at the TOP and the tail holds nothing but
+the function-key line. `clearhimem_probe.py` gets away with a tail slice only
+because its cases never change SCREEN. ⚠️ **AND I ONLY FOUND IT BY DUMPING THE RAW
+CAPTURE** — every earlier attempt reasoned about what the capture contained
+without looking at it.
+📊 **MEASURED, AND IT IS NEITHER OF THE TWO THINGS I SET OUT TO SEPARATE.** On
+**BOTH** machines, identically:
+| case | reading |
+|---|---|
+| `PAINT(15,15),15` — fill colour EQUAL to the box | `[P 15  4 ]` |
+| `PAINT(15,15),11` — a DIFFERENT fill colour | never reaches the PRINT |
+| `PAINT(15,15),11,15` — 3-argument, border = the box colour (CORRECT usage) | never reaches the PRINT |
+| the same under `ON ERROR GOTO` | **the handler NEVER FIRES** |
+🎯 **SO THE SWEEP'S `paintkw` ROW PASSES ONLY BECAUSE ITS FILL COLOUR EQUALS THE
+BOX COLOUR** — the fill stops on its first cell. Every row with a different fill
+colour, with or without an explicit border, outruns the capture. **And it is NOT
+raising an error**: the trap never fires, so it has simply not finished 30 seconds
+of capture gap later.
+🔴 **WHAT THIS DOES NOT SAY: THAT THE 3-ARGUMENT FORM IS BROKEN.** No error is
+raised, both machines behave identically, and `spec-basic-graphics-g5.md` is
+explicit that the border is parsed and RANGE-CHECKED here. **PAINT stays at 1/3
+for want of a ROW, not a form**, and the next question — *"the border is not
+honoured so it floods"* versus *"PAINT is simply this slow in SCREEN 2"* — wants a
+much longer gap (`cap_gap=120`) or a far smaller filled region.
       ⚠️ **`TXTMAX` IS NOW BOUNDED BY `DETOKBUF`, NOT BY FREE RAM** — at 1280 B
       it does not fit the 1024 B window, so `$BB00` is the stop until DETOKBUF
       is dealt with. Of D-LINEMAX's 1792 B, **1024 recovered, 768 still charged**.
