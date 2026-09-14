@@ -536,7 +536,8 @@
    "modes": {
     "stmt": "MISSING"
    },
-   "row": "ifkw",
+   "row": "ifkw_c",
+   "subject": "IF",
    "verdict": "MISSING",
    "weak": false
   },
@@ -1290,7 +1291,7 @@
    "modes": {
     "fn": "MISSING"
    },
-   "row": "usrkw",
+   "row": "usrkw_b",
    "subject": "USR",
    "verdict": "MISSING",
    "weak": false
@@ -1489,6 +1490,13 @@
     "gotokw": "MISSING"
    }
   },
+  "IF": {
+   "connected": true,
+   "rows": {
+    "ifkw_b": "UNREADABLE",
+    "ifkw_c": "MISSING"
+   }
+  },
   "IMP": {
    "connected": true,
    "rows": {
@@ -1680,7 +1688,8 @@
   "USR": {
    "connected": true,
    "rows": {
-    "usrkw": "MISSING"
+    "usrkw": "MISSING",
+    "usrkw_b": "MISSING"
    }
   },
   "XOR": {
@@ -1690,5 +1699,5 @@
    }
   }
  },
- "written": "2026-09-14 21:45:07"
+ "written": "2026-09-14 23:13:13"
 }

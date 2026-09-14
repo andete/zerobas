@@ -19719,6 +19719,22 @@ INSTRUMENT.** The one question the probe has NOT yet asked, and the place to
 start: **is the emulated machine still ALIVE after the PAINT?** Type a direct-mode
 command after `RUN` and see whether it answers — that separates *"the interpreter
 is stuck inside PAINT"* from *"the capture is looking in the wrong place"*.
+⚡ **D-KWIF2 — `IF` AND `USR` CLOSE THEIR PARTIALS. 121 of 163.**
+🟢 **`IF` 3/3.** `ifkw` takes the THEN branch, so it could see neither an ELSE
+parsed and dropped nor `IF <expr> GOTO <line>`, which is a DIFFERENT GRAMMAR and
+not a THEN with a GOTO after it. `ifkw_b` reads `[1h]` (the ELSE branch, taken
+because the condition is FALSE) and `ifkw_c` reads `[1j 0 ]` (`A=7` sits AFTER the
+jump and must be skipped).
+🔴 **AND `ifkw_b` IS STORED THOUGH IT FITS DIRECT.** At **exactly 38 characters**
+it clears the `MAX_DIRECT` guard and still came back `?noecho` on BOTH machines:
+**the ceiling is reachable but the echo is not usable there.** Same lesson
+`vpoke_b2`'s note already records at 37 — *"it passed alone and failed in
+company"*. Stored with its own marker instead.
+🟢 **`USR` 2/2.** MSX has TEN user-routine vectors and `USR<n>` selects which, so
+the numbered form reaches a DIFFERENT ADDRESS — not a second input to one
+behaviour. `DEFUSR1` points at a bare `ret` and `USR1(7)` returns its argument:
+`[ 7 ]`. **A USR that ignored the digit would read vector 0, which this row never
+sets.**
       ⚠️ **`TXTMAX` IS NOW BOUNDED BY `DETOKBUF`, NOT BY FREE RAM** — at 1280 B
       it does not fit the 1024 B window, so `$BB00` is the stop until DETOKBUF
       is dealt with. Of D-LINEMAX's 1792 B, **1024 recovered, 768 still charged**.

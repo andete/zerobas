@@ -718,6 +718,29 @@ SWEEP: list[tuple[str, str, str | None, str, str]] = [
     ("stepkw",  'step 2',             'FOR I=1TO5STEP2:NEXT:PRINT"[";I;"]"',  "direct", "D-KWDRAIN"),
     ("offkw",   'off',                'INTERVAL OFF:PRINT"[9]"',              "direct", "D-KWDRAIN"),
     ("ifkw",    'if 1 then a=2',      'IF 3>2 THEN PRINT"[4]"',               "direct", "FORM:then D-KWDRAIN"),
+    # 🌾 D-KWIF2: IF's other two forms. `ifkw` above takes the THEN branch, so it
+    # cannot see an ELSE that was parsed and dropped, nor the `IF ... GOTO` form,
+    # which is a different grammar and not a THEN with a GOTO after it.
+    # 🔴 AND IT IS **STORED**, NOT DIRECT, THOUGH IT FITS. At exactly 38 chars it
+    # clears the MAX_DIRECT guard and still came back `?noecho` on BOTH machines:
+    # the ceiling is reachable but the ECHO is not usable there. Same shape as
+    # `vpoke_b2`, whose note records the same lesson at 37. Stored with its own
+    # marker instead.
+    ("ifkw_b",   'if 0 then a=1 else a=2',
+     'IF 0 THEN PRINT"[1i]" ELSE PRINT"[1h]"',        "stored",
+     "NOECHO:[1h FORM:else the ELSE branch, taken because the condition is FALSE. "
+     "`[1h]`; an "
+     "ELSE that was parsed and dropped prints nothing at all, and one that fell "
+     "through to the THEN prints `[1i]`."),
+    # 🎯 `IF <expr> GOTO <line>` -- no THEN. The padding forces the PRINT onto line
+    # 40 so the jump has a target; verified with omsx_repl.as_stored first, and it
+    # is long ASSIGNMENTS rather than `REM`, which would swallow the rest of its
+    # line the way onkw_b's first cut did.
+    ("ifkw_c",   'if 3>2 goto 40',
+     'A=0:IF 3>2 GOTO 40:A=7:Z$="XXXXXXXXXXXXXXXXXXXXXXXX":Y$="YYYYYYYYYYYYYYYYYYYYYYYY":PRINT"[1j";A;"]"',
+     "stored",
+     "NOECHO:[1j FORM:goto the THEN-less form. `A=7` sits AFTER the jump on line 10 "
+     "and must be skipped, so `[1j 0 ]`; an IF that fell through reads `[1j 7 ]`."),
     ("nextkw",  'next i',             'FOR I=1 TO 2:NEXT:PRINT"[";I;"]"',     "direct", "FORM:bare D-KWDRAIN"),
     # D-KWBATCH7: NEXT has three forms and only the BARE one had a row.
     # `ex_next` parks 0 for a bare NEXT ("match the top frame") and `nx_comma`
@@ -1972,6 +1995,15 @@ SWEEP: list[tuple[str, str, str | None, str, str]] = [
      "D-KWRIG: the POKEd byte is a RET, so USR(7) returns 7 -- and the stub shape "
      "measures 0 (an undefined array subscripted by 7), so the row separates on a "
      "FORM:default VALUE. $E000 is the cell `pokekw` already uses."),
+    # 🌾 D-KWUSRN: MSX has TEN user-routine vectors and `USR<n>` selects which, so
+    # the numbered form reaches a DIFFERENT ADDRESS -- not a second input to the
+    # same behaviour. `DEFUSR1` must be set for it, which is the point: a USR that
+    # ignored the digit would read vector 0 and answer whatever THAT holds.
+    ("usrkw_b",  'a=usr1(7)',
+     'POKE-8192,&HC9:DEFUSR1=-8192:A=USR1(7):PRINT"[";A;"]"',  "stored",
+     "FORM:numbered the NUMBERED vector: `DEFUSR1` points at an `ret` and `USR1(7)` "
+     "returns its argument, so `[ 7 ]`. A USR that ignored the digit reads vector "
+     "0, which this row never sets."),
     ("screenkw", "screen 2",
      'SCREEN2:A=PEEK(&HFCAF):SCREEN0:PRINT"[G";A;"]"',          "stored",
      "NOECHO:[G SCRMOD ($FCAF, DECLARED in basic/sysvars.inc) reads 2 inside "
