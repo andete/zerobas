@@ -19663,6 +19663,21 @@ one sweep row is the shape `openkw_b` needed six sweeps to get right.
 ⚠️ **BOTH NEED AN ISOLATED `scratchpad/` PROBE WITH ITS OWN TIMING**, the way
 `clearhimem_probe.py` and `vdpie_probe.py` settled their questions. *Three
 guesses is where guessing stops.*
+🔴 **AND THE ISOLATED PROBE FAILED ITS OWN CONTROL — `scratchpad/paintarg_probe.py`
+MEASURES NOTHING YET, AND SAYS SO.** `bounded2`, the known-good TWO-argument shape
+the sweep scores successfully every run, reads EMPTY inside the probe. So the
+capture shape is wrong, not PAINT — **the fourth apparatus fault in a row about
+apparatus.** Three causes ruled out and recorded so the next attempt does not
+repeat them: not the echo anchor alone (`capture="screen"` changed nothing), not
+the refcache (`ZEROBAS_REFCACHE=0` changed nothing — though the FIRST run had been
+served **3 cached readings**, which is the *a gate measures, it never replays*
+hazard arriving in a scratchpad probe), and not slowness (`cap_gap=25.0`,
+`timeout=420.0`, far beyond the sweep's).
+🎯 **THE NEXT STEP IS TO MIRROR `basic_probe_kwsweep`'s NOECHO CAPTURE**
+(`marker_tail` plus the `capture="screen"` contract) rather than assume
+`run_cases`' defaults resemble it. ⚠️ **A PROBE WHOSE CONTROL FAILS MEASURES
+NOTHING, AND SAYING SO IS THE WHOLE VALUE OF HAVING HAD A CONTROL** — without it
+I would now be reporting that PAINT's 3-argument form faults on both machines.
       ⚠️ **`TXTMAX` IS NOW BOUNDED BY `DETOKBUF`, NOT BY FREE RAM** — at 1280 B
       it does not fit the 1024 B window, so `$BB00` is the stop until DETOKBUF
       is dealt with. Of D-LINEMAX's 1792 B, **1024 recovered, 768 still charged**.
