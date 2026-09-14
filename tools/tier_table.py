@@ -229,8 +229,10 @@ REACHED = {1: "TIER 0 — open TIER 1 item (happy path broken or keyword MISSING
                    "(a knife cut makes it notice)",
            "kw3": "TIER 0 — no known gap; a happy-path AND an error row agree",
            "kw3c": "TIER 0 — no known gap; two rows agree, and the keyword is "
-                   "CONNECTED (a knife cut makes it notice)"}
-GROUP_ORDER = ["kwgap", 1, 2, 3, 4, 5, "kw1", "kw1c", "kw3", "kw3c", None]
+                   "CONNECTED (a knife cut makes it notice)",
+           "t1": "TIER 1 — REACHED: knife-proven CONNECTED, every authored FORM "
+                 "covered by an agreeing row, and no open item"}
+GROUP_ORDER = ["t1", "kwgap", 1, 2, 3, 4, 5, "kw1", "kw1c", "kw3", "kw3c", None]
 
 
 KWSWEEP_PIN = os.path.join(ROOT, "build", "kwsweep-verdicts.json")
@@ -321,6 +323,58 @@ def kwsweep_evidence(kws, path=KWSWEEP_PIN):
     return out
 
 
+def kwsweep_forms(kws, path=KWSWEEP_PIN):
+    """keyword -> the set of DISTINCT `FORM:` names its SUPPORTED rows declare.
+
+    🔴 THIS EXISTS BECAUSE `kwsweep_evidence` ABOVE KEEPS ONE ROW PER KEYWORD AND
+    THROWS THE REST AWAY (`if kw not in out`). That is right for a verdict -- the
+    column says whether the keyword has an agreeing row -- but it means the table
+    could never count anything, and 33 breadth rows written on 2026-09-13/14 were
+    invisible to it beyond the first per keyword.
+    🎚️ Only SUPPORTED rows count. A DIVERGENT row exercises the form and FAILS it,
+    which is the opposite of evidence, and a WEAK row is excluded here for the same
+    reason kwsweep's own tally excludes it."""
+    try:
+        import json
+        with open(path, encoding="utf-8") as fh:
+            pin = json.load(fh)
+    except (OSError, ValueError):
+        return {}
+    kwset = set(kws)
+    out: dict[str, set] = {}
+    for key, r in pin.get("rows", {}).items():
+        if r.get("weak") or r.get("verdict") != "SUPPORTED" or not r.get("form"):
+            continue
+        kw = stmt_keyword(r.get("stmt", ""), kwset)
+        if kw:
+            out.setdefault(kw, set()).add(r["form"])
+    return out
+
+
+def tier1_status(kw, forms_seen, connected, has_open_item):
+    """Joost's TIER 1 rule (2026-09-14): CONNECTED + N distinct FORMS + no open item.
+
+    Returns (reached, why) where reached is True only when all three hold.
+    ⚠️ A keyword with NO authored form list is UNRATED, never satisfied -- absence
+    of a bar is not a bar of zero (the `kwcover` refusal, applied to this table)."""
+    try:
+        import kwforms
+    except ImportError:
+        return False, "no form table"
+    need = kwforms.forms_for(kw)
+    if not need:
+        return False, "UNRATED — no authored form list"
+    missing = [f for f in need if f not in forms_seen]
+    if has_open_item:
+        return False, "an open TIER item stands against it"
+    if not connected:
+        return False, "not knife-proven CONNECTED"
+    if missing:
+        return False, ("%d/%d forms — missing %s"
+                       % (len(need) - len(missing), len(need), " ".join(missing)))
+    return True, "CONNECTED, %d/%d forms, no open item" % (len(need), len(need))
+
+
 def kwsweep_t3(kws, path=KWSWEEP_PIN):
     """The keywords a SUPPORTED `PROVES-T3:` row speaks for.
 
@@ -366,8 +420,16 @@ def keyword_tiers(its, kws, evidence=None):
     return out
 
 
-def reached_group(g, e, t3=False, conn=False):
-    """The bucket a keyword prints under, from its gap tier and its evidence."""
+def reached_group(g, e, t3=False, conn=False, tier1=False):
+    """The bucket a keyword prints under, from its gap tier and its evidence.
+
+    🎚️ `tier1` is Joost's rule satisfied (2026-09-14): CONNECTED + N distinct
+    FORMS + no open item. It is the ONLY way this function returns anything but a
+    TIER 0 bucket, and it is passed in rather than recomputed here so the caller
+    owns the three clauses -- the table must never award a tier from evidence it
+    inferred on the spot."""
+    if tier1:
+        return "t1"
     if g is not None:
         return g                                  # 1..5: stuck below that tier
     if e == "SUPPORTED":
@@ -410,13 +472,32 @@ def fmt_items(its, kws, tiers_only=True, width=70):
     return "\n".join(out)
 
 
+def tier1_keywords(kws, conn=None, forms=None):
+    """The keywords Joost's TIER 1 rule awards, computed ONCE for every caller.
+
+    ⚠️ The open-item clause reads `kt[kw][0] is not None`, NOT `bool(kt[kw])` --
+    the entry is a TUPLE `(tier, lines, evidence)` and `(None, [], 'SUPPORTED')` is
+    TRUTHY, so a truthiness test marks EVERY keyword as carrying an open item. That
+    bug reported PSET as blocked by an item it does not have, and only comparing it
+    against PAINT (which really does carry a TIER 4 item) exposed it."""
+    conn = knife_connected() if conn is None else conn
+    forms = kwsweep_forms(kws) if forms is None else forms
+    out = set()
+    for kw in kws:
+        ok, _ = tier1_status(kw, forms.get(kw, set()), kw in conn, False)
+        if ok:
+            out.add(kw)
+    return out
+
+
 def fmt_keywords(its, kws, evidence=None):
     kt = keyword_tiers(its, kws, evidence)
     t3 = kwsweep_t3(kws)
     conn = knife_connected()
+    t1 = {kw for kw in tier1_keywords(kws, conn) if kt.get(kw, (None,))[0] is None}
     groups = defaultdict(list)
     for kw, (g, _, e) in kt.items():
-        groups[reached_group(g, e, kw in t3, kw in conn)].append(kw)
+        groups[reached_group(g, e, kw in t3, kw in conn, kw in t1)].append(kw)
     out = []
     for g in GROUP_ORDER:
         if g is None or not groups[g]:
@@ -481,9 +562,10 @@ def fmt_markdown(its, kws, evidence=None, t3=None, connected=None):
     kt = keyword_tiers(its, kws, evidence)
     t3 = kwsweep_t3(kws) if t3 is None else t3
     conn = knife_connected() if connected is None else connected
+    t1 = {kw for kw in tier1_keywords(kws, conn) if kt.get(kw, (None,))[0] is None}
     groups = defaultdict(list)
     for kw, (g, _, e) in kt.items():
-        groups[reached_group(g, e, kw in t3, kw in conn)].append(kw)
+        groups[reached_group(g, e, kw in t3, kw in conn, kw in t1)].append(kw)
     for g in GROUP_ORDER:
         if g is None or not groups[g]:
             continue
@@ -493,8 +575,12 @@ def fmt_markdown(its, kws, evidence=None, t3=None, connected=None):
     out += ["", FOOTER, "", "### Alphabetical", "", "| keyword | reached | evidence |", "|---|---|---|"]
     for kw in sorted(kws):
         g, lines, e = kt[kw]
-        grp = reached_group(g, e, kw in t3, kw in conn)
-        if grp is None:
+        grp = reached_group(g, e, kw in t3, kw in conn, kw in t1)
+        if grp == "t1":
+            import kwforms
+            out.append(f"| `{kw}` | **TIER 1** | CONNECTED; all "
+                       f"{len(kwforms.forms_for(kw))} forms agree; no open item |")
+        elif grp is None:
             out.append(f"| `{kw}` | TIER 0 | no known gap, no row |")
         elif grp == "kw1":
             out.append(f"| `{kw}` | TIER 0 | no known gap; 1 row agrees |")
@@ -635,6 +721,24 @@ def selftest():
         stmt_keyword("a=abs(-5)", {"ABS", "A"} - {"A"}) == "ABS" and stmt_keyword('a$=mid$("hi",1,1)', {"MID$"}) == "MID$"
         and stmt_keyword("A=1", {"ABS"}) is None)
     arm("S20 the full list names every keyword exactly once", sorted(kt) == sorted(kws))
+    # 🎚️ D-KWTIER1: Joost's rule, and the three ways it must REFUSE.
+    _need = set(__import__("kwforms").forms_for("PSET") or ())
+    arm("S26 TIER 1 needs CONNECTED, every authored form, and no open item",
+        tier1_status("PSET", _need, True, False)[0] is True
+        and tier1_status("PSET", _need, False, False)[0] is False       # not connected
+        and tier1_status("PSET", _need, True, True)[0] is False         # an open item
+        and tier1_status("PSET", set(list(_need)[:-1]), True, False)[0] is False)
+    arm("S27 a keyword with NO authored form list is UNRATED, never satisfied",
+        tier1_status("ZZQNOSUCH", {"a", "b", "c"}, True, False) == (
+            False, "UNRATED — no authored form list"))
+    # 🔴 THE TRUTHY-TUPLE TRAP: keyword_tiers' entry is (tier, lines, evidence), and
+    # `(None, [], 'SUPPORTED')` is TRUTHY -- testing `bool(entry)` marks EVERY
+    # keyword as carrying an open item. Measured: it reported PSET blocked by an
+    # item it does not have, and only a comparison against PAINT (which really does
+    # carry one) exposed it.
+    arm("S28 the open-item clause reads the tuple's FIRST element, not its truthiness",
+        bool((None, [], "SUPPORTED")) is True
+        and ((None, [], "SUPPORTED")[0] is not None) is False)
     md = fmt_markdown(its, kws, evidence={}, t3=set(), connected=set())
     _s14 = [("summary row", "| TIER 1 | works correctly in the happy path | 1 |" in md),
             ("LOF row", "| `LOF` | TIER 0 | open TIER 1 item, TODO.md 2 |" in md),

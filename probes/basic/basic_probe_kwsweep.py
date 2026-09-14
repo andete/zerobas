@@ -290,6 +290,31 @@ _RIG_TAGS = {"NEEDS-DISK:": "disk", "NEEDS-PRINTER:": "printer",
 # TIER 5 and does not belong on one of these rows.
 _FLAG_TAGS = ("NOFURN:", "PROVES-T3:")
 
+# 🎚️ `FORM:<name>` — WHICH SYNTACTIC FORM OF ITS KEYWORD THIS ROW EXERCISES, and
+# the reason TIER 1 needs it (Joost, 2026-09-14: "connected + N forms + no open
+# item, N depending on the complexity of each individual keyword"). Counting ROWS
+# would let three rows of the SAME form satisfy N=3 -- and that is not a
+# hypothetical: `psetkw` and `psetkw_b` both drive `PSET(x,y),c`, differing only in
+# WHICH colour, so before this tag existed PSET looked like two independent pieces
+# of evidence for one form. The name is free text; what the tier table counts is
+# DISTINCT names per keyword, against the form list authored in tools/kwforms.py.
+_FORM_TAG = "FORM:"
+
+
+def row_form(note: str) -> str | None:
+    """The form name a row declares, or None. `FORM:step-relative` -> that name.
+
+    🔴 SCANS THE WHOLE NOTE, DELIBERATELY NOT THE PREFIX RUN. `NOECHO:` is matched
+    with `startswith` and must be the note's FIRST token, so a form tag can never
+    precede it on those rows; and widening `_row_prefix_tags` to step past NOECHO
+    would change where `PROVES-T3:` is seen on every row that has both. A form name
+    selects no apparatus and changes no capture -- it is metadata the tier table
+    counts -- so it is parsed independently and cannot disturb rig or flag parsing."""
+    for tok in note.split():
+        if tok.startswith(_FORM_TAG) and len(tok) > len(_FORM_TAG):
+            return tok[len(_FORM_TAG):]
+    return None
+
 
 def _row_prefix_tags(note: str) -> tuple[str, ...]:
     """The prefix run of tags on a note, rig and flag tags in any order.
@@ -930,26 +955,58 @@ SWEEP: list[tuple[str, str, str | None, str, str]] = [
      'READ Q:RESTORE:READ R:PRINT"[F";Q+R;"]":END:DATA 3',  "stored", "D-KWDRAIN: 6 needs the pointer RESET: without RESTORE the second READ runs out of DATA"),
     ("psetkw",   'pset(1,1)',      
      'SCREEN2:PSET(1,1),15:A=POINT(1,1):SCREEN0:PRINT"[S";A;"]"',   "stored",
-     "NOECHO:[S PSET draws, POINT reads it back: 4 blank vs 15 drawn"),
+     "NOECHO:[S FORM:colour-explicit PSET draws, POINT reads it back: 4 blank vs 15 drawn"),
     # 🌾 D-KWBREADTH batch 11: the row above uses colour 15, the default foreground,
     # so a PSET that IGNORED its colour argument and drew in the current foreground
     # passes it. 7 is neither the foreground nor the blank 4, so this reads the
     # COLOUR ARGUMENT rather than "something was drawn".
     ("psetkw_b", 'pset(2,2),7',
      'SCREEN2:PSET(2,2),7:A=POINT(2,2):SCREEN0:PRINT"[H";A;"]"',    "stored",
-     "NOECHO:[H a NON-DEFAULT colour -- 7. The `psetkw` row draws in 15, which is "
+     "NOECHO:[H FORM:colour-explicit a NON-DEFAULT colour -- 7. ⚠️ THE SAME FORM AS "
+     "`psetkw`: both drive `PSET(x,y),c` and differ only in WHICH colour, which is "
+     "precisely why the tier table counts DISTINCT FORMS and not rows. "
+     "The `psetkw` row draws in 15, which is "
      "also what a PSET that discarded its colour argument would leave."),
     # 🌾 D-KWBREADTH batch 18 — AXIS (g): A READING THAT SAMPLES ONE POINT OF A
     # RANGE. Measured across the whole row set: the graphics rows use SCREEN 0, 1
     # and 2 and **never SCREEN 3**, so every pixel verb is scored in one bitmap mode
     # only. SCREEN 3 is MULTICOLOUR (64x48) with a different VRAM layout, which is
     # exactly where a mode-specific address calculation would go wrong.
-    ("psetkw_c", 'screen 3',
+    # 🔴 THE CRUNCH BODY, NOT THE ROW KEY, DECIDES WHICH KEYWORD A ROW IS ABOUT.
+    # This was written as `'screen 3'` and `tier_table.stmt_keyword` therefore
+    # credited it to SCREEN -- a row named `psetkw_c`, testing PSET, scored for a
+    # different keyword entirely and was invisible when PSET's forms were counted.
+    ("psetkw_c", 'pset(10,10),15',
      'SCREEN3:PSET(10,10),15:A=POINT(10,10):SCREEN0:PRINT"[X";A;"]"',  "stored",
-     "NOECHO:[X the SAME verb in a DIFFERENT screen mode -- SCREEN 3 is multicolour "
+     "NOECHO:[X FORM:mode-screen3 the SAME verb in a DIFFERENT screen mode -- SCREEN 3 is multicolour "
      "with its own VRAM layout, so the plot and the read-back both go through a "
      "different address calculation. 15 on BOTH machines, MEASURED before this "
      "sentence was written."),
+    # 🎚️ D-KWTIER1 (2026-09-14, Joost's rule: connected + N forms + no open item,
+    # N by the keyword's own complexity). PSET's form set is FOUR: an explicit
+    # colour, the DEFAULT colour, a STEP-relative coordinate, and a second screen
+    # mode. The two rows above cover explicit-colour TWICE and screen 3 once; these
+    # two close the remaining forms.
+    # `COLOR 11` first, so the default is read against a foreground that is NOT the
+    # 15 the other rows use -- a PSET that hard-coded 15 would pass otherwise.
+    # ⚠️ COLOR is restored AFTER the readout, not before it (the `MAXFILES` lesson:
+    # a restore placed ahead of the PRINT destroys the value it was protecting).
+    ("psetkw_d", 'pset(5,5)',
+     'SCREEN2:COLOR 11:PSET(5,5):A=POINT(5,5):SCREEN0:PRINT"[A";A;"]":COLOR 15',
+     "stored",
+     "NOECHO:[A FORM:colour-default the colour argument OMITTED, so the CURRENT "
+     "foreground must be used: 11, MEASURED on both machines before this sentence "
+     "was written. A PSET that hard-coded 15 would read 15."),
+    # STEP is RELATIVE to the last point plotted, so the pixel lands 5 right of
+    # (10,10). A PSET that parsed STEP and then treated the pair as ABSOLUTE would
+    # plot at (5,0) and leave (15,10) blank.
+    ("psetkw_e", 'pset step(5,0),15',
+     'SCREEN2:PSET(10,10),15:PSET STEP(5,0),15:A=POINT(15,10):SCREEN0:PRINT"[B";A;"]"',
+     "stored",
+     "NOECHO:[B FORM:step-relative the STEP form -- coordinates relative to the "
+     "last point: the pixel lands at (15,10), five right of (10,10), and reads 15. "
+     "MEASURED on both machines. An absolute reading would plot at (5,0) and "
+     "leave (15,10) blank at 4."),
     ("presetkw", 'preset(1,1)',    
      'SCREEN2:PSET(1,1),15:PRESET(1,1):A=POINT(1,1):SCREEN0:PRINT"[R";A;"]"', "stored",
      "NOECHO:[R PRESET must UNDO the PSET: 15 if it does nothing, 4 if it works"),
@@ -2423,6 +2480,8 @@ def main() -> int:
                               # what the row CLAIMS to prove; absent = TIER 1 only
                               "proves": ("T3" if "PROVES-T3:" in
                                          _row_prefix_tags(notes[key]) else None),
+                              # which FORM of the keyword this row exercises
+                              "form": row_form(notes[key]),
                               "stmt": stmt[key]}
                         for key, s in executed}}
         _root = _os.path.dirname(_os.path.dirname(_os.path.dirname(_os.path.abspath(__file__))))

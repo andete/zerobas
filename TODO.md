@@ -568,6 +568,42 @@ error"* from *"an error at the right line"* — either alone would agree for the
 wrong reason, the same design point as `circlekw_b`'s second pixel and
 `spritekw_b`'s write order. The packing was PRINTED before the row was written and
 matches the existing shape (line 10 raises, line 20 handles).
+🎚️ **D-KWTIER1 (2026-09-14) — `PSET` IS THE FIRST KEYWORD TO REACH ANY TIER.**
+Joost's rule, ruled the same day: **CONNECTED + N distinct FORMS + no open item,
+with N depending on the complexity of each individual keyword.** `PSET` now reads
+**TIER 1** in `make tiers` and in `docs/tier-status.md`: knife-proven CONNECTED,
+4/4 authored forms, no open item — every clause derived from the tool's own data,
+none asserted.
+🔴 **THREE THINGS WERE MISSING AND ONLY ONE WAS THE NUMBER.**
+* **`tier_table` could not COUNT.** `kwsweep_evidence` does `if kw not in out` — it
+  keeps the FIRST row per keyword and discards every other one, so all 33 breadth
+  rows were invisible to it beyond the first. `kwsweep_forms()` now counts distinct
+  forms from SUPPORTED rows only; a DIVERGENT row exercises a form and FAILS it.
+* **Rows could not SAY which form they exercise.** A new `FORM:<name>` tag, parsed
+  over the WHOLE note and deliberately NOT through `_row_prefix_tags` — `NOECHO:`
+  is matched with `startswith` and must be a note's first token, so widening the
+  prefix run would have changed where `PROVES-T3:` is seen on every row that has
+  both.
+* **N had to be AUTHORED, not derived.** `tools/kwforms.py` holds it as data with
+  its reason. Deriving N by counting our own handler's argument branches would be
+  **CIRCULAR** — a keyword we implemented too simply would get a lower bar and pass
+  more easily, grading the test against the thing under test. A keyword with no
+  entry is **UNRATED, never satisfied**: absence of a bar is not a bar of zero.
+🎯 **AND THE FORM TAG IMMEDIATELY EARNED ITSELF: `psetkw` AND `psetkw_b` ARE THE
+SAME FORM.** Both drive `PSET(x,y),c` and differ only in WHICH colour, so counting
+ROWS would have called PSET two-thirds done on one form. PSET's four are
+`colour-explicit`, `colour-default` (`[A 11 ]` — the CURRENT foreground, so a
+hard-coded 15 fails), `step-relative` (`[B 15 ]` — five right of the last point, so
+an absolute reading leaves the pixel blank) and `mode-screen3`.
+🔴 **TWO BUGS FOUND BY CROSS-CHECKING RATHER THAN BY THE GATES.** (1) `psetkw_c`'s
+crunch body was `'screen 3'`, so **`stmt_keyword` credited the row to SCREEN** — a
+row named `psetkw_c`, testing PSET, scored for a different keyword and vanished
+when PSET's forms were counted. **The CRUNCH BODY decides the subject, not the row
+key.** (2) The open-item clause: `keyword_tiers`' entry is a TUPLE
+`(tier, lines, evidence)`, and `(None, [], 'SUPPORTED')` is **TRUTHY** — testing
+`bool(entry)` marked every keyword as carrying an open item and reported PSET
+blocked by one it does not have. Only comparing against `PAINT`, which really does
+carry a TIER 4 item, exposed it. Both are now selftests (S26–S28).
 🔪 **D-KWSTRCUT — THE THIRD CUT SHAPE, AND A FIRST VERSION OF IT THAT WAS WORSE
 THAN THE GAP IT CLOSED (2026-09-13).** `basic/sysvars.inc:250` named the shape in
 prose written long before the knife existed: **MKI$ is evaluated in
@@ -1236,7 +1272,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:17963 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:17999 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -1402,7 +1438,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:6003 (T-6FE392)8 (T-529ABE)` from `TODO.md:16614 (T-529ABE)`: a
+      `TODO.md:6039 (T-6FE392)8 (T-529ABE)` from `TODO.md:16650 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -6847,7 +6883,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:16614 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:16650 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
