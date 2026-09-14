@@ -911,6 +911,17 @@ SWEEP: list[tuple[str, str, str | None, str, str]] = [
      'SCREEN2:PSET(2,2),7:A=POINT(2,2):SCREEN0:PRINT"[H";A;"]"',    "stored",
      "NOECHO:[H a NON-DEFAULT colour -- 7. The `psetkw` row draws in 15, which is "
      "also what a PSET that discarded its colour argument would leave."),
+    # 🌾 D-KWBREADTH batch 18 — AXIS (g): A READING THAT SAMPLES ONE POINT OF A
+    # RANGE. Measured across the whole row set: the graphics rows use SCREEN 0, 1
+    # and 2 and **never SCREEN 3**, so every pixel verb is scored in one bitmap mode
+    # only. SCREEN 3 is MULTICOLOUR (64x48) with a different VRAM layout, which is
+    # exactly where a mode-specific address calculation would go wrong.
+    ("psetkw_c", 'screen 3',
+     'SCREEN3:PSET(10,10),15:A=POINT(10,10):SCREEN0:PRINT"[X";A;"]"',  "stored",
+     "NOECHO:[X the SAME verb in a DIFFERENT screen mode -- SCREEN 3 is multicolour "
+     "with its own VRAM layout, so the plot and the read-back both go through a "
+     "different address calculation. 15 on BOTH machines, MEASURED before this "
+     "sentence was written."),
     ("presetkw", 'preset(1,1)',    
      'SCREEN2:PSET(1,1),15:PRESET(1,1):A=POINT(1,1):SCREEN0:PRINT"[R";A;"]"', "stored",
      "NOECHO:[R PRESET must UNDO the PSET: 15 if it does nothing, 4 if it works"),
@@ -1350,6 +1361,34 @@ SWEEP: list[tuple[str, str, str | None, str, str]] = [
      'OPEN"HI.TXT"FOR INPUT AS#1:A=LOF(1):CLOSE#1:PRINT"[";A;"]"', "stored",
      "NEEDS-DISK: " "26 — HI.TXT's exact length, which only a real directory walk "
      "produces; a stub reads 0."),
+    # 🌾 D-KWBREADTH batch 18 — AXIS (g) ON THE FILE SIDE: every one of the 17 file
+    # rows opens channel #1 and nothing ever opens a second, so the channel NUMBER
+    # is a constant across all of them. MSX defaults MAXFILES to 1, so a second
+    # channel needs it raised -- which makes this the only row with TWO files open
+    # at once. MAXFILES is put back, so the machine is left as it was found.
+    # 🔴 AND IT BELONGS WITH THE **READERS**, WHICH THE FIRST PLACEMENT GOT WRONG.
+    # It was filed after `fieldkw` with the writers by reflex -- but MAXFILES is
+    # MACHINE state, not DISK state, and both opens are FOR INPUT, so the row
+    # creates and changes nothing. Down there it ran AFTER `dsko` (which rewrites
+    # the first byte of the ROOT DIRECTORY) and `kill`, and read `[ 0 ]` -- ZERO ON
+    # BOTH SIDES, which is mode 2, because the fixture it was reading had already
+    # been mutated. THE ORDERING RULE CUTS BOTH WAYS: a writer must go last, and a
+    # READER MUST GO BEFORE THE WRITERS OR IT READS A FIXTURE THAT HAS MOVED.
+    ("openkw_b", 'open"prog.bas"for input as#2',
+     'MAXFILES=2:OPEN"HI.TXT"FOR INPUT AS#2:A$=INPUT$(2,#2):CLOSE#2:PRINT"[";A$;"]":MAXFILES=1',
+     "stored",
+     "NEEDS-DISK: " "a SECOND CHANNEL, where every one of the other file rows uses "
+     "#1 alone -- the channel NUMBER was a constant across all 17 of them. Reads "
+     "[He], the first two bytes of HI.TXT, through #2. MEASURED on both machines "
+     "before this sentence was written. "
+     "🔴 THE `MAXFILES=1` RESTORE MUST COME AFTER THE `PRINT`, AND THAT COST FOUR "
+     "SWEEPS TO SEE: assigning MAXFILES performs an implicit CLEAR, so restoring "
+     "it before the readout WIPED A$ and the row read `[]` -- the tidy-up "
+     "destroying the measurement it was protecting. "
+     "🔬 AND TWO THINGS MEASURED ALONG THE WAY, both identical on both machines and "
+     "so faithful rather than defects: with a second channel open `LOF(1)` reads 0 "
+     "where the `lof` row reads 26 with one, and a read from #1 while #2 is open "
+     "returns nothing -- which is why the observable here is #2 alone."),
     ("eof",     "a=eof(1)",
      'OPEN"HI.TXT"FOR INPUT AS#1:A$=INPUT$(26,#1):A=EOF(1):CLOSE#1:PRINT"[";A;"]"', "stored",
      "NEEDS-DISK: " "-1 AFTER the whole file is consumed. 🔴 THE READ IS THE ROW: "
