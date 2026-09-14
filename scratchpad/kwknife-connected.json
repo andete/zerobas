@@ -933,9 +933,9 @@
    "connected": true,
    "modes": {
     "fn": "MISSING",
-    "stmt": "SUPPORTED"
+    "stmt": "MISSING"
    },
-   "row": "time",
+   "row": "time_c",
    "verdict": "MISSING",
    "weak": true
   },
@@ -970,9 +970,9 @@
    "connected": true,
    "modes": {
     "fn": "MISSING",
-    "stmt": "SUPPORTED"
+    "stmt": "MISSING"
    },
-   "row": "vdp_b",
+   "row": "vdp_c",
    "verdict": "MISSING",
    "weak": false
   },
@@ -1013,5 +1013,5 @@
    "weak": false
   }
  },
- "written": "2026-09-14 11:22:23"
+ "written": "2026-09-14 11:51:24"
 }

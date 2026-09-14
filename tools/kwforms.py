@@ -132,6 +132,54 @@ FORMS: dict[str, tuple[tuple[str, ...], str]] = {
         "This is deliberately a DIFFERENT SHAPE from PSET/PRESET -- positional "
         "omission rather than an optional trailing argument and a mode.",
     ),
+    "POKE": (
+        ("address-value",),
+        "`POKE <address>,<value>` -- two REQUIRED arguments and no optional part, "
+        "no mode and no coordinate, so the whole surface is one form. The row "
+        "reads the byte back through PEEK, so a POKE that parsed and wrote nothing "
+        "fails; that is what makes N=1 a bar rather than a formality.",
+    ),
+    "VPOKE": (
+        ("address-value",),
+        "`VPOKE <vram address>,<value>` -- the same shape as POKE and the same N. "
+        "🔴 `vpoke_b` (the last byte of VRAM) and `vpoke_b2` (the maximum value) "
+        "are SAMPLES of this one form, not extra forms, and they are tagged with "
+        "the same name on purpose: counting them separately would let three "
+        "readings of one behaviour satisfy an N of three.",
+    ),
+    "OUT": (
+        ("port-value",),
+        "`OUT <port>,<value>` -- two required arguments, one behaviour. `out_b` "
+        "reads the delivered byte back through the PSG's own readback port, which "
+        "is what separates it from `outkw`, a row that writes only the address "
+        "latch and never looks.",
+    ),
+    "SOUND": (
+        ("register-value",),
+        "`SOUND <register>,<value>` -- one behaviour, and writing register 7 is "
+        "not a different form from writing register 0, only a different input. "
+        "`sound_b` reads the byte back out of the PSG.",
+    ),
+    "VDP": (
+        ("read", "write"),
+        "`VDP(n)` is BOTH an expression and an assignment TARGET, and the two are "
+        "different handlers -- the `$C8` selector in basic/expr.asm and "
+        "`ex_vdp_assign` in basic/interp.asm. A read row cannot speak for the "
+        "write at all, which is exactly the case N is meant to catch. ⚠️ NEITHER "
+        "form can see the CHIP: MSX VDP registers are write-only, so every reader "
+        "sees the RGnSAV mirror. The bar is the two ACCESS PATHS, and that limit "
+        "is stated in the write row rather than left for someone to assume away.",
+    ),
+    "TIME": (
+        ("read", "write"),
+        "`TIME` is a pseudo-variable with a read selector (`$CB`) and a separate "
+        "write handler (`ex_time_assign`), so the two halves are two forms. "
+        "⚠️ THE READ ROW IS A BOOLEAN AND HAS TO BE: zerobas is 2.5-3.8x slower "
+        "than the reference (the open TIER 4 item), so a delay loop's TIME VALUE "
+        "would diverge on INTERPRETER SPEED and be reported as a TIME defect. The "
+        "VALUE is scored by the write row, which reads back what it wrote and has "
+        "no speed dependence.",
+    ),
     "BEEP": (
         ("no-argument",),
         "MSX1 `BEEP` takes NO arguments, so its whole surface is one form and N=1 "

@@ -818,6 +818,45 @@ Each reading above was read ON ITS OWN, never off the batch's summary line.
 `direct` at 61 chars and the sweep answered *"probe defect — direct-mode exec lines
 exceed one screen row (38 cols)"* and measured NOTHING rather than scoring a
 wrapped echo.
+⚡ **D-KWBATCH2 — SIX MORE KEYWORDS FOR TWO NEW ROWS, WHICH IS WHAT THE BATCHED
+FLOW IS FOR.** `POKE`, `VPOKE`, `OUT`, `SOUND`, `VDP` and `TIME` all reach TIER 1;
+the first four needed only their form lists authored and their existing rows
+tagged, because the evidence was already there and nothing had ever counted it.
+🎚️ **FOUR OF THEM ARE N=1, AND THE DOCTRINE IS WHAT KEEPS THAT HONEST.** `POKE
+a,v`, `VPOKE a,v`, `OUT p,v` and `SOUND r,v` each take two REQUIRED arguments with
+no optional part, no mode and no coordinate — one behaviour, so one form. What
+makes N=1 a bar rather than a formality is WHAT THE ROW READS: every one of them
+reads the written byte back (PEEK, VPEEK, the PSG's own readback port), so a verb
+that parsed and wrote nothing fails.
+⚠️ **AND `vpoke_b` / `vpoke_b2` ARE TAGGED WITH THE *SAME* FORM NAME ON PURPOSE.**
+The last byte of VRAM and the maximum byte value are SAMPLES of one behaviour.
+Tagging them separately would have let three readings of one form satisfy an N of
+three — which is exactly the mistake `FORM:` was introduced to stop, committed
+against the very rows that motivated it.
+🟢 **`VDP` AND `TIME` AT N=2, AND THE SECOND FORM IS A DIFFERENT HANDLER.**
+`VDP(n)` is both an expression and an assignment TARGET (`ex_vdp_assign`,
+`basic/interp.asm`), and `TIME` has a read selector (`$CB`) and a separate
+`ex_time_assign` (`basic/time.asm`). **Every existing row read.** New rows
+`vdp_c` → `[0d 5  4 ]` and `time_c` → `[0e 300  100 ]`, both writing TWO DIFFERENT
+values so a handler that stored a constant, or ignored the assignment and left the
+old value, is visible on the second reading. Both knife-proven LOAD-BEARING.
+🔴 **WHAT `vdp_c` CANNOT PROVE, SAID IN THE ROW RATHER THAN LEFT TO BE ASSUMED
+AWAY: MSX VDP REGISTERS ARE WRITE-ONLY AT THE CHIP.** Every reader sees the RGnSAV
+mirror, so no row anywhere can witness what the VDP got. The bar is the two ACCESS
+PATHS, and the row scores the assignment path — parse, evaluate, store the value
+written.
+🎯 **AND `timetick` IS A BOOLEAN BECAUSE IT HAS TO BE — THE SPEED ITEM REACHES
+INTO THE TIER BAR.** `TIME>T` across a delay loop is all a read row can ask:
+zerobas is 2.5–3.8× slower than the reference (the open TIER 4 item), so a delay
+loop's TIME **value** would diverge on INTERPRETER SPEED and be reported as a TIME
+defect. `time_c` is where TIME's value gets scored, because writing a known value
+and reading it back has no speed dependence. ⚠️ `INT(TIME/100)` and not `TIME`:
+the clock ticks between the write and the read, so the raw value is not
+reproducible; divided by 100 both readings sit exactly on a multiple and are
+stable for ~100 ticks.
+📊 **THIRTEEN KEYWORDS AT TIER 1** — `BEEP CLEAR CLS COLOR OUT POKE PRESET PSET
+SOUND TIME VDP VPOKE WIDTH`. Two batteries got the last nine of them; one battery
+each would have cost seven more.
 🔪 **D-KWSTRCUT — THE THIRD CUT SHAPE, AND A FIRST VERSION OF IT THAT WAS WORSE
 THAN THE GAP IT CLOSED (2026-09-13).** `basic/sysvars.inc:250` named the shape in
 prose written long before the knife existed: **MKI$ is evaluated in
@@ -1486,7 +1525,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:18213 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:18252 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -1652,7 +1691,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:6253 (T-6FE392)8 (T-529ABE)` from `TODO.md:16864 (T-529ABE)`: a
+      `TODO.md:6292 (T-6FE392)8 (T-529ABE)` from `TODO.md:16903 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -7097,7 +7136,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:16864 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:16903 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

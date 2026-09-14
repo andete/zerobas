@@ -676,7 +676,8 @@ SWEEP: list[tuple[str, str, str | None, str, str]] = [
      "FORM:no-argument D-KWDRAIN: BEEP's EFFECT, not its existence -- it restores "
      "the PSG mixer, so this reads 184 where the same program without the BEEP "
      "reads 191"),
-    ("sound",   'sound 7,255',        'SOUND 7,255:PRINT"[7]"',               "direct", "D-KWDRAIN"),
+    ("sound",   'sound 7,255',        'SOUND 7,255:PRINT"[7]"',               "direct",
+     "FORM:register-value D-KWDRAIN"),
     # 🌾 D-KWBREADTH batch 6: `sound` writes PSG register 7 and prints a CONSTANT
     # MARKER, so it scores that the word ran and nothing about what landed. The PSG
     # HAS a readback path -- `OUT &HA0,<reg>` selects, `INP(&HA2)` reads -- so the
@@ -685,19 +686,37 @@ SWEEP: list[tuple[str, str, str | None, str, str]] = [
     # exactly as it was: nothing is made audible by this row.
     ("sound_b", 'sound 0,123',
      'SOUND 0,123:OUT&HA0,0:PRINT"[";INP(&HA2);"]"',                          "stored",
-     "D-KWDRAIN: SOUND's EFFECT, not its existence -- the byte is read back out "
-     "of the PSG. A SOUND that parsed and wrote nothing reads something else."),
+     "FORM:register-value D-KWDRAIN: SOUND's EFFECT, not its existence -- the byte "
+     "is read back out of the PSG. A SOUND that parsed and wrote nothing reads "
+     "something else."),
     ("vpeek",   'a=vpeek(0)',         'VPOKE 0,7:PRINT"[";VPEEK(0);"]"',      "direct", "D-KWDRAIN"),
-    ("vpoke",   'vpoke 0,1',          'VPOKE 0,9:PRINT"[";VPEEK(0);"]"',      "direct", "D-KWDRAIN"),
-    ("vdpkw",   'a=vdp(1)',           'PRINT"[";VDP(1)>0;"]"',                "direct", "D-KWDRAIN"),
+    ("vpoke",   'vpoke 0,1',          'VPOKE 0,9:PRINT"[";VPEEK(0);"]"',      "direct",
+     "FORM:address-value D-KWDRAIN"),
+    ("vdpkw",   'a=vdp(1)',           'PRINT"[";VDP(1)>0;"]"',                "direct",
+     "FORM:read D-KWDRAIN"),
     # 🌾 D-KWBREADTH batch 8: a BOOLEAN reading scores only that a value falls in a
     # half-plane, never the VALUE. `VDP(1)>0` is -1 for anything non-zero, so every
     # wrong-but-non-zero register read passes it -- and the note beside the row
     # already says the number is 240 against a stub's 0, so the value was known and
     # simply not scored.
     ("vdp_b",   'a=vdp(1)',           'PRINT"[";VDP(1);"]"',                  "direct",
-     "D-KWDRAIN: the VDP register's VALUE, not its non-zero-ness -- 240. The "
-     "`vdpkw` row's `>0` passes on any wrong non-zero read."),
+     "FORM:read D-KWDRAIN: the VDP register's VALUE, not its non-zero-ness -- 240. "
+     "The `vdpkw` row's `>0` passes on any wrong non-zero read."),
+    # 🌾 D-KWBATCH2: `VDP(n)` IS ALSO AN ASSIGNMENT TARGET, and every row above
+    # reads. `ex_vdp_assign` (basic/interp.asm:747) is a SEPARATE handler from the
+    # `$C8` selector in expr.asm, so the read rows cannot speak for it at all.
+    # 🔴 WHAT THIS ROW CAN AND CANNOT PROVE, SAID PLAINLY: MSX VDP registers are
+    # WRITE-ONLY at the chip, so no reader anywhere can see what the chip got.
+    # `VDP(n)` reads the RGnSAV mirror. The row therefore scores the ASSIGNMENT
+    # PATH -- parse, evaluate, store the value written -- and it uses TWO DIFFERENT
+    # values so a handler that stored a constant, or ignored the assignment and
+    # left the old value, fails on the second reading.
+    ("vdp_c",   'vdp(7)=5',
+     'VDP(7)=5:A=VDP(7):VDP(7)=4:B=VDP(7):PRINT"[0d";A;B;"]"',  "stored",
+     "NOECHO:[0d FORM:write the ASSIGNMENT form `VDP(n)=v`, which has its own "
+     "handler (ex_vdp_assign) and which no read row reaches. `[0d 5  4 ]` -- two "
+     "different values, so a stored constant or an ignored assignment is visible. "
+     "Register 7 is the backdrop colour, which does not disturb the text plane."),
     # 🔴 `>0`, NOT `>=0`, AND THAT IS A FIX TO MY OWN ROW. The first cut asked
     # `INP(&HA8)>=0`, which an ABSENT INP passes too: the word would parse as an
     # undefined array, `INP(&HA8)` would be element 0, and `0>=0` is TRUE.
@@ -708,14 +727,16 @@ SWEEP: list[tuple[str, str, str | None, str, str]] = [
     # zerobas and the VG-8020 may legitimately differ. `vdpkw` was checked the
     # same way and is sound as written: VDP(1) reads 240 against the stub's 0.
     ("inpkw",   'a=inp(168)',         'PRINT"[";INP(&HA8)>0 ;"]"',            "direct", "D-KWDRAIN"),
-    ("outkw",   'out 160,7',          'OUT &HA0,7:PRINT"[8]"',                "direct", "D-KWDRAIN"),
+    ("outkw",   'out 160,7',          'OUT &HA0,7:PRINT"[8]"',                "direct",
+     "FORM:port-value D-KWDRAIN"),
     # 🌾 D-KWBREADTH batch 6: the row above writes the PSG ADDRESS latch and scores
     # a marker; this one drives the whole OUT -> INP round trip through the DATA
     # port, so the byte it wrote is the byte that is read.
     ("out_b",   'out 161,77',
      'OUT&HA0,0:OUT&HA1,77:OUT&HA0,0:PRINT"[";INP(&HA2);"]"',                 "stored",
-     "D-KWDRAIN: the value OUT actually DELIVERED, via the PSG's own readback. "
-     "The `outkw` row writes only the address latch and never reads it back."),
+     "FORM:port-value D-KWDRAIN: the value OUT actually DELIVERED, via the PSG's "
+     "own readback. The `outkw` row writes only the address latch and never reads "
+     "it back."),
     # 🔴 `WAIT` HAS NO ROW HERE, AND THE FIRST ATTEMPT IS WHY. `WAIT port,mask
     # [,xor]` blocks until ((INP(port) XOR xor) AND mask) <> 0, so a mask of 0 can
     # NEVER be satisfied: the row `WAIT &HA9,0:PRINT"[9]"` -- written believing
@@ -725,7 +746,8 @@ SWEEP: list[tuple[str, str, str | None, str, str]] = [
     # (the VDP status port, whose bit 7 sets every frame) is read-to-clear and
     # would disturb the BIOS interrupt handler. Left unattributed on purpose --
     # "no known gap" is the honest state for it until a safe row exists.
-    ("pokekw",  'poke 0,1',           'POKE-8192,7:PRINT"[";PEEK(-8192);"]"', "direct", "D-KWDRAIN"),
+    ("pokekw",  'poke 0,1',           'POKE-8192,7:PRINT"[";PEEK(-8192);"]"', "direct",
+     "FORM:address-value D-KWDRAIN"),
 
     # ---------------------------------------------- D-KWDRAIN step 4a (2026-09-12)
     # 🔴 A CORRECTION TO WHAT BATCH 3 FILED. I wrote that the display verbs "cannot
@@ -1412,8 +1434,25 @@ SWEEP: list[tuple[str, str, str | None, str, str]] = [
     # MAX_DIRECT_ECHO guard below, which exists so this cannot recur silently.)
     ("timetick", "a=time",
      'T=TIME:FOR I=1 TO 400:NEXT:PRINT"[";TIME>T;"]"', "stored",
-     "THE discriminator: a real TIME advances across a delay loop; the variable "
-     "`TI` does not. This is the row that catches the silent gap."),
+     "FORM:read THE discriminator: a real TIME advances across a delay loop; the "
+     "variable `TI` does not. This is the row that catches the silent gap."),
+    # 🌾 D-KWBATCH2: `TIME = <expr>` is the WRITE half (ex_time_assign,
+    # basic/time.asm:43), a different handler from the `$CB` read selector.
+    # 🎯 AND IT IS ALSO WHERE TIME'S **VALUE** GETS SCORED. `timetick` above can
+    # only ask `TIME>T`, a BOOLEAN, and it has to: zerobas is 2.5-3.8x slower than
+    # the reference (the open TIER 4 item), so a delay loop's TIME VALUE would
+    # diverge on INTERPRETER SPEED and report it as a TIME defect. Writing a known
+    # value and reading it back has no such dependence.
+    # ⚠️ `INT(TIME/100)`, NOT `TIME`: the clock ticks at 50/60 Hz between the write
+    # and the read, so the raw value is not reproducible. Divided by 100 it is
+    # stable for ~100 ticks, and both readings sit exactly on a multiple.
+    ("time_c",  "time=30000",
+     'TIME=30000:A=INT(TIME/100):TIME=10000:B=INT(TIME/100):PRINT"[0e";A;B;"]"',
+     "stored",
+     "NOECHO:[0e FORM:write the ASSIGNMENT form. `[0e 300  100 ]` -- two different "
+     "written values read back, so a TIME= that parsed and dropped the value shows "
+     "up, and the reading is a VALUE rather than the boolean `timetick` is forced "
+     "into by the interpreter-speed difference."),
 
     # INTERVAL — the retraction case. It is NOT a keyword on either side (it is
     # INT+"ER"+VAL), so CRUNCH is expected to MATCH while SUPPORT is expected to
@@ -1770,10 +1809,13 @@ SWEEP: list[tuple[str, str, str | None, str, str]] = [
     ("cos_b",   'a=cos(0)',    'PRINT"[";COS(0);"]"',                  "direct",
      "BREADTH: the exact point of the cosine, 1 — a value reading, and not 0"),
     ("vpoke_b", 'vpoke 16383,7', 'VPOKE 16383,7:PRINT"[";VPEEK(16383);"]"', "stored",
-     "BREADTH: the LAST byte of an MSX1's 16 KB VRAM, where the existing row uses "
-     "address 0 — an off-by-one in the address path shows here and nowhere else"),
+     "FORM:address-value BREADTH: the LAST byte of an MSX1's 16 KB VRAM, where the "
+     "existing row uses address 0 — an off-by-one in the address path shows here "
+     "and nowhere else. ⚠️ SAME FORM AS `vpoke`, DELIBERATELY: `VPOKE a,v` has one "
+     "behaviour and this is a second SAMPLE of it, not a second form."),
     ("vpoke_b2", 'vpoke 100,255', 'VPOKE 100,255:PRINT"[";VPEEK(100);"]"', "stored",
-     "BREADTH: the maximum byte VALUE, where the existing row writes 9. ⚠️ STORED "
+     "FORM:address-value BREADTH: the maximum byte VALUE, where the existing row "
+     "writes 9. ⚠️ STORED "
      "BECAUSE IT PASSED ALONE AND FAILED IN COMPANY: at 37 chars it clears the "
      "38-column guard, yet the reference's capture wraps (`|[ 255 ]`) and zerobas "
      "lost its echo anchor entirely once other rows had run before it. The guard "
