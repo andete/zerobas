@@ -651,6 +651,22 @@ SWEEP: list[tuple[str, str, str | None, str, str]] = [
      "SUBJECT:PRINT_USING FORM:fraction-field D-KWDRAIN: the FRACTIONAL field, "
      "where `##` cannot reach -- placement of the point AND the rounding of the "
      "discarded digit"),
+    # D-KWPARTIAL: the format string is a small language and its FIELD TYPES are the
+    # forms. Two were covered; these are the other three.
+    ("using_c", 'using "+##"',
+     'PRINT"[";:PRINT USING"+##";7;:PRINT"]"',        "stored",
+     "SUBJECT:PRINT_USING FORM:sign the explicit SIGN field, which a format "
+     "handler that only counts digit positions drops."),
+    ("using_d", 'using "!"',
+     'PRINT"[";:PRINT USING"!";"ABC";:PRINT"]"',      "stored",
+     "SUBJECT:PRINT_USING FORM:string-field `!` takes the FIRST character of the "
+     "string argument, so `ABC` prints as `A` -- a numeric-only format handler "
+     "cannot do it at all."),
+    ("using_e", 'using "##.##^^^^"',
+     'PRINT"[";:PRINT USING"##.##^^^^";123.4;:PRINT"]"',  "stored",
+     "SUBJECT:PRINT_USING FORM:exponential the `^^^^` EXPONENTIAL field. The exact "
+     "spacing is not predicted here; what makes it a reading is that both machines "
+     "must produce the same one."),
     ("then",    'then a=1',           'IF 2>1 THEN PRINT"[3]"',               "direct", "D-KWDRAIN"),
     ("elsekw",  'else a=1',           'IF 0 THEN PRINT 1 ELSE PRINT"[8]"',    "direct", "D-KWDRAIN"),
     ("tokw",    'to 5',               'FOR I=1 TO 3:NEXT:PRINT"[";I;"]"',     "direct", "D-KWDRAIN"),
@@ -1108,6 +1124,25 @@ SWEEP: list[tuple[str, str, str | None, str, str]] = [
      "undefined array auto-dims and answers 0"),
     ("onkw",      'on error goto 20', 
      'ON ERROR GOTO 20:ERROR 7:END:PRINT"[R";ERR;ERL;"]":END',  "stored", "D-KWDRAIN: FORM:on-error ON in its ON ERROR form"),
+    # D-KWPARTIAL: `ON ERROR GOTO 0` DISABLES trapping -- the form a program uses to
+    # hand an error back to BASIC -- and only the INSTALL had a row.
+    # WARNING: NO `NOECHO:` MARKER HERE, DELIBERATELY. When the disable WORKS the
+    # error is untrapped and the program stops, so the marker never prints and a
+    # marker-anchored capture would read ?nomarker -- a refusal, not a reading.
+    # Echo-anchored, the capture holds the ERROR MESSAGE, and the failing case
+    # holds `[0w1]` instead.
+    # 🔴 AND THE PADDING IS `A=n`, NOT `REM`, BECAUSE **REM SWALLOWS THE REST OF
+    # THE LINE**. The first cut padded with `REM ZZZ...:ERROR 7`, which commented
+    # the ERROR out: no error was ever raised, execution fell through to the
+    # handler line, and the row read `[0w1]` on BOTH machines -- SUPPORTED, and
+    # proving nothing whatever. `troff_b` gets away with REM padding only because
+    # its REMs are the LAST statement on their lines.
+    ("onkw_b",   'on error goto 0',
+     'ON ERROR GOTO 40:ON ERROR GOTO 0:ERROR 7:A=1:A=2:A=3:A=4:A=5:A=6:A=7:A=8:A=9:B=1:B=2:B=3:B=4:B=5:PRINT"[0w1]":END',
+     "stored",
+     "SUBJECT:ON_ERROR_GOTO FORM:disable the DISABLE. With it working `ERROR 7` is "
+     "untrapped and the program stops with the message; with it ignored the "
+     "handler on line 40 runs and prints `[0w1]`."),
     # 🌾 D-KWBREADTH batch 12: `ON` HAS THREE FORMS AND THE ROW ABOVE COVERS ONLY
     # `ON ERROR GOTO`. The INDEX-SELECTED jump -- the form a 1985 listing actually
     # uses -- had no row at all. It needs SEPARATE numbered lines as targets, and
@@ -1329,6 +1364,15 @@ SWEEP: list[tuple[str, str, str | None, str, str]] = [
      "stored",
      "NOECHO:[V the ATTRIBUTE write -- VPEEK($1B00) is the sprite's Y. `spritekw` "
      "FORM:position round-trips SPRITE$, which is the PATTERN table and a different store."),
+    # D-KWPARTIAL: the attribute entry is four bytes -- y, x, PATTERN, COLOUR --
+    # and the row above reads only the first. These are DIFFERENT bytes of the same
+    # entry, so a handler that wrote the position and dropped the rest passes there
+    # and fails here.
+    ("putsprite_b", 'put sprite 0,(100,50),13,1',
+     'SCREEN2:SPRITE$(1)=STRING$(8,255):PUT SPRITE 0,(100,50),13,1:A=VPEEK(6914):B=VPEEK(6915):SCREEN0:PRINT"[0x";A;B;"]"',
+     "stored",
+     "NOECHO:[0x FORM:colour-and-pattern the PATTERN number and the COLOUR, bytes 2 "
+     "and 3 of plane 0's attribute entry ($1B00 = 6912). `[0x 1  13 ]`."),
     ("pointkw",  'a=point(1,1)',   
      'SCREEN2:PSET(1,1),15:A=POINT(1,1):SCREEN0:PRINT"[T";A;"]"',   "stored",
      "NOECHO:[T FORM:pixel-read POINT as the subject: a stub parses as an array and "
@@ -1529,6 +1573,26 @@ SWEEP: list[tuple[str, str, str | None, str, str]] = [
     ("spc",     'print spc(5);"x"',
      'PRINT"[";SPC(5);"X]"',                         "direct",
      "FORM:spc-item absent => array SPC(5)=0 prints ` 0 `; real => 5 spaces"),
+    # D-KWPARTIAL: BARE PRINT'S SEPARATORS HAD NO ROW. Its only two rows are the
+    # PRINT ITEMS, and PRINT is the apparatus of almost every row in this sweep --
+    # constantly exercised, almost never the SUBJECT. Being used is not being
+    # measured. Each row below reads a POSITION back rather than looking at the
+    # text, so the reading is a number both machines must agree on.
+    ("printkw_b", 'print "a","b"',
+     'CLS:PRINT"A","B";:A=POS(0):PRINT"[0t";A;"]"',   "stored",
+     "NOECHO:[0t FORM:comma-zone the COMMA advances to the next 14-column zone, so "
+     "the cursor lands at 15 after `A`,`B`. `[0t 15 ]` -- a comma treated as a "
+     "plain separator leaves it at 2."),
+    ("printkw_c", 'print "ab";"cd"',
+     'CLS:PRINT"AB";"CD";:A=POS(0):PRINT"[0u";A;"]"', "stored",
+     "NOECHO:[0u FORM:semicolon the SEMICOLON concatenates with no gap, so four "
+     "characters put the cursor at 4. `[0u 4 ]` -- a semicolon that ended the line "
+     "would leave 2."),
+    ("printkw_d", 'print "ab";',
+     'CLS:PRINT"AB";:A=CSRLIN:PRINT"[0v";A;"]"',      "stored",
+     "NOECHO:[0v FORM:trailing-suppress a TRAILING separator suppresses the "
+     "newline, so the cursor is still on row 0. `[0v 0 ]` -- without the "
+     "suppression it has moved to row 1."),
 
     # Program / editor management.
     ("swap",    "swap a,b",
@@ -1650,6 +1714,12 @@ SWEEP: list[tuple[str, str, str | None, str, str]] = [
     ("deffn",   "def fna(x)=x+1",
      'DEF FNA(X)=X+1:PRINT"[";FNA(2);"]"',           "stored",
      "SUBJECT:DEF_FN FORM:numeric absent => syntax error; real => 3"),
+    # D-KWPARTIAL: the RESULT TYPE is DEF FN's second form and not a detail -- a
+    # string-valued FN needs a GC root the numeric one does not.
+    ("deffn_b", 'def fns$(x$)=x$+"!"',
+     'DEF FNS$(X$)=X$+"!":PRINT"[";FNS$("A");"]"',    "stored",
+     "SUBJECT:DEF_FN FORM:string-valued the STRING-valued definition, whose result "
+     "lives in the string pool where the numeric one is a float. `[A!]`."),
 
     # The two missing logical operators.
     ("eqv",     "a=5 eqv 3",

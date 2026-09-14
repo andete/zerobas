@@ -1175,6 +1175,41 @@ have no row (LINE INPUT needs typed input, the same block as bare console
 `INPUT`), and the four remaining ON-traps (`ON KEY/STOP/SPRITE/STRIG GOSUB`) have
 dedicated acceptance suites but no kwsweep row — firing a trap inside a sweep row
 is apparatus this sweep does not have.
+⚡ **D-KWPARTIAL — EVERY NAMED PARTIAL CLOSED THAT WAS NOT A DELIBERATE
+DEVIATION. 73 of 171.** `PRINT` 5/5, `PRINT USING` 5/5, `DEF FN` 2/2,
+`PUT SPRITE` 2/2, `ON ERROR GOTO` 2/2 — all now TIER 1.
+🟢 **BARE `PRINT`'S SEPARATORS, AT LAST.** Each row reads a POSITION back
+rather than looking at the text, so the reading is a number both machines must
+agree on: the COMMA advances to the next 14-column zone (`[0t 15 ]`, where a comma
+treated as a plain separator leaves 2), the SEMICOLON concatenates with no gap
+(`[0u 4 ]`), and a TRAILING separator suppresses the newline (`[0v 0 ]`, still on
+row 0).
+🟢 **`PRINT USING`'s FORMAT STRING IS A SMALL LANGUAGE AND ITS FIELD TYPES ARE
+THE FORMS**: the explicit sign (`[ +7]`), the string field `!` which takes only
+the FIRST character (`ABC` prints as `A` — a numeric-only format handler cannot do
+it at all), and the exponential `^^^^` (`[ 1.23E+02]`; the exact spacing is not
+predicted, what makes it a reading is that both machines produce the same one).
+🟢 **`ON ERROR GOTO 0`** — with it working `ERROR 7` is untrapped and the
+program stops with `Out of memory in 20`; with it ignored the handler runs.
+🔴 **AND THAT ROW'S FIRST CUT PROVED NOTHING WHILE SCORING SUPPORTED, BECAUSE
+**REM SWALLOWS THE REST OF THE LINE**.** I padded with `REM ZZZ...:ERROR 7` to
+force the handler target onto line 40 — which COMMENTED THE ERROR OUT. No error
+was ever raised, execution fell through to the handler line, and the row read
+`[0w1]` on BOTH machines: agreement about nothing. ⚠️ `troff_b` gets away with REM
+padding ONLY because its REMs are the LAST statement on their lines. The padding
+is `A=n` now.
+🎯 **AND THE ROW CARRIES NO `NOECHO:` MARKER ON PURPOSE.** When the disable
+WORKS the program stops before printing, so a marker-anchored capture would read
+`?nomarker` — a refusal, not a reading. Echo-anchored, the capture holds the ERROR
+MESSAGE, and the failing case holds `[0w1]` instead.
+🟢 **`PUT SPRITE` 2/2** — the attribute entry is four bytes (y, x, PATTERN,
+COLOUR) and the old row read only the first. `putsprite_b` reads bytes 2 and 3 of
+plane 0's entry: `[0x 1  13 ]`.
+🟢 **`DEF FN` 2/2** — the string-valued definition, whose result lives in the
+string pool where the numeric one is a float.
+⛔ **NOT CHASED, AND FOR GOOD REASON: `LOCATE` 3/4, `SCREEN` 2/3 and `VARPTR`
+1/2 ARE BLOCKED BY DELIBERATE DEVIATIONS AND DEFERRALS**, not by missing rows.
+Writing a row for a form the tree does not implement would measure nothing.
 🔪 **D-KWSTRCUT — THE THIRD CUT SHAPE, AND A FIRST VERSION OF IT THAT WAS WORSE
 THAN THE GAP IT CLOSED (2026-09-13).** `basic/sysvars.inc:250` named the shape in
 prose written long before the knife existed: **MKI$ is evaluated in
@@ -1843,7 +1878,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:18570 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:18605 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -2009,7 +2044,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:6610 (T-6FE392)8 (T-529ABE)` from `TODO.md:17221 (T-529ABE)`: a
+      `TODO.md:6645 (T-6FE392)8 (T-529ABE)` from `TODO.md:17256 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -7454,7 +7489,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:17221 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:17256 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

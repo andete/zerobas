@@ -196,7 +196,7 @@
    "modes": {
     "stmt": "MISSING"
    },
-   "row": "deffn",
+   "row": "deffn_b",
    "subject": "DEF FN",
    "verdict": "MISSING",
    "weak": false
@@ -657,11 +657,11 @@
   "ON": {
    "connected": true,
    "modes": {
-    "stmt": "MISSING"
+    "stmt": "DIVERGENT"
    },
-   "row": "onkw",
+   "row": "onkw_b",
    "subject": "ON ERROR GOTO",
-   "verdict": "MISSING",
+   "verdict": "DIVERGENT",
    "weak": false
   },
   "OPEN": {
@@ -759,8 +759,8 @@
    "modes": {
     "stmt": "MISSING"
    },
-   "row": "printhash",
-   "subject": "PRINT #",
+   "row": "using_e",
+   "subject": "PRINT USING",
    "verdict": "MISSING",
    "weak": false
   },
@@ -778,7 +778,7 @@
    "modes": {
     "stmt": "UNREADABLE"
    },
-   "row": "putsprite",
+   "row": "putsprite_b",
    "subject": "PUT SPRITE",
    "verdict": "UNREADABLE",
    "weak": false
@@ -1051,7 +1051,8 @@
   "DEF FN": {
    "connected": true,
    "rows": {
-    "deffn": "MISSING"
+    "deffn": "MISSING",
+    "deffn_b": "MISSING"
    }
   },
   "GET #": {
@@ -1069,7 +1070,8 @@
   "ON ERROR GOTO": {
    "connected": true,
    "rows": {
-    "onkw": "MISSING"
+    "onkw": "MISSING",
+    "onkw_b": "DIVERGENT"
    }
   },
   "ON GOSUB": {
@@ -1087,6 +1089,9 @@
   "PRINT": {
    "connected": true,
    "rows": {
+    "printkw_b": "UNREADABLE",
+    "printkw_c": "UNREADABLE",
+    "printkw_d": "UNREADABLE",
     "tab": "MISSING"
    }
   },
@@ -1099,7 +1104,10 @@
   "PRINT USING": {
    "connected": true,
    "rows": {
-    "using": "MISSING"
+    "using": "MISSING",
+    "using_c": "MISSING",
+    "using_d": "MISSING",
+    "using_e": "MISSING"
    }
   },
   "PUT #": {
@@ -1111,9 +1119,10 @@
   "PUT SPRITE": {
    "connected": true,
    "rows": {
-    "putsprite": "UNREADABLE"
+    "putsprite": "UNREADABLE",
+    "putsprite_b": "UNREADABLE"
    }
   }
  },
- "written": "2026-09-14 15:39:42"
+ "written": "2026-09-14 16:06:28"
 }
