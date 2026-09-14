@@ -914,6 +914,14 @@ SWEEP: list[tuple[str, str, str | None, str, str]] = [
     ("presetkw", 'preset(1,1)',    
      'SCREEN2:PSET(1,1),15:PRESET(1,1):A=POINT(1,1):SCREEN0:PRINT"[R";A;"]"', "stored",
      "NOECHO:[R PRESET must UNDO the PSET: 15 if it does nothing, 4 if it works"),
+    # 🌾 D-KWBREADTH batch 14: the row above gives PRESET NO colour, so it scores
+    # only "PRESET erases". `PRESET(x,y),c` draws in colour c -- 9 is neither the
+    # background 4 nor the foreground 15, so this reads the COLOUR ARGUMENT and a
+    # PRESET that always erased would give 4.
+    ("presetkw_b", 'preset(3,3),9',
+     'SCREEN2:PRESET(3,3),9:A=POINT(3,3):SCREEN0:PRINT"[M";A;"]"',  "stored",
+     "NOECHO:[M PRESET with an explicit COLOUR -- 9. The `presetkw` row omits it "
+     "and can only see that PRESET erases."),
     ("pointkw",  'a=point(1,1)',   
      'SCREEN2:PSET(1,1),15:A=POINT(1,1):SCREEN0:PRINT"[T";A;"]"',   "stored",
      "NOECHO:[T POINT as the subject: a stub parses as an array and reads 0, not 15"),
