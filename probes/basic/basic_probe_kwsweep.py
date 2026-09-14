@@ -660,7 +660,8 @@ SWEEP: list[tuple[str, str, str | None, str, str]] = [
     # -8192 ($E000), inside zerobas's own RAM rather than the work area.
     # 🎯 EACH ONE READS BACK WHAT IT WROTE where it can (VPOKE/VPEEK, POKE/PEEK), so
     # a stub that silently accepts the statement still fails the row.
-    ("beep",    'beep',               'BEEP:PRINT"[6]"',                      "direct", "D-KWDRAIN"),
+    ("beep",    'beep',               'BEEP:PRINT"[6]"',                      "direct",
+     "FORM:no-argument D-KWDRAIN"),
     # 🌾 D-KWBREADTH batch 7: `beep` prints a CONSTANT MARKER, and BEEP's effect
     # turns out to be observable through the PSG after all (scratchpad/
     # beepobs_probe.py, all three machines): the MIXER at rest reads 184, a
@@ -672,8 +673,9 @@ SWEEP: list[tuple[str, str, str | None, str, str]] = [
     # ⚠️ And the row leaves the machine AS IT FOUND IT: 184 IS the at-rest value.
     ("beep_b",  'beep',
      'SOUND 7,255:BEEP:OUT&HA0,7:PRINT"[";INP(&HA2);"]"',                     "stored",
-     "D-KWDRAIN: BEEP's EFFECT, not its existence -- it restores the PSG mixer, "
-     "so this reads 184 where the same program without the BEEP reads 191"),
+     "FORM:no-argument D-KWDRAIN: BEEP's EFFECT, not its existence -- it restores "
+     "the PSG mixer, so this reads 184 where the same program without the BEEP "
+     "reads 191"),
     ("sound",   'sound 7,255',        'SOUND 7,255:PRINT"[7]"',               "direct", "D-KWDRAIN"),
     # 🌾 D-KWBREADTH batch 6: `sound` writes PSG register 7 and prints a CONSTANT
     # MARKER, so it scores that the word ran and nothing about what landed. The PSG
@@ -733,7 +735,24 @@ SWEEP: list[tuple[str, str, str | None, str, str]] = [
     # suites have always done with `CLS:PRINT"[";...`. So the words come back in
     # reach, and the claim is retracted where it was made.
     ("widthkw", 'width 37',    'WIDTH 37:PRINT"[W";PEEK(-3152);"]"',  "direct",
-     "NOECHO:[W WIDTH reformats the screen and takes the echo with it; the row reads LINLEN ($F3B0 = -3152) back, so a WIDTH that parses and does nothing still fails. absent => syntax error => no marker at all."),
+     "NOECHO:[W FORM:text-width WIDTH reformats the screen and takes the echo with it; the row reads LINLEN ($F3B0 = -3152) back, so a WIDTH that parses and does nothing still fails. absent => syntax error => no marker at all."),
+    # 🌾 D-KWBATCH1: WIDTH'S SECOND FORM IS A DIFFERENT CELL, NOT A DIFFERENT
+    # NUMBER. MSX keeps the text width PER MODE -- LINL40 ($F3AE) for SCREEN 0 and
+    # LINL32 ($F3AF) for SCREEN 1 (both DECLARED in basic/sysvars.inc) -- and
+    # `WIDTH` writes whichever belongs to the CURRENT mode. A WIDTH that always
+    # wrote LINL40 passes `widthkw` and fails here, which is the whole point of
+    # counting this as a second form rather than a second sample of the first.
+    # 🎯 BOTH CELLS ARE SET BY THE ROW ITSELF (`WIDTH 37` first), so the reading
+    # cannot depend on a boot default -- the VG-8020 and this repack do not agree
+    # about which mode they start in, and a row that read an untouched LINL40
+    # would be measuring the BOOT and reporting it as WIDTH.
+    ("widthkw_b", 'width 29',
+     'WIDTH 37:SCREEN1:WIDTH 29:A=PEEK(&HF3AF):B=PEEK(&HF3AE):SCREEN0:PRINT"[0a";A;B;"]"',
+     "stored",
+     "NOECHO:[0a FORM:mode1-width the SCREEN 1 width, which lives in LINL32 "
+     "($F3AF) and not in the LINL40 ($F3AE) cell `widthkw` reads. `[0a 29  37 ]`: "
+     "the cell WIDTH must change AND the one it must leave alone, so a handler "
+     "that wrote the wrong cell, or both, is visible either way."),
     # 🔴 `KEY` HAS NO ROW, AND THE ATTEMPT THAT PASSED IS WHY. A `keykw` row
     # reading CRTCNT ($F3B1) after `KEY OFF` came back SUPPORTED / match on both
     # machines -- and it was BLIND. Measured directly
@@ -1163,7 +1182,7 @@ SWEEP: list[tuple[str, str, str | None, str, str]] = [
     # basic/sysvars.inc, and guessing the standard $F87F would be building on an
     # unverified constant. Both need a measurement first.
     ("clskw",    'cls',        'CLS:PRINT"[C";CSRLIN;"]"',            "direct",
-     "NOECHO:[C CLS erases the echo by definition -- the exact row the old "
+     "NOECHO:[C FORM:no-argument CLS erases the echo by definition -- the exact row the old "
      "echo-anchored capture could never hold. 🔴 AND IT READS CSRLIN BACK ON "
      "PURPOSE: the first cut printed a bare [C1], which a CLS that PARSED AND "
      "DID NOTHING would have printed just as happily -- scoring the parse and "
@@ -1182,8 +1201,8 @@ SWEEP: list[tuple[str, str, str | None, str, str]] = [
     # anchor. `LOCATE 10` keeps output on the current row, just indented.
     ("locate",  "locate 10,0",
      'LOCATE 10:PRINT"[X]"',                         "direct",
-     "absent => `LOCATE 10` is a bare word + juxtaposition => syntax error; "
-     "real => `[X]` indented to column 10"),
+     "FORM:column absent => `LOCATE 10` is a bare word + juxtaposition => syntax "
+     "error; real => `[X]` indented to column 10"),
     # 🌾 D-KWBREADTH batch 5: the row above uses the ONE-argument form and reads the
     # marker's INDENTATION. The ROW argument is untouched, and CSRLIN reads it back
     # EXPLICITLY rather than by column-counting -- the form already recorded as
@@ -1202,9 +1221,20 @@ SWEEP: list[tuple[str, str, str | None, str, str]] = [
     # sides, because CLS erases the echoed command the capture keys on. `NOECHO:`
     # exists for exactly that and the row is captured by its own unique marker.
     ("locate_b", "locate 0,5",   'CLS:LOCATE 0,5:PRINT"[N";CSRLIN;"]"',       "direct",
-     "NOECHO:[N " "the ROW argument, read back through CSRLIN -- `[N 5 ]`. The "
+     "NOECHO:[N " "FORM:row the ROW argument, read back through CSRLIN -- `[N 5 ]`. The "
      "`locate` row sets only a COLUMN and scores the marker's indentation; CLS "
      "anchors the cursor so this reads the ROW and not the scroll history."),
+    # 🌾 D-KWBATCH1: THE OMITTED POSITION, WHICH IS THE COLOR SHAPE AGAIN. An
+    # omitted LOCATE axis KEEPS its current value (basic/missing.asm:97 records the
+    # measurement), so `LOCATE ,7` after `LOCATE 9,3` must move the ROW to 7 and
+    # LEAVE the column at 9. A parser that shifted the argument left would put 7 in
+    # the COLUMN -- and neither `locate` nor `locate_b` could see that, because each
+    # supplies its axis in the position the shift would read anyway.
+    ("locate_c", "locate ,7",
+     'CLS:LOCATE 9,3:LOCATE ,7:A=CSRLIN:B=POS(0):PRINT"[0b";A;B;"]"', "stored",
+     "NOECHO:[0b FORM:omitted-column `[0b 7  9 ]` -- the ROW moved and the COLUMN "
+     "did not. CLS anchors the cursor first, because LOCATE moves it and an "
+     "unanchored row measures scroll history (the trap `locate_b`'s note records)."),
     ("csrlin",  "a=csrlin",
      # ⚠️ THIS ROW'S "DIVERGENT" IS A PROBE ARTIFACT, NOT A FAITHFULNESS BUG,
      # and it cannot be pinned here. CSRLIN is a POSITION, so with no leading
@@ -1472,7 +1502,24 @@ SWEEP: list[tuple[str, str, str | None, str, str]] = [
      "NOECHO:[G SCRMOD ($FCAF, DECLARED in basic/sysvars.inc) reads 2 inside "
      "SCREEN 2 and 0 in text mode, on both machines -- so the row sees the MODE "
      "and not merely that the statement parsed, and it reads the mode BEFORE "
-     "returning to SCREEN 0 because a graphics screen cannot be scraped as text."),
+     "returning to SCREEN 0 because a graphics screen cannot be scraped as text. "
+     "FORM:mode"),
+    # 🌾 D-KWBATCH1: SCREEN'S SECOND ARGUMENT IS REAL HERE (G7_RESIDENT=1,
+    # basic/sysvars.inc:489) and no row ever read it. RG1SAV ($F3E0, DECLARED) is
+    # the VDP register 1 mirror whose bits 1..0 ARE the sprite size, so the row
+    # prints the mirror at size 3 and again at size 0: the two readings must differ
+    # by exactly 3 and agree in every other bit.
+    # 🔴 AND THE HISTORY SAYS WHY THIS IS WORTH A ROW: `SCREEN 1,,99` once applied
+    # 99 AS THE SPRITE SIZE (basic/screen.asm:121) and NO row could see it -- the
+    # old `and $03` turned it into size 3, and a wrong sprite size does not show up
+    # in SCRMOD, which is the only cell `screenkw` reads.
+    ("screenkw_c", "screen 2,3",
+     'SCREEN2,3:A=PEEK(&HF3E0):SCREEN2,0:B=PEEK(&HF3E0):SCREEN0:PRINT"[0c";A;B;"]"',
+     "stored",
+     "NOECHO:[0c FORM:sprite-size the SPRITE-SIZE argument, read back through "
+     "RG1SAV ($F3E0). A and B must differ by exactly 3 (bits 1..0) and match "
+     "everywhere else -- a handler that wrote the whole register, or the wrong "
+     "one, moves the other bits too."),
     ("keykw",    'key 1,"x"',
      'KEY 1,"ZZQ":KEY LIST',                                    "stored",
      "D-KWRIG: `KEY LIST` prints all ten definitions and the row compares the "

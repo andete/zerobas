@@ -763,6 +763,61 @@ built from a month-old pin passes. Making the pin current is the WORKFLOW step �
 **`make kwsweep && make tiers-md` BEFORE staging, never after a battery** — and
 that is deliberately not a gate, because a gate that ran `kwsweep` would spend 120 s
 of every battery re-deriving what the battery already writes.
+⚡ **D-KWBATCH1 — THE BATCHED FLOW, AND THREE MORE KEYWORDS AT TIER 1 FOR ONE
+BATTERY INSTEAD OF THREE** (Joost, 2026-09-14: *"if possible switch to a more
+efficient flow doing a few keywords together, avoiding too many lengthy test
+runs"*). ⚠️ **WHY ONE-PER-KEYWORD WAS SO EXPENSIVE, AND WHY THE OBVIOUS SHORTCUT
+IS WRONG:** `source_fingerprint()` hashes the WHOLE `probes/`+`tests/`+`tools/`
+trees into ONE value, so any edit to `basic_probe_kwsweep.py` forbids D-GATESKIP
+from skipping the emulator tier — 88 targets re-run for a change that can only
+affect one. **That is deliberate (a proof, not a judgement about blast radius),
+so the answer is BATCHING, never weakening the skip.**
+📏 **MEASURED 2026-09-14:** full battery 920–952 s · `make kwsweep` ~120 s ·
+`make gates-fast` ~63 s · `make kwsweep ONLY=a,b,c` for three rows, once. The loop
+is now: several keywords in one edit pass → `ONLY=` for the new rows → one
+`make kwsweep` → knife each row → citations `--fix` → `make kwsweep && make
+tiers-md` → stage → **ONE** battery → **ONE** commit naming every keyword.
+🟢 **`BEEP` AND `CLS` AT N=1, AND THAT IS THE HONEST BAR, NOT A LOW ONE.** Both
+take NO arguments, so one form is the whole surface. What keeps the evidence from
+being vacuous is not a second form but WHAT THE ROW READS: `beep_b` scores the PSG
+mixer register BEEP restores (184 against 191 without it), and `clskw` reads
+CSRLIN back — a bare marker would have been printed just as happily by a CLS that
+parsed and did nothing.
+🟢 **`WIDTH` AT N=2, WHERE THE SECOND FORM IS A DIFFERENT CELL, NOT A DIFFERENT
+NUMBER.** MSX keeps the width PER MODE — `LINL40` ($F3AE) for SCREEN 0, `LINL32`
+($F3AF) for SCREEN 1, both DECLARED — and `WIDTH` writes whichever belongs to the
+current mode. `widthkw_b` reads `[0a 29  37 ]`: **the cell WIDTH must change AND
+the one it must leave alone**, so a handler that always wrote LINL40 passes
+`widthkw` and fails here. 🎯 **BOTH CELLS ARE SET BY THE ROW ITSELF**, because the
+VG-8020 and this repack do not agree about which mode they boot into and a row
+reading an untouched cell would be measuring the BOOT and reporting it as WIDTH.
+🔭 **`LOCATE` STOPS AT 3/4 AND THE MISSING FORM IS A RECORDED DEVIATION, NOT A
+MISSING ROW.** `basic/missing.asm` O-3: the third argument is parsed,
+domain-checked and then **IGNORED** — "nothing in this tree reads CSRSW ... storing
+it would be a write nobody reads". The bar comes from the REFERENCE's syntax, so
+`LOCATE [X][,Y][,switch]` is four forms whatever we chose to implement.
+⚠️ **A FORM WE DECLINED LEAVES THE KEYWORD SHORT OF TIER 1, AND THAT IS THE
+MEASUREMENT WORKING.** New row `locate_c` covers the third of the four: `[0b 7  9 ]`
+— `LOCATE ,7` after `LOCATE 9,3` moves the ROW and LEAVES the COLUMN, which is the
+`COLOR` shape again. Neither `locate` nor `locate_b` could see a left-shifting
+parser, because each supplies its axis in the position the shift would read anyway.
+🔭 **`SCREEN` STOPS AT 2/3** — `mode` and `sprite-size` covered, `key-click` has no
+cell any row here can read. New row `screenkw_c` reads RG1SAV ($F3E0, DECLARED),
+whose bits 1..0 ARE the sprite size: `[0c 227  224 ]`, differing by exactly 3 and
+identical in every other bit. 🔴 **AND THE HISTORY SAYS WHY IT WAS WORTH A ROW:**
+`SCREEN 1,,99` once applied **99 as the sprite size** (`basic/screen.asm:121`) and
+NO row could see it — the old `and $03` turned it into size 3, and a wrong sprite
+size does not show up in `SCRMOD`, the only cell `screenkw` reads.
+🔪 **ALL THREE NEW ROWS KNIFE-PROVEN LOAD-BEARING** (`widthkw_b` → MISSING,
+`locate_c` → UNREADABLE, `screenkw_c` → MISSING with the handler cut).
+⚠️ **AND THE COST OF BATCHING, STATED BECAUSE IT IS THE REAL ONE:** reviewing
+several keywords' rows at once is exactly where I have mis-read before (`varptr_b`
+scored SUPPORTED on `[-3 ]` while its note claimed 8; `openkw_b` took six sweeps).
+Each reading above was read ON ITS OWN, never off the batch's summary line.
+🟢 **THE PROBE REFUSED ONCE, CORRECTLY, AND SAVED A SWEEP:** `locate_c` was written
+`direct` at 61 chars and the sweep answered *"probe defect — direct-mode exec lines
+exceed one screen row (38 cols)"* and measured NOTHING rather than scoring a
+wrapped echo.
 🔪 **D-KWSTRCUT — THE THIRD CUT SHAPE, AND A FIRST VERSION OF IT THAT WAS WORSE
 THAN THE GAP IT CLOSED (2026-09-13).** `basic/sysvars.inc:250` named the shape in
 prose written long before the knife existed: **MKI$ is evaluated in
@@ -1431,7 +1486,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:18158 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:18213 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -1597,7 +1652,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:6198 (T-6FE392)8 (T-529ABE)` from `TODO.md:16809 (T-529ABE)`: a
+      `TODO.md:6253 (T-6FE392)8 (T-529ABE)` from `TODO.md:16864 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -7042,7 +7097,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:16809 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:16864 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

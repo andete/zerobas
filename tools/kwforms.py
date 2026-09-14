@@ -132,6 +132,51 @@ FORMS: dict[str, tuple[tuple[str, ...], str]] = {
         "This is deliberately a DIFFERENT SHAPE from PSET/PRESET -- positional "
         "omission rather than an optional trailing argument and a mode.",
     ),
+    "BEEP": (
+        ("no-argument",),
+        "MSX1 `BEEP` takes NO arguments, so its whole surface is one form and N=1 "
+        "is the honest bar rather than a low one. What makes the evidence "
+        "non-vacuous is not a second form but what the row READS: `beep_b` scores "
+        "the PSG mixer register BEEP restores (184 where the same program without "
+        "it reads 191), so a BEEP that parsed and did nothing fails.",
+    ),
+    "CLS": (
+        ("no-argument",),
+        "`CLS` takes no arguments either. Same shape as BEEP and the same answer "
+        "to the same objection: `clskw` reads CSRLIN back, because a bare marker "
+        "would have been printed just as happily by a CLS that parsed and did "
+        "nothing -- scoring the parse and calling it the behaviour.",
+    ),
+    "WIDTH": (
+        ("text-width", "mode1-width"),
+        "`WIDTH <columns>` has one argument and no optional parts, so the second "
+        "form is not a second argument -- it is a second CELL. MSX keeps the width "
+        "per mode (LINL40 $F3AE for SCREEN 0, LINL32 $F3AF for SCREEN 1) and WIDTH "
+        "writes whichever belongs to the current mode, so a handler that always "
+        "wrote LINL40 passes the first and fails the second. N is 2 because the "
+        "mode is the only dimension this verb has.",
+    ),
+    "LOCATE": (
+        ("column", "row", "omitted-column", "cursor-switch"),
+        "`LOCATE [X][,Y][,switch]` -- the COLOR shape (positional omission) with a "
+        "third argument on top. The omission is a form in its own right because an "
+        "omitted axis KEEPS its value, so a parser that shifted left would write "
+        "the row's value into the column. ⚠️ THE CURSOR SWITCH IS AUTHORED EVEN "
+        "THOUGH THIS TREE CANNOT PASS IT: basic/missing.asm records O-3, the third "
+        "argument is parsed and domain-checked and then IGNORED because nothing "
+        "here reads CSRSW. The bar comes from the REFERENCE's syntax, so a form we "
+        "chose not to implement leaves LOCATE short of TIER 1 -- which is the "
+        "measurement working, not a bookkeeping problem to tidy away.",
+    ),
+    "SCREEN": (
+        ("mode", "sprite-size", "key-click"),
+        "MSX1 `SCREEN [mode][,sprite size][,key click][,baud][,printer]`. The "
+        "first three are the ones a 1985 listing uses; the cassette baud rate and "
+        "printer type are deliberately NOT counted, being rig settings rather than "
+        "screen behaviour. ⚠️ Like LOCATE, this is authored ahead of what the tree "
+        "can show: the sprite size is real (G7_RESIDENT, read back through RG1SAV) "
+        "and the key click has no cell any row can read here.",
+    ),
     "CLEAR": (
         ("bare", "string-space", "himem"),
         "MSX1 syntax is `CLEAR [<string space>[,<himem>]]`, so the whole surface is "

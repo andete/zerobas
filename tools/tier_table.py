@@ -723,6 +723,7 @@ def fmt_markdown(its, kws, evidence=None, t3=None, connected=None):
     conn = knife_connected() if connected is None else connected
     t1 = {kw for kw in tier1_keywords(kws, conn) if kt.get(kw, (None,))[0] is None}
     nobare = no_bare_form()
+    forms = kwsweep_forms(kws)
     groups = defaultdict(list)
     for kw, (g, _, e) in kt.items():
         groups[reached_group(g, e, kw in t3, kw in conn, kw in t1,
@@ -737,10 +738,27 @@ def fmt_markdown(its, kws, evidence=None, t3=None, connected=None):
     for kw in sorted(kws):
         g, lines, e = kt[kw]
         grp = reached_group(g, e, kw in t3, kw in conn, kw in t1, kw in nobare)
+        import kwforms
+        _need = kwforms.forms_for(kw)
         if grp == "t1":
-            import kwforms
-            out.append(f"| `{kw}` | **TIER 1** | CONNECTED; all "
-                       f"{len(kwforms.forms_for(kw))} forms agree; no open item |")
+            _n = len(_need)
+            out.append(f"| `{kw}` | **TIER 1** | CONNECTED; "
+                       f"{'its 1 form agrees' if _n == 1 else f'all {_n} forms agree'}"
+                       f"; no open item |")
+        elif _need and g is None:
+            # ⚠️ `and g is None`: when an open item ALSO stands against the keyword,
+            # the arm below keeps the cell that names the item and its TODO.md
+            # line. `tier1_status` would print "an open TIER item stands against
+            # it" and drop the citation, which is the more useful half.
+            # 🎚️ A KEYWORD WITH AN AUTHORED BAR SAYS HOW FAR SHORT IT IS. Without
+            # this, `LOCATE` at 3 of 4 forms printed "1 row agrees, connected" --
+            # the same cell as a keyword with one row and no bar at all, which
+            # hides the single most useful thing the table knows: WHICH form is
+            # missing. `tier1_status` already computes the sentence; the only bug
+            # was not printing it.
+            _ok, _why = tier1_status(kw, forms.get(kw, set()), kw in conn,
+                                     g is not None)
+            out.append(f"| `{kw}` | TIER 0 | {_why} |")
         elif grp == "kwcomp":
             out.append(f"| `{kw}` | TIER 0 | no bare form; only as a composite"
                        + (", connected" if kw in conn else "") + " |")
