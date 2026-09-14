@@ -37,6 +37,13 @@ FORMS: dict[str, tuple[tuple[str, ...], str]] = {
         "take a different address calculation there. The MSX2-only logical "
         "OPERATOR argument is deliberately NOT counted -- this is an MSX1 tree.",
     ),
+    "PRESET": (
+        ("colour-default", "colour-explicit", "step-relative", "mode-screen3"),
+        "`PRESET [STEP](x,y)[,colour]` -- the same shape as PSET, so the same four. "
+        "The default form ERASES (it draws in the background) while the explicit "
+        "form draws in the colour given, which is why both are forms and not one "
+        "form sampled twice.",
+    ),
     "CLEAR": (
         ("bare", "string-space", "himem"),
         "MSX1 syntax is `CLEAR [<string space>[,<himem>]]`, so the whole surface is "

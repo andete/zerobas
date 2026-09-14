@@ -1034,15 +1034,35 @@ SWEEP: list[tuple[str, str, str | None, str, str]] = [
      "leave (15,10) blank at 4."),
     ("presetkw", 'preset(1,1)',    
      'SCREEN2:PSET(1,1),15:PRESET(1,1):A=POINT(1,1):SCREEN0:PRINT"[R";A;"]"', "stored",
-     "NOECHO:[R PRESET must UNDO the PSET: 15 if it does nothing, 4 if it works"),
+     "NOECHO:[R FORM:colour-default PRESET must UNDO the PSET: 15 if it does nothing, 4 if it works"),
     # 🌾 D-KWBREADTH batch 14: the row above gives PRESET NO colour, so it scores
     # only "PRESET erases". `PRESET(x,y),c` draws in colour c -- 9 is neither the
     # background 4 nor the foreground 15, so this reads the COLOUR ARGUMENT and a
     # PRESET that always erased would give 4.
     ("presetkw_b", 'preset(3,3),9',
      'SCREEN2:PRESET(3,3),9:A=POINT(3,3):SCREEN0:PRINT"[M";A;"]"',  "stored",
-     "NOECHO:[M PRESET with an explicit COLOUR -- 9. The `presetkw` row omits it "
+     "NOECHO:[M FORM:colour-explicit PRESET with an explicit COLOUR -- 9. The `presetkw` row omits it "
      "and can only see that PRESET erases."),
+    # 🎚️ D-KWTIER1: PRESET's remaining two forms. Its syntax mirrors PSET's --
+    # `PRESET [STEP](x,y)[,colour]` -- so N is 4: the two above plus STEP and a
+    # second screen mode.
+    # ⚠️ DIGIT MARKERS, because every single-letter NOECHO marker A-Z is taken and a
+    # letter marker would be a PREFIX of any two-letter one (`marker_tail` matches
+    # by SUBSTRING, so `[A` would find a row printing `[AA`).
+    # 🎯 BOTH ROWS READ TWO PIXELS, one the verb must CHANGE and one it must LEAVE:
+    # `4` alone cannot tell "PRESET erased it" from "PSET never drew it".
+    ("presetkw_c", 'preset step(10,0)',
+     'SCREEN2:PSET(20,10),15:PSET(10,10),15:PRESET STEP(10,0):A=POINT(20,10):B=POINT(10,10):SCREEN0:PRINT"[1";A;B;"]"',
+     "stored",
+     "NOECHO:[1 FORM:step-relative the STEP form -- the last point is (10,10), so "
+     "`STEP(10,0)` must erase (20,10) and leave (10,10) alone: `[1 4  15 ]`, "
+     "MEASURED on both machines before this sentence was written."),
+    ("presetkw_d", 'preset(10,10)',
+     'SCREEN3:PSET(10,10),15:PSET(12,10),15:PRESET(10,10):A=POINT(10,10):B=POINT(12,10):SCREEN0:PRINT"[2";A;B;"]"',
+     "stored",
+     "NOECHO:[2 FORM:mode-screen3 the same erase in SCREEN 3, whose multicolour "
+     "VRAM layout takes a different address calculation: `[2 4  15 ]`, MEASURED "
+     "on both machines before this sentence was written."),
     # 🌾 D-KWBREADTH batch 15 — AXIS (f): `PAINT` and `PUT SPRITE` had NO ROW AS
     # SUBJECT anywhere in the sweep. They appeared only inside other rows' setup
     # lines, so kwcover counted them EXERCISED, the tier table credited the other
