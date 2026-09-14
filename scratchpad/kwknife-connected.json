@@ -171,7 +171,8 @@
    "modes": {
     "stmt": "MISSING"
    },
-   "row": "close",
+   "row": "close_b",
+   "subject": "CLOSE",
    "verdict": "MISSING",
    "weak": false
   },
@@ -486,7 +487,8 @@
    "modes": {
     "fn": "MISSING"
    },
-   "row": "fre_b",
+   "row": "fre_c",
+   "subject": "FRE",
    "verdict": "MISSING",
    "weak": false
   },
@@ -512,10 +514,11 @@
   "GOTO": {
    "connected": true,
    "modes": {
-    "stmt": "DIVERGENT"
+    "stmt": "MISSING"
    },
-   "row": "goto_t3",
-   "verdict": "DIVERGENT",
+   "row": "gotokw",
+   "subject": "GOTO",
+   "verdict": "MISSING",
    "weak": false
   },
   "HEX$": {
@@ -1399,6 +1402,12 @@
     "cint": "MISSING"
    }
   },
+  "CLOSE": {
+   "connected": true,
+   "rows": {
+    "close_b": "MISSING"
+   }
+  },
   "COS": {
    "connected": true,
    "rows": {
@@ -1454,10 +1463,22 @@
     "fix": "MISSING"
    }
   },
+  "FRE": {
+   "connected": true,
+   "rows": {
+    "fre_c": "MISSING"
+   }
+  },
   "GET #": {
    "connected": true,
    "rows": {
     "getkw": "MISSING"
+   }
+  },
+  "GOTO": {
+   "connected": true,
+   "rows": {
+    "gotokw": "MISSING"
    }
   },
   "IMP": {
@@ -1654,5 +1675,5 @@
    }
   }
  },
- "written": "2026-09-14 20:21:18"
+ "written": "2026-09-14 21:16:54"
 }

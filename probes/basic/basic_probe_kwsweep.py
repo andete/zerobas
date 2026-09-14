@@ -1654,6 +1654,14 @@ SWEEP: list[tuple[str, str, str | None, str, str]] = [
      'A=FRE(0):DIM Z(9):B=FRE(0):PRINT"[";A-B;"]"',                           "stored",
      "D-KWDRAIN: FRE tracking an ALLOCATION -- 99 bytes for DIM Z(9). A delta, so "
      "FORM:free-ram the machine-dependent absolute free figure cancels."),
+    # D-KWFRESTR: `FRE("")` REPORTS THE STRING POOL, A DIFFERENT POOL FROM
+    # `FRE(0)`'s free RAM -- not a second input to one behaviour. The row measures
+    # a DELTA across a 50-character allocation for the same reason `fre_b` does:
+    # the absolute figure is machine-dependent and the delta is not.
+    ("fre_c",    'a=fre("")',
+     'A=FRE(""):B$=STRING$(50,"X"):C=FRE(""):PRINT"[";A-C;"]"',   "stored",
+     "FORM:free-string-space the STRING pool, which `FRE(0)` does not report. A "
+     "50-character allocation, read as a DELTA."),
     ("tron",    "tron",
      "TRON:TROFF:PRINT\"[ok]\"",                     "direct",
      "FORM:toggle absent => syntax error; real => accepted (trace toggled off "
@@ -2140,6 +2148,20 @@ SWEEP: list[tuple[str, str, str | None, str, str]] = [
     ("goto_t3", 'goto 9999',   'GOTO 9999',             "direct",
      "PROVES-T3: " "Undefined line number — the commonest fault in a mistyped "
      "listing"),
+    # 🔴 D-KWGOTOROW: `GOTO` HAD NO HAPPY-PATH ROW AT ALL -- its only row was the
+    # PROVES-T3 error case above. GOTO is the APPARATUS of dozens of rows and the
+    # SUBJECT of none, the same hole bare PRINT had: being used is not being
+    # measured.
+    # ⚠️ THE PADDING IS TWO LONG ASSIGNMENTS, NOT `REM` (which would swallow the
+    # rest of its line), and it is there to force the PRINT onto line 40 so the
+    # `GOTO 40` has a target. Packing verified with omsx_repl.as_stored first:
+    # 10 `A=0:GOTO 40:A=7` / 20,30 padding / 40 the PRINT.
+    ("gotokw",   'goto 40',
+     'A=0:GOTO 40:A=7:Z$="XXXXXXXXXXXXXXXXXXXXXXXX":Y$="YYYYYYYYYYYYYYYYYYYYYYYY":PRINT"[1e";A;"]"',
+     "stored",
+     "NOECHO:[1e FORM:jump the JUMP itself: `A=7` sits AFTER the GOTO on line 10 "
+     "and must be skipped, so `[1e 0 ]`. A GOTO that parsed and fell through "
+     "reads `[1e 7 ]`."),
     ("next_t3", 'next',        'NEXT',                  "direct",
      "PROVES-T3: " "NEXT without FOR"),
     ("ret_t3",  'return',      'RETURN',                "direct",
@@ -2231,6 +2253,23 @@ SWEEP: list[tuple[str, str, str | None, str, str]] = [
      "the channel was closed. 🔴 THE BLIND SHAPE WAS MEASURED — the same row with "
      "the CLOSE removed reads 0, not an error, because zerobas allows #1 to be "
      "FORM:channel reopened; a `reopen succeeds` row would have passed without the close."),
+    # D-KWCLOSEBARE: bare `CLOSE` closes EVERY channel, which the `#n` form cannot
+    # exercise. The row opens TWO channels and closes them with one bare CLOSE,
+    # then reads a length back through a reopen -- so a CLOSE that shut only the
+    # first leaves #2 open and the second OPEN fails.
+    ("close_b",  'close',
+     'OPEN"W4.TXT"FOR OUTPUT AS#1:PRINT#1,"AB":CLOSE:OPEN"W4.TXT"FOR INPUT AS#1:A=LOF(1):CLOSE#1:PRINT"[";A;"]"',
+     "stored",
+     "NEEDS-DISK: " "FORM:all bare CLOSE closes a channel it was NOT TOLD ABOUT, "
+     "which is the behaviour `CLOSE #n` cannot exercise: the reopen only succeeds "
+     "if the write was flushed and the channel freed, and the length proves the "
+     "bytes reached the medium.\n"
+     "     \U0001f534 TWO EARLIER CUTS OF THIS ROW MEASURED THE APPARATUS INSTEAD. "
+     "With two channels it read `Bad file number in 20` -- the default MAXFILES "
+     "is ONE. With `MAXFILES=2` prepended it went DIVERGENT: zerobas read `[ 5 ]` "
+     "and the reference read a scrolled, empty screen, because MAXFILES performs "
+     "an implicit CLEAR and the row was then measuring five things at once. ONE "
+     "CHANNEL PROVES THE SAME POINT with none of that."),
     ("bsave",   'bsave"x",0,1',
      'POKE&HC800,99:BSAVE"O.BIN",&HC800,&HC800:POKE&HC800,7:BLOAD"O.BIN":A=PEEK(&HC800):PRINT"[";A;"]"', "stored",
      "NEEDS-DISK: " "a ROUND TRIP through the disk: save 99, overwrite the cell with "

@@ -19616,6 +19616,28 @@ and the same answer: *being used is not being measured.*
 ⚠️ **`FRE`'s N=1 IS NOT MET BY `fre`**, which asks `FRE(0)>1000` — a BOOLEAN.
 `fre_b` reads the DELTA across a `DIM`, which is what makes the reading
 machine-independent; the absolute figure is not comparable between machines.
+⚡ **D-KWGOTOROW — `GOTO`, `CLOSE` AND `FRE` CLOSE THEIR PARTIALS. 117 of 163.**
+🔴 **`GOTO` HAD NO HAPPY-PATH ROW AT ALL** and now has one: `A=7` sits AFTER the
+`GOTO 40` on line 10 and must be SKIPPED, so `[1e 0 ]` where a GOTO that parsed
+and fell through reads `[1e 7 ]`. ⚠️ The padding is two long ASSIGNMENTS and not
+`REM` — REM would swallow the rest of its line, the trap `onkw_b` already cost —
+and it exists only to force the PRINT onto line 40 so the jump has a target.
+Packing verified with `omsx_repl.as_stored` BEFORE the row ran.
+🎯 **AND `GOTO` IS THE THIRD AWARD TO EXERCISE THE CORRECTED OPEN-ITEM RULE** — it
+carries an open TIER 4 (speed) item, which says nothing about whether the jump
+lands.
+🟢 **`FRE` 2/2** — `FRE("")` reports the STRING pool, a different pool from
+`FRE(0)`'s free RAM. Read as a DELTA across a 50-character allocation (`[ 50 ]`)
+for the same reason `fre_b` is a delta: the absolute figure is machine-dependent.
+🔴 **`CLOSE`'s BARE ROW TOOK THREE CUTS, AND THE FIRST TWO MEASURED THE APPARATUS.**
+With two channels it read `Bad file number in 20` — **the default MAXFILES is
+ONE**. With `MAXFILES=2` prepended it went DIVERGENT: zerobas `[ 5 ]`, the
+reference a scrolled empty screen, because **MAXFILES performs an implicit CLEAR**
+and the row was by then measuring five things at once. ✅ **ONE CHANNEL PROVES THE
+SAME POINT** — bare `CLOSE` closes a channel it was NOT TOLD ABOUT, which is
+exactly what `CLOSE #n` cannot exercise — with none of the apparatus.
+⚠️ *Same lesson as `openkw_b`, which cost six sweeps: when a row needs a rig to
+stand up, ask first whether a smaller row proves the same thing.*
       ⚠️ **`TXTMAX` IS NOW BOUNDED BY `DETOKBUF`, NOT BY FREE RAM** — at 1280 B
       it does not fit the 1024 B window, so `$BB00` is the stop until DETOKBUF
       is dealt with. Of D-LINEMAX's 1792 B, **1024 recovered, 768 still charged**.
