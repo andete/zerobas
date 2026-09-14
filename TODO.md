@@ -19466,6 +19466,53 @@ dedicated suite may supply the breadth). **Four of those need CODE, three need a
 ruling, and three are not TIER 1 shaped at all.**
 📈 **OF THE 87 REMAINING, 63 ALREADY HAVE AN AGREEING ROW AND NEED ONLY A BAR** —
 the batch-8 shape, which awarded ten with no new rows. 14 need a row as well.
+🚫 **D-KWREFUSE — `SET`, `IPL` AND `CMD` LEAVE THE STATEMENT DENOMINATOR** (Joost,
+2026-09-14: *"Drop them and mark them"*, the same ruling he gave the particles).
+All three answer **ERR 5 on BOTH references** — they are tokenised and then refused
+— so they have **no happy path on this machine at all**, and a bar reading
+"refuses correctly" would be a TIER 5 reading wearing a TIER 1 label. They stay in
+the TOKEN denominator and get their own class in the table. **STATEMENT 167 → 164.**
+Selftest **S35**. ⚠️ The class arm sits BEFORE the tier arms for the same reason
+the particle arm does: all three have AGREEING rows, so without it they would
+print as "1 row agrees" beside statements that actually do something.
+🔪 **D-KWMATHCUT — THE FOURTH CUT SHAPE, AND IT WAS ONE PREFIX.** Hunting Joost's
+goal showed the bottleneck is not bars: of the 63 statements holding an agreeing
+row, **34 were NOT knife-connected**, so a bar would award them nothing.
+🎯 `ev_ff_mathconv` (`basic/expr.asm:1698`) dispatches the arithmetic conversions
+with **exactly the same `cp <TOK>` / `jp z,<target>` chain** as every other
+selector — but its targets are named **`evmc_*`**, and `plant_fn` accepted only
+`ev_*`. `evmc_abs` does not start with `ev_`. **Ten keywords had no cut at all for
+the want of one prefix.**
+🔴 **AND THE NAMESPACE GUARD IS WHY THIS WAS SAFE TO WIDEN.** `$86` really is in
+both namespaces — `ABS_TOKEN equ $86` and `DIM_TOKEN equ $86` sit 53 lines apart
+in `sysvars.inc` — but DIM dispatches through `stmt_table`'s `db token / dw
+handler` entry, never through a `cp $86` followed by a `jp z` to an `evmc_*`
+symbol, and the 23 `evmc_*` symbols exist ONLY in the math chain. The `jp z`
+restriction is kept for the reason it was kept for `ev_`: the chain is a `jp z`
+chain by construction, so an `evmc_` reached by `jr z` would be a HELPER, not a
+selector [[a-shared-tail-is-not-a-decision]].
+🔴 **AND THE FIRST SUCCESSFUL CUT WAS FILED UNDER THE WRONG KEYWORD — `ELSE`.**
+`_kwtable_name` mapped a token back to a name by the TOKEN ALONE, and a two-byte
+kwtable entry is `<prefix>,<token>`: `db 4,"ELSE",2,COLON,ELSE_TOKEN` and
+`db 3,"FIX",2,PEEK_PREFIX,FIX_TOKEN` **share `$A1`**. So `--fn FIX:fix` recorded
+its reading under ELSE — a keyword it has nothing to do with, and a PARTICLE,
+therefore scored for nobody. ⚠️ **THE BYTE IS NOT THE KEYWORD; THE PREFIX IS PART
+OF THE IDENTITY.** Same shape as every mis-attribution this sweep has turned up,
+one level down. Fixed, and the stale `ELSE` entry removed from the pin by hand.
+🟢 **TWELVE AWARDED: `ABS SGN INT FIX CINT CSNG CDBL SQR EXP LOG ERL ERR`** — all
+N=1, one argument (or none) and one behaviour, each with a row already reading a
+value a stub cannot fake. ⚠️ `INT` and `FIX` are separate keywords and NOT one form
+sampled twice: INT FLOORS toward minus infinity where FIX TRUNCATES toward zero.
+🔭 **`USR` STANDS AT 1/2** — MSX has TEN user-routine vectors and `USR<n>` selects
+which, so the numbered form reaches a DIFFERENT ADDRESS and is not a second input
+to the same behaviour. **92 of 164 at TIER 1.**
+🔬 **AND THE REMAINING TWENTY NAME AT LEAST THREE MORE DISPATCH SHAPES**, each
+refusing with its own count: the OPERATORS (`AND OR NOT XOR EQV IMP MOD` — the
+expression parser's precedence walk, not a `cp` chain), the TRANSCENDENTALS (`ATN
+SIN COS TAN RND` — `ev_ff_mathconv`'s own comment says they *"have no arm of their
+own: they fall into the table scan below"*), and the string/number pair
+(`ASC LEN` via `ev_ff_strnum`) plus `ATTR$ DSKI$ INKEY$ STRING$ CALL MAX`. **That
+is the next apparatus slice, and it gates twenty statements.**
       ⚠️ **`TXTMAX` IS NOW BOUNDED BY `DETOKBUF`, NOT BY FREE RAM** — at 1280 B
       it does not fit the 1024 B window, so `$BB00` is the stop until DETOKBUF
       is dealt with. Of D-LINEMAX's 1792 B, **1024 recovered, 768 still charged**.

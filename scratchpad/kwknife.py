@@ -161,11 +161,27 @@ def plant_fn(tok, kw=""):
         # function's own opening note: a `jr` to the error tail would usually be out
         # of range), so an `ev_` symbol reached by `jr z` is a helper, not a
         # selector. `str_func_ff` genuinely uses BOTH, which is the whole asymmetry.
-        ok = (nm.startswith("ev_") and op == 0xCA) or (strok and nm.startswith("str_"))
+        # 🔪 THE FOURTH CUT SHAPE (D-KWMATHCUT 2026-09-14), and like the third it
+        # was never a mystery -- `ev_ff_mathconv` (basic/expr.asm:1698) dispatches
+        # the arithmetic conversions with the SAME `cp <TOK>` / `jp z,<target>`
+        # chain as every other selector, but its targets are named `evmc_*`, and
+        # `evmc_abs` does not start with `ev_`. One prefix, and ABS/SGN/INT/FIX/
+        # CINT/CSNG/CDBL/SQR/EXP/LOG had no cut at all.
+        # 🔴 AND THE NAMESPACE GUARD STILL HOLDS, WHICH IS WHY THIS IS SAFE TO
+        # WIDEN. `$86` really is in BOTH namespaces -- `ABS_TOKEN equ $86` and
+        # `DIM_TOKEN equ $86` sit 53 lines apart in sysvars.inc -- so a raw byte
+        # search cannot tell them apart. But DIM dispatches through stmt_table's
+        # `db token / dw handler` entry, NOT through a `cp $86` followed by a
+        # `jp z` to an `evmc_*` symbol, and the 23 `evmc_*` symbols exist ONLY in
+        # the math chain. The `jp z` restriction is kept for the same reason it was
+        # kept for `ev_`: the selector chain is a `jp z` chain by construction, so
+        # an `evmc_` symbol reached by `jr z` would be a helper, not a selector.
+        ok = ((nm.startswith("ev_") or nm.startswith("evmc_")) and op == 0xCA) \
+            or (strok and nm.startswith("str_"))
         if ok:
             hits.append(i)
     if len(hits) != 1:
-        shape = "ev_*" + ("/str_*" if strok else "")
+        shape = "ev_*/evmc_*" + ("/str_*" if strok else "")
         return None, (f"{len(hits)} `cp ${tok:02X}` site(s) with a {shape} "
                       f"target — refusing")
     off = hits[0] + 1
@@ -490,13 +506,35 @@ def _kwtable_name(tok, fallback):
     BIND/HEXD/LEFTD/MIDD/OCTD/RIGHTD/SPACED in the pin beside the real names —
     seven entries contributing no evidence to the keyword they were measured for,
     while still inflating the row count that `knife_connected`'s floor reads. A pin
-    key is a keyword or it is noise, so the name is normalised at the source."""
-    for m in re.finditer(r'db\s+\d+,"([^"]+)",2,\w+,(\w+)',
-                         io.open(os.path.join(ROOT, "basic", "kwtable.inc"),
-                                 encoding="utf-8").read()):
-        if syms_equ().get(m.group(2)) == tok:
-            return m.group(1)
-    return fallback
+    key is a keyword or it is noise, so the name is normalised at the source.
+
+    🔴 AND THE **PREFIX** IS PART OF THE IDENTITY, WHICH THIS IGNORED (D-KWMATHCUT
+    2026-09-14). A two-byte entry is `<prefix>,<token>`, and two of them can share
+    the TOKEN while differing in the PREFIX: `kwtable.inc` holds
+    `db 4,"ELSE",2,COLON,ELSE_TOKEN` and `db 3,"FIX",2,PEEK_PREFIX,FIX_TOKEN`,
+    and `ELSE_TOKEN` and `FIX_TOKEN` are BOTH `$A1`. Matching on the token alone
+    returned whichever appears first in the file, so a `--fn FIX:fix` cut was
+    recorded in the pin under **ELSE** -- a keyword it has nothing to do with, and
+    one that is a PARTICLE and therefore scored for nobody at all.
+    ⚠️ Same shape as every mis-attribution this sweep has turned up, one level
+    down: the byte is not the keyword. In function mode the prefix must be the
+    `$FF` one."""
+    src = io.open(os.path.join(ROOT, "basic", "kwtable.inc"),
+                  encoding="utf-8").read()
+    eq = syms_equ()
+    hits = [(m.group(1), m.group(2), m.group(3))
+            for m in re.finditer(r'db\s+\d+,"([^"]+)",2,(\w+),(\w+)', src)
+            if eq.get(m.group(3)) == tok]
+    if not hits:
+        return fallback
+    ff = [h for h in hits if eq.get(h[1]) == 0xFF]
+    if FNMODE and ff:
+        return ff[0][0]
+    if len(hits) > 1 and not ff:
+        print(f"  \u26a0\ufe0f  token ${tok:02X} names {len(hits)} kwtable entries "
+              f"({', '.join(h[0] for h in hits)}) and none is $FF-prefixed -- "
+              f"recording the first")
+    return hits[0][0]
 
 
 def syms_equ():

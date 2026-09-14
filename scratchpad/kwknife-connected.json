@@ -1,6 +1,47 @@
 {
  "rom_fingerprint": "e3dbed36 bf1c245d a01dabda 10650476",
  "rows": {
+  "ABS": {
+   "connected": true,
+   "modes": {
+    "fn": "MISSING",
+    "stmt": "SUPPORTED"
+   },
+   "row": "abs",
+   "subject": "ABS",
+   "verdict": "MISSING",
+   "weak": false
+  },
+  "AND": {
+   "connected": false,
+   "modes": {
+    "stmt": "SUPPORTED"
+   },
+   "row": "andop",
+   "subject": "AND",
+   "verdict": "SUPPORTED",
+   "weak": false
+  },
+  "ASC": {
+   "connected": false,
+   "modes": {
+    "stmt": "SUPPORTED"
+   },
+   "row": "asc",
+   "subject": "ASC",
+   "verdict": "SUPPORTED",
+   "weak": false
+  },
+  "ATN": {
+   "connected": false,
+   "modes": {
+    "stmt": "SUPPORTED"
+   },
+   "row": "atn",
+   "subject": "ATN",
+   "verdict": "SUPPORTED",
+   "weak": false
+  },
   "AUTO": {
    "connected": true,
    "modes": {
@@ -65,12 +106,32 @@
    "verdict": "SUPPORTED",
    "weak": false
   },
+  "CDBL": {
+   "connected": true,
+   "modes": {
+    "fn": "MISSING"
+   },
+   "row": "cdbl",
+   "subject": "CDBL",
+   "verdict": "MISSING",
+   "weak": false
+  },
   "CHR$": {
    "connected": true,
    "modes": {
     "fn": "MISSING"
    },
    "row": "chr",
+   "verdict": "MISSING",
+   "weak": false
+  },
+  "CINT": {
+   "connected": true,
+   "modes": {
+    "fn": "MISSING"
+   },
+   "row": "cint",
+   "subject": "CINT",
    "verdict": "MISSING",
    "weak": false
   },
@@ -153,6 +214,16 @@
    },
    "row": "csave",
    "verdict": "NO-VERDICT",
+   "weak": false
+  },
+  "CSNG": {
+   "connected": true,
+   "modes": {
+    "fn": "MISSING"
+   },
+   "row": "csng",
+   "subject": "CSNG",
+   "verdict": "MISSING",
    "weak": false
   },
   "CSRLIN": {
@@ -309,6 +380,26 @@
    "verdict": "MISSING",
    "weak": false
   },
+  "ERL": {
+   "connected": true,
+   "modes": {
+    "fn": "MISSING"
+   },
+   "row": "erlkw",
+   "subject": "ERL",
+   "verdict": "MISSING",
+   "weak": false
+  },
+  "ERR": {
+   "connected": true,
+   "modes": {
+    "fn": "MISSING"
+   },
+   "row": "errkw",
+   "subject": "ERR",
+   "verdict": "MISSING",
+   "weak": false
+  },
   "ERROR": {
    "connected": true,
    "modes": {
@@ -316,6 +407,16 @@
    },
    "row": "errorkw_b",
    "verdict": "DIVERGENT",
+   "weak": false
+  },
+  "EXP": {
+   "connected": true,
+   "modes": {
+    "fn": "MISSING"
+   },
+   "row": "exp",
+   "subject": "EXP",
+   "verdict": "MISSING",
    "weak": false
   },
   "FIELD": {
@@ -333,6 +434,16 @@
     "stmt": "MISSING"
    },
    "row": "files",
+   "verdict": "MISSING",
+   "weak": false
+  },
+  "FIX": {
+   "connected": true,
+   "modes": {
+    "fn": "MISSING"
+   },
+   "row": "fix",
+   "subject": "FIX",
    "verdict": "MISSING",
    "weak": false
   },
@@ -417,6 +528,16 @@
     "fn": "MISSING"
    },
    "row": "instr_b",
+   "verdict": "MISSING",
+   "weak": false
+  },
+  "INT": {
+   "connected": true,
+   "modes": {
+    "fn": "MISSING"
+   },
+   "row": "int",
+   "subject": "INT",
    "verdict": "MISSING",
    "weak": false
   },
@@ -527,6 +648,16 @@
    },
    "row": "lof",
    "verdict": "DIVERGENT",
+   "weak": false
+  },
+  "LOG": {
+   "connected": true,
+   "modes": {
+    "fn": "MISSING"
+   },
+   "row": "log",
+   "subject": "LOG",
+   "verdict": "MISSING",
    "weak": false
   },
   "LPOS": {
@@ -689,6 +820,7 @@
     "fn": "SUPPORTED"
    },
    "row": "padkw",
+   "subject": "PAD",
    "verdict": "SUPPORTED",
    "weak": false
   },
@@ -892,6 +1024,16 @@
    "verdict": "DIVERGENT",
    "weak": false
   },
+  "SGN": {
+   "connected": true,
+   "modes": {
+    "fn": "MISSING"
+   },
+   "row": "sgn",
+   "subject": "SGN",
+   "verdict": "MISSING",
+   "weak": false
+  },
   "SOUND": {
    "connected": true,
    "modes": {
@@ -917,6 +1059,16 @@
    },
    "row": "spritekw_b",
    "verdict": "UNREADABLE",
+   "weak": false
+  },
+  "SQR": {
+   "connected": true,
+   "modes": {
+    "fn": "MISSING"
+   },
+   "row": "sqr",
+   "subject": "SQR",
+   "verdict": "MISSING",
    "weak": false
   },
   "STICK": {
@@ -992,6 +1144,16 @@
    "verdict": "MISSING",
    "weak": false
   },
+  "USR": {
+   "connected": true,
+   "modes": {
+    "fn": "MISSING"
+   },
+   "row": "usrkw",
+   "subject": "USR",
+   "verdict": "MISSING",
+   "weak": false
+  },
   "VARPTR": {
    "connected": true,
    "modes": {
@@ -1049,11 +1211,77 @@
   }
  },
  "subjects": {
+  "ABS": {
+   "connected": true,
+   "rows": {
+    "abs": "MISSING"
+   }
+  },
+  "AND": {
+   "connected": false,
+   "rows": {
+    "andop": "SUPPORTED"
+   }
+  },
+  "ASC": {
+   "connected": false,
+   "rows": {
+    "asc": "SUPPORTED"
+   }
+  },
+  "ATN": {
+   "connected": false,
+   "rows": {
+    "atn": "SUPPORTED"
+   }
+  },
+  "CDBL": {
+   "connected": true,
+   "rows": {
+    "cdbl": "MISSING"
+   }
+  },
+  "CINT": {
+   "connected": true,
+   "rows": {
+    "cint": "MISSING"
+   }
+  },
+  "CSNG": {
+   "connected": true,
+   "rows": {
+    "csng": "MISSING"
+   }
+  },
   "DEF FN": {
    "connected": true,
    "rows": {
     "deffn": "MISSING",
     "deffn_b": "MISSING"
+   }
+  },
+  "ERL": {
+   "connected": true,
+   "rows": {
+    "erlkw": "MISSING"
+   }
+  },
+  "ERR": {
+   "connected": true,
+   "rows": {
+    "errkw": "MISSING"
+   }
+  },
+  "EXP": {
+   "connected": true,
+   "rows": {
+    "exp": "MISSING"
+   }
+  },
+  "FIX": {
+   "connected": true,
+   "rows": {
+    "fix": "MISSING"
    }
   },
   "GET #": {
@@ -1076,11 +1304,23 @@
     "inputkw": "MISSING"
    }
   },
+  "INT": {
+   "connected": true,
+   "rows": {
+    "int": "MISSING"
+   }
+  },
   "LINE INPUT": {
    "connected": true,
    "rows": {
     "lineinput": "MISSING",
     "lineinput_b": "MISSING"
+   }
+  },
+  "LOG": {
+   "connected": true,
+   "rows": {
+    "log": "MISSING"
    }
   },
   "ON ERROR GOTO": {
@@ -1100,6 +1340,12 @@
    "connected": true,
    "rows": {
     "ongoto": "MISSING"
+   }
+  },
+  "PAD": {
+   "connected": false,
+   "rows": {
+    "padkw": "SUPPORTED"
    }
   },
   "PRINT": {
@@ -1138,7 +1384,25 @@
     "putsprite": "UNREADABLE",
     "putsprite_b": "UNREADABLE"
    }
+  },
+  "SGN": {
+   "connected": true,
+   "rows": {
+    "sgn": "MISSING"
+   }
+  },
+  "SQR": {
+   "connected": true,
+   "rows": {
+    "sqr": "MISSING"
+   }
+  },
+  "USR": {
+   "connected": true,
+   "rows": {
+    "usrkw": "MISSING"
+   }
   }
  },
- "written": "2026-09-14 17:15:20"
+ "written": "2026-09-14 18:53:19"
 }

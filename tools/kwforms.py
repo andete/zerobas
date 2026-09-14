@@ -126,6 +126,20 @@ PARTICLES: frozenset[str] = frozenset(("THEN", "ELSE", "TO", "STEP", "OFF"))
 OPERATORS: frozenset[str] = frozenset(
     ("AND", "OR", "NOT", "XOR", "EQV", "IMP", "MOD"))
 
+# 🎚️ REFUSE-ON-SIGHT WORDS (Joost, 2026-09-14: *"Drop them and mark them"*, the
+# same ruling he gave the particles). `SET`, `IPL` and `CMD` answer **ERR 5 on BOTH
+# REFERENCES** -- they are tokenised, and then the handler refuses. They therefore
+# have NO HAPPY PATH ON THIS MACHINE AT ALL, and a TIER 1 bar reading "refuses
+# correctly" would be a TIER 5 reading wearing a TIER 1 label.
+# 🎯 So they are counted as TOKENS -- the reference tokenises them, so we must --
+# and marked in the table under their own class, rather than sitting in the
+# STATEMENT denominator as three things that can never be awarded.
+# ⚠️ MEASURED, NOT ASSUMED: each row's note records the reading. `set` is
+# "ERR 5 on every machine with a disk ROM and on the diskless VG-8020 too"
+# (D-DONOTHING3), `ipl` is "Illegal function call on the CF-3300 as well as on
+# zerobas", `cmd` is "the third refuse-on-sight word; ERR 5 on both references".
+REFUSE_ONLY: frozenset[str] = frozenset(("SET", "IPL", "CMD"))
+
 NO_BARE_FORM: frozenset[str] = frozenset(("DEF", "GET", "ON", "PUT", "USING"))
 
 
@@ -240,6 +254,60 @@ FORMS: dict[str, tuple[tuple[str, ...], str]] = {
     "READ": (
         ("read-data",),
         "READ <var>[,<var>...] -- one behaviour; reading several variables is repetition of it, not a second form. The row reads, RESTOREs and reads again, scoring the SUM, so a READ that always returned the first item is still visible.",
+    ),
+    "ABS": (
+        ("magnitude",),
+        "ABS(x) -- one argument, one behaviour.",
+    ),
+    "SGN": (
+        ("sign",),
+        "SGN(x) -- one argument, one behaviour; the row reads the sign of a negative.",
+    ),
+    "INT": (
+        ("floor",),
+        "INT(x) -- one argument, one behaviour. It FLOORS (toward minus infinity) where FIX truncates toward zero, which is why the two are separate keywords and not one form sampled twice.",
+    ),
+    "FIX": (
+        ("truncate",),
+        "FIX(x) -- truncates TOWARD ZERO where INT floors. One behaviour.",
+    ),
+    "CINT": (
+        ("to-integer",),
+        "CINT(x) -- one argument, one behaviour, the integer coercion.",
+    ),
+    "CSNG": (
+        ("to-single",),
+        "CSNG(x) -- one argument, one behaviour.",
+    ),
+    "CDBL": (
+        ("to-double",),
+        "CDBL(x) -- one argument, one behaviour.",
+    ),
+    "SQR": (
+        ("square-root",),
+        "SQR(x) -- one argument, one behaviour.",
+    ),
+    "EXP": (
+        ("exponential",),
+        "EXP(x) -- one argument, one behaviour.",
+    ),
+    "LOG": (
+        ("logarithm",),
+        "LOG(x) -- one argument, one behaviour.",
+    ),
+    "ERL": (
+        ("error-line",),
+        "ERL -- no argument, one behaviour: the LINE the trapped error occurred on. Its row reads it inside a handler, so a constant 0 fails.",
+    ),
+    "ERR": (
+        ("error-code",),
+        "ERR -- no argument, one behaviour: the CODE of the trapped error. Its rows read 7 and 53, so a handler returning a constant is visible.",
+    ),
+    "USR": (
+        ("default", "numbered"),
+        "USR(x) and USR<n>(x) -- MSX has TEN user-routine vectors and the digit "
+        "selects which, so the numbered form reaches a DIFFERENT address and is "
+        "not a second input to the same behaviour. Only the default has a row.",
     ),
     "PEEK": (
         ("address-read",),

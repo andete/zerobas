@@ -244,9 +244,13 @@ REACHED = {1: "TIER 0 — open TIER 1 item (happy path broken or keyword MISSING
            # it is counted in the TOKEN denominator and marked here rather than
            # silently vanishing from the sheet.
            "kwpart": "NOT A STATEMENT — a syntax particle of another statement; "
-                     "counted in the TOKEN denominator, not the STATEMENT one"}
+                     "counted in the TOKEN denominator, not the STATEMENT one",
+           # 🎚️ Joost, 2026-09-14, the same ruling he gave the particles.
+           "kwrefuse": "NO HAPPY PATH HERE — the reference REFUSES it too (ERR 5 "
+                       "on both); counted in the TOKEN denominator, not the "
+                       "STATEMENT one"}
 GROUP_ORDER = ["t1", "kwgap", 1, 2, 3, 4, 5, "kw1", "kw1c", "kw3", "kw3c",
-               "kwcomp", "kwpart", None]
+               "kwcomp", "kwpart", "kwrefuse", None]
 
 
 KWSWEEP_PIN = os.path.join(ROOT, "build", "kwsweep-verdicts.json")
@@ -528,6 +532,16 @@ def keyword_tiers(its, kws, evidence=None):
     return out
 
 
+def refuse_only():
+    """Words this machine REFUSES outright -- see kwforms.REFUSE_ONLY. Tokens with
+    no happy path, so they leave the statement denominator the way particles do."""
+    try:
+        import kwforms
+    except ImportError:
+        return frozenset()
+    return kwforms.REFUSE_ONLY
+
+
 def particles():
     """Syntax particles -- see kwforms.PARTICLES. Tokens, never statements."""
     try:
@@ -557,7 +571,7 @@ def no_bare_form():
 
 
 def reached_group(g, e, t3=False, conn=False, tier1=False, nobare=False,
-                  particle=False):
+                  particle=False, refuses=False):
     """The bucket a keyword prints under, from its gap tier and its evidence.
 
     🎚️ `tier1` is Joost's rule satisfied (2026-09-14): CONNECTED + N distinct
@@ -571,6 +585,12 @@ def reached_group(g, e, t3=False, conn=False, tier1=False, nobare=False,
     # statements, which is the claim this class exists to stop making.
     if particle:
         return "kwpart"
+    # 🔴 ALSO BEFORE THE TIER ARMS. `set`/`ipl`/`cmd` have AGREEING rows -- both
+    # machines raise ERR 5 -- so without this they would print as "1 row agrees"
+    # beside statements that actually DO something, which is exactly the claim
+    # this class exists to stop making.
+    if refuses:
+        return "kwrefuse"
     if tier1:
         return "t1"
     if g is not None:
@@ -642,8 +662,8 @@ def statements(kws=None):
     not. Removing them is re-tiering the keyword umbrella, which is ruled out, so
     the count carries the flaw openly instead of being quietly adjusted."""
     kws = keywords() if kws is None else kws
-    return sorted((set(kws) - set(no_bare_form()) - set(particles()))
-                  | composite_names())
+    return sorted((set(kws) - set(no_bare_form()) - set(particles())
+                   - set(refuse_only())) | composite_names())
 
 
 def tier1_statements(stmts=None, conn=None, forms=None, kws=None):
@@ -709,11 +729,13 @@ def fmt_keywords(its, kws, evidence=None):
           if not blocks_tier1(kt.get(kw))}
     nobare = no_bare_form()
     parts = particles()
+    refuses = refuse_only()
     forms = kwsweep_forms(kws)
     groups = defaultdict(list)
     for kw, (g, _, e) in kt.items():
         groups[reached_group(g, e, kw in t3, kw in conn, kw in t1,
-                             kw in nobare, kw in parts)].append(kw)
+                             kw in nobare, kw in parts,
+                             kw in refuses)].append(kw)
     out = []
     for g in GROUP_ORDER:
         if g is None or not groups[g]:
@@ -829,6 +851,7 @@ def fmt_markdown(its, kws, evidence=None, t3=None, connected=None):
           if not blocks_tier1(kt.get(kw))}
     nobare = no_bare_form()
     parts = particles()
+    refuses = refuse_only()
     forms = kwsweep_forms(kws)
 
     out = ["# zerobas — priority-tier status", "",
@@ -859,12 +882,18 @@ def fmt_markdown(its, kws, evidence=None, t3=None, connected=None):
             "so they are counted as TOKENS and marked in the table rather than "
             "inflating the statement count with things a user cannot write. "
             "(`AS` is not in this tree's table at all.)\n"
+            "\U0001f6ab REFUSE-ON-SIGHT WORDS ARE OUT TOO (Joost, same ruling). "
+            "`SET`, `IPL` and `CMD` answer ERR 5 on BOTH references \u2014 they are "
+            "tokenised and then refused \u2014 so they have no happy path on this "
+            "machine at all, and a bar reading \"refuses correctly\" would be a "
+            "TIER 5 reading wearing a TIER 1 label.\n"
             "\u26a0\ufe0f THE OPERATORS STAY, MARKED. `AND OR NOT XOR EQV IMP MOD` are "
             "never statements either, but unlike a particle each HAS BEHAVIOUR OF "
             "ITS OWN worth tiering \u2014 `A AND B` has a truth table to get right and "
             "`THEN` has nothing."
             % (len(kws), len(statements(kws)),
-               len(set(kws) - set(no_bare_form()) - set(particles())),
+               len(set(kws) - set(no_bare_form()) - set(particles())
+                   - set(refuse_only())),
                len(composite_names()),
                len(tier1_statements(statements(kws), conn, forms, kws))), "",
             "## Every keyword and its tier", "",
@@ -875,7 +904,8 @@ def fmt_markdown(its, kws, evidence=None, t3=None, connected=None):
     groups = defaultdict(list)
     for kw, (g, _, e) in kt.items():
         groups[reached_group(g, e, kw in t3, kw in conn, kw in t1,
-                             kw in nobare, kw in parts)].append(kw)
+                             kw in nobare, kw in parts,
+                             kw in refuses)].append(kw)
     for g in GROUP_ORDER:
         if g is None or not groups[g]:
             continue
@@ -886,7 +916,7 @@ def fmt_markdown(its, kws, evidence=None, t3=None, connected=None):
     for kw in sorted(kws):
         g, lines, e = kt[kw]
         grp = reached_group(g, e, kw in t3, kw in conn, kw in t1, kw in nobare,
-                            kw in parts)
+                            kw in parts, kw in refuses)
         import kwforms
         _need = kwforms.forms_for(kw)
         if grp == "t1":
@@ -908,6 +938,9 @@ def fmt_markdown(its, kws, evidence=None, t3=None, connected=None):
             _ok, _why = tier1_status(kw, forms.get(kw, set()), kw in conn,
                                      g is not None)
             out.append(f"| `{kw}` | TIER 0 | {_why} |")
+        elif grp == "kwrefuse":
+            out.append(f"| `{kw}` | \u2014 | refused by the reference too; no happy "
+                       f"path here |")
         elif grp == "kwpart":
             out.append(f"| `{kw}` | \u2014 | a syntax particle, not a statement |")
         elif grp == "kwcomp":
@@ -1142,6 +1175,11 @@ def selftest():
         and blocks_tier1((5, [7], "SUPPORTED")) is False
         and blocks_tier1((None, [], "SUPPORTED")) is False
         and blocks_tier1(None) is False)
+    arm("S35 every refuse-only word is in the TOKEN set and in NO case in the "
+        "STATEMENT set",
+        refuse_only() <= _real
+        and not (refuse_only() & set(statements(_real)))
+        and not (refuse_only() & particles()))
     md = fmt_markdown(its, kws, evidence={}, t3=set(), connected=set())
     _s14 = [("summary row", "| TIER 1 | works correctly in the happy path | 1 |" in md),
             ("LOF row", "| `LOF` | TIER 0 | open TIER 1 item, TODO.md 2 |" in md),

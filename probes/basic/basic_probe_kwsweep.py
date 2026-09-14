@@ -501,8 +501,8 @@ SWEEP: list[tuple[str, str, str | None, str, str]] = [
     # anything but SUPPORTED, the apparatus is lying and no other row is
     # trustworthy. (The T3 KEY lesson: distrust a baseline that cannot produce a
     # non-zero answer.)
-    ("abs",     "a=abs(-5)",          'PRINT"[";ABS(-5);"]"',            "direct", "control"),
-    ("int",     "a=int(1.7)",         'PRINT"[";INT(1.7);"]"',           "direct", "control"),
+    ("abs",     "a=abs(-5)",          'PRINT"[";ABS(-5);"]"',            "direct", "FORM:magnitude control"),
+    ("int",     "a=int(1.7)",         'PRINT"[";INT(1.7);"]"',           "direct", "FORM:floor control"),
     ("len",     'a=len("ab")',        'PRINT"[";LEN("ab");"]"',          "direct", "control"),
     ("chr",     "a$=chr$(65)",        'PRINT"[";CHR$(65);"]"',           "direct", "FORM:code-to-char control"),
     ("mid",     'a$=mid$("hi",1,1)',  'PRINT"[";MID$("hi",2,1);"]"',     "direct", "FORM:substring-3arg control"),
@@ -532,7 +532,7 @@ SWEEP: list[tuple[str, str, str | None, str, str]] = [
      "D-KWDRAIN: the 3-argument START form -- 3, not 1. A start that parses and is "
      "FORM:search-from then ignored finds the FIRST A and reads 1."),
     ("hex",     "a$=hex$(255)",       'PRINT"[";HEX$(255);"]"',          "direct", "FORM:to-hex control"),
-    ("sqr",     "a=sqr(9)",           'PRINT"[";SQR(9);"]"',             "direct", "control"),
+    ("sqr",     "a=sqr(9)",           'PRINT"[";SQR(9);"]"',             "direct", "FORM:square-root control"),
     ("peek",    "a=peek(0)",          'PRINT"[";PEEK(0)>=0;"]"',         "direct", "FORM:address-read control"),
     # D-KWBATCH7: `peek` reads `PEEK(0)>=0`, a BOOLEAN, which is the fourth
     # screening axis and PEEK's only evidence. The byte PEEK reads back is scored
@@ -591,17 +591,17 @@ SWEEP: list[tuple[str, str, str | None, str, str]] = [
     # precision are exactly where a clean-room mathpack diverges, and a row that
     # only ever prints 0 or 1 cannot see it.
     ("asc",     'a=asc("A")',         'PRINT"[";ASC("A");"]"',         "direct", "D-KWDRAIN"),
-    ("cint",    'a=cint(1.7)',        'PRINT"[";CINT(1.7);"]"',        "direct", "D-KWDRAIN"),
-    ("cdbl",    'a=cdbl(1)',          'PRINT"[";CDBL(1)/3;"]"',        "direct", "D-KWDRAIN"),
-    ("csng",    'a=csng(1.5)',        'PRINT"[";CSNG(1.5);"]"',        "direct", "D-KWDRAIN"),
-    ("fix",     'a=fix(-1.7)',        'PRINT"[";FIX(-1.7);"]"',        "direct", "D-KWDRAIN"),
-    ("sgn",     'a=sgn(-3)',          'PRINT"[";SGN(-3);"]"',          "direct", "D-KWDRAIN"),
+    ("cint",    'a=cint(1.7)',        'PRINT"[";CINT(1.7);"]"',        "direct", "FORM:to-integer D-KWDRAIN"),
+    ("cdbl",    'a=cdbl(1)',          'PRINT"[";CDBL(1)/3;"]"',        "direct", "FORM:to-double D-KWDRAIN"),
+    ("csng",    'a=csng(1.5)',        'PRINT"[";CSNG(1.5);"]"',        "direct", "FORM:to-single D-KWDRAIN"),
+    ("fix",     'a=fix(-1.7)',        'PRINT"[";FIX(-1.7);"]"',        "direct", "FORM:truncate D-KWDRAIN"),
+    ("sgn",     'a=sgn(-3)',          'PRINT"[";SGN(-3);"]"',          "direct", "FORM:sign D-KWDRAIN"),
     ("sin",     'a=sin(0)',           'PRINT"[";SIN(0);"]"',           "direct", "D-KWDRAIN"),
     ("cos",     'a=cos(0)',           'PRINT"[";COS(0);"]"',           "direct", "D-KWDRAIN"),
     ("tan",     'a=tan(0)',           'PRINT"[";TAN(0);"]"',           "direct", "D-KWDRAIN"),
     ("atn",     'a=atn(1)',           'PRINT"[";INT(ATN(1)*1000);"]"', "direct", "D-KWDRAIN"),
-    ("exp",     'a=exp(1)',           'PRINT"[";INT(EXP(1)*1000);"]"', "direct", "D-KWDRAIN"),
-    ("log",     'a=log(1)',           'PRINT"[";LOG(1);"]"',           "direct", "D-KWDRAIN"),
+    ("exp",     'a=exp(1)',           'PRINT"[";INT(EXP(1)*1000);"]"', "direct", "FORM:exponential D-KWDRAIN"),
+    ("log",     'a=log(1)',           'PRINT"[";LOG(1);"]"',           "direct", "FORM:logarithm D-KWDRAIN"),
     ("mod",     'a=7 mod 3',          'PRINT"[";7 MOD 3;"]"',          "direct", "D-KWDRAIN"),
     ("notop",   'a=not 0',            'PRINT"[";NOT 0;"]"',            "direct", "D-KWDRAIN"),
     ("andop",   'a=5 and 3',          'PRINT"[";5 AND 3;"]"',          "direct", "D-KWDRAIN"),
@@ -1227,9 +1227,9 @@ SWEEP: list[tuple[str, str, str | None, str, str]] = [
      "ERR returns 53 and not 7, so the OPERAND is honoured rather than a fixed "
      "FORM:raise code being raised; ERL pins it to line 10, the line that raised it."),
     ("errkw",     'a=err',            
-     'ON ERROR GOTO 20:ERROR 7:END:PRINT"[R";ERR;ERL;"]":END',  "stored", "D-KWDRAIN: ERR reads 7, the code raised"),
+     'ON ERROR GOTO 20:ERROR 7:END:PRINT"[R";ERR;ERL;"]":END',  "stored", "FORM:error-code D-KWDRAIN: ERR reads 7, the code raised"),
     ("erlkw",     'a=erl',            
-     'ON ERROR GOTO 20:ERROR 7:END:PRINT"[R";ERR;ERL;"]":END',  "stored", "D-KWDRAIN: ERL reads 10, the line that raised"),
+     'ON ERROR GOTO 20:ERROR 7:END:PRINT"[R";ERR;ERL;"]":END',  "stored", "FORM:error-line D-KWDRAIN: ERL reads 10, the line that raised"),
     ("resumekw",  'resume next',      
      'ON ERROR GOTO 30:ERROR 7:PRINT"[U";A;"]":END:A=5:RESUME NEXT', "stored", "FORM:next D-KWDRAIN: the handler RESUMEs NEXT and control reaches the PRINT; without it nothing prints"),
     ("defintkw",  'defint a',         
@@ -1922,7 +1922,7 @@ SWEEP: list[tuple[str, str, str | None, str, str]] = [
      'POKE-8192,&HC9:DEFUSR=-8192:A=USR(7):PRINT"[U";A;"]"',   "stored",
      "D-KWRIG: the POKEd byte is a RET, so USR(7) returns 7 -- and the stub shape "
      "measures 0 (an undefined array subscripted by 7), so the row separates on a "
-     "VALUE. $E000 is the cell `pokekw` already uses."),
+     "FORM:default VALUE. $E000 is the cell `pokekw` already uses."),
     ("screenkw", "screen 2",
      'SCREEN2:A=PEEK(&HFCAF):SCREEN0:PRINT"[G";A;"]"',          "stored",
      "NOECHO:[G SCRMOD ($FCAF, DECLARED in basic/sysvars.inc) reads 2 inside "
