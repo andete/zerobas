@@ -882,8 +882,8 @@
    "modes": {
     "stmt": "MISSING"
    },
-   "row": "oninterval_b",
-   "subject": "ON INTERVAL GOSUB",
+   "row": "onkey",
+   "subject": "ON KEY GOSUB",
    "verdict": "MISSING",
    "weak": false
   },
@@ -1612,11 +1612,23 @@
     "oninterval_b": "MISSING"
    }
   },
+  "ON KEY GOSUB": {
+   "connected": true,
+   "rows": {
+    "onkey": "MISSING"
+   }
+  },
   "ON SPRITE GOSUB": {
    "connected": true,
    "rows": {
     "onsprite": "UNREADABLE",
     "onsprite_b": "UNREADABLE"
+   }
+  },
+  "ON STRIG GOSUB": {
+   "connected": true,
+   "rows": {
+    "onstrig": "MISSING"
    }
   },
   "OR": {
@@ -1726,5 +1738,5 @@
    }
   }
  },
- "written": "2026-09-15 00:19:44"
+ "written": "2026-09-15 00:52:15"
 }

@@ -275,6 +275,33 @@ _RIG_TAGS = {"NEEDS-DISK:": "disk", "NEEDS-PRINTER:": "printer",
              "NEEDS-LOG:": "log", "NEEDS-TAPE:": "tape",
              "NEEDS-BLANKTAPE:": "tapew"}
 
+# 🟢 D-KWHOLD: THE SIXTH RIG IS THE KEY MATRIX, AND IT IS THE ONLY ONE THAT TAKES
+# AN ARGUMENT. `NEEDS-HOLD:<row>,<mask>` holds ONE matrix bit down for the whole
+# of the case's RUN -- row 8 bit 0 is the SPACE bar, row 8 bits 4/5/6/7 are
+# left/up/down/right, row 6 bit $20 is F1 (the published MSX work-area layout, and
+# the same constants basic_probe_input_devices.py and basic_probe_key_trap.py
+# already drive).
+# 🔴 IT EXISTS BECAUSE KEYBUF INJECTION CANNOT REACH A MATRIX SCAN. Every other
+# delivery here writes DECODED characters into the ROM's type-ahead buffer, which
+# bypasses the matrix entirely -- so STICK/STRIG (GTSTCK/GTTRIG) and the ON KEY /
+# ON STRIG traps read IDLE no matter what the driver "types", and idle is 0, which
+# is exactly what a stub returns [[a-case-that-agrees-can-agree-for-the-wrong-reason]].
+# `omsx_repl.run_cases` has carried the `holds=` seam since the input-devices arc;
+# this only routes it per row.
+# ⚠️ THE ARGUMENT IS PART OF THE GROUP KEY, so two rows holding DIFFERENT keys are
+# captured in different batches -- one `holds` value per batch is all the timeline
+# can express.
+_HOLD_TAG = "NEEDS-HOLD:"
+
+
+def _hold_of(rigs: tuple[str, ...]) -> tuple[int, int] | None:
+    """The (row, mask) a rig tuple asks to hold down, or None."""
+    for r in rigs:
+        if r.startswith("hold:"):
+            row, mask = r[len("hold:"):].split(",")
+            return (int(row, 0), int(mask, 0))
+    return None
+
 
 # A flag tag is a prefix tag that selects no apparatus -- it changes how the
 # SCREEN is read, not what is plugged in.
@@ -387,7 +414,7 @@ def _row_prefix_tags(note: str) -> tuple[str, ...]:
     reference's function-key line -- a furniture difference reported as a defect."""
     out = []
     for tok in note.split():
-        if tok in _RIG_TAGS or tok in _FLAG_TAGS:
+        if tok in _RIG_TAGS or tok in _FLAG_TAGS or tok.startswith(_HOLD_TAG):
             out.append(tok)
         else:
             break
@@ -402,7 +429,9 @@ def _row_rigs(note: str) -> tuple[str, ...]:
     The tags are a PREFIX RUN of the note -- the first token that is not a known
     tag is where the prose starts -- so a note reads
     `"NEEDS-DISK: " "NEEDS-PRINTER: " "why this row..."`."""
-    return tuple(_RIG_TAGS[t] for t in _row_prefix_tags(note) if t in _RIG_TAGS)
+    return tuple(_RIG_TAGS[t] if t in _RIG_TAGS else "hold:" + t[len(_HOLD_TAG):]
+                 for t in _row_prefix_tags(note)
+                 if t in _RIG_TAGS or t.startswith(_HOLD_TAG))
 
 
 def _rig_kwargs(rigs: tuple[str, ...]) -> dict:
@@ -1181,6 +1210,22 @@ SWEEP: list[tuple[str, str, str | None, str, str]] = [
      "D-KWDRAIN: 255 on both; an absent PDL parses as an array and reads 0"),
     ("padkw",     'a=pad(0)',    'PRINT"[";PAD(9);"]"',     "direct",
      "D-KWDRAIN: 9 is outside PAD's range -> Illegal function call; an undefined array auto-dims to 10 and answers 0"),
+    # 🔬 D-KWHOLD: THE CONTROL FOR THE KEY-MATRIX RIG, AND IT COMES FIRST. Every
+    # STICK/STRIG/PDL row in this file reads the IDLE value, which is 0 -- exactly
+    # what a stub returns -- so none of them can separate. This row holds the SPACE
+    # BAR (matrix row 8, bit 0) down for the whole of its RUN and waits up to 120
+    # FRAMES for `STRIG(0)` to answer -1.
+    # 🔴 IT IS THE CONTROL, NOT A KEYWORD ROW: it carries no `FORM:` tag and awards
+    # nothing. If this ever reads `[1w 0 ]` the rig is not reaching the matrix and
+    # NOTHING THAT DEPENDS ON IT MAY BE BELIEVED -- which is the whole reason it
+    # was written and run before a single dependent row existed.
+    # ⚠️ The wait counts FRAMES (`TIME`), never iterations, and the `IF` that reads
+    # STRIG sits on its own line: a FALSE condition skips the REST OF THE LINE.
+    ("strig_hold", 'a=strig(0)',
+     'S=0:T=TIME:W$="WWWWWWWWWWWWWWWWWW":IF STRIG(0)THEN S=-1:V$="VVVVVVV":IF S=0 AND TIME-T<120 THEN 20:PRINT"[1w";S;"]"',
+     "stored",
+     "NEEDS-HOLD:8,0x01 SUBJECT:STRIG the SPACE BAR HELD DOWN: -1, where every "
+     "other input-device row in this file reads the idle 0 a stub also returns"),
     ("attrkw",    'a$=attr$',    'PRINT"[";ATTR$;"]"',      "direct",
      "D-KWDRAIN: bare ATTR$ raises Illegal function call -- so the word IS a token here; an undefined string variable prints empty instead"),
     ("stopkw",    'stop',        'PRINT"[T1]":STOP',        "stored",
@@ -1296,6 +1341,57 @@ SWEEP: list[tuple[str, str, str | None, str, str]] = [
      "ON -- 0 fires in 30 frames is the HANDLER SLOT being cleared "
      "(docs/spec-traps-t4-sprite.md §1.4 `R_bare_disarms`), which a trap that "
      "fires once per colliding frame makes unmissable: it would read ~30"),
+    # 🌾 D-KWHOLD: the two trap composites that need a KEY HELD DOWN, now that the
+    # matrix rig has a control that says it reaches GTTRIG (`strig_hold`). Trigger
+    # 0 IS THE SPACE BAR, so every STRIG row here holds matrix row 8 bit 0; the KEY
+    # rows hold F1 (row 6, $20) and F2 (row 6, $40).
+    # 🎯 THE LIST ROWS ARE WHY ONE PRESS IS ENOUGH FOR THE POSITIONAL FORM: the
+    # reference fires SLOT n for TRIGGER n / KEY n (spec-traps-t2-strig.md R5,
+    # spec-traps-t3-key.md K8), so an implementation that armed the LAST entry, or
+    # armed them all, reads the OTHER handler's value from the same single press.
+    ("onstrig", 'on strig gosub 60',
+     'C=0:ON STRIG GOSUB 60:STRIG(0) ON:T=TIME:V$="VVVVVVVVVVVVVVVVVVVVVVVV":IF C=0 AND TIME-T<120 THEN 40:PRINT"[1x";C>0;"]":END:W$="WWWWWWWWW":C=C+1:RETURN',
+     "stored",
+     "NEEDS-HOLD:8,0x01 FORM:arm the SPACE BAR held: the trap fires and the handler "
+     "runs. Arming is not enabling, so `STRIG(0) ON` is there too"),
+    ("onstrig_b", 'on strig gosub 60,80',
+     'C=0:ON STRIG GOSUB 60,80:STRIG(0) ON:T=TIME:V$="VVVVVVVVVVVVVVVVVVVVVV":IF C=0 AND TIME-T<120 THEN 40:PRINT"[1y";C;"]":END:W$="WWWWWWWWWWW":C=1:RETURN:U$="UUUUUUUUUUUUUUUUUUUUUUUUUUU":C=2:RETURN',
+     "stored",
+     "NEEDS-HOLD:8,0x01 FORM:list-positional 1, not 2: TRIGGER 0 takes SLOT 0. A "
+     "list that armed its last entry would read 2 from the same press"),
+    ("onstrig_c", 'on strig gosub ,60',
+     'C=0:ON STRIG GOSUB 60:ON STRIG GOSUB ,60:STRIG(0) ON:T=TIME:IF C=0 AND TIME-T<120 THEN 40:PRINT"[1z";C;"]":END:W$="WWWWWWWWW":C=C+1:RETURN',
+     "stored",
+     "NEEDS-HOLD:8,0x01 FORM:empty-slot-clears an EMPTY slot 0 clears the handler "
+     "armed one statement earlier (spec-traps-t2-strig.md S3), so 0 fires in 120 "
+     "frames with the space bar held down the whole time"),
+    # 🔴 EVERY ON KEY ROW OPENS WITH `KEY n,""`, AND THE FIRST CUT WITHOUT IT WAS
+    # `?noecho` ON THE REFERENCE AND A CLEAN READING ON ZEROBAS -- an apparatus
+    # failure that reads exactly like a divergence. The hold lasts ~12 emulated
+    # seconds and the program finishes in ~2.4, so the key AUTO-REPEATS at ~17 Hz
+    # into the BASIC prompt for the rest of it; each repeat types the function
+    # key's EXPANSION, and the reference is 2.5-3.8x faster so it gets far more of
+    # them. `color ` x ~160 scrolled the marker off the screen on the reference
+    # alone. An EMPTY expansion still fires the trap (spec-traps-t3-key.md \u00a71.1 R8/R9
+    # -- the event is upstream of string expansion) and types nothing.
+    ("onkey", 'on key gosub 60',
+     'KEY 1,"":C=0:ON KEY GOSUB 60:KEY(1) ON:T=TIME:V$="VVVVVVVVVVVVVVVVVVVVVVVV":IF C=0 AND TIME-T<120 THEN 40:PRINT"[2a";C>0;"]":END:W$="WWWWWWWWW":C=C+1:RETURN',
+     "stored",
+     "NEEDS-HOLD:6,0x20 FORM:arm F1 held: the trap fires. A trapped key is DIVERTED "
+     "(spec-traps-t3-key.md \u00a71.2), so its expansion never reaches the screen"),
+    ("onkey_b", 'on key gosub 60,80',
+     'KEY 2,"":C=0:ON KEY GOSUB 60,80:KEY(2) ON:T=TIME:V$="VVVVVVVVVVVVVVVVVVVVVV":IF C=0 AND TIME-T<120 THEN 40:PRINT"[2b";C;"]":END:W$="WWWWWWWWWWW":C=1:RETURN:U$="UUUUUUUUUUUUUUUUUUUUUUUUUUU":C=2:RETURN',
+     "stored",
+     "NEEDS-HOLD:6,0x40 FORM:list-positional 2, not 1: F2 takes the SECOND slot "
+     "(spec-traps-t3-key.md K8). Only `KEY(2)` is enabled, so the first slot cannot "
+     "fire even if it were armed"),
+    ("onkey_c", 'on key gosub ,60',
+     'KEY 1,"":C=0:ON KEY GOSUB 60:ON KEY GOSUB ,60:KEY(1) ON:T=TIME:V$="VVVVVVVVVVVVVVVVVVVVVVVV":IF C=0 AND TIME-T<120 THEN 40:PRINT"[2c";C;"]":END:W$="WWWWWWWW":C=C+1:RETURN',
+     "stored",
+     "NEEDS-HOLD:6,0x20 FORM:empty-slot-clears 0 fires with F1 held: the empty slot "
+     "cleared the handler. \u26a0\ufe0f the key is STILL SWALLOWED -- diversion follows "
+     "the entry STATE, not the handler (spec-traps-t3-key.md T5) -- which is why "
+     "no F1 expansion appears on the screen this row scrapes"),
     ("errorkw",   'error 7',          
      'ON ERROR GOTO 20:ERROR 7:END:PRINT"[R";ERR;ERL;"]":END',  "stored", "FORM:raise D-KWDRAIN: ERROR 7 is what raises it"),
     # 🌾 D-KWBREADTH batch 20 — AXIS (g): counted across the file, EVERY `ERROR`
@@ -3219,6 +3315,15 @@ def main() -> int:
                 mkw["reset"] = pre + tuple(kw.get("reset", ()))
             if mount:
                 mkw.update(_rig_kwargs(rig))
+                # 🔴 PER CASE, NOT PER CALL: `run_cases` takes one (row, mask) or
+                # None per case, aligned with `cases`. Every row in this group
+                # asked for the SAME key -- the argument is part of the group key
+                # -- so the list is that one hold repeated. `mount=False` is the
+                # crunch layer, which stores a line and never RUNs it, so there is
+                # nothing for a held key to be read by.
+                held = _hold_of(rig)
+                if held is not None:
+                    mkw["holds"] = [held] * len(idx)
             # a rig may force its own delivery mode (see _rig_kwargs: `log` needs
             # boot-per-case or every row reads its predecessors' printer output)
             tape_out = mkw.pop("_tape_path", None)

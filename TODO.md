@@ -19818,6 +19818,52 @@ the REST OF THE LINE, not just the `THEN`, so `IF C=0 THEN 50:SCREEN0` never run
 line>` and `IF TIME-T<30`, never a `FOR`: the two machines differ in interpreter
 speed by 2.5–3.8x, so a counted loop measures the INTERPRETER. For the same reason
 the arm rows read `C>0` and not `C`.
+⚡ **D-KWHOLD — THE INJECTION RIG (Joost: *“build the injection rig”*), AND IT
+LANDS TWO COMPOSITES. 131 of 163, 17 of the 19 composite statements.**
+🟢 **`NEEDS-HOLD:<row>,<mask>` IS THE SIXTH RIG, AND THE ONLY ONE THAT TAKES
+AN ARGUMENT.** It holds one KEY-MATRIX bit down for the whole of a case's `RUN`.
+`omsx_repl.run_cases` has carried the `holds=` seam since the input-devices arc;
+this only routes it per row, and the argument is part of the capture GROUP KEY, so
+two rows holding different keys are captured in different batches — one `holds`
+value per batch is all the timeline can express.
+🔬 **THE CONTROL CAME FIRST AND IS IN THE SWEEP FOR GOOD.** `strig_hold` holds
+the SPACE BAR (row 8, bit 0) and waits up to 120 FRAMES for `STRIG(0)` to answer
+−1. It reads `[1w-1 ]` on BOTH machines. It carries **no `FORM:` tag and awards
+nothing**: if it ever reads `[1w 0 ]` the rig is not reaching the matrix and nothing
+that depends on it may be believed. Every STICK/STRIG/PDL row in the file reads the
+IDLE value, which is 0 — exactly what a stub returns.
+🟢 **`ON STRIG GOSUB` 3/3 and `ON KEY GOSUB` 3/3**, authored from the two trap
+specs: ARM from a single-entry list, the POSITIONAL list, and a listed-EMPTY slot
+clearing that handler (`spec-traps-t2-strig.md` Q1/R5/S3, `spec-traps-t3-key.md`
+K1/K8/T5). **Trigger 0 IS the space bar**, which is why all three STRIG forms are
+reachable with a key matrix and no joystick; the KEY rows hold F1 (`6,$20`) and F2
+(`6,$40`).
+🎯 **ONE PRESS IS ENOUGH FOR THE POSITIONAL FORM**: the reference fires slot
+*n* for trigger/key *n*, so `60,80` reads `[1y 1 ]` where a list that armed its LAST
+entry would read 2 from the same press — and the KEY row reads `[2b 2 ]` because
+only `KEY(2)` is enabled.
+🔴 **AND THE FIRST CUT OF THE `ON KEY` ROWS WAS `?noecho` ON THE REFERENCE AND
+A CLEAN READING ON ZEROBAS — AN APPARATUS FAILURE THAT READS EXACTLY LIKE A
+DIVERGENCE.** The hold lasts ~12 emulated seconds and the program finishes in ~2.4,
+so the key AUTO-REPEATS at ~17 Hz into the BASIC prompt for the rest of it and each
+repeat types the function key's EXPANSION — `color ` × ~160, which scrolled the
+marker off the screen. **The reference is 2.5–3.8× faster, so it got far more
+repeats than zerobas did**: interpreter speed leaking into a reading for the sixth
+time this arc. Fixed with `KEY n,""` as each row's FIRST statement — an empty
+expansion still fires the trap (the event is upstream of string expansion,
+`spec-traps-t3-key.md` §1.1 R8/R9) and types nothing.
+🔭 **TWO COMPOSITES LEFT.** `ON STOP GOSUB` needs **Ctrl-STOP, which is TWO
+keys on different matrix rows** (CTRL row 6 bit 1 + STOP row 7 bit 4) and `holds`
+takes ONE `(row, mask)` per case — a real extension, not a row. `INPUT$` needs its
+console form implemented (item D).
+📏 **AND THE REAL SHAPE OF WHAT IS LEFT, COUNTED RATHER THAN GUESSED:** of the
+32 statements still short of TIER 1, **~20 are UNRATED — they have rows and a knife
+cut and no AUTHORED FORM LIST at all** (`CALL` `CONT` `DATA` `DELETE` `DRAW` `FN`
+`FOR` `KEY` `LOAD` `MOTOR` `NAME` `OPEN` `PAD` `PDL` `PLAY` `RENUM` `SPRITE` `STICK`
+`STRIG` `VAL`). The open TIER 4/5 items on several of them are **not** what holds
+them back — `blocks_tier1()` reads tier 1 only. **Authoring those bars from the
+reference's syntax is the next line of work**, and it is bookkeeping only where the
+existing rows already cover the bar.
       ⚠️ **`TXTMAX` IS NOW BOUNDED BY `DETOKBUF`, NOT BY FREE RAM** — at 1280 B
       it does not fit the 1024 B window, so `$BB00` is the stop until DETOKBUF
       is dealt with. Of D-LINEMAX's 1792 B, **1024 recovered, 768 still charged**.

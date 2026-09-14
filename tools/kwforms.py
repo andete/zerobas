@@ -537,6 +537,23 @@ FORMS: dict[str, tuple[tuple[str, ...], str]] = {
         "is the same split `USR`'s own bar makes, one level up: there it is which "
         "vector is CALLED, here it is which vector is SET.",
     ),
+    "ON KEY GOSUB": (
+        ("arm", "list-positional", "empty-slot-clears"),
+        "`ON KEY GOSUB <list>` -- the list is the statement. docs/spec-traps-t3-key.md "
+        "measured all three on the reference: K1 arms KEY 1 from a single-entry list, "
+        "K8 shows the list is POSITIONAL (slot n is function key n, so `100,200` with "
+        "`KEY(2) ON` fires 200), and T5 shows an EMPTY slot leaves the entry enabled "
+        "with no handler -- the key is still swallowed and nothing fires. Ten slots "
+        "are accepted and an eleventh is ERR 2; that is a DOMAIN, not a fourth form.",
+    ),
+    "ON STRIG GOSUB": (
+        ("arm", "list-positional", "empty-slot-clears"),
+        "`ON STRIG GOSUB <list>` -- the same three as ON KEY, measured in "
+        "docs/spec-traps-t2-strig.md: Q1 arms trigger 0 from a single-entry list, R5 "
+        "has slot n = trigger n, and S3 has a listed-empty slot CLEAR that handler. "
+        "Trigger 0 is the SPACE BAR, which is why all three are reachable with a key "
+        "matrix and no joystick.",
+    ),
     "ON INTERVAL GOSUB": (
         ("arm", "disarm"),
         "`ON INTERVAL=<n> GOSUB [<line>]` -- two behaviours, and the second is the "
