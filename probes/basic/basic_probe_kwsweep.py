@@ -717,7 +717,7 @@ SWEEP: list[tuple[str, str, str | None, str, str]] = [
     ("tokw",    'to 5',               'FOR I=1 TO 3:NEXT:PRINT"[";I;"]"',     "direct", "D-KWDRAIN"),
     ("stepkw",  'step 2',             'FOR I=1TO5STEP2:NEXT:PRINT"[";I;"]"',  "direct", "D-KWDRAIN"),
     ("offkw",   'off',                'INTERVAL OFF:PRINT"[9]"',              "direct", "D-KWDRAIN"),
-    ("ifkw",    'if 1 then a=2',      'IF 3>2 THEN PRINT"[4]"',               "direct", "D-KWDRAIN"),
+    ("ifkw",    'if 1 then a=2',      'IF 3>2 THEN PRINT"[4]"',               "direct", "FORM:then D-KWDRAIN"),
     ("nextkw",  'next i',             'FOR I=1 TO 2:NEXT:PRINT"[";I;"]"',     "direct", "FORM:bare D-KWDRAIN"),
     # D-KWBATCH7: NEXT has three forms and only the BARE one had a row.
     # `ex_next` parks 0 for a bare NEXT ("match the top frame") and `nx_comma`
@@ -1297,13 +1297,13 @@ SWEEP: list[tuple[str, str, str | None, str, str]] = [
     ("gosubkw",   'gosub 20',     
      'A=0:GOSUB 20:PRINT"[G";A;"]":END:A=7:RETURN',         "stored", "FORM:call D-KWDRAIN: the subroutine sets A=7; no GOSUB, no output"),
     ("returnkw",  'return',       
-     'A=0:GOSUB 20:PRINT"[H";A;"]":END:A=7:RETURN',         "stored", "D-KWDRAIN: A is 7 only because RETURN came back to the PRINT"),
+     'A=0:GOSUB 20:PRINT"[H";A;"]":END:A=7:RETURN',         "stored", "FORM:bare D-KWDRAIN: A is 7 only because RETURN came back to the PRINT"),
     ("endkw",     'end',          
      'A=0:GOSUB 20:PRINT"[J";A;"]":END:A=7:RETURN',         "stored", "FORM:terminate D-KWDRAIN: END keeps the subroutine from being fallen into"),
     ("readkw",    'read q',       
      'READ Q:RESTORE:READ R:PRINT"[E";Q+R;"]":END:DATA 3',  "stored", "FORM:read-data D-KWDRAIN: reads 3 from the DATA on the second line"),
     ("restorekw", 'restore',      
-     'READ Q:RESTORE:READ R:PRINT"[F";Q+R;"]":END:DATA 3',  "stored", "D-KWDRAIN: 6 needs the pointer RESET: without RESTORE the second READ runs out of DATA"),
+     'READ Q:RESTORE:READ R:PRINT"[F";Q+R;"]":END:DATA 3',  "stored", "FORM:bare D-KWDRAIN: 6 needs the pointer RESET: without RESTORE the second READ runs out of DATA"),
     ("psetkw",   'pset(1,1)',      
      'SCREEN2:PSET(1,1),15:A=POINT(1,1):SCREEN0:PRINT"[S";A;"]"',   "stored",
      "NOECHO:[S FORM:colour-explicit PSET draws, POINT reads it back: 4 blank vs 15 drawn"),
@@ -1400,7 +1400,7 @@ SWEEP: list[tuple[str, str, str | None, str, str]] = [
      'SCREEN2:LINE(10,10)-(20,20),15,B:PAINT(15,15),15:A=POINT(15,15):SCREEN0:PRINT"[U";A;"]"',
      "stored",
      "NOECHO:[U the FLOOD -- (15,15) is inside the box and is set by nothing but "
-     "PAINT, so 15 filled against 4 blank."),
+     "FORM:flood PAINT, so 15 filled against 4 blank."),
     # PUT SPRITE: the SCREEN 2 sprite ATTRIBUTE table is at $1B00 (6912) and its
     # first byte is the sprite's Y coordinate, so the write is read straight back
     # out of VRAM. `spritekw` only round-trips SPRITE$, which is the PATTERN table.
@@ -1642,7 +1642,7 @@ SWEEP: list[tuple[str, str, str | None, str, str]] = [
     # Program / editor management.
     ("swap",    "swap a,b",
      'A=1:B=2:SWAP A,B:PRINT"[";A;B;"]"',            "direct",
-     "absent => syntax error; real => ` 2  1 `"),
+     "FORM:exchange absent => syntax error; real => ` 2  1 `"),
     ("fre",     "a=fre(0)",
      'PRINT"[";FRE(0)>1000;"]"',                     "direct",
      "absent => array FRE(0)=0 => `0` (false); real => -1 (true)"),
@@ -1653,7 +1653,7 @@ SWEEP: list[tuple[str, str, str | None, str, str]] = [
     ("fre_b",   'a=fre(0)',
      'A=FRE(0):DIM Z(9):B=FRE(0):PRINT"[";A-B;"]"',                           "stored",
      "D-KWDRAIN: FRE tracking an ALLOCATION -- 99 bytes for DIM Z(9). A delta, so "
-     "the machine-dependent absolute free figure cancels."),
+     "FORM:free-ram the machine-dependent absolute free figure cancels."),
     ("tron",    "tron",
      "TRON:TROFF:PRINT\"[ok]\"",                     "direct",
      "FORM:toggle absent => syntax error; real => accepted (trace toggled off "
@@ -2019,7 +2019,7 @@ SWEEP: list[tuple[str, str, str | None, str, str]] = [
     # the MACHINES, not the verb [[readout-blind-to-its-own-subject]].
     ("dskf",    "a=dskf(0)",
      'PRINT"[";DSKF(1);"]"',                         "stored",
-     "NEEDS-DISK: " "707 free KB on the 720 KB fixture, against a stub's 0. This is "
+     "NEEDS-DISK: " "FORM:free-space 707 free KB on the 720 KB fixture, against a stub's 0. This is "
      "the row the empty drive was hiding: DSKF is not a stub and never was."),
     ("files",   "files",
      'FILES"HI.TXT":PRINT"[8]"',                     "stored",
@@ -2069,7 +2069,7 @@ SWEEP: list[tuple[str, str, str | None, str, str]] = [
      'POKE&HC000,7:BLOAD"PROG.BIN":A=PEEK(&HC000):PRINT"[";A;"]"', "stored",
      "NEEDS-DISK: " "PROG.BIN is a real BSAVE binary loading at $C000 whose first "
      "byte is $3E (62); the cell is poked to 7 first, so the row reads what the "
-     "LOAD put there and not what was already in RAM."),
+     "FORM:plain LOAD put there and not what was already in RAM."),
     # 🟢 D-KWTAPE2: THE LAST TWO WORDS OF THE DRAIN THAT HAD A MACHINE ANSWER.
     # Both waited on apparatus, and both blockers turned out to be real and then
     # to fall: `CLOAD` needed a tape mountable through the harness (`run_cases`
@@ -2077,7 +2077,8 @@ SWEEP: list[tuple[str, str, str | None, str, str]] = [
     # that WAS its subject fixed first (D-CASTAIL2 -- until then a passing row
     # would have certified a tape no real MSX could load).
     ("cload",   'cload"zq"',  'CLOAD"ZQ"',  "direct",
-     "NEEDS-TAPE: " "NOFURN: " "🎯 THE MACHINE'S OWN `Found:ZQ` IS THE WITNESS, "
+     "NEEDS-TAPE: " "NOFURN: " "FORM:load-named 🎯 THE MACHINE'S OWN `Found:ZQ` "
+     "IS THE WITNESS, "
      "printed as it reads: a hang and a silent no-op look identical at the `Ok` "
      "prompt, which is exactly how D-CASTAIL2 hid for four slices. Absent => "
      "syntax error."),
@@ -2101,7 +2102,8 @@ SWEEP: list[tuple[str, str, str | None, str, str]] = [
      'POKE&HF3F9,&HFB:A$=INKEY$:PRINT"[";A$;LEN(A$);"]"',  "stored",
      "FORM:poll-key absent => the buffer stays stuffed and INKEY$ reads nothing; real => [A 1 ]"),
     ("csave",   'csave"zq"',  'PRINT"[Z9]":CSAVE"ZQ"',  "stored",
-     "NEEDS-BLANKTAPE: " "NOFURN: " "🔴 THE ROW READS THE TAPE, NOT THE SCREEN, "
+     "NEEDS-BLANKTAPE: " "NOFURN: " "FORM:save-to-tape 🔴 THE ROW READS THE "
+     "TAPE, NOT THE SCREEN, "
      "and that is measured: every screen form of this row scored SUPPORTED on an "
      "EMPTY capture (D-KWTAPE2) because CSAVE prints nothing and ends the program. "
      "The reading is the recording DECODED BACK TO BYTES -- header id, name and "
@@ -2228,16 +2230,16 @@ SWEEP: list[tuple[str, str, str | None, str, str]] = [
      "NEEDS-DISK: " "the FLUSH is the readback: 6 bytes are on the disk only because "
      "the channel was closed. 🔴 THE BLIND SHAPE WAS MEASURED — the same row with "
      "the CLOSE removed reads 0, not an error, because zerobas allows #1 to be "
-     "reopened; a `reopen succeeds` row would have passed without the close."),
+     "FORM:channel reopened; a `reopen succeeds` row would have passed without the close."),
     ("bsave",   'bsave"x",0,1',
      'POKE&HC800,99:BSAVE"O.BIN",&HC800,&HC800:POKE&HC800,7:BLOAD"O.BIN":A=PEEK(&HC800):PRINT"[";A;"]"', "stored",
      "NEEDS-DISK: " "a ROUND TRIP through the disk: save 99, overwrite the cell with "
-     "7, load it back, read 99. A BSAVE that wrote nothing leaves 7."),
+     "FORM:range 7, load it back, read 99. A BSAVE that wrote nothing leaves 7."),
     ("save",    'save"x"',
      'A=1:SAVE"S.BAS":OPEN"S.BAS"FOR INPUT AS#1:A=LOF(1):CLOSE#1:PRINT"[";A;"]"', "stored",
      "NEEDS-DISK: " "the saved program's own length, read back through a channel: 68 "
      "on BOTH machines, which also says the tokenised on-disk form agrees byte for "
-     "byte. A SAVE that wrote nothing leaves no file and the OPEN raises."),
+     "FORM:tokenised byte. A SAVE that wrote nothing leaves no file and the OPEN raises."),
     ("kill",    'kill"x"',
      'A=DSKF(1):KILL"PROG2.BAS":B=DSKF(1):PRINT"[";B-A;"]"', "stored",
      "NEEDS-DISK: " "the FREED SPACE is the behaviour — 1 KB back after the file "
@@ -2245,7 +2247,7 @@ SWEEP: list[tuple[str, str, str | None, str, str]] = [
      "FORM:delete-file other row in this sweep opens."),
     ("merge",   'merge"x"',
      'OPEN"N.BAS"FOR OUTPUT AS#1:PRINT#1,"100 END":CLOSE:PRINT"[M0]":MERGE"N.BAS":PRINT"[M1]"', "stored",
-     "NEEDS-DISK: " "MERGE RETURNS TO COMMAND LEVEL, so the row reads `[M0]` and "
+     "NEEDS-DISK: " "FORM:merge-file MERGE RETURNS TO COMMAND LEVEL, so the row reads `[M0]` and "
      "NOT `[M1]`: the marker before it proves the statement stream got there, the "
      "absent one after it is the behaviour. 🔴 THE `[M0]` IS WHY THIS IS NOT AN "
      "EMPTY-TAIL ROW. Until D-MERGERET it read DIVERGENT with `[M1]` on the zb side; "
@@ -2412,7 +2414,7 @@ SWEEP: list[tuple[str, str, str | None, str, str]] = [
     # and it is the same dependence the `gosub` and `resume` rows already carry.
     ("runkw",   "run 20",
      'POKE&HE001,0:POKE&HE001,PEEK(&HE001)+1:IF PEEK(&HE001)<2 THEN RUN 20:PRINT"[";PEEK(&HE001);"]"',
-     "stored", "D-KWDISK"),
+     "stored", "FORM:line D-KWDISK"),
 
     # --------------------------------- D-KWDISK, the pre-existing rows (2026-09-12)
     # Disk-BASIC surface, EXECUTED at last. Every "needs a disk fixture" note
@@ -2510,7 +2512,7 @@ SWEEP: list[tuple[str, str, str | None, str, str]] = [
     ("fieldkw", 'field#1,4 as a$',
      'OPEN"F.DAT"AS#1:FIELD#1,4 AS A$:LSET A$="WXYZ":PUT#1,1:GET#1,1:PRINT"[";A$;"]":CLOSE#1',
      "stored",
-     "NEEDS-DISK: " "the random-access round trip -- FIELD binds, LSET fills, PUT "
+     "NEEDS-DISK: " "FORM:bind-buffer the random-access round trip -- FIELD binds, LSET fills, PUT "
      "writes record 1 and GET reads it back: [WXYZ], MEASURED on both machines "
      "before this sentence was written. A FIELD that bound nothing leaves A$ "
      "empty, and the four verbs are load-bearing TOGETHER -- the reading fails if "
@@ -2542,7 +2544,7 @@ SWEEP: list[tuple[str, str, str | None, str, str]] = [
     ("auto",    "auto 100",     "AUTO 100",     "stored",
      "NOFURN: " "the line-entry prompt `100` on both machines. LAST ROW BY "
      "PLACEMENT: it leaves the machine in line-entry mode, which eats whatever "
-     "follows."),
+     "FORM:start follows."),
 ]
 
 # 🔴 A DUPLICATE ROW KEY IS SILENT AND DESTRUCTIVE, AND NOTHING CHECKED FOR ONE

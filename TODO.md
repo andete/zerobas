@@ -19586,6 +19586,36 @@ symbol, which the FIRST shape should match — and the knife reports **ZERO** si
 not two. Left unchased because ATTR$ is refuse-only: it has no happy path to
 connect to. ⚠️ **Worth returning to if another `ev_*`-targeted keyword ever reports
 zero sites**, because the same cause would then be hiding a real cut.
+⚡ **D-KWBARS — FIVE AWARDED AND THIRTEEN BARS AUTHORED THAT AWARD NOTHING.
+114 of 163.**
+🟢 **`SWAP` `DSKF` `MERGE` `FIELD` `CSAVE` AT N=1**, each with a row whose reading
+can FAIL: `SWAP` reads BOTH variables back (` 2  1 `), so a swap that copied one
+way shows; `DSKF` reads 707 free KB against a stub's 0; `FIELD` is a full
+round trip — bind, LSET, PUT record 1, GET it back; `CSAVE` **reads the TAPE, not
+the screen**, which is why it needs a blank-tape rig at all.
+🎯 **`MERGE`'s READING IS AN ABSENCE, AND THAT IS THE POINT:** MERGE **returns to
+command level**, so the row reads the marker BEFORE it and NOT the one after. The
+marker before proves the program got that far, so the absence is a reading rather
+than a silence.
+🔴 **AND `SWAP` AND `DSKF` ARE THE FIRST AWARDS TO EXERCISE THE CORRECTED
+OPEN-ITEM RULE.** `SWAP` carries an open **TIER 5** item and `DSKF` an open
+**TIER 3** one; under the old reading of *"no open item"* both were barred from
+TIER 1 by defects that say nothing about the happy path. Joost's ruling — *tier n
+blocks tier n only* — is what lets them through, and the tier table still shows
+their items beside them.
+🔭 **THIRTEEN MORE BARS AUTHORED THAT AWARD NOTHING, WHICH IS WHAT A BAR IS FOR:**
+`PAINT` 1/3 (a fill that ignored its BORDER leaks), `FRE` 1/2 (`FRE(0)` and
+`FRE("")` are two different POOLS, not two inputs), `CLOAD` 1/2, `AUTO` 1/3,
+`RESTORE` 1/2, `RETURN` 1/2, `RUN` 1/3, `IF` 1/3, `CLOSE` 1/2, `SAVE` 1/2
+(tokenised against ASCII — two FILE FORMATS), `BSAVE` 1/2 (the optional ENTRY
+address is what makes the image runnable), `BLOAD` 1/3.
+🔴 **AND ONE OF THEM IS A REAL HOLE: `GOTO` HAS NO HAPPY-PATH ROW AT ALL.** Its
+only row is the `PROVES-T3` `GOTO 9999` error case. **GOTO is the apparatus of
+dozens of rows and the subject of none** — the same confusion as bare `PRINT`,
+and the same answer: *being used is not being measured.*
+⚠️ **`FRE`'s N=1 IS NOT MET BY `fre`**, which asks `FRE(0)>1000` — a BOOLEAN.
+`fre_b` reads the DELTA across a `DIM`, which is what makes the reading
+machine-independent; the absolute figure is not comparable between machines.
       ⚠️ **`TXTMAX` IS NOW BOUNDED BY `DETOKBUF`, NOT BY FREE RAM** — at 1280 B
       it does not fit the 1024 B window, so `$BB00` is the stop until DETOKBUF
       is dealt with. Of D-LINEMAX's 1792 B, **1024 recovered, 768 still charged**.

@@ -334,6 +334,78 @@ FORMS: dict[str, tuple[tuple[str, ...], str]] = {
         ("bitwise-not",),
         "NOT a -- unary and right-associative; NOT 0 = -1.",
     ),
+    "SWAP": (
+        ("exchange",),
+        "SWAP <var>,<var> -- one behaviour. The row reads BOTH variables back, so a SWAP that copied one way leaves the pair visible.",
+    ),
+    "DSKF": (
+        ("free-space",),
+        "DSKF(<drive>) -- one argument, one behaviour. The row reads 707 free KB on the 720 KB fixture, against a stub's 0.",
+    ),
+    "MERGE": (
+        ("merge-file",),
+        "MERGE <file> -- one behaviour. WARNING: MERGE RETURNS TO COMMAND LEVEL, so the row reads the marker BEFORE it and NOT the one after -- the absence is the reading, and the marker before proves the program got that far.",
+    ),
+    "FIELD": (
+        ("bind-buffer",),
+        "FIELD #<n>,<width> AS <var$>[,...] -- one behaviour; several fields is repetition of it. The row is a full round trip: FIELD binds, LSET fills, PUT writes record 1 and GET reads it back.",
+    ),
+    "CSAVE": (
+        ("save-to-tape",),
+        "CSAVE <name> -- one behaviour. THE ROW READS THE TAPE, not the screen, which is why it needs a blank-tape rig: every screen form of the reading was measured to be ambiguous.",
+    ),
+    "PAINT": (
+        ("flood", "fill-colour", "border-colour"),
+        "PAINT [STEP](x,y)[,<colour>[,<border>]] -- the flood itself, the fill colour and the BORDER colour that stops it are three behaviours; a fill that ignored its border leaks. Only the flood has a row.",
+    ),
+    "FRE": (
+        ("free-ram", "free-string-space"),
+        "FRE(0) reports free RAM and FRE("") free STRING space -- two different pools, not two inputs. WARNING: N=1 is not met by `fre`, which asks FRE(0)>1000, a BOOLEAN; `fre_b` reads the DELTA across a DIM, which is what makes the reading machine-independent.",
+    ),
+    "CLOAD": (
+        ("load-named", "load-next"),
+        "CLOAD <name> finds a named file; bare CLOAD takes the NEXT on the tape. Two search behaviours. The row's reading is the machine's own `Found:` line.",
+    ),
+    "AUTO": (
+        ("bare", "start", "start-increment"),
+        "AUTO / AUTO <start> / AUTO <start>,<increment> -- three behaviours; only the start form has a row. WARNING: this row must stay LAST by placement, because it leaves the machine in line-entry mode.",
+    ),
+    "GOTO": (
+        ("jump",),
+        "GOTO <line> -- one behaviour. WARNING: it has NO happy-path row at all. GOTO is the apparatus of dozens of rows and the subject of none; its only row is the PROVES-T3 `GOTO 9999` error case. Being used is not being measured.",
+    ),
+    "RESTORE": (
+        ("bare", "line"),
+        "RESTORE / RESTORE <line> -- reset the DATA pointer to the start, or to a specific line. Only the bare form has a row.",
+    ),
+    "RETURN": (
+        ("bare", "line"),
+        "RETURN / RETURN <line> -- return to the caller, or to an explicit line (D-RETLN). Only the bare form has a row.",
+    ),
+    "RUN": (
+        ("bare", "line", "file"),
+        "RUN / RUN <line> / RUN <file> -- three behaviours: restart, start at a line, and load-and-run. Only the line form has a row.",
+    ),
+    "IF": (
+        ("then", "else", "goto"),
+        "IF <expr> THEN ... / ... ELSE ... / IF <expr> GOTO <line> -- three behaviours. Only THEN has a row; ELSE is scored for the ELSE particle, which is a token and not a statement.",
+    ),
+    "CLOSE": (
+        ("all", "channel"),
+        "CLOSE / CLOSE #<n> -- close everything, or one channel. Only the channel form has a row.",
+    ),
+    "SAVE": (
+        ("tokenised", "ascii"),
+        "SAVE <file> writes the TOKENISED program; SAVE <file>,A writes ASCII. Two different file formats, not two inputs.",
+    ),
+    "BSAVE": (
+        ("range", "with-entry"),
+        "BSAVE <file>,<start>,<end>[,<entry>] -- the optional ENTRY address is what makes the image runnable, so it is a second behaviour.",
+    ),
+    "BLOAD": (
+        ("plain", "run", "vram"),
+        "BLOAD <file>[,R][,S] -- load, load-and-RUN, and load to VRAM (S). Three destinations/behaviours; only the plain load has a row.",
+    ),
     "ABS": (
         ("magnitude",),
         "ABS(x) -- one argument, one behaviour.",
