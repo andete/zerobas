@@ -3260,6 +3260,35 @@ sys.exit(1 if miss else 0)"
 tiers-md:
 	python3 tools/tier_table.py --keywords --markdown > docs/tier-status.md
 
+# D-TIERDOC (Joost, 2026-09-14: "maybe generate the updated tier markdown after
+# each iteration before you run the suite?"). docs/tier-status.md is GENERATED and
+# NOTHING NOTICED WHEN IT DRIFTED FROM ITS GENERATOR -- 128 green gates said
+# nothing while its own header advertised a regenerate command that writes to
+# stdout and therefore writes nothing at all. Same class as a fix that falsifies
+# the paragraph above the code it adds: no gate reads prose.
+# 🔴 IT PROVES THE DOC MATCHES THE GENERATOR, NOT THAT THE PIN IS CURRENT. The
+# evidence columns come from build/kwsweep-verdicts.json, which only a kwsweep run
+# refreshes; this check would pass on a doc generated from a month-old pin. Making
+# the pin current is the WORKFLOW step -- `make kwsweep && make tiers-md` before
+# staging -- and that is deliberately not a gate, because a gate that ran kwsweep
+# would cost 120 s on every battery to re-derive what the battery already writes.
+# ⚠️ IT IS IN `run_gates.POSTCHECKS` AND MUST STAY THERE — it runs SERIALLY AFTER
+# THE POOL. The first version put it in MUTATORS (before the pool), to keep it
+# from reading the pin while the pool's `kwsweep` rewrote it. It went red every
+# run, and its own refusal named why: `run_gates.main()` OPENS WITH
+# `rm -rf {OUT} build`, so the pin does not exist at all until the pool's kwsweep
+# writes it. There is no "before the pool" to read it in.
+# 🎯 After the pool is also the STRONGER invariant: the doc is compared against the
+# pin THIS battery just measured, not whatever was on disk when it started.
+tiers-md-check:
+	@python3 tools/tier_table.py --keywords --markdown > build/tier-status.check.md
+	@if diff -u docs/tier-status.md build/tier-status.check.md; then \
+	  echo "tiers-md-check: docs/tier-status.md matches its generator"; \
+	else \
+	  echo "🔴 tiers-md-check: docs/tier-status.md DIFFERS from its generator -- run \`make tiers-md\` (and \`make kwsweep\` first if the evidence columns are stale)"; \
+	  exit 1; \
+	fi
+
 # D-KWCOVER: which of the 159 keywords does the collected battery actually TYPE?
 # The capture rides on a normal battery run -- `omsx_repl.run_cases` appends every
 # typed line, tagged with its suite -- and the report refuses without one, because
@@ -3435,7 +3464,7 @@ clean:
         msgexact-gate msgexact-relock preflight-check latch-check injector-check \
         omsx-diag-teeth temp-root-check shared-body-check probe-reach-check citation-check todo-citation-check todo-marker-check deferral-pin-check error-alphabet-check filed-pin-check disk-mount-check \
         chokepoint-check banner-acceptance wall-literal-check \
-        patch-freshness-check gates clean
+        patch-freshness-check tiers-md tiers-md-check gates clean
 
 # --- gates: the acceptance-gate battery, run in PARALLEL ----------------------
 # Build the shared artifacts once, then fan the per-gate probes out across worker

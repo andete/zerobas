@@ -680,13 +680,89 @@ it, so an authored form list for `ON GOTO` would still award nothing. Widening t
 set is the next slice and it touches the DENOMINATOR — including S20, *"the full
 list names every keyword exactly once"*. ⚠️ **DO NOT WEAKEN A SELFTEST TO MAKE A
 COUNT COME OUT.**
-🙋 **AND ONE QUESTION FOR JOOST RATHER THAN A GUESS: CAN A PARENT KEYWORD STILL
-TIER ON ITS OWN ONCE ITS COMPOSITES ARE SPLIT OUT?** Does bare `PRINT` tier
-independently of `PRINT #` and `PRINT USING`? The code today would award a parent
-if someone authored a form list for it, which is a default nobody chose. Related:
-`USING` is UNCONNECTABLE BY CONSTRUCTION (token `$E4` is not in `stmt_table`), yet
-`PRINT USING` is now a unit in its own right — so the connectedness clause has to
-be satisfied by the COMPOSITE's cut, not the second word's.
+✅ **ANSWERED (Joost, 2026-09-14): *"yes, bare print and print # and print using
+have a different function"* — A PARENT TIERS INDEPENDENTLY OF ITS COMPOSITES.**
+Bare `PRINT`, `PRINT #` and `PRINT USING` are three subjects with three form lists
+and three N values. Still open and NOT answered by this: `USING` is UNCONNECTABLE
+BY CONSTRUCTION (token `$E4` is not in `stmt_table`), yet `PRINT USING` is a unit
+in its own right — so the connectedness clause must be satisfied by the
+COMPOSITE's own cut, not the second word's, and no such cut exists yet.
+🔬 **D-KWSUBJECT — A ROW NOW DECLARES THE STATEMENT IT IS ABOUT, BECAUSE
+DERIVATION IS WRONG ON REAL ROWS (2026-09-14).** Three shapes defeat it, all
+measured, none hypothetical: `using`'s crunch body is `using "##"` and **NEVER
+MENTIONS PRINT**, so it scored for `USING`, a token that is not in `stmt_table` and
+can never be cut; `inputkw`'s subject is `INPUT #1` but **`#` is punctuation and
+invisible to keyword matching**, so it is indistinguishable from bare `INPUT`; and
+the exec line cannot stand in for the body because it is apparatus-dominated
+(`inputkw`'s opens a file, reads it, closes it and prints a length).
+✅ **THE TAG.** `SUBJECT:PRINT_USING` in a row's note (`_` becomes a space, since a
+note token cannot hold one), parsed exactly like `FORM:` — whole note, never the
+prefix run, no effect on rig or flag parsing. Stored in the pin; `stmt_subject()`
+prefers it over the derived value. **Five rows carry one**: `using`/`using_b` →
+`PRINT USING`, `inputkw`/`input_b` → `INPUT #`, `getkw` → `GET #`.
+🔴 **AND A DECLARED SUBJECT IS VALIDATED, NOT TRUSTED.** `known_subject()` accepts
+only a keyword in the table or an authored statement name; anything else is
+REFUSED OUT LOUD and the derived subject used instead. A typo would otherwise move
+a row off its keyword and into a bucket nothing ever counts — silently, which is
+the `kwcover` lesson applied to a tag. Selftests **S29** (a declared subject wins)
+and **S30** (an unscoreable one is refused, not adopted).
+📉 **THE HONEST CONSEQUENCE: FIVE KEYWORDS LOST EVIDENCE THEY NEVER HAD.** With
+`kwsweep_evidence` keyed by SUBJECT, `GET`, `INPUT`, `ON`, `PUT` and `USING` no
+longer show a row of their own — the rows did not vanish, they moved to the
+statement they actually drive. **The table now reads worse and that is the point.**
+🎯 **AND SEPARATING THE FOUR FALSE HOLES FROM THE ONE REAL ONE IS WHAT THE
+DISTINCTION IS FOR.** MSX1 has **no bare `ON`, `DEF`, `GET`, `PUT` or `USING`
+statement** — each exists only inside a composite, so "no row of its own" is the
+truth about the language (`kwforms.NO_BARE_FORM`, rendered as its own bucket).
+🔭 **`INPUT` IS DELIBERATELY NOT IN THAT SET, AND IT IS THE FINDING: BARE CONSOLE
+`INPUT "x";A$` IS A REAL STATEMENT THIS TREE IMPLEMENTS AND HAS NEVER HAD A KWSWEEP
+ROW.** Both of its rows drive the FILE form. Without the bare/composite
+distinction this hole reads identically to the four that are not holes, which is
+exactly how it stayed invisible. ⚠️ `input-acceptance` does exercise console INPUT
+— the claim is scoped to the kwsweep denominator, not to the battery.
+🚧 **D-TIERDOC — `docs/tier-status.md` IS GENERATED AND NOTHING NOTICED WHEN IT
+DRIFTED (Joost, 2026-09-14: *"maybe generate the updated tier markdown after each
+iteration before you run the suite?"*).** 128 green gates said nothing while the
+doc's own header advertised `make tiers ARGS=--markdown` — a command that prints to
+stdout and therefore writes nothing at all. Same class as a fix that falsifies the
+paragraph beside it: **no gate reads prose.**
+✅ **`make tiers-md-check`** regenerates to `build/tier-status.check.md` and diffs.
+🔴 **AND THE PLACEMENT WAS WRONG TWICE BEFORE IT WAS RIGHT — THE INSTRUMENT
+CAUGHT ITS OWN AUTHOR.** The first version put the check in `run_gates.MUTATORS`,
+reasoning that it READS `build/kwsweep-verdicts.json` while the pool's own
+`kwsweep` REWRITES it, so it had to run before the pool — the D-SELFMUT race,
+applied by analogy. **It went RED on every run**, and the diff blamed the doc:
+139 keywords with no row, the four TIER 1 awards silently gone.
+🎯 **THE PIN WAS NOT STALE, IT WAS ABSENT — `run_gates.main()` OPENS WITH
+`rm -rf {OUT} build`.** There is no "before the pool" in which that pin exists at
+all; the pool's own `kwsweep` is what creates it. ✅ **`POSTCHECKS`, a new serial
+phase AFTER the pool**, which is the STRONGER invariant anyway: the committed doc
+is compared against the pin THIS battery just measured, not against whatever was
+on disk when it started.
+🔬 **AND THE REAL DEFECT WAS NOT THE PLACEMENT — IT WAS THAT THE GENERATOR
+ANSWERED FROM A MISSING INPUT.** `tier_table.py --markdown` read an absent pin,
+every `kwsweep_*` reader swallowed the `OSError` and returned `{}`, and it emitted
+a confident, complete, WRONG document. ✅ **`pin_rows()` + a REFUSAL**: `--markdown`
+now exits 2 naming the path and what it found, unless `--allow-no-pin` is passed.
+**The refusal is what named the cause** — the MUTATORS diff alone said only "the
+doc differs", and I would have gone on suspecting `selftest-check`, which I had
+already measured innocent twice. [[an-instrument-can-fail-the-way-the-thing-it-replaced-failed]]
+📉 **TWO MORE OF THE SAME SHAPE, IN THE GATE RUNNER, BOTH FOUND BY READING A
+SUMMARY LINE THAT COULD NOT BE TRUE.** `GATES: 41/40 green` — a post-pool unit
+counted in the numerator and missing from the denominator (`GATES` is what the
+POOL runs; the denominator now adds `POSTCHECKS` separately). And
+`wall 0s (7s build + -7s gates)` — my new phase reused the name `t0`, which holds
+the battery's START. ⚠️ **BOTH PRINTED UNDER AN ALL-GREEN RUN.**
+🔴 **`battery-membership-check` THEN CALLED THE NEW GATE A SUITE NOBODY RUNS** —
+correctly, by its own rule: it parses the `STATIC`/`EMULATOR` triple-quoted blobs
+and `POSTCHECKS` is a list literal. Widened to parse it, with `MUTATORS`
+deliberately left out (every name in it is already in `STATIC`, so it is a
+scheduling hint, not a membership list). Its six selftests GREEN.
+🔴 **IT PROVES THE DOC MATCHES THE GENERATOR, NOT THAT THE PIN IS CURRENT.** A doc
+built from a month-old pin passes. Making the pin current is the WORKFLOW step —
+**`make kwsweep && make tiers-md` BEFORE staging, never after a battery** — and
+that is deliberately not a gate, because a gate that ran `kwsweep` would spend 120 s
+of every battery re-deriving what the battery already writes.
 🔪 **D-KWSTRCUT — THE THIRD CUT SHAPE, AND A FIRST VERSION OF IT THAT WAS WORSE
 THAN THE GAP IT CLOSED (2026-09-13).** `basic/sysvars.inc:250` named the shape in
 prose written long before the knife existed: **MKI$ is evaluated in
@@ -1355,7 +1431,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:18082 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:18158 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -1521,7 +1597,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:6122 (T-6FE392)8 (T-529ABE)` from `TODO.md:16733 (T-529ABE)`: a
+      `TODO.md:6198 (T-6FE392)8 (T-529ABE)` from `TODO.md:16809 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -6966,7 +7042,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:16733 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:16809 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

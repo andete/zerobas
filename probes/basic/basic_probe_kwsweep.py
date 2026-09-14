@@ -316,6 +316,37 @@ def row_form(note: str) -> str | None:
     return None
 
 
+# 🎚️ D-KWSUBJECT (2026-09-14). WHICH STATEMENT A ROW IS ABOUT CANNOT ALWAYS BE
+# DERIVED. The tier table reads the subject off the crunch body -- first keyword,
+# or a composite name when the body carries one -- and that is right for most
+# rows and MEASURABLY WRONG for the rest:
+#   * `using`'s crunch body is `using "##"` and NEVER MENTIONS PRINT. Derivation
+#     scores it for USING, a token that is not even in `stmt_table`.
+#   * `inputkw`'s body is about `INPUT #1`, but `#` is punctuation and invisible
+#     to keyword matching, so it is indistinguishable from bare `INPUT`.
+#   * an exec line cannot stand in: it is apparatus-dominated (`inputkw`'s opens
+#     a file, reads it, closes it and prints a length).
+# Joost ruled the parents tier independently of their composites ("bare print and
+# print # and print using have a different function"), so the distinction has to
+# survive into the pin. THE ROW DECLARES IT. `_` becomes a space, because a note
+# token cannot contain one: `SUBJECT:PRINT_USING` -> `PRINT USING`.
+# ⚠️ A DECLARED SUBJECT IS VALIDATED IN `tier_table.stmt_subject`, NOT HERE -- a
+# typo that named nothing would otherwise delete the row from its real keyword's
+# evidence while looking like a tag that worked.
+_SUBJECT_TAG = "SUBJECT:"
+
+
+def row_subject(note: str) -> str | None:
+    """The statement a row declares itself to be about, or None to derive it.
+
+    Parsed exactly like `row_form` above, and for the same reasons: whole note,
+    never the prefix run, no effect on rig or flag parsing."""
+    for tok in note.split():
+        if tok.startswith(_SUBJECT_TAG) and len(tok) > len(_SUBJECT_TAG):
+            return tok[len(_SUBJECT_TAG):].replace("_", " ")
+    return None
+
+
 def _row_prefix_tags(note: str) -> tuple[str, ...]:
     """The prefix run of tags on a note, rig and flag tags in any order.
 
@@ -565,14 +596,16 @@ SWEEP: list[tuple[str, str, str | None, str, str]] = [
      "describes, a diskless VG-8020 measured against zerobas's disk-equipped "
      "build and the difference blamed on zerobas. The rest of the MK/CV family "
      "was already tagged; this row simply had not been."),
-    ("using",   'using "##"',         'PRINT USING"##";7',                    "direct", "D-KWDRAIN"),
+    ("using",   'using "##"',         'PRINT USING"##";7',                    "direct",
+     "SUBJECT:PRINT_USING FORM:integer-field D-KWDRAIN"),
     # 🌾 D-KWBREADTH batch 4: the `using` row covers ONE format string, and `##`
     # is the one that needs no fraction, no rounding and no sign. `#.##` needs all
     # three -- 3.146 must round to 3.15, not truncate to 3.14.
     ("using_b", 'using "#.##"',
      'PRINT"[";:PRINT USING"#.##";3.146;:PRINT"]"',                      "stored",
-     "D-KWDRAIN: the FRACTIONAL field, where `##` cannot reach -- placement of "
-     "the point AND the rounding of the discarded digit"),
+     "SUBJECT:PRINT_USING FORM:fraction-field D-KWDRAIN: the FRACTIONAL field, "
+     "where `##` cannot reach -- placement of the point AND the rounding of the "
+     "discarded digit"),
     ("then",    'then a=1',           'IF 2>1 THEN PRINT"[3]"',               "direct", "D-KWDRAIN"),
     ("elsekw",  'else a=1',           'IF 0 THEN PRINT 1 ELSE PRINT"[8]"',    "direct", "D-KWDRAIN"),
     ("tokw",    'to 5',               'FOR I=1 TO 3:NEXT:PRINT"[";I;"]"',     "direct", "D-KWDRAIN"),
@@ -1752,11 +1785,13 @@ SWEEP: list[tuple[str, str, str | None, str, str]] = [
     ("inputkw",  "input#1,a$",
      'OPEN"HI.TXT"FOR INPUT AS#1:INPUT#1,A$:CLOSE#1:PRINT"[I";LEN(A$);"]"',
      "stored",
-     "NEEDS-DISK: " "the FILE form: 24 = the fixture line's length, 0 without it"),
+     "NEEDS-DISK: " "SUBJECT:INPUT_# FORM:string-read the FILE form: 24 = the "
+     "fixture line's length, 0 without it"),
     ("input_b",  "input#1,a$",
      'OPEN"HI.TXT"FOR INPUT AS#1:INPUT#1,A$:CLOSE#1:PRINT"[";LEFT$(A$,5);"]"',
      "stored",
-     "NEEDS-DISK: " "the BYTES, not the COUNT. `inputkw` scores LEN(A$)=24, which "
+     "NEEDS-DISK: " "SUBJECT:INPUT_# FORM:string-read the BYTES, not the COUNT. "
+     "`inputkw` scores LEN(A$)=24, which "
      "a read returning 24 BLANKS passes just as well as the real line; HI.TXT is "
      "\"Hello from zerobas-disk!\" (tools/make_test_dsk.py), so this reads Hello."),
 
@@ -1773,7 +1808,8 @@ SWEEP: list[tuple[str, str, str | None, str, str]] = [
     ("getkw",    "get#1,1",
      'OPEN"R.DAT"AS#1:FIELD#1,4 AS A$:LSET A$="B":PUT#1,1:LSET A$="Z":A=ASC(A$):GET#1,1:B=ASC(A$):CLOSE#1:PRINT"[G";A;B;"]"',
      "stored",
-     "NEEDS-DISK: " "a PUT/GET round trip through a FIELDed record: 90 then 66, "
+     "NEEDS-DISK: " "SUBJECT:GET_# FORM:fielded-record a PUT/GET round trip "
+     "through a FIELDed record: 90 then 66, "
      "where a GET that did nothing reads 90 then 90."),
     # 🔴 `CALL` SCORES RESERVEDNESS AND NOTHING MORE, and that limit is the row.
     # The obvious form is blind: `CALL ZZQ`, bare `CALL` and the ABSENT-keyword
@@ -2546,6 +2582,8 @@ def main() -> int:
                                          _row_prefix_tags(notes[key]) else None),
                               # which FORM of the keyword this row exercises
                               "form": row_form(notes[key]),
+                              # the statement it is about, when derivation is wrong
+                              "subject": row_subject(notes[key]),
                               "stmt": stmt[key]}
                         for key, s in executed}}
         _root = _os.path.dirname(_os.path.dirname(_os.path.dirname(_os.path.abspath(__file__))))

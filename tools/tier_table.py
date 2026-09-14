@@ -231,8 +231,16 @@ REACHED = {1: "TIER 0 — open TIER 1 item (happy path broken or keyword MISSING
            "kw3c": "TIER 0 — no known gap; two rows agree, and the keyword is "
                    "CONNECTED (a knife cut makes it notice)",
            "t1": "TIER 1 — REACHED: knife-proven CONNECTED, every authored FORM "
-                 "covered by an agreeing row, and no open item"}
-GROUP_ORDER = ["t1", "kwgap", 1, 2, 3, 4, 5, "kw1", "kw1c", "kw3", "kw3c", None]
+                 "covered by an agreeing row, and no open item",
+           # 🔴 NOT A GAP. MSX1 has no bare `ON`, `DEF`, `GET`, `PUT` or `USING`
+           # statement -- each exists only inside a composite, so "no row of its
+           # own" is the truth about the language, not a hole. `INPUT` is NOT in
+           # this bucket although it lost its rows the same way: bare console
+           # `INPUT "x";A$` is real and has never had a row, and that IS a hole.
+           "kwcomp": "TIER 0 — no BARE statement form; exercised only as a "
+                     "composite (see the composite section)"}
+GROUP_ORDER = ["t1", "kwgap", 1, 2, 3, 4, 5, "kw1", "kw1c", "kw3", "kw3c",
+               "kwcomp", None]
 
 
 KWSWEEP_PIN = os.path.join(ROOT, "build", "kwsweep-verdicts.json")
@@ -294,8 +302,31 @@ def knife_connected(path=KNIFE_PIN):
     return {kw for kw, r in rows.items() if r.get("connected")}
 
 
-def stmt_subject(stmt, kwset):
+def composite_names():
+    """Every authored NON-KEYWORD statement name -- composites plus the ones no
+    derivation can reach (`PRINT #`) -- or an empty set without kwforms."""
+    try:
+        import kwforms
+    except ImportError:
+        return set()
+    return kwforms.subject_names()
+
+
+def known_subject(name, kwset):
+    """True when `name` is something this table can actually score: a keyword in
+    the 159-entry table, or an authored composite statement name."""
+    return name in kwset or name in composite_names()
+
+
+def stmt_subject(stmt, kwset, declared=None):
     """The STATEMENT a crunch body is about: a composite name, else the keyword.
+
+    🔴 A DECLARED SUBJECT WINS, BECAUSE DERIVATION IS WRONG ON REAL ROWS -- see
+    `basic_probe_kwsweep.row_subject`, which lists the three shapes it cannot see
+    (`using`'s body never says PRINT; `#` is punctuation; the exec line is
+    apparatus). A declared name that this table cannot score is REFUSED OUT LOUD
+    and the derived subject is used instead: a typo must not silently move a row
+    off its keyword and into a bucket nothing ever counts.
 
     🎚️ D-KWCOMPOSITE (Joost, 2026-09-14). `stmt_keyword` below returns the FIRST
     keyword token, which is the wrong granularity for a composite: `ON KEY GOSUB`
@@ -305,6 +336,13 @@ def stmt_subject(stmt, kwset):
     `ON` reach TIER 1 on three rows speaking for three of its EIGHT composites.
     ⚠️ The composite is matched over EVERY keyword in the body, not the first two
     adjacent ones: `ON 2 GOTO 20,30` has an expression between its two keywords."""
+    if declared:
+        if known_subject(declared, kwset):
+            return declared
+        print("\u26a0\ufe0f  tier_table: row declares SUBJECT:%s, which is neither a "
+              "keyword in the table nor an authored composite -- IGNORED, the "
+              "subject is derived from the crunch body instead" % declared,
+              file=sys.stderr)
     try:
         import kwforms
     except ImportError:
@@ -322,9 +360,42 @@ def stmt_keyword(stmt, kwset):
     return None
 
 
+def pin_rows(path=KWSWEEP_PIN):
+    """(n_rows, why) for the kwsweep pin -- the INPUT every evidence column reads.
+
+    🔴 THE GENERATOR PRODUCED A PLAUSIBLE FULL DOCUMENT FROM AN EMPTY PIN, and
+    nothing said so (D-TIERDOC, measured 2026-09-14): every `kwsweep_*` reader
+    swallows OSError/ValueError and returns {}, so a missing or half-written pin
+    renders as "139 keywords have no row" and the four TIER 1 awards silently
+    disappear. That is the documented worst shape an instrument can have -- a
+    plausible table from an input it misread -- and the answer is the same one
+    `kwcover` uses: REFUSE on a degenerate input rather than answer from it."""
+    try:
+        import json
+        with open(path, encoding="utf-8") as fh:
+            pin = json.load(fh)
+    except OSError as e:
+        return 0, f"cannot read {path}: {e}"
+    except ValueError as e:
+        return 0, f"{path} is not valid JSON (half-written?): {e}"
+    n = len(pin.get("rows", {}))
+    return n, ("written %s, %d row(s)" % (pin.get("written", "?"), n) if n
+               else f"{path} holds NO rows")
+
+
 def kwsweep_evidence(kws, path=KWSWEEP_PIN):
-    """keyword -> kwsweep verdict from the last battery's pin, or {} if none.
-    WEAK rows are excluded, as kwsweep's own tally excludes them."""
+    """STATEMENT -> kwsweep verdict from the last battery's pin, or {} if none.
+    WEAK rows are excluded, as kwsweep's own tally excludes them.
+
+    🎚️ KEYED BY SUBJECT, NOT BY FIRST KEYWORD (D-KWSUBJECT, 2026-09-14). Joost:
+    "bare print and print # and print using have a different function". So the two
+    `PRINT USING` rows are evidence for `PRINT USING` and for NOTHING ELSE -- they
+    used to be credited to `USING`, a token that is not even in `stmt_table` and
+    can never be cut, which made the table read as if USING had been exercised.
+    ⚠️ THIS MAKES THE TABLE LOOK WORSE ON PURPOSE. `USING`, `INPUT` and `GET` lose
+    the only rows they had; the rows are not gone, they moved to the statement
+    they actually drive, which the composite section renders separately. A keyword
+    whose evidence was really a composite's had no evidence of its own."""
     try:
         import json
         with open(path, encoding="utf-8") as fh:
@@ -336,7 +407,7 @@ def kwsweep_evidence(kws, path=KWSWEEP_PIN):
     for key, r in pin.get("rows", {}).items():
         if r.get("weak"):
             continue
-        kw = stmt_keyword(r.get("stmt", ""), kwset)
+        kw = stmt_subject(r.get("stmt", ""), kwset, r.get("subject"))
         if kw and kw not in out:
             out[kw] = r["verdict"]
     return out
@@ -364,7 +435,7 @@ def kwsweep_forms(kws, path=KWSWEEP_PIN):
     for key, r in pin.get("rows", {}).items():
         if r.get("weak") or r.get("verdict") != "SUPPORTED" or not r.get("form"):
             continue
-        kw = stmt_subject(r.get("stmt", ""), kwset)
+        kw = stmt_subject(r.get("stmt", ""), kwset, r.get("subject"))
         if kw:
             out.setdefault(kw, set()).add(r["form"])
     return out
@@ -439,7 +510,16 @@ def keyword_tiers(its, kws, evidence=None):
     return out
 
 
-def reached_group(g, e, t3=False, conn=False, tier1=False):
+def no_bare_form():
+    """Keywords MSX1 has no bare statement form for -- see kwforms.NO_BARE_FORM."""
+    try:
+        import kwforms
+    except ImportError:
+        return frozenset()
+    return kwforms.NO_BARE_FORM
+
+
+def reached_group(g, e, t3=False, conn=False, tier1=False, nobare=False):
     """The bucket a keyword prints under, from its gap tier and its evidence.
 
     🎚️ `tier1` is Joost's rule satisfied (2026-09-14): CONNECTED + N distinct
@@ -459,6 +539,8 @@ def reached_group(g, e, t3=False, conn=False, tier1=False):
         return "kw1c" if conn else "kw1"
     if e in ("DIVERGENT", "MISSING", "SILENT-GAP", "EXTRA"):
         return "kwgap"                            # a gap kwsweep sees and nobody filed
+    if nobare:
+        return "kwcomp"          # no bare form exists -- a row of its own cannot
     return None                                   # no known gap, no evidence
 
 
@@ -514,9 +596,11 @@ def fmt_keywords(its, kws, evidence=None):
     t3 = kwsweep_t3(kws)
     conn = knife_connected()
     t1 = {kw for kw in tier1_keywords(kws, conn) if kt.get(kw, (None,))[0] is None}
+    nobare = no_bare_form()
     groups = defaultdict(list)
     for kw, (g, _, e) in kt.items():
-        groups[reached_group(g, e, kw in t3, kw in conn, kw in t1)].append(kw)
+        groups[reached_group(g, e, kw in t3, kw in conn, kw in t1,
+                             kw in nobare)].append(kw)
     out = []
     for g in GROUP_ORDER:
         if g is None or not groups[g]:
@@ -546,6 +630,62 @@ FOOTER = ("**\"No open gap\" is not \"verified\", and a kwsweep verdict is NOT a
           "red if the keyword breaks. Neither has been demonstrated for any keyword.")
 
 
+def _composite_section(kws, evidence=None, conn=None):
+    """The statements that are NOT single keywords, and why none is awarded yet.
+
+    🎚️ D-KWCOMPOSITE/D-KWSUBJECT (Joost, 2026-09-14). `ON ERROR GOTO`, `PRINT #`
+    and their siblings are statements in their own right with their own N -- but
+    they are NOT in the 159-keyword denominator and must never be, or the count of
+    what this tree implements would inflate itself by renaming. So they get their
+    own section, and the rows that drive them are rendered HERE rather than being
+    credited to whichever keyword happens to come first.
+    🔴 NONE OF THEM CAN REACH TIER 1 TODAY, and the reason is worth printing rather
+    than leaving as a blank: `knife_connected()` is keyed by the stmt_table entry a
+    cut removes, and a composite has no entry of its own to cut (`USING`'s token
+    $E4 is not in stmt_table at all). Until a composite-aware cut exists, the
+    non-vacuity half of the bar is unproven for every one of them -- which is a
+    missing instrument, not a passing grade."""
+    try:
+        import kwforms
+    except ImportError:
+        return []
+    names = sorted(kwforms.subject_names())
+    if not names:
+        return []
+    kwset = set(kws)
+    ev = kwsweep_evidence(kws) if evidence is None else evidence
+    forms = kwsweep_forms(kws)
+    conn = knife_connected() if conn is None else conn
+    out = ["", "## Composite and channel statements", "",
+           "**Not keywords, and deliberately not in the 159-keyword denominator** "
+           "(Joost, 2026-09-14: *\"one could consider the on + second keyword one "
+           "composite keyword requiring its own tests\"*, and *\"bare print and "
+           "print # and print using have a different function\"*). Each is a "
+           "statement with its own forms and its own N. **None can reach TIER 1 "
+           "yet**: the non-vacuity half of the bar is a knife cut of a `stmt_table` "
+           "entry, and a composite has no entry of its own — `USING`'s token is not "
+           "in `stmt_table` at all. That is a missing instrument, not a pass.", "",
+           "| statement | authored N | forms seen | rows agree | what is missing |",
+           "|---|---|---|---|---|"]
+    for n in names:
+        need = kwforms.forms_for(n)
+        seen = sorted(forms.get(n, set()))
+        agree = ev.get(n) or "—"
+        miss = []
+        if not need:
+            miss.append("no authored form list (UNRATED)")
+        else:
+            gap = [f for f in need if f not in seen]
+            if gap:
+                miss.append("missing " + " ".join(gap))
+        if n not in conn:
+            miss.append("no composite cut — not knife-proven CONNECTED")
+        out.append(f"| `{n}` | {len(need) if need else '—'} | "
+                   f"{' '.join(f'`{f}`' for f in seen) or '—'} | {agree} | "
+                   f"{'; '.join(miss)} |")
+    return out
+
+
 def fmt_markdown(its, kws, evidence=None, t3=None, connected=None):
     """🔴 `evidence`/`t3` are INJECTABLE because S14 was not hermetic: it built its
     markdown from the LIVE build/kwsweep-verdicts.json, so the expected `LOF` row
@@ -560,7 +700,7 @@ def fmt_markdown(its, kws, evidence=None, t3=None, connected=None):
     both.
     """
     out = ["# zerobas — priority-tier status", "",
-           "Generated by `make tiers ARGS=--markdown` from the `🎚️` tag on every open "
+           "Generated by `make tiers-md` from the `🎚️` tag on every open "
            "`TODO.md` item and the keyword table `basic/kwtable.inc` (plus the keywords "
            "filed as missing). Regenerate; never edit.", "",
            "| tier | meaning | open items |", "|---|---|---|"]
@@ -582,9 +722,11 @@ def fmt_markdown(its, kws, evidence=None, t3=None, connected=None):
     t3 = kwsweep_t3(kws) if t3 is None else t3
     conn = knife_connected() if connected is None else connected
     t1 = {kw for kw in tier1_keywords(kws, conn) if kt.get(kw, (None,))[0] is None}
+    nobare = no_bare_form()
     groups = defaultdict(list)
     for kw, (g, _, e) in kt.items():
-        groups[reached_group(g, e, kw in t3, kw in conn, kw in t1)].append(kw)
+        groups[reached_group(g, e, kw in t3, kw in conn, kw in t1,
+                             kw in nobare)].append(kw)
     for g in GROUP_ORDER:
         if g is None or not groups[g]:
             continue
@@ -594,11 +736,14 @@ def fmt_markdown(its, kws, evidence=None, t3=None, connected=None):
     out += ["", FOOTER, "", "### Alphabetical", "", "| keyword | reached | evidence |", "|---|---|---|"]
     for kw in sorted(kws):
         g, lines, e = kt[kw]
-        grp = reached_group(g, e, kw in t3, kw in conn, kw in t1)
+        grp = reached_group(g, e, kw in t3, kw in conn, kw in t1, kw in nobare)
         if grp == "t1":
             import kwforms
             out.append(f"| `{kw}` | **TIER 1** | CONNECTED; all "
                        f"{len(kwforms.forms_for(kw))} forms agree; no open item |")
+        elif grp == "kwcomp":
+            out.append(f"| `{kw}` | TIER 0 | no bare form; only as a composite"
+                       + (", connected" if kw in conn else "") + " |")
         elif grp is None:
             out.append(f"| `{kw}` | TIER 0 | no known gap, no row |")
         elif grp == "kw1":
@@ -618,6 +763,7 @@ def fmt_markdown(its, kws, evidence=None, t3=None, connected=None):
             # the cell is always TIER 0 now; what varies is the text beside it
             out.append(f"| `{kw}` | TIER 0 | open TIER {g} item, TODO.md {', '.join(map(str, lines))}"
                        + (f"; kwsweep {e}" if e else "") + " |")
+    out += _composite_section(kws, evidence, conn)
     out += ["",
             "## Open items, keyword first", "",
             "| keyword | tier | who | what is open | TODO.md |", "|---|---|---|---|---|"]
@@ -642,12 +788,26 @@ def main(argv=None):
     ap.add_argument("--markdown", action="store_true",
                     help="the same table as a document (status page)")
     ap.add_argument("--selftest", action="store_true")
+    ap.add_argument("--allow-no-pin", action="store_true",
+                    help="render --markdown even with no kwsweep pin (the "
+                         "evidence columns will be empty and WRONG)")
     a = ap.parse_args(argv)
     if a.selftest:
         return selftest()
     its = items(open(TODO, encoding="utf-8").read())
     kws = keywords()
     if a.markdown:
+        # 🔴 REFUSE RATHER THAN RENDER FROM A PIN THAT ISN'T THERE -- see
+        # `pin_rows`. The document is mostly evidence columns; without the pin it
+        # is a confident table of nothing, and it would pass every gate.
+        n, why = pin_rows()
+        if not n and not a.allow_no_pin:
+            print("\U0001f534 tier_table --markdown REFUSES: the kwsweep pin is "
+                  "unusable (%s).\n   The evidence columns come from it, so the "
+                  "document would claim every keyword has no row.\n   Run `make "
+                  "kwsweep` first, or pass --allow-no-pin if you really want the "
+                  "item half alone." % why, file=sys.stderr)
+            return 2
         sys.stdout.write(fmt_markdown(its, kws))
         return 0
     print("PRIORITY TIERS — open items in TODO.md (recounted now, never quoted)\n")
@@ -758,6 +918,23 @@ def selftest():
     arm("S28 the open-item clause reads the tuple's FIRST element, not its truthiness",
         bool((None, [], "SUPPORTED")) is True
         and ((None, [], "SUPPORTED")[0] is not None) is False)
+    # 🎚️ D-KWSUBJECT: a row may DECLARE the statement it is about, because
+    # derivation cannot see `#` (punctuation) and `using "##"` never says PRINT.
+    # ⚠️ THE REAL TABLE, not this selftest's fixture `kws` -- `known_subject` asks
+    # whether a name is scoreable, and the fixture holds three invented keywords.
+    _kwset = set(kwtable_keywords())
+    arm("S29 a DECLARED subject wins over the one derived from the crunch body",
+        stmt_subject("input#1,a$", _kwset) == "INPUT"
+        and stmt_subject("input#1,a$", _kwset, "INPUT #") == "INPUT #"
+        and stmt_subject('using "##"', _kwset, "PRINT USING") == "PRINT USING")
+    # 🔴 A TYPO MUST NOT CREATE A BUCKET NOTHING COUNTS. Adopting an unknown name
+    # would move the row off its keyword AND out of every tally, silently -- the
+    # `kwcover` lesson: refuse a degenerate input rather than answer from it.
+    arm("S30 a declared subject that names nothing scoreable is REFUSED, not adopted",
+        stmt_subject('using "##"', _kwset, "PRINT USNIG") == "USING"
+        and known_subject("PRINT USING", _kwset) is True
+        and known_subject("PRINT #", _kwset) is True
+        and known_subject("PRINT USNIG", _kwset) is False)
     md = fmt_markdown(its, kws, evidence={}, t3=set(), connected=set())
     _s14 = [("summary row", "| TIER 1 | works correctly in the happy path | 1 |" in md),
             ("LOF row", "| `LOF` | TIER 0 | open TIER 1 item, TODO.md 2 |" in md),

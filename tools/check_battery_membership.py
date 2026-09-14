@@ -51,6 +51,16 @@ def battery(src: str) -> set[str]:
         m = re.search(rf'^{name}\s*=\s*"""(.*?)"""', src, re.S | re.M)
         if m:
             out |= set(m.group(1).split())
+    # 🔴 POSTCHECKS IS A THIRD LIST AND IT IS COLLECTED TOO (D-TIERDOC 2026-09-14).
+    # It is a python list literal, not a triple-quoted blob, so the two patterns
+    # above cannot see it -- and a unit this gate cannot see reads as "a suite
+    # nobody runs", which is the exact failure this gate exists to catch, aimed at
+    # itself. MUTATORS is deliberately NOT added: every name in it is already in
+    # STATIC, so it is a scheduling hint, not a membership list.
+    m = re.search(r'^POSTCHECKS\s*=\s*\[(.*?)\]', src, re.S | re.M)
+    if m:
+        out |= {a or b for a, b in
+                re.findall(r'"([^"]+)"|\'([^\']+)\'', m.group(1))}
     return out
 
 

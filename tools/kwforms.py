@@ -70,6 +70,42 @@ def composite_name(words) -> str | None:
     return None
 
 
+# 🎚️ STATEMENTS NO DERIVATION CAN REACH (D-KWSUBJECT, 2026-09-14). Joost: "bare
+# print and print # and print using have a different function" -- so the channel
+# forms are separate subjects, and a row must be able to SAY so.
+# 🔴 `composite_name` ABOVE CANNOT PRODUCE THESE, BY CONSTRUCTION: it matches sets
+# of KEYWORDS, and what separates `PRINT #1,A` from `PRINT A` is the `#`, which is
+# punctuation -- the crunch bodies are keyword-identical. The same holds for
+# `INPUT #` vs `INPUT` and `GET #` vs a bare GET. They are listed here so that
+# `tier_table.known_subject` accepts them from a `SUBJECT:` tag, and so that a
+# TYPO in such a tag is refused rather than silently creating a bucket nothing
+# counts. A name here is a scoreable subject; it is NOT a claim that a bar has
+# been authored for it (that is `FORMS`, and absence there is UNRATED).
+UNDERIVABLE: tuple[str, ...] = (
+    "PRINT #",
+    "INPUT #",
+    "GET #",
+    "PUT #",
+)
+
+
+# 🔴 KEYWORDS WITH NO BARE STATEMENT FORM AT ALL. Splitting composites out made
+# five keywords read "no known gap, no row" -- which for these five is not a gap
+# but the TRUTH ABOUT THE LANGUAGE: MSX1 has no bare `ON`, `DEF`, `GET`, `PUT` or
+# `USING` statement. Every one of them exists only inside a composite, so a row of
+# their own is not something that could ever be written.
+# 🎯 `INPUT` IS DELIBERATELY NOT HERE, and that is the whole value of the list:
+# `INPUT` lost its rows to `INPUT #` too, but bare console `INPUT "x";A$` is a real
+# statement this tree implements and has NEVER had a row. Without this distinction
+# both read identically and a genuine hole hides behind four false ones.
+NO_BARE_FORM: frozenset[str] = frozenset(("DEF", "GET", "ON", "PUT", "USING"))
+
+
+def subject_names() -> set[str]:
+    """Every statement name this file knows that is not a plain keyword."""
+    return {name for _, name in COMPOSITES} | set(UNDERIVABLE)
+
+
 # keyword -> (forms, why this is the set)
 FORMS: dict[str, tuple[tuple[str, ...], str]] = {
     "PSET": (
