@@ -238,9 +238,15 @@ REACHED = {1: "TIER 0 — open TIER 1 item (happy path broken or keyword MISSING
            # this bucket although it lost its rows the same way: bare console
            # `INPUT "x";A$` is real and has never had a row, and that IS a hole.
            "kwcomp": "TIER 0 — no BARE statement form; exercised only as a "
-                     "composite (see the composite section)"}
+                     "composite (see the composite section)",
+           # 🎚️ Joost, 2026-09-14: "Drop them and mark them". A particle is a
+           # TOKEN the reference tokenises, never a statement a user can write, so
+           # it is counted in the TOKEN denominator and marked here rather than
+           # silently vanishing from the sheet.
+           "kwpart": "NOT A STATEMENT — a syntax particle of another statement; "
+                     "counted in the TOKEN denominator, not the STATEMENT one"}
 GROUP_ORDER = ["t1", "kwgap", 1, 2, 3, 4, 5, "kw1", "kw1c", "kw3", "kw3c",
-               "kwcomp", None]
+               "kwcomp", "kwpart", None]
 
 
 KWSWEEP_PIN = os.path.join(ROOT, "build", "kwsweep-verdicts.json")
@@ -522,6 +528,25 @@ def keyword_tiers(its, kws, evidence=None):
     return out
 
 
+def particles():
+    """Syntax particles -- see kwforms.PARTICLES. Tokens, never statements."""
+    try:
+        import kwforms
+    except ImportError:
+        return frozenset()
+    return kwforms.PARTICLES
+
+
+def operators():
+    """Expression operators -- see kwforms.OPERATORS. Never statements either, but
+    each has behaviour of its own, so they STAY in the statement denominator."""
+    try:
+        import kwforms
+    except ImportError:
+        return frozenset()
+    return kwforms.OPERATORS
+
+
 def no_bare_form():
     """Keywords MSX1 has no bare statement form for -- see kwforms.NO_BARE_FORM."""
     try:
@@ -531,7 +556,8 @@ def no_bare_form():
     return kwforms.NO_BARE_FORM
 
 
-def reached_group(g, e, t3=False, conn=False, tier1=False, nobare=False):
+def reached_group(g, e, t3=False, conn=False, tier1=False, nobare=False,
+                  particle=False):
     """The bucket a keyword prints under, from its gap tier and its evidence.
 
     🎚️ `tier1` is Joost's rule satisfied (2026-09-14): CONNECTED + N distinct
@@ -539,6 +565,12 @@ def reached_group(g, e, t3=False, conn=False, tier1=False, nobare=False):
     TIER 0 bucket, and it is passed in rather than recomputed here so the caller
     owns the three clauses -- the table must never award a tier from evidence it
     inferred on the spot."""
+    # 🔴 BEFORE EVERY OTHER ARM. A particle is not a statement, so no tier it
+    # might otherwise land in means anything -- and a particle that happened to
+    # have an agreeing row would otherwise print as "1 row agrees" beside real
+    # statements, which is the claim this class exists to stop making.
+    if particle:
+        return "kwpart"
     if tier1:
         return "t1"
     if g is not None:
@@ -610,7 +642,8 @@ def statements(kws=None):
     not. Removing them is re-tiering the keyword umbrella, which is ruled out, so
     the count carries the flaw openly instead of being quietly adjusted."""
     kws = keywords() if kws is None else kws
-    return sorted((set(kws) - set(no_bare_form())) | composite_names())
+    return sorted((set(kws) - set(no_bare_form()) - set(particles()))
+                  | composite_names())
 
 
 def tier1_statements(stmts=None, conn=None, forms=None, kws=None):
@@ -655,11 +688,12 @@ def fmt_keywords(its, kws, evidence=None):
     conn = knife_connected()
     t1 = {kw for kw in tier1_keywords(kws, conn) if kt.get(kw, (None,))[0] is None}
     nobare = no_bare_form()
+    parts = particles()
     forms = kwsweep_forms(kws)
     groups = defaultdict(list)
     for kw, (g, _, e) in kt.items():
         groups[reached_group(g, e, kw in t3, kw in conn, kw in t1,
-                             kw in nobare)].append(kw)
+                             kw in nobare, kw in parts)].append(kw)
     out = []
     for g in GROUP_ORDER:
         if g is None or not groups[g]:
@@ -773,6 +807,7 @@ def fmt_markdown(its, kws, evidence=None, t3=None, connected=None):
     conn = knife_connected() if connected is None else connected
     t1 = {kw for kw in tier1_keywords(kws, conn) if kt.get(kw, (None,))[0] is None}
     nobare = no_bare_form()
+    parts = particles()
     forms = kwsweep_forms(kws)
 
     out = ["# zerobas — priority-tier status", "",
@@ -797,13 +832,19 @@ def fmt_markdown(its, kws, evidence=None, t3=None, connected=None):
             "and `USING` do not, and would double-count against their own "
             "composites) plus the %d composite and channel statements. "
             "**%d of them have reached TIER 1.**\n\n"
-            "\u26a0\ufe0f A stated imprecision rather than a hidden one: the statement set "
-            "still counts SYNTAX PARTICLES (`THEN`, `TO`, `STEP`, `ELSE`, `AS`, "
-            "`OFF`) as statements. They are not. Removing them means re-tiering "
-            "the keyword umbrella, which is ruled out, so the count carries the "
-            "flaw openly."
+            "\u2702\ufe0f SYNTAX PARTICLES ARE OUT (Joost, 2026-09-14: *\"Drop them and "
+            "mark them\"*). `THEN`, `ELSE`, `TO`, `STEP` and `OFF` appear only "
+            "INSIDE another statement and have nothing of their own to get right, "
+            "so they are counted as TOKENS and marked in the table rather than "
+            "inflating the statement count with things a user cannot write. "
+            "(`AS` is not in this tree's table at all.)\n"
+            "\u26a0\ufe0f THE OPERATORS STAY, MARKED. `AND OR NOT XOR EQV IMP MOD` are "
+            "never statements either, but unlike a particle each HAS BEHAVIOUR OF "
+            "ITS OWN worth tiering \u2014 `A AND B` has a truth table to get right and "
+            "`THEN` has nothing."
             % (len(kws), len(statements(kws)),
-               len(set(kws) - set(no_bare_form())), len(composite_names()),
+               len(set(kws) - set(no_bare_form()) - set(particles())),
+               len(composite_names()),
                len(tier1_statements(statements(kws), conn, forms, kws))), "",
             "## Every keyword and its tier", "",
             "**Every keyword is TIER 0: no tier is established for any of them.** The text "
@@ -813,7 +854,7 @@ def fmt_markdown(its, kws, evidence=None, t3=None, connected=None):
     groups = defaultdict(list)
     for kw, (g, _, e) in kt.items():
         groups[reached_group(g, e, kw in t3, kw in conn, kw in t1,
-                             kw in nobare)].append(kw)
+                             kw in nobare, kw in parts)].append(kw)
     for g in GROUP_ORDER:
         if g is None or not groups[g]:
             continue
@@ -823,7 +864,8 @@ def fmt_markdown(its, kws, evidence=None, t3=None, connected=None):
     out += ["", FOOTER, "", "### Alphabetical", "", "| keyword | reached | evidence |", "|---|---|---|"]
     for kw in sorted(kws):
         g, lines, e = kt[kw]
-        grp = reached_group(g, e, kw in t3, kw in conn, kw in t1, kw in nobare)
+        grp = reached_group(g, e, kw in t3, kw in conn, kw in t1, kw in nobare,
+                            kw in parts)
         import kwforms
         _need = kwforms.forms_for(kw)
         if grp == "t1":
@@ -845,6 +887,8 @@ def fmt_markdown(its, kws, evidence=None, t3=None, connected=None):
             _ok, _why = tier1_status(kw, forms.get(kw, set()), kw in conn,
                                      g is not None)
             out.append(f"| `{kw}` | TIER 0 | {_why} |")
+        elif grp == "kwpart":
+            out.append(f"| `{kw}` | \u2014 | a syntax particle, not a statement |")
         elif grp == "kwcomp":
             out.append(f"| `{kw}` | TIER 0 | no bare form; only as a composite"
                        + (", connected" if kw in conn else "") + " |")
@@ -1057,6 +1101,15 @@ def selftest():
         and tier1_status("ON GOTO", {"index-goto"}, False, False)[0] is False
         and tier1_status("ON GOTO", {"index-goto"}, True, True)[0] is False
         and tier1_status("ON GOTO", set(), True, False)[0] is False)
+    # 🎚️ Joost, 2026-09-14: particles are TOKENS, never statements.
+    # ⚠️ THE REAL TABLE AGAIN, not the fixture `kws` -- the same trap S29/S30 fell
+    # into: the fixture holds three invented keywords and no particles at all, so
+    # every clause below would pass vacuously.
+    _real = set(kwtable_keywords())
+    arm("S33 every particle is in the TOKEN set and in NO case in the STATEMENT set",
+        particles() <= _real
+        and not (particles() & set(statements(_real)))
+        and operators() <= set(statements(_real)))
     md = fmt_markdown(its, kws, evidence={}, t3=set(), connected=set())
     _s14 = [("summary row", "| TIER 1 | works correctly in the happy path | 1 |" in md),
             ("LOF row", "| `LOF` | TIER 0 | open TIER 1 item, TODO.md 2 |" in md),

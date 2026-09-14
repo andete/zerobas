@@ -19313,6 +19313,29 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       Usability CHECKED, not assumed: `CLEAR 200 : DIM A%(7000)` (14002 B, over
       the old 13875) now succeeds with **both ends written and read back**
       (11/22), 889 B still free. A `DIM` that merely succeeds witnesses nothing.
+✂️ **D-KWPARTICLE — SYNTAX PARTICLES LEAVE THE STATEMENT DENOMINATOR** (Joost,
+2026-09-14, asked whether the ⛔ on re-tiering the keyword umbrella covered the
+DENOMINATOR as well as the tier assignment: **"Drop them and mark them"**).
+🎯 **`THEN`, `ELSE`, `TO`, `STEP` and `OFF` APPEAR ONLY *INSIDE* ANOTHER
+STATEMENT AND HAVE NOTHING OF THEIR OWN TO GET RIGHT.** There is no `THEN`
+statement, only `IF ... THEN`. They stay in the TOKEN denominator — the reference
+tokenises them, so we must too — and are MARKED in the table under their own class
+rather than silently vanishing from the sheet. **STATEMENT: 171 → 166** (149
+keywords with a bare form + 17 composites).
+⚠️ **AND THE OPERATORS DELIBERATELY STAY, MARKED.** `AND OR NOT XOR EQV IMP MOD`
+are never statements either, but **unlike a particle each HAS BEHAVIOUR OF ITS OWN
+worth tiering** — `A AND B` has a truth table to get right and `THEN` has nothing.
+I put that distinction to Joost explicitly rather than deciding it quietly.
+🔴 **`AS` IS NOT IN THIS TREE'S TABLE AT ALL** — it is part of `OPEN ... AS #n`
+and `FIELD ... AS` but `basic/kwtable.inc` does not tokenise it separately.
+MEASURED, not assumed, and the reason the list is five and not six.
+✅ Selftest **S33**: every particle is in the TOKEN set and in NO case in the
+STATEMENT set, and every operator IS in the statement set.
+🔴 **AND S33 FAILED ITS FIRST RUN FOR THE REASON S29/S30 ALREADY RECORD**: it
+asked its question of the selftest's FIXTURE `kws`, which holds three invented
+keywords and no particles at all, so **every clause would have passed vacuously**.
+It reads `kwtable_keywords()` now. *A selftest that cannot see its subject agrees
+with everything.*
       ⚠️ **`TXTMAX` IS NOW BOUNDED BY `DETOKBUF`, NOT BY FREE RAM** — at 1280 B
       it does not fit the 1024 B window, so `$BB00` is the stop until DETOKBUF
       is dealt with. Of D-LINEMAX's 1792 B, **1024 recovered, 768 still charged**.

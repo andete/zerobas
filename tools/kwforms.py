@@ -98,6 +98,26 @@ UNDERIVABLE: tuple[str, ...] = (
 # `INPUT` lost its rows to `INPUT #` too, but bare console `INPUT "x";A$` is a real
 # statement this tree implements and has NEVER had a row. Without this distinction
 # both read identically and a genuine hole hides behind four false ones.
+# 🎚️ SYNTAX PARTICLES (Joost, 2026-09-14: *"Drop them and mark them"*). These
+# appear ONLY as syntax INSIDE another statement and have no behaviour of their
+# own: there is no `THEN` statement, only `IF ... THEN`. They belong in the TOKEN
+# denominator (the reference tokenises them, so we must too) and NOT in the
+# STATEMENT one, where they were inflating the count with things a user cannot
+# write.
+# ⚠️ THE OPERATORS ARE DELIBERATELY NOT HERE. `AND OR NOT XOR EQV IMP MOD` are
+# also never statements, but unlike a particle each has BEHAVIOUR OF ITS OWN worth
+# tiering -- `A AND B` has a truth table to get right, `THEN` has nothing to get
+# right. They stay in the statement set, marked as operators.
+# 🔴 `AS` IS NOT IN THE TABLE. It is part of `OPEN ... AS #n` and `FIELD ... AS`
+# but this tree's kwtable.inc does not tokenise it separately -- measured, not
+# assumed, and the reason this list is five and not six.
+PARTICLES: frozenset[str] = frozenset(("THEN", "ELSE", "TO", "STEP", "OFF"))
+
+# 🎚️ OPERATORS -- kept in the statement denominator, marked so the table does not
+# call them statements. See PARTICLES above for why the two classes are split.
+OPERATORS: frozenset[str] = frozenset(
+    ("AND", "OR", "NOT", "XOR", "EQV", "IMP", "MOD"))
+
 NO_BARE_FORM: frozenset[str] = frozenset(("DEF", "GET", "ON", "PUT", "USING"))
 
 
