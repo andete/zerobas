@@ -107,16 +107,22 @@ dirverb_op:
 ; and decodes STATUS: 0 source not found -> ERR 53, 1 copied, 2 mount / full /
 ; I-O -> load_error -- KILL's own tail, shared -- and 3 (self-copy, wildcard
 ; source) -> ERR 5.
+; 🧭 D-DISKVERB3 (2026-09-15): BOTH HALVES ARE IN disk.rom NOW, as `hk_copy`.
+; The parse half lived in the page-0 LOW REGION (`copy_parse`) and it and its
+; helper `fname_fcb` are GONE with it -- KILL and NAME stopped routing through
+; either when their own bodies moved, so COPY was the last caller of both. That
+; makes this the first verb whose saving is LOW-REGION bytes, the scarcer of the
+; two budgets at 0 B free.
 ex_copy:
-                call    copy_parse          ; HL = the cursor after the destination
-                ld      a,DISKOP_SEL_COPY
-                push    hl
-                call    dirverb_op
-                pop     hl
-                jp      c,load_error        ; sub-ROM absent
+                inc     hl                  ; HL -> bytes after the COPY token
+                ld      (FN_RESUME),hl      ; stage the cursor for the handler
+                ld      hl,H_COPY
+                call    chan_gate           ; unclaimed -> ERR 5 (trappable);
+                                            ; claimed -> disk.rom ran the whole verb
                 ld      a,(DISKOP_STATUS)
                 cp      3
-                jp      z,gb_illegal        ; 3: refused -> ERR 5
+                jp      z,gb_illegal        ; 3: refused, or no `TO` -> ERR 5
+                ld      hl,(FN_RESUME)
                 jp      kill_status         ; 0 / 1 / 2 exactly as KILL decodes them
 
 ; --- disk_error: raise the last DSKIO failure's code, else the old face --------

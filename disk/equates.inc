@@ -29,6 +29,11 @@ CALSLT          equ     $001C   ; inter-slot call: IX = target, IYh = slot id
 ; a selector checker is a follow-up, not silence.
 DISKOP_SEL_KILL equ     0       ; dirverb: KILL's fat_delete loop (sysvars.inc)
 DISKOP_SEL_NAME_STAMP equ 1     ; dirverb: NAME's read+overwrite+write (sysvars.inc)
+DISKOP_SEL_COPYSTASH equ 6      ; dirverb: COPY's DISK_FCB_NAME -> COPY_SRC (sysvars.inc)
+DISKOP_SEL_COPY equ     7       ; dirverb: COPY's body, sector by sector (sysvars.inc)
+; TO_TOKEN is the crunched `TO`, which the VG-8020 produces inside a COPY line
+; too (D-COPY). Read straight out of the program text here, as NAME reads `AS`.
+TO_TOKEN        equ     $D9     ; basic/sysvars.inc
 
 ; --- Standard hook + entry addresses (disk/PROVENANCE.md §INIT) -------------
 ; HPHYD is the standard PHYDIO hook a disk ROM installs so a host's physical disk

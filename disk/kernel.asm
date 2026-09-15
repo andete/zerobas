@@ -2261,7 +2261,7 @@ hook_tab:
                 dw      H_FILE, hk_present
                 dw      H_DSKO, hk_present   ; D-DSKIO: both bodies are a sub-ROM tenant,
                 dw      H_DSKI, hk_present   ; the hook buys the diskless ERR 5
-                dw      H_COPY, hk_present   ; D-COPY: same shape
+                dw      H_COPY, hk_copy      ; D-DISKVERB3: body here too
                 dw      H_ERRP, hk_errp      ; D-DISKERR: the disk codes' messages live HERE
                 dw      0
 
@@ -2452,6 +2452,64 @@ hkn_up:
                 cp      'z' + 1
                 ret     nc
                 sub     32
+                ret
+
+; --- hk_copy: COPY's body, BOTH HALVES, in the disk ROM (MSX2 TH hook) ------
+; D-DISKVERB3, spec-diskbasic-hook-rearchitecture.md phase 3, third verb.
+;
+; 🎯 THIS ONE PAYS IN THE SCARCER CURRENCY. COPY's parse half was `copy_parse` in
+; the page-0 LOW REGION, which stands at 0 B free -- and `fname_fcb`, its only
+; caller's only helper, goes with it now that KILL and NAME no longer route
+; through either. Both leave, so the saving is low-region bytes, not page-1 ones.
+;
+;   in   FN_RESUME = the statement cursor, just past the COPY token
+;   out  DISKOP_STATUS, decoded by main's ex_copy; CF = 1 (claimed)
+;
+; Dispositions are the dirverb tenant's own 0/1/2 plus 3, and main maps 3 to ERR 5
+; before handing 0/1/2 to the shared kill_status. A MISSING `TO` folds into 3
+; because that is what the reference answers -- ERR 5, measured on the CF-3300,
+; the one-argument form PARSING and being refused rather than ERR 2 (D-COPY).
+;
+; ⚠️ THE ONE 8.3 BUFFER IS REUSED, which is why the source is stashed first: the
+; COPYSTASH op moves DISK_FCB_NAME into COPY_SRC so the destination can overwrite
+; it. Getting that order wrong copies a file onto itself.
+hk_copy:
+                ld      hl,(FN_RESUME)
+                ld      ix,fname_expr
+                call    calbak              ; SOURCE name; may RAISE (ERR 13)
+                ld      ix,pdfcb_resume
+                call    calbak              ; -> DISK_FCB_NAME
+                ld      a,DISKOP_SEL_COPYSTASH
+                ld      ix,dirverb_op
+                call    calbak              ; -> COPY_SRC, freeing the 8.3 buffer
+                ld      hl,(FN_RESUME)      ; the tenant clobbers HL
+hkc_sp:
+                ld      a,(hl)              ; skip blanks before `TO`
+                cp      ' '
+                jr      nz,hkc_to
+                inc     hl
+                jr      hkc_sp
+hkc_to:
+                cp      TO_TOKEN
+                jr      nz,hkc_ref          ; no `TO` -> ERR 5 (measured), not ERR 2
+                inc     hl
+                ld      ix,fname_expr
+                call    calbak              ; DESTINATION name
+                ld      ix,pdfcb_resume
+                call    calbak              ; -> DISK_FCB_NAME
+                ld      a,DISKOP_SEL_COPY
+                ld      ix,dirverb_op
+                call    calbak
+                ld      a,(DISKOP_STATUS)   ; the tenant's own 0/1/2/3
+                jr      hkc_done
+hkc_ref:
+                ld      a,3                 ; refused -> ERR 5
+hkc_done:
+                ; DISKOP_STATUS written ONCE, LAST -- see hk_name for why that is
+                ; not a style choice: the cell is a channel main's FAT primitives
+                ; marshal through too.
+                ld      (DISKOP_STATUS),a
+                scf                         ; CF=1: the hook is claimed
                 ret
 
                 ds      $75A5 - $, $00
