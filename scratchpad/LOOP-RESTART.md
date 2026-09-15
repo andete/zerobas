@@ -4,20 +4,51 @@ A `ScheduleWakeup` loop is SESSION-LOCAL and dies with the session. This file is
 the durable half: paste the command in `## The command` below into a fresh
 session and the loop resumes exactly where it stopped.
 
-## Where things stand (rewritten 2026-09-13)
+## Where things stand (rewritten 2026-09-15)
 
-Recount everything — never quote a number from this file.
+Recount everything — never quote a number from this file. `make tiers-md` then
+read `docs/tier-status.md`; the headline is in its **STATEMENT — 163** paragraph.
 
-* 🟢 **THE DRAIN IS DONE. `tier_table --keywords` reports `no known gap ... 0`**,
-  which was the keyword-completeness item's own stated exit criterion. 114 → 0.
-  Every keyword now carries an open item or a kwsweep row that observes it, and
-  the three defect classes (SILENT-GAP, MISSING, DIVERGENT) are all empty.
-* 🟢 **THE TAPE TIER 1 IS CLOSED** — a tape zerobas saves loads on a real MSX.
-* 🙋 **NO AUTONOMOUS TIER 1 WORK REMAINS.** The one TIER 1 item left is the
-  keyword umbrella, now marked NEEDS-JOOST by its own instruction: it reserved
-  the tier question for him once the list emptied. He also has step (c) to price.
-* ➡️ **SO THE NEXT PICK IS TIER 3/4**, by the priority tiers — run `make tiers`
-  and take the lowest tier with a 🤖 marker. Do NOT re-tier the umbrella.
+* 🎯 **THE WORK IS TIER 1 OVER THE STATEMENT DENOMINATOR.** TWO denominators:
+  TOKEN **159** (`basic/kwtable.inc`, guarded by selftest S20, never to be
+  weakened) and STATEMENT **163** = 144 keywords with a bare statement form plus
+  the 19 composite and channel statements. As of 2026-09-15 the second reads
+  **140** — it was 121 at the start of that night's run.
+* 🎚️ **TIER 1 = CONNECTED + every AUTHORED FORM covered by an agreeing row +
+  no open TIER **1** item** (tier n blocks tier n ONLY — Joost confirmed
+  2026-09-14, `blocks_tier1()`, selftest S34). N is authored per statement in
+  `tools/kwforms.py` **from the REFERENCE's syntax, never from our handler**. No
+  entry ⇒ UNRATED, never satisfied. **A FORM IS A DISTINCT BEHAVIOUR, NOT A
+  DISTINCT INPUT.**
+* 🔧 **SEVEN RIGS NOW, AND THE LAST TWO ARE THE NEW ONES.** `NEEDS-DISK:`,
+  `NEEDS-PRINTER:`, `NEEDS-LOG:`, `NEEDS-TAPE:`, `NEEDS-BLANKTAPE:`, and then
+  **`NEEDS-HOLD:<row>,<mask>`** (holds one KEY-MATRIX bit down for a case's whole
+  RUN — row 8 bit 0 is SPACE, bits 4/5/6/7 are left/up/down/right, row 6 $20/$40
+  are F1/F2) and **`NEEDS-PLUG:<port>,<device>`** (openMSX `plug joyport<port>
+  <device>`). Both take an ARGUMENT, which is part of the capture group key.
+  `strig_hold` is the matrix rig's CONTROL and is in the sweep for good: if it
+  ever reads `[1w 0 ]` the matrix is not being reached and nothing that depends on
+  it may be believed.
+* ⛔ **WHAT IS LEFT, AND WHY — 23 statements.** Two composites: `INPUT$` needs
+  its console form IMPLEMENTED (`str_inputd` requires `,#f`) and `ON STOP GOSUB`
+  needs **Ctrl-STOP, which is TWO keys on different matrix rows** (CTRL row 6
+  bit 1 + STOP row 7 bit 4) while `holds` takes ONE `(row, mask)` per case — a
+  real `omsx_repl` extension, not a row. The rest split into: statements whose
+  bar is authored and short of rows that need a RIG (`AUTO` `BLOAD` `BSAVE`
+  `CLOAD` `RUN` `SAVE`), ones that need CODE (`LOCATE` cursor-switch, `SCREEN`
+  key-click, `VARPTR(#n)`), ones the instrument cannot reach (`KEY`'s display
+  forms — the key line's layout differs, LINLEN 37 vs 39; `PAD`'s switch;
+  `STICK`/`STRIG`'s joystick halves — openMSX drives a joystick from the HOST),
+  and ones still UNRATED because no bar can be satisfied (`CALL` `CONT` `DELETE`
+  `DRAW` `LOAD` `PLAY` `RENUM`).
+* 🔴 **`DELETE` AND `RENUM` ARE MEASURED SHUT FOR THIS INSTRUMENT** and should
+  not be re-opened with rows: `DELETE 20` inside a running program stops it
+  cleanly on BOTH machines (so every range form has the same observable) and
+  `RENUM 100` answers `Undefined line 100 in 20` on BOTH (its only reading is an
+  error). `scratchpad/mdr_probe.py`.
+* 📏 **THE MEASURED CADENCE**, so a fresh session can plan: a full battery is
+  **~910 s** and `make gates-fast` **~70 s**; `make kwsweep` alone is ~120 s.
+  One battery per slice, and batch several statements into each.
 
 ## Twelve blockers re-verified, twelve stale
 
@@ -50,16 +81,38 @@ where the leader was not the binding constraint), and the between-tone-outlier
 histogram never predicted the outcome — the cleanest recording ever produced read
 the WORST. **A refutation is only as general as the build it was measured on.**
 
-## The next slice — TIER 3/4, and the umbrella is NOT it
+## The next slice — keep taking TIER 1 over the 163
 
-The drain is finished and the umbrella is 🙋 NEEDS-JOOST by its own instruction.
-Run `make tiers` and take the lowest tier carrying a 🤖 marker. TIER 4 currently
-holds the interpreter-speed items (`FOR`/`GOTO` 2.5–3.8× slower, `PAINT` 2×,
-`PUT`), which were parked UNDER the drain by Joost's 2026-09-12 ruling — that
-ruling is now satisfied, so they are the live work.
+THE LOOP: handler first (if any) → rows + `tools/kwforms.py` in ONE edit pass →
+`make kwsweep ONLY=a,b,c` → **READ EACH READING ONE AT A TIME** → knife
+(`--fn` for functions) → `make repack-machine` → `check_todo_citations.py --fix`
+→ `make kwsweep && make tiers-md` → `make gates-fast` → stage → ONE full battery
+plus the five excluded targets → ONE commit naming every statement.
 
-⚠️ **Before starting any of them, re-read the item to its END and re-verify its
-blocker.** Twelve for twelve this session.
+🚩 **THE FIVE APPARATUS FAULTS THIS ARC KEEPS REPEATING**, every one of which
+produced a row that agreed while proving nothing:
+1. **A ROW CAN AGREE ON AN ERROR.** `fnkw` scored SUPPORTED on `Illegal direct`
+   from both machines because `DEF FN` is illegal in direct mode. Read the VALUE,
+   not the verdict.
+2. **A ROW CAN AGREE ON FURNITURE THAT DIFFERS.** The `KEY ON`/`OFF` rows read a
+   fixed VRAM offset and scored SUPPORTED on a BLANK CELL, because the key line
+   sits somewhere else on the reference (LINLEN 37 vs 39).
+3. **A ROW CAN AGREE ON A CONSTANT.** `pdlkw` read 255 — the IDLE line of an
+   EMPTY port — which a PDL answering 255 to everything passes. `motor` printed
+   `[ok]`. Plug something in; mask to the bit that moves.
+4. **INTERPRETER SPEED LEAKS IN.** The `ON KEY` rows came back `?noecho` on the
+   REFERENCE only: it finishes ~3x sooner, so it collected far more function-key
+   auto-repeats and scrolled the marker away. And a row that waits 120 frames for
+   something that must NOT happen is still waiting when the capture is taken —
+   30 frames, and count FRAMES (`TIME`) not iterations.
+5. **THE KNIFE REPORTING BLIND IS A FINDING, NOT A NUISANCE.** `DATA`'s cut moved
+   nothing because the `DATA` sat after the `END` and was never executed. Putting
+   it on the execution path turned up a SHIPPED DEFECT.
+
+⚠️ **Rows with NUMBERED LINE TARGETS are fragile under `as_stored`'s greedy
+≤34-char packing — VERIFY WITH `omsx_repl.as_stored` FIRST**, pad with long
+ASSIGNMENTS, never `REM` (it swallows the rest of its line). **And an `IF` must END
+ITS LINE**: a FALSE condition skips the REST OF THE LINE, not just the `THEN`.
 
 ## Five ways a kwsweep row can pass while seeing NOTHING
 
