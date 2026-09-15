@@ -628,24 +628,34 @@ FORMS: dict[str, tuple[tuple[str, ...], str]] = {
         "`PAD(<n>)`, n = 0..7 -- two devices of four indices each, and the four are "
         "three DIFFERENT QUANTITIES: n=0/4 is the touch SENSE (-1 or 0), n=1,2/5,6 "
         "are the X and Y COORDINATES, and n=3/7 is the SWITCH. Reading a coordinate "
-        "is not reading a sense bit. \u26a0\ufe0f The switch has no row and cannot get one "
-        "with this instrument: openMSX offers no host button to press, and an "
-        "unpressed switch reads 0 -- what a stub reads.",
+        "is not reading a sense bit. \U0001f534 THE SWITCH IS INSTRUMENT-BLOCKED, AND "
+        "THAT IS NOW MEASURED RATHER THAN ASSERTED (D-RIGBLOCK, 2026-09-15): "
+        "openMSX's ONLY input-injection surface is the MSX KEY MATRIX "
+        "(`keymatrixdown`/`keymatrixup`), and its `joystickports` debuggable READS "
+        "(63, all lines idle) but does not take a write -- the value is recomputed "
+        "from the connector, so a write is accepted and changes nothing. An "
+        "unpressed switch reads 0, which is what a stub reads.",
     ),
     "STICK": (
         ("cursor-keys", "joystick-port"),
         "`STICK(<n>)` -- n=0 reads the CURSOR KEYS off the keyboard matrix and n=1/2 "
         "read a JOYSTICK PORT's direction lines. Different hardware, different code "
-        "inside GTSTCK, so two behaviours and not two indices. \u26a0\ufe0f The port form "
-        "has no row: openMSX's joystick is driven from the HOST, which the emulated "
-        "key matrix cannot reach.",
+        "inside GTSTCK, so two behaviours and not two indices. \U0001f534 THE PORT FORM IS "
+        "INSTRUMENT-BLOCKED, AND IT IS WORSE THAN \"driven from the host\" "
+        "(D-RIGBLOCK, 2026-09-15): THIS openMSX HAS NO JOYSTICK PLUGGABLE AT ALL. "
+        "Asked directly, `joyporta` accepts `mouse`, `trackball`, `arkanoidpad`, "
+        "`paddle`, `ninjatap` and `touchpad`; `joystick1`, `joystick2`, "
+        "`keyjoystick1` and `keyjoystick2` are every one of them \"No such "
+        "pluggable\". So there is nothing to plug and nothing to poke.",
     ),
     "STRIG": (
         ("space-bar", "joystick-trigger"),
         "`STRIG(<n>)` -- n=0 is the SPACE BAR, read off the keyboard matrix; n=1..4 "
         "are the two triggers of each joystick port, read off the PSG. The same "
-        "split as STICK and for the same reason. \u26a0\ufe0f The trigger form has no row, "
-        "for the same reason STICK's port form has none.",
+        "split as STICK and for the same reason. \U0001f534 The trigger form is "
+        "INSTRUMENT-BLOCKED for the same measured reason STICK's port form is "
+        "(D-RIGBLOCK, 2026-09-15) -- no joystick pluggable exists in this openMSX, "
+        "and the `joystickports` debuggable will not take a write.",
     ),
     "FOR": (
         ("ascending", "step", "negative-step"),

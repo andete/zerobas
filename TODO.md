@@ -1878,7 +1878,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:18818 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:18852 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -2044,7 +2044,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:6645 (T-6FE392)8 (T-529ABE)` from `TODO.md:17469 (T-529ABE)`: a
+      `TODO.md:6645 (T-6FE392)8 (T-529ABE)` from `TODO.md:17503 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -7489,7 +7489,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:17469 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:17503 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -12103,6 +12103,40 @@ list. **When a slice lands, grep this list for what it just shipped.**
       flagged the byte figure beside it as PRESENT-TENSE — its pattern includes
       `\bis at\b`, which ordinary English hits. A false positive costs one
       rephrase, the trade its own header argues for — recorded, not filed.
+
+- [ ] 🛑 **RULING 4's RIG CANNOT BE BUILT FOR THREE OF ITS FOUR TARGETS —
+      openMSX HAS NO JOYSTICK TO DRIVE. MEASURED, NOT SHRUGGED AT.**
+      🙋 NEEDS-JOOST — he ruled *"build a rig, not an exemption"* (2026-09-15,
+      ruling 4). The rig is not buildable with this emulator, and that is his call
+      to take, not mine to work around.
+      Measured 2026-09-15 (D-RIGBLOCK,
+      [`scratchpad/rigcap_probe.py`](scratchpad/rigcap_probe.py)) by asking openMSX
+      directly instead of assuming:
+      | question | answer |
+      |---|---|
+      | `plug joyporta <dev>` accepts | `mouse` `trackball` `arkanoidpad` `paddle` `ninjatap` `touchpad` |
+      | …and refuses | **`joystick1` `joystick2` `keyjoystick1` `keyjoystick2`** — *"No such pluggable"* |
+      | input-injection commands | `keymatrixdown` / `keymatrixup` only — the MSX KEY MATRIX |
+      | `joystickports` debuggable | reads **63** (every line idle, correct for an empty port) |
+      | …after `debug write … 0xEF` | still **63** — the write is accepted and changes nothing |
+      🎯 **SO IT IS WORSE THAN THE FILED REASON.** `tools/kwforms.py` said the
+      joystick forms need a HOST joystick and that the `PAD` switch had "no host
+      button to press". The truth is that **there is no joystick pluggable in this
+      openMSX at all**, with or without a host stick — so `NEEDS-PLUG:` can never
+      reach `STICK(1)`/`STRIG(1)`, and the one escape hatch (forcing the port
+      through the debugger) is read-only in practice because the value is
+      recomputed from the connector on every read.
+      ⛔ **THREE FORMS ARE INSTRUMENT-BLOCKED**: `STICK`'s `joystick-port`,
+      `STRIG`'s `joystick-trigger`, `PAD`'s `switch`. All three notes in
+      `tools/kwforms.py` now carry the measurement rather than the assertion.
+      ✅ **THE FOURTH TARGET DID NOT NEED A RIG AND IS DONE**: `KEY`'s `assign`
+      (D-KEYRIG) fell to the key-matrix hold that already existed, and `KEY`'s two
+      display forms turned out to be blocked by a DEFECT of ours, not by the
+      instrument — see the item below.
+      🎯 **RE-RUN THE PROBE AGAINST A FUTURE openMSX.** If `joystick1` ever
+      plugs, or `joystickports` ever holds a written value, the rig becomes
+      possible that day and three forms open at once. That is why this is a
+      tracked probe and not a paragraph.
 
 - [ ] 🔴 **zerobas RENDERS NO FUNCTION-KEY DISPLAY LINE AT ALL, SO `KEY ON`
       AND `KEY OFF` HAVE NOTHING TO TURN ON OR OFF.**
