@@ -20190,6 +20190,31 @@ them**, so the rows are gone rather than banked. The spec's own error table has
 something, and the MSX1 `X` command is documented elsewhere as taking a string
 DESCRIPTOR ADDRESS rather than a name. **Two guesses is where guessing stops:**
 that needs an isolated probe with a control, not a third row shape.
+⚡ **D-KWDRAWX — AND THE ANSWER WAS THAT THEY WERE NEVER MISSING. `DRAW` CLOSES
+AT 10/10. 145 of 163.**
+🔴 **THE PARAGRAPH ABOVE IS REFUTED, AND IT IS KEPT RATHER THAN DELETED.** The
+isolated probe it asked for (`scratchpad/drawsubst_probe.py`, eight cases with a
+control) says every one of those spellings WORKS on both machines: `XA$;` draws,
+`XAB$;` draws with a two-letter name, `R=L;` draws, `C=A;R5` reads **7** — the
+substitution supplying a COLOUR — and both spellings WITHOUT the `;` raise ERR 5
+exactly as `spec-basic-graphics-g6.md` §147 says. The control drew 15, so the
+apparatus was sound.
+🎯 **THE CAUSE IS A STATE LEAK BETWEEN BATCHED CASES, AND IT IS FAITHFUL MSX:
+`DRAW`'s ANGLE AND SCALE PERSIST ACROSS PROGRAMS.** `drawkw_i` sets `A1`, and
+every later row in that batch then drew ROTATED — measured directly
+(`scratchpad/drawleak_probe.py`: `A1R5`, then a plain `R5` reads **4**, then the
+same `R5` behind an `A0S4` reads **15**). The two rows were correct; their
+NEIGHBOUR was the defect, and running them alone would have said so — which is
+exactly what the isolated probe did.
+🌱 **EVERY DRAW ROW NOW OPENS WITH `A0S4`** (and `C15` unless it is the colour
+row). 🔴 **AND THAT MEANS `drawkw`/`drawkw_b` WERE ONLY EVER RIGHT BECAUSE
+NOTHING BEFORE THEM HAD SET AN ANGLE** — they carried no reset and never needed
+one until this slice put a row that sets `A1` in front of them.
+📏 **A tenth entry for the row-failure list, and it is a new KIND:** a row can
+be poisoned by a neighbour's leftover MACHINE STATE, not just by delivery timing
+or a mutated fixture. The two earlier batch hazards were a WRITER upstream of a
+reader and a case slower than the batch `step`; this one is neither, and none of
+the three is visible from the row itself.
       ⚠️ **`TXTMAX` IS NOW BOUNDED BY `DETOKBUF`, NOT BY FREE RAM** — at 1280 B
       it does not fit the 1024 B window, so `$BB00` is the stop until DETOKBUF
       is dealt with. Of D-LINEMAX's 1792 B, **1024 recovered, 768 still charged**.
