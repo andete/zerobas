@@ -356,6 +356,72 @@ One verb per slice, cheapest coupling first: the FAT-light four (`COPY`,
 `field.asm` (600 B). Each slice its own battery. Each frees page-1 bytes, so it
 gets easier as it goes.
 
+#### ✅ THE FAT-LIGHT FOUR ARE DONE (2026-09-15)
+
+`0f15a873` KILL · `b26857de` NAME · `3f6a6099` COPY · `e1bbf7e5` FILES/LFILES.
+
+| | before | after |
+|---|---|---|
+| main page 1 | 3 B | **153 B** |
+| page-0 low region | 0 B | **36 B** |
+| `disk.rom` | 8820 B | 8502 B |
+
+Both scarce budgets went from nothing to workable for ~320 B spent in the ROM
+that has thousands spare. Each verb got cheaper than the last: COPY and
+FILES/LFILES needed **no new call-back targets at all**, and COPY's saving landed
+in the LOW REGION because `fname_fcb` died with its last caller.
+
+#### 🔴 AND PHASE 3 STOPS HERE UNTIL A QUESTION IS ANSWERED
+
+**There is no hook cell for any channel verb.** This ROM claims fourteen —
+`H_DSKF`, `H_MKI`/`H_MKS`/`H_MKD`, `H_CVI`/`H_CVS`/`H_CVD`, `H_NAME`, `H_KILL`,
+`H_FILE`, `H_DSKO`, `H_DSKI`, `H_COPY`, `H_ERRP` — and not one of them is `OPEN`,
+`CLOSE`, `INPUT`, `LINE INPUT`, `MERGE` or `MAXFILES`.
+
+🎯 **THE FOUR VERBS THAT MOVED ARE EXACTLY THE FOUR THAT HAD HOOKS** (`H_KILL`,
+`H_NAME`, `H_COPY`, `H_FILE`). That is not a coincidence the plan noticed: its
+"cheapest coupling first" ordering tracked hook availability without saying so.
+The pattern is *point the verb's hook at a disk-ROM body* — with no cell to
+point, it does not apply, and the remaining 975 B cannot start.
+
+**This is a KNOWN open item arriving from the other side**: the CF-3300's census
+is **35 claimed cells** (D-CFARCH) against our fourteen. Some of the other
+twenty-one are very likely these verbs. Identifying them is an ORACLE
+measurement — `scratchpad/hookid_probe.py`'s POKE method, with its two controls
+(poke nothing must not move; poke a NAMED cell must flip its verb) — not a code
+move, and it is the prerequisite for the rest of phase 3.
+
+#### AND THE COUPLING IS A DIFFERENT SHAPE TOO, MEASURED
+
+[`xslot_chanprice.py`](../../scratchpad/xslot_chanprice.py) counts every call
+site in each channel verb's span and resolves it against the symbol file. A
+page-1 site costs 7 B and 0.156 ms **each time it runs**, so a site inside a loop
+multiplies by the iteration count:
+
+| verb | bytes | page-1 sites | of those, in a loop |
+|---|---|---|---|
+| `ex_open` | 560 | 40 | **18** |
+| `ex_close` | 445 | 29 | **25** |
+| `ex_input` | 131 | 16 | **10** |
+| `ex_merge` | ? | 20 | 0 |
+| `ex_maxfiles` | 41 | 7 | 0 |
+| `ex_line` | 13 | 3 | 0 |
+
+**The FAT-light four had about three sites each, all once per statement, and ZERO
+in loops.** `ex_close` has twenty-five inside one — it walks a channel list
+calling `eval` and four channel helpers per iteration. Routing each of those
+through an inter-slot call is not the same design at all.
+🎯 **THE ANSWER IS PROBABLY THAT THE HELPERS TRAVEL WITH THE VERBS** — `fch_check`,
+`fch_select`, `fch_modes_ptr`, `fch_mode_class` are channel-only and small, so
+moving the cluster turns twenty-five inter-slot calls per iteration into local
+ones. That is a CLUSTER move, not a verb move, and it is a different slice shape
+from anything phase 3 has done. ⚠️ The seam spec's 15 labels / 164 B called from
+OUTSIDE `files.asm` are the ones that cannot travel.
+⚠️ The table is a STATIC count and says so in the probe: a span belongs to the
+verb that opens it only if nothing else jumps in, and a backward branch is a
+necessary but not sufficient sign of a loop. It ranks candidates; it does not
+authorise a move.
+
 ### Phase 4 — the FAT itself, and it is a SEPARATE DECISION
 
 Whether `basic/fat.asm` follows the verbs is not a continuation of phase 3. It is
