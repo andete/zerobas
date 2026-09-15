@@ -1878,7 +1878,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:18769 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:18785 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -2044,7 +2044,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:6645 (T-6FE392)8 (T-529ABE)` from `TODO.md:17420 (T-529ABE)`: a
+      `TODO.md:6645 (T-6FE392)8 (T-529ABE)` from `TODO.md:17436 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -7489,7 +7489,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:17420 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:17436 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -12189,19 +12189,35 @@ list. **When a slice lands, grep this list for what it just shipped.**
       a two-letter name `XAB$;`). zerobas raises **ERR 5** to every one, so
       `tools/kwforms.py`'s `substring-exec` form has no row and `PLAY` stands at
       **9 of 10**.
-      ⚠️ **NOT A SMALL FIX, AND THE COST IS NOT YET MEASURED.** The MML parser is
-      a **sub-ROM page-1 tenant** (`sub/playparse.asm`, `play_parse_tenant`), and
-      `X` means resolving a BASIC string variable BY NAME from inside it — the
-      interpreter's own variable lookup. `make basic-reloc`'s closure check says a
-      page-1 tenant may call main low-region/BIOS (`< $4000`), so a route exists;
-      **whether the lookup SITS below `$4000` is the unanswered question**, and if
-      it does not, this is a marshalling change at the `PLAY` call site rather than
-      a parser change.
+      🔴 **SCOUTED 2026-09-15 AND THE ANSWER IS THE BAD ONE: THE LOOKUP IS IN
+      MAIN PAGE 1, SO THE FIX CANNOT LIVE IN THE PARSER AT ALL.** The MML parser
+      is a sub-ROM **page-1** tenant (`sub/playparse.asm`, `play_parse_tenant`),
+      and `make basic-reloc`'s closure check is explicit about what such a tenant
+      may reach: *"every callee and data target is sub-local page-1, main
+      low-region/BIOS (< $4000), or RAM. No main-page-1 escape."* Measured from
+      `build/basic-reloc.sym`:
+      | symbol | address | |
+      |---|---|---|
+      | `var_find_typed` | **`$4853`** | main page 1 — a sub page-1 tenant CANNOT call it |
+      | `str_eval` | **`$49EE`** | main page 1 — likewise |
+      | `ex_play` | `$5B93` | main page 1, and it already calls `str_eval` |
+      🎯 **SO THE RESOLUTION MUST BE MAIN-SIDE, AT THE `PLAY` CALL SITE**, and the
+      faithful shape is a RE-ENTRANT parse: the tenant stops at `X`, records the
+      variable name and returns a "needs a variable" status; `ex_play` resolves it
+      with `var_find_typed`, points the VCB at that string's text, and re-enters
+      the tenant — which is what `X` MEANS (execute the named string as MML, then
+      carry on).
+      💰 **AND THAT PUTS THIS BEHIND THE SAME WALL AS THE `FIELD`/`LSET`/`RSET`
+      GATES.** The sub-ROM half is affordable; the main-side half is not. The
+      status decode, the `var_find_typed` call and the re-entry are all main-page-1
+      code — ~20-30 B, not yet measured exactly, but unmistakably more than the
+      **3 B** main page 1 had free on 2026-09-15.
       📏 Sub page 1 had **87 B** free on 2026-09-15 (the 37 B D-KWPLAY freed by
       deleting `>`/`<`, less the 1 B the `N` fix spent).
       🎯 **The spec's Q6 is ANSWERED — "in scope" — so this is implementation,
       not a decision**: `docs/spec-basic-audio-play.md` §2.2.
-      🔭 SCOUT-THEN-ASK — grep where the string-variable lookup lives (is it
+      🔭 SCOUT-THEN-ASK — ✅ THE SCOUT IS DONE (above); what remains is the ASK.
+      *(the original question, for the record:)* grep where the lookup lives (is it
       below `$4000`, reachable from a page-1 sub tenant, or main page 1 where the
       tenant cannot call it?) **and price the two shapes before spending any of the
       87 B.** The decision is WHICH SHAPE, and it is not answerable until that is
