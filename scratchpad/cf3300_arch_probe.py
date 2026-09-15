@@ -37,7 +37,7 @@ def main() -> int:
     tcl = os.path.join(tempfile.gettempdir(), "cfarch.tcl")
     with open(tcl, "w") as fh:
         fh.write(
-            "after time 22 {\n"
+            "after time 40 {\n"
             "  set f [open %s w]\n" % out +
             "  for {set a %d} {$a <= %d} {incr a} {\n" % (LO, HI) +
             "    if {[debug read memory $a] == %d} {\n" % CALLF +

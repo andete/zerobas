@@ -1878,7 +1878,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:19062 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:19099 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -2044,7 +2044,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:6645 (T-6FE392)8 (T-529ABE)` from `TODO.md:17713 (T-529ABE)`: a
+      `TODO.md:6645 (T-6FE392)8 (T-529ABE)` from `TODO.md:17750 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -7489,7 +7489,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:17713 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:17750 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -12198,9 +12198,46 @@ handler, `FILES 5` never reaches its Type mismatch. **The handler is entered
 BEFORE the argument is evaluated**, so control has crossed into the disk ROM
 first, whatever ultimately does the evaluating. That refutes *"check if the hook
 exists, evaluate, then call the hook"* as stated.
-⛔ **STILL OPEN, AND NOT CLAIMED**: whether the handler evaluates the argument
-itself or returns for BASIC to evaluate and is re-entered — both fit every
-reading.
+🟢 **ANSWERED 2026-09-15 (D-CFEVAL): THE HANDLER DOES *NOT* EVALUATE THE
+ARGUMENT — IT CALLS BACK INTO MAIN BASIC, AND THAT CODE EVALUATES AND
+TYPE-CHECKS.** Traced with a breakpoint on the inter-slot stub in RAM, the
+instrument Joost proposed.
+🎯 **THE DISCRIMINATOR IS THE STACK POINTER.** The stub at `$F38C` switches
+page 1 IN to the disk ROM at `SP=DB85`, then switches it back OUT to slot 0 at
+**`SP=DB79` — TWELVE BYTES DEEPER**. A return unwinds; a deeper frame is a CALL.
+The handler's own frame is still live underneath it.
+🔬 **AND THE CALL-BACK IS DOING THE EVALUATION, BY ITS OWN FOOTPRINTS**: inside
+it, with page 1 = slot 0, `KBUF $F421..$F423` and `A$`'s variable entry are read
+**at the same PCs the control `PRINT A$+".BAS"` uses**. `FILES 5` raises its Type
+mismatch inside that call-back, and between switch-in and call-back the disk ROM
+read **no** byte of the argument. Bare `FILES` skips the call-back entirely and
+goes straight to the disk.
+🔴 **CONTROLS, ALL ABLE TO FAIL AND ALL HELD**: `PRINT 1` → zero inter-slot
+events; `FROG` → only the error hook; `PRINT A$+".BAS"` → no `H_FILE`, no slot
+switch. The instrument demonstrably CAN see disk-ROM reads (it catches them
+reading a staged name later), so the ABSENCE of disk-ROM reads of the expression
+is a reading, not blindness. The stub's address was found EMPIRICALLY (the only
+non-hook RAM code executed during a statement) rather than recalled.
+📍 **SO THE FULL ORDER ON THE REFERENCE IS**: BASIC calls the hook → the disk
+ROM's handler is entered → it CALLS BACK into main BASIC across slots to evaluate
+the argument → control returns into the disk ROM → the disk work happens.
+💰 **WHICH SETTLES THE ARCHITECTURAL QUESTION FOR US: AN INTER-SLOT CALL FROM
+THE DISK ROM BACK INTO MAIN PAGE 1 IS NOT EXOTIC, IT IS WHAT THE REFERENCE DOES ON
+EVERY ARGUMENT.** D-VERBCLASS's **STAY 155 B** is therefore a PRICE and not a
+wall — it was measured under the SUB ROM's "no main-page-1 escape" rule, which the
+DISK ROM is not bound by.
+⛔ **STILL UNRESOLVED, AND DELIBERATELY NOT RECORDED**: WHICH routine the call-back
+enters in slot 0 (an internal address of the reference); how the disk ROM reaches
+the stub without passing `$0030`/`$001C`; and who writes the staged name. None
+changes the answer.
+🔴 **AND THE INVESTIGATION VOIDED ONE OF ITS OWN PROBES, WHICH LANDS ON AN EARLIER
+READING OF MINE TOO: AT t=22 s THE CF-3300 IS STILL AT THE DISK ROM'S "Enter date"
+PROMPT.** `scratchpad/cf_stubfind.py` typed into that prompt and saw page 1
+permanently in slot 3-1; it is kept as the recorded blind instrument. **That is
+also why my own slot trace read `A8 = $FC` with page 1 in slot 3** — it was
+sampling the disk ROM's prompt, not BASIC. ✅ The 35-cell census was RE-RUN at
+t=40 s and is unchanged (35 cells, all slot `$87`, all page 1), because the hooks
+are installed at INIT before the prompt.
 🔴 **AND THE OBVIOUS INSTRUMENT FOR IT IS BLIND — RECORDED SO NOBODY REBUILDS
 IT.** Tracing the slot registers during `FILES 5` looked decisive: if the handler
 reaches main BASIC, page 1 must leave the disk ROM's slot and come back. It

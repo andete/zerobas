@@ -14,7 +14,7 @@ for a probe whose rows are meaningless without one. What was never done is the
 DENOMINATOR -- nobody counted how many scratch probes still type a disk verb at
 a machine with no image mounted.
 
-\U0001f534 AND A NAIVE SCAN WOULD BE WRONG, WHICH IS THE DESIGN. Not every
+🔴 AND A NAIVE SCAN WOULD BE WRONG, WHICH IS THE DESIGN. Not every
 `OPEN"` needs a drive: `LPT:`, `CRT:`, `CAS:` and `GRP:` are DEVICE channels,
 `LOAD"CAS:"`/`SAVE"CAS:"` are tape, and a probe that only ever mentions those is
 correct with no disk at all. Counting them would inflate the finding and claim
@@ -26,7 +26,7 @@ So a file is REPORTED only when BOTH hold:
     device and cassette forms are excluded; and
   * no `diska` appears anywhere in the file.
 
-\U0001f534 AND THE FIRST CUT WAS TEXTUAL, WHICH PUT PROSE IN THE FINDING. It read
+🔴 AND THE FIRST CUT WAS TEXTUAL, WHICH PUT PROSE IN THE FINDING. It read
 every non-comment line, so `fatverb_knives`, `filesguard_knife`, `ngram12_knives`
 and others matched on the word `FILES` or `LOAD"file"` **inside their own
 docstrings**, and `bareform_probe` matched a PYTHON LIST of keyword names. 29
@@ -39,7 +39,7 @@ at the DISKLESS target on purpose: the absence of a drive IS its subject. Files
 whose text names the diskless machine are reported separately rather than
 counted as debt.
 
-\U0001f534 AND THE SECOND CUT WAS STILL WRONG, IN THE WAY IT HAD ALREADY WARNED
+🔴 AND THE SECOND CUT WAS STILL WRONG, IN THE WAY IT HAD ALREADY WARNED
 ABOUT. Seven probes typed `OPEN"TS.DAT"AS #1 LEN=128` with no `diska` anywhere
 in the file -- and they mount correctly, through `basic_probe_fldwidth`, whose
 `"dsk"` row tag selects a config that hands `run_cases` a writable copy. The
@@ -74,7 +74,7 @@ FILE_OPEN = re.compile(r"\b(OPEN|LOAD|SAVE|BLOAD|BSAVE|MERGE|RUN)\s*\"([^\"]*)\"
 DEVICE = re.compile(r"^(LPT|CRT|CAS|GRP|COM)\s*:", re.I)
 
 
-# \U0001f534 THE THREE KNOWN-BENIGN HITS, EACH WITH THE REASON READ OUT OF THE
+# 🔴 THE THREE KNOWN-BENIGN HITS, EACH WITH THE REASON READ OUT OF THE
 # FILE. The set may shrink freely; it grows only in a visible diff carrying a
 # sentence, which is the same discipline as the other pinned sets in tools/.
 ALLOW = {
@@ -87,6 +87,30 @@ ALLOW = {
     "tierscope_sweep.py":
         "prose in a non-docstring string ('an entry naming ex_poke and the FILES "
         "verb'), describing the tier scope rather than driving a machine",
+    # 🔴 D-CFEVAL (2026-09-15): FIVE PROBES WHOSE SUBJECT *IS* THE ABSENCE OF
+    # A DISK. They run `FILES` on the CF-3300 with no image precisely so the verb
+    # fails on the medium, because what is being measured is the CALL PATH -- which
+    # slot each hook points at, when the inter-slot stub fires, and who reads the
+    # argument -- not the directory listing. Mounting an image would add a real
+    # directory read and lengthen the very trace being examined.
+    "cf_stubfind.py":
+        "`FILES 5` drives the inter-slot trace, not a drive. 🔴 AND THIS PROBE IS "
+        "KEPT AS A RECORDED BLIND INSTRUMENT: at t=22 s the CF-3300 is still at "
+        "the disk ROM's `Enter date` prompt, so it typed into that prompt and saw "
+        "page 1 permanently in slot 3-1. Its readings are VOID",
+    "cf_trace.py":
+        "`FILES 5` is the traced statement; the reading is the ordered "
+        "CLPRIM/RST30/CALSLT/$A8 event list, and a numeric argument raises before "
+        "any drive access anyway",
+    "cf_whoreads.py":
+        "`FILES A$+\".BAS\"` is traced to see WHICH SLOT reads KBUF and the "
+        "variable entry; the medium failing is expected and is not the reading",
+    "cf_whoreads2.py":
+        "same statement as cf_whoreads.py, with RAM dumps added to confirm the "
+        "variable entry and string body being read",
+    "cf_whoreads3.py":
+        "bare `FILES` and the literal form, to show the call-back is SKIPPED when "
+        "there is no argument -- the absence of a disk is the point",
 }
 
 
@@ -168,7 +192,7 @@ def typed_strings(src: str):
 def scan(scratch=SCRATCH, floor=50) -> int:
     files = sorted(f for f in os.listdir(scratch) if f.endswith(".py"))
     if len(files) < floor:
-        print(f"\U0001f534 REFUSING: only {len(files)} scratch .py found; the "
+        print(f"🔴 REFUSING: only {len(files)} scratch .py found; the "
               f"corpus is hundreds. The scan broke, and an empty finding would "
               f"read as good news.")
         return 2
@@ -200,7 +224,7 @@ def scan(scratch=SCRATCH, floor=50) -> int:
             continue
         hits.append((name, trig, "nodisk" in src.lower()))
 
-    # \U0001f534 ONLY THE REAL CORPUS CAN MAKE AN EXCUSE STALE. Scanning any
+    # 🔴 ONLY THE REAL CORPUS CAN MAKE AN EXCUSE STALE. Scanning any
     # other directory trivially fails to trip all three, so a blanket
     # `set(ALLOW) - set(excused)` reported them all stale -- which is how the
     # selftest's own S4/S5 arms went red against a temp corpus. The excuses name
@@ -209,7 +233,7 @@ def scan(scratch=SCRATCH, floor=50) -> int:
              if os.path.abspath(scratch) == os.path.abspath(SCRATCH) else [])
     print(f"disk-mount: {len(files)} scratch .py — no drive verb {clean}, "
           f"drive verb AND mounts {mounted}, excused {len(excused)}, "
-          f"\U0001f534 unmounted {len(hits)}")
+          f"🔴 unmounted {len(hits)}")
     deliberate = [h for h in hits if h[2]]
     debt = [h for h in hits if not h[2]]
     for name, (verb, ln), _ in debt:
@@ -225,7 +249,7 @@ def scan(scratch=SCRATCH, floor=50) -> int:
         print("  none — every scratch probe that types a drive verb mounts an "
               "image, or is excused with a reason.")
     if stale:
-        print(f"\U0001f534 {len(stale)} STALE excuse(s) — the file no longer "
+        print(f"🔴 {len(stale)} STALE excuse(s) — the file no longer "
               f"trips the scan, so the entry hides nothing and should go: "
               + " ".join(stale))
     print("\n⚠️  TEXTUAL SHORTLIST, NOT A VERDICT: a hit may be a verb "
@@ -238,7 +262,7 @@ def scan(scratch=SCRATCH, floor=50) -> int:
 
 
 def selftest() -> int:
-    """\U0001f534 PLANT BOTH DIRECTIONS. A gate whose corpus has been clean since
+    """🔴 PLANT BOTH DIRECTIONS. A gate whose corpus has been clean since
     the day it was written would print the same confident zero if its matcher
     had rotted to `return None` [[a-knife-can-be-inert-because-the-build-did-not-happen]]."""
     import tempfile
@@ -246,7 +270,7 @@ def selftest() -> int:
 
     def arm(name, cond):
         nonlocal ok
-        print(f"{'PASS' if cond else '\U0001f534 FAIL'}  {name}")
+        print(f"{'PASS' if cond else '🔴 FAIL'}  {name}")
         ok = ok and bool(cond)
 
     arm("S1 the live scratchpad is clean", scan() == 0)
@@ -268,7 +292,7 @@ def selftest() -> int:
         open(os.path.join(d, "device_probe.py"), "w").write(
             'CASES = [("r.lpt", \'OPEN"LPT:" FOR OUTPUT AS #1\')]\n')
         arm("S5 a DEVICE channel (LPT:) is not a drive verb", scan(d) == 0)
-    print("selftest:", "GREEN" if ok else "\U0001f534 RED")
+    print("selftest:", "GREEN" if ok else "🔴 RED")
     return 0 if ok else 1
 
 
