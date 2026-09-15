@@ -1878,7 +1878,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:18892 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:18917 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -2044,7 +2044,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:6645 (T-6FE392)8 (T-529ABE)` from `TODO.md:17543 (T-529ABE)`: a
+      `TODO.md:6645 (T-6FE392)8 (T-529ABE)` from `TODO.md:17568 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -7489,7 +7489,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:17543 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:17568 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -12103,6 +12103,31 @@ list. **When a slice lands, grep this list for what it just shipped.**
       flagged the byte figure beside it as PRESENT-TENSE — its pattern includes
       `\bis at\b`, which ordinary English hits. A false positive costs one
       rephrase, the trade its own header argues for — recorded, not filed.
+
+⚡ **D-TAPEVERB (2026-09-15) — ONE OF THE SIX UNASKABLE VERBS IS NOW ASKED, AND
+THE OTHER TWO TURN OUT TO NEED A DIFFERENT INSTRUMENT FOR A REASON THIS TREE
+SHIPPED ITSELF THIS MORNING.**
+🎯 D-NODISKDEN left `SAVE`/`BLOAD`/`BSAVE` out of the diskless denominator because
+with no disk ROM a bare `SAVE"X"` is a **CASSETTE** save and waits on the tape
+motor — it blocked the VG-8020 and poisoned nine later cases.
+🟢 **THE BLANK-TAPE RIG UNBLOCKS THE DECK** (`cassetteplayer new <path>`, the same
+prologue `NEEDS-BLANKTAPE:` uses) **and `BSAVE` is now measured on three sides and
+AGREES**: VG-8020 runs, zerobas-NODISK runs, CF-3300 answers ERR 5. Controls green
+(`FROG` → Syntax error, `FILES` → 5/70/5).
+🔴 **BUT `SAVE` AND `BLOAD` ARE NOT A WINDOW PROBLEM, AND THREE WINDOWS PROVED
+IT.** At `step=8` the reference read nothing; at 30 it reached `Ok`; at **60** it
+still reached `Ok` and **never printed the fence**. That is not the capture
+closing — **`SAVE` ENDS THE RUN**, which is exactly the behaviour **D-KWSAVEEND
+shipped earlier the same day**, so a `PRINT` after it is unreachable BY
+CONSTRUCTION. `BLOAD` against a tape with no matching file never returns either.
+🎯 **SO THEIR READING MUST COME FROM THE TAPE, NOT FROM A MARKER PRINTED
+AFTERWARDS** — `basic_probe_kwsweep.py`'s `NEEDS-BLANKTAPE:` rig already decodes
+the recording, and that is the instrument these two need. The probe now carries
+only what its shape can honestly measure, with the reason written where the two
+missing cases used to be.
+⚠️ **AND THE FIRST CUT WOULD HAVE CALLED IT A DIVERGENCE**: at `step=8` zerobas
+read `<X>` for all three while the reference read nothing, which is the
+`step`-window trap wearing a divergence's clothes for the second time today.
 
 ⚡ **D-DSKOHOOK (2026-09-15) — `H_DSKO` WAS THE WRONG ADDRESS IN BOTH FILES, AND
 THAT IS EXACTLY WHY NOTHING WENT RED.**
