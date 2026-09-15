@@ -559,6 +559,14 @@ FORMS: dict[str, tuple[tuple[str, ...], str]] = {
         "PLAY ROW AT ALL; `make play-acceptance` is where PLAY is measured today, "
         "and this bar says how much of it a kwsweep row set would have to cover.",
     ),
+    "LOAD": (
+        ("plain", "run"),
+        "`LOAD \"<file>\"[,R]` -- load, and load-and-RUN. Two behaviours, and only "
+        "the second is observable with this instrument: both REPLACE the running "
+        "program, so the plain form leaves nothing to print with and its reading "
+        "would be an ABSENCE both machines produce. The `,R` form speaks through "
+        "the LOADED program, which is why `PROG3.BAS` exists.",
+    ),
     "MOTOR": (
         ("toggle", "on", "off"),
         "`MOTOR [ON|OFF]` -- three behaviours, and the bare one is not a spelling of "

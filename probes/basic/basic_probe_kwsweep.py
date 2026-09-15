@@ -142,7 +142,14 @@ DISK_TEST_DSK = _os.path.join(
 # Measured: at `cap_gap` 8 the reference still blanks on all five; at 12/3.5 both
 # machines answer; 20/5 is the proven setting and the cost is EMULATED time, not
 # wall time. Applied to the NEEDS-DISK group only [[apparatus-is-part-of-the-measurement]].
-DISK_TIMING = dict(step=5.0, cap_gap=20.0, timeout=900.0)
+# 🔴 D-KWRUNFILE: `step` WENT 5.0 -> 8.0, AND `open_c` IS WHY -- TWICE. A case
+# SLOWER THAN `step` has its SUCCESSOR typed into a still-running program, and on
+# the CF-3300 a row with two open/write/close cycles sits right at the 5 s edge:
+# `open_c` read cleanly alone and came back with a BLANK REFERENCE SCREEN as the
+# disk group grew, once when `bsave_b` joined it and again when the RUN/LOAD rows
+# did. Shrinking the row fixed it the first time and did not the second -- the
+# fix belongs to the GROUP, not to whichever row happens to be at the edge.
+DISK_TIMING = dict(step=8.0, cap_gap=20.0, timeout=900.0)
 
 
 def _disk_image() -> str:
@@ -3330,6 +3337,25 @@ SWEEP: list[tuple[str, str, str | None, str, str]] = [
      "NEEDS-DISK: " "FORM:ascii the ASCII save ENDS THE RUN, so the statement after "
      "it is never reached -- the same shape `LIST` inside a program has, and the "
      "reason is the same: this path drives the LIST walk"),
+    # 🌾 D-KWRUNFILE: the two rows the FIXTURE was blocking, not the machine.
+    # `RUN"<file>"` and `LOAD"<f>",R` REPLACE the running program, so the row that
+    # typed them has nothing left to print with -- the only witness is output from
+    # the LOADED program, and `PROG.BAS`/`PROG2.BAS` both only POKE. `PROG3.BAS`
+    # is `10 PRINT"[3h]"` (Joost ruled 2026-09-15: add a second `.BAS`, leave
+    # `PROG.BAS` alone), appended LAST in the image so no earlier file moves.
+    # ⚠️ BOTH ROWS END THE TYPED PROGRAM, so they sit at the very END of the disk
+    # group beside `save_b` for the same reason it does: a case that leaves
+    # nothing of itself running must have no successor to poison.
+    ("runkw_c", 'run"prog3.bas"',
+     'RUN"PROG3.BAS"',                                        "stored",
+     "NEEDS-DISK: " "FORM:file `[3h]` comes from the LOADED program, which is the "
+     "only thing that can speak once ours has been replaced"),
+    ("loadkw",  'load"prog3.bas",r',
+     'LOAD"PROG3.BAS",R',                                     "stored",
+     "NEEDS-DISK: " "FORM:run the same witness through `LOAD`'s own execute "
+     "option. \u26a0\ufe0f The PLAIN `LOAD` has NO row and cannot get one with this "
+     "instrument: it replaces the program and runs nothing, so the reading would "
+     "be an ABSENCE both machines produce"),
     ("bin",     "a$=bin$(5)",
      'PRINT"[";BIN$(5);"]"',                         "direct",
      "FORM:to-binary absent => syntax error; real => 101"),

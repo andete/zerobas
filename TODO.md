@@ -20271,6 +20271,49 @@ the new ROM (LOAD-BEARING); **the other rows' verdicts still date from the
 pre-fix ROM**, and that is defensible here only because a 3-byte tail shifts
 addresses without changing whether any row NOTICED its cut. A change that moved
 code between regions would need the full `--all` / `--allfn` re-measure.
+⚡ **D-KWRUNFILE — RULING 3 SHIPPED. `RUN` CLOSES AT 3/3. 147 of 163.**
+🟢 **`PROG3.BAS` is `10 PRINT"[3h]"`, appended LAST to `disk/test720.dsk`.**
+`RUN"<file>"` and `LOAD"<f>",R` REPLACE the running program, so the row that
+typed them has nothing left to print with — **the only witness is output from the
+LOADED program, and `PROG.BAS`/`PROG2.BAS` both only POKE.** That was the whole
+blocker: not a missing behaviour, a fixture that says nothing out loud.
+🎯 **`add_file` allocates clusters sequentially, so nothing before it moves** —
+`TEST.BIN` keeps cluster 2, its mid-file chain hop and its chain EOF, and every
+FAT row that pins them still reads what it read. That is what "leave `PROG.BAS`
+alone" buys.
+🟢 **`RUN` 3/3 → TIER 1** (`[3h]` from the loaded program), and `LOAD` gets a
+bar of 2 with the `,R` form covered. ⛔ **`LOAD`'s PLAIN form cannot get a row
+with this instrument** — it replaces the program and runs nothing, so its reading
+would be an ABSENCE both machines produce. `LOAD` stays 1/2 on purpose.
+🔴 **AND THE DISK GROUP'S `step` WENT 5.0 → 8.0, BECAUSE `open_c` BLANKED FOR
+THE SECOND TIME.** A case SLOWER THAN `step` has its SUCCESSOR typed into a
+still-running program, and on the CF-3300 a row with two open/write/close cycles
+sits right at the 5 s edge: `open_c` read cleanly alone and came back with a BLANK
+REFERENCE SCREEN as the group grew — once when `bsave_b` joined it, and again when
+these two rows did. **Shrinking the row fixed it the first time and did not the
+second: the fix belongs to the GROUP, not to whichever row happens to be at the
+edge.**
+🔴 **AND THE FIXTURE GATE'S OWN SELFTEST WENT RED WHILE THE GATE WAS RIGHT.**
+`check_fixture_integrity.py`'s S4 asserted a LITERAL **6** — five generated files
+plus the one it plants — so the moment the generator grew a sixth, the selftest
+failed and the check itself still passed. **A count that must be edited every time
+the fixture legitimately changes is a pin masquerading as a check**; S4 now derives
+it (one MORE than a fresh generation), which is the property it actually means.
+🔴 **AND THE BATTERY CAUGHT TWO MORE FIXTURE-COUPLED PINS — WHICH IS THE
+GATES WORKING, NOT THE FIXTURE BEING WRONG.** `namspc-acceptance`'s POSITIVE
+CONTROL `f.filesbare` pinned `5 entries + OK` (its own comment says *"change that
+image and this goes red on a REFERENCE, which is the correct loud failure"* — and
+it did, refusing to score all 138 rows rather than reporting a regression), and
+`diskbasic-acceptance` pinned the five-name directory in two probes.
+🎯 **THE CF-3300's WRAP WAS RE-MEASURED, NOT PREDICTED.** `disk_probe_files.py`
+carries the reference listing at WIDTH 29 as a FROZEN CONSTANT, and its own
+comment records that the second such constant *"froze from the polluted fixture"*
+once already. Its `run()` does not answer the CF-3300's date prompt, so the
+constant cannot be refreshed through the probe itself —
+`scratchpad/cf3300_files_probe.py` does it with the reset the kwsweep already
+uses for that machine. The real machine now reads
+`PROG2   .BAS PROG3   .BAS` on the third line, byte-identical to what this tree
+produces.
       ⚠️ **`TXTMAX` IS NOW BOUNDED BY `DETOKBUF`, NOT BY FREE RAM** — at 1280 B
       it does not fit the 1024 B window, so `$BB00` is the stop until DETOKBUF
       is dealt with. Of D-LINEMAX's 1792 B, **1024 recovered, 768 still charged**.

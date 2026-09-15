@@ -59,8 +59,14 @@ SRC_DSK = os.environ.get("DISK_DSK", os.path.join(ZEROBAS, "disk", "test720.dsk"
 # ⚠️ RE-MEASURING IS NOT ENOUGH IF THE THING MEASURED IS CONTAMINATED. The rule
 # "re-measure, never edit the constant into agreement" is right and was followed;
 # it just cannot see a bad input [[an-instrument-can-fail-the-way-the-thing-it-replaced-failed]].
+# ⚠️ FIXTURE-COUPLED: this IS the directory of disk/test720.dsk, in directory
+# order. `PROG3.BAS` joined it on 2026-09-15 (D-KWRUNFILE) because
+# `RUN"<file>"` and `LOAD",R"` REPLACE the running program, so the only witness
+# a kwsweep row can have is output from the LOADED program -- and every other
+# `.BAS` on the image only POKEs. Joost ruled: add a second `.BAS`, leave
+# `PROG.BAS` alone.
 EXPECT = ["TEST    .BIN", "HI      .TXT", "PROG    .BIN", "PROG    .BAS",
-          "PROG2   .BAS"]
+          "PROG2   .BAS", "PROG3   .BAS"]
 
 
 def build_tcl(out_path: str, width: int | None) -> str:
@@ -126,9 +132,14 @@ def run(machine: str, out: str, width=None, timeout: float = 90.0):
 # worth keeping: boot the CF-3300, CLEAR THE DATE PROMPT FIRST (skipping the
 # `\r` lets the prompt swallow both typed lines, which reads as a listing of
 # nothing), WIDTH 29, FILES -- two entries per 29-column line, directory order.
+# 🟢 RE-MEASURED 2026-09-15 (D-KWRUNFILE) when `PROG3.BAS` joined the image:
+# `scratchpad/cf3300_files_probe.py` runs the procedure above -- the `run()`
+# below does NOT answer the date prompt, which is why the refresh needs its own
+# entry point. The third line gained `PROG3   .BAS`; the wrap was MEASURED on the
+# real machine, not predicted from the width.
 CF3300_W29 = ["TEST    .BIN HI      .TXT",
               "PROG    .BIN PROG    .BAS",
-              "PROG2   .BAS"]
+              "PROG2   .BAS PROG3   .BAS"]
 
 
 def _files_lines(rows):

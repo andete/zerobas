@@ -792,13 +792,18 @@ CONTROL_WANT = {"c.let": " 7 ", "r.digctl": " 7 ", "r.strctl": "HI",
                 # which this probe already reports as an instrument fault
                 # (exit 2, nothing scored) rather than as a regression. Knife
                 # K-FS1 is the cut that proves it.
-                # ⚠️ FIXTURE-COUPLED ON PURPOSE: `5 entries` is the file count
+                # ⚠️ FIXTURE-COUPLED ON PURPOSE: `6 entries` is the file count
                 # of disk/test720.dsk (TEST.BIN, HI.TXT, PROG.BIN, PROG.BAS,
-                # PROG2.BAS). Change that image and this goes red on a
-                # REFERENCE, which is the correct loud failure -- the rows
+                # PROG2.BAS, PROG3.BAS). Change that image and this goes red on
+                # a REFERENCE, which is the correct loud failure -- the rows
                 # below it are measuring a directory listing and there is no
                 # honest way to read one without knowing what is in it.
-                "f.filesbare": "5 entries + OK",
+                # 🟢 IT DID EXACTLY THAT ON 2026-09-15 (D-KWRUNFILE), and the
+                # count moved 5 -> 6 because `PROG3.BAS` was added on purpose:
+                # `RUN"<file>"` and `LOAD",R"` REPLACE the running program, so
+                # the only witness a row can have is output from the LOADED
+                # program, and every other `.BAS` on the image only POKEs.
+                "f.filesbare": "6 entries + OK",
                 "f.fileslitl": "0 entries + <File not found>",
                 # 🟢 `10 PRINT"[B]" / 20 END` -- the same fixture as n.runline
                 # with the GOTO/RUN pair taken out. A literal want, so a
@@ -941,11 +946,11 @@ DEFERRED: dict[str, "probe_report.Deferral"] = {
     # `do_files` -- those three rows are what would catch it going anywhere else.
     "m.blank": probe_report.Deferral(
         "D-FSPEC: a BLANK filespec is `no filespec` there (lists all); a do_files question",
-        vg8020="<NO DISK ON THIS SIDE>", cf3300="5 entries + OK",
+        vg8020="<NO DISK ON THIS SIDE>", cf3300="6 entries + OK",
         zb="0 entries + <Bad file name>"),
     "m.drvbare": probe_report.Deferral(
         "D-FSPECCHAR: a DRIVE-PREFIX-ONLY filespec is the same class as m.blank -- `no filespec` there (lists all); the other verbs are measured and AGREE (m.drvkill/load/save), so the fix is in do_files, NOT in bn_done's empty-name test",
-        vg8020="<NO DISK ON THIS SIDE>", cf3300="5 entries + OK",
+        vg8020="<NO DISK ON THIS SIDE>", cf3300="6 entries + OK",
         zb="0 entries + <Bad file name>"),
 }
 

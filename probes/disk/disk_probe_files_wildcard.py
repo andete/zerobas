@@ -5,11 +5,12 @@
 """Functional + differential oracle for zerobas-BASIC WILDCARD FILES (option-
 closure Item 4).
 
-On a /tmp copy of test720.dsk (TEST.BIN HI.TXT PROG.BIN PROG.BAS PROG2.BAS),
+On a /tmp copy of test720.dsk (TEST.BIN HI.TXT PROG.BIN PROG.BAS PROG2.BAS
+PROG3.BAS),
 types a filtered directory listing and dumps the text screen:
 
-  FILES "*.BAS"    ' -> only PROG.BAS and PROG2.BAS
-  FILES "PROG*.*"  ' -> PROG.BIN, PROG.BAS, PROG2.BAS
+  FILES "*.BAS"    ' -> PROG.BAS, PROG2.BAS and PROG3.BAS
+  FILES "PROG*.*"  ' -> PROG.BIN, PROG.BAS, PROG2.BAS, PROG3.BAS
 
 The listed 8.3 names (order preserved) are compared to the real National CF-3300
 Disk BASIC given the identical command -- a live differential that also confirms
@@ -45,8 +46,9 @@ ZEROBAS = os.environ.get("ZEROBAS", os.path.dirname(os.path.dirname(os.path.dirn
 SRC_DSK = os.environ.get("DISK_DSK", os.path.join(ZEROBAS, "disk", "test720.dsk"))
 
 CASES = [
-    ('files"*.bas"',   ["PROG    .BAS", "PROG2   .BAS"]),
-    ('files"prog*.*"', ["PROG    .BIN", "PROG    .BAS", "PROG2   .BAS"]),
+    ('files"*.bas"',   ["PROG    .BAS", "PROG2   .BAS", "PROG3   .BAS"]),
+    ('files"prog*.*"', ["PROG    .BIN", "PROG    .BAS", "PROG2   .BAS",
+                        "PROG3   .BAS"]),
 ]
 # A FILES listing token is the fixed 12-char 8.3 field: an 8-char name (first
 # char alnum, padded with spaces) + '.' + a 3-char ext. This deliberately does

@@ -138,6 +138,14 @@ def selftest() -> int:
     subprocess.run([sys.executable, os.path.join(tmp, "tools", "make_test_dsk.py"),
                     live], capture_output=True, cwd=tmp)
     arm("S2 a freshly generated fixture is clean (the control)", check(tmp) == 0)
+    # 🔴 DERIVED, NOT PINNED, AND D-KWRUNFILE IS WHY. S4 below used to assert a
+    # LITERAL 6 -- five generated files plus the planted one -- so the moment the
+    # generator grew a sixth file (`PROG3.BAS`) the gate's own SELFTEST went red
+    # while the gate itself was perfectly right. A count that has to be edited
+    # every time the fixture legitimately changes is a pin masquerading as a
+    # check; the ARM is "one MORE than a fresh generation", which is the property
+    # S4 actually means.
+    fresh_n = len(directory(live) or ())
     # plant the exact pollution that was found: one extra directory entry
     d = bytearray(open(live, "rb").read())
     res, nfat = d[0x0E] | (d[0x0F] << 8), d[0x10]
@@ -151,7 +159,7 @@ def selftest() -> int:
     open(live, "wb").write(bytes(d))
     arm("S3 an extra directory entry goes RED", check(tmp) == 1)
     arm("S4 ...and the report is not fooled into calling it MISSING",
-        directory(live) is not None and len(directory(live)) == 6)
+        directory(live) is not None and len(directory(live)) == fresh_n + 1)
     shutil.rmtree(tmp, ignore_errors=True)
     print("selftest:", "GREEN" if ok else "🔴 RED")
     return 0 if ok else 1

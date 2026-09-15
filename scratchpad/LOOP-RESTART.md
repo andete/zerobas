@@ -13,7 +13,12 @@ decisions, and they set the order of the next slices. Do not re-ask.**
 2. **The four code forms (LOCATE cursor switch, SCREEN key click, `VARPTR(#n)`,
    `INPUT$` console form) — CARVE FIRST, THEN ALL FOUR TOGETHER.** A carve slice
    is the prerequisite; do not dribble them into the leftover bytes.
-3. **The disk fixture — ADD A SECOND `.BAS`, LEAVE `PROG.BAS` ALONE.** It must
+3. ✅ **DONE (D-KWRUNFILE): `PROG3.BAS` = `10 PRINT"[3h]"`, appended last.**
+   `RUN` 3/3; `LOAD` 1/2 (its plain form cannot get a row here). The disk group's
+   `step` went 5.0 → 8.0 in the same slice — a case slower than `step` has its
+   successor typed into a still-running program, and `open_c` blanked twice before
+   the fix moved from the row to the GROUP.
+   *(original ruling: ADD A SECOND `.BAS`, LEAVE `PROG.BAS` ALONE.)* It must
    PRINT a marker; that is what makes `RUN"<file>"` and `LOAD` observable. Nothing
    existing changes its bytes, so every suite mounting `disk/test720.dsk` keeps
    reading what it read.

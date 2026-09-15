@@ -294,6 +294,25 @@ POKE_TOKEN = 0x98
 HEX_TOKEN = 0x0C
 INT1_TOKEN = 0x0F
 
+# --- PROG3.BAS: the fixture that PRINTS, and why it had to exist --------------
+# 🔴 PROG.BAS AND PROG2.BAS BOTH **POKE** A LANDMARK, AND A LOADED PROGRAM THAT
+# POKES CANNOT BE SEEN BY A SCREEN-SCRAPING ROW. `RUN"<file>"` and `LOAD"<f>",R`
+# REPLACE the running program, so the row that typed them has nothing left to
+# print with -- the only witness a kwsweep row can have is output from the LOADED
+# program itself. That is why `RUN` sat at 2/3 and `LOAD` stayed UNRATED: not a
+# missing behaviour, a fixture that says nothing out loud.
+# 🎚️ JOOST RULED 2026-09-15: "add a second .BAS, leave PROG.BAS alone" -- so this
+# is a SIXTH file appended after PROG2.BAS. `add_file` allocates clusters
+# sequentially from `next_free`, so nothing before it moves: TEST.BIN keeps
+# cluster 2, its mid-file chain hop and its chain EOF, and every FAT row that
+# pins them still reads what it read.
+#   10 PRINT"[3h]"
+# `PRINT` is $91 and a string literal is stored VERBATIM, quotes included, so the
+# body is the token then `"[3h]"` then the line terminator. The marker is the
+# kwsweep marker alphabet's next free one and is PREFIX-FREE against every other.
+BAS3_MARKER = '"[3h]"'
+PRINT_TOKEN = 0x91
+
 
 def wrap_basic_line(body: bytes, lineno: int = 10,
                     txtbase: int = BAS_TXTBASE) -> bytes:
@@ -341,6 +360,11 @@ def prog2_bas_body() -> bytes:
         HEX_TOKEN, BAS2_MARKER_BYTE, 0x00,                    # &H7B -> $0C 7B 00
         0x00,                                                  # line terminator
     ])
+
+
+def prog3_bas_body() -> bytes:
+    """`10 PRINT"[3h]"` -- the fixture that PRINTS, for RUN"<file>" / LOAD",R"."""
+    return bytes([PRINT_TOKEN]) + BAS3_MARKER.encode("ascii") + bytes([0x00])
 
 
 def make_basic_file(body: bytes | None = None) -> bytes:
@@ -419,6 +443,11 @@ def main():
     # PROG2.BAS: the embedded-$00 LOAD regression fixture (`10 POKE &HD100,&H7B`).
     prog2_bas = make_basic_file(prog2_bas_body())
     img.add_file("PROG2", "BAS", prog2_bas)
+    # PROG3.BAS: the one that PRINTS. A loaded program that only POKEs cannot be
+    # seen by a screen-scraping row, and RUN"<file>" / LOAD",R" leave the row with
+    # nothing of its own to print with. Appended LAST so no earlier file moves.
+    prog3_bas = make_basic_file(prog3_bas_body())
+    img.add_file("PROG3", "BAS", prog3_bas)
 
     open(out, "wb").write(img.finish())
     print(f"wrote {out} ({TOTAL_SECTORS * SECTOR} bytes)")
@@ -439,6 +468,9 @@ def main():
           f"file {prog2_bas.hex()}")
     print(f"             relinked store image @ ${BAS_TXTBASE:04X}: "
           f"{relinked_image(prog2_bas_body()).hex()}")
+    print(f"  PROG3.BAS: {len(prog3_bas)} bytes tokenised BASIC, the PRINTING "
+          f"fixture (marker $FF + 1 line `10 PRINT{BAS3_MARKER}`); "
+          f"file {prog3_bas.hex()}")
     print(f"  geometry : firstFAT={FIRST_FAT} firstRoot={FIRST_ROOT} "
           f"rootSecs={ROOT_SECS} firstData={FIRST_DATA}")
 
