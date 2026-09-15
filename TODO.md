@@ -1878,7 +1878,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:18737 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:18769 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -2044,7 +2044,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:6645 (T-6FE392)8 (T-529ABE)` from `TODO.md:17388 (T-529ABE)`: a
+      `TODO.md:6645 (T-6FE392)8 (T-529ABE)` from `TODO.md:17420 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -7489,7 +7489,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:17388 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:17420 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -12104,9 +12104,11 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `\bis at\b`, which ordinary English hits. A false positive costs one
       rephrase, the trade its own header argues for — recorded, not filed.
 
-- [ ] 🔴 **`FIELD` HAS NO DISK-PRESENCE GATE, AND THERE IS NO HOOK TO GATE IT
-      WITH.**
-      🔭 SCOUT-THEN-ASK — the measuring is done; the choice of presence test is not.
+- [ ] 🔴 **`FIELD`, `LSET` AND `RSET` HAVE NO DISK-PRESENCE GATE. THE HOOKS
+      ARE NOW IDENTIFIED; THE BYTES ARE NOT THERE YET.**
+      🔭 SCOUT-THEN-ASK — the measuring is DONE (three hooks named, three
+      controls passed, `GET`/`PUT` excluded); what is left is 16-24 B of main
+      page 1, which had 3 B free on 2026-09-15.
       Measured 2026-09-15 (D-NODISKGAP,
       [`scratchpad/nodiskgap_probe.py`](scratchpad/nodiskgap_probe.py), four
       sides with controls): the diskless VG-8020 answers **ERR 5** to `FIELD` and
@@ -12135,17 +12137,47 @@ list. **When a slice lands, grep this list for what it just shipped.**
       — which `expansion-protocol.md` §2's own table calls `HDSKO` — IS claimed.
       Two of our documents disagree about `DSKO$`'s hook address and the machine
       sides with §2.
-      🔬 **THE DECISIVE EXPERIMENT, AND IT IS CHEAP**: on the CF-3300 `POKE` one
-      candidate's first byte to `201` (a bare `RET`, which is what an unclaimed
-      hook is) and run the verb. The slot whose un-claiming flips `FIELD#1,2 AS
-      A$` from ERR 59 to **ERR 5** is `FIELD`'s hook. One boot per candidate,
-      fourteen candidates, and a bisect halves that. ⚠️ Black-box on the
-      REFERENCE — a POKE and a reading, no disassembly.
+      🟢 **RUN 2026-09-15, AND IT ANSWERED ALL THREE**
+      ([`scratchpad/hookid_probe.py`](scratchpad/hookid_probe.py)). On the CF-3300
+      `POKE <cell>,201` un-claims a hook live (a bare `RET` is what an unclaimed
+      hook IS), and the verb that then answers ERR 5 owns that cell:
+      | hook | address |
+      |---|---|
+      | `H_LSET` | **`$FE21`** |
+      | `H_RSET` | **`$FE26`** |
+      | `H_FIELD` | **`$FE2B`** |
+      Consecutive cells, 5 apart, exactly the shape a hook table should have.
+      **Exactly one slot flips each verb** — the other candidates all read
+      unchanged, so each is identified, not merely consistent.
+      🔴 **THREE CONTROLS, AND ALL THREE COULD HAVE FAILED**: poking NOTHING
+      left every reading unmoved (so running the program is not what changes the
+      answer); poking `H_FILE $FE7B`, a slot ALREADY named here, flipped `FILES`
+      from ERR 70 to ERR 5 — **that is the one that proves the METHOD**; and that
+      same poke left `FIELD` at 59, so a hit is SPECIFIC rather than "un-claiming
+      anything breaks everything".
       📏 Main page 1 had **3 B** free on 2026-09-15, so the answer has to be
       cheap or it has to wait for the approved 256 B carve.
-      ⚠️ `GET`/`PUT`/`LSET`/`RSET` are the rest of `field.asm` and have NOT been
-      asked yet — they may have the same hole, and the same sweep answers all of
-      them at once, because each will have a slot among those fourteen too.
+      🟢 **AND THE REST OF `field.asm` HAS BEEN ASKED — the answer is NOT
+      "all of them".** Measured on three sides 2026-09-15:
+      | verb | VG-8020 | CF-3300 | zb NODISK | |
+      |---|---|---|---|---|
+      | `FIELD#1,2 AS A$` | ERR 5 | ERR 59 | ERR 59 | 🔴 gate needed |
+      | `LSET A$="X"` | ERR 5 | ran | ran | 🔴 gate needed |
+      | `RSET A$="X"` | ERR 5 | ran | ran | 🔴 gate needed |
+      | `GET#1,1` | ERR 59 | ERR 59 | ERR 59 | ✅ NO divergence |
+      | `PUT#1,1` | ERR 59 | ERR 59 | ERR 59 | ✅ NO divergence |
+      🎯 **`GET` and `PUT` need NO gate**: the diskless reference answers the
+      channel's own 59 exactly as we do. Asking that BEFORE hunting slots is what
+      kept the hunt to two verbs instead of four.
+      ⚠️ **`MERGE` IS NOT MEASURABLE WITH THIS INSTRUMENT AT ALL** — it merges
+      into the RUNNING PROGRAM, so it destroys the probe that asks the question,
+      and the VG-8020 cell came back with no fence. An apparatus limit, recorded
+      as one rather than read as a divergence.
+      💰 **THE FIX DOES NOT FIT TODAY AND IS NOT BEING SQUEEZED.** A gate is
+      `push hl / ld hl,H_x / call chan_gate / pop hl` = **8 B** per site; three
+      sites is 24 B, or 16 B if `LSET`/`RSET` share a head the way `FILES`/
+      `LFILES` now do. Main page 1 had **3 B** free on 2026-09-15. So this WAITS
+      for the approved 256 B carve — and it is a good early customer for it.
 
 - [ ] 🔴 **`PLAY`'s `X<var>;` SUBSTRING EXECUTION IS MSX1 MML AND THIS TREE
       DOES NOT IMPLEMENT IT — THE ONE FORM BETWEEN `PLAY` AND TIER 1.**
