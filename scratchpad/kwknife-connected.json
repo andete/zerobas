@@ -1,5 +1,5 @@
 {
- "rom_fingerprint": "88855a6e 6dbd7e39 a01dabda a2558499",
+ "rom_fingerprint": "2163d5d2 6dbd7e39 309f4804 ec819140",
  "rows": {
   "ABS": {
    "connected": true,
@@ -376,6 +376,16 @@
    },
    "row": "dski",
    "subject": "DSKI$",
+   "verdict": "MISSING",
+   "weak": false
+  },
+  "DSKO": {
+   "connected": true,
+   "modes": {
+    "stmt": "MISSING"
+   },
+   "row": "dsko",
+   "subject": "DSKO$",
    "verdict": "MISSING",
    "weak": false
   },
@@ -1512,6 +1522,12 @@
     "dski": "MISSING"
    }
   },
+  "DSKO$": {
+   "connected": true,
+   "rows": {
+    "dsko": "MISSING"
+   }
+  },
   "EQV": {
    "connected": true,
    "rows": {
@@ -1863,5 +1879,5 @@
    }
   }
  },
- "written": "2026-09-15 11:21:31"
+ "written": "2026-09-15 15:15:43"
 }

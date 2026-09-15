@@ -49,7 +49,15 @@ H_CVS           equ     $FE44   ; CVS
 H_CVD           equ     $FE49   ; CVD
 H_NAME          equ     $FDF9   ; NAME    (channel verbs, D-CHANHOOK)
 H_KILL          equ     $FDFE   ; KILL
-H_DSKO          equ     $FDF4   ; DSKO$ (D-DSKIO)
+H_DSKO          equ     $FDEF   ; DSKO$ (D-DSKIO) -- 🔴 WAS $FDF4 (D-DSKOHOOK
+                                ; 2026-09-15). MEASURED on the CF-3300: un-claiming $FDEF
+                                ; flips `DSKO$ 0,0` from ERR 70 to ERR 5, un-claiming $FDF4
+                                ; changes nothing. ⚠️ THIS EQUATE IS DEFINED TWICE -- here
+                                ; and in basic/sysvars.inc -- AND THE TWO MUST AGREE: the
+                                ; BASIC side consults the cell and the disk side CLAIMS it,
+                                ; so a split makes our own build refuse a verb it can do.
+                                ; 14 hook equates are duplicated across the two files;
+                                ; `tools/check_hook_equates.py` now refuses a divergence.
 H_DSKI          equ     $FE17   ; DSKI$ (D-DSKIO)
 H_COPY          equ     $FE08   ; COPY (D-COPY)
 H_ERRP          equ     $FEFD   ; error-print hook (D-DISKERR): this ROM prints ERR 68..70

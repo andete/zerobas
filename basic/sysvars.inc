@@ -3139,7 +3139,23 @@ H_CVD           equ     $FE49   ; CVD handler
 H_NAME          equ     $FDF9   ; NAME handler   (channel verbs, D-CHANHOOK)
 H_KILL          equ     $FDFE   ; KILL handler
 H_FILE          equ     $FE7B   ; FILES handler
-H_DSKO          equ     $FDF4   ; DSKO$ handler (D-DSKIO; the standard slot, claimed by hk_present)
+H_DSKO          equ     $FDEF   ; DSKO$ handler -- 🔴 WAS $FDF4 AND THAT WAS WRONG
+                                ; (D-DSKOHOOK 2026-09-15). The CF-3300 claims $FDEF and does
+                                ; NOT claim $FDF4, and un-claiming $FDEF on it (POKE ,201 --
+                                ; a bare RET is what an unclaimed hook IS) flips `DSKO$ 0,0`
+                                ; from ERR 70 to ERR 5 while un-claiming $FDF4 changes
+                                ; nothing. disk/docs/expansion-protocol.md section 2's table
+                                ; said $FDEF all along; sysvars.inc said $FDF4; the machine
+                                ; sides with section 2. ⚠️ IT WAS INVISIBLE BECAUSE WE
+                                ; CLAIMED OUR OWN WRONG ADDRESS ON BOTH SIDES: our disk ROM
+                                ; claims whatever this equate says, so `h.dsko` read `ok` on
+                                ; all three nodisk sides. With a FOREIGN disk ROM -- the
+                                ; interop basic/fat.asm:11 calls the NECESSARY PRICE of the
+                                ; universal sector interface -- `DSKO$` would have consulted
+                                ; an unclaimed cell and refused a verb the machine can do.
+                                ; 🎯 The other six verb hooks were verified the same way and
+                                ; are all CORRECT: FILE $FE7B, KILL $FDFE, NAME $FDF9,
+                                ; COPY $FE08, DSKI $FE17, DSKF $FE12.
 H_DSKI          equ     $FE17   ; DSKI$ handler (D-DSKIO)
 H_COPY          equ     $FE08   ; COPY handler (D-COPY; the standard slot)
 H_ERRP          equ     $FEFD   ; error-print hook (D-DISKERR): the errmsg tenant offers a code it

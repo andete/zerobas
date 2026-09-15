@@ -1878,7 +1878,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:18852 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:18892 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -2044,7 +2044,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:6645 (T-6FE392)8 (T-529ABE)` from `TODO.md:17503 (T-529ABE)`: a
+      `TODO.md:6645 (T-6FE392)8 (T-529ABE)` from `TODO.md:17543 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -7489,7 +7489,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:17503 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:17543 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -12103,6 +12103,46 @@ list. **When a slice lands, grep this list for what it just shipped.**
       flagged the byte figure beside it as PRESENT-TENSE — its pattern includes
       `\bis at\b`, which ordinary English hits. A false positive costs one
       rephrase, the trade its own header argues for — recorded, not filed.
+
+⚡ **D-DSKOHOOK (2026-09-15) — `H_DSKO` WAS THE WRONG ADDRESS IN BOTH FILES, AND
+THAT IS EXACTLY WHY NOTHING WENT RED.**
+🎯 **THE CONTRADICTION WAS SITTING IN THE TREE.** `basic/sysvars.inc` said
+`H_DSKO equ $FDF4`; `disk/docs/expansion-protocol.md` §2's own hook table says
+`$FDEF`. The CF-3300's claimed-cell census (D-NODISKDEN) showed `$FDEF` claimed
+and `$FDF4` **not** — the one equate we name that the reference does not claim.
+🔬 **SETTLED BY UN-CLAIMING, NOT BY READING** (`scratchpad/hookid_probe.py`'s
+method: `POKE <cell>,201` is a bare `RET`, which is what an unclaimed hook IS):
+| poke | `DSKO$ 0,0` on the CF-3300 |
+|---|---|
+| nothing (control) | ERR 70 |
+| `H_FILE $FE7B` + `FILES` (method control) | ERR 5 |
+| **`$FDEF`** | **ERR 5** — DSKO$ notices |
+| `$FDF4` | ERR 70 — nothing happens |
+🟢 **AND THE OTHER SIX VERB HOOKS WERE VERIFIED THE SAME WAY AND ARE ALL RIGHT**:
+`FILE $FE7B`, `KILL $FDFE`, `NAME $FDF9`, `COPY $FE08`, `DSKI $FE17`,
+`DSKF $FE12` — each reads ERR 70 at baseline and ERR 5 with its own cell
+un-claimed. Only `DSKO` was wrong. ⚠️ (§2's table is not infallible either: it
+calls `$FDF9` *"HSETS / SET statement"* and the machine says that cell is
+**NAME**'s.)
+🔴 **WHY IT WAS INVISIBLE, AND IT IS THE INTERESTING PART: WE CLAIMED OUR OWN
+WRONG ADDRESS ON BOTH SIDES.** `disk/kernel.asm` claims whatever the equate says,
+and `chan_gate` consults the same equate — so our BASIC and our disk ROM agreed
+with each other and `h.dsko` read `ok` on all three `nodisk-acceptance` sides. It
+would only ever have shown with a **FOREIGN** disk ROM, which claims the real
+`$FDEF` and leaves `$FDF4` alone: `DSKO$` would have consulted an unclaimed cell
+and **refused a verb the machine can do** — breaking the interop
+`basic/fat.asm:11` calls *"the NECESSARY PRICE of the universal sector
+interface"*.
+⚠️ **THE EQUATE IS DEFINED TWICE AND FIXING ONE COPY WOULD HAVE BEEN WORSE THAN
+THE BUG.** `basic/sysvars.inc` and `disk/equates.inc` each carry an `H_*` block
+and **14 names appear in both**; the BASIC side consults, the disk side claims.
+Change one and our own build refuses `DSKO$` outright.
+🟢 **SO THE FIX IS BOTH FILES (0 B — an equate) PLUS A GATE THAT MAKES THE DRIFT
+IMPOSSIBLE**: `tools/check_hook_equates.py` / `make hook-equate-check`, in the
+battery. It does NOT verify addresses — only the reference can say those — it
+verifies that the two copies cannot diverge unnoticed, and it REFUSES if it ever
+finds zero shared names (a renamed block would otherwise make it silently blind).
+📏 Main page 1 free: **3 B**, unchanged (2026-09-15) — an equate costs nothing.
 
 - [ ] 🛑 **RULING 4's RIG CANNOT BE BUILT FOR THREE OF ITS FOUR TARGETS —
       openMSX HAS NO JOYSTICK TO DRIVE. MEASURED, NOT SHRUGGED AT.**
