@@ -20387,6 +20387,31 @@ Full write-up: [`disk/docs/spec-diskbasic-relocation-seam.md`](disk/docs/spec-di
 lists the host-direction test as an acknowledged *"Gap (small)"*, so nothing would
 go red if it broke — the property is documented and spike-proven, not asserted by
 any suite.
+💰 **OPTION 3 IS PRICED: 256 B, MEASURED 2026-09-15.**
+[`scratchpad/verbpartition.py`](scratchpad/verbpartition.py) sorts `files.asm`'s
+symbols by address, cuts at each VERB ENTRY and attributes each span to the verb
+that opens it — **and it sums to 1600 B, the same figure `regionscout.py` and
+`basic-reloc` give.**
+| group | verbs | bytes |
+|---|---|---|
+| **FAT-light** | `COPY`, `FILES`/`LFILES`, `KILL`, `NAME` | **256** |
+| channel | `OPEN`, `LINE INPUT`/`INPUT#`, `CLOSE`, `MAX FILES`, `MERGE` | 975 |
+| infra | `chan_gate`, `disk_error`, the `fch_*` channel manager | 369 |
+🎯 **AND THE SHAPE OF `files.asm` IS THE FINDING: the bulk is the CHANNEL
+MACHINERY (975 B), not the directory verbs (256 B)** — and the channel machinery
+is exactly the entangled part, with `init_filechan`, `fch_select`, `fch_check` and
+`fch_ctx_addr` called from `expr.asm`, `str-engine.asm`, `input.asm`, `strvar.asm`
+and `print.asm`. The parent spec hoped for ~3 KB from a "minimal move"; the
+minimal move is 256 B, and that difference is the whole value of measuring.
+📏 **THE LADDER, CHEAPEST COUPLING FIRST: 3 (256 B) → 3b (1231 B) → 4
+(2315 B)** — each step buys bytes by taking on more INTERPRETER entanglement, not
+more FAT. Main page 1 had **5 B** free on 2026-09-15, so even option 3 is fifty
+times today's entire headroom.
+⚠️ **What the partition cannot say** is recorded with it: a span belongs to the
+verb that opens it only if no other verb jumps in, so the labels called from
+OUTSIDE `files`/`field` are listed separately — **15 labels, 164 B** in
+`files.asm` and **3 labels, 39 B** in `field.asm`. Those do not travel with a
+verb.
       ⚠️ **`TXTMAX` IS NOW BOUNDED BY `DETOKBUF`, NOT BY FREE RAM** — at 1280 B
       it does not fit the 1024 B window, so `$BB00` is the stop until DETOKBUF
       is dealt with. Of D-LINEMAX's 1792 B, **1024 recovered, 768 still charged**.

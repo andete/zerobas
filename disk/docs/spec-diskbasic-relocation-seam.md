@@ -5,7 +5,7 @@ SPDX-License-Identifier: 0BSD
 
 # Spec — disk-BASIC relocation: THE SEAM, MEASURED
 
-**Status: AWAITING USER SIGN-OFF. No code written.**
+**Status: AWAITING USER SIGN-OFF. No code written.** (Option 3 priced 2026-09-15; §4, §5 and §6 updated with the partition.)
 This is the spec [`spec-diskbasic-relocation.md`](spec-diskbasic-relocation.md)
 mandates ("the spec's first job is to **find the real seam**") and the
 measurement Joost asked for on 2026-09-15 ("re-decide after the seam is
@@ -99,20 +99,47 @@ would replace.
 and 30 inbound ones need provider-side entry points.** That, not FAT, is the cost
 to weigh.
 
-## 4. What is NOT measured, and why
+## 4. Option 3, PRICED — and the method that failed first
 
-Option 3 ("minimal move — only the FAT-light verbs; measure the actual relief")
-**cannot be priced by this instrument**. A branch-reachability closure from
-`ex_files`/`ex_kill`/`ex_name` reaches 16 labels and 194 B against `files.asm`'s
-measured 1600 — because **control reaches most of these bodies by FALLTHROUGH**,
-which a branch walk cannot see. (The same blind spot `dupspan` has: a span is
-entered without anything branching to it.) `seamscout.py` keeps the closure with
-that warning, because the negative result is the finding.
+A branch-reachability closure from `ex_files`/`ex_kill`/`ex_name` reaches 16
+labels and **194 B** against `files.asm`'s measured 1600, because **control
+reaches most of these bodies by FALLTHROUGH**, which a branch walk cannot see —
+the same blind spot `dupspan` has. `seamscout.py` keeps that closure WITH the
+warning, because the negative result is what sent the measurement somewhere else.
 
-➡️ Pricing option 3 needs a different method: an address-ordered partition of
-`files.asm`'s symbols into verb bodies, cross-checked against the listing. That is
-a measurement slice of its own, and it is the **only** thing standing between
-here and a priced option 3.
+[`scratchpad/verbpartition.py`](../../scratchpad/verbpartition.py) does it the way
+that works for a contiguous, address-ordered assembly file: sort the file's
+symbols by address, cut at each VERB ENTRY, attribute each span to the verb that
+opens it. **It sums to 1600 B — the same figure `regionscout.py` and
+`basic-reloc` give** for `files.asm` in main page 1 on 2026-09-15.
+
+| region opens at | group | bytes |
+|---|---|---|
+| `chan_gate` | infra | 22 |
+| `ex_copy` | FAT-light | 24 |
+| `disk_error` | infra | 10 |
+| `ex_files` (+`ex_lfiles`) | FAT-light | 93 |
+| `ex_open` | channel | 560 |
+| `ex_line` (+`ex_input`) | channel | 144 |
+| `ex_close` | channel | 54 |
+| `init_filechan` | infra | 337 |
+| `ex_kill` | FAT-light | 44 |
+| `ex_name` | FAT-light | 95 |
+| `ex_maxfiles` | channel | 41 |
+| `ex_merge` | channel | 176 |
+| **FAT-light total** | | **256** |
+| **channel total** | | **975** |
+| **infra total** | | **369** |
+
+⚠️ **What the partition cannot say:** a span belongs to the verb that opens it
+only if no other verb jumps into it. So the labels called from OUTSIDE
+`files.asm`/`field.asm` are listed separately — **15 labels, 164 B** in
+`files.asm` (`fname_expr` 30, `init_filechan` 30, `fch_select` 20, `fch_ctx_addr`
+12, `disk_error` 10, `dirverb_op` 10, `df_or_loaderr` 9, `fch_modes_ptr` 9,
+`pdfcb_resume` 7, `fch_check` 6, `chan_gate` 6, `ascii_read_lines` 6,
+`read_into_strscr` 4, `arl_getbyte` 4, `dev_cmp` 1) and **3 labels, 39 B** in
+`field.asm` (`fld_lookup` 19, `fld_key_de` 15, `fld_init` 5). Those do not travel
+with a verb: they stay, or they need a provider-side entry.
 
 ## 5. The options, priced at the granularity that IS measured
 
@@ -120,7 +147,8 @@ here and a priced option 3.
 |---|---|---|
 | 1. split `fat.asm` | ≤ 124 B | refuted as a lever |
 | 2. reuse `disk/fat.asm` | ≤ 124 B | ditto; do it only alongside a real move |
-| 3. minimal move (`FILES`/`KILL`/`NAME`) | **unpriced** — needs §4 | fewest edges, but the number is not yet known |
+| 3. minimal move (`COPY`/`FILES`/`LFILES`/`KILL`/`NAME`) | **256 B** | the fewest edges; the shared infra (`disk_error`, `chan_gate`, `dirverb_op`) stays and its calls go cross-slot |
+| 3b. all of `files.asm` except the shared infra | **1231 B** | adds the whole channel manager's clientele — `OPEN`/`CLOSE`/`INPUT#`/`MERGE` — and the 15 shared labels still stay |
 | 4. move `files`+`field`(+`format`) | **2315 B** | 140 outbound edges cross-slot, 30 inbound entry points, 19 `dw` dispatches replaced by `$4004`; and it drops the foreign-disk-ROM interop |
 | 5. tape → sub ROM (`cload.asm`) | 864 B | does not fit today: sub p0 has 505 B, p1 50 B. Needs a sub-ROM carve first (Joost ruled: carve the sub ROM first) |
 
@@ -135,14 +163,24 @@ entry closed as WONTFIX rather than left as a to-do.
 
 ## 6. Recommendation
 
-**Price option 3 first (§4), then decide between 3 and 4.** Option 4's 2315 B is
-real and large, but its 140 cross-slot edges are a different and bigger change than
-the spec-input anticipated, and it spends a property this project deliberately
-bought. Option 3 may deliver a useful fraction at a fraction of the coupling — and
-today nobody can say, which is the one thing worth fixing next.
+**Option 3, at 256 B, is the one to take first — and it is worth taking.** Main
+page 1 had **5 B** free on 2026-09-15, so 256 B is fifty times today's entire
+headroom, bought with the smallest coupling of any option on the table: five verbs
+that do directory work and nothing else, leaving the channel manager and every
+shared helper where they are.
+
+It is NOT the ~3 KB the parent spec hoped for, and that difference is the whole
+value of measuring: **the bulk of `files.asm` is the CHANNEL machinery (975 B),
+not the directory verbs (256 B)**, and the channel machinery is precisely the part
+that is entangled — `init_filechan`, `fch_select`, `fch_check` and `fch_ctx_addr`
+are called from `expr.asm`, `str-engine.asm`, `input.asm`, `strvar.asm` and
+`print.asm`.
+
+So the ladder, cheapest coupling first: **3 (256 B) → 3b (1231 B) → 4 (2315 B)**,
+and each step buys bytes by taking on more interpreter entanglement, not more FAT.
 
 Options 1 and 2 should be struck from the parent spec as levers: measurement has
-overtaken them.
+overtaken them — both are capped at `basic/fat.asm`'s whole 124 B.
 
 ## 7. Mechanism (unchanged from the parent spec, restated for completeness)
 
