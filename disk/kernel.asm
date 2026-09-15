@@ -2255,7 +2255,7 @@ hook_tab:
                 dw      H_CVI,  hk_present
                 dw      H_CVS,  hk_present
                 dw      H_CVD,  hk_present
-                dw      H_NAME, hk_present
+                dw      H_NAME, hk_name      ; D-DISKVERB2: body here too
                 dw      H_KILL, hk_kill      ; D-DISKVERB: the FIRST verb whose
                                              ; BODY lives here, not just its gate
                 dw      H_FILE, hk_present
@@ -2355,6 +2355,103 @@ hk_kill:
                 ld      ix,dirverb_op
                 call    calbak
                 scf                     ; CF=1: the hook is claimed
+                ret
+
+; --- hk_name: NAME's body, RUNNING IN THE DISK ROM (MSX2 TH hook) -----------
+; D-DISKVERB2, spec-diskbasic-hook-rearchitecture.md phase 3. The second verb to
+; follow its hook, on the pattern hk_kill established.
+;
+;   in   FN_RESUME = the statement cursor, just past the NAME token
+;   out  DISKOP_STATUS, and main's ex_name decodes it; CF = 1 (claimed)
+;
+; 🎯 NAME'S THREE OUTCOMES ARE ALREADY KILL'S THREE, so main shares kill_status
+; rather than keeping NAME's own tails: nm_notfound was `jp df_notfound` (ERR 53)
+; = status 0, nm_fail/nm_fail2 were `jp disk_error` = status 2, and success was
+; `jp exec_stmt` = status 1. Only the missing-`AS` syntax error needs a fourth
+; value, and main tests for it before handing over to the shared decode.
+; ⚠️ THE TENANT'S OWN STATUS HAS THE OPPOSITE POLARITY and is translated here,
+; not passed through: for NAME_STAMP the dirverb tenant answers 0 = OK, nonzero =
+; I/O error, where kill_status reads 0 as `File not found`. Forwarding it raw
+; would turn every successful rename into ERR 53.
+;
+; 🎯 THE `AS` KEYWORD IS READ STRAIGHT OUT OF THE PROGRAM TEXT. That is RAM, and
+; RAM is mapped throughout -- so two characters do not need a call-back apiece,
+; and skip_spaces/upcase stay where they are.
+hk_name:
+                ld      hl,(FN_RESUME)
+                ld      ix,fname_expr
+                call    calbak              ; OLD name -> STRSCR; may RAISE (ERR 13)
+                ld      ix,pdfcb_resume
+                call    calbak              ; -> DISK_FCB_NAME
+                ld      hl,(FN_RESUME)
+hkn_sp:
+                ld      a,(hl)              ; skip blanks before `AS`
+                cp      ' '
+                jr      nz,hkn_a
+                inc     hl
+                jr      hkn_sp
+hkn_a:
+                call    hkn_up
+                cp      'A'
+                jr      nz,hkn_syn
+                inc     hl
+                ld      a,(hl)
+                call    hkn_up
+                cp      'S'
+                jr      nz,hkn_syn
+                inc     hl
+                ld      (FN_RESUME),hl      ; the NEW name's text starts here
+                ld      ix,main_fat_mount
+                call    calbak
+                jr      c,hkn_io            ; no disk / bad BPB
+                ld      hl,DISK_FCB_NAME
+                ld      ix,main_fat_find
+                call    calbak              ; locate the OLD file
+                jr      c,hkn_nf
+                ld      hl,(FN_RESUME)
+                ld      ix,fname_expr
+                call    calbak              ; NEW name -> STRSCR, FN_RESUME moved
+                ld      hl,STRSCR + 1
+                ld      ix,parse_disk_fcb
+                call    calbak              ; new -> DISK_FCB_NAME
+                ld      a,DISKOP_SEL_NAME_STAMP
+                ld      ix,dirverb_op
+                call    calbak
+                ld      a,(DISKOP_STATUS)   ; the tenant's polarity: 0 = OK
+                or      a
+                jr      nz,hkn_io
+                ld      a,1                 ; renamed
+                jr      hkn_done
+hkn_nf:
+                xor     a                   ; 0 = old file not found -> ERR 53
+                jr      hkn_done
+hkn_io:
+                ld      a,2                 ; mount / I-O -> the mapped disk code
+                jr      hkn_done
+hkn_syn:
+                ld      a,4                 ; no `AS` -> Syntax error
+hkn_done:
+                ; 🔴 DISKOP_STATUS IS WRITTEN ONCE, HERE, AFTER EVERY CALL-BACK.
+                ; The first cut PRE-SET it to 2 and let the later paths overwrite
+                ; it -- which cannot work, because main's fat_mount and fat_find
+                ; are `ld a,DISKOP_SEL_* / jr fatprim_bounce` shims that marshal
+                ; their own disposition THROUGH THIS SAME CELL (basic/fat.asm).
+                ; So a failed mount wrote the FAT primitive's status over mine and
+                ; main decoded whatever that happened to be: measured, `NAME "A.BAS"
+                ; AS "B.BAS"` at an EMPTY DRIVE answered `Syntax error` instead of
+                ; `Disk offline`, because the cell held 4. The cell is a SHARED
+                ; channel, not ours; the only safe time to write it is last.
+                ld      (DISKOP_STATUS),a
+                scf                         ; CF=1: the hook is claimed
+                ret
+; hkn_up: upcase A. Six bytes of our own rather than a call-back for one
+; character -- own-design, and the same fold main's `upcase` does.
+hkn_up:
+                cp      'a'
+                ret     c
+                cp      'z' + 1
+                ret     nc
+                sub     32
                 ret
 
                 ds      $75A5 - $, $00

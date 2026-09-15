@@ -4,6 +4,34 @@ A `ScheduleWakeup` loop is SESSION-LOCAL and dies with the session. This file is
 the durable half: paste the command in `## The command` below into a fresh
 session and the loop resumes exactly where it stopped.
 
+## 🔴 CURRENT ORDER (2026-09-15, Joost): FINISH THE DISK KEYWORDS, THEN THE TODO
+
+He ruled the mechanism proven once phase 2 shipped: *"the mechanism is proven I
+guess ... continue with the disk keywords and afterwards back to the generic
+todo"*.
+
+The arc is [`spec-diskbasic-hook-rearchitecture.md`](../disk/docs/spec-diskbasic-hook-rearchitecture.md).
+Shipped, do not redo: `f3188146` the spec · `7ad4f4ef` 0a cross-ROM dead code ·
+`0d18d3d1` 0b the inter-slot call priced · `8a79c2b5` 0c htimi_guard ·
+`cee9ce9b` 1 the ABI · `0f15a873` 2 KILL's body moved.
+
+**The pattern phase 2 established, to copy verb by verb.** Main keeps the cursor
+hand-off and the status decode; the body becomes an `hk_*` in `disk/kernel.asm`;
+`hook_tab` points the hook at it; `chan_gate`'s presence test and `diskslot_test`
+VANISH rather than move — that is where most of the saving is. The cursor crosses
+in `FN_RESUME`, because `chan_gate` needs HL for the hook cell and clobbers DE.
+Call-back targets go in `REQUIRED_DISK_CALLBACK`, 7 B a site, 0.156 ms a call.
+**Measured ABI: HL/DE/BC/A cross BOTH ways intact**; IX/IY are the ABI's own; a
+callee may RAISE and never return, so do nothing after a call-back that an abort
+would skip; and **CF across CALSLT was never measured — do not rely on it**,
+pre-set the failure disposition instead.
+
+⚠️ **A ROM CHANGE COSTS THREE RE-RUNS**, and until they happen `selftest-check`
+and `tiers-md-check` are red as ONE fact reported twice: `kwknife.py --all` AND
+`--allfn`, then full `make kwsweep`, then `make tiers-md`.
+⚠️ **A NEW SECTION HEADER NEEDS AN INLINE CITATION** or the clean-room audit
+fails the battery in WARM-UP (rc=2) before a single unit runs.
+
 ## Where things stand (rewritten 2026-09-15)
 
 🏗️ **JOOST RULED 2026-09-15 — READ THIS BEFORE PICKING ANYTHING UP. Five
@@ -385,6 +413,7 @@ a pattern that appears in the polling command.
 
 ## The command
 
-Paste this into a fresh session:
+Paste this into a fresh session (it is also armed as a 27-minute cron while the
+authoring session lives; a cron dies with the session, this file does not):
 
-    /loop continue autonomously on zerobas — 🔴 READ scratchpad/LOOP-RESTART.md FIRST, then the item's own block in TODO.md to its END. Run `make tiers`; recount keywords with `python3 tools/tier_table.py --keywords` — never quote a count. 🟢 THE KEYWORD DRAIN IS DONE: `no known gap` is 0, which was the umbrella item's own exit criterion, and the tape TIER 1 is closed. 🙋 NO AUTONOMOUS TIER 1 WORK REMAINS — the one TIER 1 item left is the keyword umbrella, now NEEDS-JOOST by its own instruction (it reserved the tier question for him once the list emptied, and he also has step (c) to price). DO NOT re-tier it and do not pick it up. ➡️ SO TAKE THE LOWEST TIER CARRYING A 🤖 MARKER — TIER 4 currently holds the interpreter-speed items (FOR/GOTO 2.5–3.8× slower than the reference, PAINT 2×, PUT), which Joost's 2026-09-12 ruling parked UNDER the drain; that ruling is now satisfied, so they are the live work. ⚠️ RE-READ THE ITEM TO ITS END AND RE-VERIFY ITS BLOCKER BEFORE STARTING — twelve blockers were re-verified this session and twelve were stale, INKEY$ being the last: filed as needing a harness change to time a keystroke against D-LATCH/D-LATCH2, when a key does not have to be TYPED to be waiting (the BIOS type-ahead buffer is ordinary work area and BASIC can POKE it). A blocker is written down at the moment of most confusion and then never re-read against what was learned afterwards. 🎯 AND THE RULE THE TAPE ARC EARNED: when a consumer hangs, DIFF THE BYTES AGAINST OUR OWN ENCODER BEFORE THEORISING ABOUT TIMING — four slices went into a waveform when the defect was seven missing $00 bytes. ⚠️ For any speed work: `make basic-reloc` from a CLEAN tree for any wall figure, and BACK UP build/kwsweep-verdicts.json first. Standing rules: full `make gates` before each commit and never commit red; STAGE EVERYTHING BEFORE THE BATTERY AND WRITE NOTHING WHILE IT RUNS; an item may carry only ONE marker; 🔴 `check_todo_citations.py --fix` REWRITES EVERY DOC THAT CITES A MOVED BLOCK — five files beyond TODO.md every time; read `git status --short` as a LIST; after a `--fix` re-run every gate that READS TODO.md; `test -e <path> && exit 1` before any `cat >` heredoc; stage explicit paths, `git add -A` banned; commit message to a FILE with `git commit -F`; commit AND push after each fix without asking; re-run the five battery-excluded targets by hand after any slice touching a shared leaf; NEVER poll with a pattern that matches the polling command itself — use the background task's own completion notification; READ the output of every edit script.
+    /loop continue autonomously on zerobas — 🔴 READ scratchpad/LOOP-RESTART.md FIRST, then the item's own block in TODO.md to its END, and RE-VERIFY ANY BLOCKER BEFORE BUILDING ON IT. ➡️ CURRENT ORDER FROM JOOST 2026-09-15: FINISH THE DISK KEYWORDS (phase 3 of disk/docs/spec-diskbasic-hook-rearchitecture.md), THEN BACK TO THE GENERIC TODO. Next verbs, cheapest coupling first: NAME (ex_name), COPY (ex_copy + copy_parse), FILES/LFILES. ⚠️ kill_status is SHARED by KILL and COPY — a shared tail is a label, not a decision. ⚠️ EVERY DISK SLICE OWES FOUR GATES AND YOU CHECK THE ROWS BY NAME, NOT THE TOTAL: diskbasic-acceptance (grep the verb's own rows for `converged`), nodisk-acceptance (the verb must still answer ERR 5 with the hook unclaimed), deadcode, and a full `make gates`. A ROM CHANGE INVALIDATES THE KNIFE PIN — `kwknife.py --all` AND `--allfn`, then full `make kwsweep`, then `make tiers-md`. A NEW SECTION HEADER NEEDS AN INLINE CITATION or the battery dies in warm-up with rc=2. Standing rules: full `make gates` before each commit and never commit red; STAGE EVERYTHING BEFORE THE BATTERY AND WRITE NOTHING WHILE IT RUNS; `test -e <path> && exit 1` before any `cat >` heredoc; stage explicit paths, `git add -A` banned; commit message to a FILE with `git commit -F`; commit AND push after each fix without asking; re-run the five battery-excluded targets ONLY when the ROMs actually changed; WRITE EDIT SCRIPTS TO A FILE, anchor on TEXT, refuse on a missing or non-unique anchor, and ACCUMULATE PER FILE — two edits to one file both read from the original text silently discard the first; READ the output of every edit script; never poll with a pattern that matches the polling command itself.

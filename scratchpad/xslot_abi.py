@@ -30,10 +30,10 @@ WANT = [("HL", 0, [0x34, 0x12]), ("DE", 2, [0x78, 0x56]),
         ("BC", 4, [0xBC, 0x9A]), ("A", 6, [0x5A])]
 
 PROG = [
-    "10 FOR I=0 TO 18:POKE &HE700+I,0:NEXT",
+    "10 FOR I=0 TO 20:POKE &HE700+I,0:NEXT",
     '20 X=CVI("AB")',
     '30 PRINT "[";',
-    "40 FOR I=0 TO 18",
+    "40 FOR I=0 TO 20",
     "50 PRINT PEEK(&HE700+I);",
     "60 NEXT",
     '70 PRINT "]"',
@@ -49,7 +49,7 @@ def main() -> int:
     caps = omsx_repl.run_cases(ZB, [("abi", PROG)], batch=False, reset=(),
                                boot=8.0, step=3.0, cap_gap=45.0, timeout=600.0)
     scr = caps[0] or ""
-    m = re.search(r"\[((?:\s+-?\d+){19})\s*\]", scr)
+    m = re.search(r"\[((?:\s+-?\d+){21})\s*\]", scr)
     if not m:
         print("=== screen ===\n" + scr)
         print("\nINSTRUMENT FAULT (rc 2): the fence never printed.")
@@ -80,6 +80,12 @@ def main() -> int:
     print(f"    HL in $1111 -> out ${hl_mod:04X}  "
           + ("the callee's OWN value came back" if hl_mod == 0x1112
              else "🔴 NOT the callee's value"))
+    print("\n  CARRY -- two-sided, because 'always set' and 'always clear'")
+    print("  are each indistinguishable from 'preserved' on a one-sided test:")
+    print(f"    callee `scf / ret`, entered CF=0 -> CF {'SET' if got[19] else 'clear'}"
+          f"   {'the callee\'s carry came back' if got[19] else '🔴 LOST'}")
+    print(f"    callee `or a / ret`, entered CF=1 -> CF {'set' if got[20] else 'CLEAR'}"
+          f"   {'the callee\'s carry came back' if not got[20] else '🔴 LOST'}")
     return 0
 
 

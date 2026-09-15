@@ -20,11 +20,11 @@ if len(sys.argv) > 1:
     REPO = sys.argv[1]
 
 EDITS = [
-    ("disk/equates.inc",
-     "EXPTBL          equ     $FCC1   ; expanded-slot flags, 1 byte/primary, bit 7 = expanded",
-     """EXPTBL          equ     $FCC1   ; expanded-slot flags, 1 byte/primary, bit 7 = expanded
-CALSLT          equ     $001C   ; D-XSLOTABI PROBE: BIOS inter-slot call (MSX2 TH)"""),
-
+    # 🔴 NO CALSLT EDIT HERE ANY MORE. This probe predates D-DISKVERB, which
+    # shipped `CALSLT equ $001C` into disk/equates.inc for real -- so re-adding
+    # it now is a duplicate definition and pasmo refuses the build. A scaffold
+    # that plants what the tree has since grown is stale, not broken; the fix is
+    # to stop planting it, not to rename it.
     ("disk/kernel.asm",
      "                ds      $75A5 - $, $00",
      """; --- D-XSLOTABI phase-1 PROBE -- SCAFFOLD, NOT SHIPPED ---------------------
@@ -37,6 +37,8 @@ ZBABI_BUF       equ     $E700           ; inside WBUF ($E560..$E75F), the FAT/di
                                         ; WRITE is in flight, and this test does none
 ZBABI_INCHL     equ     $40A3           ; `inc hl / ret`, already in main page 1 --
                                         ; a callee that MODIFIES a register
+ZBABI_SCF       equ     $408E           ; `scf / ret`  -- a callee that SETS carry
+ZBABI_ORA       equ     $4091           ; `or a / ret` -- a callee that CLEARS it
 ZBABI_RET       equ     $686A           ; a bare `ret` already in main page 1; the
                                         ; disk ROM holds C9 at the same address, so a
                                         ; switch that did not happen returns harmlessly
@@ -82,6 +84,24 @@ zbabi_probe:
                 ; (A first cut read the $4002 witness AFTER the call returned --
                 ; by which time page 1 is the disk ROM again, so it could only
                 ; ever have read $34. Removed rather than reported.)
+                ; --- leg 4: does CARRY survive? Phase 1 left F unmeasured, and
+                ; NAME's body needs CF back from fat_mount and fat_find. Both
+                ; directions, because "always set" and "always clear" are each
+                ; indistinguishable from "preserved" on a one-sided test.
+                ld      iy,(EXPTBL-1)
+                ld      ix,ZBABI_SCF        ; callee SETS carry
+                or      a                   ; ...from CF=0
+                call    CALSLT
+                ld      a,0
+                adc     a,a                 ; A = 1 if CF came back set
+                ld      (ZBABI_BUF+19),a
+                ld      iy,(EXPTBL-1)
+                ld      ix,ZBABI_ORA        ; callee CLEARS carry
+                scf                         ; ...from CF=1
+                call    CALSLT
+                ld      a,0
+                adc     a,a
+                ld      (ZBABI_BUF+20),a
                 scf
                 ret
 

@@ -96,6 +96,8 @@ REQUIRED_DISK_RAM = [
                                 # it with the resume point -- one cell, both ways
     "DISKOP_STATUS",            # D-DISKVERB: the dirverb tenant's disposition,
                                 # which main's kill_status decodes after the hook
+    "DISK_FCB_NAME",            # D-DISKVERB2: the one 8.3 name field, which NAME
+                                # fills twice -- old to look up, then new to stamp
     "FAC",                      # the packed float accumulator
     "FACTYP",                   # 2 / 4 / 8
 ]
@@ -125,6 +127,17 @@ REQUIRED_DISK_CALLBACK: list[str] = [
     "fname_expr",               # HL = cursor in; stashes FN_RESUME + STRSCR
     "pdfcb_resume",             # parse_disk_fcb, then HL = (FN_RESUME)
     "dirverb_op",               # A = DISKOP_SEL_*; runs the dirverb sub-ROM tenant
+    # D-DISKVERB2 phase 3 (NAME). CF now crosses too -- measured two-sided, a
+    # callee that SETS it comes back set and one that CLEARS it comes back clear
+    # (scratchpad/xslot_abi.py leg 4) -- so these two may be read for their carry.
+    # ⚠️ ALIASED, because disk.rom HAS ITS OWN fat_mount/fat_find for MSX-DOS.
+    # NAME calls MAIN's deliberately: main's fat_find writes the entry location
+    # that the dirverb NAME_STAMP tenant then reads, and the disk-local FAT
+    # writes its own scratch instead. Which FAT a disk-ROM verb should use is
+    # phase 4's question, and this does not pre-empt it.
+    "main_fat_mount=fat_mount",   # CF=1: no disk / bad BPB
+    "main_fat_find=fat_find",     # HL = 8.3 name; CF=1: not found
+    "parse_disk_fcb",           # HL = [len]name text -> DISK_FCB_NAME
 ]
 
 Profile = collections.namedtuple("Profile", "code ram callback what")
@@ -205,6 +218,26 @@ def generate(sym_path: str, out_path: str, write: bool = True,
     code, ram, callback, what = prof.code, prof.ram, prof.callback, prof.what
     syms = load_syms(sym_path)
 
+    # 🔴 THE ALIAS SPLIT HAPPENS ONCE, HERE, BEFORE ANY CHECK RUNS. An entry may
+    # be written "local=symbol" when the importing ROM already defines that name
+    # itself (disk.rom has its own fat_mount/fat_find). A first cut split it only
+    # in the EMIT loop, so `missing` looked the whole "local=symbol" string up in
+    # the symbol table and refused the build -- the checks must see the SYMBOL
+    # half, or an alias could smuggle an unresolvable or mis-classed import past
+    # every one of them. `local_of` is only ever used for the emitted spelling.
+    def sym_of(entry: str) -> str:
+        return entry.rpartition("=")[2]
+
+    def local_of(entry: str) -> str:
+        head, _, tail = entry.rpartition("=")
+        return head or tail
+
+    code = [sym_of(n) for n in code]
+    ram = [sym_of(n) for n in ram]
+    emit = [(local_of(n), sym_of(n)) for n in prof.code + prof.ram + prof.callback]
+    callback_first = sym_of(prof.callback[0]) if prof.callback else None
+    callback = [sym_of(n) for n in callback]
+
     missing = [n for n in code + ram + callback if n not in syms]
     if missing:
         raise SystemExit(
@@ -261,19 +294,20 @@ def generate(sym_path: str, out_path: str, write: bool = True,
         "; from a disassembly or byte-copy of any reference ROM.",
         "",
     ]
-    for name in code + ram + callback:
+    for local, sym in emit:
         # The section marker goes where the block STARTS, not where the emit
         # loop does -- a header printed above the wrong block is a label that
         # lies, and this file is read by humans deciding which class a new
         # symbol belongs in.
-        if callback and name == callback[0]:
+        if callback_first and sym == callback_first:
             lines.append("")
             lines.append("; --- page-1 call-back targets: reached by an "
                          "INTER-SLOT call (MSX2 TH), not an absolute one ---")
         # Leading "0" (same convention pasmo's own --sym output uses, e.g.
         # "fp_div EQU 03632H") so a value whose hex form starts A-F never
         # parses as an identifier instead of a numeric literal.
-        lines.append(f"{name} equ 0{syms[name]:04X}H")
+        lines.append(f"{local} equ 0{syms[sym]:04X}H"
+                     + (f"   ; main's {sym}" if local != sym else ""))
     lines.append("")
     text = "\n".join(lines)
 

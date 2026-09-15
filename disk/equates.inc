@@ -28,6 +28,7 @@ CALSLT          equ     $001C   ; inter-slot call: IX = target, IYh = slot id
 ; hazard class as the H_* hook equates, which `make hook-equate-check` polices;
 ; a selector checker is a follow-up, not silence.
 DISKOP_SEL_KILL equ     0       ; dirverb: KILL's fat_delete loop (sysvars.inc)
+DISKOP_SEL_NAME_STAMP equ 1     ; dirverb: NAME's read+overwrite+write (sysvars.inc)
 
 ; --- Standard hook + entry addresses (disk/PROVENANCE.md §INIT) -------------
 ; HPHYD is the standard PHYDIO hook a disk ROM installs so a host's physical disk

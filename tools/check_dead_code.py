@@ -545,7 +545,23 @@ def disk_abi_seeds(spans):
         sys.exit(f"FAIL: tools/gen_resident_abi.py has no profile for "
                  f"{DISK_ABI} -- the disk ROM's call-back surface is undeclared, "
                  f"so a main routine callable only from disk.rom would read DEAD")
-    code, ram, callback = set(prof.code), set(prof.ram), set(prof.callback)
+    # 🔴 THE SAME ALIAS SPLIT THE GENERATOR DOES, AND FOR THE SAME REASON. An
+    # import written "local=symbol" is EMITTED under `local` (disk.rom has its
+    # own fat_mount/fat_find, so main's are imported as main_fat_*), but it is
+    # the SYMBOL half that must resolve to a main label. Comparing the two
+    # halves against the wrong side is what this arm caught on itself the first
+    # time an alias existed: drift on four names that were really two.
+    def _sym(entry):
+        return entry.rpartition("=")[2]
+
+    def _local(entry):
+        head, _, tail = entry.rpartition("=")
+        return head or tail
+
+    code, ram = {_sym(n) for n in prof.code}, {_sym(n) for n in prof.ram}
+    callback = {_sym(n) for n in prof.callback}
+    # what the GENERATED file is expected to spell, which is the local half
+    spelled = {_local(n) for n in prof.code + prof.ram + prof.callback}
     if len(code) < DISK_ABI_FLOOR:
         sys.exit(f"FAIL: the disk ABI declares {len(code)} code import(s), floor "
                  f"is {DISK_ABI_FLOOR} -- an emptied list would stop seeding the "
@@ -556,7 +572,7 @@ def disk_abi_seeds(spans):
     infile = {m.group(1) for m in
               (ABI_EQU.match(ln.split(';', 1)[0]) for ln in open(DISK_ABI))
               if m}
-    drift = sorted((code | ram | callback) ^ infile)
+    drift = sorted(spelled ^ infile)
     if drift:
         sys.exit(f"FAIL: {DISK_ABI} and tools/gen_resident_abi.py's profile "
                  f"disagree on {drift} -- the generated file is STALE (rebuild) "

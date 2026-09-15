@@ -1722,152 +1722,34 @@ kill_status:                            ; D-COPY shares this decode (0/1/2)
 ; Divergences: no "new already exists" check (own design); single drive (the
 ; drive prefix on either name is accepted + ignored for the stamp); the no-disk /
 ; mount / I-O wording (quarantined). See basic/PROVENANCE.md §NAME.
+; 🧭 D-DISKVERB2 (2026-09-15): THE BODY IS NOT HERE ANY MORE -- it is `hk_name`
+; in disk/kernel.asm, reached through H_NAME, on the pattern KILL established.
+; What is left is the cursor hand-off and the decode.
+;
+; 🎯 NAME'S THREE OUTCOMES WERE ALREADY KILL'S THREE, so this shares kill_status
+; instead of keeping its own tails: nm_notfound was `jp df_notfound` (ERR 53),
+; nm_fail/nm_fail2 were `jp disk_error`, success was `jp exec_stmt` -- exactly
+; status 0 / 2 / 1. Only the missing-`AS` syntax error needed a fourth value, and
+; it is tested here before the shared decode runs.
+;
+; 🔴 THE ERROR ORDER THIS VERB OWES THE REFERENCE IS UNCHANGED, and it is worth
+; keeping the measurement that fixed it (D-TODOSWEEP tranche 65, 2026-08-26,
+; scratchpad/sweep_tranche65.py, against the CF-3300):
+;     NAME"X.DAT"AS 5   old file ABSENT   cf3300 ERR 53
+;     NAME"HI.TXT"AS 5  old file EXISTS   cf3300 ERR 13
+; i.e. LOOK THE OLD FILE UP FIRST, THEN EVALUATE THE NEW NAME. hk_name does them
+; in that order for the same reason, and the `AS` check sits between them.
 ex_name:
-                push    hl                  ; ⚠️ HL IS THE STATEMENT CURSOR HERE and
-                ld      hl,H_NAME           ; the gate needs it for the hook address;
-                call    chan_gate           ; clobbering it made all three verbs answer
-                pop     hl                  ; ERR 2 on the DISK build -- caught by the
-                                            ; gate's own zb-disk column, not by review
                 inc     hl                  ; HL -> bytes after the NAME token
-                jr      do_name
-do_name:
-                call    fname_fcb          ; D-FNEXPR: OLD name, a string EXPRESSION
-                                           ; old -> DISK_FCB_NAME
-                ; "AS" (verbatim ASCII)
-                call    skip_spaces
-                call    upcase
-                cp      'A'
-                jp      nz,stmt_error
-                inc     hl
-                ld      a,(hl)
-                call    upcase
-                cp      'S'
-                jp      nz,stmt_error
-                inc     hl
-                ; D-FNEXPR: the NEW name is EVALUATED here -- before any disk
-                ; primitive runs -- and only PARSED after the old file is found.
-                ; DISK_FCB_NAME still holds the OLD name; only STRSCR is written
-                ; here.
-                ;
-                ; 🔴 THE JUSTIFICATION THAT USED TO STAND HERE IS FALSIFIED, IN
-                ; BOTH HALVES. It read: "Evaluating early is what preserves the
-                ; error ORDER the literal gate had: `NAME"x.dat"AS 5` is still
-                ; `Syntax error`, not `File not found`."  Measured 2026-08-26
-                ; (D-TODOSWEEP tranche 65, scratchpad/sweep_tranche65.py) against
-                ; the CF-3300:
-                ;
-                ;   NAME"X.DAT"AS 5   old file ABSENT   cf3300 ERR 53  zb ERR 24
-                ;   NAME"HI.TXT"AS 5  old file EXISTS   cf3300 ERR 13  zb ERR 24
-                ;
-                ; So `File not found` is exactly what the reference says when the
-                ; old file is absent -- the outcome the comment claimed to be
-                ; avoiding -- and when the old file EXISTS the reference answers
-                ; `Type mismatch`, the same face KILL/OPEN/SAVE/LOAD/BLOAD/FILES
-                ; give (D-FNEXPR2). The reference rule is LOOK THE OLD FILE UP
-                ; FIRST, THEN EVALUATE THE NEW NAME. The face this comment named
-                ; is not even the one this tree produces: both rows read ERR 24
-                ; `Missing operand`.
-                ;
-                ; ✅ FIXED 2026-09-04 (D-NAMEORD): the new name is now evaluated
-                ; AFTER the old file is located, which is the reference rule. The
-                ; cursor is parked in FN_RESUME across the disk primitives -- the
-                ; same cell the OLD name's call already uses, and the reason the
-                ; error exits below carry no `pop`.
-                ;
-                ; 🟢 AND IT DELETES A CLAIM RATHER THAN ADDING ONE. The paragraph
-                ; below used to argue that the staged NEW name survives fat_mount
-                ; + fat_find by ADDRESS -- 30 bytes of margin against DSKIO's FDC
-                ; work area. With the evaluation moved after the lookup there is
-                ; nothing staged across a disk primitive at all, so that argument
-                ; is no longer load-bearing. It is kept, inverted, because the
-                ; reasoning about STRSCR's span is still true and still useful if
-                ; anything is ever staged there again.
-                ld      (FN_RESUME),hl      ; park the cursor: the new-name text
-                call    diskslot_test
-                jp      z,load_error
-                ; find the OLD file first (records FWR_DIRSEC/FWR_DIROFF). The
-                ; text cursor no longer needs guarding across CALSLT -- it lives
-                ; in FN_RESUME, which is why the three exits below lost a `pop`.
-                ; ⚠️ SUPERSEDED BY D-NAMEORD: nothing is staged across these
-                ; primitives any more. Kept because the span reasoning is still
-                ; correct, and still the answer if anything is staged here again.
-                ; THE STAGED NEW NAME MUST SURVIVE fat_mount + fat_find, and
-                ; that is the one claim here that is NOT "consumed immediately".
-                ; It holds by ADDRESS, not by luck: the only writer into STRSCR's
-                ; span during a disk primitive is DSKIO's FDC work area
-                ; $E29A..$E29F (sysvars.inc's cross-component overlap invariant),
-                ; which is STRSCR+45..+50 -- and a name long enough to reach it
-                ; is 45+ characters, refused by build_83_name's 8.3 rule. The
-                ; bytes that can ever be read back are the first 14 at most, so
-                ; there are 30 bytes of margin.
-                call    fat_mount
-                jr      c,nm_fail
-                ld      hl,DISK_FCB_NAME
-                call    fat_find            ; old located; sets the entry location
-                jr      c,nm_notfound       ; old not found -> ERR 53 (R-DK2)
-                ; the old file exists: NOW evaluate the new name, so its own fault
-                ; (type mismatch, division by zero, ...) is what the statement
-                ; raises -- exactly as the OLD-name position already does.
-                ld      hl,(FN_RESUME)
-                call    fname_expr          ; new -> STRSCR, FN_RESUME = cursor
-                ld      hl,STRSCR+1         ; the NEW name
-                call    parse_disk_fcb      ; new -> DISK_FCB_NAME
-                ; read the dir sector, overwrite the 11-byte name, write it back.
-                ; repack: the read+overwrite+write runs in the dirverb_tenant
-                ; (sub page 1). FWR_DIRSEC/FWR_DIROFF (the located OLD entry, set
-                ; by the resident fat_mount+fat_find above) and DISK_FCB_NAME (the
-                ; new 8.3 name) are already marshalled in page-3 RAM (spec §12).
-                ld      a,DISKOP_SEL_NAME_STAMP
-                call    dirverb_op
-                jr      c,nm_fail2          ; sub-ROM absent -> error
+                ld      (FN_RESUME),hl      ; stage the cursor for the handler
+                ld      hl,H_NAME
+                call    chan_gate           ; unclaimed -> ERR 5 (trappable);
+                                            ; claimed -> disk.rom ran the whole verb
                 ld      a,(DISKOP_STATUS)
-                or      a
-                jr      nz,nm_fail2         ; tenant I/O error
+                cp      4
+                jp      z,stmt_error        ; 4 = no `AS` -> Syntax error
                 ld      hl,(FN_RESUME)      ; resume past the NEW name expression
-                jp      exec_stmt
-; D-DKNAME (docs/spec-basic-dkname.md), R-DK2: the CF-3300 answers `File not
-; found` to a NAME whose OLD file is missing, exactly as it does to a KILL that
-; matched nothing (R-DK1). The message already ships — D-MSGSUB hosts ERR 53 —
-; so this is 4 B and a real MSX error: ERR reads 53 and ON ERROR traps it, where
-; load_error did neither.
-;
-; 🔴 AND IT IS AN ARM SPLIT, NOT THE TARGET SWAP THE RESIDUAL FILED. nm_fail was
-; a SHARED exit for the fat_mount failure AND the fat_find miss, so re-pointing
-; it would have moved a disk-offline NAME to a trappable ERR 53 on no reading at
-; all — the same conflation D-DSKMSG found in do_kill. The mount keeps
-; load_error (the quarantined no-disk / mount / I-O class), and only the miss
-; becomes reference-exact.
-; \U0001f534 "UNMEASURED ON THE REFERENCE" WAS TRUE UNTIL 2026-09-10 AND IS NOW
-; FALSE (D-NMFAIL, scratchpad/nmfail_probe.py + nmfail_ctl.py). With a drive
-; and NO image the CF-3300 answers `Disk offline`, ERR reads **70**, ON ERROR
-; TRAPS it and the program STOPS -- measured for NAME, KILL, FILES, LOAD and
-; SAVE alike. zerobas prints `load error` and RUNS ON: the next line executes,
-; ON ERROR never fires, and ERR is never set. So the quarantine's premise is
-; gone; what stands in its place is a cost question, because ERR 70 does not
-; exist in this tree at all (sub/errmsg.asm's em_table stops at 64).
-; \u26a0\ufe0f AND load_error ITSELF MUST NOT BE RE-POINTED: basic/bload.asm's
-; CASSETTE failure path is the same label, so a fix belongs at the disk mount
-; sites, not at the shared tail [[a-shared-tail-is-not-a-decision]].
-;
-; ⚠️ STILL CONFLATED, said out loud: fat_find's own contract is `Cy = 1 not
-; found / error` — it does `ret c` on a read_sector FDC failure mid-scan — so an
-; I-O error during the root-directory walk now reads as `File not found` too.
-; That is KILL's residual one verb over (an I-O error inside fat_delete reads as
-; "nothing matched"); separating it needs a status OUT OF fat_find, a
-; primitive-layer change touching every caller in the tree. tnt_files is the
-; sibling that HAS separated all three, and NAME is not it. Spec §2.2.
-nm_notfound:
-                jp      df_notfound         ; ERR 53 `File not found`
-; The two remaining exits keep load_error, and stay two labels because they name
-; two different dispositions: nm_fail is the mount/no-disk failure above, nm_fail2
-; the stamp tenant's I-O error (or an absent sub-ROM) below.
-nm_fail:
-                jp      disk_error          ; D-DISKERR: ERR 70 on an empty drive, as the CF-3300
-; D-DUPSPAN2: an ALIAS, not a second copy -- byte-identical to nm_fail,
-; and POSITION-INDEPENDENT by tools/dupspan_indep.py (terminates, no
-; escaping relative jump, not entered by fallthrough, same ROM region).
-; The NAME and every call site survive; un-alias here for a distinct face.
-nm_fail2        equ     nm_fail
+                jp      kill_status         ; 0 not found / 1 renamed / 2 I-O
 
 ; --- MAXFILES = n — size the multi-channel table ---------------------------
 ; MAXFILES sets how many file channels may be open simultaneously (the value also
