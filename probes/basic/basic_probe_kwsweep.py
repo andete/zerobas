@@ -293,6 +293,31 @@ _RIG_TAGS = {"NEEDS-DISK:": "disk", "NEEDS-PRINTER:": "printer",
 # can express.
 _HOLD_TAG = "NEEDS-HOLD:"
 
+# 🟢 D-KWPLUG: THE SEVENTH RIG PLUGS A DEVICE INTO A JOYSTICK PORT.
+# `NEEDS-PLUG:<port>,<device>` becomes openMSX's `plug joyport<port> <device>`,
+# run ONCE before the timeline (the connectors exist at script start, so this
+# needs no scheduling).
+# 🔴 IT EXISTS BECAUSE A DEVICE THAT IS MERELY PLUGGED ALREADY CHANGES WHAT THE
+# REFERENCE REPORTS, AND NOTHING ELSE HERE CAN DRIVE ONE. openMSX offers no host
+# mouse or paddle to turn, so a PDL value cannot be DRIVEN -- but a plugged paddle
+# reads **128** where an empty port idles at 255, and an arkanoidpad answers
+# PAD(0) = -1 where an empty port reads 0. Those are the only teeth PDL and PAD
+# have: their unplugged rows read the IDLE line, and 255 is as much a constant as
+# 0 is [[a-case-that-agrees-can-agree-for-the-wrong-reason]].
+# The values are `basic_probe_input_devices.py`'s own measured table (its PHASE D
+# and PHASE E), not guesses.
+_PLUG_TAG = "NEEDS-PLUG:"
+
+
+def _plug_of(rigs: tuple[str, ...]) -> tuple[str, ...]:
+    """The openMSX `plug` prologue a rig tuple asks for, or ()."""
+    out = []
+    for r in rigs:
+        if r.startswith("plug:"):
+            port, dev = r[len("plug:"):].split(",")
+            out.append(f"plug joyport{port} {dev}")
+    return tuple(out)
+
 
 def _hold_of(rigs: tuple[str, ...]) -> tuple[int, int] | None:
     """The (row, mask) a rig tuple asks to hold down, or None."""
@@ -414,7 +439,8 @@ def _row_prefix_tags(note: str) -> tuple[str, ...]:
     reference's function-key line -- a furniture difference reported as a defect."""
     out = []
     for tok in note.split():
-        if tok in _RIG_TAGS or tok in _FLAG_TAGS or tok.startswith(_HOLD_TAG):
+        if (tok in _RIG_TAGS or tok in _FLAG_TAGS
+                or tok.startswith(_HOLD_TAG) or tok.startswith(_PLUG_TAG)):
             out.append(tok)
         else:
             break
@@ -429,9 +455,15 @@ def _row_rigs(note: str) -> tuple[str, ...]:
     The tags are a PREFIX RUN of the note -- the first token that is not a known
     tag is where the prose starts -- so a note reads
     `"NEEDS-DISK: " "NEEDS-PRINTER: " "why this row..."`."""
-    return tuple(_RIG_TAGS[t] if t in _RIG_TAGS else "hold:" + t[len(_HOLD_TAG):]
-                 for t in _row_prefix_tags(note)
-                 if t in _RIG_TAGS or t.startswith(_HOLD_TAG))
+    def _one(t):
+        if t in _RIG_TAGS:
+            return _RIG_TAGS[t]
+        if t.startswith(_HOLD_TAG):
+            return "hold:" + t[len(_HOLD_TAG):]
+        return "plug:" + t[len(_PLUG_TAG):]
+    return tuple(_one(t) for t in _row_prefix_tags(note)
+                 if t in _RIG_TAGS or t.startswith(_HOLD_TAG)
+                 or t.startswith(_PLUG_TAG))
 
 
 def _rig_kwargs(rigs: tuple[str, ...]) -> dict:
@@ -590,6 +622,14 @@ SWEEP: list[tuple[str, str, str | None, str, str]] = [
      "stride, 8 (MSX defaults to DOUBLE). A delta, so the machine-dependent base "
      "FORM:variable cancels; A and B are created BEFORE the DIM so the array cannot move."),
     ("stick",   "a=stick(0)",         'PRINT"[";STICK(0);"]"',           "direct", "control"),
+    # 🌾 D-KWPLUG: `stick` below reads the idle 0 a stub also returns. This one holds
+    # the CURSOR-UP key (matrix row 8, bit $20) and reads the direction code.
+    ("stick_hold", 'a=stick(0)',
+     'S=0:T=TIME:W$="WWWWWWWWWWWWWWWWWW":IF STICK(0)THEN S=STICK(0):V$="VVVVVVV":IF S=0 AND TIME-T<120 THEN 20:PRINT"[2d";S;"]"',
+     "stored",
+     "NEEDS-HOLD:8,0x20 SUBJECT:STICK FORM:cursor-keys 1 = UP: `STICK(0)` reads the "
+     "CURSOR KEYS off the matrix, and the direction CODE separates it from any "
+     "non-zero constant"),
     ("erase",   "erase a",            'DIM Q(2):ERASE Q:PRINT"[ok]"',    "direct", "control"),
     # 🌾 D-KWBATCH5: `erase` prints a CONSTANT `[ok]` -- the third screening axis,
     # and an ERASE that parsed and did nothing prints it just as happily. The effect
@@ -1247,6 +1287,23 @@ SWEEP: list[tuple[str, str, str | None, str, str]] = [
      "D-KWDRAIN: 255 on both; an absent PDL parses as an array and reads 0"),
     ("padkw",     'a=pad(0)',    'PRINT"[";PAD(9);"]"',     "direct",
      "D-KWDRAIN: 9 is outside PAD's range -> Illegal function call; an undefined array auto-dims to 10 and answers 0"),
+    # 🌾 D-KWPLUG: the rows with TEETH. `pdlkw` and `padkw` above read the IDLE
+    # line of an EMPTY port, and 255 is as much a constant as 0 -- a PDL that
+    # answered 255 to everything passes `pdlkw`. With a PADDLE plugged the value is
+    # 128, and with an ARKANOIDPAD the touch sense is -1 and the X coordinate 255,
+    # all three from `basic_probe_input_devices.py`'s own measured table (PHASE D
+    # and PHASE E). openMSX offers no host paddle to TURN, so the plugged value is
+    # the most a differential can reach here, and it is enough: it separates a real
+    # read from every constant the idle rows admit.
+    ("pdl_plug",  'a=pdl(1)',    'PRINT"[";PDL(1);"]"',      "direct",
+     "NEEDS-PLUG:a,paddle SUBJECT:PDL FORM:read 128 with a paddle in port A, where "
+     "the same expression reads 255 with the port EMPTY"),
+    ("pad_plug",  'a=pad(0)',    'PRINT"[";PAD(0);"]"',      "direct",
+     "NEEDS-PLUG:a,arkanoidpad SUBJECT:PAD FORM:touch-status -1: the pad is being "
+     "touched. An empty port reads 0, and so does a stub"),
+    ("pad_plug_b",'a=pad(1)',    'PRINT"[";PAD(1);"]"',      "direct",
+     "NEEDS-PLUG:a,arkanoidpad SUBJECT:PAD FORM:coordinate 255: index 1 is the X "
+     "COORDINATE, a different quantity from index 0's sense bit"),
     # 🔬 D-KWHOLD: THE CONTROL FOR THE KEY-MATRIX RIG, AND IT COMES FIRST. Every
     # STICK/STRIG/PDL row in this file reads the IDLE value, which is 0 -- exactly
     # what a stub returns -- so none of them can separate. This row holds the SPACE
@@ -1261,8 +1318,11 @@ SWEEP: list[tuple[str, str, str | None, str, str]] = [
     ("strig_hold", 'a=strig(0)',
      'S=0:T=TIME:W$="WWWWWWWWWWWWWWWWWW":IF STRIG(0)THEN S=-1:V$="VVVVVVV":IF S=0 AND TIME-T<120 THEN 20:PRINT"[1w";S;"]"',
      "stored",
-     "NEEDS-HOLD:8,0x01 SUBJECT:STRIG the SPACE BAR HELD DOWN: -1, where every "
-     "other input-device row in this file reads the idle 0 a stub also returns"),
+     "NEEDS-HOLD:8,0x01 SUBJECT:STRIG FORM:space-bar the SPACE BAR HELD DOWN: -1, "
+     "where every other input-device row in this file reads the idle 0 a stub also "
+     "returns. \U0001f534 IT IS ALSO THE RIG'S CONTROL, AND THAT IS NOT A CONFLICT: if it "
+     "ever reads `[1w 0 ]` the matrix is not being reached and STRIG loses the form "
+     "in the same breath -- one row, both jobs, and the failure is loud either way."),
     ("attrkw",    'a$=attr$',    'PRINT"[";ATTR$;"]"',      "direct",
      "D-KWDRAIN: bare ATTR$ raises Illegal function call -- so the word IS a token here; an undefined string variable prints empty instead"),
     ("stopkw",    'stop',        'PRINT"[T1]":STOP',        "stored",
@@ -3406,6 +3466,15 @@ def main() -> int:
                 held = _hold_of(rig)
                 if held is not None:
                     mkw["holds"] = [held] * len(idx)
+                # ⚠️ `prologue` is a WHOLE-CALL kwarg, so a plug and a printer log
+                # would overwrite one another -- no row asks for both, and the
+                # group key would separate them anyway.
+                plugs = _plug_of(rig)
+                if plugs:
+                    assert "prologue" not in mkw, (
+                        "a NEEDS-PLUG: row cannot also need the printer rig: "
+                        "both own `prologue`")
+                    mkw["prologue"] = plugs
             # a rig may force its own delivery mode (see _rig_kwargs: `log` needs
             # boot-per-case or every row reads its predecessors' printer output)
             tape_out = mkw.pop("_tape_path", None)

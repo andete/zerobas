@@ -19907,6 +19907,35 @@ four bytes each: `cp COLON / jr z,rov_seek` in the numeric path and
 NOT have it** — a `:` inside quotes is content (D-DATACOLON `d.qcolon`).
 🌱 **All four `DATA` rows now put the `DATA` FIRST**, so every one of them
 exercises the colon terminator and the execution path at once.
+⚡ **D-KWPLUG — THE SEVENTH RIG, AND FOUR INPUT-DEVICE BARS THAT SAY WHAT IS
+REALLY MISSING. 136 of 163.**
+🟢 **`NEEDS-PLUG:<port>,<device>` becomes openMSX's `plug joyport<port>
+<device>`**, run once before the timeline. It exists because a device that is
+merely PLUGGED already changes what the reference reports, and nothing else here
+can drive one: openMSX offers no host paddle to TURN.
+🔴 **AND THAT IS WHY `pdlkw` AND `padkw` PROVED LESS THAN THEY LOOKED.** They
+read the IDLE line of an EMPTY port — **255 is as much a constant as 0 is**, so a
+`PDL` that answered 255 to everything passed. With a paddle in port A the value is
+**128**; with an arkanoidpad `PAD(0)` is **−1** (touch sense) and `PAD(1)` is
+**255** (the X coordinate, a different quantity). Every figure is
+`basic_probe_input_devices.py`'s own measured table, not a guess.
+🟢 **`PDL` 1/1 → TIER 1.** One behaviour: read paddle *n*. Which port an index
+falls in is addressing, not a second behaviour.
+📏 **`PAD` 2/3, `STICK` 1/2, `STRIG` 1/2 — AND THE MISSING FORMS ARE NAMED
+RATHER THAN LEFT AS A BLANK.** `PAD`'s SWITCH cannot get a row with this
+instrument (openMSX offers no host button, and an unpressed switch reads 0 — what
+a stub reads). `STICK(0)` reads the CURSOR KEYS off the matrix and `STICK(1)/(2)`
+read a JOYSTICK PORT's direction lines — different hardware, different code inside
+GTSTCK — and openMSX's joystick is driven from the HOST, which the emulated key
+matrix cannot reach. `STRIG` splits the same way: the SPACE BAR off the matrix, the
+triggers off the PSG.
+🌱 **`stick_hold` reads `[2d 1 ]` with CURSOR-UP held** (matrix row 8, bit $20)
+where `stick` reads the idle 0, and the direction CODE separates it from any
+non-zero constant.
+🔴 **`strig_hold` NOW CARRIES `FORM:space-bar` AS WELL AS BEING THE RIG'S
+CONTROL, and that is not a conflict**: if it ever reads `[1w 0 ]` the matrix is not
+being reached and STRIG loses the form in the same breath. One row, both jobs, and
+the failure is loud either way.
       ⚠️ **`TXTMAX` IS NOW BOUNDED BY `DETOKBUF`, NOT BY FREE RAM** — at 1280 B
       it does not fit the 1024 B window, so `$BB00` is the stop until DETOKBUF
       is dealt with. Of D-LINEMAX's 1792 B, **1024 recovered, 768 still charged**.

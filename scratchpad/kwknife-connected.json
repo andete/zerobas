@@ -946,13 +946,13 @@
    "weak": false
   },
   "PAD": {
-   "connected": false,
+   "connected": true,
    "modes": {
-    "fn": "SUPPORTED"
+    "fn": "DIVERGENT"
    },
-   "row": "padkw",
+   "row": "pad_plug",
    "subject": "PAD",
-   "verdict": "SUPPORTED",
+   "verdict": "DIVERGENT",
    "weak": false
   },
   "PAINT": {
@@ -1696,8 +1696,9 @@
    }
   },
   "PAD": {
-   "connected": false,
+   "connected": true,
    "rows": {
+    "pad_plug": "DIVERGENT",
     "padkw": "SUPPORTED"
    }
   },
@@ -1802,5 +1803,5 @@
    }
   }
  },
- "written": "2026-09-15 01:23:11"
+ "written": "2026-09-15 01:56:35"
 }

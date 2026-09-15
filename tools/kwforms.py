@@ -530,6 +530,38 @@ FORMS: dict[str, tuple[tuple[str, ...], str]] = {
         ("fielded-record",),
         "GET #<channel>[,<record>] -- one behaviour, the random-file record read into the FIELD buffer. The row does a PUT/GET round trip so it reads the record back rather than merely that the statement parsed.",
     ),
+    "PDL": (
+        ("read",),
+        "`PDL(<n>)`, n = 1..12 -- six paddles per joystick port, and ONE behaviour: "
+        "read paddle n's count. Which port an index falls in is addressing, not a "
+        "second behaviour. \u26a0\ufe0f The bar is 1 and the ROW still had to change: an "
+        "EMPTY port idles at 255, so `PDL(1)` reading 255 is satisfied by a function "
+        "that answers 255 to everything. A plugged paddle reads 128.",
+    ),
+    "PAD": (
+        ("touch-status", "coordinate", "switch"),
+        "`PAD(<n>)`, n = 0..7 -- two devices of four indices each, and the four are "
+        "three DIFFERENT QUANTITIES: n=0/4 is the touch SENSE (-1 or 0), n=1,2/5,6 "
+        "are the X and Y COORDINATES, and n=3/7 is the SWITCH. Reading a coordinate "
+        "is not reading a sense bit. \u26a0\ufe0f The switch has no row and cannot get one "
+        "with this instrument: openMSX offers no host button to press, and an "
+        "unpressed switch reads 0 -- what a stub reads.",
+    ),
+    "STICK": (
+        ("cursor-keys", "joystick-port"),
+        "`STICK(<n>)` -- n=0 reads the CURSOR KEYS off the keyboard matrix and n=1/2 "
+        "read a JOYSTICK PORT's direction lines. Different hardware, different code "
+        "inside GTSTCK, so two behaviours and not two indices. \u26a0\ufe0f The port form "
+        "has no row: openMSX's joystick is driven from the HOST, which the emulated "
+        "key matrix cannot reach.",
+    ),
+    "STRIG": (
+        ("space-bar", "joystick-trigger"),
+        "`STRIG(<n>)` -- n=0 is the SPACE BAR, read off the keyboard matrix; n=1..4 "
+        "are the two triggers of each joystick port, read off the PSG. The same "
+        "split as STICK and for the same reason. \u26a0\ufe0f The trigger form has no row, "
+        "for the same reason STICK's port form has none.",
+    ),
     "FOR": (
         ("ascending", "step", "negative-step"),
         "`FOR <var>=<a> TO <b> [STEP <c>]` -- the IMPLIED step of 1, an explicit "
