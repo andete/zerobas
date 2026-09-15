@@ -184,11 +184,53 @@ unmeasured one. §4's phase 0b measures it.
   equally quiet ([`xslot_window.py`](../../scratchpad/xslot_window.py)). Every
   case above is kept short enough to answer, and no silent case is reported as a
   reading.
-* **0c — interrupt safety across the disk-ROM window.** `htimi_guard`
-  (`docs/spec-traps-t1-htimi-page1-safety.md`) already exists because a VBLANK can
-  land while page 1 is a SUB-ROM tenant; main→disk already wraps `di`/`ei`
-  (`basic/interp.asm:186`). Confirm the guard covers the disk-ROM window and the
-  call-back's re-entry.
+* **0c — interrupt safety across the disk-ROM window. ✅ DONE 2026-09-15
+  (D-XSLOTPRICE). THE GUARD COVERS IT — AND IS NOT THE MECHANISM THAT MATTERS.**
+
+  🔴 **THE QUESTION CHANGED UNDER MEASUREMENT.** 0c was filed as *"confirm
+  `htimi_guard` covers the disk-ROM window"*. It does. But measuring it found
+  something UPSTREAM of the guard: a hook handler is entered through the
+  inter-slot CALLF, which leaves **interrupts OFF**, so for the whole disk-ROM
+  window nothing runs at all — not H.TIMI, not the guard, and **not the BIOS
+  timer ISR that drives `TIME`**. A guard cannot cover a window it is never
+  reached in.
+
+  Four arms, one build, three POKEd cells
+  ([`xslot_intwin.py`](../../scratchpad/xslot_intwin.py), planted by
+  [`xslot_plant0c.py`](../../scratchpad/xslot_plant0c.py)). `ON INTERVAL=1`
+  ticks once per frame in which `event_poll` runs, and `event_poll` is exactly
+  what the guard gates (`basic/traps.asm`), so **fires ÷ frames is the fraction
+  of frames main page 1 was mapped**. `TIME` is the BIOS ISR, which the guard
+  does NOT gate, so the denominator stays honest — and reading both numbers is
+  the point: `TIME` alone cannot separate *"the guard skipped"* from *"no
+  interrupt happened"*.
+
+  | arm | fires | frames | ticked | |
+  |---|---|---|---|---|
+  | `base` | 3 | 3 | 100% | the instrument's own rate |
+  | `disk.ei0` | 3 | 3 | 100% | **but ~1 s of real work advanced `TIME` by 3 frames — the clock is STOPPED** |
+  | `disk.ei1` | 2 | 61 | **3.3%** | interrupts forced on: `TIME` runs true, `INTERVAL` does not — **the guard covering the window** |
+  | `cb.ei1` | 19 | 19 | **100%** | during the CALL-BACK page 1 is main, so the guard passes and everything is serviced |
+
+  **`disk.ei1` is the confirmation 0c asked for**, and it is two-sided: the same
+  spin with interrupts live shows the timer ISR running normally *while*
+  `INTERVAL` stays frozen. That is the guard reading a nonzero page-1 primary
+  field and skipping `event_poll` — not an absence of interrupts.
+
+  🎯 **AND `cb.ei1` IS THE ANSWER FOR THE CALL-BACK'S RE-ENTRY: 100%.** During
+  the call-back both pages hold main, so `$0038` and `htimi_guard` are equally
+  valid and the frame is serviced in full.
+
+  **What this hands phase 1.** The freeze is not something this re-architecture
+  introduces — every hook handler today, `hk_mkfloat` included, already stops the
+  clock for its duration; it is simply short. Moving verb bodies into `disk.rom`
+  lengthens those windows, so **the call-back ABI should EI for the duration of
+  the call-back**: page 0 and page 1 are both main there, the ISR is live, the
+  guard passes, and the architecture ends up BETTER for interrupt latency than
+  doing the same work disk-side would be.
+  ⚠️ Whether the handler may also EI around its own disk-ROM work is a separate
+  question with a real hazard behind it — the `htimi_guard` comment's FATPRIM
+  precedent — and it is NOT settled here.
 
 🔴 **KILL CRITERION FOR 0b — AND IT IS NOT "IS THE MACHINE FAST ENOUGH".**
 Joost, 2026-09-15, on an earlier draft that made it one: *"yes, but that is a
