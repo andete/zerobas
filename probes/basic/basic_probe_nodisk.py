@@ -101,6 +101,44 @@ CASES = [
     # for its syntax rather than by the disk gate, and both forms diverge the
     # same way, which is what says the finding is the GATE and not the parse.
     ("h.field",  'FIELD#1,2 AS A$'),
+    # 🔴 D-NODISKDEN (2026-09-15) — JOOST'S DENOMINATOR. He ruled that *"every
+    # hook claimed on 3300 we don't presumably is a sign of a defect or
+    # divergence"*, and the second half of that is this row set: it asked about 17
+    # words where `basic/kwtable.inc`'s Disk-BASIC surface is ~37. `LFILES` ran
+    # wrong for as long as it existed because it had no row while `FILES` beside it
+    # was green, so EVERY verb measured now earns a row — INCLUDING the ones that
+    # agree. An agreeing row is what makes the next regression loud.
+    # 🟢 ALL EIGHT AGREE WITH THE DISKLESS ORACLE (measured on three sides,
+    # scratchpad/nodiskden_probe.py). That is a real answer, not an absence: most
+    # claimed hooks do NOT correspond to a divergence here, which is the same
+    # lesson `GET`/`PUT` taught — a claimed hook marks a CANDIDATE, not a defect.
+    # 🔴 THE `:PRINT""` TAIL IS NOT DECORATION. `run()` appends `;` to the
+    # statement, which is fine after a `PRINT` and a SYNTAX ERROR after a bare
+    # verb -- so `CLOSE;`, `CLOSE#1;` and `MAXFILES=2;` first read ERR 2 on all
+    # three sides and scored as agreement. They agreed on an error THE PROBE
+    # ITSELF CAUSED, which is a vacuous row wearing coverage's clothes; the
+    # existing rows only escape it because their gate fires before the syntax
+    # check. With a `PRINT` to absorb the `;` the verb decides the reading.
+    # ⚠️ AND IT PRINTS `K`, NOT `""`. An empty cell is an UNNAMED OUTCOME --
+    # it reads like nothing happened, and "nothing happened" is also what a
+    # capture failure looks like. `K` says out loud that the statement RAN.
+    ("h.close",  'CLOSE:PRINT"K"'),
+    ("h.closen", 'CLOSE#1:PRINT"K"'),
+    ("v.loc",    'PRINT LOC(1)'),
+    ("h.maxf",   'MAXFILES=2:PRINT"K"'),
+    ("k.cvd",    'PRINT CVD("ABCDEFGH")'),
+    ("h.inputn", 'INPUT#1,A$'),
+    ("h.lineinp", 'LINE INPUT#1,A$'),
+    ("h.printn", 'PRINT#1,"X"'),
+    # 🔴 SIX VERBS CANNOT BE ASKED IN THIS SHAPE AT ALL, and that is recorded
+    # rather than left as an empty space:
+    #   `SAVE` / `BLOAD` / `BSAVE` — with NO DISK ROM a bare `SAVE"X"` is a
+    #     CASSETTE save and WAITS ON THE TAPE MOTOR. The first cut of the scout put
+    #     them in a batch, the VG-8020 never came back, and every case after them
+    #     read no fence at all — which the scout then flagged as nine divergences.
+    #     They need the tape rig or boot-per-case.
+    #   `LOAD` / `RUN"<file>"` / `MERGE` — they REPLACE OR MERGE INTO the running
+    #     program, so they destroy the probe that asks the question.
 ]
 
 # Rows that MUST agree with the oracle. A red here is a plain defect.

@@ -20538,6 +20538,53 @@ one-run re-stamp that sufficed for D-KWSAVEEND's 3-byte tail does not.
 🎯 **This is ruling 2's prerequisite carve**: the four code forms (LOCATE cursor
 switch, SCREEN key click, `VARPTR(#n)`, `INPUT$` console) land together after it.
 
+⚡ **D-NODISKDEN (2026-09-15) — JOOST'S DENOMINATOR, AND THE ANSWER IS A CLEAN
+NEGATIVE THAT IS WORTH AS MUCH AS A DEFECT WOULD HAVE BEEN.**
+🎯 **THE RULING** (Joost, 2026-09-15): *"every hook claimed on 3300 we don't
+presumably is a sign of a defect or divergence."* **TWO DENOMINATORS THAT SHOULD
+AGREE**, and where they do not is where the next `LFILES` hides:
+| denominator | count |
+|---|---|
+| hook cells the CF-3300 claims | **27** |
+| equates `basic/sysvars.inc` names | 14 |
+| …of those, also claimed by the CF-3300 | 13 |
+| **claimed cells with NO name here** | **14** |
+| …now identified (`H_LSET` `H_RSET` `H_FIELD`) | 3 |
+| **still unidentified** | **11** |
+| words `basic_probe_nodisk.py` asked about (before) | 17 |
+| Disk-BASIC surface in `basic/kwtable.inc` | ~37 |
+🟢 **EIGHT OF THE UNASKED VERBS ARE NOW MEASURED ON THREE SIDES AND ALL EIGHT
+AGREE WITH THE DISKLESS ORACLE** — `CLOSE`, `CLOSE#1`, `LOC`, `MAXFILES`, `CVD`,
+`INPUT#`, `LINE INPUT#`, `PRINT#`. Rows added for every one of them, because a
+verb that AGREES still earns its row: that is the whole `LFILES` lesson, which
+ran wrong for as long as it existed while `FILES` beside it was green. The set is
+21 rows → **29**.
+⚠️ **SO JOOST'S "PRESUMABLY" IS TEMPERED TWICE OVER, AND BOTH TEMPERINGS ARE
+MEASUREMENTS.** `GET`/`PUT` are hooked on the reference and diverge NOT AT ALL;
+and of the dozen unasked verbs, the eight that can be asked all agree. **A claimed
+hook marks a CANDIDATE, not a defect** — which is exactly why the divergence is
+measured before a slot is ever hunted, and why that order kept the last hunt to
+two verbs instead of four.
+🔴 **SIX VERBS CANNOT BE ASKED IN THIS SHAPE AT ALL, AND THE PROBE SAYS SO RATHER
+THAN LEAVING A GAP.** `SAVE`/`BLOAD`/`BSAVE`: with no disk ROM a bare `SAVE"X"` is
+a **CASSETTE** save and waits on the tape motor. `LOAD`/`RUN"<file>"`/`MERGE`:
+they replace or merge into the running program and destroy the probe asking the
+question. Both classes need the tape rig or boot-per-case.
+🔴 **AND THE FIRST CUT OF THE SCOUT REPORTED NINE DIVERGENCES THAT WERE ONE
+POISONED BATCH.** `SAVE` blocked on the VG-8020, every case after it read
+`? color auto goto list run` — no fence — and the flag logic compared a FAILED
+CAPTURE against a real one. An empty capture on one side is not a verdict; the
+scout now prints **NO READING — apparatus, not a verdict** instead of inventing
+one.
+🔴 **THREE OF THE NEW ROWS WERE VACUOUS ON THEIR FIRST CUT, IN A WAY THAT LOOKED
+LIKE COVERAGE.** `run()` appends `;` to the statement — harmless after a `PRINT`,
+a **Syntax error** after a bare verb — so `CLOSE;`, `CLOSE#1;` and `MAXFILES=2;`
+read ERR 2 on all three sides and scored as agreement **on an error the probe
+itself caused**. The existing rows only escape that because their gate fires
+BEFORE the syntax check. Fixed with a `:PRINT"K"` tail so the verb decides the
+reading — and `K` rather than `""`, because an empty cell is an unnamed outcome
+and reads exactly like a capture failure.
+
 🔴 **D-DISKDISP (2026-09-15) — AND THE VERY FIRST STEP OF THE APPROVED PLAN IS
 THE WRONG STEP. THE `$4004` SLOT-WALK IS NOT HOW THESE FIVE VERBS ARE REACHED.**
 🎯 **TWO OF THIS TREE'S OWN DOCUMENTS DISAGREE ON THE LOAD-BEARING RULE, AND THE
