@@ -126,12 +126,64 @@ unmeasured one. §4's phase 0b measures it.
   an `equates.inc` too. The search path now comes from the caller (defaulting to
   the top file's own directory); `sub` stays at 71 files and `basic/main.asm` at
   50, so no other build's closure moved.
-* **0b — one real inter-slot call, disk → main page 1 → back, PRICED.** Bytes per
-  call site and frames per call.
-  ⚠️ `disk/pageenv.asm`'s `calslt_h` is a **simulated** CALSLT for the boot
-  bridge — its own comment says it "calls IX directly" because those targets are
-  already mapped. It cannot reach main page 1. The runtime route is the BIOS's
-  own `$001C`, and **zerobas has never made a disk→BASIC inter-slot call**.
+* **0b — one real inter-slot call, disk → main page 1 → back, PRICED.
+  ✅ DONE 2026-09-15 (D-XSLOTPRICE). IT WORKS, AND IT IS CHEAP.**
+
+  **The route.** `disk/pageenv.asm`'s `calslt_h` is a **simulated** CALSLT for
+  the boot bridge — its own comment says it "calls IX directly" because those
+  targets are already mapped — so it cannot reach main page 1 and was never the
+  candidate. The runtime route is the BIOS's own `$001C` with `IX` = the main
+  page-1 target and `IYh` = the main-ROM slot id from `EXPTBL`. Page 0 is never
+  swapped (§2), so `CALSLT` itself stays mapped while it switches page 1 out
+  from under the caller — the same geometry main→sub page-1 tenants already use
+  on every `SQR`, `PLAY` parse and `LIST`.
+
+  **It runs.** Measured on the merged machine with a scaffolded probe
+  ([`xslot_plant.py`](../../scratchpad/xslot_plant.py), reverted after): a 2-byte
+  main-page-1 callee `ld a,(hl) / ret` reached from a disk-ROM loop behind the
+  `CVI` hook. **The witness is two-sided** — the callee returns the byte at
+  `$4002`, which is `$10` in the main ROM and `$34` in the disk ROM, so the value
+  says WHICH ROM was mapped rather than merely that something returned
+  ([`xslot_stage.py`](../../scratchpad/xslot_stage.py)):
+
+  | case | reads |
+  |---|---|
+  | control, no hook touched | `2` — the rig answers |
+  | armed 0 calls | `255` — the cell is untouched; nothing ran |
+  | armed 1 call | **`16`** = `$10`, main's byte — the switch happened |
+  | armed 64 calls | `16` |
+
+  **Bytes, assembled not counted** ([`xslot_bytes.asm`](../../scratchpad/xslot_bytes.asm)):
+  **7 B per call site** with a 7 B shared helper, or 11 B fully inline.
+  🎯 **7 B is exactly what `subrom_call` costs per site today** (`ld ix,<entry>`
+  + `call`), so a call-back site is the same size as the sub-ROM calls this
+  interpreter is already built out of. It also corroborates, rather than
+  refutes, `disk/kernel.asm`'s filed *"~36 B of call overhead"* for the
+  conversions: that verb names five main-page-1 callees, and 5 × 7 = 35 B.
+
+  **Frames** ([`xslot_price.py`](../../scratchpad/xslot_price.py)). Six cases,
+  **one build, one POKE apart** — `$E771` carries the number of inter-slot calls
+  the handler makes per hook entry, so the slope cannot be a different machine:
+
+  | calls | extra frames | per call |
+  |---|---|---|
+  | 100 | +1 | 0.0100 |
+  | 800 | +8 | 0.0100 |
+  | 1600 | +15 | 0.0094 |
+  | 3200 | +30 | 0.0094 |
+  | 6400 | +60 | 0.0094 |
+
+  Fit through the origin: **0.0094 frames/call = 0.156 ms = ~107 inter-slot
+  calls per frame.** At 3.58 MHz that is ~560 T-states for the round trip, which
+  is the right order for a slot save/switch/call/restore plus our 17 B of
+  wrapper — the physics agrees with the slope, independently of the baseline.
+
+  ⚠️ **A CAP ON THE CASE LENGTH IS PART OF THIS MEASUREMENT.** Programs past
+  ~140 frames come back with an empty capture. That boundary is the HARNESS, not
+  the subject: a plain `FOR I=1 TO 2000:NEXT` that touches no hook at all goes
+  equally quiet ([`xslot_window.py`](../../scratchpad/xslot_window.py)). Every
+  case above is kept short enough to answer, and no silent case is reported as a
+  reading.
 * **0c — interrupt safety across the disk-ROM window.** `htimi_guard`
   (`docs/spec-traps-t1-htimi-page1-safety.md`) already exists because a VBLANK can
   land while page 1 is a SUB-ROM tenant; main→disk already wraps `di`/`ei`
@@ -149,6 +201,25 @@ roughly what the architecture inherently costs — the same shape of work the
 reference does — or does it cost dramatically more?** Only the second kills it,
 and it would point at our implementation rather than at the design. A number that
 merely looks big beside our own interpreter speed proves nothing either way.
+
+✅ **ANSWERED, AND IT DOES NOT KILL IT.** Measured on the same machine, in the
+same loop shape, 100 iterations each
+([`xslot_compare.py`](../../scratchpad/xslot_compare.py)):
+
+| | per iteration |
+|---|---|
+| `X=1` — the interpreter's per-statement floor | 7.17 ms |
+| `X=CVI("AB")` — + the HOOK entry and the whole argument evaluation | 8.67 ms |
+| **one call-back** | **0.156 ms** |
+
+**A call-back costs ~10% of the hook entry the verb already pays to arrive**, and
+the hook entry is itself an inter-slot call the reference pays too on every disk
+verb. So the call-back is a small fraction of the work the architecture already
+does around it, not a multiple of it.
+⚠️ **The per-statement figures are this tree's own, and they are slow** — that is
+the filed ~3× issue Joost separated out, and it is why the honest comparison is
+call-back-against-hook-entry (both inter-slot, so the slowness cancels) rather
+than call-back-against-statement, which would flatter us.
 
 ### Phase 1 — the interface
 
