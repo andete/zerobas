@@ -2673,6 +2673,32 @@ SWEEP: list[tuple[str, str, str | None, str, str]] = [
      "WHOLE listing: the ten defaults are identical on both machines, so the only "
      "difference either side can show is `ZZQ` in slot 1 -- which is there only if "
      "the assignment happened. No FNKSTR constant is needed or guessed."),
+    # 🔴 D-KEYRIG (2026-09-15): THE ROW ABOVE *PERFORMS* THE ASSIGNMENT AND
+    # CANNOT SCORE IT. Its own note says the listing differs "only if the
+    # assignment happened" -- but a row declares ONE `FORM:`, and that one is
+    # `list`. So `assign` was uncovered by a row that exercises it.
+    # 🎯 THIS ROW READS THE ASSIGNMENT AS THE BEHAVIOUR IT ACTUALLY IS: a
+    # function-key MACRO TYPES ITS STRING into the keyboard buffer when the key is
+    # pressed, and the key-matrix rig can press it (`NEEDS-HOLD:6,0x20` is F1, the
+    # same hold the `onkey` rows use). `INKEY$` then reads back what the macro
+    # typed -- an effect, not a listing.
+    # 🔴 ITS CONTROL IS THE DEFAULT MACRO AND IT CAN FAIL: F1 defaults to
+    # `color `, so holding F1 with NO assignment reads `co` on both machines
+    # (scratchpad/keyassign_probe.py). If that ever read `ZQ`, or nothing, the rig
+    # would not be reaching the key and this row would mean nothing. The DIFFERENCE
+    # between `co` and `ZQ` is the assignment, and neither is a constant.
+    # ⚠️ `KEY 1,""` BEFORE THE PRINT IS LOAD-BEARING. The macro AUTO-REPEATS for
+    # as long as the key is held -- the same flood that made the `onkey` rows read
+    # `?noecho` on the faster reference -- and the control's first cut, which did
+    # not disarm, came back as an unparseable screen of `color color color...`.
+    # It still proved the rig reached F1, but an unreadable cell is not a verdict.
+    ("keykw_b",  'key 1,"x"',
+     '''KEY 1,"ZQ":A$="":T=TIME:W$="WWWWWWWWWWWWWWWWWW":A$=A$+INKEY$:V$="VVVVVVVVVVVVVVVVVV":IF LEN(A$)<2 AND TIME-T<99 THEN 30:KEY 1,"":PRINT"[3r";LEFT$(A$,2);"]"''',
+     "stored",
+     "NEEDS-HOLD:6,0x20 FORM:assign `ZQ` typed BY THE MACRO with F1 held -- the "
+     "assigned string coming back through `INKEY$`. Unassigned, the same hold "
+     "reads `co` from F1's default `color `, so the reading is the assignment and "
+     "not the rig"),
     # 🚫 D-KWOSK: `KEY ON` / `KEY OFF` HAVE NO ROW, AND THE REASON IS MEASURED.
     # The obvious instrument is the FUNCTION-KEY LINE in VRAM -- `KEY OFF` blanks
     # it -- but its layout is NOT the same on the two machines:

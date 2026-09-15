@@ -1878,7 +1878,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:18785 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:18818 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -2044,7 +2044,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:6645 (T-6FE392)8 (T-529ABE)` from `TODO.md:17436 (T-529ABE)`: a
+      `TODO.md:6645 (T-6FE392)8 (T-529ABE)` from `TODO.md:17469 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -7489,7 +7489,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:17436 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:17469 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -12103,6 +12103,39 @@ list. **When a slice lands, grep this list for what it just shipped.**
       flagged the byte figure beside it as PRESENT-TENSE — its pattern includes
       `\bis at\b`, which ordinary English hits. A false positive costs one
       rephrase, the trade its own header argues for — recorded, not filed.
+
+- [ ] 🔴 **zerobas RENDERS NO FUNCTION-KEY DISPLAY LINE AT ALL, SO `KEY ON`
+      AND `KEY OFF` HAVE NOTHING TO TURN ON OR OFF.**
+      🤖 AUTONOMOUS — measured and specified; no decision is waiting on Joost.
+      Measured 2026-09-15 (D-KEYRIG,
+      [`scratchpad/keydisp_probe.py`](scratchpad/keydisp_probe.py)). With
+      `KEY 1,"QQQ"` assigned and `KEY ON`, counting non-space cells in the
+      name table's LAST ROW:
+      | | non-space cells in row 23 | first code |
+      |---|---|---|
+      | VG-8020 | **18** | 81 = `Q`, the assigned macro |
+      | zerobas | **0** | — |
+      🎯 **AND THE TWO CONTROLS THAT MAKE THAT A VERDICT.** (a) A run with no
+      `KEY` statement reads `0 0` on BOTH machines, so the window is not catching
+      the program listing. (b) Both name tables ARE at VRAM 0 — printing `ZZZZZ`
+      and counting code 90 in the text area reads 5 on the VG-8020 and 10 here, so
+      zerobas's blank row 23 is a blank row 23 and not a name table living
+      somewhere else.
+      🔴 **TWO ARITHMETIC ERRORS ARE RECORDED WITH IT, because both looked like
+      findings.** The window was first `23 x LINLEN` (851 at 37, 897 at 39) and
+      read `0 0` everywhere — **SCREEN 0's name table is 40 BYTES PER ROW ON BOTH
+      MACHINES** regardless of LINLEN, so row 23 starts at 23x40 = **920**, which
+      is exactly why `keykw`'s note recorded the reference's string at offset 922.
+      And the first window (840..959) was wide enough to be right but slow enough
+      to outrun the capture on the 3x-slower machine, which reads as an empty cell
+      and is not a verdict either.
+      🎯 **THE INSTRUMENT IS SETTLED AND WORKS** — `SEARCH, NEVER INDEX`: count
+      a marker across row 23 with the display on and again with it off, print BOTH
+      counts, and LINLEN drops out. On the VG-8020 it reads `0 3` (off then on) and
+      `3 0` (on then off), with `0 0` as its control. **The moment this tree draws
+      the line, two `KEY` forms become rows with no new apparatus.**
+      📏 Cost unmeasured. `KEY` is **2/4** forms (D-KEYRIG covered `assign`);
+      these two are the rest.
 
 - [ ] 🔴 **`FIELD`, `LSET` AND `RSET` HAVE NO DISK-PRESENCE GATE. THE HOOKS
       ARE NOW IDENTIFIED; THE BYTES ARE NOT THERE YET.**
