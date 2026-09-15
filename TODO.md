@@ -1878,7 +1878,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:18662 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:18666 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -2044,7 +2044,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:6645 (T-6FE392)8 (T-529ABE)` from `TODO.md:17313 (T-529ABE)`: a
+      `TODO.md:6645 (T-6FE392)8 (T-529ABE)` from `TODO.md:17317 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -7489,7 +7489,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:17313 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:17317 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -8505,9 +8505,9 @@ list. **When a slice lands, grep this list for what it just shipped.**
       🤖 AUTONOMOUS — measured, bounded by its passing rows, and the fix is an
       argument check rather than a redesign.
 
-- [ ] 🔴 **`SAVE"x",A` ENDS THE RUN ON THE REFERENCE AND CONTINUES HERE — the
-      ASCII save drives the LIST walk, and `LIST` inside a program stops the
-      program.** Measured 2026-09-15 by D-KWSAVE
+- [x] ✅ **SHIPPED 2026-09-15 (D-KWSAVEEND) — `SAVE"x",A` ENDS THE RUN ON THE
+      REFERENCE AND USED TO CONTINUE HERE; the ASCII save drives the LIST walk,
+      and `LIST` inside a program stops the program.** Measured 2026-09-15 by D-KWSAVE
       ([`scratchpad/saveascii_probe.py`](scratchpad/saveascii_probe.py)), four
       cases on the National CF-3300 with the sweep's own disk fixture.
       | case | CF-3300 |
@@ -8530,9 +8530,13 @@ list. **When a slice lands, grep this list for what it just shipped.**
       verdict), and a two-PRINT row that read cleanly on both sides POISONED THE
       REST OF ITS BATCH — a run that ends mid-line leaves the reference somewhere
       the next case cannot be typed into.
+      ✅ **FIXED**: `ascii_save` now ends `call disk_write_end / jp end_line_end`,
+      the same tail `ex_list` has. **+3 B exactly as priced — `make basic-reloc`
+      from a clean tree, 2026-09-15: main page 1 free 8 B → 5 B, low region 0,
+      unchanged.** All four probe cases now read the same on both machines.
       🎚️ TIER 3 — common error: a program that `SAVE`s itself as ASCII and
       expects to carry on
-      🤖 AUTONOMOUS — measured against a control, bounded, and the change is one
+      🤖 AUTONOMOUS — measured against a control, bounded, and the change was one
       tail instruction.
 
 - [ ] 🔴 **`STOP OFF` UNDER A STILL-HELD Ctrl-STOP BREAKS HERE AND NOT ON THE
@@ -20215,6 +20219,58 @@ be poisoned by a neighbour's leftover MACHINE STATE, not just by delivery timing
 or a mutated fixture. The two earlier batch hazards were a WRITER upstream of a
 reader and a case slower than the batch `step`; this one is neither, and none of
 the three is visible from the row itself.
+🏗️ **JOOST RULED, 2026-09-15 — FIVE DECISIONS, AND FOUR OF THEM CHANGE THE
+NEXT SLICES. Do not re-ask.**
+1. 🟢 **`SAVE"x",A`: SPEND THE 3 B NOW.** The ASCII save must END the run the
+   way the reference does. Main page 1 goes 8 B → 5 B. ✅ **DONE, and the figure
+   held exactly: 8 B → 5 B, low region 0 unchanged.** `SAVE` 2/2, TIER 1.
+2. 🚧 **The four code forms — LOCATE's cursor switch, SCREEN's key click,
+   `VARPTR(#n)`, `INPUT$`'s console form — CARVE FIRST, THEN IMPLEMENT ALL FOUR.**
+   A carve slice is now the PREREQUISITE; they land together once there is room,
+   not piecemeal into 5 B.
+3. 💾 **The disk fixture: ADD A SECOND `.BAS`, LEAVE `PROG.BAS` ALONE.** Nothing
+   existing changes its bytes, so `ramfree`, `diskbasic` and every other suite
+   that mounts `disk/test720.dsk` keeps reading what it read. The new file PRINTs
+   a marker, which is what `RUN"<file>"` and `LOAD` need to be observable at all.
+4. 🔧 **The unreachable forms: BUILD A RIG THAT CAN REACH THEM** — not an
+   exemption. `KEY`'s display forms, `PAD`'s switch and `STICK`/`STRIG`'s joystick
+   halves stay counting against us until a rig drives openMSX's HOST-side joystick
+   and reads the key line where it actually sits.
+5. 📍 **PLACEMENT (Joost, same message): DISK CODE BELONGS IN THE DISK ROM as
+   much as possible, and TAPE CODE IS A GOOD CANDIDATE FOR THE SUB ROM.** That is
+   the lever the carve should pull first: `make basic-reloc` on 2026-09-15 reads
+   **8 B free in main page 1 and 0 in the low region**, against **~8820 B free in
+   `disk.rom` across 32 runs, largest usable hole 3182 B**, and 505 B in sub
+   page 0. 🔴 **`ascii_save` IS ITSELF DISK CODE SITTING IN THE MAIN IMAGE** —
+   the `SAVE",A"` tail this arc is about — so it is a migration candidate, not
+   only a +3 B edit. Instruction-level shaving is the LAST resort, not the first.
+⚡ **D-KWSAVEEND — THE FIRST OF THE FIVE RULINGS, SHIPPED. `SAVE` 2/2. 146 of
+163.**
+🟢 **`ascii_save` now ends `call disk_write_end / jp end_line_end`** — the same
+tail `ex_list` has, which is the whole point: this path DRIVES the LIST walk, and
+`LIST` inside a program ends the run on both machines, so `ex_list` was right and
+this tail simply did not inherit it.
+⚠️ **`call` + `jp`, not the old `jp`:** `disk_write_end` ends in a `ret` whose own
+comment says *"back to the prompt"*, so the tail jump unwound one frame further
+than a handler body does. Calling it leaves the stack exactly where `ex_list` has
+it when IT reaches `end_line_end`.
+💰 **+3 B EXACTLY AS PRICED.** `make basic-reloc` from a clean tree,
+2026-09-15: **main page 1 free 8 B → 5 B**, low region **0**, unchanged. All four
+probe cases now read the SAME on both machines — the tokenised save still
+continues (`< 72 >`), and after an ASCII one neither a readback nor a bare `PRINT`
+nor a `FILES` is reached.
+🎯 **AND THE ROW'S PLACEMENT IS THE ROW.** `save_b` is the LAST disk row: an
+ASCII save ends the run MID-LINE, and a case that ends mid-line leaves the machine
+somewhere the NEXT case cannot be typed into — an earlier cut of exactly this row
+read cleanly on both sides and blanked `namekw` and `open_c` behind it. At the end
+of the group there is no successor to poison.
+🔴 **THE KNIFE PIN REFUSED, CORRECTLY, AND WAS RE-STAMPED BY ONE RUN.** A ROM
+change moves the fingerprint, and `tier_table` will not render against a pin
+measured on a machine that no longer exists. `SAVE`'s own cut was re-measured on
+the new ROM (LOAD-BEARING); **the other rows' verdicts still date from the
+pre-fix ROM**, and that is defensible here only because a 3-byte tail shifts
+addresses without changing whether any row NOTICED its cut. A change that moved
+code between regions would need the full `--all` / `--allfn` re-measure.
       ⚠️ **`TXTMAX` IS NOW BOUNDED BY `DETOKBUF`, NOT BY FREE RAM** — at 1280 B
       it does not fit the 1024 B window, so `$BB00` is the stop until DETOKBUF
       is dealt with. Of D-LINEMAX's 1792 B, **1024 recovered, 768 still charged**.

@@ -3317,6 +3317,19 @@ SWEEP: list[tuple[str, str, str | None, str, str]] = [
      "stored",
      "NEEDS-DISK: " "FORM:vram 77 read back with VPEEK, not PEEK: the `,S` form "
      "puts the bytes in VIDEO memory, where a plain BLOAD would leave VRAM at 0"),
+    # 🔴 D-KWSAVEEND: **THE LAST DISK ROW, AND THAT PLACEMENT IS THE ROW.** An
+    # ASCII save ENDS THE RUN -- that is the whole form -- so the program stops
+    # MID-LINE, and a case that ends mid-line leaves the machine somewhere the
+    # NEXT case cannot be typed into. An earlier cut of this row read cleanly on
+    # both sides and blanked `namekw` and `open_c` behind it. At the end of the
+    # group there is no successor to poison.
+    # 🎯 `[2s]` ALONE IS THE READING: both machines print it and NEITHER reaches
+    # the `[2u]` after the SAVE. Before the fix this tree printed both.
+    ("save_b",  'save"x",a',
+     'PRINT"[2s]":SAVE"SA.BAS",A:PRINT"[2u]"',                "stored",
+     "NEEDS-DISK: " "FORM:ascii the ASCII save ENDS THE RUN, so the statement after "
+     "it is never reached -- the same shape `LIST` inside a program has, and the "
+     "reason is the same: this path drives the LIST walk"),
     ("bin",     "a$=bin$(5)",
      'PRINT"[";BIN$(5);"]"',                         "direct",
      "FORM:to-binary absent => syntax error; real => 101"),

@@ -235,7 +235,22 @@ ascii_save:
                 call    pchar
                 xor     a
                 ld      (PRDEST),a          ; restore the screen sink before Close
-                jp      disk_write_end      ; flush partial sector + stamp dir + Close
+                ; 🔴 D-KWSAVEEND: AND THEN THE RUN STOPS -- `SAVE"x",A` ENDS THE
+                ; PROGRAM ON THE REFERENCE AND USED TO CARRY ON HERE. Measured on
+                ; the CF-3300 against a control (scratchpad/saveascii_probe.py):
+                ; the TOKENISED save continues normally, and after an ASCII one
+                ; neither a readback nor a bare `PRINT` nor a `FILES` is reached.
+                ; The mechanism was never a mystery -- this path drives the LIST
+                ; walk (`list_all`), and `LIST` inside a program ENDS THE RUN on
+                ; BOTH machines -- so `ex_list` finishing `jp end_line_end` was
+                ; right and this tail simply did not inherit it.
+                ; ⚠️ `call` + `jp`, not the old `jp`: `disk_write_end` ends in a
+                ; `ret` whose comment says "back to the prompt", so the tail jump
+                ; unwound one frame further than a handler body does. Calling it
+                ; leaves the stack exactly where `ex_list` has it when IT reaches
+                ; `end_line_end`.
+                call    disk_write_end      ; flush partial sector + stamp dir + Close
+                jp      end_line_end        ; ...and the run stops, as LIST's does
 
 ; --- tape SAVE path ---
 sav_is_cas:

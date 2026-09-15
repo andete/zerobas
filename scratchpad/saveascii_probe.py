@@ -20,7 +20,7 @@ REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, os.path.join(REPO, "probes", "lib"))
 import omsx_repl  # noqa: E402
 
-MACH = "National_CF-3300"
+MACHS = ("National_CF-3300", "C-BIOS_MSX1_EU_REPACK_DISK")
 DSK = os.path.join(REPO, "disk", "test720.dsk")
 
 CASES = [
@@ -34,6 +34,13 @@ CASES = [
 
 
 def main() -> int:
+    for MACH in MACHS:
+        print("###", MACH)
+        run_one(MACH)
+    return 0
+
+
+def run_one(MACH: str) -> None:
     fh = tempfile.NamedTemporaryFile(suffix=".dsk", delete=False)
     fh.close()
     shutil.copy(DSK, fh.name)
@@ -54,7 +61,6 @@ def main() -> int:
             if line:
                 print("   %2d |%s|" % (r // 40, line))
     os.unlink(fh.name)
-    return 0
 
 
 if __name__ == "__main__":

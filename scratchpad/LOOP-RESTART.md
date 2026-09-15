@@ -6,6 +6,28 @@ session and the loop resumes exactly where it stopped.
 
 ## Where things stand (rewritten 2026-09-15)
 
+🏗️ **JOOST RULED 2026-09-15 — READ THIS BEFORE PICKING ANYTHING UP. Five
+decisions, and they set the order of the next slices. Do not re-ask.**
+
+1. **`SAVE"x",A` — SPEND THE 3 B.** The ASCII save must END the run.
+2. **The four code forms (LOCATE cursor switch, SCREEN key click, `VARPTR(#n)`,
+   `INPUT$` console form) — CARVE FIRST, THEN ALL FOUR TOGETHER.** A carve slice
+   is the prerequisite; do not dribble them into the leftover bytes.
+3. **The disk fixture — ADD A SECOND `.BAS`, LEAVE `PROG.BAS` ALONE.** It must
+   PRINT a marker; that is what makes `RUN"<file>"` and `LOAD` observable. Nothing
+   existing changes its bytes, so every suite mounting `disk/test720.dsk` keeps
+   reading what it read.
+4. **The unreachable forms — BUILD A RIG, not an exemption.** `KEY`'s display
+   forms, `PAD`'s switch, `STICK`/`STRIG`'s joystick halves keep counting against
+   us until a rig drives openMSX's HOST-side joystick and reads the key line where
+   it actually sits.
+5. 📍 **PLACEMENT: DISK CODE BELONGS IN THE DISK ROM as much as possible; TAPE
+   CODE IS A GOOD CANDIDATE FOR THE SUB ROM.** This is the carve's FIRST lever,
+   ahead of any instruction-level shaving: main page 1 has **8 B** free and the
+   low region **0**, against **~8820 B in `disk.rom`** (32 runs, largest usable
+   hole 3182 B) and 505 B in sub page 0. `ascii_save` is disk code sitting in the
+   main image and is a migration candidate in its own right.
+
 Recount everything — never quote a number from this file. `make tiers-md` then
 read `docs/tier-status.md`; the headline is in its **STATEMENT — 163** paragraph.
 
