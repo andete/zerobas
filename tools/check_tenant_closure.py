@@ -277,25 +277,44 @@ def seeds_from_inc(inc_path):
 _INCLUDE = re.compile(r'^\s*include\s+"([^"]+)"', re.IGNORECASE)
 
 
-def _resolve_include(arg):
-    """Mirror the sub build's `-I sub` search: a bare name resolves under sub/;
-    an explicit path (basic/...) is repo-root relative."""
-    return arg if '/' in arg else os.path.join('sub', arg)
+def _resolve_include(arg, incdir):
+    """Mirror the assembler's `-I <incdir>` search: a bare name resolves under
+    `incdir`; an explicit path (basic/...) is repo-root relative.
+
+    🔴 `incdir` USED TO BE HARDCODED TO `sub`, and that was invisible because it
+    is the RIGHT answer for the only caller there was. The disk ROM is built
+    with `-I disk` (Makefile) and has its OWN equates.inc, so walking
+    disk/disk.asm under the old rule quietly returned SUB's equates.inc and
+    dropped every disk part whose name sub/ does not also carry -- a closure of
+    3 files for an 8-file ROM, with no error anywhere. An instrument that
+    misreads its input and hands back a plausible table is the shape this
+    project keeps meeting; the fix is to take the search path from the caller
+    rather than from the one build that existed first.
+    """
+    return arg if '/' in arg else os.path.join(incdir, arg)
 
 
-def collect_sources(top, seen=None):
+def collect_sources(top, seen=None, incdir=None):
     """Ordered, de-duplicated list of every source file the assembly at `top`
     pulls in via `include` (recursively). Used to build the whole sub call graph
-    (its own .asm + basic/pu-render.inc, basic/detok.inc, ...)."""
+    (its own .asm + basic/pu-render.inc, basic/detok.inc, ...).
+
+    `incdir` is the assembler's `-I` directory; it defaults to the TOP file's
+    own directory, which is what every build in this tree actually passes
+    (`-I sub` for sub/sub.asm, `-I disk` for disk/disk.asm) and is a no-op for
+    basic/main.asm, whose includes are all repo-root paths.
+    """
     if seen is None:
         seen = []
+    if incdir is None:
+        incdir = os.path.dirname(top) or '.'
     if top in seen or not os.path.exists(top):
         return seen
     seen.append(top)
     for line in open(top):
         m = _INCLUDE.match(line.split(';', 1)[0])
         if m:
-            collect_sources(_resolve_include(m.group(1)), seen)
+            collect_sources(_resolve_include(m.group(1), incdir), seen, incdir)
     return seen
 
 

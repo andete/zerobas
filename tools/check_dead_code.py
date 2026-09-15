@@ -111,6 +111,19 @@ only by the assembler:
       ⚠️ A prologue that genuinely emits still falls through, untouched:
       basic/sprtrap-body.inc opens with `jr z,sp_done` above its first label.
 
+  (12) A CALLEE WHOSE ONLY CALLER IS IN ANOTHER ROM. The disk ROM calls back
+      into main BASIC across slots, so a main routine can be live with zero
+      main-side callers. Until 2026-09-15 nothing modelled that: the first such
+      routine was held up only by the `tools/` intersection arm, which is what
+      the standing control below caught. The arm is NOT the model -- the model is
+      disk_abi_seeds(), which reads the GENERATED disk import and checks it
+      against tools/gen_resident_abi.py's declared profile, so the generator, the
+      file and the label set must all agree or the gate fails. ⚠️ The three
+      symbols already in that import were masked from this because they have
+      main-side callers too; a callee that exists PURELY for the disk ROM does
+      not, and that is the case this fix exists for
+      (disk/docs/spec-diskbasic-hook-rearchitecture.md §4 phase 0a).
+
 SEEDS -- the choice matters more than the algorithm.
 
   main: `init` (the cartridge header's entry point), the resident-ABI import
@@ -122,13 +135,20 @@ SEEDS -- the choice matters more than the algorithm.
   because the ported tests still name it. That one choice is the difference between
   16 dead spans and 4.
 
+  ⚠️ AND the DISK ROM's resident-ABI import (fix 12). `disk.rom` is a
+  page-1 ROM in another slot; a main routine that exists ONLY to be called back
+  into from there has no main-side caller at all and reads as DEAD. Seeded from
+  the same GENERATED import the assembler consumes, with the name list taken
+  from tools/gen_resident_abi.py's own profile -- so a rename fails LOUDLY in
+  three places instead of dropping out of an intersection.
+
   sub: the page-0 and page-1 ENTRY-TABLE tenants, plus all prologues. This seed set
   is closed and provably complete -- the main ROM can reach sub code only through
   SUBROM_ENTRY_BASE_P0/_P1 + 3*index, so the two tables ARE the whole external
   surface.
 
-`init`, the sub entry-table tenants and the resident-ABI import are each asserted
-to resolve to a real label, so a rename fails loudly instead of silently shrinking
+`init`, the sub entry-table tenants and BOTH resident-ABI imports are each
+asserted to resolve to a real label, so a rename fails loudly instead of silently shrinking
 the seed set. ⚠️ The tools/ arm is NOT -- it is an INTERSECTION with the label set,
 so a main routine renamed out from under a tools/ lookup drops out of the seeds
 quietly. That arm is over-seeding by construction, so the failure direction is a
@@ -156,6 +176,8 @@ _spec.loader.exec_module(ctc)
 ALLOWFILE = os.path.join("tools", "deadcode-allow.txt")
 # fix (6): the GENERATED resident-ABI import is the main build's external surface.
 RESIDENT_ABI = os.path.join("sub", "basic-resident-abi.inc")
+DISK_ABI = os.path.join("disk", "basic-resident-abi.inc")
+DISK_ABI_FLOOR = 2       # REQUIRED_DISK_CODE is 3; a floor an edit cannot cross
 ABI_EQU = re.compile(r'^\s*([A-Za-z_]\w*)\s+equ\b', re.IGNORECASE)
 ABI_FLOOR = 8            # REQUIRED is 12; a floor an edit cannot quietly cross
 IDENT = re.compile(r'[A-Za-z_]\w*')
@@ -495,6 +517,90 @@ def resident_abi_seeds(spans):
     return set(names)
 
 
+def disk_abi_seeds(spans):
+    """The main labels `disk.rom` may legitimately call back into -- fix (12).
+
+    THIS IS THE PER-TOOL LOOKUP MODEL the tools/ arm could not substitute for.
+    Three things must agree and any disagreement is fatal:
+
+      1. tools/gen_resident_abi.py's DECLARED profile for this file (the CODE
+         half -- the RAM half is work-area cells, not labels, and is checked to
+         be exactly that);
+      2. the GENERATED disk/basic-resident-abi.inc the assembler consumes;
+      3. the main build's label set.
+
+    A rename that reaches only one of the three fails here. That is the whole
+    point: the tools/ arm seeded these names by INTERSECTION, so a rename made
+    them silently stop being seeds instead of making anything go red.
+    """
+    sys.path.insert(0, "tools")
+    try:
+        import gen_resident_abi as gra
+    except ImportError as e:                                # pragma: no cover
+        sys.exit(f"FAIL: cannot import tools/gen_resident_abi.py ({e}) -- it "
+                 f"DECLARES the disk ROM's call-back surface and this seed arm "
+                 f"is only as loud as that declaration")
+    prof = gra.PROFILES.get(DISK_ABI)
+    if prof is None:
+        sys.exit(f"FAIL: tools/gen_resident_abi.py has no profile for "
+                 f"{DISK_ABI} -- the disk ROM's call-back surface is undeclared, "
+                 f"so a main routine callable only from disk.rom would read DEAD")
+    code, ram, callback = set(prof.code), set(prof.ram), set(prof.callback)
+    if len(code) < DISK_ABI_FLOOR:
+        sys.exit(f"FAIL: the disk ABI declares {len(code)} code import(s), floor "
+                 f"is {DISK_ABI_FLOOR} -- an emptied list would stop seeding the "
+                 f"cross-ROM callees and report live code as dead")
+    if not os.path.exists(DISK_ABI):
+        sys.exit(f"FAIL: {DISK_ABI} is missing -- it is GENERATED into the build "
+                 f"and is what disk.rom actually calls")
+    infile = {m.group(1) for m in
+              (ABI_EQU.match(ln.split(';', 1)[0]) for ln in open(DISK_ABI))
+              if m}
+    drift = sorted((code | ram | callback) ^ infile)
+    if drift:
+        sys.exit(f"FAIL: {DISK_ABI} and tools/gen_resident_abi.py's profile "
+                 f"disagree on {drift} -- the generated file is STALE (rebuild) "
+                 f"or the profile changed without it. This seed arm reads the "
+                 f"declaration, so a drift here is a hole in the seed set")
+    missing = sorted(n for n in (code | callback) if n not in spans.nodes)
+    if missing:
+        sys.exit(f"FAIL: disk-ABI code import(s) {missing} do not resolve to a "
+                 f"main label -- renamed? A cross-ROM callee that stops matching "
+                 f"drops out of the seed set and its span reads as dead")
+    mislabelled = sorted(n for n in ram if n in spans.nodes)
+    if mislabelled:
+        sys.exit(f"FAIL: disk-ABI RAM import(s) {mislabelled} ARE main labels -- "
+                 f"the profile files them as work-area cells (ceiling-exempt, not "
+                 f"seeds). One of the two classifications is wrong")
+    return code | callback, len(callback)
+
+
+def _assert_disk_resolves_locally(m, abi):
+    """THE STANDING CONTROL on fix (12), symmetric to the sub one below.
+
+    A main label named in disk/ CODE that is not in the disk ABI must resolve
+    DISK-LOCALLY, or disk.rom reaches main by a route this sweep does not model.
+    The assembler enforces it -- and "the assembler owns it" is exactly the
+    reasoning that rots when nobody re-runs it.
+    """
+    d = Spans('disk/disk.asm', 'disk')
+    local = set(d.nodes)
+    for f in d.files:
+        for ln in open(f, errors='ignore'):
+            e = ABI_EQU.match(ln.split(';', 1)[0])
+            if e:
+                local.add(e.group(1))
+    named = set(m.nodes) & external_names(['disk'])
+    escapes = sorted(n for n in named if n not in abi and n not in local)
+    if escapes:
+        sys.exit(f"FAIL: {escapes} name main label(s) in disk/ CODE and resolve "
+                 f"to neither the disk ABI ({DISK_ABI}) nor a disk-local "
+                 f"definition. Either disk.rom reaches main by a route this sweep "
+                 f"does not model -- add it to tools/gen_resident_abi.py's "
+                 f"REQUIRED_DISK_CODE and regenerate -- or the name is a leftover")
+    return len(named)
+
+
 def _assert_sub_resolves_locally(m, s, abi):
     """THE STANDING CONTROL on fix (6), and the reason dropping sub/ is safe.
 
@@ -598,6 +704,12 @@ def main(argv):
     # standing control below needs it.
     abi = resident_abi_seeds(m)
     _assert_sub_resolves_locally(m, s, abi)
+    # fix (12): the disk ROM's call-back surface. UNLIKE the tools/ arm this is a
+    # declaration checked three ways, so it may carry weight -- that is what it is
+    # for. It goes into BOTH seed sets below, which is what lets the tools/ arm's
+    # standing control keep measuring only the tools/ arm.
+    dabi, _n_callback = disk_abi_seeds(m)
+    _n_disk = _assert_disk_resolves_locally(m, dabi)
     # 🔴 THE `tools/` ARM IS AN INTERSECTION, NOT AN ASSERTION (D-SEEDHOLE2
     # §11.5, filed 2026-08-22). `init`, the sub entry-table tenants and the
     # resident-ABI import all fail LOUDLY if they stop resolving; this arm is
@@ -619,9 +731,10 @@ def main(argv):
     # THAT is the moment to build the real model for the specific names named
     # below. Until then the arm is belt-and-braces and its hole cannot bite.
     tools_arm = set(m.nodes) & external_names(['tools'])
-    m_seeds = {'init'} | abi | tools_arm
+    m_seeds = {'init'} | abi | dabi | tools_arm
     m_seeds |= {n for n in m.nodes if n.startswith(PROLOGUE)}
-    _without = ({'init'} | abi | {n for n in m.nodes if n.startswith(PROLOGUE)})
+    _without = ({'init'} | abi | dabi
+                | {n for n in m.nodes if n.startswith(PROLOGUE)})
     _d_with, _ = m.dead(m_seeds)
     _d_without, _ = m.dead(_without)
     _carried = sorted(set(_d_without) - set(_d_with))
@@ -635,7 +748,11 @@ def main(argv):
               "(D-SEEDHOLE2 §11.5) -- and it was measured contributing NOTHING "
               "on 2026-09-05, which is what made it safe to leave coarse.\n"
               "  Give these names a per-tool lookup model that fails loudly, or "
-              "seed them from something that does.")
+              "seed them from something that does -- disk_abi_seeds() above is "
+              "the worked example (fix 12).")
+    print(f"  main: disk import surface {len(dabi)} seed(s) "
+          f"({_n_callback} of them page-1 call-backs), {_n_disk} main label(s) "
+          f"named in disk/ code, 0 escapes")
     builds['main'] = (m, m_seeds, main_sym)
 
     tenants = ctc.page0_seeds('sub/sub.asm') + ctc.page1_seeds('sub/sub.asm')

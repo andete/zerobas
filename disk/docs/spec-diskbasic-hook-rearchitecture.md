@@ -89,7 +89,8 @@ unmeasured one. §4's phase 0b measures it.
 
 ### Phase 0 — prerequisites. No code moves. Each step can kill the project cheaply.
 
-* **0a — a dead-code model for cross-ROM callees.** A main-page-1 symbol whose
+* **0a — a dead-code model for cross-ROM callees. ✅ DONE 2026-09-15
+  (D-XROMSEED).** A main-page-1 symbol whose
   only caller lives in `disk.rom` reads as DEAD to a main-image analysis. This
   already stopped a first attempt: `deadcode` refused `calbak_ping` as live only
   because a `tools/` file named it, an INTERSECTION a rename would drop silently.
@@ -98,6 +99,33 @@ unmeasured one. §4's phase 0b measures it.
   ⚠️ The existing resident-ABI symbols are masked from this only because they
   also have main-side callers; a callee that exists purely for the disk ROM does
   not.
+
+  **What shipped.** A third import class, `REQUIRED_DISK_CALLBACK` in
+  `tools/gen_resident_abi.py` — main **page-1** targets reached by an inter-slot
+  call — ceiling-checked in the OPPOSITE direction to the existing code class:
+  a code import must be BELOW `__MEAS_LOW_END` (absolute call, page 0 stays
+  mapped), a call-back import must be AT OR ABOVE `$4000`, because a page-0
+  target is already reachable and an inter-slot call to it is pure overhead.
+  `check_dead_code.py`'s new `disk_abi_seeds()` seeds the main build from that
+  declaration and makes the generator, the generated file and the main label set
+  agree or fail — the per-tool lookup model the gate asked for. The list is
+  EMPTY today; phase 1 adds the first name to it.
+
+  **Measured, not argued** — a page-1 stub with no main-side caller was planted,
+  and all three directions checked before it was reverted:
+  | experiment | result |
+  |---|---|
+  | stub planted, NOT declared | `deadcode` reports `[main] calbak_ping basic/files.asm 0x7265 PAGE1` dead — the sweep SEES it |
+  | stub declared as a call-back | 0 dead; readout `disk import surface 4 seed(s) (1 of them page-1 call-backs)`; the `tools/` weight guard stays QUIET, so the model carries it, not the intersection |
+  | a page-0 symbol declared as a call-back | generator refuses: `flt_fmt=$30B5 … belong in the CODE list` |
+
+  **And it found a defect on the way.** `check_tenant_closure.collect_sources()`
+  hardcoded the assembler's `-I sub`. Walking `disk/disk.asm` under that rule
+  returned SUB's `equates.inc` and dropped six of the disk ROM's eight parts —
+  a 3-file closure for an 8-file ROM, silently, because `sub/` happens to have
+  an `equates.inc` too. The search path now comes from the caller (defaulting to
+  the top file's own directory); `sub` stays at 71 files and `basic/main.asm` at
+  50, so no other build's closure moved.
 * **0b — one real inter-slot call, disk → main page 1 → back, PRICED.** Bytes per
   call site and frames per call.
   ⚠️ `disk/pageenv.asm`'s `calslt_h` is a **simulated** CALSLT for the boot

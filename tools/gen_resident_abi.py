@@ -28,6 +28,7 @@ Fails loudly (nonzero exit) if:
 """
 from __future__ import annotations
 
+import collections
 import re
 import sys
 
@@ -93,12 +94,35 @@ REQUIRED_DISK_RAM = [
     "FAC",                      # the packed float accumulator
     "FACTYP",                   # 2 / 4 / 8
 ]
+# CALL-BACK: main PAGE-1 targets, reached by an INTER-SLOT CALL, not by an
+# absolute one -- the third class, and the one the hook re-architecture needs
+# (disk/docs/spec-diskbasic-hook-rearchitecture.md §4 phase 0a).
+#
+# 🎯 IT IS CEILING-CHECKED IN THE OPPOSITE DIRECTION. The CODE list must be
+# BELOW __MEAS_LOW_END because a page-1 ROM reaches it by absolute address with
+# page 0 still mapped. A call-back target must be AT OR ABOVE $4000, i.e. in
+# page 1 -- because if it were page 0 it would already be reachable that way and
+# the inter-slot call would be pure cost. Misfiling in either direction is
+# fatal, which is the property that makes the two lists mean different things
+# rather than just sit in different variables.
+#
+# Empty today, and that is a statement, not an oversight: the reference's
+# handlers call back into main BASIC to evaluate arguments (D-CFEVAL) and ours
+# do not yet. Phase 1 adds the first name here; until then the class exists so
+# that adding one is a one-line declaration in a checked place rather than a
+# new mechanism invented under time pressure. ⚠️ A name here must ALSO be
+# reachable through whatever inter-slot entry phase 0b prices -- this list makes
+# the address available and says nothing about the call sequence.
+REQUIRED_DISK_CALLBACK: list[str] = []
 
-# out-path -> (code symbols, ram symbols, what it feeds)
+Profile = collections.namedtuple("Profile", "code ram callback what")
+
+# out-path -> Profile(code symbols, ram symbols, page-1 call-back symbols, what)
 PROFILES = {
-    "sub/basic-resident-abi.inc":  (REQUIRED_SUB, [], "sub-ROM"),
-    "disk/basic-resident-abi.inc": (REQUIRED_DISK_CODE, REQUIRED_DISK_RAM,
-                                    "disk ROM"),
+    "sub/basic-resident-abi.inc":  Profile(REQUIRED_SUB, [], [], "sub-ROM"),
+    "disk/basic-resident-abi.inc": Profile(REQUIRED_DISK_CODE,
+                                           REQUIRED_DISK_RAM,
+                                           REQUIRED_DISK_CALLBACK, "disk ROM"),
 }
 
 
@@ -165,10 +189,11 @@ def generate(sym_path: str, out_path: str, write: bool = True,
     checker regenerates into memory and still has to know WHICH ABI it is
     checking. Passing None for that reason used to be the only way to say
     "do not write", and it took the profile with it."""
-    code, ram, what = profile_for(out_path, profile)
+    prof = profile_for(out_path, profile)
+    code, ram, callback, what = prof.code, prof.ram, prof.callback, prof.what
     syms = load_syms(sym_path)
 
-    missing = [n for n in code + ram if n not in syms]
+    missing = [n for n in code + ram + callback if n not in syms]
     if missing:
         raise SystemExit(
             "FAIL: gen_resident_abi.py: missing resident symbol(s) in "
@@ -192,6 +217,24 @@ def generate(sym_path: str, out_path: str, write: bool = True,
             "under a page-1 CALSLT)"
         )
 
+    # THE OPPOSITE TEST, and the reason the call-back list is a separate class
+    # rather than more entries in the code one: a target BELOW $4000 is already
+    # mapped while disk.rom runs, so routing it through an inter-slot call buys
+    # nothing and pays for it. PAGE_BASE, not `ceiling` -- the low-region end
+    # moves with every carve, and page 1 does not.
+    not_page1 = [
+        f"{name}=${syms[name]:04X}" for name in callback
+        if syms[name] < LOW_CEILING_FALLBACK
+    ]
+    if not_page1:
+        raise SystemExit(
+            "FAIL: gen_resident_abi.py: call-back symbol(s) resolve BELOW "
+            f"${LOW_CEILING_FALLBACK:04X}, so they are not in page 1: "
+            f"{', '.join(not_page1)} — page 0 stays mapped while disk.rom "
+            "runs, so these are callable by absolute address and belong in the "
+            "CODE list; an inter-slot call to them would be pure overhead"
+        )
+
     lines = [
         "; Copyright (c) 2026 Joost Yervante Damad",
         "; SPDX-License-Identifier: 0BSD",
@@ -206,7 +249,15 @@ def generate(sym_path: str, out_path: str, write: bool = True,
         "; from a disassembly or byte-copy of any reference ROM.",
         "",
     ]
-    for name in code + ram:
+    for name in code + ram + callback:
+        # The section marker goes where the block STARTS, not where the emit
+        # loop does -- a header printed above the wrong block is a label that
+        # lies, and this file is read by humans deciding which class a new
+        # symbol belongs in.
+        if callback and name == callback[0]:
+            lines.append("")
+            lines.append("; --- page-1 call-back targets: reached by an "
+                         "INTER-SLOT call, not an absolute one ---")
         # Leading "0" (same convention pasmo's own --sym output uses, e.g.
         # "fp_div EQU 03632H") so a value whose hex form starts A-F never
         # parses as an identifier instead of a numeric literal.
