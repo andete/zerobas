@@ -19966,6 +19966,29 @@ first cut of those rows scored **SUPPORTED on `32` from BOTH machines — an
 agreement about a blank cell**. `scratchpad/keyline_probe.py` is the scan that said
 why; the display forms stay UNCOVERED rather than measured wrongly, and `KEY` is
 1/4 with the gap NAMED.
+⚡ **D-KWMOTOR — `MOTOR` AND `NAME` REACH TIER 1, AND THE SCOUT THAT GOT THEM
+THERE ALSO CLOSED `DELETE` AND `RENUM`. 140 of 163.**
+🟢 **`MOTOR` 3/3, and the row that was there PRINTED A CONSTANT.**
+`MOTOR OFF:PRINT"[ok]"` scored ABSENCE and nothing else — a MOTOR that parsed and
+did nothing passed it. **Bit 4 of PPI port C IS the motor line**: `INP(&HAA)AND16`
+is 16 with the motor off and 0 with it on, so all three forms are readable, the
+BARE one included — it TOGGLES, and started from OFF it reads 0.
+🔴 **THE MASK IS LOAD-BEARING, NOT TIDINESS.** The WHOLE port reads **90/74 on
+the VG-8020 and 87/71 on zerobas** (`scratchpad/mdr_probe.py`): the other bits
+differ between the machines, and a raw `INP(&HAA)` row would report a DIVERGENCE
+THAT IS NOT ONE. Masked to bit 4 both machines agree exactly.
+🟢 **`NAME` 1/1**, which had no row at all. The reading is that the NEW name
+carries the OLD file's bytes — create `NM.TXT` with `AB`, rename, reopen under the
+new name, read `LOF`: **5**. That the statement did not raise is not the same
+claim.
+🚫 **AND THE SAME SCOUT CLOSED `DELETE` AND `RENUM` FOR THIS INSTRUMENT.**
+`DELETE 20` inside a running program **stops it cleanly on both machines** — the
+statement after it is never reached — so every range form of DELETE has the SAME
+observable as every other and the bar cannot be separated. `RENUM 100` at line 20
+answers **`Undefined line 100 in 20` on both**: the renumbering breaks the
+execution pointer, so its only reading is an ERROR, which is a TIER 5 reading
+wearing a TIER 1 label. Both stay UNRATED on purpose rather than carrying a bar
+their rows could never satisfy.
       ⚠️ **`TXTMAX` IS NOW BOUNDED BY `DETOKBUF`, NOT BY FREE RAM** — at 1280 B
       it does not fit the 1024 B window, so `$BB00` is the stop until DETOKBUF
       is dealt with. Of D-LINEMAX's 1792 B, **1024 recovered, 768 still charged**.

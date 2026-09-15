@@ -2215,9 +2215,27 @@ SWEEP: list[tuple[str, str, str | None, str, str]] = [
      "is why the CLASS comes from the screen and only the TEXT from the log."),
 
     # Cassette / misc statements.
-    ("motor",   "motor on",
-     'MOTOR OFF:PRINT"[ok]"',                        "direct",
-     "absent => syntax error; MOTOR OFF is the safe direction"),
+    # 🌾 D-KWMOTOR: the cassette motor is READABLE, and this row used to print a
+    # CONSTANT. `MOTOR OFF:PRINT"[ok]"` scored absence and nothing else -- a MOTOR
+    # that parsed and did nothing passed it. Bit 4 of PPI port C is the motor line:
+    # `INP(&HAA)AND16` is 16 with the motor OFF and 0 with it ON.
+    # 🔴 THE MASK IS LOAD-BEARING, NOT TIDINESS. The WHOLE port reads 90/74 on the
+    # VG-8020 and 87/71 on zerobas (scratchpad/mdr_probe.py, which also settled
+    # that DELETE and RENUM have no happy-path reading in a sweep row at all):
+    # the other bits differ between the machines and a raw `INP(&HAA)` row would
+    # report a DIVERGENCE that is not one. Masked to bit 4 both machines agree
+    # exactly, and the 16 -> 0 step is the motor line moving.
+    ("motor",   "motor off",
+     'MOTOR OFF:A=INP(&HAA)AND16:PRINT"[2n";A;"]"',   "stored",
+     "FORM:off 16: the motor line is HIGH (idle)"),
+    ("motor_b", "motor on",
+     'MOTOR ON:A=INP(&HAA)AND16:MOTOR OFF:PRINT"[2m";A;"]"', "stored",
+     "FORM:on 0: the motor line is PULLED DOWN -- the motor is running. The row "
+     "puts it back before it prints, so the machine is left as it was found"),
+    ("motor_c", "motor",
+     'MOTOR OFF:MOTOR:A=INP(&HAA)AND16:MOTOR OFF:PRINT"[2o";A;"]"', "stored",
+     "FORM:toggle the BARE form TOGGLES: started from OFF it reads 0, the same as "
+     "`MOTOR ON` -- so the row proves the operand-less form is not a no-op"),
     # KEPT DELIBERATELY, AND KEPT WEAK. This row is the TAB( mistake reproduced
     # on purpose: `TIME>=T` is `0>=0` on a machine with no TIME at all, so BOTH
     # sides answer -1 and the row reports SUPPORTED for a feature that does not
@@ -3034,6 +3052,15 @@ SWEEP: list[tuple[str, str, str | None, str, str]] = [
     # the random-access rows above USE it, but their subject is FIELD / GET # /
     # PUT #. Both of these WRITE, so they sit with the writers: a reader placed
     # after them reads a fixture that has moved.
+    # 🌾 D-KWMOTOR: `NAME` had no row at all. One behaviour -- rename -- and the
+    # reading is that the NEW name carries the OLD file's bytes: create NM.TXT with
+    # `AB`, rename it, reopen under the new name and read LOF. A NAME that parsed
+    # and did nothing leaves NM2.TXT absent and the reopen raises File not found.
+    ("namekw",  'name"nm.txt" as "nm2.txt"',
+     'OPEN"NM.TXT"FOR OUTPUT AS#1:PRINT#1,"AB":CLOSE#1:NAME"NM.TXT" AS "NM2.TXT":OPEN"NM2.TXT"FOR INPUT AS#1:A=LOF(1):CLOSE#1:PRINT"[2p";A;"]"',
+     "stored",
+     "NEEDS-DISK: " "FORM:rename 5 bytes under the NEW name: `AB`+CRLF plus the "
+     "sequential end marker, the same count `open_c` measures"),
     ("open_c",  'open"oa.txt"for append as#1',
      'OPEN"OA.TXT"FOR OUTPUT AS#1:PRINT#1,"AB":CLOSE#1:OPEN"OA.TXT"FOR APPEND AS#1:PRINT#1,"CD":CLOSE#1:OPEN"OA.TXT"FOR INPUT AS#1:A=LOF(1):CLOSE#1:PRINT"[2f";A;"]"',
      "stored",

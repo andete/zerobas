@@ -530,6 +530,18 @@ FORMS: dict[str, tuple[tuple[str, ...], str]] = {
         ("fielded-record",),
         "GET #<channel>[,<record>] -- one behaviour, the random-file record read into the FIELD buffer. The row does a PUT/GET round trip so it reads the record back rather than merely that the statement parsed.",
     ),
+    "MOTOR": (
+        ("toggle", "on", "off"),
+        "`MOTOR [ON|OFF]` -- three behaviours, and the bare one is not a spelling of "
+        "either: it TOGGLES. All three are readable, because bit 4 of PPI port C is "
+        "the motor line itself.",
+    ),
+    "NAME": (
+        ("rename",),
+        "`NAME \"<old>\" AS \"<new>\"` -- one behaviour, and its reading has to be that "
+        "the NEW name carries the OLD file's bytes; that the statement did not raise "
+        "is not the same claim.",
+    ),
     "OPEN": (
         ("input", "output", "append", "random"),
         "`OPEN <file> [FOR <mode>] AS #<n>` -- FOR INPUT, FOR OUTPUT and FOR APPEND "

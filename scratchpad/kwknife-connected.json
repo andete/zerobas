@@ -870,6 +870,16 @@
    "verdict": "MISSING",
    "weak": false
   },
+  "NAME": {
+   "connected": true,
+   "modes": {
+    "stmt": "MISSING"
+   },
+   "row": "namekw",
+   "subject": "NAME",
+   "verdict": "MISSING",
+   "weak": false
+  },
   "NEW": {
    "connected": true,
    "modes": {
@@ -1638,6 +1648,12 @@
     "mod": "MISSING"
    }
   },
+  "NAME": {
+   "connected": true,
+   "rows": {
+    "namekw": "MISSING"
+   }
+  },
   "NOT": {
    "connected": true,
    "rows": {
@@ -1803,5 +1819,5 @@
    }
   }
  },
- "written": "2026-09-15 01:56:35"
+ "written": "2026-09-15 02:53:01"
 }
