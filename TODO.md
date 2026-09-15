@@ -1878,7 +1878,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:18632 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:18662 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -2044,7 +2044,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:6645 (T-6FE392)8 (T-529ABE)` from `TODO.md:17283 (T-529ABE)`: a
+      `TODO.md:6645 (T-6FE392)8 (T-529ABE)` from `TODO.md:17313 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -7489,7 +7489,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:17283 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:17313 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -8504,6 +8504,36 @@ list. **When a slice lands, grep this list for what it just shipped.**
       🎚️ TIER 3 — common errors: a bad drive letter is the legend's own example
       🤖 AUTONOMOUS — measured, bounded by its passing rows, and the fix is an
       argument check rather than a redesign.
+
+- [ ] 🔴 **`SAVE"x",A` ENDS THE RUN ON THE REFERENCE AND CONTINUES HERE — the
+      ASCII save drives the LIST walk, and `LIST` inside a program stops the
+      program.** Measured 2026-09-15 by D-KWSAVE
+      ([`scratchpad/saveascii_probe.py`](scratchpad/saveascii_probe.py)), four
+      cases on the National CF-3300 with the sweep's own disk fixture.
+      | case | CF-3300 |
+      |---|---|
+      | CONTROL: tokenised `SAVE"S.BAS"` then reopen + `LOF` | `< 72 >` — continues |
+      | `SAVE"SA.BAS",A` then reopen + read a byte | 🔴 nothing — never reached |
+      | `SAVE"SB.BAS",A` then a bare `PRINT` | 🔴 nothing — never reached |
+      | `SAVE"SC.BAS",A` then `FILES` | 🔴 nothing — never reached |
+      🎯 **THE MECHANISM IS NOT A MYSTERY, AND HALF OF IT ALREADY WORKS HERE.**
+      `LIST` inside a program ENDS THE RUN — measured on BOTH machines — so
+      `ex_list`'s `jp end_line_end` is right; `ascii_save` drives the same walk
+      (`list_all`) and finishes `jp disk_write_end` instead, so it returns and the
+      next statement runs. `call disk_write_end / jp end_line_end` is the shape.
+      💰 **PRICED, NOT SPENT: +3 B, and `make basic-reloc` from a clean tree on
+      2026-09-15 reads 8 B free in main page 1 with the low region at 0.**
+      Affordable and more than a third of what is left, so it is reported rather
+      than taken quietly — and the tape twin (`cas_ascii_save`) is UNMEASURED.
+      ⚠️ **`SAVE` stays 1/2 and there is NO ROW**, which cost three cuts to
+      settle: a readback row scored `ref [value] ''` (an EMPTY capture, not a
+      verdict), and a two-PRINT row that read cleanly on both sides POISONED THE
+      REST OF ITS BATCH — a run that ends mid-line leaves the reference somewhere
+      the next case cannot be typed into.
+      🎚️ TIER 3 — common error: a program that `SAVE`s itself as ASCII and
+      expects to carry on
+      🤖 AUTONOMOUS — measured against a control, bounded, and the change is one
+      tail instruction.
 
 - [ ] 🔴 **`STOP OFF` UNDER A STILL-HELD Ctrl-STOP BREAKS HERE AND NOT ON THE
       REFERENCE — the break is EDGE-triggered there and LEVEL-triggered here.**
@@ -20047,6 +20077,28 @@ also re-verifies `spec-traps-t4-sprite.md` §1.5: T1 shipped ERR 2 for the bare
 form, and both machines accept it today.)
 🔴 **THE ARM ROW DOES NOT `STOP OFF` BEFORE IT PRINTS, AND THAT IS THE FINDING**
 — the shape that does diverges, and is now a TIER 3 item of its own.
+⚡ **D-KWSAVE — `BSAVE` REACHES TIER 1, AND THE WRITER-ORDERING RULE IS PAID FOR
+A SECOND TIME. 142 of 163.**
+🟢 **`BSAVE` 2/2 — the optional ENTRY ADDRESS, read straight out of the file
+HEADER rather than by running anything.** A BSAVE image is
+`$FE,start:2,end:2,entry:2` little-endian, so byte 7 is the entry's HIGH byte:
+`[2t 201 ]` = `$C9`. 🔴 **THE ENTRY IS `&HC900` AND THE RANGE IS `&HC800`, AND
+THAT GAP IS THE WHOLE ROW**: the three-argument form writes an entry too — it
+DEFAULTS to the start — so an entry equal to `&HC800` would read 200 either way
+and separate nothing.
+🔴 **AND IT HAD TO MOVE TO THE END OF THE DISK ROWS.** Placed beside `bsave` it
+sat UPSTREAM of every reader, and `open_c` — green on its own and green in the
+batch before this row existed — came back with a **BLANK REFERENCE SCREEN, echo
+and all**. A writer goes LAST; `openkw_b`'s note already carries that rule, and
+this is the second time it has been paid for.
+🌱 **`open_c` is now TWO opens instead of three**: `LOF` on the APPEND channel
+sees the `AB`+CRLF+`$1A` that is already there — 5, where an APPEND that TRUNCATED
+reads 0 — and the three-open version was slow enough on the CF-3300 to be worth
+losing anyway.
+🔴 **`SAVE` STAYS 1/2 AND ITS SECOND FORM IS A FILED DEFECT, NOT A MISSING
+ROW** — see the `SAVE"x",A` item above: it ends the run on the reference and
+continues here, the fix is one tail instruction, and it costs 3 of the 8 bytes
+left in main page 1, so it is priced and reported rather than spent.
       ⚠️ **`TXTMAX` IS NOW BOUNDED BY `DETOKBUF`, NOT BY FREE RAM** — at 1280 B
       it does not fit the 1024 B window, so `$BB00` is the stop until DETOKBUF
       is dealt with. Of D-LINEMAX's 1792 B, **1024 recovered, 768 still charged**.

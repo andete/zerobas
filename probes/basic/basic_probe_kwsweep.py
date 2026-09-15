@@ -2832,7 +2832,7 @@ SWEEP: list[tuple[str, str, str | None, str, str]] = [
      "FORM:range 7, load it back, read 99. A BSAVE that wrote nothing leaves 7."),
     ("save",    'save"x"',
      'A=1:SAVE"S.BAS":OPEN"S.BAS"FOR INPUT AS#1:A=LOF(1):CLOSE#1:PRINT"[";A;"]"', "stored",
-     "NEEDS-DISK: " "the saved program's own length, read back through a channel: 68 "
+     "NEEDS-DISK: " "FORM:tokenised the saved program's own length, read back through a channel: 68 "
      "on BOTH machines, which also says the tokenised on-disk form agrees byte for "
      "FORM:tokenised byte. A SAVE that wrote nothing leaves no file and the OPEN raises."),
     # 🔭 D-KWSAVEA: `SAVE ...,A` (ASCII) ALSO NEEDS AN ISOLATED PROBE. The row
@@ -2841,6 +2841,33 @@ SWEEP: list[tuple[str, str, str | None, str, str]] = [
     # APPARATUS as easily as about SAVE: writing then reopening a file inside one
     # sweep row is the shape `openkw_b` needed six sweeps to get right. SAVE stays
     # at 1/2 until that is measured on its own.
+    # 🔴 D-KWSAVE: `SAVE"x",A` ENDS THE RUN ON THE REFERENCE AND CONTINUES HERE,
+    # AND THIS ROW IS PINNED DIVERGENT TO SAY SO. Both machines print `[2s]`; only
+    # zerobas goes on to print `[2u]`.
+    # 🔬 MEASURED WITH A CONTROL (scratchpad/saveascii_probe.py, four cases on the
+    # CF-3300): the TOKENISED save continues normally (`< 72 >`, the control), and
+    # after an ASCII one NEITHER a readback NOR a bare `PRINT` NOR a `FILES` is
+    # reached. The mechanism is not a mystery: `ascii_save` drives the LIST walk,
+    # and `LIST` inside a program ENDS THE RUN -- measured on BOTH machines, so
+    # zerobas already gets LIST right and only ascii_save fails to inherit it
+    # (`ex_list` finishes `jp end_line_end`; `ascii_save` finishes
+    # `jp disk_write_end`).
+    # 💰 NOT FIXED TONIGHT, AND THE NUMBER IS WHY: `basic/save.asm` is in the MAIN
+    # image and `make basic-reloc` from a clean tree on 2026-09-15 reads **8 B free
+    # in page 1** with the low region at 0. Turning that tail into
+    # `call disk_write_end / jp end_line_end` is +3 B -- affordable, and more than
+    # a third of what is left, which is exactly the kind of spend that gets
+    # REPORTED rather than taken quietly.
+    # ⛔ AND THERE IS NO ROW AT ALL, WHICH IS THE THIRD THING THIS COST TO LEARN.
+    # The first cut read the file back and scored `ref [value] ''` -- an EMPTY
+    # capture, one of the silent-failure modes and not a verdict. The second was a
+    # two-PRINT shape that read cleanly on both sides -- and POISONED THE REST OF
+    # ITS BATCH: `namekw` and `open_c`, both SUPPORTED minutes earlier, came back
+    # with BLANK REFERENCE SCREENS, echo and all, because a run that ends mid-line
+    # leaves the reference somewhere the next case cannot be typed into. A row that
+    # can only be right by making its neighbours wrong does not belong in a batched
+    # sweep; the measurement lives in the probe, which has a control and a machine
+    # to itself.
     ("kill",    'kill"x"',
      'A=DSKF(1):KILL"PROG2.BAS":B=DSKF(1):PRINT"[";B-A;"]"', "stored",
      "NEEDS-DISK: " "the FREED SPACE is the behaviour — 1 KB back after the file "
@@ -3125,12 +3152,16 @@ SWEEP: list[tuple[str, str, str | None, str, str]] = [
      "NEEDS-DISK: " "FORM:rename 5 bytes under the NEW name: `AB`+CRLF plus the "
      "sequential end marker, the same count `open_c` measures"),
     ("open_c",  'open"oa.txt"for append as#1',
-     'OPEN"OA.TXT"FOR OUTPUT AS#1:PRINT#1,"AB":CLOSE#1:OPEN"OA.TXT"FOR APPEND AS#1:PRINT#1,"CD":CLOSE#1:OPEN"OA.TXT"FOR INPUT AS#1:A=LOF(1):CLOSE#1:PRINT"[2f";A;"]"',
+     'OPEN"OA.TXT"FOR OUTPUT AS#1:PRINT#1,"AB":CLOSE#1:OPEN"OA.TXT"FOR APPEND AS#1:A=LOF(1):PRINT#1,"CD":CLOSE#1:PRINT"[2f";A;"]"',
      "stored",
-     "NEEDS-DISK: " "SUBJECT:OPEN FORM:append 9 bytes, MEASURED on both machines: "
-     "`AB`+CRLF twice is 8 and the sequential CLOSE adds the $1A end marker. The "
-     "row writes `AB` and then APPENDS `CD`, so both lines are there -- an APPEND "
-     "that TRUNCATED, which is what FOR OUTPUT does to an existing file, reads 5"),
+     "NEEDS-DISK: " "SUBJECT:OPEN FORM:append 5: `LOF` on the APPEND channel sees "
+     "the `AB`+CRLF+$1A that is ALREADY there. An APPEND that TRUNCATED -- which is "
+     "exactly what FOR OUTPUT does to an existing file -- reads 0. "
+     "\U0001f534 TWO OPENS, NOT THREE, AND THAT IS NOT TIDINESS: the three-open cut read "
+     "9 correctly on its own and came back with a BLANK REFERENCE SCREEN inside the "
+     "full disk batch. A case slower than the batch's `step` has its SUCCESSOR "
+     "typed into a still-running program, and the CF-3300 is slow enough on three "
+     "open/close cycles to cross it."),
     ("open_d",  'open"or.dat"as#1',
      'OPEN"OR.DAT"AS#1:FIELD#1,4 AS A$:LSET A$="PQRS":PUT#1,1:GET#1,1:PRINT"[2e";A$;"]":CLOSE#1',
      "stored",
@@ -3145,6 +3176,24 @@ SWEEP: list[tuple[str, str, str | None, str, str]] = [
      "before this sentence was written. A FIELD that bound nothing leaves A$ "
      "empty, and the four verbs are load-bearing TOGETHER -- the reading fails if "
      "any one of them does."),
+    # 🔴 D-KWSAVE: LAST OF THE DISK ROWS, AND IT WAS NOT AT FIRST. Placed up
+    # beside `bsave` it sat UPSTREAM of every reader, and `open_c` -- green on
+    # its own and green in the batch before this row existed -- came back with a
+    # BLANK REFERENCE SCREEN, echo and all. A writer goes LAST; that is the
+    # ordering rule `openkw_b`'s note already carries, and this is the second
+    # time it has been paid for.
+    # 🌾 THE OPTIONAL ENTRY ADDRESS, read straight out of the file
+    # HEADER rather than by running anything. A BSAVE image is
+    # `$FE,start:2,end:2,entry:2` little-endian, so byte 7 is the entry's HIGH
+    # byte. 🔴 THE ENTRY IS &HC900 AND THE RANGE IS &HC800, AND THAT GAP IS THE
+    # WHOLE ROW: the three-argument form writes an entry too -- it DEFAULTS to the
+    # start -- so an entry equal to &HC800 would read 200 either way and separate
+    # nothing. 201 is reachable only by honouring the fourth argument.
+    ("bsave_b", 'bsave"x",0,1,2',
+     'POKE&HC800,99:BSAVE"O2.BIN",&HC800,&HC800,&HC900:OPEN"O2.BIN"FOR INPUT AS#1:B$=INPUT$(7,#1):CLOSE#1:PRINT"[2t";ASC(MID$(B$,7,1));"]"',
+     "stored",
+     "NEEDS-DISK: " "FORM:with-entry 201 = $C9, the ENTRY's high byte in the file "
+     "header, where the three-argument form defaults it to the start and reads 200"),
     ("bin",     "a$=bin$(5)",
      'PRINT"[";BIN$(5);"]"',                         "direct",
      "FORM:to-binary absent => syntax error; real => 101"),
