@@ -20441,6 +20441,28 @@ OUTSIDE `files`/`field` are listed separately — **15 labels, 164 B** in
 `files.asm` and **3 labels, 39 B** in `field.asm`. Those do not travel with a
 verb.
 
+🟢 **JOOST APPROVED OPTION 3 ON 2026-09-15, VERBATIM: *"D-VERBPART — option 3
+is priced -> approved"*.** `COPY`, `FILES`/`LFILES`, `KILL`, `NAME` move to
+`disk.rom`; **256 B** of main page 1, which had **5 B** free on 2026-09-15.
+⚠️ **THE APPROVAL IS FOR RUNG 3 AND NOTHING ELSE** — 3b (1231 B), option 4
+(2315 B), `field.asm` and the 975 B channel machinery stay parked, and widening
+the move is a NEW decision rather than an implementation detail. §5's interop
+warning is attached to option 4, so `basic/fat.asm:11` and `expansion-protocol.md`
+§251 are **not** to be touched on this rung: the BASIC-side FAT stays.
+🔴 **AND THE FIRST STEP IS NOT A MOVE.** Measured 2026-09-15:
+`disk/init.asm:18` is `dw 0` — the `"AB"` header's `$4004` STATEMENT vector is a
+STUB — and the CONSUMER slot-walk does not exist at all; an unknown statement falls
+to `stmt_error`. That walk is **INTERPRETER code in `basic/interp.asm`**, it is the
+step that can go wrong quietly, and §8's "one slice per step" puts it on its own.
+📏 **Siting is not the constraint**: `disk.rom` has a **3182 B hole at `$6937`**
+bounded by the pin at `$75A5` (`tools/check_disk_walls.py`, 2026-09-15), against
+256 B of verb bodies.
+🔪 **And the slice after the move is a FULL `kwknife.py --all` AND `--allfn`
+re-measure** — §8 is explicit that a relocation moves code between REGIONS, so the
+one-run re-stamp that sufficed for D-KWSAVEEND's 3-byte tail does not.
+🎯 **This is ruling 2's prerequisite carve**: the four code forms (LOCATE cursor
+switch, SCREEN key click, `VARPTR(#n)`, `INPUT$` console) land together after it.
+
 ⚡ **D-KWPLAY (2026-09-15) — `PLAY` GOES 0 → 9 OF 10 FORMS, AND DESIGNING THE
 ROWS FOUND THREE DEFECTS. TWO ARE FIXED; THE THIRD IS THE ONLY THING LEFT
 BETWEEN `PLAY` AND TIER 1.**

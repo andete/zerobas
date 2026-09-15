@@ -56,14 +56,20 @@ The seam is **not** simply "move `files.asm` + `field.asm`, keep `fat.asm`." Inv
 So the spec's first job is to **find the real seam.** Options to evaluate (with measured
 byte relief for each):
 
-1. **Split `fat.asm`** into *loader-FAT* (the `LOAD"A:"` directory/FAT walk — stays in
-   BASIC for interop) vs *channel/record-FAT* (`fat_io_*` engine — moves to `disk.rom`
-   with `files`/`field`). Cleanest if the engine separates cleanly.
-2. **Reuse `disk/fat.asm`** — `disk.rom` already carries its own FAT layer (BDOS-side,
-   1380 lines). Evaluate whether the moved verbs can bind to it instead of `basic/fat.asm`
-   (avoids duplication / cross-slot callbacks).
-3. **Minimal move** — only the FAT-light verbs (`FILES` directory list, `KILL`, `NAME`);
-   measure the actual relief (likely < the full ~3 KB).
+1. ~~**Split `fat.asm`**~~ **STRUCK 2026-09-15 AS A LEVER** — measured, not argued:
+   the whole of `basic/fat.asm` is **124 B** of main page 1, so the best case for a
+   SPLIT of it is under that. See
+   [`spec-diskbasic-relocation-seam.md`](spec-diskbasic-relocation-seam.md) §5.
+2. ~~**Reuse `disk/fat.asm`**~~ **STRUCK 2026-09-15, same measurement, same cap.**
+   Worth doing only alongside a real move, never as the move itself.
+   🔴 **AND THE COUPLING COUNT ABOVE IS REFUTED.** "~15 calls" and "~13 calls"
+   were estimates; the measured figures are **`files`→`fat` 3 edges and
+   `field`→`fat` 3** — six, not ~28. Relocation is not a FAT problem at all; it is
+   an INTERPRETER-coupling problem, at **140 outbound edges**.
+3. **Minimal move** — only the FAT-light verbs. 🟢 **PRICED AT 256 B AND
+   APPROVED BY JOOST 2026-09-15** (`COPY`, `FILES`/`LFILES`, `KILL`, `NAME`); the
+   relief is indeed far under the hoped ~3 KB, because the bulk of `files.asm` is
+   the CHANNEL machinery (975 B), not the directory verbs.
 4. If the spec concludes **move-all is the only clean option**, that reverses the
    middle-path decision (drops interop) — **escalate to the user**, do not proceed.
 

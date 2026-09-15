@@ -9,10 +9,23 @@ session and the loop resumes exactly where it stopped.
 🏗️ **JOOST RULED 2026-09-15 — READ THIS BEFORE PICKING ANYTHING UP. Five
 decisions, and they set the order of the next slices. Do not re-ask.**
 
+0. 🟢 **SIXTH RULING, 2026-09-15, VERBATIM: *"D-VERBPART — option 3 is
+   priced -> approved"*.** The disk-BASIC relocation is UNBLOCKED at its cheapest
+   rung: `COPY`, `FILES`/`LFILES`, `KILL`, `NAME` move to `disk.rom`, **256 B** of
+   main page 1. ⚠️ **RUNG 3 AND NOTHING ELSE** — 3b (1231 B), 4 (2315 B),
+   `field.asm` and the 975 B channel machinery are NOT approved by it.
+   🔴 **AND THE FIRST STEP IS NOT A MOVE**: the `$4004` consumer slot-walk does
+   not exist (`disk/init.asm:18` is `dw 0`, an unknown statement falls to
+   `stmt_error`), so that INTERPRETER change lands on its own slice first. Then the
+   verbs; then `kwknife.py --all` AND `--allfn`, because a relocation moves code
+   between REGIONS and the one-run re-stamp is not enough. Spec:
+   [`disk/docs/spec-diskbasic-relocation-seam.md`](../disk/docs/spec-diskbasic-relocation-seam.md).
+   **This is ruling 2's prerequisite carve** — the four code forms land after it.
 1. **`SAVE"x",A` — SPEND THE 3 B.** The ASCII save must END the run.
 2. **The four code forms (LOCATE cursor switch, SCREEN key click, `VARPTR(#n)`,
    `INPUT$` console form) — CARVE FIRST, THEN ALL FOUR TOGETHER.** A carve slice
    is the prerequisite; do not dribble them into the leftover bytes.
+   🟢 **THE CARVE IS NAMED AND APPROVED: ruling 0's option 3, 256 B.**
 3. ✅ **DONE (D-KWRUNFILE): `PROG3.BAS` = `10 PRINT"[3h]"`, appended last.**
    `RUN` 3/3; `LOAD` 1/2 (its plain form cannot get a row here). The disk group's
    `step` went 5.0 → 8.0 in the same slice — a case slower than `step` has its

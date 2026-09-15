@@ -5,7 +5,24 @@ SPDX-License-Identifier: 0BSD
 
 # Spec — disk-BASIC relocation: THE SEAM, MEASURED
 
-**Status: AWAITING USER SIGN-OFF. No code written.** (Option 3 priced 2026-09-15; §4, §5 and §6 updated with the partition.)
+**Status: 🟢 OPTION 3 APPROVED BY JOOST, 2026-09-15** — verbatim:
+*"D-VERBPART — option 3 is priced -> approved"*. (Option 3 priced 2026-09-15;
+§4, §5 and §6 carry the partition.)
+
+⚠️ **THE APPROVAL IS FOR RUNG 3 AND NOTHING ELSE.** `COPY`, `FILES`/`LFILES`,
+`KILL`, `NAME` move to `disk.rom`; **256 B**. Option 3b (1231 B), option 4
+(2315 B), `field.asm`, and the channel machinery (`OPEN`/`CLOSE`/`INPUT#`/
+`LINE INPUT`/`MERGE`/`MAX FILES`, 975 B) are **not** approved by it and stay
+parked — widening the move is a new decision, not an implementation detail.
+⚠️ **§5's interop warning is attached to OPTION 4, not to this rung.** The
+BASIC-side FAT stays where it is, so `basic/fat.asm:11` and
+`expansion-protocol.md` §251 are **not** to be "corrected" in this slice.
+🔴 **§8 STILL GOVERNS: ONE SLICE PER STEP, and the first step is not a move.**
+The `$4004` consumer slot-walk does not exist — measured 2026-09-15,
+`disk/init.asm:18` is `dw 0` (the provider side is a stub) and an unknown
+statement falls to `stmt_error`. That walk is INTERPRETER code and lands on its
+own. Siting is not the constraint: `disk.rom` has a **3182 B hole at `$6937`**
+bounded by the pin at `$75A5` (`tools/check_disk_walls.py`, 2026-09-15).
 This is the spec [`spec-diskbasic-relocation.md`](spec-diskbasic-relocation.md)
 mandates ("the spec's first job is to **find the real seam**") and the
 measurement Joost asked for on 2026-09-15 ("re-decide after the seam is
