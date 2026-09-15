@@ -5,6 +5,15 @@ SPDX-License-Identifier: 0BSD
 
 # Spec — disk-BASIC relocation: THE SEAM, MEASURED
 
+**🟢 SUPERSEDED THE SAME DAY BY
+[`spec-diskbasic-hook-rearchitecture.md`](spec-diskbasic-hook-rearchitecture.md)**
+— Joost directed *"now update our disk basic to use the same architecture"*. THE
+PARK BELOW STANDS FOR WHAT IT PARKED: this spec priced a BYTE-CARVING exercise,
+and D-CFEVAL then measured that the reference's disk-ROM handlers CALL BACK into
+main BASIC across slots for argument evaluation — which is a different question
+and makes §3's "STAY 155 B" a PRICE rather than a wall. Rungs 3/3b/4 as carves
+stay closed; the architecture work has its own spec.
+
 **Status: 🛑 PARKED BY JOOST, 2026-09-15** — verbatim: *"Park it — carve
 somewhere else"*. He had approved it earlier the same day (*"D-VERBPART — option
 3 is priced -> approved"*) **against 256 B**; `scratchpad/verbclass.py` then

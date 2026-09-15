@@ -73,6 +73,14 @@ byte relief for each):
 4. If the spec concludes **move-all is the only clean option**, that reverses the
    middle-path decision (drops interop) — **escalate to the user**, do not proceed.
 
+🟢 **AND THE WHOLE MECHANISM QUESTION MOVED ON AGAIN, 2026-09-15.** The
+correction below (hooks, not `$4004`) is right and stands, but it is not the whole
+picture: D-CFEVAL measured that the reference's disk-ROM handler **CALLS BACK into
+main BASIC across slots** to evaluate its own arguments. The architecture that
+follows from that has its own spec —
+[`spec-diskbasic-hook-rearchitecture.md`](spec-diskbasic-hook-rearchitecture.md) —
+which Joost directed and which supersedes this document's relocation plan.
+
 ## Mechanism
 
 - 🔴 **DISPATCH IS THE *HOOK TABLE*, NOT `$4004` — MEASURED 2026-09-15 AND THE
