@@ -263,11 +263,75 @@ the filed ~3× issue Joost separated out, and it is why the honest comparison is
 call-back-against-hook-entry (both inter-slot, so the slowness cancels) rather
 than call-back-against-statement, which would flatter us.
 
-### Phase 1 — the interface
+### Phase 1 — the interface. ✅ ABI MEASURED 2026-09-15 (D-XSLOTABI)
 
-Define the call-back ABI: what the handler passes, what comes back, what stages in
-RAM (§2's constraint). Then build exactly ONE callee — *evaluate a filename
-expression* — the thing every disk verb needs.
+**Registers cross. Both ways. Intact.** The house rule so far has been *"everything
+crosses in RAM"* (`hk_mkfloat`), reasoning from *"CALSLT is documented to affect
+most of them"*. That is a document talking, not this machine, and every staged
+byte is work a call-back would pay on every argument. So it was measured
+([`xslot_abi.py`](../../scratchpad/xslot_abi.py), planted by
+[`xslot_plant_abi.py`](../../scratchpad/xslot_plant_abi.py)) —
+🎯 **with zero new main-ROM bytes**, which is the only reason it could be done at
+all with 3 B free: both callees already exist in main page 1 (`$686A` is a bare
+`ret`, `$40A3` is `inc hl / ret`).
+
+| leg | measured |
+|---|---|
+| **inbound** — the hook, `RST 30h` / CALLF | `HL`=`$FE3F` (main set the hook cell), `DE`=`$508A` (main set `ev_cv_back`), `C`=2 (the width) — **all arrive intact** |
+| **outbound** — the call-back, CALSLT to page 1 | `HL`/`DE`/`BC`/`A` all pass through unchanged; `IY` is consumed (slot id), `IX` is consumed (target) |
+| **return** — a callee that MODIFIES a register | `HL` in `$1111` → out `$1112`: **the callee's own value comes back** |
+
+The return leg is its own witness: `inc hl / ret` is at `$40A3` in MAIN, while the
+disk ROM holds `ld a,(nn)` there, which does not return — so `$1112` can only mean
+main page 1 was mapped and main's bytes ran.
+
+🔴 **AND THIS FALSIFIES A FILED CLAIM THAT IS CURRENTLY BLOCKING A VERB.** Four
+sites say *"DE — a register CALSLT does not preserve"* (`disk/kernel.asm:2138`
+and `:2251`, `basic/strvar.asm:344` and `:395`), and `hook_tab` routes `H_MKI` at
+`hk_present` instead of a real disk-side body **because of it**. DE was measured
+preserved on both legs. Correcting those four sites, and revisiting whether
+`MKI$` can now move, is its own slice.
+
+#### The ABI
+
+* **In**: `HL` = the statement cursor. Other arguments in `DE`/`BC` where a callee
+  already takes them. No staging needed for these.
+* **Out**: `HL` = the callee's result (typically the resumed cursor); `A` where the
+  callee already returns one. Carry is the callee's own.
+* **RAM stays the medium for anything the callee reaches for by itself** — §2's
+  constraint is unchanged and is about the DISK ROM being gone, not about
+  registers.
+* **`IX`/`IY` are the ABI's own**: `IX` is the target, `IY` the slot id. A caller
+  needing either across the call stages it.
+* ⚠️ **A callee may RAISE. `fname_expr` answers ERR 13 for a non-string operand,
+  and a BASIC error does NOT return** — it resets SP and unwinds to the statement
+  driver, abandoning the disk ROM's CALSLT frame. That is correct behaviour, not a
+  leak, but it means **a handler must do nothing after the call that an abort would
+  skip** (no un-freeing, no half-written state to repair). Stated here so it is a
+  designed property rather than a later surprise.
+* **Interrupts**: the handler is entered with them OFF (0c). The call-back is where
+  they should go back on — both pages hold main there, so `$0038` and
+  `htimi_guard` are equally valid.
+
+#### The callee — and it needs no main-ROM bytes at all
+
+*Evaluate a filename expression* is `fname_fcb`, and it is **already shaped for
+this**. It is a page-0 trampoline over two PAGE-1 halves:
+
+```
+fname_fcb:  call fname_expr      ; $6E91 — HL = cursor in; stashes FN_RESUME, STRSCR
+            jp   pdfcb_resume    ; $6E8A — parse_disk_fcb, then HL = (FN_RESUME) out
+```
+
+Everything between the halves already crosses in **RAM** (`FN_RESUME`, `STRPTR`,
+`STRSCR`), and `HL` is the only register in the contract — which the measurement
+above says survives. So a disk-ROM handler reaches it as **two call-back sites,
+14 B, all of them in `disk.rom`** (8820 B free), and **0 B in main page 1**.
+
+🎯 **THIS DISSOLVES THE SEQUENCING TRAP BELOW.** That warning assumed a call-back
+entry point costs bytes in main page 1. It does not: the entry points are the
+existing page-1 labels. Phase 1 therefore needs no co-landing, and phase 2 becomes
+purely net-negative — a verb leaves and nothing arrives.
 
 ### Phase 2 — the first verb, end to end
 
@@ -276,10 +340,14 @@ the real body instead of `hk_present`, argument via the call-back. Green on
 `diskbasic-acceptance` 34/34, `bdos-acceptance`, `kwsweep`, and **critically
 `nodisk-acceptance`** — with the hook unclaimed the verb must still answer ERR 5.
 
-⚠️ **SEQUENCING TRAP.** Main page 1 had **3 B** free on 2026-09-15. A call-back
+⚠️ ~~**SEQUENCING TRAP.** Main page 1 had **3 B** free on 2026-09-15. A call-back
 entry point costs bytes THERE, and the bytes only arrive when a verb LEAVES. So
 phase 1's callee and phase 2's first move must land in **ONE SLICE** with a
-net-negative footprint, or the first step does not fit.
+net-negative footprint, or the first step does not fit.~~
+✅ **WITHDRAWN 2026-09-15 by phase 1's measurement.** A call-back entry point costs
+NOTHING in main page 1: the entry points are main's existing page-1 labels, reached
+by address. The 3 B wall is real and still binds anything else, but it does not
+bind this. Phase 2 may land on its own, and it only frees bytes.
 
 ### Phase 3 — roll out
 
