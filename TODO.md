@@ -20677,6 +20677,60 @@ move; (iii) already elsewhere (the sub-ROM tenant). If (ii) is small, that is a
 finding about the rung and Joost should hear it before the work, not after — the
 same way the seam measurement refuted the parent spec's ~3 KB.
 
+🔴 **D-VERBCLASS (2026-09-15) — THE CLASSIFICATION IS DONE AND IT REFUTES THE
+RUNG'S PRICE. 258 B OF SPAN IS 36 B OF DEPARTURE.**
+[`scratchpad/verbclass.py`](scratchpad/verbclass.py) splits every label inside the
+four verb spans by what its own source text DOES (comments stripped, so a label
+that merely NAMES a helper is not misfiled), with sizes from
+`build/basic-reloc.sym` exactly as `verbpartition.py` takes them — the buckets
+reconcile to 258 B:
+| bucket | bytes | what it is |
+|---|---:|---|
+| **STAY** | **155** | reads the PROGRAM TEXT — statement cursor, expression evaluator, a syntax error raised while parsing, and the gate itself |
+| **TENANT** | **67** | pure marshalling into `dirverb_op`/`subrom_call`; the work is ALREADY in the sub ROM |
+| **MOVE** | **36** | no interpreter contact — the only bytes that can simply leave |
+| | **258** | |
+🎯 **SO THE RUNG IS WORTH ~36 B, OR AT MOST ~103 B** if the marshalling goes too —
+and that second number is not free, because moving the marshalling means
+`disk.rom` calling back into the **sub ROM**: a cross-slot hop from one expansion
+ROM into another, which needs proving reachable and costs bytes at both ends.
+**Against the 256 B the approval was given for.**
+📉 **AND IT IS THE THIRD TIME MEASUREMENT HAS CUT THIS ESTIMATE**: the parent spec
+hoped ~3 KB, the seam measurement said 256 B, the classification says 36–103 B.
+🔴 **MY FIRST CUT OF THE CLASSIFIER SAID 202 B STAY / 17 B MOVE AND IT WAS
+WRONG.** It counted `jp exec_stmt` as a reason to stay — but that is the
+**UNIVERSAL STATEMENT EPILOGUE**, the way every handler in the tree ends, and a
+relocated body ends with a cross-slot return instead. `raise_error`/`load_error`/
+`disk_error` are likewise an ERROR INTERFACE a moved body satisfies by returning a
+status, which is exactly what `DISKOP_STATUS` already does for the sub-ROM tenant.
+Counting them as blockers put `kill_status` (14 B) and `df_nofilespec` (28 B) in
+STAY **on the strength of their last instruction**.
+⚠️ **The span boundaries were wrong on the first cut too** — bounding `ex_files`
+by the next FAT-LIGHT verb let its span run through `ex_open`, `ex_line`,
+`ex_close` and `init_filechan`: **1190 B where the verb is 95**, and a 258 B
+question answered with 1578 B. A span is only a verb's if the NEXT REGION HEAD
+closes it, which is the rule `verbpartition.py` already used.
+🛑 **JOOST RULED 2026-09-15, VERBATIM: *"Park it — carve somewhere else"*.**
+**RUNG 3 IS PARKED.** The approval he gave earlier the same day was against
+**256 B**; 36 B does not justify a relocation slice plus its verification cost
+(full `kwknife.py --all` AND `--allfn`, `diskbasic-acceptance` 34/34, `bdos`, the
+loader path, `nodisk-acceptance`). ⛔ **NO BYTES MOVE, AND RUNGS 3, 3b AND 4 DO
+NOT RE-OPEN WITHOUT A NEW RULING.**
+🎯 **WHAT STILL NEEDS THE BYTES**, and it is small enough to be worth finding
+elsewhere: the three diskless gates — `FIELD $FE2B`, `LSET $FE21`, `RSET $FE26`,
+all measured divergent, all with hook slots identified — cost **8 B per site**,
+24 B for three or 16 B if `LSET`/`RSET` share a head the way `FILES`/`LFILES` now
+do, against **3 B** free in main page 1 (2026-09-15).
+📍 **WHERE TO CARVE INSTEAD, cheapest first**: Route D (`jp`→`jr`,
+[`scratchpad/jr_mapper.py`](scratchpad/jr_mapper.py)), which **RENEWS ON EVERY
+INSERTION** and has had bytes added to `files.asm` and `sub/playparse.asm` since
+it last ran; then the INSTRUCTION-PAIR ngram sweep, worth 113 B the one time it
+ran because it sees what a label-BLOCK scan cannot; then ruling 5's sub-ROM carve
+for tape LAST (`cload.asm` is 864 B against sub p0's 505 B and p1's 87 B on
+2026-09-15, so it fits neither island until the sub ROM itself is carved — which
+is the order Joost already set). ⛔ **PROMOTION IS MEASURED SHUT**: the low region
+had **0 B** free on 2026-09-15 and page 1 and low share ONE budget.
+
 ⚡ **D-NODISKGAP (2026-09-15) — `LFILES` WAS NEVER GATED, AND THE REASON IS THAT
 `do_files` IS A SHARED TAIL WITH TWO HEADS.**
 🎯 **D-CHANHOOK (2026-09-03) ROUTED `FILES`/`KILL`/`NAME` THROUGH THEIR HOOKS AND

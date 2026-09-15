@@ -5,9 +5,19 @@ SPDX-License-Identifier: 0BSD
 
 # Spec — disk-BASIC relocation: THE SEAM, MEASURED
 
-**Status: 🟢 OPTION 3 APPROVED BY JOOST, 2026-09-15** — verbatim:
-*"D-VERBPART — option 3 is priced -> approved"*. (Option 3 priced 2026-09-15;
-§4, §5 and §6 carry the partition.)
+**Status: 🛑 PARKED BY JOOST, 2026-09-15** — verbatim: *"Park it — carve
+somewhere else"*. He had approved it earlier the same day (*"D-VERBPART — option
+3 is priced -> approved"*) **against 256 B**; `scratchpad/verbclass.py` then
+classified the 258 B span as **STAY 155 B / TENANT 67 B / MOVE 36 B**, and 36 B
+does not justify the slice plus its §8 verification. ⛔ **NO BYTES MOVE. RUNGS 3,
+3b AND 4 DO NOT RE-OPEN WITHOUT A NEW RULING.**
+
+⚠️ **THE MEASUREMENTS BELOW STAND AND ARE WHY THE RUNG WAS PARKED** — the seam
+(interpreter, not FAT), the partition (256 B), and the mechanism correction (the
+hook table, not `$4004`) are all still true and still useful. What changed is the
+PRICE: a span is not a budget, because a verb body that parses its own arguments
+out of the program text cannot leave the interpreter. §4/§5/§6 are read in that
+light.
 
 ⚠️ **THE APPROVAL IS FOR RUNG 3 AND NOTHING ELSE.** `COPY`, `FILES`/`LFILES`,
 `KILL`, `NAME` move to `disk.rom`; **256 B**. Option 3b (1231 B), option 4

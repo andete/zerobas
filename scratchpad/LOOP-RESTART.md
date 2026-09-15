@@ -9,9 +9,18 @@ session and the loop resumes exactly where it stopped.
 🏗️ **JOOST RULED 2026-09-15 — READ THIS BEFORE PICKING ANYTHING UP. Five
 decisions, and they set the order of the next slices. Do not re-ask.**
 
-0. 🟢 **SIXTH RULING, 2026-09-15, VERBATIM: *"D-VERBPART — option 3 is
-   priced -> approved"*.** The disk-BASIC relocation is UNBLOCKED at its cheapest
-   rung: `COPY`, `FILES`/`LFILES`, `KILL`, `NAME` move to `disk.rom`, **256 B** of
+0. 🛑 **PARKED THE SAME DAY IT WAS APPROVED — READ BOTH RULINGS.** Joost
+   approved rung 3 on 2026-09-15 (*"D-VERBPART — option 3 is priced ->
+   approved"*) against **256 B**, then ruled *"Park it — carve somewhere else"*
+   once D-VERBCLASS measured the realisable relief at **36 B** (a 258 B span is
+   STAY 155 / TENANT 67 / MOVE 36). ⛔ **NO BYTES MOVE; RUNGS 3, 3b AND 4 DO NOT
+   RE-OPEN WITHOUT A NEW RULING.** The carve must come from elsewhere — Route D
+   (`jp`→`jr`, which RENEWS on every insertion) first, then the instruction-pair
+   ngram sweep, then ruling 5's sub-ROM carve for tape. What needs the bytes: the
+   three diskless gates (`FIELD $FE2B`, `LSET $FE21`, `RSET $FE26`), 16-24 B
+   against main page 1's 3 B free (2026-09-15).
+   *(The superseded approval, for the record:)* the relocation was unblocked at
+   its cheapest rung: `COPY`, `FILES`/`LFILES`, `KILL`, `NAME` move to `disk.rom`, **256 B** of
    main page 1. ⚠️ **RUNG 3 AND NOTHING ELSE** — 3b (1231 B), 4 (2315 B),
    `field.asm` and the 975 B channel machinery are NOT approved by it.
    🔴 **AND THE FIRST STEP IS NOT A MOVE**: the `$4004` consumer slot-walk does
