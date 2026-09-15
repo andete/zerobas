@@ -20099,6 +20099,40 @@ losing anyway.
 ROW** — see the `SAVE"x",A` item above: it ends the run on the reference and
 continues here, the fix is one tail instruction, and it costs 3 of the 8 bytes
 left in main page 1, so it is priced and reported rather than spent.
+⚡ **D-KWTAPE4 — `CLOAD` AND `BLOAD` BOTH CLOSE, AND THE OLD `CLOAD` ROW PROVED
+LESS THAN IT LOOKED. 144 of 163.**
+🔴 **WITH ONE FILE ON THE TAPE, `CLOAD"ZQ"` AND A BARE `CLOAD` READ THE SAME
+FILE AND PRINTED THE SAME `Found:ZQ`** — two forms, one reading, and **a CLOAD
+that ignored its name argument passed both.** The fixture now carries a SECOND
+program, `ZR`, and the two logical `.cas` images concatenate with no encoder
+change (each is `sync+header+sync+data`, which is exactly how a multi-program tape
+is laid out).
+🟢 **`CLOAD` 2/2.** The named row now reaches the SECOND file and reads
+**`Skip :ZQ`** — the machine's own witness that it PASSED OVER a non-matching
+file, which only a name can make it do. The bare row reads `Found:ZQ`, the NEXT
+file from a rewound tape.
+🔴 **AND THE TAPE RIG IS NOW BOOT-PER-CASE**, the moment there was a second
+row: the capture waits `cap_gap` (90 s) but the next case is typed after `step`
+(5 s), and a tape read is still running then — the same shape that blanked
+`open_c`'s reference screen, structural here rather than marginal. A fresh boot
+also REWINDS the tape, which the bare form depends on.
+🟢 **`BLOAD` 3/3.** `,R` LOADS AND EXECUTES: six bytes of Z80 are POKEd,
+BSAVEd with `&HC800` as the entry, and the landmark cleared before the load —
+`3E 2A` = `LD A,42`, `32 06 C8` = `LD (&HC806),A`, `C9` = `RET` — so a plain
+BLOAD reads 0 and only `,R` reads **42**. `,S` loads into **VRAM**: `&HC800` =
+51200 wraps into a 16 KB VRAM at **2048**, the start of SCREEN 0's pattern
+generator table, and the cell is cleared with `VPOKE` first so the **77** can only
+come from the file — read back with `VPEEK`, not `PEEK`.
+⚠️ Both BLOAD rows and `bsave_b` sit LAST in the disk group, because they WRITE.
+🔴 **AND THE BATTERY WENT RED ON A LOG NAME I DID NOT CHECK.** The battery's own
+output was redirected into the repo scratchpad under the slice name — and a slice
+of that name landed on 2026-09-13, so **a file of exactly that name is already
+TRACKED**. All 129 gates were green and the run still failed — correctly — on the
+pool-write guard: *never write a tracked file while a battery is running*. The
+rule the tree already carries for heredocs (`test -e <path> && exit 1`) is the
+same rule, and it applies to a REDIRECT just as much. This slice is D-KWTAPE**4**
+because 3 was taken, and the battery log now goes to the SESSION scratchpad,
+outside the repo, where it cannot collide with anything.
       ⚠️ **`TXTMAX` IS NOW BOUNDED BY `DETOKBUF`, NOT BY FREE RAM** — at 1280 B
       it does not fit the 1024 B window, so `$BB00` is the stop until DETOKBUF
       is dealt with. Of D-LINEMAX's 1792 B, **1024 recovered, 768 still charged**.

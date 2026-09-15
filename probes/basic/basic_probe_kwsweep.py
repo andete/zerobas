@@ -166,6 +166,14 @@ TAPE_TIMING = dict(step=5.0, cap_gap=90.0, timeout=1200.0)
 TAPE_MARK = "\x00TAPE\x00"
 TAPE_NAME = "ZQ"
 TAPE_PROGRAM = make_multiline_program([(10, 'PRINT"[Z9]"')], 0x8001)
+# 🎯 D-KWTAPE4: A SECOND FILE, AND IT IS WHAT MAKES EITHER `CLOAD` FORM MEAN
+# ANYTHING. With ONE file on the tape a named `CLOAD"ZQ"` and a bare `CLOAD` both
+# read the same first file and print the same `Found:ZQ` -- two forms, one
+# reading, and a CLOAD that ignored its name argument passed both. `ZR` sits
+# SECOND, so the named row has to SEARCH PAST a non-matching file to reach it and
+# the bare row takes `ZQ` because it is simply the NEXT one.
+TAPE_NAME2 = "ZR"
+TAPE_PROGRAM2 = make_multiline_program([(10, 'PRINT"[Z8]"')], 0x8001)
 
 
 def _tape_fixture() -> str:
@@ -176,7 +184,11 @@ def _tape_fixture() -> str:
     reference announces `Found:ZQ` on the screen as it reads, which is the
     machine's own witness that the verb did something and not merely parsed."""
     fh = tempfile.NamedTemporaryFile(suffix=".cas", delete=False)
-    fh.write(cas_encode.build_cas_basic(TAPE_NAME, TAPE_PROGRAM))
+    # Two logical images back to back IS a two-file tape: each is
+    # `sync+header+sync+data`, which is exactly how a multi-program .cas is laid
+    # out. Nothing in the encoder needed changing.
+    fh.write(cas_encode.build_cas_basic(TAPE_NAME, TAPE_PROGRAM)
+             + cas_encode.build_cas_basic(TAPE_NAME2, TAPE_PROGRAM2))
     fh.close()
     if not _TAPE_TEMPS:
         atexit.register(_drop_tape_temps)
@@ -538,6 +550,14 @@ def _rig_kwargs(rigs: tuple[str, ...]) -> dict:
         # cap_gap both rows come back BLANK -- which reads as a refusal.
         kw.update(TAPE_TIMING)
         kw["cassette"] = _tape_fixture()
+        # 🔴 D-KWTAPE4: BOOT-PER-CASE, THE MOMENT THERE WAS A SECOND ROW. The
+        # capture waits `cap_gap` (90 s) but the NEXT case is typed after `step`
+        # (5 s), and a tape read is still running then -- so case 2 would be typed
+        # into a machine chewing through a leader. That is the same shape that
+        # blanked `open_c`'s reference screen when a slow writer sat upstream of
+        # it; here it is structural rather than marginal. A fresh boot also
+        # REWINDS the tape, which the bare `CLOAD` row depends on.
+        kw["batch"] = False
     return kw
 
 
@@ -2640,27 +2660,21 @@ SWEEP: list[tuple[str, str, str | None, str, str]] = [
     # took `cassette=` only from D-CASORACLE on), and `CSAVE` needed the defect
     # that WAS its subject fixed first (D-CASTAIL2 -- until then a passing row
     # would have certified a tape no real MSX could load).
-    ("cload",   'cload"zq"',  'CLOAD"ZQ"',  "direct",
-     "NEEDS-TAPE: " "NOFURN: " "FORM:load-named 🎯 THE MACHINE'S OWN `Found:ZQ` "
-     "IS THE WITNESS, "
-     "printed as it reads: a hang and a silent no-op look identical at the `Ok` "
-     "prompt, which is exactly how D-CASTAIL2 hid for four slices. Absent => "
-     "syntax error."),
-    # 🟢 D-KWINKEY: THE LAST WORD ON THE DRAIN, and its filed blocker was wrong.
-    # `INKEY$` was held back as needing a HARNESS change — a key had to arrive
-    # after the machine consumed `RUN` and before the statement read it, a moment
-    # computed inside run_cases from `boot` + per-line `step` that a row cannot
-    # see, with the D-LATCH/D-LATCH2 races as what such a change must not reopen.
-    # 🎯 BUT A KEY DOES NOT HAVE TO BE TYPED TO BE WAITING. The BIOS type-ahead
-    # buffer is ordinary MSX work area (KEYBUF $FBF0, the GETPNT/PUTPNT cursors,
-    # empty when equal) and BASIC can POKE it: the program stuffs one character,
-    # sets the cursors one apart, and reads a REAL keystroke with no injector
-    # timing anywhere. Measured `[A 1 ]` on both machines
-    # (scratchpad/kwdrain_inkeypoke.py) — and the value separates from a stub,
-    # which answers `[ 0 ]` exactly as an unstuffed buffer does.
-    # ⚠️ STORED, AND THAT IS LOAD-BEARING: in direct mode the harness delivers the
-    # NEXT line through this very buffer, which would overwrite the stuffed
-    # character. Nothing competes for it during RUN.
+    # 🌾 D-KWTAPE4: THE NAMED FORM NOW REACHES THE **SECOND** FILE, AND THE OLD
+    # ONE PROVED LESS THAN IT LOOKED. With one file on the tape `CLOAD"ZQ"` and a
+    # bare `CLOAD` both read the first file and both printed `Found:ZQ` -- two
+    # forms, one reading, and a CLOAD that IGNORED ITS NAME ARGUMENT passed both.
+    # `ZR` sits second, so this row reads `Skip :ZQ`: the machine's own witness
+    # that it PASSED OVER a non-matching file, which only a name can make it do.
+    ("cload",   'cload"zr"', 'CLOAD"ZR"',                     "direct",
+     "NEEDS-TAPE: " "NOFURN: FORM:load-named \U0001f3af THE MACHINE'S OWN `Skip :ZQ` IS "
+     "THE WITNESS, printed as it searches: a hang and a silent no-op look "
+     "identical at the `Ok` prompt, which is exactly how D-CASTAIL2 hid for four "
+     "slices. A CLOAD that ignored the name would read `Found:ZQ` like the bare "
+     "row below. Absent => syntax error."),
+    ("cload_b", 'cload',     'CLOAD',                         "direct",
+     "NEEDS-TAPE: " "NOFURN: FORM:load-next the BARE form takes the NEXT file, "
+     "which from a rewound tape is `ZQ` -- no name is given and none is needed"),
     ("inkey",   'a$=inkey$',
      'POKE&HFBF0,65:POKE&HF3FA,&HF0:POKE&HF3FB,&HFB:POKE&HF3F8,&HF1:'
      'POKE&HF3F9,&HFB:A$=INKEY$:PRINT"[";A$;LEN(A$);"]"',  "stored",
@@ -3194,6 +3208,30 @@ SWEEP: list[tuple[str, str, str | None, str, str]] = [
      "stored",
      "NEEDS-DISK: " "FORM:with-entry 201 = $C9, the ENTRY's high byte in the file "
      "header, where the three-argument form defaults it to the start and reads 200"),
+    # 🌾 D-KWBLOADR: `BLOAD"x",R` LOADS **AND EXECUTES**, and the only way to see
+    # the difference from a plain load is to make the loaded bytes DO something.
+    # Six bytes of Z80 are POKEd, BSAVEd with `&HC800` as the entry, and the
+    # landmark cell is cleared before the load: `3E 2A` = LD A,42, `32 06 C8` =
+    # LD (&HC806),A, `C9` = RET -- so a plain `BLOAD` reads 0 and only the `,R`
+    # form reads 42. The RET is what brings control back to BASIC.
+    # ⚠️ LAST of the disk rows, beside `bsave_b`, because it WRITES: a writer
+    # upstream of a reader blanked `open_c`'s reference screen once already.
+    ("bload_b", 'bload"x",r',
+     'POKE&HC800,&H3E:POKE&HC801,42:POKE&HC802,&H32:POKE&HC803,6:POKE&HC804,&HC8:POKE&HC805,&HC9:BSAVE"R.BIN",&HC800,&HC805,&HC800:POKE&HC806,0:BLOAD"R.BIN",R:A=PEEK(&HC806):PRINT"[2v";A;"]"',
+     "stored",
+     "NEEDS-DISK: " "FORM:run 42: the loaded bytes RAN. A plain BLOAD loads the "
+     "same six bytes and reads 0, because nothing calls them"),
+    # 🌾 D-KWBLOADR: and `,S` loads into **VRAM** instead of RAM. The file's own
+    # header addresses are used as VRAM addresses, and &HC800 = 51200 wraps into a
+    # 16 KB VRAM at 2048 -- which in SCREEN 0 is the start of the PATTERN
+    # GENERATOR table, ordinary writable VRAM that nothing on screen is using.
+    # The cell is cleared with VPOKE before the load, so 77 can only come from the
+    # file.
+    ("bload_c", 'bload"x",s',
+     'POKE&HC800,77:BSAVE"V.BIN",&HC800,&HC800:VPOKE 2048,0:BLOAD"V.BIN",S:A=VPEEK(2048):PRINT"[2w";A;"]"',
+     "stored",
+     "NEEDS-DISK: " "FORM:vram 77 read back with VPEEK, not PEEK: the `,S` form "
+     "puts the bytes in VIDEO memory, where a plain BLOAD would leave VRAM at 0"),
     ("bin",     "a$=bin$(5)",
      'PRINT"[";BIN$(5);"]"',                         "direct",
      "FORM:to-binary absent => syntax error; real => 101"),
