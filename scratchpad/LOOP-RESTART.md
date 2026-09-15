@@ -29,18 +29,20 @@ read `docs/tier-status.md`; the headline is in its **STATEMENT — 163** paragra
   `strig_hold` is the matrix rig's CONTROL and is in the sweep for good: if it
   ever reads `[1w 0 ]` the matrix is not being reached and nothing that depends on
   it may be believed.
-* ⛔ **WHAT IS LEFT, AND WHY — 23 statements.** Two composites: `INPUT$` needs
-  its console form IMPLEMENTED (`str_inputd` requires `,#f`) and `ON STOP GOSUB`
-  needs **Ctrl-STOP, which is TWO keys on different matrix rows** (CTRL row 6
-  bit 1 + STOP row 7 bit 4) while `holds` takes ONE `(row, mask)` per case — a
-  real `omsx_repl` extension, not a row. The rest split into: statements whose
-  bar is authored and short of rows that need a RIG (`AUTO` `BLOAD` `BSAVE`
-  `CLOAD` `RUN` `SAVE`), ones that need CODE (`LOCATE` cursor-switch, `SCREEN`
-  key-click, `VARPTR(#n)`), ones the instrument cannot reach (`KEY`'s display
-  forms — the key line's layout differs, LINLEN 37 vs 39; `PAD`'s switch;
-  `STICK`/`STRIG`'s joystick halves — openMSX drives a joystick from the HOST),
-  and ones still UNRATED because no bar can be satisfied (`CALL` `CONT` `DELETE`
-  `DRAW` `LOAD` `PLAY` `RENUM`).
+* ⛔ **WHAT IS LEFT, AND WHY — and not one of them is "nobody looked".** Recount
+  the number; the KINDS are stable. **Blocked on CODE, priced, Joost's call:**
+  `SAVE` (the ASCII-save tail ends the run on the reference, +3 B against 8 B free
+  in main page 1), `LOCATE` (cursor switch), `SCREEN` (key click), `VARPTR` (`#n`),
+  `INPUT$` (console form). **Blocked on the INSTRUMENT, measured:** `KEY` (the
+  function-key line's layout differs — LINLEN 37 vs 39), `PAD` (no host button),
+  `STICK`/`STRIG` (openMSX drives a joystick from the HOST, which the emulated key
+  matrix cannot reach), `RUN"file"`/`LOAD` (the loaded program REPLACES ours so
+  nothing can print afterwards — `PROG.BAS` POKEs a landmark instead of PRINTING
+  one, and changing the fixture touches every suite that mounts it), `AUTO` (the
+  increment needs a multi-line direct interaction this harness has no shape for),
+  `CONT` (two-phase delivery). **A bar the tree is genuinely far from:** `DRAW`
+  1/10, `PLAY` 0/11, both authored from the tree's own specs. **No happy path
+  reachable here:** `CALL`, `MAX` — reservedness only.
 * 🔴 **`DELETE` AND `RENUM` ARE MEASURED SHUT FOR THIS INSTRUMENT** and should
   not be re-opened with rows: `DELETE 20` inside a running program stops it
   cleanly on BOTH machines (so every range form has the same observable) and

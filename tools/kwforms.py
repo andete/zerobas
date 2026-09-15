@@ -530,6 +530,35 @@ FORMS: dict[str, tuple[tuple[str, ...], str]] = {
         ("fielded-record",),
         "GET #<channel>[,<record>] -- one behaviour, the random-file record read into the FIELD buffer. The row does a PUT/GET round trip so it reads the record back rather than merely that the statement parsed.",
     ),
+    "DRAW": (
+        ("movement", "move-absolute", "move-relative", "blank-prefix",
+         "no-update-prefix", "colour", "scale", "angle", "substring-exec",
+         "variable-substitution"),
+        "The command string is a small language, and docs/spec-basic-graphics-g6.md "
+        "\u00a71 enumerates the whole MSX1 surface: the eight direction letters "
+        "`U D L R E F G H` (ONE behaviour -- move and draw; the eight directions are "
+        "its inputs), ABSOLUTE and RELATIVE `M` (different addressing, so two), the "
+        "`B` blank prefix (move without drawing) and `N` no-update prefix (draw, "
+        "then return to the start), `C` colour, `S` scale, `A` angle, `X` substring "
+        "execution and `=var;` substitution. AUTHORED AT TEN KNOWING THE TREE'S ROWS "
+        "MEET ONE -- the bar is the reference's syntax, the same way PRINT USING is "
+        "5 and LOCATE 3/4. \u26a0\ufe0f `drawkw`/`drawkw_b` both pass `C15`, which is the "
+        "DEFAULT FOREGROUND, so neither says anything about `C`.",
+    ),
+    "PLAY": (
+        ("notes", "note-number", "rest", "octave", "octave-shift",
+         "default-length", "tempo", "volume", "envelope", "multi-voice",
+         "substring-exec"),
+        "`PLAY \"<mml>\"[,\"<mml>\"[,\"<mml>\"]]` -- the MML subset is the statement, "
+        "and docs/spec-basic-audio-play.md \u00a72.2 lists it from published sources: "
+        "`A`-`G` notes with accidental and length, `N n` note numbers, `R` rests, "
+        "`O n` octave, `>`/`<` octave shift, `L n` default length (with `.`), `T n` "
+        "tempo, `V n` volume, `S n`/`M n` envelope, up to THREE voice strings, and "
+        "`X var;` substring execution. \u26a0\ufe0f `&` is NOT MSX1 MML -- the VG-8020 "
+        "raises ERR 5 and so does this tree -- so it is not a form. THE SWEEP HAS NO "
+        "PLAY ROW AT ALL; `make play-acceptance` is where PLAY is measured today, "
+        "and this bar says how much of it a kwsweep row set would have to cover.",
+    ),
     "MOTOR": (
         ("toggle", "on", "off"),
         "`MOTOR [ON|OFF]` -- three behaviours, and the bare one is not a spelling of "

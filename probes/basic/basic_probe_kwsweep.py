@@ -1228,14 +1228,14 @@ SWEEP: list[tuple[str, str, str | None, str, str]] = [
      "circle from passing, the way the `circlekw` row does."),
     ("drawkw",    'draw"c15r5"',      
      'SCREEN2:PSET(10,10),15:DRAW"C15R5":A=POINT(14,10):SCREEN0:PRINT"[D";A;"]"', "stored",
-     "NOECHO:[D reads 4 pixels right of the start: blank is 4, drawn is 15"),
+     "NOECHO:[D FORM:movement reads 4 pixels right of the start: blank is 4, drawn is 15"),
     # 🌾 D-KWBREADTH batch 10: the row above drives ONE direction command (`R`). A
     # DRAW that implemented only R -- or that ignored the letter entirely and moved
     # right -- passes it. `D` moves DOWN, so the pixel read is BELOW the start.
     ("drawkw_b",  'draw"c15d5"',
      'SCREEN2:PSET(10,10),15:DRAW"C15D5":A=POINT(10,14):SCREEN0:PRINT"[E";A;"]"',
      "stored",
-     "NOECHO:[E a DIFFERENT direction command -- `D` draws DOWN, so this reads a "
+     "NOECHO:[E FORM:movement a DIFFERENT direction command -- `D` draws DOWN, so this reads a "
      "pixel below the start where the `R` row reads one to the right. 15 drawn, "
      "4 blank."),
     # 🔴 THE CRUNCH IS `sprite on`, NOT `sprite$(0)=...`, AND THE FIRST CUT TAUGHT
@@ -3057,6 +3057,19 @@ SWEEP: list[tuple[str, str, str | None, str, str]] = [
     ("runkw",   "run 20",
      'POKE&HE001,0:POKE&HE001,PEEK(&HE001)+1:IF PEEK(&HE001)<2 THEN RUN 20:PRINT"[";PEEK(&HE001);"]"',
      "stored", "FORM:line D-KWDISK"),
+    # 🌾 D-KWRUNBARE: the BARE form RESTARTS, and seeing that needs state that
+    # SURVIVES a RUN. Variables do not -- RUN clears them, which is half of what
+    # the statement IS -- but VRAM does, and `VPEEK(4096)` reads **0 on BOTH
+    # machines at boot** (measured; 4096 is outside every table SCREEN 0 uses, and
+    # 8192 reads 244 on both, so this is a real zero and not an unset read).
+    # Pass 1 finds 0, writes 99 and RUNs; pass 2 finds 99 and prints.
+    # 🎯 A `RUN` THAT DID NOTHING PRINTS NOTHING AT ALL -- the program would fall
+    # off the end of line 30 on its first and only pass -- so the marker is the
+    # RESTART itself and not merely that the word parsed.
+    ("runkw_b", "run",
+     'A=VPEEK(4096):IF A=99 THEN PRINT"[2x]":END:VPOKE 4096,99:RUN',
+     "stored", "FORM:bare the RESTART: only a second pass can see the 99 the "
+     "first one wrote"),
 
     # --------------------------------- D-KWDISK, the pre-existing rows (2026-09-12)
     # Disk-BASIC surface, EXECUTED at last. Every "needs a disk fixture" note

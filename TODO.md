@@ -20133,6 +20133,38 @@ rule the tree already carries for heredocs (`test -e <path> && exit 1`) is the
 same rule, and it applies to a REDIRECT just as much. This slice is D-KWTAPE**4**
 because 3 was taken, and the battery log now goes to the SESSION scratchpad,
 outside the repo, where it cannot collide with anything.
+⚡ **D-KWROADMAP — `RUN`'s BARE FORM, TWO HONEST BARS, AND A COUNTED ANSWER TO
+"WHAT IS LEFT". 144 of 163.**
+🟢 **`RUN` 2/3 — the BARE form RESTARTS, and seeing that needed state that
+SURVIVES a RUN.** Variables do not — clearing them is half of what the statement
+IS — but VRAM does, and `VPEEK(4096)` reads **0 on BOTH machines at boot**
+(measured; 4096 is outside every table SCREEN 0 uses, and 8192 reads 244 on both,
+so that zero is a real read and not an unset one). Pass 1 finds 0, writes 99 and
+RUNs; pass 2 finds 99 and prints. **A `RUN` that did nothing prints nothing at
+all**, so the marker is the RESTART and not merely that the word parsed.
+📏 **`DRAW` 1/10 AND `PLAY` 0/11 — AUTHORED FROM THE TREE'S OWN SPECS AND
+DELIBERATELY UNSATISFIABLE TODAY.** `spec-basic-graphics-g6.md` §1 enumerates
+DRAW's whole MSX1 surface and `spec-basic-audio-play.md` §2.2 lists PLAY's MML
+subset from published sources; both become bars, the same way `PRINT USING` was
+authored at five knowing the tree met two. ⚠️ `drawkw`/`drawkw_b` both pass `C15`,
+which is the DEFAULT FOREGROUND, so neither says anything about `C` — they are
+one form, not two. And the sweep has **no PLAY row at all**: `make
+play-acceptance` is where PLAY is measured, and the bar now says how much a row
+set would have to cover.
+🎯 **AND THE NINETEEN THAT ARE LEFT ARE ALL BLOCKED ON SOMETHING NAMED.** Not
+one of them is "nobody looked":
+| blocked on | statements |
+|---|---|
+| **CODE, priced, Joost's call** | `SAVE` (the ASCII tail, +3 B), `LOCATE` (cursor switch), `SCREEN` (key click), `VARPTR` (`#n`), `INPUT$` (console form) |
+| **THE INSTRUMENT, measured** | `KEY` (the key line's layout differs — LINLEN 37 vs 39), `PAD` (no host button), `STICK`/`STRIG` (openMSX drives a joystick from the HOST, which the emulated matrix cannot reach), `RUN`/`LOAD` (the loaded program REPLACES ours, so nothing can print afterwards), `AUTO` (the increment needs a multi-line direct interaction this harness has no shape for), `CONT` (two-phase delivery), `DELETE`/`RENUM` (measured shut — every form has the same observable) |
+| **A BAR THE TREE IS GENUINELY FAR FROM** | `DRAW` 1/10, `PLAY` 0/11 |
+| **NO HAPPY PATH REACHABLE HERE** | `CALL`, `MAX` (both score RESERVEDNESS only) |
+🔴 **`RUN"file"` AND `LOAD` SHARE ONE BLOCKER AND IT IS THE FIXTURE.** Both
+load a program that REPLACES the running one, so the row cannot print afterwards —
+and `PROG.BAS` on the test disk POKEs a landmark rather than PRINTING one. A
+fixture whose program printed a marker would close both at once; changing
+`disk/test720.dsk` touches `ramfree`, `diskbasic` and every other suite that
+mounts it, so it is a decision rather than a tweak.
       ⚠️ **`TXTMAX` IS NOW BOUNDED BY `DETOKBUF`, NOT BY FREE RAM** — at 1280 B
       it does not fit the 1024 B window, so `$BB00` is the stop until DETOKBUF
       is dealt with. Of D-LINEMAX's 1792 B, **1024 recovered, 768 still charged**.
