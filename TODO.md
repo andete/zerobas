@@ -19936,6 +19936,36 @@ non-zero constant.
 CONTROL, and that is not a conflict**: if it ever reads `[1w 0 ]` the matrix is not
 being reached and STRIG loses the form in the same breath. One row, both jobs, and
 the failure is loud either way.
+⚡ **D-KWOSK — `OPEN` AND `SPRITE` REACH TIER 1, AND `KEY`'s TWO DISPLAY FORMS
+ARE REFUSED A ROW ON PURPOSE. 138 of 163.**
+🟢 **`OPEN` 4/4.** `openkw` is FOR OUTPUT and `openkw_b` FOR INPUT; APPEND and
+the FOR-LESS RANDOM mode had no row of their own — the random-access rows USE the
+FOR-less form, but their subject is `FIELD` / `GET #` / `PUT #`. `open_c` reads
+**9 bytes, measured**: `AB`+CRLF twice is 8 and the sequential `CLOSE` adds the
+`$1A` end marker, so an APPEND that TRUNCATED (what FOR OUTPUT does to an existing
+file) reads 5. `open_d` reads `PQRS` back through `FIELD`/`PUT`/`GET`, which a
+sequential channel refuses.
+🟢 **`SPRITE` 3/3.** The existing rows write a PATTERN; the trap STATE is the
+other half, and the only way to see it is the collision trap D-KWHOLD already
+built. 🔴 **`SPRITE STOP` IS NOT A THIRD BEHAVIOUR** —
+`docs/spec-traps-t4-sprite.md` §1.3 `G_stop_latch` measured it identical to
+`SPRITE OFF`, no latch — so `sprite_stop` is the DISABLE form sampled twice. It is
+there anyway: a tree that made STOP a no-op would leave the trap enabled and no OFF
+row could see it.
+🔴 **AND BOTH DISABLE ROWS CAME BACK `?nomarker` ON BOTH MACHINES AT FIRST —
+THE PROGRAM WAS STILL WAITING WHEN THE CAPTURE WAS TAKEN.** They waited 120 frames
+(2.4 s) for something that must NOT happen, which is the whole capture window; the
+ENABLE row exits early on the first fire and so never showed it. **A trap that
+fires once per COLLIDING FRAME needs no long window** — 30 frames.
+🚫 **`KEY ON` / `KEY OFF` HAVE NO ROW, AND THE REASON IS MEASURED.** The obvious
+instrument is the FUNCTION-KEY LINE in VRAM, which `KEY OFF` blanks — but its
+layout is **not the same on the two machines**: `PEEK(&HF3B0)` (LINLEN) reads **37
+on the VG-8020 and 39 on zerobas**, and the reference's assigned string lands at
+name-table offset 922 where a fixed offset reads a space on the other side. The
+first cut of those rows scored **SUPPORTED on `32` from BOTH machines — an
+agreement about a blank cell**. `scratchpad/keyline_probe.py` is the scan that said
+why; the display forms stay UNCOVERED rather than measured wrongly, and `KEY` is
+1/4 with the gap NAMED.
       ⚠️ **`TXTMAX` IS NOW BOUNDED BY `DETOKBUF`, NOT BY FREE RAM** — at 1280 B
       it does not fit the 1024 B window, so `$BB00` is the stop until DETOKBUF
       is dealt with. Of D-LINEMAX's 1792 B, **1024 recovered, 768 still charged**.

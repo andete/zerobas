@@ -1194,8 +1194,40 @@ SWEEP: list[tuple[str, str, str | None, str, str]] = [
     ("spritekw",  'sprite on',
      'SCREEN2:SPRITE$(0)=STRING$(8,255):A=ASC(SPRITE$(0)):SCREEN0:PRINT"[Z";A;"]"',
      "stored",
-     "NOECHO:[Z writes the pattern to VRAM and reads it back: 255 round-trips, "
-     "a stub reads 0 and SCREEN 0 raises Illegal function call"),
+     "NOECHO:[Z SUBJECT:SPRITE FORM:pattern-write writes the pattern to VRAM and "
+     "reads it back: 255 round-trips, a stub reads 0 and SCREEN 0 raises Illegal "
+     "function call"),
+    # 🌾 D-KWOSK: `SPRITE`'s OTHER half -- the trap STATE. The rows above write a
+    # PATTERN; these three decide whether a collision is DELIVERED, and the only
+    # way to see that is the collision trap itself (the machinery D-KWHOLD built
+    # for `ON SPRITE GOSUB`). Same measured HIT as those rows: one solid 8x8
+    # pattern at (100,100) and (104,100).
+    # 🔴 `SPRITE STOP` IS NOT A THIRD BEHAVIOUR -- docs/spec-traps-t4-sprite.md
+    # \u00a71.3 `G_stop_latch` measured `SPRITE STOP` \u2261 `SPRITE OFF` with NO LATCH, so
+    # the third row is the DISABLE form sampled twice. It is here anyway: a tree
+    # that treated STOP as a no-op would leave the trap enabled, and no OFF row
+    # could see that.
+    ("sprite_on", 'sprite on',
+     'SCREEN2:SPRITE$(0)=STRING$(8,255):C=0:ON SPRITE GOSUB 80:SPRITE ON:PUTSPRITE0,(100,100),15,0:PUTSPRITE1,(104,100),15,0:T=TIME:V$="VVVVVVVVVVVVVVVVVVVVVVVV":IF C=0 AND TIME-T<120 THEN 60:SCREEN0:PRINT"[2j";C>0;"]":END:W1=55:C=C+1:RETURN',
+     "stored",
+     "NOECHO:[2j SUBJECT:SPRITE FORM:enable -1: ARMING IS NOT ENABLING, and this is "
+     "the half that enables -- the handler runs only because `SPRITE ON` did"),
+    ("sprite_off", 'sprite off',
+     'SCREEN2:SPRITE$(0)=STRING$(8,255):C=0:ON SPRITE GOSUB 80:SPRITE OFF:PUTSPRITE0,(100,100),15,0:PUTSPRITE1,(104,100),15,0:T=TIME:V$="VVVVVVVVVVVVVVVVVVVVVV":IF C=0 AND TIME-T<30 THEN 60:SCREEN0:PRINT"[2k";C;"]":END:W1=55:C=C+1:RETURN',
+     "stored",
+     "NOECHO:[2k SUBJECT:SPRITE FORM:disable 0 fires in 30 frames with the handler "
+     "ARMED and the sprites COLLIDING -- the state byte is what stops it. "
+     "\U0001f534 30 FRAMES AND NOT 120: the first cut waited 2.4 s and came back "
+     "`?nomarker` ON BOTH MACHINES -- the program was STILL WAITING when the "
+     "capture was taken. A trap that fires once per COLLIDING FRAME needs no long "
+     "window; the ENABLE row exits early and so never showed it."),
+    ("sprite_stop", 'sprite stop',
+     'SCREEN2:SPRITE$(0)=STRING$(8,255):C=0:ON SPRITE GOSUB 80:SPRITE STOP:PUTSPRITE0,(100,100),15,0:PUTSPRITE1,(104,100),15,0:T=TIME:V$="VVVVVVVVVVVVVVVV":IF C=0 AND TIME-T<30 THEN 60:SCREEN0:PRINT"[2l";C;"]":END:W1=55:C=C+1:RETURN',
+     "stored",
+     "NOECHO:[2l SUBJECT:SPRITE FORM:disable the DISABLE form sampled a second way: "
+     "`SPRITE STOP` reads 0 too, because it is `SPRITE OFF` and does not latch "
+     "(docs/spec-traps-t4-sprite.md \u00a71.3 `G_stop_latch`). Same 30-frame window as "
+     "the row above, for the same reason."),
     # 🌾 D-KWBREADTH batch 19 — AXIS (g): measured across the file, EVERY `SPRITE$`
     # and `PUT SPRITE` uses SPRITE 0, so the pattern-table INDEX is a constant in
     # all of them and an implementation that ignored it entirely would pass.
@@ -2371,10 +2403,20 @@ SWEEP: list[tuple[str, str, str | None, str, str]] = [
      "one, moves the other bits too."),
     ("keykw",    'key 1,"x"',
      'KEY 1,"ZZQ":KEY LIST',                                    "stored",
-     "D-KWRIG: `KEY LIST` prints all ten definitions and the row compares the "
+     "FORM:list D-KWRIG: `KEY LIST` prints all ten definitions and the row compares the "
      "WHOLE listing: the ten defaults are identical on both machines, so the only "
      "difference either side can show is `ZZQ` in slot 1 -- which is there only if "
      "the assignment happened. No FNKSTR constant is needed or guessed."),
+    # 🚫 D-KWOSK: `KEY ON` / `KEY OFF` HAVE NO ROW, AND THE REASON IS MEASURED.
+    # The obvious instrument is the FUNCTION-KEY LINE in VRAM -- `KEY OFF` blanks
+    # it -- but its layout is NOT the same on the two machines:
+    # `PEEK(&HF3B0)` (LINLEN) reads **37 on the VG-8020 and 39 on zerobas**, and
+    # the reference's assigned string lands at name-table offset 922 while a fixed
+    # offset reads a space on the other side. The first cut of these rows scored
+    # SUPPORTED on `32` from BOTH machines -- an agreement about a blank cell
+    # [[a-case-that-agrees-can-agree-for-the-wrong-reason]] -- and the scan that
+    # found the real offset (scratchpad/keyline_probe.py) is what
+    # said why. The display forms stay UNCOVERED rather than measured wrongly.
     # 🔴 `WAIT` IS BACK, AND THE ROW THAT BLOCKED FOR EVER IS WHY IT LOOKS LIKE
     # THIS. Batch 3 wrote `WAIT &HA9,0`, read mask 0 as "already true", and the
     # row never returned. `WAIT p,m` returns when `INP(p) AND m` is non-zero, so
@@ -2475,7 +2517,7 @@ SWEEP: list[tuple[str, str, str | None, str, str]] = [
     ("openkw_b", 'open"prog.bas"for input as#2',
      'MAXFILES=2:OPEN"HI.TXT"FOR INPUT AS#2:A$=INPUT$(2,#2):CLOSE#2:PRINT"[";A$;"]":MAXFILES=1',
      "stored",
-     "NEEDS-DISK: " "a SECOND CHANNEL, where every one of the other file rows uses "
+     "NEEDS-DISK: " "FORM:input a SECOND CHANNEL, where every one of the other file rows uses "
      "#1 alone -- the channel NUMBER was a constant across all 17 of them. Reads "
      "[He], the first two bytes of HI.TXT, through #2. MEASURED on both machines "
      "before this sentence was written. "
@@ -2973,7 +3015,7 @@ SWEEP: list[tuple[str, str, str | None, str, str]] = [
     ("openkw",  'open"o.txt"for output as#1',
      'OPEN"O.TXT"FOR OUTPUT AS#1:PRINT#1,"AB":CLOSE#1:OPEN"O.TXT"FOR INPUT AS#1:A=LOF(1):CLOSE#1:PRINT"[";A;"]"',
      "stored",
-     "NEEDS-DISK: " "the FOR OUTPUT form, which every other use of OPEN in this "
+     "NEEDS-DISK: " "FORM:output the FOR OUTPUT form, which every other use of OPEN in this "
      "file lacks: create, write \"AB\", close, reopen FOR INPUT and read LOF. "
      "🔴 THE READING IS 5, NOT THE 4 THIS NOTE FIRST CLAIMED -- \"AB\" plus CRLF "
      "is four bytes and the file measures five on BOTH machines. The fifth is "
@@ -2987,6 +3029,24 @@ SWEEP: list[tuple[str, str, str | None, str, str]] = [
     # writes the record and `GET` reads it back. Placed here, after `loc` and
     # `openkw`, because it CREATES a file and `files`/`lfiles`/`dskf` must read the
     # fixture first.
+    # 🌾 D-KWOSK: `OPEN`'s other two modes. `openkw` opens FOR OUTPUT and `openkw_b`
+    # FOR INPUT; APPEND and the FOR-less RANDOM mode had no row of their own --
+    # the random-access rows above USE it, but their subject is FIELD / GET # /
+    # PUT #. Both of these WRITE, so they sit with the writers: a reader placed
+    # after them reads a fixture that has moved.
+    ("open_c",  'open"oa.txt"for append as#1',
+     'OPEN"OA.TXT"FOR OUTPUT AS#1:PRINT#1,"AB":CLOSE#1:OPEN"OA.TXT"FOR APPEND AS#1:PRINT#1,"CD":CLOSE#1:OPEN"OA.TXT"FOR INPUT AS#1:A=LOF(1):CLOSE#1:PRINT"[2f";A;"]"',
+     "stored",
+     "NEEDS-DISK: " "SUBJECT:OPEN FORM:append 9 bytes, MEASURED on both machines: "
+     "`AB`+CRLF twice is 8 and the sequential CLOSE adds the $1A end marker. The "
+     "row writes `AB` and then APPENDS `CD`, so both lines are there -- an APPEND "
+     "that TRUNCATED, which is what FOR OUTPUT does to an existing file, reads 5"),
+    ("open_d",  'open"or.dat"as#1',
+     'OPEN"OR.DAT"AS#1:FIELD#1,4 AS A$:LSET A$="PQRS":PUT#1,1:GET#1,1:PRINT"[2e";A$;"]":CLOSE#1',
+     "stored",
+     "NEEDS-DISK: " "SUBJECT:OPEN FORM:random the FOR-LESS form, which is RANDOM "
+     "access and not a defaulted INPUT: `PUT`/`GET` are legal on it and a "
+     "sequential channel refuses them"),
     ("fieldkw", 'field#1,4 as a$',
      'OPEN"F.DAT"AS#1:FIELD#1,4 AS A$:LSET A$="WXYZ":PUT#1,1:GET#1,1:PRINT"[";A$;"]":CLOSE#1',
      "stored",

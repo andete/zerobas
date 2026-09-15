@@ -530,6 +530,36 @@ FORMS: dict[str, tuple[tuple[str, ...], str]] = {
         ("fielded-record",),
         "GET #<channel>[,<record>] -- one behaviour, the random-file record read into the FIELD buffer. The row does a PUT/GET round trip so it reads the record back rather than merely that the statement parsed.",
     ),
+    "OPEN": (
+        ("input", "output", "append", "random"),
+        "`OPEN <file> [FOR <mode>] AS #<n>` -- FOR INPUT, FOR OUTPUT and FOR APPEND "
+        "are three sequential modes that differ in where the channel STARTS and "
+        "whether the file is truncated, and the FOR-LESS form is a fourth: RANDOM "
+        "access, on which FIELD/PUT/GET are legal and a sequential channel refuses "
+        "them. The device names (`CAS:`, `LPT:`, `CRT:`) are the same four modes "
+        "against a different medium, not a fifth behaviour.",
+    ),
+    "KEY": (
+        ("assign", "list", "display-on", "display-off"),
+        "`KEY <n>,<string>` assigns a function-key expansion; `KEY LIST` prints all "
+        "ten; `KEY ON` and `KEY OFF` show and hide the function-key LINE. The last "
+        "two are a display behaviour and not a pair of flags. \u26a0\ufe0f They have NO ROW "
+        "and the reason is measured: the key line's LAYOUT differs between the "
+        "machines -- LINLEN reads 37 on the VG-8020 and 39 on zerobas "
+        "(scratchpad/keyline_probe.py) -- so a fixed VRAM offset reads the "
+        "reference's text and the other side's blank, and the first attempt scored "
+        "SUPPORTED on a space from both.",
+    ),
+    "SPRITE": (
+        ("pattern-write", "enable", "disable"),
+        "`SPRITE$(<n>)=<pattern>` writes the pattern table; `SPRITE ON` and "
+        "`SPRITE OFF` decide whether a COLLISION is delivered to the trap. "
+        "\U0001f534 `SPRITE STOP` IS NOT A FOURTH: docs/spec-traps-t4-sprite.md \u00a71.3 "
+        "`G_stop_latch` measured it identical to `SPRITE OFF` with no latch, so a "
+        "STOP row is the disable form sampled twice -- worth having, because a tree "
+        "that made STOP a no-op would leave the trap enabled and no OFF row could "
+        "see it.",
+    ),
     "PDL": (
         ("read",),
         "`PDL(<n>)`, n = 1..12 -- six paddles per joystick port, and ONE behaviour: "
