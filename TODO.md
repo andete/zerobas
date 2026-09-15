@@ -20165,6 +20165,31 @@ and `PROG.BAS` on the test disk POKEs a landmark rather than PRINTING one. A
 fixture whose program printed a marker would close both at once; changing
 `disk/test720.dsk` touches `ramfree`, `diskbasic` and every other suite that
 mounts it, so it is a decision rather than a tweak.
+⚡ **D-KWDRAW9 — `DRAW` GOES 1/10 TO 8/10, AND THE TWO IT DOES NOT GET ARE
+REFUSED ON A MEASUREMENT.**
+🟢 **Seven new forms, every one read back with `POINT`** the way the two rows
+that were there already are — SCREEN 2's background is 4 and its drawn colour 15,
+so those two numbers are what every reading is built out of:
+`M50,50` → 15 at the midpoint (**move-absolute**); `M+20,+0` → 15 at (25,10),
+where an ABSOLUTE reading would go to (20,0) and leave it 4 (**move-relative**);
+`BM50,50R5` → **`4 15`** — nothing on the way, something at the new place, and
+reading only the first would be satisfied by a DRAW that did nothing at all
+(**blank-prefix**); `NR5D3` → **`15 15`**, the `D3` starting from (10,10) again
+because the cursor went back (**no-update-prefix**); `C7R5` → **7**
+(**colour** — and the two old rows pass `C15`, which IS the default foreground, so
+they said nothing about `C`); `S8R2` → 15 at (13,10), because `S` is in QUARTERS
+and the default is 4, so the step doubles (**scale**); `A1R5` → **`15 4`**, which
+says it turned UP rather than only that it turned (**angle**).
+⛔ **`X<var>;` AND `=<var>;` HAVE NO ROW, AND THAT IS A MEASUREMENT RATHER THAN AN
+OMISSION.** Written the way `spec-basic-graphics-g6.md` §1 names them —
+`DRAW"XA$;"` with `A$="R5"`, and `DRAW"R=A;"` with `A=5` — **BOTH MACHINES DREW
+NOTHING AND NEITHER RAISED**: the reading was `4` on each side, the background.
+🔴 **A row agreeing on an ABSENCE both sides produce says nothing about either of
+them**, so the rows are gone rather than banked. The spec's own error table has
+`=var`/`X var` WITHOUT the `;` raising ERR 5, so the `;` form is reaching
+something, and the MSX1 `X` command is documented elsewhere as taking a string
+DESCRIPTOR ADDRESS rather than a name. **Two guesses is where guessing stops:**
+that needs an isolated probe with a control, not a third row shape.
       ⚠️ **`TXTMAX` IS NOW BOUNDED BY `DETOKBUF`, NOT BY FREE RAM** — at 1280 B
       it does not fit the 1024 B window, so `$BB00` is the stop until DETOKBUF
       is dealt with. Of D-LINEMAX's 1792 B, **1024 recovered, 768 still charged**.

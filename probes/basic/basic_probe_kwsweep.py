@@ -1238,6 +1238,63 @@ SWEEP: list[tuple[str, str, str | None, str, str]] = [
      "NOECHO:[E FORM:movement a DIFFERENT direction command -- `D` draws DOWN, so this reads a "
      "pixel below the start where the `R` row reads one to the right. 15 drawn, "
      "4 blank."),
+    # 🌾 D-KWDRAW9: the other NINE forms of the command language, every one read
+    # back with `POINT` the way the two rows above are. spec-basic-graphics-g6.md
+    # §1 is the surface they come from. The background in SCREEN 2 is 4 and the
+    # drawn colour 15 unless a row says otherwise, so 4 and 15 are the two answers
+    # every reading below is built out of.
+    ("drawkw_c", 'draw"m50,50"',
+     'SCREEN2:PSET(10,10),15:DRAW"M50,50":A=POINT(30,30):SCREEN0:PRINT"[2y";A;"]"',
+     "stored",
+     "NOECHO:[2y FORM:move-absolute 15 at (30,30): `M` DRAWS a line to the absolute "
+     "point, so the midpoint of (10,10)-(50,50) is set"),
+    ("drawkw_d", 'draw"m+20,+0"',
+     'SCREEN2:PSET(10,10),15:DRAW"M+20,+0":A=POINT(25,10):SCREEN0:PRINT"[2z";A;"]"',
+     "stored",
+     "NOECHO:[2z FORM:move-relative 15 at (25,10): the SIGNED operands are a "
+     "DISPLACEMENT from (10,10), so the line ends at (30,10). Read as ABSOLUTE it "
+     "would go to (20,0) and (25,10) stays 4"),
+    ("drawkw_e", 'draw"bm50,50r5"',
+     'SCREEN2:PSET(10,10),15:DRAW"BM50,50R5":A=POINT(30,30):B=POINT(52,50):SCREEN0:PRINT"[3a";A;B;"]"',
+     "stored",
+     "NOECHO:[3a FORM:blank-prefix the move drew NOTHING on the way (30,30) and the "
+     "`R5` after it drew at the NEW place (52,50). Reading only the first would be "
+     "satisfied by a DRAW that did nothing at all"),
+    ("drawkw_f", 'draw"nr5d3"',
+     'SCREEN2:PSET(10,10),15:DRAW"NR5D3":A=POINT(12,10):B=POINT(10,12):SCREEN0:PRINT"[3b";A;B;"]"',
+     "stored",
+     "NOECHO:[3b FORM:no-update-prefix the `R5` drew AND the cursor went back, so "
+     "the `D3` after it starts from (10,10) again. Without `N` the D3 would start "
+     "at (15,10) and (10,12) stays 4"),
+    ("drawkw_g", 'draw"c7r5"',
+     'SCREEN2:PSET(10,10),15:DRAW"C7R5":A=POINT(14,10):SCREEN0:PRINT"[3c";A;"]"',
+     "stored",
+     "NOECHO:[3c FORM:colour 7, and the two rows above pass `C15` which IS THE "
+     "DEFAULT FOREGROUND -- they say nothing about `C` at all. 7 is neither the "
+     "default nor the background"),
+    ("drawkw_h", 'draw"s8r2"',
+     'SCREEN2:PSET(10,10),15:DRAW"S8R2":A=POINT(13,10):SCREEN0:PRINT"[3d";A;"]"',
+     "stored",
+     "NOECHO:[3d FORM:scale `S` is in QUARTERS and the default is 4, so `S8R2` "
+     "travels FOUR pixels where the default `R2` travels two and leaves (13,10) "
+     "at 4"),
+    ("drawkw_i", 'draw"a1r5"',
+     'SCREEN2:PSET(10,50),15:DRAW"A1R5":A=POINT(10,47):B=POINT(13,50):SCREEN0:PRINT"[3e";A;B;"]"',
+     "stored",
+     "NOECHO:[3e FORM:angle the 90-degree rotation: `R` stops going RIGHT. Both "
+     "points are read so the reading says WHICH way it turned rather than only "
+     "that it did"),
+    # ⛔ `X<var>;` AND `=<var>;` HAVE NO ROW, AND THE REASON IS A MEASUREMENT.
+    # Written the way spec-basic-graphics-g6.md §1 names them -- `DRAW"XA$;"` with
+    # `A$="R5"`, and `DRAW"R=A;"` with `A=5` -- BOTH MACHINES DREW NOTHING and
+    # NEITHER RAISED: the reading was `4` on each side, which is the background.
+    # 🔴 THAT IS A ROW AGREEING ON AN ABSENCE, and an absence both sides produce
+    # says nothing about either of them. The spec's own error table has
+    # `=var`/`X var` WITHOUT the `;` raising ERR 5, so the `;` form is reaching
+    # something -- and the MSX1 `X` command is documented elsewhere as taking a
+    # string DESCRIPTOR ADDRESS rather than a name, which `VARPTR$` (MSX2) is the
+    # usual way to spell. Two guesses is where guessing stops: this needs an
+    # ISOLATED PROBE with a control, not a third row shape.
     # 🔴 THE CRUNCH IS `sprite on`, NOT `sprite$(0)=...`, AND THE FIRST CUT TAUGHT
     # ME WHY. tier_table's WORD regex keeps a trailing `$` (so STR$ and MID$ match),
     # which makes `sprite$(0)="x"` tokenise to SPRITE$ -- and the kwtable keyword is
