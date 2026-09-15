@@ -507,12 +507,14 @@ FORMS: dict[str, tuple[tuple[str, ...], str]] = {
     "INPUT$": (
         ("console", "channel"),
         "INPUT$(n) reads n characters from the KEYBOARD and INPUT$(n,#f) from a "
-        "CHANNEL -- two sources, two forms. WARNING: the console form is MISSING "
-        "here. str_inputd (basic/strvar.asm) requires `,#f` -- its own comment "
-        "says \"file form requires '#f'\" -- and falls to str_eval_no without it, "
-        "so `A$=INPUT$(1)` is a Syntax error where the reference returns the "
-        "keypress. Measured the moment the response channel made it executable at "
-        "all; the row had been CRUNCH-ONLY since it was written.",
+        "CHANNEL -- two sources, two forms. Both ship: the console form landed "
+        "2026-09-16 (D-INPDCON) as a FOURTH ARL_GETBYTE source rather than a "
+        "second copy of the read loop, str_inputd_read already consuming n bytes "
+        "into STRSCR through that vector. It had been the LAST MISSING keyword in "
+        "the sweep -- str_inputd required `,#f` and fell to str_eval_no without "
+        "it. The CHANNEL form shipped long before but had NO ROW OF ITS OWN: it "
+        "was exercised only inside printhash, as the instrument reading PRINT #'s "
+        "bytes back, so it scored that verb and not this one.",
     ),
     "INPUT": (
         ("no-prompt", "prompt", "multi-variable"),

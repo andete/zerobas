@@ -1975,6 +1975,29 @@ arl_getbyte:
                 ld      hl,(ARL_GETBYTE)
                 jp      (hl)
 
+; --- chget_getbyte: ARL_GETBYTE source for the CONSOLE (D-INPDCON) ---------
+; `INPUT$(n)` with no `,#f` reads n characters from the KEYBOARD. That is the
+; same loop the file form already runs -- str_inputd_read consumes INDLR_N bytes
+; into STRSCR through this very vector -- so the console form is a SOURCE, not a
+; second loop: 7 bytes here instead of a duplicate of sidr_lp.
+; Source: CHGET $009F, the BIOS "wait for a character" entry (MSX2 Technical
+; Handbook BIOS list); page 0, mapped throughout.
+; ⚠️ IT NEVER REPORTS EOF. The file sources set CF at end-of-stream and
+; str_inputd_read stops early on it; the keyboard has no end, so this always
+; returns CF clear and the loop runs exactly n times -- which is the reference's
+; behaviour: INPUT$(n) waits for n keys.
+; ⚠️ AND IT DOES NOT ECHO. Measured on both references (kwsweep `inputdol_b`,
+; `A$=INPUT$(1):PRINT"[0y";A$;"]"` with `RESPOND:Z` reads `[0yZ]` -- one Z, from
+; the PRINT; an echoing INPUT$ would have put a second one before the `[`).
+; CHGET does not echo, so this is the absence of code rather than code.
+; out: A = the key, CF clear. HL preserved (the other sources promise it).
+chget_getbyte:
+                push    hl
+                call    CHGET
+                pop     hl
+                or      a                   ; CF=0: never EOF
+                ret
+
 ; mrg_storeline — 0-terminate LINEBUF at MRG_PTR and, if it is a numbered (or blank)
 ; line, hand it to dispatch_line (same tokenise + store_line path as a typed line).
 ;   out: CF set = a non-blank, non-numbered line (error); CF clear = stored/skipped.

@@ -20674,6 +20674,40 @@ NEXT SLICES. Do not re-ask.**
    `VARPTR(#n)`, `INPUT$`'s console form — CARVE FIRST, THEN IMPLEMENT ALL FOUR.**
    A carve slice is now the PREREQUISITE; they land together once there is room,
    not piecemeal into 5 B.
+   🟢 **THE CARVE IS DELIVERED, AND BY RULING 5's OWN LEVER.** Moving the four
+   FAT-light disk verbs into `disk.rom` (D-DISKVERB..4, 2026-09-15) took main
+   page 1 from **3 B to 153 B** and the low region from **0 B to 36 B** — "disk
+   code belongs in the disk ROM", pulled first, exactly as ruling 5 said. The
+   first customer was `FIELD`/`LSET`/`RSET`'s diskless gate (D-FLDGATE, 20 B).
+   ✅ **`INPUT$`'s CONSOLE FORM IS THE SECOND, SHIPPED 2026-09-16 (D-INPDCON),
+   21 B.** `A$=INPUT$(1)` answered `Syntax error` where both references read a
+   key — **the last MISSING keyword in the whole sweep, so `kwsweep` now reads
+   `DIVERGENT=2 SUPPORTED=358` with no MISSING line at all.** It reuses the file
+   form's loop rather than copying it: `str_inputd_read` already consumes
+   `INDLR_N` bytes into `STRSCR` through the `ARL_GETBYTE` vector, so the console
+   form is a FOURTH SOURCE (7 B of `CHGET`) plus the branch that points the
+   vector at it. No channel, so no `fch_check` and no `fch_select`.
+   🎯 **AND THE CHANNEL FORM HAD NO ROW OF ITS OWN**, which is why `INPUT$` read
+   `0/2` while half of it worked: `INPUT$(n,#f)` was exercised only INSIDE the
+   `printhash` row, as the INSTRUMENT that reads `PRINT #`'s bytes back, so it
+   scored `PRINT_#`. **A form measured only as another verb's instrument is a
+   form with no row** — the same class as `COPY` and `LFILES` having no row in
+   the suite that appears to gate them. It has one now; `INPUT$` is **2/2**.
+   🔴 **IT IS STILL TIER 0, AND THE REASON IS AN INSTRUMENT LIMIT WORTH ITS OWN
+   ITEM: `INPUT$` CANNOT BE KNIFE-CUT.** `tools/tier_table.py` reads *"not
+   knife-proven CONNECTED"*, and that is structural rather than a blind row:
+   `kwknife.py`'s `plant_fn` cuts a `cp <TOKEN>` / conditional-jump chain, and
+   **`INPUT$` HAS NO TOKEN** — MSX tokenises `INPUT` and `$` separately, which
+   `tools/kwforms.py` says out loud. It is reached by a SUFFIX test
+   (`str_eval_maybe_inputd`: `ld a,(hl) / cp '$' / jr z,str_inputd`), a shape the
+   knife has no cut for. Same class as `MAX`, which "is not dispatched this way
+   at all" — NOT the same as a row that fails to notice a cut.
+   ⚠️ **A FOURTH CUT SHAPE IS THE FIX AND IT IS NOT A FREEBIE**: cutting on
+   `cp '$'` by operand is ambiguous (a `$` compare is everywhere in a BASIC that
+   has string suffixes), so it would have to anchor on the SYMBOL
+   `str_eval_maybe_inputd` and patch the `cp` inside it. A wrong cut shape
+   produces FALSE `CONNECTED` readings, which is worse than none — so it is filed
+   here rather than improvised alongside the feature it would score.
 3. 💾 **The disk fixture: ADD A SECOND `.BAS`, LEAVE `PROG.BAS` ALONE.** Nothing
    existing changes its bytes, so `ramfree`, `diskbasic` and every other suite
    that mounts `disk/test720.dsk` keeps reading what it read. The new file PRINTs

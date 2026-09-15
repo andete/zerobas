@@ -3147,10 +3147,25 @@ SWEEP: list[tuple[str, str, str | None, str, str]] = [
     # INDEPENDENTLY of the statement the console-INPUT rows below are measuring.
     ("inputdol_b", 'a$=input$(1)',
      'A$=INPUT$(1):PRINT"[0y";A$;"]"',                 "stored",
-     "NOECHO:[0y RESPOND:Z SUBJECT:INPUT$ the CONSOLE form of `INPUT$`, "
-     "measurable for the first "
-     "time now a response can be typed. ref `[0yZ]`, zb `Syntax error` -- the form "
-     "is MISSING here (str_inputd requires `,#f`). Filed."),
+     "NOECHO:[0y RESPOND:Z SUBJECT:INPUT$ FORM:console the CONSOLE form of "
+     "`INPUT$`, measurable for the first time once a response could be typed. "
+     "✅ SHIPPED 2026-09-16 (D-INPDCON): it was the LAST MISSING keyword in this "
+     "sweep -- `str_inputd` required `,#f` and fell to str_eval_no without it, so "
+     "`A$=INPUT$(1)` answered Syntax error where both references read a key. Both "
+     "sides now read `[0yZ]`. One Z, from the PRINT: an ECHOING INPUT$ would put a "
+     "second before the `[`, which is how `no echo` is a reading here and not an "
+     "assumption."),
+    # 🎯 THE CHANNEL FORM, WHICH HAD NO ROW OF ITS OWN. `INPUT$(n,#f)` was
+    # exercised only INSIDE printhash below, where it is the INSTRUMENT that reads
+    # PRINT #'s bytes back -- so it scored `PRINT_#` and INPUT$ got nothing for it.
+    # A form measured only as another verb's instrument is a form with no row.
+    ("inputdol_c", 'a$=input$(3,#1)',
+     'OPEN"IDL.TXT"FOR OUTPUT AS#1:PRINT#1,"ABC":CLOSE#1:OPEN"IDL.TXT"FOR INPUT AS#1:A$=INPUT$(3,#1):CLOSE#1:PRINT"[";A$;"]"',
+     "stored",
+     "NEEDS-DISK: " "SUBJECT:INPUT$ FORM:channel the CHANNEL form -- n bytes out "
+     "of an open file rather than off the keyboard. Written and read back in one "
+     "program so the row cannot pass on a file some earlier case left behind: "
+     "`[ABC]`."),
     # ⌨️ D-KWRESPOND: bare CONSOLE INPUT, which has NEVER had a row -- both of
     # INPUT's rows drive the FILE form and now belong to `INPUT #`.
     ("inputcon", 'input a$',

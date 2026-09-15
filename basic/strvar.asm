@@ -424,7 +424,24 @@ str_inputd:
                                             ; SKIPS SPACES first, which a bare
                                             ; `ld a,(hl)` did not. BYTE-NEUTRAL:
                                             ; 3 B for 3 B.
+                jr      z,sid_filef
+                ; 🔴 D-INPDCON: `)` HERE IS THE CONSOLE FORM, and until 2026-09-16
+                ; it fell to str_eval_no -- `A$=INPUT$(1)` answered `Syntax error`
+                ; where both references read a key. It was the ONE remaining
+                ; MISSING keyword in the whole kwsweep.
+                ; 🎯 IT REUSES THE FILE FORM'S LOOP. str_inputd_read already
+                ; consumes INDLR_N bytes into STRSCR through the ARL_GETBYTE
+                ; vector, so the console form only has to point that vector at the
+                ; keyboard and join at sid_read. No channel, so no fch_check and
+                ; no fch_select -- there is nothing to select.
+                cp      ')'
                 jp      nz,str_eval_no
+                inc     hl                  ; HL past ')'
+                push    hl                  ; guard the eval cursor; str_pub_ok pops
+                ld      hl,chget_getbyte
+                ld      (ARL_GETBYTE),hl
+                jr      sid_read
+sid_filef:
                 inc     hl
                 ld      a,(hl)
                 cp      '#'                 ; file form requires '#f'
