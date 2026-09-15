@@ -1878,7 +1878,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:19099 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:19112 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -2044,7 +2044,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:6645 (T-6FE392)8 (T-529ABE)` from `TODO.md:17750 (T-529ABE)`: a
+      `TODO.md:6645 (T-6FE392)8 (T-529ABE)` from `TODO.md:17763 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -7489,7 +7489,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:17750 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:17763 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -12418,11 +12418,24 @@ finds zero shared names (a renamed block would otherwise make it silently blind)
       📏 Cost unmeasured. `KEY` is **2/4** forms (D-KEYRIG covered `assign`);
       these two are the rest.
 
-- [ ] 🔴 **`FIELD`, `LSET` AND `RSET` HAVE NO DISK-PRESENCE GATE. THE HOOKS
-      ARE NOW IDENTIFIED; THE BYTES ARE NOT THERE YET.**
-      🔭 SCOUT-THEN-ASK — the measuring is DONE (three hooks named, three
-      controls passed, `GET`/`PUT` excluded); what is left is 16-24 B of main
-      page 1, which had 3 B free on 2026-09-15.
+- [x] ✅ **`FIELD`, `LSET` AND `RSET` NOW HAVE THE DISK-PRESENCE GATE
+      (D-FLDGATE, 2026-09-15).** All three answer **ERR 5** on the diskless
+      target, matching the VG-8020, where they used to answer the CHANNEL's own
+      errors (`FIELD` 59; `LSET`/`RSET` simply RAN). `h.field` is UNPINNED — a
+      pin records a divergence, so removing one is what fixing it looks like —
+      and 🔴 **`LSET`/`RSET` GAINED THE ROWS THEY NEVER HAD**, the same gap that
+      let `LFILES` run wrong for as long as it existed.
+      💰 **THE BLOCKER WAS BYTES AND THE HOOK RE-ARCHITECTURE PAID IT.** This
+      item waited on 16-24 B against main page 1's 3 B free; moving KILL, NAME,
+      COPY and FILES/LFILES into `disk.rom` (D-DISKVERB..4) took that to 153 B,
+      and the gates cost **20 B** — measured, 153 -> 133 B. It was filed as "a
+      good early customer" for the carve and it was the first.
+      ⚠️ One gate SITE serves `LSET` and `RSET`, but each consults its OWN cell
+      (`$FE21` / `$FE26`): sharing the CODE is not sharing the CELL, and
+      un-claiming one must break one verb — which is how both were identified.
+      *(The scouting that made this a lookup rather than a decision:)*
+      🔭 the measuring was DONE (three hooks named, three controls passed,
+      `GET`/`PUT` excluded as needing no gate).
       Measured 2026-09-15 (D-NODISKGAP,
       [`scratchpad/nodiskgap_probe.py`](scratchpad/nodiskgap_probe.py), four
       sides with controls): the diskless VG-8020 answers **ERR 5** to `FIELD` and

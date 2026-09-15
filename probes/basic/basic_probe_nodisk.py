@@ -96,11 +96,25 @@ CASES = [
     # goes in first and the gate is shared, so there is nowhere left to enter that
     # skips it); the row is here so nothing can quietly un-gate it again.
     ("h.lfiles", 'LFILES'),
-    # `FIELD` has NO gate at all and no hook of its own to gate with -- see
-    # PINNED below. Asked in its ARGUMENT form: a bare `FIELD` could be refused
-    # for its syntax rather than by the disk gate, and both forms diverge the
-    # same way, which is what says the finding is the GATE and not the parse.
+    # ✅ `FIELD` IS GATED SINCE D-FLDGATE (2026-09-15) and this row now AGREES;
+    # it was pinned at ('ERR 5 ', 'ERR 59 ') and is unpinned below. Asked in its
+    # ARGUMENT form: a bare `FIELD` could be refused for its syntax rather than
+    # by the disk gate, and both forms diverged the same way, which is what said
+    # the finding was the GATE and not the parse.
     ("h.field",  'FIELD#1,2 AS A$'),
+    # 🔴 LSET AND RSET HAD NO ROW AT ALL until D-FLDGATE, which is the same gap
+    # that let LFILES run wrong for as long as it existed. D-NODISKGAP measured
+    # both: the diskless VG-8020 answers ERR 5 where this tree simply RAN them.
+    # They are gated now, so these rows agree -- and an agreeing row is what
+    # makes the next regression loud.
+    # ⚠️ THEIR CF-3300 COLUMN READS `ERR 2` AND THAT IS THIS PROBE'S OWN SHAPE,
+    # not a finding about LSET. The template appends `;` to line 30, and on a
+    # machine WITH a disk these two SUCCEED -- so the trailing `;` is then a
+    # syntax error. The scored comparison is vg8020 vs zb-nodisk (`ref == nod`),
+    # which both answer ERR 5, so the row is sound; the middle column is not a
+    # statement about the reference's LSET.
+    ("h.lset",   'LSET A$="X"'),
+    ("h.rset",   'RSET A$="X"'),
     # 🔴 D-NODISKDEN (2026-09-15) — JOOST'S DENOMINATOR. He ruled that *"every
     # hook claimed on 3300 we don't presumably is a sign of a defect or
     # divergence"*, and the second half of that is this row set: it asked about 17
@@ -184,9 +198,14 @@ CONTROLS = {"c.print", "c.str", "v.eof", "v.lof"}
 # basic/sysvars.inc:3139-3144 has no slot for it -- so fixing this needs a
 # decision about WHAT the presence test should be, not just a call. Filed in
 # TODO.md; borrowing `H_FILE` would work mechanically and would be a lie.
+# ✅ `h.field` LEFT THIS SET on 2026-09-15 (D-FLDGATE). It was pinned at
+# ("'ERR 5 '", "'ERR 59 '") -- the VG-8020's ERR 5 against our channel's own
+# ERR 59 -- because `FIELD` had no disk-presence gate and main page 1 had 3 B
+# free to build one in. The hook re-architecture paid for the bytes, the hook
+# address was already measured ($FE2B), and the row now AGREES. A pin is a
+# record of a divergence, so removing one is what FIXING it looks like.
 PINNED: dict[str, tuple[str, str]] = {
     "h.open":  ("'ERR 2 '", "'load error                             '"),
-    "h.field": ("'ERR 5 '", "'ERR 59 '"),
 }
 
 

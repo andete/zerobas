@@ -93,6 +93,12 @@ FSECTOR_BUF     equ     $E5C0   ; the buffer it names: basic/sysvars.inc's FSECT
                                 ; here because the disk ROM sees no sysvars -- the dskio-acceptance
                                 ; `dir`/`boot` rows read the buffer THROUGH the pointer, so a drift
                                 ; between the two definitions reads garbage there, not silence
+; D-FLDGATE: field.asm's three verbs. Addresses MEASURED on the CF-3300 by
+; un-claiming each cell and seeing which verb starts answering ERR 5
+; (scratchpad/hookid_probe.py); consecutive, 5 apart, the shape a hook table has.
+H_LSET          equ     $FE21   ; LSET
+H_RSET          equ     $FE26   ; RSET
+H_FIELD         equ     $FE2B   ; FIELD
 H_FILE          equ     $FE7B   ; FILES
 
 ; --- Disk scratch RAM (disk/PROVENANCE.md §Scratch RAM) --------------------

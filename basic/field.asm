@@ -254,7 +254,22 @@ fld_key_de:
 ; ===========================================================================
 ; HL = cursor at the FIELD token. Drops any prior fields on the channel, then walks
 ; the comma list assigning each variable a slice [running offset, width].
+; 🔴 D-FLDGATE (2026-09-15): THE DISK-PRESENCE GATE. Measured on four sides
+; (D-NODISKGAP): the diskless VG-8020 answers ERR 5 to `FIELD` and to
+; `FIELD#1,2 AS A$`, where this tree answered 24 and 59 -- the CHANNEL's own
+; errors, because nothing here asked whether a disk ROM exists. The zb-DISK
+; column already matched the CF-3300 on both forms, so the VERB was never wrong;
+; only the diskless target was.
+; ⚠️ THE GATE COMES BEFORE THE PARSE, as it does for every other disk verb: the
+; reference answers ERR 5 to the BARE form too, so a malformed FIELD must not
+; reach its own syntax error first on a machine that has no disk ROM at all.
+; 💰 It waited on bytes -- main page 1 had 3 B free on 2026-09-15 -- and the
+; hook re-architecture (D-DISKVERB..D-DISKVERB4) is what paid for it.
 ex_field:
+                push    hl                  ; HL IS THE STATEMENT CURSOR
+                ld      hl,H_FIELD
+                call    chan_gate           ; unclaimed -> ERR 5, trappable
+                pop     hl
                 call    inc_skip           ; past the FIELD token
                 cp      '#'
                 jr      nz,exf_havech
@@ -467,13 +482,26 @@ fadd_free:
 ; ===========================================================================
 ; LSET / RSET v$ = s$
 ; ===========================================================================
+; 🔴 D-FLDGATE: the same gate, and ONE site for both verbs -- but each consults
+; its OWN cell, so the hook address rides beside the justify flag rather than
+; being shared. Sharing the CELL would be a different claim from sharing the
+; CODE: un-claiming H_LSET must break LSET and not RSET, which is exactly how
+; both addresses were identified in the first place.
+; Measured diskless (D-NODISKGAP): the VG-8020 answers ERR 5 to `LSET A$="X"`
+; and `RSET A$="X"`, where this tree simply RAN them.
 ex_lset:
                 xor     a                   ; justify = left
+                ld      de,H_LSET
                 jr      lrset_common
 ex_rset:
                 ld      a,1                 ; justify = right
+                ld      de,H_RSET
 lrset_common:
                 ld      (LRSET_JUST),a
+                push    hl                  ; HL IS THE STATEMENT CURSOR
+                ex      de,hl               ; HL = this verb's own hook cell
+                call    chan_gate           ; unclaimed -> ERR 5, trappable
+                pop     hl
                 inc     hl                  ; past the LSET/RSET token
                 call    req_letter          ; D-NGRAM: a FIELD target must be a name
                 call    var_str_type        ; A=1 if `$`

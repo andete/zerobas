@@ -2259,6 +2259,9 @@ hook_tab:
                 dw      H_KILL, hk_kill      ; D-DISKVERB: the FIRST verb whose
                                              ; BODY lives here, not just its gate
                 dw      H_FILE, hk_files     ; D-DISKVERB4: FILES + LFILES
+                dw      H_LSET, hk_present   ; D-FLDGATE: field.asm's three. The
+                dw      H_RSET, hk_present   ; bodies stay main-side for now; the
+                dw      H_FIELD, hk_present  ; hook buys the DISKLESS ERR 5
                 dw      H_DSKO, hk_present   ; D-DSKIO: both bodies are a sub-ROM tenant,
                 dw      H_DSKI, hk_present   ; the hook buys the diskless ERR 5
                 dw      H_COPY, hk_copy      ; D-DISKVERB3: body here too

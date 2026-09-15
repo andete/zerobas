@@ -3138,6 +3138,12 @@ H_CVS           equ     $FE44   ; CVS handler
 H_CVD           equ     $FE49   ; CVD handler
 H_NAME          equ     $FDF9   ; NAME handler   (channel verbs, D-CHANHOOK)
 H_KILL          equ     $FDFE   ; KILL handler
+; D-FLDGATE: field.asm's three verbs. Addresses MEASURED on the CF-3300 by
+; un-claiming each cell and seeing which verb starts answering ERR 5
+; (scratchpad/hookid_probe.py); consecutive, 5 apart, the shape a hook table has.
+H_LSET          equ     $FE21   ; LSET handler
+H_RSET          equ     $FE26   ; RSET handler
+H_FIELD         equ     $FE2B   ; FIELD handler
 H_FILE          equ     $FE7B   ; FILES handler
 H_DSKO          equ     $FDEF   ; DSKO$ handler -- 🔴 WAS $FDF4 AND THAT WAS WRONG
                                 ; (D-DSKOHOOK 2026-09-15). The CF-3300 claims $FDEF and does
