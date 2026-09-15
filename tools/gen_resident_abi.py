@@ -98,6 +98,8 @@ REQUIRED_DISK_RAM = [
                                 # which main's kill_status decodes after the hook
     "DISK_FCB_NAME",            # D-DISKVERB2: the one 8.3 name field, which NAME
                                 # fills twice -- old to look up, then new to stamp
+    "FILES_HASPAT",             # D-DISKVERB4: 1 = a filespec pattern is staged,
+                                # 0 = list the whole directory
     "FAC",                      # the packed float accumulator
     "FACTYP",                   # 2 / 4 / 8
 ]

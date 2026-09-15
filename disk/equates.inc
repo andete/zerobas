@@ -34,6 +34,14 @@ DISKOP_SEL_COPY equ     7       ; dirverb: COPY's body, sector by sector (sysvar
 ; TO_TOKEN is the crunched `TO`, which the VG-8020 produces inside a COPY line
 ; too (D-COPY). Read straight out of the program text here, as NAME reads `AS`.
 TO_TOKEN        equ     $D9     ; basic/sysvars.inc
+; D-DISKVERB4: FILES and LFILES share ONE hook cell, so the handler reads the
+; verb's own token back out of the program text to tell them apart. Both are
+; single-byte. basic/sysvars.inc; oracle-locked (basic/kwtable.inc).
+FILES_TOKEN     equ     $B7
+LFILES_TOKEN    equ     $BB
+COLON           equ     $3A     ; ':' statement separator (basic/sysvars.inc)
+DISKOP_SEL_FILES equ    2       ; dirverb: FILES  -> screen, packed rows (sysvars.inc)
+DISKOP_SEL_LFILES equ   3       ; dirverb: LFILES -> printer, one per line (sysvars.inc)
 
 ; --- Standard hook + entry addresses (disk/PROVENANCE.md §INIT) -------------
 ; HPHYD is the standard PHYDIO hook a disk ROM installs so a host's physical disk

@@ -149,107 +149,30 @@ disk_error:
 ; 🎯 The selector now goes in FIRST and the gate is shared, so a third head
 ; cannot repeat this: there is nowhere to enter that skips it. Costs 2 B against
 ; the 10 B a second inline gate would have.
+; 🧭 D-DISKVERB4 (2026-09-15): THE BODY IS IN disk.rom, as `hk_files`. Both
+; verbs share ONE hook cell (H_FILE, which is what the reference gives them), so
+; the handler tells them apart by reading the verb's own TOKEN back out of the
+; program text at FN_RESUME-1 -- the same trick NAME uses for `AS` and COPY for
+; `TO`. That is why these two trampolines collapse into one body here.
+;
+; 🎯 THE DECODE IS kill_status, UNCHANGED. do_files ended `or a / jr z,df_notfound
+; / dec a / jr nz,disk_error / jp exec_stmt`, which IS kill_status instruction for
+; instruction -- so FILES joins KILL, NAME and COPY on the shared tail rather than
+; keeping a fourth copy of it.
+;
+; 🔴 D-NODISKGAP's finding still holds and is now structural: `ex_lfiles` used to
+; enter PAST the gate, so a diskless LFILES answered differently from a diskless
+; FILES. There is only one entry now, so that divergence cannot come back by
+; someone adding a second one.
 ex_files:
-                ld      a,DISKOP_SEL_FILES  ; screen: CHPUT, packed rows
-                jr      ex_fil_gate
 ex_lfiles:
-                ld      a,DISKOP_SEL_LFILES ; printer: LPTOUT, one entry per line
-ex_fil_gate:
-                push    af                  ; the selector, across the gate
-                push    hl                  ; ⚠️ HL IS THE STATEMENT CURSOR HERE and
-                ld      hl,H_FILE           ; the gate needs it for the hook address;
-                call    chan_gate           ; clobbering it made all three verbs answer
-                pop     hl                  ; ERR 2 on the DISK build -- caught by the
-                pop     af                  ; gate's own zb-disk column, not by review
-
-; do_files — evaluate the optional filespec, run the listing in the tenant, then
-; dispatch on how it went. ⚠️ D-FNEXPR2: "evaluate", not "parse" -- the filespec
-; is a string EXPRESSION (`FILES A$`, `FILES A$+".BAS"`), which is why the op
-; selector below can no longer be parked in DISKOP_OP across it.
-; Entry: A = the DISKOP_SEL_* op, HL -> the statement token.
-do_files:
                 inc     hl                  ; HL -> bytes after the token
-                ; 🔴 D-FNEXPR2: THE OP SELECTOR CAN NO LONGER BE PARKED IN
-                ; `DISKOP_OP` ACROSS THE PARSE, AND THAT IS A CONSEQUENCE OF
-                ; MAKING THE FILESPEC AN EXPRESSION. It used to be safe, and the
-                ; note here said why: parse_disk_fcb's fcbname tenant aliases
-                ; DISKOP_HL/DISKOP_STATUS as BN_PTR/BN_STAT and "touches
-                ; DISKOP_OP nowhere". That claim is still true and is no longer
-                ; sufficient -- the parse now begins with `str_eval`, which can
-                ; run an arbitrary string expression, and `INPUT$(n,#ch)` reaches
-                ; the drive through `fatprim_bounce`, whose FIRST INSTRUCTION is
-                ; `ld (DISKOP_OP),a` (basic/fat.asm). `FILES INPUT$(5,#1)` would
-                ; hand the dirverb tenant a FAT-primitive selector.
-                ; 🎯 SO THE SELECTOR RIDES THE STACK AND IS WRITTEN WHERE
-                ; do_kill AND do_name ALREADY WRITE THEIRS -- immediately before
-                ; the `subrom_call`, which is the house shape; do_files was the
-                ; one verb that wrote it at the head, which is exactly why it was
-                ; the one verb this could bite.
-                ; ⚠️ Every abort between the push and the pop is a `raise_error`,
-                ; which resets SP from SAVSTK, so none of them can leak the
-                ; pushed word. The one abort that RETURNS -- the DISKSLOT check
-                ; below -- is balanced by hand for that reason, and the check
-                ; still stands ahead of the `push hl` further down.
-                push    af                  ; the DISKOP_SEL_* op, across the parse
-                ; (1) a disk-ROM slot must have been recorded by the INIT scan.
-                call    diskslot_test
-                jr      nz,df_slotok
-                pop     af                  ; balance before the returning abort
-                jp      load_error
-df_slotok:
-                ; (1b) parse the optional "filespec" into a match pattern (with
-                ; '*'->'?' expansion via build_83_name); FILES_HASPAT flags its
-                ; presence. The text cursor is advanced PAST the filespec here, so
-                ; the saved cursor below already points at the statement's tail.
-                ; ✅ D-FNEXPR2: THE FILESPEC IS A STRING EXPRESSION, and the
-                ; test is "is there an ARGUMENT at all", not "is there a QUOTE".
-                ; 🔴 THE QUOTE TEST WAS NOT MERELY REFUSING `FILES A$` -- IT WAS
-                ; ANSWERING THE WRONG QUESTION, and that is D-FILESIDE's whole
-                ; finding. A non-quote fell to df_nofilespec, so zerobas LISTED
-                ; THE ENTIRE DIRECTORY and only then derailed on the unconsumed
-                ; argument; the CF-3300 lists nothing (`f.filesvarl`: 0 entries
-                ; + `File not found`, against 5 entries + `Syntax error` here).
-                ; No row could see that until D-FILESIDE built `listface`,
-                ; because the FACE alone reads the same either way.
-                ; ⚠️ End-of-statement and ':' are the only two "no filespec"
-                ; forms -- bare `FILES` and `FILES:PRINT` -- and both must keep
-                ; listing (row f.filesbare is the positive control for exactly
-                ; that, 5 entries + OK). Anything else is an operand and goes to
-                ; fname_expr, whose non-string face is measured: `FILES 5` is
-                ; `Type mismatch` with ZERO entries listed (row n.filesnum).
-                call    skip_spaces
-                xor     a
-                ld      (FILES_HASPAT),a
-                ld      a,(hl)
-                or      a
-                jr      z,df_nofilespec     ; end of statement -> whole directory
-                cp      COLON
-                jr      z,df_nofilespec     ; `FILES:...` -> ditto
-                call    fname_expr          ; the filespec is an EXPRESSION; HL ->
-                                            ; the staged '"'-terminated copy
-                call    pdfcb_resume      ; DISK_FCB_NAME = 8.3 wildcard pattern
-                ld      a,1
-                ld      (FILES_HASPAT),a
-df_nofilespec:
-                pop     af                  ; the op selector, parked at the head
-                ld      (DISKOP_OP),a       ; asserted AFTER the evaluator, not
-                                            ; before it -- see the block at do_files
-                push    hl                  ; guard the text cursor across CALSLT
-                ld      ix,SUBROM_ENTRY_BASE_P1 + 3*SUBROM_IDX_DIRVERB
-                call    subrom_call
-                pop     hl                  ; restore it (already past the filespec)
-                jp      c,load_error        ; sub-ROM absent -> error
-                ; DISKOP_STATUS carries THREE dispositions back, because Cy cannot
-                ; ride through CALSLT (sub/format.asm's rule):
-                ;   0 = nothing matched      -> File not found
-                ;   1 = listed ok
-                ;   2 = mount / DSKIO error  -> load error (the old disposition)
-                ld      a,(DISKOP_STATUS)
-                or      a
-                jr      z,df_notfound
-                dec     a
-                jr      nz,disk_error       ; D-DISKERR: 2 = mount / DSKIO -> the mapped code
-                jp      exec_stmt
+                ld      (FN_RESUME),hl      ; stage the cursor for the handler
+                ld      hl,H_FILE
+                call    chan_gate           ; unclaimed -> ERR 5 (trappable);
+                                            ; claimed -> disk.rom ran the whole verb
+                ld      hl,(FN_RESUME)
+                jp      kill_status         ; 0 none matched / 1 listed / 2 I-O
 ; df_notfound — R-LF4 + R-LF6: a filespec that matches nothing prints `File not
 ; found`, on the SCREEN, for LFILES *and* for FILES. Measured on the CF-3300 for
 ; both verbs (lfl-noneb / lfl-nonef); zerobas printed nothing at all before this

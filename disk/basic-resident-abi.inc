@@ -18,12 +18,13 @@ STRSCR equ 0E26DH
 FN_RESUME equ 0E227H
 DISKOP_STATUS equ 0E9FCH
 DISK_FCB_NAME equ 0E0DCH
+FILES_HASPAT equ 0F009H
 FAC equ 0F01CH
 FACTYP equ 0F01AH
 
 ; --- page-1 call-back targets: reached by an INTER-SLOT call (MSX2 TH), not an absolute one ---
-fname_expr equ 06E91H
-pdfcb_resume equ 06E8AH
+fname_expr equ 06E50H
+pdfcb_resume equ 06E49H
 dirverb_op equ 06C2FH
 main_fat_mount equ 063FEH   ; main's fat_mount
 main_fat_find equ 06402H   ; main's fat_find

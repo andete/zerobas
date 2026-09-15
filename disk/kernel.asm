@@ -2258,7 +2258,7 @@ hook_tab:
                 dw      H_NAME, hk_name      ; D-DISKVERB2: body here too
                 dw      H_KILL, hk_kill      ; D-DISKVERB: the FIRST verb whose
                                              ; BODY lives here, not just its gate
-                dw      H_FILE, hk_present
+                dw      H_FILE, hk_files     ; D-DISKVERB4: FILES + LFILES
                 dw      H_DSKO, hk_present   ; D-DSKIO: both bodies are a sub-ROM tenant,
                 dw      H_DSKI, hk_present   ; the hook buys the diskless ERR 5
                 dw      H_COPY, hk_copy      ; D-DISKVERB3: body here too
@@ -2509,6 +2509,67 @@ hkc_done:
                 ; not a style choice: the cell is a channel main's FAT primitives
                 ; marshal through too.
                 ld      (DISKOP_STATUS),a
+                scf                         ; CF=1: the hook is claimed
+                ret
+
+; --- hk_files: FILES and LFILES, in the disk ROM (MSX2 TH hook) -------------
+; D-DISKVERB4, spec-diskbasic-hook-rearchitecture.md phase 3, the last of the
+; FAT-light four.
+;
+; 🎯 ONE HOOK, TWO VERBS, AND THE TOKEN SAYS WHICH. H_FILE is the only cell the
+; reference gives this pair, so the selector cannot come from the hook. It is
+; read from the PROGRAM TEXT instead: FN_RESUME points just past the verb's own
+; token, so the byte before it is FILES_TOKEN or LFILES_TOKEN. Same trick as
+; NAME's `AS` and COPY's `TO` -- the text is RAM and mapped throughout, so no
+; call-back and no new sysvar.
+;
+;   in   FN_RESUME = the statement cursor, just past the FILES/LFILES token
+;   out  DISKOP_STATUS 0/1/2, decoded by the shared kill_status; CF = 1 (claimed)
+;
+; ⚠️ THE SELECTOR RIDES THE STACK ACROSS THE EVALUATOR, and that is D-FNEXPR2's
+; finding carried over rather than re-learned: the filespec is a string
+; EXPRESSION, and `FILES INPUT$(5,#1)` reaches the drive through fatprim_bounce,
+; whose FIRST instruction is `ld (DISKOP_OP),a`. Writing the selector before the
+; evaluator hands the dirverb tenant a FAT-primitive selector. An abort inside
+; the evaluator cannot leak the pushed word: raise_error resets SP from SAVSTK.
+hk_files:
+                ld      hl,(FN_RESUME)
+                dec     hl
+                ld      a,(hl)              ; the verb's own token
+                inc     hl
+                cp      LFILES_TOKEN
+                ld      a,DISKOP_SEL_FILES
+                jr      nz,hkf_sel
+                ld      a,DISKOP_SEL_LFILES
+hkf_sel:
+                push    af                  ; the selector, ACROSS the evaluator
+                xor     a
+                ld      (FILES_HASPAT),a    ; no pattern yet
+hkf_sp:
+                ld      a,(hl)              ; skip blanks before the filespec
+                cp      ' '
+                jr      nz,hkf_chk
+                inc     hl
+                jr      hkf_sp
+hkf_chk:
+                or      a
+                jr      z,hkf_run           ; end of statement -> whole directory
+                cp      COLON
+                jr      z,hkf_run           ; `FILES:...` -> ditto
+                ld      ix,fname_expr
+                call    calbak              ; an EXPRESSION; may RAISE (ERR 13)
+                ld      ix,pdfcb_resume
+                call    calbak              ; -> DISK_FCB_NAME (8.3 wildcard)
+                ld      a,1
+                ld      (FILES_HASPAT),a
+hkf_run:
+                pop     af                  ; the selector, asserted only now
+                ld      ix,dirverb_op
+                call    calbak
+                jr      nc,hkf_done         ; CF crosses -- MEASURED two-sided
+                ld      a,2                 ; sub-ROM absent -> the mount/I-O face
+                ld      (DISKOP_STATUS),a
+hkf_done:
                 scf                         ; CF=1: the hook is claimed
                 ret
 

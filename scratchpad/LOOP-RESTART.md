@@ -23,8 +23,27 @@ in `FN_RESUME`, because `chan_gate` needs HL for the hook cell and clobbers DE.
 Call-back targets go in `REQUIRED_DISK_CALLBACK`, 7 B a site, 0.156 ms a call.
 **Measured ABI: HL/DE/BC/A cross BOTH ways intact**; IX/IY are the ABI's own; a
 callee may RAISE and never return, so do nothing after a call-back that an abort
-would skip; and **CF across CALSLT was never measured — do not rely on it**,
-pre-set the failure disposition instead.
+would skip. **CF crosses too** — measured two-sided in the NAME slice, a callee
+that SETS carry comes back set and one that CLEARS it comes back clear, so a
+disposition may be read from it (the earlier "never measured, do not rely on it"
+is superseded).
+🔴 **BUT `DISKOP_STATUS` IS A SHARED CHANNEL, NOT THE HANDLER'S.** Main's FAT
+primitives are `ld a,DISKOP_SEL_* / jr fatprim_bounce` shims that marshal their
+own disposition through that same cell, so a handler may only write it **once,
+LAST**. Pre-setting it and letting later paths overwrite is what made `NAME ...
+AS ...` answer `Syntax error` at an empty drive — and it passed the happy-path
+row, because success rewrites the cell on the way out.
+🔴 **AND `disk.rom` HAS ITS OWN FAT** (`disk/fat.asm`, for MSX-DOS). Importing
+main's collides; NAME imports them aliased (`main_fat_mount=fat_mount`) because
+main's `fat_find` writes the entry location the dirverb tenant reads. Which FAT a
+disk verb should use is phase 4's question.
+
+**Shipped so far in phase 3**: `0f15a873` KILL · `b26857de` NAME · `3f6a6099`
+COPY (both halves, and it freed LOW-REGION bytes) · FILES/LFILES in flight.
+⚠️ **CHECK EVERY VERB'S ROWS BY NAME.** `diskbasic-acceptance` says 34/34 and has
+**no COPY row and no LFILES row**. COPY's gate is `copy-acceptance` (8 rows, with
+byte-for-byte content checks); LFILES's is `lptverb-acceptance` (46 rows, and it
+names the sides it cannot measure).
 
 ⚠️ **A ROM CHANGE COSTS THREE RE-RUNS**, and until they happen `selftest-check`
 and `tiers-md-check` are red as ONE fact reported twice: `kwknife.py --all` AND
