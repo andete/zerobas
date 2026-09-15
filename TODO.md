@@ -1878,7 +1878,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:18666 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:18694 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -2044,7 +2044,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:6645 (T-6FE392)8 (T-529ABE)` from `TODO.md:17317 (T-529ABE)`: a
+      `TODO.md:6645 (T-6FE392)8 (T-529ABE)` from `TODO.md:17345 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -7489,7 +7489,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:17317 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:17345 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -12103,6 +12103,34 @@ list. **When a slice lands, grep this list for what it just shipped.**
       flagged the byte figure beside it as PRESENT-TENSE — its pattern includes
       `\bis at\b`, which ordinary English hits. A false positive costs one
       rephrase, the trade its own header argues for — recorded, not filed.
+
+- [ ] 🔴 **`PLAY`'s `X<var>;` SUBSTRING EXECUTION IS MSX1 MML AND THIS TREE
+      DOES NOT IMPLEMENT IT — THE ONE FORM BETWEEN `PLAY` AND TIER 1.**
+      🎚️ TIER 1 — happy path: a documented MML command that both references run.
+      Measured 2026-09-15 (D-KWPLAY,
+      [`scratchpad/playmml_probe.py`](scratchpad/playmml_probe.py)):
+      `A$="O7L1C":PLAY"XA$;"` sounds O7 C — channel A tone period **53** — on the
+      **VG-8020 and the CF-3300**, in all three spellings tried (`XA$;`, `X A$;`,
+      a two-letter name `XAB$;`). zerobas raises **ERR 5** to every one, so
+      `tools/kwforms.py`'s `substring-exec` form has no row and `PLAY` stands at
+      **9 of 10**.
+      ⚠️ **NOT A SMALL FIX, AND THE COST IS NOT YET MEASURED.** The MML parser is
+      a **sub-ROM page-1 tenant** (`sub/playparse.asm`, `play_parse_tenant`), and
+      `X` means resolving a BASIC string variable BY NAME from inside it — the
+      interpreter's own variable lookup. `make basic-reloc`'s closure check says a
+      page-1 tenant may call main low-region/BIOS (`< $4000`), so a route exists;
+      **whether the lookup SITS below `$4000` is the unanswered question**, and if
+      it does not, this is a marshalling change at the `PLAY` call site rather than
+      a parser change.
+      📏 Sub page 1 had **87 B** free on 2026-09-15 (the 37 B D-KWPLAY freed by
+      deleting `>`/`<`, less the 1 B the `N` fix spent).
+      🎯 **The spec's Q6 is ANSWERED — "in scope" — so this is implementation,
+      not a decision**: `docs/spec-basic-audio-play.md` §2.2.
+      🔭 SCOUT-THEN-ASK — grep where the string-variable lookup lives (is it
+      below `$4000`, reachable from a page-1 sub tenant, or main page 1 where the
+      tenant cannot call it?) **and price the two shapes before spending any of the
+      87 B.** The decision is WHICH SHAPE, and it is not answerable until that is
+      measured — the same order as every other tenant question this tree has hit.
 
 - [ ] ⚠️ **`PLAY(n)` READ IMMEDIATELY AFTER `PLAY` SEES A REFERENCE TRANSIENT THAT
       zerobas DOES NOT REPRODUCE.** Filed 2026-08-28 by D-PLAYFN,
@@ -20412,6 +20440,81 @@ verb that opens it only if no other verb jumps in, so the labels called from
 OUTSIDE `files`/`field` are listed separately — **15 labels, 164 B** in
 `files.asm` and **3 labels, 39 B** in `field.asm`. Those do not travel with a
 verb.
+
+⚡ **D-KWPLAY (2026-09-15) — `PLAY` GOES 0 → 9 OF 10 FORMS, AND DESIGNING THE
+ROWS FOUND THREE DEFECTS. TWO ARE FIXED; THE THIRD IS THE ONLY THING LEFT
+BETWEEN `PLAY` AND TIER 1.**
+🎯 **THE BLOCKER WAS THE INSTRUMENT, NOT THE MACHINE.** `make play-acceptance`
+observes music with `PLAY(n)`, which answers only WHICH VOICE is sounding — so it
+covers `multi-voice` and nothing else. Pitch, volume, envelope and duration are
+all invisible to it, and that is why a keyword with a whole MML language behind it
+had **no kwsweep row at all**. **The PSG reads BACK**: `OUT&HA0,<reg>` selects and
+`INP(&HA2)` returns, LIVE, while the interrupt drain is sounding the note — the
+same trick `sound_b` already uses one row above. Control first
+([`scratchpad/playpsg_probe.py`](scratchpad/playpsg_probe.py)): `SOUND 0,200` then
+read R0 → **200 on both machines**, so everything below is a verdict.
+🔴 **DEFECT 1 — `N n` WAS A SEMITONE FLAT, FOR EVERY n FROM 1 TO 96.** The
+reference indexes its period table AT n; `pt_cmd_n` did `dec a` first.
+[`scratchpad/playnote_probe.py`](scratchpad/playnote_probe.py) walked n = 0, 1, 2,
+38…42, 96, 97 on both references: **zerobas(N n) == reference(N n−1)** on every
+one, including both ends (ref `N1` = 3228 = `pt_period[1]`, ref `N96` = **13** =
+an entry the table did not have). Fixed by deleting the `dec a` and appending the
+97th entry — **−1 B, +2 B, net +1 B** of sub page 1 (2026-09-15).
+⚠️ **THE HOST TEST AGREED WITH THE DEFECT AND COULD NOT HAVE CAUGHT IT.**
+`tests/test_play_parse.py` asserted `note(39)` for `N40` because the asm table and
+the host decoder are generated from the SAME `tests/mml_ref.py` — a closed loop.
+**Only the differential could see it**, which is the whole argument for the
+kwsweep row existing.
+🔴 **DEFECT 2 — `>` AND `<` WERE IMPLEMENTED HERE AND ARE NOT MSX1 MML.** Both
+references answer **Illegal function call** to all three spellings tried (`>C`,
+` > C`, `O5<C`), on the VG-8020 **and** the CF-3300, while this tree happily
+sounded the shifted note — an OVER-acceptance, the same class as `&` and found the
+same way. Removed: **−37 B of sub page 1** (2026-09-15), which is where the `N`
+fix's byte came from. `docs/spec-basic-audio-play.md` §2.2 had them from the same "published MSX
+Wiki" list that once carried `&`, and `tools/kwforms.py`'s PLAY bar went from
+**ELEVEN forms to TEN** with them.
+🔴 **DEFECT 3 — `X<var>;` IS MSX1 MML AND IS NOT IMPLEMENTED HERE. THIS IS THE
+OPEN TIER 1 ITEM.** Both references run `A$="O7L1C":PLAY"XA$;"` and sound O7 C
+(tone period 53) in all three spellings tried; this tree raises ERR 5. So
+`substring-exec` has no row and **`PLAY` stands at 9/10**. ⚠️ It is not a small
+fix: the MML parser is a **sub-ROM page-1 tenant**, and resolving a BASIC string
+variable by name means reaching the interpreter's variable lookup from inside it.
+The closure check says a page-1 tenant may call main low-region/BIOS (`< $4000`),
+so the route exists — **whether the lookup SITS there is the unanswered
+question**, and it is a spec-sized one, not a row.
+🟢 **THE NINE ROWS, ALL SUPPORTED, ALL MATCHING** (`playkw`…`playkw_i`): `notes`
+172 (C4's tone period low byte), `note-number` 83, `rest` `8 0`, `octave` 53,
+`volume` 3, `envelope` `10 208 7`, `multi-voice` `0 0 -1`, `default-length`
+`0 -1`, `tempo` `0 -1`. **`PLAY`'s cut is LOAD-BEARING** (knifed → MISSING).
+🎯 **THE `rest` ROW CARRIES ITS OWN CONTROL.** Voice 1 sounds a note and voice 2
+rests, so the two channel amplitudes read `8 0`; give voice 2 a NOTE instead and
+it reads `8 8`. Without that second reading the 0 is an absence, not a rest.
+⚠️ **`AND 15` IS NOT COSMETIC, AND IT WAS MEASURED BEFORE IT WAS BELIEVED.** The
+VG-8020 reads R8 back as `$80|value` and R13 as `$D0|value`. Reading the same
+register **three times in one run gave three equal answers** (131 131 131), so it
+is a stable read-back width difference between the two emulated PSGs, **not a race
+against the drain** — which is what it would have to be for no volume or envelope
+row to be trustworthy anywhere.
+⚠️ **THE DURATION ROWS WAIT IN FRAMES, AND THE FIRST CUT OF THEM DID NOT.** A
+`FOR` loop is INTERPRETER SPEED and the reference is ~3× faster: a 200-iteration
+wait sat on the wrong side of `L64` there and the right side here, so the row read
+`-1 -1` against `0 -1` and that divergence was the apparatus. `T=TIME` … `IF
+TIME-T<40 THEN <own line>` is the same two-thirds of a second on every MSX, and
+the two sides are then EXACT frame counts from the same formula: `L64`=1 vs
+`L2`=50, `T255`=11 vs `T32`=93, both straddling 40.
+🎯 **AND THE TWO DURATION ROWS GO LAST — THE `save_b` RULE AGAIN.** They END WITH
+MUSIC STILL PLAYING (50 and 93 frames queued against a 40-frame wait), so anything
+after them that read the PSG would read their leftovers.
+⚠️ **EVERY ROW SETS ITS OWN `O`/`L`/`T`/`V` INSIDE ITS OWN MML STRING**, because
+the VCB state PERSISTS ACROSS `PLAY` STATEMENTS — `DRAW`'s ANGLE/SCALE hazard
+wearing a different hat.
+🔴 **AND THE CF-3300 NEEDED ITS OWN BOOT BEFORE IT WOULD SAY ANYTHING.** Two
+scout runs got `machine stored <none>` from it and reported APPARATUS FAILURE
+rather than a reading — correctly. `basic_probe_kwsweep.py` already carries the
+answer (`MACH_BOOT` 14.0 s and a `SCREEN 0` reset) and the two tables not knowing
+about each other is the same gap D-KWORACLE filed in 2026-09-03.
+📏 **Sub page 1 free: 50 B → 87 B (2026-09-15)** — the removal paid for the fix
+and left 37 B behind.
       ⚠️ **`TXTMAX` IS NOW BOUNDED BY `DETOKBUF`, NOT BY FREE RAM** — at 1280 B
       it does not fit the 1024 B window, so `$BB00` is the stop until DETOKBUF
       is dealt with. Of D-LINEMAX's 1792 B, **1024 recovered, 768 still charged**.

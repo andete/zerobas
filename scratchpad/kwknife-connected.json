@@ -1,5 +1,5 @@
 {
- "rom_fingerprint": "ff579a8d aad1886c a01dabda b76fcfe5",
+ "rom_fingerprint": "ff579a8d 6dbd7e39 a01dabda b76fcfe5",
  "rows": {
   "ABS": {
    "connected": true,
@@ -993,6 +993,16 @@
    "verdict": "MISSING",
    "weak": false
   },
+  "PLAY": {
+   "connected": true,
+   "modes": {
+    "stmt": "MISSING"
+   },
+   "row": "playkw",
+   "subject": "PLAY",
+   "verdict": "MISSING",
+   "weak": false
+  },
   "POINT": {
    "connected": true,
    "modes": {
@@ -1731,6 +1741,12 @@
     "peek_b": "MISSING"
    }
   },
+  "PLAY": {
+   "connected": true,
+   "rows": {
+    "playkw": "MISSING"
+   }
+  },
   "PRINT": {
    "connected": true,
    "rows": {
@@ -1832,5 +1848,5 @@
    }
   }
  },
- "written": "2026-09-15 07:25:07"
+ "written": "2026-09-15 10:17:08"
 }

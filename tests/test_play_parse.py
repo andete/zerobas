@@ -153,11 +153,22 @@ def run():
            note(7 * 12 + 0),            # O8 B# -> C8 again
            ("END",)])
 
-    # --- octave: O, >, < -------------------------------------------------------
-    m, st = parse([b"O5C>C<C"])
-    check("octave O5 C >C <C", decode_queue(m, 0),
+    # --- octave: O --------------------------------------------------------------
+    m, st = parse([b"O5CO6CO5C"])
+    check("octave O5 C O6 C O5 C", decode_queue(m, 0),
           [note(5 * 12 + 0 - 12), note(6 * 12 + 0 - 12), note(5 * 12 + 0 - 12), ("END",)])
-    # (O5 sets octave 5 -> C = note 5-1)*12; >C bumps to 6; <C back to 5)
+    # (O5 sets octave 5 -> C = note (5-1)*12)
+
+    # --- '>' and '<' are NOT MSX1 MML (BOTH references raise ERR 5) --------------
+    # 🔴 THIS TEST USED TO ASSERT THE OPPOSITE, and the tenant used to
+    # implement them. D-KWPLAY (2026-09-15) measured `PLAY"L1>C"` on the VG-8020 AND
+    # the CF-3300, in three spellings, and both answered Illegal function call while
+    # this tree happily sounded the shifted note -- an OVER-acceptance, the same
+    # class as '&' and found the same way.
+    m, st = parse([b"C>C"])
+    check("'>' octave-up unsupported -> ERR 5", st, 5)
+    m, st = parse([b"O5C<C"])
+    check("'<' octave-down unsupported -> ERR 5", st, 5)
 
     # --- explicit length + dots ------------------------------------------------
     m, st = parse([b"C8C4.C2"])
@@ -183,9 +194,18 @@ def run():
           [note(C4), ("NOTE", 0, 0, mml_ref.note_frames(120, 4)), note(C4), ("END",)])
 
     # --- N note number ---------------------------------------------------------
+    # 🔴 `N n` IS ONE-BASED: N40 is pt_period[40], not [39]. This line said
+    # `note(39)` and AGREED WITH A TENANT THAT WAS A SEMITONE FLAT -- the host model
+    # and the asm were generated from each other, so neither could catch it; only
+    # the differential could (D-KWPLAY, scratchpad/playnote_probe.py, both refs).
     m, st = parse([b"N40N0"])
     check("N40 then N0(rest)", decode_queue(m, 0),
-          [note(39), ("NOTE", 0, 0, mml_ref.note_frames(120, 4)), ("END",)])
+          [note(40), ("NOTE", 0, 0, mml_ref.note_frames(120, 4)), ("END",)])
+    m, st = parse([b"N96"])
+    check("N96 reaches the 97th table entry", decode_queue(m, 0),
+          [note(96), ("END",)])
+    m, st = parse([b"N97"])
+    check("N97 is out of range -> ERR 5", st, 5)
 
     # --- '&' is not MSX1 MML (VG-8020 raises ERR5) -> our tenant does too -------
     m, st = parse([b"C&C"])

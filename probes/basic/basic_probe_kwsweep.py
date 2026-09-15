@@ -1016,6 +1016,92 @@ SWEEP: list[tuple[str, str, str | None, str, str]] = [
      "FORM:register-value D-KWDRAIN: SOUND's EFFECT, not its existence -- the byte "
      "is read back out of the PSG. A SOUND that parsed and wrote nothing reads "
      "something else."),
+
+    # ---------------------------------------------------------- D-KWPLAY: `PLAY`
+    # 🎯 PLAY WAS 0 OF ITS FORMS AND THE REASON WAS THE INSTRUMENT. `make
+    # play-acceptance` observes music with `PLAY(n)`, which answers only WHICH
+    # VOICE is sounding -- so it covers `multi-voice` and NOTHING else: pitch,
+    # volume, envelope and duration are all invisible to it. These rows read the
+    # PSG BACK instead, exactly as `sound_b` above does (`OUT&HA0,<reg>` selects,
+    # `INP(&HA2)` reads), which works LIVE while the drain is sounding the note.
+    # 🔴 THREE DEFECTS FELL OUT OF DESIGNING THEM, and two were fixed in the same
+    # slice (2026-09-15, scratchpad/playpsg_probe.py, playmml_probe.py,
+    # playnote_probe.py -- each measured on the VG-8020 AND the CF-3300):
+    #   * `N n` was A SEMITONE FLAT. The reference indexes its period table AT n;
+    #     the tenant did `dec a` first. Every N from 1 to 96 was wrong, and the
+    #     host test agreed with it because both came from the same generator.
+    #   * `>` and `<` WERE IMPLEMENTED HERE AND ARE NOT MSX1 MML. Both references
+    #     answer Illegal function call to all three spellings tried. Removed --
+    #     and tools/kwforms.py's PLAY bar went from ELEVEN forms to TEN with them.
+    #   * `X<var>;` IS MSX1 MML AND IS NOT IMPLEMENTED HERE. Both references sound
+    #     `A$="O7L1C":PLAY"XA$;"`; this tree raises ERR 5. THE ONE REMAINING GAP,
+    #     so `substring-exec` has no row and PLAY stops at 9 of 10.
+    # ⚠️ EVERY ROW SETS ITS OWN `O`/`L`/`T`/`V` INSIDE ITS OWN MML STRING. The
+    # VCB state PERSISTS ACROSS `PLAY` STATEMENTS (tests/test_play_parse.py "state
+    # persists"), which is DRAW's ANGLE/SCALE hazard wearing a different hat; a row
+    # that relied on the defaults would read whatever its neighbour left behind.
+    # ⚠️ `AND 15` IS NOT COSMETIC. The VG-8020 reads R8 back as $80|value and R13
+    # as $D0|value -- STABLE, not noise (three reads in one run gave three equal
+    # answers), but different from this machine's bare value. The low nibble is the
+    # register; the high bits are the two emulated PSGs disagreeing, not BASIC.
+    # 🔴 THE TWO DURATION ROWS GO LAST, AND THAT IS THE `save_b` RULE AGAIN: they
+    # END WITH MUSIC STILL PLAYING (50 and 93 frames queued against a 40-frame
+    # wait), so anything after them that read the PSG would read their leftovers.
+    ("playkw",   'play"c"',
+     'PLAY"O4L1T120V8C":FOR I=1 TO 200:NEXT:OUT&HA0,0:A=INP(&HA2):PRINT"[3i";A;"]"',
+     "stored",
+     "FORM:notes 172 -- the LOW BYTE of channel A's tone period while C sounds "
+     "(the full period is 428, the VG-8020-measured C4). A PLAY that queued "
+     "nothing leaves the register GICINI set it to"),
+    ("playkw_b", 'play"n40"',
+     'PLAY"L1T120V8N40":FOR I=1 TO 200:NEXT:OUT&HA0,0:A=INP(&HA2):PRINT"[3j";A;"]"',
+     "stored",
+     "FORM:note-number 83, where the letter form reads 172: `N40` names a note by "
+     "NUMBER and lands a fourth above C4. 🔴 THIS ROW READ 104 UNTIL 2026-09-15 -- "
+     "one semitone flat, for every n in 1..96"),
+    ("playkw_c", 'play"r"',
+     'PLAY"O4L1T120V8C","O4L1T120V8R":FOR I=1 TO 200:NEXT:OUT&HA0,8:A=INP(&HA2)AND15:OUT&HA0,9:B=INP(&HA2)AND15:PRINT"[3k";A;B;"]"',
+     "stored",
+     "FORM:rest `8 0` -- voice 1 sounds a note at the default volume and voice 2 "
+     "RESTS, so the two channel amplitudes differ. 🎯 THE 8 IS THIS ROW'S OWN "
+     "CONTROL: give voice 2 a NOTE instead and it reads `8 8`, so the 0 is the "
+     "rest and not an absence"),
+    ("playkw_d", 'play"o7c"',
+     'PLAY"O7L1T120V8C":FOR I=1 TO 200:NEXT:OUT&HA0,0:A=INP(&HA2):PRINT"[3l";A;"]"',
+     "stored",
+     "FORM:octave 53 against the same note's 172 three octaves down -- `O n` moves "
+     "the WHOLE note table, and the period halves per octave"),
+    ("playkw_e", 'play"v3c"',
+     'PLAY"O4L1T120V3C":FOR I=1 TO 200:NEXT:OUT&HA0,8:A=INP(&HA2)AND15:PRINT"[3o";A;"]"',
+     "stored",
+     "FORM:volume 3 -- PSG R8 is channel A's amplitude and the DEFAULT is 8, so a "
+     "`V` that parsed and did nothing reads 8 here"),
+    ("playkw_f", 'play"s10m2000c"',
+     'PLAY"O4L1T120S10M2000C":FOR I=1 TO 200:NEXT:OUT&HA0,13:A=INP(&HA2)AND15:OUT&HA0,11:B=INP(&HA2):OUT&HA0,12:C=INP(&HA2):PRINT"[3p";A;B;C;"]"',
+     "stored",
+     "FORM:envelope `10 208 7` -- R13 is the envelope SHAPE (`S10`) and R11/R12 "
+     "the 16-bit envelope PERIOD, 7*256+208 = 2000 (`M2000`). Three cells, two "
+     "commands, and no default produces any of them"),
+    ("playkw_g", 'play"","","c"',
+     'PLAY"","","O4L2T120V8C":FOR I=1 TO 200:NEXT:A=PLAY(1):B=PLAY(2):C=PLAY(3):PRINT"[3q";A;B;C;"]"',
+     "stored",
+     "FORM:multi-voice `0 0 -1` -- the THIRD string sounds and the first two are "
+     "the faithful empty-voice skip. An implementation with one voice, or one that "
+     "took the last string as the first, cannot read this"),
+    ("playkw_h", 'play"l64c"',
+     'A=0:B=0:PLAY"O4T120V8L64C":T=TIME:W$="WWWWWWWWWWWW":IF TIME-T<40 THEN 30:U$="UUUUUUUUUUUUUU":A=PLAY(0):PLAY"O4T120V8L2C":T=TIME:V$="VVVVVVVVVVVV":IF TIME-T<40 THEN 70:X$="XXXXXXXXXXXXXX":B=PLAY(0):PRINT"[3m";A;B;"]"',
+     "stored",
+     "FORM:default-length `0 -1` -- the SAME note at `L64` has finished after 40 "
+     "frames and at `L2` has not. ⚠️ THE WAIT IS FRAMES VIA `TIME`, NOT "
+     "ITERATIONS: `L64` is 1 frame and `L2` is 50, and a `FOR` loop counts "
+     "INTERPRETER SPEED -- the reference is ~3x faster, and a 200-iteration wait "
+     "sat on the WRONG side of `L64` there and the right side here"),
+    ("playkw_i", 'play"t32c"',
+     'A=0:B=0:PLAY"O4L4V8T255C":T=TIME:W$="WWWWWWWWWWWW":IF TIME-T<40 THEN 30:U$="UUUUUUUUUUUUUU":A=PLAY(0):PLAY"O4L4V8T32C":T=TIME:V$="VVVVVVVVVVVV":IF TIME-T<40 THEN 70:X$="XXXXXXXXXXXXXX":B=PLAY(0):PRINT"[3n";A;B;"]"',
+     "stored",
+     "FORM:tempo `0 -1` with the LENGTH held fixed at `L4`, so only `T` explains "
+     "it: 11 frames at `T255` against 93 at `T32`, either side of the same 40-frame "
+     "wait"),
     ("vpeek",   'a=vpeek(0)',         'VPOKE 0,7:PRINT"[";VPEEK(0);"]"',      "direct",
      "FORM:address-read D-KWDRAIN"),
     ("vpoke",   'vpoke 0,1',          'VPOKE 0,9:PRINT"[";VPEEK(0);"]"',      "direct",

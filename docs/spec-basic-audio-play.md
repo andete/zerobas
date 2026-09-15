@@ -105,13 +105,24 @@ differential is load-bearing here ([memory: error-handling-arc]).
   (`PLAY A$,B$,C$`). A missing voice string = that channel unchanged.
 - MML subset for PSG (published, MSX Wiki PLAY / MML refs):
   - `A`–`G` notes with optional `#`/`+`/`-` accidental and optional length digits;
-    `N n` (note number); `R` rest; `O n` octave (1–8); `>` / `<` octave shift.
+    `N n` (note number, **1–96, one-based**); `R` rest; `O n` octave (1–8).
   - `L n` default length (1–64); `.` dotted; `T n` tempo (32–255); `V n` volume
     (0–15); `S n` envelope shape; `M n` envelope period.
-  - **`&` tie: NOT MSX1 PLAY MML** — the VG-8020 raises Illegal function call for
-    it (empirically confirmed in Slice 2a; this list originally drew `&` from a
-    broader MML reference). zerobas rejects it (ERR 5) to match.
-  - `X var;` substring execution — **decide in Q6** whether in scope for MSX1.
+  - **`&` tie, `>` and `<` octave shift: NOT MSX1 PLAY MML** — every one of the
+    three raises Illegal function call on **both** references. `&` was measured in
+    Slice 2a; `>` and `<` were measured 2026-09-15 (D-KWPLAY, three spellings each
+    — `>C`, ` > C`, `O5<C` — on the VG-8020 **and** the CF-3300). This list drew all
+    three from a broader MML reference that is not MSX1's, and zerobas **shipped**
+    `>`/`<` until that measurement: an OVER-acceptance, removed to match.
+  - **`N n` is ONE-BASED against the same period table the letter notes index from
+    zero** — `N1` sounds C#1 and `N96` sounds C9, a semitone above the letter range
+    `O1 C`…`O8 B`, so the table needs a 97th entry no letter note can reach.
+    Measured on both references 2026-09-15; zerobas was a semitone flat for every
+    `N n` until then.
+  - `X var;` substring execution — **Q6 ANSWERED 2026-09-15: IN SCOPE.** Both
+    references run `A$="O7L1C":PLAY"XA$;"` and sound O7 C (tone period 53), in all
+    three spellings tried (`XA$;`, `X A$;`, a two-letter name). zerobas raises
+    ERR 5: **not implemented**, and that is the one remaining MML gap.
 - **Live/asynchronous semantics (the crux):** each string is parsed by the
   interpreter into a queue of data packets terminated by an end byte; the *drain*
   — dequeue packet, decode, set PSG — happens in the **timer-interrupt handler**,

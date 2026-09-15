@@ -546,18 +546,24 @@ FORMS: dict[str, tuple[tuple[str, ...], str]] = {
         "DEFAULT FOREGROUND, so neither says anything about `C`.",
     ),
     "PLAY": (
-        ("notes", "note-number", "rest", "octave", "octave-shift",
+        ("notes", "note-number", "rest", "octave",
          "default-length", "tempo", "volume", "envelope", "multi-voice",
          "substring-exec"),
         "`PLAY \"<mml>\"[,\"<mml>\"[,\"<mml>\"]]` -- the MML subset is the statement, "
         "and docs/spec-basic-audio-play.md \u00a72.2 lists it from published sources: "
         "`A`-`G` notes with accidental and length, `N n` note numbers, `R` rests, "
-        "`O n` octave, `>`/`<` octave shift, `L n` default length (with `.`), `T n` "
+        "`O n` octave, `L n` default length (with `.`), `T n` "
         "tempo, `V n` volume, `S n`/`M n` envelope, up to THREE voice strings, and "
         "`X var;` substring execution. \u26a0\ufe0f `&` is NOT MSX1 MML -- the VG-8020 "
-        "raises ERR 5 and so does this tree -- so it is not a form. THE SWEEP HAS NO "
-        "PLAY ROW AT ALL; `make play-acceptance` is where PLAY is measured today, "
-        "and this bar says how much of it a kwsweep row set would have to cover.",
+        "raises ERR 5 and so does this tree -- so it is not a form. \U0001f534 AND "
+        "NEITHER ARE `>` AND `<`, WHICH IS WHY THIS BAR WAS ELEVEN AND IS NOW TEN: "
+        "D-KWPLAY (2026-09-15) gave both references three spellings each -- `>C`, "
+        "` > C`, `O5<C` -- and got Illegal function call from every one, while this "
+        "tree SOUNDED the shifted note. Octave-shift left the bar and the two "
+        "commands left the tenant in the same slice. ⚠️ THE ROWS READ THE PSG "
+        "BACK -- `OUT&HA0,r` then `INP(&HA2)`, live while the note sounds -- because "
+        "`PLAY(n)` answers only WHICH VOICE, which covers multi-voice and nothing "
+        "else; duration (`L`, `T`) waits in FRAMES via `TIME`, never in iterations.",
     ),
     "LOAD": (
         ("plain", "run"),
