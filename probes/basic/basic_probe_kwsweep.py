@@ -319,12 +319,45 @@ def _plug_of(rigs: tuple[str, ...]) -> tuple[str, ...]:
     return tuple(out)
 
 
-def _hold_of(rigs: tuple[str, ...]) -> tuple[int, int] | None:
-    """The (row, mask) a rig tuple asks to hold down, or None."""
+def _hold_of(rigs: tuple[str, ...]):
+    """What a rig tuple asks to hold down, or None.
+
+    ONE `(row, mask)` for a single key, or a TUPLE of them for a combo --
+    `run_cases` takes either. 🔴 D-KWSTOP: the combo exists because Ctrl-STOP is
+    TWO keys on DIFFERENT MATRIX ROWS (CTRL row 6 bit $02 + STOP row 7 bit $10),
+    which is the whole reason `ON STOP GOSUB` had no row while its five sibling
+    trap composites got theirs. Written `NEEDS-HOLD:6,0x02+7,0x10`: the MODIFIER
+    FIRST, because the keys go down in the order given and come up in reverse."""
     for r in rigs:
         if r.startswith("hold:"):
-            row, mask = r[len("hold:"):].split(",")
-            return (int(row, 0), int(mask, 0))
+            spec = r[len("hold:"):].split("@")[0]
+            keys = tuple(tuple(int(v, 0) for v in part.split(","))
+                         for part in spec.split("+"))
+            return keys[0] if len(keys) == 1 else keys
+    return None
+
+
+def _holdtime_of(rigs: tuple[str, ...]) -> tuple[float, float] | None:
+    """The `@<lead>/<secs>` a hold tag carries, or None for the defaults.
+
+    🔴 D-KWSTOP: CTRL-STOP NEEDED BOTH, AND THE DEFAULTS BLANK THE REFERENCE'S
+    SCREEN. Measured on the VG-8020 with every combination separated one at a
+    time (`scratchpad/ctrlstop_probe.py`):
+      * the DURATION -- a 2 s Ctrl-STOP reads a clean `Break in 20`; 5 s and the
+        12 s default leave the screen COMPLETELY BLANK. CTRL alone and STOP alone
+        at 12 s both leave the program running to completion, so it is the COMBO
+        and it is the DURATION, and it is the reference's own behaviour at
+        command level rather than an injection fault.
+      * the LEAD -- pressing at the default RUN+0.3 blanks it too, while
+        RUN+step+0.5 (the program already looping) is clean.
+    The stop-trap arc's own docstring says the same from the other side: the
+    happy path appears with a brief TAP during a delay, never a hold.
+    ⚠️ Both are per-CALL `run_cases` kwargs, and the whole tag is part of the
+    capture GROUP KEY, so every row in a group shares them."""
+    for r in rigs:
+        if r.startswith("hold:") and "@" in r:
+            lead, secs = r.split("@", 1)[1].split("/")
+            return (float(lead), float(secs))
     return None
 
 
@@ -1503,6 +1536,36 @@ SWEEP: list[tuple[str, str, str | None, str, str]] = [
     # them. `color ` x ~160 scrolled the marker off the screen on the reference
     # alone. An EMPTY expansion still fires the trap (spec-traps-t3-key.md \u00a71.1 R8/R9
     # -- the event is upstream of string expansion) and types nothing.
+    # 🌾 D-KWSTOP: the SIXTH and last of `ON`'s trap composites, and the one that
+    # needed the rig to learn a COMBO: Ctrl-STOP is CTRL row 6 bit $02 plus STOP
+    # row 7 bit $10, two keys on DIFFERENT MATRIX ROWS. `@0.5/2.0` is a 2-SECOND
+    # press starting after the program is already looping; the defaults blank the
+    # reference's screen outright (see `_holdtime_of`, measured one variable at a
+    # time in scratchpad/ctrlstop_probe.py).
+    # 🔴 THE ARM ROW DOES NOT `STOP OFF` BEFORE IT PRINTS, AND THAT IS NOT TIDINESS
+    # -- it is the one shape that DIVERGES. With `STOP OFF` executed while the key
+    # is STILL DOWN the reference finishes normally and zerobas answers
+    # `Break in 50`: the reference's break is EDGE-triggered and consumed by the
+    # trap, zerobas re-breaks on the LEVEL. Filed rather than papered over, and it
+    # is a TIER 3 item, not a TIER 1 one -- the happy path below is clean on both.
+    ("onstop", 'on stop gosub 60',
+     'C=0:ON STOP GOSUB 60:STOP ON:T=TIME:V$="VVVVVVVVVVVVVVVVVVVVVV":IF C=0 AND TIME-T<200 THEN 30:PRINT"[2q";C>0;"]":END:W$="WWWWWW":Y$="YYYYYYYYYYYYYYYYYYYYYYYY":C=C+1:RETURN',
+     "stored",
+     "NEEDS-HOLD:6,0x02+7,0x10@0.5/2.0 FORM:arm -1: Ctrl-STOP reached the HANDLER "
+     "instead of breaking the program, which is what the statement is FOR. Without "
+     "`STOP ON` the same program answers `Break in 30` -- arm is not enable"),
+    # The bare form CLEARS the handler slot (docs/spec-traps-t4-sprite.md §1.5 says
+    # T1 shipped ERR 2 here where the reference accepts it; this row is the
+    # re-verification, and both machines accept it today). 🔴 AND UNLIKE SPRITE AND
+    # KEY, A CLEARED SLOT WITH THE ENTRY STILL ON DOES **NOT** SWALLOW THE EVENT --
+    # both machines BREAK. That is the reading: `Break in 30` where the armed row
+    # reads `[2q-1 ]`, and a bare form REFUSED with ERR 2 would read
+    # `Syntax error in 10` instead.
+    ("onstop_b", 'on stop gosub',
+     'C=0:ON STOP GOSUB 60:ON STOP GOSUB:STOP ON:T=TIME:IF C=0 AND TIME-T<200 THEN 30:PRINT"[2r";C;"]":END:W$="WWWWWWWW":Y$="YYYYYYYYYYYYYYYYYYYYYYYY":C=C+1:RETURN',
+     "stored",
+     "NEEDS-HOLD:6,0x02+7,0x10@0.5/2.0 FORM:disarm the handler slot is CLEARED, so "
+     "the program breaks where the armed row services"),
     ("onkey", 'on key gosub 60',
      'KEY 1,"":C=0:ON KEY GOSUB 60:KEY(1) ON:T=TIME:V$="VVVVVVVVVVVVVVVVVVVVVVVV":IF C=0 AND TIME-T<120 THEN 40:PRINT"[2a";C>0;"]":END:W$="WWWWWWWWW":C=C+1:RETURN',
      "stored",
@@ -3553,6 +3616,9 @@ def main() -> int:
                 held = _hold_of(rig)
                 if held is not None:
                     mkw["holds"] = [held] * len(idx)
+                    ht = _holdtime_of(rig)
+                    if ht is not None:
+                        mkw["hold_lead"], mkw["hold_secs"] = ht
                 # ⚠️ `prologue` is a WHOLE-CALL kwarg, so a plug and a printer log
                 # would overwrite one another -- no row asks for both, and the
                 # group key would separate them anyway.

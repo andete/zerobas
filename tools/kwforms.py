@@ -644,6 +644,16 @@ FORMS: dict[str, tuple[tuple[str, ...], str]] = {
         "is the same split `USR`'s own bar makes, one level up: there it is which "
         "vector is CALLED, here it is which vector is SET.",
     ),
+    "ON STOP GOSUB": (
+        ("arm", "disarm"),
+        "`ON STOP GOSUB [<line>]` -- ONE handler line, not a list (that is KEY and "
+        "STRIG), and the bare form CLEARS the slot. docs/spec-traps-t1-stop-reslice.md "
+        "\u00a75.1 has the arm leaving the STATE untouched (arm \u2260 enable) and "
+        "docs/spec-traps-t4-sprite.md \u00a71.5 has the reference accepting the bare form "
+        "and clearing the handler. \u26a0\ufe0f Unlike SPRITE and KEY, a cleared slot with the "
+        "entry still ON does NOT swallow the event: both machines BREAK, which is "
+        "what makes the two forms separable at all.",
+    ),
     "ON KEY GOSUB": (
         ("arm", "list-positional", "empty-slot-clears"),
         "`ON KEY GOSUB <list>` -- the list is the statement. docs/spec-traps-t3-key.md "

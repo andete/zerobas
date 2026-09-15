@@ -545,15 +545,23 @@ def _tcl(out_path: str, cases: list[tuple[str, list[str]]],
          hb_path: str | None = None, settle_n: int = 0,
          sentinel: tuple[int, int] | None = None,
          run_gap: float | None = None,
-         sentinel_capture: bool = False) -> str:
+         sentinel_capture: bool = False,
+         # 🔴 D-KWSTOP: **AT THE END, AND KEYWORD-ONLY IN PRACTICE.** The first cut
+         # put `hold_lead` beside `hold_secs`, which reads better and SHIFTED EVERY
+         # POSITIONAL ARGUMENT AFTER IT: `tests/test_echo_oracle.py` passes
+         # `..., None, 12.0, (), slots_out` positionally, so its `slots_out` landed
+         # on `prologue` and two echo-guard assertions went red. The test caught a
+         # real contract break, so the contract is what changed back.
+         hold_lead: float | None = None) -> str:
     """Build the whole-batch Tcl timeline. Each scheduled action gets its own
     emulated-time slot spaced by `step`, so the previous chunk is fully consumed
     (CHGET drains KEYBUF into the line editor) before the next write overwrites
     it. Measured drained before 1794/1794 injections across six batches (D-LATCH).
 
     `holds` (input-devices arc I1, docs/spec-basic-input-devices.md §8 phase C)
-    optionally holds a KEY-MATRIX bit down while a case RUNs: one `(row, mask)`
-    or None per case, aligned with `cases`. This exists because KEYBUF injection
+    optionally holds a KEY-MATRIX bit down while a case RUNs: one `(row, mask)`,
+    a SEQUENCE of them for a multi-key combo (D-KWSTOP -- Ctrl-STOP is CTRL row 6
+    bit $02 plus STOP row 7 bit $10), or None per case, aligned with `cases`. This exists because KEYBUF injection
     -- what every other phase here uses -- writes the decoded characters straight
     into the ROM's buffer and so BYPASSES the matrix entirely; a routine that
     SCANS the matrix (STICK/STRIG via GTSTCK/GTTRIG, and later ON KEY / ON STRIG)
@@ -712,11 +720,36 @@ def _tcl(out_path: str, cases: list[tuple[str, list[str]]],
             # full `step` later can land after a short sampling loop has already
             # finished -- which reads as an idle-vs-held divergence between two
             # machines of different speed rather than as the timing bug it is.
-            row, mask = hold
-            body.append(f'after time {max(boot, t - step) + 0.3:.1f} '
-                        f'{{ keymatrixdown {row} {mask} }}')
+            # 🔴 D-KWSTOP: ONE PAIR **OR A SEQUENCE OF THEM**, because Ctrl-STOP
+            # is TWO keys on DIFFERENT MATRIX ROWS (CTRL row 6 bit $02 + STOP
+            # row 7 bit $10) and a single `(row, mask)` cannot express it. Every
+            # key goes DOWN at the same emulated instant in the order given and
+            # comes UP in the REVERSE order -- the modifier is pressed first and
+            # released last, which is what basic_probe_stop_trap.py and
+            # basic_probe_key_trap.py's `shift_tap` already do by hand.
+            # ⚠️ Backward compatible by SHAPE, not by a flag: a 2-tuple of ints
+            # is one key, a sequence of pairs is a combo. The input-devices arc's
+            # single-key calls are untouched.
+            keys = (tuple(hold) if isinstance(hold[0], (tuple, list))
+                    else (tuple(hold),))
+            # 🔴 D-KWSTOP: `hold_lead` MOVES THE PRESS AFTER THE `RUN`, AND
+            # Ctrl-STOP IS WHY. The default below presses one STEP EARLY, which is
+            # right for a key the program SAMPLES -- but the reference's ROM FLUSHES
+            # THE TYPE-AHEAD BUFFER while Ctrl-STOP is down, so a press that early
+            # ate every injected line and the VG-8020 came back with a COMPLETELY
+            # BLANK SCREEN: no program, no `RUN`, nothing. (zerobas does not flush,
+            # so ITS side of the same run typed and ran normally -- an apparatus
+            # asymmetry that reads exactly like a divergence.) A positive
+            # `hold_lead` presses that many seconds AFTER the RUN slot, once the
+            # line has been consumed and the program is already looping.
+            down = (max(boot, t - step) + 0.3 if hold_lead is None
+                    else t + hold_lead)
+            for row, mask in keys:
+                body.append(f'after time {down:.1f} '
+                            f'{{ keymatrixdown {row} {mask} }}')
             t += hold_secs
-            body.append(f'after time {t:.1f} {{ keymatrixup {row} {mask} }}')
+            for row, mask in reversed(keys):
+                body.append(f'after time {t:.1f} {{ keymatrixup {row} {mask} }}')
             t += 1.0
         if settle_n > 0 and t > t_run:
             # `settle_n` LOG-SPACED samples over (t_run, t]: the window the
@@ -1058,7 +1091,8 @@ def _run_batch(machine: str, cases: list[tuple[str, list[str]]], *,
                boot: float = 8.0, step: float = 2.5, cap_gap: float = 2.5,
                reset: tuple[str, ...] = (), capture="screen",
                holds: list[tuple[int, int] | None] | None = None,
-               hold_secs: float = 12.0, prologue: tuple[str, ...] = (),
+               hold_secs: float = 12.0, hold_lead: float | None = None,
+               prologue: tuple[str, ...] = (),
                timeout: float = 240.0, omsx: str | None = None,
                cart: str | None = None, diska: str | None = None,
                cassette: str | None = None,
@@ -1128,7 +1162,8 @@ def _run_batch(machine: str, cases: list[tuple[str, list[str]]], *,
         slots: list[tuple[int, str]] = []
         with open(tcl, "w") as f:
             f.write(_tcl(out, cases, boot, step, cap_gap, reset, capture,
-                         holds, hold_secs, prologue, slots, hb_path=hb,
+                         holds, hold_secs, prologue, slots,
+                         hold_lead=hold_lead, hb_path=hb,
                          settle_n=settle_n, sentinel=sentinel, run_gap=run_gap,
                          sentinel_capture=sentinel_capture))
         for p in (out, hb):
@@ -1824,7 +1859,8 @@ def _run_cases_impl(machine: str, cases: list[tuple[str, list[str]]], *,
               batch: bool = True, reset: tuple[str, ...] = ("CLS",),
               capture="screen",
               holds: list[tuple[int, int] | None] | None = None,
-              hold_secs: float = 12.0, prologue: tuple[str, ...] = (),
+              hold_secs: float = 12.0, hold_lead: float | None = None,
+              prologue: tuple[str, ...] = (),
               boot: float = 8.0, step: float = 2.5, cap_gap: float = 2.5,
               timeout: float | None = None, omsx: str | None = None,
               cart: str | None = None, diska: str | None = None,
@@ -1867,7 +1903,7 @@ def _run_cases_impl(machine: str, cases: list[tuple[str, list[str]]], *,
     drives line entry to refusal.
     """
     kw = dict(boot=boot, step=step, cap_gap=cap_gap, capture=capture,
-              hold_secs=hold_secs, prologue=prologue,
+              hold_secs=hold_secs, hold_lead=hold_lead, prologue=prologue,
               omsx=omsx, cart=cart, diska=diska, cassette=cassette, run_gap=run_gap,
               sentinel=sentinel, sentinel_capture=sentinel_capture)
     if settle_out is not None:

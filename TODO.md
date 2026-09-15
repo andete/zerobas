@@ -1878,7 +1878,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:18605 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:18632 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -2044,7 +2044,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:6645 (T-6FE392)8 (T-529ABE)` from `TODO.md:17256 (T-529ABE)`: a
+      `TODO.md:6645 (T-6FE392)8 (T-529ABE)` from `TODO.md:17283 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -7489,7 +7489,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:17256 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:17283 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -8504,6 +8504,33 @@ list. **When a slice lands, grep this list for what it just shipped.**
       🎚️ TIER 3 — common errors: a bad drive letter is the legend's own example
       🤖 AUTONOMOUS — measured, bounded by its passing rows, and the fix is an
       argument check rather than a redesign.
+
+- [ ] 🔴 **`STOP OFF` UNDER A STILL-HELD Ctrl-STOP BREAKS HERE AND NOT ON THE
+      REFERENCE — the break is EDGE-triggered there and LEVEL-triggered here.**
+      Measured 2026-09-15 by D-KWSTOP
+      ([`scratchpad/ctrlstop_probe.py`](scratchpad/ctrlstop_probe.py)), a 2 s
+      Ctrl-STOP against the Philips VG-8020, five cases separating one variable
+      at a time.
+      | case | VG-8020 | zerobas |
+      |---|---|---|
+      | no trap at all | `Break in 20` | `Break in 20` ✅ |
+      | `ON STOP GOSUB` + `STOP ON`, handler runs, **then `STOP OFF`** | `< 1 >` | 🔴 `Break in 50` |
+      | `ON STOP GOSUB` + `STOP ON`, **no `STOP OFF`** | `<-1 >` | `<-1 >` ✅ |
+      | armed but NOT enabled | `Break in 30` | `Break in 30` ✅ |
+      | bare `ON STOP GOSUB` (slot cleared) | `Break in 30` | `Break in 30` ✅ |
+      🎯 **THE HAPPY PATH IS CLEAN ON BOTH** — row 3 is the one the sweep scores,
+      and `onstop`/`onstop_b` agree. What diverges is the SECOND event: the key
+      is still down when `STOP OFF` runs, the reference's edge has already been
+      consumed by the trap and nothing more happens, and this tree raises a fresh
+      break on the level.
+      ⚠️ **`stop-trap-acceptance` is green and cannot see it** — its cases use a
+      0.15 s TAP, so the key is up long before the handler returns. It took a
+      2 s press to separate them, and the arc's own docstring already says the
+      regime matters.
+      🎚️ TIER 3 — common error: a program that turns its own `STOP` trap off
+      while the user is still holding the key
+      🤖 AUTONOMOUS — measured, bounded by the four passing rows beside it, and
+      the change is to where `rp_break` consumes the event rather than a redesign.
 
 - [ ] 🐌 **THE INTERPRETER IS 2.5–3.8× SLOWER THAN THE CF-3300 — ON EVERYTHING,
       NOT ON ONE VERB — AND IT REFRAMES EVERY OTHER SPEED ITEM.**
@@ -19989,6 +20016,37 @@ answers **`Undefined line 100 in 20` on both**: the renumbering breaks the
 execution pointer, so its only reading is an ERROR, which is a TIER 5 reading
 wearing a TIER 1 label. Both stay UNRATED on purpose rather than carrying a bar
 their rows could never satisfy.
+⚡ **D-KWSTOP — THE RIG LEARNS A TWO-KEY COMBO, `ON STOP GOSUB` REACHES TIER 1,
+AND THE PROBE THAT GOT IT THERE FOUND A DIVERGENCE. 141 of 163, and 18 of the 19
+composite statements.**
+🟢 **`holds` NOW TAKES A SEQUENCE OF `(row, mask)` PAIRS**, pressed at one
+emulated instant in the order given and released in REVERSE — the modifier first,
+released last, which is what `basic_probe_stop_trap.py` and `key_trap`'s
+`shift_tap` already did by hand. Ctrl-STOP is CTRL row 6 bit `$02` plus STOP row 7
+bit `$10`, two keys on DIFFERENT ROWS, and that is the whole reason `ON STOP
+GOSUB` had no row while its five siblings got theirs. Backward compatible by
+SHAPE, not by a flag.
+🔴 **AND THE DEFAULT TIMING BLANKS THE REFERENCE'S SCREEN — BOTH HALVES OF IT.**
+Measured one variable at a time (`scratchpad/ctrlstop_probe.py`): a **2 s**
+Ctrl-STOP reads a clean `Break in 20`, while **5 s and the 12 s default leave the
+VG-8020's screen COMPLETELY BLANK** — no program, no `RUN`, nothing; and pressing
+at the default RUN+0.3 blanks it too, where RUN+step+0.5 (the program already
+looping) is clean. CTRL alone and STOP alone at 12 s both leave the program running
+to completion, so it is **the COMBO and it is the DURATION**, and it is the
+reference's own behaviour rather than an injection fault. zerobas does not do it,
+so its side of the same run read normally — **an apparatus asymmetry that reads
+exactly like a divergence**, and it was found by DUMPING THE RAW CAPTURE.
+🌱 The tag carries both: `NEEDS-HOLD:6,0x02+7,0x10@0.5/2.0` is keys, then
+`@<lead>/<secs>`, and the whole tag is part of the capture GROUP KEY.
+🟢 **`ON STOP GOSUB` 2/2.** `onstop` reads `[2q-1 ]` — Ctrl-STOP reached the
+HANDLER instead of breaking the program, which is what the statement is FOR.
+`onstop_b` reads `Break in 30`: the bare form CLEARS the slot, and 🔴 **unlike
+SPRITE and KEY a cleared slot with the entry still ON does NOT swallow the event —
+both machines BREAK**, which is exactly what makes the two forms separable. (It
+also re-verifies `spec-traps-t4-sprite.md` §1.5: T1 shipped ERR 2 for the bare
+form, and both machines accept it today.)
+🔴 **THE ARM ROW DOES NOT `STOP OFF` BEFORE IT PRINTS, AND THAT IS THE FINDING**
+— the shape that does diverges, and is now a TIER 3 item of its own.
       ⚠️ **`TXTMAX` IS NOW BOUNDED BY `DETOKBUF`, NOT BY FREE RAM** — at 1280 B
       it does not fit the 1024 B window, so `$BB00` is the stop until DETOKBUF
       is dealt with. Of D-LINEMAX's 1792 B, **1024 recovered, 768 still charged**.

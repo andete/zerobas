@@ -922,8 +922,8 @@
    "modes": {
     "stmt": "MISSING"
    },
-   "row": "onkey",
-   "subject": "ON KEY GOSUB",
+   "row": "onstop",
+   "subject": "ON STOP GOSUB",
    "verdict": "MISSING",
    "weak": false
   },
@@ -1699,6 +1699,12 @@
     "onsprite_b": "UNREADABLE"
    }
   },
+  "ON STOP GOSUB": {
+   "connected": true,
+   "rows": {
+    "onstop": "MISSING"
+   }
+  },
   "ON STRIG GOSUB": {
    "connected": true,
    "rows": {
@@ -1819,5 +1825,5 @@
    }
   }
  },
- "written": "2026-09-15 02:53:01"
+ "written": "2026-09-15 03:35:53"
 }
