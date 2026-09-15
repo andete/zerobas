@@ -391,6 +391,53 @@ measurement — `scratchpad/hookid_probe.py`'s POKE method, with its two control
 (poke nothing must not move; poke a NAMED cell must flip its verb) — not a code
 move, and it is the prerequisite for the rest of phase 3.
 
+##### ✅ ONE CELL RECOVERED: `$FE5D` (D-CHANHOOKID, 2026-09-15)
+
+[`hookid_chan.py`](../../scratchpad/hookid_chan.py) sweeps the twenty
+unidentified cells from the LIVE 35-cell census — not the superseded 27-cell
+scan the older probe used. Un-claiming a cell is `POKE <cell>,201`: a claimed
+cell holds `F7 <slot> <lo> <hi> C9`, an unclaimed one is a bare `RET`.
+
+| subject | baseline | flipped at | to |
+|---|---|---|---|
+| `OPEN"NOSUCH.DAT"FOR INPUT AS#1` | ERR 70 | **`$FE5D`** | ERR 51 |
+| `MERGE"NOSUCH.BAS"` | ERR 70 | **`$FE5D`** | ERR 51 |
+
+Exactly one cell of twenty moved, and the same one for both — so 🎯 **`$FE5D` is
+not "OPEN's hook"; it is the cell both FILE-OPENING verbs route through**, which
+is what MERGE opening a file to merge it would predict. Naming it for OPEN alone
+would be a name narrower than its class.
+
+All three controls passed on both sweeps: the baseline held with no poke;
+un-claiming the already-named `H_FILE` flipped `FILES` to ERR 5, which is what
+proves the METHOD works on this machine; and un-claiming `H_FILE` left the
+subject unchanged, so a flip identifies a CELL rather than meaning some hook is
+gone.
+
+⚠️ **`CLOSE` AND `MAXFILES` ARE NOT MEASURED, AND THAT IS NOT "NO HOOK".** Four
+attempts; each failed in the apparatus, never in the subject:
+`CLOSE#1` on a never-opened channel is a NO-OP in both implementations and
+`MAXFILES=2` simply succeeds, so both read baseline ERR 0 and nothing COULD
+flip; a subject that opens a real channel first needs a disk and a line under
+~38 columns; and even split and disk-backed it reads nothing inside the batch
+while the identical program answers standalone at a wider capture gap. The probe
+REFUSES (rc 2) rather than scoring a sweep with no baseline. They are the two
+SMALLEST channel verbs (54 B and 41 B of 975), so this is filed rather than
+chased.
+⚠️ **`$FEB7` gave no reading in every sweep** and is listed as outstanding, not
+as a negative.
+⚠️ And a non-flip never proves absence: a cell can belong to a verb the sweep
+does not run.
+
+🔴 **FOUR APPARATUS FAULTS IN ONE MEASUREMENT, EACH PRODUCING A PLAUSIBLE
+ANSWER** — the reason `ctrl.named` is built to fail:
+| fault | what it looked like |
+|---|---|
+| the fence matched its own ECHOED source line (`PRINT"[0]"`) | twenty clean "no flip" rows |
+| the subject could not reach a hook | "CLOSE has no hook" |
+| a typed line past ~38 columns | no reading anywhere |
+| the capture window too small for a disk WRITE | the same, but only in the batch |
+
 #### AND THE COUPLING IS A DIFFERENT SHAPE TOO, MEASURED
 
 [`xslot_chanprice.py`](../../scratchpad/xslot_chanprice.py) counts every call
