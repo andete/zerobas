@@ -1878,7 +1878,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:18917 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:19062 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -2044,7 +2044,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:6645 (T-6FE392)8 (T-529ABE)` from `TODO.md:17568 (T-529ABE)`: a
+      `TODO.md:6645 (T-6FE392)8 (T-529ABE)` from `TODO.md:17713 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -7489,7 +7489,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:17568 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:17713 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -12103,6 +12103,151 @@ list. **When a slice lands, grep this list for what it just shipped.**
       flagged the byte figure beside it as PRESENT-TENSE — its pattern includes
       `\bis at\b`, which ordinary English hits. A false positive costs one
       rephrase, the trade its own header argues for — recorded, not filed.
+
+🔬 **D-CFARCH (2026-09-15) — HOW THE CF-3300 ACTUALLY WIRES DISK BASIC, OBSERVED
+RATHER THAN GUESSED.** Joost asked for this directly: *"I'd expect most if not all
+of disk basic to be in the disk rom, and installed via the hooks"*, then *"do a
+thorough investigation how the 3300 actually handles this first, lets get rid of
+guesses and faulty invented implementations"*.
+⚠️ **THE LINE THIS STAYS ON IS THE ONE `expansion-protocol.md` §2 ALREADY DREW**: a
+claimed hook cell holds `F7 <slot> <lo> <hi> C9`, and reading it is allowed
+practice — §2 records exactly such a dump — while the target addresses are *"an
+internal detail of the reference ROM"* we note and never call. **NO INSTRUCTION OF
+THE REFERENCE IS READ OR RECORDED. This is not a disassembly.**
+🟢 **THE CENSUS — 35 CLAIMED CELLS, AND NOT ONE EXCEPTION**
+([`scratchpad/cf3300_arch_probe.py`](scratchpad/cf3300_arch_probe.py), the whole
+`$FD9A`–`$FFCF` hook area read through the debugger):
+| | |
+|---|---|
+| claimed cells | **35** |
+| slot byte | **`$87` on all 35** — expanded slot 3-1, the disk ROM |
+| entry page | **PAGE 1 (`$4000`–`$7FFF`) on all 35** |
+| tail byte | **`C9` (RET) on all 35** |
+🎯 **SO JOOST IS RIGHT, 35 FOR 35: EVERY Disk-BASIC HANDLER LIVES IN THE DISK ROM
+AND IS REACHED THROUGH A HOOK.** None in page 0, none in another slot, no RAM
+stubs, no exceptions to the idiom.
+🔴 **AND IT CORRECTS THIS TREE'S OWN EARLIER NUMBER.** D-NODISKDEN reported **27**
+claimed cells; that came from a BASIC `PEEK` sweep whose output was a single
+screen line and was **TRUNCATED**. The debugger reads memory directly and finds
+35. ⚠️ A census taken through the SCREEN is bounded by the screen.
+🔬 **THE BEHAVIOURAL HALF, BECAUSE THE CENSUS CANNOT SAY WHETHER THEY CALL BASIC
+BACK** — and a handler that evaluates an expression must reach the interpreter
+somehow, whatever the mechanism:
+| case | CF-3300 | |
+|---|---|---|
+| `FROG` | ERR 2 | control — an unknown word IS a Syntax error |
+| `FILES"*.BAS"` | ERR 70 | baseline |
+| **`FILES 5`** | **ERR 13** | **Type mismatch, NOT Syntax error → it EVALUATED and type-checked** |
+| **`A$="A":FILES A$+"B"`** | **ERR 70** | the CONCATENATION was evaluated, then the medium failed |
+| `KILL 5`, `NAME 5 AS "B"` | ERR 13 | the same face |
+❌ **AND THAT IS AS FAR AS IT GOES — AN EARLIER DRAFT OF THIS ENTRY OVERCLAIMED
+AND JOOST CAUGHT IT.** It said *"therefore the handlers call back into the
+interpreter across slots — measured, not inferred"*. **It was inferred.** The
+Type mismatch is equally consistent with main BASIC evaluating the argument
+BEFORE the handler ever runs, which is exactly the shape THIS tree uses
+(`fname_expr` main-side, then `chan_gate`).
+🔬 **SO THE ORDER WAS MEASURED INSTEAD, BY UN-CLAIMING**
+([`scratchpad/whoevals.py`](scratchpad/whoevals.py),
+[`whoevals2.py`](scratchpad/whoevals2.py)):
+| case | CF-3300 |
+|---|---|
+| `FILES 5`, hook claimed | ERR 13 |
+| **`FILES 5`, `$FE7B` un-claimed (`C9`)** | **ERR 5** |
+| `A$="A":FILES A$+"B"` un-claimed | ERR 5 |
+| `KILL 5`, `H_KILL` un-claimed | ERR 5 |
+| `FILES 5` with the body stubbed `SCF;RET` | ERR 5 |
+| `FILES 5` with the body stubbed `XOR A;RET` | ERR 5 |
+🟢 **WHAT THAT DOES ESTABLISH, NARROWLY**: BASIC consults the hook's
+EXISTENCE before evaluating the argument. If evaluation came first, an un-claimed
+hook would still raise Type mismatch on `FILES 5`; it raises Illegal function
+call instead.
+❌ **AND WHAT IT DOES *NOT* ESTABLISH — JOOST CAUGHT THIS TOO, AND THE SECOND
+EXPERIMENT WAS WORTHLESS.** He proposed: *"it could check if the hook exists, if
+not give err 5, if it exists, evaluate and then call hook"*. That design produces
+**every reading in the table above**. The `SCF;RET` / `XOR A;RET` stubs were meant
+to be "a handler that returns immediately having done nothing" — but they poked
+**byte 0, which IS the `F7` CALLF SIGNATURE**, so the cell stopped looking like a
+hook at all and the existence check failed exactly as the `C9` case does. **They
+measured nothing new.**
+⚠️ **AN EXPERIMENT THAT BREAKS THE SIGNATURE CANNOT TEST THE HANDLER** — which
+is what made the second one worthless, and what the third one fixes.
+🔬 **THE EXPERIMENT THAT DISCRIMINATES** ([`scratchpad/whoevals3.py`](scratchpad/whoevals3.py),
+control in [`whoevals4.py`](scratchpad/whoevals4.py)): keep byte 0's `F7` CALLF
+signature and redirect ONLY the slot and address, so the cell still LOOKS claimed
+while the TARGET is a `RET` we control. Two measured facts make it buildable
+without touching the reference's code — the page-3 RAM slot in CALLF encoding is
+**`$83`** (from `A8 = $FC` and `$FFFF` read inverted: page 3 = slot 3-0, slot 3
+expanded), and **`$FFCF` — `H_ZKEY`, which the CF-3300 provably does NOT claim —
+already holds `C9 C9 C9`**, because an unclaimed hook IS a `RET`.
+🔴 **THE READ-BACK CONTROL, WITHOUT WHICH NONE OF IT COUNTS** (a knife can be
+silently inert): cell `$FE7B` read `247 135 136 110 201` before and
+**`247 131 207 255 201`** after — `F7 83 $FFCF C9`, exactly as intended — and the
+target read `201 201`.
+| case (cell signature INTACT) | CF-3300 |
+|---|---|
+| `FILES 5`, unredirected | ERR 13 |
+| **`FILES 5`, target redirected to a RAM `RET`** | **ERR 5** |
+| `FILES"*.BAS"`, same redirect | ERR 5 |
+| `FILES 5`, target `SCF;RET` | ERR 5 |
+| `FILES 5`, target `XOR A;RET` | ERR 5 |
+🟢 **SO THE HOOK IS *CALLED*, NOT INSPECTED.** If BASIC merely read the cell's
+bytes, a signature-valid `F7 83 …` would have passed and evaluation would have
+followed. The outcome tracks WHAT THE TARGET DOES, not what the cell LOOKS LIKE.
+🟢 **AND THE ARGUMENT IS NOT EVALUATED BEFORE THAT CALL** — with a do-nothing
+handler, `FILES 5` never reaches its Type mismatch. **The handler is entered
+BEFORE the argument is evaluated**, so control has crossed into the disk ROM
+first, whatever ultimately does the evaluating. That refutes *"check if the hook
+exists, evaluate, then call the hook"* as stated.
+⛔ **STILL OPEN, AND NOT CLAIMED**: whether the handler evaluates the argument
+itself or returns for BASIC to evaluate and is re-entered — both fit every
+reading.
+🔴 **AND THE OBVIOUS INSTRUMENT FOR IT IS BLIND — RECORDED SO NOBODY REBUILDS
+IT.** Tracing the slot registers during `FILES 5` looked decisive: if the handler
+reaches main BASIC, page 1 must leave the disk ROM's slot and come back. It
+cannot be seen that way. `H.TIMI` is itself hooked to the disk ROM, so it must be
+silenced first (`POKE $FD9F,201`) or every VBLANK floods the log — that part
+works. The killer is that **slot 3 is EXPANDED**, so page 1's real selection lives
+in the SECONDARY register at `$FFFF`, and a write there hits the
+slot-expansion register rather than memory: openMSX's `write_mem` watchpoint never
+fires on it. Measured: **508 writes to `$A8` with page-1 primary constant at 3,
+and ZERO writes seen at `$FFFF`** — an instrument blind to exactly the switch it
+was built to watch.
+🔭 **THE INSTRUMENT THAT SHOULD WORK (Joost's suggestion): BREAK ON THE
+INTER-SLOT CALL STUB IN RAM.** It lives in the documented work area — RAM, not the
+reference's ROM — and every `CALLF`/`CALSLT` passes through it carrying the target
+slot and address, so the call graph falls out directly. ⚠️ Three conditions:
+FIND the stub's address empirically rather than from memory; silence `H.TIMI`
+first; and give it a CONTROL THAT CAN FAIL — `FROG` and a plain `PRINT` must
+produce no traffic to slot 3-1, or the log is measuring something else. **And what the "I handled it" signal IS: it is NOT CARRY**, since
+`SCF;RET` and `XOR A;RET` both behaved exactly like an unclaimed cell. Settling
+either needs tracing, which is disassembly-adjacent and not done here.
+🎯 **AND THE ORDERING IS THE PART THAT WAS ACTIONABLE ANYWAY — WE ALREADY
+MATCH IT.** `ex_fil_gate`, `ex_kill` and `ex_name` all call `chan_gate` BEFORE
+`fname_expr`/`fname_fcb`, so zerobas gates on the hook and then evaluates, in the
+same order the reference demonstrably uses.
+⛔ **WHAT IS STILL UNKNOWN, AND IS LEFT UNKNOWN RATHER THAN GUESSED**: WHICH BIOS
+entry they use to get there (`CALBAS $0159`, `CALSLT $001C`, or another). That is
+not observable without disassembly, so it is not claimed.
+📐 **WHAT IT MEANS FOR US.** Our disk ROM already calls main BASIC — but every
+code address in `disk/basic-resident-abi.inc` is **below `$4000`**
+(`widen_rhs_operand $3900`, `round_single_and_pack $343B`,
+`round_and_finalize $33E1`), i.e. page 0, which stays mapped. The verbs need
+`str_eval $49EE` and `var_find_typed $4853`, both **main page 1**. So hosting verb
+bodies in `disk.rom` needs an inter-slot call back into BASIC — the thing the
+reference demonstrably does and **zerobas has never done in that direction**
+(`grep` finds CALSLT only main→disk).
+⚠️ **AND THAT RE-PRICES D-VERBCLASS.** Its **STAY 155 B** bucket meant *cannot
+move* under the sub-ROM's "no main-page-1 escape" rule. The DISK ROM is not bound
+by that rule, so for this architecture the bucket means *cannot move WITHOUT an
+inter-slot call* — a PRICE, not a wall, and an unmeasured one. **The 36 B figure
+rung 3 was parked on was measuring the wrong thing for the architecture Joost is
+describing.**
+🙋 **NEEDS-JOOST — the next measurement is what one argument evaluation costs from
+`disk.rom`, in BYTES at the call site and in TIME**, with one verb as the probe.
+That number decides whether "most of Disk BASIC in the disk ROM" is reachable or
+only correct-in-principle. ⚠️ This machine is already a flat ~3x slower than the
+reference, so per-argument inter-slot overhead is a real cost, not a rounding
+error.
 
 ⚡ **D-TAPEVERB (2026-09-15) — ONE OF THE SIX UNASKABLE VERBS IS NOW ASKED, AND
 THE OTHER TWO TURN OUT TO NEED A DIFFERENT INSTRUMENT FOR A REASON THIS TREE
