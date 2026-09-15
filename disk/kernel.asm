@@ -2256,7 +2256,8 @@ hook_tab:
                 dw      H_CVS,  hk_present
                 dw      H_CVD,  hk_present
                 dw      H_NAME, hk_present
-                dw      H_KILL, hk_present
+                dw      H_KILL, hk_kill      ; D-DISKVERB: the FIRST verb whose
+                                             ; BODY lives here, not just its gate
                 dw      H_FILE, hk_present
                 dw      H_DSKO, hk_present   ; D-DSKIO: both bodies are a sub-ROM tenant,
                 dw      H_DSKI, hk_present   ; the hook buys the diskless ERR 5
@@ -2291,6 +2292,69 @@ install_hook:
                 inc     hl
                 ld      a, $C9              ; +4: RET
                 ld      (hl), a
+                ret
+
+; --- calbak: ONE inter-slot call back into main page 1 (MSX2 TH) ------------
+; D-DISKVERB. IX = the main page-1 target (an address from the GENERATED
+; basic-resident-abi.inc, so a page-1 shift cannot leave us calling a stale one).
+; A/HL/DE/BC pass through in both directions -- MEASURED, not assumed
+; (D-XSLOTABI, scratchpad/xslot_abi.py); IY is ours and IX is consumed.
+; `jp CALSLT` rather than call+ret: CALSLT's own `ret` lands on OUR caller.
+calbak:
+                ld      iy,(EXPTBL-1)   ; IYh = main-ROM slot id (MSX2 TH idiom)
+                jp      CALSLT
+
+; --- hk_kill: KILL's body, RUNNING IN THE DISK ROM --------------------------
+; D-DISKVERB, spec-diskbasic-hook-rearchitecture.md phase 2. The first verb whose
+; body follows its hook, which is what the reference does on all 35 of its cells
+; (D-CFARCH) and what Joost directed.
+;
+; Main's ex_kill is now the cursor hand-off and the status decode; everything
+; between is here. Two things it used to do are GONE rather than moved:
+; `chan_gate`'s presence test (we ARE the answer to it) and `diskslot_test`
+; (likewise). The diskless ERR 5 is unaffected -- it comes from chan_gate finding
+; the cell UNCLAIMED, which is exactly the case where this body does not exist.
+;
+;   in   FN_RESUME = the statement cursor, just past the KILL token
+;   out  DISKOP_STATUS = the dirverb disposition; FN_RESUME = the resume cursor;
+;        CF = 1 (claimed), which is what chan_gate tests
+;
+; 🔴 THERE IS NO `ei` HERE, AND 0c PREDICTED THERE WOULD BE. 0c measured that a
+; handler is entered with interrupts OFF and that this stops the clock outright
+; (~1 s of disk-ROM work advanced TIME by 3 frames), and concluded the call-back
+; ABI should let them back on. So an `ei` was written here -- and then MEASURED,
+; with and without, one line apart: `KILL "NOSUCH.XYZ"` against a real disk
+; advanced TIME by 2 frames BOTH WAYS (scratchpad/xslot_kill_ei.py).
+; It changed nothing, for two reasons worth keeping:
+;   * this verb is ~33 ms, so any freeze is below the resolution of the thing
+;     being protected; 0c's figure was for a ~1 s window.
+;   * `subrom_call` already does `di / call CALSLT / ei` UNCONDITIONALLY, so the
+;     moment dirverb_op runs, interrupts come back on regardless of us. The only
+;     window an `ei` here would have covered is entry -> the first call-back:
+;     a handful of instructions.
+; It is not shipped, because a byte whose measured effect is zero should not be.
+; ⚠️ THAT IS A STATEMENT ABOUT *THIS* VERB'S SIZE, NOT A GENERAL ONE. A phase-3
+; body that does long work in THIS ROM rather than inside a call-back re-opens
+; it, and 0c's numbers are the ones to re-read then.
+hk_kill:
+                ld      hl,(FN_RESUME)  ; the cursor main staged for us
+                ld      ix,fname_expr
+                call    calbak          ; a string EXPRESSION -> STRSCR; may RAISE
+                                        ; (ERR 13) and NOT return -- see the ABI
+                ld      ix,pdfcb_resume
+                call    calbak          ; -> DISK_FCB_NAME (8.3, wildcards)
+                ; 🔴 PRE-SET THE FAILURE DISPOSITION rather than read CF back.
+                ; dirverb_op returns CF=1 when the sub-ROM is absent, but whether
+                ; CF survives CALSLT is NOT among the things D-XSLOTABI measured
+                ; -- so it is not relied on. A tenant that never runs leaves the 2
+                ; standing, which is the mount/I-O disposition main already
+                ; decodes; one that runs overwrites it.
+                ld      a,2
+                ld      (DISKOP_STATUS),a
+                ld      a,DISKOP_SEL_KILL
+                ld      ix,dirverb_op
+                call    calbak
+                scf                     ; CF=1: the hook is claimed
                 ret
 
                 ds      $75A5 - $, $00

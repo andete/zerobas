@@ -16,6 +16,18 @@ SYSTEM          equ     $F37D   ; SYSTEM sysvar: BDOS entry-point word
 DOS_F340        equ     $F340   ; disk work-area flag the kernel reads at init (§8.33); $00 = ok
 RAMAD0          equ     $F341   ; RAM-slot id per page ($F341-$F344), MSX2 TH work area
 EXPTBL          equ     $FCC1   ; expanded-slot flags, 1 byte/primary, bit 7 = expanded
+; --- D-DISKVERB: the call-back route out of this ROM into main PAGE 1 -------
+; CALSLT is the BIOS's own inter-slot call (MSX2 TH). Page 0 is never swapped
+; (spec-diskbasic-hook-rearchitecture.md §2), so it stays mapped while it
+; switches page 1 from this ROM to main and back. PRICED: 7 B per call site and
+; 0.156 ms per call, ~10% of the hook entry the verb already paid to get here
+; (D-XSLOTPRICE 0b).
+CALSLT          equ     $001C   ; inter-slot call: IX = target, IYh = slot id
+; ⚠️ A PROTOCOL CONSTANT DUPLICATED FROM basic/sysvars.inc, and the two must
+; agree: main's kill_status decodes the status this selector produces. Same
+; hazard class as the H_* hook equates, which `make hook-equate-check` polices;
+; a selector checker is a follow-up, not silence.
+DISKOP_SEL_KILL equ     0       ; dirverb: KILL's fat_delete loop (sysvars.inc)
 
 ; --- Standard hook + entry addresses (disk/PROVENANCE.md §INIT) -------------
 ; HPHYD is the standard PHYDIO hook a disk ROM installs so a host's physical disk

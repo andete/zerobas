@@ -1655,33 +1655,34 @@ fcla_next:
 ; + 8.3 name as the loader verbs (parse_disk_fcb), now including 8.3 '*'/'?'
 ; wildcards: `KILL "*.BAK"` deletes every match. Errors (no disk / none matched /
 ; I-O) reuse the loader's load_error path. See basic/PROVENANCE.md §KILL.
+; 🧭 D-DISKVERB (2026-09-15): THE BODY IS NOT HERE ANY MORE. It lives in
+; disk.rom as `hk_kill`, reached through H_KILL -- which is what the reference
+; does on all 35 of its hook cells (D-CFARCH) and what Joost directed. What is
+; left is the two things only main can do: hand the handler the statement cursor,
+; and decode the disposition it comes back with.
+;
+; ⚠️ THE CURSOR CROSSES IN RAM, AND IT REUSES FN_RESUME ON PURPOSE. `chan_gate`
+; needs HL for the hook cell and clobbers DE building its return address, so
+; neither register is free to carry it. FN_RESUME is the cell fname_expr writes
+; the resume point into anyway, so one cell serves both directions and no new
+; sysvar is claimed.
+;
+; ⚠️ THE GATE STAYS, AND IT IS WHAT KEEPS THE DISKLESS ANSWER RIGHT. On a machine
+; with no disk ROM the cell is unclaimed, chan_gate raises ERR 5 before anything
+; else happens, and no filename is ever evaluated -- the same order as before.
 ex_kill:
-                push    hl                  ; ⚠️ HL IS THE STATEMENT CURSOR HERE and
-                ld      hl,H_KILL           ; the gate needs it for the hook address;
-                call    chan_gate           ; clobbering it made all three verbs answer
-                pop     hl                  ; ERR 2 on the DISK build -- caught by the
-                                            ; gate's own zb-disk column, not by review
                 inc     hl                  ; HL -> bytes after the KILL token
-                jr      do_kill
-do_kill:
-                call    fname_fcb          ; D-FNEXPR: a string EXPRESSION
-                                           ; build DISK_FCB_NAME (8.3 wildcard pattern)
-                call    diskslot_test
-                jp      z,load_error
-                push    hl                  ; guard text cursor across CALSLT
-                ; wildcard delete: fat_delete finds + frees + $E5-marks the FIRST
-                ; matching entry (name_cmp honours '?'), so loop it until no match
-                ; remains. C tracks whether anything was deleted -> File not found
-                ; (load_error) if the pattern matched nothing (Q4.1). A non-wildcard
-                ; name simply matches once, exactly as before.
-                ; repack: the loop runs in the dirverb_tenant (sub page 1),
-                ; calling fat_delete sub-locally; DISKOP_STATUS returns the
-                ; three-way disposition (docs/spec-evict-diskfile-cluster.md §12,
-                ; widened to three by D-DSKMSG — sub/dirverb.asm's tnt_kill).
-                ld      a,DISKOP_SEL_KILL
-                call    dirverb_op
-                pop     hl                  ; restore text cursor
-                jp      c,load_error        ; sub-ROM absent -> error
+                ld      (FN_RESUME),hl      ; stage the cursor for the handler
+                ld      hl,H_KILL
+                call    chan_gate           ; unclaimed -> ERR 5 (trappable);
+                                            ; claimed -> disk.rom ran the whole verb
+                ld      hl,(FN_RESUME)      ; the cursor the handler resumed at
+                jp      kill_status
+; The wildcard delete itself -- fat_delete finding, freeing and $E5-marking each
+; match in turn -- is unchanged and still runs in the dirverb_tenant (sub page 1).
+; Only its CALLER moved: hk_kill asks for DISKOP_SEL_KILL from disk.rom now
+; instead of do_kill asking from here.
+;
                 ; D-DSKMSG (docs/spec-basic-dskmsg.md §4), R-DK1: the CF-3300
                 ; answers `File not found` to a KILL that matched nothing, which
                 ; is what the line below USED to say in a comment while the code

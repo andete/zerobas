@@ -91,6 +91,11 @@ REQUIRED_DISK_CODE = [
 REQUIRED_DISK_RAM = [
     "ARGA",                     # the 15-digit working record
     "STRSCR",                   # [len][bytes] staging buffer
+    "FN_RESUME",                # D-DISKVERB: main stages the statement cursor
+                                # here for the handler, and fname_expr overwrites
+                                # it with the resume point -- one cell, both ways
+    "DISKOP_STATUS",            # D-DISKVERB: the dirverb tenant's disposition,
+                                # which main's kill_status decodes after the hook
     "FAC",                      # the packed float accumulator
     "FACTYP",                   # 2 / 4 / 8
 ]
@@ -113,7 +118,14 @@ REQUIRED_DISK_RAM = [
 # new mechanism invented under time pressure. ⚠️ A name here must ALSO be
 # reachable through whatever inter-slot entry phase 0b prices -- this list makes
 # the address available and says nothing about the call sequence.
-REQUIRED_DISK_CALLBACK: list[str] = []
+REQUIRED_DISK_CALLBACK: list[str] = [
+    # D-DISKVERB phase 2: KILL's body runs in disk.rom and calls back for the
+    # three things only main can do. Measured ABI (D-XSLOTABI): HL/DE/BC/A cross
+    # both ways intact, so nothing here needs RAM staging it does not already use.
+    "fname_expr",               # HL = cursor in; stashes FN_RESUME + STRSCR
+    "pdfcb_resume",             # parse_disk_fcb, then HL = (FN_RESUME)
+    "dirverb_op",               # A = DISKOP_SEL_*; runs the dirverb sub-ROM tenant
+]
 
 Profile = collections.namedtuple("Profile", "code ram callback what")
 
@@ -257,7 +269,7 @@ def generate(sym_path: str, out_path: str, write: bool = True,
         if callback and name == callback[0]:
             lines.append("")
             lines.append("; --- page-1 call-back targets: reached by an "
-                         "INTER-SLOT call, not an absolute one ---")
+                         "INTER-SLOT call (MSX2 TH), not an absolute one ---")
         # Leading "0" (same convention pasmo's own --sym output uses, e.g.
         # "fp_div EQU 03632H") so a value whose hex form starts A-F never
         # parses as an identifier instead of a numeric literal.

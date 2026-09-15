@@ -15,5 +15,12 @@ round_single_and_pack equ 0343BH
 round_and_finalize equ 033E1H
 ARGA equ 0F06AH
 STRSCR equ 0E26DH
+FN_RESUME equ 0E227H
+DISKOP_STATUS equ 0E9FCH
 FAC equ 0F01CH
 FACTYP equ 0F01AH
+
+; --- page-1 call-back targets: reached by an INTER-SLOT call (MSX2 TH), not an absolute one ---
+fname_expr equ 06E91H
+pdfcb_resume equ 06E8AH
+dirverb_op equ 06C2FH
