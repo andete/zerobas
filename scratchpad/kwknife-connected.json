@@ -1,5 +1,5 @@
 {
- "rom_fingerprint": "ff579a8d 6dbd7e39 a01dabda b76fcfe5",
+ "rom_fingerprint": "88855a6e 6dbd7e39 a01dabda a2558499",
  "rows": {
   "ABS": {
    "connected": true,
@@ -470,6 +470,7 @@
     "stmt": "MISSING"
    },
    "row": "fieldkw",
+   "subject": "FIELD",
    "verdict": "MISSING",
    "weak": false
   },
@@ -478,7 +479,7 @@
    "modes": {
     "stmt": "MISSING"
    },
-   "row": "files_b",
+   "row": "files",
    "subject": "FILES",
    "verdict": "MISSING",
    "weak": false
@@ -691,6 +692,7 @@
     "stmt": "MISSING"
    },
    "row": "lfiles",
+   "subject": "LFILES",
    "verdict": "MISSING",
    "weak": false
   },
@@ -1534,9 +1536,16 @@
     "exp": "MISSING"
    }
   },
+  "FIELD": {
+   "connected": true,
+   "rows": {
+    "fieldkw": "MISSING"
+   }
+  },
   "FILES": {
    "connected": true,
    "rows": {
+    "files": "MISSING",
     "files_b": "MISSING"
    }
   },
@@ -1619,6 +1628,12 @@
    "connected": true,
    "rows": {
     "len": "MISSING"
+   }
+  },
+  "LFILES": {
+   "connected": true,
+   "rows": {
+    "lfiles": "MISSING"
    }
   },
   "LINE INPUT": {
@@ -1848,5 +1863,5 @@
    }
   }
  },
- "written": "2026-09-15 10:17:08"
+ "written": "2026-09-15 11:21:31"
 }

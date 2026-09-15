@@ -1878,7 +1878,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:18694 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:18737 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -2044,7 +2044,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:6645 (T-6FE392)8 (T-529ABE)` from `TODO.md:17345 (T-529ABE)`: a
+      `TODO.md:6645 (T-6FE392)8 (T-529ABE)` from `TODO.md:17388 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -7489,7 +7489,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:17345 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:17388 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -12103,6 +12103,49 @@ list. **When a slice lands, grep this list for what it just shipped.**
       flagged the byte figure beside it as PRESENT-TENSE — its pattern includes
       `\bis at\b`, which ordinary English hits. A false positive costs one
       rephrase, the trade its own header argues for — recorded, not filed.
+
+- [ ] 🔴 **`FIELD` HAS NO DISK-PRESENCE GATE, AND THERE IS NO HOOK TO GATE IT
+      WITH.**
+      🔭 SCOUT-THEN-ASK — the measuring is done; the choice of presence test is not.
+      Measured 2026-09-15 (D-NODISKGAP,
+      [`scratchpad/nodiskgap_probe.py`](scratchpad/nodiskgap_probe.py), four
+      sides with controls): the diskless VG-8020 answers **ERR 5** to `FIELD` and
+      to `FIELD#1,2 AS A$`; this tree answers **24** and **59** — the CHANNEL's
+      own errors, because `ex_field` (`basic/field.asm:257`) goes straight to
+      `fch_check`/`fch_mode_class` with nothing asking whether a disk ROM exists.
+      The zb-DISK column matches the CF-3300 on both forms, so the verb is fine;
+      only the diskless target is wrong. Pinned as `h.field` in
+      `probes/basic/basic_probe_nodisk.py`.
+      🟢 **JOOST, 2026-09-15: *"Isn't that exactly because of the hooks for disk
+      verbs?"* — YES, AND MEASURING IT TURNED A DECISION BACK INTO A LOOKUP.**
+      I had written that `basic/sysvars.inc:3139-3144` has no `H_FIELD` and that
+      the fix therefore needed a design call. The missing equate is OUR gap, not
+      the machine's: a PEEK sweep of the hook area on a booted CF-3300 (each
+      claimed cell holds `F7 <slot> <lo> <hi> C9`, so `PEEK = 247` names it — the
+      same black-box read `expansion-protocol.md` §2 used for three hooks —
+      [`scratchpad/hookscan_probe.py`](scratchpad/hookscan_probe.py)) shows
+      the real disk ROM claims **27 cells**, and **14 of them have no equate
+      here**:
+      `$FDEF $FE21 $FE26 $FE2B $FE4E $FE58 $FE5D $FE62 $FE71 $FE76 $FE80 $FE85
+      $FE8A $FE99`.
+      🎯 **So `FIELD` almost certainly HAS a standard slot and it is one of those
+      fourteen** — the question is WHICH, and that is measurable, not arguable.
+      ⚠️ **And the sweep found a second thing worth its own look: `H_DSKO $FDF4`
+      is the ONE equate we name that the CF-3300 does NOT claim**, while `$FDEF`
+      — which `expansion-protocol.md` §2's own table calls `HDSKO` — IS claimed.
+      Two of our documents disagree about `DSKO$`'s hook address and the machine
+      sides with §2.
+      🔬 **THE DECISIVE EXPERIMENT, AND IT IS CHEAP**: on the CF-3300 `POKE` one
+      candidate's first byte to `201` (a bare `RET`, which is what an unclaimed
+      hook is) and run the verb. The slot whose un-claiming flips `FIELD#1,2 AS
+      A$` from ERR 59 to **ERR 5** is `FIELD`'s hook. One boot per candidate,
+      fourteen candidates, and a bisect halves that. ⚠️ Black-box on the
+      REFERENCE — a POKE and a reading, no disassembly.
+      📏 Main page 1 had **3 B** free on 2026-09-15, so the answer has to be
+      cheap or it has to wait for the approved 256 B carve.
+      ⚠️ `GET`/`PUT`/`LSET`/`RSET` are the rest of `field.asm` and have NOT been
+      asked yet — they may have the same hole, and the same sweep answers all of
+      them at once, because each will have a slot among those fourteen too.
 
 - [ ] 🔴 **`PLAY`'s `X<var>;` SUBSTRING EXECUTION IS MSX1 MML AND THIS TREE
       DOES NOT IMPLEMENT IT — THE ONE FORM BETWEEN `PLAY` AND TIER 1.**
@@ -20462,6 +20505,113 @@ re-measure** — §8 is explicit that a relocation moves code between REGIONS, s
 one-run re-stamp that sufficed for D-KWSAVEEND's 3-byte tail does not.
 🎯 **This is ruling 2's prerequisite carve**: the four code forms (LOCATE cursor
 switch, SCREEN key click, `VARPTR(#n)`, `INPUT$` console) land together after it.
+
+🔴 **D-DISKDISP (2026-09-15) — AND THE VERY FIRST STEP OF THE APPROVED PLAN IS
+THE WRONG STEP. THE `$4004` SLOT-WALK IS NOT HOW THESE FIVE VERBS ARE REACHED.**
+🎯 **TWO OF THIS TREE'S OWN DOCUMENTS DISAGREE ON THE LOAD-BEARING RULE, AND THE
+SPEC CARRIED THE WRONG HALF.** `spec-diskbasic-relocation.md`'s Mechanism section
+(restated verbatim as the seam spec's §7) says the dispatch is **`$4004` STATEMENT
+expansion**. `disk/docs/expansion-protocol.md` §1's own header table says `+0004
+STATEMENT` is the **`CALL`-statement expansion handler** — the route for
+`CALL <name>` / `_<name>`, not for a tokenised keyword like `FILES`.
+🔬 **MEASURED, WITH CONTROLS FIRST**
+([`scratchpad/tokscout2.py`](scratchpad/tokscout2.py) — every word run as a bare
+statement under `ON ERROR`, on three machines):
+| word | VG-8020 (diskless) | zerobas NODISK | zerobas DISK |
+|---|---|---|---|
+| `FROG`, `ZQ` (controls) | **ERR 2** | ERR 2 | ERR 2 |
+| `BEEP`, `CLS` (controls) | ran | ran | ran |
+| `FILES` `KILL` `NAME` `COPY` | **ERR 5** | ERR 5 | 70 / 24 / 24 / 24 |
+| `FIELD` | ERR 5 | ERR 24 | ERR 24 |
+| `LFILES` | ERR 5 | **ran** | ERR 70 |
+| `MERGE` | ERR 24 | ERR 24 | ERR 24 |
+🎯 **ERR 5, NOT ERR 2, IS THE WHOLE READING.** A word BASIC does not know answers
+**Syntax error** — that is what the two controls establish, and without them ERR 5
+would mean nothing. The disk verbs answer **Illegal function call** on a machine
+with NO DISK ROM AT ALL, so on a real MSX the **TOKEN AND ITS DISPATCH LIVE IN THE
+MAIN BASIC ROM** and the disk ROM supplies only the implementation behind them.
+🔴 **SO THE TOKENS AND THEIR `stmt_table` ENTRIES CANNOT MOVE — ONLY THE
+BODIES CAN.** `FILES` must stay a keyword on the diskless target too, or a
+`Syntax error` appears where an `Illegal function call` belongs and
+`nodisk-acceptance` is right to go red. What moves is the HANDLER, reached by a
+cross-slot thunk (`RST 30h` + slot + address + `RET`, the idiom
+`expansion-protocol.md` §2 records from the hooks).
+📏 **WHICH RE-PRICES THE RUNG: ~5 B of thunk per verb STAYS BEHIND**, so the
+relief is nearer **~226 B than 256 B**. Not yet measured exactly — the slot byte
+is discovered at boot, not a constant, so the thunk may be longer.
+🟢 **THE GOOD NEWS IS THAT THE RISKIEST STEP IS DELETED.** "Write a consumer
+slot-walk in `basic/interp.asm`" was the one interpreter change in the plan and
+the one that could go wrong quietly; it is not needed for this rung at all.
+❌ **I THEN CLAIMED OPTION 3 SPENDS THE FOREIGN-DISK-ROM INTEROP. THAT WAS
+WRONG, AND JOOST ASKED THE QUESTION THAT KILLED IT: *"aren't those supposed to
+work via hooks?"*** They are, and **this tree already does it**:
+`basic/sysvars.inc:3139-3144` defines `H_NAME $FDF9`, `H_KILL $FDFE`,
+`H_FILE $FE7B` and `H_COPY $FE08` — the STANDARD MSX hook slots, for exactly the
+verbs this rung moves — and `disk/kernel.asm:2258-2263` claims all four.
+🎯 **A HOOK IS CLAIMED BY WHICHEVER DISK ROM IS PRESENT, so interop is preserved
+BY CONSTRUCTION rather than spent**: a foreign disk ROM patches the same five
+bytes with its own `F7 <slot> <lo> <hi> C9`, and `FILES` reaches ITS body. That is
+the entire point of the hook idiom, and my worry only looked real because I was
+still reasoning from the spec's `$4004` route.
+🟢 **AND THE ERR 5 THE SCOUT MEASURED IS THIS MECHANISM'S OWN SIGNATURE.**
+`chan_gate` (`basic/files.asm:84`) calls THROUGH the hook cell; unclaimed it is a
+bare `ret`, and the gate then raises **Illegal function call** — which is exactly
+what the diskless VG-8020 answers for all four verbs, and what
+`nodisk-acceptance`'s `v.dskf` row already pins for `DSKF`.
+💰 **WHICH MAKES THE RUNG SMALLER AND SAFER THAN THE SPEC DESCRIBED.** Today the
+hook is only a PRESENCE TEST — `disk/kernel.asm` claims it with `hk_present` and
+the body then runs in main page 1. The relocation is: **point the hook at the real
+body in `disk.rom` and delete the main-side body.** No `$4004`, no consumer
+slot-walk, no new interpreter code, and the call site in `files.asm` already loads
+the hook address and goes through `chan_gate`.
+⚠️ **What still needs measuring before a byte moves**: what stays behind at each
+call site (the `ld hl,H_*` + `call chan_gate` pair is already there, so the
+question is what ELSE the bodies share with code that is not moving), and whether
+`dirverb_op`'s sub-ROM tenant route changes. The ~226 B figure above is
+provisional until that is counted.
+
+⚡ **D-NODISKGAP (2026-09-15) — `LFILES` WAS NEVER GATED, AND THE REASON IS THAT
+`do_files` IS A SHARED TAIL WITH TWO HEADS.**
+🎯 **D-CHANHOOK (2026-09-03) ROUTED `FILES`/`KILL`/`NAME` THROUGH THEIR HOOKS AND
+LEFT THE FOURTH ENTRY POINT OF THE SAME FILE BEHIND.** Nobody decided against
+`LFILES`; `ex_files` carried the `chan_gate` call and then `jr do_files`, and
+`ex_lfiles` sat AFTER that jump — it set its selector and fell into the shared
+tail having touched nothing. A diskless build RAN it.
+🔬 **MEASURED ON FOUR SIDES, CONTROLS FIRST**
+([`scratchpad/nodiskgap_probe.py`](scratchpad/nodiskgap_probe.py)) — and four is
+the point: without the CF-3300 there is no way to tell *"wrong on the diskless
+target"* from *"wrong everywhere"*.
+| case | VG-8020 | CF-3300 | zb NODISK | zb DISK |
+|---|---|---|---|---|
+| `FROG`, `ZQ` (controls) | ERR 2 | ERR 2 | ERR 2 | ERR 2 |
+| `CLS` (control) | ran | ran | ran | ran |
+| `FILES` (family control) | ERR 5 | ERR 70 | ERR 5 | ERR 70 |
+| `LFILES` **before** | ERR 5 | ERR 70 | **ran** | ERR 70 |
+| `LFILES` **after** | ERR 5 | ERR 70 | **ERR 5** | ERR 70 |
+🎯 **`FILES` BESIDE IT IS WHAT MADE THE HOLE INVISIBLE** — the family control
+refuses correctly on every side, so nothing in the pinned set was red and nothing
+looked wrong. The verb simply had no row: `basic_probe_nodisk.py` asked about
+`FILES`, `KILL`, `NAME`, `COPY`, `OPEN`, `DSKO$`, `DSKI$` and `DSKF`, and never
+about `LFILES`.
+🟢 **FIXED, +2 B of main page 1 (5 B → 3 B free, 2026-09-15).** The selector now
+goes in FIRST and the gate is SHARED, so a third head cannot repeat this: there is
+nowhere to enter that skips it. A second inline gate would have cost 10 B.
+🟢 **AND THE ROW EXISTS NOW** (`h.lfiles`), so the gate enforces it rather than
+the next reader having to notice.
+🔴 **`FIELD` DIVERGES THE SAME WAY AND IS *NOT* FIXED — IT IS PINNED, BECAUSE THE
+FIX NEEDS A DECISION.** `ex_field` (`basic/field.asm:257`) has no disk-presence
+gate at all; it goes straight to `fch_check`/`fch_mode_class`, so a diskless build
+answers the CHANNEL's error where the oracle answers 5 because the verb is not
+there. Both forms diverge, which is what says this is the GATE and not the parse:
+| case | VG-8020 | CF-3300 | zb NODISK | zb DISK |
+|---|---|---|---|---|
+| `FIELD` (bare) | ERR 5 | ERR 24 | ERR 24 | ERR 24 |
+| `FIELD#1,2 AS A$` | ERR 5 | ERR 59 | ERR 59 | ERR 59 |
+⚠️ **The zb-DISK column matches the CF-3300 on both forms**, so this is a
+diskless-only defect, not a broken verb.
+📌 `h.field` is now in `basic_probe_nodisk.py`'s `PINNED` set — refilling it for
+the first time since D-MKHOOK emptied it, and that is the set DOING ITS JOB: the
+row is NEW, not newly broken.
 
 ⚡ **D-KWPLAY (2026-09-15) — `PLAY` GOES 0 → 9 OF 10 FORMS, AND DESIGNING THE
 ROWS FOUND THREE DEFECTS. TWO ARE FIXED; THE THIRD IS THE ONLY THING LEFT

@@ -89,6 +89,18 @@ CASES = [
     ("k.dski",   'PRINT LEN(DSKI$(0,0))'),      # D-DSKIO: ERR 5 on both, before any parse
     ("h.dsko",   'DSKO$ 0,0'),
     ("h.copy",   'COPY"A"TO"B"'),            # D-COPY: ERR 5 on both diskless sides
+    # 🔴 D-NODISKGAP (2026-09-15): TWO VERBS THIS SET NEVER ASKED ABOUT.
+    # `LFILES` shares `do_files` with `FILES` -- a shared TAIL WITH TWO HEADS --
+    # and D-CHANHOOK gated only the first head, so a diskless build RAN it while
+    # `h.files` beside it refused correctly. Fixed in the same slice (the selector
+    # goes in first and the gate is shared, so there is nowhere left to enter that
+    # skips it); the row is here so nothing can quietly un-gate it again.
+    ("h.lfiles", 'LFILES'),
+    # `FIELD` has NO gate at all and no hook of its own to gate with -- see
+    # PINNED below. Asked in its ARGUMENT form: a bare `FIELD` could be refused
+    # for its syntax rather than by the disk gate, and both forms diverge the
+    # same way, which is what says the finding is the GATE and not the parse.
+    ("h.field",  'FIELD#1,2 AS A$'),
 ]
 
 # Rows that MUST agree with the oracle. A red here is a plain defect.
@@ -122,8 +134,21 @@ CONTROLS = {"c.print", "c.str", "v.eof", "v.lof"}
 # ⚠️ `h.open` STAYS, and is characterisation rather than a hook candidate: the
 # oracle answers ERR 2 (Syntax error) because `FOR OUTPUT` is not parseable at
 # all without Disk BASIC -- a keyword-surface question no handler hook fixes.
+# 🔴 REFILLED AGAIN 2026-09-15 (D-NODISKGAP) BY `h.field`, AND THAT IS THIS
+# SET DOING ITS JOB rather than a regression: the row is NEW, not newly broken.
+# `ex_field` (basic/field.asm:257) has NO disk-presence gate at all -- it goes
+# straight to `fch_check`/`fch_mode_class` -- so a diskless build answers the
+# CHANNEL's error (59, `File not open`) where the oracle answers 5 because the
+# verb is not there. Measured on four sides (scratchpad/nodiskgap_probe.py); the
+# BARE form diverges the same way (24 against 5), which is what says this is the
+# GATE and not the parse.
+# 🔭 Unlike FILES/KILL/NAME/COPY there is NO `H_FIELD` equate to gate with --
+# basic/sysvars.inc:3139-3144 has no slot for it -- so fixing this needs a
+# decision about WHAT the presence test should be, not just a call. Filed in
+# TODO.md; borrowing `H_FILE` would work mechanically and would be a lie.
 PINNED: dict[str, tuple[str, str]] = {
     "h.open":  ("'ERR 2 '", "'load error                             '"),
+    "h.field": ("'ERR 5 '", "'ERR 59 '"),
 }
 
 

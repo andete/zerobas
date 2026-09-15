@@ -133,16 +133,28 @@ disk_error:
                 jp      nz,raise_error
                 jp      load_error
 
+; 🔴 D-NODISKGAP (2026-09-15): `ex_lfiles` USED TO ENTER *PAST* THE GATE.
+; D-CHANHOOK routed FILES/KILL/NAME through their hooks and LFILES was missed --
+; not because anyone decided against it, but because `do_files` is a shared TAIL
+; WITH TWO HEADS and only the first head carried the gate. Measured on four sides
+; (scratchpad/nodiskgap_probe.py): the diskless VG-8020 answers ERR 5 to `LFILES`
+; exactly as it does to `FILES`, and this tree RAN it -- while `FILES` beside it
+; refused correctly, which is what made the hole invisible.
+; 🎯 The selector now goes in FIRST and the gate is shared, so a third head
+; cannot repeat this: there is nowhere to enter that skips it. Costs 2 B against
+; the 10 B a second inline gate would have.
 ex_files:
+                ld      a,DISKOP_SEL_FILES  ; screen: CHPUT, packed rows
+                jr      ex_fil_gate
+ex_lfiles:
+                ld      a,DISKOP_SEL_LFILES ; printer: LPTOUT, one entry per line
+ex_fil_gate:
+                push    af                  ; the selector, across the gate
                 push    hl                  ; ⚠️ HL IS THE STATEMENT CURSOR HERE and
                 ld      hl,H_FILE           ; the gate needs it for the hook address;
                 call    chan_gate           ; clobbering it made all three verbs answer
                 pop     hl                  ; ERR 2 on the DISK build -- caught by the
-                                            ; gate's own zb-disk column, not by review
-                ld      a,DISKOP_SEL_FILES  ; screen: CHPUT, packed rows
-                jr      do_files
-ex_lfiles:
-                ld      a,DISKOP_SEL_LFILES ; printer: LPTOUT, one entry per line
+                pop     af                  ; gate's own zb-disk column, not by review
 
 ; do_files — evaluate the optional filespec, run the listing in the tenant, then
 ; dispatch on how it went. ⚠️ D-FNEXPR2: "evaluate", not "parse" -- the filespec
