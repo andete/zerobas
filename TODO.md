@@ -20314,6 +20314,79 @@ constant cannot be refreshed through the probe itself —
 uses for that machine. The real machine now reads
 `PROG2   .BAS PROG3   .BAS` on the third line, byte-identical to what this tree
 produces.
+🔎 **D-REGIONSCOUT — THE CARVE'S FIRST MEASUREMENT, AND IT RUNS INTO A
+DOCUMENTED CHARTER PROPERTY.** `scratchpad/regionscout.py` maps every main-image
+symbol back to its source file and splits the bytes by region. It cross-checks
+exactly against `basic-reloc` on 2026-09-15 (page 1: 12443 + 3936 = 16379,
+leaving the 5 B free it reported that day; low region 6126 B, its string-engine
+figure).
+| file | kind | page 1 |
+|---|---|---|
+| `files.asm` | disk | 1600 |
+| `cload.asm` | tape | 864 |
+| `field.asm` | disk | 600 |
+| `save.asm` | disk+tape | 533 |
+| `fat.asm` | disk | 124 |
+| `format.asm` | disk | 115 |
+| `bload.asm` | disk | 100 |
+| **disk-only** | | **2539** |
+| **tape-only** | | **864** |
+🎯 **3936 B OF DISK/TAPE CODE SAT IN MAIN PAGE 1 ON 2026-09-15, WHERE 5 B WERE
+FREE.** The lever is real and it is enormous.
+🔴 **AND THE DISK HALF OF THE PLACEMENT RULE CONTRADICTS A MEASURED,
+ORACLE-PROVEN DECISION THIS TREE ALREADY MADE.** `basic/fat.asm:11` states it and
+`docs/TODO-done.md` records the spike behind it: a disk ROM's **only**
+interchangeable interface is SECTORS — there is no standard "open file by name"
+entry to delegate to, because a disk ROM's filename logic is locked inside its own
+Disk BASIC. So *"the basic-side FAT is the NECESSARY PRICE of the universal sector
+interface, not avoidable duplication"*, and the property is PROVEN, not asserted:
+every disk verb passes under zerobas-BASIC with **our own `disk.rom` AND with the
+foreign National CF-3300 disk ROM in slot 3-1**. Moving `files.asm`/`fat.asm` into
+our disk ROM would spend that property. (True delegation — hosting the disk ROM's
+own Disk BASIC extension — is already filed as the charter-raising Phase-2 item.)
+🔴 **AND THE SUB ROM, WHICH IS WHERE THIS TREE ACTUALLY EVICTS, IS FULL.**
+`fatprim_tenant`, `dirverb_tenant`, `save_tenant` and `bload_tenant` all live
+there already — and `make basic-reloc` on 2026-09-15 reads **505 B free in sub
+page 0 and 50 B in sub page 1**. Even `cload.asm`'s 864 B does not fit, so the
+TAPE half of the rule needs its own carve first.
+📍 **SO NEITHER HALF IS EXECUTABLE AT TODAY'S FREE SPACE**, and the disk half
+costs a proven property on top. Put to Joost rather than resolved here.
+🏗️ **JOOST RULED AGAIN, 2026-09-15, AFTER THE PRIOR DECISION WAS PUT IN FRONT
+OF HIM: RE-DECIDE AFTER THE SEAM IS MEASURED, AND WRITE THE SPEC, NO CODE.**
+🔴 **I ASKED A QUESTION THAT WAS ALREADY DECIDED.**
+`disk/docs/spec-diskbasic-relocation.md` is headed *"Status: DIRECTION DECIDED
+(user, 2026-07-09)"* and its decision is the ROLE-SPLIT — keep the loader path and
+the FAT it needs in `basic.rom` for interop, move the disk-MANAGEMENT verbs to
+`disk.rom` via the `$4004` STATEMENT expansion — with the alternative *"move all
+disk-BASIC incl. `fat.asm`, drop the interop"* **considered and REJECTED**. My
+first question framed the choice without that in view and got the rejected option
+back. RE-VERIFY A FILED DECISION BEFORE ASKING ABOUT ITS SUBJECT, not only before
+building on it.
+📏 **THE SEAM IS MEASURED AND IT REFUTES THE ESTIMATE THE PARENT SPEC RESTS ON.**
+Full write-up: [`disk/docs/spec-diskbasic-relocation-seam.md`](disk/docs/spec-diskbasic-relocation-seam.md).
+* `files.asm → fat.asm` is **3** edges and `field.asm → fat.asm` **3**, not the
+  *"~15"* and *"~13"* the parent spec estimates — **6, not 28.** The
+  primitive/sector layer was evicted to the sub-ROM tenants after that estimate
+  was written, and what was left of `basic/fat.asm` in main page 1 on 2026-09-15
+  was **124 B**.
+  The *"~28 cross-slot CALLSLTs"* it treats as the central obstacle **does not
+  exist**, and options 1 and 2 die with it: both are capped at 124 B.
+* **The seam that DOES exist is the INTERPRETER.** `files.asm` has **99**
+  outbound edges to the rest of BASIC (53 to `interp.asm`) and **26** inbound;
+  `field.asm` 41 and 4. Plus **19 `dw` dispatches** from `stmt_table` that the
+  edge scan cannot see and that `$4004` would replace.
+* **Option 4 (move `files`+`field`+`format`) was worth 2315 B** of page-1 relief
+  on 2026-09-15, for 140 outbound calls turned cross-slot and 30 inbound entry
+  points.
+* **Option 3 is UNPRICED, and that is the next measurement.** A branch-reachability
+  closure reaches 16 labels / 194 B against `files.asm`'s 1600, because control
+  reaches most of these bodies by **FALLTHROUGH** — the blind spot `dupspan`
+  already has. `seamscout.py` keeps the closure WITH that warning, because the
+  negative result is the finding.
+📌 **AND THE INTEROP IS UNGATED**, which cuts both ways: `expansion-protocol.md`
+lists the host-direction test as an acknowledged *"Gap (small)"*, so nothing would
+go red if it broke — the property is documented and spike-proven, not asserted by
+any suite.
       ⚠️ **`TXTMAX` IS NOW BOUNDED BY `DETOKBUF`, NOT BY FREE RAM** — at 1280 B
       it does not fit the 1024 B window, so `$BB00` is the stop until DETOKBUF
       is dealt with. Of D-LINEMAX's 1792 B, **1024 recovered, 768 still charged**.
