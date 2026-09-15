@@ -75,15 +75,42 @@ byte relief for each):
 
 ## Mechanism
 
-- **Dispatch — `STATEMENT` expansion (`$4004`).** `disk/init.asm` already lays an `"AB"`
-  header with a **zeroed** `STATEMENT` vector — implement the provider side there, and the
-  consumer slot-walk in `basic/interp.asm` (today an unknown statement falls to
-  `stmt_error`, `basic/interp.asm:688`; there is **no** slot-walk dispatcher — the "one
-  gap" flagged in `basic/docs/msx1-basic-bios-coupling.md`). Protocol is pinned in
-  `disk/docs/expansion-protocol.md` (headline: the drive-letter *loader* path does NOT use
-  DEVICE expansion — it's `DSKIO`+FAT-in-caller; `STATEMENT` expansion is for the
-  management statements). Cross-slot dispatch idiom = `CALLF`/`RST 30h` (see `disk/init.asm`
-  HPHYD hook).
+- 🔴 **DISPATCH IS THE *HOOK TABLE*, NOT `$4004` — MEASURED 2026-09-15 AND THE
+  PARAGRAPH BELOW IS KEPT ONLY TO SAY WHAT IT REPLACED.** `+0004 STATEMENT` is the
+  **`CALL`-statement** expansion handler (`disk/docs/expansion-protocol.md` §1's own
+  header table), i.e. the route for `CALL <name>` / `_<name>` — not for a tokenised
+  keyword like `FILES`. Two of this tree's documents disagreed and the spec carried
+  the wrong half.
+  **The measurement** ([`scratchpad/tokscout2.py`](../../scratchpad/tokscout2.py)):
+  run each verb as a bare statement on a machine with NO disk ROM. Controls `FROG`
+  and `ZQ` — words BASIC does not know — answer **Syntax error**; `FILES`, `KILL`,
+  `NAME`, `COPY` answer **Illegal function call**. A word whose handler refuses is
+  tokenised, so **the TOKEN and its `stmt_table` entry live in the MAIN BASIC ROM
+  and cannot move. Only the BODY can.**
+  **What actually reaches the disk ROM is the standard MSX hook**: `H_NAME $FDF9`,
+  `H_KILL $FDFE`, `H_COPY $FE08`, `H_FILE $FE7B` (`basic/sysvars.inc`), claimed by
+  `disk/kernel.asm` and called through by `chan_gate` (`basic/files.asm:84`), which
+  raises ERR 5 when the cell is an unclaimed bare `ret` — exactly the diskless
+  reading above. **Today the hook is only a PRESENCE TEST (`hk_present`) with the
+  body still in main page 1**, so the move is: point the hook at the real body in
+  `disk.rom`, delete the main-side body. **No consumer slot-walk, and no new
+  interpreter code at all.**
+  🟢 **AND THIS IS WHY THE MOVE DOES NOT COST THE FOREIGN-DISK-ROM INTEROP.** A
+  hook is claimed by whichever disk ROM is present: a foreign ROM patches the same
+  five bytes with its own `F7 <slot> <lo> <hi> C9` and the verb reaches ITS body.
+  Interop is preserved by construction. (An earlier draft of the seam spec claimed
+  the opposite; Joost asked *"aren't those supposed to work via hooks?"* and the
+  claim was withdrawn.)
+  📌 The hook-cell census is black-box and repeatable
+  ([`scratchpad/hookscan_probe.py`](../../scratchpad/hookscan_probe.py),
+  [`scratchpad/hookid_probe.py`](../../scratchpad/hookid_probe.py)): the CF-3300
+  claims **27 cells**, and un-claiming one with `POKE <cell>,201` names its owner
+  by which verb starts refusing.
+- ~~**Dispatch — `STATEMENT` expansion (`$4004`).**~~ **SUPERSEDED, see above.** The
+  original text follows for the paper trail: *`disk/init.asm` already lays an `"AB"`
+  header with a zeroed `STATEMENT` vector — implement the provider side there, and the
+  consumer slot-walk in `basic/interp.asm`.* The `"AB"` header and its zeroed vector are
+  real; what is wrong is that these five verbs would ever be dispatched through it.
 - **Placement in `disk.rom`** — assemble the moved verb bodies at the internal-gap ORGs
   (`$681D` etc.) with a `ds gap_end - $` guard, exactly like the tape patch's fill guard.
   Confirm gaps on a fresh `disk.rom` build before pinning addresses.

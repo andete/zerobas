@@ -20602,6 +20602,34 @@ question is what ELSE the bodies share with code that is not moving), and whethe
 `dirverb_op`'s sub-ROM tenant route changes. The ~226 B figure above is
 provisional until that is counted.
 
+🟢 **BOTH SPECS' MECHANISM SECTIONS ARE CORRECTED (2026-09-15).** They said
+`$4004` STATEMENT expansion and that a consumer slot-walk had to be written in
+`basic/interp.asm`; both are struck, with the original text kept beside the
+correction for the paper trail. The real route is the **standard MSX hook table**,
+which this tree already uses and already claims — so the move needs **no consumer
+slot-walk and no new interpreter code at all**, which deletes the riskiest step
+the plan had.
+🔴 **BUT THE FIRST LOOK AT WHAT *STAYS* IS DISCOURAGING, AND IT HAS TO BE COUNTED
+BEFORE ANY BYTE MOVES.** `scratchpad/verbpartition.py` on the 2026-09-15 build
+puts the FAT-light group at **258 B** (`ex_copy` 24, `ex_files` 95, `ex_kill` 44,
+`ex_name` 95 — up 2 B from 256 because of D-NODISKGAP's `LFILES` gate). Reading
+`ex_kill`, the smallest of them, the 44 B breaks down as: the hook gate (8 B,
+which STAYS and becomes the call-through), a cursor step, `call fname_fcb` —
+**which evaluates a string EXPRESSION and therefore must run main-side** — then
+`diskslot_test`, then `ld a,DISKOP_SEL_KILL` / `call dirverb_op`.
+🎯 **AND `dirverb_op` IS THE PART THAT MATTERS: THE REAL WORK IS ALREADY A SUB-ROM
+TENANT** (`SUBROM_IDX_DIRVERB`, `sub/dirverb.asm`). So the main-side 258 B is
+largely ARGUMENT EVALUATION AND ERROR DISPATCH, not the verb's work — and
+argument evaluation cannot leave, because it runs the interpreter's own
+expression evaluator on the statement cursor.
+⚠️ **So `256 B` is an upper bound on the SPAN, not on what can actually depart**,
+and the realisable relief may be materially less. ⛔ **DO NOT MOVE ANYTHING UNTIL
+EACH OF THE FOUR VERBS IS CLASSIFIED BYTE BY BYTE** into (i) must stay — touches
+the statement cursor, evaluates an expression, or raises a BASIC error; (ii) can
+move; (iii) already elsewhere (the sub-ROM tenant). If (ii) is small, that is a
+finding about the rung and Joost should hear it before the work, not after — the
+same way the seam measurement refuted the parent spec's ~3 KB.
+
 ⚡ **D-NODISKGAP (2026-09-15) — `LFILES` WAS NEVER GATED, AND THE REASON IS THAT
 `do_files` IS A SHARED TAIL WITH TWO HEADS.**
 🎯 **D-CHANHOOK (2026-09-03) ROUTED `FILES`/`KILL`/`NAME` THROUGH THEIR HOOKS AND

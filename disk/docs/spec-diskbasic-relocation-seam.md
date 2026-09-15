@@ -201,12 +201,26 @@ overtaken them — both are capped at `basic/fat.asm`'s whole 124 B.
 
 ## 7. Mechanism (unchanged from the parent spec, restated for completeness)
 
-`$4004` STATEMENT expansion; `disk/init.asm` already lays an `"AB"` header with a
-zeroed STATEMENT vector. The consumer slot-walk does not exist yet — an unknown
-statement falls to `stmt_error` — so it must be written in `basic/interp.asm`.
-Cross-slot idiom `CALLF`/`RST 30h`, as the HPHYD hook uses. Bodies assemble at the
-`disk.rom` internal gaps with a `ds gap_end - $` guard, addresses confirmed against
-a fresh build.
+🔴 **CORRECTED 2026-09-15 — IT IS NOT `$4004`, AND THE STEP THIS SECTION CALLED
+FIRST DOES NOT EXIST.** `+0004 STATEMENT` is the `CALL`-statement handler
+(`expansion-protocol.md` §1), not the route for a tokenised keyword. Measured with
+[`scratchpad/tokscout2.py`](../../scratchpad/tokscout2.py): on a machine with no
+disk ROM the controls `FROG`/`ZQ` answer **Syntax error** while `FILES`/`KILL`/
+`NAME`/`COPY` answer **Illegal function call**, so the token and its `stmt_table`
+entry live in the MAIN BASIC ROM — only the BODY can move.
+
+**The real route is the standard MSX hook table**, which this tree already uses:
+`H_FILE $FE7B`, `H_KILL $FDFE`, `H_NAME $FDF9`, `H_COPY $FE08` are claimed by
+`disk/kernel.asm` and called through by `chan_gate`. **Today they are only a
+PRESENCE TEST (`hk_present`) with the body still in main page 1**, so the move is:
+point the hook at the real body in `disk.rom`, delete the main-side body — **no
+consumer slot-walk, no new interpreter code**, and the call sites already load the
+hook address. The parent spec's Mechanism section carries the full correction.
+
+Bodies assemble at the `disk.rom` internal gaps with a `ds gap_end - $` guard,
+addresses confirmed against a fresh build — `tools/check_disk_walls.py` reports a
+**3182 B hole at `$6937`** (bounded by the pin at `$75A5`) on 2026-09-15, against
+256 B of verb bodies, so siting is not the constraint.
 
 ## 8. Verification (unchanged, and it is the reason this is one slice per step)
 
