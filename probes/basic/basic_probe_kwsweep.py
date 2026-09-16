@@ -468,6 +468,25 @@ def row_respond(note: str) -> list[str] | None:
     return None
 
 
+_PROGRAM_TAG = "PROGRAM:"
+
+
+def row_program(note: str) -> list[str] | None:
+    """The COMPLETE numbered lines a row types BEFORE its exec line, or None.
+
+    `PROGRAM:10_REM_Z1|20_REM_Z2` -> ['10 REM Z1', '20 REM Z2'] (`_` is a space,
+    the same spelling RESPOND: uses). The line NUMBERS are part of the tag on
+    purpose: `RENUM` bare is a no-op on a program that already runs 10/20/30, so
+    a row must be able to state 5/7/9 and read the renumbering. A row carrying
+    this types the lines, then its exec line, then any RESPOND: lines -- and
+    never `RUN`, because these verbs are what a user types AT THE PROMPT."""
+    for tok in note.split():
+        if tok.startswith(_PROGRAM_TAG) and len(tok) > len(_PROGRAM_TAG):
+            return [p.replace("_", " ")
+                    for p in tok[len(_PROGRAM_TAG):].split("|")]
+    return None
+
+
 _SUBJECT_TAG = "SUBJECT:"
 
 
@@ -1867,6 +1886,43 @@ SWEEP: list[tuple[str, str, str | None, str, str]] = [
     # collateral. A row is not free of the session it runs in
     # [[the-apparatus-is-part-of-the-measurement]]. Attributing AUTO needs a form
     # that exits line-entry mode, or a case of its own at the END of the sweep.
+    # 🟢 D-KWEDIT (2026-09-16): `DELETE` AND `RENUM` WERE CLOSED AS UNRATEABLE AND
+    # THE REASON WAS THE MODE, NOT THE VERB. Measured from INSIDE a running
+    # program, `DELETE 20` stops the run -- so every range form has the same
+    # observable, nothing -- and `RENUM 100` breaks the execution pointer, so its
+    # only reading is `Undefined line 100 in 20`, a TIER 5 reading wearing a TIER
+    # 1 label. Both are DIRECT-MODE EDITOR COMMANDS. At the prompt there is no run
+    # to stop and no pointer to break, and the PROGRAM TEXT AFTERWARDS separates
+    # every form exactly. The readout is the printer log, not the screen: a
+    # listing is not bounded by 40 columns there.
+    # ⚠️ The `deletekw` row above stays -- it is the ERROR class (a line that does
+    # not exist), a different question from which lines a range selects.
+    ("del_line",  "delete 20",
+     "DELETE 20",                                            "direct",
+     "NEEDS-LOG: PROGRAM:10_REM_Z1|20_REM_Z2|30_REM_Z3 RESPOND:LLIST "
+     "FORM:delete-line one line goes, its neighbours stay -- the listing reads Z1 Z3"),
+    ("del_range", "delete 20-30",
+     "DELETE 20-30",                                         "direct",
+     "NEEDS-LOG: PROGRAM:10_REM_Z1|20_REM_Z2|30_REM_Z3 RESPOND:LLIST "
+     "FORM:delete-range an inclusive span goes -- Z1 alone is left, which is what "
+     "separates this from the single-line form"),
+    ("del_head",  "delete -20",
+     "DELETE -20",                                           "direct",
+     "NEEDS-LOG: PROGRAM:10_REM_Z1|20_REM_Z2|30_REM_Z3 RESPOND:LLIST "
+     "FORM:delete-to-line the open-ended LEFT form, everything up to and including "
+     "20 -- Z3 alone is left. Whether the reference ACCEPTS this spelling is what "
+     "the row measures; a refusal here is a reading, not a failure"),
+    ("del_tail",  "delete 20-",
+     "DELETE 20-",                                           "direct",
+     "NEEDS-LOG: PROGRAM:10_REM_Z1|20_REM_Z2|30_REM_Z3 RESPOND:LLIST "
+     "🔴 MEASURED 2026-09-16 AND IT IS NOT A FORM: the open-ended RIGHT spelling is "
+     "REFUSED -- `Illegal function call` on both machines, where `DELETE -20` is "
+     "accepted. So MSX1 DELETE takes `<line>`, `<from>-<to>` and `-<to>` and NOT "
+     "`<from>-`. The row stays because the asymmetry is worth holding pinned, and it "
+     "carries NO `FORM:` tag on purpose: its reading is the same `Illegal function "
+     "call` the `deletekw` row already gets for a line that does not exist, and a "
+     "second row agreeing on the SAME ERROR would inflate the bar without testing "
+     "anything new."),
     ("newkw",     'new',
      'PRINT"[A]":NEW',                                       "stored",
      "D-KWDRAIN: the D-NEWSTMT shape -- [A] then a clean stop; before the fix "
@@ -2387,6 +2443,30 @@ SWEEP: list[tuple[str, str, str | None, str, str]] = [
     # runs in the same case.
     ("renum",   "renum 100",   'RENUM 100:PRINT"[R1]"',   "stored",
      "D-KWINP: `Undefined line 100 in 10` on both machines; absent => Syntax error"),
+    # 🟢 D-KWEDIT: `RENUM` in DIRECT MODE -- see the DELETE block above for why the
+    # filed closure was about the mode and not the verb.
+    # 🔴 THE PROGRAM STARTS AT 5/7/9 AND NOT 10/20/30 ON PURPOSE. Bare `RENUM`
+    # renumbers from 10 by 10, so on a program that is ALREADY 10/20/30 it is a
+    # no-op and the row would agree on a constant -- the reading has to be able to
+    # tell a renumbering from nothing happening.
+    ("ren_bare",  "renum",
+     "RENUM",                                                "direct",
+     "NEEDS-LOG: PROGRAM:5_REM_Z1|7_REM_Z2|9_REM_Z3 RESPOND:LLIST "
+     "FORM:renumber-all 5/7/9 becomes 10/20/30 -- the defaults, start 10 step 10"),
+    ("ren_start", "renum 100",
+     "RENUM 100",                                            "direct",
+     "NEEDS-LOG: PROGRAM:5_REM_Z1|7_REM_Z2|9_REM_Z3 RESPOND:LLIST "
+     "FORM:renumber-from a new START, 100/110/120 -- the step stays 10"),
+    ("ren_old",   "renum 100,7",
+     "RENUM 100,7",                                          "direct",
+     "NEEDS-LOG: PROGRAM:5_REM_Z1|7_REM_Z2|9_REM_Z3 RESPOND:LLIST "
+     "FORM:renumber-partial renumber only from OLD line 7 on -- 5 stays 5 and 7/9 "
+     "become 100/110, which no other form can produce"),
+    ("ren_step",  "renum 100,,20",
+     "RENUM 100,,20",                                        "direct",
+     "NEEDS-LOG: PROGRAM:5_REM_Z1|7_REM_Z2|9_REM_Z3 RESPOND:LLIST "
+     "FORM:renumber-increment the third argument, 100/120/140 -- the OMITTED middle "
+     "argument is the part a parser can shift left"),
 
     # D-DEFTYPETOK (2026-08-19): DEFSNG/DEFDBL/DEFSTR now have whole-word
     # kwtable.inc rows and single-byte tokens of their own ($AD/$AE/$AB, beside
@@ -4055,7 +4135,19 @@ def main() -> int:
             specs = []
             for _, _, line, mode, _rnote in ex_rows:
                 _resp = row_respond(_rnote)
-                if _resp:
+                _prog = row_program(_rnote)
+                if _prog:
+                    # D-KWEDIT: an EDITOR row. The program goes in, the exec line
+                    # edits it, and a RESPOND: line reads the result back -- with
+                    # NO `RUN` anywhere, which is the whole point: these verbs
+                    # were closed as unrateable only because they had been
+                    # measured from inside a running program.
+                    if not _resp:
+                        sys.exit("kwsweep: a PROGRAM: row with no RESPOND: types "
+                                 "a program and never reads it back -- refusing "
+                                 "rather than scoring an unread edit")
+                    specs.append(("direct", _prog + [line] + _resp))
+                elif _resp:
                     # D-KWRESPOND: numbered lines + RUN + the responses, as a
                     # DIRECT case, because run_cases appends RUN itself in stored
                     # mode and nothing can follow it there.

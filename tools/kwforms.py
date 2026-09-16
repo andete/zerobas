@@ -166,6 +166,30 @@ def subject_names() -> set[str]:
 
 # keyword -> (forms, why this is the set)
 FORMS: dict[str, tuple[tuple[str, ...], str]] = {
+    # 🟢 D-KWEDIT (2026-09-16). These two were filed as UNRATEABLE, and the reason
+    # was the MODE they had been measured in, not the verbs: run from inside a
+    # program `DELETE` stops the run and `RENUM` breaks the execution pointer. They
+    # are DIRECT-MODE EDITOR COMMANDS, and the bar below is what the REFERENCE
+    # accepts at the prompt -- measured row by row, not read off our handler.
+    "DELETE": (
+        ("delete-line", "delete-range", "delete-to-line"),
+        "`DELETE <line>` / `DELETE <from>-<to>` / `DELETE -<to>` -- three SELECTIONS, "
+        "and the listing afterwards separates all three (Z1+Z3, Z1, Z3). "
+        "🔴 THREE AND NOT FOUR: the symmetrical-looking `DELETE <from>-` is REFUSED "
+        "by both references with `Illegal function call` (measured), so an open-ended "
+        "RIGHT form does not exist in MSX1 and a bar of four could never be met. "
+        "Its row is kept, without a FORM: tag, to hold that asymmetry pinned.",
+    ),
+    "RENUM": (
+        ("renumber-all", "renumber-from", "renumber-partial", "renumber-increment"),
+        "`RENUM` / `RENUM <new>` / `RENUM <new>,<old>` / `RENUM <new>,,<step>` -- four "
+        "behaviours: the defaults, a new start, renumbering only from an OLD line on, "
+        "and a new increment. The middle argument is the one a parser can shift left, "
+        "which is why the omitted-middle form is counted separately. "
+        "⚠️ Their rows start the program at 5/7/9 and not 10/20/30: bare RENUM "
+        "renumbers from 10 by 10, so on an already-10/20/30 program it is a NO-OP and "
+        "the row would be agreeing on a constant.",
+    ),
     "PSET": (
         ("colour-explicit", "colour-default", "step-relative", "mode-screen3"),
         "MSX1 syntax is `PSET [STEP](x,y)[,colour]`, so the switches are STEP and "

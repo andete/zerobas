@@ -20784,6 +20784,47 @@ answers **`Undefined line 100 in 20` on both**: the renumbering breaks the
 execution pointer, so its only reading is an ERROR, which is a TIER 5 reading
 wearing a TIER 1 label. Both stay UNRATED on purpose rather than carrying a bar
 their rows could never satisfy.
+🔴 **WITHDRAWN 2026-09-16 (D-KWEDIT) — THAT CLOSURE WAS ABOUT THE MODE, NOT THE
+VERBS, AND BOTH ARE NOW AT TIER 1.** Joost: *"It seems easy to fix Renum and
+delete tests. Just validate the program in ram or llist it."* He is right, and the
+paragraph above measured two DIRECT-MODE EDITOR COMMANDS from inside a RUNNING
+PROGRAM. That is what produced both symptoms: run mid-program, `DELETE` stops the
+run (so every range form has the same observable — nothing) and `RENUM` breaks the
+execution pointer (so its only reading is an error). Typed at the prompt there is
+no run to stop and no pointer to break, and **the program text afterwards
+separates every form exactly**.
+🔬 **NEITHER READOUT HAD TO BE BUILT.** `NEEDS-LOG:` (D-KWLOG) already puts a
+listing in a HOST FILE — not bounded by 40 columns, which is the trap a screen
+scrape would have walked into — and `capture=("stored_line", TXTTAB)` already
+reads program text out of RAM. What was missing was a row that could put a
+MULTI-LINE program in place to be edited: the `PROGRAM:` tag, eight lines in
+`basic_probe_kwsweep.py`, stating COMPLETE numbered lines.
+⚠️ **NOT `as_stored`** — it PACKS statements greedily into ≤34-char bodies, so
+`REM Z1:REM Z2:REM Z3` becomes ONE line; `DELETE 20` would then have deleted the
+whole program **on both machines, agreeing, with nothing to see**. Padding the
+REMs to defeat the packer would have made the rows' validity depend on a length
+constant nobody would think to re-check.
+📏 **MEASURED, EIGHT ROWS, `SUPPORTED` 362 → 370:**
+| row | reference reading |
+|---|---|
+| `DELETE 20` | `10 REM Z1` / `30 REM Z3` |
+| `DELETE 20-30` | `10 REM Z1` |
+| `DELETE -20` | `30 REM Z3` |
+| `DELETE 20-` | **`Illegal function call`** |
+| `RENUM` on 5/7/9 | `10` / `20` / `30` |
+| `RENUM 100` | `100` / `110` / `120` |
+| `RENUM 100,7` | `5` / `100` / `110` |
+| `RENUM 100,,20` | `100` / `120` / `140` |
+🔴 **AND ONE OF THEM IS NOT A FORM.** `DELETE <from>-` is REFUSED where
+`DELETE -<to>` is accepted, so MSX1 DELETE has **three** selections and not the
+symmetrical four. Its row is kept without a `FORM:` tag: its reading is the same
+`Illegal function call` the `deletekw` row already gets for a line that does not
+exist, and a second row agreeing on the SAME ERROR would inflate the bar while
+testing nothing new.
+⚠️ **THE RENUM ROWS START AT 5/7/9 ON PURPOSE** — bare `RENUM` renumbers from 10
+by 10, so on an already-10/20/30 program it is a no-op and the row would be
+agreeing on a constant.
+🎯 **`DELETE` 3/3 and `RENUM` 4/4, both CONNECTED, both TIER 1.**
 ⚡ **D-KWSTOP — THE RIG LEARNS A TWO-KEY COMBO, `ON STOP GOSUB` REACHES TIER 1,
 AND THE PROBE THAT GOT IT THERE FOUND A DIVERGENCE. 141 of 163, and 18 of the 19
 composite statements.**
