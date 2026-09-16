@@ -1932,7 +1932,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:19290 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:19344 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -2098,7 +2098,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:6699 (T-6FE392)8 (T-529ABE)` from `TODO.md:17908 (T-529ABE)`: a
+      `TODO.md:6699 (T-6FE392)8 (T-529ABE)` from `TODO.md:17962 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -7543,7 +7543,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:17908 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:17962 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -12688,6 +12688,60 @@ finds zero shared names (a renamed block would otherwise make it silently blind)
       deleting `>`/`<`, less the 1 B the `N` fix spent).
       🎯 **The spec's Q6 is ANSWERED — "in scope" — so this is implementation,
       not a decision**: `docs/spec-basic-audio-play.md` §2.2.
+      🟢 **THE BLOCKER ABOVE HAS ROTTED — RE-MEASURED 2026-09-16, MAIN PAGE 1 HAS
+      61 B FREE, NOT 3 B** (`make basic-reloc` from a clean tree; low region 36 B,
+      all taken 2026-09-16: sub page 1 87 B, sub page 0 505 B, `disk.rom` 8490 B).
+      The disk
+      re-architecture carved it, and the `FIELD`/`LSET`/`RSET` gates this item was
+      filed as standing "behind the same wall as" have SHIPPED. The cost reason
+      for parking this is gone; what was never measured is the SEMANTICS.
+
+      🔬 **D-PLAYX MEASURED THEM, 13 ROWS, 2026-09-16**
+      ([`scratchpad/playx_probe.py`](scratchpad/playx_probe.py)). Each row is a
+      live PSG channel-A period read 30 FRAMES after the `PLAY`, and each has a
+      control written WITHOUT `X`; all four controls read identically on the
+      VG-8020 and here (`O7 C` 53/0, `O4 E` 83/1, `O7 D` 48/0, `O4 D` 125/1), so
+      the instrument is sound and every disagreement below is `X`.
+
+      | | VG-8020 | zerobas |
+      |---|---|---|
+      | `A$="O7L1C":PLAY"XA$;"` | 53/0 (= the `O7 C` control) | **ERR 5** |
+      | `A$="O7L64C":PLAY"XA$;O4L1E"` | **83/1 = the `O4 E` control** | ERR 5 |
+      | `A$="O7L1C":PLAY"XA$"` (no `;`) | **ERR 5** | ERR 5 |
+      | `A$="O7L64C":PLAY"XA$;L1D"` | **48/0 = `O7 D`**, not `O4 D` | ERR 5 |
+      | `A$="XB$;":B$="O7L1C":PLAY"XA$;"` | **53/0 — it NESTS** | ERR 5 |
+      | `A$="O7L1C":PLAY"xA$;"` | 53/0 — **case-insensitive** | ERR 5 |
+      | `A=5:PLAY"XA;"` | **ERR 13** Type mismatch | ERR 5 |
+      | `PLAY"XZ$;O7L1C"` (undefined) | **53/0 — empty, NO error, outer continues** | ERR 5 |
+
+      🎯 **FOUR THINGS THAT CHANGE THE IMPLEMENTATION, none of them guessable:**
+      1. **IT IS A CALL, NOT A JUMP.** The outer string resumes after the
+         substring — so the tenant needs a saved source cursor, and `ex_play`
+         cannot simply be re-entered on the substring and be done.
+      2. **THERE IS NO SCOPE.** `O7` set inside the substring is still in force
+         in the outer string afterwards. So the re-entry needs a SOURCE-CURSOR
+         stack only (MCLPTR + bytes remaining) and **no VCB state save/restore**
+         — materially cheaper than the item assumed.
+      3. **IT NESTS**, so that stack has depth > 1. Depth beyond 2 is UNMEASURED.
+      4. **THE `;` IS MANDATORY** and a missing one is ERR 5, an UNDEFINED string
+         is silently empty and does not stop the outer string, and a NUMERIC
+         variable is **ERR 13**, not ERR 5.
+
+      🔴 **AND ONE ROW AGREES FOR THE WRONG REASON.** `PLAY"XA$"` is ERR 5 on both
+      — but here EVERY `X` is ERR 5, so a form row written on that spelling would
+      score green while the feature is absent.
+      [[a-case-that-agrees-can-agree-for-the-wrong-reason]]
+      ⚠️ **ONE ROW IS WEAKER THAN IT LOOKS AND IS NOT A RESULT.**
+      `A$="L64C":PLAY"O7XA$;L1D"` reads `O7 D`, which is consistent with the
+      substring INHERITING the outer octave — but the substring never changes the
+      octave, so the row cannot separate inheritance from the outer state simply
+      surviving. **Whether the substring inherits state is UNMEASURED.**
+      🔴 **THE CF-3300 COLUMN IS AN APPARATUS FAILURE, NOT A READING.**
+      Boot-per-case delivery there is mangled (`machine stored <none>`, the same
+      failure D-KWPLAY hit), and the harness REFUSES with a hard exit rather than
+      raising, so a batch fallback cannot catch it. Two sides, not three;
+      `make kwsweep` reaches that machine by its own path and will answer there
+      once the form has a row.
       🔭 SCOUT-THEN-ASK — ✅ THE SCOUT IS DONE (above); what remains is the ASK.
       *(the original question, for the record:)* grep where the lookup lives (is it
       below `$4000`, reachable from a page-1 sub tenant, or main page 1 where the
