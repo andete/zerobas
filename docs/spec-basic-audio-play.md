@@ -542,6 +542,26 @@ machine, never assumed:
   with a file open is ordinary. The precedent does not extend to buffers.
 * `QUEBAK $F971-$F974` is already fully spent (`PLY_LASTDUR`, `PLY_BUFEND`).
 
+🔴 **AND THE MSX WORK AREA HAS NO CONTIGUOUS ROOM FOR IT — WALKED 2026-09-16,
+`$FB00`–`$FD00`:**
+
+| | |
+|---|---|
+| `VOICEN $FB38` → `MCLPTR $FB3C` | 4 B, of which 3 unnamed |
+| `VCBA $FB41` / `VCBB $FB66` / `VCBC $FB8B` | stride 37, offsets 22..36 unused here — **15 B each, NOT contiguous** |
+| `VCBC` end `$FBAF` → `LINTTB $FBB2` | **2 B** |
+
+So a single 24 B table does not fit beside the PLAY block, and the VCB tails are
+45 B in three separate 15 B pieces. 🎯 **ONE STACK IS ENOUGH, NOT THREE** — the
+three voices are parsed SEQUENTIALLY (`pt_vloop`), so a voice's stack is empty
+before the next one starts; per-voice storage would be paying three times for a
+thing that is only ever used once at a time. That argues for a single block in
+this tree's OWN RAM region rather than three VCB tails.
+⚠️ **AND `rammap_sweep.py`'S WINDOW `[E000,F380)` DOES NOT COVER ANY OF THIS** —
+the walk above is of `basic/sysvars.inc`'s `$FB00`+ names directly. A candidate
+in the tree's own region still has to be READ (a delta is the cell at the low
+address PLUS whatever follows) and then ASKED OF THE MACHINE.
+
 ## Appendix A — Sources (clean-provenance, contract-level)
 
 - MSX Wiki, **PLAY** — https://www.msx.org/wiki/PLAY (MML syntax, per-voice strings).
