@@ -1007,13 +1007,21 @@ def main() -> int:
         _, rr, zz = omsx_repl.run_differential(
             args.machine, args.zb_machine, [c.spec() for c in both],
             lambda i, r, z: agree(both[i].read(r), both[i].read(z)),
-            batch=batch, reset=("NEW", "CLS"))
+            # 🔴 THE RESET RESTORES CSRSW ($FCA9). `LOCATE`'s third argument
+            # became LIVE on 2026-09-16 (D-LOCCSR) -- it had been
+            # accepted-and-ignored -- so a case running `LOCATE ,,1` now ENABLES
+            # THE CURSOR and leaves it enabled for every later case in the BATCH.
+            # A batched suite's reset must put back every global its cases can
+            # move, or a row measures its predecessors. All three machines boot
+            # CSRSW = 0 (measured, scratchpad/csrsw_probe.py).
+            batch=batch, reset=("NEW", "CLS", "POKE&HFCA9,0"))
         for c, r, z in zip(both, rr, zz):
             c.ref, c.zb = c.read(r), c.read(z)
     if refonly:
         print(f"# {len(refonly)} reference-only -> {args.machine}")
         raws = omsx_repl.run_cases(args.machine, [c.spec() for c in refonly],
-                                   batch=batch, reset=("NEW", "CLS"))
+                                   batch=batch,
+                                   reset=("NEW", "CLS", "POKE&HFCA9,0"))
         for c, raw in zip(refonly, raws):
             c.ref = c.read(raw)
 

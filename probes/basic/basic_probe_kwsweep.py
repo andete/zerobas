@@ -2205,6 +2205,27 @@ SWEEP: list[tuple[str, str, str | None, str, str]] = [
      "NOECHO:[0b FORM:omitted-column `[0b 7  9 ]` -- the ROW moved and the COLUMN "
      "did not. CLS anchors the cursor first, because LOCATE moves it and an "
      "unanchored row measures scroll history (the trap `locate_b`'s note records)."),
+    # 🔪 D-LOCCSR: the FOURTH form, which basic/missing.asm's O-3 declined as
+    # "a write nobody reads". That was a claim about THIS TREE; the reference
+    # writes CSRSW ($FCA9) and a row can read it. The sentinel is the control --
+    # a cell reading 0 after `LOCATE ,,0` proves nothing unless it held 99 first.
+    # ⚠️ `,,2` IS IN THE ROW BECAUSE THE VALUE IS FOLDED: both references store 1
+    # for it, where SCREEN's neighbouring switch stores its byte RAW (screenkw_d,
+    # `,,2` -> 2). Two adjacent work-area switches, two different rules -- so this
+    # row would pass on an implementation copied from that one, and does not.
+    ("locate_d", "locate ,,1",
+     'C=PEEK(&HFCA9):POKE&HFCA9,99:LOCATE,,0:A=PEEK(&HFCA9):LOCATE,,1:B=PEEK(&HFCA9):LOCATE,,2:D=PEEK(&HFCA9):POKE&HFCA9,C:PRINT"[0e";A;B;D;"]"',
+     "stored",
+     "NOECHO:[0e FORM:cursor-switch the CURSOR-SWITCH argument, read back through "
+     "CSRSW ($FCA9) against a POKEd sentinel. `[0e 0  1  1 ]` -- the third value "
+     "is what says the byte is FOLDED to 0/1 rather than stored raw. "
+     "🔴 IT SAVES AND RESTORES CSRSW, AND THAT IS NOT TIDINESS: this row is the "
+     "first thing in the tree that makes the cell LIVE, and leaving the cursor "
+     "enabled changed what the harness typed and read -- 60 keywords went MISSING "
+     "in the batch, every one of them printing its CORRECT value and then `Type "
+     "mismatch` from the NEXT typed line. In isolation they all passed. A row that "
+     "moves global machine state has to put it back, or it measures its "
+     "successors."),
     ("csrlin",  "a=csrlin",
      # ⚠️ THIS ROW'S "DIVERGENT" IS A PROBE ARTIFACT, NOT A FAITHFULNESS BUG,
      # and it cannot be pinned here. CSRLIN is a POSITION, so with no leading

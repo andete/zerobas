@@ -791,10 +791,24 @@ the one it must leave alone**, so a handler that always wrote LINL40 passes
 `widthkw` and fails here. 🎯 **BOTH CELLS ARE SET BY THE ROW ITSELF**, because the
 VG-8020 and this repack do not agree about which mode they boot into and a row
 reading an untouched cell would be measuring the BOOT and reporting it as WIDTH.
-🔭 **`LOCATE` STOPS AT 3/4 AND THE MISSING FORM IS A RECORDED DEVIATION, NOT A
+🔭 ~~**`LOCATE` STOPS AT 3/4 AND THE MISSING FORM IS A RECORDED DEVIATION, NOT A
 MISSING ROW.** `basic/missing.asm` O-3: the third argument is parsed,
 domain-checked and then **IGNORED** — "nothing in this tree reads CSRSW ... storing
-it would be a write nobody reads". The bar comes from the REFERENCE's syntax, so
+it would be a write nobody reads".~~
+✅ **4/4 AND TIER 1 SINCE 2026-09-16 (D-LOCCSR); O-3 IS WITHDRAWN.** The struck
+sentence is a claim about THIS TREE, and the question a form has to answer is what
+the REFERENCE leaves readable. It writes **`CSRSW $FCA9`**. Measured on both
+references against a POKEd sentinel of 99
+([`scratchpad/csrsw_probe.py`](scratchpad/csrsw_probe.py)):
+`LOCATE ,,0` → 0, `,,1` → 1, `,,2` → **1**; zerobas left the sentinel standing on
+all three. "Nobody reads it" described a gap on OUR side — never a reason not to
+write what the reference writes. **10 B**, STATEMENT 148 → 149.
+🎯 **THE VALUE IS FOLDED, AND ITS NEIGHBOUR'S IS NOT.** `LOCATE ,,2` stores **1**
+where `SCREEN ,,2` stores **2** (D-SCRCLICK). Two adjacent work-area switches, two
+opposite rules — so `,,2` was asked BEFORE either was implemented, and an
+implementation generalised from one would have passed every 0-and-1 row and been
+wrong for the other.
+📊 **Fourteen blockers re-verified on this project, fourteen stale.** The bar comes from the REFERENCE's syntax, so
 `LOCATE [X][,Y][,switch]` is four forms whatever we chose to implement.
 ⚠️ **A FORM WE DECLINED LEAVES THE KEYWORD SHORT OF TIER 1, AND THAT IS THE
 MEASUREMENT WORKING.** New row `locate_c` covers the third of the four: `[0b 7  9 ]`
@@ -1892,7 +1906,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:19126 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:19140 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -2058,7 +2072,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:6659 (T-6FE392)8 (T-529ABE)` from `TODO.md:17777 (T-529ABE)`: a
+      `TODO.md:6673 (T-6FE392)8 (T-529ABE)` from `TODO.md:17791 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -7503,7 +7517,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:17777 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:17791 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -20693,6 +20707,10 @@ NEXT SLICES. Do not re-ask.**
    page 1 from **3 B to 153 B** and the low region from **0 B to 36 B** — "disk
    code belongs in the disk ROM", pulled first, exactly as ruling 5 said. The
    first customer was `FIELD`/`LSET`/`RSET`'s diskless gate (D-FLDGATE, 20 B).
+   ✅ **`LOCATE`'s CURSOR SWITCH IS THE FOURTH, SHIPPED 2026-09-16 (D-LOCCSR),
+   10 B** — filed as a DECLINED deviation (O-3) rather than as missing code, and
+   the decline rested on a false premise. `LOCATE` is **4/4, TIER 1**; STATEMENT
+   **148 → 149**. 🎯 **Only `VARPTR(#n)` remains of ruling 2's four.**
    ✅ **`SCREEN`'s KEY CLICK IS THE THIRD, SHIPPED 2026-09-16 (D-SCRCLICK),
    9 B** — and it was filed as unmeasurable rather than as code: see the struck
    "no cell any row here can read" above. `SCREEN` is **3/3, TIER 1**, and the

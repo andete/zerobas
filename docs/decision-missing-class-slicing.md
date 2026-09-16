@@ -262,12 +262,22 @@ argument binding, re-entrant evaluation, 200–400 B), not part of this slice.
   `WIDTH 40` pins the column axis, and the row-clamp cases must be pinned that
   way or they compare 22 against 23 and go red for a console-chrome reason.
 - **O-3**, the `cursor` third argument's effect, is invisible to a name-table
-  scrape. Acceptance is measured; behaviour is not. Propose implementing it as
+  scrape. ~~Acceptance is measured; behaviour is not. Propose implementing it as
   accepted-and-ignored, **documented as a deviation**, unless a VDP-level readout
   turns out to be cheap. *(Checked while closing O-1: nothing in the tree reads
   `CSRSW` (`$FCA9`) or any equivalent, so there is no existing mechanism for the
   argument to drive and storing it would be a write nothing reads. The
-  accepted-and-ignored proposal stands, and the spec states it as a deviation.)*
+  accepted-and-ignored proposal stands, and the spec states it as a deviation.)*~~
+  🔴 **WITHDRAWN 2026-09-16 (D-LOCCSR). The deviation was never needed and the
+  reasoning had the subject wrong.** "Nothing in the tree reads CSRSW" is a fact
+  about OUR side; what decides whether a form is measurable is what the REFERENCE
+  leaves behind. Both references write `CSRSW $FCA9` — `LOCATE ,,0` → 0, `,,1` →
+  1, `,,2` → 1, against a POKEd sentinel that proves the cell holds what BASIC
+  writes ([`scratchpad/csrsw_probe.py`](../scratchpad/csrsw_probe.py)). It is
+  implemented, `LOCATE` is 4/4 and TIER 1, and it cost **10 B**.
+  ⚠️ The "invisible to a name-table scrape" half was correct and is worth keeping:
+  the form needed a WORK-AREA read, not a wider scrape. What went wrong was
+  concluding from "our code has no use for it" that there was nothing to match.
 
 ## 6. What is already done
 

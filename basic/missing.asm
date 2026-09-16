@@ -132,10 +132,23 @@ mot_go:
 ;     APPLY them, and only then reject a fourth. Batching is the faithful one,
 ;     and it is also what makes an omitted axis free (see the seeding below).
 ;
-; O-3 DEVIATION: the third argument is accepted, domain-checked (0..255 -- it is
-; NOT restricted to 0/1, measured) and then IGNORED. Nothing in this tree reads
-; CSRSW or any equivalent, so there is no mechanism for it to drive and storing
-; it would be a write nobody reads. Recorded in the spec as a deviation.
+; 🔴 O-3 IS WITHDRAWN (D-LOCCSR, 2026-09-16). It read: "the third argument is
+; accepted, domain-checked (0..255 -- it is NOT restricted to 0/1, measured) and
+; then IGNORED. Nothing in this tree reads CSRSW or any equivalent, so there is no
+; mechanism for it to drive and storing it would be a write nobody reads."
+; THE LAST SENTENCE IS A CLAIM ABOUT THIS TREE, NOT ABOUT THE MACHINE, and the
+; question a form has to answer is whether the REFERENCE leaves something a row
+; can read. It does. Measured on both references against a POKEd sentinel of 99
+; (scratchpad/csrsw_probe.py):
+;     LOCATE ,,0 -> CSRSW 0     LOCATE ,,1 -> 1     LOCATE ,,2 -> 1
+; and zerobas left the sentinel standing on all three. "Nobody reads it" described
+; a gap on OUR side; it was never a reason not to write what the reference writes.
+; 🎯 THE VALUE IS NORMALISED, and that is why `,,2` was asked BEFORE the code was
+; written: SCREEN's neighbouring switch stores its byte RAW (D-SCRCLICK, `,,2` ->
+; 2). Two adjacent work-area switches, two different rules -- an implementation
+; that generalised from either would have been wrong for the other.
+; ⚠️ The 0..255 domain check is unchanged: the argument is still ACCEPTED over the
+; whole byte range, it is only the STORED value that folds to 0/1.
 ex_locate:
                 inc     hl                  ; past the LOCATE token
                 ; SEED FROM THE CURRENT POSITION. An omitted axis KEEPS its value
@@ -159,8 +172,16 @@ loc_row:
                 call    loc_more
                 jr      nc,loc_apply
 loc_cur:
-                call    loc_next            ; the cursor argument: parsed and
-                                            ; domain-checked, then dropped (O-3)
+                call    loc_next            ; the cursor argument
+                jr      nc,loc_cur_done     ; OMITTED (`LOCATE 1,1,`) -> leave the
+                                            ; switch alone; only a supplied value
+                                            ; writes it
+                or      a                   ; 0 = off; anything else = on...
+                jr      z,loc_cur_set
+                ld      a,1                 ; ...FOLDED to 1, measured (`,,2` -> 1)
+loc_cur_set:
+                ld      (CSRSW),a
+loc_cur_done:
                 call    loc_more
                 jr      nc,loc_apply
                 ; A FOURTH argument. Apply the first three FIRST, then reject --

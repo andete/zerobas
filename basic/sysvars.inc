@@ -493,6 +493,12 @@ G7_RESIDENT     equ     1
 ; leaves 1 and `,,2` leaves **2** -- the byte is stored RAW, so the handler writes
 ; it through rather than normalising to 0/1.
 CLIKSW          equ     $F3DB   ; keyboard click: 0 = off, nonzero = on (1)
+; D-LOCCSR: the cursor-display switch, LOCATE's third argument. Published MSX
+; work-area cell. MEASURED on both references (scratchpad/csrsw_probe.py):
+; `LOCATE ,,0` -> 0, `,,1` -> 1, `,,2` -> **1**. ⚠️ NORMALISED, where CLIKSW
+; above is stored RAW -- the two neighbouring switches do NOT share a rule, and
+; assuming either would have been wrong for one of them.
+CSRSW           equ     $FCA9   ; cursor display: 0 = off, 1 = on
 ; --- D-CLP: the CLEAR string-pool partition (docs/spec-basic-clearpool.md) ---
 ; ✅ ON. Funded by promoting fld_lookup to a page-0 sub-ROM tenant (sub/fldlook.asm,
 ; docs/decision-clearpool-funding.md §6.1), which returned 38 B of main page 1

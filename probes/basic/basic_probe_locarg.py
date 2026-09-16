@@ -82,13 +82,23 @@ TEST_DSK = os.path.join(REPO, "disk", "test720.dsk")
 
 # ⚠️ `diska` is a /tmp COPY, never the committed image: nothing here writes to a
 # disk, but a reference ROM that decided to would corrupt a tracked file.
+# 🔴 THE RESET RESTORES CSRSW ($FCA9), AND THAT IS NOT HOUSEKEEPING.
+# `LOCATE`'s third argument became LIVE on 2026-09-16 (D-LOCCSR) -- it had been
+# accepted-and-ignored -- so a case running `LOCATE ,,1` now genuinely ENABLES
+# THE CURSOR and leaves it enabled for every later case in the BATCH. These rows
+# read with `screen_tail`, and a visible cursor moves the clip boundary: the
+# readings came back as echoed program text (`";E;Y;X;"`) and as a neighbour's
+# `Type mismatch`, with the POSITIVE CONTROLS among the casualties. Every case
+# passed in isolation on all three sides.
+# 🎯 A BATCHED SUITE'S RESET MUST PUT BACK EVERY GLOBAL ITS CASES CAN MOVE.
+# All three machines boot CSRSW = 0 (measured), so 0 is the restore value.
 SIDES = {
     "vg8020": dict(machine="Philips_VG_8020", boot=8.0, step=2.5,
-                   reset=("NEW", "CLS"), diska=False),
+                   reset=("NEW", "CLS", "POKE&HFCA9,0"), diska=False),
     "cf3300": dict(machine="National_CF-3300", boot=14.0, step=4.5,
-                   reset=("", "SCREEN 0", "NEW", "CLS"), diska=True),
+                   reset=("", "SCREEN 0", "NEW", "CLS", "POKE&HFCA9,0"), diska=True),
     "zb":     dict(machine=ZB_MACHINE, boot=8.0, step=2.5,
-                   reset=("NEW", "CLS"), diska=True),
+                   reset=("NEW", "CLS", "POKE&HFCA9,0"), diska=True),
 }
 
 # The TRAPPED program. `stmt` runs at line 20; the handler captures ERR and the
