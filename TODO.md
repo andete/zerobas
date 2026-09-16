@@ -1932,7 +1932,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:19204 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:19225 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -2098,7 +2098,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:6699 (T-6FE392)8 (T-529ABE)` from `TODO.md:17855 (T-529ABE)`: a
+      `TODO.md:6699 (T-6FE392)8 (T-529ABE)` from `TODO.md:17876 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -7543,7 +7543,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:17855 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:17876 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -8370,7 +8370,28 @@ list. **When a slice lands, grep this list for what it just shipped.**
       🎚️ TIER 1 — happy path: `READ` at the prompt reads the wrong value silently
       🤖 AUTONOMOUS — the defect is measured, narrow and reproducible in one row.
 
-- [ ] 🔴 **`SWAP` OF TWO UNDEFINED VARIABLES OF DIFFERENT TYPES RAISES THE WRONG
+- [x] ✅ **FIXED (D-SWAPTYPE, 2026-09-16), 10 B — EXACTLY THE PRICE FILED ON
+      2026-09-13, AND THE CARVE PAID IT.** It read "priced the same day at ten
+      bytes of main page 1, WHICH HAD EIGHT". All six probe rows agree on both
+      sides.
+      ⚡ **AND IT TAKES `kwsweep` TO ZERO: `SUPPORTED=362`, no MISSING line and no
+      scored DIVERGENT line at all** — the only divergence printed is `csrlin`,
+      the documented probe artifact, which is WEAK/excluded by its own row note.
+      🎯 **THE DIAGNOSIS WAS ALREADY RIGHT AND THAT IS WHY IT WAS CHEAP**: "the
+      fault is on the CREATE path, not the compare path". `sw_operand` resolves a
+      type from the NAME (the `$` suffix, else `VARTYPE`) BEFORE it looks the
+      variable up, so both types sit in `SW_TYPE`/`SW_TYPE1` at the
+      missing-operand raise whether or not either variable exists. The raise
+      simply fired first.
+      ⚠️ **TWO THINGS CHECKED RATHER THAN ASSUMED, AND WRITTEN INTO THE CODE**:
+      only operand 2 reaches `sw_absent` (operand 1 goes through
+      `var_alloc_or_find` and is CREATED), so `SW_TYPE1` is always set by then in
+      EITHER argument order — which is what makes `str,num` work as well as
+      `num,str`; and a MATCHING pair still raises ERR 5, because `A=1:SWAP A,B` on
+      an undefined `B` is `Illegal function call` on the reference too. This
+      INSERTS a check rather than replacing the raise.
+      *(the original finding:)*
+      🔴 **`SWAP` OF TWO UNDEFINED VARIABLES OF DIFFERENT TYPES RAISED THE WRONG
       ERROR** — `Illegal function call` where both references say `Type mismatch`.
       Found 2026-09-13 by D-KWT3 batch 3, the second defect the TIER 3 rows have
       produced.

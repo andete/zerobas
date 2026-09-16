@@ -514,6 +514,28 @@ sw_absent:
                 ; (D-SWAP3, docs/spec-basic-swap3.md). The old `sw_illegal equ
                 ; gb_illegal` alias and this file's bespoke third-operand raiser are
                 ; both gone; gb_illegal is now reached only from here.
+                ; 🔴 D-SWAPTYPE (2026-09-16): THE TYPE CHECK COMES FIRST.
+                ; `SWAP A,B$` with BOTH variables undefined answered `Illegal
+                ; function call` where both references say `Type mismatch`
+                ; (D-KWT3 batch 3, scratchpad/kwt3_swapchk.py). The fault was
+                ; never in the comparison -- with the variables DEFINED the types
+                ; are compared correctly -- it was the ORDER: the missing-operand
+                ; raise fired before anything asked whether the two types agree.
+                ; 🎯 BOTH TYPES ARE ALREADY KNOWN HERE, which is what makes this
+                ; ten bytes and not a redesign: sw_operand resolves a type from
+                ; the NAME (the `$` suffix, else VARTYPE) BEFORE it looks the
+                ; variable up, so SW_TYPE holds this operand's and SW_TYPE1 holds
+                ; the first one's whether or not either exists.
+                ; ⚠️ ONLY OPERAND 2 REACHES HERE -- operand 1 goes through
+                ; var_alloc_or_find and is CREATED -- so SW_TYPE1 is always set by
+                ; the time this runs, in either argument order.
+                ; ⚠️ AND A MATCHING PAIR STILL RAISES ERR 5: `A=1:SWAP A,B` on an
+                ; undefined B is Illegal function call on the reference too, so
+                ; this inserts a check rather than replacing the raise.
+                ld      hl,SW_TYPE1
+                ld      a,(SW_TYPE)
+                cp      (hl)
+                jp      nz,type_mismatch_error
                 push    ix
                 pop     hl                  ; restore the cursor for the abort
                 jp      gb_illegal          ; ERR 5 (Illegal function call)
