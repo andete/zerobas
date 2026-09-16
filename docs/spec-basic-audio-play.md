@@ -452,16 +452,95 @@ MACHINE (`ramfree_probe.py`) before claiming any of these; a delta between two
 names is not free space. `QUEBAK $F971-$F974` is already fully spent
 (`PLY_LASTDUR`, `PLY_BUFEND`), so this needs its own home.
 
-### 7.5 Open before a byte is spent
+### 7.5 The three open questions — ANSWERED (D-PLAYX2, 2026-09-16)
 
-1. **Nesting depth `d`.** Measured at 1 level; the reference's real ceiling is
-   UNMEASURED, and `d` is 3 B of RAM each. Measure it, then pick.
-2. **Does the substring INHERIT outer state?** The row that looked like it
-   cannot separate inheritance from the outer state merely surviving — the
-   substring never changed the octave. With no scope the natural answer is yes,
-   but it is not measured.
-3. **What `X` does when the source ends without `;`** vs. a `;` that is present
-   but the variable is undefined — ERR 5 is measured for the first only.
+[`scratchpad/playx2_probe.py`](../scratchpad/playx2_probe.py) (12 rows) and
+[`scratchpad/playxdepth_probe.py`](../scratchpad/playxdepth_probe.py) (chains to
+24). Controls `O7 C` = 53/0 and `O4 C` = 172/1 read identically on both machines,
+and they are DIFFERENT from each other — which is what lets the inheritance row
+below say anything at all.
+
+**1. 🔴 NESTING HAS NO CEILING THIS TREE CAN FIND.** 2, 3, 4, 5, 6, 8, 10, 12,
+16, 20 and **24** levels all sound the note on the VG-8020. Not "deep enough" —
+*no limit observed*, which is the shape of a Z80-stack recursion rather than of a
+table. **THIS IS THE ONE ANSWER THAT MOVES THE DESIGN** (see §7.6).
+
+**2. ✅ THE SUBSTRING INHERITS THE OUTER STATE.** `A$="L1C"` with `PLAY"O7XA$;"`
+sounds **O7** C (53/0); the same `A$` with `PLAY"XA$;"` sounds the default **O4**
+C (172/1). Taken with D-PLAYX's measurement that state also LEAKS OUT, the rule
+is: **one shared parse state, no scope in either direction** — which is what
+licenses the design's "no VCB save/restore".
+
+**3. The name and terminator corners.**
+
+| | VG-8020 |
+|---|---|
+| `A$="O7L1C" : PLAY"XA;"` (no `$`) | **ERR 13** — a sigil-less name is NUMERIC and is a type fault even when `A$` exists |
+| `PLAY"XZ$;"` (undefined, nothing after) | **silence, NO error** (0/0) |
+| `A$="" : PLAY"XA$;O7L1C"` (empty substring) | the outer continues — 53/0 |
+
+So the name rule is the ordinary MSX one: the type lives in the sigil, and `X`
+requires a STRING. `ERR 13` is not about the VALUE being numeric, it is about the
+NAME being a numeric name.
+
+### 7.6 What the depth answer costs, and the shape it re-opens
+
+§7.3's servicer keeps a **fixed source-cursor stack in RAM** — 3 B a level — and
+the stack must be RAM rather than the Z80 stack precisely because a CALSLT is not
+resumable and the tenant has no locals. With no observable ceiling on the
+reference, **any depth N we pick is a divergence a probe can find**: N=8 is 24 B,
+N=24 is 72 B, and neither is "the same as the reference".
+
+⚖️ **THAT RE-PRICES THE FLATTENING SHAPE §7.2 DECLINED.** It was declined on cost
+while the depth question was open; the answer changes the comparison, because
+flattening has NO depth table at all — main expands every `X<var>;` in place and
+the tenant never sees one. Its bound is the EXPANDED LENGTH, not the nesting
+depth. Semantically it is still exact (there is no scope), so this is purely
+about where the bytes go:
+
+| | servicer + stack (§7.3) | flatten main-side |
+|---|---|---|
+| main page 1 (61 B free) | small: decode + one resolve | a scan-resolve-copy loop |
+| sub page 1 (87 B free) | the `X` scan, the stack walk, the resume | nothing |
+| RAM | 3 B x N, plus the outer `B`/`DE` | a flat buffer |
+| divergence | a DEPTH limit the reference does not have | a LENGTH limit the reference does not have |
+
+🔴 **AND WRITING THAT TABLE OUT SHOWS IT IS NOT A FORK.** The row that looked
+decisive — "RAM: 3 B x N" against "a flat buffer" — is not a trade at all:
+**flattening needs RAM TOO**, and a buffer big enough for an expansion is not
+obviously smaller than 24 B. So it is not scarce-ROM-versus-RAM; flattening
+spends the SCARCE region (main page 1) *and* RAM, to buy a divergence of a
+different shape rather than no divergence. That is strictly worse, and the depth
+answer did not rescue it.
+
+✅ **DECIDED: THE SERVICER, WITH `N = 8`.** 24 B of RAM table. The reference
+manages 24+ levels and any N is a divergence, so N is chosen to be far past
+anything real MML does (measured nesting in the wild is 1–3) and the limit is
+DOCUMENTED rather than hidden — the same way this tree records every other bound
+it cannot match. What must NOT happen is a silent wrong answer: level N+1 raises,
+it does not truncate.
+⚠️ **THE DIVERGENCE IS FILED, NOT FORGOTTEN**: `X` nested deeper than 8 raises
+where both references keep going. A row should pin it, so the day the cap moves
+the row moves with it.
+
+### 7.7 Where the RAM would come from — CANDIDATES, not a claim
+
+🔴 **RAM HAS NO GATE** (`make wall-assertion-check` polices ROM only), and
+`scratchpad/rammap_sweep.py`'s own caveat is that a delta is *"the cell at the low
+address PLUS whatever follows"*, never free space. Its window is `[E000,F380)` and
+does not even cover the PLAY work area. So, to be READ and then asked of the
+machine, never assumed:
+
+* **The VCB tail.** `VCB_STRIDE` is 37 and the highest offset this tree uses is
+  `VCX_FRAMES` at 20 (2 B). Offsets 22..36 are unused HERE — but they are real
+  MSX2-TH VCB fields, so this is space borrowed from a layout we have only
+  partly implemented, and it must be recorded as such rather than treated as
+  spare.
+* ❌ **NOT a disk buffer.** `AUDIO_VMASK equ DISKOP_OP` is the standing precedent
+  for audio/disk aliasing, but that is a transient PARAMETER cell. `SECTOR_BUF`
+  and `BDOS_SEQREC` hold LIVE state for an open channel, and `PLAY` in a program
+  with a file open is ordinary. The precedent does not extend to buffers.
+* `QUEBAK $F971-$F974` is already fully spent (`PLY_LASTDUR`, `PLY_BUFEND`).
 
 ## Appendix A — Sources (clean-provenance, contract-level)
 
