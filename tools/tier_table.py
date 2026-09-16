@@ -1023,8 +1023,18 @@ def main(argv=None):
         print(f"  {t:10} {n:3}")
     nest = nested_open(open(TODO, encoding="utf-8").read())
     if nest:
-        print(f"  \u26a0\ufe0f {len(nest)} NESTED open checkbox(es) carry no tier and no marker -- "
-              "read them; a keyword they name is NOT 'no known gap':")
+        # 🔴 THE MESSAGE SAYS WHAT `nested_open` ACTUALLY CHECKS. It used to read
+        # "carry no tier and no marker", and it never tested either: the function
+        # returns EVERY indented `- [ ]` line, which its own docstring says is the
+        # design ("Reported, never silently counted") because the top-level scans
+        # cannot see inside a block at all. Acting on the old wording -- adding
+        # markers to silence it -- changed nothing and could not, which is the
+        # readout-blind-to-its-own-subject class one level up: a message that
+        # describes a filter the code does not apply.
+        print(f"  \u26a0\ufe0f {len(nest)} NESTED open checkbox(es) -- the top-level "
+              "tier/marker scans cannot see inside a block, so these are reported "
+              "in full, never filtered. Read them: a keyword one of them names is "
+              "NOT 'no known gap':")
         for ln, head in nest:
             print(f"       {ln:>6}  {head}")
     print(f"  {'open':10} {len(its):3}    keywords: {len(kws)} "

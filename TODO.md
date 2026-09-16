@@ -1932,7 +1932,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:19255 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:19258 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -18168,6 +18168,7 @@ support** in zerobas-disk — a distinct sub-track from the verb surface above. 
             MSX-DOS boot uses **none** of H.PHYD / DSKIO / our page-0 vectors / our ROM
             header; it expects the standard **disk WORK AREA** (`DRVTBL` + driver slot/entry)
             and, absent it, falls back to a slot scan that wedges on the expanded slot 3.
+            ⛔ BLOCKED — inherits `2-Tier2-a`'s own ⛔ (the no-disassembly wall). Stated here rather than left implicit: `tools/tier_table.py` warns on a NESTED open checkbox carrying no tier and no marker, because a keyword such an item names cannot be certified `no known gap` — and a warning that fires on items whose status is merely UNWRITTEN is noise that hides the case it exists for.
       - [ ] **a3 — SIZED by black-box differential = charter-level subsystem (§8.8).** A
             clean-room RAM differential (stock CF-3300 vs Tier-1, data disk → BASIC) shows
             the base BIOS sets only `EXPTBL`; the **disk ROM** installs `RAMAD0-3`
@@ -18179,7 +18180,7 @@ support** in zerobas-disk — a distinct sub-track from the verb surface above. 
             environment, a multi-slice Phase-2+ effort that abuts the no-disassembly wall.
             **REOPENED + progressing (2026-06-22, §8.9) — §8.8 pessimism refuted.** The boot
             drives our OWN `bdos_entry`, not a rebuilt kernel. **Slice-1 DONE + committed**
-            (`f1035a0`): `$F37D` is the disk system's BDOS-call JP vector (the boot `CALL`s it
+            (`f1035a0`): `$F37D` is the disk system's BDOS-call JP vector (the boot calls it
             with C=$0F Open, DE=FCB "MSXDOS  SYS"); INIT had written a raw word there → the
             `$0038` wedge. INIT now publishes `$F37D` = `JP bdos_entry` (safe — Phase-1.5
             loader no longer reads it). Wedge gone; boot reaches bdos_entry/Open/fat_mount,
@@ -18298,6 +18299,8 @@ support** in zerobas-disk — a distinct sub-track from the verb surface above. 
             page-1 analog of the §8.16 page-0 RAMAD fix. **NEXT: the boot bridge must map page-1 RAM
             (not our ROM) while storing the loaded MSXDOS.SYS**, so `$50A9` holds its loader when the
             kernel calls it. See §8.25.
+            ⛔ BLOCKED — inherits `2-Tier2-a`'s own ⛔ (the no-disassembly wall).
+            Stated here rather than left implicit, for the reason a2 above gives.
 - [ ] **2-Tier2-b — organic GETDPB.** With DOS up, run a real DOS command (`DIR`/copy)
       and trap `$4016` to prove **real DOS code** consumes our GETDPB + DSKIO + dir/FAT
       — the organic evidence the Tier-0/1 differential could only approximate.
