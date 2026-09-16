@@ -455,7 +455,78 @@ def enumerate_fn_targets():
         kw, sel = m.group(1), eq.get(m.group(2))
         if sel is not None and kw in kw2row:
             out.append((kw, kw2row[kw], sel))
+    # 🔴 AND THE TOKEN-FREE SUBJECTS, which this enumeration cannot reach: it
+    # walks kwtable.inc, and a keyword with no table entry has none to walk.
+    # They carry tok=None, which every token-keyed shape skips.
+    # ⚠️ THEIR ROW CANNOT COME FROM `kw2row` EITHER, for the same reason -- that
+    # map is keyed on `stmt_keyword` against the kwtable set. It comes from the
+    # row's OWN `SUBJECT:` tag, which is how `INPUT$` is already attributed
+    # everywhere else in the tree (tools/kwforms.py, tier_table).
+    for kw in SUFFIX_CUTS:
+        if any(o[0] == kw for o in out):
+            continue
+        for r in sweep.SWEEP:
+            if r[2] is None or len(r) < 5:
+                continue
+            if sweep.row_subject(r[4]) == kw:
+                out.append((kw, r[0], None))
+                break
     return out
+
+
+# 🔪 THE SEVENTH CUT SHAPE'S TABLE (D-KWSUFCUT 2026-09-16): keywords that have
+# NO TOKEN AT ALL and are dispatched by a SUFFIX CHARACTER.
+# 🔴 `INPUT$` IS THE WHOLE REASON. It was the last keyword `tier_table` held at
+# TIER 0 "not knife-proven CONNECTED" with BOTH its forms agreeing -- and it is
+# not merely uncut, it is structurally outside `enumerate_fn_targets`, which is
+# driven by `kwtable_keywords()`. MSX tokenises `INPUT` and `$` SEPARATELY, so
+# there is no `INPUT$` entry to enumerate and no token byte for any of the six
+# token-keyed shapes to compare against (`tools/kwforms.py` says so in its own
+# words). It is reached instead by a suffix test:
+#     str_eval_maybe_inputd:  inc hl / ld a,(hl) / cp '$' / jr z,str_inputd
+# 🎯 AND IT IS A DECLARED TABLE RATHER THAN A HEURISTIC, DELIBERATELY. Matching
+# "a `cp <printable>` inside a routine whose name contains the stem" would sweep
+# up `ex_input`, `input_common`, `str_inputd` and `str_inputd_read` as well --
+# the same substring trap `plant_cp_named` records for LEN, where a length EQUATE
+# ending in "len" nearly outranked the real site. Naming the routine is honest
+# about being a mapping; guessing at it would be a shape that can be wrong.
+SUFFIX_CUTS = {
+    # keyword: (enclosing symbol, the suffix character its dispatch compares)
+    "INPUT$": ("str_eval_maybe_inputd", ord("$")),
+}
+
+
+def plant_suffix(kw):
+    """🔪 Cut a SUFFIX-dispatched keyword by patching the compared character.
+
+    The `cp <char>` must live INSIDE the named routine and be followed by a
+    conditional jump, and EXACTLY ONE site must qualify -- the same ambiguity
+    rule every other shape carries. A missing symbol, a missing site or two
+    sites all REFUSE; none of them guess.
+    Patching the OPERAND rather than the jump fails safely: the suffix simply
+    never matches and the caller falls to its own not-a-string-operand path,
+    which for `INPUT$` is `str_eval_no` -> Syntax error. That is exactly what a
+    row observing the keyword must notice."""
+    ent = SUFFIX_CUTS.get(kw)
+    if ent is None:
+        return None, "no suffix-cut entry for this keyword"
+    name, ch = ent
+    st = syms().get(name)
+    if st is None:
+        return None, f"no `{name}` symbol"
+    rom = bytearray(io.open(ROM, "rb").read())
+    end = min(st + 64, len(rom) - 4)
+    hits = [i for i in range(st, end)
+            if rom[i] == 0xFE and rom[i + 1] == ch and rom[i + 2] in (0x28, 0xCA, 0x20, 0xC2)]
+    if len(hits) != 1:
+        return None, (f"{len(hits)} `cp ${ch:02X}` site(s) in {name} — refusing")
+    off = hits[0] + 1
+    orig = bytes(rom[off:off + 1])
+    rom[off] = DEADTOK                  # a byte no suffix character can be
+    io.open(ROM, "wb").write(bytes(rom))
+    if io.open(ROM, "rb").read()[off] != DEADTOK:
+        sys.exit("knife: the suffix plant did NOT take — nothing was measured")
+    return (off, orig), f"suffix `cp ${ch:02X}` in {name} at ${off:04X}"
 
 
 def plant_argtab(tok):
@@ -777,18 +848,29 @@ print("knife: statement handlers -> stmt_error $%04X; a row still SUPPORTED is B
 for kw, row, tok in TARGETS:
     before = knife_guard.hashes()
     if FNMODE:
-        res, why = plant_fn(tok, kw)
-        if res is None:                      # no `cp` site: try the cpir table
-            res, why2 = plant_argtab(tok)
-        if res is None:                      # nor that: try the transcendental table
-            res, why3 = plant_totaltab(tok)
-        if res is None:                      # nor that: the operator precedence table
-            res, why4 = plant_logtab(tok)
-        if res is None:                      # LAST: a `cp` site NAMED for the keyword
-            res, why5 = plant_cp_named(tok, kw)
+        # 🔴 A TOKEN-FREE SUBJECT DECLINES EVERY TOKEN-KEYED SHAPE BY CONSTRUCTION
+        # rather than by each one happening to miss: `tok is None` cannot be
+        # compared against a ROM byte, and a shape that quietly treated None as 0
+        # would cut whatever happens to hold a zero operand.
+        res = None
+        why = why2 = why3 = why4 = why5 = why6 = "not tried"
+        if tok is not None:
+            res, why = plant_fn(tok, kw)
+            if res is None:                  # no `cp` site: try the cpir table
+                res, why2 = plant_argtab(tok)
+            if res is None:                  # nor that: the transcendental table
+                res, why3 = plant_totaltab(tok)
+            if res is None:                  # nor that: the operator precedence table
+                res, why4 = plant_logtab(tok)
+            if res is None:                  # a `cp` site NAMED for the keyword
+                res, why5 = plant_cp_named(tok, kw)
+        else:
+            why = "no token -- every token-keyed shape skipped"
+        if res is None:                      # LAST: a SUFFIX-dispatched keyword
+            res, why6 = plant_suffix(kw)     # (no token at all -- see SUFFIX_CUTS)
             if res is None:
-                print("  %-8s row %-10s %s / %s / %s / %s / %s"
-                      % (kw, row, why, why2, why3, why4, why5)); continue
+                print("  %-8s row %-10s %s / %s / %s / %s / %s / %s"
+                      % (kw, row, why, why2, why3, why4, why5, why6)); continue
         off, orig = res
     else:
         off, orig = plant(tok, dead)

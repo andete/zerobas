@@ -1932,7 +1932,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:19225 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:19255 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -19219,8 +19219,38 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       of them earned. Re-tiering on "nothing is measured broken" would be the same
       reasoning the drain has refuted four times. When the list empties, THAT is
       when the tier is the question to re-ask — with Joost.
+      ✅ **THE KNIFE HALF IS DONE (D-KWSUFCUT, 2026-09-16): NO KEYWORD IS HELD
+      BACK BY ATTRIBUTION ANY MORE.** `docs/tier-status.md` carried exactly one
+      *"not knife-proven CONNECTED"* — `INPUT$`, with BOTH its forms agreeing —
+      and that count is now **0**. STATEMENT 149 → **150**.
+      🔴 **AND IT WAS NOT MERELY UNCUT, IT WAS UNREACHABLE BY THE INSTRUMENT.**
+      `enumerate_fn_targets` walks `kwtable.inc`, and **`INPUT$` HAS NO TOKEN** —
+      MSX tokenises `INPUT` and `$` separately, which `tools/kwforms.py` says in
+      its own words — so there was no entry to enumerate and no token byte for any
+      of the six token-keyed shapes to compare against. It is dispatched by a
+      SUFFIX instead: `str_eval_maybe_inputd`'s `ld a,(hl) / cp '$' / jr z,…`.
+      🔪 **THE SEVENTH CUT SHAPE** (`plant_suffix`) patches that compared
+      CHARACTER, and the row is found by its own `SUBJECT:` tag — the attribution
+      `kwforms.py` and `tier_table` already use for it — because `kw2row` is keyed
+      on the kwtable set too. Verified: `INPUT$ row inputdol_b knifed -> MISSING
+      LOAD-BEARING`.
+      ⚠️ **IT IS A DECLARED TABLE, NOT A HEURISTIC.** Matching "a `cp <printable>`
+      inside a routine whose name contains the stem" would also sweep up
+      `ex_input`, `input_common`, `str_inputd` and `str_inputd_read` — the same
+      substring trap `plant_cp_named` records for `LEN`, where a length EQUATE
+      nearly outranked the real site. And a token-free subject now SKIPS every
+      token-keyed shape explicitly rather than relying on each one happening to
+      miss on `None`.
+      ⚠️ **THE BLIND LIST IS UNCHANGED AND EACH ENTRY IS EXPLAINED**: `MAX`/`CALL`
+      score reservedness and have no happy path here; `VDP`/`BASE` are cut on the
+      STATEMENT path while their rows use the FUNCTION form (the knife's own
+      docstring records that); `ELSE` is a particle; `PAD` is the joystick-rig
+      limit. This slice added none.
       🤖 AUTONOMOUS — Joost ruled both halves on 2026-09-13: the tier STAYS and
-      step (c) IS worth building. The drain is done; step (c) is the open work.
+      step (c) IS worth building; he RE-AIMED it the same hour to *"add more tests
+      for each keyword"*, so the `subject:` tag is retired and the ROW is the
+      attribution, with the knife kept as the sampling spot-check. **That
+      spot-check now has no keyword it cannot reach.**
 
 - [ ] **`LOAD"CAS:"` ACCEPTS A TOKENISED TAPE; the reference does not return.**
       Found 2026-08-03 by D-DOTGAPS (§1.2). With only a $D3 file on the tape the

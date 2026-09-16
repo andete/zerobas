@@ -666,6 +666,16 @@
    "verdict": "MISSING",
    "weak": false
   },
+  "INPUT$": {
+   "connected": true,
+   "modes": {
+    "fn": "MISSING"
+   },
+   "row": "inputdol_b",
+   "subject": "INPUT$",
+   "verdict": "MISSING",
+   "weak": false
+  },
   "INSTR": {
    "connected": true,
    "modes": {
@@ -1952,6 +1962,12 @@
     "inputkw": "MISSING"
    }
   },
+  "INPUT$": {
+   "connected": true,
+   "rows": {
+    "inputdol_b": "MISSING"
+   }
+  },
   "INT": {
    "connected": true,
    "rows": {
@@ -2548,5 +2564,5 @@
    }
   }
  },
- "written": "2026-09-16 05:05:21"
+ "written": "2026-09-16 05:42:01"
 }
