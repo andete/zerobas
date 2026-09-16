@@ -562,6 +562,54 @@ the walk above is of `basic/sysvars.inc`'s `$FB00`+ names directly. A candidate
 in the tree's own region still has to be READ (a delta is the cell at the low
 address PLUS whatever follows) and then ASKED OF THE MACHINE.
 
+### 7.8 Which MECHANISM the reference uses — partly answered (D-PLAYXREC)
+
+[`scratchpad/playxrec_probe.py`](../scratchpad/playxrec_probe.py), VG-8020,
+2026-09-16. ⚠️ **READ 7.8.1 BEFORE ANY ROW HERE**: this probe was wrong TWICE and
+one row is still not scoreable.
+
+| row | reading | |
+|---|---|---|
+| `c0` plain note | 53/0 | control — the rig works |
+| `c1` one level of `X` | 53/0 | control — a terminating `X` |
+| `c4` chain of **6**, top level | 53/0 | control — the subject of `c5`, unnested |
+| `c2`/`c3` `A$="XA$;"` (self-reference) | **no output in 25 s** | see below |
+| `c5` chain of 6, **80 `GOSUB`s deep** | **ERR 5** | 🔴 NOT SCOREABLE — its control is unreadable |
+| `c9` the same 80 `GOSUB`s, no `X` | no reading | the control that would make `c5` mean something |
+
+🟡 **SELF-REFERENCE PRODUCES NOTHING, REPEATEDLY — AND THAT IS NOT "IT HANGS".**
+An empty capture is the window closing. It is consistent with an unguarded
+infinite recursion and equally consistent with a very slow one; nothing here
+distinguishes them, and the row is recorded as what it is.
+
+🔴 **`c5` IS THE INTERESTING ONE AND IT CANNOT BE SCORED.** A chain that plays at
+top level raising ERR 5 at 80 `GOSUB`s deep would be strong evidence that `X`'s
+return points share the BASIC stack — but `c9`, the same nesting WITHOUT any `X`,
+produced no reading, so the 80 `GOSUB`s themselves are not cleared of causing it.
+**A subject that moves while its control is blind is not a measurement.**
+
+🎯 **AND IT DOES NOT CHANGE THE DESIGN EITHER WAY.** §7.6 chose a fixed 8-entry
+RAM table because **a CALSLT is not resumable and the tenant has no locals**, so
+the Z80 stack is unavailable to us whatever the reference does. Confirming
+recursion would only confirm that the depth divergence is unavoidable — which
+§7.6 already says. This subsection exists so the question is not re-opened as
+though it were load-bearing.
+
+#### 7.8.1 The probe was wrong twice, in two different ways
+
+1. **Hand-counted line numbers.** `ON ERROR GOTO` and `GOSUB` targets were
+   derived by counting list positions, and the recursion body was skipped
+   entirely. Both B rows read silence — subject AND control — which is the only
+   reason it was caught. Targets are now RESOLVED from labels, and an unresolved
+   `@name` refuses.
+2. 🔴 **A LABEL THAT RESOLVED PERFECTLY WELL, POINTING AT THE WRONG LINE.** The
+   settle loop was labelled on `T=TIME` rather than on the `IF`, so it jumped
+   back and re-read its own start time every iteration and never exited. Every
+   row that reached the settle hung; the ONE row that raised BEFORE reaching it
+   was the only reading in that run — **a broken instrument still emitting
+   something that looks like data.** The refusal in (1) cannot catch this: it
+   checks that a label RESOLVES, not that it resolves to the right line.
+
 ## Appendix A — Sources (clean-provenance, contract-level)
 
 - MSX Wiki, **PLAY** — https://www.msx.org/wiki/PLAY (MML syntax, per-voice strings).
