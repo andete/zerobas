@@ -794,7 +794,7 @@ FORMS: dict[str, tuple[tuple[str, ...], str]] = {
     ),
     "VARPTR": (
         ("variable", "file-channel"),
-        "VARPTR(<var>) and VARPTR(#<n>). AUTHORED AT 2 KNOWING THIS TREE CAN ONLY MEET 1: VARPTR(#n) is recorded as DEFERRED (docs/TODO-done.md), so VARPTR stands at 1/2 the way LOCATE stands at 3/4. The bar comes from the reference's syntax, not from what we chose to build. The variable form is scored by varptr_b and NOT by varptr, which reads VARPTR(B)>0 -- a BOOLEAN, which cannot see the address.",
+        "VARPTR(<var>) and VARPTR(#<n>). AUTHORED AT 2 KNOWING THIS TREE CAN ONLY MEET 1. The bar comes from the reference's syntax, not from what we chose to build. The variable form is scored by varptr_b and NOT by varptr, which reads VARPTR(B)>0 -- a BOOLEAN, which cannot see the address. 🔴 THE FILE-CHANNEL FORM'S DEFERRAL HAS A MEASURED REASON SINCE 2026-09-16 (D-VARPTRN): both references answer an ADDRESS where this tree answers Syntax error, so the form is genuinely missing -- but the only axis a row can AGREE on is the STRIDE (the base is machine-specific and cancels, as varptr_b does for arrays), and the references stride at 265 (MSX's FCB: 256-byte record + 9 header) against our FCH_CTXSZ of 306. Matching it means adopting MSX's FCB LAYOUT, which is a channel-table change rather than a VARPTR one. Awaiting Joost.",
     ),
     "CHR$": (
         ("code-to-char",),

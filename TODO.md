@@ -1063,7 +1063,33 @@ instead of 3.
 🔭 **`VARPTR` STANDS AT 1/2, AND THE MISSING FORM IS DEFERRED WORK, NOT A
 MISSING ROW.** `VARPTR(#n)` is recorded as DEFERRED in `docs/TODO-done.md`. Same
 shape as `LOCATE` at 3/4: **the bar comes from the reference's syntax, not from
-what we chose to build.** ⚠️ Its variable form is scored by `varptr_b` and NOT by
+what we chose to build.**
+🔴 **AND AS OF 2026-09-16 THE DEFERRAL HAS A MEASURED REASON, WHERE `TODO-done.md`
+GAVE NONE — 🙋 IT IS NOW A RULING QUESTION FOR JOOST, NOT A TODO ITEM.**
+[`scratchpad/varptrn_probe.py`](scratchpad/varptrn_probe.py), three sides:
+| | `VARPTR(#1)` | `VARPTR(#2)`, default MAXFILES | stride after `MAXFILES=2` |
+|---|---|---|---|
+| VG-8020 | -3465 | ERR 52 | **265** |
+| CF-3300 | -8850 | ERR 52 | **265** |
+| zerobas | **ERR 2** | **ERR 2** | — |
+🎯 **THE FORM IS GENUINELY MISSING** — `Syntax error` where both references answer
+an address — and implementing it is CHEAP: `fch_ctx_addr` (basic/files.asm)
+already turns a channel number into its block address.
+🔴 **BUT THE ONLY AXIS THAT CAN AGREE IS THE STRIDE, AND OURS CANNOT MATCH IT.**
+The ADDRESS is machine-specific, so a row must read a DELTA — exactly what
+`varptr_b` does for the variable form, where "the machine-dependent base
+cancels". The references stride at **265**: the MSX-standard FCB, 256-byte record
+plus 9 header bytes. Ours would be `FCH_CTXSZ` = `FCH_STATESZ` 50 + `FCH_RECMAX`
+256 = **306**. So `VARPTR(#n)` EXPOSES THE INTERNAL LAYOUT OF THE CHANNEL TABLE,
+and matching it means adopting MSX's FCB shape — a change to the channel
+implementation, not to `VARPTR`.
+⚠️ **THIS IS THE FIRST BLOCKER THIS SESSION THAT SURVIVED RE-VERIFICATION.**
+Fifteen re-verified, fourteen stale, this one REAL — and it only became a reason
+rather than a word once it had a number. 🙋 What Joost gets to decide: implement
+it anyway (the address form stops being a Syntax error, and the stride row simply
+records a documented divergence), or leave it deferred and score `VARPTR` at 1/2
+by design. The same shape as the `STICK`/`STRIG` breadth question already waiting
+on him. ⚠️ Its variable form is scored by `varptr_b` and NOT by
 `varptr`, which reads `VARPTR(B)>0` — a BOOLEAN, which cannot see the address.
 ⚡ **D-KWBATCH7 — FIVE MORE FOR FOUR ROWS, AND THE DUPLICATE-KEY GUARD CAUGHT ME
 ONE BATCH AFTER I WROTE IT. FIFTY-TWO KEYWORDS AT TIER 1.**
@@ -1906,7 +1932,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:19140 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:19166 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -2072,7 +2098,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:6673 (T-6FE392)8 (T-529ABE)` from `TODO.md:17791 (T-529ABE)`: a
+      `TODO.md:6699 (T-6FE392)8 (T-529ABE)` from `TODO.md:17817 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -7517,7 +7543,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:17791 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:17817 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
