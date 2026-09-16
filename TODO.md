@@ -1932,7 +1932,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:19258 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:19290 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -2098,7 +2098,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:6699 (T-6FE392)8 (T-529ABE)` from `TODO.md:17876 (T-529ABE)`: a
+      `TODO.md:6699 (T-6FE392)8 (T-529ABE)` from `TODO.md:17908 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -7543,7 +7543,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:17876 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:17908 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -9084,6 +9084,38 @@ list. **When a slice lands, grep this list for what it just shipped.**
       💡 A standing **asymmetric** perf check falls out of the same instrument:
       RED only when an operation is significantly slower than BOTH references,
       never when it is faster.
+
+      🟢 **SHIPPED 2026-09-16 AS `make perf-pin-check` (D-PERFPIN),
+      `tools/check_perf_pins.py` — AND THE RULE ABOVE IS NOT THE RULE IT
+      SHIPPED WITH.** "Slower than BOTH references" cannot gate on its own:
+      `PAINT` is 2x slower TODAY and that is THIS item, still open, so the gate
+      would have been RED on arrival and would have taught nobody anything. It
+      fires on **drift against its own PIN** (margin 3 %) instead — it cannot go
+      red for being slow, only for GETTING SLOWER — and the reference columns are
+      printed as context and never gate. That is the asymmetry the policy asks
+      for, made actionable.
+
+      🎯 **IT EXISTS BECAUSE THE DRIFT HAD ALREADY HAPPENED WITH NOTHING
+      WATCHING**: D-PAINTSCAN's reverted tree read flood **29.742824** on
+      2026-08-25; the same deterministic stopwatch reads **30.922748** today,
+      **+4.0 %**, ratio 2.02x -> 2.10x. Unexplained, and now pinned rather than
+      lost. Four operations pinned (`paint.flood`, `paint.circle`, `circle`,
+      `line`); ~13 s; control passed (pin lowered to 20.0 -> RED with
+      `+54.6 % ... SLOWER than its pin`, restored -> green).
+
+      🔴 **AND IT OPENED A HOLE IN THE SKIP PROOF THAT THE PREMISE CHECK COULD
+      NOT SEE.** The measurement is `scratchpad/paint_stopwatch.py`, OUTSIDE
+      `run_gates.py`'s fingerprinted trees, while the recipe names only the
+      in-tree tool — so editing the stopwatch would have left the emulator tier
+      skipping. `unfingerprinted_scripts` now looks ONE HOP into the scripts a
+      recipe names (arms S7/S8/S9/S13), and the stopwatch is named in
+      `FINGERPRINT_FILES` so it is covered file-by-file. ⚠️ **The hop reads
+      WIRING LINES ONLY** (`sys.path`, `subprocess`, ...): a first cut scanning
+      whole files reported **30** scratchpad paths, 29 of them PROSE citations,
+      which would have disabled the skip permanently for documentation. 30 -> 1.
+      ⚠️ And its first cut APPENDED TO THE LIST IT WAS ITERATING — two tools
+      naming each other never terminated; it hung silently for 22 minutes and
+      looked like a slow `make -n` sweep, not a loop.
       🎚️ TIER 4 — on-par speed: `PAINT` 2×
       ~~🙋 NEEDS-JOOST — a call that is yours to make (charter / scope).~~ (re-marked 2026-09-10, see below)
       🎯 **RULED (Joost, 2026-09-10): *"follow the scheme"* — TIER 4, so it is picked only

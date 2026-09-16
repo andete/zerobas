@@ -442,6 +442,20 @@ redundant-load-check: $(RELOC_SYM)
 wall-assertion-check:
 	python3 tools/wall_assertion_check.py
 
+# --- D-PERFPIN: the standing ASYMMETRIC performance check ---------------------
+# Joost's policy is "faster or comparable is not a worry; significantly SLOWER
+# is", and the PAINT item proposed a standing check for it. 🔴 BUT "slower than
+# both references" cannot be the gate: PAINT is 2x slower today and that is a
+# filed, open TIER 4 item, so such a gate would be RED on arrival and teach
+# nobody anything. This fires on DRIFT AGAINST A PIN instead -- it cannot go red
+# for being slow, only for getting SLOWER -- and the reference columns are
+# reported for context. It exists because the drift ALREADY happened unnoticed:
+# the flood went 29.742824 (2026-08-25) -> 30.922748, +4.0%, with nothing
+# watching. ~13 s; the mark stopwatch is exact and repeats bit-identically, which
+# is what makes a 3% margin legitimate rather than optimistic.
+perf-pin-check: repack-machine
+	python3 tools/check_perf_pins.py
+
 # --- D-RAMCLAIM: a RAM free-space claim may not contain a NAME ----------------
 # `wall-assertion-check` above polices ROM figures and dates them; RAM figures
 # had NO gate, so they rot silently -- sysvars.inc advertised "376 B spare" where

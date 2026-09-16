@@ -90,6 +90,7 @@ runline-acceptance keystr-acceptance loc-acceptance dskio-acceptance copy-accept
 cursor-acceptance time-acceptance namspc-acceptance arrdim-acceptance
 asciidigit-acceptance
 arylv-acceptance badfnum-acceptance beep-acceptance binfre-acceptance
+perf-pin-check
 cassave-acceptance castail-acceptance deffn-acceptance direct-ctrl-acceptance
 dskmsg-acceptance editverb-acceptance fldary-acceptance fldwidth-acceptance
 forvar-acceptance gicini-acceptance graphics-floor-acceptance ifsem-acceptance input-acceptance nodisk-acceptance pusing-acceptance catterm-acceptance catusr-acceptance nameord-acceptance namegate-acceptance
@@ -122,7 +123,12 @@ LAST_GREEN = os.path.join(OUT, "..", "gate_last_green.json")
 # whole design: judgement about blast radius is exactly the reasoning that
 # failed three times on 2026-08-26, each caught by a gate nobody expected.
 FINGERPRINT_TREES = ("probes", "tests", "tools")
-FINGERPRINT_FILES = ("Makefile",)
+# 🔴 `scratchpad/paint_stopwatch.py` IS THE MEASUREMENT `perf-pin-check` MAKES,
+# and scratchpad/ is not a fingerprinted TREE (it churns; fingerprinting it
+# would mean never skipping). Named here it is covered file-by-file, and
+# `unfingerprinted_scripts` exempts what is named here -- so editing the
+# stopwatch invalidates the skip, which is the whole point.
+FINGERPRINT_FILES = ("Makefile", "scratchpad/paint_stopwatch.py")
 
 
 def source_fingerprint():
@@ -179,6 +185,15 @@ def inert_against_last_green():
 # skip instead of being true on the day someone looked. ~0.03 s per target.
 # [[apparatus-is-part-of-the-measurement]]
 SCRIPT_REF = re.compile(r"([\w./-]+\.(?:py|tcl|sh))")
+# 🔴 A PATH IN A COMMENT IS A CITATION, NOT A DEPENDENCY. Inside a recipe,
+# naming a script IS running it; inside a .py FILE it usually is not, and
+# this repo cites its probes in prose everywhere -- the first cut of the
+# one-hop scan reported **30** scratchpad paths, 29 of them documentation,
+# which would have disabled the emulator skip forever. So a hop only counts
+# from a line that actually WIRES something. Measured 2026-09-16: 30 -> 1,
+# and the 1 is `check_perf_pins.py`'s stopwatch.
+WIRE_LINE = re.compile(r"sys\.path|subprocess|runpy|import_module"
+                       r"|spec_from_file_location|Popen|check_call|check_output")
 
 
 def _make_n(target):
@@ -189,7 +204,7 @@ def _make_n(target):
         return None
 
 
-def unfingerprinted_scripts(read_recipe=_make_n, exists=None):
+def unfingerprinted_scripts(read_recipe=_make_n, exists=None, read_file=None):
     """-> the set of scripts an EMULATOR recipe runs from outside the fingerprint.
 
     `read_recipe`/`exists` are injected by the selftest so the arm can drive a
@@ -199,16 +214,54 @@ def unfingerprinted_scripts(read_recipe=_make_n, exists=None):
     parallel battery [[exit-safe-is-not-concurrency-safe]]."""
     if exists is None:
         exists = lambda ref: os.path.exists(os.path.join(ROOT, ref))
-    stray = set()
+    if read_file is None:
+        def read_file(ref):
+            try:
+                with open(os.path.join(ROOT, ref)) as fh:
+                    return fh.read()
+            except OSError:
+                return ""
+    stray, hop1 = set(), []
+
+    # 🔴 `hop1` IS A LIST BEING APPENDED TO WHILE IT IS WALKED unless `collect`
+    # is False -- which is how the first cut of this ran forever: two tools that
+    # name each other kept re-queueing one another, silently, for 22 minutes.
+    # ONE hop means ONE hop, and each file at most once.
+    def consider(ref, collect=True):
+        ref = ref.lstrip("./")
+        if ref in FINGERPRINT_FILES:
+            return                       # covered file-by-file, not by a tree
+        if ref.startswith(FINGERPRINT_TREES):
+            if collect and ref not in hop1:
+                hop1.append(ref)         # inside -- but what does IT reach?
+        elif exists(ref):
+            stray.add(ref)
+
     for target in EMULATOR:
         out = read_recipe(target)
         if out is None:
             # Cannot read the recipe -> cannot prove the premise -> do not skip.
             return {f"<make -n {target} failed>"}
         for ref in SCRIPT_REF.findall(out):
-            ref = ref.lstrip("./")
-            if not ref.startswith(FINGERPRINT_TREES) and exists(ref):
-                stray.add(ref)
+            consider(ref)
+
+    # 🔴 ONE HOP FURTHER, added 2026-09-16 with `perf-pin-check`: a recipe may
+    # name a tool that is inside the fingerprint while the WORK it does lives
+    # outside it. `check_perf_pins.py` is in tools/; the stopwatch it measures
+    # with is in scratchpad/. Reading only recipes, this check called that
+    # premise HELD. It does not hold by being inside one file.
+    # ⚠️ Only ONE hop, and only for text that LOOKS like a path -- a bare
+    # `import foo` is invisible, so a tool reaching out of tree must name the
+    # file (`check_perf_pins.py` does, next to its sys.path insert).
+    for ref in hop1:
+        if not ref.endswith(".py"):
+            continue
+        for line in read_file(ref).splitlines():
+            if not WIRE_LINE.search(line):
+                continue
+            for inner in SCRIPT_REF.findall(line):
+                if inner.lstrip("./") != ref:
+                    consider(inner, collect=False)
     return stray
 
 
@@ -240,6 +293,37 @@ def selftest():
     # An untracked path is not a hazard -- it is not what the recipe runs.
     arm("S5 a reference to a NON-EXISTENT path is not reported",
         unfingerprinted_scripts(lambda t: outside, lambda _r: False) == set())
+
+    # --- the one-hop arms (D-PERFPIN) --------------------------------------
+    # 🔴 S7 is the arm that was MISSING while the hole was open: a recipe naming
+    # only an in-tree tool, where the tool itself reaches into scratchpad.
+    tool = "python3 tools/x_probe_check.py\n"
+    reach = "sys.path: scratchpad/foo_probe.py\n"
+    arm("S7 a tool INSIDE the fingerprint reaching OUTSIDE it is caught",
+        unfingerprinted_scripts(
+            lambda t, f=EMULATOR[0]: tool if t == f else inside, seen,
+            read_file=lambda r: reach if r == "tools/x_probe_check.py" else "")
+        == {"scratchpad/foo_probe.py"})
+    arm("S8 a file named in FINGERPRINT_FILES is covered, not stray",
+        unfingerprinted_scripts(
+            lambda t, f=EMULATOR[0]: tool if t == f else inside, seen,
+            read_file=lambda r: ("sys.path scratchpad/paint_stopwatch.py\n"
+                                 if r == "tools/x_probe_check.py" else ""))
+        == set())
+    # A tool naming ITSELF (shebang, docstring) is not a hop out of anywhere.
+    arm("S9 a tool that only names itself is not reported",
+        unfingerprinted_scripts(
+            lambda t, f=EMULATOR[0]: tool if t == f else inside, seen,
+            read_file=lambda r: "tools/x_probe_check.py\n")
+        == set())
+
+    # 🔴 S13 is the arm that keeps this check USABLE. Without it the hop would
+    # fire on the 29 scratchpad paths this repo names in COMMENTS.
+    arm("S13 a scratchpad path merely CITED in a comment is not a dependency",
+        unfingerprinted_scripts(
+            lambda t, f=EMULATOR[0]: tool if t == f else inside, seen,
+            read_file=lambda r: "# see scratchpad/foo_probe.py for the method\n")
+        == set())
 
     arm("S6 the LIVE premise holds: no emulator recipe leaves the fingerprint",
         unfingerprinted_scripts() == set())
