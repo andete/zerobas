@@ -4,6 +4,81 @@ A `ScheduleWakeup` loop is SESSION-LOCAL and dies with the session. This file is
 the durable half: paste the command in `## The command` below into a fresh
 session and the loop resumes exactly where it stopped.
 
+## 🔴 STATE AS OF 2026-09-16 — READ THIS BEFORE THE FIRING PROMPT
+
+⚠️ **THE CRON PROMPT IS STALE AND HAS BEEN ALL SESSION.** It still says *"NEXT
+VERBS: NAME, then COPY, then FILES/LFILES"* and *"DO NOT rely on CF across
+CALSLT — it was never measured"*. All three verbs shipped; CF is measured
+two-sided. **This file is the durable half — believe it over the prompt.**
+
+### The autonomous queue is EMPTY except TIER 4
+
+Every tiered 🤖 item below TIER 4 is closed. What is left:
+* **TIER 4 speed** — the interpreter's 2.5–3.8× band, `PAINT` 1.9–2.0×, `PUT`.
+  Large, open-ended, and the only tiered autonomous work remaining.
+* 🙋 **THREE RULINGS WAIT ON JOOST, and none should be taken alone:**
+  1. **`VARPTR(#n)`** — the references stride **265** (MSX's FCB: 256-byte record
+     + 9 header), ours would be **306** (`FCH_STATESZ` 50 + `FCH_RECMAX` 256).
+     The ADDRESS cannot agree between machines, so a row must read a DELTA — and
+     ours cannot match. Implement anyway and document the divergence, or leave it
+     deferred and score `VARPTR` 1/2 by design?
+     ([`varptrn_probe.py`](varptrn_probe.py))
+  2. **The channel-verb CLUSTER MOVE** — `$FE5D` is recovered (it is the cell
+     BOTH `OPEN` and `MERGE` arrive through), but `ex_open` has **40** page-1
+     call sites with **18 inside loops** against ~3 and none for the FAT-light
+     four. The channel HELPERS must travel WITH the bodies; that is a slice shape
+     phase 3 has not done. ([`xslot_chanprice.py`](xslot_chanprice.py))
+  3. **`LOAD"CAS:"`** — bug-for-bug fidelity costs a working feature and the
+     faithful behaviour is a HANG no row can carry.
+
+### What the disk-verb carve bought, and it is the session's through-line
+
+`make basic-reloc` on 2026-09-16: **main page 1 61 B free, low region 36 B,
+`disk.rom` 8490 B** — from **3 B and 0 B**. Moving the FAT-light four into
+`disk.rom` (`0f15a873` KILL · `b26857de` NAME · `3f6a6099` COPY · `e1bbf7e5`
+FILES/LFILES) paid for **six** items that had been diagnosed, priced and parked
+on bytes that did not exist:
+
+| item | cost | what was actually wrong |
+|---|---|---|
+| `FIELD`/`LSET`/`RSET` gate | 20 B | genuinely blocked on bytes |
+| `INPUT$` console form | 21 B | genuinely missing code |
+| `SCREEN` key click | 9 B | *"no cell any row can read"* — **false** |
+| `LOCATE` cursor switch | 10 B | a declined deviation whose premise was about the wrong side |
+| `DSKF` drive range | 16 B | *"blocked on the same 8 bytes"* |
+| `SWAP` type order | 10 B | *"priced at ten bytes, which had eight"* |
+
+Plus `D-STOPEDGE`, which cost no bytes and turned out to be a hole in **shared
+trap machinery** rather than in `STOP`.
+
+📏 **`kwsweep` reads `SUPPORTED=362` — zero MISSING, zero scored DIVERGENT** (only
+`csrlin`, WEAK-excluded by its own row note). **150 of 163** statements at TIER 1.
+No keyword is unreachable by the knife. **Recount all of it; never quote it.**
+
+### 🔴 What this session kept re-learning
+
+* **RE-VERIFY THE BLOCKER BEFORE READING THE ITEM.** Fifteen re-verified, **fourteen
+  stale**. Two were blocked by a SENTENCE, not by the machine. The one that
+  survived (`VARPTR(#n)`) had NO stated reason at all until it was measured.
+* **AN AGREEING ROW BESIDE EVERY ERROR ROW.** `DSKF`'s first cut made EVERY call
+  answer `Bad drive name` — and the TIER 3 row PASSED, because a refusal is what
+  it asserts. Only the happy-path row dissented.
+* **A BATCHED SUITE'S RESET MUST RESTORE EVERY GLOBAL ITS CASES MOVE**, or a row
+  measures its predecessors. Making `CSRSW` live broke three suites at once, and
+  `missing-acceptance` reported the damage as *"good news about the tree"*.
+* **A FIX THAT CHANGES NOTHING IS A QUESTION ABOUT THE MECHANISM.** D-STOPEDGE's
+  first patch moved no reading because `STOP OFF` had already destroyed the bit
+  it tested.
+* **CORRECT CODE IN THE WRONG PLACE IN A CONTROL-FLOW GRAPH** is invisible in a
+  diff: a block dropped into a fallthrough gap (`sea_click`), a shared RAM
+  channel written too early (`DISKOP_STATUS`). Both caught by suites, neither by
+  the probe written for the feature.
+* **AN ITEM'S MARKER CAN BE SUPERSEDED INSIDE ITS OWN BLOCK** — take the LAST,
+  not the first. Taking the first reported 🙋 work as autonomous AND hid a TIER 1
+  item.
+* **A MESSAGE CAN ASSERT A PROPERTY IT NEVER TESTED** and send you after useless
+  work (`tier_table`'s nested-checkbox warning, D-KWBACKTICK).
+
 ## 🔴 CURRENT ORDER (2026-09-15, Joost): FINISH THE DISK KEYWORDS, THEN THE TODO
 
 He ruled the mechanism proven once phase 2 shipped: *"the mechanism is proven I
@@ -432,7 +507,8 @@ a pattern that appears in the polling command.
 
 ## The command
 
-Paste this into a fresh session (it is also armed as a 27-minute cron while the
-authoring session lives; a cron dies with the session, this file does not):
+Paste this into a fresh session. ⚠️ **It supersedes the 27-minute cron prompt,
+which went stale within an hour of being armed** — a cron prompt is fixed at
+creation and cannot learn, which is the whole reason this file exists.
 
-    /loop continue autonomously on zerobas — 🔴 READ scratchpad/LOOP-RESTART.md FIRST, then the item's own block in TODO.md to its END, and RE-VERIFY ANY BLOCKER BEFORE BUILDING ON IT. ➡️ CURRENT ORDER FROM JOOST 2026-09-15: FINISH THE DISK KEYWORDS (phase 3 of disk/docs/spec-diskbasic-hook-rearchitecture.md), THEN BACK TO THE GENERIC TODO. Next verbs, cheapest coupling first: NAME (ex_name), COPY (ex_copy + copy_parse), FILES/LFILES. ⚠️ kill_status is SHARED by KILL and COPY — a shared tail is a label, not a decision. ⚠️ EVERY DISK SLICE OWES FOUR GATES AND YOU CHECK THE ROWS BY NAME, NOT THE TOTAL: diskbasic-acceptance (grep the verb's own rows for `converged`), nodisk-acceptance (the verb must still answer ERR 5 with the hook unclaimed), deadcode, and a full `make gates`. A ROM CHANGE INVALIDATES THE KNIFE PIN — `kwknife.py --all` AND `--allfn`, then full `make kwsweep`, then `make tiers-md`. A NEW SECTION HEADER NEEDS AN INLINE CITATION or the battery dies in warm-up with rc=2. Standing rules: full `make gates` before each commit and never commit red; STAGE EVERYTHING BEFORE THE BATTERY AND WRITE NOTHING WHILE IT RUNS; `test -e <path> && exit 1` before any `cat >` heredoc; stage explicit paths, `git add -A` banned; commit message to a FILE with `git commit -F`; commit AND push after each fix without asking; re-run the five battery-excluded targets ONLY when the ROMs actually changed; WRITE EDIT SCRIPTS TO A FILE, anchor on TEXT, refuse on a missing or non-unique anchor, and ACCUMULATE PER FILE — two edits to one file both read from the original text silently discard the first; READ the output of every edit script; never poll with a pattern that matches the polling command itself.
+    /loop continue autonomously on zerobas — 🔴 READ scratchpad/LOOP-RESTART.md FIRST and BELIEVE IT OVER THIS PROMPT; then the item's own block in TODO.md to its END. 📊 RE-VERIFY THE BLOCKER *BEFORE* READING THE ITEM — fifteen re-verified, FOURTEEN STALE, two of them blocked by a sentence rather than by the machine. ➡️ THE AUTONOMOUS QUEUE IS EMPTY BELOW TIER 4: the disk keywords are done as far as the pattern reaches, the six items the carve funded have shipped, and `kwsweep` reads SUPPORTED=362 with zero missing and zero scored divergences. What is left is TIER 4 speed (the 2.5–3.8× interpreter band, PAINT, PUT) and THREE RULINGS that are Joost's, not yours: VARPTR(#n)'s FCB stride (265 vs our 306), the channel-verb CLUSTER move (ex_open has 40 page-1 call sites, 18 in loops — the helpers must travel with the bodies), and LOAD"CAS:" (fidelity costs a working feature; the faithful behaviour is a hang no row can carry). DO NOT take any of the three alone. ⚠️ AN ITEM'S MARKER CAN BE SUPERSEDED INSIDE ITS OWN BLOCK — take the LAST, not the first; taking the first reports 🙋 work as autonomous AND hides TIER 1 items. ⚠️ CHECK ROWS BY NAME, NEVER A CONVERGED TOTAL — diskbasic-acceptance says 34/34 and has no COPY row and no LFILES row. ⚠️ KEEP AN AGREEING ROW BESIDE EVERY ERROR ROW: DSKF's first cut made every call answer `Bad drive name` and the TIER 3 row PASSED on it. ⚠️ A BATCHED SUITE'S RESET MUST RESTORE EVERY GLOBAL ITS CASES MOVE. ⚠️ A ROM CHANGE INVALIDATES THE KNIFE PIN: `kwknife.py --all` AND `--allfn`, then full `make kwsweep`, then `make tiers-md`, and the ORDER for docs is TODO edit -> check_todo_citations.py --fix -> tiers-md (the tier table cites TODO LINE NUMBERS). Standing rules: full `make gates` before each commit and never commit red; STAGE EVERYTHING BEFORE THE BATTERY AND WRITE NOTHING WHILE IT RUNS; `test -e <path> && exit 1` before any `cat >` heredoc; stage explicit paths, `git add -A` banned; commit message to a FILE with `git commit -F`; commit AND push after each fix without asking; re-run the five battery-excluded targets ONLY when the ROMs actually changed; WRITE EDIT SCRIPTS TO A FILE, anchor on TEXT, refuse on a missing or non-unique anchor, and ACCUMULATE PER FILE; READ the output of every edit script; never poll with a pattern that matches the polling command itself.
