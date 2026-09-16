@@ -372,6 +372,97 @@ risk is staged behind a working core, consistent with the risk-staging norm.
 
 ---
 
+## 7. `X<var>;` substring execution — the design (D-PLAYX, 2026-09-16)
+
+⚠️ **PROVENANCE**: every behavioural statement below is this project's own
+black-box measurement of a Philips VG-8020 (13 rows,
+[`scratchpad/playx_probe.py`](../scratchpad/playx_probe.py)), each row carrying a
+control written WITHOUT `X`. No disassembly; §0's boundary is unchanged.
+
+### 7.1 What it does (measured, not assumed)
+
+| | behaviour |
+|---|---|
+| resumption | **A CALL, NOT A JUMP** — the outer string continues after the substring |
+| scope | **NONE** — `O7` set inside the substring is still in force outside it |
+| nesting | **YES**, at least one level (`A$="XB$;"`); deeper is UNMEASURED |
+| terminator | `;` is **MANDATORY** — without it, ERR 5 |
+| undefined var | silently **EMPTY**, and the outer string continues |
+| numeric var | **ERR 13** Type mismatch (not ERR 5) |
+| case | insensitive (`x` works) |
+
+🎯 **"NO SCOPE" IS THE LOAD-BEARING ONE.** It means the re-entry needs a SOURCE
+CURSOR STACK and **no VCB state save/restore at all** — parse state is simply
+shared. That is what makes this affordable.
+
+### 7.2 Where it cannot live, and why the obvious shapes are all shut
+
+The MML parser is `play_parse_tenant`, a **sub-ROM PAGE-1 tenant**
+(`sub/playparse.asm`), and the resolve it needs — `var_find_typed $4853`,
+`str_eval $49EE` — is **main page 1**. Three routes were considered and two are
+measured shut:
+
+* ❌ **Resolve in the tenant via an inter-slot call**, the way `disk.rom` now
+  calls main page 1 (D-XSLOTPRICE, 7 B a site). Shut: `sub/deffn.asm`'s header
+  records it MEASURED — no sub tenant in this tree calls main page 1, and there
+  is no import mechanism (`sub/basic-resident-abi.inc` is generated for page-1
+  tenants calling main's LOW region). The disk ROM's mechanism is the disk ROM's.
+* ❌ **Flatten the string main-side before handing it over** — expand every
+  `X<var>;` into a scratch buffer so the tenant never sees an `X`. Semantically
+  exact (there is no scope), but it spends MAIN PAGE 1, the scarce region, on a
+  scan-resolve-copy loop plus a buffer.
+* ✅ **A SERVICER, on `sub/deffn.asm`'s precedent** — the one shape this tree has
+  already built for exactly this problem.
+
+### 7.3 The servicer protocol
+
+⚠️ **A CALSLT IS NOT RESUMABLE** (`sub/deffn.asm`). The tenant is re-entered AT
+ITS TOP once per bounce and recovers its phase from RAM plus the entry register;
+**there are no locals**, because the Z80 stack belongs to the resident servicer
+and anything pushed is gone by the next entry. DEF FN carries BOTH directions of
+its protocol in one byte by giving the two directions DISJOINT ALPHABETS, and the
+same trick applies here.
+
+    tenant -> main   1  resolve the variable named in PLY_XNAME; give me (ptr,len)
+    main   -> tenant  0  nothing asked yet (a fresh PLAY)
+                     $81 resolved -- (ptr,len) are in PLY_XPTR/PLY_XLEN
+                     $82 undefined -- treat as the EMPTY string (NOT an error)
+                      13 raise Type mismatch (the name was numeric)
+
+`$82` is a separate answer from `$81` with length 0 only because the two are
+worth telling apart in the source; both resume the parse.
+
+### 7.4 The state that must move to RAM
+
+The parse today keeps its cursor in `MCLPTR` (RAM) but its **byte count in `B`**
+and its **queue write pointer in `DE`** — registers, which a non-resumable
+re-entry destroys. So:
+
+| cell | width | why |
+|---|---|---|
+| `PLY_XLEFT` | 1 | the outer `B`, bytes remaining |
+| `PLY_XPUT` | 2 | the outer `DE`, queue write pointer |
+| `PLY_XNAME` | 2 | the variable name being resolved (name0, name1) |
+| `PLY_XPTR` / `PLY_XLEN` | 3 | the servicer's answer |
+| `PLY_XSTK` | 3 x d | the source-cursor stack: (ptr:2, left:1) per level |
+| `PLY_XDEP` | 1 | current depth |
+
+🔴 **RAM HAS NO GATE** — walk `scratchpad/rammap_sweep.py` and then ASK THE
+MACHINE (`ramfree_probe.py`) before claiming any of these; a delta between two
+names is not free space. `QUEBAK $F971-$F974` is already fully spent
+(`PLY_LASTDUR`, `PLY_BUFEND`), so this needs its own home.
+
+### 7.5 Open before a byte is spent
+
+1. **Nesting depth `d`.** Measured at 1 level; the reference's real ceiling is
+   UNMEASURED, and `d` is 3 B of RAM each. Measure it, then pick.
+2. **Does the substring INHERIT outer state?** The row that looked like it
+   cannot separate inheritance from the outer state merely surviving — the
+   substring never changed the octave. With no scope the natural answer is yes,
+   but it is not measured.
+3. **What `X` does when the source ends without `;`** vs. a `;` that is present
+   but the variable is undefined — ERR 5 is measured for the first only.
+
 ## Appendix A — Sources (clean-provenance, contract-level)
 
 - MSX Wiki, **PLAY** — https://www.msx.org/wiki/PLAY (MML syntax, per-voice strings).
