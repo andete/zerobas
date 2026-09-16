@@ -2667,6 +2667,22 @@ SWEEP: list[tuple[str, str, str | None, str, str]] = [
      "RG1SAV ($F3E0). A and B must differ by exactly 3 (bits 1..0) and match "
      "everywhere else -- a handler that wrote the whole register, or the wrong "
      "one, moves the other bits too."),
+    # 🔪 D-SCRCLICK: the THIRD form, which TODO.md filed as unmeasurable -- "the
+    # key click has no cell any row here can read". CLIKSW $F3DB is a published
+    # work-area cell and both references move it, so the claim was an INSTRUMENT
+    # assumption rather than a fact about the machine.
+    # 🎯 THE SENTINEL IS THE CONTROL. Reading 0 after `SCREEN ,,0` proves nothing
+    # on its own -- the cell may have been 0 already, or always be 0. POKEing 99
+    # first means a row that reads 0 has WATCHED SCREEN write it.
+    # ⚠️ AND `,,2` IS IN THE ROW ON PURPOSE: both references store the byte RAW, so
+    # an implementation that normalised to 0/1 would look right on the first two
+    # values and be wrong on the first one anyone varies.
+    ("screenkw_d", "screen ,,1",
+     'POKE&HF3DB,99:SCREEN,,0:A=PEEK(&HF3DB):SCREEN,,1:B=PEEK(&HF3DB):SCREEN,,2:PRINT"[0d";A;B;PEEK(&HF3DB);"]"',
+     "stored",
+     "NOECHO:[0d FORM:key-click the KEY-CLICK argument, read back through CLIKSW "
+     "($F3DB) against a POKEd sentinel. `[0d 0  1  2 ]` -- the third value is what "
+     "says the byte is stored RAW rather than folded to 0/1."),
     ("keykw",    'key 1,"x"',
      'KEY 1,"ZZQ":KEY LIST',                                    "stored",
      "FORM:list D-KWRIG: `KEY LIST` prints all ten definitions and the row compares the "

@@ -1251,8 +1251,24 @@ spr_extra_arg:
                 ; reads nothing but HL, which it pushes.
                 ld      c,4                 ; sprite size: 0..3
                 jr      z,sea_bound
+                ; 🔴 D-SCRCLICK: SLOT 2 IS THE KEYBOARD CLICK AND IT USED TO BE
+                ; IGNORED WITH THE REST. TODO.md filed it as unmeasurable -- "the
+                ; key click has no cell any row here can read" -- and that was an
+                ; INSTRUMENT claim that did not survive being asked. CLIKSW $F3DB
+                ; is a published work-area cell, and both references move it:
+                ; `SCREEN ,,0` -> 0, `,,1` -> 1, `,,2` -> **2**, against a POKEd
+                ; sentinel that proves the cell holds what BASIC writes
+                ; (scratchpad/clicksw_probe.py). zerobas left the sentinel standing
+                ; on every one.
+                ; 🎯 THE BYTE IS STORED RAW -- no `and 1`, no domain check. That is
+                ; the reason `,,2` was asked at all: an implementation that
+                ; normalised would have looked right on 0 and 1 and been wrong on
+                ; the first value anyone actually varies. Slot 3's domain narrowing
+                ; below is specific to slot 3 and is NOT a rule about later slots.
+                cp      1                   ; slot 2 = the key click
+                jr      z,sea_click
                 cp      2                   ; slot 3?  (A = slot - 1)
-                ret     nz                  ; slots 2, 4 and 5 stay ignored
+                ret     nz                  ; slots 4 and 5 stay ignored
                 dec     e                   ; baud 1..2 -> 0..1, so ONE bound test
                 ld      c,2                 ; serves both domains
 sea_bound:
@@ -1276,6 +1292,21 @@ sea_bound:
                 ld      (GFX_SSIZE),a       ; A = E, checked against C above
                 ld      a,12                ; tenant: apply the size bits to register 1
                 jr      spr_tenant
+
+; --- sea_click: SCREEN's key-click slot (D-SCRCLICK) ------------------------
+; 🔴 SITED HERE, AFTER THE ROUTINE'S LAST EXIT, AND THE FIRST CUT PUT IT ABOVE
+; `sea_bound` WHERE IT BROKE A FALLTHROUGH. The baud arm ends `dec e / ld c,2`
+; and FALLS THROUGH into sea_bound; a block dropped in that gap silently became
+; baud's continuation, so `SCREEN 1,,,0` and `SCREEN 1,,,3` stored the baud byte
+; to CLIKSW and returned WITHOUT their domain check -- ERR 5 on both references,
+; nothing here. Caught by screenerr-acceptance's t.b0 and t.b3, not by review:
+; a span is byte-identical without being ENTERED the same way, and a fallthrough
+; is precisely what reading the diff does not show [[dupspan-slice]].
+; in: E = the argument, stored RAW (see the dispatch comment above).
+sea_click:
+                ld      a,e
+                ld      (CLIKSW),a
+                ret
 
 ; --- ex_put_sprite: PUT SPRITE p[,(x,y)|STEP(dx,dy)][,c][,n] ---------------
 ; Reached from ex_put (basic/field.asm) with HL ON the SPRITE token. Parses into

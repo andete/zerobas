@@ -801,8 +801,22 @@ MEASUREMENT WORKING.** New row `locate_c` covers the third of the four: `[0b 7  
 — `LOCATE ,7` after `LOCATE 9,3` moves the ROW and LEAVES the COLUMN, which is the
 `COLOR` shape again. Neither `locate` nor `locate_b` could see a left-shifting
 parser, because each supplies its axis in the position the shift would read anyway.
-🔭 **`SCREEN` STOPS AT 2/3** — `mode` and `sprite-size` covered, `key-click` has no
-cell any row here can read. New row `screenkw_c` reads RG1SAV ($F3E0, DECLARED),
+🔭 ~~**`SCREEN` STOPS AT 2/3** — `mode` and `sprite-size` covered, `key-click` has no
+cell any row here can read.~~
+✅ **3/3 AND TIER 1 SINCE 2026-09-16 (D-SCRCLICK), AND THE STRUCK CLAIM IS WHY THE
+RULE EXISTS.** "No cell any row here can read" was an INSTRUMENT assumption, not a
+fact about the machine: **`CLIKSW $F3DB`** is a published MSX work-area cell and
+BOTH references move it. Against a POKEd sentinel of 99 — which is what makes a
+reading of 0 a WATCHED write rather than a cell that was always 0 —
+`SCREEN ,,0` → 0, `SCREEN ,,1` → 1, `SCREEN ,,2` → **2**
+([`scratchpad/clicksw_probe.py`](scratchpad/clicksw_probe.py)). zerobas left the
+sentinel standing on every one: `spr_extra_arg` dispatched slot 1 and slot 3 and
+let slot 2 fall through to `ret nz`. **9 B** fixes it.
+🎯 **`,,2` WAS ASKED BEFORE ANY CODE WAS WRITTEN AND IT CHANGED THE CODE.** Both
+references store the byte **RAW** — no fold to 0/1 — so an `and 1` would have
+looked right on the first two values and been wrong on the first one anyone
+varies. Row `screenkw_d` carries all three for that reason.
+📊 **Thirteen blockers re-verified on this project, thirteen stale.** New row `screenkw_c` reads RG1SAV ($F3E0, DECLARED),
 whose bits 1..0 ARE the sprite size: `[0c 227  224 ]`, differing by exactly 3 and
 identical in every other bit. 🔴 **AND THE HISTORY SAYS WHY IT WAS WORTH A ROW:**
 `SCREEN 1,,99` once applied **99 as the sprite size** (`basic/screen.asm:121`) and
@@ -1878,7 +1892,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:19112 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:19126 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -2044,7 +2058,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:6645 (T-6FE392)8 (T-529ABE)` from `TODO.md:17763 (T-529ABE)`: a
+      `TODO.md:6659 (T-6FE392)8 (T-529ABE)` from `TODO.md:17777 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -7489,7 +7503,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:17763 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:17777 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -20679,6 +20693,11 @@ NEXT SLICES. Do not re-ask.**
    page 1 from **3 B to 153 B** and the low region from **0 B to 36 B** — "disk
    code belongs in the disk ROM", pulled first, exactly as ruling 5 said. The
    first customer was `FIELD`/`LSET`/`RSET`'s diskless gate (D-FLDGATE, 20 B).
+   ✅ **`SCREEN`'s KEY CLICK IS THE THIRD, SHIPPED 2026-09-16 (D-SCRCLICK),
+   9 B** — and it was filed as unmeasurable rather than as code: see the struck
+   "no cell any row here can read" above. `SCREEN` is **3/3, TIER 1**, and the
+   STATEMENT count moved **147 → 148**. Two of ruling 2's four remain:
+   `LOCATE`'s cursor switch and `VARPTR(#n)`.
    ✅ **`INPUT$`'s CONSOLE FORM IS THE SECOND, SHIPPED 2026-09-16 (D-INPDCON),
    21 B.** `A$=INPUT$(1)` answered `Syntax error` where both references read a
    key — **the last MISSING keyword in the whole sweep, so `kwsweep` now reads

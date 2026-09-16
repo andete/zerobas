@@ -487,6 +487,12 @@ G6_RESIDENT     equ     1
 ; G7_RESIDENT gates the RESIDENT half the way G6_RESIDENT gated DRAW's, so the
 ; slice can be built with the tenant alone if the page-1 tail runs out again.
 G7_RESIDENT     equ     1
+; D-SCRCLICK: the keyboard-click switch, SCREEN's third argument. Published MSX
+; work-area cell (MSX2 Technical Handbook work-area table). MEASURED on both
+; references (scratchpad/clicksw_probe.py): `SCREEN ,,0` leaves 0 here, `,,1`
+; leaves 1 and `,,2` leaves **2** -- the byte is stored RAW, so the handler writes
+; it through rather than normalising to 0/1.
+CLIKSW          equ     $F3DB   ; keyboard click: 0 = off, nonzero = on (1)
 ; --- D-CLP: the CLEAR string-pool partition (docs/spec-basic-clearpool.md) ---
 ; ✅ ON. Funded by promoting fld_lookup to a page-0 sub-ROM tenant (sub/fldlook.asm,
 ; docs/decision-clearpool-funding.md §6.1), which returned 38 B of main page 1
