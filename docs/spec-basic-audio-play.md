@@ -531,11 +531,11 @@ address PLUS whatever follows"*, never free space. Its window is `[E000,F380)` a
 does not even cover the PLAY work area. So, to be READ and then asked of the
 machine, never assumed:
 
-* **The VCB tail.** `VCB_STRIDE` is 37 and the highest offset this tree uses is
-  `VCX_FRAMES` at 20 (2 B). Offsets 22..36 are unused HERE — but they are real
-  MSX2-TH VCB fields, so this is space borrowed from a layout we have only
-  partly implemented, and it must be recorded as such rather than treated as
-  spare.
+* ❌ **The VCB tail — REFUTED, see §7.9.** `VCB_STRIDE` is 37 and the highest
+  offset this tree uses is `VCX_FRAMES` at 20 (2 B), so offsets 22..36 looked
+  like 15 spare bytes a voice. The published layout names all of them
+  (`ENVLPX +19` is **14** bytes, then `MCLSTX +33` and `MCLSEX +36`). The
+  borrowed-layout caveat was right and understated.
 * ❌ **NOT a disk buffer.** `AUDIO_VMASK equ DISKOP_OP` is the standing precedent
   for audio/disk aliasing, but that is a transient PARAMETER cell. `SECTOR_BUF`
   and `BDOS_SEQREC` hold LIVE state for an open channel, and `PLAY` in a program
@@ -609,6 +609,62 @@ though it were load-bearing.
    was the only reading in that run — **a broken instrument still emitting
    something that looks like data.** The refusal in (1) cannot catch this: it
    checks that a label RESOLVES, not that it resolves to the right line.
+
+### 7.9 What the PUBLISHED work area says — and it refutes §7.7 (D-PLAYXDOC)
+
+⚠️ **PROVENANCE**: the MSX Technical Data Book's work-area listing (ASCII, 1984)
+and [MSX2 Technical Handbook Appendix 4](https://konamiman.github.io/MSX2-Technical-Handbook/md/Appendix4.html),
+which agree cell for cell. Both are DATA-DEFINITION TABLES, tier B under §0 and
+the same provenance `basic/sysvars.inc` already cites for the VCB layout. **No
+disassembly was read**; a ROM-routine commentary that surfaced during the search
+was discarded unused.
+
+🔴 **§7.7'S TWO RAM CANDIDATES ARE BOTH DOCUMENTED CELLS, NOT SPARE BYTES.**
+
+| what §7.7 called spare | what it actually is |
+|---|---|
+| the 3 unnamed bytes `$FB39`–`$FB3B` between `VOICEN` and `MCLPTR` | **`SAVVOL $FB39` (2)** "save volume for pause" + **`MCLLEN $FB3B` (1)** |
+| VCB offsets 22..36, "15 B a voice" | **`ENVLPX +19` is FOURTEEN bytes**, not one — then **`MCLSTX +33` (3) "stack save area"** and **`MCLSEX +36` (1) "initial stack"**. The 37-byte VCB is fully accounted for. |
+
+So the borrowed-layout caveat §7.7 attached to the VCB tail was the right instinct
+and still understated it: those offsets are not merely *someday* fields, they are
+named, sized and purposed in the published table. **Neither candidate survives.**
+
+🎯 **AND THE NAMES ARE AN ARCHITECTURAL HINT WE DID NOT HAVE.** The layout carries
+**`SAVSP $FB36` (2) "save main stack pointer during play"**, per voice
+**`VCXSTP +5` (2) "save top of stack pointer"**, and a per-voice **`MCLSTX` of
+exactly 3 bytes** — which is exactly one `(MCLLEN:1, MCLPTR:2)` pair, i.e. ONE
+saved source cursor. A design that parks one level in the VCB and puts the rest on
+the Z80 stack would look precisely like this. ⚠️ **INFERENCE, NOT DOCUMENTATION** —
+no source says how the parser handles `X`, and a fixed table is not excluded by
+the text. It is recorded because it is consistent with D-PLAYXREC's unscoreable
+80-`GOSUB` row and with 24 levels working, and because §7.6's decision does not
+depend on it either way.
+
+✅ **THE `;` RULE IS DOCUMENTED, and it corroborates our measurement.** TDB, PLAY:
+*"The semicolon(;) is required when you use a variable in this way, and when you
+use the X command."* The `DRAW` entry gives the purpose — running a command string
+longer than 255 characters. The VG-8020's own handbook says the semicolon must
+directly follow the variable.
+
+🔴 **NOTHING IS PUBLISHED ON THE NESTING DEPTH, IN EITHER DIRECTION.** Eleven
+manuals and datapacks were checked (TDB, Sony MSX BASIC ref, the VG-8020 handbook,
+MSX Datapack Vol.1, MSX2 TH, Hitachi BASIC 2.0, Sony BASIC 3.0, three third-party
+books, the MSX-MUSIC/MSX-AUDIO chapters) and **not one nests `X` inside an
+`X`-called string**; every published example is main-string → one variable. So
+D-PLAYX2's 24 levels are **unrefuted and uncorroborated**, and our depth cap is a
+divergence from measured behaviour that no document describes.
+
+⚠️ **ONE DOCUMENTED DIVERGENCE THAT IS NOT OURS.** MSX-MUSIC Extended BASIC
+(Datapack Vol.2 §3.2, footnote on `Xx;`) says *"you can not write a macro after
+this macro. It results in error if you do it."* That is `CALL MUSIC`'s handler on
+MSX2+/turbo R, a different MML engine from `PLAY` — and standard `PLAY`
+demonstrably continues after `X...;` (§7.1). Do not let the two be conflated.
+
+📌 **FOLLOW-UP, NOT DONE HERE**: `basic/sysvars.inc` names neither `SAVSP`,
+`SAVVOL`, `MCLLEN`, `MCLTAB`, `MCLFLG`, `PRSCNT`, `VCXSTP`, `MCLSTX` nor `MCLSEX`,
+so nothing stops a future slice claiming `$FB39`–`$FB3B` as free exactly as §7.7
+just tried to. They should be added as documented equates.
 
 ## Appendix A — Sources (clean-provenance, contract-level)
 
