@@ -1932,7 +1932,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:19166 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:19179 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -2098,7 +2098,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:6699 (T-6FE392)8 (T-529ABE)` from `TODO.md:17817 (T-529ABE)`: a
+      `TODO.md:6699 (T-6FE392)8 (T-529ABE)` from `TODO.md:17830 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -7543,7 +7543,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:17817 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:17830 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -8450,7 +8450,20 @@ list. **When a slice lands, grep this list for what it just shipped.**
       misjudged — but a row that distinguishes two variables must not spell them
       with a shared two-character prefix.
 
-- [ ] 🔴 **`DSKF` ACCEPTS ANY DRIVE NUMBER AND SILENTLY RETURNS THE SAME FIGURE** —
+- [x] ✅ **`DSKF` VALIDATES ITS DRIVE ARGUMENT (D-DSKFDRV, 2026-09-16), 16 B.**
+      `dskf_t3` agrees; `kwsweep` DIVERGENT 2 → 1. It was
+      **blocked on 8 B of main page 1** and the disk-verb carve paid for it — the
+      same wall `D-SWAPTYPE` still sits behind, which is now the ONLY scored
+      divergence left.
+      🔴 **AND THE FIRST CUT WAS A FALSE PASS THAT THE TIER 3 ROW COULD NOT SEE.**
+      I put the check after `chan_gate`, which CLOBBERS DE building its own return
+      address (`ld de,cg_back`) — and DE is the drive argument. So it tested
+      `cg_back` and **every** `DSKF` answered `Bad drive name`. `dskf_t3` PASSED on
+      that, because a refusal is exactly what it expects; only the happy-path
+      `dskf` row caught it. DE is guarded across the gate now.
+      ⚠️ **DRIVE 2 IS DELIBERATELY UNCHANGED AND STILL UNMEASURED** — see below.
+      *(the original finding:)*
+      🔴 **`DSKF` ACCEPTED ANY DRIVE NUMBER AND SILENTLY RETURNED THE SAME FIGURE** —
       `Bad drive name` on the reference, a free-space number here. Found 2026-09-13
       by D-KWT3 batch 5, the third defect the TIER 3 rows have produced and the
       second that answers with a plausible NUMBER rather than an error.

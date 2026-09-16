@@ -1415,11 +1415,52 @@ ev_ff_dskf:                                 ; DSKF(d): free clusters on the driv
                 ; pins, raised at once rather than deferred -- so the diskless
                 ; refusal is unchanged and the IX guard shrinks to one pair.
                 push    ix
+                push    de                  ; 🔴 chan_gate CLOBBERS DE building its
+                                            ; own return address (`ld de,cg_back`),
+                                            ; and DE is the DRIVE ARGUMENT. The
+                                            ; first cut checked it AFTER the gate
+                                            ; and so tested cg_back: every DSKF
+                                            ; answered `Bad drive name`. The
+                                            ; TIER 3 row PASSED on that -- it
+                                            ; expects the refusal -- and only the
+                                            ; happy-path `dskf` row caught it.
                 ld      hl,H_DSKF
                 call    chan_gate           ; no disk ROM -> Illegal function call
+                pop     de
                 pop     ix
-                ; The drive arg (DE) is ignored (single drive). Returns the count
-                ; of free FAT entries — = free KB on a 1 KB/cluster 720 KB volume.
+                ; 🔴 D-DSKFDRV (2026-09-16): THE DRIVE ARGUMENT IS NO LONGER
+                ; IGNORED, AND THE COMMENT THAT SAID IT WAS IS THE DEFECT WRITTEN
+                ; DOWN. It read "The drive arg (DE) is ignored (single drive)" --
+                ; the reasoning being that a one-drive machine has nothing to
+                ; choose between. But the CF-3300 IS a one-drive machine and
+                ; validates anyway: `DSKF(9)` is `Bad drive name` there and was
+                ; `707` here (D-KWT3 batch 5, scratchpad/kwt3_dskfchk.py).
+                ; 📏 THE BOUND IS MEASURED, NOT JUDGED: on the CF-3300 0, 1 and 2
+                ; are ACCEPTED (0 and 1 answer 707; 2 prompts for the phantom B:)
+                ; while 3, 4, 8 and 9 all answer `Bad drive name` -- four points
+                ; above the line and two below it. So the rule is `drive <= 2`.
+                ; 🎯 THE CHECK WAS MISSING ENTIRELY RATHER THAN TOO WIDE, and the
+                ; PASSING rows are what said so: this tree answered the same 707
+                ; for 0, 1 AND 9, so nothing was validating the argument at all.
+                ; That is why this ADDS a check instead of narrowing one.
+                ; ⚠️ WHAT DRIVE 2 *DOES* IS DELIBERATELY UNCHANGED AND STILL
+                ; UNMEASURED. On the reference it prompts `Insert diskette for
+                ; drive B:` and WAITS -- a row that prompts eats its successors,
+                ; so the probe excludes it and this fix only moves the REFUSAL
+                ; boundary to match. A single-drive machine's answer for 2 needs a
+                ; rig that can answer the prompt; it is filed, not guessed.
+                ld      a,d                 ; DE = the drive argument
+                or      a                   ; >255 cannot be a drive
+                jr      nz,ev_dskf_bad
+                ld      a,e
+                cp      3                   ; 0..2 accepted, 3+ refused
+                jr      c,ev_dskf_ok
+ev_dskf_bad:
+                ld      a,62                ; `Bad drive name`, as measured
+                jp      raise_error
+ev_dskf_ok:
+                ; Returns the count of free FAT entries
+                ; — = free KB on a 1 KB/cluster 720 KB volume.
                 ; CALSLT (inside fat_count_free) clobbers IX/IY, and IX is the
                 ; evaluator's live token cursor — guard it on the stack.
                 push    ix
