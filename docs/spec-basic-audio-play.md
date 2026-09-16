@@ -513,15 +513,34 @@ spends the SCARCE region (main page 1) *and* RAM, to buy a divergence of a
 different shape rather than no divergence. That is strictly worse, and the depth
 answer did not rescue it.
 
-✅ **DECIDED: THE SERVICER, WITH `N = 8`.** 24 B of RAM table. The reference
-manages 24+ levels and any N is a divergence, so N is chosen to be far past
-anything real MML does (measured nesting in the wild is 1–3) and the limit is
-DOCUMENTED rather than hidden — the same way this tree records every other bound
-it cannot match. What must NOT happen is a silent wrong answer: level N+1 raises,
-it does not truncate.
-⚠️ **THE DIVERGENCE IS FILED, NOT FORGOTTEN**: `X` nested deeper than 8 raises
-where both references keep going. A row should pin it, so the day the cap moves
-the row moves with it.
+✅ **DECIDED (Joost, 2026-09-16): `N = 1` — SINGLE-LEVEL `X`, FOR NOW.**
+*"Maybe we should just implement single var X for now."* Ship the form the whole
+published language uses and leave nesting out.
+
+🎯 **AND §7.9 IS WHY THIS IS A SCOPE CUT RATHER THAN A CORNER CUT.** Across eleven
+manuals and datapacks **not one example nests `X` inside an `X`-called string** —
+every published use is main-string → one variable. Single-level covers the
+DOCUMENTED language surface completely; what it gives up is behaviour that exists
+on the machine (we measured 24 levels) and in no manual.
+
+💰 **THE TABLE COLLAPSES, AND THE SHAPE LANDS ON THE REFERENCE'S OWN.** One saved
+cursor is `(ptr:2, left:1)` = **3 B** — which is exactly the size and content of
+the published per-voice **`MCLSTX` "stack save area"** (§7.9). Whatever the
+reference does beyond one level, its first level is parked in a slot the same
+shape as ours.
+
+    saved outer cursor   ptr 2 + left 1   3 B
+    current bytes-left   the outer `B`    1 B   (MCLPTR is already RAM)
+    the name to resolve  name0, name1     2 B
+    the queue write ptr  the outer `DE`   2 B   (destroyed by a non-resumable CALSLT)
+                                          ----
+                                          8 B   -- against 24 B + these for N=8
+
+⚠️ **NESTING RAISES, IT DOES NOT TRUNCATE**: an `X` met while the slot is occupied
+is ERR 5. That is what this tree does today for every `X`, so no row changes
+meaning — but it IS a divergence from measured behaviour, it is not documented
+anywhere, and it must be pinned by a row so the day the cap moves the row moves
+with it.
 
 ### 7.7 Where the RAM would come from — CANDIDATES, not a claim
 
@@ -561,6 +580,47 @@ this tree's OWN RAM region rather than three VCB tails.
 the walk above is of `basic/sysvars.inc`'s `$FB00`+ names directly. A candidate
 in the tree's own region still has to be READ (a delta is the cell at the low
 address PLUS whatever follows) and then ASKED OF THE MACHINE.
+
+### 7.10 Where the 8 bytes live — `RN_*`, and why that is safe
+
+🔴 **THE OBVIOUS PLACES ARE ALL TAKEN.** §7.7's candidates are refuted by §7.9,
+and the `$E9C0`–`$EA40` map is dense: `DISKOP_HL $E9FE` runs to `$E9FF` and
+`FCH_MODES` starts at `$EA00` with nothing between. There is no 8 B hole to claim.
+
+✅ **SO IT IS AN ALIAS — `RN_PTR`/`RN_NEW`/`RN_OLD`/`RN_INC`, `$EA30`–`$EA37`,
+exactly 8 contiguous bytes**, on the precedent this tree already runs on
+(`AUDIO_VMASK equ DISKOP_OP`, `SECTOR_BUF` over the string pool, DRAW's frame
+buffer over PAINT's): *deliberate aliasing between mutually exclusive execution
+contexts.*
+
+    saved outer cursor   RN_PTR   ptr 2 + left 1
+    current bytes-left   RN_OLD+1 1
+    the name to resolve  RN_NEW   2
+    the queue write ptr  RN_INC   2
+
+🔬 **THE EXCLUSION IS CHECKED, NOT ASSUMED**, and it rests on three facts:
+
+1. **Every `RENUM` cell is WRITTEN BEFORE IT IS READ, on every entry.**
+   `sub/lineedit.asm` `le_renum` stores the `10`/`10`/`0` defaults into `RN_NEW`,
+   `RN_INC` and `RN_OLD` before parsing a single argument, and `RN_PTR` is
+   written by `basic/program.asm` before the tenant is called. Nothing carries
+   over between statements, so a `PLAY` that clobbers them cannot corrupt a LATER
+   `RENUM`. (This is the load-bearing one: a verb that REMEMBERED its last
+   arguments could not be aliased this way.)
+2. **A `RENUM` cannot be in flight during a `PLAY` parse.** `RENUM` is a
+   multi-bounce tenant and `RN_PTR` does persist ACROSS ITS OWN bounces — but no
+   BASIC statement runs between them, so a `PLAY` cannot interleave. The
+   servicer bounce this design adds runs `var_find_typed` in main and nothing
+   else.
+3. ⚠️ **NO ISR RACE.** `basic/playsvc.asm`'s H.TIMI drain reads the packet QUEUE,
+   not the parse state, so the cells are touched only by the statement-level
+   parse. Aliasing something the drain touched would be a different and much
+   worse proposition.
+
+⚠️ **AND THE HAZARD, STATED**: this is now a THIRD tenant reading the same 8
+bytes, and the day `RENUM` learns to remember an argument — or `PLAY` learns to
+parse from an interrupt — fact 1 or fact 3 fails silently. The equates must name
+each other so a reader of either verb sees the other.
 
 ### 7.8 Which MECHANISM the reference uses — partly answered (D-PLAYXREC)
 
