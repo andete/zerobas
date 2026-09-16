@@ -796,6 +796,24 @@ rp_brk_run:
                 pop     hl                  ; HL = resume stmt ptr, intact
                 jr      rp_trapchk          ; dispatch now (do NOT break)
 rp_real_break:
+                ; 🔴 D-STOPEDGE (2026-09-16): THE BREAK IS EDGE-TRIGGERED ON THIS
+                ; PATH TOO. Measured against the VG-8020 with a 2 s hold
+                ; (scratchpad/ctrlstop_probe.py): with `ON STOP GOSUB` + `STOP ON`,
+                ; the handler running, and THEN `STOP OFF` while the key is STILL
+                ; DOWN, the reference answers `< 1 >` and this tree answered
+                ; `Break in 50`. The reference's edge was already consumed by the
+                ; trap; ours re-read the LEVEL once the state went OFF and raised a
+                ; fresh break.
+                ; 🎯 SO THE SHADOW IS TESTED HERE AND DELIBERATELY *NOT* SET. The
+                ; ON/SERVICING path below sets it on a 0->1 edge; this one only
+                ; asks whether that already happened. Setting it here as well would
+                ; give every plain break an edge latch and change cases nothing has
+                ; measured -- a program with no trap at all that breaks, CONTs, and
+                ; is still holding the key. Four of the probe's five cases pass
+                ; today and must keep passing: with the shadow never set on those
+                ; paths, this test is inert for them by construction, not by luck.
+                bit     6,(hl)              ; the trap already consumed this press?
+                jr      nz,rp_brk_run       ; yes -> no new edge, no break
                 pop     hl                  ; HL = resume stmt ptr
 rp_do_break:
                 ; Ctrl-STOP pressed between lines/statements. HL = the statement

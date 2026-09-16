@@ -307,7 +307,22 @@ ss_write:
                 ld      (hl),a
                 ret
 ss_off:
-                ld      (hl),ZTS_OFF        ; OFF: state 0 AND PENDING cleared
+                ; 🔴 D-STOPEDGE (2026-09-16): OFF KEEPS THE EDGE SHADOW. This wrote
+                ; the WHOLE byte -- `ld (hl),ZTS_OFF` -- so turning a trap off also
+                ; wiped bit 6, and the arm above says in its own words why that bit
+                ; matters: without it a device held ACROSS the state change fakes a
+                ; 0->1 edge afterwards. OFF had exactly that hole.
+                ; MEASURED (scratchpad/ctrlstop_probe.py, 2 s hold vs the VG-8020):
+                ; `ON STOP GOSUB` + `STOP ON`, handler runs, then `STOP OFF` with
+                ; the key STILL DOWN -- reference `< 1 >`, this tree `Break in 50`,
+                ; because rp_break then re-read the LEVEL against a shadow that
+                ; `STOP OFF` had just cleared.
+                ; ⚠️ PENDING IS STILL DROPPED, which is what OFF is for; only the
+                ; SHADOW survives, and it is a fact about the DEVICE rather than
+                ; about the trap's state.
+                ld      a,b
+                and     ZTS_SHADOW          ; OFF: state 0, PENDING cleared,
+                ld      (hl),a              ; the device edge shadow KEPT
                 ret
 
 ; ct_find: scan ZTRAP for the highest-priority firable entry.

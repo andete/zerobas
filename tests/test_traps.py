@@ -336,14 +336,31 @@ def t_strig_shadow(fails):
         fails = check(fails, f"set_state {label}: SHADOW kept",
                       m.peek(e0)[0] & ZTS_SHADOW, ZTS_SHADOW)
 
-    # 4. OFF is the one state that forgets everything -- PENDING *and* the shadow.
-    #    Safe because the next enable re-seeds (spec §3), and it keeps `X OFF` the
-    #    single "forget it all" reset.
+    # 4. OFF forgets PENDING and KEEPS THE DEVICE EDGE SHADOW.
+    #    🔴 THIS USED TO ASSERT THE WHOLE BYTE CLEARED, on the reasoning that OFF
+    #    is "the single forget-it-all reset" and is "safe because the next enable
+    #    re-seeds (spec §3)". BOTH HALVES FAILED against a measurement
+    #    (D-STOPEDGE 2026-09-16, scratchpad/ctrlstop_probe.py, a 2 s Ctrl-STOP
+    #    against the VG-8020):
+    #      * the re-seed argument is about the transition BACK to ON, and the
+    #        divergence happens WHILE OFF -- rp_break consults the shadow on a
+    #        path that runs in the OFF state, and `STOP OFF` under a still-held
+    #        key answered `Break in 50` where the reference answers `< 1 >`;
+    #      * and STOP HAS NO SEED. strig_flag re-seeds on ON (program.asm), STOP
+    #        does not -- so for STOP the preserved shadow is also what stops a key
+    #        held across OFF->ON faking a fresh edge.
+    #    The shadow is a fact about the DEVICE, not about the trap's state, which
+    #    is exactly what the ss_write arm beside it already says in its own words.
+    #    Harmless where it is re-seeded (STRIG), necessary where it is not (STOP);
+    #    all eight trap suites re-run green.
     reset_traps(m)
     m.poke(e0, bytes([ZTS_ON | ZTS_PENDING | ZTS_SHADOW]))
     m.poke(m.addr("TRAPENA"), b"\x01")
     m.call("set_state", hl=e0, a=ZTS_OFF)
-    fails = check(fails, "set_state ON->OFF: whole byte cleared", m.peek(e0)[0], 0)
+    fails = check(fails, "set_state ON->OFF: state and PENDING cleared",
+                  m.peek(e0)[0] & ~ZTS_SHADOW, 0)
+    fails = check(fails, "set_state ON->OFF: SHADOW kept",
+                  m.peek(e0)[0] & ZTS_SHADOW, ZTS_SHADOW)
     return fails
 
 

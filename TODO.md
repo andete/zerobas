@@ -1932,7 +1932,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:19179 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:19204 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -2098,7 +2098,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:6699 (T-6FE392)8 (T-529ABE)` from `TODO.md:17830 (T-529ABE)`: a
+      `TODO.md:6699 (T-6FE392)8 (T-529ABE)` from `TODO.md:17855 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -7543,7 +7543,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:17830 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:17855 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -8606,8 +8606,33 @@ list. **When a slice lands, grep this list for what it just shipped.**
       🤖 AUTONOMOUS — measured against a control, bounded, and the change was one
       tail instruction.
 
-- [ ] 🔴 **`STOP OFF` UNDER A STILL-HELD Ctrl-STOP BREAKS HERE AND NOT ON THE
-      REFERENCE — the break is EDGE-triggered there and LEVEL-triggered here.**
+- [x] ✅ **FIXED (D-STOPEDGE, 2026-09-16), ~6 B — AND IT WAS A HOLE IN SHARED
+      TRAP MACHINERY, NOT IN `STOP`.** All five probe cases now agree with the
+      VG-8020; `c0_armed` reads `< 1 >` where it read `Break in 50`.
+      🔴 **`ss_off` WROTE THE WHOLE STATE BYTE** (`ld (hl),ZTS_OFF`), so turning
+      **any** trap off also wiped its DEVICE EDGE SHADOW (bit 6) — and the arm
+      immediately above it PRESERVES that bit, with a comment saying exactly why:
+      a device held ACROSS the state change fakes a 0→1 edge afterwards. The OFF
+      path had the identical hole sitting next to its own explanation. It now keeps
+      the shadow and still drops PENDING, which is what OFF is for.
+      🎯 **THE FIRST FIX CHANGED NOTHING AND THAT IS WHAT FOUND IT.** Adding the
+      edge test to `rp_break`'s OFF path had no effect, because `STOP OFF` had
+      already destroyed the bit being tested. A fix that does not move the reading
+      is a question about the mechanism, not a failed patch.
+      ⚠️ **THE NEW TEST READS THE SHADOW WITHOUT SETTING IT.** The ON/SERVICING
+      path sets it on an edge; this one only asks whether that already happened.
+      Setting it here too would give every plain break an edge latch and change
+      cases nothing has measured (a trap-free program that breaks, `CONT`s, and is
+      still holding the key). With the shadow never set on those paths the test is
+      inert for the four passing cases BY CONSTRUCTION rather than by luck.
+      ⚠️ **WHY IT HID: only a HELD device can expose it**, and
+      `stop-trap-acceptance` uses a 0.15 s TAP — the key is up long before the
+      handler returns. It took a 2 s press. All eight trap suites (STOP, STRIG,
+      KEY, INTERVAL, SPRITE, error, depth, servicing) re-run green, which is the
+      check the shared change actually needed.
+      *(the original finding:)*
+      🔴 **`STOP OFF` UNDER A STILL-HELD Ctrl-STOP BROKE HERE AND NOT ON THE
+      REFERENCE — the break is EDGE-triggered there and was LEVEL-triggered here.**
       Measured 2026-09-15 by D-KWSTOP
       ([`scratchpad/ctrlstop_probe.py`](scratchpad/ctrlstop_probe.py)), a 2 s
       Ctrl-STOP against the Philips VG-8020, five cases separating one variable
