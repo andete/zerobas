@@ -1089,7 +1089,40 @@ rather than a word once it had a number. 🙋 What Joost gets to decide: impleme
 it anyway (the address form stops being a Syntax error, and the stride row simply
 records a documented divergence), or leave it deferred and score `VARPTR` at 1/2
 by design. The same shape as the `STICK`/`STRIG` breadth question already waiting
-on him. ⚠️ Its variable form is scored by `varptr_b` and NOT by
+on him.
+🎯 **RULED (Joost, 2026-09-16): NEITHER — *"I think this means we need to change to
+the MSX's FCB shape."*** So `VARPTR(#n)` is not the work; the CHANNEL BLOCK is, and
+`VARPTR(#n)` then falls out of it agreeing rather than being made to agree.
+⚠️ **NOTED, NOT STARTED** (*"just note it, you don't need to do anything now"*).
+🔴 **AND SCOPING IT FOUND THAT OUR TWO NUMBERS FOR THE REFERENCE'S PER-CHANNEL
+BLOCK DISAGREE BY 2, WITH NOTHING RECONCILING THEM**:
+| measurement | value | source |
+|---|---|---|
+| what `MAXFILES=n` costs `FRE(0)` per channel | **267** | D-MAXFRE, `docs/chancost-cf3300-characterization.md` §2 — exactly linear, BOTH references, ceiling 15 |
+| the `VARPTR(#n)` stride | **265** | D-VARPTRN, BOTH references (the table above) |
+Build to 265 and `VARPTR` agrees while `FRE(0)` is off by 2 a channel; build to 267
+and the reverse. 🔬 **THE HYPOTHESIS TO TEST FIRST — AND IT IS ONLY A HYPOTHESIS:**
+they measure different things, 265 being the FCB proper (9 header + 256 record) and
+the other 2 a per-channel POINTER ENTRY in a separate table, which is how MSX's
+`FILTAB` is publicly documented to work. 265 + 2 = 267 fits exactly, **and an
+arithmetic coincidence is not a measurement** — read it on the machines before any
+stride is laid down. [[two-rules-that-coincide-on-every-row-you-have]]
+💰 **THE STRIDE IS THE SMALL HALF. THE 41 BYTES ARE THE WORK.** Our block is
+`[state:FCH_STATESZ 50][record:256]` = **306**; the MSX FCB header is **9**. So the
+change is finding a home for 41 B of per-channel ENGINE state that MSX keeps
+elsewhere — the cluster iterator (`FAT_CURCLUS`/`FAT_CLUSSEC`), the file meta
+`LOF` reads (`FAT_FIRSTCLUS`/`FAT_FILESIZE`), the read stream
+(`FREAD_OFF`/`FREAD_LEFT`) and the whole `FWR_*` write state
+(`basic/sysvars.inc` FCH_STATE0). MSX keeps it in the DISK ROM's work area —
+which, after the hook re-architecture, is a place this tree now has.
+📐 Blast radius: `basic/files.asm` (the ctx save/restore memcpys), `basic/field.asm`
+(D-FIELDFIX made the record travel with the channel — that half already matches),
+the FAT primitives, and `sub/strheap.asm`'s pool arithmetic
+(`strheap_varceil`, `-FCH_CTXSZ`). 🟢 It RETURNS pool: 306 -> 265 gives back 41 B a
+channel, up to **615 B** at `MAXFILES=15`.
+🎚️ TIER 1 — happy path: a form both references answer and this tree refuses.
+🤖 AUTONOMOUS — ruled 2026-09-16; measure 265-vs-267 first, write the shape to the
+spec before moving code, then build. ⚠️ Its variable form is scored by `varptr_b` and NOT by
 `varptr`, which reads `VARPTR(B)>0` — a BOOLEAN, which cannot see the address.
 ⚡ **D-KWBATCH7 — FIVE MORE FOR FOUR ROWS, AND THE DUPLICATE-KEY GUARD CAUGHT ME
 ONE BATCH AFTER I WROTE IT. FIFTY-TWO KEYWORDS AT TIER 1.**
@@ -1146,6 +1179,29 @@ which is the correct answer with nothing plugged in **and also exactly what a st
 returns** — a reading that cannot fail. `input-devices-acceptance` exercises them
 properly; the kwsweep denominator cannot, and a bar met by an unfailable row would
 be worse than no bar.
+🎯 **RULED (Joost, 2026-09-16): *"we should come up with a way to test, if needed
+create a testing pluggable device."*** So the filed blocker — no joystick pluggable
+in this openMSX, injection being the MSX key matrix only, `joystickports` refusing a
+write — is NOT the end of the question. ⚠️ **NOTED, NOT STARTED.**
+🔬 **AND THE BLOCKER'S PREMISE IS ALREADY DOUBTFUL.** openMSX **21.0** here names
+`msxjoystick1` / `msxjoystick2` and the connectors `joyporta` / `joyportb`, plus
+`arkanoidpad`, `touchpad`, `trackball`, `mouse`, `joytap`, `ninjatap` and
+`magickey` (read out of the shipped binary, 2026-09-16). **That is the NAMES
+existing, not a plug working and not a way to DRIVE one** — the filed finding may
+simply have looked for a pluggable under an older name. First step is therefore a
+RE-VERIFICATION, not a build: plug `msxjoystick1` into `joyporta` from Tcl and see
+whether `STICK(1)` moves.
+🪜 Three rungs, cheapest first: (1) an existing pluggable driven by whatever host
+event openMSX binds it to; (2) openMSX's Tcl surface poking the port directly;
+(3) only if both fail, **an own testing pluggable device** — which for `PAD` may be
+required anyway, since a paddle is an analogue axis no key matrix can express.
+⚠️ **THE ROW IS THE POINT, NOT THE DEVICE.** What must come out of this is a
+reading that CAN FAIL: today's 0 is correct-with-nothing-plugged-in and is also
+what a stub returns, so the rig has to produce a NON-ZERO the stub cannot fake,
+with the nothing-plugged 0 kept as the control.
+🎚️ TIER 1 — happy path: three keywords stuck at 1/2, 1/2 and 2/3 forms for want of
+an instrument, not for want of an implementation.
+🤖 AUTONOMOUS — ruled 2026-09-16; re-verify the pluggable first.
 ⚡ **D-KWSTMTDEN — COMPOSITES BECOME FIRST-CLASS, AND THE DENOMINATOR MOVES**
 (Joost, 2026-09-14, of the tier doc's *"Not keywords, and deliberately not in the
 159-keyword denominator"*: **"why not? They should have the same TIER and
@@ -1932,7 +1988,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:19344 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:19400 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -2098,7 +2154,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:6699 (T-6FE392)8 (T-529ABE)` from `TODO.md:17962 (T-529ABE)`: a
+      `TODO.md:6755 (T-6FE392)8 (T-529ABE)` from `TODO.md:18018 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -7543,7 +7599,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:17962 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:18018 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
