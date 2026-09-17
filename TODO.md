@@ -1217,6 +1217,31 @@ which is the correct answer with nothing plugged in **and also exactly what a st
 returns** — a reading that cannot fail. `input-devices-acceptance` exercises them
 properly; the kwsweep denominator cannot, and a bar met by an unfailable row would
 be worse than no bar.
+      ✅ **LOCALISED 2026-09-17 (D-HOLDROW,
+      [`scratchpad/holdrow_probe.py`](scratchpad/holdrow_probe.py)) — THE HOLD RIG
+      WORKS AND ROW 8 IS REACHED. `STICK(0)` DOES NOT READ WHAT THE INJECTION
+      DRIVES.** One change at a time from a known-good hold, both machines
+      identical:
+      | case | held | reading |
+      |---|---|---|
+      | `INKEY$` | row 8 bit `$20` (UP) | **30** — the up-arrow code |
+      | `INKEY$` | row 8 bit `$01` (SPACE) | **32** — space |
+      | `INKEY$` | nothing | none |
+      | **`STICK(0)`** | row 8 bit `$20` | **0** |
+      So the press lands, row 8 is the right row, bit 5 is the right bit, and the
+      negative control is silent — but `STICK(0)`, which on a real MSX reads the
+      cursor keys, sees none of it. **On the VG-8020 too**, so this is not a
+      zerobas defect: it is the injection reaching the keyboard DECODER (which
+      fills the buffer `INKEY$` reads) and not whatever `STICK` samples.
+      🎯 **THAT IS THE WHOLE VALUE OF THIS TICK**: the blocker was "the rig reads
+      flat" and is now "`STICK`'s SOURCE is not driven by `keymatrixdown`". The
+      next person looks at what `STICK` samples, not at the hold — three cuts were
+      spent on the hold and it was never the problem.
+      ⚠️ **ONE CASE IS NOT A FAULT AND MUST NOT BE READ AS ONE**: the F1 hold
+      (row 6 bit `$20`), included as the known-good control, came back
+      `<no reading>` — F1's macro AUTO-REPEATS for as long as the key is held and
+      floods the screen, which is exactly why the shipping `keykw_b` row disarms
+      with `KEY 1,""` first. The three rows above make it redundant.
       🔬 **RE-VERIFIED 2026-09-17 (D-JOYPLUG,
       [`scratchpad/joyplug_probe.py`](scratchpad/joyplug_probe.py)) — THE BLOCKER
       IS REAL AND ITS STATED REASON IS STALE.** Three things measured:
@@ -2061,7 +2086,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:19611 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:19636 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -2227,7 +2252,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:6828 (T-6FE392)8 (T-529ABE)` from `TODO.md:18091 (T-529ABE)`: a
+      `TODO.md:6853 (T-6FE392)8 (T-529ABE)` from `TODO.md:18116 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -7672,7 +7697,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:18091 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:18116 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
