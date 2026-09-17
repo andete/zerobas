@@ -497,183 +497,91 @@ ex_rset:
                 ld      a,1                 ; justify = right
                 ld      de,H_RSET
 lrset_common:
+                ; 🏗️ D-LRSETMOVE (Joost, 2026-09-17). The body is in disk.rom as
+                ; `hk_lrset`; what is left here is the hand-off, the gate and the
+                ; resume — and THREE BUNDLES the handler calls back into.
+                ; 🎚️ HE RULED THIS AFTER BEING SHOWN THE PRICE AND ARGUING THE
+                ; OTHER WAY: only ~25 B of the old 122 B body is disk work (the
+                ; field-entry walk); the rest is PARSE, so the move buys ~15 B and
+                ; costs three call-backs. *"cut it anyway, it is the correct place
+                ; for it"* — placement, not economy. Recorded because the
+                ; arithmetic here invites the reverse conclusion on sight.
+                ; 🔑 THE BUNDLES ARE WHY IT IS THREE CROSSINGS AND NOT TEN. The
+                ; target parse alone is req_letter + var_str_type + the `$` check
+                ; + tgt_parse_fld + fld_find — FIVE calls for ONE logical act. A
+                ; bundle per act (target, RHS, finish) is what keeps LSET at
+                ; ~1.94 ms against the CF-3300's measured 2.59 ms.
+                ; ⚠️ THE CURSOR CROSSES IN FN_RESUME, NOT IN HL. Every bundle
+                ; reads it and writes it back, so the handler never threads it —
+                ; and the two `push hl`/`pop hl` pairs the old body used to guard
+                ; it across fld_find and the store are GONE rather than moved,
+                ; which matters because a push that straddles a calbak straddles
+                ; a CALSLT.
                 ld      (LRSET_JUST),a
-                push    hl                  ; HL IS THE STATEMENT CURSOR
+                inc     hl                  ; past the LSET/RSET token
+                ld      (FN_RESUME),hl      ; the handler's cursor
                 ex      de,hl               ; HL = this verb's own hook cell
                 call    chan_gate           ; unclaimed -> ERR 5, trappable
-                pop     hl
-                inc     hl                  ; past the LSET/RSET token
+                ld      hl,(FN_RESUME)      ; where the handler left it
+                jp      exec_stmt
+
+; --- lrset_tgt: call-back 1 -- the whole target parse AND the field lookup ----
+; out: CF=1 -> HL = the FLD_TAB entry; CF=0 -> not fielded (D-LRVAR), FLD_CHAN
+;      already 0 and MIDS_DEST already the descriptor. FN_RESUME = the cursor
+;      past the reference. May RAISE (ERR 13 on a non-string target), which is
+;      safe from a call-back: it runs in MAIN with main page 1 mapped, so the
+;      unwind discards the disk-ROM frame and the handler never resumes.
+lrset_tgt:
+                ld      hl,(FN_RESUME)
                 call    req_letter          ; D-NGRAM: a FIELD target must be a name
                 call    var_str_type        ; A=1 if `$`
                 or      a
                 jp      z,type_mismatch_error
-                                            ; D-LRVAR spec §4.4: a NUMERIC target is
-                                            ; ERR 13, not ERR 2 -- measured, `A=1` /
-                                            ; `LSET A=2` is `Type mismatch` on the
-                                            ; CF-3300 and was `Syntax error` here.
-                                            ; Byte-neutral: same `jp cc,nn`.
-                call    tgt_parse_fld       ; BC = key (name, or the ARYTAB-relative
-                                            ; element key -- D-FLDARY); HL advanced
-                                            ; past the name + `$` + any `(subs)`
-                push    hl                  ; guard cursor across the lookup
+                call    tgt_parse_fld       ; BC = key
+                ld      (FN_RESUME),hl      ; past the whole reference
                 call    fld_find            ; CF set -> HL -> entry (BC preserved)
-                jr      nc,lrset_notfld     ; D-LRVAR: no field -> the variable's own
-                                            ; bytes, NOT an error any more
-                ; --- FIELDed arm: channel, width and DESTINATION from the entry ---
-                ; D-LRVAR §4.1(b): the store's destination cell used to hold a bare
-                ; OFFSET and the tenant added FSECTOR_BUF itself. It now holds the
-                ; ADDRESS, because the non-FIELDed arm's destination is a variable
-                ; body in an entirely different page and no offset names it. So this
-                ; arm does the addition -- 3 B here, 4 B back sub-side, and one cell
-                ; with one meaning on both arms.
-                ; ⚠️ FSECTOR_BUF is a FIXED address ($E5C0): fch_select swaps the
-                ; buffer's CONTENTS per channel, never its location, so computing the
-                ; sum here (before the select, which happens after str_eval) is safe.
-                ; ⚠️ The width is read BEFORE the address is built, because building
-                ; it needs HL and HL is the entry walk.
-                ld      a,(hl)              ; chan
-                ld      (FLD_CHAN),a        ; non-zero: fld_find never returns a free
-                                            ; slot, so this doubles as the arm flag
-                inc     hl
-                inc     hl
-                inc     hl                  ; -> off lo
-                ld      e,(hl)
-                inc     hl
-                ld      d,(hl)              ; DE = off
-                inc     hl
-                ld      a,(hl)              ; width
-                ld      (LRSET_W),a
-                ld      hl,FSECTOR_BUF
-                add     hl,de
-                ld      (LRSET_DEST),hl     ; = the field's first byte
-lrs_haveeq:
-                ; --- shared by BOTH arms: `=` and the whole RHS evaluation --------
-                ; 🎯 The non-FIELDed arm re-enters HERE rather than duplicating the
-                ; 19 B of `=` parse + str_eval + error tail. That sharing is where
-                ; D-LRVAR's byte budget comes from (spec §4.2).
-                pop     hl                  ; restore cursor
+                ret     c
+                ; D-LRVAR: no field -> the variable's own storage
+                call    tgt_desc            ; HL = the STRTAB descriptor
+                ld      (MIDS_DEST),hl
+                xor     a
+                ld      (FLD_CHAN),a        ; 0 = "not fielded" -- never a legal chan
+                ret                         ; CF=0 from `xor a`
+
+; --- lrset_rhs: call-back 2 -- the `=` and the RHS string expression ---------
+; out: STRPTR -> [len][ptr]; FN_RESUME = cursor past the RHS. May RAISE.
+lrset_rhs:
+                ld      hl,(FN_RESUME)
                 call    skip_eq             ; '='
                 jp      nz,stmt_error
-                ; --- D-LSETTM: THE DECLINE HAS TWO CAUSES AND THE CF-3300
-                ; --- ANSWERS THEM DIFFERENTLY (docs/spec-basic-lsettm.md).
-                ; `str_eval` declines both for "the slot is EMPTY" and for
-                ; "something is here and it is not a string", and this site used
-                ; ONE `jp nc,stmt_error` for both -- ERR 2 where the reference
-                ; says 24 and 13 respectively. Measured on the National CF-3300:
-                ; `LSET A$=` / `LSET A$=:` -> ERR 24, `LSET A$=5` / `RSET A$=5` /
-                ; `LSET A$=N` -> ERR 13. Six rows, all ERR 2 here.
-                ; 🎯 THE SAME SPLIT printusing.asm:66 ALREADY RECORDS in this very
-                ; machinery, and the same repair: take the missing case off the
-                ; front with req_operand, after which an NC can only mean the
-                ; second. str_eval_next is unrolled to its `inc hl / skip / eval`
-                ; because req_operand must run PAST the '=' but BEFORE the eval,
-                ; and req_operand does its own skip_spaces (so no second one).
-                ; +4 B. [[two-rules-that-coincide-on-every-row-you-have]]
                 inc     hl                  ; past '='
                 call    req_operand         ; `LSET A$=` / `= :` -> ERR 24
                 call    str_eval            ; STRPTR -> [len][ptr]; HL advanced
                 jp      nc,type_mismatch_error  ; a non-string RHS -> ERR 13
-                                            ; (0 B: the same instruction,
-                                            ; retargeted -- printusing.asm:74)
-                push    hl                  ; guard cursor across select + store
+                ld      (FN_RESUME),hl
+                ret
+
+; --- lrset_finish: call-back 3 -- pick the destination, then store -----------
+; The FIELDed arm needs fch_select (which reloads FSECTOR_BUF for the channel);
+; the variable arm needs the descriptor re-fixed for any ARYTAB move the RHS
+; caused. Both end in lrset_store, which dispatches the sub-ROM tenant — and
+; that dispatch stays MAIN-side deliberately: a disk->sub CALSLT is a nesting
+; this tree has never made and this slice does not invent one.
+lrset_finish:
                 ld      a,(FLD_CHAN)
                 or      a
-                jr      z,lrs_var           ; 0 -> non-FIELDed (spec §4.2)
-                call    fch_select          ; FSECTOR_BUF = this channel's record buffer
-                jr      lrs_store
-lrs_var:
-                ; --- non-FIELDed arm: the target's OWN bytes, in place ------------
-                ; 🔴 THIS RUNS AFTER str_eval AND THAT ORDERING IS FORCED (spec
-                ; §5.2). The target's body lives in the string heap; the RHS can
-                ; allocate a temp, an allocation can run strheap_gc, and a GC
-                ; COMPACTS bodies and rewrites every root DESCRIPTOR's ptr. The
-                ; descriptor is a GC root, the body address is not -- so the
-                ; descriptor is snapshotted before the RHS (lrset_notfld below) and
-                ; dereferenced only here.
-                ; 🎯 AND THE WIDTH IS READ FROM THE SAME DESCRIPTOR, BEFORE the
-                ; deref consumes HL. That is what makes an UNSET target safe: it
-                ; resolves to STR_EMPTY (a `db 0` in ROM) or to a [0][garbage] slot,
-                ; whose ptr points at nothing -- and a width of 0 makes the store
-                ; return before it ever uses the pointer. Measured: `LSET A$="HI"`
-                ; on a never-assigned A$ is a NO-OP on the CF-3300, not an
-                ; assignment and not an error (spec §1, n.unset/n.empty).
+                jr      z,lrf_var           ; 0 -> non-FIELDed (spec §4.2)
+                call    fch_select          ; FSECTOR_BUF = this channel's record
+                jp      lrset_store
+lrf_var:
                 call    tgt_desc_fix        ; HL = the descriptor, corrected for any
-                                            ; ARYTAB move the RHS caused (vars.asm;
-                                            ; a scalar comes back verbatim)
+                                            ; ARYTAB move since (auto-DIM, string GC)
                 ld      a,(hl)              ; the target's CURRENT length IS the width
                 ld      (LRSET_W),a         ; -- it never changes (measured: n.len)
                 call    pu_deref_body       ; HL = the body (main LOW region)
                 ld      (LRSET_DEST),hl
-lrs_store:
-                call    lrset_store
-                jp      pop_exec            ; D-POPEXEC: pop hl + exec_stmt
-; --- lrset_notfld: the target has no field -> store into the VARIABLE ---------
-; D-LRVAR (docs/spec-basic-lrvar.md). Until this slice this was a bare
-; `jp stmt_error` commented "slice-1 limit" -- measured 2026-08-08 as the last two
-; red rows of docs/lvsites-msx1-characterization.md.
-;
-; 🎯 NO STORE ENGINE IS WRITTEN. The measured rule is "overwrite the target's
-; CURRENT bytes in place, space-padded to its CURRENT length, left- or
-; right-justified, a longer source keeping its FIRST len(target) bytes for BOTH
-; verbs" -- which is lrset_store_tenant's existing behaviour with the width set to
-; the target's length and the destination set to its body. Eight rows of §1 fall
-; out of that with no semantic code at all; spec §4.3 walks each one.
-;
-; The DESCRIPTOR (not the body) is snapshotted here, through the same
-; tgt_desc/tgt_desc_fix pair D-LVFIX built for ex_mid_stmt: a scalar's address is
-; stashed verbatim, an element's as its ARYTAB-RELATIVE offset, so an ARYTAB move
-; inside the RHS cannot alias a neighbouring element (spec §5.3). ⚠️ MIDS_DEST is
-; the cell that pair is hardcoded on, so this is its SECOND tenant -- safe because
-; the other one (ex_mid_stmt) is a statement head and str_eval cannot reach a
-; statement head, the same walk tgt_desc's own header already requires.
-lrset_notfld:
-                call    tgt_desc            ; HL = the STRTAB descriptor (scalar) or
-                                            ; elem - ARYTAB (element); clobbers BC,
-                                            ; which is dead now that fld_find has run
-                ld      (MIDS_DEST),hl
-                xor     a
-                ld      (FLD_CHAN),a        ; 0 = "not fielded" -- never a legal
-                                            ; channel (fch_check rejects 0 with
-                                            ; ERR 59), and already the free-slot
-                                            ; marker throughout FLD_TAB
-                jr      lrs_haveeq
+                jp      lrset_store
 
-; lrset_store — copy the [len][ptr] string at STRPTR into the destination
-; (LRSET_DEST), width (LRSET_W), justify (LRSET_JUST). The destination is first
-; space-filled, then min(srclen,width) bytes are copied (left- or right-aligned);
-; a longer source truncates from the right.
-;
-; ⚠️ D-LRVAR: (LRSET_DEST) is an ADDRESS, not the field OFFSET the cell used to
-; hold. Both callers now compute it: the FIELDed arm as FSECTOR_BUF + the entry's
-; offset, the non-FIELDed arm as the target variable's own heap body. The tenant
-; got 4 B smaller for it (docs/spec-basic-lrvar.md §4.1).
-;
-; --- repack: a resident stub over the SUBROM_IDX_LRSETST page-0 tenant ------
-; docs/spec-basic-fldary.md §6.4 — the D-FLDARY FUNDING CARVE. The body (68 B of
-; main page 1) moved whole to sub/lrsetst.asm; this stub is 11 B, so the carve
-; returns 57 B, against D-FLDARY's measured 38 B requirement.
-;
-; WHY THIS ONE, and it is not "because it is the biggest". D-LVFIX's cluster
-; attempt (--entries ex_field,ex_lset,ex_rset,fld_add,fld_find) came back NOT
-; page-0-evictable — 313 absent-region callees reached through resident main
-; page 1, because the statement HEADS drag stmt_error/eval and thus the whole
-; interpreter behind them. The leaf-only re-run
-; (fld_add,fld_find,fld_clear_chan,fld_init,lrset_store) is page-0-tenant CLEAN
-; with ONE blocker, and of that set lrset_store is the one taken:
-;   * 68 B in ONE contiguous span, six labels, ONE caller (lrset_common below);
-;   * 🎯 ZERO REGISTER MARSHALLING. Every input is a RAM cell — LRSET_DEST,
-;     LRSET_W, LRSET_JUST, STRPTR, FSECTOR_BUF ($E5C0, page 3) — and it returns
-;     nothing. fld_find, by contrast, returns CF+HL, and CF collides with
-;     subrom_call's own CF (which means "sub-ROM absent", never "found"), so it
-;     would have had to invent a cell. Nothing here does.
-;   * its ONE blocker is 8 bytes: pu_deref_body (main LOW region, switched out
-;     under a page-0 CALSLT) is inlined sub-side in 5 B — the caller's A does not
-;     need preserving here, since `ld a,(LRSET_W)` reloads it two instructions
-;     later. Exactly the disposition sub/fldlook.asm gives mk_rvdesc.
-;
-; COLD ENOUGH: one CALSLT per LSET/RSET statement, already downstream of
-; fch_select's 512-byte LDIR pair when the channel changes. Same argument the
-; fld_lookup carve made one document earlier.
 lrset_store:
                 ld      ix,SUBROM_ENTRY_BASE_P0 + 3*SUBROM_IDX_LRSETST
                 jp      sc_call     ; no args, no result, cannot fail

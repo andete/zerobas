@@ -89,10 +89,17 @@ H_COPY          equ     $FE08   ; COPY (D-COPY)
 H_ERRP          equ     $FEFD   ; error-print hook (D-DISKERR): this ROM prints ERR 68..70
 DSKBUF_PTR      equ     $F351   ; word -> the DSKI$/DSKO$ sector buffer; the disk ROM writes it
                                 ; at init (basic/sysvars.inc has the same cell and the reading)
-FSECTOR_BUF     equ     $E5C0   ; the buffer it names: basic/sysvars.inc's FSECTOR_BUF, mirrored
-                                ; here because the disk ROM sees no sysvars -- the dskio-acceptance
-                                ; `dir`/`boot` rows read the buffer THROUGH the pointer, so a drift
-                                ; between the two definitions reads garbage there, not silence
+; 🟢 FSECTOR_BUF IS NO LONGER MIRRORED HERE (D-LRSETMOVE, 2026-09-17). It was a
+; hand copy of basic/sysvars.inc's value, carrying its own warning that *"a drift
+; between the two definitions reads garbage there, not silence"* -- and hk_lrset
+; needed the same cell, which collided. The fix is the one that removes the
+; hazard instead of working around it: it now arrives through
+; disk/basic-resident-abi.inc, GENERATED per build from build/basic-reloc.sym and
+; verified by `make diskrom-abi-check`, so the two definitions CANNOT drift
+; because there is only one.
+; ⚠️ `DSKBUF_PTR` above is still a hand copy with the same hazard. Left alone
+; deliberately: it is not this slice's subject, and changing a mirrored address
+; while moving a verb would put two causes in one commit.
 ; D-FLDGATE: field.asm's three verbs. Addresses MEASURED on the CF-3300 by
 ; un-claiming each cell and seeing which verb starts answering ERR 5
 ; (scratchpad/hookid_probe.py); consecutive, 5 apart, the shape a hook table has.

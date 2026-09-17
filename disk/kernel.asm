@@ -2156,6 +2156,51 @@ hkm_copy:
                 scf
                 ret
 
+; --- hk_lrset: LSET/RSET's body, RUNNING IN THE DISK ROM --------------------
+; docs/spec-basic-nodisk.md §9 for the hook; disk/docs/spec-diskcode-eviction.md
+; §7.3-§7.5 for the slice. D-LRSETMOVE, Joost 2026-09-17: *"cut it anyway, it is
+; the correct place for it"*.
+;
+; 🎯 WHAT IS ACTUALLY HERE IS THE FIELD-ENTRY WALK, AND THAT IS THE WHOLE POINT
+; OF THE ACCOUNTING IN THE SPEC: of the old 122 B body, ~25 B is disk work and
+; the rest is PARSE, which stays in main behind three bundled call-backs. A verb
+; that is mostly parse moves almost nothing however the crossings are arranged.
+;
+;   in   FN_RESUME = the statement cursor, just past the LSET/RSET token
+;        LRSET_JUST = 0 left / 1 right, set by main before the gate
+;   out  the statement is DONE; FN_RESUME = the resume cursor
+;        CF = 1 (claimed), which is what chan_gate tests
+;
+; ⚠️ THE FLD_TAB ENTRY LAYOUT IS READ HERE AND WRITTEN NOWHERE ELSE IN THIS ROM:
+; [chan][key:2][off:2][width]. It is main's table in main's RAM -- this body
+; walks it, it does not own it -- so a change to that shape is a change to TWO
+; files. basic/field.asm builds it.
+hk_lrset:
+                ld      ix,lrset_tgt
+                call    calbak              ; CF=1 -> HL = the FLD_TAB entry;
+                jr      nc,hklr_rhs         ; CF=0 -> not fielded, main set up
+                ld      a,(hl)              ; chan
+                ld      (FLD_CHAN),a        ; non-zero: fld_find never returns a free
+                inc     hl
+                inc     hl
+                inc     hl                  ; -> off lo
+                ld      e,(hl)
+                inc     hl
+                ld      d,(hl)              ; DE = off
+                inc     hl
+                ld      a,(hl)              ; width
+                ld      (LRSET_W),a
+                ld      hl,FSECTOR_BUF
+                add     hl,de
+                ld      (LRSET_DEST),hl     ; = the field's first byte
+hklr_rhs:
+                ld      ix,lrset_rhs
+                call    calbak              ; the `=` and the RHS expression
+                ld      ix,lrset_finish
+                call    calbak              ; destination, then the store
+                scf
+                ret
+
 ; --- hk_dskf: DSKF's body, RUNNING IN THE DISK ROM --------------------------
 ; docs/spec-basic-nodisk.md §9 for the hook, and D-DSKFDRV
 ; (scratchpad/kwt3_dskfchk.py) for the bound below. D-DSKFMOVE, Joost 2026-09-17:
@@ -2363,8 +2408,8 @@ hook_tab:
                 dw      H_KILL, hk_kill      ; D-DISKVERB: the FIRST verb whose
                                              ; BODY lives here, not just its gate
                 dw      H_FILE, hk_files     ; D-DISKVERB4: FILES + LFILES
-                dw      H_LSET, hk_present   ; D-FLDGATE: field.asm's three. The
-                dw      H_RSET, hk_present   ; bodies stay main-side for now; the
+                dw      H_LSET, hk_lrset     ; D-LRSETMOVE: both bodies HERE now
+                dw      H_RSET, hk_lrset     ; (one body; LRSET_JUST says which)
                 dw      H_FIELD, hk_present  ; hook buys the DISKLESS ERR 5
                 dw      H_DSKO, hk_present   ; D-DSKIO: both bodies are a sub-ROM tenant,
                 dw      H_DSKI, hk_present   ; the hook buys the diskless ERR 5

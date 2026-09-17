@@ -231,11 +231,95 @@ loop. Two options were put to Joost:
 tiers"*.** That is consistent with the tier ladder — TIER 1 is the happy path
 working, TIER 2 reasonable time, TIER 4 on-par speed — and with the charter:
 faithful full MSX1 BASIC, which is what the reference's own architecture is.
+### 7.2 🟢 THE BASELINE, TAKEN 2026-09-17 — AND IT OVERTURNS §7.1's FRAMING
+
+[`scratchpad/lrset_stopwatch.py`](../../scratchpad/lrset_stopwatch.py), N=200,
+empty loop subtracted, seconds of emulated time **per statement**:
+
+| | CF-3300 | zerobas | |
+|---|---|---|---|
+| `LSET A$="X"` | 0.002593 | **0.001469** | we are 1.77× FASTER |
+| `RSET A$="X"` | 0.002594 | **0.001496** | 1.73× faster |
+| `FIELD#1,16 AS A$` | 0.005451 | **0.003049** | 1.79× faster |
+
+🎯 **THE REFERENCE'S FIGURE *IS* THE PRICE OF THE ARCHITECTURE WE ARE MOVING
+TO.** The CF-3300 runs these three in its DISK ROM, with the call-backs this
+move adds; we run them in main with plain calls. So its column is not a target
+to beat — it is what an in-disk-ROM implementation of these verbs costs, measured
+on the machine that has one.
+
+🔴 **AND THAT MAKES §7.1's OPTION A CHEAPER THAN IT WAS PRESENTED.** The estimate
+put to Joost was "5–6 call-backs ≈ 0.8–0.9 ms per statement", which sounded like
+a large hit — because it was compared against a statement time NOBODY HAD
+MEASURED. `LSET` is 1.47 ms, so +0.8 ms is **+55%**, landing at ~2.3 ms against
+the CF-3300's 2.59: still slightly FASTER than the reference. An estimate quoted
+without its denominator is not half a measurement, it is a different claim.
+
+### 7.2a 🟢 AFTER THE MOVE (D-LRSETMOVE, same day) — and the reverse direction is measured at last
+
+| per statement | before | after | CF-3300 |
+|---|---|---|---|
+| `LSET A$="X"` | 0.001469 | **0.001978** | 0.002593 |
+| `RSET A$="X"` | 0.001496 | **0.002023** | 0.002594 |
+| `FIELD#1,16 AS A$` | 0.003049 | 0.003049 — **unchanged** | 0.005451 |
+
+🟢 **STILL 1.31× FASTER THAN THE REFERENCE**, with three call-backs where it has
+its own. And `FIELD` unchanged is the CONTROL: it had not moved, so a figure that
+had shifted would have said the instrument drifted between runs rather than that
+the verb did.
+
+🎯 **+0.509 ms OVER THREE CROSSINGS = 0.170 ms PER CALL-BACK, disk→main.**
+D-XSLOTPRICE measured 0.156 ms **main→disk**, and §7.1 flagged the reverse as
+ASSUMED to match. It is ~9% dearer, which is now a reading rather than a guess —
+and the prediction built on the old figure (+0.47 ms) came in 8% low, which is
+the right direction to be wrong in but not a reason to keep estimating.
+
+⚠️ The instrument's own first run returned NO MARKS on both machines, which is
+what a watchpoint that never armed looks like AND what a program that raised
+before its first POKE looks like. It was the second: the probe mounted no disk,
+so `OPEN` failed at line 10. **A `control` row that needs no disk and no channel
+is what separated them**, and it is row one of that probe for good.
+
 ⚠️ **AND THE COST MUST BE MEASURED, NOT CARRIED AS AN ESTIMATE.** 0.156 ms is
 D-XSLOTPRICE's **main→disk** figure; the reverse direction is ASSUMED to match
 and has not been measured. Time `LSET` in a loop before and after, and record the
 reading — a per-statement price that only ever existed as an estimate is the kind
 of figure a later slice quotes as if it had been taken.
+
+### 7.3 The trio, sized and cut into slices (2026-09-17)
+
+`ex_lset`..`lrset_notfld` is **`$7325`–`$739E` = 122 B**; the rest of
+`field.asm`'s 576 B private is `FIELD` and the field-table machinery. So the trio
+is **two or three slices, not one**, and this is the riskiest work in this spec:
+a well-tested verb (`fldwidth-acceptance`, D-LRVAR) with subtle error ordering.
+
+**What travels with the body** (defined in `field.asm`, private): `tgt_parse_fld`,
+`fld_find`.
+**What becomes a call-back** (page 1, defined elsewhere): `req_letter`,
+`var_str_type`, `skip_eq`, `req_operand`, `str_eval`, `tgt_desc_fix`,
+`fch_select`, and `lrset_store` — which stays main-side deliberately, because it
+dispatches a SUB-ROM tenant and a disk→sub CALSLT is an unproven nesting this
+slice should not invent.
+**What is already reachable**: `pu_deref_body` (`$28C1`, low region, declared).
+
+🟢 **A CALL-BACK MAY RAISE, AND THE TREE ALREADY RELIES ON IT.** `hk_files` calls
+`fname_expr` with the note *"an EXPRESSION; may RAISE (ERR 13)"*. It is safe
+because the target runs in MAIN with main page 1 mapped, so `raise_error`'s
+`ld sp,(SAVSTK)` unwinds a stack whose disk-ROM frame is simply discarded — the
+handler never resumes, which is the correct outcome for an error. **So
+`req_operand`'s ERR 24 and `str_eval`'s ERR 13 do not need a status protocol**;
+only decisions the body itself makes (`type_mismatch_error` on a non-`$` target)
+do, and `DISKOP_STATUS` is that channel.
+
+⚠️ **THE CURSOR IS THE THING TO GET RIGHT.** Every parse call-back takes and
+returns `HL`, and D-XSLOTABI says `HL` crosses both ways — but the body holds the
+cursor across `fld_find` and the `=` scan with two `push hl`/`pop hl` pairs
+today. Those pairs are inside the handler after the move, and a push that
+straddles a `calbak` is a push that straddles a CALSLT.
+
+**Order:** (1) `LSET`/`RSET`, 122 B, proves the seam and the cursor threading;
+(2) `FIELD`, whose field-list loop needs an `eval` call-back per `n AS name$`
+pair; (3) the field-table machinery, which by then has no main-side callers left.
 
 ⚠️ **WHAT IS STILL OPEN IS PHASE 3'S QUESTION, NOT THIS ONE**: `OPEN`, `CLOSE`,
 `INPUT`, `LINE INPUT`, `MERGE` and `MAXFILES` **have no hook cell we have
@@ -243,6 +327,86 @@ identified**, and the pattern is *point the verb's hook at a disk-ROM body*. Wit
 no cell to point there is nothing to do. That is an ORACLE measurement — the
 `hookid_chan.py` POKE sweep over the unidentified cells of the 35-cell census,
 with its two controls — and it gates step 6, not steps 4 and 5.
+
+## 7.4 🏗️ TWO RULES FOR WHERE A BODY BELONGS (Joost, 2026-09-17)
+
+**R1 — THE CALL-BACK COUNT IS A MEASURE OF MISPLACEMENT, *AFTER* DUPLICATION.**
+
+Joost, on seeing the trio's ten: *"if we need many callbacks from disk back to
+main rom that might mean there's a design flaw?"* — and he is right, with one
+correction he supplied himself: *"we have plenty of space in the disk rom...
+small utilities can exist as duplicate there."* So the count that diagnoses
+anything is the count **after the small helpers are duplicated**.
+
+| body | call-backs |
+|---|---|
+| `MKI$`, `CVI`/`CVS`/`CVD` | 0 |
+| `DSKF` | 1 |
+| `KILL`, `NAME`, `FILES`, `COPY` | 1–2 (the filename expression) |
+| `LSET`/`RSET` **before** duplication | ~10 |
+| `LSET`/`RSET` **after** | ~2 (`str_eval`, `lrset_store`) |
+
+🎯 **ONE OR TWO IS NATURAL; MANY MEANS THE BODY IS IN THE WRONG ROM.** The
+underlying question is *does this verb need the DISK, or only the disk ROM's
+EXISTENCE?* — but the count is the measurable form of it, and it must be taken
+after R2 is applied or it measures the wrong thing. **My first reading of the
+trio's ten concluded "misplaced, do not move" and was WRONG for exactly that
+reason.**
+
+⚠️ **DUPLICATION MEANS ONE SOURCE ASSEMBLED TWICE, NEVER A COPY.** This tree
+already shares **18** `*-body.inc` files between main and `sub/`/`disk/`
+(`fatio-body.inc`, `fat-prim-body.inc`, `bload-body.inc`, `fcbname-body.inc`…),
+and `make shared-body-check` exists for the failure a real copy would invite:
+*"a dead COPY of a live routine is worse than dead code, because it reads as the
+live one while being free to drift from it."*
+⚠️ **AND A HELPER IS ONLY DUPLICABLE IF ITS CLOSURE IS.** That is checkable, not
+a judgement: `tools/check_tenant_closure.py` already computes exactly this for
+the sub-ROM tenants. A helper whose closure stays in RAM and the low region can
+be duplicated; one that reaches the evaluator cannot — which is why `str_eval`
+is irreducible and the reference calls back for expressions too (D-CFEVAL).
+
+**R1a — BEFORE CONCLUDING MISPLACEMENT, BUNDLE.** Ten call-backs is often one
+step asked ten times. `LSET`'s target parse is `req_letter` + `var_str_type` +
+the `$` check + `tgt_parse_fld` — **four call-backs for one logical act**, and
+its RHS parse is another four. A single main-side entry per act — *parse the
+target, give me the key*; *parse the RHS, give me the descriptor* — turns ten
+into **three** (target, RHS, store).
+
+🎯 **AND BUNDLING BEATS DUPLICATION WHERE BOTH APPLY.** A bundle costs a few
+bytes of new main-side code and removes the fine-grained crossings outright; a
+duplicate costs disk-ROM bytes and adds a second copy to keep honest. Reach for
+the bundle first; duplicate what is left and genuinely local.
+⚠️ **A BUNDLE IS ALSO WHAT THE REFERENCE MUST BE DOING.** Its disk ROM asks
+BASIC to *evaluate an expression* once, not to *skip a space*, *test a letter*
+and *look up a variable* in three crossings — which is consistent with the
+CF-3300 being 1.8× slower than us rather than ten times.
+
+⚠️ **AND IT CHANGES THE SLICE PLAN IN §7.5**: with bundling, slice 1 lands at ~3
+call-backs (~0.47 ms, `LSET` ≈ 1.94 ms) and stays FASTER than the CF-3300's
+2.59 ms, so the seam slice never ships a state slower than the reference and
+slice 2 becomes optional rather than corrective.
+
+**R2 — DUPLICATE THE HOT PATH, CALL BACK FOR THE ERRORS.**
+
+A duplicate **cannot raise**: `raise_error` is main page 1. A call-back **can**,
+and the tree already relies on it (`hk_files` calls `fname_expr` with *"an
+EXPRESSION; may RAISE (ERR 13)"*) — it is safe because the target runs in MAIN
+with main page 1 mapped, so the unwind discards the disk-ROM frame and the
+handler never resumes, which is the correct outcome for an error.
+
+🎯 So a verb's error tail becomes a call-back on a path that runs approximately
+never, while the per-statement path stays local. **That is also what protects the
+speed**: §7.2 measured the trio at 1.8× FASTER than the CF-3300 precisely because
+it makes those call-backs and we do not; under R1+R2 we keep most of that margin
+instead of trading all of it for placement.
+
+### 7.5 So the trio is TWO slices, not one
+
+1. **Seam first, with call-backs for everything.** The risk in this verb is the
+   CURSOR THREADING and the ERROR ORDERING, not the helper placement — isolate
+   it. Expect the +55%; it is temporary and Joost has ruled speed waits.
+2. **Then duplication**, replacing call-backs with shared `-body.inc` includes
+   one at a time, each a mechanical change against a seam already proven.
 
 ## 8. What must stay in main, and why
 

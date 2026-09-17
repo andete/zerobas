@@ -22,6 +22,10 @@ DISK_FCB_NAME equ 0E0DCH
 FILES_HASPAT equ 0F009H
 FAC equ 0F01CH
 FACTYP equ 0F01AH
+FSECTOR_BUF equ 0E5C0H
+FLD_CHAN equ 0E01BH
+LRSET_W equ 0E01DH
+LRSET_DEST equ 0E01EH
 STRPTR equ 0E0C9H
 
 ; --- page-1 call-back targets: reached by an INTER-SLOT call (MSX2 TH), not an absolute one ---
@@ -32,3 +36,6 @@ main_fat_mount equ 0641CH   ; main's fat_mount
 main_fat_find equ 06420H   ; main's fat_find
 parse_disk_fcb equ 065C1H
 fat_count_free equ 0644FH
+lrset_tgt equ 07341H
+lrset_rhs equ 07363H
+lrset_finish equ 0737AH

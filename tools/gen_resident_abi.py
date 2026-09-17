@@ -108,6 +108,12 @@ REQUIRED_DISK_RAM = [
                                 # 0 = list the whole directory
     "FAC",                      # the packed float accumulator
     "FACTYP",                   # 2 / 4 / 8
+    # D-LRSETMOVE: hk_lrset walks main's FLD_TAB entry and fills the three
+    # cells the sub-ROM store tenant reads. It WALKS the table; main OWNS it.
+    "FSECTOR_BUF",              # the shared record buffer the offset indexes
+    "FLD_CHAN",                 # 0 = not fielded (D-LRVAR)
+    "LRSET_W",                  # the field width
+    "LRSET_DEST",               # the field's first byte
     "STRPTR",                   # D-CVMOVE: the evaluator's string DESCRIPTOR
                                 # pointer, which hk_cv derefs (see pu_deref_body
                                 # above); read-only from the disk side
@@ -159,6 +165,12 @@ REQUIRED_DISK_CALLBACK: list[str] = [
     # count, which is a 13 B stub onto the SUB ROM's fatprim tenant -- so the
     # walk is in neither ROM that this call crosses between.
     "fat_count_free",           # DE = free clusters; CF=1: no disk
+    # D-LRSETMOVE: LSET/RSET's three BUNDLES. Each is one logical act, not
+    # one helper -- the target parse alone would otherwise be five
+    # crossings. All three may RAISE, which is safe from a call-back.
+    "lrset_tgt",                # CF=1: HL = FLD_TAB entry; CF=0: not fielded
+    "lrset_rhs",                # STRPTR = the RHS descriptor
+    "lrset_finish",             # destination, then the sub-ROM store
 ]
 
 Profile = collections.namedtuple("Profile", "code ram callback what")

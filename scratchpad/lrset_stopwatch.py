@@ -36,7 +36,7 @@ produces marks anyway -- the loop still executes -- so THE ERROR LINE IS CHECKED
 a case that raises is reported as such rather than timed.
 """
 from __future__ import annotations
-import os, sys
+import os, shutil, sys, tempfile
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, os.path.join(ROOT, "probes", "lib"))
@@ -50,32 +50,55 @@ SIDES = {
 }
 MARK = 0xE000
 N = 200
+# 🔴 A CHANNEL NEEDS A DISK, AND THE FIRST RUN OF THIS PROBE HAD NONE. It mounted
+# nothing, so `OPEN"TEST.DAT"AS#1` raised at line 10 and the program never
+# reached its first POKE -- NO MARKS on both machines, which looks exactly like
+# the instrument failing to arm. The `control` row is what separated the two.
+# ⚠️ A FRESH TEMP COPY PER RUN, never disk/test720.dsk itself: this probe OPENs,
+# FIELDs, LSETs and CLOSEs, so it WRITES. Timing a verb against a tracked
+# fixture would leave the fixture dirty and the next probe reading a disk this
+# one modified.
+DSK = os.path.join(ROOT, "disk", "test720.dsk")
 
 # (label, the statement repeated N times; "" = the empty-loop baseline)
+# 🔴 `control` NEEDS NO DISK AND NO CHANNEL, AND IT IS FIRST FOR A REASON. The
+# first run of this probe returned NO MARKS on BOTH machines, which has two
+# completely different causes: the sentinel watchpoint never armed (an
+# INSTRUMENT failure -- omsx_repl documents one, where a trailing @WAIT armed it
+# 117.5 emulated seconds late), or the program RAISED before reaching its first
+# POKE (a PROGRAM failure -- `OPEN"TEST.DAT"AS#1` on a machine with no disk).
+# Without a row that needs neither, the two are indistinguishable and the
+# temptation is to guess. If `control` times and the rest do not, it is the
+# OPEN; if `control` does not time either, it is the instrument.
 OPS = [
-    ("baseline",  ""),
-    ("lset",      'LSET A$="X"'),
-    ("rset",      'RSET A$="X"'),
-    ("field",     "FIELD#1,16 AS A$"),
+    ("control",   "", False),     # no OPEN, no FIELD -- proves the marks fire
+    ("baseline",  "", True),      # the empty loop, WITH the channel set up
+    ("lset",      'LSET A$="X"', True),
+    ("rset",      'RSET A$="X"', True),
+    ("field",     "FIELD#1,16 AS A$", True),
 ]
 
 
-def measure(side, op):
+def measure(side, op, chan=True):
     cfg = SIDES[side]
-    body = ['10 OPEN"TEST.DAT"AS#1 LEN=32',
-            "20 FIELD#1,16 AS A$",
+    body = (['10 OPEN"TEST.DAT"AS#1 LEN=32',
+             "20 FIELD#1,16 AS A$"] if chan else
+            ["10 REM no channel -- the control", "20 REM"]) + [
             f"30 POKE&H{MARK:04X},1",
             f"40 FOR I%=1 TO {N}",
             ("50 REM" if not op else f"50 {op}"),
             "60 NEXT I%",
             f"70 POKE&H{MARK:04X},255",
-            "80 CLOSE#1:GOTO80"]
+            ("80 CLOSE#1:GOTO80" if chan else "80 GOTO80")]
     spec = ("direct", list(cfg["reset"]) + body + ["RUN"])
     so: dict = {}
+    fh = tempfile.NamedTemporaryFile(suffix=".dsk", delete=False); fh.close()
+    shutil.copy(DSK, fh.name)
     out = omsx_repl.run_batch(cfg["machine"], [spec], reset=(), boot=cfg["boot"],
                               step=2.5, run_gap=120.0, cap_gap=8.0,
                               timeout=600.0, verify_delivery=False,
-                              sentinel=(MARK, 255), settle_out=so)
+                              sentinel=(MARK, 255), settle_out=so,
+                              diska=fh.name)
     text = "\n".join(str(x) for x in (out or []))
     marks = so.get("marks", {}).get(0, [])
     t = {v: i for i, v in marks}
@@ -91,35 +114,48 @@ def main():
     print(f"N={N} per loop; figures are SECONDS of emulated time\n")
     print(f"{'op':<10} {'cf3300 loop':>13} {'zb loop':>13} "
           f"{'cf3300/stmt':>13} {'zb/stmt':>13}")
-    for label, op in OPS:
+    missing = []
+    for label, op, chan in OPS:
         if only and label not in only:
             continue
         row = {}
         for side in ("cf3300", "zb"):
-            dur, why = measure(side, op)
+            dur, why = measure(side, op, chan)
             row[side] = dur
             if dur is None:
                 print(f"  !! {label} {side}: {why}")
-        if label == "baseline":
-            base = row
-            print(f"{label:<10} {row.get('cf3300', float('nan')):>13.6f} "
-                  f"{row.get('zb', float('nan')):>13.6f} "
+                missing.append((label, side, why))
+        def fmt(v):
+            return "  (no reading)" if v is None else f"{v:>13.6f}"
+        if label in ("control", "baseline"):
+            if label == "baseline":
+                base = row
+            print(f"{label:<10} {fmt(row.get('cf3300'))} {fmt(row.get('zb'))} "
                   f"{'--':>13} {'--':>13}")
             continue
         cells = []
         for side in ("cf3300", "zb"):
             if row.get(side) is None or base.get(side) is None:
-                cells.append(float("nan"))
+                cells.append(None)
             else:
                 cells.append((row[side] - base[side]) / N)
-        print(f"{label:<10} {row.get('cf3300', float('nan')):>13.6f} "
-              f"{row.get('zb', float('nan')):>13.6f} "
-              f"{cells[0]:>13.6f} {cells[1]:>13.6f}")
+        print(f"{label:<10} {fmt(row.get('cf3300'))} {fmt(row.get('zb'))} "
+              f"{fmt(cells[0])} {fmt(cells[1])}")
     print("\n🔴 READ THE PER-STATEMENT COLUMNS ONLY: the loop figures include "
           "FOR/NEXT, which is itself 2.5-3.8x the reference here, and the "
           "baseline row is what removes it.")
     print("⚠️ A `!!` line is an APPARATUS result, not a fast statement -- a run "
           "whose FIELD raised still produces marks, because the loop still ran.")
+    if missing:
+        ctl = [m for m in missing if m[0] == "control"]
+        print("\n\U0001f534 REFUSING: %d reading(s) absent." % len(missing))
+        print("   " + ("THE CONTROL DID NOT TIME EITHER, so this is the "
+                       "INSTRUMENT, not the OPEN -- fix the rig before "
+                       "believing any row above." if ctl else
+                       "The control DID time, so the marks fire and the rig is "
+                       "sound: the absent rows are the PROGRAM (the channel "
+                       "set-up), not the stopwatch."))
+        return 2
     return 0
 
 
