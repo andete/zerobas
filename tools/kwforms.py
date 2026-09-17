@@ -174,6 +174,65 @@ def subject_names() -> set[str]:
 
 # keyword -> (forms, why this is the set)
 FORMS: dict[str, tuple[tuple[str, ...], str]] = {
+    # 🎚️ THE REFUSE-ON-SIGHT WORDS, BARRED HERE BY JOOST'S 2026-09-17 REFINEMENT:
+    # *"works correctly in the happy path, unless there is no happy path in which
+    # case it works correctly in the normal failing path"*. Each of these HAS a
+    # normal path -- it is the refusal -- so each can reach TIER 1 by matching the
+    # reference's error, and each is back in the STATEMENT denominator.
+    # 🔴 N = 1 FOR ALL FIVE, AND THAT IS THE POINT, NOT LAZINESS. A form is a
+    # distinct BEHAVIOUR, not a distinct input, and these words have exactly one
+    # behaviour on this machine. More spellings would all read THE SAME ERROR --
+    # `SET PASSWORD` and `SET SCREEN` are one refusal sampled twice -- and awarding
+    # on a second row that agrees for the same reason is the thing this tree does
+    # not do.
+    "SET": (
+        ("refuse",),
+        "`SET <anything>` is Illegal function call on BOTH references and here "
+        "(measured: `SET PASSWORD`). MSX2 gives SET real jobs; on MSX1 there are "
+        "none, so the whole behaviour is the refusal and the bar is that the ERROR "
+        "CODE matches -- a word that refused with a different code, or refused "
+        "where the reference did something, would fail this.",
+    ),
+    "IPL": (
+        ("refuse",),
+        "`IPL` is Illegal function call on both references and here. One "
+        "behaviour; see SET above for why N is 1.",
+    ),
+    "CMD": (
+        ("refuse",),
+        "`CMD\"X\"` is Illegal function call on both references and here. One "
+        "behaviour; see SET above.",
+    ),
+    # 🔴 `ATTR$` AND `CALL` CANNOT REACH TIER 1, AND NOT FOR WANT OF A ROW.
+    # Measured 2026-09-17: neither is a knife target -- `ATTR$` is absent from the
+    # 49 FUNCTION targets and `CALL`'s statement target resolves to a BLIND row --
+    # because THERE IS NO HANDLER TO CUT. `SET`/`IPL`/`CMD` have handlers that
+    # actively refuse with ERR 5, which an absent word cannot imitate (it parses
+    # the word as a variable and gives ERR 2), so a cut moves their reading and
+    # the knife proves them CONNECTED. `ATTR$` and `CALL` refuse BY BEING ABSENT:
+    # `CALL FOO` is ERR 2 whether the word is dispatched or merely misparsed, so
+    # no row can tell a present handler from a missing one.
+    # 🎯 THE CRUNCH LAYER STILL PROVES THE TOKEN EXISTS -- that is a different
+    # claim, and the one worth having. What is unprovable is that anything is
+    # REACHED. This is the honest shape of "agreeing on an absence both sides
+    # produce", and the table says `not knife-proven CONNECTED` rather than
+    # pretending otherwise.
+    "ATTR$": (
+        ("refuse",),
+        "`ATTR$` is tokenised and then refused -- `sysvars.inc` says so outright "
+        "(`ATTR_TOKEN equ $E9 ; ATTR$ -- tokenised, then ERR 5 (no function)`) and "
+        "the row agrees. One behaviour.",
+    ),
+    "CALL": (
+        ("refuse",),
+        "`CALL <name>` dispatches to an EXTENSION ROM and a bare MSX1 has none, so "
+        "`CALL FOO`, the `_FOO` shorthand and a bare `CALL` are all **ERR 2** on "
+        "both references and here (D-AKCM). 🔴 A DIFFERENT ERROR FROM THE OTHER "
+        "FOUR, which is why the bar is 'matches the reference' and not 'raises 5'. "
+        "The `_FOO` shorthand is the same behaviour by another spelling, so it is "
+        "not a second form.",
+    ),
+
     # 🟢 D-KWEDIT (2026-09-16). These two were filed as UNRATEABLE, and the reason
     # was the MODE they had been measured in, not the verbs: run from inside a
     # program `DELETE` stops the run and `RENUM` breaks the execution pointer. They

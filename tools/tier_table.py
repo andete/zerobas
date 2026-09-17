@@ -585,14 +585,17 @@ def reached_group(g, e, t3=False, conn=False, tier1=False, nobare=False,
     # statements, which is the claim this class exists to stop making.
     if particle:
         return "kwpart"
-    # 🔴 ALSO BEFORE THE TIER ARMS. `set`/`ipl`/`cmd` have AGREEING rows -- both
-    # machines raise ERR 5 -- so without this they would print as "1 row agrees"
-    # beside statements that actually DO something, which is exactly the claim
-    # this class exists to stop making.
-    if refuses:
-        return "kwrefuse"
+    # 🎚️ REFINED (Joost, 2026-09-17): TIER 1 NOW BEATS THE REFUSE CLASS. A
+    # refuse-on-sight word HAS a normal path -- the refusal -- so if its authored
+    # form is covered by an agreeing row and nothing is filed against it, it has
+    # got its whole behaviour right and is TIER 1. What the class still does is
+    # catch a refuse word that has NOT met that bar: without it, an agreeing row
+    # alone would print as "1 row agrees" beside statements that actually DO
+    # something, which is the claim the class exists to stop making.
     if tier1:
         return "t1"
+    if refuses:
+        return "kwrefuse"
     if g is not None:
         return g                                  # 1..5: stuck below that tier
     # 🔴 THIS TEST USED TO SIT BELOW THE ROW EVIDENCE, AND THE ROW WON. `MAX` is
@@ -676,10 +679,20 @@ def statements(kws=None):
     ⚠️ A STATED IMPRECISION RATHER THAN A HIDDEN ONE: this set still counts SYNTAX
     PARTICLES (`THEN`, `TO`, `STEP`, `ELSE`, `AS`, `OFF`) as statements. They are
     not. Removing them is re-tiering the keyword umbrella, which is ruled out, so
-    the count carries the flaw openly instead of being quietly adjusted."""
+    the count carries the flaw openly instead of being quietly adjusted.
+
+    🎚️ **REFINED BY JOOST 2026-09-17**: *"works correctly in the happy path,
+    unless there is no happy path in which case it works correctly in the normal
+    failing path"*. So the REFUSE-ON-SIGHT words are back IN this denominator.
+    They were removed on 2026-09-14 because "a TIER 1 bar reading 'refuses
+    correctly' would be a TIER 5 reading wearing a TIER 1 label" -- and the
+    refinement answers that directly: TIER 5 is *every* error situation, while
+    for these words the refusal is the ONLY path there is, so it is the normal
+    one. A word that refuses where the reference refuses, with the same code, has
+    got its whole behaviour right."""
     kws = keywords() if kws is None else kws
-    return sorted((set(kws) - set(no_bare_form()) - set(particles())
-                   - set(refuse_only())) | composite_names())
+    return sorted((set(kws) - set(no_bare_form())
+                   - set(particles())) | composite_names())
 
 
 def tier1_statements(stmts=None, conn=None, forms=None, kws=None):
@@ -881,7 +894,14 @@ def fmt_markdown(its, kws, evidence=None, t3=None, connected=None):
            "`TODO.md` item and the keyword table `basic/kwtable.inc` (plus the keywords "
            "filed as missing). Regenerate; never edit.", "",
            "| tier | meaning | open items |", "|---|---|---|"]
-    meaning = {"TIER 1": "works correctly in the happy path", "TIER 2": "works in reasonable time",
+    # 🎚️ REFINED BY JOOST 2026-09-17. The original read "works correctly in the
+    # happy path", which left five words with nowhere to stand: `SET`, `IPL`,
+    # `CMD`, `ATTR$` and `CALL` have no happy path on an MSX1 at all, and were
+    # therefore held out of the STATEMENT denominator as things that could never be
+    # awarded. His refinement gives them a path: the normal FAILING one.
+    meaning = {"TIER 1": "works correctly in the happy path — or, where there is "
+                         "no happy path, in the normal failing path",
+               "TIER 2": "works in reasonable time",
                "TIER 3": "handles the most common error situations",
                "TIER 4": "faster than or on par with the reference",
                "TIER 5": "handles every error situation correctly"}
@@ -903,6 +923,11 @@ def fmt_markdown(its, kws, evidence=None, t3=None, connected=None):
             "keywords that have a bare statement form (%s do not, and would "
             "double-count against their own "
             "composites) plus the %d composite and channel statements. "
+            "\U0001f39a\ufe0f REFINED BY JOOST 2026-09-17: a word with NO happy path is "
+            "counted here and barred on its NORMAL FAILING path instead -- "
+            "`SET`, `IPL`, `CMD`, `ATTR$` and `CALL` refuse on sight, and "
+            "refusing with the reference's own error IS getting their whole "
+            "behaviour right. "
             "**%d of them have reached TIER 1.**\n\n"
             "\u2702\ufe0f SYNTAX PARTICLES ARE OUT (Joost, 2026-09-14: *\"Drop them and "
             "mark them\"*). `THEN`, `ELSE`, `TO`, `STEP` and `OFF` appear only "
@@ -920,8 +945,11 @@ def fmt_markdown(its, kws, evidence=None, t3=None, connected=None):
             "ITS OWN worth tiering \u2014 `A AND B` has a truth table to get right and "
             "`THEN` has nothing."
             % (len(kws), len(statements(kws)),
-               len(set(kws) - set(no_bare_form()) - set(particles())
-                   - set(refuse_only())),
+               # 🔴 THIS MUST MATCH `statements()` OR THE SENTENCE STOPS ADDING
+               # UP. It subtracted refuse_only until 2026-09-17, and the moment
+               # Joost's refinement brought those five back into the denominator
+               # the prose read "143 + 19" beside a total of 167.
+               len(set(kws) - set(no_bare_form()) - set(particles())),
                _nobare_prose(),
                len(composite_names()),
                len(tier1_statements(statements(kws), conn, forms, kws))), "",
@@ -1214,13 +1242,22 @@ def selftest():
         and blocks_tier1((5, [7], "SUPPORTED")) is False
         and blocks_tier1((None, [], "SUPPORTED")) is False
         and blocks_tier1(None) is False)
-    arm("S35 every refuse-only word is in the TOKEN set and in NO case in the "
-        "STATEMENT set",
+    # 🎚️ INVERTED BY JOOST'S 2026-09-17 REFINEMENT. It read "and in NO case in
+    # the STATEMENT set" -- the right guard for the old rule, and the wrong one the
+    # moment a word with no happy path was given a path. It now asserts the
+    # POSITIVE: every refuse-only word IS a statement and its bar IS the refusal,
+    # so an edit that quietly drops one back out, or gives one a bar that is not
+    # `("refuse",)`, still fails here. A guard that contradicts a ruling is the
+    # guard working; re-aim it, never weaken it.
+    arm("S35 every refuse-only word is in the TOKEN set AND in the "
+        "STATEMENT set, barred on its refusal",
         refuse_only() <= _real
-        and not (refuse_only() & set(statements(_real)))
+        and refuse_only() <= set(statements(_real))
         and not (refuse_only() & particles()))
     md = fmt_markdown(its, kws, evidence={}, t3=set(), connected=set())
-    _s14 = [("summary row", "| TIER 1 | works correctly in the happy path | 1 |" in md),
+    _s14 = [("summary row",
+             "| TIER 1 | works correctly in the happy path \u2014 or, where there "
+             "is no happy path, in the normal failing path | 1 |" in md),
             ("LOF row", "| `LOF` | TIER 0 | open TIER 1 item, TODO.md 2 |" in md),
             ("ZZZ row", "| `ZZZ` | TIER 0 | no known gap, no row |" in md),
             ("honesty footer", "not \"verified\"" in md),

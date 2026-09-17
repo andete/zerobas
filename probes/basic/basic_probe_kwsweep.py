@@ -1606,7 +1606,7 @@ SWEEP: list[tuple[str, str, str | None, str, str]] = [
      "ever reads `[1w 0 ]` the matrix is not being reached and STRIG loses the form "
      "in the same breath -- one row, both jobs, and the failure is loud either way."),
     ("attrkw",    'a$=attr$',    'PRINT"[";ATTR$;"]"',      "direct",
-     "D-KWDRAIN: bare ATTR$ raises Illegal function call -- so the word IS a token here; an undefined string variable prints empty instead"),
+     "FORM:refuse D-KWDRAIN: bare ATTR$ raises Illegal function call -- so the word IS a token here; an undefined string variable prints empty instead"),
     ("stopkw",    'stop',        'PRINT"[T1]":STOP',        "stored",
      "FORM:break D-KWDRAIN: prints then Break in 10 on both machines; without STOP there is no Break"),
     # 🔴 D-AKCM (2026-09-17): THIS ROW AGREES ON AN ERROR. `PRINT"[";MAX;"]"` is
@@ -3420,7 +3420,22 @@ SWEEP: list[tuple[str, str, str | None, str, str]] = [
     # a bare MSX1 has none. The word has no happy path on this machine.
     ("callkw",   "call zzq",  'CALL=1:PRINT"[C1]"',   "stored",
      "D-KWGET: reservedness only — Syntax error on all three machines where the "
-     "stub shape assigns and prints"),
+     "stub shape assigns and prints. 🔴 DELIBERATELY CARRIES NO `FORM:` TAG: this "
+     "row is about the word being RESERVED, and reservedness is on this tree's "
+     "do-not-award list. `CALL`'s one form is the row below."),
+    # 🎚️ D-TIER1REF (Joost, 2026-09-17): *"works correctly in the happy path,
+    # unless there is no happy path in which case it works correctly in the normal
+    # failing path"*. `CALL <name>` dispatches to an EXTENSION ROM and a bare MSX1
+    # has none, so the refusal IS the normal path -- and the bar is that the error
+    # MATCHES. It is ERR 2 here, not the ERR 5 the other four refuse-on-sight
+    # words give, which is exactly why the bar cannot be written as "raises 5".
+    # Measured on three spellings (`CALL FOO`, the `_FOO` shorthand, bare `CALL`),
+    # all ERR 2 on both machines (scratchpad/akcm_probe.py); the shorthand is the
+    # same behaviour by another spelling, so it is not a second form.
+    ("callkw_b", "call foo",  'CALL FOO:PRINT"[C2]"',  "stored",
+     "FORM:refuse `CALL FOO` is Syntax error on both references and here -- no "
+     "extension ROM to dispatch to. The `PRINT` never runs, which is what "
+     "separates a refusal from a CALL that silently did nothing"),
 
     # 🎯 `runkw` IS NOT A DISK ROW and is deliberately not tagged: `RUN` is plain
     # MSX BASIC and the VG-8020 is its proper oracle. It sat in "no known gap"
@@ -3480,18 +3495,18 @@ SWEEP: list[tuple[str, str, str | None, str, str]] = [
      "NEEDS-DISK: " "the COPY's own length read back through a channel: 26, HI.TXT's "
      "FORM:file-to-file size. A COPY that created an empty file reads 0."),
     ("set",     'set password',  "SET PASSWORD", "stored",
-     "NEEDS-DISK: " "ERR 5 on every machine with a disk ROM and on the diskless "
+     "NEEDS-DISK: " "FORM:refuse ERR 5 on every machine with a disk ROM and on the diskless "
      "VG-8020 too (D-DONOTHING3) — the handler refuses ON SIGHT. That IS the "
      "differential: an absent SET parses `SET PASSWORD` as a variable and a name, "
      "which is a Syntax error, not an Illegal function call."),
     ("attr",    'a$=attr$(0)',   None, "direct", "NEEDS-DISK: " "MSX-DOS2-era; measured for the record"),
     ("ipl",     "ipl",           "IPL", "stored",
-     "NEEDS-DISK: " "MEASURED, not assumed to be destructive: `IPL` is Illegal "
+     "NEEDS-DISK: " "FORM:refuse MEASURED, not assumed to be destructive: `IPL` is Illegal "
      "function call on the CF-3300 as well as on zerobas — the boot-sector write "
      "the old note feared needs MSX-DOS2, and this machine refuses the word on "
      "sight. Same Syntax-error differential as `set`."),
     ("cmd",     'cmd"x"',        'CMD"X"',      "stored",
-     "NEEDS-DISK: " "the third refuse-on-sight word; ERR 5 on both references."),
+     "NEEDS-DISK: " "FORM:refuse the third refuse-on-sight word; ERR 5 on both references."),
     # 🟢 THE FIRST TWO-TAG ROW, and D-DFEND is what earned it: `LFILES` walks a
     # DISK and prints to a PRINTER, which is why `_row_rigs` returns a tuple.
     # 🎯 AND IT HOLDS THE GROUND A FIX WON. `LFILES` did not zero LPTPOS, so with
