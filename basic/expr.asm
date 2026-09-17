@@ -1536,6 +1536,38 @@ ev_ff_cv:
                 ; documented to affect IX among others, and the UNCLAIMED path is a
                 ; bare `ret` that would have hidden it until a disk was present --
                 ; the same trap DE set for MKI$.
+                ; 🏗️ D-CVMOVE (Joost's ruling, 2026-09-17): THE CONVERSION MOVED
+                ; BEHIND THE HOOK, AND THAT IS A COMPATIBILITY FIX, NOT A CARVE.
+                ; Until now the hook was offered as a PRESENCE TEST ONLY: main did
+                ; the whole conversion after `ev_cv_back` regardless, so a foreign
+                ; disk ROM that claimed H_CVI and computed the answer had it
+                ; OVERWRITTEN. `hk_cv` (disk/kernel.asm) now does the work and
+                ; main only reads the result out of RAM.
+                ; 🔑 THE CHECKS RUN FIRST so the BODY POINTER can cross in RAM,
+                ; and the reorder is unobservable: BOTH the too-short check and
+                ; the unclaimed gate raise ERR 5, so whichever fires first the
+                ; reading is the same. The D-CVITM check itself is UNCHANGED and
+                ; still sits before pu_deref_body turns the descriptor into a body.
+                ld      hl,(STRPTR)
+                ld      a,(hl)              ; descriptor length
+                cp      c                   ; fewer bytes than the width -> deferred
+                jp      c,ev_f_ifc          ; ERR 5 (D-CVITM, now at three widths)
+                ; 🔴 NOTHING IS MARSHALLED THROUGH STRSCR HERE, AND THE FIRST CUT
+                ; OF THIS SLICE WAS: it staged the body pointer in STRSCR+1 and
+                ; the width in STRSCR, which is where MKI$/MKS$/MKD$ STAGE THEIR
+                ; RESULT -- so `CVI(MKI$(258))` and `CVS(MKS$(1.5))` wrote the
+                ; pointer straight over the string they were about to convert.
+                ; 12 of 32 rows DIFF, and the green ones were the arguments that
+                ; are not staged strings. A ROUND TRIP IS WHERE A SHARED SCRATCH
+                ; BUFFER ALIASES ITSELF, and it is the case these verbs exist for.
+                ; 🎯 SO THE BODY DEREFS IT ITSELF: STRPTR is the evaluator's
+                ; descriptor pointer, already in RAM, and `pu_deref_body` is in
+                ; the LOW REGION ($28C1) -- callable from disk.rom by absolute
+                ; address. Nothing has to cross that was not already across.
+                ld      a,c
+                ld      (FACTYP),a          ; the width IS the FACTYP code, so this
+                                            ; is both how the width crosses AND the
+                                            ; final type for the float arms
                 push    ix
                 push    bc                  ; C = the width, and the verb's identity
                 ld      hl,H_CVI
@@ -1555,40 +1587,20 @@ ev_cv_back:
                 pop     bc
                 pop     ix
                 jp      nc,ev_f_ifc         ; no disk ROM -> Illegal function call
-                call    flt_int_result      ; CVI returns an int; a float nested in
-                                            ;  the string arg must not stick (A only)
-                ld      hl,(STRPTR)
-                ; 🔴 D-CVITM: CVI NEEDS TWO BYTES AND DID NOT CHECK. `CVI("A")`
-                ; read one byte of the string and one byte of whatever followed
-                ; it, and answered a plausible number (8769); the reference says
-                ; `Illegal function call`. The descriptor's length byte is right
-                ; here, before pu_deref_body turns HL into the body pointer.
-                ld      a,(hl)              ; descriptor length
-                cp      c                   ; fewer bytes than the width -> deferred
-                jp      c,ev_f_ifc          ; ERR 5 (D-CVITM, now at three widths)
-                call    pu_deref_body       ; arrays slice-4a: HL(desc)->HL(body);
-                                            ; shared with printusing.asm/field.asm
+                ; 🎯 THE BODY RAN IN disk.rom. `hk_cv` converted everything: for
+                ; width 2 the two bytes are in FAC and FACTYP is 2; for 4/8 the
+                ; packed value is in FAC with FACTYP already the width. THE WIDTH *IS* THE FACTYP CODE, which
+                ; is why no second table is needed on either side of the call.
+                ; 🟢 `flt_int_result` IS GONE FROM THIS PATH, not relocated: it
+                ; only ever set FACTYP := 2, and the body sets FACTYP itself in
+                ; both arms -- so its page-1 address stopped being a dependency
+                ; of a routine that has to run in another slot.
                 ld      a,c
                 cp      2
                 jr      nz,ev_cv_float
-                ld      a,(hl)              ; low byte
-                inc     hl
-                ld      e,a
-                ld      a,(hl)              ; high byte
-                ld      d,a                 ; DE = int (LE)
+                ld      de,(FAC)            ; the int the body produced (LE)
                 ret
 ev_cv_float:
-                ; 🎯 THE WIDTH *IS* THE FACTYP CODE (2/4/8 for int/single/double),
-                ; so the same C that sized the check now types the result and no
-                ; second table is needed. flt_int_result above already set
-                ; FACTYP=2; this overwrites it, which is exactly the "a float
-                ; nested in the string arg must not stick" contract read the
-                ; other way round.
-                ld      a,c
-                ld      (FACTYP),a
-                ld      b,0
-                ld      de,FAC
-                ldir                        ; the string's bytes ARE the packed value
                 jp      flt_to_int16        ; tail: sets DE, returns to OUR caller
 
 ; --- cvi_tmm: CVI's non-string decline, with the OPERAND'S OWN FAULT FIRST ----

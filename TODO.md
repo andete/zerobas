@@ -75,8 +75,36 @@ item — do **one item per session** to keep context lean.
       REGISTERS"*. `MKI$`'s filed reason — *"needs DE, which does not survive
       CALSLT"* — is a register-lifetime argument, and RAM is the answer this
       ABI already gives to register lifetime.
-      ➡️ **ORDER:** `MKI$` first (D-MKINT, below) because it is the one verb the
-      tree had written off; then the stub-extension rig, which is what makes
+      ✅ **`MKI$` DONE 2026-09-17 (D-MKINT), +13 B** — its exemption described
+      MARSHALLING, not implementation; the conversion is the identity, so
+      `hk_present` was already truthful and `ld (STRSCR+1),de` replaced an
+      eight-byte hand-written store.
+      ✅ **`CVI`/`CVS`/`CVD` DONE 2026-09-17 (D-CVMOVE), +14 B** (page 1 51 → 65,
+      `disk.rom` 8490 → 8452 B) — and this one was a COMPATIBILITY FIX, not a
+      carve: main ran the whole conversion after the hook returned REGARDLESS of
+      whether it was claimed, so a foreign disk ROM's answer was overwritten on
+      the way out. 🔴 **THAT IS TRUE OF ALL TEN GATE-ONLY CELLS** — the hook is
+      offered as a PRESENCE TEST and the work is redone main-side — so each
+      remaining verb is the same fix rather than a fresh judgement.
+      🔴 **AND THE FIRST CUT OF D-CVMOVE MARSHALLED THROUGH `STRSCR`, WHICH IS
+      WHERE `MKI$`/`MKS$`/`MKD$` STAGE THEIR RESULT.** `CVI(MKI$(258))` hands the
+      body a string whose body IS `STRSCR+1`, so the pointer wrote over the value
+      being converted: **12 of 32 rows DIFF**, and the 20 that stayed green were
+      the arguments that are not staged strings. **A ROUND TRIP IS WHERE A SHARED
+      SCRATCH BUFFER ALIASES ITSELF**, and it is the case these verbs exist for.
+      The fix REMOVED the marshalling instead of moving it: the width rides
+      `FACTYP` (the width IS the FACTYP code) and the body derefs `STRPTR`
+      itself via `pu_deref_body`, already at `$28C1` in the low region. 🎯 **SO
+      BEFORE MARSHALLING ANYTHING, ASK WHETHER IT IS ALREADY IN RAM OR ALREADY
+      BELOW `$4000`** — for these three it was both, and the marshalling was pure
+      risk. Declared in `tools/gen_resident_abi.py`'s checked lists, which is
+      what that file is for.
+      🟢 **A PAGE-1 HELPER IS USUALLY NOT A BLOCKER**: `flt_int_result` was one
+      instruction's worth of work (`FACTYP := 2`) and VANISHED rather than
+      moving. Only a substantial helper — `fat_count_free`, the channel engine —
+      forces the promote-or-call-back decision.
+      ➡️ **ORDER:** ~~`MKI$`~~ ~~`CVI`/`CVS`/`CVD`~~ done; then the
+      stub-extension rig, which is what makes
       every offer LOAD-BEARING — today `h.lset`/`h.rset` AGREE on the diskless
       target while the hook is bypassed, so agreement is not evidence the hook
       is honoured [[a-case-that-agrees-can-agree-for-the-wrong-reason]]; then
@@ -2271,7 +2299,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:19933 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:19961 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -2437,7 +2465,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:7038 (T-6FE392)8 (T-529ABE)` from `TODO.md:18327 (T-529ABE)`: a
+      `TODO.md:7066 (T-6FE392)8 (T-529ABE)` from `TODO.md:18355 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -7882,7 +7910,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:18327 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:18355 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

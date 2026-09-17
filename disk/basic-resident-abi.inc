@@ -13,6 +13,7 @@
 widen_rhs_operand equ 038DCH
 round_single_and_pack equ 03417H
 round_and_finalize equ 033BDH
+pu_deref_body equ 028C1H
 ARGA equ 0F06AH
 STRSCR equ 0E26DH
 FN_RESUME equ 0E227H
@@ -21,11 +22,12 @@ DISK_FCB_NAME equ 0E0DCH
 FILES_HASPAT equ 0F009H
 FAC equ 0F01CH
 FACTYP equ 0F01AH
+STRPTR equ 0E0C9H
 
 ; --- page-1 call-back targets: reached by an INTER-SLOT call (MSX2 TH), not an absolute one ---
-fname_expr equ 06E80H
-pdfcb_resume equ 06E79H
-dirverb_op equ 06C5FH
-main_fat_mount equ 0642EH   ; main's fat_mount
-main_fat_find equ 06432H   ; main's fat_find
-parse_disk_fcb equ 065D3H
+fname_expr equ 06E72H
+pdfcb_resume equ 06E6BH
+dirverb_op equ 06C51H
+main_fat_mount equ 06420H   ; main's fat_mount
+main_fat_find equ 06424H   ; main's fat_find
+parse_disk_fcb equ 065C5H

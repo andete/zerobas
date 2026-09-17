@@ -2156,6 +2156,62 @@ hkm_copy:
                 scf
                 ret
 
+; --- hk_cv: CVI/CVS/CVD's conversion, RUNNING IN THE DISK ROM ---------------
+; docs/spec-basic-nodisk.md §9 (D-MKHOOK) is where these three are established as
+; the DISK ROM's verbs rather than ours -- the same section basic/expr.asm's gate
+; cites -- and §13 is the ABI hk_mkfloat above follows. The conversion itself is
+; measured, not derived: MKS$/MKD$ emit exactly what the variable store holds
+; (docs/spec-basic-faczero.md §0, byte-identical on all three machines), so the
+; packed bytes ARE the value and the inverse is a copy, not an algorithm.
+; D-CVMOVE (Joost, 2026-09-17: *"any keyword implemented by the disk rom should
+; go via the hook to the disk rom"*). The inverse of hk_mkfloat above, and it
+; lands here for a COMPATIBILITY reason rather than a byte one: until now these
+; three hooks were a PRESENCE TEST ONLY -- main did the whole conversion after
+; the call returned, so a foreign disk ROM that claimed H_CVI and computed the
+; answer had it overwritten on the way out.
+;
+; ⚠️ EVERYTHING CROSSES IN RAM, NOT IN REGISTERS -- the same ABI hk_mkfloat
+; states, for the same reason (CALSLT is documented to affect most of them).
+;   in   FACTYP = the width, 2 / 4 / 8 -- the width IS the FACTYP code, so one
+;                 cell carries the argument in and the answer's type out
+;        STRPTR = the evaluator's DESCRIPTOR pointer, length-checked main-side
+;                 (the D-CVITM check stays there: it must fire BEFORE the
+;                 descriptor becomes a body pointer)
+;   out  width 2:   FAC = the two bytes, FACTYP = 2
+;        width 4/8: FAC = the packed value, FACTYP unchanged (= the width)
+;        CF set (handled) in both arms
+; 🔴 NOTHING CROSSES THROUGH STRSCR, AND THE FIRST CUT OF THIS ROUTINE DID.
+; STRSCR is where MKI$/MKS$/MKD$ STAGE THEIR RESULT, so `CVI(MKI$(258))` hands
+; this routine a string whose body IS STRSCR+1 -- and marshalling a pointer
+; there wrote over the very value being converted. 12 of 32 rows DIFF; the ones
+; that stayed green were the arguments that are not staged strings. A ROUND TRIP
+; IS WHERE A SHARED SCRATCH BUFFER ALIASES ITSELF.
+; 🎯 So the deref happens HERE instead: `pu_deref_body` is in main's LOW REGION
+; ($28C1), which stays mapped while this ROM is, so the body can reach it by
+; absolute address and nothing has to cross that was not already across.
+hk_cv:
+                ld      a,(FACTYP)          ; the width
+                ld      c,a
+                ld      b,0                 ; BC = the byte count for the ldir
+                ld      hl,(STRPTR)         ; the descriptor...
+                call    pu_deref_body       ; ...and its body (low region: $28C1)
+                ld      a,c                 ; ⚠️ RELOAD: the call clobbers A
+                cp      2
+                jr      nz,hkcv_float
+                ld      e,(hl)              ; low byte
+                inc     hl
+                ld      d,(hl)              ; high byte -- DE = the int (LE)
+                ld      (FAC),de
+                ld      a,2                 ; CVI returns an int; a float nested in
+                ld      (FACTYP),a          ; the string arg must not stick
+                scf
+                ret
+hkcv_float:
+                ld      de,FAC
+                ldir                        ; the string's bytes ARE the packed value
+                scf                         ; FACTYP is already the width
+                ret
+
 ; --- ; --- install_basic_hooks: claim every BASIC-extension hook this ROM answers --
 ; Table-driven so init.asm costs ONE call: the pad before its $41EF pin is 31 B
 ; and seven inline installs need 45. docs/spec-basic-nodisk.md §9.
@@ -2252,9 +2308,9 @@ hook_tab:
                                              ; not survive CALSLT -- stays main-side
                 dw      H_MKS,  hk_mkfloat   ; the float coercion LIVES HERE now
                 dw      H_MKD,  hk_mkfloat
-                dw      H_CVI,  hk_present
-                dw      H_CVS,  hk_present
-                dw      H_CVD,  hk_present
+                dw      H_CVI,  hk_cv       ; D-CVMOVE: the conversion lives HERE
+                dw      H_CVS,  hk_cv       ; now, not just its presence -- so a
+                dw      H_CVD,  hk_cv       ; claiming ROM's answer is not overwritten
                 dw      H_NAME, hk_name      ; D-DISKVERB2: body here too
                 dw      H_KILL, hk_kill      ; D-DISKVERB: the FIRST verb whose
                                              ; BODY lives here, not just its gate

@@ -82,6 +82,12 @@ REQUIRED_DISK_CODE = [
     "widen_rhs_operand",        # MKS$/MKD$: widen the live RHS into ARGA
     "round_single_and_pack",    # ...then pack it as single
     "round_and_finalize",       # ...or as double
+    "pu_deref_body",            # D-CVMOVE: hk_cv turns the evaluator's string
+                                # DESCRIPTOR into a body pointer itself, rather
+                                # than having one marshalled to it -- STRSCR is
+                                # where MKI$/MKS$/MKD$ stage their result, so a
+                                # pointer parked there is overwritten by the very
+                                # round trip these verbs exist for
 ]
 # RAM: NOT ceiling-checked, and that exemption is the point -- these are work-area
 # cells above $8000, always mapped, and applying the page-0-resident test to them
@@ -102,6 +108,9 @@ REQUIRED_DISK_RAM = [
                                 # 0 = list the whole directory
     "FAC",                      # the packed float accumulator
     "FACTYP",                   # 2 / 4 / 8
+    "STRPTR",                   # D-CVMOVE: the evaluator's string DESCRIPTOR
+                                # pointer, which hk_cv derefs (see pu_deref_body
+                                # above); read-only from the disk side
 ]
 # CALL-BACK: main PAGE-1 targets, reached by an INTER-SLOT CALL, not by an
 # absolute one -- the third class, and the one the hook re-architecture needs
