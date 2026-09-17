@@ -1217,6 +1217,31 @@ which is the correct answer with nothing plugged in **and also exactly what a st
 returns** — a reading that cannot fail. `input-devices-acceptance` exercises them
 properly; the kwsweep denominator cannot, and a bar met by an unfailable row would
 be worse than no bar.
+      🔴 **CORRECTION 2026-09-17 (D-STICKSAMPLE) — D-HOLDROW'S FRAMING WAS WRONG
+      AND THE TREE ALREADY HAD THE ANSWER.** It reported *"`STICK(0)` does not
+      read what the injection drives"* as a localised blocker. It does read it:
+      polled instead of sampled once, `STICK(0)` reads **1** with cursor-UP held
+      and `STRIG(0)` reads **-1** with SPACE held, on BOTH machines, with silent
+      negative controls ([`scratchpad/sticksample_probe.py`](scratchpad/sticksample_probe.py)).
+      🎯 **AND THE SHIPPING ROWS HAVE DONE EXACTLY THAT SINCE D-KWPLUG**:
+      `stick_hold` reads `[2d 1 ]` and `strig_hold` reads `[1w-1 ]`, both
+      SUPPORTED, both `NEEDS-HOLD:` with a poll — and `stick_hold`'s own note says
+      why (*"`stick` below reads the idle 0 a stub also returns. This one holds the
+      CURSOR-UP key … and reads the direction CODE"*). My probes sampled ONCE,
+      immediately after `RUN`, which misses a press the poll catches. **The
+      instrument was never broken; my probe was written worse than the row that
+      already existed**, and three ticks went into it
+      [[a-justification-parenthesis-is-an-unrun-claim]].
+      ✅ **SO THE `cursor-keys` AND `space-bar` FORMS ARE ALREADY COVERED**, and
+      the gap is EXACTLY the two the tier table names: `STICK`'s
+      **`joystick-port`** and `STRIG`'s **`joystick-trigger`** (plus `PAD`'s
+      **`switch`**). Those need a joystick that can be DRIVEN, which is what
+      D-JOYPLUG measured and is the only part of this item still open.
+      ⛔ **DO NOT INVESTIGATE `STICK`'s SAMPLING SOURCE** — that was D-HOLDROW's
+      filed next step and it is withdrawn: `ev_ff_stick` calls `GTSTCK` and works.
+      The next step is driving a PLUGGED device, nothing else.
+      ⚠️ *(superseded by the correction above — kept because its INKEY$ rows are
+      still the proof that the hold reaches row 8:)*
       ✅ **LOCALISED 2026-09-17 (D-HOLDROW,
       [`scratchpad/holdrow_probe.py`](scratchpad/holdrow_probe.py)) — THE HOLD RIG
       WORKS AND ROW 8 IS REACHED. `STICK(0)` DOES NOT READ WHAT THE INJECTION
@@ -2086,7 +2111,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:19636 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:19661 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -2252,7 +2277,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:6853 (T-6FE392)8 (T-529ABE)` from `TODO.md:18116 (T-529ABE)`: a
+      `TODO.md:6878 (T-6FE392)8 (T-529ABE)` from `TODO.md:18141 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -7697,7 +7722,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:18116 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:18141 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
