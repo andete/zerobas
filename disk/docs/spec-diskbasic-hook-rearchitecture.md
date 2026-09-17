@@ -17,6 +17,15 @@ does not apply here — see §3 — so the park is lifted by a later direction r
 than contradicted. Rungs 3/3b/4 as *byte-carving* exercises stay closed; this
 spec is about ARCHITECTURE, and the bytes are a consequence rather than the goal.
 
+> 🧭 **2026-09-17 — THIS DOCUMENT IS THE MECHANISM; THE DENOMINATOR IS
+> [spec-diskcode-eviction.md](spec-diskcode-eviction.md).** Joost ruled *"there
+> should probably be hardly any disk code left in the main Rom"*, and that spec
+> measures what "hardly any" is against: **2394 B** in six disk-only files, 250 B
+> of it interface. It also carries a CORRECTION that matters here: §4's phase-0b
+> framing of the disk→BASIC call as unpriced is **stale** — `calbak` stands at 19
+> call sites and its ABI was measured in phase 1 (D-XSLOTABI). Phase 3's blocker
+> below is unaffected: it is hook-cell IDENTIFICATION, not the call.
+
 ## 0. The one-line target
 
 **Every Disk-BASIC verb body lives in `disk.rom`, is reached through its standard

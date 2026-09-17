@@ -2156,6 +2156,53 @@ hkm_copy:
                 scf
                 ret
 
+; --- hk_dskf: DSKF's body, RUNNING IN THE DISK ROM --------------------------
+; docs/spec-basic-nodisk.md §9 for the hook, and D-DSKFDRV
+; (scratchpad/kwt3_dskfchk.py) for the bound below. D-DSKFMOVE, Joost 2026-09-17:
+; *"any keyword implemented by the disk rom should go via the hook to the disk
+; rom"*.
+;
+;   in   FAC          = the drive argument, staged by main because chan_gate
+;                       clobbers DE building its own return address
+;   out  FAC          = the free cluster count (when DISKOP_STATUS = 0)
+;        DISKOP_STATUS= 0 counted, 1 drive out of range -> main raises ERR 62
+;        CF = 1 (claimed), which is what chan_gate tests
+;
+; 📏 THE BOUND IS MEASURED, NOT JUDGED, and it moved here with the code it
+; guards: on the CF-3300 drives 0, 1 and 2 are ACCEPTED (0 and 1 answer 707; 2
+; prompts for the phantom B:) while 3, 4, 8 and 9 all answer `Bad drive name` --
+; four points above the line and two below it. So the rule is `drive <= 2`.
+; 🔴 THE CHECK WAS MISSING ENTIRELY RATHER THAN TOO WIDE when D-DSKFDRV added
+; it: this tree answered the same 707 for 0, 1 AND 9, so nothing was validating
+; the argument at all. ⚠️ WHAT DRIVE 2 *DOES* IS STILL UNMEASURED -- on the
+; reference it prompts and WAITS, and a row that prompts eats its successors, so
+; the probe excludes it and this only places the REFUSAL boundary.
+;
+; 🎯 THE COUNT ITSELF IS A CALL-BACK, and that is the honest shape today: main's
+; `fat_count_free` is a 13 B stub that dispatches DISKOP_SEL_FAT_COUNT_FREE to
+; the SUB ROM's fatprim tenant, so the walk is neither here nor in main. Moving
+; the walk itself is part of the 2394 B question (TODO), not of this verb.
+hk_dskf:
+                ld      de,(FAC)            ; the drive argument
+                ld      a,d
+                or      a                   ; >255 cannot be a drive
+                jr      nz,hkdf_bad
+                ld      a,e
+                cp      3                   ; 0..2 accepted, 3+ refused
+                jr      nc,hkdf_bad
+                ld      ix,fat_count_free   ; DE = free clusters, via the tenant
+                call    calbak
+                ld      (FAC),de
+                xor     a
+                ld      (DISKOP_STATUS),a   ; counted
+                scf
+                ret
+hkdf_bad:
+                ld      a,1
+                ld      (DISKOP_STATUS),a   ; main raises ERR 62 `Bad drive name`
+                scf
+                ret
+
 ; --- hk_cv: CVI/CVS/CVD's conversion, RUNNING IN THE DISK ROM ---------------
 ; docs/spec-basic-nodisk.md §9 (D-MKHOOK) is where these three are established as
 ; the DISK ROM's verbs rather than ours -- the same section basic/expr.asm's gate
@@ -2303,7 +2350,8 @@ ibh_lp:
 ; The seven conversion hooks, each one of the 35 slots the CF-3300's disk ROM
 ; claims (scratchpad/hookdiff_probe.py) and each named in the MSX2 TH table.
 hook_tab:
-                dw      H_DSKF, hk_present
+                dw      H_DSKF, hk_dskf     ; D-DSKFMOVE: body here, not just
+                                             ; its presence
                 dw      H_MKI,  hk_present   ; MKI$'s store needs DE, which does
                                              ; not survive CALSLT -- stays main-side
                 dw      H_MKS,  hk_mkfloat   ; the float coercion LIVES HERE now

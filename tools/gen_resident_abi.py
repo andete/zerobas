@@ -124,13 +124,19 @@ REQUIRED_DISK_RAM = [
 # fatal, which is the property that makes the two lists mean different things
 # rather than just sit in different variables.
 #
-# Empty today, and that is a statement, not an oversight: the reference's
-# handlers call back into main BASIC to evaluate arguments (D-CFEVAL) and ours
-# do not yet. Phase 1 adds the first name here; until then the class exists so
-# that adding one is a one-line declaration in a checked place rather than a
-# new mechanism invented under time pressure. ⚠️ A name here must ALSO be
-# reachable through whatever inter-slot entry phase 0b prices -- this list makes
-# the address available and says nothing about the call sequence.
+# 🔴 THIS PARAGRAPH SAID "Empty today, and that is a statement, not an
+# oversight" UNTIL 2026-09-17, WITH SIX NAMES IN THE LIST BELOW IT. Phases 2 and
+# 3 filled it and left the prose describing the tree as it was before them --
+# and it was still being read as current: it is the sentence behind my telling
+# Joost that this tree "has never made a disk->BASIC inter-slot call" and that
+# its price was the gate on the channel-verb cluster. `calbak` (disk/kernel.asm)
+# is `ld iy,(EXPTBL-1) / jp CALSLT` and stands at NINETEEN call sites.
+# [[a-fix-falsifies-the-justification-beside-it]]
+# 🟢 AND THE ABI IS MEASURED, NOT ASSUMED -- D-XSLOTABI, two-sided: HL/DE/BC/A
+# cross both ways intact and CF crosses too (a callee that SETS it comes back
+# set, one that CLEARS it comes back clear; scratchpad/xslot_abi.py leg 4).
+# ⚠️ A name here must ALSO be reachable through that entry -- this list makes the
+# address available and says nothing about the call sequence.
 REQUIRED_DISK_CALLBACK: list[str] = [
     # D-DISKVERB phase 2: KILL's body runs in disk.rom and calls back for the
     # three things only main can do. Measured ABI (D-XSLOTABI): HL/DE/BC/A cross
@@ -149,6 +155,10 @@ REQUIRED_DISK_CALLBACK: list[str] = [
     "main_fat_mount=fat_mount",   # CF=1: no disk / bad BPB
     "main_fat_find=fat_find",     # HL = 8.3 name; CF=1: not found
     "parse_disk_fcb",           # HL = [len]name text -> DISK_FCB_NAME
+    # D-DSKFMOVE phase: DSKF's body runs in disk.rom and calls back for the
+    # count, which is a 13 B stub onto the SUB ROM's fatprim tenant -- so the
+    # walk is in neither ROM that this call crosses between.
+    "fat_count_free",           # DE = free clusters; CF=1: no disk
 ]
 
 Profile = collections.namedtuple("Profile", "code ram callback what")

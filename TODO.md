@@ -52,9 +52,20 @@ item — do **one item per session** to keep context lean.
       cells are gate-only with the body main-side (`disk/kernel.asm:2250`).
       The cluster to move: **`MKI$` `DSKF` `CVI` `CVS` `CVD` `LSET` `RSET`
       `FIELD`** (`DSKI$`/`DSKO$` bodies are already a sub-ROM tenant).
-      🎯 **AND THE PRICE I OFFERED HIM AT D-CFARCH IS NOT ON THE CRITICAL
-      PATH.** All six moved bodies did it with **no disk→BASIC inter-slot call
-      at all**: `disk.rom` is a PAGE-1 ROM, so while it is mapped, page 0 still
+      🔴 **CORRECTION 2026-09-17, SAME DAY: "THE PRICE IS NOT ON THE CRITICAL
+      PATH" AND "ALL SIX MOVED BODIES DID IT WITH NO DISK→BASIC CALL" ARE BOTH
+      FALSE, AND I WROTE THEM HERE.** `calbak` (`disk/kernel.asm:2362`) is
+      `ld iy,(EXPTBL-1) / jp CALSLT` and stands at **19 call sites**, reaching
+      six PAGE-1 targets declared in `gen_resident_abi.py`'s CALLBACK list —
+      `fname_expr` `$6E72`, `pdfcb_resume`, `dirverb_op`, `main_fat_mount`,
+      `main_fat_find`, `parse_disk_fcb`. Its ABI is MEASURED two-sided
+      (D-XSLOTABI: HL/DE/BC/A and CF all cross both ways). 🎯 **I REPEATED A
+      STALE NOTE INSTEAD OF CHECKING** — the loop prompt's, and the generator's
+      own paragraph saying that list was "empty today" while it held six names.
+      **SO `FIELD`/`LSET`/`RSET` ARE NOT BLOCKED ON AN UNPRICED MECHANISM**;
+      they call back like the others. What remains below is still true:
+      all six moved bodies ALSO reach main's LOW REGION directly, which is
+      cheaper than a call-back and is why most of them need one rarely: `disk.rom` is a PAGE-1 ROM, so while it is mapped, page 0 still
       holds slot 0 and main's **LOW REGION is callable by absolute address**
       (every code address in `disk/basic-resident-abi.inc` is below `$4000` —
       `$38DC` `$3417` `$33BD` — the rest are RAM cells, and `make
@@ -103,7 +114,30 @@ item — do **one item per session** to keep context lean.
       instruction's worth of work (`FACTYP := 2`) and VANISHED rather than
       moving. Only a substantial helper — `fat_count_free`, the channel engine —
       forces the promote-or-call-back decision.
-      ➡️ **ORDER:** ~~`MKI$`~~ ~~`CVI`/`CVS`/`CVD`~~ done; then the
+      ✅ **`DSKF` DONE 2026-09-17 (D-DSKFMOVE), +4 B** (page 1 65 → 69,
+      `disk.rom` 8452 → 8415 B) — identical to the CF-3300 on all six drive
+      points (0 and 1 answer 706; 3, 4, 8, 9 `Bad drive name`). The drive
+      argument crosses in RAM because `chan_gate` clobbers `DE`, and the `IY`
+      guard moved from the count to the GATE, because the count now runs inside
+      the handler. ⚠️ The COUNT is still a call-back: `fat_count_free` is a 13 B
+      stub onto the SUB ROM's `fatprim` tenant, so the walk is in neither ROM
+      the call crosses between — that is the eviction spec's step 5, not this
+      verb's business.
+      📋 **AND THE WHOLE DIRECTION NOW HAS A SPEC, RULED BY JOOST 2026-09-17**
+      (*"there should probably be hardly any disk code left in the main Rom"*):
+      [`disk/docs/spec-diskcode-eviction.md`](disk/docs/spec-diskcode-eviction.md).
+      **Measured 2026-09-17: 2394 B left page 1** if the six disk-only files
+      move — 250 B
+      of that is INTERFACE that must stay (the parse, the raise, the channel
+      readers, cold-boot init) and **2144 B is private**, against 69 B free on
+      2026-09-17. ⚠️ `disk.rom`'s 8415 B is **fragmented into 32 runs** by pinned
+      kernel addresses; the largest is 2777 B, so the bulk fits ONCE and nothing
+      else does. The spec carries the eight rules each of today's three moves
+      paid for, the diskless obligation (D-NODISKGAP: one entry, and it is the
+      gate), and what it does NOT claim.
+      ➡️ **ORDER:** ~~`MKI$`~~ ~~`CVI`/`CVS`/`CVD`~~ ~~`DSKF`~~ done; then
+      `LSET`/`RSET`/`FIELD` (NOT blocked — see the correction above), then the
+      FAT layer, then the channel engine; then the
       stub-extension rig, which is what makes
       every offer LOAD-BEARING — today `h.lset`/`h.rset` AGREE on the diskless
       target while the hook is bypassed, so agreement is not evidence the hook
@@ -2299,7 +2333,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:19961 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:19995 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -2465,7 +2499,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:7066 (T-6FE392)8 (T-529ABE)` from `TODO.md:18355 (T-529ABE)`: a
+      `TODO.md:7100 (T-6FE392)8 (T-529ABE)` from `TODO.md:18389 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -7910,7 +7944,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:18355 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:18389 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

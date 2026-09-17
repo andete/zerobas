@@ -1403,85 +1403,41 @@ fch_mode_class:
                 cp      LPT_MODE
                 ret                         ; CF set (A<LPT_MODE) = disk file channel
 ev_ff_dskf:                                 ; DSKF(d): free clusters on the drive
-                ; --- D-MKHOOK: DSKF is the DISK ROM's, through H.DSKF -----------
-                ; docs/spec-basic-nodisk.md §9. Unlike the conversions this verb had
-                ; almost no main-side body to begin with -- the work is already a
-                ; sub-ROM tenant -- so the hook buys exactly one thing: a diskless
-                ; build REFUSES instead of answering 0.
-                ; 💰 D-PAIRCARVE (2026-09-11): this used to open-code the hook
-                ; call (the same 11 B chan_gate now shares), then `jp nc,ev_f_ifc`.
-                ; chan_gate raises ERR 5 itself when nobody claimed the hook --
-                ; the same `Illegal function call` the nodisk gate's `v.dskf` row
-                ; pins, raised at once rather than deferred -- so the diskless
-                ; refusal is unchanged and the IX guard shrinks to one pair.
+                ; 🏗️ D-DSKFMOVE (Joost's ruling, 2026-09-17): THE BODY IS IN
+                ; disk.rom AS `hk_dskf`. What is left here is the argument
+                ; hand-off, the gate, and the verdict decode -- the shape KILL,
+                ; NAME, FILES and COPY already use.
+                ; 🔴 THE DRIVE ARGUMENT CROSSES IN RAM BECAUSE `chan_gate`
+                ; CLOBBERS DE building its own return address, and that is not a
+                ; guess: the first cut of D-DSKFDRV checked DE AFTER the gate and
+                ; so tested `cg_back`, which made EVERY DSKF answer `Bad drive
+                ; name`. The TIER 3 row passed on it -- it expects a refusal --
+                ; and only the happy-path row caught it. Staging removes the
+                ; hazard instead of guarding it.
+                ; ⚠️ IY IS GUARDED HERE NOW, NOT AROUND THE COUNT. The count used
+                ; to run main-side under its own push/pop pair; it runs inside the
+                ; handler now, so the guard has to span the GATE instead -- IX and
+                ; IY both, because the sub-ROM CALSLT the count ends in clobbers
+                ; them and the evaluator needs both back.
+                ld      (FAC),de            ; the drive argument
                 push    ix
-                push    de                  ; 🔴 chan_gate CLOBBERS DE building its
-                                            ; own return address (`ld de,cg_back`),
-                                            ; and DE is the DRIVE ARGUMENT. The
-                                            ; first cut checked it AFTER the gate
-                                            ; and so tested cg_back: every DSKF
-                                            ; answered `Bad drive name`. The
-                                            ; TIER 3 row PASSED on that -- it
-                                            ; expects the refusal -- and only the
-                                            ; happy-path `dskf` row caught it.
+                push    iy
                 ld      hl,H_DSKF
                 call    chan_gate           ; no disk ROM -> Illegal function call
-                pop     de
+                pop     iy
                 pop     ix
-                ; 🔴 D-DSKFDRV (2026-09-16): THE DRIVE ARGUMENT IS NO LONGER
-                ; IGNORED, AND THE COMMENT THAT SAID IT WAS IS THE DEFECT WRITTEN
-                ; DOWN. It read "The drive arg (DE) is ignored (single drive)" --
-                ; the reasoning being that a one-drive machine has nothing to
-                ; choose between. But the CF-3300 IS a one-drive machine and
-                ; validates anyway: `DSKF(9)` is `Bad drive name` there and was
-                ; `707` here (D-KWT3 batch 5, scratchpad/kwt3_dskfchk.py).
-                ; 📏 THE BOUND IS MEASURED, NOT JUDGED: on the CF-3300 0, 1 and 2
-                ; are ACCEPTED (0 and 1 answer 707; 2 prompts for the phantom B:)
-                ; while 3, 4, 8 and 9 all answer `Bad drive name` -- four points
-                ; above the line and two below it. So the rule is `drive <= 2`.
-                ; 🎯 THE CHECK WAS MISSING ENTIRELY RATHER THAN TOO WIDE, and the
-                ; PASSING rows are what said so: this tree answered the same 707
-                ; for 0, 1 AND 9, so nothing was validating the argument at all.
-                ; That is why this ADDS a check instead of narrowing one.
-                ; ⚠️ WHAT DRIVE 2 *DOES* IS DELIBERATELY UNCHANGED AND STILL
-                ; UNMEASURED. On the reference it prompts `Insert diskette for
-                ; drive B:` and WAITS -- a row that prompts eats its successors,
-                ; so the probe excludes it and this fix only moves the REFUSAL
-                ; boundary to match. A single-drive machine's answer for 2 needs a
-                ; rig that can answer the prompt; it is filed, not guessed.
-                ld      a,d                 ; DE = the drive argument
-                or      a                   ; >255 cannot be a drive
-                jr      nz,ev_dskf_bad
-                ld      a,e
-                cp      3                   ; 0..2 accepted, 3+ refused
-                jr      c,ev_dskf_ok
-ev_dskf_bad:
+                ; 🎯 THE VERDICT COMES BACK IN DISKOP_STATUS, the same cell the
+                ; dirverb handlers answer through: 0 = counted, non-zero = the
+                ; drive is out of range. The BOUND is measured, not judged, and
+                ; the measurement lives with the body in disk/kernel.asm.
+                ld      a,(DISKOP_STATUS)
+                or      a
+                jr      z,ev_dskf_ok
                 ld      a,62                ; `Bad drive name`, as measured
                 jp      raise_error
 ev_dskf_ok:
-                ; Returns the count of free FAT entries
-                ; — = free KB on a 1 KB/cluster 720 KB volume.
-                ; CALSLT (inside fat_count_free) clobbers IX/IY, and IX is the
-                ; evaluator's live token cursor — guard it on the stack.
-                push    ix
-                push    iy
-                call    fat_count_free      ; DE = free cluster count
-                pop     iy
-                pop     ix
+                ld      de,(FAC)            ; DE = free cluster count
                 ret
-; --- CVI / CVS / CVD: a number out of a string's leading bytes ---------------
-; D-MKSD (docs/spec-basic-mksd.md). ONE body, parameterised by C = the width, so
-; the three verbs share every hard-won piece of CVI's error ordering rather than
-; re-deriving it twice: the deferred missing-`(`/`)` syntax errors (BUG C), the
-; non-string vs nested-fault split (D-CVITM + D-CVISTRTM), and the
-; too-short-string check (D-CVITM) that stops a plausible number being read out
-; of whatever followed the string.
-;
-; ⚠️ A SHARED TAIL IS A LABEL, NOT A DECISION -- so the width is threaded through
-; C and the ONLY divergence is the last few instructions. Measured on the CF-3300:
-; `CVS("AB")` and `CVS("")` are ERR 5 exactly as `CVI("A")` is, and
-; `CVS("ABCDEFGH")` uses the first four bytes and ignores the rest -- the same
-; rule at three widths, which is why one body is right here and not merely short.
 ev_ff_cvs:      ld      c,4
                 jr      ev_ff_cv
 ev_ff_cvd:      ld      c,8
