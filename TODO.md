@@ -2026,7 +2026,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:19545 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:19576 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -19010,8 +19010,39 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       🟢 **THE FEATURE IS ALREADY WIRED**: `key_on` calls **DSPFNK** and `key_off`
       calls **ERAFNK**, so the BIOS is asked to paint and erase the line. Only the
       window bound stayed a compile-time constant.
-      🙋 **ONE QUESTION DECIDES WHETHER THIS IS A FIX OR A REGRESSION, AND IT IS
-      NOT MINE**: does C-BIOS's `DSPFNK` actually PAINT anything on our target?
+      🔬 **MEASURED 2026-09-17 (D-DSPFNK,
+      [`scratchpad/dspfnk_probe.py`](scratchpad/dspfnk_probe.py)): C-BIOS's
+      `DSPFNK` PAINTS NOTHING.** Name-table row 23 (`BASE(0)+920`, 40 bytes a
+      row), counted as non-blank cells rather than read as text, because blanks
+      are invisible and the two machines' widths differ:
+      | | `KEY ON` | `KEY OFF` |
+      |---|---|---|
+      | VG-8020 | **20 cells from offset 2** | 0 |
+      | VG-8020, a macro assigned | **21** | 0 |
+      | zerobas | **0** | 0 |
+      | row 22 control, both machines | 0 | 0 |
+      The row-22 control is what makes the zeroes mean anything: an instrument
+      that read 0 everywhere would agree by being blind.
+      🎯 **SO THERE ARE THREE OPTIONS, NOT TWO, AND THE THIRD IS THE CHEAP ONE.**
+      * **(a) Leave it.** `KEY` stays 3/4 forms and never reaches TIER 1.
+      * **(b) Move the bound only** — `CON_LASTROW` becomes a RAM cell that
+        `key_on`/`key_off` set (~10 B; main page 1 was 61 B free on 2026-09-17).
+        The measured observable then agrees with the reference **and the screen
+        gets worse**: a row reserved for a line that is never drawn, one usable
+        row traded for nothing [[rows-going-green-is-not-the-fix]].
+      * **(c) PAINT THE LINE OURSELVES, then move the bound.** 🎯 The macro store
+        is already SUB-SIDE (`ex_key` reaches it through `sc_call`, and
+        `keystr_tenant` lives in sub page 0), so the rendering belongs where the
+        strings already are — **sub page 0, which was 505 B free on 2026-09-17** — and main pays
+        only the ~10 B bound change. VRAM is I/O, not paged, so a tenant can
+        write it. This is the option that actually closes the item, and it is
+        cheap on the wall that binds.
+      🙋 **(c) IS A JOOST CALL, NOT A CODE CALL**: `DSPFNK` is a BIOS entry, so
+      painting it in BASIC means implementing around a gap in the MACHINE rather
+      than in the language. The tree has form for that (`LPTOUT`), but the charter
+      says faithful **BASIC**, and this is the boundary.
+      🙋 *(the question this answered, for the record:)* does C-BIOS's `DSPFNK`
+      actually PAINT anything on our target?
       D-KWOSK's measurement says row 23 reads blank here while the reference has
       the assigned string at name-table offset 922 — which suggests it does not.
       If so, moving the bound would reserve a row for a line that is never drawn:
