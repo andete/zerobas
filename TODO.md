@@ -2026,7 +2026,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:19508 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:19545 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -18984,6 +18984,43 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       📌 **THE `display-on` ROW IS OWED, NOT WRITTEN OFF** — it belongs with the
       fix, and until it exists `KEY` cannot reach TIER 1 even if everything else
       agrees [[a-row-written-off-as-out-of-scope-leaves-the-bookkeeping]].
+      🔬 **THE RULE IS PINNED, 2026-09-17 (D-KEYON,
+      [`scratchpad/keyon_probe.py`](scratchpad/keyon_probe.py))**, every row with
+      its own `KEY OFF` twin so the question is always *what does `KEY ON`
+      change*:
+      | | `KEY ON` | `KEY OFF` |
+      |---|---|---|
+      | `LOCATE 0,22` → `CSRLIN` | 22 | 22 |
+      | `LOCATE 0,23` | **22** | 23 |
+      | `LOCATE 0,24` | **22** | 23 |
+      | `LOCATE 5,23` → `POS(0)` | 5 | 5 |
+      | thirty `PRINT`s → `CSRLIN` | **22** | 23 |
+      zerobas reads the `KEY OFF` column in BOTH states. So it is ONE bound, it
+      **CLAMPS rather than erroring** (no row raises), the COLUMN survives a
+      clamped row, and **SCROLLING honours the same bound** — which rules out
+      "LOCATE validates and scrolling does not".
+      🎯 **AND THE SITE WAS ALREADY NAMED, BY A COMMENT THAT PREDICTED THIS.**
+      `CON_LASTROW equ 23` (`basic/sysvars.inc`) is the clamp, and its own note
+      says the row *"MOVES WITH `KEY` on the reference: 22 with the function-key
+      row painted, 23 with it off … so if a function-key row is ever added to this
+      console, THIS is the definition that has to move with it — which is the
+      entire reason it has a name."* The fix is to make it a RAM cell that
+      `key_on`/`key_off` (`basic/screen.asm`) set, and the clamp at
+      `basic/missing.asm` read.
+      🟢 **THE FEATURE IS ALREADY WIRED**: `key_on` calls **DSPFNK** and `key_off`
+      calls **ERAFNK**, so the BIOS is asked to paint and erase the line. Only the
+      window bound stayed a compile-time constant.
+      🙋 **ONE QUESTION DECIDES WHETHER THIS IS A FIX OR A REGRESSION, AND IT IS
+      NOT MINE**: does C-BIOS's `DSPFNK` actually PAINT anything on our target?
+      D-KWOSK's measurement says row 23 reads blank here while the reference has
+      the assigned string at name-table offset 922 — which suggests it does not.
+      If so, moving the bound would reserve a row for a line that is never drawn:
+      the measured observable would agree with the reference while the SCREEN got
+      worse, one usable row traded for nothing
+      [[rows-going-green-is-not-the-fix]]. The alternative is to keep the row
+      usable and stay divergent on the bound. ⚠️ **MEASURE `DSPFNK` FIRST** — read
+      VRAM row 23 on both machines after `KEY ON` — because if it DOES paint, the
+      choice evaporates and the fix is the ~10 B of moving the bound.
       🎚️ TIER 1 — happy path: `KEY` — a documented statement whose observable
       effect is absent here. ⚠️ THE SUBJECT IS DECLARED because the headline says
       "`KEY ON`", and a headline scan reads that as TWO keywords: it filed this
