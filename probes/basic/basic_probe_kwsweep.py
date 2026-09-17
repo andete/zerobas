@@ -2860,6 +2860,19 @@ SWEEP: list[tuple[str, str, str | None, str, str]] = [
     # **24 on both machines in BOTH states**, delta 0. A row on it would have
     # agreed on a constant -- the same mistake as the blank VRAM cell, in a new
     # cell (scratchpad/akcm_probe.py).
+    # 🟢 D-FNKLINE + D-SCROLLBOUND (2026-09-17): THE ROW THAT WAS OWED. With the
+    # line painted and the row RESERVED (`key_on` decrements `CRTCNT`), `KEY ON`
+    # takes row 23 and `LOCATE 0,23` clamps to **22** -- which is what the
+    # reference has always done and what this tree did not.
+    # ⚠️ Same `CLS`-then-print shape as `keykw_off` below, and the same NOECHO:
+    # anchor for the same reason: the CLS that normalises the scroll geometry
+    # takes the echoed command with it.
+    ("keykw_on",  'key on',
+     'KEY ON:LOCATE 0,23:A=CSRLIN:CLS:PRINT"[K5";A;"]"',        "stored",
+     "NOECHO:[K5 "
+     "FORM:display-on with the function-key line shown, row 23 belongs to it and "
+     "`LOCATE 0,23` clamps to 22. Its twin `keykw_off` reads 23 from the same "
+     "spelling, so the PAIR is the reading and neither cell is a constant"),
     ("keykw_off", 'key off',
      'KEY OFF:LOCATE 0,23:A=CSRLIN:CLS:PRINT"[K4";A;"]"',        "stored",
      "NOECHO:[K4 "

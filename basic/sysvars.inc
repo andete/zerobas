@@ -1412,6 +1412,39 @@ CNSDFG          equ     $F3DE   ; function-key display flag: $FF = shown, 0 = hi
 ; named so the pair cannot drift apart.
 KEYOP_FNKPAINT  equ     254     ; keystr_tenant: draw the function-key line
 KEYOP_FNKBLANK  equ     253     ; keystr_tenant: erase it
+; 🔬 D-SCROLLBOUND (2026-09-17): HOW THE ROW IS ACTUALLY RESERVED, measured on
+; both machines by POKEing `CRTCNT` and printing thirty lines:
+;   |            | plain | CRTCNT poked to 23 |
+;   | VG-8020 KEY OFF |  23  |  22  |
+;   | VG-8020 KEY ON  |  22  |  21  |
+;   | zerobas  either |  23  |  22  |
+; So **`CRTCNT` IS the console scroll bound on BOTH** -- and the reference
+; subtracts ONE MORE under `KEY ON` while `CRTCNT` itself still reads 24. That
+; adjustment lives inside its BIOS `CHPUT`; C-BIOS has no such adjustment but
+; DOES honour `CRTCNT`, and screen output here goes through `CHPUT` (`pchar`'s
+; `PRDEST` dispatch), so the only lever we own is `CRTCNT` itself.
+; 🎯 SO `key_on` DECREMENTS IT AND `key_off` GIVES IT BACK, which makes the
+; BEHAVIOUR identical -- scrolling AND `LOCATE` both stop at 22 under `KEY ON`,
+; exactly as the reference does -- and every other consumer of `CRTCNT` (the
+; screen editor in `sub/readline.asm`, `basic/repl.asm`) inherits the correct
+; bound for free instead of each needing its own copy of the rule.
+; ⚠️ **THE ONE PRICE, STATED**: `PEEK(&HF3B1)` then reads **23** under `KEY ON`
+; where the reference reads 24. One work-area cell differs so that the visible
+; behaviour matches; the alternative was leaving `PRINT` to scroll the painted
+; line away, which `basic_probe_missing.py`'s own note calls the wrong way green.
+; ⚠️ AND THE ADJUSTMENT IS IDEMPOTENT ON PURPOSE -- it is gated on `CNSDFG`, so
+; `KEY ON:KEY ON` does not reserve two rows and `KEY OFF` at boot does not hand
+; back a row nobody took.
+; ⚠️ WRITTEN ABSOLUTELY, NOT ADJUSTED. `inc`/`dec` on CRTCNT is idempotent
+; against a repeated `KEY` statement and NOT against anything else that rewrites
+; the cell: `WIDTH 40:CLS:KEY OFF` resets CRTCNT to 24 while `CNSDFG` still said
+; the row was reserved, so the decrement-and-give-back pair reached **25** and
+; `LOCATE 5,23` set a cursor row that does not exist (three `locrow` rows
+; aborted; `lr-key-off-22` passed, which is an off-by-one at the boundary rather
+; than a broken statement). Every MSX1 text mode has 24 rows, so the two states
+; are constants and cannot drift.
+CON_ROWS        equ     24      ; text rows in every MSX1 text mode
+CON_ROWS_KEYON  equ     CON_ROWS - 1        ; `KEY ON` keeps the bottom one
 ; --- $E227..$E228 (2 B): FN_RESUME. The cell `LOC_RET` freed -----------------
 ; D-FNEXPR, 2026-08-21: a filename argument is a string EXPRESSION, so the
 ; statement cursor no longer sits inside the name -- `fname_expr`

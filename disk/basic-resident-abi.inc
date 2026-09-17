@@ -23,9 +23,9 @@ FAC equ 0F01CH
 FACTYP equ 0F01AH
 
 ; --- page-1 call-back targets: reached by an INTER-SLOT call (MSX2 TH), not an absolute one ---
-fname_expr equ 06E93H
-pdfcb_resume equ 06E8CH
-dirverb_op equ 06C72H
-main_fat_mount equ 06441H   ; main's fat_mount
-main_fat_find equ 06445H   ; main's fat_find
-parse_disk_fcb equ 065E6H
+fname_expr equ 06E9DH
+pdfcb_resume equ 06E96H
+dirverb_op equ 06C7CH
+main_fat_mount equ 0644BH   ; main's fat_mount
+main_fat_find equ 0644FH   ; main's fat_find
+parse_disk_fcb equ 065F0H

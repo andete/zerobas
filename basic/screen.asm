@@ -406,16 +406,27 @@ key_call:
 ; op byte and one `sc_call`.
 ; ⚠️ NO `print_string` DRAIN HERE, unlike `key_call` above: these ops leave
 ; DETOKBUF a lone NUL, so draining would print nothing and cost bytes.
+; 🔬 D-SCROLLBOUND: each arm also moves `CRTCNT`, which is what actually
+; RESERVES the row -- measured as the console scroll bound on both machines. See
+; basic/sysvars.inc for the table and for the one cell this costs.
+; ⚠️ THE VALUE IS WRITTEN ABSOLUTELY, NOT ADJUSTED, and the first cut got this
+; wrong: `inc`/`dec` gated on `CNSDFG` is idempotent against a repeated `KEY` and
+; NOT against `WIDTH`, which rewrites CRTCNT underneath it -- `WIDTH 40:CLS:KEY
+; OFF` reached 25 and `LOCATE 5,23` then set a row that does not exist.
 key_off:
                 inc     hl                  ; past OFF
                 push    hl
                 call    ERAFNK
+                ld      a,CON_ROWS
+                ld      (CRTCNT),a          ; the console gets all 24 rows
                 xor     a                   ; the line is hidden
                 jr      key_disp
 key_on:
                 inc     hl                  ; past ON
                 push    hl
                 call    DSPFNK
+                ld      a,CON_ROWS_KEYON
+                ld      (CRTCNT),a          ; reserve the bottom row
                 ld      a,$FF               ; the reference's own value, measured
 key_disp:
                 ld      (CNSDFG),a

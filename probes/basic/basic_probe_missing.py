@@ -403,10 +403,19 @@ LOCROW = [
     ("lr-row-25",     'WIDTH 40:KEY ON:CLS:LOCATE 5,25:Y=CSRLIN:X=POS(0)'),
     ("lr-row-255",    'WIDTH 40:KEY ON:CLS:LOCATE 5,255:Y=CSRLIN:X=POS(0)'),
     # is the clamp target the fixed bottom row, or CRTCNT-1?
-    ("lr-key-off-22", 'WIDTH 40:CLS:KEY OFF:LOCATE 5,22:Y=CSRLIN:X=POS(0):KEY ON'),
-    ("lr-key-off-23", 'WIDTH 40:CLS:KEY OFF:LOCATE 5,23:Y=CSRLIN:X=POS(0):KEY ON'),
-    ("lr-key-off-24", 'WIDTH 40:CLS:KEY OFF:LOCATE 5,24:Y=CSRLIN:X=POS(0):KEY ON'),
-    ("lr-key-off-255", 'WIDTH 40:CLS:KEY OFF:LOCATE 5,255:Y=CSRLIN:X=POS(0):KEY ON'),
+    # 🔴 THESE FOUR USED TO END `:KEY ON`, and that tail painted over their own
+    # answer once `KEY ON` started drawing the function-key line (D-FNKLINE):
+    # `LOCATE 5,23` puts the answer ON row 23 and the paint then overwrites it,
+    # so `value()` found only the echo and reported `<aborted>`. `lr-key-off-22`
+    # was untouched because its answer sits on row 22. Proved on ONE case with
+    # the other three held as controls.
+    # 🎯 STATE RESTORATION BELONGS IN THE `reset`, WHICH RUNS BEFORE A CASE --
+    # not in the case's own statement list, which runs after the measurement and
+    # can destroy it. Every other `locrow` case sets `KEY` explicitly.
+    ("lr-key-off-22", 'WIDTH 40:CLS:KEY OFF:LOCATE 5,22:Y=CSRLIN:X=POS(0)'),
+    ("lr-key-off-23", 'WIDTH 40:CLS:KEY OFF:LOCATE 5,23:Y=CSRLIN:X=POS(0)'),
+    ("lr-key-off-24", 'WIDTH 40:CLS:KEY OFF:LOCATE 5,24:Y=CSRLIN:X=POS(0)'),
+    ("lr-key-off-255", 'WIDTH 40:CLS:KEY OFF:LOCATE 5,255:Y=CSRLIN:X=POS(0)'),
     # the COLUMN axis through the same instrument -- the grid already settled
     # this (clamps to WIDTH-1), so agreement here is what says the instrument is
     # sound before its row answers are believed
@@ -824,11 +833,19 @@ XDIVERGENT = {
     # Hard-coding 22 into zerobas would be the wrong way green: it would make
     # zerobas's own last row unreachable by LOCATE while PRINT still scrolls
     # onto it. See docs/spec-basic-missing-class.md §7.2.
-    "lr-row-23":  "console chrome: ref reserves a function-key row (22) vs 23",
-    "lr-row-24":  "console chrome: ref reserves a function-key row (22) vs 23",
-    "lr-row-25":  "console chrome: ref reserves a function-key row (22) vs 23",
-    "lr-row-255": "console chrome: ref reserves a function-key row (22) vs 23",
-    "lr-both-255": "console chrome: ref reserves a function-key row (22) vs 23",
+    # 🟢 CLOSED 2026-09-17 (D-FNKLINE + D-SCROLLBOUND) AND THE WARNING ABOVE IS
+    # WHY IT TOOK TWO SLICES. The four `lr-row-*` pins and `lr-both-255` are
+    # RETIRED because zerobas now does what the reference does, on BOTH halves:
+    #   * the function-key line is PAINTED, byte for byte (`keystr_tenant`'s
+    #     FNK ops), so the reserved row has something in it worth reserving;
+    #   * the row is RESERVED by `key_on` decrementing `CRTCNT` -- measured as
+    #     the console scroll bound on BOTH machines -- so `LOCATE` AND `PRINT`
+    #     stop at 22 together. That is exactly the condition this note set: the
+    #     first cut moved LOCATE alone, the four rows went STALE while PRINT
+    #     still scrolled onto the row, and it was REVERTED rather than pinned.
+    # Measured after the fix, ten cells, zerobas == VG-8020 on every one:
+    #   LOCATE 0,22/23/24 -> 22/22/22 (KEY ON), 22/23/23 (KEY OFF); the column
+    #   survives a clamped row; thirty PRINTs settle at 22 (ON) and 23 (OFF).
 
     # -- bottom-row MARKER rows: the instrument cannot see the clamp ---------
     # These read where a CHARACTER ends up after printing AND scrolling, so they
@@ -841,7 +858,13 @@ XDIVERGENT = {
     # reference has no row 23 at KEY ON, so its wrap scrolls and CSRLIN reads 22;
     # zerobas wraps onto 23. LOCATE itself agrees -- lr-in-22 (same row, same
     # KEY state, scroll-free readout) is 22/22 on both.
-    "xc-max":      "wrap at the last column of the bottom row: ref has no row 23",
+    # 🟢 CLOSED 2026-09-17 (D-SCROLLBOUND) AND IT IS THE STRONGEST CHECK ON THE
+    # FIX, because it measures something ELSE. Its reason above reads "the
+    # reference has no row 23 at KEY ON, so its WRAP scrolls and CSRLIN reads 22;
+    # zerobas wraps onto 23" -- and now `key_on` reserves the row through
+    # `CRTCNT`, so OUR wrap scrolls too and reads 22. Nothing here was aimed at
+    # the wrap: it converged because the bound it depends on became right, which
+    # is what a real fix looks like next to a row made green on purpose.
     "loc-max-row": "marker row at the screen bottom: measures scroll, not the clamp",
     "la-row-23":   "marker row at the screen bottom: measures scroll, not the clamp",
     "la-row-24":   "marker row at the screen bottom: measures scroll, not the clamp",
@@ -1014,6 +1037,14 @@ def main() -> int:
             # A batched suite's reset must put back every global its cases can
             # move, or a row measures its predecessors. All three machines boot
             # CSRSW = 0 (measured, scratchpad/csrsw_probe.py).
+            # 🔴 AND `CRTCNT` ($F3B1) JOINED IT 2026-09-17: `KEY ON` now reserves
+            # the bottom row by writing that cell (D-SCROLLBOUND), so a `KEY ON`
+            # case leaves 23 behind and a later case that never mentions `KEY`
+            # would inherit a 23-row console. ⚠️ THIS IS NOT what fixed the
+            # `lr-key-off-*` aborts -- that was the cases' own trailing `:KEY ON`
+            # painting over their answers, and adding this poke changed nothing.
+            # It is kept because it is protective in its own right, not because
+            # it was the cause.
             batch=batch, reset=("NEW", "CLS", "POKE&HFCA9,0"))
         for c, r, z in zip(both, rr, zz):
             c.ref, c.zb = c.read(r), c.read(z)

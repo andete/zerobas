@@ -211,12 +211,24 @@ loc_col_set:
                 ld      a,b
                 inc     a                   ; CSRX is 1-BASED
                 ld      (CSRX),a
-                ; row -> clamp to the console's bottom row (sysvars.inc
-                ; CON_LASTROW; NOT CRTCNT, which measures 24 on both machines)
+                ; row -> clamp to the console's bottom row, which is
+                ; `CRTCNT - 1` and MOVES WITH `KEY` (D-SCROLLBOUND): `key_on`
+                ; reserves a row by decrementing `CRTCNT`, so the clamp, the
+                ; scroll and the screen editor all read ONE bound instead of
+                ; three copies of the rule.
+                ; 🔴 THE OLD COMMENT HERE SAID "NOT CRTCNT, which measures 24 on
+                ; both machines" -- true of the CELL and wrong about the
+                ; MECHANISM: POKEing it moves the scroll bound on BOTH machines
+                ; (sysvars.inc's table). The reference keeps 24 and subtracts
+                ; inside its BIOS; we have no BIOS to change, so we move the cell.
+                ld      a,(CRTCNT)
+                dec     a                   ; A = the last usable row
+                ld      b,a
                 ld      a,(LOC_ROW)
-                cp      CON_LASTROW+1
-                jr      c,loc_row_set
-                ld      a,CON_LASTROW
+                cp      b
+                jr      c,loc_row_set       ; wanted < bound -> keep it
+                ld      a,b                 ; else clamp (wanted == bound is a
+                                            ; no-op through this same arm)
 loc_row_set:
                 inc     a                   ; CSRY is 1-BASED
                 ld      (CSRY),a
