@@ -622,6 +622,52 @@ bytes, and the day `RENUM` learns to remember an argument — or `PLAY` learns t
 parse from an interrupt — fact 1 or fact 3 fails silently. The equates must name
 each other so a reader of either verb sees the other.
 
+### 7.11 🔴 BUILT, MEASURED, AND IT DOES NOT FIT — ~30 B SHORT (D-PLAYXBUILD)
+
+**Attempted 2026-09-17 and reverted.** The code was written end to end, assembled,
+and the walls read from a clean build. It is a BUDGET blocker, not a design one:
+every decision in §7.1–§7.10 survived contact.
+
+| | before | after | spent |
+|---|---|---|---|
+| sub page 1 | 87 B free | **3 B** | 84 B — the tenant half |
+| main page 1 | 61 B free | **21 B** | 40 B — the servicer + the `MUSICF` drop |
+
+**And the name scan is STILL NOT WRITTEN.** It needs ~40–50 B against the 21 B
+left, so the feature is roughly **30 B short of shipping**.
+
+🎯 **WHAT THE ATTEMPT SETTLED, which a re-attempt should not re-derive:**
+
+* ⚠️ **THE SERVICER BOUNCE BREAKS AN ATOMICITY THE PARSER SILENTLY RELIED ON.**
+  Until `X`, the whole parse ran inside ONE CALSLT under DI, so `pt_buf`'s ring
+  reset and the parse that filled it were atomic. The bounce makes `subrom_call`
+  do `ei` **with main page 1 mapped, so `htimi_guard` does NOT skip** — and a
+  voice still marked playing from a PREVIOUS `PLAY` would be drained from a ring
+  that was just zeroed. The fix is to drop the claimed voices from `MUSICF`
+  before the hand-off, and it belongs in `ex_play`: `AUDIO_VMASK` is already
+  exactly that mask, so only the voices this statement REPLACES are cleared and
+  D-MUSICF's invariant (an unmentioned voice keeps playing) is preserved. Moving
+  it there also took 7 B off the wall that binds.
+* 🔴 **`DE` IS THE QUEUE WRITE POINTER FOR THE WHOLE `X` SCAN.** The obvious
+  `ld e,c / ld d,0 / add hl,de` index into the name buffer destroys it, and the
+  damage is a corrupted packet stream rather than a parse error. A, C and HL only.
+* 🟢 **`pt_buf` IS SAFE TO RE-CALL ON RESUME** — the split it looked to need is
+  unnecessary. Its reset writes `QD_PUT`/`QD_GET`/`VCX_FRAMES`, and all three are
+  already the values a resume wants: `QD_PUT` is not read during a parse
+  (`pt_voice_end` recomputes it from DE), and the other two belong to a drain the
+  voice is excluded from.
+* **The emptiness flag is ONE byte**: an MML source pointer is a RAM address, so
+  a zero HIGH byte cannot be a real cursor.
+* **Where the scan goes is a WALL question, not a design one.** In the tenant it
+  is ~76 B against 87; in main it is ~45 B against 61. Either fits ALONE; neither
+  fits beside the rest of its own half.
+
+💰 **SO IT NEEDS A CARVE OF ~30 B IN MAIN PAGE 1** (or ~85 B in sub page 1, which
+is worse). `scratchpad/jr_mapper.py` offers 3 B today. That is a slice of its own.
+⚠️ **AND `X` MUST NOT SHIP HALF-BUILT**: with the tenant parking and main not yet
+scanning, `pl_xvar` resolves an uninitialised key and the parser then reads a
+body chosen at random — strictly worse than today's honest ERR 5.
+
 ### 7.8 Which MECHANISM the reference uses — partly answered (D-PLAYXREC)
 
 [`scratchpad/playxrec_probe.py`](../scratchpad/playxrec_probe.py), VG-8020,
