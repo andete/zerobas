@@ -2146,7 +2146,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:19696 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:19740 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -19130,6 +19130,50 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       🟢 **THE FEATURE IS ALREADY WIRED**: `key_on` calls **DSPFNK** and `key_off`
       calls **ERAFNK**, so the BIOS is asked to paint and erase the line. Only the
       window bound stayed a compile-time constant.
+      🎯 **RULED (Joost, 2026-09-17): OPTION (c) — *"go with option c for KEY"*.**
+      Paint the function-key line ourselves, then move the bound.
+      🔬 **THE LAYOUT IS MEASURED, NOT GUESSED (D-FNKLINE,
+      [`scratchpad/fnkline_probe.py`](scratchpad/fnkline_probe.py))** — row 23 read
+      back as TEXT rather than as a count, 20 cells at a time because a 40-char
+      dump plus its fence does not fit a 40-column line:
+      ```
+      col: 0         1         2         3
+           0123456789012345678901234567890123456789
+           "  color  auto   goto   list   run       "   KEY ON, defaults
+           "  ZQZQZQ auto   goto   list   run       "   after KEY 1,"ZQZQZQ"
+           "                                        "   KEY OFF
+      ```
+      **Five fields at columns 2, 9, 16, 23, 30 — stride 7, each SIX wide.** The
+      assigned row is what pins the width: `ZQZQZQ` fills 2..7 exactly and `auto`
+      still starts at 9, so the field is 6 and column 8 is the gap. The non-blank
+      counts agree with D-DSPFNK's independent count (5+4+4+4+3 = **20** default,
+      6+4+4+4+3 = **21** assigned).
+      ⚠️ Column 0..1, the four gaps and 36..39 are blank; `run`'s field is
+      space-padded, so a macro's trailing CR renders as a SPACE and not as a
+      control glyph (no cell read below 32).
+      🏗️ **THE DESIGN, and every piece of it already exists:**
+      * **The painter goes SUB-SIDE, in `sub/keystr.asm`** — a new `KEYARG` op on
+        the existing `keystr_tenant` (`SUBROM_IDX_KEYSTR`, sub page 0). That
+        tenant ALREADY reads the macro store (`$F87F`, stride 16, NUL-terminated,
+        itself measured by D-KEYSTR), which is exactly what a painter needs.
+      * **VRAM from a page-0 tenant is allowed and precedented**: `sub/graphics.asm`
+        — itself a page-0 tenant — writes it with `gfx_vram_wr` (HL = address,
+        C = byte, clobbers A only, DI-guarded per byte), a page-local `call` away.
+        ⚠️ A page-0 tenant may NOT call the BIOS, so `WRTVRM`/`LDIRVM` are out and
+        this is the reason the primitive matters.
+      * **Row 23 is `NAMBAS + 920`.** The SCREEN 0 name table is 40 wide
+        REGARDLESS of `LINLEN` — which is why the probe's stride-40 arithmetic
+        read the labels at the right columns even though `LINLEN` is 37 there and
+        39 here.
+      * **Main pays only the bound**: `key_on`/`key_off` set the new RAM cell and
+        invoke the op; `CON_LASTROW equ 23` becomes that cell, read by the clamp
+        in `basic/missing.asm`. 💰 Share one helper between the two arms — two
+        open-coded copies of (set bound, set op, `sc_call`) is ~44 B against a
+        ~24 B helper plus two 6 B call sites, and main page 1 was **61 B** free on
+        2026-09-17.
+      📌 **AND THE `display-on` ROW SHIPS WITH IT** — `KEY ON:LOCATE 0,23:CSRLIN`
+      reads 22 on the reference and 23 here, so it is the row that proves the
+      bound moved; `keykw_off` already covers the other half.
       🔬 **MEASURED 2026-09-17 (D-DSPFNK,
       [`scratchpad/dspfnk_probe.py`](scratchpad/dspfnk_probe.py)): C-BIOS's
       `DSPFNK` PAINTS NOTHING.** Name-table row 23 (`BASE(0)+920`, 40 bytes a
