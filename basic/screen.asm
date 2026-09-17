@@ -395,13 +395,38 @@ key_call:
                 ld      hl,DETOKBUF
                 call    print_string
                 jp      pop_exec            ; D-POPEXEC: pop hl + exec_stmt
+; 🟢 D-FNKLINE (Joost, 2026-09-17: *"go with option c for KEY"*). These two used
+; to be a bare BIOS call each, and on our target that call PAINTS NOTHING --
+; C-BIOS's `DSPFNK` leaves row 23 blank where the reference writes 20 cells
+; (D-DSPFNK). So each arm now does three things: keep the BIOS call (harmless,
+; and correct on a machine whose BIOS does paint), set `CNSDFG` -- the DOCUMENTED
+; flag C-BIOS does not maintain -- and ask the sub-ROM to draw or erase the line.
+; 🎯 THE PAINTER IS SUB-SIDE because the macro store already is: `keystr_tenant`
+; reads `$F87F` and sub page 0 is not the scarce region. Main pays the flag, the
+; op byte and one `sc_call`.
+; ⚠️ NO `print_string` DRAIN HERE, unlike `key_call` above: these ops leave
+; DETOKBUF a lone NUL, so draining would print nothing and cost bytes.
 key_off:
                 inc     hl                  ; past OFF
                 push    hl
                 call    ERAFNK
-                jp      pop_exec            ; D-POPEXEC: pop hl + exec_stmt
+                xor     a                   ; the line is hidden
+                jr      key_disp
 key_on:
                 inc     hl                  ; past ON
                 push    hl
                 call    DSPFNK
+                ld      a,$FF               ; the reference's own value, measured
+key_disp:
+                ld      (CNSDFG),a
+                or      a
+                ld      a,KEYOP_FNKBLANK
+                jr      z,kd_op
+                ld      a,KEYOP_FNKPAINT
+kd_op:
+                ld      (KEYARG),a
+                push    ix
+                ld      ix,SUBROM_ENTRY_BASE_P0 + 3*SUBROM_IDX_KEYSTR
+                call    sc_call             ; D-SCCALL: tenant call + absent raise
+                pop     ix
                 jp      pop_exec            ; D-POPEXEC: pop hl + exec_stmt

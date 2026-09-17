@@ -25,9 +25,79 @@
 ; drains DETOKBUF with print_string after every op.
 ; Clobbers everything (tenant convention).
 FNKSTR          equ     $F87F               ; measured base (D-KEYSTR scout)
+; --- the function-key LINE (D-FNKLINE) --------------------------------------
+; 🔬 THE LAYOUT IS MEASURED, read back as TEXT rather than counted
+; (scratchpad/fnkline_probe.py), because a count cannot give column positions:
+;   "  color  auto   goto   list   run       "   KEY ON, the defaults
+;   "  ZQZQZQ auto   goto   list   run       "   after KEY 1,"ZQZQZQ"
+; FIVE fields at columns 2, 9, 16, 23, 30 -- stride 7, each SIX wide. The
+; ASSIGNED row is what pins the width: `ZQZQZQ` fills 2..7 exactly and `auto`
+; still starts at 9, so the field is 6 and column 8 is the gap.
+; ⚠️ ROW 23 IS `NAMBAS + 920` -- the SCREEN 0 name table is 40 bytes a row
+; REGARDLESS of `LINLEN` (37 on the reference, 39 here), which is why stride-40
+; arithmetic finds the labels on both. A fixed ABSOLUTE offset is the mistake
+; D-KWOSK made in this exact place.
+; ⚠️ A byte below 32 renders as a SPACE: the slot is NUL-filled past the string
+; and F5's default carries a trailing CR, and the reference shows neither as a
+; glyph (no measured cell read below 32).
+FNK_ROW         equ     920                 ; row 23 within the name table
+FNK_COL0        equ     2                   ; first field's column
+FNK_STRIDE      equ     7                   ; field pitch
+FNK_WIDTH       equ     6                   ; visible characters a field
+FNK_FIELDS      equ     5                   ; F1..F5 are displayed; F6..F10 are not
 KEYSLOTS        equ     10
 KEYSTRIDE       equ     16
 KEYMAX          equ     15                  ; measured truncation (D-KEYSCOUT2)
+
+; ks_paint / ks_blank: draw or erase the function-key line.
+; 🔴 VRAM FROM A PAGE-0 TENANT IS ALLOWED AND PRECEDENTED -- `gfx_vram_wr`
+; (sub/graphics.asm, itself a page-0 tenant) is a page-local `call`, takes
+; HL = address and C = byte, clobbers A only and preserves HL/BC/DE. A page-0
+; tenant may NOT call the BIOS, so `WRTVRM`/`LDIRVM` are out; that is the whole
+; reason the primitive matters here.
+ks_paint:
+                call    ks_blank            ; start from a clean row, so a macro
+                                            ; that shortened leaves no tail
+                ld      hl,(NAMBAS)
+                ld      de,FNK_ROW + FNK_COL0
+                add     hl,de               ; HL -> row 23, first field
+                ld      de,FNKSTR           ; DE -> slot 1
+                ld      b,FNK_FIELDS
+ksp_field:
+                push    bc                  ; C is the data byte below
+                ld      b,FNK_WIDTH
+ksp_char:
+                ld      a,(de)
+                cp      ' '
+                jr      nc,ksp_put
+                ld      a,' '               ; NUL or a control byte -> blank
+ksp_put:
+                ld      c,a
+                call    gfx_vram_wr
+                inc     hl
+                inc     de
+                djnz    ksp_char
+                inc     hl                  ; the one-column gap
+                push    hl                  ; DE += KEYSTRIDE - FNK_WIDTH
+                ld      hl,KEYSTRIDE - FNK_WIDTH
+                add     hl,de
+                ex      de,hl
+                pop     hl
+                pop     bc
+                djnz    ksp_field
+                ret
+
+ks_blank:
+                ld      hl,(NAMBAS)
+                ld      de,FNK_ROW
+                add     hl,de               ; HL -> row 23, column 0
+                ld      b,FNK_STRIDE * FNK_FIELDS + FNK_COL0 + 3
+ksb_lp:
+                ld      c,' '
+                call    gfx_vram_wr
+                inc     hl
+                djnz    ksb_lp
+                ret
 
 keystr_tenant:
                 ; Every op leaves DETOKBUF printable for the resident drain:
@@ -42,6 +112,10 @@ keystr_tenant:
                 jr      z,ks_defaults
                 cp      255
                 jr      z,ks_list
+                cp      KEYOP_FNKPAINT
+                jr      z,ks_paint
+                cp      KEYOP_FNKBLANK
+                jr      z,ks_blank
                 ; --- KEY n,"str": slot address = FNKSTR + 16*(n-1) --------------
                 dec     a
                 ld      l,a

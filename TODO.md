@@ -2146,7 +2146,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:19740 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:19781 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -19130,6 +19130,47 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       🟢 **THE FEATURE IS ALREADY WIRED**: `key_on` calls **DSPFNK** and `key_off`
       calls **ERAFNK**, so the BIOS is asked to paint and erase the line. Only the
       window bound stayed a compile-time constant.
+      🟢 **BUILT 2026-09-17 (D-FNKLINE) — THE LINE PAINTS, BYTE FOR BYTE. THE
+      BOUND MOVE IS WRITTEN AND DELIBERATELY NOT SHIPPED.** Row 23 now reads
+      identically to the reference in both states, including the assigned-macro
+      case: `"  color  auto   goto   list   run       "` and
+      `"  ZQZQZQ auto   goto   list   run       "`, blank under `KEY OFF`.
+      💰 Main page 1 was **61 B → 35 B** free and sub page 0 **505 B → 434 B** on
+      2026-09-17: 26 B of the scarce region for the two arms, 71 B of the
+      abundant one for the painter.
+      🎯 **AND IT COST NO NEW RAM, because the state already had a documented
+      home.** `CNSDFG` ($F3DE) is the MSX function-key display flag and the
+      reference sets it `$FF`/0 (measured in ONE run, 0 → 255, D-CNSDFG).
+      **C-BIOS does not maintain it — 0 in both states here — so `key_on`/
+      `key_off` WRITE it.** That is a fidelity gain on its own: a program PEEKing
+      `$F3DE` now sees the MSX-correct value where before it saw 0 whatever `KEY`
+      had done.
+      🔴 **WHY THE `LOCATE` BOUND MOVE IS HELD BACK, IN THIS FILE'S OWN WORDS.**
+      It was built, measured working (`LOCATE 0,23` → 22 under `KEY ON`, matching
+      the reference on every row) and then REVERTED, because
+      `probes/basic/basic_probe_missing.py`'s own note beside the four pinned
+      `lr-row-*` divergences says exactly what it would produce: *"it would make
+      zerobas's own last row unreachable by LOCATE **while PRINT still scrolls
+      onto it**"*. That is the state the change lands in, and the warning predates
+      it by weeks.
+      ⚠️ **THE SCROLL HALF IS NOT REACHABLE FROM BASIC.** D-KEYON measured that
+      the reference's bound governs SCROLLING too (thirty `PRINT`s settle at 22
+      with `KEY ON`; ours settle at 23, so output reaching the bottom scrolls the
+      painted line away). Screen output goes through the BIOS `CHPUT` (`pchar`'s
+      `PRDEST` dispatch, `basic/print.asm`), so the scroll REGION is C-BIOS's:
+      moving it means OWNING console output instead of calling it — a different
+      and much larger slice.
+      📌 **SO THE FOUR `lr-row-*` XDIVERGENT PINS STAY VALID AND THE `display-on`
+      ROW IS STILL OWED.** Retiring those pins while `PRINT` still scrolls onto
+      the row would be the wrong way green, by the same note.
+      🙋 **JOOST'S CALL AGAIN, and the ground has moved under his (c):** he chose
+      it on the understanding that painting closes the item. Painting is done and
+      shipped; closing it needs the console-output slice. Options now: take that
+      slice, ship the bound move anyway and accept the LOCATE/PRINT
+      inconsistency, or leave it here with the line painted.
+      🎚️ TIER 1 — happy path: `KEY` — the line is painted; the window bound and
+      the scroll region still belong to the BIOS.
+      🤖 AUTONOMOUS for the measurement and the painter; 🙋 the rest is his.
       🎯 **RULED (Joost, 2026-09-17): OPTION (c) — *"go with option c for KEY"*.**
       Paint the function-key line ourselves, then move the bound.
       🔬 **THE LAYOUT IS MEASURED, NOT GUESSED (D-FNKLINE,

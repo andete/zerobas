@@ -1390,6 +1390,28 @@ TRACEFLAG       equ     $E226   ; 1 B: TRON state (0 = TROFF)
 ; So if a function-key row is ever added to this console, THIS is the definition
 ; that has to move with it -- which is the entire reason it has a name.
 CON_LASTROW     equ     23      ; 0-based; CSRY is 1-based, so CSRY max = 24
+; 🟢 D-FNKLINE (2026-09-17, Joost: *"go with option c for KEY"*): THE ROW ABOVE
+; MOVES NOW, and the flag it moves with is a DOCUMENTED MSX CELL rather than a
+; new one. `CNSDFG` is the function-key DISPLAY flag; the reference sets it $FF
+; under `KEY ON` and 0 under `KEY OFF` (measured both ways in ONE run,
+; scratchpad/cnsdfg_probe.py: 0 -> 255 on the VG-8020).
+; 🔴 AND C-BIOS DOES NOT MAINTAIN IT -- it reads 0 in BOTH states here, which is
+; why `key_on`/`key_off` WRITE it instead of reading it. That makes this MORE
+; faithful, not less: a program PEEKing $F3DE now sees the MSX-correct value on
+; our target too, where before it saw 0 whatever `KEY` had done.
+; ⚠️ NOT A NEW RAM BYTE ON PURPOSE. RAM has no gate here and both cells this file
+; documents as retired-and-free are already spent (`GFX_DJ` $E220, `GFX_BAD`
+; $E3E5); `CNSDFG` is reserved by the MSX work area and carries exactly this fact.
+CNSDFG          equ     $F3DE   ; function-key display flag: $FF = shown, 0 = hidden
+                                ; (MSX work area; measured D-CNSDFG)
+; The two bounds the clamp picks between. 22 with the function-key line painted,
+; 23 without -- measured on the reference in both states (D-KEYON): `LOCATE 0,23`
+; then `CSRLIN` reads 22 under `KEY ON` and 23 under `KEY OFF`, it CLAMPS rather
+; than raising, the COLUMN survives the clamp, and SCROLLING honours the same
+; bound. `CON_LASTROW - 1` is the KEY ON value; it is written out rather than
+; named so the pair cannot drift apart.
+KEYOP_FNKPAINT  equ     254     ; keystr_tenant: draw the function-key line
+KEYOP_FNKBLANK  equ     253     ; keystr_tenant: erase it
 ; --- $E227..$E228 (2 B): FN_RESUME. The cell `LOC_RET` freed -----------------
 ; D-FNEXPR, 2026-08-21: a filename argument is a string EXPRESSION, so the
 ; statement cursor no longer sits inside the name -- `fname_expr`
