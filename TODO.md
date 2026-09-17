@@ -1217,6 +1217,41 @@ which is the correct answer with nothing plugged in **and also exactly what a st
 returns** — a reading that cannot fail. `input-devices-acceptance` exercises them
 properly; the kwsweep denominator cannot, and a bar met by an unfailable row would
 be worse than no bar.
+      🔬 **RE-VERIFIED 2026-09-17 (D-JOYPLUG,
+      [`scratchpad/joyplug_probe.py`](scratchpad/joyplug_probe.py)) — THE BLOCKER
+      IS REAL AND ITS STATED REASON IS STALE.** Three things measured:
+      * ✅ **`plug joyporta msxjoystick1` SUCCEEDS.** The pluggable exists in
+        openMSX 21.0 and the prologue does not error, so *"no joystick pluggable
+        in this openMSX"* is false. The plumbing to ask for one exists here too:
+        `basic_probe_kwsweep.py` already has a `NEEDS-PLUG:` rig (`_plug_of`).
+      * ⚠️ **PLUGGED CHANGES NOTHING**: `STICK(1)` and `STRIG(1)` read 0 plugged
+        and 0 unplugged, on both machines. That row awards nothing by design — 0
+        is also what nothing-plugged and what a stub return — it is here to show
+        the plug did not BREAK the reads.
+      * 🔴 **AND THE KEY MATRIX DOES NOT DRIVE `STICK(0)` — ON EITHER MACHINE.**
+        `STICK(0)` is the KEYBOARD direction pad and needs no joystick at all, so
+        arrow-UP held (row 8, bit `$20`) should read 1. It reads **0 on the
+        VG-8020 as well as here.** So the instrument cannot currently move ANY
+        `STICK`, and Joost's *"if needed create a testing pluggable device"* is
+        still the route: what is missing is not a device to plug but a way to
+        DRIVE one.
+      🎯 **WHAT THAT LAST ROW COST, AND WHY THE REFERENCE COLUMN WAS WORTH IT.**
+      With zerobas alone the same 0 looked like OUR `STICK(0)` being a stub — a
+      TIER 1 defect reachable with no device at all, which is what I went looking
+      for. The reference reading 0 too is what refuted it: an agreement on a value
+      the CONTROL was supposed to move is a broken instrument, not a finding
+      [[a-case-that-agrees-can-agree-for-the-wrong-reason]].
+      ⚠️ **THREE CUTS, THREE DIFFERENT FAULTS, EACH CAUGHT BY THE CONTROL**: the
+      first passed `holds` on DIRECT-mode cases, and the press is scheduled at the
+      RUN SLOT which a direct case does not have; the second fixed that and still
+      read flat; the third added the reference and showed the flatness is the rig,
+      not the tree. The `(row, mask)` SHAPE was right throughout — `_hold_of`
+      builds exactly the same 2-tuple — so the remaining suspect is the TIMING or
+      the matrix row, and neither is worth another blind cut.
+      📌 **NEXT STEP IS NOT ANOTHER CUT AT THIS PROBE**: take a row that is KNOWN
+      to work (the `onkey` rows hold row 6 bit `$20` and score SUPPORTED) and
+      change ONE thing at a time towards a `STICK(0)` read. That separates timing
+      from matrix row in one run instead of guessing at both.
 🎯 **RULED (Joost, 2026-09-16): *"we should come up with a way to test, if needed
 create a testing pluggable device."*** So the filed blocker — no joystick pluggable
 in this openMSX, injection being the MSX key matrix only, `joystickports` refusing a
@@ -2026,7 +2061,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:19576 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:19611 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -2192,7 +2227,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:6793 (T-6FE392)8 (T-529ABE)` from `TODO.md:18056 (T-529ABE)`: a
+      `TODO.md:6828 (T-6FE392)8 (T-529ABE)` from `TODO.md:18091 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -7637,7 +7672,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:18056 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:18091 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
