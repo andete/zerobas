@@ -1129,7 +1129,42 @@ together rather than separately.
 ⛔ **THEREFORE IT IS NOT THE FUNDING FOR `PLAY X`** — that needs ~30 B and this is
 a slice with a speed risk attached.
 🎯 **RULED (Joost, 2026-09-16): NEITHER — *"I think this means we need to change to
-the MSX's FCB shape."*** So `VARPTR(#n)` is not the work; the CHANNEL BLOCK is, and
+the MSX's FCB shape."***
+🔬 **MEASURED 2026-09-17 (D-FCBSTRIDE,
+[`scratchpad/fcbstride_probe.py`](scratchpad/fcbstride_probe.py)) — 265 AND 267
+ARE BOTH RIGHT, AND THE LAYOUT I GUESSED IS WRONG.**
+| | VG-8020 | zerobas |
+|---|---|---|
+| `VARPTR(#1)` at `MAXFILES` 1 / 2 / 3 | −3465, −3730, −3995 | ERR 2 |
+| shift per added channel | **−265** | — |
+| stride #1→#2, #1→#3 | **265**, **530** | — |
+| `FRE(0)` charge per channel, three steps | **267, 267, 267** | **306, 306, 306** |
+✅ **THE SUBSTANCE OF THE HYPOTHESIS HOLDS**: 265 is the FCB proper (9 + 256) and
+there are **2 MORE BYTES A CHANNEL** charged to `FRE(0)` that are not part of it.
+Both numbers were re-measured here rather than inherited, and the FRE charge is
+linear over three steps on both machines.
+🔴 **BUT THE DECIDING ROW CAME BACK THE OTHER WAY, AND THAT IS THE USEFUL PART.**
+I predicted `VARPTR(#1)` would shift by **267** per channel if a `FILTAB` sat
+ABOVE the FCBs. It shifts by **265**, and the three readings agree on one
+implied constant: **the FCB area's TOP IS PINNED AT `$F380` AND THE ARRAY GROWS
+DOWNWARD, with #1 LOWEST** (`VARPTR(#1) + 265n = −3200 = $F380` for n = 1, 2 and
+3). So the extra 2 a channel lives **BELOW** the FCB array, not above it — a
+guess that fitted the arithmetic and still had the geometry backwards.
+🎯 **WHAT THAT PINS FOR THE REBUILD**: match the reference exactly and a channel
+costs **265 of FCB + 2 elsewhere**, the array hangs downward off `$F380`, and
+`VARPTR(#n) = $F380 − 265·(MAXFILES − n + 1)` falls out for free instead of being
+made to agree.
+📏 **AND OUR OVERCHARGE IS NOW EXACT**: we charge **306** a channel
+(`[state:50][record:256]`) against the reference's 267 — **39 B a channel more
+than the reference charges**, of which **41 B** is the per-channel engine state
+that has to leave the block (306 − 265). At `MAXFILES=15` the difference is
+**585 B** of pool.
+⚠️ **ONE PROBE FAULT WORTH NAMING**: zerobas's `VARPTR` cells printed
+`'<E";ERR;"'` — the fence matched the SOURCE of the error line rather than its
+output, because the handler's own text contains the marker. The reading is still
+unambiguously an error, but a fence that appears in the source it echoes is the
+hazard this tree has hit before and the cell is ugly proof of it.
+ So `VARPTR(#n)` is not the work; the CHANNEL BLOCK is, and
 `VARPTR(#n)` then falls out of it agreeing rather than being made to agree.
 ⚠️ **NOTED, NOT STARTED** (*"just note it, you don't need to do anything now"*).
 🔴 **AND SCOPING IT FOUND THAT OUR TWO NUMBERS FOR THE REFERENCE'S PER-CHANNEL
@@ -2111,7 +2146,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:19661 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:19696 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -2277,7 +2312,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:6878 (T-6FE392)8 (T-529ABE)` from `TODO.md:18141 (T-529ABE)`: a
+      `TODO.md:6913 (T-6FE392)8 (T-529ABE)` from `TODO.md:18176 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -7722,7 +7757,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:18141 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:18176 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
