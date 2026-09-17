@@ -2146,7 +2146,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:19781 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:19823 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -19145,6 +19145,48 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       `key_off` WRITE it.** That is a fidelity gain on its own: a program PEEKing
       `$F3DE` now sees the MSX-correct value where before it saw 0 whatever `KEY`
       had done.
+      🔬 **THE RESERVATION MECHANISM IS FOUND (D-SCROLLBOUND, 2026-09-17,
+      [`scratchpad/scrollbound_probe.py`](scratchpad/scrollbound_probe.py))** —
+      `CRTCNT` POKEd to 23, then thirty `PRINT`s:
+      | | plain | `CRTCNT` = 23 |
+      |---|---|---|
+      | VG-8020, `KEY OFF` | 23 | **22** |
+      | VG-8020, `KEY ON` | **22** | **21** |
+      | zerobas, either | 23 | **22** |
+      🎯 **So `CRTCNT` IS the console scroll bound on BOTH machines, and the
+      reference subtracts ONE MORE under `KEY ON` while `CRTCNT` itself still
+      reads 24** — that adjustment is inside its BIOS `CHPUT`. C-BIOS has no such
+      adjustment but does honour `CRTCNT`, and our screen output goes through
+      `CHPUT`, so the only lever we own is the cell itself.
+      🟢 **AND MOVING IT WORKS.** With `key_on` writing `CRTCNT` = 23 (and
+      `key_off` 24) and the `LOCATE` clamp reading `CRTCNT - 1`, **all ten cells
+      of `scratchpad/keyon_probe.py` read identically to the VG-8020** — including
+      `scr_on` = 22, the scroll row that was the whole point. One price, stated:
+      `PEEK(&HF3B1)` then reads 23 under `KEY ON` where the reference reads 24.
+      🔴 **IT IS WRITTEN AND NOT SHIPPED, because three rows of
+      `missing-acceptance` abort and I cannot say why.** `lr-key-off-23`,
+      `-24` and `-255` (`WIDTH 40:CLS:KEY OFF:LOCATE 5,23`) report `<aborted>` on
+      zerobas — "a `[` with no `]`" — while `lr-key-off-22` passes. **FIVE
+      hypotheses were eliminated:**
+      1. an `inc`/`dec` drift on `CRTCNT` → rewritten as ABSOLUTE writes; no change;
+      2. `WIDTH` resetting `CRTCNT` underneath → absolute writes cover that; no change;
+      3. the statement itself → `WIDTH 40:CLS:KEY OFF:LOCATE 5,23` reads **`23 5`
+         on BOTH machines** when the answer is printed after a `CLS`, and the raw
+         tail shows the complete `[ 23 5 ]`
+         ([`scratchpad/koff23_probe.py`](scratchpad/koff23_probe.py),
+         [`scratchpad/koffraw_probe.py`](scratchpad/koffraw_probe.py));
+      4. batch contamination → the reset already restores `CSRSW` for exactly this
+         reason, so `CRTCNT` was added beside it; no change;
+      5. session state → the battery fails **BOOT-PER-CASE too**, which rules the
+         whole class out.
+      ⚠️ **SO THE DIFFERENCE IS IN THE SUITE'S OWN CASE SHAPE, not in the
+      statement, and I did not find it.** Shipping a behaviour change whose test
+      failure I cannot explain is how a silent wrong answer gets in; the patch is
+      recorded here instead.
+      📌 **THE CHEAPEST NEXT STEP** is to print that suite's case through the same
+      `CLS`-then-read shape its own `keykw_off`/`keykw_on` twins use, and see
+      whether the `]` survives — i.e. suspect the READ, which is the one part of
+      the case these five hypotheses never touched.
       🔴 **WHY THE `LOCATE` BOUND MOVE IS HELD BACK, IN THIS FILE'S OWN WORDS.**
       It was built, measured working (`LOCATE 0,23` → 22 under `KEY ON`, matching
       the reference on every row) and then REVERTED, because
