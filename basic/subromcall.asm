@@ -36,6 +36,28 @@
 ; builds); CF=0 after a completed call. The tenant runs with slot-0 page 0 (BIOS
 ; + $0038 ISR) switched out, so the whole call is under DI (§3b/§3d); CALSLT
 ; clobbers all registers — the caller guards anything live (e.g. the text cursor).
+; --- deffn_subcall: `ld ix,<the DEF FN tenant's entry>` + `call subrom_call`
+; stood open-coded at all FOUR DEF FN dispatch sites (basic/deffn.asm x3 for
+; FNF_SAVE / the request read / FNF_RESTORE, basic/interp.asm x1 for
+; FNF_UNWIND) at 7 B each. Behind this 3 B call they cost 3, and the helper
+; costs only the `ld` because it FALLS THROUGH into subrom_call below: 12 B,
+; D-LONGRUN (scratchpad/longrun_scout.py, the run at 4 sites that the 8-site
+; floor in scratchpad/pair_carve_scout.py could not report).
+; 🟢 THE FALL-THROUGH IS LEGAL, AND THE ANSWER WAS NOT IN THIS FILE.
+; subrom_call is the FIRST code here, so what decides it is whether the include
+; BEFORE this one in basic/main.asm falls forward -- basic/float-arith.asm, and
+; it ends `ret`. No label shares subrom_call's address and nothing jumps to the
+; byte before it, so the only way in here is this label.
+; 🟢 IDENTICAL BEHAVIOUR, and why: `ld ix,nn` sets no flags and touches no other
+; register, so L (the FNF_* op code), A, DE and HL reach the tenant exactly as
+; they did open-coded; and `call deffn_subcall` pushes exactly the ONE return
+; address `call subrom_call` pushed, so subrom_call's own `ret` lands back at
+; the site with CF (absent vs completed) intact and SP unchanged.
+; ⚠️ EVERY OTHER subrom_call CALLER IS UNAFFECTED -- they load their own index
+; and call the label below directly; this is one more entry, not a funnel.
+deffn_subcall:
+                ld      ix,SUBROM_ENTRY_BASE_P0 + 3*SUBROM_IDX_DEFFN
+
 subrom_call:
                 ld      a,(SUBSLOT_OK)
                 or      a

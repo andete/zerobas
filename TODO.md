@@ -28,7 +28,14 @@ item — do **one item per session** to keep context lean.
 
 - [ ] 💰 **THE CARVE INVENTORY, RE-RUN 2026-09-17 (D-LONGRUN) — THE MECHANICAL
       FAMILY IS NOT SHUT, IT IS JUST SMALL: ~20-40 B, NONE OF IT IN ONE PIECE.**
-      🎚️ TIER 1 funding — this is what `PLAY`'s `X<var>;` is ~30 B short of.
+      🎚️ BUDGET — funding for TIER 1: this is what `PLAY`'s `X<var>;` is ~30 B
+      short of. 🔴 **AND THIS LINE READ `🎚️ TIER 1 funding —` FOR ONE COMMIT,
+      WHICH SILENTLY STOLE ANOTHER ITEM'S ROW** — `tools/tier_table.py`'s TAG
+      regex wants `TIER n —`, so ` funding` made it parse as NOTHING; this item
+      is the first top-level `- [ ]` in a ~1900-line stretch that has no other,
+      so its block swallowed the `🎚️` line at TODO.md:1408 and the sheet printed
+      THAT text against THIS line number. The TIER 1 count read 3 before and 3
+      after. [[an-instrument-can-fail-the-way-the-thing-it-replaced-failed]]
       Every route in [[carve-routes-measured-shut]] re-measured from a clean
       tree: `clone_scout --min 4 --extend` **0 groups** of 1278 spans;
       `scratchpad/jr_mapper.py` **2 sites / 2 B on 2026-09-17** (both page 1,
@@ -43,9 +50,14 @@ item — do **one item per session** to keep context lean.
       floor (`scratchpad/longrun_scout.py`, `--selftest`, reuses the parent's
       normaliser and sizer so the two agree on every shared judgement) gives
       478 rows at 3+ sites. **Live candidates, overlap NOT deduped:**
-      `ld ix,SUBROM_ENTRY_BASE_P0+3*SUBROM_IDX_DEFFN`+`call subrom_call` (4
-      sites, 7 B, net 8 — one CONSTANT operand, so a 7 B stub and a 3 B call
-      per site); `call skip_comma`+`jp nz,stmt_error`+`inc hl` (4 sites, 7 B,
+      ~~`ld ix,SUBROM_ENTRY_BASE_P0+3*SUBROM_IDX_DEFFN`+`call subrom_call`~~
+      **TAKEN 2026-09-17 (D-DEFFNSUB), +12 B not the 8 the scout priced**: the
+      helper FALLS THROUGH into `subrom_call`, so it costs the `ld` alone (4 B,
+      not 7). Page 1 was 22 → 38 B and low 36 → 32 B on 2026-09-17, predicted
+      before building and measured exactly. 🎯 **THE SCOUT CANNOT SEE A
+      FALL-THROUGH** — `net` assumes a helper that cannot have one, so a row
+      whose second instruction is the START of a routine is UNDERPRICED, and
+      that is the class to look for first. `call skip_comma`+`jp nz,stmt_error`+`inc hl` (4 sites, 7 B,
       net 8 — the D-SKIPCOMMA family, which has already paid four times);
       `ld hl,0`+`or a`+`sbc hl,de` (5 sites, 6 B, net 8); `ld
       hl,(CURLINE)`+`inc hl`+`inc hl`+`ld e,(hl)`+`inc hl`+`ld d,(hl)`+`ex
@@ -2189,7 +2201,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:19825 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:19863 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -2355,7 +2367,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:6956 (T-6FE392)8 (T-529ABE)` from `TODO.md:18219 (T-529ABE)`: a
+      `TODO.md:6968 (T-6FE392)8 (T-529ABE)` from `TODO.md:18257 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -7800,7 +7812,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:18219 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:18257 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -12755,6 +12767,14 @@ finds zero shared names (a renamed block would otherwise make it silently blind)
 
 - [ ] 🛑 **RULING 4's RIG CANNOT BE BUILT FOR THREE OF ITS FOUR TARGETS —
       openMSX HAS NO JOYSTICK TO DRIVE. MEASURED, NOT SHRUGGED AT.**
+      🎚️ TIER 1 — happy path: `STICK`, `STRIG` and `PAD` are stuck at 1/2, 1/2
+      and 2/3 forms for want of an INSTRUMENT, not an implementation.
+      🔴 **THIS ITEM CARRIED NO `🎚️` TAG UNTIL 2026-09-17, AND AN UNTAGGED OPEN
+      ITEM IS IN NO TIER LIST AND BARS NO ATTAINMENT** — invisible in the
+      direction that flatters the sheet. `tools/tier_table.py` now REFUSES on
+      one. ⚠️ The tag must be on its OWN line: `TAG` is anchored at line start,
+      so a tag sharing the `- [ ]` line parses as nothing, which is how the
+      first attempt at this fix left the item still untagged.
       🙋 NEEDS-JOOST — he ruled *"build a rig, not an exemption"* (2026-09-15,
       ruling 4). The rig is not buildable with this emulator, and that is his call
       to take, not mine to work around.
@@ -12787,8 +12807,26 @@ finds zero shared names (a renamed block would otherwise make it silently blind)
       possible that day and three forms open at once. That is why this is a
       tracked probe and not a paragraph.
 
-- [ ] 🔴 **zerobas RENDERS NO FUNCTION-KEY DISPLAY LINE AT ALL, SO `KEY ON`
-      AND `KEY OFF` HAVE NOTHING TO TURN ON OR OFF.**
+- [x] ✅ **CLOSED 2026-09-17 (D-FNKLINE + D-SCROLLBOUND + D-KEYROW): the
+      function-key display line PAINTS, the row is RESERVED, and all ten cells
+      of [`scratchpad/keyon_probe.py`](scratchpad/keyon_probe.py) read
+      identically to the VG-8020, scroll row included.** `KEY` is 4/4 forms and
+      TIER 1; five pinned divergences retired, `xc-max` among them — and that
+      one was never aimed at, it measures where a WRAP lands. Three things had
+      to be true together: the line is painted byte-for-byte by
+      `keystr_tenant`'s FNK ops in sub page 0; `key_on` writes `CRTCNT` 23 and
+      `key_off` 24, measured as the console scroll bound on BOTH machines; and
+      the `LOCATE` clamp reads `CRTCNT - 1`, so clamp, scroll and screen editor
+      cannot disagree. One stated price: `PEEK(&HF3B1)` reads 23 under `KEY ON`
+      where the reference reads 24 — its BIOS keeps 24 and subtracts inside
+      `CHPUT`, and we have no BIOS to change.
+      🔴 **AND THIS ITEM STAYED CHECKED OPEN AND UNTAGGED AFTER IT SHIPPED**,
+      which is how `KEY` could be awarded TIER 1 while an open item named it:
+      an UNTAGGED item is in no tier list AND bars no attainment. The generator
+      now REFUSES on one.
+      🕰️ **The measurement that opened it, kept:**
+      🔴 **zerobas RENDERED NO FUNCTION-KEY DISPLAY LINE AT ALL, SO `KEY ON`
+      AND `KEY OFF` HAD NOTHING TO TURN ON OR OFF.**
       🤖 AUTONOMOUS — measured and specified; no decision is waiting on Joost.
       Measured 2026-09-15 (D-KEYRIG,
       [`scratchpad/keydisp_probe.py`](scratchpad/keydisp_probe.py)). With

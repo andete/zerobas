@@ -186,10 +186,9 @@ fn_call:
                 ; answered ERR 7 to every FN call the moment the base relocated.
                 ; The body is a page-0 tenant op because main page 1 had ONE byte
                 ; free; ERR 7 now comes from the pool's own collision.
-                push    ix                  ; IX is the caller's cursor; subrom_call
-                ld      l,FNF_SAVE          ; takes IX as the ENTRY and clobbers it
-                ld      ix,SUBROM_ENTRY_BASE_P0 + 3*SUBROM_IDX_DEFFN
-                call    subrom_call
+                push    ix                  ; IX is the caller's cursor; the
+                ld      l,FNF_SAVE          ; dispatch loads IX and CALSLT clobbers it
+                call    deffn_subcall
                 pop     ix
                 jp      c,subrom_absent_error
                 ld      a,(FN_FST)
@@ -293,8 +292,7 @@ fn_lp:
                 ; class too. And every wrong answer is a plausible NUMBER --
                 ; 22529, 45058, 11264 -- not damage.
                 push    de
-                ld      ix,SUBROM_ENTRY_BASE_P0 + 3*SUBROM_IDX_DEFFN
-                call    subrom_call         ; A = the tenant's request
+                call    deffn_subcall       ; A = the tenant's request
                 pop     de                  ; (a `pop` does not touch CF)
                 jp      c,subrom_absent_error
                 dec     a
@@ -373,8 +371,7 @@ fn_leave:
                 push    de                  ; [result]
                 push    hl                  ; [cursor]
                 ld      l,FNF_RESTORE
-                ld      ix,SUBROM_ENTRY_BASE_P0 + 3*SUBROM_IDX_DEFFN
-                call    subrom_call         ; absent cannot happen here: the SAVE
+                call    deffn_subcall       ; absent cannot happen here: the SAVE
                 pop     hl                  ; already errored if it were
                 pop     de
                 ret

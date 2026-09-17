@@ -55,6 +55,20 @@ _spec.loader.exec_module(_ctm)
 GATE_MARKER = _ctm.MARKER            # {emoji: compiled regex}, the gate's own
 BOX = re.compile(r"^- \[ \] ")
 HEAD_END = re.compile(r"^(#{2,3} )|^- \[")
+# 🔴 A 🎚️ LINE THAT DOES NOT PARSE IS WORSE THAN A MISSING ONE, because the
+# item then inherits whatever tag its block swallows NEXT. Measured 2026-09-17:
+# `🎚️ TIER 1 funding —` (the word between the tier and the dash) parsed as
+# nothing, and since its item was the only top-level `- [ ]` in a ~1900-line
+# stretch, its block reached a 🎚️ line 1379 lines away and printed THAT text
+# against THIS line number. The TIER 1 count was 3 before and 3 after, so no
+# number moved. LOOKALIKE exists to make that loud.
+# ⚠️ NARROW ON PURPOSE, AND THE FIRST CUT WAS NOT. `🎚️` is also a decorative
+# prefix in this file's prose ("🎚️ **PRIORITY TIERS (Joost...**"), so
+# "any line starting with 🎚️" fired on 14 items that are perfectly fine.
+# What is actually suspicious is a line that BEGINS like a tag -- the emoji
+# then a tier or class WORD -- and then fails to finish like one.
+LOOKALIKE = re.compile(r"^[ \t]*🎚️\s*(TIER [1-5]|APPARATUS|BUDGET|STANDING"
+                       r"|OTHER)\b")
 KWENT = re.compile(r'^\s*db\s+\d+,"([A-Z][A-Z$#]*)"')
 TICK = re.compile(r"`([^`\n]{1,40})`")
 WORD = re.compile(r"[A-Z][A-Z]*\$?")   # a trailing $ is part of STR$/MID$; a # never is (`PUT#1` names PUT)
@@ -101,10 +115,18 @@ def items(text):
         blk = lines[a:b]
         tier, tag_text = "UNTAGGED", ""
         marker = "?"
-        for l in blk:
+        bad = []
+        for n, l in enumerate(blk):
             m = TAG.match(l)
             if m:
-                tier, tag_text = m.group(1), m.group(2)
+                # 🎯 THE FIRST TAG WINS, NOT THE LAST. A 🎚️ line belongs to the
+                # item it FOLLOWS; last-wins let a distant line inside a
+                # swallowed block override the item's own. Only one block in the
+                # tree has ever held two (2026-09-17), and that one was the bug.
+                if tier == "UNTAGGED":
+                    tier, tag_text = m.group(1), m.group(2)
+            elif LOOKALIKE.match(l):
+                bad.append((a + n + 1, l.strip()[:70]))
             for emoji, rx in GATE_MARKER.items():
                 if rx.match(l):
                     marker = emoji
@@ -118,8 +140,34 @@ def items(text):
         head = head[:e + 2] if e > 0 else head[:120]
         head = head.replace("**", "")
         res.append(dict(line=a + 1, tier=tier, tag=tag_text, marker=marker,
-                        head=head, body="\n".join(blk)))
+                        head=head, body="\n".join(blk), badtags=bad))
     return res
+
+
+def tag_faults(its):
+    """Every way an open item can be in NO tier list, as a list of complaints.
+
+    🔴 BOTH OF THESE WERE LIVE ON 2026-09-17 AND NEITHER MOVED A COUNT:
+      * a MALFORMED 🎚️ line -- the item inherits a tag from elsewhere in its
+        block (see LOOKALIKE above);
+      * an UNTAGGED open item -- it appears in no tier list AND bars no
+        attainment, so `KEY` was awarded TIER 1 while an open item named it.
+        Two items were in this state, one of them finished and left checked
+        open.
+    🎯 THE ASYMMETRY IS THE POINT: a missing tag is invisible in the direction
+    that FLATTERS the sheet, so it has to be a refusal rather than a note.
+    """
+    out = []
+    for it in its:
+        for ln, txt in it.get("badtags", ()):
+            out.append("TODO.md:%d: 🎚️ line does not parse (wants `TIER n —`, "
+                       "`APPARATUS —`, `BUDGET —`, `STANDING —` or `OTHER —`): %s"
+                       % (ln, txt))
+        if it["tier"] == "UNTAGGED":
+            out.append("TODO.md:%d: open item carries no 🎚️ tag, so it is in no "
+                       "tier list and bars no attainment: %s"
+                       % (it["line"], it["head"][:60]))
+    return out
 
 
 def base_tier(t):
@@ -212,11 +260,24 @@ def kw_gaps(its, kws):
 # and NON-VACUITY (a mutation check showing the rows would go red if it broke),
 # and no keyword has been shown to have either. The old labels read as a ladder
 # ("1 — happy path only") and implied a rung had been climbed.
+# 🔴 A BUCKET LABEL IS NOT A CAUSE, AND THESE FIVE READ LIKE ONE. Joost,
+# 2026-09-17, of the attainment bar: *"no open item at or below this tier => yes,
+# that is the correct way to interprete"* -- which `blocks_tier1` has implemented
+# since 2026-09-14, so an item at tier 2..5 does NOT hold a keyword out of TIER
+# 1. Only the labels still said it did, and they were read as the reason: they
+# put `PAINT`, `PUT`, `CONT` and `LOAD` under "open TIER n item" when the actual
+# TIER 1 blocker is FORM COVERAGE (`PAINT` 1 form, `LOAD` 1, `PUT` none) or
+# CONNECTEDNESS (`CONT` is not knife-proven). The alphabetical column now states
+# the real blocker first and keeps the item as an ALSO.
 REACHED = {1: "TIER 0 — open TIER 1 item (happy path broken or keyword MISSING)",
-           2: "TIER 0 — open TIER 2 item (works, but not in reasonable time)",
-           3: "TIER 0 — open TIER 3 item (a common error situation is wrong)",
-           4: "TIER 0 — open TIER 4 item (slower than the reference)",
-           5: "TIER 0 — open TIER 5 item (an exhaustive error case is wrong)",
+           2: "TIER 0 — TIER 1 bar unmet; an open TIER 2 item also stands "
+              "(works, but not in reasonable time)",
+           3: "TIER 0 — TIER 1 bar unmet; an open TIER 3 item also stands "
+              "(a common error situation is wrong)",
+           4: "TIER 0 — TIER 1 bar unmet; an open TIER 4 item also stands "
+              "(slower than the reference)",
+           5: "TIER 0 — TIER 1 bar unmet; an open TIER 5 item also stands "
+              "(an exhaustive error case is wrong)",
            "kwgap": "TIER 0 — a gap kwsweep SEES that no open item files (DIVERGENT/MISSING)",
            # 🔴 NOT TIERS (Joost, 2026-09-13: "kwsweep SUPPORTED is not evidence
            # for tier 1"). A SUPPORTED verdict says zerobas and the reference
@@ -246,9 +307,19 @@ REACHED = {1: "TIER 0 — open TIER 1 item (happy path broken or keyword MISSING
            "kwpart": "NOT A STATEMENT — a syntax particle of another statement; "
                      "counted in the TOKEN denominator, not the STATEMENT one",
            # 🎚️ Joost, 2026-09-14, the same ruling he gave the particles.
+           # 🔴 THIS LABEL SAID "counted in the TOKEN denominator, not the
+           # STATEMENT one" UNTIL 2026-09-17, AND `statements()` HAD ALREADY PUT
+           # THESE WORDS BACK. Joost's refinement that day ("...unless there is
+           # no happy path in which case it works correctly in the normal
+           # failing path") returns them to the STATEMENT denominator -- so two
+           # halves of ONE generated sheet disagreed about the denominator the
+           # headline count rests on, and the arithmetic only closes the way the
+           # code computes it: 167 = 148 + 19 INCLUDES `ATTR$` and `CALL`.
+           # [[two-sections-of-one-doc-disagreed]]
            "kwrefuse": "NO HAPPY PATH HERE — the reference REFUSES it too (ERR 5 "
-                       "on both); counted in the TOKEN denominator, not the "
-                       "STATEMENT one"}
+                       "on both), so the NORMAL FAILING path is the whole bar; "
+                       "counted in BOTH denominators since Joost's 2026-09-17 "
+                       "refinement"}
 GROUP_ORDER = ["t1", "kwgap", 1, 2, 3, 4, 5, "kw1", "kw1c", "kw3", "kw3c",
                "kwcomp", "kwpart", "kwrefuse", None]
 
@@ -463,7 +534,7 @@ def kwsweep_forms(kws, path=KWSWEEP_PIN):
     return out
 
 
-def tier1_status(kw, forms_seen, connected, has_open_item):
+def tier1_status(kw, forms_seen, connected, blocked_by_tier1_item):
     """Joost's TIER 1 rule (2026-09-14): CONNECTED + N distinct FORMS + no open item.
 
     Returns (reached, why) where reached is True only when all three hold.
@@ -477,7 +548,12 @@ def tier1_status(kw, forms_seen, connected, has_open_item):
     if not need:
         return False, "UNRATED — no authored form list"
     missing = [f for f in need if f not in forms_seen]
-    if has_open_item:
+    # ⚠️ THE CALLER MUST PASS `blocks_tier1(entry)`, NOT `g is not None`. This
+    # parameter was named `has_open_item` and every caller handed it ANY open
+    # item, so the sentence below was printed for keywords whose only item is at
+    # tier 4 or 5 -- disagreeing with `blocks_tier1` in the same file. Joost's
+    # 2026-09-17 ruling settles which of the two is right: only a TIER 1 item.
+    if blocked_by_tier1_item:
         return False, "an open TIER 1 item stands against it"
     if not connected:
         return False, "not knife-proven CONNECTED"
@@ -596,6 +672,11 @@ def reached_group(g, e, t3=False, conn=False, tier1=False, nobare=False,
         return "t1"
     if refuses:
         return "kwrefuse"
+    # 🔴 `and g != 1`: a TIER 1 item is still the headline even here, because that
+    # is a HAPPY-PATH gap in the composite the keyword exists inside; anything
+    # above tier 1 is not what stops a bare form that does not exist.
+    if nobare and g != 1:
+        return "kwcomp"
     if g is not None:
         return g                                  # 1..5: stuck below that tier
     # 🔴 THIS TEST USED TO SIT BELOW THE ROW EVIDENCE, AND THE ROW WON. `MAX` is
@@ -935,11 +1016,16 @@ def fmt_markdown(its, kws, evidence=None, t3=None, connected=None):
             "so they are counted as TOKENS and marked in the table rather than "
             "inflating the statement count with things a user cannot write. "
             "(`AS` is not in this tree's table at all.)\n"
-            "\U0001f6ab REFUSE-ON-SIGHT WORDS ARE OUT TOO (Joost, same ruling). "
-            "`SET`, `IPL` and `CMD` answer ERR 5 on BOTH references \u2014 they are "
-            "tokenised and then refused \u2014 so they have no happy path on this "
-            "machine at all, and a bar reading \"refuses correctly\" would be a "
-            "TIER 5 reading wearing a TIER 1 label.\n"
+            "\U0001f6ab REFUSE-ON-SIGHT WORDS ARE IN, AND THIS PARAGRAPH USED TO "
+            "SAY THEY WERE OUT. `SET`, `IPL`, `CMD`, `ATTR$` and `CALL` answer "
+            "ERR 5 on BOTH references \u2014 they are tokenised and then refused. "
+            "On 2026-09-14 that removed them, reasoning that a bar reading "
+            "\"refuses correctly\" would be a TIER 5 reading wearing a TIER 1 "
+            "label; Joost's 2026-09-17 refinement answers exactly that \u2014 TIER "
+            "5 is EVERY error situation, while for these words the refusal is "
+            "the ONLY path there is, so it is the normal one. `SET`, `IPL` and "
+            "`CMD` have reached it; `ATTR$` and `CALL` have not, and cannot be "
+            "knife-proven CONNECTED at all \u2014 there is no handler to cut.\n"
             "\u26a0\ufe0f THE OPERATORS STAY, MARKED. `AND OR NOT XOR EQV IMP MOD` are "
             "never statements either, but unlike a particle each HAS BEHAVIOUR OF "
             "ITS OWN worth tiering \u2014 `A AND B` has a truth table to get right and "
@@ -981,6 +1067,11 @@ def fmt_markdown(its, kws, evidence=None, t3=None, connected=None):
             out.append(f"| `{kw}` | **TIER 1** | CONNECTED; "
                        f"{'its 1 form agrees' if _n == 1 else f'all {_n} forms agree'}"
                        f"; no open item |")
+        # ⚠️ `g != 1` KEEPS THE TIER 1 CASE ON THE ARM BELOW, AND S14 IS WHAT
+        # SAID SO. Widening this to every `g` sent `LOF` -- whose blocker really
+        # IS its TIER 1 item -- through `tier1_status`, which names the item but
+        # DROPS the TODO.md citation, the more useful half. When the item is the
+        # cause, cite it; when it is not, say what is.
         elif _need and g is None:
             # ⚠️ `and g is None`: when an open item ALSO stands against the keyword,
             # the arm below keeps the cell that names the item and its TODO.md
@@ -993,7 +1084,20 @@ def fmt_markdown(its, kws, evidence=None, t3=None, connected=None):
             # missing. `tier1_status` already computes the sentence; the only bug
             # was not printing it.
             _ok, _why = tier1_status(kw, forms.get(kw, set()), kw in conn,
-                                     g is not None)
+                                     blocks_tier1(kt.get(kw)))
+            out.append(f"| `{kw}` | TIER 0 | {_why} |")
+        # 🎯 AN ITEM ABOVE TIER 1 IS AN *ALSO*, NEVER THE REASON. `CONT` has no
+        # authored form list and is not knife-proven CONNECTED -- two real TIER 1
+        # blockers -- and the sheet printed only "open TIER 5 item", which is the
+        # one thing that does NOT hold it out of TIER 1 (Joost, 2026-09-17).
+        elif g is not None and g != 1 and grp not in ("kwrefuse", "kwpart",
+                                                      "kwcomp"):
+            _ok, _why = tier1_status(kw, forms.get(kw, set()), kw in conn,
+                                     blocks_tier1(kt.get(kw)))
+            if kw not in conn and "CONNECTED" not in _why:
+                _why += "; not knife-proven CONNECTED"
+            _why += ("; an open TIER %s item also stands, %s"
+                     % (g, " ".join("TODO.md:%d" % l for l in sorted(lines))))
             out.append(f"| `{kw}` | TIER 0 | {_why} |")
         elif grp == "kwrefuse":
             out.append(f"| `{kw}` | \u2014 | refused by the reference too; no happy "
@@ -1054,6 +1158,12 @@ def main(argv=None):
     if a.selftest:
         return selftest()
     its = items(open(TODO, encoding="utf-8").read())
+    faults = tag_faults(its)
+    if faults:
+        print("\U0001f534 tier_table: %d open item(s) cannot be tiered" % len(faults))
+        for f in faults:
+            print("   ", f)
+        return 2
     kws = keywords()
     if a.markdown:
         # 🔴 REFUSE RATHER THAN RENDER FROM A PIN THAT ISN'T THERE -- see

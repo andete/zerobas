@@ -1407,8 +1407,7 @@ raise_error:
                 or      a
                 jr      z,rerr_nofn
                 ld      l,FNF_UNWIND
-                ld      ix,SUBROM_ENTRY_BASE_P0 + 3*SUBROM_IDX_DEFFN
-                call    subrom_call         ; absent sub-ROM: nothing to unwind
+                call    deffn_subcall       ; absent sub-ROM: nothing to unwind
 rerr_nofn:
                 call    record_errline
                 ; resolve the abort-fallback message FIRST (into HL), THEN decide
