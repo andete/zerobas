@@ -2026,7 +2026,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:19438 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:19486 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -18959,6 +18959,54 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       since D-CLP; corrected in the same commit
       [[a-fix-falsifies-the-justification-beside-it]].
       🤖 AUTONOMOUS — implement; the references settle the behaviour (ruled 2026-09-10).
+
+- [ ] 🔴 **`KEY ON` DOES NOT RESERVE THE FUNCTION-KEY LINE — THE TEXT WINDOW IS
+      ONE ROW TOO TALL.** Measured 2026-09-17 (D-AKCM,
+      [`scratchpad/akcm_probe.py`](scratchpad/akcm_probe.py)), two machines:
+      | | `KEY OFF` | `KEY ON` |
+      |---|---|---|
+      | `LOCATE 0,23 : PRINT CSRLIN` — VG-8020 | 23 | **22** |
+      | the same, zerobas | 23 | **23** |
+      With `KEY ON` the reference keeps row 23 for the function-key display and
+      the text window is rows 0..22; here row 23 is still writable. The `KEY OFF`
+      halves agree exactly, so the disagreement is `KEY ON` and not the cursor.
+      🎯 **AND IT IS A ROW INDEX, WHICH IS WHY THIS IS MEASURABLE AT ALL.**
+      D-KWOSK left these two forms UNCOVERED on purpose because the obvious
+      instrument — the function-key line in VRAM — has a different layout on the
+      two machines (LINLEN 37 vs 39; the assigned string at name-table offset 922
+      on the reference only), and the first cut scored SUPPORTED on `32` from
+      both, an agreement about a blank cell.
+      ⚠️ **`CRTCNT` ($F3B1) IS NOT THE OBSERVABLE EITHER**, and it was the obvious
+      second guess: it reads **24 on both machines in BOTH states**, delta 0. A
+      row on it would have agreed on a constant — the same mistake in a new cell.
+      🟢 The half that AGREES now has a row (`keykw_off`, `FORM:display-off`), so
+      `KEY` stands at **3 of 4** authored forms.
+      📌 **THE `display-on` ROW IS OWED, NOT WRITTEN OFF** — it belongs with the
+      fix, and until it exists `KEY` cannot reach TIER 1 even if everything else
+      agrees [[a-row-written-off-as-out-of-scope-leaves-the-bookkeeping]].
+      🎚️ TIER 1 — happy path: a documented statement whose observable effect is
+      absent here.
+      🤖 AUTONOMOUS — the bar comes from the reference, and both halves are
+      measured.
+
+- [ ] 🔭 **`AUTO` STANDS AT 1/3 FORMS AND THE BLOCKER IS THE RIG, NOT THE VERB.**
+      `AUTO` leaves the machine in LINE-ENTRY MODE, which eats whatever row
+      follows — it once took **21** other rows with it — so its single row is last
+      by placement and no second one can be added beside it.
+      🎯 **THE FIX IS BOOT-PER-CASE, AND THE MACHINERY EXISTS**: `NEEDS-LOG:` and
+      the tape rigs already force `batch=False` in `_rig_kwargs`
+      (`probes/basic/basic_probe_kwsweep.py`), so a row that only needs its own
+      boot has nothing to invent — it needs a tag that sets that one kwarg.
+      📏 The two missing forms and what would read them:
+      * `bare` — `AUTO` prompts `10`; the start form already covers `AUTO 100`.
+      * `start-increment` — `AUTO 100,5` prompts `100` and then **`105`**, which
+        the start form cannot show: the increment is only visible on the SECOND
+        prompt, so the row must enter a line. `RESPOND:` already types lines
+        after a run, and D-KWEDIT's `PROGRAM:` rows showed the delivery works.
+      ⚠️ Both forms leave line-entry mode behind them, so both need the new tag —
+      it is not enough to put one of them last.
+      🎚️ TIER 1 — happy path: two documented spellings with no row.
+      🤖 AUTONOMOUS — the rig is the whole of the work.
 
 - [ ] **Keyword-completeness gaps — the measured remainder of MSX1 BASIC.**
       **The coverage denominator now exists** (2026-07-26,

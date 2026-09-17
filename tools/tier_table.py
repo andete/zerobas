@@ -595,6 +595,16 @@ def reached_group(g, e, t3=False, conn=False, tier1=False, nobare=False,
         return "t1"
     if g is not None:
         return g                                  # 1..5: stuck below that tier
+    # 🔴 THIS TEST USED TO SIT BELOW THE ROW EVIDENCE, AND THE ROW WON. `MAX` is
+    # in NO_BARE_FORM and was still reported as "no known gap; ONE happy-path row
+    # agrees", because a SUPPORTED verdict was checked first -- and that verdict
+    # came from `maxkw`, whose `PRINT"[";MAX;"]"` is **ERR 2 on both machines**
+    # (D-AKCM). So the one piece of evidence for a word with no bare form was two
+    # machines AGREEING ON AN ERROR, which is on this tree's own do-not-award
+    # list. The comment below always said "a row of its own cannot" -- the code
+    # just checked it too late to mean it. [[a-case-that-agrees-can-agree-for-the-wrong-reason]]
+    if nobare:
+        return "kwcomp"          # no bare form exists -- a row of its own cannot
     if e == "SUPPORTED":
         # A PROVES-T3 row is the rung above a happy-path row: same keyword, a
         # SECOND row that scored an ERROR situation against the reference.
@@ -603,9 +613,15 @@ def reached_group(g, e, t3=False, conn=False, tier1=False, nobare=False,
         return "kw1c" if conn else "kw1"
     if e in ("DIVERGENT", "MISSING", "SILENT-GAP", "EXTRA"):
         return "kwgap"                            # a gap kwsweep sees and nobody filed
-    if nobare:
-        return "kwcomp"          # no bare form exists -- a row of its own cannot
     return None                                   # no known gap, no evidence
+
+
+def _nobare_prose() -> str:
+    """kwforms.NO_BARE_FORM as `\u0060A\u0060, \u0060B\u0060 and \u0060C\u0060`, so the sentence cannot
+    drift from the set it is explaining."""
+    import kwforms                      # imported locally, as everywhere else here
+    ws = ["`%s`" % w for w in sorted(kwforms.NO_BARE_FORM)]
+    return ", ".join(ws[:-1]) + " and " + ws[-1] if len(ws) > 1 else ws[0]
 
 
 def fmt_items(its, kws, tiers_only=True, width=70):
@@ -877,9 +893,15 @@ def fmt_markdown(its, kws, evidence=None, t3=None, connected=None):
             "## Two denominators, and which question each answers", "",
             "**TOKEN \u2014 %d** (`basic/kwtable.inc`): is every token in the table "
             "implemented? That is what the per-keyword sections below count.\n"
+            # 🔴 THE EXCLUSION LIST IS GENERATED, and it was not always: it
+            # named five words by hand while kwforms.NO_BARE_FORM had held SIX
+            # since 2026-09-14 (`MAX` joined and the sentence did not). A
+            # document whose prose disagrees with the code that computes its own
+            # number is the failure class this tree keeps meeting.
+            # [[two-sections-of-one-doc-disagreed]]
             "**STATEMENT \u2014 %d**: how much of the LANGUAGE works? The %d "
-            "keywords that have a bare statement form (`DEF`, `GET`, `ON`, `PUT` "
-            "and `USING` do not, and would double-count against their own "
+            "keywords that have a bare statement form (%s do not, and would "
+            "double-count against their own "
             "composites) plus the %d composite and channel statements. "
             "**%d of them have reached TIER 1.**\n\n"
             "\u2702\ufe0f SYNTAX PARTICLES ARE OUT (Joost, 2026-09-14: *\"Drop them and "
@@ -900,6 +922,7 @@ def fmt_markdown(its, kws, evidence=None, t3=None, connected=None):
             % (len(kws), len(statements(kws)),
                len(set(kws) - set(no_bare_form()) - set(particles())
                    - set(refuse_only())),
+               _nobare_prose(),
                len(composite_names()),
                len(tier1_statements(statements(kws), conn, forms, kws))), "",
             "## Every keyword and its tier", "",

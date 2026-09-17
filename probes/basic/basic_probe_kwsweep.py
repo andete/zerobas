@@ -1596,6 +1596,12 @@ SWEEP: list[tuple[str, str, str | None, str, str]] = [
      "D-KWDRAIN: bare ATTR$ raises Illegal function call -- so the word IS a token here; an undefined string variable prints empty instead"),
     ("stopkw",    'stop',        'PRINT"[T1]":STOP',        "stored",
      "FORM:break D-KWDRAIN: prints then Break in 10 on both machines; without STOP there is no Break"),
+    # 🔴 D-AKCM (2026-09-17): THIS ROW AGREES ON AN ERROR. `PRINT"[";MAX;"]"` is
+    # ERR 2 on BOTH references and here -- the `[` prints, then the bare `MAX`
+    # raises -- so its SUPPORTED verdict is two machines failing identically. It
+    # is kept because the AGREEMENT is still worth pinning (the word tokenises
+    # the same way on both), but `MAX` is NO_BARE_FORM and `tier_table` no longer
+    # reads this as happy-path evidence.
     ("maxkw",     'max',               'PRINT"[";MAX;"]"',                     "direct",
      "D-KWDRAIN: bare MAX is a Syntax error on a real machine; a stub prints 0"),
     ("strigkw",   'a=strig(0)',        'PRINT"[";STRIG(5);"]"',                "direct",
@@ -2826,6 +2832,37 @@ SWEEP: list[tuple[str, str, str | None, str, str]] = [
     # [[a-case-that-agrees-can-agree-for-the-wrong-reason]] -- and the scan that
     # found the real offset (scratchpad/keyline_probe.py) is what
     # said why. The display forms stay UNCOVERED rather than measured wrongly.
+    # 🟢 D-AKCM (2026-09-17): THEY HAVE AN INSTRUMENT NOW, AND IT IS NOT A VRAM
+    # CELL. `KEY ON` reserves the bottom line for the function-key display, so the
+    # TEXT WINDOW is one row shorter -- and a ROW INDEX is machine-independent
+    # where a name-table offset is not. `LOCATE 0,23` then `CSRLIN` reads:
+    #     KEY OFF   23 on the VG-8020 and 23 here      -- agree
+    #     KEY ON    22 on the VG-8020 and 23 here      -- 🔴 DIVERGENT
+    # 🔴 SO `KEY ON` DOES NOT RESERVE THE LINE HERE. That is a TIER 1 defect, not
+    # an evidence gap, and it is filed as one; only the form that AGREES is
+    # authored below. ⚠️ THE `display-on` ROW IS OWED, not written off: it belongs
+    # with the fix, and the item says so
+    # [[a-row-written-off-as-out-of-scope-leaves-the-bookkeeping]].
+    # ⚠️ `CRTCNT` ($F3B1) IS NOT THE OBSERVABLE and was the obvious guess: it reads
+    # **24 on both machines in BOTH states**, delta 0. A row on it would have
+    # agreed on a constant -- the same mistake as the blank VRAM cell, in a new
+    # cell (scratchpad/akcm_probe.py).
+    ("keykw_off", 'key off',
+     'KEY OFF:LOCATE 0,23:A=CSRLIN:CLS:PRINT"[K4";A;"]"',        "stored",
+     "NOECHO:[K4 "
+     "FORM:display-off \u26a0\ufe0f THE `CLS` IS LOAD-BEARING: the first cut printed "
+     "from wherever `LOCATE 0,23` left the cursor and scored DIVERGENT on the "
+     "SCREEN FURNITURE -- 19 line separators against 20 -- while BOTH machines "
+     "read 23. The value is the reading; the scroll geometry is not, and the two "
+     "boot screens do not agree on it. Snapshot CSRLIN, clear, then print. "
+     "\u26a0\ufe0f AND THE `CLS` TAKES THE ECHOED COMMAND WITH IT, so the row is "
+     "anchored on its own `[K4` marker (NOECHO:) instead -- the second cut scored "
+     "UNREADABLE on both sides for exactly that reason. "
+     "With the function-key line given back, row 23 is inside the "
+     "text window and CSRLIN reads 23 on both machines. Its twin `KEY ON` reads 22 "
+     "there and 23 here, which is the filed TIER 1 divergence -- so this row is "
+     "the half that agrees, and it is a ROW INDEX rather than a VRAM offset "
+     "because the two machines' name tables do not line up"),
     # 🔴 `WAIT` IS BACK, AND THE ROW THAT BLOCKED FOR EVER IS WHY IT LOOKS LIKE
     # THIS. Batch 3 wrote `WAIT &HA9,0`, read mask 0 as "already true", and the
     # row never returned. `WAIT p,m` returns when `INP(p) AND m` is non-zero, so
@@ -3364,6 +3401,10 @@ SWEEP: list[tuple[str, str, str | None, str, str]] = [
     # [[a-case-that-agrees-can-agree-for-the-wrong-reason]].
     # 🎯 NOT A DISK ROW: `CALL` is reserved on the diskless VG-8020 too, which is
     # what makes the VG-8020 its proper oracle.
+    # 🔴 D-AKCM (2026-09-17): SO DOES THIS ONE, AND IT IS WHY `CALL` IS NOW A
+    # REFUSE-ON-SIGHT WORD. `CALL FOO`, the `_FOO` shorthand and a bare `CALL` are
+    # ERR 2 on both references -- `CALL <name>` dispatches to an EXTENSION ROM and
+    # a bare MSX1 has none. The word has no happy path on this machine.
     ("callkw",   "call zzq",  'CALL=1:PRINT"[C1]"',   "stored",
      "D-KWGET: reservedness only — Syntax error on all three machines where the "
      "stub shape assigns and prints"),

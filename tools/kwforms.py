@@ -143,7 +143,15 @@ OPERATORS: frozenset[str] = frozenset(
 # `ATTR_TOKEN equ $E9 ; ATTR$ — tokenised, then ERR 5 (no function)`, and the
 # row's own note agrees: *"bare ATTR$ raises Illegal function call -- so the word
 # IS a token here"*. Tokenised and refused is the same shape as SET/IPL/CMD.
-REFUSE_ONLY: frozenset[str] = frozenset(("SET", "IPL", "CMD", "ATTR$"))
+# ⚠️ `CALL` JOINED 2026-09-17 (D-AKCM, scratchpad/akcm_probe.py). `CALL FOO`,
+# the `_FOO` shorthand and a bare `CALL` are **ERR 2 on BOTH references** and
+# here. `CALL <name>` is a real MSX statement -- it dispatches to an EXTENSION
+# ROM -- and on a bare MSX1 there is none to dispatch to, so the word has no
+# happy path on this machine. Same conclusion as SET/IPL/CMD, by a different
+# error: those are tokenised and refused with ERR 5, this one has nothing to
+# call. 🔴 ITS ONLY ROW (`callkw`) AGREES ON THAT ERROR, which is precisely what
+# this tree does not award on.
+REFUSE_ONLY: frozenset[str] = frozenset(("SET", "IPL", "CMD", "ATTR$", "CALL"))
 
 # ⚠️ `MAX` JOINED 2026-09-14 (D-KWSIX): `MAX_TOKEN equ $CD ; MAX — 1st half of
 # MAXFILES (statement: MAX FILES = n)`, and kwtable holds `MAX` and `FILES` as
