@@ -26,6 +26,49 @@ item — do **one item per session** to keep context lean.
 
 ## Open — standing residuals (INDEX; this is the pickup list)
 
+- [ ] 💰 **THE CARVE INVENTORY, RE-RUN 2026-09-17 (D-LONGRUN) — THE MECHANICAL
+      FAMILY IS NOT SHUT, IT IS JUST SMALL: ~20-40 B, NONE OF IT IN ONE PIECE.**
+      🎚️ TIER 1 funding — this is what `PLAY`'s `X<var>;` is ~30 B short of.
+      Every route in [[carve-routes-measured-shut]] re-measured from a clean
+      tree: `clone_scout --min 4 --extend` **0 groups** of 1278 spans;
+      `scratchpad/jr_mapper.py` **2 sites / 2 B on 2026-09-17** (both page 1,
+      `jp kill_status` at `basic/files.asm:1609` and `:1681`) — and Route D
+      RENEWS on every insertion, so that figure was taken, not predicted; promotion still
+      moves the page-1 ↔ low split 1:1 and **cannot raise their sum**;
+      `scratchpad/pair_carve_scout.py` best row **net 5 B**. 🔴 **THE ONE
+      UNASKED QUESTION WAS ITS SITE FLOOR** — that tool discards every run seen
+      at fewer than 8 sites, and `net = n*(cost-3) - (cost+1)` is linear in
+      **cost** as well as in n, so a 12 B run at 4 sites beats a 4 B run at 10
+      five times over, and long runs are RARER by construction. Removing the
+      floor (`scratchpad/longrun_scout.py`, `--selftest`, reuses the parent's
+      normaliser and sizer so the two agree on every shared judgement) gives
+      478 rows at 3+ sites. **Live candidates, overlap NOT deduped:**
+      `ld ix,SUBROM_ENTRY_BASE_P0+3*SUBROM_IDX_DEFFN`+`call subrom_call` (4
+      sites, 7 B, net 8 — one CONSTANT operand, so a 7 B stub and a 3 B call
+      per site); `call skip_comma`+`jp nz,stmt_error`+`inc hl` (4 sites, 7 B,
+      net 8 — the D-SKIPCOMMA family, which has already paid four times);
+      `ld hl,0`+`or a`+`sbc hl,de` (5 sites, 6 B, net 8); `ld
+      hl,(CURLINE)`+`inc hl`+`inc hl`+`ld e,(hl)`+`inc hl`+`ld d,(hl)`+`ex
+      de,hl` (3 sites, 9 B, net 8); `call subrom_call`+`pop ix`+`jp
+      c,subrom_absent_error` (3 sites, 8 B, net 6). ⚠️ **`net` IS A CEILING**
+      (it assumes a helper that cannot fall through), rows OVERLAP so the
+      savings are NOT additive, and `sites` counts SOURCE lines — D-EVSPCLOSE
+      lost one to `IF !G8_RESIDENT`. 🎯 **AND THE TOP ROW OF THE NEW SCAN IS
+      PRE-REFUSED IN THE SOURCE**: `push de`+`call push_lhs_frame`+`call
+      set_factyp_int_ret` (6 sites, net 14) is declined at
+      [basic/float-arith.asm:1550](basic/float-arith.asm:1550) because the run
+      is a FIXED-SIZE FRAME PROTOCOL and a helper's return address lands INSIDE
+      the frame — a comment that ends *"the sweep will keep ranking it, and the
+      answer will keep being no"*, and it was right. **Reading it also found
+      its DE-stash bullet enumerating FIVE call sites when there are SIX**
+      (`ev_pw_lp` unnamed); the sixth satisfies the argument (`push de`
+      immediately before, `call ev_f` immediately after), so the code was right
+      and only the count was stale — fixed here, 0 B. ⛔ **DO NOT re-open the
+      `push_lhs_frame` run.** Routes B (page-0 verb eviction, 2563 B behind a
+      structural refusal) and C (the sub page-1 eval-bounce co-routine, open
+      and unpriced) were NOT re-measured today and are the only routes left
+      that could pay in one piece.
+
 🔬 **RE-SWEEP DONE 2026-08-26 (D-TODOSWEEP), 65 TRANCHES** —
 [`docs/todo-sweep-2026-08-26.md`](docs/todo-sweep-2026-08-26.md), verdicts in
 `scratchpad/sweep_verdicts.json`, denominator `tools/todo_inventory.py`.
@@ -2146,7 +2189,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:19782 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:19825 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -2312,7 +2355,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:6913 (T-6FE392)8 (T-529ABE)` from `TODO.md:18176 (T-529ABE)`: a
+      `TODO.md:6956 (T-6FE392)8 (T-529ABE)` from `TODO.md:18219 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -7757,7 +7800,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:18176 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:18219 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

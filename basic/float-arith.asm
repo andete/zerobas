@@ -1537,9 +1537,9 @@ widen_int_to:
 ; Fixed by popping the return address off FIRST (out of the way of the
 ; frame pushes), then pushing it back on top right before the final ret --
 ; own design, the standard "preserve a persistent stack frame across a call
-; boundary" idiom. Uses DE as the stash (safe here because at all 5 call
-; sites -- evr_rhs, ev_e_add, ev_e_sub, ev_t_mul, ev_t_div -- the very next
-; thing the caller does after this call is invoke the rhs sub-evaluator,
+; boundary" idiom. Uses DE as the stash (safe here because at all 6 call
+; sites -- evr_rhs, ev_e_add, ev_e_sub, ev_t_mul, ev_t_div, ev_pw_lp -- the very
+; next thing the caller does after this call is invoke the rhs sub-evaluator,
 ; which overwrites DE with the rhs value before DE is ever read again; the
 ; lhs value this DE might have held was already pushed to the stack by the
 ; caller BEFORE this call). The matching pop side (pop_lhs_and_probe,
