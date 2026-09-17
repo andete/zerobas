@@ -327,6 +327,24 @@ str_mkf:
                 ld      a,c
                 ld      (STRSCR),a          ; length = the width; reloaded below because
                                             ; the coercion helpers clobber BC
+                ; 🏗️ JOOST RULED 2026-09-17: EVERY DISK COMMAND'S IMPLEMENTATION
+                ; BELONGS IN disk.rom BEHIND ITS HOOK, and of MKI$'s filed
+                ; exemption -- "needs DE, which does not survive CALSLT" --
+                ; *"perhaps we need to work around this"*. THE WORKAROUND IS THE
+                ; ABI THIS TREE ALREADY WROTE: hk_mkfloat's header says
+                ; "EVERYTHING CROSSES IN RAM, NOT IN REGISTERS", so DE crosses in
+                ; RAM like the width above it and the value in FAC beside it.
+                ; 🎯 AND IT IS ONE INSTRUCTION, because `ld (nn),de` writes E THEN
+                ; D -- exactly the low-then-high order the eight bytes of
+                ; `str_mkf_int` used to spell out by hand.
+                ; ⚠️ UNCONDITIONAL, AND THAT IS CHEAPER THAN A SECOND BRANCH. For
+                ; a FLOAT argument DE is not the value (FAC is), so this writes
+                ; junk -- which hk_mkfloat then overwrites IN FULL: its `ldir`
+                ; copies all 4 or 8 bytes from FAC over STRSCR+1.. before it
+                ; returns. A branch to skip it would cost a `jr` and buy nothing.
+                ; ⚠️ AND IT MUST SIT HERE, BEFORE `cp 2`: `ld (nn),de` sets no
+                ; flags, but it must not come between the compare and its `jr`.
+                ld      (STRSCR+1),de       ; MKI$'s packed form IS the raw integer
                 ; --- D-MKHOOK: these three verbs belong to the DISK ROM ---------
                 ; docs/spec-basic-nodisk.md §9. Their keyword-table entries are
                 ; faithfully ours (a diskless VG-8020 crunches MKI$ to `FF AE`),
@@ -371,13 +389,13 @@ mkf_hook:
                 ; `F7 <slot> <lo> <hi> C9`, so `jp (hl)` runs the inter-slot call
                 ; and its `ret` lands on mkf_back. Unclaimed it is a bare `ret` and
                 ; lands there at once with CF untouched.
-                push    de                  ; DE is MKI$'s value; CALSLT clobbers it
+                ; 🟢 NO `push de` HERE ANY MORE. It existed only to carry MKI$'s
+                ; value across CALSLT, and the value is in RAM before we arrive.
                 ld      de,mkf_back
                 push    de
                 or      a                   ; CF clear = "nobody claimed it"
                 jp      (hl)
 mkf_back:
-                pop     de
                 jr      c,mkf_have
                 ld      a,3                 ; Illegal function call, DEFERRED --
                 call    penderr_set         ; first-error-wins outranks the syntax
@@ -385,20 +403,20 @@ mkf_back:
                 pop     hl                  ; balance the guarded cursor
                 jr      str_eval_no         ; `jr` (D-SCRARITY carve): 1 B
 mkf_have:
-                ld      a,(STRSCR)          ; the hook clobbered A
-                cp      2
-                ; 🎯 D-DISKABI: THE FLOAT COERCION IS NOT HERE ANY MORE. For MKS$
-                ; and MKD$ the hook above WAS the conversion -- hk_mkfloat
-                ; (disk/kernel.asm) widened, packed and filled STRSCR before
-                ; returning -- so there is nothing left to do but wrap the
-                ; descriptor. MKI$ keeps its store here because it needs DE, which
-                ; does not survive CALSLT.
-                jr      nz,str_mkf_desc
-str_mkf_int:
-                ld      a,e
-                ld      (STRSCR+1),a        ; low byte of n
-                ld      a,d
-                ld      (STRSCR+2),a        ; high byte of n
+                ; 🎯 D-DISKABI + D-MKINT: NO COERCION AND NO DISCRIMINATION HERE
+                ; ANY MORE, FOR ANY OF THE THREE. For MKS$/MKD$ the hook WAS the
+                ; conversion -- hk_mkfloat (disk/kernel.asm) widened, packed and
+                ; filled STRSCR before returning. For MKI$ the packed form IS the
+                ; raw integer, staged into STRSCR+1 above, so the hook has nothing
+                ; to compute and `hk_present` is the truthful entry for H_MKI.
+                ; 🔑 SO ALL THREE ARRIVE THE SAME WAY -- bytes in STRSCR+1.., the
+                ; length in STRSCR -- and `strscr_desc` re-reads that length
+                ; itself (basic/str-engine.asm:319), which is why nothing needs
+                ; the width back in A. That removed `ld a,(STRSCR)` + `cp 2` + the
+                ; `jr`, 7 B, on top of the 8 B store and the 2 B push/pop.
+                ; ⚠️ A CLAIMING ROM STILL WINS: a foreign disk ROM's MKI$ writes
+                ; its own answer over STRSCR+1.. before returning, exactly as
+                ; hk_mkfloat does -- which is the whole point of offering the hook.
 str_mkf_desc:
                 call    strscr_desc         ; RVDESC -> [len][ptr] wrapping STRSCR
                                             ; (arrays slice-4a §10: every STRPTR

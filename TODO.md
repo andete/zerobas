@@ -26,6 +26,76 @@ item — do **one item per session** to keep context lean.
 
 ## Open — standing residuals (INDEX; this is the pickup list)
 
+- [ ] 🏗️ **JOOST RULED 2026-09-17: EVERY HOOK-IMPLEMENTABLE KEYWORD MUST USE ITS
+      HOOK, AND EVERY DISK COMMAND'S IMPLEMENTATION BELONGS IN `disk.rom`
+      BEHIND IT — NO EXCEPTIONS.**
+      🎚️ STANDING — a ruling, not a task; the tasks it creates are listed below.
+      🤖 AUTONOMOUS — the ruling is given; each step below is ordinary work.
+      Verbatim, in three messages: *"every one of the hook implementable
+      keywords must use its hook obviously"*; *"any keyword implemented by the
+      disk rom should go via the hook to the disk rom"*; and of `MKI$`'s filed
+      exemption, *"perhaps we need to work around this; all disk commands need
+      to be in the disk rom"*. The reason is COMPATIBILITY, in his words:
+      without the hook *"we would be incompatible with the reference"* — a
+      third-party extension ROM that claims a cell is never reached.
+      🟢 **THE HOOK HALF IS ALREADY DONE, MEASURED 2026-09-17: all 16 verb hooks
+      ARE consulted.** ⚠️ And the first measurement said four were not —
+      `H_DSKI` `H_DSKO` `H_LSET` `H_RSET` — because it grepped `ld hl,H_*`, and
+      those four load the cell through **DE** (`basic/field.asm:492`, HL being
+      the statement cursor). 🔴 **A GREP THAT ASSUMES ONE SPELLING IS NOT A
+      MEASUREMENT** — the inverse of [[a-shared-tail-is-not-a-decision]]'s "grep
+      instructions, not the symbol". `H_TIMI`/`H_ZKEY` are inbound (we install
+      into them) and `H_ERRP` offers outward, so they are not verb offers.
+      📏 **WHAT REMAINS IS THE BODY HALF.** Six bodies already live in
+      `disk.rom` behind their hook — `hk_mkfloat` (`MKS$`/`MKD$`), `hk_name`,
+      `hk_kill`, `hk_files` (`FILES`+`LFILES`), `hk_copy`, `hk_errp` — and ten
+      cells are gate-only with the body main-side (`disk/kernel.asm:2250`).
+      The cluster to move: **`MKI$` `DSKF` `CVI` `CVS` `CVD` `LSET` `RSET`
+      `FIELD`** (`DSKI$`/`DSKO$` bodies are already a sub-ROM tenant).
+      🎯 **AND THE PRICE I OFFERED HIM AT D-CFARCH IS NOT ON THE CRITICAL
+      PATH.** All six moved bodies did it with **no disk→BASIC inter-slot call
+      at all**: `disk.rom` is a PAGE-1 ROM, so while it is mapped, page 0 still
+      holds slot 0 and main's **LOW REGION is callable by absolute address**
+      (every code address in `disk/basic-resident-abi.inc` is below `$4000` —
+      `$38DC` `$3417` `$33BD` — the rest are RAM cells, and `make
+      diskrom-abi-check` regenerates them per build). So the per-verb question
+      is only whether the helpers a body needs sit in the low region or in page
+      1; a page-1 helper is a **promotion** (`scratchpad/promote_scout.py`,
+      1:1, free), not a blocker. `str_eval $49EE` / `var_find_typed $4853`
+      become the gate ONLY if we decide the disk side should parse its own
+      arguments the way the reference does — and we do not need that for
+      compatibility, because our main-side parse produces the same observable
+      errors D-CFARCH measured (`FILES 5` → ERR 13, not ERR 2).
+      💰 **THE ECONOMICS INVERT, WHICH IS WHY THIS OUTRANKS CARVING.** A carve
+      returns ~12 B at a time ([[carve-routes-measured-shut]]); moving a verb
+      body out of the main image returns its WHOLE SIZE, into a region that had
+      8490 B free in 32 runs on 2026-09-17 against main page 1's 38 B.
+      🔑 **THE ABI IS ALREADY WRITTEN AND IT ANSWERS THE `MKI$` EXEMPTION**:
+      `hk_mkfloat`'s header says *"EVERYTHING CROSSES IN RAM, NOT IN
+      REGISTERS"*. `MKI$`'s filed reason — *"needs DE, which does not survive
+      CALSLT"* — is a register-lifetime argument, and RAM is the answer this
+      ABI already gives to register lifetime.
+      ➡️ **ORDER:** `MKI$` first (D-MKINT, below) because it is the one verb the
+      tree had written off; then the stub-extension rig, which is what makes
+      every offer LOAD-BEARING — today `h.lset`/`h.rset` AGREE on the diskless
+      target while the hook is bypassed, so agreement is not evidence the hook
+      is honoured [[a-case-that-agrees-can-agree-for-the-wrong-reason]]; then
+      the remaining six bodies; then the keywords with NO hook equate at all
+      (`ATTR$`, `CALL`, and check `SET`/`IPL`/`CMD`), gated on identifying their
+      cells among the 32 unidentified claimed ones.
+      ⚠️ **`ATTR$` IS UNUSED IN PRACTICE (Joost, same day) AND STILL NEEDS ITS
+      HOOK** — the hook is the compatibility surface, not the feature.
+      ⚠️ **`CALL` IS MIS-AUTHORED AND THAT IS MY ERROR FROM D-AKCM (same day)**:
+      `tools/kwforms.py` has it in `REFUSE_ONLY` with its form list `("refuse",)`,
+      yet this tree IMPLEMENTS `CALL FORMAT` (`basic/format.asm:50`, bulk in
+      `sub/format.asm`, tested by `probes/disk/diskbasic_probe_format.py`). Its
+      real form is `format`. 🎯 **AND THE KNIFE'S `BLIND` VERDICT ON `CALL` WAS
+      THE TRUE SIGNAL**: cutting `ex_call` cannot change `CALL FOO`'s ERR 2,
+      because an unknown name errors either way — the knife was saying the row
+      does not reach the code. A `CALL FORMAT` row IS cut-sensitive. Also:
+      `ex_call` matches only `"FORMAT"` and otherwise `jp nc,stmt_error`, with
+      **no offer to any other extension**, which is the same gap as `ATTR$`.
+
 - [ ] 💰 **THE CARVE INVENTORY, RE-RUN 2026-09-17 (D-LONGRUN) — THE MECHANICAL
       FAMILY IS NOT SHUT, IT IS JUST SMALL: ~20-40 B, NONE OF IT IN ONE PIECE.**
       🎚️ BUDGET — funding for TIER 1: this is what `PLAY`'s `X<var>;` is ~30 B
@@ -2201,7 +2271,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:19863 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:19933 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -2367,7 +2437,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:6968 (T-6FE392)8 (T-529ABE)` from `TODO.md:18257 (T-529ABE)`: a
+      `TODO.md:7038 (T-6FE392)8 (T-529ABE)` from `TODO.md:18327 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -7812,7 +7882,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:18257 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:18327 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
