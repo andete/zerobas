@@ -290,9 +290,16 @@ def _printer_plug(path: str) -> tuple[str, ...]:
 # A WRITING row would need the opposite fixture -- a blank tape openMSX creates --
 # and no row needs one yet, because CSAVE turns out to have no screen-observable
 # consequence at all (see the item): that rig arrives with the row that uses it.
+# 🟢 D-KWAUTO: `NEEDS-BOOT:` IS THE SEVENTH RIG AND THE SMALLEST -- it asks for
+# NOTHING but a boot of its own. Every other rig that needs boot-per-case gets it
+# as a SIDE EFFECT of the device it wants (the printer log is never truncated, a
+# blank tape must be re-created), so a row whose only requirement is isolation had
+# no way to say so and had to be LAST BY PLACEMENT instead. `AUTO` is why: it
+# leaves the machine in LINE-ENTRY MODE, which ate 21 following rows once, and
+# placement can only ever protect ONE such row.
 _RIG_TAGS = {"NEEDS-DISK:": "disk", "NEEDS-PRINTER:": "printer",
              "NEEDS-LOG:": "log", "NEEDS-TAPE:": "tape",
-             "NEEDS-BLANKTAPE:": "tapew"}
+             "NEEDS-BLANKTAPE:": "tapew", "NEEDS-BOOT:": "boot"}
 
 # 🟢 D-KWHOLD: THE SIXTH RIG IS THE KEY MATRIX, AND IT IS THE ONLY ONE THAT TAKES
 # AN ARGUMENT. `NEEDS-HOLD:<row>,<mask>` holds ONE matrix bit down for the whole
@@ -548,6 +555,12 @@ def _rig_kwargs(rigs: tuple[str, ...]) -> dict:
     0, so no exit status can catch it. `batch` is returned here as a kwarg and
     popped by `capture()`."""
     kw: dict = {}
+    if "boot" in rigs:
+        # 🎯 THE WHOLE RIG. A row that poisons the SESSION rather than the SCREEN
+        # cannot be cleaned up by `reset` -- `NEW`/`CLS` are typed INTO whatever
+        # mode the previous row left behind -- so the only fix is not to share a
+        # boot with anyone.
+        kw["batch"] = False
     if "disk" in rigs:
         kw.update(DISK_TIMING)
         kw["diska"] = _disk_image()
@@ -3666,9 +3679,22 @@ SWEEP: list[tuple[str, str, str | None, str, str]] = [
     # parsed and did nothing prints no prompt at all.
     # ========================================================================
     ("auto",    "auto 100",     "AUTO 100",     "stored",
-     "NOFURN: " "the line-entry prompt `100` on both machines. LAST ROW BY "
-     "PLACEMENT: it leaves the machine in line-entry mode, which eats whatever "
-     "FORM:start follows."),
+     "NEEDS-BOOT: " "NOFURN: " "FORM:start the line-entry prompt `100` on both "
+     "machines. 🟢 NO LONGER LAST BY PLACEMENT (D-KWAUTO): it still leaves the "
+     "machine in line-entry mode, but `NEEDS-BOOT:` gives it a boot of its own, "
+     "which is what lets the two rows below exist at all."),
+    # 🟢 D-KWAUTO: THE OTHER TWO FORMS, NOW THAT MORE THAN ONE `AUTO` ROW CAN
+    # COEXIST. ⚠️ The increment is invisible on the FIRST prompt -- `AUTO 100` and
+    # `AUTO 100,5` both open at `100` -- so the step form has to ENTER A LINE and
+    # read the SECOND prompt. `RESPOND:` already types lines after the run.
+    ("auto_bare", "auto",         "AUTO",         "stored",
+     "NEEDS-BOOT: " "NOFURN: " "FORM:bare the default start, prompt `10` -- which "
+     "is what separates it from the `start` row's `100`"),
+    ("auto_step", "auto 100,5",   "AUTO 100,5",   "stored",
+     "NEEDS-BOOT: " "NOFURN: " "RESPOND:REM_Z "
+     "FORM:start-increment enter one line at the `100` prompt and the NEXT prompt "
+     "is `105`. The first prompt cannot tell this form from `start`; the second "
+     "is the only place the increment is observable"),
 ]
 
 # 🔴 A DUPLICATE ROW KEY IS SILENT AND DESTRUCTIVE, AND NOTHING CHECKED FOR ONE

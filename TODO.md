@@ -2026,7 +2026,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:19486 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:19508 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -18984,12 +18984,34 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       📌 **THE `display-on` ROW IS OWED, NOT WRITTEN OFF** — it belongs with the
       fix, and until it exists `KEY` cannot reach TIER 1 even if everything else
       agrees [[a-row-written-off-as-out-of-scope-leaves-the-bookkeeping]].
-      🎚️ TIER 1 — happy path: a documented statement whose observable effect is
-      absent here.
+      🎚️ TIER 1 — happy path: `KEY` — a documented statement whose observable
+      effect is absent here. ⚠️ THE SUBJECT IS DECLARED because the headline says
+      "`KEY ON`", and a headline scan reads that as TWO keywords: it filed this
+      against `ON` as well, moving `ON` out of its correct no-bare-form class and
+      into "blocked by an open TIER 1 item" for an item that is not about it.
       🤖 AUTONOMOUS — the bar comes from the reference, and both halves are
       measured.
 
-- [ ] 🔭 **`AUTO` STANDS AT 1/3 FORMS AND THE BLOCKER IS THE RIG, NOT THE VERB.**
+- [x] 🟢 **DONE 2026-09-17 (D-KWAUTO) — `AUTO` IS 3/3 AND THE RIG IS ONE KWARG.**
+      `NEEDS-BOOT:` is the seventh rig and the smallest: it asks for nothing but a
+      boot of its own. Every other rig that needs boot-per-case got it as a SIDE
+      EFFECT of the device it wanted, so a row whose only requirement was
+      ISOLATION had no way to say so and had to be last by placement — which can
+      only ever protect ONE such row.
+      📏 **THREE DISTINCT READINGS, all SUPPORTED on both machines:**
+      | form | reading |
+      |---|---|
+      | `AUTO` | `10*` — the default start (the `*` is the existing line 10) |
+      | `AUTO 100` | `100` |
+      | `AUTO 100,5` | **`100 REM Z\|105`** |
+      🎯 **THE STEP FORM HAD TO ENTER A LINE**, and that is the whole reason it
+      needed more than a tag: `AUTO 100` and `AUTO 100,5` BOTH open at `100`, so
+      the first prompt cannot tell them apart and a row reading it would have been
+      the same reading as another form. `RESPOND:` types one line at the prompt
+      and the SECOND prompt, `105`, is where the increment finally shows.
+      `SUPPORTED` 371 → 373.
+      *(the original item, for the record:)*
+      🔭 **`AUTO` STANDS AT 1/3 FORMS AND THE BLOCKER IS THE RIG, NOT THE VERB.**
       `AUTO` leaves the machine in LINE-ENTRY MODE, which eats whatever row
       follows — it once took **21** other rows with it — so its single row is last
       by placement and no second one can be added beside it.
