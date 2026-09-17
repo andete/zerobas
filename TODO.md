@@ -1090,6 +1090,44 @@ it anyway (the address form stops being a Syntax error, and the stride row simpl
 records a documented divergence), or leave it deferred and score `VARPTR` at 1/2
 by design. The same shape as the `STICK`/`STRIG` breadth question already waiting
 on him.
+🔬 **PRICED 2026-09-17 (D-FATPAGE1), because Joost proposed it as the carve that
+would fund `PLAY`'s `X<var>;` — and THE PREMISE NEEDS CORRECTING FIRST.**
+🔴 **THE FAT ENGINE IS ALREADY OUT OF MAIN PAGE 1.** It is `fatprim_tenant`
+(`sub/fatprim.asm`, which includes `basic/fat-prim-body.inc`); main's `fat_mount`
+is a FOUR-BYTE SHIM — `ld a,DISKOP_SEL_FAT_MOUNT` / `jr fatprim_bounce`. Of
+`fat-prim-body.inc`'s **86** labels only **8** exist in the main image. (My own
+answer of 2026-09-16 said "the FAT is still in main page 1": true of the shims,
+misleading about the engine.)
+📏 **WHAT IS ACTUALLY THERE IS 394 B**, `$6427`–`$65B0`, measured as the span from
+`fat.asm`'s first label to `bload.asm`'s (so it covers everything `fat.asm`
+includes). ⚠️ An earlier reading of *"4012 B"* was WRONG: `fat_rand_get` /
+`fat_rand_put` at `$73CE` are defined in `files.asm`, not here.
+
+| part | ~size | |
+|---|---|---|
+| the selector shims (`fat_mount`/`fat_find`/…) | ~52 B | 4 B each; the engine is sub-side |
+| `fatprim_bounce` | ~13 B | the one marshaller they all share |
+| `fatio-body.inc` + `fatiocreate` + `fat_io_append`/`fia_*` | ~240 B | the READ path |
+| `fatiow-body.inc` | ~77 B | the WRITE path |
+
+💰 **SO THE CARVE ON OFFER IS THE ~317 B OF BYTE-LEVEL I/O**, and 10 call sites
+outside the FAT's own bodies would need marshalling (`files.asm` 3, `field.asm` 3,
+`cload.asm` 2, `expr.asm` 1, `bload-body.inc` 1) at 7 B each — **net ~250 B**,
+which would fund `X` eight times over.
+🔴 **AND IT CANNOT BE TAKEN THE OBVIOUS WAY, WHICH IS WHY THAT CODE IS IN MAIN.**
+`fat_io_getbyte` is a PER-BYTE routine reached through a VECTOR: `cload.asm`
+swaps `ARL_GETBYTE` between `cal_getbyte` (cassette) and `fat_io_getbyte` (disk)
+and the shared line reader calls it once per byte. An inter-slot call is
+**0.156 ms** (D-XSLOTPRICE), so a 4 KB `LOAD` would gain **~640 ms** of pure
+overhead on a machine already ~3× slower than the reference. That is a TIER 2
+question — reasonable time — not a free 250 B.
+🎯 **THE CARVE IS REAL BUT IT NEEDS THE *LOOP* TO MOVE, NOT THE BYTE ROUTINE** —
+i.e. the sub side runs the whole read/write, and main bounces once per
+OPERATION. That is a redesign of the channel I/O layer, which is **the same layer
+Joost's MSX-FCB-shape ruling already touches**, so the two should be priced
+together rather than separately.
+⛔ **THEREFORE IT IS NOT THE FUNDING FOR `PLAY X`** — that needs ~30 B and this is
+a slice with a speed risk attached.
 🎯 **RULED (Joost, 2026-09-16): NEITHER — *"I think this means we need to change to
 the MSX's FCB shape."*** So `VARPTR(#n)` is not the work; the CHANNEL BLOCK is, and
 `VARPTR(#n)` then falls out of it agreeing rather than being made to agree.
@@ -1988,7 +2026,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:19400 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:19438 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -2154,7 +2192,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:6755 (T-6FE392)8 (T-529ABE)` from `TODO.md:18018 (T-529ABE)`: a
+      `TODO.md:6793 (T-6FE392)8 (T-529ABE)` from `TODO.md:18056 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -7599,7 +7637,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:18018 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:18056 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
