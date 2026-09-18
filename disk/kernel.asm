@@ -412,25 +412,6 @@ bdos_create_body:                       ; [bdos_create, bdos_create_failpop) —
                 xor     a                   ; A = $00 success
                 ret
 
-frs_mul_body:                           ; [frs_mul, frs_eof) loop; entered via frs_mul stub
-                add     hl, de
-                djnz    frs_mul_body        ; HL = (cluster-2) * secPerClus
-                ld      de, (FAT_FIRSTDATA)
-                add     hl, de
-                ld      a, (FAT_CLUSSEC)
-                ld      e, a
-                ld      d, 0
-                add     hl, de              ; HL = absolute logical sector
-                ex      de, hl
-                ld      hl, SECTOR_BUF
-                call    read_sector
-                ret     c
-                ld      a, (FAT_CLUSSEC)
-                inc     a
-                ld      (FAT_CLUSSEC), a
-                or      a                   ; Cy = 0 success
-                ret
-
 write_sector:                           ; relocated (entry collided with $4935 veneer)
                 ld      b, 1            ; one sector
                 ld      c, $F9          ; media byte (ignored, single drive)
@@ -458,82 +439,6 @@ gdate_handler:
                 xor     a                   ; A = 0 (Sunday); F = $44 (Z,P/V), as stock
                 ld      ($F306), a          ; clear dispatcher re-entrancy flag (stock parity)
                 ret
-
-fac_loop_body:                          ; [fac_loop, fac_have_sec) -> falls into fac_have_sec; relocated past $553C
-                ld      de, (FAT_WRTMP)
-                push    hl
-                or      a
-                sbc     hl, de
-                pop     hl
-                jp      nc, fac_full        ; jr->jp: relocated
-                push    hl
-                ld      a, l
-                and     1
-                ld      (FAT_PARITY), a
-                ld      e, l
-                ld      d, h
-                srl     d
-                rr      e                   ; DE = cluster >> 1
-                add     hl, de              ; HL = fatofs = cluster * 3/2
-                ld      a, l
-                ld      (FAT_BYTEIDX), a
-                ld      a, h
-                and     1
-                ld      (FAT_BYTEIDX + 1), a    ; byteidx = fatofs & $1FF
-                ld      a, h
-                srl     a                   ; FAT sector offset = fatofs >> 9
-                ld      e, a
-                ld      d, 0
-                ld      hl, (FAT_FATSTART)
-                add     hl, de              ; HL = absolute FAT sector
-                ld      de, (FAT_WRTMP2)
-                push    hl
-                or      a
-                sbc     hl, de
-                pop     hl
-                jp      z, fac_have_sec     ; jr->jp: already loaded -> no re-read
-                ld      (FAT_WRTMP2), hl    ; remember the new cached sector
-                ld      (FAT_FATSEC), hl
-                ex      de, hl
-                ld      hl, WBUF
-                call    read_sector
-                jp      c, fac_rderr        ; jr->jp: relocated
-                jp      fac_have_sec        ; fall-through preserved
-
-fac_e_odd_body:                         ; [fac_e_odd, fat_write_fat_entry) — ends in ret
-                ld      a, (FAT_B1)
-                ld      l, a
-                ld      h, 0
-                add     hl, hl
-                add     hl, hl
-                add     hl, hl
-                add     hl, hl
-                ld      a, (FAT_B0)
-                rrca
-                rrca
-                rrca
-                rrca
-                and     $0F
-                ld      e, a
-                ld      d, 0
-                add     hl, de
-                ex      de, hl
-                ret
-
-ffds_nopad_body:                        ; [ffds_nopad, ffds_alloc) -> falls into ffds_alloc
-                ld      hl, (BDOS_WRCLUS)
-                ld      a, h
-                or      l
-                jp      z, ffds_alloc       ; jr->jp: no cluster yet -> allocate the first
-                ld      a, (BDOS_WRSECIDX)
-                ld      hl, FAT_SECPERCLUS
-                cp      (hl)
-                jp      c, ffds_haveclus    ; jr->jp: room in the current cluster
-                jp      ffds_alloc          ; fall-through preserved
-
-; (fdc_entloop_body/fdc_useslot_body relocated to runtime.asm, M22a — their old
-; span here collided with the $55DB/$55E6/$55FF GTIME/STIME/VERIFY canonical
-; entries below, tier2-m22-cpmver-spec.md §4.2.)
 
 ; --- MSX-DOS-1 kernel GTIME/STIME/VERIFY entries: $55DB/$55E6/$55FF (M22a) ----
 ; While processing BDOS GTIME ($2C) / STIME ($2D) / VERIFY ($2E) the relocated
@@ -591,52 +496,6 @@ k_55FF:
 ; Position-free: reached only by fat.asm's `fdc_entloop`/`fdc_useslot` veneers.
 ; Kept contiguous, same relative order (M21a-RC-1 convention). Neither falls through
 ; (each ends in an absolute jp), so the relocation is byte-for-byte behaviour-neutral.
-fdc_entloop_body:
-                push    bc
-                push    hl
-                ld      a, (hl)
-                or      a
-                jp      z, fdc_useslot      ; jr->jp: $00 end-marker -> free slot here
-                cp      $E5
-                jp      z, fdc_useslot      ; jr->jp: $E5 deleted -> reusable slot
-                ld      de, (FAT_NAMEPTR)
-                call    name_cmp
-                jp      z, fdc_useslot      ; jr->jp: same-name existing entry
-                pop     hl
-                ld      de, 32
-                add     hl, de
-                pop     bc
-                djnz    fdc_entloop_body
-                ld      hl, (FAT_DIRSEC)
-                inc     hl
-                ld      (FAT_DIRSEC), hl
-                ld      hl, (FAT_DIRREM)
-                dec     hl
-                ld      (FAT_DIRREM), hl
-                jp      fdc_secloop         ; jr->jp: relocated
-
-fdc_useslot_body:
-                pop     hl                  ; HL = dir entry slot in WBUF
-                pop     bc
-                ld      de, (FAT_DIRSEC)
-                ld      (BDOS_DIRSEC), de
-                push    hl
-                ld      de, WBUF
-                or      a
-                sbc     hl, de              ; HL = offset within the sector
-                ld      (BDOS_DIROFF), hl
-                pop     hl
-                push    hl
-                ex      de, hl              ; DE = dest slot
-                ld      hl, (FAT_NAMEPTR)
-                ld      bc, 11
-                ldir                        ; name -> entry +0..10
-                xor     a
-                ld      (de), a             ; +11 = $00 (normal file; matches MSX-DOS)
-                inc     de
-                ld      b, 20               ; +12..+31 is 20 bytes
-                jp      fdc_zero            ; fall-through preserved
-
 ; p0_env_tab — the page-0 RST/CALLF/INT vector template, read by lay_page0_env
 ; THROUGH the ROM page (`ld hl, p0_env_tab`; pageenv.asm). Formerly pinned at $7FB7,
 ; straddling the FDC window (its head entries read back as register garbage, tolerated
@@ -669,76 +528,6 @@ p0_env_tab:
 ; this block, so the whole unit moves as one byte-identical piece (no jr/jp
 ; conversions needed -- unlike fdc_entloop_body/fdc_useslot_body, which split into
 ; two separately-addressed routines, this block keeps its single entry point).
-ff_secloop:
-                ld      hl, (FAT_DIRREM)
-                ld      a, h
-                or      l
-                jr      z, ff_notfound      ; scanned every root sector
-                ld      de, (FAT_DIRSEC)
-                ld      hl, SECTOR_BUF
-                call    read_sector
-                ret     c                   ; propagate FDC error
-                ld      hl, SECTOR_BUF
-                ld      b, 16               ; 512 / 32 entries per sector
-ff_entloop:
-                push    bc
-                push    hl
-                ld      a, (hl)
-                or      a
-                jr      z, ff_endmark       ; $00 = end of directory
-                cp      $E5
-                jr      z, ff_skip          ; deleted entry
-                push    hl
-                ld      de, 11
-                add     hl, de
-                ld      a, (hl)             ; attribute byte (+11)
-                pop     hl
-                and     $18                 ; volume-label | directory -> skip
-                jr      nz, ff_skip
-                ld      de, (FAT_NAMEPTR)
-                call    name_cmp
-                jr      z, ff_found
-ff_skip:
-                pop     hl
-                ld      de, 32
-                add     hl, de              ; next 32-byte directory entry
-                pop     bc
-                djnz    ff_entloop
-                ld      hl, (FAT_DIRSEC)
-                inc     hl
-                ld      (FAT_DIRSEC), hl
-                ld      hl, (FAT_DIRREM)
-                dec     hl
-                ld      (FAT_DIRREM), hl
-                jr      ff_secloop
-ff_endmark:
-                pop     hl
-                pop     bc
-ff_notfound:
-                scf
-                ret
-ff_found:
-                pop     hl                  ; HL = directory entry
-                pop     bc
-                push    hl
-                ld      de, 26
-                add     hl, de
-                ld      a, (hl)             ; first cluster low (+26)
-                inc     hl
-                ld      h, (hl)             ; first cluster high (+27)
-                ld      l, a
-                ld      (FAT_FIRSTCLUS), hl
-                pop     hl
-                push    hl
-                ld      de, 28
-                add     hl, de
-                ld      de, FAT_FILESIZE
-                ld      bc, 4
-                ldir                        ; file size (+28..31, LE)
-                pop     hl
-                or      a                   ; Cy = 0 found
-                ret
-
 ; fsize_body — MSX-DOS-1 kernel FSIZE ($23) canonical entry $501E's real body
 ; (M28 §3.2). Wired IN PLACE at $501E (dead-$00 pad, no relocation -- [LANDED-B]).
 ; Entry: DE=$DA40 (kernel 37-byte FCB copy, name pre-filled at copy+1..11),
@@ -2479,22 +2268,31 @@ hook_tab:
 ; label only, so it is position-free here.
 ;   in   the boot sector is already in the METADATA buffer
 ;   out  HL = total sectors (16-bit, BPB +19). Clobbers DE.
-ftc_totsec:
-                ld      hl, (MBUF_PTR)
-                ld      de, 19
-                add     hl, de
-                ld      e, (hl)
-                inc     hl
-                ld      d, (hl)
-                ex      de, hl
-                ret
-
 fat_bufinit:
                 ld      hl, SECTOR_BUF
                 ld      (DBUF_PTR), hl
                 ld      hl, WBUF
                 ld      (MBUF_PTR), hl
                 ret
+
+; 🏗️ D-FATENG Option 2 (Joost, 2026-09-18): ONE FAT12 ENGINE, ONE SOURCE, TWO
+; ROMs -- the same file sub.rom assembles. disk/fat.asm keeps only the
+; BDOS-specific half and the pinned M26 trampolines, which resolve to these
+; labels BY NAME.
+; ⚠️ INCLUDED **HERE**, IN THE FREE CORRIDOR, AND THE POSITION IS NOT A
+; PREFERENCE. Placed after fat.asm it pushed kernel.asm past a pin and pasmo
+; wrapped the image; appended after runtime.asm it overran the ROM by 1369 B,
+; because disk.rom's 8314 B of free space is 32 INTERIOR HOLES, not a tail. This
+; corridor is the largest (2712 B at $6B0D) and is where install_hook below
+; already lives for the same reason.
+                ; ⚠️ REPO-ROOT RELATIVE, NOT "../basic/...". pasmo accepts
+                ; both, but tools/check_tenant_closure.py's _resolve_include
+                ; treats any path containing "/" as repo-root relative -- so
+                ; "../basic/..." resolved ABOVE the repo and the body was
+                ; SILENTLY DROPPED from the disk closure, leaving five of its
+                ; labels looking like unresolved main references. sub/fatprim.asm
+                ; uses this form for the same file.
+                include "basic/fat-prim-body.inc"
 
 install_hook:
                 ld      a, $F7              ; +0: RST 30h (CALLF)
@@ -3450,45 +3248,6 @@ rdb_eof:
 ; than the collision itself (to `ld b,a`) to leave enough room for the
 ; 3-byte veneer to land exactly at $477D (a 3-byte-for-3-byte swap at the
 ; collision point alone leaves zero slack).
-fat_mount_tail:
-                ld      b, a                ; B = numFATs (loop count)
-                ld      de, (SECTOR_BUF + BPB_FATSZ16)
-                ld      (FAT_SECPERFAT), de ; cache for per-copy sector stride
-                ld      hl, 0
-fm_fatacc:
-                add     hl, de
-                djnz    fm_fatacc           ; HL = numFATs * secPerFAT
-                ld      de, (FAT_FATSTART)
-                add     hl, de
-                ld      (FAT_FIRSTROOT), hl
-                ; root sectors = (rootEnts*32 + 511) / 512  (512 B per sector)
-                ld      hl, (SECTOR_BUF + BPB_ROOTENTCNT)
-                add     hl, hl
-                add     hl, hl
-                add     hl, hl
-                add     hl, hl
-                add     hl, hl              ; HL = rootEnts * 32
-                ld      de, 511
-                add     hl, de
-                ld      a, h
-                srl     a                   ; HL >> 9  (== H >> 1, result < 256)
-                ld      l, a
-                ld      h, 0
-                ld      (FAT_ROOTSECS), hl
-                ; first data sector = firstRoot + rootSecs
-                ld      de, (FAT_FIRSTROOT)
-                add     hl, de
-                ld      (FAT_FIRSTDATA), hl
-                ; M30: reset the per-operation FAT allocator scan hint. fat_mount
-                ; runs exactly once at the start of every BDOS file operation and
-                ; always precedes any fat_alloc_cluster, so resetting here (SUCCESS
-                ; path only) gives the hint per-operation lifetime with no
-                ; free-invalidation surface (tier2-m30-alloc-hint-spec.md §2/§3.2).
-                ld      hl, 2
-                ld      (FAT_ALLOCHINT), hl
-                or      a                   ; Cy = 0 success
-                ret
-
 ; wrseq_body — MSX-DOS-1 kernel per-record sequential-I/O worker entry
 ; $477D's body. CORRECTED (M25, tier2-m24-fclose-multicluster-spec.md
 ; "UPDATE 2"): the RAM kernel CALLs $477D for EVERY sequential record

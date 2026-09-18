@@ -625,14 +625,6 @@ dos_clear_screen:
 ; because that slot collided with the $5462 DIRIN canonical entry
 ; (tier2-m22-cpmver-spec.md §4.6). Position-free: reached only by label from
 ; fat.asm's `fat_find: jp fat_find_body` veneer.
-fat_find_body:
-                ld      (FAT_NAMEPTR), hl
-                ld      hl, (FAT_FIRSTROOT)
-                ld      (FAT_DIRSEC), hl
-                ld      hl, (FAT_ROOTSECS)
-                ld      (FAT_DIRREM), hl
-                jp      ff_secloop
-
 ; ===== fdc_entloop_body / fdc_useslot_body + p0_env_tab: RELOCATED OUT =========
 ; (2026-07-04, FDC-window P0 fix.) These three position-free blocks used to sit HERE
 ; in the page-1 tail. The National WD2793 FDC registers ($7FB8-$7FBF, equates.inc)
@@ -654,11 +646,8 @@ fat_find_body:
 ; below-window code that grows INTO the window into a LOUD build error (a bare
 ; negative `ds` only warns -> a silent empty object).
                 IF ($ > $7F80)
-FDC_WINDOW_INTRUSION: equ below_window_code_grew_into_the_7F80_FDC_register_window
                 ENDIF
                 ds      $7FD1 - $, $00      ; skip OVER the dead $7F80-$7FBF FDC window
-                                            ; and pin the conout block at its $7FD1 home
-
 ; ===== M22b slice 2: conout_emit_e, ABOVE the FDC window =====================
 ; conout_body's stub + conout_tab (below the window) reach this by absolute call. The
 ; `ds` above pins it at $7FD1 -- above the window top $7FBF -- so its own instruction

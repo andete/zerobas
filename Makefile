@@ -97,8 +97,12 @@ DEPS  := basic/interp.asm basic/initext.asm basic/title.asm basic/repl.asm \
 DISK_SRC := disk/disk.asm
 # disk.asm is an orchestrator that `include`s these parts (assembled with -I disk);
 # listed as prerequisites so a change to any part triggers a rebuild.
+# D-FATENG Option 2 (Joost, 2026-09-18): disk.rom assembles the SHARED FAT body
+# too -- one engine, one source, two ROMs. It must be a prerequisite or an edit to
+# it leaves disk.rom quietly stale; `rom-parts-check` refused exactly that.
 DISK_PARTS := disk/equates.inc disk/init.asm disk/pageenv.asm disk/driver.asm \
-              disk/fat.asm disk/kernel.asm disk/runtime.asm
+              disk/fat.asm disk/kernel.asm disk/runtime.asm \
+              basic/fat-prim-body.inc
 DISK_ROM := $(BUILD)/disk.rom
 
 # zerobas-sub: the built-in MSX2-style sub-ROM, a standalone 32 KB ROM spanning

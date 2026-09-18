@@ -89,6 +89,12 @@ def make_machine(used_clusters):
 
     m.trap("read_sector", read_sector)
     m.trap("write_sector", write_sector)
+    # D-FATENG Option 2: the shared FAT body writes through
+    # `fatprim_write_sector`, not disk's own `write_sector` (which
+    # the BDOS half still uses). Trapping only the old name let the
+    # engine's writes through untrapped, so the simulated FAT never
+    # updated and the cluster read back 0x000.
+    m.trap("fatprim_write_sector", write_sector)
     m.trap("fat_total_clusters", lambda mm: setattr(mm.cpu, "de", TOTAL))
     m.poke_w(m.addr("FAT_FATSTART"), FATSTART)
     m.poke(m.addr("FAT_NUMFATS"), NUMFATS)

@@ -95,6 +95,12 @@ def make_machine(disk):
     m.trap("frnd_locate", frnd_locate)
     m.trap("read_sector", read_sector)
     m.trap("write_sector", write_sector)
+    # D-FATENG Option 2: the shared FAT body writes through
+    # `fatprim_write_sector`, not disk's own `write_sector` (which
+    # the BDOS half still uses). Trapping only the old name let the
+    # engine's writes through untrapped, so the simulated FAT never
+    # updated and the cluster read back 0x000.
+    m.trap("fatprim_write_sector", write_sector)
     # the directory stamp is a separate concern with its own tests
     m.trap("fat_dir_update", lambda mm: mm.cpu.__setattr__("f", mm.cpu.f & ~0x01))
     return m

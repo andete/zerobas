@@ -52,6 +52,9 @@
 ; dependent (ds-anchored canonical kernel addresses + the 16 KB page pad), so the
 ; include order reproduces the exact byte sequence. Do not reorder.
 ; ===========================================================================
+DISK_BUILD      equ     1   ; D-FATENG Option 2: the shared FAT body
+                            ; binds its sector primitives to our LOCAL
+                            ; dskio in this ROM.
                 include "equates.inc"
                 ; The main ROM's addresses this ROM calls into (D-DISKABI).
                 ; GENERATED per build from build/basic-reloc.sym, so a low-region

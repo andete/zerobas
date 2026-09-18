@@ -1071,6 +1071,17 @@ ftc_done:
 ; sector (all write-side scratch, dead during this read-only query); FAT_B0/FAT_B1
 ; hold the entry's two bytes. Sources: Microsoft FAT spec (a 0 entry is free; the
 ; 12-bit even/odd nibble packing).
+; 🏗️ D-FATENG Option 2: OMITTED FROM disk.rom, and not because it would not work.
+; disk/basic-resident-abi.inc already binds `fat_count_free` as a CALLBACK:
+; hk_dskf reaches MAIN's copy across the slot for DSKF, and main's is itself a
+; stub onto the sub-ROM tenant. Defining it here as well is a redefinition, which
+; the assembler refuses -- and it was the ONLY such clash between this body and
+; the disk ABI (checked: 1 of 29 ABI names).
+; ⚠️ SO THE SLOT CROSSING SURVIVES THE SWAP. With the engine now local, disk.rom
+; COULD count free clusters without leaving the slot -- a strictly better DSKF
+; path, and a separate slice rather than something smuggled into an atomic swap.
+    IF DISK_BUILD
+    ELSE
 fat_count_free:
                 call    fat_mount
                 jp      c, fcf_zero
@@ -1192,6 +1203,8 @@ fcf_zero:
 ; the file's current data sector, allocating/extending the cluster chain first.
 ;   out: Cy = 0 ok, Cy = 1 = disk full / write error
 ; (Microsoft FAT spec §3.3 data-sector math.)
+    ENDIF
+
 fat_flush_data_sector:
                 ; zero-pad the unused tail of the buffer (bytes WRBUFLEN..511) so a
                 ; partial final sector writes 512 well-defined bytes.
