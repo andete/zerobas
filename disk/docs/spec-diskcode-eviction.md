@@ -345,6 +345,39 @@ five files**, not 25 in six.
 (`basic/files.asm:1974`) jumps through that vector **once per byte** from three
 loops (`ascii_read_lines`, `read_into_strscr`, `sidr_lp`).
 
+**(c) 🔴 AND THE COUNT HAS NOW BEEN WRONG FOUR TIMES, SO IT IS A TOOL.**
+`scratchpad/fatdep_census.py` derives it from the transitive `include` closure of
+`basic/main.asm` — what the main ROM actually assembles — and carries a selftest
+proving the closure walks nested includes and excludes a sub-only file. Run it;
+do not quote this paragraph.
+
+| reading | figure | what was wrong |
+|---|---|---|
+| §6.1 as written, 2026-09-17 | 25 in six files | three of the six are `include`d only by `sub/` |
+| the correction, 2026-09-18 | 13 in five | dropped `basic/files.asm` (7 sites); relayed, not re-derived |
+| a hand grep, same day | 20 in five | its entry list omitted `fat_io_append` |
+| **the tool** | **21 in five** | derived, with a selftest |
+
+**And the split is what matters, not the total:**
+
+| class | count | what it means |
+|---|---|---|
+| **VECTOR** | **3** | `ld hl,fat_io_getbyte` stored into `ARL_GETBYTE` — `cload.asm:852`, `files.asm:1181`, `input.asm:278`. Dispatched ONCE PER BYTE. **This is the pin.** |
+| CALL | 18 | ordinary `call`/`jp`; moves with its verb or becomes a call-back |
+
+⚠️ **AND THE FRAMING WAS WRONG TOO, WHICH IS WHY THIS LOOKED UNMOVABLE.** These
+are not TAPE code depending on FAT. They are SHARED loaders that dispatch on
+DEVICE, whose disk arm calls FAT — and the dispatch is three instructions:
+`arl_set_src` chooses between `fat_io_getbyte` and `cas_in_getbyte`. Reading
+them as a tape/disk entanglement is what produced "the FAT layer is pinned in
+main".
+
+🟢 **AND §6.2a DISSOLVES THE PIN.** The vector can hold a main-side trampoline
+that crosses to `disk.rom`: one inter-slot call per byte, measured on 2026-09-18
+at 0.859 ms/byte against the reference's 4.297 — **0.20×**. The per-byte vector
+is exactly the case step 7 was run for, and it lands on the side that says the
+crossing is affordable. What remains for steps 11/12 is placement, not price.
+
 🎯 **SO THE BLOCKER IS NOT A CALL COUNT. IT IS A RAM VECTOR.** A page-1 address
 in ANOTHER SLOT is not callable through `ARL_GETBYTE`, and that — not the number
 of `call` sites — is why the byte cursors are resident. This is a sharper
