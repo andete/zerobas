@@ -62,6 +62,13 @@
 ; INIT-scan CALSLT word SCAN_IY ($E0D9), dead once the REPL runs, exactly as
 ; bdos_call did. DSKIO_ENTRY = $4010 is the disk-ROM interface table's DSKIO offset
 ; (MSX2 TH §5; header is 16 bytes so the table starts at +$10).
+; 🏗️ D-FATENG Option 2: OMITTED ENTIRELY FROM disk.rom. This is the cross-slot
+; DSKIO path and its error mapping; in disk.rom `read_sector` reaches the LOCAL
+; dskio and nothing references these. Gating them out also keeps DISKSLOT /
+; SCAN_IY / DISKOP_ERR -- basic-core cells the disk ROM does not define -- out of
+; that assembly.
+    IF DISK_BUILD
+    ELSE
 dskio_calslt:
                 push    af                  ; preserve the direction CY across IY setup
                 ld      a,(DISKSLOT)
@@ -101,6 +108,8 @@ dc_map:
 ;   out: Cy = 0 ok, Cy = 1 error (A = DSKIO error code)
 ; Ported from disk.asm read_sector; the body is identical except the tail call now
 ; goes through dskio_calslt (cross-slot $4010) instead of the local dskio.
+    ENDIF
+
 ; 🏗️ D-FATENG Option 2: THE ONLY PLACE THE TWO HOMES DIFFER. Assembled into
 ; disk.rom the primitive reaches its OWN DSKIO by a plain local call; assembled
 ; into sub.rom (or main) it must CALSLT across to whatever disk ROM holds the
@@ -159,25 +168,25 @@ fatprim_write_sector:
 ;   out: Cy = 0 ok (geometry valid), Cy = 1 error (FDC error / not 512 B per sec)
 fat_mount:
                 ld      de, 0           ; boot sector = logical sector 0
-                ld      hl, FSECTOR_BUF
+                ld      hl, FAT_DBUF
                 call    read_sector
                 ret     c
-                ; require 512 bytes per sector ($0200 LE) — matches FSECTOR_BUF
-                ld      a, (FSECTOR_BUF + BPB_BYTSPERSEC)
+                ; require 512 bytes per sector ($0200 LE) — matches FAT_DBUF
+                ld      a, (FAT_DBUF + BPB_BYTSPERSEC)
                 or      a
                 jr      nz, fat_mount_bad   ; low byte must be 0
-                ld      a, (FSECTOR_BUF + BPB_BYTSPERSEC + 1)
+                ld      a, (FAT_DBUF + BPB_BYTSPERSEC + 1)
                 cp      2
                 jr      nz, fat_mount_bad   ; high byte must be 2 ($0200 = 512)
-                ld      a, (FSECTOR_BUF + BPB_SECPERCLUS)
+                ld      a, (FAT_DBUF + BPB_SECPERCLUS)
                 ld      (FAT_SECPERCLUS), a
-                ld      hl, (FSECTOR_BUF + BPB_RSVDSECCNT)
+                ld      hl, (FAT_DBUF + BPB_RSVDSECCNT)
                 ld      (FAT_FATSTART), hl  ; first FAT sector = reserved sectors
                 ; first root sector = reserved + numFATs * secPerFAT
-                ld      a, (FSECTOR_BUF + BPB_NUMFATS)
+                ld      a, (FAT_DBUF + BPB_NUMFATS)
                 ld      (FAT_NUMFATS), a    ; cache for the write path's FAT sync
                 ld      b, a
-                ld      de, (FSECTOR_BUF + BPB_FATSZ16)
+                ld      de, (FAT_DBUF + BPB_FATSZ16)
                 ld      (FAT_SECPERFAT), de ; cache for per-copy sector stride
                 ld      hl, 0
 fm_fatacc:
@@ -187,7 +196,7 @@ fm_fatacc:
                 add     hl, de
                 ld      (FAT_FIRSTROOT), hl
                 ; root sectors = (rootEnts*32 + 511) / 512  (512 B per sector)
-                ld      hl, (FSECTOR_BUF + BPB_ROOTENTCNT)
+                ld      hl, (FAT_DBUF + BPB_ROOTENTCNT)
                 add     hl, hl
                 add     hl, hl
                 add     hl, hl
@@ -226,10 +235,10 @@ ff_secloop:
                 or      l
                 jr      z, ff_notfound      ; scanned every root sector
                 ld      de, (FAT_DIRSEC)
-                ld      hl, FSECTOR_BUF
+                ld      hl, FAT_DBUF
                 call    read_sector
                 ret     c                   ; propagate FDC error
-                ld      hl, FSECTOR_BUF
+                ld      hl, FAT_DBUF
                 ld      b, 16               ; 512 / 32 entries per sector
 ff_entloop:
                 push    bc
@@ -277,7 +286,7 @@ ff_found:
                 ld      de, (FAT_DIRSEC)
                 ld      (FWR_DIRSEC), de
                 push    hl
-                ld      de, FSECTOR_BUF
+                ld      de, FAT_DBUF
                 or      a
                 sbc     hl, de              ; HL = entry offset within the sector
                 ld      (FWR_DIROFF), hl
@@ -379,11 +388,11 @@ fat_next_cluster:
                 add     hl, de
                 ld      (FAT_FATSEC), hl
                 ex      de, hl
-                ld      hl, FSECTOR_BUF
+                ld      hl, FAT_DBUF
                 call    read_sector
                 ; byte0 = buf[byteidx]
                 ld      hl, (FAT_BYTEIDX)
-                ld      de, FSECTOR_BUF
+                ld      de, FAT_DBUF
                 add     hl, de
                 ld      a, (hl)
                 ld      (FAT_B0), a
@@ -394,7 +403,7 @@ fat_next_cluster:
                 sbc     hl, de
                 jr      z, fnc_straddle
                 ld      hl, (FAT_BYTEIDX)
-                ld      de, FSECTOR_BUF + 1
+                ld      de, FAT_DBUF + 1
                 add     hl, de
                 ld      a, (hl)
                 jr      fnc_combine
@@ -402,9 +411,9 @@ fnc_straddle:
                 ld      hl, (FAT_FATSEC)
                 inc     hl
                 ex      de, hl
-                ld      hl, FSECTOR_BUF
+                ld      hl, FAT_DBUF
                 call    read_sector
-                ld      a, (FSECTOR_BUF)
+                ld      a, (FAT_DBUF)
 fnc_combine:
                 ld      (FAT_B1), a
                 ld      a, (FAT_PARITY)
@@ -437,8 +446,8 @@ fnc_odd:
                 add     hl, de
                 ret
 
-; fat_read_file_sector — read the open file's next data sector into FSECTOR_BUF.
-;   out: Cy = 0 ok (FSECTOR_BUF holds 512 bytes), Cy = 1 end-of-file / error
+; fat_read_file_sector — read the open file's next data sector into FAT_DBUF.
+;   out: Cy = 0 ok (FAT_DBUF holds 512 bytes), Cy = 1 end-of-file / error
 ; The caller bounds the true end of file with FAT_FILESIZE; this returns Cy = 1
 ; once the cluster chain reaches an end-of-chain marker.
 fat_read_file_sector:
@@ -477,7 +486,7 @@ frs_mul:
                 ld      d, 0
                 add     hl, de              ; HL = absolute logical sector
                 ex      de, hl
-                ld      hl, FSECTOR_BUF
+                ld      hl, FAT_DBUF
                 call    read_sector
                 ret     c
                 ld      a, (FAT_CLUSSEC)
@@ -489,10 +498,15 @@ frs_eof:
                 scf
                 ret
 
+; 🏗️ D-FATENG Option 2: and "sub-ROM only" is now ENFORCED, not just asserted --
+; BDOS has no channel concept, and these are the only routines that touch
+; basic-core's FCH_ACTIVE / FCH_MODES, which disk.rom does not define.
+    IF DISK_BUILD
+    ELSE
 ; ⚠️ SUB-ROM ONLY, and it stays that way: this primitive is sized for the sub-ROM,
 ; its only real home. (It used to be gated out of the retired lean 16 KB cart,
 ; which was byte-full and would have overrun its $8000 ceiling outright.)
-; fat_restage_channel — re-read into FSECTOR_BUF whatever the LIVE channel had
+; fat_restage_channel — re-read into FAT_DBUF whatever the LIVE channel had
 ; staged there before it was switched away (D-FCH S-FCH-1,
 ; docs/spec-basic-filechan-alloc.md §3.1).
 ;   in:  the engine globals already hold the channel's state (fch_load_ctx has
@@ -524,7 +538,7 @@ fat_restage_channel:
                 or      a                   ; device channels own no sector; Cy=0
                 ret
 ; fat_detach_channel — write the LIVE channel's dirty partial sector out, IN
-; PLACE, so the shared FSECTOR_BUF can be handed to another channel. The inverse
+; PLACE, so the shared FAT_DBUF can be handed to another channel. The inverse
 ; of fat_restage_channel; together they are the whole write-back cache.
 ;   out: Cy = 1 on a write error (disk full), Cy = 0 otherwise (including the
 ;        common "nothing dirty" case).
@@ -604,23 +618,24 @@ frst_mul:
                 ld      d, 0
                 add     hl, de              ; HL = absolute logical sector
                 ex      de, hl
-                ld      hl, FSECTOR_BUF
+                ld      hl, FAT_DBUF
                 jp      read_sector
+    ENDIF
 
 ; ===========================================================================
 ; FAT12 WRITE-BACK substrate (ported verbatim from disk.asm §FAT12 write-back).
 ; All structures (free-cluster scan, 12-bit entry pack, multi-FAT sync, directory
 ; create/update) realise the Microsoft FAT specification; the physical sector
 ; write goes through write_sector (cross-slot DSKIO with CY=1). Buffer discipline
-; unchanged: the file DATA being accumulated lives in FSECTOR_BUF
+; unchanged: the file DATA being accumulated lives in FAT_DBUF
 ; (fat_flush_data_sector writes it out); the FAT/dir METADATA helpers use the
-; independent FWBUF, so a cluster scan or dir stamp never disturbs the in-flight
+; independent FAT_MBUF, so a cluster scan or dir stamp never disturbs the in-flight
 ; data sector.
 ; ===========================================================================
 
 ; fat_read_fat_sector — read FAT-copy-0 sector that holds cluster N's entry.
 ;   in:  HL = cluster number
-;   out: FWBUF holds that FAT sector; (FAT_FATSEC) = its absolute sector;
+;   out: FAT_MBUF holds that FAT sector; (FAT_FATSEC) = its absolute sector;
 ;        (FAT_BYTEIDX) = byte index of the entry's low byte within the sector;
 ;        (FAT_PARITY) = cluster & 1; Cy reflects the read.
 fat_read_fat_sector:
@@ -645,7 +660,7 @@ fat_read_fat_sector:
                 add     hl, de
                 ld      (FAT_FATSEC), hl
                 ex      de, hl
-                ld      hl, FWBUF
+                ld      hl, FAT_MBUF
                 jp      read_sector
 
 ; fat_alloc_cluster — find a free ($000) cluster, mark it EOC, sync all FATs.
@@ -654,7 +669,7 @@ fat_read_fat_sector:
 fat_alloc_cluster:
                 call    fat_total_clusters  ; DE = total clusters (reads boot sector)
                 ld      (FAT_WRTMP), de
-                ; FAT_FATSEC tracks which FAT sector is in FWBUF; -1 = none loaded.
+                ; FAT_FATSEC tracks which FAT sector is in FAT_MBUF; -1 = none loaded.
                 ld      hl, $FFFF
                 ld      (FAT_WRTMP2), hl    ; cached-sector = none
                 ld      hl, 2               ; first data cluster
@@ -686,7 +701,7 @@ fac_loop:
                 ld      d, 0
                 ld      hl, (FAT_FATSTART)
                 add     hl, de              ; HL = absolute FAT sector
-                ; is this sector already in FWBUF? (cached-sector compare)
+                ; is this sector already in FAT_MBUF? (cached-sector compare)
                 ld      de, (FAT_WRTMP2)
                 push    hl
                 or      a
@@ -696,11 +711,11 @@ fac_loop:
                 ld      (FAT_WRTMP2), hl    ; remember the new cached sector
                 ld      (FAT_FATSEC), hl
                 ex      de, hl
-                ld      hl, FWBUF
+                ld      hl, FAT_MBUF
                 call    read_sector
                 jr      c, fac_rderr
 fac_have_sec:
-                ; read the 12-bit entry from FWBUF (handles straddle into next sec).
+                ; read the 12-bit entry from FAT_MBUF (handles straddle into next sec).
                 pop     hl                  ; HL = cluster
                 push    hl
                 call    fac_entry_from_wbuf ; DE = entry value
@@ -727,12 +742,12 @@ fac_full:
                 ret
 
 ; fac_entry_from_wbuf — unpack cluster (FAT_BYTEIDX/FAT_PARITY already set) from
-; the FAT sector currently in FWBUF; if the entry straddles the 512-byte boundary
+; the FAT sector currently in FAT_MBUF; if the entry straddles the 512-byte boundary
 ; (byteidx == 511) read the FOLLOWING FAT sector for the high byte.
 ;   out: DE = 12-bit entry value; preserves nothing but DE
 fac_entry_from_wbuf:
                 ld      hl, (FAT_BYTEIDX)
-                ld      de, FWBUF
+                ld      de, FAT_MBUF
                 add     hl, de
                 ld      a, (hl)
                 ld      (FAT_B0), a
@@ -742,20 +757,20 @@ fac_entry_from_wbuf:
                 sbc     hl, de
                 jr      z, fac_straddle
                 ld      hl, (FAT_BYTEIDX)
-                ld      de, FWBUF + 1
+                ld      de, FAT_MBUF + 1
                 add     hl, de
                 ld      a, (hl)
                 jr      fac_comb
 fac_straddle:
-                ; read the next FAT sector into FWBUF and cache it.
+                ; read the next FAT sector into FAT_MBUF and cache it.
                 ld      hl, (FAT_FATSEC)
                 inc     hl
                 ld      (FAT_FATSEC), hl
                 ld      (FAT_WRTMP2), hl
                 ex      de, hl
-                ld      hl, FWBUF
+                ld      hl, FAT_MBUF
                 call    read_sector
-                ld      a, (FWBUF)
+                ld      a, (FAT_MBUF)
 fac_comb:
                 ld      (FAT_B1), a
                 ld      a, (FAT_PARITY)
@@ -794,10 +809,10 @@ fac_e_odd:
 fat_write_fat_entry:
                 ld      (FAT_WRTMP), de     ; save the value
                 push    hl                  ; save cluster
-                call    fat_read_fat_sector ; FWBUF = FAT sector 0; BYTEIDX/PARITY set
-                ; --- pack the low byte / shared nibble into FWBUF[byteidx]
+                call    fat_read_fat_sector ; FAT_MBUF = FAT sector 0; BYTEIDX/PARITY set
+                ; --- pack the low byte / shared nibble into FAT_MBUF[byteidx]
                 ld      hl, (FAT_BYTEIDX)
-                ld      de, FWBUF
+                ld      de, FAT_MBUF
                 add     hl, de
                 push    hl                  ; HL = &buf[byteidx]
                 ld      de, (FAT_WRTMP)     ; DE = value
@@ -839,10 +854,10 @@ fwe_byte1:
                 inc     hl
                 ld      (FAT_FATSEC), hl    ; advance to the straddle sector
                 ex      de, hl
-                ld      hl, FWBUF
+                ld      hl, FAT_MBUF
                 call    read_sector
                 jr      c, fwe_err
-                ld      hl, FWBUF           ; patch byte 0 of the next sector
+                ld      hl, FAT_MBUF           ; patch byte 0 of the next sector
                 ld      de, (FAT_WRTMP)
                 ld      a, (FAT_PARITY)
                 or      a
@@ -858,7 +873,7 @@ fwe_byte1:
                 jr      fwe_finish
 fwe_str_odd:
                 ; odd straddle: buf[0] = value[11:4] = (value >> 4) & $FF
-                ld      hl, FWBUF
+                ld      hl, FAT_MBUF
                 ld      a, e
                 rrca
                 rrca
@@ -917,8 +932,8 @@ fwe_err:
                 scf                         ; report the I/O error
                 ret
 
-; fat_write_buf_allfats — write FWBUF back to (FAT_FATSEC) in every FAT copy.
-;   in:  FWBUF holds the sector; FAT_FATSEC = its sector in FAT copy 0
+; fat_write_buf_allfats — write FAT_MBUF back to (FAT_FATSEC) in every FAT copy.
+;   in:  FAT_MBUF holds the sector; FAT_FATSEC = its sector in FAT copy 0
 ;   out: Cy = 0 ok, Cy = 1 error
 ; (Microsoft FAT spec §3.1: NumFATs identical copies; §3.2: same packing.)
 fat_write_buf_allfats:
@@ -929,7 +944,7 @@ fwba_loop:
                 push    bc
                 push    hl
                 ex      de, hl              ; DE = target sector
-                ld      hl, FWBUF
+                ld      hl, FAT_MBUF
                 call    fatprim_write_sector
                 pop     hl
                 pop     bc
@@ -943,15 +958,15 @@ fwba_loop:
 
 ; fat_total_clusters — total cluster count of the volume (2 + data clusters).
 ;   out: DE = total clusters; preserves HL
-; (Microsoft FAT spec §3.3.) Re-reads the boot sector into FWBUF (NOT FSECTOR_BUF,
+; (Microsoft FAT spec §3.3.) Re-reads the boot sector into FAT_MBUF (NOT FAT_DBUF,
 ; which may hold in-flight write data).
 fat_total_clusters:
                 push    hl
                 ld      de, 0
-                ld      hl, FWBUF
+                ld      hl, FAT_MBUF
                 call    read_sector
                 jr      c, ftc_done         ; on error report 2 (no free clusters)
-                ld      hl, (FWBUF + 19)    ; total sectors 16-bit (BPB +19)
+                ld      hl, (FAT_MBUF + 19)    ; total sectors 16-bit (BPB +19)
                 ld      de, (FAT_FIRSTDATA)
                 or      a
                 sbc     hl, de              ; HL = data sectors
@@ -981,7 +996,7 @@ ftc_done:
 ; fat_count_free — count free clusters (FAT entries == 0) over the data range
 ; [2, total). Mounts first. Used by DSKF.
 ;   out: DE = free cluster count (0 on mount error).
-; Reads each FAT sector ONCE (caching it in FSECTOR_BUF, keyed by FWR_FIRST) and
+; Reads each FAT sector ONCE (caching it in FAT_DBUF, keyed by FWR_FIRST) and
 ; decodes the 12-bit entry for each cluster inline, counting the zeros. A naive
 ; one-read-per-cluster scan is correct but ~700 cross-slot DSKIO reads — far too
 ; slow on a real FDC; caching collapses it to a handful. Loop state lives in RAM
@@ -1029,7 +1044,7 @@ fcf_loop:
                 jr      z, fcf_have         ; already cached
                 ld      (FWR_FIRST), hl
                 ex      de, hl
-                ld      hl, FSECTOR_BUF
+                ld      hl, FAT_DBUF
                 call    read_sector         ; cache this FAT sector
 fcf_have:
                 ; byteidx = offset & 511
@@ -1042,31 +1057,31 @@ fcf_have:
                 ld      a, h
                 and     1
                 ld      h, a                ; HL = byteidx (0..511)
-                ; byte0 = FSECTOR_BUF[byteidx]
+                ; byte0 = FAT_DBUF[byteidx]
                 push    hl
-                ld      de, FSECTOR_BUF
+                ld      de, FAT_DBUF
                 add     hl, de
                 ld      a, (hl)
                 ld      (FAT_B0), a
                 pop     hl                  ; HL = byteidx
-                ; byte1 = byteidx==511 ? next FAT sector[0] : FSECTOR_BUF[byteidx+1]
+                ; byte1 = byteidx==511 ? next FAT sector[0] : FAT_DBUF[byteidx+1]
                 ld      a, h
                 cp      1
                 jr      nz, fcf_b1_same
                 ld      a, l
                 cp      $FF
                 jr      nz, fcf_b1_same     ; byteidx != 511 -> same sector
-                ; straddle: byte1 lives in the next FAT sector (read into FWBUF).
+                ; straddle: byte1 lives in the next FAT sector (read into FAT_MBUF).
                 ld      hl, (FWR_FIRST)
                 inc     hl
                 ex      de, hl
-                ld      hl, FWBUF
+                ld      hl, FAT_MBUF
                 call    read_sector
-                ld      a, (FWBUF)
+                ld      a, (FAT_MBUF)
                 jr      fcf_haveb1
 fcf_b1_same:
                 inc     hl                  ; byteidx+1
-                ld      de, FSECTOR_BUF
+                ld      de, FAT_DBUF
                 add     hl, de
                 ld      a, (hl)
 fcf_haveb1:
@@ -1107,7 +1122,7 @@ fcf_zero:
                 ld      de, 0
                 ret
 
-; fat_flush_data_sector — write FSECTOR_BUF (the current 512-byte data buffer) to
+; fat_flush_data_sector — write FAT_DBUF (the current 512-byte data buffer) to
 ; the file's current data sector, allocating/extending the cluster chain first.
 ;   out: Cy = 0 ok, Cy = 1 = disk full / write error
 ; (Microsoft FAT spec §3.3 data-sector math.)
@@ -1122,8 +1137,8 @@ fat_flush_data_sector:
                 jr      c, ffds_nopad       ; (defensive: WRBUFLEN > 512 never happens)
                 ld      b, h
                 ld      c, l                ; BC = pad count
-                ld      hl, FSECTOR_BUF
-                add     hl, de              ; HL = FSECTOR_BUF + WRBUFLEN = first pad byte
+                ld      hl, FAT_DBUF
+                add     hl, de              ; HL = FAT_DBUF + WRBUFLEN = first pad byte
 ffds_padloop:
                 ld      a, b
                 or      c
@@ -1187,7 +1202,7 @@ ffds_mul:
                 ld      d, 0
                 add     hl, de              ; HL = absolute logical sector
                 ex      de, hl              ; DE = sector
-                ld      hl, FSECTOR_BUF
+                ld      hl, FAT_DBUF
                 call    fatprim_write_sector
                 ret     c
                 ld      a, (FWR_SECIDX)
@@ -1213,10 +1228,10 @@ fdcr_secloop:
                 or      l
                 jr      z, fdcr_full        ; no slot in any root sector
                 ld      de, (FAT_DIRSEC)
-                ld      hl, FWBUF
+                ld      hl, FAT_MBUF
                 call    read_sector
                 ret     c
-                ld      hl, FWBUF
+                ld      hl, FAT_MBUF
                 ld      b, 16               ; 16 entries per 512-byte sector
 fdcr_entloop:
                 push    bc
@@ -1243,13 +1258,13 @@ fdcr_entloop:
                 ld      (FAT_DIRREM), hl
                 jr      fdcr_secloop
 fdcr_useslot:
-                pop     hl                  ; HL = dir entry slot in FWBUF
+                pop     hl                  ; HL = dir entry slot in FAT_MBUF
                 pop     bc
                 ; record the slot's sector + byte offset for fat_dir_update.
                 ld      de, (FAT_DIRSEC)
                 ld      (FWR_DIRSEC), de
                 push    hl
-                ld      de, FWBUF
+                ld      de, FAT_MBUF
                 or      a
                 sbc     hl, de              ; HL = offset within the sector
                 ld      (FWR_DIROFF), hl
@@ -1275,7 +1290,7 @@ fdcr_zero:
                 pop     hl                  ; discard slot pointer
                 ; write the dir sector back.
                 ld      de, (FWR_DIRSEC)
-                ld      hl, FWBUF
+                ld      hl, FAT_MBUF
                 call    fatprim_write_sector
                 ret     c
                 or      a                   ; Cy = 0 success
@@ -1290,12 +1305,12 @@ fdcr_full:
 ; (Microsoft FAT spec §3.4.)
 fat_dir_update:
                 ld      de, (FWR_DIRSEC)
-                ld      hl, FWBUF
+                ld      hl, FAT_MBUF
                 call    read_sector
                 ret     c
-                ; HL = &entry = FWBUF + DIROFF
+                ; HL = &entry = FAT_MBUF + DIROFF
                 ld      hl, (FWR_DIROFF)
-                ld      de, FWBUF
+                ld      de, FAT_MBUF
                 add     hl, de
                 ; +26 first cluster (LE) = FWR_FIRST
                 push    hl
@@ -1315,7 +1330,7 @@ fat_dir_update:
                 ldir
                 ; write the dir sector back.
                 ld      de, (FWR_DIRSEC)
-                ld      hl, FWBUF
+                ld      hl, FAT_MBUF
                 call    fatprim_write_sector
                 ret     c
                 or      a                   ; Cy = 0 success

@@ -2838,6 +2838,12 @@ FSECTOR_BUF     equ     $E5C0   ; file data / read sector buffer ($E5C0..$E7BF)
 ; workload) and lies below the sysvar sweep's $F380 floor.
 DSKBUF_PTR      equ     $F351   ; word -> the DSKI$/DSKO$ sector buffer (2)
 FWBUF           equ     $E7C0   ; FAT/dir metadata sector buffer ($E7C0..$E9BF)
+
+; D-FATENG Option 2: the shared FAT body (basic/fat-prim-body.inc) is assembled
+; into sub.rom AND disk.rom and must not spell either ROM's private names, so it
+; says FAT_DBUF / FAT_MBUF and each ROM binds them. Zero bytes (EQU).
+FAT_DBUF        equ     FSECTOR_BUF     ; the body's data/sector buffer
+FAT_MBUF        equ     FWBUF           ; the body's FAT/dir metadata buffer
 ; FAT12 geometry, filled by fat_mount from the on-disk BPB (own-choice free RAM in
 ; page $E9 above the buffers).
 FAT_SECPERCLUS  equ     $E9C0   ; sectors per cluster (byte)

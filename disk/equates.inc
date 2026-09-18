@@ -258,6 +258,35 @@ BDOS_WRBUFLEN   equ     $E54C   ; bytes currently buffered in SECTOR_BUF (word, 
 BDOS_WRBYTES    equ     $E54E   ; total bytes written so far = final file size (4-byte LE)
 BDOS_DIRSEC     equ     $E552   ; logical sector holding the open file's dir entry (word)
 BDOS_DIROFF     equ     $E554   ; byte offset of that dir entry within its sector (word)
+
+; --- D-FATENG Option 2: the shared FAT body's names, bound to THIS ROM's cells -
+; disk/docs/spec-diskcode-eviction.md §6.4a. basic/fat-prim-body.inc is assembled
+; into BOTH sub.rom and disk.rom, one source, and it spells its buffers and
+; write-state in basic-core's names. Each ROM binds them to its OWN cells with an
+; EQU -- Joost, 2026-09-18: *"keep it a per-ROM equate for now"*. Zero bytes: an
+; EQU emits nothing, and each ROM assembles its own instance of the body, so
+; there is still exactly ONE engine per ROM.
+; ⚠️ A RUNTIME POINTER BECOMES NECESSARY ONLY WHEN disk.rom's ENGINE SERVES BOTH
+; BDOS **AND** Disk BASIC -- two contexts inside ONE assembly, which an equate
+; cannot express. That is steps 9-12, not now. D-FATENG slices 1-2 built that
+; pointer (DBUF_PTR/MBUF_PTR) against disk/fat.asm's own copy, which Option 2
+; deletes; it comes back here when the consumers move.
+; 🔴 NEUTRAL NAMES, AND FSECTOR_BUF IS WHY. The first cut aliased the body's
+; own `FSECTOR_BUF` to our SECTOR_BUF -- but disk/basic-resident-abi.inc ALREADY
+; binds FSECTOR_BUF to basic-core's $E5C0, because hk_lrset walks BASIC's field
+; buffer across the slot. Re-pointing it would have silently broken LSET/RSET.
+; The assembler caught it as a redefinition; nothing else would have.
+; So the shared body no longer spells basic-core's names at all: it uses
+; FAT_DBUF / FAT_MBUF, and each ROM binds those to its own cells.
+FAT_DBUF        equ     SECTOR_BUF      ; the body's data/sector buffer
+FAT_MBUF        equ     WBUF            ; the body's FAT/dir metadata buffer
+FWR_CLUS        equ     BDOS_WRCLUS     ; chain-tail cluster being filled
+FWR_FIRST       equ     BDOS_WRFIRST    ; file's first cluster
+FWR_SECIDX      equ     BDOS_WRSECIDX   ; sector index within the cluster
+FWR_BUFLEN      equ     BDOS_WRBUFLEN   ; bytes buffered
+FWR_BYTES       equ     BDOS_WRBYTES    ; total bytes written
+FWR_DIRSEC      equ     BDOS_DIRSEC     ; dir entry's sector
+FWR_DIROFF      equ     BDOS_DIROFF     ; dir entry's offset within it
 FAT_WRTMP       equ     $E556   ; transient scratch for the FAT12 write helpers (word)
 FAT_WRTMP2      equ     $E558   ; second transient (free-cluster scan cached sector)
 ; A SECOND 512-byte sector buffer used by the WRITE-BACK FAT/dir helpers. The
