@@ -3,6 +3,11 @@
 # SPDX-License-Identifier: 0BSD
 """D-LOADTIME: what does a TOKENISED `LOAD` cost? ⛔ THIS METHOD CANNOT ANSWER IT.
 
+✅ **ANSWERED THE SAME DAY BY `scratchpad/loadrun_probe.py` (D-LOADRUN)**, which
+built the method this header describes and measured **0.2178 ms/byte on zerobas
+and 0.0376 on the CF-3300** (spec-diskcode-eviction.md §6.2c). Read that one for
+the figure; read this one for why the obvious instrument does not work.
+
 🔴 STATUS 2026-09-18: **INCOMPLETE, AND KEPT FOR ITS DIAGNOSIS.** The disk
 builder and the tokenised-program generator below are correct and reusable; the
 TIMING METHOD is not, and this header says why so the next attempt does not
@@ -22,18 +27,28 @@ ctl` control caught. Shortening `step` below the load does not work either: a
 injector needs (at 3 s the calibration case broke -- its 1000-iteration loop was
 still running when the capture fired).
 
-🟢 WHAT IT DID ESTABLISH, as an upper bound worth keeping: **a 7603-byte
-tokenised LOAD takes under 3 s on the CF-3300** -- under ~0.39 ms/byte, and
-plausibly far less. That is the same order as D-XSLOTPRICE's 0.156 ms crossing,
-which is exactly why the question matters and why a real measurement is needed
-before step 9 moves anything.
+🟢 WHAT IT DID ESTABLISH, as an upper bound: **a 7603-byte tokenised LOAD takes
+under 3 s on the CF-3300** -- under ~0.39 ms/byte. ✅ The real figure, measured
+by D-LOADRUN, is **0.0376 ms/byte** there, so this bound was honest and an order
+of magnitude loose -- which is what an upper bound from a failed instrument is
+worth, and why it was not allowed to decide step 9.
 
-➡️ THE METHOD THAT WOULD WORK: `LOAD"P.BAS",R`, with the marker as the loaded
-program's FIRST line. The loaded program runs the instant the load completes, so
-the second clock read is triggered by the WORK and no injection gap intervenes.
-It needs a genuinely tokenised marker line -- obtainable by having the machine
-SAVE one once and padding it in Python with the REM generator below, NOT by
-guessing MSX token bytes.
+➡️ THE METHOD THAT WORKED, now built as `scratchpad/loadrun_probe.py`:
+`LOAD"P.BAS",R`, with the marker as the loaded program's FIRST line. The loaded
+program runs the instant the load completes, so the second clock read is
+triggered by the WORK and no injection gap intervenes.
+
+🔴 AND THE OTHER HALF WAS A SENTENCE IN THIS FILE, BELOW, WHICH IS WRONG:
+*"`LOAD"x",R` does not help -- it clears variables too."* It clears VARIABLES.
+**`TIME` is a system cell, not a BASIC variable**, so `TIME=0` before the load
+survives into the loaded program and is the whole clock. D-LOADRUN proves it
+rather than assuming it, with a control that runs a delay loop before the load
+and checks the two costs COMPOSE.
+
+🔴 A THIRD THING THIS FILE GOT WRONG, harmlessly: the REM generator below emits
+`$8F` + text, but the machine emits **`$8F $20` + text** -- it keeps the space
+after `REM`. Both load. D-LOADRUN takes its tokenised lines from a `SAVE` the
+machine performs, which is how the difference surfaced at all.
 
 --- the original intent follows ---
 
@@ -50,7 +65,8 @@ loop-to-the-cursor for this path -- on an assumption nobody has measured.
 
 WHY THE TIMING IS NOT SELF-REPORTING.  `LOAD` REPLACES THE PROGRAM, so the usual
 `T=TIME ... PRINT TIME-T` cannot survive it: the code holding T is gone before it
-could print.  (`LOAD"x",R` does not help -- it clears variables too.)  So the
+could print.  (`LOAD"x",R` does not help -- it clears variables too.  🔴 FALSE,
+see the correction at the top: it clears VARIABLES, and `TIME` is not one.)  So the
 clock is read on BOTH SIDES OF THE LOAD by two SEPARATE injected lines, and the
 probe's own injection gap is removed by a control that does the same thing with
 no LOAD in between:

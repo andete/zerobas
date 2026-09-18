@@ -476,7 +476,7 @@ ITS LOOP.** §6.1(b) is why. Every remaining step is an instance of it.
 | 6 | 🔬 **MEASURE: does the reference's BDOS share Disk BASIC's sector buffer?** | §0.1 — decides whether there is a parameter at all. **Nothing moves before this.** |
 | 7 | 🔬 **MEASURE: does the reference cross slots per BYTE for sequential file I/O?** | §6.3 — decides whether loop duplication is required or is wasted bytes |
 | 8 | the FAT engine to `disk.rom`, ONE copy, base parametrised per §0.1 | needs 6; needs a scratch build to prove the fragmented fit |
-| 9 | the tokenised `LOAD` loop (`dpl_*`) — already disk-only, its tape twin `ctp_*` is separate code | needs 8 |
+| 9 | the tokenised `LOAD` loop (`dpl_*`) — already disk-only, its tape twin `ctp_*` is separate code | needs 8; ✅ **MEASURED §6.2c — the LOOP moves, the cursor stays** |
 | 10 | `OPEN`/`CLOSE` disk arms + the channel write-back manager | needs 8 |
 | 11 | `INPUT#` / `INPUT$` loop copies beside their cursor | needs 7 |
 | 12 | `PRINT#` — the one consumer with no loop of its own to move | needs 7; see §6.3 |
@@ -562,12 +562,91 @@ injection gap intervenes. It needs a genuinely tokenised marker line — obtaine
 by having the machine `SAVE` one once and padding it with the probe's REM
 generator, **not** by guessing MSX token bytes.
 
-⛔ **UNTIL THEN §6.3 STANDS FOR STEP 9 ON ITS ORIGINAL REASONING, WHICH IS AN
-ARGUMENT AND NOT A MEASUREMENT.** Do not move `dpl_*` on the strength of it.
+➡️ **SUPERSEDED THE SAME DAY BY §6.2c**, which built exactly the instrument
+this paragraph specified and got an answer. The diagnosis above is kept because
+it is the reason the second attempt was shaped the way it was.
+
+### 6.2c 🟢 STEP 9 MEASURED 2026-09-18 (D-LOADRUN) — §6.3 STANDS, AND IT IS NOW A NUMBER
+
+`scratchpad/loadrun_probe.py` is the instrument §6.2b specified. Two changes make
+the clock honest:
+
+  * **`LOAD"x",R`**, with the marker as the loaded program's FIRST line — so the
+    second clock read is triggered BY THE WORK and the injection gap that
+    defeated `loadtime_probe` cannot intervene. The capture may fire arbitrarily
+    late; the reading is TIME AS PRINTED.
+  * **`TIME`, not a variable.** `scratchpad/loadtime_probe.py`'s own docstring
+    concluded *"`LOAD"x",R` does not help — it clears variables too"* (that
+    sentence is in the PROBE, not in §6.2b), and it was the sentence to attack: `TIME`
+    is a SYSTEM cell, not a BASIC variable, so `TIME=0` before the load survives
+    into the loaded program. **This is measured, not assumed** — see the
+    composition control below.
+
+Three programs, identical but for REM padding, so every FIXED cost cancels:
+
+| machine | S (1055 B) | M (7208 B) | L (14369 B) | **ms/byte** |
+|---|---|---|---|---|
+| CF-3300 (60 Hz) | 51 | 62 | 81 | **0.0376** |
+| zerobas (50 Hz) | 16 | 83 | 161 | **0.2178** |
+
+🔴 **FINDING 1 — THE ANSWER TO STEP 9.** One inter-slot crossing per byte is
+0.156 ms (D-XSLOTPRICE), so cursor-out-loop-left-behind costs
+**0.2178 → 0.3738 ms/byte = 1.72×** our current LOAD. On a 16 KB program that is
+**3.57 s → 6.12 s**. §6.3's arithmetic was exactly right (+2.6 s on 16 KB); what
+it could not know was the baseline that gets added to. **§6.3 THEREFORE STANDS
+FOR STEP 9 — MOVE THE LOOP, NOT THE CURSOR — AND IT NOW STANDS ON A
+MEASUREMENT.** The margin is also now known and bounded: if the fit ever forces
+the other arrangement, the price is 1.72×, not infinity.
+
+🔴 **FINDING 2 — AND IT IS NOT THE EVICTION'S BUSINESS: WE ARE 5.8× SLOWER THAN
+THE REFERENCE PER BYTE OF TOKENISED `LOAD`** (0.2178 vs 0.0376 ms, wall clock).
+**That is not the general interpretation gap.** The probe's own delay control
+prices this machine at **3.0×** the reference on a bare `FOR..NEXT` (148 jiffies
+@ 60 Hz = 2.47 s against 375 @ 50 Hz = 7.50 s), consistent with D-SPEEDPROF —
+and `dpl_*` is ROM code, not interpretation, so the remaining ~2× is ours.
+Filed as a residual in `TODO.md`; nothing else in the tree would have found it.
+
+🟢 **FINDING 3 — TWO DIFFERENT SHAPES, WHICH IS WHY THE DIFFERENTIAL DESIGN
+EARNED ITSELF.** The reference spends **0.85 s** before the first payload byte
+and we spend **0.32 s**; then it spends 1/6 of our per-byte cost. An absolute
+timing of one load would have blended those two facts into a single misleading
+ratio in whichever direction the chosen file size happened to point.
+
+⚠️ **CONTROLS — each one voids the reading if it fails, and all passed:**
+  * **TIME SURVIVES THE LOAD**, measured: a delay case times a bare `FOR` loop,
+    a fourth case runs the same loop AND THEN loads. They must COMPOSE —
+    CF-3300 199 predicted / 201 measured, zerobas 391 / 393;
+  * **LINEARITY**, because a two-point differential assumes a shape it cannot
+    see — a FAT walk that re-read a sector per cluster would be superlinear and
+    a slope from the endpoints would look clean while understating big loads.
+    The mid-size point is predicted **64.9 / measured 62** (CF-3300) and
+    **83.0 / measured 83** (zerobas);
+  * **the identity witness** — each program prints its own number after the
+    timed line, so a failed open leaving the previous program resident cannot
+    pass as a difference;
+  * the large load must exceed the small one; the marker must appear at all; and
+    the seed program must read back with the line numbers it was typed with.
+
+⚠️ **REPRODUCIBLE TO THE JIFFY, AND THE ONE CHANGE BETWEEN RUNS WAS EXPLAINED.**
+Adding the mid-size program to the image moved `L.BAS` two jiffies later on BOTH
+machines (79→81, 159→161) while `S.BAS` did not move at all — `M.BAS` is
+allocated ahead of it, so `L.BAS` starts further into the disk. That is a layout
+effect the instrument is sharp enough to see, not noise.
+
+🔬 **A FREE FINDING ON THE WAY, AND §6.2b's RULE EARNED ITSELF ON FIRST USE.**
+§6.2b forbade guessing MSX token bytes, so the probe has the machine `SAVE` the
+lines and reads them back out of the image. `loadtime_probe.py` had built its REM
+lines as `$8F` + text; **the machine emits `$8F $20` + text** — it keeps the space
+after `REM`. Both forms load, so nothing was broken, but the hand-built one was
+not what the machine produces. 🟢 And both machines tokenised all five seed
+lines **identically**.
 
 ### 6.3 🔴 THE ONE ARRANGEMENT THAT IS ALREADY DEAD — NARROWED BY §6.2a
 
-🟢 **NARROWED 2026-09-18 BY §6.2a: THIS IS NOW TRUE OF STEP 9 ONLY.** For the
+🟢 **NARROWED 2026-09-18 BY §6.2a: THIS IS NOW TRUE OF STEP 9 ONLY** — and
+✅ **CONFIRMED FOR STEP 9 THE SAME DAY BY §6.2c**, which measured the baseline
+this paragraph was reasoning about: the crossing costs **1.72×** our current
+LOAD, so the conclusion below is right and is no longer an assertion. For the
 BASIC-visible byte verbs the measurement says a per-byte crossing costs 0.20× the
 reference, so the paragraph below applies to the tokenised `LOAD` loop — where
 there is no interpreter overhead per byte to absorb it — and not to

@@ -217,6 +217,31 @@ item — do **one item per session** to keep context lean.
       `ex_call` matches only `"FORMAT"` and otherwise `jp nc,stmt_error`, with
       **no offer to any other extension**, which is the same gap as `ATTR$`.
 
+- [ ] 🔴 **TOKENISED `LOAD` IS 5.8× THE REFERENCE PER BYTE, AND THAT IS NOT THE
+      INTERPRETATION GAP.**
+      🎚️ TIER 4 — on-par speed, on `LOAD`.
+      🔭 **SCOUT-THEN-ASK** — profiling `dpl_*`'s per-byte path is free;
+      SPENDING BYTES on it is not, and the byte budget is Joost's call.
+      Measured 2026-09-18 by
+      `scratchpad/loadrun_probe.py` (D-LOADRUN), three program sizes per machine,
+      linearity checked: **zerobas 0.2178 ms/byte, CF-3300 0.0376**
+      (`disk/docs/spec-diskcode-eviction.md` §6.2c). A 16 KB program is **3.57 s
+      here against 0.62 s there**.
+      🔴 **THE USUAL EXCUSE DOES NOT COVER IT.** The same probe's own delay
+      control prices this machine at **3.0×** the reference on a bare `FOR..NEXT`
+      — consistent with D-SPEEDPROF's 2.5–3.8× — and `dpl_*` is ROM code with no
+      interpretation per byte, so roughly **2× of the 5.8× is this loop's own**.
+      🟢 And the shapes differ in the other direction too: the reference spends
+      **0.85 s** of FIXED cost before the first payload byte where we spend
+      **0.32 s**, so we win on small files and lose on large ones.
+      ⚠️ **NOT THE EVICTION'S BUSINESS** — §6.2c measured this only to price step
+      9's inter-slot question, and step 9's answer does not depend on it. Picking
+      this up means profiling `dpl_*`'s per-byte path in `basic/cload.asm:1027`
+      onwards, which is a TIER 4 slice of its own.
+      ⚠️ **AND WHATEVER IS FOUND, RE-MEASURE — DO NOT QUOTE THE FIGURES ABOVE.**
+      They were taken before step 9 moved `dpl_*` anywhere, and step 9 adds an
+      inter-slot call at the top of exactly this path.
+
 - [ ] 💰 **THE CARVE INVENTORY, RE-RUN 2026-09-17 (D-LONGRUN) — THE MECHANICAL
       FAMILY IS NOT SHUT, IT IS JUST SMALL: ~20-40 B, NONE OF IT IN ONE PIECE.**
       🎚️ BUDGET — funding for TIER 1: this is what `PLAY`'s `X<var>;` is ~30 B
@@ -2392,7 +2417,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:20096 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:20121 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -2558,7 +2583,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:7201 (T-6FE392)8 (T-529ABE)` from `TODO.md:18490 (T-529ABE)`: a
+      `TODO.md:7226 (T-6FE392)8 (T-529ABE)` from `TODO.md:18515 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -8045,7 +8070,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:18490 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:18515 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
