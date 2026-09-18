@@ -672,7 +672,27 @@ fat_alloc_cluster:
                 ; FAT_FATSEC tracks which FAT sector is in FAT_MBUF; -1 = none loaded.
                 ld      hl, $FFFF
                 ld      (FAT_WRTMP2), hl    ; cached-sector = none
+                ; 🏗️ D-FATENG: M30's per-operation allocation hint, DISK-SIDE ONLY.
+                ; disk/fat.asm scans from FAT_ALLOCHINT instead of restarting at 2
+                ; every time; the hint is reset to 2 by fat_mount_tail
+                ; (disk/kernel.asm) at the start of each BDOS operation and
+                ; advanced past each claimed cluster by fac_found below, so it
+                ; returns the SAME cluster sequence as a from-2 scan, faster
+                ; (tier2-m30-alloc-hint-spec.md §4). Byte-size-neutral: `ld hl,2`
+                ; and `ld hl,(nn)` are both 3 bytes.
+                ; ⚠️ GATED, NOT ADOPTED WHOLESALE: basic-core has no FAT_ALLOCHINT
+                ; cell and giving it one is a RAM allocation, not a port. Each side
+                ; keeps exactly what it has today.
+                ; 🔴 AND WITHOUT THIS PORT THE SWAP WOULD HAVE LEFT DEAD STATE THE
+                ; GATES CANNOT SEE: fat_mount_tail keeps RESETTING FAT_ALLOCHINT in
+                ; disk/kernel.asm, which survives the swap -- a RAM write nothing
+                ; reads, which no dead-code sweep reports because it is not an
+                ; unreachable routine.
+    IF DISK_BUILD
+                ld      hl, (FAT_ALLOCHINT) ; first candidate cluster
+    ELSE
                 ld      hl, 2               ; first data cluster
+    ENDIF
 fac_loop:
                 ld      de, (FAT_WRTMP)
                 push    hl
@@ -735,6 +755,14 @@ fac_found:
                 call    fat_write_fat_entry ; HL = cluster, DE = value
                 pop     hl
                 ret     c                   ; write error propagates (Cy set)
+    IF DISK_BUILD
+                ; M30: advance the scan hint past this claimed cluster WITHOUT
+                ; disturbing HL, which must return as the allocated cluster.
+                push    hl
+                inc     hl
+                ld      (FAT_ALLOCHINT), hl
+                pop     hl
+    ENDIF
                 or      a                   ; Cy = 0 success, HL = cluster
                 ret
 fac_full:
