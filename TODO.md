@@ -217,6 +217,29 @@ item — do **one item per session** to keep context lean.
       `ex_call` matches only `"FORMAT"` and otherwise `jp nc,stmt_error`, with
       **no offer to any other extension**, which is the same gap as `ATTR$`.
 
+- [ ] 🔴 **TWO DEAD `equ` ALIASES, AND A 12-LINE JUSTIFICATION ARGUING ABOUT AN
+      INSTRUCTION THAT NO LONGER EXISTS.**
+      🎚️ APPARATUS — the hole is in the GATES, not in the ROM.
+      🤖 **AUTONOMOUS** — no ruling needed; the only judgement is whether to
+      delete the names or re-point them, and neither costs bytes.
+      Found 2026-09-18 by `scratchpad/dpldep_census.py` (D-DPLDEP) while deriving
+      step 9's scope (`disk/docs/spec-diskcode-eviction.md` §6.5).
+      🔴 `dpl_link_err` (`basic/cload.asm:1111`) and `dpl_err_pop`
+      (`basic/cload.asm:1139`) have **ZERO references** anywhere — D-TRUNCLOAD
+      replaced their call sites with `jr c,dpl_eof` and left the `equ`s behind.
+      Both headers still claim *"The NAME and every call site survive"*.
+      🔴 **AND THE STALE PROSE IS THE WORSE HALF.** D-NGRAM13's justification
+      above `dpl_get_store` (`basic/cload.asm:1148`) still argues at length about
+      where *"the `jp c,dpl_err_pop`"* should sit and why folding it into the
+      helper "cannot be witnessed". **That instruction does not exist.** A reader
+      pricing a change there would be reasoning about code that is gone.
+      [[a-fix-falsifies-the-justification-beside-it]]
+      ⚠️ **WHY NO GATE CAUGHT IT:** `check_dead_code` does not follow `equ`
+      aliases — an alias emits no bytes, so it is invisible to a span model — and
+      no gate reads prose at all. The real deliverable is therefore an ARM, not a
+      deletion: an unreferenced `equ` whose target is a code label is dead by the
+      same argument as an unreferenced routine.
+
 - [ ] 🔴 **TOKENISED `LOAD` IS 5.8× THE REFERENCE PER BYTE, AND THAT IS NOT THE
       INTERPRETATION GAP.**
       🎚️ TIER 4 — on-par speed, on `LOAD`.
@@ -2417,7 +2440,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:20121 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:20144 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -2583,7 +2606,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:7226 (T-6FE392)8 (T-529ABE)` from `TODO.md:18515 (T-529ABE)`: a
+      `TODO.md:7249 (T-6FE392)8 (T-529ABE)` from `TODO.md:18538 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -8070,7 +8093,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:18515 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:18538 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

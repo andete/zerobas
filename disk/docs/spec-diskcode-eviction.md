@@ -476,7 +476,7 @@ ITS LOOP.** §6.1(b) is why. Every remaining step is an instance of it.
 | 6 | 🔬 **MEASURE: does the reference's BDOS share Disk BASIC's sector buffer?** | §0.1 — decides whether there is a parameter at all. **Nothing moves before this.** |
 | 7 | 🔬 **MEASURE: does the reference cross slots per BYTE for sequential file I/O?** | §6.3 — decides whether loop duplication is required or is wasted bytes |
 | 8 | the FAT engine to `disk.rom`, ONE copy, base parametrised per §0.1 | needs 6; needs a scratch build to prove the fragmented fit |
-| 9 | the tokenised `LOAD` loop (`dpl_*`) — already disk-only, its tape twin `ctp_*` is separate code | needs 8; ✅ **MEASURED §6.2c — the LOOP moves, the cursor stays** |
+| 9 | the tokenised `LOAD` loop (`dpl_*`) — 🔴 **NOT "already disk-only": `dpl_err` has 9 CASSETTE in-edges, §6.5** | needs 8; ✅ **MEASURED §6.2c** (the LOOP moves) and ✅ **SCOPED §6.5** (6 bodies move, 2 tails stay) |
 | 10 | `OPEN`/`CLOSE` disk arms + the channel write-back manager | needs 8 |
 | 11 | `INPUT#` / `INPUT$` loop copies beside their cursor | needs 7 |
 | 12 | `PRINT#` — the one consumer with no loop of its own to move | needs 7; see §6.3 |
@@ -729,6 +729,64 @@ that breaks COMMAND.COM would be found by `bdos-acceptance` late and expensively
 
 ⛔ **NOT STARTED. 1725 B of code interleaved with 24 absolute-address pins is
 not a slice to begin on a guess about which parametrisation is wanted.**
+
+## 6.5 🔴 STEP 9's SCOPE, DERIVED 2026-09-18 (D-DPLDEP) — AND THE NAME `dpl_` LIES
+
+§6.2c settled WHY step 9 moves the loop. `scratchpad/dpldep_census.py` settles
+WHAT, from the transitive `include` closure of `basic/main.asm`, and the first
+thing it establishes is that **`dpl_` is not a device prefix**. `basic/cload.asm`
+says so in its own header — *"🔴 dpl_err IS SHARED WITH THE WHOLE CASSETTE PATH
+(do_tape_prog above, nine `jp c,dpl_err` sites)"* — so a move of "everything
+spelled `dpl_*`" would put a CASSETTE tail in `disk.rom`, where a diskless build
+cannot reach it at all. [[a-shared-tail-is-not-a-decision]]: the unit of decision
+is the CALL SITE, never the symbol.
+
+| symbol | in-edges | from | step 9 |
+|---|---|---|---|
+| `dpl_line` | 2 | DISK (incl. **fallthrough** from `disk_prog_load`) | 🟢 moves |
+| `dpl_body` | 2 | DISK | 🟢 moves |
+| `dpl_eof` | 4 | DISK | 🟢 moves |
+| `dpl_get_store` | 3 | DISK | 🟢 moves |
+| `dpl_oom_pop` | 2 | DISK | 🟢 moves |
+| `dpl_nf` | 1 | DISK | 🟢 moves |
+| `dpl_err` | **12** | **9 TAPE**, 3 DISK | 🔴 **STAYS** (or is duplicated) |
+| `dpl_oom` | 2 | **1 TAPE**, 1 DISK | 🔴 **STAYS** (or is duplicated) |
+| `dpl_link_err` | **0** | — | ⚠️ `equ ctp_link_err`, and **DEAD** |
+| `dpl_err_pop` | **0** | — | ⚠️ `equ ctp_err_pop`, and **DEAD** |
+| `dpl_done` | 4 | DISK | `equ load_commit_prog` — main's commit tail |
+
+🟢 **WHAT THE MOVE BUYS, AS A RATIO.** After it, the loop's per-byte call
+`fat_io_getbyte` is LOCAL to `disk.rom` (Option 2 put the engine there), so the
+only crossings left are once-per-load call-backs: `load_commit_prog` on
+completion, and `load_error` / `df_or_loaderr` / `new_prog` / `print_msg` on
+failure. **One crossing per LOAD instead of one per BYTE** — 0.156 ms against the
+2.24 s that 14369 crossings would cost on the large program §6.2c timed. That is
+the whole of §6.3, expressed as the arrangement rather than the prohibition.
+
+🔴 **AND TWO TAILS DO NOT GO.** `dpl_err` and `dpl_oom` are reached from the
+cassette path and must stay in main, or be duplicated in `disk.rom`. Duplication
+is the wrong default: both are once-per-FAILURE paths, so a call-back costs
+nothing anyone can measure, and a second copy is bytes plus a second thing to
+keep correct. **The moved loop should call back to them.**
+
+⚠️ **THE TOOL CORRECTED ITS OWN AUTHOR TWICE, and both were in the rows rather
+than the total:**
+  1. **Fallthrough is an in-edge.** The first cut scanned `call`/`jp`/`jr` only
+     and reported `dpl_line` with ONE in-edge — its own back-edge — which reads
+     as a nearly-dead routine. It is the ENTRY POINT of the tokenised load,
+     reached by fallthrough from `disk_prog_load`. [[dupspan-slice]].
+  2. **A directive is not an instruction.** Adding fallthrough then produced
+     FIVE edges, of which **three were false**: `dpl_done equ load_commit_prog`
+     has no colon, so it read as a non-terminating code line and every label
+     after an `equ` looked fallen-into. Two genuine edges remain.
+
+🔴 **A RESIDUAL THIS TURNED UP, FILED IN `TODO.md`:** `dpl_link_err` and
+`dpl_err_pop` have **zero references** — D-TRUNCLOAD replaced their call sites
+with `jr c,dpl_eof` and left the `equ`s behind. Worse, D-NGRAM13's 12-line
+justification above `dpl_get_store` still argues about where *"the `jp
+c,dpl_err_pop`"* should sit, and that instruction no longer exists anywhere.
+[[a-fix-falsifies-the-justification-beside-it]] — no gate reads prose, and
+`check_dead_code` does not follow `equ` aliases.
 
 ## 7. The channel trio, and the wall that is not one
 
