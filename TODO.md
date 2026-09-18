@@ -217,6 +217,29 @@ item — do **one item per session** to keep context lean.
       `ex_call` matches only `"FORMAT"` and otherwise `jp nc,stmt_error`, with
       **no offer to any other extension**, which is the same gap as `ATTR$`.
 
+- [ ] 🔴 **`rammap_sweep.py` READS ONLY `.inc` FILES, SO ~20 PAGE-3 CELLS ARE
+      INVISIBLE TO THE ONLY RAM MAP WE HAVE.**
+      🎚️ APPARATUS — RAM has no gate, so this sweep IS the map.
+      🤖 **AUTONOMOUS** — widen the file glob and re-run; no ruling needed.
+      Found 2026-09-19 while hunting 6 bytes for step 9
+      (`disk/docs/spec-diskcode-eviction.md` §6.6f). The sweep's own banner says
+      *"1107 equ definitions in 35 .inc files"* — and `disk/init.asm` declares
+      `BOOT_SV_A8` $E760, the `R30_*`/`CALSLT_*` set, ten `RDBLK_*` cells,
+      `P1_DEST`/`P1_BLIT`, `WA_SEG`, `CONOUT_CHAR`, `PG_SV_A8`, the 48-byte
+      interrupt stack, `INT_SP_SAVE`, `CONIN_BUF` and `DRV_TRAMP`
+      ($E800..$E813) — **none of which the sweep can see**, because it is `.asm`.
+      🔴 **THIS IS NOT HYPOTHETICAL.** It is the same hole that made
+      `$E7FD..$E813` look like a 25-byte gap when it is `RDBLK_RRSTART` +
+      `DRV_TRAMP`, back to back.
+      ⚠️ **AND WHILE IN THERE, THE SECOND HALF OF THE SAME PROBLEM:** the sweep
+      ranks by DELTA BETWEEN NAMES and prints *"95 B $E761..$E7C0
+      RRND_CLUSSEC"* when `RRND_CLUSSEC` is **one byte**. Its own header says a
+      delta is never free space, which is honest but leaves every reader to
+      re-derive the sizes by hand. Candidate: parse the declared width from the
+      comment (`(word)`, `(4-byte LE)`, `N bytes`) and print UNATTRIBUTED runs
+      rather than deltas — an unattributed run is the thing a RAM hunt actually
+      wants, and it is what a `.asm`-blind sweep cannot currently compute.
+
 - [ ] 🔴 **`refcache-check` GOES RED ON THE CALENDAR, AND THE RETRY ARM CALLS IT
       "REAL".**
       🎚️ APPARATUS — a time-dependent red is indistinguishable from a
@@ -2466,7 +2489,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:20170 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:20193 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -2632,7 +2655,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:7275 (T-6FE392)8 (T-529ABE)` from `TODO.md:18564 (T-529ABE)`: a
+      `TODO.md:7298 (T-6FE392)8 (T-529ABE)` from `TODO.md:18587 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -8119,7 +8142,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:18564 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:18587 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

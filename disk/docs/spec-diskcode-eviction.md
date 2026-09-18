@@ -913,6 +913,63 @@ byte-identical** (`63c42493`, `7333f7f6`, `fe6084a1`, before and after) — the
 control that makes a rename of this kind safe to land on its own, and the reason
 this change needs no knife re-stamp.
 
+### 6.6f 🔴 THE 6 BYTES ARE NOT BORROWABLE, AND THE MOVE DE-ENTANGLES SOMETHING (2026-09-19)
+
+§6.6e said the port needs `FREAD_OFF` (2 B) and `FREAD_LEFT` (4 B) disk-side.
+The obvious economy — bind them to main's `$E9E6`/`$E9E8`, which no disk source
+claims — is **wrong, and for a reason worth writing down.**
+
+🔴 **THOSE TWO CELLS ARE INSIDE THE PER-CHANNEL CONTEXT BLOCK.**
+`basic/sysvars.inc` §"Phase 2" puts `FCH_STATE0..+FCH_STATESZ` at
+**$E9C9..$E9FA**, and names its contents: the read iterator, the file meta, *"the
+read stream (`FREAD_OFF`/`FREAD_LEFT`)"* and the whole write state.
+`fch_save_active`/`fch_load_ctx` copy that span in and out on every channel
+switch. A disk-side loader writing `$E9E6` would be writing into main's channel
+staging area from another slot.
+
+🟢 **AND THE SAME FACT IS AN ARGUMENT *FOR* THE MOVE.** Main's FAT state block
+IS the per-channel context block, so **today a tokenised `LOAD` clobbers channel
+state although `LOAD` is not a channel**. Running the load on `disk.rom`'s own
+state ($E4A9..) takes it out of that span entirely. Step 9 is therefore a
+separation-of-state improvement as well as a speed one — which §6.2c's timing
+could not see.
+
+⚠️ **SO THE 6 BYTES MUST COME FROM disk.rom's OWN RAM, AND IT IS FULL.** Every
+documented region is packed, checked name by name rather than by delta:
+
+| region | verdict |
+|---|---|
+| `$E4A0..$E4C1` (the disk FAT state) | packed; `$E4C2..$E541` is basic-core's `DISK_DTA` |
+| `$E7E8..$E7FF` | the *"free tail"* its own comment names — **spent**, `RDBLK_RRSTART` took `$E7FD-$E7FF` |
+| `$E77C..$E7E7` | `WA_SEG` hook bodies, `CONOUT_CHAR`, `PG_SV_A8`, the 48-byte interrupt stack, `INT_SP_SAVE`, `CONIN_BUF` |
+| `$E560..$E75F` | `WBUF`, 512 B |
+
+⚠️ **TWO THINGS THAT LOOKED LIKE DEFECTS AND ARE NOT** — checked, because a
+map is a reading:
+  * `BOOT_SV_A8`/`BOOT_SV_SEC` ($E760/$E761, `disk/init.asm`) sit on top of
+    `RRND_RECSEC`/`RRND_CLUSSEC` (`disk/equates.inc`). Deliberate: the BOOT_SV
+    pair is *"transient, used only during INIT's boot bridge"*. The disk ROM
+    already practises documented time-division reuse.
+  * `scratchpad/rammap_sweep.py` reports *"95 B $E761..$E7C0 RRND_CLUSSEC"*.
+    `RRND_CLUSSEC` is **one byte**. That is the delta-is-not-size artefact the
+    sweep's own header warns about — and it is why this section walked the
+    declarations instead. 🔴 The sweep also reads only `.inc` files, so it never
+    sees `disk/init.asm`'s ~20 declarations at all.
+
+➡️ **TWO WAYS TO GET THE 6 BYTES, AND THE SECOND IS PROBABLY RIGHT:**
+  1. **A RAM hunt** — fill a candidate window, exercise every subsystem, read it
+     back (`scratchpad/ramfree_probe.py` is the template). Honest, and a probe of
+     its own.
+  2. **Time-division reuse of BDOS's per-call scratch**, e.g. `RDBLK_BUFPOS`
+     ($E774, *"byte offset into SECTOR_BUF (word, 0..512)"* — literally
+     `FREAD_OFF`'s semantics) and a `RDBLK_*` word pair. Every one of those cells
+     is documented *"per-call lifetime only"* and *"dead during the DOS phase"*,
+     and this is the ROM's own established discipline (see `BOOT_SV_*` above).
+     ⚠️ **IT RESTS ON ONE CLAIM THAT MUST BE STATED, NOT ASSUMED: a BASIC `LOAD`
+     and a BDOS random-block read cannot overlap.** That is not the same claim as
+     §0.1a's, which was about BUFFERS that persist across operations, not
+     per-call scratch — but it needs saying out loud before it is relied on.
+
 ## 7. The channel trio, and the wall that is not one
 
 `LSET`/`RSET`/`FIELD` need the channel engine: `fch_check` `$7080`,
