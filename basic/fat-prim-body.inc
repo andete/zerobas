@@ -101,12 +101,28 @@ dc_map:
 ;   out: Cy = 0 ok, Cy = 1 error (A = DSKIO error code)
 ; Ported from disk.asm read_sector; the body is identical except the tail call now
 ; goes through dskio_calslt (cross-slot $4010) instead of the local dskio.
+; 🏗️ D-FATENG Option 2: THE ONLY PLACE THE TWO HOMES DIFFER. Assembled into
+; disk.rom the primitive reaches its OWN DSKIO by a plain local call; assembled
+; into sub.rom (or main) it must CALSLT across to whatever disk ROM holds the
+; slot. Everything else in this file is identical on both sides, which is what
+; makes one source possible at all. Same shape as sv-diskwr.inc's `IF SUB_BUILD`.
+; ⚠️ ONE LABEL, CONDITIONAL ONLY ON THE DIFFERING INSTRUCTION. The first cut
+; put a whole `read_sector:` in each arm, and `check_dead_code` does not read
+; `IF/ELSE` -- it kept one arm's span, lost `dskio_calslt`'s only reacher, and
+; reported it plus dc_fail/dc_map as 47 B of dead code in [sub]. With the label
+; outside, the span carries BOTH `jp` edges and the graph stays honest on both
+; sides.
 read_sector:
                 xor     a               ; drive 0 (ignored); also Cy = 0 = read
                 ld      b, 1            ; one sector
                 ld      c, $F9          ; media byte ($F9 = 720K; ignored, single drive)
+    IF DISK_BUILD
+                jp      dskio           ; LOCAL: no slot to cross, and the inter-slot
+                                        ; call disappears with it
+    ELSE
                 jp      dskio_calslt    ; tail-call: returns to our caller with DSKIO's CY
                                         ; (A=0 cleared CY here -> read direction)
+    ENDIF
 
 ; write_sector — write one logical sector from a buffer via cross-slot DSKIO.
 ;   in:  DE = logical sector number, HL = buffer (512 bytes)
@@ -127,7 +143,11 @@ fatprim_write_sector:
                 ld      c, $F9          ; media byte (ignored, single drive)
                 ld      a, 0            ; drive 0 (ignored)
                 scf                     ; Cy = 1 = WRITE direction (MSX2 TH DSKIO)
+    IF DISK_BUILD
+                jp      dskio           ; LOCAL, as read_sector above
+    ELSE
                 jp      dskio_calslt    ; tail-call: returns to our caller with DSKIO's CY
+    ENDIF
 
 ; ===========================================================================
 ; FAT12 READ layer (ported verbatim from disk.asm §FAT12 layer).

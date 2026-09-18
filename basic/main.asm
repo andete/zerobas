@@ -43,6 +43,14 @@ BASIC_ORG:      equ     $2812
 ; SUB_BUILD distinguishes this main-ROM assembly from sub/sub.asm, which shares
 ; several body .inc files with it (bload-body.inc's ,R handoff differs by side).
 SUB_BUILD       equ     0
+; D-FATENG Option 2 (Joost, 2026-09-18): the FAT12 engine becomes ONE SOURCE in
+; TWO ROMs -- basic/fat-prim-body.inc assembled into disk.rom as well, so
+; `disk/fat.asm`'s own copy can go. The bodies differ in exactly one place: how a
+; sector primitive reaches DSKIO. In disk.rom it is LOCAL; everywhere else it is
+; a CALSLT into whatever disk ROM holds the slot. DISK_BUILD gates that, on the
+; SUB_BUILD pattern above -- "it gates body .inc files that genuinely differ by
+; side" (sub/sub.asm:54).
+DISK_BUILD      equ     0
                 include "basic/sysvars.inc"
 
                 org     BASIC_ORG

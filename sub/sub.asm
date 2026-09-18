@@ -53,6 +53,7 @@
 ; CART S3, docs/spec-lean-retire-s3-gates.md §2.1) and nothing here reads the symbol
 ; any more. SUB_BUILD stays — it gates body .inc files that genuinely differ by side.
 SUB_BUILD       equ     1   ; shared body .inc files that differ by side test this
+DISK_BUILD      equ     0   ; D-FATENG: 1 only in disk.rom, where DSKIO is LOCAL
                 include "basic/sysvars.inc"
 
 ; ===========================================================================
