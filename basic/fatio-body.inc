@@ -53,11 +53,21 @@ fat_io_find:
                 ret
 
 ; fat_io_getbyte — return the next file byte in A; Cy set on EOF (no more data).
-; State: FREAD_OFF = next byte index within FSECTOR_BUF (0..512); FREAD_LEFT =
-; bytes of the file still undelivered (bounds the true EOF). Refills FSECTOR_BUF
-; from the cluster chain when the in-RAM sector is exhausted. CALSLT (inside
-; fat_read_file_sector's DSKIO) clobbers every register, so all loop state lives
-; in RAM and is reloaded here each call.
+; State: FREAD_OFF = next byte index within FAT_DBUF (0..512); FREAD_LEFT =
+; bytes of the file still undelivered (bounds the true EOF). Refills FAT_DBUF
+; from the cluster chain when the in-RAM sector is exhausted.
+; 🔴 THE BUFFER IS NAMED `FAT_DBUF`, NEVER `FSECTOR_BUF`, AND THAT IS
+; LOAD-BEARING FOR A ROM THIS FILE IS NOT IN YET. `FAT_DBUF` is the per-ROM alias
+; of whatever buffer THIS build's `fat_read_file_sector` actually fills --
+; $E5C0 in main/sub, $E2A0 in disk.rom (Option 2's parametrisation). In the main
+; build the two names are the same cell, so this rename is byte-identical; in a
+; disk build they are 800 bytes apart. `disk/basic-resident-abi.inc` ALSO binds
+; `FSECTOR_BUF equ 0E5C0H`, so spelling it the old way would assemble WITHOUT ONE
+; ERROR and read a buffer nobody filled (spec-diskcode-eviction.md §6.6c).
+; Step 9 ports this file into `disk.rom`; the name must already be right then.
+;
+; CALSLT (inside fat_read_file_sector's DSKIO) clobbers every register, so all
+; loop state lives in RAM and is reloaded here each call.
 fat_io_getbyte:
                 ; EOF once every file byte has been delivered (FREAD_LEFT == 0).
                 ld      hl, (FREAD_LEFT)
@@ -72,15 +82,15 @@ fat_io_getbyte:
                 ld      de, 512
                 or      a
                 sbc     hl, de
-                jr      c, fig_have         ; OFF < 512 -> bytes left in FSECTOR_BUF
+                jr      c, fig_have         ; OFF < 512 -> bytes left in FAT_DBUF
                 call    fat_read_file_sector
                 jr      c, fig_eof          ; chain ended early -> EOF (size bounded)
                 ld      hl, 0
                 ld      (FREAD_OFF), hl     ; back to byte 0 of the fresh sector
 fig_have:
-                ; A = FSECTOR_BUF[OFF]; advance OFF and decrement LEFT.
+                ; A = FAT_DBUF[OFF]; advance OFF and decrement LEFT.
                 ld      hl, (FREAD_OFF)
-                ld      de, FSECTOR_BUF
+                ld      de, FAT_DBUF        ; per-ROM; see the header
                 add     hl, de
                 ld      a, (hl)
                 ld      b, a                ; B = the byte (survives the bookkeeping)

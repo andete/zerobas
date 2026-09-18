@@ -217,6 +217,32 @@ item — do **one item per session** to keep context lean.
       `ex_call` matches only `"FORMAT"` and otherwise `jp nc,stmt_error`, with
       **no offer to any other extension**, which is the same gap as `ATTR$`.
 
+- [ ] 🔴 **`refcache-check` GOES RED ON THE CALENDAR, AND THE RETRY ARM CALLS IT
+      "REAL".**
+      🎚️ APPARATUS — a time-dependent red is indistinguishable from a
+      regression at the moment you have to decide whether to commit.
+      🤖 **AUTONOMOUS** — no ruling needed.
+      Observed 2026-09-19: a full `make gates` reported `rc=2 refcache-check`,
+      retried it, printed **`retry refcache-check: rc 2->2  REAL (still red)`**
+      and failed the battery. The suite then passed STANDALONE, and passed again
+      under the battery's own `ZEROBAS_REFCACHE=0`, so the environment was not
+      the cause.
+      🔴 **THE CAUSE IS THE CLOCK.** `probes/lib/probe_refcache.py --maintain`
+      reported `oldest 14.0d, cap 14d; pruned 27` on the first standalone run
+      and `pruned 0` on the next: the store had aged PAST its 14-day cap during
+      the battery, and the run that diagnosed it also REPAIRED it. A second full
+      battery was then 42/42 green with `refcache-check rc=0`.
+      ⚠️ **THE RETRY ARM IS THE PART THAT MISLEADS.** It exists to separate flakes
+      from regressions, and it reported this one as REAL because a second run
+      inside the same battery is a second run at the same instant — a boundary
+      condition is not a race. A retry that cannot move the clock cannot classify
+      a clock-driven red.
+      ⚠️ **AND A GREEN RE-RUN WAS GREEN FOR THE WRONG REASON** — the prune had
+      already fixed it [[a-case-that-agrees-can-agree-for-the-wrong-reason]].
+      Candidate fix: `--maintain` prunes BEFORE the selftest rather than after,
+      or the selftest states the store's age and refuses to assert expiry
+      behaviour while sitting exactly on the cap.
+
 - [ ] 🔴 **TWO DEAD `equ` ALIASES, AND A 12-LINE JUSTIFICATION ARGUING ABOUT AN
       INSTRUCTION THAT NO LONGER EXISTS.**
       🎚️ APPARATUS — the hole is in the GATES, not in the ROM.
@@ -2440,7 +2466,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:20144 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:20170 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -2606,7 +2632,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:7249 (T-6FE392)8 (T-529ABE)` from `TODO.md:18538 (T-529ABE)`: a
+      `TODO.md:7275 (T-6FE392)8 (T-529ABE)` from `TODO.md:18564 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -8093,7 +8119,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:18538 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:18564 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

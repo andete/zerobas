@@ -867,6 +867,52 @@ arm the shared FAT body would have been dropped silently and **every FAT
 primitive would have been reported as needing a call-back** — a plausible table
 from an input the tool misread. S9–S11 hold that shut, S11 against the real tree.
 
+### 6.6e 🔴 AND THE FAT STATE IS PER-ROM, SO STEP 9 MOVES THE *STREAM*, NOT THE LOOP (2026-09-19)
+
+§6.6b said the cursor must travel with the loop. Checking what the cursor needs
+turned up the constraint underneath that:
+
+| cell | main | `disk.rom` |
+|---|---|---|
+| `FAT_CURCLUS` | $E9C9 | **$E4A9** |
+| `FAT_FIRSTCLUS` | $E9CC | **$E4AC** |
+| `FAT_FILESIZE` | $E9CE | **$E4AE** |
+| `FAT_BYTEIDX` | $E9D6 | **$E4B3** |
+
+🔴 **The two assemblies of the engine keep two INDEPENDENT state blocks**, so a
+file opened by main's `fat_io_open` cannot be read by `disk.rom`'s
+`fat_io_getbyte`: the disk-side cursor would walk a cluster chain nobody had
+primed. **Step 9 is therefore the tokenised LOAD stream END TO END — open, marker
+peek and loop — not the loop and not even the loop plus the cursor.**
+
+➡️ **THE SHAPE THAT FOLLOWS**, and it is smaller than it sounds because
+`disk_prog_load` has only three callers (`do_load`, `do_run`, the autoexec arm):
+
+| stays in main | crosses once | moves to `disk.rom` |
+|---|---|---|
+| `diskslot_test`; the `CLPTR`/`CLINK` seed (RAM, both ROMs see it) | the hook call, once per load | `fat_io_open`, the `$FF` marker peek, and the six §6.5 bodies |
+| the ASCII branch — `ascii_load` **already re-opens from offset 0**, so it simply opens main-side as it does today | `load_commit_prog` on completion; `load_error`/`df_or_loaderr` on failure | |
+
+So the hook returns one of three answers — *not found*, *not tokenised (ASCII)*,
+*loaded* — and main keeps every path that is not the tokenised one.
+
+⚠️ **IT NEEDS 6 BYTES OF NEW DISK-SIDE RAM**: `FREAD_OFF` (2 B) and `FREAD_LEFT`
+(4 B), which `disk/equates.inc` does not define. 🔴 **RAM HAS NO GATE** — walk
+`scratchpad/rammap_sweep.py` and then ASK THE MACHINE with `ramfree_probe.py`;
+**a delta between two names is not free space** [[deffn-ramhunt-slice]].
+⚠️ **AND DO NOT REUSE `BDOS_BYTESLEFT` ($E542)** merely because it holds the same
+quantity: it is BDOS's cell, and D-FATBUF (§0.1a) measured the reference keeping
+the BDOS and Disk-BASIC buffer sets SEPARATE. Sharing it would undo the one thing
+§0.1 established by measurement.
+
+🟢 **ONE PIECE OF THIS HAS LANDED, AND IT IS PROVABLY NEUTRAL.**
+`basic/fatio-body.inc` now names its buffer `FAT_DBUF` instead of `FSECTOR_BUF`,
+which disarms §6.6c's trap BEFORE the port rather than during it. In the main
+build the two names are the same cell, so **all three ROMs came out
+byte-identical** (`63c42493`, `7333f7f6`, `fe6084a1`, before and after) — the
+control that makes a rename of this kind safe to land on its own, and the reason
+this change needs no knife re-stamp.
+
 ## 7. The channel trio, and the wall that is not one
 
 `LSET`/`RSET`/`FIELD` need the channel engine: `fch_check` `$7080`,
