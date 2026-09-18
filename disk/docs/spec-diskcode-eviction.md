@@ -5,9 +5,95 @@ SPDX-License-Identifier: 0BSD
 
 # Spec — evicting the disk code from the main ROM
 
-**Status: written 2026-09-17, no code moved under it yet.**
+**Status: written 2026-09-17; five verbs moved under it (D-MKINT, D-CVMOVE,
+D-DSKFMOVE, D-LRSETMOVE, D-FIELDMOVE). RE-FRAMED 2026-09-18 by the ruling in
+§0.0, which replaces the denominator this spec was originally organised around.**
 Ruled by Joost, 2026-09-17: *"There should probably be hardly any disk code left
 in the main Rom."*
+
+## 0.0 🏗️ THE GOVERNING EQUIVALENCE (Joost, 2026-09-18)
+
+> *"Lets consider main + sub our replacement of reference main; the end result
+> should be similar to the reference both for with disk and without disk."*
+
+**`main.rom` + `sub.rom` TOGETHER are our replacement for the reference's BASIC
+ROM. `disk.rom` is our replacement for its disk ROM.** The sub ROM is an
+artefact of our size budget, not an architectural tier: nothing about a byte's
+placement may depend on which of the two it landed in.
+
+Three consequences, and they settle questions this spec previously left open:
+
+**(1) THE CONSTRAINT REACHES `sub.rom`.** This spec used to ask whether "no disk
+code in main" stopped at main or propagated. Under the equivalence it is not a
+question: disk *implementation* in `sub.rom` is exactly as misplaced as disk
+implementation in main. The ~4.8 KB of disk-only tenants in `sub.rom` page 1 —
+the FAT primitive engine above all — are there because `sub.rom` was the only
+ROM with room in the D-DISKABI era (2026-07-19), which is a HISTORICAL
+placement, not a designed one. They are in scope.
+
+**(2) THERE IS NO DISKLESS BUILD, AND THERE MUST NOT BE ONE.** The reference
+ships ONE BASIC ROM that works both with and without a disk ROM; the disk ROM's
+presence is the only thing that differs. A `DISK_RESIDENT` conditional-assembly
+switch producing a second main would therefore be LESS faithful, not more — and
+it was recommended to Joost on 2026-09-18 before this ruling and is now
+withdrawn. **The build arrangement we already have is the correct one**: the
+same `main.rom` + `sub.rom` in both machines, with slot 3-1 empty for
+`C-BIOS_MSX1_EU_REPACK_NODISK`. What is wrong is the CONTENT, not the build.
+
+**(3) THE DISKLESS TARGET STOPS BEING A SEPARATE OBLIGATION.** Once every disk
+implementation is behind a hook, a diskless machine behaves like the reference
+for free: the cells are unclaimed, `chan_gate` raises ERR 5, and that is the
+whole of it. §9's obligation becomes a CONSEQUENCE of the architecture rather
+than a thing each slice must remember.
+⚠️ **WHAT STAYS IN MAIN ON A DISKLESS MACHINE IS THE HOOK STUB ITSELF.** The
+reference's diskless main ROM still crunches `MKS$` and answers ERR 5
+(docs/spec-basic-nodisk.md §1), so ~10 B per verb of `ld hl,H_x` +
+`call chan_gate` is FAITHFUL main-ROM BASIC. "No disk code" means no disk
+IMPLEMENTATION; it has never meant no disk SURFACE.
+
+🎯 **AND THE TARGET BECOMES CHECKABLE.** "Hardly any disk code" is a judgement;
+*"no disk-implementation symbol is reachable in main+sub"* is an invariant a
+gate can hold. That is a better end state than any byte count in §1, and
+designing that gate is part of this work rather than a follow-up to it.
+
+## 0.1 🏗️ ONE FAT12 ENGINE (Joost, 2026-09-18)
+
+> *"we'd obviously don't want two FAT12 engines; if needed we need to
+> parametrize where it has its buf"*
+
+Costing the move surfaced that `disk.rom` already carries its own FAT12 engine
+for BDOS/MSX-DOS, so BASIC's engine arriving there would make two. **That is
+ruled out.** One engine serves both.
+
+🟢 **THE TWO CONTROL BLOCKS ARE ALREADY BYTE-IDENTICAL IN LAYOUT** (read
+2026-09-18 from `disk/equates.inc:123-171` and `basic/sysvars.inc:2831-2866`).
+Same fields, same order, same offsets — `+0` SECPERCLUS, `+1` FATSTART, `+3`
+FIRSTROOT, `+5` ROOTSECS, `+7` FIRSTDATA, `+9` CURCLUS, `+B` CLUSSEC, `+C`
+FIRSTCLUS, `+E` FILESIZE, continuing identically through `FAT_DIRREM`. Only the
+BASE differs: `$E4A0` (disk) against `$E9C0` (BASIC). **So parametrising the
+base is a base change, not a rewrite** — the expensive-sounding half of this is
+already done and nobody noticed.
+
+🔴 **BUT THE BUFFER COUNT DIFFERS, AND THAT DIFFERENCE IS OURS.** The disk-side
+engine has ONE `SECTOR_BUF` (`$E2A0`, 512 B). BASIC's has TWO — `FSECTOR_BUF`
+(`$E5C0`) for file data and `FWBUF` (`$E7C0`) for FAT/dir metadata — a
+deliberate zerobas choreography so a record survives a chain walk
+(`basic/field.asm` header, D-FIELDFIX). It is a zerobas design decision, not
+something measured off the reference.
+
+🔬 **SO THE FIRST MEASUREMENT IS JOOST'S OWN QUESTION, AND IT IS BLACK-BOX.**
+*"unless bdos actually uses the same buf as disk basic — on the reference"*
+(2026-09-18). If the reference's BDOS and Disk BASIC share one sector buffer,
+there is nothing to parametrise at all and OUR two-buffer split is the thing to
+reconsider. **This is observable without a disassembly**: run a Disk BASIC file
+operation on the CF-3300, read the candidate RAM window through the DEBUGGER,
+then run a BDOS call and read the same window — if both disturb the same bytes
+they share. RAM is data; reading it is the same line D-CFARCH and the hook
+census already work on. ⚠️ Needs a negative control (a window neither touches)
+and a positive one (a window Disk BASIC demonstrably writes), or an agreement
+proves nothing [[a-case-that-agrees-can-agree-for-the-wrong-reason]].
+⛔ **UNMEASURED AS OF 2026-09-18. Do not choose a parametrisation before it is
+taken** — the answer decides whether there is a parameter at all.
 
 This is the continuation of
 [spec-diskbasic-hook-rearchitecture.md](spec-diskbasic-hook-rearchitecture.md),
@@ -19,17 +105,47 @@ each piece costs to move, and in what order.
 
 ---
 
-## 0. The one-line target
+## 0. The one-line target — as re-stated by §0.0
 
-Main keeps the **parse** and the **error raise**. `disk.rom` gets the **work**.
-Nothing that only a disk can do should occupy a byte of main page 1.
+Main+sub keep the **parse**, the **error raise** and the **hook surface**.
+`disk.rom` gets the **work**. Nothing that only a disk can do should occupy a
+byte of main+sub.
+⚠️ This section read *"a byte of main page 1"* until 2026-09-18; §0.0 is why
+that was too narrow in two directions at once — it excluded `sub.rom`, and it
+excluded main's low region.
 
 ---
 
-## 1. The denominator, measured 2026-09-17
+## 1. The denominator, measured 2026-09-17 — AND SUPERSEDED
 
-`tools/carve_scout.py --census` over the six files that are disk code and nothing
-else — `basic/fat.asm`, `basic/files.asm`, `basic/field.asm`,
+🔴 **READ §0.0 FIRST. THIS SECTION IS KEPT FOR ITS MEASUREMENT, NOT FOR ITS
+FRAMING.** Under the governing equivalence the denominator is not "disk code in
+main page 1" but "disk IMPLEMENTATION anywhere in main+sub", which is a larger
+set and a differently-shaped one. The figures below are still the best reading
+of the six files they cover; they are simply not the whole subject any more.
+
+🔴 **AND THE CENSUS UNDER-COUNTS ITS OWN SUBJECT, THREE WAYS** (found 2026-09-18
+by an independent review of this spec, each verified against the tree):
+
+1. **`basic/fatiow-body.inc` IS MISSING FROM THE FILE LIST** although
+   `basic/fat.asm:341` includes it (`fat_io_putbyte` / `fat_io_close`). A census
+   whose own subject includes a file it does not list is not a denominator.
+2. **`basic/files.asm` IS NOT "DISK CODE AND NOTHING ELSE".** Roughly half of
+   its 1459 B is device-generic or tape code — the `LPT:`/`CRT:`/`CAS:` channel
+   arms, `merge_cas`, `read_into_strscr` (whose external callers are the CONSOLE
+   `INPUT`), `fname_expr`, `ex_maxfiles`, `init_filechan`, the `fch_check*`
+   readers that serve EOF/LOF/LOC for every device. The sentence "six files that
+   are disk code and nothing else" overclaims by about a third of the largest
+   file.
+3. **THE FAT LAYER IS NOT THE BULK AND NEVER WAS.** Measured 2026-09-18 from
+   `build/basic-reloc.sym`: `fat.asm` + `fatio-body.inc` + `fatiocreate-body.inc`
+   is ~315 B, ~394 B with the omitted `fatiow-body.inc`. That is ~16 % of the
+   set. The bulk is `files.asm` (1459 B) and `field.asm` (634 B). **§6 ordered
+   "the FAT layer" as the big step twice, and it was never the big step** — §6.1
+   half-caught this in the course of getting the blocker wrong.
+
+`tools/carve_scout.py --census` over the six files as originally listed —
+`basic/fat.asm`, `basic/files.asm`, `basic/field.asm`,
 `basic/fatio-body.inc`, `basic/fatiocreate-body.inc`, `basic/randio-body.inc`:
 
 ```
@@ -153,11 +269,42 @@ one commit.
 | 1 | `MKI$` | ✅ D-MKINT — the exemption was marshalling, not implementation; +13 B |
 | 2 | `CVI` `CVS` `CVD` | ✅ D-CVMOVE — +14 B main, −38 B disk; 0/32 DIFF |
 | 3 | `DSKF` | ✅ D-DSKFMOVE — +4 B main, −37 B disk; identical on all six drive points |
-| 4 | `LSET` `RSET` `FIELD` | the channel trio — §7 |
-| 5 | the FAT layer (`basic/fat.asm` + the two `fatio` bodies) | 🛑 **BLOCKED — §6.1** |
-| 6 | the channel engine (`basic/field.asm`, `randio-body.inc`) | last, §7 |
+| 4 | `LSET` `RSET` | ✅ D-LRSETMOVE — +9 B main, −47 B disk; fldwidth 49/49 |
+| 5 | `FIELD` | ✅ D-FIELDMOVE — **−23 B main, −18 B disk**; §7.6 |
+| 6+ | everything below | ➡️ **RE-ORDERED BY §6.2 (2026-09-18)** |
 
-### 6.1 🛑 THE FAT LAYER CANNOT LEAVE UNTIL THE LOADERS DO — measured 2026-09-17
+### 6.1 🛑 THE FAT LAYER CANNOT LEAVE UNTIL THE LOADERS DO — measured 2026-09-17, AND WRONG
+
+🔴 **THIS SECTION'S CALL-SITE LIST IS WRONG AND ITS BLOCKER IS MIS-NAMED.**
+Corrected 2026-09-18; the original is kept below because the reasoning it
+contains about hot-path cost is sound and only its INPUT was bad.
+
+**(a) Three of the six "files outside" are not in main at all.**
+`basic/bload-body.inc`, `basic/fat-prim-body.inc` and `basic/fat-delete-body.inc`
+are `include`d only from `sub/*.asm` (`sub/bload.asm:246`, `sub/fatprim.asm:250`,
+`sub/fatprim.asm:251`); `basic/main.asm` includes none of them. Their call sites
+bind SUB-LOCALLY and pin nothing in main. The main-side count is **13 sites in
+five files**, not 25 in six.
+
+**(b) The list omits the caller that actually does the pinning.**
+`basic/input.asm:278` — `arl_set_src` — installs `fat_io_getbyte` into the
+`ARL_GETBYTE` RAM vector (`basic/sysvars.inc:1619`), and `arl_getbyte`
+(`basic/files.asm:1974`) jumps through that vector **once per byte** from three
+loops (`ascii_read_lines`, `read_into_strscr`, `sidr_lp`).
+
+🎯 **SO THE BLOCKER IS NOT A CALL COUNT. IT IS A RAM VECTOR.** A page-1 address
+in ANOTHER SLOT is not callable through `ARL_GETBYTE`, and that — not the number
+of `call` sites — is why the byte cursors are resident. This is a sharper
+statement and a more tractable one: a static call site can become a call-back,
+but a per-byte indirect vector cannot become an inter-slot one at any acceptable
+price. **The fix is to move the LOOP to where the cursor is, not the cursor to
+where the loop is** — which is precisely what `sub/bload.asm` already does for
+BLOAD, so the pattern is proven in-tree rather than proposed.
+
+⚠️ **THE ORIGINAL TEXT FOLLOWS, FOR ITS COST REASONING ONLY. Its file list and
+its "25 call sites" are superseded by (a) and (b) above.**
+
+#### 6.1-orig (superseded 2026-09-18)
 
 This spec listed the FAT layer as "the bulk" and put it at step 5. **That order
 is wrong, and the census is what hid it**: `--census` reports a label as SHARED
@@ -194,6 +341,42 @@ frontier**, which this spec does not yet break out.
 🎯 **THE SMALL VERBS FIRST IS NOT TIMIDITY.** Each one pays for the next by
 freeing main page 1 — 22 B this morning, 69 B now — and each proves one more of
 §5's rules against a real probe before the bulk move depends on it.
+
+### 6.2 ➡️ THE ORDER UNDER THE GOVERNING EQUIVALENCE (2026-09-18)
+
+Steps 1–5 were the right work and stay done. What follows them is re-ordered,
+because §0.0 changed the subject and §6.1(b) changed the blocker.
+
+**The rule that orders the rest: MOVE A LOOP TO ITS CURSOR, NEVER A CURSOR TO
+ITS LOOP.** §6.1(b) is why. Every remaining step is an instance of it.
+
+| # | what | gate on it |
+|---|---|---|
+| 6 | 🔬 **MEASURE: does the reference's BDOS share Disk BASIC's sector buffer?** | §0.1 — decides whether there is a parameter at all. **Nothing moves before this.** |
+| 7 | 🔬 **MEASURE: does the reference cross slots per BYTE for sequential file I/O?** | §6.3 — decides whether loop duplication is required or is wasted bytes |
+| 8 | the FAT engine to `disk.rom`, ONE copy, base parametrised per §0.1 | needs 6; needs a scratch build to prove the fragmented fit |
+| 9 | the tokenised `LOAD` loop (`dpl_*`) — already disk-only, its tape twin `ctp_*` is separate code | needs 8 |
+| 10 | `OPEN`/`CLOSE` disk arms + the channel write-back manager | needs 8 |
+| 11 | `INPUT#` / `INPUT$` loop copies beside their cursor | needs 7 |
+| 12 | `PRINT#` — the one consumer with no loop of its own to move | needs 7; see §6.3 |
+| 13 | the `sub.rom` disk-only tenants (~4.8 KB): `fatprim`, `dirverb`, `randio`, `fiawalk`, `fcbname`, BLOAD's and SAVE's disk arms | in scope only because of §0.0 |
+| 14 | 🛡️ **the gate**: no disk-implementation symbol reachable in main+sub | §0.0's checkable end state |
+
+⚠️ **STEP 13 IS WHY THIS DOES NOT FIT IN ONE PASS.** main's ~2.2 KB plus
+`sub.rom`'s ~4.8 KB is ~7 KB against `disk.rom`'s 8350 B free — but that free
+space is **32 runs, largest 2712 B** (`tools/check_disk_walls.py`, 2026-09-18).
+Staging is forced by fragmentation, not chosen for caution. **Every step
+re-reads the walls before it starts; none of them may quote a figure from here.**
+
+### 6.3 🔴 THE ONE ARRANGEMENT THAT IS ALREADY DEAD
+
+**Cursors out, loops left behind** — the shape the original §6 step 5 described —
+costs **one inter-slot call per byte**. At 0.156 ms (D-XSLOTPRICE) a 16 KB
+tokenised `LOAD` gains ~2.6 s, on a machine already ~3× slower than the
+reference. It is not a trade-off to weigh; it is ruled out, and step 7 exists to
+establish whether the reference itself pays a per-byte crossing (in which case
+`PRINT#`'s per-byte case in step 12 is ON-PAR rather than a defect, and steps 11
+and 12 shrink).
 
 ## 7. The channel trio, and the wall that is not one
 
@@ -467,12 +650,25 @@ The 250 B frontier is not a residue to be minimised; it is the **interface**.
   `LOF` — verbs that are not disk-only.
 * **`init_filechan`** (30 B) runs at cold boot, before any hook is claimed.
 
-## 9. The diskless obligation
+## 9. The diskless obligation — which §0.0 turns into a consequence
 
 `C-BIOS_MSX1_EU_REPACK_NODISK` is an official target. **Every body that moves
 must leave the diskless build answering what the reference answers**, which is
 ERR 5 from the hook being unclaimed — not the channel's own error, and not
 silence.
+
+🎯 **AND UNDER §0.0 THIS STOPS BEING A SEPARATE THING TO REMEMBER.** The diskless
+target is the SAME `main.rom` + `sub.rom` in a machine with slot 3-1 empty —
+which is exactly the reference's own arrangement, one BASIC ROM serving both
+machines. So once a body is behind its hook, the diskless answer is not
+something the slice must arrange: it is what an unclaimed cell already does.
+The obligation below is therefore a CHECK that the move was complete, not a
+second feature to build.
+⛔ **AND IT IS WHY THERE MUST BE NO DISKLESS BUILD.** A `DISK_RESIDENT`
+conditional-assembly switch would produce a second main that no longer contains
+the unclaimed-hook paths — which would delete the only witness that those paths
+answer ERR 5 correctly in the DISK build. The same-ROM diskless machine is both
+the faithful arrangement and the instrument.
 
 ⚠️ **D-NODISKGAP IS THE WARNING**: `ex_lfiles` once entered PAST its gate, so a
 diskless `LFILES` answered differently from a diskless `FILES`. **A body that
@@ -494,15 +690,29 @@ divergence — removing an entry from it is what fixing one looks like.
 
 ## 11. What this spec does NOT claim
 
-* It does not claim the 2394 B is all recoverable: §8's 250 B is interface.
-* It does not price the tape/disk shared loaders (§1) — and §6.1 is what that
-  omission costs: they PIN the FAT layer in main, so "the bulk" is not available
-  until they are priced. **The first version of this spec listed it as step 5
-  anyway**, which is a plan asserting availability it had not checked.
-* It does not answer where the **FAT walk** should live. `fat_count_free` is a
-  13 B stub in main onto the SUB ROM's `fatprim` tenant, so the walk is in
-  neither ROM the call crosses between. Whether it belongs in `disk.rom` — which
-  has its own FAT for MSX-DOS, deliberately not shared (CALLBACK list, D-DISKVERB2
-  note) — is step 5's question and is genuinely open.
-* It does not assume the order in §6 survives contact. Each step re-reads the
+* It does not claim the census in §1 is the denominator. Under §0.0 the subject
+  is disk IMPLEMENTATION in main+sub; §1 measures six files in main, one of
+  which is half device-generic and one of whose includes it omits.
+* It does not claim any byte figure in §1 or §6.2 is tool-derived. The
+  per-cluster splits are HAND CLASSIFICATION from label spans. The only honest
+  measurement of "disk code in main+sub" is the reachability gate at step 14,
+  which does not exist yet.
+* **It does not answer where the FAT engine's buffer parameter comes from, and
+  §0.1 says why: the question of whether the reference even HAS two buffers is
+  unmeasured.** A parametrisation chosen before step 6 would be a design built
+  on an assumption about hardware nobody has read.
+* It does not know the hook cells for `LOAD` / `SAVE` / `PRINT#` / `INPUT#` /
+  `CLOSE`. Only `$FE5D` is measured, and it flips `OPEN` and `MERGE` TOGETHER
+  (spec-diskbasic-hook-rearchitecture.md §403). Steps 9–12 each need their cell
+  identified first, and the published names are not contracts we can read
+  without a disassembly — so ours will be own-design behind measured cells.
+* It does not claim a handler that runs a whole `LOAD` is safe as written: it
+  must `ei` on entry and `di` on exit (the `bload_tenant` precedent), or TIME,
+  PLAY and the traps freeze for the load's duration.
+* It does not assume the order in §6.2 survives contact. Each step re-reads the
   walls before it starts.
+* 🔴 **It does not claim to be right this time.** This spec has now been wrong
+  about the FAT layer THREE times: once on the order (step 5 as "the bulk"),
+  once on the blocker (§6.1's file list), and once on the subject (§0.0). All
+  three were caught by someone re-deriving from the tree rather than reading
+  this document. Do that again before building on it.
