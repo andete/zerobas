@@ -844,8 +844,30 @@ fwe_byte1:
                 cp      $FF
                 jr      nz, fwe_b1_same     ; byteidx != 511 -> same sector
                 ld      a, b
-                or      a
-                jr      nz, fwe_b1_same     ; (byteidx high != 0; impossible for 512)
+                dec     a
+                jr      nz, fwe_b1_same     ; 🔴 D-FATSTRAD: byteidx is 9-bit (0..511),
+                                            ; so the straddle case 511 = $01FF has HIGH
+                                            ; BYTE 1 -- straddle iff (c==$FF AND b==1).
+                                            ; This said `or a` (b==0) until 2026-09-18,
+                                            ; which mis-read byteidx 255 as a straddle
+                                            ; and byteidx 511 as same-sector, packing
+                                            ; the entry into the WRONG SECTOR and
+                                            ; corrupting FAT entries at clusters
+                                            ; 170/341/682 on a 720 KB disk.
+                                            ; ⚠️ THE FIX LANDED IN disk/fat.asm ON
+                                            ; 2026-07-04, oracle-confirmed against stock
+                                            ; ("101 real disks straddle at 511"), AND
+                                            ; NEVER REACHED THIS COPY. tests/
+                                            ; test_fat_write_fat_entry.py found the
+                                            ; original, documents it, sets
+                                            ; STRADDLE_FIXED = True -- and drives the
+                                            ; DISK build, so it has been proving the
+                                            ; fixed half while this half shipped the
+                                            ; defect to every BASIC disk write.
+                                            ; Found by D-FATDIFF's engine differential
+                                            ; (scratchpad/fateng_diff.py), run before
+                                            ; Option 2's swap precisely to catch a
+                                            ; routine where disk's copy knew more.
                 ; straddle: byte1 is buf[0] of the NEXT FAT sector. First persist
                 ; this sector to all FATs, then load + patch the next sector.
                 call    fat_write_buf_allfats
