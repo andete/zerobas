@@ -152,9 +152,26 @@ item — do **one item per session** to keep context lean.
       (only the base differs, `$E4A0` vs `$E9C0`), so parametrising is a base
       change. 🔬 **BUT THE FIRST MEASUREMENT IS HIS OWN QUESTION** — *"unless
       bdos actually uses the same buf as disk basic, on the reference"* — which
-      is BLACK-BOX observable through the debugger and **UNMEASURED**. Our
-      two-buffer choreography (`FSECTOR_BUF` + `FWBUF`) is zerobas' own design,
-      not something read off the reference. **Nothing moves before that reading.**
+      is BLACK-BOX observable through the debugger.
+      🟢 **MEASURED 2026-09-18 (D-FATBUF, `scratchpad/fatbuf_probe.py`): THE
+      REFERENCE KEEPS THEM SEPARATE.** After a chain walk on the CF-3300 FOUR
+      regions are resident at once — file data at `$DD77` (256 B) and `$ED95`
+      (512 B), FAT sector at `$E595` and `$EF95` (512 B each) — and the second
+      pair is ADJACENT, 512 B of data immediately followed by 512 B of FAT. So
+      our `FSECTOR_BUF`/`FWBUF` split is **not** our invention; the reference
+      does the same. The one-engine plan therefore does not collapse to a single
+      buffer — it must ADDRESS TWO, which is exactly the parameter §0.1 asks for,
+      and the byte-identical control-block layout is what makes it cheap.
+      ⚠️ **NARROWER THAN JOOST'S QUESTION**: this measures file-data vs FAT
+      WITHIN Disk BASIC's file I/O. Whether BDOS shares those regions is
+      unattributed — the probe reads which bytes are resident, never which
+      routine wrote them. The two extra regions are unexplained.
+      🔴 **AND THE INSTRUMENT TOOK EIGHT CORRECTIONS, EVERY FAILURE PLAUSIBLE**
+      (spec §0.1a lists them). The one that ended it: stop hand-rolling keyboard
+      injection and drive `probes/lib/omsx_repl.py`, which had already solved all
+      five typing defects — `$` substitution, the boot date prompt, SCREEN 1
+      geometry, dropped characters, a lost CR. **A probe that types its own keys
+      is re-deriving a solved problem.**
       🔴 **AND THE SPEC HAS NOW BEEN WRONG ABOUT THE FAT LAYER THREE TIMES** —
       the order (step 5 as "the bulk": it is ~394 B, ~16 %), the blocker (§6.1
       listed three files that are `include`d only by `sub/`, and MISSED
@@ -2360,7 +2377,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:20064 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:20081 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -2526,7 +2543,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:7169 (T-6FE392)8 (T-529ABE)` from `TODO.md:18458 (T-529ABE)`: a
+      `TODO.md:7186 (T-6FE392)8 (T-529ABE)` from `TODO.md:18475 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -8013,7 +8030,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:18458 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:18475 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

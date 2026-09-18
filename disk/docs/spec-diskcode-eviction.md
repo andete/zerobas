@@ -92,8 +92,59 @@ they share. RAM is data; reading it is the same line D-CFARCH and the hook
 census already work on. ⚠️ Needs a negative control (a window neither touches)
 and a positive one (a window Disk BASIC demonstrably writes), or an agreement
 proves nothing [[a-case-that-agrees-can-agree-for-the-wrong-reason]].
-⛔ **UNMEASURED AS OF 2026-09-18. Do not choose a parametrisation before it is
-taken** — the answer decides whether there is a parameter at all.
+### 0.1a 🟢 MEASURED 2026-09-18 (D-FATBUF): THE REFERENCE KEEPS THEM SEPARATE
+
+`scratchpad/fatbuf_probe.py`, on the National CF-3300. The probe builds its own
+FAT12 disk so it knows every sector's bytes, reads a file across a cluster
+boundary — forcing a chain walk with file data live — and then searches
+`$8000-$FFFF` for the payload and the FAT sector in 64-byte windows.
+
+**After the walk, FOUR regions are resident at once:**
+
+| region | size | holds |
+|---|---|---|
+| `$DD77-$DE76` | 256 B | file data |
+| `$E595-$E794` | 512 B | FAT sector |
+| `$ED95-$EF94` | 512 B | file data |
+| `$EF95-$F194` | 512 B | FAT sector |
+
+🎯 **FILE DATA AND FAT METADATA ARE LIVE SIMULTANEOUSLY, AT DISTINCT ADDRESSES**
+— and the second pair is ADJACENT: 512 B of file data at `$ED95` immediately
+followed by 512 B of FAT at `$EF95`. That is the shape of a deliberate
+two-buffer arrangement, not of one buffer re-read.
+
+**So zerobas' `FSECTOR_BUF`/`FWBUF` split is NOT our invention after all.** The
+choreography `basic/field.asm` documents — the record survives a chain walk
+because metadata goes elsewhere — is what the reference does too. §0.1's worry
+that we had invented a divergence is answered: we had not.
+
+**What this does to the one-engine plan (§0.1):** the engine does NOT have to
+collapse to a single buffer to match the reference. It has to be able to address
+TWO. The parameter §0.1 asks for is therefore real, and the two control blocks
+being byte-identical in layout (only the base differs) is what makes it cheap.
+
+⚠️ **WHAT IT DOES NOT SETTLE, AND JOOST'S QUESTION WAS NARROWER THAN THIS.** He
+asked whether *BDOS* shares *Disk BASIC's* buffer. This measures file-data
+against FAT-metadata WITHIN Disk BASIC's own file I/O. The two extra regions
+(`$DD77`, `$E595`) are unattributed — a second drive's buffers, a BDOS set, or a
+cache; the probe reads WHICH BYTES ARE RESIDENT, never which routine wrote them.
+Attributing them is a separate measurement and is not claimed here.
+⚠️ The 256 B region is the size `LOC(1)` counts in (it reported 256 and 768),
+which is consistent with a per-channel record buffer — noted as an observation,
+not a conclusion.
+
+🔴 **THE INSTRUMENT TOOK EIGHT CORRECTIONS AND EVERY FAILURE LOOKED PLAUSIBLE.**
+Recorded in the probe's own docstring because the class matters more than this
+result: a diff against an idle control (boot already fills the buffer), a 30-byte
+directory entry that shifted the whole image, a FAT too flat to locate, a
+contiguity assumption broken by scattered clusters, the CF-3300's boot date
+prompt eating every line, Tcl substituting `$` out of `A$=INPUT$(...)`, a witness
+that matched the screen ECHO of the line printing it, and windows sampled at 512
+B against a machine that buffers in 256. **None raised an error; each produced a
+clean-looking table.** The run that finally answered did so only because the
+probe refuses instead of reporting — and the fix that ended it was to stop
+hand-rolling injection and drive `probes/lib/omsx_repl.py`, which had already
+solved all five typing defects years of this tree ago.
 
 This is the continuation of
 [spec-diskbasic-hook-rearchitecture.md](spec-diskbasic-hook-rearchitecture.md),
