@@ -221,6 +221,24 @@ BDOS_BYTESLEFT  equ     $E542   ; bytes of the open file not yet delivered (4-by
 ; grep-clean free page-3 RAM. See disk/PROVENANCE.md §Scratch RAM.
 BDOS_SEQREC     equ     $E814   ; records delivered so far by RDSEQ (K, word)
 
+; --- D-FATENG: the FAT engine's BUFFER BASES, held in RAM ---------------------
+; 🏗️ Joost, 2026-09-18, ruling (b) of spec-diskcode-eviction.md §6.4a:
+; *"parametrize where it has its buf"*. ONE FAT12 engine serves BDOS and (later)
+; Disk BASIC, and the two want different buffers -- so the base is loaded rather
+; than assembled in. `ld hl,(DBUF_PTR)` is the SAME 3 BYTES as `ld hl,SECTOR_BUF`
+; and costs 6 extra T-states, which is why (b) was affordable at all.
+;
+; ⚠️ THIS HOME IS PROVISIONAL AND SCOPED TO THE BDOS-ONLY SLICE. $E816 is
+; grep-clean in the DISK work area (it is the byte after BDOS_SEQREC, by the same
+; method the comment above used), but it lies INSIDE basic-core's FWBUF
+; ($E7C0-$E9BF) -- so the moment the engine also serves Disk BASIC these cells
+; must move, because the engine would be using that very buffer as its metadata
+; scratch. The final home is basic-core's own FAT control block ($E9C0..), which
+; this direction FREES when the sub.rom fatprim tenant is deleted.
+; 🔴 DO NOT let a later slice read these while BASIC's metadata buffer is live.
+DBUF_PTR        equ     $E816   ; word -> the 512-byte DATA/sector buffer
+MBUF_PTR        equ     $E818   ; word -> the 512-byte FAT/dir METADATA buffer
+
 ; --- BDOS / FAT12 WRITE-back scratch (disk/PROVENANCE.md §Scratch RAM) -------
 ; The write side mirrors the read side's "single open file" model: at most one
 ; file is open for write at a time, and its position lives in these vars. The

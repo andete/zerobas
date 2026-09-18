@@ -105,6 +105,12 @@ init:
                 ; Do this FIRST, before anything clobbers A.
                 ld      (HOOK_SLOT), a      ; HOOK_SLOT = our slot byte (e.g. $87 = 3-1)
 
+                ; D-FATENG: the FAT engine reads its buffer bases from RAM now,
+                ; so they must exist before any FAT call. Three bytes here; the
+                ; body is in the free corridor (disk/kernel.asm) because the pad
+                ; before the $41EF pin is only 25 B.
+                call    fat_bufinit
+
                 ; --- install the hooks this ROM claims -------------------------
                 ; Each is the standard 5-byte CALLF stub `F7 <slot> <lo> <hi> C9`
                 ; (RST 30h ; slot ; addr-lo ; addr-hi ; RET -- MSX2 TH §2), written

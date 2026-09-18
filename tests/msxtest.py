@@ -115,8 +115,32 @@ class Machine:
         self.sym = load_symbols(sym_path)
         self.cpu = Z80(self.mem)
         self.traps = {}                # addr -> callback(machine)
+        self._seed_fat_buffers()
         if "subrom_call" in self.sym:
             self._install_subrom_bridge()
+
+    def _seed_fat_buffers(self):
+        """Point the FAT engine at its buffer pair, as `init` does on the machine.
+
+        🔴 D-FATENG (Joost's ruling (b), spec-diskcode-eviction.md §6.4a): the FAT
+        engine loads its buffer bases from RAM -- `ld hl,(DBUF_PTR)` where it used
+        to say `ld hl,SECTOR_BUF` -- so ONE engine can serve BDOS and Disk BASIC.
+        On the real machine `disk/init.asm` calls `fat_bufinit` before anything
+        touches the FAT. **These tests never run `init`**, so without this the
+        engine dereferences a zero pointer and reads sector data from $0000.
+
+        It is seeded HERE rather than in seventeen test files for the reason the
+        next FAT test would otherwise rediscover: the precondition belongs to the
+        ENGINE, not to any one caller. Same idiom as those tests' own
+        `FAT_ALLOCHINT` seeding -- set what the real path would have set.
+
+        Self-configuring and silent on a ROM without these symbols, so the main-
+        ROM tests are unaffected."""
+        need = ("DBUF_PTR", "MBUF_PTR", "SECTOR_BUF", "WBUF")
+        if not all(n in self.sym for n in need):
+            return
+        self.poke_w(self.sym["DBUF_PTR"], self.sym["SECTOR_BUF"])
+        self.poke_w(self.sym["MBUF_PTR"], self.sym["WBUF"])
 
     def _install_subrom_bridge(self):
         """Bridge the sub-ROM dispatch the flat harness can't page (subrom S2b).

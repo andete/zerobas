@@ -80,7 +80,7 @@ read_sector:
 ;   out: Cy = 0 ok (geometry valid), Cy = 1 error (FDC error / not 512 B per sec)
 fat_mount:
                 ld      de, 0           ; boot sector = logical sector 0
-                ld      hl, SECTOR_BUF
+                ld      hl, (DBUF_PTR)
                 call    read_sector
                 ret     c
                 ; require 512 bytes per sector ($0200 LE) — matches SECTOR_BUF
@@ -226,7 +226,7 @@ fat_next_cluster:
                 add     hl, de
                 ld      (FAT_FATSEC), hl
                 ex      de, hl
-                ld      hl, SECTOR_BUF
+                ld      hl, (DBUF_PTR)
                 call    read_sector
                 ; byte0 = buf[byteidx]
                 ld      hl, (FAT_BYTEIDX)
@@ -249,7 +249,7 @@ fnc_straddle:
                 ld      hl, (FAT_FATSEC)
                 inc     hl
                 ex      de, hl
-                ld      hl, SECTOR_BUF
+                ld      hl, (DBUF_PTR)
                 call    read_sector
                 ld      a, (SECTOR_BUF)
 fnc_combine:
@@ -375,7 +375,7 @@ fat_read_fat_sector:
                 add     hl, de
                 ld      (FAT_FATSEC), hl
                 ex      de, hl
-                ld      hl, WBUF
+                ld      hl, (MBUF_PTR)
                 jp      read_sector
 
 ; fat_alloc_cluster — find a free ($000) cluster, mark it EOC, sync all FATs.
@@ -470,7 +470,7 @@ fac_straddle:
                 ld      (FAT_FATSEC), hl
                 ld      (FAT_WRTMP2), hl
                 ex      de, hl
-                ld      hl, WBUF
+                ld      hl, (MBUF_PTR)
                 call    read_sector
                 ld      a, (WBUF)
 fac_comb:
@@ -558,10 +558,10 @@ fwe_byte1:
                 inc     hl
                 ld      (FAT_FATSEC), hl    ; advance to the straddle sector
                 ex      de, hl
-                ld      hl, WBUF
+                ld      hl, (MBUF_PTR)
                 call    read_sector
                 jr      c, fwe_err
-                ld      hl, WBUF            ; patch byte 0 of the next sector
+                ld      hl, (MBUF_PTR)            ; patch byte 0 of the next sector
                 ld      de, (FAT_WRTMP)
                 ld      a, (FAT_PARITY)
                 or      a
@@ -579,7 +579,7 @@ fwe_str_odd:
                 ; odd straddle: buf[0] = value[11:4] = (value >> 4) & $FF
                 ; compute (value>>4): low nibble from high nibble of E, high nibble
                 ; from low nibble of D.
-                ld      hl, WBUF
+                ld      hl, (MBUF_PTR)
                 ld      a, e
                 rrca
                 rrca
@@ -658,7 +658,7 @@ fwba_loop:
                 push    bc
                 push    hl
                 ex      de, hl              ; DE = target sector
-                ld      hl, WBUF
+                ld      hl, (MBUF_PTR)
                 call    write_sector
                 pop     hl
                 pop     bc
@@ -678,7 +678,7 @@ fwba_loop:
 fat_total_clusters:
                 push    hl
                 ld      de, 0
-                ld      hl, WBUF
+                ld      hl, (MBUF_PTR)
                 call    read_sector
                 jr      c, ftc_done         ; on error report 2 (no free clusters)
                 ld      hl, (WBUF + 19)     ; total sectors 16-bit (BPB +19)
@@ -728,7 +728,7 @@ fat_flush_data_sector:
                 jr      c, ffds_nopad       ; (defensive: WRBUFLEN > 512 never happens)
                 ld      b, h
                 ld      c, l                ; BC = pad count
-                ld      hl, SECTOR_BUF
+                ld      hl, (DBUF_PTR)
                 add     hl, de              ; HL = SECTOR_BUF + WRBUFLEN = first pad byte
 ffds_padloop:
                 ld      a, b
@@ -788,7 +788,7 @@ ffds_mul:
                 ld      d, 0
                 add     hl, de              ; HL = absolute logical sector
                 ex      de, hl              ; DE = sector
-                ld      hl, SECTOR_BUF
+                ld      hl, (DBUF_PTR)
                 call    write_sector
                 ret     c
                 ld      a, (BDOS_WRSECIDX)
@@ -821,10 +821,10 @@ fdc_secloop:
                 or      l
                 jr      z, fdc_full         ; no slot in any root sector
                 ld      de, (FAT_DIRSEC)
-                ld      hl, WBUF
+                ld      hl, (MBUF_PTR)
                 call    read_sector
                 ret     c
-                ld      hl, WBUF
+                ld      hl, (MBUF_PTR)
                 ld      b, 16               ; 16 entries per 512-byte sector
 fdc_entloop:
                 jp      fdc_entloop_body    ; Tier-2 3b: divert; veneer fills the gap
@@ -844,7 +844,7 @@ fdc_zero:
                 pop     hl                  ; discard slot pointer
                 ; write the dir sector back.
                 ld      de, (BDOS_DIRSEC)
-                ld      hl, WBUF
+                ld      hl, (MBUF_PTR)
                 call    write_sector
                 ret     c
                 or      a                   ; Cy = 0 success
@@ -862,7 +862,7 @@ fdc_full:
 ; left intact. (Microsoft FAT spec §3.4.)
 fat_dir_update:
                 ld      de, (BDOS_DIRSEC)
-                ld      hl, WBUF
+                ld      hl, (MBUF_PTR)
                 call    read_sector
                 ret     c
                 ; HL = &entry = WBUF + DIROFF
@@ -887,7 +887,7 @@ fat_dir_update:
                 ldir
                 ; write the dir sector back.
                 ld      de, (BDOS_DIRSEC)
-                ld      hl, WBUF
+                ld      hl, (MBUF_PTR)
                 call    write_sector
                 ret     c
                 or      a                   ; Cy = 0 success
@@ -1296,7 +1296,7 @@ fren_body:
                 ld      bc, 11
                 ldir                        ; overwrite the dirent's name in place
                 ld      de, (FAT_DIRSEC)
-                ld      hl, SECTOR_BUF
+                ld      hl, (DBUF_PTR)
                 call    write_sector
                 jp      c, fren_ioerr
                 xor     a

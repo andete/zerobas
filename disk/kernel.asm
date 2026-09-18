@@ -2464,6 +2464,21 @@ hook_tab:
 ; out: HL advanced past the stub. Clobbers A, HL.
 ; Sited here rather than in init.asm because the pad before the $41EF pin is only
 ; 25 B and one inline install already spent all of it.
+; --- fat_bufinit: point the FAT engine at the BDOS buffer pair ---------------
+; disk/docs/spec-diskcode-eviction.md §6.4a (the fork and its ruling) and §0.1
+; (why a base parameter is needed at all, and what D-FATBUF measured).
+; D-FATENG, Joost's ruling (b): the engine loads its buffer bases from RAM
+; instead of assembling them in, so ONE engine can serve two callers. This sets
+; the BDOS pair; a later slice sets the Disk-BASIC pair before its own calls.
+; Sited HERE and not in init.asm for the reason install_hook records below: the
+; pad before the $41EF pin is 25 B and one inline install already spent it.
+fat_bufinit:
+                ld      hl, SECTOR_BUF
+                ld      (DBUF_PTR), hl
+                ld      hl, WBUF
+                ld      (MBUF_PTR), hl
+                ret
+
 install_hook:
                 ld      a, $F7              ; +0: RST 30h (CALLF)
                 ld      (hl), a
