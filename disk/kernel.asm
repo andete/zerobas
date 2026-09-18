@@ -2472,6 +2472,23 @@ hook_tab:
 ; the BDOS pair; a later slice sets the Disk-BASIC pair before its own calls.
 ; Sited HERE and not in init.asm for the reason install_hook records below: the
 ; pad before the $41EF pin is 25 B and one inline install already spent it.
+; --- ftc_totsec: total sectors from the boot sector's BPB +19 ----------------
+; disk/docs/spec-diskcode-eviction.md §6.4a. Split out of fat_total_clusters
+; because that routine sits in a region pinned by `ds $4B59 - $` with no slack:
+; the 3-byte `ld hl,(WBUF + 19)` it replaces could not grow in place. Reached by
+; label only, so it is position-free here.
+;   in   the boot sector is already in the METADATA buffer
+;   out  HL = total sectors (16-bit, BPB +19). Clobbers DE.
+ftc_totsec:
+                ld      hl, (MBUF_PTR)
+                ld      de, 19
+                add     hl, de
+                ld      e, (hl)
+                inc     hl
+                ld      d, (hl)
+                ex      de, hl
+                ret
+
 fat_bufinit:
                 ld      hl, SECTOR_BUF
                 ld      (DBUF_PTR), hl

@@ -84,18 +84,34 @@ fat_mount:
                 call    read_sector
                 ret     c
                 ; require 512 bytes per sector ($0200 LE) — matches SECTOR_BUF
-                ld      a, (SECTOR_BUF + BPB_BYTSPERSEC)
+                ; D-FATENG: the BPB fields sit at CONSECUTIVE offsets 11..16, so
+                ; one walking pointer reads them all and the buffer base stays a
+                ; RAM word. IX would have been size-neutral but is NOT free here
+                ; -- it is used 22x in this file and BDOS callers hold the FCB in
+                ; it -- and saving it would have cost a push/pop plus a second
+                ; exit path for each `jr nz,fat_mount_bad`. HL costs +5 B total
+                ; and leaves both error arms jumping straight out.
+                ld      hl, (DBUF_PTR)
+                ld      de, BPB_BYTSPERSEC
+                add     hl, de              ; -> +11, bytes-per-sector low
+                ld      a, (hl)
                 or      a
                 jr      nz, fat_mount_bad   ; low byte must be 0
-                ld      a, (SECTOR_BUF + BPB_BYTSPERSEC + 1)
+                inc     hl
+                ld      a, (hl)
                 cp      2
                 jr      nz, fat_mount_bad   ; high byte must be 2 ($0200 = 512)
-                ld      a, (SECTOR_BUF + BPB_SECPERCLUS)
+                inc     hl
+                ld      a, (hl)             ; +13 sectors per cluster
                 ld      (FAT_SECPERCLUS), a
-                ld      hl, (SECTOR_BUF + BPB_RSVDSECCNT)
-                ld      (FAT_FATSTART), hl  ; first FAT sector = reserved sectors
+                inc     hl
+                ld      e, (hl)
+                inc     hl
+                ld      d, (hl)             ; +14 reserved sectors (word LE)
+                ld      (FAT_FATSTART), de  ; first FAT sector = reserved sectors
                 ; first root sector = reserved + numFATs * secPerFAT
-                ld      a, (SECTOR_BUF + BPB_NUMFATS)
+                inc     hl
+                ld      a, (hl)             ; +16 number of FAT copies
                 ld      (FAT_NUMFATS), a    ; cache for the write path's FAT sync
                 jp      fat_mount_tail      ; Tier-2 3b: divert; veneer fills the gap (M24 slice B)
 ; --- MSX-DOS-1 kernel WRSEQ-worker entry: $477D (M24 slice B;
@@ -230,7 +246,7 @@ fat_next_cluster:
                 call    read_sector
                 ; byte0 = buf[byteidx]
                 ld      hl, (FAT_BYTEIDX)
-                ld      de, SECTOR_BUF
+                ld      de, (DBUF_PTR)
                 add     hl, de
                 ld      a, (hl)
                 ld      (FAT_B0), a
@@ -241,7 +257,8 @@ fat_next_cluster:
                 sbc     hl, de
                 jr      z, fnc_straddle
                 ld      hl, (FAT_BYTEIDX)
-                ld      de, SECTOR_BUF + 1
+                ld      de, (DBUF_PTR)
+                inc     de                  ; D-FATENG: the +1 is now a step
                 add     hl, de
                 ld      a, (hl)
                 jr      fnc_combine
@@ -251,7 +268,8 @@ fnc_straddle:
                 ex      de, hl
                 ld      hl, (DBUF_PTR)
                 call    read_sector
-                ld      a, (SECTOR_BUF)
+                ld      hl, (DBUF_PTR)
+                ld      a, (hl)
 fnc_combine:
                 ld      (FAT_B1), a
                 ld      a, (FAT_PARITY)
@@ -449,7 +467,7 @@ fac_full:
 ;   out: DE = 12-bit entry value; preserves nothing but DE
 fac_entry_from_wbuf:
                 ld      hl, (FAT_BYTEIDX)
-                ld      de, WBUF
+                ld      de, (MBUF_PTR)
                 add     hl, de
                 ld      a, (hl)
                 ld      (FAT_B0), a
@@ -459,7 +477,8 @@ fac_entry_from_wbuf:
                 sbc     hl, de
                 jr      z, fac_straddle
                 ld      hl, (FAT_BYTEIDX)
-                ld      de, WBUF + 1
+                ld      de, (MBUF_PTR)
+                inc     de                  ; D-FATENG: the +1 is now a step
                 add     hl, de
                 ld      a, (hl)
                 jr      fac_comb
@@ -472,7 +491,8 @@ fac_straddle:
                 ex      de, hl
                 ld      hl, (MBUF_PTR)
                 call    read_sector
-                ld      a, (WBUF)
+                ld      hl, (MBUF_PTR)
+                ld      a, (hl)
 fac_comb:
                 ld      (FAT_B1), a
                 ld      a, (FAT_PARITY)
@@ -506,7 +526,7 @@ fat_write_fat_entry:
                 call    fat_read_fat_sector ; WBUF = FAT sector 0; BYTEIDX/PARITY set
                 ; --- pack the low byte / shared nibble into WBUF[byteidx]
                 ld      hl, (FAT_BYTEIDX)
-                ld      de, WBUF
+                ld      de, (MBUF_PTR)
                 add     hl, de
                 push    hl                  ; HL = &buf[byteidx]
                 ld      de, (FAT_WRTMP)     ; DE = value
@@ -681,7 +701,14 @@ fat_total_clusters:
                 ld      hl, (MBUF_PTR)
                 call    read_sector
                 jr      c, ftc_done         ; on error report 2 (no free clusters)
-                ld      hl, (WBUF + 19)     ; total sectors 16-bit (BPB +19)
+                ; 🔴 D-FATENG: A CALL, NOT INLINE, AND THE PIN IS WHY. Reading
+                ; BPB +19 through (MBUF_PTR) costs 11 B inline against the 3 B
+                ; `ld hl,(WBUF + 19)` it replaces -- and those 8 bytes overran the
+                ; `ds $4B59 - $` pin below, which pasmo reports only as "64KB
+                ; limit passed inside instruction". A `call` is the SAME 3 bytes
+                ; as the load was, so the pinned region grows by nothing and the
+                ; body lives in the free corridor beside fat_bufinit.
+                call    ftc_totsec          ; HL = total sectors (BPB +19)
                 ld      de, (FAT_FIRSTDATA)
                 or      a
                 sbc     hl, de              ; HL = data sectors
@@ -867,7 +894,7 @@ fat_dir_update:
                 ret     c
                 ; HL = &entry = WBUF + DIROFF
                 ld      hl, (BDOS_DIROFF)
-                ld      de, WBUF
+                ld      de, (MBUF_PTR)
                 add     hl, de
                 ; +26 first cluster (LE) = BDOS_WRFIRST
                 push    hl
@@ -998,6 +1025,21 @@ dskchg:
 ; FAT_FIRSTDATA / FAT_SECPERCLUS / FAT_NUMFATS / FAT_SECPERFAT) and leaves the
 ; boot sector in SECTOR_BUF, so GETDPB reuses those (our own code) and reads the
 ; remaining raw BPB fields (media, sector size, root-entry count) from SECTOR_BUF.
+;
+; 🔴 D-FATENG: THE FOUR `SECTOR_BUF + n` READS BELOW ARE THE ONLY LITERAL BUFFER
+; REFERENCES LEFT IN THIS FILE, AND THEY ARE DELIBERATE. Everything else now
+; loads its base from (DBUF_PTR)/(MBUF_PTR) so one engine can serve two callers.
+; GETDPB does not need to: it is the disk DRIVER's $4016 entry (disk/init.asm:31),
+; reached by MSX-DOS and by our own init -- never by BASIC, whose loader drives
+; DSKIO $4010 instead (basic/fat.asm:10). Its buffer is therefore always the BDOS
+; one. Converting them would cost a register getdpb does not have spare: HL walks
+; the DPB destination across all four, and IX is not free in this file (22 uses;
+; BDOS callers hold the FCB there).
+; ⚠️ THE LATENT COUPLING, NAMED SO IT IS NOT REDISCOVERED: `fat_mount` above
+; reads the boot sector through (DBUF_PTR). If GETDPB were ever reached while
+; that pointer addressed BASIC's buffer, fat_mount would fill THAT buffer and the
+; reads below would return stale bytes from SECTOR_BUF. Nothing does this today.
+; A slice that makes BASIC reach GETDPB must convert these four first.
 getdpb:
                 ; HL = DPB base - 1 (Nextor §4.5.3). GETDPB fills from base+1 (media)
                 ; onward; base+0 (drive number) is the caller's, not ours. So the
