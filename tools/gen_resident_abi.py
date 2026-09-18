@@ -168,6 +168,10 @@ REQUIRED_DISK_CALLBACK: list[str] = [
     # D-LRSETMOVE: LSET/RSET's three BUNDLES. Each is one logical act, not
     # one helper -- the target parse alone would otherwise be five
     # crossings. All three may RAISE, which is safe from a call-back.
+    # D-FIELDMOVE: FIELD's TWO bundles. field_item returns a CARRY for "another
+    # item follows", so the handler's crossings scale with the item count.
+    "field_prologue",           # channel + mode class + FLD_TAB reset
+    "field_item",               # one `w AS v$`; CF=1 -> another follows
     "lrset_tgt",                # CF=1: HL = FLD_TAB entry; CF=0: not fielded
     "lrset_rhs",                # STRPTR = the RHS descriptor
     "lrset_finish",             # destination, then the sub-ROM store

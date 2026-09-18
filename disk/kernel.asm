@@ -2175,6 +2175,38 @@ hkm_copy:
 ; [chan][key:2][off:2][width]. It is main's table in main's RAM -- this body
 ; walks it, it does not own it -- so a change to that shape is a change to TWO
 ; files. basic/field.asm builds it.
+; --- hk_field: FIELD's body, RUNNING IN THE DISK ROM -----------------------
+; docs/spec-basic-nodisk.md §9 for the hook; disk/docs/spec-diskcode-eviction.md
+; §7.3-§7.5 for the slice. D-FIELDMOVE, the last member of the channel trio.
+;
+; 🎯 THIS IS THE THINNEST HANDLER IN THE ROM AND THAT IS THE FINDING, NOT A
+; DEFECT. FIELD is a parse, a channel classify and a write into main's FLD_TAB;
+; none of it is disk work, so what moves is the DECISION to run rather than any
+; body. It is here because the alternative -- main gating on H_FIELD and then
+; doing the job anyway -- discards the answer of any ROM that claims the cell.
+;
+; 🔑 THE LOOP IS THE REASON THE ITEM BUNDLE RETURNS A CARRY. main's field_item
+; parses ONE `w AS v$`, adds it, checks the ERR 50 bound and reports whether a
+; comma followed; the crossings therefore scale with the ITEM COUNT (1 + N),
+; unlike LSET/RSET's fixed three. A four-field FIELD is five crossings.
+;
+;   in   FN_RESUME = the statement cursor, just past the FIELD token
+;   out  the statement is DONE; FN_RESUME = the resume cursor
+;        CF = 1 (claimed), which is what chan_gate tests
+;
+; ⚠️ FLD_TAB IS NEITHER READ NOR WRITTEN HERE. Joost's rule: main owns the
+; table, so FLD_ENTSZ and FLD_TABEND never need hand-mirroring in this ROM --
+; the hazard disk/equates.inc's FSECTOR_BUF mirror actually caused (D-LRSETMOVE).
+hk_field:
+                ld      ix,field_prologue
+                call    calbak              ; channel, mode class, table reset
+hkf_item:
+                ld      ix,field_item
+                call    calbak              ; one `w AS v$`; CF=1 -> another follows
+                jr      c,hkf_item
+                scf
+                ret
+
 hk_lrset:
                 ld      ix,lrset_tgt
                 call    calbak              ; CF=1 -> HL = the FLD_TAB entry;
@@ -2410,7 +2442,8 @@ hook_tab:
                 dw      H_FILE, hk_files     ; D-DISKVERB4: FILES + LFILES
                 dw      H_LSET, hk_lrset     ; D-LRSETMOVE: both bodies HERE now
                 dw      H_RSET, hk_lrset     ; (one body; LRSET_JUST says which)
-                dw      H_FIELD, hk_present  ; hook buys the DISKLESS ERR 5
+                dw      H_FIELD, hk_field    ; D-FIELDMOVE: the trio is complete --
+                                             ; body here, not just its presence
                 dw      H_DSKO, hk_present   ; D-DSKIO: both bodies are a sub-ROM tenant,
                 dw      H_DSKI, hk_present   ; the hook buys the diskless ERR 5
                 dw      H_COPY, hk_copy      ; D-DISKVERB3: body here too

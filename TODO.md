@@ -135,9 +135,12 @@ item — do **one item per session** to keep context lean.
       else does. The spec carries the eight rules each of today's three moves
       paid for, the diskless obligation (D-NODISKGAP: one entry, and it is the
       gate), and what it does NOT claim.
-      ➡️ **ORDER:** ~~`MKI$`~~ ~~`CVI`/`CVS`/`CVD`~~ ~~`DSKF`~~ done; then
-      `LSET`/`RSET`/`FIELD` (NOT blocked — see the correction above), then the
-      FAT layer, then the channel engine; then the
+      ➡️ **ORDER:** ~~`MKI$`~~ ~~`CVI`/`CVS`/`CVD`~~ ~~`DSKF`~~ ~~`LSET`/`RSET`~~
+      ~~`FIELD`~~ done — the channel trio is complete (D-LRSETMOVE, D-FIELDMOVE);
+      then the FAT layer, **which is BLOCKED until the loaders split** (spec §6.1:
+      25 call sites in the SHARED tape/disk loaders pin it in main, and the spec's
+      own step 5 called it "the bulk" until that was measured), then the channel
+      engine; then the
       stub-extension rig, which is what makes
       every offer LOAD-BEARING — today `h.lset`/`h.rset` AGREE on the diskless
       target while the hook is bypassed, so agreement is not evidence the hook
@@ -2333,7 +2336,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:19995 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:20040 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -2499,7 +2502,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:7100 (T-6FE392)8 (T-529ABE)` from `TODO.md:18389 (T-529ABE)`: a
+      `TODO.md:7145 (T-6FE392)8 (T-529ABE)` from `TODO.md:18434 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -2824,6 +2827,48 @@ list. **When a slice lands, grep this list for what it just shipped.**
       building on it. **The wall time is the cheap discriminator.**
       🎚️ APPARATUS — battery-score validity window
       🤖 AUTONOMOUS — a re-run settles each one.
+
+- [ ] 🔴 **THE KNIFE PROVES ITS OWN PLANT TOOK AND NEVER PROVES WHAT IT
+      PLANTED INTO WAS CLEAN — AND THE FAILURE MANUFACTURES CONNECTEDNESS.**
+      Measured 2026-09-18 during D-FIELDMOVE. A `make gates-fast` aborted
+      (`Error 1`) with a `kwsweep` mutation still planted in `build/`; the knife
+      was then run without the standing `clean -> repack-machine -> probe`
+      sequence, and every row it took was measured on a DOUBLY mutated ROM.
+      🔴 **THE READING WAS PLAUSIBLE, NOT OBVIOUSLY BROKEN**: 85 of 155 rows
+      moved to `NO-VERDICT` (1 -> 86), `MISSING` fell 124 -> 61, `UNREADABLE`
+      10 -> 1 -- and because a row counts as CONNECTED when the knifed verdict
+      DIFFERS from the unknifed one, the corruption *added* two connections
+      (`CALL`, `MAX`), carrying `CALL` from TIER 0 to TIER 1 and the keyword
+      count from 138 to 139. A tier sheet rose on a slice that never touched
+      either keyword.
+      🎯 **ROOT CAUSE, AND IT IS A MAKE SEMANTIC**: the plant WRITES
+      `build/basic.rom`, which makes it NEWER than its sources, so a later
+      `make` considers it up to date and never regenerates it. An aborted run
+      therefore leaves a mutated ROM that looks FRESH to every tool downstream.
+      🔬 **PROVED BY RE-RUN, not by argument**: `make clean` + `repack-machine`
+      + the same `kwknife.py --all` reproduces the pre-existing distribution
+      exactly (connected 150, `MISSING` 124, `SUPPORTED` 8, `UNREADABLE` 10,
+      `DIVERGENT` 12, `NO-VERDICT` 1) and returns `CALL`/`MAX` to not-connected.
+      The polluted pin is kept at `scratchpad/kwknife-pollution-2026-09-18.json`
+      so the two can be diffed rather than described.
+      ⚠️ **THIS IS THE INVERSE OF THE CLASS ALREADY ON FILE.**
+      [[a-knife-can-be-inert-because-the-build-did-not-happen]] is UNDER-
+      reporting: the knife reports `moved 0 rows`. This OVER-reports: every row
+      moves, so everything looks load-bearing. `knife_guard.hashes()` catches
+      the first and is blind to the second by construction -- it proves the
+      images MOVED, which a plant-on-top-of-a-plant also does.
+      ➡️ **THE FIX IS A BASELINE ASSERTION, NOT MORE HASHING**: before the first
+      plant, `kwknife.py` must establish that the ROM it is about to cut is a
+      fresh build of the current source -- force the regeneration (delete the
+      built ROMs, or stamp the sources) rather than trusting mtime. A cheap
+      second arm: refuse when the unknifed baseline's verdict distribution is
+      not reproducible across two reads.
+      🔭 **AND THE DENOMINATOR IS NOT JUST THE KNIFE**: `kwsweep` and every
+      acceptance suite read the same `build/` outputs and inherit the same
+      trust. What else ran in that window is unmeasured.
+      💰 Zero ROM bytes; a tools-only change.
+      🎚️ APPARATUS — knife baseline integrity
+      🤖 AUTONOMOUS — a gate settles it; finishable unattended.
 
 - [x] 🟢 **`subrom-closure-check` CLASSIFIES A SUB-LOCAL `equ` ALIAS AS A
       MAIN-ROM ESCAPE.** Found 2026-08-30 by D-NGRAM14,
@@ -7944,7 +7989,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:18389 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:18434 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

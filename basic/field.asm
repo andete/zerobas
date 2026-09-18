@@ -61,15 +61,16 @@
 ;     1..255: the CF-3300 accepts `FIELD#1,0 AS A$` and reports LEN(A$) = 0
 ;     (row d.zero). The old claim was this file's own invention and a fix built
 ;     on it would have shipped a divergence -- see docs/spec-basic-fldwidth.md
-;     §1. The domain is now enforced by get_byte_arg at exf_item (ERR 6 past
+;     §1. The domain is now enforced by get_byte_arg at field_item (ERR 6 past
 ;     int16, ERR 5 outside 0..255), which is the reference's own two-stage rule.
-;   * FIELD overflow past the RECORD LENGTH (ERR 50) is still not checked --
-;     MEASURED and priced at ~27 B against a 6 B page-1 wall, DECLINED with
-;     numbers (spec §6.5; rows d.sum / d.sum1 / d.sumok pin the boundary to the
-;     byte). Its own denominator also needs `OPEN .. LEN=r` rows, which nothing
-;     has measured: every row so far uses the default 256-byte record, so
-;     "checked against the record length" and "checked against a constant 256"
-;     are not yet separated. Filed in TODO.md as its own residual.
+;   * (closed by D-RECLEN) FIELD overflow past the RECORD LENGTH raises ERR 50.
+;     ⚠️ THIS BULLET SAID "still not checked -- DECLINED with numbers" UNTIL
+;     D-FIELDMOVE, while the check stood ~30 lines below it at field_item: the
+;     price it quoted (~27 B against a 6 B page-1 wall) was real when written and
+;     the carve that paid for it never came back here. The bound is
+;     FCH_RECLENS[ch] and NOT a constant 256 -- row r.mid FIELDs a width of 200
+;     into a LEN=64 record and the CF-3300 refuses it, which no default-256 row
+;     could ever separate (docs/spec-basic-fldwidth.md §6.5 addendum).
 ;   * record numbers are 1..255 (file < 64 KB — the same 16-bit size ceiling the
 ;     loader text path documents); bare GET/PUT (no record number) default to record
 ;     1 — the auto-incrementing "current record" is not tracked.
@@ -265,12 +266,38 @@ fld_key_de:
 ; reach its own syntax error first on a machine that has no disk ROM at all.
 ; 💰 It waited on bytes -- main page 1 had 3 B free on 2026-09-15 -- and the
 ; hook re-architecture (D-DISKVERB..D-DISKVERB4) is what paid for it.
+; 🏗️ D-FIELDMOVE (Joost, 2026-09-17/18). The body is in disk.rom as `hk_field`;
+; what is left here is the hand-off, the gate and the resume — plus TWO BUNDLES
+; the handler calls back into. Same ruling as LSET/RSET, same reason: a gate-only
+; hook is a PRESENCE TEST, and main redoing the work after it discards the answer
+; a claiming ROM just gave.
+; 🎯 AND FIELD IS THE EXTREME CASE OF THE ACCOUNTING IN spec-diskcode-eviction.md
+; §7.3: essentially NONE of this statement is disk work. It is a parse, a channel
+; classify and a write into FLD_TAB — and FLD_TAB is main's table by the rule
+; Joost set, so the entry shape stays in one file. What crosses is the DECISION
+; to run, which is the whole point: correctness, not bytes.
+; ⚠️ THE CURSOR CROSSES IN FN_RESUME, NOT IN HL, and every bundle reads it and
+; writes it back — so the `push hl`/`pop hl` pairs that used to guard it across
+; fch_mode_class and fld_clear_chan are still LOCAL to a bundle. A push that
+; straddles a calbak would straddle a CALSLT.
 ex_field:
-                push    hl                  ; HL IS THE STATEMENT CURSOR
+                inc     hl                  ; past the FIELD token
+                ld      (FN_RESUME),hl      ; the handler's cursor
                 ld      hl,H_FIELD
                 call    chan_gate           ; unclaimed -> ERR 5, trappable
-                pop     hl
-                call    inc_skip           ; past the FIELD token
+                ld      hl,(FN_RESUME)      ; where the handler left it
+                jp      exec_stmt
+
+; --- field_prologue: call-back 1 -- the channel, its mode, and the reset -----
+; in:  FN_RESUME = the cursor, just past the FIELD token.
+; out: FLD_CHAN = the channel, FLD_CUROFF = 0, this channel's old fields dropped,
+;      FN_RESUME = the cursor past the comma that ends the channel clause.
+; May RAISE (ERR 5 / 52 / 59 / 61), which is safe from a call-back: it runs in
+; MAIN with main page 1 mapped, so the unwind discards the disk-ROM frame and
+; the handler never resumes.
+field_prologue:
+                ld      hl,(FN_RESUME)
+                call    skip_spaces
                 cp      '#'
                 jr      nz,exf_havech
                 inc     hl
@@ -300,7 +327,21 @@ exf_havech:
                 ld      (FLD_CUROFF+1),a
                 ; a comma separates the channel from the field list: FIELD #f , w AS v$
                 call    req_comma           ; D-NGRAM17
-exf_item:
+                ld      (FN_RESUME),hl
+                ret
+
+; --- field_item: call-back 2 -- ONE `w AS v$`, parsed, added and bounds-checked
+; in:  FN_RESUME = the cursor at a field item.
+; out: the entry is in FLD_TAB and FLD_CUROFF is bumped; FN_RESUME = the cursor
+;      past the item (and past its trailing comma, when there is one).
+;      CF = 1 -> another item follows; CF = 0 -> the field list ended.
+; 🔑 ONE BUNDLE PER ITEM, NOT ONE PER HELPER. The item is eval_byte_checked +
+; the `AS` + is_letter + var_str_type + tgt_parse_fld + fld_add + the ERR 50
+; bound — SEVEN calls for one logical act. Bundling is what keeps a four-field
+; FIELD at five crossings rather than thirty.
+; May RAISE (ERR 2 / 5 / 6 / 11 / 13 / 50). See field_prologue on why that is safe.
+field_item:
+                ld      hl,(FN_RESUME)
                 ; D-FLDWIDTH (docs/spec-basic-fldwidth.md): THE WIDTH IS A BYTE
                 ; ARGUMENT, and it is the ordinary two-stage one every other
                 ; numeric argument in this tree already uses. Until this slice
@@ -413,10 +454,14 @@ exf_fits:
                 pop     hl
                 call    skip_comma
                 jr      z,exf_comma
-                jp      exec_stmt           ; end of the field list
+                ld      (FN_RESUME),hl      ; end of the field list
+                or      a                   ; CF = 0: the handler's loop stops
+                ret
 exf_comma:
-                inc     hl                  ; past ',' -> next field item
-                jr      exf_item
+                inc     hl                  ; past ',' -> the next field item
+                ld      (FN_RESUME),hl
+                scf                         ; CF = 1: go round again
+                ret
 ; D-DUPSPAN2: an ALIAS, not a second copy -- byte-identical to elas_err,
 ; and POSITION-INDEPENDENT by tools/dupspan_indep.py (terminates, no
 ; escaping relative jump, not entered by fallthrough, same ROM region).

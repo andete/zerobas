@@ -408,6 +408,51 @@ instead of trading all of it for placement.
 2. **Then duplication**, replacing call-backs with shared `-body.inc` includes
    one at a time, each a mechanical change against a seam already proven.
 
+### 7.6 🔴 FIELD COST BYTES IN BOTH ROMS, AND R1 DID NOT SEE IT COMING (D-FIELDMOVE, 2026-09-18)
+
+`FIELD` is the third and last member of the trio, and it is the first move in
+this spec that makes **both** ROMs smaller-off. Measured from a clean tree on
+2026-09-18:
+
+| | main page 1 | main low region | `disk.rom` |
+|---|---|---|---|
+| before (`3997a9cc`) | 78 B free | 32 B free | 8368 B free |
+| after | 55 B free | 32 B free | 8350 B free |
+
+Main page 1 lost 23 B and `disk.rom` spent 18 B. Nothing was bought with those
+41 bytes except the thing the slice is for: a ROM that claims `H_FIELD` now
+*runs*, where before main consulted the cell and then did the statement itself.
+
+**R1 (§7.4) does not diagnose this verb, and that is a defect in R1.** R1 reads
+the CALL-BACK COUNT as the measure of misplacement. `FIELD` has TWO call-back
+targets — fewer than `LSET`/`RSET`'s three — so R1 scores it *better placed*
+than the verb that actually moved something. It is not. The right axis is the
+**ratio of BODY to HAND-OFF**:
+
+| verb | body in `disk.rom` | statement left in main | call-back targets |
+|---|---|---|---|
+| `DSKF` | the free-cluster count | the drive argument | 1 |
+| `LSET`/`RSET` | ~25 B, the field-entry walk | ~97 B of parse | 3 |
+| `FIELD` | ~15 B, a loop | ~300 B of parse, classify and table write | 2 |
+
+So R1 stands as written — a HIGH count still means misplacement — but its
+converse is false, and this row is the proof: **a LOW call-back count can mean
+there was never a body to move.** Read the two together or neither.
+
+⚠️ **AND THE CROSSINGS SCALE WITH THE ITEM COUNT HERE, WHICH NO EARLIER MOVE
+DID.** `field_item` parses one `w AS v$`, adds it, checks the ERR 50 bound and
+returns CF=1 when a comma follows, so a FIELD of N items costs 1 + N crossings
+against `LSET`'s fixed 3. At the 0.170 ms measured in §7.2a, a four-field
+`FIELD` pays ~0.85 ms. That is a projection from a measured per-crossing price,
+NOT a measurement of `FIELD` — the stopwatch row for it is 3.049 ms pre-move
+(§7.2a's control) and has not been re-taken.
+
+🎯 **WHY IT IS STILL CORRECT.** The defect §4 names is not a byte count and was
+never going to be paid for in bytes. `FIELD`'s substance is a parse, a channel
+classify and a write into `FLD_TAB` — and `FLD_TAB` is MAIN's table by rule R2,
+which is why `FLD_ENTSZ`/`FLD_TABEND` still appear in exactly one file. A verb
+can be entirely main-shaped and still have to be *decided* in the disk ROM.
+
 ## 8. What must stay in main, and why
 
 The 250 B frontier is not a residue to be minimised; it is the **interface**.

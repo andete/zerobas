@@ -36,6 +36,8 @@ main_fat_mount equ 0641CH   ; main's fat_mount
 main_fat_find equ 06420H   ; main's fat_find
 parse_disk_fcb equ 065C1H
 fat_count_free equ 0644FH
-lrset_tgt equ 07341H
-lrset_rhs equ 07363H
-lrset_finish equ 0737AH
+field_prologue equ 07265H
+field_item equ 0729BH
+lrset_tgt equ 07358H
+lrset_rhs equ 0737AH
+lrset_finish equ 07391H
