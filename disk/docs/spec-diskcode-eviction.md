@@ -529,6 +529,42 @@ ASSIGNMENT from a string-valued FUNCTION call, so a little call overhead stays
 inside the I/O figure, making file I/O look DEARER than it is. That inflates
 both sides and cannot manufacture the 19× normalised gap.
 
+### 6.2b ⛔ STEP 9 IS STILL UNMEASURED, AND THE OBVIOUS METHOD DOES NOT WORK (2026-09-18)
+
+§6.2a settled steps 11 and 12 and explicitly left step 9 open: the tokenised
+`LOAD` loop runs INSIDE the ROM with no per-byte interpreter overhead for a
+crossing to hide behind. `scratchpad/loadtime_probe.py` was built to close it and
+**cannot**.
+
+**Why.** The two clock reads sit either side of the `LOAD` in separate injected
+lines, so the second fires on the HARNESS'S TIMETABLE, not when the work
+finishes. On the CF-3300:
+
+| | `ctl` | `load` | both equal |
+|---|---|---|---|
+| step = 14 s | 1678 jiffies | 1606 | the 28 s injection gap |
+| step = 3 s | 360 jiffies | 307 | the 6 s injection gap |
+
+Every configuration measures the gap; the load vanishes inside it and the
+difference is jitter — **negative**, which is what the probe's `load > ctl`
+control caught. Shortening `step` below the load does not rescue it: a 7.6 KB
+load completes in **under 3 seconds**, already below the step the injector needs
+(at 3 s the calibration case broke, its loop still running at capture).
+
+🟢 **THE ONE FIGURE IT DID ESTABLISH, as an upper bound:** a 7603-byte tokenised
+`LOAD` is **under 3 s on the CF-3300** — under ~0.39 ms/byte and plausibly far
+less. That is the same order as D-XSLOTPRICE's 0.156 ms crossing, which is
+precisely why step 9 cannot be decided by assertion.
+
+➡️ **THE METHOD THAT WOULD WORK**: `LOAD"P.BAS",R` with the marker as the loaded
+program's FIRST line, so the second clock read is triggered by the WORK and no
+injection gap intervenes. It needs a genuinely tokenised marker line — obtained
+by having the machine `SAVE` one once and padding it with the probe's REM
+generator, **not** by guessing MSX token bytes.
+
+⛔ **UNTIL THEN §6.3 STANDS FOR STEP 9 ON ITS ORIGINAL REASONING, WHICH IS AN
+ARGUMENT AND NOT A MEASUREMENT.** Do not move `dpl_*` on the strength of it.
+
 ### 6.3 🔴 THE ONE ARRANGEMENT THAT IS ALREADY DEAD — NARROWED BY §6.2a
 
 🟢 **NARROWED 2026-09-18 BY §6.2a: THIS IS NOW TRUE OF STEP 9 ONLY.** For the
