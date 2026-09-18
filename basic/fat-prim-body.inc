@@ -213,6 +213,22 @@ fm_fatacc:
                 ld      de, (FAT_FIRSTROOT)
                 add     hl, de
                 ld      (FAT_FIRSTDATA), hl
+    IF DISK_BUILD
+                ; 🔴 M30's hint RESET, and it must live here once the swap lands.
+                ; It currently sits in fat_mount_tail (disk/kernel.asm) -- which a
+                ; call-graph walk shows the swap ORPHANS, because the body's
+                ; fat_mount replaces the routine that reaches it. Porting the READ
+                ; and the ADVANCE without this would leave the hint climbing
+                ; monotonically and never restarting: allocation would walk off the
+                ; end of the volume and report the disk full while free clusters
+                ; remained. fat_mount runs exactly once at the start of every BDOS
+                ; file operation and always precedes any fat_alloc_cluster, so
+                ; resetting on the SUCCESS path gives the hint per-operation
+                ; lifetime with no free-invalidation surface
+                ; (tier2-m30-alloc-hint-spec.md §2/§3.2).
+                ld      hl, 2
+                ld      (FAT_ALLOCHINT), hl
+    ENDIF
                 or      a                   ; Cy = 0 success
                 ret
 fat_mount_bad:
