@@ -419,7 +419,53 @@ space is **32 runs, largest 2712 B** (`tools/check_disk_walls.py`, 2026-09-18).
 Staging is forced by fragmentation, not chosen for caution. **Every step
 re-reads the walls before it starts; none of them may quote a figure from here.**
 
-### 6.3 🔴 THE ONE ARRANGEMENT THAT IS ALREADY DEAD
+### 6.2a 🟢 STEP 7 MEASURED 2026-09-18 (D-SEQIO) — AND IT INVERTS §6.3 FOR TWO OF THE STEPS
+
+`scratchpad/seqio_stopwatch.py`, both machines, stored-mode programs timed with
+`TIME`. ⚠️ `TIME` counts VDP interrupts — **60 Hz on the Japanese CF-3300, 50 Hz
+on our EU repack** — so the headline is NORMALISED against a calibration loop
+each machine runs itself, in which the tick rate cancels.
+
+| machine | cal (1000 it) | loop (512 it) | io (512 B) | per byte, cal units | per byte, ms |
+|---|---|---|---|---|---|
+| CF-3300 (60 Hz) | 97 | 92 | 224 | **2.66** | 4.297 |
+| zerobas (50 Hz) | 249 | 244 | 262 | **0.14** | 0.703 |
+
+🔴 **THE REFERENCE SPENDS 2.66 EMPTY-LOOP-ITERATIONS PER BYTE OF SEQUENTIAL
+INPUT; WE SPEND 0.14** — normalised, so machine speed is not the cause. We are
+**20× faster per byte** on a tree that is otherwise 2.5–3.8× SLOWER at
+interpretation (D-SPEEDPROF). Whatever the reference does per byte is expensive:
+4.3 ms is ~27× a single inter-slot crossing at D-XSLOTPRICE's 0.156 ms.
+
+**Adding one crossing per byte to our path gives 0.859 ms/byte — still 0.20× the
+reference.** So for the BASIC-visible byte verbs, a per-byte crossing is not the
+catastrophe §6.3 assumed; it disappears into interpretation that is already
+there.
+
+🔴 **BUT IT SETTLES STEPS 11 AND 12 ONLY, AND NOT STEP 9.** `INPUT#`, `INPUT$`
+and `PRINT#` pay a whole BASIC statement's worth of interpretation per byte, and
+that is what a crossing would hide behind — it is the case this probe measures.
+**The tokenised `LOAD` loop runs INSIDE the ROM with no interpreter overhead per
+byte, so a crossing there is pure addition against nothing.** Its cost is not
+measured here and must not be inferred from this table.
+
+➡️ **CONSEQUENCES FOR THE ORDER:** step 11's loop duplication is **not forced**
+— `INPUT#`/`INPUT$` may keep their cursor across the seam. Step 12's `PRINT#`
+may cross per byte without being a regression, which removes the dilemma §6.3
+left it in. Step 9 keeps its loop-to-the-cursor requirement until measured.
+
+⚠️ **THE CONTROL'S BIAS POINTS THE SAFE WAY**: `loop` subtracts a string
+ASSIGNMENT from a string-valued FUNCTION call, so a little call overhead stays
+inside the I/O figure, making file I/O look DEARER than it is. That inflates
+both sides and cannot manufacture the 19× normalised gap.
+
+### 6.3 🔴 THE ONE ARRANGEMENT THAT IS ALREADY DEAD — NARROWED BY §6.2a
+
+🟢 **NARROWED 2026-09-18 BY §6.2a: THIS IS NOW TRUE OF STEP 9 ONLY.** For the
+BASIC-visible byte verbs the measurement says a per-byte crossing costs 0.20× the
+reference, so the paragraph below applies to the tokenised `LOAD` loop — where
+there is no interpreter overhead per byte to absorb it — and not to
+`INPUT#`/`INPUT$`/`PRINT#`.
 
 **Cursors out, loops left behind** — the shape the original §6 step 5 described —
 costs **one inter-slot call per byte**. At 0.156 ms (D-XSLOTPRICE) a 16 KB

@@ -172,6 +172,21 @@ item — do **one item per session** to keep context lean.
       five typing defects — `$` substitution, the boot date prompt, SCREEN 1
       geometry, dropped characters, a lost CR. **A probe that types its own keys
       is re-deriving a solved problem.**
+      🟢 **STEP 7 ALSO MEASURED 2026-09-18 (D-SEQIO, `scratchpad/seqio_stopwatch.py`)
+      AND IT INVERTS THE ASSUMPTION §6.3 WAS BUILT ON.** Per byte of sequential
+      file input, normalised against each machine's own calibration loop so the
+      50/60 Hz tick difference cancels: the **CF-3300 spends 2.66 empty-loop
+      iterations per byte, zerobas 0.14** — we are **20× faster per byte**, on a
+      tree otherwise 2.5–3.8× SLOWER at interpretation. In ms: 4.297 vs 0.703.
+      Adding one inter-slot crossing per byte to our path gives 0.859 ms/byte,
+      still **0.20× the reference**.
+      ➡️ So step 11's loop duplication is **NOT FORCED** and step 12's `PRINT#`
+      may cross per byte without being a regression.
+      🔴 **BUT IT SETTLES STEPS 11 AND 12 ONLY, NOT STEP 9.** `INPUT#`/`INPUT$`/
+      `PRINT#` pay a whole BASIC statement's worth of interpretation per byte,
+      which is what a crossing hides behind. The tokenised `LOAD` loop runs
+      INSIDE the ROM with no such overhead, so a crossing there is pure addition
+      against nothing — **unmeasured, and not inferable from this table.**
       🔴 **AND THE SPEC HAS NOW BEEN WRONG ABOUT THE FAT LAYER THREE TIMES** —
       the order (step 5 as "the bulk": it is ~394 B, ~16 %), the blocker (§6.1
       listed three files that are `include`d only by `sub/`, and MISSED
@@ -2377,7 +2392,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:20081 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:20096 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -2543,7 +2558,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:7186 (T-6FE392)8 (T-529ABE)` from `TODO.md:18475 (T-529ABE)`: a
+      `TODO.md:7201 (T-6FE392)8 (T-529ABE)` from `TODO.md:18490 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -8030,7 +8045,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:18475 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:18490 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
