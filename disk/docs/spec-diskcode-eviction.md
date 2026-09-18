@@ -476,7 +476,7 @@ ITS LOOP.** §6.1(b) is why. Every remaining step is an instance of it.
 | 6 | 🔬 **MEASURE: does the reference's BDOS share Disk BASIC's sector buffer?** | §0.1 — decides whether there is a parameter at all. **Nothing moves before this.** |
 | 7 | 🔬 **MEASURE: does the reference cross slots per BYTE for sequential file I/O?** | §6.3 — decides whether loop duplication is required or is wasted bytes |
 | 8 | the FAT engine to `disk.rom`, ONE copy, base parametrised per §0.1 | needs 6; needs a scratch build to prove the fragmented fit |
-| 9 | the tokenised `LOAD` loop (`dpl_*`) — 🔴 **NOT "already disk-only": `dpl_err` has 9 CASSETTE in-edges, §6.5** | needs 8; ✅ **MEASURED §6.2c** (the LOOP moves) and ✅ **SCOPED §6.5** (6 bodies move, 2 tails stay) |
+| 9 | the tokenised `LOAD` loop (`dpl_*`) **+ the stream cursor `fat_io_getbyte`** — 🔴 not "already disk-only" (§6.5) and 🛑 not sufficient alone (§6.6) | ✅ **MEASURED §6.2c**, ✅ **SCOPED §6.5**, 🛑 **RE-SCOPED §6.6: the loop ALONE creates the per-byte crossing it exists to remove** |
 | 10 | `OPEN`/`CLOSE` disk arms + the channel write-back manager | needs 8 |
 | 11 | `INPUT#` / `INPUT$` loop copies beside their cursor | needs 7 |
 | 12 | `PRINT#` — the one consumer with no loop of its own to move | needs 7; see §6.3 |
@@ -780,6 +780,10 @@ than the total:**
      has no colon, so it read as a non-terminating code line and every label
      after an `equ` looked fallen-into. Two genuine edges remain.
 
+➡️ **AND §6.5 IS NOT THE WHOLE SCOPE** — §6.6 re-scoped it the same day: the
+six bodies above cannot travel without `fat_io_getbyte`, which is not in
+`disk.rom`. Read §6.6 before acting on this section.
+
 🔴 **A RESIDUAL THIS TURNED UP, FILED IN `TODO.md`:** `dpl_link_err` and
 `dpl_err_pop` have **zero references** — D-TRUNCLOAD replaced their call sites
 with `jr c,dpl_eof` and left the `equ`s behind. Worse, D-NGRAM13's 12-line
@@ -787,6 +791,81 @@ justification above `dpl_get_store` still argues about where *"the `jp
 c,dpl_err_pop`"* should sit, and that instruction no longer exists anywhere.
 [[a-fix-falsifies-the-justification-beside-it]] — no gate reads prose, and
 `check_dead_code` does not follow `equ` aliases.
+
+## 6.6 🛑 STEP 9 IS BLOCKED AS SCOPED — THE CURSOR IS NOT WHERE §6.5 ASSUMED (D-DPLFIT, 2026-09-18)
+
+§6.5 scoped the move and §6.2c priced it. Attempting it turned up one blocker
+that had already been lifted and one that had not. **Do not move `dpl_*` on
+§6.5 alone.**
+
+### 6.6a 🟢 THE BLOCKER THAT WAS ALREADY LIFTED
+
+Every call-back target step 9 needs is in **main PAGE 1** — `load_commit_prog`
+$67F1, `load_error` $664A, `df_or_loaderr` $6C8E, `new_prog` $75CE, `print_msg`
+$776F — which `disk.rom` cannot reach by an ordinary `call`. The standing note
+that *"zerobas has NEVER made a disk→BASIC inter-slot call"* is **STALE**:
+`calbak` (`disk/kernel.asm:2318`) is exactly that call, and it has ~20 live sites
+since D-FIELDMOVE. Verified rather than assumed — `hk_field` reaches
+`field_prologue` at **$7265, main page 1**. So the mechanism exists and is
+shipping.
+
+### 6.6b 🔴 THE BLOCKER THAT IS REAL: THE STREAM CURSOR IS NOT IN `disk.rom`
+
+`python3 scratchpad/dpldep_census.py --move` walks `disk/disk.asm`'s include
+closure and answers, per out-edge, whether the move makes it free:
+
+| out-edge | in `disk.rom`? | frequency |
+|---|---|---|
+| `fat_io_getbyte` | 🔴 **no** | **PER BYTE** |
+| `load_commit_prog` | 🔴 no | once per load |
+| `load_error`, `df_or_loaderr`, `new_prog`, `print_msg` | 🔴 no | once per failure |
+
+🔴 **Option 2 moved the PRIMITIVE layer, not the STREAM layer.**
+`fat_io_getbyte` is defined in `basic/fatio-body.inc`, which `disk/disk.asm` does
+not include; only `basic/fat-prim-body.inc` travelled. **So moving `dpl_*` alone
+would convert a local call into an inter-slot call PER BYTE** — precisely the
+arrangement §6.3 forbids and §6.2c priced at 1.72×. The move as scoped does not
+remove the crossing; it CREATES it.
+
+➡️ **THEREFORE STEP 9 IS THE LOOP *PLUS* THE STREAM CURSOR, OR IT IS NOTHING.**
+The shape is Option 2's and needs no new ruling: **one source, two ROMs** —
+`fatio-body.inc` included by `disk/disk.asm` as well, exactly as
+`fat-prim-body.inc` already is.
+
+### 6.6c ⚠️ AND A TRAP UNDERNEATH IT THAT ASSEMBLES CLEAN
+
+`fat_io_getbyte` reads its sector buffer **by hardcoded name**
+(`ld de, FSECTOR_BUF`), and the two ROMs do not agree on where that is:
+
+| | |
+|---|---|
+| `FSECTOR_BUF` (`basic/sysvars.inc:2831`) | **$E5C0** |
+| `SECTOR_BUF` (`disk/equates.inc:123`) | **$E2A0** |
+| what `fat_read_file_sector` fills | `FAT_DBUF` — *aliased per ROM* |
+
+🔴 **`disk/basic-resident-abi.inc:25` ALSO binds `FSECTOR_BUF equ 0E5C0H`**, so
+a naive port would **assemble without a single error** and read a buffer nobody
+filled. This is the same class as Option 2's `FSECTOR_BUF` alias collision, one
+layer up, and the fix is the same: the ported body must use the neutral
+`FAT_DBUF` name, never `FSECTOR_BUF`.
+
+### 6.6d 🟢 WHAT STAYS IN MAIN, AND WHY IT IS NOT A SECOND ENGINE
+
+The `ARL_GETBYTE` RAM vector keeps main's copy: `basic/input.asm:278` and
+`basic/files.asm:1181` store `fat_io_getbyte` into it for the ASCII path, and
+**a RAM vector cannot hold a foreign-slot address** — D-FATDEP named this the
+pin. The tokenised loop calls the cursor DIRECTLY, so the two paths can be served
+by two assemblies of ONE source. That is Joost's 2026-09-18 ruling applied, not
+bypassed: what is forbidden is two FAT engines, not one engine assembled twice.
+
+⚠️ **THE TOOL CORRECTED ITSELF HERE TOO, AND THE GUARD IS WHY.** `--move`'s
+first real run REFUSED: the include resolver had two rules (relative to the
+including file, relative to the root) and pasmo uses a **third** — the Makefile
+runs `pasmo -I disk` FROM THE REPO ROOT, so `disk/kernel.asm:2295`'s
+`include "basic/fat-prim-body.inc"` resolves against the CWD. Without the strict
+arm the shared FAT body would have been dropped silently and **every FAT
+primitive would have been reported as needing a call-back** — a plausible table
+from an input the tool misread. S9–S11 hold that shut, S11 against the real tree.
 
 ## 7. The channel trio, and the wall that is not one
 

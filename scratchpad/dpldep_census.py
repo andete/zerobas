@@ -95,23 +95,61 @@ DIRECTIVE = re.compile(
     r"endif|macro|endm|end|public|extern|module|align)\b", re.I)
 
 
-def closure(root, base=None):
-    """Every file the ROM at `root` actually assembles, transitively."""
+def closure(root, base=None, strict=False):
+    """Every file the ROM at `root` actually assembles, transitively.
+
+    \U0001F534 AN INCLUDE THAT RESOLVES TO NOTHING IS SILENTLY DROPPED, and that
+    has cost this project a whole 1300-line file once already: `disk/fat.asm`
+    reaches `"../basic/fat-prim-body.inc"`, which resolves ABOVE the root when
+    joined to the wrong base. A dropped file makes every symbol in it look
+    ABSENT -- which, for this tool, reads as "needs a call-back" and would
+    manufacture work. So an include is tried relative to the INCLUDING FILE
+    first, then to `base`, and with `strict` a miss REFUSES instead of
+    vanishing.
+    """
     base = base or REPO
-    seen, stack = [], [root]
+    seen, stack, missed = [], [(root, base)], []
     while stack:
-        f = stack.pop(0)
-        if f in seen:
+        f, home = stack.pop(0)
+        # \U0001F534 THREE RULES, AND THE THIRD IS THE ONE PASMO ACTUALLY USES for
+        # `disk/kernel.asm`'s `include "basic/fat-prim-body.inc"`: the Makefile
+        # runs `pasmo -I disk` FROM THE REPO ROOT, so a repo-relative include
+        # inside a subdirectory resolves against the CWD. Without this the
+        # closure dropped the whole shared FAT body and the move report would
+        # have called every FAT primitive "needs a call-back".
+        cands = [os.path.normpath(os.path.join(home, f)),
+                 os.path.normpath(os.path.join(base, f)),
+                 os.path.normpath(os.path.join(REPO, f))]
+        p = next((c for c in cands if os.path.exists(c)), None)
+        if p is None:
+            missed.append(f)
             continue
-        p = os.path.join(base, f)
-        if not os.path.exists(p):
+        if p in seen:
             continue
-        seen.append(f)
+        seen.append(p)                        # ABSOLUTE; callers display relative
         for ln in open(p, errors="replace"):
             m = INC_RE.match(ln)
-            if m and m.group(1) not in seen:
-                stack.append(m.group(1))
+            if m:
+                stack.append((m.group(1), os.path.dirname(p)))
+    if strict and missed:
+        sys.exit("REFUSING: %d include(s) resolved to no file (%s) -- a dropped "
+                 "file makes its symbols look ABSENT, which this tool would "
+                 "report as a needed call-back" % (len(missed), ", ".join(missed)))
     return seen
+
+
+def defined_in(files):
+    """Every label a ROM's closure DEFINES (`name:` or `name equ ...`)."""
+    out = set()
+    for p in files:
+        if not os.path.exists(p):
+            continue
+        for ln in open(p, errors="replace"):
+            code = ln.split(";")[0]
+            m = LBL_RE.match(code) or EQU_RE.match(code)
+            if m:
+                out.add(m.group(1))
+    return out
 
 
 def classify(routine):
@@ -125,10 +163,10 @@ def scan(files, base=None):
     """(in_edges, out_edges, alias_of) over the whole main closure."""
     base = base or REPO
     ins, outs, alias = [], [], {}
-    for f in files:
-        p = os.path.join(base, f)
+    for p in files:
         if not os.path.exists(p):
             continue
+        f = os.path.relpath(p, base)
         cur, prev_code, prev_lbl = "(file prologue)", "", None
         for i, ln in enumerate(open(p, errors="replace"), 1):
             code = ln.split(";")[0]
@@ -199,7 +237,7 @@ def selftest():
         ok4 = any(r[3] == "fat_io_getbyte" for r in outs)
         print("%s S4 the block's OUT-edges are collected"
               % ("PASS" if ok4 else "FAIL"))
-        ok5 = not any(r[0].startswith("sub/") for r in ins)
+        ok5 = not any("sub/" in r[0] for r in ins)
         print("%s S5 a file only sub/ assembles is NOT in main's closure"
               % ("PASS" if ok5 else "FAIL"))
         # 🔴 THE ARM THE FIRST CUT LACKED, and the reason the headline was
@@ -217,14 +255,89 @@ def selftest():
         print("%s S8 a label after an `equ` DIRECTIVE gets NO fallthrough edge "
               "(the directive is not an instruction)"
               % ("PASS" if ok8 else "FAIL"))
-        return 0 if all((ok1, ok2, ok3, ok4, ok5, ok6, ok7, ok8)) else 1
+        # \U0001F534 S9/S10 GUARD THE DROPPED-INCLUDE FAILURE, which once cost a
+        # whole 1300-line file: `../basic/...` resolving above the root.
+        os.makedirs(os.path.join(d, "other"))
+        open(os.path.join(d, "other/root.asm"), "w").write(
+            '                include "../basic/leaf.inc"\n')
+        f2 = closure("root.asm", os.path.join(d, "other"))
+        ok9 = any(p.endswith("basic/leaf.inc") for p in f2)
+        print("%s S9 a `../` include is FOLLOWED, not dropped "
+              "(the 1300-line-file failure)" % ("PASS" if ok9 else "FAIL"))
+        open(os.path.join(d, "other/bad.asm"), "w").write(
+            '                include "nope.inc"\n')
+        try:
+            closure("bad.asm", os.path.join(d, "other"), strict=True)
+            ok10 = False
+        except SystemExit:
+            ok10 = True
+        print("%s S10 an include resolving to NOTHING refuses under `strict` "
+              "instead of vanishing" % ("PASS" if ok10 else "FAIL"))
+        # \U0001F534 S11 IS AGAINST THE REAL TREE, because the rule it guards is a
+        # property of THIS repo's build: `disk/kernel.asm` includes the shared
+        # FAT body repo-relative, and the closure must follow it.
+        real = closure("disk.asm", os.path.join(REPO, "disk"))
+        ok11 = any(p.endswith("basic/fat-prim-body.inc") for p in real)
+        print("%s S11 disk.asm's REAL closure reaches the shared FAT body "
+              "(a repo-root-relative include from a subdirectory)"
+              % ("PASS" if ok11 else "FAIL"))
+        return 0 if all((ok1, ok2, ok3, ok4, ok5, ok6, ok7, ok8, ok9, ok10,
+                         ok11)) else 1
     finally:
         shutil.rmtree(d, ignore_errors=True)
+
+
+def move_report():
+    """\U0001F534 AFTER THE MOVE, WHICH OUT-EDGES ARE FREE AND WHICH COST A CROSSING?
+
+    Step 9's whole justification (\u00a76.2c) is that the loop's per-byte
+    `fat_io_getbyte` becomes LOCAL once the loop sits in `disk.rom`. That is a
+    claim about `disk/disk.asm`'s include closure, so it is CHECKED here rather
+    than assumed -- if the cursor is not local, the move CREATES the per-byte
+    crossing \u00a76.3 rules out instead of removing it.
+    """
+    dfiles = closure("disk.asm", os.path.join(REPO, "disk"), strict=True)
+    ddefs = defined_in(dfiles)
+    ins, outs, alias = scan(closure(ROOT))
+    # \u26a0\ufe0f A DEAD ALIAS'S TARGET IS NOT WORK. `dpl_link_err`/`dpl_err_pop` have
+    # ZERO in-edges, so listing `ctp_link_err`/`ctp_err_pop` here would overstate
+    # the call-backs the move needs -- and an overstated number is the kind that
+    # gets quoted.
+    live = {r[2] for r in ins}
+    want = sorted({t for _, _, _, t, _ in outs} |
+                  {v for k, v in alias.items() if k in BLOCK and k in live})
+    print("disk.rom assembles %d file(s)\n" % len(dfiles))
+    print("| out-edge | in disk.rom? | after the move |")
+    print("|---|---|---|")
+    local = []
+    for t in want:
+        if t in ddefs:
+            local.append(t)
+            print("| `%s` | \U0001F7E2 yes | free -- resolves disk-locally |" % t)
+        else:
+            print("| `%s` | \U0001F534 **no** | needs a `calbak` call-back |" % t)
+    cursor = "fat_io_getbyte"
+    print()
+    if cursor in ddefs:
+        print("\U0001F7E2 **`%s` IS LOCAL TO disk.rom** -- the per-byte call stays "
+              "inside the ROM and step 9 removes the crossing it was meant to."
+              % cursor)
+        return 0
+    print("\U0001F534 **`%s` IS NOT IN disk.rom's CLOSURE.** It is defined in\n"
+          "   `basic/fatio-body.inc`, which `disk/disk.asm` does not include --\n"
+          "   Option 2 moved the PRIMITIVE layer (`fat-prim-body.inc`), not the\n"
+          "   STREAM layer. Moving `dpl_*` alone would turn a local call into an\n"
+          "   inter-slot call PER BYTE: exactly the arrangement \u00a76.3 forbids and\n"
+          "   \u00a76.2c priced at 1.72x. **The stream cursor must travel with the\n"
+          "   loop, or step 9 must not happen.**" % cursor)
+    return 1
 
 
 def main():
     if "--selftest" in sys.argv:
         return selftest()
+    if "--move" in sys.argv:
+        return move_report()
     files = closure(ROOT)
     ins, outs, alias = scan(files)
     print("main.asm assembles %d file(s)\n" % len(files))
