@@ -74,12 +74,14 @@ BASE differs: `$E4A0` (disk) against `$E9C0` (BASIC). **So parametrising the
 base is a base change, not a rewrite** — the expensive-sounding half of this is
 already done and nobody noticed.
 
-🔴 **BUT THE BUFFER COUNT DIFFERS, AND THAT DIFFERENCE IS OURS.** The disk-side
-engine has ONE `SECTOR_BUF` (`$E2A0`, 512 B). BASIC's has TWO — `FSECTOR_BUF`
-(`$E5C0`) for file data and `FWBUF` (`$E7C0`) for FAT/dir metadata — a
-deliberate zerobas choreography so a record survives a chain walk
-(`basic/field.asm` header, D-FIELDFIX). It is a zerobas design decision, not
-something measured off the reference.
+🔴 **CORRECTED 2026-09-18 (D-FATENG): BOTH ENGINES HAVE TWO BUFFERS.** This
+paragraph claimed the disk-side engine had ONE `SECTOR_BUF` and that the split
+was BASIC's alone. It has `SECTOR_BUF` (`$E2A0`, 512 B) **and `WBUF` (`$E560`,
+512 B)** — `disk/equates.inc:123,250` — exactly mirroring BASIC's `FSECTOR_BUF`
+(`$E5C0`) / `FWBUF` (`$E7C0`). The data/metadata split is the SAME STRUCTURE on
+both sides; only the base addresses differ. That makes unification easier than
+this section assumed, not harder, and it is why §0.1a's measurement of the
+reference matters for the SHAPE rather than for whether we keep two buffers.
 
 🔬 **SO THE FIRST MEASUREMENT IS JOOST'S OWN QUESTION, AND IT IS BLACK-BOX.**
 *"unless bdos actually uses the same buf as disk basic — on the reference"*
@@ -474,6 +476,76 @@ reference. It is not a trade-off to weigh; it is ruled out, and step 7 exists to
 establish whether the reference itself pays a per-byte crossing (in which case
 `PRINT#`'s per-byte case in step 12 is ON-PAR rather than a defect, and steps 11
 and 12 shrink).
+
+## 6.4 🔬 STEP 8 ANALYSED 2026-09-18 (D-FATENG) — THE FIT PASSES, AND A CONSTRAINT THE SPEC NEVER NAMED
+
+**The two engines are ONE engine, diverged.** `disk/fat.asm` (1390 lines) and
+`basic/fat-prim-body.inc` (1302 lines) share **53 labels**. Comparing their code
+with comments stripped:
+
+| | identical routines |
+|---|---|
+| as written | **24 / 53** |
+| after aliasing the buffer pairs (`SECTOR_BUF`↔`FSECTOR_BUF`, `WBUF`↔`FWBUF`, and the two write-state cells) | **35 / 53** |
+
+So the residual difference is dominated by exactly the thing Joost named — where
+the buffers are. The symbols appearing in differing lines, ranked: `FWBUF` 16,
+`WBUF` 15, `FSECTOR_BUF` 15, `SECTOR_BUF` 13, then the write-state pairs
+(`FWR_SECIDX`/`BDOS_WRSECIDX`, `FWR_CLUS`/`BDOS_WRCLUS`).
+
+🟢 **THE FIT GATE PASSES.** `disk.rom` free space is 8350 B in 32 runs and the
+largest usable hole is **2712 B at `$6B0D`** (`tools/check_disk_walls.py`,
+2026-09-18). The BASIC engine is ~1725 B as assembled in `sub.rom`, so it fits
+with ~987 B to spare. ⚠️ Arithmetic only — a scratch build is still what proves
+placement, and this section does not claim otherwise.
+
+🔴 **AND THE CONSTRAINT NOTHING IN THIS SPEC HAD NAMED: `disk/fat.asm` CARRIES
+24 HARD ADDRESS PINS.** They are the M26 BDOS canonical entries — MSX-DOS calls
+them by absolute address — anchored with `ds $XXXX - $, $00` padding through the
+file (`k_46BA`, `k_4720`, `k_477D`, `k_4788`, `k_4793`, `k_47BE`, …;
+`disk/docs/tier2-m26-spec.md`). **The file's layout is frozen**, so a shared body
+cannot simply be dropped into it and nothing may be relocated across a pin.
+
+**What still differs after aliasing** (18 routines) is not noise; it is real:
+* `read_sector` — BASIC's CALSLTs out to whatever disk ROM holds the slot;
+  disk's calls its own local DSKIO. **In a unified engine living in `disk.rom`
+  this SIMPLIFIES to the local one** and the inter-slot call disappears.
+* `nc_loop` / `fat_find` — BASIC's carries WILDCARD matching, which `FILES`
+  needs and BDOS does not.
+* the routines interleaved with the M26 pins, which differ by padding.
+
+### 6.4a 🙋 THE FORK — FOR JOOST, NOT FOR ME
+
+One engine in one ROM cannot take an ASSEMBLY-time buffer parameter: that would
+instantiate it twice, which is the two-engine outcome he ruled out. So the base
+must be supplied another way, and there are two ways:
+
+**(a) SHARE ONE BUFFER PAIR — no parameter at all.** 🟢 Measured 2026-09-18: the
+BASIC path never enters BDOS. Every mention of `bdos_entry` under `basic/` is a
+comment saying the loader drives DSKIO `$4010` *instead* (`basic/fat.asm:10`,
+`basic/sv-diskwr.inc:14`, `basic/fat-prim-body.inc:52`). The two paths do not
+interleave, so they could use the same pair. ⚠️ It must be BASIC's addresses
+that win: disk's `SECTOR_BUF $E2A0` overlaps BASIC's `STRSCR` (`$E26D`+255), so
+BASIC cannot move to disk's. That makes it a **BDOS RAM remap**, gated by
+`bdos-acceptance`, and **whether any BDOS cell is pinned by COMMAND.COM
+compatibility is still undetermined.** Cost: zero bytes, zero cycles, unknown risk.
+
+**(b) A RUNTIME POINTER — `ld hl,(DBUF)` where the code says `ld hl,SECTOR_BUF`.**
+Each engine carries ~70 buffer references, of which ~24 (disk) / ~34 (BASIC) are
+plain `ld rr,BUF` loads and ~15 / ~12 are `BUF+offset` forms. A plain
+`ld hl,(nn)` is the SAME 3 bytes as `ld hl,nn` and costs 6 extra T-states; the
+offset forms are the dear ones (a load plus an `add`). Rough size: **~60–100 B**
+and a small cycle cost on every buffer access. No RAM remap, no
+`bdos-acceptance` exposure.
+
+**Recommendation: (b).** It is the literal reading of Joost's *"parametrize
+where it has its buf"*, it costs bytes we have in `disk.rom` rather than risk we
+cannot size, and it leaves the M26 pins untouched. (a) is strictly better if the
+remap is safe — but "if" is exactly what nobody has measured, and a RAM remap
+that breaks COMMAND.COM would be found by `bdos-acceptance` late and expensively.
+
+⛔ **NOT STARTED. 1725 B of code interleaved with 24 absolute-address pins is
+not a slice to begin on a guess about which parametrisation is wanted.**
 
 ## 7. The channel trio, and the wall that is not one
 
