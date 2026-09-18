@@ -26,7 +26,8 @@ Three consequences, and they settle questions this spec previously left open:
 **(1) THE CONSTRAINT REACHES `sub.rom`.** This spec used to ask whether "no disk
 code in main" stopped at main or propagated. Under the equivalence it is not a
 question: disk *implementation* in `sub.rom` is exactly as misplaced as disk
-implementation in main. The ~4.8 KB of disk-only tenants in `sub.rom` page 1 —
+implementation in main. The disk-only tenants in `sub.rom` page 1 — **2.2–3.7 KB,
+measured 2026-09-18, see §0.2** —
 the FAT primitive engine above all — are there because `sub.rom` was the only
 ROM with room in the D-DISKABI era (2026-07-19), which is a HISTORICAL
 placement, not a designed one. They are in scope.
@@ -55,6 +56,40 @@ IMPLEMENTATION; it has never meant no disk SURFACE.
 *"no disk-implementation symbol is reachable in main+sub"* is an invariant a
 gate can hold. That is a better end state than any byte count in §1, and
 designing that gate is part of this work rather than a follow-up to it.
+
+## 0.2 🟢 WHAT sub.rom's DISK CODE ACTUALLY COSTS — MEASURED 2026-09-18 (D-SUBDISK)
+
+§0.0 put `sub.rom`'s disk-only tenants in scope and priced them at "~4.8 KB".
+That was HAND CLASSIFICATION of label spans — my reading, never a tool's — and it
+was the last unmeasured quantity this plan rested on. Main's half was already
+derived (`carve_scout.py --census`: 2408 B total, 250 SHARED, 2158 PRIVATE).
+
+`scratchpad/subdisk_census.py` computes it as a closure DIFFERENTIAL over
+`check_dead_code.Spans`, which already resolves fall-through and shared-tail
+edges: seed the disk-only tenants, subtract what every other tenant reaches, and
+what remains is alive ONLY because of the disk.
+
+| | bytes | spans | meaning |
+|---|---|---|---|
+| **LOW** | **2178 B** | 133 | minus every other tenant, INCLUDING `bload`/`save` — a strict lower bound |
+| **HIGH** | **3708 B** | 221 | minus the unmixed only, i.e. `bload`/`save`'s disk arms leave too, which they would |
+
+🔴 **IT IS A BRACKET AND NOT A NUMBER ON PURPOSE.** `bload_tenant` and
+`save_tenant` serve TAPE AND DISK. Counting them as disk over-states; excluding
+them subtracts the FAT code their disk arms need, which under-states. Picking one
+and calling it "the" figure is precisely the hand classification this replaces.
+
+**So sub.rom's disk cost is 2.2–3.7 KB, and the ~4.8 KB was high by 30–120 %.**
+
+⚠️ **THE SIZE MODEL HAD A TRAP, AND A SANITY CHECK IS WHAT FOUND IT.**
+`Spans.size()` is label-to-NEXT-LABEL, so it includes PADDING: summed over all of
+`sub.rom` it gives 62611 B for a 32768 B ROM — **1.91×** — because a few spans sit
+before the page-boundary pads (`sub_p1_ping` alone measures 16203 B). The first
+cut of this measurement reported an "upper bound" of **34705 B, more than the ROM
+holds**, and that impossibility is the only reason the flaw surfaced at all.
+Those spans are now excluded by name, the exclusion is PRINTED rather than
+silent, and `--selftest` asserts the over-count still exists — if the whole-ROM
+ratio ever looks plausible, the pads have moved and the exclusion list is stale.
 
 ## 0.1 🏗️ ONE FAT12 ENGINE (Joost, 2026-09-18)
 
@@ -445,11 +480,11 @@ ITS LOOP.** §6.1(b) is why. Every remaining step is an instance of it.
 | 10 | `OPEN`/`CLOSE` disk arms + the channel write-back manager | needs 8 |
 | 11 | `INPUT#` / `INPUT$` loop copies beside their cursor | needs 7 |
 | 12 | `PRINT#` — the one consumer with no loop of its own to move | needs 7; see §6.3 |
-| 13 | the `sub.rom` disk-only tenants (~4.8 KB): `fatprim`, `dirverb`, `randio`, `fiawalk`, `fcbname`, BLOAD's and SAVE's disk arms | in scope only because of §0.0 |
+| 13 | the `sub.rom` disk-only tenants (**2178–3708 B, §0.2**): `fatprim`, `dirverb`, `fcbname`, and BLOAD's / SAVE's disk arms | in scope only because of §0.0 |
 | 14 | 🛡️ **the gate**: no disk-implementation symbol reachable in main+sub | §0.0's checkable end state |
 
 ⚠️ **STEP 13 IS WHY THIS DOES NOT FIT IN ONE PASS.** main's ~2.2 KB plus
-`sub.rom`'s ~4.8 KB is ~7 KB against `disk.rom`'s 8350 B free — but that free
+`sub.rom`'s 2.2–3.7 KB is **4.4–5.9 KB** against `disk.rom`'s 8314 B free — but that free
 space is **32 runs, largest 2712 B** (`tools/check_disk_walls.py`, 2026-09-18).
 Staging is forced by fragmentation, not chosen for caution. **Every step
 re-reads the walls before it starts; none of them may quote a figure from here.**
