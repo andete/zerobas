@@ -375,11 +375,30 @@ item — do **one item per session** to keep context lean.
       the control that a passing selftest most needs. 🔴 One mutation was a
       NO-OP (`{} or {...}` still evaluates to the real dict) and reported a
       false all-green; the harness now asserts the source actually changed.
-      ➡️ **WHAT THE ⚠️ LIST NOW IS: a worklist.** 44 disk cells and most of
-      basic's have no declared width, so they can produce no run. Each is a
-      one-line comment away from being measurable — `LINEBUF` is the clearest
-      (255 + terminator, per the August doc, declared nowhere in its own
-      comment). Declaring widths is zero bytes and turns prose into map.
+      ➡️ **THE ⚠️ LIST WAS A WORKLIST, AND IT TURNED OUT NOT TO NEED HAND WORK
+      (D-RAMPAREN, 2026-09-19).** The plan was to declare widths cell by cell.
+      🔴 **THE TREE ALREADY DECLARED THEM AND THE PARSER WAS THROWING THEM
+      AWAY:** 229 `equ` comments in `basic/sysvars.inc` + `disk/equates.inc` end
+      in a bare parenthesised integer — `HOOK_SLOT … our slot byte for the HPHYD
+      inter-slot hook (1)`, `CLOC … computed VRAM byte address of the current
+      pixel (2)` — and it always means the width. Reading it (rule R5, ANCHORED
+      at the end so `(0..4)`, `(M19)` and `($F9)` are not widths) took the basic
+      map from **31% to ~70%** covered, for zero edits to any source comment.
+      🔴 **AND IT EXPOSED A DEFECT IN THE DANGEROUS DIRECTION, SHIPPED THAT
+      MORNING.** The `byte` rule matched the word anywhere, so *"computed VRAM
+      **byte** address … (2)"* read as ONE byte and *"the media **byte** ($F9)"*
+      as one too. A width too SMALL INVENTS an unattributed run that is not free
+      — the one failure mode the tool exists to prevent — and **five of the runs
+      it printed on the day it shipped rested on that mis-parse**. `byte` is now
+      only honoured as the parenthesised annotation `(byte)`; the run count fell
+      23 → 18, which is the honest direction.
+      🔬 Both new rules have mutation controls: unanchoring the `(N)` rule, and
+      widening `(byte)` back to prose, each turn a named negative vector red.
+      ➡️ **STILL A WORKLIST, BUT A SHORTER ONE.** What remains undeclared is
+      mostly cells whose comment carries no width in any form, plus the
+      GENERATED `disk/basic-resident-abi.inc` entries, which have no comments at
+      all — `tools/gen_resident_abi.py` could carry main's own declared width
+      across, which would close most of the disk map's remainder mechanically.
 
 - [ ] 🔴 **`refcache-check` GOES RED ON THE CALENDAR, AND THE RETRY ARM CALLS IT
       "REAL".**
@@ -2674,7 +2693,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:20378 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:20397 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -2840,7 +2859,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:7483 (T-6FE392)8 (T-529ABE)` from `TODO.md:18772 (T-529ABE)`: a
+      `TODO.md:7502 (T-6FE392)8 (T-529ABE)` from `TODO.md:18791 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -8327,7 +8346,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:18772 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:18791 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

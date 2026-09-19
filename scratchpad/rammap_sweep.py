@@ -146,7 +146,17 @@ def files_for(comp: str, inc_only: bool = False) -> list[str]:
 #   R3 `N bytes` / `N-byte` / `N B`.   `B` is UPPERCASE-only on purpose: a
 #      lowercase alternative makes "24-bit" parse as 24 bytes.
 #   R4 `N-bit` (N a multiple of 8).
-#   R5 `byte` -> 1, last.
+#   R5 a trailing `(N)` -- THIS TREE'S OWN CONVENTION, and the first cut threw
+#      it away. 229 `equ` comments in basic/sysvars.inc + disk/equates.inc end
+#      in a bare parenthesised integer and it always means the width in bytes.
+#      ANCHORED at the end on purpose: `(0..4)`, `(M19)` and `($F9)` are not
+#      widths. Adding it took the basic map from 31% to ~70% covered.
+#   R6 `(byte)` -> 1, last, and ONLY parenthesised. 🔴 The first cut matched
+#      `byte` anywhere, so "computed VRAM BYTE address ... (2)" read as ONE and
+#      "the media BYTE ($F9)" read as one too -- a width too SMALL, which is the
+#      direction that INVENTS free space. Five of the runs this tool printed on
+#      the day it shipped rested on that mis-parse. R5's negative controls are
+#      what caught it.
 # Anything else is UNDECLARED, which is NOT the same as 1 and is never rendered
 # as a run. Under-reporting free space is the safe direction; inventing it is
 # the one that costs a slice a day.
@@ -154,7 +164,21 @@ RANGE = re.compile(r"\$([0-9A-Fa-f]{4})\s*(?:-|\.\.|\bto\b)\s*\$([0-9A-Fa-f]{4})
 NBYTES = re.compile(r"\b(\d+)[\s-]*(?:[Bb]ytes?|B)\b")
 NBITS = re.compile(r"\b(\d+)[\s-]*bit\b")
 WORDY = re.compile(r"\b(?:word|int16)\b", re.IGNORECASE)
-BYTEY = re.compile(r"\bbyte\b", re.IGNORECASE)
+# 🔴 `byte` ONLY AS A PARENTHESISED TYPE ANNOTATION, never as prose. The first
+# cut matched `\bbyte\b` anywhere, so "computed VRAM BYTE address ... (2)" read
+# as ONE byte and "the media BYTE ($F9)" read as one too. That is the DANGEROUS
+# direction -- a width too small invents an unattributed run that is not free --
+# and the R6 vectors are what caught it. `(word)` stays unanchored because in
+# this tree it is only ever used as the annotation; `byte` is an ordinary noun.
+BYTEY = re.compile(r"\(byte\)", re.IGNORECASE)
+# R6 A TRAILING `(N)`, WHICH IS THIS TREE'S OWN CONVENTION AND I WAS THROWING IT
+# AWAY. 229 `equ` comments in basic/sysvars.inc + disk/equates.inc end in a bare
+# parenthesised integer -- `HOOK_SLOT ... our slot byte for the HPHYD inter-slot
+# hook (1)`, `CLOC ... computed VRAM byte address of the current pixel (2)` --
+# and it always means the cell's WIDTH IN BYTES. It is last in the order so any
+# explicit form wins, and it must be ANCHORED AT THE END: `(0..4)`, `(M19)` and
+# `($F9)` are not widths, and an unanchored rule would eat them.
+PARENN = re.compile(r"\((\d+)\)\s*$")
 
 
 def declared_width(addr: int, comment: str | None):
@@ -174,6 +198,9 @@ def declared_width(addr: int, comment: str | None):
     m = NBITS.search(comment)
     if m and int(m.group(1)) % 8 == 0 and int(m.group(1)) > 0:
         return int(m.group(1)) // 8, "bits"
+    m = PARENN.search(comment)
+    if m:
+        return int(m.group(1)), "(n)"
     if BYTEY.search(comment):
         return 1, "byte"
     return None, None
@@ -439,6 +466,18 @@ WIDTH_VECTORS = [
      "R2 beats R3: the 11 bytes are the POINTEE, the cell is a word"),
     (0xE816, "word -> the 512-byte DATA/sector buffer", 2,
      "R2 beats R3 again -- the overlap check found both of these"),
+    (0xE55D, "our slot byte for the HPHYD inter-slot hook (1)", 1,
+     "R6 this tree's OWN convention: 229 equ comments end in a bare (N)"),
+    (0xF92A, "computed VRAM byte address of the current pixel (2)", 2,
+     "R6 again -- and it is why coverage went 31% -> 72% on the basic map"),
+    (0xF247, "current drive index (0..4)", None,
+     "🔴 NEGATIVE CONTROL: a RANGE in parens is not a width"),
+    (0x5058, "MSX-DOS-1 kernel SETDTA-time entry (M19)", None,
+     "🔴 NEGATIVE CONTROL: a finding id in parens is not a width"),
+    (0xE000, "the media byte ($F9)", None,
+     "🔴 NEGATIVE CONTROL: a hex literal in parens is not a width"),
+    (0xE001, "a (2) that is not at the END of the comment", None,
+     "🔴 NEGATIVE CONTROL: R6 is ANCHORED -- unanchor it and this reads as 2"),
     (0xE760, "saved $A8 primary-slot config", None,
      "🔴 NEGATIVE CONTROL: no width declared -> UNDECLARED, never 1"),
     (0xE761, "saved slot secondary ($FFFF) live value", None,
@@ -459,7 +498,7 @@ def selftest(lo, hi) -> int:
             bad.append(f"${addr:04X} {cmt!r}: want {want}, got {got}")
         print(f"    A3 {'ok ' if got == want else 'FAIL'} "
               f"{str(want):>5} <- {cmt[:46]!r:48} {why}")
-    ok["A3 width vocabulary (8 vectors, 3 negative)"] = not bad
+    ok["A3 width vocabulary (14 vectors, 7 negative)"] = not bad
     for b in bad:
         print(f"    A3 MISMATCH {b}")
 
