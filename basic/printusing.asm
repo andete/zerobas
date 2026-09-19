@@ -369,12 +369,12 @@ pfi_done:
                 ld      b,l                 ; B = length
                 ret
 
-; pu_emit_str0 — emit the 0-terminated string at HL via pchar. Clobbers A, HL.
-; D-DUPSPAN2: an ALIAS, not a second copy -- byte-identical to print_string,
-; and POSITION-INDEPENDENT by tools/dupspan_indep.py (terminates, no
-; escaping relative jump, not entered by fallthrough, same ROM region).
-; The NAME and every call site survive; un-alias here for a distinct face.
-pu_emit_str0    equ     print_string
+; D-ALIASGATE: `pu_emit_str0 equ print_string` REMOVED 2026-09-19 — zero
+; references. 🔴 THE GATE FOUND THIS ONE; THE FILED ITEM DID NOT KNOW IT EXISTED.
+; It is the same defect as cload.asm's two, from the same slice (D-DUPSPAN2) and
+; under the same false header — "The NAME and every call site survive" — which
+; is what makes it a CLASS rather than an oversight. Callers use `print_string`
+; directly.
 
 ; pu_do_string — eval the next value as a string and emit it per PU_TYPE:
 ;   1 '&' whole, 2 '!' first char, 3 '\..\' fixed PU_W (left-justified, space-pad).

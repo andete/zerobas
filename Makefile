@@ -401,6 +401,13 @@ basic-reloc: $(RELOC_SYM) $(RELOC_ROM) $(SUB_ROM) $(DISK_ROM)
 deadcode: $(RELOC_SYM) $(SUB_ROM) $(DISK_ROM)
 	python3 tools/check_dead_code.py --report $(RELOC_SYM) $(SUB_SYM) $(DISK_SYM)
 
+# --- D-ALIASGATE: an `equ` emits no bytes, so `deadcode` above cannot see an
+# unreferenced ALIAS of a code label. This is that arm. Source-only: no ROM, no
+# symbol table, no build dependency.
+dead-alias-check:
+	python3 tools/check_dead_aliases.py --selftest
+	python3 tools/check_dead_aliases.py
+
 # --- Layout invariant (D-LAYOUTINV) -------------------------------------------
 # The property a LAYOUT PASS is allowed to preserve: every routine keeps its
 # ORDERED INSTRUCTION SEQUENCE, and only its address and the FORM of its branches

@@ -1101,14 +1101,12 @@ dpl_body:
                 dec     de
                 jr      dpl_body
 
-; dpl_link_err — the second fat_io_getbyte (link high) returned EOF; AF (link-low)
-; is on the stack from the push before that call.  Pop it to restore balance, then
-; fall through to dpl_err (close file + error path).
-; D-DUPSPAN2: an ALIAS, not a second copy -- byte-identical to ctp_link_err,
-; and POSITION-INDEPENDENT by tools/dupspan_indep.py (terminates, no
-; escaping relative jump, not entered by fallthrough, same ROM region).
-; The NAME and every call site survive; un-alias here for a distinct face.
-dpl_link_err    equ     ctp_link_err
+;  D-ALIASGATE: `dpl_link_err equ ctp_link_err` REMOVED 2026-09-19. D-TRUNCLOAD
+; replaced its call sites with `jr c,dpl_eof` -- EOF between the two link-word
+; reads is the normal end of a truncated program, not an error -- and left the
+; `equ` behind under a header still claiming "The NAME and every call site
+; survive". Zero references; an `equ` emits no bytes, so `check_dead_code` could
+; not see it. `tools/check_dead_aliases.py` can, and now does.
 
 ; --- dpl_eof: EOF reached with ONE word guarded on the stack -----------------
 ; D-TRUNCLOAD. A truncated tokenised BASIC file is not an error condition: the
@@ -1130,13 +1128,11 @@ dpl_eof:
                 pop     af                  ; drop the caller's guarded word
                 jp      dpl_done
 
-; dpl_err_pop / dpl_oom_pop — drop the stacked body length / remaining count, then
-; take the file-closing error / out-of-memory path (stack stays balanced).
-; D-DUPSPAN2: an ALIAS, not a second copy -- byte-identical to ctp_err_pop,
-; and POSITION-INDEPENDENT by tools/dupspan_indep.py (terminates, no
-; escaping relative jump, not entered by fallthrough, same ROM region).
-; The NAME and every call site survive; un-alias here for a distinct face.
-dpl_err_pop     equ     ctp_err_pop
+; dpl_oom_pop — drop the stacked body length / remaining count, then take the
+; out-of-memory path (stack stays balanced). Its twin `dpl_err_pop` is GONE:
+; D-ALIASGATE removed the `equ ctp_err_pop` on 2026-09-19 for the same reason as
+; dpl_link_err above, and see dpl_get_store's header for the analysis that used
+; to rest on it.
 ; --- dpl_get_store: read ONE file byte and store it at CLPTR, advancing -------
 ; D-NGRAM13. The disk loader's line-number and body copies each said this six
 ; times over; it is one routine now.
@@ -1144,17 +1140,24 @@ dpl_err_pop     equ     ctp_err_pop
 ;   stored and CLPTR has advanced.  Clobbers A, HL, flags. BC/DE preserved.
 ;
 ; 🔴 IT RETURNS CF AND THE CALLER STILL RAISES, AND THAT COSTS 4 B ON PURPOSE.
-; Each call site guards exactly ONE value across the read (the body length, or
-; the remaining count) and `dpl_err_pop` drops it. Folding the `jp c,dpl_err_pop`
-; INTO this helper is 4 B cheaper and needs a frame fix -- the helper's own
-; return address sits on top of the guard, so the tail must drop two.
+; ⚠️ **THE INSTRUCTION THIS PARAGRAPH WAS WRITTEN ABOUT NO LONGER EXISTS**, and
+; the analysis is kept rather than deleted because its CONCLUSION still holds
+; while its subject changed (2026-09-19, D-ALIASGATE). D-NGRAM13 argued about a
+; `jp c,dpl_err_pop` at each call site; D-TRUNCLOAD later replaced every one of
+; them with `jr c,dpl_eof`, because an EOF mid-program is the normal end of a
+; truncated file and not an error at all. What survives unchanged is the SHAPE:
+; each call site guards exactly ONE value across the read (the body length, or
+; the remaining count) and its own branch drops it. Folding that branch INTO
+; this helper would still be a few bytes cheaper and would still need a frame
+; fix -- the helper's own return address sits on top of the guard, so the tail
+; must drop two.
 ; ⚠️ THAT FIX CANNOT BE WITNESSED. K-N13A cut it and moved ZERO rows, on TWO
 ; fixtures chosen to make the bogus return address as hostile as possible ($0007
 ; and $0BB3): the stack below the loader is the REPL's own, so a stray `ret`
 ; finds a plausible address in it and the machine wanders back to the prompt.
 ; A guard no row can see is one nobody can maintain, so the CF-return shape wins
-; -- the `jp c,dpl_err_pop` stays at the site, where the stack is exactly what
-; every existing analysis of this routine assumes.
+; -- the branch stays at the SITE, where the stack is exactly what every
+; existing analysis of this routine assumes.
 ; (docs/spec-basic-ngram13.md §3; the same call D-ARGOPEN made.)
 dpl_get_store:
                 call    fat_io_getbyte
