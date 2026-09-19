@@ -328,13 +328,30 @@ def load(key: str):
         return None, None
 
 
+# 🔴 WHAT THE LAST prune() COULD NOT DELETE, AND WHY THAT NEEDED A NAME.
+# `except OSError: kept += 1` counted a FAILED unlink as a kept entry, which is
+# indistinguishable from a legitimately young one -- so an over-cap entry that
+# cannot be removed makes `maintain()` go red while reporting only "an entry
+# survived the prune", with no path, no age and no hint that a delete FAILED.
+# D-REFDIAG reproduced exactly that on demand (a read-only parent directory) and
+# could not reproduce the failure actually filed, so the deliverable is to make
+# the NEXT occurrence explain itself rather than to guess at the last one.
+# A list of (path, age_seconds, errno-ish string); reset at the start of a prune.
+PRUNE_FAILED: list = []
+
+
 def prune(max_age_days: float | None = None,
           now: float | None = None) -> tuple[int, int]:
     """Delete every entry past the cap. -> (removed, kept). Disk is the SECOND
     reason this exists; the first is that an expired entry left on disk is a
-    stale reading waiting for the cap to be raised."""
+    stale reading waiting for the cap to be raised.
+
+    Entries that were over the cap and could NOT be unlinked are counted in
+    `kept` (the return shape is unchanged) AND recorded in `PRUNE_FAILED`, so
+    the caller can say WHICH entry defeated it."""
     limit = _MAX_AGE if max_age_days is None else max_age_days * 86400.0
     removed = kept = 0
+    PRUNE_FAILED.clear()
     for dirpath, _dirs, files in os.walk(ROOT):
         for fn in files:
             if not fn.endswith(".json"):
@@ -344,7 +361,9 @@ def prune(max_age_days: float | None = None,
             if limit > 0 and a > limit:
                 try:
                     os.unlink(fp); removed += 1
-                except OSError:
+                except OSError as e:
+                    PRUNE_FAILED.append((fp, a, e.__class__.__name__
+                                         + (f"/{e.errno}" if e.errno else "")))
                     kept += 1
             else:
                 kept += 1
@@ -709,6 +728,67 @@ def _selftest() -> int:
             (os.utime(edge, (t_now - RC._MAX_AGE * 3, t_now - RC._MAX_AGE * 3)),
              RC.maintain(now=t_now, stats_now=t_now,
                          ) == 0)[1] and not os.path.exists(edge))
+        # --- D-REFDIAG: the one-clock fix finally has a COVERING arm ---------
+        # 🔴 KA11 AND KA12 DO NOT COVER IT, AND A MUTATION PROVED THAT. Reverting
+        # `prune(now=now)` to `prune()` -- undoing D-REFRACE's entire fix -- left
+        # EVERY arm passing: KA11 plants half a second of margin, and KA12 passes
+        # `stats_now` by hand so it exercises the SHAPE without ever checking
+        # that `maintain` threads its clock into `prune`.
+        # This one separates them. Plant an entry 20 days old, then run the whole
+        # of `maintain` against a clock 30 days in the PAST. Threading that clock
+        # through makes the entry's age NEGATIVE (clamped to 0), so it survives;
+        # reading the wall clock inside `prune` makes it 20 days old, so it is
+        # deleted. Survival IS the fix.
+        for fn in os.listdir(RC.ROOT):
+            fp = os.path.join(RC.ROOT, fn)
+            if os.path.isfile(fp):
+                os.unlink(fp)
+        RC.store("e" * 40, ["r5"], "M")
+        ent = RC._path("e" * 40)
+        t20 = time.time() - 20 * 86400
+        os.utime(ent, (t20, t20))
+        past = time.time() - 30 * 86400
+        RC.maintain(now=past, stats_now=past)
+        arm("KA15 🔴 THE ARM THAT COVERS D-REFRACE: maintain() threads ITS clock "
+            "into prune(), so an entry that is 'not yet written' at that clock "
+            "SURVIVES -- revert `prune(now=now)` and this entry is deleted",
+            os.path.exists(ent))
+        RC.maintain()
+        arm("KA15 NEGATIVE: at the REAL clock the same 20-day entry is pruned, "
+            "so KA15 is about the clock and not about expiry being broken",
+            not os.path.exists(ent))
+
+        # --- D-REFDIAG: a failed unlink must NAME itself ---------------------
+        # 🔴 THE ARM THAT MATTERS HERE. `except OSError: kept += 1` made an
+        # entry prune COULD NOT DELETE look exactly like a young one, so the
+        # gate went red saying only "an entry survived the prune". Reproduced on
+        # demand with a read-only parent directory.
+        for fn in os.listdir(RC.ROOT):
+            fp = os.path.join(RC.ROOT, fn)
+            if os.path.isfile(fp):
+                os.unlink(fp)
+        RC.store("d" * 40, ["r4"], "M")
+        stuck = RC._path("d" * 40)
+        way_old = time.time() - RC._MAX_AGE * 2
+        os.utime(stuck, (way_old, way_old))
+        holder = os.path.dirname(stuck)
+        mode = os.stat(holder).st_mode
+        os.chmod(holder, 0o555)
+        try:
+            rc_stuck = RC.maintain()
+            failed_named = bool(RC.PRUNE_FAILED) and \
+                RC.PRUNE_FAILED[0][0] == stuck
+        finally:
+            os.chmod(holder, mode)
+        arm("KA14 an over-cap entry that CANNOT be unlinked makes maintain red "
+            "AND is named in PRUNE_FAILED, so the post-mortem has the path",
+            rc_stuck == 1 and failed_named)
+
+        removed2, _kept2 = RC.prune()
+        arm("KA14 NEGATIVE: once it IS removable the same entry prunes and "
+            "PRUNE_FAILED is EMPTY -- so the list means 'could not delete', "
+            "not merely 'an over-cap entry existed'",
+            removed2 == 1 and not RC.PRUNE_FAILED)
     finally:
         shutil.rmtree(RC.ROOT, ignore_errors=True)
         RC.ROOT = saved_root
@@ -747,8 +827,43 @@ def maintain(now: float | None = None,
     # entry may be past the cap -- if one is, expiry is not doing what the two
     # sentences above claim.
     if MAX_AGE_DAYS > 0 and oldest > _MAX_AGE:
+        # 🔴 SAY WHICH ENTRY AND WHY, NOT JUST THAT ONE EXISTS. The filed red
+        # (TODO, apparatus (d)) could not be diagnosed after the fact because
+        # this message named nothing: the run that investigated it also REPAIRED
+        # it, so the evidence was gone. Everything below is free to compute and
+        # is what a post-mortem needs.
         print(f"🔴 an entry survived the prune at {oldest / 86400:.1f}d "
               f"> {MAX_AGE_DAYS:g}d cap")
+        if PRUNE_FAILED:
+            print(f"   CAUSE: {len(PRUNE_FAILED)} over-cap entr(ies) could NOT "
+                  f"be unlinked -- this is the `except OSError` arm, and it is "
+                  f"counted in `kept`, which is why it used to look like a "
+                  f"young entry:")
+            for fp, a, err in PRUNE_FAILED[:5]:
+                print(f"     {a / 86400:.2f}d  {err}  {fp}")
+        else:
+            # No unlink failed, so the survivor was UNDER the cap when the prune
+            # looked and OVER it when the report did -- or it appeared between
+            # the two walks. Name the offender so the next reader has the datum
+            # this gate denied its own investigator.
+            worst = None
+            for dirpath, _dirs, files in os.walk(ROOT):
+                for fn in files:
+                    if not fn.endswith(".json"):
+                        continue
+                    fp = os.path.join(dirpath, fn)
+                    ag = _age(fp, now if stats_now is None else stats_now)
+                    if worst is None or ag > worst[1]:
+                        worst = (fp, ag)
+            print("   CAUSE: no unlink failed, so this is NOT the "
+                  "`except OSError` arm. The oldest survivor was under the cap "
+                  "when prune looked and over it when the report did, or it "
+                  "arrived between the two walks.")
+            if worst:
+                print(f"     oldest survivor: {worst[1] / 86400:.4f}d  "
+                      f"{worst[0]}")
+                print(f"     margin over cap: "
+                      f"{(worst[1] - _MAX_AGE):.3f}s")
         return 1
     return 0
 

@@ -547,12 +547,43 @@ item — do **one item per session** to keep context lean.
       DEMONSTRATED by leaving it passing. It is relabelled as a green control.
       KA12 is the arm with content: measure the post-condition a second later
       than the prune — the shape the code had — and the same store goes RED.
-      ➡️ **STILL OPEN:** reproduce the original failure. Candidates not yet
-      tested: a `prune()` unlink that fails with OSError leaves an over-cap
-      entry and counts it as `kept`, which goes red on EVERY run until the file
-      can be removed; or a parallel battery suite touching the store mid-walk.
-      The retry arm's verdict was not wrong in principle — it reported a red that
-      was real; what it could not say is that the CAUSE was the clock.
+      🟢 **CANDIDATES TESTED 2026-09-19 (D-REFDIAG) — ONE REPRODUCES, ONE IS
+      REFUTED, AND THE FILED INCIDENT IS STILL UNEXPLAINED.**
+      🔴 **Candidate 1 REPRODUCES ON DEMAND:** an over-cap entry whose unlink
+      fails (read-only parent directory) is counted by `except OSError: kept +=
+      1` and is then INDISTINGUISHABLE from a legitimately young entry —
+      `maintain()` goes red saying only *"an entry survived the prune"*, with no
+      path, no age for the offender, and no hint that a delete failed.
+      🟢 **Candidate 2 is REFUTED BY CONSTRUCTION, not by a test:** a concurrent
+      writer cannot produce this symptom at all. `store()` writes through
+      `mkstemp` + `os.replace`, so every entry it creates has a FRESH mtime and
+      an age of ~0. A parallel suite can race the walk but cannot manufacture an
+      over-cap entry.
+      ⚠️ **NEITHER EXPLAINS THE FILED RED**, whose survivor sat at `oldest 14.0d`
+      and pruned cleanly on the next run. So the item stays OPEN — but the next
+      occurrence will name its own cause instead of needing reconstruction: the
+      red now prints WHICH entry survived, its age to four decimals, its margin
+      over the cap in seconds, and whether its unlink FAILED (`PRUNE_FAILED`,
+      with the errno). The run that investigates it will no longer be the run
+      that destroys the evidence.
+      🔴 **AND A LARGER FINDING ABOUT MY OWN METHOD, WHICH COST A WRONG CLAIM.**
+      D-REFRACE reported "KA11 is vacuous — a mutation reverting `prune(now=now)`
+      left it PASSING". That conclusion was right and the EVIDENCE WAS NOT: the
+      mutation was applied to a COPY of the file, and this module's selftest does
+      `import probe_refcache as RC` (line ~617, deliberately — it tests the
+      instance `omsx_repl` will use), so the copy's own code was never under
+      test. **`assert the source changed` is necessary and NOT sufficient; the
+      mutated code must BE the code under test.** Mutating IN PLACE and restoring
+      afterwards shows the truth: reverting the one-clock fix made NO arm fail —
+      KA12 passes `stats_now` by hand, so it exercises the shape without ever
+      checking that `maintain` threads its clock into `prune`. **D-REFRACE's fix
+      shipped UNCOVERED.**
+      🟢 **KA15 covers it now**, and a mutation confirms it bites: plant a
+      20-day-old entry, run `maintain` against a clock 30 days in the PAST, and
+      the entry must SURVIVE (its age is negative at that clock). Revert
+      `prune(now=now)` and it is deleted. Its negative control runs the same
+      entry at the real clock and requires it to be pruned, so the arm is about
+      the clock and not about expiry being broken.
 
 - [x] ✅ **DONE 2026-09-19 (D-ALIASGATE): THE ARM EXISTS, AND IT FOUND A THIRD
       ALIAS THE ITEM DID NOT KNOW ABOUT.**
@@ -2799,7 +2830,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:20503 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:20534 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -2965,7 +2996,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:7608 (T-6FE392)8 (T-529ABE)` from `TODO.md:18897 (T-529ABE)`: a
+      `TODO.md:7639 (T-6FE392)8 (T-529ABE)` from `TODO.md:18928 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -8452,7 +8483,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:18897 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:18928 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
