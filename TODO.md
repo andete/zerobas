@@ -277,28 +277,67 @@ item — do **one item per session** to keep context lean.
       dead code in it. ⚠️ Never silent: the count and the names are printed, or
       a stale `.sym` would filter REAL findings away.
 
-- [ ] 🔴 **`rammap_sweep.py` READS ONLY `.inc` FILES, SO ~20 PAGE-3 CELLS ARE
-      INVISIBLE TO THE ONLY RAM MAP WE HAVE.**
+- [x] ✅ **DONE 2026-09-19 (D-RAMMAP): THE ONLY RAM MAP WE HAVE COULD NOT SEE
+      CELLS THAT EXIST — FOUR WAYS, NOT THE ONE THAT WAS FILED.**
       🎚️ APPARATUS — RAM has no gate, so this sweep IS the map.
-      🤖 **AUTONOMOUS** — widen the file glob and re-run; no ruling needed.
-      Found 2026-09-19 while hunting 6 bytes for step 9
-      (`disk/docs/spec-diskcode-eviction.md` §6.6f). The sweep's own banner says
-      *"1107 equ definitions in 35 .inc files"* — and `disk/init.asm` declares
-      `BOOT_SV_A8` $E760, the `R30_*`/`CALSLT_*` set, ten `RDBLK_*` cells,
-      `P1_DEST`/`P1_BLIT`, `WA_SEG`, `CONOUT_CHAR`, `PG_SV_A8`, the 48-byte
-      interrupt stack, `INT_SP_SAVE`, `CONIN_BUF` and `DRV_TRAMP`
-      ($E800..$E813) — **none of which the sweep can see**, because it is `.asm`.
-      🔴 **THIS IS NOT HYPOTHETICAL.** It is the same hole that made
-      `$E7FD..$E813` look like a 25-byte gap when it is `RDBLK_RRSTART` +
-      `DRV_TRAMP`, back to back.
-      ⚠️ **AND WHILE IN THERE, THE SECOND HALF OF THE SAME PROBLEM:** the sweep
-      ranks by DELTA BETWEEN NAMES and prints *"95 B $E761..$E7C0
-      RRND_CLUSSEC"* when `RRND_CLUSSEC` is **one byte**. Its own header says a
-      delta is never free space, which is honest but leaves every reader to
-      re-derive the sizes by hand. Candidate: parse the declared width from the
-      comment (`(word)`, `(4-byte LE)`, `N bytes`) and print UNATTRIBUTED runs
-      rather than deltas — an unattributed run is the thing a RAM hunt actually
-      wants, and it is what a `.asm`-blind sweep cannot currently compute.
+      🤖 **AUTONOMOUS** — shipped.
+      Filed 2026-09-19 while hunting 6 bytes for step 9
+      (`disk/docs/spec-diskcode-eviction.md` §6.6f) as two defects. Fixing the
+      first uncovered two more of the same shape, and the FOURTH was uncovered
+      by the fix to the first — reading a cell was necessary and not sufficient.
+      **(1) `.inc`-ONLY GLOB.** `disk/init.asm` declares ~20 page-3 cells with
+      `equ` and none were in the map. Fixed by adding `*.asm` per component.
+      This is the hole that made `$E7FD..$E813` read as a 25-byte gap when it is
+      `RDBLK_RRSTART` + `DRV_TRAMP` back to back; the sweep now attributes every
+      byte of it and reports no run there.
+      **(2) RANKED BY DELTA BETWEEN NAMES.** It printed *"95 B $E761..$E7C0
+      RRND_CLUSSEC"* for a ONE-BYTE cell. Widths are now parsed from the cell's
+      own comment (five rules, `$LO-$HI` range / `word` / `N bytes` / `N-bit` /
+      `byte`) and the output is UNATTRIBUTED RUNS — the bytes no declaration
+      covers. 🔴 **An undeclared width is reported as undeclared, NEVER as 1**;
+      under-reporting free space is the safe direction, inventing it is the one
+      that costs a slice a day.
+      **(3) A NAME DECLARED IN TWO COMPONENTS LOST AN ADDRESS.** `parse`'s
+      `setdefault` kept the first winner, so with basic parsed before disk the
+      whole per-ROM FAT block at `$E4A0..$E4BF` — every cell Option 2
+      parametrises per ROM — was ABSENT, shadowed by its main-ROM twin at
+      `$E9C9`. Components now resolve in SEPARATE namespaces, which is also the
+      only correct arithmetic: a run is a statement about ONE machine's map, and
+      merging two mutually-exclusive maps computes a gap that exists in neither.
+      **(4) AND EIGHT OF THE CELLS (1) MADE VISIBLE STILL DID NOT RESOLVE.**
+      `WA_SEG equ P1_BLIT + (p1_blit_end - p1_blit_tmpl)` is derived from
+      ASSEMBLER LABELS, so it parsed, landed in `raw`, and fell out of the map
+      silently. The build's `.sym` now seeds them — only names the source
+      resolver could not do alone, with every name BOTH can do CROSS-CHECKED, so
+      a stale `.sym` surfaces as a printed finding instead of quietly moving
+      cells. `--no-sym` is the negative control.
+      🔬 **THE OVERLAP CHECK PAID FOR ITSELF TWICE BEFORE SHIPPING.** A declared
+      width that runs into the next name caught two real parser defects: `word`
+      must beat an N-byte figure (`FAT_NAMEPTR ; -> 11-byte search name (word)`
+      is a POINTER — the 11 bytes are the pointee), and a per-address width must
+      be a CONSENSUS not a MAXIMUM (`INT_STK_TOP ; 48-byte stack grows down`
+      overrode `INT_SP_SAVE ; (word)` at the same address and ran 46 B into
+      `CONIN_BUF`). Both now DEMOTE to the ⚠️ list instead of producing a
+      number, as does `ZTRAP`'s `($E1D1..$E207)` — end-EXCLUSIVE where
+      `DRV_TRAMP`'s `($E800-$E813)` is inclusive, so the same notation means two
+      things in this tree and neither reading can be trusted alone.
+      🟢 **VALIDATED AGAINST AN ANSWER DERIVED BY HAND IN AUGUST.**
+      `docs/deffn-ramhunt-2026-08-22.md` §2 had to state in prose that `TOKBUF`'s
+      612 B delta is *"actually 36 B free"*; the sweep now computes **36 B
+      $EE40..$EE64** mechanically, from `TOKBUFSZ`'s own comment. That is the
+      whole point of the change and it agrees with a figure this tool did not
+      produce.
+      ⚠️ **16 SELFTEST ARMS, AND SIX MUTATIONS PROVE THEY BITE.** Reverting the
+      `.asm` glob, the consensus rule, the overrun demotion, the `word` priority,
+      the `.sym` seeding and the per-component namespaces each turn arms RED —
+      the control that a passing selftest most needs. 🔴 One mutation was a
+      NO-OP (`{} or {...}` still evaluates to the real dict) and reported a
+      false all-green; the harness now asserts the source actually changed.
+      ➡️ **WHAT THE ⚠️ LIST NOW IS: a worklist.** 44 disk cells and most of
+      basic's have no declared width, so they can produce no run. Each is a
+      one-line comment away from being measurable — `LINEBUF` is the clearest
+      (255 + terminator, per the August doc, declared nowhere in its own
+      comment). Declaring widths is zero bytes and turns prose into map.
 
 - [ ] 🔴 **`refcache-check` GOES RED ON THE CALENDAR, AND THE RETRY ARM CALLS IT
       "REAL".**
@@ -2549,7 +2588,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:20253 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:20292 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -2715,7 +2754,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:7358 (T-6FE392)8 (T-529ABE)` from `TODO.md:18647 (T-529ABE)`: a
+      `TODO.md:7397 (T-6FE392)8 (T-529ABE)` from `TODO.md:18686 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -8202,7 +8241,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:18647 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:18686 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

@@ -36,6 +36,16 @@ window, and prints the **delta to the next name**.
 says where a cell *starts* and never how long it is. The two largest deltas prove
 it:
 
+> ➡️ **THE TOOL CHANGED ON 2026-09-19 (D-RAMMAP) AND THIS SECTION IS THE DATED
+> RECORD OF WHAT IT USED TO PRINT.** It read only `.inc` files (so ~20 page-3
+> cells in `disk/init.asm` were invisible), merged the components into one
+> namespace (so the per-ROM FAT block at `$E4A0..$E4BF` was shadowed away), and
+> ranked by delta. It now parses each cell's declared WIDTH out of its own
+> comment and prints UNATTRIBUTED RUNS per component — **the `TOKBUF` row below
+> was derived BY HAND here and the sweep now computes it, 36 B at
+> `$EE40..$EE64`.** Re-run it rather than reading these numbers; see `TODO.md`
+> (D-RAMMAP) for all four blindnesses and the six mutation controls.
+
 | name | delta | actually free |
 |---|---|---|
 | `TOKBUF` `$EC00` | 612 B | **36 B** — it is 576 B of crunch buffer (`TOKBUFSZ`) |

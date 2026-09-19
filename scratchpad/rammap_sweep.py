@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""D-DEFFN RAM HUNT — where is the BASIC workspace actually free?
+"""D-DEFFN RAM HUNT -- where is the BASIC workspace actually free?
 
 🔴 THE REASON THIS IS A TOOL AND NOT A READING. `basic/sysvars.inc` said
 *"-> top $E3E8, well below the disk WBUF wall at $E560 (376 B spare)"* and TEN
@@ -8,56 +8,181 @@ advertised it. **A free-space figure in a comment is a reading with a date on
 it, and RAM figures have NO GATE** -- `make wall-assertion-check` polices ROM
 claims only. So the map gets WALKED, never read.
 
-WHAT IT DOES. Resolves every `NAME equ <expr>` in the component's `.inc` files
+WHAT IT DOES. Resolves every `NAME equ <expr>` in a component's source
 (including `X equ Y + N*M` chains, iteratively to a fixed point), keeps those
-landing in a RAM window, sorts them, and prints the DELTA to the next name.
+landing in a RAM window, parses each cell's DECLARED WIDTH out of its own
+comment, and prints the UNATTRIBUTED RUNS -- the bytes no declaration covers.
 
-🔴 EVERY GAP IS A CANDIDATE, NOT FREE SPACE -- and this is the tool's whole
-caveat. An address tells you where a cell STARTS and never how long it is, so a
-delta of N bytes is *"the previous cell plus whatever follows it"*, not N free
-bytes. `GFX_PSTK equ $E3F2` is followed by nothing until `$E560` and is **360
-bytes of live span stack**. The tool CANNOT know that; only the `_CAP`/`_END`
-arithmetic beside it can, and only a reader can connect the two. Treat a big
-delta as *"go read this"*.
+🔴 THREE BLINDNESSES FIXED 2026-09-19 (D-RAMMAP), ALL OF THE SAME SHAPE: the
+only RAM map we have could not see cells that exist.
+
+**(1) IT READ ONLY `.inc`.** `disk/init.asm` declares ~20 page-3 cells with
+`equ` -- `BOOT_SV_A8`, the `R30_*`/`CALSLT_*` save set, ten `RDBLK_*`,
+`P1_DEST`/`P1_BLIT`, `WA_SEG`, `CONOUT_CHAR`, `PG_SV_A8`, the 48-byte interrupt
+stack, `INT_SP_SAVE`, `CONIN_BUF`, `DRV_TRAMP` -- and NONE of them were in the
+map, because the glob was `*.inc`. That is not hypothetical: it is why
+`$E7FD..$E813` read as a 25-byte gap when it is `RDBLK_RRSTART` + `DRV_TRAMP`
+back to back (`disk/docs/spec-diskcode-eviction.md` §6.6f). Selftest arm A4
+pins it, with the old `.inc`-only glob as the negative control.
+
+**(2) IT RANKED BY DELTA BETWEEN NAMES.** It printed *"95 B $E761..$E7C0
+RRND_CLUSSEC"* when that cell is ONE BYTE, and left every reader to re-derive
+the sizes by hand. An address says where a cell STARTS and never how long it
+is -- so the width is now READ FROM THE DECLARATION and an UNDECLARED width is
+reported as undeclared, never as 1. A run is printed only when BOTH ends are
+pinned by a declared width; everything else stays in the ⚠️ list as *"go read
+this"*, which is exactly what the old output was, no better and no worse.
+
+**(3) A NAME DECLARED IN TWO COMPONENTS SILENTLY LOST ONE ADDRESS.** `parse`
+kept the first `setdefault` winner, so with basic parsed before disk the whole
+per-ROM FAT block at `$E4A0..$E4BF` (`FAT_CURCLUS`, `FAT_FILESIZE`, 20-odd
+cells that Option 2 parametrises per ROM) was ABSENT from the merged map --
+shadowed by its main-ROM twin at `$E9C9`. Components are therefore resolved in
+SEPARATE NAMESPACES and reported separately, which is also the only correct
+arithmetic: a run is a statement about one machine's map, and merging two
+mutually-exclusive maps computes a gap that exists in neither. Arm A6 pins it.
+
+**(4) AND EIGHT OF THE CELLS (1) MADE VISIBLE STILL DID NOT RESOLVE.** `WA_SEG
+equ P1_BLIT + (p1_blit_end - p1_blit_tmpl)` is derived from ASSEMBLER LABELS,
+which no source-text resolver can evaluate -- so `WA_SEG`, `CONOUT_CHAR`,
+`PG_SV_A8`, `INT_STK_TOP`, `INT_SP_SAVE`, `CONIN_BUF`, `CONIN_MAX` and
+`CONIN_COUNT` parsed, landed in `raw`, and then fell out of the map silently.
+Reading them was necessary and not sufficient. The build's own `.sym` supplies
+them, so it is SEEDED -- but only for names the source resolver could not do
+alone, and every name BOTH can do is CROSS-CHECKED. A disagreement is printed
+as a finding, because a stale `.sym` filtering real cells away is the failure
+this fix would otherwise introduce (`--no-sym` is arm A7's negative control).
+
+🔴 A RUN IS STILL A CANDIDATE, NOT A GUARANTEE. A declared width can be a lie,
+and a cell with no `equ` at all -- addressed only as `(SOMETHING + 6)` in code --
+is invisible to every version of this tool. Treat a run as *"go read this"*;
+the ⚠️ OVERLAPS list exists because a width parsed wrong shows up there first.
 
 🔴 AND OVERLAP IS DESIGNED HERE, NOT A BUG. This tree deliberately aliases
-windows between mutually-exclusive execution contexts (the standalone disk ROM's
-`SECTOR_BUF` over basic-core's string pool; DRAW's frame buffer over PAINT's
-span stack). So the same address legitimately carries several names from
-different components, and a hole in ONE component's map can be solidly occupied
-in another's. `--all` prints every component together for exactly that reason.
+windows between mutually-exclusive execution contexts (the standalone disk
+ROM's `SECTOR_BUF` over basic-core's string pool; DRAW's frame buffer over
+PAINT's span stack). So the same address legitimately carries several names,
+and a hole in ONE component's map can be solidly occupied in another's. That is
+the second reason the components are printed apart rather than merged.
 
-⚠️ CALIBRATION: `--selftest` plants a synthetic pair with a known gap and
-asserts the walk reports THAT gap, so "no holes" is a statement about the map
-rather than about a walk that finds nothing by construction. It also plants an
-`X equ Y+N` chain, because a resolver that silently dropped arithmetic would
-under-report occupancy -- which is the failure direction that costs RAM.
+⚠️ CALIBRATION: `--selftest` runs six arms, each with a negative control, and
+prints every one. A2 plants a synthetic pair with a known gap and asserts the
+walk reports THAT gap, so "no holes" is a statement about the map rather than
+about a walk that finds nothing by construction. A1 plants an `X equ Y+N` chain,
+because a resolver that silently dropped arithmetic would under-report
+occupancy -- the failure direction that costs RAM.
+
+USAGE: rammap_sweep.py [lo] [hi] [--basic|--disk] [--inc-only] [--no-sym]
+       [--widths]
 """
 from __future__ import annotations
 import glob
 import re
 import sys
 
-EQU = re.compile(r"^([A-Za-z_][A-Za-z0-9_]*)\s+equ\s+(.+?)\s*(?:;.*)?$",
+EQU = re.compile(r"^([A-Za-z_][A-Za-z0-9_]*)\s+equ\s+(.+?)\s*(?:;(.*))?$",
                  re.IGNORECASE)
 
 # The BASIC workspace this project owns, below the standard MSX sysvar block.
 DEFAULT_LO, DEFAULT_HI = 0xE000, 0xF380
 
-# ⚠️ `--basic` drops disk/equates.inc. That is not a convenience: the standalone
-# MSX1 disk ROM (slot 3-1) only ever runs while booting/driving MSX-DOS, NEVER
-# while the BASIC interpreter is live, and this tree ALREADY aliases across that
-# boundary deliberately (basic-core's string pool sits over disk's SECTOR_BUF;
-# PAINT's span stack sits over disk's BDOS scratch). So a hole that exists only
-# in BASIC's own map is a REAL candidate for BASIC-resident state, and merging
-# the two components hides it. Run BOTH and read the difference.
-BASIC_FILES = sorted(glob.glob("basic/*.inc")) + sorted(glob.glob("sub/*.inc"))
-FILES = BASIC_FILES + sorted(glob.glob("disk/*.inc"))
+# ⚠️ THE COMPONENTS ARE SEPARATE ON PURPOSE -- see blindness (3) above and the
+# aliasing note. The standalone MSX1 disk ROM (slot 3-1) only ever runs while
+# booting/driving MSX-DOS, NEVER while the BASIC interpreter is live, and this
+# tree ALREADY aliases across that boundary deliberately (basic-core's string
+# pool sits over disk's SECTOR_BUF; PAINT's span stack sits over disk's BDOS
+# scratch). So a hole that exists only in BASIC's own map is a REAL candidate
+# for BASIC-resident state, and merging the two components hides it.
+COMPONENTS = {
+    "basic": ("basic/*.inc", "sub/*.inc", "basic/*.asm", "sub/*.asm"),
+    "disk":  ("disk/*.inc", "disk/*.asm"),
+}
+
+# The build's own symbol tables, per component -- see blindness (4). Missing
+# files are simply skipped and SAID SO; this tool must run in a tree that has
+# never been built.
+SYMS = {
+    "basic": ("build/basic-reloc.sym", "build/sub.sym"),
+    "disk":  ("build/disk.sym",),
+}
+SYMLINE = re.compile(r"^([A-Za-z_][A-Za-z0-9_]*)\s+EQU\s+([0-9A-Fa-f]+)H\s*$")
 
 
+def sym_seed(paths):
+    """name -> value, from pasmo `NAME\tEQU 0XXXXH` lines. Also the files
+    actually read, so the report can name its own denominator."""
+    vals, seen = {}, []
+    for p in paths:
+        try:
+            lines = open(p).readlines()
+        except OSError:
+            continue
+        seen.append(p)
+        for ln in lines:
+            m = SYMLINE.match(ln.rstrip("\n"))
+            if m:
+                vals[m.group(1)] = int(m.group(2), 16)
+    return vals, seen
+
+
+def files_for(comp: str, inc_only: bool = False) -> list[str]:
+    out: list[str] = []
+    for pat in COMPONENTS[comp]:
+        if inc_only and not pat.endswith(".inc"):
+            continue
+        out += sorted(glob.glob(pat))
+    return out
+
+
+# ---------------------------------------------------------------- width parse
+# 🔴 ORDER IS LOAD-BEARING AND EACH RULE EARNED ITS PLACE.
+#   R1 an explicit `$LO-$HI` in the comment is the author stating the extent.
+#   R2 `word`/`int16` -> 2, AHEAD of any N-byte figure. 🔴 THIS ORDER WAS
+#      WRONG IN THE FIRST CUT AND THE OVERLAP CHECK CAUGHT IT: `FAT_NAMEPTR
+#      equ $E4B9 ; -> 11-byte search name (word)` is a POINTER -- the 11 bytes
+#      are what it points AT. So is `DBUF_PTR ; word -> the 512-byte DATA/
+#      sector buffer`. In this tree `(word)` types the CELL and a byte count
+#      describes the payload, so `word` wins whenever both appear.
+#   R3 `N bytes` / `N-byte` / `N B`.   `B` is UPPERCASE-only on purpose: a
+#      lowercase alternative makes "24-bit" parse as 24 bytes.
+#   R4 `N-bit` (N a multiple of 8).
+#   R5 `byte` -> 1, last.
+# Anything else is UNDECLARED, which is NOT the same as 1 and is never rendered
+# as a run. Under-reporting free space is the safe direction; inventing it is
+# the one that costs a slice a day.
+RANGE = re.compile(r"\$([0-9A-Fa-f]{4})\s*(?:-|\.\.|\bto\b)\s*\$([0-9A-Fa-f]{4})")
+NBYTES = re.compile(r"\b(\d+)[\s-]*(?:[Bb]ytes?|B)\b")
+NBITS = re.compile(r"\b(\d+)[\s-]*bit\b")
+WORDY = re.compile(r"\b(?:word|int16)\b", re.IGNORECASE)
+BYTEY = re.compile(r"\bbyte\b", re.IGNORECASE)
+
+
+def declared_width(addr: int, comment: str | None):
+    """(width, rule) from the cell's own comment, or (None, None)."""
+    if not comment:
+        return None, None
+    m = RANGE.search(comment)
+    if m:
+        lo, hi = int(m.group(1), 16), int(m.group(2), 16)
+        if lo == addr and hi >= lo:
+            return hi - lo + 1, "range"
+    if WORDY.search(comment):
+        return 2, "word"
+    m = NBYTES.search(comment)
+    if m:
+        return int(m.group(1)), "bytes"
+    m = NBITS.search(comment)
+    if m and int(m.group(1)) % 8 == 0 and int(m.group(1)) > 0:
+        return int(m.group(1)) // 8, "bits"
+    if BYTEY.search(comment):
+        return 1, "byte"
+    return None, None
+
+
+# ---------------------------------------------------------------- resolve
 def parse(paths):
-    """name -> (raw expression, file, line)."""
-    raw = {}
+    """name -> (expr, file, line, comment); plus the intra-component clashes."""
+    raw, clash = {}, {}
     for p in paths:
         try:
             lines = open(p).readlines()
@@ -65,23 +190,27 @@ def parse(paths):
             continue
         for i, ln in enumerate(lines, 1):
             m = EQU.match(ln.rstrip("\n"))
-            if m:
-                raw.setdefault(m.group(1), (m.group(2).strip(), p, i))
-    return raw
+            if not m:
+                continue
+            n, e, c = m.group(1), m.group(2).strip(), m.group(3)
+            if n in raw and raw[n][0] != e:
+                clash.setdefault(n, [raw[n]]).append((e, p, i, c))
+                continue
+            raw.setdefault(n, (e, p, i, c))
+    return raw, clash
 
 
 def resolve(raw):
     """Iterate to a fixed point: `X equ Y+N*M` needs Y resolved first."""
-    vals, expr = {}, {}
-    for n, (e, f, i) in raw.items():
-        expr[n] = (e, f, i)
+    vals = {}
+    expr = dict(raw)
     for _ in range(24):
         progress = False
-        for n, (e, f, i) in expr.items():
+        for n, rec in expr.items():
+            e = rec[0]
             if n in vals:
                 continue
             s = e.replace("$", "0x")
-            # a bare hex literal with an H suffix, and & forms
             s = re.sub(r"\b([0-9A-Fa-f]+)H\b", r"0x\1", s)
             s = s.replace("&H", "0x").replace("&h", "0x")
             # 🔴 STRIP HEX LITERALS BEFORE SCANNING FOR NAMES. `0xE3E8` yields
@@ -105,71 +234,347 @@ def resolve(raw):
     return vals, expr
 
 
+class Map:
+    """One component's resolved RAM map inside [lo, hi)."""
+
+    def __init__(self, comp, lo, hi, inc_only=False, raw=None, files=None,
+                 use_sym=True):
+        self.comp, self.lo, self.hi = comp, lo, hi
+        self.files = files if files is not None else files_for(comp, inc_only)
+        if raw is None:
+            self.raw, self.clash = parse(self.files)
+        else:
+            self.raw, self.clash = raw, {}
+        self.vals, self.expr = resolve(self.raw)
+        # 🔬 THE SYM IS A SECOND SOURCE, NOT A SUBSTITUTE. It fills only what
+        # the source resolver could not do, and disagrees loudly about the
+        # rest -- so a stale `.sym` shows up as a finding instead of quietly
+        # moving cells around.
+        self.from_sym, self.symfiles, self.disagree = {}, [], []
+        self.crosschecked = 0
+        if use_sym:
+            sym, self.symfiles = sym_seed(SYMS.get(comp, ()))
+            for n in self.raw:
+                if n in sym and n in self.vals:
+                    self.crosschecked += 1
+                    if self.vals[n] != sym[n]:
+                        self.disagree.append((n, self.vals[n], sym[n]))
+                elif n in sym:
+                    self.vals[n] = sym[n]
+                    self.from_sym[n] = sym[n]
+        inwin = sorted((v, n) for n, v in self.vals.items() if lo <= v < hi)
+        self.byaddr: dict[int, list[str]] = {}
+        for v, n in inwin:
+            self.byaddr.setdefault(v, []).append(n)
+        self.addrs = sorted(self.byaddr)
+        # 🔴 PER-ADDRESS WIDTH IS A CONSENSUS, NOT A MAXIMUM. The first cut
+        # took the widest declaration among aliased names, and `INT_STK_TOP`
+        # ("SP top; 48-byte stack grows down" -- the 48 bytes are BELOW it)
+        # then overrode `INT_SP_SAVE` ("(word)") at the same address and ran
+        # 46 B into `CONIN_BUF`. When aliased names disagree about their own
+        # extent, NOBODY knows the extent: the address becomes DISPUTED and
+        # produces no run. An explicit `$LO-$HI` range is the one declaration
+        # authoritative enough to settle it.
+        self.width: dict[int, int] = {}
+        self.rule: dict[int, str] = {}
+        self.disputed: dict[int, list] = {}
+        for a in self.addrs:
+            cand = []
+            for n in self.byaddr[a]:
+                w, r = declared_width(a, self.expr[n][3])
+                if w is not None:
+                    cand.append((w, r, n))
+            if not cand:
+                continue
+            rng = [c for c in cand if c[1] == "range"]
+            if rng:
+                self.width[a], self.rule[a] = rng[0][0], rng[0][1]
+            elif len({c[0] for c in cand}) == 1:
+                self.width[a], self.rule[a] = cand[0][0], cand[0][1]
+            else:
+                self.disputed[a] = cand
+        # 🔴 AND A WIDTH THAT OVERRUNS ITS NEIGHBOUR IS NOT TRUSTED EITHER.
+        # `BDOS_RECIDX ; next 128-byte record within SECTOR_BUF (0..4)` is a
+        # ONE-BYTE index whose comment names the record size; `ZTRAP`'s range
+        # `($E1D1..$E207)` is end-EXCLUSIVE where `DRV_TRAMP`'s `($E800-$E813)`
+        # is inclusive. Both parse to a plausible number and both are wrong, so
+        # the overlap DEMOTES the width instead of reporting a run from it.
+        # Suppressing a run is the safe direction; a wrong run is a day lost.
+        self.overrun: dict[int, tuple] = {}
+        for a, b in zip(self.addrs, self.addrs[1:]):
+            w = self.width.get(a)
+            if w is not None and a + w > b:
+                self.overrun[a] = (w, b)
+        for a in self.overrun:
+            del self.width[a]
+
+    def site(self, a):
+        _, f, i, _ = self.expr[self.byaddr[a][0]]
+        return f"{f}:{i}"
+
+    def runs(self):
+        """(size, from, after_name) for gaps NO declaration covers."""
+        out = []
+        for a, b in zip(self.addrs, self.addrs[1:]):
+            w = self.width.get(a)
+            if w is None:
+                continue
+            gap = b - (a + w)
+            if gap > 0:
+                out.append((gap, a + w, b, a))
+        tail = self.hi - (self.addrs[-1] + self.width[self.addrs[-1]]) \
+            if self.addrs and self.addrs[-1] in self.width else None
+        return out, tail
+
+    def undeclared(self):
+        """(delta, addr, next, why) where no width can be trusted."""
+        out = []
+        for a, b in zip(self.addrs, self.addrs[1:]):
+            if a in self.width:
+                continue
+            why = ("overruns" if a in self.overrun else
+                   "disputed" if a in self.disputed else "undeclared")
+            out.append((b - a, a, b, why))
+        return out
+
+    def overlaps(self):
+        out = []
+        for a, (w, b) in self.overrun.items():
+            out.append((a + w - b, a, b, w))
+        return out
+
+
+def report(m: Map) -> None:
+    nin = sum(1 for p in m.files if p.endswith(".inc"))
+    print(f"\n=== component {m.comp} -- {len(m.files)} files "
+          f"({nin} .inc, {len(m.files) - nin} .asm) ===")
+    print(f"  denominator: {len(m.raw)} equ definitions; "
+          f"{len(m.vals)} resolved; {len(m.addrs)} distinct addresses in "
+          f"[{m.lo:04X},{m.hi:04X}); "
+          f"{sum(1 for a in m.addrs if len(m.byaddr[a]) > 1)} carrying more "
+          f"than one name (deliberate aliasing is normal -- see the header)")
+    if m.clash:
+        print(f"  ⚠️ {len(m.clash)} name(s) declared twice WITHIN this "
+              f"component with different expressions -- first wins: "
+              f"{', '.join(sorted(m.clash)[:6])}")
+    if m.symfiles:
+        insym = sum(1 for n in m.from_sym
+                    if m.lo <= m.from_sym[n] < m.hi)
+        print(f"  🔬 SYM: {', '.join(m.symfiles)} supplied {len(m.from_sym)} "
+              f"name(s) the source alone could not resolve ({insym} in "
+              f"window), and cross-checked {m.crosschecked} it could -- "
+              f"{len(m.disagree)} disagree.")
+        for n, a, b in m.disagree[:10]:
+            print(f"     🔴 {n}: source says ${a:04X}, sym says ${b:04X} "
+                  f"(stale build, or the expression is mis-parsed)")
+    else:
+        print("  ⚠️ SYM: no symbol table read -- every cell whose `equ` is "
+              "derived from an assembler label is MISSING from this map. "
+              "Build first, or expect holes that are really cells.")
+    cov = len(m.width)
+    pct = (100.0 * cov / len(m.addrs)) if m.addrs else 0.0
+    print(f"  🔬 WIDTH COVERAGE: {cov} of {len(m.addrs)} addresses declare "
+          f"their width in their own comment ({pct:.0f}%). The rest cannot "
+          f"produce a run -- they are the ⚠️ list below, which is exactly the "
+          f"old output.")
+
+    runs, tail = m.runs()
+    runs.sort(reverse=True)
+    print(f"\n  🟢 UNATTRIBUTED RUNS -- {len(runs)} gap(s) that NO declared "
+          f"width covers. A candidate, not a guarantee: a cell addressed only "
+          f"as an offset in code has no `equ` and is invisible here.")
+    for g, s, e, owner in runs[:20]:
+        print(f"  {g:5d} B  ${s:04X}..${e:04X}  after "
+              f"{'/'.join(m.byaddr[owner])} (${owner:04X} + "
+              f"{m.width[owner]} B, {m.rule[owner]})")
+        print(f"            {m.site(owner)}")
+    if tail is not None and tail > 0:
+        a = m.addrs[-1]
+        print(f"  {tail:5d} B  ${a + m.width[a]:04X}..${m.hi:04X}  after "
+              f"{'/'.join(m.byaddr[a])} -- to the window top")
+
+    und = m.undeclared()
+    und.sort(reverse=True)
+    nd = sum(1 for u in und if u[3] == "disputed")
+    no = sum(1 for u in und if u[3] == "overruns")
+    print(f"\n  ⚠️ NO TRUSTED WIDTH -- {len(und)} cell(s): "
+          f"{len(und) - nd - no} declare none, {nd} disputed between aliased "
+          f"names, {no} overrun their neighbour. 🔴 Each figure is 'the cell "
+          f"at the low address PLUS whatever follows', NEVER free space -- "
+          f"this list is exactly the old output. Go read the source.")
+    for d, a, b, why in und[:20]:
+        print(f"  {d:5d} B  ${a:04X}..${b:04X}  {'/'.join(m.byaddr[a])} "
+              f"[{why}]")
+        print(f"            {m.site(a)}")
+
+    ov = m.overlaps()
+    if ov:
+        ov.sort(reverse=True)
+        print(f"\n  🔴 OVERLAPS -- {len(ov)}, each already DEMOTED out of the "
+              f"runs above. Three classes, and only the third is a defect: "
+              f"(a) a CONTAINER whose fields are named separately inside it "
+              f"(DISK_FCB, FREAD_LEFT); (b) DESIGNED ALIASING between "
+              f"mutually-exclusive contexts (FAT buffers under the cassette "
+              f"buffers); (c) a comment this parser read wrong. Read every "
+              f"one -- a comment a tool cannot parse is one a human misreads "
+              f"too, and (c) is a fixable doc defect.")
+        for x, a, b, w in ov[:20]:
+            print(f"  {x:5d} B over  ${a:04X}+{w} > ${b:04X}  "
+                  f"{'/'.join(m.byaddr[a])} -> {'/'.join(m.byaddr[b])}")
+            print(f"            {m.site(a)}")
+
+
+# ---------------------------------------------------------------- selftest
+WIDTH_VECTORS = [
+    # (addr, comment, expected width, why this vector exists)
+    (0xE800, "4 CALLF trampolines, 5 bytes each ($E800-$E813)", 20,
+     "R1 explicit range -- and 4*5=20 agrees with the prose"),
+    (0xE7FD, "k_47B2 entry RR, FCB+33..35 (24-bit, 3 bytes)", 3,
+     "R3 beats R4: '33..35' is not a width, '24-bit' is not 24 bytes"),
+    (0xE774, "byte offset into SECTOR_BUF (word, 0..512)", 2,
+     "R4 order: 'byte offset' must not beat '(word)'"),
+    (0xE2A0, "512-byte sector buffer", 512, "R2 hyphenated"),
+    (0xE9F1, "write buffer length (2 B)", 2, "R3 bare B"),
+    (0xE4B9, "-> 11-byte search name (word)", 2,
+     "R2 beats R3: the 11 bytes are the POINTEE, the cell is a word"),
+    (0xE816, "word -> the 512-byte DATA/sector buffer", 2,
+     "R2 beats R3 again -- the overlap check found both of these"),
+    (0xE760, "saved $A8 primary-slot config", None,
+     "🔴 NEGATIVE CONTROL: no width declared -> UNDECLARED, never 1"),
+    (0xE761, "saved slot secondary ($FFFF) live value", None,
+     "🔴 NEGATIVE CONTROL: a $-literal is not a range"),
+    (0xE800, "lives at $E900-$E9FF", None,
+     "🔴 NEGATIVE CONTROL: a range that is not THIS cell's is ignored"),
+]
+
+
+def selftest(lo, hi) -> int:
+    ok = {}
+
+    # ---- A3 width vocabulary, with three negative controls -----------------
+    bad = []
+    for addr, cmt, want, why in WIDTH_VECTORS:
+        got, _ = declared_width(addr, cmt)
+        if got != want:
+            bad.append(f"${addr:04X} {cmt!r}: want {want}, got {got}")
+        print(f"    A3 {'ok ' if got == want else 'FAIL'} "
+              f"{str(want):>5} <- {cmt[:46]!r:48} {why}")
+    ok["A3 width vocabulary (8 vectors, 3 negative)"] = not bad
+    for b in bad:
+        print(f"    A3 MISMATCH {b}")
+
+    # ---- A1/A2 planted chain + planted gap, in the OLD shape ---------------
+    raw, _ = parse(files_for("basic"))
+    real, _ = resolve(dict(raw))
+    ra = sorted({v for n, v in real.items() if lo <= v < hi})
+    # 🔴 PLANT INSIDE A STRETCH THE MAP ITSELF SAYS IS EMPTY. The first cut
+    # planted at a hand-picked $E7A0..$E7F0 and the walk reported a 24 B gap
+    # instead of 72 -- because a REAL name sits at $E7C0, between the two
+    # plants. The walk was right and the FIXTURE was wrong, which is the same
+    # shape as a knife whose green row is a claim about its fixture. So:
+    # resolve the real map first, take its largest gap, and plant well inside.
+    span = max(zip(ra, ra[1:]), key=lambda t: t[1] - t[0])
+    base = span[0] + 8
+    p = dict(raw)
+    p["__PLANT_BASE"] = (f"${base:04X}", "<plant>", 0, None)
+    p["__PLANT_STEP"] = ("__PLANT_BASE + 4*2", "<plant>", 0, None)
+    p["__PLANT_FAR"] = (f"${base + 24:04X}", "<plant>", 0, None)
+    # A5's plants ride in the same fixture: a DECLARED 8-byte cell 24 B before
+    # its neighbour must yield a 16 B RUN, and an undeclared one must not.
+    p["__PW_BASE"] = (f"${base + 64:04X}", "<plant>", 0, "the thing (8 bytes)")
+    p["__PW_NEXT"] = (f"${base + 88:04X}", "<plant>", 0, "next (word)")
+    m = Map("basic", lo, hi, raw=p, files=files_for("basic"))
+    want_step = m.vals["__PLANT_BASE"] + 8
+    ok["A1 arithmetic chain `X equ Y+N*M` resolves"] = \
+        m.vals.get("__PLANT_STEP") == want_step
+    gap = next((b - a for a, b in zip(m.addrs, m.addrs[1:])
+                if a == want_step), None)
+    ok["A2 planted 16 B gap is found by the walk"] = gap == 16
+
+    # ---- A5 run vs undeclared, with the undeclared plant as the control ----
+    runs, _ = m.runs()
+    got_run = [(g, s) for g, s, e, o in runs if o == m.vals["__PW_BASE"]]
+    ok["A5 declared width -> a 16 B unattributed run"] = \
+        got_run == [(16, m.vals["__PW_BASE"] + 8)]
+    und_addrs = {a for _, a, _, _ in m.undeclared()}
+    run_owners = {o for _, _, _, o in runs}
+    ok["A5 NEGATIVE: undeclared plant is in ⚠️, NOT in 🟢"] = \
+        (m.vals["__PLANT_BASE"] in und_addrs
+         and m.vals["__PLANT_BASE"] not in run_owners)
+
+    # ---- A4 .asm visibility, with the old .inc-only glob as the control ----
+    d_all = Map("disk", lo, hi)
+    d_inc = Map("disk", lo, hi, inc_only=True)
+    ok["A4 `.asm` cells are visible (DRV_TRAMP $E800, disk/init.asm)"] = \
+        d_all.vals.get("DRV_TRAMP") == 0xE800
+    ok["A4 NEGATIVE: the old `.inc`-only glob could NOT see it"] = \
+        "DRV_TRAMP" not in d_inc.vals
+    ok["A4 and it brought >=15 more page-3 cells with it"] = \
+        len(d_all.addrs) - len(d_inc.addrs) >= 15
+
+    # ---- A6 per-component namespaces (the shadowing control) ---------------
+    b_all = Map("basic", lo, hi)
+    ok["A6 per-ROM twin visible in BOTH maps (FAT_CURCLUS)"] = \
+        (b_all.vals.get("FAT_CURCLUS") == 0xE9C9
+         and d_all.vals.get("FAT_CURCLUS") == 0xE4A9)
+    merged, _ = parse(files_for("basic") + files_for("disk"))
+    mvals, _ = resolve(merged)
+    ok["A6 NEGATIVE: one merged namespace shadows it to a single address"] = \
+        mvals.get("FAT_CURCLUS") == 0xE9C9 and 0xE4A9 not in set(mvals.values())
+
+    # ---- A8 an untrustworthy width must DEMOTE, not produce a number ------
+    p2 = dict(raw)
+    p2["__OV_A"] = (f"${base + 128:04X}", "<plant>", 0, "big (64 bytes)")
+    p2["__OV_B"] = (f"${base + 136:04X}", "<plant>", 0, "next (word)")
+    p2["__DI_A"] = (f"${base + 200:04X}", "<plant>", 0, "one way (8 bytes)")
+    p2["__DI_A2"] = (f"${base + 200:04X}", "<plant>", 0, "other way (word)")
+    p2["__DI_B"] = (f"${base + 240:04X}", "<plant>", 0, "after (word)")
+    m2 = Map("basic", lo, hi, raw=p2, files=files_for("basic"))
+    a_ov, a_di = m2.vals["__OV_A"], m2.vals["__DI_A"]
+    r2_owners = {o for _, _, _, o in m2.runs()[0]}
+    ok["A8 a width that overruns its neighbour yields NO run"] = \
+        a_ov in m2.overrun and a_ov not in r2_owners and a_ov not in m2.width
+    ok["A8 aliased names that disagree -> DISPUTED, no run"] = \
+        a_di in m2.disputed and a_di not in r2_owners
+    ok["A8 NEGATIVE: both still appear in the ⚠️ list"] = \
+        {a_ov, a_di} <= {a for _, a, _, _ in m2.undeclared()}
+
+    # ---- A7 sym seeding, with --no-sym as the control ---------------------
+    d_nosym = Map("disk", lo, hi, use_sym=False)
+    ok["A7 sym supplies a label-derived cell (WA_SEG $E795)"] = \
+        d_all.vals.get("WA_SEG") == 0xE795 and "WA_SEG" in d_all.from_sym
+    ok["A7 NEGATIVE: without the sym it is absent from the map"] = \
+        "WA_SEG" not in d_nosym.vals
+    ok["A7 cross-check is non-vacuous and clean"] = \
+        d_all.crosschecked > 20 and not d_all.disagree
+
+    print()
+    for k, v in ok.items():
+        print(f"  SELFTEST: {'PASS' if v else 'FAIL'}  {k}")
+    print(f"  SELFTEST: {sum(ok.values())}/{len(ok)} arms pass")
+    return 0 if all(ok.values()) else 1
+
+
 def main() -> int:
     args = [a for a in sys.argv[1:] if not a.startswith("--")]
-    selftest = "--selftest" in sys.argv
     lo = int(args[0], 16) if len(args) > 0 else DEFAULT_LO
     hi = int(args[1], 16) if len(args) > 1 else DEFAULT_HI
+    if "--selftest" in sys.argv:
+        return selftest(lo, hi)
 
-    raw = parse(BASIC_FILES if "--basic" in sys.argv else FILES)
-    if selftest:
-        # 🔴 PLANT INSIDE A STRETCH THE MAP ITSELF SAYS IS EMPTY. The first cut
-        # planted at a hand-picked $E7A0..$E7F0 and the walk reported a 24 B gap
-        # instead of 72 -- because a REAL name sits at $E7C0, between the two
-        # plants. The walk was right and the FIXTURE was wrong, which is the
-        # same shape as a knife whose green row is a claim about its fixture.
-        # So: resolve the real map first, take its largest gap, and plant well
-        # inside that.
-        real, _ = resolve(dict(raw))
-        ra = sorted({v for n, v in real.items() if lo <= v < hi})
-        span = max(zip(ra, ra[1:]), key=lambda t: t[1] - t[0])
-        base = span[0] + 8
-        raw["__PLANT_BASE"] = (f"${base:04X}", "<plant>", 0)
-        raw["__PLANT_STEP"] = ("__PLANT_BASE + 4*2", "<plant>", 0)
-        raw["__PLANT_FAR"] = (f"${base + 24:04X}", "<plant>", 0)
-
-    vals, expr = resolve(raw)
-    inwin = sorted((v, n) for n, v in vals.items() if lo <= v < hi)
-    nfiles = len(BASIC_FILES if "--basic" in sys.argv else FILES)
-    print(f"  denominator: {len(raw)} equ definitions in {nfiles} .inc "
-          f"files; {len(vals)} resolved; {len(inwin)} land in "
-          f"[{lo:04X},{hi:04X})")
-
-    # group names sharing an address -- deliberate aliasing shows up here
-    byaddr: dict[int, list[str]] = {}
-    for v, n in inwin:
-        byaddr.setdefault(v, []).append(n)
-    addrs = sorted(byaddr)
-
-    if selftest:
-        want_step = vals["__PLANT_BASE"] + 8
-        ok_chain = vals.get("__PLANT_STEP") == want_step
-        gap = next((b - a for a, b in zip(addrs, addrs[1:]) if a == want_step),
-                   None)
-        ok_gap = gap == 16
-        print(f"  SELFTEST: arithmetic chain resolved = {ok_chain} "
-              f"(want ${want_step:04X}, got "
-              f"${vals.get('__PLANT_STEP', 0):04X})")
-        print(f"  SELFTEST: planted gap found = {ok_gap} (want 16, got {gap})")
-        return 0 if (ok_chain and ok_gap) else 1
-
-    gaps = []
-    for a, b in zip(addrs, addrs[1:]):
-        gaps.append((b - a, a, b))
-    gaps.sort(reverse=True)
-    print(f"\n  LARGEST DELTAS -- 🔴 each is 'the cell at the low address PLUS "
-          f"whatever follows', NEVER free space. Go read the source.\n")
-    for d, a, b in gaps[:20]:
-        names = "/".join(byaddr[a])
-        _, f, i = expr[byaddr[a][0]]
-        print(f"  {d:5d} B  ${a:04X}..${b:04X}  {names}")
-        print(f"            {f}:{i}")
-    tail = hi - addrs[-1] if addrs else 0
-    print(f"\n  (last name ${addrs[-1]:04X} {'/'.join(byaddr[addrs[-1]])}, "
-          f"{tail} B to the ${hi:04X} window top)")
-    print(f"  {len(addrs)} distinct addresses, "
-          f"{sum(1 for a in addrs if len(byaddr[a]) > 1)} carrying more than "
-          f"one name (deliberate aliasing is normal here -- see the header)")
+    inc_only = "--inc-only" in sys.argv
+    comps = [c for c in ("basic", "disk")
+             if f"--{c}" in sys.argv] or ["basic", "disk"]
+    for c in comps:
+        m = Map(c, lo, hi, inc_only=inc_only,
+                use_sym="--no-sym" not in sys.argv)
+        report(m)
+        if "--widths" in sys.argv:
+            print("\n  --widths: every address, its names and its width")
+            for a in m.addrs:
+                w = m.width.get(a)
+                print(f"    ${a:04X}  {str(w) if w else '?':>5}  "
+                      f"{'/'.join(m.byaddr[a])}")
     return 0
 
 
