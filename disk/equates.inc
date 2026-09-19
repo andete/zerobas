@@ -106,7 +106,67 @@ DSKBUF_PTR      equ     $F351   ; word -> the DSKI$/DSKO$ sector buffer; the dis
 H_LSET          equ     $FE21   ; LSET
 H_RSET          equ     $FE26   ; RSET
 H_FIELD         equ     $FE2B   ; FIELD
-H_FILE          equ     $FE7B   ; FILES
+H_FILE          equ     $FE7B
+; --- H_FOPEN: the cell every file-OPENING verb arrives at (D-DPLMOVE) --------
+; 🏗️ RULED BY JOOST 2026-09-19 (spec-diskcode-eviction.md §6.6m): "the reference
+; is the better oracle then me, so go with FE5D + selector". "Every disk command
+; behind ITS hook" means THE CELL THE REFERENCE ACTUALLY USES -- so where it
+; routes several verbs through one cell, so do we.
+;
+; 🎯 NAMED FOR ITS CLASS, NOT FOR A VERB. D-CHANHOOK measured that of twenty
+; unidentified cells exactly one moves OPEN"NOSUCH" and exactly one moves
+; MERGE"NOSUCH", and it is the same one; §6.6j added LOAD as the third. Calling
+; it H_OPEN or H_LOAD would be a name narrower than its class, which
+; spec-diskbasic-hook-rearchitecture.md already declined once.
+;
+; CLEAN-ROOM: the ADDRESS is a hook cell's, read for SLOT and IDIOM only from
+; the 35-cell census (scratchpad/hookdiff_probe.py, expansion-protocol.md §2).
+; What the reference's own handler does there is its internal detail: never
+; read, never called, and nothing below depends on it.
+H_FOPEN         equ     $FE5D
+
+; --- FOPEN_SEL: which verb is asking (main -> disk.rom) ----------------------
+; 🔴 IT ALIASES DISKOP_OP, AND THAT IS THE TREE'S OWN IDIOM, NOT A SHORTCUT.
+; sysvars.inc already binds DEFT_STATUS and LE_STATUS onto DISKOP_STATUS for
+; mutually-exclusive consumers. The last free byte below the channel-context
+; table went to DISKOP_OP itself ($E9FB; the five-byte gap at $E9FB..$E9FF is
+; spent), so a new cell would have to displace something.
+; MUTUAL EXCLUSION, ARGUED: DISKOP_OP is main -> SUB-ROM-TENANT. Between main
+; writing FOPEN_SEL and disk.rom reading it there is one inter-slot call and no
+; tenant dispatch -- the hook body needs NO call-backs (§6.6h) and disk.rom's
+; FAT engine reaches the drive through DSKIO directly, never through a tenant.
+; ⚠️ A future arm that DOES call back into main must re-assert the selector
+; after it returns, or move to its own cell.
+;
+; 🔴 AND THE SELECTOR IS NOT READ FROM THE PROGRAM TEXT, WHICH §6.6m FIRST SAID.
+; hk_files recovers its verb from the token before FN_RESUME, and that works
+; because main stages the cursor past the token and the FILESPEC IS EVALUATED
+; INSIDE THE HOOK. LOAD evaluates its filename in MAIN, before the hook is
+; reached, so by then FN_RESUME points past the EXPRESSION and the byte in front
+; of it is the closing quote, not the verb. Same shape, different side of the
+; call -- so the selector crosses in RAM (§6.6n).
+FOPEN_SEL       equ     DISKOP_OP
+FOPEN_SEL_LOAD  equ     $4C     ; 🔴 NOT 0, AND THE REASON IS MEASURED. This
+                                ; aliases DISKOP_OP, whose 0 is a LIVE value --
+                                ; `DISKOP_SEL_KILL equ 0` -- so a selector of 0
+                                ; reads "LOAD is asking" whenever the cell is
+                                ; merely idle. And $FE5D IS reached on paths that
+                                ; are not ours: claiming it with a 0 selector
+                                ; starved the STOP-trap re-arm, because every
+                                ; such call fell through into a full FAT mount
+                                ; (spec-diskcode-eviction.md §6.6p). $4C is
+                                ; outside DISKOP_SEL_*'s whole 0..7 range.
+; The on-disk tokenised-BASIC marker, same value basic/sysvars.inc declares.
+; A PUBLIC format constant (basic/docs/spec-ascii-saveload.md), not an address --
+; duplicated the way BPB_*/DIRENT_*/EOC already are in this file, because it
+; cannot drift with a repack the way TXTBASE/TXTMAX can (those go through the
+; GENERATED basic-resident-abi.inc instead, and for exactly that reason).
+BASIC_DISK_ID   equ     $FF
+; 1..3 are reserved for steps 10-12 (OPEN, MERGE, SAVE): the ruling says they
+; route to this same cell and add selector values rather than claiming cells of
+; their own. An unrecognised selector returns CF=0 -- "not mine" -- and main
+; carries on, which is what makes adding an arm a local change.
+   ; FILES
 
 ; --- Disk scratch RAM (disk/PROVENANCE.md §Scratch RAM) --------------------
 ; (GETDPB writes the 18-byte DPB into the CALLER's buffer per MSX2 TH, so the disk

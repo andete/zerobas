@@ -217,82 +217,86 @@ item — do **one item per session** to keep context lean.
       `ex_call` matches only `"FORMAT"` and otherwise `jp nc,stmt_error`, with
       **no offer to any other extension**, which is the same gap as `ATTR$`.
 
-- [ ] 🏗️ **RULED 2026-09-19 — `LOAD` SHARES ITS ENTRY, AND THE SHARED CELL IS
-      THE ANSWER: `$FE5D` + A SELECTOR.**
-      🎚️ TIER 2 — reasonable time, on `LOAD`: this is what stops the tokenised
-      loader reaching the disk ROM it was measured into.
-      🤖 **AUTONOMOUS** — Joost ruled (§6.6m): *"the reference is the better
-      oracle then me, so go with FE5D + selector"*. "Every disk command behind
-      ITS hook" means **the cell the reference actually uses**, for the CLASS and
-      not for `LOAD` alone — so steps 10–12 inherit the answer and stop being
-      blocked. The cell is `H_FOPEN` (named for its class, as D-CHANHOOK already
-      insisted), the pattern is **`hk_files`** (ONE cell, verb from the token in
-      program text) and NOT `hk_lrset` (two cells, one body). ⚠️ The diskless arm
-      is NOT `chan_gate`: `LOAD"X"` with no disk ROM must fall through to
-      CASSETTE, so this hook REPORTS rather than RAISES.
-      ⚠️ Left open on purpose (§6.6m): the readings suggest `$FE5D` is a routine
-      the verbs CALL rather than a verb ENTRY. That bears on how faithfully we
-      mirror the reference's internal shape, not on correctness — zerobas owns
-      both sides of this interface — and §6.6l's counting experiment can still
-      settle it later.
+- [ ] 🛑 **STEP 9 IS BUILT AND BACKED OUT: `$FE5D` CANNOT BE CLAIMED, AND IT IS
+      NOT A VERB ENTRY.**
+      🎚️ TIER 2 — reasonable time, on `LOAD`.
+      🙋 **NEEDS-JOOST** — his ruling (§6.6m) said *"the reference is the better
+      oracle then me, so go with FE5D + selector"*, and the PRINCIPLE stands. The
+      CELL does not: §6.6p measured that claiming `$FE5D` makes the STOP trap
+      re-fire 1× instead of 3× against a threshold of 2, and proved it is the
+      CLAIM and not our handler (an immediate `ret` in the body still fails). And
+      `$FE5D` is `H.NULO` — *"an operation for file-buffer 0"* in C-BIOS's public
+      hook table, a name `docs/spec-basic-nodisk.md` already carried. It is a
+      shared SUBSYSTEM cell, so `LOAD`/`OPEN`/`MERGE` all moving together under a
+      POKE is what it PREDICTS, not evidence that they share a verb entry.
+      🔴 **I MIS-IDENTIFIED IT TWICE FROM A FILE I HAD READ.** §6.6j called it a
+      shared entry; §6.6l built a pattern on top of that; the ruling was then
+      asked for on those terms. The name was in the tree the whole time.
+      ➡️ `H.MERG $FE67`, `H.SAVE $FE6C`, `H.BINS $FE71` and `H.BINL $FE76` each
+      have a cell of their OWN — so §6.6l's *"the program-file verbs have no
+      per-verb cell"* was conflating *unclaimed by the CF-3300* with *does not
+      exist*. What LOAD's own cell is, if it has one, is still unmeasured.
+      🟢 Everything is BUILT and inert: the loop, the stream layer, the selector,
+      `chan_probe` and the ABI additions. Only the `hook_tab` row is backed out —
+      restoring it is one line. Main is reverted, so `LOAD` behaves exactly as
+      before and main's page-1 budget is unchanged.
+      🟢 **WHAT IT BOUGHT, measured 2026-09-19 on a clean build:** main page-1
+      free went **55 B → 164 B**; `disk.rom` free went **8324 B → 8153 B**. That
+      is the eviction working in the direction it was designed for — main's
+      scarcest budget gains what the disk ROM, with kilobytes spare, can afford.
+      🟢 **AND THE PER-BYTE CROSSING §6.2c PRICED IS GONE RATHER THAN MOVED.**
+      `fat_io_getbyte` resolves LOCALLY in `disk.rom`, so every byte of a 14 KB
+      program is an in-page call instead of the inter-slot crossing that measured
+      1.72× the whole load.
+      🔴 **THE DEAD-CODE CANARY FIRED EXACTLY AS WRITTEN, AND THAT IS THE BEST
+      THING IN THIS SLICE.** `tools/deadcode-allow.txt` said *"DELETE THESE LINES
+      when the hook lands: the gate will then report them as no-longer-dead,
+      which is the canary working."* The build went RED on precisely that and
+      named all four (`fat_io_find`, `fat_io_getbyte`, `fig_have`, `fig_eof`). An
+      allowlist entry that documents its own retirement condition, and then
+      enforces it, is worth more than the bytes it guarded.
+      ⚠️ `fat_io_open` KEEPS its entry for a NEW reason: `hk_dpload` calls
+      `fat_mount` and `fat_io_find` **separately**, because their two carries are
+      what tells *not found* from a mount/I-O fault. So this ROM enters the
+      shared body one instruction lower and `fat_io_open`'s own two instructions
+      are unreferenced here while main uses them. A shared source's unused entry
+      point is not dead code in the sense the sweep means.
+      🎯 **A HAZARD RETIRED, NOT RELOCATED.** The old not-found arm went
+      `dpl_nf` → `df_or_loaderr`, which reads `DISKOP_OP` and is only safe when
+      the carry came straight out of a main-side `fat_io_open` — a precondition
+      stated in a comment and enforced by nothing (it once answered *File not
+      found* to a broken TAPE). The disk side now returns the distinction as a
+      CODE, so nothing on this path reads that cell. It could not: it is carrying
+      the selector.
+      🔴 **`chan_gate` WOULD HAVE BEEN WRONG, AND THE REASON IS MEASURED.** Every
+      hooked verb so far answers ERR 5 when its cell is unclaimed, because that
+      is what a diskless MSX does for `FILES`/`KILL`/`NAME`. `LOAD"X"` with no
+      disk ROM must fall through to **CASSETTE**. Hence `chan_probe`, which hands
+      the carry back; `chan_gate` is now built on top of it.
+      ⚠️ **§6.6m's OWN CLAIM WAS WRONG AND IS CORRECTED IN §6.6n.** It said the
+      selector is read from the program text like `hk_files`. That works for
+      `FILES` because its filespec is evaluated INSIDE the hook; `LOAD` evaluates
+      in main first, so by then `FN_RESUME` points past the EXPRESSION and the
+      byte in front of it is the closing quote. The selector crosses in RAM
+      instead, aliased onto `DISKOP_OP` — the tree's own idiom (`DEFT_STATUS`,
+      `LE_STATUS`) — with the mutual exclusion ARGUED where the binding is.
+      🧮 **AND THE 111 vs 109 B DOC DEBT IS SETTLED BY MEASUREMENT.** The move
+      gave a third figure and made the gap checkable: `disk.rom` lost **171 B**
+      of free space while `hk_dpload` + `hdl_*` sum to **167 B** of spans — and
+      the missing **4 B are exactly the `dw H_FOPEN, hk_dpload` row in
+      `hook_tab`**, which is data and belongs to no span. So the two quantities
+      measure different things, as suspected, and the difference is now
+      accounted rather than asserted. ⚠️ D-DPLPORT's own 2 B (111 free-space vs
+      109 spans) is NOT explained by the same cause — it added no table row — so
+      it is not a constant overhead; it is bounded, small, and still open.
+      🟢 Incidentally closes half of the dead-`equ`-alias item below:
+      `dpl_link_err` and `dpl_err_pop` went WITH the moved block. What remains
+      there is the GATE ARM (`check_dead_code` cannot follow an `equ` alias) and
+      D-NGRAM13's stale prose.
+      ➡️ **STEPS 10–12 ARE NOW A LOCAL EDIT.** Selector values 1–3 are reserved
+      for `OPEN`, `MERGE` and `SAVE`; an unrecognised selector already returns
+      `CF=0` so main carries on. Each arm is one more test against `ret nz`.
       The measurement behind it (2026-09-19, D-LOADHOOK,
-      `disk/docs/spec-diskcode-eviction.md` §6.6j). Of 18 candidate cells exactly
-      two move `LOAD"NOSUCH.BAS"` — `$FE5D` (→ ERR 51) and `$FEB7` (→ nothing
-      happens) — and **both move `OPEN"NOSUCH"` identically**, so neither is
-      LOAD's own. Every control passed.
-      🔴 **THIS FALSIFIES AN ASSUMPTION THE EVICTION CARRIES.** The standing
-      ruling puts a disk command's body behind ITS hook, and that has held for
-      `KILL`, `NAME`, `COPY`, `FILES`, `LSET`/`RSET` and `FIELD` — each with a
-      cell of its own. `LOAD` is the first verb MEASURED not to have one. What
-      the ruling means for a verb that shares its entry is Joost's call, not
-      something to settle by picking a cell.
-      🔴 **REVIEWED AND NARROWED 2026-09-19 (D-LOADREV, §6.6l) — THREE HOLES,
-      AND THE FIRST IS A PLAIN ERROR.** (1) `$FE5D` was ALREADY identified nine
-      days earlier: `disk/docs/spec-diskbasic-hook-rearchitecture.md` (D-CHANHOOK,
-      2026-09-15) has a measured table where `$FE5D` is the ONLY cell of twenty
-      that moves `OPEN` and the ONLY one that moves `MERGE`. So this measurement
-      added a THIRD verb to a cell the tree had named — a stronger result than
-      the one recorded. §6.6k's *"`$FE5D` is referenced nowhere in the tree"* is
-      RETRACTED: the grep behind it asked for `H_OPEN`/`H_CLOSE` and the answer
-      was written about a different symbol. **An empty grep is evidence about the
-      string you typed and nothing else.** (2) The instrument is BLIND to the
-      phase step 9 moves — `LOAD"NOSUCH.BAS"` is readable because it fails at the
-      directory search, so seven data-phase-named candidates read "unchanged" for
-      a reason unrelated to LOAD. Read the table as a bound, not a census.
-      (3) `LOAD` is NOT an anomaly: the CF-3300 leaves `H.MERG`, `H.SAVE` and
-      `H.LOPD` unclaimed, so no per-verb cell for the program-file verbs is the
-      reference's PATTERN — steps 10, 11 and 12 meet the same wall.
-      🙋 **SO THE QUESTION IS SHARPER THAN IT WAS PUT:** does *"every disk command
-      behind ITS hook"* mean a cell of its own, or the cell the reference actually
-      uses? If the latter, the shape is `$FE5D` + a verb selector and the pattern
-      to copy is **`hk_files`** (ONE cell, verb read from the token in program
-      text) — NOT `hk_lrset`, which is two cells sharing one body and is what
-      §6.6j reached for. ⚠️ And diskless `LOAD` must fall through to CASSETTE,
-      not raise ERR 5 as `chan_gate` does.
-      🔬 The distinguishing experiment is SPECIFIED and NOT RUN (§6.6l): count
-      breakpoint hits per cell across the 1055 B and 14369 B images from §6.2c,
-      `incr` + `cont` only — no step, no read at the target, so the clean-room
-      line is not approached. Working: `scratchpad/loadhook_analysis.md`.
-      Established 2026-09-19 (`disk/docs/spec-diskcode-eviction.md` §6.6h).
-      `disk/equates.inc` names SIXTEEN hook cells and none is `LOAD`'s, while
-      D-CFARCH's census counted **35** cells the reference's disk ROM claims.
-      Joost's standing ruling puts a disk command's body behind its hook, and the
-      clean-room line permits reading a cell for its SLOT and IDIOM — never
-      guessing the address.
-      🟢 **THE HOOK BODY IS ALREADY DESIGNED AND NEEDS NO CALL-BACKS** (§6.6h):
-      it returns `CF=1` plus a code in A, and main dispatches. `fat_io_find`
-      already separates NOT FOUND from a mount/I-O fault without `DISKOP_OP`.
-      ⚠️ **TWO THINGS TO FIX BEFORE `scratchpad/hookid_probe.py` CAN ANSWER IT:**
-      its `UNNAMED` candidate list is the **old 27-cell census** and must be
-      re-derived against the 35; and 🔴 **the subject destroys the instrument** —
-      `LOAD` replaces the program that would print the answer, so the readable
-      case is `LOAD"<missing>"` (which raises before touching the program) with
-      an `ERR` trap as the witness. **That it raises first must be ESTABLISHED,
-      not assumed.** Keep the probe's three existing controls: poke nothing must
-      not move; poke a NAMED cell must flip its verb; that same poke must NOT
-      flip a different verb.
-      ⛔ Until the cell is named, the 111 B ported into `disk.rom` by D-DPLPORT
-      stay unreferenced.
 
 - [x] ✅ **DONE 2026-09-19 (D-DISKDEAD): `disk.rom` NOW HAS A DEAD-CODE SWEEP,
       AND ITS FIRST RUN FOUND THE 109 B IT WAS BUILT FOR.**
@@ -2626,7 +2630,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:20330 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:20334 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -2792,7 +2796,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:7435 (T-6FE392)8 (T-529ABE)` from `TODO.md:18724 (T-529ABE)`: a
+      `TODO.md:7439 (T-6FE392)8 (T-529ABE)` from `TODO.md:18728 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -8279,7 +8283,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:18724 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:18728 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

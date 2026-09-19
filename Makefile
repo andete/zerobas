@@ -3290,7 +3290,19 @@ print('\n'.join('  MISSING FROM DEPS: '+m for m in miss)) if miss else print('  
 sys.exit(1 if miss else 0)"
 
 tiers-md:
-	python3 tools/tier_table.py --keywords --markdown > docs/tier-status.md
+# 🔴 WRITE TO A TEMP AND MOVE ON SUCCESS. `> docs/tier-status.md` truncates the
+# target BEFORE the generator runs, so a non-zero exit leaves an EMPTY file and
+# the failure is discovered later, as missing content rather than as an error.
+# Not hypothetical: `tier_table.py` REFUSES while the knife pin is stale (which
+# is correct of it, and happens on every ROM change), and that refusal emptied
+# this file twice -- once to 2 lines, once to 0 -- each time needing a
+# `git checkout` to notice and undo. The temp file is in the same directory so
+# the move is atomic on the same filesystem.
+	python3 tools/tier_table.py --keywords --markdown > docs/.tier-status.md.tmp \
+	  && mv docs/.tier-status.md.tmp docs/tier-status.md \
+	  || (rm -f docs/.tier-status.md.tmp; \
+	      echo "tiers-md: generator FAILED -- docs/tier-status.md left UNCHANGED"; \
+	      exit 1)
 
 # D-TIERDOC (Joost, 2026-09-14: "maybe generate the updated tier markdown after
 # each iteration before you run the suite?"). docs/tier-status.md is GENERATED and

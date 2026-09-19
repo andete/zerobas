@@ -117,6 +117,23 @@ REQUIRED_DISK_RAM = [
     "STRPTR",                   # D-CVMOVE: the evaluator's string DESCRIPTOR
                                 # pointer, which hk_cv derefs (see pu_deref_body
                                 # above); read-only from the disk side
+    # D-DPLMOVE (spec-diskcode-eviction.md §6.6m, Joost's ruling): the tokenised
+    # LOAD loop runs in disk.rom now and writes main's program area directly.
+    # These five are what it touches. 🔴 TXTBASE/TXTMAX are REPACK-DEPENDENT
+    # constants, not sysvars -- publishing them here rather than re-declaring
+    # them in disk/equates.inc is the whole point: a repack that moves the text
+    # ceiling must not leave the loader's bounds check reading the old one, and
+    # a hand-copied constant drifts SILENTLY where a generated one cannot.
+    "DISKOP_OP",                # the hook's verb selector (FOPEN_SEL aliases it)
+    "DISKOP_ERR",               # D-DPLMOVE §6.6o: the ERR code of the last DSKIO
+                                # failure. disk.rom's FAT engine reaches the drive
+                                # LOCALLY, so it must map and publish this itself --
+                                # main's `disk_error` raises whatever is here, and
+                                # with nothing written it PRINTED instead
+    "CLPTR",                    # store cursor into the program area
+    "CLINK",                    # saved link word of the current line
+    "TXTBASE",                  # text base: where the seed puts CLPTR/CLINK
+    "TXTMAX",                   # text ceiling: the loop's out-of-memory bound
 ]
 # CALL-BACK: main PAGE-1 targets, reached by an INTER-SLOT CALL, not by an
 # absolute one -- the third class, and the one the hook re-architecture needs

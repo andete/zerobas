@@ -2237,6 +2237,19 @@ hook_tab:
                 dw      H_DSKI, hk_present   ; the hook buys the diskless ERR 5
                 dw      H_COPY, hk_copy      ; D-DISKVERB3: body here too
                 dw      H_ERRP, hk_errp      ; D-DISKERR: the disk codes' messages live HERE
+                ; ⛔ H_FOPEN IS **NOT** INSTALLED, AND THAT IS A MEASUREMENT.
+                ; D-DPLMOVE built the row here and backed it out: claiming $FE5D
+                ; breaks `stop-trap-acceptance`'s E_rearm_under_held_key_refires
+                ; on this machine -- zerobas re-fires the STOP trap 3x with the
+                ; cell unclaimed and 1x with it claimed, against a threshold of 2.
+                ; PROVEN TO BE THE CLAIM ITSELF, NOT THIS BODY: with hk_dpload
+                ; reduced to an immediate `ret`, so the cell is claimed and the
+                ; handler does nothing, the row still fails -- twice. And
+                ; $FE5D is H.NULO, "an operation for file-buffer 0" (C-BIOS's
+                ; public hook table; docs/spec-basic-nodisk.md already had the
+                ; name), which is a shared SUBSYSTEM cell and not a verb entry.
+                ; See spec-diskcode-eviction.md §6.6p. Restoring this row is a
+                ; one-line change once Joost has ruled on the cell.
                 dw      0
 
 ; --- install_hook: write one 5-byte CALLF stub into a hook slot -------------
@@ -2308,6 +2321,181 @@ fat_bufinit:
                 ; are FREAD_OFF/FREAD_LEFT, aliased onto the RDBLK scratch
                 ; in init.asm (§6.6f).
                 include "basic/fatio-body.inc"
+
+; --- hk_dpload: the tokenised LOAD loop, in the disk ROM ---------------------
+; D-DPLMOVE. Step 9 of disk/docs/spec-diskcode-eviction.md §6.2, unblocked by
+; Joost's ruling in §6.6m: the hook is the cell the REFERENCE uses ($FE5D,
+; H_FOPEN), and the verb comes from a SELECTOR.
+;
+;   in   FOPEN_SEL = FOPEN_SEL_LOAD; DISK_FCB_NAME = the 8.3 name main parsed
+;   out  CF = 1 claimed; DISKOP_STATUS = 0 loaded / 1 not found / 2 not
+;        tokenised (main's ASCII path takes it) / 3 mount or I-O / 4 out of
+;        memory.  CF = 0 = "not my selector" -- main carries on as if unhooked.
+;
+; THE CODE COMES BACK IN RAM, NOT IN A. §6.6h designed this hook as "CF=1 and
+; A = a code"; this answers through DISKOP_STATUS instead, because that is what
+; every hook already in hook_tab does -- hk_files, hk_kill and hk_copy all put
+; their disposition there and main decodes it. CF still rides the CALLF return,
+; which chan_gate has always relied on.
+; ⚠️ HONESTY ABOUT WHY THIS CHANGED: it was my first guess at §6.6o's red
+; `l.load` row and it was WRONG -- the row stayed red. The real cause was that
+; disk.rom never wrote DISKOP_ERR at all. This is kept because consistency with
+; the other four hooks is worth having, NOT because it fixed anything; a comment
+; claiming otherwise would be the same class of unverified claim §6.6l is about.
+;
+; 🎯 WHY THE LOOP AND NOT JUST THE OPEN. §6.2c MEASURED the alternative: leaving
+; the byte loop in main and reaching the stream across the slot costs one
+; inter-slot crossing PER BYTE, 1.72x the whole load. `fat_io_getbyte` resolves
+; LOCALLY here (the stream layer is included above), so every byte of a 14 KB
+; program is an in-page call.
+;
+; 🔴 NO CALL-BACKS, AND THAT IS A PROPERTY TO KEEP. The body reaches main only
+; through RAM -- CLPTR/CLINK/TXTBASE/TXTMAX out of the GENERATED
+; basic-resident-abi.inc, so a repack that moves the text ceiling cannot leave
+; the bounds check reading the old one. Every decision main has to make it makes
+; from A, on its own side. If an arm here ever needs `calbak`, re-read
+; FOPEN_SEL's mutual-exclusion note in disk/equates.inc first.
+hk_dpload:
+                ld      a,(FOPEN_SEL)
+                cp      FOPEN_SEL_LOAD
+                ret     nz                  ; CF=0: not mine. Steps 10-12 add
+                                            ; their arms right here.
+                ; mount and find SEPARATELY: their two carries are what tells
+                ; `file not found` from a mount/I-O fault, which is the whole
+                ; reason fatio-body.inc carries the zero-byte `fat_io_find`
+                ; label (D-BLNF). DISKOP_OP is not read on this path -- and it
+                ; could not be, it is carrying the selector.
+                call    fat_mount
+                jp      c,hdl_io            ; 3: mount / I-O (`jp`: the exits
+                                            ; sit past the whole loop body)
+                call    fat_io_find
+                jp      c,hdl_nf            ; 1: not found (`jp`, same reason)
+                ; seed the store cursor. ⚠️ HOISTED ABOVE THE MARKER READ for
+                ; D-TRUNCLOAD's reason, unchanged by the move: an EOF on the
+                ; very first byte (a ZERO-BYTE file) must commit an EMPTY
+                ; program like every other EOF here, and cannot with CLPTR
+                ; unset. Seeded AFTER the open, exactly where main seeded it,
+                ; so a failed load leaves these cells as untouched as before.
+                ld      hl,TXTBASE
+                ld      (CLPTR),hl
+                ld      (CLINK),hl          ; A_0 = saving machine's text base
+                ; first byte selects the format: $FF = tokenised.
+                call    fat_io_getbyte
+                jp      c,hdl_ok            ; D-TRUNCLOAD: EOF here is an empty
+                                            ; program, not an error
+                cp      BASIC_DISK_ID
+                jp      nz,hdl_ascii        ; 2: main re-opens and tokenises
+hdl_line:
+                call    fat_io_getbyte      ; link low
+                jp      c,hdl_ok            ; EOF between lines = normal end
+                push    af                  ; preserve link-low across the read
+                call    fat_io_getbyte      ; link high
+                jr      c,hdl_eof
+                ld      b,a
+                pop     af
+                ld      c,a                 ; BC = saved link word L_n
+                ld      a,b
+                or      c
+                jp      z,hdl_ok            ; $0000 link -> program complete
+                ; body length = L_n - A_n - 4   (A_n = CLINK)
+                ld      hl,(CLINK)
+                ld      (CLINK),bc
+                ld      a,c
+                sub     l
+                ld      e,a
+                ld      a,b
+                sbc     a,h
+                ld      d,a
+                dec     de
+                dec     de
+                dec     de
+                dec     de                  ; DE = body length (incl. its $00)
+                ; this line's header (>=4 B) must fit below TXTMAX
+                push    de
+                ld      hl,(CLPTR)
+                ld      de,TXTMAX-4
+                or      a
+                sbc     hl,de
+                jr      nc,hdl_oom_pop
+                ; store the saved link word verbatim; relink fixes it later
+                ld      hl,(CLPTR)
+                ld      (hl),c
+                inc     hl
+                ld      (hl),b
+                inc     hl
+                ld      (CLPTR),hl
+                call    hdl_get_store       ; line number, 2 bytes
+                jr      c,hdl_eof
+                call    hdl_get_store
+                jr      c,hdl_eof
+                pop     de                  ; DE = body length
+hdl_body:
+                ld      a,d
+                or      e
+                jr      z,hdl_line          ; whole body copied -> next line
+                push    de
+                ld      hl,(CLPTR)
+                ld      de,TXTMAX
+                or      a
+                sbc     hl,de
+                jr      nc,hdl_oom_pop
+                call    hdl_get_store
+                jr      c,hdl_eof
+                pop     de
+                dec     de
+                jr      hdl_body
+
+; hdl_get_store: read ONE file byte and store it at CLPTR, advancing.
+;   out CF = EOF (nothing stored) / clear = stored, CLPTR advanced.
+; D-NGRAM13's shape, carried over with the move: it returns CF and the CALLER
+; raises, because each call site guards exactly one value across the read and
+; folding the drop in here would need a frame fix no row can witness.
+hdl_get_store:
+                call    fat_io_getbyte
+                ret     c
+                ld      hl,(CLPTR)
+                ld      (hl),a
+                inc     hl
+                ld      (CLPTR),hl
+                ret
+
+; hdl_eof: EOF with ONE guarded word on the stack -- three sites guard a 16-bit
+; count (`push de`) and one the link-low byte (`push af`); both are one word and
+; main's load_commit_prog reads neither, so the pop only has to be the right
+; SIZE. D-TRUNCLOAD: a truncated tokenised file is NOT an error -- the reference
+; is silent at all five EOF sites (docs/spec-basic-truncload.md §2).
+hdl_eof:
+                pop     af                  ; drop the guarded word
+hdl_ok:
+                xor     a                   ; 0: loaded
+                jr      hdl_answer
+hdl_oom_pop:
+                pop     de
+                ld      a,4                 ; 4: out of memory
+                jr      hdl_answer
+hdl_nf:
+                ld      a,1                 ; 1: file not found
+                jr      hdl_answer
+hdl_ascii:
+                ld      a,2                 ; 2: not tokenised
+                jr      hdl_answer
+hdl_io:
+                ld      a,3                 ; 3: mount / I-O
+; hdl_answer: the ONE exit. DISKOP_STATUS carries the code across the hook
+; return -- see the header for why it is not A -- and CF=1 says "claimed".
+hdl_answer:
+                ld      (DISKOP_STATUS),a
+                ; 🔴 DISARM THE SELECTOR ON THE WAY OUT. The cell is shared and
+                ; $FE5D is reached by callers that are not this verb (§6.6p);
+                ; leaving it armed means the NEXT such call falls through into a
+                ; FAT mount. Cleared here rather than in main because the side
+                ; that CONSUMED the selector is the side that should retire it,
+                ; and a main-side clear leaves a window between the two.
+                ; 0 is DISKOP_OP's own idle value, and is not the magic.
+                xor     a
+                ld      (FOPEN_SEL),a
+                scf
+                ret
 
 install_hook:
                 ld      a, $F7              ; +0: RST 30h (CALLF)

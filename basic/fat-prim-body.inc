@@ -62,12 +62,23 @@
 ; INIT-scan CALSLT word SCAN_IY ($E0D9), dead once the REPL runs, exactly as
 ; bdos_call did. DSKIO_ENTRY = $4010 is the disk-ROM interface table's DSKIO offset
 ; (MSX2 TH §5; header is 16 bytes so the table starts at +$10).
-; 🏗️ D-FATENG Option 2: OMITTED ENTIRELY FROM disk.rom. This is the cross-slot
-; DSKIO path and its error mapping; in disk.rom `read_sector` reaches the LOCAL
-; dskio and nothing references these. Gating them out also keeps DISKSLOT /
-; SCAN_IY / DISKOP_ERR -- basic-core cells the disk ROM does not define -- out of
-; that assembly.
+; 🏗️ D-FATENG Option 2: the CROSS-SLOT half is omitted from disk.rom, which
+; reaches the drive LOCALLY. Gating it out keeps DISKSLOT / SCAN_IY -- basic-core
+; cells the disk ROM does not define -- out of that assembly.
+; 🔴 BUT THE ERROR MAPPING BELOW IS **NOT** GATED OUT ANY MORE, AND THAT WAS A
+; REAL DEFECT, NOT A TIDY-UP (D-DPLMOVE, spec-diskcode-eviction.md §6.6o). It
+; used to sit inside the ELSE arm, so `disk.rom` mapped no DSKIO failure to an
+; MSX ERR code and wrote no DISKOP_ERR. It did not matter while every disk-ROM
+; verb reached the drive by calling BACK into main's engine -- `hk_dpload` is the
+; first that does not, and at an EMPTY DRIVE `LOAD"X"` printed `load error`
+; instead of raising ERR 70, because main's `disk_error` raises what is in
+; DISKOP_ERR and nothing had put anything there. One `l.load` row went red
+; against twelve green siblings.
     IF DISK_BUILD
+dskio_calslt:
+                call    dskio               ; LOCAL: no slot to cross, and the
+                                            ; inter-slot call disappears with it
+                jr      dc_result
     ELSE
 dskio_calslt:
                 push    af                  ; preserve the direction CY across IY setup
@@ -77,6 +88,8 @@ dskio_calslt:
                 ld      ix,DSKIO_ENTRY      ; standard DSKIO entry ($4010)
                 pop     af                  ; restore A=drive and the direction CY
                 call    CALSLT              ; cross-slot DSKIO; returns DSKIO's CY/A/B
+    ENDIF
+dc_result:
                 ; D-DISKERR (docs/spec-basic-diskerr.md): DSKIO's error byte (published:
                 ; 0 write protected, 2 not ready, 4 CRC, 6 seek, 8 record not found,
                 ; 10 write fault, 12 other) becomes the MSX ERR code the verb raises --
@@ -108,7 +121,6 @@ dc_map:
 ;   out: Cy = 0 ok, Cy = 1 error (A = DSKIO error code)
 ; Ported from disk.asm read_sector; the body is identical except the tail call now
 ; goes through dskio_calslt (cross-slot $4010) instead of the local dskio.
-    ENDIF
 
 ; 🏗️ D-FATENG Option 2: THE ONLY PLACE THE TWO HOMES DIFFER. Assembled into
 ; disk.rom the primitive reaches its OWN DSKIO by a plain local call; assembled
@@ -125,13 +137,11 @@ read_sector:
                 xor     a               ; drive 0 (ignored); also Cy = 0 = read
                 ld      b, 1            ; one sector
                 ld      c, $F9          ; media byte ($F9 = 720K; ignored, single drive)
-    IF DISK_BUILD
-                jp      dskio           ; LOCAL: no slot to cross, and the inter-slot
-                                        ; call disappears with it
-    ELSE
-                jp      dskio_calslt    ; tail-call: returns to our caller with DSKIO's CY
-                                        ; (A=0 cleared CY here -> read direction)
-    ENDIF
+                jp      dskio_calslt    ; tail-call: returns to our caller with DSKIO's
+                                        ; CY (A=0 cleared CY here -> read direction).
+                                        ; ONE name for both ROMs now: the local-vs-
+                                        ; cross-slot difference lives INSIDE it, so
+                                        ; both get the DISKOP_ERR mapping (§6.6o)
 
 ; write_sector — write one logical sector from a buffer via cross-slot DSKIO.
 ;   in:  DE = logical sector number, HL = buffer (512 bytes)
@@ -152,11 +162,7 @@ fatprim_write_sector:
                 ld      c, $F9          ; media byte (ignored, single drive)
                 ld      a, 0            ; drive 0 (ignored)
                 scf                     ; Cy = 1 = WRITE direction (MSX2 TH DSKIO)
-    IF DISK_BUILD
-                jp      dskio           ; LOCAL, as read_sector above
-    ELSE
-                jp      dskio_calslt    ; tail-call: returns to our caller with DSKIO's CY
-    ENDIF
+                jp      dskio_calslt    ; tail-call, as read_sector above
 
 ; ===========================================================================
 ; FAT12 READ layer (ported verbatim from disk.asm §FAT12 layer).

@@ -3217,7 +3217,20 @@ H_KILL          equ     $FDFE   ; KILL handler
 H_LSET          equ     $FE21   ; LSET handler
 H_RSET          equ     $FE26   ; RSET handler
 H_FIELD         equ     $FE2B   ; FIELD handler
-H_FILE          equ     $FE7B   ; FILES handler
+H_FILE          equ     $FE7B
+
+; --- H_FOPEN / FOPEN_SEL: see disk/equates.inc for the full rationale --------
+; 🏗️ Joost's ruling, 2026-09-19 (spec-diskcode-eviction.md §6.6m): the hook is
+; the cell the REFERENCE uses, and $FE5D is the one every file-OPENING verb
+; arrives at -- OPEN and MERGE measured by D-CHANHOOK, LOAD added by §6.6j.
+; Main's side of the contract: write FOPEN_SEL, call the cell through
+; chan_probe, dispatch on A. CF=0 back means no disk ROM claimed it.
+H_FOPEN         equ     $FE5D
+FOPEN_SEL       equ     DISKOP_OP   ; aliased; mutual exclusion argued in
+                                    ; disk/equates.inc's block
+FOPEN_SEL_LOAD  equ     $4C         ; NOT 0: 0 is a live DISKOP_OP value and
+                                    ; $FE5D is reached on paths that are not
+                                    ; ours -- see disk/equates.inc (§6.6p)   ; FILES handler
 H_DSKO          equ     $FDEF   ; DSKO$ handler -- 🔴 WAS $FDF4 AND THAT WAS WRONG
                                 ; (D-DSKOHOOK 2026-09-15). The CF-3300 claims $FDEF and does
                                 ; NOT claim $FDF4, and un-claiming $FDEF on it (POKE ,201 --

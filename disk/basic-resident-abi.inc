@@ -27,6 +27,12 @@ FLD_CHAN equ 0E01BH
 LRSET_W equ 0E01DH
 LRSET_DEST equ 0E01EH
 STRPTR equ 0E0C9H
+DISKOP_OP equ 0E9FBH
+DISKOP_ERR equ 0E098H
+CLPTR equ 0E02BH
+CLINK equ 0E02DH
+TXTBASE equ 08001H
+TXTMAX equ 0DB00H
 
 ; --- page-1 call-back targets: reached by an INTER-SLOT call (MSX2 TH), not an absolute one ---
 fname_expr equ 06E6EH

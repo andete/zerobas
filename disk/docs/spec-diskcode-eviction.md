@@ -1266,10 +1266,11 @@ that spec already declined once.
 **(2) THE PATTERN IS `hk_files`, NOT `hk_lrset`.** `hk_lrset` is TWO cells
 sharing one body, with `LRSET_JUST` telling them apart — it does not solve this
 problem, because here there is one cell and several verbs. `hk_files` is the
-shape that does: ONE cell, and the verb read from the PROGRAM TEXT, because
-`FN_RESUME` points just past the verb's own token so the byte before it is the
-token itself (`disk/kernel.asm`). No call-back, no new sysvar, and the same trick
-`NAME`'s `AS` and `COPY`'s `TO` already use.
+shape that does: ONE cell and a selector.
+⚠️ **BUT THE SELECTOR'S SOURCE IS NOT `hk_files`'s — CORRECTED IN §6.6n.** This
+paragraph first said the verb is read from the PROGRAM TEXT, the way `hk_files`
+reads the token before `FN_RESUME`. That is wrong for `LOAD`, and the reason is
+structural rather than incidental.
 
 **(3) STEPS 10–12 INHERIT THE ANSWER.** §6.6l established that no per-verb cell
 for the program-file verbs is the reference's PATTERN — the CF-3300 leaves
@@ -1294,6 +1295,109 @@ main does for `FILES`/`KILL`/`NAME`. `LOAD` is different: with no disk ROM,
 `LOAD"X"` must fall through to CASSETTE. So this hook needs a gate that REPORTS
 rather than RAISES, and main keeps its existing `diskslot_test` and cassette
 arms behind it.
+
+### 6.6n 🔴 THE SELECTOR CROSSES IN RAM, NOT IN THE PROGRAM TEXT (D-DPLMOVE, 2026-09-19)
+
+§6.6m said the pattern is `hk_files` and meant it twice over: one cell with a
+selector (right) and the selector read from the program text (wrong). The
+correction is worth more than the fix, because it names WHEN each shape applies.
+
+🎯 **`hk_files` CAN READ THE TOKEN BECAUSE ITS FILESPEC IS EVALUATED INSIDE THE
+HOOK.** `ex_files` stages `FN_RESUME` just past the verb's own token and calls
+the cell immediately; the byte in front of that cursor is therefore still
+`FILES_TOKEN` or `LFILES_TOKEN`, and the evaluator runs later, on the disk side,
+which is why `hk_files` pushes the selector across it on the stack.
+
+🔴 **`LOAD` EVALUATES ITS FILENAME IN MAIN, BEFORE THE HOOK EXISTS IN THE
+PICTURE.** `do_load` calls `fname_dev`, dispatches `CAS:` versus disk, and only
+then reaches `disk_prog_load`. By that point `FN_RESUME` has been overwritten
+with the EXPRESSION's resume point — `basic/cload.asm` reads it exactly that way
+twice, for the `,R` tail — so the byte in front of it is the closing quote of the
+filename, not the verb's token. Re-staging it would mean stashing the token's
+address across the evaluator, which is two bytes of RAM to avoid one.
+
+🟢 **SO THE SELECTOR CROSSES IN RAM, AND IT ALIASES `DISKOP_OP`.** That is this
+tree's own idiom rather than a shortcut: `basic/sysvars.inc` already binds
+`DEFT_STATUS` and `LE_STATUS` onto `DISKOP_STATUS` for mutually-exclusive
+consumers. `FOPEN_SEL equ DISKOP_OP`, and the exclusion is ARGUED where the
+binding is, not assumed: `DISKOP_OP` is main → SUB-ROM TENANT, while between
+main writing the selector and `disk.rom` reading it there is one inter-slot call
+and no tenant dispatch — the hook body needs no call-backs (§6.6h) and
+`disk.rom`'s FAT engine reaches the drive through DSKIO directly. ⚠️ Written
+down with it: an arm that ever DOES call back into main must re-assert the
+selector afterwards, or take its own cell.
+
+🟢 **AND IT COST NOTHING, WHICH IS WHY THE CELL WAS WORTH FINDING.** The last
+free byte below the channel-context table is `DISKOP_OP` itself — the five-byte
+gap at `$E9FB..$E9FF` that `basic/sysvars.inc` advertises is fully spent — so a
+new cell would have had to displace something. `scratchpad/rammap_sweep.py`
+(D-RAMMAP, the same day) is what made that readable at a glance instead of by
+hand.
+
+➡️ **THE GENERALISATION, for steps 10–12.** A verb whose argument is evaluated
+INSIDE its hook can carry the selector in the program text; a verb whose argument
+is evaluated BEFORE the hook must carry it in RAM. `OPEN`, `MERGE` and `SAVE` all
+evaluate their filespec in main, so all three take the RAM route and add a value
+to `FOPEN_SEL` — selector 1, 2 and 3 are reserved for them, and an unrecognised
+selector already returns `CF=0`, so each arm is a local edit to one `ret nz`.
+
+### 6.6p 🛑 `$FE5D` CANNOT BE CLAIMED, AND IT IS NOT A VERB ENTRY (D-DPLMOVE, 2026-09-19)
+
+Step 9 was implemented under §6.6m and **backed out at the battery**. The code is
+right; the CELL is not. Three measurements, each one falsifying the step before
+it.
+
+🔴 **(1) CLAIMING `$FE5D` BREAKS THE STOP TRAP.** `stop-trap-acceptance`'s
+`E_rearm_under_held_key_refires` asks that the STOP trap re-fire while the key is
+held: zerobas re-fires **3×** with the cell unclaimed and **1×** with it claimed,
+against a threshold of 2. Three runs each way, and the pre-change ROMs pass in a
+separate worktree, so this is not a flake and not pre-existing.
+
+🔴 **(2) IT IS THE CLAIM, NOT OUR HANDLER.** With `hk_dpload` reduced to an
+immediate `ret` — the cell claimed, the body doing nothing at all — the row still
+fails, twice. So no amount of fixing the handler helps: a `F7 <slot> <lo> <hi>
+C9` stub at `$FE5D` is by itself enough.
+⚠️ The MECHANISM is not established. Nothing in C-BIOS calls `$FE5D` (it defines
+the name and never references it) and neither does our main outside the call this
+step added. Recorded as an open question rather than guessed at — the decision
+below does not depend on it.
+
+🔴 **(3) AND THE NAME SAYS WHY THE IDENTIFICATION WAS NEVER SAFE.** `$FE5D` is
+**`H.NULO`**, which C-BIOS's public hook table documents as *"called for an
+operation for file-buffer 0, in DISKBASIC"* — and `docs/spec-basic-nodisk.md`
+ALREADY carried that name. It is a shared SUBSYSTEM cell, not a verb entry.
+`LOAD`, `OPEN` and `MERGE` all operate on file buffer 0, so un-claiming it
+disturbs all three — which is exactly the reading D-CHANHOOK and §6.6j took as
+evidence that they *share an entry*. A cell every one of the subjects uses cannot
+separate them; the POKE sweeps were measuring the subsystem
+([[readout-blind-to-its-own-subject]] again, in a new dress).
+⚠️ **§6.6l's "no per-verb cell for the program-file verbs" ALSO needs narrowing.**
+The same table names `H.MERG $FE67`, `H.SAVE $FE6C`, `H.BINS $FE71` and
+`H.BINL $FE76` — MERGE, SAVE, BSAVE and BLOAD each have a cell **of their own**.
+What the CF-3300 does is leave several of them UNCLAIMED, which is a different
+fact from their not existing, and §6.6l conflated the two.
+
+🙋 **SO THE RULING'S PREMISE IS REOPENED, AND ONLY JOOST CAN CLOSE IT.** §6.6m
+answered *"a cell of its own, or the cell the reference uses?"* with the latter,
+on the understanding that `$FE5D` was that cell. It is not: it is a subsystem
+hook we cannot claim without breaking an unrelated, measured behaviour. The
+ruling's PRINCIPLE is untouched — mirror the reference — but the cell it was
+applied to was mis-identified by me, twice, and the spec said so in a file I had
+read.
+
+🟢 **WHAT IS KEPT, ALL OF IT INERT.** The loop, the stream layer, the selector,
+`chan_probe`'s design and the ABI additions are built and correct; only the
+`hook_tab` row is backed out, which is a one-line change to restore. The main-ROM
+side is reverted, so `LOAD` behaves exactly as it did before this step and main's
+page-1 budget is unchanged. `disk.rom` carries 16 allowlisted-dead spans whose
+entry states its own retirement condition, as D-DPLPORT's did.
+
+🟢 **AND ONE REAL FIX SURVIVES ON ITS OWN MERITS.** `basic/fat-prim-body.inc`
+used to gate the DSKIO error mapping out of `disk.rom` entirely, so that ROM
+mapped no DSKIO failure to an MSX ERR code and wrote no `DISKOP_ERR`. It did not
+matter while every disk-ROM verb reached the drive by calling BACK into main's
+engine — but it is a latent defect for any verb that does not, which is the whole
+direction of this eviction. The mapping is now shared by both arms.
 
 ## 7. The channel trio, and the wall that is not one
 
