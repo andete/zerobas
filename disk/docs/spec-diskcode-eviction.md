@@ -1599,6 +1599,51 @@ counter to settle them.
 reasoning predicted (§6.6p) and only a full battery caught. `$FE67` must earn the
 same clearance before any byte rests on it.
 
+### 6.6t 🔴 IT WAS NEVER THE CELL: OUR DISK ROM CANNOT INSTALL AN 18th HOOK (D-FE67CLEAR, 2026-09-19)
+
+Joost asked for the `$FE67` clearance test before choosing a shape. `$FE67`
+failed it — and chasing that failure overturned §6.6p.
+
+**THE CLEARANCE RESULT.** Claim `$FE67` with a handler that is a bare `ret`,
+nothing calling it, and run the full battery: **131/132, red on
+`stop-trap-acceptance`** — the same row, the same values as `$FE5D`
+(`E_rearm_under_held_key_refires`, `flag` 1 against a threshold of 2).
+
+🔴 **SO THE CAUSE IS NOT THE CELL, AND §6.6p's EXPLANATION IS RETRACTED.** That
+section concluded `$FE5D` could not be claimed *because it is `H.NULO`, a
+file-buffer-0 subsystem cell*. That reasoning was wrong. Three cells now fail
+identically — `$FE5D`, `$FE67`, and **`$FDB3`, which no verb in the D-HOOKCOUNT
+run ever enters**. A cell nothing touches breaks the same row the same way.
+
+🎯 **IT IS THE COUNT, AND TWO SWAP TESTS PIN IT.** `hook_tab` installs
+**seventeen** hooks. With an eighteenth installed the row fails; with seventeen
+it passes **regardless of which seventeen**:
+
+| build | installed | `flag` |
+|---|---|---|
+| baseline | 17 | **3** ✅ |
+| `hk_clearance` present but its table row zeroed | 17 | **3** ✅ |
+| + `$FDB3` / `$FE5D` / `$FE67` installed | 18 | **1** ❌ |
+| + `$FDB3` installed, `H_MKI` row removed | 17 | **3** ✅ |
+| + `$FDB3` installed, `H_DSKO` row removed instead | 17 | **3** ✅ |
+
+The code-presence control matters as much as the swaps: `hk_clearance`'s bytes
+in the ROM with the table row zeroed passes, so it is neither the image size nor
+the layout shift. Only the INSTALLATION of an eighteenth stub does it.
+
+⚠️ **THE MECHANISM IS NOT ESTABLISHED, AND IS NOT GUESSED AT HERE.** The hook
+area is not corrupted: dumping `$FD9A..$FFE7` after boot and diffing baseline
+against +1 shows only the new stub's own five bytes, plus four `<lo>` target
+bytes of `H_NAME`/`H_KILL`/`H_COPY`/`H_FILE` shifted by exactly +5 because their
+handlers moved down the ROM. The table walk is correct. Why a eighteenth
+installed hook costs the STOP trap two of its three re-fires is open.
+
+🟢 **WHAT THIS UNBLOCKS.** The obstacle is OURS, not the reference's, and it is
+not about which address step 9 claims. `$FE67` remains the measured shared
+`LOAD`+`MERGE` entry (§6.6s) and is still the right cell for Joost's §6.6m
+shape. What has to be fixed first is the 18-hook ceiling — and one obvious
+avenue is that step 9 need not ADD a row at all if it can share an existing one.
+
 ## 7. The channel trio, and the wall that is not one
 
 `LSET`/`RSET`/`FIELD` need the channel engine: `fch_check` `$7080`,

@@ -284,8 +284,36 @@ item — do **one item per session** to keep context lean.
       ⚠️ The 16 parked spans in `disk.rom` are the WRONG SHAPE for this and
       should be retired rather than revived when Joost rules.
 
-- [ ] 🛑 **SUPERSEDED BY THE ABOVE — kept for the reasoning: `$FE5D` CANNOT BE
-      CLAIMED, AND IT IS NOT A VERB ENTRY.**
+- [ ] 🔴 **OUR DISK ROM CANNOT INSTALL AN 18th HOOK — AND THAT, NOT THE CELL,
+      IS WHAT BLOCKS STEP 9.**
+      🎚️ TIER 2 — it blocks the eviction at every address, so it outranks the
+      shape question it was hiding.
+      🤖 **AUTONOMOUS** — a defect in our own ROM with a deterministic
+      reproduction; no ruling needed to investigate it.
+      MEASURED 2026-09-19 (D-FE67CLEAR, `disk/docs/spec-diskcode-eviction.md`
+      §6.6t), running the clearance test Joost asked for before choosing a shape.
+      🔴 **§6.6p's EXPLANATION IS RETRACTED.** It said `$FE5D` could not be
+      claimed *because it is `H.NULO`, a file-buffer-0 cell*. Wrong. THREE cells
+      fail identically — `$FE5D`, `$FE67`, and `$FDB3`, which no verb in the
+      D-HOOKCOUNT run ever enters. A cell nothing touches breaks the same row
+      (`stop-trap-acceptance`'s `E_rearm_under_held_key_refires`, `flag` 1
+      against a threshold of 2) in exactly the same way.
+      🎯 **IT IS THE COUNT.** `hook_tab` installs SEVENTEEN hooks. An eighteenth
+      fails; seventeen passes regardless of WHICH seventeen — proved by swapping
+      the new hook in against `H_MKI` removed, and again against `H_DSKO`
+      removed. And the code-presence control rules out size and layout: the same
+      handler compiled in with its table row ZEROED passes.
+      ⚠️ **MECHANISM UNKNOWN, AND NOT GUESSED.** The hook area is not corrupted —
+      dumping `$FD9A..$FFE7` after boot and diffing shows only the new stub's own
+      five bytes plus four `<lo>` target bytes shifted by +5 because their
+      handlers moved down the ROM. The table walk is correct.
+      ➡️ Next: find why an eighteenth installed stub costs the STOP trap two of
+      its three re-fires. ⚠️ And note the cheap way around it if the ceiling
+      proves hard: step 9 need not ADD a row — sharing an existing one keeps the
+      count at seventeen.
+
+- [ ] 🛑 **SUPERSEDED — kept for its reasoning, but its CAUSE was wrong (see the
+      18-hook item above): `$FE5D` and the file-buffer-0 reading.**
       🎚️ TIER 2 — reasonable time, on `LOAD`.
       🙋 **NEEDS-JOOST** — his ruling (§6.6m) said *"the reference is the better
       oracle then me, so go with FE5D + selector"*, and the PRINCIPLE stands. The
@@ -2848,7 +2876,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:20552 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:20580 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -3014,7 +3042,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:7657 (T-6FE392)8 (T-529ABE)` from `TODO.md:18946 (T-529ABE)`: a
+      `TODO.md:7685 (T-6FE392)8 (T-529ABE)` from `TODO.md:18974 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -8501,7 +8529,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:18946 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:18974 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
