@@ -1447,6 +1447,12 @@ save/restore around it, or the crossing §6.2c priced. That is a THIRD option
 beside §6.6p's two, and it is a measurement nobody has taken: `disk.rom` had
 free space at the last reading, so a private buffer may simply be affordable.
 
+> 📘 **§§6.6r–§6.6aa ARE THE WORKING RECORD, WRITTEN AS THE MEASUREMENTS WERE
+> MADE, AND SEVERAL CORRECT EARLIER ONES.** The consolidated, retraction-checked
+> description of how `LOAD` works on the reference is
+> **`disk/docs/expansion-protocol.md` §8** — read that first, and come here for
+> the instrument, the controls and the history of each claim.
+
 ### 6.6r 🟢 MEASURED AT LAST: `LOAD` **DOES** HAVE CELLS OF ITS OWN, AND THE REFERENCE'S LOOP IS **PER SECTOR** (D-HOOKCOUNT, 2026-09-19)
 
 `scratchpad/hookcount_probe.py`. Two independent runs, every figure identical,

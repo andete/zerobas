@@ -5,7 +5,13 @@ SPDX-License-Identifier: 0BSD
 
 # zerobas disk expansion protocol — pinned spec (Phase 1.5 research spike)
 
-Status: **research spike output, not yet implemented.** This document pins the
+Status: **research spike output, not yet implemented.** §§1–6 are the Phase-1.5
+spike (the TRANSPORT: header, hooks, DSKIO). **§8 is a later and separate body of
+work (2026-09-19): the CONTROL FLOW** — who calls whom, with what, and what comes
+back — consolidated from eleven measured sections of
+`disk/docs/spec-diskcode-eviction.md`. Read §8 for how `LOAD` actually works.
+
+This document pins the
 exact standard MSX BASIC↔disk-ROM protocol the zerobas loader verbs
 (`BLOAD`/`LOAD`/`RUN`/`SAVE`/`BSAVE` for `"A:"`) must speak so that
 
@@ -258,110 +264,223 @@ zerobas-disk images for the provider-direction test.
 
 ---
 
-## 8. The CONTROL-FLOW half of the protocol (measured 2026-09-19)
+## 8. How `LOAD` actually works on the reference — the consolidated protocol
 
-§§2–3 pin the *transport*: which hooks exist, the install idiom, and DSKIO's
-register contract. They do not say **who drives whom**, and that is the half a
-faithful re-implementation actually has to match. It is now measured — see
-`disk/docs/spec-diskcode-eviction.md` §6.6r/§6.6s (which cells, how often) and
-**§6.6u** (who calls whom) and **§6.6v** (which cells are CLAIMED, and the
-register contract), from `scratchpad/hookcount_probe.py`,
-`scratchpad/loadproto_probe.py` and `scratchpad/crossabi_probe.py`.
+**Status: synthesis, 2026-09-19.** §§1–3 pin the *transport* — the extension-ROM
+header, which hooks exist, the install idiom, DSKIO's register convention. They
+do not say **who drives whom**, and that is the half a faithful re-implementation
+has to match. This section is the answer, consolidated from eleven working
+sections of `disk/docs/spec-diskcode-eviction.md` (§6.6r–§6.6aa) written as the
+measurements were made, several of them correcting earlier ones.
 
-🔴 **AND A CELL IS ONLY A CROSSING IF IT IS CLAIMED.** A claimed slot holds
-`F7 <slot> <lo> <hi> C9` (§2); an unclaimed one holds a bare `C9`, and BASIC
-calls it anyway — it returns and nothing crosses. **35 of the 118 published slots
-are claimed** on the CF-3300, static across every case measured. An entry counter
-sees an offered extension point and a real handover identically, so the claim
-state has to be read before any cell is called an entry (§6.6v; it cost this
-project two wrong cells).
+> 🔴 **HOW TO READ THIS.** Claims are separated into **measured**, **inferred**
+> and **not measured**, and the measured ones name their instrument and the
+> control that makes them believable. A claim with no control named is not one
+> you should build on. §8.7 lists the retractions that are still live, so nothing
+> here re-imports a corrected claim.
 
-The shape of a reference `LOAD`, in one line: **main calls one hook cell once,
-and the disk ROM does everything else on its own side.**
+It is placed before §7 deliberately: the clean-room statement closes the document.
 
-* main (page 1) calls the CLAIMED cell `$FE5D` — once, whatever the file size;
-  it is the cell every file verb enters, so the disk side necessarily selects on
-  something. It is the only one of these cells that pairs entry with exit;
-* control crosses to the disk ROM, which runs mount, directory search and the
-  **entire sector loop** there: every per-sector entry's caller is in the disk
-  ROM, at 3 data sectors and at 29 alike;
-* the disk side makes 8 outward inter-slot calls (mount traffic — the count does
-  not scale with sectors) and **every one targets its own slot**;
-* **no disk→main crossing is OBSERVED at either public inter-slot entry**
-  (`$0030` CALLF, `$001C` CALSLT) for the whole verb. ⚠️ Read that as scoped: it
-  bounds the two public entries, not every route back into main — a ROM can page
-  slots itself with `out ($a8)`, and §6.6v records evidence that something does;
-* `$FE76` (claimed) is entered ONE-WAY — it never returns through the cell — and
-  only on the BINARY-FORMAT program path: tokenised `LOAD` enters it, ASCII
-  `LOAD` does not, nor does `MERGE`, `SAVE` or `BLOAD`. `IY` there points at the
-  file name in padded 8.3 directory form;
-* `$FE67`, `$FE6C` and the two per-sector cells are UNCLAIMED. They are entered
-  — by main and by the disk ROM respectively — and they do nothing. They are
-  extension points this machine's disk ROM did not take.
+---
 
-### The register contract at `$FE5D` (§6.6w)
+### 8.1 A hook cell is only a crossing if it is CLAIMED
+
+A claimed cell holds `F7 <slot> <lo> <hi> C9` (§2); an unclaimed one holds a bare
+`C9`, and BASIC calls it anyway — it returns and **nothing crosses**. After boot,
+**35 of the 118 published slots are claimed**, identical across every case
+measured.
+
+🔴 **An entry counter cannot tell the two apart.** An offered extension point
+nobody took and a real inter-slot handover are both "entered once". Four of the
+cells this project's analysis had been built on are bare `RET`s: `$FE67`, `$FE6C`
+and both per-sector cells. Read a cell's five bytes before calling it an entry,
+a boundary or a crossing.
+
+*Measured: §6.6v, `scratchpad/crossabi_probe.py`. Control: the claim state is
+read directly, and independently corroborated by an entry/exit asymmetry — an
+unclaimed cell shows entries and no exits, because its `C9` at offset 0 returns
+before offset 4 is reached.*
+
+### 8.2 The crossing is `$FE5D`, and it carries a MODE, not a verb
+
+Main calls the claimed cell `$FE5D` — once per file operation, whatever the file
+size. It is the cell every file verb enters and the only one that pairs entry
+with exit. The register contract at that instant:
 
 | register | what it carries |
 |---|---|
-| `DE` | the **open MODE**: `1` input (`LOAD`, `MERGE`, `BLOAD`, `OPEN…INPUT`), `2` output (`OPEN…OUTPUT`), `$80` for `SAVE` |
-| `HL` | the file buffer — one value for the program verbs, another for `OPEN`'s channel |
+| `DE` | the **open mode**: `$0001` for `LOAD`, `MERGE`, `BLOAD` and `OPEN…FOR INPUT`; `$0002` for `OPEN…FOR OUTPUT`; `$0080` for `SAVE` |
+| `HL` | the **file buffer** — `$DC65` for the program verbs, `$DD6E` for `OPEN`'s channel |
+| `BC` | `$F871` — one past the end of the file-name block at `$F864..$F870` |
 | `AF` | invariant across every verb |
-| `BC`, `IX`, `IY` | vary without an interpretation the measurement supports |
+| `IX`, `IY` | vary; no interpretation this measurement supports |
 
-🔴 **There is NO verb selector at the crossing.** `LOAD`, `MERGE` and `BLOAD`
-arrive with the same cell, the same `DE` and the same `HL`. The reference opens
-file buffer 0 in a mode; the verb-level difference is carried by which OTHER
-claimed cell is entered and by what main does around the call.
+🔴 **There is no verb selector.** `LOAD`, `MERGE` and `BLOAD` arrive with the same
+cell, the same `DE` and the same `HL`. The reference opens file buffer 0 in a
+mode; verb-level difference is carried by *which other claimed cell* is entered
+and by what main does around the call.
 
-### What the disk side FETCHES for itself (§6.6x)
+⚠️ `$F41F` holds the statement's BASIC token at this instant (`$B5` `LOAD`, `$B6`
+`MERGE`, `$BA` `SAVE`, `$B0` `OPEN`) and is **not** the selector — 13 reads, all
+from main, none inside the crossing. It is main's own bookkeeping.
 
-Handing over is half the contract; the other half is what the disk ROM reads out
-of the shared work area once it has control. Measured with a read watchpoint over
-`$F380..$FFFF` armed for the crossing and filtered to reads whose PC is in the
-disk ROM:
+*Measured: §6.6v, §6.6w, `scratchpad/crossabi_probe.py` and
+`scratchpad/selector_probe.py`. Controls: a timing arm proving the capture
+happens before the crossing runs; a read watchpoint proving who consumes
+`$F41F`; a determinism arm proving two runs of one case are byte-identical.*
 
-* **38 distinct cells for `LOAD`, 36 for `SAVE`, 36 of them SHARED.** `LOAD` adds
-  exactly two; `SAVE` adds none. Both make 480 disk-side reads in the band.
-* `$F864..$F870` (13 B) is **the file name** — its bytes read `..S       BAS` and
-  `..T       BAS`. 🔑 `BC` at the crossing is `$F871`, exactly one past it, which
-  two independent measurements agree on.
-* The rest is small and hot: `$FB21..$FB22`, `$FB29`, `$FCC4`, `$FCC8` and the
-  word at `$FD73..$FD74`.
-* ⚠️ Scope: the SHARED work area only. The disk ROM's private RAM below `$F380`
-  is excluded by design — that is internal state, not interface.
+### 8.3 The disk ROM owns everything from there
 
-### The return direction (§6.6y)
+Control crosses and the disk ROM runs mount, directory search and the **entire
+sector loop** on its own side. Every per-sector entry's caller is in the disk
+ROM — **16 of 16** at 3 data sectors, **68 of 68** at 29 — each at a stack depth
+below the verb entry.
 
-* The disk ROM writes **22** work-area cells during a `LOAD` and **16** during a
-  `SAVE`, each exactly once. What main SEES changed on return is **34** and
-  **11** — different sets, because some cells are written and restored and
-  others are changed by another region.
-* `$F568..$F574` is the **output** name block: the disk side fills all 13 bytes
-  and they read `.S       BAS` / `.T       BAS` on return. With the input block
-  at `$F864..$F870` that is an input/output PAIR, both drive byte + 8.3 + one.
-* 🔴 **Part of the protocol executes from RAM**, and it is now located (§6.6z).
-  Five clusters, all BELOW `$F380` and therefore invisible to the `$F380..$FFFF`
-  band above: `$F1D9..$F1E1` (9 B, the hottest), `$F1F4`, **`$F255..$F2A3`
-  (79 B, the largest)**, `$F365..$F36B`, and `$F38C..$F399` — the last matching
-  the stub `scratchpad/cf_trace.py` found empirically and labelled CLPRIM.
-  🔑 **The disk ROM writes the 79-byte block at BOOT** (t≈3.80, against a
-  crossing at t≈164.03) and never rebuilds it per call. A faithful provider
-  inherits that obligation — RAM-resident code, which no design here has assumed
-  and which no ROM wall check would catch the absence of.
-* `$FC9E` (the documented JIFFY timer) and `$FCA2` change in both verbs and are
-  written only from main page 0 — the 60 Hz interrupt, as §6.6x predicted.
+The disk side makes **8** outward inter-slot calls, every one to its own slot,
+and the count does **not** scale with sectors (8 at 3, 8 at 29), so they are
+mount traffic.
 
-🟢 **CLOSED (§6.6aa): there is NO hand-back.** Watching port `$A8` inside the
-window, the page-1 selection changes exactly three times — `0-0` → `3-1` → `0-0`
-— with zero `DISK → elsewhere → DISK` excursions. The disk ROM is paged in once
-and stays for the whole crossing. The apparent puzzle (`$FE76` seeming to be
-entered mid-crossing) was an artefact of a probe printing entries and exits by
-category rather than in time order; a timestamped run puts `$FE76` after the
-crossing closes.
+**There is no hand-back.** Across the crossing the page-1 selection changes
+exactly three times — `0-0` → `3-1` → `0-0` — with **zero**
+`DISK → elsewhere → DISK` excursions. The disk ROM is paged in once and stays.
+⚠️ That is a claim about which ROM is *visible*; an inter-slot trampoline
+switches slots too, so visibility and execution are different statements.
 
-⚠️ **Still open:** why `SAVE` uses `$80` where `OPEN…FOR OUTPUT` uses `2`; what
-`IX`/`IY` hold; the installers of the four RAM clusters other than the 79-byte
-block; and what any of the RAM-resident code does.
+*Measured: §6.6u (`scratchpad/loadproto_probe.py`) and §6.6aa
+(`scratchpad/slotswitch_probe.py`). Controls: a caller whose region is known a
+priori (`H.TIMI`'s is main page 0, 2244/2244); and a known-answer pair — page 1
+must read MAIN at the crossing's entry and DISK somewhere inside it.*
+
+### 8.4 The shared work area — the interface surface
+
+**What the disk side reads.** 38 distinct cells during a `LOAD`, 36 during a
+`SAVE`, **36 of them shared**; `LOAD` adds exactly two and `SAVE` adds none. Both
+make **480** disk-side reads in the band.
+
+**What the disk side writes.** 22 cells during a `LOAD` and 16 during a `SAVE`,
+**each exactly once**. What main *sees changed* on return is 34 and 11 — a
+different set, because some cells are written and restored and others are changed
+by another region.
+
+**Two 13-byte name blocks, an input/output pair.** Both are drive byte + 8.3 name
++ one trailing byte:
+
+* `$F864..$F870` — the name main supplies. `BC` points one past it.
+* `$F568..$F574` — the name the disk side publishes. It reads `.S       BAS`
+  after `LOAD"S.BAS"` and `.T       BAS` after `SAVE"T.BAS"`.
+
+The rest is small and hot: `$FB21..$FB22`, `$FB29`, `$FCC4`, `$FCC8`, and the
+word at `$FD73..$FD74`.
+
+`$FC9E` (the documented JIFFY timer) and `$FCA2` change in both verbs and are
+written only from main page 0 — the 60 Hz interrupt, which runs throughout.
+
+⚠️ **Scope.** This is the shared work area `$F380..$FFFF` only. The disk ROM's
+private RAM below `$F380` is excluded by design — internal state, not interface.
+
+*Measured: §6.6x (`scratchpad/diskreads_probe.py`) and §6.6y
+(`scratchpad/diskwrites_probe.py`). Controls: SP lies outside the watched band,
+so these are work-area accesses and not push/pop traffic; the log ceiling was not
+reached, so each set is complete rather than a prefix; and **every changed cell
+has a recorded writer** — an orphan would mean the watchpoint is blind and every
+"the disk side does not write this" reading unfounded.*
+
+### 8.5 Part of the protocol executes from RAM
+
+Five clusters of code run from RAM during the crossing, **all below `$F380`** —
+which is why the work-area probes could report a writer "in region RAM" and not
+say where it lived:
+
+| range | span | fetches |
+|---|---|---|
+| `$F1D9..$F1E1` | 9 B | 582 |
+| `$F1F4` | 1 B | 2 |
+| **`$F255..$F2A3`** | **79 B** | 45 |
+| `$F365..$F36B` | 7 B | 196 |
+| `$F38C..$F399` | 14 B | 520 |
+
+The last matches the stub `scratchpad/cf_trace.py` located empirically and
+labelled CLPRIM. ⚠️ Clusters bridge gaps of up to 16 B — operands are fetched as
+data and a `jr` skips forward — so the spans are an upper bound on extent, not a
+measured routine size.
+
+🔑 **The disk ROM installs the 79-byte block at boot.** Writes to `$F255..$F2A3`
+come from main page 0 at t≈0.372, main page 1 at t≈1.191 and **the disk ROM at
+t≈3.798**; the crossing itself is at t≈164.03. Every write precedes the crossing
+by ~160 emulated seconds, so the block is installed once and is **not** rebuilt
+per call.
+
+*Measured: §6.6z (`scratchpad/ramcode_probe.py`). Control: an execution detector
+(`wp_last_address == PC` selects opcode fetches) validated by a known-answer pair
+— `$FE5D` holds `F7` and must appear; the read-only name block at `$F864..$F870`
+must not.*
+
+### 8.6 A `LOAD`, end to end
+
+1. Main executes the tokenised `LOAD`. `$F41F` holds the statement token — main's
+   own record, never read by the disk side.
+2. Main places the file name in FCB form at `$F864..$F870` and sets `BC` one past
+   it, `HL` to the file buffer, `DE` to the open mode (`$0001`, a read).
+3. Main calls `$FE5D`. Page 1 is main at this instant.
+4. The cell's `F7 <slot> <lo> <hi> C9` crosses; page 1 becomes the disk ROM.
+5. The disk ROM does mount, directory search and the whole sector loop on its own
+   side, reading 38 shared work-area cells (480 reads) and making 8 outward
+   inter-slot calls to its own slot. Code in five RAM clusters installed at boot
+   runs alongside it.
+6. The disk side writes 22 work-area cells, each once, publishing the resolved
+   name at `$F568..$F574`.
+7. Control returns through the cell's trailing `C9`; page 1 returns to main. Main
+   sees 34 cells changed.
+8. **After** the crossing closes, main enters `$FE76` — claimed, one-way, and
+   specific to the binary-format program path: tokenised `LOAD` enters it; ASCII
+   `LOAD`, `MERGE`, `SAVE` and `BLOAD` do not.
+
+### 8.7 Live retractions — do not re-import these
+
+| claim | status |
+|---|---|
+| "`$FE67` is the shared verb entry" (§6.6s) | 🔴 **retracted** by §6.6v — `$FE67` is a bare `RET` |
+| "main hands `LOAD` over at `$FE67`" (§6.6u) | 🔴 **cell corrected** to `$FE5D` by §6.6v; the shape was right |
+| "its sector loop is driven from outside the hook" (§6.6r) | 🔴 **retracted** by its own author; answered by §6.6u — the loop is inside the disk ROM |
+| "per-sector largely dissolves the buffer-aliasing hazard" (§6.6r) | 🔴 **withdrawn** — premised on main keeping the loop, which it does not |
+| "`$FE76` is entered between `$FE5D`'s entry and exit" (§6.6v) | 🔴 **retracted** by §6.6aa — an artefact of a probe printing entries and exits by category rather than in time order |
+| "H.BINL is `BLOAD`'s cell" (public name) | 🔴 **refuted**, then **refined** — it marks the binary-FORMAT path |
+
+### 8.8 Inferred, not measured
+
+* That the two 13-byte blocks are FCB-style **drive byte + 8.3 + one trailing
+  byte** is read off their contents and their size, not from any specification.
+* That main page-0 activity during the crossing is the 60 Hz interrupt is
+  strongly supported (`$FC9E` is the documented JIFFY) but was not isolated by
+  disabling interrupts.
+
+### 8.9 Not measured
+
+* Why `SAVE` uses `$0080` where `OPEN…FOR OUTPUT` uses `$0002` — two writes, two
+  codes.
+* What `IX` and `IY` carry at the crossing.
+* The installers and install times of the four RAM clusters other than the
+  79-byte block, and whether any cluster is shared with non-disk BIOS function.
+* What any of the RAM-resident code **does**. 🔴 And it must stay that way: code
+  sitting in RAM is reference ROM content that has merely been relocated, so
+  reading its bytes would be reading the reference. Range, size, installer region
+  and install time only.
+* Whether `SAVE` and `MERGE` share the whole shape, or only the crossing.
+
+### 8.10 What a faithful implementation inherits
+
+* **One claimed cell** carrying a mode byte, not a verb dispatch — cheaper than
+  the selector this project had planned for.
+* **The whole loop below the boundary**: the disk side owns mount, directory and
+  sector transfer for the duration of one call.
+* **A shared work-area contract of ~38 cells**, nearly all common to read and
+  write paths, with an input name block and an output name block.
+* 🔴 **RAM-resident code installed at boot** — a *new kind* of cost. No design in
+  this project has assumed it, and `wall-assertion-check` covers ROM only, so
+  nothing here would have caught its absence.
+* 🔴 **And the buffer-aliasing hazard is the price of the faithful shape**, not an
+  argument against it: a disk side that owns the loop holds buffer state across
+  the whole transfer while a BASIC statement is live.
 
 ---
 
@@ -372,5 +491,19 @@ openMSX breakpoints on documented hook addresses and reading the live Z80
 register file / system work areas. The reference disk ROM's code bytes (slot 3-1
 $4000–$7FFF) were never captured, read, or disassembled. Every address and
 register convention is cited to the MSX2 Technical Handbook, the public MSX hook
-table, or such observation. No implementation code was written for this spike;
-no commit was made.
+table, or such observation. No implementation code was written for the Phase-1.5
+spike (§§1–6); no commit was made for it.
+
+🔴 **AND THE SAME LINE, RESTATED FOR §8'S MEASUREMENTS (2026-09-19).** They read
+registers, RAM addresses, work-area RAM CONTENTS, I/O port values and the
+slot-select state, at breakpoints and watchpoints on RAM addresses in the
+published hook table. No ROM byte was read, no hook cell's `<lo> <hi>` was
+followed, nothing was single-stepped into ROM, and nothing was disassembled.
+Two further restrictions were adopted as §8's measurements got closer to the ROM:
+
+* a register holding an address in page 0 or 1 is reported as a **region**, never
+  as an address, and a slot that was not sampled is never named;
+* 🔴 **the bytes of the RAM-resident code (§8.5) were never read.** Code sitting
+  in RAM is reference ROM content that has merely been RELOCATED, so reading it
+  would be reading the reference. Its address range, size, installer region and
+  install time are measured; its contents are not.
