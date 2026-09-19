@@ -340,6 +340,25 @@ item — do **one item per session** to keep context lean.
       crossing at t≈164.03, so installed once and NOT rebuilt per call. The
       timing is measured, not inferred: the probe logs the crossing's own
       timestamp.
+      🔍 **AND THE GAP ANALYSIS IS DONE (D-HOOKCENSUS, §6.7).** A hook census
+      taken the SAME WAY on both machines: the reference claims **35** of 118
+      slots, we claim **18**, and **ours are a strict SUBSET** — not one cell we
+      claim is left bare by the reference. The census also found what reading
+      `hook_tab` could not: 17 rows but 18 installed, because `disk/init.asm`
+      writes `$FFA7` (HPHYD) directly for the provider direction.
+      🔑 **THE HEADLINE IS THAT THE ARCHITECTURES ARE INVERTED, BY AN EARLIER
+      DECISION RATHER THAN BY OVERSIGHT.** The reference keeps mount, directory,
+      FAT and the sector loop in its disk ROM. We keep the FAT12 engine and the
+      loop in MAIN (`basic/fat.asm`, `basic/cload.asm`) and use the disk ROM as a
+      pure sector transport over `CALSLT $4010` — the committed Depth-A plan of
+      `expansion-protocol.md` §4b/§5, chosen so our loader can drive a FOREIGN
+      disk ROM. Step 9 is the proposal to invert it back, and BOTH directions
+      have to keep working.
+      🟢 **Two things got CHEAPER:** no verb selector is needed (a mode byte
+      suffices), and our claimed set already nests inside the reference's.
+      🔴 **Two are BLOCKING and are ONE slice:** claim `$FE5D` (blocked by
+      §6.6t's parked correlation) and move the loop below it (the D-DPLMOVE slice
+      that was backed out).
       ➡️ **That is a NEW KIND of cost for step 9 — RAM, not ROM.**
       `wall-assertion-check` covers ROM only, so nothing here would have caught
       its absence. ⚠️ Unmeasured: the other four clusters' installers, whether
@@ -2983,7 +3002,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:20687 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:20706 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -3149,7 +3168,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:7792 (T-6FE392)8 (T-529ABE)` from `TODO.md:19081 (T-529ABE)`: a
+      `TODO.md:7811 (T-6FE392)8 (T-529ABE)` from `TODO.md:19100 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -8636,7 +8655,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:19081 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:19100 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

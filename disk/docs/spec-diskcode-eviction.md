@@ -2249,6 +2249,83 @@ and `$FE76` is a main-side step that follows it. §6.6u's "no disk→main crossi
 either public inter-slot entry" needed no widening after all — but it stays
 scoped as written, because visibility and execution are different claims.
 
+## 6.7 🔍 GAP ANALYSIS — zerobas AGAINST THE MEASURED PROTOCOL (D-HOOKCENSUS, 2026-09-19)
+
+`disk/docs/expansion-protocol.md` §8 describes how `LOAD` works on the reference.
+This is the other half: **what zerobas does, and whether the difference matters.**
+Reference-side values are cited to §8; our side is either measured on our own
+machine or cited to our source. ⚠️ **No redesign is proposed here.** The point is
+to put the shape in front of Joost before anything is built.
+
+🔴 **AND THE HEADLINE IS THAT THE TWO ARCHITECTURES ARE INVERTED — BY AN EARLIER
+DECISION, NOT BY OVERSIGHT.** The reference puts mount, directory, FAT and the
+sector loop in its disk ROM and calls it once. zerobas puts the FAT12 engine and
+the loop in MAIN (`basic/fat.asm`, `basic/cload.asm`) and uses the disk ROM as a
+**pure sector transport** reached by `CALSLT $4010` (DSKIO). That is exactly the
+committed **Depth-A** plan of `expansion-protocol.md` §4b/§5, chosen so our loader
+can drive a FOREIGN disk ROM. Step 9 is the proposal to invert it back.
+
+### The hook census, measured on BOTH machines the same way
+
+`scratchpad/hookcensus_probe.py` reads the first byte of all 118 published slots
+after boot and classifies `F7` (claimed) against `C9` (bare). Run on the
+reference and on `C-BIOS_MSX1_EU_BASIC_DISK`, which wires our own `build/disk.rom`
+(verified by hash, not assumed).
+
+🔑 **The reference claims 35; we claim 18; and OUR 18 ARE A STRICT SUBSET.**
+There is not one cell we claim that the reference leaves bare. The 17 it claims
+and we do not are `$FD9F`, `$FE4E`, `$FE58`, **`$FE5D`**, `$FE62`, `$FE71`,
+`$FE76`, `$FE80`, `$FE85`, `$FE8A`, `$FE99`, `$FE9E`, `$FEA3`, `$FEAD`, `$FEB2`,
+`$FEB7`, `$FFAC`.
+
+🔎 **AND THE CENSUS FOUND SOMETHING READING THE TABLE COULD NOT.** `hook_tab`
+has 17 rows but 18 cells are installed: `$FFA7` (HPHYD) is written directly by
+`disk/init.asm`, outside the table, for the PROVIDER direction so a foreign host
+reaches our DSKIO. Benign and documented — but it is why the census was taken
+instead of counting table rows. A table is an intention; a census is the machine.
+
+*Controls: a two-sided known-answer pair on EACH machine — on the reference
+`$FD9F` must be claimed (§2 observed its stub) and `$FE67` must not (§6.6v); on
+ours `$FE7B` must be claimed and `$FE5D` must not (`disk/kernel.asm` records that
+row as built and BACKED OUT). One arm alone would miss a reader wrong in the
+other direction.*
+
+### The gap table
+
+| # | element | REFERENCE (§8) | ZEROBAS | MATTERS? | why |
+|---|---|---|---|---|---|
+| 1 | hook cells claimed | 35 of 118 | **18**, a strict subset of the reference's | 🟢 **NOT A GAP** | nothing we claim is claimed by nobody else; the sets are nested, not divergent |
+| 2 | the file-verb crossing | `$FE5D`, claimed, once per operation (§8.2) | **not claimed at all** — `H_FOPEN` was built and backed out | 🔴 **BLOCKING** | the reference's shape has no other entry point; §6.6t's parked correlation currently reddens a row on any new claim |
+| 3 | what crosses | an open MODE in `DE`, buffer in `HL`, name block via `BC` (§8.2) | per-sector DSKIO calls: drive/sector/count/buffer per MSX2 TH §5 | 🟡 **COSTS TIME** | one crossing per operation versus one per sector; §6.2c priced the arithmetic |
+| 4 | verb selector | none — `LOAD`/`MERGE`/`BLOAD` indistinguishable (§8.2) | one claimed cell PER VERB | 🟢 **NOT A GAP, and cheaper than planned** | §6.6m's "selector" turns out to be unnecessary: a mode byte suffices |
+| 5 | who owns the loop | the disk ROM, mount through sector transfer (§8.3) | **main** — `basic/cload.asm` `disk_prog_load`, `basic/fat.asm` | 🔴 **BLOCKING** | this IS step 9; D-DPLMOVE built the move and backed it out |
+| 6 | who owns FAT/directory | the disk ROM | **main** (`basic/fat.asm`, loader-side engine over DSKIO) | 🟡 **COSTS BYTES** | the Depth-A choice; it is what keeps a foreign disk ROM drivable |
+| 7 | shared work-area contract | ~38 cells read, 22 written; two 13-byte name blocks (§8.4) | private: `DISKOP_OP`, `DISKOP_ERR`, `FAT_DBUF` and friends | 🟢 **NOT A GAP today** | we own both sides, so the contract is ours to pick; it matters only for the PROVIDER direction |
+| 8 | RAM-resident code | five clusters below `$F380`; the disk ROM installs a 79 B block at boot (§8.5) | **3 bytes** — `$F37D` gets `JP bdos_entry` at INIT (`disk/init.asm`) | 🟡 **COSTS BYTES IF WE INVERT** | we are not at zero, but ours is a dispatch vector for a foreign host, not logic that runs during our own load |
+| 9 | hand-back during a transfer | none; page 1 goes `0-0` → `3-1` → `0-0` (§8.3) | n/a — main never leaves, so there is nothing to hand back | 🟢 **NOT A GAP** | a consequence of row 5, not an independent difference |
+
+### What this changes about step 9
+
+🟢 **Two things got CHEAPER.** Row 4: no verb selector is needed, so §6.6m's
+shape costs a mode byte rather than a dispatch. Row 1: our claimed set is already
+a subset of the reference's, so adopting `$FE5D` widens it in the direction the
+reference already went rather than inventing a cell.
+
+🔴 **Two things are confirmed BLOCKING, and they are the same slice.** Rows 2
+and 5 are one change: claim `$FE5D`, move the loop below it. Row 2 is blocked by
+§6.6t's parked correlation on `stop-trap-acceptance`; row 5 is the slice
+D-DPLMOVE built and backed out.
+
+⚠️ **And one thing is a genuine NEW cost nobody had priced (row 8).** RAM-resident
+code is a different budget from ROM, and `wall-assertion-check` covers ROM only —
+so its absence could never have been caught by a gate. We are not at zero (the
+`$F37D` vector exists), but nothing in our design runs from RAM during a load.
+
+⚠️ **WHAT THIS SECTION DOES NOT DO.** It does not propose the inversion, price
+it in bytes, or claim the Depth-A decision was wrong — Depth A is what lets our
+loader drive a FOREIGN disk ROM, which is a requirement §8 says nothing about.
+Both directions have to keep working, and that trade is Joost's.
+
 ## 7. The channel trio, and the wall that is not one
 
 `LSET`/`RSET`/`FIELD` need the channel engine: `fch_check` `$7080`,
