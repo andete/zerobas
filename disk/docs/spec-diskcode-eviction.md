@@ -2114,6 +2114,79 @@ breakpoints on RAM addresses in the published hook table. No ROM byte read, no
 hook target followed, nothing single-stepped into ROM, nothing disassembled. PC
 is never printed — only the region it falls in.
 
+### 6.6z 🔑 THE RAM-RESIDENT CODE IS LOCATED, SIZED AND DATED — THE DISK ROM INSTALLS IT AT BOOT (D-RAMCODE, 2026-09-19)
+
+§6.6y found that part of the crossing executes from RAM and deliberately did not
+guess what it was. `scratchpad/ramcode_probe.py` locates it.
+
+🎯 **AN EXECUTION DETECTOR, NOT A DATA-ACCESS ONE.** `openmsx-probing-toolbox.md`
+§1 records that a `read_mem` watchpoint fires on the Z80 OPCODE FETCH as well as
+on data reads, and that PC at that moment is the executing instruction. So
+`wp_last_address == PC` selects FETCHES and rejects data reads. The earlier
+probes recorded PC at data accesses, which only ever sampled instructions that
+happened to touch the watched band; this samples execution itself.
+
+🔴 **TWO CONTROLS WITH KNOWN ANSWERS ARE WHAT MAKE THE REST READABLE.** `$FE5D`
+holds `F7` and every probe in this arc has watched it execute — it IS in the
+executed set. `$F864..$F870` is the name block the disk side READS and never runs
+(§6.6x) — it is ABSENT. One would catch a detector that misses fetches, the other
+one that passes data reads. Plus: the quiet case executes nothing, two runs give
+an identical set, and the ceiling was not reached.
+
+🟢 **FIVE CLUSTERS OF RAM CODE, ALL BELOW `$F380`.**
+
+| range | span | distinct | fetches | |
+|---|---|---|---|---|
+| `$F1D9..$F1E1` | 9 B | 5 | **582** | the hottest |
+| `$F1F4` | 1 B | 1 | 2 | |
+| `$F255..$F2A3` | **79 B** | 18 | 45 | the largest |
+| `$F365..$F36B` | 7 B | 4 | 196 | |
+| `$F38C..$F399` | 14 B | 10 | 520 | 🔑 matches the stub `scratchpad/cf_trace.py` found empirically and labelled CLPRIM |
+
+Plus execution inside the published hook table itself, which is expected and is
+its own confirmation: `$FD9A..$FDA3` (the interrupt pair), `$FE5D` once, and
+`$FFCF..$FFD4`. ⚠️ Clusters bridge gaps of up to 16 B — operands are fetched as
+data and a `jr` skips forward, so a strict run would shatter one routine into
+fragments. The spans are therefore an upper bound on extent, not a measured
+routine size.
+
+🔑 **AND THIS IS WHY THE EARLIER PROBES COULD NOT SEE IT.** §6.6x and §6.6y watch
+`$F380..$FFFF`. Every one of these clusters is BELOW that. They reported a writer
+whose region was RAM and could not say where it lived, because the region was all
+they sampled.
+
+🔴 **WHO INSTALLS THE 79-BYTE BLOCK, AND WHEN.** Watching writes to
+`$F255..$F2A3` from reset:
+
+| writer | writes | first | last |
+|---|---|---|---|
+| MAIN-P0 | 158 | t=0.3723 | t=0.3737 |
+| MAIN-P1 | 3 | t=1.1911 | t=1.1924 |
+| **DISK** | **158** | **t=3.7983** | **t=3.8034** |
+
+79 distinct cells in ONE contiguous run, and 158 = 2 × 79 — each side writes the
+whole block twice. 🎯 **The crossing itself is at t=164.0254 and the LAST write to
+the range is at t=3.8034 — 160 emulated seconds earlier.** So the block is
+installed once, during boot, and is **not** rebuilt per call. That timing is
+measured rather than inferred: the probe logs the crossing's own timestamp
+precisely so "t=3.8 looks like boot" did not have to be an assumption.
+
+➡️ **WHAT THIS OBLIGES STEP 9 TO.** The reference's disk ROM writes **79 bytes of
+RAM-resident code at boot**, and code in that block runs during a file operation.
+No design in this project has assumed RAM-resident code at all. It is not a large
+number, but it is a NEW KIND of cost — RAM, not ROM — and `wall-assertion-check`
+covers ROM only, so nothing would have caught its absence.
+
+⚠️ **WHAT IS NOT MEASURED.** The other four clusters' installers and install
+times; whether any of the five is shared with non-disk BIOS function; and what
+any of this code DOES.
+
+🔴 **CLEAN ROOM, AND THE LINE IS TIGHTER HERE THAN ANYWHERE ELSE IN THIS ARC.**
+Code sitting in RAM is reference ROM content that has merely been RELOCATED, so
+reading its bytes would be reading the reference. This section reports an address
+RANGE, a SIZE, the REGION of each writer and the emulated TIME. Not one byte of
+that code was read, disassembled or single-stepped.
+
 ## 7. The channel trio, and the wall that is not one
 
 `LSET`/`RSET`/`FIELD` need the channel engine: `fch_check` `$7080`,

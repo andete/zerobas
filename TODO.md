@@ -330,11 +330,20 @@ item — do **one item per session** to keep context lean.
       resolves §6.6x's deliberately-unnamed block: `$F568..$F574` is an OUTPUT,
       filled by the disk side and reading `.S       BAS` / `.T       BAS` on
       return, so with `$F864..$F870` it forms an input/output PAIR.
-      🔴 **PART OF THE PROTOCOL EXECUTES FROM RAM** — eleven bytes of a third name
-      copy at `$F5B2..$F5BD`, plus `$F5C2`/`$F5C4`/`$F5CA..$F5CD`, are written by
-      code in pages 2-3, neither the disk ROM page nor main ROM. ⚠️ What that
-      code IS is unmeasured. It matters because a faithful step 9 may need
-      RAM-resident code of its own, which no design here has assumed.
+      🔴 **PART OF THE PROTOCOL EXECUTES FROM RAM, AND IT IS NOW LOCATED
+      (D-RAMCODE, §6.6z).** Five clusters, ALL BELOW `$F380` — which is why the
+      `$F380..$FFFF` band of §6.6x/§6.6y could report a RAM writer but not say
+      where it lived: `$F1D9..$F1E1` (9 B, 582 fetches), `$F1F4`,
+      **`$F255..$F2A3` (79 B, the largest)**, `$F365..$F36B`, `$F38C..$F399`
+      (the stub `scratchpad/cf_trace.py` found empirically and called CLPRIM).
+      🔑 **The DISK ROM writes the 79-byte block at BOOT** — t≈3.80 against a
+      crossing at t≈164.03, so installed once and NOT rebuilt per call. The
+      timing is measured, not inferred: the probe logs the crossing's own
+      timestamp.
+      ➡️ **That is a NEW KIND of cost for step 9 — RAM, not ROM.**
+      `wall-assertion-check` covers ROM only, so nothing here would have caught
+      its absence. ⚠️ Unmeasured: the other four clusters' installers, whether
+      any cluster is shared with non-disk BIOS function, and what the code does.
       🆕 **K17 is the control that licenses the comparison:** every changed cell
       has a recorded writer, zero orphans — so the write set is complete and
       "the disk side does not write this" is a real claim.
@@ -2970,7 +2979,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:20674 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:20683 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -3136,7 +3145,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:7779 (T-6FE392)8 (T-529ABE)` from `TODO.md:19068 (T-529ABE)`: a
+      `TODO.md:7788 (T-6FE392)8 (T-529ABE)` from `TODO.md:19077 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -8623,7 +8632,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:19068 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:19077 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

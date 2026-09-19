@@ -339,10 +339,15 @@ disk ROM:
 * `$F568..$F574` is the **output** name block: the disk side fills all 13 bytes
   and they read `.S       BAS` / `.T       BAS` on return. With the input block
   at `$F864..$F870` that is an input/output PAIR, both drive byte + 8.3 + one.
-* 🔴 **Part of the protocol executes from RAM.** Eleven bytes of a third name
-  copy at `$F5B2..$F5BD`, plus `$F5C2`, `$F5C4` and `$F5CA..$F5CD`, are written
-  by code whose PC is in pages 2-3 — neither the disk ROM page nor main ROM.
-  What that code is has not been measured.
+* 🔴 **Part of the protocol executes from RAM**, and it is now located (§6.6z).
+  Five clusters, all BELOW `$F380` and therefore invisible to the `$F380..$FFFF`
+  band above: `$F1D9..$F1E1` (9 B, the hottest), `$F1F4`, **`$F255..$F2A3`
+  (79 B, the largest)**, `$F365..$F36B`, and `$F38C..$F399` — the last matching
+  the stub `scratchpad/cf_trace.py` found empirically and labelled CLPRIM.
+  🔑 **The disk ROM writes the 79-byte block at BOOT** (t≈3.80, against a
+  crossing at t≈164.03) and never rebuilds it per call. A faithful provider
+  inherits that obligation — RAM-resident code, which no design here has assumed
+  and which no ROM wall check would catch the absence of.
 * `$FC9E` (the documented JIFFY timer) and `$FCA2` change in both verbs and are
   written only from main page 0 — the 60 Hz interrupt, as §6.6x predicted.
 
