@@ -2349,6 +2349,62 @@ starts.
 one byte of any cluster was read, disassembled or single-stepped — code sitting in
 RAM is relocated reference content, and reading it would be reading the reference.
 
+### 6.6ad 🔑 `IX` IS A VERB-FAMILY SELECTOR, AND IT QUALIFIES §8.2 (D-IXFAM, 2026-09-20)
+
+`IX` was the last unnamed item in §8.9. It had printed `differs` in every case,
+which says only that its value sits in page 0 or 1. **"Differs across the set" was
+the wrong question.** Grouping the ten verbs by EQUAL VALUE — which prints no
+address and is therefore safe for a page-1 register — asks the decisive one.
+
+🟢 **`IX` TAKES EXACTLY THREE VALUES, ALL IN PAGE 1, AND THEY PARTITION THE VERBS
+BY FAMILY:**
+
+| class | verbs |
+|---|---|
+| BASIC-program file | `LOAD`, `MERGE`, `SAVE`, `SAVE"…",A` |
+| `OPEN` channel | `OPEN…INPUT` / `OUTPUT` / `APPEND` / `RANDOM` |
+| binary image | `BLOAD`, `BSAVE` |
+
+Invariant across files (the four-load arm already showed that), identical across
+two runs, and page 1 at that instant is MAIN (§6.6aa measured the page-1 selection
+as `0-0` at the crossing's entry). **So `IX` is a main-ROM page-1 pointer chosen by
+verb family.** ⚠️ What it points AT is inside the reference's ROM and was not
+read; "a per-family vector" is the obvious reading and is NOT asserted here.
+
+🔴 **AND THIS QUALIFIES §8.2's "THERE IS NO VERB SELECTOR".** That sentence rests
+on `LOAD`, `MERGE` and `BLOAD` arriving with the same cell, the same `DE` and the
+same `HL` — all three still true. But two registers DO separate `BLOAD` from
+`LOAD`/`MERGE`:
+
+| register | classes over the ten verbs | separates `BLOAD`? |
+|---|---|---|
+| `HL` | 2 — program-file vs channel | ❌ shares with `LOAD`/`MERGE` |
+| `DE` | 5 — the open-mode codes (§6.6ab) | ❌ shares (`$0001`) |
+| **`IX`** | **3 — by family** | ✅ binary image is its own class |
+| **`BC`** | **4** | ✅ `$0000` for `BLOAD`, the start address for `BSAVE` |
+
+➡️ **The precise statement is narrower and stronger than §8.2's:** **no measured
+register separates `LOAD` from `MERGE`** — they are identical in `AF`, `BC`, `DE`,
+`HL`, `IX` and `IY`. `BLOAD` is NOT in that position; it is separated by family in
+`IX` and individually in `BC`. What the crossing lacks is a verb code, not all
+discrimination.
+
+🔑 **AND THE THREE REGISTERS AGREE ON ONE STRUCTURE, AT THREE RESOLUTIONS.** `HL`
+splits program-file from channel (which buffer); `IX` splits program-file from
+channel from binary image (which family); `BC` splits the same way and then
+separates the binary pair, carrying `BSAVE`'s start address as typed (§6.6ab).
+Three registers, one nested partition, measured independently.
+
+⚠️ **`IY` STAYS UNNAMED.** It groups `{BLOAD, every OPEN}` against
+`{LOAD, MERGE, SAVE, SAVE,A}` with `BSAVE` alone — a third partition that matches
+neither of the others and that nothing in these ten points explains.
+
+🔴 **CLEAN ROOM.** The partition is printed as verb groupings and page numbers.
+No page-0 or page-1 address was printed, no target was followed, nothing was read
+from ROM. That is what made a page-1 register reportable at all.
+
+✅ **§8.9 IS NOW EMPTY** and the measurement arc is complete.
+
 ## 6.7 🔍 GAP ANALYSIS — zerobas AGAINST THE MEASURED PROTOCOL (D-HOOKCENSUS, 2026-09-19)
 
 `disk/docs/expansion-protocol.md` §8 describes how `LOAD` works on the reference.

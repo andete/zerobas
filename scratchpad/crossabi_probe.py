@@ -522,6 +522,34 @@ def main() -> int:
                 shown[t] = ("$%04X" % v if isinstance(v, int)
                             and (v < 0x100 or (v >> 14) >= 2) else "differs")
             print("  %-3s DIFFERS: %s" % (r, shown))
+            # 🔑 THE PARTITION, WHICH "DIFFERS" CANNOT SHOW. Saying a register
+            # differs ACROSS THE SET leaves the decisive question unasked: do
+            # LOAD, MERGE and BLOAD -- which §8.2 calls indistinguishable at the
+            # crossing on the strength of AF/BC/DE/HL -- share this register's
+            # value, or does it separate them? Grouping verbs by EQUAL VALUE
+            # answers that without printing any address, so it is safe for a
+            # register whose value sits in page 0 or 1.
+            groups: dict = {}
+            for t, v in vals.items():
+                groups.setdefault(v, []).append(t)
+            parts = sorted(groups.values(), key=len, reverse=True)
+            print("      partition: %s"
+                  % " | ".join("{%s}" % ",".join(g) for g in parts))
+            pages = {(v >> 14) for v in groups if isinstance(v, int)}
+            print("      pages occupied: %s   (%d distinct value(s) over %d verbs)"
+                  % (sorted(pages), len(groups), len(vals)))
+            trio = [g for g in parts
+                    if len({"loadA", "mergeA", "bloadB"} & set(g)) > 1]
+            if any(len({"loadA", "mergeA", "bloadB"} & set(g)) == 3 for g in parts):
+                print("      -> LOAD, MERGE and BLOAD SHARE this register: it is "
+                      "not what separates them")
+            elif trio:
+                print("      -> LOAD/MERGE/BLOAD are PARTLY separated by this "
+                      "register")
+            else:
+                print("      🔴 -> LOAD, MERGE and BLOAD each get a DIFFERENT "
+                      "value: this register DOES separate the verbs §8.2 calls "
+                      "indistinguishable")
     else:
         print("  (a case is missing)")
 

@@ -313,12 +313,22 @@ with exit. The register contract at that instant:
 | `HL` | the **file buffer** — `$DC65` for every program verb, `$DD6E` for every `OPEN` channel (ten verbs, §6.6ab) |
 | `BC` | `$F871` — one past the end of the file-name block at `$F864..$F870`; for `BSAVE` it is the START ADDRESS as typed (§6.6ab) |
 | `AF` | invariant across every verb |
-| `IX`, `IY` | vary; no interpretation this measurement supports |
+| `IX` | a **main-ROM page-1 pointer chosen by verb FAMILY** — three values over ten verbs: BASIC-program file / `OPEN` channel / binary image (§6.6ad). What it points at was not read |
+| `IY` | three classes that match neither `IX`'s nor `BC`'s; unnamed |
 
-🔴 **There is no verb selector.** `LOAD`, `MERGE` and `BLOAD` arrive with the same
-cell, the same `DE` and the same `HL`. The reference opens file buffer 0 in a
-mode; verb-level difference is carried by *which other claimed cell* is entered
-and by what main does around the call.
+🔴 **There is no verb CODE, and the precise statement is narrower than "no
+selector" (§6.6ad).** `LOAD`, `MERGE` and `BLOAD` arrive with the same cell, the
+same `DE` and the same `HL` — but `IX` and `BC` DO separate `BLOAD` from the other
+two, by family and individually. **What no measured register separates is `LOAD`
+from `MERGE`**: those two are identical in `AF`, `BC`, `DE`, `HL`, `IX` and `IY`.
+The reference opens file buffer 0 in a mode, passes a per-family pointer, and
+carries the remaining verb-level difference in *which other claimed cell* is
+entered and in what main does around the call.
+
+🔑 **Three registers, one nested partition, measured independently:** `HL` splits
+program-file from channel (which buffer), `IX` adds binary image (which family),
+and `BC` splits the binary pair further, carrying `BSAVE`'s start address as
+typed.
 
 ⚠️ `$F41F` holds the statement's BASIC token at this instant (`$B5` `LOAD`, `$B6`
 `MERGE`, `$BA` `SAVE`, `$B0` `OPEN`) and is **not** the selector — 13 reads, all
@@ -468,8 +478,10 @@ must not.*
   writes use `$0002`), not "binary" (`BSAVE` uses `$0002`) and not "not-ASCII"
   (`BLOAD` uses `$0001`): among ten operations it is used by **exactly one**, the
   tokenised program `SAVE`. ⚠️ What it MEANS is still not determined.
-* What `IX` carries at the crossing (`IY` reads `$0000` for `BLOAD` and every
-  `OPEN`, and `$00D0` for `BSAVE"…",&HD000,…`, but that is not enough to name it).
+* 🟢 **ANSWERED (§6.6ad):** `IX` is a main-ROM page-1 pointer selected by verb
+  family, three values over ten verbs, invariant across files. Its target is
+  inside the reference's ROM and was not read. `IY` remains unnamed — its
+  partition matches neither `IX`'s nor `BC`'s and nothing measured explains it.
 * 🟢 **ANSWERED (§6.6ac):** four of the five clusters are written by the disk
   ROM (~96 B of span); the fifth, `$F38C..$F399`, has no disk-side writer and is
   the BIOS's inter-slot stub.
