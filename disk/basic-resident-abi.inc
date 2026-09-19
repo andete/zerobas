@@ -14,25 +14,25 @@ widen_rhs_operand equ 038DCH
 round_single_and_pack equ 03417H
 round_and_finalize equ 033BDH
 pu_deref_body equ 028C1H
-ARGA equ 0F06AH
-STRSCR equ 0E26DH
-FN_RESUME equ 0E227H
-DISKOP_STATUS equ 0E9FCH
-DISK_FCB_NAME equ 0E0DCH
-FILES_HASPAT equ 0F009H
-FAC equ 0F01CH
-FACTYP equ 0F01AH
-FSECTOR_BUF equ 0E5C0H
-FLD_CHAN equ 0E01BH
-LRSET_W equ 0E01DH
-LRSET_DEST equ 0E01EH
-STRPTR equ 0E0C9H
-DISKOP_OP equ 0E9FBH
-DISKOP_ERR equ 0E098H
-CLPTR equ 0E02BH
-CLINK equ 0E02DH
-TXTBASE equ 08001H
-TXTMAX equ 0DB00H
+ARGA equ 0F06AH   ; operand A / working result, FPNUM record (18)
+STRSCR equ 0E26DH   ; $E26D: [len][bytes:STRMAX] staging
+FN_RESUME equ 0E227H   ; D-FNEXPR: text cursor just past a filename
+DISKOP_STATUS equ 0E9FCH   ; tenant -> main: 0 = ok (Cy=0 / Z set); nonzero =
+DISK_FCB_NAME equ 0E0DCH   ; +1..+11: 8.3 name field (11 bytes)
+FILES_HASPAT equ 0F009H   ; FILES: 1 = a filespec pattern is in DISK_FCB_NAME (1)
+FAC equ 0F01CH   ; float accumulator: value bytes as tokenised (8)
+FACTYP equ 0F01AH   ; 2=int / 4=single / 8=double (1)
+FSECTOR_BUF equ 0E5C0H   ; file data / read sector buffer ($E5C0..$E7BF)
+FLD_CHAN equ 0E01BH   ; FIELD/LSET/RSET: the channel being fielded (1)
+LRSET_W equ 0E01DH   ; LSET/RSET: destination field width (1)
+LRSET_DEST equ 0E01EH   ; LSET/RSET: destination ADDRESS of the store (2).
+STRPTR equ 0E0C9H   ; pointer to the [len][bytes] descriptor (2 bytes)
+DISKOP_OP equ 0E9FBH   ; main -> tenant: DISKOP_SEL_* primitive selector (1)
+DISKOP_ERR equ 0E098H   ; tenant -> main: ERR code of the last DSKIO failure, 0 = none (1)
+CLPTR equ 0E02BH   ; CLOAD/LOAD: store cursor into the program area (2)
+CLINK equ 0E02DH   ; CLOAD/LOAD: saved link word of the current line
+TXTBASE equ 08001H   ; text base (oracle: TXTTAB value after boot)
+TXTMAX equ 0DB00H   ; repack: text ceiling. DETOKBUF sits immediately
 
 ; --- page-1 call-back targets: reached by an INTER-SLOT call (MSX2 TH), not an absolute one ---
 fname_expr equ 06E6EH

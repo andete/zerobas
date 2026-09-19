@@ -1399,6 +1399,43 @@ matter while every disk-ROM verb reached the drive by calling BACK into main's
 engine — but it is a latent defect for any verb that does not, which is the whole
 direction of this eviction. The mapping is now shared by both arms.
 
+### 6.6q 🛑 A HOOK BODY THAT USES `disk.rom`'s OWN FAT ENGINE RUNS WHILE BASIC IS LIVE — AND ITS BUFFER ALIASES MAIN'S RAM (D-RAMABI, 2026-09-19)
+
+Found while carrying widths into the generated ABI, and it is independent of
+§6.6p's cell question — it will still be true whichever cell Joost picks.
+
+🔴 **THE PREMISE THAT IS GOING STALE.** `disk/equates.inc` and
+`scratchpad/rammap_sweep.py` both rest on the same argument for why `disk.rom`
+may alias main's workspace: *the standalone disk ROM only ever runs while
+booting or driving MSX-DOS, NEVER while the BASIC interpreter is live.* That was
+true when it was written. The hook re-architecture makes it false by
+construction: `hk_kill`, `hk_files`, `hk_copy`, `hk_lrset`, `hk_field`,
+`hk_dskf` and `hk_errp` all execute **during** a BASIC statement.
+
+🟢 **IT HAS NOT BITTEN YET, AND THE REASON IS WORTH KNOWING.** Every hook body
+shipped so far reaches the drive by `calbak`ing into MAIN's engine, which fills
+main's own `FSECTOR_BUF` ($E5C0). None of them touches `disk.rom`'s
+`SECTOR_BUF`. The aliasing is real but currently unreachable.
+
+🔴 **STEP 9 IS EXACTLY THE CASE THAT BREAKS IT.** `hk_dpload`'s whole point
+(§6.2c) is that `fat_io_getbyte` resolves LOCALLY, so it fills `FAT_DBUF`, which
+in a disk build is `SECTOR_BUF equ $E2A0` — 512 bytes running to `$E49F`. Main
+has live cells inside that window: `SH_START $E375`, `SH_ERR $E37E`,
+`MIDS_DEST $E3E6`, `GFX_PXL $E3ED`, `GFX_CS_M2 $E3F6`, `GFX_SSIZE $E41B`, and
+the string-heap/temp-pool region around them.
+
+⚠️ **LOAD MIGHT SURVIVE IT BY ACCIDENT; STEPS 10–12 WILL NOT.** `LOAD` replaces
+the program and clears variables, so a trampled string heap may not be
+observable — which is the worst kind of safe, because it hides the defect.
+`OPEN`/`INPUT#`/`PRINT#` run MID-PROGRAM against live strings and live graphics
+state, and step 10 is the same work again by §6.6m's own argument.
+
+➡️ **WHAT THIS ADDS TO THE STEP-9 DECISION,** whichever cell it lands on: the
+disk-side stream needs a buffer that does NOT alias main's live workspace, or a
+save/restore around it, or the crossing §6.2c priced. That is a THIRD option
+beside §6.6p's two, and it is a measurement nobody has taken: `disk.rom` had
+free space at the last reading, so a private buffer may simply be affordable.
+
 ## 7. The channel trio, and the wall that is not one
 
 `LSET`/`RSET`/`FIELD` need the channel engine: `fch_check` `$7080`,

@@ -29,6 +29,7 @@ Fails loudly (nonzero exit) if:
 from __future__ import annotations
 
 import collections
+import glob
 import re
 import sys
 
@@ -360,8 +361,20 @@ def generate(sym_path: str, out_path: str, write: bool = True,
         # Leading "0" (same convention pasmo's own --sym output uses, e.g.
         # "fp_div EQU 03632H") so a value whose hex form starts A-F never
         # parses as an identifier instead of a numeric literal.
-        lines.append(f"{local} equ 0{syms[sym]:04X}H"
-                     + (f"   ; main's {sym}" if local != sym else ""))
+            # 🔬 CARRY THE SOURCE COMMENT ACROSS (D-RAMABI). This file used to emit
+        # bare `NAME equ 0XXXXH` lines, so every ABI cell reached the other ROM
+        # with NO declaration of how long it is -- and `scratchpad/
+        # rammap_sweep.py`, which IS the only RAM map this project has, could
+        # therefore produce no unattributed run for any of them. Main already
+        # says: 229 `equ` comments in basic/sysvars.inc end in a bare `(N)`
+        # meaning the width in bytes. Copying the comment carries that width
+        # (and the cell's MEANING, which is worth more) into disk.rom's and
+        # sub.rom's view for free.
+        note = ORIGIN.get(sym, "")
+        tail = f"   ; main's {sym}" if local != sym else ""
+        if note:
+            tail = (tail + " -- " + note) if tail else f"   ; {note}"
+        lines.append(f"{local} equ 0{syms[sym]:04X}H" + tail)
     lines.append("")
     text = "\n".join(lines)
 
@@ -369,6 +382,34 @@ def generate(sym_path: str, out_path: str, write: bool = True,
         with open(out_path, "w") as fh:
             fh.write(text)
     return text
+
+
+# Where the names are DECLARED, for the comment carry-over above. Sorted globs
+# keep the generator deterministic, which `check_resident_abi.py` relies on: it
+# re-runs this generator in memory and diffs byte-for-byte.
+ORIGIN_TREES = ("basic/*.inc", "basic/*.asm", "sub/*.inc", "sub/*.asm")
+_ORIGIN_EQU = re.compile(r"^([A-Za-z_]\w*)\s+equ\s+[^;]*;\s*(.+?)\s*$",
+                         re.IGNORECASE)
+
+
+def _scrape_origin():
+    """name -> the source comment on its `equ` line. First declaration wins,
+    matching the assembler's own view and this file's other lookups."""
+    out = {}
+    for pat in ORIGIN_TREES:
+        for p in sorted(glob.glob(pat)):
+            try:
+                lines = open(p).readlines()
+            except OSError:
+                continue
+            for ln in lines:
+                m = _ORIGIN_EQU.match(ln.rstrip("\n"))
+                if m:
+                    out.setdefault(m.group(1), m.group(2))
+    return out
+
+
+ORIGIN = _scrape_origin()
 
 
 def main() -> int:

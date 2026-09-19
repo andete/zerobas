@@ -124,6 +124,7 @@ DELIVERABLES = [
     dict(name="abi", needs_cbios=False, floor=20,
          make_target="build/basic-reloc.sym",
          pair=["sub/basic-resident-abi.inc"],
+         extra_sources=["tools/gen_resident_abi.py"],
          regen="abi", abi_profile="sub", needs=["build/basic-reloc.sym"]),
     # The DISK ROM's bridge (D-DISKABI) is the same kind of generated file and
     # goes stale the same way -- this gate's own header records that the sub one
@@ -131,6 +132,7 @@ DELIVERABLES = [
     dict(name="abi-disk", needs_cbios=False, floor=20,
          make_target="build/basic-reloc.sym",
          pair=["disk/basic-resident-abi.inc"],
+         extra_sources=["tools/gen_resident_abi.py"],
          regen="abi", abi_profile="disk", needs=["build/basic-reloc.sym"]),
     # The coefficients genuinely depend on nothing but their generator, so a
     # floor of 1 is the honest floor here rather than a weakened one -- and the
@@ -201,6 +203,17 @@ def check(d, cbios, keep) -> int:
                   f"deliverable; regenerate it with `make {f}`.")
             return 1
     prereqs = prereqs_of(d["make_target"])
+    # 🔴 THE GENERATOR IS A SOURCE, AND make's DATABASE FOR THIS TARGET DOES NOT
+    # SAY SO. `abi`/`abi-disk` take their prerequisites from `build/
+    # basic-reloc.sym`, whose recipe knows nothing about
+    # `tools/gen_resident_abi.py` -- the generator appears only in the .inc's own
+    # rule. So a change to the GENERATOR read as "sources CLEAN" and the group
+    # went RED with "STALE IN THE LAST COMMIT", which is the exact gap this
+    # file's own header predicts: *"A source that is missing from the list reads
+    # as clean ... the failure direction is loud, not silent."* Measured
+    # 2026-09-19 (D-RAMABI), when teaching the generator to carry source
+    # comments across made the .inc legitimately differ from HEAD.
+    prereqs = sorted(set(prereqs) | set(d.get("extra_sources", ())))
     if len(prereqs) < d["floor"]:
         print(f"INSTRUMENT: make reported {len(prereqs)} prerequisite(s) for "
               f"{d['make_target']}, floor is {d['floor']}. The sources-clean "

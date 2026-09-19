@@ -207,6 +207,21 @@ def declared_width(addr: int, comment: str | None):
 
 
 # ---------------------------------------------------------------- resolve
+# 🔴 A GENERATED ABI FILE IMPORTS ANOTHER ROM'S CELLS, AND A GAP BETWEEN TWO OF
+# THEM IS NOT THIS ROM'S TO SPEND. `disk/basic-resident-abi.inc` publishes ~35 of
+# main's addresses so disk.rom can reach them; main has several HUNDRED cells,
+# and the ones in between are simply invisible here. Before D-RAMABI carried the
+# source comments across, those cells had no width and produced no run, so the
+# problem was hidden by a second defect. Now they have widths -- so the runs must
+# be suppressed explicitly: an IMPORTED cell may TERMINATE a run (it is a real
+# boundary) but may never OWN one.
+IMPORTED_FILES = ("basic-resident-abi.inc",)
+
+
+def is_imported(path: str) -> bool:
+    return any(path.endswith(s) for s in IMPORTED_FILES)
+
+
 def parse(paths):
     """name -> (expr, file, line, comment); plus the intra-component clashes."""
     raw, clash = {}, {}
@@ -339,6 +354,11 @@ class Map:
         _, f, i, _ = self.expr[self.byaddr[a][0]]
         return f"{f}:{i}"
 
+    def imported(self, a) -> bool:
+        """True when EVERY name at this address came from a generated ABI
+        import -- i.e. the cell belongs to another ROM's map, not this one's."""
+        return all(is_imported(self.expr[n][1]) for n in self.byaddr[a])
+
     def runs(self):
         """(size, from, after_name) for gaps NO declaration covers."""
         out = []
@@ -346,11 +366,14 @@ class Map:
             w = self.width.get(a)
             if w is None:
                 continue
+            if self.imported(a):
+                continue        # see IMPORTED_FILES: not this ROM's gap to claim
             gap = b - (a + w)
             if gap > 0:
                 out.append((gap, a + w, b, a))
         tail = self.hi - (self.addrs[-1] + self.width[self.addrs[-1]]) \
-            if self.addrs and self.addrs[-1] in self.width else None
+            if (self.addrs and self.addrs[-1] in self.width
+                and not self.imported(self.addrs[-1])) else None
         return out, tail
 
     def undeclared(self):
@@ -407,9 +430,15 @@ def report(m: Map) -> None:
 
     runs, tail = m.runs()
     runs.sort(reverse=True)
+    nimp = sum(1 for a in m.addrs if m.imported(a))
     print(f"\n  🟢 UNATTRIBUTED RUNS -- {len(runs)} gap(s) that NO declared "
           f"width covers. A candidate, not a guarantee: a cell addressed only "
-          f"as an offset in code has no `equ` and is invisible here.")
+          f"as an offset in code has no `equ` and is invisible here."
+          + (f"\n     ⚠️ {nimp} address(es) here are IMPORTED from another ROM "
+             f"through a generated ABI. They bound runs but never own one: this "
+             f"map sees only the handful of that ROM's cells the ABI publishes, "
+             f"so a gap between two of them is FULL of cells it cannot see."
+             if nimp else ""))
     for g, s, e, owner in runs[:20]:
         print(f"  {g:5d} B  ${s:04X}..${e:04X}  after "
               f"{'/'.join(m.byaddr[owner])} (${owner:04X} + "
@@ -577,6 +606,24 @@ def selftest(lo, hi) -> int:
         a_di in m2.disputed and a_di not in r2_owners
     ok["A8 NEGATIVE: both still appear in the ⚠️ list"] = \
         {a_ov, a_di} <= {a for _, a, _, _ in m2.undeclared()}
+
+    # ---- A9 an IMPORTED cell bounds a run but never owns one --------------
+    p3 = dict(raw)
+    # same cell, same width, same following gap -- the ONLY difference is which
+    # file declared it. That is what makes this a control rather than a demo.
+    p3["__IMP_A"] = (f"${base + 300:04X}", "disk/basic-resident-abi.inc", 0,
+                     "imported (2)")
+    p3["__IMP_B"] = (f"${base + 340:04X}", "<plant>", 0, "native (2)")
+    p3["__NAT_A"] = (f"${base + 400:04X}", "<plant>", 0, "native (2)")
+    p3["__NAT_B"] = (f"${base + 440:04X}", "<plant>", 0, "native (2)")
+    m3 = Map("basic", lo, hi, raw=p3, files=files_for("basic"))
+    owners3 = {o for _, _, _, o in m3.runs()[0]}
+    ok["A9 an ABI-IMPORTED cell owns NO run (the gap after it is full of the "
+       "other ROM's cells this map cannot see)"] = \
+        m3.vals["__IMP_A"] in m3.width and m3.vals["__IMP_A"] not in owners3
+    ok["A9 NEGATIVE: the SAME shape in a native file DOES own one, so the "
+       "suppression is about the FILE and not about the fixture"] = \
+        m3.vals["__NAT_A"] in owners3
 
     # ---- A7 sym seeding, with --no-sym as the control ---------------------
     d_nosym = Map("disk", lo, hi, use_sym=False)

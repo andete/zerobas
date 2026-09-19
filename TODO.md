@@ -400,6 +400,37 @@ item — do **one item per session** to keep context lean.
       all — `tools/gen_resident_abi.py` could carry main's own declared width
       across, which would close most of the disk map's remainder mechanically.
 
+- [ ] 🛑 **A HOOK BODY USING `disk.rom`'s OWN FAT ENGINE WOULD CORRUPT MAIN'S
+      RAM — THE "NEVER WHILE BASIC IS LIVE" PREMISE IS GOING STALE.**
+      🎚️ TIER 2 — it is a correctness constraint on the disk-code eviction, not
+      an apparatus nicety.
+      🙋 **NEEDS-JOOST** — it changes what step 9 must buy, so it belongs with
+      the `$FE5D` decision rather than ahead of it.
+      Found 2026-09-19 (D-RAMABI) while carrying widths into the generated ABI;
+      INDEPENDENT of which cell step 9 ends up claiming
+      (`disk/docs/spec-diskcode-eviction.md` §6.6q).
+      🔴 `disk/equates.inc` and `scratchpad/rammap_sweep.py` both justify
+      aliasing `disk.rom`'s buffers over main's workspace with *"the disk ROM
+      only ever runs while booting/driving MSX-DOS, NEVER while the BASIC
+      interpreter is live"*. The hook re-architecture makes that false by
+      construction: `hk_kill`, `hk_files`, `hk_copy`, `hk_lrset`, `hk_field`,
+      `hk_dskf` and `hk_errp` all run DURING a BASIC statement.
+      🟢 **It has not bitten**, and the reason matters: every shipped hook body
+      reaches the drive by `calbak`ing into MAIN's engine, which fills main's own
+      `FSECTOR_BUF`. Nothing touches `disk.rom`'s `SECTOR_BUF` yet.
+      🔴 **Step 9 is precisely the case that would.** `hk_dpload` exists so that
+      `fat_io_getbyte` resolves LOCALLY — filling `FAT_DBUF` = `SECTOR_BUF equ
+      $E2A0`, 512 B to `$E49F`. Main has live cells inside it: `SH_START $E375`,
+      `SH_ERR $E37E`, `MIDS_DEST $E3E6`, `GFX_PXL $E3ED`, `GFX_CS_M2 $E3F6`,
+      `GFX_SSIZE $E41B`, and the string-heap/temp-pool region.
+      ⚠️ `LOAD` may survive it BY ACCIDENT (it clears variables anyway), which is
+      the worst kind of safe — it hides the defect. `OPEN`/`INPUT#`/`PRINT#` run
+      mid-program against live strings and will not.
+      ➡️ A THIRD option beside §6.6p's two, and an unmeasured one: give the
+      disk-side stream a buffer that does not alias main's live workspace.
+      `disk.rom` had free space at the last reading, so it may simply be
+      affordable — but that is a measurement, not a claim.
+
 - [ ] 🔴 **`refcache-check` GOES RED ON THE CALENDAR, AND THE RETRY ARM CALLS IT
       "REAL".**
       🎚️ APPARATUS — a time-dependent red is indistinguishable from a
@@ -2693,7 +2724,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:20397 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:20428 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -2859,7 +2890,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:7502 (T-6FE392)8 (T-529ABE)` from `TODO.md:18791 (T-529ABE)`: a
+      `TODO.md:7533 (T-6FE392)8 (T-529ABE)` from `TODO.md:18822 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -8346,7 +8377,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:18791 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:18822 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
