@@ -2305,6 +2305,50 @@ prints enough of each case's screen that a failure is visible rather than
 inferred, and flags any case whose screen contains an error word. Without that,
 a failed case contributes a register row that looks exactly like data.
 
+### 6.6ac 🔑 FOUR OF THE FIVE RAM CLUSTERS ARE THE DISK ROM'S; THE FIFTH IS THE BIOS'S (D-RAMCODE round 2, 2026-09-19)
+
+§6.6z traced the installer of the 79-byte block and left the other four
+unmeasured (§8.9). `scratchpad/ramcode_probe.py` phase 2 now watches **all five
+ranges under ONE boot** — so the install times are directly comparable rather than
+read off five timelines that only happen to start alike — and the run is repeated.
+
+| cluster | span | writers, in time order | disk-installed? |
+|---|---|---|---|
+| `$F1D9..$F1E1` | 9 B | MAIN-P0 ×18 @0.380 · **DISK ×18** @3.797–6.911 | ✅ |
+| `$F1F4` | 1 B | MAIN-P0 ×2 @0.380 · **DISK ×2** @3.797–6.911 | ✅ |
+| `$F255..$F2A3` | **79 B** | MAIN-P0 ×158 @0.372 · MAIN-P1 ×3 @1.191 · **DISK ×158** @3.798 | ✅ |
+| `$F365..$F36B` | 7 B | MAIN-P0 ×14 @0.368 · **DISK ×20** @3.802–14.003 | ✅ |
+| `$F38C..$F399` | 14 B | MAIN-P0 ×42 @0.368–0.619 · MAIN-P1 ×14 @1.189 | ❌ **no DISK writer at all** |
+
+🔑 **AND THE ONE THE DISK ROM DOES NOT WRITE IS EXACTLY THE ONE INDEPENDENTLY
+IDENTIFIED AS BIOS INFRASTRUCTURE.** §6.6z noted that `$F38C..$F399` matches the
+stub `scratchpad/cf_trace.py` located empirically and labelled CLPRIM — the
+inter-slot call primitive. Two measurements that knew nothing of each other agree:
+one found the range by matching an old probe's note, the other found it by being
+the only cluster with no disk-side writer.
+
+➡️ **SO THE DISK ROM'S RAM OBLIGATION IS FOUR CLUSTERS AND ~96 B OF SPAN**
+(9 + 1 + 79 + 7), not the ~110 B across five that §6.6z's list implied. The 14-byte
+inter-slot stub is the BIOS's and a faithful `disk.rom` inherits nothing for it.
+
+🟢 **EVERY CLUSTER IS INSTALLED BEFORE THE CROSSING AND NONE IS REBUILT PER
+CALL.** The crossing is at t=164.0254; the latest write to any cluster is
+t=14.0034. ⚠️ Two clusters are written more than once during boot — `$F1D9` and
+`$F1F4` up to t≈6.91, `$F365` up to t≈14.00 — so "installed at INIT" is too
+narrow: the disk side touches them again later in the boot sequence. What is
+measured is that all of it precedes the first file operation by a wide margin.
+
+🔴 **CONTROLS.** Two runs agree on every cluster's writers and counts. A
+per-cluster POSITIVE arm refuses to read an unwritten range as "never installed"
+— it would be a watchpoint that did not fire, and these must not print the same
+way (silence is not evidence). The crossing's own timestamp is logged, so
+"before the crossing" is a comparison and not an assumption about when typing
+starts.
+
+🔴 **CLEAN ROOM.** Ranges, sizes, writer regions and emulated times only. Not
+one byte of any cluster was read, disassembled or single-stepped — code sitting in
+RAM is relocated reference content, and reading it would be reading the reference.
+
 ## 6.7 🔍 GAP ANALYSIS — zerobas AGAINST THE MEASURED PROTOCOL (D-HOOKCENSUS, 2026-09-19)
 
 `disk/docs/expansion-protocol.md` §8 describes how `LOAD` works on the reference.
@@ -2357,7 +2401,7 @@ other direction.*
 | 5 | who owns the loop | the disk ROM, mount through sector transfer (§8.3) | **main** — `basic/cload.asm` `disk_prog_load`, `basic/fat.asm` | 🔴 **BLOCKING** | this IS step 9; D-DPLMOVE built the move and backed it out |
 | 6 | who owns FAT/directory | the disk ROM | **main** (`basic/fat.asm`, loader-side engine over DSKIO) | 🟡 **COSTS BYTES** | the Depth-A choice — 🔴 but see the correction below: its stated justification is already assessed as theoretical |
 | 7 | shared work-area contract | ~38 cells read, 22 written; two 13-byte name blocks (§8.4) | private: `DISKOP_OP`, `DISKOP_ERR`, `FAT_DBUF` and friends | 🟢 **NOT A GAP today** | we own both sides, so the contract is ours to pick; it matters only for the PROVIDER direction |
-| 8 | RAM-resident code | five clusters below `$F380`; the disk ROM installs a 79 B block at boot (§8.5) | **3 bytes** — `$F37D` gets `JP bdos_entry` at INIT (`disk/init.asm`) | 🟡 **COSTS BYTES IF WE INVERT** | we are not at zero, but ours is a dispatch vector for a foreign host, not logic that runs during our own load |
+| 8 | RAM-resident code | **four** clusters the disk ROM installs, **~96 B of span** (§6.6ac); a fifth is the BIOS's inter-slot stub | **3 bytes** — `$F37D` gets `JP bdos_entry` at INIT (`disk/init.asm`) | 🟡 **COSTS BYTES IF WE INVERT** | we are not at zero, but ours is a dispatch vector for a foreign host, not logic that runs during our own load |
 | 9 | hand-back during a transfer | none; page 1 goes `0-0` → `3-1` → `0-0` (§8.3) | n/a — main never leaves, so there is nothing to hand back | 🟢 **NOT A GAP** | a consequence of row 5, not an independent difference |
 
 ### What this changes about step 9

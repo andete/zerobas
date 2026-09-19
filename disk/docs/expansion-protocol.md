@@ -400,9 +400,16 @@ say where it lived:
 | `$F38C..$F399` | 14 B | 520 |
 
 The last matches the stub `scratchpad/cf_trace.py` located empirically and
-labelled CLPRIM. ⚠️ Clusters bridge gaps of up to 16 B — operands are fetched as
-data and a `jr` skips forward — so the spans are an upper bound on extent, not a
-measured routine size.
+labelled CLPRIM — and 🔑 **it is the one cluster with NO disk-side writer**
+(§6.6ac), which two independent routes agree on. ⚠️ Clusters bridge gaps of up to
+16 B — operands are fetched as data and a `jr` skips forward — so the spans are an
+upper bound on extent, not a measured routine size.
+
+➡️ **The DISK ROM installs four of the five, ~96 B of span** (9 + 1 + 79 + 7).
+Every one is written well before the first file operation — the latest write to
+any cluster is t≈14.00 against a crossing at t≈164.03 — and none is rebuilt per
+call. ⚠️ Two are written more than once during boot, so "installed at INIT" is
+too narrow: the disk side touches them again later in the boot sequence.
 
 🔑 **The disk ROM installs the 79-byte block at boot.** Writes to `$F255..$F2A3`
 come from main page 0 at t≈0.372, main page 1 at t≈1.191 and **the disk ROM at
@@ -463,8 +470,9 @@ must not.*
   tokenised program `SAVE`. ⚠️ What it MEANS is still not determined.
 * What `IX` carries at the crossing (`IY` reads `$0000` for `BLOAD` and every
   `OPEN`, and `$00D0` for `BSAVE"…",&HD000,…`, but that is not enough to name it).
-* The installers and install times of the four RAM clusters other than the
-  79-byte block, and whether any cluster is shared with non-disk BIOS function.
+* 🟢 **ANSWERED (§6.6ac):** four of the five clusters are written by the disk
+  ROM (~96 B of span); the fifth, `$F38C..$F399`, has no disk-side writer and is
+  the BIOS's inter-slot stub.
 * What any of the RAM-resident code **does**. 🔴 And it must stay that way: code
   sitting in RAM is reference ROM content that has merely been relocated, so
   reading its bytes would be reading the reference. Range, size, installer region

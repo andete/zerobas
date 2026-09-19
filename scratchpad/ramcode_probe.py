@@ -115,13 +115,11 @@ proc __region {} {
 # comparison. Without it the whole "installed at boot, not per call" reading
 # rests on my assumption about when typing starts.
 debug set_bp @CELL@ {} { puts $::lf "C [format %.4f [machine_info time]]" ; flush $::lf }
-debug set_watchpoint write_mem {@WLO@ @WHI@} {} {
-    incr ::n
-    if {$::n <= 4000} {
-        puts $::lf "W [format %.4f [machine_info time]] [__region] $::wp_last_address"
-        flush $::lf
-    }
-}
+# 🔴 ALL FIVE CLUSTERS IN ONE RUN, NOT FIVE RUNS. Each watchpoint tags its own
+# cluster, so the five ranges are watched under ONE boot -- which also means the
+# install TIMES are directly comparable rather than being read off five separate
+# timelines that only happen to start the same way.
+@WATCHES@
 '''
 
 
@@ -154,13 +152,22 @@ def run_phase1(tag, lines, dsk):
     return meta, ex
 
 
-def run_phase2(tag, lines, dsk, lo, hi):
+def run_phase2(tag, lines, dsk, ranges):
+    """`ranges` = [(lo, hi), ...] -- every cluster watched under ONE boot."""
     import omsx_repl
     fd, out = tempfile.mkstemp(prefix="ramcode2-%s-" % tag, suffix=".txt")
     os.close(fd)
+    w = "\n".join(
+        'debug set_watchpoint write_mem {%d %d} {} {\n'
+        '    incr ::n\n'
+        '    if {$::n <= 8000} {\n'
+        '        puts $::lf "W %d [format %%.4f [machine_info time]] '
+        '[__region] $::wp_last_address"\n'
+        '        flush $::lf\n'
+        '    }\n'
+        '}' % (lo, hi, i) for i, (lo, hi) in enumerate(ranges))
     t = PHASE2
-    for k, v in (("@OUT@", out), ("@WLO@", str(lo)), ("@WHI@", str(hi)),
-                 ("@CELL@", str(C_NULO))):
+    for k, v in (("@OUT@", out), ("@WATCHES@", w), ("@CELL@", str(C_NULO))):
         t = t.replace(k, v)
     omsx_repl.run_cases(REF, [("direct", lines)], batch=False, reset=RESET,
                         boot=BOOT, step=STEP, cap_gap=CAP_GAP, diska=dsk,
@@ -169,8 +176,8 @@ def run_phase2(tag, lines, dsk, lo, hi):
     try:
         for ln in open(out):
             p = ln.split()
-            if p and p[0] == "W" and len(p) >= 4:
-                ws.append((float(p[1]), p[2], int(p[3])))
+            if p and p[0] == "W" and len(p) >= 5:
+                ws.append((int(p[1]), float(p[2]), p[3], int(p[4])))
             elif p and p[0] == "C" and len(p) >= 2:
                 cross.append(float(p[1]))
     except (OSError, ValueError):
@@ -321,42 +328,69 @@ def main() -> int:
         print("\nNo non-hook RAM code found; nothing to trace in phase 2.")
         return 0
 
-    lo, hi = max(non_hook, key=lambda r: r[1] - r[0])
-    print("\n=== PHASE 2: who writes $%04X..$%04X, and when ===" % (lo, hi))
-    ws, cross = run_phase2("loadS", ['LOAD"S.BAS"'], dsk, lo, hi)
+    # 🔑 EVERY non-hook cluster, not just the biggest. §6.6z traced the 79-byte
+    # block and left the other four unmeasured; this reports each one's writers
+    # and install times under a single boot, and repeats the run because one
+    # green pass is weak evidence.
+    print("\n=== PHASE 2: who writes each RAM-code cluster, and when ===")
+    runs = []
+    for rep in ("a", "b"):
+        ws, cross = run_phase2("rep" + rep, ['LOAD"S.BAS"'], dsk, non_hook)
+        runs.append((ws, cross))
+    (ws, cross), (ws2, cross2) = runs
+
+    def summarise(w):
+        out = {}
+        for idx, t, reg, _a in w:
+            e = out.setdefault(idx, {}).setdefault(reg, [0, t, t])
+            e[0] += 1
+            e[1] = min(e[1], t)
+            e[2] = max(e[2], t)
+        return out
+
+    sm, sm2 = summarise(ws), summarise(ws2)
+    ok2 = True
     if not ws:
-        print("  RED: no writes to that range were seen at all -- either it is "
-              "never written (so it is not installed code) or the watchpoint is "
-              "misconfigured. These must not be reported the same way; treat "
-              "this as UNRESOLVED.")
+        print("  RED: NO writes to ANY cluster were seen -- either none is ever "
+              "written (which cannot be, they hold code) or the watchpoints are "
+              "misconfigured. These must not read the same way; UNRESOLVED.")
         return 1
-    byreg: dict = {}
-    for t, reg, _a in ws:
-        e = byreg.setdefault(reg, [0, t, t])
-        e[0] += 1
-        e[1] = min(e[1], t)
-        e[2] = max(e[2], t)
-    print("  %d write(s) recorded (log ceiling 4000)" % len(ws))
-    for reg, (n, t0, t1) in sorted(byreg.items(), key=lambda kv: -kv[1][0]):
-        print("      %-8s x%-6d first t=%.4f  last t=%.4f" % (reg, n, t0, t1))
-    print("  distinct cells written: %d over %d run(s)"
-          % (len({a for _t, _r, a in ws}),
-             len(addr_runs(sorted({a for _t, _r, a in ws})))))
-    if not cross:
-        print("  ⚠️  the crossing was never reached in this run, so 'before the "
-              "crossing' cannot be checked -- treat the timing as UNRESOLVED")
-        return 1
-    last = max(t for t, _r, _a in ws)
-    print("  the crossing itself is at t=%.4f; the LAST write to this range is "
-          "at t=%.4f" % (cross[0], last))
-    if last < cross[0]:
-        print("  -> every write PRECEDES the crossing by %.2f emulated seconds: "
-              "the routine is installed once and is NOT rebuilt per call"
-              % (cross[0] - last))
+    # 🔴 POSITIVE PER CLUSTER. A cluster with no writes is not "never installed";
+    # it is a watchpoint that did not fire, and saying otherwise would be the
+    # silence-is-not-evidence error.
+    silent = [i for i in range(len(non_hook)) if i not in sm]
+    if silent:
+        print("  🔴 %d cluster(s) saw NO writes: %s -- treat as UNRESOLVED, not "
+              "as 'never installed'"
+              % (len(silent), " ".join("$%04X" % non_hook[i][0] for i in silent)))
+        ok2 = False
+    if {k: {r: v[0] for r, v in d.items()} for k, d in sm.items()} != \
+       {k: {r: v[0] for r, v in d.items()} for k, d in sm2.items()}:
+        print("  🔴 two runs disagree on the writer counts -- no timing claim is "
+              "safe")
+        ok2 = False
     else:
-        print("  -> writes occur AT OR AFTER the crossing: the routine is (re)"
-              "built during the operation, not merely installed at boot")
-    return 0
+        print("  two runs agree on every cluster's writers and counts")
+    if not cross:
+        print("  ⚠️  the crossing was never reached, so 'before the crossing' "
+              "cannot be checked -- timing UNRESOLVED")
+        return 1
+    print("  the crossing is at t=%.4f\n" % cross[0])
+    for i, (lo, hi) in enumerate(non_hook):
+        d = sm.get(i, {})
+        print("  $%04X..$%04X (%d B)" % (lo, hi, hi - lo + 1))
+        for reg, (n, t0, t1) in sorted(d.items(), key=lambda kv: kv[1][1]):
+            print("      %-8s x%-5d t=%.4f..%.4f" % (reg, n, t0, t1))
+        last = max((v[2] for v in d.values()), default=None)
+        if last is None:
+            print("      (no writes seen)")
+        elif last < cross[0]:
+            print("      -> installed %.2f emulated seconds BEFORE the crossing;"
+                  " not rebuilt per call" % (cross[0] - last))
+        else:
+            print("      -> written AT OR AFTER the crossing: rebuilt during the "
+                  "operation")
+    return 0 if ok2 else 1
 
 
 if __name__ == "__main__":
