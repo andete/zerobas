@@ -517,6 +517,32 @@ def resident_abi_seeds(spans):
     return set(names)
 
 
+def disk_seeds(spans):
+    """`disk.rom`'s reachable-from-outside surface, DERIVED not listed.
+
+    Every element is parsed from the source that defines it, so the set cannot
+    drift: the hook bodies come from `hook_tab`, not from a copy of it.
+    """
+    out = {n for n in spans.nodes if n.startswith(PROLOGUE)}
+    src = os.path.join('disk', 'kernel.asm')   # repo-relative, as DISK_ABI is
+    txt = open(src, errors='replace').read() if os.path.exists(src) else ''
+    # the hook table's own rows: `dw H_xxx, hk_yyy`
+    hooks = set(re.findall(r'^\s*dw\s+H_[A-Z0-9_]+\s*,\s*([A-Za-z_][\w]*)',
+                           txt, re.M))
+    if not hooks:
+        sys.exit("FAIL: no `dw H_*, hk_*` rows found in disk/kernel.asm -- the "
+                 "hook-table scrape broke, and a disk sweep without the hook "
+                 "bodies would report the whole ROM dead")
+    out |= {h for h in hooks if h in spans.nodes}
+    # pinned kernel contract entries (MSX-DOS calls them by ADDRESS) and the
+    # BDOS door; plus the templates LDIR'd into page-3 RAM.
+    out |= {n for n in spans.nodes
+            if re.match(r'k_[0-9A-F]{4}$', n)
+            or n in ('bdos_entry', 'init')
+            or n.endswith('_tmpl')}
+    return out
+
+
 def disk_abi_seeds(spans):
     """The main labels `disk.rom` may legitimately call back into -- fix (12).
 
@@ -688,8 +714,8 @@ def load_allow():
             sys.exit(f"FAIL: {ALLOWFILE}:{lineno}: need `<build> <label> <reason>`, "
                      f"got {raw.strip()!r} -- a reason is MANDATORY")
         build, label, reason = parts[0], parts[1], parts[2].strip()
-        if build not in ('main', 'sub'):
-            sys.exit(f"FAIL: {ALLOWFILE}:{lineno}: build must be main|sub, "
+        if build not in ('main', 'sub', 'disk'):
+            sys.exit(f"FAIL: {ALLOWFILE}:{lineno}: build must be main|sub|disk, "
                      f"got {build!r}")
         allow[(build, label)] = reason
     return allow
@@ -703,15 +729,17 @@ def main(argv):
     # canary below MUST then fail -- that is what proves this gate cannot go
     # quietly blind and report a clean sweep forever.
     blind = '--blind' in argv
-    if len(args) != 3:
+    if len(args) != 4:
         sys.exit(__doc__.strip().splitlines()[0] +
                  "\nusage: check_dead_code.py [--report] "
-                 "build/basic-reloc.sym build/sub.sym")
+                 "build/basic-reloc.sym build/sub.sym build/disk.sym")
     main_sym, sub_sym = ctc.load_syms(args[1]), ctc.load_syms(args[2])
+    disk_sym = ctc.load_syms(args[3])
 
     builds = {}
     m = Spans('basic/main.asm', 'main')
     s = Spans('sub/sub.asm', 'sub')
+    d = Spans('disk/disk.asm', 'disk')
     if 'init' not in m.nodes:
         sys.exit("FAIL: seed `init` is not a label in the main build -- renamed?")
     # fix (6): the main build's external surface is the GENERATED resident-ABI
@@ -789,6 +817,28 @@ def main(argv):
                | {n for n in ('sub_p0_table', 'sub_p1_table') if n in s.nodes})
     builds['sub'] = (s, s_seeds, sub_sym)
 
+    # --- (13) THE THIRD BUILD. `disk.rom` was swept by NOTHING until 2026-09-19:
+    # this file's own banner said "BOTH builds", and BOTH meant main and sub. It
+    # was found by walking into it -- D-DPLPORT added two routines to `disk.rom`
+    # that nothing called, and every gate stayed green.
+    #
+    # 🔴 THE SEEDS ARE THE WHOLE JOB, AND THEY ARE NOT main's. Almost nothing
+    # in this ROM is reached by a `call` a name-following model can see:
+    #   * the ROM HEADER's `jp dskio` / `jp dskchg` / ... block is the file
+    #     PROLOGUE of init.asm, so the prologue spans carry those six entries;
+    #   * every `hk_*` body is reached through a 5-byte CALLF stub this ROM
+    #     WRITES INTO RAM, from a table of addresses -- seeded from `hook_tab`
+    #     itself so the set cannot drift from the table;
+    #   * the `k_*` kernel contract entries sit at PINNED addresses and are
+    #     called by MSX-DOS, from another ROM entirely;
+    #   * `bdos_entry` is reached through a RAM vector;
+    #   * the `*_tmpl` blocks are COPIED into page-3 RAM by LDIR and executed
+    #     there, which is address arithmetic no model can follow.
+    # A sweep seeded wrongly would report most of the ROM dead, which is why
+    # this was never as cheap as pointing the tool at a third `.sym`.
+    d_seeds = disk_seeds(d)
+    builds['disk'] = (d, d_seeds, disk_sym)
+
     allow = load_allow()
     findings, canary_alive = [], []
     for name, (spans, seeds, syms) in builds.items():
@@ -802,6 +852,23 @@ def main(argv):
             print(f"  {name:4s}: {len(pad)} padding-only span(s) not reportable "
                   f"(fix 9): {', '.join(sorted(pad))}")
             dead = [d for d in dead if d not in set(pad)]
+        # 🔴 (14) A LABEL THE BUILD NEVER ASSEMBLED CANNOT BE DEAD CODE IN IT.
+        # The span model does not parse `IF DISK_BUILD` / `IF SUB_BUILD`, so a
+        # routine excluded by a conditional still has a SPAN and looks
+        # unreachable. The symbol table is the evidence that settles it: if the
+        # assembler emitted the label, it is in the build's `.sym`; if it is not
+        # there, those bytes are not in this ROM. Found on the disk arm's first
+        # run, which reported `fat_detach_channel`/`fdet_maybe` -- present in
+        # sub.sym, absent from disk.sym, because the channel-restage block is
+        # gated out of the disk build.
+        # ⚠️ NEVER SILENT: a stale or truncated `.sym` would filter REAL findings
+        # away, so the count and the names are always printed.
+        unbuilt = [lbl for lbl in dead if syms.get(lbl) is None]
+        if unbuilt:
+            print(f"  {name:4s}: {len(unbuilt)} span(s) NOT IN THIS BUILD'S .sym "
+                  f"-- excluded by a conditional, not dead: "
+                  f"{', '.join(sorted(unbuilt))}")
+            dead = [d for d in dead if d not in set(unbuilt)]
         deadset = set(dead)
         for lbl in dead:
             reason = allow.get((name, lbl))
@@ -856,7 +923,7 @@ def main(argv):
         for (b, reg), n in sorted(tot.items()):
             print(f"    {b} {reg}: {n} B")
     if ok:
-        print("OK: no unreachable spans in either build; every allowlist entry "
+        print("OK: no unreachable spans in any of the three builds; every allowlist entry "
               "still verified dead (the sweep is not blind).")
     if report_only:
         if not ok:

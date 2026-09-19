@@ -256,26 +256,26 @@ item — do **one item per session** to keep context lean.
       ⛔ Until the cell is named, the 111 B ported into `disk.rom` by D-DPLPORT
       stay unreferenced.
 
-- [ ] 🔴 **`disk.rom` HAS NO DEAD-CODE SWEEP — "BOTH builds" MEANS main AND sub.**
-      🎚️ APPARATUS — a whole ROM is outside the gate that stops code rotting.
-      🤖 **AUTONOMOUS** — `check_dead_code.py` already builds
-      `Spans('disk/disk.asm', 'disk')` for its ABI-seed analysis, so the span
-      model exists; what is missing is the sweep over it and a seed set.
-      Found 2026-09-19 by walking into it: D-DPLPORT added `fat_io_open` and
-      `fat_io_getbyte` to `disk.rom` where nothing calls them yet, and **every
-      gate stayed green.** `tools/check_dead_code.py` takes
-      `build/basic-reloc.sym build/sub.sym` and its banner says *"TRANSITIVE
-      dead-code sweep, BOTH builds"* — BOTH is main and sub.
-      ⚠️ **THE SEEDS ARE THE WHOLE JOB, AND THEY ARE NOT THE SAME AS main's.**
-      `disk.rom`'s entry points are its hook-table cells, the DSKIO/DSKCHG
-      entries, `bdos_entry`, the INIT boot bridge and the `$0030`/CALSLT
-      handlers — reached from ANOTHER ROM or from hardware, never by a `call`
-      the sweep can see. A sweep seeded wrongly would report most of the ROM
-      dead, which is why this was never as cheap as pointing the tool at a third
-      `.sym`.
-      ⚠️ **AND IT NEEDS THE ALLOWLIST-IS-A-CONTROL DISCIPLINE** the main sweep
-      already has: every allowlist entry re-verified dead on each run, or the
-      escape valve becomes the hole.
+- [x] ✅ **DONE 2026-09-19 (D-DISKDEAD): `disk.rom` NOW HAS A DEAD-CODE SWEEP,
+      AND ITS FIRST RUN FOUND THE 109 B IT WAS BUILT FOR.**
+      🎚️ APPARATUS.
+      🤖 **AUTONOMOUS** — shipped.
+      `tools/check_dead_code.py` takes a third `.sym` (the Makefile now builds
+      `build/disk.sym`) and sweeps `disk/disk.asm`: **529 spans, 75 seeds**. The
+      seeds are DERIVED, not listed — the hook bodies are scraped from
+      `hook_tab` itself so the set cannot drift, and the tool REFUSES if that
+      scrape returns nothing, because a disk sweep without them would report the
+      whole ROM dead. `disk` is now a valid allowlist build, and the `--blind`
+      falsification control still fails with the disk entries in it, so the new
+      arm is covered by the vacuity canary rather than sitting outside it.
+      🔴 **AND IT IMMEDIATELY CAUGHT A FALSE-POSITIVE CLASS OF ITS OWN**, which
+      is now fix (14): the span model does not parse `IF DISK_BUILD`, so a
+      routine a conditional EXCLUDED still has a span and looks unreachable. The
+      first run reported `fat_detach_channel`/`fdet_maybe` that way. The symbol
+      table settles it — present in `sub.sym`, absent from `disk.sym`, so those
+      bytes are not in this ROM. A label the build never assembled cannot be
+      dead code in it. ⚠️ Never silent: the count and the names are printed, or
+      a stale `.sym` would filter REAL findings away.
 
 - [ ] 🔴 **`rammap_sweep.py` READS ONLY `.inc` FILES, SO ~20 PAGE-3 CELLS ARE
       INVISIBLE TO THE ONLY RAM MAP WE HAVE.**

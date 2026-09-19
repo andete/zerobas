@@ -104,6 +104,11 @@ DISK_PARTS := disk/equates.inc disk/init.asm disk/pageenv.asm disk/driver.asm \
               disk/fat.asm disk/kernel.asm disk/runtime.asm \
               basic/fat-prim-body.inc basic/fatio-body.inc
 DISK_ROM := $(BUILD)/disk.rom
+# D-DISKDEAD: disk.rom needs a symbol table like the other two builds, because
+# the dead-code sweep reports a span's ADDRESS and SIZE from it. Without one the
+# disk arm could still say WHAT is dead but not WHERE or HOW BIG, which is the
+# half that decides whether anyone acts on it.
+DISK_SYM := $(BUILD)/disk.sym
 
 # zerobas-sub: the built-in MSX2-style sub-ROM, a standalone 32 KB ROM spanning
 # BOTH pages of an internal expanded subslot (slot 3-2 on the merged machine).
@@ -243,7 +248,7 @@ $(BUILD):
 # gates that selected it. $(SRC) now assembles the one $2812-based image.
 
 $(DISK_ROM): $(DISK_SRC) $(DISK_PARTS) disk/basic-resident-abi.inc | $(BUILD)
-	$(PASMO) -I disk --bin $(DISK_SRC) $(DISK_ROM)
+	$(PASMO) -I disk --bin $(DISK_SRC) $(DISK_ROM) $(DISK_SYM)
 	python3 tools/pad_rom.py $(DISK_ROM) 16384
 
 disk: $(DISK_ROM)
@@ -370,7 +375,7 @@ basic-reloc: $(RELOC_SYM) $(RELOC_ROM) $(SUB_ROM) $(DISK_ROM)
 	python3 tools/check_tenant_closure.py $(RELOC_SYM) sub/basic-resident-abi.inc
 	python3 tools/check_tenant_closure.py --page0 $(SUB_SYM) sub/sub.asm
 	python3 tools/check_tenant_closure.py --page1 $(SUB_SYM) sub/sub.asm
-	python3 tools/check_dead_code.py $(RELOC_SYM) $(SUB_SYM)
+	python3 tools/check_dead_code.py $(RELOC_SYM) $(SUB_SYM) $(DISK_SYM)
 	python3 tools/audit_citations.py
 	python3 tools/check_citation_paths.py
 
@@ -393,8 +398,8 @@ basic-reloc: $(RELOC_SYM) $(RELOC_ROM) $(SUB_ROM) $(DISK_ROM)
 # suppression list: the gate asserts every entry is still detected as dead, which
 # is the only warning available for this tool going blind and reporting a clean
 # tree while measuring nothing.
-deadcode: $(RELOC_SYM) $(SUB_ROM)
-	python3 tools/check_dead_code.py --report $(RELOC_SYM) $(SUB_SYM)
+deadcode: $(RELOC_SYM) $(SUB_ROM) $(DISK_ROM)
+	python3 tools/check_dead_code.py --report $(RELOC_SYM) $(SUB_SYM) $(DISK_SYM)
 
 # --- Layout invariant (D-LAYOUTINV) -------------------------------------------
 # The property a LAYOUT PASS is allowed to preserve: every routine keeps its

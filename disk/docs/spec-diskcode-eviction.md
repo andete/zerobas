@@ -477,7 +477,7 @@ ITS LOOP.** §6.1(b) is why. Every remaining step is an instance of it.
 | 7 | 🔬 **MEASURE: does the reference cross slots per BYTE for sequential file I/O?** | §6.3 — decides whether loop duplication is required or is wasted bytes |
 | 8 | the FAT engine to `disk.rom`, ONE copy, base parametrised per §0.1 | needs 6; needs a scratch build to prove the fragmented fit |
 | 9 | the tokenised `LOAD` loop (`dpl_*`) **+ the stream cursor `fat_io_getbyte`** — 🔴 not "already disk-only" (§6.5) and 🛑 not sufficient alone (§6.6) | ✅ **MEASURED §6.2c**, ✅ **SCOPED §6.5**, 🛑 **RE-SCOPED §6.6: the loop ALONE creates the per-byte crossing it exists to remove** |
-| 10 | `OPEN`/`CLOSE` disk arms + the channel write-back manager | needs 8 |
+| 10 | `OPEN`/`CLOSE` disk arms + the channel write-back manager | needs 8; 🛑 **BLOCKED the same way as 9 — no `H_OPEN`/`H_CLOSE` exists, and §6.6j measured that both cells which move `OPEN` also move `LOAD`** |
 | 11 | `INPUT#` / `INPUT$` loop copies beside their cursor | needs 7 |
 | 12 | `PRINT#` — the one consumer with no loop of its own to move | needs 7; see §6.3 |
 | 13 | the `sub.rom` disk-only tenants (**2178–3708 B, §0.2**): `fatprim`, `dirverb`, `fcbname`, and BLOAD's / SAVE's disk arms | in scope only because of §0.0 |
@@ -1146,6 +1146,20 @@ in the drive) that refused rather than measuring against the shared DSKIO layer;
 and an openMSX invocation missing `set renderer none`, which blocks before the
 machine starts and hangs forever. The last one now has a 180 s timeout, so a hang
 names itself instead of being diagnosed by `ps`.
+
+### 6.6k 🛑 STEP 10 IS BLOCKED THE SAME WAY, ESTABLISHED IN ONE CHECK (2026-09-19)
+
+Step 10 moves `OPEN`/`CLOSE`'s disk arms behind their hook. **There is no
+`H_OPEN` and no `H_CLOSE`** — `disk/equates.inc` names seventeen cells and
+neither is among them, and `$FE5D` is referenced nowhere in the tree. §6.6j
+already measured the rest: the two cells that move `OPEN"NOSUCH"` are the two
+that move `LOAD"NOSUCH.BAS"`, identically. So step 10 needs the same ruling step
+9 does, and for the same reason.
+
+⚠️ **THIS TOOK ONE GREP, NOT SIX TICKS**, which is the point of recording it.
+Step 9's arc found one further constraint per tick for five ticks before any code
+moved. The check that would have short-circuited it — *does this verb have a
+named hook cell?* — costs nothing and now runs first.
 
 ## 7. The channel trio, and the wall that is not one
 
