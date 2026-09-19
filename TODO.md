@@ -275,14 +275,31 @@ item — do **one item per session** to keep context lean.
       ⛔ **NOTHING MAY BE INSTALLED AT `$FE67` UNTIL IT EARNS THE CLEARANCE
       `$FE5D` FAILED.** Claiming `$FE5D` broke `stop-trap-acceptance` in a way no
       reasoning predicted and only a full battery caught (§6.6p).
-      ➡️ The slice to build is the PER-SECTOR service: main keeps the tokenised
-      loop, `disk.rom` gains a sector-read entry. §6.2c already priced it — per
-      BYTE is unaffordable, per SECTOR is ~29 crossings on the large load.
-      🟢 **This also largely dissolves the aliasing hazard below**: a per-sector
-      service never holds a 512-byte buffer over main's live workspace for the
-      duration of a load.
-      ⚠️ The 16 parked spans in `disk.rom` are the WRONG SHAPE for this and
-      should be retired rather than revived when Joost rules.
+      🟢 **ANSWERED 2026-09-19 (D-LOADPROTO, §6.6u) — AND IT IS NO LONGER A
+      CHOICE.** The retraction above was right that counts cannot separate the two
+      shapes. A RETURN ADDRESS can: at a breakpoint on a hook cell the word at
+      `(SP)` is the return into whoever called it, and classifying it by page +
+      selected slot names the caller's ROM. **Every per-sector entry's caller is
+      in the DISK ROM** — 16 of 16 at 3 data sectors, 68 of 68 at 29 — each at a
+      stack depth below the verb entry, and **no disk→main crossing occurs at
+      either public inter-slot entry for the whole verb**. Main calls `$FE67`
+      once and the disk ROM runs mount, directory search and the entire sector
+      loop on its own side.
+      ➡️ **So the slice to build is the WHOLE-LOOP move, not a per-sector service
+      called from main.** That is the A-vs-B question off Joost's plate: the
+      reference is B, measured rather than preferred.
+      🔴 **AND THAT PUTS THE ALIASING HAZARD BACK.** The dissolution claimed here
+      was premised on MAIN keeping the loop. The reference does the opposite, so
+      a faithful step 9 DOES hold disk-side buffer state across the transfer
+      while a BASIC statement is live. It is the price of the faithful shape and
+      has to be SOLVED, not designed around.
+      ⚠️ Still unmeasured, and the next thing a faithful implementation needs:
+      the REGISTER CONTRACT at the crossing — what main puts in which register
+      before calling `$FE67` and what it expects back — and whether `SAVE` and
+      `MERGE` share the shape.
+      ⚠️ The 16 parked spans in `disk.rom` were the wrong shape for a per-sector
+      service; against the measured whole-loop shape they deserve a fresh look
+      rather than automatic retirement.
 
 - [ ] 🔴 **OUR DISK ROM CANNOT INSTALL AN 18th HOOK — AND THAT, NOT THE CELL,
       IS WHAT BLOCKS STEP 9.**
@@ -2897,7 +2914,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:20601 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:20618 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -3063,7 +3080,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:7706 (T-6FE392)8 (T-529ABE)` from `TODO.md:18995 (T-529ABE)`: a
+      `TODO.md:7723 (T-6FE392)8 (T-529ABE)` from `TODO.md:19012 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -8550,7 +8567,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:18995 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:19012 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

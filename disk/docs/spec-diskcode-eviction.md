@@ -1499,6 +1499,9 @@ OVER-READING AND IS RETRACTED.** A count of 1 at the verb cell and 29 at the
 sector cell is consistent with BOTH shapes: a loop inside the `$FE67` handler
 calling the sector service 29 times, and a loop in main calling it 29 times
 directly. Counts cannot separate them, and nothing else here does either.
+✅ **ANSWERED SINCE, BY §6.6u:** the caller's return address settles it — the
+loop is INSIDE the disk ROM. The retraction was right and the original hunch was
+too; what was missing was an instrument that could tell them apart.
 🟢 **WHAT IS DETERMINED IS STILL THE THING THAT MATTERS:** a per-SECTOR hook
 boundary EXISTS in the reference, and a per-BYTE one does not. So a per-sector
 design is faithful and affordable — option C of D-LOADREV's analysis, priced
@@ -1506,7 +1509,12 @@ there at ~29 crossings ≈ 4.5 ms against a 3.57 s load — exactly as §6.2c's
 arithmetic predicted. Whether the loop above that boundary sits in main or in
 `disk.rom` is OURS to choose, not something this measurement dictates.
 
-🟢 **AND IT LARGELY DISSOLVES §6.6q.** A per-sector service hands main one sector
+🔴 **THE FOLLOWING PARAGRAPH IS WITHDRAWN BY §6.6u.** Its premise is that MAIN
+keeps the loop and the disk side is a one-sector-at-a-time service. Measured, the
+reference does the opposite, so the hazard is back — and it is the price of the
+faithful shape, not an argument against it. The analysis is kept because the
+conditional it states is still true: IF main kept the loop, §6.6q would go away.
+🟢 ~~**AND IT LARGELY DISSOLVES §6.6q.**~~ A per-sector service hands main one sector
 at a time, so the disk side never holds a 512-byte buffer aliased over main's
 live workspace for the duration of a load. The hazard does not need solving; the
 design that created it was the wrong design.
@@ -1558,6 +1566,10 @@ every file verb, as §6.6p said. **So "one cell, several verbs, a selector" — 
 shape Joost ruled for in §6.6m — is exactly right, and I applied it to the wrong
 address.** `$FE67` is the cell that shape belongs at.
 
+🔴 **THE NEXT PARAGRAPH'S INFERENCE IS CORRECTED BY §6.6u: ORDER IS NOT NESTING.**
+`$FE5D`'s caller is measured to be MAIN page 1, so it is a main-side step in the
+same statement, NOT something the disk-side handler calls. The CONCLUSION —
+`$FE67` is the verb entry — survives, on §6.6u's evidence rather than on this.
 🎯 **AND THE ORDERING SETTLES ENTRY-VERSUS-CALLEE**, which §6.6j could only
 guess: during a `LOAD`, `$FE67` is entered at sequence 17129 and `$FE5D` at
 17131 — **the LOAD-only cell comes FIRST, then the shared file-buffer-0
@@ -1676,6 +1688,104 @@ obstacle to step 9 at ANY address. `$FE67` remains the measured shared
 ➡️ And the cheap way round is unchanged and now looks better than chasing this:
 **step 9 need not ADD a row at all** — sharing an existing one leaves the
 installed set untouched and sidesteps the whole question.
+
+### 6.6u 🟢 MEASURED: MAIN HANDS `LOAD` OVER ONCE AND THE DISK ROM OWNS THE WHOLE SECTOR LOOP (D-LOADPROTO, 2026-09-19)
+
+🏗️ **JOOST, 2026-09-19:** *"as long as we don't fully know how e.g. `LOAD`
+works on the reference, we can't implement it properly."* That reframes step 9
+from a shape Joost has to RULE on into a shape that can be MEASURED, and this is
+the measurement. `scratchpad/loadproto_probe.py`, three identical runs.
+
+🎯 **THE METHOD, AND IT IS ONE STEP PAST D-HOOKCOUNT.** At a breakpoint on a
+hook cell the Z80 has not yet executed the cell's first byte, so the word at
+`(SP)` is the return address into WHOEVER CALLED THE HOOK. Classify that address
+by its page and that page's selected slot and the caller's ROM falls out:
+`$0000-$3FFF` slot 0 = main page 0, `$4000-$7FFF` slot 0 = main page 1,
+`$4000-$7FFF` slot 3-1 = the disk ROM. 🔴 **The slot is what makes this work at
+all** — `$4000-$7FFF` is main page 1 AND the disk ROM, so an address alone
+cannot tell them apart, and the probe's selftest carries that exact pair as a
+negative control.
+
+🔴 **FOUR CONTROLS, ALL GREEN IN EVERY RUN.**
+
+| | control | result |
+|---|---|---|
+| K1 | `H.TIMI $FD9F`'s caller is known a priori to be the BIOS interrupt handler in **main page 0** | classified MAIN-P0, 2244/2244 |
+| K2 | the arming window must cover the WHOLE verb: each sector cell's delta must equal D-HOOKCOUNT's | **8 each** (3-sector image), **34 each** (29-sector image) |
+| K3 | the `quiet` case types no verb, so `$FE67` never fires and the trace must be EMPTY | 0 events |
+| K4 | the disk ROM must actually be observed selected into page 1 | slot 3-1 seen |
+
+🟢 **(1) THE SECTOR LOOP RUNS INSIDE THE DISK ROM.** Every entry to the
+per-sector service has its caller in the **disk ROM**, at both sizes:
+
+| image | data sectors | sector-service entries | callers |
+|---|---|---|---|
+| S (1055 B) | 3 | 16 | **DISK 16 / MAIN 0** |
+| L (14369 B) | 29 | 68 | **DISK 68 / MAIN 0** |
+
+Three data sectors and twenty-nine give the same verdict, so this is the shape of
+the loop and not an artefact of a file that fits somewhere special. **This is the
+sentence §6.6r had to RETRACT, now settled by measurement rather than by
+preference:** a count of 1 at the verb cell and 29 at the sector cell was
+consistent with a loop in main and with a loop in the disk ROM; the caller region
+separates them, and it is the disk ROM.
+
+🟢 **(2) AND A SECOND, INDEPENDENT LINE AGREES.** All 16 (and all 68) sector
+entries sit at a stack depth BELOW the verb entry's. Caller region and stack
+depth are different quantities and could have disagreed; they do not.
+
+🔴 **(3) THE HEADLINE IS A NEGATIVE: THE DISK ROM NEVER CALLS BACK INTO MAIN
+DURING A LOAD.** Both public inter-slot entries were trapped for the whole verb
+— `$0030` (RST 30h / CALLF) and `$001C` (CALSLT). The disk side makes **8**
+outward calls through CALSLT and **every one of them targets its own slot**;
+there is no disk→main crossing at either entry, at either file size. The 8 do
+not scale with sectors (8 at 3 sectors, 8 at 29), so they are mount traffic, not
+per-sector work.
+
+➡️ **SO THE REFERENCE'S `LOAD` PROTOCOL IS ONE HANDOVER, NOT A CONVERSATION:**
+main (page 1) calls `$FE67` once, control crosses to the disk ROM, and the disk
+ROM runs mount, directory search and the entire sector loop on its own side
+before returning. Main is not driving the transfer.
+
+🔴 **(4) WHICH CORRECTS §6.6s, AND THE ERROR WAS READING ORDER AS NESTING.**
+§6.6s took `$FE67` at sequence 17129 and `$FE5D` at 17131 as "the LOAD-only cell
+comes first, then the shared machinery ... the signature of `$FE67` being the
+verb entry and `$FE5D` something it calls." **`$FE5D`'s caller is MAIN page 1**,
+as is `$FE76`'s. They are main-side steps in the same statement, not callees of
+the disk-side handler. Ordering constrains nothing about who calls whom; only the
+return address does. 🎯 The conclusion `$FE67` IS the verb entry survives — it
+is the cell main calls, and the crossing happens there — but it survives on this
+evidence, not on §6.6s's.
+
+🔴 **AND THIS PUTS §6.6q BACK.** §6.6r retired the buffer-aliasing hazard on the
+grounds that "a per-sector service hands main one sector at a time, so the disk
+side never holds a 512-byte buffer aliased over main's live workspace for the
+duration of a load." That relief was premised on MAIN keeping the loop. The
+reference does the opposite, so a faithful step 9 **does** hold disk-side buffer
+state across the whole transfer while a BASIC statement is live, and
+`SECTOR_BUF $E2A0..$E49F` still overlaps `SH_START $E375`, `SH_ERR $E37E`,
+`MIDS_DEST $E3E6`, `GFX_PXL $E3ED`, `GFX_CS_M2 $E3F6`, `GFX_SSIZE $E41B` and the
+string heap. **The hazard is not dissolved; it is the price of the faithful
+shape**, and it has to be solved rather than designed around.
+
+🙋 **WHAT THIS DOES AND DOES NOT DECIDE FOR STEP 9.** It removes the A-vs-B
+question from Joost's plate: the reference is **B** — one cell, the whole loop
+below it. It does NOT clear the obstacle §6.6t parks: claiming a new hook cell
+still reddens `stop-trap-acceptance`, so the "share an existing row" route stays
+the cheap way in. And it does not price the move.
+
+⚠️ **WHAT IS STILL NOT KNOWN.** The register contract at the crossing — what
+main puts in which register before calling `$FE67`, and what it expects back.
+That is the next thing a faithful implementation needs and the next thing this
+instrument can be pointed at. Also unmeasured: whether `SAVE` and `MERGE` have
+the same shape, and whether the 8 mount-time CALSLTs are DSKIO or something else.
+
+🔴 **CLEAN ROOM.** Registers, one word of RAM (the stack top) and the
+slot-select state only — the same surface `disk/docs/expansion-protocol.md` §7
+already operates on ("reading the live Z80 register file / system work areas").
+No ROM byte was read, no hook cell's `<lo> <hi>` was followed, nothing was
+single-stepped into ROM, nothing was disassembled. The report prints REGIONS and
+counts and deliberately never prints a reference-internal address.
 
 ## 7. The channel trio, and the wall that is not one
 

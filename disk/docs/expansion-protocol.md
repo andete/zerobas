@@ -258,6 +258,37 @@ zerobas-disk images for the provider-direction test.
 
 ---
 
+## 8. The CONTROL-FLOW half of the protocol (measured 2026-09-19)
+
+§§2–3 pin the *transport*: which hooks exist, the install idiom, and DSKIO's
+register contract. They do not say **who drives whom**, and that is the half a
+faithful re-implementation actually has to match. It is now measured — see
+`disk/docs/spec-diskcode-eviction.md` §6.6r/§6.6s (which cells, how often) and
+**§6.6u** (who calls whom), from `scratchpad/hookcount_probe.py` and
+`scratchpad/loadproto_probe.py`.
+
+The shape of a reference `LOAD`, in one line: **main calls one hook cell once,
+and the disk ROM does everything else on its own side.**
+
+* main (page 1) calls the verb cell `$FE67` — once, whatever the file size;
+* control crosses to the disk ROM, which runs mount, directory search and the
+  **entire sector loop** there: every per-sector entry's caller is in the disk
+  ROM, at 3 data sectors and at 29 alike;
+* the disk side makes 8 outward inter-slot calls (mount traffic — the count does
+  not scale with sectors) and **every one targets its own slot**;
+* **no disk→main crossing occurs at either public inter-slot entry** (`$0030`
+  CALLF, `$001C` CALSLT) for the whole verb;
+* `$FE5D` and `$FE76` are also entered during a `LOAD`, but their callers are in
+  MAIN — they are main-side steps in the same statement, not callees of the
+  disk-side handler.
+
+⚠️ **Still unmeasured:** the register contract AT the crossing (what main puts
+in which register before calling `$FE67`, and what it expects back), and whether
+`SAVE`/`MERGE` share the shape. Those are the next things a faithful
+implementation needs.
+
+---
+
 ## 7. Clean-room statement
 
 All disk-ROM behaviour here was obtained by **black-box observation**: setting
