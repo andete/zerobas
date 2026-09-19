@@ -232,9 +232,33 @@ item — do **one item per session** to keep context lean.
       cell of its own. `LOAD` is the first verb MEASURED not to have one. What
       the ruling means for a verb that shares its entry is Joost's call, not
       something to settle by picking a cell.
-      ➡️ The shape the readings SUGGEST (a hypothesis, not a finding): a
-      dispatch inside a shared cell, as `hk_lrset` already serves both `LSET` and
-      `RSET` from one body via `LRSET_JUST`. Needs its own measurement first.
+      🔴 **REVIEWED AND NARROWED 2026-09-19 (D-LOADREV, §6.6l) — THREE HOLES,
+      AND THE FIRST IS A PLAIN ERROR.** (1) `$FE5D` was ALREADY identified nine
+      days earlier: `disk/docs/spec-diskbasic-hook-rearchitecture.md` (D-CHANHOOK,
+      2026-09-15) has a measured table where `$FE5D` is the ONLY cell of twenty
+      that moves `OPEN` and the ONLY one that moves `MERGE`. So this measurement
+      added a THIRD verb to a cell the tree had named — a stronger result than
+      the one recorded. §6.6k's *"`$FE5D` is referenced nowhere in the tree"* is
+      RETRACTED: the grep behind it asked for `H_OPEN`/`H_CLOSE` and the answer
+      was written about a different symbol. **An empty grep is evidence about the
+      string you typed and nothing else.** (2) The instrument is BLIND to the
+      phase step 9 moves — `LOAD"NOSUCH.BAS"` is readable because it fails at the
+      directory search, so seven data-phase-named candidates read "unchanged" for
+      a reason unrelated to LOAD. Read the table as a bound, not a census.
+      (3) `LOAD` is NOT an anomaly: the CF-3300 leaves `H.MERG`, `H.SAVE` and
+      `H.LOPD` unclaimed, so no per-verb cell for the program-file verbs is the
+      reference's PATTERN — steps 10, 11 and 12 meet the same wall.
+      🙋 **SO THE QUESTION IS SHARPER THAN IT WAS PUT:** does *"every disk command
+      behind ITS hook"* mean a cell of its own, or the cell the reference actually
+      uses? If the latter, the shape is `$FE5D` + a verb selector and the pattern
+      to copy is **`hk_files`** (ONE cell, verb read from the token in program
+      text) — NOT `hk_lrset`, which is two cells sharing one body and is what
+      §6.6j reached for. ⚠️ And diskless `LOAD` must fall through to CASSETTE,
+      not raise ERR 5 as `chan_gate` does.
+      🔬 The distinguishing experiment is SPECIFIED and NOT RUN (§6.6l): count
+      breakpoint hits per cell across the 1055 B and 14369 B images from §6.2c,
+      `incr` + `cont` only — no step, no read at the target, so the clean-room
+      line is not approached. Working: `scratchpad/loadhook_analysis.md`.
       Established 2026-09-19 (`disk/docs/spec-diskcode-eviction.md` §6.6h).
       `disk/equates.inc` names SIXTEEN hook cells and none is `LOAD`'s, while
       D-CFARCH's census counted **35** cells the reference's disk ROM claims.
@@ -2588,7 +2612,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:20292 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:20316 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -2754,7 +2778,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:7397 (T-6FE392)8 (T-529ABE)` from `TODO.md:18686 (T-529ABE)`: a
+      `TODO.md:7421 (T-6FE392)8 (T-529ABE)` from `TODO.md:18710 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -8241,7 +8265,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:18686 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:18710 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

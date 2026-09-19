@@ -1122,6 +1122,13 @@ proceed as written. This is a measurement, not a search that ran out of patience
 the candidate set was derived from the full 35-cell census and every one of the
 18 was asked on its own machine.
 
+🔴 **BUT THE HEADING OVERSTATES WHAT THE RUN CAN SUPPORT — NARROWED BY §6.6l.**
+What is measured is *no candidate ON LOAD's OPEN PATH is LOAD-specific*. The
+readable case is `LOAD"NOSUCH.BAS"` precisely BECAUSE it fails at the directory
+search (§6.6i), so the run never reaches the DATA phase — and the data phase is
+where step 9's loop lives. Cells named for that phase read "unchanged" whether
+they are LOAD's or not. Read the table as a bound, not as a census of LOAD.
+
 🔴 **IT ALSO FALSIFIES AN ASSUMPTION THE EVICTION HAS BEEN CARRYING.** Joost's
 standing ruling is that a disk command's implementation belongs in `disk.rom`
 behind ITS hook. That has held for every verb so far — `KILL`, `NAME`, `COPY`,
@@ -1151,7 +1158,12 @@ names itself instead of being diagnosed by `ps`.
 
 Step 10 moves `OPEN`/`CLOSE`'s disk arms behind their hook. **There is no
 `H_OPEN` and no `H_CLOSE`** — `disk/equates.inc` names seventeen cells and
-neither is among them, and `$FE5D` is referenced nowhere in the tree. §6.6j
+neither is among them. ~~and `$FE5D` is referenced nowhere in the tree~~
+🔴 **THAT CLAUSE WAS FALSE AND IS RETRACTED — see §6.6l.** `$FE5D` is named in
+four places, one of them a MEASURED TABLE nine days older than §6.6j
+(`spec-diskbasic-hook-rearchitecture.md` §D-CHANHOOK, 2026-09-15). The grep
+behind it asked for `H_OPEN`/`H_CLOSE` and I let its emptiness stand for a
+conclusion about a different symbol. §6.6j
 already measured the rest: the two cells that move `OPEN"NOSUCH"` are the two
 that move `LOAD"NOSUCH.BAS"`, identically. So step 10 needs the same ruling step
 9 does, and for the same reason.
@@ -1160,6 +1172,75 @@ that move `LOAD"NOSUCH.BAS"`, identically. So step 10 needs the same ruling step
 Step 9's arc found one further constraint per tick for five ticks before any code
 moved. The check that would have short-circuited it — *does this verb have a
 named hook cell?* — costs nothing and now runs first.
+
+### 6.6l 🔴 §6.6j AND §6.6k REVIEWED AND NARROWED (D-LOADREV, 2026-09-19)
+
+An adversarial review of the two sections above — asked for holes, not for
+agreement — found three, and the first is a plain error of mine. Its working is
+`scratchpad/loadhook_analysis.md`; every claim below was re-verified against the
+tree before being recorded here.
+
+🔴 **(1) `$FE5D` WAS ALREADY IDENTIFIED, NINE DAYS BEFORE §6.6j MEASURED LOAD
+ONTO IT.** `disk/docs/spec-diskbasic-hook-rearchitecture.md` (D-CHANHOOK,
+2026-09-15) carries a measured table: of twenty unidentified cells, `$FE5D` is
+the ONLY one that moves `OPEN"NOSUCH.DAT"FOR INPUT AS#1` **and** the only one
+that moves `MERGE"NOSUCH.BAS"`, both ERR 70 -> ERR 51. `scratchpad/
+LOOP-RESTART.md` states it outright: *"`$FE5D` is recovered (it is the cell BOTH
+`OPEN` and `MERGE` arrive through)"*. So §6.6j did not discover an unexplained
+cell — it added a THIRD verb, `LOAD`, to a shared cell the tree had already
+named. That is a stronger result than the one recorded, and it was available
+without any new measurement.
+⚠️ **THE MECHANISM OF THE ERROR IS WORTH MORE THAN THE ERROR.** §6.6k grepped
+for `H_OPEN`/`H_CLOSE`, found nothing, and wrote *"`$FE5D` is referenced nowhere
+in the tree"* — a claim about a DIFFERENT SYMBOL than the one searched. An empty
+grep is evidence about the string you typed and about nothing else.
+
+🔴 **(2) THE INSTRUMENT IS BLIND TO THE PHASE STEP 9 ACTUALLY MOVES.**
+`LOAD"NOSUCH.BAS"` is the readable case BECAUSE it raises before touching the
+program (§6.6i) — it fails in the directory search. Step 9 moves the tokenised
+DATA loop, which runs only after a successful open. Every candidate whose public
+name belongs to the data phase therefore reads "unchanged" for a reason that has
+nothing to do with whether it is LOAD's: `$FE80`, `$FE85`, `$FE8A`, `$FE99`,
+`$FE9E`, `$FEA3`, `$FEAD` (`docs/spec-basic-nodisk.md`). **Seven of the eighteen
+rows are uninformative, and they are the seven nearest the subject.**
+⚠️ Smaller, same family: `$FEBC` never entered the candidate list because the
+census requires the `F7 … C9` idiom (`scratchpad/hookid_load.py`), and
+`docs/spec-basic-nodisk.md` flags that cell as an unexplained loose end.
+
+🟢 **(3) AND LOAD IS NOT AN ANOMALY, WHICH CHANGES THE QUESTION.** The CF-3300
+leaves `H.MERG`, `H.SAVE` and `H.LOPD` UNCLAIMED (`docs/spec-basic-nodisk.md`).
+No per-verb cell for the program-file verbs is the reference's PATTERN, not a
+quirk of `LOAD` — so steps 10, 11 and 12 meet the same wall, and §6.6k's "step 10
+is blocked the same way" is the second instance of a rule rather than a
+coincidence.
+
+🙋 **SO THE RULING JOOST IS ASKED FOR IS SHARPER THAN §6.6j PUT IT.** Not *"what
+do we do about a verb with no hook"* but: **does "every disk command behind ITS
+hook" mean a cell of its own, or the cell the reference actually uses?** If the
+latter, the shape is `$FE5D` plus a verb selector, and the pattern to copy is
+`hk_files` — ONE cell, verb read from the token in program text (`disk/
+kernel.asm`) — **not** `hk_lrset`, which is two cells sharing one body and is
+what §6.6j reached for. ⚠️ One consequence the cost table must carry: on a
+diskless machine `LOAD` has to fall through to CASSETTE, not raise ERR 5 the way
+`chan_gate` does, so that surface needs a variant.
+
+🔬 **THE DISTINGUISHING EXPERIMENT, SPECIFIED AND NOT RUN.** Breakpoint-COUNT
+each claimed cell across `LOAD"S.BAS",R` vs `LOAD"L.BAS",R` (the 1055 B and
+14369 B images §6.2c already built), handler doing `incr` + `cont` only — no
+step, no read at the target, no register capture, so the clean-room line
+(`expansion-protocol.md` §2) is not approached. Controls: `H_FILE` must count on
+`FILES` and zero on `LOAD`; a cell known to scale with sectors must be SEEN to
+scale, or a null result means only that the counter is blind. Outcomes: one cell
+counts once and nothing scales -> shared entry with the loop inside; something
+scales per sector -> stream primitives, which is a different port; per BYTE is
+already excluded by §6.2c's arithmetic, since the reference cannot afford a
+crossing per byte at the rate it achieves.
+
+⚠️ **DOC DEBT THE REVIEW TURNED UP.** §6.6g prices the port at **111 B** and
+`tools/deadcode-allow.txt` at **109 B**. They measure different things — a
+free-space DELTA against a sum of SPANS — and the 2 B between them is
+unreconciled; one check settles it and neither figure should be quoted until it
+does.
 
 ## 7. The channel trio, and the wall that is not one
 
