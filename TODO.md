@@ -340,15 +340,30 @@ item — do **one item per session** to keep context lean.
       byte in front of it is the closing quote. The selector crosses in RAM
       instead, aliased onto `DISKOP_OP` — the tree's own idiom (`DEFT_STATUS`,
       `LE_STATUS`) — with the mutual exclusion ARGUED where the binding is.
-      🧮 **AND THE 111 vs 109 B DOC DEBT IS SETTLED BY MEASUREMENT.** The move
-      gave a third figure and made the gap checkable: `disk.rom` lost **171 B**
-      of free space while `hk_dpload` + `hdl_*` sum to **167 B** of spans — and
-      the missing **4 B are exactly the `dw H_FOPEN, hk_dpload` row in
-      `hook_tab`**, which is data and belongs to no span. So the two quantities
-      measure different things, as suspected, and the difference is now
-      accounted rather than asserted. ⚠️ D-DPLPORT's own 2 B (111 free-space vs
-      109 spans) is NOT explained by the same cause — it added no table row — so
-      it is not a constant overhead; it is bounded, small, and still open.
+      🧮 **THE 111 vs 109 B DEBT IS SETTLED (D-BYTEREC, 2026-09-19) — AND THE
+      QUESTION WAS MALFORMED.** Built both sides of D-DPLPORT in worktrees and
+      compared the images byte for byte. The three figures are three DIFFERENT
+      quantities and they decompose exactly:
+      `-111` (the gate's free-space delta, `0x00` runs ≥ 16 B) `= -103` (net
+      `0x00` bytes anywhere) `- 8` (zeros that fell into runs UNDER the 16 B
+      threshold and stopped being counted); and `-103 = -113` (zeros
+      overwritten) `+ 10` (bytes of the new image that ARE `0x00` and are still
+      counted as free).
+      🔴 **SO 109 WAS NEVER COMPARABLE TO 111.** That commit RELOCATED code as
+      well as adding it — 454 bytes differ, spread across the image — so zeros
+      were consumed and created far from the new spans. A span sum measures what
+      code occupies; a free-space delta measures what a zero-run scan can still
+      see. Comparing them across a relocating commit is a category error, and
+      the "2 B" was the near-cancellation of a +8 threshold effect and a −6-ish
+      relocation effect, not a residue with one cause.
+      ➡️ **TWO STANDING BIASES IN THE FREE-SPACE FIGURE, now named:** it
+      UNDER-counts by ignoring runs below 16 B, and OVER-counts by treating
+      `0x00` bytes inside code as free. Both are real, both are small, and a
+      reader comparing it to any span figure needs to know them.
+      ⚠️ **AND D-DPLMOVE's OWN "the missing 4 B are the `hook_tab` row" RESTS ON
+      THE SAME FLAWED COMPARISON** and should be treated as unverified. It may
+      well be right; it was not established, because that commit relocated code
+      too and no worktree holds the state it was measured in.
       🟢 Incidentally closes half of the dead-`equ`-alias item below:
       `dpl_link_err` and `dpl_err_pop` went WITH the moved block. What remains
       there is the GATE ARM (`check_dead_code` cannot follow an `equ` alias) and
@@ -2784,7 +2799,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:20488 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:20503 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -2950,7 +2965,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:7593 (T-6FE392)8 (T-529ABE)` from `TODO.md:18882 (T-529ABE)`: a
+      `TODO.md:7608 (T-6FE392)8 (T-529ABE)` from `TODO.md:18897 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -8437,7 +8452,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:18882 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:18897 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

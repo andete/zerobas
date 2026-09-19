@@ -979,7 +979,18 @@ source, two ROMs** shape Option 2 used for the primitive body.
 | | |
 |---|---|
 | the 6 bytes of cursor state | `FREAD_OFF` → `RDBLK_BUFPOS`, `FREAD_LEFT` → `RDBLK_REQ` (`disk/init.asm`) |
-| `disk.rom` free, 2026-09-19 | **8324 B in 29 runs**, from 8435 B — the layer cost **111 B** |
+| `disk.rom` free, 2026-09-19 | **8324 B in 29 runs**, from 8435 B — the gate's figure fell **111 B** |
+
+⚠️ **THAT 111 IS NOT THE LAYER'S SIZE, AND D-BYTEREC MEASURED THE DIFFERENCE.**
+The spans sum to 109 B; the gate's free-space figure fell 111 B; neither is the
+other's check. Built both sides in worktrees and diffed the images:
+`-111 = -103` (net `0x00` bytes) `- 8` (zeros that fell below the scan's 16 B
+run threshold), and `-103 = -113` (zeros overwritten) `+ 10` (code bytes that
+happen to BE `0x00` and are still counted free). The commit RELOCATED code as
+well as adding it — 454 bytes differ across the image — so a span sum and a
+free-space delta are not comparable here at all. The free-space figure
+UNDER-counts by ignoring sub-16-byte runs and OVER-counts by reading `0x00`
+inside code as free; both biases are small and both are now named.
 | knife pin | re-stamped (`--all`, `--allfn`); full `kwsweep` green; **no tier row moved** |
 
 🟢 **AND THE PREMISE NOW HOLDS, MECHANICALLY:**
