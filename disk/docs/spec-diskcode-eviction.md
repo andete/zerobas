@@ -1054,6 +1054,49 @@ must change before it can answer this one:
 is the honest state: the stream layer is in `disk.rom` and correct, the hook body
 is designed, and the address it must be installed at is unknown.
 
+### 6.6i 🔧 THE INSTRUMENT FOR §6.6h EXISTS; THE RUN IS UNFINISHED (D-LOADHOOK, 2026-09-19)
+
+`scratchpad/hookid_load.py` is built: the `POKE <cell>,201` method
+`hookid_probe.py` used to answer `FIELD`, `LSET` and `RSET`, aimed at `LOAD`. It
+does **not** yet have the answer, and what it has instead is worth keeping.
+
+🟢 **IT DERIVES BOTH SIDES OF THE CANDIDATE SET RATHER THAN QUOTING THEM.** The
+named cells are PARSED from `disk/equates.inc` — and that immediately corrected a
+number this spec had been repeating: **17 named cells, not 16.** The claimed set
+is read through the DEBUGGER, never the screen (D-CFARCH's 27-vs-35 lesson).
+
+🔴 **ITS FIRST RUN REFUSED, AND THE REFUSAL WAS RIGHT.** The census returned
+**zero** claimed cells and the probe stopped rather than concluding *"LOAD is not
+hooked"* — an empty match set is not a finding
+[[an-instrument-can-fail-the-way-the-thing-it-replaced-failed]]. Three separate
+mistakes in my own scan, all in the four lines of Tcl:
+  * **no boot wait.** The Tcl runs at machine CREATION; the disk ROM's INIT
+    writes the hook table during boot, so the scan read a table of zeros.
+    `cf3300_arch_probe.py` wraps its scan in `after time 40` for exactly this.
+  * **`peek` instead of `debug read memory`.**
+  * 🔴 **a stride of 5.** A cell is five bytes, but nothing promises the table
+    starts aligned at `$FD9A` — stepping 5 tests one phase in five and silently
+    misses the other four. Fixed to step by 1, as the working census does.
+
+⛔ **THE RE-RUN THEN HUNG** — alive ~20 minutes past the census with **no
+emulator process running** and no output. Not diagnosed. The most likely cause is
+mine: two openMSX instances were competing (a stale `cf3300_arch_probe` run plus
+this one) and I `kill -9`'d both mid-flight, which can leave the boot-per-case
+harness waiting on something that will never arrive. **A clean re-run on an idle
+machine is the next step, and it must be started from a tree with no other
+emulator in flight.**
+
+⚠️ **WHAT THE PROBE ALREADY GETS RIGHT, so the next run is not a fresh design:**
+  * `LOAD"<missing>"` as the case, because `LOAD` REPLACES the running program —
+    the same reason `hookid_probe.py` records MERGE as unmeasurable. Round 0
+    ESTABLISHES that it raises ERR 53 with the program intact and refuses if not.
+  * all three controls kept: poke nothing · poke a NAMED cell and flip ITS verb
+    · poke that same cell and check a DIFFERENT verb does NOT move.
+  * 🔴 **silence is scored as a CHANGE, not as an apparatus failure.** If
+    un-claiming the cell drops `LOAD` onto the cassette path the machine may wait
+    for tape forever; that is a reading, and its `--selftest` has the negative
+    control proving silence cannot be parsed as the baseline.
+
 ## 7. The channel trio, and the wall that is not one
 
 `LSET`/`RSET`/`FIELD` need the channel engine: `fch_check` `$7080`,
