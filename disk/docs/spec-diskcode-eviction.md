@@ -2046,6 +2046,74 @@ breakpoint on a RAM address in the published hook table. No ROM byte read, no
 hook target followed, nothing single-stepped into ROM, nothing disassembled. PC
 is never printed — only the region it falls in.
 
+### 6.6y 🟢 THE RETURN DIRECTION — AND PART OF THE PROTOCOL RUNS FROM RAM (D-DISKWRITE, 2026-09-19)
+
+§6.6w measured what main hands over, §6.6x what the disk side fetches. This is the
+return direction, asked as two deliberately redundant questions:
+**(a)** what does the disk ROM WRITE during the crossing, and **(b)** what has
+CHANGED by the time main gets control back. `scratchpad/diskwrites_probe.py`.
+
+🔴 **THEY ARE NOT THE SAME SET, AND THAT IS THE POINT.** A cell the disk side
+writes and then restores appears in (a) and not in (b). A cell changed by a
+writer in another region appears in (b) and not in (a). Reporting one alone would
+silently pick a side.
+
+| | `LOAD` | `SAVE` |
+|---|---|---|
+| (a) cells the DISK ROM wrote | **22** (22 writes — each cell exactly once) | **16** (16 writes) |
+| (b) cells CHANGED across the crossing | **34** | **11** |
+| in both | 13 | 9 |
+| written by DISK, unchanged on return | 9 | 7 |
+| changed, not written by DISK | 21 | 2 |
+
+🔑 **AND IT RESOLVES THE BLOCK §6.6x DELIBERATELY LEFT UNNAMED.**
+`$F568..$F574` was read 25 times during the crossing with contents identical
+across verbs AND files, so §6.6x refused to call it the argument. It is an
+**OUTPUT**: the disk side writes all 13 bytes, and across the crossing it goes
+from stale (`".` …) to **`.S       BAS`** for `LOAD"S.BAS"` and **`.T       BAS`**
+for `SAVE"T.BAS"`. It was read so often because it is written and then re-read.
+🎯 **So the two 13-byte blocks are an input/output PAIR:** main supplies the name
+at `$F864..$F870` (§6.6x, with `BC = $F871` one past it) and the disk side
+publishes a resolved copy at `$F568..$F574`. Both are drive byte + 8.3 name + one
+trailing byte.
+
+🔴 **AND PART OF THE PROTOCOL EXECUTES FROM RAM.** The classifier reports three
+writer regions inside the window — DISK, MAIN-P0 and **RAM** — and RAM is not
+incidental: `$F5B3..$F5BD` (eleven of the twelve bytes of a THIRD copy of the
+name, which reads `.S       BAS` on return) plus `$F5C2`, `$F5C4` and
+`$F5CA..$F5CD` are written by code whose PC is in pages 2-3. The disk ROM itself
+wrote only `$F5B2`, the byte before them. ⚠️ **What that RAM-resident code IS is
+not measured and is not guessed here** — only that it is neither the disk ROM
+page nor main ROM. It matters for step 9 because a faithful implementation may
+need RAM-resident code of its own, and nothing in this project's design has
+assumed that.
+
+🟢 **THE INTERRUPT ACCOUNTS FOR THE REST, AND IT WAS PREDICTED.** `$FC9E` and
+`$FCA2` change in BOTH verbs and are written only from MAIN page 0 — `$FC9E` is
+the documented JIFFY timer, and §6.6x had already noted that main page-0 activity
+during the window is explained by the 60 Hz handler living there. A prediction
+made in the previous section, borne out here without being fitted to it.
+
+🔴 **EIGHT CONTROLS, ALL GREEN — AND ONE OF THEM IS THE INSTRUMENT'S OWN
+HONESTY.** 🆕 **K17: every cell whose content changed has a recorded writer —
+zero orphans, in both verbs.** If a cell had changed with no writer logged, the
+watchpoint would have a blind spot, half (a) would be incomplete, and every "the
+disk side does not write this" reading would be unfounded. It is the control that
+licenses the (a)-versus-(b) comparison at all. The others are carried from
+D-DISKREAD: the watchpoint fires (327 k writes in the band), writes occur inside
+(1267) and outside (326 k) the window, three distinct writer regions, SP outside
+the band, the ceiling not reached, the quiet case empty, and **two runs of one
+case agreeing in BOTH halves**.
+
+⚠️ **SCOPE, as in §6.6x.** The SHARED work area `$F380..$FFFF` only. The disk
+ROM's private RAM below `$F380` is excluded by design — internal state, not
+interface.
+
+🔴 **CLEAN ROOM.** RAM addresses, RAM contents and the slot-select state, at
+breakpoints on RAM addresses in the published hook table. No ROM byte read, no
+hook target followed, nothing single-stepped into ROM, nothing disassembled. PC
+is never printed — only the region it falls in.
+
 ## 7. The channel trio, and the wall that is not one
 
 `LSET`/`RSET`/`FIELD` need the channel engine: `fch_check` `$7080`,

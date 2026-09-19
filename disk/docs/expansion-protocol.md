@@ -330,10 +330,27 @@ disk ROM:
 * ⚠️ Scope: the SHARED work area only. The disk ROM's private RAM below `$F380`
   is excluded by design — that is internal state, not interface.
 
-⚠️ **Still open:** why `SAVE` uses `$80` where `OPEN…FOR OUTPUT` uses `2`, what
-`IX`/`IY` hold, and whether the disk side ever hands control back to main inside
-the crossing (a write watchpoint on port `$A8` would settle it; main page-0
-activity during the window is explained by the 60 Hz interrupt on its own).
+### The return direction (§6.6y)
+
+* The disk ROM writes **22** work-area cells during a `LOAD` and **16** during a
+  `SAVE`, each exactly once. What main SEES changed on return is **34** and
+  **11** — different sets, because some cells are written and restored and
+  others are changed by another region.
+* `$F568..$F574` is the **output** name block: the disk side fills all 13 bytes
+  and they read `.S       BAS` / `.T       BAS` on return. With the input block
+  at `$F864..$F870` that is an input/output PAIR, both drive byte + 8.3 + one.
+* 🔴 **Part of the protocol executes from RAM.** Eleven bytes of a third name
+  copy at `$F5B2..$F5BD`, plus `$F5C2`, `$F5C4` and `$F5CA..$F5CD`, are written
+  by code whose PC is in pages 2-3 — neither the disk ROM page nor main ROM.
+  What that code is has not been measured.
+* `$FC9E` (the documented JIFFY timer) and `$FCA2` change in both verbs and are
+  written only from main page 0 — the 60 Hz interrupt, as §6.6x predicted.
+
+⚠️ **Still open:** why `SAVE` uses `$80` where `OPEN…FOR OUTPUT` uses `2`; what
+`IX`/`IY` hold; what the RAM-resident code is; and whether the disk side ever
+hands control back to main inside the crossing (a write watchpoint on port `$A8`
+would settle it — main page-0 activity is explained by the interrupt on its own,
+and there are no main page-1 reads or writes in the window at all).
 
 ---
 
