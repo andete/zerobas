@@ -328,7 +328,13 @@ def main() -> int:
         outs = [e for e in ev if str(e.get("tag", "")).startswith("OUT")]
         print("\n=== %s === events=%s bad=%s  IN=%d OUT=%d"
               % (tag, meta.get("events"), meta.get("bad"), len(ins), len(outs)))
-        for e in ins + outs:
+        # 🔴 TIME ORDER, NOT CATEGORY ORDER. This printed `ins + outs`, so every
+        # entry appeared before every exit whatever the machine actually did --
+        # and §6.6v read a control-flow claim straight out of that artefact
+        # ("`$FE76` is entered BETWEEN `$FE5D`'s entry and exit"). D-SLOTSW,
+        # which timestamps its events, shows `$FE76` comes AFTER the crossing
+        # closes. `ev` is appended in file order, which IS time order.
+        for e in [x for x in ev if str(x.get("tag", "")).startswith(("IN", "OUT"))]:
             print("  %-10s caller=%-8s %s" % (
                 e["tag"], region(e["caller"], e["pri"], e["sec"]),
                 "  ".join("%s=%s" % (r, describe(e, r)) for r in REGS)))

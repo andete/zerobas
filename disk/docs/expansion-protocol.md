@@ -351,11 +351,17 @@ disk ROM:
 * `$FC9E` (the documented JIFFY timer) and `$FCA2` change in both verbs and are
   written only from main page 0 — the 60 Hz interrupt, as §6.6x predicted.
 
+🟢 **CLOSED (§6.6aa): there is NO hand-back.** Watching port `$A8` inside the
+window, the page-1 selection changes exactly three times — `0-0` → `3-1` → `0-0`
+— with zero `DISK → elsewhere → DISK` excursions. The disk ROM is paged in once
+and stays for the whole crossing. The apparent puzzle (`$FE76` seeming to be
+entered mid-crossing) was an artefact of a probe printing entries and exits by
+category rather than in time order; a timestamped run puts `$FE76` after the
+crossing closes.
+
 ⚠️ **Still open:** why `SAVE` uses `$80` where `OPEN…FOR OUTPUT` uses `2`; what
-`IX`/`IY` hold; what the RAM-resident code is; and whether the disk side ever
-hands control back to main inside the crossing (a write watchpoint on port `$A8`
-would settle it — main page-0 activity is explained by the interrupt on its own,
-and there are no main page-1 reads or writes in the window at all).
+`IX`/`IY` hold; the installers of the four RAM clusters other than the 79-byte
+block; and what any of the RAM-resident code does.
 
 ---
 

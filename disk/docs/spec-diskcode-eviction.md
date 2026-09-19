@@ -1872,6 +1872,12 @@ a 3-sector and a 29-sector file. `HL` points at a fixed structure whose contents
 are identical case to case. **So the selector and the arguments travel in RAM,
 not in the register file**, and finding them is the next measurement.
 
+🔴 **THE PARAGRAPH BELOW IS RETRACTED BY §6.6aa.** `$FE76` is NOT entered
+between `$FE5D`'s entry and its exit — that ordering came from this probe
+printing `ins + outs`, i.e. every entry before every exit by CATEGORY, and I read
+it as a time order. A timestamped run puts `$FE76` after the crossing closes, and
+the `$A8` trace shows page 1 going MAIN → DISK → MAIN with no excursion. There is
+no hand-back to explain. The scoping advice in it is still correct and is kept.
 ⚠️ **AND §6.6u'S CROSSING-DIRECTION BULLET MUST BE READ AS WRITTEN.** It says no
 disk-side call into main was observed *at either public inter-slot entry*, and
 that remains true. It is not the same as "no return into main happens": `$FE76`
@@ -2186,6 +2192,56 @@ Code sitting in RAM is reference ROM content that has merely been RELOCATED, so
 reading its bytes would be reading the reference. This section reports an address
 RANGE, a SIZE, the REGION of each writer and the emulated TIME. Not one byte of
 that code was read, disassembled or single-stepped.
+
+### 6.6aa 🔴 THE OPEN QUESTION WAS AN ARTEFACT OF MY OWN PRINT ORDER (D-SLOTSW, 2026-09-19)
+
+§6.6v left one thing open and §6.6x/§6.6y carried it forward: *"`$FE76` is entered
+with `MAIN-P1` on top of stack BETWEEN `$FE5D`'s entry and its exit"*, with two
+candidate explanations — a return into main by a non-public route, or a `jp` so
+the top-of-stack is a caller's caller. **Neither is needed. `$FE76` is not inside
+the window at all.**
+
+🔴 **WHERE THE CLAIM CAME FROM.** `scratchpad/crossabi_probe.py` printed its
+events as `ins + outs` — every ENTRY before every EXIT, whatever the machine
+actually did. I read a control-flow ordering out of a list I had myself
+concatenated by category. The probe never measured that ordering and never
+claimed to.
+
+🟢 **WHAT A TIMESTAMPED RUN SHOWS.** `scratchpad/slotswitch_probe.py` logs in
+true time order: the crossing opens, the crossing shuts, and **`$FE76` is entered
+at t=165.1181 with the window already SHUT**, page 1 selected to MAIN. An
+ordinary main-side step after the crossing returns — nothing to explain.
+
+🔑 **AND AN INDEPENDENT INSTRUMENT AGREES.** Watching writes to port `$A8`
+inside the window, the page-1 selection changes exactly three times:
+**`0-0` → `3-1` → `0-0`** — MAIN, then the DISK ROM, then MAIN again. **Zero
+`DISK → elsewhere → DISK` excursions.** The disk ROM is paged in once, stays for
+the whole crossing, and is paged out at the end. Nothing hands control to main
+ROM page 1 mid-crossing, by any route, public or not.
+The `$A8` writers inside the window are MAIN-P0 (208) and RAM (104) — the
+interrupt handler and the inter-slot trampolines, both of which switch slots and
+restore them, which is why they do not register as excursions.
+
+🔴 **FOUR CONTROLS, INCLUDING A KNOWN-ANSWER PAIR.** At the crossing's entry
+page 1 must read MAIN — §6.6v measured main page 1 as the caller — and it does;
+page 1 must be selected to the disk ROM somewhere inside the window, because
+§6.6u measured the disk ROM running the sector loop there — and it is. One arm
+would catch a decode that is wrong in each direction. The quiet case records
+nothing, and two runs give an identical sequence.
+⚠️ The first run failed the MAIN arm because openMSX renders a NON-EXPANDED
+slot's secondary as the literal `X` and the readout said `0-X`. The control was
+right and the formatter was wrong — a fact already recorded once in this arc and
+re-broken here.
+
+⚠️ **WHAT THIS DOES NOT SAY.** `$A8` traffic proves which ROM is VISIBLE, not who
+is executing; an inter-slot trampoline switches slots too. The verdict is stated
+in terms of page-1 visibility, which is what was measured.
+
+➡️ **SO §6.6v'S OPEN ITEM IS CLOSED AND THE ANSWER IS "NO HAND-BACK".** The
+crossing is one handover, control stays on the disk side for its whole duration,
+and `$FE76` is a main-side step that follows it. §6.6u's "no disk→main crossing at
+either public inter-slot entry" needed no widening after all — but it stays
+scoped as written, because visibility and execution are different claims.
 
 ## 7. The channel trio, and the wall that is not one
 

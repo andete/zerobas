@@ -347,12 +347,16 @@ item — do **one item per session** to keep context lean.
       🆕 **K17 is the control that licenses the comparison:** every changed cell
       has a recorded writer, zero orphans — so the write set is complete and
       "the disk side does not write this" is a real claim.
+      🟢 **CLOSED (D-SLOTSW, §6.6aa): there is NO hand-back, and the question
+      was MY ARTEFACT.** Watching `$A8` inside the window, page 1 changes exactly
+      three times — `0-0` → `3-1` → `0-0` — with ZERO `DISK → elsewhere → DISK`
+      excursions: the disk ROM is paged in once and stays. The apparent puzzle
+      came from `crossabi_probe.py` printing `ins + outs`, every entry before
+      every exit BY CATEGORY, which I read as a time order; a timestamped run
+      puts `$FE76` AFTER the crossing closes. The probe now prints in time order.
       ⚠️ Still open, none blocking: why `SAVE` uses `$80` where
-      `OPEN…FOR OUTPUT` uses `2`; what `IX`/`IY` hold; what the RAM-resident code
-      is; and whether the disk side hands control back to main inside the
-      crossing — main page-0 activity is explained by the 60 Hz interrupt alone
-      and there is no main page-1 traffic at all in the window, so a write
-      watchpoint on port `$A8` is what would settle it.
+      `OPEN…FOR OUTPUT` uses `2`; what `IX`/`IY` hold; the installers of the four
+      RAM clusters other than the 79-byte block; and what the RAM code does.
       🔴 **AND THAT PUTS THE ALIASING HAZARD BACK.** The dissolution claimed here
       was premised on MAIN keeping the loop. The reference does the opposite, so
       a faithful step 9 DOES hold disk-side buffer state across the transfer
@@ -2979,7 +2983,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:20683 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:20687 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -3145,7 +3149,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:7788 (T-6FE392)8 (T-529ABE)` from `TODO.md:19077 (T-529ABE)`: a
+      `TODO.md:7792 (T-6FE392)8 (T-529ABE)` from `TODO.md:19081 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -8632,7 +8636,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:19077 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:19081 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
