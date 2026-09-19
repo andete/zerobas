@@ -250,8 +250,13 @@ def seed(machine, reset, tmpd, tag):
     return dict(items), len(blob)
 
 
-def build(seeded, tmpd, tag):
-    """PHASE B -- two programs differing ONLY in how much REM padding they hold."""
+def build(seeded, tmpd, tag, extra=None):
+    """PHASE B -- two programs differing ONLY in how much REM padding they hold.
+
+    `extra` = {'NAME    EXT': bytes} rides along on the SAME image. Added for
+    D-HOOKCOUNT, which needs an ASCII program and a BSAVE binary beside S/M/L:
+    `write_files` builds a FRESH image every call, so a second call would wipe
+    these three. Default None, so every existing caller is unaffected."""
     mark, rem = seeded[10], seeded[20]
     per = 4 + len(rem)                       # link + lineno + body, per REM line
     out, sizes = {}, {}
@@ -265,6 +270,7 @@ def build(seeded, tmpd, tag):
         blob = assemble(items)
         out["%-8s%s" % (name, "BAS")] = blob
         sizes[name] = len(blob)
+    out.update(extra or {})
     dsk = os.path.join(tmpd, "run_%s.dsk" % tag)
     write_files(dsk, out)
     return dsk, sizes, per

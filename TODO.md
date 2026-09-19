@@ -217,8 +217,68 @@ item — do **one item per session** to keep context lean.
       `ex_call` matches only `"FORMAT"` and otherwise `jp nc,stmt_error`, with
       **no offer to any other extension**, which is the same gap as `ATTR$`.
 
-- [ ] 🛑 **STEP 9 IS BUILT AND BACKED OUT: `$FE5D` CANNOT BE CLAIMED, AND IT IS
-      NOT A VERB ENTRY.**
+- [ ] 🟢 **STEP 9 RE-OPENED WITH AN ANSWER: `LOAD` HAS CELLS OF ITS OWN, AND THE
+      REFERENCE'S LOOP IS **PER SECTOR** — SO THE SLICE THAT WAS BUILT IS THE
+      WRONG SHAPE.**
+      🎚️ TIER 2 — reasonable time, on `LOAD`.
+      🙋 **NEEDS-JOOST** — a far better-posed question than before.
+      MEASURED 2026-09-19 (D-HOOKCOUNT, `scratchpad/hookcount_probe.py`,
+      §6.6r): two independent runs, every figure identical, three controls green.
+      🔴 **THE METHOD WAS THE PROBLEM ALL ALONG.** Un-claiming a cell is a
+      NEGATIVE probe whose witness (an error message) travels through the
+      subsystem it breaks — and because `LOAD` destroys the program that would
+      print the answer, it could only use `LOAD"<missing>"`, which dies in the
+      directory search and never reaches the data phase. COUNTING breakpoint
+      entries fixes both: the counter is outside the guest, so a SUCCESSFUL load
+      is readable.
+      🟢 **`LOAD` enters FIVE cells `OPEN` does not** — `$FE67`, `$FE76`,
+      `$FED0`, `$FED5`, `$FEDA` — while `$FE5D` (H.NULO) is entered once by BOTH,
+      exactly as §6.6p said. The question §6.6j called unanswerable was
+      answerable; its instrument could not reach it.
+      🔴 **AND `$FFCF`/`$FFD4` SCALE PER SECTOR: +8 for a 1055 B program, +34 for
+      14369 B.** 3 data sectors vs 29 — a difference of 26, and the counts differ
+      by 26. Not time-driven (`H.TIMI` is flat across cases). So the reference
+      drives its sector loop from OUTSIDE the hook, one call per sector. **Step 9
+      as designed puts the whole loop INSIDE `disk.rom`, entered once — the
+      opposite shape.**
+      🟢 **ROUNDS 2 AND 3 (§6.6s): THE PREDICTION HELD AND THE CELL IS NAMED.**
+      Stated before the run — if `$FFCF` is per-sector, the MID image must read
+      exactly **+20** (15 sectors + the 5-call mount overhead). It read +20.
+      Three points, one line: 8 / 20 / 34 for 3 / 15 / 29 sectors.
+      🟢 The public names are VALIDATED, not assumed: `SAVE` moves `$FE6C`
+      (H.SAVE) and `FILES` moves `$FE7B` (H_FILE), two independent confirmations.
+      🟢 `$FFCF` is the GENERIC sector service — a `SAVE` of the same program
+      adds +27 on top of the identical load, so writes pay per sector too.
+      🔴 **`$FE67` IS A SHARED VERB ENTRY: `LOAD` +1, `MERGE` +1, and nothing
+      else touches it.** And during a `LOAD` it is entered BEFORE `$FE5D` (seq
+      17129 vs 17131), which is the signature of an ENTRY versus something the
+      entry calls. **So Joost's ruling — one cell, several verbs, a selector —
+      was right, and I applied it to the wrong address.** `$FE67` is where that
+      shape belongs.
+      ⚠️ **RETRACTED FROM MY OWN §6.6r:** "its sector loop is driven from outside
+      the hook" was an over-reading. 1 at the verb cell and 29 at the sector cell
+      fits a loop INSIDE the handler just as well as one in main; counts cannot
+      separate them. What IS determined is that a per-SECTOR boundary exists and
+      a per-BYTE one does not — so a per-sector design is faithful, and where the
+      loop above it sits is OURS to choose.
+      ⚠️ **UNRESOLVED:** `BLOAD` did not enter `$FE76` (C-BIOS's H.BINL) though it
+      did enter `$FE5D`, so the case ran. Either that cell is not BLOAD's or the
+      synthetic BSAVE fixture is malformed; this data cannot tell which, and it
+      needs a verification arm proving `BLOAD` SUCCEEDED before its zero counts.
+      ⛔ **NOTHING MAY BE INSTALLED AT `$FE67` UNTIL IT EARNS THE CLEARANCE
+      `$FE5D` FAILED.** Claiming `$FE5D` broke `stop-trap-acceptance` in a way no
+      reasoning predicted and only a full battery caught (§6.6p).
+      ➡️ The slice to build is the PER-SECTOR service: main keeps the tokenised
+      loop, `disk.rom` gains a sector-read entry. §6.2c already priced it — per
+      BYTE is unaffordable, per SECTOR is ~29 crossings on the large load.
+      🟢 **This also largely dissolves the aliasing hazard below**: a per-sector
+      service never holds a 512-byte buffer over main's live workspace for the
+      duration of a load.
+      ⚠️ The 16 parked spans in `disk.rom` are the WRONG SHAPE for this and
+      should be retired rather than revived when Joost rules.
+
+- [ ] 🛑 **SUPERSEDED BY THE ABOVE — kept for the reasoning: `$FE5D` CANNOT BE
+      CLAIMED, AND IT IS NOT A VERB ENTRY.**
       🎚️ TIER 2 — reasonable time, on `LOAD`.
       🙋 **NEEDS-JOOST** — his ruling (§6.6m) said *"the reference is the better
       oracle then me, so go with FE5D + selector"*, and the PRINCIPLE stands. The
@@ -2724,7 +2784,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:20428 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:20488 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -2890,7 +2950,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:7533 (T-6FE392)8 (T-529ABE)` from `TODO.md:18822 (T-529ABE)`: a
+      `TODO.md:7593 (T-6FE392)8 (T-529ABE)` from `TODO.md:18882 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -8377,7 +8437,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:18822 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:18882 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

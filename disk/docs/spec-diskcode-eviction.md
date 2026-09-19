@@ -1436,6 +1436,136 @@ save/restore around it, or the crossing §6.2c priced. That is a THIRD option
 beside §6.6p's two, and it is a measurement nobody has taken: `disk.rom` had
 free space at the last reading, so a private buffer may simply be affordable.
 
+### 6.6r 🟢 MEASURED AT LAST: `LOAD` **DOES** HAVE CELLS OF ITS OWN, AND THE REFERENCE'S LOOP IS **PER SECTOR** (D-HOOKCOUNT, 2026-09-19)
+
+`scratchpad/hookcount_probe.py`. Two independent runs, every figure identical,
+all three controls passing. This answers both open questions and it corrects
+§6.6j, §6.6l and §6.6p — in the direction of *more* was knowable, not less.
+
+🔴 **WHY EVERY EARLIER ATTEMPT FAILED, AND IT WAS THE METHOD.** `hookid_load.py`
+UN-CLAIMS a cell and watches what breaks. That is a NEGATIVE probe: it reports
+that something changed, never what the cell is for. Its witness is an ERROR
+MESSAGE, which travels through the subsystem being broken — so `H.NULO`, which
+every file-buffer-0 operation uses, moved for `LOAD`, `OPEN` and `MERGE` alike.
+And because `LOAD` destroys the program that would print the answer, it could
+only ever use `LOAD"<missing>"`, which dies in the directory search and never
+reaches the data phase at all.
+🎯 **COUNTING ENTRIES INSTEAD OF BREAKING THINGS FIXES BOTH.** A breakpoint
+counter does not live in the guest, so a SUCCESSFUL load of a real file is
+readable; and shared infrastructure versus a dedicated entry, indistinguishable
+under un-claiming, are completely different under counting.
+
+🟢 **(1) `LOAD` ENTERS FIVE CELLS THAT `OPEN` DOES NOT.**
+
+| cell | `FILES` | `LOAD` small | `LOAD` large | `OPEN…FOR INPUT` |
+|---|---|---|---|---|
+| `$FE5D` (H.NULO) | 0 | **+1** | **+1** | **+1** |
+| `$FE67` | 0 | **+1** | **+1** | 0 |
+| `$FE76` | 0 | **+1** | **+1** | 0 |
+| `$FED0` / `$FED5` / `$FEDA` | 0 | **+1** | **+1** | 0 |
+| `$FE7B` (H_FILE, control) | **+1** | 0 | 0 | 0 |
+
+`$FE5D` behaves exactly as §6.6p measured — shared, once each, by both verbs. But
+**five cells move for `LOAD` and not for `OPEN`**, which is precisely the
+question §6.6j declared unanswerable. It was unanswerable *by that instrument*.
+⚠️ Suggestive, and labelled as inference rather than measurement: C-BIOS's table
+calls `$FE67` H.MERG and `$FE76` H.BINL, and `LOAD` enters both while entering
+NEITHER `H.SAVE $FE6C` nor `H.BINS $FE71`. A shared READ path across
+LOAD/MERGE/BLOAD with the write verbs excluded explains that exactly — and means
+those one-line names are narrower than the cells' real class, the same lesson
+D-CHANHOOK drew about `$FE5D`.
+
+🔴 **(2) AND THE ARCHITECTURE IS PER-SECTOR, WHICH CONTRADICTS STEP 9's DESIGN.**
+`$FFCF` and `$FFD4` SCALE with program size: **+8** for the 1055 B image, **+34**
+for the 14369 B one. The arithmetic is exact — 1055 B is 3 data sectors, 14369 B
+is 29, a difference of **26**, and the counts differ by **26**. The residual +5
+is mount traffic (boot sector, FAT, directory). It is not time-driven: `H.TIMI
+$FD9F` is flat across every case, so emulated time is constant.
+
+**So the reference crosses a hook boundary ONCE PER SECTOR during `LOAD`.**
+⚠️ ~~Its sector loop is driven from OUTSIDE the hook.~~ 🔴 **THAT SENTENCE WAS AN
+OVER-READING AND IS RETRACTED.** A count of 1 at the verb cell and 29 at the
+sector cell is consistent with BOTH shapes: a loop inside the `$FE67` handler
+calling the sector service 29 times, and a loop in main calling it 29 times
+directly. Counts cannot separate them, and nothing else here does either.
+🟢 **WHAT IS DETERMINED IS STILL THE THING THAT MATTERS:** a per-SECTOR hook
+boundary EXISTS in the reference, and a per-BYTE one does not. So a per-sector
+design is faithful and affordable — option C of D-LOADREV's analysis, priced
+there at ~29 crossings ≈ 4.5 ms against a 3.57 s load — exactly as §6.2c's
+arithmetic predicted. Whether the loop above that boundary sits in main or in
+`disk.rom` is OURS to choose, not something this measurement dictates.
+
+🟢 **AND IT LARGELY DISSOLVES §6.6q.** A per-sector service hands main one sector
+at a time, so the disk side never holds a 512-byte buffer aliased over main's
+live workspace for the duration of a load. The hazard does not need solving; the
+design that created it was the wrong design.
+
+⚠️ **WHAT IS STILL NOT KNOWN, AND THE CLEAN-ROOM LINE IS WHY.** What any of these
+cells DO internally. This probe set breakpoints on addresses in the PUBLISHED
+hook table ($FD9A..$FFE7 — MSX2 TH, and C-BIOS's `$C9`-fill confirms the span),
+counted entries, and never peeked a cell, followed `<lo> <hi>`, single-stepped,
+or captured a register. `$FFCF`/`$FFD4` sit past the last hook C-BIOS's own table
+documents, so they are named here BY BEHAVIOUR — "entered once per sector during
+a load" — and not by a label this project has any business asserting.
+
+🙋 **WHAT IS NOW JOOST'S TO DECIDE** is a better-posed question than §6.6p's:
+step 9 should mirror the reference's PER-SECTOR service rather than move the
+whole loop. That is a different slice from the one that was built — main keeps
+the tokenised loop, `disk.rom` gains a sector-read entry — and the 16 parked
+spans are the wrong shape for it.
+
+### 6.6s 🟢 ROUNDS 2 AND 3: THE PREDICTION HELD, AND `$FE67` IS THE SHARED ENTRY (D-HOOKCOUNT, 2026-09-19)
+
+🟢 **THE PER-SECTOR CLAIM SURVIVED A FALSIFIABLE PREDICTION.** Stated before the
+run: if `$FFCF`/`$FFD4` are per-sector, the MID image must land ON the line the
+other two define — 15 sectors plus the 5-call mount overhead the small image
+established, so **exactly +20**. It read **+20**. Three points, one line:
+8 / 20 / 34 hits for 3 / 15 / 29 sectors. Two points can be fitted by anything.
+
+🟢 **AND THE PUBLIC NAMES ARE NOW VALIDATED RATHER THAN ASSUMED.** `SAVE` moves
+`$FE6C` (C-BIOS: H.SAVE) and `$FE71` (H.BINS) and nothing else does; `FILES`
+moves `$FE7B` (H_FILE). Two independent confirmations that the documented table
+lines up with what the counter attributes — so `LOAD` entering `$FE67` is a fact
+about the machine, not a mislabelling.
+
+🟢 **`$FFCF`/`$FFD4` IS THE GENERIC SECTOR SERVICE, BOTH DIRECTIONS.** A `SAVE`
+of the same program adds **+27** on top of the identical load. Writes pay per
+sector through the same cell, so it is the sector-level entry every disk
+operation reaches — which is what a per-sector step 9 would be calling.
+
+🔴 **`$FE67` IS A SHARED VERB ENTRY, AND IT IS THE ONE JOOST'S RULING DESCRIBES.**
+
+| cell | `LOAD` | `MERGE` | `BLOAD` | `SAVE` | `OPEN` |
+|---|---|---|---|---|---|
+| `$FE67` (H.MERG) | **+1** | **+1** | 0 | 0 | 0 |
+| `$FE76` (H.BINL) | **+1** | 0 | 0 | 0 | 0 |
+| `$FE6C` (H.SAVE) | 0 | 0 | 0 | **+1** | 0 |
+| `$FE5D` (H.NULO) | **+1** | **+1** | **+1** | **+1** | **+1** |
+
+`LOAD` and `MERGE` share `$FE67`; nothing else touches it. `$FE5D` is entered by
+every file verb, as §6.6p said. **So "one cell, several verbs, a selector" — the
+shape Joost ruled for in §6.6m — is exactly right, and I applied it to the wrong
+address.** `$FE67` is the cell that shape belongs at.
+
+🎯 **AND THE ORDERING SETTLES ENTRY-VERSUS-CALLEE**, which §6.6j could only
+guess: during a `LOAD`, `$FE67` is entered at sequence 17129 and `$FE5D` at
+17131 — **the LOAD-only cell comes FIRST, then the shared file-buffer-0
+machinery.** That is the signature of `$FE67` being the verb entry and `$FE5D`
+something it calls, confirming §6.6j's hunch by measurement rather than by
+intuition. `$FE76` follows ~100 events later, after the data phase.
+
+⚠️ **UNRESOLVED, AND NOT TO BE READ AS A FINDING:** `BLOAD` did NOT enter
+`$FE76`, the cell C-BIOS names H.BINL. It did enter `$FE5D`, so the case ran and
+opened its file — but the synthetic BSAVE fixture may be malformed in a way that
+fails after the open. Either `$FE76` is not BLOAD's, or the fixture is wrong, and
+this data cannot tell which. It needs a verification arm that proves `BLOAD`
+SUCCEEDED before its zero means anything.
+
+⛔ **AND NOTHING SHOULD BE INSTALLED AT `$FE67` UNTIL IT IS TESTED THE WAY
+`$FE5D` WAS.** Claiming `$FE5D` broke `stop-trap-acceptance` in a way no
+reasoning predicted (§6.6p) and only a full battery caught. `$FE67` must earn the
+same clearance before any byte rests on it.
+
 ## 7. The channel trio, and the wall that is not one
 
 `LSET`/`RSET`/`FIELD` need the channel engine: `fch_check` `$7080`,
