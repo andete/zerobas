@@ -2299,7 +2299,7 @@ other direction.*
 | 3 | what crosses | an open MODE in `DE`, buffer in `HL`, name block via `BC` (§8.2) | per-sector DSKIO calls: drive/sector/count/buffer per MSX2 TH §5 | 🟡 **COSTS TIME** | one crossing per operation versus one per sector; §6.2c priced the arithmetic |
 | 4 | verb selector | none — `LOAD`/`MERGE`/`BLOAD` indistinguishable (§8.2) | one claimed cell PER VERB | 🟢 **NOT A GAP, and cheaper than planned** | §6.6m's "selector" turns out to be unnecessary: a mode byte suffices |
 | 5 | who owns the loop | the disk ROM, mount through sector transfer (§8.3) | **main** — `basic/cload.asm` `disk_prog_load`, `basic/fat.asm` | 🔴 **BLOCKING** | this IS step 9; D-DPLMOVE built the move and backed it out |
-| 6 | who owns FAT/directory | the disk ROM | **main** (`basic/fat.asm`, loader-side engine over DSKIO) | 🟡 **COSTS BYTES** | the Depth-A choice; it is what keeps a foreign disk ROM drivable |
+| 6 | who owns FAT/directory | the disk ROM | **main** (`basic/fat.asm`, loader-side engine over DSKIO) | 🟡 **COSTS BYTES** | the Depth-A choice — 🔴 but see the correction below: its stated justification is already assessed as theoretical |
 | 7 | shared work-area contract | ~38 cells read, 22 written; two 13-byte name blocks (§8.4) | private: `DISKOP_OP`, `DISKOP_ERR`, `FAT_DBUF` and friends | 🟢 **NOT A GAP today** | we own both sides, so the contract is ours to pick; it matters only for the PROVIDER direction |
 | 8 | RAM-resident code | five clusters below `$F380`; the disk ROM installs a 79 B block at boot (§8.5) | **3 bytes** — `$F37D` gets `JP bdos_entry` at INIT (`disk/init.asm`) | 🟡 **COSTS BYTES IF WE INVERT** | we are not at zero, but ours is a dispatch vector for a foreign host, not logic that runs during our own load |
 | 9 | hand-back during a transfer | none; page 1 goes `0-0` → `3-1` → `0-0` (§8.3) | n/a — main never leaves, so there is nothing to hand back | 🟢 **NOT A GAP** | a consequence of row 5, not an independent difference |
@@ -2321,10 +2321,43 @@ code is a different budget from ROM, and `wall-assertion-check` covers ROM only 
 so its absence could never have been caught by a gate. We are not at zero (the
 `$F37D` vector exists), but nothing in our design runs from RAM during a load.
 
-⚠️ **WHAT THIS SECTION DOES NOT DO.** It does not propose the inversion, price
-it in bytes, or claim the Depth-A decision was wrong — Depth A is what lets our
-loader drive a FOREIGN disk ROM, which is a requirement §8 says nothing about.
-Both directions have to keep working, and that trade is Joost's.
+### 🔴 CORRECTION (Joost, 2026-09-19): THE INTEROP COUNTERWEIGHT IS ALREADY DEAD
+
+This section first justified row 6 as *"what keeps a foreign disk ROM drivable"*
+and closed by calling the inversion a trade between two live directions. **Joost:
+*"I thought we already let go of driving a disk ROM without basic…"*, and the
+record is on his side.** `disk/docs/spec-diskbasic-hook-rearchitecture.md` §Phase 4
+already settled it, quoting him on 2026-09-15:
+
+> *"in practice I'd think any external cartridge providing a disk also provides
+> disk basic"* — and earlier, *"this seems a theoretical situation"*.
+
+and concluding that with a foreign cartridge present **its** Disk BASIC claims the
+hooks and runs, whichever ROM our FAT sits in — ordinary MSX behaviour, not a loss.
+**So "interop with a DSKIO-only disk ROM" describes hardware that does not exist
+and is NOT a reason to keep the FAT in BASIC.** That spec further records that
+`basic/fat.asm:11`'s *"disk-ROM-INDEPENDENT"* and the relocation spec's *"the
+NECESSARY PRICE of the universal sector interface"* **rest on it and are
+overstated**, with the correction **filed and awaiting Joost**.
+
+🎯 **I cited those two documents' stated rationale without checking whether it
+had been superseded** — and it had been, four days earlier, by the person I then
+described as owing a decision on it. That is the same failure this arc keeps
+paying for: treating a document's justification as current because it is written
+down.
+
+➡️ **WHAT IT CHANGES.** The inversion has **no interop counterweight**. What
+still bears on where the FAT lives is the CHARTER, and only for our own primary
+deployment, where our disk ROM is the one present: *we reimplement MSX1 BASIC, so
+we implement its disk verbs* — the FAT is in BASIC because we wrote the verbs, not
+because of interop. So rows 2 and 5 are not a trade against a second direction;
+they are an ordinary cost/benefit against §6.6t's blocking correlation and the
+size of the move.
+
+⚠️ **WHAT THIS SECTION STILL DOES NOT DO.** It does not propose the inversion or
+price it in bytes. And the filed correction to `basic/fat.asm:11` and the
+relocation spec is still open — this section does not close it, it only stops
+re-importing the claim they overstate.
 
 ## 7. The channel trio, and the wall that is not one
 

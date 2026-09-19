@@ -359,6 +359,21 @@ item — do **one item per session** to keep context lean.
       🔴 **Two are BLOCKING and are ONE slice:** claim `$FE5D` (blocked by
       §6.6t's parked correlation) and move the loop below it (the D-DPLMOVE slice
       that was backed out).
+      🔴 **CORRECTED SAME DAY — THE INTEROP COUNTERWEIGHT IS ALREADY DEAD.** §6.7
+      first justified keeping the FAT in main as *"what keeps a foreign disk ROM
+      drivable"* and called the inversion a trade between two live directions.
+      Joost: *"I thought we already let go of driving a disk ROM without
+      basic…"* — and the record agrees. `spec-diskbasic-hook-rearchitecture.md`
+      §Phase 4 settled it on 2026-09-15 (*"any external cartridge providing a disk
+      also provides disk basic"*, *"this seems a theoretical situation"*): a
+      foreign cartridge's own Disk BASIC claims the hooks whichever ROM our FAT
+      sits in, so DSKIO-only interop **describes hardware that does not exist**.
+      That spec also records `basic/fat.asm:11` and the relocation spec's
+      *"necessary price"* as OVERSTATED, correction filed and still open.
+      ➡️ **So rows 2 and 5 are not a trade against a second direction** — they are
+      cost/benefit against §6.6t's blocking correlation and the size of the move.
+      What still bears on where the FAT lives is the CHARTER alone: we reimplement
+      MSX1 BASIC, so we implement its disk verbs.
       ➡️ **That is a NEW KIND of cost for step 9 — RAM, not ROM.**
       `wall-assertion-check` covers ROM only, so nothing here would have caught
       its absence. ⚠️ Unmeasured: the other four clusters' installers, whether
@@ -3002,7 +3017,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:20706 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:20721 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -3168,7 +3183,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:7811 (T-6FE392)8 (T-529ABE)` from `TODO.md:19100 (T-529ABE)`: a
+      `TODO.md:7826 (T-6FE392)8 (T-529ABE)` from `TODO.md:19115 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -8655,7 +8670,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:19100 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:19115 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
