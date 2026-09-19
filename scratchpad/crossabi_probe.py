@@ -299,7 +299,16 @@ def main() -> int:
     dsk, sizes, _per = LR.build(seeded, tmpd, "ref",
                                 extra={"A       BAS": ASCII_BAS,
                                        "QQQQQQQQBAS": ASCII_BAS,
-                                       "B       BIN": BSAVE_BIN})
+                                       "B       BIN": BSAVE_BIN,
+                                       # 🔴 `FOR APPEND` ON A MISSING FILE IS AN
+                                       # ERROR, AND AN ERRORING CASE LOOKS LIKE
+                                       # A FINDING: the first run showed $FE5D
+                                       # entered and never returning through the
+                                       # cell, which is exactly the signature of
+                                       # a one-way handover. Give APPEND a file
+                                       # that EXISTS so the shape it reports is
+                                       # the verb's and not a failure's.
+                                       "Z2      DAT": b"seed\r\n"})
     print("images: S=%d B  L=%d B  A=Q=%d B" % (sizes["S"], sizes["L"],
                                                 len(ASCII_BAS)))
 
@@ -319,6 +328,27 @@ def main() -> int:
         ("bloadB",  ['BLOAD"B.BIN"']),
         ("openIn",  ['OPEN"A.BAS"FOR INPUT AS#1', "CLOSE"]),
         ("openOut", ['OPEN"Z.DAT"FOR OUTPUT AS#1', "CLOSE"]),
+        # 🔬 D-MODECODE, 2026-09-19 -- WHY DOES `SAVE` USE $0080 WHERE
+        # `OPEN...FOR OUTPUT` USES $0002? Two writes, two codes (§8.9).
+        # 🔴 PREDICTION, STATED BEFORE THE RUN. §8 already showed that FORMAT
+        # (tokenised vs ASCII) is carried by WHICH CELL is entered -- `$FE76`,
+        # the binary-format program path -- and NOT by `DE`. So `DE` should be an
+        # MSX open-MODE code rather than a format code, which predicts:
+        #     BSAVE            -> $0080  (a program-format write, like SAVE)
+        #     SAVE"...",A      -> $0080  (still a program save; ASCII-ness is
+        #                                 carried elsewhere)
+        #     OPEN...FOR APPEND-> $0008  (if DE is the classic 1/2/8 mode code)
+        # `SAVE...,A` is the DISCRIMINATING case: $0080 kills "DE partitions by
+        # format"; anything else kills "DE is a program-save flag".
+        ("bsaveX",  ['BSAVE"X.BIN",&HD000,&HD00F']),
+        ("saveA",   ['SAVE"U.BAS",A']),
+        ("openApp", ['OPEN"Z2.DAT"FOR APPEND AS#1', "CLOSE"]),
+        # 🔬 AND THE FOURTH CLASSIC MODE, ADDED AFTER THE FIRST RUN. `DE` read
+        # 1 / 2 / 8 for INPUT / OUTPUT / APPEND -- three of the four classic MSX
+        # open-mode codes. Random access has no `FOR` clause (`OPEN "f" AS #n`),
+        # and if it reads 4 the set is complete and `$0080` is left as the one
+        # code that is NOT a channel mode.
+        ("openRnd", ['OPEN"Z2.DAT"AS#1', "CLOSE"]),
     ]
     res = {}
     for tag, lines in cases:
@@ -338,9 +368,17 @@ def main() -> int:
             print("  %-10s caller=%-8s %s" % (
                 e["tag"], region(e["caller"], e["pri"], e["sec"]),
                 "  ".join("%s=%s" % (r, describe(e, r)) for r in REGS)))
+        # 🔴 PRINT ENOUGH SCREEN THAT A FAILED CASE IS VISIBLE. One truncated
+        # line cannot distinguish "the verb ran" from "the verb printed an
+        # error", and this probe's whole output is per-verb register values --
+        # a case that errored contributes a row that looks like data.
         if cap:
-            tail = [x for x in str(cap).splitlines() if x.strip()]
-            print("  screen: %s" % (tail[-1][:70] if tail else "?"))
+            txt = " ".join(str(cap).split())
+            print("  screen: ...%s" % txt[-110:])
+            for bad in ("error", "Error", "?Redo", "Syntax"):
+                if bad in txt:
+                    print("  🔴 THIS CASE PRINTED %r -- its registers are a "
+                          "FAILURE's, not the verb's" % bad)
 
     print("\n=== CONTROLS ===")
     ok = True
@@ -467,7 +505,8 @@ def main() -> int:
     # carry the VERB", because every one of its cases IS a LOAD. D-SELECTOR
     # needed that second question and it was never asked here.
     print("\n=== DOES A REGISTER CARRY THE VERB? (at the crossing $FE5D) ===")
-    vcases = ("loadA", "mergeA", "saveT", "bloadB", "openIn", "openOut")
+    vcases = ("loadA", "mergeA", "saveT", "bloadB", "openIn", "openOut",
+              "bsaveX", "saveA", "openApp", "openRnd")
     vregs = {t: inreg(t) for t in vcases}
     if all(vregs.values()):
         for r in REGS:

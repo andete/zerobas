@@ -2249,6 +2249,62 @@ and `$FE76` is a main-side step that follows it. §6.6u's "no disk→main crossi
 either public inter-slot entry" needed no widening after all — but it stays
 scoped as written, because visibility and execution are different claims.
 
+### 6.6ab 🔑 `DE` IS THE MSX OPEN-MODE CODE, AND `$0080` BELONGS TO EXACTLY ONE VERB (D-MODECODE, 2026-09-19)
+
+§8.9 left open why `SAVE` passes `$0080` where `OPEN…FOR OUTPUT` passes `$0002` —
+two writes, two codes. Ten verbs through `scratchpad/crossabi_probe.py` settle the
+first half and sharpen the second.
+
+🔴 **A PREDICTION WAS STATED BEFORE THE RUN AND SCORED 1 OF 3.** §8 had already
+shown that FORMAT is carried by WHICH CELL is entered (`$FE76`, the binary-format
+program path), so the prediction was that `DE` is a mode code and ASCII-ness is
+carried elsewhere:
+
+| case | predicted | measured | |
+|---|---|---|---|
+| `OPEN…FOR APPEND` | `$0008` | **`$0008`** | ✅ hit |
+| `BSAVE` | `$0080` | **`$0002`** | ❌ miss |
+| `SAVE"…",A` | `$0080` | **`$0002`** | ❌ miss |
+
+🟢 **THE HIT COMPLETES A SET.** Adding random access (`OPEN "f" AS #n`, which has
+no `FOR` clause) gives **all four classic MSX open-mode codes**, measured:
+
+| `DE` | mode | verbs that pass it |
+|---|---|---|
+| `$0001` | INPUT | `LOAD`, `MERGE`, `BLOAD`, `OPEN…FOR INPUT` |
+| `$0002` | OUTPUT | `OPEN…FOR OUTPUT`, **`BSAVE`**, **`SAVE"…",A`** |
+| `$0004` | RANDOM | `OPEN "f" AS #n` |
+| `$0008` | APPEND | `OPEN…FOR APPEND` |
+| `$0080` | — | **tokenised `SAVE`, and nothing else** |
+
+🔴 **AND THE MISSES ARE WHAT PRODUCED THE RIGHT MODEL, AGAIN.** `$0080` is NOT
+"a write" — three other writes use `$0002`. It is NOT "binary" — `BSAVE` writes a
+binary image through plain OUTPUT. It is NOT "not-ASCII" in any general sense —
+`BLOAD` reads binary through plain INPUT. Among ten operations it is used by
+**exactly one**: the tokenised program `SAVE`. Bit 7, disjoint from the low mode
+bits, for the single operation that does not open an ordinary channel.
+⚠️ **WHAT `$0080` MEANS IS NOT DETERMINED BY THESE TEN POINTS** and is not named
+here. What IS determined is the shape: a four-value mode code plus one out-of-band
+value, and the out-of-band one is the tokenised save.
+
+🟢 **TWO MORE REGISTERS FIRM UP ON THE WIDER SET.** `HL` partitions cleanly and
+now across ten verbs rather than six: **`$DC65` for every program verb**
+(`LOAD`/`MERGE`/`SAVE`/`SAVE,A`/`BLOAD`/`BSAVE`) and **`$DD6E` for every `OPEN`
+channel** (INPUT/OUTPUT/APPEND/RANDOM). And `BC` is identified for one verb by
+correspondence with an input I chose: for `BSAVE"X.BIN",&HD000,&HD00F` it reads
+**`$D000`** — the start address as typed. For the name-taking program verbs it is
+`$F871`, one past the name block (§6.6x). `AF` remains invariant across every
+verb; `IX` is still uninterpreted.
+
+🔴 **AND ONE CASE FAILED FIRST, WHICH IS WHY THE PROBE NOW SHOWS ITS SCREEN.**
+`OPEN…FOR APPEND` on a file that does not exist is an error, and the erroring run
+reported `$FE5D` entered and never returning through the cell — **exactly the
+signature of a genuine one-way handover** (§6.6v's `$FE76`). Seeding `Z2.DAT` onto
+the image made it pair, which confirms the cause by construction. The probe now
+prints enough of each case's screen that a failure is visible rather than
+inferred, and flags any case whose screen contains an error word. Without that,
+a failed case contributes a register row that looks exactly like data.
+
 ## 6.7 🔍 GAP ANALYSIS — zerobas AGAINST THE MEASURED PROTOCOL (D-HOOKCENSUS, 2026-09-19)
 
 `disk/docs/expansion-protocol.md` §8 describes how `LOAD` works on the reference.

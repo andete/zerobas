@@ -309,9 +309,9 @@ with exit. The register contract at that instant:
 
 | register | what it carries |
 |---|---|
-| `DE` | the **open mode**: `$0001` for `LOAD`, `MERGE`, `BLOAD` and `OPEN…FOR INPUT`; `$0002` for `OPEN…FOR OUTPUT`; `$0080` for `SAVE` |
-| `HL` | the **file buffer** — `$DC65` for the program verbs, `$DD6E` for `OPEN`'s channel |
-| `BC` | `$F871` — one past the end of the file-name block at `$F864..$F870` |
+| `DE` | the **MSX open-mode code**, all four classic values measured (§6.6ab): `$0001` INPUT (`LOAD`, `MERGE`, `BLOAD`, `OPEN…FOR INPUT`) · `$0002` OUTPUT (`OPEN…FOR OUTPUT`, `BSAVE`, `SAVE"…",A`) · `$0004` RANDOM (`OPEN "f" AS #n`) · `$0008` APPEND · and `$0080` for **tokenised `SAVE` and nothing else** |
+| `HL` | the **file buffer** — `$DC65` for every program verb, `$DD6E` for every `OPEN` channel (ten verbs, §6.6ab) |
+| `BC` | `$F871` — one past the end of the file-name block at `$F864..$F870`; for `BSAVE` it is the START ADDRESS as typed (§6.6ab) |
 | `AF` | invariant across every verb |
 | `IX`, `IY` | vary; no interpretation this measurement supports |
 
@@ -456,9 +456,13 @@ must not.*
 
 ### 8.9 Not measured
 
-* Why `SAVE` uses `$0080` where `OPEN…FOR OUTPUT` uses `$0002` — two writes, two
-  codes.
-* What `IX` and `IY` carry at the crossing.
+* 🟢 **PARTLY ANSWERED (§6.6ab).** `DE` is the MSX open-mode code and all four
+  classic values are measured (1/2/4/8). `$0080` is not "a write" (three other
+  writes use `$0002`), not "binary" (`BSAVE` uses `$0002`) and not "not-ASCII"
+  (`BLOAD` uses `$0001`): among ten operations it is used by **exactly one**, the
+  tokenised program `SAVE`. ⚠️ What it MEANS is still not determined.
+* What `IX` carries at the crossing (`IY` reads `$0000` for `BLOAD` and every
+  `OPEN`, and `$00D0` for `BSAVE"…",&HD000,…`, but that is not enough to name it).
 * The installers and install times of the four RAM clusters other than the
   79-byte block, and whether any cluster is shared with non-disk BIOS function.
 * What any of the RAM-resident code **does**. 🔴 And it must stay that way: code
