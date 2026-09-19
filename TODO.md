@@ -403,9 +403,31 @@ item — do **one item per session** to keep context lean.
       a clock-driven red.
       ⚠️ **AND A GREEN RE-RUN WAS GREEN FOR THE WRONG REASON** — the prune had
       already fixed it [[a-case-that-agrees-can-agree-for-the-wrong-reason]].
-      Candidate fix: `--maintain` prunes BEFORE the selftest rather than after,
-      or the selftest states the store's age and refuses to assert expiry
-      behaviour while sitting exactly on the cap.
+      🟢 **PARTIAL 2026-09-19 (D-REFRACE) — ONE PROVEN MECHANISM REMOVED, AND
+      THE ORIGINAL RED STILL NOT EXPLAINED.** `maintain()` walked the store
+      TWICE, pruning against one `time.time()` and then measuring ages against a
+      later one, so its own post-condition (*"after a prune no entry may be past
+      the cap"*) could fail an entry that the prune had legitimately kept. One
+      clock reading is now threaded through `_age`/`expired`/`prune`/
+      `store_stats`, so the two walks cannot disagree about what time it is.
+      🔴 **BUT THAT IS ALMOST CERTAINLY NOT WHAT WAS OBSERVED, AND SAYING SO IS
+      THE POINT.** The gap between the two walks is MICROSECONDS; for it to
+      matter an entry must sit within microseconds of the cap. The filed red had
+      27 entries pruned and `oldest 14.0d` — plausible for a store aging out,
+      not for a microsecond window. So this removes a mechanism that is provably
+      red-capable, and does NOT close the item.
+      ⚠️ **AND THE FIRST ARM I WROTE FOR IT WAS VACUOUS.** KA11 planted an entry
+      half a second under the cap and asserted `maintain()` green — it passes
+      with or without the fix, which a mutation reverting `prune(now=now)`
+      DEMONSTRATED by leaving it passing. It is relabelled as a green control.
+      KA12 is the arm with content: measure the post-condition a second later
+      than the prune — the shape the code had — and the same store goes RED.
+      ➡️ **STILL OPEN:** reproduce the original failure. Candidates not yet
+      tested: a `prune()` unlink that fails with OSError leaves an over-cap
+      entry and counts it as `kept`, which goes red on EVERY run until the file
+      can be removed; or a parallel battery suite touching the store mid-walk.
+      The retry arm's verdict was not wrong in principle — it reported a red that
+      was real; what it could not say is that the CAUSE was the clock.
 
 - [ ] 🔴 **TWO DEAD `equ` ALIASES, AND A 12-LINE JUSTIFICATION ARGUING ABOUT AN
       INSTRUCTION THAT NO LONGER EXISTS.**
@@ -2630,7 +2652,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:20334 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:20356 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -2796,7 +2818,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:7439 (T-6FE392)8 (T-529ABE)` from `TODO.md:18728 (T-529ABE)`: a
+      `TODO.md:7461 (T-6FE392)8 (T-529ABE)` from `TODO.md:18750 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -8283,7 +8305,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:18728 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:18750 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

@@ -290,19 +290,26 @@ MAX_AGE_DAYS = float(os.environ.get("ZEROBAS_REFCACHE_MAX_AGE_DAYS", "14"))
 _MAX_AGE = MAX_AGE_DAYS * 86400.0
 
 
-def _age(path: str) -> float:
-    """Seconds since the entry was written. -1 when it cannot be told."""
+def _age(path: str, now: float | None = None) -> float:
+    """Seconds since the entry was written. -1 when it cannot be told.
+
+    🔴 `now` IS NOT A TEST HOOK, IT IS THE FIX. Reading the clock afresh per
+    call makes every age relative to a DIFFERENT instant, and `maintain` walks
+    the store twice -- once to prune, once to report. An entry at cap minus a
+    hair survives the prune and is over the cap when the report measures it, so
+    the gate fails ITSELF (D-REFRACE, TODO).""" 
     try:
-        return max(0.0, time.time() - os.path.getmtime(path))
+        t = time.time() if now is None else now
+        return max(0.0, t - os.path.getmtime(path))
     except OSError:
         return -1.0
 
 
-def expired(path: str) -> bool:
+def expired(path: str, now: float | None = None) -> bool:
     """An entry older than the cap. A cap of 0 or less disables expiry."""
     if _MAX_AGE <= 0:
         return False
-    a = _age(path)
+    a = _age(path, now)
     return a >= 0 and a > _MAX_AGE
 
 
@@ -321,7 +328,8 @@ def load(key: str):
         return None, None
 
 
-def prune(max_age_days: float | None = None) -> tuple[int, int]:
+def prune(max_age_days: float | None = None,
+          now: float | None = None) -> tuple[int, int]:
     """Delete every entry past the cap. -> (removed, kept). Disk is the SECOND
     reason this exists; the first is that an expired entry left on disk is a
     stale reading waiting for the cap to be raised."""
@@ -332,7 +340,7 @@ def prune(max_age_days: float | None = None) -> tuple[int, int]:
             if not fn.endswith(".json"):
                 continue
             fp = os.path.join(dirpath, fn)
-            a = _age(fp)
+            a = _age(fp, now)
             if limit > 0 and a > limit:
                 try:
                     os.unlink(fp); removed += 1
@@ -343,7 +351,7 @@ def prune(max_age_days: float | None = None) -> tuple[int, int]:
     return removed, kept
 
 
-def store_stats() -> tuple[int, int, float]:
+def store_stats(now: float | None = None) -> tuple[int, int, float]:
     """-> (entries, bytes, oldest_age_seconds) over the whole store."""
     n = size = 0
     oldest = 0.0
@@ -357,7 +365,7 @@ def store_stats() -> tuple[int, int, float]:
                 size += os.path.getsize(fp)
             except OSError:
                 pass
-            oldest = max(oldest, _age(fp))
+            oldest = max(oldest, _age(fp, now))
     return n, size, oldest
 
 
@@ -671,6 +679,36 @@ def _selftest() -> int:
         arm("KA10 a cap of 0 DISABLES expiry (the escape hatch works)",
             not RC.expired(RC._path("b" * 40)))
         RC._MAX_AGE = saved_max
+
+        # --- D-REFRACE: maintain must not race its own post-condition -------
+        for fn in os.listdir(RC.ROOT):
+            fp = os.path.join(RC.ROOT, fn)
+            if os.path.isfile(fp):
+                os.unlink(fp)
+        RC.store("c" * 40, ["r3"], "M")
+        edge = RC._path("c" * 40)
+        # plant it a HAIR under the cap: survives a prune taken now, and is
+        # over the cap a second later. This is the real store's situation on
+        # the day an entry ages out mid-battery.
+        t_now = time.time()
+        os.utime(edge, (t_now - RC._MAX_AGE + 0.5, t_now - RC._MAX_AGE + 0.5))
+        arm("KA11 GREEN CONTROL (and only that): maintain() is green on an "
+            "entry under the cap. 🔴 IT PASSES WITH OR WITHOUT THE ONE-CLOCK "
+            "FIX -- a mutation reverting `prune(now=now)` left it PASSING -- "
+            "because the real gap between the two walks is microseconds and "
+            "this fixture plants half a second of margin. Named for what it "
+            "is; KA12 is the arm with content.", RC.maintain(now=t_now) == 0)
+        arm("KA12 🔴 THE ARM WITH CONTENT: measure the post-condition a second "
+            "LATER than the prune -- the shape the code had before D-REFRACE -- "
+            "and the SAME store goes RED. That is what makes `maintain` capable "
+            "of failing ITSELF on the calendar, and why one clock reading is "
+            "now threaded through both walks.",
+            RC.maintain(now=t_now, stats_now=t_now + 1.0) == 1)
+        arm("KA13 and a genuinely over-cap entry is still PRUNED, so KA11 did "
+            "not buy its green by disabling expiry",
+            (os.utime(edge, (t_now - RC._MAX_AGE * 3, t_now - RC._MAX_AGE * 3)),
+             RC.maintain(now=t_now, stats_now=t_now,
+                         ) == 0)[1] and not os.path.exists(edge))
     finally:
         shutil.rmtree(RC.ROOT, ignore_errors=True)
         RC.ROOT = saved_root
@@ -681,7 +719,8 @@ def _selftest() -> int:
     return 1 if fails else 0
 
 
-def maintain() -> int:
+def maintain(now: float | None = None,
+             stats_now: float | None = None) -> int:
     """Prune expired entries and print what the store looks like.
 
     🟢 THE PRUNE HAS TO BE SOMEWHERE THAT ACTUALLY RUNS. An age cap that only
@@ -689,8 +728,18 @@ def maintain() -> int:
     filed item's whole complaint was that `rm -rf` was the entire recovery
     procedure. `make refcache-check` runs every battery, costs nothing, and is
     already the file's gate."""
-    removed, kept = prune()
-    n, size, oldest = store_stats()
+    # 🔴 ONE CLOCK READING FOR BOTH WALKS. The prune and the post-condition
+    # must agree about what time it is, or the check is a race against the gate
+    # itself: an entry at cap-epsilon passes the prune and is at cap+delta when
+    # the report measures it. That is what made `refcache-check` go red on the
+    # CALENDAR and the battery's retry arm call it REAL -- a second run inside
+    # one battery is a second run at the same instant, so a retry cannot
+    # classify a clock-driven red (D-REFRACE).
+    # `stats_now` exists ONLY for the selftest's negative control, which
+    # reproduces the old two-readings behaviour and must go red.
+    now = time.time() if now is None else now
+    removed, kept = prune(now=now)
+    n, size, oldest = store_stats(now=now if stats_now is None else stats_now)
     print(f"refcache store: {n} entr(ies), {size / 1e6:.1f} MB, "
           f"oldest {oldest / 86400:.1f}d, cap {MAX_AGE_DAYS:g}d; "
           f"pruned {removed}, kept {kept}")
