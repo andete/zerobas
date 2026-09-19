@@ -313,8 +313,27 @@ arrive with the same cell, the same `DE` and the same `HL`. The reference opens
 file buffer 0 in a mode; the verb-level difference is carried by which OTHER
 claimed cell is entered and by what main does around the call.
 
-⚠️ **Still open:** why `SAVE` uses `$80` where `OPEN…FOR OUTPUT` uses `2`, and
-what `BC`/`IX`/`IY` hold.
+### What the disk side FETCHES for itself (§6.6x)
+
+Handing over is half the contract; the other half is what the disk ROM reads out
+of the shared work area once it has control. Measured with a read watchpoint over
+`$F380..$FFFF` armed for the crossing and filtered to reads whose PC is in the
+disk ROM:
+
+* **38 distinct cells for `LOAD`, 36 for `SAVE`, 36 of them SHARED.** `LOAD` adds
+  exactly two; `SAVE` adds none. Both make 480 disk-side reads in the band.
+* `$F864..$F870` (13 B) is **the file name** — its bytes read `..S       BAS` and
+  `..T       BAS`. 🔑 `BC` at the crossing is `$F871`, exactly one past it, which
+  two independent measurements agree on.
+* The rest is small and hot: `$FB21..$FB22`, `$FB29`, `$FCC4`, `$FCC8` and the
+  word at `$FD73..$FD74`.
+* ⚠️ Scope: the SHARED work area only. The disk ROM's private RAM below `$F380`
+  is excluded by design — that is internal state, not interface.
+
+⚠️ **Still open:** why `SAVE` uses `$80` where `OPEN…FOR OUTPUT` uses `2`, what
+`IX`/`IY` hold, and whether the disk side ever hands control back to main inside
+the crossing (a write watchpoint on port `$A8` would settle it; main page-0
+activity during the window is explained by the 60 Hz interrupt on its own).
 
 ---
 

@@ -1979,6 +1979,73 @@ single-stepped into ROM, nothing disassembled. A register value is printed only
 when it cannot be a reference-internal address — a scalar below `$0100`, or a
 pointer into RAM; anything in page 0 or 1 is reported as differing and no more.
 
+### 6.6x 🟢 THE INPUT SURFACE IS 38 CELLS, AND 36 OF THEM ARE SHARED BY READ AND WRITE (D-DISKREAD, 2026-09-19)
+
+§6.6w measured what main HANDS the disk side at `$FE5D`. This measures what the
+disk side FETCHES for itself once control has crossed — the other half of the
+input contract, and the surface a faithful `disk.rom` would have to read the same
+way. `scratchpad/diskreads_probe.py`.
+
+🎯 **THE METHOD.** A `read_mem` watchpoint over `$F380..$FFFF`, armed between
+the `$FE5D` entry breakpoint and its exit at cell+4, recording each read's
+address and the REGION its reader's PC falls in, then keeping the reads whose
+reader is the DISK ROM. Addresses are deduplicated, so the result is a SET with a
+hit count rather than a transcript.
+
+🔴 **SEVEN CONTROLS, ALL GREEN.** The watchpoint fires (15.0 M times in the
+band, so silence would have been a fault and not a finding); reads occur both
+inside the window (3436) and outside (15.0 M), so the "during the crossing"
+qualifier is earned; the reader classifier produces three distinct regions, so no
+row is a tautology; **SP at the crossing is OUTSIDE the band**, so these are
+work-area reads and not push/pop traffic wearing a work-area address; the log
+ceiling was NOT reached, so the set is complete rather than a prefix; the quiet
+case produces nothing; and **two runs of one case give an identical hit map**, so
+a cell present in one verb and absent in another is a difference between the
+VERBS.
+
+🟢 **THE ANSWER: 38 DISTINCT CELLS FOR `LOAD`, 36 FOR `SAVE`, 36 OF THEM
+SHARED.** `LOAD` adds exactly two (`$F5BE` and `$FCAE`, one read each) and `SAVE`
+adds none. Both verbs make **480** disk-side reads in the band.
+
+| cells | `LOAD` | `SAVE` | what the bytes say |
+|---|---|---|---|
+| `$F568..$F574` (13 B) | ×25 | ×25 | identical in both verbs and both files — **not** the argument |
+| `$F864..$F870` (13 B) | ×48 | ×46 | 🔑 **the file name**: `..S       BAS` / `..T       BAS` |
+| `$F85F..$F861` (3 B) | ×3 | ×3 | — |
+| `$FB21..$FB22`, `$FB29` | ×63, ×45 | ×63, ×45 | read repeatedly through the transfer |
+| `$FCC4`, `$FCC8` | ×96 each | ×97 each | the hottest pair |
+| `$FD73..$FD74` | ×102 | ×104 | a word, read repeatedly |
+| `$F5BE`, `$FCAE` | ×1 each | — | the only `LOAD`-only cells |
+
+🔑 **AND TWO INDEPENDENT MEASUREMENTS MEET.** §6.6w recorded `BC = $F871` at the
+crossing for `LOAD`, `MERGE` and `SAVE` — **exactly one past the end of the
+`$F864..$F870` name block** this probe finds the disk side reading. Neither
+measurement knew about the other: one compared registers across verbs, the other
+watched memory reads and rendered their contents. The name is identified by what
+is THERE, not by a work-area label this tree has no table for.
+
+⚠️ **`$F568..$F574` IS NOT THE ARGUMENT, THOUGH IT LOOKS LIKE A NAME FIELD.**
+Its 13 bytes are IDENTICAL for `LOAD"S.BAS"` and `SAVE"T.BAS"`, so whatever it
+holds does not track the file. It is read 25 times either way and is left
+uninterpreted rather than guessed — the same discipline `$F41F` earned in §6.6w.
+
+⚠️ **SCOPE, STATED SO THE NUMBER IS NOT OVER-READ.** This is the SHARED WORK
+AREA only. The disk ROM's own private RAM below `$F380` is excluded BY DESIGN:
+that is its internal state, not the interface. "38 cells" is the size of the
+boundary, not of everything the disk side touches.
+
+🔎 **AND A NOTE FOR §6.6v'S OPEN QUESTION.** Inside the window the readers are
+DISK (480), RAM (876 — the inter-slot stubs) and **MAIN-P0 (2080)**, with **no
+MAIN-P1 reads at all**. Main page-0 code running during the crossing is fully
+explained by the 60 Hz interrupt handler, which lives there — so "main code runs
+inside the window" is NOT by itself evidence that the disk side handed control
+back. The `$A8` discriminator is still the thing that would settle it.
+
+🔴 **CLEAN ROOM.** RAM addresses, RAM contents and the slot-select state, at a
+breakpoint on a RAM address in the published hook table. No ROM byte read, no
+hook target followed, nothing single-stepped into ROM, nothing disassembled. PC
+is never printed — only the region it falls in.
+
 ## 7. The channel trio, and the wall that is not one
 
 `LSET`/`RSET`/`FIELD` need the channel engine: `fch_check` `$7080`,

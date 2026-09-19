@@ -312,8 +312,23 @@ item — do **one item per session** to keep context lean.
       equates at all four points). A read watchpoint shows 13 reads, ALL from
       MAIN, NONE inside the crossing. It is main's own bookkeeping. That is the
       mechanism check §6.6t's parked correlation never got, and it cost one run.
-      ⚠️ Still open, neither blocking: why `SAVE` uses `$80` where
-      `OPEN…FOR OUTPUT` uses `2`, and what `BC`/`IX`/`IY` hold.
+      🟢 **AND THE INPUT SURFACE IS ENUMERATED (D-DISKREAD, §6.6x).** A read
+      watchpoint over `$F380..$FFFF`, armed for the crossing and filtered to
+      readers in the disk ROM, gives **38 distinct cells for `LOAD`, 36 for
+      `SAVE`, 36 of them SHARED** — `LOAD` adds two, `SAVE` adds none, and both
+      make 480 disk-side reads. `$F864..$F870` is the FILE NAME, identified by
+      its bytes (`..S       BAS` / `..T       BAS`), and §6.6w's `BC = $F871` is
+      exactly one past it — two independent measurements meeting. ⚠️ Scope: the
+      SHARED work area only; the disk ROM's private RAM below `$F380` is excluded
+      by design.
+      ➡️ **So step 9's RAM dependency is small and enumerable**, which is what a
+      whole-loop move needs to know before it is priced.
+      ⚠️ Still open, none blocking: why `SAVE` uses `$80` where
+      `OPEN…FOR OUTPUT` uses `2`; what `IX`/`IY` hold; what the 13 bytes at
+      `$F568..$F574` are (identical across verbs AND files, so not the argument);
+      and whether the disk side hands control back to main inside the crossing —
+      main page-0 activity in the window is explained by the 60 Hz interrupt
+      alone, so a write watchpoint on port `$A8` is what would settle it.
       🔴 **AND THAT PUTS THE ALIASING HAZARD BACK.** The dissolution claimed here
       was premised on MAIN keeping the loop. The reference does the opposite, so
       a faithful step 9 DOES hold disk-side buffer state across the transfer
@@ -2940,7 +2955,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:20644 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:20659 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -3106,7 +3121,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:7749 (T-6FE392)8 (T-529ABE)` from `TODO.md:19038 (T-529ABE)`: a
+      `TODO.md:7764 (T-6FE392)8 (T-529ABE)` from `TODO.md:19053 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -8593,7 +8608,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:19038 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:19053 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
