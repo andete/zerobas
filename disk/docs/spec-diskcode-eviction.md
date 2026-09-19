@@ -1638,11 +1638,44 @@ bytes of `H_NAME`/`H_KILL`/`H_COPY`/`H_FILE` shifted by exactly +5 because their
 handlers moved down the ROM. The table walk is correct. Why a eighteenth
 installed hook costs the STOP trap two of its three re-fires is open.
 
-🟢 **WHAT THIS UNBLOCKS.** The obstacle is OURS, not the reference's, and it is
-not about which address step 9 claims. `$FE67` remains the measured shared
-`LOAD`+`MERGE` entry (§6.6s) and is still the right cell for Joost's §6.6m
-shape. What has to be fixed first is the 18-hook ceiling — and one obvious
-avenue is that step 9 need not ADD a row at all if it can share an existing one.
+🔴 **AND THEN THE "CEILING" ITSELF FAILED TO SURVIVE A MECHANISM CHECK — SO IT
+IS PARKED, NOT BELIEVED.** Counting hook ENTRIES on OUR machine while running the
+failing row's own program, 16-hook build against 18-hook build:
+
+| cell | 16 hooks | 18 hooks |
+|---|---|---|
+| `$FD9A` / `$FD9F` (the 60 Hz interrupt pair) | 12981 | **12981** |
+| `$FDA4` | 375 | **375** |
+| `$FDC2` | 153 | **153** |
+| `$FDB3` (the 18th hook itself) | 0 | **0** |
+
+**Nothing ever enters the extra hook, and every cell that IS entered has an
+identical count.** Same work, same interrupt total, same run length. The only
+mechanical story — that a claimed cell costs a full inter-slot call where an
+unclaimed one costs a bare `RET` — is therefore dead, and no other mechanism is
+in hand.
+
+⛔ **SO "OUR DISK ROM CANNOT INSTALL AN 18th HOOK" IS NOT A FINDING AND MUST NOT
+BE TREATED AS ONE.** What exists is a CORRELATION, consistent across nine builds
+(five red at 18 installed, four green at 16 or 17, the set of cells irrelevant)
+with NO mechanism and with the machine demonstrably doing identical work. A
+correlation that survives every discriminating test but explains nothing is far
+more likely to be a property of the MEASUREMENT than of a Z80.
+➡️ The honest next step, whenever someone returns to it, is to doubt
+`E_rearm_under_held_key_refires` before doubting the hardware: it scores 3
+against a threshold of 2 where the reference scores 122, so it is a
+one-step-from-red metric, and what it counts is re-fires inside a fixed window.
+Establish what makes IT move before attributing anything to hook installation.
+
+🟡 **WHAT SURVIVES, AND IT IS THE PART THAT MATTERS FOR STEP 9:** claiming a
+cell — ANY of three tried — reproducibly turns that row red, and the code-only
+control (handler assembled in, table row zeroed) stays green. Whatever the cause,
+installing a new hook currently trips an acceptance row, and that is a real
+obstacle to step 9 at ANY address. `$FE67` remains the measured shared
+`LOAD`+`MERGE` entry (§6.6s) and is still the right cell for Joost's §6.6m shape.
+➡️ And the cheap way round is unchanged and now looks better than chasing this:
+**step 9 need not ADD a row at all** — sharing an existing one leaves the
+installed set untouched and sidesteps the whole question.
 
 ## 7. The channel trio, and the wall that is not one
 

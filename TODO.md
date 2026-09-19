@@ -307,10 +307,31 @@ item — do **one item per session** to keep context lean.
       dumping `$FD9A..$FFE7` after boot and diffing shows only the new stub's own
       five bytes plus four `<lo>` target bytes shifted by +5 because their
       handlers moved down the ROM. The table walk is correct.
-      ➡️ Next: find why an eighteenth installed stub costs the STOP trap two of
-      its three re-fires. ⚠️ And note the cheap way around it if the ceiling
-      proves hard: step 9 need not ADD a row — sharing an existing one keeps the
-      count at seventeen.
+      🔴 **AND THE "CEILING" DID NOT SURVIVE A MECHANISM CHECK — PARKED, NOT
+      BELIEVED.** Counting hook ENTRIES on our own machine while running the
+      failing row's program: the 18th hook (`$FDB3`) is entered **zero** times in
+      both builds, and every cell that IS entered has an IDENTICAL count
+      (`$FD9A`/`$FD9F` 12981 each, `$FDA4` 375, `$FDC2` 153). Same work, same
+      interrupt total. The only mechanical story — a claimed cell costing a full
+      inter-slot call where an unclaimed one costs a bare `RET` — is dead, and
+      nothing replaces it.
+      ⛔ **So "cannot install an 18th hook" is a CORRELATION, not a finding.**
+      Consistent across nine builds (five red at 18 installed, four green at 16
+      or 17, the cells irrelevant) with no mechanism and with the machine
+      demonstrably doing identical work. A correlation that survives every
+      discriminating test and explains nothing is more likely a property of the
+      MEASUREMENT than of a Z80. I let a strong correlation stand in for a cause,
+      which is the thing this file keeps warning about.
+      ➡️ **Whoever picks this up: doubt the ROW first.**
+      `E_rearm_under_held_key_refires` scores 3 against a threshold of 2 where
+      the reference scores 122 — one step from red — and it counts re-fires
+      inside a fixed window. Establish what makes IT move before attributing
+      anything to hook installation.
+      🟡 **What survives and still blocks step 9:** claiming a cell, any of three
+      tried, reproducibly turns that row red, while the code-only control
+      (handler assembled in, table row zeroed) stays green. ➡️ The cheap way
+      round now looks better than chasing it: **step 9 need not ADD a row** —
+      sharing an existing one leaves the installed set untouched.
 
 - [ ] 🛑 **SUPERSEDED — kept for its reasoning, but its CAUSE was wrong (see the
       18-hook item above): `$FE5D` and the file-buffer-0 reading.**
@@ -2876,7 +2897,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:20580 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:20601 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -3042,7 +3063,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:7685 (T-6FE392)8 (T-529ABE)` from `TODO.md:18974 (T-529ABE)`: a
+      `TODO.md:7706 (T-6FE392)8 (T-529ABE)` from `TODO.md:18995 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -8529,7 +8550,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:18974 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:18995 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
