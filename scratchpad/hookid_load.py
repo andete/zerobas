@@ -35,6 +35,9 @@ hit. Naming that in advance is the point: an unnamed outcome reads as no outcome
 🔴 CONTROLS -- the same three that made the FIELD answer trustworthy:
   base      poke NOTHING: `LOAD"<missing>"` must read ERR 53, twice over --
             it proves the verb raises AND that the program survives to report.
+            IT NEEDS A DISK IN THE DRIVE: with none the reading is ERR 70 (disk
+            offline) from the shared DSKIO layer -- the wrong baseline, and a
+            far less specific one. Round 0 caught exactly that.
   ctrl_file poke `H_FILE $FE7B`, a cell we have ALREADY named, and run `FILES`.
             It must flip ERR 70 -> ERR 5. THIS is what proves the METHOD; without
             it a flip in an unnamed cell proves nothing.
@@ -51,7 +54,16 @@ sys.path.insert(0, os.path.join(REPO, "probes", "lib"))
 import omsx_repl                                              # noqa: E402
 
 REF = "National_CF-3300"
-REF_KW = dict(boot=14.0, reset=("", "SCREEN 0"), batch=False)
+# A DISK MUST BE IN THE DRIVE, AND ROUND 0 IS WHAT ESTABLISHED THAT. The first
+# run read ERR 70 (disk offline) instead of 53 and REFUSED. 70 would have been a
+# bad subject even if accepted: "disk offline" comes from the shared DSKIO layer
+# every disk verb reaches, so un-claiming LOAD's OWN cell might not move it at
+# all -- an insensitive baseline that would report "no candidate matched" and
+# look like a finding. With a disk mounted, ERR 53 means the directory was
+# actually SEARCHED and the name was not in it, which is specific to the path
+# this probe is trying to locate.
+DISKA = os.path.join(REPO, "disk", "test720.dsk")
+REF_KW = dict(boot=14.0, reset=("", "SCREEN 0"), batch=False, diska=DISKA)
 H_FILE = 0xFE7B                       # already named -- the method's control
 MISSING = 'LOAD"NOSUCH.BAS"'
 BASE_ERR = 53                         # File not found, established by round 0
@@ -102,8 +114,28 @@ def claimed_cells():
         '  close $f\n'
         '  exit\n'
         '}\n' % out)
-    subprocess.run(["openmsx", "-machine", REF, "-command", "source %s" % tcl],
-                   stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    # THE TWO FLAGS BELOW ARE NOT COSMETIC, AND LEAVING THEM OUT COST HOURS.
+    # `probes/lib/omsx_repl.py` launches every working probe in this tree with
+    # `set renderer none; set sound_driver null`. Without them openMSX tries to
+    # bring up a real renderer, blocks before the machine ever starts, and sits
+    # at 0.0% CPU forever -- so `after time 40` (EMULATED seconds) never fires
+    # and `subprocess.run` waits on a process that will never exit. Two runs of
+    # this probe hung that way, and `kill -9` on the PYTHON parent left the
+    # openMSX CHILD orphaned and still holding the machine, which is what made
+    # the third run look like a fresh hang.
+    # ⚠️ AND THE TIMEOUT IS THE REAL GUARD: with it, a hang is a REFUSAL that
+    # names itself in seconds instead of a silence that has to be diagnosed by
+    # `ps`.
+    try:
+        subprocess.run(["openmsx", "-machine", REF,
+                        "-command", "set renderer none; set sound_driver null",
+                        "-script", tcl],
+                       stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+                       timeout=180)
+    except subprocess.TimeoutExpired:
+        sys.exit("REFUSING: the census openMSX did not exit within 180 s. It is "
+                 "not emulating -- check `pgrep -fl openmsx` for an ORPHAN from "
+                 "an earlier run still holding the machine.")
     if not os.path.exists(out):
         sys.exit("REFUSING: openMSX produced no census -- nothing was measured")
     return [int(l, 16) for l in open(out).read().split() if l.strip()]
@@ -149,8 +181,10 @@ def selftest():
 
 
 def run(cases):
-    caps = omsx_repl.run_cases(REF, [c[1] for c in cases], capture="screen",
-                               **REF_KW)
+    # ("stored", lines) -- run_cases takes (MODE, lines) pairs, not bare line
+    # lists. `hookid_probe.py` wraps them the same way at its own call site.
+    caps = omsx_repl.run_cases(REF, [("stored", c[1]) for c in cases],
+                               capture="screen", cap_gap=8.0, **REF_KW)
     return [(cases[i][0], read_err(caps[i])) for i in range(len(cases))]
 
 
@@ -214,9 +248,57 @@ def main():
               "which would mean a cell serves two verbs. Neither is assumable; "
               "this is a finding, not a failure.")
         return 1
-    print("🔴 %d CANDIDATES MOVED IT (%s). A verb with two cells is possible "
-          "but must be shown, not chosen -- re-run each hit ALONE before naming "
-          "one." % (len(hits), ", ".join(hits)))
+    print("🔴 %d CANDIDATES MOVED IT (%s). Each row above is ALREADY one "
+          "cell on its own machine, so repeating them proves nothing new -- what "
+          "is missing is a case that SEPARATES them.\n"
+          % (len(hits), ", ".join(hits)))
+    return round2([int(h[1:], 16) for h in hits])
+
+
+def round2(hits):
+    """WHICH of two hits is LOAD's OWN cell?
+
+    🔴 TWO RULES THAT COINCIDE ON EVERY ROW YOU HAVE. Both cells move the LOAD
+    case, so the reading cannot tell "this is LOAD's hook" from "this is a hook
+    LOAD passes THROUGH". `$FE5D` is already suspected of being the cell both
+    `OPEN` and `MERGE` arrive through -- the shared FILENAME parse, not the verb.
+    Picking the one that looks right would be choosing, not measuring
+    [[two-rules-that-coincide-on-every-row-you-have]].
+
+    THE SEPARATING CASE: a verb that shares the name parse but is NOT LOAD.
+    `OPEN"NOSUCH"FOR INPUT AS#1` raises ERR 53 for the same reason and goes
+    through the same parse. A cell that moves BOTH is the shared one; a cell that
+    moves LOAD and leaves OPEN alone is LOAD's.
+    """
+    OPENC = 'OPEN"NOSUCH"FOR INPUT AS#1'
+    cases = [("open_base", prog([], OPENC))] + \
+            [("$%04X+OPEN" % a, prog([a], OPENC)) for a in hits] + \
+            [("$%04X+LOAD" % a, prog([a], MISSING)) for a in hits]
+    rows = run(cases)
+    d = dict(rows)
+    base = d["open_base"]
+    print("| case | reads | |")
+    print("|---|---|---|")
+    for n, v in rows:
+        if n == "open_base":
+            tag = "(baseline)"
+        else:
+            want = base if "OPEN" in n else BASE_ERR
+            tag = "🔴 moved" if v != want else "held"
+        print("| %s | %s | %s |" % (n, v, tag))
+    print()
+    own = [a for a in hits
+           if d["$%04X+OPEN" % a] == base and d["$%04X+LOAD" % a] != BASE_ERR]
+    for a in [a for a in hits if d["$%04X+OPEN" % a] != base]:
+        print("  $%04X moves OPEN too -- a cell LOAD passes THROUGH, not its own."
+              % a)
+    if len(own) == 1:
+        print("\n🟢 **LOAD's OWN HOOK CELL IS $%04X** -- it moves LOAD and "
+              "leaves OPEN alone, while the other hit moves both." % own[0])
+        return 0
+    print("\n🔴 NOT SEPARATED: %d cell(s) are LOAD-specific by this test "
+          "(%s). The separating case did not separate them, so nothing is named."
+          % (len(own), ", ".join("$%04X" % a for a in own) or "none"))
     return 1
 
 

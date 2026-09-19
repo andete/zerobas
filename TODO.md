@@ -217,11 +217,24 @@ item — do **one item per session** to keep context lean.
       `ex_call` matches only `"FORMAT"` and otherwise `jp nc,stmt_error`, with
       **no offer to any other extension**, which is the same gap as `ATTR$`.
 
-- [ ] 🛑 **`LOAD` HAS NO IDENTIFIED HOOK CELL, AND IT NOW BLOCKS STEP 9.**
+- [ ] 🛑 **MEASURED: `LOAD` HAS NO HOOK CELL OF ITS OWN — IT SHARES ITS ENTRY,
+      AND THAT IS A QUESTION FOR JOOST.**
       🎚️ TIER 2 — reasonable time, on `LOAD`: this is what stops the tokenised
       loader reaching the disk ROM it was measured into.
-      🔭 **SCOUT-THEN-ASK** — the measurement is autonomous; whether to spend
-      the resulting bytes is Joost's.
+      🙋 **NEEDS-JOOST** — the measurement is DONE (2026-09-19, D-LOADHOOK,
+      `disk/docs/spec-diskcode-eviction.md` §6.6j). Of 18 candidate cells exactly
+      two move `LOAD"NOSUCH.BAS"` — `$FE5D` (→ ERR 51) and `$FEB7` (→ nothing
+      happens) — and **both move `OPEN"NOSUCH"` identically**, so neither is
+      LOAD's own. Every control passed.
+      🔴 **THIS FALSIFIES AN ASSUMPTION THE EVICTION CARRIES.** The standing
+      ruling puts a disk command's body behind ITS hook, and that has held for
+      `KILL`, `NAME`, `COPY`, `FILES`, `LSET`/`RSET` and `FIELD` — each with a
+      cell of its own. `LOAD` is the first verb MEASURED not to have one. What
+      the ruling means for a verb that shares its entry is Joost's call, not
+      something to settle by picking a cell.
+      ➡️ The shape the readings SUGGEST (a hypothesis, not a finding): a
+      dispatch inside a shared cell, as `hk_lrset` already serves both `LSET` and
+      `RSET` from one body via `LRSET_JUST`. Needs its own measurement first.
       Established 2026-09-19 (`disk/docs/spec-diskcode-eviction.md` §6.6h).
       `disk/equates.inc` names SIXTEEN hook cells and none is `LOAD`'s, while
       D-CFARCH's census counted **35** cells the reference's disk ROM claims.
@@ -2536,7 +2549,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:20240 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:20253 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -2702,7 +2715,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:7345 (T-6FE392)8 (T-529ABE)` from `TODO.md:18634 (T-529ABE)`: a
+      `TODO.md:7358 (T-6FE392)8 (T-529ABE)` from `TODO.md:18647 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -8189,7 +8202,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:18634 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:18647 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

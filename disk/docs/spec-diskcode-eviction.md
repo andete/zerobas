@@ -1097,6 +1097,56 @@ emulator in flight.**
     for tape forever; that is a reading, and its `--selftest` has the negative
     control proving silence cannot be parsed as the baseline.
 
+### 6.6j 🔴 MEASURED: `LOAD` HAS NO HOOK CELL OF ITS OWN (D-LOADHOOK, 2026-09-19)
+
+`scratchpad/hookid_load.py` ran end to end. All three controls passed — the
+baseline raises ERR 53 with the program intact, un-claiming a NAMED cell flips
+its own verb to ERR 5, and that same poke leaves the LOAD case at 53. Of **18**
+candidate cells (35 claimed, read through the debugger, minus the **17** named in
+`disk/equates.inc`), exactly two move `LOAD"NOSUCH.BAS"`:
+
+| cell | `LOAD"missing"` | `OPEN"missing"` |
+|---|---|---|
+| `$FE5D` | 51 | **51** |
+| `$FEB7` | OK (nothing happened) | **OK** |
+| the other 16 | 53 | — |
+
+🔴 **AND THE SEPARATING CASE DID NOT SEPARATE THEM.** `OPEN"NOSUCH"FOR INPUT
+AS#1` raises ERR 53 for the same reason and goes through the same filename parse,
+so a cell that is LOAD's own should move LOAD and leave OPEN alone. **Both cells
+move both verbs, identically.** Neither is LOAD-specific: they are shared
+infrastructure every disk FILE verb passes through.
+
+⛔ **SO THERE IS NO `H_LOAD` TO INSTALL `hk_dpload` AT**, and §6.6h's plan cannot
+proceed as written. This is a measurement, not a search that ran out of patience:
+the candidate set was derived from the full 35-cell census and every one of the
+18 was asked on its own machine.
+
+🔴 **IT ALSO FALSIFIES AN ASSUMPTION THE EVICTION HAS BEEN CARRYING.** Joost's
+standing ruling is that a disk command's implementation belongs in `disk.rom`
+behind ITS hook. That has held for every verb so far — `KILL`, `NAME`, `COPY`,
+`FILES`, `LSET`/`RSET`, `FIELD` — each with a cell of its own. **`LOAD` is the
+first verb measured NOT to have one.** What the ruling means for a verb that
+shares its entry is a question for Joost, not one to answer by picking a cell.
+
+➡️ **WHAT THE READINGS SUGGEST, offered as a question and not a conclusion:**
+`$FEB7` un-claimed makes both verbs do NOTHING silently, which is what an entry
+point looks like; `$FE5D` un-claimed leaves both raising ERR 51, which is what a
+routine they both CALL looks like. If `disk.rom` is to serve the tokenised
+loader, the shape would be a dispatch inside a shared cell — the way `hk_lrset`
+already serves both `LSET` and `RSET` from one body via `LRSET_JUST`. ⚠️ That is
+a hypothesis about the REFERENCE's architecture and needs its own measurement
+before any code rests on it.
+
+🟢 **THE PROBE IS SOUND AND ITS DIAGNOSES ARE WORTH KEEPING** — three
+apparatus faults were caught by its own guards on the way here, each of which
+would otherwise have produced a confident wrong answer: an empty census that
+refused rather than reporting "LOAD is not hooked"; a baseline of ERR 70 (no disk
+in the drive) that refused rather than measuring against the shared DSKIO layer;
+and an openMSX invocation missing `set renderer none`, which blocks before the
+machine starts and hangs forever. The last one now has a 180 s timeout, so a hang
+names itself instead of being diagnosed by `ps`.
+
 ## 7. The channel trio, and the wall that is not one
 
 `LSET`/`RSET`/`FIELD` need the channel engine: `fch_check` `$7080`,
