@@ -11,6 +11,22 @@
 ; loader disk-ROM-INDEPENDENT: any standard MSX1 disk ROM (our own, or a foreign
 ; one such as the National CF-3300) services the same loader unchanged.
 ;
+; 🔴 THAT INDEPENDENCE IS A TRUE DESCRIPTION AND NO LONGER A JUSTIFICATION
+; (corrected 2026-09-19). This header used to be cited across the tree as the
+; reason the FAT engine must live in BASIC -- "the NECESSARY PRICE of the
+; universal sector interface". Joost, 2026-09-15: "in practice I'd think any
+; external cartridge providing a disk also provides disk basic", and earlier,
+; "this seems a theoretical situation". With a foreign cartridge present it is
+; THAT cartridge's Disk BASIC which claims the hooks and runs, whichever ROM our
+; FAT sits in -- ordinary MSX behaviour, not a loss. So interop with a
+; DSKIO-only disk ROM describes hardware that does not exist, and it is NOT a
+; reason to keep this engine here. See spec-diskbasic-hook-rearchitecture.md
+; Phase 4 and spec-diskcode-eviction.md 6.7.
+; 🎯 WHAT DOES STILL BEAR ON IT is the charter, and only for our own primary
+; deployment where our disk ROM is the one present: we reimplement MSX1 BASIC,
+; so we implement its disk verbs. The FAT is in BASIC because we wrote the
+; verbs, not because of interop.
+;
 ; PORTED from disk/disk.asm (this project's OWN clean-room FAT12 code — porting our
 ; own code carries its provenance forward, not a forbidden disassembly). The only
 ; substantive change vs. the disk-ROM-side original is the physical-sector

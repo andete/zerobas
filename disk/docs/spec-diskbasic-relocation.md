@@ -24,19 +24,36 @@ spec-before-implementation). See memory `basic-rom-space-and-growth`.
 
 ## The decision
 
+> 🔴 **THE INTEROP PREMISE BELOW IS RETIRED (2026-09-19).** This decision was taken
+> "preserving the foreign-disk-ROM interop", and the alternative was rejected
+> because it *"drops the interop"*. **Joost, 2026-09-15**
+> (`spec-diskbasic-hook-rearchitecture.md` §Phase 4): *"in practice I'd think any
+> external cartridge providing a disk also provides disk basic"*, and earlier,
+> *"this seems a theoretical situation"*. A foreign cartridge brings its own Disk
+> BASIC, which claims the hooks whichever ROM our FAT sits in — ordinary MSX
+> behaviour, not a loss. **So the counterweight this decision was balanced against
+> does not exist.**
+> 🎯 The SPLIT itself is not thereby wrong: it also frees `basic.rom` space with
+> no C-BIOS page-0 change, and the charter independently says we implement MSX1
+> BASIC's disk verbs. But the rejected alternative was rejected on a reason that
+> has since been withdrawn, so **it is open again** — see
+> `spec-diskcode-eviction.md` §6.7, where the same question returns as step 9's
+> inversion. The analysis below is kept unchanged; only its premise is corrected.
+
 **Clean middle path** — split disk-BASIC by role, preserving the foreign-disk-ROM interop:
 
 - **Keep in `basic.rom`:** the drive-letter *loader* path (`LOAD"A:"`, `BLOAD"A:"`,
   `SAVE"A:"`, `BSAVE"A:"`, `RUN"A:"`) **plus the FAT logic it needs**, so zerobas-BASIC can
   still load via *any* standard/foreign disk ROM using only sector-level `DSKIO` (the "host
-  direction", `expansion-protocol.md` §1.5c — latent, not-yet-implemented, but the current
-  layout keeps the door open).
+  direction", `expansion-protocol.md` §1.5c — latent, not-yet-implemented, and 🔴 as of
+  2026-09-15 no longer a goal the layout needs to keep a door open for).
 - **Move to `disk.rom`:** the disk-management / non-loader verbs, dispatched via the MSX
   **`STATEMENT` expansion** mechanism (`$4004`). This is the faithful home and frees
   `basic.rom` space with **no C-BIOS page-0 change**.
 
 (The alternative "move *all* disk-BASIC incl. `fat.asm`, ~5 KB, drop the interop" was
-considered and rejected in favour of this. The page-0 C-BIOS spill in
+considered and rejected in favour of this — 🔴 **on a reason withdrawn 2026-09-15;
+see the note under this heading.** The page-0 C-BIOS spill in
 `docs/cbios-repack-space-analysis.md` is a *separate* future tool, reserved for genuine
 *interpreter* overflow — not this.)
 

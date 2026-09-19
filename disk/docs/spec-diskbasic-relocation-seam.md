@@ -188,14 +188,20 @@ with a verb: they stay, or they need a provider-side entry.
 | 4. move `files`+`field`(+`format`) | **2315 B** | 140 outbound edges cross-slot, 30 inbound entry points, 19 `dw` dispatches replaced by `$4004`; and it drops the foreign-disk-ROM interop |
 | 5. tape → sub ROM (`cload.asm`) | 864 B | does not fit today: sub p0 has 505 B, p1 50 B. Needs a sub-ROM carve first (Joost ruled: carve the sub ROM first) |
 
-⚠️ **On the interop.** `basic/fat.asm:11` and the 2026-06 spike record that the
-BASIC-side FAT is *"the NECESSARY PRICE of the universal sector interface"*, proven
-by every disk verb passing with the foreign CF-3300 disk ROM in slot 3-1.
-**No standing gate asserts it** — `expansion-protocol.md` §251 lists the
-host-direction test as an acknowledged *"Gap (small)"*. So the property is real,
-documented and spike-proven, but nothing would go red if it broke. If option 4 is
-taken, those documents must be corrected in the same slice, and the "Gap (small)"
-entry closed as WONTFIX rather than left as a to-do.
+🔴 **On the interop — SUPERSEDED 2026-09-19, and this note anticipated it.**
+It used to read that `basic/fat.asm:11` and the 2026-06 spike record the BASIC-side
+FAT as *"the NECESSARY PRICE of the universal sector interface"*, real and
+spike-proven but ungated. The PROPERTY is still real: every disk verb did pass
+with the foreign CF-3300 disk ROM in slot 3-1, and no standing gate asserts it.
+**What is retired is its status as a REQUIREMENT.** Joost 2026-09-15, recorded in `disk/docs/spec-diskbasic-hook-rearchitecture.md` §Phase 4: a foreign cartridge
+brings its own Disk BASIC, which claims the hooks whichever ROM our FAT sits in,
+so DSKIO-only interop describes hardware that does not exist.
+🎯 This note already said what to do about it — *"If option 4 is taken, those
+documents must be corrected in the same slice, and the 'Gap (small)' entry closed
+as WONTFIX rather than left as a to-do."* The correction has now been made
+(`basic/fat.asm`, `basic/PROVENANCE.md`, `basic/sysvars.inc`,
+`spec-diskbasic-relocation.md` and here); the *"Gap (small)"* entry in
+`expansion-protocol.md` §6 is NOT closed by this edit and remains open.
 
 ## 6. Recommendation
 

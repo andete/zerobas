@@ -22472,8 +22472,16 @@ figure).
 | **tape-only** | | **864** |
 🎯 **3936 B OF DISK/TAPE CODE SAT IN MAIN PAGE 1 ON 2026-09-15, WHERE 5 B WERE
 FREE.** The lever is real and it is enormous.
-🔴 **AND THE DISK HALF OF THE PLACEMENT RULE CONTRADICTS A MEASURED,
-ORACLE-PROVEN DECISION THIS TREE ALREADY MADE.** `basic/fat.asm:11` states it and
+🔴 **THE PARAGRAPH BELOW IS CORRECTED (2026-09-19): THE SPIKE IS PROVEN, THE
+DECISION IT IS USED TO DEFEND IS NOT.** "No standard open-by-name entry exists" is
+measured and still true. "Therefore the BASIC-side FAT is the NECESSARY PRICE"
+only follows if the universal sector interface is a REQUIREMENT, and Joost retired
+that on 2026-09-15 (`spec-diskbasic-hook-rearchitecture.md` §Phase 4): a foreign
+cartridge brings its own Disk BASIC, so DSKIO-only interop describes hardware that
+does not exist. The analysis is kept; its conclusion is inverted. See
+`spec-diskcode-eviction.md` §6.7.
+🔴 ~~**AND THE DISK HALF OF THE PLACEMENT RULE CONTRADICTS A MEASURED,
+ORACLE-PROVEN DECISION THIS TREE ALREADY MADE.**~~ `basic/fat.asm:11` states it and
 `docs/TODO-done.md` records the spike behind it: a disk ROM's **only**
 interchangeable interface is SECTORS — there is no standard "open file by name"
 entry to delegate to, because a disk ROM's filename logic is locked inside its own
@@ -22560,6 +22568,11 @@ is priced -> approved"*.** `COPY`, `FILES`/`LFILES`, `KILL`, `NAME` move to
 the move is a NEW decision rather than an implementation detail. §5's interop
 warning is attached to option 4, so `basic/fat.asm:11` and `expansion-protocol.md`
 §251 are **not** to be touched on this rung: the BASIC-side FAT stays.
+⚠️ **THAT SCOPING WAS CORRECT FOR RUNG 3 AND ITS REASON HAS SINCE BEEN WITHDRAWN
+(2026-09-19).** The interop warning it defers to was retired by Joost on
+2026-09-15; `basic/fat.asm` and the relocation specs were corrected on 2026-09-19.
+The rung-3 scope is unaffected — nothing widened — but a later rung must NOT cite
+this line as evidence that the BASIC-side FAT has a live justification.
 🔴 **AND THE FIRST STEP IS NOT A MOVE.** Measured 2026-09-15:
 `disk/init.asm:18` is `dw 0` — the `"AB"` header's `$4004` STATEMENT vector is a
 STUB — and the CONSUMER slot-walk does not exist at all; an unknown statement falls

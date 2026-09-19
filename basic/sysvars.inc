@@ -3241,10 +3241,16 @@ H_DSKO          equ     $FDEF   ; DSKO$ handler -- 🔴 WAS $FDF4 AND THAT WAS W
                                 ; sides with section 2. ⚠️ IT WAS INVISIBLE BECAUSE WE
                                 ; CLAIMED OUR OWN WRONG ADDRESS ON BOTH SIDES: our disk ROM
                                 ; claims whatever this equate says, so `h.dsko` read `ok` on
-                                ; all three nodisk sides. With a FOREIGN disk ROM -- the
-                                ; interop basic/fat.asm:11 calls the NECESSARY PRICE of the
-                                ; universal sector interface -- `DSKO$` would have consulted
-                                ; an unclaimed cell and refused a verb the machine can do.
+                                ; all three nodisk sides. With a FOREIGN disk ROM `DSKO$`
+                                ; would have consulted an unclaimed cell and refused a verb
+                                ; the machine can do. 🔴 THE EQUATE BUG WAS REAL; THE
+                                ; INTEROP IT WAS FRAMED AGAINST IS NOT (2026-09-19). This
+                                ; note used to call that interop "the NECESSARY PRICE of the
+                                ; universal sector interface", citing basic/fat.asm:11 --
+                                ; a justification retired by Joost on 2026-09-15 (a foreign
+                                ; cartridge brings its own Disk BASIC). The WRONG ADDRESS
+                                ; was still wrong, and the gate that now prevents the drift
+                                ; is still worth having; only the motive quoted here was.
                                 ; 🎯 The other six verb hooks were verified the same way and
                                 ; are all CORRECT: FILE $FE7B, KILL $FDFE, NAME $FDF9,
                                 ; COPY $FE08, DSKI $FE17, DSKF $FE12.

@@ -1185,8 +1185,18 @@ A black-box spike on the real National **CF-3300** Disk BASIC established (and t
 [expansion-protocol.md](../disk/docs/expansion-protocol.md) pins) that the
 drive-letter loader path is *pure DSKIO* — the disk ROM resolves `"A:"` internally
 (BPB/FAT/dir) and moves bytes via DSKIO; there is no standard "open file by name"
-entry to delegate to. So owning the FAT12 logic loader-side is the necessary price
-of the universal sector interface, not avoidable duplication.
+entry to delegate to. ~~So owning the FAT12 logic loader-side is the necessary price
+of the universal sector interface, not avoidable duplication.~~
+
+🔴 **THE PREMISE STANDS; THE CONCLUSION DOES NOT (corrected 2026-09-19).** "No
+standard open-by-name entry exists" is measured and still true — the reference's
+own disk ROM owns mount, directory and the sector loop
+([expansion-protocol.md](../disk/docs/expansion-protocol.md) §8.3). But "necessary
+price" only follows if the UNIVERSAL sector interface is a requirement, and it is
+not: Joost 2026-09-15, recorded in `disk/docs/spec-diskbasic-hook-rearchitecture.md` §Phase 4 found that a foreign cartridge brings its own Disk BASIC, which claims
+the hooks whichever ROM our FAT sits in, so DSKIO-only interop describes hardware
+that does not exist. The FAT is loader-side because we wrote the verbs (the
+charter), not as a price paid for interop.
 
 | Item | Value | Source class | Note |
 |------|-------|--------------|------|
