@@ -970,6 +970,43 @@ map is a reading:
      §0.1a's, which was about BUFFERS that persist across operations, not
      per-call scratch — but it needs saying out loud before it is relied on.
 
+### 6.6g 🟢 THE STREAM LAYER IS IN `disk.rom` (D-DPLPORT, 2026-09-19)
+
+Step 9's first half is built. `basic/fatio-body.inc` — `fat_io_open` and
+`fat_io_getbyte` — is now assembled into `disk.rom` as well, the same **one
+source, two ROMs** shape Option 2 used for the primitive body.
+
+| | |
+|---|---|
+| the 6 bytes of cursor state | `FREAD_OFF` → `RDBLK_BUFPOS`, `FREAD_LEFT` → `RDBLK_REQ` (`disk/init.asm`) |
+| `disk.rom` free, 2026-09-19 | **8324 B in 29 runs**, from 8435 B — the layer cost **111 B** |
+| knife pin | re-stamped (`--all`, `--allfn`); full `kwsweep` green; **no tier row moved** |
+
+🟢 **AND THE PREMISE NOW HOLDS, MECHANICALLY:**
+`scratchpad/dpldep_census.py --move` flipped from
+*"`fat_io_getbyte` IS NOT IN disk.rom's CLOSURE"* to
+*"🟢 `fat_io_getbyte` IS LOCAL TO disk.rom"*. The five remaining out-edges are
+all once-per-load or once-per-failure call-backs.
+
+⚠️ **THE 6 BYTES COST NOTHING BECAUSE THEY ARE TIME-DIVIDED, AND THE INVARIANT
+WAS ALREADY WRITTEN.** §6.6f found no free disk-side RAM, so the cursor state
+aliases BDOS's Random-Block-Read scratch. That is not a new assumption: the
+`RDBLK_*` block's own comment already says *"Only the DOS-boot path (on a
+real-BIOS host) calls $27, so this never collides with the zerobas-BASIC host
+buffers (which use the standard DSKIO path, not `bdos_entry`)."* A tokenised
+`LOAD` is a zerobas-BASIC host operation reaching the disk through DSKIO, so it
+cannot be inside a `$27` call. Same discipline as `BOOT_SV_*` over `RRND_*`.
+
+🔴 **WHAT IS NOT DONE, STATED PLAINLY: NOTHING CALLS IT YET.** The hook
+(`fat_io_open` + the `$FF` peek + the six §6.5 bodies, per §6.6e) is the second
+half, and until it lands these two routines are 111 B of correct, unreferenced
+code in `disk.rom`.
+
+🔴 **AND NO GATE NOTICED THAT** — `tools/check_dead_code.py`'s *"BOTH builds"*
+means **main and sub**; `disk.rom` is swept by nothing. Filed in `TODO.md`
+(APPARATUS, 🤖). Discovered by walking into it, which is the only reason this
+section can say it out loud instead of it being found months from now.
+
 ## 7. The channel trio, and the wall that is not one
 
 `LSET`/`RSET`/`FIELD` need the channel engine: `fch_check` `$7080`,

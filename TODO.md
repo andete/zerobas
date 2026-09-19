@@ -217,6 +217,27 @@ item — do **one item per session** to keep context lean.
       `ex_call` matches only `"FORMAT"` and otherwise `jp nc,stmt_error`, with
       **no offer to any other extension**, which is the same gap as `ATTR$`.
 
+- [ ] 🔴 **`disk.rom` HAS NO DEAD-CODE SWEEP — "BOTH builds" MEANS main AND sub.**
+      🎚️ APPARATUS — a whole ROM is outside the gate that stops code rotting.
+      🤖 **AUTONOMOUS** — `check_dead_code.py` already builds
+      `Spans('disk/disk.asm', 'disk')` for its ABI-seed analysis, so the span
+      model exists; what is missing is the sweep over it and a seed set.
+      Found 2026-09-19 by walking into it: D-DPLPORT added `fat_io_open` and
+      `fat_io_getbyte` to `disk.rom` where nothing calls them yet, and **every
+      gate stayed green.** `tools/check_dead_code.py` takes
+      `build/basic-reloc.sym build/sub.sym` and its banner says *"TRANSITIVE
+      dead-code sweep, BOTH builds"* — BOTH is main and sub.
+      ⚠️ **THE SEEDS ARE THE WHOLE JOB, AND THEY ARE NOT THE SAME AS main's.**
+      `disk.rom`'s entry points are its hook-table cells, the DSKIO/DSKCHG
+      entries, `bdos_entry`, the INIT boot bridge and the `$0030`/CALSLT
+      handlers — reached from ANOTHER ROM or from hardware, never by a `call`
+      the sweep can see. A sweep seeded wrongly would report most of the ROM
+      dead, which is why this was never as cheap as pointing the tool at a third
+      `.sym`.
+      ⚠️ **AND IT NEEDS THE ALLOWLIST-IS-A-CONTROL DISCIPLINE** the main sweep
+      already has: every allowlist entry re-verified dead on each run, or the
+      escape valve becomes the hole.
+
 - [ ] 🔴 **`rammap_sweep.py` READS ONLY `.inc` FILES, SO ~20 PAGE-3 CELLS ARE
       INVISIBLE TO THE ONLY RAM MAP WE HAVE.**
       🎚️ APPARATUS — RAM has no gate, so this sweep IS the map.
@@ -2489,7 +2510,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:20193 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:20214 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -2655,7 +2676,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:7298 (T-6FE392)8 (T-529ABE)` from `TODO.md:18587 (T-529ABE)`: a
+      `TODO.md:7319 (T-6FE392)8 (T-529ABE)` from `TODO.md:18608 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -8142,7 +8163,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:18587 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:18608 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

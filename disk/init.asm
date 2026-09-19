@@ -213,6 +213,29 @@ RDBLK_DONE      equ     $E770   ; records delivered so far (word; = HL on return
 RDBLK_CNT       equ     $E772   ; bytes left in the current record (word)
 RDBLK_BUFPOS    equ     $E774   ; byte offset into SECTOR_BUF (word, 0..512)
 RDBLK_DST       equ     $E776   ; current DTA write pointer (word; from BDOS_DTA)
+; --- the tokenised-LOAD stream cursor, ALIASED ONTO THE RDBLK SCRATCH ---------
+; D-DPLPORT (spec-diskcode-eviction.md §6.6f). `basic/fatio-body.inc` is now
+; assembled into THIS ROM too, and its cursor needs 6 bytes of state that survive
+; the DSKIO CALSLT (which clobbers every register). It cannot borrow main's
+; FREAD_OFF/FREAD_LEFT at $E9E6/$E9E8: those sit INSIDE the per-channel context
+; block FCH_STATE0..+FCH_STATESZ ($E9C9..$E9FA) that fch_save_active/fch_load_ctx
+; stage in and out, so writing them from this slot would reach into main's
+; channel staging.
+;
+; 🔴 THE NON-OVERLAP CLAIM IS THE BLOCK COMMENT ABOVE, NOT A NEW ONE: "Only the
+; DOS-boot path (on a real-BIOS host) calls $27, so this never collides with the
+; zerobas-BASIC host buffers (which use the standard DSKIO path, not
+; bdos_entry)." A tokenised LOAD is a zerobas-BASIC host operation and reaches
+; the disk through DSKIO, so it cannot be inside a BDOS $27 call. Same
+; time-division discipline as BOOT_SV_A8/BOOT_SV_SEC over RRND_RECSEC/
+; RRND_CLUSSEC further down -- deliberate reuse of provably disjoint lifetimes,
+; and it costs zero new page-3 RAM (there is none free: §6.6f walked it).
+;
+; ⚠️ WRITTEN AS ALIASES, NOT LITERALS, so they cannot drift from the cells they
+; share if the RDBLK block ever moves.
+FREAD_OFF       equ     RDBLK_BUFPOS    ; byte index within FAT_DBUF (0..512) (word)
+FREAD_LEFT      equ     RDBLK_REQ       ; file bytes undelivered (4-byte LE:
+                                        ; RDBLK_REQ + RDBLK_RECSIZE, $E76C..$E76F)
 ; M31 (tier2-m31-rdblk-randrecord-spec.md §3.1): k_47B2's own entry-RR cell, for
 ; the RR := entry-RR + HL write-back to FCB+33..35 at return. A 24-bit FCB field
 ; needs 3 bytes; parked in the last of the $E7E8-$E7FF free tail (the gap

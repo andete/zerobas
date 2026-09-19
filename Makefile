@@ -102,7 +102,7 @@ DISK_SRC := disk/disk.asm
 # it leaves disk.rom quietly stale; `rom-parts-check` refused exactly that.
 DISK_PARTS := disk/equates.inc disk/init.asm disk/pageenv.asm disk/driver.asm \
               disk/fat.asm disk/kernel.asm disk/runtime.asm \
-              basic/fat-prim-body.inc
+              basic/fat-prim-body.inc basic/fatio-body.inc
 DISK_ROM := $(BUILD)/disk.rom
 
 # zerobas-sub: the built-in MSX2-style sub-ROM, a standalone 32 KB ROM spanning

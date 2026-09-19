@@ -2294,6 +2294,21 @@ fat_bufinit:
                 ; uses this form for the same file.
                 include "basic/fat-prim-body.inc"
 
+                ; --- the FAT STREAM layer, the primitives' caller ----
+                ; D-DPLPORT (spec-diskcode-eviction.md §6.6b). Option 2
+                ; brought the PRIMITIVE body here; the tokenised LOAD loop
+                ; calls `fat_io_getbyte` ONCE PER BYTE, and §6.2c measured
+                ; that an inter-slot crossing per byte costs 1.72x the
+                ; whole load. So the stream layer is assembled here too --
+                ; same file, same one source, second ROM.
+                ; ⚠️ It names FAT_DBUF, never FSECTOR_BUF: this ROM fills
+                ; $E2A0 while basic-resident-abi.inc binds FSECTOR_BUF to
+                ; $E5C0, so the old spelling assembled clean and read a
+                ; buffer nobody filled (§6.6c). Its 6 bytes of cursor state
+                ; are FREAD_OFF/FREAD_LEFT, aliased onto the RDBLK scratch
+                ; in init.asm (§6.6f).
+                include "basic/fatio-body.inc"
+
 install_hook:
                 ld      a, $F7              ; +0: RST 30h (CALLF)
                 ld      (hl), a
