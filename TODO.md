@@ -217,6 +217,32 @@ item — do **one item per session** to keep context lean.
       `ex_call` matches only `"FORMAT"` and otherwise `jp nc,stmt_error`, with
       **no offer to any other extension**, which is the same gap as `ATTR$`.
 
+- [ ] 🛑 **`LOAD` HAS NO IDENTIFIED HOOK CELL, AND IT NOW BLOCKS STEP 9.**
+      🎚️ TIER 2 — reasonable time, on `LOAD`: this is what stops the tokenised
+      loader reaching the disk ROM it was measured into.
+      🔭 **SCOUT-THEN-ASK** — the measurement is autonomous; whether to spend
+      the resulting bytes is Joost's.
+      Established 2026-09-19 (`disk/docs/spec-diskcode-eviction.md` §6.6h).
+      `disk/equates.inc` names SIXTEEN hook cells and none is `LOAD`'s, while
+      D-CFARCH's census counted **35** cells the reference's disk ROM claims.
+      Joost's standing ruling puts a disk command's body behind its hook, and the
+      clean-room line permits reading a cell for its SLOT and IDIOM — never
+      guessing the address.
+      🟢 **THE HOOK BODY IS ALREADY DESIGNED AND NEEDS NO CALL-BACKS** (§6.6h):
+      it returns `CF=1` plus a code in A, and main dispatches. `fat_io_find`
+      already separates NOT FOUND from a mount/I-O fault without `DISKOP_OP`.
+      ⚠️ **TWO THINGS TO FIX BEFORE `scratchpad/hookid_probe.py` CAN ANSWER IT:**
+      its `UNNAMED` candidate list is the **old 27-cell census** and must be
+      re-derived against the 35; and 🔴 **the subject destroys the instrument** —
+      `LOAD` replaces the program that would print the answer, so the readable
+      case is `LOAD"<missing>"` (which raises before touching the program) with
+      an `ERR` trap as the witness. **That it raises first must be ESTABLISHED,
+      not assumed.** Keep the probe's three existing controls: poke nothing must
+      not move; poke a NAMED cell must flip its verb; that same poke must NOT
+      flip a different verb.
+      ⛔ Until the cell is named, the 111 B ported into `disk.rom` by D-DPLPORT
+      stay unreferenced.
+
 - [ ] 🔴 **`disk.rom` HAS NO DEAD-CODE SWEEP — "BOTH builds" MEANS main AND sub.**
       🎚️ APPARATUS — a whole ROM is outside the gate that stops code rotting.
       🤖 **AUTONOMOUS** — `check_dead_code.py` already builds
@@ -2510,7 +2536,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:20214 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:20240 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -2676,7 +2702,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:7319 (T-6FE392)8 (T-529ABE)` from `TODO.md:18608 (T-529ABE)`: a
+      `TODO.md:7345 (T-6FE392)8 (T-529ABE)` from `TODO.md:18634 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -8163,7 +8189,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:18608 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:18634 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

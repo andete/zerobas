@@ -1007,6 +1007,53 @@ means **main and sub**; `disk.rom` is swept by nothing. Filed in `TODO.md`
 (APPARATUS, 🤖). Discovered by walking into it, which is the only reason this
 section can say it out loud instead of it being found months from now.
 
+### 6.6h 🛑 THE HOOK HAS NO CELL: STEP 9's SECOND HALF NEEDS A MEASUREMENT FIRST (2026-09-19)
+
+The hook was designed and then not written, because the one thing it cannot be
+given is an address. **`LOAD` has no identified hook cell.** `disk/equates.inc`
+names sixteen (`H_DSKF`, `H_MKI`…`H_CVD`, `H_NAME`, `H_KILL`, `H_DSKO`, `H_DSKI`,
+`H_COPY`, `H_ERRP`, `H_LSET`, `H_RSET`, `H_FIELD`, `H_FILE`) and **none of them
+is LOAD's**, while D-CFARCH's census counted **35** cells the reference's disk ROM
+claims. Joost's standing ruling puts a disk command's body behind its hook, and
+inventing the address is not an option: the clean-room line lets a cell be read
+for its SLOT and IDIOM, not guessed at.
+
+🟢 **THE DESIGN IS SETTLED AND COSTS NOTHING TO KEEP** — it is waiting only on
+that address, and it came out simpler than §6.6e sketched:
+
+| | |
+|---|---|
+| the hook returns | `CF=1` (claimed) and **A = a code**: 0 loaded · 1 not found · 2 not tokenised · 3 mount/I-O · 4 out of memory |
+| **call-backs needed** | **NONE.** Main dispatches on A — `load_commit_prog`, `dpl_err`, `dpl_oom`, `ascii_load` all stay on main's side of the single hook call |
+| main keeps | `diskslot_test`, the `CLPTR`/`CLINK` seed, and every non-tokenised path |
+
+🟢 **AND `fat_io_find` ALREADY SOLVES THE PART THAT LOOKED HARD.** Distinguishing
+*not found* from a mount/I-O fault normally needs `DISKOP_OP`, which the disk side
+never writes — but `basic/fatio-body.inc` already carries a zero-byte label for
+exactly this, and says so: *"D-BLNF: that is how the BLOAD tenant tells NOT FOUND
+from a mount/I-O fault without a `DISKOP_OP` it never writes."* `hk_dpload` calls
+`fat_mount` then `fat_io_find` and reads the two carries separately. 🟢 That also
+**removes** a hazard rather than adding one: `dpl_nf`'s current header warns at
+length that `df_or_loaderr` reads a `DISKOP_OP` that is stale unless the carry
+came straight out of a main-side `fat_io_open`. Under the code contract nothing
+reads that cell on this path at all.
+
+➡️ **WHAT THE MEASUREMENT IS.** `scratchpad/hookid_probe.py` has the method and
+its three controls (poke nothing → must not move; poke a NAMED cell → must flip
+its verb; poke that same named cell → a DIFFERENT verb must NOT flip). Two things
+must change before it can answer this one:
+  * its `UNNAMED` list is the **old 27-cell census**; D-CFARCH corrected the
+    count to 35, so the candidate set must be re-derived, not reused;
+  * 🔴 **the subject destroys the instrument.** `LOAD` replaces the program that
+    would print the answer. The readable case is `LOAD"<missing>"`, which raises
+    **before** touching the program — but that must be *established*, not
+    assumed, and it means the witness is an `ERR` trap rather than a marker the
+    loaded program prints.
+
+⛔ **UNTIL THAT CELL IS NAMED, THE 111 B PORTED IN §6.6g STAY UNREFERENCED.** That
+is the honest state: the stream layer is in `disk.rom` and correct, the hook body
+is designed, and the address it must be installed at is unknown.
+
 ## 7. The channel trio, and the wall that is not one
 
 `LSET`/`RSET`/`FIELD` need the channel engine: `fch_check` `$7080`,
