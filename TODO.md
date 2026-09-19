@@ -261,10 +261,17 @@ item — do **one item per session** to keep context lean.
       separate them. What IS determined is that a per-SECTOR boundary exists and
       a per-BYTE one does not — so a per-sector design is faithful, and where the
       loop above it sits is OURS to choose.
-      ⚠️ **UNRESOLVED:** `BLOAD` did not enter `$FE76` (C-BIOS's H.BINL) though it
-      did enter `$FE5D`, so the case ran. Either that cell is not BLOAD's or the
-      synthetic BSAVE fixture is malformed; this data cannot tell which, and it
-      needs a verification arm proving `BLOAD` SUCCEEDED before its zero counts.
+      🟢 **RESOLVED (D-BLOADARM):** the BSAVE payload is now `$A5` and the case
+      READS IT BACK (165, behind a `CHR$` marker so the typed line cannot be
+      mistaken for the result). The fixture is valid and `BLOAD` SUCCEEDED — so
+      its zero at `$FE76` is REAL. `BLOAD` enters only the shared file-buffer-0
+      set and has no dedicated cell among the four.
+      🔑 **The published names are worth exactly this much, measured at four
+      points:** `$FE6C` H.SAVE ✅ and `$FE7B` H_FILE ✅ are borne out; `$FE67`
+      H.MERG is PARTLY (MERGE enters it — and so does LOAD); `$FE76` H.BINL is
+      REFUTED (BLOAD does not enter it, LOAD does). A documented name identifies
+      A verb that uses the cell, not the only one, and in one case not the verb
+      at all. Generate hypotheses from the names; settle them with the counter.
       ⛔ **NOTHING MAY BE INSTALLED AT `$FE67` UNTIL IT EARNS THE CLEARANCE
       `$FE5D` FAILED.** Claiming `$FE5D` broke `stop-trap-acceptance` in a way no
       reasoning predicted and only a full battery caught (§6.6p).
@@ -450,6 +457,17 @@ item — do **one item per session** to keep context lean.
       the control that a passing selftest most needs. 🔴 One mutation was a
       NO-OP (`{} or {...}` still evaluates to the real dict) and reported a
       false all-green; the harness now asserts the source actually changed.
+      🛑 **AND THE REMAINING HAND WORK IS DECLINED, 2026-09-19 — a judgement,
+      not an omission.** 142 cells still declare no width (107 basic, 35 disk).
+      Each needs a width DERIVED from the code that uses it, and a width too
+      SMALL manufactures a run that is not free — the one failure mode this tool
+      exists to prevent. So it is 142 careful derivations whose payoff is more
+      candidate runs in a map nobody is reading: no RAM hunt is active and the
+      last one closed long ago. The mechanical halves were worth doing because
+      they were free and self-checking (one rule bought 31% → 70% coverage);
+      this is the expensive tail. ➡️ Do it the day someone needs bytes, against
+      the cells that hunt actually touches, not as a sweep.
+
       ➡️ **THE ⚠️ LIST WAS A WORKLIST, AND IT TURNED OUT NOT TO NEED HAND WORK
       (D-RAMPAREN, 2026-09-19).** The plan was to declare widths cell by cell.
       🔴 **THE TREE ALREADY DECLARED THEM AND THE PARSER WAS THROWING THEM
@@ -2830,7 +2848,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:20534 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:20552 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -2996,7 +3014,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:7639 (T-6FE392)8 (T-529ABE)` from `TODO.md:18928 (T-529ABE)`: a
+      `TODO.md:7657 (T-6FE392)8 (T-529ABE)` from `TODO.md:18946 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -8483,7 +8501,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:18928 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:18946 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

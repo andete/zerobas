@@ -124,13 +124,18 @@ def prologue(dump_path):
 ORDER: dict = {}
 
 
+CAPTURE: dict = {}
+
+
 def run(tag, lines, dsk):
     """One case on its own machine. -> {cell: count}."""
     fd, path = tempfile.mkstemp(prefix=f"hookcount-{tag}-", suffix=".txt")
     os.close(fd)
-    omsx_repl.run_cases(REF, [("direct", lines)], batch=False, reset=RESET,
-                        boot=BOOT, step=STEP, cap_gap=CAP_GAP, diska=dsk,
-                        capture="screen", prologue=prologue(path))
+    caps = omsx_repl.run_cases(REF, [("direct", lines)], batch=False,
+                               reset=RESET, boot=BOOT, step=STEP,
+                               cap_gap=CAP_GAP, diska=dsk, capture="screen",
+                               prologue=prologue(path))
+    CAPTURE[tag] = (caps or [None])[0]
     out, first = {}, {}
     try:
         for ln in open(path):
@@ -158,9 +163,16 @@ def run(tag, lines, dsk):
 # description). Nothing here is derived from a reference ROM.
 ASCII_BAS = b"10 REM Z\r\n20 REM Z\r\n"
 BIN_START, BIN_LEN = 0xD000, 16
+# 🔴 A DISTINCTIVE PAYLOAD, BECAUSE A ZERO ONE CANNOT BE VERIFIED. Round 3 used
+# `bytes(BIN_LEN)` and then read `$FE76 = 0` for BLOAD -- a result that could
+# equally mean "that cell is not BLOAD's" or "my fixture is malformed and the
+# verb failed after opening the file". An all-zero payload makes the readback
+# ambiguous too, since unwritten RAM reads zero. $A5 is distinguishable from
+# both zero and $FF.
+BIN_FILL = 0xA5
 BSAVE_BIN = (b"\xFE" + struct.pack("<HHH", BIN_START,
                                     BIN_START + BIN_LEN - 1, BIN_START)
-             + bytes(BIN_LEN))
+             + bytes([BIN_FILL]) * BIN_LEN)
 
 
 def main() -> int:
@@ -190,7 +202,11 @@ def main() -> int:
         # If neither does, `LOAD` owns them outright and the selector is
         # unnecessary.
         ("merge", ['MERGE"A.BAS"']),
-        ("bload", ['BLOAD"B.BIN"']),
+        # 🔬 THE CASE NOW PROVES ITSELF. `BLOAD` then reads the payload back and
+        # prints it behind a CHR$-built marker, so the typed line cannot be
+        # mistaken for the result [[trapsvc-echo-fence]]. Until this reads $A5,
+        # `$FE76 = 0` for BLOAD means nothing at all.
+        ("bload", ['BLOAD"B.BIN"', "PRINT CHR$(64)+CHR$(66);PEEK(&HD000)"]),
     ]
     got = {}
     for tag, lines in cases:
@@ -252,6 +268,25 @@ def main() -> int:
         d = got["loadS_saveT"].get(c, 0) - got["loadS"].get(c, 0)
         print(f"  ${c:04X}  SAVE adds {d:+d} on top of the same load")
 
+    # ---- did BLOAD actually succeed? ---------------------------------------
+    cap = CAPTURE.get("bload") or ""
+    got_fill = None
+    for j in range(0, len(cap), 40):
+        row = cap[j:j + 40]
+        if "@B" in row:
+            tok = row.split("@B", 1)[1].strip().split()
+            if tok:
+                try:
+                    got_fill = int(tok[0])
+                except ValueError:
+                    pass
+    print(f"\n=== DID BLOAD SUCCEED? payload byte read back = {got_fill} "
+          f"(want {BIN_FILL}) ===")
+    bload_ok = got_fill == BIN_FILL
+    print(f"  {'PASS' if bload_ok else '🔴 FAIL'}  BLOAD loaded its payload -- "
+          f"without this its $FE76 = 0 is UNINTERPRETABLE (a malformed fixture "
+          f"and a cell that is not BLOAD's look identical)")
+
     print("\n=== ROUND 3: IS $FE67 / $FE76 SHARED, OR LOAD'S OUTRIGHT? ===")
     for c, name in ((0xFE67, "H.MERG"), (0xFE76, "H.BINL"),
                     (0xFE6C, "H.SAVE"), (0xFE5D, "H.NULO")):
@@ -276,6 +311,8 @@ def main() -> int:
     print("\n=== CONTROLS ===")
     ok = {}
     ok.update(pred_ok)
+    ok["bload fixture is VALID (its payload read back), so its zero counts"] = \
+        bload_ok
     fb, lb = base.get(H_FILE, 0), base.get(H_FILE, 0)
     ok["ctrl_file: FILES moves H_FILE"] = got["files"].get(H_FILE, 0) > fb
     ok["ctrl_cross: LOAD does NOT move H_FILE"] = \

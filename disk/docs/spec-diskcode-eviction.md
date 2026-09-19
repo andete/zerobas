@@ -1565,12 +1565,34 @@ machinery.** That is the signature of `$FE67` being the verb entry and `$FE5D`
 something it calls, confirming §6.6j's hunch by measurement rather than by
 intuition. `$FE76` follows ~100 events later, after the data phase.
 
-⚠️ **UNRESOLVED, AND NOT TO BE READ AS A FINDING:** `BLOAD` did NOT enter
-`$FE76`, the cell C-BIOS names H.BINL. It did enter `$FE5D`, so the case ran and
-opened its file — but the synthetic BSAVE fixture may be malformed in a way that
-fails after the open. Either `$FE76` is not BLOAD's, or the fixture is wrong, and
-this data cannot tell which. It needs a verification arm that proves `BLOAD`
-SUCCEEDED before its zero means anything.
+🟢 **RESOLVED (D-BLOADARM, 2026-09-19): THE ZERO IS REAL, AND THE NAME IS NOT.**
+Round 3's BSAVE fixture carried an all-zero payload, so `BLOAD` entering `$FE76`
+zero times could equally mean *that cell is not BLOAD's* or *the fixture is
+malformed and the verb died after the open* — opposite conclusions from one
+number. The payload is now `$A5` (distinguishable from unwritten RAM and from
+`$FF`) and the case READS IT BACK behind a `CHR$`-built marker, so the typed line
+cannot be mistaken for the result. It reads **165**: the fixture is valid and
+`BLOAD` SUCCEEDED.
+**So `$FE76` is entered by `LOAD` and NOT by `BLOAD`**, even though C-BIOS's
+table calls it `H.BINL`, *"called when doing a BLOAD command for disks"*. `BLOAD`
+enters only the shared file-buffer-0 set (`$FE5D`, `$FE4E`, `$FE62`, `$FEB2`,
+`$FEB7`) and has no dedicated cell among these four.
+
+🔑 **WHICH SETTLES HOW MUCH THE PUBLISHED NAMES ARE WORTH, MEASURED AT FOUR
+POINTS RATHER THAN ASSUMED:**
+
+| cell | C-BIOS name | what the counter says |
+|---|---|---|
+| `$FE6C` | H.SAVE | ✅ borne out — only `SAVE` enters it |
+| `$FE7B` | H_FILE | ✅ borne out — only `FILES` enters it |
+| `$FE67` | H.MERG | ⚠️ PARTLY — `MERGE` does enter it, and so does `LOAD` |
+| `$FE76` | H.BINL | ❌ REFUTED — `BLOAD` does not enter it; `LOAD` does |
+
+➡️ **A documented name identifies A verb that uses the cell — not the only verb,
+and in one case not the verb at all.** That is the "a name narrower than its
+class" lesson D-CHANHOOK drew about `$FE5D`, now measured across four cells and
+found to fail in BOTH directions. Use the names to generate hypotheses; use the
+counter to settle them.
 
 ⛔ **AND NOTHING SHOULD BE INSTALLED AT `$FE67` UNTIL IT IS TESTED THE WAY
 `$FE5D` WAS.** Claiming `$FE5D` broke `stop-trap-acceptance` in a way no
