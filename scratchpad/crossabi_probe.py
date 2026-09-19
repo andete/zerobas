@@ -97,6 +97,12 @@ DUMPREGS = ("BC", "DE", "HL", "IX", "IY")
 CAP = 400
 
 ASCII_BAS = b"10 REM Z\r\n20 REM Z\r\n"
+# The BSAVE header is the documented `$FE` + start + end + exec (basic/bload.asm
+# implements it from the same public description); $A5 is distinguishable from
+# unwritten RAM and from $FF (D-BLOADARM).
+BIN_START, BIN_LEN, BIN_FILL = 0xD000, 16, 0xA5
+BSAVE_BIN = (b"\xFE" + struct.pack("<HHH", BIN_START, BIN_START + BIN_LEN - 1,
+                                    BIN_START) + bytes([BIN_FILL]) * BIN_LEN)
 
 
 TCL = r'''
@@ -292,7 +298,8 @@ def main() -> int:
     # follows the file's SIZE or content" -- S vs L cannot, because both differ.
     dsk, sizes, _per = LR.build(seeded, tmpd, "ref",
                                 extra={"A       BAS": ASCII_BAS,
-                                       "QQQQQQQQBAS": ASCII_BAS})
+                                       "QQQQQQQQBAS": ASCII_BAS,
+                                       "B       BIN": BSAVE_BIN})
     print("images: S=%d B  L=%d B  A=Q=%d B" % (sizes["S"], sizes["L"],
                                                 len(ASCII_BAS)))
 
@@ -304,6 +311,14 @@ def main() -> int:
         ("loadQ",  ['LOAD"QQQQQQQQ.BAS"']),
         ("mergeA", ['MERGE"A.BAS"']),
         ("saveT",  ['SAVE"T.BAS"']),
+        # 🔬 THE PREDICTION TEST. Stated BEFORE this run: if DE carries the
+        # operation's MODE rather than its verb, then every READ must show the
+        # value LOAD and MERGE share and every WRITE the value SAVE shows.
+        # `BLOAD` and `OPEN...FOR INPUT` are reads; `OPEN...FOR OUTPUT` is a
+        # write. Three new points against a hypothesis fitted to three old ones.
+        ("bloadB",  ['BLOAD"B.BIN"']),
+        ("openIn",  ['OPEN"A.BAS"FOR INPUT AS#1', "CLOSE"]),
+        ("openOut", ['OPEN"Z.DAT"FOR OUTPUT AS#1', "CLOSE"]),
     ]
     res = {}
     for tag, lines in cases:
@@ -441,6 +456,30 @@ def main() -> int:
             if str(e.get("tag", "")) == "IN%d" % C_NULO:
                 return e
         return None
+    # 🔴 ACROSS VERBS, NOT JUST ACROSS FILES. The four-load comparison below
+    # answers "does a register carry the FILE"; it cannot answer "does a register
+    # carry the VERB", because every one of its cases IS a LOAD. D-SELECTOR
+    # needed that second question and it was never asked here.
+    print("\n=== DOES A REGISTER CARRY THE VERB? (at the crossing $FE5D) ===")
+    vcases = ("loadA", "mergeA", "saveT", "bloadB", "openIn", "openOut")
+    vregs = {t: inreg(t) for t in vcases}
+    if all(vregs.values()):
+        for r in REGS:
+            vals = {t: vregs[t].get(r) for t in vcases}
+            if len(set(vals.values())) == 1:
+                print("  %-3s identical across every verb" % r)
+                continue
+            # 🔴 PRINT A VALUE ONLY WHEN IT CANNOT BE A REFERENCE-INTERNAL
+            # ADDRESS: a scalar below $0100, or a pointer into RAM. Anything in
+            # page 0 or 1 is reported as differing and nothing more.
+            shown = {}
+            for t, v in vals.items():
+                shown[t] = ("$%04X" % v if isinstance(v, int)
+                            and (v < 0x100 or (v >> 14) >= 2) else "differs")
+            print("  %-3s DIFFERS: %s" % (r, shown))
+    else:
+        print("  (a case is missing)")
+
     S, L, A, Q = (inreg(t) for t in ("loadS", "loadL", "loadA", "loadQ"))
     if all(x is not None for x in (S, L, A, Q)):
         for r in REGS:

@@ -1862,6 +1862,9 @@ the file name in padded 8.3 directory form — the dump reads `S       BAS` and
 `L       BAS` and tracks the file being loaded. Identified by what is THERE, not
 by matching a work-area name this tree does not have a table for.
 
+✅ **ANSWERED BY §6.6w:** the selector is not in RAM and not a verb — `DE`
+carries an open MODE (`1` input, `2` output, `$80` for `SAVE`) and `HL` the file
+buffer. `LOAD`, `MERGE` and `BLOAD` are indistinguishable at this cell.
 🔴 **BUT `$FE5D` CARRIES NO PER-FILE ARGUMENT IN THE REGISTERS.** `AF`, `BC`,
 `DE`, `HL`, `IX` and `IY` at its entry are **invariant across all four loads** —
 including between two files with the SAME BYTES and different names, and between
@@ -1891,6 +1894,90 @@ register points at) and slot-select state. No ROM byte read, no hook target
 followed, nothing single-stepped into ROM, nothing disassembled; a register
 holding a reference-internal address is reported as a PAGE, and the probe refuses
 to name a slot it did not sample.
+
+### 6.6w 🔑 THE CROSSING CARRIES AN OPEN **MODE**, NOT A VERB SELECTOR (D-SELECTOR, 2026-09-19)
+
+§6.6v left one question: the registers at `$FE5D` are invariant across four
+loads, so what tells the disk side which operation it is serving? Two
+measurements answer it — `scratchpad/selector_probe.py` (a RAM differential at
+the crossing) and an extension to `scratchpad/crossabi_probe.py` (the register
+comparison §6.6v never made).
+
+🔴 **FIRST, A CANDIDATE THAT LOOKED PERFECT AND IS NOT THE ANSWER.** Dumping
+`$E000..$FFFF` at the `$FE5D` breakpoint across cases and subtracting —
+verb-dependent MINUS name-dependent MINUS size-dependent — leaves three runs. Two
+are the typed input line, identified by CONTENT (they spell `LOAD"`, `MERGE`,
+`SAVE"`, `OPEN"`). The third is a single byte at **`$F41F`**:
+
+| verb | `$F41F` | our own `basic/sysvars.inc` |
+|---|---|---|
+| `LOAD` | `$B5` | `LOAD_TOKEN equ $B5` |
+| `MERGE` | `$B6` | `MERGE_TOKEN equ $B6` |
+| `SAVE` | `$BA` | `SAVE_TOKEN equ $BA` |
+| `OPEN` | `$B0` | `OPEN_TOKEN equ $B0` |
+
+It is the statement's BASIC token, and our equates — oracle-sourced from a
+VG-8020 by crunching keywords, a different machine by a different method — agree
+at all four points. A one-byte code, perfectly verb-dependent, file-independent,
+live at the instant of the crossing. **And it is not what the disk side reads.**
+A `read_mem` watchpoint on it reports **13 reads, every one with PC in MAIN
+(3 in page 0, 10 in page 1), and ZERO inside the `$FE5D` window** — identical in
+`LOAD` and `MERGE`. It is main's own record of the statement it is executing.
+🎯 **This is the check §6.6t's parked correlation did not have.** A byte that
+tracks the verb across four values with independent confirmation of its meaning
+is exactly the kind of evidence that gets shipped as a finding. Asking *who reads
+it* cost one run and refuted it.
+
+➡️ **AND WITHIN THAT BAND THERE IS NO OTHER CANDIDATE.** Verb-dependent,
+file-independent, and not the input line — the set is that one byte. So the
+selector is not in the work area the disk side could consult.
+
+🔑 **SECOND: IT IS IN `DE`, AND IT IS A MODE RATHER THAN A VERB.** §6.6v compared
+registers across four cases that were all LOADs, so it could only ever answer
+"does a register carry the FILE". Asked across VERBS, `DE` separates them:
+
+| case | `DE` |
+|---|---|
+| `LOAD` | `$0001` |
+| `MERGE` | `$0001` |
+| `BLOAD` | `$0001` |
+| `OPEN … FOR INPUT` | `$0001` |
+| `OPEN … FOR OUTPUT` | `$0002` |
+| `SAVE` | `$0080` |
+
+🔬 **A PREDICTION WAS STATED BEFORE THE RUN AND IT SCORED HALF.** Fitted to the
+first three points, the hypothesis was *"`DE` carries read-versus-write"*, which
+predicts `BLOAD` = `$0001`, `OPEN FOR INPUT` = `$0001` and **`OPEN FOR OUTPUT` =
+`$0080`**. The read half HELD across three new points. ❌ **The write half is
+REFUTED:** `OPEN FOR OUTPUT` reads `$0002`, not `SAVE`'s `$0080`. `DE` is an
+open-MODE code — `1` for input, `2` for output, `$80` for `SAVE` — which is
+exactly what a cell named *"an operation for file-buffer 0"* would take.
+
+🟢 **`HL` IS THE BUFFER.** `$DC65` for every program verb and `$DD6E` for
+`OPEN`'s channel — machine RAM addresses, so they are quotable. `AF` is invariant
+across every verb; `BC`, `IX` and `IY` vary without an interpretation this
+measurement can support, and are left unclaimed rather than guessed.
+
+🔴 **WHICH QUALIFIES §6.6m'S SHAPE, THE DAY AFTER §6.6v RESTORED IT.** Joost
+ruled for *"one cell, several verbs, a selector"*. The cell is right and the
+selector is not there: **`LOAD`, `MERGE` and `BLOAD` are INDISTINGUISHABLE at the
+crossing** — same cell, same `DE`, same `HL`. The reference does not pass a verb.
+It opens file buffer 0 in a MODE, and the verb-level difference is carried by
+WHICH OTHER CLAIMED CELL is entered (`$FE76` for the tokenised-program path,
+§6.6v) and by what main does around the call.
+➡️ **For step 9 that is cheaper than a selector, not dearer:** the shared entry
+needs a mode byte, not a verb dispatch, and the per-verb work stays where it
+already is.
+
+⚠️ **WHAT IS STILL OPEN.** `$0080` for `SAVE` against `$0002` for `OPEN FOR
+OUTPUT` is unexplained — two writes, two codes. And `BC`/`IX`/`IY` are unread.
+Neither blocks the shape.
+
+🔴 **CLEAN ROOM.** RAM and registers at a breakpoint on a RAM address in the
+published hook table. No ROM byte read, no hook target followed, nothing
+single-stepped into ROM, nothing disassembled. A register value is printed only
+when it cannot be a reference-internal address — a scalar below `$0100`, or a
+pointer into RAM; anything in page 0 or 1 is reported as differing and no more.
 
 ## 7. The channel trio, and the wall that is not one
 

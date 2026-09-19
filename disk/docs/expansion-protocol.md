@@ -299,10 +299,22 @@ and the disk ROM does everything else on its own side.**
   — by main and by the disk ROM respectively — and they do nothing. They are
   extension points this machine's disk ROM did not take.
 
-⚠️ **Still unmeasured:** at `$FE5D` every register is INVARIANT across loads of
-different names and different sizes, so the selector and the arguments travel in
-RAM. **Finding them is the open question**, and it is now a RAM-differential
-rather than a register capture.
+### The register contract at `$FE5D` (§6.6w)
+
+| register | what it carries |
+|---|---|
+| `DE` | the **open MODE**: `1` input (`LOAD`, `MERGE`, `BLOAD`, `OPEN…INPUT`), `2` output (`OPEN…OUTPUT`), `$80` for `SAVE` |
+| `HL` | the file buffer — one value for the program verbs, another for `OPEN`'s channel |
+| `AF` | invariant across every verb |
+| `BC`, `IX`, `IY` | vary without an interpretation the measurement supports |
+
+🔴 **There is NO verb selector at the crossing.** `LOAD`, `MERGE` and `BLOAD`
+arrive with the same cell, the same `DE` and the same `HL`. The reference opens
+file buffer 0 in a mode; the verb-level difference is carried by which OTHER
+claimed cell is entered and by what main does around the call.
+
+⚠️ **Still open:** why `SAVE` uses `$80` where `OPEN…FOR OUTPUT` uses `2`, and
+what `BC`/`IX`/`IY` hold.
 
 ---
 
