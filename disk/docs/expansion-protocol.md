@@ -264,28 +264,45 @@ zerobas-disk images for the provider-direction test.
 register contract. They do not say **who drives whom**, and that is the half a
 faithful re-implementation actually has to match. It is now measured — see
 `disk/docs/spec-diskcode-eviction.md` §6.6r/§6.6s (which cells, how often) and
-**§6.6u** (who calls whom), from `scratchpad/hookcount_probe.py` and
-`scratchpad/loadproto_probe.py`.
+**§6.6u** (who calls whom) and **§6.6v** (which cells are CLAIMED, and the
+register contract), from `scratchpad/hookcount_probe.py`,
+`scratchpad/loadproto_probe.py` and `scratchpad/crossabi_probe.py`.
+
+🔴 **AND A CELL IS ONLY A CROSSING IF IT IS CLAIMED.** A claimed slot holds
+`F7 <slot> <lo> <hi> C9` (§2); an unclaimed one holds a bare `C9`, and BASIC
+calls it anyway — it returns and nothing crosses. **35 of the 118 published slots
+are claimed** on the CF-3300, static across every case measured. An entry counter
+sees an offered extension point and a real handover identically, so the claim
+state has to be read before any cell is called an entry (§6.6v; it cost this
+project two wrong cells).
 
 The shape of a reference `LOAD`, in one line: **main calls one hook cell once,
 and the disk ROM does everything else on its own side.**
 
-* main (page 1) calls the verb cell `$FE67` — once, whatever the file size;
+* main (page 1) calls the CLAIMED cell `$FE5D` — once, whatever the file size;
+  it is the cell every file verb enters, so the disk side necessarily selects on
+  something. It is the only one of these cells that pairs entry with exit;
 * control crosses to the disk ROM, which runs mount, directory search and the
   **entire sector loop** there: every per-sector entry's caller is in the disk
   ROM, at 3 data sectors and at 29 alike;
 * the disk side makes 8 outward inter-slot calls (mount traffic — the count does
   not scale with sectors) and **every one targets its own slot**;
-* **no disk→main crossing occurs at either public inter-slot entry** (`$0030`
-  CALLF, `$001C` CALSLT) for the whole verb;
-* `$FE5D` and `$FE76` are also entered during a `LOAD`, but their callers are in
-  MAIN — they are main-side steps in the same statement, not callees of the
-  disk-side handler.
+* **no disk→main crossing is OBSERVED at either public inter-slot entry**
+  (`$0030` CALLF, `$001C` CALSLT) for the whole verb. ⚠️ Read that as scoped: it
+  bounds the two public entries, not every route back into main — a ROM can page
+  slots itself with `out ($a8)`, and §6.6v records evidence that something does;
+* `$FE76` (claimed) is entered ONE-WAY — it never returns through the cell — and
+  only on the BINARY-FORMAT program path: tokenised `LOAD` enters it, ASCII
+  `LOAD` does not, nor does `MERGE`, `SAVE` or `BLOAD`. `IY` there points at the
+  file name in padded 8.3 directory form;
+* `$FE67`, `$FE6C` and the two per-sector cells are UNCLAIMED. They are entered
+  — by main and by the disk ROM respectively — and they do nothing. They are
+  extension points this machine's disk ROM did not take.
 
-⚠️ **Still unmeasured:** the register contract AT the crossing (what main puts
-in which register before calling `$FE67`, and what it expects back), and whether
-`SAVE`/`MERGE` share the shape. Those are the next things a faithful
-implementation needs.
+⚠️ **Still unmeasured:** at `$FE5D` every register is INVARIANT across loads of
+different names and different sizes, so the selector and the arguments travel in
+RAM. **Finding them is the open question**, and it is now a RAM-differential
+rather than a register capture.
 
 ---
 

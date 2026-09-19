@@ -1552,7 +1552,11 @@ of the same program adds **+27** on top of the identical load. Writes pay per
 sector through the same cell, so it is the sector-level entry every disk
 operation reaches — which is what a per-sector step 9 would be calling.
 
-🔴 **`$FE67` IS A SHARED VERB ENTRY, AND IT IS THE ONE JOOST'S RULING DESCRIBES.**
+🔴 **RETRACTED BY §6.6v — `$FE67` IS UNCLAIMED, SO IT IS NOT AN ENTRY AT ALL.**
+Reading the cell's bytes shows a bare `C9`: main calls it and it returns. The
+counts below are real and the INFERENCE from them is not, because a hook nobody
+claimed and a real crossing are both "entered once". Joost's `$FE5D` stands.
+🔴 ~~**`$FE67` IS A SHARED VERB ENTRY, AND IT IS THE ONE JOOST'S RULING DESCRIBES.**~~
 
 | cell | `LOAD` | `MERGE` | `BLOAD` | `SAVE` | `OPEN` |
 |---|---|---|---|---|---|
@@ -1598,7 +1602,7 @@ POINTS RATHER THAN ASSUMED:**
 | `$FE6C` | H.SAVE | ✅ borne out — only `SAVE` enters it |
 | `$FE7B` | H_FILE | ✅ borne out — only `FILES` enters it |
 | `$FE67` | H.MERG | ⚠️ PARTLY — `MERGE` does enter it, and so does `LOAD` |
-| `$FE76` | H.BINL | ❌ REFUTED — `BLOAD` does not enter it; `LOAD` does |
+| `$FE76` | H.BINL | ⚠️ REFINED by §6.6v — it marks the BINARY-FORMAT program path: tokenised `LOAD` enters it, ASCII `LOAD` does not, and neither does `BLOAD` |
 
 ➡️ **A documented name identifies A verb that uses the cell — not the only verb,
 and in one case not the verb at all.** That is the "a name narrower than its
@@ -1734,18 +1738,26 @@ separates them, and it is the disk ROM.
 entries sit at a stack depth BELOW the verb entry's. Caller region and stack
 depth are different quantities and could have disagreed; they do not.
 
-🔴 **(3) THE HEADLINE IS A NEGATIVE: THE DISK ROM NEVER CALLS BACK INTO MAIN
-DURING A LOAD.** Both public inter-slot entries were trapped for the whole verb
+🔴 **(3) THE HEADLINE IS A NEGATIVE: THE DISK ROM IS NEVER SEEN CALLING BACK
+INTO MAIN AT EITHER PUBLIC INTER-SLOT ENTRY DURING A LOAD.** ⚠️ §6.6v shows this
+must be read exactly as scoped — it bounds the two public entries, not every
+route back into main, and a ROM can page slots itself with `out ($a8)`. Both public inter-slot entries were trapped for the whole verb
 — `$0030` (RST 30h / CALLF) and `$001C` (CALSLT). The disk side makes **8**
 outward calls through CALSLT and **every one of them targets its own slot**;
 there is no disk→main crossing at either entry, at either file size. The 8 do
 not scale with sectors (8 at 3 sectors, 8 at 29), so they are mount traffic, not
 per-sector work.
 
+🔴 **CORRECTED BY §6.6v: THE CELL NAMED IN THE NEXT PARAGRAPH IS WRONG.**
+`$FE67` holds a bare `C9` — main calls it and it returns, and nothing crosses
+there. The HANDOVER SHAPE below is right and the ADDRESS is not: the crossing is
+at `$FE5D`, which is claimed and which every file verb enters. An entry count
+cannot tell an offered extension point from a crossing, which is why this section
+picked the wrong cell.
 ➡️ **SO THE REFERENCE'S `LOAD` PROTOCOL IS ONE HANDOVER, NOT A CONVERSATION:**
-main (page 1) calls `$FE67` once, control crosses to the disk ROM, and the disk
-ROM runs mount, directory search and the entire sector loop on its own side
-before returning. Main is not driving the transfer.
+main (page 1) calls ~~`$FE67`~~ **`$FE5D`** once, control crosses to the disk ROM,
+and the disk ROM runs mount, directory search and the entire sector loop on its
+own side before returning. Main is not driving the transfer.
 
 🔴 **(4) WHICH CORRECTS §6.6s, AND THE ERROR WAS READING ORDER AS NESTING.**
 §6.6s took `$FE67` at sequence 17129 and `$FE5D` at 17131 as "the LOAD-only cell
@@ -1786,6 +1798,99 @@ already operates on ("reading the live Z80 register file / system work areas").
 No ROM byte was read, no hook cell's `<lo> <hi>` was followed, nothing was
 single-stepped into ROM, nothing was disassembled. The report prints REGIONS and
 counts and deliberately never prints a reference-internal address.
+
+### 6.6v 🔴 AN ENTERED CELL IS NOT A CROSSING — `$FE67` IS A BARE `RET`, AND JOOST'S `$FE5D` RULING WAS RIGHT AFTER ALL (D-CROSSABI, 2026-09-19)
+
+`scratchpad/crossabi_probe.py`, seven cases, two runs agreeing on every control
+and every shape. It set out to measure the REGISTER CONTRACT at §6.6u's crossing
+and found there is no crossing at that cell.
+
+🔴 **THE PRECONDITION FAILED, AND THE FAILURE IS THE RESULT.** A claimed hook
+cell holds `F7 <slot> <lo> <hi> C9`; an unclaimed one holds a bare `C9`. Reading
+the five bytes of every published slot after boot (§2 permits exactly this — slot
+and idiom, nothing followed) gives **35 of 118 slots CLAIMED**, identical across
+all seven cases:
+
+| cell | | state |
+|---|---|---|
+| `$FD9F` | H.TIMI | CLAIMED |
+| `$FFA7` | HPHYD | CLAIMED |
+| `$FDEF` | HDSKO | CLAIMED |
+| **`$FE5D`** | **H.NULO** | **CLAIMED** |
+| **`$FE76`** | **H.BINL** | **CLAIMED** |
+| `$FE67` | §6.6u's "verb entry" | 🔴 **unclaimed — bare `RET`** |
+| `$FE6C` | H.SAVE | 🔴 **unclaimed — bare `RET`** |
+| `$FFCF` / `$FFD4` | the per-sector service | 🔴 **unclaimed — bare `RET`** |
+
+🎯 **SO AN ENTRY COUNT CANNOT LOCATE A CROSSING, AND THAT IS THE LESSON.**
+BASIC calls its hook cells unconditionally to offer an extension the chance to
+act. An offered cell nobody took and a real inter-slot handover are **both
+"entered once"** under a breakpoint counter. Every cell D-HOOKCOUNT ranked, and
+every conclusion §6.6s and §6.6u drew about WHICH cell matters, rests on a
+measurement that is blind to the distinction. Four of them are no-ops.
+
+🟢 **A SECOND WITNESS AGREES, AND IT IS NOT DERIVED FROM THE BYTES.** Trapping
+both ends of each cell — offset 0 and the trailing `C9` at offset 4, both RAM
+addresses in the published table — gives an asymmetry that follows from the claim
+state without being read off it:
+
+| cell | entries / exits | reading |
+|---|---|---|
+| `$FE5D` | 1 / 1 in all six verb cases | a call-and-return crossing |
+| `$FE76` | 1 / 0 (tokenised `LOAD` only) | entered, never returns through the cell |
+| `$FE67` | 1 / 0 | its `C9` at offset 0 returns before offset 4 is reached |
+| `$FE6C` | 1 / 0 | the same |
+
+🔑 **WHICH RESTORES JOOST'S §6.6m RULING AND RETRACTS MY CORRECTION OF IT.** He
+ruled *"the reference is the better oracle then me, so go with FE5D + selector"*.
+§6.6s moved that to `$FE67` on the strength of an entry count. **`$FE5D` is the
+claimed cell, it is the one every file verb enters, and it is the only one that
+pairs.** One cell, several verbs, therefore necessarily a selector — exactly the
+shape he ruled for, at the address he named. The cell has now moved twice and the
+reason it moved wrongly is this section's first paragraph.
+
+⚠️ **`$FE76` IS ABOUT THE FORMAT, NOT THE VERB — WHICH PARTLY REHABILITATES A
+NAME §6.6s MARKED REFUTED.** It is entered by `LOAD` of a TOKENISED file and NOT
+by `LOAD` of an ASCII file (the probe loads the same bytes under two names, and a
+third file in ASCII form, so this is separated rather than inferred), not by
+`MERGE`, not by `SAVE`, not by `BLOAD`. "H.BINL — binary load" describes the
+BINARY-FORMAT program path, which is a better fit than either "BLOAD's cell" or
+"refuted".
+
+🟢 **AND ONE REGISTER IS IDENTIFIED BY CONTENT.** At `$FE76`, `IY` points at
+the file name in padded 8.3 directory form — the dump reads `S       BAS` and
+`L       BAS` and tracks the file being loaded. Identified by what is THERE, not
+by matching a work-area name this tree does not have a table for.
+
+🔴 **BUT `$FE5D` CARRIES NO PER-FILE ARGUMENT IN THE REGISTERS.** `AF`, `BC`,
+`DE`, `HL`, `IX` and `IY` at its entry are **invariant across all four loads** —
+including between two files with the SAME BYTES and different names, and between
+a 3-sector and a 29-sector file. `HL` points at a fixed structure whose contents
+are identical case to case. **So the selector and the arguments travel in RAM,
+not in the register file**, and finding them is the next measurement.
+
+⚠️ **AND §6.6u'S CROSSING-DIRECTION BULLET MUST BE READ AS WRITTEN.** It says no
+disk-side call into main was observed *at either public inter-slot entry*, and
+that remains true. It is not the same as "no return into main happens": `$FE76`
+is entered, with `MAIN-P1` on top of stack, BETWEEN `$FE5D`'s entry and its exit.
+Two readings fit — the disk side returned control to main by a route that is not
+`$0030` or `$001C` (a ROM can page slots itself with `out ($a8)`), or `$FE76` is
+reached by a `jp` so its top-of-stack is a caller's caller, the limit D-LOADPROTO
+named up front. 🔼 **The discriminator is cheap and unrun:** watch `$A8` writes
+inside the window, the idiom `scratchpad/cf_trace.py` already carries.
+
+🟢 **WHAT §6.6u KEEPS.** Its central finding does not depend on claim state:
+every per-sector entry's CALLER is in the disk ROM, at 3 data sectors and at 29,
+so the disk ROM owns the sector loop and step 9's shape is still the whole-loop
+move. What changes is WHERE main hands over — `$FE5D`, not `$FE67` — and that the
+per-sector cells are the disk ROM's own unclaimed extension points rather than a
+boundary anything crosses.
+
+🔴 **CLEAN ROOM.** Registers, RAM (hook cells, the stack top, and whatever a
+register points at) and slot-select state. No ROM byte read, no hook target
+followed, nothing single-stepped into ROM, nothing disassembled; a register
+holding a reference-internal address is reported as a PAGE, and the probe refuses
+to name a slot it did not sample.
 
 ## 7. The channel trio, and the wall that is not one
 
