@@ -476,8 +476,8 @@ ITS LOOP.** §6.1(b) is why. Every remaining step is an instance of it.
 | 6 | 🔬 **MEASURE: does the reference's BDOS share Disk BASIC's sector buffer?** | §0.1 — decides whether there is a parameter at all. **Nothing moves before this.** |
 | 7 | 🔬 **MEASURE: does the reference cross slots per BYTE for sequential file I/O?** | §6.3 — decides whether loop duplication is required or is wasted bytes |
 | 8 | the FAT engine to `disk.rom`, ONE copy, base parametrised per §0.1 | needs 6; needs a scratch build to prove the fragmented fit |
-| 9 | the tokenised `LOAD` loop (`dpl_*`) **+ the stream cursor `fat_io_getbyte`** — 🔴 not "already disk-only" (§6.5) and 🛑 not sufficient alone (§6.6) | ✅ **MEASURED §6.2c**, ✅ **SCOPED §6.5**, 🛑 **RE-SCOPED §6.6: the loop ALONE creates the per-byte crossing it exists to remove** |
-| 10 | `OPEN`/`CLOSE` disk arms + the channel write-back manager | needs 8; 🛑 **BLOCKED the same way as 9 — no `H_OPEN`/`H_CLOSE` exists, and §6.6j measured that both cells which move `OPEN` also move `LOAD`** |
+| 9 | the tokenised `LOAD` loop (`dpl_*`) **+ the stream cursor `fat_io_getbyte`** — 🔴 not "already disk-only" (§6.5) and 🛑 not sufficient alone (§6.6) | ✅ **MEASURED §6.2c**, ✅ **SCOPED §6.5**, ✅ **PORTED §6.6g**, 🏗️ **UNBLOCKED §6.6m: `H_FOPEN` ($FE5D) + a selector, ruled by Joost** |
+| 10 | `OPEN`/`CLOSE` disk arms + the channel write-back manager | needs 8; 🏗️ **UNBLOCKED by §6.6m — same cell, another selector value; no longer "blocked the same way", it is the same work again** |
 | 11 | `INPUT#` / `INPUT$` loop copies beside their cursor | needs 7 |
 | 12 | `PRINT#` — the one consumer with no loop of its own to move | needs 7; see §6.3 |
 | 13 | the `sub.rom` disk-only tenants (**2178–3708 B, §0.2**): `fatprim`, `dirverb`, `fcbname`, and BLOAD's / SAVE's disk arms | in scope only because of §0.0 |
@@ -1050,9 +1050,11 @@ must change before it can answer this one:
     assumed, and it means the witness is an `ERR` trap rather than a marker the
     loaded program prints.
 
-⛔ **UNTIL THAT CELL IS NAMED, THE 111 B PORTED IN §6.6g STAY UNREFERENCED.** That
-is the honest state: the stream layer is in `disk.rom` and correct, the hook body
-is designed, and the address it must be installed at is unknown.
+⛔ ~~**UNTIL THAT CELL IS NAMED, THE 111 B PORTED IN §6.6g STAY UNREFERENCED.**~~
+🟢 **LIFTED BY §6.6m (Joost, 2026-09-19): the cell is `$FE5D`, named `H_FOPEN`,
+and the selector comes from the program text on the `hk_files` pattern.** The
+design in the table above is unchanged by the ruling — it was only ever waiting
+for an address.
 
 ### 6.6i 🔧 THE INSTRUMENT FOR §6.6h EXISTS; THE RUN IS UNFINISHED (D-LOADHOOK, 2026-09-19)
 
@@ -1241,6 +1243,57 @@ crossing per byte at the rate it achieves.
 free-space DELTA against a sum of SPANS — and the 2 B between them is
 unreconciled; one check settles it and neither figure should be quoted until it
 does.
+
+### 6.6m 🏗️ RULED BY JOOST, 2026-09-19: `$FE5D` + A SELECTOR
+
+> *"the reference is the better oracle then me, so go with FE5D + selector"*
+
+**This settles the question §6.6l sharpened, and it settles it for the CLASS, not
+for `LOAD` alone.** "Every disk command behind ITS hook" means **the cell the
+reference actually uses**, not a cell of its own per verb. Where the reference
+routes several verbs through one cell, so do we, and the verb is recovered from a
+SELECTOR.
+
+Three consequences, and they unblock steps 9 through 12 together:
+
+**(1) `$FE5D` GETS A NAME FOR ITS CLASS, NOT FOR A VERB.** D-CHANHOOK already
+refused to call it "OPEN's hook" — *"it is the cell both FILE-OPENING verbs route
+through"* (`spec-diskbasic-hook-rearchitecture.md`) — and §6.6j added `LOAD` as
+the third. It is `H_FOPEN` in `disk/equates.inc`: the cell every file-OPENING
+verb arrives at. Naming it `H_LOAD` would be the narrower-than-its-class mistake
+that spec already declined once.
+
+**(2) THE PATTERN IS `hk_files`, NOT `hk_lrset`.** `hk_lrset` is TWO cells
+sharing one body, with `LRSET_JUST` telling them apart — it does not solve this
+problem, because here there is one cell and several verbs. `hk_files` is the
+shape that does: ONE cell, and the verb read from the PROGRAM TEXT, because
+`FN_RESUME` points just past the verb's own token so the byte before it is the
+token itself (`disk/kernel.asm`). No call-back, no new sysvar, and the same trick
+`NAME`'s `AS` and `COPY`'s `TO` already use.
+
+**(3) STEPS 10–12 INHERIT THE ANSWER.** §6.6l established that no per-verb cell
+for the program-file verbs is the reference's PATTERN — the CF-3300 leaves
+`H.MERG`, `H.SAVE` and `H.LOPD` unclaimed. Under this ruling that stops being a
+blocker for each of them in turn: they route to `H_FOPEN` and add selector
+values. Step 10 is no longer "blocked the same way"; it is the same work again.
+
+⚠️ **ONE THING THE RULING DOES NOT DECIDE, AND IT IS WRITTEN DOWN RATHER THAN
+ASSUMED AWAY.** §6.6j's readings suggest `$FE5D` behaves like a routine the
+verbs CALL (un-claimed, all three still raise ERR 51) rather than like a verb
+entry (`$FEB7`, un-claimed, makes them do nothing). If that is so, mirroring the
+reference at `$FE5D` matches its CELL but not necessarily its internal SHAPE.
+🟢 **That does not threaten correctness**, because zerobas owns both sides of
+this interface: our main stub calls the cell and our `disk.rom` claims it and
+dispatches. It bears only on how faithfully our architecture mirrors the
+reference's, which is a question §6.6l's counting experiment can still answer
+later, and it costs nothing to leave open.
+
+⚠️ **AND THE DISKLESS PATH IS NOT `chan_gate`.** Every verb behind a hook so far
+answers ERR 5 when the cell is unclaimed, which is what the reference's diskless
+main does for `FILES`/`KILL`/`NAME`. `LOAD` is different: with no disk ROM,
+`LOAD"X"` must fall through to CASSETTE. So this hook needs a gate that REPORTS
+rather than RAISES, and main keeps its existing `diskslot_test` and cassette
+arms behind it.
 
 ## 7. The channel trio, and the wall that is not one
 
