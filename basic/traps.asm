@@ -126,6 +126,45 @@ event_poll:
 ep_live:
                 push    hl
                 push    de
+                ; --- STOP's edge shadow is RELEASED ONCE PER FRAME -------------
+                ; D-STOPRELATCH (2026-09-20, scratchpad/stoprelatch_probe.py;
+                ; docs/spec-traps-t1-stop-reslice.md). The reference RE-FIRES a
+                ; STOP handler under a held Ctrl-STOP -- 121-122 times in the
+                ; same run where this tree fired ONCE -- and the reason this
+                ; file used to give for that number was wrong. It was attributed
+                ; to `STOP OFF:STOP ON` re-arming ("a transition into ON does not
+                ; seed the shadow"); measured, the re-arm is IRRELEVANT. A
+                ; handler that only increments and RETURNs re-fires 121 times
+                ; too. The rule is: while the entry is ON and the key is down,
+                ; the trap fires once per frame. That is the INTFLG model -- the
+                ; ISR re-raises the event every VBLANK and the interpreter
+                ; consumes it at a statement boundary.
+                ;
+                ; ⚠️ THIS IS NOT STOPGRACE COMING BACK, AND THE DIFFERENCE IS THE
+                ; WHOLE POINT. STOPGRACE was a one-VBLANK window that EXPIRED and
+                ; then ABORTED a running handler (spec §12.3). This releases a
+                ; LEVEL observation and can abort nothing: rp_break latches, it
+                ; never breaks while the entry is sampled.
+                ;
+                ; 🔴 ON **ONLY**, NOT ON-OR-SERVICING, AND THAT IS LOAD-BEARING.
+                ; Clearing during SERVICING would regress D-STOPEDGE
+                ; (basic/program.asm rp_real_break): its case is a handler
+                ; running, then `STOP OFF` with the key STILL DOWN, where the
+                ; reference answers `< 1 >` because the trap already consumed
+                ; that press. rp_real_break proves that by finding bit 6 SET. A
+                ; per-frame clear during SERVICING would wipe the evidence and
+                ; bring `Break in 50` back -- and only racily, between a frame
+                ; and the next statement boundary, which is worse than a plain
+                ; regression. `cp ZTS_ON` excludes SERVICING (3) and both
+                ; unsampled states, so every D-STOPEDGE case is untouched by
+                ; construction rather than by luck.
+                ld      hl,ZTRAP+ZTI_STOP*ZTRAP_ENTSZ
+                ld      a,(hl)
+                and     ZTS_STATE_MASK
+                cp      ZTS_ON              ; exactly ON: not SERVICING, not OFF
+                jr      nz,ep_stop_held
+                res     6,(hl)              ; ZTS_SHADOW: next boundary is a fresh edge
+ep_stop_held:
     IF TRAPS_T5
                 ; --- INTERVAL (entry 0): the per-frame down-counter -------------
                 ; docs/spec-traps-t5-interval.md §2.1. This stanza was written for

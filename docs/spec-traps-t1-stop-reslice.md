@@ -537,7 +537,9 @@ on both. `tests/test_traps.py` grows `t_stop_shadow`, a fence pinning that `ZTI_
 special-cased out of the shadow discipline.
 
 🔴 **CORRECTION 2026-09-20 (D-REARMSENS): CASE E IS A PHASE METRIC, AND ZEROBAS DOES
-NOT HAVE THE PROPERTY IT ASSERTS.** The "zerobas 6" above is stale twice over — the row
+NOT HAVE THE PROPERTY IT ASSERTS.** ✅ **FIXED LATER THE SAME DAY — read the
+D-STOPRELATCH block below with this one; the diagnosis here stands and the state it
+describes is history.** The "zerobas 6" above is stale twice over — the row
 reads **3** at the gate's own schedule, and **1** almost everywhere else. Sweeping knobs
 that should not matter, on the SHIPPED ROM with nothing rebuilt
 ([`scratchpad/rearmsens_probe.py`](../scratchpad/rearmsens_probe.py)):
@@ -567,6 +569,62 @@ left untouched and green until that is decided. ⚠️ Until then a RED on case 
 nothing on its own: check its schedule sensitivity before attributing it to any change.
 🎯 This is also what dissolved `spec-diskcode-eviction.md` §6.6t's "our disk ROM cannot
 install an 18th hook" (§6.6af) — that claim rested entirely on this row.
+
+🟢 **FIXED 2026-09-20 (D-STOPRELATCH) — AND THE MECHANISM THIS FILE GAVE FOR THE 122
+WAS WRONG.** The table above attributes the reference's 122 fires to the re-arm: *"a
+transition into `ON` does not seed the shadow"*. Measured, **the re-arm is irrelevant.**
+Three programs, three key-down phases each, held key throughout
+([`scratchpad/stoprelatch_probe.py`](../scratchpad/stoprelatch_probe.py)):
+
+| handler's line 102 | VG-8020 | zerobas BEFORE | zerobas AFTER |
+|---|---|---|---|
+| `STOP OFF:STOP ON` (the gate's own row) | 122, 122, 122 | 3, 2, 1 | 255, 255, 255 |
+| `STOP ON` alone — no disarm | 122, 122, 122 | 1, 1, 1 | 255, 255, 255 |
+| **no line 102 at all — no re-arm whatever** | **121, 121, 121** | 1, 1, 1 | 255, 255, 255 |
+
+A handler that only increments a byte and `RETURN`s re-fires 121 times. **So the rule is
+not about `STOP OFF`, or about `STOP ON`, or about seeding: while the entry is `ON` and
+the key is down, the trap fires once per frame.** That is the INTFLG model — the ISR
+re-raises the event every VBLANK and the interpreter consumes it at a statement boundary.
+Three candidate rules fitted the two rows this file already had; only the no-re-arm case
+separates them, and nobody had run it.
+
+🔬 **THE CADENCE IS PER-FRAME, AND THE HANDLER'S OWN COST IS WHAT PROVES IT.** Adding a
+`FOR K=1TO n:NEXT` inside the handler spends TIME per fire without changing the number of
+statements, so a per-frame rule must drop the count and a per-statement rule must not.
+The reference drops: **68** fires at `n=200` and **19** at `n=800`, against 122 with no
+delay. zerobas after the fix follows the same curve (25 and 7).
+
+**As-built, one stanza, 12 B in `event_poll` (`basic/traps.asm`):** release `ZTS_SHADOW`
+on the STOP entry once per frame, **when the state is exactly `ON`**.
+🔴 **`ON` only, and that is load-bearing.** Clearing during `SERVICING` would regress
+D-STOPEDGE (`rp_real_break`): its case is a handler running, then `STOP OFF` with the key
+still down, where the reference answers `< 1 >` *because the trap already consumed that
+press* — which `rp_real_break` proves by finding bit 6 SET. A per-frame clear under
+`SERVICING` would wipe that evidence, and only racily, between a frame and the next
+statement boundary. `cp ZTS_ON` excludes `SERVICING` (3) and both unsampled states, so
+every D-STOPEDGE case is untouched by construction.
+⚠️ **AND IT IS NOT STOPGRACE RETURNING.** STOPGRACE was a one-VBLANK window that EXPIRED
+and then ABORTED a running handler. This releases a LEVEL observation and can abort
+nothing — `rp_break` latches, it never breaks while the entry is sampled. The standing
+*"do not reintroduce a timing proxy here"* is about the former and still stands.
+
+🟢 **WHAT IT DID TO THE GATE.** Case E went from **red at 15 of 20 timing configurations**
+to **green at 20 of 20** — every key-down phase in a 5 ms sweep and every boot offset,
+with a 127× margin instead of one step. `stop-trap-acceptance`, `trapsvc-acceptance` and
+`trapdepth-acceptance` are all green, cases A/B/B2/C/C2/D/F unchanged.
+⚠️ **INSTRUMENT CEILING, NAMED:** the sentinel is `POKE flag,PEEK(flag)+1`, one byte, so
+**255 means "at least 255"**. zerobas reads 255 because its loop is ~7× slower and spans
+~7× the frames — the count is a per-machine artifact of run length, which is exactly why
+case E asserts a PROPERTY and not equality. The reference's own 12000-iteration point
+reads 255 too and is likewise not a datum.
+
+🙋 **AND ONE THING THIS REOPENS RATHER THAN SETTLES: the SEED.** This file deletes
+`ex_stop`'s edge seed on the strength of *"122 fires vs the seeded build's 1"* — but the
+122 is not about seeding, so that row never tested the seed. With the per-frame release in
+place a seed would delay the first fire by at most one frame, i.e. it is very nearly
+inert either way; the DECISION is probably still right and its stated EVIDENCE is not.
+Filed in `TODO.md`; do not cite that row for the seed again.
 
 **Arc lesson, again:** the host suite was green through all of this and stayed green — it
 pins zerobas's own state machine, not the oracle. What was never really measured was the

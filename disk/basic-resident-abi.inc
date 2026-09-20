@@ -35,15 +35,15 @@ TXTBASE equ 08001H   ; text base (oracle: TXTTAB value after boot)
 TXTMAX equ 0DB00H   ; repack: text ceiling. DETOKBUF sits immediately
 
 ; --- page-1 call-back targets: reached by an INTER-SLOT call (MSX2 TH), not an absolute one ---
-fname_expr equ 06E6EH
-pdfcb_resume equ 06E67H
-dirverb_op equ 06C4DH
-main_fat_mount equ 0641CH   ; main's fat_mount
-main_fat_find equ 06420H   ; main's fat_find
-parse_disk_fcb equ 065C1H
-fat_count_free equ 0644FH
-field_prologue equ 07265H
-field_item equ 0729BH
-lrset_tgt equ 07358H
-lrset_rhs equ 0737AH
-lrset_finish equ 07391H
+fname_expr equ 06E7AH
+pdfcb_resume equ 06E73H
+dirverb_op equ 06C59H
+main_fat_mount equ 06428H   ; main's fat_mount
+main_fat_find equ 0642CH   ; main's fat_find
+parse_disk_fcb equ 065CDH
+fat_count_free equ 0645BH
+field_prologue equ 07271H
+field_item equ 072A7H
+lrset_tgt equ 07364H
+lrset_rhs equ 07386H
+lrset_finish equ 0739DH

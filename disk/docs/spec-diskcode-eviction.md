@@ -2621,6 +2621,39 @@ hooks; it is a known defect in the STOP trap with a measured oracle.**
 2026-09-20, `disk.rom` had **8113 B** free in 29 runs — re-run
 `make basic-reloc`, never quote that figure.
 
+### 6.6ah 🟢 THE LAST OBSTACLE TO STEP 9 IS FIXED (D-STOPRELATCH, 2026-09-20)
+
+§6.6ag left step 9 waiting on one thing: `stop-trap-acceptance`'s
+`E_rearm_under_held_key_refires` had no robust green on EITHER build, because
+the property it asserts was not implemented. It is implemented now.
+
+🔴 **THE REFERENCE'S RULE WAS NOT WHAT THE SPEC SAID.**
+`docs/spec-traps-t1-stop-reslice.md` attributed its 122 fires to the handler's
+`STOP OFF:STOP ON` re-arm. Measured across three programs and three key-down
+phases, **the re-arm is irrelevant** — a handler that only increments a byte and
+`RETURN`s re-fires **121** times. The rule is: while the entry is `ON` and the
+key is down, the trap fires once per frame (the INTFLG model), and the handler's
+own time cost reduces the count, which is what separates per-frame from
+per-statement.
+
+🟢 **THE FIX IS 12 B IN `event_poll`** — release the STOP entry's edge shadow
+once per frame, **when the state is exactly `ON`**, which excludes `SERVICING`
+and so leaves every D-STOPEDGE case untouched by construction. Full reasoning in
+the traps spec; main page 1 went 55 B → 43 B free (measured 2026-09-20, re-run
+`make basic-reloc`).
+
+🎯 **AND THE GATE STOPPED BALANCING ON A SPIKE.** Case E was red at 15 of 20
+timing configurations and green only at the schedule the harness defaults to
+(§6.6af). It is now **green at 20 of 20** — every phase in a 5 ms sweep and every
+boot offset — with a 127× margin. That is the difference between fixing a metric
+and loosening one, and it is why §6.6af's ⛔ against a threshold tweak mattered.
+
+➡️ **SO STEP 9 IS UNBLOCKED, AND THE NEXT MOVE IS MECHANICAL:** restore
+`dw H_FOPEN, hk_dpload` in `hook_tab`, delete the 16 D-DPLMOVE lines from
+`tools/deadcode-allow.txt` (15 go live; re-add `fat_io_open` with the D-BLNF
+reason), re-run the knives, and run the battery. §6.6ag measured every part of
+that except the row it was waiting on.
+
 ## 6.7 🔍 GAP ANALYSIS — zerobas AGAINST THE MEASURED PROTOCOL (D-HOOKCENSUS, 2026-09-19)
 
 > 🏗️ **RULED BY JOOST, 2026-09-20: *"I think the answer to Two is obvious: we do

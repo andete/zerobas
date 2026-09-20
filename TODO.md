@@ -382,8 +382,14 @@ item — do **one item per session** to keep context lean.
       implementation detail: whether we need our own equivalent of the
       reference's ~96 B of RAM-resident code (§6.6ac) is a SEPARATE question it
       does not answer, and row 8 stays open.
-      🔴 **THE OBSTACLE IS NOW A KNOWN DEFECT, NOT A MYSTERY (D-REARMSENS
-      2026-09-20, §6.6af + §6.6ag).** §6.6t's *"cannot install an 18th hook"* is
+      🟢 **UNBLOCKED 2026-09-20 (D-STOPRELATCH, §6.6ah): THE LAST OBSTACLE IS
+      FIXED.** The STOP re-fire divergence is implemented, and case E is green at
+      20 of 20 timing configurations instead of 5. ➡️ **The next move is
+      mechanical and every part of it is already measured (§6.6ag):** restore
+      `dw H_FOPEN, hk_dpload`, delete the 16 D-DPLMOVE lines from
+      `tools/deadcode-allow.txt` (15 go live; re-add `fat_io_open` with the
+      D-BLNF reason), re-run the knives, run the battery.
+      🔴 **THE HISTORY, KEPT (D-REARMSENS 2026-09-20, §6.6af + §6.6ag).** §6.6t's *"cannot install an 18th hook"* is
       WITHDRAWN: the row that carried it reads RED on the UNMODIFIED ROM at 15 of
       20 timing configurations and green only at the one schedule the gate uses.
       The row was then INSTALLED and run against a full battery — **129/132**,
@@ -501,7 +507,48 @@ item — do **one item per session** to keep context lean.
       round now looks better than chasing it: **step 9 need not ADD a row** —
       sharing an existing one leaves the installed set untouched.
 
-- [ ] 🔴 **A HELD Ctrl-STOP DOES NOT RE-FIRE A RE-ARMING HANDLER — AND THE GATE
+- [x] ✅ **DONE 2026-09-20 (D-STOPRELATCH): A HELD Ctrl-STOP NOW RE-FIRES, AND
+      THE MECHANISM THE SPEC GAVE FOR THE REFERENCE'S 122 WAS WRONG.**
+      `docs/spec-traps-t1-stop-reslice.md` + `disk/docs/spec-diskcode-eviction.md`
+      §6.6ah. The re-arm turned out to be IRRELEVANT: a handler that only
+      increments a byte and `RETURN`s re-fires **121** times on the VG-8020. The
+      rule is per-frame while the entry is `ON` (the INTFLG model), proved
+      against a per-statement rule by making the HANDLER costlier — the
+      reference's count drops 122 → 68 → 19 as a `FOR` delay grows inside it.
+      Three candidate rules fitted the two rows the spec already had; only the
+      no-re-arm case separates them, and nobody had run it.
+      🟢 **THE FIX IS 12 B IN `event_poll`:** release `ZTS_SHADOW` on the STOP
+      entry once per frame, **when the state is exactly `ON`** — which excludes
+      `SERVICING` and leaves every D-STOPEDGE case untouched by construction
+      rather than by luck. Main page 1 55 B → 43 B free (2026-09-20; re-run
+      `make basic-reloc`, never quote it).
+      🎯 **AND THE GATE STOPPED BALANCING ON A SPIKE:** case E went from red at
+      15 of 20 timing configurations to **green at 20 of 20**, every phase and
+      every boot offset, with a 127× margin. That is what separates fixing a
+      metric from loosening one.
+      ⚠️ **INSTRUMENT CEILING, NAMED:** the sentinel is one byte, so 255 means
+      "at least 255". zerobas reads 255 because its loop is ~7× slower and spans
+      ~7× the frames; the reference's own 12000-iteration point saturates too.
+      ⬇️ The original diagnosis is kept below, inverted rather than deleted.
+
+- [ ] 🔬 **`ex_stop`'s MISSING EDGE SEED RESTS ON A ROW THAT NEVER TESTED IT.**
+      🎚️ TIER 5 — EVERY ERROR. Almost certainly inert either way; this is a
+      correctness-of-the-record item, not a behaviour item.
+      🤖 **AUTONOMOUS** — our own ROM against a reference that answers at every
+      phase; the separating case does not exist yet, but building it needs no
+      ruling.
+      `docs/spec-traps-t1-stop-reslice.md` deletes `ex_stop`/`es_set`'s edge seed
+      on the strength of *"122 fires vs the seeded build's 1"*. D-STOPRELATCH
+      showed the 122 is produced by the per-frame shadow release and has nothing
+      to do with seeding, so **that row never tested the seed** — the decision is
+      probably still right and its stated evidence is not.
+      ➡️ With the per-frame release in place a seed would delay the first fire by
+      at most one frame, so the behaviour is very nearly identical either way.
+      The case that would separate them presses and HOLDS Ctrl-STOP *across* the
+      `STOP ON`, and reads whether the first fire lands on the same statement or
+      one frame later. ⛔ Do not cite the 122 row for the seed again.
+
+- [x] 🔴 **A HELD Ctrl-STOP DOES NOT RE-FIRE A RE-ARMING HANDLER — AND THE GATE
       THAT EXISTS TO PIN THAT HAS BEEN GREEN BY TIMING LUCK.**
       🎚️ TIER 2 — REASONABLE TIME. Promoted from TIER 3 the same day: it is a
       real BASIC-fidelity divergence on a shipped trap AND it is now the single
@@ -3119,7 +3166,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:20823 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:20870 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -3285,7 +3332,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:7928 (T-6FE392)8 (T-529ABE)` from `TODO.md:19217 (T-529ABE)`: a
+      `TODO.md:7975 (T-6FE392)8 (T-529ABE)` from `TODO.md:19264 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -8772,7 +8819,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:19217 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:19264 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
