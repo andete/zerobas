@@ -2878,7 +2878,16 @@ work. At **257 B and rising** — five cells are still unsized, including
 is relocating most of a 512 B window into a map that §6.6aj already measured as
 having **no 512 B contiguous free run anywhere**. Option (a) is dead.
 
-➡️ **SO TWO REMAIN, AND THEY SHOULD BE PRICED AGAINST EACH OTHER NEXT:**
+🎯 **AND JOOST NAMED A THIRD, WHICH IS BIGGER THAN BOTH.** *"If we'd use the
+plain stack we wouldn't need a dedicated region."* The reference's PAINT span
+stack **grows down from `STKTOP`** — measured and signed off in
+`docs/spec-basic-graphics-g5.md` D3 — and we shipped a fixed 120-entry array
+anyway. Moving it (and `TEMPPOOL`, which is the same shape) onto the real stack
+frees **~456 B of the 510**, fixes an ungated two-way divergence at the capacity
+edge, and retires the very aliasing argument §6.6q invalidates. Filed in
+`TODO.md` as his call — it re-architects a shipped, well-gated feature.
+
+➡️ **AND THE TWO NARROWER OPTIONS, IF THAT ONE IS DECLINED:**
 > **(b) SAVE/RESTORE** the occupied bytes around the hook. Now countable rather
 > than guessed — but it needs somewhere to save 257+ B TO, which is the same
 > shortage, unless the save set can be narrowed to what `LOAD` actually cares

@@ -498,6 +498,53 @@ item — do **one item per session** to keep context lean.
       service; against the measured whole-loop shape they deserve a fresh look
       rather than automatic retirement.
 
+- [ ] 🔴 **PAINT's SPAN STACK IS A FIXED ARRAY; THE REFERENCE'S GROWS DOWN FROM
+      `STKTOP` — A DIVERGENCE NO ROW COVERS, AND THE BIGGEST RAM LEVER WE HAVE.**
+      🎚️ TIER 3 — COMMON ERRORS. The divergence only shows at the capacity edge
+      or under a low `CLEAR ,addr`; no happy path depends on it.
+      🙋 **NEEDS-JOOST** — it re-architects a shipped, well-gated feature
+      (`sub/graphics.asm` G5), and the reason to do it now is a RAM shortage in a
+      different subsystem. Whether that is worth the risk is his call, not mine.
+      🎯 **RAISED BY JOOST 2026-09-20:** *"I was wondering about it because if
+      we'd use the plain stack we wouldn't need a dedicated region."* Correct,
+      and the record supports it more strongly than the question assumed.
+      🔴 **WE MEASURED THE REFERENCE AND THEN DID SOMETHING ELSE.**
+      `docs/spec-basic-graphics-g5.md:131` (D3, SIGNED OFF) records, measured:
+      *"its stack grows down from `STKTOP` and only overflows under
+      pathologically tight memory (box + ~73 full-height parallel channels
+      completes at normal HIMEM and down to himem=`$8800`; only himem=`$8500`
+      forces 'Out of memory in 60')"*. We shipped a FIXED 120-entry array at
+      `GFX_PSTK $E3F2` instead.
+      ➡️ **THE DIVERGENCE RUNS IN BOTH DIRECTIONS, AND NEITHER IS GATED.** Our
+      cap is 120 spans **regardless of HIMEM**, so (1) a fill needing 121+ spans
+      raises ERR 7 here at NORMAL himem where the reference completes, and (2) at
+      `CLEAR ,&H8500` we SUCCEED where the reference raises *Out of memory*. No
+      PAINT row sets HIMEM, so nothing can see either.
+      ⚠️ And the shipped capacity is **below D3's own signed-off target**: the
+      spec said *"size the stack generously (target ≥128 spans)"*; `GFX_PSTK_CAP`
+      is 120, because the window is 376 B.
+      💰 **THE RAM IT WOULD FREE IS THE LEVER STEP 9 NEEDS.** `GFX_PSTK` is
+      **360 B** at `$E3F2..$E559`, inside the window disk's `SECTOR_BUF` wants
+      and which §6.6al measured at **510 B of 512 occupied**. `TEMPPOOL` is the
+      same shape — its own header calls it *"a downward-growing array of
+      `[len:1][ptr:2]` entries"*, i.e. a stack implemented as a fixed array — and
+      is 96 B more. Together ~456 B of the 510.
+      🎯 **AND IT RETIRES A SAFETY ARGUMENT THAT IS ALREADY GOING STALE.**
+      `GFX_PSTK`'s header licenses its overlap with disk's `SECTOR_BUF` by
+      *"the STANDALONE MSX1 disk-ROM … only ever runs while booting/driving
+      MSX-DOS, never while the BASIC interpreter (and so never a PAINT
+      statement) is live"* — which is exactly the premise `hk_dpload` falsifies
+      by construction (§6.6q). `PAINT` then `LOAD` in one program is the case.
+      ⚠️ **THE HAZARD, SO IT IS PRICED HONESTLY:** the Z80 stack also carries
+      return addresses, so a span-fill cannot simply `push` entries and then
+      `call` a helper. It needs its own cursor into the region below `SP` (with
+      an overflow test against the control-frame pool, which SP already merges
+      with — Joost's 2026-09-11 ruling) rather than raw `push`/`pop`. That is the
+      work, and it is why the fixed array was the easy answer first time.
+      ➡️ **IF TAKEN, the acceptance row is the one that does not exist yet:** the
+      same fill at two HIMEMs on both machines, asserting that overflow tracks
+      HIMEM rather than a constant.
+
 - [x] ✅ **WITHDRAWN 2026-09-20 (D-REARMSENS): OUR DISK ROM CANNOT INSTALL AN
       18th HOOK — the ROW could not carry that claim, and doubting it found a
       real BASIC divergence instead.** `disk/docs/spec-diskcode-eviction.md`
@@ -3221,7 +3268,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:20925 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:20972 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -3387,7 +3434,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:8030 (T-6FE392)8 (T-529ABE)` from `TODO.md:19319 (T-529ABE)`: a
+      `TODO.md:8077 (T-6FE392)8 (T-529ABE)` from `TODO.md:19366 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -8874,7 +8921,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:19319 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:19366 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
