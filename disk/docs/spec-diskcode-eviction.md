@@ -2995,7 +2995,31 @@ work rather than a missing answer — **and `OPEN` last**, behind either the RAM
 lever (PAINT's 360 B span stack, filed) or a design that keeps the sector buffer
 per-crossing and the per-channel state small.
 
-### 6.6ao 🟡 STEP 12 BUILT AND BACKED OUT — THE WRITE PATH IS NOT THE READ PATH (D-SAVEPORT, 2026-09-20)
+### 6.6ao 🟢 STEP 12 IS DONE — `SAVE` RUNS IN `disk.rom`, AND THE BUG WAS ONE UNCONVERTED SYMBOL (D-SAVEPORT, 2026-09-20)
+
+> ✅ **RESOLVED AND MERGED.** The section below is the diagnosis as it was made,
+> ending in the root cause. `gates-full` **132/132** plus all eight
+> battery-excluded targets, with the port in.
+>
+> 🎯 **THE CAUSE: `basic/fatiow-body.inc` buffered each byte with
+> `ld de, FSECTOR_BUF` where the read side says `FAT_DBUF`.** D-FATENG converted
+> the shared FAT bodies to the neutral per-ROM names precisely so a third ROM
+> could bind them to its own cells, and `fatio-body.inc` carries a 🔴 paragraph
+> stating the rule for the READ side. **Its WRITE twin was missed.** In main and
+> sub the two names are ONE address (`FAT_DBUF equ FSECTOR_BUF`), so the mistake
+> assembled clean and was invisible for as long as it existed. In `disk.rom`
+> `FSECTOR_BUF` resolves through the generated ABI to MAIN's `$E5C0` while
+> `FAT_DBUF` is `SECTOR_BUF $E2A0` — so every byte landed in main's buffer and
+> `fat_flush_data_sector` wrote the untouched one, which still held the boot
+> sector `fat_mount` had just read.
+>
+> ⚠️ **IT IS A CLASS, NOT AN INCIDENT.** A shared body that spells one ROM's cell
+> name assembles cleanly in every ROM where that name happens to alias the right
+> address. **Only a ROM that binds them differently can see it** — so the defect
+> was latent from the day `disk.rom` first included a write body, and there was
+> no such ROM until this step.
+
+### 6.6ao (the diagnosis, as it was made)
 
 The `SAVE` port assembles, links and sizes correctly, and it **fails at
 runtime**. Backed out to keep the tree green; everything below is what it cost
@@ -3053,8 +3077,19 @@ on the same build**, through the sub-ROM tenant, and every `LOAD` / `BLOAD` /
 the crossing work; what fails is confined to the first four program bytes read
 from inside `hk_dpsave`.
 
-➡️ **THE PORT IS ON THE BRANCH `wip/saveport` (`d2bd7903`)** so the next session
-iterates on code rather than re-deriving it.
+🟢 **AND READING THE ARTIFACT FINISHED IT.** The probe writes a real `.dsk`, so
+the root directory answers directly: `SV.BAS` is **16 bytes — the RIGHT size** —
+and its data cluster holds `eb fe 90 5a 45 52 4f 42 41 53 20 …`, i.e.
+`EB FE 90 "ZEROBAS "`, **the boot sector**. Beside it on the same disk the
+known-good fixture `PROG.BAS` holds `ff 0e 80 0a 00 98 …`, which is what `SV`
+should have been. A right-sized file containing the boot sector says the byte
+count was correct and the buffer was never written — which named the symbol.
+
+🎯 **THE LESSON, PAID TWICE IN ONE SLICE.** `runtail-acceptance` said *"load
+error"*, a funnel. `diskbasic-acceptance`'s row printed the BYTES. The disk
+image answered the rest. **Reach for the row that reads the artifact before
+theorising about the mechanism** — I wrote that down after the first half of
+this bug and then still spent a round guessing at mechanisms.
 
 🟢 **TWO GATES FOUND REAL BLIND SPOTS, AND THAT IS THE PART THAT LANDS.**
 * `tools/check_shared_bodies.py` scanned `("basic", "sub")` only, so a shared
