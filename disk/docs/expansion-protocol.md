@@ -255,12 +255,32 @@ No blockers that change the committed Depth-A plan.
 |-----|---------------|--------|
 | (a) **Observation** of a real standard Disk BASIC | `National_CF-3300` (`cf-3300_disk.rom`, 16 KB, present & ungzipped in `~/.openMSX/share/systemroms/`) | **Available** — used for this spike. WD2793 / National connection style, true MSX1. |
 | (b) **Host-direction test** (foreign disk ROM + zerobas-BASIC) | needs a `*_BASIC_DISK` machine whose slot-3-1 ROM is a *foreign* ROM (e.g. `cf-3300_disk.rom`, or `vg8235_disk.rom`/`nms8250_disk.rom`, both present gzipped). | **Gap (small):** the current `C-BIOS_MSX1_BASIC_DISK` machine wires *zerobas's own* `disk.rom`. The install script's `--disk-rom` can point at a foreign ROM to build this variant — straightforward, no new tooling. |
+| (d) **Second-vendor cross-check** (is §8 the MSX standard or one maker's?) | `Philips_VG_8020_NMS1200` — a stock VG-8020 with the **Philips NMS 1200** disk interface (`nms1200_6.rom`, 2DD/720K) lifted verbatim into its external slot 1. The machine XML lives in `~/.openMSX/share/machines/`, OUTSIDE the repo, so nothing in the battery fingerprint moves. | 🟢 **Done 2026-09-20 (§6.6ae), and RULED ONE-OFF by Joost:** *"it is one off, as expected it is near identical."* It answered its question — claimed cells, crossing, mode codes and RAM clusters all identical, only `HL` differs (+2) — and is **NOT** a standing oracle. Do not gate against it; the machine file is kept only so the run can be repeated if §8 is ever revised. |
 | (c) **Provider-direction test** (real BASIC/DOS + zerobas-disk image) | real MSX-DOS 1.03 on `National_CF-3300` (already used by `disk_probe_bdos.py` / `disk_probe_fwrite.py`); a zerobas-disk-written `.dsk` mounted under it. | **Available** — the existing FCB differential already mounts zerobas-written images under real MSX-DOS. For the *hook/DSKIO* provider contract, the same machine drives PHYDIO once zerobas-disk installs HPHYD. |
 
 **Confirmed:** a foreign standard disk ROM (CF-3300's) can be combined with
 zerobas-BASIC for the host-direction test (just rebuild the machine with
 `--disk-rom cf-3300_disk.rom`), and a real MSX-DOS host already mounts
 zerobas-disk images for the provider-direction test.
+
+🔑 **AND ROW (b) IS NOW CHEAPER THAN IT READS.** Joost, 2026-09-20: *"the VG8020
++ for example the Philips NMS Disk extension is a valid machine combo. In the same
+way our non-disk ZeroBAS + that same disk extension should work."* With
+`nms1200_6.rom` now present, that machine is **diskless zerobas plus a real
+third-party disk cartridge** — and what it would test is not our loader driving
+foreign sectors (retired, §6.7) but whether our BASIC **gets out of the way** so
+the cartridge's own Disk BASIC claims the hooks and runs. ⚠️ Nothing covers that
+today: `nodisk-acceptance` runs `C-BIOS_MSX1_EU_REPACK_NODISK`, whose slot 3-1 is
+EMPTY — "no disk ROM at all" and "somebody else's disk ROM" are different
+machines.
+🗓️ **JOOST, 2026-09-20: *"of course zerobas + nms will become an interesting
+validation target at some point."*** So it is a real future target rather than an
+open question — and the natural time for it is **AFTER step 9**, not before.
+Until the eviction lands, our main+sub still implements the loader, so the test
+would be measuring a machine we are about to stop being. Once no disk
+implementation is left in main+sub, "does a third-party cartridge just work?" is
+a clean question with a clean answer, and it is the sharpest single check that
+the eviction actually achieved §0.0's point (3).
 
 ---
 
