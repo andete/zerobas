@@ -54,7 +54,11 @@ sys.path.insert(0, os.path.join(REPO, "scratchpad"))
 from selector_probe import pcregion                           # noqa: E402
 from diskreads_probe import addr_runs                         # noqa: E402
 
-REF = "National_CF-3300"
+# 🔬 SECOND VENDOR (2026-09-20): `ZB_RAMCODE_MACHINE` points the same detector
+# and the same controls at another vendor's disk ROM. Where the hook surface and
+# the register contract turned out to be MSX-standard, RAM-resident code is the
+# one place an implementation difference is EXPECTED.
+REF = os.environ.get("ZB_RAMCODE_MACHINE", "National_CF-3300")
 RESET = ("", "SCREEN 0", "CLOSE", "NEW", "CLS")
 BOOT, STEP, CAP_GAP = 14.0, 30.0, 8.0
 

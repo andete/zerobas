@@ -273,6 +273,13 @@ has to match. This section is the answer, consolidated from eleven working
 sections of `disk/docs/spec-diskcode-eviction.md` (§6.6r–§6.6aa) written as the
 measurements were made, several of them correcting earlier ones.
 
+> 🟢 **CROSS-CHECKED ON A SECOND VENDOR (2026-09-20, §6.6ae).** This was written
+> from ONE disk ROM. It has since been re-run against a **Philips NMS 1200** on a
+> stock VG-8020: the claimed cell set (35 of 118), the crossing, the open-mode
+> codes and the RAM-code clusters are **identical**, and the only difference is
+> `HL`'s buffer address (+2). So §8 describes the MSX standard rather than one
+> maker's implementation.
+>
 > 🔴 **HOW TO READ THIS.** Claims are separated into **measured**, **inferred**
 > and **not measured**, and the measured ones name their instrument and the
 > control that makes them believable. A claim with no control named is not one
@@ -310,7 +317,7 @@ with exit. The register contract at that instant:
 | register | what it carries |
 |---|---|
 | `DE` | the **MSX open-mode code**, all four classic values measured (§6.6ab): `$0001` INPUT (`LOAD`, `MERGE`, `BLOAD`, `OPEN…FOR INPUT`) · `$0002` OUTPUT (`OPEN…FOR OUTPUT`, `BSAVE`, `SAVE"…",A`) · `$0004` RANDOM (`OPEN "f" AS #n`) · `$0008` APPEND · and `$0080` for **tokenised `SAVE` and nothing else** |
-| `HL` | the **file buffer** — `$DC65` for every program verb, `$DD6E` for every `OPEN` channel (ten verbs, §6.6ab) |
+| `HL` | the **file buffer** — one value for every program verb, another for every `OPEN` channel (ten verbs, §6.6ab). 🔴 **The ADDRESSES are per-machine:** `$DC65`/`$DD6E` on the National CF-3300, `$DC67`/`$DD70` on a Philips NMS 1200 — a constant +2 (§6.6ae). Take the pointer from `HL`; do not hardcode it |
 | `BC` | `$F871` — one past the end of the file-name block at `$F864..$F870`; for `BSAVE` it is the START ADDRESS as typed (§6.6ab) |
 | `AF` | invariant across every verb |
 | `IX` | a **main-ROM page-1 pointer chosen by verb FAMILY** — three values over ten verbs: BASIC-program file / `OPEN` channel / binary image (§6.6ad). What it points at was not read |
@@ -414,6 +421,10 @@ labelled CLPRIM — and 🔑 **it is the one cluster with NO disk-side writer**
 (§6.6ac), which two independent routes agree on. ⚠️ Clusters bridge gaps of up to
 16 B — operands are fetched as data and a `jr` skips forward — so the spans are an
 upper bound on extent, not a measured routine size.
+
+🔑 **AND A SECOND VENDOR PUTS THEM AT THE SAME ADDRESSES WITH THE SAME SPANS**
+(§6.6ae) — so this is not a CF-3300 implementation detail that a faithful
+`disk.rom` could decline to copy.
 
 ➡️ **The DISK ROM installs four of the five, ~96 B of span** (9 + 1 + 79 + 7).
 Every one is written well before the first file operation — the latest write to

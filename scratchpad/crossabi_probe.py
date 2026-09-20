@@ -75,7 +75,12 @@ sys.path.insert(0, os.path.join(REPO, "scratchpad"))
 # writing a second one that could drift from it.
 from loadproto_probe import region, _sub                      # noqa: E402
 
-REF = "National_CF-3300"
+# 🔬 SECOND VENDOR (2026-09-20). Everything this probe measured was on ONE disk
+# ROM. `--machine` lets the same cases, the same controls and the same reader run
+# against another vendor, so "is §8 the MSX standard or a National quirk?" is a
+# diff rather than an argument. D-HOOKCENSUS already found the two claim the SAME
+# 35 cells; this asks whether the CONTRACT at the crossing matches too.
+REF = os.environ.get("ZB_XABI_MACHINE", "National_CF-3300")
 RESET = ("", "SCREEN 0", "CLOSE", "NEW", "CLS")
 BOOT, STEP, CAP_GAP = 14.0, 30.0, 8.0
 

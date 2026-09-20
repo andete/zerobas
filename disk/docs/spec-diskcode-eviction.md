@@ -2405,6 +2405,69 @@ from ROM. That is what made a page-1 register reportable at all.
 
 ✅ **§8.9 IS NOW EMPTY** and the measurement arc is complete.
 
+### 6.6ae 🔑 A SECOND VENDOR: §8 IS THE MSX STANDARD, NOT A NATIONAL QUIRK (D-2VENDOR, 2026-09-20)
+
+Everything in `expansion-protocol.md` §8 was measured on ONE disk ROM — the
+National CF-3300 — and §6.7's ruling commits us to copying it. Joost supplied the
+**Philips NMS 1200** ROM (*"2DD Micro Floppydisk Drive"*, 720K like our media),
+which runs on a stock **VG-8020**: a real machine combination, and a genuinely
+independent implementation. The same probes, the same cases and the same readers
+were pointed at it.
+
+🔴 **A PREDICTION WAS STATED BEFORE THE RUNS AND SCORED 2 OF 4.**
+
+| prediction | measured | |
+|---|---|---|
+| the crossing cell matches | `$FE5D`, claimed, 1 in / 1 out on both | ✅ |
+| the open-mode codes match | byte-identical, every verb | ✅ |
+| the claimed-cell COUNT differs | **identical: 35 of 118, the SAME cells** | ❌ |
+| the RAM-cluster ADDRESSES differ | **identical addresses and spans** | ❌ |
+
+🎯 **Both misses run the same way: I underestimated how standardised this is.**
+
+🟢 **WHAT IS IDENTICAL, VENDOR TO VENDOR.** The claimed set — 35 cells, National
+only: none, Philips only: none. The crossing at `$FE5D`, pairing entry with exit
+in all thirteen cases. `DE`'s open-mode codes (`$0001`/`$0002`/`$0004`/`$0008`
+and `$0080` for tokenised `SAVE` alone). `BC`'s four-class partition including
+`$F871` one past the name block and `BSAVE`'s start address. `IX`'s three-class
+family partition, `IY`'s. And the five RAM-code clusters, at the same addresses
+with the same spans.
+
+🔴 **WHAT DIFFERS — EXACTLY ONE THING, AND IT MATTERS FOR IMPLEMENTATION.** `HL`,
+the file buffer, reads `$DC65`/`$DD6E` on the National and **`$DC67`/`$DD70` on
+the Philips** — a constant **+2**, with the same two-class partition either side.
+⚠️ **So those addresses are per-machine, not constants, and §8.2 stated them as if
+they were.** A faithful implementation must take the buffer pointer from `HL`
+rather than hardcode a value; that is now corrected in §8.2.
+
+⚠️ **TWO READINGS OF THE SAMENESS, AND THIS MEASUREMENT CHOOSES NEITHER.** Two
+independent vendors putting RAM code at identical addresses is consistent with
+the MSX standard fixing that layout, and equally with both deriving from one
+Microsoft/ASCII reference implementation. For our purposes the consequence is the
+same — it is the standard behaviour rather than one maker's choice — and the cause
+is not measured.
+
+➡️ **WHAT IT CHANGES FOR THE RULING.** *"We do as the reference does"* is on much
+firmer ground: **the reference** turns out to mean MSX, not National. And §6.7's
+row 8 gets heavier rather than lighter — RAM-resident code at those addresses is
+not a CF-3300 implementation detail we could decline to copy; two independent
+disk ROMs do the same thing in the same place.
+
+🔴 **CONTROLS ON A VENDOR NEVER MEASURED BEFORE.** There is no honest a-priori
+answer for an unmeasured machine, so the census carries a **structural two-sided
+check** — a reader stuck on `F7` claims every slot, one stuck on `C9` claims none,
+and both produce a plausible table. `$FFA7` (HPHYD) is the one cell §2 lets us
+demand in advance. The execution detector kept its known-answer pair (`$FE5D`
+must appear, the read-only name block must not), both green on the new machine,
+and two runs give an identical executed set.
+⚠️ One arm was found INERT and is labelled as such rather than counted: the
+"no slots read" check is subsumed by "nothing is claimed" for verdict purposes,
+and a mutation deleting it stays green. It is kept for its message only.
+
+🔴 **CLEAN ROOM.** Claim states (§2: slot and idiom), registers, work-area RAM,
+ranges and regions. No ROM byte read on either machine, no target followed,
+nothing disassembled, and not one byte of the RAM-resident code read on either.
+
 ## 6.7 🔍 GAP ANALYSIS — zerobas AGAINST THE MEASURED PROTOCOL (D-HOOKCENSUS, 2026-09-19)
 
 > 🏗️ **RULED BY JOOST, 2026-09-20: *"I think the answer to Two is obvious: we do
