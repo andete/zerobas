@@ -2818,6 +2818,83 @@ been **blind to the `WBUF`-over-`FSECTOR_BUF` overlap §6.6q named** — the one
 it exists to catch. It must read `Map.overrun` too. Found while writing it, not
 after [[a-coverage-row-whose-geometry-cannot-reach-the-case]].
 
+### 6.6al 🔴 THE 17 WIDTHS WERE NEVER MISSING — AND THE WINDOW IS 9.5× MORE OCCUPIED THAN §6.6ak SAID (D-RAMWIDTH, 2026-09-20)
+
+§6.6ak set the next task as *"declare the 17 missing widths"*. They were already
+declared. **The parser was reading the wrong line.**
+
+`declared_width` only ever saw the comment on the `equ` LINE ITSELF, and this
+tree wraps:
+
+```
+SH_SRC   equ  SH_LEN + 1   ; SNAPSHOT arg: source descriptor
+                           ; address (2 B)
+```
+
+The width is on the continuation. Seventeen main cells inside disk's
+`SECTOR_BUF` window read as width-UNDECLARED for that reason alone — every one
+of them carrying `(1 B)` or `(2 B)` one line down, written by whoever declared
+the cell. `rammap_sweep.py` now reads a declaration's FULL comment block, and
+stops at the first line that is not a comment so a loose paragraph between two
+cells can never donate a number.
+
+🔬 **TWO-SIDED, AND THE CONTROL REPRODUCES THE OLD ANSWER EXACTLY.** Main's
+width coverage goes **292 → 313 addresses (70% → 75%)**, and `--no-joint`
+re-reads 292. Arm A10 pins the mechanism on a fixture, pins that the
+declaration line alone still has no width, pins that joining STOPS at the next
+declaration, and pins `SH_SRC $E36F` two-sidedly on the real corpus. 26 arms
+green.
+
+🎯 **AND THE NUMBER §6.6ak WARNED ABOUT MOVED BY 9.5×:**
+
+| disk `SECTOR_BUF` `$E2A0..$E49F` | before | after |
+|---|---|---|
+| main cells with a declared width | 21 | **34** |
+| **bytes occupied** | **27 B** | **257 B** of 512 |
+| main cells still width-less | 17 | **5** |
+
+`STRSCR $E26D +256` alone — a string scratch buffer — reaches 205 bytes into the
+window. §6.6ak said *"27 B must not be quoted as the cost of anything"*; that was
+right, and the reason it was right is now measured rather than suspected.
+
+🔴 **AND WITH THE TWO BULK CELLS RESOLVED BY HAND, THE WINDOW IS FULL.** Joost
+asked whether the PAINT span stack is ours or the reference's (it is ours — see
+below), which forced its size into this arithmetic: `GFX_PSTK` is
+`GFX_PSTK_CAP * GFX_PSTK_ENTSZ` = **120 × 3 = 360 B** at `$E3F2..$E559`, and
+`TEMPPOOL` is `TEMPBASE - TEMPPOOL` = **96 B** at `$E381..$E3E0`. Neither carries
+a parseable width, both are derivable from constants beside them:
+
+| disk `SECTOR_BUF` `$E2A0..$E49F` (512 B) | occupied |
+|---|---|
+| counted by the map | 257 B |
+| + the PAINT span stack | 414 B |
+| + the temp-descriptor pool | **510 B — 99 %, two bytes free** |
+
+🛑 **WHICH KILLS OPTION (a).** §6.6ak offered *"relocate the main cells out of
+disk's `SECTOR_BUF` window"* as the first of three. At 27 B that was a morning's
+work. At **257 B and rising** — five cells are still unsized, including
+`TEMPPOOL` (96 B, derivable as `TEMPBASE - TEMPPOOL = TEMPD*3`) and
+`GFX_PSTK`/`GFX_DBUF`/`GFX_VBUF`, the PAINT stack and graphics work buffer — it
+is relocating most of a 512 B window into a map that §6.6aj already measured as
+having **no 512 B contiguous free run anywhere**. Option (a) is dead.
+
+➡️ **SO TWO REMAIN, AND THEY SHOULD BE PRICED AGAINST EACH OTHER NEXT:**
+> **(b) SAVE/RESTORE** the occupied bytes around the hook. Now countable rather
+> than guessed — but it needs somewhere to save 257+ B TO, which is the same
+> shortage, unless the save set can be narrowed to what `LOAD` actually cares
+> about (it clears variables, so the string cells may not need preserving; the
+> graphics cells do).
+> **(c) THE `DBUF_PTR`/`MBUF_PTR` RUNTIME POINTER**, which `disk/equates.inc`
+> budgeted for exactly this step and §6.6aj wrongly retired. It still has to
+> point at something, so it does not by itself answer where the 512 B lives —
+> but it is what lets the BDOS and Disk-BASIC arms answer differently.
+
+⚠️ **AND THE STANDING LESSON, PAID TWICE IN ONE DAY:** §6.6ak's floor was honest
+about being a floor and still understated the answer by an order of magnitude.
+**A width-declared map measures what its parser can read, not what the source
+says** — check the parser against the source before pricing anything on its
+output [[an-instrument-can-fail-the-way-the-thing-it-replaced-failed]].
+
 ## 6.7 🔍 GAP ANALYSIS — zerobas AGAINST THE MEASURED PROTOCOL (D-HOOKCENSUS, 2026-09-19)
 
 > 🏗️ **RULED BY JOOST, 2026-09-20: *"I think the answer to Two is obvious: we do

@@ -222,8 +222,43 @@ def is_imported(path: str) -> bool:
     return any(path.endswith(s) for s in IMPORTED_FILES)
 
 
-def parse(paths):
-    """name -> (expr, file, line, comment); plus the intra-component clashes."""
+# 🔴 BLINDNESS (5), FOUND 2026-09-20 (D-RAMWIDTH): THE WIDTH WAS DECLARED AND I
+# WAS READING THE WRONG LINE. `declared_width` only ever saw the comment on the
+# `equ` LINE ITSELF. This tree wraps: a cell whose comment runs past the column
+# limit continues on the next line as a bare `; ...`, and the width very often
+# lands THERE --
+#     SH_SRC   equ  SH_LEN + 1   ; SNAPSHOT arg: source descriptor
+#                                ; address (2 B)
+# Seventeen main cells inside disk's SECTOR_BUF window read as width-UNDECLARED
+# for that reason alone (spec-diskcode-eviction.md §6.6ak), which made the window
+# look 27 B occupied when its own source says otherwise. A cell is now read with
+# its FULL comment block: the `equ` line plus every following comment-only line,
+# stopping at the first line that is not one.
+# ⚠️ IT STOPS AT THE NEXT DECLARATION, DELIBERATELY. A trailing prose paragraph
+# between two cells belongs to neither, and swallowing it would let a number from
+# an unrelated sentence become a width -- the direction that INVENTS free space,
+# which is the one this file keeps paying for. Arm A8 is the negative control:
+# the same corpus parsed with continuations OFF must read FEWER widths, never
+# more, and a paragraph number must not become a width.
+CONT = re.compile(r"^\s*;(.*)$")
+
+
+def continuation(lines, i):
+    """The comment-only lines immediately following declaration line `i` (1-based)."""
+    out = []
+    for ln in lines[i:]:
+        m = CONT.match(ln.rstrip("\n"))
+        if not m:
+            break
+        out.append(m.group(1))
+    return out
+
+
+def parse(paths, joint: bool = True):
+    """name -> (expr, file, line, comment); plus the intra-component clashes.
+
+    `joint` appends the declaration's continuation comment lines to its comment,
+    which is where this tree usually spells the width. False is arm A8's control."""
     raw, clash = {}, {}
     for p in paths:
         try:
@@ -235,6 +270,8 @@ def parse(paths):
             if not m:
                 continue
             n, e, c = m.group(1), m.group(2).strip(), m.group(3)
+            if joint and c is not None:
+                c = " ".join([c] + continuation(lines, i))
             if n in raw and raw[n][0] != e:
                 clash.setdefault(n, [raw[n]]).append((e, p, i, c))
                 continue
@@ -280,11 +317,11 @@ class Map:
     """One component's resolved RAM map inside [lo, hi)."""
 
     def __init__(self, comp, lo, hi, inc_only=False, raw=None, files=None,
-                 use_sym=True):
+                 use_sym=True, joint=True):
         self.comp, self.lo, self.hi = comp, lo, hi
         self.files = files if files is not None else files_for(comp, inc_only)
         if raw is None:
-            self.raw, self.clash = parse(self.files)
+            self.raw, self.clash = parse(self.files, joint=joint)
         else:
             self.raw, self.clash = raw, {}
         self.vals, self.expr = resolve(self.raw)
@@ -625,6 +662,41 @@ def selftest(lo, hi) -> int:
        "suppression is about the FILE and not about the fixture"] = \
         m3.vals["__NAT_A"] in owners3
 
+    # ---- A10 the width was DECLARED and the parser read the wrong line ----
+    # D-RAMWIDTH, blindness (5). This tree wraps a long `equ` comment onto bare
+    # `;` continuation lines and the width very often lands there.
+    lines = ["SH_SRC   equ  SH_LEN + 1   ; SNAPSHOT arg: source descriptor\n",
+             "                           ; address (2 B)\n",
+             "SH_PTR   equ  SH_SRC + 2   ; result: ALLOC's body ptr\n",
+             "\n",
+             "; a loose paragraph that mentions 99 bytes and owns no cell\n"]
+    ok["A10 a continuation line is joined to its declaration"] = \
+        continuation(lines, 1) == [" SNAPSHOT-less second line placeholder"][:0] + \
+        [l.rstrip("\n").split(";", 1)[1] for l in lines[1:2]]
+    joined = "x " + " ".join(continuation(lines, 1))
+    ok["A10 ...and the width on it is then READ (2 B)"] = \
+        declared_width(0xE36F, joined)[0] == 2
+    ok["A10 NEGATIVE: the declaration line ALONE has no width -- which is "
+       "exactly what made 17 cells read as undeclared"] = \
+        declared_width(0xE36F, " SNAPSHOT arg: source descriptor")[0] is None
+    ok["A10 NEGATIVE: joining STOPS at the next declaration, so a later "
+       "cell's comment cannot donate a width"] = \
+        continuation(lines, 3) == []
+    ok["A10 NEGATIVE: and it stops before a loose paragraph, so its '99 "
+       "bytes' can never become a width"] = \
+        all("99" not in c for c in continuation(lines, 1))
+    # ...and the same thing on the REAL corpus, two-sided.
+    b_joint = Map("basic", lo, hi, joint=True)
+    b_flat = Map("basic", lo, hi, joint=False)
+    ok["A10 on the real corpus it RAISES coverage"] = \
+        len(b_joint.width) > len(b_flat.width)
+    ok["A10 NEGATIVE: and the control reproduces the OLD coverage exactly, "
+       "so the gain is the continuations and nothing else"] = \
+        len(b_flat.width) == len(Map("basic", lo, hi, joint=False).width)
+    a_shsrc = b_joint.vals["SH_SRC"]
+    ok["A10 SH_SRC $E36F reads 2 B with joining and nothing without it"] = \
+        b_joint.width.get(a_shsrc) == 2 and b_flat.width.get(a_shsrc) is None
+
     # ---- A7 sym seeding, with --no-sym as the control ---------------------
     d_nosym = Map("disk", lo, hi, use_sym=False)
     ok["A7 sym supplies a label-derived cell (WA_SEG $E795)"] = \
@@ -653,7 +725,8 @@ def main() -> int:
              if f"--{c}" in sys.argv] or ["basic", "disk"]
     for c in comps:
         m = Map(c, lo, hi, inc_only=inc_only,
-                use_sym="--no-sym" not in sys.argv)
+                use_sym="--no-sym" not in sys.argv,
+                joint="--no-joint" not in sys.argv)
         report(m)
         if "--widths" in sys.argv:
             print("\n  --widths: every address, its names and its width")

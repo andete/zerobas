@@ -417,10 +417,27 @@ item — do **one item per session** to keep context lean.
       27 B of declared main cells and NO disk cells — but 17 more main cells
       there declare no width at all, two of them bulk (`TEMPPOOL`,
       `GFX_PSTK`/`GFX_DBUF`/`GFX_VBUF`). **Do not quote 27 B as a cost.**
-      ➡️ **NEXT, IN ORDER:** (1) declare the 17 missing widths — comment-only,
-      zero bytes, and nothing can be priced until it is done; (2) re-measure;
-      (3) then choose between relocating the main cells out of disk's window,
-      save/restore around the hook, or the `DBUF_PTR` runtime pointer;
+      🔴 **DONE, AND IT MOVED THE ANSWER 9.5× (§6.6al, 2026-09-20).** The 17
+      widths were never missing: `rammap_sweep.py` read only the comment on the
+      `equ` LINE, and this tree wraps — every one of them carried `(1 B)`/`(2 B)`
+      one line down. The parser now reads a declaration's full comment block and
+      stops at the first non-comment line. Main coverage 292 → 313 addresses;
+      `--no-joint` reproduces 292 exactly; arm A10, 26 arms green.
+      ➡️ Disk's `SECTOR_BUF` window: **27 B → 257 B** of 512 occupied, width-less
+      cells 17 → 5. `STRSCR $E26D +256` alone reaches 205 B into it.
+      🔴 **AND WITH THE TWO BULK CELLS RESOLVED BY HAND THE WINDOW IS FULL:**
+      `GFX_PSTK` is `GFX_PSTK_CAP*GFX_PSTK_ENTSZ` = 120×3 = **360 B**
+      (`$E3F2..$E559`) and `TEMPPOOL` is `TEMPBASE-TEMPPOOL` = **96 B**. Folded
+      in: **510 B of 512 occupied — two bytes free.**
+      🛑 **SO RELOCATING MAIN'S CELLS OUT IS DEAD** — that is most of a 512 B
+      window, into a map with no 512 B contiguous free run anywhere.
+      ➡️ **NEXT:** price (b) save/restore around the hook against (c) the
+      `DBUF_PTR`/`MBUF_PTR` runtime pointer §6.6aj wrongly retired. Neither by
+      itself says where the 512 B lives; (b) may shrink if the save set narrows
+      to what `LOAD` actually cares about (it clears variables, so the string
+      cells may not need preserving — the graphics cells do).
+      ⚠️ Five cells are STILL unsized and two are bulk: `TEMPPOOL` (96 B,
+      derivable as `TEMPBASE - TEMPPOOL`) and `GFX_PSTK`/`GFX_DBUF`/`GFX_VBUF`.
       (4) the two-way RAM overlap gate — ⚠️ it must read `Map.overrun` as well as
       `Map.width`, or it is blind to the very overlap §6.6q named;
       (4) then the main-ROM side — write `FOPEN_SEL`, call the cell, decode
@@ -3204,7 +3221,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:20908 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:20925 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -3370,7 +3387,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:8013 (T-6FE392)8 (T-529ABE)` from `TODO.md:19302 (T-529ABE)`: a
+      `TODO.md:8030 (T-6FE392)8 (T-529ABE)` from `TODO.md:19319 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -8857,7 +8874,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:19302 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:19319 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
