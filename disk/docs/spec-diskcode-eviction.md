@@ -2952,6 +2952,49 @@ answer.
 ➡️ **NEXT: steps 10-12** (`OPEN`, `MERGE`, `SAVE`) are a selector value each on
 this side and an arm each in `hk_dpload` — plus that buffer question.
 
+### 6.6an 🔴 STEPS 10-12 ARE THREE DIFFERENT PROBLEMS, NOT ONE SHAPE — MY OWN CLAIM RETRACTED (2026-09-20)
+
+§6.6n's generalisation — *"selector 1, 2 and 3 are reserved for them … each arm
+is a local edit to one `ret nz`"* — and every restatement of it since, including
+§6.6am's *"a selector value each and an arm each"*, are **about the SELECTOR
+MECHANISM only**. I repeated them as if they described the whole work. They do
+not. Read against the actual code, each of the three has a different blocker and
+none is a local edit.
+
+🛑 **STEP 10 `OPEN` — BLOCKED ON RAM, MEASURED TODAY.** A channel holds its
+sector between statements, so a disk-side loop needs a buffer that survives
+arbitrary BASIC in between. There is none: §6.6al measured disk's `SECTOR_BUF`
+window at **510 B of 512** occupied, and main's FAT buffers cannot host it
+either — `disk.rom`'s OWN machinery already overlaps that window (`R30_*`, the
+inter-slot register save; `P1_BLIT`; `PG_SV_A8`; `WA_SEG`; the `RDBLK_*` block).
+⚠️ And the map's *"unattributed runs"* are **not** free space: the 102 B run at
+`$E15A` holds five `basic` cells that simply declare no width. The tool says so
+in its own header and I nearly priced against it anyway.
+
+🛑 **STEP 11 `MERGE` — BLOCKED ON SHAPE, AND THE REFERENCE'S IS UNMEASURED.**
+`ex_merge` is `fat_io_open` + `ascii_read_lines`: every line must be TOKENISED,
+which is main's job (it reaches the sub-ROM tokeniser). A disk-side loop would
+have to call BACK into main per line — which `FOPEN_SEL`'s own note forbids
+without re-asserting the selector, because the cell aliases `DISKOP_OP`. So
+`MERGE` cannot simply follow `LOAD`, and **§8.9 already lists the answer as not
+measured**: *"whether `SAVE` and `MERGE` share the whole shape, or only the
+crossing."* §8.2's finding that `LOAD` and `MERGE` are indistinguishable at the
+crossing is about the REGISTERS, not about what happens after it.
+
+🟡 **STEP 12 `SAVE` — NOT BLOCKED, BUT NOT A CARVE EITHER.** It is a
+single-statement whole-file operation like `LOAD`, so no buffer must survive the
+crossing. But its body is **already evicted**: `do_save` ends `jp sv_tenant`,
+which calls `SUBROM_IDX_SAVE` — the tokenised save runs in the SUB-ROM, not in
+main page 1. So the move is sub → disk, a port of the write path rather than a
+main-page-1 carve, and its value is FAITHFULNESS, not bytes: today a machine
+with a foreign disk ROM still saves through OUR engine, because `do_save` reaches
+no hook at all. That is §0.0's point (3) unmet for `SAVE`.
+
+➡️ **SO THE ORDER IS `SAVE` FIRST** — the only one of the three whose blocker is
+work rather than a missing answer — **and `OPEN` last**, behind either the RAM
+lever (PAINT's 360 B span stack, filed) or a design that keeps the sector buffer
+per-crossing and the per-channel state small.
+
 ## 6.7 🔍 GAP ANALYSIS — zerobas AGAINST THE MEASURED PROTOCOL (D-HOOKCENSUS, 2026-09-19)
 
 > 🏗️ **RULED BY JOOST, 2026-09-20: *"I think the answer to Two is obvious: we do

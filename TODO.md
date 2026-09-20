@@ -398,8 +398,24 @@ item — do **one item per session** to keep context lean.
       runs `PAINT` then `LOAD`; `LOAD` survives because everything in the window
       is per-statement scratch. That does NOT carry to steps 10-12, which run
       mid-program against live state. First thing step 10 must answer.
-      ➡️ **NEXT: steps 10-12** — a selector value each here, an arm each in
-      `hk_dpload`, plus the buffer question.
+      🔴 **CORRECTED SAME DAY (§6.6an): "a selector value each" WAS MY OWN
+      CLAIM AND IT IS WRONG.** §6.6n's generalisation is about the SELECTOR
+      MECHANISM only; each of the three has a different blocker.
+      🛑 **10 `OPEN`** — RAM. A channel holds its sector across statements and
+      there is nowhere to put it: §6.6al measured the window 510/512 full, and
+      main's FAT buffers already carry `disk.rom`'s own `R30_*`/`P1_BLIT`/
+      `PG_SV_A8`/`RDBLK_*`. ⚠️ The map's "unattributed runs" are NOT free — the
+      102 B run at `$E15A` holds five undeclared `basic` cells.
+      🛑 **11 `MERGE`** — SHAPE. It must TOKENISE each line (main's job, via the
+      sub-ROM), so a disk-side loop needs per-line call-backs that `FOPEN_SEL`'s
+      aliasing forbids. §8.9 already lists the reference's shape here as NOT
+      MEASURED.
+      🟡 **12 `SAVE`** — not blocked, but not a carve: `do_save` ends
+      `jp sv_tenant` (`SUBROM_IDX_SAVE`), so the body is ALREADY in the sub-ROM.
+      The move is sub → disk and its value is faithfulness — today a foreign disk
+      ROM is bypassed entirely, because `do_save` reaches no hook at all.
+      ➡️ **ORDER: `SAVE` first** (its blocker is work, not a missing answer),
+      `MERGE` needs a measurement, `OPEN` needs the RAM lever.
       🟢 **THE HOOK WAS INSTALLED FIRST, 2026-09-20 (§6.6ai).**
       `dw H_FOPEN, hk_dpload` is in `hook_tab`; the 16 D-DPLMOVE allowlist lines
       are gone (15 went live, `fat_io_open` kept with the D-BLNF reason, exactly
@@ -3286,7 +3302,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:20990 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:21006 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -3452,7 +3468,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:8095 (T-6FE392)8 (T-529ABE)` from `TODO.md:19384 (T-529ABE)`: a
+      `TODO.md:8111 (T-6FE392)8 (T-529ABE)` from `TODO.md:19400 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -8939,7 +8955,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:19384 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:19400 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
