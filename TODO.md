@@ -420,12 +420,18 @@ item — do **one item per session** to keep context lean.
       `run-hit` reads `load error`, so `sv_load_error` ran with `DISKOP_ERR = 0`,
       a logical carry out of the create/flush rather than a mapped DSKIO failure.
       Not staleness (reproduced after `make clean`).
-      🔬 **LIVE HYPOTHESIS, UNVERIFIED:** step 9 only ever made `disk.rom` READ
-      from inside a hook. `disk/driver.asm`'s page-1 handling (`P1_DEST`/
-      `P1_BLIT`, *"ROM under DOS … blit to the real target"*) has only run with
-      page 1 = RAM under MSX-DOS, never with page 1 = `disk.rom` itself. A write
-      from inside a hook is the first caller in that configuration. **Start
-      there.**
+      🔴 **THAT HYPOTHESIS WAS WRONG (retracted same day):** the page-1 bounce
+      is in the READ loop only and fires on a page-1 DESTINATION; our buffer is
+      `SECTOR_BUF`, page 3. `dskio_write` has no bounce at all.
+      🔬 **THE REAL SIGNATURE IS FOUR BYTES.** `diskbasic-acceptance`'s
+      SAVE/BSAVE row: `got 00 00 00 00 98 20 …` vs `exp 0e 80 0a 00 98 20 …` —
+      **exactly the first line's link word and line number are zero**, every
+      byte from offset 4 on correct. So nothing is shifted, the `$FF` marker was
+      written, and the failure is the first four `disk_putbyte` calls reading
+      `$8001..$8004`. **`BSAVE` passes on the same build** (sub-ROM tenant) and
+      every LOAD/BLOAD/RUN row passes through step 9's hook, so both the FAT
+      write path and the crossing work.
+      ➡️ The port is on branch **`wip/saveport` (`d2bd7903`)** — iterate there.
       🟢 **TWO GATE BLIND SPOTS FOUND, one kept:** `check_shared_bodies.py`
       scanned `basic`+`sub` only, so a body included ONLY by `disk.rom` read as
       "included by NOTHING" — fixed, `disk` is in `DIRS`. And `rom-parts-check`
@@ -3319,7 +3325,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:21023 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:21029 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -3485,7 +3491,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:8128 (T-6FE392)8 (T-529ABE)` from `TODO.md:19417 (T-529ABE)`: a
+      `TODO.md:8134 (T-6FE392)8 (T-529ABE)` from `TODO.md:19423 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -8972,7 +8978,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:19417 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:19423 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

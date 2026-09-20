@@ -3023,13 +3023,38 @@ carry** out of `fat_io_create` / `fat_dir_create` / the flush, not a mapped DSKI
 failure. ⚠️ Not staleness — reproduced after `make clean` with the prerequisites
 corrected.
 
-🔬 **THE LIVE HYPOTHESIS, UNVERIFIED AND WRITTEN DOWN AS SUCH.** Step 9 only ever
-made `disk.rom` **read** from inside a hook. `disk/driver.asm`'s transfer path
-carries page-1 handling for the DOS context — *"ROM under DOS) read into
-SECTOR_BUF then blit to the real target"*, `P1_DEST` / `P1_BLIT` — and that has
-only ever run with page 1 = RAM under MSX-DOS, never with page 1 = `disk.rom`
-itself because a hook body is executing there. A write from inside a hook is the
-first caller in that configuration. **Check that before anything else.**
+🔴 **THAT HYPOTHESIS WAS WRONG, AND IT IS RETRACTED THE SAME DAY.** It said the
+driver's page-1 bounce (`P1_DEST` / `P1_BLIT`) was the suspect. Read: that path
+is in the **READ** loop only, and it fires on a page-1 **DESTINATION** — our
+buffer is `SECTOR_BUF`, in page 3. It cannot be involved. The write loop
+(`dskio_write`) mirrors the read loop with no bounce at all.
+
+🔬 **THE REAL SIGNATURE, AND IT IS FOUR BYTES.** `runtail-acceptance` only says
+*"load error"*; `diskbasic-acceptance`'s SAVE/BSAVE row is finer and names it:
+
+```
+SAVE"A:SV.BAS"  ->  NEW  ->  RUN"A:SV.BAS"
+  got 00 00 00 00 98 20 0c 02 d0 2c 0f 7b 00 00 00
+  exp 0e 80 0a 00 98 20 0c 02 d0 2c 0f 7b 00 00 00
+```
+
+**Exactly the first four bytes are zero** — the first line's link word (`$800e`)
+and its line number (10). Everything from offset 4 on is byte-correct, so:
+
+* nothing is SHIFTED — the byte count and the stream are right;
+* the `$FF` marker WAS written, or the loader would have taken the ASCII path;
+* the failure is the first four `disk_putbyte` calls after the marker, which
+  read `$8001..$8004` and wrote zeros.
+
+🟢 **AND WHAT IT RULES OUT.** Not a stale ROM (reproduced after `make clean` with
+the prerequisites corrected). Not the write engine in general — **`BSAVE` passes
+on the same build**, through the sub-ROM tenant, and every `LOAD` / `BLOAD` /
+`RUN"file"` row passes through step 9's own hook. So both the FAT write path and
+the crossing work; what fails is confined to the first four program bytes read
+from inside `hk_dpsave`.
+
+➡️ **THE PORT IS ON THE BRANCH `wip/saveport` (`d2bd7903`)** so the next session
+iterates on code rather than re-deriving it.
 
 🟢 **TWO GATES FOUND REAL BLIND SPOTS, AND THAT IS THE PART THAT LANDS.**
 * `tools/check_shared_bodies.py` scanned `("basic", "sub")` only, so a shared
