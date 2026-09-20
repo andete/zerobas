@@ -382,13 +382,17 @@ item — do **one item per session** to keep context lean.
       implementation detail: whether we need our own equivalent of the
       reference's ~96 B of RAM-resident code (§6.6ac) is a SEPARATE question it
       does not answer, and row 8 stays open.
-      🟢 **UNBLOCKED 2026-09-20 (D-STOPRELATCH, §6.6ah): THE LAST OBSTACLE IS
-      FIXED.** The STOP re-fire divergence is implemented, and case E is green at
-      20 of 20 timing configurations instead of 5. ➡️ **The next move is
-      mechanical and every part of it is already measured (§6.6ag):** restore
-      `dw H_FOPEN, hk_dpload`, delete the 16 D-DPLMOVE lines from
-      `tools/deadcode-allow.txt` (15 go live; re-add `fat_io_open` with the
-      D-BLNF reason), re-run the knives, run the battery.
+      🟢 **THE HOOK IS INSTALLED, 2026-09-20 (§6.6ai). `$FE5D` IS CLAIMED.**
+      `dw H_FOPEN, hk_dpload` is in `hook_tab`; the 16 D-DPLMOVE allowlist lines
+      are gone (15 went live, `fat_io_open` kept with the D-BLNF reason, exactly
+      as §6.6ag predicted); knives re-pinned with all 2500+ rows byte-identical.
+      ⚠️ **MAIN DOES NOT CALL IT YET, DELIBERATELY.** The row is inert on this
+      machine — nothing enters `$FE5D` — and safe if anything ever does, because
+      `FOPEN_SEL_LOAD` is `$4C`, outside `DISKOP_SEL_*`'s 0..7 range.
+      ➡️ **NEXT, AND IT IS THE REAL WORK:** the main-ROM side — write
+      `FOPEN_SEL`, call the cell, decode `DISKOP_STATUS`, and drop main's own
+      tokenised-LOAD loop. Then steps 10-12 (`OPEN`, `MERGE`, `SAVE`) are local
+      edits that add a selector value each (§6.6n).
       🔴 **THE HISTORY, KEPT (D-REARMSENS 2026-09-20, §6.6af + §6.6ag).** §6.6t's *"cannot install an 18th hook"* is
       WITHDRAWN: the row that carried it reads RED on the UNMODIFIED ROM at 15 of
       20 timing configurations and green only at the one schedule the gate uses.
@@ -3166,7 +3170,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:20870 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:20874 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -3332,7 +3336,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:7975 (T-6FE392)8 (T-529ABE)` from `TODO.md:19264 (T-529ABE)`: a
+      `TODO.md:7979 (T-6FE392)8 (T-529ABE)` from `TODO.md:19268 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -8819,7 +8823,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:19264 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:19268 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

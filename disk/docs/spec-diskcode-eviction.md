@@ -2654,6 +2654,42 @@ and loosening one, and it is why §6.6af's ⛔ against a threshold tweak mattere
 reason), re-run the knives, and run the battery. §6.6ag measured every part of
 that except the row it was waiting on.
 
+### 6.6ai 🟢 STEP 9's HOOK IS INSTALLED — `$FE5D` IS CLAIMED (2026-09-20)
+
+`dw H_FOPEN, hk_dpload` is in `hook_tab`. Nine months of this section's
+numbering were spent on three explanations for why it could not be, each
+retracted by the next:
+
+| § | the claimed obstacle | how it ended |
+|---|---|---|
+| 6.6p | the CELL — `$FE5D` is `H.NULO`, a file-buffer-0 subsystem cell | retracted by §6.6t: two other cells fail identically, one of them entered by no verb at all |
+| 6.6t | the hook COUNT — *"our disk ROM cannot install an 18th"* | withdrawn by §6.6af: the row carrying it reads RED on the UNMODIFIED ROM at 15 of 20 timing configurations |
+| 6.6af/ag | the ROW had no robust green on either build | **real**, and fixed by §6.6ah — a held Ctrl-STOP now re-fires, and the row is green at 20 of 20 with a 127× margin |
+
+🟢 **THE DEAD-CODE CANARY CLOSED THE LOOP.** The 16 D-DPLMOVE entries in
+`tools/deadcode-allow.txt` each said *"delete these lines when the hook lands."*
+They are deleted: **15 went live**, and the one that did not — `fat_io_open` —
+is allowlisted with its own reason, the same one the `sub` entry above it
+already carried (`hk_dpload` calls `fat_mount` and `fat_io_find` separately, so
+the two carries can tell `file not found` from a mount/I-O fault — D-BLNF).
+§6.6ag predicted exactly this split and it reproduced.
+
+⚠️ **MAIN DOES NOT CALL IT YET, AND THAT IS A DELIBERATE INTERMEDIATE STATE.**
+The main-ROM side — write `FOPEN_SEL`, call the cell, decode `DISKOP_STATUS` —
+is the next slice. Until then the row is inert on this machine: nothing enters
+`$FE5D` (C-BIOS defines the name and never references it), so `LOAD` behaves
+exactly as before. **It is safe even if something does enter it**, because
+`FOPEN_SEL_LOAD` is `$4C`, outside `DISKOP_SEL_*`'s whole 0..7 range — an
+arriving call with the cell merely idle takes `hk_dpload`'s `ret nz` and answers
+`CF=0`, *not mine*, without touching the drive. That is §6.6p's own footnote,
+and it is what makes landing the row ahead of its caller a safe step rather than
+a half-wired one.
+
+🔬 **RE-PINNED, AND THE PIN SAYS THE CHANGE IS LOCAL.** A ROM change invalidates
+the knife pin, so `kwknife.py --all` and `--allfn` were re-run. The diff is the
+fingerprint and the timestamp — **all 2500+ rows byte-identical**, twice in one
+day (§6.6ah's main-ROM change too). Neither moved any keyword's connectedness.
+
 ## 6.7 🔍 GAP ANALYSIS — zerobas AGAINST THE MEASURED PROTOCOL (D-HOOKCENSUS, 2026-09-19)
 
 > 🏗️ **RULED BY JOOST, 2026-09-20: *"I think the answer to Two is obvious: we do
