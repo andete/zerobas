@@ -25,7 +25,7 @@
 ; fat_io_putbyte — append the byte in A to the open-for-write file.
 ;   in:  A = byte to write.
 ;   out: Cy = 0 ok; Cy = 1 = disk full / write error.
-; Buffers the byte into FSECTOR_BUF at offset FWR_BUFLEN; when the buffer fills
+; Buffers the byte into FAT_DBUF at offset FWR_BUFLEN; when the buffer fills
 ; (512 bytes) it is flushed to the file's current data sector (allocating/extending
 ; the cluster chain as needed) and the buffer resets. FWR_BYTES accumulates the
 ; true byte count for fat_io_close to stamp into the directory entry. The flush's
@@ -33,8 +33,18 @@
 fat_io_putbyte:
                 ld      c, a                ; C = byte to store (survives the math)
                 ld      hl, (FWR_BUFLEN)
-                ld      de, FSECTOR_BUF
-                add     hl, de              ; HL = FSECTOR_BUF + FWR_BUFLEN
+                ; 🔴 `FAT_DBUF`, NEVER `FSECTOR_BUF` -- the SAME rule
+                ; fatio-body.inc states for the read side, and this file was
+                ; MISSED when D-FATENG applied it (D-SAVEPORT, 2026-09-20). In
+                ; main and sub the two names are one address, so the mistake was
+                ; invisible; in disk.rom `FSECTOR_BUF` resolves through
+                ; basic-resident-abi.inc to MAIN's $E5C0 while FAT_DBUF is
+                ; SECTOR_BUF $E2A0 -- so every byte landed in main's buffer and
+                ; the flush wrote the untouched one, which still held the boot
+                ; sector fat_mount had just read. The saved file was the right
+                ; SIZE and contained `EB FE 90 "ZEROBAS "`.
+                ld      de, FAT_DBUF        ; per-ROM; see the note above
+                add     hl, de              ; HL = FAT_DBUF + FWR_BUFLEN
                 ld      (hl), c             ; store the byte
                 ; advance buffered length and total byte count by 1.
                 ld      hl, (FWR_BUFLEN)

@@ -2338,6 +2338,60 @@ fat_bufinit:
                 ; are FREAD_OFF/FREAD_LEFT, aliased onto the RDBLK scratch
                 ; in init.asm (§6.6f).
                 include "basic/fatio-body.inc"
+                ; --- the WRITE side, for step 12's hk_dpsave ----------------
+                ; D-SAVEPORT. The same four bodies the SUB-ROM save tenant
+                ; includes, in the same order, byte-identical: the sequential
+                ; write cursor, then the helpers over it, then SAVE's engine.
+                ; Beside fat-prim-body.inc above, fat_mount / fat_dir_create /
+                ; fat_flush_data_sector / fat_dir_update are IN-PAGE calls here
+                ; exactly as they are in the tenant -- which is the whole reason
+                ; the move costs no marshalling.
+                include "basic/fatiocreate-body.inc" ; fat_io_create
+                include "basic/fatiow-body.inc"      ; fat_io_putbyte / fat_io_close
+                include "basic/sv-diskwr.inc"        ; disk_write_begin/putbyte/
+                                                     ; putword/write_end
+                include "basic/sv-savdisk.inc"       ; sav_disk_write .. sav_fin
+
+; --- hk_dpsave: the tokenised SAVE write engine, in the disk ROM ------------
+; D-SAVEPORT, step 12 of spec-diskcode-eviction.md §6.2, under the same ruling
+; as step 9: *"we do as the reference does"*. Reached through the SAME claimed
+; cell as LOAD with FOPEN_SEL = FOPEN_SEL_SAVE ($53).
+;
+; 🎯 WHY THIS IS A FAITHFULNESS MOVE AND NOT A CARVE. The body was ALREADY
+; evicted from main page 1 -- `do_save` used to end `jp sv_tenant`, running
+; `sav_disk_write` in the SUB-ROM (SUBROM_IDX_SAVE). So this frees no main byte.
+; What it buys is §0.0's point (3): before it, `do_save` reached no hook at all,
+; so a machine with a FOREIGN disk ROM still saved through OUR engine. Now the
+; cell decides, and a cartridge that claims $FE5D gets the verb.
+;
+; 🔴 THE BODY IS THE SAME SOURCE, NOT A COPY. `basic/sv-savdisk.inc` and the
+; helpers below it are included byte-identically by main, sub and disk; the
+; names they spell resolve in all three because the four they needed from main
+; (PRGEND, DSV_PTR, DSV_END, DISKSLOT_OK) are published through the GENERATED
+; basic-resident-abi.inc. Forking the body for a third ROM was the alternative
+; and it is exactly what that generator exists to avoid.
+;
+;   in   FOPEN_SEL = FOPEN_SEL_SAVE; DISK_FCB_NAME = the 8.3 name main parsed
+;   out  CF = 1 claimed; DISKOP_STATUS = 0 written / 3 mount, disk-full or I-O
+hk_dpsave:
+                xor     a
+                ld      (DISKOP_ERR),a      ; D-DISKERR: no DSKIO failure pending
+                ld      (DISKOP_STATUS),a   ; assume written; sv_load_error flips it
+                call    sav_disk_write      ; `call`, not `jp`: sv_load_error's
+                                            ; `ret` lands here, which is the sub
+                                            ; tenant's own discipline preserved
+                scf                         ; claimed, whatever the disposition
+                ret
+
+; sv_load_error -- the disk-local reporter, rebound exactly as the sub-ROM
+; tenant rebinds it. Resident it is a zero-byte EQU onto `load_error`, which
+; PRINTS; here it must not print, because main's `disk_error` reports ONCE from
+; the status this leaves behind -- the same contract step 9's arm already uses.
+; No TAPIOF: a disk SAVE never armed the tape.
+sv_load_error:
+                ld      a,3                 ; mount / disk full / write / I-O
+                ld      (DISKOP_STATUS),a
+                ret
 
 ; --- hk_dpload: the tokenised LOAD loop, in the disk ROM ---------------------
 ; D-DPLMOVE. Step 9 of disk/docs/spec-diskcode-eviction.md §6.2, unblocked by
@@ -2374,8 +2428,10 @@ fat_bufinit:
 ; FOPEN_SEL's mutual-exclusion note in disk/equates.inc first.
 hk_dpload:
                 ld      a,(FOPEN_SEL)
+                cp      FOPEN_SEL_SAVE
+                jr      z,hk_dpsave         ; step 12 (D-SAVEPORT)
                 cp      FOPEN_SEL_LOAD
-                ret     nz                  ; CF=0: not mine. Steps 10-12 add
+                ret     nz                  ; CF=0: not mine. Steps 10-11 add
                                             ; their arms right here.
                 ; mount and find SEPARATELY: their two carries are what tells
                 ; `file not found` from a mount/I-O fault, which is the whole

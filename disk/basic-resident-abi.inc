@@ -33,17 +33,21 @@ CLPTR equ 0E02BH   ; CLOAD/LOAD: store cursor into the program area (2)
 CLINK equ 0E02DH   ; CLOAD/LOAD: saved link word of the current line
 TXTBASE equ 08001H   ; text base (oracle: TXTTAB value after boot)
 TXTMAX equ 0DB00H   ; repack: text ceiling. DETOKBUF sits immediately
+PRGEND equ 0E026H   ; addr of the $0000 end-of-program marker (2 bytes)
+DSV_PTR equ 0E0EDH   ; SAVE: current source byte pointer (2)
+DSV_END equ 0E0EFH   ; SAVE/BSAVE: last source byte addr, inclusive (2)
+DISKSLOT_OK equ 0E0E8H   ; 1 = DISKSLOT holds a valid disk-ROM slot id
 
 ; --- page-1 call-back targets: reached by an INTER-SLOT call (MSX2 TH), not an absolute one ---
-fname_expr equ 06E0BH
-pdfcb_resume equ 06E04H
-dirverb_op equ 06BEAH
+fname_expr equ 06E19H
+pdfcb_resume equ 06E12H
+dirverb_op equ 06BF8H
 main_fat_mount equ 06428H   ; main's fat_mount
 main_fat_find equ 0642CH   ; main's fat_find
 parse_disk_fcb equ 065CDH
 fat_count_free equ 0645BH
-field_prologue equ 07202H
-field_item equ 07238H
-lrset_tgt equ 072F5H
-lrset_rhs equ 07317H
-lrset_finish equ 0732EH
+field_prologue equ 07210H
+field_item equ 07246H
+lrset_tgt equ 07303H
+lrset_rhs equ 07325H
+lrset_finish equ 0733CH

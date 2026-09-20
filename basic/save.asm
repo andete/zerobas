@@ -204,8 +204,25 @@ sav_is_disk:
                 jr      z,sav_ascii_flag    ; SAVE"name",<flag> -> check for ,A
                 or      a
                 jp      nz,load_error       ; trailing junk after the name
-                ld      a,SV_OP_SAV_DISK
-                jp      sv_tenant           ; SAVE -> disk, tokenised (fall-through entry)
+                ; --- SAVE -> disk, tokenised: HAND IT TO disk.rom ------
+                ; D-SAVEPORT, step 12 (spec-diskcode-eviction.md §6.6ao), same
+                ; ruling and same cell as step 9's LOAD. This used to be
+                ; `ld a,SV_OP_SAV_DISK / jp sv_tenant`, which ran the write
+                ; engine in the SUB-ROM and reached NO hook -- so a machine with
+                ; a foreign disk ROM saved through our engine anyway. The cell
+                ; decides now.
+                ; ⚠️ SAME EXIT CONTRACT AS `sv_tenant`: `ret` on success, and
+                ; `disk_error` otherwise, which raises the mapped code when
+                ; disk.rom recorded one in DISKOP_ERR and prints `load error`
+                ; when it did not.
+                ld      a,FOPEN_SEL_SAVE
+                ld      (FOPEN_SEL),a
+                ld      hl,H_FOPEN
+                call    chan_gate           ; unclaimed -> ERR 5; claimed -> it ran
+                ld      a,(DISKOP_STATUS)
+                or      a
+                ret     z                   ; 0 = written
+                jp      disk_error          ; 3 = mount / disk full / write / I-O
 
 ; --- SAVE"name",A -> ASCII listing save --------------------------------------
 ; sav_ascii_flag: HL is at the ',' after the filename. Accept only ",A" (any
