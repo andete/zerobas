@@ -2690,6 +2690,15 @@ the knife pin, so `kwknife.py --all` and `--allfn` were re-run. The diff is the
 fingerprint and the timestamp — **all 2500+ rows byte-identical**, twice in one
 day (§6.6ah's main-ROM change too). Neither moved any keyword's connectedness.
 
+> 🔴 **ITS REMEDY IS REFUTED BY §6.6ak, THREE HOURS LATER AND ON THE SAME DAY.**
+> The section below proposes aliasing `disk.rom`'s FAT buffers onto main's
+> `FSECTOR_BUF`/`FWBUF`. **Do not do that.** Main's two FAT buffers are already
+> occupied by `disk.rom`'s OWN critical state — the inter-slot register save
+> set, `CALSLT_HL`, `P1_DEST`, the `RDBLK_*` block and the 20-byte `DRV_TRAMP`
+> trampoline. A 512 B sector buffer sited there would overwrite the machinery
+> the crossing itself runs on. The HAZARD and the refutation of §6.6q's private
+> buffer both stand; only the proposed fix is withdrawn. Read §6.6ak.
+
 ### 6.6aj 🔑 §6.6q's BUFFER HAZARD IS PRICED — AND THE EXPENSIVE REMEDY IT ASSUMED IS NOT NEEDED (D-FATBUFALIAS, 2026-09-20)
 
 §6.6ai landed the hook; **the main-ROM side cannot be wired to it until this is
@@ -2759,6 +2768,55 @@ the `disk.rom` cells it finds inside `$E5C0..$E9BF`; (3) rebind `FAT_DBUF`/
 `FAT_MBUF`; (4) then wire main's `disk_prog_load` to the hook. Step (1) is worth
 having whatever happens to (3) — it is the missing gate the whole RAM layout has
 been running without.
+
+### 6.6ak 🔴 I PROPOSED A REMEDY WITHOUT WALKING THE TARGET, AND THE MAP KILLED IT (D-RAMOVERLAP, 2026-09-20)
+
+§6.6aj checked ONE cell in the window it proposed to move into (`RDBLK_BUFPOS
+$E774`), called it *"the first conflict"*, and recommended the move anyway. A
+full two-way walk — `rammap_sweep.py`'s per-component maps, cross-multiplied —
+says the window is not sparsely occupied. It is **`disk.rom`'s own workspace.**
+
+| window | MAIN cells inside | DISK cells inside |
+|---|---|---|
+| disk `SECTOR_BUF` `$E2A0..$E49F` | 21 cells, **27 B declared** | **none** |
+| disk `WBUF` `$E560..$E75F` | `CAL_BUF` 256 B | 3 cells |
+| main `FSECTOR_BUF` `$E5C0..$E7BF` | `CAL_BUF` 256 B | **14 cells** — `R30_AF/BC/DE/HL`, `CALSLT_HL`, `P1_DEST`, `RDBLK_CNT/DONE/DST/RECSIZE/BUFPOS`, `WRBLK_MUL*` |
+| main `FWBUF` `$E7C0..$E9BF` | `CAL_BUF2` 256 B | **14 cells** — `DRV_TRAMP` (20 B), `DBUF_PTR`, `MBUF_PTR`, `BDOS_SEQREC`, `CONIN_BUF`, the `WRBLK_*` block |
+
+🎯 **`R30_*` IS THE INTER-SLOT REGISTER SAVE AND `DRV_TRAMP` IS THE DRIVER
+TRAMPOLINE.** Siting a 512-byte sector buffer over them would destroy the
+crossing while the crossing is running — and `DBUF_PTR`/`MBUF_PTR`, the very
+pointers the move is supposed to retarget, live inside the target too. **§6.6aj's
+remedy is withdrawn.**
+
+🔴 **AND THE REPLACEMENT NUMBER IS A FLOOR, WHICH IS THE PART TO BE CAREFUL
+WITH.** Disk's `SECTOR_BUF` window contains only **27 B of declared main cells
+across 21 names** and **no disk cells at all** — which makes "move those 21 cells
+out and the hazard is gone" look like a 27-byte fix. It is not, and the tool's
+own standing caveat is why: **17 further main cells in that same window declare
+NO width**, and two of them are named as bulk storage — **`TEMPPOOL $E381`** and
+**`GFX_PSTK`/`GFX_DBUF`/`GFX_VBUF` `$E3F2`** (the PAINT stack and the graphics
+work buffer), alongside `SH_*`, `MIDS_DEST`, `GFX_CS_M2`, `GFX_SDESC`,
+`GFX_SSIZE`. A pool and a stack are exactly the cells whose real extent a
+declared-width map cannot see. **27 B must not be quoted as the cost of
+anything.**
+
+➡️ **SO THE NEXT TASK IS SMALLER AND MORE USEFUL THAN THE ONE §6.6aj NAMED:
+DECLARE THE 17 MISSING WIDTHS.** It is comment-only, it costs no bytes, it makes
+the RAM map honest for every future slice — and only after it can the three
+remaining options be priced against each other at all:
+> (a) relocate the main cells out of disk's `SECTOR_BUF` window;
+> (b) save/restore the occupied bytes around the hook;
+> (c) bring back the `DBUF_PTR`/`MBUF_PTR` runtime pointer after all.
+
+⚠️ **A NOTE FOR THE GATE THIS WAS SUPPOSED TO BUILD.** `rammap_sweep.py`
+DEMOTES a declared width when it overruns the next declared address in the SAME
+component — correct for free-space reporting, and exactly wrong for a
+cross-component overlap check, because the biggest buffers are demoted precisely
+because they are deliberately shared. A gate reading `Map.width` alone would have
+been **blind to the `WBUF`-over-`FSECTOR_BUF` overlap §6.6q named** — the one case
+it exists to catch. It must read `Map.overrun` too. Found while writing it, not
+after [[a-coverage-row-whose-geometry-cannot-reach-the-case]].
 
 ## 6.7 🔍 GAP ANALYSIS — zerobas AGAINST THE MEASURED PROTOCOL (D-HOOKCENSUS, 2026-09-19)
 
