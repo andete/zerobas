@@ -368,9 +368,10 @@ item — do **one item per session** to keep context lean.
       different machines and only the first is covered. The rig is that same
       machine with a foreign ROM in 3-1 — `nms8250_disk.rom`, `nms8245_disk.rom`,
       `cf-3300_disk.rom` and a dozen others are already present locally.
-      🔴 **Two are BLOCKING and are ONE slice:** claim `$FE5D` (no longer
-      blocked — §6.6t's correlation is withdrawn by §6.6af) and move the loop
-      below it (the D-DPLMOVE slice that was backed out).
+      🔴 **Two are BLOCKING and are ONE slice:** claim `$FE5D` (§6.6t's
+      correlation is withdrawn by §6.6af; what remains is the STOP re-fire
+      divergence, §6.6ag) and move the loop below it (the D-DPLMOVE slice that
+      was backed out).
       🏗️ **RULED BY JOOST 2026-09-20: *"I think the answer to Two is obvious: we
       do as the reference does."*** The FAT12 engine and the loader's sector loop
       MOVE OUT OF MAIN INTO `disk.rom`. Rows 2, 5 and 6 of §6.7's table stop being
@@ -381,14 +382,16 @@ item — do **one item per session** to keep context lean.
       implementation detail: whether we need our own equivalent of the
       reference's ~96 B of RAM-resident code (§6.6ac) is a SEPARATE question it
       does not answer, and row 8 stays open.
-      🟢 **THE FIRST OBSTACLE IS GONE (D-REARMSENS 2026-09-20, §6.6af).** The
-      move needs `$FE5D` claimed, and §6.6t recorded that claiming ANY new cell
-      reddens `stop-trap-acceptance`'s `E_rearm_under_held_key_refires`. Its own
-      advice was to doubt the ROW first; doing so showed the row reads RED on the
-      UNMODIFIED ROM at 15 of 20 timing configurations and green only at the one
-      schedule the gate uses. **The claim is withdrawn — an 18th hook is not
-      known to be a problem — and that row may not be cited here in either
-      direction.**
+      🔴 **THE OBSTACLE IS NOW A KNOWN DEFECT, NOT A MYSTERY (D-REARMSENS
+      2026-09-20, §6.6af + §6.6ag).** §6.6t's *"cannot install an 18th hook"* is
+      WITHDRAWN: the row that carried it reads RED on the UNMODIFIED ROM at 15 of
+      20 timing configurations and green only at the one schedule the gate uses.
+      The row was then INSTALLED and run against a full battery — **129/132**,
+      the only behavioural red being that same row, the other two a stale knife
+      pin. ➡️ **So what step 9 is waiting on is the STOP re-fire divergence
+      above**, which has no robust green on either build. Fix it and this row is
+      a one-line change; `tools/deadcode-allow.txt` already records exactly what
+      happens when it goes in (15 of 16 spans go live).
       🔴 **CORRECTED SAME DAY — THE INTEROP COUNTERWEIGHT IS ALREADY DEAD.** §6.7
       first justified keeping the FAT in main as *"what keeps a foreign disk ROM
       drivable"* and called the inversion a trade between two live directions.
@@ -500,8 +503,23 @@ item — do **one item per session** to keep context lean.
 
 - [ ] 🔴 **A HELD Ctrl-STOP DOES NOT RE-FIRE A RE-ARMING HANDLER — AND THE GATE
       THAT EXISTS TO PIN THAT HAS BEEN GREEN BY TIMING LUCK.**
-      🎚️ TIER 3 — COMMON ERRORS. It is a real BASIC-fidelity divergence on a
-      shipped trap, but no happy path depends on it.
+      🎚️ TIER 2 — REASONABLE TIME. Promoted from TIER 3 the same day: it is a
+      real BASIC-fidelity divergence on a shipped trap AND it is now the single
+      thing blocking step 9 (§6.6ag), so it outranks the eviction work behind
+      it. No happy path depends on the behaviour itself.
+      🛑 **IT BLOCKS STEP 9, AND THAT IS THE WHOLE REMAINING OBSTACLE.** The
+      `hook_tab` row was installed on 2026-09-20 and run against a full battery:
+      **129/132**, the only behavioural red being this row (the other two are one
+      stale knife pin, which a ROM change invalidates by design). The dead-code
+      canary worked — 15 of the 16 allowlisted D-DPLMOVE spans went live and
+      exactly one, `fat_io_open`, stayed dead for its own D-BLNF reason. So the
+      eviction is ready and this row is what it is waiting on.
+      🎯 **AND THE 17-vs-18 SWEEP SAYS THE ROW HAS NO ROBUST GREEN ON EITHER
+      BUILD.** Same 5 ms key-down sweep against both: identical at 8 of 9 points,
+      differing only at `0.300` — the schedule the gate uses — where 17 hooks
+      give 3 and 18 give 1. The 18-hook build still passes at three of nine
+      phases. There is no build that is robustly green and none robustly red;
+      there is a spike, and the gate is standing on it.
       🤖 **AUTONOMOUS** — our own ROM, deterministic reproduction, an oracle that
       answers at every phase; no ruling needed to measure or to fix.
       MEASURED 2026-09-20 (D-REARMSENS,
@@ -3101,7 +3119,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:20805 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:20823 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -3267,7 +3285,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:7910 (T-6FE392)8 (T-529ABE)` from `TODO.md:19199 (T-529ABE)`: a
+      `TODO.md:7928 (T-6FE392)8 (T-529ABE)` from `TODO.md:19217 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -8754,7 +8772,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:19199 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:19217 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

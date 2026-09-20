@@ -2515,7 +2515,10 @@ control (same program, trap disarmed) reads 0 twice while still gating
 
 ➡️ **SO THE OBSTACLE TO STEP 9 IS REMOVED — BY DISQUALIFICATION, NOT BY
 EXPLANATION.** What an 18th installed hook does to the machine's sub-frame phase
-is still not established, and this section does not guess at it. It does not have
+is still not established, and this section does not guess at it. ⚠️ **§6.6ag
+narrows it the same day:** installed and swept, the two builds read IDENTICALLY
+at 8 of 9 key-down phases and differ only at the gate's own — so the effect is
+confined to a knife-edge point, not spread across the phase space. It does not have
 to: a row whose green depends on one schedule value, and which the unmodified ROM
 fails at three quarters of nearby ones, cannot carry the claim *"our disk ROM
 cannot install an 18th hook."* **That claim is withdrawn.** §6.6t's evidence —
@@ -2544,6 +2547,80 @@ absent?) and belongs with the divergence, not with this measurement. Until then,
 **no step-9 work may cite `E_rearm_under_held_key_refires` as evidence in either
 direction** — neither as an obstacle nor as a clearance.
 
+### 6.6ag 🔬 THE 18th HOOK WAS INSTALLED AND RUN AGAINST A FULL BATTERY — ONE ROW, ONE POINT (D-REARMSENS round 2, 2026-09-20)
+
+§6.6af withdrew the obstacle by disqualifying the row. The obvious next question
+is whether that licenses the install, so the install was done: `dw H_FOPEN,
+hk_dpload` back in `hook_tab`, the 16 D-DPLMOVE lines deleted from
+`tools/deadcode-allow.txt`, a clean build, and `make gates-full`. **It is
+reverted again — but for a different reason, and the difference is the finding.**
+
+🟢 **THE DEAD-CODE CANARY WORKED EXACTLY AS ITS OWN NOTE PROMISED.** Those 16
+entries each said *"DELETE THESE LINES when the hook lands: the gate will then
+report them as no-longer-dead, which is the canary working."* With the row in,
+**15 of the 16 went live** and exactly **one** stayed dead — `fat_io_open`, and
+for a reason that was already written one line above it: `hk_dpload` calls
+`fat_mount` and `fat_io_find` SEPARATELY, because their two carries are what tell
+`file not found` from a mount/I-O fault (D-BLNF), which is the whole reason
+`fatio-body.inc` carries the zero-byte `fat_io_find` label. The combined entry
+`fat_io_open` is main's. That one entry is now allowlisted with the HONEST
+reason instead of the retracted §6.6p one.
+
+🔬 **THE BATTERY: 129/132, AND ONLY ONE RED IS REAL.**
+
+| red | what it is |
+|---|---|
+| `stop-trap-acceptance` | the predicted casualty — `E_rearm_under_held_key_refires` |
+| `selftest-check` | `tier_table.py --selftest` |
+| `tiers-md-check` | `tier_table.py` |
+
+The last two are ONE cause and it is bookkeeping, not behaviour: a ROM change
+invalidates the knife pin, and `tier_table.py` **refuses** until
+`kwknife.py --all` and `--allfn` are re-run — it names the old and new ROM hashes
+and says so. Everything else — all 89 emulator targets, `diskbasic`, `bdos`,
+`fat-*`, `nodisk` — passed with an 18th hook installed.
+
+🎯 **AND THE SYMMETRIC MEASUREMENT IS SHARPER THAN §6.6af's, SO IT NARROWS IT.**
+The same 5 ms key-down sweep, run against BOTH builds:
+
+| key-down | 17 hooks | 18 hooks |
+|---|---|---|
+| 0.300 s | **3** | **1** |
+| 0.305 | 1 | 1 |
+| 0.310 | 2 | 2 |
+| 0.315 | 2 | 2 |
+| 0.320 / 0.325 / 0.330 | 1 | 1 |
+| 0.335 | 2 | 2 |
+| 0.340 | 1 | 1 |
+
+**The profiles are identical at 8 of the 9 points.** They differ at exactly one —
+`0.300`, which is the schedule the gate uses. The boot-offset sweep says the same
+thing from the other side: the 18-hook build reads 1 at all nine offsets
+including `6.000`, where the 17-hook build reads 3 and 1 everywhere else.
+
+➡️ **SO THE PICTURE IS NOT "THE PHASE SHIFTED" — IT IS "THE GATE SITS ON A
+SPIKE".** `0.300` is a singular point where the 17-hook build produces two extra
+fires its own neighbours do not; an 18th hook flattens that one point and changes
+nothing else anywhere measured. §6.6af's conclusion stands and is strengthened —
+the row cannot carry a claim about hooks — but its open question is now narrowed:
+whatever the 18th hook perturbs, its effect is confined to a knife-edge, not
+spread across the phase space. **Note also that the 18-hook build still PASSES
+the row at three of nine phases (0.310, 0.315, 0.335).** There is no build here
+that is robustly green and none that is robustly red.
+
+🔴 **WHICH IS WHY THE ROW IS NOW THE BLOCKER, AND IT IS ORDINARY WORK.** It has
+no robust green to return to, on either build, because the property it asserts is
+not implemented: zerobas answers **1** — it does not re-fire under a held key at
+all — where the reference answers 122 at every phase. Fix that divergence and the
+row stops balancing on a spike; then the `hook_tab` row goes back in as the
+one-line change it is. **The obstacle to step 9 is no longer a mystery about
+hooks; it is a known defect in the STOP trap with a measured oracle.**
+
+⚠️ **THE COST OF THE ROW, FOR WHOEVER LANDS IT:** 4 B of `hook_tab` and the
+5-byte RAM stub `install_hook` writes. Measured with the row installed on
+2026-09-20, `disk.rom` had **8113 B** free in 29 runs — re-run
+`make basic-reloc`, never quote that figure.
+
 ## 6.7 🔍 GAP ANALYSIS — zerobas AGAINST THE MEASURED PROTOCOL (D-HOOKCENSUS, 2026-09-19)
 
 > 🏗️ **RULED BY JOOST, 2026-09-20: *"I think the answer to Two is obvious: we do
@@ -2567,7 +2644,15 @@ direction** — neither as an obstacle nor as a clearance.
 > does not answer, and row 8 stays open until it is measured against a real
 > design rather than assumed either way.
 >
-> 🟢 **AND THE THING THAT BLOCKED THE FIRST STEP NO LONGER DOES (§6.6af,
+> 🔴 **AND THE FIRST STEP IS BLOCKED BY SOMETHING ELSE NOW — A KNOWN DEFECT,
+> NOT A MYSTERY (§6.6ag).** The row was installed and run against a full battery
+> the same day: 129/132, with the only behavioural red being
+> `stop-trap-acceptance` and the other two a stale knife pin. That row has no
+> robust green on EITHER build, because the property it asserts is not
+> implemented. **Fixing that divergence is the unblock, and it is ordinary
+> BASIC-fidelity work with a measured oracle.**
+>
+> 🟢 **AND THE THING THAT USED TO BLOCK IT NO LONGER DOES (§6.6af,
 > 2026-09-20).** The move needs `$FE5D` claimed, and §6.6t recorded that claiming
 > ANY new hook cell reddens `stop-trap-acceptance`'s
 > `E_rearm_under_held_key_refires`. Its own advice was to doubt the ROW first;

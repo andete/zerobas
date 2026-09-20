@@ -2237,19 +2237,31 @@ hook_tab:
                 dw      H_DSKI, hk_present   ; the hook buys the diskless ERR 5
                 dw      H_COPY, hk_copy      ; D-DISKVERB3: body here too
                 dw      H_ERRP, hk_errp      ; D-DISKERR: the disk codes' messages live HERE
-                ; ⛔ H_FOPEN IS **NOT** INSTALLED, AND THAT IS A MEASUREMENT.
-                ; D-DPLMOVE built the row here and backed it out: claiming $FE5D
-                ; breaks `stop-trap-acceptance`'s E_rearm_under_held_key_refires
-                ; on this machine -- zerobas re-fires the STOP trap 3x with the
-                ; cell unclaimed and 1x with it claimed, against a threshold of 2.
-                ; PROVEN TO BE THE CLAIM ITSELF, NOT THIS BODY: with hk_dpload
-                ; reduced to an immediate `ret`, so the cell is claimed and the
-                ; handler does nothing, the row still fails -- twice. And
-                ; $FE5D is H.NULO, "an operation for file-buffer 0" (C-BIOS's
-                ; public hook table; docs/spec-basic-nodisk.md already had the
-                ; name), which is a shared SUBSYSTEM cell and not a verb entry.
-                ; See spec-diskcode-eviction.md §6.6p. Restoring this row is a
-                ; one-line change once Joost has ruled on the cell.
+                ; ⛔ H_FOPEN IS NOT INSTALLED **YET**, AND THE REASON CHANGED
+                ; ON 2026-09-20. The row was installed, run against a FULL
+                ; battery, and reverted -- see spec-diskcode-eviction.md §6.6ag.
+                ;
+                ; 🟢 WHAT IS NO LONGER TRUE. §6.6p blamed the CELL ($FE5D is
+                ; H.NULO, a file-buffer-0 subsystem cell); §6.6t retracted that
+                ; and blamed the hook COUNT ("we cannot install an 18th");
+                ; §6.6af withdraws that too. Neither is the obstacle. The CELL
+                ; is settled -- Joost ruled §6.6m, re-affirmed in §6.7's
+                ; "we do as the reference does".
+                ;
+                ; 🔴 WHAT ACTUALLY BLOCKS IT: `stop-trap-acceptance`'s
+                ; E_rearm_under_held_key_refires has NO ROBUST GREEN to return
+                ; to. It is a phase metric. Sweeping the key-down instant in
+                ; 5 ms steps, the 17-hook and 18-hook builds read IDENTICALLY at
+                ; 8 of 9 points; they differ only at the one schedule the gate
+                ; uses, where 17 hooks produce two anomalous extra fires (3)
+                ; and 18 flatten them (1). zerobas's real answer everywhere is
+                ; 1 -- it does NOT re-fire under a held key, where the
+                ; reference fires 122 at every phase.
+                ; ➡️ So the unblock is the DIVERGENCE FIX (TODO.md): make the
+                ; re-arm re-fire the way the reference does, and the row stops
+                ; balancing on a spike. Then this row goes back in -- it is a
+                ; one-line change, and `tools/deadcode-allow.txt` records
+                ; exactly what happens when it does.
                 dw      0
 
 ; --- install_hook: write one 5-byte CALLF stub into a hook slot -------------
