@@ -102,7 +102,9 @@ DISK_SRC := disk/disk.asm
 # it leaves disk.rom quietly stale; `rom-parts-check` refused exactly that.
 DISK_PARTS := disk/equates.inc disk/init.asm disk/pageenv.asm disk/driver.asm \
               disk/fat.asm disk/kernel.asm disk/runtime.asm \
-              basic/fat-prim-body.inc basic/fatio-body.inc
+              basic/fat-prim-body.inc basic/fatio-body.inc \
+              basic/fatiocreate-body.inc basic/fatiow-body.inc \
+              basic/sv-diskwr.inc basic/sv-savdisk.inc
 DISK_ROM := $(BUILD)/disk.rom
 # D-DISKDEAD: disk.rom needs a symbol table like the other two builds, because
 # the dead-code sweep reports a span's ADDRESS and SIZE from it. Without one the
@@ -217,7 +219,7 @@ SUB_PARTS := sub/equates.inc sub/deftype.asm sub/tkfloat.asm sub/fp_sqrt.asm sub
              sub/fcbname.asm basic/fcbname-body.inc \
              sub/fldlook.asm sub/lrsetst.asm sub/deffn.asm \
              sub/bload.asm basic/bload-body.inc basic/fatio-body.inc basic/pdfcb-body.inc \
-             sub/save.asm basic/sv-bsvdisk.inc basic/sv-bsvcas.inc basic/sv-savdisk.inc \
+             sub/save.asm basic/sv-bsvdisk.inc basic/sv-bsvcas.inc \
              basic/sv-tsb.inc basic/sv-tputw.inc basic/sv-tne.inc basic/sv-diskwr.inc \
              basic/fatiocreate-body.inc basic/fatiow-body.inc \
              sub/circleparse.asm sub/errmsg.asm sub/lineno.asm sub/readline.asm \

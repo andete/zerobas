@@ -3228,6 +3228,7 @@ H_FILE          equ     $FE7B
 H_FOPEN         equ     $FE5D
 FOPEN_SEL       equ     DISKOP_OP   ; aliased; mutual exclusion argued in
                                     ; disk/equates.inc's block
+FOPEN_SEL_SAVE  equ     $53         ; step 12 (D-SAVEPORT): tokenised SAVE
 FOPEN_SEL_LOAD  equ     $4C         ; NOT 0: 0 is a live DISKOP_OP value and
                                     ; $FE5D is reached on paths that are not
                                     ; ours -- see disk/equates.inc (§6.6p)   ; FILES handler

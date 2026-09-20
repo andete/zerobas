@@ -81,7 +81,7 @@ save_tenant:
                 dec     a
                 jr      z,sv_t_bsv_cas
                 dec     a
-                jr      z,sv_t_sav_disk
+                jr      z,sv_t_out          ; SV_OP_SAV_DISK: served by disk.rom now
                 call    tape_save_basic     ; SV_OP_SAV_CAS
                 jr      sv_t_out
 sv_t_bsv_disk:
@@ -90,8 +90,6 @@ sv_t_bsv_disk:
 sv_t_bsv_cas:
                 call    bsv_cas_open
                 jr      sv_t_out
-sv_t_sav_disk:
-                call    sav_disk_write
 sv_t_out:
                 di                          ; subrom_call's CALSLT returns under DI
                 ret
@@ -125,6 +123,5 @@ sv_load_error:
 ; --- the four engines themselves, shared with the resident side ------------
                 include "basic/sv-bsvdisk.inc"       ; bsv_open .. bsv_fin
                 include "basic/sv-bsvcas.inc"        ; bsv_cas_open .. bsv_cas_fin
-                include "basic/sv-savdisk.inc"       ; sav_disk_write .. sav_fin
                 include "basic/sv-tsb.inc"           ; tape_save_basic .. tsb_fin
                 include "basic/sv-tputw.inc"         ; tape_putword (BSAVE tape header)

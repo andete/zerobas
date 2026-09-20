@@ -135,6 +135,19 @@ REQUIRED_DISK_RAM = [
     "CLINK",                    # saved link word of the current line
     "TXTBASE",                  # text base: where the seed puts CLPTR/CLINK
     "TXTMAX",                   # text ceiling: the loop's out-of-memory bound
+    # D-SAVEPORT (spec-diskcode-eviction.md §6.6ao), step 12: the tokenised SAVE
+    # write engine runs in disk.rom now. basic/sv-savdisk.inc is shared BYTE-
+    # IDENTICALLY by main, sub and disk, so every name it spells must resolve in
+    # all three -- publishing them here is what keeps that body verbatim instead
+    # of forking it for the third ROM.
+    "PRGEND",                   # addr of the $0000 end-of-program marker: the
+                                # image walk's inclusive end is PRGEND+1
+    "DSV_PTR",                  # SAVE: the image walk's current source byte
+    "DSV_END",                  # SAVE: its last source byte, inclusive
+    "DISKSLOT_OK",              # disk_write_begin's own guard. disk.rom plainly
+                                # IS the disk ROM, but the body is shared and the
+                                # cell is main's -- reading it costs nothing and
+                                # keeps the source identical in all three builds
 ]
 # CALL-BACK: main PAGE-1 targets, reached by an INTER-SLOT CALL, not by an
 # absolute one -- the third class, and the one the hook re-architecture needs
