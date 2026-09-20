@@ -2690,6 +2690,76 @@ the knife pin, so `kwknife.py --all` and `--allfn` were re-run. The diff is the
 fingerprint and the timestamp — **all 2500+ rows byte-identical**, twice in one
 day (§6.6ah's main-ROM change too). Neither moved any keyword's connectedness.
 
+### 6.6aj 🔑 §6.6q's BUFFER HAZARD IS PRICED — AND THE EXPENSIVE REMEDY IT ASSUMED IS NOT NEEDED (D-FATBUFALIAS, 2026-09-20)
+
+§6.6ai landed the hook; **the main-ROM side cannot be wired to it until this is
+closed.** §6.6q named the hazard and called the fix *"a measurement nobody has
+taken"*. Taken here.
+
+🔴 **THE HAZARD, RESTATED PRECISELY.** `hk_dpload` resolves `fat_io_getbyte`
+LOCALLY — that is the whole point of §6.2c — so it fills `disk.rom`'s
+`FAT_DBUF`, which that ROM binds to `SECTOR_BUF $E2A0..$E49F`. Main has live
+cells inside that window (`SH_START $E375`, `SH_ERR $E37E`, `MIDS_DEST $E3E6`,
+`GFX_PXL $E3ED`, `GFX_CS_M2 $E3F6`, `GFX_SSIZE $E41B`, plus the string heap and
+temp pool). `LOAD` clears variables, so a trampled heap may hide — but nothing
+resets the GRAPHICS cells, so `SCREEN 2` then `LOAD"X.BAS"` is observable.
+
+🔴 **THE REMEDY §6.6q ASSUMED IS NOT AFFORDABLE.** It suggested a PRIVATE buffer
+— *"`disk.rom` had free space at the last reading, so a private buffer may
+simply be affordable"* — which conflates ROM free space with RAM. Walked with
+`scratchpad/rammap_sweep.py` on 2026-09-20, main's `$E000..$F380` window has
+**no 512 B contiguous unattributed run at all**: the largest two are **192 B**
+(`$E900..$E9C0` and `$E700..$E7C0`), then 102, 96, 50, 48, 36, 28. ⚠️ And those
+are UPPER bounds — the sweep's own caveat is that a cell addressed only as an
+offset in code carries no `equ` and is invisible to it. A private 512 B data
+buffer plus a private 512 B metadata buffer is out of the question.
+
+🟢 **AND THE CHEAP REMEDY IS SITTING THERE ALREADY: ALIAS MAIN'S OWN FAT PAIR.**
+Main declares exactly the pair `disk.rom` needs, and binds the shared body's
+names to them:
+
+| | main (`basic/sysvars.inc`) | `disk.rom` (`disk/equates.inc`) |
+|---|---|---|
+| data / sector | `FSECTOR_BUF $E5C0..$E7BF` | `SECTOR_BUF $E2A0..$E49F` |
+| FAT / dir metadata | `FWBUF $E7C0..$E9BF` | `WBUF $E560..$E75F` |
+
+**Main's pair is idle by construction whenever `disk.rom`'s engine runs.** Under
+MSX-DOS the interpreter is not live at all; through `hk_dpload` main has handed
+over and its own engine is not running, and that body takes NO call-backs
+(§6.6h, re-asserted at `FOPEN_SEL`). It is the same argument the tree already
+accepts for `CAL_BUF2 $E800`, which lives *inside* `FWBUF` because *"a cassette
+ASCII load does no disk I/O, so FWBUF is as dead as it gets"*. Aliasing onto
+main's FAT pair swaps an overlap with LIVE graphics and string state for an
+overlap with two buffers that are dead by the same reasoning.
+
+🎯 **WHICH RETIRES A COST `disk/equates.inc` HAD BUDGETED FOR EXACTLY THIS STEP.**
+That file says a RUNTIME POINTER *"becomes necessary only when `disk.rom`'s
+engine serves both BDOS **and** Disk BASIC — two contexts inside ONE assembly,
+**which an equate cannot express**. That is steps 9-12"*. Measured, the premise
+fails: the two contexts do not need DIFFERENT buffers, because neither ever runs
+while the other's owner is live. One pair serves both, and an equate expresses
+it. **`DBUF_PTR`/`MBUF_PTR` need not come back.** The saving is not
+hypothetical: the shared bodies spell their buffers at ASSEMBLY time in **42
+`FAT_DBUF` and 39 `FAT_MBUF` sites** (`basic/fat-prim-body.inc`,
+`basic/fatio-body.inc`), byte-identical across three ROMs. An equate costs zero
+bytes at every one of them; a runtime pointer pays at each, in main too.
+
+⚠️ **IT IS STILL NOT A TWO-LINE CHANGE, AND HERE IS THE FIRST CONFLICT.** All 67
+`SECTOR_BUF` and 12 `WBUF` references in `disk/` are SYMBOLIC, so the two `equ`s
+move everything — but the target window is not empty. `disk/init.asm` already
+declares **`RDBLK_BUFPOS equ $E774`, which is inside main's `FSECTOR_BUF`**. A
+full two-way overlap check is the prerequisite, and 🔴 **RAM HAS NO GATE** —
+`wall-assertion-check` and `check_disk_walls.py` cover ROM only. So that check
+has to be BUILT, not eyeballed; it is the first task of the next slice, not an
+afterthought to it.
+
+➡️ **THE SHAPE, FOR WHOEVER TAKES IT:** (1) build the two-way RAM overlap gate
+across `basic/sysvars.inc`, `disk/equates.inc` and `disk/init.asm`; (2) relocate
+the `disk.rom` cells it finds inside `$E5C0..$E9BF`; (3) rebind `FAT_DBUF`/
+`FAT_MBUF`; (4) then wire main's `disk_prog_load` to the hook. Step (1) is worth
+having whatever happens to (3) — it is the missing gate the whole RAM layout has
+been running without.
+
 ## 6.7 🔍 GAP ANALYSIS — zerobas AGAINST THE MEASURED PROTOCOL (D-HOOKCENSUS, 2026-09-19)
 
 > 🏗️ **RULED BY JOOST, 2026-09-20: *"I think the answer to Two is obvious: we do

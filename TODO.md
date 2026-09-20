@@ -389,10 +389,29 @@ item — do **one item per session** to keep context lean.
       ⚠️ **MAIN DOES NOT CALL IT YET, DELIBERATELY.** The row is inert on this
       machine — nothing enters `$FE5D` — and safe if anything ever does, because
       `FOPEN_SEL_LOAD` is `$4C`, outside `DISKOP_SEL_*`'s 0..7 range.
-      ➡️ **NEXT, AND IT IS THE REAL WORK:** the main-ROM side — write
-      `FOPEN_SEL`, call the cell, decode `DISKOP_STATUS`, and drop main's own
-      tokenised-LOAD loop. Then steps 10-12 (`OPEN`, `MERGE`, `SAVE`) are local
-      edits that add a selector value each (§6.6n).
+      🛑 **AND THE MAIN-ROM SIDE IS BLOCKED ON §6.6q's BUFFER HAZARD, WHICH IS
+      NOW PRICED (§6.6aj, 2026-09-20).** `hk_dpload`'s local `fat_io_getbyte`
+      fills `disk.rom`'s `SECTOR_BUF $E2A0..$E49F`, which overlaps main's LIVE
+      graphics and string cells — `SCREEN 2` then `LOAD"X.BAS"` is observable.
+      🔴 §6.6q's assumed remedy, a PRIVATE buffer, is NOT affordable: walked with
+      `rammap_sweep.py`, main's window has **no 512 B contiguous unattributed
+      run** (largest two are 192 B), and those are upper bounds.
+      🟢 The cheap remedy is to ALIAS MAIN'S OWN FAT PAIR (`FSECTOR_BUF` +
+      `FWBUF`), idle by construction whenever `disk.rom`'s engine runs — the same
+      argument that already licenses `CAL_BUF2` living inside `FWBUF`. It also
+      RETIRES the runtime pointer `disk/equates.inc` had budgeted for steps 9-12
+      (42 `FAT_DBUF` + 39 `FAT_MBUF` assemble-time sites across three ROMs that
+      would each have had to pay for it).
+      ⚠️ Not a two-line change: `disk/init.asm`'s `RDBLK_BUFPOS $E774` is already
+      inside main's `FSECTOR_BUF`, and 🔴 **RAM HAS NO GATE**, so a two-way
+      overlap check must be BUILT first — worth having whatever happens to the
+      rebind.
+      ➡️ **NEXT, IN ORDER:** (1) the two-way RAM overlap gate; (2) relocate the
+      `disk.rom` cells inside `$E5C0..$E9BF`; (3) rebind `FAT_DBUF`/`FAT_MBUF`;
+      (4) then the main-ROM side — write `FOPEN_SEL`, call the cell, decode
+      `DISKOP_STATUS`, drop main's own tokenised-LOAD loop. Then steps 10-12
+      (`OPEN`, `MERGE`, `SAVE`) are local edits adding a selector value each
+      (§6.6n).
       🔴 **THE HISTORY, KEPT (D-REARMSENS 2026-09-20, §6.6af + §6.6ag).** §6.6t's *"cannot install an 18th hook"* is
       WITHDRAWN: the row that carried it reads RED on the UNMODIFIED ROM at 15 of
       20 timing configurations and green only at the one schedule the gate uses.
@@ -3170,7 +3189,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:20874 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:20893 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -3336,7 +3355,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:7979 (T-6FE392)8 (T-529ABE)` from `TODO.md:19268 (T-529ABE)`: a
+      `TODO.md:7998 (T-6FE392)8 (T-529ABE)` from `TODO.md:19287 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -8823,7 +8842,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:19268 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:19287 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
