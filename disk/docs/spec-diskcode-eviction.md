@@ -2407,11 +2407,46 @@ from ROM. That is what made a page-1 register reportable at all.
 
 ## 6.7 🔍 GAP ANALYSIS — zerobas AGAINST THE MEASURED PROTOCOL (D-HOOKCENSUS, 2026-09-19)
 
+> 🏗️ **RULED BY JOOST, 2026-09-20: *"I think the answer to Two is obvious: we do
+> as the reference does."*** The gap table below was put in front of him to
+> decide, and this is the decision. **The FAT12 engine and the loader's sector
+> loop move OUT of main and INTO `disk.rom`**, so that mount, directory search,
+> FAT walk and transfer all live where the reference keeps them, reached through
+> one claimed cell. Rows 2, 5 and 6 of the table are no longer open questions;
+> they are the work.
+>
+> ➡️ **This supersedes the "clean middle path"** of
+> `disk/docs/spec-diskbasic-relocation.md`, whose rejected alternative — *"move
+> all disk-BASIC incl. `fat.asm`, ~5 KB, drop the interop"* — is now the chosen
+> one. That spec's own escalation rule said reversing its decision must go to the
+> user; it went, and this is the answer.
+>
+> ⚠️ **WHAT THE RULING DOES NOT BY ITSELF SETTLE.** "As the reference does" is
+> about WHO OWNS WHAT, not about copying every implementation detail. The
+> reference installs ~96 B of RAM-resident code at boot (§6.6ac); whether a
+> faithful `disk.rom` needs its own equivalent is a separate question this ruling
+> does not answer, and row 8 stays open until it is measured against a real
+> design rather than assumed either way.
+>
+> 🛑 **AND ONE THING STILL BLOCKS THE FIRST STEP.** The move needs `$FE5D`
+> claimed, and claiming ANY new hook cell reproducibly reddens
+> `stop-trap-acceptance`'s `E_rearm_under_held_key_refires` (§6.6t) — an
+> unexplained CORRELATION with no mechanism, parked. That is the first thing to
+> break, and §6.6t's own advice is to doubt the ROW before the hook: it scores 3
+> against a threshold of 2 where the reference scores 122.
+>
+> 🟢 **AND IT CUTS THE RIGHT WAY FOR THE DISKLESS COMBO** (Joost, same day: a
+> VG-8020 plus a Philips NMS disk cartridge is a valid machine, and diskless
+> zerobas plus that cartridge should work the same). With no disk implementation
+> left in main+sub, a foreign cartridge's own Disk BASIC claims the hooks and
+> runs — which is §0.0's point (3), reached for free rather than defended.
+
 `disk/docs/expansion-protocol.md` §8 describes how `LOAD` works on the reference.
 This is the other half: **what zerobas does, and whether the difference matters.**
 Reference-side values are cited to §8; our side is either measured on our own
-machine or cited to our source. ⚠️ **No redesign is proposed here.** The point is
-to put the shape in front of Joost before anything is built.
+machine or cited to our source. ⚠️ **The table proposed no redesign** — it was
+written to put the shape in front of Joost, and the ruling above is what came
+back.
 
 🔴 **AND THE HEADLINE IS THAT THE TWO ARCHITECTURES ARE INVERTED — BY AN EARLIER
 DECISION, NOT BY OVERSIGHT.** The reference puts mount, directory, FAT and the

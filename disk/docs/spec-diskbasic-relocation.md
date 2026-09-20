@@ -24,6 +24,16 @@ spec-before-implementation). See memory `basic-rom-space-and-growth`.
 
 ## The decision
 
+> 🏗️ **SUPERSEDED BY A RULING, 2026-09-20.** Joost: *"I think the answer to Two
+> is obvious: we do as the reference does."* **The rejected alternative below —
+> *"move all disk-BASIC incl. `fat.asm`, ~5 KB, drop the interop"* — IS NOW THE
+> CHOSEN PATH.** The FAT12 engine and the loader's sector loop move into
+> `disk.rom`, where the reference keeps them. §"When to escalate" required a
+> reversal of this decision to go to the user; it did, and this is the answer.
+> The analysis below is kept in full — its inventory and its costings are still
+> the best survey of the seam — but its CONCLUSION is no longer operative. See
+> `spec-diskcode-eviction.md` §6.7.
+>
 > 🔴 **THE INTEROP PREMISE BELOW IS RETIRED (2026-09-19).** This decision was taken
 > "preserving the foreign-disk-ROM interop", and the alternative was rejected
 > because it *"drops the interop"*. **Joost, 2026-09-15**

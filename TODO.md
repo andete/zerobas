@@ -356,9 +356,35 @@ item — do **one item per session** to keep context lean.
       have to keep working.
       🟢 **Two things got CHEAPER:** no verb selector is needed (a mode byte
       suffices), and our claimed set already nests inside the reference's.
+      🟢 **AND THE RULING CUTS THE RIGHT WAY FOR A COMBO JOOST AFFIRMED
+      2026-09-20:** *"the VG8020 + for example the Philips NMS Disk extension is a
+      valid machine combo. In the same way our non-disk ZeroBAS + that same disk
+      extension should work."* With no disk implementation left in main+sub, a
+      foreign cartridge's own Disk BASIC claims the hooks and runs — §0.0's point
+      (3), reached for free rather than defended.
+      ⚠️ **AND THAT COMBO IS UNTESTED.** `nodisk-acceptance` runs
+      `C-BIOS_MSX1_EU_REPACK_NODISK`, whose slot 3-1 is EMPTY (verified in the
+      machine XML). "No disk ROM at all" and "somebody else's disk ROM" are
+      different machines and only the first is covered. The rig is that same
+      machine with a foreign ROM in 3-1 — `nms8250_disk.rom`, `nms8245_disk.rom`,
+      `cf-3300_disk.rom` and a dozen others are already present locally.
       🔴 **Two are BLOCKING and are ONE slice:** claim `$FE5D` (blocked by
       §6.6t's parked correlation) and move the loop below it (the D-DPLMOVE slice
       that was backed out).
+      🏗️ **RULED BY JOOST 2026-09-20: *"I think the answer to Two is obvious: we
+      do as the reference does."*** The FAT12 engine and the loader's sector loop
+      MOVE OUT OF MAIN INTO `disk.rom`. Rows 2, 5 and 6 of §6.7's table stop being
+      questions and become the work. This SUPERSEDES the "clean middle path" of
+      `spec-diskbasic-relocation.md`, whose rejected alternative (*"move all
+      disk-BASIC incl. `fat.asm`, ~5 KB"*) is now the chosen one.
+      ⚠️ The ruling is about WHO OWNS WHAT, not about copying every
+      implementation detail: whether we need our own equivalent of the
+      reference's ~96 B of RAM-resident code (§6.6ac) is a SEPARATE question it
+      does not answer, and row 8 stays open.
+      🛑 **FIRST OBSTACLE, UNCHANGED:** the move needs `$FE5D` claimed, and
+      claiming ANY new cell reddens `stop-trap-acceptance`'s
+      `E_rearm_under_held_key_refires` (§6.6t). Doubt the ROW first — it scores 3
+      against a threshold of 2 where the reference scores 122.
       🔴 **CORRECTED SAME DAY — THE INTEROP COUNTERWEIGHT IS ALREADY DEAD.** §6.7
       first justified keeping the FAT in main as *"what keeps a foreign disk ROM
       drivable"* and called the inversion a trade between two live directions.
@@ -3017,7 +3043,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:20721 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:20747 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -3183,7 +3209,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:7826 (T-6FE392)8 (T-529ABE)` from `TODO.md:19115 (T-529ABE)`: a
+      `TODO.md:7852 (T-6FE392)8 (T-529ABE)` from `TODO.md:19141 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -8670,7 +8696,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:19115 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:19141 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
