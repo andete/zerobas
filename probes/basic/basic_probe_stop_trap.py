@@ -371,6 +371,23 @@ ASSERTED = [
 # was to mirror that in ex_stop, and it was written that way first. The reference says
 # otherwise -- 122 fires against the seeded build's 1 -- so ex_stop carries no seed and
 # says why. Without this case nothing would ever catch a well-meaning "harmonisation".
+# 🔴 CORRECTION 2026-09-20 (D-REARMSENS, scratchpad/rearmsens_probe.py;
+# docs/spec-traps-t1-stop-reslice.md and disk/docs/spec-diskcode-eviction.md §6.6af).
+# THIS CASE IS A PHASE METRIC AND IT IS GREEN BY LUCK. Every arm below ran the SHIPPED
+# ROM with nothing rebuilt. Shifting the key-down instant, or the emulator's boot delay,
+# by 5 ms moves zerobas's count across 1/2/3:
+#     key-down 0.300..0.340 s, 5 ms steps -> 3 1 2 2 1 1 1 2 1
+#     boot     6.000..6.040 s, 5 ms steps -> 3 1 1 1 1 1 1 1 1
+# Red at 15 of 20 timing configurations, green only at the schedule `run()` defaults to,
+# and perfectly deterministic at each one -- a pinned phase, not a flake. The VG-8020
+# reads 122 (+/-1) at every one of the same points, so the fragility is OURS.
+# ➡️ zerobas's real answer is ONE FIRE: it does NOT re-fire under a held key, and the
+# count does not scale with the run length (1500/3000/6000/12000 -> 2 2 3 3), which is
+# what the edge model predicts. So the `flag>=2` below has been passing on two
+# accidental extra fires and the PROPERTY it names is not implemented.
+# ⛔ DO NOT repair a future red here by loosening the threshold or widening the
+# schedule -- both re-hide the divergence, which is filed in TODO.md as its own item.
+# A red on this case means nothing until its schedule sensitivity is re-checked.
 REARM = [
     ("E_rearm_under_held_key_refires",
      [CLR, "10 ON STOP GOSUB 100", "20 STOP ON", RANOK,

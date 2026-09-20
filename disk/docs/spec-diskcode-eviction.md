@@ -1623,6 +1623,13 @@ same clearance before any byte rests on it.
 
 ### 6.6t 🔴 IT WAS NEVER THE CELL: OUR DISK ROM CANNOT INSTALL AN 18th HOOK (D-FE67CLEAR, 2026-09-19)
 
+> 🟢 **ITS CONCLUSION IS WITHDRAWN BY §6.6af (2026-09-20).** The analysis
+> below is kept intact — inverted, not deleted — because it is what made the
+> right next move findable. Its own closing advice, *doubt the row first*,
+> was taken and was correct: `E_rearm_under_held_key_refires` reads RED on
+> the UNMODIFIED ROM at 15 of 20 timing configurations, so it cannot carry
+> the claim in this heading. **An 18th hook is not known to be a problem.**
+
 Joost asked for the `$FE67` clearance test before choosing a shape. `$FE67`
 failed it — and chasing that failure overturned §6.6p.
 
@@ -2468,6 +2475,75 @@ and a mutation deleting it stays green. It is kept for its message only.
 ranges and regions. No ROM byte read on either machine, no target followed,
 nothing disassembled, and not one byte of the RAM-resident code read on either.
 
+### 6.6af 🟢 THE 18th-HOOK OBSTACLE IS DISSOLVED — THE ROW IS A PHASE METRIC AND ITS GREEN WAS LUCK (D-REARMSENS, 2026-09-20)
+
+§6.6t parked a correlation with no mechanism and said exactly what to do about
+it: *"doubt `E_rearm_under_held_key_refires` before doubting the hardware …
+establish what makes IT move before attributing anything to hook installation."*
+That was done. **Every arm below runs the SHIPPED ROM — no hook is installed, no
+byte of `hook_tab` changes, nothing is rebuilt.**
+([`scratchpad/rearmsens_probe.py`](../../scratchpad/rearmsens_probe.py))
+
+🎯 **THE ROW READS RED ON THE UNMODIFIED BUILD AT 15 OF 20 TIMING
+CONFIGURATIONS.** Shift the instant the key goes down, or shift the emulator's
+boot delay, by a few milliseconds — nothing else — and the count collapses:
+
+| knob (ROM untouched) | values |
+|---|---|
+| key-down at 0.300 … 0.340 s, 5 ms steps | **3**, 1, 2, 2, 1, 1, 1, 2, 1 |
+| key-down at 0.34 / 0.38 / 0.42 / 0.46 s | 1, 1, 2, 1 |
+| boot delay 6.000 … 6.040 s, 5 ms steps (press schedule untouched) | **3**, 1, 1, 1, 1, 1, 1, 1, 1 |
+
+**Only the gate's own configuration is green.** The boot-offset arm is the
+sharpest: of nine offsets spanning 40 ms, `boot=6.0` — the value
+`basic_probe_stop_trap.run` defaults to — is the only one that scores above the
+threshold, and every other offset reads 1.
+
+🔴 **AND IT IS NOT A FLAKE, WHICH MATTERS AS MUCH.** Six identical runs at the
+gate's own schedule all read 3; three runs with the row's literal 200 s hold all
+read 3; every phase point read the same value on repeat. The metric is perfectly
+DETERMINISTIC and pinned to the schedule — so §6.6t's nine builds were measuring
+something real, just not hooks. The correlation and the determinism were never in
+conflict.
+
+🟢 **THE CONTROLS, AND THE REFERENCE IS THE ONE THAT SETTLES IT.** The same fine
+sweep on the VG-8020 reads **122, 122, 122, 122, 122, 122, 122, 122, 121** — a
+±1 wobble on 122, 0.8 %. So the instrument reads a large, phase-STABLE number
+where one exists, and the fragility is zerobas's, not the probe's. The negative
+control (same program, trap disarmed) reads 0 twice while still gating
+`ran`/`done`, so the counter can produce a zero.
+
+➡️ **SO THE OBSTACLE TO STEP 9 IS REMOVED — BY DISQUALIFICATION, NOT BY
+EXPLANATION.** What an 18th installed hook does to the machine's sub-frame phase
+is still not established, and this section does not guess at it. It does not have
+to: a row whose green depends on one schedule value, and which the unmodified ROM
+fails at three quarters of nearby ones, cannot carry the claim *"our disk ROM
+cannot install an 18th hook."* **That claim is withdrawn.** §6.6t's evidence —
+identical hook-entry counts, identical interrupt totals, identical work, reds and
+greens independent of which cells — always fitted "the measurement moved" better
+than "the Z80 did"; it now has the direct demonstration it lacked.
+
+🔴 **AND DOUBTING THE ROW FOUND SOMETHING WORSE THAN A FRAGILE GATE: A REAL
+DIVERGENCE IT HAS BEEN HIDING.** The row asserts a PROPERTY — *flag ≥ 2*, i.e.
+"a handler that re-arms itself under a held key fires again **at all**". At every
+timing configuration but a handful, zerobas answers **1**: it fires once and
+never again, while the reference fires 122 at every phase. **zerobas does not
+implement the property the row exists to pin**, and the row has been green since
+it was written because its fixed schedule happens to land on a phase worth two
+extra fires. The count does not scale with how long the program runs either
+(`FOR I=1TO` 1500 / 3000 / 6000 / 12000 → 2, 2, 3, 3), which is what an
+edge-latched model predicts and a per-scan model does not — consistent with
+zerobas latching Ctrl-STOP into PENDING (the T2 STRIG model adopted when
+STOPGRACE was removed) against the reference re-latching on every keyboard scan.
+Filed as its own TODO item; it is a BASIC-fidelity defect, not a disk one, and it
+must not be "fixed" by loosening the threshold.
+
+⚠️ **WHAT THIS DOES NOT LICENSE.** The gate is still GREEN and is left untouched
+here: rewriting it is a design step (what should it assert, given the property is
+absent?) and belongs with the divergence, not with this measurement. Until then,
+**no step-9 work may cite `E_rearm_under_held_key_refires` as evidence in either
+direction** — neither as an obstacle nor as a clearance.
+
 ## 6.7 🔍 GAP ANALYSIS — zerobas AGAINST THE MEASURED PROTOCOL (D-HOOKCENSUS, 2026-09-19)
 
 > 🏗️ **RULED BY JOOST, 2026-09-20: *"I think the answer to Two is obvious: we do
@@ -2491,12 +2567,15 @@ nothing disassembled, and not one byte of the RAM-resident code read on either.
 > does not answer, and row 8 stays open until it is measured against a real
 > design rather than assumed either way.
 >
-> 🛑 **AND ONE THING STILL BLOCKS THE FIRST STEP.** The move needs `$FE5D`
-> claimed, and claiming ANY new hook cell reproducibly reddens
-> `stop-trap-acceptance`'s `E_rearm_under_held_key_refires` (§6.6t) — an
-> unexplained CORRELATION with no mechanism, parked. That is the first thing to
-> break, and §6.6t's own advice is to doubt the ROW before the hook: it scores 3
-> against a threshold of 2 where the reference scores 122.
+> 🟢 **AND THE THING THAT BLOCKED THE FIRST STEP NO LONGER DOES (§6.6af,
+> 2026-09-20).** The move needs `$FE5D` claimed, and §6.6t recorded that claiming
+> ANY new hook cell reddens `stop-trap-acceptance`'s
+> `E_rearm_under_held_key_refires`. Its own advice was to doubt the ROW first;
+> doing so showed the row reads RED on the UNMODIFIED ROM at 15 of 20 timing
+> configurations and green only at the schedule the gate happens to use. **The
+> obstacle is withdrawn, and no step-9 work may cite that row in either
+> direction.** What it did expose is a real BASIC divergence — zerobas does not
+> re-fire under a held Ctrl-STOP at all — filed separately.
 >
 > 🟢 **AND IT CUTS THE RIGHT WAY FOR THE DISKLESS COMBO** (Joost, same day: a
 > VG-8020 plus a Philips NMS disk cartridge is a valid machine, and diskless

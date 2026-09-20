@@ -536,6 +536,38 @@ artifact of how many line boundaries fit the run — ref 122, zerobas 6). D now 
 on both. `tests/test_traps.py` grows `t_stop_shadow`, a fence pinning that `ZTI_STOP` is not
 special-cased out of the shadow discipline.
 
+🔴 **CORRECTION 2026-09-20 (D-REARMSENS): CASE E IS A PHASE METRIC, AND ZEROBAS DOES
+NOT HAVE THE PROPERTY IT ASSERTS.** The "zerobas 6" above is stale twice over — the row
+reads **3** at the gate's own schedule, and **1** almost everywhere else. Sweeping knobs
+that should not matter, on the SHIPPED ROM with nothing rebuilt
+([`scratchpad/rearmsens_probe.py`](../scratchpad/rearmsens_probe.py)):
+
+| knob (ROM untouched) | values |
+|---|---|
+| key-down 0.300 … 0.340 s, 5 ms steps | **3**, 1, 2, 2, 1, 1, 1, 2, 1 |
+| emulator boot delay 6.000 … 6.040 s, 5 ms steps | **3**, 1, 1, 1, 1, 1, 1, 1, 1 |
+| the same sweep on the VG-8020 | 122 ×8, 121 ×1 |
+
+**Red at 15 of 20 timing configurations, green only at the schedule the gate uses** — and
+perfectly deterministic at each one, so this is a pinned phase, not a flake. The reference
+is phase-STABLE at 122, so the fragility is ours.
+
+➡️ **WHAT THAT MEANS FOR THE MECHANISM ABOVE.** zerobas's generic answer is **one fire**:
+under a held key the re-arming handler does **not** fire again. The count does not scale
+with the program's length either (`FOR I=1TO` 1500 / 3000 / 6000 / 12000 → 2, 2, 3, 3),
+which is exactly what the edge model described above predicts. The last table row — *"a
+transition into `ON` does not seed the shadow"* — is still the right reading of the
+REFERENCE; what is wrong is the assumption that our edge model reproduces its consequence.
+It does not, and case E's `flag>=2` has been passing on two accidental extra fires.
+
+⛔ **THE FIX IS NOT A LOOSER THRESHOLD OR A WIDER SCHEDULE** — both re-hide it. Either
+`rp_break`/`ex_stop` re-fire under a held key the way the reference does, or case E is
+restated as a measured divergence carrying these numbers. Filed in `TODO.md`; the gate is
+left untouched and green until that is decided. ⚠️ Until then a RED on case E means
+nothing on its own: check its schedule sensitivity before attributing it to any change.
+🎯 This is also what dissolved `spec-diskcode-eviction.md` §6.6t's "our disk ROM cannot
+install an 18th hook" (§6.6af) — that claim rested entirely on this row.
+
 **Arc lesson, again:** the host suite was green through all of this and stayed green — it
 pins zerobas's own state machine, not the oracle. What was never really measured was the
 reference, because the apparatus could not hold still long enough to read it.

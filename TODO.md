@@ -368,9 +368,9 @@ item — do **one item per session** to keep context lean.
       different machines and only the first is covered. The rig is that same
       machine with a foreign ROM in 3-1 — `nms8250_disk.rom`, `nms8245_disk.rom`,
       `cf-3300_disk.rom` and a dozen others are already present locally.
-      🔴 **Two are BLOCKING and are ONE slice:** claim `$FE5D` (blocked by
-      §6.6t's parked correlation) and move the loop below it (the D-DPLMOVE slice
-      that was backed out).
+      🔴 **Two are BLOCKING and are ONE slice:** claim `$FE5D` (no longer
+      blocked — §6.6t's correlation is withdrawn by §6.6af) and move the loop
+      below it (the D-DPLMOVE slice that was backed out).
       🏗️ **RULED BY JOOST 2026-09-20: *"I think the answer to Two is obvious: we
       do as the reference does."*** The FAT12 engine and the loader's sector loop
       MOVE OUT OF MAIN INTO `disk.rom`. Rows 2, 5 and 6 of §6.7's table stop being
@@ -381,10 +381,14 @@ item — do **one item per session** to keep context lean.
       implementation detail: whether we need our own equivalent of the
       reference's ~96 B of RAM-resident code (§6.6ac) is a SEPARATE question it
       does not answer, and row 8 stays open.
-      🛑 **FIRST OBSTACLE, UNCHANGED:** the move needs `$FE5D` claimed, and
-      claiming ANY new cell reddens `stop-trap-acceptance`'s
-      `E_rearm_under_held_key_refires` (§6.6t). Doubt the ROW first — it scores 3
-      against a threshold of 2 where the reference scores 122.
+      🟢 **THE FIRST OBSTACLE IS GONE (D-REARMSENS 2026-09-20, §6.6af).** The
+      move needs `$FE5D` claimed, and §6.6t recorded that claiming ANY new cell
+      reddens `stop-trap-acceptance`'s `E_rearm_under_held_key_refires`. Its own
+      advice was to doubt the ROW first; doing so showed the row reads RED on the
+      UNMODIFIED ROM at 15 of 20 timing configurations and green only at the one
+      schedule the gate uses. **The claim is withdrawn — an 18th hook is not
+      known to be a problem — and that row may not be cited here in either
+      direction.**
       🔴 **CORRECTED SAME DAY — THE INTEROP COUNTERWEIGHT IS ALREADY DEAD.** §6.7
       first justified keeping the FAT in main as *"what keeps a foreign disk ROM
       drivable"* and called the inversion a trade between two live directions.
@@ -430,12 +434,27 @@ item — do **one item per session** to keep context lean.
       service; against the measured whole-loop shape they deserve a fresh look
       rather than automatic retirement.
 
-- [ ] 🔴 **OUR DISK ROM CANNOT INSTALL AN 18th HOOK — AND THAT, NOT THE CELL,
-      IS WHAT BLOCKS STEP 9.**
-      🎚️ TIER 2 — it blocks the eviction at every address, so it outranks the
-      shape question it was hiding.
-      🤖 **AUTONOMOUS** — a defect in our own ROM with a deterministic
-      reproduction; no ruling needed to investigate it.
+- [x] ✅ **WITHDRAWN 2026-09-20 (D-REARMSENS): OUR DISK ROM CANNOT INSTALL AN
+      18th HOOK — the ROW could not carry that claim, and doubting it found a
+      real BASIC divergence instead.** `disk/docs/spec-diskcode-eviction.md`
+      §6.6af. **Nothing was rebuilt**: every arm ran the SHIPPED ROM, with
+      `hook_tab` untouched. Shift the key-down instant, or the emulator's boot
+      delay, by 5 ms and `E_rearm_under_held_key_refires` collapses from 3 to 1
+      — **red at 15 of 20 timing configurations, green only at the one schedule
+      the gate uses.** Of nine boot offsets spanning 40 ms, `boot=6.0` is the
+      only green. It is not a flake either: six identical runs all read 3, and
+      every phase point repeats its own value, so the determinism §6.6t measured
+      was real and simply was not about hooks. The VG-8020 control reads
+      122/122/122/122/122/122/122/122/121 across the same sweep — a phase-STABLE
+      large number, so the fragility is ours, not the probe's.
+      ➡️ **The obstacle to step 9 is removed by DISQUALIFICATION, not
+      explanation.** What an 18th installed hook does to sub-frame phase is still
+      unestablished and is not guessed at; it does not need to be, because the
+      row cannot bear the claim either way. **No step-9 work may cite that row as
+      an obstacle OR as a clearance.**
+      🎯 **AND THE ROW'S OWN ADVICE PAID OFF TWICE** — see the divergence item
+      below, which is what it was hiding.
+      ⬇️ The original analysis is kept below, inverted rather than deleted.
       MEASURED 2026-09-19 (D-FE67CLEAR, `disk/docs/spec-diskcode-eviction.md`
       §6.6t), running the clearance test Joost asked for before choosing a shape.
       🔴 **§6.6p's EXPLANATION IS RETRACTED.** It said `$FE5D` could not be
@@ -478,6 +497,45 @@ item — do **one item per session** to keep context lean.
       (handler assembled in, table row zeroed) stays green. ➡️ The cheap way
       round now looks better than chasing it: **step 9 need not ADD a row** —
       sharing an existing one leaves the installed set untouched.
+
+- [ ] 🔴 **A HELD Ctrl-STOP DOES NOT RE-FIRE A RE-ARMING HANDLER — AND THE GATE
+      THAT EXISTS TO PIN THAT HAS BEEN GREEN BY TIMING LUCK.**
+      🎚️ TIER 3 — COMMON ERRORS. It is a real BASIC-fidelity divergence on a
+      shipped trap, but no happy path depends on it.
+      🤖 **AUTONOMOUS** — our own ROM, deterministic reproduction, an oracle that
+      answers at every phase; no ruling needed to measure or to fix.
+      MEASURED 2026-09-20 (D-REARMSENS,
+      [`scratchpad/rearmsens_probe.py`](scratchpad/rearmsens_probe.py),
+      `disk/docs/spec-diskcode-eviction.md` §6.6af), while doubting the row that
+      §6.6t said to doubt.
+      🎯 **THE PROPERTY IS NOT IMPLEMENTED.** `stop-trap-acceptance`'s
+      `E_rearm_under_held_key_refires` asserts *flag ≥ 2* — "a handler that
+      re-arms itself under a held Ctrl-STOP fires again **at all**". The
+      reference fires **122** times, at every phase sampled (±1). zerobas fires
+      **1** at all but a handful of timing configurations: it fires once and
+      never again. The gate's 3 is two accidental extra fires contributed by the
+      one schedule it happens to use.
+      🔬 **THE SHAPE OF THE EVIDENCE.** The count does NOT scale with how long
+      the program runs (`FOR I=1TO` 1500 / 3000 / 6000 / 12000 → 2, 2, 3, 3),
+      which is what an EDGE-latched model predicts and a per-scan model does not.
+      That is consistent with zerobas latching Ctrl-STOP into PENDING — the T2
+      STRIG model adopted when STOPGRACE was removed
+      (`docs/spec-traps-t1-stop-reslice.md`) — against the reference re-latching
+      on every keyboard scan while the key is down.
+      ⛔ **DO NOT "FIX" THIS BY LOOSENING THE THRESHOLD**, and do not fix it by
+      widening the schedule until the row is green again: both would re-hide the
+      divergence. Either zerobas re-fires under a held key the way the reference
+      does, or the row is restated as a MEASURED DIVERGENCE with the numbers on
+      it. Which of the two is a design question about `ex_stop`/`rp_break`, not a
+      gate question.
+      ⚠️ **THE GATE IS LEFT UNTOUCHED AND IS STILL GREEN.** Rewriting it belongs
+      with the decision above, not with the measurement — but note that until
+      then it is a row that passes on luck, so a future red there means nothing
+      until its schedule sensitivity is checked first.
+      🎯 **THE LESSON, AND IT IS THE THIRD TIME THIS ARC HAS PAID IT:** a row can
+      be GREEN for the wrong reason just as easily as red. The negative control
+      that made this readable was sweeping a knob that should not matter — and
+      finding that it does.
 
 - [ ] 🛑 **SUPERSEDED — kept for its reasoning, but its CAUSE was wrong (see the
       18-hook item above): `$FE5D` and the file-buffer-0 reading.**
@@ -3043,7 +3101,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:20747 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:20805 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -3209,7 +3267,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:7852 (T-6FE392)8 (T-529ABE)` from `TODO.md:19141 (T-529ABE)`: a
+      `TODO.md:7910 (T-6FE392)8 (T-529ABE)` from `TODO.md:19199 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -8696,7 +8754,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:19141 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:19199 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
