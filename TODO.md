@@ -382,7 +382,25 @@ item — do **one item per session** to keep context lean.
       implementation detail: whether we need our own equivalent of the
       reference's ~96 B of RAM-resident code (§6.6ac) is a SEPARATE question it
       does not answer, and row 8 stays open.
-      🟢 **THE HOOK IS INSTALLED, 2026-09-20 (§6.6ai). `$FE5D` IS CLAIMED.**
+      🟢 **✅ STEP 9 IS DONE, 2026-09-20 (§6.6am). `LOAD` RUNS IN `disk.rom`.**
+      Main is `diskslot_test`, write `FOPEN_SEL` = `$4C`, `call chan_gate` on
+      `H_FOPEN`, decode `DISKOP_STATUS` (0 loaded / 1 → `df_notfound` ERR 53 /
+      2 → `ascii_load` / 3 → `disk_error` / 4 → `dpl_oom`). Mount, directory
+      search, FAT walk and the byte loop are `hk_dpload`'s.
+      💰 **120 B of main page 1 returned, measured 2026-09-20** — `dpl_line`/`dpl_body`/
+      `dpl_get_store`/`dpl_eof`/`dpl_oom_pop`/`dpl_nf` went unreachable and
+      `check_dead_code` named all six. Page 1 **43 B → 154 B free** (2026-09-20;
+      re-run `make basic-reloc`, never quote it). `gates-full` 132/132 plus all
+      eight excluded targets.
+      🔴 `dpl_nf` had to go: it read `DISKOP_OP`, which now carries the SELECTOR,
+      and its own header said that is safe only while the cell is provably fresh.
+      ⚠️ **§6.6q's BUFFER HAZARD IS NOT RETIRED.** It did not bite, but no suite
+      runs `PAINT` then `LOAD`; `LOAD` survives because everything in the window
+      is per-statement scratch. That does NOT carry to steps 10-12, which run
+      mid-program against live state. First thing step 10 must answer.
+      ➡️ **NEXT: steps 10-12** — a selector value each here, an arm each in
+      `hk_dpload`, plus the buffer question.
+      🟢 **THE HOOK WAS INSTALLED FIRST, 2026-09-20 (§6.6ai).**
       `dw H_FOPEN, hk_dpload` is in `hook_tab`; the 16 D-DPLMOVE allowlist lines
       are gone (15 went live, `fat_io_open` kept with the D-BLNF reason, exactly
       as §6.6ag predicted); knives re-pinned with all 2500+ rows byte-identical.
@@ -3268,7 +3286,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:20972 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:20990 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -3434,7 +3452,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:8077 (T-6FE392)8 (T-529ABE)` from `TODO.md:19366 (T-529ABE)`: a
+      `TODO.md:8095 (T-6FE392)8 (T-529ABE)` from `TODO.md:19384 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -8921,7 +8939,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:19366 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:19384 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

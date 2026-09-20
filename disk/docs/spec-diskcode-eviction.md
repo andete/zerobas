@@ -2904,6 +2904,54 @@ about being a floor and still understated the answer by an order of magnitude.
 says** — check the parser against the source before pricing anything on its
 output [[an-instrument-can-fail-the-way-the-thing-it-replaced-failed]].
 
+### 6.6am 🟢 STEP 9 IS DONE — `LOAD` RUNS IN `disk.rom` (D-DPLWIRE, 2026-09-20)
+
+Main hands the whole of `LOAD` across the slot. `disk_prog_load` is now
+`diskslot_test`, three lines, and a decode:
+
+```
+        ld   a,FOPEN_SEL_LOAD      ; $4C -- which verb is asking
+        ld   (FOPEN_SEL),a
+        ld   hl,H_FOPEN            ; $FE5D, the cell the REFERENCE uses
+        call chan_gate             ; unclaimed -> ERR 5; claimed -> it ran
+        ld   a,(DISKOP_STATUS)     ; 0 loaded / 1 not found / 2 ASCII /
+                                   ; 3 mount-I/O / 4 out of memory
+```
+
+Mount, directory search, FAT walk and the entire byte loop are `hk_dpload`'s.
+Main evaluates the filespec, says which verb is asking, and commits the program
+that comes back — which is what §8 measured the reference doing.
+
+💰 **120 B OF MAIN PAGE 1 RETURNED, AND THE GATE FOUND THEM.** `dpl_line`,
+`dpl_body`, `dpl_get_store`, `dpl_eof`, `dpl_oom_pop` and `dpl_nf` went
+unreachable the moment the call landed; `check_dead_code` named all six with
+their sizes rather than leaving me to guess. Main page 1 **43 B → 154 B free**
+(2026-09-20; re-run `make basic-reloc`).
+
+🔴 **`dpl_nf` WENT WITH THEM, AND ITS OWN HEADER IS WHY.** It read `DISKOP_OP`
+through `df_or_loaderr`, and said in as many words that this is safe *"ONLY for
+an arm where `DISKOP_OP` is provably FRESH"*. `DISKOP_OP` now carries the
+SELECTOR, so that arm no longer exists and reading it as a FAT primitive code
+would be exactly the stale-cell bug the header warned about — the one
+`castail-acceptance` caught the first time. Not-found is `DISKOP_STATUS = 1`
+now, decoded straight to `df_notfound`.
+
+🟢 **`gates-full` 132/132 plus all eight battery-excluded targets**, including
+`diskbasic`, `runtail`, `truncload`, `castail`, `fat-error` and `nodisk`.
+
+⚠️ **AND WHAT THIS DOES *NOT* SHOW.** §6.6q's buffer hazard did not bite — but
+no suite runs `PAINT` and then `LOAD` in one program, which is the case that
+would exercise it. §6.6al measured disk's `SECTOR_BUF` window at 510 B of 512
+occupied by main cells; the reason `LOAD` survives is that every one of them is
+per-statement scratch for statements that cannot be running during a `LOAD`.
+**That reasoning does not carry to steps 10-12**: `OPEN`/`INPUT#`/`PRINT#` run
+mid-program against live string and graphics state, which is what §6.6q said
+from the start. The hazard is unretired and is the first thing step 10 must
+answer.
+
+➡️ **NEXT: steps 10-12** (`OPEN`, `MERGE`, `SAVE`) are a selector value each on
+this side and an arm each in `hk_dpload` — plus that buffer question.
+
 ## 6.7 🔍 GAP ANALYSIS — zerobas AGAINST THE MEASURED PROTOCOL (D-HOOKCENSUS, 2026-09-19)
 
 > 🏗️ **RULED BY JOOST, 2026-09-20: *"I think the answer to Two is obvious: we do

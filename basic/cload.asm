@@ -987,191 +987,67 @@ disk_prog_load:
                 jp      z,dpl_err           ; no disk ROM at all: NO primitive has
                                             ; run, so DISKOP_OP would be stale --
                                             ; and dpl_err is the SAFE tail now
-                ; (2) open the file via the FAT12 engine (mount + find + prime).
-                call    fat_io_open
-                jp      c,dpl_nf           ; D-LOADERR: not found -> ERR 53 (raised);
-                                           ; mount / I-O -> the unchanged `load error`.
-                                           ; DISKOP_OP is FRESH here and nowhere else
-                                           ; in this routine.
-                ; (3) start a fresh program: store cursor at the text base.
-                ; ⚠️ HOISTED ABOVE THE MARKER READ BY D-TRUNCLOAD: an EOF on the
-                ; very first byte (a ZERO-BYTE file) must commit an EMPTY program
-                ; like every other EOF here, and it cannot do that with CLPTR
-                ; unset. Nothing between here and `ascii_load` reads either
-                ; variable -- that path uses new_prog / ascii_read_lines -- so
-                ; the two stores are dead on that arm rather than wrong.
-                ld      hl,TXTBASE
-                ld      (CLPTR),hl
-                ld      (CLINK),hl          ; A_0 = saving machine's text base (== ours)
-                ; (4) first byte selects the format: $FF = tokenised BASIC; anything
-                ; else = an ASCII (SAVE",A") program (ASCII text never starts $FF).
-                call    fat_io_getbyte
-                jp      c,dpl_done          ; D-TRUNCLOAD: EOF is the END of the
-                                            ; program, not an error -- the
-                                            ; reference is SILENT at all five of
-                                            ; this routine's EOF sites
-                cp      BASIC_DISK_ID
-                jp      nz,ascii_load       ; not the $FF marker -> ASCII program load
-                ; --- read the line-link image, stopping at the $0000 end-link ---
-                ; LENGTH-DRIVEN, exactly like do_tape_prog's ctp_line/ctp_body: a
-                ; token body may contain $00 bytes, so the line boundary is taken
-                ; from the saved link-word differences, NOT the first $00. This
-                ; line's body length = (this link) - (previous link) - 4; we copy
-                ; exactly that many body bytes (embedded $00s included), landing on
-                ; the next link word. The saved links are stored as-is; relink
-                ; (token-aware) recomputes them below.
+                ; (2) HAND THE WHOLE LOAD TO disk.rom (step 9, D-DPLWIRE).
+                ; 🏗️ Joost's ruling (spec-diskcode-eviction.md §6.6m, re-affirmed
+                ; in §6.7's *"we do as the reference does"*): mount, directory
+                ; search, FAT walk and the entire byte loop live where the
+                ; reference keeps them, reached through ONE claimed cell. Main's
+                ; side of the contract is the three lines below plus a decode --
+                ; it evaluates the filespec, says which verb is asking, and
+                ; commits the program that comes back.
                 ;
-                ; Per line: read the 2-byte link word; $0000 -> end of program.
-                ; Otherwise store link word + 2-byte line number verbatim, then copy
-                ; the computed body byte count and loop.
-dpl_line:
-                call    fat_io_getbyte        ; link low
-                jp      c,dpl_done          ; D-TRUNCLOAD: EOF between lines is the
-                                            ; normal end of the program
-                push    af                  ; preserve link-low: fat_io_getbyte may clobber C
-                call    fat_io_getbyte        ; link high
-                jr      c,dpl_eof           ; must drop the pushed link-low first
-                                            ; (`jr`, not `jp`, here and at the three
-                                            ; D-TRUNCLOAD sites below: 4 B carved for
-                                            ; D-UPSTR. dpl_eof is in range and the
-                                            ; branch is taken once per load, so the
-                                            ; NOT-taken path is also 3 cycles cheaper)
-                ld      b,a                 ; B = link high
-                pop     af
-                ld      c,a                 ; C = link low (restored)
-                                            ; BC = saved link word L_n = A_{n+1}
-                ld      a,b
-                or      c
-                jp      z,dpl_done          ; $0000 link -> program complete
-                                            ; (`jp`, not `jr` -- D-NGRAM12 moved
-                                            ; dpl_done to the shared tail, which
-                                            ; is out of relative range from here)
-
-                ; body length = L_n - A_n - 4   (A_n = CLINK = previous link word)
-                ld      hl,(CLINK)          ; HL = A_n
-                ld      (CLINK),bc          ; advance CLINK = L_n for the next line
-                ld      a,c
-                sub     l
-                ld      e,a
-                ld      a,b
-                sbc     a,h
-                ld      d,a                 ; DE = L_n - A_n = full line length
-                dec     de
-                dec     de
-                dec     de
-                dec     de                  ; DE = body length (incl. its $00 term)
-
-                ; bounds: this line's header (>=4 bytes) must fit below TXTMAX
-                push    de                  ; guard body length across fat_io_getbyte
-                ld      hl,(CLPTR)
-                ld      de,TXTMAX-4
+                ; 🔴 THE SELECTOR GOES IN FIRST, and it is not a formality:
+                ; FOPEN_SEL aliases DISKOP_OP, and $FE5D is reached on paths that
+                ; are not ours, so hk_dpload answers CF=0 to anything that is not
+                ; exactly FOPEN_SEL_LOAD ($4C, outside DISKOP_SEL_*'s 0..7 range).
+                ; Steps 10-12 (OPEN, MERGE, SAVE) add a value each here and an
+                ; arm there; that is the whole shape (§6.6n).
+                ;
+                ; ⚠️ WHY chan_gate AND NOT A BARE `call H_FOPEN`. The cell is
+                ; `F7 <slot> <lo> <hi> C9`; unclaimed it is a bare `ret` and the
+                ; call returns with CF as we left it. chan_gate is the one place
+                ; that reads that answer -- CF=0 -> ERR 5, trappable, which is
+                ; what the reference gives a diskless machine. diskslot_test
+                ; above still runs first, so the diskless path is unchanged.
+                ld      a,FOPEN_SEL_LOAD
+                ld      (FOPEN_SEL),a
+                ld      hl,H_FOPEN
+                call    chan_gate           ; claimed -> disk.rom ran the WHOLE
+                                            ; load, and CLPTR/CLINK are seeded
+                ; (3) decode what it did. DISKOP_STATUS, not A: that is what
+                ; every other hook in hook_tab answers through (hk_files,
+                ; hk_kill, hk_copy) and main already decodes it that way.
+                ld      a,(DISKOP_STATUS)
                 or      a
-                sbc     hl,de
-                jr      nc,dpl_oom_pop
-
-                ; store the (saved) link word verbatim; relink fixes it later
-                ld      hl,(CLPTR)
-                ld      (hl),c
-                inc     hl
-                ld      (hl),b
-                inc     hl
-                ld      (CLPTR),hl
-
-                ; line number (2 bytes)
-                call    dpl_get_store
-                jr      c,dpl_eof           ; D-TRUNCLOAD
-                call    dpl_get_store
-                jr      c,dpl_eof           ; D-TRUNCLOAD
-                pop     de                  ; DE = body length
-
-                ; token body: copy EXACTLY DE bytes (embedded $00s and all)
-dpl_body:
-                ld      a,d
-                or      e
-                jr      z,dpl_line          ; whole body copied -> next line
-                push    de                  ; guard remaining count across fat_io_getbyte
-                ld      hl,(CLPTR)          ; bounds check
-                ld      de,TXTMAX
-                or      a
-                sbc     hl,de
-                jr      nc,dpl_oom_pop
-                call    dpl_get_store
-                jr      c,dpl_eof           ; D-TRUNCLOAD
-                pop     de                  ; DE = remaining count
-                dec     de
-                jr      dpl_body
-
-;  D-ALIASGATE: `dpl_link_err equ ctp_link_err` REMOVED 2026-09-19. D-TRUNCLOAD
-; replaced its call sites with `jr c,dpl_eof` -- EOF between the two link-word
-; reads is the normal end of a truncated program, not an error -- and left the
-; `equ` behind under a header still claiming "The NAME and every call site
-; survive". Zero references; an `equ` emits no bytes, so `check_dead_code` could
-; not see it. `tools/check_dead_aliases.py` can, and now does.
-
-; --- dpl_eof: EOF reached with ONE word guarded on the stack -----------------
-; D-TRUNCLOAD. A truncated tokenised BASIC file is not an error condition: the
-; reference is SILENT at all five of this routine's EOF sites, including a
-; zero-byte file, and NOT because it reads whole sectors -- a garbage-padded
-; truncation of the same recorded length reads identically to a zero-padded one
-; (docs/spec-basic-truncload.md §2). So EOF joins the normal completion path and
-; the caller's one guarded word is dropped on the way.
-; 🔴 ONE TAIL FOR TWO DIFFERENT PUSHES. Three sites guard a 16-bit COUNT
-; (`push de`) and one guards the LINK-LOW byte (`push af`); both are one stack
-; word, and `load_commit_prog` reads neither A, DE nor the flags -- it opens
-; `ld hl,(CLPTR)` and ends `or a`. The pop only has to be the right SIZE.
-; ⚠️ THIS DOES NOT WORK WITHOUT THE BOUNDED RELINK (sub/lineedit.asm
-; `rlb_lp`): committing a line whose body was cut off leaves no `$00`
-; terminator, so relink's end-find OVERSHOOTS PRGEND -- and against an equality
-; test it then walks RAM forever. Measured as a HANG before that test became
-; `>=`.
-dpl_eof:
-                pop     af                  ; drop the caller's guarded word
-                jp      dpl_done
-
-; dpl_oom_pop — drop the stacked body length / remaining count, then take the
-; out-of-memory path (stack stays balanced). Its twin `dpl_err_pop` is GONE:
-; D-ALIASGATE removed the `equ ctp_err_pop` on 2026-09-19 for the same reason as
-; dpl_link_err above, and see dpl_get_store's header for the analysis that used
-; to rest on it.
-; --- dpl_get_store: read ONE file byte and store it at CLPTR, advancing -------
-; D-NGRAM13. The disk loader's line-number and body copies each said this six
-; times over; it is one routine now.
-;   in:  nothing.   out: CF set = EOF (nothing stored); CF clear = the byte is
-;   stored and CLPTR has advanced.  Clobbers A, HL, flags. BC/DE preserved.
-;
-; 🔴 IT RETURNS CF AND THE CALLER STILL RAISES, AND THAT COSTS 4 B ON PURPOSE.
-; ⚠️ **THE INSTRUCTION THIS PARAGRAPH WAS WRITTEN ABOUT NO LONGER EXISTS**, and
-; the analysis is kept rather than deleted because its CONCLUSION still holds
-; while its subject changed (2026-09-19, D-ALIASGATE). D-NGRAM13 argued about a
-; `jp c,dpl_err_pop` at each call site; D-TRUNCLOAD later replaced every one of
-; them with `jr c,dpl_eof`, because an EOF mid-program is the normal end of a
-; truncated file and not an error at all. What survives unchanged is the SHAPE:
-; each call site guards exactly ONE value across the read (the body length, or
-; the remaining count) and its own branch drops it. Folding that branch INTO
-; this helper would still be a few bytes cheaper and would still need a frame
-; fix -- the helper's own return address sits on top of the guard, so the tail
-; must drop two.
-; ⚠️ THAT FIX CANNOT BE WITNESSED. K-N13A cut it and moved ZERO rows, on TWO
-; fixtures chosen to make the bogus return address as hostile as possible ($0007
-; and $0BB3): the stack below the loader is the REPL's own, so a stray `ret`
-; finds a plausible address in it and the machine wanders back to the prompt.
-; A guard no row can see is one nobody can maintain, so the CF-return shape wins
-; -- the branch stays at the SITE, where the stack is exactly what every
-; existing analysis of this routine assumes.
-; (docs/spec-basic-ngram13.md §3; the same call D-ARGOPEN made.)
-dpl_get_store:
-                call    fat_io_getbyte
-                ret     c                   ; EOF -> the CALLER raises, in ITS frame
-                ld      hl,(CLPTR)
-                ld      (hl),a
-                inc     hl
-                ld      (CLPTR),hl
+                jp      z,dpl_done          ; 0 = loaded -> relink and commit
+                dec     a
+                jp      z,df_notfound       ; 1 = not found -> ERR 53, and it
+                                            ; RAISES: D-LOADERR measured both
+                                            ; references stopping here, and
+                                            ; do_run must not run the old program
+                dec     a
+                jp      z,ascii_load        ; 2 = not tokenised -> main re-opens
+                                            ; from offset 0 and tokenises
+                dec     a
+                jp      nz,dpl_oom          ; 4 = out of memory
+                ; 3 = mount / I-O. `call`, not `jp`: disk_error raises the MAPPED
+                ; code when disk.rom recorded one in DISKOP_ERR (the shared DSKIO
+                ; mapping that survived D-DPLMOVE's back-out) and otherwise falls
+                ; to the non-raising `load error` -- which must still return with
+                ; CF SET, the D-RUNTAIL contract in this routine's header.
+                call    disk_error
+                scf
                 ret
-
-dpl_oom_pop:
-                pop     de
-                jr      dpl_oom
-
+; 🟢 THE TOKENISED LOAD LOOP IS GONE FROM MAIN (step 9, D-DPLWIRE 2026-09-20).
+; dpl_line / dpl_body / dpl_get_store / dpl_eof / dpl_oom_pop and dpl_nf lived
+; here and are now hk_dpload's, in disk.rom -- 120 B of main page 1 returned.
+; dpl_nf went with them because its own header said it was ONLY safe for an arm
+; whose CF came DIRECTLY from a main-side fat_io_open; there is no such arm left,
+; and DISKOP_OP now carries the SELECTOR, so reading it as a FAT primitive code
+; would be exactly the stale-cell bug that header warned about. Not-found is
+; disk.rom's DISKOP_STATUS = 1 now, decoded straight to df_notfound.
+; What stays: dpl_done (the shared commit), dpl_err, dpl_oom and ascii_load --
+; the ASCII path is still main's, because tokenising is.
 ; dpl_done — program fully read; no Close, the read side has no dirty state.
 ; D-NGRAM12: an ALIAS, not a second copy. This body WAS ten instructions
 ; byte-identical to do_tape_prog's completion tail; they are one routine now,
@@ -1206,17 +1082,6 @@ dpl_err:
                 call    load_error
                 scf
                 ret
-; dpl_nf — the same tail plus the not-found test. ONLY for an arm where DISKOP_OP
-; is provably FRESH: the CF has just come out of a main-side `fat_io_open`, whose
-; last act was `call fat_find` through fatprim_bounce. df_or_loaderr's non-found
-; arm is `jp load_error`, so a CALL of it returns here exactly as `call
-; load_error` does; only the found-nothing case diverts, to a raise that never
-; comes back.
-dpl_nf:
-                call    df_or_loaderr
-                scf
-                ret
-
 ; dpl_oom — store overflow: leave a clean (empty) program, report "out of memory".
 ; Mirrors ctp_oom for the disk store-overflow case. (No Close: read side is clean.)
 dpl_oom:
