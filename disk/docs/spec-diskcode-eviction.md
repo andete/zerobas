@@ -2995,6 +2995,59 @@ work rather than a missing answer — **and `OPEN` last**, behind either the RAM
 lever (PAINT's 360 B span stack, filed) or a design that keeps the sector buffer
 per-crossing and the per-channel state small.
 
+### 6.6ao 🟡 STEP 12 BUILT AND BACKED OUT — THE WRITE PATH IS NOT THE READ PATH (D-SAVEPORT, 2026-09-20)
+
+The `SAVE` port assembles, links and sizes correctly, and it **fails at
+runtime**. Backed out to keep the tree green; everything below is what it cost
+and what it found.
+
+🟢 **WHAT WAS BUILT, AND IT IS THE RIGHT SHAPE.** Four shared bodies added to
+`disk.rom` byte-identically — `fatiocreate-body.inc`, `fatiow-body.inc`,
+`sv-diskwr.inc`, `sv-savdisk.inc` — beside the `fat-prim-body.inc` it already
+had, so `fat_mount` / `fat_dir_create` / `fat_flush_data_sector` are in-page
+calls exactly as they are in the sub-ROM tenant. `hk_dpload` became a two-arm
+dispatcher with `FOPEN_SEL_SAVE = $53`; a disk-local `sv_load_error` records
+status 3 the way the sub tenant records `SV_STAT`; `do_save`'s
+`ld a,SV_OP_SAV_DISK / jp sv_tenant` became the same `chan_gate` sequence step 9
+uses; and the sub-ROM's `SV_OP_SAV_DISK` arm and include were removed, so the
+body lived in exactly one ROM. Four cells (`PRGEND`, `DSV_PTR`, `DSV_END`,
+`DISKSLOT_OK`) were published through the generated ABI so the shared source
+stayed verbatim in all three builds. Measured 2026-09-20: **sub page 1 87 B →
+145 B free**, main page 1 154 B → 140 B (the call sequence), `disk.rom` 8113 B →
+7888 B.
+
+🔴 **AND IT FAILS `runtail-acceptance`'s POSITIVE CONTROL.** `run-hit` reads
+`load error`, and `load-plain` / `load-short` then list nothing — the `SAVE`
+wrote no usable file. So `sv_load_error` ran with `DISKOP_ERR = 0`: a **logical
+carry** out of `fat_io_create` / `fat_dir_create` / the flush, not a mapped DSKIO
+failure. ⚠️ Not staleness — reproduced after `make clean` with the prerequisites
+corrected.
+
+🔬 **THE LIVE HYPOTHESIS, UNVERIFIED AND WRITTEN DOWN AS SUCH.** Step 9 only ever
+made `disk.rom` **read** from inside a hook. `disk/driver.asm`'s transfer path
+carries page-1 handling for the DOS context — *"ROM under DOS) read into
+SECTOR_BUF then blit to the real target"*, `P1_DEST` / `P1_BLIT` — and that has
+only ever run with page 1 = RAM under MSX-DOS, never with page 1 = `disk.rom`
+itself because a hook body is executing there. A write from inside a hook is the
+first caller in that configuration. **Check that before anything else.**
+
+🟢 **TWO GATES FOUND REAL BLIND SPOTS, AND THAT IS THE PART THAT LANDS.**
+* `tools/check_shared_bodies.py` scanned `("basic", "sub")` only, so a shared
+  body included **only** by `disk.rom` read as *"included by NOTHING"* — the
+  exact false positive its own header warns a bad glob produces. It stayed
+  invisible because every shared body `disk.rom` includes was ALSO included by
+  the sub-ROM, until `sv-savdisk.inc` moved out of it. **Fixed; `disk` is in
+  `DIRS` now**, and that fix is kept.
+* `rom-parts-check` correctly refused the four new includes until they were
+  `$(DISK_ROM)` prerequisites — *"an edit to any of them will NOT trigger a
+  rebuild, and the ROM will go quietly stale"*. It reverted with the port, but
+  it did its job first time.
+
+➡️ **TO RESUME:** the branch is one `git revert` away in
+[`e458032b..`](../../TODO.md)'s successor; re-apply the six edits above, then
+start at the driver's page-1 handling for a WRITE issued while page 1 holds
+`disk.rom`.
+
 ## 6.7 🔍 GAP ANALYSIS — zerobas AGAINST THE MEASURED PROTOCOL (D-HOOKCENSUS, 2026-09-19)
 
 > 🏗️ **RULED BY JOOST, 2026-09-20: *"I think the answer to Two is obvious: we do

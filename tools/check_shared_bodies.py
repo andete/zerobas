@@ -35,7 +35,13 @@ import re
 import sys
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-DIRS = ("basic", "sub")
+# 🔴 `disk` WAS MISSING UNTIL 2026-09-20 (D-SAVEPORT), AND THAT MADE THIS GATE
+# BLIND IN THE ONE DIRECTION IT EXISTS TO WATCH. A shared body included ONLY by
+# disk.rom read as "included by NOTHING" -- the exact false positive this file's
+# own header warns a bad glob produces. It stayed invisible because every shared
+# body disk.rom includes was ALSO included by sub, until sv-savdisk.inc moved
+# out of the sub-ROM and into disk.rom alone.
+DIRS = ("basic", "sub", "disk")
 INCLUDE = re.compile(r'^\s*include\s+"([^"]+)"', re.I | re.M)
 ALLOW = os.path.join(os.path.dirname(os.path.abspath(__file__)),
                      "shared-body-allow.txt")

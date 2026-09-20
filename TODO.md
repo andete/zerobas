@@ -414,7 +414,24 @@ item — do **one item per session** to keep context lean.
       `jp sv_tenant` (`SUBROM_IDX_SAVE`), so the body is ALREADY in the sub-ROM.
       The move is sub → disk and its value is faithfulness — today a foreign disk
       ROM is bypassed entirely, because `do_save` reaches no hook at all.
-      ➡️ **ORDER: `SAVE` first** (its blocker is work, not a missing answer),
+      🟡 **`SAVE` WAS BUILT AND BACKED OUT 2026-09-20 (§6.6ao).** It
+      assembles, links and sizes right — sub page 1 **87 B → 145 B free**,
+      `disk.rom` −225 B — and FAILS `runtail-acceptance`'s positive control:
+      `run-hit` reads `load error`, so `sv_load_error` ran with `DISKOP_ERR = 0`,
+      a logical carry out of the create/flush rather than a mapped DSKIO failure.
+      Not staleness (reproduced after `make clean`).
+      🔬 **LIVE HYPOTHESIS, UNVERIFIED:** step 9 only ever made `disk.rom` READ
+      from inside a hook. `disk/driver.asm`'s page-1 handling (`P1_DEST`/
+      `P1_BLIT`, *"ROM under DOS … blit to the real target"*) has only run with
+      page 1 = RAM under MSX-DOS, never with page 1 = `disk.rom` itself. A write
+      from inside a hook is the first caller in that configuration. **Start
+      there.**
+      🟢 **TWO GATE BLIND SPOTS FOUND, one kept:** `check_shared_bodies.py`
+      scanned `basic`+`sub` only, so a body included ONLY by `disk.rom` read as
+      "included by NOTHING" — fixed, `disk` is in `DIRS`. And `rom-parts-check`
+      correctly demanded the four new includes become `$(DISK_ROM)`
+      prerequisites.
+      ➡️ **ORDER: `SAVE` first** (its blocker is now a NAMED defect),
       `MERGE` needs a measurement, `OPEN` needs the RAM lever.
       🟢 **THE HOOK WAS INSTALLED FIRST, 2026-09-20 (§6.6ai).**
       `dw H_FOPEN, hk_dpload` is in `hook_tab`; the 16 D-DPLMOVE allowlist lines
@@ -3302,7 +3319,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:21006 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:21023 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -3468,7 +3485,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:8111 (T-6FE392)8 (T-529ABE)` from `TODO.md:19400 (T-529ABE)`: a
+      `TODO.md:8128 (T-6FE392)8 (T-529ABE)` from `TODO.md:19417 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -8955,7 +8972,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:19400 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:19417 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
