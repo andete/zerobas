@@ -561,6 +561,21 @@ item — do **one item per session** to keep context lean.
       addressed only as an offset has no `equ` and is not there at all; a blank
       size means the extent is not machine-readable, NOT one byte; and a width
       can be PRESENT AND WRONG.
+      🟢 **✅ AND IT REACHES THE MSX STANDARD WORK AREA NOW** — Joost, same day:
+      *"Does it also contain the officially documented ram variables?"* It did
+      not: the table stopped at `$F37F` while this tree declares **101 cells
+      above it** (79 `basic` — `USRTAB`, `LINL40/32`, `LINLEN`, `CSRY/CSRX`,
+      `CLIKSW`, `RG0SAV`… — and 22 `disk` — `EXPTBL`, `SLTTBL`, the published
+      hook table). They are in the document now, in their OWN section that says
+      plainly **this project uses these cells and does not own them**.
+      🔴 **AND THEY ARE DELIBERATELY OUTSIDE THE ARITHMETIC:** the run walk and
+      the width ratchet still stop at `$F380`. A gap up there would be bytes the
+      BIOS owns and we merely never named, and demanding our comments re-declare
+      extents the MSX standard already fixes would be noise, not rigour.
+      🔴 **THE FIRST STANDARD-AREA ROW PRINTED A WRONG WIDTH AND PROVED THE
+      CLASS AGAIN:** `USRTAB ; 10 USR jump vectors, 2 bytes each` read as **2**
+      where it is 20. The total leads now — third instance in one day, after
+      `FCH_RECNOS` and `GFX_DFSTK`.
       ➡️ **RESIDUAL: 137 pinned cells whose width lives only in prose.** Each
       removal is one-way and improves the map; burn them down as they are
       touched rather than in one sweep.
@@ -3492,7 +3507,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:21196 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:21211 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -3658,7 +3673,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:8301 (T-6FE392)8 (T-529ABE)` from `TODO.md:19590 (T-529ABE)`: a
+      `TODO.md:8316 (T-6FE392)8 (T-529ABE)` from `TODO.md:19605 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -9145,7 +9160,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:19590 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:19605 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

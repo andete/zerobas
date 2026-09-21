@@ -2386,7 +2386,13 @@ CLR_HIMEM_MARGIN equ    680
 ; USRTAB: the 10 DEF USR vectors (USR0..USR9), 2 bytes each, $F39A..$F3AD.
 ; Source: C-BIOS system variables (BSD 2-clause). On C-BIOS (no BASIC) this is
 ; unused work-area RAM, so DEF USR writing it is safe and observable.
-USRTAB          equ     $F39A   ; 10 USR jump vectors, 2 bytes each
+USRTAB          equ     $F39A   ; 20 B total, 10 USR jump vectors of 2 B each.
+                                ; 🔴 THE TOTAL LEADS (2026-09-21): with
+                                ; "2 bytes each" first, tools/ram_map.py read
+                                ; the WIDTH as 2 and docs/ram-map.md printed it.
+                                ; Same shape as FCH_RECNOS and GFX_DFSTK the same
+                                ; day -- a width PRESENT and WRONG, which no gate
+                                ; catches.
 ; Step B scratch (page $E0, clear of LINEBUF/VARTAB in page $E1).
 SL_NUM          equ     $E030   ; store_line: target line number (2)
 SL_SLOT         equ     $E032   ; store_line: insertion slot address (2)

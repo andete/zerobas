@@ -93,6 +93,19 @@ EQU = re.compile(r"^([A-Za-z_][A-Za-z0-9_]*)\s+equ\s+(.+?)\s*(?:;(.*))?$",
 
 # The BASIC workspace this project owns, below the standard MSX sysvar block.
 DEFAULT_LO, DEFAULT_HI = 0xE000, 0xF380
+# 🔴 THE DOCUMENT REACHES HIGHER THAN THE ANALYSIS, AND ON PURPOSE (Joost,
+# 2026-09-21: *"Does it also contain the officially documented ram variables?"*
+# It did not). Above $F380 lies the MSX STANDARD work area -- LINLEN, CSRY/CSRX,
+# RG0SAV, EXPTBL/SLTTBL, the published hook table. This project DECLARES 101 of
+# those cells because it uses them; it does not OWN them.
+# 🎯 SO THEY BELONG IN THE TABLE AND NOT IN THE ARITHMETIC. A reader asking
+# "what is at $F3B0" must find LINLEN here. But an unattributed RUN up there
+# would be a statement about bytes the BIOS owns and we merely never named, and
+# the width RATCHET would demand our comments re-declare extents the MSX
+# standard already fixes. Runs and the ratchet stay in [DEFAULT_LO, DEFAULT_HI);
+# the document covers DOC_HI and says which half a row is in.
+DOC_HI = 0x10000
+STD_LO = 0xF380
 
 # ⚠️ THE COMPONENTS ARE SEPARATE ON PURPOSE -- see blindness (3) above and the
 # aliasing note. The standalone MSX1 disk ROM (slot 3-1) only ever runs while
@@ -653,9 +666,19 @@ def doc_rows(maps: dict, flat: dict | None = None) -> list:
     return out
 
 
-def write_doc(maps: dict, path: str) -> str:
-    flat = {c: Map(c, m.lo, m.hi, joint=False) for c, m in maps.items()}
-    rows = doc_rows(maps, flat)
+def write_doc(maps: dict, path: str | None = None) -> str:
+    """Render the document; write it only when `path` is given.
+
+    🔴 RENDERING AND WRITING ARE SEPARATE so the gate and the selftest can
+    compare without putting a temporary file anywhere -- the first cut wrote a
+    `.gen` beside the real one and a scratch file in the system temp dir, which
+    is precisely what `tools/check_temp_root.py` exists to stop.
+    """
+    # the document's own maps reach into the standard work area; the callers'
+    # maps (runs, ratchet, overlays) deliberately do not.
+    wide = {c: Map(c, m.lo, DOC_HI) for c, m in maps.items()}
+    flat = {c: Map(c, m.lo, DOC_HI, joint=False) for c, m in maps.items()}
+    rows = doc_rows(wide, flat)
     L = []
     L.append("<!--")
     L.append("Copyright (c) 2026 Joost Yervante Damad")
@@ -693,14 +716,40 @@ def write_doc(maps: dict, path: str) -> str:
     L.append("second one is the question a per-component map cannot answer.")
     L.append("")
     for comp in sorted(maps):
-        m = maps[comp]
-        L.append(f"* **{comp}** — {len(m.addrs)} declared addresses in "
-                 f"`${m.lo:04X}..${m.hi - 1:04X}`, {len(m.width)} with a "
-                 f"machine-readable width.")
+        m, w = maps[comp], wide[comp]
+        std = sum(1 for a in w.addrs if a >= STD_LO)
+        L.append(f"* **{comp}** — {len(m.addrs)} declared addresses in this "
+                 f"project's own workspace `${m.lo:04X}..${STD_LO - 1:04X}` "
+                 f"({len(m.width)} with a machine-readable width), plus "
+                 f"**{std}** in the MSX standard work area at or above "
+                 f"`${STD_LO:04X}`.")
+    L.append("")
+    L.append(f"## This project's own workspace (`${DEFAULT_LO:04X}..${STD_LO - 1:04X}`)")
     L.append("")
     L.append("| address | size | component | name(s) | purpose | inside |")
     L.append("|---|---|---|---|---|---|")
+    split_done = False
     for a, cells, cover in rows:
+        if a >= STD_LO and not split_done:
+            split_done = True
+            L.append("")
+            L.append(f"## The MSX standard work area (`${STD_LO:04X}` and above)")
+            L.append("")
+            L.append("🔴 **THIS PROJECT USES THESE CELLS; IT DOES NOT OWN THEM.**")
+            L.append("Their addresses and meanings are the MSX standard's (and")
+            L.append("C-BIOS's), not this tree's, so the *purpose* column quotes")
+            L.append("our comment about why WE touch the cell — which is not the")
+            L.append("same thing as the standard's definition of it. Look the cell")
+            L.append("up in the MSX2 Technical Handbook before relying on a row.")
+            L.append("")
+            L.append("⚠️ **AND THEY ARE DELIBERATELY OUTSIDE THE ARITHMETIC.** The")
+            L.append("unattributed-run walk and the width ratchet both stop at")
+            L.append(f"`${STD_LO:04X}`: a gap here would be bytes the BIOS owns and")
+            L.append("we merely never named, and demanding our comments re-declare")
+            L.append("extents the standard already fixes would be noise, not rigour.")
+            L.append("")
+            L.append("| address | size | component | name(s) | purpose | inside |")
+            L.append("|---|---|---|---|---|---|")
         ins = "; ".join(f"`{c}` {n}" for c, n, _o in cover) or ""
         for i, (comp, names, w, rule, why, site) in enumerate(cells):
             size = f"{w} B" if w else ""
@@ -708,8 +757,9 @@ def write_doc(maps: dict, path: str) -> str:
                      f"| {ins if i == 0 else ''} |")
     L.append("")
     body = "\n".join(L) + "\n"
-    with open(path, "w") as f:
-        f.write(body)
+    if path is not None:
+        with open(path, "w") as f:
+            f.write(body)
     return body
 
 
@@ -1104,6 +1154,28 @@ def selftest(lo, hi) -> int:
         all(len(p) <= PURPOSE_MAX and (len(p) < PURPOSE_MAX or p.endswith("…"))
             for _a, cells, _cv in rows14 for p in [c[4] for c in cells])
 
+
+    # ---- A15 the document reaches the MSX standard work area; the ARITHMETIC
+    # does NOT. 🙋 Joost, 2026-09-21: "Does it also contain the officially
+    # documented ram variables?" -- it did not, and the fix must not drag the
+    # run walk and the width ratchet up there with it.
+    wide15 = {c: Map(c, lo, DOC_HI) for c in ("basic", "disk")}
+    ok["A15 the wide map SEES the standard work area (LINLEN, EXPTBL)"] = \
+        any(a >= STD_LO for a in wide15["basic"].addrs) and \
+        wide15["basic"].vals.get("LINLEN", 0) >= STD_LO and \
+        wide15["disk"].vals.get("EXPTBL", 0) >= STD_LO
+    ok["A15 NEGATIVE: the ANALYSIS map stops below it, so no run and no pin "
+       "is ever claimed up there"] = \
+        all(a < STD_LO for a in b_all.addrs) and \
+        all(a < STD_LO for a in d_all.addrs)
+    doc15 = write_doc({c: Map(c, lo, hi) for c in ("basic", "disk")})
+    ok["A15 the document carries BOTH sections"] = \
+        "## This project's own workspace" in doc15 and \
+        "## The MSX standard work area" in doc15
+    ok["A15 a standard-area cell has a row"] = "`$F3B0`" in doc15
+    ok["A15 NEGATIVE: the standard section says the cells are NOT ours"] = \
+        "IT DOES NOT OWN THEM" in doc15
+
     # ---- A7 sym seeding, with --no-sym as the control ---------------------
     d_nosym = Map("disk", lo, hi, use_sym=False)
     ok["A7 sym supplies a label-derived cell (WA_SEG $E795)"] = \
@@ -1133,8 +1205,11 @@ def main() -> int:
     if "--doc" in sys.argv:
         maps = {c: Map(c, lo, hi) for c in ("basic", "disk")}
         body = write_doc(maps, DOC)
-        print(f"{DOC}: {body.count(chr(10))} lines, "
-              f"{len(doc_rows(maps))} address(es)")
+        nrows = sum(1 for ln in body.splitlines()
+                    if ln.startswith("| `$"))
+        print(f"{DOC}: {body.count(chr(10))} lines, {nrows} row(s) "
+              f"(one per declared address; the count used to come from the "
+              f"NARROW maps and under-reported the standard work area)")
         return 0
     if "--check" in sys.argv:
         maps = {c: Map(c, lo, hi) for c in ("basic", "disk")}
@@ -1146,8 +1221,7 @@ def main() -> int:
             have = open(DOC).read()
         except OSError:
             have = None
-        want = write_doc(maps, DOC + ".gen")
-        os.unlink(DOC + ".gen")
+        want = write_doc(maps)
         if have != want:
             rc = 1
             lines.append(f"🔴 {DOC} has DRIFTED from its generator "

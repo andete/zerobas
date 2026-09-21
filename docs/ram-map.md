@@ -33,8 +33,10 @@ other component's cell at the same address; the `inside` column
 names the other component's BUFFER this address falls within. That
 second one is the question a per-component map cannot answer.
 
-* **basic** — 418 declared addresses in `$E000..$F37F`, 318 with a machine-readable width.
-* **disk** — 121 declared addresses in `$E000..$F37F`, 84 with a machine-readable width.
+* **basic** — 418 declared addresses in this project's own workspace `$E000..$F37F` (318 with a machine-readable width), plus **79** in the MSX standard work area at or above `$F380`.
+* **disk** — 121 declared addresses in this project's own workspace `$E000..$F37F` (84 with a machine-readable width), plus **22** in the MSX standard work area at or above `$F380`.
+
+## This project's own workspace (`$E000..$F37F`)
 
 | address | size | component | name(s) | purpose | inside |
 |---|---|---|---|---|---|
@@ -577,4 +579,123 @@ second one is the question a per-component map cannot answer.
 | `$F365` |  | `disk` | `F365_STUB` | fixed disk-work-area slot-read stub (IN A,($A8);RET; M15 §7.1) |  |
 | `$F368` | 21 B | `disk` | `WA_JMPTAB` | disk-work-area resident jump table ($F368-$F37C, 7 slots) |  |
 | `$F37D` | 2 B | `disk` | `SYSTEM` | SYSTEM sysvar: BDOS entry-point word |  |
+
+## The MSX standard work area (`$F380` and above)
+
+🔴 **THIS PROJECT USES THESE CELLS; IT DOES NOT OWN THEM.**
+Their addresses and meanings are the MSX standard's (and
+C-BIOS's), not this tree's, so the *purpose* column quotes
+our comment about why WE touch the cell — which is not the
+same thing as the standard's definition of it. Look the cell
+up in the MSX2 Technical Handbook before relying on a row.
+
+⚠️ **AND THEY ARE DELIBERATELY OUTSIDE THE ARITHMETIC.** The
+unattributed-run walk and the width ratchet both stop at
+`$F380`: a gap here would be bytes the BIOS owns and
+we merely never named, and demanding our comments re-declare
+extents the standard already fixes would be noise, not rigour.
+
+| address | size | component | name(s) | purpose | inside |
+|---|---|---|---|---|---|
+| `$F380` |  | `basic` | `CLR_HIMEM_TOP` | 62336: highest address CLEAR accepts |  |
+| `$F39A` | 20 B | `basic` | `USRTAB` | 20 B total, 10 USR jump vectors of 2 B each. |  |
+| `$F3AE` |  | `basic` | `LINL40` | text columns for SCREEN 0 (WIDTH default) |  |
+| `$F3AF` |  | `basic` | `LINL32` | text columns for SCREEN 1 (WIDTH default) |  |
+| `$F3B0` |  | `basic` | `LINLEN` | current line length (active width) |  |
+| `$F3B1` |  | `basic` | `CRTCNT` | number of text rows on the screen (MSX work area; D-SCREDIT) |  |
+| `$F3B3` |  | `basic` | `BASETAB` | BASE(0..19): 20 LE words, 4 groups of 5 (name, colour, |  |
+| `$F3DB` |  | `basic` | `CLIKSW` | keyboard click: 0 = off, nonzero = on (1) |  |
+| `$F3DC` |  | `basic` | `CSRY` | cursor row (1-based); the CSRLIN pseudo-variable reads it |  |
+| `$F3DD` |  | `basic` | `CSRX` | cursor column (1-based); C-BIOS sysvars / PRINT comma zones |  |
+| `$F3DE` |  | `basic` | `CNSDFG` | function-key display flag: $FF = shown, 0 = hidden |  |
+| `$F3DF` | 8 B | `basic` | `RG0SAV` | VDP register 0..7 mirrors ($F3DF..$F3E6); RG1SAV = +1 |  |
+| `$F3E0` | 2 B | `basic` | `RG1SAV` | VDP register 1 mirror; bits 1..0 = SCREEN's sprite-size |  |
+| `$F3E7` |  | `basic` | `STATFL` | VDP status-register copy kept by the frame ISR |  |
+| `$F3E9` |  | `basic` | `FORCLR` | foreground colour |  |
+| `$F3EA` |  | `basic` | `BAKCLR` | background colour |  |
+| `$F3EB` |  | `basic` | `BDRCLR` | border colour |  |
+| `$F3F2` |  | `basic` | `ATRBYT` | current graphics attribute / plot colour (1) |  |
+| `$F3FC` | 2 B | `basic` | `CS120_LOW` | 1200-baud reference low-signal length word |  |
+| `$F401` | 2 B | `basic` | `CS240_LOW` | 2400-baud reference low-signal length word |  |
+| `$F406` | 2 B | `basic` | `ACT_LOW` | active low-signal length word (the live baud) |  |
+| `$F414` | 1 B | `basic` | `ERRFLG` | 1 B: last error's MSX ERR code (0 = none yet). |  |
+| `$F676` |  | `basic` | `TXTTAB` | sysvar: pointer to the BASIC text base |  |
+| `$F6B3` | 2 B | `basic` | `ERRLIN` | 2 B: last error's line number, or 65535 if it |  |
+| `$F6B5` | 2 B | `basic` | `DOT` | 2 B: the line `.` names. Cold value 0 (init). |  |
+| `$F6B9` | 2 B | `basic` | `ONELIN` | 2 B: ON ERROR handler line's LINK address (the |  |
+| `$F6BB` | 1 B | `basic` | `ONEFLG` | 1 B: $FF = currently inside a handler (no RESUME |  |
+| `$F6CA` | 26 B | `basic` | `DEFTBL` | per-letter default-type map, A..Z (26) -- |  |
+| `$F87F` | 40 B | `basic` | `FNKSTR` | measured base (D-KEYSTR scout) |  |
+| `$F922` |  | `basic` | `NAMBAS` | name-table base of the current text mode (MSX work area; D-SCREDIT) |  |
+| `$F92A` | 2 B | `basic` | `CLOC` | computed VRAM byte address of the current pixel (2) |  |
+| `$F92C` |  | `basic` | `CMASK` | MSB-first bit mask of the current pixel (1) |  |
+| `$F959` | 6 B | `basic` | `QUETAB` | 4 x 6-byte ring descriptors (3 voice + 1 RS232) |  |
+| `$F971` |  | `basic` | `PLY_LASTDUR` | QUEBAK+0 (2): saved write pointer across pt_length |  |
+| `$F973` |  | `basic` | `PLY_BUFEND` | QUEBAK+2 (2): current voice buffer end (overflow guard) |  |
+| `$F975` | 128 B | `basic` | `VOICAQ` | voice-0 packet buffer (128 B) |  |
+| `$F9F5` | 128 B | `basic` | `VOICBQ` | voice-1 packet buffer (128 B) |  |
+| `$FA75` | 128 B | `basic` | `VOICCQ` | voice-2 packet buffer (128 B) |  |
+| `$FAF8` |  | `basic` | `EXBRSA` |  |  |
+| `$FB38` |  | `basic` | `VOICEN` | voice currently being parsed (0..2) |  |
+| `$FB3C` |  | `basic` | `MCLPTR` | address of the MML string being parsed (source cursor) |  |
+| `$FB3E` |  | `basic` | `QUEUEN` | active queue # scratch (0..2) |  |
+| `$FB3F` |  | `basic` | `MUSICF` | bitmask: bit v = voice v queue active (SET LAST) |  |
+| `$FB40` |  | `basic` | `PLYCNT` | count of PLAY statements parsed, not yet executed |  |
+| `$FB41` | 37 B | `basic` | `VCBA` | Voice Control Block, voice 0 (37 B) |  |
+| `$FB66` |  | `basic` | `VCBB` | Voice Control Block, voice 1 |  |
+| `$FB8B` |  | `basic` | `VCBC` | Voice Control Block, voice 2 |  |
+| `$FBB2` |  | `basic` | `LINTTB` | per-row continuation table, one byte per row: 0 = the row |  |
+| `$FBE5` | 11 B | `basic` | `NEWKEY` | key matrix snapshot, 11 B (row 6 bit 0 = SHIFT) |  |
+| `$FC4A` | 2 B | `basic` | `HIMEM` | highest RAM address BASIC may use (2 bytes) |  |
+| `$FC9E` |  | `basic` | `JIFFY` | MSX software clock, bumped by the timer ISR (MSX2 TH work area) |  |
+| `$FCA9` |  | `basic` | `CSRSW` | cursor display: 0 = off, 1 = on |  |
+| `$FCAF` |  | `basic` | `SCRMOD` | current screen mode (0..3) |  |
+| `$FCB3` | 2 B | `basic` | `GXPOS` | pending plot X (int16 LE) |  |
+| `$FCB5` | 2 B | `basic` | `GYPOS` | pending plot Y (int16 LE) |  |
+| `$FCB7` | 2 B | `basic` | `GRPACX` | last-referenced point X (int16 LE) |  |
+| `$FCB9` | 2 B | `basic` | `GRPACY` | last-referenced point Y (int16 LE) |  |
+| `$FCC1` | 1 B | `basic` | `EXPTBL` | expanded-slot flags, 1 byte/primary, bit7 = expanded |  |
+| `$FCC1` | 1 B | `disk` | `EXPTBL` | expanded-slot flags, 1 byte/primary, bit 7 = expanded |  |
+| `$FCC5` |  | `disk` | `SLTTBL` | SLTTBL base: per-primary mirror of the secondary-slot regs |  |
+| `$FCC8` |  | `disk` | `SLTTBL3` | SLTTBL[3]: RAM mirror of slot-3 secondary-slot register (=SLTTBL+3) |  |
+| `$FD9F` | 5 B | `basic` | `H_TIMI` | timer-interrupt hook, 5-byte inter-slot call area |  |
+| `$FDEF` |  | `basic` | `H_DSKO` | DSKO$ handler -- 🔴 WAS $FDF4 AND THAT WAS WRONG |  |
+| `$FDEF` |  | `disk` | `H_DSKO` | DSKO$ (D-DSKIO) -- 🔴 WAS $FDF4 (D-DSKOHOOK |  |
+| `$FDF9` |  | `basic` | `H_NAME` | NAME handler (channel verbs, D-CHANHOOK) |  |
+| `$FDF9` |  | `disk` | `H_NAME` | NAME (channel verbs, D-CHANHOOK) |  |
+| `$FDFE` |  | `basic` | `H_KILL` | KILL handler |  |
+| `$FDFE` |  | `disk` | `H_KILL` | KILL |  |
+| `$FE08` |  | `basic` | `H_COPY` | COPY handler (D-COPY; the standard slot) |  |
+| `$FE08` |  | `disk` | `H_COPY` | COPY (D-COPY) |  |
+| `$FE12` |  | `basic` | `H_DSKF` | DSKF handler |  |
+| `$FE12` |  | `disk` | `H_DSKF` | DSKF |  |
+| `$FE17` |  | `basic` | `H_DSKI` | DSKI$ handler (D-DSKIO) |  |
+| `$FE17` |  | `disk` | `H_DSKI` | DSKI$ (D-DSKIO) |  |
+| `$FE21` |  | `basic` | `H_LSET` | LSET handler |  |
+| `$FE21` |  | `disk` | `H_LSET` | LSET |  |
+| `$FE26` |  | `basic` | `H_RSET` | RSET handler |  |
+| `$FE26` |  | `disk` | `H_RSET` | RSET |  |
+| `$FE2B` |  | `basic` | `H_FIELD` | FIELD handler |  |
+| `$FE2B` |  | `disk` | `H_FIELD` | FIELD |  |
+| `$FE30` |  | `basic` | `H_MKI` | MKI$ handler (disk/kernel.asm hk_present) |  |
+| `$FE30` |  | `disk` | `H_MKI` | MKI$ -- the first verb routed this way (D-MKHOOK) |  |
+| `$FE35` |  | `basic` | `H_MKS` | MKS$ handler |  |
+| `$FE35` |  | `disk` | `H_MKS` | MKS$ |  |
+| `$FE3A` |  | `basic` | `H_MKD` | MKD$ handler |  |
+| `$FE3A` |  | `disk` | `H_MKD` | MKD$ |  |
+| `$FE3F` |  | `basic` | `H_CVI` | CVI handler |  |
+| `$FE3F` |  | `disk` | `H_CVI` | CVI |  |
+| `$FE44` |  | `basic` | `H_CVS` | CVS handler |  |
+| `$FE44` |  | `disk` | `H_CVS` | CVS |  |
+| `$FE49` |  | `basic` | `H_CVD` | CVD handler |  |
+| `$FE49` |  | `disk` | `H_CVD` | CVD |  |
+| `$FE5D` |  | `basic` | `H_FOPEN` |  |  |
+| `$FE5D` |  | `disk` | `H_FOPEN` |  |  |
+| `$FE7B` |  | `basic` | `H_FILE` |  |  |
+| `$FE7B` |  | `disk` | `H_FILE` |  |  |
+| `$FEFD` |  | `basic` | `H_ERRP` | error-print hook (D-DISKERR): the errmsg tenant offers a code it |  |
+| `$FEFD` |  | `disk` | `H_ERRP` | error-print hook (D-DISKERR): this ROM prints ERR 68..70 |  |
+| `$FFA7` |  | `disk` | `HPHYD` | PHYDIO hook (5 RAM bytes, default C9) |  |
+| `$FFCF` | 5 B | `basic` | `H_ZKEY` | fn-key delivery hook, 5-byte JP vector (zkey_install) |  |
+| `$FFF9` |  | `basic` | `LINENO_CEIL` |  |  |
 
