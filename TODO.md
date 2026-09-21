@@ -483,6 +483,48 @@ item — do **one item per session** to keep context lean.
       identical; `mergewin_probe.py` CLEAN on both fixtures with its control
       firing 258 / 1898.
 
+- [ ] 🔬 **COMPARE RAM *USAGE* AGAINST THE REFERENCE, CELL BY CELL — AND JOOST'S
+      HUNCH IS THE HYPOTHESIS TO SCORE**
+      🎚️ TIER 2 — reasonable time: it is not a divergence hunt, it is a cost
+      comparison that feeds the eviction's remaining RAM blockers.
+      🤖 **AUTONOMOUS** — measurement of the DOCUMENTED work area, which the
+      clean-room line explicitly permits.
+      🙋 **FILED AT JOOST'S REQUEST, 2026-09-21, AND EXPLICITLY NOT NOW:** *"This
+      is not something for now, but it may be valuable to compare variable usage
+      between our implementation and reference and if we differ adjust if
+      needed."* Then, the same day: *"I have a hunch reference is very economical
+      with RAM."*
+      🔮 **THE HUNCH IS A PREDICTION AND MUST BE SCORED AS ONE, INCLUDING A
+      MISS.** State it before the run: *the reference writes FEWER distinct RAM
+      cells than zerobas for the same BASIC operation.* ⚠️ Distrust it — it is
+      the comfortable answer, and "economical" has at least three different
+      meanings (fewer cells touched, fewer cells RESERVED, or state kept on the
+      stack instead of in a named cell) which will not all point the same way.
+      🟢 **ONE INSTANCE IS ALREADY CONFIRMED AND IT IS OURS:** the PAINT span
+      stack is a FIXED `GFX_PSTK_CAP * GFX_PSTK_ENTSZ` = 120 × 3 = 360 B array,
+      where the reference grows its spans DOWN FROM `STKTOP` and costs nothing
+      while PAINT is not running (`docs/spec-basic-graphics-g5.md` D3). That is
+      the lever step 10 is still waiting on, so this item and that one are the
+      same question asked twice.
+      🔬 **THE METHOD EXISTS — IT IS D-DISKWRITES's, POINTED SOMEWHERE ELSE.**
+      `scratchpad/diskwrites_probe.py` already arms a `write_mem` watchpoint over
+      a band, brackets it between two breakpoints and reports every address
+      written, with a positive control that must fire. Point it at
+      `$F380..$FFFF` (and at each machine's own workspace) on the CF-3300 and on
+      zerobas, run the SAME typed BASIC on both, and diff the written sets.
+      ⚠️ **AND `docs/ram-map.md` IS THE OTHER HALF OF THE DENOMINATOR**: it lists
+      what WE declare. A cell the reference writes that we never named is the
+      interesting direction, and so is a cell we reserve that it never touches.
+      🔴 **CLEAN ROOM: THIS IS ON THE PERMITTED SIDE, BUT ONLY JUST.** Work-area
+      RAM addresses and CONTENTS are readable (`expansion-protocol.md` §7). ROM
+      bytes are not, and neither are the bytes of the reference's RAM-RESIDENT
+      code (§8.5) — so a cell inside one of those five clusters is reported as
+      belonging to a cluster, never decoded.
+      ⚠️ **A DIFFERENCE IS NOT AUTOMATICALLY A DEFECT.** Some of our cells exist
+      because we made a different, deliberate architectural choice (the channel
+      context, the temp-descriptor pool). The output is a priced comparison for
+      Joost, not a list of things to change.
+
 - [ ] 🔬 **PROMOTE THE THREE ASCII/MERGE DISK PROBES INTO THE BATTERY — THEIR
       EXCUSE'S PREMISE CHANGED WHEN STEP 11 SHIPPED**
       🎚️ TIER 3 — common errors: a silent break here is a wrong answer, not a
@@ -3507,7 +3549,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:21211 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:21253 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -3673,7 +3715,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:8316 (T-6FE392)8 (T-529ABE)` from `TODO.md:19605 (T-529ABE)`: a
+      `TODO.md:8358 (T-6FE392)8 (T-529ABE)` from `TODO.md:19647 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -9160,7 +9202,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:19605 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:19647 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
