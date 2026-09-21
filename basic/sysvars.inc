@@ -696,7 +696,7 @@ GFX_TY1         equ     $E11C   ; box: stashed corner 1 Y (2)
 GFX_TX2         equ     $E11E   ; box: stashed corner 2 X (2)
 GFX_TY2         equ     $E120   ; box: stashed corner 2 Y (2)
 GFX_FILLCNT     equ     $E122   ; box fill: scanlines remaining (2)
-GFX_YSTEP       equ     $E124   ; box fill: row step, $0001/$FFFF (2)   -> ends $E126
+GFX_YSTEP       equ     $E124   ; box fill: row step, $0001/$FFFF (2)   -> ends $E126 (2 B)
 ; Graphics G4 (CIRCLE, docs/spec-basic-graphics-g4.md §6). Append-only after G3's
 ; $E126, same discipline (dead during any graphics statement, below the PLAY ISR
 ; region; the LINEBUF overlay it was originally argued from is retired — G3 header
@@ -843,7 +843,7 @@ FCH_MODES       equ     $EA00   ; 16 B ($EA00..$EA0F)
 ; tokenise pass completes BEFORE any of its tokens execute, so this is dead for
 ; the entire duration of any statement's execution.
 TKLNUM          equ     $E013   ; tokeniser: 1 = line-number mode is armed (1)
-INDLR_N         equ     $E016   ; INPUT$(n,#f): remaining bytes to read (transient, 1)
+INDLR_N         equ     $E016   ; INPUT$(n,#f): remaining bytes to read (transient, 1) (1 B)
 MRG_PTR         equ     $E017   ; MERGE: write cursor into LINEBUF for the current line (2)
 ; Random-access (FIELD/LSET/RSET) transient parse/store scratch (Phase 2c slice 1).
 ; All dead outside a single FIELD or LSET/RSET statement. Free $E019.. gap below
@@ -852,7 +852,7 @@ FLD_CUROFF      equ     $E019   ; FIELD: running byte offset into the record buf
 FLD_CHAN        equ     $E01B   ; FIELD/LSET/RSET: the channel being fielded (1)
 LRSET_JUST      equ     $E01C   ; LSET/RSET: 0 = left-justify, 1 = right-justify (1)
 LRSET_W         equ     $E01D   ; LSET/RSET: destination field width (1)
-LRSET_DEST      equ     $E01E   ; LSET/RSET: destination ADDRESS of the store (2).
+LRSET_DEST      equ     $E01E   ; LSET/RSET: destination ADDRESS of the store (2). (2 B)
                                 ; D-LRVAR renamed this from LRSET_OFF (same address,
                                 ; 0 RAM): it held the field's OFFSET while the only
                                 ; destination was FSECTOR_BUF + off, but a
@@ -889,7 +889,7 @@ NUMBUF          equ     $E0C0   ; PRINT: decimal-format scratch (8 bytes, 0-term
 ; until D-PENDERR retired the TMISMATCH cell; STRENG_SPARE is the same address,
 ; deliberately left standing so MIDS_DEST does NOT move -- see its definition.)
 MIDS_DEST       equ     STRENG_SPARE + 1
-; Console INPUT (repack build only): the LINEBUF read cursor for linebuf_getbyte
+; Console INPUT (repack build only): the LINEBUF read cursor for linebuf_getbyte (2 B)
 ; (basic/input.asm). LINEBUF is one PAGE (page-aligned, <= 256 B), so a single low
 ; byte suffices. Aliases NUMBUF like MIDS_DEST — dead during INPUT, which formats no
 ; numbers; the MID$ statement and console INPUT never execute simultaneously.
@@ -913,7 +913,7 @@ INP_CURSOR      equ     NUMBUF   ; console INPUT LINEBUF read cursor (1 B, alias
 ; Page 3 is always-mapped RAM and is NOT paged out by a sub-ROM CALSLT (the
 ; tokenise tenant takes page 0, the fatprim/detok tenants page 1), so both
 ; buffers stay addressable from the tenants that fill them.
-LINEBUF         equ     $EB00   ; repack: ASCII input line from the keyboard (LINEMAX B)
+LINEBUF         equ     $EB00   ; repack: ASCII input line from the keyboard (LINEMAX B) (1 B)
 LINEMAX         equ     255     ; 254 chars + the 0 terminator (measured reference ceiling)
 ; The largest STORABLE line number. Anything past this is refused outright with
 ; `Syntax error` (ERR 2) at line entry -- MEASURED on both the VG-8020 and the
@@ -1025,7 +1025,7 @@ ARYTAB          equ     $E1C0   ; live 2-byte cell: scalar-region end == array
                                 ; base (repack only; VARTAB's own dead RAM)
 ; Error-handling S1 (docs/spec-basic-error-handling.md §5.5): the freed VARTAB
 ; window $E1C2..$E240 is the home for error-handling state. D-2 needs one byte:
-DIRECTF         equ     $E1C2   ; 1 = executing a DIRECT-mode line, 0 = running a
+DIRECTF         equ     $E1C2   ; 1 = executing a DIRECT-mode line, 0 = running a (1 B)
                                 ; stored program. Read by fre_abort_low to decide
                                 ; the run-mode " in <line>" suffix. Written by
                                 ; run_prog/ex_cont (0) and dispatch_line (1) before
@@ -1709,7 +1709,7 @@ CAS_IN_MODE     equ     8       ; FCH_MODES value: OPEN"CAS:" FOR INPUT (INPUT# 
 ;      absolute bytes it scored NO-ORACLE, i.e. "no reading", while all three
 ;      sides agreed perfectly on the movement. NO-ORACLE is a verdict about the
 ;      COMPARISON, not about the variable.
-FRETOP          equ     $E268               ; heap low boundary; heap occupies
+FRETOP          equ     $E268               ; heap low boundary; heap occupies (2 B)
                                             ; [FRETOP,C), grows DOWN as strings alloc.
                                             ; Reset to the ceiling C at cold start/
                                             ; NEW/RUN/CLEAR (heap_reset, str-
@@ -2005,7 +2005,7 @@ GFX_DDY         equ     GFX_DDX + 2     ; $E545: ...dy (2)
 GFX_DTX         equ     GFX_DDY + 2     ; $E547: move target X (2)
 GFX_DTY         equ     GFX_DTX + 2     ; $E549: ...Y (2)
 GFX_DTMP        equ     GFX_DTY + 2     ; $E54B: mul/rotate/sign scratch (2)
-GFX_DSP         equ     GFX_DTMP + 2    ; $E54D: tenant entry SP -- an error deep in the
+GFX_DSP         equ     GFX_DTMP + 2    ; $E54D: tenant entry SP -- an error deep in the (2 B)
                                         ; parse restores it and exits, so every helper can
                                         ; just jump to the error tail instead of threading
                                         ; a CF through the whole call chain (2) -> ends $E54F
@@ -2025,7 +2025,7 @@ GFX_SN          equ     GFX_VBUF + 32   ; $E412: SPRITE$ entry index / PUT SPRIT
 GFX_VLEN        equ     GFX_SN + 2      ; $E414: the entry size the tenant read back (1)
 GFX_SDESC       equ     GFX_VLEN + 1    ; $E415: SPRITE$(n)= RHS string descriptor
                                         ; ([len][ptr]); the tenant dereferences it (2)
-GFX_SC          equ     GFX_SDESC + 2   ; $E417: PUT SPRITE colour (2). x/y need no cells --
+GFX_SC          equ     GFX_SDESC + 2   ; $E417: PUT SPRITE colour (2). x/y need no cells -- (2 B)
                                         ; they ride the arc's pinned GXPOS/GYPOS pair, which
                                         ; PUT SPRITE writes anyway (the work area keeps the
                                         ; raw, unwrapped coordinate)
@@ -2034,7 +2034,7 @@ GFX_SSIZE       equ     GFX_SPATN + 2   ; $E41B: SCREEN's sprite-size argument w
                                         ; set is in flight (RG1SAV bits 1..0 hold it after) (1)
 GFX_SARGN       equ     GFX_SSIZE + 1   ; $E41C: how many extra SCREEN arguments have been
                                         ; seen -- only the FIRST is the sprite size (1)
-GFX_SFLAGS      equ     GFX_SARGN + 1   ; $E41D: which arguments were GIVEN --
+GFX_SFLAGS      equ     GFX_SARGN + 1   ; $E41D: which arguments were GIVEN -- (1 B)
                                         ; bit0 = coordinates, bit1 = colour, bit2 = pattern;
                                         ; an omitted one keeps the entry's own byte (1)
 ;
@@ -2063,7 +2063,7 @@ DEFT_STATUS     equ     DISKOP_STATUS   ; tenant -> main: 0 ok / 1 = stmt_error
 ; a graphics statement are never in flight together), and clear of the PERSISTENT
 ; GFX_DSCALE/GFX_DANGLE pair below.
 RDV_VAL         equ     DEFT_PTR + 2    ; $E551: the value read (int16 LE) (2)
-RDV_ST          equ     RDV_VAL + 2     ; $E553: tenant -> main STATUS (1):
+RDV_ST          equ     RDV_VAL + 2     ; $E553: tenant -> main STATUS (1): (1 B)
                                         ;   0 = out of data      (ERR 4)
                                         ;   1 = an item was read (RDV_VAL / STRSCR)
                                         ;   2 = the item is not a NUMBER (ERR 2) --
@@ -2342,7 +2342,7 @@ ARY_ADDR        equ     $E035   ; [tenant return, RESOLVE] element address (2)
                                 ; 0 for SCALAR_FIND's "not found" (0 is never
                                 ; a valid entry address -- program text
                                 ; starts at $8001)
-ARY_ERR         equ     $E037   ; [tenant return] 0 ok; 1 Subscript-oor;
+ARY_ERR         equ     $E037   ; [tenant return] 0 ok; 1 Subscript-oor; (1 B)
                                 ; 2 Illegal-fn (negative); 3 Redimensioned;
                                 ; 4 Out of memory -- an ALLOCATION that will
                                 ; not fit VARIABLE space (DIM, auto-dim, and
@@ -2616,15 +2616,15 @@ SPC_TOKEN       equ     $DF     ; SPC(n) — PRINT item, RELATIVE n spaces
 ; Runtime control-flow state (page $E0).
 CURLINE         equ     $E038   ; link-field addr of the line being executed (2)
 GOTOTGT         equ     $E03A   ; pending branch-target line addr (2)
-GOTOFLAG        equ     $E03C   ; 1 = a branch (GOTO) is pending
-ENDFLAG         equ     $E03D   ; 1 = END/STOP reached, stop the run
+GOTOFLAG        equ     $E03C   ; 1 = a branch (GOTO) is pending (1 B)
+ENDFLAG         equ     $E03D   ; 1 = END/STOP reached, stop the run (1 B)
 ; Mid-line resume: GOTO branches to a line *start*, but RETURN and NEXT must
 ; resume at an exact token position (the statement after GOSUB / the FOR loop
 ; body). When RESUMEFLAG is set the RUN loop runs from RESUMEPTR instead of
 ; recomputing the body from CURLINE; the resuming statement sets CURLINE to the
 ; line that holds RESUMEPTR so the post-statement "advance to next line" works.
 RESUMEPTR       equ     $E03E   ; mid-line resume token pointer (2)
-RESUMEFLAG      equ     $E040   ; 1 = resume at RESUMEPTR (set by RETURN / NEXT)
+RESUMEFLAG      equ     $E040   ; 1 = resume at RESUMEPTR (set by RETURN / NEXT) (1 B)
 ; CONT / Ctrl-STOP break-resume state (own-design; see PROVENANCE.md). When a
 ; running program is broken by the STOP statement or by Ctrl-STOP (BREAKX), the
 ; run loop records exactly where to resume: CONTLINE = the link-field address of
@@ -2665,7 +2665,7 @@ DISK_FCB_NAME   equ     DISK_FCB + 1    ; +1..+11: 8.3 name field (11 bytes)
 ; $E0E7.. gap (after the name block, before LINEBUF at $E100). See basic/
 ; PROVENANCE.md §disk-ROM slot capture.
 DISKSLOT        equ     $E0E7   ; disk ROM slot id for CALSLT (1)
-DISKSLOT_OK     equ     $E0E8   ; 1 = DISKSLOT holds a valid disk-ROM slot id
+DISKSLOT_OK     equ     $E0E8   ; 1 = DISKSLOT holds a valid disk-ROM slot id (1 B)
 ; BSAVE/BLOAD ",S" VRAM select (page $E0 free gap $E0E9..$E0EC; dead outside a
 ; BSAVE/BLOAD) -- also cassette ASCII load's CAL_CURHI (below): a BSAVE/BLOAD
 ; ",S" and a cassette ASCII LOAD/CLOAD never run at the same time, so the two
@@ -2723,7 +2723,7 @@ CAL_CURHI       equ     $E0E9   ; cassette ASCII load: high byte of the CURRENTL
 ; IN_RDLEN and FILES_ENTIDX below overlay each other).
 CAL_CNT         equ     $E0EA   ; cassette ASCII load: read position in the
                                 ; current 256-byte tape block, 0..255 (1)
-CAL_NEEDFILL    equ     $E0EB   ; cassette ASCII load: whether the buffer CAL_CURHI
+CAL_NEEDFILL    equ     $E0EB   ; cassette ASCII load: whether the buffer CAL_CURHI (1 B)
                                 ; does NOT point at holds a live pre-fetched block.
                                 ; 0 = it does (the normal, steady-state case: swap
                                 ; to it freely on drain). 1 = a read-ahead attempt
@@ -2767,7 +2767,7 @@ DSV_END         equ     $E0EF   ; SAVE/BSAVE: last source byte addr, inclusive (
 TSV_PTR         equ     $E0F1   ; tape save: current source-byte pointer (2)
 TSV_END         equ     $E0F3   ; tape save: last source-byte address, inclusive (2)
 TSV_CNT         equ     $E0F5   ; tape save: loop counter (1)
-TSV_NAME        equ     $E0F6   ; tape save: 6-char filename buffer (space-padded)
+TSV_NAME        equ     $E0F6   ; tape save: 6-char filename buffer (space-padded) (1 B)
 ; CALL FORMAT sub-ROM tenant args/result (repack eviction, docs/spec-evict-call-
 ; format.md §3/§4). ALIASED over the tape CSAVE/BSAVE write scratch just above —
 ; CALL FORMAT and a tape CSAVE/BSAVE are distinct top-level statements that never
@@ -2913,19 +2913,19 @@ FAT_CURCLUS     equ     $E9C9   ; current cluster in the open file's chain (word
 FAT_CLUSSEC     equ     $E9CB   ; sector index within current cluster (byte)
 FAT_FIRSTCLUS   equ     $E9CC   ; first cluster of the found file (word)
 FAT_FILESIZE    equ     $E9CE   ; file size in bytes (4-byte LE)
-FAT_NUMFATS     equ     $E9D2   ; number of FAT copies (byte; from BPB +16)
+FAT_NUMFATS     equ     $E9D2   ; number of FAT copies (byte; from BPB +16) (1 B)
 FAT_SECPERFAT   equ     $E9D3   ; sectors per FAT copy (word; from BPB +22)
 ; FAT12 working scratch (transient within a single call).
-FAT_PARITY      equ     $E9D5   ; 1 = odd cluster, 0 = even (FAT12 nibble pack)
+FAT_PARITY      equ     $E9D5   ; 1 = odd cluster, 0 = even (FAT12 nibble pack) (1 B)
 FAT_BYTEIDX     equ     $E9D6   ; byte index within a FAT sector (word, 0..511)
 FAT_FATSEC      equ     $E9D8   ; FAT sector currently read (word)
-FAT_B0          equ     $E9DA   ; first FAT byte of a 12-bit entry
-FAT_B1          equ     $E9DB   ; second FAT byte of a 12-bit entry
+FAT_B0          equ     $E9DA   ; first FAT byte of a 12-bit entry (1 B)
+FAT_B1          equ     $E9DB   ; second FAT byte of a 12-bit entry (1 B)
 FAT_NAMEPTR     equ     $E9DC   ; -> 11-byte search name (word)
 FAT_DIRSEC      equ     $E9DE   ; current root-dir sector being scanned (word)
 FAT_DIRREM      equ     $E9E0   ; root-dir sectors remaining to scan (word)
 FAT_WRTMP       equ     $E9E2   ; transient scratch for the FAT12 write helpers (word)
-FAT_WRTMP2      equ     $E9E4   ; second transient (free-cluster scan cached sector)
+FAT_WRTMP2      equ     $E9E4   ; second transient (free-cluster scan cached sector) (2 B)
 ; Read byte-stream state (fat_io_open / fat_io_getbyte).
 FREAD_OFF       equ     $E9E6   ; next byte index within FSECTOR_BUF (0..512) (word)
 FREAD_LEFT      equ     $E9E8   ; bytes of the open file still undelivered (4-byte LE)
@@ -3468,12 +3468,12 @@ FLD_TABEND      equ     FLD_TAB + FLD_SLOTS*FLD_ENTSZ   ; $EEC4
 ; ($EEC4..$EEFF = 60 bytes). See basic/field.asm §GET/PUT.
 GP_RECNO        equ     $EEC4   ; record number (1-based, 2)
 GP_SEC          equ     $EEC6   ; file logical-sector index of the record (2)
-GP_WITHIN       equ     $EEC8   ; byte offset of the record within its sector (0/256, 2)
+GP_WITHIN       equ     $EEC8   ; byte offset of the record within its sector (0/256, 2) (2 B)
 GP_CLUS         equ     $EECA   ; current cluster during the chain walk (2)
 GP_CLIDX        equ     $EECC   ; cluster steps still to walk (2)
 GP_SECINCL      equ     $EECE   ; sector index within the final cluster (1)
 GP_PHYS         equ     $EECF   ; resolved absolute physical sector (2)
-GP_OLDNSEC      equ     $EED1   ; file's old sector count (ceil(size/512), 2)
+GP_OLDNSEC      equ     $EED1   ; file's old sector count (ceil(size/512), 2) (2 B)
 GP_FLAGS        equ     $EED3   ; bit0 = extend (PUT allocates; GET does not) (1)
 GP_MODE         equ     $EED4   ; 0 = GET (read), 1 = PUT (write) (1)
 GP_CHAN         equ     $EED5   ; the channel number being GET/PUT (1)
@@ -3714,7 +3714,7 @@ CTL_STACK_MARGIN equ    256    ; MEASURED: ctllim-acceptance is green at this si
                                ; with a single `dec h` / test it with `cp high`.
 CTLTOP          equ     $E052   ; the pool's TOP = strheap_varceil(), cached (2)
 TSP             equ     $E054   ; newest trap SERVICE record; valid iff TRAPSVC != 0 (2)
-CTLLIM          equ     $E056   ; the pool's collision FLOOR = ARYEND+2 (2). Written
+CTLLIM          equ     $E056   ; the pool's collision FLOOR = ARYEND+2 (2). Written (2 B)
                                 ; sub-side by strheap_ctllim at the two allocator
                                 ; success paths and at reset; read by the main ROM's
                                 ; ctl_alloc on every push. ARYEND needs an array-chain
@@ -3921,7 +3921,7 @@ FN_STK_FLOOR    equ     $F200
 ; DATA / READ / RESTORE state. The reference stores DATA items as verbatim ASCII
 ; text (oracle: `data 5,6` -> $84 $20 '5' ',' '6'), so READ parses ASCII from the
 ; stored program at run time and a DATA cursor walks the $84-tagged statements.
-DATASTATE       equ     $E0B8   ; 0 = unpositioned (RESTORE), 1 = ready, 2 = exhausted
+DATASTATE       equ     $E0B8   ; 0 = unpositioned (RESTORE), 1 = ready, 2 = exhausted (1 B)
 DATAPTR         equ     $E0B9   ; next unread DATA item (ASCII) in the program (2)
 DATALINE        equ     $E0BB   ; link-field of the line holding DATAPTR (2)
 RESTORE_LINE    equ     $E0BD   ; link-field a READ seeks DATA from when unpositioned (2)
@@ -3955,7 +3955,7 @@ TKOVF           equ     $F01B   ; tokeniser: 0 = ok, else the ERR CODE of the
                                 ; unconditionally (D-MSGMIGRATE) (1)
 FAC             equ     $F01C   ; float accumulator: value bytes as tokenised (8)
 FOUTBUF         equ     $F024   ; flt_out formatter output scratch (24)
-TKDIG           equ     $F03C   ; tokeniser/formatter: significant-digit array,
+TKDIG           equ     $F03C   ; tokeniser/formatter: significant-digit array, (1 B)
                                 ; one decimal digit value (0-9) per byte (24)
 ; tk_float single-literal scan state (own choice — free RAM; transient, dead
 ; between literals). See sub/tkfloat.asm tk_float for field semantics (the crunch
@@ -4039,7 +4039,7 @@ FPNUM_DEXP      equ     1       ; field offset: signed dec_exp (2)
 FPNUM_DIG       equ     3       ; field offset: digit array, 14 sig + 1 guard (15)
 FPNUM_SIZE      equ     18
 
-FPERR           equ     $F069   ; runtime numeric-error flag: 0 none / 1 overflow /
+FPERR           equ     $F069   ; runtime numeric-error flag: 0 none / 1 overflow / (1 B)
                                 ; 2 division by zero (spec §10.2 D-F2-1) / 3 illegal
                                 ; function call (math pack slice 1b, SQR(x<0),
                                 ; spec-basic-math-pack.md §10.4/§10.5 -- same
@@ -4103,7 +4103,7 @@ CVT_MODE        equ     $F100   ; domain_convert_core: 0=strict int16 domain,
                                 ; 1=address domain (1)
 PLF_RA          equ     $F101   ; pop_lhs_and_probe: scratch home for its own
                                 ; "call"-pushed return address (2)
-PLF_RA2         equ     $F103   ; ...and for its DIRECT caller's (combine_add/
+PLF_RA2         equ     $F103   ; ...and for its DIRECT caller's (combine_add/ (2 B)
                                 ; sub/mul/cmp/div_float's own) "call"-pushed
                                 ; return address, which sits ON TOP of the
                                 ; persistent lhs frame too -- every combine_*
@@ -4120,9 +4120,9 @@ PLF_RA2         equ     $F103   ; ...and for its DIRECT caller's (combine_add/
 ; SUB_PING ($F105, sub/equates.inc) is the S2a injection-gate cell and is not
 ; referenced by main-ROM code; SUBSLOT/SUBSLOT_OK are the private dispatch path
 ; (decoupled from EXBRSA $FAF8, which a stray program could clobber — D-6/R4).
-SUBSLOT         equ     $F106   ; slot id of zerobas-sub (bit7 exp | 3-2 | 3), 1
-SUBSLOT_OK      equ     $F107   ; 1 = a CD sub-ROM was found and recorded, else 0
-DB_CUR          equ     $F108   ; wave-3 detok: the DETOKBUF write cursor, held across
+SUBSLOT         equ     $F106   ; slot id of zerobas-sub (bit7 exp | 3-2 | 3), 1 (1 B)
+SUBSLOT_OK      equ     $F107   ; 1 = a CD sub-ROM was found and recorded, else 0 (1 B)
+DB_CUR          equ     $F108   ; wave-3 detok: the DETOKBUF write cursor, held across (2 B)
                                 ; the whole sub-side walk (the core clobbers DE/HL, so
                                 ; the cursor cannot live in a register). Own-choice free
                                 ; RAM, the $F108.. tail of the $F01A-$F194 window (below
@@ -4140,9 +4140,9 @@ DB_CUR          equ     $F108   ; wave-3 detok: the DETOKBUF write cursor, held 
 ; primitive); these cells sit at $F10A.. — well below the C-BIOS sysvar/primitive area
 ; (RDPRIM/WRPRIM/CLPRIM $F380+ and the C-BIOS stack), so there is no collision.
 SUB_INT_RAM     equ     $F10A   ; the copied trampoline stub (<= 64 B; executes from RAM)
-INT_MAIN_PRIM   equ     $F14A   ; page-0 primary field of the MAIN (BIOS) slot (=0)
-INT_SUB_PRIM    equ     $F14B   ; page-0 primary field of the sub-ROM slot (=3, slot 3)
-INT_SUB_SUBSL   equ     $F14C   ; page-0 subslot  field of the sub-ROM slot (=2, i.e. 3-2)
+INT_MAIN_PRIM   equ     $F14A   ; page-0 primary field of the MAIN (BIOS) slot (=0) (1 B)
+INT_SUB_PRIM    equ     $F14B   ; page-0 primary field of the sub-ROM slot (=3, slot 3) (1 B)
+INT_SUB_SUBSL   equ     $F14C   ; page-0 subslot  field of the sub-ROM slot (=2, i.e. 3-2) (1 B)
 SUB_INT_DELTA   equ     $F14D   ; self-test tenant result: JIFFY ticks observed under EI (1)
 ; --- Math pack slice 2e RND_SEED (repack build only, docs/spec-basic- -------
 ; mathpack-slice2.md §15.3): the RND generator's persistent 14-digit LCG

@@ -21,15 +21,33 @@ sector loop move OUT of main and INTO `disk.rom`, reached through the claimed
 hook cell `$FE5D`.
 
 **Shipped:** step 9 LOAD (`e458032b`) · step 11 MERGE + ASCII LOAD (`35eeafb7`) ·
-step 12 SAVE (`3b8e1b57`) · and step 13's first three slices — `174bf887`
-D-NAMESTAMP, `407298e0` D-KILLLOCAL, `c9238e5a` D-COPYLOCAL.
+step 12 SAVE (`3b8e1b57`) · and **step 13 COMPLETE**, all four slices —
+`174bf887` D-NAMESTAMP, `407298e0` D-KILLLOCAL, `c9238e5a` D-COPYLOCAL,
+`285b80e9` D-FILESLOCAL.
+
+⚠️ **THOSE SHAS ARE READ BACK FROM `git log`, AND THE REASON THAT IS WORTH A
+LINE:** the D-FILESLOCAL sha was first written into a hand-off as `c9238e5a`'s
+neighbour from memory rather than from the log, and it was wrong. A sha is
+exactly the kind of fact that looks checkable and is not, once it is in prose.
 
 **Step 13 is NOT a 1895 B relocation** (that filing was wrong, §6.6av): the ported
 disk verbs each made a three-ROM round trip — `hk_*` called BACK into main just
 so main could marshal on to `sub.rom`'s `dirverb_tenant`, whose body ran FAT
 primitives `disk.rom` has had since steps 9/11/12. Each slice deletes one.
 
-➡️ **NEXT: `FILES`/`LFILES`, and SCOUT IT BEFORE PRICING IT.** This arc has now
+🔴 **THE TIERED AUTONOMOUS QUEUE IS EMPTY BELOW TIER 4 (checked 2026-09-21).**
+`tools/tier_table.py --keywords` reports the unattributed keyword list at **0**,
+so the TIER 1 keyword-completeness item has no concrete target left and its own
+text says the tier re-ask goes to Joost at exactly this point. TIER 2's two
+autonomous items are step 13 (closed) and the RAM-usage comparison (Joost's,
+*"not something for now"*). What is left autonomous is TIER 4 speed (`PAINT`,
+`PUT`, the interpreter band) and the APPARATUS/BUDGET buckets.
+⚠️ **`VARPTR` LOOKS LIKE A TIER 1 TARGET AND IS NOT:** its second authored
+form is `file-channel` (`VARPTR(#n)`), which is Joost's filed stride ruling.
+Re-verifying that blocker is what stopped a wasted tick.
+
+📜 **HISTORICAL, kept because the lesson outlived the slice — `FILES`/`LFILES`
+and SCOUT IT BEFORE PRICING IT:** This arc has now
 had to correct the same over-confident sentence twice — *"`KILL`, `COPY` and
 `FILES` are the same shape"* was measured on `KILL` alone and was false for
 `COPY`, and then `COPY`'s own scout over-priced it by 17 B because it priced a

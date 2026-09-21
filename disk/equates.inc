@@ -13,7 +13,7 @@ SYSTEM          equ     $F37D   ; SYSTEM sysvar: BDOS entry-point word
 ; page 0). MSX2 TH work area; the disk-ROM-INIT responsibility is confirmed by a
 ; black-box differential (provider-oracle-scope.md §8.8/§8.16). EXPTBL flags which
 ; primary slots are expanded. (EXPTBL also in basic/sysvars.inc — same address.)
-DOS_F340        equ     $F340   ; disk work-area flag the kernel reads at init (§8.33); $00 = ok
+DOS_F340        equ     $F340   ; disk work-area flag the kernel reads at init (§8.33); $00 = ok (1 B)
 RAMAD0          equ     $F341   ; RAM-slot id per page ($F341-$F344), MSX2 TH work area
 EXPTBL          equ     $FCC1   ; expanded-slot flags, 1 byte/primary, bit 7 = expanded
 ; D-FILESLOCAL (disk/docs/spec-diskcode-eviction.md §6.6ba): FILES/LFILES emit
@@ -210,11 +210,11 @@ BASIC_DISK_ID   equ     $FF
 ; ROM reserves no local DPB area.)
 ;
 ; FDC driver state (7 bytes below the sector buffer)
-FDC_IFF         equ     $E299   ; saved caller IFF2 across a sector op (1 = was EI)
-FDC_CNT         equ     $E29A   ; remaining sector count
+FDC_IFF         equ     $E299   ; saved caller IFF2 across a sector op (1 = was EI) (1 B)
+FDC_CNT         equ     $E29A   ; remaining sector count (1 B)
 FDC_LSEC        equ     $E29B   ; current logical sector (word)
 FDC_DEST        equ     $E29D   ; current transfer address (word)
-FDC_TRY         equ     $E29F   ; read attempt counter
+FDC_TRY         equ     $E29F   ; read attempt counter (1 B)
 
 ; Sector buffer (512 bytes) — DSKIO reads land here for FAT12 parsing.
 SECTOR_BUF      equ     $E2A0   ; 512-byte sector buffer ($E2A0-$E49F)
@@ -233,7 +233,7 @@ FAT_FIRSTCLUS   equ     $E4AC   ; first cluster of the found file (word)
 FAT_FILESIZE    equ     $E4AE   ; file size in bytes (4-byte LE)
 ; numFATs / secPerFAT cached at mount so the write path can sync every FAT copy
 ; without re-reading the boot sector (which would clobber SECTOR_BUF mid-flush).
-FAT_NUMFATS     equ     $E55A   ; number of FAT copies (byte; from BPB +16)
+FAT_NUMFATS     equ     $E55A   ; number of FAT copies (byte; from BPB +16) (1 B)
 FAT_SECPERFAT   equ     $E55B   ; sectors per FAT copy (word; from BPB +22)
 ; This ROM's own slot byte, captured from A at INIT entry (disk/PROVENANCE.md
 ; §INIT) and used to build the HPHYD CALLF operand. Own-choice free page-3 RAM
@@ -260,7 +260,7 @@ BDOS_SRCHIDX    equ     $E55E   ; runtime dir-search cursor (word; M19)
 ; code decoded. See disk/kernel.asm setdta_cache_body / docs/tier2-m19-spec.md.
 DOS_DTAPTR      equ     $F23D   ; disk work-area current-DTA cache (word, LE; M19)
 ; FAT12 working scratch (transient within a single call)
-FAT_PARITY      equ     $E4B2   ; 1 = odd cluster, 0 = even (FAT12 nibble pack)
+FAT_PARITY      equ     $E4B2   ; 1 = odd cluster, 0 = even (FAT12 nibble pack) (1 B)
 FAT_BYTEIDX     equ     $E4B3   ; byte index within a FAT sector (word, 0..511)
 FAT_FATSEC      equ     $E4B5   ; FAT sector currently read (word)
 FAT_B0          equ     $E4B7   ; first FAT byte of a 12-bit entry
@@ -399,8 +399,8 @@ WBUF            equ     $E560   ; write-back FAT/dir sector buffer ($E560..$E75F
 ; loop, and the earlier ROM-`db` cells silently no-op'd their stores (writes to
 ; the read-only $4000-$7FFF ROM image), forcing record-in-sector to 0 -> wrong
 ; record. Own-choice free page-3 RAM immediately after WBUF (PROVENANCE §Scratch RAM).
-RRND_RECSEC     equ     $E760   ; r0 & 3 (record-in-sector) across the sector-seek loop
-RRND_CLUSSEC    equ     $E761   ; FAT_CLUSSEC-1 across the cluster->sector multiply loop
+RRND_RECSEC     equ     $E760   ; r0 & 3 (record-in-sector) across the sector-seek loop (1 B)
+RRND_CLUSSEC    equ     $E761   ; FAT_CLUSSEC-1 across the cluster->sector multiply loop (1 B)
 
 ; $26 WRBLK ($47BE, M28 tier2-m28-blockrandom-spec.md) 24-bit positioning scratch --
 ; transient within a single wrblk_body call (no cross-call lifetime, no init needed).
@@ -409,7 +409,7 @@ RRND_CLUSSEC    equ     $E761   ; FAT_CLUSSEC-1 across the cluster->sector multi
 ; dead whenever a BDOS FCB call (WRBLK included) is running, same lifetime-disjoint
 ; reuse discipline as RRND_RECSEC/RRND_CLUSSEC above (own choice, no oracle bytes).
 WRBLK_REC       equ     $E7E8   ; 24-bit target record number for the current step (3 bytes)
-WRBLK_RECSEC    equ     $E7EB   ; WRBLK_REC & 3 (record-in-sector) across the seek/extend loop
+WRBLK_RECSEC    equ     $E7EB   ; WRBLK_REC & 3 (record-in-sector) across the seek/extend loop (1 B)
 WRBLK_RS        equ     $E7EC   ; resolved record size (FCB+14..15, 0 -> 128) (word)
 WRBLK_CNT       equ     $E7EE   ; records still to process this call (word, counts down to 0)
 WRBLK_REQ       equ     $E7F0   ; the ORIGINAL requested count (word; HL is pinned-preserved
@@ -427,7 +427,7 @@ WRBLK_NEXTCLUS  equ     $E7F6   ; shrink path: next cluster to free, saved acros
 ; next-sector call can skip the from-head fat_open+re-walk. Cross-call lifetime
 ; WITHIN a single wrblk_body invocation only -- wrblk_body clears CURVALID once
 ; before wrblk_loop.
-WRBLK_CURVALID  equ     $E7F8   ; byte: 0 = iterator not yet positioned this call
+WRBLK_CURVALID  equ     $E7F8   ; byte: 0 = iterator not yet positioned this call (1 B)
 WRBLK_CURSEC    equ     $E7F9   ; word: sector-in-file the iterator currently sits
                                 ; on (meaningful only when CURVALID=1)
 ; M30 (tier2-m30-alloc-hint-spec.md) FAT allocator next-free scan cursor -- a FAT

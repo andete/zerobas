@@ -483,8 +483,15 @@ item — do **one item per session** to keep context lean.
       identical; `mergewin_probe.py` CLEAN on both fixtures with its control
       firing 258 / 1898.
 
-- [ ] 🔬 **STEP 13: DELETE THE THREE-ROM ROUND TRIP THE PORTED DISK VERBS STILL
-      MAKE — IT IS NOT A 1895 B RELOCATION**
+- [x] 🟢 **STEP 13: DELETE THE THREE-ROM ROUND TRIP THE PORTED DISK VERBS STILL
+      MAKE — CLOSED 2026-09-21, ALL FOUR SLICES SHIPPED**
+      ✅ `174bf887` D-NAMESTAMP · `407298e0` D-KILLLOCAL · `c9238e5a` D-COPYLOCAL
+      · `285b80e9` D-FILESLOCAL. `dirverb_tenant` is down from eight ops to two,
+      and those two (`DSKO$`/`DSKI$`) are called from MAIN rather than from a
+      disk-ROM hook, so they have NO round trip to delete. The only residual is
+      the COSMETIC rename recorded in §6.6ba.
+      *(the original item, for the record:)*
+      🔬 **IT IS NOT A 1895 B RELOCATION**
       🎚️ TIER 2 — reasonable time; it is the last eviction work needing no ruling.
       🤖 **AUTONOMOUS** — the shape is proven by steps 9, 11 and 12 and the
       acceptance rows already exist.
@@ -850,9 +857,57 @@ item — do **one item per session** to keep context lean.
       CLASS AGAIN:** `USRTAB ; 10 USR jump vectors, 2 bytes each` read as **2**
       where it is 20. The total leads now — third instance in one day, after
       `FCH_RECNOS` and `GFX_DFSTK`.
-      ➡️ **RESIDUAL: 137 pinned cells whose width lives only in prose.** Each
-      removal is one-way and improves the map; burn them down as they are
-      touched rather than in one sweep.
+      ➡️ **RESIDUAL: pinned cells whose width lives only in prose.** Each
+      removal is one-way and improves the map. **Recount from
+      `make ram-map-check`, never from here.**
+      🟢 **✅ 54 BURNED DOWN 2026-09-21 (D-WIDTHSCOUT), 137 → 83 — AND THIS
+      WAS A SWEEP,
+      WHICH THE LINE ABOVE USED TO ADVISE AGAINST.** The advice's reason was that
+      a width written from a guess is worse than none
+      [[a-width-present-and-wrong-is-worse-than-one-absent]], and the sweep
+      removes that hazard rather than ignoring it: **every width is DERIVED FROM
+      THE INSTRUCTION THAT TOUCHES THE CELL**, not from its name or its
+      neighbours. A Z80 absolute access states its own width — `ld (N),hl` is
+      two bytes, `ld a,(N)` is one, `ld (N+3),a` proves at least four — so
+      `scratchpad/widthscout.py` reads the access set per cell and REFUSES
+      wherever the code does not speak with one voice.
+      🔬 **95 `undeclared` pins → 74 UNAMBIGUOUS / 4 AMBIGUOUS / 17 UNSEEN.**
+      Only the unambiguous set was written, and the built ROMs came out
+      **byte-identical** (comment-only), so no knife arm moved.
+      🔴 **AND THE SWEEP'S OWN FIRST PASS BROKE A DIFFERENT INVARIANT, WHICH IS
+      A CLASS THIS TREE KEEPS MEETING**
+      [[a-mechanical-fix-can-break-a-different-invariant]].
+      `disk/basic-resident-abi.inc` is GENERATED, and the applier wrote widths
+      into it. They survived long enough to make three pins look stale, the pins
+      were deleted, and the next build regenerated the file and wiped them —
+      leaving three cells with no width AND no pin. **`make ram-map-check` caught
+      it**, the three pins are restored, and the scout now NAMES the generated
+      files and says the fix belongs in main's own declaration.
+      ⚠️ Note the second half of that: the generator TRUNCATES the comment it
+      copies, so it can cut a width off a cell whose declaration really does
+      carry one. Unfixed — the pin is the honest answer until it is.
+      🔴 **AND THE SCOUT REFUSED ITS OWN SUCCESS.** Its instrument-fault floor
+      was *"fewer than 100 pins means the parse broke"*, keyed to the 137 that
+      stood when it was written — so the sweep it exists for tripped it at 83. A
+      refusal keyed to a COUNT is a figure that rots; the floor is structural now
+      (it refuses only a file it could not parse at all).
+      🔴 **THE FOUR AMBIGUOUS CELLS ARE THE POINT, AND THREE WOULD HAVE BEEN
+      BADLY WRONG IF GUESSED:** `LHS_FAC` is **8 B** (`+0/+2/+4` word stores),
+      `RVDESC` **3 B** (a byte then a word — a string descriptor), `DRVTBL`
+      **16 B**, and `CLR_SAVE` is written as a WORD and read as a BYTE. A default
+      of 1 or 2 would have shipped a present-and-wrong width on every one.
+      ⚠️ **AND `UNSEEN` IS NOT `1 B`** — 17 cells have no access spelled with
+      their own name at all (reached through a pointer, or as an offset from a
+      neighbour), so the code cannot speak for them and they stay pinned. That is
+      the same geometry blindness the map's own header records.
+      ➡️ **21 UNAMBIGUOUS PINS REMAIN UNWRITTEN** — the 19 below plus the two
+      generated-file cells. A second pass, not a forgotten one.
+      ⚠️ **19 NAMES REFUSED WITH "the comment already declares a width"**, which
+      is a DISAGREEMENT worth a look rather than a nuisance: the pin file rates
+      those cells `undeclared` while the parser reads a width out of the same
+      comment. The tool's per-NAME test and the map's per-ADDRESS consensus are
+      not the same question — an aliased neighbour with no width can outvote a
+      name that has one. Unexamined; filed here, not fixed.
       🟡 **12 `SAVE`** — not blocked, but not a carve: `do_save` ends
       `jp sv_tenant` (`SUBROM_IDX_SAVE`), so the body is ALREADY in the sub-ROM.
       The move is sub → disk and its value is faithfulness — today a foreign disk
@@ -3781,7 +3836,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:21485 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:21540 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -3947,7 +4002,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:8590 (T-6FE392)8 (T-529ABE)` from `TODO.md:19879 (T-529ABE)`: a
+      `TODO.md:8645 (T-6FE392)8 (T-529ABE)` from `TODO.md:19934 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -9434,7 +9489,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:19879 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:19934 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

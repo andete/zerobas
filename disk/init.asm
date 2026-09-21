@@ -191,8 +191,8 @@ CHPUT           equ     $00A2   ; MSX BIOS: emit the character in A (MSX2 TH)
 BOOT_LOAD       equ     $C000   ; standard boot-sector load address (MSX2 TH ch.3)
 BOOT_ENTRY      equ     $C01E   ; custom-boot-program entry (BOOT_LOAD + $1E)
 ; page-0 RAM-swap scratch (transient, used only during INIT's boot bridge).
-BOOT_SV_A8      equ     $E760   ; saved $A8 primary-slot config
-BOOT_SV_SEC     equ     $E761   ; saved slot secondary ($FFFF) live value
+BOOT_SV_A8      equ     $E760   ; saved $A8 primary-slot config (1 B)
+BOOT_SV_SEC     equ     $E761   ; saved slot secondary ($FFFF) live value (1 B)
 ; step-6 page-0 environment scratch (transient; used only by the $0030 CALLF
 ; handler and the CALSLT handler during the boot bridge). The $0030 handler must
 ; deliver A,B,C,DE,HL UNTOUCHED to the DSKIO callee, so it saves them here while
@@ -252,7 +252,7 @@ WA_SEG          equ     P1_BLIT + (p1_blit_end - p1_blit_tmpl)  ; base of the tw
 ; Inter-slot helper scratch (M8/§8.67 CONOUT + A-2/§8.70 int_h): transient page-3 RAM
 ; right after the WA_SEG hook bodies — dead during the DOS phase (SP is in page 2/3),
 ; written+read within one DI'd call. PG_SV_A8 is shared by both page-0 main-ROM calls.
-CONOUT_CHAR     equ     WA_SEG + (wa_seg_end_tmpl - wa_seg_rom_tmpl)  ; CONOUT: saved char
+CONOUT_CHAR     equ     WA_SEG + (wa_seg_end_tmpl - wa_seg_rom_tmpl)  ; CONOUT: saved char (1 B)
 PG_SV_A8        equ     CONOUT_CHAR + 1                              ; shared: saved $A8 config
 ; A-2b (tier2-a2b-spec.md): a private interrupt stack so int_h_body is NON-DESTRUCTIVE
 ; when an interrupt fires with a corrupt caller SP (a primary derail) — it never marches
@@ -268,8 +268,8 @@ INT_SP_SAVE     equ     INT_STK_TOP                                 ; caller SP 
 ; ($E800). CONIN_BUF stashes the caller's DE (buffer base) across pg0_mainrom_in/out,
 ; which clobber D/E; CONIN_MAX/CONIN_COUNT track the func-$0A buffer fill state.
 CONIN_BUF       equ     INT_SP_SAVE + 2                             ; CONIN: buffer base (word)
-CONIN_MAX       equ     CONIN_BUF + 2                                ; CONIN: max length ([DE+0])
-CONIN_COUNT     equ     CONIN_MAX + 1                                ; CONIN: running fill count
+CONIN_MAX       equ     CONIN_BUF + 2                                ; CONIN: max length ([DE+0]) (1 B)
+CONIN_COUNT     equ     CONIN_MAX + 1                                ; CONIN: running fill count (1 B)
 ; A-3 (tier2-a3-spec.md): the maskable-interrupt handler must live in ALWAYS-MAPPED
 ; memory. $0038 fires AFTER COMMAND.COM reclaims page 1 as RAM (wa_seg_ram), so a
 ; page-1 handler ($4251/int_h_body) is unmapped exactly when it is needed and the boot
@@ -307,7 +307,7 @@ GETWRK_AREA     equ     $DD0E   ; MSX-DOS work-area base returned by $4030 (128 
 ; The returned HL/DE/IX point into the disk work area the kernel/disk-ROM already
 ; built; this entry only hands them back (it does not populate them). We reproduce the
 ; observed contract with our own code; the stock's $472D body is never disassembled.
-W50A9_WRKB      equ     $F242   ; the one work-area cell $50A9 clears (semantic: black-box)
+W50A9_WRKB      equ     $F242   ; the one work-area cell $50A9 clears (semantic: black-box) (1 B)
 W50A9_RET_DE    equ     $F1AA   ; DE (= IX) on return: disk work-area pointer
 W50A9_RET_HL    equ     $F359   ; HL on return: disk work-area pointer (DRVTBL+$11 region)
 ; --- $F348 DRVTBL: the disk-driver table MSXDOS.SYS dispatches through (§8.22) ---
@@ -685,8 +685,8 @@ RES_STUBS       equ     $F24E   ; no-op segment-hook stub table base (§8.29)
 RES_STUBS_END   equ     $F2B8   ; one past the last stub ($F2B7); $F2B8+ = kernel data (§8.61)
 DRVA_DPB        equ     $F195   ; drive-A DPB base (id byte + 18-byte DPB, §8.30)
 DRVTBL          equ     $F348   ; MSX-DOS-1 disk-driver table (§8.22)
-DRVCNT          equ     $F347   ; DRVTBL-1: logical-drive count ($02); read by $50D5 (M17)
-CURDRV_CELL     equ     $F247   ; current-drive index ($00=A:); read by $50C4 (M18)
+DRVCNT          equ     $F347   ; DRVTBL-1: logical-drive count ($02); read by $50D5 (M17) (1 B)
+CURDRV_CELL     equ     $F247   ; current-drive index ($00=A:); read by $50C4 (M18) (1 B)
 RES_PRINT       equ     $F1C9   ; resident $-string print routine the kernel CALLs (§8.28)
 F365_STUB       equ     $F365   ; fixed disk-work-area slot-read stub (IN A,($A8);RET; M15 §7.1)
 DRV_NTRAMP      equ     4       ; number of CALLF trampolines

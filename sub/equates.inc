@@ -190,7 +190,7 @@ SUBROM_IDX_PARSELN      equ     23
 ; $F195 — see basic/sysvars.inc). S2a proves the mechanism by injection, so the
 ; main ROM does not yet reference this cell; S2b's dispatch stub will formalise
 ; the SUB_ARG/result marshalling block that starts here.
-SUB_PING                equ     $F105   ; PING page tag: $C0 (page 0) / $C1 (page 1)
+SUB_PING                equ     $F105   ; PING page tag: $C0 (page 0) / $C1 (page 1) (1 B)
 SUB_PING_P0             equ     $C0     ; written by the page-0 ping
 SUB_PING_P1             equ     $C1     ; written by the page-1 ping
 

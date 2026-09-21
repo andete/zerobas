@@ -25,7 +25,7 @@ FACTYP equ 0F01AH   ; 2=int / 4=single / 8=double (1)
 FSECTOR_BUF equ 0E5C0H   ; file data / read sector buffer ($E5C0..$E7BF)
 FLD_CHAN equ 0E01BH   ; FIELD/LSET/RSET: the channel being fielded (1)
 LRSET_W equ 0E01DH   ; LSET/RSET: destination field width (1)
-LRSET_DEST equ 0E01EH   ; LSET/RSET: destination ADDRESS of the store (2).
+LRSET_DEST equ 0E01EH   ; LSET/RSET: destination ADDRESS of the store (2). (2 B)
 STRPTR equ 0E0C9H   ; pointer to the [len][bytes] descriptor (2 bytes)
 DISKOP_OP equ 0E9FBH   ; main -> tenant: DISKOP_SEL_* primitive selector (1)
 DISKOP_ERR equ 0E098H   ; tenant -> main: ERR code of the last DSKIO failure, 0 = none (1)
@@ -36,7 +36,7 @@ TXTMAX equ 0DB00H   ; repack: text ceiling. DETOKBUF sits immediately
 PRGEND equ 0E026H   ; addr of the $0000 end-of-program marker (2 bytes)
 DSV_PTR equ 0E0EDH   ; SAVE: current source byte pointer (2)
 DSV_END equ 0E0EFH   ; SAVE/BSAVE: last source byte addr, inclusive (2)
-DISKSLOT_OK equ 0E0E8H   ; 1 = DISKSLOT holds a valid disk-ROM slot id
+DISKSLOT_OK equ 0E0E8H   ; 1 = DISKSLOT holds a valid disk-ROM slot id (1 B)
 main_FWR_DIRSEC equ 0E9F7H   ; main's FWR_DIRSEC -- logical sector holding the open file's dir entry (word)
 main_FWR_DIROFF equ 0E9F9H   ; main's FWR_DIROFF -- byte offset of that dir entry within its sector (word)
 COPY_SRC equ 0E080H   ; the source's 11-byte 8.3 name field
