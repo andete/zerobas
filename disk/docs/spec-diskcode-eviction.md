@@ -3436,7 +3436,22 @@ now crosses the slot, so a `disk.rom` edit could break it with no gate saying so
 > 🟢 **CLOSED THE SAME DAY (D-DISKASCII, 2026-09-21).** `make
 > diskascii-acceptance` runs all three against the repack machine as CF-3300
 > differentials and is collected in the battery; the three allowlist lines are
-> gone. It runs **all three even when one is red** — `make` would stop at the
+> gone.
+> 🔴 **BUT THE REASON GIVEN ABOVE IS WRONG, AND IT IS MINE (corrected
+> 2026-09-21).** *"`diskbasic-acceptance` has no `MERGE` row"* is FALSE:
+> `probes/disk/diskbasic_acceptance.py` runs `disk_probe_merge.py` as its
+> `MERGE` row (line 79), `disk_probe_save_ascii.py` as `SAVE(ASCII)` and
+> `disk_probe_load_ascii.py` as `LOAD(ASCII)`. I grepped the BUILD LOG for the
+> word and read six lines of make noise as "no row", instead of reading the row
+> list the suite prints — while quoting *"check every verb's rows BY NAME"* as
+> the lesson being applied.
+> 🎯 **THE OUTCOME WAS STILL RIGHT, FOR A DIFFERENT REASON:**
+> `diskbasic-acceptance` is one of the EIGHT BATTERY-EXCLUDED targets, so those
+> three rows ran only when someone ran it by hand. `diskascii-acceptance` is in
+> the battery, so it is genuinely new coverage — of the *frequency*, not of the
+> *verbs*. And the reach allowlist was right all along: `check_probe_reach`
+> scans the Makefile, and a probe SPAWNED BY ANOTHER PROBE is invisible to it
+> [[a-static-gate-cannot-see-a-computed-path]]. It runs **all three even when one is red** — `make` would stop at the
 > first, and one failure hiding the other two is how a denominator goes missing.
 > A negative control (`DISK_DSK=/nonexistent`) confirms all three are attempted
 > and the target still exits non-zero.
@@ -3514,6 +3529,54 @@ page 0 434 B, sub page 1 145 B, `disk.rom` 7842 B in 29 runs with the **largest
 usable hole 2531 B at `$5602`**. The census's LOW bracket (1895 B) fits that hole;
 the HIGH one (3689 B) does not. **Staging is forced by fragmentation**, exactly as
 §6.2 said — but the first slice here is ~30 B, not 1895.
+
+### 6.6aw 🟢 `NAME`'s DIR STAMP RUNS IN `disk.rom` — ONE ROUND TRIP DELETED (D-NAMESTAMP, 2026-09-21)
+
+§6.6av's first slice, implemented. `hk_name`'s
+`ld a,DISKOP_SEL_NAME_STAMP / ld ix,dirverb_op / call calbak` was a call-back
+into MAIN that marshalled on to `sub.rom`'s `dirverb_tenant` — **two boundary
+crossings for thirteen instructions**. `hkn_stamp` does it here.
+
+| | before | after |
+|---|---|---|
+| `NAME`'s stamp | `disk.rom → main → sub.rom` | **local** |
+| `sub.rom` page 1 free | 145 B | **188 B** |
+| `disk.rom` free | 7842 B | 7814 B |
+| main | unchanged | unchanged |
+
+`tnt_name_stamp` is **deleted** — with the stamp local, nothing reached
+`DISKOP_SEL_NAME_STAMP` from either ROM, and the dispatcher's bare fall-through
+into it is now an explicit `jp dv_err` so an unrecognised op takes the error tail
+instead of running whatever happens to follow.
+
+🔴 **TWO NAMES IN THIRTEEN INSTRUCTIONS WOULD EACH HAVE BEEN A SILENT WRONG
+ANSWER.** `disk.rom` declares `FWR_DIRSEC`/`FWR_DIROFF` **itself**, at
+`$E552`/`$E554` — its own FAT's scratch, a DIFFERENT address from main's
+`$E9F7`/`$E9F9` that `main_fat_find` writes. And the sub-ROM body being replaced
+spells `FSECTOR_BUF`, which in THIS ROM is main's buffer at `$E5C0`, not ours at
+`$E2A0`. Either spelling assembles cleanly; the first writes a valid sector at
+the wrong offset and the second reads the wrong buffer. **Both are the class that
+cost step 12 a day (§6.6ao)**, and the defence is the same: the entry location
+arrives as a GENERATED alias, `main_FWR_DIRSEC=FWR_DIRSEC`, exactly as
+`main_fat_mount`/`main_fat_find` already do, and the buffer is spelled
+`FAT_DBUF`.
+
+⚠️ **§6.6av's ORDERING PROBLEM IS NOT SOLVED — IT IS SIDESTEPPED, AND ONLY FOR
+THIS SLICE.** Making `fat_mount`/`fat_find` local as well still requires their
+result to survive main running `fname_expr` through a call-back, and §6.6av's
+reordering fix would change the ORDER in which `NAME` evaluates and errors —
+which `nameord-acceptance` exists to pin. So the mount and find stay as
+call-backs, main's `$E9F7` stays the hand-off, and nothing new has to survive
+anything. **Read that as the remaining work, not as a solved problem.**
+
+🔬 **VERIFIED BY NAME:** `diskbasic-acceptance` 34/34 with its `NAME` row PASS,
+`nameord-acceptance` and `namegate-acceptance` green, and `nodiskerr-acceptance`
+13 rows / 0 divergences — including the face that broke here before,
+`NAME … AS …` at an empty drive answering `Disk offline` rather than
+`Syntax error`.
+
+➡️ **`KILL`, `COPY` and `FILES` are the same shape**, each with fewer names to
+juggle and the same `dirverb_op` call-back to delete.
 
 ## 6.7 🔍 GAP ANALYSIS — zerobas AGAINST THE MEASURED PROTOCOL (D-HOOKCENSUS, 2026-09-19)
 

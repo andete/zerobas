@@ -148,6 +148,15 @@ REQUIRED_DISK_RAM = [
                                 # IS the disk ROM, but the body is shared and the
                                 # cell is main's -- reading it costs nothing and
                                 # keeps the source identical in all three builds
+    # D-NAMESTAMP (spec-diskcode-eviction.md §6.6aw): NAME's dir-entry stamp runs
+    # in disk.rom now instead of calling back to the sub-ROM tenant. It needs the
+    # entry location that main's fat_find recorded -- and these are ALIASED for
+    # the same reason main_fat_mount/main_fat_find are: disk.rom HAS cells of
+    # these names ($E552/$E554) and they are its OWN FAT's scratch, a DIFFERENT
+    # address from main's ($E9F7/$E9F9). 🔴 Reading the wrong one would have been
+    # silent -- the stamp would write a valid sector at the wrong offset.
+    "main_FWR_DIRSEC=FWR_DIRSEC",   # sector holding the located dir entry
+    "main_FWR_DIROFF=FWR_DIROFF",   # byte offset of the entry within it
 ]
 # CALL-BACK: main PAGE-1 targets, reached by an INTER-SLOT CALL, not by an
 # absolute one -- the third class, and the one the hook re-architecture needs

@@ -2764,12 +2764,8 @@ hkn_a:
                 ld      hl,STRSCR + 1
                 ld      ix,parse_disk_fcb
                 call    calbak              ; new -> DISK_FCB_NAME
-                ld      a,DISKOP_SEL_NAME_STAMP
-                ld      ix,dirverb_op
-                call    calbak
-                ld      a,(DISKOP_STATUS)   ; the tenant's polarity: 0 = OK
-                or      a
-                jr      nz,hkn_io
+                call    hkn_stamp           ; LOCAL now -- no call-back, no sub-ROM
+                jr      c,hkn_io
                 ld      a,1                 ; renamed
                 jr      hkn_done
 hkn_nf:
@@ -2794,6 +2790,47 @@ hkn_done:
                 ld      (DISKOP_STATUS),a
                 scf                         ; CF=1: the hook is claimed
                 ret
+; --- hkn_stamp: overwrite the located dir entry's 8.3 name, IN THIS ROM ------
+; D-NAMESTAMP (disk/docs/spec-diskcode-eviction.md §6.6aw). This was
+; `ld a,DISKOP_SEL_NAME_STAMP / ld ix,dirverb_op / call calbak` -- a call-back
+; into MAIN that marshalled on to `sub.rom`'s dirverb tenant, so a NAME crossed
+; main -> disk.rom -> main -> sub.rom. Steps 9/11/12 gave this ROM its own
+; read_sector / write_sector / FAT_DBUF, so the stamp is thirteen instructions
+; here and the round trip is gone.
+; Sources: the dir-entry layout is FAT12's published one (the 8.3 name is the
+; entry's first 11 bytes -- disk/docs/spec-diskbasic-verbs.md, and the same
+; DIRENT_* constants disk/equates.inc already declares); read_sector /
+; write_sector take DE = logical sector, HL = buffer (basic/fat-prim-body.inc).
+; Clean-room: our own FAT12 engine throughout; no reference ROM byte is read.
+;
+;   in : main_FWR_DIRSEC / main_FWR_DIROFF -- where main's fat_find found the OLD
+;        entry; DISK_FCB_NAME -- the NEW 8.3 name
+;   out: CF = 0 stamped, CF = 1 a DSKIO failure (DISKOP_ERR carries the code)
+; 🔴 THE `main_` PREFIX IS LOAD-BEARING. disk.rom declares FWR_DIRSEC/FWR_DIROFF
+; ITSELF, at $E552/$E554 -- its own FAT's scratch, a DIFFERENT address from
+; main's $E9F7/$E9F9. Spelling the bare name here would have assembled cleanly
+; and written a valid sector at the WRONG OFFSET, which is exactly the class that
+; cost step 12 a day (§6.6ao). The aliased import is generated, so it cannot
+; drift.
+; 🔴 AND `FAT_DBUF`, NEVER `FSECTOR_BUF`: the sub-ROM body this replaces spells
+; `FSECTOR_BUF`, which in THIS ROM is main's buffer at $E5C0 rather than ours at
+; $E2A0. Copying it verbatim is the bug it would have been.
+hkn_stamp:
+                ld      de,(main_FWR_DIRSEC)
+                ld      hl,FAT_DBUF
+                call    read_sector
+                ret     c
+                ld      hl,FAT_DBUF
+                ld      de,(main_FWR_DIROFF)
+                add     hl,de               ; HL -> the entry in the buffer
+                ex      de,hl               ; DE -> its 11-byte name field
+                ld      hl,DISK_FCB_NAME    ; source = the NEW 8.3 name
+                ld      bc,11
+                ldir
+                ld      de,(main_FWR_DIRSEC)
+                ld      hl,FAT_DBUF
+                jp      write_sector        ; tail-call: its CF is our answer
+
 ; hkn_up: upcase A. Six bytes of our own rather than a call-back for one
 ; character -- own-design, and the same fold main's `upcase` does.
 hkn_up:

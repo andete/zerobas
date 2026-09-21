@@ -518,6 +518,22 @@ item — do **one item per session** to keep context lean.
       usable hole **2531 B at `$5602`** — the census's LOW bracket fits it, the
       HIGH one does not, so staging stays forced by fragmentation. **The first
       slice is ~30 B, not 1895.**
+      🟢 **✅ FIRST SLICE DONE 2026-09-21 (§6.6aw, D-NAMESTAMP): `NAME`'s dir
+      stamp is LOCAL.** `hkn_stamp` replaces the `dirverb_op` call-back — two
+      boundary crossings for thirteen instructions — and `tnt_name_stamp` is
+      DELETED, with the dispatcher's bare fall-through into it replaced by an
+      explicit `jp dv_err`. **sub page 1 145 B → 188 B free**, `disk.rom`
+      7842 → 7814 B, main unchanged (measured 2026-09-21).
+      🔴 **TWO NAMES WOULD EACH HAVE BEEN A SILENT WRONG ANSWER:** disk declares
+      `FWR_DIRSEC`/`FWR_DIROFF` itself at `$E552`/`$E554`, a DIFFERENT address
+      from main's `$E9F7`/`$E9F9`; and the sub-ROM body spells `FSECTOR_BUF`,
+      which in disk.rom is main's buffer. Both assemble cleanly. The entry
+      location now arrives as a GENERATED alias `main_FWR_DIRSEC=FWR_DIRSEC`.
+      ⚠️ **§6.6av's ORDERING PROBLEM IS SIDESTEPPED, NOT SOLVED** — `fat_mount`
+      and `fat_find` stay call-backs, so nothing new has to survive `fname_expr`.
+      Making them local still needs that answer, and the reorder would move the
+      order `nameord-acceptance` exists to pin.
+      ➡️ `KILL`, `COPY` and `FILES` are the same shape, fewer names each.
 
 - [ ] 🔬 **COMPARE RAM *USAGE* AGAINST THE REFERENCE, CELL BY CELL — AND JOOST'S
       HUNCH IS THE HYPOTHESIS TO SCORE**
@@ -567,8 +583,17 @@ item — do **one item per session** to keep context lean.
       slow one.
       🤖 **AUTONOMOUS** — a Makefile target plus battery membership, no ruling
       needed.
-      🔴 **`diskbasic-acceptance` HAS NO `MERGE` ROW** and its 34/34 says nothing
-      about `MERGE`, ASCII `LOAD` or `SAVE",A"`. The three probes that do cover
+      🔴 **THAT PREMISE WAS FALSE AND IT WAS MINE (corrected 2026-09-21).**
+      `diskbasic-acceptance` DOES have a `MERGE` row — `diskbasic_acceptance.py`
+      runs `disk_probe_merge.py` as it, plus `SAVE(ASCII)` and `LOAD(ASCII)`. I
+      grepped the BUILD LOG for the word and read make noise as "no row", while
+      quoting *"check every verb's rows BY NAME"* as the lesson being applied.
+      🎯 **THE OUTCOME STILL HOLDS, FOR A DIFFERENT REASON:**
+      `diskbasic-acceptance` is one of the EIGHT BATTERY-EXCLUDED targets, so
+      those rows ran only by hand; `diskascii-acceptance` is IN the battery. The
+      gain is FREQUENCY, not verbs. And the reach allowlist was right all along:
+      a probe SPAWNED BY ANOTHER PROBE is invisible to a Makefile scanner.
+      ⚠️ The original claim, kept so the correction has a subject: The three probes that do cover
       them — `probes/disk/disk_probe_merge.py`, `disk_probe_load_ascii.py`,
       `disk_probe_save_ascii.py` — are in NO Makefile target, excused in
       `tools/probe-reach-allow.txt` as *"archived and still re-provable when the
@@ -3601,7 +3626,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:21305 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:21330 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -3767,7 +3792,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:8410 (T-6FE392)8 (T-529ABE)` from `TODO.md:19699 (T-529ABE)`: a
+      `TODO.md:8435 (T-6FE392)8 (T-529ABE)` from `TODO.md:19724 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -9254,7 +9279,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:19699 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:19724 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

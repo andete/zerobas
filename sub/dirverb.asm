@@ -75,7 +75,15 @@ dirverb_tenant:
                 jp      z,tnt_copystash         ; 6 -> COPY, first half (D-COPY)
                 cp      DISKOP_SEL_COPY
                 jp      z,tnt_copy              ; 7 -> COPY, the body
-                ; fall through -> DISKOP_SEL_NAME_STAMP = 1
+                ; 🔴 SELECTOR 1 (NAME_STAMP) IS NO LONGER SERVED HERE, AND THE
+                ; FALL-THROUGH HAD TO GO WITH IT (D-NAMESTAMP,
+                ; spec-diskcode-eviction.md §6.6aw). NAME's dir-entry stamp runs
+                ; in disk.rom now -- it has its own read_sector/write_sector and
+                ; the entry location arrives through the generated ABI -- so the
+                ; body below this dispatcher was dead and is deleted. An
+                ; unrecognised op now takes the error tail rather than silently
+                ; running whatever happens to follow.
+                jp      dv_err
 
 ; --- NAME "old" AS "new": stamp the new 8.3 name over the located dir entry --
 ; Inputs (from the resident head): FWR_DIRSEC/FWR_DIROFF locate the OLD file's
@@ -83,25 +91,6 @@ dirverb_tenant:
 ; shims); DISK_FCB_NAME holds the NEW 8.3 name. Read that dir sector, overwrite
 ; the 11-byte name field in place, write it back. Byte-for-byte the same logic
 ; as basic/files.asm's do_name tail.
-tnt_name_stamp:
-                ld      de,(FWR_DIRSEC)
-                ld      hl,FSECTOR_BUF
-                call    read_sector            ; sub-local primitive body
-                jr      c,dv_err
-                ld      hl,FSECTOR_BUF
-                ld      de,(FWR_DIROFF)
-                add     hl,de                  ; HL -> the entry in the buffer
-                ex      de,hl                  ; DE -> dest name field
-                ld      hl,DISK_FCB_NAME       ; source = the new 8.3 name
-                ld      bc,11
-                ldir                           ; overwrite the 11-byte 8.3 name
-                ld      de,(FWR_DIRSEC)
-                ld      hl,FSECTOR_BUF
-                call    fatprim_write_sector   ; sub-local (renamed) primitive
-                jr      c,dv_err
-                xor     a
-                ld      (DISKOP_STATUS),a       ; ok
-                ret
 dv_err:
                 ld      a,1
                 ld      (DISKOP_STATUS),a       ; error -> head does load_error

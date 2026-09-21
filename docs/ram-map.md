@@ -34,7 +34,7 @@ names the other component's BUFFER this address falls within. That
 second one is the question a per-component map cannot answer.
 
 * **basic** — 418 declared addresses in this project's own workspace `$E000..$F37F` (318 with a machine-readable width), plus **79** in the MSX standard work area at or above `$F380`.
-* **disk** — 121 declared addresses in this project's own workspace `$E000..$F37F` (84 with a machine-readable width), plus **22** in the MSX standard work area at or above `$F380`.
+* **disk** — 123 declared addresses in this project's own workspace `$E000..$F37F` (86 with a machine-readable width), plus **22** in the MSX standard work area at or above `$F380`.
 
 ## This project's own workspace (`$E000..$F37F`)
 
@@ -417,7 +417,9 @@ second one is the question a per-component map cannot answer.
 | `$E9F1` | 2 B | `basic` | `FWR_BUFLEN` | bytes currently buffered in FSECTOR_BUF (word, 0..512) |  |
 | `$E9F3` | 4 B | `basic` | `FWR_BYTES` | total bytes written so far = final file size (4-byte LE) |  |
 | `$E9F7` | 2 B | `basic` | `FWR_DIRSEC` | logical sector holding the open file's dir entry (word) |  |
+| `$E9F7` | 2 B | `disk` | `main_FWR_DIRSEC` | main's FWR_DIRSEC -- logical sector holding the open file's dir entry (word) |  |
 | `$E9F9` | 2 B | `basic` | `FWR_DIROFF` | byte offset of that dir entry within its sector (word) |  |
+| `$E9F9` | 2 B | `disk` | `main_FWR_DIROFF` | main's FWR_DIROFF -- byte offset of that dir entry within its sector (word) |  |
 | `$E9FB` | 1 B | `basic` | `AUDIO_VMASK/DISKOP_OP/FOPEN_SEL/LE_OP` | main -> tenant: DISKOP_SEL_* primitive selector (1) |  |
 | `$E9FB` | 1 B | `disk` | `DISKOP_OP/FOPEN_SEL` | main -> tenant: DISKOP_SEL_* primitive selector (1) |  |
 | `$E9FC` | 1 B | `basic` | `AUDIO_STATUS/BN_STAT/CM_STATUS/DEFT_STATUS/DISKOP_STATUS/LE_STATUS` | tenant -> main: 0 = ok (Cy=0 / Z set); nonzero = |  |
