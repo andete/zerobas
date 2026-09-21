@@ -3281,6 +3281,16 @@ H_FOPEN         equ     $FE5D
 FOPEN_SEL       equ     DISKOP_OP   ; aliased; mutual exclusion argued in
                                     ; disk/equates.inc's block
 FOPEN_SEL_SAVE  equ     $53         ; step 12 (D-SAVEPORT): tokenised SAVE
+FOPEN_SEL_AOPEN equ     $41         ; step 11 (D-MERGEPORT): open an ASCII program
+                                    ; file -- MERGE and ASCII LOAD alike
+FOPEN_SEL_GETB  equ     $47         ; step 11: hand back ONE byte of it. 🔴 These
+                                    ; two, like $4C and $53, are outside
+                                    ; DISKOP_SEL_*'s whole 0..7 range, so an idle
+                                    ; cell can never read as "step 11 is asking".
+                                    ; ⚠️ THIS BLOCK IS DUPLICATED IN
+                                    ; disk/equates.inc and the two must agree;
+                                    ; they are values, not addresses, so nothing
+                                    ; generated keeps them in step.
 FOPEN_SEL_LOAD  equ     $4C         ; NOT 0: 0 is a live DISKOP_OP value and
                                     ; $FE5D is reached on paths that are not
                                     ; ours -- see disk/equates.inc (§6.6p)   ; FILES handler

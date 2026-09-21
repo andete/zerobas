@@ -2388,6 +2388,61 @@ hk_dpsave:
 ; PRINTS; here it must not print, because main's `disk_error` reports ONCE from
 ; the status this leaves behind -- the same contract step 9's arm already uses.
 ; No TAPIOF: a disk SAVE never armed the tape.
+; --- hk_aopen: open an ASCII program file and prime the read (step 11) -------
+; `MERGE` and ASCII `LOAD` arrive here. Main keeps the LINE loop and the
+; tokeniser -- that is not a concession, it is what the reference does: its disk
+; side never owns MERGE's line loop, the crossing is entered exactly ONCE for a
+; 2-line file and once for a 100-line one, and the per-LINE cells sit in a band
+; NEITHER measured vendor claims (expansion-protocol.md §8.6a, D-MERGESHAPE).
+;
+; 🔴 MOUNT AND FIND SEPARATELY, for hk_dpload's reason: their two carries are
+; what tells `File not found` from a mount/I-O fault. `fat_io_find` is the
+; zero-byte label inside fat_io_open that splits them (D-BLNF), and it leaves
+; the stream primed, which is why nothing else is needed here.
+; ⚠️ DISKOP_STATUS IS WRITTEN ONCE, LAST, on every arm -- it is a SHARED channel
+; (main's FAT primitives marshal through the same cell) and pre-setting it is
+; what made `NAME ... AS ...` answer Syntax error at an empty drive (§6.6an).
+hk_aopen:
+                call    fat_mount
+                jr      c,hka_io            ; 3: mount / I-O
+                call    fat_io_find
+                jr      c,hka_nf            ; 1: not found
+                xor     a                   ; 0: open and primed
+hka_st:
+                ld      (DISKOP_STATUS),a
+                scf                         ; CF=1: mine
+                ret
+hka_nf:
+                ld      a,1
+                jr      hka_st
+hka_io:
+                ld      a,3
+                jr      hka_st
+
+; --- hk_agetb: one byte of the open ASCII file (step 11) ---------------------
+; Sources: the per-byte shape is MEASURED, not chosen -- disk/docs/
+; expansion-protocol.md §8.6a (D-MERGESHAPE) counts $FE8A (H.INDS) entered
+; exactly once per byte of an ASCII LOAD or MERGE on both reference vendors,
+; and zero times on the tokenised path. The register contract (BC crossing
+; intact both ways) is spec-diskbasic-hook-rearchitecture.md's measured ABI.
+; Clean-room: entry counts and register file only; no reference ROM byte read.
+; 🔴 THE BYTE COMES BACK IN C, NOT IN CF+A, AND chan_gate IS WHY. The gate uses
+; CF as the CLAIMED/unclaimed answer (`or a` / `jp (hl)` / `cg_back: ret c`), so
+; a handler cannot also return a disposition in it. C carries the byte -- BC
+; crosses intact both ways (the measured ABI) -- and DISKOP_STATUS carries EOF.
+; Main's dsk_agetbyte turns the pair back into the `A = byte, CF = EOF` contract
+; ARL_GETBYTE's other sources already honour.
+hk_agetb:
+                call    fat_io_getbyte      ; A = byte, CF set = EOF
+                ld      c,a
+                ld      a,1                 ; 1 = EOF
+                jr      c,hkg_st
+                xor     a                   ; 0 = C holds a byte
+hkg_st:
+                ld      (DISKOP_STATUS),a
+                scf
+                ret
+
 sv_load_error:
                 ld      a,3                 ; mount / disk full / write / I-O
                 ld      (DISKOP_STATUS),a
@@ -2430,9 +2485,13 @@ hk_dpload:
                 ld      a,(FOPEN_SEL)
                 cp      FOPEN_SEL_SAVE
                 jr      z,hk_dpsave         ; step 12 (D-SAVEPORT)
+                cp      FOPEN_SEL_AOPEN
+                jr      z,hk_aopen          ; step 11 (D-MERGEPORT)
+                cp      FOPEN_SEL_GETB
+                jr      z,hk_agetb          ; step 11, once per BYTE
                 cp      FOPEN_SEL_LOAD
-                ret     nz                  ; CF=0: not mine. Steps 10-11 add
-                                            ; their arms right here.
+                ret     nz                  ; CF=0: not mine. Step 10 (OPEN) adds
+                                            ; its arm right here.
                 ; mount and find SEPARATELY: their two carries are what tells
                 ; `file not found` from a mount/I-O fault, which is the whole
                 ; reason fatio-body.inc carries the zero-byte `fat_io_find`

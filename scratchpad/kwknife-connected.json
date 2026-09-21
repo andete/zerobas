@@ -1,5 +1,5 @@
 {
- "rom_fingerprint": "027894ed 8d0fa5a3 357ea272 7733ba6b",
+ "rom_fingerprint": "48b21659 8d0fa5a3 7d1901d6 72e3beb1",
  "rows": {
   "ABS": {
    "connected": true,
@@ -48,32 +48,32 @@
   "AUTO": {
    "connected": true,
    "modes": {
-    "stmt": "NO-VERDICT"
+    "stmt": "MISSING"
    },
    "row": "auto",
    "subject": "AUTO",
-   "verdict": "NO-VERDICT",
+   "verdict": "MISSING",
    "weak": false
   },
   "BASE": {
    "connected": true,
    "modes": {
     "fn": "MISSING",
-    "stmt": "NO-VERDICT"
+    "stmt": "SUPPORTED"
    },
    "row": "basekw",
    "subject": "BASE",
-   "verdict": "NO-VERDICT",
+   "verdict": "SUPPORTED",
    "weak": false
   },
   "BEEP": {
    "connected": true,
    "modes": {
-    "stmt": "NO-VERDICT"
+    "stmt": "MISSING"
    },
    "row": "beep",
    "subject": "BEEP",
-   "verdict": "NO-VERDICT",
+   "verdict": "MISSING",
    "weak": false
   },
   "BIN$": {
@@ -89,31 +89,31 @@
   "BLOAD": {
    "connected": true,
    "modes": {
-    "stmt": "NO-VERDICT"
+    "stmt": "MISSING"
    },
    "row": "bload",
    "subject": "BLOAD",
-   "verdict": "NO-VERDICT",
+   "verdict": "MISSING",
    "weak": false
   },
   "BSAVE": {
    "connected": true,
    "modes": {
-    "stmt": "NO-VERDICT"
+    "stmt": "MISSING"
    },
    "row": "bsave",
    "subject": "BSAVE",
-   "verdict": "NO-VERDICT",
+   "verdict": "MISSING",
    "weak": false
   },
   "CALL": {
-   "connected": true,
+   "connected": false,
    "modes": {
-    "stmt": "NO-VERDICT"
+    "stmt": "SUPPORTED"
    },
    "row": "callkw",
    "subject": "CALL",
-   "verdict": "NO-VERDICT",
+   "verdict": "SUPPORTED",
    "weak": false
   },
   "CDBL": {
@@ -149,81 +149,81 @@
   "CIRCLE": {
    "connected": true,
    "modes": {
-    "stmt": "NO-VERDICT"
+    "stmt": "UNREADABLE"
    },
    "row": "circlekw",
    "subject": "CIRCLE",
-   "verdict": "NO-VERDICT",
+   "verdict": "UNREADABLE",
    "weak": false
   },
   "CLEAR": {
    "connected": true,
    "modes": {
-    "stmt": "NO-VERDICT"
+    "stmt": "MISSING"
    },
    "row": "clearkw",
    "subject": "CLEAR",
-   "verdict": "NO-VERDICT",
+   "verdict": "MISSING",
    "weak": false
   },
   "CLOAD": {
    "connected": true,
    "modes": {
-    "stmt": "NO-VERDICT"
+    "stmt": "MISSING"
    },
    "row": "cload",
    "subject": "CLOAD",
-   "verdict": "NO-VERDICT",
+   "verdict": "MISSING",
    "weak": false
   },
   "CLOSE": {
    "connected": true,
    "modes": {
-    "stmt": "NO-VERDICT"
+    "stmt": "MISSING"
    },
    "row": "close",
    "subject": "CLOSE",
-   "verdict": "NO-VERDICT",
+   "verdict": "MISSING",
    "weak": false
   },
   "CLS": {
    "connected": true,
    "modes": {
-    "stmt": "NO-VERDICT"
+    "stmt": "MISSING"
    },
    "row": "clskw",
    "subject": "CLS",
-   "verdict": "NO-VERDICT",
+   "verdict": "MISSING",
    "weak": false
   },
   "CMD": {
    "connected": true,
    "modes": {
-    "stmt": "NO-VERDICT"
+    "stmt": "DIVERGENT"
    },
    "row": "cmd",
    "subject": "CMD",
-   "verdict": "NO-VERDICT",
+   "verdict": "DIVERGENT",
    "weak": false
   },
   "COLOR": {
    "connected": true,
    "modes": {
-    "stmt": "NO-VERDICT"
+    "stmt": "MISSING"
    },
    "row": "colorkw",
    "subject": "COLOR",
-   "verdict": "NO-VERDICT",
+   "verdict": "MISSING",
    "weak": false
   },
   "COPY": {
    "connected": true,
    "modes": {
-    "stmt": "NO-VERDICT"
+    "stmt": "MISSING"
    },
    "row": "copy",
    "subject": "COPY",
-   "verdict": "NO-VERDICT",
+   "verdict": "MISSING",
    "weak": false
   },
   "COS": {
@@ -298,91 +298,91 @@
   "DATA": {
    "connected": true,
    "modes": {
-    "stmt": "NO-VERDICT"
+    "stmt": "MISSING"
    },
    "row": "datakw",
    "subject": "DATA",
-   "verdict": "NO-VERDICT",
+   "verdict": "MISSING",
    "weak": false
   },
   "DEF": {
    "connected": true,
    "modes": {
-    "stmt": "NO-VERDICT"
+    "stmt": "MISSING"
    },
    "row": "deffn",
    "subject": "DEF FN",
-   "verdict": "NO-VERDICT",
+   "verdict": "MISSING",
    "weak": false
   },
   "DEFDBL": {
    "connected": true,
    "modes": {
-    "stmt": "NO-VERDICT"
+    "stmt": "MISSING"
    },
    "row": "defdbl",
    "subject": "DEFDBL",
-   "verdict": "NO-VERDICT",
+   "verdict": "MISSING",
    "weak": false
   },
   "DEFINT": {
    "connected": true,
    "modes": {
-    "stmt": "NO-VERDICT"
+    "stmt": "MISSING"
    },
    "row": "defintkw",
    "subject": "DEFINT",
-   "verdict": "NO-VERDICT",
+   "verdict": "MISSING",
    "weak": false
   },
   "DEFSNG": {
    "connected": true,
    "modes": {
-    "stmt": "NO-VERDICT"
+    "stmt": "MISSING"
    },
    "row": "defsng",
    "subject": "DEFSNG",
-   "verdict": "NO-VERDICT",
+   "verdict": "MISSING",
    "weak": false
   },
   "DEFSTR": {
    "connected": true,
    "modes": {
-    "stmt": "NO-VERDICT"
+    "stmt": "MISSING"
    },
    "row": "defstr",
    "subject": "DEFSTR",
-   "verdict": "NO-VERDICT",
+   "verdict": "MISSING",
    "weak": false
   },
   "DELETE": {
    "connected": true,
    "modes": {
-    "stmt": "NO-VERDICT"
+    "stmt": "DIVERGENT"
    },
    "row": "deletekw",
    "subject": "DELETE",
-   "verdict": "NO-VERDICT",
+   "verdict": "DIVERGENT",
    "weak": false
   },
   "DIM": {
    "connected": true,
    "modes": {
-    "stmt": "NO-VERDICT"
+    "stmt": "MISSING"
    },
    "row": "dimkw",
    "subject": "DIM",
-   "verdict": "NO-VERDICT",
+   "verdict": "MISSING",
    "weak": false
   },
   "DRAW": {
    "connected": true,
    "modes": {
-    "stmt": "NO-VERDICT"
+    "stmt": "UNREADABLE"
    },
    "row": "drawkw",
    "subject": "DRAW",
-   "verdict": "NO-VERDICT",
+   "verdict": "UNREADABLE",
    "weak": false
   },
   "DSKF": {
@@ -418,11 +418,11 @@
   "DSKO$": {
    "connected": true,
    "modes": {
-    "stmt": "NO-VERDICT"
+    "stmt": "MISSING"
    },
    "row": "dsko",
    "subject": "DSKO$",
-   "verdict": "NO-VERDICT",
+   "verdict": "MISSING",
    "weak": false
   },
   "ELSE": {
@@ -438,11 +438,11 @@
   "END": {
    "connected": true,
    "modes": {
-    "stmt": "NO-VERDICT"
+    "stmt": "MISSING"
    },
    "row": "endkw",
    "subject": "END",
-   "verdict": "NO-VERDICT",
+   "verdict": "MISSING",
    "weak": false
   },
   "EOF": {
@@ -468,11 +468,11 @@
   "ERASE": {
    "connected": true,
    "modes": {
-    "stmt": "NO-VERDICT"
+    "stmt": "MISSING"
    },
    "row": "erase",
    "subject": "ERASE",
-   "verdict": "NO-VERDICT",
+   "verdict": "MISSING",
    "weak": false
   },
   "ERL": {
@@ -498,11 +498,11 @@
   "ERROR": {
    "connected": true,
    "modes": {
-    "stmt": "NO-VERDICT"
+    "stmt": "DIVERGENT"
    },
    "row": "errorkw",
    "subject": "ERROR",
-   "verdict": "NO-VERDICT",
+   "verdict": "DIVERGENT",
    "weak": false
   },
   "EXP": {
@@ -518,21 +518,21 @@
   "FIELD": {
    "connected": true,
    "modes": {
-    "stmt": "NO-VERDICT"
+    "stmt": "MISSING"
    },
    "row": "fieldkw",
    "subject": "FIELD",
-   "verdict": "NO-VERDICT",
+   "verdict": "MISSING",
    "weak": false
   },
   "FILES": {
    "connected": true,
    "modes": {
-    "stmt": "NO-VERDICT"
+    "stmt": "MISSING"
    },
    "row": "files",
    "subject": "FILES",
-   "verdict": "NO-VERDICT",
+   "verdict": "MISSING",
    "weak": false
   },
   "FIX": {
@@ -558,11 +558,11 @@
   "FOR": {
    "connected": true,
    "modes": {
-    "stmt": "NO-VERDICT"
+    "stmt": "MISSING"
    },
    "row": "forkw",
    "subject": "FOR",
-   "verdict": "NO-VERDICT",
+   "verdict": "MISSING",
    "weak": false
   },
   "FRE": {
@@ -578,31 +578,31 @@
   "GET": {
    "connected": true,
    "modes": {
-    "stmt": "NO-VERDICT"
+    "stmt": "MISSING"
    },
    "row": "getkw",
    "subject": "GET #",
-   "verdict": "NO-VERDICT",
+   "verdict": "MISSING",
    "weak": false
   },
   "GOSUB": {
    "connected": true,
    "modes": {
-    "stmt": "NO-VERDICT"
+    "stmt": "MISSING"
    },
    "row": "gosubkw",
    "subject": "GOSUB",
-   "verdict": "NO-VERDICT",
+   "verdict": "MISSING",
    "weak": false
   },
   "GOTO": {
    "connected": true,
    "modes": {
-    "stmt": "NO-VERDICT"
+    "stmt": "DIVERGENT"
    },
    "row": "goto_t3",
    "subject": "GOTO",
-   "verdict": "NO-VERDICT",
+   "verdict": "DIVERGENT",
    "weak": false
   },
   "HEX$": {
@@ -618,11 +618,11 @@
   "IF": {
    "connected": true,
    "modes": {
-    "stmt": "NO-VERDICT"
+    "stmt": "MISSING"
    },
    "row": "ifkw",
    "subject": "IF",
-   "verdict": "NO-VERDICT",
+   "verdict": "MISSING",
    "weak": false
   },
   "IMP": {
@@ -659,11 +659,11 @@
   "INPUT": {
    "connected": true,
    "modes": {
-    "stmt": "NO-VERDICT"
+    "stmt": "MISSING"
    },
    "row": "inputkw",
    "subject": "INPUT #",
-   "verdict": "NO-VERDICT",
+   "verdict": "MISSING",
    "weak": false
   },
   "INPUT$": {
@@ -698,31 +698,31 @@
   "IPL": {
    "connected": true,
    "modes": {
-    "stmt": "NO-VERDICT"
+    "stmt": "DIVERGENT"
    },
    "row": "ipl",
    "subject": "IPL",
-   "verdict": "NO-VERDICT",
+   "verdict": "DIVERGENT",
    "weak": false
   },
   "KEY": {
    "connected": true,
    "modes": {
-    "stmt": "NO-VERDICT"
+    "stmt": "MISSING"
    },
    "row": "keykw",
    "subject": "KEY",
-   "verdict": "NO-VERDICT",
+   "verdict": "MISSING",
    "weak": false
   },
   "KILL": {
    "connected": true,
    "modes": {
-    "stmt": "NO-VERDICT"
+    "stmt": "DIVERGENT"
    },
    "row": "kill_t3",
    "subject": "KILL",
-   "verdict": "NO-VERDICT",
+   "verdict": "DIVERGENT",
    "weak": false
   },
   "LEFT$": {
@@ -748,61 +748,61 @@
   "LET": {
    "connected": true,
    "modes": {
-    "stmt": "NO-VERDICT"
+    "stmt": "MISSING"
    },
    "row": "let",
    "subject": "LET",
-   "verdict": "NO-VERDICT",
+   "verdict": "MISSING",
    "weak": false
   },
   "LFILES": {
    "connected": true,
    "modes": {
-    "stmt": "NO-VERDICT"
+    "stmt": "MISSING"
    },
    "row": "lfiles",
    "subject": "LFILES",
-   "verdict": "NO-VERDICT",
+   "verdict": "MISSING",
    "weak": false
   },
   "LINE": {
    "connected": true,
    "modes": {
-    "stmt": "NO-VERDICT"
+    "stmt": "UNREADABLE"
    },
    "row": "linekw",
    "subject": "LINE",
-   "verdict": "NO-VERDICT",
+   "verdict": "UNREADABLE",
    "weak": false
   },
   "LIST": {
    "connected": true,
    "modes": {
-    "stmt": "NO-VERDICT"
+    "stmt": "MISSING"
    },
    "row": "listkw",
    "subject": "LIST",
-   "verdict": "NO-VERDICT",
+   "verdict": "MISSING",
    "weak": false
   },
   "LLIST": {
    "connected": true,
    "modes": {
-    "stmt": "NO-VERDICT"
+    "stmt": "MISSING"
    },
    "row": "llist",
    "subject": "LLIST",
-   "verdict": "NO-VERDICT",
+   "verdict": "MISSING",
    "weak": false
   },
   "LOAD": {
    "connected": true,
    "modes": {
-    "stmt": "NO-VERDICT"
+    "stmt": "MISSING"
    },
    "row": "loadkw",
    "subject": "LOAD",
-   "verdict": "NO-VERDICT",
+   "verdict": "MISSING",
    "weak": false
   },
   "LOC": {
@@ -818,11 +818,11 @@
   "LOCATE": {
    "connected": true,
    "modes": {
-    "stmt": "NO-VERDICT"
+    "stmt": "MISSING"
    },
    "row": "locate",
    "subject": "LOCATE",
-   "verdict": "NO-VERDICT",
+   "verdict": "MISSING",
    "weak": false
   },
   "LOF": {
@@ -858,41 +858,41 @@
   "LPRINT": {
    "connected": true,
    "modes": {
-    "stmt": "NO-VERDICT"
+    "stmt": "MISSING"
    },
    "row": "lprintkw",
    "subject": "LPRINT",
-   "verdict": "NO-VERDICT",
+   "verdict": "MISSING",
    "weak": false
   },
   "LSET": {
    "connected": true,
    "modes": {
-    "stmt": "NO-VERDICT"
+    "stmt": "MISSING"
    },
    "row": "lset",
    "subject": "LSET",
-   "verdict": "NO-VERDICT",
+   "verdict": "MISSING",
    "weak": false
   },
   "MAX": {
-   "connected": true,
+   "connected": false,
    "modes": {
-    "stmt": "NO-VERDICT"
+    "stmt": "SUPPORTED"
    },
    "row": "maxkw",
    "subject": "MAX",
-   "verdict": "NO-VERDICT",
+   "verdict": "SUPPORTED",
    "weak": false
   },
   "MERGE": {
    "connected": true,
    "modes": {
-    "stmt": "NO-VERDICT"
+    "stmt": "MISSING"
    },
    "row": "merge",
    "subject": "MERGE",
-   "verdict": "NO-VERDICT",
+   "verdict": "MISSING",
    "weak": false
   },
   "MID$": {
@@ -957,41 +957,41 @@
   "MOTOR": {
    "connected": true,
    "modes": {
-    "stmt": "NO-VERDICT"
+    "stmt": "MISSING"
    },
    "row": "motor",
    "subject": "MOTOR",
-   "verdict": "NO-VERDICT",
+   "verdict": "MISSING",
    "weak": false
   },
   "NAME": {
    "connected": true,
    "modes": {
-    "stmt": "NO-VERDICT"
+    "stmt": "MISSING"
    },
    "row": "namekw",
    "subject": "NAME",
-   "verdict": "NO-VERDICT",
+   "verdict": "MISSING",
    "weak": false
   },
   "NEW": {
    "connected": true,
    "modes": {
-    "stmt": "NO-VERDICT"
+    "stmt": "MISSING"
    },
    "row": "newkw",
    "subject": "NEW",
-   "verdict": "NO-VERDICT",
+   "verdict": "MISSING",
    "weak": false
   },
   "NEXT": {
    "connected": true,
    "modes": {
-    "stmt": "NO-VERDICT"
+    "stmt": "MISSING"
    },
    "row": "nextkw",
    "subject": "NEXT",
-   "verdict": "NO-VERDICT",
+   "verdict": "MISSING",
    "weak": false
   },
   "NOT": {
@@ -1017,21 +1017,21 @@
   "ON": {
    "connected": true,
    "modes": {
-    "stmt": "NO-VERDICT"
+    "stmt": "MISSING"
    },
    "row": "onkw",
    "subject": "ON ERROR GOTO",
-   "verdict": "NO-VERDICT",
+   "verdict": "MISSING",
    "weak": false
   },
   "OPEN": {
    "connected": true,
    "modes": {
-    "stmt": "NO-VERDICT"
+    "stmt": "MISSING"
    },
    "row": "openkw_b",
    "subject": "OPEN",
-   "verdict": "NO-VERDICT",
+   "verdict": "MISSING",
    "weak": false
   },
   "OR": {
@@ -1047,11 +1047,11 @@
   "OUT": {
    "connected": true,
    "modes": {
-    "stmt": "NO-VERDICT"
+    "stmt": "MISSING"
    },
    "row": "outkw",
    "subject": "OUT",
-   "verdict": "NO-VERDICT",
+   "verdict": "MISSING",
    "weak": false
   },
   "PAD": {
@@ -1067,11 +1067,11 @@
   "PAINT": {
    "connected": true,
    "modes": {
-    "stmt": "NO-VERDICT"
+    "stmt": "UNREADABLE"
    },
    "row": "paintkw",
    "subject": "PAINT",
-   "verdict": "NO-VERDICT",
+   "verdict": "UNREADABLE",
    "weak": false
   },
   "PDL": {
@@ -1097,11 +1097,11 @@
   "PLAY": {
    "connected": true,
    "modes": {
-    "stmt": "NO-VERDICT"
+    "stmt": "MISSING"
    },
    "row": "playkw",
    "subject": "PLAY",
-   "verdict": "NO-VERDICT",
+   "verdict": "MISSING",
    "weak": false
   },
   "POINT": {
@@ -1116,11 +1116,11 @@
   "POKE": {
    "connected": true,
    "modes": {
-    "stmt": "NO-VERDICT"
+    "stmt": "MISSING"
    },
    "row": "pokekw",
    "subject": "POKE",
-   "verdict": "NO-VERDICT",
+   "verdict": "MISSING",
    "weak": false
   },
   "POS": {
@@ -1136,101 +1136,101 @@
   "PRESET": {
    "connected": true,
    "modes": {
-    "stmt": "NO-VERDICT"
+    "stmt": "UNREADABLE"
    },
    "row": "presetkw",
    "subject": "PRESET",
-   "verdict": "NO-VERDICT",
+   "verdict": "UNREADABLE",
    "weak": false
   },
   "PRINT": {
    "connected": true,
    "modes": {
-    "stmt": "NO-VERDICT"
+    "stmt": "UNREADABLE"
    },
    "row": "printkw_b",
    "subject": "PRINT",
-   "verdict": "NO-VERDICT",
+   "verdict": "UNREADABLE",
    "weak": false
   },
   "PSET": {
    "connected": true,
    "modes": {
-    "stmt": "NO-VERDICT"
+    "stmt": "UNREADABLE"
    },
    "row": "psetkw",
    "subject": "PSET",
-   "verdict": "NO-VERDICT",
+   "verdict": "UNREADABLE",
    "weak": false
   },
   "PUT": {
    "connected": true,
    "modes": {
-    "stmt": "NO-VERDICT"
+    "stmt": "UNREADABLE"
    },
    "row": "putsprite",
    "subject": "PUT SPRITE",
-   "verdict": "NO-VERDICT",
+   "verdict": "UNREADABLE",
    "weak": false
   },
   "READ": {
    "connected": true,
    "modes": {
-    "stmt": "NO-VERDICT"
+    "stmt": "MISSING"
    },
    "row": "readkw",
    "subject": "READ",
-   "verdict": "NO-VERDICT",
+   "verdict": "MISSING",
    "weak": false
   },
   "REM": {
    "connected": true,
    "modes": {
-    "stmt": "NO-VERDICT"
+    "stmt": "MISSING"
    },
    "row": "rem",
    "subject": "REM",
-   "verdict": "NO-VERDICT",
+   "verdict": "MISSING",
    "weak": false
   },
   "RENUM": {
    "connected": true,
    "modes": {
-    "stmt": "NO-VERDICT"
+    "stmt": "DIVERGENT"
    },
    "row": "renum",
    "subject": "RENUM",
-   "verdict": "NO-VERDICT",
+   "verdict": "DIVERGENT",
    "weak": false
   },
   "RESTORE": {
    "connected": true,
    "modes": {
-    "stmt": "NO-VERDICT"
+    "stmt": "MISSING"
    },
    "row": "restorekw",
    "subject": "RESTORE",
-   "verdict": "NO-VERDICT",
+   "verdict": "MISSING",
    "weak": false
   },
   "RESUME": {
    "connected": true,
    "modes": {
-    "stmt": "NO-VERDICT"
+    "stmt": "MISSING"
    },
    "row": "resumekw",
    "subject": "RESUME",
-   "verdict": "NO-VERDICT",
+   "verdict": "MISSING",
    "weak": false
   },
   "RETURN": {
    "connected": true,
    "modes": {
-    "stmt": "NO-VERDICT"
+    "stmt": "MISSING"
    },
    "row": "returnkw",
    "subject": "RETURN",
-   "verdict": "NO-VERDICT",
+   "verdict": "MISSING",
    "weak": false
   },
   "RIGHT$": {
@@ -1256,51 +1256,51 @@
   "RSET": {
    "connected": true,
    "modes": {
-    "stmt": "NO-VERDICT"
+    "stmt": "MISSING"
    },
    "row": "rset",
    "subject": "RSET",
-   "verdict": "NO-VERDICT",
+   "verdict": "MISSING",
    "weak": false
   },
   "RUN": {
    "connected": true,
    "modes": {
-    "stmt": "NO-VERDICT"
+    "stmt": "MISSING"
    },
    "row": "runkw",
    "subject": "RUN",
-   "verdict": "NO-VERDICT",
+   "verdict": "MISSING",
    "weak": false
   },
   "SAVE": {
    "connected": true,
    "modes": {
-    "stmt": "NO-VERDICT"
+    "stmt": "MISSING"
    },
    "row": "save",
    "subject": "SAVE",
-   "verdict": "NO-VERDICT",
+   "verdict": "MISSING",
    "weak": false
   },
   "SCREEN": {
    "connected": true,
    "modes": {
-    "stmt": "NO-VERDICT"
+    "stmt": "MISSING"
    },
    "row": "screenkw",
    "subject": "SCREEN",
-   "verdict": "NO-VERDICT",
+   "verdict": "MISSING",
    "weak": false
   },
   "SET": {
    "connected": true,
    "modes": {
-    "stmt": "NO-VERDICT"
+    "stmt": "DIVERGENT"
    },
    "row": "set",
    "subject": "SET",
-   "verdict": "NO-VERDICT",
+   "verdict": "DIVERGENT",
    "weak": false
   },
   "SGN": {
@@ -1326,11 +1326,11 @@
   "SOUND": {
    "connected": true,
    "modes": {
-    "stmt": "NO-VERDICT"
+    "stmt": "MISSING"
    },
    "row": "sound",
    "subject": "SOUND",
-   "verdict": "NO-VERDICT",
+   "verdict": "MISSING",
    "weak": false
   },
   "SPACE$": {
@@ -1346,11 +1346,11 @@
   "SPRITE": {
    "connected": true,
    "modes": {
-    "stmt": "NO-VERDICT"
+    "stmt": "UNREADABLE"
    },
    "row": "spritekw",
    "subject": "SPRITE",
-   "verdict": "NO-VERDICT",
+   "verdict": "UNREADABLE",
    "weak": false
   },
   "SQR": {
@@ -1376,11 +1376,11 @@
   "STOP": {
    "connected": true,
    "modes": {
-    "stmt": "NO-VERDICT"
+    "stmt": "MISSING"
    },
    "row": "stopkw",
    "subject": "STOP",
-   "verdict": "NO-VERDICT",
+   "verdict": "MISSING",
    "weak": false
   },
   "STR$": {
@@ -1416,11 +1416,11 @@
   "SWAP": {
    "connected": true,
    "modes": {
-    "stmt": "NO-VERDICT"
+    "stmt": "MISSING"
    },
    "row": "swap",
    "subject": "SWAP",
-   "verdict": "NO-VERDICT",
+   "verdict": "MISSING",
    "weak": false
   },
   "TAN": {
@@ -1437,31 +1437,31 @@
    "connected": true,
    "modes": {
     "fn": "MISSING",
-    "stmt": "NO-VERDICT"
+    "stmt": "SUPPORTED"
    },
    "row": "time",
    "subject": "TIME",
-   "verdict": "NO-VERDICT",
+   "verdict": "SUPPORTED",
    "weak": true
   },
   "TROFF": {
    "connected": true,
    "modes": {
-    "stmt": "NO-VERDICT"
+    "stmt": "MISSING"
    },
    "row": "troff",
    "subject": "TROFF",
-   "verdict": "NO-VERDICT",
+   "verdict": "MISSING",
    "weak": false
   },
   "TRON": {
    "connected": true,
    "modes": {
-    "stmt": "NO-VERDICT"
+    "stmt": "MISSING"
    },
    "row": "tron",
    "subject": "TRON",
-   "verdict": "NO-VERDICT",
+   "verdict": "MISSING",
    "weak": false
   },
   "USR": {
@@ -1497,11 +1497,11 @@
    "connected": true,
    "modes": {
     "fn": "MISSING",
-    "stmt": "NO-VERDICT"
+    "stmt": "SUPPORTED"
    },
    "row": "vdpkw",
    "subject": "VDP",
-   "verdict": "NO-VERDICT",
+   "verdict": "SUPPORTED",
    "weak": false
   },
   "VPEEK": {
@@ -1517,31 +1517,31 @@
   "VPOKE": {
    "connected": true,
    "modes": {
-    "stmt": "NO-VERDICT"
+    "stmt": "MISSING"
    },
    "row": "vpoke",
    "subject": "VPOKE",
-   "verdict": "NO-VERDICT",
+   "verdict": "MISSING",
    "weak": false
   },
   "WAIT": {
    "connected": true,
    "modes": {
-    "stmt": "NO-VERDICT"
+    "stmt": "MISSING"
    },
    "row": "waitkw",
    "subject": "WAIT",
-   "verdict": "NO-VERDICT",
+   "verdict": "MISSING",
    "weak": false
   },
   "WIDTH": {
    "connected": true,
    "modes": {
-    "stmt": "NO-VERDICT"
+    "stmt": "MISSING"
    },
    "row": "widthkw",
    "subject": "WIDTH",
-   "verdict": "NO-VERDICT",
+   "verdict": "MISSING",
    "weak": false
   },
   "XOR": {
@@ -1583,19 +1583,19 @@
   "AUTO": {
    "connected": true,
    "rows": {
-    "auto": "NO-VERDICT"
+    "auto": "MISSING"
    }
   },
   "BASE": {
-   "connected": true,
+   "connected": false,
    "rows": {
-    "basekw": "NO-VERDICT"
+    "basekw": "SUPPORTED"
    }
   },
   "BEEP": {
    "connected": true,
    "rows": {
-    "beep": "NO-VERDICT"
+    "beep": "MISSING"
    }
   },
   "BIN$": {
@@ -1607,19 +1607,19 @@
   "BLOAD": {
    "connected": true,
    "rows": {
-    "bload": "NO-VERDICT"
+    "bload": "MISSING"
    }
   },
   "BSAVE": {
    "connected": true,
    "rows": {
-    "bsave": "NO-VERDICT"
+    "bsave": "MISSING"
    }
   },
   "CALL": {
-   "connected": true,
+   "connected": false,
    "rows": {
-    "callkw": "NO-VERDICT"
+    "callkw": "SUPPORTED"
    }
   },
   "CDBL": {
@@ -1643,50 +1643,50 @@
   "CIRCLE": {
    "connected": true,
    "rows": {
-    "circlekw": "NO-VERDICT"
+    "circlekw": "UNREADABLE"
    }
   },
   "CLEAR": {
    "connected": true,
    "rows": {
-    "clearkw": "NO-VERDICT"
+    "clearkw": "MISSING"
    }
   },
   "CLOAD": {
    "connected": true,
    "rows": {
-    "cload": "NO-VERDICT"
+    "cload": "MISSING"
    }
   },
   "CLOSE": {
    "connected": true,
    "rows": {
-    "close": "NO-VERDICT",
+    "close": "MISSING",
     "close_b": "MISSING"
    }
   },
   "CLS": {
    "connected": true,
    "rows": {
-    "clskw": "NO-VERDICT"
+    "clskw": "MISSING"
    }
   },
   "CMD": {
    "connected": true,
    "rows": {
-    "cmd": "NO-VERDICT"
+    "cmd": "DIVERGENT"
    }
   },
   "COLOR": {
    "connected": true,
    "rows": {
-    "colorkw": "NO-VERDICT"
+    "colorkw": "MISSING"
    }
   },
   "COPY": {
    "connected": true,
    "rows": {
-    "copy": "NO-VERDICT"
+    "copy": "MISSING"
    }
   },
   "COS": {
@@ -1728,13 +1728,13 @@
   "DATA": {
    "connected": true,
    "rows": {
-    "datakw": "NO-VERDICT"
+    "datakw": "MISSING"
    }
   },
   "DEF FN": {
    "connected": true,
    "rows": {
-    "deffn": "NO-VERDICT",
+    "deffn": "MISSING",
     "deffn_b": "MISSING"
    }
   },
@@ -1748,43 +1748,43 @@
   "DEFDBL": {
    "connected": true,
    "rows": {
-    "defdbl": "NO-VERDICT"
+    "defdbl": "MISSING"
    }
   },
   "DEFINT": {
    "connected": true,
    "rows": {
-    "defintkw": "NO-VERDICT"
+    "defintkw": "MISSING"
    }
   },
   "DEFSNG": {
    "connected": true,
    "rows": {
-    "defsng": "NO-VERDICT"
+    "defsng": "MISSING"
    }
   },
   "DEFSTR": {
    "connected": true,
    "rows": {
-    "defstr": "NO-VERDICT"
+    "defstr": "MISSING"
    }
   },
   "DELETE": {
    "connected": true,
    "rows": {
-    "deletekw": "NO-VERDICT"
+    "deletekw": "DIVERGENT"
    }
   },
   "DIM": {
    "connected": true,
    "rows": {
-    "dimkw": "NO-VERDICT"
+    "dimkw": "MISSING"
    }
   },
   "DRAW": {
    "connected": true,
    "rows": {
-    "drawkw": "NO-VERDICT"
+    "drawkw": "UNREADABLE"
    }
   },
   "DSKF": {
@@ -1802,7 +1802,7 @@
   "DSKO$": {
    "connected": true,
    "rows": {
-    "dsko": "NO-VERDICT"
+    "dsko": "MISSING"
    }
   },
   "ELSE": {
@@ -1814,7 +1814,7 @@
   "END": {
    "connected": true,
    "rows": {
-    "endkw": "NO-VERDICT"
+    "endkw": "MISSING"
    }
   },
   "EOF": {
@@ -1832,7 +1832,7 @@
   "ERASE": {
    "connected": true,
    "rows": {
-    "erase": "NO-VERDICT"
+    "erase": "MISSING"
    }
   },
   "ERL": {
@@ -1850,7 +1850,7 @@
   "ERROR": {
    "connected": true,
    "rows": {
-    "errorkw": "NO-VERDICT"
+    "errorkw": "DIVERGENT"
    }
   },
   "EXP": {
@@ -1862,13 +1862,13 @@
   "FIELD": {
    "connected": true,
    "rows": {
-    "fieldkw": "NO-VERDICT"
+    "fieldkw": "MISSING"
    }
   },
   "FILES": {
    "connected": true,
    "rows": {
-    "files": "NO-VERDICT",
+    "files": "MISSING",
     "files_b": "MISSING"
    }
   },
@@ -1887,7 +1887,7 @@
   "FOR": {
    "connected": true,
    "rows": {
-    "forkw": "NO-VERDICT"
+    "forkw": "MISSING"
    }
   },
   "FRE": {
@@ -1900,19 +1900,19 @@
   "GET #": {
    "connected": true,
    "rows": {
-    "getkw": "NO-VERDICT"
+    "getkw": "MISSING"
    }
   },
   "GOSUB": {
    "connected": true,
    "rows": {
-    "gosubkw": "NO-VERDICT"
+    "gosubkw": "MISSING"
    }
   },
   "GOTO": {
    "connected": true,
    "rows": {
-    "goto_t3": "NO-VERDICT",
+    "goto_t3": "DIVERGENT",
     "gotokw": "MISSING"
    }
   },
@@ -1925,7 +1925,7 @@
   "IF": {
    "connected": true,
    "rows": {
-    "ifkw": "NO-VERDICT",
+    "ifkw": "MISSING",
     "ifkw_b": "UNREADABLE",
     "ifkw_c": "MISSING"
    }
@@ -1959,7 +1959,7 @@
   "INPUT #": {
    "connected": true,
    "rows": {
-    "inputkw": "NO-VERDICT"
+    "inputkw": "MISSING"
    }
   },
   "INPUT$": {
@@ -1977,19 +1977,19 @@
   "IPL": {
    "connected": true,
    "rows": {
-    "ipl": "NO-VERDICT"
+    "ipl": "DIVERGENT"
    }
   },
   "KEY": {
    "connected": true,
    "rows": {
-    "keykw": "NO-VERDICT"
+    "keykw": "MISSING"
    }
   },
   "KILL": {
    "connected": true,
    "rows": {
-    "kill_t3": "NO-VERDICT"
+    "kill_t3": "DIVERGENT"
    }
   },
   "LEFT$": {
@@ -2007,19 +2007,19 @@
   "LET": {
    "connected": true,
    "rows": {
-    "let": "NO-VERDICT"
+    "let": "MISSING"
    }
   },
   "LFILES": {
    "connected": true,
    "rows": {
-    "lfiles": "NO-VERDICT"
+    "lfiles": "MISSING"
    }
   },
   "LINE": {
    "connected": true,
    "rows": {
-    "linekw": "NO-VERDICT"
+    "linekw": "UNREADABLE"
    }
   },
   "LINE INPUT": {
@@ -2032,7 +2032,7 @@
   "LIST": {
    "connected": true,
    "rows": {
-    "listkw": "NO-VERDICT",
+    "listkw": "MISSING",
     "listkw_b": "MISSING",
     "listkw_c": "MISSING"
    }
@@ -2040,13 +2040,13 @@
   "LLIST": {
    "connected": true,
    "rows": {
-    "llist": "NO-VERDICT"
+    "llist": "MISSING"
    }
   },
   "LOAD": {
    "connected": true,
    "rows": {
-    "loadkw": "NO-VERDICT"
+    "loadkw": "MISSING"
    }
   },
   "LOC": {
@@ -2058,7 +2058,7 @@
   "LOCATE": {
    "connected": true,
    "rows": {
-    "locate": "NO-VERDICT"
+    "locate": "MISSING"
    }
   },
   "LOF": {
@@ -2082,19 +2082,19 @@
   "LPRINT": {
    "connected": true,
    "rows": {
-    "lprintkw": "NO-VERDICT"
+    "lprintkw": "MISSING"
    }
   },
   "LSET": {
    "connected": true,
    "rows": {
-    "lset": "NO-VERDICT"
+    "lset": "MISSING"
    }
   },
   "MAX": {
-   "connected": true,
+   "connected": false,
    "rows": {
-    "maxkw": "NO-VERDICT"
+    "maxkw": "SUPPORTED"
    }
   },
   "MAX FILES": {
@@ -2106,7 +2106,7 @@
   "MERGE": {
    "connected": true,
    "rows": {
-    "merge": "NO-VERDICT"
+    "merge": "MISSING"
    }
   },
   "MID$": {
@@ -2142,25 +2142,25 @@
   "MOTOR": {
    "connected": true,
    "rows": {
-    "motor": "NO-VERDICT"
+    "motor": "MISSING"
    }
   },
   "NAME": {
    "connected": true,
    "rows": {
-    "namekw": "NO-VERDICT"
+    "namekw": "MISSING"
    }
   },
   "NEW": {
    "connected": true,
    "rows": {
-    "newkw": "NO-VERDICT"
+    "newkw": "MISSING"
    }
   },
   "NEXT": {
    "connected": true,
    "rows": {
-    "nextkw": "NO-VERDICT"
+    "nextkw": "MISSING"
    }
   },
   "NOT": {
@@ -2178,7 +2178,7 @@
   "ON ERROR GOTO": {
    "connected": true,
    "rows": {
-    "onkw": "NO-VERDICT",
+    "onkw": "MISSING",
     "onkw_b": "DIVERGENT"
    }
   },
@@ -2229,7 +2229,7 @@
   "OPEN": {
    "connected": true,
    "rows": {
-    "openkw_b": "NO-VERDICT"
+    "openkw_b": "MISSING"
    }
   },
   "OR": {
@@ -2241,7 +2241,7 @@
   "OUT": {
    "connected": true,
    "rows": {
-    "outkw": "NO-VERDICT"
+    "outkw": "MISSING"
    }
   },
   "PAD": {
@@ -2254,7 +2254,7 @@
   "PAINT": {
    "connected": true,
    "rows": {
-    "paintkw": "NO-VERDICT"
+    "paintkw": "UNREADABLE"
    }
   },
   "PDL": {
@@ -2273,13 +2273,13 @@
   "PLAY": {
    "connected": true,
    "rows": {
-    "playkw": "NO-VERDICT"
+    "playkw": "MISSING"
    }
   },
   "POKE": {
    "connected": true,
    "rows": {
-    "pokekw": "NO-VERDICT"
+    "pokekw": "MISSING"
    }
   },
   "POS": {
@@ -2291,13 +2291,13 @@
   "PRESET": {
    "connected": true,
    "rows": {
-    "presetkw": "NO-VERDICT"
+    "presetkw": "UNREADABLE"
    }
   },
   "PRINT": {
    "connected": true,
    "rows": {
-    "printkw_b": "NO-VERDICT",
+    "printkw_b": "UNREADABLE",
     "printkw_c": "UNREADABLE",
     "printkw_d": "UNREADABLE",
     "tab": "MISSING"
@@ -2321,7 +2321,7 @@
   "PSET": {
    "connected": true,
    "rows": {
-    "psetkw": "NO-VERDICT"
+    "psetkw": "UNREADABLE"
    }
   },
   "PUT #": {
@@ -2333,44 +2333,44 @@
   "PUT SPRITE": {
    "connected": true,
    "rows": {
-    "putsprite": "NO-VERDICT",
+    "putsprite": "UNREADABLE",
     "putsprite_b": "UNREADABLE"
    }
   },
   "READ": {
    "connected": true,
    "rows": {
-    "readkw": "NO-VERDICT"
+    "readkw": "MISSING"
    }
   },
   "REM": {
    "connected": true,
    "rows": {
-    "rem": "NO-VERDICT"
+    "rem": "MISSING"
    }
   },
   "RENUM": {
    "connected": true,
    "rows": {
-    "renum": "NO-VERDICT"
+    "renum": "DIVERGENT"
    }
   },
   "RESTORE": {
    "connected": true,
    "rows": {
-    "restorekw": "NO-VERDICT"
+    "restorekw": "MISSING"
    }
   },
   "RESUME": {
    "connected": true,
    "rows": {
-    "resumekw": "NO-VERDICT"
+    "resumekw": "MISSING"
    }
   },
   "RETURN": {
    "connected": true,
    "rows": {
-    "returnkw": "NO-VERDICT"
+    "returnkw": "MISSING"
    }
   },
   "RIGHT$": {
@@ -2388,32 +2388,32 @@
   "RSET": {
    "connected": true,
    "rows": {
-    "rset": "NO-VERDICT"
+    "rset": "MISSING"
    }
   },
   "RUN": {
    "connected": true,
    "rows": {
-    "runkw": "NO-VERDICT"
+    "runkw": "MISSING"
    }
   },
   "SAVE": {
    "connected": true,
    "rows": {
-    "save": "NO-VERDICT",
+    "save": "MISSING",
     "save_b": "MISSING"
    }
   },
   "SCREEN": {
    "connected": true,
    "rows": {
-    "screenkw": "NO-VERDICT"
+    "screenkw": "MISSING"
    }
   },
   "SET": {
    "connected": true,
    "rows": {
-    "set": "NO-VERDICT"
+    "set": "DIVERGENT"
    }
   },
   "SGN": {
@@ -2432,7 +2432,7 @@
   "SOUND": {
    "connected": true,
    "rows": {
-    "sound": "NO-VERDICT"
+    "sound": "MISSING"
    }
   },
   "SPACE$": {
@@ -2444,7 +2444,7 @@
   "SPRITE": {
    "connected": true,
    "rows": {
-    "spritekw": "NO-VERDICT"
+    "spritekw": "UNREADABLE"
    }
   },
   "SQR": {
@@ -2462,7 +2462,7 @@
   "STOP": {
    "connected": true,
    "rows": {
-    "stopkw": "NO-VERDICT"
+    "stopkw": "MISSING"
    }
   },
   "STR$": {
@@ -2486,7 +2486,7 @@
   "SWAP": {
    "connected": true,
    "rows": {
-    "swap": "NO-VERDICT"
+    "swap": "MISSING"
    }
   },
   "TAN": {
@@ -2497,21 +2497,21 @@
    }
   },
   "TIME": {
-   "connected": true,
+   "connected": false,
    "rows": {
-    "time": "NO-VERDICT"
+    "time": "SUPPORTED"
    }
   },
   "TROFF": {
    "connected": true,
    "rows": {
-    "troff": "NO-VERDICT"
+    "troff": "MISSING"
    }
   },
   "TRON": {
    "connected": true,
    "rows": {
-    "tron": "NO-VERDICT"
+    "tron": "MISSING"
    }
   },
   "USR": {
@@ -2528,9 +2528,9 @@
    }
   },
   "VDP": {
-   "connected": true,
+   "connected": false,
    "rows": {
-    "vdpkw": "NO-VERDICT"
+    "vdpkw": "SUPPORTED"
    }
   },
   "VPEEK": {
@@ -2542,19 +2542,19 @@
   "VPOKE": {
    "connected": true,
    "rows": {
-    "vpoke": "NO-VERDICT"
+    "vpoke": "MISSING"
    }
   },
   "WAIT": {
    "connected": true,
    "rows": {
-    "waitkw": "NO-VERDICT"
+    "waitkw": "MISSING"
    }
   },
   "WIDTH": {
    "connected": true,
    "rows": {
-    "widthkw": "NO-VERDICT"
+    "widthkw": "MISSING"
    }
   },
   "XOR": {
@@ -2564,5 +2564,5 @@
    }
   }
  },
- "written": "2026-09-21 06:51:38"
+ "written": "2026-09-21 08:44:53"
 }

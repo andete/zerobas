@@ -1826,9 +1826,10 @@ ex_merge:
                 call    diskslot_test
                 jp      z,load_error
                 push    hl                  ; guard the text cursor across the merge
-                call    fat_io_open         ; mount + find + prime the sequential read
-                jr      c,mrg_ioerr         ; not found / mount / I-O error
-                call    ascii_read_lines    ; tokenise+store each line; CF set = bad line
+                call    dsk_aopen           ; step 11: the DISK ROM mounts, finds and
+                jr      c,mrg_ioerr         ; primes -- CF set = it said no
+                call    dsk_ascii_drive     ; tokenise+store each line, bytes through
+                                            ; the crossing; CF set = bad line
                 pop     hl                  ; restore the text cursor
                 jp      c,stmt_error        ; non-numbered line -> "Direct statement in file"
                 ; 🔴 D-MERGERET (2026-09-12): MERGE RETURNS TO COMMAND LEVEL, and
@@ -1843,8 +1844,17 @@ ex_merge:
                 jp      end_line_end
 mrg_ioerr:
                 pop     hl
-                jp      df_or_loaderr       ; D-LOADERR: `File not found` when the
-                                            ; name simply is not there
+                ; 🔴 NOT `df_or_loaderr` ANY MORE, AND THIS IS THE `A SHARED TAIL
+                ; IS A LABEL, NOT A DECISION` CLASS. That tail decides between
+                ; ERR 53 and a DSKIO code by reading DISKOP_OP -- and FOPEN_SEL
+                ; ALIASES DISKOP_OP, so after the crossing that cell holds $41,
+                ; not DISKOP_SEL_FAT_FIND, and every miss would have reported a
+                ; disk error. The disk side already answered the question:
+                ; DISKOP_STATUS 1 = not found, 3 = mount / I-O.
+                ld      a,(DISKOP_STATUS)
+                dec     a
+                jp      z,df_notfound       ; 1 -> ERR 53 File not found
+                jp      disk_error          ; 3 -> the mapped DSKIO code
 
 ; --- MERGE "CAS:name" — merge an ASCII program from cassette ------------------
 ; The tape counterpart of the disk MERGE above: read an $EA ASCII cassette file and
@@ -1974,6 +1984,71 @@ arl_ok:
 arl_getbyte:
                 ld      hl,(ARL_GETBYTE)
                 jp      (hl)
+
+; --- dsk_aopen: open an ASCII program file THROUGH the crossing (step 11) ----
+; The disk side mounts, searches the directory and primes the stream; main keeps
+; the line loop and the tokeniser. `MERGE` and ASCII `LOAD` share this because on
+; the reference they share everything (expansion-protocol.md §8.6a).
+;   in : DISK_FCB_NAME staged by the caller (pdfcb_resume / parse_disk_fcb)
+;   out: CF clear = open and primed; CF set = DISKOP_STATUS says why (1 not
+;        found, 3 mount / I-O). Clobbers A/HL, as every chan_gate caller does.
+; ⚠️ diskslot_test is the CALLER's job, exactly as it is for disk_prog_load: a
+; diskless machine must not reach chan_gate's ERR 5 by this road.
+dsk_aopen:
+                ld      a,FOPEN_SEL_AOPEN
+                ld      (FOPEN_SEL),a
+                ld      hl,H_FOPEN
+                call    chan_gate
+                ld      a,(DISKOP_STATUS)
+                or      a                   ; 0 -> Z, and CF is CLEAR here
+                ret     z
+                scf
+                ret
+
+; --- dsk_agetbyte: an ARL_GETBYTE source that crosses ONCE PER BYTE ----------
+; 🔴 THE SELECTOR IS RE-ASSERTED ON EVERY CALL, AND IT HAS TO BE. FOPEN_SEL
+; aliases DISKOP_OP, and between two byte reads main runs `mrg_storeline` --
+; which reaches the SUB-ROM tokeniser, whose own marshalling uses that cell.
+; disk/equates.inc's block says an arm that calls back into main must re-assert
+; the selector; this is that arm, and three bytes per byte is the whole price.
+; 🔬 A crossing per byte is what the reference does here: $FE8A (H.INDS) is
+; entered once per byte of an ASCII LOAD or MERGE and is CLAIMED on both
+; measured vendors, while the tokenised path enters it zero times (§8.6a).
+;   out: A = byte, CF clear; or CF set = end of file. The contract ARL_GETBYTE's
+;        other sources (fat_io_getbyte, cal_getbyte, chget_getbyte) honour.
+; Preserves nothing, which that contract already allows.
+dsk_agetbyte:
+                ld      a,FOPEN_SEL_GETB
+                ld      (FOPEN_SEL),a
+                ld      hl,H_FOPEN
+                call    chan_gate
+                ld      a,(DISKOP_STATUS)
+                or      a
+                jr      nz,dag_eof          ; nonzero = EOF
+                ld      a,c                 ; the byte -- BC crosses intact
+                or      a                   ; CF clear = a byte follows
+                ret
+dag_eof:
+                scf
+                ret
+
+; --- dsk_ascii_drive: ascii_read_lines off the CROSSING byte source ----------
+; The disk twin of cas_ascii_drive (cload.asm), and deliberately the same shape:
+; point ARL_GETBYTE at this slice's source, run the reader, put the vector back.
+; 🔴 THE RESTORE IS NOT COSMETIC. `INPUT #n` / `LINE INPUT #n` read through the
+; SAME vector (read_into_strscr), and their disk arm is still main's own
+; fat_io_getbyte because step 10 has not moved -- so leaving the crossing source
+; installed would send a channel read across the slot with no open file there.
+;   out: CF from ascii_read_lines (set = a non-blank, non-numbered line).
+dsk_ascii_drive:
+                ld      hl,dsk_agetbyte
+                ld      (ARL_GETBYTE),hl
+                call    ascii_read_lines
+                push    af                  ; preserve the reader's CF
+                ld      hl,fat_io_getbyte
+                ld      (ARL_GETBYTE),hl
+                pop     af
+                ret
 
 ; --- chget_getbyte: ARL_GETBYTE source for the CONSOLE (D-INPDCON) ---------
 ; `INPUT$(n)` with no `,#f` reads n characters from the KEYBOARD. That is the

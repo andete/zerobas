@@ -463,6 +463,48 @@ item — do **one item per session** to keep context lean.
       times, the byte reads the same 467 (2227 rich) and the `TOKBUF` control
       the identical 258 and 1898. Only the subject moved.
       ➡️ **SO STEP 11's RAM BLOCKER IS CLEARED** and the port itself is next.
+      🟢 **✅ STEP 11 IS DONE 2026-09-21 (§6.6at, D-MERGEPORT).** `MERGE` and
+      ASCII `LOAD` open through `$FE5D` (`FOPEN_SEL_AOPEN $41`) and read every
+      byte through it (`FOPEN_SEL_GETB $47`); the line loop and the tokeniser
+      stay in main, which is what the reference does. ONE selector pair for both
+      verbs, because on the reference they are one mechanism.
+      💰 **IT COSTS MAIN BYTES AND DOES NOT SAVE THEM:** main page 1 was
+      **140 B → 75 B free** and `disk.rom` **7888 B → 7842 B** (2026-09-21).
+      `OPEN…FOR INPUT` still needs main's `fat_io_*`, so nothing could be
+      deleted; the value is §0.0's point (3), as it was for `SAVE`.
+      🔴 **TWO THINGS BIT, BOTH ALREADY-NAMED CLASSES:** `mrg_ioerr` used to
+      `jp df_or_loaderr`, which picks ERR 53 vs a DSKIO code by reading
+      `DISKOP_OP` — and `FOPEN_SEL` ALIASES it, so every missing file would have
+      reported a disk error (*a shared tail is a label, not a decision*). And
+      the selector must be re-asserted on EVERY crossing, because main runs the
+      sub-ROM tokeniser between byte reads.
+      🔬 `disk_probe_merge` 123, `disk_probe_load_ascii` 35,
+      `disk_probe_save_ascii` 42 — all differential against the CF-3300 and
+      identical; `mergewin_probe.py` CLEAN on both fixtures with its control
+      firing 258 / 1898.
+
+- [ ] 🔬 **PROMOTE THE THREE ASCII/MERGE DISK PROBES INTO THE BATTERY — THEIR
+      EXCUSE'S PREMISE CHANGED WHEN STEP 11 SHIPPED**
+      🎚️ TIER 3 — common errors: a silent break here is a wrong answer, not a
+      slow one.
+      🤖 **AUTONOMOUS** — a Makefile target plus battery membership, no ruling
+      needed.
+      🔴 **`diskbasic-acceptance` HAS NO `MERGE` ROW** and its 34/34 says nothing
+      about `MERGE`, ASCII `LOAD` or `SAVE",A"`. The three probes that do cover
+      them — `probes/disk/disk_probe_merge.py`, `disk_probe_load_ascii.py`,
+      `disk_probe_save_ascii.py` — are in NO Makefile target, excused in
+      `tools/probe-reach-allow.txt` as *"archived and still re-provable when the
+      code changes"*.
+      ⚠️ **THAT WAS A REASONABLE CALL WHILE THESE PATHS LIVED ENTIRELY IN MAIN.**
+      Since §6.6at they CROSS THE SLOT, so a `disk.rom` edit can break them with
+      no gate saying so — and the re-proof only happens if whoever changes
+      `disk.rom` remembers three probes no target runs.
+      ➡️ Add a `diskascii-acceptance` target running all three against
+      `$ZEROBAS_BASIC_MACHINE` with the CF-3300 differential, collect it in the
+      battery (`battery-membership-check` will demand that), and delete the
+      three allowlist lines. ⚠️ They are EMULATOR probes and take ~3 min each —
+      price the battery cost before wiring, and consider the eight-excluded list
+      if it is too slow.
 
 - [ ] 🧮 **THERE IS NO SINGLE RAM MAP, AND THAT IS WHAT MAKES EVERY RAM QUESTION
       EXPENSIVE** — Joost, 2026-09-21: *"Don't you have a single RAM map?"*
@@ -3436,7 +3478,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:21140 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:21182 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -3602,7 +3644,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:8245 (T-6FE392)8 (T-529ABE)` from `TODO.md:19534 (T-529ABE)`: a
+      `TODO.md:8287 (T-6FE392)8 (T-529ABE)` from `TODO.md:19576 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -9089,7 +9131,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:19534 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:19576 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

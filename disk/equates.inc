@@ -148,6 +148,23 @@ H_FOPEN         equ     $FE5D
 FOPEN_SEL       equ     DISKOP_OP
 SUB_BUILD       equ     0       ; this is the DISK build, not the sub-ROM
 
+FOPEN_SEL_AOPEN equ     $41     ; step 11 (D-MERGEPORT): open an ASCII program
+                                ; file and prime the sequential read -- `MERGE`
+                                ; and ASCII `LOAD` alike, because on the
+                                ; reference they are ONE mechanism (identical
+                                ; 47-cell set, expansion-protocol.md §8.6a). The
+                                ; selector names the OPERATION, not the verb.
+FOPEN_SEL_GETB  equ     $47     ; step 11: hand back ONE byte of the open ASCII
+                                ; file. 🔴 A CROSSING PER BYTE IS WHAT THE
+                                ; REFERENCE DOES on exactly these paths -- $FE8A
+                                ; (H.INDS) is entered once per byte and is
+                                ; CLAIMED on both measured vendors -- so this is
+                                ; faithfulness, not a concession. Priced at
+                                ; 0.156 ms/byte (D-XSLOTPRICE) against the
+                                ; reference's own 4.3 ms/byte (§6.2a).
+                                ; ⚠️ MAIN RE-ASSERTS THE SELECTOR BEFORE EVERY
+                                ; CROSSING, and must: it aliases DISKOP_OP and
+                                ; main runs the TOKENISER between byte reads.
 FOPEN_SEL_SAVE  equ     $53     ; step 12 (D-SAVEPORT): tokenised SAVE. Same
                                 ; rule as LOAD's $4C -- outside DISKOP_SEL_*'s
                                 ; 0..7 range, so an idle cell can never read as

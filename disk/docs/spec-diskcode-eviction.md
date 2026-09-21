@@ -3378,6 +3378,65 @@ cells in both components. **43 arms green.**
 ➡️ **RESIDUAL, FILED:** 137 pinned cells whose width lives only in prose. Each
 removal is a real improvement to the map and the gate makes them one-way.
 
+### 6.6at 🟢 STEP 11 IS DONE — `MERGE` AND ASCII `LOAD` RUN THROUGH THE CROSSING (D-MERGEPORT, 2026-09-21)
+
+Main opens the file and reads every byte of it **through `$FE5D`**. The line
+loop and the tokeniser stay in main, which is not a concession: §8.6a measured
+that the reference's disk side never owns `MERGE`'s line loop either.
+
+| | selector | what the disk side does |
+|---|---|---|
+| `FOPEN_SEL_AOPEN` `$41` | once per file | `fat_mount`, then `fat_io_find` — separately, so their two carries still tell `File not found` from a mount/I-O fault — leaving the stream primed |
+| `FOPEN_SEL_GETB` `$47` | **once per byte** | `fat_io_getbyte`; the byte comes back in `C`, EOF in `DISKOP_STATUS` |
+
+🔑 **ONE SELECTOR PAIR FOR BOTH VERBS, BECAUSE THE REFERENCE HAS ONE MECHANISM.**
+`MERGE` and ASCII `LOAD` enter an identical 47-cell set there. The selector
+names the OPERATION, not the verb — and `ascii_load`'s re-open, which used to be
+main's own `fat_io_open` rewinding to offset 0, is now the disk side being asked
+to open the file again. Same semantics, other side of the seam.
+
+🔴 **THE BYTE COMES BACK IN `C` BECAUSE `chan_gate` OWNS `CF`.** The gate uses
+carry as the CLAIMED/unclaimed answer (`or a` / `jp (hl)` / `cg_back: ret c`), so
+a handler cannot also return a disposition in it. `BC` crosses intact both ways,
+`DISKOP_STATUS` carries EOF, and main's `dsk_agetbyte` reassembles the
+`A = byte, CF = EOF` contract the other `ARL_GETBYTE` sources already honour.
+
+🔴 **THE SELECTOR IS RE-ASSERTED ON EVERY SINGLE CROSSING, AND IT HAS TO BE.**
+`FOPEN_SEL` aliases `DISKOP_OP`, and between two byte reads main runs
+`mrg_storeline`, which reaches the SUB-ROM tokeniser and its own marshalling
+through that cell. `disk/equates.inc` wrote that rule down when the alias was
+argued; this is the first arm it applies to.
+
+🔴 **AND IT BIT SOMEWHERE ELSE — `A SHARED TAIL IS A LABEL, NOT A DECISION`.**
+`mrg_ioerr` used to `jp df_or_loaderr`, which chooses between ERR 53 and a DSKIO
+code **by reading `DISKOP_OP`**. After the crossing that cell holds `$41`, so
+every missing file would have reported a disk error. `ex_merge` now decodes
+`DISKOP_STATUS`, which the disk side already answered.
+
+💰 **IT COSTS MAIN BYTES; IT DOES NOT SAVE THEM, AND THAT WAS EXPECTED.** Main
+page 1 went **140 B → 75 B free** and `disk.rom` **7888 B → 7842 B**
+(2026-09-21). `OPEN…FOR INPUT` still needs main's `fat_io_*`, so nothing could be
+deleted — the value is §0.0's point (3), the same argument §6.6an made for
+`SAVE`: a machine with a foreign disk ROM now merges through ITS engine.
+
+🔬 **VERIFIED, AND THE WINDOW PROBE IS NOW A LIVE SAFETY PROPERTY.**
+`disk_probe_merge` reads `123`, `disk_probe_load_ascii` `35`, `disk_probe_save_ascii`
+`42` — every one differential against the CF-3300 and identical.
+`diskbasic-acceptance` 34/34. And `mergewin_probe.py` reads **CLEAN on both
+fixtures with its `TOKBUF` control still firing 258 / 1898** — which since this
+commit is not a hypothetical: the disk side's sector buffer really does hold the
+stream while main tokenises.
+
+🔴 **BUT `diskbasic-acceptance` HAS NO `MERGE` ROW, AND ITS 34/34 SAYS NOTHING
+ABOUT THIS SLICE.** The three probes that do cover it are ARCHIVED — excused in
+`tools/probe-reach-allow.txt` as *"re-provable when the code changes"*, which is
+exactly what was done here. ⚠️ **The excuse's premise has changed**: this path
+now crosses the slot, so a `disk.rom` edit can break it with no gate saying so.
+Promoting the three to the battery is filed in `TODO.md`.
+
+➡️ **THAT LEAVES STEP 10 `OPEN`**, still behind the RAM lever Joost has filed,
+and step 13's bulk.
+
 ## 6.7 🔍 GAP ANALYSIS — zerobas AGAINST THE MEASURED PROTOCOL (D-HOOKCENSUS, 2026-09-19)
 
 > 🏗️ **RULED BY JOOST, 2026-09-20: *"I think the answer to Two is obvious: we do

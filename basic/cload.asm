@@ -1106,9 +1106,16 @@ dpl_oom:
 ; no reference ROM read. See basic/docs/spec-ascii-saveload.md §4.
 ascii_load:
                 call    new_prog            ; LOAD replaces the current program
-                call    fat_io_open         ; re-prime: reset the read to offset 0
+                ; 🔴 STEP 11 (D-MERGEPORT): THE RE-OPEN CROSSES NOW. The disk ROM
+                ; already has this file open -- hk_dpload read its first byte to
+                ; decide the format -- so what main needs is a REWIND, and asking
+                ; the disk side to open it again is the rewind. Same selector and
+                ; same byte source `MERGE` uses, because on the reference ASCII
+                ; `LOAD` and `MERGE` are ONE mechanism: an identical 47-cell set,
+                ; counts differing by at most 1 on nine of them (§8.6a).
+                call    dsk_aopen           ; mount + find + prime, on the disk side
                 jr      c,dpl_err           ; file vanished between opens -> error
-                call    ascii_read_lines    ; tokenise + store; CF set = bad line
+                call    dsk_ascii_drive     ; tokenise + store; CF set = bad line
                 jr      c,dpl_err           ; non-numbered line / not an ASCII program
                 ret                         ; caller handles ,R / returns to the REPL
                                             ; (D-RUNTAIL: CF is clear here -- the `jp c`
