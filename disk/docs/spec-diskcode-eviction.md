@@ -3112,7 +3112,15 @@ this bug and then still spent a round guessing at mechanisms.
 start at the driver's page-1 handling for a WRITE issued while page 1 holds
 `disk.rom`.
 
-### 6.6ap 🟢 STEP 11's BLOCKER IS DISSOLVED — THE REFERENCE NEVER OWNS `MERGE`'s LINE LOOP (D-MERGESHAPE, 2026-09-21)
+### 6.6ap 🟡 STEP 11's *SHAPE* BLOCKER IS DISSOLVED — THE REFERENCE NEVER OWNS `MERGE`'s LINE LOOP (D-MERGESHAPE, 2026-09-21)
+
+> 🔴 **THE HEADING SAID "STEP 11's BLOCKER IS DISSOLVED" AND THAT WAS TOO
+> BROAD — corrected by §6.6aq the same day.** The per-line CALL-BACK objection
+> is dissolved and stays dissolved. A second blocker, which §6.6an assigned to
+> step 10 alone, applies here too: the shape below needs `disk.rom`'s sector
+> buffer to survive main running between byte reads, and it does not. §6.6aq
+> measures the damage at SEVEN addresses. Everything else in this section
+> stands as measured.
 
 §6.6an filed step 11 as **blocked on shape**: `MERGE` must TOKENISE each line,
 tokenising is main's job, a disk-side loop would need a call-back into main per
@@ -3171,6 +3179,72 @@ re-pointed at `$FE67` — bare in `hook_tab` and bare on the National — and th
 lesson is the standing one: **an a-priori answer rots exactly like a wall
 figure**, and a control that names one has to be re-read whenever the tree moves
 under it.
+
+### 6.6aq 🔴 STEP 11 IS NOT UNBLOCKED — THE SHAPE OBJECTION IS GONE AND A RAM ONE IS LEFT, WORTH 7 BYTES (D-MERGEWIN, 2026-09-21)
+
+🔴 **§6.6ap's HEADLINE OVERSTATED ITS OWN FINDING, AND THIS IS THE CORRECTION.**
+What §6.6ap dissolved is §6.6an's *stated* blocker — the per-line call-back —
+and that stays dissolved: the reference's disk side never owns `MERGE`'s line
+loop, so nothing has to call back. What §6.6ap did not ask is what the shape it
+recommends **costs us**, and the answer is a second blocker that §6.6an assigned
+to step 10 alone.
+
+🎯 **THE REFERENCE NEVER HAS THIS PROBLEM; WE DO, AND IT IS OUR OWN DOING.**
+`disk.rom` borrows main's RAM for its buffers — `SECTOR_BUF`/`FAT_DBUF` is
+`$E2A0..$E49F` and `WBUF`/`FAT_MBUF` is `$E560..$E75F`, and §6.6al measured 510
+of the first 512 bytes as occupied by MAIN cells. **A seam finer than
+once-per-file requires those buffers to survive main running in between.** Step
+9 is safe precisely because main does not run during it.
+
+🔬 **MEASURED ON OUR OWN MACHINE** (`scratchpad/mergewin_probe.py`; every
+address is ours, from `build/basic-reloc.sym`, and no reference ROM is
+involved). A `write_mem` watchpoint over both buffer windows, armed at
+`mrg_storeline` and disarmed at the next `arl_getbyte` — the bracket is exactly
+*"main is running between two byte reads"* — with a third breakpoint at
+`arl_ok` closing it for good at the end of the read.
+
+🔴 **DIRTY. SEVEN ADDRESSES, IN THREE RUNS:**
+
+| run | cells | writes over 40 lines |
+|---|---|---|
+| `$E36D..$E36E` | `SH_OP`, `SH_LEN` | 82 |
+| `$E371..$E372` | `SH_PTR` | 82 |
+| `$E37E..$E380` | `SH_ERR`, `TEMPTOP` | 123 |
+
+All seven are inside `SECTOR_BUF`. `WBUF`'s window was not touched.
+
+🔑 **AND THE SURFACE IS THE ROUTINE'S, NOT THE FIXTURE'S.** The same run over a
+`--rich` fixture — quoted string literals, multi-statement bodies and `REM`
+tails, **2224 B against 464 B**, with the `TOKBUF` control firing 1898 times
+against 258 — writes **the same seven addresses the same 287 times**. Line
+content does not widen it. These are `mrg_storeline`'s own fixed cells: the
+string engine's block-move arguments it inserts program text with, plus the
+temp-pool top.
+
+➡️ **SO THE LEVER IS 7 BYTES, NOT 510, AND THAT IS A DIFFERENT KIND OF ITEM.**
+§6.6al killed option (a) — *"relocate the main cells out of disk's `SECTOR_BUF`
+window"* — because the window holds 257 B of counted cells and 510 B once
+`GFX_PSTK` and `TEMPPOOL` are resolved by hand. **That arithmetic is about the
+WHOLE window; step 11 only needs the cells this ONE path writes.** Moving the
+`SH_*` argument block and `TEMPTOP` out is ~20 B of relocation, against
+unattributed runs of 192 B and 80 B elsewhere in the map.
+⚠️ **AND THE MAP'S "UNATTRIBUTED RUNS" ARE NOT FREE SPACE** — §6.6an nearly
+priced against one that held five undeclared `basic` cells. A target run must be
+verified before it is spent, not read off the map.
+
+⚠️ **WHAT THIS DOES NOT RETIRE.** §6.6q's hazard in general is untouched: this
+measures ONE path (`MERGE` / ASCII `LOAD`'s line loop) against ONE pair of
+windows. `PAINT` then `LOAD` is still ungated, and `GFX_PSTK` still sits in the
+same window.
+
+🎯 **A CONTROL I ADDED MID-RUN CONFIRMED RATHER THAN CORRECTED, AND THAT IS
+WORTH RECORDING TOO.** Round 1's bracket had a leak: it opened at
+`mrg_storeline` and closed at the NEXT `arl_getbyte`, and after the last line
+there is no next one — so `win` stayed set through the `RUN` that proves the
+merge worked, and `RUN`'s own string traffic was inside the bracket. The
+`arl_ok` breakpoint closes it. **The answer did not move: 287 writes, the same
+seven addresses.** A control that confirms is not a wasted control; without it
+the number would have been unreadable.
 
 ## 6.7 🔍 GAP ANALYSIS — zerobas AGAINST THE MEASURED PROTOCOL (D-HOOKCENSUS, 2026-09-19)
 
