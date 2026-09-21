@@ -554,6 +554,35 @@ item — do **one item per session** to keep context lean.
       is already in `disk.rom`, and its window has NO call-back at all (the name
       is in `DISK_FCB_NAME` before the mount), so §6.6av's ordering question
       does not arise for it.
+      🟢 **✅ SECOND SLICE DONE 2026-09-21 (§6.6ay, D-KILLLOCAL): `KILL`'s
+      DELETE LOOP IS LOCAL.** `disk/kernel.asm` includes
+      `basic/fat-delete-body.inc` beside the primitive body it already had, and
+      `hk_kill`'s `ld a,DISKOP_SEL_KILL / ld ix,dirverb_op / call calbak` becomes
+      the tenant's own mount + loop on THIS ROM's `fat_mount`/`fat_delete`.
+      `tnt_kill` is DELETED and the dispatcher's `or a / jp z,tnt_kill` with it —
+      selector 0 falls to `dv_err` like selector 1 (§6.6aw). `fat_delete` STAYS
+      in `sub.rom`: `tnt_copy` still calls it.
+      💰 **sub page 1 188 B → 216 B free**, `disk.rom` 7814 → 7720 B, main
+      unchanged at 75 B / 32 B (measured 2026-09-21, clean tree). **No main byte
+      is bought and none was expected** — both halves were already outside main
+      page 1; the gain is the round trip.
+      🔴 **THE PRE-SET `DISKOP_STATUS` IS GONE, NOT KEPT.** `hk_kill` used to
+      store 2 before the call-back and let the tenant overwrite it; that was safe
+      only because the tenant wrote the cell on every path. The disposition is
+      now decided in `A` and stored ONCE, last — the rule `hkn_done` states.
+      🔴 **`DISKOP_ERR` NEEDED NO NEW LINE, AND IT WAS READ NOT ASSUMED:**
+      `dirverb_tenant` cleared it on entry, but `fat-prim-body.inc`'s `dc_result`
+      writes it on BOTH arms and §6.6o already moved that mapping outside the
+      `IF DISK_BUILD` gate, so the local DSKIO path maintains it.
+      ⚠️ **ONE CONFLATION TRAVELS WITH THE CODE:** a DSKIO failure inside
+      `fat_delete` before anything is deleted still reads as "nothing matched"
+      (ERR 53). That is `fat_delete`'s one-CF-bit contract and the
+      primitive-layer change D-DSKMSG declined to make; the mount stays split out
+      ahead of the loop, which is what keeps a disk-offline `KILL` answering
+      `Disk offline`.
+      ➡️ **NEXT: `COPY` (two ops, `tnt_copystash` + `tnt_copy`) and
+      `FILES`/`LFILES`** — same shape, and `FILES` is the one that leaves
+      `dirverb_tenant` holding `DSKO$`/`DSKI$` only.
 
 - [ ] 🔬 **SHOULD MAIN AND `disk.rom` USE THE SAME ADDRESS FOR THE SAME THING? —
       JOOST'S QUESTION, AND THE MAP CAN PRICE IT**
@@ -3683,7 +3712,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:21387 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:21416 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -3849,7 +3878,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:8492 (T-6FE392)8 (T-529ABE)` from `TODO.md:19781 (T-529ABE)`: a
+      `TODO.md:8521 (T-6FE392)8 (T-529ABE)` from `TODO.md:19810 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -9336,7 +9365,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:19781 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:19810 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

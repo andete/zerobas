@@ -2323,6 +2323,15 @@ fat_bufinit:
                 ; labels looking like unresolved main references. sub/fatprim.asm
                 ; uses this form for the same file.
                 include "basic/fat-prim-body.inc"
+                ; --- fat_delete, for the KILL loop below ----------------
+                ; D-KILLLOCAL (disk/docs/spec-diskcode-eviction.md §6.6ay).
+                ; The SAME shared body sub/fatprim.asm includes; it is a
+                ; separate file only to preserve main's original byte order
+                ; (see its header). Its six callees -- fat_mount, fat_find,
+                ; fat_next_cluster, fat_write_fat_entry, read_sector,
+                ; fatprim_write_sector -- are all in the block above, so this
+                ; costs no marshalling either.
+                include "basic/fat-delete-body.inc"
 
                 ; --- the FAT STREAM layer, the primitives' caller ----
                 ; D-DPLPORT (spec-diskcode-eviction.md §6.6b). Option 2
@@ -2693,19 +2702,49 @@ hk_kill:
                                         ; (ERR 13) and NOT return -- see the ABI
                 ld      ix,pdfcb_resume
                 call    calbak          ; -> DISK_FCB_NAME (8.3, wildcards)
-                ; 🔴 PRE-SET THE FAILURE DISPOSITION rather than read CF back.
-                ; dirverb_op returns CF=1 when the sub-ROM is absent, but whether
-                ; CF survives CALSLT is NOT among the things D-XSLOTABI measured
-                ; -- so it is not relied on. A tenant that never runs leaves the 2
-                ; standing, which is the mount/I-O disposition main already
-                ; decodes; one that runs overwrites it.
-                ld      a,2
-                ld      (DISKOP_STATUS),a
-                ld      a,DISKOP_SEL_KILL
-                ld      ix,dirverb_op
-                call    calbak
+                ; 🎯 EVERY CALL-BACK IS BEHIND US, AND THAT IS THE WHOLE POINT
+                ; OF THE SLICE (D-KILLLOCAL, spec-diskcode-eviction.md §6.6ay).
+                ; What stood here was `ld a,DISKOP_SEL_KILL / ld ix,dirverb_op /
+                ; call calbak` -- a call-back into MAIN that marshalled on to
+                ; `sub.rom`'s dirverb tenant, so one KILL crossed
+                ; main -> disk.rom -> main -> sub.rom and back. The loop below is
+                ; the tenant's body verbatim, running on THIS ROM's fat_mount /
+                ; fat_delete, and nothing in the window has to survive a
+                ; call-back because no call-back happens in it.
+                ; 🔴 `FAT_DBUF`, NEVER `FSECTOR_BUF` -- the body spells the
+                ; per-ROM name and this ROM binds it to $E2A0 (§6.6c). The
+                ; sub-ROM tenant's own callees are identical source.
+                call    fat_mount       ; LOCAL primitive body
+                ld      a,2             ; 2 = mount / DSKIO error -> disk_error
+                jr      c,hkk_done
+                ld      c,0             ; C = deleted-any flag
+hkk_loop:
+                push    bc
+                call    fat_delete      ; frees + $E5-marks the FIRST match
+                pop     bc
+                jr      c,hkk_end       ; no (further) match -> stop
+                ld      c,1             ; deleted at least one
+                jr      hkk_loop
+hkk_end:
+                ld      a,c
+hkk_done:
+                ; 🔴 DISKOP_STATUS IS WRITTEN ONCE, HERE. It is a SHARED
+                ; channel -- main's FAT primitives marshal their own disposition
+                ; through the same cell -- and pre-setting it is what made NAME
+                ; answer `Syntax error` at an empty drive (see hkn_done). The
+                ; pre-set that used to stand above was harmless only because the
+                ; tenant it guarded overwrote the cell itself.
+                ld      (DISKOP_STATUS),a   ; 0 none matched / 1 deleted / 2 mount
                 scf                     ; CF=1: the hook is claimed
                 ret
+
+; ⚠️ STILL CONFLATED, AND IT TRAVELS WITH THE CODE: a DSKIO failure INSIDE
+; fat_delete, after the mount and before anything was deleted, returns C = 0 and
+; reads as "nothing matched" (ERR 53) rather than as an I-O error. That is
+; fat_delete's own contract -- `Cy = 1 not found / mount / I-O error`, one bit for
+; three outcomes -- and separating it is a primitive-layer change D-DSKMSG
+; declined to make. The mount is split out here exactly as it was in the tenant,
+; which is what keeps a disk-offline KILL answering `Disk offline`.
 
 ; --- hk_name: NAME's body, RUNNING IN THE DISK ROM (MSX2 TH hook) -----------
 ; D-DISKVERB2, spec-diskbasic-hook-rearchitecture.md phase 3. The second verb to

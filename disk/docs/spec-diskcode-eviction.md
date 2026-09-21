@@ -3634,6 +3634,63 @@ is neutral, every callee it needs (`fat_next_cluster`, `fat_write_fat_entry`,
 in `DISK_FCB_NAME` before the mount, and the delete loop follows it directly. So
 §6.6av's ordering question does not even arise for `KILL`.
 
+### 6.6ay 🟢 `KILL`'s DELETE LOOP RUNS IN `disk.rom` — THE SECOND ROUND TRIP DELETED (D-KILLLOCAL, 2026-09-21)
+
+§6.6ax left this one `include` away and it stayed that cheap. `disk/kernel.asm`
+assembles `basic/fat-delete-body.inc` beside the primitive body it already had,
+and `hk_kill`'s tail — `ld a,DISKOP_SEL_KILL / ld ix,dirverb_op / call calbak` —
+becomes the tenant's own loop, running on this ROM's `fat_mount` and
+`fat_delete`.
+
+**What that call-back actually cost.** One `KILL` crossed
+`main → disk.rom → main → sub.rom` and back: `hk_kill` called BACK into main
+just so main could `subrom_call` on to `dirverb_tenant`, whose body then ran
+sub-local FAT primitives that `disk.rom` has had since steps 9/11/12. The verb's
+work never needed either of the two middle hops. `tnt_kill` is deleted, and with
+it the `or a / jp z,tnt_kill` that opened the dirverb dispatcher — selector 0
+now falls to `dv_err` with every other unrecognised op, as selector 1 already did
+(§6.6aw). **`fat_delete` stays in `sub.rom`: `tnt_copy` still calls it.**
+
+🎯 **NOTHING HAD TO SURVIVE A CALL-BACK, WHICH IS WHY THIS SLICE IS NOT
+§6.6av's PROBLEM.** `NAME` had to keep `fat_find`'s result alive across main
+evaluating a second filename expression; `KILL` has ONE name, it is in
+`DISK_FCB_NAME` before the mount, and the loop follows the two parse call-backs
+directly. So the mount and the find are local here without any of the ordering
+argument `nameord-acceptance` exists to pin. **That is a property of `KILL`, not
+a general result — §6.6av stays open.**
+
+🔴 **`DISKOP_STATUS` IS WRITTEN ONCE, LAST — AND THE OLD CODE'S PRE-SET WAS
+SAFE ONLY BY ACCIDENT.** `hk_kill` used to store 2 before the call-back, on the
+stated reasoning that *"whether CF survives CALSLT is NOT among the things
+D-XSLOTABI measured"*, and let the tenant overwrite it. That worked because the
+tenant wrote the cell itself on every path it took. It is the same pattern that
+made `NAME` answer `Syntax error` at an empty drive (`hkn_done`), where main's
+`fat_mount` shim marshalled its own disposition through the shared cell in
+between. With the loop local there is no in-between, and the pre-set is gone
+rather than kept: the disposition is now decided in `A` and stored once.
+
+⚠️ **ONE CONFLATION MOVES WITH THE CODE AND IS NOT FIXED BY MOVING IT.** A DSKIO
+failure INSIDE `fat_delete`, after the mount and before anything was deleted,
+still returns `C = 0` and reads as *"nothing matched"* — ERR 53 rather than an
+I-O error. That is `fat_delete`'s own contract (one CF bit for three outcomes)
+and separating it is the primitive-layer change D-DSKMSG declined to make. The
+mount is split out ahead of the loop exactly as the tenant split it, which is
+what keeps a disk-offline `KILL` answering `Disk offline`.
+
+🔴 **`DISKOP_ERR` NEEDED NO NEW LINE, AND THAT IS A READING, NOT A GUESS.**
+`dirverb_tenant` clears it on entry, so deleting the tenant from `KILL`'s path
+could have left main's `disk_error` raising a stale code. It does not:
+`basic/fat-prim-body.inc`'s `dc_result` writes the cell on BOTH arms — 0 on a
+clean transfer, the mapped ERR code on a failure — and §6.6o put that mapping
+outside the `IF DISK_BUILD` gate precisely so `disk.rom`'s local DSKIO path keeps
+it. The tenant's `xor a` was belt-and-braces over a primitive that already
+maintained the cell.
+
+⚠️ **WHAT THIS DOES NOT BUY: A MAIN BYTE.** Both halves were already outside
+main page 1 — the body in `sub.rom`, the caller in `disk.rom`. The gain is the
+round trip and the second copy's reachability, the same currency §6.6aw was paid
+in. Read the walls after the slice, do not predict them from it.
+
 ## 6.7 🔍 GAP ANALYSIS — zerobas AGAINST THE MEASURED PROTOCOL (D-HOOKCENSUS, 2026-09-19)
 
 > 🏗️ **RULED BY JOOST, 2026-09-20: *"I think the answer to Two is obvious: we do

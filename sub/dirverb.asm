@@ -61,8 +61,6 @@ dirverb_tenant:
                 xor     a
                 ld      (DISKOP_ERR),a      ; D-DISKERR: no DSKIO failure pending yet
                 ld      a,(DISKOP_OP)
-                or      a
-                jp      z,tnt_kill              ; DISKOP_SEL_KILL = 0
                 cp      DISKOP_SEL_FILES
                 jp      z,tnt_files             ; 2 -> FILES  (screen)
                 cp      DISKOP_SEL_LFILES
@@ -83,6 +81,12 @@ dirverb_tenant:
                 ; body below this dispatcher was dead and is deleted. An
                 ; unrecognised op now takes the error tail rather than silently
                 ; running whatever happens to follow.
+                ; 🔴 AND SELECTOR 0 (KILL) WENT THE SAME WAY (D-KILLLOCAL,
+                ; §6.6ay): `hk_kill` runs the mount and the delete loop on
+                ; disk.rom's OWN fat_mount/fat_delete, so the `or a / jp z,tnt_kill`
+                ; that opened this chain is gone too and 0 falls to dv_err with
+                ; every other unrecognised op. fat_delete STAYS in this assembly --
+                ; tnt_copy still calls it.
                 jp      dv_err
 
 ; --- NAME "old" AS "new": stamp the new 8.3 name over the located dir entry --
@@ -94,44 +98,6 @@ dirverb_tenant:
 dv_err:
                 ld      a,1
                 ld      (DISKOP_STATUS),a       ; error -> head does load_error
-                ret
-
-; --- KILL "name": delete every matching entry ------------------------------
-; Input: DISK_FCB_NAME holds the 8.3 wildcard pattern. fat_delete frees + $E5-
-; marks the FIRST match per call (name_cmp honours '?'/'*'), so loop until no
-; match remains. C accumulates the deleted-any flag; DISKOP_STATUS carries it
-; back (0 = nothing matched -> the head raises ERR 53 "File not found";
-; 1 = deleted at least one; 2 = mount error -> the head does load_error).
-;
-; 🔴 THE MOUNT IS SEPARATED FROM THE MISS ON PURPOSE, AND IT IS WHY THE FILED
-; "the fix is 0 B" WAS WRONG (D-DSKMSG, docs/spec-basic-dskmsg.md §4.1).
-; fat_delete's own contract is `Cy = 1 not found / mount / I-O error` -- it calls
-; fat_mount itself -- so before this the deleted-any flag was 0 for ALL THREE, and
-; simply re-pointing the head's `jp z` at df_notfound would have turned a
-; disk-offline KILL into a TRAPPABLE ERR 53 on no reading at all. Mounting here
-; and taking tf_ioerr gives KILL the same three-way DISKOP_STATUS disposition
-; tnt_files already has (0 = nothing matched -> ERR 53; 1 = deleted at least one;
-; 2 = mount error -> load_error). fat_delete still mounts; a second mount of a
-; mounted volume re-reads the BPB and is idempotent.
-;
-; ⚠️ STILL CONFLATED, said out loud: an I-O error INSIDE fat_delete, after the
-; mount and before anything was deleted, still returns C=0 and reads as "nothing
-; matched". Separating that needs a status out of fat_delete itself, a
-; primitive-layer change D-DSKMSG does not make.
-tnt_kill:
-                call    fat_mount               ; sub-local primitive body
-                jp      c,tf_ioerr              ; STATUS = 2 -> head does load_error
-                ld      c,0                     ; C = deleted-any flag
-dvk_loop:
-                push    bc
-                call    fat_delete             ; sub-local primitive body
-                pop     bc
-                jr      c,dvk_done              ; no (further) match -> stop
-                ld      c,1                     ; deleted at least one
-                jr      dvk_loop
-dvk_done:
-                ld      a,c
-                ld      (DISKOP_STATUS),a       ; deleted-any (0 = none)
                 ret
 
 ; --- DSKO$ / DSKI$: one sector between (DSKBUF_PTR) and sector FWR_DIRSEC ------

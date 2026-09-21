@@ -1608,9 +1608,13 @@ ex_kill:
                 ld      hl,(FN_RESUME)      ; the cursor the handler resumed at
                 jp      kill_status
 ; The wildcard delete itself -- fat_delete finding, freeing and $E5-marking each
-; match in turn -- is unchanged and still runs in the dirverb_tenant (sub page 1).
-; Only its CALLER moved: hk_kill asks for DISKOP_SEL_KILL from disk.rom now
-; instead of do_kill asking from here.
+; match in turn -- is unchanged SOURCE, but it no longer runs where this used to
+; say. 🧭 D-KILLLOCAL (disk/docs/spec-diskcode-eviction.md §6.6ay): the loop ran
+; in the SUB-ROM dirverb tenant, so `hk_kill` called BACK into main to marshal on
+; to it and one KILL crossed main -> disk.rom -> main -> sub.rom. disk.rom
+; assembles the same shared body now, so the mount and the loop are local to the
+; handler and the round trip is gone. Nothing here changed: the cursor hand-off
+; and kill_status's 0/1/2 decode are the same two things main alone can do.
 ;
                 ; D-DSKMSG (docs/spec-basic-dskmsg.md §4), R-DK1: the CF-3300
                 ; answers `File not found` to a KILL that matched nothing, which
