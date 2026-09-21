@@ -35,7 +35,29 @@ disk verbs each made a three-ROM round trip — `hk_*` called BACK into main jus
 so main could marshal on to `sub.rom`'s `dirverb_tenant`, whose body ran FAT
 primitives `disk.rom` has had since steps 9/11/12. Each slice deletes one.
 
-🔴 **THE TIERED AUTONOMOUS QUEUE IS EMPTY BELOW TIER 4 (checked 2026-09-21).**
+🔴 **THE TIERED AUTONOMOUS QUEUE IS EMPTY AT *EVERY* TIER (re-checked 2026-09-21,
+D-RETRYSUBJ) — AND "BELOW TIER 4" WAS THE WRONG BOUND.** Scanning every OPEN
+item for its LAST work-bucket marker leaves **three** whose last marker is
+`🤖 AUTONOMOUS`: the RAM-usage comparison (TIER 2 — **Joost's**, *"not
+something for now"*), `refcache-check` (APPARATUS), and `ex_stop`'s missing edge
+seed (TIER 5). **TIER 4 speed is NOT autonomous**: its LAST marker is
+`🙋 NEEDS-JOOST` on the charter question (*does faithful include speed?*), and
+the item says plainly that optimising is only worth starting once that is
+answered — §5's autonomous half is already refuted.
+➡️ **SO THE REMAINING NON-JOOST AUTONOMOUS WORK IS TWO ITEMS**, and when they
+close, the loop's honest move is to go to Joost rather than spin.
+⚠️ **THE RENAME RESIDUAL IS DECLINED, MEASURED** (§6.6ba): `dirverb_tenant` /
+`dirverb_op` / `SUBROM_IDX_DIRVERB` are ~96 refs across **12 code + 11 doc**
+files, and the docs are the eviction's HISTORICAL RECORD — renaming them would
+falsify it, so no mechanical sed, and no gate would catch a
+consistent-but-wrong rename. Document, do not half-change.
+🔴 **CHECK THE CHECKBOX BEFORE THE BODY.** A `DSKF` blocker reading *"8 B free
+on 2026-09-13"* looked like a prime stale blocker; the item is `- [x]` DONE
+(D-DSKFDRV) and that text is its original, kept for the record. Several closed
+items carry *"(the original item, for the record:)"* blocks that read exactly
+like live work.
+
+📜 **SUPERSEDED, kept for its own record — the earlier reading:**
 `tools/tier_table.py --keywords` reports the unattributed keyword list at **0**,
 so the TIER 1 keyword-completeness item has no concrete target left and its own
 text says the tier re-ask goes to Joost at exactly this point. TIER 2's two
