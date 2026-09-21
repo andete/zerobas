@@ -470,7 +470,7 @@ item — do **one item per session** to keep context lean.
       🙋 **NEEDS-JOOST** — only on WHEN. He raised it while step 11's port was
       the queued work and said which to spend next is his call; the work itself
       needs no ruling.
-      🔴 **THE EVIDENCE IS §6.6ar.** `scratchpad/rammap_sweep.py` offered 22
+      🔴 **THE EVIDENCE IS §6.6ar.** `tools/ram_map.py` offered 22
       "unattributed runs"; EVERY one of 20 B or more was occupied, and not one
       could be ruled out from the map — each needed a sentence of prose
       elsewhere in `basic/sysvars.inc` (`FWBUF`/`FSECTOR_BUF` extents inside
@@ -485,6 +485,29 @@ item — do **one item per session** to keep context lean.
       `basic/sysvars.inc` + `disk/equates.inc` + `sub/`, and gate it so every
       byte is attributed or explicitly declared free. The ~105 cells with no
       trusted width are the bulk of it.
+      🟢 **✅ THE MAP AND ITS GATE SHIPPED 2026-09-21 (§6.6as, D-RAMGATE):**
+      `tools/ram_map.py` + `make ram-map-check`, 43 selftest arms, collected in
+      the static tier. It pins every width-less cell in
+      `tools/ram-width-allow.txt` keyed by **NAME, not address** (`SH_OP` moved
+      18 B the same day), fails when one is unpinned AND when a pin stops
+      matching, and prints the **cross-ROM overlay table** — the line that
+      matters reads `disk FAT_DBUF/SECTOR_BUF $E2A0..$E49F hosts 25 cell(s) of
+      the other map`.
+      🔑 **THE WORST BLINDNESS WAS A DELETED WIDTH, NOT A MISSING ONE:** an
+      explicit `$LO..$HI` range was demoted whenever a cell sat inside it, and
+      this tree puts cells inside buffers on purpose — so the three biggest
+      buffers carried NO trusted extent and everything in them read as free.
+      Ranges are authoritative now and `runs()` is containment-aware; §6.6ar's
+      four false candidates are down to one honest 50 B run.
+      🔴 **TWO OF THEM WERE WIDTHS READ WRONG, WHICH NO RATCHET CATCHES:**
+      `FCH_RECNOS ; 32 B … (word …)` read as 2, `GFX_DFSTK ; … (4 B each)` read
+      as 4 where the array is 32. Both declarations now lead with the total.
+      ⚠️ **THE GATE DOES NOT POLICE THE RUNS**, on purpose —
+      `tools/check_ram_claims.py`'s header already argued why, and that argument
+      still holds. It gates the PRECONDITION.
+      ➡️ **RESIDUAL: 137 pinned cells whose width lives only in prose.** Each
+      removal is one-way and improves the map; burn them down as they are
+      touched rather than in one sweep.
       🟡 **12 `SAVE`** — not blocked, but not a carve: `do_save` ends
       `jp sv_tenant` (`SUBROM_IDX_SAVE`), so the body is ALREADY in the sub-ROM.
       The move is sub → disk and its value is faithfulness — today a foreign disk
@@ -539,7 +562,7 @@ item — do **one item per session** to keep context lean.
       fills `disk.rom`'s `SECTOR_BUF $E2A0..$E49F`, which overlaps main's LIVE
       graphics and string cells — `SCREEN 2` then `LOAD"X.BAS"` is observable.
       🔴 §6.6q's assumed remedy, a PRIVATE buffer, is NOT affordable: walked with
-      `rammap_sweep.py`, main's window has **no 512 B contiguous unattributed
+      `ram_map.py`, main's window has **no 512 B contiguous unattributed
       run** (largest two are 192 B), and those are upper bounds.
       🟢 The cheap remedy is to ALIAS MAIN'S OWN FAT PAIR (`FSECTOR_BUF` +
       `FWBUF`), idle by construction whenever `disk.rom`'s engine runs — the same
@@ -563,7 +586,7 @@ item — do **one item per session** to keep context lean.
       there declare no width at all, two of them bulk (`TEMPPOOL`,
       `GFX_PSTK`/`GFX_DBUF`/`GFX_VBUF`). **Do not quote 27 B as a cost.**
       🔴 **DONE, AND IT MOVED THE ANSWER 9.5× (§6.6al, 2026-09-20).** The 17
-      widths were never missing: `rammap_sweep.py` read only the comment on the
+      widths were never missing: `ram_map.py` read only the comment on the
       `equ` LINE, and this tree wraps — every one of them carried `(1 B)`/`(2 B)`
       one line down. The parser now reads a declaration's full comment block and
       stops at the first non-comment line. Main coverage 292 → 313 addresses;
@@ -1067,7 +1090,7 @@ item — do **one item per session** to keep context lean.
       Found 2026-09-19 (D-RAMABI) while carrying widths into the generated ABI;
       INDEPENDENT of which cell step 9 ends up claiming
       (`disk/docs/spec-diskcode-eviction.md` §6.6q).
-      🔴 `disk/equates.inc` and `scratchpad/rammap_sweep.py` both justify
+      🔴 `disk/equates.inc` and `tools/ram_map.py` both justify
       aliasing `disk.rom`'s buffers over main's workspace with *"the disk ROM
       only ever runs while booting/driving MSX-DOS, NEVER while the BASIC
       interpreter is live"*. The hook re-architecture makes that false by
@@ -3413,7 +3436,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:21117 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:21140 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -3579,7 +3602,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:8222 (T-6FE392)8 (T-529ABE)` from `TODO.md:19511 (T-529ABE)`: a
+      `TODO.md:8245 (T-6FE392)8 (T-529ABE)` from `TODO.md:19534 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -5118,7 +5141,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       gap is FULL (`PU_WP` ends at `$EEFC`, `FMT_SEC`/`FMT_DESC` own
       `$EEFD..$EEFF`). **RAM HAS NO GATE**, so nothing could have caught it, and
       the claim that hid it was a parenthesis in a comment nobody could run.
-      Aliasing is not itself the defect — `scratchpad/rammap_sweep.py` reports 50
+      Aliasing is not itself the defect — `tools/ram_map.py` reports 50
       addresses already carrying more than one name — the PARTNER was. `PU_DEC`
       and `PU_COMMAS` now share `PU_WP`, where the exclusivity is provable in one
       file against one flag, and **row `x.mixed` measures it** rather than
@@ -9066,7 +9089,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:19511 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:19534 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -11541,7 +11564,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       ➡️ **SO THE COLOR ATOMIC FIX IS NOW AFFORDABLE IN CODE AND BLOCKED ON RAM.**
       `call clr_enter` is **three bytes** in page 1 (exactly what is free) and the
       save/restore is about **thirteen** in the low region (fourteen free). What it
-      still needs is **2 bytes of RAM**, and 🔴 **RAM HAS NO GATE** — `rammap_sweep`
+      still needs is **2 bytes of RAM**, and 🔴 **RAM HAS NO GATE** — `ram_map`
       reports gaps between NAMES, and a delta between two names is not free space
       [[deffn-ramhunt-slice]]. Allocating unverified RAM to fix partial state on an
       already-erroring statement is the wrong trade unattended; the RAM question is
@@ -17946,7 +17969,7 @@ finds zero shared names (a renamed block would otherwise make it silently blind)
       - ⚠️ **RAM: two words are wanted (running destination + remaining count),
         and `sysvars.inc` ADVERTISES `$EA92..$EAFF` free (110 B) — DO NOT TRUST
         THAT LINE.** RAM has no gate here; walk it with
-        `scratchpad/rammap_sweep.py` and then ASK THE MACHINE with
+        `tools/ram_map.py` and then ASK THE MACHINE with
         `ramfree_probe.py`. A delta between two names is not free space.
       - 🟢 **THE INSTRUMENTS ALREADY EXIST, AND THEY ARE THE POINT.**
         `tests/test_open_len.py` checks `frnd_calc` against an INDEPENDENTLY
@@ -18375,7 +18398,7 @@ finds zero shared names (a renamed block would otherwise make it silently blind)
       Not the file buffers either (`MAXFILES=0` recovers 41 B).
       🎯 **THE REAL CEILING IS `TXTMAX $BB00`, NOT HIMEM.** `$BB00 − $8001 =
       15103`, against `FRE(0) = 14767` — that is the whole figure. Above it,
-      walked with `scratchpad/rammap_sweep.py` and an `equ` sweep, never read off
+      walked with `tools/ram_map.py` and an `equ` sweep, never read off
       a comment:
       | span | size | what is there |
       |---|---|---|
@@ -19047,7 +19070,7 @@ finds zero shared names (a renamed block would otherwise make it silently blind)
       `make wall-assertion-check` gates ROM figures and dates them; RAM figures
       rot silently (`basic/sysvars.inc` offered *"376 B spare"* where **10**
       were, for three slices). Two tools now exist and neither is a gate:
-      `scratchpad/rammap_sweep.py` (walks the `equ` chain, calibrated) and
+      `tools/ram_map.py` (walks the `equ` chain, calibrated) and
       `scratchpad/ramfree_probe.py` (fills a window, works the machine, reads
       it back). ⚠️ **A delta between two names is NOT free space** — `TOKBUF`'s
       612 B delta is 36 B free and `LINEBUF`'s 256 B delta is 0. Promoting
@@ -21253,7 +21276,7 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
         MY OWN INDEX.** `$E038` was chosen as the DELTA after `SL_TOK` (2 B at
         `$E036`) and because nothing greps for the literal — neither of which is
         evidence the address is free. `make wall-assertion-check` covers **ROM
-        only**; `scratchpad/rammap_sweep.py` says in its own banner that a delta
+        only**; `tools/ram_map.py` says in its own banner that a delta
         is *"the cell at the low address PLUS whatever follows, NEVER free
         space"*, and `$E038` is `CURLINE` in that very map
         [[deffn-ramhunt-slice]].

@@ -1,6 +1,6 @@
 # D-REPOINTMARK — the citation opt-out marker, honoured by the REWRITER too
 
-**2026-09-01.** Closes the residual filed at `../TODO.md:3362 (T-B42BAC)`, whose own candidate was *"an explicit escape the tools honour ... plus a gate arm that a
+**2026-09-01.** Closes the residual filed at `../TODO.md:3385 (T-B42BAC)`, whose own candidate was *"an explicit escape the tools honour ... plus a gate arm that a
 marked example survives `--fix`"*. Half of that had already shipped and the item
 did not know it; the other half was a live hole with five exposed lines.
 

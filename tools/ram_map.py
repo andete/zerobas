@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# Copyright (c) 2026 Joost Yervante Damad
+# SPDX-License-Identifier: 0BSD
 """D-DEFFN RAM HUNT -- where is the BASIC workspace actually free?
 
 🔴 THE REASON THIS IS A TOOL AND NOT A READING. `basic/sysvars.inc` said
@@ -72,8 +74,11 @@ about a walk that finds nothing by construction. A1 plants an `X equ Y+N` chain,
 because a resolver that silently dropped arithmetic would under-report
 occupancy -- the failure direction that costs RAM.
 
-USAGE: rammap_sweep.py [lo] [hi] [--basic|--disk] [--inc-only] [--no-sym]
-       [--widths]
+USAGE: ram_map.py [lo] [hi] [--basic|--disk] [--inc-only] [--no-sym]
+       [--widths] [--check] [--selftest]
+       --check is the gate (`make ram-map-check`): a ratchet on the cells
+       whose width is not machine-readable, plus the cross-ROM overlay
+       table. It never fails on a RUN -- see check()'s own note.
 """
 from __future__ import annotations
 import glob
@@ -379,13 +384,46 @@ class Map:
         # is inclusive. Both parse to a plausible number and both are wrong, so
         # the overlap DEMOTES the width instead of reporting a run from it.
         # Suppressing a run is the safe direction; a wrong run is a day lost.
+        # 🔴 BUT AN EXPLICIT `$LO..$HI` RANGE IS EXEMPT, AND LEAVING IT IN WAS
+        # THE MAP'S WORST BLINDNESS (D-RAMGATE, 2026-09-21). This tree hosts
+        # cells INSIDE big buffers on purpose -- `CAL_BUF $E600` lives inside
+        # `FSECTOR_BUF $E5C0..$E7BF` and says so in its own comment, `CAL_BUF2
+        # $E800` inside `FWBUF $E7C0..$E9BF`. The overrun rule read those
+        # tenants as "the 512 is wrong" and DELETED the width, so the three
+        # biggest buffers in the map carried NO trusted extent at all, and the
+        # bytes inside them were then reported as unattributed runs. That is
+        # where §6.6ar's four false candidates came from.
+        # 🎯 A RANGE IS A CLAIM ABOUT A SPAN, NOT ABOUT THE NEXT NAME. The
+        # width-consensus code above already calls it "the one declaration
+        # authoritative enough to settle" a dispute; it is equally
+        # authoritative here. A derived width (`(n B)`, `* N`) keeps the old
+        # demotion, because those really are guesses about extent.
         self.overrun: dict[int, tuple] = {}
         for a, b in zip(self.addrs, self.addrs[1:]):
             w = self.width.get(a)
-            if w is not None and a + w > b:
+            if w is not None and a + w > b and self.rule.get(a) != "range":
                 self.overrun[a] = (w, b)
         for a in self.overrun:
             del self.width[a]
+        # 🔑 AND THE SPANS THOSE RANGES COVER ARE WHAT MAKES A GAP ATTRIBUTED.
+        # `runs()` used to walk CONSECUTIVE pairs, so a gap between two cells
+        # that both sit inside one declared buffer was reported as free. Every
+        # address a declared span covers is recorded here once, and a candidate
+        # run must clear all of them.
+        self.spans: list[tuple] = [(a, a + self.width[a]) for a in self.width
+                                   if self.width[a] > 1]
+        self.spans.sort()
+
+    def covering(self, lo: int, hi: int):
+        """The declared span that CONTAINS [lo, hi), or None.
+
+        A gap inside a buffer is that buffer's, not free space. Returns the
+        enclosing span's start so the report can name who owns the bytes.
+        """
+        for a, b in self.spans:
+            if a <= lo and hi <= b:
+                return a
+        return None
 
     def site(self, a):
         _, f, i, _ = self.expr[self.byaddr[a][0]]
@@ -406,7 +444,7 @@ class Map:
             if self.imported(a):
                 continue        # see IMPORTED_FILES: not this ROM's gap to claim
             gap = b - (a + w)
-            if gap > 0:
+            if gap > 0 and self.covering(a + w, b) is None:
                 out.append((gap, a + w, b, a))
         tail = self.hi - (self.addrs[-1] + self.width[self.addrs[-1]]) \
             if (self.addrs and self.addrs[-1] in self.width
@@ -517,6 +555,125 @@ def report(m: Map) -> None:
             print(f"            {m.site(a)}")
 
 
+
+# ------------------------------------------------------ cross-ROM overlays
+# 🔑 THE THING THAT ACTUALLY BITES IS NOT A HOLE, IT IS AN OVERLAY. This tree
+# aliases windows between contexts that were mutually exclusive until they
+# stopped being: `disk.rom`'s `SECTOR_BUF` sits on top of basic-core's string
+# pool, `WBUF` on top of main's own `FSECTOR_BUF`, and the cassette buffers
+# live inside both of main's disk buffers. A per-component map cannot answer
+# *"what does the disk side destroy while main is running?"* -- and that is
+# exactly the question steps 10 and 11 of the disk-code eviction turn on
+# (disk/docs/spec-diskcode-eviction.md §6.6aq/§6.6ar).
+def overlays(maps: dict, min_width: int = 64) -> list:
+    """[(owner_comp, owner_names, lo, hi, [(comp, addr, names)])] -- for every
+    declared span of at least `min_width` bytes, the cells of OTHER components
+    that fall inside it."""
+    out = []
+    for comp, m in maps.items():
+        for a in sorted(m.width):
+            w = m.width[a]
+            if w < min_width:
+                continue
+            guests = []
+            for other, om in maps.items():
+                if other == comp:
+                    continue
+                for b in om.addrs:
+                    if a <= b < a + w:
+                        guests.append((other, b, "/".join(om.byaddr[b])))
+            if guests:
+                out.append((comp, "/".join(m.byaddr[a]), a, a + w, guests))
+    return out
+
+
+# -------------------------------------------------------------- the gate
+ALLOW = "tools/ram-width-allow.txt"
+ALLOW_RE = re.compile(r"^(\S+)\s+(\S+)\s+(\S+)\s*(?:#.*)?$")
+
+
+def width_key(m, a) -> tuple:
+    """(component, names, why) -- keyed by NAME, never by address.
+
+    🔴 THE ADDRESS IS THE WRONG KEY AND THIS TREE PROVED IT ON 2026-09-21:
+    `SH_OP..SH_ERR` moved 18 bytes out of the disk sector-buffer window that
+    same day. A pin on `$E36D` would have gone red on a correct change; a pin
+    on the NAME follows the cell.
+    """
+    why = ("overruns" if a in m.overrun else
+           "disputed" if a in m.disputed else "undeclared")
+    return (m.comp, "/".join(sorted(m.byaddr[a])), why)
+
+
+def load_allow(path: str) -> list:
+    out = []
+    try:
+        lines = open(path).readlines()
+    except OSError:
+        return out
+    for ln in lines:
+        ln = ln.split("#", 1)[0].strip() if ln.lstrip().startswith("#") else ln
+        ln = ln.rstrip("\n")
+        if not ln.strip():
+            continue
+        m = ALLOW_RE.match(ln.strip())
+        if m:
+            out.append((m.group(1), m.group(2), m.group(3)))
+    return out
+
+
+def check(maps: dict, allow: list) -> tuple:
+    """(rc, lines). A RATCHET, in this tree's own allowlist idiom.
+
+    🔴 AN ALLOWLIST THAT ONLY SUPPRESSES IS ROT (`tools/check_temp_root.py`
+    says so about its own). This one is a CONTROL IN BOTH DIRECTIONS: a cell
+    that appears with no trusted width and is NOT pinned is an error, and a
+    PIN that no longer matches is equally an error. The list may SHRINK and
+    may never grow, so the ~100 cells whose width lives only in prose can be
+    burned down and can never quietly come back.
+
+    ⚠️ AND IT DOES NOT GATE THE RUNS, ON PURPOSE. An unattributed run is a
+    CANDIDATE -- a cell addressed only as an offset in code has no `equ` and is
+    invisible to every version of this tool. Failing a build on "this looks
+    free" would encode exactly the error `tools/check_ram_claims.py`'s header
+    warned about.
+    """
+    have, lines, rc = set(), [], 0
+    for comp in sorted(maps):
+        m = maps[comp]
+        for a in m.addrs:
+            if a not in m.width:
+                have.add(width_key(m, a))
+    want = set(allow)
+    new = sorted(have - want)
+    stale = sorted(want - have)
+    lines.append(f"ram-map: {len(have)} cell(s) with no trusted width, "
+                 f"{len(want)} pinned in {ALLOW}")
+    if new:
+        rc = 1
+        lines.append(f"🔴 {len(new)} cell(s) have NO TRUSTED WIDTH and are NOT "
+                     f"pinned. Declare the width in the cell's own comment "
+                     f"(`(2 B)`, `(n bytes)`, or an explicit `$LO..$HI`), or "
+                     f"add a line here with the reason:")
+        for c, n, w in new:
+            lines.append(f"     {c} {n} {w}")
+    if stale:
+        rc = 1
+        lines.append(f"🔴 {len(stale)} pin(s) no longer match anything -- the "
+                     f"cell gained a width, was renamed, or is gone. 🎯 THIS "
+                     f"IS THE GOOD DIRECTION: delete the line. The list may "
+                     f"SHRINK and may never grow.")
+        for c, n, w in stale:
+            lines.append(f"     {c} {n} {w}")
+    if not new and not stale:
+        lines.append("🟢 every cell with no trusted width is pinned, and every "
+                     "pin still matches.")
+    lines.append("⚠️ THIS GATE DOES NOT CHECK THE RUNS. An unattributed run is "
+                 "a CANDIDATE, never free space: a cell addressed only as an "
+                 "offset in code has no `equ` and is invisible here.")
+    return rc, lines
+
+
 # ---------------------------------------------------------------- selftest
 WIDTH_VECTORS = [
     # (addr, comment, expected width, why this vector exists)
@@ -572,14 +729,26 @@ def selftest(lo, hi) -> int:
     raw, _ = parse(files_for("basic"))
     real, _ = resolve(dict(raw))
     ra = sorted({v for n, v in real.items() if lo <= v < hi})
-    # 🔴 PLANT INSIDE A STRETCH THE MAP ITSELF SAYS IS EMPTY. The first cut
-    # planted at a hand-picked $E7A0..$E7F0 and the walk reported a 24 B gap
-    # instead of 72 -- because a REAL name sits at $E7C0, between the two
-    # plants. The walk was right and the FIXTURE was wrong, which is the same
-    # shape as a knife whose green row is a claim about its fixture. So:
-    # resolve the real map first, take its largest gap, and plant well inside.
-    span = max(zip(ra, ra[1:]), key=lambda t: t[1] - t[0])
-    base = span[0] + 8
+    # 🔴 PLANT IN A WINDOW NO REAL CELL OCCUPIES -- AND THAT IS THE SECOND TIME
+    # THIS FIXTURE HAS BEEN WRONG WHILE THE WALK WAS RIGHT. The first cut
+    # planted at a hand-picked $E7A0..$E7F0 and read a 24 B gap instead of 72,
+    # because a REAL name sits at $E7C0 between the two plants; the fix was to
+    # take the map's own largest gap. **That fix died the day `runs()` learned
+    # about containment (D-RAMGATE):** the largest raw gap is now INSIDE
+    # `TOKBUF`'s declared span, so every planted run was correctly suppressed
+    # and three arms went red on a corpus change rather than on a defect.
+    # 🎯 SO THE FIXTURE STOPS RIDING THE CORPUS. `$D000..$D800` carries no `equ`
+    # in either component (asserted below, so this cannot rot silently), the
+    # plants get a window of their own, and an arm can never again fail because
+    # a real declaration moved. The real corpus is still exercised -- by A6, A7
+    # and A10, which are ABOUT it.
+    PLANT_LO, PLANT_HI = 0xD000, 0xD800
+    ok["A0 the plant window is empty of real cells, in BOTH components -- "
+       "without this every planted arm below is a claim about a collision"] = \
+        not [v for v in real.values() if PLANT_LO <= v < PLANT_HI] and \
+        not [v for v in resolve(dict(parse(files_for("disk"))[0]))[0].values()
+             if PLANT_LO <= v < PLANT_HI]
+    base = PLANT_LO + 8
     p = dict(raw)
     p["__PLANT_BASE"] = (f"${base:04X}", "<plant>", 0, None)
     p["__PLANT_STEP"] = ("__PLANT_BASE + 4*2", "<plant>", 0, None)
@@ -588,7 +757,7 @@ def selftest(lo, hi) -> int:
     # its neighbour must yield a 16 B RUN, and an undeclared one must not.
     p["__PW_BASE"] = (f"${base + 64:04X}", "<plant>", 0, "the thing (8 bytes)")
     p["__PW_NEXT"] = (f"${base + 88:04X}", "<plant>", 0, "next (word)")
-    m = Map("basic", lo, hi, raw=p, files=files_for("basic"))
+    m = Map("basic", PLANT_LO, PLANT_HI, raw=p, files=files_for("basic"))
     want_step = m.vals["__PLANT_BASE"] + 8
     ok["A1 arithmetic chain `X equ Y+N*M` resolves"] = \
         m.vals.get("__PLANT_STEP") == want_step
@@ -634,7 +803,7 @@ def selftest(lo, hi) -> int:
     p2["__DI_A"] = (f"${base + 200:04X}", "<plant>", 0, "one way (8 bytes)")
     p2["__DI_A2"] = (f"${base + 200:04X}", "<plant>", 0, "other way (word)")
     p2["__DI_B"] = (f"${base + 240:04X}", "<plant>", 0, "after (word)")
-    m2 = Map("basic", lo, hi, raw=p2, files=files_for("basic"))
+    m2 = Map("basic", PLANT_LO, PLANT_HI, raw=p2, files=files_for("basic"))
     a_ov, a_di = m2.vals["__OV_A"], m2.vals["__DI_A"]
     r2_owners = {o for _, _, _, o in m2.runs()[0]}
     ok["A8 a width that overruns its neighbour yields NO run"] = \
@@ -653,7 +822,7 @@ def selftest(lo, hi) -> int:
     p3["__IMP_B"] = (f"${base + 340:04X}", "<plant>", 0, "native (2)")
     p3["__NAT_A"] = (f"${base + 400:04X}", "<plant>", 0, "native (2)")
     p3["__NAT_B"] = (f"${base + 440:04X}", "<plant>", 0, "native (2)")
-    m3 = Map("basic", lo, hi, raw=p3, files=files_for("basic"))
+    m3 = Map("basic", PLANT_LO, PLANT_HI, raw=p3, files=files_for("basic"))
     owners3 = {o for _, _, _, o in m3.runs()[0]}
     ok["A9 an ABI-IMPORTED cell owns NO run (the gap after it is full of the "
        "other ROM's cells this map cannot see)"] = \
@@ -694,8 +863,88 @@ def selftest(lo, hi) -> int:
        "so the gain is the continuations and nothing else"] = \
         len(b_flat.width) == len(Map("basic", lo, hi, joint=False).width)
     a_shsrc = b_joint.vals["SH_SRC"]
-    ok["A10 SH_SRC $E36F reads 2 B with joining and nothing without it"] = \
+    ok[f"A10 SH_SRC ${a_shsrc:04X} reads 2 B with joining and nothing "
+       "without it (the ADDRESS is derived, not typed -- it moved on "
+       "2026-09-21 and a typed one would have rotted)"] = \
         b_joint.width.get(a_shsrc) == 2 and b_flat.width.get(a_shsrc) is None
+
+
+    # ---- A11 CONTAINMENT: a gap inside a declared span is NOT a run --------
+    # D-RAMGATE. This is the blindness that produced §6.6ar's false candidates:
+    # `CAL_BUF2 $E800` sits inside `FWBUF $E7C0..$E9BF` and the walk reported
+    # the 192 B after it as unattributed, because it only ever compared
+    # CONSECUTIVE pairs.
+    p4 = dict(raw)
+    p4["__BUF"] = (f"${PLANT_LO + 0x100:04X}", "<plant>", 0,
+                   f"a buffer (${PLANT_LO + 0x100:04X}..${PLANT_LO + 0x1FF:04X})")
+    p4["__TENANT"] = (f"${PLANT_LO + 0x140:04X}", "<plant>", 0, "inside it (2)")
+    p4["__AFTER"] = (f"${PLANT_LO + 0x200:04X}", "<plant>", 0, "next (word)")
+    m4 = Map("basic", PLANT_LO, PLANT_HI, raw=p4, files=files_for("basic"))
+    a_buf, a_ten = m4.vals["__BUF"], m4.vals["__TENANT"]
+    ok["A11 an explicit RANGE keeps its width although a cell sits inside "
+       "it -- the overrun demotion would have deleted it"] = \
+        m4.width.get(a_buf) == 256 and a_buf not in m4.overrun
+    r4 = {(g, st) for g, st, e, o in m4.runs()[0]}
+    ok["A11 the gap after the TENANT is attributed to the enclosing buffer, "
+       "not reported as free"] = \
+        not any(st == a_ten + 2 for _g, st in r4)
+    ok["A11 covering() names the owner"] = \
+        m4.covering(a_ten + 2, a_buf + 256) == a_buf
+    # NEGATIVE: the same gap OUTSIDE any span is still a run, so containment
+    # suppresses by CONTAINMENT and not by accident.
+    p5 = dict(raw)
+    p5["__L"] = (f"${PLANT_LO + 0x300:04X}", "<plant>", 0, "lone (2)")
+    p5["__R"] = (f"${PLANT_LO + 0x340:04X}", "<plant>", 0, "next (word)")
+    m5 = Map("basic", PLANT_LO, PLANT_HI, raw=p5, files=files_for("basic"))
+    ok["A11 NEGATIVE: the same shape with NO enclosing span IS a run"] = \
+        any(st == m5.vals["__L"] + 2 for _g, st, _e, _o in m5.runs()[0])
+    ok["A11 NEGATIVE: a DERIVED width that overruns is still demoted -- the "
+       "exemption is for explicit ranges only"] = \
+        m2.vals["__OV_A"] in m2.overrun
+
+    # ---- A12 the gate: a ratchet that fails in BOTH directions ------------
+    class _M:
+        def __init__(self, comp, addrs, width, byaddr):
+            self.comp, self.addrs, self.width, self.byaddr = \
+                comp, addrs, width, byaddr
+            self.overrun, self.disputed = {}, {}
+    fake = {"x": _M("x", [1, 2], {1: 2}, {1: ["A"], 2: ["B"]})}
+    rc0, _ = check(fake, [("x", "B", "undeclared")])
+    ok["A12 pinned + matching -> green"] = rc0 == 0
+    rc1, l1 = check(fake, [])
+    ok["A12 NEGATIVE: an UNPINNED width-less cell is RED"] = \
+        rc1 == 1 and any("NOT pinned" in x for x in l1)
+    rc2, l2 = check(fake, [("x", "B", "undeclared"), ("x", "GONE", "undeclared")])
+    ok["A12 NEGATIVE: a pin that matches NOTHING is RED -- the list may "
+       "SHRINK and may never grow"] = \
+        rc2 == 1 and any("no longer match" in x for x in l2)
+    ok["A12 the gate SAYS it does not police the runs"] = \
+        any("CANDIDATE, never free space" in x for x in check(fake, [
+            ("x", "B", "undeclared")])[1])
+    ok["A12 the pin is keyed by NAME, not by address"] = \
+        width_key(_M("x", [9], {}, {9: ["Z", "Y"]}), 9) == \
+        ("x", "Y/Z", "undeclared")
+    ok["A12 the real allowlist parses and is non-empty"] = \
+        len(load_allow(ALLOW)) > 0
+    ok["A12 NEGATIVE: a missing allowlist parses as EMPTY, which makes the "
+       "gate RED rather than silently green"] = \
+        load_allow("/nonexistent/ram-width-allow.txt") == []
+
+    # ---- A13 the cross-ROM overlay, which is the whole point --------------
+    maps13 = {"basic": b_all, "disk": d_all}
+    ov13 = overlays(maps13)
+    owners13 = {(c, n) for c, n, _a, _b, _g in ov13}
+    ok["A13 disk's SECTOR_BUF is reported as hosting main's cells -- the "
+       "overlay §6.6aq is about"] = \
+        any(c == "disk" and "SECTOR_BUF" in n for c, n in owners13)
+    ok["A13 ...and it names more than one guest"] = \
+        any(c == "disk" and "SECTOR_BUF" in n and len(g) > 1
+            for c, n, _a, _b, g in ov13)
+    ok["A13 NEGATIVE: a component never reports ITSELF as a guest"] = \
+        all(all(gc != c for gc, _ga, _gn in g)
+            for c, _n, _a, _b, g in ov13)
+    ok["A13 NEGATIVE: a span below the threshold is not reported"] = \
+        overlays(maps13, min_width=0x10000) == []
 
     # ---- A7 sym seeding, with --no-sym as the control ---------------------
     d_nosym = Map("disk", lo, hi, use_sym=False)
@@ -723,10 +972,27 @@ def main() -> int:
     inc_only = "--inc-only" in sys.argv
     comps = [c for c in ("basic", "disk")
              if f"--{c}" in sys.argv] or ["basic", "disk"]
+    if "--check" in sys.argv:
+        maps = {c: Map(c, lo, hi) for c in ("basic", "disk")}
+        rc, lines = check(maps, load_allow(ALLOW))
+        for ln in lines:
+            print(ln)
+        ov = overlays(maps)
+        print(f"\n🔑 CROSS-ROM OVERLAYS -- {len(ov)} declared span(s) of "
+              f">=64 B host another component's cells. This is DESIGNED, and "
+              f"it is what a per-component map cannot show:")
+        for oc, on, a, b, guests in ov:
+            print(f"  {oc:5} {on} ${a:04X}..${b - 1:04X} hosts "
+                  f"{len(guests)} cell(s) of the other map: "
+                  + ", ".join(f"{g[2]} ${g[1]:04X}" for g in guests[:6])
+                  + (" …" if len(guests) > 6 else ""))
+        return rc
+    maps = {}
     for c in comps:
         m = Map(c, lo, hi, inc_only=inc_only,
                 use_sym="--no-sym" not in sys.argv,
                 joint="--no-joint" not in sys.argv)
+        maps[c] = m
         report(m)
         if "--widths" in sys.argv:
             print("\n  --widths: every address, its names and its width")

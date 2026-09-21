@@ -24,7 +24,7 @@ says where a cell STARTS and never how long it is, so *"no name inside the
 span"* does **not** mean the span is free: a cell whose name sits below the
 claim can extend up into it. `TOKBUF`'s 612-byte delta to the next name is 36
 bytes free; `LINEBUF`'s 256-byte delta is 0. **This check cannot see that**, and
-promoting `scratchpad/rammap_sweep.py` to a gate on deltas alone would have
+promoting `tools/ram_map.py` to a gate on deltas alone would have
 encoded exactly the error the filing warned about.
 
 ⚠️ So this is the CHEAP HALF, and it says so rather than implying coverage it

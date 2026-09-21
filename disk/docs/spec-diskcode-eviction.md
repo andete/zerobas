@@ -898,7 +898,7 @@ So the hook returns one of three answers — *not found*, *not tokenised (ASCII)
 
 ⚠️ **IT NEEDS 6 BYTES OF NEW DISK-SIDE RAM**: `FREAD_OFF` (2 B) and `FREAD_LEFT`
 (4 B), which `disk/equates.inc` does not define. 🔴 **RAM HAS NO GATE** — walk
-`scratchpad/rammap_sweep.py` and then ASK THE MACHINE with `ramfree_probe.py`;
+`tools/ram_map.py` and then ASK THE MACHINE with `ramfree_probe.py`;
 **a delta between two names is not free space** [[deffn-ramhunt-slice]].
 ⚠️ **AND DO NOT REUSE `BDOS_BYTESLEFT` ($E542)** merely because it holds the same
 quantity: it is BDOS's cell, and D-FATBUF (§0.1a) measured the reference keeping
@@ -950,7 +950,7 @@ map is a reading:
     `RRND_RECSEC`/`RRND_CLUSSEC` (`disk/equates.inc`). Deliberate: the BOOT_SV
     pair is *"transient, used only during INIT's boot bridge"*. The disk ROM
     already practises documented time-division reuse.
-  * `scratchpad/rammap_sweep.py` reports *"95 B $E761..$E7C0 RRND_CLUSSEC"*.
+  * `tools/ram_map.py` reports *"95 B $E761..$E7C0 RRND_CLUSSEC"*.
     `RRND_CLUSSEC` is **one byte**. That is the delta-is-not-size artefact the
     sweep's own header warns about — and it is why this section walked the
     declarations instead. 🔴 The sweep also reads only `.inc` files, so it never
@@ -1341,7 +1341,7 @@ selector afterwards, or take its own cell.
 🟢 **AND IT COST NOTHING, WHICH IS WHY THE CELL WAS WORTH FINDING.** The last
 free byte below the channel-context table is `DISKOP_OP` itself — the five-byte
 gap at `$E9FB..$E9FF` that `basic/sysvars.inc` advertises is fully spent — so a
-new cell would have had to displace something. `scratchpad/rammap_sweep.py`
+new cell would have had to displace something. `tools/ram_map.py`
 (D-RAMMAP, the same day) is what made that readable at a glance instead of by
 hand.
 
@@ -1416,7 +1416,7 @@ Found while carrying widths into the generated ABI, and it is independent of
 §6.6p's cell question — it will still be true whichever cell Joost picks.
 
 🔴 **THE PREMISE THAT IS GOING STALE.** `disk/equates.inc` and
-`scratchpad/rammap_sweep.py` both rest on the same argument for why `disk.rom`
+`tools/ram_map.py` both rest on the same argument for why `disk.rom`
 may alias main's workspace: *the standalone disk ROM only ever runs while
 booting or driving MSX-DOS, NEVER while the BASIC interpreter is live.* That was
 true when it was written. The hook re-architecture makes it false by
@@ -2716,7 +2716,7 @@ resets the GRAPHICS cells, so `SCREEN 2` then `LOAD"X.BAS"` is observable.
 🔴 **THE REMEDY §6.6q ASSUMED IS NOT AFFORDABLE.** It suggested a PRIVATE buffer
 — *"`disk.rom` had free space at the last reading, so a private buffer may
 simply be affordable"* — which conflates ROM free space with RAM. Walked with
-`scratchpad/rammap_sweep.py` on 2026-09-20, main's `$E000..$F380` window has
+`tools/ram_map.py` on 2026-09-20, main's `$E000..$F380` window has
 **no 512 B contiguous unattributed run at all**: the largest two are **192 B**
 (`$E900..$E9C0` and `$E700..$E7C0`), then 102, 96, 50, 48, 36, 28. ⚠️ And those
 are UPPER bounds — the sweep's own caveat is that a cell addressed only as an
@@ -2773,7 +2773,7 @@ been running without.
 
 §6.6aj checked ONE cell in the window it proposed to move into (`RDBLK_BUFPOS
 $E774`), called it *"the first conflict"*, and recommended the move anyway. A
-full two-way walk — `rammap_sweep.py`'s per-component maps, cross-multiplied —
+full two-way walk — `ram_map.py`'s per-component maps, cross-multiplied —
 says the window is not sparsely occupied. It is **`disk.rom`'s own workspace.**
 
 | window | MAIN cells inside | DISK cells inside |
@@ -2809,7 +2809,7 @@ remaining options be priced against each other at all:
 > (b) save/restore the occupied bytes around the hook;
 > (c) bring back the `DBUF_PTR`/`MBUF_PTR` runtime pointer after all.
 
-⚠️ **A NOTE FOR THE GATE THIS WAS SUPPOSED TO BUILD.** `rammap_sweep.py`
+⚠️ **A NOTE FOR THE GATE THIS WAS SUPPOSED TO BUILD.** `ram_map.py`
 DEMOTES a declared width when it overruns the next declared address in the SAME
 component — correct for free-space reporting, and exactly wrong for a
 cross-component overlap check, because the biggest buffers are demoted precisely
@@ -2834,7 +2834,7 @@ SH_SRC   equ  SH_LEN + 1   ; SNAPSHOT arg: source descriptor
 The width is on the continuation. Seventeen main cells inside disk's
 `SECTOR_BUF` window read as width-UNDECLARED for that reason alone — every one
 of them carrying `(1 B)` or `(2 B)` one line down, written by whoever declared
-the cell. `rammap_sweep.py` now reads a declaration's FULL comment block, and
+the cell. `ram_map.py` now reads a declaration's FULL comment block, and
 stops at the first line that is not a comment so a loose paragraph between two
 cells can never donate a number.
 
@@ -3271,14 +3271,15 @@ at `$E3E5`. Only the cells the ASCII line path WRITES had to leave; the chain
 below them is pinned where it was.
 
 🎯 **AND THE REAL FINDING IS ABOUT THE MAP, NOT THE BYTES.**
-`scratchpad/rammap_sweep.py` offered **22 unattributed runs**. Every one of
+`tools/ram_map.py` offered **22 unattributed runs**. Every one of
 **20 B or more was occupied**, and not one of them could be ruled out from the
 map — each needed a sentence of prose somewhere else in `basic/sysvars.inc`:
 
 | the map offered | what is actually there | where that is written |
 |---|---|---|
 | 192 B `$E900`, 192 B `$E700` | `FWBUF` / `FSECTOR_BUF` bodies | a sentence inside `CAL_BUF2`'s comment |
-| 80 B `$EA42`, 36 B `$EE40` | the `FCH_CTX` array | `FLD_TAB`'s comment: `$EA00 + 2*562 = $EE64` |
+| 80 B `$EA42` | `FCH_RECNOS` (32 B) then 50 B that really IS free | 🔴 **I got this one wrong — see §6.6as** |
+| 36 B `$EE40` | unclaimed, which is not the same as free | 🔴 **ditto** |
 | 28 B `$E4FD` | `GFX_DFSTK`'s body | `4*GFX_DFCAP`, one line above it |
 | 48 B `$E238..$E268` | `STRTAB` from `$E240` on | a `; FREE-RAM` note that grants only 8 B |
 | 20 B `$E3FE` | inside the `SECTOR_BUF` window anyway | — |
@@ -3306,6 +3307,76 @@ caused. `diskbasic-acceptance` on that same ROM answered 34/34, the third run
 was clean, and the fourth (`--rich`) too. **A repeated apparatus failure is
 still an apparatus failure — reach for a gate that exercises the same machine
 before believing the probe.**
+
+### 6.6as 🟢 THERE IS A RAM MAP NOW, AND IT GATES ITSELF — AND TWO OF §6.6ar's ATTRIBUTIONS WERE MINE AND WRONG (D-RAMGATE, 2026-09-21)
+
+🙋 **JOOST ASKED FOR THIS, IN THESE WORDS:** *"I'm a bit worried that it takes
+you so much time to figure out ram usage. Don't you have a single RAM map?"*
+The answer was no. It is now `tools/ram_map.py` + `make ram-map-check`.
+
+🔴 **FIRST, THE CORRECTION, BECAUSE IT IS THE SAME CLASS THE SLICE IS ABOUT.**
+§6.6ar's table attributed two of the four false runs — `$EA42` (80 B) and
+`$EE40` (36 B) — to *"the `FCH_CTX` array, which ends at `$EE64`"*. **I read
+that off `FLD_TAB`'s comment and it describes a STATIC table this tree
+retired.** `LINEBUF $EB00` and `TOKBUF $EC00` sit inside the span it claims, so
+it cannot have been true, and its own arithmetic (`2*562`) never matched
+`FCH_CEIL = 15`. What is really there: `$EA42` is `FCH_RECNOS` (32 B) followed
+by **50 B that the source itself declares free and `make ramfree-acceptance`
+has measured**, and `$EE40..$EE63` is simply UNCLAIMED, which is not the same
+thing. The stale comment is fixed at its source. **I wrote a note about
+trusting prose and then trusted prose in the same note.**
+
+🔑 **THE MAP'S WORST BLINDNESS WAS NOT A MISSING WIDTH, IT WAS A DELETED ONE.**
+An explicit `$LO..$HI` range was being DEMOTED whenever another cell sat inside
+it — and this tree puts cells inside buffers on purpose (`CAL_BUF $E600` lives
+in `FSECTOR_BUF $E5C0..$E7BF`, `CAL_BUF2 $E800` in `FWBUF $E7C0..$E9BF`). So
+the three biggest buffers in the map carried **no trusted extent at all**, and
+every byte inside them was reported as unattributed. **A range is a claim about
+a SPAN, not about the next name**; it is now exempt, and `runs()` is
+containment-aware, so a gap inside a declared buffer is attributed to it.
+
+| the map said (§6.6ar) | the map says now |
+|---|---|
+| 192 B free at `$E900` | inside `FWBUF` — gone |
+| 192 B free at `$E700` | inside `FSECTOR_BUF` — gone |
+| 80 B free at `$EA42` | **50 B**, after `FCH_RECNOS`'s real 32 B |
+| 28 B free at `$E4FD` | `GFX_DFSTK`'s own body — gone |
+
+🔴 **AND TWO OF THOSE WERE WIDTHS THE PARSER READ WRONG, WHICH NO RATCHET CAN
+CATCH.** `FCH_RECNOS ; 32 B … (word, 1-based …)` read as **2**, because the
+map's R2 rule deliberately lets `word` beat a byte count — right for a POINTER
+to an N-byte thing, wrong here. `GFX_DFSTK ; … (4 B each)` read as **4** where
+the array is 32. Both declarations now lead with the total. **A width that is
+present and wrong is worse than one that is absent**, and the only defence is
+that a run is a candidate to go and read.
+
+🔑 **THE GATE IS A RATCHET IN THIS TREE'S OWN ALLOWLIST IDIOM.**
+`tools/ram-width-allow.txt` pins every cell whose extent is not
+machine-readable, keyed by **NAME, never by address** — `SH_OP..SH_ERR` moved
+18 bytes on 2026-09-21 and an address pin would have gone red on a correct
+change. A cell that appears unpinned is an error; **a pin that no longer
+matches is equally an error**, so the list may SHRINK and may never grow.
+⚠️ **IT DOES NOT GATE THE RUNS, ON PURPOSE.** `tools/check_ram_claims.py`'s own
+header warned that *"promoting the sweeper to a gate on deltas alone would have
+encoded exactly the error the filing warned about"* — that is still true. This
+gates the PRECONDITION for one day being able to.
+
+🔑 **AND IT PRINTS THE CROSS-ROM OVERLAY TABLE, WHICH IS THE QUESTION §6.6aq
+WAS.** Seven declared spans of ≥64 B host another component's cells; the line
+that matters reads **`disk FAT_DBUF/SECTOR_BUF $E2A0..$E49F hosts 25 cell(s) of
+the other map`**. A per-component map cannot say that, and it is the whole
+reason steps 10 and 11 were expensive.
+
+⚠️ **THE FIXTURE STOPPED RIDING THE CORPUS, AND THAT IS ALSO A LESSON.** The
+planted selftest arms used to plant in *"the map's own largest gap"*. The
+moment `runs()` learned about containment, that gap moved inside `TOKBUF`'s
+span and three arms went red **on a corpus change rather than on a defect** —
+the second time this fixture has been wrong while the walk was right. The
+plants now own a window (`$D000..$D800`) that an arm asserts is empty of real
+cells in both components. **43 arms green.**
+
+➡️ **RESIDUAL, FILED:** 137 pinned cells whose width lives only in prose. Each
+removal is a real improvement to the map and the gate makes them one-way.
 
 ## 6.7 🔍 GAP ANALYSIS — zerobas AGAINST THE MEASURED PROTOCOL (D-HOOKCENSUS, 2026-09-19)
 

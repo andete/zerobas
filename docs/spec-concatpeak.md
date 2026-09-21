@@ -114,7 +114,7 @@ allocation reaches `3L`.
   search, so the orders probably do not collide — **"probably" is not a contract
   for a shared cell, and that is the first thing the slice must settle**, not the
   last. The alternative is a new cell, which means walking the RAM map
-  (`scratchpad/rammap_sweep.py`) because [[deffn-ramhunt-slice]] — RAM has no
+  (`tools/ram_map.py`) because [[deffn-ramhunt-slice]] — RAM has no
   gate, and a delta between two names is not free space.
 
 ## 6. The gate hole, closed

@@ -67,7 +67,7 @@ WARM = ["repack-machine", "basic-reloc", "subrom-abi-check", "disk/test720.dsk"]
 # emulator units = 2870. The entire cost of a battery is the emulator tier, and
 # both of that day's real reds came out of the static one.
 STATIC = """basic-reloc deps-check subrom-abi-check diskrom-abi-check rom-parts-check subrom-closure-check unit-test deadcode
-wall-assertion-check ram-claim-check build-assert-check needle-case-check redundant-load-check rowshape-check injector-check
+wall-assertion-check ram-claim-check ram-map-check build-assert-check needle-case-check redundant-load-check rowshape-check injector-check
 dead-alias-check
 temp-root-check todo-citation-check todo-marker-check deferral-pin-check error-alphabet-check chokepoint-check wall-literal-check
 filed-pin-check disk-mount-check

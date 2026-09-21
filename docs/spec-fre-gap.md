@@ -37,7 +37,7 @@ Everything above `$BB00` is invisible to BASIC.
 
 ## What occupies the 14464 B above the ceiling
 
-Walked with `scratchpad/rammap_sweep.py` plus a sweep for every `equ` in the span
+Walked with `tools/ram_map.py` plus a sweep for every `equ` in the span
 — *not* read off a comment, because RAM figures have no gate:
 
 | span | size | what is actually there |

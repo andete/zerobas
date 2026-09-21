@@ -447,7 +447,7 @@ re-entry destroys. So:
 | `PLY_XSTK` | 3 x d | the source-cursor stack: (ptr:2, left:1) per level |
 | `PLY_XDEP` | 1 | current depth |
 
-🔴 **RAM HAS NO GATE** — walk `scratchpad/rammap_sweep.py` and then ASK THE
+🔴 **RAM HAS NO GATE** — walk `tools/ram_map.py` and then ASK THE
 MACHINE (`ramfree_probe.py`) before claiming any of these; a delta between two
 names is not free space. `QUEBAK $F971-$F974` is already fully spent
 (`PLY_LASTDUR`, `PLY_BUFEND`), so this needs its own home.
@@ -545,7 +545,7 @@ with it.
 ### 7.7 Where the RAM would come from — CANDIDATES, not a claim
 
 🔴 **RAM HAS NO GATE** (`make wall-assertion-check` polices ROM only), and
-`scratchpad/rammap_sweep.py`'s own caveat is that a delta is *"the cell at the low
+`tools/ram_map.py`'s own caveat is that a delta is *"the cell at the low
 address PLUS whatever follows"*, never free space. Its window is `[E000,F380)` and
 does not even cover the PLAY work area. So, to be READ and then asked of the
 machine, never assumed:
@@ -576,7 +576,7 @@ three voices are parsed SEQUENTIALLY (`pt_vloop`), so a voice's stack is empty
 before the next one starts; per-voice storage would be paying three times for a
 thing that is only ever used once at a time. That argues for a single block in
 this tree's OWN RAM region rather than three VCB tails.
-⚠️ **AND `rammap_sweep.py`'S WINDOW `[E000,F380)` DOES NOT COVER ANY OF THIS** —
+⚠️ **AND `ram_map.py`'S WINDOW `[E000,F380)` DOES NOT COVER ANY OF THIS** —
 the walk above is of `basic/sysvars.inc`'s `$FB00`+ names directly. A candidate
 in the tree's own region still has to be READ (a delta is the cell at the low
 address PLUS whatever follows) and then ASKED OF THE MACHINE.

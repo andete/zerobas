@@ -493,6 +493,23 @@ ram-claim-check:
 	python3 tools/check_ram_claims.py --selftest
 	python3 tools/check_ram_claims.py
 
+# --- ram-map-check: the EXTENT half `ram-claim-check` says it cannot do -------
+# 🔴 THE OTHER GATE'S OWN HEADER NAMES THIS GAP: *"an address is where a cell
+# STARTS, never how long it is ... promoting the sweeper to a gate on deltas
+# alone would have encoded exactly the error the filing warned about."* That is
+# still true, so this gate does NOT police the runs. What it polices is the
+# PRECONDITION for ever being able to: every cell whose extent is not
+# machine-readable is pinned in tools/ram-width-allow.txt, the list may SHRINK
+# and may never grow, and a pin that stops matching is equally an error.
+# 🙋 FILED BY JOOST, 2026-09-21: *"I'm a bit worried that it takes you so much
+# time to figure out ram usage. Don't you have a single RAM map?"* -- no, and
+# this is the start of one. It also prints the CROSS-ROM OVERLAY table, which is
+# the question a per-component map cannot answer: which of main's cells does
+# disk.rom's sector buffer sit on top of (spec-diskcode-eviction.md §6.6aq).
+ram-map-check:
+	python3 tools/ram_map.py --selftest
+	python3 tools/ram_map.py --check
+
 # --- D-DEFFN §4.5: an ALIGNMENT assert over a MOVING symbol is a landmine ------
 # `wall-assertion-check` and `ram-claim-check` police FIGURES; this polices the
 # `IF <cond> / db UNDEFINED_SYMBOL / ENDIF` asserts themselves. Two shapes look
@@ -3470,6 +3487,7 @@ clean:
         bdos-cbios-selfcheck audit-citations basic-reloc deadcode repack-main repack-boot \
         repack-machine diskbasic-acceptance-repack string-acceptance time-acceptance \
         battery-membership-check fixture-integrity-check diskmap ram-claim-check \
+        ram-map-check \
         asciidigit-acceptance \
         build-assert-check \
         interval-trap-acceptance \

@@ -1768,10 +1768,16 @@ STRSCR          equ     RVDESC + 3          ; $E26D: [len][bytes:STRMAX] staging
 ; exactly. ⚠️ `TEMPPOOL` deliberately does NOT follow -- it is re-anchored to its
 ; own absolute address just below, so nothing downstream of it moves at all.
 ; 🔴 AND THE TARGET IS A *SOURCE-DECLARED* FREE RUN, NOT AN "UNATTRIBUTED" ONE.
-; Every unattributed run of >= 20 B in `scratchpad/rammap_sweep.py`'s map turned
+; Every unattributed run of >= 20 B in `tools/ram_map.py`'s map turned
 ; out to be occupied when read against this file: $E900 and $E700 are inside
-; FWBUF/FSECTOR_BUF, $EA42 and $EE40 are inside the FCH_CTX array (which ends at
-; $EE64), $E4FD is GFX_DFSTK's body, $E238..$E268 is STRTAB from $E240 on. The
+; FWBUF/FSECTOR_BUF, $EA42 is FCH_RECNOS plus a MEASURED-free tail, $E4FD is
+; GFX_DFSTK's body, $E238..$E268 is STRTAB from $E240 on. 🔴 AND TWO OF THOSE
+; ATTRIBUTIONS WERE MINE AND WRONG (corrected 2026-09-21): I read $EA42 and
+; $EE40 as "inside the FCH_CTX array" from FLD_TAB's comment, which describes a
+; STATIC table this tree retired -- `LINEBUF $EB00` and `TOKBUF $EC00` sit
+; inside the span it claims, so it cannot be true. $EA60..$EA92 really is free
+; and says so, and $EE40..$EE63 is simply unclaimed. Trusting prose is the
+; exact failure the note was written about. The
 ; two runs this slice spends are the two this FILE calls FREE-RAM in as many
 ; words: the retired TRAPSTK here, and $E238..$E240 for TEMPTOP below.
 SH_BASE         equ     $E20D   ; the retired TRAPSTK's FREE-RAM run; SH_OP..SH_ERR
@@ -1970,7 +1976,11 @@ GFX_DEND        equ     GFX_DPTR + 2    ; $E4F4: one past the current frame's la
 GFX_DFREE       equ     GFX_DEND + 2    ; $E4F6: next free byte in GFX_DBUF (2)
 GFX_DFTOP       equ     GFX_DFREE + 2   ; $E4F8: X-frame stack depth (1)
 GFX_DFCAP       equ     8               ; max X nesting (own-design cap, D-G6-4)
-GFX_DFSTK       equ     GFX_DFTOP + 1   ; $E4F9: saved [ptr][end] per outer frame (4 B each)
+GFX_DFSTK       equ     GFX_DFTOP + 1   ; $E4F9: saved [ptr][end] per outer frame --
+                                ; 32 B total, 4 B each * GFX_DFCAP. 🔴 THE TOTAL
+                                ; COMES FIRST ON PURPOSE (D-RAMGATE): with only
+                                ; "4 B each" the map read the WIDTH as 4 and
+                                ; reported this array's own 28 B as a free run.
 GFX_DCMD        equ     GFX_DFSTK + 4*GFX_DFCAP   ; $E519: current command's start cursor,
                                         ; the rewind point for a substitution (2)
 GFX_DSUBN       equ     GFX_DCMD + 2    ; $E51B: substitutions RESOLVED for this command (1)
@@ -3422,9 +3432,15 @@ FCH_CTXSZ       equ     FCH_STATESZ + FCH_RECMAX
 ; (channel, byte offset, width) of that channel's record buffer (= FSECTOR_BUF while
 ; the channel is active, swapped by the write-back cache). str_eval consults it on
 ; READ (building a transient [len][bytes] descriptor in FLD_DESC from the slice);
-; LSET/RSET write into the slice. Placed in clean high RAM above FCH_CTX (which ends
-; at $EE63: $EA00 + FCH_CEIL*FCH_CTXSZ = $EA00 + 2*562 = $EE64) and below the C-BIOS
+; LSET/RSET write into the slice. Placed in clean high RAM below the C-BIOS
 ; sysvars (~$F380). See basic/field.asm + PROVENANCE.md §random-access records.
+; 🔴 THIS USED TO SAY "above FCH_CTX (which ends at $EE63: $EA00 +
+; FCH_CEIL*FCH_CTXSZ = $EA00 + 2*562 = $EE64)" AND IT HAS BEEN FALSE SINCE THE
+; STATIC FCH_CTX TABLE WAS RETIRED (see FCH_MODES above; the context block is
+; computed by `fch_ctx_addr` now, and its `2*562` never matched FCH_CEIL=15
+; anyway). `LINEBUF $EB00` and `TOKBUF $EC00` sit inside the span it claimed,
+; which is proof enough on its own. It cost a reader a wrong attribution on
+; 2026-09-21; $EE40..$EE63 is simply UNCLAIMED, which is not the same as free.
 FLD_ENTSZ       equ     6       ; field entry = [chan:1][k0:1][k1:1][off:2][wid:1]
 FLD_SLOTS       equ     16      ; max simultaneously-defined fields (own choice)
 FLD_TAB         equ     $EE64   ; field table base ($EE64..$EEC3, 96 bytes)
@@ -3472,7 +3488,7 @@ PU_WP           equ     $EEFB   ; pu_fmt_int scratch write pointer (2) -- ALIASE
 ; gap" -- FALSE, it aliased FMT_DESC, and nothing caught it because RAM HAS NO
 ; GATE (wall-assertion-check covers ROM only).
 ;
-; Aliasing itself is normal here (scratchpad/rammap_sweep.py: 50 addresses carry
+; Aliasing itself is normal here (tools/ram_map.py: 50 addresses carry
 ; more than one name). What was wrong was the PARTNER and the unstated argument.
 ; These two share PU_WP, whose exclusivity is provable in ONE file against ONE
 ; flag: PU_WP is scratch for `pu_fmt_int`, and basic/printusing.asm reaches
@@ -3528,9 +3544,18 @@ FLD_DESC        equ     $EF00   ; transient fielded-read descriptor [len][bytes:
 ; same freed $EA00 page-3 window as FCH_MODES.
 FCH_RECLENS     equ     $EA10   ; 32 B ($EA10..$EA2F). ~~$EA92..$EAFF free (110 B)~~
                                 ; \U0001f534 STALE SINCE D-DEFFN: $EA9C..$EB00 is FN_PAREA
-                                ; (rammap_sweep). A comment claiming free RAM is a
+                                ; (tools/ram_map.py). A comment claiming free RAM is a
                                 ; claim; the band below was ASKED of the machine.
-FCH_RECNOS      equ     $EA40   ; 32 B: per-channel record number of the last GET/PUT
+FCH_RECNOS      equ     $EA40   ; 32 B ($EA40..$EA5F): per-channel record number
+                                ; of the last GET/PUT
+                                ; 🔴 THE RANGE IS SPELLED OUT BECAUSE "32 B"
+                                ; ALONE WAS NOT ENOUGH (D-RAMGATE, 2026-09-21):
+                                ; `(word` appears later in this same comment and
+                                ; `tools/ram_map.py`'s R2 rule deliberately lets
+                                ; `word` beat a byte count -- right for a POINTER
+                                ; to an N-byte thing, wrong here. The map read
+                                ; this cell as 2 B and reported the 50 B of real
+                                ; free space above it as an 80 B run.
                                 ; (word, 1-based, 0 = none yet) -- what LOC(#n) reads on a
                                 ; RANDOM channel (D-LOC). Written beside GP_RECNO in
                                 ; basic/field.asm; a single global there was right for
@@ -3789,7 +3814,7 @@ FOR_STK_END     equ     $EA92   ; RETIRED AS A STACK; the literal survives ONLY 
 ; var_load_fac / var_store_fac / str_get_key / str_set_key unchanged.
 ;
 ; ⚠️ THE WINDOW IS $EA92..$EB00, 110 B, MEASURED not read: no name in basic/,
-; sub/ or disk/ claims it (scratchpad/rammap_sweep.py) and 14 of 14 empirical
+; sub/ or disk/ claims it (tools/ram_map.py) and 14 of 14 empirical
 ; rows -- a FULL FOR stack and a NINTH frame, GOSUB, the crunch, PAINT, DRAW,
 ; PLAY's ISR, strings, a disk write round trip, FILES -- changed 0 bytes of it
 ; (scratchpad/ramfree_probe.py). Page 3, always mapped, so a sub-ROM CALSLT can

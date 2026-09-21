@@ -377,7 +377,7 @@ def generate(sym_path: str, out_path: str, write: bool = True,
             # 🔬 CARRY THE SOURCE COMMENT ACROSS (D-RAMABI). This file used to emit
         # bare `NAME equ 0XXXXH` lines, so every ABI cell reached the other ROM
         # with NO declaration of how long it is -- and `scratchpad/
-        # rammap_sweep.py`, which IS the only RAM map this project has, could
+        # ram_map.py`, which IS the only RAM map this project has, could
         # therefore produce no unattributed run for any of them. Main already
         # says: 229 `equ` comments in basic/sysvars.inc end in a bare `(N)`
         # meaning the width in bytes. Copying the comment carries that width

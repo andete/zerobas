@@ -23,7 +23,7 @@ to confirm it.
 
 ---
 
-## 2. `scratchpad/rammap_sweep.py` — the map, walked
+## 2. `tools/ram_map.py` — the map, walked
 
 Resolves every `NAME equ <expr>` in the components' `.inc` files — iterating to a
 fixed point so `X equ Y + N*M` chains resolve — keeps those landing in a RAM

@@ -4,7 +4,7 @@
 🔴 WHY THIS EXISTS. `make wall-assertion-check` polices ROM free-space claims and
 **nothing polices RAM ones**, so they rot silently: `basic/sysvars.inc` advertised
 *"376 B spare"* for three slices after the window had been spent, and what caught
-it was the ASSEMBLER, not the reading. `scratchpad/rammap_sweep.py` says
+it was the ASSEMBLER, not the reading. `tools/ram_map.py` says
 $EA92..$EB00 carries no name in any component's map. **A map is still a reading.**
 
 THE MEASUREMENT. Fill the window with a known pattern from BASIC, run one

@@ -1280,10 +1280,10 @@ constraint the next edit to that address can silently break, and the comment is
 the only thing standing between the constraint and a landmine.
 
 **RAM free-space policing — LIVE, and cheaper than it reads.** No gate polices it:
-neither `ramfree_probe.py` nor `rammap_sweep.py` is a make target or a member of
+neither `ramfree_probe.py` nor `ram_map.py` is a make target or a member of
 the 39-unit battery.
 
-🟢 **BUT BOTH INSTRUMENTS ALREADY EXIST.** `rammap_sweep.py` walks the map;
+🟢 **BUT BOTH INSTRUMENTS ALREADY EXIST.** `ram_map.py` walks the map;
 `ramfree_probe.py` asks the machine. The item reads as *"this needs building"*;
 what it actually needs is **wiring** — the measuring code is written and merely
 unattached to a gate.

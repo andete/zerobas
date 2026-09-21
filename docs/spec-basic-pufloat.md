@@ -465,7 +465,7 @@ low byte.
 invisible, and the claim that made it invisible was a parenthesis in a comment
 nobody could run.
 
-Aliasing is *not* itself the defect: `scratchpad/rammap_sweep.py` reports **50
+Aliasing is *not* itself the defect: `tools/ram_map.py` reports **50
 addresses already carrying more than one name**, and deliberate reuse is the
 convention in this file. What was wrong was the **partner** and the **unstated
 argument**. `PU_DEC` and `PU_COMMAS` now share `PU_WP`, where the exclusivity is

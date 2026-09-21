@@ -1,0 +1,160 @@
+# ram-width-allow.txt -- cells whose extent is NOT machine-readable.
+#
+# 🔴 THIS LIST IS A RATCHET AND A CONTROL, NOT A SUPPRESSION. `make
+# ram-map-check` fails when a cell with no trusted width is MISSING here, and
+# equally when a line here no longer matches anything. It may SHRINK and may
+# never grow.
+#
+# HOW TO REMOVE A LINE: give the cell a machine-readable width in its OWN
+# comment -- `(2 B)`, `(n bytes)`, `* N`, or an explicit `$LO..$HI` range --
+# then delete the line. An explicit range is the strongest form: it is the one
+# declaration authoritative enough to settle a dispute between aliased names,
+# and (since D-RAMGATE) the one that is NOT demoted when other cells sit inside
+# it, which is how a buffer that deliberately hosts tenants keeps its extent.
+#
+# WHY each line is here: `undeclared` = no width in the comment at all;
+# `disputed` = aliased names disagree about the extent, so NOBODY knows it;
+# `overruns` = the parsed width runs past the next cell, so it is a guess about
+# extent rather than a statement of it.
+#
+# ⚠️ A cell addressed only as an offset in code has no `equ` and is invisible
+# to this tool entirely. Nothing here says otherwise.
+#
+# format: <component> <name>[/<alias>...] <why>
+basic ARY_ADDR undeclared
+basic ARY_CUR/RUNFLAG overruns
+basic ARY_ERR undeclared
+basic ARY_KEY/TKRADIX overruns
+basic ARY_TYPE/CLPTR disputed
+basic AU_INC/RN_INC undeclared
+basic BN_PTR/DISKOP_HL disputed
+basic CAL_CNT overruns
+basic CAL_CURHI/VRAM_FLAG overruns
+basic CAL_NEEDFILL undeclared
+basic CAL_SAVE/CAS_WCNT disputed
+basic CAS_HDRID undeclared
+basic CAS_VMIS overruns
+basic CLR_SAVE undeclared
+basic CONTVALID undeclared
+basic CSP undeclared
+basic CTLLIM undeclared
+basic CVT_MODE overruns
+basic DATASTATE undeclared
+basic DB_CUR undeclared
+basic DIRECTF undeclared
+basic DISKOP_A/PLY_NUMOVF disputed
+basic DISKOP_ERR undeclared
+basic DISKSLOT_OK undeclared
+basic DISK_FCB/DISK_FCB_DRV overruns
+basic DSV_END undeclared
+basic ENDFLAG undeclared
+basic ERRMARK overruns
+basic FAT_B0 undeclared
+basic FAT_B1 undeclared
+basic FAT_NUMFATS undeclared
+basic FAT_PARITY undeclared
+basic FAT_WRTMP2 undeclared
+basic FCH_RDMODE undeclared
+basic FILES_ENTIDX/IN_RDLEN overruns
+basic FILES_HASPAT undeclared
+basic FMT_RESULT/TSV_NAME undeclared
+basic FN_FST overruns
+basic FN_PAREA undeclared
+basic FN_PAREA_END undeclared
+basic FN_STK_FLOOR undeclared
+basic FOMBYTES undeclared
+basic FOSIGCOUNT/TKVALEND disputed
+basic FOUTBUF/HORNER_ACC/MATH_R/SQRT_R disputed
+basic FPERR undeclared
+basic FRETOP undeclared
+basic GFX_B/GFX_WE_P disputed
+basic GFX_CPHASE overruns
+basic GFX_CS_M1/GFX_DBUF/GFX_PSTK/GFX_VBUF disputed
+basic GFX_DANGLE overruns
+basic GFX_DSP undeclared
+basic GFX_OP/LST_LO/RN_TGT/SL_DELLO/SL_NUM disputed
+basic GFX_REL overruns
+basic GFX_RES/SL_SLOT disputed
+basic GFX_SC undeclared
+basic GFX_SFLAGS undeclared
+basic GFX_WS_O overruns
+basic GFX_YSTEP undeclared
+basic GOTOFLAG undeclared
+basic GP_CHAN undeclared
+basic GP_OLDNSEC undeclared
+basic GP_WITHIN undeclared
+basic HORNER_G/MATH_T/RND_LE/SQRT_X disputed
+basic INDLR_N undeclared
+basic INP_CURSOR/NUMBUF disputed
+basic INT_MAIN_PRIM undeclared
+basic INT_SUB_PRIM undeclared
+basic INT_SUB_SUBSL undeclared
+basic KEYARG/WIDIG disputed
+basic LHS_FAC undeclared
+basic LINEBUF undeclared
+basic LRSET_DEST undeclared
+basic LST_HI/RN_LINE/SL_DELHI/SL_SIZE overruns
+basic LST_PTR/SL_DELPTR/SL_TOK overruns
+basic MATH_A/RND_STATE/SQRT_Y disputed
+basic MC_TYPE overruns
+basic MIDS_DEST undeclared
+basic MRG_PTR undeclared
+basic MULPROD/RND_ACCLE overruns
+basic OO_DEVTYPE overruns
+basic PLF_RA2 undeclared
+basic PRDEST undeclared
+basic PU_COMMAS/PU_WP disputed
+basic PU_DEC undeclared
+basic PU_TYPE undeclared
+basic RDV_MODE overruns
+basic RDV_ST undeclared
+basic RESTORE_LINE undeclared
+basic RESUMEFLAG undeclared
+basic RL_KEY undeclared
+basic RVDESC undeclared
+basic SH_BASE/SH_OP disputed
+basic SUBSLOT undeclared
+basic SUBSLOT_OK undeclared
+basic SUB_INT_DELTA overruns
+basic SUB_INT_RAM overruns
+basic SUB_PING undeclared
+basic TEMPPOOL undeclared
+basic TKDIG undeclared
+basic TKLEAD undeclared
+disk BDOS_RECIDX overruns
+disk BOOT_SV_A8/RRND_RECSEC undeclared
+disk BOOT_SV_SEC/RRND_CLUSSEC undeclared
+disk CONIN_COUNT undeclared
+disk CONIN_MAX undeclared
+disk CONOUT_CHAR undeclared
+disk CURDRV_CELL undeclared
+disk DISKOP_STATUS undeclared
+disk DISKSLOT_OK undeclared
+disk DOS_F340 undeclared
+disk DRVCNT undeclared
+disk DRVTBL undeclared
+disk F365_STUB undeclared
+disk FAT_B0 undeclared
+disk FAT_B1 undeclared
+disk FAT_NUMFATS undeclared
+disk FAT_PARITY undeclared
+disk FAT_WRTMP2 overruns
+disk FDC_CNT undeclared
+disk FDC_IFF undeclared
+disk FDC_TRY undeclared
+disk FN_RESUME undeclared
+disk HOOK_SLOT overruns
+disk INT_SP_SAVE/INT_STK_TOP disputed
+disk LRSET_DEST undeclared
+disk P1_BLIT undeclared
+disk RES_PRINT undeclared
+disk RES_STUBS undeclared
+disk RES_STUBS_END undeclared
+disk STRSCR undeclared
+disk W50A9_RET_DE undeclared
+disk W50A9_RET_HL undeclared
+disk W50A9_WRKB undeclared
+disk WA_SEG/WA_SEG_ROM undeclared
+disk WA_SEG_RAM undeclared
+disk WRBLK_CURVALID undeclared
+disk WRBLK_RECSEC undeclared

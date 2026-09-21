@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: 0BSD
 r"""D-LOC RAM ASK — is $EA40..$EA5F unclaimed by any LIVE writer on zerobas?
 
-The map (scratchpad/rammap_sweep.py) shows CLR_SAVE at $EA3E (2 B) and the next
+The map (tools/ram_map.py) shows CLR_SAVE at $EA3E (2 B) and the next
 name at $EA9C (FN_PAREA); a delta between two names is NOT free space -- the
 walker says so in its own banner -- so the band is ASKED of the machine: plant
 a distinctive pattern at $EA40..$EA5F with POKE, run a workload that exercises
