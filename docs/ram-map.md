@@ -33,14 +33,14 @@ other component's cell at the same address; the `inside` column
 names the other component's BUFFER this address falls within. That
 second one is the question a per-component map cannot answer.
 
-* **basic** — 418 declared addresses in this project's own workspace `$E000..$F37F` (379 with a machine-readable width), plus **79** in the MSX standard work area at or above `$F380`.
+* **basic** — 418 declared addresses in this project's own workspace `$E000..$F37F` (382 with a machine-readable width), plus **79** in the MSX standard work area at or above `$F380`.
 * **disk** — 128 declared addresses in this project's own workspace `$E000..$F37F` (109 with a machine-readable width), plus **24** in the MSX standard work area at or above `$F380`.
 
 ## This project's own workspace (`$E000..$F37F`)
 
 | address | size | component | name(s) | purpose | inside |
 |---|---|---|---|---|---|
-| `$E010` |  | `basic` | `ERRMARK` | error landmark marker byte |  |
+| `$E010` | 1 B | `basic` | `ERRMARK` | error landmark marker byte (1 B) |  |
 | `$E011` | 1 B | `basic` | `MAXF` | current MAXFILES ceiling (0..FCH_CEIL); default 1 (1) |  |
 | `$E012` | 1 B | `basic` | `FCH_ACTIVE` | channel live in the engine globals, 0 = none (1) |  |
 | `$E013` | 1 B | `basic` | `TKLNUM` | tokeniser: 1 = line-number mode is armed (1) |  |
@@ -331,7 +331,7 @@ second one is the question a per-component map cannot answer.
 | `$E551` | 2 B | `basic` | `RDV_VAL` | $E551: the value read (int16 LE) (2) | `disk` BDOS_WRBYTES/FWR_BYTES |
 | `$E552` | 2 B | `disk` | `BDOS_DIRSEC/FWR_DIRSEC` | logical sector holding the open file's dir entry (word) | `basic` RDV_VAL |
 | `$E553` | 1 B | `basic` | `RDV_ST` | $E553: tenant -> main STATUS (1): (1 B) | `disk` BDOS_DIRSEC/FWR_DIRSEC |
-| `$E554` |  | `basic` | `RDV_MODE` | $E554: main -> tenant MODE (1), D-READVAR: |  |
+| `$E554` | 1 B | `basic` | `RDV_MODE` | $E554: main -> tenant MODE (1 B), D-READVAR: |  |
 | `$E554` | 2 B | `disk` | `BDOS_DIROFF/FWR_DIROFF` | byte offset of that dir entry within its sector (word) |  |
 | `$E555` | 2 B | `basic` | `TGT_ADDR` | $E555: element address, or 0 = scalar (2) | `disk` BDOS_DIROFF/FWR_DIROFF |
 | `$E556` | 2 B | `disk` | `FAT_WRTMP` | transient scratch for the FAT12 write helpers (word) | `basic` TGT_ADDR |
@@ -369,8 +369,8 @@ second one is the question a per-component map cannot answer.
 | `$E795` |  | `disk` | `WA_SEG/WA_SEG_ROM` | base of the two hook bodies | `basic` FAT_DBUF/FSECTOR_BUF |
 | `$E79B` |  | `disk` | `WA_SEG_RAM` |  | `basic` FAT_DBUF/FSECTOR_BUF |
 | `$E7B0` | 1 B | `disk` | `CONOUT_CHAR` | CONOUT: saved char (1 B) | `basic` FAT_DBUF/FSECTOR_BUF |
-| `$E7B1` | 48 B | `disk` | `PG_SV_A8` | shared: saved $A8 config | `basic` FAT_DBUF/FSECTOR_BUF |
-| `$E7C0` | 512 B | `basic` | `FAT_MBUF/FWBUF` | FAT/dir metadata sector buffer ($E7C0..$E9BF) | `disk` PG_SV_A8 |
+| `$E7B1` | 1 B | `disk` | `PG_SV_A8` | shared: saved $A8 config (1 B) | `basic` FAT_DBUF/FSECTOR_BUF |
+| `$E7C0` | 512 B | `basic` | `FAT_MBUF/FWBUF` | FAT/dir metadata sector buffer ($E7C0..$E9BF) |  |
 | `$E7E2` |  | `disk` | `INT_SP_SAVE/INT_STK_TOP` | caller SP saved above the stack top (word) | `basic` FAT_MBUF/FWBUF |
 | `$E7E4` | 2 B | `disk` | `CONIN_BUF` | CONIN: buffer base (word) | `basic` FAT_MBUF/FWBUF |
 | `$E7E6` | 1 B | `disk` | `CONIN_MAX` | CONIN: max length ([DE+0]) (1 B) | `basic` FAT_MBUF/FWBUF |
@@ -443,7 +443,7 @@ second one is the question a per-component map cannot answer.
 | `$EA3C` | 2 B | `basic` | `GP_LEFT` | record bytes still to move, ends $EA3E (2 B) |  |
 | `$EA3E` | 2 B | `basic` | `CLR_SAVE` | fg+bg, in flight across a COLOR statement (2) |  |
 | `$EA40` | 32 B | `basic` | `FCH_RECNOS` | 32 B ($EA40..$EA5F): per-channel record number |  |
-| `$EA92` | 111 B | `basic` | `FN_BASE/FN_PTR/FOR_STK_END` | RETIRED AS A STACK; the literal survives ONLY as |  |
+| `$EA92` | 2 B | `basic` | `FN_BASE/FN_PTR/FOR_STK_END` | RETIRED AS A STACK; the literal survives ONLY as |  |
 | `$EA94` | 2 B | `basic` | `FN_DPTR` | 2 B: the definition cursor, tenant-only |  |
 | `$EA96` | 2 B | `basic` | `FN_KEY` | 2 B: the formal (or the $FFFF result slot) |  |
 | `$EA98` | 1 B | `basic` | `FN_TYP` | 1 B: its type -- and the ERR code on req 0 |  |
@@ -455,7 +455,7 @@ second one is the question a per-component map cannot answer.
 | `$EB00` | 1 B | `basic` | `LINEBUF` | repack: ASCII input line from the keyboard (LINEMAX B) (1 B) |  |
 | `$EC00` | 576 B | `basic` | `TOKBUF` | repack: crunch buffer, 576 B ($EC00..$EE3F) |  |
 | `$EE64` | 96 B | `basic` | `FLD_TAB` | field table base ($EE64..$EEC3, 96 bytes) |  |
-| `$EEC4` | 60 B | `basic` | `FLD_TABEND/GP_RECNO` | record number (1-based, 2) |  |
+| `$EEC4` | 2 B | `basic` | `FLD_TABEND/GP_RECNO` | record number, 1-based (2 B) |  |
 | `$EEC6` | 2 B | `basic` | `GP_SEC` | file logical-sector index of the record (2) |  |
 | `$EEC8` | 2 B | `basic` | `GP_WITHIN` | byte offset of the record within its sector (0/256, 2) (2 B) |  |
 | `$EECA` | 2 B | `basic` | `GP_CLUS` | current cluster during the chain walk (2) |  |
@@ -476,7 +476,7 @@ second one is the question a per-component map cannot answer.
 | `$EEFC` | 1 B | `basic` | `PU_DEC` | PRINT USING `.`: decimal places requested (D-PUDOT) (1) |  |
 | `$EEFD` | 1 B | `basic` | `FMT_SEC` | CALL FORMAT: current sector index being written (1) |  |
 | `$EEFE` | 2 B | `basic` | `FMT_DESC` | CALL FORMAT: chosen geometry descriptor pointer (2) |  |
-| `$EF00` | 256 B | `basic` | `FLD_DESC` | transient fielded-read descriptor [len][bytes:255] |  |
+| `$EF00` | 256 B | `basic` | `FLD_DESC` | transient fielded-read descriptor [len][bytes:255] (256 B) |  |
 | `$F006` | 2 B | `basic` | `GP_RECLEN` | active channel's record length (word), loaded per calc |  |
 | `$F008` | 1 B | `basic` | `OO_RECLEN_CHAN` | OPEN scratch: channel # stashed across the LEN= eval (1) |  |
 | `$F009` | 1 B | `basic` | `FILES_HASPAT` | FILES: 1 = a filespec pattern is in DISK_FCB_NAME (1) |  |
@@ -560,8 +560,8 @@ second one is the question a per-component map cannot answer.
 | `$F14E` | 1 B | `basic` | `VARTYPE` | var_name_key: the RESOLVED type (2/4/8) of the |  |
 | `$F14F` | 1 B | `basic` | `VS_TARGET_TYPE` | var_store_fac/var_alloc_or_find (vars.asm): |  |
 | `$F150` | 2 B | `basic` | `VS_INT_VAL` | var_store_fac (vars.asm): the coerced int16 value |  |
-| `$F152` | 26 B | `basic` | `LHS_VARTYPE` | ex_let (interp.asm): the LHS variable's resolved |  |
-| `$F16D` |  | `basic` | `MC_TYPE` | evmc_sub1 (expr.asm): the operand's FACTYP (4/8), |  |
+| `$F152` | 1 B | `basic` | `LHS_VARTYPE` | ex_let (interp.asm): the LHS variable's resolved |  |
+| `$F16D` | 1 B | `basic` | `MC_TYPE` | evmc_sub1 (expr.asm): the operand's FACTYP (4/8), |  |
 | `$F16E` |  | `basic` | `HORNER_G/MATH_T/RND_LE/SQRT_X` | the efficiency-normalized argument x' (constant |  |
 | `$F180` |  | `basic` | `MATH_A/RND_STATE/SQRT_Y` | fp_atan's persistent reduced-argument "a" -- |  |
 | `$F192` | 2 B | `basic` | `MATH_N/MATH_SIGN/SQRT_K` | signed net count of the x'/y<->x/y-under-100^k |  |
@@ -609,9 +609,9 @@ extents the standard already fixes would be noise, not rigour.
 | `$F3AE` |  | `basic` | `LINL40` | text columns for SCREEN 0 (WIDTH default) |  |
 | `$F3AF` |  | `basic` | `LINL32` | text columns for SCREEN 1 (WIDTH default) |  |
 | `$F3B0` |  | `basic` | `LINLEN` | current line length (active width) |  |
-| `$F3B0` | 7 B | `disk` | `LINLEN` | current line length = the active width (ditto) |  |
-| `$F3B1` |  | `basic` | `CRTCNT` | number of text rows on the screen (MSX work area; D-SCREDIT) | `disk` LINLEN |
-| `$F3B3` |  | `basic` | `BASETAB` | BASE(0..19): 20 LE words, 4 groups of 5 (name, colour, | `disk` LINLEN |
+| `$F3B0` |  | `disk` | `LINLEN` | current line length = the active width (ditto) |  |
+| `$F3B1` |  | `basic` | `CRTCNT` | number of text rows on the screen (MSX work area; D-SCREDIT) |  |
+| `$F3B3` |  | `basic` | `BASETAB` | BASE(0..19): 20 LE words, 4 groups of 5 (name, colour, |  |
 | `$F3DB` | 1 B | `basic` | `CLIKSW` | keyboard click: 0 = off, nonzero = on (1) |  |
 | `$F3DC` |  | `basic` | `CSRY` | cursor row (1-based); the CSRLIN pseudo-variable reads it |  |
 | `$F3DD` |  | `basic` | `CSRX` | cursor column (1-based); C-BIOS sysvars / PRINT comma zones |  |
@@ -634,7 +634,7 @@ extents the standard already fixes would be noise, not rigour.
 | `$F6B9` | 2 B | `basic` | `ONELIN` | 2 B: ON ERROR handler line's LINK address (the |  |
 | `$F6BB` | 1 B | `basic` | `ONEFLG` | 1 B: $FF = currently inside a handler (no RESUME |  |
 | `$F6CA` | 26 B | `basic` | `DEFTBL` | per-letter default-type map, A..Z (26) -- |  |
-| `$F87F` | 40 B | `basic` | `FNKSTR` | measured base (D-KEYSTR scout) |  |
+| `$F87F` |  | `basic` | `FNKSTR` | measured base (D-KEYSTR scout) |  |
 | `$F922` |  | `basic` | `NAMBAS` | name-table base of the current text mode (MSX work area; D-SCREDIT) |  |
 | `$F92A` | 2 B | `basic` | `CLOC` | computed VRAM byte address of the current pixel (2) |  |
 | `$F92C` | 1 B | `basic` | `CMASK` | MSB-first bit mask of the current pixel (1) |  |

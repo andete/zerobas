@@ -810,7 +810,7 @@ BASETAB         equ     $F3B3   ; BASE(0..19): 20 LE words, 4 groups of 5 (name,
 CURPTR          equ     $E020   ; current load pointer (2 bytes)
 ENDPTR          equ     $E022   ; final load address  (2 bytes)
 EXECPTR         equ     $E024   ; execution address   (2 bytes)
-ERRMARK         equ     $E010   ; error landmark marker byte
+ERRMARK         equ     $E010   ; error landmark marker byte (1 B)
 ; --- Phase 2: MAXFILES multi-channel control (free $E011.. gap below CURPTR) ---
 ; The Phase-2 file verbs gained a real multi-channel table (retiring the single-
 ; channel limit). FCH_CEIL channels can be open at once. Because fat.asm keeps ONE
@@ -2068,7 +2068,7 @@ RDV_ST          equ     RDV_VAL + 2     ; $E553: tenant -> main STATUS (1): (1 B
                                         ;   1 = an item was read (RDV_VAL / STRSCR)
                                         ;   2 = the item is not a NUMBER (ERR 2) --
                                         ;       D-READVAR's c.strnum, numeric mode only
-RDV_MODE        equ     RDV_ST + 1      ; $E554: main -> tenant MODE (1), D-READVAR:
+RDV_MODE        equ     RDV_ST + 1      ; $E554: main -> tenant MODE (1 B), D-READVAR:
                                         ;   0 = numeric, data_parse_int -> RDV_VAL
                                         ;   1 = string, the item's RAW ASCII span ->
                                         ;       STRSCR ([len][bytes]); RDV_VAL undefined
@@ -3466,7 +3466,7 @@ FLD_TABEND      equ     FLD_TAB + FLD_SLOTS*FLD_ENTSZ   ; $EEC4
 ; so not per-channel). The disk-position walk survives read_sector/CALSLT clobbers
 ; by keeping its loop state here in RAM. Free gap above FLD_TAB, below FLD_DESC
 ; ($EEC4..$EEFF = 60 bytes). See basic/field.asm §GET/PUT.
-GP_RECNO        equ     $EEC4   ; record number (1-based, 2)
+GP_RECNO        equ     $EEC4   ; record number, 1-based (2 B)
 GP_SEC          equ     $EEC6   ; file logical-sector index of the record (2)
 GP_WITHIN       equ     $EEC8   ; byte offset of the record within its sector (0/256, 2) (2 B)
 GP_CLUS         equ     $EECA   ; current cluster during the chain walk (2)
@@ -3545,7 +3545,7 @@ PU_DEC          equ     $EEFC   ; PRINT USING `.`: decimal places requested (D-P
 ; They are RAM, always visible. See basic/format.asm / basic/format-body.inc / sub/format.asm.
 FMT_SEC         equ     $EEFD   ; CALL FORMAT: current sector index being written (1)
 FMT_DESC        equ     $EEFE   ; CALL FORMAT: chosen geometry descriptor pointer (2)
-FLD_DESC        equ     $EF00   ; transient fielded-read descriptor [len][bytes:255]
+FLD_DESC        equ     $EF00   ; transient fielded-read descriptor [len][bytes:255] (256 B)
 ; --- Phase 2c: random-record LEN= (OPEN..AS #n LEN=r) ----------------------
 ; The random record length, per channel. GET/PUT geometry (basic/field.asm) uses
 ; it in place of the old hard-wired 256: a record of r bytes tiles the 512-byte
@@ -4187,7 +4187,8 @@ LHS_VARTYPE     equ     $F152   ; ex_let (interp.asm): the LHS variable's resolv
                                 ; RHS variable factor re-runs var_name_key, which
                                 ; overwrites the GLOBAL (VARTYPE), so a cross-type
                                 ; assignment (A%=A#) must read this latched copy for
-                                ; the var_store_fac target, not the clobbered global (1)
+                                ; the var_store_fac target, not the clobbered global
+                                ; (1 B)
 ; --- Math float pack, slice F3 S3b RAM (repack build only) ------------------
 ; docs/spec-basic-float-core.md §11.1. The per-letter DEFtbl: a 26-byte map
 ; (index name0-'A', A..Z) holding the resolved default type of an UNSUFFIXED

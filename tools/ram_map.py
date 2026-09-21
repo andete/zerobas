@@ -285,12 +285,29 @@ def is_imported(path: str) -> bool:
 CONT = re.compile(r"^\s*;(.*)$")
 
 
+# 🔴 A SECTION HEADER ENDS A CELL'S COMMENT, AND WITHOUT THIS THE WALK RAN
+# STRAIGHT THROUGH ONE (D-WIDTHSECT, 2026-09-21). `; --- Math float pack ... ---`
+# is a comment-only line, so the continuation walk kept going and glued the whole
+# NEXT SECTION onto `LHS_VARTYPE` -- 1800+ characters, including "a 26-byte map"
+# describing `DEFTBL`, a different cell entirely. The width reader then declared
+# LHS_VARTYPE 26 bytes wide; it is 1. `PG_SV_A8` read 48 the same way, off a
+# neighbouring paragraph about a 48-byte interrupt stack.
+# 🎯 `purpose()` ALREADY SPLITS ON `---` FOR EXACTLY THIS REASON. That is the
+# THIRD time a lesson lived in that function and not in the width reader beside
+# it [[two-correct-rules-can-cancel-each-other]] -- so the stop belongs HERE, in
+# the shared walk, where both readers get it.
+SECTION = re.compile(r"^\s*-{3,}|-{3,}\s*$")
+
+
 def continuation(lines, i):
-    """The comment-only lines immediately following declaration line `i` (1-based)."""
+    """The comment-only lines immediately following declaration line `i`
+    (1-based), stopping at the next SECTION HEADER."""
     out = []
     for ln in lines[i:]:
         m = CONT.match(ln.rstrip("\n"))
         if not m:
+            break
+        if SECTION.search(m.group(1)):
             break
         out.append(m.group(1))
     return out
@@ -1086,6 +1103,29 @@ def selftest(lo, hi) -> int:
     ok["A10 NEGATIVE: and it stops before a loose paragraph, so its '99 "
        "bytes' can never become a width"] = \
         all("99" not in c for c in continuation(lines, 1))
+    # ---- A16 a SECTION HEADER ends the comment (D-WIDTHSECT) --------------
+    # 🔴 THE A10 PARAGRAPH ARM ABOVE IS SEPARATED BY A BLANK LINE, AND THAT IS
+    # WHY IT MISSED THIS: a `; --- ... ---` header is itself a COMMENT line, so
+    # the walk ran straight through it into the next section. Measured on the
+    # real corpus -- `LHS_VARTYPE` swallowed 1800+ characters including "a
+    # 26-byte map" describing DEFTBL and declared itself 26 bytes wide; it is 1.
+    sect = ["LV   equ  $F152   ; the LHS variable's resolved\n",
+            "                  ; type, latched before eval\n",
+            "; --- Math float pack, slice F3 S3b RAM -------------------\n",
+            "; docs/spec.md: the per-letter DEFtbl, a 26-byte map\n",
+            "; (index name0-'A', A..Z) holding the default type\n"]
+    ok["A16 the walk STOPS at a `; --- section --- ` header"] = \
+        len(continuation(sect, 1)) == 1
+    ok["A16 NEGATIVE: so the NEXT section's '26-byte' cannot become this "
+       "cell's width"] = \
+        declared_width(0xF152, "x " + " ".join(continuation(sect, 1)))[0] is None
+    ok["A16 NEGATIVE: without the stop it WOULD have -- the arm can fail"] = \
+        declared_width(0xF152, "x " + " ".join(
+            l.split(";", 1)[1] for l in sect[1:]))[0] == 26
+    # 🔴 POSITIVE CONTROL: an ordinary continuation still joins, or this stop
+    # would silently undo A10 and take SH_SRC's width with it.
+    ok["A16 POSITIVE: a continuation with no header still joins"] = \
+        len(continuation(lines, 1)) == 1
     # ...and the same thing on the REAL corpus, two-sided.
     b_joint = Map("basic", lo, hi, joint=True)
     b_flat = Map("basic", lo, hi, joint=False)

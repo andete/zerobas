@@ -67,6 +67,18 @@ ALLOW = os.path.join(ROOT, "tools", "ram-width-allow.txt")
 # Z80 has, which is what makes the classification total rather than heuristic.
 W2 = ("hl", "de", "bc", "sp", "ix", "iy")
 
+# 🔴 AN ADDRESS LOAD MEANS THERE ARE ACCESSES THIS SCAN CANNOT SEE, AND THE
+# FIRST CUT TREATED IT AS SILENCE. `ld hl,NAME` does not read the cell -- a
+# selftest arm pins that, and it is right about what the instruction DOES. But
+# it is the wrong answer to the question this tool actually asks. Measured
+# 2026-09-21: `GFX_SOCT` reads UNAMBIGUOUS 1 B, because the only access spelled
+# with its name is `ld a,(GFX_SOCT) / and 7` -- the octant bits. Its full record
+# is compared by `ld hl,GFX_SOCT / ld de,GFX_EOCT / ld b,4`, a FOUR-byte pointer
+# walk the name-keyed scan is blind to, and the declared `(2)` is correct.
+# So a pointer to the cell DEMOTES the verdict: it is precisely the case where
+# a derived width is least trustworthy, not most.
+PTR = ("hl", "de", "bc", "ix", "iy")
+
 
 def access_re(name: str) -> re.Pattern:
     """Every `(NAME)` or `(NAME + k)` operand, with the register beside it."""
@@ -77,15 +89,54 @@ def access_re(name: str) -> re.Pattern:
         re.I)
 
 
+def pointer_re(name: str) -> re.Pattern:
+    """`ld rr,NAME` -- the ADDRESS of the cell into a pointer register."""
+    return re.compile(r"ld\s+(" + "|".join(PTR) + r")\s*,\s*"
+                      + re.escape(name) + r"\s*(?:$|[;,+])", re.I | re.M)
+
+
 def strip_comment(line: str) -> str:
     return line.split(";", 1)[0]
 
 
+# 🔴 A COMPONENT'S ACCESSES DO NOT ALL LIVE IN ITS OWN FILE GLOB, AND THIS COST
+# THE FIRST CUT A FALSE FINDING. `ram_map.files_for()` answers "where are this
+# component's DECLARATIONS", which is the right question for the map and the
+# wrong one here: `disk`'s `FAT_SECPERFAT` ($E55B) is written `ld (FAT_SECPERFAT),
+# de` in `basic/fat-prim-body.inc` -- a SHARED body `disk.rom` assembles and the
+# `disk/*` glob does not contain. The scan saw only `disk/fat.asm`'s byte read
+# and reported the declared `(word)` as a disagreement.
+# 🎯 THE FIX IS DERIVED, NOT A LIST: a component assembles its own files PLUS
+# everything they `include`, transitively. That is the same relation
+# `tools/check_shared_bodies.py` uses to decide what "shared" even means.
+INCLUDE = re.compile(r'^\s*include\s+"([^"]+)"', re.I | re.M)
+
+
+def assembled_files(paths):
+    """`paths` plus every file they include, transitively. An include path
+    containing "/" is repo-root relative -- the same rule check_tenant_closure
+    learned the hard way, where "../basic/..." resolved ABOVE the repo and a
+    body was silently dropped."""
+    seen, queue = list(paths), list(paths)
+    while queue:
+        p = queue.pop()
+        try:
+            src = open(os.path.join(ROOT, p)).read()
+        except OSError:
+            continue
+        for inc in INCLUDE.findall(src):
+            rel = inc if "/" in inc else os.path.join(os.path.dirname(p), inc)
+            if rel not in seen and os.path.exists(os.path.join(ROOT, rel)):
+                seen.append(rel)
+                queue.append(rel)
+    return seen
+
+
 def scan(names, files):
-    """-> (widths seen, max offset+1 seen, sample lines). Comments excluded:
-    a comment naming `ld (X),hl` is prose, and prose is not a measurement."""
-    pats = [(n, access_re(n)) for n in names]
-    widths, reach, samples = set(), 0, []
+    """-> (widths seen, max offset+1 seen, sample lines, pointered). Comments
+    excluded: a comment naming `ld (X),hl` is prose, not a measurement."""
+    pats = [(n, access_re(n), pointer_re(n)) for n in names]
+    widths, reach, samples, pointered = set(), 0, [], []
     for path in files:
         try:
             src = open(os.path.join(ROOT, path)).read().splitlines()
@@ -95,7 +146,9 @@ def scan(names, files):
             code = strip_comment(line)
             if not code.strip():
                 continue
-            for n, pat in pats:
+            for n, pat, pptr in pats:
+                if pptr.search(code) and len(pointered) < 3:
+                    pointered.append(code.strip())
                 for m in pat.finditer(code):
                     off = m.group(1) or m.group(4) or "0"
                     reg = (m.group(2) or m.group(3) or "").lower()
@@ -104,10 +157,12 @@ def scan(names, files):
                     reach = max(reach, int(off) + w)
                     if len(samples) < 3:
                         samples.append(code.strip())
-    return widths, reach, samples
+    return widths, reach, samples, pointered
 
 
-def verdict(widths, reach):
+def verdict(widths, reach, pointered=()):
+    if pointered:
+        return "POINTED", (reach or None)
     if not widths:
         return "UNSEEN", None
     if len(widths) == 1 and reach == next(iter(widths)):
@@ -127,8 +182,8 @@ def selftest():
         p = os.path.join(d, "x.asm")
         open(p, "w").write(text)
         rel = os.path.relpath(p, ROOT)
-        w, r, _ = scan(names, [rel])
-        v, got = verdict(w, r)
+        w, r, _, ptr = scan(names, [rel])
+        v, got = verdict(w, r, ptr)
         if v != want_v or (want_r is not None and got != want_r):
             print(f"  selftest: {label}: got {v}/{got}, want {want_v}/{want_r}")
             fails += 1
@@ -149,9 +204,20 @@ def selftest():
     # ...and a DIFFERENT name that merely contains ours must not match.
     arm("a longer name containing ours", "UNSEEN", None, ["PRE"],
         "        ld (PREFIX),hl\n")
-    # ...nor a bare `ld hl,NAME` (that is the ADDRESS, not a read of the cell)
-    arm("an address load is not an access", "UNSEEN", None, ["ADR"],
-        "        ld hl,ADR\n")
+    # 🔴 ...and a bare `ld hl,NAME` IS STILL NOT A READ OF THE CELL -- but it is
+    # PROOF THAT READS EXIST WHICH THIS SCAN CANNOT SEE, so the verdict is
+    # POINTED, never UNSEEN and never UNAMBIGUOUS. Measured on GFX_SOCT.
+    arm("an address load is not an access, but it IS a warning",
+        "POINTED", None, ["ADR"], "        ld hl,ADR\n")
+    arm("a pointer OUTRANKS an otherwise clean byte access",
+        "POINTED", 1, ["PTD"],
+        "        ld a,(PTD)\n        ld hl,PTD\n        ld b,4\n")
+    # NEGATIVE: a cell with no pointer anywhere keeps its clean verdict, or the
+    # new rule would swallow every answer the tool used to give.
+    arm("NEGATIVE: no pointer -> the verdict is unchanged", "UNAMBIGUOUS", 2,
+        ["CLN"], "        ld (CLN),hl\n        ld hl,(CLN)\n")
+    # ...and an indirect load through the SAME register must not read as a
+    # pointer-take: `ld hl,(CLN)` is a word READ, which the arm above pins.
     print("  selftest: PASS" if not fails else f"  selftest: {fails} FAILURE(S)")
     return fails
 
@@ -175,36 +241,40 @@ def main(argv):
               f"{os.path.relpath(ALLOW, ROOT)} -- the parse broke, and a clean "
               f"run here would mean nothing.")
         return 2
-    files = {c: ram_map.files_for(c) for c in ("basic", "disk")}
+    # \U0001f534 ACCESSES, NOT DECLARATIONS -- see assembled_files() above.
+    files = {c: assembled_files(ram_map.files_for(c)) for c in ("basic", "disk")}
     gen = set()
     for comp in files:
         for p in files[comp]:
             if any(p.endswith(g) for g in ram_map.IMPORTED_FILES):
                 gen.add(p)
-    buckets = {"UNAMBIGUOUS": [], "AMBIGUOUS": [], "UNSEEN": []}
+    buckets = {"UNAMBIGUOUS": [], "AMBIGUOUS": [], "POINTED": [], "UNSEEN": []}
     for comp, names, why in allow:
         if want and why != want:
             continue
-        widths, seen, samples = scan(names.split("/"), files[comp])
-        v, reach = verdict(widths, seen)
-        buckets[v].append((comp, names, why, reach, samples))
+        widths, seen, samples, ptr = scan(names.split("/"), files[comp])
+        v, reach = verdict(widths, seen, ptr)
+        buckets[v].append((comp, names, why, reach, samples or ptr))
 
     total = sum(len(b) for b in buckets.values())
     print(f"width-scout: {total} pin(s) examined"
           + (f" (--why {want})" if want else "") + "\n")
-    for v in ("UNAMBIGUOUS", "AMBIGUOUS", "UNSEEN"):
+    for v in ("UNAMBIGUOUS", "AMBIGUOUS", "POINTED", "UNSEEN"):
         rows = buckets[v]
         print(f"== {v} ({len(rows)}) ==")
         for comp, names, why, reach, samples in rows:
             w = f"{reach} B" if reach else "-"
             print(f"  {comp:6} {names:28} {why:11} {w}")
-            if v == "AMBIGUOUS":
+            if v in ("AMBIGUOUS", "POINTED"):
                 for s in samples:
                     print(f"           | {s}")
         print()
     print("🔴 ONLY THE UNAMBIGUOUS SET IS SAFE TO WRITE INTO A DECLARATION. An")
-    print("   AMBIGUOUS cell is where a guessed width would have been WRONG, and")
-    print("   UNSEEN is not 'one byte' -- it is 'the code cannot speak for it'.")
+    print("   AMBIGUOUS cell is where a guessed width would have been WRONG;")
+    print("   UNSEEN is not 'one byte' -- it is 'the code cannot speak for it';")
+    print("   and POINTED means a pointer is taken to the cell, so accesses")
+    print("   exist that a NAME-keyed scan cannot see at all (GFX_SOCT: 1 B by")
+    print("   this reading, 4 B by the pointer walk, and `(2)` is correct).")
     if gen:
         print()
         print("🔴 AND NOT INTO THESE -- THEY ARE GENERATED, AND A WIDTH WRITTEN")

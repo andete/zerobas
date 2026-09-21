@@ -930,11 +930,42 @@ item — do **one item per session** to keep context lean.
       differ, and MOST of the 17 are the instrument, not the tree — for a
       buffer, the only access spelled with the name is its FIRST byte, so
       `FLD_DESC` reads 256 in prose and 1 in code and both are right.
-      ➡️ **THREE SMALL CELLS ARE NOT EXPLAINED BY THAT BIAS AND ARE FILED, NOT
-      FIXED:** `GFX_SOCT` and `FAT_SECPERFAT` declare `(word)` and `GFX_EOCT`
-      `(2)`, while every access spelled with those names is a BYTE. Either the
-      comment is a present-and-wrong width or the high byte is reached another
-      way. Needs a reading, not a rule.
+      🟢 **✅ READ 2026-09-21 (D-WIDTHSECT): ALL THREE COMMENTS WERE RIGHT AND
+      THE INSTRUMENT WAS WRONG TWICE.** `GFX_SOCT`/`GFX_EOCT` are compared as a
+      FOUR-BYTE record by `ld hl,GFX_SOCT / ld de,GFX_EOCT / ld b,4`; the
+      `ld a,(GFX_SOCT) / and 7` the scan saw reads only the octant bits, exactly
+      as the declaration says. And `FAT_SECPERFAT`'s word accesses
+      (`ld (FAT_SECPERFAT),de`) live in `basic/fat-prim-body.inc` — a SHARED body
+      `disk.rom` assembles and the `disk/*` glob does not contain.
+      🔴 **TWO INSTRUMENT DEFECTS, BOTH FIXED, BOTH OF WHICH WOULD HAVE TOLD A
+      FUTURE SWEEP TO WRITE A WRONG WIDTH:**
+      * **POINTED is a new verdict.** `ld hl,NAME` does not read the cell — an
+        arm pinned that and it is right about the INSTRUCTION — but it proves
+        accesses exist a NAME-keyed scan cannot see, so it now DEMOTES the
+        verdict instead of counting as silence. **10 of the 21 remaining
+        `undeclared` pins are POINTED**; every one of them read UNAMBIGUOUS
+        before.
+      * **A component's ACCESSES are not its file glob.** That glob answers
+        *where are the DECLARATIONS*. The scan now walks each component's files
+        PLUS everything they `include`, transitively — the same relation
+        `check_shared_bodies.py` uses to decide what "shared" means.
+      🔴 **AND I WAS WRONG TO CALL ALL 17 DISAGREEMENTS INSTRUMENT BIAS.** With
+      the instrument fixed the list is **4**, and TWO of them are real
+      present-and-wrong widths in the tree: `PG_SV_A8` (a 1-byte saved `$A8`
+      config) declared **48 B**, and `LHS_VARTYPE` (1 byte) declared **26 B**.
+      🔴 **THE CAUSE IS STRUCTURAL AND IT IS THE THIRD INSTANCE OF ONE SHAPE.**
+      `continuation()` walked straight through a `; --- section header ---`,
+      because a header is itself a comment line — so `LHS_VARTYPE` swallowed
+      1800+ characters of the NEXT section, including *"a 26-byte map"*
+      describing `DEFTBL`, a different cell. `purpose()` already splits on
+      `---`; the width reader did not. **The stop now lives in the shared walk
+      where both readers get it**, pinned by four A16 arms including one that
+      proves the arm can fail without the fix.
+      💰 **83 → 55 pins across the two passes.** Four more cells were then
+      declared honestly rather than borrowing a neighbour's number — `ERRMARK`
+      1 B, `GP_RECNO` 2 B, `RDV_MODE` 1 B (all three CODE-derived) and
+      `FLD_DESC` 256 B (from its own `[len][bytes:255]`, since the code only
+      POINTS at it). All comment-only: the three ROMs are byte-identical.
       ➡️ **AND THREE CELLS MOVED THE OTHER WAY, WHICH IS THE FIX WORKING:**
       `ARY_ADDR` now has a width and it OVERRUNS its neighbour;
       `CAL_CURHI`/`VRAM_FLAG` and `FREAD_LEFT`/`RDBLK_REQ` now have aliases that
@@ -3874,7 +3905,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:21578 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:21609 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -4040,7 +4071,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:8683 (T-6FE392)8 (T-529ABE)` from `TODO.md:19972 (T-529ABE)`: a
+      `TODO.md:8714 (T-6FE392)8 (T-529ABE)` from `TODO.md:20003 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -9527,7 +9558,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:19972 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:20003 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

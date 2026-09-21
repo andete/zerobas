@@ -32,7 +32,6 @@ basic CAL_SAVE/CAS_WCNT disputed
 basic CVT_MODE overruns
 basic DISKOP_A/PLY_NUMOVF disputed
 basic DISK_FCB/DISK_FCB_DRV overruns
-basic ERRMARK overruns
 basic FN_PAREA undeclared
 basic FN_PAREA_END undeclared
 basic FN_STK_FLOOR undeclared
@@ -50,12 +49,10 @@ basic KEYARG/WIDIG disputed
 basic LST_HI/RN_LINE/SL_DELHI/SL_SIZE overruns
 basic LST_PTR/SL_DELPTR/SL_TOK overruns
 basic MATH_A/RND_STATE/SQRT_Y disputed
-basic MC_TYPE overruns
 basic MIDS_DEST undeclared
 basic MULPROD/RND_ACCLE overruns
 basic OO_DEVTYPE overruns
 basic PU_COMMAS/PU_WP disputed
-basic RDV_MODE overruns
 basic RVDESC undeclared
 basic SH_BASE/SH_OP disputed
 basic SUB_INT_RAM overruns

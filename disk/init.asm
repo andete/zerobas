@@ -253,7 +253,7 @@ WA_SEG          equ     P1_BLIT + (p1_blit_end - p1_blit_tmpl)  ; base of the tw
 ; right after the WA_SEG hook bodies — dead during the DOS phase (SP is in page 2/3),
 ; written+read within one DI'd call. PG_SV_A8 is shared by both page-0 main-ROM calls.
 CONOUT_CHAR     equ     WA_SEG + (wa_seg_end_tmpl - wa_seg_rom_tmpl)  ; CONOUT: saved char (1 B)
-PG_SV_A8        equ     CONOUT_CHAR + 1                              ; shared: saved $A8 config
+PG_SV_A8        equ     CONOUT_CHAR + 1                              ; shared: saved $A8 config (1 B)
 ; A-2b (tier2-a2b-spec.md): a private interrupt stack so int_h_body is NON-DESTRUCTIVE
 ; when an interrupt fires with a corrupt caller SP (a primary derail) — it never marches
 ; that stack through memory. int_h saves the caller SP, runs on its own 48-byte stack,
