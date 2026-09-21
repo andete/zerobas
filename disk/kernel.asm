@@ -3114,13 +3114,234 @@ hkf_chk:
                 ld      (FILES_HASPAT),a
 hkf_run:
                 pop     af                  ; the selector, asserted only now
-                ld      ix,dirverb_op
-                call    calbak
-                jr      nc,hkf_done         ; CF crosses -- MEASURED two-sided
-                ld      a,2                 ; sub-ROM absent -> the mount/I-O face
-                ld      (DISKOP_STATUS),a
-hkf_done:
+                ld      (DISKOP_OP),a       ; op AND sink AND layout, all three
+                call    hkf_body            ; LOCAL: writes DISKOP_STATUS itself
                 scf                         ; CF=1: the hook is claimed
+                ret
+
+; --- hkf_body: the root-directory walk and the 8.3 emit, IN THIS ROM --------
+; D-FILESLOCAL (disk/docs/spec-diskcode-eviction.md §6.6ba). `tnt_files` and its
+; four helpers, moved verbatim except for the buffer name. This was
+; `ld ix,dirverb_op / call calbak` -- back into MAIN so main could `subrom_call`
+; on to `sub.rom`, the last of step 13's four round trips.
+;
+;   in   DISKOP_OP = DISKOP_SEL_FILES | DISKOP_SEL_LFILES (op AND sink AND
+;        layout); FILES_HASPAT = 1 if DISK_FCB_NAME holds an 8.3 wildcard
+;   out  DISKOP_STATUS = 0 nothing matched / 1 ok / 2 mount or DSKIO error
+;
+; 🔴 THIS BODY USES `DISKOP_STATUS` AS WORKING STATE, AND THAT IS NOT THE
+; §6.6aw VIOLATION IT LOOKS LIKE. The once-and-last rule exists because main's
+; FAT primitives are shims that marshal their own disposition through the same
+; cell, so a SECOND writer can land between yours. No call-back happens after
+; `hkf_run`, so no shim runs, and the cell is exclusively ours for the walk --
+; exactly as it was for the tenant. `df_end` READS it back (it must know whether
+; anything was emitted), which is why the seed and the df_do_emit store stay.
+;
+; 🔴 `FAT_DBUF`, NOT `FSECTOR_BUF`. The tenant spelled the per-ROM name in
+; CODE at two sites (the sector read and df_entptr's base); in THIS ROM that is
+; main's buffer at $E5C0 rather than ours at $E2A0, and it would have assembled
+; clean and walked a directory nobody read (§6.6c, §6.6ao).
+;
+; ⚠️ INTERRUPTS. A hook handler is entered with them OFF and nothing here turns
+; them back on: this ROM's `read_sector` is a plain local `call dskio`, where the
+; sub-ROM tenant's crossed by CALSLT. Measured either side of the move rather
+; than argued -- scratchpad/filesei_probe.py, and §6.6ba carries the numbers.
+; Clean-room: our own code, relocated; see basic/files.asm's header for the
+; FILES/LFILES provenance and the CF-3300 oracle citations (R-LF1/R-LF2/R-LF7,
+; docs/spec-basic-lfiles.md, docs/lptverb-msx1-characterization.md §4.2).
+hkf_body:
+                ; Seed the matched-any flag at "nothing matched", ALWAYS: the
+                ; walk sets it to 1 at df_do_emit the first time it emits, so a
+                ; listing that emits nothing raises ERR 53 whether or not the
+                ; caller gave a filespec. R-LF7 measured that the CF-3300 answers
+                ; `File not found` to a bare FILES over an empty volume too --
+                ; the same disposition, not a different one.
+                xor     a
+                ld      (DISKOP_STATUS),a
+                call    fat_mount           ; LOCAL primitive body
+                jp      c,hkf_io
+                ld      hl,(FAT_FIRSTROOT)
+                ld      (FAT_DIRSEC),hl
+                ld      hl,(FAT_ROOTSECS)
+                ld      (FAT_DIRREM),hl
+df_secloop:
+                ld      hl,(FAT_DIRREM)
+                ld      a,h
+                or      l
+                jr      z,df_end            ; scanned every root sector
+                ld      de,(FAT_DIRSEC)
+                ld      hl,FAT_DBUF
+                call    read_sector         ; LOCAL primitive body
+                jp      c,hkf_io            ; FDC / DSKIO error
+                xor     a
+                ld      (FILES_ENTIDX),a    ; entry 0..15 within this sector
+df_entloop:
+                call    df_entptr           ; HL -> current 32-byte dir entry
+                ld      a,(hl)
+                or      a
+                jr      z,df_end            ; $00 = first free slot -> end of dir
+                cp      $E5
+                jr      z,df_nextent        ; deleted entry
+                push    hl
+                ld      de,11
+                add     hl,de
+                ld      a,(hl)              ; attribute byte (+11)
+                pop     hl
+                and     $18                 ; volume-label | sub-dir -> skip
+                jr      nz,df_nextent
+                ld      a,(FILES_HASPAT)
+                or      a
+                jr      z,df_do_emit        ; bare listing -> everything
+                push    hl                  ; name_cmp advances HL by 11
+                ld      de,DISK_FCB_NAME
+                call    name_cmp            ; LOCAL; DE=pattern, HL=entry
+                pop     hl                  ; restore entry ptr (flags preserved)
+                jr      nz,df_nextent       ; no match -> skip
+df_do_emit:
+                ld      a,1
+                ld      (DISKOP_STATUS),a   ; at least one entry matched
+                call    df_emit
+df_nextent:
+                ld      a,(FILES_ENTIDX)
+                inc     a
+                ld      (FILES_ENTIDX),a
+                cp      16                  ; 512 / 32 entries per sector
+                jr      c,df_entloop
+                ld      hl,(FAT_DIRSEC)     ; advance to the next root-dir sector
+                inc     hl
+                ld      (FAT_DIRSEC),hl
+                ld      hl,(FAT_DIRREM)
+                dec     hl
+                ld      (FAT_DIRREM),hl
+                jr      df_secloop
+df_end:
+                ; D-DFEND: the SCREEN form leaves the cursor where the last entry
+                ; ended (measured three ways on the CF-3300); the PRINTER form
+                ; puts the head column back to 0, but ONLY when something was
+                ; emitted -- on a no-match both machines print `File not found`,
+                ; send nothing, and leave the head parked for R-LP16 to flush.
+                ; Zeroing unconditionally fixes one arm and breaks the other.
+                ld      a,(DISKOP_OP)
+                cp      DISKOP_SEL_LFILES
+                ret     nz                  ; SCREEN: leave the cursor put
+                ld      a,(DISKOP_STATUS)
+                dec     a                   ; 1 = at least one entry emitted
+                ret     nz                  ; nothing emitted -> head never moved
+                ld      (LPTPOS),a          ; A is 0 here
+                ret
+hkf_io:
+                ld      a,2
+                ld      (DISKOP_STATUS),a   ; -> main's kill_status does load_error
+                ret
+
+; df_entptr -- HL = FAT_DBUF + FILES_ENTIDX*32 (the current dir entry).
+; Recomputed from RAM each time so the emit path's register clobber is harmless.
+df_entptr:
+                ld      a,(FILES_ENTIDX)
+                ld      l,a
+                ld      h,0
+                add     hl,hl               ; *2
+                add     hl,hl               ; *4
+                add     hl,hl               ; *8
+                add     hl,hl               ; *16
+                add     hl,hl               ; *32
+                ld      de,FAT_DBUF
+                add     hl,de
+                ret
+
+; df_emit -- print one directory entry's 8.3 name field. HL -> the 32-byte
+; directory entry (name at +0..10). Clobbers regs; the entry index lives in RAM
+; so the caller re-derives the pointer.
+; R-LF1: the printer form has no separator and no wrap -- the wrap decision reads
+; CSRX and LINLEN, the SCREEN cursor and the SCREEN width, so on the printer it
+; would be reading an unrelated device.
+df_emit:
+                ld      a,(DISKOP_OP)
+                cp      DISKOP_SEL_LFILES
+                jr      z,de_field
+                ld      a,(CSRX)
+                dec     a                   ; 0-based column (0 = line start)
+                or      a
+                jr      z,de_field          ; first field on the line
+                ; D-DFEND: the space is a TRAILING one shared with the printer,
+                ; not a separator emitted BEFORE the next field -- the two are
+                ; indistinguishable row by row and differ where the cursor comes
+                ; to REST, which is the one place the reference could be read.
+                ; The `cp 13` is DELIBERATELY UNCHANGED: requiring field+space to
+                ; fit is what keeps the trailing space off the last column.
+                ld      b,a                 ; B = current 0-based column
+                ld      a,(LINLEN)
+                sub     b                   ; A = columns left on this line
+                cp      13                  ; need 12 (field) + 1 (its space)
+                jr      nc,de_field         ; room -> emit the field here
+                call    df_crlf             ; no room -> wrap to a new line
+de_field:
+                ld      b,8                 ; 8 name chars, raw off the disk
+de_name:
+                ld      a,(hl)
+                push    hl
+                push    bc
+                call    df_out
+                pop     bc
+                pop     hl
+                inc     hl
+                djnz    de_name
+                push    hl                  ; '.' between name and extension
+                ld      a,'.'
+                call    df_out
+                pop     hl
+                ld      b,3                 ; 3 extension chars
+de_ext:
+                ld      a,(hl)
+                push    hl
+                push    bc
+                call    df_out
+                pop     bc
+                pop     hl
+                inc     hl
+                djnz    de_ext
+                ; R-LF2, widened by D-DFEND: the trailing space is emitted on
+                ; BOTH sinks; only the CR/LF after it stays printer-only.
+                ld      a,' '
+                call    df_out
+                ld      a,(DISKOP_OP)
+                cp      DISKOP_SEL_LFILES
+                ret     nz                  ; SCREEN: the reference ends here
+                ; fall through -> CR/LF
+
+; df_crlf -- end the current line on the active sink. This is print_crlf's body;
+; print_crlf itself is main PAGE 1, and the head/body fork it forced is exactly
+; what kept FILES out of the Phase-2 eviction.
+df_crlf:
+                ld      a,13
+                call    df_out
+                ld      a,10
+                ; fall through -> df_out (its `ret` is this routine's)
+
+; df_out -- emit the byte in A to the active sink: CHPUT for FILES, LPTOUT for
+; LFILES. Preserves HL/DE/BC exactly as main's `pchar` does, so it is a drop-in
+; for the `call CHPUT` sites this code carried while it was resident.
+; ⚠️ A PLAIN `call` REACHES BOTH. Page 0 holds the main ROM while BASIC runs --
+; `calbak`'s own `jp CALSLT` ($001C) already depends on it. The MSX-DOS side of
+; this ROM pages the BIOS in by hand because THERE page 0 is RAM; that is a
+; different environment, not a precedent for this one.
+df_out:
+                push    hl
+                push    de
+                push    bc
+                ld      c,a                 ; C survives the DISKOP_OP load
+                ld      a,(DISKOP_OP)
+                cp      DISKOP_SEL_LFILES
+                ld      a,c
+                jr      z,dfo_lpt
+                call    CHPUT
+                jr      dfo_done
+dfo_lpt:
+                call    LPTOUT
+dfo_done:
+                pop     bc
+                pop     de
+                pop     hl
                 ret
 
                 ds      $75A5 - $, $00

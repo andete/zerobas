@@ -34,7 +34,7 @@ names the other component's BUFFER this address falls within. That
 second one is the question a per-component map cannot answer.
 
 * **basic** — 418 declared addresses in this project's own workspace `$E000..$F37F` (318 with a machine-readable width), plus **79** in the MSX standard work area at or above `$F380`.
-* **disk** — 126 declared addresses in this project's own workspace `$E000..$F37F` (89 with a machine-readable width), plus **22** in the MSX standard work area at or above `$F380`.
+* **disk** — 128 declared addresses in this project's own workspace `$E000..$F37F` (91 with a machine-readable width), plus **24** in the MSX standard work area at or above `$F380`.
 
 ## This project's own workspace (`$E000..$F37F`)
 
@@ -144,6 +144,7 @@ second one is the question a per-component map cannot answer.
 | `$E0F5` | 1 B | `basic` | `FMT_GEOMSEL/TSV_CNT` | main -> tenant: 0 = 360k, 1 = 720k (1) |  |
 | `$E0F6` |  | `basic` | `FMT_RESULT/TSV_NAME` | tenant -> main: 0 = ok, 1 = DSKIO write error (1) |  |
 | `$E0FC` |  | `basic` | `FILES_ENTIDX/IN_RDLEN` | FILES: dir entry index 0..15 within a sector (1) |  |
+| `$E0FC` | 1 B | `disk` | `FILES_ENTIDX` | FILES: dir entry index 0..15 within a sector (1) |  |
 | `$E0FD` | 1 B | `basic` | `FCH_NUM` | open channel's file number, 0 = none open (1) |  |
 | `$E0FE` | 1 B | `basic` | `FCH_MODE` | open mode: 0=none, 1=INPUT, 2=OUTPUT (1) |  |
 | `$E0FF` |  | `basic` | `FCH_RDMODE` | current read: 0=INPUT# (stop at ','/CR), 1=LINE (1) |  |
@@ -437,6 +438,7 @@ second one is the question a per-component map cannot answer.
 | `$EA36` |  | `basic` | `AU_INC/RN_INC` | AUTO: the increment (2) |  |
 | `$EA38` | 1 B | `basic` | `RL_AUTO` | read_line: 1 = AUTO's polling mode (1) |  |
 | `$EA39` | 1 B | `basic` | `LPTPOS` | printer head column, 0-based (1) |  |
+| `$EA39` | 1 B | `disk` | `LPTPOS` | printer head column, 0-based (1) |  |
 | `$EA3A` | 2 B | `basic` | `GP_SRC` | pass cursor into FSECTOR_BUF (2) |  |
 | `$EA3C` |  | `basic` | `GP_LEFT` | record bytes still to move (2) -> ends $EA3E |  |
 | `$EA3E` |  | `basic` | `CLR_SAVE` | fg+bg, in flight across a COLOR statement (2) |  |
@@ -607,11 +609,13 @@ extents the standard already fixes would be noise, not rigour.
 | `$F3AE` |  | `basic` | `LINL40` | text columns for SCREEN 0 (WIDTH default) |  |
 | `$F3AF` |  | `basic` | `LINL32` | text columns for SCREEN 1 (WIDTH default) |  |
 | `$F3B0` |  | `basic` | `LINLEN` | current line length (active width) |  |
-| `$F3B1` |  | `basic` | `CRTCNT` | number of text rows on the screen (MSX work area; D-SCREDIT) |  |
-| `$F3B3` |  | `basic` | `BASETAB` | BASE(0..19): 20 LE words, 4 groups of 5 (name, colour, |  |
+| `$F3B0` | 7 B | `disk` | `LINLEN` | current line length = the active width (ditto) |  |
+| `$F3B1` |  | `basic` | `CRTCNT` | number of text rows on the screen (MSX work area; D-SCREDIT) | `disk` LINLEN |
+| `$F3B3` |  | `basic` | `BASETAB` | BASE(0..19): 20 LE words, 4 groups of 5 (name, colour, | `disk` LINLEN |
 | `$F3DB` |  | `basic` | `CLIKSW` | keyboard click: 0 = off, nonzero = on (1) |  |
 | `$F3DC` |  | `basic` | `CSRY` | cursor row (1-based); the CSRLIN pseudo-variable reads it |  |
 | `$F3DD` |  | `basic` | `CSRX` | cursor column (1-based); C-BIOS sysvars / PRINT comma zones |  |
+| `$F3DD` |  | `disk` | `CSRX` | cursor column, 1-based (MSX standard work area; |  |
 | `$F3DE` |  | `basic` | `CNSDFG` | function-key display flag: $FF = shown, 0 = hidden |  |
 | `$F3DF` | 8 B | `basic` | `RG0SAV` | VDP register 0..7 mirrors ($F3DF..$F3E6); RG1SAV = +1 |  |
 | `$F3E0` | 2 B | `basic` | `RG1SAV` | VDP register 1 mirror; bits 1..0 = SCREEN's sprite-size |  |

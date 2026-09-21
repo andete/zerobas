@@ -16,6 +16,20 @@ SYSTEM          equ     $F37D   ; SYSTEM sysvar: BDOS entry-point word
 DOS_F340        equ     $F340   ; disk work-area flag the kernel reads at init (§8.33); $00 = ok
 RAMAD0          equ     $F341   ; RAM-slot id per page ($F341-$F344), MSX2 TH work area
 EXPTBL          equ     $FCC1   ; expanded-slot flags, 1 byte/primary, bit 7 = expanded
+; D-FILESLOCAL (disk/docs/spec-diskcode-eviction.md §6.6ba): FILES/LFILES emit
+; from THIS ROM now, so it needs the list-device entry beside CHPUT ($00A2,
+; disk/init.asm) and the two SCREEN cells the wrap decision reads.
+; 🔴 ALL THREE ARE PUBLISHED MSX CONSTANTS, NOT OUR CHOICES, which is why
+; re-declaring them here cannot drift -- the same rule EXPTBL above is under.
+; A BIOS entry is reachable by a plain `call` from a hook handler: page 0 holds
+; the main ROM while BASIC runs, which `calbak`'s own `jp CALSLT` ($001C) already
+; relies on. That is NOT the MSX-DOS case, where page 0 is RAM and lstout_body
+; has to page the BIOS in (disk/kernel.asm) -- do not read one for the other.
+LPTOUT          equ     $00A5   ; MSX BIOS: send the character in A to the list
+                                ; device (MSX2 TH; same class as CHPUT $00A2)
+CSRX            equ     $F3DD   ; cursor column, 1-based (MSX standard work area;
+                                ; same address basic/sysvars.inc declares)
+LINLEN          equ     $F3B0   ; current line length = the active width (ditto)
 ; --- D-DISKVERB: the call-back route out of this ROM into main PAGE 1 -------
 ; CALSLT is the BIOS's own inter-slot call (MSX2 TH). Page 0 is never swapped
 ; (spec-diskbasic-hook-rearchitecture.md §2), so it stays mapped while it

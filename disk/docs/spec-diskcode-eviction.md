@@ -3774,6 +3774,93 @@ the three ERR 5 refusals.
 `tnt_files` emits through `CHPUT`/`LPTOUT` and spells `FSECTOR_BUF` in CODE at
 two sites. Scout it before pricing it.
 
+### 6.6ba 🟢 `FILES`/`LFILES` FOLLOWS, AND STEP 13'S LAST ROUND TRIP IS GONE (D-FILESLOCAL, 2026-09-21)
+
+The fourth and last of the ported disk verbs. `tnt_files` and its four helpers
+(`df_entptr`, `df_emit`, `df_crlf`, `df_out`) move into `disk/kernel.asm` as
+`hkf_body`, and `hk_files`' `ld ix,dirverb_op / call calbak` becomes a local
+call. **`dirverb_tenant` now serves TWO ops instead of eight.**
+
+🔬 **THE SCOUT FIRST, BECAUSE THIS ARC HAS PAID TWICE FOR SKIPPING IT.** Four
+questions, four answers, all by grep before a line was written:
+* `FAT_FIRSTROOT`, `FAT_ROOTSECS`, `FAT_DIRSEC`, `FAT_DIRREM` — **already
+  disk-local** in `disk/equates.inc`; `name_cmp`, `fat_mount`, `read_sector` are
+  in `fat-prim-body.inc`, already included; `FILES_HASPAT` is **already in the
+  generated ABI** and `hk_files` already writes it.
+* `FILES_ENTIDX` — main's, one consumer. ⚠️ **AND IT IS AN ALIASED CELL:**
+  `basic/sysvars.inc` puts `IN_RDLEN` on the same address (`$E0FC`) with the
+  stated argument that a listing and a file read are mutually exclusive.
+  Publishing the address UNCHANGED keeps that argument intact; a disk-local twin
+  would have created a second cell and quietly retired an exclusion nobody
+  re-derived.
+* `CSRX`/`LINLEN` — MSX **standard work-area** cells, re-declared in
+  `disk/equates.inc` under the same rule `EXPTBL` is already under: a published
+  constant cannot drift. `LPTPOS` is ours, so it goes through the ABI.
+* `CHPUT`/`LPTOUT` — **reachable by a plain `call`**, and the proof was already
+  in the tree: `calbak` does `jp CALSLT` to `$001C`, a page-0 BIOS entry, on
+  every existing hook call-back. Page 0 holds the main ROM while BASIC runs.
+  🔴 **DO NOT READ THIS ROM'S MSX-DOS SIDE AS A PRECEDENT** — `lstout_body`
+  pages the BIOS in by hand (`pg0_mainrom_in`) because THERE page 0 is RAM. Two
+  environments, one ROM; the DOS one nearly cost this slice a page-mapping dance
+  it does not need.
+
+🔴 **A PREDICTION WAS STATED BEFORE THE RUN AND IT MISSED.** `hk_kill`'s header
+names the case that re-opens D-XSLOTPRICE 0c's interrupt finding: *"a phase-3
+body that does long work in THIS ROM rather than inside a call-back."* `FILES` is
+that body — a whole root-directory walk plus a `CHPUT` per character — and this
+ROM's `read_sector` is a plain local `call dskio` where the tenant's crossed by
+CALSLT, which hands interrupts back. **I predicted the clock would freeze and
+that an `ei` on entry would be needed.** Measured either side of the move with
+`scratchpad/filesei_probe.py`: a bare `FILES` over `disk/test720.dsk` advanced
+`TIME` by **4 frames BEFORE and 4 frames AFTER**. No `ei` is shipped, on the same
+rule `hk_kill` settled: a byte whose measured effect is zero should not be.
+
+🎯 **AND "4 = 4" ONLY MEANS SOMETHING BECAUSE THE INSTRUMENT CARRIES ITS OWN
+CONTROLS** — *no change* is also exactly what a dead fence prints. Measured in the
+same run: an empty window reads **1** (the floor: two `TIME` samples with only a
+`PRINT` between them), `FOR I=1 TO 60` reads **15**, `FOR I=1 TO 240` reads
+**59**. The fence sits at its floor across nothing, grows with the work and
+scales linearly. A frozen verb would read the floor; `FILES` reads 4 in both
+builds. ⚠️ **The BEFORE build is the subject's own positive control**: its
+sector reads crossed by CALSLT, so its reading IS this verb's interrupts-on
+figure, and the AFTER build matches it.
+
+⚠️ **THE PROBE'S FIRST CUT REFUSED, AND THAT WAS THE RIGHT ANSWER.** Its control
+loops were sized by guess (500 and 2000); the second never finished inside the
+capture window, so two of three fences printed. It exited 2 rather than reporting
+the two it had. The loops are sized off the first reading now, and the counts are
+VARIABLES — the first cut hard-coded them twice, in the program and in the print
+label, so resizing left the label naming inputs the run had not used.
+
+🔴 **`hkf_body` USES `DISKOP_STATUS` AS WORKING STATE, AND THAT IS NOT THE
+§6.6aw VIOLATION IT LOOKS LIKE.** The once-and-last rule exists because main's
+FAT primitives marshal their own disposition through the same cell, so a SECOND
+writer can land between yours. No call-back happens after `hkf_run`, so no shim
+runs and the cell is exclusively ours for the walk — and `df_end` must READ it
+back to know whether anything was emitted (D-DFEND's conditional `LPTPOS` store).
+The seed and the `df_do_emit` store therefore stay.
+
+💬 **THE TENANT'S FILE HEADER WAS REWRITTEN, NOT PATCHED.** It described *"the
+disk I/O bodies of the directory verbs KILL and NAME"*; all five have left, and
+what remains is `DSKO$`/`DSKI$` — raw sectors, not directory verbs. It also had
+an ORPHANED `; --- NAME "old" AS "new" ---` block sitting above `dv_err`, left by
+§6.6aw. ➡️ **Filed, not done:** the tenant, its file, `dirverb_op` and
+`SUBROM_IDX_DIRVERB` still carry the directory-verb name. Renaming them crosses
+the sub-ROM index, the resident ABI and main's veneer, so the name is DOCUMENTED
+rather than half-changed.
+
+💰 **sub page 1 439 B → 706 B free**, `disk.rom` 7528 → 7279 B, main unchanged
+(2026-09-21, clean tree). Across step 13's four slices sub page 1 went
+**145 → 706 B**.
+
+🔬 **VERIFIED BY NAME:** `diskbasic-acceptance` 34/34 with its `FILES` row, and
+`lptverb-acceptance`'s 46 rows — which is where `LFILES` actually lives;
+`diskbasic-acceptance` has no `LFILES` row and never did.
+
+➡️ **WHAT IS LEFT OF STEP 13 IS NOTHING** — `DSKO$` and `DSKI$` are called from
+MAIN, not from a hook, so they have no round trip to delete. The residual is the
+RENAME above, and it is cosmetic.
+
 ## 6.7 🔍 GAP ANALYSIS — zerobas AGAINST THE MEASURED PROTOCOL (D-HOOKCENSUS, 2026-09-19)
 
 > 🏗️ **RULED BY JOOST, 2026-09-20: *"I think the answer to Two is obvious: we do

@@ -176,6 +176,18 @@ REQUIRED_DISK_RAM = [
                                 # destination's delete/create (both clobber
                                 # FAT_FIRSTCLUS through fat_find)
     "COPY_LEFT",                # bytes still to copy (4-byte LE)
+    # D-FILESLOCAL (spec-diskcode-eviction.md §6.6ba): FILES/LFILES' walk and
+    # emit run in disk.rom now. FILES_HASPAT is already published above.
+    # ⚠️ FILES_ENTIDX IS AN ALIASED CELL AND THE ALIAS IS DELIBERATE.
+    # basic/sysvars.inc puts IN_RDLEN on the same address ($E0FC) with the
+    # stated argument that a directory listing and a file read are mutually
+    # exclusive. Publishing the address UNCHANGED keeps that argument exactly as
+    # it was -- the walk is still the only writer of this name, and it still
+    # cannot overlap a read. A disk-local twin would have created a SECOND cell
+    # and quietly retired an exclusion nobody re-derived.
+    "FILES_ENTIDX",             # dir entry index 0..15 within the current sector
+    "LPTPOS",                   # printer head column: LFILES zeroes it at the end
+                                # of a listing that emitted something (D-DFEND)
 ]
 # CALL-BACK: main PAGE-1 targets, reached by an INTER-SLOT CALL, not by an
 # absolute one -- the third class, and the one the hook re-architecture needs

@@ -620,12 +620,38 @@ item — do **one item per session** to keep context lean.
       🔬 `copy-acceptance` 8 rows / 0 divergences, byte-for-byte on content,
       including `c.big` at 2048 B (the multi-sector loop) and the three ERR 5
       refusals `c.self` / `c.wild` / `c.nodest`.
-      ➡️ **`FILES`/`LFILES` IS WHAT IS LEFT, AND IT IS NOT THE SAME SHAPE
-      EITHER** — `tnt_files` emits through `CHPUT`/`LPTOUT` and spells
-      `FSECTOR_BUF` in CODE at two sites (`sub/dirverb.asm:196`, `:301`), which
-      in `disk.rom` is main's buffer. **Scout it before pricing it.** It is the
-      one that leaves `dirverb_tenant` holding `DSKO$`/`DSKI$` only — and both
-      of those are called from MAIN, so the tenant does not empty.
+      🟢 **✅ FOURTH AND LAST SLICE DONE 2026-09-21 (§6.6ba, D-FILESLOCAL):
+      `FILES`/`LFILES` FOLLOWS.** `tnt_files` and its four helpers become
+      `hkf_body` in `disk/kernel.asm`; `dirverb_tenant` serves TWO ops instead
+      of eight. The scout ran FIRST this time: the FAT scratch cells and
+      `name_cmp`/`fat_mount`/`read_sector` were already disk-local,
+      `FILES_HASPAT` was already in the ABI, `CSRX`/`LINLEN` are MSX standard
+      work-area constants that cannot drift, and `CHPUT`/`LPTOUT` are reachable
+      by a plain `call` — proven by `calbak`'s own `jp CALSLT` to `$001C`.
+      ⚠️ **`FILES_ENTIDX` IS AN ALIASED CELL** (`IN_RDLEN` shares `$E0FC` on a
+      stated mutual-exclusion argument), so the address is published UNCHANGED;
+      a disk-local twin would have retired an exclusion nobody re-derived.
+      🔴 **A PREDICTION WAS STATED AND IT MISSED.** `hk_kill`'s header names
+      the case that re-opens 0c's interrupt finding — *"a phase-3 body that does
+      long work in THIS ROM"* — and `FILES` is it. I predicted a frozen clock and
+      an `ei`. Measured either side with `scratchpad/filesei_probe.py`: a bare
+      `FILES` advanced `TIME` by **4 frames BEFORE and 4 AFTER**. No `ei` ships.
+      🎯 **AND THE INSTRUMENT CARRIES ITS OWN CONTROLS**, because *no change*
+      is what a dead fence prints too: empty window **1** (the floor), `FOR 1..60`
+      **15**, `FOR 1..240` **59** — at its floor across nothing, growing with the
+      work, scaling. The BEFORE build is the subject's own positive control: its
+      sector reads crossed by CALSLT, so its figure IS interrupts-on.
+      💰 **sub page 1 439 B → 706 B free**, `disk.rom` 7528 → 7279 B, main
+      unchanged. Across the four slices sub page 1 went **145 → 706 B**.
+      🔬 `diskbasic-acceptance` 34/34 with its `FILES` row, and
+      `lptverb-acceptance`'s 46 rows — where `LFILES` actually lives;
+      `diskbasic-acceptance` has no `LFILES` row and never did.
+      ➡️ **STEP 13 IS DONE.** `DSKO$`/`DSKI$` are called from MAIN, not from a
+      hook, so they have no round trip to delete. ⚠️ **ONE COSMETIC RESIDUAL,
+      FILED NOT DONE:** the tenant, `sub/dirverb.asm`, `dirverb_op` and
+      `SUBROM_IDX_DIRVERB` still carry the directory-verb name though no
+      directory verb is left in them. The file header says so; renaming crosses
+      the sub-ROM index, the resident ABI and main's veneer.
 
 - [ ] 🔬 **SHOULD MAIN AND `disk.rom` USE THE SAME ADDRESS FOR THE SAME THING? —
       JOOST'S QUESTION, AND THE MAP CAN PRICE IT**
@@ -3755,7 +3781,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:21459 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:21485 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -3921,7 +3947,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:8564 (T-6FE392)8 (T-529ABE)` from `TODO.md:19853 (T-529ABE)`: a
+      `TODO.md:8590 (T-6FE392)8 (T-529ABE)` from `TODO.md:19879 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -9408,7 +9434,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:19853 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:19879 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

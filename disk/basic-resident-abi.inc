@@ -42,6 +42,8 @@ main_FWR_DIROFF equ 0E9F9H   ; main's FWR_DIROFF -- byte offset of that dir entr
 COPY_SRC equ 0E080H   ; the source's 11-byte 8.3 name field
 COPY_CLUS equ 0E08BH   ; the source's first cluster (word)
 COPY_LEFT equ 0E08DH   ; bytes still to copy (4-byte LE)
+FILES_ENTIDX equ 0E0FCH   ; FILES: dir entry index 0..15 within a sector (1)
+LPTPOS equ 0EA39H   ; printer head column, 0-based (1)
 
 ; --- page-1 call-back targets: reached by an INTER-SLOT call (MSX2 TH), not an absolute one ---
 fname_expr equ 06E19H
