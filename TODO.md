@@ -555,6 +555,43 @@ item — do **one item per session** to keep context lean.
       is in `DISK_FCB_NAME` before the mount), so §6.6av's ordering question
       does not arise for it.
 
+- [ ] 🔬 **SHOULD MAIN AND `disk.rom` USE THE SAME ADDRESS FOR THE SAME THING? —
+      JOOST'S QUESTION, AND THE MAP CAN PRICE IT**
+      🎚️ TIER 2 — reasonable time; it would retire an apparatus rather than add
+      one, and it is upstream of steps 10 and 13.
+      🙋 **NEEDS-JOOST** — the answer is a ruling about RAM architecture, and
+      one of the two readings of it has a real behavioural risk.
+      🙋 **HIS WORDS, 2026-09-21:** *"Shouldn't we try to use the same address
+      for both main and disk for the same thing?"*
+      🟢 **THE PRIZE IS CONCRETE:** the whole `FAT_DBUF`/`FAT_MBUF` neutral-name
+      convention — and `shared-body-check`'s rule 2 that now polices it — exists
+      ONLY because the two ROMs put the same thing at different addresses. Same
+      address, and a shared body spells one name and is right everywhere.
+      🔬 **MEASURED 2026-09-21 from `docs/ram-map.md`:**
+      main data `FSECTOR_BUF` `$E5C0..$E7BF` · main meta `FWBUF`
+      `$E7C0..$E9BF` · disk data `SECTOR_BUF` `$E2A0..$E49F` · disk meta `WBUF`
+      `$E560..$E75F`.
+      🔴 **THEY ARE NOT MERELY DIFFERENT — THEY ARE PARTLY ALIASED WITHOUT
+      AGREEING:** disk's META buffer overlaps main's DATA buffer across
+      **416 B** (`$E5C0..$E75F`). That is the worst of both arrangements.
+      ⚠️ **AND EACH ALREADY HOSTS THE OTHER MAP'S CELLS:** main data hosts 23
+      declared disk cells, main meta 20, disk data **25** basic cells, disk meta
+      2.
+      ➡️ **TWO PROPOSALS HIDE IN THE QUESTION, AT VERY DIFFERENT PRICES:**
+      **(a) same address, still two buffers** — a RELOCATION, not a rename.
+      Needs 512 B free at the target in the other ROM's map, and §6.6al measured
+      disk's `SECTOR_BUF` window at 510 of 512 occupied by MAIN cells.
+      **(b) ONE buffer, shared** — halves the RAM and is the stronger answer,
+      but needs the mutual-exclusion argument §6.6q says is exactly what is NOT
+      established: during a crossing the disk side holds a sector while main's
+      state has to survive. This is step 10's question wearing another hat.
+      🔬 **THE MEASUREMENT THAT WOULD SETTLE (b)** is `mergewin_probe.py`'s:
+      a `write_mem` watchpoint over one buffer, bracketed across every window in
+      which the other side could be live. A CLEAN result is the licence; a dirty
+      one names the cells to move.
+      ⚠️ **DO NOT START EITHER WITHOUT HIM** — (a) spends RAM this tree does not
+      have and (b) changes an invariant three shipped slices rest on.
+
 - [ ] 🔬 **COMPARE RAM *USAGE* AGAINST THE REFERENCE, CELL BY CELL — AND JOOST'S
       HUNCH IS THE HYPOTHESIS TO SCORE**
       🎚️ TIER 2 — reasonable time: it is not a divergence hunt, it is a cost
@@ -3646,7 +3683,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:21350 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:21387 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -3812,7 +3849,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:8455 (T-6FE392)8 (T-529ABE)` from `TODO.md:19744 (T-529ABE)`: a
+      `TODO.md:8492 (T-6FE392)8 (T-529ABE)` from `TODO.md:19781 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -9299,7 +9336,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:19744 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:19781 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
