@@ -34,7 +34,7 @@ names the other component's BUFFER this address falls within. That
 second one is the question a per-component map cannot answer.
 
 * **basic** — 418 declared addresses in this project's own workspace `$E000..$F37F` (384 with a machine-readable width), plus **79** in the MSX standard work area at or above `$F380`.
-* **disk** — 128 declared addresses in this project's own workspace `$E000..$F37F` (110 with a machine-readable width), plus **24** in the MSX standard work area at or above `$F380`.
+* **disk** — 128 declared addresses in this project's own workspace `$E000..$F37F` (113 with a machine-readable width), plus **24** in the MSX standard work area at or above `$F380`.
 
 ## This project's own workspace (`$E000..$F37F`)
 
@@ -229,8 +229,8 @@ second one is the question a per-component map cannot answer.
 | `$E224` | 1 B | `basic` | `SV_OP` | 1 B: main -> tenant, SV_OP_* engine selector |  |
 | `$E225` | 1 B | `basic` | `SV_STAT` | 1 B: tenant -> main, 0 = written, 1 = load_error |  |
 | `$E226` | 1 B | `basic` | `TRACEFLAG` | 1 B: TRON state (0 = TROFF) |  |
-| `$E227` | 2 B | `basic` | `FN_RESUME` | D-FNEXPR: text cursor just past a filename |  |
-| `$E227` |  | `disk` | `FN_RESUME` | D-FNEXPR: text cursor just past a filename |  |
+| `$E227` | 2 B | `basic` | `FN_RESUME` | D-FNEXPR: cursor past a filename expr (2 B) |  |
+| `$E227` | 2 B | `disk` | `FN_RESUME` | D-FNEXPR: cursor past a filename expr (2 B) |  |
 | `$E229` | 1 B | `basic` | `LOC_COL` | 1 B: LOCATE's parsed column, pre-clamp |  |
 | `$E22A` | 1 B | `basic` | `LOC_ROW` | 1 B: LOCATE's parsed row, pre-clamp |  |
 | `$E22B` | 2 B | `basic` | `SW_ADDR` | 2 B: the operand just resolved |  |
@@ -244,8 +244,8 @@ second one is the question a per-component map cannot answer.
 | `$E238` | 2 B | `basic` | `TEMPTOP` | current cursor (2 B) |  |
 | `$E268` | 2 B | `basic` | `FRETOP` | heap low boundary; heap occupies (2 B) |  |
 | `$E26A` | 3 B | `basic` | `RVDESC` | $E26A: [len:1][ptr:2] scratch descriptor (3 B) |  |
-| `$E26D` | 256 B | `basic` | `STRSCR` | $E26D: [len][bytes:STRMAX] staging |  |
-| `$E26D` |  | `disk` | `STRSCR` | $E26D: [len][bytes:STRMAX] staging |  |
+| `$E26D` | 256 B | `basic` | `STRSCR` | [len][bytes:STRMAX] staging, $E26D..$E36C |  |
+| `$E26D` | 256 B | `disk` | `STRSCR` | [len][bytes:STRMAX] staging, $E26D..$E36C |  |
 | `$E299` | 1 B | `disk` | `FDC_IFF` | saved caller IFF2 across a sector op (1 = was EI) (1 B) | `basic` STRSCR |
 | `$E29A` | 1 B | `disk` | `FDC_CNT` | remaining sector count (1 B) | `basic` STRSCR |
 | `$E29B` | 2 B | `disk` | `FDC_LSEC` | current logical sector (word) | `basic` STRSCR |
@@ -426,8 +426,8 @@ second one is the question a per-component map cannot answer.
 | `$E9F9` | 2 B | `disk` | `main_FWR_DIROFF` | main's FWR_DIROFF -- byte offset of that dir entry within its sector (word) |  |
 | `$E9FB` | 1 B | `basic` | `AUDIO_VMASK/DISKOP_OP/FOPEN_SEL/LE_OP` | main -> tenant: DISKOP_SEL_* primitive selector (1) |  |
 | `$E9FB` | 1 B | `disk` | `DISKOP_OP/FOPEN_SEL` | main -> tenant: DISKOP_SEL_* primitive selector (1) |  |
-| `$E9FC` | 1 B | `basic` | `AUDIO_STATUS/BN_STAT/CM_STATUS/DEFT_STATUS/DISKOP_STATUS/LE_STATUS` | tenant -> main: 0 = ok (Cy=0 / Z set); nonzero = |  |
-| `$E9FC` |  | `disk` | `DISKOP_STATUS` | tenant -> main: 0 = ok (Cy=0 / Z set); nonzero = |  |
+| `$E9FC` | 1 B | `basic` | `AUDIO_STATUS/BN_STAT/CM_STATUS/DEFT_STATUS/DISKOP_STATUS/LE_STATUS` | $E9FC tenant->main: 0 ok / nonzero ERR code |  |
+| `$E9FC` | 1 B | `disk` | `DISKOP_STATUS` | tenant -> main: the disposition (1 B) |  |
 | `$E9FD` |  | `basic` | `DISKOP_A/PLY_NUMOVF` | tenant -> main: the primitive's real A output, |  |
 | `$E9FE` |  | `basic` | `BN_PTR/DISKOP_HL` | tenant -> main: the primitive's real HL output |  |
 | `$EA00` | 16 B | `basic` | `FCH_MODES` | 16 B ($EA00..$EA0F) |  |

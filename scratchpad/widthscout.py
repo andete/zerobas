@@ -282,7 +282,64 @@ def main(argv):
         print("   pins were deleted on widths that then vanished):")
         for p in sorted(gen):
             print(f"     {p}   <- fix the width in MAIN's own declaration instead")
+    abi_width_audit()
     return 0
+
+
+def abi_width_audit():
+    """Published ABI cells whose width lives BELOW their `equ` line.
+
+    🔴 WHY THIS EXISTS. `tools/gen_resident_abi.py` copies each published cell's
+    comment so the width travels to disk.rom and sub.rom -- but `_scrape_origin`
+    reads the `equ` LINE ONLY. A width spelled one line down (the `SH_SRC` shape,
+    which this tree uses constantly) is therefore DROPPED, and the imported cell
+    arrives width-less. Measured 2026-09-21: that is the entire reason
+    `disk DISKOP_STATUS`, `disk FN_RESUME` and `disk STRSCR` were pinned.
+
+    ⚠️ IT IS ADVISORY, NOT A GATE, AND THE REASON IS `TXTBASE`. A hit means the
+    joined block declares a width the line does not -- which is EITHER a real
+    width being lost OR a FALSE reading of the joined block. `TXTBASE`'s joined
+    comment yields **2304**, off `TXTMAX`'s preamble ("Lowered 2304 B below the
+    $C000 BLOAD ceiling"); TXTBASE has no such extent. Refusing on this signal
+    would demand a fix where the right action is nothing
+    [[a-claim-about-empty-space-read-as-a-cells-extent]].
+
+    🎯 THE FIX FOR A REAL ONE IS THE SOURCE, NOT THE GENERATOR: move the width
+    onto the declaration LINE, and the line-only scrape becomes right by
+    construction. Teaching the generator to join would carry the hazardous block
+    across too, TXTBASE's 2304 with it.
+    """
+    pub = set()
+    for f in ("disk/basic-resident-abi.inc", "sub/basic-resident-abi.inc"):
+        try:
+            src = open(os.path.join(ROOT, f)).read()
+        except OSError:
+            continue
+        pub |= set(re.findall(r"^([A-Za-z_][A-Za-z0-9_]*)\s+equ\s", src, re.M))
+    m = ram_map.Map("basic", 0xE000, ram_map.DOC_HI)
+    line, _ = ram_map.parse(m.files, joint=False)
+    lost = []
+    for n in sorted(pub):
+        base = n[5:] if n.startswith("main_") else n
+        a = m.vals.get(base)
+        if a is None or base not in m.expr:
+            continue
+        wl, _r = ram_map.declared_width(a, line.get(base, (None,) * 4)[3])
+        wj, rj = ram_map.declared_width(a, m.expr[base][3])
+        if wl is None and wj is not None:
+            lost.append((n, base, a, wj, rj))
+    print()
+    print(f"🔎 ABI WIDTH AUDIT -- {len(lost)} published cell(s) declare a width "
+          f"only BELOW the `equ` line, so the generator's line-only scrape drops it:")
+    if not lost:
+        print("     none -- every published cell's width is on its own line.")
+        return
+    for n, base, a, wj, rj in lost:
+        print(f"     {n:16} ${a:04X}  joined says {wj} ({rj}), line says nothing")
+    print("   ⚠️ A hit is EITHER a real width being lost OR a false read of the")
+    print("      joined block (TXTBASE yields 2304 off TXTMAX's preamble, and has")
+    print("      no such extent). Read it; the fix for a real one is to move the")
+    print("      width onto the declaration LINE, never to join in the generator.")
 
 
 if __name__ == "__main__":

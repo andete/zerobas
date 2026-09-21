@@ -1473,9 +1473,9 @@ CON_ROWS_KEYON  equ     CON_ROWS - 1        ; `KEY ON` keeps the bottom one
 ; `call`/`ret`. The two bytes were left NAMED rather than silently reused, so
 ; that the next cell wanting them would know what had been here -- and that is
 ; exactly how they were re-let above, one day later.
-FN_RESUME       equ     $E227   ; D-FNEXPR: text cursor just past a filename
-                                ; EXPRESSION, parked by fname_expr while the
-                                ; staged name is parsed out of STRSCR (2 B)
+FN_RESUME       equ     $E227   ; D-FNEXPR: cursor past a filename expr (2 B)
+                                ; parked by fname_expr while the staged name is
+                                ; parsed out of STRSCR
 ; LOCATE parses all three arguments and applies them only when all three are
 ; valid -- measured (basic/missing.asm ex_locate). Both cells are SEEDED from the
 ; live cursor, so an omitted axis is re-applied unchanged and needs no
@@ -1744,7 +1744,7 @@ RVDESC          equ     FRETOP + 2          ; $E26A: [len:1][ptr:2] scratch desc
                                             ; — the same "single shared scratch, safe
                                             ; by immediate consumption" property the
                                             ; pre-4a STRSCR already relied on.
-STRSCR          equ     RVDESC + 3          ; $E26D: [len][bytes:STRMAX] staging
+STRSCR          equ     RVDESC + 3          ; [len][bytes:STRMAX] staging, $E26D..$E36C
                                             ; buffer — UNCHANGED role from pre-4a,
                                             ; just widened 65->256 B (1+STRMAX).
                                             ; NOT a heap root (fixed RAM, outside
@@ -2951,8 +2951,9 @@ FWR_DIROFF      equ     $E9F9   ; byte offset of that dir entry within its secto
 ; so visible from main (page-1 resident shims) and the sub-ROM page-1 tenant
 ; (sub/fatprim.asm) alike.
 DISKOP_OP       equ     $E9FB   ; main -> tenant: DISKOP_SEL_* primitive selector (1)
-DISKOP_STATUS   equ     $E9FC   ; tenant -> main: 0 = ok (Cy=0 / Z set); nonzero =
-                                ; error (Cy=1) or no-match (NZ), per primitive (1)
+DISKOP_STATUS   equ     $E9FC   ; tenant -> main: the disposition (1 B)
+                                ; 0 = ok (Cy=0 / Z set); nonzero = error (Cy=1)
+                                ; or no-match (NZ), per primitive
 DISKOP_A        equ     $E9FD   ; tenant -> main: the primitive's real A output,
                                 ; if it has one (read_sector/write_sector's DSKIO
                                 ; error code); reloaded uniformly even where no

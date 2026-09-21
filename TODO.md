@@ -883,9 +883,32 @@ item — do **one item per session** to keep context lean.
       leaving three cells with no width AND no pin. **`make ram-map-check` caught
       it**, the three pins are restored, and the scout now NAMES the generated
       files and says the fix belongs in main's own declaration.
-      ⚠️ Note the second half of that: the generator TRUNCATES the comment it
-      copies, so it can cut a width off a cell whose declaration really does
-      carry one. Unfixed — the pin is the honest answer until it is.
+      🟢 **✅ AND THE SECOND HALF IS FIXED 2026-09-21 (D-ABIWIDTH) — BUT
+      "TRUNCATES" WAS THE WRONG WORD, WHICH MATTERED.** `_scrape_origin` does
+      not shorten anything: it reads the `equ` LINE ONLY and never joins the
+      continuation below it. A width spelled one line down (the `SH_SRC` shape,
+      which this tree uses constantly) is therefore DROPPED whole.
+      🎯 **THAT WAS THE ENTIRE REASON THREE CELLS WERE PINNED** —
+      `disk DISKOP_STATUS`, `disk FN_RESUME`, `disk STRSCR`, the same three
+      D-WIDTHSCOUT had to RESTORE after writing widths into the generated file.
+      Root cause, not a coincidence.
+      🔴 **AND THE OBVIOUS FIX WOULD HAVE INJECTED A FALSE WIDTH.** Teaching
+      the generator to JOIN, or synthesising a `(N B)` from the joined block,
+      carries that block's errors across: `TXTBASE`'s joined comment yields
+      **2304**, off `TXTMAX`'s preamble (*"Lowered 2304 B below the $C000 BLOAD
+      ceiling"*), and TXTBASE has no such extent. **Checking one cell before
+      shipping the fix is what caught it.**
+      ✅ **SO THE FIX IS THE SOURCE:** the three widths moved onto their own
+      declaration LINES (1 B / 2 B, both code-confirmed; 256 B from
+      `[len][bytes:STRMAX]`), and the line-only scrape is right by construction.
+      `STRSCR` is declared as an explicit `$E26D..$E36C` RANGE rather than a byte
+      count, because it deliberately hosts disk's FDC cells and a range is the
+      one form NOT demoted for overrunning.
+      🔎 **AND THE CLASS CANNOT RECUR SILENTLY:** `widthscout.py` gained an
+      ABI WIDTH AUDIT naming every published cell whose width lives only below
+      its `equ` line. ⚠️ **ADVISORY, NOT A GATE** — a hit is EITHER a lost width
+      OR a false joined read, and TXTBASE is the standing example of the second,
+      so a refusal would demand a fix where the right action is nothing.
       🔴 **AND THE SCOUT REFUSED ITS OWN SUCCESS.** Its instrument-fault floor
       was *"fewer than 100 pins means the parse broke"*, keyed to the 137 that
       stood when it was written — so the sweep it exists for tripped it at 83. A
@@ -3941,7 +3964,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:21645 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:21668 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -4107,7 +4130,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:8750 (T-6FE392)8 (T-529ABE)` from `TODO.md:20039 (T-529ABE)`: a
+      `TODO.md:8773 (T-6FE392)8 (T-529ABE)` from `TODO.md:20062 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -9594,7 +9617,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:20039 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:20062 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

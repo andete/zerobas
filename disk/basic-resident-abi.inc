@@ -15,9 +15,9 @@ round_single_and_pack equ 03417H
 round_and_finalize equ 033BDH
 pu_deref_body equ 028C1H
 ARGA equ 0F06AH   ; operand A / working result, FPNUM record (18)
-STRSCR equ 0E26DH   ; $E26D: [len][bytes:STRMAX] staging
-FN_RESUME equ 0E227H   ; D-FNEXPR: text cursor just past a filename
-DISKOP_STATUS equ 0E9FCH   ; tenant -> main: 0 = ok (Cy=0 / Z set); nonzero =
+STRSCR equ 0E26DH   ; [len][bytes:STRMAX] staging, $E26D..$E36C
+FN_RESUME equ 0E227H   ; D-FNEXPR: cursor past a filename expr (2 B)
+DISKOP_STATUS equ 0E9FCH   ; tenant -> main: the disposition (1 B)
 DISK_FCB_NAME equ 0E0DCH   ; +1..+11: 8.3 name field (11 bytes)
 FILES_HASPAT equ 0F009H   ; FILES: 1 = a filespec pattern is in DISK_FCB_NAME (1)
 FAC equ 0F01CH   ; float accumulator: value bytes as tokenised (8)
