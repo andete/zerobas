@@ -1718,6 +1718,30 @@ item — do **one item per session** to keep context lean.
       `prune(now=now)` and it is deleted. Its negative control runs the same
       entry at the real clock and requires it to be pruned, so the arm is about
       the clock and not about expiry being broken.
+      🟢 **✅ THE MISLEADING-VERDICT HALF IS FIXED 2026-09-21 (D-RETRYSUBJ) —
+      AND BOTH VERDICTS WERE WRONG, NOT ONE.** The item said *"a retry that
+      cannot move the clock cannot classify a clock-driven red"*; the deeper rule
+      is that **a retry is only evidence when the first run did not change the
+      subject**. `refcache-check`'s recipe ends `probe_refcache.py --maintain`,
+      and maintain PRUNES — so the red run is also a REPAIRING run.
+      * **Still red → not REAL**: a second run inside the same battery is a
+        second run at the same instant.
+      * **Green on retry → not FLAKE**: the first run fixed it, and counting that
+        as a recovered flake launders a real repair
+        [[a-case-that-agrees-can-agree-for-the-wrong-reason]]. A fix that caught
+        only the red half would have left this one standing.
+      `tools/run_gates.py` gained `SELF_REPAIRING` + `retry_verdict()`: such a
+      target reads **INCONCLUSIVE** in BOTH directions and is never added to the
+      recovered-flakes list. ⚠️ **The battery's pass/fail is UNCHANGED** — rc is
+      still rc; only the CLAIM about what the rc means is corrected.
+      🔴 **MEMBERSHIP IS EARNED BY THE RECIPE, NOT ASSERTED:** arm S18 runs
+      `make -n` on every member and requires a mutating flag in its own recipe,
+      so the set cannot rot into a list of targets someone wanted to stop
+      failing. Six arms (S13–S18); S15/S16/S17 verified to go RED with
+      `SELF_REPAIRING` emptied **in the module under test**, which is the
+      mutation discipline this item's own D-REFRACE entry had to learn.
+      ⚠️ **THE ROOT CAUSE OF THE FILED RED IS STILL OPEN** — this fixes what the
+      battery SAYS about it, not why the store aged out. The item stays open.
 
 - [x] ✅ **DONE 2026-09-19 (D-ALIASGATE): THE ARM EXISTS, AND IT FOUND A THIRD
       ALIAS THE ITEM DID NOT KNOW ABOUT.**
@@ -3964,7 +3988,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:21668 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:21692 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -4130,7 +4154,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:8773 (T-6FE392)8 (T-529ABE)` from `TODO.md:20062 (T-529ABE)`: a
+      `TODO.md:8797 (T-6FE392)8 (T-529ABE)` from `TODO.md:20086 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -9617,7 +9641,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:20062 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:20086 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

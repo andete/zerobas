@@ -198,6 +198,44 @@ WIRE_LINE = re.compile(r"sys\.path|subprocess|runpy|import_module"
                        r"|spec_from_file_location|Popen|check_call|check_output")
 
 
+# 🔴 A RETRY IS ONLY EVIDENCE WHEN THE FIRST RUN DID NOT CHANGE THE SUBJECT
+# (D-RETRYSUBJ, 2026-09-21; the defect is filed in TODO's refcache-check item).
+# The serial retry separates a contention FLAKE from a REGRESSION by running a
+# red unit again -- which assumes the second run observes the SAME state as the
+# first. `refcache-check` breaks that assumption: its recipe ends
+# `probe_refcache.py --maintain`, and maintain PRUNES the store. A red run is
+# therefore also a REPAIRING run.
+# 🎯 SO BOTH VERDICTS ARE WRONG FOR IT, NOT JUST ONE. Green on retry does not
+# mean "flake" -- it means the first run fixed it, and calling that a recovered
+# flake launders a real repair [[a-case-that-agrees-can-agree-for-the-wrong-reason]].
+# Still red does not mean "real" either: the filed incident was the store aging
+# past its 14-day cap, and a second run inside the same battery is a second run
+# at the same instant. **A retry that cannot move the clock cannot classify a
+# clock-driven red.** Observed 2026-09-19: the battery printed
+# `retry refcache-check: rc 2->2  REAL (still red)` and the suite then passed
+# standalone.
+# ⚠️ MEMBERSHIP IS EVIDENCE, NOT A LITERAL: arm S13 reads the target's own
+# recipe and requires a mutating flag in it, so this set cannot quietly rot into
+# a suppression list.
+SELF_REPAIRING = {
+    "refcache-check": "--maintain PRUNES the store, so the red run repairs it",
+}
+
+
+def retry_verdict(name, rc):
+    """-> (verdict text, counts as a recovered FLAKE).
+
+    A self-repairing target gets INCONCLUSIVE in BOTH directions and is never
+    counted as a flake; the battery's pass/fail is unchanged (rc is rc)."""
+    if name in SELF_REPAIRING:
+        why = SELF_REPAIRING[name]
+        side = ("green, but the first run already repaired it"
+                if rc == 0 else "still red at the SAME instant")
+        return f"INCONCLUSIVE ({side}; {why})", False
+    return ("FLAKE (green on retry)" if rc == 0
+            else "REAL (still red)"), rc == 0
+
+
 def _make_n(target):
     try:
         return subprocess.run(["make", "-n", target], cwd=ROOT,
@@ -351,6 +389,33 @@ def selftest():
     else:
         arm("S10 off macOS hold_awake is a no-op and says so", not held and "macOS" in why)
     arm("S12 hold_awake never claims 'held' without saying why", bool(why))
+
+    # ---- S13..S17 the retry arm cannot classify a SELF-REPAIRING target -----
+    arm("S13 an ordinary target green on retry is a FLAKE, and counts",
+        retry_verdict("unit-test", 0) == ("FLAKE (green on retry)", True))
+    arm("S14 an ordinary target still red is REAL, and does not count",
+        retry_verdict("unit-test", 2)[0] == "REAL (still red)"
+        and retry_verdict("unit-test", 2)[1] is False)
+    # 🔴 THE TWO ARMS THIS EXISTS FOR -- both directions, because both
+    # verdicts were wrong, and a fix that only caught the red half would leave a
+    # real repair still reported as a recovered flake.
+    v0, f0 = retry_verdict("refcache-check", 0)
+    v2, _f2 = retry_verdict("refcache-check", 2)
+    arm("S15 a self-repairing target GREEN on retry is INCONCLUSIVE, never FLAKE",
+        v0.startswith("INCONCLUSIVE") and "FLAKE" not in v0)
+    arm("S16 ...and is NOT counted as a recovered flake (the claim is about "
+        "stochastic behaviour, and a repair is not stochastic)", f0 is False)
+    arm("S17 a self-repairing target STILL RED is INCONCLUSIVE, never REAL",
+        v2.startswith("INCONCLUSIVE") and "REAL" not in v2)
+    # ⚠️ MEMBERSHIP MUST BE EARNED BY THE RECIPE, or this becomes a list of
+    # targets someone wanted to stop failing.
+    bad = []
+    for t in SELF_REPAIRING:
+        rec = _make_n(t) or ""
+        if not re.search(r"--maintain|--prune|--repair", rec):
+            bad.append(t)
+    arm("S18 every SELF_REPAIRING member's own recipe shows a mutating flag "
+        f"(checked: {' '.join(sorted(SELF_REPAIRING))})", not bad)
     print("selftest:", "GREEN" if ok else "🔴 RED")
     return 0 if ok else 1
 
@@ -786,8 +851,8 @@ def main():
                             shutil.copy(src, keep)
                 except OSError:
                     pass
-                verdict = "FLAKE (green on retry)" if rc == 0 else "REAL (still red)"
-                if rc == 0:
+                verdict, is_flake = retry_verdict(n, rc)
+                if is_flake:
                     flaky.append(n)
                 print(f"  retry {n}: rc {old}->{rc}  {verdict}", flush=True)
 
