@@ -44,8 +44,32 @@ seed (TIER 5). **TIER 4 speed is NOT autonomous**: its LAST marker is
 `🙋 NEEDS-JOOST` on the charter question (*does faithful include speed?*), and
 the item says plainly that optimising is only worth starting once that is
 answered — §5's autonomous half is already refuted.
-➡️ **SO THE REMAINING NON-JOOST AUTONOMOUS WORK IS TWO ITEMS**, and when they
-close, the loop's honest move is to go to Joost rather than spin.
+🛑 **AND AS OF 2026-09-22 THE AUTONOMOUS QUEUE IS EXHAUSTED — THE LOOP WAS
+STOPPED, NOT ABANDONED.** `ex_stop`'s edge-seed item closed (D-STOPSEED,
+`348a6dba`). Re-running the marker scan leaves TWO open items whose last marker
+is `🤖 AUTONOMOUS`, and **neither is actionable**:
+* the **RAM-usage comparison** (TIER 2) — Joost's, *"This is not something for
+  now"*;
+* **`refcache-check`** (APPARATUS) — its actionable half shipped as D-RETRYSUBJ
+  (`2c46d1e1`); the ROOT CAUSE is waiting on a **recurrence** of a red that has
+  not happened again, so there is nothing to do until it does.
+
+🙋 **WHAT THE NEXT SESSION SHOULD DO IS ASK JOOST**, not pick something. The
+rulings that would re-open real work, in the order they unblock the most:
+1. **Does faithful include SPEED?** (the TIER 4 charter question) — this gates
+   the interpreter's 2.5–3.8× band, `PAINT` and `PUT`, i.e. all remaining
+   TIERED work. The item says optimising is only worth starting once it is
+   answered.
+2. **Step 10 `OPEN`** — the PAINT span-stack RAM lever.
+3. **The same-address question** — D-COPYLOCAL answered it only in miniature
+   (cells with ONE consumer); `SECTOR_BUF`/`FSECTOR_BUF` and `WBUF`/`FWBUF` have
+   two consumers each and 416 B of accidental overlap.
+4. **The TIER 1 keyword tier re-ask** — the unattributed list is now 0, which
+   the item itself named as the moment to re-ask.
+5. The **RAM-usage comparison**, whenever he wants it.
+
+⚠️ **RESTARTING THE LOOP WITHOUT ONE OF THOSE ANSWERS WILL SPIN.** The honest
+move was to stop and say so.
 ⚠️ **THE RENAME RESIDUAL IS DECLINED, MEASURED** (§6.6ba): `dirverb_tenant` /
 `dirverb_op` / `SUBROM_IDX_DIRVERB` are ~96 refs across **12 code + 11 doc**
 files, and the docs are the eviction's HISTORICAL RECORD — renaming them would
