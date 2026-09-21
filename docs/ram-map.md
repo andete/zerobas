@@ -1,0 +1,580 @@
+<!--
+Copyright (c) 2026 Joost Yervante Damad
+SPDX-License-Identifier: 0BSD
+-->
+
+# The RAM map — every declared address, and what it is for
+
+🔴 **GENERATED. Do not edit.** `make ram-map-doc` rewrites it from
+`basic/sysvars.inc`, `sub/`, `disk/equates.inc` and `disk/*.asm`;
+`make ram-map-check` fails if it has drifted. Change a cell's
+comment, not this file.
+
+Each row is ONE address. **Purpose is the author's own comment**,
+quoted and truncated, never a paraphrase — a generated map that
+summarises is a second place for the truth to drift.
+
+🔴 **THREE THINGS THIS TABLE CANNOT TELL YOU**, and they are the
+three that have cost this project days:
+
+* **A cell addressed only as an offset in code has no `equ` and is
+  not here at all.** Absence from this table is not emptiness.
+* **A blank SIZE means the extent is not machine-readable** — it is
+  pinned in `tools/ram-width-allow.txt` with the reason. It does
+  NOT mean one byte.
+* **A width can be present and WRONG.** `; 32 B … (word)` read as 2
+  and `; (4 B each)` read as 4 for a 32-byte array, both on
+  2026-09-21. No gate catches that; only reading does.
+
+⚠️ **OVERLAP IS DESIGNED HERE.** The standalone disk ROM's buffers
+sit on top of BASIC's cells on purpose, and the cassette buffers
+sit inside both of main's disk buffers. The `also` column names the
+other component's cell at the same address; the `inside` column
+names the other component's BUFFER this address falls within. That
+second one is the question a per-component map cannot answer.
+
+* **basic** — 418 declared addresses in `$E000..$F37F`, 318 with a machine-readable width.
+* **disk** — 121 declared addresses in `$E000..$F37F`, 84 with a machine-readable width.
+
+| address | size | component | name(s) | purpose | inside |
+|---|---|---|---|---|---|
+| `$E010` |  | `basic` | `ERRMARK` | error landmark marker byte |  |
+| `$E011` | 1 B | `basic` | `MAXF` | current MAXFILES ceiling (0..FCH_CEIL); default 1 (1) |  |
+| `$E012` | 1 B | `basic` | `FCH_ACTIVE` | channel live in the engine globals, 0 = none (1) |  |
+| `$E013` | 1 B | `basic` | `TKLNUM` | tokeniser: 1 = line-number mode is armed (1) |  |
+| `$E016` |  | `basic` | `INDLR_N` | INPUT$(n,#f): remaining bytes to read (transient, 1) |  |
+| `$E017` |  | `basic` | `MRG_PTR` | MERGE: write cursor into LINEBUF for the current line (2) |  |
+| `$E019` | 2 B | `basic` | `FLD_CUROFF` | FIELD: running byte offset into the record buffer (2) |  |
+| `$E01B` | 1 B | `basic` | `FLD_CHAN` | FIELD/LSET/RSET: the channel being fielded (1) |  |
+| `$E01B` | 1 B | `disk` | `FLD_CHAN` | FIELD/LSET/RSET: the channel being fielded (1) |  |
+| `$E01C` | 1 B | `basic` | `LRSET_JUST` | LSET/RSET: 0 = left-justify, 1 = right-justify (1) |  |
+| `$E01D` | 1 B | `basic` | `LRSET_W` | LSET/RSET: destination field width (1) |  |
+| `$E01D` | 1 B | `disk` | `LRSET_W` | LSET/RSET: destination field width (1) |  |
+| `$E01E` |  | `basic` | `LRSET_DEST` | LSET/RSET: destination ADDRESS of the store (2). |  |
+| `$E01E` |  | `disk` | `LRSET_DEST` | LSET/RSET: destination ADDRESS of the store (2). |  |
+| `$E020` | 2 B | `basic` | `CURPTR` | current load pointer (2 bytes) |  |
+| `$E022` | 2 B | `basic` | `ENDPTR` | final load address (2 bytes) |  |
+| `$E024` | 2 B | `basic` | `EXECPTR` | execution address (2 bytes) |  |
+| `$E026` | 2 B | `basic` | `PRGEND` | addr of the $0000 end-of-program marker (2 bytes) |  |
+| `$E026` | 2 B | `disk` | `PRGEND` | addr of the $0000 end-of-program marker (2 bytes) |  |
+| `$E028` | 1 B | `basic` | `ARY_OP/TKNAME` | tokeniser: 1 = previous char was part of a name |  |
+| `$E029` |  | `basic` | `ARY_KEY/TKRADIX` | tokeniser: &H/&O accumulator radix (16 or 8) |  |
+| `$E02A` |  | `basic` | `TKRTOK` | tokeniser: &H/&O constant token to emit ($0C/$0B) |  |
+| `$E02B` |  | `basic` | `ARY_TYPE/CLPTR` | CLOAD/LOAD: store cursor into the program area (2) |  |
+| `$E02B` | 2 B | `disk` | `CLPTR` | CLOAD/LOAD: store cursor into the program area (2) |  |
+| `$E02C` | 1 B | `basic` | `ARY_NIDX` | parsed subscript/bound count for the CURRENT | `disk` CLPTR |
+| `$E02D` | 2 B | `basic` | `ARY_IDXP/CLINK` | CLOAD/LOAD: saved link word of the current line |  |
+| `$E02D` | 2 B | `disk` | `CLINK` | CLOAD/LOAD: saved link word of the current line |  |
+| `$E02F` |  | `basic` | `ARY_CUR/RUNFLAG` | [D-ARR-C] the text cursor, parked across the |  |
+| `$E030` |  | `basic` | `GFX_OP/LST_LO/RN_TGT/SL_DELLO/SL_NUM` | main->tenant op: 0=selftest(G1) 1=plot(PSET/PRESET) 2=point (1) |  |
+| `$E031` | 1 B | `basic` | `GFX_C` | main->tenant: resolved plot colour 0..15 (PSET/PRESET) (1) |  |
+| `$E032` |  | `basic` | `GFX_RES/SL_SLOT` | tenant->main: POINT result colour 0..15 (1) |  |
+| `$E033` |  | `basic` | `GFX_REL` | parse_coord: 1 = STEP (relative) coordinate, 0 = absolute (1) |  |
+| `$E034` |  | `basic` | `LST_HI/RN_LINE/SL_DELHI/SL_SIZE` | RENUM: the OLD number of the line it is in -- |  |
+| `$E035` |  | `basic` | `ARY_ADDR` | [tenant return, RESOLVE] element address (2) |  |
+| `$E036` |  | `basic` | `LST_PTR/SL_DELPTR/SL_TOK` | DELETE: the statement cursor, on the token |  |
+| `$E037` |  | `basic` | `ARY_ERR` | [tenant return] 0 ok; 1 Subscript-oor; |  |
+| `$E038` | 2 B | `basic` | `CURLINE` | link-field addr of the line being executed (2) |  |
+| `$E03A` | 2 B | `basic` | `GOTOTGT` | pending branch-target line addr (2) |  |
+| `$E03C` |  | `basic` | `GOTOFLAG` | 1 = a branch (GOTO) is pending |  |
+| `$E03D` |  | `basic` | `ENDFLAG` | 1 = END/STOP reached, stop the run |  |
+| `$E03E` | 2 B | `basic` | `RESUMEPTR` | mid-line resume token pointer (2) |  |
+| `$E040` |  | `basic` | `RESUMEFLAG` | 1 = resume at RESUMEPTR (set by RETURN / NEXT) |  |
+| `$E041` | 2 B | `basic` | `GSP` | newest GOSUB frame's address; == CTLTOP if none (2) |  |
+| `$E043` | 2 B | `basic` | `FSP` | the FOR run's FLOOR: FOR frames are [CSP,FSP) (2) |  |
+| `$E045` | 6 B | `basic` | `FOR_CUR` | scratch: a working copy of one FOR frame (11), and |  |
+| `$E050` |  | `basic` | `CSP` | the pool's allocation frontier, descending (2) |  |
+| `$E052` | 2 B | `basic` | `CTLTOP` | the pool's TOP = strheap_varceil(), cached (2) |  |
+| `$E054` | 2 B | `basic` | `TSP` | newest trap SERVICE record; valid iff TRAPSVC != 0 (2) |  |
+| `$E056` |  | `basic` | `CTLLIM` | the pool's collision FLOOR = ARYEND+2 (2). Written |  |
+| `$E058` | 40 B | `basic` | `SL_CEIL` | store_line: the VARIABLE-region ceiling the |  |
+| `$E080` | 11 B | `basic` | `COPY_SRC` | the source's 11-byte 8.3 name field |  |
+| `$E08B` | 2 B | `basic` | `COPY_CLUS` | the source's first cluster (word) |  |
+| `$E08D` | 4 B | `basic` | `COPY_LEFT` | bytes still to copy (4-byte LE) |  |
+| `$E091` | 2 B | `basic` | `RL_HL` | main -> tenant: the write cursor (LINEBUF, or AUTO's preset) (2) |  |
+| `$E093` | 1 B | `basic` | `RL_STAT` | tenant -> main: 0 = Enter, $FF = Ctrl-STOP / Ctrl-C (1) |  |
+| `$E094` | 1 B | `basic` | `RL_ROW0` | the row where input began (1-based; 0 once scrolled off) (1) |  |
+| `$E095` | 1 B | `basic` | `RL_COL0` | the column where input began, after any prompt (1) |  |
+| `$E096` | 1 B | `basic` | `RL_LAST` | the logical line's last row at Enter (1) |  |
+| `$E097` |  | `basic` | `RL_KEY` | main -> tenant: the key CHGET returned (main waits in CHGET, as before) (1) |  |
+| `$E098` |  | `basic` | `DISKOP_ERR` | tenant -> main: ERR code of the last DSKIO failure, 0 = none (1) |  |
+| `$E098` | 1 B | `disk` | `DISKOP_ERR` | tenant -> main: ERR code of the last DSKIO failure, 0 = none (1) |  |
+| `$E099` | 2 B | `basic` | `FNSP` | newest FN frame's address, 0 = no FN call live (2) |  |
+| `$E09B` |  | `basic` | `FN_FST` | tenant -> main: 0 = frame saved, 1 = pool full -> ERR 7 (1) |  |
+| `$E0B8` |  | `basic` | `DATASTATE` | 0 = unpositioned (RESTORE), 1 = ready, 2 = exhausted |  |
+| `$E0B9` | 2 B | `basic` | `DATAPTR` | next unread DATA item (ASCII) in the program (2) |  |
+| `$E0BB` | 2 B | `basic` | `DATALINE` | link-field of the line holding DATAPTR (2) |  |
+| `$E0BD` |  | `basic` | `RESTORE_LINE` | link-field a READ seeks DATA from when unpositioned (2) |  |
+| `$E0C0` |  | `basic` | `INP_CURSOR/NUMBUF` | console INPUT LINEBUF read cursor (1 B, aliases NUMBUF) |  |
+| `$E0C8` | 1 B | `basic` | `VALTYP` | 0 = numeric result, 1 = string result (1 byte) |  |
+| `$E0C9` | 2 B | `basic` | `STRPTR` | pointer to the [len][bytes] descriptor (2 bytes) |  |
+| `$E0C9` | 2 B | `disk` | `STRPTR` | pointer to the [len][bytes] descriptor (2 bytes) |  |
+| `$E0CB` |  | `basic` | `PRDEST` | PRINT destination: 0=screen, 1=file channel (1) |  |
+| `$E0CC` | 1 B | `basic` | `PRDEV` | PRINT# device sink selector (1) |  |
+| `$E0CD` |  | `basic` | `OO_DEVTYPE` | OPEN device-channel type being parsed (transient, 1) |  |
+| `$E0CE` | 2 B | `basic` | `ARL_GETBYTE` | ascii_read_lines byte-source vector (2) |  |
+| `$E0D0` | 2 B | `basic` | `CONTLINE` | saved CURLINE for CONT (2) |  |
+| `$E0D2` | 2 B | `basic` | `CONTPTR` | saved resume token pointer for CONT (2) |  |
+| `$E0D4` |  | `basic` | `CONTVALID` | 1 = a CONT resume point is valid (1) |  |
+| `$E0D5` | 1 B | `basic` | `SCAN_PRIM` | primary slot currently being scanned (1) |  |
+| `$E0D6` | 1 B | `basic` | `SCAN_SLOT` | candidate slot id for RDSLT/CALSLT (1) |  |
+| `$E0D7` | 2 B | `basic` | `SCAN_INIT` | candidate ROM's INIT entry address (2) |  |
+| `$E0D9` | 2 B | `basic` | `SCAN_IY` | CALSLT slot word: high byte = slot (IYh) (2) |  |
+| `$E0DB` |  | `basic` | `DISK_FCB/DISK_FCB_DRV` | +0: drive code (0=default,1=A,2=B; ignored) |  |
+| `$E0DC` | 11 B | `basic` | `DISK_FCB_NAME` | +1..+11: 8.3 name field (11 bytes) |  |
+| `$E0DC` | 11 B | `disk` | `DISK_FCB_NAME` | +1..+11: 8.3 name field (11 bytes) |  |
+| `$E0E7` | 1 B | `basic` | `DISKSLOT` | disk ROM slot id for CALSLT (1) |  |
+| `$E0E8` |  | `basic` | `DISKSLOT_OK` | 1 = DISKSLOT holds a valid disk-ROM slot id |  |
+| `$E0E8` |  | `disk` | `DISKSLOT_OK` | 1 = DISKSLOT holds a valid disk-ROM slot id |  |
+| `$E0E9` |  | `basic` | `CAL_CURHI/VRAM_FLAG` | cassette ASCII load: high byte of the CURRENTLY |  |
+| `$E0EA` |  | `basic` | `CAL_CNT` | cassette ASCII load: read position in the |  |
+| `$E0EB` |  | `basic` | `CAL_NEEDFILL` | cassette ASCII load: whether the buffer CAL_CURHI |  |
+| `$E0EC` |  | `basic` | `CAL_SAVE/CAS_WCNT` | cassette ASCII load: parked byte across a prefetch (1) |  |
+| `$E0ED` | 2 B | `basic` | `DSV_PTR` | SAVE: current source byte pointer (2) |  |
+| `$E0ED` | 2 B | `disk` | `DSV_PTR` | SAVE: current source byte pointer (2) |  |
+| `$E0EF` |  | `basic` | `DSV_END` | SAVE/BSAVE: last source byte addr, inclusive (2) |  |
+| `$E0EF` | 2 B | `disk` | `DSV_END` | SAVE/BSAVE: last source byte addr, inclusive (2) |  |
+| `$E0F1` | 2 B | `basic` | `SSE_OUT/TSV_PTR` | tenant -> main: next statement's start, or |  |
+| `$E0F3` | 2 B | `basic` | `TSV_END` | tape save: last source-byte address, inclusive (2) |  |
+| `$E0F5` | 1 B | `basic` | `FMT_GEOMSEL/TSV_CNT` | main -> tenant: 0 = 360k, 1 = 720k (1) |  |
+| `$E0F6` |  | `basic` | `FMT_RESULT/TSV_NAME` | tenant -> main: 0 = ok, 1 = DSKIO write error (1) |  |
+| `$E0FC` |  | `basic` | `FILES_ENTIDX/IN_RDLEN` | FILES: dir entry index 0..15 within a sector (1) |  |
+| `$E0FD` | 1 B | `basic` | `FCH_NUM` | open channel's file number, 0 = none open (1) |  |
+| `$E0FE` | 1 B | `basic` | `FCH_MODE` | open mode: 0=none, 1=INPUT, 2=OUTPUT (1) |  |
+| `$E0FF` |  | `basic` | `FCH_RDMODE` | current read: 0=INPUT# (stop at ','/CR), 1=LINE (1) |  |
+| `$E100` | 2 B | `basic` | `GFX_X1` | LINE endpoint 1 X (int16 LE) -- resident marshals, tenant reads |  |
+| `$E102` | 2 B | `basic` | `GFX_Y1` | LINE endpoint 1 Y (int16 LE) |  |
+| `$E104` | 2 B | `basic` | `GFX_X2` | LINE endpoint 2 X (int16 LE) |  |
+| `$E106` | 2 B | `basic` | `GFX_Y2` | LINE endpoint 2 Y (int16 LE) |  |
+| `$E108` | 1 B | `basic` | `GFX_MODE` | GFX_OP=3 sub-mode: 0=segment 1=box outline 2=box fill (1) |  |
+| `$E109` | 2 B | `basic` | `GFX_CX` | Bresenham: current pixel X (int16, may be off-screen) (2) |  |
+| `$E10B` | 2 B | `basic` | `GFX_CY` | Bresenham: current pixel Y (int16) (2) |  |
+| `$E10D` | 2 B | `basic` | `GFX_ERR` | Bresenham: error accumulator, in [0,DMAJ) (2) |  |
+| `$E10F` | 2 B | `basic` | `GFX_DMAJ` | Bresenham: major-axis delta (2) |  |
+| `$E111` | 2 B | `basic` | `GFX_DMIN` | Bresenham: minor-axis delta (2) |  |
+| `$E113` | 2 B | `basic` | `GFX_CNT` | Bresenham: major steps still to take (2) |  |
+| `$E115` | 1 B | `basic` | `GFX_STEEP` | Bresenham: 0 = x-major, 1 = y-major (1) |  |
+| `$E116` | 2 B | `basic` | `GFX_SMIN` | Bresenham: minor-axis step, $0001 (+1) or $FFFF (-1) (2) |  |
+| `$E118` | 1 B | `basic` | `GFX_SDX` | init scratch: sign of (x2-x1), $01/$FF (1) |  |
+| `$E119` | 1 B | `basic` | `GFX_SDY` | init scratch: sign of (y2-y1), $01/$FF (1) |  |
+| `$E11A` | 2 B | `basic` | `GFX_TX1` | box: stashed corner 1 X (2) |  |
+| `$E11C` | 2 B | `basic` | `GFX_TY1` | box: stashed corner 1 Y (2) |  |
+| `$E11E` | 2 B | `basic` | `GFX_TX2` | box: stashed corner 2 X (2) |  |
+| `$E120` | 2 B | `basic` | `GFX_TY2` | box: stashed corner 2 Y (2) |  |
+| `$E122` | 2 B | `basic` | `GFX_FILLCNT` | box fill: scanlines remaining (2) |  |
+| `$E124` |  | `basic` | `GFX_YSTEP` | box fill: row step, $0001/$FFFF (2) -> ends $E126 |  |
+| `$E126` | 2 B | `basic` | `GFX_CXC` | centre X (int16 LE) (2) |  |
+| `$E128` | 2 B | `basic` | `GFX_CYC` | centre Y (int16 LE) (2) |  |
+| `$E12A` | 2 B | `basic` | `GFX_R` | radius (int16, >=0 -- resident guards G4-rneg) (2) |  |
+| `$E12C` | 1 B | `basic` | `GFX_ASPMAJ` | 0 = x-major (aspect<=1), 1 = y-major (aspect>1) (1) |  |
+| `$E12D` | 2 B | `basic` | `GFX_ASPS` | 8.8 minor scale S, round(minor_ratio*256); 256=no scale (2) |  |
+| `$E12F` | 1 B | `basic` | `GFX_ARCF` | 0 = full circle (ignore S/E), 1 = arc (apply the mask) (1) |  |
+| `$E130` | 2 B | `basic` | `GFX_SVX` | start boundary vector X, screen-offset scaled ints (2) |  |
+| `$E132` | 2 B | `basic` | `GFX_SVY` | start boundary vector Y (2) |  |
+| `$E134` | 2 B | `basic` | `GFX_EVX` | end boundary vector X (2) |  |
+| `$E136` | 2 B | `basic` | `GFX_EVY` | end boundary vector Y (2) |  |
+| `$E138` | 1 B | `basic` | `GFX_FULLW` | full-wrap flag (0/1): the two boundaries land in the |  |
+| `$E139` | 2 B | `basic` | `GFX_QX` | midpoint-circle octant state: x (2) |  |
+| `$E13B` | 2 B | `basic` | `GFX_QY` | midpoint-circle octant state: y (2) |  |
+| `$E13D` | 2 B | `basic` | `GFX_QD` | midpoint-circle octant state: d (signed) (2) |  |
+| `$E13F` | 2 B | `basic` | `GFX_PX` | tenant scratch: current (mirrored+scaled) offset X, |  |
+| `$E141` | 2 B | `basic` | `GFX_PY` | tenant scratch: current offset Y (2) |  |
+| `$E143` | 2 B | `basic` | `GFX_CS_AX` | circleparse scratch: cpt_angle_from_arga's neg-flag |  |
+| `$E145` | 2 B | `basic` | `GFX_CS_AY` | circleparse scratch: cpt_angle_from_arga / |  |
+| `$E147` | 2 B | `basic` | `GFX_M` | D-ARCMASK: M = floor(r/sqrt(2)), the octant's top |  |
+| `$E149` | 2 B | `basic` | `GFX_WS_P` | wedge START boundary: in-octant position, 0..M-1 (2) |  |
+| `$E14B` |  | `basic` | `GFX_WS_O` | wedge START boundary: octant 0..7 (1) |  |
+| `$E14C` | 2 B | `basic` | `GFX_SOCT` | start: trunc(\|a0\|*4/pi), RAW/unmasked int16 (the |  |
+| `$E14E` | 2 B | `basic` | `GFX_SU14` | start: trunc(frac * 16384), 0..16383 (2) |  |
+| `$E150` | 2 B | `basic` | `GFX_EOCT` | end: trunc(\|a1\|*4/pi), RAW/unmasked (2) |  |
+| `$E152` | 2 B | `basic` | `GFX_EU14` | end: trunc(frac * 16384) (2) |  |
+| `$E154` | 1 B | `basic` | `GFX_SNEG` | resident: start angle was negative -> spoke pending (1) |  |
+| `$E155` | 1 B | `basic` | `GFX_ENEG` | resident: end angle was negative -> spoke pending (1) |  |
+| `$E156` |  | `basic` | `GFX_B/GFX_WE_P` | wedge END boundary: in-octant position, 0..M-1 (2) |  |
+| `$E157` |  | `basic` | `GFX_CPHASE` | CIRCLE-parse co-routine phase (sub/circleparse.asm): |  |
+| `$E158` | 1 B | `basic` | `GFX_PTX/GFX_WE_O` | main->tenant: POINT target X, 0..255 (1) |  |
+| `$E159` | 9 B | `basic` | `GFX_PTY/GFX_WRAPF` | main->tenant: POINT target Y, 0..191 (1) -> ends $E15A |  |
+| `$E1C0` | 2 B | `basic` | `ARYTAB` | live 2-byte cell: scalar-region end == array |  |
+| `$E1C2` |  | `basic` | `DIRECTF` | 1 = executing a DIRECT-mode line, 0 = running a |  |
+| `$E1C3` | 2 B | `basic` | `SAVSTK` | 2 B: SP anchor for the trap unwind. Written by |  |
+| `$E1CB` | 4 B | `basic` | `ERRRESUME` | 4 B: resume context captured at trap time — |  |
+| `$E1CF` | 2 B | `basic` | `SAVTXT` | 2 B: the CURRENT statement's text pointer, |  |
+| `$E1D1` | 55 B | `basic` | `ZTRAP` | 18 entries * 3 B = 54 B ($E1D1..$E207). Each |  |
+| `$E207` | 2 B | `basic` | `ZINTVAL` | 2 B: INTERVAL reload period in frames (0 = disarmed) |  |
+| `$E209` | 2 B | `basic` | `ZINTCNT` | 2 B: INTERVAL live down-counter (frames to next fire) |  |
+| `$E20B` | 1 B | `basic` | `TRAPENA` | 1 B: count of traps currently in state ON. Gates the |  |
+| `$E20C` | 1 B | `basic` | `TRAPSVC` | 1 B: count of live SERVICING entries == depth of the |  |
+| `$E20D` |  | `basic` | `SH_BASE/SH_OP` | the retired TRAPSTK's FREE-RAM run; SH_OP..SH_ERR |  |
+| `$E20E` | 1 B | `basic` | `SH_LEN` | ALLOC/TEMP_ALLOC/BUILD_CONCAT arg: |  |
+| `$E20F` | 2 B | `basic` | `SH_SRC` | SNAPSHOT arg: source descriptor |  |
+| `$E211` | 2 B | `basic` | `SH_PTR` | result: ALLOC's body ptr / GC's new |  |
+| `$E213` | 2 B | `basic` | `SH_PTR2` | result: TEMP_ALLOC's body-to-fill |  |
+| `$E215` | 1 B | `basic` | `SH_START` | SLICE (op=5) arg: 0-based start (1 B) |  |
+| `$E216` | 1 B | `basic` | `SH_COUNT` | SLICE (op=5) arg: byte count (1 B) |  |
+| `$E217` | 2 B | `basic` | `SH_NUM` | HEX_BUILD/OCT_BUILD (op=6/7) arg: the |  |
+| `$E219` | 1 B | `basic` | `SH_FILLBYTE` | FILL (op=8) arg: the byte to repeat |  |
+| `$E21A` | 2 B | `basic` | `SH_DEST` | MID_STORE (op=9) arg: the MID$- |  |
+| `$E21C` | 2 B | `basic` | `SH_P` | INSTR_SEARCH (op=11) arg: p (2 B) |  |
+| `$E21E` | 1 B | `basic` | `SH_ERR` | result: 0 ok, 1 Out of memory, 2 = |  |
+| `$E21F` | 1 B | `basic` | `TRAPPEND` | 1 B (was just past the retired TRAPSTK): 1 = |  |
+| `$E220` | 1 B | `basic` | `GFX_DJ` | JIFFY delta observed while drawing under EI (1) |  |
+| `$E221` | 2 B | `basic` | `BL_PTR` | 2 B: main -> tenant, the token cursor after BLOAD |  |
+| `$E223` | 1 B | `basic` | `BL_STAT` | 1 B: tenant -> main. 0 = loaded, 1 = `load |  |
+| `$E224` | 1 B | `basic` | `SV_OP` | 1 B: main -> tenant, SV_OP_* engine selector |  |
+| `$E225` | 1 B | `basic` | `SV_STAT` | 1 B: tenant -> main, 0 = written, 1 = load_error |  |
+| `$E226` | 1 B | `basic` | `TRACEFLAG` | 1 B: TRON state (0 = TROFF) |  |
+| `$E227` | 2 B | `basic` | `FN_RESUME` | D-FNEXPR: text cursor just past a filename |  |
+| `$E227` |  | `disk` | `FN_RESUME` | D-FNEXPR: text cursor just past a filename |  |
+| `$E229` | 1 B | `basic` | `LOC_COL` | 1 B: LOCATE's parsed column, pre-clamp |  |
+| `$E22A` | 1 B | `basic` | `LOC_ROW` | 1 B: LOCATE's parsed row, pre-clamp |  |
+| `$E22B` | 2 B | `basic` | `SW_ADDR` | 2 B: the operand just resolved |  |
+| `$E22D` | 1 B | `basic` | `SW_TYPE` | 1 B: its type (1 = string, 2/4/8 numeric) |  |
+| `$E22E` | 2 B | `basic` | `SW_ADDR1` | 2 B: operand 1, held across operand 2's parse |  |
+| `$E230` | 1 B | `basic` | `SW_TYPE1` | 1 B: operand 1's type |  |
+| `$E231` | 1 B | `basic` | `SW_MODE` | 1 B: 0 = this operand MAY be created, 1 = must exist |  |
+| `$E232` | 2 B | `basic` | `POOLSIZE` | 2 B: the size CLEAR recorded. Written ONLY by |  |
+| `$E234` | 2 B | `basic` | `PLN_NUM` | 2 B: the parsed line number (BC), $FFFF if the |  |
+| `$E236` | 2 B | `basic` | `PLN_PTR` | 2 B: LINEBUF pointer at the body (HL) |  |
+| `$E238` | 2 B | `basic` | `TEMPTOP` | current cursor (2 B) |  |
+| `$E268` |  | `basic` | `FRETOP` | heap low boundary; heap occupies |  |
+| `$E26A` |  | `basic` | `RVDESC` | $E26A: [len:1][ptr:2] scratch descriptor |  |
+| `$E26D` | 256 B | `basic` | `STRSCR` | $E26D: [len][bytes:STRMAX] staging |  |
+| `$E26D` |  | `disk` | `STRSCR` | $E26D: [len][bytes:STRMAX] staging |  |
+| `$E299` |  | `disk` | `FDC_IFF` | saved caller IFF2 across a sector op (1 = was EI) | `basic` STRSCR |
+| `$E29A` |  | `disk` | `FDC_CNT` | remaining sector count | `basic` STRSCR |
+| `$E29B` | 2 B | `disk` | `FDC_LSEC` | current logical sector (word) | `basic` STRSCR |
+| `$E29D` | 2 B | `disk` | `FDC_DEST` | current transfer address (word) | `basic` STRSCR |
+| `$E29F` |  | `disk` | `FDC_TRY` | read attempt counter | `basic` STRSCR |
+| `$E2A0` | 512 B | `disk` | `FAT_DBUF/SECTOR_BUF` | 512-byte sector buffer ($E2A0-$E49F) | `basic` STRSCR |
+| `$E381` |  | `basic` | `TEMPPOOL` | $E381: low (deepest-push) address | `disk` FAT_DBUF/SECTOR_BUF |
+| `$E3E1` | 2 B | `basic` | `ISRCH_A/TEMPBASE` | $E3E1: resolved A-operand body base (2 B) | `disk` FAT_DBUF/SECTOR_BUF |
+| `$E3E3` | 2 B | `basic` | `ISRCH_B` | $E3E3: resolved B-operand body base (2 B) | `disk` FAT_DBUF/SECTOR_BUF |
+| `$E3E5` | 1 B | `basic` | `GFX_BAD/STRENG_SPARE` | VRAM read-back mismatch count (1) | `disk` FAT_DBUF/SECTOR_BUF |
+| `$E3E6` |  | `basic` | `MIDS_DEST` |  | `disk` FAT_DBUF/SECTOR_BUF |
+| `$E3E8` | 1 B | `basic` | `GFX_PTOP` | span-stack top-of-stack index, 0..GFX_PSTK_CAP (1) | `disk` FAT_DBUF/SECTOR_BUF |
+| `$E3E9` | 1 B | `basic` | `GFX_POVF` | 1 = the stack overflowed; resident raises ERR 7 (1) | `disk` FAT_DBUF/SECTOR_BUF |
+| `$E3EA` | 1 B | `basic` | `GFX_PTESTX` | gfx_paint_inside/gfx_paint_plot: pixel-under-test X (1) | `disk` FAT_DBUF/SECTOR_BUF |
+| `$E3EB` | 1 B | `basic` | `GFX_PTESTY` | ...Y (1) | `disk` FAT_DBUF/SECTOR_BUF |
+| `$E3EC` | 1 B | `basic` | `GFX_PFY` | gfx_paint_flood/_process: current span's row (1) | `disk` FAT_DBUF/SECTOR_BUF |
+| `$E3ED` | 1 B | `basic` | `GFX_PXL` | ...current span's left column (1) | `disk` FAT_DBUF/SECTOR_BUF |
+| `$E3EE` | 1 B | `basic` | `GFX_PXR` | ...current span's right column (1) | `disk` FAT_DBUF/SECTOR_BUF |
+| `$E3EF` | 1 B | `basic` | `GFX_PSCX` | gfx_paint_process/_scan_row: scan cursor column (1) | `disk` FAT_DBUF/SECTOR_BUF |
+| `$E3F0` | 1 B | `basic` | `GFX_PSCY` | gfx_paint_scan_row: the neighbour row being scanned (1) | `disk` FAT_DBUF/SECTOR_BUF |
+| `$E3F1` | 1 B | `basic` | `GFX_PSPA` | gfx_paint_scan_row: pending sub-span's start column (1) | `disk` FAT_DBUF/SECTOR_BUF |
+| `$E3F2` |  | `basic` | `GFX_CS_M1/GFX_DBUF/GFX_PSTK/GFX_VBUF` | span-stack array base: GFX_PSTK_CAP * [y][xL][xR] | `disk` FAT_DBUF/SECTOR_BUF |
+| `$E3F6` | 8 B | `basic` | `GFX_CS_M2` | $E3F6: r*r for the same compare, CONTIGUOUS with | `disk` FAT_DBUF/SECTOR_BUF |
+| `$E412` | 2 B | `basic` | `GFX_SN` | $E412: SPRITE$ entry index / PUT SPRITE plane (2) | `disk` FAT_DBUF/SECTOR_BUF |
+| `$E414` | 1 B | `basic` | `GFX_VLEN` | $E414: the entry size the tenant read back (1) | `disk` FAT_DBUF/SECTOR_BUF |
+| `$E415` | 2 B | `basic` | `GFX_SDESC` | $E415: SPRITE$(n)= RHS string descriptor | `disk` FAT_DBUF/SECTOR_BUF |
+| `$E417` |  | `basic` | `GFX_SC` | $E417: PUT SPRITE colour (2). x/y need no cells -- | `disk` FAT_DBUF/SECTOR_BUF |
+| `$E419` | 2 B | `basic` | `GFX_SPATN` | $E419: ...pattern number (2) | `disk` FAT_DBUF/SECTOR_BUF |
+| `$E41B` | 1 B | `basic` | `GFX_SSIZE` | $E41B: SCREEN's sprite-size argument while a mode | `disk` FAT_DBUF/SECTOR_BUF |
+| `$E41C` | 1 B | `basic` | `GFX_SARGN` | $E41C: how many extra SCREEN arguments have been | `disk` FAT_DBUF/SECTOR_BUF |
+| `$E41D` |  | `basic` | `GFX_SFLAGS` | $E41D: which arguments were GIVEN -- | `disk` FAT_DBUF/SECTOR_BUF |
+| `$E4A0` | 1 B | `disk` | `FAT_SECPERCLUS` | sectors per cluster (byte) |  |
+| `$E4A1` | 2 B | `disk` | `FAT_FATSTART` | first FAT sector (= reserved sectors) (word) |  |
+| `$E4A3` | 2 B | `disk` | `FAT_FIRSTROOT` | first root-directory sector (word) |  |
+| `$E4A5` | 2 B | `disk` | `FAT_ROOTSECS` | number of root-directory sectors (word) |  |
+| `$E4A7` | 2 B | `disk` | `FAT_FIRSTDATA` | first data sector (word) |  |
+| `$E4A9` | 2 B | `disk` | `FAT_CURCLUS` | current cluster in the open file's chain (word) |  |
+| `$E4AB` | 1 B | `disk` | `FAT_CLUSSEC` | sector index within current cluster (byte) |  |
+| `$E4AC` | 2 B | `disk` | `FAT_FIRSTCLUS` | first cluster of the found file (word) |  |
+| `$E4AE` | 4 B | `disk` | `FAT_FILESIZE` | file size in bytes (4-byte LE) |  |
+| `$E4B2` |  | `disk` | `FAT_PARITY` | 1 = odd cluster, 0 = even (FAT12 nibble pack) |  |
+| `$E4B3` | 2 B | `disk` | `FAT_BYTEIDX` | byte index within a FAT sector (word, 0..511) |  |
+| `$E4B5` | 2 B | `disk` | `FAT_FATSEC` | FAT sector currently read (word) |  |
+| `$E4B7` |  | `disk` | `FAT_B0` | first FAT byte of a 12-bit entry |  |
+| `$E4B8` |  | `disk` | `FAT_B1` | second FAT byte of a 12-bit entry |  |
+| `$E4B9` | 2 B | `disk` | `FAT_NAMEPTR` | -> 11-byte search name (word) |  |
+| `$E4BB` | 2 B | `disk` | `FAT_DIRSEC` | current root-dir sector being scanned (word) |  |
+| `$E4BD` | 2 B | `disk` | `FAT_DIRREM` | root-dir sectors remaining to scan (word) |  |
+| `$E4BF` |  | `disk` | `BDOS_RECIDX` | next 128-byte record within SECTOR_BUF (0..4) |  |
+| `$E4C0` | 2 B | `disk` | `BDOS_DTA` | current DTA pointer (word; default DTA_DEFAULT) |  |
+| `$E4F2` | 2 B | `basic` | `GFX_DPTR` | $E4F2: parse cursor in the current frame (2) |  |
+| `$E4F4` | 2 B | `basic` | `GFX_DEND` | $E4F4: one past the current frame's last byte (2) |  |
+| `$E4F6` | 2 B | `basic` | `GFX_DFREE` | $E4F6: next free byte in GFX_DBUF (2) |  |
+| `$E4F8` | 1 B | `basic` | `GFX_DFTOP` | $E4F8: X-frame stack depth (1) |  |
+| `$E4F9` | 32 B | `basic` | `GFX_DFSTK` | $E4F9: saved [ptr][end] per outer frame -- |  |
+| `$E519` | 2 B | `basic` | `GFX_DCMD` | $E519: current command's start cursor, |  |
+| `$E51B` | 1 B | `basic` | `GFX_DSUBN` | $E51B: substitutions RESOLVED for this command (1) |  |
+| `$E51C` | 1 B | `basic` | `GFX_DSUBI` | $E51C: substitutions SEEN so far this re-parse (1) |  |
+| `$E51D` | 4 B | `basic` | `GFX_DSUB` | $E51D: the resolved values, 2 slots (M takes two) (4) |  |
+| `$E521` | 1 B | `basic` | `GFX_DSUBLEN` | $E521: slot 0's string length (X only) (1) |  |
+| `$E522` | 1 B | `basic` | `GFX_DREQ` | $E522: tenant->resident: 0 = done, 1 = resolve an |  |
+| `$E523` | 1 B | `basic` | `GFX_DRESUME` | $E523: resident->tenant: 1 = resuming (1) |  |
+| `$E524` | 2 B | `basic` | `GFX_DVAL` | $E524: the resolved int16, or a string body ptr (2) |  |
+| `$E526` | 1 B | `basic` | `GFX_DVLEN` | $E526: that string's length (1) |  |
+| `$E527` | 24 B | `basic` | `GFX_DEXP` | $E527: NUL-terminated copy of the text between |  |
+| `$E53F` | 1 B | `basic` | `GFX_DFB` | $E53F: 1 = B (blank move) prefix pending (1) |  |
+| `$E540` | 1 B | `basic` | `GFX_DFN` | $E540: 1 = N (no-update) prefix pending (1) |  |
+| `$E541` | 2 B | `basic` | `GFX_DARG` | $E541: last parsed argument (int16 LE) (2) |  |
+| `$E542` | 4 B | `disk` | `BDOS_BYTESLEFT` | bytes of the open file not yet delivered (4-byte LE) | `basic` GFX_DARG |
+| `$E543` | 2 B | `basic` | `GFX_DDX` | $E543: this command's dx (int16) (2) | `disk` BDOS_BYTESLEFT |
+| `$E545` | 2 B | `basic` | `GFX_DDY` | $E545: ...dy (2) | `disk` BDOS_BYTESLEFT |
+| `$E546` | 1 B | `disk` | `BDOS_WRMODE` | 1 = a file is open for sequential write (byte) | `basic` GFX_DDY |
+| `$E547` | 2 B | `basic` | `GFX_DTX` | $E547: move target X (2) |  |
+| `$E547` | 2 B | `disk` | `BDOS_WRCLUS/FWR_CLUS` | chain-tail cluster currently being filled (word) |  |
+| `$E549` | 2 B | `basic` | `GFX_DTY` | $E549: ...Y (2) |  |
+| `$E549` | 2 B | `disk` | `BDOS_WRFIRST/FWR_FIRST` | file's first cluster, 0 until first allocated (word) |  |
+| `$E54B` | 2 B | `basic` | `GFX_DTMP` | $E54B: mul/rotate/sign scratch (2) |  |
+| `$E54B` | 1 B | `disk` | `BDOS_WRSECIDX/FWR_SECIDX` | sector index within the current cluster (byte) |  |
+| `$E54C` | 2 B | `disk` | `BDOS_WRBUFLEN/FWR_BUFLEN` | bytes currently buffered in SECTOR_BUF (word, 0..512) | `basic` GFX_DTMP |
+| `$E54D` |  | `basic` | `GFX_DSP` | $E54D: tenant entry SP -- an error deep in the | `disk` BDOS_WRBUFLEN/FWR_BUFLEN |
+| `$E54E` | 4 B | `disk` | `BDOS_WRBYTES/FWR_BYTES` | total bytes written so far = final file size (4-byte LE) |  |
+| `$E54F` | 2 B | `basic` | `DEFT_PTR` | $E54F: token cursor in AND out (2) | `disk` BDOS_WRBYTES/FWR_BYTES |
+| `$E551` | 2 B | `basic` | `RDV_VAL` | $E551: the value read (int16 LE) (2) | `disk` BDOS_WRBYTES/FWR_BYTES |
+| `$E552` | 2 B | `disk` | `BDOS_DIRSEC/FWR_DIRSEC` | logical sector holding the open file's dir entry (word) | `basic` RDV_VAL |
+| `$E553` |  | `basic` | `RDV_ST` | $E553: tenant -> main STATUS (1): | `disk` BDOS_DIRSEC/FWR_DIRSEC |
+| `$E554` |  | `basic` | `RDV_MODE` | $E554: main -> tenant MODE (1), D-READVAR: |  |
+| `$E554` | 2 B | `disk` | `BDOS_DIROFF/FWR_DIROFF` | byte offset of that dir entry within its sector (word) |  |
+| `$E555` | 4 B | `basic` | `TGT_ADDR` | $E555: element address, or 0 = scalar (2) | `disk` BDOS_DIROFF/FWR_DIROFF |
+| `$E556` | 2 B | `disk` | `FAT_WRTMP` | transient scratch for the FAT12 write helpers (word) | `basic` TGT_ADDR |
+| `$E558` |  | `disk` | `FAT_WRTMP2` | second transient (free-cluster scan cached sector) | `basic` TGT_ADDR |
+| `$E55A` | 1 B | `basic` | `GFX_DSCALE/GFX_PSTK_END` | $E55A: persistent scale, quarter units, |  |
+| `$E55A` |  | `disk` | `FAT_NUMFATS` | number of FAT copies (byte; from BPB +16) |  |
+| `$E55B` |  | `basic` | `GFX_DANGLE` | $E55B: persistent angle 0..3 (1). Boot 0 |  |
+| `$E55B` | 2 B | `disk` | `FAT_SECPERFAT` | sectors per FAT copy (word; from BPB +22) |  |
+| `$E55C` | 2 B | `basic` | `GFX_G8N/GFX_PPITCH` | $E55C: 1 or 4, live only inside a PAINT | `disk` FAT_SECPERFAT |
+| `$E55D` |  | `disk` | `HOOK_SLOT` | our slot byte for the HPHYD inter-slot hook (1) | `basic` GFX_G8N/GFX_PPITCH |
+| `$E55E` | 2 B | `basic` | `GFX_G8V` | $E55E: written value (int16 LE) (2) |  |
+| `$E55E` | 2 B | `disk` | `BDOS_SRCHIDX` | runtime dir-search cursor (word; M19) |  |
+| `$E560` | 512 B | `disk` | `FAT_MBUF/WBUF` | write-back FAT/dir sector buffer ($E560..$E75F) |  |
+| `$E5C0` | 512 B | `basic` | `FAT_DBUF/FSECTOR_BUF` | file data / read sector buffer ($E5C0..$E7BF) |  |
+| `$E5C0` | 512 B | `disk` | `FSECTOR_BUF` | file data / read sector buffer ($E5C0..$E7BF) |  |
+| `$E600` | 256 B | `basic` | `CAL_BUF/CAS_WBUF` | cassette ASCII load: 256-byte tape block buffer (in idle FSECTOR_BUF) | `disk` FAT_MBUF/WBUF |
+| `$E754` | 4 B | `disk` | `WRBLK_MULACC` | 32-bit product accumulator (LE) | `basic` FAT_DBUF/FSECTOR_BUF |
+| `$E758` | 4 B | `disk` | `WRBLK_MULOP` | 32-bit shifted-RS operand (LE), doubled each iteration | `basic` FAT_DBUF/FSECTOR_BUF |
+| `$E75C` | 3 B | `disk` | `WRBLK_MULN` | 24-bit shifting copy of RR_start (bit tested each iteration) | `basic` FAT_DBUF/FSECTOR_BUF |
+| `$E760` |  | `disk` | `BOOT_SV_A8/RRND_RECSEC` | r0 & 3 (record-in-sector) across the sector-seek loop | `basic` FAT_DBUF/FSECTOR_BUF |
+| `$E761` |  | `disk` | `BOOT_SV_SEC/RRND_CLUSSEC` | FAT_CLUSSEC-1 across the cluster->sector multiply loop | `basic` FAT_DBUF/FSECTOR_BUF |
+| `$E762` | 2 B | `disk` | `R30_HL` | $0030 handler: saved caller HL (word) | `basic` FAT_DBUF/FSECTOR_BUF |
+| `$E764` | 2 B | `disk` | `R30_BC` | $0030 handler: saved caller BC (word) | `basic` FAT_DBUF/FSECTOR_BUF |
+| `$E766` | 2 B | `disk` | `R30_DE` | $0030 handler: saved caller DE (word) | `basic` FAT_DBUF/FSECTOR_BUF |
+| `$E768` | 2 B | `disk` | `R30_AF` | $0030 handler: saved caller AF incl. carry (word) | `basic` FAT_DBUF/FSECTOR_BUF |
+| `$E76A` | 2 B | `disk` | `CALSLT_HL` | CALSLT handler: HL stash across the call setup (word) | `basic` FAT_DBUF/FSECTOR_BUF |
+| `$E76C` | 4 B | `disk` | `FREAD_LEFT/RDBLK_REQ` | records requested (HL on entry) (word) | `basic` FAT_DBUF/FSECTOR_BUF |
+| `$E76E` | 2 B | `disk` | `RDBLK_RECSIZE` | record size from FCB+14 (word) | `basic` FAT_DBUF/FSECTOR_BUF |
+| `$E770` | 2 B | `disk` | `RDBLK_DONE` | records delivered so far (word; = HL on return) | `basic` FAT_DBUF/FSECTOR_BUF |
+| `$E772` | 2 B | `disk` | `RDBLK_CNT` | bytes left in the current record (word) | `basic` FAT_DBUF/FSECTOR_BUF |
+| `$E774` | 2 B | `disk` | `FREAD_OFF/RDBLK_BUFPOS` | byte index within FAT_DBUF (0..512) (word) | `basic` FAT_DBUF/FSECTOR_BUF |
+| `$E776` | 2 B | `disk` | `RDBLK_DST` | current DTA write pointer (word; from BDOS_DTA) | `basic` FAT_DBUF/FSECTOR_BUF |
+| `$E778` | 2 B | `disk` | `P1_DEST` | saved page-1 destination word (dskio bounce path) | `basic` FAT_DBUF/FSECTOR_BUF |
+| `$E77A` |  | `disk` | `P1_BLIT` | runtime address of the installed blit routine | `basic` FAT_DBUF/FSECTOR_BUF |
+| `$E795` |  | `disk` | `WA_SEG/WA_SEG_ROM` | base of the two hook bodies | `basic` FAT_DBUF/FSECTOR_BUF |
+| `$E79B` |  | `disk` | `WA_SEG_RAM` |  | `basic` FAT_DBUF/FSECTOR_BUF |
+| `$E7B0` |  | `disk` | `CONOUT_CHAR` | CONOUT: saved char | `basic` FAT_DBUF/FSECTOR_BUF |
+| `$E7B1` | 48 B | `disk` | `PG_SV_A8` | shared: saved $A8 config | `basic` FAT_DBUF/FSECTOR_BUF |
+| `$E7C0` | 512 B | `basic` | `FAT_MBUF/FWBUF` | FAT/dir metadata sector buffer ($E7C0..$E9BF) | `disk` PG_SV_A8 |
+| `$E7E2` |  | `disk` | `INT_SP_SAVE/INT_STK_TOP` | caller SP saved above the stack top (word) | `basic` FAT_MBUF/FWBUF |
+| `$E7E4` | 2 B | `disk` | `CONIN_BUF` | CONIN: buffer base (word) | `basic` FAT_MBUF/FWBUF |
+| `$E7E6` |  | `disk` | `CONIN_MAX` | CONIN: max length ([DE+0]) | `basic` FAT_MBUF/FWBUF |
+| `$E7E7` |  | `disk` | `CONIN_COUNT` | CONIN: running fill count | `basic` FAT_MBUF/FWBUF |
+| `$E7E8` | 3 B | `disk` | `WRBLK_REC` | 24-bit target record number for the current step (3 bytes) | `basic` FAT_MBUF/FWBUF |
+| `$E7EB` |  | `disk` | `WRBLK_RECSEC` | WRBLK_REC & 3 (record-in-sector) across the seek/extend loop | `basic` FAT_MBUF/FWBUF |
+| `$E7EC` | 2 B | `disk` | `WRBLK_RS` | resolved record size (FCB+14..15, 0 -> 128) (word) | `basic` FAT_MBUF/FWBUF |
+| `$E7EE` | 2 B | `disk` | `WRBLK_CNT` | records still to process this call (word, counts down to 0) | `basic` FAT_MBUF/FWBUF |
+| `$E7F0` | 2 B | `disk` | `WRBLK_REQ` | the ORIGINAL requested count (word; HL is pinned-preserved | `basic` FAT_MBUF/FWBUF |
+| `$E7F2` | 2 B | `disk` | `WRBLK_PREVCLUS` | cluster before the current step's advance/allocate (word); | `basic` FAT_MBUF/FWBUF |
+| `$E7F4` | 2 B | `disk` | `WRBLK_KEEPCNT` | shrink path: clusters-to-keep walk countdown (word) | `basic` FAT_MBUF/FWBUF |
+| `$E7F6` | 2 B | `disk` | `WRBLK_NEXTCLUS` | shrink path: next cluster to free, saved across the | `basic` FAT_MBUF/FWBUF |
+| `$E7F8` |  | `disk` | `WRBLK_CURVALID` | byte: 0 = iterator not yet positioned this call | `basic` FAT_MBUF/FWBUF |
+| `$E7F9` | 2 B | `disk` | `WRBLK_CURSEC` | word: sector-in-file the iterator currently sits | `basic` FAT_MBUF/FWBUF |
+| `$E7FB` | 2 B | `disk` | `FAT_ALLOCHINT` | next cluster to try in fat_alloc_cluster's scan (word) | `basic` FAT_MBUF/FWBUF |
+| `$E7FD` | 3 B | `disk` | `RDBLK_RRSTART` | k_47B2 entry RR, FCB+33..35 (24-bit, 3 bytes) | `basic` FAT_MBUF/FWBUF |
+| `$E800` | 256 B | `basic` | `CAL_BUF2` | cassette ASCII load: 256-byte read-ahead buffer (in idle FWBUF) |  |
+| `$E800` | 20 B | `disk` | `DRV_TRAMP` | 4 CALLF trampolines, 5 bytes each ($E800-$E813) |  |
+| `$E814` | 2 B | `disk` | `BDOS_SEQREC` | records delivered so far by RDSEQ (K, word) | `basic` FAT_MBUF/FWBUF |
+| `$E816` | 2 B | `disk` | `DBUF_PTR` | word -> the 512-byte DATA/sector buffer | `basic` FAT_MBUF/FWBUF |
+| `$E818` | 2 B | `disk` | `MBUF_PTR` | word -> the 512-byte FAT/dir METADATA buffer | `basic` FAT_MBUF/FWBUF |
+| `$E9C0` | 1 B | `basic` | `FAT_SECPERCLUS` | sectors per cluster (byte) |  |
+| `$E9C1` | 2 B | `basic` | `FAT_FATSTART` | first FAT sector (= reserved sectors) (word) |  |
+| `$E9C3` | 2 B | `basic` | `FAT_FIRSTROOT` | first root-directory sector (word) |  |
+| `$E9C5` | 2 B | `basic` | `FAT_ROOTSECS` | number of root-directory sectors (word) |  |
+| `$E9C7` | 2 B | `basic` | `FAT_FIRSTDATA` | first data sector (word) |  |
+| `$E9C9` | 2 B | `basic` | `FAT_CURCLUS/FCH_STATE0` | current cluster in the open file's chain (word) |  |
+| `$E9CB` | 1 B | `basic` | `FAT_CLUSSEC` | sector index within current cluster (byte) |  |
+| `$E9CC` | 2 B | `basic` | `FAT_FIRSTCLUS` | first cluster of the found file (word) |  |
+| `$E9CE` | 4 B | `basic` | `FAT_FILESIZE` | file size in bytes (4-byte LE) |  |
+| `$E9D2` |  | `basic` | `FAT_NUMFATS` | number of FAT copies (byte; from BPB +16) |  |
+| `$E9D3` | 2 B | `basic` | `FAT_SECPERFAT` | sectors per FAT copy (word; from BPB +22) |  |
+| `$E9D5` |  | `basic` | `FAT_PARITY` | 1 = odd cluster, 0 = even (FAT12 nibble pack) |  |
+| `$E9D6` | 2 B | `basic` | `FAT_BYTEIDX` | byte index within a FAT sector (word, 0..511) |  |
+| `$E9D8` | 2 B | `basic` | `FAT_FATSEC` | FAT sector currently read (word) |  |
+| `$E9DA` |  | `basic` | `FAT_B0` | first FAT byte of a 12-bit entry |  |
+| `$E9DB` |  | `basic` | `FAT_B1` | second FAT byte of a 12-bit entry |  |
+| `$E9DC` | 2 B | `basic` | `FAT_NAMEPTR` | -> 11-byte search name (word) |  |
+| `$E9DE` | 2 B | `basic` | `FAT_DIRSEC` | current root-dir sector being scanned (word) |  |
+| `$E9E0` | 2 B | `basic` | `FAT_DIRREM` | root-dir sectors remaining to scan (word) |  |
+| `$E9E2` | 2 B | `basic` | `FAT_WRTMP` | transient scratch for the FAT12 write helpers (word) |  |
+| `$E9E4` |  | `basic` | `FAT_WRTMP2` | second transient (free-cluster scan cached sector) |  |
+| `$E9E6` | 2 B | `basic` | `FREAD_OFF` | next byte index within FSECTOR_BUF (0..512) (word) |  |
+| `$E9E8` | 4 B | `basic` | `FREAD_LEFT` | bytes of the open file still undelivered (4-byte LE) |  |
+| `$E9EC` | 2 B | `basic` | `FWR_CLUS` | chain-tail cluster currently being filled (word) |  |
+| `$E9EE` | 2 B | `basic` | `FWR_FIRST` | file's first cluster, 0 until first allocated (word) |  |
+| `$E9F0` | 1 B | `basic` | `FWR_SECIDX` | sector index within the current cluster (byte) |  |
+| `$E9F1` | 2 B | `basic` | `FWR_BUFLEN` | bytes currently buffered in FSECTOR_BUF (word, 0..512) |  |
+| `$E9F3` | 4 B | `basic` | `FWR_BYTES` | total bytes written so far = final file size (4-byte LE) |  |
+| `$E9F7` | 2 B | `basic` | `FWR_DIRSEC` | logical sector holding the open file's dir entry (word) |  |
+| `$E9F9` | 2 B | `basic` | `FWR_DIROFF` | byte offset of that dir entry within its sector (word) |  |
+| `$E9FB` | 1 B | `basic` | `AUDIO_VMASK/DISKOP_OP/FOPEN_SEL/LE_OP` | main -> tenant: DISKOP_SEL_* primitive selector (1) |  |
+| `$E9FB` | 1 B | `disk` | `DISKOP_OP/FOPEN_SEL` | main -> tenant: DISKOP_SEL_* primitive selector (1) |  |
+| `$E9FC` | 1 B | `basic` | `AUDIO_STATUS/BN_STAT/CM_STATUS/DEFT_STATUS/DISKOP_STATUS/LE_STATUS` | tenant -> main: 0 = ok (Cy=0 / Z set); nonzero = |  |
+| `$E9FC` |  | `disk` | `DISKOP_STATUS` | tenant -> main: 0 = ok (Cy=0 / Z set); nonzero = |  |
+| `$E9FD` |  | `basic` | `DISKOP_A/PLY_NUMOVF` | tenant -> main: the primitive's real A output, |  |
+| `$E9FE` |  | `basic` | `BN_PTR/DISKOP_HL` | tenant -> main: the primitive's real HL output |  |
+| `$EA00` | 16 B | `basic` | `FCH_MODES` | 16 B ($EA00..$EA0F) |  |
+| `$EA10` | 32 B | `basic` | `FCH_RECLENS` | 32 B ($EA10..$EA2F). ~~$EA92..$EAFF free (110 B)~~ |  |
+| `$EA30` | 2 B | `basic` | `RN_PTR` | RENUM: the reference-pass cursor (2) |  |
+| `$EA32` | 2 B | `basic` | `AU_NUM/RN_NEW` | AUTO: the line number being prompted (2) |  |
+| `$EA34` | 2 B | `basic` | `RN_OLD` | RENUM: old line to start renumbering at (2) |  |
+| `$EA36` |  | `basic` | `AU_INC/RN_INC` | AUTO: the increment (2) |  |
+| `$EA38` | 1 B | `basic` | `RL_AUTO` | read_line: 1 = AUTO's polling mode (1) |  |
+| `$EA39` | 1 B | `basic` | `LPTPOS` | printer head column, 0-based (1) |  |
+| `$EA3A` | 2 B | `basic` | `GP_SRC` | pass cursor into FSECTOR_BUF (2) |  |
+| `$EA3C` |  | `basic` | `GP_LEFT` | record bytes still to move (2) -> ends $EA3E |  |
+| `$EA3E` |  | `basic` | `CLR_SAVE` | fg+bg, in flight across a COLOR statement (2) |  |
+| `$EA40` | 32 B | `basic` | `FCH_RECNOS` | 32 B ($EA40..$EA5F): per-channel record number |  |
+| `$EA92` | 111 B | `basic` | `FN_BASE/FN_PTR/FOR_STK_END` | RETIRED AS A STACK; the literal survives ONLY as |  |
+| `$EA94` | 2 B | `basic` | `FN_DPTR` | 2 B: the definition cursor, tenant-only |  |
+| `$EA96` | 2 B | `basic` | `FN_KEY` | 2 B: the formal (or the $FFFF result slot) |  |
+| `$EA98` | 1 B | `basic` | `FN_TYP` | 1 B: its type -- and the ERR code on req 0 |  |
+| `$EA99` | 1 B | `basic` | `FN_FEND` | 1 B: low byte of one-past the live frame. |  |
+| `$EA9A` | 1 B | `basic` | `FN_SLOTP` | 1 B: low byte of the slot the NEXT formal takes |  |
+| `$EA9B` | 1 B | `basic` | `FN_RTYPE` | 1 B: the FN's own resolved type (its result type) |  |
+| `$EA9C` |  | `basic` | `FN_PAREA` | the shadow-parameter slots themselves |  |
+| `$EAFF` |  | `basic` | `FN_PAREA_END` |  |  |
+| `$EB00` |  | `basic` | `LINEBUF` | repack: ASCII input line from the keyboard (LINEMAX B) |  |
+| `$EC00` | 576 B | `basic` | `TOKBUF` | repack: crunch buffer, 576 B ($EC00..$EE3F) |  |
+| `$EE64` | 96 B | `basic` | `FLD_TAB` | field table base ($EE64..$EEC3, 96 bytes) |  |
+| `$EEC4` | 60 B | `basic` | `FLD_TABEND/GP_RECNO` | record number (1-based, 2) |  |
+| `$EEC6` | 2 B | `basic` | `GP_SEC` | file logical-sector index of the record (2) |  |
+| `$EEC8` |  | `basic` | `GP_WITHIN` | byte offset of the record within its sector (0/256, 2) |  |
+| `$EECA` | 2 B | `basic` | `GP_CLUS` | current cluster during the chain walk (2) |  |
+| `$EECC` | 2 B | `basic` | `GP_CLIDX` | cluster steps still to walk (2) |  |
+| `$EECE` | 1 B | `basic` | `GP_SECINCL` | sector index within the final cluster (1) |  |
+| `$EECF` | 2 B | `basic` | `GP_PHYS` | resolved absolute physical sector (2) |  |
+| `$EED1` |  | `basic` | `GP_OLDNSEC` | file's old sector count (ceil(size/512), 2) |  |
+| `$EED3` | 1 B | `basic` | `GP_FLAGS` | bit0 = extend (PUT allocates; GET does not) (1) |  |
+| `$EED4` | 1 B | `basic` | `GP_MODE` | 0 = GET (read), 1 = PUT (write) (1) |  |
+| `$EED5` |  | `basic` | `GP_CHAN` | the channel number being GET/PUT (1) |  |
+| `$EED6` | 32 B | `basic` | `PU_FMT` | copied format string ($EED6..$EEF5, 32 chars) |  |
+| `$EEF6` | 1 B | `basic` | `PU_FMTLEN` | live format length (1) |  |
+| `$EEF7` | 1 B | `basic` | `PU_POS` | current scan index into PU_FMT (1) |  |
+| `$EEF8` | 1 B | `basic` | `PU_W` | current field width (1) |  |
+| `$EEF9` |  | `basic` | `PU_TYPE` | field type: 0 num #, 1 str &, 2 str !, 3 str \..\ (1) |  |
+| `$EEFA` | 1 B | `basic` | `PU_FLAGS` | bit0 = trailing separator (suppress NL); bit1 = wrapped (1) |  |
+| `$EEFB` |  | `basic` | `PU_COMMAS/PU_WP` | pu_fmt_int scratch write pointer (2) -- ALIASED by |  |
+| `$EEFC` |  | `basic` | `PU_DEC` | PRINT USING `.`: decimal places requested (D-PUDOT) (1) |  |
+| `$EEFD` | 1 B | `basic` | `FMT_SEC` | CALL FORMAT: current sector index being written (1) |  |
+| `$EEFE` | 2 B | `basic` | `FMT_DESC` | CALL FORMAT: chosen geometry descriptor pointer (2) |  |
+| `$EF00` | 256 B | `basic` | `FLD_DESC` | transient fielded-read descriptor [len][bytes:255] |  |
+| `$F006` | 2 B | `basic` | `GP_RECLEN` | active channel's record length (word), loaded per calc |  |
+| `$F008` | 1 B | `basic` | `OO_RECLEN_CHAN` | OPEN scratch: channel # stashed across the LEN= eval (1) |  |
+| `$F009` |  | `basic` | `FILES_HASPAT` | FILES: 1 = a filespec pattern is in DISK_FCB_NAME (1) |  |
+| `$F009` | 1 B | `disk` | `FILES_HASPAT` | FILES: 1 = a filespec pattern is in DISK_FCB_NAME (1) |  |
+| `$F00A` | 6 B | `basic` | `CAS_WANT` | requested 6-char tape name, space-padded (6) |  |
+| `$F010` | 1 B | `basic` | `CAS_WANT_ON` | 1 = match CAS_WANT; 0 = load next file (bare form) (1) |  |
+| `$F011` | 6 B | `basic` | `CAS_HDRNAME` | 6-char name read from the current tape header (6) |  |
+| `$F017` |  | `basic` | `CAS_HDRID` | file-type id byte read from the current header (1) |  |
+| `$F018` | 1 B | `basic` | `CAS_VERIFY` | 1 = CLOAD? compare-mode (no store) (1) |  |
+| `$F019` |  | `basic` | `CAS_VMIS` | sticky: 1 = a verify mismatch was seen (1) |  |
+| `$F01A` | 1 B | `basic` | `FACTYP` | 2=int / 4=single / 8=double (1) |  |
+| `$F01A` | 1 B | `disk` | `FACTYP` | 2=int / 4=single / 8=double (1) |  |
+| `$F01B` | 1 B | `basic` | `TKOVF` | tokeniser: 0 = ok, else the ERR CODE of the |  |
+| `$F01C` | 8 B | `basic` | `FAC` | float accumulator: value bytes as tokenised (8) |  |
+| `$F01C` | 8 B | `disk` | `FAC` | float accumulator: value bytes as tokenised (8) |  |
+| `$F024` |  | `basic` | `FOUTBUF/HORNER_ACC/MATH_R/SQRT_R` | final-correction high-precision residual scratch |  |
+| `$F036` | 1 B | `basic` | `HORNER_CNT` | fp_poly_horner's own remaining-term loop |  |
+| `$F037` | 2 B | `basic` | `HORNER_PTR` | fp_poly_horner's own advancing coeff- |  |
+| `$F03C` |  | `basic` | `TKDIG` | tokeniser/formatter: significant-digit array, |  |
+| `$F054` | 1 B | `basic` | `TKPOS` | running digit-position counter (1) |  |
+| `$F055` | 1 B | `basic` | `TKINTLEN` | integer-part digit count = P (1) |  |
+| `$F056` | 1 B | `basic` | `TKHAVESIG` | 1 once the first nonzero digit is seen (1) |  |
+| `$F057` | 1 B | `basic` | `TKNZPOS` | position of the first nonzero digit = f (1) |  |
+| `$F058` | 1 B | `basic` | `TKDCOUNT` | classification digit count = D, saturating (1) |  |
+| `$F059` | 1 B | `basic` | `TKSTORED` | digits actually written to TKDIG, capped 24 (1) |  |
+| `$F05A` | 1 B | `basic` | `TKFLAGS` | bit0=dot bit1=exp bit2=expD bit3=! bit4=# bit5=% (1) |  |
+| `$F05B` | 2 B | `basic` | `TKEXP` | signed explicit exponent, saturated +-9999 (2) |  |
+| `$F05D` | 1 B | `basic` | `TKEXPD` | 1 = the exponent marker being parsed is D/d (1) |  |
+| `$F05E` | 1 B | `basic` | `TKEXPSIGN` | 1 = the exponent being parsed is negative (1) |  |
+| `$F05F` | 1 B | `basic` | `TKPC` | target precision digit count: 6 / 14 (1) |  |
+| `$F060` | 2 B | `basic` | `TKDEXP` | signed dec_exp, pre-/post-round (2) |  |
+| `$F062` |  | `basic` | `TKLEAD` | computed lead byte (sign+excess-64 exponent) (1) |  |
+| `$F063` | 1 B | `basic` | `FOSIGN` | 0 / $80 = the value's sign bit (1) |  |
+| `$F064` |  | `basic` | `FOSIGCOUNT/TKVALEND` | significant digit count = s, trailing zeros |  |
+| `$F065` |  | `basic` | `FOMBYTES` | mantissa byte count: 3 (single) / 7 (double) (1) |  |
+| `$F067` | 2 B | `basic` | `TKSRCSAVE` | (2) |  |
+| `$F069` |  | `basic` | `FPERR` | runtime numeric-error flag: 0 none / 1 overflow / |  |
+| `$F06A` | 18 B | `basic` | `ARGA` | operand A / working result, FPNUM record (18) |  |
+| `$F06A` | 18 B | `disk` | `ARGA` | operand A / working result, FPNUM record (18) |  |
+| `$F07C` | 18 B | `basic` | `ARGB` | operand B, FPNUM record (18) |  |
+| `$F08E` |  | `basic` | `MULPROD/RND_ACCLE` | fp_mul: 28-digit product (14x14), MSD first (28) |  |
+| `$F09C` | 1 B | `basic` | `RND_I` | multiply-add loop: S/acc digit index i |  |
+| `$F09D` | 1 B | `basic` | `RND_J` | multiply-add loop: A's digit index j |  |
+| `$F09E` | 1 B | `basic` | `RND_IJ` | multiply-add loop: i+j, the target |  |
+| `$F09F` | 1 B | `basic` | `RND_AJ` | multiply-add loop: A_LE[j], stashed |  |
+| `$F0A0` | 1 B | `basic` | `RND_CARRY` | multiply-add loop: running BCD carry, |  |
+| `$F0A1` | 1 B | `basic` | `RND_K` | output normalisation: count of leading |  |
+| `$F0AA` | 15 B | `basic` | `DIVPAD` | fp_div: divisor zero-padded to 15 digits (15) |  |
+| `$F0B9` | 15 B | `basic` | `DIVREM` | fp_div: running remainder, 15 digits (15) |  |
+| `$F0C8` | 18 B | `basic` | `CVT` | fac_to_int_strict/addr + flt_to_int16 (float.asm) |  |
+| `$F0DA` | 1 B | `basic` | `LHS_FACTYP` | ev_e/ev_t binary-op sites: the LHS operand's FACTYP, |  |
+| `$F0DB` |  | `basic` | `LHS_FAC` | ...and the LHS operand's raw FAC bytes (8) |  |
+| `$F0E3` | 1 B | `basic` | `FP_SHIFTAMT` | dig15_shr/dig15_shl: shift-amount parameter (1) |  |
+| `$F0E4` | 2 B | `basic` | `FP_LHSVAL` | combine_*: the LHS operand's plain int16 value, |  |
+| `$F0E6` | 2 B | `basic` | `FP_TMP_B` | combine_*: the RHS operand's plain int16 value, |  |
+| `$F0E8` | 1 B | `basic` | `FP_RSIGN` | signed_div_de_bc/signed_mod_de_bc: result sign (1) |  |
+| `$F0E9` |  | `basic` | `KEYARG/WIDIG` | widen_int_to: binary->BCD digit scratch, up to |  |
+| `$F0EE` | 1 B | `basic` | `MUL_I` | fp_mul: outer-loop digit index i, 13 downto 0; |  |
+| `$F0EF` | 1 B | `basic` | `MUL_ADIG` | fp_mul: A[i], the current outer-loop digit (1) |  |
+| `$F0F0` | 1 B | `basic` | `MUL_CARRY` | fp_mul: running carry within one outer pass; |  |
+| `$F0F1` | 2 B | `basic` | `MUL_PP` | fp_mul: MULPROD write-cursor for the inner loop (2) |  |
+| `$F0F3` | 2 B | `basic` | `MULCAND` | mul16x16_32: multiplicand operand (2) |  |
+| `$F0F5` | 2 B | `basic` | `MULTPLR` | mul16x16_32: multiplier operand, shifted in place (2) |  |
+| `$F0F7` | 4 B | `basic` | `MUL32` | mul16x16_32: 32-bit unsigned product, LE |  |
+| `$F0FB` | 2 B | `basic` | `WSRC` | widen_fac_to/widen_lhsframe_to (shared unpack |  |
+| `$F0FD` | 2 B | `basic` | `WSRC_TYP` | ...and the address of its type byte, FACTYP |  |
+| `$F0FF` | 1 B | `basic` | `FP_OPMODE` | combine_add/combine_sub shared body: 0=add, |  |
+| `$F100` |  | `basic` | `CVT_MODE` | domain_convert_core: 0=strict int16 domain, |  |
+| `$F101` | 2 B | `basic` | `PLF_RA` | pop_lhs_and_probe: scratch home for its own |  |
+| `$F103` |  | `basic` | `PLF_RA2` | ...and for its DIRECT caller's (combine_add/ |  |
+| `$F105` |  | `basic` | `SUB_PING` | PING page tag: $C0 (page 0) / $C1 (page 1) |  |
+| `$F106` |  | `basic` | `SUBSLOT` | slot id of zerobas-sub (bit7 exp \| 3-2 \| 3), 1 |  |
+| `$F107` |  | `basic` | `SUBSLOT_OK` | 1 = a CD sub-ROM was found and recorded, else 0 |  |
+| `$F108` |  | `basic` | `DB_CUR` | wave-3 detok: the DETOKBUF write cursor, held across |  |
+| `$F10A` |  | `basic` | `SUB_INT_RAM` | the copied trampoline stub (<= 64 B; executes from RAM) |  |
+| `$F142` | 7 B | `basic` | `RND_SEED` | packed BCD, MSD-first, 7 bytes (-> $F148) |  |
+| `$F14A` |  | `basic` | `INT_MAIN_PRIM` | page-0 primary field of the MAIN (BIOS) slot (=0) |  |
+| `$F14B` |  | `basic` | `INT_SUB_PRIM` | page-0 primary field of the sub-ROM slot (=3, slot 3) |  |
+| `$F14C` |  | `basic` | `INT_SUB_SUBSL` | page-0 subslot field of the sub-ROM slot (=2, i.e. 3-2) |  |
+| `$F14D` |  | `basic` | `SUB_INT_DELTA` | self-test tenant result: JIFFY ticks observed under EI (1) |  |
+| `$F14E` | 1 B | `basic` | `VARTYPE` | var_name_key: the RESOLVED type (2/4/8) of the |  |
+| `$F14F` | 1 B | `basic` | `VS_TARGET_TYPE` | var_store_fac/var_alloc_or_find (vars.asm): |  |
+| `$F150` | 2 B | `basic` | `VS_INT_VAL` | var_store_fac (vars.asm): the coerced int16 value |  |
+| `$F152` | 26 B | `basic` | `LHS_VARTYPE` | ex_let (interp.asm): the LHS variable's resolved |  |
+| `$F16D` |  | `basic` | `MC_TYPE` | evmc_sub1 (expr.asm): the operand's FACTYP (4/8), |  |
+| `$F16E` |  | `basic` | `HORNER_G/MATH_T/RND_LE/SQRT_X` | the efficiency-normalized argument x' (constant |  |
+| `$F180` |  | `basic` | `MATH_A/RND_STATE/SQRT_Y` | fp_atan's persistent reduced-argument "a" -- |  |
+| `$F192` | 2 B | `basic` | `MATH_N/MATH_SIGN/SQRT_K` | signed net count of the x'/y<->x/y-under-100^k |  |
+| `$F193` | 1 B | `basic` | `MATH_RECIP/SQRT_ITER` | Heron loop iteration counter, 1-based (the stop- |  |
+| `$F194` | 1 B | `basic` | `MATH_BREAK/MATH_J/SQRT_POW10` | final decision-loop (§10.4 step 4, REVISED |  |
+| `$F195` | 18 B | `disk` | `DRVA_DPB` | drive-A DPB base (id byte + 18-byte DPB, §8.30) |  |
+| `$F1AA` |  | `disk` | `W50A9_RET_DE` | DE (= IX) on return: disk work-area pointer |  |
+| `$F1C9` |  | `disk` | `RES_PRINT` | resident $-string print routine the kernel CALLs (§8.28) |  |
+| `$F200` |  | `basic` | `FN_STK_FLOOR` |  |  |
+| `$F23D` | 2 B | `disk` | `DOS_DTAPTR` | disk work-area current-DTA cache (word, LE; M19) |  |
+| `$F242` |  | `disk` | `W50A9_WRKB` | the one work-area cell $50A9 clears (semantic: black-box) |  |
+| `$F247` |  | `disk` | `CURDRV_CELL` | current-drive index ($00=A:); read by $50C4 (M18) |  |
+| `$F24E` |  | `disk` | `RES_STUBS` | no-op segment-hook stub table base (§8.29) |  |
+| `$F2B8` |  | `disk` | `RES_STUBS_END` | one past the last stub ($F2B7); $F2B8+ = kernel data (§8.61) |  |
+| `$F340` |  | `disk` | `DOS_F340` | disk work-area flag the kernel reads at init (§8.33); $00 = ok |  |
+| `$F341` | 4 B | `disk` | `RAMAD0` | RAM-slot id per page ($F341-$F344), MSX2 TH work area |  |
+| `$F347` |  | `disk` | `DRVCNT` | DRVTBL-1: logical-drive count ($02); read by $50D5 (M17) |  |
+| `$F348` |  | `disk` | `DRVTBL` | MSX-DOS-1 disk-driver table (§8.22) |  |
+| `$F351` | 2 B | `basic` | `DSKBUF_PTR` | word -> the DSKI$/DSKO$ sector buffer (2) |  |
+| `$F351` | 2 B | `disk` | `DSKBUF_PTR` | word -> the DSKI$/DSKO$ sector buffer; the disk ROM writes it |  |
+| `$F359` |  | `disk` | `W50A9_RET_HL` | HL on return: disk work-area pointer (DRVTBL+$11 region) |  |
+| `$F365` |  | `disk` | `F365_STUB` | fixed disk-work-area slot-read stub (IN A,($A8);RET; M15 §7.1) |  |
+| `$F368` | 21 B | `disk` | `WA_JMPTAB` | disk-work-area resident jump table ($F368-$F37C, 7 slots) |  |
+| `$F37D` | 2 B | `disk` | `SYSTEM` | SYSTEM sysvar: BDOS entry-point word |  |
+

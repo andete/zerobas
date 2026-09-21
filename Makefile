@@ -510,6 +510,16 @@ ram-map-check:
 	python3 tools/ram_map.py --selftest
 	python3 tools/ram_map.py --check
 
+# --- ram-map-doc: regenerate docs/ram-map.md ----------------------------------
+# 🙋 JOOST, 2026-09-21: *"what I was expecting is a table that says for each RAM
+# address what its purpose(es) is (are)."* That is docs/ram-map.md -- one row per
+# ADDRESS, the cell's own comment as its purpose, and the column that says which
+# of the OTHER component's buffers the address falls inside. `ram-map-check`
+# above refuses when the file has drifted from this generator, the same
+# discipline docs/tier-status.md already runs under.
+ram-map-doc:
+	python3 tools/ram_map.py --doc
+
 # --- D-DEFFN §4.5: an ALIGNMENT assert over a MOVING symbol is a landmine ------
 # `wall-assertion-check` and `ram-claim-check` police FIGURES; this polices the
 # `IF <cond> / db UNDEFINED_SYMBOL / ENDIF` asserts themselves. Two shapes look
@@ -3487,7 +3497,7 @@ clean:
         bdos-cbios-selfcheck audit-citations basic-reloc deadcode repack-main repack-boot \
         repack-machine diskbasic-acceptance-repack string-acceptance time-acceptance \
         battery-membership-check fixture-integrity-check diskmap ram-claim-check \
-        ram-map-check \
+        ram-map-check ram-map-doc \
         asciidigit-acceptance \
         build-assert-check \
         interval-trap-acceptance \

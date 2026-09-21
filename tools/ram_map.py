@@ -75,13 +75,16 @@ because a resolver that silently dropped arithmetic would under-report
 occupancy -- the failure direction that costs RAM.
 
 USAGE: ram_map.py [lo] [hi] [--basic|--disk] [--inc-only] [--no-sym]
-       [--widths] [--check] [--selftest]
+       [--widths] [--check] [--doc] [--selftest]
+       --doc writes docs/ram-map.md, one row per ADDRESS with the cell's
+       own comment as its purpose; --check verifies that file matches.
        --check is the gate (`make ram-map-check`): a ratchet on the cells
        whose width is not machine-readable, plus the cross-ROM overlay
        table. It never fails on a RUN -- see check()'s own note.
 """
 from __future__ import annotations
 import glob
+import os
 import re
 import sys
 
@@ -587,6 +590,129 @@ def overlays(maps: dict, min_width: int = 64) -> list:
     return out
 
 
+
+# ------------------------------------------------- the per-ADDRESS document
+# 🙋 JOOST ASKED FOR EXACTLY THIS, 2026-09-21: *"what I was expecting is a table
+# that says for each RAM address what its purpose(es) is (are)."* The overlay
+# table added earlier that day answers a different question -- which SPANS sit
+# on top of which -- and he had to say so. This is the table: one row per
+# address, every name at it, every component that claims it, and the purpose in
+# the author's own words.
+DOC = "docs/ram-map.md"
+PURPOSE_MAX = 150
+
+
+def purpose(m, a, flat=None) -> str:
+    """The cell's own comment, flattened to one line.
+
+    🔴 THE AUTHOR'S WORDS, NOT A SUMMARY. A generated map that paraphrases is a
+    second place for the truth to drift; this quotes and truncates.
+    🔴 AND IT READS THE DECLARATION LINE, NOT THE JOINED BLOCK. Joining
+    continuation lines is right for the WIDTH -- that is why it exists (§6.6al)
+    -- and wrong for the purpose: the first draft of this table had `ERRMARK`
+    swallow the next section's whole paragraph. The joined text is the fallback
+    for a cell whose own line carries no comment at all.
+    """
+    for src in ([flat, m] if flat is not None else [m]):
+        best = ""
+        for n in m.byaddr[a]:
+            if n not in src.expr:
+                continue
+            c = re.sub(r"\s+", " ", (src.expr[n][3] or "").strip())
+            c = re.split(r"\s+---+\s+", c)[0].strip()
+            if len(c) > len(best):
+                best = c
+        if best:
+            if len(best) > PURPOSE_MAX:
+                best = best[:PURPOSE_MAX - 1].rstrip() + "…"
+            return best.replace("|", "\\|")
+    return ""
+
+
+def doc_rows(maps: dict, flat: dict | None = None) -> list:
+    """[(addr, [(comp, names, width, rule, purpose, site)], [covering])]."""
+    everything = sorted({a for m in maps.values() for a in m.addrs})
+    out = []
+    for a in everything:
+        cells, cover = [], []
+        for comp in sorted(maps):
+            m = maps[comp]
+            if a in m.byaddr:
+                cells.append((comp, "/".join(m.byaddr[a]), m.width.get(a),
+                              m.rule.get(a),
+                              purpose(m, a, (flat or {}).get(comp)),
+                              m.site(a)))
+            else:
+                # not a cell of this component -- but is it INSIDE one of its
+                # declared buffers? That is the "what does the disk side sit on
+                # top of" question, asked one address at a time.
+                owner = m.covering(a, a + 1)
+                if owner is not None:
+                    cover.append((comp, "/".join(m.byaddr[owner]), owner))
+        out.append((a, cells, cover))
+    return out
+
+
+def write_doc(maps: dict, path: str) -> str:
+    flat = {c: Map(c, m.lo, m.hi, joint=False) for c, m in maps.items()}
+    rows = doc_rows(maps, flat)
+    L = []
+    L.append("<!--")
+    L.append("Copyright (c) 2026 Joost Yervante Damad")
+    L.append("SPDX-License-Identifier: 0BSD")
+    L.append("-->")
+    L.append("")
+    L.append("# The RAM map — every declared address, and what it is for")
+    L.append("")
+    L.append("🔴 **GENERATED. Do not edit.** `make ram-map-doc` rewrites it from")
+    L.append("`basic/sysvars.inc`, `sub/`, `disk/equates.inc` and `disk/*.asm`;")
+    L.append("`make ram-map-check` fails if it has drifted. Change a cell's")
+    L.append("comment, not this file.")
+    L.append("")
+    L.append("Each row is ONE address. **Purpose is the author's own comment**,")
+    L.append("quoted and truncated, never a paraphrase — a generated map that")
+    L.append("summarises is a second place for the truth to drift.")
+    L.append("")
+    L.append("🔴 **THREE THINGS THIS TABLE CANNOT TELL YOU**, and they are the")
+    L.append("three that have cost this project days:")
+    L.append("")
+    L.append("* **A cell addressed only as an offset in code has no `equ` and is")
+    L.append("  not here at all.** Absence from this table is not emptiness.")
+    L.append("* **A blank SIZE means the extent is not machine-readable** — it is")
+    L.append("  pinned in `tools/ram-width-allow.txt` with the reason. It does")
+    L.append("  NOT mean one byte.")
+    L.append("* **A width can be present and WRONG.** `; 32 B … (word)` read as 2")
+    L.append("  and `; (4 B each)` read as 4 for a 32-byte array, both on")
+    L.append("  2026-09-21. No gate catches that; only reading does.")
+    L.append("")
+    L.append("⚠️ **OVERLAP IS DESIGNED HERE.** The standalone disk ROM's buffers")
+    L.append("sit on top of BASIC's cells on purpose, and the cassette buffers")
+    L.append("sit inside both of main's disk buffers. The `also` column names the")
+    L.append("other component's cell at the same address; the `inside` column")
+    L.append("names the other component's BUFFER this address falls within. That")
+    L.append("second one is the question a per-component map cannot answer.")
+    L.append("")
+    for comp in sorted(maps):
+        m = maps[comp]
+        L.append(f"* **{comp}** — {len(m.addrs)} declared addresses in "
+                 f"`${m.lo:04X}..${m.hi - 1:04X}`, {len(m.width)} with a "
+                 f"machine-readable width.")
+    L.append("")
+    L.append("| address | size | component | name(s) | purpose | inside |")
+    L.append("|---|---|---|---|---|---|")
+    for a, cells, cover in rows:
+        ins = "; ".join(f"`{c}` {n}" for c, n, _o in cover) or ""
+        for i, (comp, names, w, rule, why, site) in enumerate(cells):
+            size = f"{w} B" if w else ""
+            L.append(f"| `${a:04X}` | {size} | `{comp}` | `{names}` | {why} "
+                     f"| {ins if i == 0 else ''} |")
+    L.append("")
+    body = "\n".join(L) + "\n"
+    with open(path, "w") as f:
+        f.write(body)
+    return body
+
+
 # -------------------------------------------------------------- the gate
 ALLOW = "tools/ram-width-allow.txt"
 ALLOW_RE = re.compile(r"^(\S+)\s+(\S+)\s+(\S+)\s*(?:#.*)?$")
@@ -946,6 +1072,38 @@ def selftest(lo, hi) -> int:
     ok["A13 NEGATIVE: a span below the threshold is not reported"] = \
         overlays(maps13, min_width=0x10000) == []
 
+
+    # ---- A14 the per-ADDRESS document, which is what was actually asked for -
+    maps14 = {"basic": b_all, "disk": d_all}
+    rows14 = doc_rows(maps14, {c: Map(c, lo, hi, joint=False)
+                               for c in maps14})
+    byaddr14 = {a: (cells, cover) for a, cells, cover in rows14}
+    ok["A14 every declared address of BOTH components has a row"] = \
+        set(byaddr14) == set(b_all.addrs) | set(d_all.addrs)
+    # 🔴 THE PROBE ADDRESS MUST BE A DECLARED CELL, NOT JUST AN ADDRESS INSIDE
+    # THE BUFFER: this table has a row per DECLARATION, so a byte in the middle
+    # of TEMPPOOL's body has no row to carry the annotation. The first cut asked
+    # about SECTOR_BUF+$100 and read an empty default as a failure.
+    ok["A14 a basic cell INSIDE disk's SECTOR_BUF names that buffer"] = \
+        any("SECTOR_BUF" in n for _c, n, _o
+            in byaddr14[b_all.vals["GFX_PTOP"]][1])
+    ok["A14 NEGATIVE: an address outside every foreign buffer names none"] = \
+        byaddr14[b_all.vals["TKLNUM"]][1] == []
+    # SH_SRC's width lives on its continuation line ("address (2 B)"), which is
+    # exactly why joining exists -- and exactly why the PURPOSE must not join.
+    flat14 = Map("basic", lo, hi, joint=False)
+    a_src = b_all.vals["SH_SRC"]
+    ok["A14 the purpose is the DECLARATION line, not the joined block -- the "
+       "first draft had a cell swallow the next section's paragraph"] = \
+        len(purpose(b_all, a_src, flat14)) < len(purpose(b_all, a_src))
+    ok["A14 a pipe in a comment is escaped, so one cell cannot split a row"] = \
+        all("|" not in p.replace("\\|", "")
+            for _a, cells, _cv in rows14 for p in [c[4] for c in cells])
+    ok["A14 NEGATIVE: a purpose longer than the cap is truncated with an "
+       "ellipsis rather than silently cut"] = \
+        all(len(p) <= PURPOSE_MAX and (len(p) < PURPOSE_MAX or p.endswith("…"))
+            for _a, cells, _cv in rows14 for p in [c[4] for c in cells])
+
     # ---- A7 sym seeding, with --no-sym as the control ---------------------
     d_nosym = Map("disk", lo, hi, use_sym=False)
     ok["A7 sym supplies a label-derived cell (WA_SEG $E795)"] = \
@@ -972,9 +1130,31 @@ def main() -> int:
     inc_only = "--inc-only" in sys.argv
     comps = [c for c in ("basic", "disk")
              if f"--{c}" in sys.argv] or ["basic", "disk"]
+    if "--doc" in sys.argv:
+        maps = {c: Map(c, lo, hi) for c in ("basic", "disk")}
+        body = write_doc(maps, DOC)
+        print(f"{DOC}: {body.count(chr(10))} lines, "
+              f"{len(doc_rows(maps))} address(es)")
+        return 0
     if "--check" in sys.argv:
         maps = {c: Map(c, lo, hi) for c in ("basic", "disk")}
         rc, lines = check(maps, load_allow(ALLOW))
+        # 🔴 THE DOCUMENT IS GENERATED, SO IT CAN DRIFT, SO IT IS CHECKED.
+        # Same discipline as docs/tier-status.md: regenerate into memory and
+        # compare, and say which command fixes it.
+        try:
+            have = open(DOC).read()
+        except OSError:
+            have = None
+        want = write_doc(maps, DOC + ".gen")
+        os.unlink(DOC + ".gen")
+        if have != want:
+            rc = 1
+            lines.append(f"🔴 {DOC} has DRIFTED from its generator "
+                         f"({'absent' if have is None else 'differs'}) -- "
+                         f"run `make ram-map-doc`.")
+        else:
+            lines.append(f"🟢 {DOC} matches its generator.")
         for ln in lines:
             print(ln)
         ov = overlays(maps)
