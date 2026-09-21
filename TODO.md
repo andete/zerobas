@@ -452,6 +452,39 @@ item — do **one item per session** to keep context lean.
       undeclared `basic` cells).
       ⚠️ This does NOT retire §6.6q in general: `PAINT` then `LOAD` is still
       ungated and `GFX_PSTK` still sits in the same window.
+      🟢 **✅ THE RELOCATION IS DONE 2026-09-21 (§6.6ar).** `SH_OP..SH_ERR`
+      moved `$E36D..$E37E` -> **`$E20D..$E21E`** (the retired `TRAPSTK`'s
+      source-declared FREE-RAM run, which the 18 B block fills to the byte,
+      ending one below `TRAPPEND`); `TEMPTOP` moved `$E37F..$E380` ->
+      **`$E238..$E239`** (6 B of that run left). `TEMPPOOL` is now anchored
+      ABSOLUTELY so the 122 B chained below it does not move into the GFX block.
+      🔬 **THE PROBE THAT FOUND IT IS THE ACCEPTANCE TEST THAT CLOSES IT:**
+      287 writes / 7 addresses -> **0**, with the bracket arming the same 41
+      times, the byte reads the same 467 (2227 rich) and the `TOKBUF` control
+      the identical 258 and 1898. Only the subject moved.
+      ➡️ **SO STEP 11's RAM BLOCKER IS CLEARED** and the port itself is next.
+
+- [ ] 🧮 **THERE IS NO SINGLE RAM MAP, AND THAT IS WHAT MAKES EVERY RAM QUESTION
+      EXPENSIVE** — Joost, 2026-09-21: *"Don't you have a single RAM map?"*
+      🎚️ TIER 2 — reasonable time; it is apparatus, and it gates steps 10-11.
+      🙋 **NEEDS-JOOST** — only on WHEN. He raised it while step 11's port was
+      the queued work and said which to spend next is his call; the work itself
+      needs no ruling.
+      🔴 **THE EVIDENCE IS §6.6ar.** `scratchpad/rammap_sweep.py` offered 22
+      "unattributed runs"; EVERY one of 20 B or more was occupied, and not one
+      could be ruled out from the map — each needed a sentence of prose
+      elsewhere in `basic/sysvars.inc` (`FWBUF`/`FSECTOR_BUF` extents inside
+      `CAL_BUF2`'s comment; `FCH_CTX`'s `$EA00 + 2*562 = $EE64` inside
+      `FLD_TAB`'s; `GFX_DFSTK`'s `4*GFX_DFCAP`; `STRTAB` from `$E240`).
+      🔴 **THREE DEFECTS, ONE SHAPE:** a cell's WIDTH lives in a prose comment
+      rather than in its declaration; the sweeper is a PARSER over that prose
+      and lives in `scratchpad/`; and **RAM has no gate at all** —
+      `wall-assertion-check` is ROM only.
+      ➡️ **THE WORK:** promote the sweeper to `tools/`, make the width
+      declaration mandatory and machine-readable, generate ONE map across
+      `basic/sysvars.inc` + `disk/equates.inc` + `sub/`, and gate it so every
+      byte is attributed or explicitly declared free. The ~105 cells with no
+      trusted width are the bulk of it.
       🟡 **12 `SAVE`** — not blocked, but not a carve: `do_save` ends
       `jp sv_tenant` (`SUBROM_IDX_SAVE`), so the body is ALREADY in the sub-ROM.
       The move is sub → disk and its value is faithfulness — today a foreign disk
@@ -3380,7 +3413,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:21084 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:21117 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -3546,7 +3579,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:8189 (T-6FE392)8 (T-529ABE)` from `TODO.md:19478 (T-529ABE)`: a
+      `TODO.md:8222 (T-6FE392)8 (T-529ABE)` from `TODO.md:19511 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -9033,7 +9066,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:19478 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:19511 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

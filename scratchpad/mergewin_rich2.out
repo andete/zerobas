@@ -1,0 +1,17 @@
+armed at mrg_storeline $7183, disarmed at arl_getbyte $7178, closed for good at arl_ok $7176 -- the bracket is 'main between two byte reads', and nothing after the merge
+windows $E2A0..$E49F (SECTOR_BUF/FAT_DBUF) and $E560..$E75F (WBUF/FAT_MBUF)
+control $EC00..$EC7F (TOKBUF) -- it MUST fire
+fixture: RICH, 2224 B
+
+self-proof: MERGE read 40 line(s), fixture has 40
+meta: {'arm': 41, 'dis': 2227, 'fin': 4, 'win': 0, 'ctl': 1898, 'logged': 0, 'capped': 0}
+
+=== WRITES INTO disk's SECTOR_BUF WINDOW, between byte reads ===
+  (none)
+
+🟢 CLEAN: across 41 bracketed intervals with the control firing 1898 time(s), main's ASCII line path wrote NOTHING into EITHER disk buffer window. A disk-side sector buffer there would survive the tokeniser.
+
+--- PREDICTIONS SCORED ---
+  P1 the control band fires: HIT (1898 hits)
+  P2 the window band stays silent: HIT
+refcache: 0 hit, 2 miss, 2 stored

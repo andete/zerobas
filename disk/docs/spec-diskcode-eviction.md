@@ -3246,6 +3246,67 @@ merge worked, and `RUN`'s own string traffic was inside the bracket. The
 seven addresses.** A control that confirms is not a wasted control; without it
 the number would have been unreadable.
 
+### 6.6ar 🟢 THE WINDOW IS CLEAN — 20 B RELOCATED, AND EVERY "UNATTRIBUTED RUN" IN THE MAP WAS OCCUPIED (D-RAMFREE, 2026-09-21)
+
+§6.6aq measured step 11's real blocker at seven addresses inside `disk.rom`'s
+`SECTOR_BUF` window and priced the remedy at ~20 B of relocation. **Done, and
+the probe that found the problem is the acceptance test that closes it.**
+
+| | before | after |
+|---|---|---|
+| `SH_OP..SH_ERR` (18 B) | `$E36D..$E37E` | **`$E20D..$E21E`** |
+| `TEMPTOP` (2 B) | `$E37F..$E380` | **`$E238..$E239`** |
+| writes into either disk window, between byte reads | **287**, 7 addresses | **0** |
+| the `TOKBUF` control, same run | 258 | **258** |
+| ditto, `--rich` fixture | 1898 | **1898** |
+
+🔑 **TWO-SIDED WITH EVERYTHING ELSE HELD FIXED.** The bracket armed the same 41
+times, the byte reads numbered the same 467 (2227 rich), and the control fired
+the identical 258 and 1898. The only number that moved is the subject.
+
+🔴 **`TEMPPOOL` IS NOW ANCHORED ABSOLUTELY, ON PURPOSE.** It used to be
+`TEMPTOP + 2`, so moving `TEMPTOP` would have dragged the 96 B pool, `TEMPBASE`,
+`ISRCH_*`, `STRENG_SPARE` and `MIDS_DEST` — 122 B — straight into the GFX block
+at `$E3E5`. Only the cells the ASCII line path WRITES had to leave; the chain
+below them is pinned where it was.
+
+🎯 **AND THE REAL FINDING IS ABOUT THE MAP, NOT THE BYTES.**
+`scratchpad/rammap_sweep.py` offered **22 unattributed runs**. Every one of
+**20 B or more was occupied**, and not one of them could be ruled out from the
+map — each needed a sentence of prose somewhere else in `basic/sysvars.inc`:
+
+| the map offered | what is actually there | where that is written |
+|---|---|---|
+| 192 B `$E900`, 192 B `$E700` | `FWBUF` / `FSECTOR_BUF` bodies | a sentence inside `CAL_BUF2`'s comment |
+| 80 B `$EA42`, 36 B `$EE40` | the `FCH_CTX` array | `FLD_TAB`'s comment: `$EA00 + 2*562 = $EE64` |
+| 28 B `$E4FD` | `GFX_DFSTK`'s body | `4*GFX_DFCAP`, one line above it |
+| 48 B `$E238..$E268` | `STRTAB` from `$E240` on | a `; FREE-RAM` note that grants only 8 B |
+| 20 B `$E3FE` | inside the `SECTOR_BUF` window anyway | — |
+
+**The two runs this slice spent are the only two the file itself calls
+`FREE-RAM` in words** — the retired `TRAPSTK` (`$E20D..$E21E`, and the 18 B
+block fits it to the byte, ending one below `TRAPPEND`) and the 8 B below
+`STRTAB`, of which 6 B remain.
+
+🙋 **SO THE STANDING ITEM IS NOT "FIND MORE RAM", IT IS "HAVE A RAM MAP".**
+Joost, 2026-09-21: *"Don't you have a single RAM map?"* — no, and that is the
+defect this slice paid for. A cell's WIDTH lives in a prose comment rather than
+in its declaration; the sweeper is a parser over that prose, it sits in
+`scratchpad/`, and **RAM has no gate at all** (`wall-assertion-check` is ROM
+only). Filed in `TODO.md`: promote the sweeper to `tools/`, make the width
+declaration mandatory and machine-readable, generate ONE map across
+`basic/sysvars.inc` + `disk/equates.inc` + `sub/`, and gate it so every byte is
+attributed or explicitly declared free. The ~105 cells with no trusted width are
+the work.
+
+⚠️ **TWO CONSECUTIVE IDENTICAL APPARATUS FAILURES LOOKED DETERMINISTIC AND WERE
+NOT.** The first two post-relocation runs both died with the same mis-echo
+(`SCREEN 0` delivered as ` 0`), which reads exactly like a regression the change
+caused. `diskbasic-acceptance` on that same ROM answered 34/34, the third run
+was clean, and the fourth (`--rich`) too. **A repeated apparatus failure is
+still an apparatus failure — reach for a gate that exercises the same machine
+before believing the probe.**
+
 ## 6.7 🔍 GAP ANALYSIS — zerobas AGAINST THE MEASURED PROTOCOL (D-HOOKCENSUS, 2026-09-19)
 
 > 🏗️ **RULED BY JOOST, 2026-09-20: *"I think the answer to Two is obvious: we do

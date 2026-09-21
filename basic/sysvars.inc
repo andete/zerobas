@@ -1311,7 +1311,10 @@ TRAPSVC         equ     $E20C   ; 1 B: count of live SERVICING entries == depth 
                                 ; service stack. Gates ex_return's re-enable hook (0 =
                                 ; no added cost on a normal RETURN).
 ; D-CTLPOOL: TRAPSTK ($E20D, 6 x 3 B) IS RETIRED.
-; FREE-RAM $E20D..$E21F  the retired trap service stack. The
+; 🔴 SPENT 2026-09-21 (D-MERGEWIN): $E20D..$E21E now holds the SH_* param block,
+; re-based out of disk.rom's SECTOR_BUF window. The run is used to the byte --
+; SH_OP..SH_ERR is exactly 18 B and ends one below TRAPPEND.
+; WAS FREE-RAM $E20D..$E21F  the retired trap service stack. The
 ; service record now lives in the control pool (TSP, sysvars below), pushed
 ; BEFORE its GOSUB frame so it lands under it and stays out of the [CSP,FSP) run
 ; a `NEXT` walks. TRAPSVC survives as the COUNT, because ex_return gates on it
@@ -1535,7 +1538,9 @@ PLN_NUM         equ     $E234   ; 2 B: the parsed line number (BC), $FFFF if the
                                 ; BC*10+digit chain carried (pl_sat's saturation --
                                 ; dl_store's ceiling check rejects it)
 PLN_PTR         equ     $E236   ; 2 B: LINEBUF pointer at the body (HL)
-; FREE-RAM $E238..$E240  below STRTAB/VAREND, which begin at $E240
+; FREE-RAM $E23A..$E240  below STRTAB/VAREND, which begin at $E240
+; 🔴 $E238..$E23A WAS PART OF THIS RUN AND IS SPENT (2026-09-21, D-MERGEWIN):
+; TEMPTOP lives there now, out of disk.rom's SECTOR_BUF window. 6 B left.
 ; Direct-mode control flow (docs/spec-basic-direct-ctrl.md §3) claims NO new RAM:
 ; the virtual line header a typed line executes under (`dir_line`, program.asm) is
 ; a 4-byte ROM constant, and CURLINE == dir_line is the sole definition of direct
@@ -1648,11 +1653,17 @@ CAS_IN_MODE     equ     8       ; FCH_MODES value: OPEN"CAS:" FOR INPUT (INPUT# 
 ;                                                 for a value of unknown-until-
 ;                                                 read length (read_into_strscr/
 ;                                                 INPUT$)
-;   SH_*      $E36D .. $E37F     18 B            string-heap tenant param block
+;   (free)    $E36D .. $E381     20 B            🔴 VACATED 2026-09-21 by
+;                                                 D-MERGEWIN -- SH_* and TEMPTOP
+;                                                 lived here and are inside
+;                                                 disk.rom's SECTOR_BUF window
+;   SH_*      $E20D .. $E21F     18 B            string-heap tenant param block
 ;                                                 (SH_OP..SH_ERR; grew from the
 ;                                                 original 5 B as slice-4a added
 ;                                                 SLICE/HEX/FILL/MID/INSTR cells)
-;   TEMPTOP   $E37F .. $E381      2 B            temp-descriptor stack cursor
+;                                                 -- now in the retired TRAPSTK run
+;   TEMPTOP   $E238 .. $E23A      2 B            temp-descriptor stack cursor
+;                                                 -- now below STRTAB
 ;   (pool)    $E381 .. $E3E1     96 B            TEMPD=32 * 3 B temp-stack slots
 ;   ISRCH_*   $E3E1 .. $E3E5      4 B            INSTR resolved-body-base scratch
 ;   STRENG_SPARE $E3E5 .. $E3E6   1 B            FREE (was the D-2 flag, D-PENDERR)
@@ -1744,7 +1755,29 @@ STRSCR          equ     RVDESC + 3          ; $E26D: [len][bytes:STRMAX] staging
 ; are the shape-C follow-up move of the temp-descriptor-stack allocators
 ; themselves into the tenant — basic/str-engine.asm ran out of low-region
 ; room for them; see str_temp_alloc/str_snapshot_to_temp's own headers).
-SH_OP           equ     STRSCR + 1 + STRMAX ; $E36D (1 B)
+; 🔴 RE-BASED OUT OF `disk.rom`'s SECTOR_BUF WINDOW, 2026-09-21 (D-MERGEWIN,
+; disk/docs/spec-diskcode-eviction.md §6.6aq). This block used to follow STRSCR
+; at $E36D, which is INSIDE `disk.rom`'s `SECTOR_BUF`/`FAT_DBUF` ($E2A0..$E49F).
+; That was free while the disk ROM owned a whole file operation per crossing --
+; main does not run during one -- but step 11's seam is per BYTE, so anything
+; main writes between byte reads destroys the buffered sector. A watchpoint
+; bracketed by `mrg_storeline` and the next `arl_getbyte` measured exactly seven
+; such addresses, and four of them are SH_OP/SH_LEN/SH_PTR/SH_ERR.
+; 🎯 THE WHOLE BLOCK MOVES, NOT THE FOUR WRITTEN CELLS: a param block split
+; across two homes is a block nobody can reason about, and the run below fits it
+; exactly. ⚠️ `TEMPPOOL` deliberately does NOT follow -- it is re-anchored to its
+; own absolute address just below, so nothing downstream of it moves at all.
+; 🔴 AND THE TARGET IS A *SOURCE-DECLARED* FREE RUN, NOT AN "UNATTRIBUTED" ONE.
+; Every unattributed run of >= 20 B in `scratchpad/rammap_sweep.py`'s map turned
+; out to be occupied when read against this file: $E900 and $E700 are inside
+; FWBUF/FSECTOR_BUF, $EA42 and $EE40 are inside the FCH_CTX array (which ends at
+; $EE64), $E4FD is GFX_DFSTK's body, $E238..$E268 is STRTAB from $E240 on. The
+; two runs this slice spends are the two this FILE calls FREE-RAM in as many
+; words: the retired TRAPSTK here, and $E238..$E240 for TEMPTOP below.
+SH_BASE         equ     $E20D   ; the retired TRAPSTK's FREE-RAM run; SH_OP..SH_ERR
+                                ; is exactly 18 B and ends at $E21E, one below
+                                ; TRAPPEND $E21F -- the run is spent to the byte
+SH_OP           equ     SH_BASE             ; $E20D (1 B)
 SH_LEN          equ     SH_OP + 1           ; ALLOC/TEMP_ALLOC/BUILD_CONCAT arg:
                                             ; requested length / operand count (1 B)
 SH_SRC          equ     SH_LEN + 1          ; SNAPSHOT arg: source descriptor
@@ -1783,9 +1816,18 @@ SH_ERR          equ     SH_P + 2            ; result: 0 ok, 1 Out of memory, 2 =
 ; window (spec §17 Q-1: "implementation maximizes within the freed window,
 ; >= 8") — 32 is 4x the reference's ~8 and costs only 96 B, leaving ~290 B of
 ; further headroom in the historical 800 B window for future growth.
-TEMPTOP         equ     SH_ERR + 1          ; $E37F: current cursor (2 B)
+; 🔴 TEMPTOP MOVES WITH THEM, AND FOR THE SAME MEASURED REASON (D-MERGEWIN):
+; $E37F..$E380 is inside `disk.rom`'s SECTOR_BUF window and `mrg_storeline`
+; writes it 123 times over 40 merged lines. It goes to the FREE-RAM run below
+; STRTAB, leaving $E23A..$E23F of that run still free.
+TEMPTOP         equ     $E238               ; current cursor (2 B)
 TEMPD           equ     32                  ; temp-descriptor stack depth
-TEMPPOOL        equ     TEMPTOP + 2         ; $E381: low (deepest-push) address
+; ⚠️ ABSOLUTE, NOT `TEMPTOP + 2`, SINCE D-MERGEWIN MOVED TEMPTOP. The pool and
+; everything chained off it (TEMPBASE, ISRCH_*, STRENG_SPARE, MIDS_DEST) stay
+; exactly where they were: only the two cells the ASCII line path WRITES had to
+; leave the window, and dragging 122 B of chain behind them would have collided
+; with the GFX block at $E3E5.
+TEMPPOOL        equ     $E381               ; $E381: low (deepest-push) address
 TEMPBASE        equ     TEMPPOOL + TEMPD*3  ; $E3E1: high boundary = the empty-
                                             ; stack value for TEMPTOP
 ; INSTR (ev_f_instr/instr_search, str-engine.asm) resolves both operand
