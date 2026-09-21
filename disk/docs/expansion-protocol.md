@@ -483,6 +483,59 @@ must not.*
    specific to the binary-format program path: tokenised `LOAD` enters it; ASCII
    `LOAD`, `MERGE`, `SAVE` and `BLOAD` do not.
 
+### 8.6a 🔑 THE FORMAT SELECTS THE SHAPE, NOT THE VERB (D-MERGESHAPE, 2026-09-21)
+
+§8.6 traces the TOKENISED `LOAD`. §8.9 asked whether `SAVE` and `MERGE` follow
+the same shape or **share only the crossing**. They share only the crossing, and
+what decides the rest is the **file FORMAT**.
+
+Measured by counting entries to every slot in the published hook table
+(`scratchpad/mergeshape_probe.py`, eleven arms), on ASCII fixtures of 2 and 100
+program lines. Every arm that reads a file **prints the number of lines it
+actually read**, so a verb that errored contributes no row at all rather than a
+row shaped like data.
+
+| | tokenised `LOAD` / `SAVE` | ASCII `LOAD` / `MERGE` / `SAVE"…",A` |
+|---|---|---|
+| `$FE5D`, the crossing | **once**, whatever the size | **once**, whatever the size |
+| per SECTOR | `$FFCF`/`$FFD4` = 5 + sectors | the same pair, the same coefficient |
+| per BYTE | **none at all** | `$FE8A` H.INDS reading · `$FE85` H.FILO writing |
+| the format's own cell | `$FE76` H.BINL (`LOAD`) · `$FE71` H.BINS (`SAVE`) | neither; `SAVE"…",A` adds `$FF89`/`$FF8E` in the unclaimed band |
+
+🔑 **`$FE8A` IS ENTERED EXACTLY ONCE PER BYTE OF THE FILE** — 53 entries for a
+53 B fixture, 1125 for a 1125 B one, at both sizes and for `LOAD` of an ASCII
+file and `MERGE` alike, while the tokenised `LOAD` of 1055 B and of 14369 B
+enters it **zero** times. `$FE85` is the write twin: +1124 for `SAVE"…",A` of the
+same program, **zero** for the tokenised `SAVE`.
+
+🔴 **AND THAT PER-BYTE ENTRY IS A REAL CROSSING.** By §8.1's own test, re-run
+today, `$FE8A` and `$FE85` are CLAIMED on **both** reference vendors — the
+National CF-3300 and the Philips NMS 1200 claim an identical 35 cells. So on the
+ASCII program paths the reference **crosses slots once per byte**. The cells that
+scale per LINE instead sit in a band neither vendor claims — bare `ret`s — so the
+line-level work stays on main's side of the boundary and crosses nothing.
+
+🔑 **`MERGE` IS ASCII `LOAD`.** The two enter an IDENTICAL set of **47** cells,
+and their counts differ by at most 1 on nine of them at both sizes (plus the
+60 Hz timer hook, which is wall-clock, not verb). Whatever separates the two
+verbs happens above the seam — consistent with §8.2's finding that no measured
+register separates them either.
+
+🔑 **TOKENISED `SAVE` IS TOKENISED `LOAD` MIRRORED.** Net of the load its own arm
+must perform first, it is one crossing, `$FE6C` H.SAVE, `$FE71` H.BINS, **+27**
+on the per-sector pair, and **zero** per-byte entries.
+
+*Controls: a quiet arm every count is a delta against; `H_FILE` moved by `FILES`
+and not by `LOAD`; and the tokenised pair SEEN to scale 8 → 34 between 3 and 29
+sectors, without which "nothing scales" would be the instrument rather than the
+machine. The per-sector line now has five points on one line, 5 + sectors, at
+1, 3, 3 and 29 sectors — two of them new sizes.*
+
+⚠️ **WHAT THIS DOES NOT SAY.** Counts give the GRANULARITY of the boundary, not
+which side runs the loop. That is the same over-reading `spec-diskcode-eviction.md`
+§6.6r had to retract, and it is not re-imported here: "one crossing per byte" is
+a statement about the seam, not about where the loop counter lives.
+
 ### 8.7 Live retractions — do not re-import these
 
 | claim | status |
@@ -520,7 +573,11 @@ must not.*
   sitting in RAM is reference ROM content that has merely been relocated, so
   reading its bytes would be reading the reference. Range, size, installer region
   and install time only.
-* Whether `SAVE` and `MERGE` share the whole shape, or only the crossing.
+* 🟢 **ANSWERED (§8.6a, 2026-09-21):** only the crossing. The FORMAT
+  selects the shape — tokenised transfers are per-sector with no per-byte
+  entry at all, ASCII transfers add a CLAIMED cell entered once per byte
+  (`$FE8A` reading, `$FE85` writing). `MERGE` is ASCII `LOAD` cell for
+  cell; tokenised `SAVE` is tokenised `LOAD` mirrored.
 
 ### 8.10 What a faithful implementation inherits
 

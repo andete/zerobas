@@ -2972,6 +2972,10 @@ inter-slot register save; `P1_BLIT`; `PG_SV_A8`; `WA_SEG`; the `RDBLK_*` block).
 in its own header and I nearly priced against it anyway.
 
 🛑 **STEP 11 `MERGE` — BLOCKED ON SHAPE, AND THE REFERENCE'S IS UNMEASURED.**
+> 🟢 **SUPERSEDED BY §6.6ap (2026-09-21): measured, and the blocker is gone.**
+> The reference's disk side never owns `MERGE`'s line loop, so the per-line
+> call-back this paragraph rules out is not needed. The rest of the paragraph
+> stands as the reasoning that was correct about OUR code.
 `ex_merge` is `fat_io_open` + `ascii_read_lines`: every line must be TOKENISED,
 which is main's job (it reaches the sub-ROM tokeniser). A disk-side loop would
 have to call BACK into main per line — which `FOPEN_SEL`'s own note forbids
@@ -3107,6 +3111,66 @@ this bug and then still spent a round guessing at mechanisms.
 [`e458032b..`](../../TODO.md)'s successor; re-apply the six edits above, then
 start at the driver's page-1 handling for a WRITE issued while page 1 holds
 `disk.rom`.
+
+### 6.6ap 🟢 STEP 11's BLOCKER IS DISSOLVED — THE REFERENCE NEVER OWNS `MERGE`'s LINE LOOP (D-MERGESHAPE, 2026-09-21)
+
+§6.6an filed step 11 as **blocked on shape**: `MERGE` must TOKENISE each line,
+tokenising is main's job, a disk-side loop would need a call-back into main per
+line, and `FOPEN_SEL`'s aliasing onto `DISKOP_OP` forbids that. The paragraph
+ended on the honest reason it could go no further — *"§8.9 already lists the
+answer as not measured"*. **It is measured now, and the blocker was a premise the
+reference does not hold.**
+
+🔑 **THE REFERENCE'S DISK SIDE NEVER OWNS `MERGE`'s LINE LOOP, so it never needs
+a per-line call-back either.** `expansion-protocol.md` §8.6a is the finding;
+the two sentences that matter here:
+
+* **The crossing `$FE5D` is entered exactly ONCE** for a 2-line `MERGE` and once
+  for a 100-line one. It is the OPEN, not the loop.
+* **The transfer above it is per BYTE, through `$FE8A`** — 53 entries for a 53 B
+  file, 1125 for a 1125 B file — and `$FE8A` is CLAIMED on both reference
+  vendors, so each of those entries is a genuine inter-slot crossing. The cells
+  that scale per LINE sit in a band neither vendor claims: bare `ret`s, main's
+  own machinery, crossing nothing.
+
+➡️ **SO THE SHAPE STEP 11 NEEDS IS THE ONE WE ALREADY HAVE, WITH THE SEAM MOVED.**
+`ex_merge` is `fat_io_open` + `ascii_read_lines` and `ascii_load` is the same
+pair; both keep the line loop and the tokeniser in main. That is what the
+reference does. The port is therefore:
+
+1. `ex_merge` and `ascii_load` reach the crossing for the **OPEN only** — another
+   `FOPEN_SEL` value beside `FOPEN_SEL_LOAD` / `FOPEN_SEL_SAVE`;
+2. the per-byte cursor becomes a service in `disk.rom` that main calls once per
+   byte, which is what `$FE8A`/`$FE85` are on the reference;
+3. `ascii_read_lines` and the tokeniser **do not move**.
+
+🔴 **AND THE COST IS THE ONE §6.2a ALREADY PRICED AND RULED ACCEPTABLE.** A
+crossing per byte is 0.156 ms (D-XSLOTPRICE) against the reference's own 4.3 ms
+per byte on sequential I/O — and now it is not a design choice we would be making
+alone: the reference pays a claimed-cell crossing per byte on exactly these
+paths. §6.3's dilemma does not arise for `MERGE`.
+
+⚠️ **WHAT IS STILL NOT SETTLED, AND MUST NOT BE READ IN.** Counts give the
+GRANULARITY of the seam, not which side runs the loop — the over-reading §6.6r
+had to retract. What is established is that the boundary is crossed once per
+file at `$FE5D` and once per byte at a claimed cell, and that no claimed cell is
+entered per LINE. That is enough to rule out "the disk side owns the line loop
+and calls back per line"; it is not a proof of who holds the loop counter.
+
+🎯 **AND ONE PREDICATE OF MINE WAS MIS-SPECIFIED, WHICH IS ITS OWN LESSON.** P4
+predicted *"tokenised `SAVE` crosses once"* and was scored against the arm's raw
+delta — but the arm must LOAD a program before it can save one, so `$FE5D` read
++2 and the prediction printed MISS. The claim was right; the quantity named was
+an ARM, not an OPERATION. Subtracting the arm that performs only that load leaves
++1, and the probe now scores it that way. **Name the operation, not the run.**
+
+🔴 **A CONTROL WENT RED ON A FACT THAT HAD LEGITIMATELY MOVED.**
+`scratchpad/hookcensus_probe.py` asserted `$FE5D` is UNCLAIMED on zerobas, on the
+strength of a sentence in `disk/kernel.asm`. Step 9 claimed it. The arm was
+re-pointed at `$FE67` — bare in `hook_tab` and bare on the National — and the
+lesson is the standing one: **an a-priori answer rots exactly like a wall
+figure**, and a control that names one has to be re-read whenever the tree moves
+under it.
 
 ## 6.7 🔍 GAP ANALYSIS — zerobas AGAINST THE MEASURED PROTOCOL (D-HOOKCENSUS, 2026-09-19)
 

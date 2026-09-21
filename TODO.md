@@ -410,6 +410,27 @@ item — do **one item per session** to keep context lean.
       sub-ROM), so a disk-side loop needs per-line call-backs that `FOPEN_SEL`'s
       aliasing forbids. §8.9 already lists the reference's shape here as NOT
       MEASURED.
+      🟢 **✅ UNBLOCKED 2026-09-21 (§6.6ap, D-MERGESHAPE,
+      `scratchpad/mergeshape_probe.py`) — THE PREMISE WAS THE PROBLEM.** The
+      reference's disk side **never owns `MERGE`'s line loop**, so the per-line
+      call-back this blocker rules out is not needed. `$FE5D` is entered EXACTLY
+      ONCE for a 2-line `MERGE` and once for a 100-line one; the transfer above
+      it runs per BYTE through `$FE8A` (53 entries for 53 B, 1125 for 1125 B),
+      and `$FE8A` is CLAIMED on BOTH reference vendors, so each is a real
+      crossing. The cells that scale per LINE are in a band neither vendor
+      claims — bare `ret`s, main's side, crossing nothing.
+      🔑 **`MERGE` IS ASCII `LOAD`**: an identical 47-cell set, counts differing
+      by at most 1 on nine of them at both sizes. And **tokenised `SAVE` is
+      tokenised `LOAD` mirrored** — one crossing, `$FE6C`, `$FE71`, +27 per
+      sector, zero per-byte. **The FORMAT selects the shape, not the verb.**
+      ➡️ **SO THE PORT IS**: `ex_merge`/`ascii_load` reach the crossing for the
+      OPEN only (another `FOPEN_SEL` value); the per-byte cursor becomes a
+      `disk.rom` service main calls per byte; `ascii_read_lines` and the
+      tokeniser **do not move**. Priced at 0.156 ms/byte against the reference's
+      own 4.3 ms/byte (§6.2a), and the reference pays a claimed-cell crossing per
+      byte on exactly these paths.
+      ⚠️ Counts give the seam's GRANULARITY, not which side holds the loop
+      counter — §6.6r's retraction is not re-imported.
       🟡 **12 `SAVE`** — not blocked, but not a carve: `do_save` ends
       `jp sv_tenant` (`SUBROM_IDX_SAVE`), so the body is ALREADY in the sub-ROM.
       The move is sub → disk and its value is faithfulness — today a foreign disk
@@ -3338,7 +3359,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:21042 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:21063 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -3504,7 +3525,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:8147 (T-6FE392)8 (T-529ABE)` from `TODO.md:19436 (T-529ABE)`: a
+      `TODO.md:8168 (T-6FE392)8 (T-529ABE)` from `TODO.md:19457 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -8991,7 +9012,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:19436 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:19457 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

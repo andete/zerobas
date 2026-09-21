@@ -1,0 +1,118 @@
+tokenised images: S=1055 B  L=14369 B
+ASCII fixtures:   A2=53 B (1 sector) A100=1125 B (3 sectors)
+  quiet        20944 hit(s) over  33 cell(s)
+  loadTokS     20953 hit(s) over  41 cell(s)
+  loadTokL     20945 hit(s) over  41 cell(s)
+  asciiL2      24265 hit(s) over  52 cell(s)  fence=2 (want 2)
+  asciiL100    29435 hit(s) over  52 cell(s)  fence=100 (want 100)
+  merge2       24264 hit(s) over  52 cell(s)  fence=2 (want 2)
+  merge100     29436 hit(s) over  52 cell(s)  fence=100 (want 100)
+  saveTok      32906 hit(s) over  54 cell(s)  fence=100 (want 100)
+  saveAsc      36627 hit(s) over  56 cell(s)  fence=100 (want 100)
+  seq2         33960 hit(s) over  53 cell(s)  fence=3 (want 3)
+  seq100       41374 hit(s) over  53 cell(s)  fence=101 (want 101)
+
+=== SELF-PROOF: did each verb actually do its job? ===
+  PASS  asciiL2: read 2 line(s), fixture has 2
+  PASS  asciiL100: read 100 line(s), fixture has 100
+  PASS  merge2: read 2 line(s), fixture has 2
+  PASS  merge100: read 100 line(s), fixture has 100
+  PASS  saveTok: read 100 line(s), fixture has 100
+  PASS  saveAsc: read 100 line(s), fixture has 100
+  PASS  seq2: read 3 line(s), fixture has 3
+  PASS  seq100: read 101 line(s), fixture has 101
+
+=== PER-CELL DELTA vs quiet ===
+  $FD9A  loadTokS=-32  loadTokL=-62  asciiL2=+1473  asciiL100=+1458  merge2=+1473  merge100=+1459  saveTok=+2803  saveAsc=+2770  seq2=+5968  seq100=+5945
+  $FD9F  loadTokS=-32  loadTokL=-62  asciiL2=+1473  asciiL100=+1458  merge2=+1473  merge100=+1459  saveTok=+2803  saveAsc=+2770  seq2=+5968  seq100=+5945
+  $FDA4  loadTokS=+8  loadTokL=+8  asciiL2=+29  asciiL100=+33  merge2=+30  merge100=+34  saveTok=+54  saveAsc=+56  seq2=+145  seq100=+149
+  $FDA9  asciiL2=+1  asciiL100=+1  merge2=+1  merge100=+1  saveTok=+2  saveAsc=+2  seq2=+4  seq100=+4
+  $FDAE  asciiL2=+1  asciiL100=+1  merge2=+1  merge100=+1  saveTok=+2  saveAsc=+2  seq2=+4  seq100=+4
+  $FDC2  loadTokS=+8  loadTokL=+8  asciiL2=+13  asciiL100=+15  merge2=+14  merge100=+16  saveTok=+27  saveAsc=+29  seq2=+118  seq100=+120
+  $FDDB  asciiL2=+1  asciiL100=+1  merge2=+1  merge100=+1  saveTok=+2  saveAsc=+2  seq2=+4  seq100=+4
+  $FE4E  loadTokS=+1  loadTokL=+1  asciiL2=+2  asciiL100=+2  merge2=+2  merge100=+2  saveTok=+3  saveAsc=+3  seq2=+8  seq100=+204
+  $FE53  asciiL2=+1  asciiL100=+1  merge2=+1  merge100=+1  saveTok=+1  saveAsc=+1  seq2=+3  seq100=+101
+  $FE58  seq2=+1  seq100=+1
+  $FE5D  loadTokS=+1  loadTokL=+1  asciiL2=+1  asciiL100=+1  merge2=+1  merge100=+1  saveTok=+2  saveAsc=+2  seq2=+1  seq100=+1 <- $FE5D the crossing
+  $FE62  loadTokS=+1  loadTokL=+1  asciiL2=+1  asciiL100=+1  merge2=+1  merge100=+1  saveTok=+2  saveAsc=+2  seq2=+1  seq100=+1
+  $FE67  loadTokS=+1  loadTokL=+1  asciiL2=+1  asciiL100=+1  merge2=+1  merge100=+1  saveTok=+1  saveAsc=+1
+  $FE6C  saveTok=+1  saveAsc=+1 <- $FE6C H.SAVE
+  $FE71  saveTok=+1
+  $FE76  loadTokS=+1  loadTokL=+1 <- $FE76 H.BINL
+  $FE85  saveAsc=+1124
+  $FE8A  asciiL2=+53  asciiL100=+1125  merge2=+53  merge100=+1125  saveTok=+1125  saveAsc=+1125  seq2=+52  seq100=+1124
+  $FE94  seq2=+4  seq100=+102
+  $FEA3  seq2=+4  seq100=+102
+  $FEB2  loadTokS=+1  loadTokL=+1  asciiL2=+1  asciiL100=+1  merge2=+1  merge100=+1  saveTok=+2  saveAsc=+2  seq2=+1  seq100=+1
+  $FEB7  loadTokS=+1  loadTokL=+1  asciiL2=+1  asciiL100=+1  merge2=+1  merge100=+1  saveTok=+2  saveAsc=+2  seq2=+1  seq100=+1
+  $FECB  asciiL2=+5  asciiL100=+103  merge2=+4  merge100=+102  saveTok=+103  saveAsc=+103  seq2=+5  seq100=+5
+  $FED0  loadTokS=+1  loadTokL=+1  asciiL2=+5  asciiL100=+103  merge2=+4  merge100=+102  saveTok=+103  saveAsc=+103  seq2=+5  seq100=+5
+  $FED5  loadTokS=+1  loadTokL=+1  asciiL2=+5  asciiL100=+103  merge2=+4  merge100=+102  saveTok=+103  saveAsc=+103  seq2=+5  seq100=+5
+  $FEDA  loadTokS=+1  loadTokL=+1  asciiL2=+5  asciiL100=+103  merge2=+4  merge100=+102  saveTok=+103  saveAsc=+103  seq2=+5  seq100=+5
+  $FEDF  loadTokS=+8  loadTokL=+8  asciiL2=+38  asciiL100=+140  merge2=+39  merge100=+141  saveTok=+164  saveAsc=+1492  seq2=+151  seq100=+155
+  $FEE4  loadTokS=+8  loadTokL=+8  asciiL2=+29  asciiL100=+33  merge2=+30  merge100=+34  saveTok=+54  saveAsc=+1180  seq2=+145  seq100=+149
+  $FEE9  asciiL2=+1  asciiL100=+1  merge2=+1  merge100=+1  saveTok=+1  saveAsc=+102  seq2=+1  seq100=+1
+  $FEEE  asciiL2=+4  asciiL100=+102  merge2=+4  merge100=+102  saveTok=+102  saveAsc=+102
+  $FEF8  saveTok=+1
+  $FF07  asciiL2=+1  asciiL100=+1  merge2=+1  merge100=+1  saveTok=+2  saveAsc=+2
+  $FF0C  asciiL2=+5  asciiL100=+103  merge2=+5  merge100=+103  saveTok=+104  saveAsc=+104  seq2=+4  seq100=+4
+  $FF11  asciiL2=+4  asciiL100=+102  merge2=+4  merge100=+102  saveTok=+103  saveAsc=+103  seq2=+4  seq100=+4
+  $FF16  asciiL2=+3  asciiL100=+101  merge2=+3  merge100=+101  saveTok=+101  saveAsc=+101  seq2=+4  seq100=+4
+  $FF1B  asciiL2=+3  asciiL100=+101  merge2=+3  merge100=+101  saveTok=+101  saveAsc=+101  seq2=+4  seq100=+4
+  $FF20  asciiL2=+4  asciiL100=+102  merge2=+4  merge100=+102  saveTok=+103  saveAsc=+103  seq2=+4  seq100=+4
+  $FF25  asciiL2=+9  asciiL100=+205  merge2=+9  merge100=+205  saveTok=+206  saveAsc=+207  seq2=+19  seq100=+19
+  $FF2A  asciiL2=+4  asciiL100=+4  merge2=+4  merge100=+4  saveTok=+5  saveAsc=+5  seq2=+13  seq100=+13
+  $FF2F  asciiL2=+2  asciiL100=+2  merge2=+2  merge100=+2  saveTok=+3  saveAsc=+3  seq2=+10  seq100=+10
+  $FF34  asciiL2=+5  asciiL100=+201  merge2=+5  merge100=+201  saveTok=+201  saveAsc=+202  seq2=+6  seq100=+6
+  $FF3E  loadTokS=+1  loadTokL=+1  asciiL2=+3  asciiL100=+101  merge2=+3  merge100=+101  saveTok=+102  saveAsc=+101  seq2=+16  seq100=+408
+  $FF43  loadTokS=+1  loadTokL=+1  asciiL2=+4  asciiL100=+102  merge2=+4  merge100=+102  saveTok=+103  saveAsc=+103  seq2=+16  seq100=+408
+  $FF48  loadTokS=+9  loadTokL=+9  asciiL2=+82  asciiL100=+1938  merge2=+82  merge100=+1938  saveTok=+2563  saveAsc=+2362  seq2=+223  seq100=+3849
+  $FF52  asciiL2=+1  asciiL100=+1  merge2=+1  merge100=+1  saveTok=+1  saveAsc=+1  seq2=+1  seq100=+1
+  $FF5C  loadTokS=+1  loadTokL=+1  asciiL2=+6  asciiL100=+104  merge2=+5  merge100=+103  saveTok=+104  saveAsc=+104  seq2=+10  seq100=+108
+  $FF66  loadTokS=+1  loadTokL=+1  asciiL2=+9  asciiL100=+205  merge2=+9  merge100=+205  saveTok=+206  saveAsc=+206  seq2=+23  seq100=+513
+  $FF6B  asciiL2=+2  asciiL100=+100  merge2=+2  merge100=+100  saveTok=+100  saveAsc=+100  seq2=+3  seq100=+101
+  $FF70  loadTokS=+1  loadTokL=+1  asciiL2=+3  asciiL100=+3  merge2=+3  merge100=+3  saveTok=+4  saveAsc=+4  seq2=+7  seq100=+105
+  $FF75  asciiL2=+2  asciiL100=+2  merge2=+2  merge100=+2  saveTok=+2  saveAsc=+2  seq2=+6  seq100=+104
+  $FF7A  asciiL2=+2  asciiL100=+2  merge2=+2  merge100=+2  saveTok=+2  saveAsc=+2  seq2=+6  seq100=+104
+  $FF89  saveAsc=+1
+  $FF8E  saveAsc=+204
+  $FF9D  loadTokS=+1  loadTokL=+1  asciiL2=+6  asciiL100=+6  merge2=+6  merge100=+6  saveTok=+8  saveAsc=+109  seq2=+11  seq100=+207
+  $FFA2  asciiL2=+5  asciiL100=+201  merge2=+5  merge100=+201  saveTok=+201  saveAsc=+201  seq2=+10  seq100=+304
+  $FFCF  loadTokS=+8  loadTokL=+34  asciiL2=+6  asciiL100=+8  merge2=+6  merge100=+8  saveTok=+35  saveAsc=+35  seq2=+6  seq100=+8
+  $FFD4  loadTokS=+8  loadTokL=+34  asciiL2=+6  asciiL100=+8  merge2=+6  merge100=+8  saveTok=+35  saveAsc=+35  seq2=+6  seq100=+8
+
+=== P1: IS THE CROSSING PER-FILE OR PER-LINE? ===
+  MERGE        $FE5D: 1 at 2 lines, 1 at 100 lines -> constant
+  ASCII LOAD   $FE5D: 1 at 2 lines, 1 at 100 lines -> constant
+  seq channel  $FE5D: 1 at 2 lines, 1 at 100 lines -> constant
+
+=== P2: IS MERGE THE SAME MECHANISM AS ASCII LOAD? ===
+  shared cells      : $FD9A $FD9F $FDA4 $FDA9 $FDAE $FDC2 $FDDB $FE4E $FE53 $FE5D $FE62 $FE67 $FE8A $FEB2 $FEB7 $FECB $FED0 $FED5 $FEDA $FEDF $FEE4 $FEE9 $FEEE $FF07 $FF0C $FF11 $FF16 $FF1B $FF20 $FF25 $FF2A $FF2F $FF34 $FF3E $FF43 $FF48 $FF52 $FF5C $FF66 $FF6B $FF70 $FF75 $FF7A $FF9D $FFA2 $FFCF $FFD4
+  MERGE only        : (none)
+  ASCII LOAD only   : (none)
+
+=== P3: WHAT SCALES, AND DOES THE CHANNEL PATH SCALE THE SAME? ===
+  merge100   cells that grow vs merge2: $FDA4 30->34  $FDC2 14->16  $FE8A 53->1125  $FECB 4->102  $FED0 4->102  $FED5 4->102  $FEDA 4->102  $FEDF 39->141  $FEE4 30->34  $FEEE 4->102  $FF0C 5->103  $FF11 4->102  $FF16 3->101  $FF1B 3->101  $FF20 4->102  $FF25 9->205  $FF34 5->201  $FF3E 3->101  $FF43 4->102  $FF48 82->1938  $FF5C 5->103  $FF66 9->205  $FF6B 2->100  $FFA2 5->201  $FFCF 6->8  $FFD4 6->8
+  asciiL100  cells that grow vs asciiL2: $FDA4 29->33  $FDC2 13->15  $FE8A 53->1125  $FECB 5->103  $FED0 5->103  $FED5 5->103  $FEDA 5->103  $FEDF 38->140  $FEE4 29->33  $FEEE 4->102  $FF0C 5->103  $FF11 4->102  $FF16 3->101  $FF1B 3->101  $FF20 4->102  $FF25 9->205  $FF34 5->201  $FF3E 3->101  $FF43 4->102  $FF48 82->1938  $FF5C 6->104  $FF66 9->205  $FF6B 2->100  $FFA2 5->201  $FFCF 6->8  $FFD4 6->8
+  seq100     cells that grow vs seq2: $FDA4 145->149  $FDC2 118->120  $FE4E 8->204  $FE53 3->101  $FE8A 52->1124  $FE94 4->102  $FEA3 4->102  $FEDF 151->155  $FEE4 145->149  $FF3E 16->408  $FF43 16->408  $FF48 223->3849  $FF5C 10->108  $FF66 23->513  $FF6B 3->101  $FF70 7->105  $FF75 6->104  $FF7A 6->104  $FF9D 11->207  $FFA2 10->304  $FFCF 6->8  $FFD4 6->8
+  loadTokL   cells that grow vs loadTokS: $FFCF 8->34  $FFD4 8->34
+
+=== P4/P5: SAVE ===
+  saveTok  $FE5D=+2  $FE6C=+1  $FE76=+0
+  saveAsc  $FE5D=+2  $FE6C=+1  $FE76=+0
+  tokenised-only cells: $FE71 $FEF8
+  ASCII-only cells    : $FE85 $FF89 $FF8E
+
+--- PREDICTIONS SCORED ---
+  P1 MERGE's crossing is CONSTANT across line count: HIT
+  P2 MERGE and ASCII LOAD enter the same cell SET: HIT
+     MERGE scales on ['$FDA4', '$FDC2', '$FE8A', '$FECB', '$FED0', '$FED5', '$FEDA', '$FEDF', '$FEE4', '$FEEE', '$FF0C', '$FF11', '$FF16', '$FF1B', '$FF20', '$FF25', '$FF34', '$FF3E', '$FF43', '$FF48', '$FF5C', '$FF66', '$FF6B', '$FFA2', '$FFCF', '$FFD4']; the channel loop scales on ['$FDA4', '$FDC2', '$FE4E', '$FE53', '$FE8A', '$FE94', '$FEA3', '$FEDF', '$FEE4', '$FF3E', '$FF43', '$FF48', '$FF5C', '$FF66', '$FF6B', '$FF70', '$FF75', '$FF7A', '$FF9D', '$FFA2', '$FFCF', '$FFD4']
+  P3 MERGE scales on a cell the channel path also moves: HIT
+  P4 tokenised SAVE crosses once and skips $FE76: 🔴 MISS
+  P5 ASCII SAVE enters the same cell set as tokenised SAVE: 🔴 MISS
+
+=== CONTROLS ===
+  PASS  ctrl_cross: a tokenised LOAD does NOT move H_FILE
+  PASS  ctrl_scale: SOMETHING is seen to scale S -> L on the tokenised control, or the counter is blind and every 'constant' below is the instrument
+  PASS  ctrl_cross2: the crossing $FE5D moved AT ALL for MERGE
+refcache: 0 hit, 12 miss, 12 stored

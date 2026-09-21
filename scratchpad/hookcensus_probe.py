@@ -58,7 +58,14 @@ PHIL = "Philips_VG_8020_NMS1200"
 # records it as THE load-bearing provider hook, and both the CF-3300 and our own
 # ROM install it. Everything else on that machine has to rest on the structural
 # control below instead.
-KNOWN = {REF: (0xFD9F, 0xFE67), ZB: (0xFE7B, 0xFE5D), PHIL: (0xFFA7, None)}
+# 🔴 ZEROBAS's "must be UNCLAIMED" arm MOVED, AND THE CONTROL IS WHY IT WAS
+# NOTICED. It used to name `$FE5D`, on the strength of `disk/kernel.asm`
+# recording the cell as unclaimed. Step 9 CLAIMED it (hook_tab row 18,
+# `H_FOPEN`), so the arm went RED on a fact that had legitimately changed --
+# an a-priori answer rots exactly like a wall figure. `$FE67` (H.MERG) takes
+# its place: it is in neither `hook_tab` nor `ZB_TABLE`, and the National
+# leaves it bare too, so the pair still spans both answers.
+KNOWN = {REF: (0xFD9F, 0xFE67), ZB: (0xFE7B, 0xFE67), PHIL: (0xFFA7, None)}
 
 # what `hook_tab` in disk/kernel.asm intends to install (disk/equates.inc)
 ZB_TABLE = {
@@ -67,6 +74,8 @@ ZB_TABLE = {
     0xFDFE: "H_KILL", 0xFDEF: "H_DSKO", 0xFE17: "H_DSKI", 0xFE08: "H_COPY",
     0xFEFD: "H_ERRP", 0xFE21: "H_LSET", 0xFE26: "H_RSET", 0xFE2B: "H_FIELD",
     0xFE7B: "H_FILE",
+    # step 9 (2026-09-20): the crossing itself, `disk/kernel.asm` hook_tab
+    0xFE5D: "H_FOPEN",
 }
 
 

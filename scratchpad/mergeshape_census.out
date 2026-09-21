@@ -1,0 +1,52 @@
+National_CF-3300             118 slot(s) read, 35 CLAIMED
+C-BIOS_MSX1_EU_BASIC_DISK    118 slot(s) read, 19 CLAIMED
+Philips_VG_8020_NMS1200      118 slot(s) read, 35 CLAIMED
+
+=== CONTROLS ===
+  National_CF-3300             green: 35 of 118 claimed (neither all nor none); $FD9F claimed, $FE67 unclaimed as known in advance
+  C-BIOS_MSX1_EU_BASIC_DISK    green: 19 of 118 claimed (neither all nor none); $FE7B claimed, $FE67 unclaimed as known in advance
+  Philips_VG_8020_NMS1200      green: 35 of 118 claimed (neither all nor none); $FFA7 claimed as known in advance
+
+=== SECOND VENDOR: National CF-3300 vs Philips NMS 1200 ===
+  National claims 35, Philips claims 35, 35 in COMMON
+  National only: (none)
+  Philips only:  (none)
+    $FE5D the crossing             National CLAIMED   Philips CLAIMED
+    $FE76 H.BINL                   National CLAIMED   Philips CLAIMED
+    $FFA7 HPHYD                    National CLAIMED   Philips CLAIMED
+    $FD9F H.TIMI                   National CLAIMED   Philips CLAIMED
+    $FE67 unclaimed on National    National bare      Philips bare
+    $FFCF sector service A         National bare      Philips bare
+
+=== THE CENSUS ===
+  reference claims 35, zerobas claims 19, 19 in COMMON
+
+  claimed by BOTH (19):
+      $FDEF  H_DSKO
+      $FDF9  H_NAME
+      $FDFE  H_KILL
+      $FE08  H_COPY
+      $FE12  H_DSKF
+      $FE17  H_DSKI
+      $FE21  H_LSET
+      $FE26  H_RSET
+      $FE2B  H_FIELD
+      $FE30  H_MKI
+      $FE35  H_MKS
+      $FE3A  H_MKD
+      $FE3F  H_CVI
+      $FE44  H_CVS
+      $FE49  H_CVD
+      $FE5D  H_FOPEN
+      $FE7B  H_FILE
+      $FEFD  H_ERRP
+      $FFA7  
+
+  claimed by ZEROBAS ONLY (0) -- cells the reference leaves bare:
+
+  claimed by the REFERENCE ONLY (16) -- cells we leave bare:
+      $FD9F $FE4E $FE58 $FE62 $FE71 $FE76 $FE80 $FE85 $FE8A $FE99 $FE9E $FEA3 $FEAD $FEB2 $FEB7 $FFAC
+
+=== does `hook_tab` match what the machine ended up with? ===
+  ⚠️  installed but not in the table: $FFA7
+refcache: 0 hit, 3 miss, 3 stored
