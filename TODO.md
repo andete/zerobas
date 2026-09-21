@@ -483,6 +483,42 @@ item — do **one item per session** to keep context lean.
       identical; `mergewin_probe.py` CLEAN on both fixtures with its control
       firing 258 / 1898.
 
+- [ ] 🔬 **STEP 13: DELETE THE THREE-ROM ROUND TRIP THE PORTED DISK VERBS STILL
+      MAKE — IT IS NOT A 1895 B RELOCATION**
+      🎚️ TIER 2 — reasonable time; it is the last eviction work needing no ruling.
+      🤖 **AUTONOMOUS** — the shape is proven by steps 9, 11 and 12 and the
+      acceptance rows already exist.
+      🔴 **MEASURED 2026-09-21 (§6.6av, D-DIRVERBTRIP).** `hk_kill`, `hk_name`,
+      `hk_copy` and the `FILES`/`LFILES` pair each do `ld ix,dirverb_op / call
+      calbak` — **back into main**, which marshals on to `sub.rom`'s
+      `dirverb_tenant`, which does the FAT work in MAIN's buffers. `hk_name` also
+      calls back to `main_fat_mount` and `main_fat_find`. A `NAME` is
+      `main → disk.rom → main → sub.rom`.
+      🎯 **THE REASON IS HISTORY, NOT DESIGN:** those bodies moved on 2026-09-15,
+      and steps 9/11/12 gave `disk.rom` its own `fat_mount`, `fat_find`,
+      `read_sector`, `fatprim_write_sector`, `FAT_DBUF` and `FWR_DIRSEC`
+      AFTERWARDS. `dirverb_tenant` falls out at the END rather than being carried
+      across. ⚠️ Two of its eight ops (`DSKO$`, `DSKI$`) are called from MAIN, so
+      it does not empty completely.
+      🛑 **THE BLOCKER IS §6.6q's AT A NEW ADDRESS:** disk's `FWR_DIRSEC` is
+      `$E552`, main's is `$E9F7`, so a local `fat_find` must have its result
+      survive main running `fname_expr` — arbitrary expression evaluation —
+      through a call-back. `docs/ram-map.md` says `$E542..$E555` is main's
+      `GFX_D*` DRAW block: unlikely to be touched by a string expression, and
+      "unlikely" is the standard this project has twice paid for accepting.
+      ➡️ **THE DESIGN AVOIDS THE QUESTION BY ORDER, NOT RAM:** evaluate BOTH
+      names first, stash the two 8.3 names in `disk.rom`, then run local
+      `fat_mount` + `fat_find` + stamp **with no call-back in the window**.
+      Correct by construction, ~30 B, and it removes three call-backs from `NAME`
+      alone. `KILL`/`COPY`/`FILES` are the same shape with fewer names.
+      🔬 Acceptance already exists: `diskbasic-acceptance` has `KILL`, `NAME` and
+      `FILES` rows BY NAME, `copy-acceptance` has COPY's eight byte-for-byte
+      rows, `lptverb-acceptance` has LFILES's.
+      💰 Walls 2026-09-21 (clean tree): `disk.rom` 7842 B in 29 runs, largest
+      usable hole **2531 B at `$5602`** — the census's LOW bracket fits it, the
+      HIGH one does not, so staging stays forced by fragmentation. **The first
+      slice is ~30 B, not 1895.**
+
 - [ ] 🔬 **COMPARE RAM *USAGE* AGAINST THE REFERENCE, CELL BY CELL — AND JOOST'S
       HUNCH IS THE HYPOTHESIS TO SCORE**
       🎚️ TIER 2 — reasonable time: it is not a divergence hunt, it is a cost
@@ -3565,7 +3601,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:21269 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:21305 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -3731,7 +3767,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:8374 (T-6FE392)8 (T-529ABE)` from `TODO.md:19663 (T-529ABE)`: a
+      `TODO.md:8410 (T-6FE392)8 (T-529ABE)` from `TODO.md:19699 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -9218,7 +9254,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:19663 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:19699 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

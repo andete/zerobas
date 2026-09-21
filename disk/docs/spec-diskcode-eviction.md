@@ -3451,6 +3451,70 @@ now crosses the slot, so a `disk.rom` edit could break it with no gate saying so
 ➡️ **THAT LEAVES STEP 10 `OPEN`**, still behind the RAM lever Joost has filed,
 and step 13's bulk.
 
+### 6.6av 🔑 STEP 13 IS NOT "MOVE 1895 B OF TENANT" — THE PORTED VERBS STILL MAKE A THREE-ROM ROUND TRIP (D-DIRVERBTRIP, 2026-09-21)
+
+§6.2's table describes step 13 as *"the `sub.rom` disk-only tenants (2178–3708 B,
+§0.2): `fatprim`, `dirverb`, `fcbname`, and BLOAD's / SAVE's disk arms"*, and
+`scratchpad/subdisk_census.py` brackets the cost at **1895 B LOW / 3689 B HIGH**.
+Both are about SIZE. Reading the code first says the interesting quantity is
+somewhere else.
+
+🔴 **THE FIVE VERBS ALREADY IN `disk.rom` STILL CROSS THREE ROM BOUNDARIES.**
+`hk_kill`, `hk_name`, `hk_copy` and the `FILES`/`LFILES` pair each do
+`ld ix,dirverb_op / call calbak` — **back into main**, which does
+`ld ix,…SUBROM_IDX_DIRVERB / jp subrom_call` — **on into the sub-ROM**, where the
+tenant does the FAT work in MAIN's buffers. `hk_name` additionally calls back to
+`main_fat_mount` and `main_fat_find`. So a `NAME` is
+`main → disk.rom → main → sub.rom`, five times over the verb.
+
+🎯 **AND THE REASON IS HISTORY, NOT DESIGN: THEY WERE PORTED BEFORE `disk.rom`
+HAD A FAT ENGINE.** Phase 3 moved those bodies in 2026-09-15; steps 9, 11 and 12
+gave `disk.rom` its own `fat_mount`, `fat_find`, `read_sector`,
+`fatprim_write_sector`, `FAT_DBUF` and `FWR_DIRSEC`/`FWR_DIROFF` afterwards. The
+call-backs are now removable, and **that** is what step 13 is: not relocating a
+tenant, but deleting the round trip that keeps it alive. `dirverb_tenant` falls
+out at the end rather than being carried across.
+
+⚠️ **SIX OF THE EIGHT OPS ARE REACHED FROM `disk.rom`; TWO ARE NOT.**
+`DISKOP_SEL_DSKO` and `DISKOP_SEL_DSKI` are called from MAIN
+(`basic/str-engine.asm`), so the tenant does not empty out completely and the
+slice must not assume it does.
+
+🛑 **THE BLOCKER IS §6.6q's, AT A NEW ADDRESS, AND `docs/ram-map.md` FOUND IT IN
+SECONDS.** `disk.rom`'s `FWR_DIRSEC` is **`$E552`** and main's is **`$E9F7`** —
+different cells. So a local `fat_find` records the directory entry in `$E552`,
+and the stamp must read it back **after main has run `fname_expr` for the NEW
+name — arbitrary BASIC expression evaluation — through a call-back.** The map
+says what is underneath: `$E542..$E555` is main's `GFX_D*` DRAW block.
+⚠️ A string expression will not run `DRAW`, so this is unlikely rather than
+impossible — and "unlikely" is the standard this project has twice paid for
+accepting. It is the same question step 10 asks: **what of `disk.rom`'s state
+survives main running in between?**
+
+➡️ **THE DESIGN THAT AVOIDS THE QUESTION ENTIRELY — order, not RAM.** Nothing
+needs to survive a call-back if no call-back happens in the window:
+
+1. `fname_expr` + `pdfcb_resume` for the OLD name (call-backs);
+2. stash the OLD 11-byte 8.3 name in `disk.rom`;
+3. parse `AS`; `fname_expr` + `parse_disk_fcb` for the NEW name (call-backs);
+4. stash the NEW name, restore the OLD into `DISK_FCB_NAME`;
+5. **local `fat_mount`, local `fat_find`, restore the NEW name, local stamp —
+   with NO call-back anywhere in this run.**
+
+That is correct by construction rather than by measurement, costs ~30 B in
+`disk.rom`, and removes three call-backs from `NAME` alone. `KILL`, `COPY` and
+`FILES` are the same shape with fewer names to juggle.
+
+🔬 **AND IT HAS AN ACCEPTANCE TEST ALREADY**: `diskbasic-acceptance` has rows for
+`KILL`, `NAME` and `FILES` by name, `copy-acceptance` carries COPY's eight
+byte-for-byte rows, and `lptverb-acceptance` carries LFILES's.
+
+💰 **WALLS, 2026-09-21, CLEAN TREE:** main page 1 75 B free, low region 32 B, sub
+page 0 434 B, sub page 1 145 B, `disk.rom` 7842 B in 29 runs with the **largest
+usable hole 2531 B at `$5602`**. The census's LOW bracket (1895 B) fits that hole;
+the HIGH one (3689 B) does not. **Staging is forced by fragmentation**, exactly as
+§6.2 said — but the first slice here is ~30 B, not 1895.
+
 ## 6.7 🔍 GAP ANALYSIS — zerobas AGAINST THE MEASURED PROTOCOL (D-HOOKCENSUS, 2026-09-19)
 
 > 🏗️ **RULED BY JOOST, 2026-09-20: *"I think the answer to Two is obvious: we do
