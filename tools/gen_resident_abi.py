@@ -157,6 +157,25 @@ REQUIRED_DISK_RAM = [
     # silent -- the stamp would write a valid sector at the wrong offset.
     "main_FWR_DIRSEC=FWR_DIRSEC",   # sector holding the located dir entry
     "main_FWR_DIROFF=FWR_DIROFF",   # byte offset of the entry within it
+    # D-COPYLOCAL (spec-diskcode-eviction.md §6.6az): COPY's body runs in
+    # disk.rom now instead of calling back twice to the sub-ROM tenant.
+    # 🎯 THESE THREE ARE **NOT** ALIASED, AND THE DIFFERENCE IS THE POINT.
+    # FWR_DIRSEC above had to be, because disk.rom declares a cell of that name
+    # itself. COPY_SRC/COPY_CLUS/COPY_LEFT have exactly ONE consumer in the whole
+    # tree -- the body being moved -- and no disk-side twin, so the same address
+    # serves both sides and there is nothing to reconcile. The declaration stays
+    # in basic/sysvars.inc and arrives here generated, which is what keeps it
+    # from drifting.
+    # ⚠️ COPY_SRC IS NOT SCRATCH. DISK_FCB_NAME is the only 8.3 buffer, so the
+    # SOURCE name has to survive main evaluating the DESTINATION expression
+    # through a call-back -- which is exactly why the COPYSTASH selector existed.
+    # A main sysvar owned by COPY alone is a cell main's evaluator does not
+    # touch; a disk-local scratch pick would have had to argue that.
+    "COPY_SRC",                 # the source's 11-byte 8.3 name, across fname_expr
+    "COPY_CLUS",                # the source's first cluster, saved across the
+                                # destination's delete/create (both clobber
+                                # FAT_FIRSTCLUS through fat_find)
+    "COPY_LEFT",                # bytes still to copy (4-byte LE)
 ]
 # CALL-BACK: main PAGE-1 targets, reached by an INTER-SLOT CALL, not by an
 # absolute one -- the third class, and the one the hook re-architecture needs

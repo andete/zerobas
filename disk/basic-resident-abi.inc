@@ -39,6 +39,9 @@ DSV_END equ 0E0EFH   ; SAVE/BSAVE: last source byte addr, inclusive (2)
 DISKSLOT_OK equ 0E0E8H   ; 1 = DISKSLOT holds a valid disk-ROM slot id
 main_FWR_DIRSEC equ 0E9F7H   ; main's FWR_DIRSEC -- logical sector holding the open file's dir entry (word)
 main_FWR_DIROFF equ 0E9F9H   ; main's FWR_DIROFF -- byte offset of that dir entry within its sector (word)
+COPY_SRC equ 0E080H   ; the source's 11-byte 8.3 name field
+COPY_CLUS equ 0E08BH   ; the source's first cluster (word)
+COPY_LEFT equ 0E08DH   ; bytes still to copy (4-byte LE)
 
 ; --- page-1 call-back targets: reached by an INTER-SLOT call (MSX2 TH), not an absolute one ---
 fname_expr equ 06E19H

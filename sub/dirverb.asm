@@ -69,10 +69,6 @@ dirverb_tenant:
                 jp      z,tnt_dsko              ; 4 -> DSKO$ (D-DSKIO)
                 cp      DISKOP_SEL_DSKI
                 jp      z,tnt_dski              ; 5 -> DSKI$
-                cp      DISKOP_SEL_COPYSTASH
-                jp      z,tnt_copystash         ; 6 -> COPY, first half (D-COPY)
-                cp      DISKOP_SEL_COPY
-                jp      z,tnt_copy              ; 7 -> COPY, the body
                 ; 🔴 SELECTOR 1 (NAME_STAMP) IS NO LONGER SERVED HERE, AND THE
                 ; FALL-THROUGH HAD TO GO WITH IT (D-NAMESTAMP,
                 ; spec-diskcode-eviction.md §6.6aw). NAME's dir-entry stamp runs
@@ -81,12 +77,16 @@ dirverb_tenant:
                 ; body below this dispatcher was dead and is deleted. An
                 ; unrecognised op now takes the error tail rather than silently
                 ; running whatever happens to follow.
-                ; 🔴 AND SELECTOR 0 (KILL) WENT THE SAME WAY (D-KILLLOCAL,
-                ; §6.6ay): `hk_kill` runs the mount and the delete loop on
-                ; disk.rom's OWN fat_mount/fat_delete, so the `or a / jp z,tnt_kill`
-                ; that opened this chain is gone too and 0 falls to dv_err with
-                ; every other unrecognised op. fat_delete STAYS in this assembly --
-                ; tnt_copy still calls it.
+                ; 🔴 AND SELECTORS 0, 6 AND 7 WENT THE SAME WAY (D-KILLLOCAL
+                ; §6.6ay, D-COPYLOCAL §6.6az): `hk_kill` runs the delete loop and
+                ; `hk_copy` runs BOTH of COPY's halves on disk.rom's own FAT, so
+                ; the `or a / jp z,tnt_kill` that opened this chain and the two
+                ; COPY arms are gone and those ops fall to dv_err with every other
+                ; unrecognised one. ⚠️ fat_delete STAYS in this assembly: the
+                ; fatprim tenant publishes it as DISKOP_SEL_FAT_DELETE.
+                ; 🎯 FOUR OF THE EIGHT OPS ARE LEFT -- FILES, LFILES, DSKO$ and
+                ; DSKI$ -- and the last two are called from MAIN, so this tenant
+                ; does not empty even when FILES follows.
                 jp      dv_err
 
 ; --- NAME "old" AS "new": stamp the new 8.3 name over the located dir entry --
@@ -415,114 +415,3 @@ dfo_done:
                 pop     hl
                 ret
 
-; --- COPY "src" TO "dst": the body (D-COPY, docs/spec-basic-copy.md §3) ----------
-; At the END of the file: placed between tnt_kill and tnt_files it pushed one of
-; tnt_files' own `jr`s out of range.
-; Op 6 stashes the parsed SOURCE name (DISK_FCB_NAME is the only 8.3 buffer and
-; the destination reuses it). Op 7, with DISK_FCB_NAME = the destination:
-;   mount; refuse a self-copy and a wildcard source (STATUS 3 -> ERR 5, both
-;   measured); fat_find the source FIRST -- it records the entry's location in
-;   FWR_DIRSEC/FWR_DIROFF, which the destination's create must own afterwards --
-;   and stash its first cluster and size (the destination's delete and create
-;   clobber FAT_FIRSTCLUS/FAT_FILESIZE through fat_find); delete an old
-;   destination (the reference overwrites), create the new one and reset the
-;   write cursor exactly as fat_io_create does; reopen the source; then per
-;   sector: fat_read_file_sector -> FSECTOR_BUF, n = min(512, left),
-;   FWR_BUFLEN = n, FWR_BYTES += n, fat_flush_data_sector (which allocates the
-;   chain as it goes); finally fat_dir_update stamps size + first cluster.
-; The read iterator (FAT_CURCLUS/FAT_CLUSSEC) and the write cursor (FWR_*) are
-; disjoint cells; FSECTOR_BUF is the one shared buffer and that is the point.
-; STATUS: 0 source not found (ERR 53), 1 copied, 2 mount/full/I-O (load_error),
-; 3 refused (ERR 5).
-tnt_copystash:
-                ld      hl,DISK_FCB_NAME
-                ld      de,COPY_SRC
-                ld      bc,11
-                ldir
-                ret
-tnt_copy:
-                call    fat_mount
-                jp      c,tf_ioerr              ; STATUS = 2
-                ld      hl,COPY_SRC
-                ld      de,DISK_FCB_NAME
-                ld      b,11
-tc_same:        ld      a,(de)
-                cp      (hl)
-                jr      nz,tc_differ
-                inc     hl
-                inc     de
-                djnz    tc_same
-                jp      tc_ill                  ; all 11 bytes equal: a self-copy
-tc_differ:      ld      hl,COPY_SRC
-                ld      b,11
-tc_wild:        ld      a,(hl)
-                cp      '?'                     ; pdfcb turns '*' into '?'s too
-                jp      z,tc_ill
-                inc     hl
-                djnz    tc_wild
-                ld      hl,COPY_SRC
-                call    fat_find
-                jp      c,tc_notfound           ; STATUS = 0
-                ld      hl,(FAT_FIRSTCLUS)
-                ld      (COPY_CLUS),hl
-                ld      hl,(FAT_FILESIZE)
-                ld      (COPY_LEFT),hl
-                ld      hl,(FAT_FILESIZE+2)
-                ld      (COPY_LEFT+2),hl
-                call    fat_delete              ; an old destination; Cy = 1 "none" is fine
-                ld      hl,DISK_FCB_NAME
-                call    fat_dir_create
-                jp      c,tf_ioerr
-                xor     a
-                ld      (FWR_SECIDX),a
-                ld      hl,0
-                ld      (FWR_CLUS),hl
-                ld      (FWR_FIRST),hl
-                ld      (FWR_BYTES),hl
-                ld      (FWR_BYTES+2),hl
-                ld      hl,(COPY_CLUS)
-                ld      (FAT_FIRSTCLUS),hl
-                call    fat_open
-tc_loop:
-                ld      hl,(COPY_LEFT)
-                ld      a,(COPY_LEFT+2)
-                or      h
-                or      l
-                jr      z,tc_done
-                call    fat_read_file_sector    ; -> FSECTOR_BUF
-                jr      c,tc_done               ; chain ended before the size did: stamp what arrived
-                ld      de,512
-                ld      hl,(COPY_LEFT)
-                ld      a,(COPY_LEFT+2)
-                or      a
-                jr      nz,tc_n                 ; >= 65536 left: a whole sector
-                or      a
-                sbc     hl,de
-                jr      nc,tc_n                 ; >= 512 left: a whole sector
-                ld      de,(COPY_LEFT)          ; the tail: n = left
-tc_n:           ld      (FWR_BUFLEN),de
-                ld      hl,(COPY_LEFT)          ; left -= n
-                or      a
-                sbc     hl,de
-                ld      (COPY_LEFT),hl
-                jr      nc,tc_nb
-                ld      hl,COPY_LEFT+2
-                dec     (hl)
-tc_nb:          ld      hl,(FWR_BYTES)          ; FWR_BYTES += n
-                add     hl,de
-                ld      (FWR_BYTES),hl
-                jr      nc,tc_fl
-                ld      hl,FWR_BYTES+2
-                inc     (hl)
-tc_fl:          call    fat_flush_data_sector   ; allocates/extends, writes FSECTOR_BUF
-                jp      c,tf_ioerr
-                jr      tc_loop
-tc_done:        call    fat_dir_update          ; true size + first cluster
-                jp      c,tf_ioerr
-                ld      a,1
-                jr      tc_st
-tc_ill:         ld      a,3
-                jr      tc_st
-tc_notfound:    xor     a
-tc_st:          ld      (DISKOP_STATUS),a
-                ret

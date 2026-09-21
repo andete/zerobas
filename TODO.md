@@ -597,8 +597,35 @@ item — do **one item per session** to keep context lean.
       is an `ldir` here and BOTH `dirverb_op` call-backs go, so `hk_copy` loses
       the tenant entirely. Acceptance: `copy-acceptance`'s eight byte-for-byte
       rows.
-      ➡️ **THEN `FILES`/`LFILES`**, which is the one that leaves
-      `dirverb_tenant` holding `DSKO$`/`DSKI$` only.
+      🟢 **✅ THIRD SLICE DONE 2026-09-21 (§6.6az, D-COPYLOCAL): THE 17 BYTES
+      COST NOTHING.** Those three cells have exactly ONE consumer in the tree —
+      the body being moved. `grep` finds `COPY_SRC`/`COPY_CLUS`/`COPY_LEFT` in
+      `sub/dirverb.asm` and nowhere else; main DECLARES them at `$E080..$E090`
+      and never touches them. So `disk.rom` uses **the same address for the same
+      thing**, published through `gen_resident_abi.py` UNALIASED like
+      `DISK_FCB_NAME` — and a main sysvar reserved for `COPY` alone is, BY
+      CONSTRUCTION, a cell main's expression evaluator does not touch, which is
+      the `fname_expr`-survival argument the scout said would have to be made.
+      💬 **IT ANSWERS JOOST'S SAME-ADDRESS QUESTION IN MINIATURE AND ONLY
+      THERE** — these cells have one consumer and no disk-side twin. The cells
+      his question is really about (`SECTOR_BUF`/`FSECTOR_BUF`,
+      `WBUF`/`FWBUF`) have two live consumers each and 416 B of accidental
+      overlap. **This is not a precedent for those.**
+      💰 **sub page 1 216 B → 439 B free**, `disk.rom` 7720 → 7528 B, main
+      unchanged (measured 2026-09-21, clean tree). BOTH `dirverb_op` crossings
+      are gone, so `hk_copy` reaches no other ROM at all.
+      🔴 `hkc_body` RETURNS its disposition in `A` rather than storing it — the
+      §6.6aw rule applied, not restated: two writers on the `DISKOP_STATUS`
+      channel is what made `NAME` answer `Syntax error` at an empty drive.
+      🔬 `copy-acceptance` 8 rows / 0 divergences, byte-for-byte on content,
+      including `c.big` at 2048 B (the multi-sector loop) and the three ERR 5
+      refusals `c.self` / `c.wild` / `c.nodest`.
+      ➡️ **`FILES`/`LFILES` IS WHAT IS LEFT, AND IT IS NOT THE SAME SHAPE
+      EITHER** — `tnt_files` emits through `CHPUT`/`LPTOUT` and spells
+      `FSECTOR_BUF` in CODE at two sites (`sub/dirverb.asm:196`, `:301`), which
+      in `disk.rom` is main's buffer. **Scout it before pricing it.** It is the
+      one that leaves `dirverb_tenant` holding `DSKO$`/`DSKI$` only — and both
+      of those are called from MAIN, so the tenant does not empty.
 
 - [ ] 🔬 **SHOULD MAIN AND `disk.rom` USE THE SAME ADDRESS FOR THE SAME THING? —
       JOOST'S QUESTION, AND THE MAP CAN PRICE IT**
@@ -3728,7 +3755,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:21432 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:21459 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -3894,7 +3921,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:8537 (T-6FE392)8 (T-529ABE)` from `TODO.md:19826 (T-529ABE)`: a
+      `TODO.md:8564 (T-6FE392)8 (T-529ABE)` from `TODO.md:19853 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -9381,7 +9408,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:19826 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:19853 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

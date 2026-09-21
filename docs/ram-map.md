@@ -34,7 +34,7 @@ names the other component's BUFFER this address falls within. That
 second one is the question a per-component map cannot answer.
 
 * **basic** — 418 declared addresses in this project's own workspace `$E000..$F37F` (318 with a machine-readable width), plus **79** in the MSX standard work area at or above `$F380`.
-* **disk** — 123 declared addresses in this project's own workspace `$E000..$F37F` (86 with a machine-readable width), plus **22** in the MSX standard work area at or above `$F380`.
+* **disk** — 126 declared addresses in this project's own workspace `$E000..$F37F` (89 with a machine-readable width), plus **22** in the MSX standard work area at or above `$F380`.
 
 ## This project's own workspace (`$E000..$F37F`)
 
@@ -91,8 +91,11 @@ second one is the question a per-component map cannot answer.
 | `$E056` |  | `basic` | `CTLLIM` | the pool's collision FLOOR = ARYEND+2 (2). Written |  |
 | `$E058` | 40 B | `basic` | `SL_CEIL` | store_line: the VARIABLE-region ceiling the |  |
 | `$E080` | 11 B | `basic` | `COPY_SRC` | the source's 11-byte 8.3 name field |  |
+| `$E080` | 11 B | `disk` | `COPY_SRC` | the source's 11-byte 8.3 name field |  |
 | `$E08B` | 2 B | `basic` | `COPY_CLUS` | the source's first cluster (word) |  |
+| `$E08B` | 2 B | `disk` | `COPY_CLUS` | the source's first cluster (word) |  |
 | `$E08D` | 4 B | `basic` | `COPY_LEFT` | bytes still to copy (4-byte LE) |  |
+| `$E08D` | 4 B | `disk` | `COPY_LEFT` | bytes still to copy (4-byte LE) |  |
 | `$E091` | 2 B | `basic` | `RL_HL` | main -> tenant: the write cursor (LINEBUF, or AUTO's preset) (2) |  |
 | `$E093` | 1 B | `basic` | `RL_STAT` | tenant -> main: 0 = Enter, $FF = Ctrl-STOP / Ctrl-C (1) |  |
 | `$E094` | 1 B | `basic` | `RL_ROW0` | the row where input began (1-based; 0 once scrolled off) (1) |  |

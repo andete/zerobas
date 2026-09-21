@@ -3716,6 +3716,64 @@ stash becomes an `ldir` in this ROM and **BOTH** `dirverb_op` call-backs go, so
 `hk_copy` loses the tenant entirely rather than one of two crossings. Acceptance
 is `copy-acceptance`'s eight byte-for-byte rows.
 
+### 6.6az 🟢 `COPY` LOSES ITS TENANT ENTIRELY — AND THE 17 BYTES COST NOTHING (D-COPYLOCAL, 2026-09-21)
+
+§6.6ay's scout priced this at 17 B of disk-local RAM and a claim that would have
+to be argued. **It was neither, and the reason is worth more than the saving.**
+
+🎯 **THOSE THREE CELLS HAVE EXACTLY ONE CONSUMER IN THE WHOLE TREE — THE BODY
+BEING MOVED.** `COPY_SRC`/`COPY_CLUS`/`COPY_LEFT` are declared in
+`basic/sysvars.inc` at `$E080..$E090`, and grepping for them finds `sub/dirverb.asm`
+and nothing else: main declares them and never touches them. So `disk.rom` does
+not need a twin at a different address — it uses **the same address for the same
+thing**, published through `tools/gen_resident_abi.py` UNALIASED, exactly as
+`DISK_FCB_NAME` already is. The declaration stays in one file and arrives
+generated, so it cannot drift.
+
+⚠️ **AND THAT IS ALSO WHY `COPY_SRC` SURVIVES `fname_expr`, WHICH WAS THE REAL
+QUESTION.** The scout was right that the eleven bytes must live where main's
+expression evaluator cannot reach them — the whole reason
+`DISKOP_SEL_COPYSTASH` existed. A main sysvar reserved for `COPY` alone IS such
+a cell, by construction, and no argument is needed. A disk-local scratch pick
+would have had to make one, against §6.6al's measurement that disk's
+`SECTOR_BUF` window is 510/512 occupied by main cells.
+
+💬 **IT ALSO ANSWERS JOOST'S QUESTION IN MINIATURE, AND ONLY IN MINIATURE.** He
+asked whether main and `disk.rom` should use the same address for the same
+thing. Here they do, at no cost — but only because these cells have one consumer
+and no existing disk-side twin. The cells his question is really about
+(`SECTOR_BUF` vs `FSECTOR_BUF`, `WBUF` vs `FWBUF`) have TWO live consumers each
+and 416 B of accidental overlap; **nothing here settles those, and this section
+is not a precedent for them.**
+
+**What moved.** `hk_copy` made TWO `dirverb_op` crossings, one to stash eleven
+bytes and one to run the copy, each going back into MAIN so main could marshal on
+to `sub.rom`. The stash is an `ldir` here; the body is `hkc_body`, the tenant's
+code verbatim less its `DISKOP_STATUS` store. Every routine it calls was already
+in this assembly and every write-cursor cell it uses (`FWR_SECIDX`, `FWR_CLUS`,
+`FWR_FIRST`, `FWR_BYTES`, `FWR_BUFLEN`, `FAT_FILESIZE`) was already disk-local.
+`tnt_copystash` and `tnt_copy` are deleted with their two dispatcher arms.
+
+🔴 **`hkc_body` RETURNS ITS DISPOSITION IN `A` RATHER THAN STORING IT**, and
+that is the §6.6aw rule applied rather than restated: the tenant wrote
+`DISKOP_STATUS` itself, `hkc_done` writes it too, and two writers on a channel
+main's FAT primitives also marshal through is what made `NAME` answer
+`Syntax error` at an empty drive.
+
+💬 **`FAT_DBUF`, NOT `FSECTOR_BUF`.** The sub-ROM body's comments named the
+per-ROM spelling three times. The primitives themselves are neutral since
+§6.6ax, so only the prose was wrong — but it is the prose a copy-paste would have
+believed.
+
+🔬 **VERIFIED BY NAME:** `copy-acceptance` 8 rows / 0 divergences, differential
+against the CF-3300 and byte-for-byte on content — including `c.big` at
+2048 bytes, which is the multi-sector loop, and `c.self` / `c.wild` / `c.nodest`,
+the three ERR 5 refusals.
+
+➡️ **`FILES`/`LFILES` IS WHAT IS LEFT**, and it is NOT the same shape either:
+`tnt_files` emits through `CHPUT`/`LPTOUT` and spells `FSECTOR_BUF` in CODE at
+two sites. Scout it before pricing it.
+
 ## 6.7 🔍 GAP ANALYSIS — zerobas AGAINST THE MEASURED PROTOCOL (D-HOOKCENSUS, 2026-09-19)
 
 > 🏗️ **RULED BY JOOST, 2026-09-20: *"I think the answer to Two is obvious: we do
