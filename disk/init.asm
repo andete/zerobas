@@ -684,7 +684,9 @@ build_resident:
 RES_STUBS       equ     $F24E   ; no-op segment-hook stub table base (§8.29)
 RES_STUBS_END   equ     $F2B8   ; one past the last stub ($F2B7); $F2B8+ = kernel data (§8.61)
 DRVA_DPB        equ     $F195   ; drive-A DPB base (id byte + 18-byte DPB, §8.30)
-DRVTBL          equ     $F348   ; MSX-DOS-1 disk-driver table (§8.22)
+DRVTBL          equ     $F348   ; MSX-DOS-1 disk-driver table, $F348..$F357 (§8.22;
+                                ; the builder below writes +0 byte, +1/+3/+5/+7/+9/
+                                ; +11/+13 words and a +15 sentinel -- 16 B in all)
 DRVCNT          equ     $F347   ; DRVTBL-1: logical-drive count ($02); read by $50D5 (M17) (1 B)
 CURDRV_CELL     equ     $F247   ; current-drive index ($00=A:); read by $50C4 (M18) (1 B)
 RES_PRINT       equ     $F1C9   ; resident $-string print routine the kernel CALLs (§8.28)

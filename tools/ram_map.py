@@ -208,6 +208,16 @@ BYTEY = re.compile(r"\(byte\)", re.IGNORECASE)
 PARENN = re.compile(r"\((\d+)\)\s*$")
 
 
+# \U0001f534 A `FREE-RAM` CLAIM IS A STATEMENT ABOUT EMPTY SPACE, NOT A CELL'S EXTENT,
+# AND READING IT AS ONE IS BACKWARDS (D-WIDTHFREE, 2026-09-21). `; FREE-RAM
+# $LO..$HI` is `tools/check_ram_claims.py`'s declared-free-window syntax. One sat
+# in `SL_CEIL`'s comment block starting at SL_CEIL's OWN address, and because
+# RANGE is the FIRST and most authoritative rule it outranked the `(2)` the cell
+# actually declares: a 2-byte pointer read as 40 bytes wide.
+FREERAM = re.compile(r"FREE-RAM\s+\$[0-9A-Fa-f]{4}\s*(?:-|\.\.|\bto\b)\s*"
+                     r"\$[0-9A-Fa-f]{4}")
+
+
 def _declared_width_inner(addr: int, comment: str | None):
     """(width, rule) from the cell's own comment, or (None, None).
 
@@ -218,6 +228,7 @@ def _declared_width_inner(addr: int, comment: str | None):
     """
     if not comment:
         return None, None
+    comment = FREERAM.sub(" ", comment)     # a free-window claim is not an extent
     m = RANGE.search(comment)
     if m:
         lo, hi = int(m.group(1), 16), int(m.group(2), 16)
@@ -956,6 +967,21 @@ WIDTH_VECTORS = [
     (0xE02E, "a 12 B cell that mentions $0B in passing", 12,
      "🟢 POSITIVE CONTROL: the lookbehind must not blind the rule to a REAL "
      "count sitting beside a hex literal"),
+    # 🔴 D-WIDTHFREE (2026-09-21): a FREE-RAM claim is about EMPTY space.
+    (0xE058, "ceiling (2) FREE-RAM $E058..$E07F the rest of the retired stack",
+     None,
+     "🔴 NEGATIVE CONTROL, AND IT SHIPPED WRONG: a `FREE-RAM $LO..$HI` claim "
+     "starting at the cell's OWN address outranked the `(2)` it declares, "
+     "because RANGE is the first rule -- SL_CEIL read 40 B and is a POINTER. "
+     "\u26a0\ufe0f The answer is None, NOT 2: stripping the claim removes a WRONG "
+     "width, it does not manufacture a right one (the `(2)` is no longer final, "
+     "and R6 is anchored). The cell still has to declare itself on its own line"),
+    (0xE059, "ceiling FREE-RAM $E059..$E07F the rest (2 B)", 2,
+     "\U0001f7e2 POSITIVE CONTROL: ...and once it DOES, the claim beside it is "
+     "harmless"),
+    (0xE5C0, "file data / read sector buffer ($E5C0..$E7BF)", 512,
+     "🟢 POSITIVE CONTROL: a REAL declared range is still authoritative -- the "
+     "FREE-RAM strip must not blind the rule that settles the big buffers"),
 ]
 
 
@@ -970,7 +996,7 @@ def selftest(lo, hi) -> int:
             bad.append(f"${addr:04X} {cmt!r}: want {want}, got {got}")
         print(f"    A3 {'ok ' if got == want else 'FAIL'} "
               f"{str(want):>5} <- {cmt[:46]!r:48} {why}")
-    ok["A3 width vocabulary (19 vectors, 11 negative)"] = not bad
+    ok["A3 width vocabulary (22 vectors, 13 negative)"] = not bad
     for b in bad:
         print(f"    A3 MISMATCH {b}")
 

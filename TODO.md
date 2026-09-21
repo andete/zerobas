@@ -970,7 +970,43 @@ item — do **one item per session** to keep context lean.
       `ARY_ADDR` now has a width and it OVERRUNS its neighbour;
       `CAL_CURHI`/`VRAM_FLAG` and `FREAD_LEFT`/`RDBLK_REQ` now have aliases that
       DISAGREE. A reader that could not see the widths could not see the
-      conflicts either. All three are pinned with their real reason.
+      conflicts either.
+      🟢 **✅ ALL THREE READ 2026-09-21 (D-WIDTHFREE), AND THEY ARE THREE
+      DIFFERENT ANSWERS — WHICH IS WHY A RULE WOULD HAVE BEEN WRONG:**
+      * `ARY_ADDR` — **not a defect.** Its 2 bytes run into `$E036`, which is
+        `LST_PTR`/`SL_DELPTR`/`SL_TOK`: a deliberately aliased transient scratch
+        region (arrays vs LIST vs store_line). The map cannot tell a designed
+        overlap from an error, so the `overruns` pin is the honest state.
+      * `FREAD_LEFT`/`RDBLK_REQ` — **not a defect.** One address, two uses of
+        different size (4-byte file counter / 2-byte record request), each
+        declared correctly. `disputed` is exactly right: nobody knows a single
+        extent, and §the `INT_STK_TOP` lesson forbids taking the maximum.
+      * `CAL_CURHI`/`VRAM_FLAG` — **a defect, and a mis-read.** It took **256**
+        off *"the current 256-byte tape block"* in a prose PREAMBLE for the NEXT
+        cell; it is 1 byte, as `VRAM_FLAG` at the same address already said. The
+        `---` stop could not help: the preamble has no section header.
+      🔴 **AND THE LAST COMMENT-vs-CODE DISAGREEMENT WAS THE SHARPEST OF ALL.**
+      `SL_CEIL` — a 2-byte pointer (`ld (SL_CEIL),hl`) — read **40 B**, off a
+      **`FREE-RAM $E058..$E07F` claim starting at its own address** sitting in its
+      comment block. That syntax is `check_ram_claims.py`'s declared-EMPTY-window
+      form, so reading it as a cell's extent is backwards, and it outranked
+      everything because RANGE is the FIRST rule. A `FREE-RAM` range is now
+      stripped before the range rule runs.
+      ⚠️ **THE STRIP REMOVES A WRONG ANSWER; IT DOES NOT MANUFACTURE A RIGHT
+      ONE** — its arm asserts `None`, not 2, because the cell's own `(2)` is no
+      longer final once the claim is gone. The width still had to be declared on
+      the line. ⚠️ And the strip changed NOTHING on the corpus by itself: the
+      same block also holds a NARRATIVE range (*"ramfree_e058.py fills
+      $E058..$E07F with $AA"*) which matched first. Predicted 1–3 cells would
+      move; **0 did**.
+      🟢 **CLOSING STATE: 356 AGREE, 0 DISAGREE, 138 not settleable by code
+      (POINTED/UNSEEN/AMBIGUOUS), 52 pinned.** Every cell whose width the
+      instructions can settle now matches its own comment.
+      ➡️ **AND THE FOUR "AMBIGUOUS" CELLS WERE HALF DONE ALREADY** — re-measuring
+      before reading them showed `LHS_FAC` (8 B) and `CLR_SAVE` (2 B) were
+      unpinned and already agreeing. `RVDESC` is 3 B (`[len:1][ptr:2]`, its own
+      words) and `DRVTBL` is 16 B (its builder writes +0 byte, +1/+3/+5/+7/+9/
+      +11/+13 words, +15 sentinel — derived, not guessed).
       ⚠️ **19 NAMES REFUSED WITH "the comment already declares a width"**, which
       is a DISAGREEMENT worth a look rather than a nuisance: the pin file rates
       those cells `undeclared` while the parser reads a width out of the same
@@ -3905,7 +3941,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:21609 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:21645 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -4071,7 +4107,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:8714 (T-6FE392)8 (T-529ABE)` from `TODO.md:20003 (T-529ABE)`: a
+      `TODO.md:8750 (T-6FE392)8 (T-529ABE)` from `TODO.md:20039 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -9558,7 +9594,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:20003 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:20039 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

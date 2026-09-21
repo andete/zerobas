@@ -27,7 +27,6 @@ basic ARY_KEY/TKRADIX overruns
 basic ARY_TYPE/CLPTR disputed
 basic BN_PTR/DISKOP_HL disputed
 basic CAL_CNT overruns
-basic CAL_CURHI/VRAM_FLAG disputed
 basic CAL_SAVE/CAS_WCNT disputed
 basic CVT_MODE overruns
 basic DISKOP_A/PLY_NUMOVF disputed
@@ -53,13 +52,11 @@ basic MIDS_DEST undeclared
 basic MULPROD/RND_ACCLE overruns
 basic OO_DEVTYPE overruns
 basic PU_COMMAS/PU_WP disputed
-basic RVDESC undeclared
 basic SH_BASE/SH_OP disputed
 basic SUB_INT_RAM overruns
 basic TEMPPOOL undeclared
 disk BDOS_RECIDX overruns
 disk DISKOP_STATUS undeclared
-disk DRVTBL undeclared
 disk F365_STUB undeclared
 disk FAT_B0 undeclared
 disk FAT_B1 undeclared

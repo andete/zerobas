@@ -1729,7 +1729,7 @@ FRETOP          equ     $E268               ; heap low boundary; heap occupies (
                                             ; can still reference the heap after it
                                             ; runs -- reclaiming it there too is
                                             ; correct, not just permitted.
-RVDESC          equ     FRETOP + 2          ; $E26A: [len:1][ptr:2] scratch descriptor
+RVDESC          equ     FRETOP + 2          ; $E26A: [len:1][ptr:2] scratch descriptor (3 B)
                                             ; for a value whose body is NOT in the
                                             ; heap (a token-stream literal / STRSCR) —
                                             ; excluded from GC roots by construction
@@ -2713,8 +2713,9 @@ VRAM_FLAG       equ     $E0E9   ; 1 = ",S" VRAM save/load (1)
 ; it gets that by setting CAL_CURHI to CAL_BUF2's high byte ONCE before its
 ; loop and never touching it again, so every cal_refill call in that loop keeps
 ; targeting CAL_BUF, unchanged from before this fix.
-CAL_CURHI       equ     $E0E9   ; cassette ASCII load: high byte of the CURRENTLY
-                                ; SERVED buffer, CAL_BUF ($E6) or CAL_BUF2 ($E8) (1)
+CAL_CURHI       equ     $E0E9   ; cassette ASCII load: served buffer high (1 B)
+                                ; i.e. CAL_BUF ($E6) or CAL_BUF2 ($E8), the
+                                ; CURRENTLY SERVED one
 ; Cassette ASCII load (cload.asm cal_getbyte) read position within the current
 ; 256-byte tape block, 0..255 (§0.1: fixed 256-byte tape data blocks). Also the
 ; drain trigger: wrapping 255->0 means "this buffer is now empty -> swap to the
@@ -3739,8 +3740,8 @@ GOSUB_FRAME     equ     8       ; [CURLINE:2][resume:2][prevGSP:2][prevFSP:2].
                                 ; GOSUB (docs/spec-basic-forret.md §4). Both are
                                 ; needed; neither is derivable from the other.
 TRAP_FRAME      equ     3       ; [prevTSP:2][idx:1] -- see TRAPSTK's retirement above
-SL_CEIL         equ     $E058   ; store_line: the VARIABLE-region ceiling the
-                                ; store must stay below (2). D-TXTCEIL: written
+SL_CEIL         equ     $E058   ; store_line: the ceiling a store stays below (2 B)
+                                ; i.e. the VARIABLE region's. D-TXTCEIL: written
                                 ; by dl_store from fch_ctx_addr(1) -- channel 1's
                                 ; block base IS strheap_varceil() -- and read by
                                 ; the lineedit tenant, which cannot reach the

@@ -33,8 +33,8 @@ other component's cell at the same address; the `inside` column
 names the other component's BUFFER this address falls within. That
 second one is the question a per-component map cannot answer.
 
-* **basic** — 418 declared addresses in this project's own workspace `$E000..$F37F` (382 with a machine-readable width), plus **79** in the MSX standard work area at or above `$F380`.
-* **disk** — 128 declared addresses in this project's own workspace `$E000..$F37F` (109 with a machine-readable width), plus **24** in the MSX standard work area at or above `$F380`.
+* **basic** — 418 declared addresses in this project's own workspace `$E000..$F37F` (384 with a machine-readable width), plus **79** in the MSX standard work area at or above `$F380`.
+* **disk** — 128 declared addresses in this project's own workspace `$E000..$F37F` (110 with a machine-readable width), plus **24** in the MSX standard work area at or above `$F380`.
 
 ## This project's own workspace (`$E000..$F37F`)
 
@@ -89,7 +89,7 @@ second one is the question a per-component map cannot answer.
 | `$E052` | 2 B | `basic` | `CTLTOP` | the pool's TOP = strheap_varceil(), cached (2) |  |
 | `$E054` | 2 B | `basic` | `TSP` | newest trap SERVICE record; valid iff TRAPSVC != 0 (2) |  |
 | `$E056` | 2 B | `basic` | `CTLLIM` | the pool's collision FLOOR = ARYEND+2 (2). Written (2 B) |  |
-| `$E058` | 40 B | `basic` | `SL_CEIL` | store_line: the VARIABLE-region ceiling the |  |
+| `$E058` | 2 B | `basic` | `SL_CEIL` | store_line: the ceiling a store stays below (2 B) |  |
 | `$E080` | 11 B | `basic` | `COPY_SRC` | the source's 11-byte 8.3 name field |  |
 | `$E080` | 11 B | `disk` | `COPY_SRC` | the source's 11-byte 8.3 name field |  |
 | `$E08B` | 2 B | `basic` | `COPY_CLUS` | the source's first cluster (word) |  |
@@ -131,7 +131,7 @@ second one is the question a per-component map cannot answer.
 | `$E0E7` | 1 B | `basic` | `DISKSLOT` | disk ROM slot id for CALSLT (1) |  |
 | `$E0E8` | 1 B | `basic` | `DISKSLOT_OK` | 1 = DISKSLOT holds a valid disk-ROM slot id (1 B) |  |
 | `$E0E8` | 1 B | `disk` | `DISKSLOT_OK` | 1 = DISKSLOT holds a valid disk-ROM slot id (1 B) |  |
-| `$E0E9` |  | `basic` | `CAL_CURHI/VRAM_FLAG` | cassette ASCII load: high byte of the CURRENTLY |  |
+| `$E0E9` | 1 B | `basic` | `CAL_CURHI/VRAM_FLAG` | cassette ASCII load: served buffer high (1 B) |  |
 | `$E0EA` |  | `basic` | `CAL_CNT` | cassette ASCII load: read position in the |  |
 | `$E0EB` | 1 B | `basic` | `CAL_NEEDFILL` | cassette ASCII load: whether the buffer CAL_CURHI (1 B) |  |
 | `$E0EC` |  | `basic` | `CAL_SAVE/CAS_WCNT` | cassette ASCII load: parked byte across a prefetch (1) |  |
@@ -243,7 +243,7 @@ second one is the question a per-component map cannot answer.
 | `$E236` | 2 B | `basic` | `PLN_PTR` | 2 B: LINEBUF pointer at the body (HL) |  |
 | `$E238` | 2 B | `basic` | `TEMPTOP` | current cursor (2 B) |  |
 | `$E268` | 2 B | `basic` | `FRETOP` | heap low boundary; heap occupies (2 B) |  |
-| `$E26A` |  | `basic` | `RVDESC` | $E26A: [len:1][ptr:2] scratch descriptor |  |
+| `$E26A` | 3 B | `basic` | `RVDESC` | $E26A: [len:1][ptr:2] scratch descriptor (3 B) |  |
 | `$E26D` | 256 B | `basic` | `STRSCR` | $E26D: [len][bytes:STRMAX] staging |  |
 | `$E26D` |  | `disk` | `STRSCR` | $E26D: [len][bytes:STRMAX] staging |  |
 | `$E299` | 1 B | `disk` | `FDC_IFF` | saved caller IFF2 across a sector op (1 = was EI) (1 B) | `basic` STRSCR |
@@ -579,7 +579,7 @@ second one is the question a per-component map cannot answer.
 | `$F340` | 1 B | `disk` | `DOS_F340` | disk work-area flag the kernel reads at init (§8.33); $00 = ok (1 B) |  |
 | `$F341` | 4 B | `disk` | `RAMAD0` | RAM-slot id per page ($F341-$F344), MSX2 TH work area |  |
 | `$F347` | 1 B | `disk` | `DRVCNT` | DRVTBL-1: logical-drive count ($02); read by $50D5 (M17) (1 B) |  |
-| `$F348` |  | `disk` | `DRVTBL` | MSX-DOS-1 disk-driver table (§8.22) |  |
+| `$F348` | 16 B | `disk` | `DRVTBL` | MSX-DOS-1 disk-driver table, $F348..$F357 (§8.22; |  |
 | `$F351` | 2 B | `basic` | `DSKBUF_PTR` | word -> the DSKI$/DSKO$ sector buffer (2) |  |
 | `$F351` | 2 B | `disk` | `DSKBUF_PTR` | word -> the DSKI$/DSKO$ sector buffer; the disk ROM writes it |  |
 | `$F359` |  | `disk` | `W50A9_RET_HL` | HL on return: disk work-area pointer (DRVTBL+$11 region) |  |
