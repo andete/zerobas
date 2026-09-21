@@ -525,7 +525,7 @@ item — do **one item per session** to keep context lean.
       context, the temp-descriptor pool). The output is a priced comparison for
       Joost, not a list of things to change.
 
-- [ ] 🔬 **PROMOTE THE THREE ASCII/MERGE DISK PROBES INTO THE BATTERY — THEIR
+- [x] 🔬 **PROMOTE THE THREE ASCII/MERGE DISK PROBES INTO THE BATTERY — THEIR
       EXCUSE'S PREMISE CHANGED WHEN STEP 11 SHIPPED**
       🎚️ TIER 3 — common errors: a silent break here is a wrong answer, not a
       slow one.
@@ -547,6 +547,22 @@ item — do **one item per session** to keep context lean.
       three allowlist lines. ⚠️ They are EMULATOR probes and take ~3 min each —
       price the battery cost before wiring, and consider the eight-excluded list
       if it is too slow.
+      🟢 **✅ DONE 2026-09-21 (D-DISKASCII).** `make diskascii-acceptance` runs
+      all three against the repack machine as CF-3300 differentials, is
+      collected in `EMULATOR` in `tools/run_gates.py`, and the three
+      `probe-reach-allow.txt` lines are deleted. It reproduces the known-good
+      numbers: merge **123**, load_ascii **35**, save_ascii **42**, each
+      identical on both machines.
+      🎯 **IT RUNS ALL THREE EVEN WHEN ONE IS RED** — `make` would stop at the
+      first, and one failure hiding the other two is how a denominator goes
+      missing. Negative control: `DISK_DSK=/nonexistent make
+      diskascii-acceptance` attempts all three and still exits non-zero.
+      🔴 **AND THE FIRST CUT WAS INVISIBLE TO THE REACHABILITY GATE.** It looped
+      over bare names and built `probes/disk/$p.py` at runtime;
+      `check_probe_reach.py` scans the Makefile TEXTUALLY, so it still reported
+      all three as unreached — **the target worked and the gate could not see
+      it**. The paths are literal in the loop list now.
+
 
 - [ ] 🧮 **THERE IS NO SINGLE RAM MAP, AND THAT IS WHAT MAKES EVERY RAM QUESTION
       EXPENSIVE** — Joost, 2026-09-21: *"Don't you have a single RAM map?"*
@@ -3549,7 +3565,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:21253 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:21269 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -3715,7 +3731,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:8358 (T-6FE392)8 (T-529ABE)` from `TODO.md:19647 (T-529ABE)`: a
+      `TODO.md:8374 (T-6FE392)8 (T-529ABE)` from `TODO.md:19663 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -9202,7 +9218,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:19647 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:19663 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

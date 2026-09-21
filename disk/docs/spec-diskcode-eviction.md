@@ -3428,11 +3428,25 @@ commit is not a hypothetical: the disk side's sector buffer really does hold the
 stream while main tokenises.
 
 🔴 **BUT `diskbasic-acceptance` HAS NO `MERGE` ROW, AND ITS 34/34 SAYS NOTHING
-ABOUT THIS SLICE.** The three probes that do cover it are ARCHIVED — excused in
+ABOUT THIS SLICE.** The three probes that do cover it were ARCHIVED — excused in
 `tools/probe-reach-allow.txt` as *"re-provable when the code changes"*, which is
-exactly what was done here. ⚠️ **The excuse's premise has changed**: this path
-now crosses the slot, so a `disk.rom` edit can break it with no gate saying so.
-Promoting the three to the battery is filed in `TODO.md`.
+exactly what was done here. ⚠️ **The excuse's premise had changed**: this path
+now crosses the slot, so a `disk.rom` edit could break it with no gate saying so.
+
+> 🟢 **CLOSED THE SAME DAY (D-DISKASCII, 2026-09-21).** `make
+> diskascii-acceptance` runs all three against the repack machine as CF-3300
+> differentials and is collected in the battery; the three allowlist lines are
+> gone. It runs **all three even when one is red** — `make` would stop at the
+> first, and one failure hiding the other two is how a denominator goes missing.
+> A negative control (`DISK_DSK=/nonexistent`) confirms all three are attempted
+> and the target still exits non-zero.
+> 🔴 **AND THE FIRST CUT WAS INVISIBLE TO THE GATE THAT CHECKS REACHABILITY.**
+> It looped over bare names and built `probes/disk/$p.py` at runtime;
+> `check_probe_reach.py` scans the Makefile TEXTUALLY for `probes/.../name.py`,
+> so it still reported all three as unreached. **The target worked and the gate
+> could not see it.** The paths are spelled out in the loop list now. A path a
+> gate would have to EXECUTE the Makefile to learn is a path that gate does not
+> know about.
 
 ➡️ **THAT LEAVES STEP 10 `OPEN`**, still behind the RAM lever Joost has filed,
 and step 13's bulk.

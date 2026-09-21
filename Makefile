@@ -2234,6 +2234,42 @@ dskio-acceptance: repack-machine $(DISK_TEST_DSK)
 copy-acceptance: repack-machine $(DISK_TEST_DSK)
 	ZEROBAS_BASIC_MACHINE=$(REPACK_MACHINE) python3 probes/disk/diskbasic_probe_copy.py
 
+# --- diskascii-acceptance: MERGE + ASCII LOAD + ASCII SAVE, the three verbs the
+# --- battery could not see (D-MERGEPORT, spec-diskcode-eviction.md §6.6at) -----
+# 🔴 WHY THIS EXISTS. `diskbasic-acceptance` says 34/34 and has NO `MERGE` row --
+# nor one for ASCII `LOAD` or `SAVE",A"`. The three probes that do cover them sat
+# in NO make target at all, excused in tools/probe-reach-allow.txt as "archived
+# and still re-provable when the code changes". That was a fair call while these
+# paths lived entirely in main.
+# 🔴 STEP 11 ENDED IT: since §6.6at, `MERGE` and ASCII `LOAD` open the file and
+# read every byte of it THROUGH THE SLOT, so a disk.rom edit can break them and
+# nothing says so -- and the re-proof only happens if whoever edits disk.rom
+# remembers three probes no target runs. A suite's N/N is a claim about the rows
+# it HAS.
+# 🎯 ALL THREE RUN EVEN WHEN ONE IS RED, on purpose: `make` would stop at the
+# first, and one failure hiding the other two is how a denominator goes missing.
+# Each is a CF-3300 differential; D-REFCACHE keys on the ROM bytes, so the
+# reference side is served from cache and a zerobas rebuild always misses.
+# 🔴 THE PATHS ARE SPELLED OUT IN THE LOOP LIST ON PURPOSE. The first cut looped
+# over bare NAMES and built `probes/disk/$$p.py` at runtime -- and
+# `check_probe_reach.py` scans this file TEXTUALLY for `probes/.../name.py`, so
+# it still reported all three as "no make target runs it". The target worked and
+# the gate could not see it. A path a gate has to EXECUTE the Makefile to learn
+# is a path that gate does not know about.
+diskascii-acceptance: repack-machine $(DISK_TEST_DSK)
+	@rc=0; for p in probes/disk/disk_probe_merge.py \
+	                probes/disk/disk_probe_load_ascii.py \
+	                probes/disk/disk_probe_save_ascii.py; do \
+	  echo "=== $$p ==="; \
+	  ZEROBAS_BASIC_MACHINE=$(REPACK_MACHINE) python3 $$p || rc=1; \
+	done; \
+	if [ $$rc -ne 0 ]; then \
+	  echo "🔴 diskascii-acceptance: at least one of MERGE / ASCII LOAD / ASCII SAVE is RED"; \
+	else \
+	  echo "✅ diskascii-acceptance: MERGE + ASCII LOAD + ASCII SAVE all converged with the CF-3300"; \
+	fi; \
+	exit $$rc
+
 # --- D-SCREDIT: the screen editor's happy path (docs/spec-basic-screditor.md) ------
 screditor-acceptance: repack-machine
 	ZEROBAS_BASIC_MACHINE=$(REPACK_MACHINE) python3 probes/basic/basic_probe_screditor.py
