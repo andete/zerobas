@@ -63,15 +63,15 @@ fdl_isdata:
 fdl_marked:
                 ; --- mark the directory entry deleted ($E5) and write it back ---
                 ld      de, (FWR_DIRSEC)
-                ld      hl, FSECTOR_BUF
+                ld      hl, FAT_DBUF
                 call    read_sector
                 ret     c
                 ld      hl, (FWR_DIROFF)
-                ld      de, FSECTOR_BUF
+                ld      de, FAT_DBUF
                 add     hl, de
                 ld      (hl), $E5           ; deleted-entry marker
                 ld      de, (FWR_DIRSEC)
-                ld      hl, FSECTOR_BUF
+                ld      hl, FAT_DBUF
                 jp      fatprim_write_sector ; tail: returns the write's CY (renamed,
                                             ; see fat-prim-body.inc's write_sector
                                             ; header for why)

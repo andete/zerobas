@@ -534,6 +534,26 @@ item — do **one item per session** to keep context lean.
       Making them local still needs that answer, and the reorder would move the
       order `nameord-acceptance` exists to pin.
       ➡️ `KILL`, `COPY` and `FILES` are the same shape, fewer names each.
+      🔴 **`KILL` STOPPED ONE STEP IN, AND FOUND A CLASS (§6.6ax,
+      D-NEUTRALSWEEP, 2026-09-21).** `fat_delete` is NOT in `disk.rom` — it is
+      its own shared body, `basic/fat-delete-body.inc`, which spells
+      `FSECTOR_BUF` THREE TIMES IN CODE. That is §6.6ao's defect exactly, one
+      `include` away. The sweep found **31 such references across FIVE shared
+      bodies** (fat-delete 3, fiawalked 2, fld-fill 2, format 9, randio 15),
+      none of which has ever bitten because no ROM binds the names differently
+      yet.
+      🔬 **ALL 31 CONVERTED, AND NOTHING MOVED:** in main and sub the two names
+      are one address, so a pure rename must leave the images untouched — both
+      ROMs came out BYTE-IDENTICAL, which is the control that separates
+      "renamed" from "changed".
+      🛡️ **AND IT IS A GATE NOW:** `make shared-body-check` rule 2 — a shared
+      body may not spell `FSECTOR_BUF`/`FWBUF` in code — with comments, `equ`
+      definitions and the declaration files exempt, and 10 selftest arms whose
+      plant is a real FILE rather than a string.
+      ➡️ **SO `KILL` IS UNBLOCKED**: the body is neutral, every callee it needs
+      is already in `disk.rom`, and its window has NO call-back at all (the name
+      is in `DISK_FCB_NAME` before the mount), so §6.6av's ordering question
+      does not arise for it.
 
 - [ ] 🔬 **COMPARE RAM *USAGE* AGAINST THE REFERENCE, CELL BY CELL — AND JOOST'S
       HUNCH IS THE HYPOTHESIS TO SCORE**
@@ -3626,7 +3646,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:21330 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:21350 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -3792,7 +3812,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:8435 (T-6FE392)8 (T-529ABE)` from `TODO.md:19724 (T-529ABE)`: a
+      `TODO.md:8455 (T-6FE392)8 (T-529ABE)` from `TODO.md:19744 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -9279,7 +9299,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:19724 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:19744 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

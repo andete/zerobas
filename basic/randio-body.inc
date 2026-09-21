@@ -121,7 +121,7 @@ frnd_next:
                 call    fat_read_fat_sector ; FWBUF = FAT sector; BYTEIDX/PARITY/FATSEC set
                 ret     c
                 ld      hl,(FAT_BYTEIDX)
-                ld      de,FWBUF
+                ld      de,FAT_MBUF
                 add     hl,de
                 ld      a,(hl)
                 ld      (FAT_B0),a          ; low byte
@@ -131,7 +131,7 @@ frnd_next:
                 sbc     hl,de
                 jr      z,frnd_straddle     ; entry straddles into the next FAT sector
                 ld      hl,(FAT_BYTEIDX)
-                ld      de,FWBUF+1
+                ld      de,FAT_MBUF+1
                 add     hl,de
                 ld      a,(hl)
                 jr      frnd_combine
@@ -139,10 +139,10 @@ frnd_straddle:
                 ld      hl,(FAT_FATSEC)
                 inc     hl
                 ex      de,hl
-                ld      hl,FWBUF
+                ld      hl,FAT_MBUF
                 call    read_sector
                 ret     c
-                ld      a,(FWBUF)
+                ld      a,(FAT_MBUF)
 frnd_combine:
                 ld      (FAT_B1),a          ; high byte
                 ld      a,(FAT_PARITY)
@@ -271,8 +271,8 @@ frl_eof:
 ; frnd_fill_fwbuf — fill FWBUF with 512 spaces (a fresh record sector with no prior
 ; on-disk content). Clobbers BC,DE,HL.
 frnd_fill_fwbuf:
-                ld      hl,FWBUF
-                ld      de,FWBUF+1
+                ld      hl,FAT_MBUF
+                ld      de,FAT_MBUF+1
                 ld      bc,511
                 ld      (hl),' '
                 ldir
@@ -416,7 +416,7 @@ fat_rand_put:
                 ; expected sector image INDEPENDENTLY and guards the bytes above
                 ; FWBUF+512, neither of which a round-trip can do (`PUT` and
                 ; `GET` share the offset, so they agree on the same wrong answer).
-                ld      hl,FSECTOR_BUF
+                ld      hl,FAT_DBUF
                 ld      (GP_SRC),hl         ; pass cursor into the record
                 ld      hl,(GP_RECLEN)
                 ld      (GP_LEFT),hl        ; bytes still to move
@@ -435,21 +435,21 @@ frp_pass:
                 jr      frp_overlay
 frp_readold:
                 ld      de,(GP_PHYS)
-                ld      hl,FWBUF
+                ld      hl,FAT_MBUF
                 call    read_sector
                 ret     c
 frp_overlay:
                 ; n = min(left, 512 - within) -- what fits in THIS sector
                 call    frnd_pass_len       ; BC = n, and GP_LEFT -= n
                 ld      hl,(GP_WITHIN)
-                ld      de,FWBUF
+                ld      de,FAT_MBUF
                 add     hl,de
                 ex      de,hl               ; DE = FWBUF + within (dest)
                 ld      hl,(GP_SRC)         ; src = the record, advanced per pass
                 ldir
                 ld      (GP_SRC),hl         ; HL is past the bytes just moved
                 ld      de,(GP_PHYS)
-                ld      hl,FWBUF
+                ld      hl,FAT_MBUF
                 call    write_sector
                 ret     c
                 ld      hl,(GP_LEFT)
@@ -543,7 +543,7 @@ fat_rand_get:
                 ; a wrong ANSWER rather than corruption -- the single `ldir` used
                 ; to copy the tail of a straddling record out of the bytes ABOVE
                 ; FWBUF. Same two-pass shape as `fat_rand_put`, minus the extend.
-                ld      hl,FSECTOR_BUF
+                ld      hl,FAT_DBUF
                 ld      (GP_SRC),hl         ; here the cursor is the DESTINATION
                 ld      hl,(GP_RECLEN)
                 ld      (GP_LEFT),hl
@@ -553,13 +553,13 @@ frg_pass:
                 call    frnd_locate
                 jr      c,frg_eoffill       ; beyond EOF -> spaces
                 ld      de,(GP_PHYS)
-                ld      hl,FWBUF
+                ld      hl,FAT_MBUF
                 call    read_sector
                 ret     c
                 ; FSECTOR_BUF[..] = FWBUF[within..within+n) for this sector's share
                 call    frnd_pass_len       ; BC = n, and GP_LEFT -= n
                 ld      hl,(GP_WITHIN)
-                ld      de,FWBUF
+                ld      de,FAT_MBUF
                 add     hl,de               ; HL = FWBUF + within (src)
                 ld      de,(GP_SRC)         ; dest, advanced per pass
                 ldir
@@ -585,8 +585,8 @@ frg_ok:
 ; with a record half past EOF is unmeasured, and no row here can carry it while
 ; `oo_parse_reclen` still refuses a straddling length.
 frg_eoffill:
-                ld      hl,FSECTOR_BUF
-                ld      de,FSECTOR_BUF+1
+                ld      hl,FAT_DBUF
+                ld      de,FAT_DBUF+1
                 ld      bc,255
                 ld      (hl),' '
                 ldir

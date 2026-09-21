@@ -33,6 +33,16 @@ from __future__ import annotations
 import os
 import re
 import sys
+# 🔴 `probe_tmp` AT MODULE LEVEL, NOT INSIDE THE SELFTEST. It sets
+# `tempfile.tempdir` as an IMPORT SIDE EFFECT, so the selftest's planted-body
+# directory lands under /tmp/zerobas -- and `tools/check_temp_root.py` scans
+# STATICALLY, so a function-local import reads as "reaches no chokepoint" and it
+# refused the build. Both facts are the point: the root is real, and the gate
+# that polices it cannot see a runtime import
+# [[a-static-gate-cannot-see-a-computed-path]].
+sys.path.insert(0, os.path.join(os.path.dirname(
+    os.path.dirname(os.path.abspath(__file__))), "probes", "lib"))
+import probe_tmp                  # noqa: E402,F401 -- sets tempfile.tempdir
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 # 🔴 `disk` WAS MISSING UNTIL 2026-09-20 (D-SAVEPORT), AND THAT MADE THIS GATE
@@ -82,6 +92,60 @@ def allowlist():
     return out
 
 
+
+# --- THE SECOND RULE: A SHARED BODY MAY NOT SPELL A PER-ROM BUFFER NAME -------
+# 🔴 THIS IS THE DEFECT THAT COST STEP 12 A DAY, AS A GATE (D-NEUTRALSWEEP,
+# 2026-09-21). `basic/fatiow-body.inc` buffered each byte with
+# `ld de, FSECTOR_BUF` where its read twin says `FAT_DBUF`. In main and sub those
+# are ONE address, so it assembled clean and was invisible; in `disk.rom`
+# `FSECTOR_BUF` resolves through the generated ABI to MAIN's $E5C0 while
+# `FAT_DBUF` is $E2A0 -- so every byte went to main's buffer and the flush wrote
+# the untouched one.
+# 🎯 IT IS A CLASS, NOT AN INCIDENT, AND THE SWEEP PROVED IT: FIVE MORE shared
+# bodies still spelled the per-ROM name in CODE (fat-delete, fiawalked, fld-fill,
+# format, randio -- 31 references). None of them bit, because no ROM that binds
+# the names differently includes them YET. Each was one `include` away.
+# 🔬 The conversion is provably a no-op where the names alias: both ROMs came out
+# BYTE-IDENTICAL.
+# ⚠️ COMMENTS ARE EXEMPT ON PURPOSE. `fatio-body.inc` and `fatiow-body.inc` carry
+# the rule itself in prose and must go on naming the wrong name to state it.
+PERROM = re.compile(r"\b(FSECTOR_BUF|FWBUF)\b")
+NEUTRAL = {"FSECTOR_BUF": "FAT_DBUF", "FWBUF": "FAT_MBUF"}
+
+
+# A DECLARATION is not a reference. `basic/sysvars.inc` is where these names are
+# BOUND (`FWBUF equ $E7C0`, `FAT_MBUF equ FWBUF`) and the generated ABI is where
+# disk.rom IMPORTS main's -- both must go on spelling them. The rule is about a
+# body that READS OR WRITES through the name.
+EQU_DEF = re.compile(r"^\s*\w+\s+equ\b", re.IGNORECASE)
+PERROM_EXEMPT_FILES = ("basic/sysvars.inc", "disk/equates.inc",
+                       "disk/basic-resident-abi.inc", "sub/equates.inc")
+
+
+def perrom_hits(rel):
+    """[(line, text, name)] for CODE references only.
+
+    Comments are exempt (two bodies state the rule in prose and must name the
+    wrong name to do it), and so are `equ` DEFINITIONS and the files whose job
+    is to bind or import these names.
+    """
+    out = []
+    if rel.replace(os.sep, "/") in PERROM_EXEMPT_FILES:
+        return out
+    try:
+        lines = open(os.path.join(ROOT, rel), errors="replace").readlines()
+    except OSError:
+        return out
+    for i, ln in enumerate(lines, 1):
+        code = ln.split(";", 1)[0]
+        if EQU_DEF.match(code):
+            continue
+        m = PERROM.search(code)
+        if m:
+            out.append((i, code.strip(), m.group(1)))
+    return out
+
+
 def check(verbose=True):
     files = list(sources())
     inc = included_basenames(files)
@@ -115,7 +179,28 @@ def check(verbose=True):
         if not dead:
             print("  clean — every .inc is assembled (or allowlisted with a "
                   "reason)")
-    return 1 if dead else 0
+
+    # --- rule 2: no per-ROM buffer name in a shared body's CODE --------------
+    named = []
+    for rel in files:
+        if not rel.endswith(".inc"):
+            continue
+        for line, text, which in perrom_hits(rel):
+            named.append((rel, line, text, which))
+    if verbose:
+        if named:
+            print(f"\n  🔴 {len(named)} per-ROM buffer name(s) in shared body "
+                  f"CODE. In main and sub these ALIAS the neutral name, so the "
+                  f"build is silent; in disk.rom they are DIFFERENT ADDRESSES "
+                  f"and the body reads or writes the wrong buffer. Spell "
+                  f"FAT_DBUF / FAT_MBUF:")
+            for rel, line, text, which in named:
+                print(f"     {rel}:{line}  {text[:60]}"
+                      f"   -> {NEUTRAL[which]}")
+        else:
+            print("  clean — no shared body spells FSECTOR_BUF or FWBUF in "
+                  "code (comments are exempt: two bodies state the rule)")
+    return 1 if (dead or named) else 0
 
 
 def selftest():
@@ -148,6 +233,43 @@ def selftest():
             "reporting every .inc dead", check(verbose=False) == 2)
     finally:
         globals()["INCLUDE"] = saved
+    # --- rule 2's arms, each with its negative control --------------------
+    # 🔴 THE PLANT IS A FILE, not a string, because perrom_hits READS THE TREE.
+    # An arm that only exercised the regex would pass while the file walk was
+    # blind -- the shape that let the ORIGINAL defect through six shared bodies.
+    import tempfile
+    d = tempfile.mkdtemp(prefix="sharedbody-")
+    plant = os.path.join(d, "planted-body.inc")
+    with open(plant, "w") as f:
+        f.write("; FSECTOR_BUF in a comment is EXEMPT -- two bodies state the "
+                "rule\n")
+        f.write("PLANTED_ALIAS   equ     FWBUF       ; an equ DEFINITION is "
+                "exempt too\n")
+        f.write("                ld      hl,FSECTOR_BUF\n")
+        f.write("                ld      de,FWBUF+1  ; FSECTOR_BUF here is a "
+                "comment\n")
+    saved_root = globals()["ROOT"]
+    try:
+        globals()["ROOT"] = d
+        hits = perrom_hits("planted-body.inc")
+    finally:
+        globals()["ROOT"] = saved_root
+    arm("S5 a per-ROM name in CODE is reported (2 of them)", len(hits) == 2)
+    arm("S6 NEGATIVE: the one in a COMMENT is not",
+        all("comment" not in t for _l, t, _w in hits))
+    arm("S7 NEGATIVE: an `equ` DEFINITION is not -- sysvars.inc binds these "
+        "names and must go on spelling them", "equ" not in
+        " ".join(t for _l, t, _w in hits).lower())
+    arm("S8 each hit names the neutral spelling to use",
+        {NEUTRAL[w] for _l, _t, w in hits} == {"FAT_DBUF", "FAT_MBUF"})
+    arm("S9 NEGATIVE: a declaration FILE is exempt whole -- sysvars.inc has "
+        "many and must report none", perrom_hits("basic/sysvars.inc") == [])
+    arm("S10 the live tree is CLEAN of the class (31 references were "
+        "converted on 2026-09-21; both ROMs came out byte-identical)",
+        not [1 for rel in sources() if rel.endswith(".inc")
+             for _h in perrom_hits(rel)])
+    import shutil
+    shutil.rmtree(d, ignore_errors=True)
     print("selftest:", "GREEN" if ok else "🔴 RED")
     return 0 if ok else 1
 

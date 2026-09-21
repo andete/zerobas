@@ -58,7 +58,7 @@ fmt_zwrite:
                 ld      a,(FMT_SEC)
                 ld      e,a
                 ld      d,0
-                ld      hl,FSECTOR_BUF
+                ld      hl,FAT_DBUF
                 call    write_sector
                 ret     c
                 ld      a,(FMT_SEC)
@@ -70,10 +70,10 @@ fmt_fatheads:
                 call    fmt_zero_buf
                 ld      a,GM_MEDIA
                 call    fmt_geom_byte
-                ld      (FSECTOR_BUF),a
+                ld      (FAT_DBUF),a
                 ld      a,$FF
-                ld      (FSECTOR_BUF + 1),a
-                ld      (FSECTOR_BUF + 2),a
+                ld      (FAT_DBUF + 1),a
+                ld      (FAT_DBUF + 2),a
                 ld      a,GM_NUMFATS
                 call    fmt_geom_byte
                 ld      (FMT_SEC),a         ; reuse FMT_SEC as the FAT-copy counter
@@ -85,7 +85,7 @@ fmt_fatlp:
                 jr      z,fmt_boot
                 push    hl
                 ex      de,hl               ; DE = sector
-                ld      hl,FSECTOR_BUF
+                ld      hl,FAT_DBUF
                 call    write_sector
                 pop     hl
                 ret     c
@@ -105,11 +105,11 @@ fmt_boot:
                 ld      hl,(FMT_DESC)
                 ld      de,GM_BOOT
                 add     hl,de               ; HL = the 32-byte boot template
-                ld      de,FSECTOR_BUF
+                ld      de,FAT_DBUF
                 ld      bc,32
                 ldir
                 ld      de,0                ; sector 0
-                ld      hl,FSECTOR_BUF
+                ld      hl,FAT_DBUF
                 jp      write_sector        ; tail: returns its Cy (ok / error)
 
 ; fmt_menu_text — at its ORIGINAL position (do_format's era) between fmt_boot and
@@ -138,8 +138,8 @@ fmt_geom_word:
 
 ; fmt_zero_buf — fill FSECTOR_BUF with 512 zero bytes. Clobbers BC, DE, HL.
 fmt_zero_buf:
-                ld      hl,FSECTOR_BUF
-                ld      de,FSECTOR_BUF + 1
+                ld      hl,FAT_DBUF
+                ld      de,FAT_DBUF + 1
                 ld      bc,511
                 ld      (hl),0
                 ldir

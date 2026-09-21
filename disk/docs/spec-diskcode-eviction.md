@@ -3578,6 +3578,62 @@ anything. **Read that as the remaining work, not as a solved problem.**
 ➡️ **`KILL`, `COPY` and `FILES` are the same shape**, each with fewer names to
 juggle and the same `dirverb_op` call-back to delete.
 
+### 6.6ax 🔴 FIVE MORE SHARED BODIES STILL SPELLED THE PER-ROM BUFFER NAME — AND NOW A GATE SAYS SO (D-NEUTRALSWEEP, 2026-09-21)
+
+The `KILL` slice was next after §6.6aw, and it stopped one step in.
+`fat_delete` is **not in `disk.rom`** — it lives in its own shared body,
+`basic/fat-delete-body.inc`, which `disk.rom` does not include. Reading that
+body before including it is what found this.
+
+🔴 **IT SPELLS `FSECTOR_BUF` THREE TIMES IN CODE.** That is §6.6ao's defect
+exactly — the one that cost step 12 a day — sitting one `include` away. And the
+sweep it prompted says it is not one file:
+
+| shared body | per-ROM names in CODE |
+|---|---|
+| `basic/fat-delete-body.inc` | 3 |
+| `basic/fiawalked-body.inc` | 2 |
+| `basic/fld-fill-body.inc` | 2 |
+| `basic/format-body.inc` | 9 |
+| `basic/randio-body.inc` | **15** |
+
+**Thirty-one references, none of which has ever bitten**, because no ROM that
+binds `FSECTOR_BUF` and `FAT_DBUF` to different addresses includes any of them
+yet. Every one was one `include` away from a silent wrong buffer.
+
+🔬 **ALL THIRTY-ONE ARE CONVERTED, AND THE PROOF IS THAT NOTHING MOVED.** In main
+and sub the two names are one address, so a pure rename must leave the images
+untouched — and it did: `zerobas-main-eu.rom` and `sub.rom` both came out
+**byte-identical**. That is the control that separates "renamed" from "changed".
+
+🛡️ **AND THE RULE IS A GATE NOW, NOT A MEMORY.** `make shared-body-check` gained
+a second rule: **a shared body may not spell `FSECTOR_BUF` or `FWBUF` in code**,
+and it names the neutral spelling to use. Three exemptions, each deliberate:
+* **comments** — `fatio-body.inc` and `fatiow-body.inc` state the rule in prose
+  and must go on naming the wrong name to do it;
+* **`equ` definitions** — `basic/sysvars.inc` is where the names are BOUND;
+* **the declaration files themselves**, including the generated ABI, whose job is
+  to bind or import them.
+
+Ten selftest arms, each with its negative control, and the plant is a real FILE
+rather than a string: an arm that only exercised the regex would pass while the
+file walk was blind, which is the shape that let the original defect through six
+bodies.
+
+⚠️ **AND THE GATE'S OWN SELFTEST TRIPPED ANOTHER GATE**, which is worth the line:
+its planted body needs a temp directory, so `tools/check_temp_root.py` refused
+the build until `probe_tmp` was imported at MODULE level. A function-local import
+reads as *"reaches no chokepoint"* — a static scanner cannot see a runtime one
+[[a-static-gate-cannot-see-a-computed-path]], the same class as yesterday's
+Makefile loop.
+
+➡️ **`KILL` IS NOW UNBLOCKED** and is the next slice: `basic/fat-delete-body.inc`
+is neutral, every callee it needs (`fat_next_cluster`, `fat_write_fat_entry`,
+`fatprim_write_sector`, `read_sector`, `fat_find`, `fat_mount`) is already in
+`disk.rom`, and `hk_kill` needs no call-back in its window at all — the name is
+in `DISK_FCB_NAME` before the mount, and the delete loop follows it directly. So
+§6.6av's ordering question does not even arise for `KILL`.
+
 ## 6.7 🔍 GAP ANALYSIS — zerobas AGAINST THE MEASURED PROTOCOL (D-HOOKCENSUS, 2026-09-19)
 
 > 🏗️ **RULED BY JOOST, 2026-09-20: *"I think the answer to Two is obvious: we do

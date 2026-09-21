@@ -33,7 +33,7 @@ fia_walked:
                 ld      a,(FAT_CLUSSEC)
                 dec     a
                 ld      (FWR_SECIDX),a
-                ld      hl,FSECTOR_BUF
+                ld      hl,FAT_DBUF
                 ld      de,(FAT_WRTMP2)
                 dec     de                  ; offset rem-1 = last data byte
                 add     hl,de
@@ -50,7 +50,7 @@ fia_part_ctrlz:
                 jp      fia_bytes_m1
 fia_full:
                 ; last sector full: check its final byte ([511]) for the Ctrl-Z.
-                ld      a,(FSECTOR_BUF+511)
+                ld      a,(FAT_DBUF+511)
                 cp      $1A
                 jr      z,fia_full_ctrlz
                 ; no Ctrl-Z: resume on a FRESH next sector (SECIDX = CLUSSEC; if that

@@ -27,8 +27,8 @@
 ; bytes) with spaces. Used by a RANDOM open so unwritten fields read as spaces.
 ; Clobbers A? no — only BC/DE/HL.
 fld_fill_record:
-                ld      hl,FSECTOR_BUF
-                ld      de,FSECTOR_BUF+1
+                ld      hl,FAT_DBUF
+                ld      de,FAT_DBUF+1
                 ld      bc,511
                 ld      (hl),' '
                 ldir
