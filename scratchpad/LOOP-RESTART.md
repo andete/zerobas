@@ -4,7 +4,70 @@ A `ScheduleWakeup` loop is SESSION-LOCAL and dies with the session. This file is
 the durable half: paste the command in `## The command` below into a fresh
 session and the loop resumes exactly where it stopped.
 
-## 🔴 STATE AS OF 2026-09-16 — READ THIS BEFORE THE FIRING PROMPT
+## 🔴 STATE AS OF 2026-09-21 — READ THIS BEFORE THE FIRING PROMPT
+
+⚠️ **THE 09-16 BLOCK BELOW IS SUPERSEDED IN ITS HEADLINE AND STILL GOOD IN ITS
+LESSONS.** Read this section for WHERE the work is; read that one for HOW it
+goes wrong. In particular its *"the autonomous queue is EMPTY except TIER 4"* is
+no longer true — Joost's 09-20 ruling on the disk-code eviction (*"I think the
+answer to Two is obvious: we do as the reference does"*) opened a TIER 2 arc that
+is still running.
+
+### The live arc: `disk/docs/spec-diskcode-eviction.md` §6.2, steps 9–14
+
+Under his governing frame — *"a clear understanding of how the communication
+between main rom and disk rom fully works"* — the FAT engine and the loader's
+sector loop move OUT of main and INTO `disk.rom`, reached through the claimed
+hook cell `$FE5D`.
+
+**Shipped:** step 9 LOAD (`e458032b`) · step 11 MERGE + ASCII LOAD (`35eeafb7`) ·
+step 12 SAVE (`3b8e1b57`) · and step 13's first three slices — `174bf887`
+D-NAMESTAMP, `407298e0` D-KILLLOCAL, `c9238e5a` D-COPYLOCAL.
+
+**Step 13 is NOT a 1895 B relocation** (that filing was wrong, §6.6av): the ported
+disk verbs each made a three-ROM round trip — `hk_*` called BACK into main just
+so main could marshal on to `sub.rom`'s `dirverb_tenant`, whose body ran FAT
+primitives `disk.rom` has had since steps 9/11/12. Each slice deletes one.
+
+➡️ **NEXT: `FILES`/`LFILES`, and SCOUT IT BEFORE PRICING IT.** This arc has now
+had to correct the same over-confident sentence twice — *"`KILL`, `COPY` and
+`FILES` are the same shape"* was measured on `KILL` alone and was false for
+`COPY`, and then `COPY`'s own scout over-priced it by 17 B because it priced a
+cell's home before grepping its consumers. `tnt_files` emits through
+`CHPUT`/`LPTOUT` and spells `FSECTOR_BUF` in CODE at two sites
+(`sub/dirverb.asm:196`, `:301`), which in `disk.rom` is MAIN's buffer at `$E5C0`.
+After it, `dirverb_tenant` holds `DSKO$`/`DSKI$` only — both called from MAIN, so
+it does not empty.
+
+🙋 **JOOST'S, FILED, DO NOT START:** the RAM-usage comparison against the
+reference (`12cbc6fe` — *"not something for now"*, plus *"I have a hunch
+reference is very economical with RAM"*) · the same-address question (`9d4f94b2`)
+· step 10 `OPEN` (the PAINT span-stack RAM lever) · the *"Gap (small)"* entry in
+`expansion-protocol.md` §6 · the merged remote branch `wip/saveport`.
+⚠️ §6.6q's hazard is NOT retired in general: `PAINT` then `LOAD` is still
+ungated and `GFX_PSTK` still sits in disk's `SECTOR_BUF` window.
+
+### What this arc keeps re-learning
+
+* **`DISKOP_STATUS` IS A SHARED CHANNEL — WRITE IT ONCE, LAST.** Main's FAT
+  primitives marshal their own disposition through the same cell, so a handler
+  that pre-sets it and lets later paths overwrite reads whatever they left.
+  Measured: `NAME "A.BAS" AS "B.BAS"` at an EMPTY DRIVE answered `Syntax error`
+  instead of `Disk offline`. A moved body should RETURN its status in `A`.
+* **`FAT_DBUF`/`FAT_MBUF`, NEVER `FSECTOR_BUF`/`FWBUF`, in anything shared.**
+  `disk.rom` binds them to `$E2A0`/`$E560`; main binds them to `$E5C0`/`$E7C0`.
+  The wrong spelling ASSEMBLES CLEAN and reads a buffer nobody filled. It is a
+  gate now (`make shared-body-check` rule 2) but only over `*-body.inc`.
+* **A LOCAL `fat_find`'s RESULT MUST SURVIVE A CALL-BACK, OR THERE MUST BE NO
+  CALL-BACK IN THE WINDOW.** `KILL` had one name so the question never arose;
+  `NAME` sidesteps it by ORDER; `COPY` answers it with a main sysvar that has one
+  consumer. §6.6av — the general question — is still open.
+* **A ROM CHANGE INVALIDATES THE KNIFE PIN.** `tier_table.py` REFUSES until
+  `scratchpad/kwknife.py --all` AND `--allfn` are re-run (~15 min, and they must
+  not overlap another emulator probe). A comment-only `.inc` edit leaves the
+  hashes identical and needs neither.
+
+## 📦 STATE AS OF 2026-09-16 — superseded above, kept for its lessons
 
 ⚠️ **THE CRON PROMPT IS STALE AND HAS BEEN ALL SESSION.** It still says *"NEXT
 VERBS: NAME, then COPY, then FILES/LFILES"* and *"DO NOT rely on CF across
