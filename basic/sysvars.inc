@@ -869,7 +869,7 @@ CLINK           equ     $E02D   ; CLOAD/LOAD: saved link word of the current lin
 TKNAME          equ     $E028   ; tokeniser: 1 = previous char was part of a name
                                 ; (so a following digit stays verbatim, not crunched)
 TKRADIX         equ     $E029   ; tokeniser: &H/&O accumulator radix (16 or 8)
-TKRTOK          equ     $E02A   ; tokeniser: &H/&O constant token to emit ($0C/$0B)
+TKRTOK          equ     $E02A   ; tokeniser: &H/&O constant token to emit, $0C/$0B (1 B)
 NUMBUF          equ     $E0C0   ; PRINT: decimal-format scratch (8 bytes, 0-term)
 ; MID$-statement: the destination var's descriptor address, stashed for one
 ; MID$(A$,n,m)=B$ so the token cursor can stay in HL through the arg parse.
@@ -3796,7 +3796,7 @@ FN_FST          equ     $E09B   ; tenant -> main: 0 = frame saved, 1 = pool full
 ; `make ramfree-acceptance`, which fills every declared span and runs nine
 ; subsystems over it -- so "nothing else writes here" is a measurement.
 GP_SRC          equ     $EA3A   ; pass cursor into FSECTOR_BUF (2)
-GP_LEFT         equ     $EA3C   ; record bytes still to move (2) -> ends $EA3E
+GP_LEFT         equ     $EA3C   ; record bytes still to move, ends $EA3E (2 B)
 ; --- D-PARTIAL: COLOR's shadow colour pair (2026-09-08) ----------------------
 ; `COLOR 7,99` must leave the foreground UNCHANGED: both references reject the
 ; statement ATOMICALLY, and zerobas stored each component as it validated it.

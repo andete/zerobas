@@ -900,8 +900,46 @@ item — do **one item per session** to keep context lean.
       their own name at all (reached through a pointer, or as an offset from a
       neighbour), so the code cannot speak for them and they stay pinned. That is
       the same geometry blindness the map's own header records.
-      ➡️ **21 UNAMBIGUOUS PINS REMAIN UNWRITTEN** — the 19 below plus the two
-      generated-file cells. A second pass, not a forgotten one.
+      🟢 **✅ THE SECOND PASS RAN 2026-09-21 (D-WIDTHJOIN), 83 → 58 — AND
+      NOT ONE OF THOSE 19 CELLS NEEDED AN EDIT. THE READER WAS BLIND.**
+      🔴 **`ram_map.parse()` JOINS A DECLARATION'S COMMENT WITH THE PROSE
+      BLOCK BELOW IT, AND RULE R6 `(n)` IS ANCHORED AT THE END ON PURPOSE.** So
+      `; element address (2)` — a width, stated, at the end of its own line —
+      stopped being final once the next section's paragraph was glued after it,
+      and the cell read `undeclared`. Both halves are deliberate and correct
+      alone: joining is why `SH_SRC` has a width at all, and the anchor is why a
+      `(2)` mid-prose is not mistaken for one. **Together they cancelled.**
+      🎯 `purpose()` ALREADY CARRIED HALF THIS LESSON — *"it reads the
+      DECLARATION LINE, not the joined block"* — and the width reader did not.
+      It now tries the line FIRST and falls back to the joined block, which
+      keeps the anchor working where it was designed to and still resolves an
+      extent spelled one line below the `equ`.
+      🔴 **AND THE CROSS-CHECK FOUND A WIDTH OF ZERO.** Comparing every
+      comment-declared width against the instruction-derived one, `TKRTOK` and
+      `GP_LEFT` read **0 B**: `NBYTES` matched the `0` of the HEX LITERAL `$0B`
+      in `; ... token to emit ($0C/$0B)`. The existing `($F9)` negative control
+      missed it because **the hazard is the `$`, not the parentheses**. Two
+      fixes: a lookbehind, and a structural floor refusing any width ≤ 0.
+      ⚠️ **EACH FIX IS PINNED BY AN ARM THE OTHER CANNOT RESCUE** — the floor
+      alone would have made the `$0B` vector pass with the regex still broken
+      [[a-case-that-agrees-can-agree-for-the-wrong-reason]], so the lookbehind is
+      pinned by a NON-ZERO bogus read (`emit $1B then $2B` → 1) and the floor by
+      a `$`-free one (`a plain 0 B claim`). Five new A3 vectors, four negative
+      and one positive.
+      ⚠️ **THE COMPARISON'S OWN BIAS IS STATED, NOT HIDDEN:** 375 agree, 17
+      differ, and MOST of the 17 are the instrument, not the tree — for a
+      buffer, the only access spelled with the name is its FIRST byte, so
+      `FLD_DESC` reads 256 in prose and 1 in code and both are right.
+      ➡️ **THREE SMALL CELLS ARE NOT EXPLAINED BY THAT BIAS AND ARE FILED, NOT
+      FIXED:** `GFX_SOCT` and `FAT_SECPERFAT` declare `(word)` and `GFX_EOCT`
+      `(2)`, while every access spelled with those names is a BYTE. Either the
+      comment is a present-and-wrong width or the high byte is reached another
+      way. Needs a reading, not a rule.
+      ➡️ **AND THREE CELLS MOVED THE OTHER WAY, WHICH IS THE FIX WORKING:**
+      `ARY_ADDR` now has a width and it OVERRUNS its neighbour;
+      `CAL_CURHI`/`VRAM_FLAG` and `FREAD_LEFT`/`RDBLK_REQ` now have aliases that
+      DISAGREE. A reader that could not see the widths could not see the
+      conflicts either. All three are pinned with their real reason.
       ⚠️ **19 NAMES REFUSED WITH "the comment already declares a width"**, which
       is a DISAGREEMENT worth a look rather than a nuisance: the pin file rates
       those cells `undeclared` while the parser reads a width out of the same
@@ -3836,7 +3874,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:21540 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:21578 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -4002,7 +4040,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:8645 (T-6FE392)8 (T-529ABE)` from `TODO.md:19934 (T-529ABE)`: a
+      `TODO.md:8683 (T-6FE392)8 (T-529ABE)` from `TODO.md:19972 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -9489,7 +9527,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:19934 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:19972 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

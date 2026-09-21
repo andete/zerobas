@@ -182,7 +182,13 @@ def files_for(comp: str, inc_only: bool = False) -> list[str]:
 # as a run. Under-reporting free space is the safe direction; inventing it is
 # the one that costs a slice a day.
 RANGE = re.compile(r"\$([0-9A-Fa-f]{4})\s*(?:-|\.\.|\bto\b)\s*\$([0-9A-Fa-f]{4})")
-NBYTES = re.compile(r"\b(\d+)[\s-]*(?:[Bb]ytes?|B)\b")
+# 🔴 THE LOOKBEHIND IS NOT DECORATION: `$0B` READ AS "0 BYTES" (D-WIDTHJOIN,
+# 2026-09-21). `TKRTOK ; ... token to emit ($0C/$0B)` names two HEX LITERALS,
+# and the `0` of `$0B` with the `B` after it is exactly this rule's shape, so
+# the cell declared itself ZERO BYTES WIDE and the map believed it. There was
+# already a negative control for `($F9)` -- a hex literal in PARENS -- which is
+# why this one slipped: the hazard is the `$`, not the parentheses.
+NBYTES = re.compile(r"(?<!\$)\b(\d+)[\s-]*(?:[Bb]ytes?|B)\b")
 NBITS = re.compile(r"\b(\d+)[\s-]*bit\b")
 WORDY = re.compile(r"\b(?:word|int16)\b", re.IGNORECASE)
 # 🔴 `byte` ONLY AS A PARENTHESISED TYPE ANNOTATION, never as prose. The first
@@ -202,8 +208,14 @@ BYTEY = re.compile(r"\(byte\)", re.IGNORECASE)
 PARENN = re.compile(r"\((\d+)\)\s*$")
 
 
-def declared_width(addr: int, comment: str | None):
-    """(width, rule) from the cell's own comment, or (None, None)."""
+def _declared_width_inner(addr: int, comment: str | None):
+    """(width, rule) from the cell's own comment, or (None, None).
+
+    🔴 A WIDTH OF ZERO IS NOT A WIDTH, AND THE FIRST CUT RETURNED ONE. Two
+    cells read 0 B off hex literals (`$0B`) and the map carried the figure --
+    a cell cannot be zero bytes wide, so the structural floor below is a second
+    line of defence that does not depend on any one rule's regex being right.
+    """
     if not comment:
         return None, None
     m = RANGE.search(comment)
@@ -225,6 +237,15 @@ def declared_width(addr: int, comment: str | None):
     if BYTEY.search(comment):
         return 1, "byte"
     return None, None
+
+
+def declared_width(addr: int, comment: str | None):          # noqa: F811
+    """`_declared_width` with the structural floor applied: a width of 0 (or
+    less) is refused outright, whichever rule produced it."""
+    w, r = _declared_width_inner(addr, comment)
+    if w is not None and w <= 0:
+        return None, None
+    return w, r
 
 
 # ---------------------------------------------------------------- resolve
@@ -378,10 +399,30 @@ class Map:
         self.width: dict[int, int] = {}
         self.rule: dict[int, str] = {}
         self.disputed: dict[int, list] = {}
+        # 🔴 THE DECLARATION LINE IS TRIED FIRST, THE JOINED BLOCK SECOND, AND
+        # THE TWO RULES THAT MAKE THAT NECESSARY ARE BOTH DELIBERATE (D-WIDTHJOIN,
+        # 2026-09-21). Joining continuation lines is why `SH_SRC` has a width at
+        # all (A10) -- this tree often spells an extent one line below the `equ`.
+        # But rule R6 `(n)` is ANCHORED AT THE END on purpose: its own negative
+        # control is "a (2) that is not at the END of the comment", because a
+        # parenthesised number mid-prose is not a width. JOINING BREAKS THAT
+        # ANCHOR -- `; element address (2)` ends its line with a width and then
+        # has the next section's paragraph glued after it, so the `(2)` stops
+        # being final and the cell reads UNDECLARED.
+        # 🎯 MEASURED: 19 cells were pinned `undeclared` whose OWN line declares
+        # a width in so many words. `purpose()` already carries half of this
+        # lesson ("it reads the DECLARATION LINE, not the joined block") and the
+        # width reader did not. Line first, joined as the fallback, keeps both:
+        # the anchor works where it was designed to, and a continuation-line
+        # extent still resolves.
+        line_raw, _ = parse(self.files, joint=False)
         for a in self.addrs:
             cand = []
             for n in self.byaddr[a]:
-                w, r = declared_width(a, self.expr[n][3])
+                own = line_raw.get(n, (None, None, None, None))[3]
+                w, r = declared_width(a, own)
+                if w is None:
+                    w, r = declared_width(a, self.expr[n][3])
                 if w is not None:
                     cand.append((w, r, n))
             if not cand:
@@ -883,6 +924,21 @@ WIDTH_VECTORS = [
      "🔴 NEGATIVE CONTROL: a $-literal is not a range"),
     (0xE800, "lives at $E900-$E9FF", None,
      "🔴 NEGATIVE CONTROL: a range that is not THIS cell's is ignored"),
+    # 🔴 D-WIDTHJOIN (2026-09-21): TWO DEFECTS THE ARMS ABOVE ALL MISSED,
+    # pinned here by the real comment that produced one of them.
+    (0xE02A, "tokeniser: &H/&O constant token to emit ($0C/$0B)", None,
+     "🔴 NEGATIVE CONTROL, AND IT SHIPPED WRONG: `$0B` read as `0 B`, so "
+     "TKRTOK declared itself ZERO bytes wide. The `($F9)` control above "
+     "missed it because the hazard is the `$`, not the parens"),
+    (0xE02B, "a plain 0 B claim", None,
+     "🔴 NEGATIVE CONTROL: a width of ZERO is refused whatever rule made it"),
+    (0xE02C, "0 bytes of anything", None,
+     "🔴 NEGATIVE CONTROL: the same floor through the spelled-out form"),
+    (0xE02D, "emit $1B then $2B", None,
+     "🔴 NEGATIVE CONTROL: neither hex literal is a byte count"),
+    (0xE02E, "a 12 B cell that mentions $0B in passing", 12,
+     "🟢 POSITIVE CONTROL: the lookbehind must not blind the rule to a REAL "
+     "count sitting beside a hex literal"),
 ]
 
 
@@ -897,7 +953,7 @@ def selftest(lo, hi) -> int:
             bad.append(f"${addr:04X} {cmt!r}: want {want}, got {got}")
         print(f"    A3 {'ok ' if got == want else 'FAIL'} "
               f"{str(want):>5} <- {cmt[:46]!r:48} {why}")
-    ok["A3 width vocabulary (14 vectors, 7 negative)"] = not bad
+    ok["A3 width vocabulary (19 vectors, 11 negative)"] = not bad
     for b in bad:
         print(f"    A3 MISMATCH {b}")
 
