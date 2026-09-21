@@ -3691,6 +3691,31 @@ main page 1 — the body in `sub.rom`, the caller in `disk.rom`. The gain is the
 round trip and the second copy's reachability, the same currency §6.6aw was paid
 in. Read the walls after the slice, do not predict them from it.
 
+🔴 **AND `COPY` IS *NOT* "THE SAME SHAPE WITH FEWER NAMES" — SCOUTED AFTER
+THE SLICE, AND THE HEADLINE §6.6aw AND §6.6ax BOTH CARRIED IS WRONG FOR IT.**
+The good half first: every routine `tnt_copy` calls — `fat_mount`, `fat_find`,
+`fat_delete`, `fat_dir_create`, `fat_open`, `fat_read_file_sector`,
+`fat_flush_data_sector`, `fat_dir_update` — is in `basic/fat-prim-body.inc`,
+which `disk.rom` already includes, and every cell its write cursor uses
+(`FWR_SECIDX`/`FWR_CLUS`/`FWR_FIRST`/`FWR_BYTES`/`FWR_BUFLEN`, `FAT_FILESIZE`)
+is ALREADY declared disk-local in `disk/equates.inc`. No new code has to move.
+
+⚠️ **WHAT IS MISSING IS RAM, AND §6.6av'S QUESTION COMES BACK WITH IT.**
+`COPY_SRC` (11 B), `COPY_CLUS` (2 B) and `COPY_LEFT` (4 B) are MAIN sysvars with
+no disk-local twin. And `COPY_SRC` is not scratch: the whole reason
+`DISKOP_SEL_COPYSTASH` exists is that `DISK_FCB_NAME` is the only 8.3 buffer, so
+the SOURCE name must survive main evaluating the DESTINATION expression through
+`fname_expr` — the very thing `KILL` avoided by having one name. **11 of those
+17 bytes must live where main's expression evaluator cannot reach them**, which
+is a disk-local RAM claim, not a scratch pick. `COPY_CLUS`/`COPY_LEFT` are live
+only inside the copy loop, where no call-back happens, so those 6 bytes are free
+to go anywhere.
+
+🎯 **THE PRIZE IS BIGGER THAN `KILL`'s, THOUGH:** with `COPY_SRC` local the
+stash becomes an `ldir` in this ROM and **BOTH** `dirverb_op` call-backs go, so
+`hk_copy` loses the tenant entirely rather than one of two crossings. Acceptance
+is `copy-acceptance`'s eight byte-for-byte rows.
+
 ## 6.7 🔍 GAP ANALYSIS — zerobas AGAINST THE MEASURED PROTOCOL (D-HOOKCENSUS, 2026-09-19)
 
 > 🏗️ **RULED BY JOOST, 2026-09-20: *"I think the answer to Two is obvious: we do
