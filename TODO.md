@@ -1329,12 +1329,37 @@ item — do **one item per session** to keep context lean.
       ~7× the frames; the reference's own 12000-iteration point saturates too.
       ⬇️ The original diagnosis is kept below, inverted rather than deleted.
 
-- [ ] 🔬 **`ex_stop`'s MISSING EDGE SEED RESTS ON A ROW THAT NEVER TESTED IT.**
-      🎚️ TIER 5 — EVERY ERROR. Almost certainly inert either way; this is a
+- [x] 🟢 **`ex_stop`'s MISSING EDGE SEED — CLOSED 2026-09-22 (D-STOPSEED):
+      THE DECISION STANDS, ON EVIDENCE THAT ACTUALLY TESTS IT.**
+      🎚️ TIER 5 — EVERY ERROR. Inert either way, as expected; this was a
       correctness-of-the-record item, not a behaviour item.
-      🤖 **AUTONOMOUS** — our own ROM against a reference that answers at every
-      phase; the separating case does not exist yet, but building it needs no
-      ruling.
+      🤖 **AUTONOMOUS** — our own ROM; no ruling needed and none taken.
+      🎯 **THE WAY IN WAS TO TEST THE *OTHER* REASON.** The spec gives TWO
+      arguments for no-seed. The refuted one is the 122-fire row. The second —
+      *"the case a seed would protect is unreachable for STOP anyway: a held
+      Ctrl-STOP breaks the program before `STOP ON` runs"* — is a REACHABILITY
+      claim about our own ROM, so it needs **no seeded variant to test**. That
+      turned an A/B-build slice into one probe
+      ([`scratchpad/stopseed_probe.py`](scratchpad/stopseed_probe.py)).
+      🔬 **THE SEPARATING CASE IS THE WORD "LINE":** if the break were checked
+      only at a LINE boundary, `STOP ON` on the SAME LINE as the delay would
+      execute with the key down. Both shapes, Ctrl-STOP held 25 s across the
+      enable, three phases each: **`RAN`=0 on both** (the enable never ran),
+      against a control armed BEFORE the delay that saturates at **255 fires in
+      the same press window** — which is what makes the zeroes readable rather
+      than a press that missed.
+      ⚠️ **UNREACHABLE FOR A STRONGER REASON THAN THE SPEC GAVE, AND THE PROBE
+      SAYS SO:** the break lands INSIDE the preceding work, not at the boundary
+      before `STOP ON`, so the enable is unreachable whatever the
+      line/statement granularity is — the same-line row does NOT discriminate
+      between them and does not claim to.
+      🔴 **AND IT COULD NOT REUSE THE SHARED GATE.**
+      `rearmsens_probe.gate()` REFUSES any trial with `ran != 1`, because for
+      its question an un-armed trial is invalid; here `ran` IS the subject, so
+      the shared helper would have refused exactly the interesting outcome.
+      **A precondition in one experiment is a finding in another.**
+      *(the original item, for the record:)*
+      🔬 **IT RESTED ON A ROW THAT NEVER TESTED IT.**
       `docs/spec-traps-t1-stop-reslice.md` deletes `ex_stop`/`es_set`'s edge seed
       on the strength of *"122 fires vs the seeded build's 1"*. D-STOPRELATCH
       showed the 122 is produced by the per-frame shadow release and has nothing
@@ -3988,7 +4013,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:21692 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:21717 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -4154,7 +4179,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:8797 (T-6FE392)8 (T-529ABE)` from `TODO.md:20086 (T-529ABE)`: a
+      `TODO.md:8822 (T-6FE392)8 (T-529ABE)` from `TODO.md:20111 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -9641,7 +9666,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:20086 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:20111 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

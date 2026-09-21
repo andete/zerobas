@@ -619,12 +619,43 @@ with a 127× margin instead of one step. `stop-trap-acceptance`, `trapsvc-accept
 case E asserts a PROPERTY and not equality. The reference's own 12000-iteration point
 reads 255 too and is likewise not a datum.
 
-🙋 **AND ONE THING THIS REOPENS RATHER THAN SETTLES: the SEED.** This file deletes
+🙋 **AND ONE THING THIS REOPENED RATHER THAN SETTLED: the SEED.** This file deletes
 `ex_stop`'s edge seed on the strength of *"122 fires vs the seeded build's 1"* — but the
 122 is not about seeding, so that row never tested the seed. With the per-frame release in
 place a seed would delay the first fire by at most one frame, i.e. it is very nearly
 inert either way; the DECISION is probably still right and its stated EVIDENCE is not.
-Filed in `TODO.md`; do not cite that row for the seed again.
+⛔ **Do not cite that row for the seed again.**
+
+🟢 **SETTLED 2026-09-22 (D-STOPSEED) — BY TESTING THE *OTHER* REASON, WHICH NOBODY HAD
+RUN.** The bullet list above gives a SECOND argument for no-seed, and it is the
+load-bearing one: *"the case a seed would protect (key held across the enable) is
+unreachable for STOP anyway — with the entry `OFF` or suspended, a held Ctrl-STOP breaks
+the program at the line boundary before `STOP ON` runs."* That is a REACHABILITY claim
+about our own ROM, so it needs no seeded variant to test — which is why
+[`scratchpad/stopseed_probe.py`](../scratchpad/stopseed_probe.py) is a reachability probe
+and not an A/B build.
+
+🎯 **THE SEPARATING CASE IS THE WORD "LINE".** If the break were checked only at a LINE
+boundary, putting `STOP ON` on the SAME LINE as the preceding delay would leave no
+boundary between them and the enable would execute with the key still down. Both shapes
+were run, Ctrl-STOP held 25 s across the enable, at three key-down phases each:
+
+| shape | `RAN` (poked immediately AFTER `STOP ON`) | fires |
+|---|---|---|
+| `20 FOR..NEXT` / `30 STOP ON` (a boundary between) | **0** ×3 | 0 |
+| `20 FOR..NEXT:STOP ON:POKE` (no boundary) | **0** ×3 | 0 |
+| control: `STOP ON` BEFORE the delay, same press window | 1 ×3 | **255** |
+
+🔴 **THE CONTROL IS WHAT MAKES THE ZEROES MEAN ANYTHING.** A press that never reached
+the machine would also leave `RAN` untouched by any fire — the armed-first row saturates
+at 255 in the SAME window, so the key is demonstrably down and being seen there.
+
+✅ **SO THE PROTECTED CASE IS UNREACHABLE AND THE NO-SEED DECISION STANDS**, now on
+evidence that tests it. ⚠️ **AND IT IS UNREACHABLE FOR A STRONGER REASON THAN THIS FILE
+GAVE:** the break does not wait for the boundary before `STOP ON` at all — it lands INSIDE
+the preceding work, so the enable is unreachable whatever the line/statement granularity
+is. The same-line row therefore does not discriminate line-vs-statement checking, and this
+probe does not claim it does.
 
 **Arc lesson, again:** the host suite was green through all of this and stayed green — it
 pins zerobas's own state machine, not the oracle. What was never really measured was the
