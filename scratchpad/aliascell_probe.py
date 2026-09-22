@@ -113,10 +113,27 @@ TAIL = [
 # The extent sweep scored these off VRAM, where a NUL is invisible, so "nothing
 # after ABCD" and "four zero bytes" painted identically. Each verb now reports
 # its own LEN and first byte out of RAM instead of being assumed to match KILL.
+# 🔴 `FILES` AND `COPY` ARE THE CONTRAST PAIR THIS PROBE EXISTS TO RESOLVE.
+# The write-side sweep found 7 of 8 judged verbs damage a file being written and
+# `FILES` alone does not -- while `LFILES`, the SAME directory walk differing
+# only in where the characters go, is not evidence either way (its arm blocks
+# before `CLOSE`). So "it mounts, therefore it corrupts" is not the rule, and
+# `FILES` beside a verb that DOES corrupt is the comparison that can name the
+# difference. `COPY` is that verb.
+#
+# ⚠️ AND THE READ SIDE IS A SEPARATE QUESTION FROM THE WRITE SIDE. `FILES` was
+# only ever measured against a file being WRITTEN; whether it corrupts a file
+# being READ has never been run. Both are here.
+#
+# ⚠️ A PRINTING VERB IS FINE IN THIS PROBE AND ONLY IN THIS PROBE: every
+# quantity here -- LEN, the first byte, the cell dumps -- is read out of RAM by
+# watchpoint, so a listing that scrolls the screen disturbs nothing.
 ARMS = [("CONTROL", ["70 X=1"]),
         ("KILL", ['70 KILL"Y.DAT"']),
         ("NAME", ['70 NAME"Y.DAT"AS"W.DAT"']),
-        ("DSKF", ["70 X=DSKF(0)"])]
+        ("DSKF", ["70 X=DSKF(0)"]),
+        ("FILES", ["70 FILES"]),
+        ("COPY", ['70 COPY"Y.DAT"TO"C.DAT"'])]
 
 
 def prologue(log):
@@ -243,15 +260,24 @@ def main(argv):
     if not out.get("CONTROL") or not out.get("KILL"):
         print("\nREFUSED: an arm produced no usable phase set")
         return 2
-    for when in ("verb", "read"):
-        ctl = {c[0] for c in out["CONTROL"][when]}
-        only = [c for c in out["KILL"][when] if c[0] not in ctl]
-        print(f"\n  moved across the {when.upper()} in KILL and NOT in the "
-              f"control ({len(only)}):")
-        for nm, b, a in only[:40]:
-            print(f"    {nm:<24} ${b:02X} -> ${a:02X}")
-        if not only:
-            print("    (none)")
+    # 🔴 EVERY ARM, NOT JUST THE FIRST ONE. The first cut printed KILL's diff
+    # and nothing else, which is exactly the shape that hides the interesting
+    # row: `FILES` is the arm this sweep was extended for and its diff was not
+    # being shown at all [[readout-blind-to-its-own-subject]].
+    for name in [n for n, _ in ARMS if n != "CONTROL"]:
+        if not out.get(name):
+            continue
+        for when in ("verb", "read"):
+            ctl = {c[0] for c in out["CONTROL"][when]}
+            only = [c for c in out[name][when] if c[0] not in ctl]
+            print(f"\n  {name}: moved across the {when.upper()} and NOT in "
+                  f"the control ({len(only)}):")
+            for nm, b, a in only[:24]:
+                print(f"    {nm:<24} ${b:02X} -> ${a:02X}")
+            if len(only) > 24:
+                print(f"    … and {len(only) - 24} more")
+            if not only:
+                print("    (none)")
     return 0
 
 

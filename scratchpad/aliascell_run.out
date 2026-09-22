@@ -4,8 +4,10 @@ D-ALIASCELL: which cell goes to zero? (empty, not garbage)
   KILL    : 20 cell-byte(s) moved across the VERB, 5 across the READ; B$ = 4 char(s), first byte $00
   NAME    : 25 cell-byte(s) moved across the VERB, 5 across the READ; B$ = 4 char(s), first byte $20
   DSKF    : 25 cell-byte(s) moved across the VERB, 5 across the READ; B$ = 4 char(s), first byte $00
+  FILES   : 4 cell-byte(s) moved across the VERB, 6 across the READ; B$ = 4 char(s), first byte $45
+  COPY    : 20 cell-byte(s) moved across the VERB, 5 across the READ; B$ = 4 char(s), first byte $20
 
-  moved across the VERB in KILL and NOT in the control (19):
+  KILL: moved across the VERB and NOT in the control (19):
     DISKOP block+1           $00 -> $01
     DISKOP block+3           $1F -> $73
     DISKOP block+4           $00 -> $E2
@@ -26,6 +28,96 @@ D-ALIASCELL: which cell goes to zero? (empty, not garbage)
     $E5CE                    $4F -> $00
     $E5CF                    $50 -> $00
 
-  moved across the READ in KILL and NOT in the control (0):
+  KILL: moved across the READ and NOT in the control (0):
     (none)
-refcache: 0 hit, 4 miss, 4 stored
+
+  NAME: moved across the VERB and NOT in the control (24):
+    FAT_FIRSTCLUS            $0A -> $09
+    FAT_FILESIZE             $13 -> $04
+    FWR_DIROFF               $E0 -> $C0
+    DISKOP block             $07 -> $03
+    DISKOP block+1           $00 -> $01
+    DISKOP block+2           $01 -> $09
+    DISKOP block+3           $1F -> $73
+    DISKOP block+4           $00 -> $E2
+    $E5C0                    $41 -> $54
+    $E5C1                    $42 -> $45
+    $E5C2                    $43 -> $53
+    $E5C3                    $44 -> $54
+    $E5C4                    $45 -> $20
+    $E5C5                    $46 -> $20
+    $E5C6                    $47 -> $20
+    $E5C7                    $48 -> $20
+    $E5C8                    $49 -> $42
+    $E5C9                    $4A -> $49
+    $E5CA                    $4B -> $4E
+    $E5CB                    $4C -> $20
+    $E5CC                    $4D -> $00
+    $E5CD                    $4E -> $00
+    $E5CE                    $4F -> $00
+    $E5CF                    $50 -> $00
+
+  NAME: moved across the READ and NOT in the control (0):
+    (none)
+
+  DSKF: moved across the VERB and NOT in the control (24):
+    FAT_WRTMP                $FF -> $CB
+    FAT_WRTMP+1              $0F -> $02
+    FAT_WRTMP2               $01 -> $C0
+    FAT_WRTMP2+1             $00 -> $02
+    FWR_CLUS                 $0A -> $CB
+    FWR_CLUS+1               $00 -> $02
+    FWR_FIRST                $0A -> $03
+    DISKOP block             $07 -> $0A
+    $E5C0                    $41 -> $00
+    $E5C1                    $42 -> $00
+    $E5C2                    $43 -> $00
+    $E5C3                    $44 -> $00
+    $E5C4                    $45 -> $00
+    $E5C5                    $46 -> $00
+    $E5C6                    $47 -> $00
+    $E5C7                    $48 -> $00
+    $E5C8                    $49 -> $00
+    $E5C9                    $4A -> $00
+    $E5CA                    $4B -> $00
+    $E5CB                    $4C -> $00
+    $E5CC                    $4D -> $00
+    $E5CD                    $4E -> $00
+    $E5CE                    $4F -> $00
+    $E5CF                    $50 -> $00
+
+  DSKF: moved across the READ and NOT in the control (0):
+    (none)
+
+  FILES: moved across the VERB and NOT in the control (3):
+    FILES_ENTIDX/IN_RDLEN    $04 -> $08
+    DISKOP block             $07 -> $02
+    DISKOP block+1           $00 -> $01
+
+  FILES: moved across the READ and NOT in the control (1):
+    FILES_ENTIDX/IN_RDLEN    $08 -> $04
+
+  COPY: moved across the VERB and NOT in the control (19):
+    DISKOP block+1           $00 -> $01
+    DISKOP block+3           $1F -> $73
+    DISKOP block+4           $00 -> $E2
+    $E5C0                    $41 -> $50
+    $E5C1                    $42 -> $52
+    $E5C2                    $43 -> $4F
+    $E5C3                    $44 -> $47
+    $E5C4                    $45 -> $20
+    $E5C5                    $46 -> $20
+    $E5C6                    $47 -> $20
+    $E5C7                    $48 -> $20
+    $E5C8                    $49 -> $42
+    $E5C9                    $4A -> $41
+    $E5CA                    $4B -> $53
+    $E5CB                    $4C -> $20
+    $E5CC                    $4D -> $00
+    $E5CD                    $4E -> $00
+    $E5CE                    $4F -> $00
+    $E5CF                    $50 -> $00
+
+  COPY: moved across the READ and NOT in the control (0):
+    (none)
+refcache: 0 hit, 6 miss, 6 stored

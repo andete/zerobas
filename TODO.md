@@ -789,13 +789,41 @@ item — do **one item per session** to keep context lean.
       `NAME`/`DSKI$`/`DSKO$` leave it EMPTY, `KILL` NUL-fills the first record,
       `COPY`/`SAVE` leave a DIRECTORY ENTRY (`PROG    BAS`) in the file's first
       bytes, `DSKF` leaves 37 bytes of `$09`.
-      🟢 **AND ONE VERB IS CLEAN: `FILES`.** Byte-identical to the control. That
-      is the row worth explaining, because **`LFILES` is the same directory walk
-      differing only in where the characters go** — so "it mounts, therefore it
-      corrupts" is not the rule. ⚠️ `LFILES` itself is **NOT** evidence either
-      way: its arm never reached `CLOSE` (it blocks with no printer), so the
-      probe REFUSES it rather than counting it. ➡️ **`FILES` vs the rest is the
-      next question, and it is the one that could name the actual difference.**
+      🟢 **AND ONE VERB IS CLEAN: `FILES`.** Byte-identical to the control.
+      ⚠️ `LFILES` is **NOT** evidence either way: its arm never reached `CLOSE`
+      (it blocks with no printer), so the probe REFUSES it rather than counting
+      it.
+      ✅ **AND `FILES` IS NOW EXPLAINED — IT NEVER TOUCHES MAIN'S BUFFER**
+      (`scratchpad/aliascell_probe.py`, `scratchpad/aliascell_run.out`). Across
+      the verb it moves exactly three cell-bytes, and NONE of them is in
+      `$E5C0..$E7BF`: its own `FILES_ENTIDX` (`$E0FC`, `$04`→`$08`) and two
+      bytes of the `DISKOP` marshalling block. The corrupting verbs move 19–25,
+      almost all of them inside main's staged sector. **`FILES` is also clean on
+      the READ side** — first byte `$45` (`E`), where `KILL`/`DSKF` give `$00`.
+      🎯 **SO THE RULE IS NOT "IT MOUNTS" — IT IS "IT REFILLS MAIN'S STAGED
+      SECTOR".** `FILES` mounts, walks the whole root directory and emits every
+      entry, and does it without disturbing one byte of the buffer. **A
+      disk-ROM verb does not have to touch it.**
+      🔴 **AND THAT REFINES WHAT WAS FILED ABOUT THE REMEDY — READ THIS BEFORE
+      QUOTING THE EARLIER LINE.** This item says *"changing the two ROMs'
+      addresses would not close it"*, on the strength of the `174bf887`
+      reproduction. That remains true **about the defect CLASS** and is now too
+      strong **about the shipped ROM**:
+      **(i)** the CLASS is *"something refills main's staged sector and nothing
+      restages it"*, and `174bf887` proves the class does not need aliasing —
+      there the directory work ran in the sub-ROM tenant against main's OWN
+      `FSECTOR_BUF` by name;
+      **(ii)** but that ROUTE no longer exists — those verbs mount locally now —
+      and **every damaging verb measured TODAY reaches the buffer through disk's
+      `WBUF` (`$E560..$E75F`) aliasing it.** `FILES` is the proof that the route
+      is avoidable rather than inherent.
+      ➡️ **SO JOOST'S OPTION (c) — MAKE THE TWO MAPS DISJOINT — WOULD REMOVE
+      EVERY ROUTE THIS TREE CAN CURRENTLY MEASURE**, while leaving the class
+      open: anything that later refills the buffer without a restage bites
+      again, exactly as `174bf887` did. **A route fix, not a class fix** — and
+      that is a real choice rather than the "none of them helps" the earlier
+      line implied. ⚠️ **NOT MEASURED:** whether (c) is affordable, and whether
+      any path outside these nine verbs still reaches the buffer.
       🔬 **BOTH CONTROLS RUN IN THE SAME SWEEP, IN BOTH DIRECTIONS:** `no-disk`
       MUST come back clean (or nothing is attributable) and `KILL` MUST come
       back damaged (or the sweep has stopped being able to see the defect and
@@ -4358,7 +4386,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:22071 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:22099 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -4524,7 +4552,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:9167 (T-6FE392)8 (T-529ABE)` from `TODO.md:20465 (T-529ABE)`: a
+      `TODO.md:9195 (T-6FE392)8 (T-529ABE)` from `TODO.md:20493 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -10011,7 +10039,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:20465 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:20493 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
