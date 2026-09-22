@@ -703,10 +703,37 @@ item — do **one item per session** to keep context lean.
       create ONE file, then open it for input and read — fine, measured in the
       same session, with and without an `A:` drive prefix (`GABCD` / `HABCD`).
       **The second file creation is the trigger.**
-      ⚠️ **WHAT IS NOT ISOLATED YET, AND MUST NOT BE ASSUMED:** whether it is the
-      `OPEN` or the `INPUT$` that hangs; whether two WRITES specifically matter
-      or any two file operations do; and whether MAXFILES, the channel table or
-      the FAT buffers are involved. **The mechanism is unmeasured.**
+      🔬 **NARROWED 2026-09-22 TO ONE RULE THAT FITS EVERY OBSERVATION:**
+      ***after TWO `OPEN … FOR OUTPUT` have completed, the NEXT `OPEN` of any
+      kind hangs.*** Reads alone never hang.
+      | case | sequence | result |
+      |---|---|---|
+      | three `OPEN FOR OUTPUT` | out, out, out | markers 1,2 — **hangs on the 3rd** |
+      | three `OPEN FOR INPUT` | in, in, in | **all three fine** |
+      | two opens (control) | in, in | fine, reaches the end |
+      | the original | out, out, in | **hangs on the `in`** |
+      | same name twice | out(Z), out(Z), in(Z) | **hangs on the `in`** |
+      | interleaved | out, in ✓, out | **hangs after the read** |
+      🔴 **SO IT IS THE WRITE PATH THAT LEAVES STATE**, and it accumulates: one
+      `OPEN FOR OUTPUT` is harmless, two poison the next open whatever its mode.
+      ✅ **AND IT IS `OPEN` ITSELF, NOT `INPUT$`** — a marker placed between the
+      `OPEN` and the first read never prints.
+      ❌ **`MAXFILES=2` DOES NOT FIX IT**, and neither does a bare `CLOSE`
+      before the failing open. It is not a channel-count or channel-release
+      problem.
+      ❌ **AND THE FAT HYPOTHESIS IS REFUTED, NOT UNTESTED.** The obvious cause
+      for a HANG is an unterminated cluster walk, so the resulting image was
+      parsed on the host after two writes: **the disk is perfect** — both
+      directory entries correct, sizes right, single-cluster chains, proper EOC
+      terminators, no loop. Whatever is wrong is in zerobas's IN-MEMORY state,
+      not in what it wrote. That rules out the whole bad-chain family.
+      ⚠️ **STILL UNMEASURED:** WHICH cell the write path leaves poisoned. The
+      candidates are the `FWR_*` write cursor, the directory-create scratch, and
+      the cluster-allocation state — none of them checked yet.
+      ⚠️ **AND THE COUNT IS FROM SIX SEQUENCES, NOT A PROOF.** "Two outputs" is
+      the smallest rule consistent with all of them; a seventh case could still
+      separate "two outputs" from "two DIRECTORY CREATES" — every output here
+      created or truncated a file.
       ⚠️ **NO SUITE CATCHES IT.** `diskbasic-acceptance` is 34/34 and every disk
       gate is green: the batteries exercise one file per case, so the two-file
       sequence has no row anywhere.
@@ -4076,7 +4103,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:21789 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:21816 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -4242,7 +4269,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:8885 (T-6FE392)8 (T-529ABE)` from `TODO.md:20183 (T-529ABE)`: a
+      `TODO.md:8912 (T-6FE392)8 (T-529ABE)` from `TODO.md:20210 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -9729,7 +9756,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:20183 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:20210 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
