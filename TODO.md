@@ -671,10 +671,25 @@ item — do **one item per session** to keep context lean.
       directory verb is left in them. The file header says so; renaming crosses
       the sub-ROM index, the resident ABI and main's veneer.
 
-- [ ] 🔴 **THE THIRD `OPEN` AFTER TWO `OPEN … FOR OUTPUT` SILENTLY ABORTS THE
-      PROGRAM — NO ERROR, NO `Ok`, AND `ON ERROR` NEVER FIRES (D-TWOFILE,
-      2026-09-22)**
-      ⚠️ **"HANGS" WAS MY WORD AND IT IS WRONG — CORRECTED 2026-09-22.** A PC
+- [ ] 🔴 **SCREEN OUTPUT DIES AFTER THE SECOND `PRINT` THAT FOLLOWS DISK
+      ACTIVITY — THE PROGRAM RUNS ON TO COMPLETION (D-TWOFILE, 2026-09-22)**
+      🔴 **THE SUBJECT CHANGED TWICE, AND BOTH EARLIER HEADLINES WERE MINE AND
+      WRONG.** It was filed as *"writing two files then reading one HANGS"*, then
+      corrected to *"the third `OPEN` silently aborts the program"*. **Neither
+      is what happens.** Nothing hangs and nothing aborts: every `OPEN`
+      succeeds, every statement executes, and the program reaches its last line.
+      **What fails is the SCREEN.**
+      🔬 **THE MEASUREMENT THAT SETTLED IT** — `POKE` phase markers (invisible,
+      read by a watchpoint) bracketing `PRINT` markers (visible, read off VRAM),
+      in ONE program: **all six POKE phases were recorded; only the first two
+      PRINTs appeared.** Execution is complete and the display is not.
+      🎯 **AND IT EXPLAINS EVERY EARLIER OBSERVATION AT ONCE**, which is why the
+      first two headlines survived as long as they did: the "missing" error
+      message, the absent `Ok`, the marker that "never printed", and the idle
+      command-prompt PC are all ONE fact — the machine finished and returned to
+      the prompt, and none of it was drawn. **Every symptom I had was the
+      screen's, and I read them all as the disk's.**
+      ⚠️ **THE PC EVIDENCE, KEPT BECAUSE IT IS WHAT BROKE THE FIRST HEADLINE.** A PC
       sample during the failing window puts **93 % of samples at `$11A0`**,
       which is `18 F2` (`jr -14`) in our own ROM image and which
       `scratchpad/speedprof_rig.py` independently identifies as the **idle
@@ -747,11 +762,23 @@ item — do **one item per session** to keep context lean.
       cluster-allocation state; candidates for the exit are an abort that skips
       the message and a stack unwind that lands past the handler. **None
       checked.**
-      🎯 **THE NEXT STEP IS NAMED:** a silent return to command level with an
-      armed `ON ERROR` is a very short list of code paths — read the abort/
-      `raise_error` path for one that resets `SP` from `SAVSTK` and re-enters the
-      REPL without printing, and check what the write path leaves in the trap
-      state that could steer it there.
+      ❌ **AND THE STACK-LEAK HYPOTHESIS IS REFUTED BY MEASUREMENT, NOT DROPPED.**
+      "After TWO outputs" looks exactly like a per-open leak, so `SP` was
+      sampled at every phase via a watchpoint: **`$CE01` at all of them, with no
+      drift.** Nothing is leaking.
+      ❌ **`CLEAR200,&HCFFF` IS NOT THE DIFFERENCE EITHER.** It appeared in the
+      working run and not the failing ones, which made it the obvious cause; a
+      with/without pair reached all four phases BOTH ways.
+      ➡️ **THE NEXT STEP IS THE SCREEN, NOT THE DISK.** The cursor cells read
+      `CSRY=24 CSRX=1` at every phase — row 24, which is BELOW the console's
+      usable area on a machine whose `KEY ON` bound is 23. Candidates, none
+      checked: the scroll bound (`CRTCNT`/`CON_LASTROW`), a console cell inside
+      a disk buffer window, and the function-key line's row. ⚠️ §6.6q's overlap
+      question is now a SUSPECT rather than a neighbour.
+      ⚠️ **AND THE APPARATUS IS NOT YET RULED OUT:** M1 and M2 appear in the same
+      capture that lacks M3 and M4, which argues for a real screen-side failure
+      rather than a capture artefact — but no row has yet re-read VRAM a second
+      time to prove the pixels are absent rather than the reading.
       ⚠️ **AND THE COUNT IS FROM SIX SEQUENCES, NOT A PROOF.** "Two outputs" is
       the smallest rule consistent with all of them; a seventh case could still
       separate "two outputs" from "two DIRECTORY CREATES" — every output here
@@ -4171,7 +4198,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:21884 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:21911 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -4337,7 +4364,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:8980 (T-6FE392)8 (T-529ABE)` from `TODO.md:20278 (T-529ABE)`: a
+      `TODO.md:9007 (T-6FE392)8 (T-529ABE)` from `TODO.md:20305 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -9824,7 +9851,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:20278 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:20305 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
