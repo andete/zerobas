@@ -178,7 +178,32 @@ EMPTY**; **`DSKF` → 37 bytes of `$09`**. The write stream buffers into the SAM
 `FSECTOR_BUF`, so `CLOSE` flushes the verb's leftovers to disk. ⚠️ **`DSKF` is a
 READ-ONLY query and it destroys a file being written.**
 
-➡️ **THE NEXT ITEM: THE REMAINING VERBS — and the write probe UNBLOCKS THEM.**
+✅ **THE VERB SWEEP IS DONE (`450cd501`): 7 OF 8 JUDGED VERBS DAMAGE THE OPEN
+FILE.** `KILL`, `NAME`, `DSKF`, `COPY`, `DSKI$`, `DSKO$`, `SAVE`.
+`NAME`/`DSKI$`/`DSKO$` leave it EMPTY, `KILL` NUL-fills the first record,
+`COPY`/`SAVE` leave a DIRECTORY ENTRY (`PROG    BAS`) in it, `DSKF` leaves 37
+bytes of `$09`.
+🟢 **AND `FILES` IS CLEAN — byte-identical to the control.**
+⚠️ `LFILES` is NOT evidence either way: its arm never reached `CLOSE` (it blocks
+with no printer) and the probe REFUSES it. **A refusal is not a finding.**
+⚠️ **EACH ARM NOW POKES A COMPLETION MARKER AFTER ITS `CLOSE`** — an empty file
+is what a wiped file AND an unfinished program both look like, and without the
+marker four arms were uninterpretable.
+
+➡️ **THE NEXT ITEM: WHY IS `FILES` CLEAN? — pure measurement, and it is the row
+that could name the actual difference.** `LFILES` is the SAME directory walk
+differing only in where the characters go, so *"it mounts, therefore it
+corrupts"* is NOT the rule. Point `aliasscope_probe.py` (footprint) at `FILES`
+and compare with `COPY`/`KILL`: does `FILES` write into `$E5C0..$E7BF` at all?
+⚠️ **REMEMBER THE FOOTPRINT DOES NOT PREDICT THE OUTCOME** — `OPEN…FOR INPUT`
+wrote `NAME`'s exact footprint and survived — so a zero footprint would be
+informative and a matching one would NOT settle it.
+📋 **ALSO OPEN:** `FIELD`/`LSET` need their OWN sweep against their own control
+(a RANDOM channel the current control does not have). 📋 **THEN** the 12
+`cap_gap > step` sites (TIER 2 🔭). ⚠️ **THE SUPERSEDED LINE BELOW ASKED FOR THE
+VERB SWEEP** — done.
+
+➡️ ~~**THE NEXT ITEM: THE REMAINING VERBS — and the write probe UNBLOCKS THEM.**~~
 `FILES`/`LFILES` were skipped because a listing scrolls the screen the fence is
 read from; `scratchpad/aliaswrite_probe.py` scores off the IMAGE, so a printing
 verb is now testable. Sweep `FILES`, `LFILES`, `COPY`, `FIELD`, `LSET`,
