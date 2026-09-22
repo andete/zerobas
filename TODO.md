@@ -734,6 +734,50 @@ item — do **one item per session** to keep context lean.
       the same-address question — that probe's CONTROL would not run. ➡️ **THAT
       CONTROL IS NOW EXPLAINED AND THE PROBE NEEDS A `run_gap`, NOT A FIX.**
 
+- [ ] 🔴 **`$D000` IS NOT A PRIVATE CELL — THE MACHINE WRITES IT 32 TIMES, AND
+      EVERY `$xx00` PAGE BOUNDARY TOO (D-CELLPRIV, 2026-09-23)**
+      🎚️ TIER 2 — apparatus. It cannot break the ROM, and it silently invents
+      findings, which is the expensive direction.
+      🔭 **SCOUT-THEN-ASK** — the sweep below is mechanical, but retiring or
+      re-running an affected probe is a judgement about what still needs saying.
+      🔬 **MEASURED** (`scratchpad/cellpriv.out`): a program that NEVER pokes
+      `$D000..$D002` still logs **32 writes to `$D000`**, alternating `15` and
+      `240`, during one ordinary disk program. **`CLEAR 200,&HCFFF` does not
+      stop it.** `scratchpad/findquiet.out` swept ten candidates under
+      `CLEAR 200,&HBFFF`: `$D000`, `$CF00`, `$CE00`, `$C800`, `$C000` all take
+      **32**, `$BF00` takes 17, `$B000`/`$A000`/`$9000` take 2 — and **`$CFFE`
+      takes none.** The 32-write pattern lands on `$xx00` addresses, so the
+      customary "round number" choice of marker cell is the worst one available.
+      🔴 **IT FABRICATED A FINDING BEFORE IT WAS CAUGHT.** `aliasfield_probe.py`
+      poked `ERR` to `$D001` and read the log for a non-marker value; it picked
+      up the machine's `15` and reported **`ERR 15` in every arm including the
+      no-disk control**. The tell was the control: an error that appears in the
+      arm that does nothing is the apparatus, not the subject.
+      ➡️ **THE SCOPE, EACH WITH ITS REASON — THREE OF FOUR PROBES SURVIVE:**
+      🟢 `aliaswrite_probe.py` — its marker VALUE is `9`, and the machine writes
+      only `15`/`240`, so the completion flag is sound and `LFILES`'s
+      DID-NOT-FINISH stands. ⚠️ Measured in one run, not proved for all values.
+      🟢 `aliascell_probe.py` — its dumps are SNAPSHOTS tagged by the value read,
+      so a spurious write adds an ignored `p15` line and cannot alter the `p1`/
+      `p2`/`p3` dumps. Its `LEN`/`ASC` cells are `$D001`/`$D002`, which took no
+      machine writes in the measured run.
+      🟢 `aliasbite_probe.py` — reads a screen fence, no marker cell at all.
+      🔴 **`aliasscope_probe.py` IS AFFECTED: ITS COUNTS ARE LOWER BOUNDS.** It
+      gates on `$::ph == 1`, and a machine write of `15` between the two markers
+      closes the window early. **So `KILL` 416 / `NAME` 832+192 / `DSKF`
+      1664+384 / `OPEN-IN` 832+192 are AT LEAST those figures, not exactly.**
+      ⚠️ The DIRECTION of every conclusion drawn from it survives — an
+      under-count cannot invent writes — but *"416 is exactly the width of the
+      overlap"* is **no longer a measured coincidence** and must not be quoted
+      as one until the probe is re-run on a quiet cell.
+      🟢 **AND `FILES`'s ZERO FOOTPRINT DOES NOT REST ON IT** — that came from
+      `aliascell`'s snapshot diff (3 cell-bytes, none in `$E5C0..$E7BF`), which
+      the gating bug cannot reach.
+      ➡️ **THE WORK:** re-run `aliasscope_probe.py` with `PHASE = $CFFE` and
+      `CLEAR 200,&HBFFF`, and sweep the tree for other probes that poke a
+      `$xx00` cell as a marker. ⚠️ **AND VERIFY THE REPLACEMENT, DO NOT TRUST
+      IT** — `$CFFE` is quiet in ONE measured program, which is evidence and not
+      a guarantee; a marker cell is a CLAIM that nobody else writes it.
 - [ ] 🔬 **DO THE 12 PROBE SITES THAT PASS `cap_gap > step` WITH NO `run_gap`
       ACTUALLY CAPTURE THEIR CASES IN TIME? (out of D-TWOFILE, 2026-09-22)**
       🎚️ TIER 2 — reasonable time; it is apparatus, and a suite that captures
@@ -833,11 +877,29 @@ item — do **one item per session** to keep context lean.
       program that never closed looks like; without the marker four arms were
       uninterpretable. With it, `LFILES` is the only one that did not finish —
       `NAME`, `DSKI$` and `DSKO$` ran to `END` and their empty files are real.
-      ⚠️ **`LOAD` and `FIELD`/`LSET` are excluded WITH REASONS, not skipped:**
-      `LOAD` returns to command level so the arm's own `CLOSE` never runs (the
-      damage would be the missing flush, not the verb); `FIELD`/`LSET` need a
-      RANDOM channel the control does not have, so they need their own sweep
-      against their own control.
+      ⚠️ **`LOAD` IS EXCLUDED WITH A REASON, not skipped:** it returns to command
+      level so the arm's own `CLOSE` never runs, and the damage would be the
+      missing flush rather than the verb.
+      ✅ **`FIELD`/`LSET`/`PUT`/`GET` HAVE HAD THEIR OWN SWEEP (2026-09-23,
+      `scratchpad/aliasfield_probe.py`, `scratchpad/aliasfield_run.out`) AND ALL
+      FOUR ARE CLEAN.** They need a RANDOM channel the write sweep's control
+      lacks, so they got their own: every arm opens and `FIELD`s `#2` in the
+      shared body, both controls run in the same sweep, and only the interposed
+      statement differs. `no-disk` clean, `KILL` damaged, **`FIELD`, `LSET`,
+      `PUT` and `GET` all byte-identical to the control**.
+      🎯 **AND `PUT`/`GET` BEING CLEAN IS THE INTERESTING HALF — IT STRENGTHENS
+      THE RULE.** A prediction was stated before the run that they WOULD damage,
+      since they move a sector by definition. They do not: `PUT`/`GET` on
+      channel `#2` are **CHANNEL SWITCHES**, and a channel switch restages. It is
+      the same reason a second `OPEN` and a `PRINT#` on another channel are
+      clean. Every clean row measured so far is a channel switch or touches no
+      buffer; every damaged row is a disk-ROM verb that refills it.
+      ⚠️ **ONE ARM WAS A FIXTURE FAULT FIRST.** `GET#2,1` on a freshly created
+      empty random file correctly raises `Input past end` (ERR 55 — the
+      reference's own behaviour, `basic/field.asm`), so the arm died before its
+      `CLOSE` and reported REFUSED. Seeding the file with one `PUT` in the
+      shared body made it judgeable. **The refusal was about the fixture, never
+      about `GET`.**
       🎚️ TIER 1 — happy path, and the write half is data loss. Open a file,
       read or write, do anything else to the disk, continue: the read returns
       the RIGHT NUMBER of characters and the WRONG CONTENT, and the write puts
@@ -4386,7 +4448,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:22099 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:22161 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -4552,7 +4614,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:9195 (T-6FE392)8 (T-529ABE)` from `TODO.md:20493 (T-529ABE)`: a
+      `TODO.md:9257 (T-6FE392)8 (T-529ABE)` from `TODO.md:20555 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -10039,7 +10101,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:20493 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:20555 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

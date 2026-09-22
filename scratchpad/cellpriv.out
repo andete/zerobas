@@ -1,0 +1,7 @@
+D-CELLPRIV: is $D000..$D002 private to the probe?
+
+  plain            32 write(s) to $D000..$D002 by the MACHINE   e.g. ['D000=15', 'D000=240', 'D000=15', 'D000=240']
+  after-CLEAR      32 write(s) to $D000..$D002 by the MACHINE   e.g. ['D000=15', 'D000=240', 'D000=15', 'D000=240']
+
+VERDICT: plain=32 after-CLEAR=32
+refcache: 0 hit, 2 miss, 2 stored

@@ -1,0 +1,12 @@
+writes by the MACHINE during a full disk program (CLEAR 200,&HBFFF):
+  $D000    32
+  $CFFE     0   <- QUIET
+  $CF00    32
+  $CE00    32
+  $C800    32
+  $C000    33
+  $BF00    17
+  $B000     2
+  $A000     2
+  $9000     2
+refcache: 0 hit, 1 miss, 1 stored

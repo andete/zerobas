@@ -1,0 +1,18 @@
+D-ALIASFIELD: do the RANDOM-file verbs corrupt an open SEQUENTIAL file?
+
+  no-disk   ran to END  b'AAAABBBBCCCCDDDD\r\nEEEEFFFFGGGGHHHH\r\n\x1a'
+  KILL      ran to END  b'\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00EEEEFFFFGGGGHHHH\r\n\x1a'
+  FIELD     ran to END  b'AAAABBBBCCCCDDDD\r\nEEEEFFFFGGGGHHHH\r\n\x1a'
+  LSET      ran to END  b'AAAABBBBCCCCDDDD\r\nEEEEFFFFGGGGHHHH\r\n\x1a'
+  PUT       ran to END  b'AAAABBBBCCCCDDDD\r\nEEEEFFFFGGGGHHHH\r\n\x1a'
+  GET       ran to END  b'AAAABBBBCCCCDDDD\r\nEEEEFFFFGGGGHHHH\r\n\x1a'
+
+  KILL     DATA LOST ON THE MEDIUM — record(s) AAAABBBBCCCCDDDD are absent from the committed file; got b'\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00EEEEFFFFGGGGHHHH\r\n\x1a'
+  FIELD    CLEAN — the file on disk is byte-identical to the control
+  LSET     CLEAN — the file on disk is byte-identical to the control
+  PUT      CLEAN — the file on disk is byte-identical to the control
+  GET      CLEAN — the file on disk is byte-identical to the control
+
+VERDICT: 1 of 5 JUDGED verbs damage the file: KILL
+  controls: no-disk clean (negative) and KILL damaged (positive), both in this run
+refcache: 0 hit, 6 miss, 6 stored
