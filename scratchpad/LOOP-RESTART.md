@@ -141,7 +141,32 @@ Main's own engine already reuses `FSECTOR_BUF` for every file operation. §6.6q'
 new **(c) make them DISJOINT** (no mutual-exclusion argument, cheaper than (a),
 forfeits the shared-body prize). All three are his.
 
-➡️ **THE NEXT ITEM IS D-ALIASBITE'S EXTENT — pure measurement, no ruling.** The
+✅ **D-ALIASBITE'S EXTENT IS SWEPT (`e5ffa6fa`) AND IT REFUTED A CLAIM FILED IN
+`2fef4b0e`.** Seven interposed statements: **`KILL`, `NAME` and `DSKF` truncate;
+a second `OPEN` (in or out), a `PRINT#` on another channel, and a no-disk arm are
+all CLEAN.** So *"main's own engine reuses `FSECTOR_BUF` for any file operation"*
+is FALSE — ordinary channel I/O is fine. ⚠️ `DSKF` is READ-ONLY and truncates.
+🔴 **AND THE FOOTPRINT DOES NOT PREDICT THE OUTCOME:** `OPEN…FOR INPUT AS#2`
+writes the SAME 832/192 as `NAME` and the channel SURVIVES. A watchpoint count
+says what a verb TOUCHES, never whether anything breaks — the two probes are two
+instruments, not one. [[a-footprint-does-not-predict-an-outcome]]
+🎯 **LEADING HYPOTHESIS, FROM OUR OWN SOURCE** (`basic/sysvars.inc`, "Phase 2:
+MAXFILES per-channel context blocks"): the buffer is a CACHE, flushed on switch
+away and re-read on switch back via `fch_restage`. **A channel switch restages; a
+disk-ROM verb is not a channel switch.** NOT established as the cause.
+
+➡️ **THE NEXT ITEM: WHY EMPTY AND NOT GARBAGE.** An overwritten-but-believed
+buffer should return the WRONG BYTES, not none. `FREAD_OFF`/`FREAD_LEFT`
+(`$E9E6`/`$E9E8`) and the `FCH_STATE0` span (`$E9C9..$E9FA`) are all OUTSIDE the
+clobbered window, so **the counter that reaches zero is not identified.** Point
+the `aliasscope` watchpoint method at those cells across the verb. Pure
+measurement, no ruling.
+📋 **ALSO OPEN:** the untested verbs — `FILES`/`LFILES`, `COPY`, `FIELD`, `LSET`,
+`DSKI$`/`DSKO$`, `SAVE`/`LOAD`. ⚠️ A LISTING verb needs a readout that is NOT the
+screen the fence is read from. 📋 **THEN** the 12 `cap_gap > step` sites (TIER 2 🔭).
+⚠️ **THE SUPERSEDED LINE BELOW SAID THE EXTENT SWEEP WAS NEXT** — it is done.
+
+➡️ ~~**THE NEXT ITEM IS D-ALIASBITE'S EXTENT — pure measurement, no ruling.**~~ The
 filed item says so itself: *"THE VERB LIST IS TWO, NOT A CLASS."* Does every
 mounting verb do it? Does it need a disk VERB at all, or does any second file
 operation (a second `OPEN`, a `PRINT#` on another channel) do it? Each answer
