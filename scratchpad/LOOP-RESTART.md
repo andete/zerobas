@@ -170,7 +170,27 @@ whole `FCH_STATE0` span, `FCH_NUM`/`FCH_MODE` all unchanged. Only the BUFFER
 bookkeeping is intact and its data is not — a stale cache serving the last
 writer's leftovers, confirmed by the content FOLLOWING the verb.
 
-➡️ **THE NEXT ITEM: DOES THE WRITE PATH LOSE DATA TOO? — pure measurement.** The
+🔴 **THE WRITE SIDE IS DATA LOSS ON THE MEDIUM (`bbd68eb5`) — THE ITEM IS NOW
+MORE SERIOUS THAN WHEN JOOST WAS ASKED TO RULE ON IT.** `OPEN FOR OUTPUT` ·
+`PRINT#` · *[verb]* · `PRINT#` · `CLOSE`, file read back off the HOST-PARSED FAT
+chain: control correct; **`KILL` → first 18 bytes `$00`**; **`NAME` → the file is
+EMPTY**; **`DSKF` → 37 bytes of `$09`**. The write stream buffers into the SAME
+`FSECTOR_BUF`, so `CLOSE` flushes the verb's leftovers to disk. ⚠️ **`DSKF` is a
+READ-ONLY query and it destroys a file being written.**
+
+➡️ **THE NEXT ITEM: THE REMAINING VERBS — and the write probe UNBLOCKS THEM.**
+`FILES`/`LFILES` were skipped because a listing scrolls the screen the fence is
+read from; `scratchpad/aliaswrite_probe.py` scores off the IMAGE, so a printing
+verb is now testable. Sweep `FILES`, `LFILES`, `COPY`, `FIELD`, `LSET`,
+`DSKI$`/`DSKO$`, `SAVE`, `LOAD` through it. Pure measurement, no ruling.
+📋 **THEN** the 12 `cap_gap > step` sites (`scratchpad/gapscan.py --tracked`,
+TIER 2 🔭, `settle_n` is the instrument).
+🙋 **AND THE REMEDY IS STILL JOOST'S** — (a) same address, (b) one shared
+buffer, (c) DISJOINT. ⚠️ None of them adds a restage, and the defect reproduces
+at `174bf887` with no aliasing anywhere, so **none of the three closes it.**
+⚠️ **THE SUPERSEDED LINE BELOW ASKED ABOUT THE WRITE PATH** — answered.
+
+➡️ ~~**THE NEXT ITEM: DOES THE WRITE PATH LOSE DATA TOO? — pure measurement.**~~ The
 read side is done. `FWR_*` streams through the SAME `FSECTOR_BUF`, so
 `OPEN FOR OUTPUT` · `PRINT#1` · *[disk verb]* · `PRINT#1` · `CLOSE` may commit
 the verb's leftovers TO DISK. That would be data loss on the medium rather than a
