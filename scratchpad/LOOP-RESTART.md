@@ -155,7 +155,34 @@ MAXFILES per-channel context blocks"): the buffer is a CACHE, flushed on switch
 away and re-read on switch back via `fch_restage`. **A channel switch restages; a
 disk-ROM verb is not a channel switch.** NOT established as the cause.
 
-➡️ **THE NEXT ITEM: WHY EMPTY AND NOT GARBAGE.** An overwritten-but-believed
+✅ **"WHY EMPTY AND NOT GARBAGE" IS ANSWERED (`72326acd`) — IT WAS GARBAGE, AND
+THE GARBAGE WAS INVISIBLE.** `LEN(B$)`/`ASC(B$)` read out of RAM: **4 characters
+in every arm**, first byte `$45` (correct) in the control, `$00` after
+`KILL`/`DSKF`, `$20` after `NAME`. **NOTHING IS TRUNCATED** — the wrong BYTES are
+delivered and `CHPUT` paints a NUL as nothing. The item headline, its table and
+two commit messages said "truncates" and were all reading that screen.
+🔴 **AND IT IS WORSE THAN A TRUNCATION:** a short read is detectable by a
+program, four bytes of wrong data are not.
+✅ **THE MECHANISM IS MEASURED, NOT HYPOTHESISED** (`scratchpad/aliascell_probe.py`):
+**NOT ONE ENGINE CELL MOVES** across the verb — `FREAD_OFF`, `FREAD_LEFT`, the
+whole `FCH_STATE0` span, `FCH_NUM`/`FCH_MODE` all unchanged. Only the BUFFER
+(`$E5C0..$E5CF`: `ABCD…` → all `$00`) and 3 bytes of the `DISKOP` block. Main's
+bookkeeping is intact and its data is not — a stale cache serving the last
+writer's leftovers, confirmed by the content FOLLOWING the verb.
+
+➡️ **THE NEXT ITEM: DOES THE WRITE PATH LOSE DATA TOO? — pure measurement.** The
+read side is done. `FWR_*` streams through the SAME `FSECTOR_BUF`, so
+`OPEN FOR OUTPUT` · `PRINT#1` · *[disk verb]* · `PRINT#1` · `CLOSE` may commit
+the verb's leftovers TO DISK. That would be data loss on the medium rather than a
+bad read, and it is strictly worse. Read the file back in the same program AND
+parse the image on the host. ⚠️ **A WRITE-SIDE ARM MUST NOT SCORE OFF THE SCREEN**
+— take lengths and bytes out of RAM or off the host-parsed image.
+📋 **ALSO OPEN:** the untested verbs (`FILES`/`LFILES`, `COPY`, `FIELD`, `LSET`,
+`DSKI$`/`DSKO$`, `SAVE`/`LOAD`) — lower value now the mechanism is known, but
+they are the denominator. 📋 **THEN** the 12 `cap_gap > step` sites (TIER 2 🔭).
+⚠️ **THE SUPERSEDED LINE BELOW ASKED "WHY EMPTY"** — answered; do not re-run it.
+
+➡️ ~~**THE NEXT ITEM: WHY EMPTY AND NOT GARBAGE.**~~ An overwritten-but-believed
 buffer should return the WRONG BYTES, not none. `FREAD_OFF`/`FREAD_LEFT`
 (`$E9E6`/`$E9E8`) and the `FCH_STATE0` span (`$E9C9..$E9FA`) are all OUTSIDE the
 clobbered window, so **the counter that reaches zero is not identified.** Point
