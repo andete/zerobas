@@ -126,7 +126,31 @@ capture**, so the capture fired at RUN+`step` = 3.0 s and read a half-drawn
 screen. `run_gap` is the knob. Pinned by `tests/test_capture_budget.py`
 (emulator-free, 8 rows + a knife) and stated on `_run_cases_impl`'s docstring.
 
-➡️ **THE NEXT ITEM IS THE SAME-ADDRESS QUESTION** (*"should main and `disk.rom`
+✅ **THE SAME-ADDRESS QUESTION IS ANSWERED AS FAR AS MEASUREMENT CAN TAKE IT
+(`2fef4b0e`), AND IT TURNED UP A TIER 1 DEFECT.** `aliasbite_probe.py` only ever
+needed a `run_gap`; with one it says **BITES**. A disk verb between two reads of
+an open channel truncates it: `('ABCD','EFGH')` becomes `('ABCD','')`, silently.
+`aliasscope_probe.py` measured the mechanism — `KILL` writes **416 B** into
+`$E5C0..$E75F` (exactly the overlap's width) and zero above; `NAME` writes 832
+there and 192 into `$E760..$E7BF`.
+🔴 **BUT AN A/B AT `174bf887` REPRODUCES IT IDENTICALLY**, before any local mount
+existed — **the overlap is NOT the cause and fixing it would not close the item.**
+Main's own engine already reuses `FSECTOR_BUF` for every file operation. §6.6q's
+*"has not bitten yet"* is inverted in place, its analysis kept.
+🙋 **THE REMEDY IS JOOST'S** — (a) same address, (b) one shared buffer, or the
+new **(c) make them DISJOINT** (no mutual-exclusion argument, cheaper than (a),
+forfeits the shared-body prize). All three are his.
+
+➡️ **THE NEXT ITEM IS D-ALIASBITE'S EXTENT — pure measurement, no ruling.** The
+filed item says so itself: *"THE VERB LIST IS TWO, NOT A CLASS."* Does every
+mounting verb do it? Does it need a disk VERB at all, or does any second file
+operation (a second `OPEN`, a `PRINT#` on another channel) do it? Each answer
+widens or narrows a TIER 1 defect and none of it needs Joost.
+📋 **THEN:** the 12 `cap_gap > step` probe sites (TIER 2 🔭, `settle_n` is the
+instrument). ⚠️ **THE SUPERSEDED LINE BELOW SAID THE SAME-ADDRESS QUESTION WAS
+NEXT** — it is done; do not re-run it.
+
+➡️ ~~**THE NEXT ITEM IS THE SAME-ADDRESS QUESTION**~~ (*"should main and `disk.rom`
 use the same address for the same thing?"*), which Joost approved
 (*"3.: yes, this one as well"*) and which is TIER 2.
 🟢 **AND ITS BLOCKER IS NOW EXPLAINED:** `scratchpad/aliasbite_probe.py` REFUSED
