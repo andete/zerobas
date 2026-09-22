@@ -1,0 +1,6 @@
+  the program's own POKE 99: 1 at t=20.04
+  foreign writes: 32, t=0.00..0.03
+
+  foreign writes AFTER the program's marker: 0
+  VERDICT: BOOT-TIME ONLY — the cell is safe once the program runs
+refcache: 0 hit, 1 miss, 1 stored

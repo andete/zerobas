@@ -52,6 +52,7 @@ tests/test_capture_budget.py.
 from __future__ import annotations
 
 import os
+import re
 import shutil
 import sys
 import tempfile
@@ -68,9 +69,20 @@ SRC_DSK = os.path.join(ROOT, "disk", "test720.dsk")
 # docstring. Neither is main's own, and the second is NOT a clean control.
 OVERLAP = (0xE5C0, 0xE75F)          # main FSECTOR_BUF ∩ disk WBUF
 BEYOND = (0xE760, 0xE7BF)           # main FSECTOR_BUF ∩ ~20 declared disk cells
-PHASE = 0xD000                      # the phase cell (main RAM, program-owned)
+# 🔴 NOT $D000, AND THE COUNTS THIS PROBE PUBLISHED BEFORE 2026-09-23 WERE
+# LOWER BOUNDS BECAUSE OF IT. The window is gated on `$::ph == 1`, and THE
+# MACHINE writes $D000 32 times per disk program (15/240 alternating,
+# scratchpad/cellpriv.out) -- each one closed the gate early. $CFFE took none of
+# them (scratchpad/findquiet.out), and every $xx00 boundary took all 32, so the
+# round number was the worst available choice.
+# ⚠️ AND THE CELL IS RE-VERIFIED IN EVERY RUN rather than trusted: the callback
+# logs each value written, and a value that is not 1 or 2 REFUSES the run
+# [[a-marker-cell-is-a-claim-nobody-else-writes-it]].
+PHASE = 0xCFFE                      # measured quiet; verified again per run
 
 BODY = [
+    # CLEAR puts BASIC's ceiling well below the marker cell.
+    "1 CLEAR 200,&HBFFF",
     "5 MAXFILES=2",
     '10 OPEN"Y.DAT"FOR OUTPUT AS#1',
     '15 PRINT#1,"X"',
@@ -81,10 +93,10 @@ BODY = [
     "45 ON ERROR GOTO 99",
     '50 OPEN"Z.DAT"FOR INPUT AS#1',
     "60 A$=INPUT$(4,#1)",
-    "65 POKE&HD000,1",                 # window OPENS
+    "65 POKE&HCFFE,1",                 # window OPENS
 ]
 TAIL = [
-    "75 POKE&HD000,2",                 # window CLOSES
+    "75 POKE&HCFFE,2",                 # window CLOSES
     "80 B$=INPUT$(4,#1)",
     "85 CLOSE#1",
     "95 PRINTCHR$(91);A$;B$;CHR$(93):END",
@@ -116,7 +128,8 @@ def prologue(log):
     w = (f'set ::sf [open "{log}" w]\n'
          f'set ::ph 0\n'
          f'debug set_watchpoint write_mem {PHASE} {{}} '
-         f'{{ set ::ph [debug read memory {PHASE}] }}\n')
+         f'{{ set ::ph [debug read memory {PHASE}];'
+         f'  puts $::sf "PH$::ph"; flush $::sf }}\n')
     for name, (lo, hi) in (("OVERLAP", OVERLAP), ("BEYOND", BEYOND)):
         w += (f'debug set_watchpoint write_mem {{{lo} {hi}}} {{}} '
               f'{{ if {{$::ph == 1}} {{ puts $::sf "{name}"; flush $::sf }} }}\n')
@@ -124,9 +137,20 @@ def prologue(log):
 
 
 def counts(path):
+    """{OVERLAP, BEYOND} counts, or None when the phase cell was not private.
+
+    🔴 THE SECOND RETURN IS THE POINT. Every write to the phase cell is logged,
+    and a value other than the two the program pokes means SOMEONE ELSE wrote
+    it -- which silently closes the gate and under-counts. That is exactly what
+    $D000 did, so the claim is re-earned per run instead of written down once."""
     try:
         txt = open(path).read()
     except OSError:
+        return None
+    stray = [v for v in re.findall(r"PH(\d+)", txt) if v not in ("1", "2")]
+    if stray:
+        print(f"    🔴 phase cell NOT private: {len(stray)} foreign write(s), "
+              f"values {sorted(set(stray))[:6]}")
         return None
     return {n: txt.count(n) for n in ("OVERLAP", "BEYOND")}
 
@@ -184,6 +208,14 @@ def selftest():
         verdict(None, quiet).startswith("REFUSED"))
     # and the counter itself: it must be able to see a hit AND to report none.
     p = tempfile.mkstemp(suffix=".log")[1]
+    # 🔴 THE ARM FOR THE REFUSAL THAT WAS ADDED AFTER $D000 WAS CAUGHT: a log
+    # carrying a phase value the program never poked must REFUSE, not count.
+    open(p, "w").write("PH1\nOVERLAP\nPH15\nOVERLAP\nPH2\n")
+    arm("NEGATIVE: a foreign write to the phase cell REFUSES the run",
+        counts(p) is None)
+    open(p, "w").write("PH1\nOVERLAP\nOVERLAP\nPH2\nBEYOND\n")
+    arm("a log with only the program's own phase values counts normally",
+        counts(p) == {"OVERLAP": 2, "BEYOND": 1})
     open(p, "w").write("OVERLAP\nOVERLAP\nBEYOND\n")
     arm("the counter reads a log", counts(p) == {"OVERLAP": 2, "BEYOND": 1})
     open(p, "w").write("")

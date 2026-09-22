@@ -734,7 +734,37 @@ item — do **one item per session** to keep context lean.
       the same-address question — that probe's CONTROL would not run. ➡️ **THAT
       CONTROL IS NOW EXPLAINED AND THE PROBE NEEDS A `run_gap`, NOT A FIX.**
 
-- [ ] 🔴 **`$D000` IS NOT A PRIVATE CELL — THE MACHINE WRITES IT 32 TIMES, AND
+- [x] ✅ **~~`$D000` IS NOT A PRIVATE CELL~~ — IT IS WRITTEN AT **BOOT** AND IS
+      SAFE ONCE A PROGRAM RUNS. THE FAULT WAS READING THE WHOLE LOG
+      (D-CELLPRIV, 2026-09-23)**
+      🔴 **THE HEADLINE FILED HOURS EARLIER WAS MINE AND WAS TOO STRONG.** The
+      32 writes are real and the analysis below is kept, but they are **boot-time
+      RAM sizing**, not live traffic: `15`/`240` alternating at every `$xx00`
+      boundary is a write-pattern-and-read-back memory walk.
+      🔬 **TIMESTAMPED** (`scratchpad/celltime.out`): the 32 foreign writes land
+      at **t = 0.00 … 0.03**; the program's own marker is at **t = 20.04**;
+      **foreign writes after the program's marker: ZERO.**
+      🎯 **SO THE DEFECT WAS IN THE PROBE'S LOG PARSING, NOT IN THE CELL.**
+      `aliasfield_probe.py` scanned the WHOLE watchpoint log — which begins at
+      power-on — for "a value that is not my marker", and found the boot walk.
+      **A watchpoint log spans the entire run, including boot; a marker read has
+      to be scoped to the program's own window.**
+      ✅ **EVERY WORRY IN THE SCOPE SECTION BELOW IS RETIRED, AND ONE BY
+      MEASUREMENT RATHER THAN ARGUMENT:** `aliasscope_probe.py` was re-run on
+      `$CFFE` with a per-run guard that REFUSES on any foreign phase value, and
+      **every figure came back IDENTICAL** — `KILL` 416/0, `NAME` 832/192,
+      `DSKF` 1664/384, `OPEN-IN` 832/192, control 0/0, guard silent. The counts
+      were never lower bounds, and ***"416 is exactly the width of the overlap"*
+      is quotable again.**
+      ✅ **AND THE FOUR TRACKED BATTERY PROBES THAT COUNT IN `$D000` ARE FINE** —
+      `basic_probe_stop_trap.py`, `key_trap`, `strig_trap`, `interval_trap` all
+      use `POKE&HD000,PEEK(&HD000)+1`. Boot is over before their programs start.
+      🟢 **WHAT SURVIVES, AND IT IS WORTH KEEPING:** the probes now sit on
+      `$CFFE` with the claim **re-verified every run** rather than assumed, which
+      is strictly better than being right by luck. ⚠️ And the general rule holds:
+      **a marker cell is a claim, and a log is not a window.**
+      *(the original item, for the record:)*
+      **`$D000` IS NOT A PRIVATE CELL — THE MACHINE WRITES IT 32 TIMES, AND
       EVERY `$xx00` PAGE BOUNDARY TOO (D-CELLPRIV, 2026-09-23)**
       🎚️ TIER 2 — apparatus. It cannot break the ROM, and it silently invents
       findings, which is the expensive direction.
@@ -762,14 +792,14 @@ item — do **one item per session** to keep context lean.
       `p2`/`p3` dumps. Its `LEN`/`ASC` cells are `$D001`/`$D002`, which took no
       machine writes in the measured run.
       🟢 `aliasbite_probe.py` — reads a screen fence, no marker cell at all.
-      🔴 **`aliasscope_probe.py` IS AFFECTED: ITS COUNTS ARE LOWER BOUNDS.** It
-      gates on `$::ph == 1`, and a machine write of `15` between the two markers
-      closes the window early. **So `KILL` 416 / `NAME` 832+192 / `DSKF`
-      1664+384 / `OPEN-IN` 832+192 are AT LEAST those figures, not exactly.**
-      ⚠️ The DIRECTION of every conclusion drawn from it survives — an
-      under-count cannot invent writes — but *"416 is exactly the width of the
-      overlap"* is **no longer a measured coincidence** and must not be quoted
-      as one until the probe is re-run on a quiet cell.
+      🟢 ~~**`aliasscope_probe.py` IS AFFECTED: ITS COUNTS ARE LOWER BOUNDS**~~ —
+      **REFUTED THE SAME DAY, BY RE-RUNNING IT.** The worry was sound in form: it
+      gates on `$::ph == 1`, so a foreign write between the markers WOULD close
+      the window early. It never happened, because the foreign writes are at
+      boot and the window brackets one verb ~20 s later. Re-run on `$CFFE` with
+      a guard that refuses on any foreign phase value: **`KILL` 416/0, `NAME`
+      832/192, `DSKF` 1664/384, `OPEN-IN` 832/192, control 0/0 — IDENTICAL, and
+      the guard stayed silent.**
       🟢 **AND `FILES`'s ZERO FOOTPRINT DOES NOT REST ON IT** — that came from
       `aliascell`'s snapshot diff (3 cell-bytes, none in `$E5C0..$E7BF`), which
       the gating bug cannot reach.
@@ -4448,7 +4478,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:22161 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:22191 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -4614,7 +4644,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:9257 (T-6FE392)8 (T-529ABE)` from `TODO.md:20555 (T-529ABE)`: a
+      `TODO.md:9287 (T-6FE392)8 (T-529ABE)` from `TODO.md:20585 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -10101,7 +10131,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:20555 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:20585 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

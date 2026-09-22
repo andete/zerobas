@@ -1,0 +1,3 @@
+  no-disk-at-all    33 write(s) total,  32 FOREIGN  values ['15', '240']
+  disk-io           33 write(s) total,  32 FOREIGN  values ['15', '240']
+refcache: 0 hit, 2 miss, 2 stored
