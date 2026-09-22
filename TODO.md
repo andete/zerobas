@@ -784,6 +784,32 @@ item — do **one item per session** to keep context lean.
       the session and is what the next program reads back.**
       ⚠️ **AND `DSKF` DOES IT — a read-only free-space query destroys a file
       being written.** No verb here modifies the file it damages.
+      📋 **THE FULL VERB SWEEP, 2026-09-22 — 7 OF 8 JUDGED VERBS DAMAGE THE
+      FILE.** `KILL`, `NAME`, `DSKF`, `COPY`, `DSKI$`, `DSKO$`, `SAVE` all do;
+      `NAME`/`DSKI$`/`DSKO$` leave it EMPTY, `KILL` NUL-fills the first record,
+      `COPY`/`SAVE` leave a DIRECTORY ENTRY (`PROG    BAS`) in the file's first
+      bytes, `DSKF` leaves 37 bytes of `$09`.
+      🟢 **AND ONE VERB IS CLEAN: `FILES`.** Byte-identical to the control. That
+      is the row worth explaining, because **`LFILES` is the same directory walk
+      differing only in where the characters go** — so "it mounts, therefore it
+      corrupts" is not the rule. ⚠️ `LFILES` itself is **NOT** evidence either
+      way: its arm never reached `CLOSE` (it blocks with no printer), so the
+      probe REFUSES it rather than counting it. ➡️ **`FILES` vs the rest is the
+      next question, and it is the one that could name the actual difference.**
+      🔬 **BOTH CONTROLS RUN IN THE SAME SWEEP, IN BOTH DIRECTIONS:** `no-disk`
+      MUST come back clean (or nothing is attributable) and `KILL` MUST come
+      back damaged (or the sweep has stopped being able to see the defect and
+      every `CLEAN` row is a false acquittal). Both held.
+      ⚠️ **EACH ARM ALSO POKES A COMPLETION MARKER AFTER ITS `CLOSE`, AND THAT
+      CHANGED A ROW.** An EMPTY file is what a wiped file looks like AND what a
+      program that never closed looks like; without the marker four arms were
+      uninterpretable. With it, `LFILES` is the only one that did not finish —
+      `NAME`, `DSKI$` and `DSKO$` ran to `END` and their empty files are real.
+      ⚠️ **`LOAD` and `FIELD`/`LSET` are excluded WITH REASONS, not skipped:**
+      `LOAD` returns to command level so the arm's own `CLOSE` never runs (the
+      damage would be the missing flush, not the verb); `FIELD`/`LSET` need a
+      RANDOM channel the control does not have, so they need their own sweep
+      against their own control.
       🎚️ TIER 1 — happy path, and the write half is data loss. Open a file,
       read or write, do anything else to the disk, continue: the read returns
       the RIGHT NUMBER of characters and the WRONG CONTENT, and the write puts
@@ -4332,7 +4358,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:22045 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:22071 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -4498,7 +4524,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:9141 (T-6FE392)8 (T-529ABE)` from `TODO.md:20439 (T-529ABE)`: a
+      `TODO.md:9167 (T-6FE392)8 (T-529ABE)` from `TODO.md:20465 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -9985,7 +10011,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:20439 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:20465 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

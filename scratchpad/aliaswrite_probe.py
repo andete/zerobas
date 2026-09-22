@@ -45,6 +45,7 @@ import fatbuf_probe as FB  # noqa: E402
 ZB = "C-BIOS_MSX1_EU_REPACK_DISK"
 SRC_DSK = os.path.join(ROOT, "disk", "test720.dsk")
 TARGET = "W       DAT"          # 8.3, space-padded -- the file under test
+DONE_CELL = 0xD000              # the arm pokes 9 here after CLOSE
 
 # Two records, distinct and self-describing, so a diff names WHICH half moved.
 REC1 = "AAAABBBBCCCCDDDD"
@@ -62,14 +63,48 @@ BODY = [
 TAIL = [
     f'40 PRINT#1,"{REC2}"',
     "45 CLOSE#1",
+    # 🔴 THE COMPLETION MARKER, AND IT IS NOT OPTIONAL. An EMPTY file is what a
+    # wiped file looks like AND what a program that never reached `CLOSE` looks
+    # like -- the image alone cannot tell them apart, so four arms of the first
+    # sweep were uninterpretable and read as findings. This cell is written
+    # only if the arm ran to the end; a missing 9 makes the row REFUSE instead
+    # of accusing a verb [[an-unnamed-outcome-reads-as-no-outcome]].
+    "50 POKE&HD000,9",
     "95 END",
     '99 PRINTCHR$(91);"E";ERR;CHR$(93)',
     "RUN",
 ]
-ARMS = [("no-disk", ["35 X=1"]),            # negative control -- MUST be clean
-        ("KILL", ['35 KILL"Y.DAT"']),
+# 🔴 TWO CONTROLS, IN BOTH DIRECTIONS, IN THE SAME RUN. `no-disk` MUST come
+# back clean or nothing here is attributable; `KILL` MUST come back damaged or
+# the sweep has stopped being able to see the defect at all. One without the
+# other leaves a whole direction unchecked
+# [[a-null-result-needs-the-instrument-controls-in-the-same-run]].
+#
+# ⚠️ THE READOUT IS THE IMAGE, WHICH IS WHAT MAKES THE PRINTING VERBS TESTABLE.
+# `FILES`/`LFILES` were excluded from the earlier sweeps only because a listing
+# scrolls the screen the fence was read off; nothing here reads the screen.
+#
+# ⚠️ TWO VERBS ARE EXCLUDED, AND NOT FOR CONVENIENCE:
+#   * `LOAD` replaces the stored program and returns to command level, so the
+#     arm's own `PRINT#`/`CLOSE` never execute. The file would be damaged by the
+#     MISSING CLOSE, not by the verb -- an arm that cannot attribute its result.
+#   * `FIELD`/`LSET` need a RANDOM channel (`OPEN … AS #2 LEN=n`) that the
+#     control does not have, so adding them changes the program under test.
+#     They deserve their own sweep against their own control.
+ARMS = [("no-disk", ["35 X=1"]),            # NEGATIVE control -- MUST be clean
+        ("KILL", ['35 KILL"Y.DAT"']),       # POSITIVE control -- MUST be damaged
         ("NAME", ['35 NAME"Y.DAT"AS"V.DAT"']),
-        ("DSKF", ["35 X=DSKF(0)"])]
+        ("DSKF", ["35 X=DSKF(0)"]),
+        ("FILES", ["35 FILES"]),
+        ("LFILES", ["35 LFILES"]),
+        ("COPY", ['35 COPY"Y.DAT"TO"C.DAT"']),
+        ("DSKI$", ["35 Q$=DSKI$(0,0)"]),
+        # DSKO$ writes a RAW SECTOR, which would confound an image readout --
+        # unless it writes back exactly what it just read. Paired with the
+        # matching DSKI$ it rewrites sector 0 byte-identically, so the arm
+        # measures the VERB and not a scribble (docs/spec-basic-dskio.md `o2`).
+        ("DSKO$", ["35 Q$=DSKI$(0,0):DSKO$ 0,0"]),
+        ("SAVE", ['35 SAVE"S.BAS"'])]
 
 
 def geom(d):
@@ -110,8 +145,11 @@ def read_file(img, name8):
     return None
 
 
-def verdict(ctl, sub):
+def verdict(ctl, sub, done=True):
     """Named before the run, so the outcome cannot be chosen after it."""
+    if not done:
+        return ("REFUSED — the arm never reached its CLOSE, so the file on "
+                "disk shows a missing flush and NOT what the verb did to it")
     if ctl is None:
         return ("INSTRUMENT FAULT: the CONTROL never created the file, so no "
                 "row can be attributed to a verb")
@@ -140,6 +178,12 @@ def selftest():
 
     good = (REC1 + "\r\n" + REC2 + "\r\n").encode()
     arm("identical file -> CLEAN", verdict(good, good).startswith("CLEAN"))
+    # 🔴 THE ARM THAT KEEPS AN UNFINISHED RUN FROM ACCUSING A VERB: an empty
+    # file from a program that never closed must REFUSE, not report DATA LOST.
+    arm("NEGATIVE: an arm that did not finish REFUSES, whatever the file says",
+        verdict(good, None, done=False).startswith("REFUSED"))
+    arm("NEGATIVE: ...even when the file looks perfect",
+        verdict(good, good, done=False).startswith("REFUSED"))
     lost = (("\x00" * 16) + "\r\n" + REC2 + "\r\n").encode()
     arm("first record replaced by NULs -> DATA LOST",
         verdict(good, lost).startswith("DATA LOST"))
@@ -168,12 +212,21 @@ def selftest():
 def run(label, lines):
     tmp = tempfile.mkstemp(suffix=".dsk")[1]
     shutil.copyfile(SRC_DSK, tmp)      # never write the tracked fixture
+    log = probe_tmp.tmp(f"aliaswrite_{label}.log")
+    pro = (f'set ::df [open "{log}" w]\n'
+           f'debug set_watchpoint write_mem {DONE_CELL} {{}} '
+           f'{{ puts $::df [debug read memory {DONE_CELL}]; flush $::df }}\n')
     omsx_repl.run_cases(ZB, [(label, BODY + lines + TAIL)], batch=False,
                         reset=(), boot=8.0, step=3.0, cap_gap=2.5,
-                        run_gap=60.0, timeout=900.0, diska=tmp)
+                        run_gap=60.0, timeout=900.0, diska=tmp,
+                        prologue=(pro,))
+    try:
+        done = "9" in open(log).read().split()
+    except OSError:
+        done = False
     got = read_file(open(tmp, "rb").read(), TARGET)
-    print(f"  {label:9} {got!r}")
-    return got
+    print(f"  {label:9} {'ran to END' if done else 'DID NOT FINISH'}  {got!r}")
+    return (done, got)
 
 
 def main(argv):
@@ -185,10 +238,37 @@ def main(argv):
         print(f"INSTRUMENT FAULT: no test disk at {SRC_DSK}")
         return 2
     out = {n: run(n, l) for n, l in ARMS}
-    ctl = out["no-disk"]
+    if not out["no-disk"][0]:
+        print("\nINSTRUMENT FAULT: the CONTROL never reached its CLOSE")
+        return 2
+    ctl = out["no-disk"][1]
     print()
-    for name, _ in ARMS[1:]:
-        print(f"  {name}: {verdict(ctl, out[name])}")
+    rows = [(n, verdict(ctl, out[n][1], out[n][0])) for n, _ in ARMS[1:]]
+    for name, v in rows:
+        print(f"  {name:8} {v}")
+    # 🔴 THE POSITIVE CONTROL IS CHECKED, NOT JUST PRINTED. A sweep whose known
+    # -damaged arm comes back CLEAN has lost the ability to see the defect, and
+    # every "clean" below it would be a false acquittal.
+    kill = dict(rows)["KILL"]
+    if not kill.startswith(("DATA LOST", "GONE", "DIFFERS")):
+        print(f"\n🔴 INSTRUMENT FAULT: the POSITIVE control (KILL) came back "
+              f"{kill.split(chr(8212))[0].strip()} — the sweep can no longer "
+              f"see the defect, so no 'CLEAN' row above is evidence.")
+        return 2
+    # 🔴 A REFUSAL IS NOT A FINDING. The first cut counted "anything not CLEAN"
+    # as damage, which swept the one arm that could not be judged into the
+    # accusation -- the tally line would have said 8 where the evidence supports
+    # 7 [[an-unnamed-outcome-reads-as-no-outcome]].
+    bad = [n for n, v in rows if v.startswith(("DATA LOST", "GONE", "DIFFERS"))]
+    ref = [n for n, v in rows if v.startswith("REFUSED")]
+    judged = len(rows) - len(ref)
+    print(f"\nVERDICT: {len(bad)} of {judged} JUDGED verbs damage the file: "
+          f"{', '.join(bad) if bad else '(none)'}")
+    if ref:
+        print(f"  {len(ref)} arm(s) could not be judged and are NOT counted "
+              f"either way: {', '.join(ref)}")
+    print("  controls: no-disk clean (negative) and KILL damaged (positive), "
+          "both in this run")
     return 0
 
 
