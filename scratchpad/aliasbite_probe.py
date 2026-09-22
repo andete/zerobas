@@ -36,6 +36,16 @@ disturbs its own readout is this project's oldest tax.
 read MUST return the next four bytes; if it does not, the probe is measuring its
 own file handling and says so instead of blaming the overlap.
 
+🔴 **THIS PROBE READS THE SCREEN, AND THE SCREEN CANNOT DRAW A NUL.** An arm
+reported here as `('ABCD', '')` does NOT mean the read returned nothing:
+`aliascell_probe.py` measures `LEN(B$)` out of RAM and gets **4 characters in
+every arm**, with first byte `$00` after `KILL`/`DSKF` and `$20` after `NAME`.
+Nothing is truncated; the wrong BYTES are delivered and `CHPUT` paints them as
+nothing. Three headlines of this investigation were read off this screen and
+three were wrong. **A blank here is "the screen showed nothing", never "the
+machine returned nothing"** -- for a length or a byte value, use
+`aliascell_probe.py` [[readout-blind-to-its-own-subject]].
+
     python3 -u scratchpad/aliasbite_probe.py [--selftest]
 """
 from __future__ import annotations
@@ -144,8 +154,11 @@ def verdict(ctl, sub):
         return ("CLEAN — a disk-ROM mount between two reads of an open channel "
                 "does NOT corrupt it; the 416 B overlap does not bite today")
     return (f"BITES — the control reads {ctl} and the same program with one "
-            f"KILL between the reads reads {sub}: a disk-ROM mount destroys an "
-            f"open channel's cached sector")
+            f"interposed statement reads {sub}: the verb refills the sector "
+            f"main had staged for the open channel, and the next read serves "
+            f"its leftovers. ⚠️ THE SECOND ELEMENT IS A SCREEN READING: a blank "
+            f"means the bytes did not PAINT, not that none were returned "
+            f"(aliascell_probe.py reads the true length out of RAM)")
 
 
 def selftest():

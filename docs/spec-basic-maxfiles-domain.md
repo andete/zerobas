@@ -36,7 +36,7 @@ Gate: `make chancost-characterize`.
 
 ## 0. The filed item is STALE — measured, not read off the diff
 
-TODO ([`../TODO.md:16325 (T-F37B1B)`](../TODO.md:16325)) says `MAXFILES=16` raises **ERR 2
+TODO ([`../TODO.md:16346 (T-F37B1B)`](../TODO.md:16346)) says `MAXFILES=16` raises **ERR 2
 `syntax error`** on zerobas where the reference raises **ERR 5 `Illegal function
 call`**. That was fixed by `61e3a48` ("S-FCH-2: measure it, and land the half
 that costs nothing"), which turned `ex_maxfiles`'s two `jp cc,stmt_error` rejects
@@ -179,7 +179,7 @@ until §2's measurement says what is wrong.
 3. [`spec-basic-filechan-alloc.md`](spec-basic-filechan-alloc.md) §7 — the
    S-FCH-2 bullet lists ERR 5 as landed already (§5c does say so), but §7's
    summary line still reads as though the class work is open.
-4. [`../TODO.md:16325 (T-F37B1B)`](../TODO.md:16325) — the item itself.
+4. [`../TODO.md:16346 (T-F37B1B)`](../TODO.md:16346) — the item itself.
 
 ## 5. Gates
 

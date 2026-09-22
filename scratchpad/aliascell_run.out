@@ -1,0 +1,31 @@
+D-ALIASCELL: which cell goes to zero? (empty, not garbage)
+
+  CONTROL : 1 cell-byte(s) moved across the VERB, 5 across the READ; B$ = 4 char(s), first byte $45
+  KILL    : 20 cell-byte(s) moved across the VERB, 5 across the READ; B$ = 4 char(s), first byte $00
+  NAME    : 25 cell-byte(s) moved across the VERB, 5 across the READ; B$ = 4 char(s), first byte $20
+  DSKF    : 25 cell-byte(s) moved across the VERB, 5 across the READ; B$ = 4 char(s), first byte $00
+
+  moved across the VERB in KILL and NOT in the control (19):
+    DISKOP block+1           $00 -> $01
+    DISKOP block+3           $1F -> $73
+    DISKOP block+4           $00 -> $E2
+    $E5C0                    $41 -> $00
+    $E5C1                    $42 -> $00
+    $E5C2                    $43 -> $00
+    $E5C3                    $44 -> $00
+    $E5C4                    $45 -> $00
+    $E5C5                    $46 -> $00
+    $E5C6                    $47 -> $00
+    $E5C7                    $48 -> $00
+    $E5C8                    $49 -> $00
+    $E5C9                    $4A -> $00
+    $E5CA                    $4B -> $00
+    $E5CB                    $4C -> $00
+    $E5CC                    $4D -> $00
+    $E5CD                    $4E -> $00
+    $E5CE                    $4F -> $00
+    $E5CF                    $50 -> $00
+
+  moved across the READ in KILL and NOT in the control (0):
+    (none)
+refcache: 0 hit, 4 miss, 4 stored

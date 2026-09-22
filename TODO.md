@@ -763,24 +763,35 @@ item — do **one item per session** to keep context lean.
       reads a value the program set BEFORE the slow part is unaffected. The
       verdict has to be per-ROW, not per-site.
 
-- [ ] 🔴 **A DISK VERB BETWEEN TWO READS OF AN OPEN CHANNEL TRUNCATES IT, AND
-      SAYS NOTHING (D-ALIASBITE, 2026-09-22)**
+- [ ] 🔴 **A DISK VERB BETWEEN TWO READS OF AN OPEN CHANNEL MAKES THE NEXT READ
+      HAND BACK THE WRONG BYTES, AND SAYS NOTHING (D-ALIASBITE, 2026-09-22)**
       🎚️ TIER 1 — happy path. Open a file, read, do anything else to the disk,
-      read again: the second read returns an EMPTY string and the program runs
-      on with wrong data. No error is raised and no handler fires.
+      read again: the second read returns the RIGHT NUMBER of characters and the
+      WRONG CONTENT. No error is raised and no handler fires.
+      🔴 **"TRUNCATES" WAS WRONG, AND IT WAS A SCREEN ARTEFACT — CORRECTED
+      2026-09-22 (`scratchpad/aliascell_probe.py`).** `LEN(B$)` and `ASC(B$)`
+      read out of RAM rather than off VRAM say **4 characters in every arm**:
+      control first byte `$45` (`E`, correct), `KILL` `$00`, `DSKF` `$00`,
+      `NAME` `$20`. Nothing is truncated and nothing is short. **A NUL is
+      invisible to `CHPUT`**, so four zero bytes and an empty string painted the
+      same `[ABCD]` and the readout could not tell them apart.
+      ⚠️ **THAT MAKES IT WORSE, NOT BETTER.** A short read is at least
+      detectable by a program; four bytes of the wrong data are not. And the
+      content follows the VERB — zeros after `KILL`/`DSKF`, directory padding
+      after `NAME` — which is the signature of a stale cache serving whatever
+      the last writer left, not of a counter reaching zero.
       🙋 **NEEDS-JOOST** — the FINDING is complete and the REMEDY is his: every
       candidate fix moves a buffer or an invariant he owns, and the
       same-address item below already says *"do not start either without him"*.
       🔬 **MEASURED** (`scratchpad/aliasbite_probe.py`, `scratchpad/aliasbite_run.out`,
       `C-BIOS_MSX1_EU_REPACK_DISK`): the same program ± one statement —
       `OPEN"Z.DAT"FOR INPUT` · `A$=INPUT$(4,#1)` · *[verb]* · `B$=INPUT$(4,#1)`.
-      **CONTROL `('ABCD','EFGH')` · with one `KILL` `('ABCD','')`.**
-      ⚠️ **THE EMPTY RETURN IS ITSELF A SECOND DIVERGENCE.** `INPUT$(4,#1)`
-      returned a 0-character string rather than 4 characters or an error. 🔴 **NOT
-      MEASURED AGAINST A REFERENCE** — we have no booted disk oracle in this
-      tree, so "the reference raises `Input past end`" is NOT claimed here. What
-      is claimed is that a 4-character request answered with 0 characters and no
-      error is wrong on its own terms.
+      The screen shows `[ABCD]` where the control shows `[ABCDEFGH]`; the RAM
+      readout above says the four missing characters were DELIVERED, as `$00`.
+      🔴 **NOT MEASURED AGAINST A REFERENCE** — there is no booted disk oracle in
+      this tree, so nothing is claimed here about what the reference does. What
+      is claimed is that a read which returns file data the file does not contain,
+      with no error, is wrong on its own terms.
       🔬 **THE MECHANISM, MEASURED AND NOT GUESSED**
       (`scratchpad/aliasscope_probe.py`, `scratchpad/aliasscope_run.out`): a
       write watchpoint over main's `FSECTOR_BUF`, counted ONLY between two
@@ -809,9 +820,9 @@ item — do **one item per session** to keep context lean.
       | `OPEN…FOR INPUT AS#2` | `EFGH` | clean |
       | `OPEN…FOR OUTPUT AS#2` | `EFGH` | clean |
       | `PRINT#2` | `EFGH` | clean |
-      | `KILL` | *(empty)* | **TRUNCATED** |
-      | `NAME` | *(empty)* | **TRUNCATED** |
-      | `DSKF` | *(empty)* | **TRUNCATED** |
+      | `KILL` | 4 chars, `$00` | **CORRUPTED** |
+      | `NAME` | 4 chars, `$20` | **CORRUPTED** |
+      | `DSKF` | 4 chars, `$00` | **CORRUPTED** |
       🔴 **AND OVERWRITING THE BUFFER IS NOT SUFFICIENT — THE FOOTPRINT DOES NOT
       PREDICT THE OUTCOME.** `OPEN…FOR INPUT AS#2` writes **832** bytes into
       `$E5C0..$E75F` and **192** into `$E760..$E7BF` — byte-for-byte the same
@@ -826,14 +837,24 @@ item — do **one item per session** to keep context lean.
       sector; a disk-ROM verb is not a channel switch.** `OPEN`/`PRINT#` on #2
       trash the buffer and main re-reads on the way back; `KILL`/`NAME`/`DSKF`
       trash it and main still believes its staged sector is valid.
-      ⚠️ **THAT IS THE LEADING HYPOTHESIS, NOT AN ESTABLISHED CAUSE.** It explains
-      all seven arms and it is the tree's own documented design, but the route by
-      which a trashed buffer yields an EMPTY string rather than GARBAGE is **not
-      measured** — an overwritten-but-believed buffer should return the wrong
-      bytes, not none. `FREAD_OFF`/`FREAD_LEFT` (`$E9E6`/`$E9E8`) and the
-      `FCH_STATE0` span (`$E9C9..$E9FA`) are all OUTSIDE the clobbered window, so
-      the counter that reaches zero has not been identified. **That is the next
-      measurement.**
+      ✅ **AND IT IS NOW THE MEASURED MECHANISM, NOT A HYPOTHESIS**
+      (`scratchpad/aliascell_probe.py`, `scratchpad/aliascell_run.out`): the
+      whole channel state was dumped by name at three phases — before the verb,
+      after it, and after the second read — and diffed against a non-disk
+      control. **NOT ONE ENGINE CELL MOVES.** `FREAD_OFF`, `FREAD_LEFT`, the
+      entire `FCH_STATE0` span, `FCH_NUM`/`FCH_MODE`: all unchanged across the
+      verb. What changes is the BUFFER — `$E5C0..$E5CF` goes from
+      `41 42 43 44 …` (`ABCD…`) to all `$00` — plus 3 bytes of the `DISKOP`
+      marshalling block, which is the crossing's own.
+      🎯 **SO MAIN'S BOOKKEEPING IS INTACT AND ITS DATA IS NOT.** The read serves
+      offset 4..7 of a buffer someone else refilled, exactly as a stale cache
+      does. ⚠️ ~~*"why EMPTY and not GARBAGE"*~~ **DISSOLVES: it WAS garbage, and
+      the garbage was invisible.** The question only existed because the outcome
+      was read off a screen that cannot draw a NUL.
+      🔴 **AND THE CONTENT FOLLOWS THE VERB, WHICH IS THE CONFIRMING DETAIL** —
+      `$00` after `KILL` and `DSKF`, `$20` after `NAME`. A counter reaching zero
+      would give one answer for all three; "whatever the last writer left" gives
+      exactly this.
       🟢 **WHAT SURVIVES INTACT IS THE CONCLUSION THAT MATTERS FOR THE REMEDY:**
       the `174bf887` reproduction still stands and now fits better, not worse —
       there the directory work ran in the sub-ROM tenant against main's OWN
@@ -4291,7 +4312,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:22004 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:22025 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -4457,7 +4478,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:9100 (T-6FE392)8 (T-529ABE)` from `TODO.md:20398 (T-529ABE)`: a
+      `TODO.md:9121 (T-6FE392)8 (T-529ABE)` from `TODO.md:20419 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -9944,7 +9965,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:20398 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:20419 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
