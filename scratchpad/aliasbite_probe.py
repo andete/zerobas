@@ -158,9 +158,18 @@ def selftest():
 def run(label, prog):
     tmp = tempfile.mkstemp(suffix=".dsk")[1]
     shutil.copyfile(SRC_DSK, tmp)      # never write the tracked fixture
+    # 🔴 `run_gap`, NOT `cap_gap` -- AND THIS PROBE IS WHY THE DISTINCTION IS
+    # PINNED. The first cut passed `cap_gap=45.0` to give four disk operations
+    # room. `cap_gap` is the gap AFTER the capture (inter-case spacing); the
+    # RUN->capture budget is `step`, so this program got 3.0 s for ~6 s of work
+    # and its CONTROL came back empty. The probe did the right thing -- it
+    # refused to judge the ROM on a broken control -- but the control was never
+    # broken, and chasing it produced five wrong diagnoses of a defect that does
+    # not exist (D-TWOFILE, withdrawn in b43e19ef). The schedule is now pinned
+    # by tests/test_capture_budget.py. [[a-fact-documented-where-the-caller-never-looks]]
     caps = omsx_repl.run_cases(ZB, [(label, prog)], batch=False, reset=(),
-                               boot=8.0, step=3.0, cap_gap=45.0, timeout=900.0,
-                               diska=tmp)
+                               boot=8.0, step=3.0, cap_gap=2.5, run_gap=60.0,
+                               timeout=900.0, diska=tmp)
     scr = caps[0] or ""
     r = read_fence(scr)
     # \u26a0\ufe0f THE SCREEN IS PRINTED WHENEVER THE READING IS NOT THE EXPECTED

@@ -1423,10 +1423,32 @@ true when it was written. The hook re-architecture makes it false by
 construction: `hk_kill`, `hk_files`, `hk_copy`, `hk_lrset`, `hk_field`,
 `hk_dskf` and `hk_errp` all execute **during** a BASIC statement.
 
-🟢 **IT HAS NOT BITTEN YET, AND THE REASON IS WORTH KNOWING.** Every hook body
-shipped so far reaches the drive by `calbak`ing into MAIN's engine, which fills
-main's own `FSECTOR_BUF` ($E5C0). None of them touches `disk.rom`'s
-`SECTOR_BUF`. The aliasing is real but currently unreachable.
+🔴 ~~**IT HAS NOT BITTEN YET, AND THE REASON IS WORTH KNOWING.**~~ **IT BITES,
+MEASURED 2026-09-22 (D-ALIASBITE).** The analysis below is kept because it is
+correct and it is what made the prediction; only its conclusion is inverted. It
+said every hook body reaches the drive by `calbak`ing into MAIN's engine, which
+fills main's own `FSECTOR_BUF` ($E5C0), so none of them touches `disk.rom`'s
+`SECTOR_BUF` and the aliasing is real but unreachable. **Step 13's four
+local-mount slices ended that**, and `scratchpad/aliasscope_probe.py` now counts
+`disk.rom` writing **416 bytes** of its `WBUF` into main's `FSECTOR_BUF` for one
+`KILL`, and **832 + 192** for one `NAME`, while a BASIC channel is open on it.
+
+⚠️ **AND THE HAZARD IS THE MIRROR OF THE ONE THIS SECTION NAMES.** §6.6q watches
+disk's `SECTOR_BUF` ($E2A0) landing on main's *cells*; what was measured is
+disk's `WBUF` ($E560) landing on main's *data buffer*. Same architecture, other
+direction — so a fix aimed only at `SECTOR_BUF` would leave the measured half
+standing.
+
+🟢 **WHAT SURVIVES INTACT IS THE SECTION'S ACTUAL SUBJECT.** Its premise — *the
+standalone disk ROM only ever runs while booting or driving MSX-DOS, never while
+the BASIC interpreter is live* — is exactly what went false, and this section
+called that two days before it was measured.
+
+🔴 **BUT IT IS NOT THE CAUSE OF THE TIER 1 DEFECT, AND THAT MATTERS FOR ANY FIX
+SITED HERE.** The truncation D-ALIASBITE reports reproduces IDENTICALLY at
+`174bf887`, before any local mount existed: main's own engine already reuses
+`FSECTOR_BUF` for every file operation. Retiring this aliasing is worth doing
+and would not close that item.
 
 🔴 **STEP 9 IS EXACTLY THE CASE THAT BREAKS IT.** `hk_dpload`'s whole point
 (§6.2c) is that `fat_io_getbyte` resolves LOCALLY, so it fills `FAT_DBUF`, which

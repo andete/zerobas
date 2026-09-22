@@ -763,6 +763,58 @@ item — do **one item per session** to keep context lean.
       reads a value the program set BEFORE the slow part is unaffected. The
       verdict has to be per-ROW, not per-site.
 
+- [ ] 🔴 **A DISK VERB BETWEEN TWO READS OF AN OPEN CHANNEL TRUNCATES IT, AND
+      SAYS NOTHING (D-ALIASBITE, 2026-09-22)**
+      🎚️ TIER 1 — happy path. Open a file, read, do anything else to the disk,
+      read again: the second read returns an EMPTY string and the program runs
+      on with wrong data. No error is raised and no handler fires.
+      🙋 **NEEDS-JOOST** — the FINDING is complete and the REMEDY is his: every
+      candidate fix moves a buffer or an invariant he owns, and the
+      same-address item below already says *"do not start either without him"*.
+      🔬 **MEASURED** (`scratchpad/aliasbite_probe.py`, `scratchpad/aliasbite_run.out`,
+      `C-BIOS_MSX1_EU_REPACK_DISK`): the same program ± one statement —
+      `OPEN"Z.DAT"FOR INPUT` · `A$=INPUT$(4,#1)` · *[verb]* · `B$=INPUT$(4,#1)`.
+      **CONTROL `('ABCD','EFGH')` · with one `KILL` `('ABCD','')`.**
+      ⚠️ **THE EMPTY RETURN IS ITSELF A SECOND DIVERGENCE.** `INPUT$(4,#1)`
+      returned a 0-character string rather than 4 characters or an error. 🔴 **NOT
+      MEASURED AGAINST A REFERENCE** — we have no booted disk oracle in this
+      tree, so "the reference raises `Input past end`" is NOT claimed here. What
+      is claimed is that a 4-character request answered with 0 characters and no
+      error is wrong on its own terms.
+      🔬 **THE MECHANISM, MEASURED AND NOT GUESSED**
+      (`scratchpad/aliasscope_probe.py`, `scratchpad/aliasscope_run.out`): a
+      write watchpoint over main's `FSECTOR_BUF`, counted ONLY between two
+      `POKE` markers bracketing the verb, so main's own reads are excluded by
+      construction. Control window silent; `KILL` writes **416** bytes into
+      `$E5C0..$E75F` and zero above; `NAME` writes **832** there **and 192** into
+      `$E760..$E7BF`. 416 is exactly the width of the overlap.
+      🔴 **AND THE A/B SAYS STEP 13 DID NOT CAUSE IT.** §6.6q's *"it has not
+      bitten yet"* rests on every hook body reaching the drive through MAIN's
+      engine, and step 13's four local-mount slices ended that — so the obvious
+      reading is that this arc introduced it. **It did not.** Built
+      `174bf887` (pre-D-KILLLOCAL, `KILL` still round-tripping) into the machine
+      from a detached worktree and ran the same probe: **`('ABCD','')`, identical**
+      (`scratchpad/aliasbite_old.out`). The bug is OLDER than the eviction arc.
+      🎯 **SO THERE ARE TWO INDEPENDENT EXPOSURES AND THE OVERLAP IS ONLY ONE:**
+      **(1)** main's own FAT engine reuses `FSECTOR_BUF` for ANY file operation,
+      so an open channel's cached sector is clobbered by main's own work — this
+      is what bites at `174bf887`, where no disk-ROM buffer is involved at all;
+      **(2)** since step 13, `disk.rom`'s `WBUF` ALSO lands there, measured above.
+      🔴 **THEREFORE FIXING THE OVERLAP WOULD NOT FIX THIS BUG**, and that is the
+      load-bearing consequence for the item below: the same-address work is a
+      real improvement and is **not** the remedy for this defect. A fix has to
+      give an open channel a cached sector that survives other file activity —
+      or re-read it — which is main-side work.
+      ⚠️ **NO SUITE CATCHES IT**, and the shape is familiar: the batteries
+      exercise one channel per case, so "read, do something else, read again"
+      has no row anywhere. `diskbasic-acceptance` is green.
+      ⚠️ **THE VERB LIST IS TWO, NOT A CLASS.** `KILL` and `NAME` both do it;
+      both were chosen because they print nothing. Whether every mounting verb
+      does is untested, and the two differ in FOOTPRINT (`NAME` also writes the
+      per-crossing scratch), so they are not interchangeable evidence.
+      🧭 **FOUND** by giving `aliasbite_probe.py` the `run_gap` its control
+      needed — the probe was right to refuse a verdict on a broken control, and
+      the control was never broken (D-TWOFILE, withdrawn in `b43e19ef`).
 - [ ] 🔬 **SHOULD MAIN AND `disk.rom` USE THE SAME ADDRESS FOR THE SAME THING? —
       JOOST'S QUESTION, AND THE MAP CAN PRICE IT**
       🎚️ TIER 2 — reasonable time; it would retire an apparatus rather than add
@@ -804,6 +856,34 @@ item — do **one item per session** to keep context lean.
       one names the cells to move.
       ⚠️ **DO NOT START EITHER WITHOUT HIM** — (a) spends RAM this tree does not
       have and (b) changes an invariant three shipped slices rest on.
+      🔬 **THE OVERLAP IS NOW MEASURED LIVE, NOT INFERRED FROM THE MAP
+      (2026-09-22, `scratchpad/aliasscope_probe.py`).** A write watchpoint over
+      main's `FSECTOR_BUF`, bracketed to one verb: `KILL` puts **416 bytes** into
+      `$E5C0..$E75F` — exactly the overlap's width — and zero above it; `NAME`
+      puts **832** there and **192** more into `$E760..$E7BF`. The control window
+      is silent. **The aliasing is not theoretical and it is not rare.**
+      🔴 **AND IT IS WORSE THAN "416 B": THERE IS NO MAIN-ONLY PART OF THAT
+      BUFFER AT ALL.** `docs/ram-map.md` declares **23 `disk` cells inside
+      `$E5C0..$E7B1`** — the `$0030` handler's register stashes, `CALSLT_HL`, the
+      `RDBLK`/`FREAD_OFF` state, `WA_SEG`, `CONOUT_CHAR`, `PG_SV_A8`. The
+      *"main data hosts 23 declared disk cells"* line above is that same fact; it
+      means the WBUF overlap is the large contiguous part of a buffer that is
+      shared end to end. ⚠️ A first cut of the probe assumed `$E760..$E7BF` was
+      main-only and used it as a clean CONTROL region — contradicted by a line in
+      this very item. Corrected before any verdict was filed.
+      🔴 **BUT THE DEFECT ABOVE IS NOT CAUSED BY THIS, AND THAT IS THE RESULT
+      THAT SHOULD SHAPE THE ANSWER.** D-ALIASBITE reproduces IDENTICALLY at
+      `174bf887`, before `disk.rom` mounted locally at all: main's own engine
+      reuses `FSECTOR_BUF` for every file operation. **So (a) and (b) are
+      architecture, not a bug fix** — worth doing on their own merits, and they
+      would not close a TIER 1 item.
+      ➡️ **A THIRD PROPOSAL THE MEASUREMENT PUTS ON THE TABLE: (c) MAKE THEM
+      DISJOINT.** Neither the same address nor one shared buffer — just stop the
+      two maps from covering the same bytes. It needs no mutual-exclusion
+      argument, which is (b)'s blocker, and it is strictly cheaper than (a). It
+      does NOT give the shared-body prize (`FAT_DBUF`/`FAT_MBUF` would still be
+      two addresses), so it is a different trade, not a compromise. 🙋 **HIS CALL
+      — all three are his.**
 
 - [ ] 🎚️ **TIER 5 IS NOW "MATCHES THE REFERENCE'S RAM USAGE" — THE RUNG, AND
       WHAT CAN AND CANNOT BE IN IT (D-TIER5RAM, 2026-09-22)**
@@ -4167,7 +4247,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:21880 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:21960 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -4333,7 +4413,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:9007 (T-6FE392)8 (T-529ABE)` from `TODO.md:20274 (T-529ABE)`: a
+      `TODO.md:9056 (T-6FE392)8 (T-529ABE)` from `TODO.md:20354 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -9820,7 +9900,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:20274 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:20354 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
