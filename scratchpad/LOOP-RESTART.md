@@ -190,8 +190,34 @@ with no printer) and the probe REFUSES it. **A refusal is not a finding.**
 is what a wiped file AND an unfinished program both look like, and without the
 marker four arms were uninterpretable.
 
-➡️ **THE NEXT ITEM: WHY IS `FILES` CLEAN? — pure measurement, and it is the row
-that could name the actual difference.** `LFILES` is the SAME directory walk
+✅ **`FILES` IS EXPLAINED (`064b0755`): IT NEVER TOUCHES MAIN'S BUFFER.** Across
+the verb it moves THREE cell-bytes — its own `FILES_ENTIDX` (`$E0FC`) and two of
+the `DISKOP` block — and **none in `$E5C0..$E7BF`**, against 19–25 for the
+corrupting verbs. It is clean on the READ side too (`$45`, `E`).
+🎯 **SO THE RULE IS NOT "IT MOUNTS" — IT IS "IT REFILLS MAIN'S STAGED SECTOR".**
+A disk-ROM verb can mount, walk the whole root directory and emit every entry
+without disturbing a byte.
+🔴 **AND THAT REFINED THE REMEDY ADVICE — DO NOT QUOTE THE OLD LINE.** *"Changing
+the addresses would not close it"* is true of the defect CLASS and was TOO STRONG
+about the shipped ROM. `174bf887`'s route (the sub-ROM tenant using main's own
+buffer BY NAME) **no longer exists**; every damaging verb measured today reaches
+the buffer through disk's `WBUF` ALIASING it. **So (c) DISJOINT would remove
+every route this tree can measure** — a ROUTE fix, not a CLASS fix. That is a
+real choice, not "none of them helps". ⚠️ Unmeasured: whether (c) is affordable,
+and whether any path outside these nine verbs reaches the buffer.
+
+➡️ **THE NEXT ITEM: `FIELD`/`LSET`, WHICH NEED THEIR OWN SWEEP.** They require a
+RANDOM channel (`OPEN … AS #n LEN=`) that the current control does not have, so
+they need their own control rather than being bolted onto `aliaswrite_probe.py`.
+Pure measurement, no ruling.
+📋 **THEN** the 12 `cap_gap > step` sites (`scratchpad/gapscan.py --tracked`,
+TIER 2 🔭, `settle_n` is the instrument, advisory not a gate).
+🔴 **AFTER THOSE TWO THE QUEUE IS EMPTY — GO TO JOOST.** The remedy has waited
+since `2fef4b0e` and the item has grown twice since: the write side is data loss,
+and (c) now looks materially better than when it was filed.
+⚠️ **THE SUPERSEDED LINE BELOW ASKED WHY `FILES` IS CLEAN** — answered.
+
+➡️ ~~**THE NEXT ITEM: WHY IS `FILES` CLEAN?**~~ `LFILES` is the SAME directory walk
 differing only in where the characters go, so *"it mounts, therefore it
 corrupts"* is NOT the rule. Point `aliasscope_probe.py` (footprint) at `FILES`
 and compare with `COPY`/`KILL`: does `FILES` write into `$E5C0..$E7BF` at all?
