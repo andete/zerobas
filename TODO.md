@@ -401,11 +401,22 @@ item — do **one item per session** to keep context lean.
       🔴 **CORRECTED SAME DAY (§6.6an): "a selector value each" WAS MY OWN
       CLAIM AND IT IS WRONG.** §6.6n's generalisation is about the SELECTOR
       MECHANISM only; each of the three has a different blocker.
-      🛑 **10 `OPEN`** — RAM. A channel holds its sector across statements and
-      there is nowhere to put it: §6.6al measured the window 510/512 full, and
-      main's FAT buffers already carry `disk.rom`'s own `R30_*`/`P1_BLIT`/
-      `PG_SV_A8`/`RDBLK_*`. ⚠️ The map's "unattributed runs" are NOT free — the
-      102 B run at `$E15A` holds five undeclared `basic` cells.
+      🟢 **10 `OPEN` — APPROVED BY JOOST, 2026-09-22: *"yes, we need to do
+      this"***. The RAM blocker below is real and stands as a COST, not as a
+      refusal: it is what the slice has to solve, and the PAINT span-stack lever
+      is the named candidate (`GFX_PSTK` is a FIXED 120 × 3 = 360 B array, where
+      the reference grows its spans DOWN FROM `STKTOP` and costs nothing while
+      `PAINT` is not running — `docs/spec-basic-graphics-g5.md` D3).
+      ⚠️ **AND IT IS DOWNSTREAM OF THE SAME-ADDRESS RULING**, which Joost
+      approved in the same breath: both are about where the two ROMs' buffers
+      live, and §6.6q's hazard (`GFX_PSTK` sitting in disk's `SECTOR_BUF`
+      window) is the same fact seen from the other side. Settle that first.
+      🛑 **THE BLOCKER, FOR THE RECORD** — RAM. A channel holds its sector
+      across statements and there is nowhere to put it: §6.6al measured the
+      window 510/512 full, and main's FAT buffers already carry `disk.rom`'s own
+      `R30_*`/`P1_BLIT`/`PG_SV_A8`/`RDBLK_*`. ⚠️ The map's "unattributed runs"
+      are NOT free — the 102 B run at `$E15A` holds five undeclared `basic`
+      cells.
       🛑 **11 `MERGE`** — SHAPE. It must TOKENISE each line (main's job, via the
       sub-ROM), so a disk-side loop needs per-line call-backs that `FOPEN_SEL`'s
       aliasing forbids. §8.9 already lists the reference's shape here as NOT
@@ -664,8 +675,13 @@ item — do **one item per session** to keep context lean.
       JOOST'S QUESTION, AND THE MAP CAN PRICE IT**
       🎚️ TIER 2 — reasonable time; it would retire an apparatus rather than add
       one, and it is upstream of steps 10 and 13.
-      🙋 **NEEDS-JOOST** — the answer is a ruling about RAM architecture, and
-      one of the two readings of it has a real behavioural risk.
+      🤖 **AUTONOMOUS** — **APPROVED BY JOOST, 2026-09-22: *"yes, this one as
+      well"***, answering his own 2026-09-21 question below. The ruling is to
+      DO it; which of the two readings (same address + two buffers, or ONE
+      shared buffer) is still an engineering choice this item must settle with
+      a measurement, and ⚠️ reading (b) is the one that needs the
+      mutual-exclusion argument §6.6q says is NOT established — so it may not be
+      taken on the approval alone.
       🙋 **HIS WORDS, 2026-09-21:** *"Shouldn't we try to use the same address
       for both main and disk for the same thing?"*
       🟢 **THE PRIZE IS CONCRETE:** the whole `FAT_DBUF`/`FAT_MBUF` neutral-name
@@ -4013,7 +4029,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:21717 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:21742 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -4179,7 +4195,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:8822 (T-6FE392)8 (T-529ABE)` from `TODO.md:20111 (T-529ABE)`: a
+      `TODO.md:8838 (T-6FE392)8 (T-529ABE)` from `TODO.md:20136 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -9666,7 +9682,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:20111 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:20136 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -10881,8 +10897,17 @@ list. **When a slice lands, grep this list for what it just shipped.**
       that could actually move it. ⚠️ Not read yet, and it changes nothing about
       the charter question below — optimising is only worth starting once "does
       faithful include speed?" is answered.
-      🙋 **NEEDS-JOOST** on the charter question (does faithful include speed?);
-      🤖 the non-repack comparison in §5 is autonomous and comes first.
+      🏗️ **RULED BY JOOST, 2026-09-22: YES — AND IT STAYS TIER 4.** His words,
+      answering *"does faithful include speed?"*: ***"yes but that is tier 4"***.
+      So speed IS part of faithful and the item is no longer gated on a ruling
+      — but its PRIORITY is unchanged, which is the operative half: it comes
+      after every TIER 1–3 item, and picking it ahead of one would be reading
+      the ruling as a promotion it explicitly is not.
+      🤖 **AUTONOMOUS** — the charter question is answered, so the optimising
+      work this item gates is now startable at its own tier. §5's non-repack
+      comparison is already refuted; the live lead is D-SPEEDPROF's profile
+      (`es_scan` and the hot dispatch path), plus the two Z80 references Joost
+      filed on 2026-09-02, still unread.
       🟢 **PROFILED, AND TWO DISPATCH FIXES LANDED — EVERY MEASURED ROW IS 17–26 %
       FASTER FOR ZERO BYTES (D-SPEEDPROF, [`docs/spec-basic-speedprof.md`](docs/spec-basic-speedprof.md),
       2026-09-11).** The item had a ratio and a refuted cause but no profile; a
