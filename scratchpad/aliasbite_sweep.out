@@ -1,0 +1,32 @@
+D-ALIASBITE: WHAT truncates an open main channel? (extent sweep)
+
+  CONTROL   : ('ABCD', 'EFGH')
+  no-disk   : ('ABCD', 'EFGH')
+=== KILL       screen ===
+ zerobas version 0.1                     clean-room MSX1 BASIC                                                           zerobas Disk BASIC                      ZB5 MAXFILES=2                          ZB10 OPEN"Y.DAT"FOR OUTPUT AS#1         ZB15 PRINT#1,"X"                        ZB17 CLOSE#1                            ZB20 OPEN"Z.DAT"FOR OUTPUT AS#1         ZB30 PRINT#1,"ABCDEFGHIJKLMNOP"         ZB40 CLOSE#1                            ZB45 ON ERROR GOTO 99                   ZB50 OPEN"Z.DAT"FOR INPUT AS#1          ZB60 A$=INPUT$(4,#1)                    ZB70 KILL"Y.DAT"                        ZB80 B$=INPUT$(4,#1)                    ZB85 CLOSE#1                            ZB95 PRINTCHR$(91);A$;B$;CHR$(93):END   ZB99 PRINTCHR$(91);"E";ERR;CHR$(93)     ZBRUN                                   [ABCD]                                  ZB                                                                                                                     
+=== end ===
+  KILL      : ('ABCD', '')
+=== NAME       screen ===
+ zerobas version 0.1                     clean-room MSX1 BASIC                                                           zerobas Disk BASIC                      ZB5 MAXFILES=2                          ZB10 OPEN"Y.DAT"FOR OUTPUT AS#1         ZB15 PRINT#1,"X"                        ZB17 CLOSE#1                            ZB20 OPEN"Z.DAT"FOR OUTPUT AS#1         ZB30 PRINT#1,"ABCDEFGHIJKLMNOP"         ZB40 CLOSE#1                            ZB45 ON ERROR GOTO 99                   ZB50 OPEN"Z.DAT"FOR INPUT AS#1          ZB60 A$=INPUT$(4,#1)                    ZB70 NAME"Y.DAT"AS"W.DAT"               ZB80 B$=INPUT$(4,#1)                    ZB85 CLOSE#1                            ZB95 PRINTCHR$(91);A$;B$;CHR$(93):END   ZB99 PRINTCHR$(91);"E";ERR;CHR$(93)     ZBRUN                                   [ABCD    ]                              ZB                                                                                                                     
+=== end ===
+  NAME      : ('ABCD', '')
+=== DSKF       screen ===
+ zerobas version 0.1                     clean-room MSX1 BASIC                                                           zerobas Disk BASIC                      ZB5 MAXFILES=2                          ZB10 OPEN"Y.DAT"FOR OUTPUT AS#1         ZB15 PRINT#1,"X"                        ZB17 CLOSE#1                            ZB20 OPEN"Z.DAT"FOR OUTPUT AS#1         ZB30 PRINT#1,"ABCDEFGHIJKLMNOP"         ZB40 CLOSE#1                            ZB45 ON ERROR GOTO 99                   ZB50 OPEN"Z.DAT"FOR INPUT AS#1          ZB60 A$=INPUT$(4,#1)                    ZB70 X=DSKF(0)                          ZB80 B$=INPUT$(4,#1)                    ZB85 CLOSE#1                            ZB95 PRINTCHR$(91);A$;B$;CHR$(93):END   ZB99 PRINTCHR$(91);"E";ERR;CHR$(93)     ZBRUN                                   [ABCD]                                  ZB                                                                                                                     
+=== end ===
+  DSKF      : ('ABCD', '')
+  OPEN-IN   : ('ABCD', 'EFGH')
+  OPEN-OUT  : ('ABCD', 'EFGH')
+  PRINT#    : ('ABCD', 'EFGH')
+
+  interposed            reads        verdict
+  no-disk     ('ABCD', 'EFGH')       clean
+  KILL        ('ABCD', '')           TRUNCATED
+  NAME        ('ABCD', '')           TRUNCATED
+  DSKF        ('ABCD', '')           TRUNCATED
+  OPEN-IN     ('ABCD', 'EFGH')       clean
+  OPEN-OUT    ('ABCD', 'EFGH')       clean
+  PRINT#      ('ABCD', 'EFGH')       clean
+
+VERDICT: 3 of 7 interposed statements truncate the open channel: KILL, NAME, DSKF
+  the no-disk arm read clean, so the sweep can report BOTH outcomes
+refcache: 0 hit, 8 miss, 8 stored

@@ -65,6 +65,7 @@ SRC_DSK = os.path.join(ROOT, "disk", "test720.dsk")
 # reads fine, measured against a prefix-free twin in the same run. Dropped only
 # because the shorter form is the one proven to work end-to-end here.
 BODY = [
+    "5 MAXFILES=2",
     '10 OPEN"Y.DAT"FOR OUTPUT AS#1',
     '15 PRINT#1,"X"',
     "17 CLOSE#1",
@@ -88,7 +89,32 @@ TAIL = [
     '99 PRINTCHR$(91);"E";ERR;CHR$(93)',
     "RUN",
 ]
-VERB = '70 KILL"Y.DAT"'             # mounts in disk.rom, prints nothing
+# 🔴 THE INTERPOSED STATEMENT IS THE WHOLE EXPERIMENT, SO IT IS A DENOMINATOR
+# AND NOT AN EXAMPLE. Two verbs licensed "KILL and NAME do it" and nothing wider
+# [[a-shared-tail-is-not-a-decision]]. These separate the questions that the
+# two-verb reading cannot: is a MOUNT required, or does any file operation do
+# it? does a READ-ONLY query do it? does it need `disk.rom` at all?
+#
+# ⚠️ `no-disk` IS THE ARM THAT MAKES THE OTHERS READABLE. If every arm reports a
+# truncation, an instrument that always reports one looks identical. This arm
+# touches no file and MUST read clean; if it does not, no other row means
+# anything. [[a-null-result-needs-the-instrument-controls-in-the-same-run]]
+#
+# ⚠️ EVERY ARM PRINTS NOTHING, on purpose: a listing would scroll the screen the
+# fence is read from, and an apparatus that disturbs its own readout is this
+# project's oldest tax.
+CASES = [
+    ("no-disk   ", ["70 X=1"]),                      # negative control
+    ("KILL      ", ['70 KILL"Y.DAT"']),
+    ("NAME      ", ['70 NAME"Y.DAT"AS"W.DAT"']),
+    ("DSKF      ", ["70 X=DSKF(0)"]),                # read-only query, mounts
+    ("OPEN-IN   ", ['70 OPEN"Y.DAT"FOR INPUT AS#2',
+                    "72 CLOSE#2"]),                  # no disk VERB at all
+    ("OPEN-OUT  ", ['70 OPEN"Q.DAT"FOR OUTPUT AS#2',
+                    "72 CLOSE#2"]),
+    ("PRINT#    ", ['70 OPEN"Q.DAT"FOR OUTPUT AS#2',
+                    '72 PRINT#2,"Z"', "74 CLOSE#2"]),
+]
 
 # 8 characters exactly: two 4-char reads concatenated, no separator needed.
 FENCE = re.compile(r"\[([A-Za-z0-9 ]{0,16})\]")
@@ -187,10 +213,28 @@ def main(argv):
     if not os.path.exists(SRC_DSK):
         print(f"INSTRUMENT FAULT: no test disk at {SRC_DSK}")
         return 2
-    print("D-ALIASBITE: does a disk-ROM mount corrupt an open main channel?\n")
-    ctl = run("CONTROL no-verb", BODY + TAIL)
-    sub = run("SUBJECT  with-KILL", BODY + [VERB] + TAIL)
-    print("\nVERDICT:", verdict(ctl, sub))
+    print("D-ALIASBITE: WHAT truncates an open main channel? (extent sweep)\n")
+    ctl = run("CONTROL   ", BODY + TAIL)
+    if ctl != ("ABCD", "EFGH"):
+        print(f"\nINSTRUMENT FAULT: the CONTROL read {ctl}, not "
+              f"('ABCD', 'EFGH') -- no row below can be attributed to its "
+              f"interposed statement.")
+        return 2
+    rows = [(name, run(name, BODY + lines + TAIL)) for name, lines in CASES]
+    print("\n  interposed            reads        verdict")
+    for name, r in rows:
+        mark = "clean" if r == ctl else "TRUNCATED"
+        print(f"  {name}  {str(r):<22} {mark}")
+    neg = dict(rows).get("no-disk   ")
+    if neg != ctl:
+        print(f"\n🔴 INSTRUMENT FAULT: the no-disk arm read {neg}, not {ctl}. "
+              f"Something other than the interposed file operation is "
+              f"truncating the channel; NO verdict is issued about any verb.")
+        return 2
+    bad = [n.strip() for n, r in rows if r != ctl]
+    print(f"\nVERDICT: {len(bad)} of {len(rows)} interposed statements "
+          f"truncate the open channel: {', '.join(bad) if bad else '(none)'}")
+    print("  the no-disk arm read clean, so the sweep can report BOTH outcomes")
     return 0
 
 

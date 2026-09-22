@@ -795,11 +795,51 @@ item — do **one item per session** to keep context lean.
       `174bf887` (pre-D-KILLLOCAL, `KILL` still round-tripping) into the machine
       from a detached worktree and ran the same probe: **`('ABCD','')`, identical**
       (`scratchpad/aliasbite_old.out`). The bug is OLDER than the eviction arc.
-      🎯 **SO THERE ARE TWO INDEPENDENT EXPOSURES AND THE OVERLAP IS ONLY ONE:**
-      **(1)** main's own FAT engine reuses `FSECTOR_BUF` for ANY file operation,
-      so an open channel's cached sector is clobbered by main's own work — this
-      is what bites at `174bf887`, where no disk-ROM buffer is involved at all;
-      **(2)** since step 13, `disk.rom`'s `WBUF` ALSO lands there, measured above.
+      🔴 ~~**SO THERE ARE TWO INDEPENDENT EXPOSURES**~~ — **REFUTED BY THE EXTENT
+      SWEEP, 2026-09-22, AND THE WRONG CLAIM WAS MINE.** I wrote that *"main's
+      own FAT engine reuses `FSECTOR_BUF` for ANY file operation"*. It does reuse
+      it, and that does **not** truncate anything: a second `OPEN` (input or
+      output) and a `PRINT#` on another channel all leave channel #1 intact.
+      ➡️ **THE EXTENT, MEASURED** (`scratchpad/aliasbite_probe.py`,
+      `scratchpad/aliasbite_sweep.out` — one interposed statement per arm, same
+      control, and a `no-disk` arm that MUST read clean or no row counts):
+      | interposed | 2nd read | |
+      |---|---|---|
+      | `X=1` (no disk) | `EFGH` | clean |
+      | `OPEN…FOR INPUT AS#2` | `EFGH` | clean |
+      | `OPEN…FOR OUTPUT AS#2` | `EFGH` | clean |
+      | `PRINT#2` | `EFGH` | clean |
+      | `KILL` | *(empty)* | **TRUNCATED** |
+      | `NAME` | *(empty)* | **TRUNCATED** |
+      | `DSKF` | *(empty)* | **TRUNCATED** |
+      🔴 **AND OVERWRITING THE BUFFER IS NOT SUFFICIENT — THE FOOTPRINT DOES NOT
+      PREDICT THE OUTCOME.** `OPEN…FOR INPUT AS#2` writes **832** bytes into
+      `$E5C0..$E75F` and **192** into `$E760..$E7BF` — byte-for-byte the same
+      footprint as `NAME`, which truncates — and the channel survives. So the
+      aliasing cannot be the explanation on its own. ⚠️ `DSKF` is **read-only**
+      and truncates (1664/384): you do not have to modify the disk.
+      🎯 **THE EXPLANATION THAT FITS EVERY ROW IS IN OUR OWN SOURCE.**
+      `basic/sysvars.inc` §"Phase 2: MAXFILES per-channel context blocks"
+      describes the design: *"It treats the shared buffer as a CACHE: flush on
+      switch away, re-read on switch back. That is what `fch_save_active` /
+      `fch_load_ctx` now do, via `fch_restage`."* **A channel switch restages the
+      sector; a disk-ROM verb is not a channel switch.** `OPEN`/`PRINT#` on #2
+      trash the buffer and main re-reads on the way back; `KILL`/`NAME`/`DSKF`
+      trash it and main still believes its staged sector is valid.
+      ⚠️ **THAT IS THE LEADING HYPOTHESIS, NOT AN ESTABLISHED CAUSE.** It explains
+      all seven arms and it is the tree's own documented design, but the route by
+      which a trashed buffer yields an EMPTY string rather than GARBAGE is **not
+      measured** — an overwritten-but-believed buffer should return the wrong
+      bytes, not none. `FREAD_OFF`/`FREAD_LEFT` (`$E9E6`/`$E9E8`) and the
+      `FCH_STATE0` span (`$E9C9..$E9FA`) are all OUTSIDE the clobbered window, so
+      the counter that reaches zero has not been identified. **That is the next
+      measurement.**
+      🟢 **WHAT SURVIVES INTACT IS THE CONCLUSION THAT MATTERS FOR THE REMEDY:**
+      the `174bf887` reproduction still stands and now fits better, not worse —
+      there the directory work ran in the sub-ROM tenant against main's OWN
+      `FSECTOR_BUF`, with no aliasing anywhere, and it truncated just the same.
+      **Changing the two ROMs' addresses does not add a restage**, so it would
+      not close this item. One defect, two eras, same shape.
       🔴 **THEREFORE FIXING THE OVERLAP WOULD NOT FIX THIS BUG**, and that is the
       load-bearing consequence for the item below: the same-address work is a
       real improvement and is **not** the remedy for this defect. A fix has to
@@ -808,10 +848,14 @@ item — do **one item per session** to keep context lean.
       ⚠️ **NO SUITE CATCHES IT**, and the shape is familiar: the batteries
       exercise one channel per case, so "read, do something else, read again"
       has no row anywhere. `diskbasic-acceptance` is green.
-      ⚠️ **THE VERB LIST IS TWO, NOT A CLASS.** `KILL` and `NAME` both do it;
-      both were chosen because they print nothing. Whether every mounting verb
-      does is untested, and the two differ in FOOTPRINT (`NAME` also writes the
-      per-crossing scratch), so they are not interchangeable evidence.
+      ✅ ~~**THE VERB LIST IS TWO, NOT A CLASS.**~~ **SWEPT 2026-09-22** — seven
+      interposed statements, table above. The class is *disk-ROM verbs*, and it
+      is NOT *file operations*: three of three verbs truncate (including the
+      read-only `DSKF`) and four of four ordinary channel operations do not.
+      ⚠️ **STILL NOT EVERY VERB.** `FILES`/`LFILES`, `COPY`, `FIELD`, `LSET`,
+      `DSKI$`/`DSKO$` and `SAVE`/`LOAD` are untested here; the three measured all
+      print nothing, which is why they were chosen, and a listing verb needs a
+      readout that is not the screen the fence is on.
       🧭 **FOUND** by giving `aliasbite_probe.py` the `run_gap` its control
       needed — the probe was right to refuse a verdict on a broken control, and
       the control was never broken (D-TWOFILE, withdrawn in `b43e19ef`).
@@ -4247,7 +4291,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:21960 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:22004 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -4413,7 +4457,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:9056 (T-6FE392)8 (T-529ABE)` from `TODO.md:20354 (T-529ABE)`: a
+      `TODO.md:9100 (T-6FE392)8 (T-529ABE)` from `TODO.md:20398 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -9900,7 +9944,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:20354 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:20398 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

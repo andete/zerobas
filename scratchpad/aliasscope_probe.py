@@ -38,6 +38,12 @@ buffer, and that is not the finding.
 📏 The counts are taken only between two POKE phase markers that BRACKET the
 verb, so main's own reads before and after are excluded by construction.
 
+🔴 AND THE FOOTPRINT DOES NOT PREDICT THE OUTCOME -- MEASURED, NOT ASSUMED.
+`OPEN"Y.DAT"FOR INPUT AS#2` produces the SAME counts as `NAME` (832 / 192) and
+the open channel SURVIVES it. So a reading here says what a verb TOUCHES; it
+does not say whether the channel breaks. Pair it with aliasbite_probe.py's
+extent sweep, which reads the outcome, and do not infer one from the other.
+
 ⚠️ `run_gap`, not `cap_gap` -- see aliasbite_probe.py's note and
 tests/test_capture_budget.py.
 
@@ -65,6 +71,7 @@ BEYOND = (0xE760, 0xE7BF)           # main FSECTOR_BUF ∩ ~20 declared disk cel
 PHASE = 0xD000                      # the phase cell (main RAM, program-owned)
 
 BODY = [
+    "5 MAXFILES=2",
     '10 OPEN"Y.DAT"FOR OUTPUT AS#1',
     '15 PRINT#1,"X"',
     "17 CLOSE#1",
@@ -88,8 +95,16 @@ TAIL = [
 # channel"; the claim worth making is about any disk-ROM verb that MOUNTS, so
 # the sweep names them [[a-shared-tail-is-not-a-decision]]. Both print nothing,
 # which keeps the screen the fence is read from undisturbed.
-VERBS = [("KILL", '70 KILL"Y.DAT"'),
-         ("NAME", '70 NAME"Y.DAT"AS"W.DAT"')]
+# ⚠️ `OPEN-IN` IS HERE BECAUSE THE EXTENT SWEEP REFUTED THE OBVIOUS STORY. A
+# second `OPEN` on another channel does NOT truncate the first, so "main's own
+# engine reuses FSECTOR_BUF for any file operation" is false. This arm asks the
+# question that separates the remaining explanations: does main's own `OPEN`
+# write into that buffer AT ALL? If it writes and stays clean, writing is not
+# sufficient and the difference lies elsewhere.
+VERBS = [("KILL", ['70 KILL"Y.DAT"']),
+         ("NAME", ['70 NAME"Y.DAT"AS"W.DAT"']),
+         ("DSKF", ["70 X=DSKF(0)"]),
+         ("OPEN-IN", ['70 OPEN"Y.DAT"FOR INPUT AS#2', "72 CLOSE#2"])]
 
 
 def prologue(log):
@@ -198,8 +213,8 @@ def main(argv):
         return 1 if selftest() else 0
     ctl = run("CONTROL  no-verb", BODY + TAIL)
     print()
-    for name, line in VERBS:
-        sub = run(f"SUBJECT  {name}", BODY + [line] + TAIL)
+    for name, lines in VERBS:
+        sub = run(f"SUBJECT  {name}", BODY + lines + TAIL)
         print(f"  VERDICT {name}: {verdict(ctl, sub)}\n")
     return 0
 

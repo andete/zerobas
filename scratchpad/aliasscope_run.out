@@ -8,4 +8,10 @@ D-ALIASSCOPE: is the 416 B overlap the mechanism, or a neighbour?
   SUBJECT  NAME: {'OVERLAP': 832, 'BEYOND': 192}
   VERDICT NAME: WBUF *AND* THE DECLARED CELLS — 832 write(s) in $E5C0..$E75F and 192 in $E760..$E7BF, which holds ~20 declared disk cells: main's buffer is hit by a sector AND by per-crossing scratch, so a mount is not the only exposure
 
-refcache: 0 hit, 3 miss, 3 stored
+  SUBJECT  DSKF: {'OVERLAP': 1664, 'BEYOND': 384}
+  VERDICT DSKF: WBUF *AND* THE DECLARED CELLS — 1664 write(s) in $E5C0..$E75F and 384 in $E760..$E7BF, which holds ~20 declared disk cells: main's buffer is hit by a sector AND by per-crossing scratch, so a mount is not the only exposure
+
+  SUBJECT  OPEN-IN: {'OVERLAP': 832, 'BEYOND': 192}
+  VERDICT OPEN-IN: WBUF *AND* THE DECLARED CELLS — 832 write(s) in $E5C0..$E75F and 192 in $E760..$E7BF, which holds ~20 declared disk cells: main's buffer is hit by a sector AND by per-crossing scratch, so a mount is not the only exposure
+
+refcache: 0 hit, 5 miss, 5 stored
