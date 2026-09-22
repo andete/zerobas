@@ -1,0 +1,11 @@
+D-ALIASWRITE: does a disk verb between two PRINT# corrupt the FILE?
+
+  no-disk   b'AAAABBBBCCCCDDDD\r\nEEEEFFFFGGGGHHHH\r\n\x1a'
+  KILL      b'\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00EEEEFFFFGGGGHHHH\r\n\x1a'
+  NAME      b''
+  DSKF      b'\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t'
+
+  KILL: DATA LOST ON THE MEDIUM — record(s) AAAABBBBCCCCDDDD are absent from the committed file; got b'\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00EEEEFFFFGGGGHHHH\r\n\x1a'
+  NAME: DATA LOST ON THE MEDIUM — record(s) AAAABBBBCCCCDDDD, EEEEFFFFGGGGHHHH are absent from the committed file; got b''
+  DSKF: DATA LOST ON THE MEDIUM — record(s) AAAABBBBCCCCDDDD, EEEEFFFFGGGGHHHH are absent from the committed file; got b'\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t'
+refcache: 0 hit, 4 miss, 4 stored

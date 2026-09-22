@@ -763,11 +763,31 @@ item — do **one item per session** to keep context lean.
       reads a value the program set BEFORE the slow part is unaffected. The
       verdict has to be per-ROW, not per-site.
 
-- [ ] 🔴 **A DISK VERB BETWEEN TWO READS OF AN OPEN CHANNEL MAKES THE NEXT READ
-      HAND BACK THE WRONG BYTES, AND SAYS NOTHING (D-ALIASBITE, 2026-09-22)**
-      🎚️ TIER 1 — happy path. Open a file, read, do anything else to the disk,
-      read again: the second read returns the RIGHT NUMBER of characters and the
-      WRONG CONTENT. No error is raised and no handler fires.
+- [ ] 🔴 **A DISK VERB INSIDE AN OPEN CHANNEL CORRUPTS IT — A READ HANDS BACK
+      THE WRONG BYTES, AND A WRITE COMMITS THEM TO THE DISK (D-ALIASBITE,
+      2026-09-22)**
+      🔴 **THE WRITE SIDE IS DATA LOSS ON THE MEDIUM, MEASURED 2026-09-22**
+      (`scratchpad/aliaswrite_probe.py`, `scratchpad/aliaswrite_run.out`).
+      `OPEN…FOR OUTPUT` · `PRINT#1,"AAAABBBBCCCCDDDD"` · *[verb]* ·
+      `PRINT#1,"EEEEFFFFGGGGHHHH"` · `CLOSE`, then the file read back off the
+      HOST-PARSED FAT chain — not off the screen:
+      | interposed | the file that is actually on the disk |
+      |---|---|
+      | `X=1` (control) | `AAAABBBBCCCCDDDD\r\nEEEEFFFFGGGGHHHH\r\n\x1a` ✅ |
+      | `KILL` | the first 18 bytes are `$00`; only the SECOND record survives |
+      | `NAME` | **the file is EMPTY** — both records gone |
+      | `DSKF` | 37 bytes of `$09` — neither record, pure leftovers |
+      🎯 **SAME MECHANISM, WORSE CONSEQUENCE.** The write stream buffers into
+      the SAME `FSECTOR_BUF`; a record short of a full sector is still sitting
+      there when the verb refills it, so `CLOSE` flushes the verb's leftovers to
+      disk. A bad read is transient and lives in one variable — **this survives
+      the session and is what the next program reads back.**
+      ⚠️ **AND `DSKF` DOES IT — a read-only free-space query destroys a file
+      being written.** No verb here modifies the file it damages.
+      🎚️ TIER 1 — happy path, and the write half is data loss. Open a file,
+      read or write, do anything else to the disk, continue: the read returns
+      the RIGHT NUMBER of characters and the WRONG CONTENT, and the write puts
+      that wrong content on the medium. No error is raised and no handler fires.
       🔴 **"TRUNCATES" WAS WRONG, AND IT WAS A SCREEN ARTEFACT — CORRECTED
       2026-09-22 (`scratchpad/aliascell_probe.py`).** `LEN(B$)` and `ASC(B$)`
       read out of RAM rather than off VRAM say **4 characters in every arm**:
@@ -4312,7 +4332,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:22025 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:22045 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -4478,7 +4498,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:9121 (T-6FE392)8 (T-529ABE)` from `TODO.md:20419 (T-529ABE)`: a
+      `TODO.md:9141 (T-6FE392)8 (T-529ABE)` from `TODO.md:20439 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -9965,7 +9985,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:20419 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:20439 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
