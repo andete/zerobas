@@ -671,8 +671,18 @@ item — do **one item per session** to keep context lean.
       directory verb is left in them. The file header says so; renaming crosses
       the sub-ROM index, the resident ABI and main's veneer.
 
-- [ ] 🔴 **WRITING TWO FILES THEN READING ONE *HANGS* — NO ERROR, AND
-      `ON ERROR` NEVER FIRES (D-TWOFILE, 2026-09-22)**
+- [ ] 🔴 **THE THIRD `OPEN` AFTER TWO `OPEN … FOR OUTPUT` SILENTLY ABORTS THE
+      PROGRAM — NO ERROR, NO `Ok`, AND `ON ERROR` NEVER FIRES (D-TWOFILE,
+      2026-09-22)**
+      ⚠️ **"HANGS" WAS MY WORD AND IT IS WRONG — CORRECTED 2026-09-22.** A PC
+      sample during the failing window puts **93 % of samples at `$11A0`**,
+      which is `18 F2` (`jr -14`) in our own ROM image and which
+      `scratchpad/speedprof_rig.py` independently identifies as the **idle
+      command-prompt loop**. The machine is not spinning inside the verb: it is
+      back at command level, doing nothing. Combined with the marker evidence
+      below — markers 1 and 2 print, marker 3 never does — the program RAN, did
+      two opens, and then **left without a word**: no error text, no `Ok`, and
+      nothing after it executes.
       🎚️ TIER 1 — happy path: writing a file, writing another, then reading one
       back is ordinary Disk-BASIC use, and it does not return.
       🤖 **AUTONOMOUS** — our own ROM, reproducible on demand, no ruling needed.
@@ -727,9 +737,21 @@ item — do **one item per session** to keep context lean.
       directory entries correct, sizes right, single-cluster chains, proper EOC
       terminators, no loop. Whatever is wrong is in zerobas's IN-MEMORY state,
       not in what it wrote. That rules out the whole bad-chain family.
-      ⚠️ **STILL UNMEASURED:** WHICH cell the write path leaves poisoned. The
-      candidates are the `FWR_*` write cursor, the directory-create scratch, and
-      the cluster-allocation state — none of them checked yet.
+      ❌ **AND "IT IS A CPU SPIN" IS REFUTED TOO, BY THE SAME SAMPLE.** The
+      obvious mechanism for a stuck verb is a loop that never exits; the PC says
+      otherwise. Whatever goes wrong RETURNS — it just returns to command level
+      instead of to the next statement, and says nothing on the way.
+      ⚠️ **STILL UNMEASURED:** WHICH cell the write path leaves poisoned, and by
+      what route the third `OPEN` reaches command level. Candidates for the cell
+      are the `FWR_*` write cursor, the directory-create scratch and the
+      cluster-allocation state; candidates for the exit are an abort that skips
+      the message and a stack unwind that lands past the handler. **None
+      checked.**
+      🎯 **THE NEXT STEP IS NAMED:** a silent return to command level with an
+      armed `ON ERROR` is a very short list of code paths — read the abort/
+      `raise_error` path for one that resets `SP` from `SAVSTK` and re-enters the
+      REPL without printing, and check what the write path leaves in the trap
+      state that could steer it there.
       ⚠️ **AND THE COUNT IS FROM SIX SEQUENCES, NOT A PROOF.** "Two outputs" is
       the smallest rule consistent with all of them; a seventh case could still
       separate "two outputs" from "two DIRECTORY CREATES" — every output here
@@ -4149,7 +4171,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:21862 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:21884 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -4315,7 +4337,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:8958 (T-6FE392)8 (T-529ABE)` from `TODO.md:20256 (T-529ABE)`: a
+      `TODO.md:8980 (T-6FE392)8 (T-529ABE)` from `TODO.md:20278 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -9802,7 +9824,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:20256 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:20278 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
