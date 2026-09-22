@@ -222,7 +222,33 @@ spurious write closes its gate early. Directions survive; **do NOT quote *"416
 is exactly the overlap width"*** until it is re-run on `$CFFE`. 🟢 `FILES`'s zero
 footprint does NOT rest on it — that came from `aliascell`'s snapshot diff.
 
-➡️ **THE NEXT ITEM: RE-RUN `aliasscope_probe.py` ON `$CFFE`** (with
+✅ **`aliasscope` RE-RUN ON `$CFFE` (`360cf469`) — EVERY FIGURE IDENTICAL.**
+`KILL` 416/0 · `NAME` 832/192 · `DSKF` 1664/384 · `OPEN-IN` 832/192 · control
+0/0, with a per-run guard that refuses on any foreign phase value. **The counts
+were NEVER lower bounds and *"416 is exactly the width of the overlap"* is
+quotable again.**
+🔴 **AND D-CELLPRIV'S OWN HEADLINE WAS CORRECTED — IT WAS MINE AND TOO STRONG.**
+`$D000`'s 32 writes are **BOOT-TIME RAM SIZING** (`15`/`240` at every `$xx00`),
+timestamped at **t=0.00–0.03** against the program's marker at **t=20.04**, with
+ZERO after it. **The cell is safe once a program runs.** The fault was reading
+the WHOLE watchpoint log, which begins at power-on — **a log is not a window.**
+✅ **THE `$xx00` SWEEP CAME BACK EMPTY IN THE DIRECTION THAT MATTERS:** the four
+tracked battery probes that count in `$D000` (`stop_trap`, `key_trap`,
+`strig_trap`, `interval_trap`) are FINE — boot is over before their programs
+start. 🟢 What survives is worth keeping: the probes now sit on `$CFFE` with the
+claim RE-VERIFIED every run rather than assumed.
+
+➡️ **THE NEXT ITEM — AND IT IS THE LAST ONE: the 12 `cap_gap > step` sites**
+(`scratchpad/gapscan.py --tracked`, TIER 2 🔭). `settle_n` is the instrument and
+was never pointed at this. **Advisory, not a gate** — a wide `cap_gap` is
+legitimate inter-case spacing, so a hit has two meanings and the verdict has to
+be per-ROW.
+🔴 **AFTER THAT THE QUEUE IS EMPTY — GO TO JOOST.** The remedy has waited since
+`2fef4b0e`; the write side is DATA LOSS, and **(c) DISJOINT would remove every
+route this tree can measure**, which is materially better than when it was filed.
+⚠️ **THE SUPERSEDED LINE BELOW ASKED FOR THE `aliasscope` RE-RUN** — done.
+
+➡️ ~~**THE NEXT ITEM: RE-RUN `aliasscope_probe.py` ON `$CFFE`**~~ (with
 `CLEAR 200,&HBFFF`) so its counts are exact, and sweep the tree for other probes
 poking a `$xx00` marker. ⚠️ **Verify the replacement rather than trusting it** —
 `$CFFE` is quiet in ONE measured program.
