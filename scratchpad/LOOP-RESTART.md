@@ -206,7 +206,33 @@ every route this tree can measure** — a ROUTE fix, not a CLASS fix. That is a
 real choice, not "none of them helps". ⚠️ Unmeasured: whether (c) is affordable,
 and whether any path outside these nine verbs reaches the buffer.
 
-➡️ **THE NEXT ITEM: `FIELD`/`LSET`, WHICH NEED THEIR OWN SWEEP.** They require a
+✅ **THE RANDOM VERBS ARE ALL CLEAN (`3f814149`): `FIELD`, `LSET`, `PUT`, `GET`.**
+`PUT`/`GET` being clean STRENGTHENS the rule — they are CHANNEL SWITCHES, and a
+channel switch restages. Every clean row measured is a channel switch or touches
+no buffer; every damaged row is a disk-ROM verb that refills it.
+🔴 **AND `$D000` IS NOT A PRIVATE CELL — IT FABRICATED A FINDING.** The machine
+writes it **32 times** per disk program (15/240 alternating); `CLEAR` does not
+stop it; every `$xx00` boundary is the same; **`$CFFE` is quiet**. The first run
+reported `ERR 15` in EVERY arm including the no-disk control.
+⚠️ **SCOPE — 3 of 4 probes survive, each for a stated reason** (see the
+D-CELLPRIV item): `aliaswrite` sound (marker VALUE 9 never collides),
+`aliascell` sound (SNAPSHOTS tagged by value), `aliasbite` sound (no marker).
+🔴 **`aliasscope_probe.py` IS AFFECTED: its counts are LOWER BOUNDS**, because a
+spurious write closes its gate early. Directions survive; **do NOT quote *"416
+is exactly the overlap width"*** until it is re-run on `$CFFE`. 🟢 `FILES`'s zero
+footprint does NOT rest on it — that came from `aliascell`'s snapshot diff.
+
+➡️ **THE NEXT ITEM: RE-RUN `aliasscope_probe.py` ON `$CFFE`** (with
+`CLEAR 200,&HBFFF`) so its counts are exact, and sweep the tree for other probes
+poking a `$xx00` marker. ⚠️ **Verify the replacement rather than trusting it** —
+`$CFFE` is quiet in ONE measured program.
+📋 **THEN** the 12 `cap_gap > step` sites (TIER 2 🔭).
+🔴 **AFTER THOSE THE QUEUE IS EMPTY — GO TO JOOST.** The remedy has waited since
+`2fef4b0e`; the write side is data loss, and (c) DISJOINT now looks materially
+better than when it was filed.
+⚠️ **THE SUPERSEDED LINE BELOW ASKED FOR THE `FIELD`/`LSET` SWEEP** — done.
+
+➡️ ~~**THE NEXT ITEM: `FIELD`/`LSET`, WHICH NEED THEIR OWN SWEEP.**~~ They require a
 RANDOM channel (`OPEN … AS #n LEN=`) that the current control does not have, so
 they need their own control rather than being bolted onto `aliaswrite_probe.py`.
 Pure measurement, no ruling.
