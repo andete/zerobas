@@ -671,6 +671,53 @@ item — do **one item per session** to keep context lean.
       directory verb is left in them. The file header says so; renaming crosses
       the sub-ROM index, the resident ABI and main's veneer.
 
+- [ ] 🔴 **WRITING TWO FILES THEN READING ONE *HANGS* — NO ERROR, AND
+      `ON ERROR` NEVER FIRES (D-TWOFILE, 2026-09-22)**
+      🎚️ TIER 1 — happy path: writing a file, writing another, then reading one
+      back is ordinary Disk-BASIC use, and it does not return.
+      🤖 **AUTONOMOUS** — our own ROM, reproducible on demand, no ruling needed.
+      🔬 **THE REPRODUCER, WITH PROGRESS MARKERS SO THE STOP IS NAMED**
+      (`C-BIOS_MSX1_EU_REPACK_DISK`, a scratch copy of `disk/test720.dsk`):
+
+          10 ON ERROR GOTO 99
+          15 OPEN"Y.DAT"FOR OUTPUT AS#1
+          17 PRINT#1,"X"
+          19 CLOSE#1
+          20 PRINTCHR$(91);"P1";CHR$(93)
+          25 OPEN"Z.DAT"FOR OUTPUT AS#1
+          27 PRINT#1,"ABCDEFGH"
+          29 CLOSE#1
+          30 PRINTCHR$(91);"P2";CHR$(93)
+          35 OPEN"Z.DAT"FOR INPUT AS#1
+          37 A$=INPUT$(4,#1)
+          40 PRINTCHR$(91);"P3";CHR$(93)
+          ...
+          99 PRINTCHR$(91);"E";ERR;CHR$(93)
+
+      📏 **MEASURED: `P1` and `P2` PRINT; `P3` NEVER DOES**, at a 90-second
+      capture gap. Both files are created successfully. The program then stops
+      at line 35/37 and produces NOTHING — no `Ok`, no error message, and the
+      `ON ERROR` handler at 99 does not run. **That is a HANG, not a raised
+      error**, and an untrappable one.
+      🟢 **THE ONE-FILE FORM WORKS, WHICH IS WHAT MAKES IT ATTRIBUTABLE:**
+      create ONE file, then open it for input and read — fine, measured in the
+      same session, with and without an `A:` drive prefix (`GABCD` / `HABCD`).
+      **The second file creation is the trigger.**
+      ⚠️ **WHAT IS NOT ISOLATED YET, AND MUST NOT BE ASSUMED:** whether it is the
+      `OPEN` or the `INPUT$` that hangs; whether two WRITES specifically matter
+      or any two file operations do; and whether MAXFILES, the channel table or
+      the FAT buffers are involved. **The mechanism is unmeasured.**
+      ⚠️ **NO SUITE CATCHES IT.** `diskbasic-acceptance` is 34/34 and every disk
+      gate is green: the batteries exercise one file per case, so the two-file
+      sequence has no row anywhere.
+      🧭 **FOUND SIDEWAYS**, while building `scratchpad/aliasbite_probe.py` for
+      the same-address question below — that probe's CONTROL would not run, and
+      its instrument-fault arm refused to issue a verdict about the ROM on a
+      broken control. Chasing the control is what produced this.
+      🔴 **AND MY FIRST TWO HYPOTHESES WERE BOTH WRONG:** I blamed the `A:`
+      drive prefix (refuted by a prefix/no-prefix pair in one run) and then a
+      missing `ON ERROR` (refuted — the handler is armed and still never runs).
+
 - [ ] 🔬 **SHOULD MAIN AND `disk.rom` USE THE SAME ADDRESS FOR THE SAME THING? —
       JOOST'S QUESTION, AND THE MAP CAN PRICE IT**
       🎚️ TIER 2 — reasonable time; it would retire an apparatus rather than add
@@ -4029,7 +4076,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:21742 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:21789 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -4195,7 +4242,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:8838 (T-6FE392)8 (T-529ABE)` from `TODO.md:20136 (T-529ABE)`: a
+      `TODO.md:8885 (T-6FE392)8 (T-529ABE)` from `TODO.md:20183 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -9682,7 +9729,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:20136 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:20183 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
