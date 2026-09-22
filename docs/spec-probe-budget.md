@@ -26,6 +26,20 @@ after the last line, so:
 * **`cap_gap` is the gap AFTER the capture** (inter-case spacing) and buys the
   case that owns it nothing.
 
+🔴 **AND THAT SECOND BULLET IS NOW PINNED BY A ROW, BECAUSE PROSE DID NOT HOLD
+IT** ([`tests/test_capture_budget.py`](../tests/test_capture_budget.py), 8 rows +
+a knife, emulator-free). It was stated here in bold and repeated in `_tcl`'s own
+comment, and **D-TWOFILE still spent five wrong diagnoses on it** — a hang, a
+silent abort, a dead screen, a slow `OPEN` — because a probe passed
+`cap_gap=70.0` to buy a 4.4-second program some room and actually bought it the
+3.0 seconds its `step` was worth. The capture landed between two `PRINT`s and a
+half-drawn screen read as a defect. **Both places that carried the fact are
+places a CALLER never looks**, so it is now also on `_run_cases_impl`'s
+docstring, and [`scratchpad/gapscan.py`](../scratchpad/gapscan.py) ranks the
+sites that tuned the wrong knob. ⚠️ Its hits are an **advisory**: a wide
+`cap_gap` is legitimate as inter-case spacing, and only `settle_n` below can
+say whether a case was still drawing when its capture fired.
+
 🔴 **`step` therefore does DOUBLE DUTY, and that is the constraint that shapes any
 cut.** It is simultaneously (a) the inter-line injection spacing that guarantees
 the previous chunk has been consumed — *"measured drained before 1794/1794

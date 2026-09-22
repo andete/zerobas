@@ -671,128 +671,97 @@ item — do **one item per session** to keep context lean.
       directory verb is left in them. The file header says so; renaming crosses
       the sub-ROM index, the resident ABI and main's veneer.
 
-- [ ] 🔴 **SCREEN OUTPUT DIES AFTER THE SECOND `PRINT` THAT FOLLOWS DISK
-      ACTIVITY — THE PROGRAM RUNS ON TO COMPLETION (D-TWOFILE, 2026-09-22)**
-      🔴 **THE SUBJECT CHANGED TWICE, AND BOTH EARLIER HEADLINES WERE MINE AND
-      WRONG.** It was filed as *"writing two files then reading one HANGS"*, then
-      corrected to *"the third `OPEN` silently aborts the program"*. **Neither
-      is what happens.** Nothing hangs and nothing aborts: every `OPEN`
-      succeeds, every statement executes, and the program reaches its last line.
-      **What fails is the SCREEN.**
-      🔬 **THE MEASUREMENT THAT SETTLED IT** — `POKE` phase markers (invisible,
-      read by a watchpoint) bracketing `PRINT` markers (visible, read off VRAM),
-      in ONE program: **all six POKE phases were recorded; only the first two
-      PRINTs appeared.** Execution is complete and the display is not.
-      🎯 **AND IT EXPLAINS EVERY EARLIER OBSERVATION AT ONCE**, which is why the
-      first two headlines survived as long as they did: the "missing" error
-      message, the absent `Ok`, the marker that "never printed", and the idle
-      command-prompt PC are all ONE fact — the machine finished and returned to
-      the prompt, and none of it was drawn. **Every symptom I had was the
-      screen's, and I read them all as the disk's.**
-      ⚠️ **THE PC EVIDENCE, KEPT BECAUSE IT IS WHAT BROKE THE FIRST HEADLINE.** A PC
-      sample during the failing window puts **93 % of samples at `$11A0`**,
-      which is `18 F2` (`jr -14`) in our own ROM image and which
-      `scratchpad/speedprof_rig.py` independently identifies as the **idle
-      command-prompt loop**. The machine is not spinning inside the verb: it is
-      back at command level, doing nothing. Combined with the marker evidence
-      below — markers 1 and 2 print, marker 3 never does — the program RAN, did
-      two opens, and then **left without a word**: no error text, no `Ok`, and
-      nothing after it executes.
-      🎚️ TIER 1 — happy path: writing a file, writing another, then reading one
-      back is ordinary Disk-BASIC use, and it does not return.
-      🤖 **AUTONOMOUS** — our own ROM, reproducible on demand, no ruling needed.
-      🔬 **THE REPRODUCER, WITH PROGRESS MARKERS SO THE STOP IS NAMED**
-      (`C-BIOS_MSX1_EU_REPACK_DISK`, a scratch copy of `disk/test720.dsk`):
-
-          10 ON ERROR GOTO 99
-          15 OPEN"Y.DAT"FOR OUTPUT AS#1
-          17 PRINT#1,"X"
-          19 CLOSE#1
-          20 PRINTCHR$(91);"P1";CHR$(93)
-          25 OPEN"Z.DAT"FOR OUTPUT AS#1
-          27 PRINT#1,"ABCDEFGH"
-          29 CLOSE#1
-          30 PRINTCHR$(91);"P2";CHR$(93)
-          35 OPEN"Z.DAT"FOR INPUT AS#1
-          37 A$=INPUT$(4,#1)
-          40 PRINTCHR$(91);"P3";CHR$(93)
-          ...
-          99 PRINTCHR$(91);"E";ERR;CHR$(93)
-
-      📏 **MEASURED: `P1` and `P2` PRINT; `P3` NEVER DOES**, at a 90-second
-      capture gap. Both files are created successfully. The program then stops
-      at line 35/37 and produces NOTHING — no `Ok`, no error message, and the
-      `ON ERROR` handler at 99 does not run. **That is a HANG, not a raised
-      error**, and an untrappable one.
-      🟢 **THE ONE-FILE FORM WORKS, WHICH IS WHAT MAKES IT ATTRIBUTABLE:**
-      create ONE file, then open it for input and read — fine, measured in the
-      same session, with and without an `A:` drive prefix (`GABCD` / `HABCD`).
-      **The second file creation is the trigger.**
-      🔬 **NARROWED 2026-09-22 TO ONE RULE THAT FITS EVERY OBSERVATION:**
-      ***after TWO `OPEN … FOR OUTPUT` have completed, the NEXT `OPEN` of any
-      kind hangs.*** Reads alone never hang.
-      | case | sequence | result |
-      |---|---|---|
-      | three `OPEN FOR OUTPUT` | out, out, out | markers 1,2 — **hangs on the 3rd** |
-      | three `OPEN FOR INPUT` | in, in, in | **all three fine** |
-      | two opens (control) | in, in | fine, reaches the end |
-      | the original | out, out, in | **hangs on the `in`** |
-      | same name twice | out(Z), out(Z), in(Z) | **hangs on the `in`** |
-      | interleaved | out, in ✓, out | **hangs after the read** |
-      🔴 **SO IT IS THE WRITE PATH THAT LEAVES STATE**, and it accumulates: one
-      `OPEN FOR OUTPUT` is harmless, two poison the next open whatever its mode.
-      ✅ **AND IT IS `OPEN` ITSELF, NOT `INPUT$`** — a marker placed between the
-      `OPEN` and the first read never prints.
-      ❌ **`MAXFILES=2` DOES NOT FIX IT**, and neither does a bare `CLOSE`
-      before the failing open. It is not a channel-count or channel-release
-      problem.
-      ❌ **AND THE FAT HYPOTHESIS IS REFUTED, NOT UNTESTED.** The obvious cause
-      for a HANG is an unterminated cluster walk, so the resulting image was
-      parsed on the host after two writes: **the disk is perfect** — both
-      directory entries correct, sizes right, single-cluster chains, proper EOC
-      terminators, no loop. Whatever is wrong is in zerobas's IN-MEMORY state,
-      not in what it wrote. That rules out the whole bad-chain family.
-      ❌ **AND "IT IS A CPU SPIN" IS REFUTED TOO, BY THE SAME SAMPLE.** The
-      obvious mechanism for a stuck verb is a loop that never exits; the PC says
-      otherwise. Whatever goes wrong RETURNS — it just returns to command level
-      instead of to the next statement, and says nothing on the way.
-      ⚠️ **STILL UNMEASURED:** WHICH cell the write path leaves poisoned, and by
-      what route the third `OPEN` reaches command level. Candidates for the cell
-      are the `FWR_*` write cursor, the directory-create scratch and the
-      cluster-allocation state; candidates for the exit are an abort that skips
-      the message and a stack unwind that lands past the handler. **None
-      checked.**
-      ❌ **AND THE STACK-LEAK HYPOTHESIS IS REFUTED BY MEASUREMENT, NOT DROPPED.**
-      "After TWO outputs" looks exactly like a per-open leak, so `SP` was
-      sampled at every phase via a watchpoint: **`$CE01` at all of them, with no
-      drift.** Nothing is leaking.
-      ❌ **`CLEAR200,&HCFFF` IS NOT THE DIFFERENCE EITHER.** It appeared in the
-      working run and not the failing ones, which made it the obvious cause; a
-      with/without pair reached all four phases BOTH ways.
-      ➡️ **THE NEXT STEP IS THE SCREEN, NOT THE DISK.** The cursor cells read
-      `CSRY=24 CSRX=1` at every phase — row 24, which is BELOW the console's
-      usable area on a machine whose `KEY ON` bound is 23. Candidates, none
-      checked: the scroll bound (`CRTCNT`/`CON_LASTROW`), a console cell inside
-      a disk buffer window, and the function-key line's row. ⚠️ §6.6q's overlap
-      question is now a SUSPECT rather than a neighbour.
-      ⚠️ **AND THE APPARATUS IS NOT YET RULED OUT:** M1 and M2 appear in the same
-      capture that lacks M3 and M4, which argues for a real screen-side failure
-      rather than a capture artefact — but no row has yet re-read VRAM a second
-      time to prove the pixels are absent rather than the reading.
-      ⚠️ **AND THE COUNT IS FROM SIX SEQUENCES, NOT A PROOF.** "Two outputs" is
-      the smallest rule consistent with all of them; a seventh case could still
-      separate "two outputs" from "two DIRECTORY CREATES" — every output here
-      created or truncated a file.
-      ⚠️ **NO SUITE CATCHES IT.** `diskbasic-acceptance` is 34/34 and every disk
-      gate is green: the batteries exercise one file per case, so the two-file
-      sequence has no row anywhere.
+- [x] ✅ **D-TWOFILE IS WITHDRAWN: THERE IS NO DEFECT. IT WAS THE PROBE'S
+      CAPTURE FIRING BEFORE THE PROGRAM FINISHED (2026-09-22)**
+      🔴 **FOUR HEADLINES, ALL MINE, ALL WRONG.** Filed as *"writing two files
+      then reading one HANGS"*, corrected to *"the third `OPEN` silently
+      aborts"*, then to *"screen output dies while execution continues"*, and
+      each correction was itself refuted. The machine was never at fault:
+      **writing two files and reading one back works, and always did.**
+      🔬 **THE MEASUREMENT THAT CLOSED IT** (`scratchpad/twofile_orig.out`, both
+      arms in ONE run so the instrument carries its own control): the original
+      sequence — `OPEN` out, `OPEN` out, `OPEN` in, `INPUT#`, `PRINT` — read
+      with the ORIGINAL apparatus (`cap_gap=70.0`) gives `fences=[]`, and read
+      with a real budget (`run_gap=60.0`) gives **`['alpha', 'DONE']`** and the
+      prompt back. Same ROM, same disk, same program; only the capture moment
+      differs.
+      🎯 **WHY: `cap_gap` NEVER BOUGHT THE CAPTURE ANY TIME.** A case's capture
+      fires `step` past its `RUN` (or `run_gap`, when given); `cap_gap` is the
+      gap AFTER the capture — inter-case spacing and the scheduled exit. The
+      probe passed `step=3.0, cap_gap=70.0` to a program that needs **4.4 s**,
+      so the capture landed at RUN+3.0 s, between the second and third `PRINT`.
+      📏 **PROVED, NOT INFERRED, BY TWO INDEPENDENT READS OF VRAM**
+      (`scratchpad/twofile_scr2.out`, `twofile_scr3.out`): a watchpoint dumped
+      the whole SCREEN-0 name table at each phase. **All four markers are on
+      screen at the end and both reads of every dump agree** — while the
+      end-of-case capture shows the banner still unscrolled and only the first
+      two markers. The capture is the EARLIER screen, not a later one.
+      ⏱️ **AND THE "SLOW `OPEN`" THEORY DIED IN THE SAME RUN**
+      (`scratchpad/twofile_tim.out`): the three opens take **1.46 s, 1.45 s,
+      1.49 s** — flat. No cliff, no accumulation.
+      ✅ **WHAT THIS BUYS, AND IT IS WHY THE ITEM IS KEPT RATHER THAN DELETED:**
+      `tests/test_capture_budget.py` (8 rows + a knife, emulator-free) now pins
+      the schedule — `cap_gap` cannot move a capture, `run_gap` can and only
+      ever later — and `_run_cases_impl`'s docstring states it where a CALLER
+      reads it. 🔴 **THE FACT WAS ALREADY WRITTEN DOWN TWICE:**
+      `docs/spec-probe-budget.md` §1 says it in bold, and `_tcl` repeats it in a
+      comment beside the code. Both live where a caller never looks, and
+      `cap_gap` is a name that READS like "the gap before the capture".
+      📋 **12 TRACKED PROBE CALL SITES PASS `cap_gap > step` WITH NO `run_gap`**
+      (`scratchpad/gapscan.py`, ratios 1.2–18.0; 218 sites counting scratchpad
+      one-offs). Highest: `basic_probe_kwsweep.py` 18×, `input_devices` 10×,
+      `trapsvc` 9×, `ramfree` 4.8×. ⚠️ **NOT YET JUDGED** — a wide `cap_gap` is
+      legitimate as inter-case spacing, so a hit has two meanings and needs a
+      READING, not a refusal. Filed as its own item below.
+      ❌ **REFUTED ALONG THE WAY, EACH BY MEASUREMENT AND EACH KEPT FOR THE
+      RECORD:** the `A:` drive prefix (a prefix/no-prefix pair both work); a
+      missing `ON ERROR` (the handler is armed and never runs — because nothing
+      ever raises); FAT corruption (the written image parses perfectly on the
+      host: entries, sizes, single-cluster chains, proper EOC); a CPU spin (93 %
+      of PC samples at the idle command-prompt loop — which was TRUE, and meant
+      the program had not started the third open yet, not that it had returned);
+      a stack leak (`SP` = `$CE01` at every phase, no drift);
+      `CLEAR200,&HCFFF` (with/without both reach every phase).
+      🔴 **AND THE SIX-ROW "TWO OUTPUTS POISON THE NEXT OPEN" TABLE WAS AN
+      ARTEFACT OF THE SAME CLOCK.** Every sequence that "hung" was simply longer
+      than `step`; the rule fitted six rows because six rows shared one bug in
+      the instrument. **A table that fits every row you have can still be
+      measuring the apparatus.** [[apparatus-is-part-of-the-measurement]]
+      ⚠️ **§6.6q's overlap question is NOT implicated** — it was named a suspect
+      by the screen headline, which is withdrawn. It returns to being a
+      neighbour, and the same-address item below is unaffected.
       🧭 **FOUND SIDEWAYS**, while building `scratchpad/aliasbite_probe.py` for
-      the same-address question below — that probe's CONTROL would not run, and
-      its instrument-fault arm refused to issue a verdict about the ROM on a
-      broken control. Chasing the control is what produced this.
-      🔴 **AND MY FIRST TWO HYPOTHESES WERE BOTH WRONG:** I blamed the `A:`
-      drive prefix (refuted by a prefix/no-prefix pair in one run) and then a
-      missing `ON ERROR` (refuted — the handler is armed and still never runs).
+      the same-address question — that probe's CONTROL would not run. ➡️ **THAT
+      CONTROL IS NOW EXPLAINED AND THE PROBE NEEDS A `run_gap`, NOT A FIX.**
+
+- [ ] 🔬 **DO THE 12 PROBE SITES THAT PASS `cap_gap > step` WITH NO `run_gap`
+      ACTUALLY CAPTURE THEIR CASES IN TIME? (out of D-TWOFILE, 2026-09-22)**
+      🎚️ TIER 2 — reasonable time; it is apparatus, and a suite that captures
+      early is green the wrong way rather than red.
+      🔭 **SCOUT-THEN-ASK** — a wide `cap_gap` is legitimate as inter-case
+      spacing, so a hit has TWO meanings and an advisory beats a gate; whether
+      any suite's ROWS actually move is the reading that decides it.
+      📋 The sites, from `scratchpad/gapscan.py` (ratio = `cap_gap`/`step`):
+      `basic_probe_kwsweep.py` 18.0 and 2.5, `basic_probe_input_devices.py`
+      10.0, `basic_probe_trapsvc.py` 9.0, `basic_probe_ramfree.py` 4.8,
+      `basic_probe_banner.py` 2.7, `basic_probe_txtceil.py` 2.0,
+      `basic_probe_pusing.py` 2.0, `basic_probe_nodisk.py` 2.0,
+      `basic_probe_namend.py` 1.7, `probe_refcache.py` 1.2,
+      `basic_probe_deffn.py` 1.2.
+      🔴 **TWO OF THEM SAY IN THEIR OWN COMMENTS THAT `cap_gap` COVERS THE RUN**
+      — `input_devices.py:254` (*"cap_gap alone has to cover the loop"*) and
+      `kwsweep.py:593` (*"the capture waits cap_gap (90 s)"*). Those beliefs are
+      false by `tests/test_capture_budget.py`; whether the ROWS are wrong is a
+      separate question and the one worth answering.
+      🔬 **THE INSTRUMENT ALREADY EXISTS AND WAS NEVER POINTED AT THIS:**
+      `settle_n`/`settle_out` (docs/spec-probe-budget.md) samples the capture
+      region between RUN and capture and reports when it stopped changing —
+      exactly "was the program still drawing when we looked?". Run it over the
+      12 sites before changing any budget; the spec's own rule is *instrument
+      first, cut only what the data licenses*.
+      ⚠️ **A SITE THAT CAPTURES EARLY IS NOT AUTOMATICALLY WRONG** — a row that
+      reads a value the program set BEFORE the slow part is unaffected. The
+      verdict has to be per-ROW, not per-site.
 
 - [ ] 🔬 **SHOULD MAIN AND `disk.rom` USE THE SAME ADDRESS FOR THE SAME THING? —
       JOOST'S QUESTION, AND THE MAP CAN PRICE IT**
@@ -4198,7 +4167,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:21911 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:21880 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -4364,7 +4333,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:9007 (T-6FE392)8 (T-529ABE)` from `TODO.md:20305 (T-529ABE)`: a
+      `TODO.md:9007 (T-6FE392)8 (T-529ABE)` from `TODO.md:20274 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -9851,7 +9820,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:20305 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:20274 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

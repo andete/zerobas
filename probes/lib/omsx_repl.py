@@ -1901,6 +1901,19 @@ def _run_cases_impl(machine: str, cases: list[tuple[str, list[str]]], *,
     program against what was typed and re-runs a mangled one boot-per-case,
     announcing it on stderr. Set it False only for a probe that deliberately
     drives line entry to refusal.
+
+    🔴 **`run_gap` IS THE RUN->CAPTURE BUDGET; `cap_gap` IS NOT.** A case's
+    capture fires `run_gap` past its `RUN` when one is given and `step` past it
+    otherwise, and `cap_gap` -- the gap AFTER the capture -- never moves it
+    (docs/spec-probe-budget.md §1, pinned by tests/test_capture_budget.py). So a
+    case whose program needs longer than `step` to finish needs `run_gap`;
+    raising `cap_gap` only delays the NEXT case and the scheduled exit.
+    ⚠️ **AND A CAPTURE TAKEN TOO EARLY LOOKS LIKE A DEFECT, NOT LIKE A TIMEOUT.**
+    D-TWOFILE read a half-drawn screen as a hang, then as a silent abort, then
+    as dead screen output, across five wrong diagnoses; the program had simply
+    not reached its later `PRINT`s yet. The fact was already in §1 in bold and
+    in `_tcl`'s own comment -- neither of which is where a CALLER looks, which
+    is why it is also here.
     """
     kw = dict(boot=boot, step=step, cap_gap=cap_gap, capture=capture,
               hold_secs=hold_secs, hold_lead=hold_lead, prologue=prologue,

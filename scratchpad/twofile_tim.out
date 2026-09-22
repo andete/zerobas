@@ -1,0 +1,9 @@
+--- emulated seconds per phase ---
+  phase 1: t=    56.04
+  phase 2: t=    57.50  +    1.46s   OPEN E1 + CLOSE + PRINT M1
+  phase 3: t=    58.95  +    1.45s   OPEN E2 + CLOSE + PRINT M2
+  phase 4: t=    60.44  +    1.49s   OPEN E3 + CLOSE + PRINT M3
+  phase 5: t=    60.48  +    0.04s   PRINT M4
+  phase 6: t=    60.48  +    0.00s   (tail)
+fences = ['M1', 'M2']
+refcache: 0 hit, 1 miss, 1 stored
