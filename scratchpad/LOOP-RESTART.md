@@ -111,6 +111,45 @@ reference is very economical with RAM"*) · the same-address question (`9d4f94b2
 ⚠️ §6.6q's hazard is NOT retired in general: `PAINT` then `LOAD` is still
 ungated and `GFX_PSTK` still sits in disk's `SECTOR_BUF` window.
 
+### 🔴 STATE AS OF 2026-09-22 — THE DISK SIDE-TRACK IS CLEAR, GO TO THE
+### SAME-ADDRESS QUESTION
+
+Joost's order, in his words: *"do the same-address question first; we want to
+finish the disk side-track first"*, then *"take the hang first"*. **The hang is
+finished** — and it was never a hang.
+
+**`b43e19ef` D-TWOFILE IS WITHDRAWN: THERE WAS NO DEFECT.** Writing two files and
+reading one back works and always did. Four headlines — a hang, a silent abort,
+dead screen output, a slow `OPEN` — were all wrong. The probe passed
+`cap_gap=70.0` to buy a 4.4-second program room; **`cap_gap` is the gap AFTER the
+capture**, so the capture fired at RUN+`step` = 3.0 s and read a half-drawn
+screen. `run_gap` is the knob. Pinned by `tests/test_capture_budget.py`
+(emulator-free, 8 rows + a knife) and stated on `_run_cases_impl`'s docstring.
+
+➡️ **THE NEXT ITEM IS THE SAME-ADDRESS QUESTION** (*"should main and `disk.rom`
+use the same address for the same thing?"*), which Joost approved
+(*"3.: yes, this one as well"*) and which is TIER 2.
+🟢 **AND ITS BLOCKER IS NOW EXPLAINED:** `scratchpad/aliasbite_probe.py` REFUSED
+to issue a verdict because its CONTROL would not run. **The control was fine and
+the probe needs a `run_gap`** — chasing that control is what produced D-TWOFILE.
+Give it one and re-run before touching anything else.
+⚠️ **§6.6q's overlap is a NEIGHBOUR again, not a suspect** — it was promoted to
+suspect by the withdrawn screen headline.
+📋 **Filed out of it, TIER 2 🔭 SCOUT-THEN-ASK:** do the **12 probe sites** that
+pass `cap_gap > step` with no `run_gap` (`scratchpad/gapscan.py --tracked`)
+actually capture their cases in time? Two say in their own comments that
+`cap_gap` covers the run. `settle_n` is the instrument and was never pointed at
+it. **Advisory, not a gate** — a wide `cap_gap` is legitimate inter-case spacing.
+
+🔴 **WHAT THIS COST AND THE RULE IT EARNED:** five diagnoses of the ROM, each
+refuted by measurement, before the apparatus was ever a candidate. **When two or
+more hypotheses about the SUBJECT are each refuted, promote the INSTRUMENT to
+first suspect** — do not reach for a third about the subject. And a six-row table
+fit perfectly because all six rows shared the one instrument bug: **ask what the
+rows SHARE before asking what separates them.**
+[[a-rule-that-fits-every-row-may-be-fitting-the-instrument]]
+[[a-fact-documented-where-the-caller-never-looks]]
+
 ### What this arc keeps re-learning
 
 * **`DISKOP_STATUS` IS A SHARED CHANNEL — WRITE IT ONCE, LAST.** Main's FAT
