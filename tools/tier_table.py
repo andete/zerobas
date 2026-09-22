@@ -41,9 +41,17 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 TODO = os.path.join(ROOT, "TODO.md")
 KWTABLE = os.path.join(ROOT, "basic", "kwtable.inc")
 
-TIERS = ["TIER 1", "TIER 2", "TIER 3", "TIER 4", "TIER 5"]
+# \U0001f3d7\ufe0f RULED BY JOOST 2026-09-22: a RAM-FIDELITY rung is inserted as TIER 5
+# and the old "every error situation" bar moves to TIER 6. The ladder is a
+# priority order as well as a quality one, and he placed RAM fidelity ABOVE
+# exhaustive error handling deliberately.
+TIERS = ["TIER 1", "TIER 2", "TIER 3", "TIER 4", "TIER 5", "TIER 6"]
 CLASSES = ["APPARATUS", "BUDGET", "STANDING", "OTHER"]
-TAG = re.compile(r"^[ \t]*🎚️\s*(TIER [1-5](?: \(latent\))?|APPARATUS|BUDGET|STANDING|OTHER)\s*—\s*(.*)$")
+# \U0001f534 THE RANGE IS [1-6] SINCE 2026-09-22, AND THE BLANKET RENUMBER THAT
+# INTRODUCED TIER 6 TRIPPED OVER IT: moving 13 markers from 5 to 6 left ten
+# items parsing as UNTAGGED, because this regex still ended at 5. The tier
+# NAMES were updated and the tier GRAMMAR was not -- two places, one change.
+TAG = re.compile(r"^[ \t]*🎚️\s*(TIER [1-6](?: \(latent\))?|APPARATUS|BUDGET|STANDING|OTHER)\s*—\s*(.*)$")
 # 🔴 ONE DENOMINATOR: the marker is whatever `make todo-marker-check` says it is.
 # A loose `^\s*🙋 ` regex here read a prose line beginning with 🙋 as the
 # item's marker and disagreed with the gate on two items in its first run.
@@ -67,7 +75,7 @@ HEAD_END = re.compile(r"^(#{2,3} )|^- \[")
 # "any line starting with 🎚️" fired on 14 items that are perfectly fine.
 # What is actually suspicious is a line that BEGINS like a tag -- the emoji
 # then a tier or class WORD -- and then fails to finish like one.
-LOOKALIKE = re.compile(r"^[ \t]*🎚️\s*(TIER [1-5]|APPARATUS|BUDGET|STANDING"
+LOOKALIKE = re.compile(r"^[ \t]*🎚️\s*(TIER [1-6]|APPARATUS|BUDGET|STANDING"
                        r"|OTHER)\b")
 KWENT = re.compile(r'^\s*db\s+\d+,"([A-Z][A-Z$#]*)"')
 TICK = re.compile(r"`([^`\n]{1,40})`")
@@ -277,6 +285,8 @@ REACHED = {1: "TIER 0 — open TIER 1 item (happy path broken or keyword MISSING
            4: "TIER 0 — TIER 1 bar unmet; an open TIER 4 item also stands "
               "(slower than the reference)",
            5: "TIER 0 — TIER 1 bar unmet; an open TIER 5 item also stands "
+              "(its RAM usage does not match the reference)",
+           6: "TIER 0 — TIER 1 bar unmet; an open TIER 6 item also stands "
               "(an exhaustive error case is wrong)",
            "kwgap": "TIER 0 — a gap kwsweep SEES that no open item files (DIVERGENT/MISSING)",
            # 🔴 NOT TIERS (Joost, 2026-09-13: "kwsweep SUPPORTED is not evidence
@@ -766,8 +776,8 @@ def statements(kws=None):
     unless there is no happy path in which case it works correctly in the normal
     failing path"*. So the REFUSE-ON-SIGHT words are back IN this denominator.
     They were removed on 2026-09-14 because "a TIER 1 bar reading 'refuses
-    correctly' would be a TIER 5 reading wearing a TIER 1 label" -- and the
-    refinement answers that directly: TIER 5 is *every* error situation, while
+    correctly' would be a TIER 6 reading wearing a TIER 1 label" -- and the
+    refinement answers that directly: TIER 6 is *every* error situation, while
     for these words the refusal is the ONLY path there is, so it is the normal
     one. A word that refuses where the reference refuses, with the same code, has
     got its whole behaviour right."""
@@ -806,7 +816,7 @@ def blocks_tier1(entry):
     says so in its own text: *"the interpreter is 2.5-3.8x slower (TIER 2,
     reasonable time, is met)"*.
     🎯 MEASURED COST OF THE MISTAKE: 15 statements were held out of TIER 1 by items
-    that are not about the happy path at all -- eleven at TIER 5 (an exhaustive
+    that are not about the happy path at all -- eleven at TIER 6 (an exhaustive
     error case), three at TIER 4 (speed) and one at TIER 3 (a common error).
     ⚠️ The tuple is `(tier, lines, evidence)` and `(None, [], 'SUPPORTED')` is
     TRUTHY, so this reads the FIRST element -- the trap selftest S28 pins."""
@@ -985,7 +995,8 @@ def fmt_markdown(its, kws, evidence=None, t3=None, connected=None):
                "TIER 2": "works in reasonable time",
                "TIER 3": "handles the most common error situations",
                "TIER 4": "faster than or on par with the reference",
-               "TIER 5": "handles every error situation correctly"}
+               "TIER 5": "matches the reference's RAM usage",
+               "TIER 6": "handles every error situation correctly"}
     counts = dict(summary(its))
     for t in TIERS:
         out.append(f"| {t} | {meaning[t]} | {counts.get(t, 0)} |")
@@ -1020,7 +1031,7 @@ def fmt_markdown(its, kws, evidence=None, t3=None, connected=None):
             "SAY THEY WERE OUT. `SET`, `IPL`, `CMD`, `ATTR$` and `CALL` answer "
             "ERR 5 on BOTH references \u2014 they are tokenised and then refused. "
             "On 2026-09-14 that removed them, reasoning that a bar reading "
-            "\"refuses correctly\" would be a TIER 5 reading wearing a TIER 1 "
+            "\"refuses correctly\" would be a TIER 6 reading wearing a TIER 1 "
             "label; Joost's 2026-09-17 refinement answers exactly that \u2014 TIER "
             "5 is EVERY error situation, while for these words the refusal is "
             "the ONLY path there is, so it is the normal one. `SET`, `IPL` and "
@@ -1088,7 +1099,7 @@ def fmt_markdown(its, kws, evidence=None, t3=None, connected=None):
             out.append(f"| `{kw}` | TIER 0 | {_why} |")
         # 🎯 AN ITEM ABOVE TIER 1 IS AN *ALSO*, NEVER THE REASON. `CONT` has no
         # authored form list and is not knife-proven CONNECTED -- two real TIER 1
-        # blockers -- and the sheet printed only "open TIER 5 item", which is the
+        # blockers -- and the sheet printed only "open TIER 6 item", which is the
         # one thing that does NOT hold it out of TIER 1 (Joost, 2026-09-17).
         elif g is not None and g != 1 and grp not in ("kwrefuse", "kwpart",
                                                       "kwcomp"):
@@ -1246,6 +1257,14 @@ def selftest():
     kws = ["LOF", "PUT", "AND", "KEY", "DEF", "FN", "ZZZ", "CLEAR"]
     g = kw_gaps(its, kws)
     arm("S5 backticked keywords map to their item's tier", g.get("LOF") == {("TIER 1", 2)} and g.get("PUT") == {("TIER 1", 2)})
+    # 🔴 D-TIER5RAM: the grammar and the NAMES are two places, and the renumber
+    # that added TIER 6 updated only one -- ten items silently read as UNTAGGED.
+    arm("S5b TIER 6 parses as a tier (the grammar, not just the name table)",
+        TAG.match("      🎚️ TIER 6 — every error situation") is not None)
+    arm("S5c NEGATIVE: TIER 7 does NOT parse, so the range is a real bound",
+        TAG.match("      🎚️ TIER 7 — invented") is None)
+    arm("S5d every name in TIERS is one the grammar accepts",
+        all(TAG.match(f"      🎚️ {t} — x") for t in TIERS))
     arm("S6 `DEF FN` yields both keywords", g.get("DEF") == {("TIER 5", 9)} and g.get("FN") == {("TIER 5", 9)})
     arm("S7 unbackticked English words (AND, KEY) do NOT match", "AND" not in g and "KEY" not in g)
     arm("S8 a keyword with no item is absent from gaps, present in the footer",

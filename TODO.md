@@ -787,16 +787,62 @@ item — do **one item per session** to keep context lean.
       ⚠️ **DO NOT START EITHER WITHOUT HIM** — (a) spends RAM this tree does not
       have and (b) changes an invariant three shipped slices rest on.
 
+- [ ] 🎚️ **TIER 5 IS NOW "MATCHES THE REFERENCE'S RAM USAGE" — THE RUNG, AND
+      WHAT CAN AND CANNOT BE IN IT (D-TIER5RAM, 2026-09-22)**
+      🎚️ TIER 5 — the rung's own definition; it is the bar every other item at
+      this tier is measured against.
+      🏗️ **RULED BY JOOST, 2026-09-22.** He proposed a tier *"matches the RAM
+      usage of the reference exactly"*, then: ***"it would make more sense to
+      make it tier 5 and bump current tier 5 to tier 6"***. Done — 13 `🎚️`
+      markers moved, `tier_table.py` has six rungs, and **TIER 6 is now
+      "handles every error situation correctly"**. He placed RAM fidelity ABOVE
+      exhaustive error handling deliberately.
+      ❌ **"EXACTLY" IS NOT THE BAR, AND HE AGREED — THE REFERENCES DISAGREE WITH
+      EACH OTHER.** Measured in this tree: the CF-3300 and the Philips NMS 1200
+      differ by **+2** in the file-buffer pointer (`expansion-protocol.md`
+      §6.6ae), and the VG-8020 and CF-3300 have different stack tops (`$F09E`
+      vs `$DB95`, the `VARPTR(#n)` item). *"The reference's RAM usage"* has no
+      single referent to match, so a bar of *exact* equality is not well formed.
+      ✅ **HIS ADDITION, AND IT WIDENS THE RUNG BEYOND WHAT I PROPOSED:** *"I do
+      think we can also see what undocumented region gets used and should also
+      try to match that."* So the rung is **not** limited to the documented work
+      area — which cells the reference touches in its OWN workspace is in scope
+      too, as a target to match where we reasonably can.
+      🔴 **CLEAN ROOM, AND THIS IS THE LINE THAT MAKES THE WIDENING LEGAL.**
+      Work-area RAM **addresses and CONTENTS are readable** (`expansion-protocol.md`
+      §7), and that covers undocumented cells just as much as documented ones —
+      *observing which addresses get written is not decoding anything*. What
+      stays forbidden is §8.5: **the BYTES of the reference's RAM-RESIDENT CODE**.
+      A written cell inside one of those five clusters is therefore reported as
+      *belonging to a cluster*, never decoded. ROM bytes remain out entirely.
+      ➡️ **THE BAR, IN TWO HALVES, BECAUSE THEY HAVE DIFFERENT EVIDENCE:**
+      **(i) OBSERVABLE** — what a BASIC program can see: `FRE(0)`, `FRE("")`,
+      `VARPTR` deltas, `PEEK` of documented cells, what `CLEAR n` leaves. These
+      are behavioural and belong to the keyword that exposes them.
+      **(ii) FOOTPRINT** — which cells get written for a given operation, in both
+      workspaces. Measured by the watchpoint method, not by reading code.
+      ⚠️ **AND A CAUTION ABOUT PLACEMENT THAT THE RENUMBER DOES NOT REMOVE:** an
+      observable RAM divergence can break an ORDINARY program — `PEEK(VARPTR(A$))`
+      is not exotic in MSX-land. When one does, it deserves the tier its IMPACT
+      earns, which may be TIER 1, not this rung. The rung is where the SYSTEMATIC
+      comparison lives, not a place to park breakage.
+      🤖 **AUTONOMOUS** — the MEASUREMENT is permitted and needs no ruling. ⚠️ Any
+      ADJUSTMENT it proposes comes back to Joost: moving a cell to match the
+      reference changes an address this tree has already made decisions about
+      (`docs/sysvar-rehoming-decisions.md`).
+
 - [ ] 🔬 **COMPARE RAM *USAGE* AGAINST THE REFERENCE, CELL BY CELL — AND JOOST'S
       HUNCH IS THE HYPOTHESIS TO SCORE**
       🎚️ TIER 2 — reasonable time: it is not a divergence hunt, it is a cost
       comparison that feeds the eviction's remaining RAM blockers.
       🤖 **AUTONOMOUS** — measurement of the DOCUMENTED work area, which the
       clean-room line explicitly permits.
-      🙋 **FILED AT JOOST'S REQUEST, 2026-09-21, AND EXPLICITLY NOT NOW:** *"This
-      is not something for now, but it may be valuable to compare variable usage
-      between our implementation and reference and if we differ adjust if
-      needed."* Then, the same day: *"I have a hunch reference is very economical
+      🟢 **THE "NOT NOW" IS LIFTED, 2026-09-22.** Filed at his request on
+      2026-09-21 as *"This is not something for now, but it may be valuable to
+      compare variable usage between our implementation and reference and if we
+      differ adjust if needed"* — and his TIER 5 ruling the next day asks for
+      exactly this, widened to the UNDOCUMENTED regions. **This item is the
+      measurement that populates the TIER 5 rung above.** Then, the same day: *"I have a hunch reference is very economical
       with RAM."*
       🔮 **THE HUNCH IS A PREDICTION AND MUST BE SCORED AS ONE, INCLUDING A
       MISS.** State it before the run: *the reference writes FEWER distinct RAM
@@ -1421,7 +1467,7 @@ item — do **one item per session** to keep context lean.
 
 - [x] 🟢 **`ex_stop`'s MISSING EDGE SEED — CLOSED 2026-09-22 (D-STOPSEED):
       THE DECISION STANDS, ON EVIDENCE THAT ACTUALLY TESTS IT.**
-      🎚️ TIER 5 — EVERY ERROR. Inert either way, as expected; this was a
+      🎚️ TIER 6 — EVERY ERROR. Inert either way, as expected; this was a
       correctness-of-the-record item, not a behaviour item.
       🤖 **AUTONOMOUS** — our own ROM; no ruling needed and none taken.
       🎯 **THE WAY IN WAS TO TEST THE *OTHER* REASON.** The spec gives TWO
@@ -4103,7 +4149,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:21816 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:21862 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -4269,7 +4315,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:8912 (T-6FE392)8 (T-529ABE)` from `TODO.md:20210 (T-529ABE)`: a
+      `TODO.md:8958 (T-6FE392)8 (T-529ABE)` from `TODO.md:20256 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -6373,7 +6419,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `RENUM`/`AUTO` behave alike. So D-NEWSTMT's missing-`stmt_table`-entry defect
       was NOT a class: every other program verb already had its entry, and `NEW` was
       the only one reachable solely from `dispatch_line`'s pre-tokenise match.
-      🎚️ TIER 5 — the error IS raised and is the right error; what differs is the
+      🎚️ TIER 6 — the error IS raised and is the right error; what differs is the
       line attribution on `CONT`
       🙋 NEEDS-JOOST — TIER 5, and the fix touches a path whose comment records a
       DELIBERATE design choice (`print_msg` instead of `raise_error`, to keep the
@@ -8940,7 +8986,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       uses, or (c) accept the body copy and fix the PRECEDENCE some other way.
       Each touches a load-bearing subsystem whose internal invariant has no
       external oracle — which is why this is now 🙋 and not 🤖.
-      🎚️ TIER 5 — which of two applicable errors wins (`String too long` precedence)
+      🎚️ TIER 6 — which of two applicable errors wins (`String too long` precedence)
       🙋 **NEEDS-JOOST** — a refactor of the string heap's ownership rules.
 
 - [x] 🟢 **THE MISSING-OPERAND HALF: `5+` READS ERR 24 WHERE BOTH REFERENCES SAY
@@ -9756,7 +9802,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:20210 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:20256 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -10675,7 +10721,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       fix is written and costs ten bytes of main page 1, and if a page-1 eviction
       ever makes bytes cheap this is a two-minute job. It is parked at the tier its
       likelihood deserves, not deleted for being inconvenient.
-      🎚️ TIER 5 — every error: which of two applicable errors wins for `SWAP A,B$`
+      🎚️ TIER 6 — every error: which of two applicable errors wins for `SWAP A,B$`
       🤖 AUTONOMOUS — reproduced in one row, and the passing rows bound it tightly.
       ⚠️ **APPARATUS NOTE FOR EVERY FUTURE ROW: MSX VARIABLE NAMES ARE SIGNIFICANT
       TO TWO CHARACTERS.** `ZQ9` and `ZQ7` are the SAME variable, and the control
@@ -12740,7 +12786,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       canonical marker in one block as AMBIGUOUS, and it is right to: this item
       has one open question, not two.
       🎯 The scouting the older 🔭 asked for is DONE; what is left is the call.
-      🎚️ TIER 5 — `NAME old AS <non-string>` type fault
+      🎚️ TIER 6 — `NAME old AS <non-string>` type fault
       🔁 **PARKED (Joost, 2026-09-10): every TIER 5 item waits until TIERS 1–4 are clean, and
       *"when we get to TIER 5, we'll have to do a prioritization together"* —
       the TIER 5 order is a joint pass, not the loop's pick.
@@ -13843,7 +13889,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       per temp against a 255-character line, so `DEF FN` was picked as the
       cheapest lever at 6 — and the FN ceiling of 10 stops the ramp long before
       32 temps. The two are the same wall.
-      🎚️ TIER 5 — nested `FN` beyond depth 10 (a symptom of the misplaced `SP`, whose cause item is TIER 1 by D-PARENNEST — this row stays the mild face of it)
+      🎚️ TIER 6 — nested `FN` beyond depth 10 (a symptom of the misplaced `SP`, whose cause item is TIER 1 by D-PARENNEST — this row stays the mild face of it)
       🔁 **PARKED (Joost, 2026-09-10): every TIER 5 item waits until TIERS 1–4 are clean, and
       *"when we get to TIER 5, we'll have to do a prioritization together"* —
       the TIER 5 order is a joint pass, not the loop's pick.
@@ -14188,7 +14234,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       reference"* and RAM-NEGATIVE, at the price of a wider change. Spending an
       authorisation on a shape it was not given for is the thing to check first
       [[a-priced-decline-is-a-claim-about-a-design]].
-      🎚️ TIER 5 — `DEF FN` formals aliasing
+      🎚️ TIER 6 — `DEF FN` formals aliasing
       🔁 **PARKED (Joost, 2026-09-10): every TIER 5 item waits until TIERS 1–4 are clean, and
       *"when we get to TIER 5, we'll have to do a prioritization together"* —
       the TIER 5 order is a joint pass, not the loop's pick.
@@ -15042,7 +15088,7 @@ finds zero shared names (a renamed block would otherwise make it silently blind)
       different shape**, which is a different fix and a different risk.
       🟢 `no PLAY at all` reads `0 0 0 0` on both — the resting state is shared,
       so every row above is read against a real zero.
-      🎚️ TIER 5 — `PLAY(n)` transient
+      🎚️ TIER 6 — `PLAY(n)` transient
       🔁 **PARKED (Joost, 2026-09-10): every TIER 5 item waits until TIERS 1–4 are clean, and
       *"when we get to TIER 5, we'll have to do a prioritization together"* —
       the TIER 5 order is a joint pass, not the loop's pick.
@@ -18085,7 +18131,7 @@ finds zero shared names (a renamed block would otherwise make it silently blind)
       So 165 B buys a faithful reproduction of a guard with a hole in it. That is
       still the charter answer — but it is not the safety answer I implied
       [[a-justification-parenthesis-is-an-unrun-claim]].
-      🎚️ TIER 5 — `OPEN` of the same file on two channels is accepted here, refused on the CF-3300
+      🎚️ TIER 6 — `OPEN` of the same file on two channels is accepted here, refused on the CF-3300
       🙋 **NEEDS-JOOST — the measuring is DONE, the spend is yours.** 165 B of
       RAM to make zerobas refuse what it currently permits, mirroring a
       per-channel verbatim name the reference is now measured to keep.
@@ -18889,7 +18935,7 @@ finds zero shared names (a renamed block would otherwise make it silently blind)
       ⚠️ Carries the hazard S-CLP-4 already wrote down: a variable pointing into
       program text means `MID$(A$,1,1)="X"` writes into the PROGRAM. Unpriced,
       and it is a design question (store-by-reference), not a byte question.
-      🎚️ TIER 5 — `DATA` literal string-pool accounting (`FRE` differs)
+      🎚️ TIER 6 — `DATA` literal string-pool accounting (`FRE` differs)
       🔁 **PARKED (Joost, 2026-09-10): every TIER 5 item waits until TIERS 1–4 are clean, and
       *"when we get to TIER 5, we'll have to do a prioritization together"* —
       the TIER 5 order is a joint pass, not the loop's pick.
@@ -19133,7 +19179,7 @@ finds zero shared names (a renamed block would otherwise make it silently blind)
       is exactly the shape of the `ZB`-prompt and disk-banner calls: faithful vs
       sane, decided case by case. Today's answer was "faithful" and it improved
       BOTH; this row is the one where it would not.
-      🎚️ TIER 5 — `FIELD` + `VAL` descriptor binding corner
+      🎚️ TIER 6 — `FIELD` + `VAL` descriptor binding corner
       🔁 **PARKED (Joost, 2026-09-10): every TIER 5 item waits until TIERS 1–4 are clean, and
       *"when we get to TIER 5, we'll have to do a prioritization together"* —
       the TIER 5 order is a joint pass, not the loop's pick.
@@ -21835,7 +21881,7 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       not something a reference or a gate can settle, and the faithful behaviour
       is a HANG that no row can carry. Misfiling toward 🤖 is the expensive
       direction, which is why ties go to 🙋.
-      🎚️ TIER 5 — `LOAD"CAS:"` accepts what the reference hangs on
+      🎚️ TIER 6 — `LOAD"CAS:"` accepts what the reference hangs on
       🙋 NEEDS-JOOST — bug-for-bug fidelity here costs a working feature; that trade is his call.
 
 - [x] 🔴 **A LINE STORE IS BOUNDED BY THE CONSTANT `TXTMAX`, NOT BY HIMEM.**
@@ -24476,7 +24522,7 @@ and left 37 B behind.
       question: evaluating PEEK's own argument writes `VALTYP` before PEEK reads
       it. One-sided by construction — the cell is zerobas's own private one and
       has no reference column.
-      🎚️ TIER 5 — `VALTYP` at cold boot (declined)
+      🎚️ TIER 6 — `VALTYP` at cold boot (declined)
       🔁 **PARKED (Joost, 2026-09-10): every TIER 5 item waits until TIERS 1–4 are clean, and
       *"when we get to TIER 5, we'll have to do a prioritization together"* —
       the TIER 5 order is a joint pass, not the loop's pick.
