@@ -333,6 +333,116 @@ REACHED = {1: "TIER 0 — open TIER 1 item (happy path broken or keyword MISSING
 GROUP_ORDER = ["t1", "kwgap", 1, 2, 3, 4, 5, "kw1", "kw1c", "kw3", "kw3c",
                "kwcomp", "kwpart", "kwrefuse", None]
 
+# 🔴 D-KWSTATUS (Joost, 2026-09-23: *"I have a feeling this TIER ranking is
+# confusing. Can we come up with a better mechanism?"*). It was, and the
+# confusion was STRUCTURAL rather than cosmetic: ONE ordinal scale was carrying
+# three unrelated jobs -- an ITEM's priority (fix happy paths before rare
+# errors), a KEYWORD's attainment, and two quality dimensions (speed, RAM) that
+# are orthogonal to correctness rather than harder versions of it. `TIER 2` on
+# an item meant *a defect is filed at the reasonable-time rung*; on a keyword it
+# read as *it has reached reasonable time*. Same token, near-opposite sense.
+# 🔬 THE EVIDENCE WAS IN THE GENERATED SHEET ITSELF, not in taste:
+#   * it asserted "Every keyword is TIER 0: no tier is established for any of
+#     them" and, twelve lines later, "TIER 1 — REACHED ... 139";
+#   * eleven of the fifteen GROUP_ORDER buckets were all labelled `TIER 0`,
+#     which is why that blanket sentence had to be bolted on at all;
+#   * `LOAD` moved from TIER 0 to TIER 1 on 2026-09-23 with NO item closing, and
+#     its row then read "no open item" while FOUR stood [[two-sections-of-one-doc-disagreed]].
+# 🎯 SO: ONE WORD, ONE MEANING. `TIER n` now appears only as an ITEM's priority.
+# A keyword has a STATUS, and the distinctions the eleven labels were encoding
+# move into EVIDENCE COLUMNS, where they cannot contradict each other -- a count
+# in a column cannot print "no open item" while four stand.
+# ⚠️ PRESENTATION ONLY, AND DELIBERATELY SO. `reached_group` is untouched and
+# still pinned by S-series arms, so no keyword changes classification here; this
+# maps its buckets onto a status. A redesign that also re-derived the buckets
+# would have made "did anything move?" unanswerable in the same diff.
+STATUS = {
+    "COVERED": ("🟢 COVERED",
+                "knife-proven CONNECTED, every authored FORM covered by an "
+                "agreeing row, and no open TIER 1 item"),
+    "PARTIAL": ("🟡 PARTIAL",
+                "knife-proven CONNECTED, but not every authored FORM has an "
+                "agreeing row yet"),
+    "GAP": ("🔴 GAP",
+            "a TIER 1 item is filed against it, or kwsweep sees a divergence "
+            "nobody has filed"),
+    "UNPROVEN": ("⚪ UNPROVEN",
+                 "cannot be scored: no authored form list, or not knife-proven "
+                 "CONNECTED. Agreement is not attainment"),
+    "NA": ("⚫ N/A",
+           "not a statement of its own — a syntax particle, a composite-only "
+           "word, or one both references refuse"),
+}
+STATUS_ORDER = ["COVERED", "PARTIAL", "GAP", "UNPROVEN", "NA"]
+# The buckets whose status does not depend on the keyword's own evidence.
+# 🔴 ONLY THE BUCKETS WHOSE STATUS CANNOT DEPEND ON THE KEYWORD'S OWN EVIDENCE.
+# The `kw1`/`kw1c`/`kw3`/`kw3c` buckets are NOT here, and the first cut of this
+# table put them under a flat UNPROVEN -- which printed `VARPTR` as UNPROVEN
+# beside its own evidence reading `knife ✓ · 1/2 forms`, i.e. knife-proven with
+# partial coverage, which is exactly PARTIAL. A bucket name is not a blocker;
+# ask `tier1_status` what the blocker IS [[a-bucket-label-is-not-a-cause]].
+GROUP_STATUS = {"t1": "COVERED", 1: "GAP", "kwgap": "GAP",
+                "kwpart": "NA", "kwcomp": "NA", "kwrefuse": "NA"}
+
+
+def kw_status(grp, kw, forms_seen, connected, blocked_by_tier1_item):
+    """(status, blocker) for a keyword, from the bucket `reached_group` gave it.
+
+    ⚠️ A bucket at tier 2..6 does NOT decide the status. Joost ruled
+    (2026-09-17) that an item above tier 1 never holds a keyword out, so the
+    real blocker is FORM COVERAGE or CONNECTEDNESS and the item is an ALSO --
+    which is what the old labels got backwards and what the evidence column
+    now says outright."""
+    if grp in GROUP_STATUS:
+        return GROUP_STATUS[grp], ""
+    # 1..6 minus 1 (which GROUP_STATUS owns): ask what the real blocker is.
+    _ok, why = tier1_status(kw, forms_seen, connected, blocked_by_tier1_item)
+    if _ok:
+        return "COVERED", ""
+    if "forms" in why:
+        # `0/n forms` is a different thing from `1/n`: nothing about the word is
+        # covered yet, which is a gap rather than a partial reading.
+        return ("GAP" if why.lstrip().startswith("0/") else "PARTIAL"), why
+    return "UNPROVEN", why
+
+
+def status_of(kt, kw, t3, conn, t1, nobare, parts, refuses, forms):
+    """(status_key, evidence_cell) for one keyword -- the whole per-keyword row.
+
+    One place, so the summary table and the alphabetical table can never
+    disagree about a keyword the way two halves of this sheet once disagreed
+    about the denominator [[two-sections-of-one-doc-disagreed]]."""
+    g, lines, e = kt[kw]
+    grp = reached_group(g, e, kw in t3, kw in conn, kw in t1, kw in nobare,
+                        kw in parts, kw in refuses)
+    st, _why = kw_status(grp, kw, forms.get(kw, set()), kw in conn,
+                         blocks_tier1(kt.get(kw)))
+    if grp == "kwpart":
+        return st, "syntax particle \u2014 never a statement of its own"
+    if grp == "kwcomp":
+        return st, "no BARE form \u2014 exercised only inside a composite"
+    if grp == "kwrefuse":
+        return st, "both references REFUSE it \u2014 the refusal is the whole bar"
+    return st, kw_evidence(kw, forms.get(kw, set()), kw in conn, g, lines)
+
+
+def kw_evidence(kw, forms_seen, connected, gap_tier, lines):
+    """The evidence cell: one clause per question, none of them ordinal."""
+    import kwforms
+    need = kwforms.forms_for(kw)
+    bits = ["knife %s" % ("✓" if connected else "✗")]
+    bits.append("%d/%d forms" % (len(([f for f in need if f in forms_seen])),
+                                 len(need)) if need else "no form list")
+    if gap_tier is not None:
+        # ⚠️ `gap_tier` is the WORST (lowest) tier among the open items, and the
+        # citations are ALL of them -- so say both. "open TIER 2" above four
+        # citations spanning tiers 2/2/4/6 read as four TIER 2 items.
+        n = len(lines)
+        bits.append("%s open, worst TIER %s (%s)"
+                    % (n, gap_tier, " ".join("TODO.md:%d" % l
+                                             for l in sorted(lines))))
+    return " · ".join(bits)
+
 
 KWSWEEP_PIN = os.path.join(ROOT, "build", "kwsweep-verdicts.json")
 KNIFE_PIN = os.path.join(ROOT, "scratchpad", "kwknife-connected.json")
@@ -852,17 +962,15 @@ def fmt_keywords(its, kws, evidence=None):
     refuses = refuse_only()
     forms = kwsweep_forms(kws)
     groups = defaultdict(list)
-    for kw, (g, _, e) in kt.items():
-        groups[reached_group(g, e, kw in t3, kw in conn, kw in t1,
-                             kw in nobare, kw in parts,
-                             kw in refuses)].append(kw)
+    for kw in kt:
+        st, _ = status_of(kt, kw, t3, conn, t1, nobare, parts, refuses, forms)
+        groups[st].append(kw)
     out = []
-    for g in GROUP_ORDER:
-        if g is None or not groups[g]:
+    for st in STATUS_ORDER:
+        if not groups[st]:
             continue
-        out.append(f"{REACHED[g]:58} {len(groups[g]):3}  " + " ".join(sorted(groups[g])))
-    none = sorted(groups[None])
-    out.append(f"{'no known gap (NOT a tier -- no item, no kwsweep row)':58} {len(none):3}  " + " ".join(none))
+        out.append(f"{STATUS[st][0]:14} {len(groups[st]):3}  "
+                   + " ".join(sorted(groups[st])))
     out.append("")
     ev_n = sum(1 for _, (_, _, e) in kt.items() if e)
     out.append(f"kwsweep evidence: {ev_n} keyword(s) from {KWSWEEP_PIN if ev_n else 'NO PIN -- run make kwsweep (it runs in every battery)'}")
@@ -947,14 +1055,20 @@ def _composite_section(kws, evidence=None, conn=None):
                 miss.append("missing " + " ".join(gap))
         if n not in conn:
             miss.append("not knife-proven CONNECTED")
-        reached = "**TIER 1**" if n in awarded else "TIER 0"
+        # \U0001f534 D-KWSTATUS: a composite gets the same STATUS vocabulary as a
+        # keyword. It said `TIER 0` until 2026-09-23 -- the eleventh meaning of
+        # that token, and the one the negative control below caught.
+        reached = (STATUS["COVERED"][0] if n in awarded
+                   else STATUS["GAP"][0] if need and not seen
+                   else STATUS["PARTIAL"][0] if need and n in conn
+                   else STATUS["UNPROVEN"][0])
         nf = "%d/%d" % (len(seen), len(need)) if need else "\u2014"
         out.append("| `%s` | %s | %s | %s | %s |"
                    % (n, reached, nf, agree, "; ".join(miss) or "\u2014"))
     return out
 
 
-def fmt_markdown(its, kws, evidence=None, t3=None, connected=None):
+def fmt_markdown(its, kws, evidence=None, t3=None, connected=None, forms=None):
     """🔴 `evidence`/`t3` are INJECTABLE because S14 was not hermetic: it built its
     markdown from the LIVE build/kwsweep-verdicts.json, so the expected `LOF` row
     changed the moment a sweep re-ran and gave LOF a verdict (it gained a
@@ -978,7 +1092,13 @@ def fmt_markdown(its, kws, evidence=None, t3=None, connected=None):
     nobare = no_bare_form()
     parts = particles()
     refuses = refuse_only()
-    forms = kwsweep_forms(kws)
+    # 🔴 INJECTABLE FOR THE SAME REASON `evidence`/`t3` ARE, AND S14 PROVED IT
+    # THE HARD WAY. Putting the FORM COUNT into a keyword row made this function
+    # read `build/kwsweep-verdicts.json` -- which `make gates` DELETES in its
+    # build step -- so S14 passed at the prompt and FAILED in the battery, on
+    # the same bytes. A selftest that depends on a build artefact is a flake
+    # with a schedule [[a-knife-can-be-inert-because-the-build-did-not-happen]].
+    forms = kwsweep_forms(kws) if forms is None else forms
 
     out = ["# zerobas — priority-tier status", "",
            "Generated by `make tiers-md` from the `🎚️` tag on every open "
@@ -1050,93 +1170,47 @@ def fmt_markdown(its, kws, evidence=None, t3=None, connected=None):
                _nobare_prose(),
                len(composite_names()),
                len(tier1_statements(statements(kws), conn, forms, kws))), "",
-            "## Every keyword and its tier", "",
-            "**Every keyword is TIER 0: no tier is established for any of them.** The text "
-            "beside each says only what is KNOWN AGAINST it — an open item at tier n, a gap "
-            "the sweep sees, or how many rows agree. None of that is attainment.", "",
-            "| established tier, and what is known against it | n | keywords |", "|---|---|---|"]
+            "## Every keyword and its status", "",
+            "🚩 **`TIER n` IN THIS DOCUMENT ALWAYS MEANS AN *ITEM\'S* "
+            "PRIORITY — never a rung a keyword has climbed.** A keyword has a "
+            "STATUS. The two were one ordinal scale until 2026-09-23 (Joost: "
+            "*\"I have a feeling this TIER ranking is confusing\"*), and it was: "
+            "`TIER 2` on an item means *a defect is filed at the reasonable-time "
+            "rung*, while on a keyword it read as *it has reached reasonable "
+            "time* — the same token in near-opposite senses. Eleven of the "
+            "fifteen buckets were all called `TIER 0`, which is why this section "
+            "used to open by declaring that every keyword was TIER 0 anyway, "
+            "twelve lines above a row awarding TIER 1 to 139 of them.", "",
+            "⚠️ **A STATUS IS NOT AN ATTAINMENT EITHER.** `🟢 COVERED` means "
+            "*nothing is known against it*: the forms that were authored have "
+            "agreeing rows and no TIER 1 item is filed. It does NOT mean the "
+            "keyword is verified — that needs BREADTH (rows covering a verb\'s "
+            "real forms) and NON-VACUITY (a mutation check showing those rows go "
+            "red if it breaks), and neither has been demonstrated for any "
+            "keyword.", "",
+            "| status | what it means | n | keywords |", "|---|---|---|---|"]
     groups = defaultdict(list)
-    for kw, (g, _, e) in kt.items():
-        groups[reached_group(g, e, kw in t3, kw in conn, kw in t1,
-                             kw in nobare, kw in parts,
-                             kw in refuses)].append(kw)
-    for g in GROUP_ORDER:
-        if g is None or not groups[g]:
+    for kw in kt:
+        st, _ = status_of(kt, kw, t3, conn, t1, nobare, parts, refuses, forms)
+        groups[st].append(kw)
+    for st in STATUS_ORDER:
+        if not groups[st]:
             continue
-        out.append(f"| {REACHED[g]} | {len(groups[g])} | " + " ".join(f"`{k}`" for k in sorted(groups[g])) + " |")
-    none = sorted(groups[None])
-    out.append(f"| no known gap (no item, no kwsweep row — unverified) | {len(none)} | " + " ".join(f"`{k}`" for k in none) + " |")
-    out += ["", FOOTER, "", "### Alphabetical", "", "| keyword | reached | evidence |", "|---|---|---|"]
+        out.append("| %s | %s | %d | %s |"
+                   % (STATUS[st][0], STATUS[st][1], len(groups[st]),
+                      " ".join(f"`{k}`" for k in sorted(groups[st]))))
+    out += ["", FOOTER, "", "### Alphabetical", "",
+            "| keyword | status | evidence |", "|---|---|---|"]
+    # 🎯 ONE CALL, NOT A FIFTEEN-ARM CHAIN. Every arm this replaced printed its
+    # own sentence, and they drifted: the `t1` arm said "no open item" for
+    # keywords with four, while the arm two below it existed precisely to name
+    # the item it claimed did not exist. A status plus EVIDENCE COLUMNS cannot
+    # do that -- the open-item count is a column, so it is either there or it is
+    # not [[two-sections-of-one-doc-disagreed]].
     for kw in sorted(kws):
-        g, lines, e = kt[kw]
-        grp = reached_group(g, e, kw in t3, kw in conn, kw in t1, kw in nobare,
-                            kw in parts, kw in refuses)
-        import kwforms
-        _need = kwforms.forms_for(kw)
-        if grp == "t1":
-            _n = len(_need)
-            out.append(f"| `{kw}` | **TIER 1** | CONNECTED; "
-                       f"{'its 1 form agrees' if _n == 1 else f'all {_n} forms agree'}"
-                       f"; no open item |")
-        # ⚠️ `g != 1` KEEPS THE TIER 1 CASE ON THE ARM BELOW, AND S14 IS WHAT
-        # SAID SO. Widening this to every `g` sent `LOF` -- whose blocker really
-        # IS its TIER 1 item -- through `tier1_status`, which names the item but
-        # DROPS the TODO.md citation, the more useful half. When the item is the
-        # cause, cite it; when it is not, say what is.
-        elif _need and g is None:
-            # ⚠️ `and g is None`: when an open item ALSO stands against the keyword,
-            # the arm below keeps the cell that names the item and its TODO.md
-            # line. `tier1_status` would print "an open TIER item stands against
-            # it" and drop the citation, which is the more useful half.
-            # 🎚️ A KEYWORD WITH AN AUTHORED BAR SAYS HOW FAR SHORT IT IS. Without
-            # this, `LOCATE` at 3 of 4 forms printed "1 row agrees, connected" --
-            # the same cell as a keyword with one row and no bar at all, which
-            # hides the single most useful thing the table knows: WHICH form is
-            # missing. `tier1_status` already computes the sentence; the only bug
-            # was not printing it.
-            _ok, _why = tier1_status(kw, forms.get(kw, set()), kw in conn,
-                                     blocks_tier1(kt.get(kw)))
-            out.append(f"| `{kw}` | TIER 0 | {_why} |")
-        # 🎯 AN ITEM ABOVE TIER 1 IS AN *ALSO*, NEVER THE REASON. `CONT` has no
-        # authored form list and is not knife-proven CONNECTED -- two real TIER 1
-        # blockers -- and the sheet printed only "open TIER 6 item", which is the
-        # one thing that does NOT hold it out of TIER 1 (Joost, 2026-09-17).
-        elif g is not None and g != 1 and grp not in ("kwrefuse", "kwpart",
-                                                      "kwcomp"):
-            _ok, _why = tier1_status(kw, forms.get(kw, set()), kw in conn,
-                                     blocks_tier1(kt.get(kw)))
-            if kw not in conn and "CONNECTED" not in _why:
-                _why += "; not knife-proven CONNECTED"
-            _why += ("; an open TIER %s item also stands, %s"
-                     % (g, " ".join("TODO.md:%d" % l for l in sorted(lines))))
-            out.append(f"| `{kw}` | TIER 0 | {_why} |")
-        elif grp == "kwrefuse":
-            out.append(f"| `{kw}` | \u2014 | refused by the reference too; no happy "
-                       f"path here |")
-        elif grp == "kwpart":
-            out.append(f"| `{kw}` | \u2014 | a syntax particle, not a statement |")
-        elif grp == "kwcomp":
-            out.append(f"| `{kw}` | TIER 0 | no bare form; only as a composite"
-                       + (", connected" if kw in conn else "") + " |")
-        elif grp is None:
-            out.append(f"| `{kw}` | TIER 0 | no known gap, no row |")
-        elif grp == "kw1":
-            out.append(f"| `{kw}` | TIER 0 | no known gap; 1 row agrees |")
-        elif grp == "kw1c":
-            out.append(f"| `{kw}` | TIER 0 | no known gap; 1 row agrees, connected |")
-        elif grp == "kw3c":
-            out.append(f"| `{kw}` | TIER 0 | no known gap; 2 rows agree, connected |")
-        elif grp == "kw3":
-            # D-KWT3: the rung above kw1 -- a SECOND row, scoring an error
-            # situation. `g` is None for both, so this arm must come before the
-            # one below, which indexes REACHED by the GAP tier.
-            out.append(f"| `{kw}` | TIER 0 | no known gap; 2 rows agree (happy + error) |")
-        elif grp == "kwgap":
-            out.append(f"| `{kw}` | GAP, unfiled | kwsweep {e} and no open item |")
-        else:
-            # the cell is always TIER 0 now; what varies is the text beside it
-            out.append(f"| `{kw}` | TIER 0 | open TIER {g} item, TODO.md {', '.join(map(str, lines))}"
-                       + (f"; kwsweep {e}" if e else "") + " |")
+        st, ev = status_of(kt, kw, t3, conn, t1, nobare, parts, refuses, forms)
+        out.append(f"| `{kw}` | {STATUS[st][0]} | {ev} |")
+
     out += _composite_section(kws, evidence, conn)
     out += ["",
             "## Open items, keyword first", "",
@@ -1267,9 +1341,22 @@ def selftest():
         all(TAG.match(f"      🎚️ {t} — x") for t in TIERS))
     arm("S6 `DEF FN` yields both keywords", g.get("DEF") == {("TIER 5", 9)} and g.get("FN") == {("TIER 5", 9)})
     arm("S7 unbackticked English words (AND, KEY) do NOT match", "AND" not in g and "KEY" not in g)
+    # \U0001f534 D-KWSTATUS: the line this used to pin ("no known gap (NOT a tier
+    # -- ...)") was its own bucket in the text emitter. A keyword with nothing
+    # known about it is UNPROVEN now -- same fact, and it no longer needs a
+    # sentence explaining that the bucket is not a tier.
+    _fk = fmt_keywords(its, kws)
     arm("S8 a keyword with no item is absent from gaps, present in the footer",
-        "ZZZ" not in g and "no known gap (NOT a tier -- no item, no kwsweep row)" in fmt_keywords(its, kws)
-        and fmt_keywords(its, kws).split("\n")[-1].startswith("8 keywords"))
+        "ZZZ" not in g
+        and any(l.startswith(STATUS["UNPROVEN"][0]) and "ZZZ" in l
+                for l in _fk.split("\n"))
+        and _fk.split("\n")[-1].startswith("8 keywords"))
+    # \U0001f534 AND THE TEXT EMITTER MUST NOT LABEL ANYTHING TIER 0 EITHER. S14
+    # covers the markdown; without this the two halves could drift apart again,
+    # which is the exact failure this sheet has already had once
+    # [[two-sections-of-one-doc-disagreed]].
+    arm("S8b NEGATIVE: the text summary carries no TIER 0 bucket",
+        "TIER 0" not in _fk)
     arm("S9 summary counts UNTAGGED separately", ("UNTAGGED", 1) in summary(its))
     arm("S11 a keyword named only in the BODY does not count", "CLEAR" not in g)
     arm("S10 the real kwtable parses to 150+ keywords", len(kwtable_keywords()) >= 150)
@@ -1383,12 +1470,35 @@ def selftest():
         refuse_only() <= _real
         and refuse_only() <= set(statements(_real))
         and not (refuse_only() & particles()))
-    md = fmt_markdown(its, kws, evidence={}, t3=set(), connected=set())
+    # LOF's only authored form is `length`; handing it in makes the rows below
+    # depend on THIS fixture and not on whatever pin happens to be on disk.
+    md = fmt_markdown(its, kws, evidence={}, t3=set(), connected=set(),
+                      forms={"LOF": {"length"}})
     _s14 = [("summary row",
              "| TIER 1 | works correctly in the happy path \u2014 or, where there "
              "is no happy path, in the normal failing path | 1 |" in md),
-            ("LOF row", "| `LOF` | TIER 0 | open TIER 1 item, TODO.md 2 |" in md),
-            ("ZZZ row", "| `ZZZ` | TIER 0 | no known gap, no row |" in md),
+            # \U0001f534 D-KWSTATUS: THE ROWS SAY STRICTLY MORE THAN THEY DID.
+            # `LOF`'s old cell was "open TIER 1 item, TODO.md 2" and mentioned
+            # neither that it HAS all its forms nor that it is NOT knife-proven
+            # -- both of which a reader needs to know what to do about it.
+            ("LOF row",
+             "| `LOF` | \U0001f534 GAP | knife \u2717 \u00b7 1/1 forms \u00b7 1 open, worst "
+             "TIER 1 (TODO.md:2) |" in md),
+            ("ZZZ row",
+             "| `ZZZ` | \u26aa UNPROVEN | knife \u2717 \u00b7 no form list |" in md),
+            # \U0001f534 THE INVARIANT THE WHOLE REDESIGN EXISTS FOR, AS A NEGATIVE
+            # CONTROL. `TIER 0` meant eleven different things and read as a rank
+            # of zero; if it ever comes back, the sheet has started scoring
+            # keywords on the ITEM priority scale again.
+            # \u26a0\ufe0f ABOUT CELLS, NOT MENTIONS. The header and the honesty
+            # footer legitimately EXPLAIN the retired token -- forbidding the
+            # words would forbid recording why they went. What must never come
+            # back is a keyword or composite LABELLED with it.
+            ("NEGATIVE: no row is labelled TIER 0", "| TIER 0 |" not in md),
+            # \U0001f534 AND A COVERED ROW STILL CARRIES ITS OPEN-ITEM COUNT. The old
+            # `t1` arm printed "no open item" for keywords with four; the count
+            # is a COLUMN now, so it cannot go missing.
+            ("NEGATIVE: no row claims 'no open item'", "no open item" not in md),
             ("honesty footer", "not \"verified\"" in md),
             ("open-items row", "| `LOF`, `PUT` | TIER 1 | 🤖 | `LOF` and `PUT#1,255` | 2 |" in md)]
     for _n, _c in _s14:
