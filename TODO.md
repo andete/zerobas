@@ -808,17 +808,48 @@ item — do **one item per session** to keep context lean.
       `$xx00` cell as a marker. ⚠️ **AND VERIFY THE REPLACEMENT, DO NOT TRUST
       IT** — `$CFFE` is quiet in ONE measured program, which is evidence and not
       a guarantee; a marker cell is a CLAIM that nobody else writes it.
-- [ ] 🟢 **BOTH FAULTY SUITES ARE FIXED (2026-09-23); WHAT IS LEFT IS THE FOUR
-      UNRUN SITES — `kwsweep` AND `deffn-acceptance` WERE CAPTURING ROWS EARLY
-      (D-CAPGAP, answered and half-closed the same day)**
-      ⚠️ **NOT MARKED DONE, AND THAT WAS A DELIBERATE REVERSAL.** A hand-off
-      written earlier the same evening said to close this item once both suites
-      shipped. It was wrong: **four of the twelve sites are still unmeasured**
-      (`trapsvc-acceptance` 9.0, `input-devices-acceptance` 10.0,
-      `nodisk-acceptance` 2.0, `probe_refcache.py`'s own site), and closing the
-      item would orphan them. **A plan written before the work is not a
-      measurement of the work** — the item's own scope decides, not the note.
-      🤖 **AUTONOMOUS** — the remaining four need no ruling, only an A/B each.
+- [x] 🟢 **CLOSED 2026-09-24: ALL TWELVE SITES ARE ANSWERED. Two suites were
+      capturing early and are fixed; ONE would be BROKEN by the same change; one
+      "site" is not a site (D-CAPGAP).**
+      📏 **THE LAST FOUR, A/B'd AT `ZEROBAS_RUN_GAP=90`, each with `refcache`
+      reporting 0 hits so the wide arm was genuinely measured:**
+      | site | ratio | verdict |
+      |---|---|---|
+      | `trapsvc-acceptance` | 9.0 | 🟢 rows IDENTICAL — its wide `cap_gap` is legitimate inter-case spacing |
+      | `nodisk-acceptance` | 2.0 | 🟢 rows IDENTICAL |
+      | `input-devices-acceptance` | 10.0 | 🔴 **a wide budget BREAKS it** |
+      | `probe_refcache.py` | 1.2 | ⚫ **NOT A CAPTURE SITE AT ALL** |
+      🔴 **`input-devices` IS THE SECOND INDEPENDENT PROOF THAT THIS BUDGET IS
+      NEVER PER-SUITE.** It holds KEY-MATRIX bits, and the hold is pressed at the
+      capture slot MINUS `step`, so raising the slot moves the PRESS past the
+      program's sampling window. All five hold rows collapse to idle:
+      | row | base | wide |
+      |---|---|---|
+      | `space` | `Z 0 -1` | `Z 0 0` |
+      | `left` | `Z 7 0` | `Z 0 0` |
+      | `up` | `Z 1 0` | `Z 0 0` |
+      | `down` | `Z 5 0` | `Z 0 0` |
+      | `right` | `Z 3 0` | `Z 0 0` |
+      ⚠️ **AND THE SUITE STILL SAYS `PASS`, BECAUSE BOTH MACHINES FLIP
+      TOGETHER** — five rows agreeing about nothing. 🟢 It is honest enough to
+      append *"both differ from the documented value"*, which is the only reason
+      this is visible at all: **a probe that carries its expected value as well
+      as its comparison can notice a vacuous agreement; one that only compares
+      cannot.** That note is worth copying to other hold-driven suites.
+      ⚫ **AND `probe_refcache.py` IS A `gapscan.py` FALSE POSITIVE.** Both of
+      its hits are inside its OWN selftest: one is a parameter dict used only to
+      derive a cache KEY (it never boots a machine), the other runs
+      `PRINT "REFCACHE"`, which finishes instantly against an 8 s budget.
+      **`gapscan.py` counts any `cap_gap`/`step` pair in a probe file, including
+      signature defaults and selftest constants** — so the "12 sites" the item
+      was scoped on included at least one that could not capture anything.
+      *A ranked list of suspects is not a list of subjects.*
+      📊 **FINAL TALLY, 12 of 12:** 9 sites identical (banner, nameord, txtceil,
+      pusing, ramfree, trapsvc, nodisk, plus `kwsweep`'s second site) · 2 FIXED
+      (`deffn-acceptance` `run_gap=25.0`; `kwsweep`'s TAPE rows `run_gap=60.0`
+      via `TAPE_TIMING`) · 1 that must NOT be widened (`input-devices`) · 1
+      non-site. **The ratio predicted none of it**: 10.0 breaks, 9.0 is fine,
+      1.2 was one of the two real faults.
       ✅ **HE ANSWERED IT, AND THE MARKER WAS STALE UNTIL 2026-09-23:** *"yes, if
       a suite is faulty it needs to be fixed obviously"*. The approval was given
       the same day the measurement landed and this line still read NEEDS-JOOST,
@@ -4799,7 +4830,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:22741 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:22772 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -4965,7 +4996,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:9608 (T-6FE392)8 (T-529ABE)` from `TODO.md:21039 (T-529ABE)`: a
+      `TODO.md:9639 (T-6FE392)8 (T-529ABE)` from `TODO.md:21070 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -10452,7 +10483,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:21039 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:21070 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

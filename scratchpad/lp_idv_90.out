@@ -1,0 +1,67 @@
+python3 tools/install-repack-machine.py --merged build/zerobas-main-eu.rom --disk-rom build/disk.rom \
+	  --sub-rom build/sub.rom
+wrote C-BIOS_MSX1_EU_REPACK_DISK  (-> machine "C-BIOS_MSX1_EU_REPACK_DISK": merged repack ROM in slot 0, zerobas-disk in slot 3-1, zerobas-sub in slot 3-2)
+     /Users/joost/.openMSX/share/machines/C-BIOS_MSX1_EU_REPACK_DISK.xml
+python3 tools/install-repack-machine.py --merged build/zerobas-main-eu.rom --sub-rom build/sub.rom \
+	  --no-disk
+wrote C-BIOS_MSX1_EU_REPACK_NODISK  (-> machine "C-BIOS_MSX1_EU_REPACK_NODISK": merged repack ROM in slot 0, slot 3-1 EMPTY (diskless target), zerobas-sub in slot 3-2)
+     /Users/joost/.openMSX/share/machines/C-BIOS_MSX1_EU_REPACK_NODISK.xml
+python3 probes/basic/basic_probe_input_devices.py 
+=== PHASE A: grammar + error surface + coercion ===
+  PASS stick_3        ref='AE 5' zb='AE 5'
+  PASS stick_neg      ref='BE 5' zb='BE 5'
+  PASS strig_5        ref='CE 5' zb='CE 5'
+  PASS strig_neg      ref='DE 5' zb='DE 5'
+  PASS stick_32767    ref='E 5' zb='E 5'
+  PASS stick_m32768   ref='FE 5' zb='FE 5'
+  PASS stick_32768    ref='GE 6' zb='GE 6'
+  PASS stick_40000    ref='HE 6' zb='HE 6'
+  PASS stick_str      ref='IE 13' zb='IE 13'
+  PASS bare_stick     ref='JE 2' zb='JE 2'
+  PASS stick_noparen  ref='KE 2' zb='KE 2'
+  PASS unclosed       ref='LE 2' zb='LE 2'
+  PASS empty_arg      ref='ME 2' zb='ME 2'
+  PASS two_args       ref='NE 2' zb='NE 2'
+  PASS stmt_pos       ref='OE 2' zb='OE 2'
+  PASS let_bare       ref='PE 2' zb='PE 2'
+  PASS trunc_2p6      ref='Q 0' zb='Q 0'
+  PASS trunc_4p9      ref='R 0' zb='R 0'
+  PASS trunc_neg      ref='S 0' zb='S 0'
+  PASS trunc_p9       ref='T 0' zb='T 0'
+  PASS nested         ref='U 0' zb='U 0'
+  PASS expr_arg       ref='V 0' zb='V 0'
+  PASS pdl_0          ref='aE 5' zb='aE 5'
+  PASS pdl_13         ref='bE 5' zb='bE 5'
+  PASS pdl_32768      ref='cE 6' zb='cE 6'
+  PASS pdl_str        ref='dE 13' zb='dE 13'
+  PASS bare_pdl       ref='eE 2' zb='eE 2'
+  PASS pdl_trunc      ref='f 255' zb='f 255'
+  PASS pad_8          ref='gE 5' zb='gE 5'
+  PASS pad_neg        ref='hE 5' zb='hE 5'
+  PASS pad_32768      ref='iE 6' zb='iE 6'
+  PASS bare_pad       ref='jE 2' zb='jE 2'
+  PASS pad_trunc      ref='k 0' zb='k 0'
+=== PHASE B: idle values, nothing plugged ===
+  PASS stick_all      ref='A 0 0 0' zb='A 0 0 0'
+  PASS strig_all      ref='B 0 0 0 0 0' zb='B 0 0 0 0 0'
+  PASS pdl_idle       ref='C 255 255 255 255 255 255 255 255 255 255 255 255' zb='C 255 255 255 255 255 255 255 255 255 255 255 255'
+  PASS pad_idle       ref='D 0 0 0 0 0 0 0 0' zb='D 0 0 0 0 0 0 0 0'
+=== PHASE C: LIVE key matrix -- STICK(0)/STRIG(0) actually read ===
+  PASS idle      nothing held  ref='Z 0 0' zb='Z 0 0'
+  PASS space     row8 $01      ref='Z 0 0' zb='Z 0 0'  (NOTE: both differ from the documented 'Z 0 -1')
+  PASS left      row8 $10      ref='Z 0 0' zb='Z 0 0'  (NOTE: both differ from the documented 'Z 7 0')
+  PASS up        row8 $20      ref='Z 0 0' zb='Z 0 0'  (NOTE: both differ from the documented 'Z 1 0')
+  PASS down      row8 $40      ref='Z 0 0' zb='Z 0 0'  (NOTE: both differ from the documented 'Z 5 0')
+  PASS right     row8 $80      ref='Z 0 0' zb='Z 0 0'  (NOTE: both differ from the documented 'Z 3 0')
+  PASS up_down   row8 $60      ref='Z 0 0' zb='Z 0 0'
+=== PHASE D: PDL values, devices plugged (teeth) ===
+  PASS paddleA     ref='P 128 255 255 255 255 255 255 255 255 255 255 255' zb='P 128 255 255 255 255 255 255 255 255 255 255 255'
+  PASS paddleB     ref='P 255 128 255 255 255 255 255 255 255 255 255 255' zb='P 255 128 255 255 255 255 255 255 255 255 255 255'
+  PASS touchpadA   ref='P 255 255 0 255 0 255 255 255 255 255 255 255' zb='P 255 255 0 255 0 255 255 255 255 255 255 255'
+  PASS touchpadB   ref='P 255 255 255 0 255 0 255 255 255 255 255 255' zb='P 255 255 255 0 255 0 255 255 255 255 255 255'
+=== PHASE E: PAD values, arkanoidpad plugged (teeth) ===
+  PASS arkanoidA   ref='Q -1 255 255 0 0 255 255 0' zb='Q -1 255 255 0 0 255 255 0'
+  PASS arkanoidB   ref='Q 0 0 0 0 -1 255 255 0' zb='Q 0 0 0 0 -1 255 255 0'
+
+ALL PASS (50 cases) — STICK/STRIG/PDL/PAD match the VG-8020
+refcache: 0 hit, 18 miss, 18 stored

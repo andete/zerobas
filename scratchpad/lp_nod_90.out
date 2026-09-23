@@ -1,0 +1,46 @@
+python3 tools/install-repack-machine.py --merged build/zerobas-main-eu.rom --disk-rom build/disk.rom \
+	  --sub-rom build/sub.rom
+wrote C-BIOS_MSX1_EU_REPACK_DISK  (-> machine "C-BIOS_MSX1_EU_REPACK_DISK": merged repack ROM in slot 0, zerobas-disk in slot 3-1, zerobas-sub in slot 3-2)
+     /Users/joost/.openMSX/share/machines/C-BIOS_MSX1_EU_REPACK_DISK.xml
+python3 tools/install-repack-machine.py --merged build/zerobas-main-eu.rom --sub-rom build/sub.rom \
+	  --no-disk
+wrote C-BIOS_MSX1_EU_REPACK_NODISK  (-> machine "C-BIOS_MSX1_EU_REPACK_NODISK": merged repack ROM in slot 0, slot 3-1 EMPTY (diskless target), zerobas-sub in slot 3-2)
+     /Users/joost/.openMSX/share/machines/C-BIOS_MSX1_EU_REPACK_NODISK.xml
+python3 probes/basic/basic_probe_nodisk.py --gate
+
+row                        vg8020                 zb-disk               zb-nodisk   verdict
+c.print                     ' 2 '                   ' 2 '                   ' 2 '   ok (control)
+c.str                       ' 3 '                   ' 3 '                   ' 3 '   ok (control)
+k.mks                    'ERR 5 '                   ' 4 '                'ERR 5 '   ok
+k.mkd                    'ERR 5 '                   ' 8 '                'ERR 5 '   ok
+k.cvs                    'ERR 5 '                 ' 1.5 '                'ERR 5 '   ok
+k.mki                    'ERR 5 '                   ' 2 '                'ERR 5 '   ok
+k.cvi                    'ERR 5 '                 ' 258 '                'ERR 5 '   ok
+v.dskf                   'ERR 5 '                   ' 0 '                'ERR 5 '   ok
+v.eof                   'ERR 59 '               'ERR 59 '               'ERR 59 '   ok (control)
+v.lof                   'ERR 59 '               'ERR 59 '               'ERR 59 '   ok (control)
+v.cvistr                 'ERR 5 '               ' 16961 '                'ERR 5 '   ok
+v.mkifld                 'ERR 5 '                   ' 1 '                'ERR 5 '   ok
+h.files                  'ERR 5 '                'ERR 2 '                'ERR 5 '   ok
+h.kill                   'ERR 5 '               'ERR 70 '                'ERR 5 '   ok
+h.name                   'ERR 5 '               'ERR 70 '                'ERR 5 '   ok
+h.open                   'ERR 2 '               'ERR 70 '  'load error                             '   known-divergent, pinned
+k.dski                   'ERR 5 '               'ERR 70 '                'ERR 5 '   ok
+h.dsko                   'ERR 5 '               'ERR 70 '                'ERR 5 '   ok
+h.copy                   'ERR 5 '               'ERR 70 '                'ERR 5 '   ok
+h.lfiles                 'ERR 5 '                'ERR 2 '                'ERR 5 '   ok
+h.field                  'ERR 5 '               'ERR 59 '                'ERR 5 '   ok
+h.lset                   'ERR 5 '                'ERR 2 '                'ERR 5 '   ok
+h.rset                   'ERR 5 '                'ERR 2 '                'ERR 5 '   ok
+h.close                       'K'                     'K'                     'K'   ok
+h.closen                      'K'                     'K'                     'K'   ok
+v.loc                   'ERR 59 '               'ERR 59 '               'ERR 59 '   ok
+h.maxf                        'K'                     'K'                     'K'   ok
+k.cvd                    'ERR 5 '     ' 4.2434445464748 '                'ERR 5 '   ok
+h.inputn                'ERR 59 '               'ERR 59 '               'ERR 59 '   ok
+h.lineinp               'ERR 59 '               'ERR 59 '               'ERR 59 '   ok
+h.printn                'ERR 59 '               'ERR 59 '               'ERR 59 '   ok
+
+rows 31  controls-red 0  pin-drift 0  unreadable 0  pinned-divergent 1
+NODISK: PASS
+refcache: 0 hit, 93 miss, 93 stored
