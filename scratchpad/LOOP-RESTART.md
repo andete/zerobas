@@ -55,6 +55,36 @@ reclassified. COVERED is 139, the same number the old "TIER 1 — REACHED" had.
 string `no open item` may not appear at all. If either fires, the sheet has
 started scoring keywords on the ITEM priority scale again.
 
+### 🔴 …AND JOOST CAUGHT A REGRESSION IN IT THE SAME HOUR — D-KWPROVEN (`b0206cc8`)
+
+*"the old scoring system, while complicated, at least required building up tests
+and evidence to reach next tiers for a keyword"* and *"lack of items at a tier
+for a command does not actually mean there are no defects"*. **Both correct.**
+D-KWSTATUS fixed a labelling contradiction and DELETED THE LADDER in the same
+stroke; those were not the same problem. The status column measures the ABSENCE
+of filed items and I had given it a green tick reading `COVERED`, which rewards
+SILENCE — the exact inverse of what the old scheme demanded.
+📏 **THE LOSS, MEASURED:** **32 keywords carry a scored `PROVES-T3:` row and the
+new sheet rendered that ZERO times.** `kwsweep_t3` was intact throughout; only
+the rendering dropped it.
+✅ **FIXED: TWO ORTHOGONAL COLUMNS.** `🟢 COVERED` → `🟢 NO KNOWN GAP` (the
+phrase the old text emitter used, which I had deleted), plus a **PROVEN** column
+`T1✓ T2— T3✓ T4— T5— T6—`. **A rung is ticked only by a DECLARED, SCORED row,
+never by silence**, and T1 also requires knife-proven CONNECTEDNESS — so `LOF`
+reads `1/1 forms` and `T1—`.
+🎯 **T1 139/159 · T3 32/159 · T2, T4, T5, T6 ALL 0/159 — NO PROVING ROW TYPE
+EXISTS FOR THEM.** Nothing here has shown that ANY keyword runs in reasonable
+time, at on-par speed, within the reference's RAM, or handles its exhaustive
+error set. 🙋 **Designing those row types is JOOST'S** (a rung's definition is
+charter-level), and T4's cannot even be specified until the charter question is
+answered.
+⚠️ **`S36e` PINS THE FOUR ZEROES.** If it fires, someone added a proving row
+type — which must be deliberate, with its own definition of what the row proves.
+🔴 **THE LESSON, AND IT IS THE SHARPEST OF THE DAY: I MADE AN INSTRUMENT LESS
+DEMANDING WHILE MAKING IT CLEARER, AND ONLY THE CLARITY WAS ASKED FOR.** When a
+rework replaces a scale, ask what the old scale REQUIRED of the thing it
+measured, not just what it said. Simplifying a measure is a way of lowering it.
+
 ### 🤖 WHAT IS ACTUALLY AUTONOMOUS TONIGHT — RE-SCAN, DO NOT TRUST THIS LIST
 
 🔴 **`tools/tier_table.py --all` PRINTS THE *TIER LINE'S* MARKER, NOT THE
