@@ -1,0 +1,326 @@
+D-REFBUF: how many sector buffers does the reference use, and where?
+
+
+=== in-no-verb ===
+  marker cell: 4 write(s) outside the program's set, e.g. [(0, 'MAIN-P0', 0.5459319550389784), (255, 'MAIN-P0', 0.54593782170639), (0, 'MAIN-P1', 0.8039415624052777), (255, 'MAIN-P1', 0.8039474290726893)]
+  marker sequence intact; POKEs came from ['MAIN-P0', 'MAIN-P1']
+  geometry at line 0: MEMSIZ=$DC5F STKTOP=$DB97 BOTTOM=$8000 HIMEM=$DE77
+  window 1 [OPEN]: 302 cell(s) written, 198 by DISK, SP at open $BC10
+      $BBC2..$BC11 ( 80 B) x1452  DISK=760 MAIN-P0=392 MAIN-P1=266 RAM=34 STACK
+      $BDED..$BDF1 (  5 B) x7     DISK=7
+      $BDF3..$BDF3 (  1 B) x3     DISK=3
+      $BDF6..$BE09 ( 20 B) x20    DISK=1 RAM=19
+      $DEB5..$DED9 ( 37 B) x47    DISK=47
+      $F1BF..$F1C0 (  2 B) x2     DISK=2
+      $F23D..$F23E (  2 B) x4     DISK=4
+      $F2B8..$F2C4 ( 13 B) x42    DISK=42
+      $F2DC..$F2EF ( 20 B) x29    DISK=29
+      $F2F2..$F2FE ( 13 B) x18    DISK=18
+      $F306..$F306 (  1 B) x1     DISK=1
+      $F309..$F30C (  4 B) x5     DISK=5
+      $F33D..$F33F (  3 B) x6     DISK=6
+      $F355..$F356 (  2 B) x4     DISK=4
+      $F568..$F574 ( 13 B) x13    DISK=13
+      $F576..$F576 (  1 B) x1     DISK=1
+      $F5B2..$F5D2 ( 33 B) x37    DISK=5 RAM=32
+      $F666..$F66B (  6 B) x18    MAIN-P1=18
+      $F678..$F67C (  5 B) x7     MAIN-P0=3 MAIN-P1=4
+      $F6AF..$F6B2 (  4 B) x8     MAIN-P1=8
+      $F864..$F870 ( 13 B) x15    DISK=2 MAIN-P1=13
+      $FCAE..$FCAE (  1 B) x1     DISK=1
+  window 3 [read #1 (4 B)]: 112 cell(s) written, 36 by DISK, SP at open $BC10
+      $817E..$8184 (  7 B) x13    MAIN-P0=3 MAIN-P1=10
+      $BBDC..$BC11 ( 54 B) x1036  DISK=302 MAIN-P0=270 MAIN-P1=444 RAM=20 STACK
+      $BCD9..$BCDC (  4 B) x4     MAIN-P1=4
+      $BDF0..$BDF0 (  1 B) x4     DISK=4
+      $BDF3..$BDF3 (  1 B) x3     DISK=3
+      $F666..$F66B (  6 B) x24    MAIN-P1=24
+      $F678..$F67C (  5 B) x7     MAIN-P0=3 MAIN-P1=4
+      $F698..$F69E (  7 B) x15    MAIN-P1=15
+      $F6AF..$F6B2 (  4 B) x8     MAIN-P1=8
+      $F6C4..$F6C7 (  4 B) x4     MAIN-P1=4
+  window 5 [VERB]: 120 cell(s) written, 12 by DISK, SP at open $BC10
+      $8184..$818F ( 12 B) x23    MAIN-P0=8 MAIN-P1=15
+      $BBD6..$BC11 ( 60 B) x398   DISK=20 MAIN-P0=148 MAIN-P1=226 RAM=4 STACK
+      $F1BF..$F1C0 (  2 B) x2     DISK=2
+      $F666..$F66B (  6 B) x18    MAIN-P1=18
+      $F6AF..$F6B2 (  4 B) x8     MAIN-P1=8
+      $F6C4..$F6C7 (  4 B) x4     MAIN-P1=4
+      $F7F6..$F7FE (  9 B) x23    MAIN-P0=17 MAIN-P1=6
+  window 7 [read #2 (4 B)]: 112 cell(s) written, 36 by DISK, SP at open $BC10
+      $818F..$8195 (  7 B) x13    MAIN-P0=3 MAIN-P1=10
+      $BBDC..$BC11 ( 54 B) x1036  DISK=302 MAIN-P0=270 MAIN-P1=444 RAM=20 STACK
+      $BCD5..$BCD8 (  4 B) x4     MAIN-P1=4
+      $BDF0..$BDF0 (  1 B) x4     DISK=4
+      $BDF3..$BDF3 (  1 B) x4     DISK=4
+      $F666..$F66B (  6 B) x24    MAIN-P1=24
+      $F678..$F67C (  5 B) x7     MAIN-P0=3 MAIN-P1=4
+      $F698..$F69E (  7 B) x15    MAIN-P1=15
+      $F6AF..$F6B2 (  4 B) x8     MAIN-P1=8
+      $F6C4..$F6C7 (  4 B) x4     MAIN-P1=4
+  window 9 [CLOSE]: 129 cell(s) written, 65 by DISK, SP at open $BC10
+      $BBC2..$BC11 ( 80 B) x620   DISK=240 MAIN-P0=202 MAIN-P1=166 RAM=12 STACK
+      $BDED..$BDED (  1 B) x3     DISK=3
+      $BDF4..$BDF4 (  1 B) x1     DISK=1
+      $F1BF..$F1C0 (  2 B) x2     DISK=2
+      $F2B9..$F2C4 ( 12 B) x12    DISK=12
+      $F2DC..$F2DC (  1 B) x1     DISK=1
+      $F2E1..$F2E1 (  1 B) x1     DISK=1
+      $F30C..$F30C (  1 B) x1     DISK=1
+      $F666..$F66B (  6 B) x18    MAIN-P1=18
+      $F6AF..$F6B2 (  4 B) x8     MAIN-P1=8
+      $F864..$F865 (  2 B) x4     DISK=2 MAIN-P1=2
+
+=== in-KILL ===
+  marker cell: 4 write(s) outside the program's set, e.g. [(0, 'MAIN-P0', 0.5459319550389784), (255, 'MAIN-P0', 0.54593782170639), (0, 'MAIN-P1', 0.8039415624052777), (255, 'MAIN-P1', 0.8039474290726893)]
+  marker sequence intact; POKEs came from ['MAIN-P0', 'MAIN-P1']
+  geometry at line 0: MEMSIZ=$DC5F STKTOP=$DB97 BOTTOM=$8000 HIMEM=$DE77
+  window 1 [OPEN]: 302 cell(s) written, 198 by DISK, SP at open $BC10
+      $BBC2..$BC11 ( 80 B) x1452  DISK=760 MAIN-P0=392 MAIN-P1=266 RAM=34 STACK
+      $BDED..$BDF1 (  5 B) x7     DISK=7
+      $BDF3..$BDF3 (  1 B) x3     DISK=3
+      $BDF6..$BE09 ( 20 B) x20    DISK=1 RAM=19
+      $DEB5..$DED9 ( 37 B) x47    DISK=47
+      $F1BF..$F1C0 (  2 B) x2     DISK=2
+      $F23D..$F23E (  2 B) x4     DISK=4
+      $F2B8..$F2C4 ( 13 B) x42    DISK=42
+      $F2DC..$F2EF ( 20 B) x29    DISK=29
+      $F2F2..$F2FE ( 13 B) x18    DISK=18
+      $F306..$F306 (  1 B) x1     DISK=1
+      $F309..$F30C (  4 B) x5     DISK=5
+      $F33D..$F33F (  3 B) x6     DISK=6
+      $F355..$F356 (  2 B) x4     DISK=4
+      $F568..$F574 ( 13 B) x13    DISK=13
+      $F576..$F576 (  1 B) x1     DISK=1
+      $F5B2..$F5D2 ( 33 B) x37    DISK=5 RAM=32
+      $F666..$F66B (  6 B) x18    MAIN-P1=18
+      $F678..$F67C (  5 B) x7     MAIN-P0=3 MAIN-P1=4
+      $F6AF..$F6B2 (  4 B) x8     MAIN-P1=8
+      $F864..$F870 ( 13 B) x15    DISK=2 MAIN-P1=13
+      $FCAE..$FCAE (  1 B) x1     DISK=1
+  window 3 [read #1 (4 B)]: 112 cell(s) written, 36 by DISK, SP at open $BC10
+      $8183..$8189 (  7 B) x13    MAIN-P0=3 MAIN-P1=10
+      $BBDC..$BC11 ( 54 B) x1036  DISK=302 MAIN-P0=270 MAIN-P1=444 RAM=20 STACK
+      $BCD9..$BCDC (  4 B) x4     MAIN-P1=4
+      $BDF0..$BDF0 (  1 B) x4     DISK=4
+      $BDF3..$BDF3 (  1 B) x3     DISK=3
+      $F666..$F66B (  6 B) x24    MAIN-P1=24
+      $F678..$F67C (  5 B) x7     MAIN-P0=3 MAIN-P1=4
+      $F698..$F69E (  7 B) x15    MAIN-P1=15
+      $F6AF..$F6B2 (  4 B) x8     MAIN-P1=8
+      $F6C4..$F6C7 (  4 B) x4     MAIN-P1=4
+  window 5 [VERB]: 252 cell(s) written, 148 by DISK, SP at open $BC10
+      $BB88..$BC11 (138 B) x6574  DISK=4364 MAIN-P0=1914 MAIN-P1=176 RAM=120 STACK
+      $E594..$E594 (  1 B) x1     DISK=1
+      $E5A2..$E5A3 (  2 B) x2     DISK=2
+      $EC55..$EC55 (  1 B) x1     DISK=1
+      $F1BF..$F1C0 (  2 B) x30    DISK=30
+      $F1C6..$F1C7 (  2 B) x12    DISK=12
+      $F23C..$F23C (  1 B) x2     DISK=2
+      $F2B8..$F2C4 ( 13 B) x22    DISK=22
+      $F2DC..$F2DC (  1 B) x1     DISK=1
+      $F2E1..$F2E1 (  1 B) x1     DISK=1
+      $F2FE..$F2FF (  2 B) x5     DISK=5
+      $F30C..$F30C (  1 B) x1     DISK=1
+      $F33F..$F33F (  1 B) x4     DISK=4
+      $F355..$F356 (  2 B) x2     DISK=2
+      $F568..$F573 ( 12 B) x12    DISK=12
+      $F666..$F66B (  6 B) x12    MAIN-P1=12
+      $F678..$F67C (  5 B) x7     MAIN-P0=3 MAIN-P1=4
+      $F6AF..$F6B2 (  4 B) x8     MAIN-P1=8
+      $F866..$F870 ( 11 B) x11    MAIN-P1=11
+      $FBD9..$FBEF ( 23 B) x225   MAIN-P0=225
+  window 7 [read #2 (4 B)]: 151 cell(s) written, 44 by DISK, SP at open $BC10
+      $8189..$818F (  7 B) x13    MAIN-P0=3 MAIN-P1=10
+      $BBD6..$BC11 ( 60 B) x1170  DISK=322 MAIN-P0=380 MAIN-P1=444 RAM=24 STACK
+      $BCD5..$BCD8 (  4 B) x4     MAIN-P1=4
+      $BDF0..$BDF0 (  1 B) x4     DISK=4
+      $BDF3..$BDF3 (  1 B) x4     DISK=4
+      $F1BF..$F1C0 (  2 B) x2     DISK=2
+      $F666..$F66B (  6 B) x24    MAIN-P1=24
+      $F678..$F67C (  5 B) x7     MAIN-P0=3 MAIN-P1=4
+      $F698..$F69E (  7 B) x15    MAIN-P1=15
+      $F6AF..$F6B2 (  4 B) x8     MAIN-P1=8
+      $F6C4..$F6C7 (  4 B) x4     MAIN-P1=4
+      $FBD9..$FBEF ( 23 B) x45    MAIN-P0=45
+  window 9 [CLOSE]: 83 cell(s) written, 53 by DISK, SP at open $BC10
+      $BBE8..$BC11 ( 42 B) x508   DISK=218 MAIN-P0=116 MAIN-P1=166 RAM=8 STACK
+      $BDED..$BDED (  1 B) x3     DISK=3
+      $BDF4..$BDF4 (  1 B) x1     DISK=1
+      $F2B9..$F2C4 ( 12 B) x12    DISK=12
+      $F2DC..$F2DC (  1 B) x1     DISK=1
+      $F2E1..$F2E1 (  1 B) x1     DISK=1
+      $F30C..$F30C (  1 B) x1     DISK=1
+      $F666..$F66B (  6 B) x18    MAIN-P1=18
+      $F6AF..$F6B2 (  4 B) x8     MAIN-P1=8
+      $F864..$F865 (  2 B) x4     DISK=2 MAIN-P1=2
+
+=== in-DSKF ===
+  marker cell: 4 write(s) outside the program's set, e.g. [(0, 'MAIN-P0', 0.5459319550389784), (255, 'MAIN-P0', 0.54593782170639), (0, 'MAIN-P1', 0.8039415624052777), (255, 'MAIN-P1', 0.8039474290726893)]
+  marker sequence intact; POKEs came from ['MAIN-P0', 'MAIN-P1']
+  geometry at line 0: MEMSIZ=$DC5F STKTOP=$DB97 BOTTOM=$8000 HIMEM=$DE77
+  window 1 [OPEN]: 304 cell(s) written, 200 by DISK, SP at open $BC10
+      $BBC0..$BC11 ( 82 B) x1564  DISK=780 MAIN-P0=480 MAIN-P1=266 RAM=38 STACK
+      $BDED..$BDF1 (  5 B) x7     DISK=7
+      $BDF3..$BDF3 (  1 B) x3     DISK=3
+      $BDF6..$BE09 ( 20 B) x20    DISK=1 RAM=19
+      $DEB5..$DED9 ( 37 B) x47    DISK=47
+      $F1BF..$F1C0 (  2 B) x4     DISK=4
+      $F23D..$F23E (  2 B) x4     DISK=4
+      $F2B8..$F2C4 ( 13 B) x42    DISK=42
+      $F2DC..$F2EF ( 20 B) x29    DISK=29
+      $F2F2..$F2FE ( 13 B) x18    DISK=18
+      $F306..$F306 (  1 B) x1     DISK=1
+      $F309..$F30C (  4 B) x5     DISK=5
+      $F33D..$F33F (  3 B) x6     DISK=6
+      $F355..$F356 (  2 B) x4     DISK=4
+      $F568..$F574 ( 13 B) x13    DISK=13
+      $F576..$F576 (  1 B) x1     DISK=1
+      $F5B2..$F5D2 ( 33 B) x37    DISK=5 RAM=32
+      $F666..$F66B (  6 B) x18    MAIN-P1=18
+      $F678..$F67C (  5 B) x7     MAIN-P0=3 MAIN-P1=4
+      $F6AF..$F6B2 (  4 B) x8     MAIN-P1=8
+      $F864..$F870 ( 13 B) x15    DISK=2 MAIN-P1=13
+      $FCAE..$FCAE (  1 B) x1     DISK=1
+  window 3 [read #1 (4 B)]: 112 cell(s) written, 36 by DISK, SP at open $BC10
+      $8182..$8188 (  7 B) x13    MAIN-P0=3 MAIN-P1=10
+      $BBDC..$BC11 ( 54 B) x1036  DISK=302 MAIN-P0=270 MAIN-P1=444 RAM=20 STACK
+      $BCD9..$BCDC (  4 B) x4     MAIN-P1=4
+      $BDF0..$BDF0 (  1 B) x4     DISK=4
+      $BDF3..$BDF3 (  1 B) x3     DISK=3
+      $F666..$F66B (  6 B) x24    MAIN-P1=24
+      $F678..$F67C (  5 B) x7     MAIN-P0=3 MAIN-P1=4
+      $F698..$F69E (  7 B) x15    MAIN-P1=15
+      $F6AF..$F6B2 (  4 B) x8     MAIN-P1=8
+      $F6C4..$F6C7 (  4 B) x4     MAIN-P1=4
+  window 5 [VERB]: 180 cell(s) written, 57 by DISK, SP at open $BC10
+      $8188..$8193 ( 12 B) x23    MAIN-P0=8 MAIN-P1=15
+      $BBB8..$BC11 ( 90 B) x8388  DISK=7332 MAIN-P0=736 MAIN-P1=288 RAM=32 STACK
+      $F1BF..$F1C0 (  2 B) x12    DISK=12
+      $F2E1..$F2E1 (  1 B) x1     DISK=1
+      $F306..$F306 (  1 B) x1     DISK=1
+      $F33F..$F33F (  1 B) x1     DISK=1
+      $F355..$F356 (  2 B) x2     DISK=2
+      $F666..$F66B (  6 B) x18    MAIN-P1=18
+      $F6AF..$F6B2 (  4 B) x8     MAIN-P1=8
+      $F6C4..$F6C7 (  4 B) x4     MAIN-P1=4
+      $F7F6..$F7FE (  9 B) x27    MAIN-P0=21 MAIN-P1=6
+      $FBD9..$FBEF ( 23 B) x90    MAIN-P0=90
+  window 7 [read #2 (4 B)]: 112 cell(s) written, 36 by DISK, SP at open $BC10
+      $8193..$8199 (  7 B) x13    MAIN-P0=3 MAIN-P1=10
+      $BBDC..$BC11 ( 54 B) x1036  DISK=302 MAIN-P0=270 MAIN-P1=444 RAM=20 STACK
+      $BCD5..$BCD8 (  4 B) x4     MAIN-P1=4
+      $BDF0..$BDF0 (  1 B) x4     DISK=4
+      $BDF3..$BDF3 (  1 B) x4     DISK=4
+      $F666..$F66B (  6 B) x24    MAIN-P1=24
+      $F678..$F67C (  5 B) x7     MAIN-P0=3 MAIN-P1=4
+      $F698..$F69E (  7 B) x15    MAIN-P1=15
+      $F6AF..$F6B2 (  4 B) x8     MAIN-P1=8
+      $F6C4..$F6C7 (  4 B) x4     MAIN-P1=4
+  window 9 [CLOSE]: 130 cell(s) written, 65 by DISK, SP at open $BC10
+      $BBDA..$BC11 ( 56 B) x642   DISK=238 MAIN-P0=224 MAIN-P1=168 RAM=12 STACK
+      $BDED..$BDED (  1 B) x3     DISK=3
+      $BDF4..$BDF4 (  1 B) x1     DISK=1
+      $F1BF..$F1C0 (  2 B) x2     DISK=2
+      $F2B9..$F2C4 ( 12 B) x12    DISK=12
+      $F2DC..$F2DC (  1 B) x1     DISK=1
+      $F2E1..$F2E1 (  1 B) x1     DISK=1
+      $F30C..$F30C (  1 B) x1     DISK=1
+      $F666..$F66B (  6 B) x18    MAIN-P1=18
+      $F6AF..$F6B2 (  4 B) x8     MAIN-P1=8
+      $F864..$F865 (  2 B) x4     DISK=2 MAIN-P1=2
+      $FBD9..$FBEF ( 23 B) x45    MAIN-P0=45
+
+=== in-NAME ===
+  marker cell: 4 write(s) outside the program's set, e.g. [(0, 'MAIN-P0', 0.5459319550389784), (255, 'MAIN-P0', 0.54593782170639), (0, 'MAIN-P1', 0.8039415624052777), (255, 'MAIN-P1', 0.8039474290726893)]
+  marker sequence intact; POKEs came from ['MAIN-P0', 'MAIN-P1']
+  geometry at line 0: MEMSIZ=$DC5F STKTOP=$DB97 BOTTOM=$8000 HIMEM=$DE77
+  window 1 [OPEN]: 302 cell(s) written, 198 by DISK, SP at open $BC10
+      $BBC2..$BC11 ( 80 B) x1452  DISK=760 MAIN-P0=392 MAIN-P1=266 RAM=34 STACK
+      $BDED..$BDF1 (  5 B) x7     DISK=7
+      $BDF3..$BDF3 (  1 B) x3     DISK=3
+      $BDF6..$BE09 ( 20 B) x20    DISK=1 RAM=19
+      $DEB5..$DED9 ( 37 B) x47    DISK=47
+      $F1BF..$F1C0 (  2 B) x2     DISK=2
+      $F23D..$F23E (  2 B) x4     DISK=4
+      $F2B8..$F2C4 ( 13 B) x42    DISK=42
+      $F2DC..$F2EF ( 20 B) x29    DISK=29
+      $F2F2..$F2FE ( 13 B) x18    DISK=18
+      $F306..$F306 (  1 B) x1     DISK=1
+      $F309..$F30C (  4 B) x5     DISK=5
+      $F33D..$F33F (  3 B) x6     DISK=6
+      $F355..$F356 (  2 B) x4     DISK=4
+      $F568..$F574 ( 13 B) x13    DISK=13
+      $F576..$F576 (  1 B) x1     DISK=1
+      $F5B2..$F5D2 ( 33 B) x37    DISK=5 RAM=32
+      $F666..$F66B (  6 B) x18    MAIN-P1=18
+      $F678..$F67C (  5 B) x7     MAIN-P0=3 MAIN-P1=4
+      $F6AF..$F6B2 (  4 B) x8     MAIN-P1=8
+      $F864..$F870 ( 13 B) x15    DISK=2 MAIN-P1=13
+      $FCAE..$FCAE (  1 B) x1     DISK=1
+  window 3 [read #1 (4 B)]: 112 cell(s) written, 36 by DISK, SP at open $BC10
+      $818C..$8192 (  7 B) x13    MAIN-P0=3 MAIN-P1=10
+      $BBDC..$BC11 ( 54 B) x1036  DISK=302 MAIN-P0=270 MAIN-P1=444 RAM=20 STACK
+      $BCD9..$BCDC (  4 B) x4     MAIN-P1=4
+      $BDF0..$BDF0 (  1 B) x4     DISK=4
+      $BDF3..$BDF3 (  1 B) x3     DISK=3
+      $F666..$F66B (  6 B) x24    MAIN-P1=24
+      $F678..$F67C (  5 B) x7     MAIN-P0=3 MAIN-P1=4
+      $F698..$F69E (  7 B) x15    MAIN-P1=15
+      $F6AF..$F6B2 (  4 B) x8     MAIN-P1=8
+      $F6C4..$F6C7 (  4 B) x4     MAIN-P1=4
+  window 5 [VERB]: 312 cell(s) written, 184 by DISK, SP at open $BC10
+      $BB9E..$BC11 (116 B) x2646  DISK=1520 MAIN-P0=818 MAIN-P1=246 RAM=62 STACK
+      $EC55..$EC5F ( 11 B) x11    DISK=11
+      $F1BF..$F1C0 (  2 B) x10    DISK=10
+      $F1C6..$F1C7 (  2 B) x4     DISK=4
+      $F23C..$F23E (  3 B) x4     DISK=4
+      $F2B8..$F2DC ( 37 B) x102   DISK=102
+      $F2E1..$F2E1 (  1 B) x2     DISK=2
+      $F2FE..$F2FF (  2 B) x4     DISK=4
+      $F309..$F30C (  4 B) x6     DISK=6
+      $F33F..$F33F (  1 B) x3     DISK=3
+      $F355..$F356 (  2 B) x4     DISK=4
+      $F568..$F574 ( 13 B) x13    DISK=13
+      $F576..$F576 (  1 B) x1     DISK=1
+      $F578..$F583 ( 12 B) x12    DISK=12
+      $F5B2..$F5D2 ( 33 B) x37    DISK=5 RAM=32
+      $F666..$F66B (  6 B) x12    MAIN-P1=12
+      $F678..$F67C (  5 B) x14    MAIN-P0=6 MAIN-P1=8
+      $F6AF..$F6B2 (  4 B) x8     MAIN-P1=8
+      $F866..$F870 ( 11 B) x22    MAIN-P1=22
+      $FBD9..$FBEF ( 23 B) x45    MAIN-P0=45
+  window 7 [read #2 (4 B)]: 160 cell(s) written, 48 by DISK, SP at open $BC10
+      $8192..$8198 (  7 B) x13    MAIN-P0=3 MAIN-P1=10
+      $BBB4..$BC11 ( 94 B) x1148  DISK=324 MAIN-P0=356 MAIN-P1=444 RAM=24 STACK
+      $BCD5..$BCD8 (  4 B) x4     MAIN-P1=4
+      $BDF0..$BDF0 (  1 B) x4     DISK=4
+      $BDF3..$BDF3 (  1 B) x4     DISK=4
+      $F1BF..$F1C0 (  2 B) x2     DISK=2
+      $F666..$F66B (  6 B) x24    MAIN-P1=24
+      $F678..$F67C (  5 B) x7     MAIN-P0=3 MAIN-P1=4
+      $F698..$F69E (  7 B) x15    MAIN-P1=15
+      $F6AF..$F6B2 (  4 B) x8     MAIN-P1=8
+      $F6C4..$F6C7 (  4 B) x4     MAIN-P1=4
+  window 9 [CLOSE]: 83 cell(s) written, 53 by DISK, SP at open $BC10
+      $BBE8..$BC11 ( 42 B) x508   DISK=218 MAIN-P0=116 MAIN-P1=166 RAM=8 STACK
+      $BDED..$BDED (  1 B) x3     DISK=3
+      $BDF4..$BDF4 (  1 B) x1     DISK=1
+      $F2B9..$F2C4 ( 12 B) x12    DISK=12
+      $F2DC..$F2DC (  1 B) x1     DISK=1
+      $F2E1..$F2E1 (  1 B) x1     DISK=1
+      $F30C..$F30C (  1 B) x1     DISK=1
+      $F666..$F66B (  6 B) x18    MAIN-P1=18
+      $F6AF..$F6B2 (  4 B) x8     MAIN-P1=8
+      $F864..$F865 (  2 B) x4     DISK=2 MAIN-P1=2
+
+=== SECTOR-SIZED RUNS (>= 256 B, not the stack), per window ===
+
+=== RELATION: channel staging (w1+w3) vs verb staging (w5) ===
+  in-no-verb     NO CHANNEL STAGING SEEN; after the verb, window 7 stages 0 sector(s)
+  in-KILL        NO CHANNEL STAGING SEEN; after the verb, window 7 stages 0 sector(s)
+  in-DSKF        NO CHANNEL STAGING SEEN; after the verb, window 7 stages 0 sector(s)
+  in-NAME        NO CHANNEL STAGING SEEN; after the verb, window 7 stages 0 sector(s)
+
+🔴 INSTRUMENT FAULT: KILL staged no sector in window 5 -- the watchpoint is blind (or KILL touched no sector, which would itself need a second witness)
+refcache: 0 hit, 4 miss, 4 stored

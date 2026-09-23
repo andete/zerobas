@@ -1,0 +1,124 @@
+D-REFBUF: how many sector buffers does the reference use, and where?
+
+
+=== in-no-verb ===
+  marker sequence intact; POKEs came from ['MAIN-P0']
+  geometry at line 0: MEMSIZ=$0000 STKTOP=$F380 BOTTOM=$8000 HIMEM=$F380
+  window 1 [OPEN]: 690 cell(s) written, 527 by DISK, SP at open $BCCF
+      $BCA1..$BCD2 ( 50 B) x900   DISK=44 MAIN-P0=224 MAIN-P1=424 RAM=12 SLOT3-2=196
+      $E0C8..$E0CB (  4 B) x7     MAIN-P0=2 MAIN-P1=5
+      $E0DA..$E0E6 ( 13 B) x18    MAIN-P1=1 SLOT3-2=17
+      $E26E..$E273 (  6 B) x6     MAIN-P1=6
+      $E299..$E29F (  7 B) x24    DISK=24
+      $E5C0..$E7BF (512 B) x1024  DISK=1024 <-- 512 B
+      $E9C0..$E9D4 ( 21 B) x21    SLOT3-2=21
+      $E9DC..$E9E1 (  6 B) x6     SLOT3-2=6
+      $E9E6..$E9EB (  6 B) x6     MAIN-P1=6
+      $E9F7..$E9FF (  9 B) x24    MAIN-P1=5 SLOT3-2=19
+      $FBD9..$FBEF ( 23 B) x57    MAIN-P0=57
+  window 3 [read #1 (4 B)]: 662 cell(s) written, 527 by DISK, SP at open $BCCF
+      $817E..$8185 (  8 B) x11    SLOT3-2=11
+      $BC9C..$BCD2 ( 55 B) x811   DISK=22 MAIN-P0=164 MAIN-P1=520 RAM=10 SLOT3-2=95
+      $BFFB..$BFFE (  4 B) x4     SLOT3-2=4
+      $E028..$E02B (  4 B) x4     MAIN-P1=4
+      $E035..$E039 (  5 B) x7     MAIN-P1=4 SLOT3-2=3
+      $E0C8..$E0CB (  4 B) x11    MAIN-P0=4 MAIN-P1=7
+      $E1C0..$E1C4 (  5 B) x8     MAIN-P1=6 SLOT3-2=2
+      $E20F..$E212 (  4 B) x6     MAIN-P0=2 MAIN-P1=2 SLOT3-2=2
+      $E268..$E271 ( 10 B) x10    MAIN-P0=3 MAIN-P1=5 SLOT3-2=2
+      $E299..$E29F (  7 B) x12    DISK=12
+      $E5C0..$E7BF (512 B) x512   DISK=512 <-- 512 B
+      $E9E6..$E9EB (  6 B) x26    MAIN-P1=26
+      $E9FB..$E9FF (  5 B) x5     MAIN-P1=1 SLOT3-2=4
+  window 5 [VERB]: 151 cell(s) written, 0 by DISK, SP at open $BCCF
+      $8184..$8190 ( 13 B) x21    MAIN-P1=8 SLOT3-2=13
+      $BC9A..$BCD2 ( 57 B) x543   MAIN-P0=92 MAIN-P1=398 RAM=2 SLOT3-2=51
+      $E028..$E02B (  4 B) x4     MAIN-P1=4
+      $E035..$E039 (  5 B) x7     MAIN-P1=4 SLOT3-2=3
+      $E1C0..$E1C4 (  5 B) x8     MAIN-P1=6 SLOT3-2=2
+      $F01C..$F023 (  8 B) x8     MAIN-P0=8
+      $F06A..$F07B ( 18 B) x19    MAIN-P0=19
+      $F0C8..$F0D9 ( 18 B) x18    MAIN-P0=18
+      $F0FB..$F0FE (  4 B) x4     MAIN-P0=4
+  window 7 [read #2 (4 B)]: 135 cell(s) written, 0 by DISK, SP at open $BCCF
+      $818F..$8196 (  8 B) x11    SLOT3-2=11
+      $BC9C..$BCD2 ( 55 B) x743   MAIN-P0=126 MAIN-P1=516 RAM=6 SLOT3-2=95
+      $BFF7..$BFFA (  4 B) x4     SLOT3-2=4
+      $E028..$E02B (  4 B) x4     MAIN-P1=4
+      $E035..$E039 (  5 B) x7     MAIN-P1=4 SLOT3-2=3
+      $E0C8..$E0CB (  4 B) x11    MAIN-P0=4 MAIN-P1=7
+      $E1C0..$E1C4 (  5 B) x8     MAIN-P1=6 SLOT3-2=2
+      $E20F..$E212 (  4 B) x6     MAIN-P0=2 MAIN-P1=2 SLOT3-2=2
+      $E268..$E271 ( 10 B) x10    MAIN-P0=3 MAIN-P1=5 SLOT3-2=2
+      $E9E6..$E9EB (  6 B) x24    MAIN-P1=24
+  window 9 [CLOSE]: 67 cell(s) written, 0 by DISK, SP at open $BCCF
+      $BCA1..$BCD2 ( 50 B) x364   MAIN-P0=20 MAIN-P1=344
+
+=== in-KILL ===
+  marker sequence intact; POKEs came from ['MAIN-P0']
+  geometry at line 0: MEMSIZ=$0000 STKTOP=$F380 BOTTOM=$8000 HIMEM=$F380
+  window 1 [OPEN]: 690 cell(s) written, 527 by DISK, SP at open $BCCF
+      $BCA1..$BCD2 ( 50 B) x900   DISK=44 MAIN-P0=224 MAIN-P1=424 RAM=12 SLOT3-2=196
+      $E0C8..$E0CB (  4 B) x7     MAIN-P0=2 MAIN-P1=5
+      $E0DA..$E0E6 ( 13 B) x18    MAIN-P1=1 SLOT3-2=17
+      $E26E..$E273 (  6 B) x6     MAIN-P1=6
+      $E299..$E29F (  7 B) x24    DISK=24
+      $E5C0..$E7BF (512 B) x1024  DISK=1024 <-- 512 B
+      $E9C0..$E9D4 ( 21 B) x21    SLOT3-2=21
+      $E9DC..$E9E1 (  6 B) x6     SLOT3-2=6
+      $E9E6..$E9EB (  6 B) x6     MAIN-P1=6
+      $E9F7..$E9FF (  9 B) x24    MAIN-P1=5 SLOT3-2=19
+      $FBD9..$FBEF ( 23 B) x57    MAIN-P0=57
+  window 3 [read #1 (4 B)]: 662 cell(s) written, 527 by DISK, SP at open $BCCF
+      $8183..$818A (  8 B) x11    SLOT3-2=11
+      $BC9C..$BCD2 ( 55 B) x811   DISK=22 MAIN-P0=164 MAIN-P1=520 RAM=10 SLOT3-2=95
+      $BFFB..$BFFE (  4 B) x4     SLOT3-2=4
+      $E028..$E02B (  4 B) x4     MAIN-P1=4
+      $E035..$E039 (  5 B) x7     MAIN-P1=4 SLOT3-2=3
+      $E0C8..$E0CB (  4 B) x11    MAIN-P0=4 MAIN-P1=7
+      $E1C0..$E1C4 (  5 B) x8     MAIN-P1=6 SLOT3-2=2
+      $E20F..$E212 (  4 B) x6     MAIN-P0=2 MAIN-P1=2 SLOT3-2=2
+      $E268..$E271 ( 10 B) x10    MAIN-P0=3 MAIN-P1=5 SLOT3-2=2
+      $E299..$E29F (  7 B) x12    DISK=12
+      $E5C0..$E7BF (512 B) x512   DISK=512 <-- 512 B
+      $E9E6..$E9EB (  6 B) x26    MAIN-P1=26
+      $E9FB..$E9FF (  5 B) x5     MAIN-P1=1 SLOT3-2=4
+  window 5 [VERB]: 1169 cell(s) written, 1096 by DISK, SP at open $BCCF
+      $BC9D..$BCD2 ( 54 B) x950   DISK=554 MAIN-P0=100 MAIN-P1=250 RAM=10 SLOT3-2=36
+      $E098..$E098 (  1 B) x11    DISK=11
+      $E0C8..$E0CB (  4 B) x7     MAIN-P0=2 MAIN-P1=5
+      $E0DB..$E0E6 ( 12 B) x16    MAIN-P1=1 SLOT3-2=15
+      $E26E..$E273 (  6 B) x6     MAIN-P1=6
+      $E299..$E4A8 (528 B) x3744  DISK=3744
+      $E4AC..$E4BE ( 19 B) x30    DISK=30
+      $E552..$E557 (  6 B) x6     DISK=6
+      $E55A..$E55C (  3 B) x9     DISK=9
+      $E560..$E75F (512 B) x514   DISK=514 <-- 512 B
+      $E7FB..$E7FC (  2 B) x6     DISK=6
+      $E9FC..$E9FC (  1 B) x2     DISK=1 SLOT3-2=1
+  window 7 [read #2 (4 B)]: 135 cell(s) written, 0 by DISK, SP at open $BCCF
+      $8189..$8190 (  8 B) x11    SLOT3-2=11
+      $BC9C..$BCD2 ( 55 B) x739   MAIN-P0=126 MAIN-P1=516 RAM=6 SLOT3-2=91
+      $BFF7..$BFFA (  4 B) x4     SLOT3-2=4
+      $E028..$E02B (  4 B) x4     MAIN-P1=4
+      $E035..$E039 (  5 B) x7     MAIN-P1=4 SLOT3-2=3
+      $E0C8..$E0CB (  4 B) x11    MAIN-P0=4 MAIN-P1=7
+      $E1C0..$E1C4 (  5 B) x8     MAIN-P1=6 SLOT3-2=2
+      $E20F..$E212 (  4 B) x6     MAIN-P0=2 MAIN-P1=2 SLOT3-2=2
+      $E268..$E271 ( 10 B) x10    MAIN-P0=3 MAIN-P1=5 SLOT3-2=2
+      $E9E6..$E9EB (  6 B) x24    MAIN-P1=24
+  window 9 [CLOSE]: 72 cell(s) written, 0 by DISK, SP at open $BCCF
+      $BCA1..$BCD2 ( 50 B) x400   MAIN-P0=48 MAIN-P1=352
+
+=== SECTOR-SIZED RUNS (>= 256 B, not the stack), per window ===
+  in-no-verb     w1: $E5C0..$E7BF (512 B) ('DISK',)
+  in-no-verb     w3: $E5C0..$E7BF (512 B) ('DISK',)
+  in-KILL        w1: $E5C0..$E7BF (512 B) ('DISK',)
+  in-KILL        w3: $E5C0..$E7BF (512 B) ('DISK',)
+  in-KILL        w5: $E299..$E4A8 (528 B) ('DISK',)
+  in-KILL        w5: $E560..$E75F (512 B) ('DISK',)
+
+=== RELATION: channel staging (w1+w3) vs verb staging (w5) ===
+  in-no-verb     VERB STAGES NOTHING sector-sized; after the verb, window 7 stages 0 sector(s)
+  in-KILL        PARTIAL OVERLAP: $E5C0+512 vs $E560+512 share 416 B, $E5C0+512 vs $E560+512 share 416 B; after the verb, window 7 stages 0 sector(s)
+refcache: 0 hit, 2 miss, 2 stored

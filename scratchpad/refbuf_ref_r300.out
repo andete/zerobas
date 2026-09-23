@@ -1,0 +1,14 @@
+D-REFBUF: how many sector buffers does the reference use, and where?
+
+
+=== in-cold-no-verb-r300 ===
+  marker cell: 5 write(s) outside the program's set, e.g. [(0, 'MAIN-P0', 0.5459319550389784), (255, 'MAIN-P0', 0.54593782170639), (0, 'MAIN-P1', 0.8039415624052777), (255, 'MAIN-P1', 0.8039474290726893)]
+  REFUSED: marker history [90, 1, 2, 3, 4, 5, 6, 7, 98] is not the program's [90, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 99]
+  marker history: 0@MAIN-P0 255@MAIN-P0 0@MAIN-P1 255@MAIN-P1 90@MAIN-P1 1@MAIN-P1 2@MAIN-P1 3@MAIN-P1 4@MAIN-P1 5@MAIN-P1 6@MAIN-P1 7@MAIN-P1 98@MAIN-P1
+
+=== in-cold-DSKI$-r300 ===
+  marker cell: 5 write(s) outside the program's set, e.g. [(0, 'MAIN-P0', 0.5459319550389784), (255, 'MAIN-P0', 0.54593782170639), (0, 'MAIN-P1', 0.8039415624052777), (255, 'MAIN-P1', 0.8039474290726893)]
+  REFUSED: marker history [90, 1, 2, 3, 4, 5, 6, 7, 98] is not the program's [90, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 99]
+  marker history: 0@MAIN-P0 255@MAIN-P0 0@MAIN-P1 255@MAIN-P1 90@MAIN-P1 1@MAIN-P1 2@MAIN-P1 3@MAIN-P1 4@MAIN-P1 5@MAIN-P1 6@MAIN-P1 7@MAIN-P1 98@MAIN-P1
+omsx_repl: 1 of 1 capture(s) MISSING on National_CF-3300 -- the stall watchdog killed it after 90s wall  (no emulated instant was recorded; fewer than two beats arrived, so there is no final interval to rate -- this run was killed during boot; a host-clock deadline CANNOT by itself separate a frozen emulator from one starved of CPU -- read those figures and the line count below together, and check host load before calling this REAL); the run wrote 0 line(s).  emulator said: warning: While executing /tmp/zerobas/repl_koae19nw.txt.tcl: can't read "x2": no such variable
+refcache: 0 hit, 2 miss, 2 stored

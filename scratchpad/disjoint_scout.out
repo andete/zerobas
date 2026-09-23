@@ -1,0 +1,23 @@
+D-DISJOINT: is option (c) affordable? spans free in BOTH maps
+
+  spans >= 32 B free in BOTH components, in [E000,F380):
+      255 B  $EB01..$EBFF
+      248 B  $F248..$F33F
+      150 B  $F1A7..$F23C
+      102 B  $E15A..$E1BF
+      100 B  $EA9C..$EAFF
+       56 B  $F10A..$F141
+       50 B  $EA60..$EA91
+       48 B  $E4C2..$E4F1
+       46 B  $E23A..$E267
+       38 B  $E05A..$E07F
+       36 B  $EE40..$EE63
+       36 B  $F16E..$F191
+  ---- 12 span(s), 1165 B total
+
+  disk WBUF (512 B, now $E560): 🔴 NO single free span is big enough
+  disk SECTOR_BUF (512 B, now $E2A0): 🔴 NO single free span is big enough
+
+⚠️  A span here is a CANDIDATE. Width coverage is ~92%/88% and a cell addressed
+   only as a code offset has no `equ` at all, so confirm against the machine
+   before moving anything in.

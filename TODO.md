@@ -961,8 +961,53 @@ item — do **one item per session** to keep context lean.
       shared buffer with no restage after a crossing is corrupted exactly as
       today's two buffers are. The load-bearing change is the RESTAGE; (a)/(b)/(c)
       then decide how much RAM and how much shared-body tidiness we buy with it.
-      🙋 **STILL HIS CALL**, but the question is now narrower: not *"which of the
-      three?"* but *"which of the three do we want ALONGSIDE the restage?"*
+      🏗️ **RULED BY JOOST, 2026-09-23: *"go with (c) then"*** — after a Fable
+      agent measured the reference's actual shape (below).
+      🔬 **WHAT THE REFERENCE ACTUALLY DOES** (`scratchpad/refbuf_*.out`, measured
+      on `National_CF-3300` with the apparatus first validated on zerobas, where
+      it reproduced our 416 B overlap exactly). **THREE TIERS, MUTUALLY
+      DISJOINT:** a per-channel **record** buffer in the BASIC pool
+      (`$BDF6..$BEF5` for channel 1 — the 267 B/channel is 11 B FCB + 256 B
+      record); a **file-data** sector buffer at `$ED95..$EF94`; and a
+      **directory/raw** sector buffer at `$EB95..$ED94`. `KILL "Y.DAT"` wrote ONE
+      byte at `$EC55` (entry 6 of the directory buffer) plus a few FAT cells.
+      **No verb ever wrote the data buffer, and neither sector buffer ever wrote
+      the other's range.** So the reference is safe for TWO reasons: the buffers
+      are disjoint, AND the channel's live bytes are in a per-channel copy no
+      verb touches. Confidence: high on the geometry, medium on which buffer is
+      "directory" vs "data" (inferred from observed users). Unrun there: `COPY`,
+      `SAVE`, `LOAD`, `DSKO$`, random channels, a two-sector read.
+      🔴 **AND (c) AS LITERALLY SPECIFIED DOES NOT FIT — MEASURED, and this was
+      the item's own open question** (`scratchpad/disjoint_scout.py`,
+      `scratchpad/disjoint_mainonly.out`). Spans of `[E000,F380)` that MAIN does
+      not declare: **444 B** `$F195..$F350`, 255 B `$EB01`, 212 B `$E41E`, 116 B
+      `$E36D`, 102 B `$E15A`, 100 B `$EA9C`, 96 B `$E560` — **1325 B in total but
+      fragmented across seven spans, and NOT ONE is 512 B.** Free in BOTH maps it
+      is worse: 1165 B, largest 255 B. **There is nowhere to put a relocated
+      512 B `WBUF`, let alone `SECTOR_BUF` as well.** ⚠️ A span there is a
+      CANDIDATE: width coverage is ~92 %/88 % and a cell addressed only as a code
+      offset has no `equ` at all, so any span would still need confirming against
+      the machine.
+      🎯 **BUT THE REFERENCE-SHAPED FIX NEEDS NO NEW RAM AT ALL, AND THE
+      MACHINERY IS ALREADY BUILT.** `basic/files.asm` `fch_save_active` /
+      `fch_load_ctx` already copy the channel's 256 B record out of and back into
+      `FSECTOR_BUF` around a channel switch (`FCH_RECMAX` is reserved per channel
+      in `FCH_CTXSZ`, and D-FIELDFIX made the record travel), and `fch_load_ctx`
+      ends in `jp fch_restage` — *"re-read this channel's staged sector"*. **That
+      is exactly the reference's flush-away / re-read-on-return.** A channel
+      switch is safe BECAUSE it goes through that path; a disk-ROM verb is unsafe
+      only because it does not.
+      🙋 **SO (c) NEEDS A RULING IT DID NOT HAVE WHEN IT WAS CHOSEN.** The
+      relocation is unaffordable in this window; the options that remain are:
+      **(c-i)** put a disk buffer below `HIMEM`, charging `FRE(0)` as the
+      reference charges 267 B/channel — affordable, costs user RAM;
+      **(c-ii)** make a disk-ROM crossing take the same save/restage path a
+      channel switch already takes — **zero new RAM, reuses shipped code**, and
+      it is what makes the reference safe;
+      **(c-iii)** relocate anyway by first carving 512 B out of main's map.
+      ⚠️ **NOT MEASURED:** what (c-ii) costs in time (a restage is a sector
+      re-read; the reference does it lazily, on switch-back, not after every
+      verb).
       🔬 **BOTH CONTROLS RUN IN THE SAME SWEEP, IN BOTH DIRECTIONS:** `no-disk`
       MUST come back clean (or nothing is attributable) and `KILL` MUST come
       back damaged (or the sweep has stopped being able to see the defect and
@@ -4552,7 +4597,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:22265 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:22310 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -4718,7 +4763,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:9361 (T-6FE392)8 (T-529ABE)` from `TODO.md:20659 (T-529ABE)`: a
+      `TODO.md:9406 (T-6FE392)8 (T-529ABE)` from `TODO.md:20704 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -10205,7 +10250,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:20659 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:20704 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
