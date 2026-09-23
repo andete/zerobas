@@ -42,7 +42,30 @@ import probe_tmp  # noqa: E402,F401  -- module level, sets tempfile.tempdir
 import omsx_repl  # noqa: E402
 import fatbuf_probe as FB  # noqa: E402
 
-ZB = "C-BIOS_MSX1_EU_REPACK_DISK"
+# 🔴 THE MACHINE IS OVERRIDABLE SO THE REFERENCE CAN ANSWER THE SAME QUESTION.
+# `National_CF-3300` is a genuine MSX1 with its own `cf-3300_disk.rom` in slot
+# 3-1 -- the tree's standing disk oracle. (An earlier note in this arc claimed
+# there was no booted disk oracle here; that was WRONG, and it attached an
+# unnecessary "not measured against a reference" caveat to every D-ALIASBITE
+# finding.) `National_CF-3300_ZEROBASDISK` is a DIFFERENT machine -- real BIOS
+# with OUR disk ROM -- and is a provider oracle, NOT a behaviour reference.
+# ⚠️ CLEAN ROOM: this probe reads only the DISK IMAGE the machine wrote and the
+# marker cell the PROGRAM pokes. It dumps no reference RAM span and no ROM byte,
+# so §8.5 is not approached -- which is why aliascell_probe.py, which DOES dump
+# RAM spans, must never be pointed at a reference.
+ZB = os.environ.get("ZEROBAS_ALIAS_MACHINE", "C-BIOS_MSX1_EU_REPACK_DISK")
+BOOT = float(os.environ.get("ZEROBAS_ALIAS_BOOT", "8.0"))
+# 🔴 A STOCK MSX1 BOOTS SCREEN 1, AND THE SCRAPE ASSUMES SCREEN 0. `reset` is
+# IGNORED in boot-per-case mode, so the reference needs these as typed DIRECT
+# lines instead -- the same ("", "SCREEN 0", "NEW", "CLS") the other reference
+# probes use. Without them the harness reports every slot BLIND and nothing is
+# delivered at all, which reads as "the program did not finish".
+PRELUDE = [x for x in os.environ.get("ZEROBAS_ALIAS_PRELUDE", "").split("|") if
+           x or os.environ.get("ZEROBAS_ALIAS_PRELUDE", "").startswith("|")]
+# ⚠️ ONLY THE NAMED ARMS, when asked: a reference run costs a boot per arm and
+# the question ("does the reference corrupt it too?") is answered by the control
+# plus one damaging verb. Narrowing is explicit, not silent.
+ONLY = [x for x in os.environ.get("ZEROBAS_ALIAS_ONLY", "").split(",") if x]
 SRC_DSK = os.path.join(ROOT, "disk", "test720.dsk")
 TARGET = "W       DAT"          # 8.3, space-padded -- the file under test
 DONE_CELL = 0xD000              # the arm pokes 9 here after CLOSE
@@ -216,8 +239,8 @@ def run(label, lines):
     pro = (f'set ::df [open "{log}" w]\n'
            f'debug set_watchpoint write_mem {DONE_CELL} {{}} '
            f'{{ puts $::df [debug read memory {DONE_CELL}]; flush $::df }}\n')
-    omsx_repl.run_cases(ZB, [(label, BODY + lines + TAIL)], batch=False,
-                        reset=(), boot=8.0, step=3.0, cap_gap=2.5,
+    omsx_repl.run_cases(ZB, [(label, PRELUDE + BODY + lines + TAIL)], batch=False,
+                        reset=(), boot=BOOT, step=3.0, cap_gap=2.5,
                         run_gap=60.0, timeout=900.0, diska=tmp,
                         prologue=(pro,))
     try:
@@ -237,23 +260,46 @@ def main(argv):
     if not os.path.exists(SRC_DSK):
         print(f"INSTRUMENT FAULT: no test disk at {SRC_DSK}")
         return 2
-    out = {n: run(n, l) for n, l in ARMS}
+    arms = [(n, l) for n, l in ARMS if not ONLY or n in ONLY]
+    if ONLY and "no-disk" not in [n for n, _ in arms]:
+        print("REFUSING: the no-disk control must be in every run")
+        return 2
+    out = {n: run(n, l) for n, l in arms}
     if not out["no-disk"][0]:
         print("\nINSTRUMENT FAULT: the CONTROL never reached its CLOSE")
         return 2
     ctl = out["no-disk"][1]
     print()
-    rows = [(n, verdict(ctl, out[n][1], out[n][0])) for n, _ in ARMS[1:]]
+    rows = [(n, verdict(ctl, out[n][1], out[n][0])) for n, _ in arms[1:]]
     for name, v in rows:
         print(f"  {name:8} {v}")
     # 🔴 THE POSITIVE CONTROL IS CHECKED, NOT JUST PRINTED. A sweep whose known
     # -damaged arm comes back CLEAN has lost the ability to see the defect, and
     # every "clean" below it would be a false acquittal.
-    kill = dict(rows)["KILL"]
-    if not kill.startswith(("DATA LOST", "GONE", "DIFFERS")):
+    kill = dict(rows).get("KILL")
+    if kill is None:
+        print("\n⚠️  no KILL arm in this run: the positive control is ABSENT, "
+              "so a CLEAN row below is not evidence that the defect is gone")
+        return 0
+    # 🔴 AND THE POSITIVE CONTROL'S EXPECTATION INVERTS ON A REFERENCE. On OUR
+    # machine a clean KILL means the sweep has gone blind and every CLEAN row is
+    # a false acquittal. On a REFERENCE a clean KILL is the FINDING -- the whole
+    # question is whether it corrupts the file too. Printing the same red line
+    # in both cases would file the answer as an instrument fault.
+    damaged = kill.startswith(("DATA LOST", "GONE", "DIFFERS"))
+    on_reference = ZB != "C-BIOS_MSX1_EU_REPACK_DISK"
+    if on_reference:
+        print(f"\n🔬 REFERENCE RUN on {ZB}: KILL came back "
+              f"{'DAMAGED' if damaged else 'CLEAN'}.")
+        print("  CLEAN here is the ANSWER, not a blind sweep: the reference "
+              "keeps an open file intact across the verb."
+              if not damaged else
+              "  DAMAGED here would mean the reference has the same defect.")
+    elif not damaged:
         print(f"\n🔴 INSTRUMENT FAULT: the POSITIVE control (KILL) came back "
-              f"{kill.split(chr(8212))[0].strip()} — the sweep can no longer "
-              f"see the defect, so no 'CLEAN' row above is evidence.")
+              f"{kill.split(chr(8212))[0].strip()} — on OUR machine the sweep "
+              f"can no longer see the defect, so no 'CLEAN' row above is "
+              f"evidence.")
         return 2
     # 🔴 A REFUSAL IS NOT A FINDING. The first cut counted "anything not CLEAN"
     # as damage, which swept the one arm that could not be judged into the

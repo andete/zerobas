@@ -940,10 +940,29 @@ item — do **one item per session** to keep context lean.
       ➡️ **SO JOOST'S OPTION (c) — MAKE THE TWO MAPS DISJOINT — WOULD REMOVE
       EVERY ROUTE THIS TREE CAN CURRENTLY MEASURE**, while leaving the class
       open: anything that later refills the buffer without a restage bites
-      again, exactly as `174bf887` did. **A route fix, not a class fix** — and
-      that is a real choice rather than the "none of them helps" the earlier
-      line implied. ⚠️ **NOT MEASURED:** whether (c) is affordable, and whether
-      any path outside these nine verbs still reaches the buffer.
+      again, exactly as `174bf887` did. **A route fix, not a class fix.**
+      ⚠️ **NOT MEASURED:** whether (c) is affordable, and whether any path
+      outside these nine verbs still reaches the buffer.
+      🏗️ **AND THE REFERENCE NOW ANSWERS THE ARCHITECTURE QUESTION TOO (Joost,
+      2026-09-23: *"how does the reference deal with this? My gut goes for
+      option (b)"*).** His gut matches the reference, and our own measurements
+      already said so before this item existed:
+      **(i)** `docs/chancost-cf3300-characterization.md` measured the reference
+      charging **267 B per channel — LESS THAN ONE SECTOR**, so its sector
+      staging is NOT per-channel: it keeps ONE shared buffer. `basic/sysvars.inc`
+      cites exactly this and calls it *"a CACHE: flush on switch away, re-read on
+      switch back"*.
+      **(ii)** and `scratchpad/aliaswrite_ref.out` now shows that on the
+      reference a disk verb does NOT disturb an open channel.
+      🎯 **SO THE REFERENCE IS (b) PLUS A DISCIPLINE, AND THE DISCIPLINE IS THE
+      PART WE ARE MISSING.** We ALREADY have one shared buffer restaged on a
+      CHANNEL SWITCH — that half is copied. What we do not do is restage across a
+      **disk-ROM crossing**. ⚠️ **So (b) on its own would not close this**: a
+      shared buffer with no restage after a crossing is corrupted exactly as
+      today's two buffers are. The load-bearing change is the RESTAGE; (a)/(b)/(c)
+      then decide how much RAM and how much shared-body tidiness we buy with it.
+      🙋 **STILL HIS CALL**, but the question is now narrower: not *"which of the
+      three?"* but *"which of the three do we want ALONGSIDE the restage?"*
       🔬 **BOTH CONTROLS RUN IN THE SAME SWEEP, IN BOTH DIRECTIONS:** `no-disk`
       MUST come back clean (or nothing is attributable) and `KILL` MUST come
       back damaged (or the sweep has stopped being able to see the defect and
@@ -1000,10 +1019,19 @@ item — do **one item per session** to keep context lean.
       `OPEN"Z.DAT"FOR INPUT` · `A$=INPUT$(4,#1)` · *[verb]* · `B$=INPUT$(4,#1)`.
       The screen shows `[ABCD]` where the control shows `[ABCDEFGH]`; the RAM
       readout above says the four missing characters were DELIVERED, as `$00`.
-      🔴 **NOT MEASURED AGAINST A REFERENCE** — there is no booted disk oracle in
-      this tree, so nothing is claimed here about what the reference does. What
-      is claimed is that a read which returns file data the file does not contain,
-      with no error, is wrong on its own terms.
+      ✅ **MEASURED AGAINST THE REFERENCE, 2026-09-23 — AND IT DOES NOT HAVE
+      THIS BUG.** ~~*"there is no booted disk oracle in this tree"*~~ **WAS
+      FALSE**, and it was mine: `National_CF-3300` carries its own
+      `cf-3300_disk.rom` in slot 3-1 and has been this tree's disk oracle all
+      along. Every *"not measured against a reference"* caveat this item carried
+      was unnecessary. (⚠️ `National_CF-3300_ZEROBASDISK` is a DIFFERENT machine
+      — real BIOS, OUR disk ROM — a provider oracle, not a behaviour reference.)
+      📏 **THE REFERENCE KEEPS THE FILE INTACT** (`scratchpad/aliaswrite_ref.out`,
+      same program, same readout off the host-parsed image): `KILL`, `NAME`,
+      `DSKF` and `COPY` all leave it **byte-identical to the control** — the same
+      four verbs that destroy it on ours.
+      🎯 **SO JOOST'S RULING SETTLES THE DIRECTION: *"we do as the reference
+      does"* — a disk verb must not disturb an open channel.**
       🔬 **THE MECHANISM, MEASURED AND NOT GUESSED**
       (`scratchpad/aliasscope_probe.py`, `scratchpad/aliasscope_run.out`): a
       write watchpoint over main's `FSECTOR_BUF`, counted ONLY between two
@@ -4524,7 +4552,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:22237 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:22265 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -4690,7 +4718,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:9333 (T-6FE392)8 (T-529ABE)` from `TODO.md:20631 (T-529ABE)`: a
+      `TODO.md:9361 (T-6FE392)8 (T-529ABE)` from `TODO.md:20659 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -10177,7 +10205,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:20631 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:20659 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

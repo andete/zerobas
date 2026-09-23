@@ -1,0 +1,19 @@
+D-ALIASWRITE: does a disk verb between two PRINT# corrupt the FILE?
+
+  no-disk   ran to END  b'AAAABBBBCCCCDDDD\r\nEEEEFFFFGGGGHHHH\r\n\x1a'
+  KILL      ran to END  b'AAAABBBBCCCCDDDD\r\nEEEEFFFFGGGGHHHH\r\n\x1a'
+  NAME      ran to END  b'AAAABBBBCCCCDDDD\r\nEEEEFFFFGGGGHHHH\r\n\x1a'
+  DSKF      ran to END  b'AAAABBBBCCCCDDDD\r\nEEEEFFFFGGGGHHHH\r\n\x1a'
+  COPY      ran to END  b'AAAABBBBCCCCDDDD\r\nEEEEFFFFGGGGHHHH\r\n\x1a'
+
+  KILL     CLEAN — the file on disk is byte-identical to the control
+  NAME     CLEAN — the file on disk is byte-identical to the control
+  DSKF     CLEAN — the file on disk is byte-identical to the control
+  COPY     CLEAN — the file on disk is byte-identical to the control
+
+🔬 REFERENCE RUN on National_CF-3300: KILL came back CLEAN.
+  CLEAN here is the ANSWER, not a blind sweep: the reference keeps an open file intact across the verb.
+
+VERDICT: 0 of 4 JUDGED verbs damage the file: (none)
+  controls: no-disk clean (negative) and KILL damaged (positive), both in this run
+refcache: 0 hit, 5 miss, 5 stored
