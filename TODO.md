@@ -4848,7 +4848,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:22814 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:22841 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -22269,7 +22269,34 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       whether a THIRD file would be reachable. Both are cheap and belong with
       the fix.
 
-- [ ] 🔬 **`basic_probe_cas_match.py` HAS NO MAKEFILE TARGET AT ALL, SO NO
+- [x] 🛑 **WITHDRAWN WITHIN THE HOUR — IT IS A DOCUMENTED DECISION, NOT A GAP,
+      AND THE TOOL THAT SAYS SO ALREADY EXISTED (2026-09-24).**
+      🔴 **`tools/check_probe_reach.py` HAS BEEN IN THE TREE SINCE `8056aa74`**
+      (*"D-PROBEREACH: the count nobody had — 104 probes that no `make` target
+      runs — and a ratchet so it can only go down"*). It classifies every probe,
+      carries a per-probe ALLOWLIST WITH REASONS, and ratchets so the count can
+      only fall. `basic_probe_cas_match.py` is allowed by name: *"ARCHIVED AND
+      STILL RE-PROVABLE — RUN GREEN 2026-08-31 (D-PROBEREACH4), serially on a
+      fresh build… **No `make` target by choice**; the slot is the NEEDS-JOOST
+      runtime call."* Every allowlist entry was earned by RUNNING the probe.
+      🔴 **SO I FILED A DEFECT AGAINST A DECISION, AND SPENT A TICK RE-DERIVING
+      A SWEEP THAT WAS ALREADY COMMITTED.** The trigger was real — the probe
+      genuinely is unreachable by `make` — but *unreachable* was the known,
+      priced, deliberate state, and I never asked whether the tree already knew.
+      **BEFORE FILING AN APPARATUS GAP, GREP `tools/` FOR A CHECK THAT ALREADY
+      MEASURES IT.** An archive is not an orphan.
+      🔴 **AND I DESTROYED THAT TOOL WITH A `cat >` HEREDOC, WHICH THE TREE'S
+      OWN RULE EXISTS TO PREVENT.** The rule is *`ls`/`test -e` before any
+      `cat >`*. I ran the `ls` — **in the same shell command as the `cat >`**,
+      so the check and the overwrite were ATOMIC and the output scrolled past
+      after the file was already gone. Recovered with `git checkout` (verified
+      clean; the discarded draft is kept out of tree).
+      🎯 **THE RULE NEEDS THE REFINEMENT THIS COST: A GUARD IN THE SAME COMMAND
+      AS THE ACTION IT GUARDS IS NOT A GUARD.** Run the existence check as its
+      OWN command and READ IT, then write. Anything else is a ritual that
+      produces a log line and stops nothing.
+      📜 **The original filing, for the record:**
+      🔬 **`basic_probe_cas_match.py` HAS NO MAKEFILE TARGET AT ALL, SO NO
       BATTERY CAN EVER RUN IT (2026-09-24)**
       🎚️ APPARATUS — it is not a BASIC defect; it is a probe that cannot be
       reached by `make` and therefore cannot go red.
