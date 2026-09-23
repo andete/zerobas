@@ -169,7 +169,30 @@ def _disk_image() -> str:
 
 # Tape rows are the slowest in the sweep; see _rig_kwargs for why these figures
 # and not the disk ones [[apparatus-is-part-of-the-measurement]].
-TAPE_TIMING = dict(step=5.0, cap_gap=90.0, timeout=1200.0)
+# 🔴 `run_gap` IS THE RUN->CAPTURE BUDGET AND THE TAPE ROWS NEEDED ONE
+# (D-CAPGAP, fixed 2026-09-23). `cap_gap` is the gap AFTER the capture and buys
+# a slow case nothing; the budget was `step` (5 s), which does not cover a tape
+# SEARCH -- a 16000-cycle leader alone is ~7 emulated seconds per file and
+# `cload` has to skip ZQ to reach ZR.
+# 🎯 WHAT IT WAS HIDING WAS A REAL DEFECT, AND A VACUOUS AGREEMENT WAS HIDING IT:
+#     ref  'Skip :ZQ'            zb  'Skip :ZQ'            -> SUPPORTED
+# Both machines were captured MID-SEARCH, so they agreed on the shared prefix.
+# With a real budget the reference finishes and finds the file while we fail:
+#     ref  'Skip :ZQ|Found:ZR'   zb  'Skip :ZQ|load error' -> MISSING
+# That is this tree's own do-not-award shape: two machines agreeing about
+# nothing [[a-case-that-agrees-can-agree-for-the-wrong-reason]], on one of its
+# named DENOMINATORS -- exactly the hole the denominator exists to close.
+# 🔴 AND IT IS HERE, ON THE TAPE ROWS, RATHER THAN ON THE SUITE. A blanket
+# `run_gap` FIXES `cload` AND BREAKS FOUR OTHER ROWS: `stick_hold`,
+# `strig_hold`, `onstrig` and `onstrig_b` are `NEEDS-HOLD:` rows, the hold is
+# pressed at the capture slot MINUS `step`, and `run_gap` raises that slot --
+# so a wide budget moves the PRESS past the program's own 120-tick sampling
+# window and all four reference readings flip from held (1/-1) to idle (0).
+# MEASURED at ZEROBAS_RUN_GAP=90: `[2d 1 ]`->`[2d 0 ]`, `[1w-1 ]`->`[1w 0 ]`,
+# `[1x-1 ]`->`[1x 0 ]`, `[1y 1 ]`->`[1y 0 ]`. **Those four are the instrument
+# breaking, not the truth emerging** -- the opposite direction from `cload`, in
+# the same run. A per-SUITE budget cannot tell them apart; a per-RIG one can.
+TAPE_TIMING = dict(step=5.0, cap_gap=90.0, run_gap=60.0, timeout=1200.0)
 TAPE_MARK = "\x00TAPE\x00"
 TAPE_NAME = "ZQ"
 TAPE_PROGRAM = make_multiline_program([(10, 'PRINT"[Z9]"')], 0x8001)

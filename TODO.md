@@ -808,8 +808,17 @@ item — do **one item per session** to keep context lean.
       `$xx00` cell as a marker. ⚠️ **AND VERIFY THE REPLACEMENT, DO NOT TRUST
       IT** — `$CFFE` is quiet in ONE measured program, which is evidence and not
       a guarantee; a marker cell is a CLAIM that nobody else writes it.
-- [ ] 🔴 **YES FOR FIVE, NO FOR TWO — `kwsweep` AND `deffn-acceptance` ARE
-      CAPTURING ROWS EARLY (D-CAPGAP, answered 2026-09-23)**
+- [ ] 🟢 **BOTH FAULTY SUITES ARE FIXED (2026-09-23); WHAT IS LEFT IS THE FOUR
+      UNRUN SITES — `kwsweep` AND `deffn-acceptance` WERE CAPTURING ROWS EARLY
+      (D-CAPGAP, answered and half-closed the same day)**
+      ⚠️ **NOT MARKED DONE, AND THAT WAS A DELIBERATE REVERSAL.** A hand-off
+      written earlier the same evening said to close this item once both suites
+      shipped. It was wrong: **four of the twelve sites are still unmeasured**
+      (`trapsvc-acceptance` 9.0, `input-devices-acceptance` 10.0,
+      `nodisk-acceptance` 2.0, `probe_refcache.py`'s own site), and closing the
+      item would orphan them. **A plan written before the work is not a
+      measurement of the work** — the item's own scope decides, not the note.
+      🤖 **AUTONOMOUS** — the remaining four need no ruling, only an A/B each.
       ✅ **HE ANSWERED IT, AND THE MARKER WAS STALE UNTIL 2026-09-23:** *"yes, if
       a suite is faulty it needs to be fixed obviously"*. The approval was given
       the same day the measurement landed and this line still read NEEDS-JOOST,
@@ -838,9 +847,38 @@ item — do **one item per session** to keep context lean.
       ⚠️ **A TIGHT VALUE IS SAFE HERE BECAUSE THE FAILURE MODE IS LOUD** — if 25
       ever stops covering the recursion, the row reports *NOT MEASURED* again
       rather than quietly agreeing.
-      📋 **HALF TWO IS STILL OPEN: `kwsweep`**, and it is the harder one — four
-      reference values change and a `MISSING cload` row APPEARS, on one of this
-      tree's named denominators.
+      🟢 **HALF TWO SHIPPED TOO (2026-09-23), AND IT IS *NOT* WHAT THE FILED
+      MEASUREMENT IMPLIED.** The A/B said a wide budget changes four reference
+      values AND surfaces a `MISSING cload` row. Re-run, **those two changes
+      point in OPPOSITE directions, in the same run**:
+      🔴 **THE FOUR VALUE CHANGES ARE THE INSTRUMENT BREAKING, NOT THE TRUTH
+      EMERGING.** `stick_hold`, `strig_hold`, `onstrig` and `onstrig_b` are all
+      `NEEDS-HOLD:` rows. The hold is pressed at the capture slot MINUS `step`
+      (`omsx_repl.py`, and the source says why), and `run_gap` RAISES that slot
+      — so a wide budget moves the PRESS past the program's own 120-tick
+      sampling window and every reading flips from held to idle:
+      `[2d 1 ]`→`[2d 0 ]`, `[1w-1 ]`→`[1w 0 ]`, `[1x-1 ]`→`[1x 0 ]`,
+      `[1y 1 ]`→`[1y 0 ]`. **A blanket `run_gap` would have "fixed" `cload` and
+      silently broken four rows that were right.**
+      🎯 **SO THE BUDGET IS PER-RIG, NOT PER-SUITE:** `run_gap=60.0` joins
+      `TAPE_TIMING`, which only the tape rows take. **Exactly one row moved**,
+      and the four hold rows are byte-identical:
+      | row | before | after |
+      |---|---|---|
+      | `cload` | `SUPPORTED` — ref `Skip :ZQ`, zb `Skip :ZQ` | **`MISSING`** — ref `Skip :ZQ\|Found:ZR`, zb `Skip :ZQ\|load error` |
+      💰 Wall time **32 s → 32 s**, measured alone both times: the tape rows
+      already waited, so the budget was mis-SPENT rather than absent.
+      🔴 **AND THE SUPPORTED ROW WAS A VACUOUS AGREEMENT — TWO MACHINES AGREEING
+      ABOUT NOTHING.** Both were captured MID-SEARCH and matched on the shared
+      prefix `Skip :ZQ`. This is the tree's own do-not-award shape, sitting on a
+      named DENOMINATOR, which is exactly the hole a denominator exists to close
+      [[a-case-that-agrees-can-agree-for-the-wrong-reason]].
+      ➡️ **IT SURFACED A REAL TIER 1 DEFECT — filed separately below
+      (D-CLOADSKIP).** `kwsweep` still exits 0, so the gap is REPORTED rather
+      than red: the denominator can now see it.
+      ✅ **THE ITEM'S OWN WARNING WAS THE RIGHT ONE, AND IT WAS NEARLY IGNORED:**
+      *"a site that captures early is not automatically wrong — the verdict has
+      to be per-ROW, not per-site"*. Four rows say so in the same run.
       🔬 **HOW IT WAS ANSWERED, AND NOT BY RECONSTRUCTING THE CASES.** A separate
       driver that re-types a suite's programs agrees with its own mistakes, so
       the control acts on the REAL suite: `$ZEROBAS_RUN_GAP` (new, in `_tcl`)
@@ -4748,7 +4786,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:22637 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:22701 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -4914,7 +4952,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:9557 (T-6FE392)8 (T-529ABE)` from `TODO.md:20988 (T-529ABE)`: a
+      `TODO.md:9595 (T-6FE392)8 (T-529ABE)` from `TODO.md:21026 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -10401,7 +10439,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:20988 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:21026 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -22115,6 +22153,32 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       it is not enough to put one of them last.
       🎚️ TIER 1 — happy path: two documented spellings with no row.
       🤖 AUTONOMOUS — the rig is the whole of the work.
+
+- [ ] 🔴 **`CLOAD"ZR"` CANNOT REACH THE SECOND FILE ON A TAPE — WE SKIP IT AND
+      THEN FAIL (D-CLOADSKIP, 2026-09-23)**
+      🎚️ TIER 1 — happy path: loading a NAMED program from a tape holding more
+      than one file is ordinary MSX BASIC, and the fixture has two files
+      precisely so the named and bare forms mean different things (D-KWTAPE4).
+      🤖 **AUTONOMOUS** — the reproduction is one existing gate row; no ruling.
+      🔬 **MEASURED** (`make kwsweep`, row `cload`, `scratchpad/lp_kw_fix.out`):
+      | | reading |
+      |---|---|
+      | reference | `Skip :ZQ\|Found:ZR` |
+      | zerobas | `Skip :ZQ\|load error` |
+      🎯 **THE SKIP WORKS AND THE LOAD DOES NOT.** We emit `Skip :ZQ`, so the
+      search recognises the name mismatch and steps over the first file
+      correctly; it is reaching or reading the SECOND file that fails. That
+      narrows it away from name matching and onto the inter-file walk.
+      🟢 **AND THE ADJACENT FORMS ARE FINE**, which is what makes this specific:
+      bare `CLOAD` (`cload_b`) reads the first file and scores SUPPORTED, and
+      `CSAVE`/`CLOAD` round-trips of a single file have their own passing rows.
+      🔴 **IT WAS INVISIBLE UNTIL 2026-09-23 AND SCORED `SUPPORTED`** — both
+      machines were captured mid-search and agreed on the prefix `Skip :ZQ`.
+      D-CAPGAP's tape budget is what made it readable. **A row that agrees can
+      agree for the wrong reason, and this one did for months.**
+      ⚠️ **NOT MEASURED:** whether `LOAD"CAS:ZR"` fails the same way, and
+      whether a THIRD file would be reachable. Both are cheap and belong with
+      the fix.
 
 - [ ] 🎚️ **WHAT PROVES A RUNG? T2, T4, T5 AND T6 HAVE NO PROVING ROW TYPE, SO
       `0 of 159` KEYWORDS PROVE ANY OF THEM (D-KWPROVEN, 2026-09-23).**
