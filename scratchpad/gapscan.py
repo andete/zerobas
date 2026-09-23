@@ -16,7 +16,22 @@ ratio ranks suspicion; only `settle_n` (the budget instrument) can convict.
 
 Usage:  python3 scratchpad/gapscan.py [--tracked]   # --tracked: probes/tools/tests only
         python3 scratchpad/gapscan.py --selftest
+
+🔴 RANK 1 IS A KNOWN MUST-NOT-TOUCH, AND THE RANK IS WHY THIS WARNING IS HERE.
+`basic_probe_input_devices.py` (10.0) heads the list and was MEASURED on
+2026-09-24: giving it a `run_gap` moves the key-matrix PRESS past the program's
+sampling window and collapses all five hold rows to idle -- `Z 7 0` -> `Z 0 0`
+and so on -- **while the suite still reports PASS, because both machines flip
+together.** Widening it would replace five readings with five vacuous
+agreements. The same applies to any `NEEDS-HOLD:`-style site.
+🎯 SO THIS LIST IS A SUSPICION ORDER, NOT A WORK ORDER. All twelve original
+sites were resolved under D-CAPGAP: nine identical, two genuinely fixed
+(`deffn-acceptance`, and `kwsweep`'s TAPE rows via `TAPE_TIMING` -- per-RIG,
+never per-suite), one that must not be widened, one that was not a site at all.
+**The ratio predicted none of it**: 10.0 breaks, 9.0 is fine, and 1.2 was one of
+the two real faults.
 """
+import ast
 import os
 import re
 import sys
@@ -39,6 +54,46 @@ def scan_text(txt: str):
             continue
         st = re.findall(r"step\s*=\s*" + NUM, seg)
         yield float(m.group(1)), (float(st[-1]) if st else DRIVER_STEP_DEFAULT)
+
+
+# 🔴 A SELFTEST'S `cap_gap` IS NOT A BUDGET, AND ONE OF THEM REACHED THE
+# INDICTMENT (D-CAPGAP, 2026-09-24). `probes/lib/probe_refcache.py` was ranked
+# as a `cap_gap > step` SITE on the strength of two hits inside its own
+# `_selftest`: one a `dict(...)` used only to derive a cache KEY -- it never
+# boots a machine -- and one a run of `PRINT "REFCACHE"`, which finishes
+# instantly against an 8 s budget. Neither can capture a case early because
+# neither has a case to capture. **The 12-site list the arc was scoped on
+# therefore contained a site that could not belong to it.**
+# ⚠️ SIGNATURES ARE DELIBERATELY *NOT* MASKED, and that is a measurement rather
+# than an oversight: `cap_gap` appears as a function PARAMETER at five places,
+# all in `scratchpad/` (i2_char, i2_pinmap, sncap/emutime, sncap/emutotal,
+# rungap/check_timeline), so none reaches `--tracked`. And a parameter's default
+# IS the effective budget for every caller that does not override it, so masking
+# it would hide a real site. A first note on this claimed "signature defaults
+# and selftest constants" were both false positives; the signature half was
+# WRONG and is corrected here [[a-justification-parenthesis-is-an-unrun-claim]].
+def mask_selftests(txt: str) -> str:
+    """`txt` with every selftest FUNCTION BODY blanked, line for line.
+
+    Blanked rather than deleted so every surviving line keeps its number, which
+    matters because the flattening in `scan_text` joins continuations and a
+    dropped line would silently fuse two unrelated calls.
+    ⚠️ Returns `txt` unchanged when it does not parse: `scan_text` is also fed
+    bare SNIPPETS by the selftest below, and refusing those would make the
+    scanner's own arms unrunnable."""
+    try:
+        tree = ast.parse(txt)
+    except SyntaxError:
+        return txt
+    drop = set()
+    for n in ast.walk(tree):
+        if (isinstance(n, (ast.FunctionDef, ast.AsyncFunctionDef))
+                and "selftest" in n.name):
+            drop.update(range(n.lineno, (n.end_lineno or n.lineno) + 1))
+    if not drop:
+        return txt
+    return "\n".join("" if i + 1 in drop else l
+                     for i, l in enumerate(txt.split("\n")))
 
 
 DELIVERY = re.compile(r"\b(?:run_cases|run_batch|run_case|run_differential)\s*\(")
@@ -77,6 +132,7 @@ def scan_tree(tracked_only=False):
                 txt = open(p, errors="replace").read()
                 if "cap_gap" not in txt:
                     continue
+                txt = mask_selftests(txt)
                 for cg, st in scan_text(txt):
                     if cg > st:
                         hits.append((cg / st, st, cg, os.path.relpath(p, ROOT)))
@@ -92,6 +148,33 @@ def selftest():
             fails.append(f"{label}: got {got!r}, want {want!r}")
         print(f"  {'PASS' if got == want else 'FAIL'}  {label:<52} {got!r}")
 
+    # 🔴 D-CAPGAP: THE SELFTEST MASK, IN BOTH DIRECTIONS. Without the negative
+    # arm the mask could blank the whole file and every arm above would still
+    # pass, because "no sites" is what a clean corpus looks like too.
+    _sf = ("def _selftest():\n"
+           "    KW = dict(step=8.0, cap_gap=10.0)\n")
+    _real = ("def run(m):\n"
+             "    return run_cases(m, c, step=3.0, cap_gap=70.0)\n")
+    check("a selftest body is masked away",
+          list(scan_text(mask_selftests(_sf))), [])
+    check("NEGATIVE: a REAL site outside a selftest survives the mask",
+          list(scan_text(mask_selftests(_real))), [(70.0, 3.0)])
+    check("NEGATIVE: the mask keeps a real site that FOLLOWS a selftest",
+          list(scan_text(mask_selftests(_sf + _real))), [(70.0, 3.0)])
+    # A snippet that is not a parseable module must pass through untouched --
+    # `scan_text`'s own arms below feed it bare expressions.
+    check("NEGATIVE: an unparseable snippet is returned unchanged",
+          mask_selftests("run_cases(m, c, step=3.0, cap_gap=70.0"),
+          "run_cases(m, c, step=3.0, cap_gap=70.0")
+    # 🎯 AND THE SUBJECT THAT STARTED IT: probe_refcache's two hits are both in
+    # `_selftest`, so the masked file must offer NO site at all.
+    _rc = os.path.join(ROOT, "probes", "lib", "probe_refcache.py")
+    if os.path.exists(_rc):
+        _t = open(_rc, errors="replace").read()
+        check("probe_refcache offers sites BEFORE the mask (the control)",
+              bool(list(scan_text(_t))), True)
+        check("...and NONE after it -- both hits were selftest constants",
+              list(scan_text(mask_selftests(_t))), [])
     check("a site with cap_gap and step is read",
           list(scan_text("run_cases(m, c, step=3.0, cap_gap=70.0)")),
           [(70.0, 3.0)])

@@ -840,10 +840,28 @@ item — do **one item per session** to keep context lean.
       its hits are inside its OWN selftest: one is a parameter dict used only to
       derive a cache KEY (it never boots a machine), the other runs
       `PRINT "REFCACHE"`, which finishes instantly against an 8 s budget.
-      **`gapscan.py` counts any `cap_gap`/`step` pair in a probe file, including
-      signature defaults and selftest constants** — so the "12 sites" the item
-      was scoped on included at least one that could not capture anything.
+      **`gapscan.py` counted any `cap_gap`/`step` pair in a probe file,
+      selftest constants included** — so the "12 sites" the item was scoped on
+      held one that could not capture anything.
       *A ranked list of suspects is not a list of subjects.*
+      ✅ **FIXED 2026-09-24: `gapscan.py` now masks selftest BODIES** (`ast`, by
+      function name, blanking lines rather than deleting them so the
+      continuation-joining in `scan_text` cannot fuse two unrelated calls). The
+      tracked list goes **12 → 9**, and every drop is correct: `probe_refcache`
+      masked, while `kwsweep`'s 18.0 site and `deffn` now carry a real
+      `run_gap` and so are no longer candidates at all.
+      🔴 **AND ONE HALF OF THE SENTENCE ABOVE WAS MY OWN ERROR, CORRECTED HERE.**
+      It first read *"signature defaults and selftest constants"*. Both of
+      `probe_refcache`'s hits are inside `_selftest`; **neither is a signature
+      default.** `cap_gap` does appear as a function PARAMETER at five places —
+      all in `scratchpad/`, so none reaches `--tracked` — and those are
+      deliberately NOT masked, because a parameter's default IS the effective
+      budget for every caller that does not override it. Masking them would hide
+      a real site [[a-justification-parenthesis-is-an-unrun-claim]].
+      ⚠️ **RANK 1 IS NOW A KNOWN MUST-NOT-TOUCH:** `input-devices` (10.0) heads
+      the list and is the one site a `run_gap` would BREAK. The scanner's
+      docstring says so, because a ranked list invites its reader to start at
+      the top.
       📊 **FINAL TALLY, 12 of 12:** 9 sites identical (banner, nameord, txtceil,
       pusing, ramfree, trapsvc, nodisk, plus `kwsweep`'s second site) · 2 FIXED
       (`deffn-acceptance` `run_gap=25.0`; `kwsweep`'s TAPE rows `run_gap=60.0`
@@ -4830,7 +4848,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:22772 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:22790 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -4996,7 +5014,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:9639 (T-6FE392)8 (T-529ABE)` from `TODO.md:21070 (T-529ABE)`: a
+      `TODO.md:9657 (T-6FE392)8 (T-529ABE)` from `TODO.md:21088 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -10483,7 +10501,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:21070 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:21088 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
