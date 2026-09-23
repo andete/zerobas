@@ -288,6 +288,13 @@ def main(argv):
     # in both cases would file the answer as an instrument fault.
     damaged = kill.startswith(("DATA LOST", "GONE", "DIFFERS"))
     on_reference = ZB != "C-BIOS_MSX1_EU_REPACK_DISK"
+    # 🔴 WHEN A FIX IS UNDER TEST, A CLEAN KILL IS THE POINT -- but saying so
+    # REMOVES this run's positive control, and a sweep with no positive control
+    # cannot tell "fixed" from "gone blind". So the switch does not silence the
+    # guard, it RELOCATES it: the positive control then has to come from an A/B
+    # against the pre-fix ROM, and this says so out loud rather than printing a
+    # reassuring green [[a-null-result-needs-the-instrument-controls-in-the-same-run]].
+    expect_clean = os.environ.get("ZEROBAS_ALIAS_EXPECT") == "clean"
     if on_reference:
         print(f"\n🔬 REFERENCE RUN on {ZB}: KILL came back "
               f"{'DAMAGED' if damaged else 'CLEAN'}.")
@@ -295,6 +302,13 @@ def main(argv):
               "keeps an open file intact across the verb."
               if not damaged else
               "  DAMAGED here would mean the reference has the same defect.")
+    elif expect_clean:
+        print(f"\n🔬 FIX UNDER TEST: KILL came back "
+              f"{'STILL DAMAGED' if damaged else 'CLEAN'}.")
+        if not damaged:
+            print("  ⚠️  THIS RUN HAS NO POSITIVE CONTROL. A clean sweep and a "
+                  "blind sweep look identical from here — the fix is only "
+                  "demonstrated by an A/B against the pre-fix ROM.")
     elif not damaged:
         print(f"\n🔴 INSTRUMENT FAULT: the POSITIVE control (KILL) came back "
               f"{kill.split(chr(8212))[0].strip()} — on OUR machine the sweep "

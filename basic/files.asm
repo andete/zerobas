@@ -81,13 +81,70 @@
 ;        raises ERR 5 and never returns.
 ; One helper rather than three inline gates: 6 B per verb instead of 12, which
 ; matters at 75 B of page 1 (2026-09-03).
+;
+; 🔴 D-ALIASBITE (2026-09-23, Joost: *"go with the bookkeeping fix"*): THE
+; CROSSING IS ALSO A CHANNEL SWITCH, AND IT HAS TO BE BOOKKEPT LIKE ONE.
+; `FAT_DBUF` ($E5C0) holds the OPEN channel's staged sector, and a disk-ROM verb
+; refills it -- measured: `KILL` writes 416 B of its own `WBUF` straight through
+; it, `NAME` 832+192, `DSKF` 1664+384. Before this, a verb run while a channel
+; was open made the next read serve 4 bytes of the verb's leftovers (no error,
+; no short read) and made the next write COMMIT them to the disk.
+; 🎯 THE PAIR THAT FIXES IT WAS ALREADY SHIPPED, for the channel-switch case:
+; `fch_flush_active` (fat_detach_channel) writes a dirty partial sector out IN
+; PLACE and steps back onto it, and `fch_restage` (fat_restage_channel) re-reads
+; whatever the live channel had staged. `fch_load_ctx` has always ended in
+; `jp fch_restage`. A channel switch was safe BECAUSE it took that path; a verb
+; was unsafe only because it did not. So take it here too.
+; 🔬 THE REFERENCE DOES THE SAME THING AND WAS MEASURED DOING IT
+; (`scratchpad/refbuf_ref_*.out`, National_CF-3300): its directory/raw sector
+; buffer and its file-data sector buffer never write each other's range, and the
+; data buffer is re-read on switch-back. Relocating our buffers to be disjoint
+; instead was priced and REFUSED: main leaves no 512 B span anywhere in
+; [$E000,$F380) -- 1325 B free but the largest hole is 444 B
+; (`scratchpad/disjoint_mainonly.out`).
+; ⚠️ BOTH HALVES RETURN AT ONCE WHEN NOTHING IS LIVE (`FCH_ACTIVE` = 0), so the
+; common no-file-open path pays one `ld a,(nn)` and a branch, not a crossing.
+; ⚠️ THE FLUSH'S Cy IS DISCARDED ON PURPOSE. A write error here (disk full) is
+; re-raised by the channel's own `CLOSE`, which still has to flush; raising from
+; inside the gate would give every verb a new error path it never had.
+; ⚠️ NO CALLER TESTS Cy AFTER `chan_gate` -- checked at all twelve call sites,
+; every one loads `DISKOP_STATUS` or `FN_RESUME` next -- so the claimed path is
+; free to end in a `jp` instead of the old `ret c`.
 chan_gate:
+                push    af                  ; ⚠️ KEEPS THE CALLER'S A ACROSS THE
+                ld      a,(FCH_ACTIVE)      ; GATE, which the original code did by
+                or      a                   ; never touching it. NOT what fixed the
+                jr      z,cg_noflush        ; ERR 53 -- that was DISKOP_STATUS
+                push    hl                  ; below, and AF was the FIRST suspect
+                call    fch_flush_active    ; and changed nothing. Kept because
+                pop     hl                  ; restoring the old contract exactly is
+                                            ; worth 2 B, not because it is a fix.
+cg_noflush:
+                pop     af
+cg_cross:
                 ld      de,cg_back          ; call THROUGH HL: the cell is
                 push    de                  ; `F7 <slot> <lo> <hi> C9`, so its own
                 or      a                   ; `ret` lands here; unclaimed it is a
                 jp      (hl)                ; bare `ret` and lands here at once
 cg_back:
-                ret     c                   ; claimed -> back to the verb
+                jr      nc,cg_unclaimed     ; claimed -> the verb may have refilled
+                ld      a,(FCH_ACTIVE)      ; FAT_DBUF under the open channel
+                or      a
+                ret     z                   ; no channel live -> nothing staged
+                ; 🔴 `DISKOP_STATUS` IS A SHARED CHANNEL -- WRITE IT ONCE, LAST.
+                ; The re-stage is itself a DISKOP and lands its own result there,
+                ; ON TOP of the verb's, before the verb's caller decodes it. The
+                ; first cut just fell through to the re-stage and `KILL`/`NAME`
+                ; came back `File not found` (ERR 53) -- `kill_status` was reading
+                ; the RE-STAGE's 0, not KILL's. Measured twice: clobbering A was
+                ; the first suspect and restoring AF changed nothing.
+                ld      a,(DISKOP_STATUS)
+                push    af
+                call    fch_restage         ; re-read this channel's staged sector
+                pop     af
+                ld      (DISKOP_STATUS),a   ; hand the VERB's status back
+                ret
+cg_unclaimed:
                 ld      a,5                 ; Illegal function call -- TRAPPABLE,
                 jp      raise_error         ; which is what the reference gives
 

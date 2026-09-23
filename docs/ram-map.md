@@ -34,7 +34,7 @@ names the other component's BUFFER this address falls within. That
 second one is the question a per-component map cannot answer.
 
 * **basic** — 418 declared addresses in this project's own workspace `$E000..$F37F` (384 with a machine-readable width), plus **79** in the MSX standard work area at or above `$F380`.
-* **disk** — 128 declared addresses in this project's own workspace `$E000..$F37F` (113 with a machine-readable width), plus **24** in the MSX standard work area at or above `$F380`.
+* **disk** — 128 declared addresses in this project's own workspace `$E000..$F37F` (114 with a machine-readable width), plus **24** in the MSX standard work area at or above `$F380`.
 
 ## This project's own workspace (`$E000..$F37F`)
 
@@ -365,16 +365,7 @@ second one is the question a per-component map cannot answer.
 | `$E774` | 2 B | `disk` | `FREAD_OFF/RDBLK_BUFPOS` | byte index within FAT_DBUF (0..512) (word) | `basic` FAT_DBUF/FSECTOR_BUF |
 | `$E776` | 2 B | `disk` | `RDBLK_DST` | current DTA write pointer (word; from BDOS_DTA) | `basic` FAT_DBUF/FSECTOR_BUF |
 | `$E778` | 2 B | `disk` | `P1_DEST` | saved page-1 destination word (dskio bounce path) | `basic` FAT_DBUF/FSECTOR_BUF |
-| `$E77A` |  | `disk` | `P1_BLIT` | runtime address of the installed blit routine | `basic` FAT_DBUF/FSECTOR_BUF |
-| `$E795` |  | `disk` | `WA_SEG/WA_SEG_ROM` | base of the two hook bodies | `basic` FAT_DBUF/FSECTOR_BUF |
-| `$E79B` |  | `disk` | `WA_SEG_RAM` |  | `basic` FAT_DBUF/FSECTOR_BUF |
-| `$E7B0` | 1 B | `disk` | `CONOUT_CHAR` | CONOUT: saved char (1 B) | `basic` FAT_DBUF/FSECTOR_BUF |
-| `$E7B1` | 1 B | `disk` | `PG_SV_A8` | shared: saved $A8 config (1 B) | `basic` FAT_DBUF/FSECTOR_BUF |
 | `$E7C0` | 512 B | `basic` | `FAT_MBUF/FWBUF` | FAT/dir metadata sector buffer ($E7C0..$E9BF) |  |
-| `$E7E2` |  | `disk` | `INT_SP_SAVE/INT_STK_TOP` | caller SP saved above the stack top (word) | `basic` FAT_MBUF/FWBUF |
-| `$E7E4` | 2 B | `disk` | `CONIN_BUF` | CONIN: buffer base (word) | `basic` FAT_MBUF/FWBUF |
-| `$E7E6` | 1 B | `disk` | `CONIN_MAX` | CONIN: max length ([DE+0]) (1 B) | `basic` FAT_MBUF/FWBUF |
-| `$E7E7` | 1 B | `disk` | `CONIN_COUNT` | CONIN: running fill count (1 B) | `basic` FAT_MBUF/FWBUF |
 | `$E7E8` | 3 B | `disk` | `WRBLK_REC` | 24-bit target record number for the current step (3 bytes) | `basic` FAT_MBUF/FWBUF |
 | `$E7EB` | 1 B | `disk` | `WRBLK_RECSEC` | WRBLK_REC & 3 (record-in-sector) across the seek/extend loop (1 B) | `basic` FAT_MBUF/FWBUF |
 | `$E7EC` | 2 B | `disk` | `WRBLK_RS` | resolved record size (FCB+14..15, 0 -> 128) (word) | `basic` FAT_MBUF/FWBUF |
@@ -451,9 +442,18 @@ second one is the question a per-component map cannot answer.
 | `$EA9A` | 1 B | `basic` | `FN_SLOTP` | 1 B: low byte of the slot the NEXT formal takes |  |
 | `$EA9B` | 1 B | `basic` | `FN_RTYPE` | 1 B: the FN's own resolved type (its result type) |  |
 | `$EA9C` |  | `basic` | `FN_PAREA` | the shadow-parameter slots themselves |  |
+| `$EA9C` |  | `disk` | `WA_SEG/WA_SEG_ROM` | base of the two hook bodies -- no width |  |
+| `$EAA2` |  | `disk` | `WA_SEG_RAM` |  |  |
+| `$EAB7` | 1 B | `disk` | `CONOUT_CHAR` | CONOUT: saved char (1 B) |  |
+| `$EAB8` | 1 B | `disk` | `PG_SV_A8` | shared: saved $A8 config (1 B) |  |
+| `$EAE9` |  | `disk` | `INT_SP_SAVE/INT_STK_TOP` | caller SP saved above the stack top (word) |  |
+| `$EAEB` | 2 B | `disk` | `CONIN_BUF` | CONIN: buffer base (word) |  |
+| `$EAED` | 1 B | `disk` | `CONIN_MAX` | CONIN: max length ([DE+0]) (1 B) |  |
+| `$EAEE` | 1 B | `disk` | `CONIN_COUNT` | CONIN: running fill count (1 B) |  |
 | `$EAFF` |  | `basic` | `FN_PAREA_END` |  |  |
 | `$EB00` | 1 B | `basic` | `LINEBUF` | repack: ASCII input line from the keyboard (LINEMAX B) (1 B) |  |
 | `$EC00` | 576 B | `basic` | `TOKBUF` | repack: crunch buffer, 576 B ($EC00..$EE3F) |  |
+| `$EE40` | 27 B | `disk` | `P1_BLIT` | installed blit routine (27 B) -- declared |  |
 | `$EE64` | 96 B | `basic` | `FLD_TAB` | field table base ($EE64..$EEC3, 96 bytes) |  |
 | `$EEC4` | 2 B | `basic` | `FLD_TABEND/GP_RECNO` | record number, 1-based (2 B) |  |
 | `$EEC6` | 2 B | `basic` | `GP_SEC` | file logical-sector index of the record (2) |  |

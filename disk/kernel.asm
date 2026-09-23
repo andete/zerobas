@@ -3517,6 +3517,27 @@ install_f365:
                 ldir
                 ret
 
+; install_resident — copy the page-3-resident BLIT and the two HOOK BODIES to
+; their RAM homes (D-ALIASBITE carve, 2026-09-23). Two LDIRs because the two
+; blocks are no longer contiguous in RAM: they used to sit at $E77A/$E795, i.e.
+; INSIDE main's `FSECTOR_BUF` ($E5C0..$E7BF), and main now RE-READS that buffer
+; after a disk-ROM crossing -- which overwrote 54 B of executable code. The
+; templates are still adjacent in ROM (wa_seg_rom_tmpl follows p1_blit_end), so
+; only the destinations differ.
+; ⚠️ Sited HERE and not inline at the call site: the pre-$41FD init region is at
+; capacity, and overflowing the `ds $41FD - $` anchor assembles to an EMPTY
+; object file with NO error (tools/pad_rom.py is what catches it).
+install_resident:
+                ld      hl, p1_blit_tmpl
+                ld      de, P1_BLIT
+                ld      bc, p1_blit_end - p1_blit_tmpl
+                ldir
+                ld      hl, wa_seg_rom_tmpl
+                ld      de, WA_SEG
+                ld      bc, wa_seg_end_tmpl - wa_seg_rom_tmpl
+                ldir
+                ret
+
 ; res_print_tmpl — clean-room body for the resident $-string print routine, relocated
 ; to RES_PRINT ($F1C9) by install_res_print (M15 §9.2/§9.3(ii)). The kernel CALLs
 ; $F1C9 with DE -> a '$'-terminated string. Emits each char via conout_body (the

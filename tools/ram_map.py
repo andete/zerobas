@@ -44,9 +44,13 @@ SEPARATE NAMESPACES and reported separately, which is also the only correct
 arithmetic: a run is a statement about one machine's map, and merging two
 mutually-exclusive maps computes a gap that exists in neither. Arm A6 pins it.
 
-**(4) AND EIGHT OF THE CELLS (1) MADE VISIBLE STILL DID NOT RESOLVE.** `WA_SEG
-equ P1_BLIT + (p1_blit_end - p1_blit_tmpl)` is derived from ASSEMBLER LABELS,
-which no source-text resolver can evaluate -- so `WA_SEG`, `CONOUT_CHAR`,
+**(4) AND EIGHT OF THE CELLS (1) MADE VISIBLE STILL DID NOT RESOLVE.** The head
+of that chain used to be `WA_SEG equ P1_BLIT + (p1_blit_end - p1_blit_tmpl)`,
+derived from ASSEMBLER LABELS which no source-text resolver can evaluate.
+⚠️ `WA_SEG` ITSELF IS ABSOLUTE SINCE 2026-09-23 (the D-ALIASBITE carve moved it
+out of main's `FSECTOR_BUF`), so it resolves from source now and `CONOUT_CHAR`
+is the head of the label-derived run -- but the CLASS is unchanged and so is
+everything below it. At the time: `WA_SEG`, `CONOUT_CHAR`,
 `PG_SV_A8`, `INT_STK_TOP`, `INT_SP_SAVE`, `CONIN_BUF`, `CONIN_MAX` and
 `CONIN_COUNT` parsed, landed in `raw`, and then fell out of the map silently.
 Reading them was necessary and not sufficient. The build's own `.sym` supplies
@@ -1300,10 +1304,19 @@ def selftest(lo, hi) -> int:
 
     # ---- A7 sym seeding, with --no-sym as the control ---------------------
     d_nosym = Map("disk", lo, hi, use_sym=False)
-    ok["A7 sym supplies a label-derived cell (WA_SEG $E795)"] = \
-        d_all.vals.get("WA_SEG") == 0xE795 and "WA_SEG" in d_all.from_sym
+    # 🔴 THE SUBJECT MOVED, SO THE ARM MOVED WITH IT. This used to name
+    # `WA_SEG $E795`; the D-ALIASBITE carve (2026-09-23) gave WA_SEG an ABSOLUTE
+    # `equ` -- so it is now resolvable from source text and can no longer
+    # demonstrate what this arm is for. `CONOUT_CHAR` still is not: it is
+    # `WA_SEG + (wa_seg_end_tmpl - wa_seg_rom_tmpl)`, a label-difference only the
+    # assembler can evaluate. ⚠️ Pinning the ADDRESS as well is deliberate -- an
+    # arm that only checked `in from_sym` would pass on a cell resolved to the
+    # wrong place.
+    ok["A7 sym supplies a label-derived cell (CONOUT_CHAR $EAB7)"] = \
+        d_all.vals.get("CONOUT_CHAR") == 0xEAB7 \
+        and "CONOUT_CHAR" in d_all.from_sym
     ok["A7 NEGATIVE: without the sym it is absent from the map"] = \
-        "WA_SEG" not in d_nosym.vals
+        "CONOUT_CHAR" not in d_nosym.vals
     ok["A7 cross-check is non-vacuous and clean"] = \
         d_all.crosschecked > 20 and not d_all.disagree
 

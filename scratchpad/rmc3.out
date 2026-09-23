@@ -1,0 +1,100 @@
+python3 tools/ram_map.py --selftest
+    A3 ok     20 <- '4 CALLF trampolines, 5 bytes each ($E800-$E813' R1 explicit range -- and 4*5=20 agrees with the prose
+    A3 ok      3 <- 'k_47B2 entry RR, FCB+33..35 (24-bit, 3 bytes)'  R3 beats R4: '33..35' is not a width, '24-bit' is not 24 bytes
+    A3 ok      2 <- 'byte offset into SECTOR_BUF (word, 0..512)'     R4 order: 'byte offset' must not beat '(word)'
+    A3 ok    512 <- '512-byte sector buffer'                         R2 hyphenated
+    A3 ok      2 <- 'write buffer length (2 B)'                      R3 bare B
+    A3 ok      2 <- '-> 11-byte search name (word)'                  R2 beats R3: the 11 bytes are the POINTEE, the cell is a word
+    A3 ok      2 <- 'word -> the 512-byte DATA/sector buffer'        R2 beats R3 again -- the overlap check found both of these
+    A3 ok      1 <- 'our slot byte for the HPHYD inter-slot hook (1' R6 this tree's OWN convention: 229 equ comments end in a bare (N)
+    A3 ok      2 <- 'computed VRAM byte address of the current pixe' R6 again -- and it is why coverage went 31% -> 72% on the basic map
+    A3 ok   None <- 'current drive index (0..4)'                     🔴 NEGATIVE CONTROL: a RANGE in parens is not a width
+    A3 ok   None <- 'MSX-DOS-1 kernel SETDTA-time entry (M19)'       🔴 NEGATIVE CONTROL: a finding id in parens is not a width
+    A3 ok   None <- 'the media byte ($F9)'                           🔴 NEGATIVE CONTROL: a hex literal in parens is not a width
+    A3 ok   None <- 'a (2) that is not at the END of the comment'    🔴 NEGATIVE CONTROL: R6 is ANCHORED -- unanchor it and this reads as 2
+    A3 ok   None <- 'saved $A8 primary-slot config'                  🔴 NEGATIVE CONTROL: no width declared -> UNDECLARED, never 1
+    A3 ok   None <- 'saved slot secondary ($FFFF) live value'        🔴 NEGATIVE CONTROL: a $-literal is not a range
+    A3 ok   None <- 'lives at $E900-$E9FF'                           🔴 NEGATIVE CONTROL: a range that is not THIS cell's is ignored
+    A3 ok   None <- 'tokeniser: &H/&O constant token to emit ($0C/$' 🔴 NEGATIVE CONTROL, AND IT SHIPPED WRONG: `$0B` read as `0 B`, so TKRTOK declared itself ZERO bytes wide. The `($F9)` control above missed it because the hazard is the `$`, not the parens
+    A3 ok   None <- 'a plain 0 B claim'                              🔴 NEGATIVE CONTROL: a width of ZERO is refused whatever rule made it
+    A3 ok   None <- '0 bytes of anything'                            🔴 NEGATIVE CONTROL: the same floor through the spelled-out form
+    A3 ok   None <- 'emit $1B then $2B'                              🔴 NEGATIVE CONTROL: neither hex literal is a byte count
+    A3 ok     12 <- 'a 12 B cell that mentions $0B in passing'       🟢 POSITIVE CONTROL: the lookbehind must not blind the rule to a REAL count sitting beside a hex literal
+    A3 ok   None <- 'ceiling (2) FREE-RAM $E058..$E07F the rest of ' 🔴 NEGATIVE CONTROL, AND IT SHIPPED WRONG: a `FREE-RAM $LO..$HI` claim starting at the cell's OWN address outranked the `(2)` it declares, because RANGE is the first rule -- SL_CEIL read 40 B and is a POINTER. ⚠️ The answer is None, NOT 2: stripping the claim removes a WRONG width, it does not manufacture a right one (the `(2)` is no longer final, and R6 is anchored). The cell still has to declare itself on its own line
+    A3 ok      2 <- 'ceiling FREE-RAM $E059..$E07F the rest (2 B)'   🟢 POSITIVE CONTROL: ...and once it DOES, the claim beside it is harmless
+    A3 ok    512 <- 'file data / read sector buffer ($E5C0..$E7BF)'  🟢 POSITIVE CONTROL: a REAL declared range is still authoritative -- the FREE-RAM strip must not blind the rule that settles the big buffers
+
+  SELFTEST: PASS  A3 width vocabulary (22 vectors, 13 negative)
+  SELFTEST: PASS  A0 the plant window is empty of real cells, in BOTH components -- without this every planted arm below is a claim about a collision
+  SELFTEST: PASS  A1 arithmetic chain `X equ Y+N*M` resolves
+  SELFTEST: PASS  A2 planted 16 B gap is found by the walk
+  SELFTEST: PASS  A5 declared width -> a 16 B unattributed run
+  SELFTEST: PASS  A5 NEGATIVE: undeclared plant is in ⚠️, NOT in 🟢
+  SELFTEST: PASS  A4 `.asm` cells are visible (DRV_TRAMP $E800, disk/init.asm)
+  SELFTEST: PASS  A4 NEGATIVE: the old `.inc`-only glob could NOT see it
+  SELFTEST: PASS  A4 and it brought >=15 more page-3 cells with it
+  SELFTEST: PASS  A6 per-ROM twin visible in BOTH maps (FAT_CURCLUS)
+  SELFTEST: PASS  A6 NEGATIVE: one merged namespace shadows it to a single address
+  SELFTEST: PASS  A8 a width that overruns its neighbour yields NO run
+  SELFTEST: PASS  A8 aliased names that disagree -> DISPUTED, no run
+  SELFTEST: PASS  A8 NEGATIVE: both still appear in the ⚠️ list
+  SELFTEST: PASS  A9 an ABI-IMPORTED cell owns NO run (the gap after it is full of the other ROM's cells this map cannot see)
+  SELFTEST: PASS  A9 NEGATIVE: the SAME shape in a native file DOES own one, so the suppression is about the FILE and not about the fixture
+  SELFTEST: PASS  A10 a continuation line is joined to its declaration
+  SELFTEST: PASS  A10 ...and the width on it is then READ (2 B)
+  SELFTEST: PASS  A10 NEGATIVE: the declaration line ALONE has no width -- which is exactly what made 17 cells read as undeclared
+  SELFTEST: PASS  A10 NEGATIVE: joining STOPS at the next declaration, so a later cell's comment cannot donate a width
+  SELFTEST: PASS  A10 NEGATIVE: and it stops before a loose paragraph, so its '99 bytes' can never become a width
+  SELFTEST: PASS  A16 the walk STOPS at a `; --- section --- ` header
+  SELFTEST: PASS  A16 NEGATIVE: so the NEXT section's '26-byte' cannot become this cell's width
+  SELFTEST: PASS  A16 NEGATIVE: without the stop it WOULD have -- the arm can fail
+  SELFTEST: PASS  A16 POSITIVE: a continuation with no header still joins
+  SELFTEST: PASS  A10 on the real corpus it RAISES coverage
+  SELFTEST: PASS  A10 NEGATIVE: and the control reproduces the OLD coverage exactly, so the gain is the continuations and nothing else
+  SELFTEST: PASS  A10 SH_SRC $E20F reads 2 B with joining and nothing without it (the ADDRESS is derived, not typed -- it moved on 2026-09-21 and a typed one would have rotted)
+  SELFTEST: PASS  A11 an explicit RANGE keeps its width although a cell sits inside it -- the overrun demotion would have deleted it
+  SELFTEST: PASS  A11 the gap after the TENANT is attributed to the enclosing buffer, not reported as free
+  SELFTEST: PASS  A11 covering() names the owner
+  SELFTEST: PASS  A11 NEGATIVE: the same shape with NO enclosing span IS a run
+  SELFTEST: PASS  A11 NEGATIVE: a DERIVED width that overruns is still demoted -- the exemption is for explicit ranges only
+  SELFTEST: PASS  A12 pinned + matching -> green
+  SELFTEST: PASS  A12 NEGATIVE: an UNPINNED width-less cell is RED
+  SELFTEST: PASS  A12 NEGATIVE: a pin that matches NOTHING is RED -- the list may SHRINK and may never grow
+  SELFTEST: PASS  A12 the gate SAYS it does not police the runs
+  SELFTEST: PASS  A12 the pin is keyed by NAME, not by address
+  SELFTEST: PASS  A12 the real allowlist parses and is non-empty
+  SELFTEST: PASS  A12 NEGATIVE: a missing allowlist parses as EMPTY, which makes the gate RED rather than silently green
+  SELFTEST: PASS  A13 disk's SECTOR_BUF is reported as hosting main's cells -- the overlay §6.6aq is about
+  SELFTEST: PASS  A13 ...and it names more than one guest
+  SELFTEST: PASS  A13 NEGATIVE: a component never reports ITSELF as a guest
+  SELFTEST: PASS  A13 NEGATIVE: a span below the threshold is not reported
+  SELFTEST: PASS  A14 every declared address of BOTH components has a row
+  SELFTEST: PASS  A14 a basic cell INSIDE disk's SECTOR_BUF names that buffer
+  SELFTEST: PASS  A14 NEGATIVE: an address outside every foreign buffer names none
+  SELFTEST: PASS  A14 the purpose is the DECLARATION line, not the joined block -- the first draft had a cell swallow the next section's paragraph
+  SELFTEST: PASS  A14 a pipe in a comment is escaped, so one cell cannot split a row
+  SELFTEST: PASS  A14 NEGATIVE: a purpose longer than the cap is truncated with an ellipsis rather than silently cut
+  SELFTEST: PASS  A15 the wide map SEES the standard work area (LINLEN, EXPTBL)
+  SELFTEST: PASS  A15 NEGATIVE: the ANALYSIS map stops below it, so no run and no pin is ever claimed up there
+  SELFTEST: PASS  A15 the document carries BOTH sections
+  SELFTEST: PASS  A15 a standard-area cell has a row
+  SELFTEST: PASS  A15 NEGATIVE: the standard section says the cells are NOT ours
+  SELFTEST: PASS  A7 sym supplies a label-derived cell (CONOUT_CHAR $EAB7)
+  SELFTEST: PASS  A7 NEGATIVE: without the sym it is absent from the map
+  SELFTEST: PASS  A7 cross-check is non-vacuous and clean
+  SELFTEST: 58/58 arms pass
+python3 tools/ram_map.py --check
+ram-map: 48 cell(s) with no trusted width, 48 pinned in tools/ram-width-allow.txt
+🟢 every cell with no trusted width is pinned, and every pin still matches.
+⚠️ THIS GATE DOES NOT CHECK THE RUNS. An unattributed run is a CANDIDATE, never free space: a cell addressed only as an offset in code has no `equ` and is invisible here.
+🟢 docs/ram-map.md matches its generator.
+
+🔑 CROSS-ROM OVERLAYS -- 8 declared span(s) of >=64 B host another component's cells. This is DESIGNED, and it is what a per-component map cannot show:
+  basic STRSCR $E26D..$E36C hosts 7 cell(s) of the other map: STRSCR $E26D, FDC_IFF $E299, FDC_CNT $E29A, FDC_LSEC $E29B, FDC_DEST $E29D, FDC_TRY $E29F …
+  basic FAT_DBUF/FSECTOR_BUF $E5C0..$E7BF hosts 18 cell(s) of the other map: FSECTOR_BUF $E5C0, WRBLK_MULACC $E754, WRBLK_MULOP $E758, WRBLK_MULN $E75C, BOOT_SV_A8/RRND_RECSEC $E760, BOOT_SV_SEC/RRND_CLUSSEC $E761 …
+  basic FAT_MBUF/FWBUF $E7C0..$E9BF hosts 16 cell(s) of the other map: WRBLK_REC $E7E8, WRBLK_RECSEC $E7EB, WRBLK_RS $E7EC, WRBLK_CNT $E7EE, WRBLK_REQ $E7F0, WRBLK_PREVCLUS $E7F2 …
+  basic CAL_BUF2 $E800..$E8FF hosts 4 cell(s) of the other map: DRV_TRAMP $E800, BDOS_SEQREC $E814, DBUF_PTR $E816, MBUF_PTR $E818
+  disk  STRSCR $E26D..$E36C hosts 1 cell(s) of the other map: STRSCR $E26D
+  disk  FAT_DBUF/SECTOR_BUF $E2A0..$E49F hosts 25 cell(s) of the other map: TEMPPOOL $E381, ISRCH_A/TEMPBASE $E3E1, ISRCH_B $E3E3, GFX_BAD/STRENG_SPARE $E3E5, MIDS_DEST $E3E6, GFX_PTOP $E3E8 …
+  disk  FAT_MBUF/WBUF $E560..$E75F hosts 2 cell(s) of the other map: FAT_DBUF/FSECTOR_BUF $E5C0, CAL_BUF/CAS_WBUF $E600
+  disk  FSECTOR_BUF $E5C0..$E7BF hosts 2 cell(s) of the other map: FAT_DBUF/FSECTOR_BUF $E5C0, CAL_BUF/CAS_WBUF $E600

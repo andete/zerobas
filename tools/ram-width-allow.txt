@@ -62,7 +62,6 @@ disk FAT_B1 undeclared
 disk FAT_WRTMP2 overruns
 disk FREAD_LEFT/RDBLK_REQ disputed
 disk INT_SP_SAVE/INT_STK_TOP disputed
-disk P1_BLIT undeclared
 disk RES_PRINT undeclared
 disk RES_STUBS undeclared
 disk RES_STUBS_END undeclared

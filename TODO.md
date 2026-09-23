@@ -997,6 +997,52 @@ item — do **one item per session** to keep context lean.
       is exactly the reference's flush-away / re-read-on-return.** A channel
       switch is safe BECAUSE it goes through that path; a disk-ROM verb is unsafe
       only because it does not.
+      🟢 **SHIPPED 2026-09-23 (Joost: *"go with the bookkeeping fix"*): THE READ
+      SIDE IS FIXED AND MATCHES THE REFERENCE.** `chan_gate` now calls
+      `fch_flush_active` before the crossing and `fch_restage` after it — the
+      SAME pair a channel switch already took, which is why a channel switch was
+      always safe. **Every verb now reads `('ABCD','EFGH')`**: `KILL`, `NAME`,
+      `DSKF`, `OPEN-IN`, `OPEN-OUT`, `PRINT#`, no-disk (`scratchpad/aliasbite_fixed.out`).
+      💰 **main page 1: 75 B → 44 B free** (measured 2026-09-23, both from a clean
+      tree). `disk.rom` 7279 → 7264 B.
+      🔴 **AND `DISKOP_STATUS` COST A ROUND, EXACTLY AS THIS TREE ALREADY WROTE
+      DOWN.** The first cut let the re-stage fall through, and `KILL`/`NAME` came
+      back `File not found` — `kill_status` was decoding the RE-STAGE's `0`, not
+      the verb's. *Write it once, LAST.* ⚠️ A clobbered `A` was the first suspect
+      and preserving `AF` changed nothing; the `push af` is kept only because it
+      restores the gate's original contract, and the source says so.
+      🔴 **THE WRITE SIDE IS 4 OF 8 AND THE RESIDUAL IS FILED, NOT CLOSED**
+      (`scratchpad/aliaswrite_carved.out`). `KILL`, `FILES`, `COPY`, `SAVE` now
+      commit the correct file; **`NAME`, `DSKF`, `DSKI$`, `DSKO$` still lose it**
+      (`NAME`/`DSKI$`/`DSKO$` empty, `DSKF` 37 × `$09` — byte-identical to
+      before the fix).
+      ❌ **AND MY MECHANISM FOR THAT WAS REFUTED BY THE CARVE.** The failing set
+      is exactly the set that writes above `$E75F`, and I inferred the re-stage
+      was overwriting disk's resident code there. **Moving that code changed
+      NOTHING.** ⚠️ The inference was also untestable by this probe: each arm
+      performs ONE crossing, so code clobbered by a re-stage could only show on
+      the NEXT one. ➡️ **NEXT STEP: point `aliascell_probe.py`'s named-cell
+      snapshot diff at the WRITE program** and find which of main's engine cells
+      move across `NAME` and not across `KILL`. Do not guess a third time.
+      🏗️ **THE CARVE SHIPPED TOO, AND IT IS JUSTIFIED BY ARCHITECTURE, NOT BY A
+      MEASURED FIX.** `P1_BLIT` and the two `WA_SEG` hook bodies — 54 B of
+      RESIDENT CODE — were living at `$E77A`/`$E795`, i.e. INSIDE main's
+      `FSECTOR_BUF` (`$E5C0..$E7BF`), which main now re-reads from the disk after
+      every crossing. They move to `$EE40` (blit) and `$EA9C` (bodies, with the
+      `CONOUT`/`PG_SV`/interrupt-stack/`CONIN` chain following to `$EAEE`), and
+      `install_resident` in `disk/kernel.asm` does two LDIRs instead of one.
+      ⚠️ **NO SINGLE FREE RUN WAS BIG ENOUGH** — the source-vouched runs are
+      `$EA60..$EA91` (50 B), `$EA9C..$EAFF` (100 B, bounded by `FN_RTYPE` and
+      `LINEBUF`) and `$EE40..$EE63` (36 B) — which is why the blocks are no
+      longer contiguous. ⚠️ **AND THE HAZARD IT REMOVES IS UNDEMONSTRATED:** a
+      second crossing after a re-stage should hit overwritten code, and no probe
+      here does two crossings. **Stated as a reason, not as a result.**
+      🔴 **THE FREE-SPACE FIGURES I FIRST QUOTED WERE LARGELY ILLUSORY**, and
+      `basic/sysvars.inc` warns about exactly that: *"every unattributed run of
+      >= 20 B in `tools/ram_map.py`'s map turned out to be occupied when read
+      against this file"* — `$E700`/`$E900` are inside `FSECTOR_BUF`/`FWBUF` and
+      `LINEBUF $EB00` sits inside the 255 B span I called the largest hole. The
+      runs used here are the ones the source vouches for.
       🙋 **SO (c) NEEDS A RULING IT DID NOT HAVE WHEN IT WAS CHOSEN.** The
       relocation is unaffordable in this window; the options that remain are:
       **(c-i)** put a disk buffer below `HIMEM`, charging `FRE(0)` as the
@@ -4597,7 +4643,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:22310 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:22356 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -4763,7 +4809,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:9406 (T-6FE392)8 (T-529ABE)` from `TODO.md:20704 (T-529ABE)`: a
+      `TODO.md:9452 (T-6FE392)8 (T-529ABE)` from `TODO.md:20750 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -10250,7 +10296,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:20704 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:20750 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

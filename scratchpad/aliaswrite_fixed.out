@@ -1,0 +1,30 @@
+D-ALIASWRITE: does a disk verb between two PRINT# corrupt the FILE?
+
+  no-disk   ran to END  b'AAAABBBBCCCCDDDD\r\nEEEEFFFFGGGGHHHH\r\n\x1a'
+  KILL      ran to END  b'AAAABBBBCCCCDDDD\r\nEEEEFFFFGGGGHHHH\r\n\x1a'
+  NAME      ran to END  b''
+  DSKF      ran to END  b'\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t'
+  FILES     ran to END  b'AAAABBBBCCCCDDDD\r\nEEEEFFFFGGGGHHHH\r\n\x1a'
+  LFILES    DID NOT FINISH  b''
+  COPY      ran to END  b'AAAABBBBCCCCDDDD\r\nEEEEFFFFGGGGHHHH\r\n\x1a'
+  DSKI$     ran to END  b''
+  DSKO$     ran to END  b''
+  SAVE      ran to END  b'AAAABBBBCCCCDDDD\r\nEEEEFFFFGGGGHHHH\r\n\x1a'
+
+  KILL     CLEAN — the file on disk is byte-identical to the control
+  NAME     DATA LOST ON THE MEDIUM — record(s) AAAABBBBCCCCDDDD, EEEEFFFFGGGGHHHH are absent from the committed file; got b''
+  DSKF     DATA LOST ON THE MEDIUM — record(s) AAAABBBBCCCCDDDD, EEEEFFFFGGGGHHHH are absent from the committed file; got b'\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t'
+  FILES    CLEAN — the file on disk is byte-identical to the control
+  LFILES   REFUSED — the arm never reached its CLOSE, so the file on disk shows a missing flush and NOT what the verb did to it
+  COPY     CLEAN — the file on disk is byte-identical to the control
+  DSKI$    DATA LOST ON THE MEDIUM — record(s) AAAABBBBCCCCDDDD, EEEEFFFFGGGGHHHH are absent from the committed file; got b''
+  DSKO$    DATA LOST ON THE MEDIUM — record(s) AAAABBBBCCCCDDDD, EEEEFFFFGGGGHHHH are absent from the committed file; got b''
+  SAVE     CLEAN — the file on disk is byte-identical to the control
+
+🔬 FIX UNDER TEST: KILL came back CLEAN.
+  ⚠️  THIS RUN HAS NO POSITIVE CONTROL. A clean sweep and a blind sweep look identical from here — the fix is only demonstrated by an A/B against the pre-fix ROM.
+
+VERDICT: 4 of 8 JUDGED verbs damage the file: NAME, DSKF, DSKI$, DSKO$
+  1 arm(s) could not be judged and are NOT counted either way: LFILES
+  controls: no-disk clean (negative) and KILL damaged (positive), both in this run
+refcache: 0 hit, 10 miss, 10 stored
