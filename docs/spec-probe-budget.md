@@ -40,6 +40,23 @@ sites that tuned the wrong knob. ⚠️ Its hits are an **advisory**: a wide
 `cap_gap` is legitimate as inter-case spacing, and only `settle_n` below can
 say whether a case was still drawing when its capture fired.
 
+🔬 **AND THE QUESTION IS NOW ANSWERABLE ON THE REAL SUITE, NOT A RECONSTRUCTION**
+(D-CAPGAP, 2026-09-23). `$ZEROBAS_RUN_GAP` in `_tcl` RAISES every case's
+RUN→capture budget and never lowers it, so a suite can be run twice and its rows
+diffed: identical ⇒ the budget was adequate, a row that MOVES was captured
+early. Seven of the twelve sites were A/B'd; **five identical, and `kwsweep` and
+`deffn-acceptance` MOVED** — `deffn` scores a row as *"NOT MEASURED"* that a
+real budget reads correctly, and `kwsweep` changes reference values and gains a
+`MISSING` row it otherwise cannot see.
+🔴 **THE RATIO DOES NOT PREDICT WHICH:** `deffn` has the second-LOWEST ratio of
+the twelve and moves; `ramfree` at 4.8× does not. The scan is a suspicion order.
+⚠️ **THE SWITCH MUST BE VISIBLE TO THE REFERENCE CACHE, AND THE FIRST CUT WAS
+NOT.** It lives below `probe_refcache`'s key, so the first A/B served the *first*
+run's capture and reported IDENTICAL ROWS BY CONSTRUCTION — caught only because
+the second run logged `1 hit`. `harness_fingerprint()` now folds the switch in:
+**a reading is taken BY something, and a knob that moves the capture instant is
+part of that something.**
+
 🔴 **`step` therefore does DOUBLE DUTY, and that is the constraint that shapes any
 cut.** It is simultaneously (a) the inter-line injection spacing that guarantees
 the previous chunk has been consumed — *"measured drained before 1794/1794

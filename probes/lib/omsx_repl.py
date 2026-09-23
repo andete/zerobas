@@ -588,6 +588,27 @@ def _tcl(out_path: str, cases: list[tuple[str, list[str]]],
     downstream is therefore against what this function actually SCHEDULED, not
     against a reconstruction of it -- a reconstruction would have to re-derive
     the chunking and the `10 *` numbering, and would agree with a bug in either."""
+    # 🔬 $ZEROBAS_RUN_GAP RAISES EVERY CASE'S RUN->CAPTURE BUDGET, FOR THE
+    # BUDGET CONTROL (D-CAPGAP). A suite whose rows are IDENTICAL with and
+    # without it had an adequate budget; a row that MOVES was being captured
+    # before the machine had finished. That question cannot be answered by
+    # reconstructing a suite's cases in a separate driver -- a reconstruction
+    # agrees with its own mistakes -- so the switch acts on the REAL suite.
+    # 🔴 IT LIVES HERE, NOT IN `_run_cases_impl`, BECAUSE THIS IS THE ONE PLACE
+    # THE SCHEDULE IS BUILT. The first cut put it at the `run_cases` entry point
+    # and `run_batch` walked straight past it; tests/test_capture_budget.py's
+    # R4 caught that before it could make a suite look adequate by not applying.
+    # ⚠️ IT ONLY EVER RAISES. The schedule takes max(t, t_run + run_gap), so a
+    # case that already asks for more (an explicit `@WAIT`, or a larger
+    # `run_gap` at the call site) is untouched and no capture is pulled EARLIER.
+    # ⚠️ A TEST-HARNESS SWITCH, NOT A TUNABLE: the runner never sets it.
+    _rg = os.environ.get("ZEROBAS_RUN_GAP")
+    if _rg:
+        try:
+            run_gap = max(run_gap or 0.0, float(_rg))
+        except ValueError:
+            sys.stderr.write(f"⚠️  ZEROBAS_RUN_GAP={_rg!r} is not a number; "
+                             f"ignored\n")
     body: list[str] = []
     cap = _cap_expr(capture)
     echo = echo_guard_on() and slots_out is not None

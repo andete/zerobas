@@ -808,7 +808,53 @@ item — do **one item per session** to keep context lean.
       `$xx00` cell as a marker. ⚠️ **AND VERIFY THE REPLACEMENT, DO NOT TRUST
       IT** — `$CFFE` is quiet in ONE measured program, which is evidence and not
       a guarantee; a marker cell is a CLAIM that nobody else writes it.
-- [ ] 🔬 **DO THE 12 PROBE SITES THAT PASS `cap_gap > step` WITH NO `run_gap`
+- [ ] 🔴 **YES FOR FIVE, NO FOR TWO — `kwsweep` AND `deffn-acceptance` ARE
+      CAPTURING ROWS EARLY (D-CAPGAP, answered 2026-09-23)**
+      🙋 **NEEDS-JOOST for the REMEDY** — giving either suite a `run_gap` CHANGES
+      GATE ROWS, and one of them is a denominator. The measurement is done; what
+      to do about it is his.
+      🔬 **HOW IT WAS ANSWERED, AND NOT BY RECONSTRUCTING THE CASES.** A separate
+      driver that re-types a suite's programs agrees with its own mistakes, so
+      the control acts on the REAL suite: `$ZEROBAS_RUN_GAP` (new, in `_tcl`)
+      RAISES every case's RUN→capture budget and never lowers it, and a suite is
+      run twice and its rows diffed. Identical rows ⇒ the budget was adequate;
+      a row that MOVES was being captured before the machine had finished.
+      📏 **SEVEN SUITES A/B'd AT `ZEROBAS_RUN_GAP=90`:**
+      | suite | ratio | rows |
+      |---|---|---|
+      | `banner-acceptance` | 2.7 | identical |
+      | `nameord-acceptance` | 1.7 | identical |
+      | `txtceil-acceptance` | 2.0 | identical |
+      | `pusing-acceptance` | 2.0 | identical |
+      | `ramfree-acceptance` | 4.8 | identical |
+      | **`kwsweep`** | **18.0** | 🔴 **MOVED** |
+      | **`deffn-acceptance`** | **1.2** | 🔴 **MOVED** |
+      🔴 **AND THE RATIO DOES NOT PREDICT IT.** `deffn` has the SECOND-LOWEST
+      ratio of the twelve and it moves; `ramfree` at 4.8 does not. **So
+      `gapscan.py`'s ranking is a suspicion order, not a finding order** — the
+      only thing that answers the question is running the suite.
+      ✅ **`deffn-acceptance`: A ROW IT SCORES AS "NOT MEASURED" IS MEASURABLE.**
+      `b.recurse` reads `<NO OUTPUT>` on the budget and is reported as *"NOT
+      MEASURED — blank reading"*; with a real budget it reads **`ERR 7 AT 60`,
+      matching the reference exactly**. The suite's own *"NEVER SIGNALLED"* line
+      drops it too. **A row written off as unmeasurable was simply captured too
+      early** [[an-unnamed-outcome-reads-as-no-outcome]].
+      🔴 **`kwsweep`: REFERENCE VALUES CHANGE, AND A ROW APPEARS.** `[2d 1 ]` →
+      `[2d 0 ]`, `[1w-1 ]` → `[1w 0 ]`, `[1x-1 ]` → `[1x 0 ]`, `[1y 1 ]` →
+      `[1y 0 ]`, and a **`MISSING cload`** row shows up ONLY in the wide run — at
+      the normal budget that gap is not detected at all. ⚠️ `kwsweep` is one of
+      this tree's named DENOMINATORS, so a row it cannot see is exactly the kind
+      of hole it exists to close.
+      🔬 **"MOVED" IS NOT "FLAKY", AND THAT WAS CHECKED:** `kwsweep`'s base run
+      was repeated with the cache off and is **byte-identical to itself**, so the
+      wide-budget difference is attributable to the budget and not to run-to-run
+      noise.
+      ⚠️ **COVERAGE IS SEVEN OF TWELVE, AND THE REST ARE NOT CLAIMED:**
+      `trapsvc-acceptance` (9.0), `input-devices-acceptance` (10.0),
+      `nodisk-acceptance` (2.0) and `probe_refcache.py`'s own site are UNRUN. The
+      two highest remaining ratios are among them.
+      *(the original item, for the record:)*
+      🔬 **DO THE 12 PROBE SITES THAT PASS `cap_gap > step` WITH NO `run_gap`
       ACTUALLY CAPTURE THEIR CASES IN TIME? (out of D-TWOFILE, 2026-09-22)**
       🎚️ TIER 2 — reasonable time; it is apparatus, and a suite that captures
       early is green the wrong way rather than red.
@@ -4478,7 +4524,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:22191 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:22237 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -4644,7 +4690,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:9287 (T-6FE392)8 (T-529ABE)` from `TODO.md:20585 (T-529ABE)`: a
+      `TODO.md:9333 (T-6FE392)8 (T-529ABE)` from `TODO.md:20631 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -10131,7 +10177,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:20585 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:20631 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

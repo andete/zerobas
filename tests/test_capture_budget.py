@@ -83,7 +83,38 @@ check("run_gap raises the capture above the cap_gap-only schedule",
 check("a run_gap shorter than `step` never pulls the capture EARLIER",
       cap_time(cap_gap=2.5, run_gap=0.5), base)
 
-print("R4  KNIFE: this file can SEE a capture that moved")
+print("R4  $ZEROBAS_RUN_GAP raises the budget and NEVER lowers it")
+# The budget control (D-CAPGAP) answers "was this suite's capture early?" by
+# running the REAL suite with and without the override and diffing its rows. It
+# is only sound if the switch cannot pull a capture EARLIER -- a suite that ends
+# in an explicit @WAIT, or one whose call site already passes a larger run_gap,
+# must be untouched.
+import importlib  # noqa: E402
+
+
+def cap_with_env(val, **kw):
+    os.environ["ZEROBAS_RUN_GAP"] = val
+    try:
+        importlib.reload(omsx_repl)
+        return cap_time(**kw)
+    finally:
+        del os.environ["ZEROBAS_RUN_GAP"]
+        importlib.reload(omsx_repl)
+
+
+check("the env var raises a case with no run_gap of its own",
+      round(cap_with_env("45", cap_gap=2.5) - (BOOT + STEP), 6), 45.0)
+check("it does NOT lower a call site that already asks for more",
+      round(cap_with_env("10", cap_gap=2.5, run_gap=60.0) - (BOOT + STEP), 6),
+      60.0)
+# NEGATIVE: with the variable unset the schedule must be exactly what it was,
+# or every suite in the tree would be silently re-timed by importing this.
+check("NEGATIVE: unset leaves the schedule untouched", cap_time(cap_gap=2.5),
+      base)
+check("NEGATIVE: a non-numeric value is ignored, not crashed",
+      cap_with_env("later", cap_gap=2.5), base)
+
+print("R5  KNIFE: this file can SEE a capture that moved")
 # Without this row every check above would pass just as happily against a
 # regex that matched nothing and a `cap_time` that returned a constant.
 check("cap_time is sensitive to the schedule at all (run_gap=90 differs)",

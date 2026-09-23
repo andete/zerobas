@@ -226,10 +226,21 @@ def harness_fingerprint() -> str:
     global _HARNESS
     if _HARNESS is None:
         here = os.path.dirname(os.path.abspath(__file__))
+        # 🔴 AND THE HARNESS SWITCHES THAT CHANGE THE SCHEDULE, NOT ONLY THE
+        # FILES. `$ZEROBAS_RUN_GAP` (D-CAPGAP) raises every case's RUN->capture
+        # budget from inside `_tcl`, BELOW the point where this key is built --
+        # so without this line an A/B "with and without the wider budget"
+        # returned the FIRST run's cached capture and reported IDENTICAL ROWS BY
+        # CONSTRUCTION. Measured: the second run logged `1 hit`, which is the
+        # only reason it was caught. A reading is taken BY something, and a
+        # switch that moves the capture instant is part of that something
+        # [[a-rule-that-fits-every-row-may-be-fitting-the-instrument]].
+        switches = "|".join(f"{k}={os.environ.get(k, '')}"
+                            for k in ("ZEROBAS_RUN_GAP",))
         _HARNESS = _sha(b"".join(
             open(os.path.join(here, n), "rb").read()
             for n in sorted(("omsx_repl.py", "omsx_run.py"))
-            if os.path.exists(os.path.join(here, n))))
+            if os.path.exists(os.path.join(here, n))) + switches.encode())
     return _HARNESS
 
 
