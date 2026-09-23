@@ -660,11 +660,16 @@ FORMS: dict[str, tuple[tuple[str, ...], str]] = {
     ),
     "LOAD": (
         ("plain", "run"),
-        "`LOAD \"<file>\"[,R]` -- load, and load-and-RUN. Two behaviours, and only "
-        "the second is observable with this instrument: both REPLACE the running "
-        "program, so the plain form leaves nothing to print with and its reading "
-        "would be an ABSENCE both machines produce. The `,R` form speaks through "
-        "the LOADED program, which is why `PROG3.BAS` exists.",
+        "`LOAD \"<file>\"[,R]` -- load, and load-and-RUN. The `,R` form speaks "
+        "through the LOADED program, which is why `PROG3.BAS` exists. \U0001f534 THIS "
+        "NOTE USED TO SAY THE PLAIN FORM WAS UNOBSERVABLE -- \"both REPLACE the "
+        "running program, so the plain form leaves nothing to print with and its "
+        "reading would be an ABSENCE both machines produce\" -- and that was true "
+        "when written and STALE from D-KWLOG (2026-09-13) onward: `NEEDS-LOG:` + "
+        "`RESPOND:LLIST` reads a LISTING out of a host file, so the program never "
+        "has to run. Joost's ruling (\"just validate the program in ram or llist "
+        "it\") had already been applied to `DELETE`/`RENUM`; `LOAD` was simply "
+        "never revisited. The `load_b` row closes it (D-LOADPLAIN).",
     ),
     "MOTOR": (
         ("toggle", "on", "off"),

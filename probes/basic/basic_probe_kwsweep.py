@@ -3679,9 +3679,29 @@ SWEEP: list[tuple[str, str, str | None, str, str]] = [
     ("loadkw",  'load"prog3.bas",r',
      'LOAD"PROG3.BAS",R',                                     "stored",
      "NEEDS-DISK: " "FORM:run the same witness through `LOAD`'s own execute "
-     "option. \u26a0\ufe0f The PLAIN `LOAD` has NO row and cannot get one with this "
-     "instrument: it replaces the program and runs nothing, so the reading would "
-     "be an ABSENCE both machines produce"),
+     "option -- the loaded program speaks for itself"),
+    # 🟢 D-LOADPLAIN (2026-09-23): THE PLAIN FORM, AND THE NOTE THAT SAID IT
+    # COULD NOT HAVE ONE WAS STALE. This row's own predecessor read "the PLAIN
+    # `LOAD` has NO row and cannot get one with this instrument: it replaces the
+    # program and runs nothing, so the reading would be an ABSENCE both machines
+    # produce". True when written, and answered four months later by machinery
+    # this file already carries: `NEEDS-LOG:` + `RESPOND:LLIST` (D-KWLOG) puts a
+    # LISTING in a host file, so the program does not have to run to be read.
+    # Joost had already ruled the principle -- "just validate the program in ram
+    # or llist it" -- and `DELETE`/`RENUM` were built on it; nobody came back to
+    # `LOAD` [[a-justification-parenthesis-is-an-unrun-claim]].
+    # 🎯 THE READOUT IS TWO-SIDED ON PURPOSE. `PROGRAM:` plants `10 REM ZQ9`
+    # and `PROG3.BAS` is `10 PRINT"[3h]"`, so the log reads ONE or the OTHER: the
+    # loaded text proves the load happened AND that it REPLACED, while a `LOAD`
+    # that did nothing leaves `ZQ9` behind and is not an absence either side can
+    # produce by accident. An empty log is a third, distinguishable outcome.
+    # ⚠️ Two rigs, and they compose -- `lfiles` already carries
+    # NEEDS-DISK + NEEDS-PRINTER, and `_rig_kwargs` unions them.
+    ("load_b",  'load"prog3.bas"',
+     'LOAD"PROG3.BAS"',                                       "direct",
+     "NEEDS-DISK: " "NEEDS-LOG: PROGRAM:10_REM_ZQ9 RESPOND:LLIST "
+     "FORM:plain load WITHOUT `,R` -- the listing afterwards is the witness, "
+     "since the loaded program is never run"),
     ("bin",     "a$=bin$(5)",
      'PRINT"[";BIN$(5);"]"',                         "direct",
      "FORM:to-binary absent => syntax error; real => 101"),
