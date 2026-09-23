@@ -6,7 +6,7 @@ both references agree on all of them, oracle-locked before zerobas ran).
 
 ## 1. What was filed, and why it was the wrong subject
 
-`../TODO.md:20870 (T-51AAE2)` filed **two standing-red acceptance suites with no expectation
+`../TODO.md:21003 (T-51AAE2)` filed **two standing-red acceptance suites with no expectation
 written down** and asked for each to be fixed or pinned by name. The brief
 carried three claims, and the measurement refutes all three:
 

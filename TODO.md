@@ -4715,7 +4715,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:22485 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:22561 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -4881,7 +4881,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:9524 (T-6FE392)8 (T-529ABE)` from `TODO.md:20879 (T-529ABE)`: a
+      `TODO.md:9524 (T-6FE392)8 (T-529ABE)` from `TODO.md:20955 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -10368,7 +10368,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:20879 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:20955 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -15408,8 +15408,31 @@ finds zero shared names (a renamed block would otherwise make it silently blind)
       🎯 **THE SIGKILL IS THE INFORMATIVE HALF:** that entitlement is
       RESTRICTED, so it only takes effect behind an Apple-issued provisioning
       profile carrying the HID-virtual-device capability. A self-signed claim
-      does not merely fail, it is fatal. ⚠️ **NOT MEASURED: whether root alone
-      lifts it** — that needs Joost's password and was not run unasked.
+      does not merely fail, it is fatal.
+      ✅ **AND ROOT IS MEASURED NOW TOO — IT DOES NOT LIFT IT.** `sudo` gives
+      `uid=0` and the same `nil` (Joost ran it 2026-09-23; it needs his
+      password, so it was never run unasked). **AMFI checks the SIGNATURE, not
+      the uid.** ⚠️ A prediction was stated before the run that root would NOT
+      help, and it held — but *"I expect it to fail"* is not a measurement, and
+      this item carried it as an explicit NOT-MEASURED line until it was one.
+      ⚠️ **THE FIRST ATTEMPT READ `uid=501`, WHICH IS NOT ROOT AT ALL** and
+      would have been filed as "root refuses" had the tool not printed the uid.
+      **A privilege test that does not report its own privilege is not a
+      privilege test** — the `getuid()` in the message is the reason this row
+      is trustworthy.
+      📏 **SO EVERY LOCAL ESCAPE HATCH IS NOW MEASURED SHUT:** unsigned → nil ·
+      ad-hoc signed claiming it → SIGKILL · root → nil · injecting a dylib that
+      calls SDL's own `SDL_JoystickAttachVirtual` → shut twice over (SDL is
+      linked STATICALLY so the symbols are unreachable, and openMSX runs under
+      HARDENED RUNTIME, which blocks `DYLD_INSERT_LIBRARIES`). What remains is
+      relaxing AMFI — a permanent, system-wide signature-enforcement downgrade
+      on Joost's own machine, **recommended AGAINST for a test rig**.
+      🔴 **AND THERE IS NO FREE TOOL TO INSTALL INSTEAD — THE GAP IS
+      STRUCTURAL.** Karabiner-Elements ships the one widely-deployed SIGNED
+      virtual-HID driver on macOS and it exposes a KEYBOARD and a POINTING
+      DEVICE only, so SDL would never offer `joystick1`; kext-based ones
+      (foohid) are dead on Apple Silicon; `vJoy`/`ViGEmBus` are Windows-only.
+      Karabiner needed Apple's grant to exist at all, which is the point.
       ⛔ **AND THE ROUTE THAT NEEDS NO APPLE ANYTHING IS SHUT FOR THIS BINARY.**
       Injecting a dylib that calls SDL's own `SDL_JoystickAttachVirtual` fails
       twice over: openMSX links SDL **statically** (no SDL in `otool -L`, so the
@@ -15422,12 +15445,65 @@ finds zero shared names (a renamed block would otherwise make it silently blind)
       **63** empty. But it exposes **no new debuggable** and adds no writable
       state, so its position still comes from host mouse events — which a
       headless run never receives.
-      🙋 **NEEDS-JOOST, and it is now ONE question:** is there an Apple
-      Developer account willing to request the HID-virtual-device capability? If
-      yes, the tool is small and three forms open. If no, the remaining route is
-      **building openMSX ourselves** — which would make the emulator under every
-      gate a local build, and *the apparatus is part of the measurement*, so
-      that is his call and not a workaround to slip in.
+      🏗️ **RULED BY JOOST, 2026-09-23: the APPLE DEVELOPER ACCOUNT route.**
+      The alternative he did NOT take was building openMSX ourselves, which
+      would have made the emulator under every gate — including both reference
+      machines — a local build; *the apparatus is part of the measurement*, so
+      that was his call and not a workaround to slip in.
+      🟢 **SO THE TOOL IS WRITTEN AND WAITING: `tools/rigstick.swift`,
+      `make rigstick` / `rigstick-selftest` / `rigstick-probe`.** It publishes a
+      2-axis 4-button virtual HID joystick through `CoreHID` and drives it from
+      stdin one command per line — `up` `downright` `trig1 on` `state x y b`
+      `quit` — answering `OK` to each **so a probe can synchronise instead of
+      sleeping**. `Usage(Joystick)` not `Usage(Gamepad)` on purpose: a gamepad
+      gets remapped through SDL's controller database and an MSX stick wants the
+      raw axes openMSX's `JoystickDevice` reads.
+      ⏳ **WHAT IS LEFT IS THE PROFILE, NOTHING ELSE.** `--probe` prints exactly
+      which refusal this machine gives, so the day a provisioning profile with
+      the HID-virtual-device capability exists, `make rigstick-probe` answers
+      it in one command.
+      ✅ **THE SELFTEST IS NON-VACUOUS AND WAS PROVEN SO BY MUTATION.** 24 arms,
+      of which 8 are negative controls (an unknown word, an empty line, a
+      direction carrying an argument, a trigger with no on/off, an out-of-range
+      axis and button mask, a short `state`). The load-bearing arm is that **a
+      direction keeps a held trigger and a trigger does not move the stick** —
+      the composite `STICK`+`STRIG` reading depends on exactly that, and it is
+      what the obvious implementation (rebuild the whole state per command)
+      would break. Mutating `Parser.apply` to clear the buttons on a direction
+      turns that one arm red and nothing else. ⚠️ The mutation was applied to
+      the tool itself and reverted, not to a copy.
+      🔴 **AND IT IS DELIBERATELY NOT IN THE BATTERY.** Every emulator-facing
+      arm would be inert without the entitlement, and **a gate that cannot fail
+      is worse than no gate**; it also needs `swiftc`, which nothing else here
+      does. The selftest covers the parser and the report encoder — the part a
+      probe's verdict rests on — and is run by hand. Wire it in when the profile
+      exists, and say so then.
+      ⚠️ **STILL NOT MEASURED, and none of it is reachable from here:** that
+      macOS accepts the descriptor, that SDL enumerates the device, and that
+      openMSX then offers `joystick1`. The tool says so in its own `--selftest`
+      output rather than implying coverage it does not have.
+      🔧 **JOOST'S SECOND RULING, 2026-09-23: A REAL USB DEVICE IS THE
+      FALLBACK — *"I do have some arduino dev boards, I can check that route
+      later"*.** A board flashed as a USB HID gamepad and driven over its own
+      USB serial port needs NOTHING from Apple: macOS sees a genuine joystick,
+      SDL enumerates it, openMSX offers `joystick1`, and the probe writes
+      `up\n` to `/dev/tty.usbmodem*`.
+      🟢 **AND `rigstick`'s DESIGN SURVIVES THAT CHANGE INTACT** — the command
+      language, the `OK` handshake, the parser and its 24-arm selftest all
+      carry over; only the transport moves from `dispatchInputReport` to a
+      serial write. That is why the parser is a separate, device-free unit.
+      ⚠️ **IT MUST BE A NATIVE-USB BOARD:** Leonardo / Micro / Pro Micro
+      (ATmega32U4), or SAMD/ARM (Due, Zero, MKR, Nano 33), or RP2040. An
+      Uno/Nano/Mega CANNOT — its USB is a separate bridge chip, so it
+      enumerates as a serial port and can never present a HID descriptor.
+      🔬 **THE CHEAPEST NEXT MEASUREMENT IS NEITHER ROUTE: BORROW ANY USB
+      GAMEPAD.** Nothing on this Mac is on the Generic Desktop page today
+      (measured: `ioreg -c IOHIDDevice` lists only the internal keyboard /
+      trackpad, a headset and the keyboard backlight). Ten minutes with any
+      stick answers whether `joystick1` appears, whether
+      `plug joyporta joystick1` succeeds and whether `STICK(1)` reads it —
+      **the plumbing question BOTH routes depend on**, answered before either
+      is paid for. If that chain fails, neither route was worth finishing.
 
 - [x] ✅ **CLOSED 2026-09-17 (D-FNKLINE + D-SCROLLBOUND + D-KEYROW): the
       function-key display line PAINTS, the row is RESERVED, and all ten cells

@@ -511,6 +511,28 @@ ram-map-check:
 	python3 tools/ram_map.py --selftest
 	python3 tools/ram_map.py --check
 
+# --- rigstick: the host joystick openMSX does not have (ruling 4's rig) -------
+# D-RIGBLOCK: openMSX 21.0 has NO key-joystick pluggable (0 occurrences of
+# `keyjoystick` in its binary) and builds `joystick1` from SDL's HOST
+# enumeration, so the only route to STICK/STRIG is a device the host reports.
+# 🔴 DELIBERATELY NOT IN THE BATTERY, AND THIS IS THE REASON. It cannot create
+# its device without the RESTRICTED entitlement
+# com.apple.developer.hid.virtual.device, so every emulator-facing arm would be
+# inert -- and a gate that cannot fail is worse than no gate. It also needs
+# swiftc, which nothing else in this tree does. `rigstick-selftest` covers the
+# parser and the report encoder, which is the part a probe's verdict rests on;
+# run it by hand. When a provisioning profile exists, wire it in then and say so.
+rigstick: | $(BUILD)
+	swiftc -O -parse-as-library -o $(BUILD)/rigstick tools/rigstick.swift
+
+rigstick-selftest: rigstick
+	$(BUILD)/rigstick --selftest
+
+# `--probe` reports which of the two refusals this machine gives: nil (the
+# entitlement is absent) or a SIGKILL before main (it was claimed unsigned).
+rigstick-probe: rigstick
+	$(BUILD)/rigstick --probe
+
 # --- ram-map-doc: regenerate docs/ram-map.md ----------------------------------
 # 🙋 JOOST, 2026-09-21: *"what I was expecting is a table that says for each RAM
 # address what its purpose(es) is (are)."* That is docs/ram-map.md -- one row per
@@ -3535,6 +3557,7 @@ clean:
         repack-machine diskbasic-acceptance-repack string-acceptance time-acceptance \
         battery-membership-check fixture-integrity-check diskmap ram-claim-check \
         ram-map-check ram-map-doc \
+        rigstick rigstick-selftest rigstick-probe \
         asciidigit-acceptance \
         build-assert-check \
         interval-trap-acceptance \
