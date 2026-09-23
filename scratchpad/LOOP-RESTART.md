@@ -238,7 +238,35 @@ tracked battery probes that count in `$D000` (`stop_trap`, `key_trap`,
 start. 🟢 What survives is worth keeping: the probes now sit on `$CFFE` with the
 claim RE-VERIFIED every run rather than assumed.
 
-➡️ **THE NEXT ITEM — AND IT IS THE LAST ONE: the 12 `cap_gap > step` sites**
+🛑 **THE AUTONOMOUS QUEUE IS EMPTY (2026-09-23, `4ab3f665`). THE NEXT MOVE IS
+JOOST'S — DO NOT INVENT WORK.** Three things are waiting on him:
+
+  1. 🔴 **D-ALIASBITE's REMEDY, waiting since `2fef4b0e` and TWICE more serious
+     since.** A disk verb inside an open channel corrupts it: a READ hands back
+     4 bytes of the wrong data, and a WRITE commits them TO DISK. 7 of 8 judged
+     verbs damage the file; `DSKF`/`DSKI$` are READ-ONLY and still destroy a file
+     being written. His three options: (a) same address, (b) one shared buffer,
+     (c) **DISJOINT** — and (c) would remove every route this tree can measure
+     (a ROUTE fix, not a CLASS fix). ⚠️ **The old line *"none of them closes it"*
+     is superseded; do not quote it.**
+  2. 🔴 **D-CAPGAP's REMEDY:** `kwsweep` and `deffn-acceptance` capture rows
+     early. Giving either a `run_gap` CHANGES GATE ROWS and one is a denominator.
+  3. 🙋 The standing list: the RAM-usage comparison (TIER 5), step 10 `OPEN`,
+     the *"Gap (small)"* entry, `wip/saveport`, the TIER 1 keyword tier re-ask,
+     the TIER 4 charter question.
+
+📋 **IF MORE AUTONOMOUS WORK IS WANTED, THE HONEST REMAINDER IS SMALL:** four of
+the twelve `cap_gap` sites are UNRUN — `trapsvc-acceptance` (9.0),
+`input-devices-acceptance` (10.0), `nodisk-acceptance` (2.0) and
+`probe_refcache.py`'s own site — and the two highest remaining ratios are among
+them. ⚠️ **The ratio does NOT predict a finding** (`deffn` is 1.2× and moves,
+`ramfree` is 4.8× and does not), so each needs its own A/B.
+🔬 **THE CONTROL IS BUILT:** `ZEROBAS_RUN_GAP=90 make <target>`, diff the rows
+against a plain run, and **check `refcache` reports 0 hits on the wide run** —
+the first cut of this control was served from cache and reported identical rows
+BY CONSTRUCTION.
+
+➡️ ~~**THE NEXT ITEM — AND IT IS THE LAST ONE: the 12 `cap_gap > step` sites**~~
 (`scratchpad/gapscan.py --tracked`, TIER 2 🔭). `settle_n` is the instrument and
 was never pointed at this. **Advisory, not a gate** — a wide `cap_gap` is
 legitimate inter-case spacing, so a hit has two meanings and the verdict has to
