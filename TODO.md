@@ -883,7 +883,15 @@ item — do **one item per session** to keep context lean.
       reads a value the program set BEFORE the slow part is unaffected. The
       verdict has to be per-ROW, not per-site.
 
-- [ ] 🔴 **A DISK VERB INSIDE AN OPEN CHANNEL CORRUPTS IT — A READ HANDS BACK
+- [x] 🟢 **CLOSED 2026-09-23 (D-ALIASWCELL): A DISK VERB INSIDE AN OPEN
+      CHANNEL NO LONGER CORRUPTS IT — READ AND WRITE BOTH VERIFIED.** 0 of 7
+      interposed statements damage a channel being read, 0 of 8 judged verbs
+      damage a file being written, 0 of 5 random-file verbs damage it, each
+      sweep carrying BOTH controls in the same run
+      (`scratchpad/aliasbite_state.out`, `scratchpad/aliaswrite_state.out`,
+      `scratchpad/aliasfield_state.out`).
+      📜 **THE ORIGINAL ITEM, FOR THE RECORD:**
+      🔴 **A DISK VERB INSIDE AN OPEN CHANNEL CORRUPTS IT — A READ HANDS BACK
       THE WRONG BYTES, AND A WRITE COMMITS THEM TO THE DISK (D-ALIASBITE,
       2026-09-22)**
       🔴 **THE WRITE SIDE IS DATA LOSS ON THE MEDIUM, MEASURED 2026-09-22**
@@ -1011,19 +1019,65 @@ item — do **one item per session** to keep context lean.
       the verb's. *Write it once, LAST.* ⚠️ A clobbered `A` was the first suspect
       and preserving `AF` changed nothing; the `push af` is kept only because it
       restores the gate's original contract, and the source says so.
-      🔴 **THE WRITE SIDE IS 4 OF 8 AND THE RESIDUAL IS FILED, NOT CLOSED**
-      (`scratchpad/aliaswrite_carved.out`). `KILL`, `FILES`, `COPY`, `SAVE` now
-      commit the correct file; **`NAME`, `DSKF`, `DSKI$`, `DSKO$` still lose it**
-      (`NAME`/`DSKI$`/`DSKO$` empty, `DSKF` 37 × `$09` — byte-identical to
-      before the fix).
-      ❌ **AND MY MECHANISM FOR THAT WAS REFUTED BY THE CARVE.** The failing set
-      is exactly the set that writes above `$E75F`, and I inferred the re-stage
-      was overwriting disk's resident code there. **Moving that code changed
-      NOTHING.** ⚠️ The inference was also untestable by this probe: each arm
-      performs ONE crossing, so code clobbered by a re-stage could only show on
-      the NEXT one. ➡️ **NEXT STEP: point `aliascell_probe.py`'s named-cell
-      snapshot diff at the WRITE program** and find which of main's engine cells
-      move across `NAME` and not across `KILL`. Do not guess a third time.
+      🟢 **AND THE WRITE SIDE IS NOW CLOSED TOO (D-ALIASWCELL, 2026-09-23):
+      8 OF 8 JUDGED VERBS COMMIT THE CORRECT FILE**
+      (`scratchpad/aliaswrite_state.out`) — `KILL`, `NAME`, `DSKF`, `FILES`,
+      `COPY`, `DSKI$`, `DSKO$`, `SAVE`, every one byte-identical to the control.
+      The read side re-ran clean (`scratchpad/aliasbite_state.out`, 0 of 7) and
+      so did the random-channel sweep (`scratchpad/aliasfield_state.out`, 0 of
+      5). `LFILES` still refuses — it blocks with no printer and never reaches
+      its `CLOSE` — and a refusal is not a finding.
+      💰 **main page 1 44 → 38 B free, low region 32 → 26 B** (measured
+      2026-09-23 from a clean tree): 12 B for the whole of D-ALIASWCELL.
+      ❌ **THE FIRST MECHANISM WAS REFUTED BY THE CARVE, AND WAS UNTESTABLE
+      ANYWAY.** The failing set was exactly the set writing above `$E75F`, so I
+      inferred the re-stage was overwriting disk's resident code there. Moving
+      that code changed NOTHING — and each arm performs ONE crossing, so
+      clobbered code could only ever show on the NEXT one.
+      🔬 **SO THE CELLS WERE NAMED INSTEAD, NOT GUESSED A THIRD TIME**
+      (`scratchpad/aliaswcell_probe.py`, `scratchpad/aliaswcell_run.out`): the
+      named-cell snapshot diff pointed at the WRITE program, with the FIXED
+      `KILL` as the contrast arm rather than a control, so the readout answers
+      *what separates a repaired verb from a broken one* directly.
+      🎯 **AND THE SURVIVORS FAILED FOR THREE DIFFERENT REASONS, not one.**
+      **(1) `chan_gate` was re-staging the SECTOR and not the CURSORS THAT
+      ADDRESS IT.** `fch_flush_active`/`fch_restage` move the buffer alone; a
+      channel switch also LDIRs the 50-byte `FCH_STATE0` span ($E9C9..$E9FA)
+      through `fch_save_active`/`fch_load_ctx`. Measured: `NAME` left
+      `FWR_DIROFF` moved ($E0 → $C0), so `CLOSE` stamped the open file's size
+      and first cluster into the WRONG directory entry — the buffer was intact
+      and the POINTER TO THE DIRECTORY was not. `DSKF` left `FWR_CLUS` holding
+      its free-cluster count ($0000 → $02CB) and the re-stage then faithfully
+      computed a sector address FROM THAT: the buffer came back ZEROED across
+      the crossing. **The re-stage never failed; it was handed poisoned state.**
+      Fixed by taking the whole pair, which took the sweep from 4 of 8 to 6.
+      **(2) `DSKI$`/`DSKO$` DO THEIR WORK OUTSIDE THE GATE.** `dsk_core` gates
+      the hook, then parses, then calls `dirverb_op` DIRECTLY — so the gate's own
+      restore ran before the sector number was even parsed. They also marshal
+      that sector number through `FWR_DIRSEC`, which is the open channel's own
+      directory pointer. A second restore after the tenant fixes both at once,
+      and only because the gate saved BEFORE the poke: **that ordering is
+      load-bearing and the source now says so.**
+      **(3) `DSKBUF_PTR` NAMED `FSECTOR_BUF` — THE LAST ROUTE, AND THE WORST.**
+      The raw-sector buffer a program finds through `PEEK(&HF351)` was main's
+      FILE DATA sector, so `DSKI$` read a raw sector over the open channel's
+      staged data and `DSKO$` wrote that data back out. With (1) and (2) in
+      place `DSKO$ 0,0` wrote the open file's records over **SECTOR 0** and the
+      disk lost its boot record — strictly worse than the bug being fixed, and
+      caught only because the sweep reads the host-parsed image.
+      ✅ **AND THE FIX FOR (3) IS THE REFERENCE'S MEASURED GEOMETRY.** The
+      CF-3300 answers the same cell with `$EB95` — its DIRECTORY/RAW sector
+      buffer, disjoint from its file-data buffer at `$ED95`. `FWBUF` ($E7C0) is
+      ours, so `DSKBUF_PTR` points there now. ⚠️ Nothing pinned the old value:
+      every probe and gate row reaches the buffer THROUGH the pointer, which is
+      the MSX idiom and the reason the cell exists.
+      🔬 **BOTH SWEEPS HAVE A POSITIVE CONTROL AGAIN, AND IT IS NO LONGER A
+      VERB.** `KILL` held that role while `KILL` was broken; the moment the fix
+      landed the guard fired on the FIX and both probes returned rc=2 with every
+      row clean and nothing judged. **A positive control the subject can repair
+      is not a control.** `truncate!` (re-`OPEN` the file FOR OUTPUT) damages it
+      by construction, is untouched by any buffer question, and is excluded from
+      the verb tally. [[a-positive-control-the-subject-can-repair-is-not-a-control]]
       🏗️ **THE CARVE SHIPPED TOO, AND IT IS JUSTIFIED BY ARCHITECTURE, NOT BY A
       MEASURED FIX.** `P1_BLIT` and the two `WA_SEG` hook bodies — 54 B of
       RESIDENT CODE — were living at `$E77A`/`$E795`, i.e. INSIDE main's
@@ -1043,17 +1097,34 @@ item — do **one item per session** to keep context lean.
       against this file"* — `$E700`/`$E900` are inside `FSECTOR_BUF`/`FWBUF` and
       `LINEBUF $EB00` sits inside the 255 B span I called the largest hole. The
       runs used here are the ones the source vouches for.
-      🙋 **SO (c) NEEDS A RULING IT DID NOT HAVE WHEN IT WAS CHOSEN.** The
-      relocation is unaffordable in this window; the options that remain are:
+      ✅ **ANSWERED BY MEASUREMENT, 2026-09-23: (c-ii) WAS ENOUGH, AND (c) AS
+      LITERALLY SPECIFIED WAS NEVER NEEDED.** The whole defect closed for 12 B
+      of ROM and ZERO new RAM — no relocated 512 B buffer, no `FRE(0)` charge.
+      The one piece of genuine disjointness it did take was free: `DSKBUF_PTR`
+      moved from `FSECTOR_BUF` to `FWBUF`, which is a different EXISTING buffer
+      and the tier the reference puts raw sectors on. **So the ruling below is
+      superseded by the result, not still waiting.**
+      🙋 **WHAT IS STILL HIS, and it is now a RAM-geometry question rather than
+      a defect:** whether main's two sector buffers should be made disjoint from
+      disk's ANYWAY, for the CLASS rather than the routes. Nothing this tree can
+      measure reaches the buffer any more, so it buys robustness against future
+      code, not a fix. That belongs with the standing RAM-usage comparison.
+      📜 **THE OPTIONS AS THEY STOOD WHEN THE RULING WAS ASKED FOR, for the
+      record.** The relocation was unaffordable in this window; the options
+      that remained were:
       **(c-i)** put a disk buffer below `HIMEM`, charging `FRE(0)` as the
       reference charges 267 B/channel — affordable, costs user RAM;
       **(c-ii)** make a disk-ROM crossing take the same save/restage path a
       channel switch already takes — **zero new RAM, reuses shipped code**, and
       it is what makes the reference safe;
       **(c-iii)** relocate anyway by first carving 512 B out of main's map.
-      ⚠️ **NOT MEASURED:** what (c-ii) costs in time (a restage is a sector
-      re-read; the reference does it lazily, on switch-back, not after every
-      verb).
+      ⚠️ **STILL NOT MEASURED:** what (c-ii) costs in TIME. A re-stage is a
+      sector re-read and we now do one after every crossing, where the reference
+      does it lazily on switch-back. **The gate returns at once when no channel
+      is live (`FCH_ACTIVE` = 0), so the common no-file-open path is unaffected**
+      — the cost falls only on a disk verb issued while a file is open, which is
+      the case that used to corrupt. Not timed; TIER 4 owns speed and its
+      charter question is unanswered.
       🔬 **BOTH CONTROLS RUN IN THE SAME SWEEP, IN BOTH DIRECTIONS:** `no-disk`
       MUST come back clean (or nothing is attributable) and `KILL` MUST come
       back damaged (or the sweep has stopped being able to see the defect and
@@ -1102,9 +1173,10 @@ item — do **one item per session** to keep context lean.
       content follows the VERB — zeros after `KILL`/`DSKF`, directory padding
       after `NAME` — which is the signature of a stale cache serving whatever
       the last writer left, not of a counter reaching zero.
-      🙋 **NEEDS-JOOST** — the FINDING is complete and the REMEDY is his: every
-      candidate fix moves a buffer or an invariant he owns, and the
-      same-address item below already says *"do not start either without him"*.
+      ✅ **WAS 🙋 NEEDS-JOOST AND HE RULED IT** — *"we do as the reference
+      does"*, then *"go with the bookkeeping fix"*. Both halves are shipped and
+      measured; what remains of the RAM-geometry question is folded into the
+      standing RAM-usage comparison, which is his and not started.
       🔬 **MEASURED** (`scratchpad/aliasbite_probe.py`, `scratchpad/aliasbite_run.out`,
       `C-BIOS_MSX1_EU_REPACK_DISK`): the same program ± one statement —
       `OPEN"Z.DAT"FOR INPUT` · `A$=INPUT$(4,#1)` · *[verb]* · `B$=INPUT$(4,#1)`.
@@ -4643,7 +4715,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:22356 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:22428 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -4809,7 +4881,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:9452 (T-6FE392)8 (T-529ABE)` from `TODO.md:20750 (T-529ABE)`: a
+      `TODO.md:9524 (T-6FE392)8 (T-529ABE)` from `TODO.md:20822 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -10296,7 +10368,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:20750 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:20822 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

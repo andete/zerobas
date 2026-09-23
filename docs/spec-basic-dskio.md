@@ -63,7 +63,14 @@ the hook gate comes BEFORE the parse, on both keywords.
 * Hook cells: `H_DSKO` = `$FDF4`, `H_DSKI` = `$FE17` (the standard MSX slots;
   unused here until now), claimed by `disk/kernel.asm`'s `hook_tab` with
   `hk_present`, like `H_DSKF`/`H_NAME`/`H_KILL`.
-* Buffer pointer: `DSKBUF_PTR equ $F351` (word), set once at disk-ROM init
+* Buffer pointer: `DSKBUF_PTR equ $F351` (word), set once at disk-ROM init to
+  **`FWBUF`** ($E7C0), our directory/raw metadata sector buffer. It named
+  `FSECTOR_BUF` until 2026-09-23; that is the open channel's staged *data*
+  sector, and sharing it meant `DSKO$ 0,0` with a file open wrote the file's
+  records over sector 0 (D-ALIASWCELL). The reference answers the same cell with
+  `$EB95`, its directory/raw buffer, disjoint from its file-data buffer at
+  `$ED95` — so this is its geometry, not a workaround. Nothing pins the value:
+  every probe reads the buffer *through* the pointer.
   to `FSECTOR_BUF` ($E5C0). The band `$F34D..$F358` was ASKED of the zerobas
   machine (planted pattern, disk workload incl. two channels, KILL, FILES,
   DSKF, strings, DEF FN — all 12 bytes survived); it is outside the sysvar

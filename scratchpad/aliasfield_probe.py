@@ -116,8 +116,18 @@ TAIL = [
 # `PUT`/`GET` are here beside `FIELD`/`LSET` because they are the random verbs
 # that actually MOVE A SECTOR -- if the rule is "it refills main's staged
 # sector", they are where it should show.
+# 🔴 THE POSITIVE CONTROL IS A CONSTRUCTED ONE, NOT A VERB -- same correction
+# aliaswrite_probe.py took on 2026-09-23 and for the same reason. `KILL` held
+# the role while `KILL` was broken; once D-ALIASWCELL fixed it, the guard fired
+# on the FIX and the sweep returned rc=2 with every row clean and nothing
+# judged. A positive control the subject can repair is not a control.
+# `truncate!` re-opens the file FOR OUTPUT, which truncates it whatever any
+# buffer does, so it keeps reporting damage after every fix.
+# ⚠️ It is a CONTROL, not one of the random-file verbs: excluded from the tally.
+POSITIVE = "truncate!"
 ARMS = [("no-disk", ["35 X=1"]),            # NEGATIVE control -- MUST be clean
-        ("KILL", ['35 KILL"Y.DAT"']),       # POSITIVE control -- MUST be damaged
+        (POSITIVE, ['35 CLOSE#1:OPEN"W.DAT"FOR OUTPUT AS#1']),  # MUST be damaged
+        ("KILL", ['35 KILL"Y.DAT"']),
         ("FIELD", ["35 FIELD#2,16 AS G$"]),
         ("LSET", ['35 LSET F$="ZZZZ"']),
         ("PUT", ["35 PUT#2,1"]),
@@ -275,26 +285,33 @@ def main(argv):
     # 🔴 THE POSITIVE CONTROL IS CHECKED, NOT JUST PRINTED. A sweep whose known
     # -damaged arm comes back CLEAN has lost the ability to see the defect, and
     # every "clean" below it would be a false acquittal.
+    pos = dict(rows)[POSITIVE]
+    if not pos.startswith(("DATA LOST", "GONE", "DIFFERS")):
+        print(f"\n🔴 INSTRUMENT FAULT: the CONSTRUCTED positive control "
+              f"({POSITIVE}) came back {pos.split(chr(8212))[0].strip()} — it "
+              f"truncates the file by construction, so a sweep that cannot see "
+              f"THAT cannot see anything and no 'CLEAN' row above is evidence.")
+        return 2
     kill = dict(rows)["KILL"]
     if not kill.startswith(("DATA LOST", "GONE", "DIFFERS")):
-        print(f"\n🔴 INSTRUMENT FAULT: the POSITIVE control (KILL) came back "
-              f"{kill.split(chr(8212))[0].strip()} — the sweep can no longer "
-              f"see the defect, so no 'CLEAN' row above is evidence.")
-        return 2
+        print("\n🟢 KILL came back CLEAN, and the sweep is NOT blind: the "
+              "constructed positive control still reports damage. KILL is a "
+              "FIXED verb here (D-ALIASWCELL), not a blind row.")
     # 🔴 A REFUSAL IS NOT A FINDING. The first cut counted "anything not CLEAN"
     # as damage, which swept the one arm that could not be judged into the
     # accusation -- the tally line would have said 8 where the evidence supports
     # 7 [[an-unnamed-outcome-reads-as-no-outcome]].
-    bad = [n for n, v in rows if v.startswith(("DATA LOST", "GONE", "DIFFERS"))]
-    ref = [n for n, v in rows if v.startswith("REFUSED")]
-    judged = len(rows) - len(ref)
+    verbs = [(n, v) for n, v in rows if n != POSITIVE]
+    bad = [n for n, v in verbs if v.startswith(("DATA LOST", "GONE", "DIFFERS"))]
+    ref = [n for n, v in verbs if v.startswith("REFUSED")]
+    judged = len(verbs) - len(ref)
     print(f"\nVERDICT: {len(bad)} of {judged} JUDGED verbs damage the file: "
           f"{', '.join(bad) if bad else '(none)'}")
     if ref:
         print(f"  {len(ref)} arm(s) could not be judged and are NOT counted "
               f"either way: {', '.join(ref)}")
-    print("  controls: no-disk clean (negative) and KILL damaged (positive), "
-          "both in this run")
+    print(f"  controls: no-disk clean (negative) and {POSITIVE} damaged "
+          f"(positive), both in this run")
     return 0
 
 

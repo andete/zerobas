@@ -2235,11 +2235,34 @@ dsk_drv_ok:
                 jp      nz,stmt_error
                 inc     hl
                 call    eval_int16_checked  ; DE = sector
+                ; 🔴 THIS POKES A CELL THE OPEN CHANNEL OWNS, AND THAT IS WHY
+                ; THE RESTORE BELOW IS NOT OPTIONAL (D-ALIASWCELL, 2026-09-23).
+                ; `FWR_DIRSEC` is the sector-number word the dirverb tenant
+                ; already owns for NAME -- and it is also where an OUTPUT
+                ; channel remembers which sector holds ITS directory entry, so
+                ; `CLOSE` stamps the file's size and first cluster there. With a
+                ; file open, `DSKI$(0,0)` used to leave that pointing at sector
+                ; 0: the entry was never updated and the file came back EMPTY.
+                ; ⚠️ chan_gate ABOVE saved the state block BEFORE this poke, so
+                ; the context still holds the channel's real FWR_DIRSEC and the
+                ; restore after the tenant puts it back. That ordering is
+                ; load-bearing: moving the gate below the parse would snapshot
+                ; the poisoned value and break this silently.
                 ld      (FWR_DIRSEC),de
                 pop     af                  ; the op again
                 push    hl                  ; guard the cursor across CALSLT
                 push    ix                  ; and IX -- DSKI$ runs inside the evaluator
                 call    dirverb_op
+                ; The tenant just moved a raw sector, so main's staged sector and
+                ; the cells addressing it are both stale -- and FWR_DIRSEC, which
+                ; the parse poked above, is the open channel's own directory
+                ; pointer. Same restore chan_gate gives every other verb.
+                ; ⚠️ INSIDE the HL/IX guards, not after them: chan_restore_st
+                ; clobbers both, and HL here is the statement cursor.
+                jr      c,dsk_out           ; sub-ROM absent -- CF must reach the
+                call    chan_restore_st     ; `jp c` below, so skip and keep it
+                or      a                   ; CF = 0: the sub-ROM answered
+dsk_out:
                 pop     ix
                 pop     hl
                 jp      c,load_error        ; sub-ROM absent

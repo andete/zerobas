@@ -284,7 +284,10 @@ ex_field:
                 inc     hl                  ; past the FIELD token
                 ld      (FN_RESUME),hl      ; the handler's cursor
                 ld      hl,H_FIELD
-                call    chan_gate           ; unclaimed -> ERR 5, trappable
+                call    chan_gate_bare      ; unclaimed -> ERR 5, trappable.
+                                            ; BARE: this verb WRITES the
+                                            ; channel's record, so the full
+                                            ; gate's restore would undo it
                 ld      hl,(FN_RESUME)      ; where the handler left it
                 jp      exec_stmt
 
@@ -566,7 +569,10 @@ lrset_common:
                 inc     hl                  ; past the LSET/RSET token
                 ld      (FN_RESUME),hl      ; the handler's cursor
                 ex      de,hl               ; HL = this verb's own hook cell
-                call    chan_gate           ; unclaimed -> ERR 5, trappable
+                call    chan_gate_bare      ; unclaimed -> ERR 5, trappable.
+                                            ; BARE: this verb WRITES the
+                                            ; channel's record, so the full
+                                            ; gate's restore would undo it
                 ld      hl,(FN_RESUME)      ; where the handler left it
                 jp      exec_stmt
 

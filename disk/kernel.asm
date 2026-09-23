@@ -2191,8 +2191,24 @@ fdc_wp_chkrdy:
                 scf
                 ret
 
+; 🔴 D-ALIASWCELL (2026-09-23): THE RAW-SECTOR BUFFER IS ~~FSECTOR_BUF~~ FWBUF.
+; It named FSECTOR_BUF -- main's FILE DATA sector -- so with a file open, DSKI$
+; read a raw sector straight over the channel's staged data and DSKO$ wrote the
+; channel's data back out over whatever sector it was given. Measured: with
+; `chan_gate` re-staging the channel after every crossing, `DSKO$ 0,0` wrote the
+; open file's records over SECTOR 0 and the disk lost its boot record entirely.
+; 🔬 AND THIS IS THE REFERENCE'S OWN GEOMETRY, NOT AN INVENTION. The CF-3300
+; answers this same cell with $EB95, which is its DIRECTORY/RAW sector buffer --
+; disjoint from its file-data buffer at $ED95 (scratchpad/refbuf_*.out). FWBUF
+; is our directory/metadata buffer, so pointing the cell there puts DSKI$/DSKO$
+; on the same tier the reference puts them on.
+; ⚠️ NOTHING PINS THE VALUE: every probe and gate row reaches the buffer through
+; `PEEK(&HF351)+256*PEEK(&HF352)`, which is the MSX idiom and the point of the
+; cell. ⚠️ The buffer stays volatile across a later disk operation -- a re-stage
+; may re-read the FAT through FWBUF -- exactly as the reference's raw buffer is
+; volatile across directory work.
 install_basic_hooks:
-                ld      hl, FSECTOR_BUF     ; D-DSKIO: publish the DSKI$/DSKO$ buffer at the
+                ld      hl, FWBUF           ; D-DSKIO: publish the DSKI$/DSKO$ buffer at the
                 ld      (DSKBUF_PTR), hl    ; cell the MSX idiom PEEKs (docs/spec-basic-dskio.md)
                 ld      hl, hook_tab
 ibh_lp:

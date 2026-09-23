@@ -1,0 +1,131 @@
+D-ALIASWCELL: which cells separate a FIXED verb from a BROKEN one?
+
+  no-disk : 1 across the VERB, 3 across the PRINT#, 13 across the CLOSE
+  KILL    : 9 across the VERB, 3 across the PRINT#, 10 across the CLOSE
+  NAME    : 13 across the VERB, 3 across the PRINT#, 10 across the CLOSE
+  DSKF    : 31 across the VERB, 3 across the PRINT#, 11 across the CLOSE
+
+  CONTROL across the VERB: 1 cell-byte(s) — NOT QUIET
+
+  KILL: moved across the VERB and not in the control (8):
+    FAT_PARITY               $01 -> $00  <- NOT saved by a channel switch
+    FAT_BYTEIDX              $0D -> $0F  <- NOT saved by a channel switch
+    FAT_B0                   $0F -> $00  <- NOT saved by a channel switch
+    FWR_CLUS                 $00 -> $0A  <- NOT saved by a channel switch
+    FWR_FIRST                $00 -> $0A  <- NOT saved by a channel switch
+    DISKOP block             $0C -> $13
+    DISKOP block+1           $00 -> $01
+    DISKOP block+3           $08 -> $1F
+
+  KILL: moved across the PRINT# and not in the control (0):
+    (none)
+
+  KILL: moved across the CLOSE and not in the control (2):
+    DISKOP block+1           $01 -> $00
+    DISKOP block+3           $1F -> $08
+
+  NAME: moved across the VERB and not in the control (12):
+    FAT_FIRSTCLUS            $FF -> $09  <- NOT saved by a channel switch
+    FAT_FIRSTCLUS+1          $FF -> $00  <- NOT saved by a channel switch
+    FAT_FILESIZE             $00 -> $04  <- NOT saved by a channel switch
+    FAT_PARITY               $01 -> $00  <- NOT saved by a channel switch
+    FAT_BYTEIDX              $0D -> $0F  <- NOT saved by a channel switch
+    FAT_B0                   $0F -> $00  <- NOT saved by a channel switch
+    FWR_CLUS                 $00 -> $0A  <- NOT saved by a channel switch
+    FWR_FIRST                $00 -> $0A  <- NOT saved by a channel switch
+    FWR_DIROFF               $E0 -> $C0  <- NOT saved by a channel switch
+    DISKOP block             $0C -> $13
+    DISKOP block+1           $00 -> $01
+    DISKOP block+3           $08 -> $1F
+
+  NAME: moved across the PRINT# and not in the control (0):
+    (none)
+
+  NAME: moved across the CLOSE and not in the control (2):
+    DISKOP block+1           $01 -> $00
+    DISKOP block+3           $1F -> $08
+
+  DSKF: moved across the VERB and not in the control (30):
+    FAT_PARITY               $01 -> $00  <- NOT saved by a channel switch
+    FAT_BYTEIDX              $0D -> $0F  <- NOT saved by a channel switch
+    FAT_B0                   $0F -> $00  <- NOT saved by a channel switch
+    FAT_WRTMP                $FF -> $CB  <- NOT saved by a channel switch
+    FAT_WRTMP+1              $0F -> $02  <- NOT saved by a channel switch
+    FAT_WRTMP2               $01 -> $C0  <- NOT saved by a channel switch
+    FAT_WRTMP2+1             $00 -> $02  <- NOT saved by a channel switch
+    FWR_CLUS                 $00 -> $CB  <- NOT saved by a channel switch
+    FWR_CLUS+1               $00 -> $02  <- NOT saved by a channel switch
+    FWR_FIRST                $00 -> $03  <- NOT saved by a channel switch
+    DISKOP block             $0C -> $13
+    DISKOP block+2           $00 -> $08
+    DISKOP block+3           $08 -> $C0
+    DISKOP block+4           $00 -> $E5
+    $E5C0                    $41 -> $00
+    $E5C1                    $41 -> $00
+    $E5C2                    $41 -> $00
+    $E5C3                    $41 -> $00
+    $E5C4                    $42 -> $00
+    $E5C5                    $42 -> $00
+    $E5C6                    $42 -> $00
+    $E5C7                    $42 -> $00
+    $E5C8                    $43 -> $00
+    $E5C9                    $43 -> $00
+    $E5CA                    $43 -> $00
+    $E5CB                    $43 -> $00
+    $E5CC                    $44 -> $00
+    $E5CD                    $44 -> $00
+    $E5CE                    $44 -> $00
+    $E5CF                    $44 -> $00
+
+  DSKF: moved across the PRINT# and not in the control (0):
+    (none)
+
+  DSKF: moved across the CLOSE and not in the control (3):
+    DISKOP block+2           $08 -> $00
+    DISKOP block+3           $C0 -> $08
+    DISKOP block+4           $E5 -> $00
+
+  🎯 NAME moved it across the VERB and the FIXED KILL did NOT (4):
+    FAT_FIRSTCLUS            $FF -> $09  <- NOT saved by a channel switch
+    FAT_FIRSTCLUS+1          $FF -> $00  <- NOT saved by a channel switch
+    FAT_FILESIZE             $00 -> $04  <- NOT saved by a channel switch
+    FWR_DIROFF               $E0 -> $C0  <- NOT saved by a channel switch
+
+  🎯 DSKF moved it across the VERB and the FIXED KILL did NOT (23):
+    FAT_WRTMP                $FF -> $CB  <- NOT saved by a channel switch
+    FAT_WRTMP+1              $0F -> $02  <- NOT saved by a channel switch
+    FAT_WRTMP2               $01 -> $C0  <- NOT saved by a channel switch
+    FAT_WRTMP2+1             $00 -> $02  <- NOT saved by a channel switch
+    FWR_CLUS+1               $00 -> $02  <- NOT saved by a channel switch
+    DISKOP block+2           $00 -> $08
+    DISKOP block+4           $00 -> $E5
+    $E5C0                    $41 -> $00
+    $E5C1                    $41 -> $00
+    $E5C2                    $41 -> $00
+    $E5C3                    $41 -> $00
+    $E5C4                    $42 -> $00
+    $E5C5                    $42 -> $00
+    $E5C6                    $42 -> $00
+    $E5C7                    $42 -> $00
+    $E5C8                    $43 -> $00
+    $E5C9                    $43 -> $00
+    $E5CA                    $43 -> $00
+    $E5CB                    $43 -> $00
+    $E5CC                    $44 -> $00
+    $E5CD                    $44 -> $00
+    $E5CE                    $44 -> $00
+    $E5CF                    $44 -> $00
+
+  🎯 NAME moved it across the PRINT# and the FIXED KILL did NOT (0):
+    (none)
+
+  🎯 DSKF moved it across the PRINT# and the FIXED KILL did NOT (0):
+    (none)
+
+  🎯 NAME moved it across the CLOSE and the FIXED KILL did NOT (0):
+    (none)
+
+  🎯 DSKF moved it across the CLOSE and the FIXED KILL did NOT (2):
+    DISKOP block+2           $08 -> $00
+    DISKOP block+4           $E5 -> $00
+refcache: 0 hit, 4 miss, 4 stored

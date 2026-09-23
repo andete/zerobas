@@ -95,6 +95,30 @@
 ; whatever the live channel had staged. `fch_load_ctx` has always ended in
 ; `jp fch_restage`. A channel switch was safe BECAUSE it took that path; a verb
 ; was unsafe only because it did not. So take it here too.
+; 🔴 AND "THAT PATH" IS THE *WHOLE* PAIR, NOT ITS BUFFER HALF -- CORRECTED
+; 2026-09-23 AFTER THE FIRST CUT SHIPPED THE HALF. The first cut called
+; `fch_flush_active`/`fch_restage` directly, which move the SECTOR and nothing
+; else, and it fixed every read but only 4 of 8 writes. A channel switch does
+; not merely flush: `fch_save_active` LDIRs the 50-byte `FCH_STATE0` span
+; ($E9C9..$E9FA) into the channel's context and `fch_load_ctx` LDIRs it back --
+; and the ENGINE STATE is what the surviving failures were losing.
+; 🔬 MEASURED, NOT INFERRED (`scratchpad/aliaswcell_probe.py`,
+; `scratchpad/aliaswcell_run.out`): a named-cell snapshot either side of the
+; crossing, with the FIXED `KILL` as the contrast arm rather than a control.
+; The two surviving failures fail for TWO DIFFERENT REASONS, and both are cells
+; in that span that nothing restored:
+;   * `NAME` leaves `FWR_DIROFF` moved ($E0 -> $C0) -- it walked the directory
+;     with main's own cursor, so `CLOSE` then stamped the open file's size and
+;     first cluster into the WRONG directory entry. The buffer was intact; the
+;     POINTER TO THE DIRECTORY was not.
+;   * `DSKF` leaves `FWR_CLUS` holding its free-cluster count ($0000 -> $02CB)
+;     and `FAT_WRTMP`/`FAT_WRTMP2` its walk state. The re-stage then faithfully
+;     computed a sector address FROM THAT and re-read the wrong sector: the
+;     buffer comes back ZEROED ($E5C0.. `AAAA` -> $00) across the crossing.
+;     The re-stage did not fail; it was handed poisoned state.
+; 🎯 SO THE RE-STAGE IS ONLY AS GOOD AS THE STATE IT READS. Restoring the sector
+; without restoring the cursors that address it is not a cache -- it is a cache
+; with a dangling key.
 ; 🔬 THE REFERENCE DOES THE SAME THING AND WAS MEASURED DOING IT
 ; (`scratchpad/refbuf_ref_*.out`, National_CF-3300): its directory/raw sector
 ; buffer and its file-data sector buffer never write each other's range, and the
@@ -116,7 +140,7 @@ chan_gate:
                 or      a                   ; never touching it. NOT what fixed the
                 jr      z,cg_noflush        ; ERR 53 -- that was DISKOP_STATUS
                 push    hl                  ; below, and AF was the FIRST suspect
-                call    fch_flush_active    ; and changed nothing. Kept because
+                call    fch_save_active     ; and changed nothing. Kept because
                 pop     hl                  ; restoring the old contract exactly is
                                             ; worth 2 B, not because it is a fix.
 cg_noflush:
@@ -128,9 +152,6 @@ cg_cross:
                 jp      (hl)                ; bare `ret` and lands here at once
 cg_back:
                 jr      nc,cg_unclaimed     ; claimed -> the verb may have refilled
-                ld      a,(FCH_ACTIVE)      ; FAT_DBUF under the open channel
-                or      a
-                ret     z                   ; no channel live -> nothing staged
                 ; 🔴 `DISKOP_STATUS` IS A SHARED CHANNEL -- WRITE IT ONCE, LAST.
                 ; The re-stage is itself a DISKOP and lands its own result there,
                 ; ON TOP of the verb's, before the verb's caller decodes it. The
@@ -138,15 +159,66 @@ cg_back:
                 ; came back `File not found` (ERR 53) -- `kill_status` was reading
                 ; the RE-STAGE's 0, not KILL's. Measured twice: clobbering A was
                 ; the first suspect and restoring AF changed nothing.
-                ld      a,(DISKOP_STATUS)
-                push    af
-                call    fch_restage         ; re-read this channel's staged sector
-                pop     af
-                ld      (DISKOP_STATUS),a   ; hand the VERB's status back
-                ret
+                jp      chan_restore_st
 cg_unclaimed:
                 ld      a,5                 ; Illegal function call -- TRAPPABLE,
                 jp      raise_error         ; which is what the reference gives
+
+; chan_gate_bare -- the SAME crossing with NO channel bookkeeping, for the two
+; verbs whose whole job is to write the live channel's record.
+; 🔴 FIELD AND LSET/RSET MUST NOT TAKE THE FULL GATE, AND FIVE SUITES SAID SO.
+; `hk_lrset` walks main's FLD_TAB and stores the field's bytes INTO FSECTOR_BUF
+; -- that buffer IS the channel's record. The full gate saves the record before
+; the crossing and LDIRs it back after, so it copied the PRE-LSET record over
+; the store and undid it: `fldary`, `fldwidth`, `lrvar`, `lvfix` and `tgtspc`
+; all went red with the target reading back as spaces, including their own
+; positive controls.
+; 🎯 AND THE RULE IS THE ONE THIS ARC ALREADY MEASURED: the bookkeeping exists
+; because a disk-ROM verb REFILLS main's staged sector behind an open channel.
+; FIELD and LSET/RSET touch no disk and move no sector; they write the record
+; deliberately, on purpose, and there is nothing to restore it from.
+; ⚠️ A verb added here must be one that does NO sector I/O. When in doubt take
+; the full gate -- the cost of the bookkeeping is a re-read, the cost of missing
+; it is data on the medium (D-ALIASBITE).
+chan_gate_bare:
+                ld      de,cgb_back
+                push    de
+                or      a                   ; CF = 0; unclaimed the cell is a
+                jp      (hl)                ; bare `ret` and lands below at once
+cgb_back:
+                ret     c                   ; claimed -> back to the caller
+                jr      cg_unclaimed        ; ERR 5, same face as the full gate
+
+; chan_restore -- reload the live channel's context: the 50-byte FCH_STATE0
+; state block AND (via fch_load_ctx's closing `jp fch_restage`) the sector it
+; addresses. No-op when no channel is live. Clobbers A/BC/DE/HL, and IX as every
+; CALSLT on this path already does.
+;
+; ⚠️ SHARED WITH dsk_core (basic/str-engine.asm) AND THAT IS THE POINT.
+; DSKI$/DSKO$ do their sector I/O through `dirverb_op` DIRECTLY, not through
+; `chan_gate`, so the gate's own restore runs too early for them -- it happens
+; while the hook is being claimed, before the sector number is even parsed.
+; Without a second restore after the tenant runs they were the last two verbs
+; still committing a wrecked file (D-ALIASWCELL, 2026-09-23).
+chan_restore:
+                ld      a,(FCH_ACTIVE)
+                or      a
+                ret     z                   ; nothing live -> nothing staged
+                jp      fch_load_ctx
+
+; chan_restore_st -- chan_restore with DISKOP_STATUS held across it, which is
+; the form BOTH callers need and neither may skip.
+; ⚠️ CLOBBERS A/BC/DE/HL AND IX. dsk_core keeps its cursor in HL and the
+; evaluator keeps a token cursor in IX, so it calls this INSIDE its own
+; push hl / push ix guards -- the first cut put it after the pops and DSKI$
+; returned to a wrecked cursor instead of to its caller.
+chan_restore_st:
+                ld      a,(DISKOP_STATUS)
+                push    af
+                call    chan_restore
+                pop     af
+                ld      (DISKOP_STATUS),a   ; hand the VERB's status back
+                ret
 
 ; --- dirverb_op: run dirverb-tenant op A ------------------------------------
 ; 💰 D-PAIRCARVE (2026-09-11): the `ld (DISKOP_OP),a` / `ld ix,...DIRVERB` /

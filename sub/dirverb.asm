@@ -88,7 +88,8 @@ dv_err:
 
 ; --- DSKO$ / DSKI$: one sector between (DSKBUF_PTR) and sector FWR_DIRSEC ------
 ; D-DSKIO, docs/spec-basic-dskio.md §3. The head parsed drive and sector; the
-; buffer is whatever DSKBUF_PTR names (FSECTOR_BUF, written at disk-ROM init).
+; buffer is whatever DSKBUF_PTR names (FWBUF -- the DIRECTORY/RAW tier, NOT the
+; open channel's FSECTOR_BUF; written at disk-ROM init, D-ALIASWCELL).
 ; No mount and no BPB: a raw sector needs neither, and the reference reads
 ; sector 9999 without complaint. STATUS = 0 ok, $FF = DSKIO error.
 tnt_dsko:

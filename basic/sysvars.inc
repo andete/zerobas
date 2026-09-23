@@ -2890,9 +2890,15 @@ EOC             equ     $0FFF   ; end-of-chain marker we write (Microsoft FAT §
 FSECTOR_BUF     equ     $E5C0   ; file data / read sector buffer ($E5C0..$E7BF)
 ; D-DSKIO (docs/spec-basic-dskio.md): the word a program reads to find DSKI$'s
 ; sector -- the MSX idiom PEEK(&HF351)+256*PEEK(&HF352), MEASURED on the CF-3300
-; (its buffer is at $EB95 behind the same cell). Here it names FSECTOR_BUF and is
-; written once by the disk ROM's install_basic_hooks (disk/kernel.asm), so a
-; diskless build never touches it. $F34D..$F358 was ASKED of the machine on
+; (its buffer is at $EB95 behind the same cell). Here it names ~~FSECTOR_BUF~~
+; FWBUF and is written once by the disk ROM's install_basic_hooks
+; (disk/kernel.asm), so a diskless build never touches it.
+; 🔴 IT NAMED FSECTOR_BUF UNTIL 2026-09-23 AND THAT WAS THE LAST D-ALIASBITE
+; ROUTE (D-ALIASWCELL). FSECTOR_BUF is the OPEN CHANNEL's staged data sector, so
+; a raw-sector verb and an open file were sharing one buffer with no owner:
+; `DSKO$ 0,0` with a file open wrote the file's records over sector 0. The
+; reference's $EB95 is its DIRECTORY/RAW buffer, disjoint from its file-data
+; buffer at $ED95 -- FWBUF is ours, so this now matches its geometry. $F34D..$F358 was ASKED of the machine on
 ; 2026-09-11 (12 planted bytes survived a two-channel/KILL/FILES/DSKF/string/DEF FN
 ; workload) and lies below the sysvar sweep's $F380 floor.
 DSKBUF_PTR      equ     $F351   ; word -> the DSKI$/DSKO$ sector buffer (2)

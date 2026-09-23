@@ -114,8 +114,23 @@ TAIL = [
 #   * `FIELD`/`LSET` need a RANDOM channel (`OPEN … AS #2 LEN=n`) that the
 #     control does not have, so adding them changes the program under test.
 #     They deserve their own sweep against their own control.
+# 🔴 THE POSITIVE CONTROL IS NO LONGER A VERB, AND IT HAD TO STOP BEING ONE.
+# `KILL` held that role while `KILL` was broken: a sweep whose known-damaged arm
+# comes back clean has gone blind, and every CLEAN row below it is a false
+# acquittal. Then the fix landed and `KILL` went clean -- at which point the
+# guard fired on the FIX and the run returned rc=2 with nothing judged. A
+# positive control that the subject can repair is not a control.
+# `truncate!` damages the file BY CONSTRUCTION and has nothing to do with
+# D-ALIASBITE: re-opening a file FOR OUTPUT truncates it, so the first record
+# cannot survive no matter what any buffer does. It stays a valid positive
+# control after every fix, which is exactly what the earlier note asked for when
+# it said the positive control "has to come from an A/B against the pre-fix ROM"
+# [[a-null-result-needs-the-instrument-controls-in-the-same-run]].
+# ⚠️ It is a CONTROL, not a verb: it is excluded from the damage tally below.
+POSITIVE = "truncate!"
 ARMS = [("no-disk", ["35 X=1"]),            # NEGATIVE control -- MUST be clean
-        ("KILL", ['35 KILL"Y.DAT"']),       # POSITIVE control -- MUST be damaged
+        (POSITIVE, ['35 CLOSE#1:OPEN"W.DAT"FOR OUTPUT AS#1']),  # MUST be damaged
+        ("KILL", ['35 KILL"Y.DAT"']),
         ("NAME", ['35 NAME"Y.DAT"AS"V.DAT"']),
         ("DSKF", ["35 X=DSKF(0)"]),
         ("FILES", ["35 FILES"]),
@@ -217,6 +232,17 @@ def selftest():
         verdict(b"short", good).startswith("INSTRUMENT FAULT"))
     arm("NEGATIVE: a control that is None is an INSTRUMENT FAULT",
         verdict(None, good).startswith("INSTRUMENT FAULT"))
+    # 🔴 THE CONSTRUCTED POSITIVE CONTROL, BOTH DIRECTIONS. What `truncate!`
+    # actually produces is the SECOND record only, and the guard keys on the
+    # verdict string -- so pin that a truncated file reads as damage, and that
+    # the arm's own name is excluded from the verb tally.
+    trunc = (REC2 + "\r\n").encode()
+    arm("the truncate! control's own file reads as DATA LOST",
+        verdict(good, trunc).startswith("DATA LOST"))
+    arm("NEGATIVE: truncate! is a CONTROL, not one of the verbs swept",
+        POSITIVE not in [n for n, _ in ARMS[2:]])
+    arm("the truncate! arm is present and truncates by re-opening FOR OUTPUT",
+        any(n == POSITIVE and "FOR OUTPUT" in l[0] for n, l in ARMS))
     # and the reader: it must find a real file in a real image, and report None
     # for one that is absent -- without this the sweep could return None for
     # every arm and read as "GONE" everywhere.
@@ -261,9 +287,13 @@ def main(argv):
         print(f"INSTRUMENT FAULT: no test disk at {SRC_DSK}")
         return 2
     arms = [(n, l) for n, l in ARMS if not ONLY or n in ONLY]
-    if ONLY and "no-disk" not in [n for n, _ in arms]:
-        print("REFUSING: the no-disk control must be in every run")
-        return 2
+    names = [n for n, _ in arms]
+    # BOTH controls, in BOTH directions, in every run -- narrowing with
+    # ZEROBAS_ALIAS_ONLY may not drop either of them.
+    for need in ("no-disk", POSITIVE):
+        if ONLY and need not in names:
+            print(f"REFUSING: the {need} control must be in every run")
+            return 2
     out = {n: run(n, l) for n, l in arms}
     if not out["no-disk"][0]:
         print("\nINSTRUMENT FAULT: the CONTROL never reached its CLOSE")
@@ -276,6 +306,18 @@ def main(argv):
     # 🔴 THE POSITIVE CONTROL IS CHECKED, NOT JUST PRINTED. A sweep whose known
     # -damaged arm comes back CLEAN has lost the ability to see the defect, and
     # every "clean" below it would be a false acquittal.
+    # 🔴 THE CONSTRUCTED POSITIVE CONTROL DECIDES WHETHER ANY 'CLEAN' COUNTS.
+    # It truncates the file by construction, so an instrument that can see
+    # damage at all MUST report it damaged. This is checked before anything
+    # else, because a blind sweep prints a page of reassuring CLEAN rows.
+    pos = dict(rows).get(POSITIVE)
+    if pos is not None and not pos.startswith(("DATA LOST", "GONE", "DIFFERS")):
+        print(f"\n🔴 INSTRUMENT FAULT: the CONSTRUCTED positive control "
+              f"({POSITIVE}) came back CLEAN. It re-opens the file FOR OUTPUT, "
+              f"which truncates it whatever the ROM does — a sweep that cannot "
+              f"see THAT cannot see anything, so no 'CLEAN' row above is "
+              f"evidence.")
+        return 2
     kill = dict(rows).get("KILL")
     if kill is None:
         print("\n⚠️  no KILL arm in this run: the positive control is ABSENT, "
@@ -310,25 +352,28 @@ def main(argv):
                   "blind sweep look identical from here — the fix is only "
                   "demonstrated by an A/B against the pre-fix ROM.")
     elif not damaged:
-        print(f"\n🔴 INSTRUMENT FAULT: the POSITIVE control (KILL) came back "
-              f"{kill.split(chr(8212))[0].strip()} — on OUR machine the sweep "
-              f"can no longer see the defect, so no 'CLEAN' row above is "
-              f"evidence.")
-        return 2
+        # 🟢 NOT AN INSTRUMENT FAULT ANY MORE, AND THE REASON IS THE ARM ABOVE.
+        # This used to return rc=2: with KILL as the positive control, a clean
+        # KILL was indistinguishable from a blind sweep. `truncate!` carries
+        # that direction now and it came back damaged, so a clean KILL is a
+        # reading about the ROM rather than about the instrument.
+        print("\n🟢 KILL came back CLEAN, and the sweep is NOT blind: the "
+              "constructed positive control above still reports damage.")
     # 🔴 A REFUSAL IS NOT A FINDING. The first cut counted "anything not CLEAN"
     # as damage, which swept the one arm that could not be judged into the
     # accusation -- the tally line would have said 8 where the evidence supports
     # 7 [[an-unnamed-outcome-reads-as-no-outcome]].
-    bad = [n for n, v in rows if v.startswith(("DATA LOST", "GONE", "DIFFERS"))]
-    ref = [n for n, v in rows if v.startswith("REFUSED")]
-    judged = len(rows) - len(ref)
+    verbs = [(n, v) for n, v in rows if n != POSITIVE]
+    bad = [n for n, v in verbs if v.startswith(("DATA LOST", "GONE", "DIFFERS"))]
+    ref = [n for n, v in verbs if v.startswith("REFUSED")]
+    judged = len(verbs) - len(ref)
     print(f"\nVERDICT: {len(bad)} of {judged} JUDGED verbs damage the file: "
           f"{', '.join(bad) if bad else '(none)'}")
     if ref:
         print(f"  {len(ref)} arm(s) could not be judged and are NOT counted "
               f"either way: {', '.join(ref)}")
-    print("  controls: no-disk clean (negative) and KILL damaged (positive), "
-          "both in this run")
+    print(f"  controls: no-disk clean (negative) and {POSITIVE} damaged "
+          f"(positive), both in this run")
     return 0
 
 

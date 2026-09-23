@@ -1,0 +1,22 @@
+D-ALIASFIELD: do the RANDOM-file verbs corrupt an open SEQUENTIAL file?
+
+  no-disk   ran to END  b'AAAABBBBCCCCDDDD\r\nEEEEFFFFGGGGHHHH\r\n\x1a'
+  truncate! ran to END  b'EEEEFFFFGGGGHHHH\r\n\x1a'
+  KILL      ran to END  b'AAAABBBBCCCCDDDD\r\nEEEEFFFFGGGGHHHH\r\n\x1a'
+  FIELD     ran to END  b'AAAABBBBCCCCDDDD\r\nEEEEFFFFGGGGHHHH\r\n\x1a'
+  LSET      ran to END  b'AAAABBBBCCCCDDDD\r\nEEEEFFFFGGGGHHHH\r\n\x1a'
+  PUT       ran to END  b'AAAABBBBCCCCDDDD\r\nEEEEFFFFGGGGHHHH\r\n\x1a'
+  GET       ran to END  b'AAAABBBBCCCCDDDD\r\nEEEEFFFFGGGGHHHH\r\n\x1a'
+
+  truncate! DATA LOST ON THE MEDIUM — record(s) AAAABBBBCCCCDDDD are absent from the committed file; got b'EEEEFFFFGGGGHHHH\r\n\x1a'
+  KILL     CLEAN — the file on disk is byte-identical to the control
+  FIELD    CLEAN — the file on disk is byte-identical to the control
+  LSET     CLEAN — the file on disk is byte-identical to the control
+  PUT      CLEAN — the file on disk is byte-identical to the control
+  GET      CLEAN — the file on disk is byte-identical to the control
+
+🟢 KILL came back CLEAN, and the sweep is NOT blind: the constructed positive control still reports damage. KILL is a FIXED verb here (D-ALIASWCELL), not a blind row.
+
+VERDICT: 0 of 5 JUDGED verbs damage the file: (none)
+  controls: no-disk clean (negative) and truncate! damaged (positive), both in this run
+refcache: 0 hit, 7 miss, 7 stored

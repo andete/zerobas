@@ -1,0 +1,23 @@
+D-ALIASBITE: WHAT truncates an open main channel? (extent sweep)
+
+  CONTROL   : ('ABCD', 'EFGH')
+  no-disk   : ('ABCD', 'EFGH')
+  KILL      : ('ABCD', 'EFGH')
+  NAME      : ('ABCD', 'EFGH')
+  DSKF      : ('ABCD', 'EFGH')
+  OPEN-IN   : ('ABCD', 'EFGH')
+  OPEN-OUT  : ('ABCD', 'EFGH')
+  PRINT#    : ('ABCD', 'EFGH')
+
+  interposed            reads        verdict
+  no-disk     ('ABCD', 'EFGH')       clean
+  KILL        ('ABCD', 'EFGH')       clean
+  NAME        ('ABCD', 'EFGH')       clean
+  DSKF        ('ABCD', 'EFGH')       clean
+  OPEN-IN     ('ABCD', 'EFGH')       clean
+  OPEN-OUT    ('ABCD', 'EFGH')       clean
+  PRINT#      ('ABCD', 'EFGH')       clean
+
+VERDICT: 0 of 7 interposed statements truncate the open channel: (none)
+  the no-disk arm read clean, so the sweep can report BOTH outcomes
+refcache: 0 hit, 8 miss, 8 stored

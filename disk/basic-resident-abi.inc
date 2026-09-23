@@ -10,9 +10,9 @@
 ; main ROM, read out of our own build's symbol file. Nothing here is derived
 ; from a disassembly or byte-copy of any reference ROM.
 
-widen_rhs_operand equ 038DCH
-round_single_and_pack equ 03417H
-round_and_finalize equ 033BDH
+widen_rhs_operand equ 038E2H
+round_single_and_pack equ 0341DH
+round_and_finalize equ 033C3H
 pu_deref_body equ 028C1H
 ARGA equ 0F06AH   ; operand A / working result, FPNUM record (18)
 STRSCR equ 0E26DH   ; [len][bytes:STRMAX] staging, $E26D..$E36C
@@ -23,6 +23,7 @@ FILES_HASPAT equ 0F009H   ; FILES: 1 = a filespec pattern is in DISK_FCB_NAME (1
 FAC equ 0F01CH   ; float accumulator: value bytes as tokenised (8)
 FACTYP equ 0F01AH   ; 2=int / 4=single / 8=double (1)
 FSECTOR_BUF equ 0E5C0H   ; file data / read sector buffer ($E5C0..$E7BF)
+FWBUF equ 0E7C0H   ; FAT/dir metadata sector buffer ($E7C0..$E9BF)
 FLD_CHAN equ 0E01BH   ; FIELD/LSET/RSET: the channel being fielded (1)
 LRSET_W equ 0E01DH   ; LSET/RSET: destination field width (1)
 LRSET_DEST equ 0E01EH   ; LSET/RSET: destination ADDRESS of the store (2). (2 B)
@@ -46,15 +47,15 @@ FILES_ENTIDX equ 0E0FCH   ; FILES: dir entry index 0..15 within a sector (1)
 LPTPOS equ 0EA39H   ; printer head column, 0-based (1)
 
 ; --- page-1 call-back targets: reached by an INTER-SLOT call (MSX2 TH), not an absolute one ---
-fname_expr equ 06E38H
-pdfcb_resume equ 06E31H
-dirverb_op equ 06C17H
+fname_expr equ 06E47H
+pdfcb_resume equ 06E40H
+dirverb_op equ 06C26H
 main_fat_mount equ 06428H   ; main's fat_mount
 main_fat_find equ 0642CH   ; main's fat_find
 parse_disk_fcb equ 065CDH
 fat_count_free equ 0645BH
-field_prologue equ 07270H
-field_item equ 072A6H
-lrset_tgt equ 07363H
-lrset_rhs equ 07385H
-lrset_finish equ 0739CH
+field_prologue equ 0727FH
+field_item equ 072B5H
+lrset_tgt equ 07372H
+lrset_rhs equ 07394H
+lrset_finish equ 073ABH

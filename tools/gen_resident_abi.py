@@ -112,6 +112,11 @@ REQUIRED_DISK_RAM = [
     # D-LRSETMOVE: hk_lrset walks main's FLD_TAB entry and fills the three
     # cells the sub-ROM store tenant reads. It WALKS the table; main OWNS it.
     "FSECTOR_BUF",              # the shared record buffer the offset indexes
+    # D-ALIASWCELL: install_basic_hooks publishes the DSKI$/DSKO$ raw-sector
+    # buffer through DSKBUF_PTR ($F351), and it has to be the DIRECTORY/RAW
+    # tier -- FSECTOR_BUF is the open channel's staged data sector, and sharing
+    # it let `DSKO$` write an open file's records over the sector it was given.
+    "FWBUF",                    # the FAT/dir metadata sector buffer
     "FLD_CHAN",                 # 0 = not fielded (D-LRVAR)
     "LRSET_W",                  # the field width
     "LRSET_DEST",               # the field's first byte

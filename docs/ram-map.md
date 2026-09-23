@@ -34,7 +34,7 @@ names the other component's BUFFER this address falls within. That
 second one is the question a per-component map cannot answer.
 
 * **basic** — 418 declared addresses in this project's own workspace `$E000..$F37F` (384 with a machine-readable width), plus **79** in the MSX standard work area at or above `$F380`.
-* **disk** — 128 declared addresses in this project's own workspace `$E000..$F37F` (114 with a machine-readable width), plus **24** in the MSX standard work area at or above `$F380`.
+* **disk** — 129 declared addresses in this project's own workspace `$E000..$F37F` (115 with a machine-readable width), plus **24** in the MSX standard work area at or above `$F380`.
 
 ## This project's own workspace (`$E000..$F37F`)
 
@@ -366,6 +366,7 @@ second one is the question a per-component map cannot answer.
 | `$E776` | 2 B | `disk` | `RDBLK_DST` | current DTA write pointer (word; from BDOS_DTA) | `basic` FAT_DBUF/FSECTOR_BUF |
 | `$E778` | 2 B | `disk` | `P1_DEST` | saved page-1 destination word (dskio bounce path) | `basic` FAT_DBUF/FSECTOR_BUF |
 | `$E7C0` | 512 B | `basic` | `FAT_MBUF/FWBUF` | FAT/dir metadata sector buffer ($E7C0..$E9BF) |  |
+| `$E7C0` | 512 B | `disk` | `FWBUF` | FAT/dir metadata sector buffer ($E7C0..$E9BF) |  |
 | `$E7E8` | 3 B | `disk` | `WRBLK_REC` | 24-bit target record number for the current step (3 bytes) | `basic` FAT_MBUF/FWBUF |
 | `$E7EB` | 1 B | `disk` | `WRBLK_RECSEC` | WRBLK_REC & 3 (record-in-sector) across the seek/extend loop (1 B) | `basic` FAT_MBUF/FWBUF |
 | `$E7EC` | 2 B | `disk` | `WRBLK_RS` | resolved record size (FCB+14..15, 0 -> 128) (word) | `basic` FAT_MBUF/FWBUF |
