@@ -444,7 +444,30 @@ def run_side(side, labels):
         sn = probe_signal.kwargs(so) if marked else {}
         caps = omsx_repl.run_cases(
             cfg["machine"], [("direct", list(cfg["reset"]) + lines)],
-            batch=False, reset=(), boot=cfg["boot"], step=8.0, cap_gap=10.0, timeout=300.0,
+            # 🔴 `run_gap` IS THE RUN->CAPTURE BUDGET AND THIS SUITE NEEDED ONE
+            # (D-CAPGAP, fixed 2026-09-23). Without it the budget was `step`
+            # (8 s), and `b.recurse` -- `DEF FNA(X)=FNA(X)` then `FNA(1)` --
+            # was captured BEFORE the recursion exhausted memory. The suite
+            # then scored it `<NO OUTPUT>` and reported it as "NOT MEASURED --
+            # blank reading", i.e. a row written off as unmeasurable that was
+            # simply looked at too early [[an-unnamed-outcome-reads-as-no-outcome]].
+            # 📏 MEASURED, both runs ALONE so the numbers are comparable (a
+            # figure from inside the parallel battery is not -- the first cut of
+            # this note compared 43 s against the battery's 119 s and made the
+            # fix look like a speed-up):
+            #     no run_gap   37 s   b.recurse `<NO OUTPUT>`, NOT MEASURED
+            #     run_gap=25   43 s   b.recurse `ERR 7 AT 60`, matching the ref
+            # So +6 s buys one row that could not be read at all.
+            # ⚠️ ONLY THE CASES THAT DO NOT SIGNAL PAY IT. This suite captures
+            # ON SIGNAL (75 of 77 rows); the budget is the FALLBACK ceiling, so
+            # raising it costs the one or two rows that never signal and nothing
+            # else. `NEVER SIGNALLED` drops from {b.recurse, o.clearwipe3} to
+            # {o.clearwipe3}.
+            # ⚠️ AND THE FAILURE MODE IS LOUD, which is why a tight value is
+            # safe: if 25 ever stops covering the recursion the row reports
+            # "NOT MEASURED" again rather than quietly agreeing.
+            batch=False, reset=(), boot=cfg["boot"], step=8.0, cap_gap=10.0,
+            run_gap=25.0, timeout=300.0,
             **sn)
         SIG.add(so, label=f"{side}:{label}")
         out[label] = face(caps[0])

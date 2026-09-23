@@ -810,9 +810,37 @@ item — do **one item per session** to keep context lean.
       a guarantee; a marker cell is a CLAIM that nobody else writes it.
 - [ ] 🔴 **YES FOR FIVE, NO FOR TWO — `kwsweep` AND `deffn-acceptance` ARE
       CAPTURING ROWS EARLY (D-CAPGAP, answered 2026-09-23)**
-      🙋 **NEEDS-JOOST for the REMEDY** — giving either suite a `run_gap` CHANGES
-      GATE ROWS, and one of them is a denominator. The measurement is done; what
-      to do about it is his.
+      ✅ **HE ANSWERED IT, AND THE MARKER WAS STALE UNTIL 2026-09-23:** *"yes, if
+      a suite is faulty it needs to be fixed obviously"*. The approval was given
+      the same day the measurement landed and this line still read NEEDS-JOOST,
+      which is the class this tree keeps paying for — **a filed blocker outlives
+      the ruling that lifted it.** ⚠️ The caution it carried is still right and
+      is kept as the METHOD: giving a suite a `run_gap` changes gate rows, so
+      every moved row gets its own before/after stated.
+      🤖 **AUTONOMOUS** — both halves, on his ruling.
+      🟢 **HALF ONE SHIPPED: `deffn-acceptance` (2026-09-23).** `run_gap=25.0`
+      at its single `run_cases` site, and **exactly one row moved**:
+      | row | before | after |
+      |---|---|---|
+      | `b.recurse` | `<NO OUTPUT>` — *NOT MEASURED, blank reading* | `ERR 7 AT 60`, **matching the reference** |
+      Scored rows 86 → 87; every other row byte-identical; `deffn-strict` (same
+      probe) unchanged at 87.
+      💰 **AND THE COST WAS MEASURED HONESTLY, WHICH TOOK A SECOND ATTEMPT.**
+      Both runs ALONE: **37 s → 43 s, so +6 s** buys a row that could not be
+      read at all. ⚠️ The first cut of this figure compared the fixed run's 43 s
+      against the **battery's** 119 s and made a +16 % cost look like a 3×
+      speed-up. **A wall time from inside the parallel battery is not comparable
+      to one measured alone** — the contention is the difference, not the change.
+      🔬 **ONLY THE NON-SIGNALLING CASES PAY IT.** The suite captures ON SIGNAL
+      (75 of 77 rows), so the budget is a FALLBACK ceiling; raising it costs the
+      one or two rows that never signal. `NEVER SIGNALLED` drops from
+      `{b.recurse, o.clearwipe3}` to `{o.clearwipe3}`.
+      ⚠️ **A TIGHT VALUE IS SAFE HERE BECAUSE THE FAILURE MODE IS LOUD** — if 25
+      ever stops covering the recursion, the row reports *NOT MEASURED* again
+      rather than quietly agreeing.
+      📋 **HALF TWO IS STILL OPEN: `kwsweep`**, and it is the harder one — four
+      reference values change and a `MISSING cload` row APPEARS, on one of this
+      tree's named denominators.
       🔬 **HOW IT WAS ANSWERED, AND NOT BY RECONSTRUCTING THE CASES.** A separate
       driver that re-types a suite's programs agrees with its own mistakes, so
       the control acts on the REAL suite: `$ZEROBAS_RUN_GAP` (new, in `_tcl`)
@@ -858,9 +886,14 @@ item — do **one item per session** to keep context lean.
       ACTUALLY CAPTURE THEIR CASES IN TIME? (out of D-TWOFILE, 2026-09-22)**
       🎚️ TIER 2 — reasonable time; it is apparatus, and a suite that captures
       early is green the wrong way rather than red.
-      🔭 **SCOUT-THEN-ASK** — a wide `cap_gap` is legitimate as inter-case
+      ~~🔭 SCOUT-THEN-ASK — a wide `cap_gap` is legitimate as inter-case
       spacing, so a hit has TWO meanings and an advisory beats a gate; whether
-      any suite's ROWS actually move is the reading that decides it.
+      any suite's ROWS actually move is the reading that decides it.~~
+      (struck 2026-09-23: the scout is DONE and the ask is ANSWERED, so this
+      block's marker is history. It is struck rather than deleted because the
+      reasoning is still the right reasoning — and because leaving it live made
+      `todo-marker-check` refuse the item as AMBIGUOUS, which is the gate doing
+      exactly its job: an archived marker beside a live one is two answers.)
       📋 The sites, from `scratchpad/gapscan.py` (ratio = `cap_gap`/`step`):
       `basic_probe_kwsweep.py` 18.0 and 2.5, `basic_probe_input_devices.py`
       10.0, `basic_probe_trapsvc.py` 9.0, `basic_probe_ramfree.py` 4.8,
@@ -4715,7 +4748,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:22604 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:22637 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -4881,7 +4914,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:9524 (T-6FE392)8 (T-529ABE)` from `TODO.md:20955 (T-529ABE)`: a
+      `TODO.md:9557 (T-6FE392)8 (T-529ABE)` from `TODO.md:20988 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -10368,7 +10401,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:20955 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:20988 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
