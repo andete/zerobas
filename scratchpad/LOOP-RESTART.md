@@ -4,6 +4,155 @@ A `ScheduleWakeup` loop is SESSION-LOCAL and dies with the session. This file is
 the durable half: paste the command in `## The command` below into a fresh
 session and the loop resumes exactly where it stopped.
 
+## 🟢 STATE AS OF 2026-09-23 — THIS IS THE CURRENT ONE. EVERYTHING BELOW IS HISTORY.
+
+**Tree CLEAN, all pushed, head `70ab3095`.** Today shipped SIX commits, every
+sha read back from `git log` rather than from memory (this arc has already put a
+wrong one in prose once):
+`c59a427b` D-ALIASBITE read side · `43d8b5b5` D-ALIASWCELL write side ·
+`875e3bbd` the rig measured · `07b7e324` `rigstick` written ·
+`9c621cb5` D-LOADPLAIN · `70ab3095` D-KWSTATUS.
+
+### 🟢 D-ALIASBITE IS CLOSED, BOTH SIDES
+
+A disk verb inside an open channel no longer corrupts it. **0 of 7** interposed
+statements damage a channel being read, **0 of 8** judged verbs damage a file
+being written, **0 of 5** random-file verbs damage it. `LFILES` still REFUSES
+(it blocks with no printer and never reaches `CLOSE`) and a refusal is not a
+finding.
+🔬 **THE FOUR SURVIVORS FAILED FOR THREE DIFFERENT REASONS**, and the lesson is
+that a set failing together is not a set failing alike:
+1. `chan_gate` re-staged the SECTOR and not the CURSORS THAT ADDRESS IT. It now
+   takes `fch_save_active`/`fch_load_ctx` (the whole channel-switch pair), not
+   `fch_flush_active`/`fch_restage` (the buffer half).
+2. `DSKI$`/`DSKO$` do their work OUTSIDE the gate via `dirverb_op`, and marshal
+   their sector number through `FWR_DIRSEC` -- the open channel's own directory
+   pointer. They take a second restore, and it only works because the gate saved
+   BEFORE the parse. **That ordering is load-bearing and the source says so.**
+3. `DSKBUF_PTR` named `FSECTOR_BUF`. With 1 and 2 in place `DSKO$ 0,0` wrote the
+   open file's records over SECTOR 0 and the disk lost its boot record --
+   strictly worse than the bug being fixed. It points at `FWBUF` now, which is
+   the tier the CF-3300 puts raw sectors on (`$EB95`, disjoint from its
+   file-data buffer at `$ED95`).
+⚠️ **`FIELD`/`LSET`/`RSET` TAKE `chan_gate_bare`** -- the crossing WITHOUT the
+bookkeeping. `hk_lrset` writes the channel's record ON PURPOSE, so the full
+gate's restore undid it and reddened five suites. A verb added there must do NO
+sector I/O; when in doubt take the full gate.
+💰 main page 1 **44 → 29 B free**, low region **32 → 26 B**, `disk.rom`
+unchanged at 7264 B. (Dated 2026-09-23, from a clean tree. **RE-RUN
+`make basic-reloc`, never quote this.**)
+
+### 🟢 D-KWSTATUS: A KEYWORD HAS A STATUS, NEVER A TIER
+
+Joost: *"I have a feeling this TIER ranking is confusing. Can we come up with a
+better mechanism?"* One ordinal scale was carrying three jobs. **`TIER n` now
+means ONLY an item's priority.** `docs/tier-status.md` reads
+`🟢 COVERED / 🟡 PARTIAL / 🔴 GAP / ⚪ UNPROVEN / ⚫ N/A` with evidence columns
+(`knife ✓ · 2/2 forms · 4 open, worst TIER 2`).
+⚠️ **`reached_group` IS UNTOUCHED** -- the change is presentation, so nothing was
+reclassified. COVERED is 139, the same number the old "TIER 1 — REACHED" had.
+🔴 **TWO NEGATIVE CONTROLS PIN IT:** no cell may read `| TIER 0 |`, and the
+string `no open item` may not appear at all. If either fires, the sheet has
+started scoring keywords on the ITEM priority scale again.
+
+### 🤖 WHAT IS ACTUALLY AUTONOMOUS TONIGHT — RE-SCAN, DO NOT TRUST THIS LIST
+
+🔴 **`tools/tier_table.py --all` PRINTS THE *TIER LINE'S* MARKER, NOT THE
+ITEM'S LAST ONE.** The queue rule is the LAST work-bucket marker in the block,
+so an item shown `🤖` there can be `🙋` by its end. **TIER 4 speed is the known
+case**: `PAINT`, `PUT` and the interpreter band all print `🤖` and are all
+gated on Joost's unanswered charter question (*does faithful include speed?*).
+**Read each block to its END before starting it.**
+
+➡️ **TONIGHT'S FIRST ITEM — D-CAPGAP's TWO FAULTY SUITES, and Joost already
+approved the work**: *"yes, if a suite is faulty it needs to be fixed
+obviously"*. `kwsweep` and `deffn-acceptance` capture rows EARLY. `deffn`'s
+`b.recurse` scores "NOT MEASURED" but reads `ERR 7 AT 60` correctly once given a
+real budget; `kwsweep` changes four reference values and gains a `MISSING cload`
+row. ⚠️ **BOTH CHANGE GATE ROWS AND ONE IS A DENOMINATOR** -- so the change is
+the BUDGET, and every moved row needs its own before/after stated.
+📋 **THEN the four UNRUN `cap_gap` sites**: `trapsvc-acceptance` (9.0),
+`input-devices-acceptance` (10.0), `nodisk-acceptance` (2.0), and
+`probe_refcache.py`'s own site. ⚠️ **THE RATIO DOES NOT PREDICT A FINDING**
+(`deffn` is 1.2× and moves, `ramfree` is 4.8× and does not), so each needs its
+own A/B. 🔬 The control: `ZEROBAS_RUN_GAP=90 make <target>`, diff against a
+plain run, **and check `refcache` reports 0 hits on the wide run** -- the first
+cut of this control was served from cache and agreed BY CONSTRUCTION.
+📋 **THEN** the APPARATUS bucket, which is deep (~35 items) and nearly all
+`🤖`: citation tooling, knife roster, filed-face rot, probes that exit 0 on a
+divergence, the error-message alphabet, temp-root literals.
+📋 **AND the keyword-completeness remainder** (TIER 1, `🤖`, ~TODO.md:22086).
+
+### 🙋 JOOST'S — DO NOT START ANY OF THESE
+
+* **The STICK/STRIG/PAD rig.** He ruled the Apple Developer route and will
+  request the `com.apple.developer.hid.virtual.device` capability
+  (`https://developer.apple.com/contact/request/system-extension/`). The tool is
+  WRITTEN (`tools/rigstick.swift`, `make rigstick-selftest`) and every local
+  escape hatch is MEASURED SHUT: unsigned → nil · ad-hoc signed claiming it →
+  SIGKILL before `main` · **root (uid=0) → nil** · injecting SDL's
+  `SDL_JoystickAttachVirtual` → shut twice (SDL is linked STATICALLY and openMSX
+  runs under HARDENED RUNTIME). **No free tool exists** -- Karabiner ships the
+  one signed virtual-HID driver on macOS and it is keyboard + pointer only.
+  Fallback he will check himself: an Arduino with NATIVE USB (Leonardo/Micro/Pro
+  Micro, SAMD/ARM, RP2040 -- an Uno/Nano CANNOT).
+  🔬 **The cheapest unrun measurement is neither route: BORROW ANY USB GAMEPAD**
+  and answer whether `joystick1` appears, `plug joyporta joystick1` succeeds and
+  `STICK(1)` reads it. Nothing on the Mac is on the Generic Desktop page today.
+* **The TIER 4 charter question** -- *does faithful include speed?* It gates all
+  remaining TIERED work.
+* **The RAM-usage comparison** (*"not something for now"*), **step 10 `OPEN`**,
+  the *"Gap (small)"* entry in `expansion-protocol.md` §6, the merged remote
+  branch `wip/saveport`, the **TIER 1 keyword tier re-ask**.
+* **The buffer GEOMETRY question**, which survives D-ALIASWCELL: should main's
+  two sector buffers be disjoint from disk's ANYWAY, for the CLASS rather than
+  the routes? Nothing this tree can measure reaches the buffer now, so it buys
+  robustness against FUTURE code, not a fix. It belongs with the RAM comparison.
+* **One cosmetic offer he has not answered:** whether `⚫ N/A` should be split
+  into "particle" and "composite-only", which are different facts.
+
+### 🔴 THREE TIMES TODAY A GATE ANSWERED ABOUT A WORLD THAT NO LONGER EXISTED
+
+Different mechanisms, one shape: **the instrument outlived its input.**
+1. `ram-map-check` computed its verdict from a **STALE `.sym`** and I nearly
+   deleted a LIVE pin on its say-so. The rebuild is what revealed it.
+2. `make tiers-md` read the **kwsweep pin written by the battery that ran
+   against the BROKEN intermediate ROM**, and demoted `LSET`, `FIELD` and
+   `OPEN` to TIER 0. A pin is a measurement of ONE ROM and keeps its answer
+   after that ROM is gone.
+3. **A FLAKE WITH A SCHEDULE, and I introduced it.** Putting a form count in a
+   keyword row made `fmt_markdown` read `build/kwsweep-verdicts.json` -- and
+   **`make gates` DELETES `build/` in its build step**. So `selftest-check`
+   passed at the prompt and FAILED in the battery, on byte-identical source:
+   backwards, since the battery is the verdict that gets trusted. ⚠️ The file
+   had ALREADY been fixed for this (*"`evidence`/`t3` are INJECTABLE because S14
+   was not hermetic"*) and I re-entered through a new door by adding a FOURTH
+   dependency to the same function.
+🎯 **THE RULE: when a gate disagrees with a hand run on IDENTICAL BYTES, the
+difference is the ENVIRONMENT, and `build/` not existing is the first thing to
+try.** Move the artefact aside and re-run rather than reasoning about it.
+
+### 🔴 OTHER LESSONS PAID FOR TODAY — CARRY THEM
+
+* **A POSITIVE CONTROL THE SUBJECT CAN REPAIR IS NOT A CONTROL.** `KILL` was the
+  positive control in two write sweeps; the moment the fix landed the guard
+  fired on the FIX and both probes returned rc=2 with every row clean and
+  nothing judged. `truncate!` (re-`OPEN` FOR OUTPUT) damages by construction and
+  survives every future fix. **Check every probe you touch for this shape.**
+* **A PRIVILEGE TEST THAT DOES NOT REPORT ITS OWN PRIVILEGE IS NOT ONE.** The
+  first root run came back `uid=501` -- not root -- and would have been filed as
+  "root refuses" had the tool not printed `getuid()` in its own message.
+* **A WHOLE-LINE MATCH ON A BINARY IS NOT AN ABSENCE.** `grep -x` scored
+  `No such pluggable` at 0 in a binary that demonstrably emits it.
+* **A STALE JUSTIFICATION OUTLIVES THE THING THAT JUSTIFIED IT.** Plain `LOAD`
+  had no row because a note said the instrument could not reach it. True when
+  written, stale from D-KWLOG four months later. **Joost remembered; the file
+  did not.** When an item says "cannot", check the date against the machinery.
+* **A BUCKET LABEL IS NOT A BLOCKER.** `VARPTR` printed UNPROVEN beside its own
+  evidence reading `knife ✓ · 1/2 forms`, because I mapped the bucket instead of
+  asking what the blocker was -- the same mistake the labels I was replacing had
+  made one level up.
+
 ## 🔴 STATE AS OF 2026-09-21 — READ THIS BEFORE THE FIRING PROMPT
 
 ⚠️ **THE 09-16 BLOCK BELOW IS SUPERSEDED IN ITS HEADLINE AND STILL GOOD IN ITS

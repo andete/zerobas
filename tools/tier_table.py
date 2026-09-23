@@ -357,9 +357,18 @@ GROUP_ORDER = ["t1", "kwgap", 1, 2, 3, 4, 5, "kw1", "kw1c", "kw3", "kw3c",
 # maps its buckets onto a status. A redesign that also re-derived the buckets
 # would have made "did anything move?" unanswerable in the same diff.
 STATUS = {
-    "COVERED": ("🟢 COVERED",
-                "knife-proven CONNECTED, every authored FORM covered by an "
-                "agreeing row, and no open TIER 1 item"),
+    # 🔴 IT SAID "🟢 COVERED" FOR ONE COMMIT AND THAT WAS A REGRESSION I
+    # INTRODUCED (Joost, 2026-09-23: *"lack of items at a tier for a command
+    # does not actually mean there are no defects"*). This measures the ABSENCE
+    # of filed items, and the old text emitter called it exactly that -- "no
+    # known gap" -- which I deleted in the same change. A green tick on an
+    # absence rewards SILENCE; the PROVEN column beside it is the half that
+    # requires evidence to be built.
+    "COVERED": ("🟢 NO KNOWN GAP",
+                "nothing is FILED against it and the sweep sees nothing: every "
+                "authored FORM has an agreeing row and it is knife-proven "
+                "CONNECTED. ⚠️ An ABSENCE of findings, NOT an attainment — "
+                "read the PROVEN column for what was actually shown"),
     "PARTIAL": ("🟡 PARTIAL",
                 "knife-proven CONNECTED, but not every authored FORM has an "
                 "agreeing row yet"),
@@ -424,6 +433,41 @@ def status_of(kt, kw, t3, conn, t1, nobare, parts, refuses, forms):
     if grp == "kwrefuse":
         return st, "both references REFUSE it \u2014 the refusal is the whole bar"
     return st, kw_evidence(kw, forms.get(kw, set()), kw in conn, g, lines)
+
+
+# 🎚️ THE RUNGS, AND WHAT IT TAKES TO TICK ONE. A rung is proven only by a
+# DECLARED, SCORED row -- never by the absence of an open item, which is the
+# distinction this column exists to restore (Joost, 2026-09-23: *"the old
+# scoring system, while complicated, at least required building up tests and
+# evidence to reach next tiers for a keyword"*). He was right and the status
+# column alone had lost it: 32 keywords carry a scored `PROVES-T3:` row and the
+# sheet rendered that fact ZERO times.
+#   T1  every authored FORM has an agreeing row AND the keyword is knife-proven
+#       CONNECTED (an agreeing row a knife cut cannot disturb proves nothing
+#       about our code, which is this tree's oldest rule about evidence).
+#   T3  a `PROVES-T3:` row -- a COMMON ERROR situation the sweep scored against
+#       the reference -- plus the same connectedness requirement.
+# 🔴 T2, T4, T5 AND T6 HAVE NO PROVING ROW TYPE AT ALL, SO THEY READ `—` FOR
+# EVERY KEYWORD, AND PRINTING THEM IS THE POINT. Nothing in this tree has yet
+# shown that ANY keyword runs in reasonable time, at on-par speed, within the
+# reference's RAM, or handles its exhaustive error set. That work was invisible
+# while the sheet had one column; a row of dashes 159 keywords wide is its
+# honest size. Designing those row types is filed and is Joost's (D-KWPROVEN).
+RUNGS = ("T1", "T2", "T3", "T4", "T5", "T6")
+
+
+def proven_rungs(kw, forms_seen, connected, t3):
+    """{rung: bool} -- what has been positively DEMONSTRATED about a keyword."""
+    import kwforms
+    need = kwforms.forms_for(kw)
+    t1 = bool(need) and connected and all(f in forms_seen for f in need)
+    return {"T1": t1, "T2": False, "T3": bool(connected and kw in t3),
+            "T4": False, "T5": False, "T6": False}
+
+
+def proven_cell(kw, forms_seen, connected, t3):
+    p = proven_rungs(kw, forms_seen, connected, t3)
+    return " ".join("%s%s" % (r, "✓" if p[r] else "—") for r in RUNGS)
 
 
 def kw_evidence(kw, forms_seen, connected, gap_tier, lines):
@@ -1199,8 +1243,33 @@ def fmt_markdown(its, kws, evidence=None, t3=None, connected=None, forms=None):
         out.append("| %s | %s | %d | %s |"
                    % (STATUS[st][0], STATUS[st][1], len(groups[st]),
                       " ".join(f"`{k}`" for k in sorted(groups[st]))))
+    # 🎚️ THE HEADLINE ANSWER TO "WHAT IS STILL MISSING". Counting the ticks per
+    # rung says, in one table, how much of the ladder has ever been climbed --
+    # and the four zeroes are the work nobody can see from the status column.
+    out += ["", "### What has been PROVEN, per rung", "",
+            "| rung | what a tick requires | keywords proving it |",
+            "|---|---|---|"]
+    _req = {"T1": "every authored FORM has an agreeing row, and knife-proven CONNECTED",
+            "T2": "🔴 NO PROVING ROW TYPE EXISTS — reasonable time is unmeasured for every keyword",
+            "T3": "a `PROVES-T3:` row: a COMMON ERROR situation scored against the reference",
+            "T4": "🔴 NO PROVING ROW TYPE EXISTS — on-par speed is unmeasured for every keyword",
+            "T5": "🔴 NO PROVING ROW TYPE EXISTS — RAM parity is unmeasured for every keyword",
+            "T6": "🔴 NO PROVING ROW TYPE EXISTS — the exhaustive error set is unmeasured"}
+    _prov = {r: 0 for r in RUNGS}
+    for kw in kws:
+        p = proven_rungs(kw, forms.get(kw, set()), kw in conn, t3)
+        for r in RUNGS:
+            _prov[r] += bool(p[r])
+    for r in RUNGS:
+        out.append("| %s | %s | **%d** of %d |" % (r, _req[r], _prov[r], len(kws)))
     out += ["", FOOTER, "", "### Alphabetical", "",
-            "| keyword | status | evidence |", "|---|---|---|"]
+            "🎚️ **TWO COLUMNS, TWO QUESTIONS.** *known against* is what is "
+            "FILED or what the sweep SEES. *proven* is what has been positively "
+            "DEMONSTRATED by a declared, scored row. A keyword can read "
+            "`🟢 NO KNOWN GAP` and still have proven almost nothing — which is "
+            "the normal case here, and was invisible until 2026-09-23.", "",
+            "| keyword | known against | proven | evidence |",
+            "|---|---|---|---|"]
     # 🎯 ONE CALL, NOT A FIFTEEN-ARM CHAIN. Every arm this replaced printed its
     # own sentence, and they drifted: the `t1` arm said "no open item" for
     # keywords with four, while the arm two below it existed precisely to name
@@ -1209,7 +1278,8 @@ def fmt_markdown(its, kws, evidence=None, t3=None, connected=None, forms=None):
     # not [[two-sections-of-one-doc-disagreed]].
     for kw in sorted(kws):
         st, ev = status_of(kt, kw, t3, conn, t1, nobare, parts, refuses, forms)
-        out.append(f"| `{kw}` | {STATUS[st][0]} | {ev} |")
+        pr = proven_cell(kw, forms.get(kw, set()), kw in conn, t3)
+        out.append(f"| `{kw}` | {STATUS[st][0]} | {pr} | {ev} |")
 
     out += _composite_section(kws, evidence, conn)
     out += ["",
@@ -1357,6 +1427,27 @@ def selftest():
     # [[two-sections-of-one-doc-disagreed]].
     arm("S8b NEGATIVE: the text summary carries no TIER 0 bucket",
         "TIER 0" not in _fk)
+    # 🎚️ D-KWPROVEN (Joost, 2026-09-23: *"lack of items at a tier for a command
+    # does not actually mean there are no defects"*). A rung is ticked by a
+    # DECLARED, SCORED row and by nothing else -- least of all by silence.
+    _pr = lambda **kw: proven_rungs(kw.pop("k", "LOCATE"), kw.pop("f", set()),
+                                    kw.pop("c", False), kw.pop("t", set()))
+    arm("S36 T1 needs its forms AND connectedness",
+        proven_rungs("LOF", {"length"}, True, set())["T1"])
+    arm("S36b NEGATIVE: an agreeing row that is NOT connected proves no rung",
+        not proven_rungs("LOF", {"length"}, False, {"LOF"})["T1"]
+        and not proven_rungs("LOF", {"length"}, False, {"LOF"})["T3"])
+    arm("S36c NEGATIVE: a MISSING form leaves T1 unproven",
+        not proven_rungs("LOF", set(), True, set())["T1"])
+    arm("S36d T3 needs a PROVES-T3 row",
+        proven_rungs("LOF", {"length"}, True, {"LOF"})["T3"]
+        and not proven_rungs("LOF", {"length"}, True, set())["T3"])
+    # 🔴 THE HONEST GAP, PINNED. If this ever fires, a proving row type was
+    # added for one of these rungs -- which must be a DELIBERATE act with its
+    # own definition of what the row proves, not a side effect.
+    arm("S36e NEGATIVE: T2/T4/T5/T6 cannot be ticked — no row type proves them",
+        not any(proven_rungs("LOF", {"length"}, True, {"LOF"})[r]
+                for r in ("T2", "T4", "T5", "T6")))
     arm("S9 summary counts UNTAGGED separately", ("UNTAGGED", 1) in summary(its))
     arm("S11 a keyword named only in the BODY does not count", "CLEAR" not in g)
     arm("S10 the real kwtable parses to 150+ keywords", len(kwtable_keywords()) >= 150)
@@ -1482,10 +1573,11 @@ def selftest():
             # neither that it HAS all its forms nor that it is NOT knife-proven
             # -- both of which a reader needs to know what to do about it.
             ("LOF row",
-             "| `LOF` | \U0001f534 GAP | knife \u2717 \u00b7 1/1 forms \u00b7 1 open, worst "
-             "TIER 1 (TODO.md:2) |" in md),
+             "| `LOF` | \U0001f534 GAP | T1\u2014 T2\u2014 T3\u2014 T4\u2014 T5\u2014 T6\u2014 | "
+             "knife \u2717 \u00b7 1/1 forms \u00b7 1 open, worst TIER 1 (TODO.md:2) |" in md),
             ("ZZZ row",
-             "| `ZZZ` | \u26aa UNPROVEN | knife \u2717 \u00b7 no form list |" in md),
+             "| `ZZZ` | \u26aa UNPROVEN | T1\u2014 T2\u2014 T3\u2014 T4\u2014 T5\u2014 T6\u2014 | "
+             "knife \u2717 \u00b7 no form list |" in md),
             # \U0001f534 THE INVARIANT THE WHOLE REDESIGN EXISTS FOR, AS A NEGATIVE
             # CONTROL. `TIER 0` meant eleven different things and read as a rank
             # of zero; if it ever comes back, the sheet has started scoring
@@ -1499,6 +1591,9 @@ def selftest():
             # `t1` arm printed "no open item" for keywords with four; the count
             # is a COLUMN now, so it cannot go missing.
             ("NEGATIVE: no row claims 'no open item'", "no open item" not in md),
+            # 🎚️ D-KWPROVEN: the LADDER is back and it is its own column.
+            ("proven column header", "| keyword | known against | proven | evidence |" in md),
+            ("the rung summary is printed", "### What has been PROVEN, per rung" in md),
             ("honesty footer", "not \"verified\"" in md),
             ("open-items row", "| `LOF`, `PUT` | TIER 1 | 🤖 | `LOF` and `PUT#1,255` | 2 |" in md)]
     for _n, _c in _s14:

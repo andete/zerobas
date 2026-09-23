@@ -4715,7 +4715,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:22561 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:22604 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -22082,6 +22082,49 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       it is not enough to put one of them last.
       🎚️ TIER 1 — happy path: two documented spellings with no row.
       🤖 AUTONOMOUS — the rig is the whole of the work.
+
+- [ ] 🎚️ **WHAT PROVES A RUNG? T2, T4, T5 AND T6 HAVE NO PROVING ROW TYPE, SO
+      `0 of 159` KEYWORDS PROVE ANY OF THEM (D-KWPROVEN, 2026-09-23).**
+      🎚️ TIER 1 — it is the bar every other item is measured against, and three
+      quarters of it has never been measurable.
+      🙋 **NEEDS-JOOST** — a rung's definition is charter-level, not a coding
+      choice. What does a row that PROVES "reasonable time" look like? A wall
+      against the reference, per keyword? A ratio? Same question for RAM parity
+      and for "the exhaustive error set", which has no obvious finite bound.
+      🔴 **THIS ITEM EXISTS BECAUSE JOOST CAUGHT A REGRESSION I SHIPPED.** The
+      D-KWSTATUS rework replaced a per-keyword tier with a STATUS, and in doing
+      so deleted the LADDER: *"the old scoring system, while complicated, at
+      least required building up tests and evidence to reach next tiers for a
+      keyword"*, and *"lack of items at a tier for a command does not actually
+      mean there are no defects"*. Both correct. **The status column measures
+      the ABSENCE of filed items, and I had given that a green tick reading
+      COVERED** — which rewards silence, exactly inverting what the old scheme
+      demanded.
+      📏 **MEASURED, and it is how big the loss was:** **32 keywords carry a
+      scored `PROVES-T3:` row and the new sheet rendered that fact ZERO times.**
+      The machinery (`kwsweep_t3`) was intact throughout; only the rendering
+      dropped it.
+      ✅ **FIXED THE SAME DAY:** `🟢 COVERED` is `🟢 NO KNOWN GAP` again (the
+      phrase the old text emitter used, which I had deleted), and a **PROVEN**
+      column carries the ladder: `T1✓ T2— T3✓ T4— T5— T6—`. A rung is ticked
+      only by a DECLARED, SCORED row and never by silence — and T1 additionally
+      requires knife-proven CONNECTEDNESS, so `LOF` reads `1/1 forms` and `T1—`.
+      | rung | proving it |
+      |---|---|
+      | T1 — every authored form agrees, knife-proven | **139** of 159 |
+      | T3 — a `PROVES-T3:` row scored vs the reference | **32** of 159 |
+      | T2 / T4 / T5 / T6 — **no row type exists** | **0** of 159 |
+      🎯 **SO THE FOUR ZEROES ARE THIS ITEM.** Nothing in this tree has shown
+      that ANY keyword runs in reasonable time, at on-par speed, within the
+      reference's RAM, or handles its exhaustive error set. That work was
+      invisible while the sheet had one column; it is now a row of dashes 159
+      wide. ⚠️ **T4 is additionally gated on the charter question** (*does
+      faithful include speed?*), so T4's row type cannot even be specified until
+      that is answered.
+      🔬 **PINNED BY A NEGATIVE CONTROL** (`S36e`): T2/T4/T5/T6 CANNOT be ticked.
+      If that arm ever fires, a proving row type was added — which must be a
+      deliberate act carrying its own definition of what the row proves, not a
+      side effect of some other change.
 
 - [ ] **Keyword-completeness gaps — the measured remainder of MSX1 BASIC.**
       **The coverage denominator now exists** (2026-07-26,
