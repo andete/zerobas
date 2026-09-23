@@ -238,6 +238,29 @@ tracked battery probes that count in `$D000` (`stop_trap`, `key_trap`,
 start. 🟢 What survives is worth keeping: the probes now sit on `$CFFE` with the
 claim RE-VERIFIED every run rather than assumed.
 
+⚙️ **OPERATING NOTE, 2026-09-23 — DO NOT RUN THE EIGHT BATTERY-EXCLUDED TARGETS
+UNCONDITIONALLY.** They sit outside `make gates`'s collection so they never get
+`inert_against_last_green`, and running them after every commit cost ~10 min a
+tick for nothing. Joost: *"why are you running a battery when there has been no
+changes?"* **Apply the same inertness reasoning:** run them when a ROM, a
+`probes/`/`tools/`/`tests/` source, a fixture or the installed machine moved;
+SKIP them (and say so) for a change confined to `TODO.md`, `docs/` and
+`scratchpad/`. ⚠️ `citation-check` is cheap, static and reads the docs, so a docs
+change does warrant that one. ⚠️ `make gates` itself is NOT the waste — its
+static tier checks citations, the tier table and the markers, and it skips the
+emulator tier on its own.
+
+✅ **AND THE REFERENCE HAS ANSWERED THE ARCHITECTURE QUESTION (`d2849fab`).**
+`National_CF-3300` has its OWN `cf-3300_disk.rom` and has been this tree's disk
+oracle all along — the earlier *"there is no booted disk oracle here"* was FALSE.
+**On the reference, `KILL`/`NAME`/`DSKF`/`COPY` all leave an open file
+BYTE-IDENTICAL.** So *"we do as the reference does"* settles the direction: a
+disk verb must not disturb an open channel. ⚠️ And the reference is **(b) PLUS A
+DISCIPLINE** — one shared buffer (267 B/channel, less than a sector) AND a
+restage. We already restage on a CHANNEL SWITCH; we do not across a DISK-ROM
+CROSSING. **So (b) alone would not close it — the RESTAGE is the load-bearing
+change**, and (a)/(b)/(c) only decide what we buy alongside it.
+
 🛑 **THE AUTONOMOUS QUEUE IS EMPTY (2026-09-23, `4ab3f665`). THE NEXT MOVE IS
 JOOST'S — DO NOT INVENT WORK.** Three things are waiting on him:
 
