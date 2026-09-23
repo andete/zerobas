@@ -873,9 +873,22 @@ item — do **one item per session** to keep context lean.
       prefix `Skip :ZQ`. This is the tree's own do-not-award shape, sitting on a
       named DENOMINATOR, which is exactly the hole a denominator exists to close
       [[a-case-that-agrees-can-agree-for-the-wrong-reason]].
-      ➡️ **IT SURFACED A REAL TIER 1 DEFECT — filed separately below
-      (D-CLOADSKIP).** `kwsweep` still exits 0, so the gap is REPORTED rather
-      than red: the denominator can now see it.
+      ➡️ **IT SURFACED A `MISSING cload` ROW THAT LOOKED LIKE A TIER 1 DEFECT
+      AND WAS NOT — see D-CLOADSKIP below, filed and WITHDRAWN the same night.**
+      The fixture padded its tape files; with a CSAVE-faithful one the row is
+      `SUPPORTED` again.
+      🎯 **BUT THE BUDGET FIX IS WHAT MADE EITHER READING POSSIBLE, AND THE ROW
+      MEANS SOMETHING DIFFERENT NOW.** Before: `SUPPORTED` on ref `Skip :ZQ` vs
+      zb `Skip :ZQ` — agreement on a TRUNCATED PREFIX, two machines agreeing
+      about nothing. After: `SUPPORTED` on `Skip :ZQ\|Found:ZR` — the whole
+      search, scored. **The verdict letter is unchanged and the evidence behind
+      it is completely different**, which is exactly why a denominator's rows
+      have to be read and not counted.
+      🔴 **AND FIXING ONE INSTRUMENT FAULT EXPOSED A SECOND THAT LOOKED LIKE A
+      FINDING.** The fixture fault was invisible while the budget fault hid the
+      whole search. **Repairing an instrument can manufacture a false accusation
+      from the next fault down** — the only thing that separates them is the
+      experiment [[an-instrument-can-fail-the-way-the-thing-it-replaced-failed]].
       ✅ **THE ITEM'S OWN WARNING WAS THE RIGHT ONE, AND IT WAS NEARLY IGNORED:**
       *"a site that captures early is not automatically wrong — the verdict has
       to be per-ROW, not per-site"*. Four rows say so in the same run.
@@ -4786,7 +4799,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:22701 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:22741 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -4952,7 +4965,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:9595 (T-6FE392)8 (T-529ABE)` from `TODO.md:21026 (T-529ABE)`: a
+      `TODO.md:9608 (T-6FE392)8 (T-529ABE)` from `TODO.md:21039 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -10439,7 +10452,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:21026 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:21039 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -22154,7 +22167,34 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       🎚️ TIER 1 — happy path: two documented spellings with no row.
       🤖 AUTONOMOUS — the rig is the whole of the work.
 
-- [ ] 🔴 **`CLOAD"ZR"` CANNOT REACH THE SECOND FILE ON A TAPE — WE SKIP IT AND
+- [x] 🛑 **WITHDRAWN THE SAME NIGHT IT WAS FILED — THERE IS NO ROM DEFECT
+      (D-CLOADSKIP, 2026-09-23). IT WAS AN UNFAITHFUL FIXTURE.**
+      🔬 **THE REFUTATION:** `kwsweep`'s tape fixture built BOTH files with
+      `cas_encode.build_cas_basic`, which appends **16 `$00` pad bytes** after
+      the end-link for SINGLE-file framing. On a MULTI-file tape those unread
+      bytes leave a skipped tokenised file mid-block so the next `TAPION` cannot
+      relock. Rebuilt CSAVE-faithfully (no pad, exactly as
+      `basic_probe_cas_match.py:tok_file_nopad` already did), `CLOAD"ZR"` reads
+      **`Skip :ZQ|Found:ZR` and scores SUPPORTED** — our named tape search skips
+      and finds correctly.
+      🔴 **I FILED A CAUSE BEFORE PROVING IT, WHICH IS THE RULE THIS TREE
+      CARRIES.** The item asserted "the skip works and the load does not ... it
+      is the inter-city walk, not name matching" off ONE row, hours before the
+      experiment that refuted it. **A `MISSING` row is a question, not a
+      verdict.**
+      ✅ **AND THE TREE ALREADY KNEW.** `cload.asm`'s `cas_skip_data` states the
+      hazard as its own assumption (*"assumes the tokenised data block ENDS at
+      the $0000 end-link ... cas_encode's single-file 16-byte pad would leave
+      slack"*), and `cas_match` built `tok_file_nopad` to avoid it. Only
+      `kwsweep` kept the padded builder. **The comment named the exact encoder
+      that would break it, and it was right.**
+      🎯 **THE REAL LESSON IS ABOUT STACKED INSTRUMENT FAULTS:** the short
+      budget HID everything behind a vacuous agreement; fixing it exposed the
+      SECOND fault, and the second one **looked exactly like a ROM finding**.
+      **Repairing one instrument can manufacture a false accusation from the
+      next one down.** Nothing but the experiment separates them.
+      📜 **The original filing, for the record:**
+      🔴 **`CLOAD"ZR"` CANNOT REACH THE SECOND FILE ON A TAPE — WE SKIP IT AND
       THEN FAIL (D-CLOADSKIP, 2026-09-23)**
       🎚️ TIER 1 — happy path: loading a NAMED program from a tape holding more
       than one file is ordinary MSX BASIC, and the fixture has two files
