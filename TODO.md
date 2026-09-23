@@ -4715,7 +4715,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:22428 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:22485 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -4881,7 +4881,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:9524 (T-6FE392)8 (T-529ABE)` from `TODO.md:20822 (T-529ABE)`: a
+      `TODO.md:9524 (T-6FE392)8 (T-529ABE)` from `TODO.md:20879 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -10368,7 +10368,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:20822 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:20879 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -15371,6 +15371,63 @@ finds zero shared names (a renamed block would otherwise make it silently blind)
       plugs, or `joystickports` ever holds a written value, the rig becomes
       possible that day and three forms open at once. That is why this is a
       tracked probe and not a paragraph.
+      🏗️ **JOOST RE-OPENED THIS 2026-09-23: *"write some kind of osx tool that
+      can be used as device/interface to test stick trig pad"*.** So the target
+      is no longer *"can openMSX drive a stick"* but *"can we BUILD the device
+      openMSX is missing"*. Re-measured that day, and the answer is a FORK with
+      one question in it, not a wall.
+      🔬 **WHY openMSX HAS NO JOYSTICK — MEASURED, AND IT IS NOT A
+      MISCONFIGURATION** (`scratchpad/rigcap_now.out`, openMSX **21.0**). The
+      2026-09-15 refusals reproduce exactly. I doubted the `keyjoystick1` row,
+      because a key joystick needs NO host hardware and would have dissolved
+      half the blocker for free — **the doubt was wrong and the row was right.**
+      The string `keyjoystick` occurs **0 times** in the openMSX binary
+      (against 11 for `arkanoidpad` and 1 for `touchpad`, both of which plug),
+      so the pluggable is GONE from this build, not merely unregistered.
+      ⚠️ The first cut of that test used `grep -x` and scored `No such
+      pluggable` at 0 — a string openMSX demonstrably emits. **A whole-line
+      match on a binary is not an absence.** Re-run as a substring.
+      🎯 **AND `joystick1` IS CREATED FROM SDL's HOST ENUMERATION** — the binary
+      carries the SDL `##joystick-table` game-controller database. So the ONLY
+      way a joystick reaches openMSX 21.0 is a device the HOST reports.
+      **Joost's instinct is therefore the only route there is**, not one option
+      among several.
+      🟢 **AND macOS HAS EXACTLY THE RIGHT API.** macOS 26.6 ships public
+      `CoreHID.HIDVirtualDevice` (macOS 15+): `Properties(descriptor:vendorID:
+      productID:product:…)`, `init?(properties:)`, `dispatchInputReport(data:
+      timestamp:)`. A ~150-line Swift CLI publishing a virtual gamepad and
+      taking `up`/`fire`/`centre` on stdin is all the rig needs, and **SDL reads
+      joystick state from the HID layer rather than from window events**, so it
+      should work headless where key injection never could.
+      🔴 **BUT THE ENTITLEMENT IS APPLE-GATED, AND THAT IS THE WHOLE QUESTION.**
+      Measured with a built probe, both directions:
+      | how it was run | result |
+      |---|---|
+      | unsigned, uid 501 | `HIDVirtualDevice(properties:)` returns **nil** — silent, nothing in `log show` |
+      | ad-hoc signed carrying `com.apple.developer.hid.virtual.device` | **SIGKILL, exit 137** — AMFI kills it before `main` |
+      🎯 **THE SIGKILL IS THE INFORMATIVE HALF:** that entitlement is
+      RESTRICTED, so it only takes effect behind an Apple-issued provisioning
+      profile carrying the HID-virtual-device capability. A self-signed claim
+      does not merely fail, it is fatal. ⚠️ **NOT MEASURED: whether root alone
+      lifts it** — that needs Joost's password and was not run unasked.
+      ⛔ **AND THE ROUTE THAT NEEDS NO APPLE ANYTHING IS SHUT FOR THIS BINARY.**
+      Injecting a dylib that calls SDL's own `SDL_JoystickAttachVirtual` fails
+      twice over: openMSX links SDL **statically** (no SDL in `otool -L`, so the
+      symbols are not reachable), and the app runs under **hardened runtime**
+      (`codesign` `flags=0x10000(runtime)`, TeamID `SV87YZANNN`), which blocks
+      `DYLD_INSERT_LIBRARIES` outright.
+      📏 **`PAD` IS NOT THE SAME QUESTION AND MAY BE CHEAPER — BUT IT IS NOT
+      FREE EITHER.** `PAD()` reads the TOUCHPAD, which plugs today, and plugging
+      it MOVES the port: `joystickports` reads **61** with a touchpad against
+      **63** empty. But it exposes **no new debuggable** and adds no writable
+      state, so its position still comes from host mouse events — which a
+      headless run never receives.
+      🙋 **NEEDS-JOOST, and it is now ONE question:** is there an Apple
+      Developer account willing to request the HID-virtual-device capability? If
+      yes, the tool is small and three forms open. If no, the remaining route is
+      **building openMSX ourselves** — which would make the emulator under every
+      gate a local build, and *the apparatus is part of the measurement*, so
+      that is his call and not a workaround to slip in.
 
 - [x] ✅ **CLOSED 2026-09-17 (D-FNKLINE + D-SCROLLBOUND + D-KEYROW): the
       function-key display line PAINTS, the row is RESERVED, and all ten cells
