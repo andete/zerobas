@@ -206,18 +206,6 @@ TAPE_NAME2 = "ZR"
 TAPE_PROGRAM2 = make_multiline_program([(10, 'PRINT"[Z8]"')], 0x8001)
 
 
-def _tok_nopad(name: str, program: bytes) -> bytes:
-    """A tokenised .cas file ending EXACTLY at the program's $0000 end-link.
-
-    The same construction as `basic_probe_cas_match.py:tok_file_nopad`; see the
-    note in `_tape_fixture` for why the padded builder is wrong on a multi-file
-    tape. ⚠️ DUPLICATED rather than shared, deliberately and only for now: the
-    right home is `cas_encode`, but adding it there is a change every tape probe
-    would inherit and this one is being measured tonight."""
-    return (cas_encode.CAS_SYNC + bytes([cas_encode.BASIC_ID] * 10)
-            + name[:6].ljust(6).encode("ascii") + cas_encode.CAS_SYNC + program)
-
-
 def _tape_fixture() -> str:
     """A PREPARED tape for a reading row: a clean-room `.cas` carrying one known
     program under a known name, fresh per machine like the disk images.
@@ -243,8 +231,8 @@ def _tape_fixture() -> str:
     # ⚠️ Real CSAVE tapes have no such pad (save.asm: payload then TAPOOF), so
     # the unpadded form is the faithful one and the padded form was testing the
     # fixture rather than the verb.
-    fh.write(_tok_nopad(TAPE_NAME, TAPE_PROGRAM)
-             + _tok_nopad(TAPE_NAME2, TAPE_PROGRAM2))
+    fh.write(cas_encode.build_cas_basic_nopad(TAPE_NAME, TAPE_PROGRAM)
+             + cas_encode.build_cas_basic_nopad(TAPE_NAME2, TAPE_PROGRAM2))
     fh.close()
     if not _TAPE_TEMPS:
         atexit.register(_drop_tape_temps)

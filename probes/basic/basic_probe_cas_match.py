@@ -55,7 +55,10 @@ _zbs.path.insert(0, _zbo.path.join(_zbo.path.dirname(_zbo.path.dirname(
 # 🎯 the project temp root, as a side effect of import (probe_tmp.py).
 import probe_tmp  # noqa: E402,F401
 
-from cas_encode import build_cas_basic, CAS_SYNC, BASIC_ID  # noqa: E402
+# CAS_SYNC/BASIC_ID are no longer imported: the only user here was the local
+# nopad builder, which is now a shim on cas_encode's shared one. A dead import
+# is a claim that a file still assembles a .cas by hand, and this one does not.
+from cas_encode import build_cas_basic, build_cas_basic_nopad  # noqa: E402
 from bas_tokenise import make_multiline_program         # noqa: E402
 from basic_probe_cas_ascii import build_ascii_cas       # noqa: E402
 from basic_probe_cas_verbs import (                     # noqa: E402
@@ -83,16 +86,20 @@ def asc(witness: int) -> list[str]:
     return [f"10 POKE&H{WITNESS:04X},&H{witness:02X}"]
 
 
+# 🔴 THIS FUNCTION WAS THE ORIGINAL AND IS NOW A SHIM ON THE SHARED ONE
+# (2026-09-24). It lived here alone while `basic_probe_kwsweep.py` built its
+# multi-file tape with the PADDED builder and manufactured a TIER 1 ROM
+# accusation that had to be withdrawn (D-CLOADSKIP). A faithful-fixture rule
+# that lives in ONE probe is a rule the next probe does not have.
+# ⚠️ Kept as a NAME rather than replaced at its call sites: `two_tok_tape` and
+# the ASCII builders below read as a set, and renaming half of them would cost
+# more clarity than the indirection does.
 def tok_file_nopad(name: str, program: bytes) -> bytes:
-    """A tokenised .cas file whose data block ends EXACTLY at the program's $0000
-    end-link, with NO trailing in-block padding — matching what our own CSAVE
-    writes (save.asm: payload then TAPOOF). cas_encode.build_cas_basic appends 16
-    $00 pad bytes for single-file framing; on a multi-file tape those unread pad
-    bytes would leave a SKIPPED tokenised file mid-block so the next TAPION cannot
-    relock. Real CSAVE tapes have no such pad, so this is the faithful skip fixture
-    (see spec §A + cload.asm cas_skip_data: tokenised skip assumes end-at-$0000)."""
-    return CAS_SYNC + bytes([BASIC_ID] * 10) + name[:6].ljust(6).encode("ascii") \
-        + CAS_SYNC + program
+    """A tokenised .cas file ending EXACTLY at the program's $0000 end-link.
+
+    See `cas_encode.build_cas_basic_nopad`, which this now calls and whose
+    docstring carries the measurement."""
+    return build_cas_basic_nopad(name, program)
 
 
 def two_tok_tape(tmp: str, tag: str) -> str:

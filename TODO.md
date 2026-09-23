@@ -4848,7 +4848,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:22790 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:22814 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -22268,6 +22268,30 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       ⚠️ **NOT MEASURED:** whether `LOAD"CAS:ZR"` fails the same way, and
       whether a THIRD file would be reachable. Both are cheap and belong with
       the fix.
+
+- [ ] 🔬 **`basic_probe_cas_match.py` HAS NO MAKEFILE TARGET AT ALL, SO NO
+      BATTERY CAN EVER RUN IT (2026-09-24)**
+      🎚️ APPARATUS — it is not a BASIC defect; it is a probe that cannot be
+      reached by `make` and therefore cannot go red.
+      🤖 **AUTONOMOUS** — giving it a target and battery membership needs no
+      ruling.
+      🔬 **FOUND BY NEEDING IT.** The `cas_encode` de-duplication changed this
+      probe, and nothing in the battery would have exercised the change, so it
+      had to be run by hand: `python3 -u probes/basic/basic_probe_cas_match.py`
+      → ALL PASS. **A probe you have to remember to run is one that rots the
+      first time nobody remembers.**
+      ⚠️ **THIS IS SHARPER THAN THE KNOWN "uncollected suite" CLASS.** That one
+      is about `make gates` collecting only some `*-acceptance` targets; this
+      probe has **no target to collect** — `grep` finds it in neither the
+      Makefile nor `tools/run_gates.py`. An uncollected target can at least be
+      run by name.
+      📋 The fix is the standard one: a Makefile target plus membership in
+      `EMULATOR` in `tools/run_gates.py`. ⚠️ **Price its wall time ALONE first**
+      — it is a tape probe, and tape rows are slow by construction (a
+      16000-cycle leader is ~7 emulated seconds before a byte moves).
+      ⚠️ **AND SWEEP FOR SIBLINGS RATHER THAN FIXING THE ONE** — if this probe
+      has no target, others may not either. The sweep is the item, not the
+      single file.
 
 - [ ] 🎚️ **WHAT PROVES A RUNG? T2, T4, T5 AND T6 HAVE NO PROVING ROW TYPE, SO
       `0 of 159` KEYWORDS PROVE ANY OF THEM (D-KWPROVEN, 2026-09-23).**

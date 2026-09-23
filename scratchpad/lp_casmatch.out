@@ -1,0 +1,15 @@
+(machine=C-BIOS_MSX1_EU_REPACK_DISK)
+RUN"CAS:BBB" on [AAA,BBB] tokenised -> skips AAA, runs BBB:
+  [PASS]   witness=$B2 (expect $B2, not $A1)
+RUN"CAS:BBB" on [AAA,BBB] ASCII -> skips AAA (multi-block), runs BBB:
+  [PASS]   witness=$B2 (expect $B2)
+RUN"CAS:BBB" on [AAA ASCII, BBB tokenised] -> id-dispatched skip:
+  [PASS]   witness=$B2 (expect $B2)
+bare CLOAD + RUN on [AAA,BBB] -> loads the FIRST file (unchanged):
+  [PASS]   witness=$A1 (expect $A1)
+RUN"CAS:ZZZ" on [AAA,BBB] -> not found, nothing runs (no hang):
+  [PASS]   witness=$11 (expect poison $11)
+RUN"CAS:bbb" on [AAA,BBB] -> case-sensitive, "bbb" != "BBB", not found:
+  [PASS]   witness=$11 (expect poison $11 -- matches the CF-3300)
+
+ALL PASS -- cassette name-matching finds the named file, skips earlier files, is case-sensitive, and fails cleanly when absent

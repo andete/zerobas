@@ -19,6 +19,8 @@ Provenance of constants
 """
 from __future__ import annotations
 
+import sys
+
 
 # Source: MSX2 Technical Handbook, cassette I/O chapter.
 CAS_SYNC = bytes([0x1F, 0xA6, 0xDE, 0xBA, 0xCC, 0x13, 0x7D, 0x74])
@@ -111,8 +113,71 @@ def build_cas_basic(name: str, program: bytes) -> bytes:
     return bytes(buf)
 
 
+def build_cas_basic_nopad(name: str, program: bytes) -> bytes:
+    """A tokenised BASIC .cas file whose data block ends EXACTLY at the
+    program's $0000 end-link, with NO trailing in-block padding.
+
+    🔴 USE THIS FOR ANY MULTI-FILE TAPE. `build_cas_basic` appends 16 `$00`
+    bytes so a SINGLE-file image can be framed (the device half blocks on
+    silence once a block's data runs out). On a tape holding more than one file
+    those unread pad bytes leave a SKIPPED file mid-block, so the next `TAPION`
+    cannot relock on the following header -- `cload.asm`'s `cas_skip_data`
+    states exactly that assumption in its own body, naming this encoder as the
+    hazard.
+    🔬 IT COST A FALSE ACCUSATION ON 2026-09-23 (D-CLOADSKIP, withdrawn).
+    `basic_probe_kwsweep.py` built a two-file tape with the padded builder, so
+    `CLOAD"ZR"` read `Skip :ZQ|load error` where the reference read
+    `Skip :ZQ|Found:ZR`. That was filed as a TIER 1 ROM defect and refuted the
+    same night: the ROM was right and the fixture was not. **Real CSAVE tapes
+    have no such pad** (save.asm: payload then TAPOOF), so THIS is the faithful
+    shape and the padded one is the special case.
+    ⚠️ The caller still owns the terminating $0000 link, exactly as for
+    `build_cas_basic`."""
+    return (CAS_SYNC + bytes([BASIC_ID] * 10)
+            + name[:6].ljust(6).encode("ascii") + CAS_SYNC + program)
+
+
+def selftest() -> int:
+    """🔴 THE PADDED/UNPADDED DISTINCTION, PINNED — it is the one that cost a
+    withdrawn TIER 1 filing, so it is asserted rather than described."""
+    fails = 0
+
+    def arm(label, cond):
+        nonlocal fails
+        if not cond:
+            print(f"  cas_encode: FAIL {label}")
+            fails += 1
+
+    prog = bytes([0x00, 0x00])                      # a bare $0000 end-link
+    pad = build_cas_basic("ZQ", prog)
+    nop = build_cas_basic_nopad("ZQ", prog)
+    arm("the unpadded file ENDS at the program's last byte", nop.endswith(prog))
+    arm("the padded file appends exactly 16 zero bytes",
+        pad == nop + bytes(16))
+    # NEGATIVE: they must not be the same object or the same bytes -- without
+    # this, both builders could be aliased and every arm above would pass.
+    arm("NEGATIVE: padded and unpadded DIFFER", pad != nop)
+    arm("NEGATIVE: the unpadded file carries no trailing zero pad",
+        not nop.endswith(bytes(16)))
+    # The header half must be identical: only the tail may differ, or a caller
+    # switching builders would silently change the file NAME as well.
+    arm("only the TAIL differs -- the header block is byte-identical",
+        pad[:len(nop)] == nop)
+    arm("the name is space-padded to six", b"ZQ    " in nop)
+    # A two-file tape built the faithful way has its second header immediately
+    # after the first file's last byte, which is the property the skip needs.
+    two = nop + build_cas_basic_nopad("ZR", prog)
+    arm("a two-file tape puts the next SYNC straight after the end-link",
+        two[len(nop):len(nop) + len(CAS_SYNC)] == CAS_SYNC)
+    print("  cas_encode: PASS" if not fails else f"  cas_encode: {fails} FAILURE(S)")
+    return 1 if fails else 0
+
+
 if __name__ == "__main__":
     import argparse
+
+    if "--selftest" in sys.argv:
+        raise SystemExit(selftest())
 
     ap = argparse.ArgumentParser(description=__doc__,
                                  formatter_class=argparse.RawDescriptionHelpFormatter)
