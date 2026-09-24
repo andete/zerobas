@@ -1721,10 +1721,40 @@ item — do **one item per session** to keep context lean.
       ➕ **zerobas also writes `SLTTBL3` (`$FCC8`) and the secondary-slot
       register `$FFFF` on most ops** — its sub-ROM tenant calls; the reference
       writes neither for any of the 16.
-      ➡️ **NEXT:** name the reference-only cells from the published table;
-      widen the op list (control flow, graphics, file I/O); goal (a) (free
-      memory: `FRE(0)`/`FRE("")` after boot and after `CLEAR`). Every
-      ADJUSTMENT goes to Joost.
+      🏷 **NAMED (`scratchpad/ramfoot_names.py` → `scratchpad/ramfoot_names.out`,
+      offline, names from C-BIOS's `systemvars.asm` — sysvarsweep's own
+      generator):** **186 reference-only documented bytes in 29 published
+      variables.** Three kinds, by what a program can SEE:
+      | kind | variables | written by |
+      |---|---|---|
+      | **pointers a program PEEKs** | `STREND` `ARYTAB`† `TEMPPT` `TEMPST` `DSCTMP` `FRETOP`† `RNDX` | every variable op (STREND 12/16, ARYTAB 11/16); strings; `RND` |
+      | **screen/device state** | `ATRBYT` `TTYPOS` `ESCCNT` `PRTFLG` `CNSDFG` `FNKSWI` `LINWRK` `GRPHED` | `COLOR`, `LOCATE`, `PRINT`, `CLS` |
+      | **interpreter scratch** | `DIMFLG` `SUBFLG` `TEMP` `PRMFLG` `ARYTA2` `ENDFOR` `DAC` `ARG` `HOLD` `HOLD2` `HOLD8` `FBUFFR` `DECCNT` `PTRFIL` | arithmetic, `FOR`, `PRINT` |
+      † already DECIDED once: D-REHOME (2026-08-01) rejected re-homing
+      `FRETOP` and `ARYTAB` (REJECT-GROUP) — under the charter of that date,
+      before goal (b) *same addresses* was ruled (2026-09-24).
+      ⚠️ Maintaining a published cell costs ROM bytes on every path that
+      changes it, and main has 13 B. A scratch cell no program reads buys goal
+      (b) on paper and nothing a user can see.
+      ~~🙋 **BACK TO JOOST (the rung's own rule):** which of the three kinds
+      should zerobas maintain at the published address — and does goal (b)
+      reopen D-REHOME's two rejections?~~
+      🏗️ **RULED BY JOOST, 2026-09-24: *"All 29"*** — full address fidelity,
+      scratch included, chosen over "pointers only" (the recommendation),
+      "pointers + screen state" and "none for now". It REOPENS D-REHOME's
+      `FRETOP`/`ARYTAB` rejections.
+      🤖 **AUTONOMOUS — D-ADDR29, the arc it starts:** (1) a per-variable
+      table — published name/address/width, zerobas's equivalent (name,
+      address, width, FORMAT), any zerobas cell already AT the target, the
+      D-REHOME verdict and its reason; (2) re-home by EQUATE where an
+      equivalent exists with the same format (0 ROM bytes, and it frees our own
+      workspace — goal (a) for free); (3) price the rest (a variable zerobas
+      has no equivalent of must be WRITTEN, which costs ROM against the 13 B).
+      ⚠️ A format mismatch (e.g. zerobas's FAC vs the BCD `DAC`) or a collision
+      at the target is not decided here — those come back as priced choices.
+      ➡️ **STILL TO MEASURE:** widen the op list (control flow, graphics, file
+      I/O); goal (a) (free memory: `FRE(0)`/`FRE("")` after boot and after
+      `CLEAR`).
 
 - [x] 🔬 **PROMOTE THE THREE ASCII/MERGE DISK PROBES INTO THE BATTERY — THEIR
       EXCUSE'S PREMISE CHANGED WHEN STEP 11 SHIPPED**
@@ -5011,7 +5041,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:23778 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:23808 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -5177,7 +5207,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:9938 (T-6FE392)8 (T-529ABE)` from `TODO.md:21432 (T-529ABE)`: a
+      `TODO.md:9968 (T-6FE392)8 (T-529ABE)` from `TODO.md:21462 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -10782,7 +10812,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:21432 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:21462 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

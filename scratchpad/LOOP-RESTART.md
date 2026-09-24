@@ -22,6 +22,8 @@ morning hand-off `98513bcc`: `79167b21` D-KWTIME · `b21a86aa` D-KWT5ALONE ·
 | **the `ZB` prompt** | text stays `ZB`, but it **ends its row with CR/LF like `Ok`** (D-ZBCRLF, shipped) |
 | **CURLIN** | *"Yes, maintain CURLIN"* — shipped (D-CURLIN) |
 | **boot width** | a presentational split (VG-8020 37, CF-3300 39) → zerobas boots at 37 (the 09-04 rule), disk rows compare at the CF-3300's 39 |
+| **shared buffer** | *"(b) One shared buffer"*, then *"Merge; BDOS out of scope"* — shipped as D-BUFMERGE (`6e1722b7`) |
+| **RAM addresses** | *"All 29"* — every published work-area variable the VG-8020 writes and zerobas does not (D-RAMFOOT) is to be maintained at the published address, scratch included; reopens D-REHOME's FRETOP/ARYTAB rejections. Arc D-ADDR29, TODO §"COMPARE RAM *USAGE*" |
 
 ### ➡️ THE QUEUE NOW
 
