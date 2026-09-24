@@ -61,8 +61,9 @@ STALL_TIMEOUT = 20.0
 
 # OWN_RAM_RANGES — every RAM block WE install code into (base, end-exclusive), sourced
 # from the equ's in init.asm/kernel.asm + build/disk.omsx.sym (checked 2026-07-01):
-#   P1_BLIT..WA_SEG_RAM+len  $E77A-$E7B0 (p1_blit_tmpl+wa_seg_*_tmpl, one contiguous LDIR)
-#   DRV_TRAMP                $E800-$E814 (4 CALLF trampolines, 5 B each)
+#   P1_BLIT                  $EE40-$EE5B (p1_blit_tmpl, 27 B -- D-ALIASBITE carve)
+#   WA_SEG..CONOUT_CHAR      $EA9C-$EAB7 (wa_seg_*_tmpl hook bodies -- D-ALIASBITE carve)
+#   DRV_TRAMP                $E592-$E5A6 (4 CALLF trampolines, 5 B each -- D-BUFMERGE)
 #   RES_PRINT                $F1C9-$F1D0 (res_print_tmpl, 7 B)
 #   RES_STUBS                $F24E-$F2B8 (no-op $C9 stub table)
 #   WA_JMPTAB..SYSTEM        $F368-$F380 (7 JP slots + the SYSTEM BDOS vector JP)
@@ -73,8 +74,9 @@ STALL_TIMEOUT = 20.0
 # after a wa_seg `ret` — a clean-room breach of the same class as the 2026-06-30 one
 # below. Keep this list in sync with init.asm/kernel.asm if a resident block moves.
 OWN_RAM_RANGES = [
-    (0xE77A, 0xE7B0),  # P1_BLIT + WA_SEG_ROM/WA_SEG_RAM
-    (0xE800, 0xE814),  # DRV_TRAMP
+    (0xEE40, 0xEE5B),  # P1_BLIT (was $E77A, inside main's FSECTOR_BUF)
+    (0xEA9C, 0xEAB7),  # WA_SEG_ROM/WA_SEG_RAM (was $E795, same reason)
+    (0xE592, 0xE5A6),  # DRV_TRAMP (was $E800, inside main's FWBUF -- D-BUFMERGE)
     (0xF1C9, 0xF1D0),  # RES_PRINT
     (0xF24E, 0xF2B8),  # RES_STUBS
     (0xF368, 0xF380),  # WA_JMPTAB + SYSTEM

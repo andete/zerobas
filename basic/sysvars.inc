@@ -1862,7 +1862,8 @@ ISRCH_B         equ     ISRCH_A + 2         ; $E3E3: resolved B-operand body bas
 ; anywhere near and both ROM walls are. Spend it when something needs a byte.
 STRENG_SPARE    equ     ISRCH_B + 2         ; $E3E5: 1 B free (was TMISMATCH)
 ; MIDS_DEST ($E3E6, 2 B, STRENG_SPARE+1, defined above) sits right above here — the
-; last claimed cell in the freed STRTAB window; up to $E560 (disk WBUF) is spare.
+; last claimed cell in the freed STRTAB window; up to $E560 (disk.rom's cell block
+; since D-BUFMERGE; its WBUF before) is spare.
     IF MIDS_DEST + 2 > $E560
                 db      STRING_HEAP_LAYOUT_OVERRAN_E560_DISK_WBUF_WALL
     ENDIF
@@ -2871,18 +2872,25 @@ EOC             equ     $0FFF   ; end-of-chain marker we write (Microsoft FAT §
 ; -- the GFX_PSTK/GFX_D* block above it runs to $E55F, 512 B higher. A reader siting
 ; a new host buffer off this sentence would have overlapped live graphics scratch.
 ;
-; CROSS-COMPONENT OVERLAP INVARIANT (the load-bearing one — read before moving any
-; address here). On the combined machine these host buffers ($E5C0..$E9FB) OVERLAP
-; zerobas-disk's own scratch: disk SECTOR_BUF $E2A0..$E49F sits just below, and disk
-; WBUF $E560..$E75F overlaps FSECTOR_BUF directly. This is safe ONLY because the
-; host drives zerobas-disk exclusively through the raw DSKIO ($4010) entry, and
-; DSKIO touches just its FDC work bytes ($E29A..$E29F) + the caller's HL buffer —
-; it never reaches disk's SECTOR_BUF / WBUF (those belong to disk's GETDPB / bdos
-; FAT paths, which the host never calls: it owns FAT12 itself via basic/fat.asm and
-; parses the BPB directly, never invoking $4016 GETDPB). Break that discipline —
-; e.g. make the host call $4016, or route disk DSKIO through SECTOR_BUF — and these
-; buffers corrupt silently. No compile-time guard enforces it (two separate
-; assembly units); the contract lives here and in disk/disk.asm's scratch map.
+; CROSS-COMPONENT SHARING INVARIANT (the load-bearing one — read before moving any
+; address here). 🏗️ D-BUFMERGE (Joost, 2026-09-24: *"(b) One shared buffer"*):
+; zerobas-disk's SECTOR_BUF and WBUF ARE these two buffers -- disk/disk.asm
+; asserts SECTOR_BUF = FSECTOR_BUF and WBUF = FWBUF at build time. It is safe
+; because every BASIC verb that crosses into disk.rom goes through `chan_gate`
+; (basic/files.asm), which saves the live channel before the crossing and
+; re-stages its sector and engine state after it; LSET/RSET take
+; `chan_gate_bare` because they write the record on purpose and do no sector
+; I/O. The audit is on the TODO item (`scratchpad/bufaudit.py`). ⚠️ A NEW
+; crossing that can reach a buffer MUST take the full gate. ⚠️ BDOS ($F37D)
+; and PHYDIO called from a user's machine code while a file is open are not
+; bracketed and are outside the contract (ruled 2026-09-24).
+; 🔴 THIS PARAGRAPH SAID THE OPPOSITE UNTIL D-BUFMERGE: that the old partial
+; overlap (disk WBUF $E560..$E75F over FSECTOR_BUF) was safe "ONLY because" the
+; host never reached disk's buffers. D-DISKVERB moved verb bodies into disk.rom
+; and falsified that long before; D-ALIASBITE measured the damage.
+; disk.rom's own cells stay OUT of both buffers, at $E560..$E5AB -- the gap this
+; file keeps free (basic-core RAM is asserted below $E560, the buffers start
+; at $E5C0).
 ; A *foreign* disk ROM's DSKIO scratch is outside our control and could in principle
 ; collide with this region; the CF-3300 oracle keeps its work area in the
 ; $F2xx-$F3xx sysvar block (MSX2 TH work area), clear of page $E2/$E5/$E7/$E9, so it

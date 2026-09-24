@@ -61,6 +61,19 @@ DISK_BUILD      equ     1   ; D-FATENG Option 2: the shared FAT body
                 ; shift cannot leave us calling stale addresses; `make
                 ; diskrom-abi-check` is the standing assert.
                 include "basic-resident-abi.inc"
+                ; D-BUFMERGE: ONE shared buffer pair (Joost, 2026-09-24). The two
+                ; maps are separate assembly units, so the equality is asserted
+                ; here, where both names are in scope; the cell block moved out of
+                ; the buffers must also stay below them.
+    IF SECTOR_BUF - FSECTOR_BUF
+                db      DISK_SECTOR_BUF_IS_NOT_MAIN_FSECTOR_BUF
+    ENDIF
+    IF WBUF - FWBUF
+                db      DISK_WBUF_IS_NOT_MAIN_FWBUF
+    ENDIF
+    IF MBUF_PTR + 2 > SECTOR_BUF
+                db      DISK_CELL_BLOCK_OVERRAN_INTO_THE_SHARED_BUFFER
+    ENDIF
                 include "init.asm"
                 include "pageenv.asm"
                 include "driver.asm"

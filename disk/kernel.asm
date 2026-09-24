@@ -2359,7 +2359,8 @@ fat_bufinit:
                 ; ⚠️ It names FAT_DBUF, never FSECTOR_BUF: this ROM fills
                 ; $E2A0 while basic-resident-abi.inc binds FSECTOR_BUF to
                 ; $E5C0, so the old spelling assembled clean and read a
-                ; buffer nobody filled (§6.6c). Its 6 bytes of cursor state
+                ; buffer nobody filled (§6.6c). [D-BUFMERGE, 2026-09-24: the
+                ; two are now ONE address; the neutral name stays.] Its 6 bytes of cursor state
                 ; are FREAD_OFF/FREAD_LEFT, aliased onto the RDBLK scratch
                 ; in init.asm (§6.6f).
                 include "basic/fatio-body.inc"
@@ -2728,7 +2729,8 @@ hk_kill:
                 ; fat_delete, and nothing in the window has to survive a
                 ; call-back because no call-back happens in it.
                 ; 🔴 `FAT_DBUF`, NEVER `FSECTOR_BUF` -- the body spells the
-                ; per-ROM name and this ROM binds it to $E2A0 (§6.6c). The
+                ; per-ROM name and this ROM bound it to $E2A0 (§6.6c; one
+                ; address since D-BUFMERGE, the name stays). The
                 ; sub-ROM tenant's own callees are identical source.
                 call    fat_mount       ; LOCAL primitive body
                 ld      a,2             ; 2 = mount / DSKIO error -> disk_error
@@ -2869,7 +2871,8 @@ hkn_done:
 ; drift.
 ; 🔴 AND `FAT_DBUF`, NEVER `FSECTOR_BUF`: the sub-ROM body this replaces spells
 ; `FSECTOR_BUF`, which in THIS ROM is main's buffer at $E5C0 rather than ours at
-; $E2A0. Copying it verbatim is the bug it would have been.
+; $E2A0. Copying it verbatim is the bug it would have been. (D-BUFMERGE made
+; them one address on 2026-09-24; the neutral spelling stays right either way.)
 hkn_stamp:
                 ld      de,(main_FWR_DIRSEC)
                 ld      hl,FAT_DBUF
@@ -2988,7 +2991,8 @@ hkc_done:
 ; cells; FAT_DBUF is the one shared buffer and that is the point.
 ; 🔴 `FAT_DBUF`, NOT `FSECTOR_BUF`: the sub-ROM body's comment named the
 ; per-ROM spelling, which in THIS ROM is main's buffer at $E5C0 rather than ours
-; at $E2A0 (§6.6c). The primitives themselves are already neutral (§6.6ax).
+; at $E2A0 (§6.6c) -- one address since D-BUFMERGE, the spelling stays neutral.
+; The primitives themselves are already neutral (§6.6ax).
 hkc_body:
                 call    fat_mount
                 jp      c,hkc_io            ; A = 2
@@ -3156,7 +3160,8 @@ hkf_run:
 ; 🔴 `FAT_DBUF`, NOT `FSECTOR_BUF`. The tenant spelled the per-ROM name in
 ; CODE at two sites (the sector read and df_entptr's base); in THIS ROM that is
 ; main's buffer at $E5C0 rather than ours at $E2A0, and it would have assembled
-; clean and walked a directory nobody read (§6.6c, §6.6ao).
+; clean and walked a directory nobody read (§6.6c, §6.6ao). Since D-BUFMERGE
+; (2026-09-24) the two names are one address; the neutral one stays.
 ;
 ; ⚠️ INTERRUPTS. A hook handler is entered with them OFF and nothing here turns
 ; them back on: this ROM's `read_sector` is a plain local `call dskio`, where the

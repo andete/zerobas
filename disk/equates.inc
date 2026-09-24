@@ -217,7 +217,17 @@ FDC_DEST        equ     $E29D   ; current transfer address (word)
 FDC_TRY         equ     $E29F   ; read attempt counter (1 B)
 
 ; Sector buffer (512 bytes) — DSKIO reads land here for FAT12 parsing.
-SECTOR_BUF      equ     $E2A0   ; 512-byte sector buffer ($E2A0-$E49F)
+; 🏗️ D-BUFMERGE (Joost, 2026-09-24: *"(b) One shared buffer"*): this IS main's
+; FSECTOR_BUF, and WBUF below IS main's FWBUF -- one data buffer and one
+; metadata buffer for both ROMs, the reference's own shape. It is safe because
+; every BASIC verb that crosses into this ROM goes through main's `chan_gate`,
+; which saves the live channel and re-stages its sector after the crossing
+; (the audit: TODO.md, `scratchpad/bufaudit.py`). ⚠️ BDOS ($F37D) and PHYDIO
+; called from a user's machine code while a BASIC file is open are NOT
+; bracketed and are declared outside the contract -- they already overwrote
+; main RAM before the merge. disk.asm asserts both equalities at build time.
+; Was $E2A0, on top of main's TEMPPOOL and GFX_* cells.
+SECTOR_BUF      equ     $E5C0   ; 512-byte sector buffer ($E5C0-$E7BF) = main FSECTOR_BUF
 
 ; --- FAT12 geometry + iterator state (disk/PROVENANCE.md §Scratch RAM) ------
 ; Filled by fat_mount from the on-disk BPB; the file iterator walks the cluster
@@ -316,7 +326,7 @@ BDOS_BYTESLEFT  equ     $E542   ; bytes of the open file not yet delivered (4-by
 ; remained) — so this cell is placed just past DRV_TRAMP ($E800-$E813, the
 ; last claimed cell before the $F1xx+ fixed BIOS/MSX2-work-area region),
 ; grep-clean free page-3 RAM. See disk/PROVENANCE.md §Scratch RAM.
-BDOS_SEQREC     equ     $E814   ; records delivered so far by RDSEQ (K, word)
+BDOS_SEQREC     equ     $E5A6   ; records delivered so far by RDSEQ (K, word)
 
 ; --- D-FATENG: the FAT engine's BUFFER BASES, held in RAM ---------------------
 ; 🏗️ Joost, 2026-09-18, ruling (b) of spec-diskcode-eviction.md §6.4a:
@@ -333,8 +343,8 @@ BDOS_SEQREC     equ     $E814   ; records delivered so far by RDSEQ (K, word)
 ; scratch. The final home is basic-core's own FAT control block ($E9C0..), which
 ; this direction FREES when the sub.rom fatprim tenant is deleted.
 ; 🔴 DO NOT let a later slice read these while BASIC's metadata buffer is live.
-DBUF_PTR        equ     $E816   ; word -> the 512-byte DATA/sector buffer
-MBUF_PTR        equ     $E818   ; word -> the 512-byte FAT/dir METADATA buffer
+DBUF_PTR        equ     $E5A8   ; word -> the 512-byte DATA/sector buffer
+MBUF_PTR        equ     $E5AA   ; word -> the 512-byte FAT/dir METADATA buffer
 
 ; --- BDOS / FAT12 WRITE-back scratch (disk/PROVENANCE.md §Scratch RAM) -------
 ; The write side mirrors the read side's "single open file" model: at most one
@@ -391,7 +401,12 @@ FAT_WRTMP2      equ     $E558   ; second transient (free-cluster scan cached sec
 ; cluster (FAT scan) or stamping the directory entry must read/write OTHER sectors
 ; without disturbing that in-flight data, so the write-back metadata path uses
 ; this independent buffer. Own-choice free page-3 RAM after the write scratch.
-WBUF            equ     $E560   ; write-back FAT/dir sector buffer ($E560..$E75F)
+; D-BUFMERGE: = main's FWBUF (was $E560, whose top 416 B lay inside main's
+; FSECTOR_BUF). The 76 B of this ROM's cells that lay inside $E5C0..$E9BF moved
+; to $E560..$E5AB, which main keeps free by assertion (basic/sysvars.inc caps its
+; cells below $E560 and places its buffers from $E5C0) -- a buffer fill of our
+; own would otherwise have overwritten our own state.
+WBUF            equ     $E7C0   ; write-back FAT/dir sector buffer ($E7C0..$E9BF) = main FWBUF
 
 ; Random-record ($21/$22) positioning scratch — transient within a single
 ; rrnd_position / rrnd_sector call (NO cross-call lifetime, no init needed).
@@ -399,27 +414,30 @@ WBUF            equ     $E560   ; write-back FAT/dir sector buffer ($E560..$E75F
 ; loop, and the earlier ROM-`db` cells silently no-op'd their stores (writes to
 ; the read-only $4000-$7FFF ROM image), forcing record-in-sector to 0 -> wrong
 ; record. Own-choice free page-3 RAM immediately after WBUF (PROVENANCE §Scratch RAM).
-RRND_RECSEC     equ     $E760   ; r0 & 3 (record-in-sector) across the sector-seek loop (1 B)
-RRND_CLUSSEC    equ     $E761   ; FAT_CLUSSEC-1 across the cluster->sector multiply loop (1 B)
+RRND_RECSEC     equ     $E560   ; r0 & 3 (record-in-sector) across the sector-seek loop (1 B)
+RRND_CLUSSEC    equ     $E561   ; FAT_CLUSSEC-1 across the cluster->sector multiply loop (1 B)
 
 ; $26 WRBLK ($47BE, M28 tier2-m28-blockrandom-spec.md) 24-bit positioning scratch --
 ; transient within a single wrblk_body call (no cross-call lifetime, no init needed).
+; 🏗️ D-BUFMERGE (2026-09-24): this block, $E7E8..$E819 below, now sits at
+; $E57A..$E5AB, same internal layout, because $E7C0.. is the shared WBUF. The
+; placement notes that follow are the ORIGINAL siting, kept as history.
 ; Own-choice free page-3 RAM in the $E7E8-$E7FF gap (after CONIN_COUNT $E7E7, before
 ; DRV_TRAMP $E800) -- clear of every other disk region; CONIN's own buffer state is
 ; dead whenever a BDOS FCB call (WRBLK included) is running, same lifetime-disjoint
 ; reuse discipline as RRND_RECSEC/RRND_CLUSSEC above (own choice, no oracle bytes).
-WRBLK_REC       equ     $E7E8   ; 24-bit target record number for the current step (3 bytes)
-WRBLK_RECSEC    equ     $E7EB   ; WRBLK_REC & 3 (record-in-sector) across the seek/extend loop (1 B)
-WRBLK_RS        equ     $E7EC   ; resolved record size (FCB+14..15, 0 -> 128) (word)
-WRBLK_CNT       equ     $E7EE   ; records still to process this call (word, counts down to 0)
-WRBLK_REQ       equ     $E7F0   ; the ORIGINAL requested count (word; HL is pinned-preserved
+WRBLK_REC       equ     $E57A   ; 24-bit target record number for the current step (3 bytes)
+WRBLK_RECSEC    equ     $E57D   ; WRBLK_REC & 3 (record-in-sector) across the seek/extend loop (1 B)
+WRBLK_RS        equ     $E57E   ; resolved record size (FCB+14..15, 0 -> 128) (word)
+WRBLK_CNT       equ     $E580   ; records still to process this call (word, counts down to 0)
+WRBLK_REQ       equ     $E582   ; the ORIGINAL requested count (word; HL is pinned-preserved
                                 ; on exit, per [LANDED-A] -- WRBLK returns HL = requested, not actual)
-WRBLK_PREVCLUS  equ     $E7F2   ; cluster before the current step's advance/allocate (word);
+WRBLK_PREVCLUS  equ     $E584   ; cluster before the current step's advance/allocate (word);
                                 ; needed to link a freshly-allocated cluster onto the true
                                 ; last-good cluster (fat_advance may leave FAT_CURCLUS on a
                                 ; stale EOC/free value once the chain is exhausted)
-WRBLK_KEEPCNT   equ     $E7F4   ; shrink path: clusters-to-keep walk countdown (word)
-WRBLK_NEXTCLUS  equ     $E7F6   ; shrink path: next cluster to free, saved across the
+WRBLK_KEEPCNT   equ     $E586   ; shrink path: clusters-to-keep walk countdown (word)
+WRBLK_NEXTCLUS  equ     $E588   ; shrink path: next cluster to free, saved across the
                                 ; fat_write_fat_entry call that frees the CURRENT one (word)
 ; M29 (tier2-m29-wrblk-position-cursor-spec.md) incremental position cursor --
 ; persists wrblk_position_ext's iterator ACROSS calls within one wrblk_body loop
@@ -427,8 +445,8 @@ WRBLK_NEXTCLUS  equ     $E7F6   ; shrink path: next cluster to free, saved acros
 ; next-sector call can skip the from-head fat_open+re-walk. Cross-call lifetime
 ; WITHIN a single wrblk_body invocation only -- wrblk_body clears CURVALID once
 ; before wrblk_loop.
-WRBLK_CURVALID  equ     $E7F8   ; byte: 0 = iterator not yet positioned this call (1 B)
-WRBLK_CURSEC    equ     $E7F9   ; word: sector-in-file the iterator currently sits
+WRBLK_CURVALID  equ     $E58A   ; byte: 0 = iterator not yet positioned this call (1 B)
+WRBLK_CURSEC    equ     $E58B   ; word: sector-in-file the iterator currently sits
                                 ; on (meaningful only when CURVALID=1)
 ; M30 (tier2-m30-alloc-hint-spec.md) FAT allocator next-free scan cursor -- a FAT
 ; cell (fat_alloc_cluster is reached from WRBLK/WRSEQ/create-then-write, not just
@@ -439,7 +457,7 @@ WRBLK_CURSEC    equ     $E7F9   ; word: sector-in-file the iterator currently si
 ; that operation so a multi-cluster allocation scans forward instead of
 ; restarting from 2 every time (kills the O(n^2) rescan). Own-choice free
 ; page-3 RAM; see disk/PROVENANCE.md §Scratch RAM.
-FAT_ALLOCHINT   equ     $E7FB   ; next cluster to try in fat_alloc_cluster's scan (word)
+FAT_ALLOCHINT   equ     $E58D   ; next cluster to try in fat_alloc_cluster's scan (word)
 ; The one-shot RR*RS size multiply (wrblk_mul_rr_rs) runs AFTER fat_find's SECTOR_BUF
 ; scan and BEFORE fat_dir_update's own WBUF read/write -- no fat_alloc_cluster/
 ; fat_write_fat_entry call happens during the multiply itself, so WBUF's tail is safe,

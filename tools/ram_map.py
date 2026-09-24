@@ -1058,8 +1058,10 @@ def selftest(lo, hi) -> int:
     # ---- A4 .asm visibility, with the old .inc-only glob as the control ----
     d_all = Map("disk", lo, hi)
     d_inc = Map("disk", lo, hi, inc_only=True)
-    ok["A4 `.asm` cells are visible (DRV_TRAMP $E800, disk/init.asm)"] = \
-        d_all.vals.get("DRV_TRAMP") == 0xE800
+    # D-BUFMERGE (2026-09-24) moved DRV_TRAMP out of the shared WBUF, $E800 ->
+    # $E592; the arm is about VISIBILITY of an .asm-declared cell, not the value.
+    ok["A4 `.asm` cells are visible (DRV_TRAMP $E592, disk/init.asm)"] = \
+        d_all.vals.get("DRV_TRAMP") == 0xE592
     ok["A4 NEGATIVE: the old `.inc`-only glob could NOT see it"] = \
         "DRV_TRAMP" not in d_inc.vals
     ok["A4 and it brought >=15 more page-3 cells with it"] = \
@@ -1260,9 +1262,12 @@ def selftest(lo, hi) -> int:
     # THE BUFFER: this table has a row per DECLARATION, so a byte in the middle
     # of TEMPPOOL's body has no row to carry the annotation. The first cut asked
     # about SECTOR_BUF+$100 and read an empty default as a failure.
+    # D-BUFMERGE (2026-09-24): disk's SECTOR_BUF IS main's FSECTOR_BUF now, so
+    # GFX_PTOP (under the old $E2A0 buffer) is outside it; CAL_BUF, the cassette
+    # block buffer main parks in the idle data buffer, is the declared cell inside.
     ok["A14 a basic cell INSIDE disk's SECTOR_BUF names that buffer"] = \
         any("SECTOR_BUF" in n for _c, n, _o
-            in byaddr14[b_all.vals["GFX_PTOP"]][1])
+            in byaddr14[b_all.vals["CAL_BUF"]][1])
     ok["A14 NEGATIVE: an address outside every foreign buffer names none"] = \
         byaddr14[b_all.vals["TKLNUM"]][1] == []
     # SH_SRC's width lives on its continuation line ("address (2 B)"), which is

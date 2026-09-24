@@ -191,28 +191,28 @@ CHPUT           equ     $00A2   ; MSX BIOS: emit the character in A (MSX2 TH)
 BOOT_LOAD       equ     $C000   ; standard boot-sector load address (MSX2 TH ch.3)
 BOOT_ENTRY      equ     $C01E   ; custom-boot-program entry (BOOT_LOAD + $1E)
 ; page-0 RAM-swap scratch (transient, used only during INIT's boot bridge).
-BOOT_SV_A8      equ     $E760   ; saved $A8 primary-slot config (1 B)
-BOOT_SV_SEC     equ     $E761   ; saved slot secondary ($FFFF) live value (1 B)
+BOOT_SV_A8      equ     $E560   ; saved $A8 primary-slot config (1 B)
+BOOT_SV_SEC     equ     $E561   ; saved slot secondary ($FFFF) live value (1 B)
 ; step-6 page-0 environment scratch (transient; used only by the $0030 CALLF
 ; handler and the CALSLT handler during the boot bridge). The $0030 handler must
 ; deliver A,B,C,DE,HL UNTOUCHED to the DSKIO callee, so it saves them here while
 ; it reads the inline CALLF operand off the stack. Own-choice free page-3 RAM
 ; after BOOT_SV_SEC. (provider-oracle-scope.md §8.4)
-R30_HL          equ     $E762   ; $0030 handler: saved caller HL (word)
-R30_BC          equ     $E764   ; $0030 handler: saved caller BC (word)
-R30_DE          equ     $E766   ; $0030 handler: saved caller DE (word)
-R30_AF          equ     $E768   ; $0030 handler: saved caller AF incl. carry (word)
-CALSLT_HL       equ     $E76A   ; CALSLT handler: HL stash across the call setup (word)
+R30_HL          equ     $E562   ; $0030 handler: saved caller HL (word)
+R30_BC          equ     $E564   ; $0030 handler: saved caller BC (word)
+R30_DE          equ     $E566   ; $0030 handler: saved caller DE (word)
+R30_AF          equ     $E568   ; $0030 handler: saved caller AF incl. carry (word)
+CALSLT_HL       equ     $E56A   ; CALSLT handler: HL stash across the call setup (word)
 ; BDOS $27 (Random Block Read) scratch — transient within one RDBLK call. Own-choice
 ; free page-3 RAM after the step-6 block. Only the DOS-boot path (on a real-BIOS host)
 ; calls $27, so this never collides with the zerobas-BASIC host buffers (which use
 ; the standard DSKIO path, not bdos_entry). (disk/PROVENANCE.md §BDOS interface)
-RDBLK_REQ       equ     $E76C   ; records requested (HL on entry) (word)
-RDBLK_RECSIZE   equ     $E76E   ; record size from FCB+14 (word)
-RDBLK_DONE      equ     $E770   ; records delivered so far (word; = HL on return)
-RDBLK_CNT       equ     $E772   ; bytes left in the current record (word)
-RDBLK_BUFPOS    equ     $E774   ; byte offset into SECTOR_BUF (word, 0..512)
-RDBLK_DST       equ     $E776   ; current DTA write pointer (word; from BDOS_DTA)
+RDBLK_REQ       equ     $E56C   ; records requested (HL on entry) (word)
+RDBLK_RECSIZE   equ     $E56E   ; record size from FCB+14 (word)
+RDBLK_DONE      equ     $E570   ; records delivered so far (word; = HL on return)
+RDBLK_CNT       equ     $E572   ; bytes left in the current record (word)
+RDBLK_BUFPOS    equ     $E574   ; byte offset into SECTOR_BUF (word, 0..512)
+RDBLK_DST       equ     $E576   ; current DTA write pointer (word; from BDOS_DTA)
 ; --- the tokenised-LOAD stream cursor, ALIASED ONTO THE RDBLK SCRATCH ---------
 ; D-DPLPORT (spec-diskcode-eviction.md §6.6f). `basic/fatio-body.inc` is now
 ; assembled into THIS ROM too, and its cursor needs 6 bytes of state that survive
@@ -238,12 +238,13 @@ FREAD_LEFT      equ     RDBLK_REQ       ; file bytes undelivered (4-byte LE:
                                         ; RDBLK_REQ + RDBLK_RECSIZE, $E76C..$E76F)
 ; M31 (tier2-m31-rdblk-randrecord-spec.md §3.1): k_47B2's own entry-RR cell, for
 ; the RR := entry-RR + HL write-back to FCB+33..35 at return. A 24-bit FCB field
-; needs 3 bytes; parked in the last of the $E7E8-$E7FF free tail (the gap
+; needs 3 bytes; parked in the last of the $E7E8-$E7FF free tail (now $E57A-$E591,
+; D-BUFMERGE moved the whole block with its layout; the gap
 ; currently ends at FAT_ALLOCHINT=$E7FB word -> $E7FD-$E7FF free). Per-call
 ; lifetime only (like the other RDBLK_* cells above).
-RDBLK_RRSTART   equ     $E7FD   ; k_47B2 entry RR, FCB+33..35 (24-bit, 3 bytes)
+RDBLK_RRSTART   equ     $E58F   ; k_47B2 entry RR, FCB+33..35 (24-bit, 3 bytes)
 ; page-1 transfer bounce scratch (a3 §8.35; free page-3 RAM after RDBLK_DST)
-P1_DEST         equ     $E778   ; saved page-1 destination word (dskio bounce path)
+P1_DEST         equ     $E578   ; saved page-1 destination word (dskio bounce path)
 P1_BLIT         equ     $EE40   ; installed blit routine (27 B) -- declared
                                 ; because the map otherwise DERIVES 54 B, the
                                 ; old blit+bodies size from when they were
@@ -284,13 +285,12 @@ PG_SV_A8        equ     CONOUT_CHAR + 1                              ; shared: s
 ; that stack through memory. int_h saves the caller SP, runs on its own 48-byte stack,
 ; then restores. INT_SP_SAVE sits ABOVE the stack top so a (pathological) overflow can't
 ; clobber the saved SP, keeping the return clean. Region: PG_SV_A8+1 .. INT_SP_SAVE+1
-; resolves to $E7B2..$E7E3, clear of DRV_TRAMP ($E800). Own-choice free page-3 RAM; the
+; resolves to $EAB9..$EAEA since the D-ALIASBITE carve. Own-choice free page-3 RAM; the
 ; ld (nn),sp / ld sp,(nn) save-restore is own-design, no oracle bytes (clean-room).
 INT_STK_TOP     equ     PG_SV_A8 + 1 + 48                           ; SP top; 48-byte stack grows down
 INT_SP_SAVE     equ     INT_STK_TOP                                 ; caller SP saved above the stack top (word)
 ; M13 (tier2-conin-spec.md v3): conin_line_body scratch, right after INT_SP_SAVE (word) --
-; dead during the DOS phase like the other inter-slot scratch above; clear of DRV_TRAMP
-; ($E800). CONIN_BUF stashes the caller's DE (buffer base) across pg0_mainrom_in/out,
+; dead during the DOS phase like the other inter-slot scratch above. CONIN_BUF stashes the caller's DE (buffer base) across pg0_mainrom_in/out,
 ; which clobber D/E; CONIN_MAX/CONIN_COUNT track the func-$0A buffer fill state.
 CONIN_BUF       equ     INT_SP_SAVE + 2                             ; CONIN: buffer base (word)
 CONIN_MAX       equ     CONIN_BUF + 2                                ; CONIN: max length ([DE+0]) (1 B)
@@ -344,7 +344,8 @@ W50A9_RET_HL    equ     $F359   ; HL on return: disk work-area pointer (DRVTBL+$
 ; `F7 <slot> <lo> <hi> C9` (RST 30h inter-slot call; MSX2 TH §2) -- into our own
 ; $4010-region BIOS entries, never the stock's $EF95 kernel bytes. DRV_TRAMP holds
 ; them in reserved page-3 RAM past the $4030 work area (free, gated DOS path only).
-DRV_TRAMP       equ     $E800   ; 4 CALLF trampolines, 5 bytes each ($E800-$E813)
+DRV_TRAMP       equ     $E592   ; 4 CALLF trampolines, 5 bytes each ($E592-$E5A5;
+                                ; was $E800, inside main's FWBUF -- D-BUFMERGE)
 ; Reserved top-of-RAM advertised in DRVTBL+1 (the stock's HIMEM value). NOTE: this is
 ; NOT the kernel-placement lever -- §8.20 ruled out HIMEM, §8.23 ruled out DRVTBL+1,
 ; and §8.24 proved the lever is DRVTBL+3 (the $4030 work-area pointer, GETWRK_AREA
@@ -687,7 +688,7 @@ build_resident:
                 ld      hl, DRVA_DPB            ; GETDPB: HL = DPB base (fills base+1 on)
                 call    getdpb
                 ; --- p1_blit: page-3-resident routine for page-1 bounce (§8.35) --------
-                ; Installed into P1_BLIT ($E77A) so dskio can CALL it from page-1 ROM
+                ; Installed into P1_BLIT ($EE40) so dskio can CALL it from page-1 ROM
                 ; while page 1 is temporarily remapped to RAM. Own-choice free page-3
                 ; RAM after RDBLK_DST ($E776-$E777); clear of every other region.
                 ; 🔴 TWO LDIRs NOW, AND THEY RUN IN THE FREE TAIL. The blocks used

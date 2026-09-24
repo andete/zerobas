@@ -1416,7 +1416,7 @@ item — do **one item per session** to keep context lean.
       🧭 **FOUND** by giving `aliasbite_probe.py` the `run_gap` its control
       needed — the probe was right to refuse a verdict on a broken control, and
       the control was never broken (D-TWOFILE, withdrawn in `b43e19ef`).
-- [ ] 🔬 **SHOULD MAIN AND `disk.rom` USE THE SAME ADDRESS FOR THE SAME THING? —
+- [x] 🔬 **SHOULD MAIN AND `disk.rom` USE THE SAME ADDRESS FOR THE SAME THING? —
       JOOST'S QUESTION, AND THE MAP CAN PRICE IT**
       🎚️ TIER 2 — reasonable time; it would retire an apparatus rather than add
       one, and it is upstream of steps 10 and 13.
@@ -1533,10 +1533,22 @@ item — do **one item per session** to keep context lean.
       BDOS state, `P1_DEST`, `DBUF_PTR`/`MBUF_PTR`, and the boot-only
       `R30_*`/`BOOT_SV_*`/`CALSLT_HL`) moved OUT, or disk's own fills would
       overwrite its own state. ~45 B; main's map has 1325 B of holes.
-      🙋 **BACK TO JOOST, as the ruling said it would come:** the audit holds
+      ~~🙋 **BACK TO JOOST, as the ruling said it would come:** the audit holds
       for every BASIC verb and fails for BDOS/PHYDIO called from user machine
       code. Proceed with the merge and declare BDOS-from-BASIC outside the
-      contract (as it already silently is), or not?
+      contract (as it already silently is), or not?~~
+      🏗️ **RULED BY JOOST, 2026-09-24: *"Merge; BDOS out of scope"*** —
+      proceed, and BDOS/PHYDIO called from a user's machine code while a BASIC
+      file is open is declared OUTSIDE the contract (it already silently was).
+      🟢 **D-BUFMERGE, SHIPPED THE SAME DAY:** disk's `SECTOR_BUF`/`WBUF` ARE
+      main's `FSECTOR_BUF`/`FWBUF` (`$E5C0`/`$E7C0`), asserted equal at build
+      time in `disk/disk.asm` (a planted `$E5C2` breaks the build — checked). The
+      76 B of disk cells that lay inside `$E5C0..$E9BF` moved to `$E560..$E5AB`
+      with their internal layout kept — main keeps that gap free by assertion.
+      `docs/ram-map.md`'s cross-component "inside" rows fell from 80 to 26, and
+      **none of main's `TEMPPOOL`/`GFX_*` cells sit under a disk buffer any
+      more** — the merge also RETIRED the aliasing the audit found. The
+      `FAT_DBUF`/`FAT_MBUF` neutral names stay (right either way).
 
 - [ ] 🎚️ **~~TIER 5~~ TIER 4 (SWAPPED 2026-09-24) IS NOW "MATCHES THE REFERENCE'S
       RAM USAGE" — THE RUNG, AND WHAT CAN AND CANNOT BE IN IT (D-TIER5RAM,
@@ -4951,7 +4963,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:23664 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:23676 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -5117,7 +5129,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:9878 (T-6FE392)8 (T-529ABE)` from `TODO.md:21372 (T-529ABE)`: a
+      `TODO.md:9890 (T-6FE392)8 (T-529ABE)` from `TODO.md:21384 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -10722,7 +10734,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:21372 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:21384 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
