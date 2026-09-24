@@ -623,7 +623,7 @@ lrset_finish:
                 or      a
                 jr      z,lrf_var           ; 0 -> non-FIELDed (spec §4.2)
                 call    fch_select          ; FSECTOR_BUF = this channel's record
-                jp      lrset_store
+                jr      lrset_store
 lrf_var:
                 call    tgt_desc_fix        ; HL = the descriptor, corrected for any
                                             ; ARYTAB move since (auto-DIM, string GC)
@@ -631,7 +631,7 @@ lrf_var:
                 ld      (LRSET_W),a         ; -- it never changes (measured: n.len)
                 call    pu_deref_body       ; HL = the body (main LOW region)
                 ld      (LRSET_DEST),hl
-                jp      lrset_store
+                jr      lrset_store
 
 lrset_store:
                 ld      ix,SUBROM_ENTRY_BASE_P0 + 3*SUBROM_IDX_LRSETST

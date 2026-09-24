@@ -5077,7 +5077,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:23962 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:23986 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -5243,7 +5243,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:10004 (T-6FE392)8 (T-529ABE)` from `TODO.md:21616 (T-529ABE)`: a
+      `TODO.md:10004 (T-6FE392)8 (T-529ABE)` from `TODO.md:21640 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -10848,7 +10848,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:21616 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:21640 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -16175,7 +16175,31 @@ finds zero shared names (a renamed block would otherwise make it silently blind)
       `LFILES` now do. Main page 1 had **3 B** free on 2026-09-15. So this WAITS
       for the approved 256 B carve — and it is a good early customer for it.
 
-- [ ] 🔴 **zerobas PRINTS ITS `ZB` PROMPT AFTER EVERY STORED PROGRAM LINE; THE
+- [x] 🟢 **FIXED 2026-09-24 (D-OKSTORE), 7 B of main page 1 — 5/5 cases place
+      the prompt as the VG-8020 does** (`scratchpad/okstore_probe.py`:
+      `okstore_before.out` 2/5 → `okstore_after.out` 5/5). MEASURED RULE: the
+      reference prints NO prompt after a STORED line, a line DELETED by its bare
+      number, or an empty Enter; it DOES after an error and after a direct
+      command. **Protocol (one byte, `PRMWANT` $F026):** `repl` writes 2
+      (read_line's own Enter A); a DIRECT COMMAND (`dl_cmd`) overwrites it with
+      its first character (printable, so bit 5/6 set); the two SILENT exits
+      (`dl_quiet`: a stored/deleted line, an empty Enter) `res 1` — the
+      top-level 2 becomes 0, a command's character stays nonzero; an error
+      touches nothing. Prompt iff nonzero.
+      🔴 **TWO CUTS FAILED FIRST, AND THE BATTERY — NOT READING — CAUGHT BOTH:**
+      (1) testing the Z FLAG: the probe caught the line-entry error report, then
+      `onerr0` (23/32) and `error-trap` caught a RUNTIME error's unwind returning
+      with incidental flags; (2) an explicit flag CLEARED by the silent exits:
+      `editverb` (55/61, AUTO) and `castail` (27/31, cassette ASCII LOAD/MERGE)
+      caught that a direct command that STORES LINES ITSELF calls dispatch_line
+      per line, and those nested stores silenced the command's own prompt. The
+      bit protocol separates the top level from nested stores for free.
+      💰 **FUNDED BY A CARVE:** 9 `jp`→`jr` sites (`scratchpad/jr_mapper.py
+      --write`) and `skipsp_test` PROMOTED into the low region's last 5 B. After
+      it main read **page 1 1 B, low 0 B** from a clean build 2026-09-24 — main
+      is FULL; the next ROM-growing item needs a carve first.
+      🕰️ **As filed:**
+      🔴 **zerobas PRINTS ITS `ZB` PROMPT AFTER EVERY STORED PROGRAM LINE; THE
       REFERENCE PRINTS `Ok` ONLY AFTER A DIRECT COMMAND.** Seen 2026-09-24 on
       two screens captured the same evening (`scratchpad/playxrec_selfrec_run.out`
       on the VG-8020, the same program on zerobas): typing `NEW` then lines
@@ -16189,8 +16213,8 @@ finds zero shared names (a renamed block would otherwise make it silently blind)
       should return to the LINE READ, not the prompt. ⚠️ AUTO's own line-number
       loop and the error path must keep their current behaviour — measure
       both. ROM cost a few bytes of main's 13.
-      🤖 **AUTONOMOUS** — measure first (a row counting prompt rows after a
-      3-line program entry, on both machines), then fix.
+      ✅ ~~🤖 **AUTONOMOUS** — measure first (a row counting prompt rows after a
+      3-line program entry, on both machines), then fix.~~ Done, see the top.
 
 - [x] 🟢 **SHIPPED 2026-09-24 (D-PLAYX12): `PLAY`'s `X<var>;` — THE MML TENANT
       WALKS THE VARIABLE CHAIN ITSELF, AND MAIN SPENT 0 BYTES.** Joost's

@@ -1,0 +1,18 @@
+DIFF  store3
+   ref: NEW | <P> | 10 A=1 | 20 B=2 | 30 C=3 | LIST | 10 A=1 | 20 B=2 | 30 C=3 | <P>
+   zb : NEW | <P> | 10 A=1 | <P> | 20 B=2 | <P> | 30 C=3 | <P> | LIST | 10 A=1 | 20 B=2 | 30 C=3 | <P>
+DIFF  blank
+   ref: NEW | <P> |  |  | PRINT 7 | 7 | <P>
+   zb : NEW | <P> |  | <P> |  | <P> | PRINT 7 | 7 | <P>
+DIFF  delete
+   ref: NEW | <P> | 10 A=1 | 20 B=2 | 10 | LIST | 20 B=2 | <P>
+   zb : NEW | <P> | 10 A=1 | <P> | 20 B=2 | <P> | 10 | <P> | LIST | 20 B=2 | <P>
+SAME  badnum
+   ref: NEW | <P> | 70000 A=1 | Syntax error | <P> | PRINT 8 | 8 | <P>
+   zb : NEW | <P> | 70000 A=1 | Syntax error | <P> | PRINT 8 | 8 | <P>
+SAME  direct
+   ref: NEW | <P> | PRINT 9 | 9 | <P> | PRINT 10 | 10 | <P>
+   zb : NEW | <P> | PRINT 9 | 9 | <P> | PRINT 10 | 10 | <P>
+
+2/5 cases place the prompt as the reference does
+refcache: 0 hit, 2 miss, 2 stored

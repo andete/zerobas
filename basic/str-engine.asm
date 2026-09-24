@@ -469,6 +469,15 @@ curlin_direct:
 curlin_store:
                 ld      (CURLIN),hl
                 ret
+; skipsp_test -- skip spaces at (HL); A = the first non-space char, Z iff it is the
+; terminator. PROMOTED here from basic/program.asm by D-OKSTORE (2026-09-24): the
+; low region and main page 1 are ONE budget (include order decides the region),
+; and this 5 B body filled the low region's last 5 B so page 1 could fund the
+; prompt protocol. Callers are unchanged (a `call` either way).
+skipsp_test:
+                call    skip_spaces
+                or      a
+                ret
 
 
 ; --- str_temp_alloc: A=length(0..255) -> push a temp-descriptor-stack ------

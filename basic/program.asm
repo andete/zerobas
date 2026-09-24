@@ -30,12 +30,15 @@
 dispatch_line:
                 ld      hl,LINEBUF
                 call    skipsp_test
-                ret     z                   ; blank line -> nothing to do
+                jr      z,dl_quiet          ; blank line -> nothing to do, no prompt
                 cp      '0'
                 jr      c,dl_cmd
                 cp      '9'+1
                 jr      c,dl_store          ; leading digit -> numbered line
 dl_cmd:
+                ld      (PRMWANT),a         ; D-OKSTORE: a direct command -- its first
+                                            ; char (printable: bit 5/6 set) survives
+                                            ; dl_quiet's `res 1` in any nested store
                 ld      de,run_kw
                 call    is_cmd
                 call    c,dl_bare           ; matched -- but ONLY the BARE form is
@@ -186,7 +189,13 @@ dl_lnok:
                 jr      nz,dl_overflow_pop
                 pop     bc
                 ld      hl,TOKBUF
-                jp      store_line          ; returns to the REPL
+                call    store_line          ; OOM raises and never returns here
+; D-OKSTORE: the two SILENT exits -- a stored/deleted line, an empty Enter. `res 1`
+; silences only repl's own 2; a direct command's character keeps its prompt.
+dl_quiet:
+                ld      hl,PRMWANT
+                res     1,(hl)
+                ret
 dl_overflow_pop:
                 pop     bc                  ; balance the stack (line number now unused)
 dl_overflow:
@@ -799,7 +808,7 @@ rp_break:
                 call    trap_pend   ; wake the run-loop dispatcher
 rp_brk_run:
                 pop     hl                  ; HL = resume stmt ptr, intact
-                jp      rp_trapchk          ; dispatch now (do NOT break) -- `jp`:
+                jr      rp_trapchk          ; dispatch now (do NOT break) -- `jp`:
                                             ; D-CURLIN's 16 B in derive_directf put
                                             ; the backward span past -128 (+1 B)
 rp_real_break:
@@ -2444,11 +2453,6 @@ goto_take_bc:
 ; instead of aborting. It cost a whole battery to find.
 ; ⚠️ 17 T per call, on parse and disk-entry paths only: not one of the 25 is in
 ; expr.asm or float-arith.asm, which is where the TIER 4 speed item lives.
-skipsp_test:
-                call    skip_spaces
-                or      a
-                ret
-
 diskslot_test:
                 ld      a,(DISKSLOT_OK)
                 or      a

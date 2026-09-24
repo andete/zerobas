@@ -33,7 +33,7 @@ other component's cell at the same address; the `inside` column
 names the other component's BUFFER this address falls within. That
 second one is the question a per-component map cannot answer.
 
-* **basic** — 416 declared addresses in this project's own workspace `$E000..$F37F` (383 with a machine-readable width), plus **84** in the MSX standard work area at or above `$F380`.
+* **basic** — 417 declared addresses in this project's own workspace `$E000..$F37F` (384 with a machine-readable width), plus **84** in the MSX standard work area at or above `$F380`.
 * **disk** — 127 declared addresses in this project's own workspace `$E000..$F37F` (113 with a machine-readable width), plus **24** in the MSX standard work area at or above `$F380`.
 
 ## This project's own workspace (`$E000..$F37F`)
@@ -492,6 +492,7 @@ second one is the question a per-component map cannot answer.
 | `$F01C` | 8 B | `basic` | `FAC` | float accumulator: value bytes as tokenised (8) |  |
 | `$F01C` | 8 B | `disk` | `FAC` | float accumulator: value bytes as tokenised (8) |  |
 | `$F024` | 2 B | `basic` | `PLY_XSP` | PLAY X: saved SP at pt_voice's call (2) |  |
+| `$F026` | 1 B | `basic` | `PRMWANT` | D-OKSTORE: nonzero = print the prompt (1) |  |
 | `$F03C` | 1 B | `basic` | `TKDIG` | tokeniser/formatter: significant-digit array, (1 B) |  |
 | `$F054` | 1 B | `basic` | `TKPOS` | running digit-position counter (1) |  |
 | `$F055` | 1 B | `basic` | `TKINTLEN` | integer-part digit count = P (1) |  |

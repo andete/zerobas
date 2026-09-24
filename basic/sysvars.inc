@@ -3995,6 +3995,22 @@ FBUFFR          equ     $F7C5   ; published: number-conversion buffer (43 B)
 ; depth 0 is "SP is back here". In the 24 B S1 freed at $F024 (FOUTBUF's old
 ; home -- nothing addressed FAC+8.. or the old run, checked by grep).
 PLY_XSP         equ     $F024   ; PLAY X: saved SP at pt_voice's call (2)
+; D-OKSTORE (2026-09-24, scratchpad/okstore_probe.py): does a prompt follow this
+; typed line? The reference prints `Ok` after a direct command and after an error,
+; and NOTHING after a stored/deleted line or an empty Enter. Protocol:
+;   * `repl` writes 2 (read_line's Enter A: bit 1 alone);
+;   * dispatch_line's DIRECT-COMMAND path (dl_cmd) overwrites it with the line's
+;     first character -- printable, so bit 5 or 6 is always set;
+;   * its two SILENT exits (dl_quiet) `res 1`: the top-level 2 becomes 0 (no
+;     prompt), while a character keeps a high bit (prompt) -- so the stores a
+;     direct command makes itself (AUTO, ASCII LOAD/MERGE call dispatch_line per
+;     line) can never silence that command's own prompt;
+;   * an error, by whatever path it unwinds, touches nothing.
+; 🔴 TWO CUTS FAILED FIRST, each caught by the battery, not by reading: the Z
+; FLAG (a runtime error's unwind returns with incidental flags -- onerr0 23/32)
+; and a plain CLEAR in the silent exit (AUTO's and cassette LOAD/MERGE's nested
+; stores cleared it -- editverb 55/61, castail 27/31).
+PRMWANT         equ     $F026   ; D-OKSTORE: nonzero = print the prompt (1)
 FOUTBUF         equ     FBUFFR+1 ; flt_out formatter output scratch (24)
 TKDIG           equ     $F03C   ; tokeniser/formatter: significant-digit array, (1 B)
                                 ; one decimal digit value (0-9) per byte (24)

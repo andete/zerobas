@@ -94,11 +94,20 @@ repl:
                                             ; reference shows (body: str-engine.asm)
                 ld      hl,prompt_text
                 call    print_string
+repl_read:
                 call    read_line           ; LINEBUF <- typed line (ASCII, 0-term)
-                call    nc,dispatch_line    ; store / RUN / NEW / direct-execute --
-                                            ; CF set = the line was ABORTED (Ctrl-C,
-                                            ; D-CTRLC), so it is DISCARDED unexecuted.
-                                            ; `call nc` costs the same 3 bytes as `call`.
+                jr      c,repl              ; CF set = ABORTED (Ctrl-C, D-CTRLC):
+                                            ; discarded unexecuted, and prompted
+                ; D-OKSTORE: the prompt follows only a direct command or an error --
+                ; the protocol and the two cuts that failed are at PRMWANT
+                ; (basic/sysvars.inc). ⚠️ A = 2 HERE BY read_line's CONTRACT (its
+                ; Enter exit is RL_STAT's 1 through `rla` with CF clear; the CF
+                ; exits left above) -- the protocol's "bit 1 alone" is that value.
+                ld      (PRMWANT),a
+                call    dispatch_line       ; store / RUN / NEW / direct-execute
+                ld      a,(PRMWANT)
+                or      a
+                jr      z,repl_read         ; a silent line: no prompt
                 jr      repl
 
 ; --- print_string: CHPUT a 0-terminated string at (HL) --------------------

@@ -984,7 +984,7 @@ cig_eof:
 disk_prog_load:
                 ; (1) disk ROM slot must have been recorded by the INIT scan.
                 call    diskslot_test
-                jp      z,dpl_err           ; no disk ROM at all: NO primitive has
+                jr      z,dpl_err           ; no disk ROM at all: NO primitive has
                                             ; run, so DISKOP_OP would be stale --
                                             ; and dpl_err is the SAFE tail now
                 ; (2) HAND THE WHOLE LOAD TO disk.rom (step 9, D-DPLWIRE).
@@ -1026,10 +1026,10 @@ disk_prog_load:
                                             ; references stopping here, and
                                             ; do_run must not run the old program
                 dec     a
-                jp      z,ascii_load        ; 2 = not tokenised -> main re-opens
+                jr      z,ascii_load        ; 2 = not tokenised -> main re-opens
                                             ; from offset 0 and tokenises
                 dec     a
-                jp      nz,dpl_oom          ; 4 = out of memory
+                jr      nz,dpl_oom          ; 4 = out of memory
                 ; 3 = mount / I-O. `call`, not `jp`: disk_error raises the MAPPED
                 ; code when disk.rom recorded one in DISKOP_ERR (the shared DSKIO
                 ; mapping that survived D-DPLMOVE's back-out) and otherwise falls

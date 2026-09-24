@@ -159,7 +159,7 @@ cg_back:
                 ; came back `File not found` (ERR 53) -- `kill_status` was reading
                 ; the RE-STAGE's 0, not KILL's. Measured twice: clobbering A was
                 ; the first suspect and restoring AF changed nothing.
-                jp      chan_restore_st
+                jr      chan_restore_st
 cg_unclaimed:
                 ld      a,5                 ; Illegal function call -- TRAPPABLE,
                 jp      raise_error         ; which is what the reference gives
@@ -1735,7 +1735,7 @@ ex_kill:
                 call    chan_gate           ; unclaimed -> ERR 5 (trappable);
                                             ; claimed -> disk.rom ran the whole verb
                 ld      hl,(FN_RESUME)      ; the cursor the handler resumed at
-                jp      kill_status
+                jr      kill_status
 ; The wildcard delete itself -- fat_delete finding, freeing and $E5-marking each
 ; match in turn -- is unchanged SOURCE, but it no longer runs where this used to
 ; say. 🧭 D-KILLLOCAL (disk/docs/spec-diskcode-eviction.md §6.6ay): the loop ran
@@ -1811,7 +1811,7 @@ ex_name:
                 cp      4
                 jp      z,stmt_error        ; 4 = no `AS` -> Syntax error
                 ld      hl,(FN_RESUME)      ; resume past the NEW name expression
-                jp      kill_status         ; 0 not found / 1 renamed / 2 I-O
+                jr      kill_status         ; 0 not found / 1 renamed / 2 I-O
 
 ; --- MAXFILES = n — size the multi-channel table ---------------------------
 ; MAXFILES sets how many file channels may be open simultaneously (the value also
