@@ -113,7 +113,12 @@ TEST_DSK = os.environ.get("ZEROBAS_TEST_DSK", "disk/test720.dsk")
 SIDES = {
     "cf3300": dict(machine="National_CF-3300", boot=14.0, step=4.5,
                    reset=("", "SCREEN 0", "NEW")),
-    "zb":     dict(machine=ZB_MACHINE, boot=8.0, step=2.5, reset=("NEW",)),
+    # 📏 D-BOOTWIDTH (2026-09-24): zerobas boots at the VG-8020's 37 now, the
+    # CF-3300 -- this probe's disk oracle -- at 39. FILES packs to the live width,
+    # so a disk row compared 2-per-line against 3-per-line: the reference split,
+    # not a defect. zerobas's side of a DISK case starts at the oracle's width.
+    "zb":     dict(machine=ZB_MACHINE, boot=8.0, step=2.5,
+                   reset=("WIDTH 39", "NEW")),
 }
 # Stated, not derived: see the docstring. A diskless MSX1 answers `Syntax error`
 # to every word this probe types.

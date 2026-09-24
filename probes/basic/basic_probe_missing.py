@@ -865,9 +865,12 @@ XDIVERGENT = {
     # `CRTCNT`, so OUR wrap scrolls too and reads 22. Nothing here was aimed at
     # the wrap: it converged because the bound it depends on became right, which
     # is what a real fix looks like next to a row made green on purpose.
-    "loc-max-row": "marker row at the screen bottom: measures scroll, not the clamp",
-    "la-row-23":   "marker row at the screen bottom: measures scroll, not the clamp",
-    "la-row-24":   "marker row at the screen bottom: measures scroll, not the clamp",
+    # 🟢 loc-max-row / la-row-23 / la-row-24 CLOSED 2026-09-24 (D-ZBCRLF) -- and
+    # by the same kind of evidence as xc-max above. Their reason read "measures
+    # scroll, not the clamp", and the scroll folded in the PROMPT: zerobas's `ZB`
+    # shared the typed line's row, so it scrolled one row less per command than
+    # the reference's `Ok`. Joost's CR/LF after `ZB` gave the prompt its own row;
+    # the marker now lands at 21,5 on both. Nothing here was aimed at LOCATE.
 }
 
 

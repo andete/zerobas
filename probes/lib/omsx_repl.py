@@ -2071,11 +2071,15 @@ PROMPTS = ("Ok", "ZB")
 # Since 2026-07-27 it is 'ZB' and always OPENS a fresh line (basic/repl.asm),
 # matching the reference.
 #
-# ⚠️ "Always starts a line" is NOT "always alone on a line": the prompt is still
-# followed on that row by the ECHO of whatever the user typed, which is what a
-# prompt is for. So a row equal to a prompt is a prompt with nothing typed after
-# it (what terminates a tail, below), while a row that STARTS with one is an
-# echo -- probes that read echo rows must still strip the leading prompt.
+# ~~⚠️ "Always starts a line" is NOT "always alone on a line": the prompt is still
+# followed on that row by the ECHO of whatever the user typed~~ -- TRUE UNTIL
+# 2026-09-24. 🏗️ D-ZBCRLF (Joost): *"the ZB prompt stays, but it should have
+# the crlf like the OK prompt of the reference"*. `ZB` now ends its own row and
+# the echo starts at column 0 of the next -- the reference's layout, `Ok` apart.
+# So on BOTH sides a row equal to a prompt is the prompt, and an echo row carries
+# no prefix. Stripping a leading prompt stays harmless (nothing matches), which
+# is why most readers needed no change; the two echo GUARDS that anchored on
+# `"ZB" + line` (diskbasic chancost/lof) anchor on `""` now, like the reference.
 
 def result_span(raw: str | None, why: dict | None = None) -> str | None:
     """Text between the LAST '[' and the following ']' (the printed value).

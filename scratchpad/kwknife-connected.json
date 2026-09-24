@@ -1,5 +1,5 @@
 {
- "rom_fingerprint": "b70061b8 b188cd31 e2e1ef29 4028c66d",
+ "rom_fingerprint": "451f48bb b188cd31 719bc02e e8fa6f18",
  "rows": {
   "ABS": {
    "connected": true,
@@ -669,11 +669,11 @@
   "INPUT$": {
    "connected": true,
    "modes": {
-    "fn": "MISSING"
+    "fn": "DIVERGENT"
    },
    "row": "inputdol_b",
    "subject": "INPUT$",
-   "verdict": "MISSING",
+   "verdict": "DIVERGENT",
    "weak": false
   },
   "INSTR": {
@@ -1286,11 +1286,11 @@
   "SCREEN": {
    "connected": true,
    "modes": {
-    "stmt": "MISSING"
+    "stmt": "DIVERGENT"
    },
    "row": "screenkw",
    "subject": "SCREEN",
-   "verdict": "MISSING",
+   "verdict": "DIVERGENT",
    "weak": false
   },
   "SET": {
@@ -1537,11 +1537,11 @@
   "WIDTH": {
    "connected": true,
    "modes": {
-    "stmt": "MISSING"
+    "stmt": "DIVERGENT"
    },
    "row": "widthkw",
    "subject": "WIDTH",
-   "verdict": "MISSING",
+   "verdict": "DIVERGENT",
    "weak": false
   },
   "XOR": {
@@ -1965,7 +1965,7 @@
   "INPUT$": {
    "connected": true,
    "rows": {
-    "inputdol_b": "MISSING"
+    "inputdol_b": "DIVERGENT"
    }
   },
   "INT": {
@@ -2407,7 +2407,7 @@
   "SCREEN": {
    "connected": true,
    "rows": {
-    "screenkw": "MISSING"
+    "screenkw": "DIVERGENT"
    }
   },
   "SET": {
@@ -2554,7 +2554,7 @@
   "WIDTH": {
    "connected": true,
    "rows": {
-    "widthkw": "MISSING"
+    "widthkw": "DIVERGENT"
    }
   },
   "XOR": {
@@ -2564,5 +2564,5 @@
    }
   }
  },
- "written": "2026-09-24 09:25:41"
+ "written": "2026-09-24 11:26:41"
 }

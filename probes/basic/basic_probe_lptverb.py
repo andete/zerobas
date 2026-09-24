@@ -448,6 +448,13 @@ def run_side(side, only):
     log = probe_tmp.tmp(f"zb_lptverb_{side}.log")
     plug = (f"set printerlogfilename {{{log}}}", "plug printerport logger")
 
+    # 📏 D-BOOTWIDTH (2026-09-24): zerobas boots at the VG-8020's 37 now, the
+    # CF-3300 -- this probe's disk oracle -- at 39. FILES packs to the live width,
+    # so a disk row compared 2-per-line against 3-per-line: the reference split,
+    # not a defect. zerobas's side of a DISK case starts at the oracle's width.
+    def disk_width(diska):
+        return ["WIDTH 39"] if (side == "zb" and diska) else []
+
     def prn_battery(rows, diska=None):
         """A printer-log battery: boot-per-case, reset carried into the case.
 
@@ -457,7 +464,7 @@ def run_side(side, only):
         that capture is a whole log and every later delta is silently wrong in
         the direction of a plausible divergence. One boot per case makes every
         capture exactly that case's own output and deletes the class."""
-        cases = [(("direct"), list(cfg["reset"]) + list(lines))
+        cases = [(("direct"), list(cfg["reset"]) + disk_width(diska) + list(lines))
                  for _, lines in rows]
         caps = omsx_repl.run_cases(
             cfg["machine"], cases, batch=False, reset=(),
@@ -510,7 +517,7 @@ def run_side(side, only):
 
     def scr_battery(rows, diska=None):
         """A screen-readout battery on a mounted image: boot-per-case."""
-        cases = [("direct", list(cfg["reset"]) + list(lines))
+        cases = [("direct", list(cfg["reset"]) + disk_width(diska) + list(lines))
                  for _, lines in rows]
         caps = omsx_repl.run_cases(
             cfg["machine"], cases, batch=False, reset=(), boot=cfg["boot"],

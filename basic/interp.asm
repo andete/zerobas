@@ -157,6 +157,14 @@ init:
                 ; reaches BASIC. Every later reset (NEW / RUN / CLEAR) goes through
                 ; clear_vars as normal, by which time the scan has long run.
                 call    ctl_reset
+                ; 🔴 D-BOOTWIDTH (2026-09-24): BOOT AT WIDTH 37, THE VG-8020's.
+                ; Measured at cold boot: VG-8020 37, CF-3300 39 -- a presentational
+                ; reference split (EU/PAL keeps text inside the overscan), so the
+                ; VG value ships on BOTH targets (Joost, 2026-09-04). zerobas booted
+                ; at 39 because nothing here wrote LINL40 and C-BIOS's default is
+                ; 39. show_title's INITXT below takes LINLEN from LINL40.
+                ld      a,37
+                ld      (LINL40),a
                 call    show_title          ; startup header lines
                 ; --- the disk ROM announces itself, UNDER the main banner -----
                 ; 🧭 2026-09-01 (Joost's call). The reference prints `Disk BASIC

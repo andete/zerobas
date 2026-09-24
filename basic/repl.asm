@@ -197,5 +197,11 @@ txt_mode:
                 ret     z
                 jp      INITXT
 
+; 🏗️ D-ZBCRLF (Joost, 2026-09-24): *"the ZB prompt stays, but it should have
+; the crlf like the OK prompt of the reference."* The TEXT stays `ZB` (the
+; identity marker, 2026-09-01); the LAYOUT is the reference's -- `Ok` sits alone
+; on its row and the typed line starts at column 0 of the next. Same-row `ZB`
+; cost every typed line 2 columns the reference does not spend, which D-BOOTWIDTH
+; exposed: at 37 columns a 35-37-char line wrapped here and not there.
 prompt_text:
-                db      "ZB",0
+                db      "ZB",13,10,0

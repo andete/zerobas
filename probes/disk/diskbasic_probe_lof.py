@@ -103,15 +103,16 @@ SRC_DSK = os.path.join(os.path.dirname(os.path.dirname(
 # side -> (machine, has-date-prompt, boot instant in emulated seconds, prompt).
 # ⚠️ The PROMPT is what the echo guard anchors on, and it must be exact: the
 # reference echoes a typed line at the start of its own row (after the SCREEN 1
-# left margin, which the guard squeezes away), while zerobas prints "ZB" and
-# echoes on the same row. Anchoring on it is what makes an INSERTED character
+# left margin, which the guard squeezes away), while zerobas USED TO print "ZB" and
+# echo on the same row -- since D-ZBCRLF (2026-09-24) it echoes at the start of
+# its own row too, so both sides anchor on "". Anchoring on it is what makes an INSERTED character
 # visible -- a plain substring test passes `ZBPPRINT LOF(1)` because the correct
 # text is still in there. If a prompt ever changes, every row fails loudly, which
 # is the right direction for a guard to break in.
 MACHINES = {
     "ref": ("National_CF-3300", True, 12.0, ""),
     "zb":  (os.environ.get("ZEROBAS_BASIC_MACHINE", "C-BIOS_MSX1_EU_REPACK_DISK"),
-            False, 8.0, "ZB"),
+            False, 8.0, ""),  # D-ZBCRLF: `ZB` now ends its row, like `Ok`
 }
 
 # The committed test image's directory, for reference:

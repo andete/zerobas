@@ -667,7 +667,15 @@ TXTTAB = 0xF676   # sysvar: 2-byte LE pointer to the BASIC text base (both machi
 # Widest direct-mode exec line whose prompt echo still fits ONE SCREEN-0 row, so
 # omsx_repl.screen_tail can find it. Anything wider must use mode="stored" (whose
 # echoed command is the short "RUN"). Enforced at startup — see main().
-MAX_DIRECT_ECHO = 38
+# 🔴 36, NOT 38 (D-BOOTWIDTH + D-ZBCRLF, 2026-09-24). 38 silently assumed
+# zerobas's screen was 39 wide. zerobas now boots at the VG-8020's 37, and a
+# line that exactly FILLS the row wraps the cursor: 37 - 1 = 36. Measured on the
+# way there: while `ZB` still shared the typed line's row, 36-37-char rows went
+# UNREADABLE (the echo split) and a 35-char one gained a stray row break; Joost
+# then ruled the CR/LF after `ZB` (D-ZBCRLF), which gave the 2 columns back. The
+# five rows moved to stored mode in between stay stored -- harmless either way.
+MAX_DIRECT_ECHO = 36
+DISK_ORACLE_WIDTH = 39      # the CF-3300's boot width (D-BOOTWIDTH, measured)
 
 # The MSX1 BASIC reserved-word set. CANDIDATE GENERATOR ONLY — this list decides
 # what gets measured, never what the answer is. Sourced from the published
@@ -729,7 +737,7 @@ SWEEP: list[tuple[str, str, str | None, str, str]] = [
     # by `pokekw` -- but that row's SUBJECT is POKE. This one's crunch body is
     # `a=peek(-8192)`, so the reading is scored for PEEK.
     ("peek_b",  'a=peek(-8192)',
-     'POKE-8192,66:PRINT"[";PEEK(-8192);"]"',        "direct",
+     'POKE-8192,66:PRINT"[";PEEK(-8192);"]"',        "stored",
      "FORM:address-read the VALUE, not its non-negativity -- 66, the byte just "
      "POKEd. `peek` asks `PEEK(0)>=0`, which is true of every possible byte."),
     ("varptr",  "a=varptr(b)",        'B=1:PRINT"[";VARPTR(B)>0;"]"',    "direct", "control"),
@@ -862,7 +870,7 @@ SWEEP: list[tuple[str, str, str | None, str, str]] = [
     # to CLS:PRINT:PRINT. So this row reads the DELTA across two PRINTs, which is
     # what the three machines agree on, and which a stub still fails: an absent
     # CSRLIN parses as a variable and gives 0-0 = 0, not 2.
-    ("csrlind", 'a=csrlin',           'A=CSRLIN:PRINT:PRINT"[";CSRLIN-A;"]"', "direct",
+    ("csrlind", 'a=csrlin',           'A=CSRLIN:PRINT:PRINT"[";CSRLIN-A;"]"', "stored",
      "FORM:row-read D-KWDRAIN"),
     ("let",     'let a=5',            'LET A=5:PRINT"[";A;"]"',        "direct", "FORM:assign D-KWDRAIN"),
     ("rem",     'rem x',              'PRINT"[";1;"]":REM z',          "direct", "FORM:comment D-KWDRAIN"),
@@ -933,7 +941,7 @@ SWEEP: list[tuple[str, str, str | None, str, str]] = [
     ("then",    'then a=1',           'IF 2>1 THEN PRINT"[3]"',               "direct", "D-KWDRAIN"),
     ("elsekw",  'else a=1',           'IF 0 THEN PRINT 1 ELSE PRINT"[8]"',    "direct", "D-KWDRAIN"),
     ("tokw",    'to 5',               'FOR I=1 TO 3:NEXT:PRINT"[";I;"]"',     "direct", "D-KWDRAIN"),
-    ("stepkw",  'step 2',             'FOR I=1TO5STEP2:NEXT:PRINT"[";I;"]"',  "direct", "D-KWDRAIN"),
+    ("stepkw",  'step 2',             'FOR I=1TO5STEP2:NEXT:PRINT"[";I;"]"',  "stored", "D-KWDRAIN"),
     ("offkw",   'off',                'INTERVAL OFF:PRINT"[9]"',              "direct", "D-KWDRAIN"),
     ("ifkw",    'if 1 then a=2',      'IF 3>2 THEN PRINT"[4]"',               "direct", "FORM:then D-KWDRAIN"),
     # 🌾 D-KWIF2: IF's other two forms. `ifkw` above takes the THEN branch, so it
@@ -1045,6 +1053,21 @@ SWEEP: list[tuple[str, str, str | None, str, str]] = [
     # -8192 ($E000), inside zerobas's own RAM rather than the work area.
     # 🎯 EACH ONE READS BACK WHAT IT WROTE where it can (VPOKE/VPEEK, POKE/PEEK), so
     # a stub that silently accepts the statement still fails the row.
+    # 🔴 D-PSGLATCH (2026-09-24): THE READ IS SYNCED TO THE INTERRUPT. In a
+    # batch the VG-8020 read R0 = 191 ($BF, the idle value of R14, the joystick
+    # port) against the 123 just written -- and 123 on BOTH run alone. The
+    # reference's interrupt service SELECTS R14 to scan the joystick, so one
+    # landing between `OUT&HA0,0` and `INP(&HA2)` reads the wrong register;
+    # zerobas's leaves the latch alone. Moving this row ahead of the BEEP rows
+    # was tried first, on a wrong diagnosis, and changed nothing -- the row
+    # stays there harmlessly. Now line 20 waits for TIME to tick and line 30
+    # selects and reads inside the next 20 ms; the REM pads line 20 so the OUT
+    # cannot be packed onto the IF's line, where a false IF would skip it.
+    ("sound_b", 'sound 0,123',
+     'SOUND 0,123:T9=TIME:FOR J9=1 TO 2:J9=1-(TIME<>T9):NEXT:OUT&HA0,0:PRINT"[";INP(&HA2);"]"', "stored",
+     "FORM:register-value D-KWDRAIN: SOUND's EFFECT, not its existence -- the byte "
+     "is read back out of the PSG. A SOUND that parsed and wrote nothing reads "
+     "something else."),
     ("beep",    'beep',               'BEEP:PRINT"[6]"',                      "direct",
      "FORM:no-argument D-KWDRAIN"),
     # 🌾 D-KWBREADTH batch 7: `beep` prints a CONSTANT MARKER, and BEEP's effect
@@ -1057,7 +1080,7 @@ SWEEP: list[tuple[str, str, str | None, str, str]] = [
     # CELL EXCLUDES NOTHING, and 184 would have been read as "nothing happened".
     # ⚠️ And the row leaves the machine AS IT FOUND IT: 184 IS the at-rest value.
     ("beep_b",  'beep',
-     'SOUND 7,255:BEEP:OUT&HA0,7:PRINT"[";INP(&HA2);"]"',                     "stored",
+     'SOUND 7,255:BEEP:T9=TIME:FOR J9=1 TO 2:J9=1-(TIME<>T9):NEXT:OUT&HA0,7:PRINT"[";INP(&HA2);"]"',                     "stored",
      "WEAK: " "D-KWBATCH5 DEMOTED THIS ROW: IT READS A TRANSIENT AND THE TWO "
      "MACHINES DIFFER IN SPEED. The mixer is restored when the beep FINISHES, so "
      "184 (sounding) vs 191 (finished) is a race between the beep and the OUT/INP "
@@ -1069,7 +1092,7 @@ SWEEP: list[tuple[str, str, str | None, str, str]] = [
      "🎯 `beep_c` below reads a register BEEP does NOT put back, which has no such "
      "race. THE ORIGINAL NOTE'S CLAIM IS STILL TRUE, it just is not SCOREABLE."),
     ("beep_c",  'beep',
-     'SOUND 0,0:BEEP:OUT&HA0,0:PRINT"[";INP(&HA2);"]"',                     "stored",
+     'SOUND 0,0:BEEP:T9=TIME:FOR J9=1 TO 2:J9=1-(TIME<>T9):NEXT:OUT&HA0,0:PRINT"[";INP(&HA2);"]"',                     "stored",
      "FORM:no-argument BEEP's effect on a register it does not have to put back "
      "-- channel A's tone-period low byte, zeroed first."),
     ("sound",   'sound 7,255',        'SOUND 7,255:PRINT"[7]"',               "direct",
@@ -1080,11 +1103,6 @@ SWEEP: list[tuple[str, str, str | None, str, str]] = [
     # effect is observable after all. Register 0 (channel A fine tune) is used
     # rather than 7 because it is a plain 8-bit cell and because the MIXER is left
     # exactly as it was: nothing is made audible by this row.
-    ("sound_b", 'sound 0,123',
-     'SOUND 0,123:OUT&HA0,0:PRINT"[";INP(&HA2);"]"',                          "stored",
-     "FORM:register-value D-KWDRAIN: SOUND's EFFECT, not its existence -- the byte "
-     "is read back out of the PSG. A SOUND that parsed and wrote nothing reads "
-     "something else."),
 
     # ---------------------------------------------------------- D-KWPLAY: `PLAY`
     # 🎯 PLAY WAS 0 OF ITS FORMS AND THE REASON WAS THE INSTRUMENT. `make
@@ -1117,36 +1135,36 @@ SWEEP: list[tuple[str, str, str | None, str, str]] = [
     # END WITH MUSIC STILL PLAYING (50 and 93 frames queued against a 40-frame
     # wait), so anything after them that read the PSG would read their leftovers.
     ("playkw",   'play"c"',
-     'PLAY"O4L1T120V8C":FOR I=1 TO 200:NEXT:OUT&HA0,0:A=INP(&HA2):PRINT"[3i";A;"]"',
+     'PLAY"O4L1T120V8C":FOR I=1 TO 200:NEXT:T9=TIME:FOR J9=1 TO 2:J9=1-(TIME<>T9):NEXT:OUT&HA0,0:A=INP(&HA2):PRINT"[3i";A;"]"',
      "stored",
      "FORM:notes 172 -- the LOW BYTE of channel A's tone period while C sounds "
      "(the full period is 428, the VG-8020-measured C4). A PLAY that queued "
      "nothing leaves the register GICINI set it to"),
     ("playkw_b", 'play"n40"',
-     'PLAY"L1T120V8N40":FOR I=1 TO 200:NEXT:OUT&HA0,0:A=INP(&HA2):PRINT"[3j";A;"]"',
+     'PLAY"L1T120V8N40":FOR I=1 TO 200:NEXT:T9=TIME:FOR J9=1 TO 2:J9=1-(TIME<>T9):NEXT:OUT&HA0,0:A=INP(&HA2):PRINT"[3j";A;"]"',
      "stored",
      "FORM:note-number 83, where the letter form reads 172: `N40` names a note by "
      "NUMBER and lands a fourth above C4. 🔴 THIS ROW READ 104 UNTIL 2026-09-15 -- "
      "one semitone flat, for every n in 1..96"),
     ("playkw_c", 'play"r"',
-     'PLAY"O4L1T120V8C","O4L1T120V8R":FOR I=1 TO 200:NEXT:OUT&HA0,8:A=INP(&HA2)AND15:OUT&HA0,9:B=INP(&HA2)AND15:PRINT"[3k";A;B;"]"',
+     'PLAY"O4L1T120V8C","O4L1T120V8R":FOR I=1 TO 200:NEXT:T9=TIME:FOR J9=1 TO 2:J9=1-(TIME<>T9):NEXT:OUT&HA0,8:A=INP(&HA2)AND15:OUT&HA0,9:B=INP(&HA2)AND15:PRINT"[3k";A;B;"]"',
      "stored",
      "FORM:rest `8 0` -- voice 1 sounds a note at the default volume and voice 2 "
      "RESTS, so the two channel amplitudes differ. 🎯 THE 8 IS THIS ROW'S OWN "
      "CONTROL: give voice 2 a NOTE instead and it reads `8 8`, so the 0 is the "
      "rest and not an absence"),
     ("playkw_d", 'play"o7c"',
-     'PLAY"O7L1T120V8C":FOR I=1 TO 200:NEXT:OUT&HA0,0:A=INP(&HA2):PRINT"[3l";A;"]"',
+     'PLAY"O7L1T120V8C":FOR I=1 TO 200:NEXT:T9=TIME:FOR J9=1 TO 2:J9=1-(TIME<>T9):NEXT:OUT&HA0,0:A=INP(&HA2):PRINT"[3l";A;"]"',
      "stored",
      "FORM:octave 53 against the same note's 172 three octaves down -- `O n` moves "
      "the WHOLE note table, and the period halves per octave"),
     ("playkw_e", 'play"v3c"',
-     'PLAY"O4L1T120V3C":FOR I=1 TO 200:NEXT:OUT&HA0,8:A=INP(&HA2)AND15:PRINT"[3o";A;"]"',
+     'PLAY"O4L1T120V3C":FOR I=1 TO 200:NEXT:T9=TIME:FOR J9=1 TO 2:J9=1-(TIME<>T9):NEXT:OUT&HA0,8:A=INP(&HA2)AND15:PRINT"[3o";A;"]"',
      "stored",
      "FORM:volume 3 -- PSG R8 is channel A's amplitude and the DEFAULT is 8, so a "
      "`V` that parsed and did nothing reads 8 here"),
     ("playkw_f", 'play"s10m2000c"',
-     'PLAY"O4L1T120S10M2000C":FOR I=1 TO 200:NEXT:OUT&HA0,13:A=INP(&HA2)AND15:OUT&HA0,11:B=INP(&HA2):OUT&HA0,12:C=INP(&HA2):PRINT"[3p";A;B;C;"]"',
+     'PLAY"O4L1T120S10M2000C":FOR I=1 TO 200:NEXT:T9=TIME:FOR J9=1 TO 2:J9=1-(TIME<>T9):NEXT:OUT&HA0,13:A=INP(&HA2)AND15:OUT&HA0,11:B=INP(&HA2):OUT&HA0,12:C=INP(&HA2):PRINT"[3p";A;B;C;"]"',
      "stored",
      "FORM:envelope `10 208 7` -- R13 is the envelope SHAPE (`S10`) and R11/R12 "
      "the 16-bit envelope PERIOD, 7*256+208 = 2000 (`M2000`). Three cells, two "
@@ -1253,7 +1271,7 @@ SWEEP: list[tuple[str, str, str | None, str, str]] = [
     # This drives a KNOWN byte out to the PSG and reads that byte back, so the
     # reading is the value and not its non-zero-ness.
     ("inp_b",   'a=inp(&ha2)',
-     'OUT&HA0,0:OUT&HA1,66:OUT&HA0,0:PRINT"[";INP(&HA2);"]"',                 "stored",
+     'T9=TIME:FOR J9=1 TO 2:J9=1-(TIME<>T9):NEXT:OUT&HA0,0:OUT&HA1,66:OUT&HA0,0:PRINT"[";INP(&HA2);"]"',                 "stored",
      "FORM:port-read the VALUE, not its non-zero-ness -- 66, the byte just written "
      "to PSG register 0. `out_b` drives the same path but its SUBJECT is OUT; this "
      "row's crunch body is `a=inp(&ha2)`, so the reading is scored for INP."),
@@ -1263,7 +1281,7 @@ SWEEP: list[tuple[str, str, str | None, str, str]] = [
     # a marker; this one drives the whole OUT -> INP round trip through the DATA
     # port, so the byte it wrote is the byte that is read.
     ("out_b",   'out 161,77',
-     'OUT&HA0,0:OUT&HA1,77:OUT&HA0,0:PRINT"[";INP(&HA2);"]"',                 "stored",
+     'T9=TIME:FOR J9=1 TO 2:J9=1-(TIME<>T9):NEXT:OUT&HA0,0:OUT&HA1,77:OUT&HA0,0:PRINT"[";INP(&HA2);"]"',                 "stored",
      "FORM:port-value D-KWDRAIN: the value OUT actually DELIVERED, via the PSG's "
      "own readback. The `outkw` row writes only the address latch and never reads "
      "it back."),
@@ -1276,7 +1294,7 @@ SWEEP: list[tuple[str, str, str | None, str, str]] = [
     # (the VDP status port, whose bit 7 sets every frame) is read-to-clear and
     # would disturb the BIOS interrupt handler. Left unattributed on purpose --
     # "no known gap" is the honest state for it until a safe row exists.
-    ("pokekw",  'poke 0,1',           'POKE-8192,7:PRINT"[";PEEK(-8192);"]"', "direct",
+    ("pokekw",  'poke 0,1',           'POKE-8192,7:PRINT"[";PEEK(-8192);"]"', "stored",
      "FORM:address-value D-KWDRAIN"),
 
     # ---------------------------------------------- D-KWDRAIN step 4a (2026-09-12)
@@ -2325,7 +2343,7 @@ SWEEP: list[tuple[str, str, str | None, str, str]] = [
     # CORNER: anchored but untagged, the row came back UNREADABLE `?noecho` on BOTH
     # sides, because CLS erases the echoed command the capture keys on. `NOECHO:`
     # exists for exactly that and the row is captured by its own unique marker.
-    ("locate_b", "locate 0,5",   'CLS:LOCATE 0,5:PRINT"[N";CSRLIN;"]"',       "direct",
+    ("locate_b", "locate 0,5",   'CLS:LOCATE 0,5:PRINT"[N";CSRLIN;"]"',       "stored",
      "NOECHO:[N " "FORM:row the ROW argument, read back through CSRLIN -- `[N 5 ]`. The "
      "`locate` row sets only a COLUMN and scores the marker's indentation; CLS "
      "anchors the cursor so this reads the ROW and not the scroll history."),
@@ -4233,6 +4251,16 @@ def main() -> int:
             mkw = dict(kw)
             mkw["boot"] = MACH_BOOT.get(mach, 8.0)
             pre = MACH_RESET_PRE.get(mach, ())
+            # 📏 D-BOOTWIDTH (2026-09-24): THE DISK GROUP COMPARES AT ITS ORACLE'S
+            # WIDTH. The references boot at DIFFERENT widths -- the VG-8020 at 37,
+            # the CF-3300 (the disk rows' oracle) at 39 -- and zerobas now boots
+            # at the VG's 37. Measured: `files_b` then compared FILES packed
+            # 2-per-line against 3-per-line, the split and not a FILES defect.
+            # zerobas's side of the disk group therefore starts at 39, as before
+            # today; a per-row `WIDTH 39` could not do it, because the change
+            # re-inits the screen on one side only and wipes the anchor echo.
+            if "disk" in rig and mach == args.zb_machine:
+                pre = pre + (f"WIDTH {DISK_ORACLE_WIDTH}",)
             if pre:
                 mkw["reset"] = pre + tuple(kw.get("reset", ()))
             if mount:

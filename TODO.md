@@ -4899,7 +4899,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:23464 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:23527 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -22925,6 +22925,27 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       alone, `NEW`, `CLS`, Ctrl-STOP — both machines. The first step that
       restores the bit on the reference is where zerobas's fix goes.
 
+- [x] 🟢 **CLOSED 2026-09-24 — D-PSGLATCH: EVERY `OUT&HA0`→`INP(&HA2)` ROW WAS A RACE
+      ON THE REFERENCE, AND D-BOOTWIDTH's TIMING SHIFT MADE ONE LOSE IT.** In a
+      batch `sound_b` read R0 = **191** on the VG-8020 against the 123 it had just
+      written; ALONE it read 123 on both. 191 is `$BF`, the idle value of **R14**
+      (the joystick port): the reference's interrupt service SELECTS R14 to scan
+      the joystick, so an interrupt landing between the select and the read
+      returns the wrong register. Zerobas's service leaves the latch alone.
+      🔴 **A WRONG DIAGNOSIS FIRST:** a neighbouring BEEP finishing late (the
+      `beep_c` race) — moving the row ahead of the BEEP rows changed nothing.
+      🔴 **AND FIXING ONE ROW MOVED THE RACE:** with `sound_b` synced, `playkw_f`
+      read R11 as 191. So the whole CLASS was fixed at once: all 11 PSG-reading
+      rows now run `T9=TIME:FOR J9=1 TO 2:J9=1-(TIME<>T9):NEXT` just before their
+      first `OUT&HA0` — a line-free wait that exits right after an interrupt, so
+      select-and-read land inside the next 20 ms. kwsweep 376 → **377**, 0
+      DIVERGENT. They had been agreeing by LUCK
+      [[a-case-that-agrees-can-agree-for-the-wrong-reason]].
+      📝 **THE BEHAVIOUR ITSELF (TIER 6, not filed as work):** a BASIC program
+      that reads the PSG with `OUT`/`INP` on the reference can be hit by the
+      interrupt's R14 select; on zerobas it cannot. Faithful would mean
+      reproducing a race — recorded, not proposed.
+
 - [x] 🟢 **CLOSED 2026-09-24 — D-PINONLY: A ONE-ROW `make kwsweep ONLY=…` OVERWROTE
       THE PIN, AND THE SHEET DREW `SQR`/`PAINT`/`MOTOR` AS `🔴 GAP` FROM IT.** The
       recurring class *"an instrument hands you a plausible table from an input
@@ -22954,8 +22975,50 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       SUPPORTED. 🔴 **`widthkw` COULD NEVER SEE IT** — it reads `LINLEN`, which
       both sides set to 37 either way: a row that agreed for the wrong reason.
 
-- [ ] 🔴 **ZEROBAS BOOTS AT WIDTH 39; THE VG-8020 BOOTS AT 37 — EVERY USER SEES IT,
-      AND NO ITEM FILED IT AS A DIVERGENCE (D-BOOTWIDTH, found 2026-09-24).**
+- [x] 🟢 **CLOSED 2026-09-24 — ZEROBAS BOOTS AT 37 NOW, THE VG-8020's WIDTH. AND THE
+      CF-3300 BOOTS AT 39: IT WAS A REFERENCE SPLIT, NOT A PLAIN DEFECT.** Was:
+      *ZEROBAS BOOTS AT WIDTH 39; THE VG-8020 BOOTS AT 37 — EVERY USER SEES IT,
+      AND NO ITEM FILED IT AS A DIVERGENCE (D-BOOTWIDTH, found 2026-09-24).*
+      📏 **MEASURED** (`SCREEN 0` first, since the CF-3300 accepts no typed
+      line before it; `LINL40` is the boot text width on every machine):
+      VG-8020 **37**, CF-3300 **39**, zerobas (disk and diskless) 39 → **37**.
+      🔮 Prediction *"the CF-3300 boots at 37 like the VG-8020"* — **MISS**.
+      The split is regional in all likelihood (the VG-8020 is a European PAL
+      machine, 37 columns keeping text inside the overscan; the CF-3300 is
+      Japanese), and zerobas's machine is the EU one (`C-BIOS_MSX1_EU`).
+      ✅ Presentational split → the VG-8020's value on both targets (Joost,
+      2026-09-04, [[oracle-split-prefer-vg8020]]): `ld (LINL40),37` just before
+      `show_title`, whose INITXT takes LINLEN from it (`basic/interp.asm`, 5 B).
+      ⚠️ **THE BLAST RADIUS IS THE CF-3300 NOW:** rows comparing zerobas's
+      screen layout at the boot width against the CF-3300 agreed by accident
+      (39 = 39) and may diverge (37 vs 39) — each such row is this split
+      surfacing, to be given an explicit `WIDTH` or declared, never to push
+      zerobas back to 39.
+      📏 **THE FALLOUT, MEASURED (full kwsweep on the new ROM):** SUPPORTED
+      377 → 372, and every loss was APPARATUS, none a BASIC defect:
+      **(a) three rows UNREADABLE and one with a stray row break** (`peek_b`,
+      `pokekw`, `csrlind`; `stepkw`) — direct lines of 35–37 chars. zerobas's
+      `ZB` prompt keeps the typed line ON THE SAME ROW (kept deliberately,
+      2026-09-01), so at 37 columns a 37-char line wraps and its echo splits:
+      `ZBPOKE-8192,66:…PEEK(-8192);"` / `]"`. At 39 they had just fitted.
+      kwsweep's `MAX_DIRECT_ECHO` was **38**, silently assuming a 39-wide
+      screen; it went to 34 (37 − 2 for `ZB` − 1) and the five rows over it
+      were stored — then to **36** once D-ZBCRLF gave the 2 columns back. **(b) `files_b` DIVERGED** — FILES packed 3 per line on the
+      CF-3300 (39) and 2 here (37): the split itself. A per-row `WIDTH 39`
+      could not fix it (the change re-inits one side's screen and wipes the
+      anchor echo), so zerobas's side of kwsweep's DISK GROUP resets to
+      `WIDTH 39` — the disk oracle's width, i.e. exactly the state those rows
+      had before today (`DISK_ORACLE_WIDTH`).
+      🏗️ **AND IT SURFACED THE PROMPT'S LAYOUT — RULED THE SAME HOUR
+      (D-ZBCRLF):** `ZB` same-row vs `Ok`-then-newline cost every typed line 2
+      columns the reference does not spend. Joost: *"the ZB prompt stays, but
+      it should have the crlf like the OK prompt of the reference."* The TEXT
+      stays `ZB` (the 2026-09-01 identity decision); `prompt_text` is now
+      `"ZB",13,10` (`basic/repl.asm`, +2 B), and a boot screen dump reads
+      row-for-row the VG-8020's, `Ok`/`ZB` apart. The two echo guards that
+      anchored on `"ZB" + line` (`diskbasic_probe_chancost.py`,
+      `diskbasic_probe_lof.py`) anchor on `""` now, like the reference;
+      readers that treat a prompt row as a TERMINATOR needed nothing.
       🎚️ TIER 1 — happy path: the power-on screen is the first thing BASIC does.
       🤖 **AUTONOMOUS** — a presentational reference split ships the VG-8020's
       value on BOTH targets (Joost, 2026-09-04, [[oracle-split-prefer-vg8020]]);
