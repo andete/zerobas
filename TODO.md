@@ -4848,7 +4848,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:23005 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:23020 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -5014,7 +5014,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:9738 (T-6FE392)8 (T-529ABE)` from `TODO.md:21169 (T-529ABE)`: a
+      `TODO.md:9753 (T-6FE392)8 (T-529ABE)` from `TODO.md:21184 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -6031,7 +6031,22 @@ list. **When a slice lands, grep this list for what it just shipped.**
       axis where the sides CAN agree. The ADDRESS cannot"* — **a probe that
       concludes a comparison is impossible cannot itself be one**) ·
       `spritestate_probe` (*"This observes STATE and COUNT. The CAUSE is a
-      question for the …"*). **22 left.**
+      question for the …"*). **Five more:** `drawleak_probe` (an APPARATUS
+      diagnosis — DRAW's ANGLE and SCALE persist across PROGRAMS, so a BATCHED
+      sweep carries them between cases and the middle one *"reads the
+      BACKGROUND — it drew rotated"*) · `drawsubst_probe` (the `varptrn` shape
+      again: *"BOTH MACHINES DREW NOTHING AND NEITHER RAISED. A row agreeing on
+      an absence both sides produce says nothing about either"*) ·
+      `nodiskgap_probe` (a markdown TABLE of rows × machines, no verdict
+      column) · `fcbstride_probe` (*"265 or 267? Measure it before any stride is
+      laid down"* — reconciling TWO OF OUR OWN NUMBERS that disagree by 2, not a
+      reference comparison). **17 left.**
+      📊 **A PATTERN IS EMERGING IN WHAT GETS DECLARED, AND IT IS WORTH NAMING:**
+      most of these probes exist to decide **whether a row can be written at
+      all** — is the effect observable, is there a cell, can the sides ever
+      agree, is the sweep contaminating itself. **They are the step BEFORE a
+      row, so of course they have no verdict.** That is not a hole in the
+      corpus; it is the corpus containing its own groundwork.
       🔴 **AND THERE IS NO MECHANICAL TRIAGE — TWO SCANS WERE TRIED AND BOTH
       FAILED, WHICH IS THE USEFUL PART OF THIS SLICE.**
       **(a)** *"does it print verdict vocabulary?"* — `keyline_probe` carries
@@ -10582,7 +10597,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:21169 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:21184 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
