@@ -57,6 +57,14 @@ boolaxis_probe: NO-VERDICT -- "can the BOOLEAN rows carry a VALUE without diverg
 datacolon2_probe: NO-VERDICT -- prints `=== <machine> ===` sections of raw readings with no cross-machine verdict. ⚠️ Its header says the control "must read 42 on both machines", which is the AUTHOR'S EXPECTATION FOR A HUMAN READER, not a verdict the probe computes -- the same trap as a probe that merely MENTIONS a reference. Declared 2026-09-24.
 deleterange_probe: NO-VERDICT -- "what does DELETE of an EXISTING line do MID-PROGRAM?", asked because "a breadth row needs to know whether execution CONTINUES after a successful DELETE: if it does not, nothing can be read afterwards and the row cannot carry a VALUE". Feasibility for a row. Declared 2026-09-24.
 paintarg_probe: NO-VERDICT -- "does `PAINT(x,y),C,B` fault, or does the FLOOD outrun the capture?" -- an OBSERVABILITY question about the capture, and it records its own first cut failing its own control (`run_cases` anchors its default capture on the ECHOED COMMAND). Declared 2026-09-24.
+# --- the INPUT-DEVICES DIAGNOSTIC CLUSTER (declared 2026-09-24) ------------
+# Four probes that all ask WHETHER THE RIG WORKS, not whether zerobas matches:
+# is the key line where we think, does the hold land, is a joystick pluggable,
+# is the sampling window wrong. They are the apparatus asking about itself.
+keyline_probe: NO-VERDICT -- "Where does the FUNCTION-KEY LINE live in VRAM, and does KEY OFF blank it?". ⚠️ Its header states expectations ("it must find 'Z' somewhere ... the same offsets must be blank") and it PRINTS NONE of them -- per-machine raw readings only. The canonical case of a header expectation being an instruction to a human reader.
+holdrow_probe: NO-VERDICT -- separates "row 8 is not reached" from "STICK does not read it", after D-JOYPLUG spent three cuts on a flat reading. It prints APPARATUS FAILURE guards and per-name cells; the APPARATUS FAILURE is an instrument guard, not a divergence.
+joyplug_probe: NO-VERDICT -- RE-VERIFIES the filed "no joystick pluggable" blocker against the emulator, on Joost's 2026-09-17 ruling. A capability question about openMSX, like rigcap_probe.
+sticksample_probe: NO-VERDICT -- "was the flat `STICK` a SAMPLING window, not a dead rig?". It is diagnosing the INSTRUMENT: the hold lands and row 8 is reached (INKEY$ reads 30 under it, on both machines) while STICK(0) reads 0.
 # --- 2026-09-08: seven CHARACTERISATION probes from the missing-keyword and
 # screen-editor arcs. `filed_row_sweep` reported all seven as "NOTHING PARSED",
 # alongside a genuinely ROTTED probe (ramfree), and the two were
