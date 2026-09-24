@@ -1305,6 +1305,24 @@ SWEEP: list[tuple[str, str, str | None, str, str]] = [
      "($F3AF) and not in the LINL40 ($F3AE) cell `widthkw` reads. `[0a 29  37 ]`: "
      "the cell WIDTH must change AND the one it must leave alone, so a handler "
      "that wrote the wrong cell, or both, is visible either way."),
+    # 🔴 D-WIDTHKEEP (2026-09-24): A WIDTH TO THE WIDTH ALREADY IN FORCE DOES
+    # NOTHING ON THE REFERENCE -- and zerobas re-initialised the screen. Found by
+    # T5's keyword-alone timing (`WIDTH 37` cost 32.0 ms here, 0.71 ms on the
+    # VG-8020), then measured as BEHAVIOUR: after `PRINT"KKKK":WIDTH 37` the
+    # VG-8020 still holds the four K's and the cursor on row 1 (SCREEN 0 and 1
+    # alike), zerobas held none and homed the cursor. `widthkw` could never see
+    # it: it reads LINLEN, which both sides set to 37 either way -- a row that
+    # agreed for the wrong reason. The rule compares against LINLEN, not the
+    # per-mode cell: with LINLEN poked to 30 the reference DOES re-init, with only
+    # LINL40 poked it does not, and leaves LINL40 at 30 -- it does nothing at all.
+    # `WIDTH 37` FIRST so the row never depends on the width a neighbour left.
+    ("widthkw_c", 'width 37',
+     'WIDTH 37:CLS:PRINT"KKKK":WIDTH 37:B=CSRLIN:C=0:FOR I=0 TO 119:C=C-(VPEEK(I)=75):NEXT:PRINT"[4w";C;B;"]"',
+     "stored",
+     "NOECHO:[4w FORM:same-width a WIDTH to the width already in force keeps the "
+     "screen and the cursor: `[4w 4  1 ]` = the four K's still in VRAM and the "
+     "cursor still on row 1. A handler that re-initialises the screen reads "
+     "`[4w 0  0 ]`."),
     # 🔴 `KEY` HAS NO ROW, AND THE ATTEMPT THAT PASSED IS WHY. A `keykw` row
     # reading CRTCNT ($F3B1) after `KEY OFF` came back SUPPORTED / match on both
     # machines -- and it was BLIND. Measured directly

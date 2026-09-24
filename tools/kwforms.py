@@ -1095,13 +1095,17 @@ FORMS: dict[str, tuple[tuple[str, ...], str]] = {
         "nothing -- scoring the parse and calling it the behaviour.",
     ),
     "WIDTH": (
-        ("text-width", "mode1-width"),
+        ("text-width", "mode1-width", "same-width"),
         "`WIDTH <columns>` has one argument and no optional parts, so the second "
         "form is not a second argument -- it is a second CELL. MSX keeps the width "
         "per mode (LINL40 $F3AE for SCREEN 0, LINL32 $F3AF for SCREEN 1) and WIDTH "
         "writes whichever belongs to the current mode, so a handler that always "
-        "wrote LINL40 passes the first and fails the second. N is 2 because the "
-        "mode is the only dimension this verb has.",
+        "wrote LINL40 passes the first and fails the second. ➕ D-WIDTHKEEP "
+        "(2026-09-24): the THIRD form is the width ALREADY in force, which the "
+        "reference treats as a no-op -- screen, cursor and per-mode cell all "
+        "untouched -- where a handler that always re-inits clears the screen. "
+        "Neither of the first two rows could see it: both read cells, and the "
+        "cells agree either way.",
     ),
     "LOCATE": (
         ("column", "row", "omitted-column", "cursor-switch"),

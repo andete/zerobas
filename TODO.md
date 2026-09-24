@@ -4899,7 +4899,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:23341 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:23391 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -5065,7 +5065,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:9826 (T-6FE392)8 (T-529ABE)` from `TODO.md:21312 (T-529ABE)`: a
+      `TODO.md:9826 (T-6FE392)8 (T-529ABE)` from `TODO.md:21316 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -10670,7 +10670,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:21312 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:21316 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -12150,10 +12150,14 @@ list. **When a slice lands, grep this list for what it just shipped.**
       ⏱ **AND THE KEYWORD ALONE (T5, D-KWT5ALONE, same day):** median 1.06×;
       `PAINT` **2.1×** once the switch is subtracted; and two gaps the whole
       rows hid entirely — **`WIDTH 37` costs 32.0 ms here and 0.71 ms on the
-      VG-8020** (≈45×), **`MOTOR OFF` 5.25 vs 0.51 ms** (≈10×). ❓ `WIDTH`'s is
-      worth a BEHAVIOUR row, not only a speed one: a width that does not change
-      may be a near no-op on the reference and a full screen re-initialise
-      here — whether the SCREEN CONTENT survives on each side is unmeasured.
+      VG-8020** (≈45×), **`MOTOR OFF` 5.25 vs 0.51 ms** (≈10×). ~~❓ `WIDTH`'s
+      is worth a BEHAVIOUR row, not only a speed one … unmeasured.~~ ✅
+      **MEASURED AND FIXED THE SAME DAY (D-WIDTHKEEP, closed entry below
+      D-BOOTWIDTH):** it WAS behaviour — the reference keeps the screen; zerobas
+      cleared it. ⚠️ **But the 45× SURVIVES the fix**, and for a second reason:
+      kwtime's batch starts from a FRESH BOOT, where zerobas is at width 39 and
+      the reference at 37 — so `widthkw`'s `WIDTH 37` is a real change here and
+      a no-op there. After D-WIDTHKEEP the 45× measures D-BOOTWIDTH, not WIDTH.
       🤖 AUTONOMOUS — the charter half is ANSWERED (the STANDING sequencing of
       2026-09-02: speed is a real defect), so what remains under it is measurable work.
       ⚠️ **RANKED LAST BY THAT SAME RULING** — every open DIVERGENCE outranks it, so
@@ -22862,6 +22866,52 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       🔮 **PREDICTIONS:** main pass unchanged — HIT; twin misses only the
       semantic ones — HIT; `PAINT` 1.8–2.1× — HIT (2.10); `abs` ≈0.7× — MISS
       (0.58: its carrying `PRINT` really is faster here, 8.0 vs 8.6 ms).
+
+- [x] 🟢 **CLOSED 2026-09-24 — D-WIDTHKEEP: A `WIDTH` TO THE WIDTH ALREADY IN
+      FORCE IS A NO-OP, AND ZEROBAS CLEARED THE SCREEN.** Found by T5's
+      keyword-alone timing (`WIDTH 37` 32.0 ms here, 0.71 ms on the VG-8020),
+      then measured as BEHAVIOUR (refcache OFF): after `PRINT"KKKK":WIDTH 37`
+      the VG-8020 keeps the four K's and the cursor on row 1 — SCREEN 0 and
+      SCREEN 1 alike — where zerobas re-initialised (0 K's, cursor homed). A
+      CHANGED width clears on both. 🎯 **THE RULE IS LINLEN, AND IT SEPARATED
+      TWO THAT COINCIDE:** with `LINLEN` poked to 30 the reference re-inits;
+      with only `LINL40` poked it does not, and leaves `LINL40` at the poked 30
+      — so it writes NOTHING. [[two-rules-that-coincide-on-every-row-you-have]]
+      ✅ `ex_width` (`basic/screen.asm`) compares `LINLEN` after the bounds
+      checks and `jp z,exec_stmt` (+8 B of page 1). A third `WIDTH` form,
+      `same-width` (`tools/kwforms.py`), with row `widthkw_c`: DIVERGENT
+      `[4w 4 1]` vs `[4w 0 0]` on the unfixed ROM (predicted exactly), then
+      SUPPORTED. 🔴 **`widthkw` COULD NEVER SEE IT** — it reads `LINLEN`, which
+      both sides set to 37 either way: a row that agreed for the wrong reason.
+
+- [ ] 🔴 **ZEROBAS BOOTS AT WIDTH 39; THE VG-8020 BOOTS AT 37 — EVERY USER SEES IT,
+      AND NO ITEM FILED IT AS A DIVERGENCE (D-BOOTWIDTH, found 2026-09-24).**
+      🎚️ TIER 1 — happy path: the power-on screen is the first thing BASIC does.
+      🤖 **AUTONOMOUS** — a presentational reference split ships the VG-8020's
+      value on BOTH targets (Joost, 2026-09-04, [[oracle-split-prefer-vg8020]]);
+      only the blast radius makes it its own slice.
+      🔬 **MEASURED** (`PEEK` at cold boot, refcache OFF): `LINLEN LINL40 LINL32
+      SCRMOD` read **`37 37 29 0`** on the VG-8020 and **`39 39 29 0`** here.
+      Nothing in `basic/` writes `LINL40`, so it is C-BIOS's default.
+      🎯 **FOUND BY D-WIDTHKEEP, NOT BY LOOKING:** its exploratory probe ran on a
+      FRESH boot and kept reading `WIDTH 37` as a clear on zerobas after the
+      fix — correctly, because from 39 it IS a change. The kwsweep row sets
+      `WIDTH 37` first and never saw the boot value.
+      ⚠️ **THE DIFFERENCE IS KNOWN TO THE APPARATUS AND NOT TO THE LEDGER.**
+      Several entries route AROUND it (`KEY`'s line layout "LINLEN 37 vs 39",
+      a screen window "851 at 37, 897 at 39", a name-table offset) — each
+      treated it as an instrument obstacle; none filed it. **So the fix will
+      MOVE readings those probes were built to tolerate**: grep for `37`/`39`
+      and `LINLEN` in `probes/` before the change, and expect some rows to
+      need re-reading, not re-pinning.
+      ❓ Also measure the CF-3300's boot width before coding: if it differs from
+      the VG-8020 this is a split (ship the VG value); if it agrees, it is
+      simply a defect.
+      📏 **A SECOND, MEASURED CONSEQUENCE:** after D-WIDTHKEEP the sheet still
+      reads `WIDTH … T5 45×`. `widthkw`'s `WIDTH 37` runs at the boot width, so
+      it re-initialises the screen here (from 39) and is a no-op on the
+      reference (already 37). The fix for THIS item should bring `WIDTH`'s T5
+      down with it — a free control for the change.
 
 - [ ] **Keyword-completeness gaps — the measured remainder of MSX1 BASIC.**
       **The coverage denominator now exists** (2026-07-26,

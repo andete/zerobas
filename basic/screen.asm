@@ -294,6 +294,18 @@ wid_bound:
                 ld      a,b
                 or      a
                 jr      z,wid_illegal       ; `WIDTH 0` -> Illegal function call
+                ; 🔴 D-WIDTHKEEP (2026-09-24): A WIDTH TO THE WIDTH ALREADY IN
+                ; FORCE IS A NO-OP. Measured on the VG-8020: `PRINT"KKKK":WIDTH 37`
+                ; keeps the four K's AND the cursor (SCREEN 0 and 1 alike), where
+                ; this handler re-initialised the screen (32 ms, cleared, homed).
+                ; The test is against LINLEN, not the per-mode cell -- with LINLEN
+                ; poked to 30 the reference DOES re-init; with only LINL40 poked it
+                ; does not, and LINL40 keeps the poked value -- so nothing at all is
+                ; written. Bounds first: `WIDTH 0` and an over-wide width still err.
+                ld      a,(LINLEN)
+                cp      b
+                jp      z,exec_stmt         ; HL = text pointer, as pop_exec leaves it
+                ld      a,b
                 ld      (LINLEN),a
                 ld      (de),a              ; the mode's per-mode default
 wid_apply:
