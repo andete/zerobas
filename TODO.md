@@ -1541,7 +1541,10 @@ item — do **one item per session** to keep context lean.
       compare variable usage between our implementation and reference and if we
       differ adjust if needed"* — and his TIER 5 ruling the next day asks for
       exactly this, widened to the UNDOCUMENTED regions. **This item is the
-      measurement that populates the TIER 5 rung above.** Then, the same day: *"I have a hunch reference is very economical
+      measurement that populates the TIER 5 rung above.** 🏗️ **CONFIRMED
+      2026-09-24 (D-KWPROVEN):** asked what proves T5, Joost answered ***"The
+      whole RAM map"*** — so per-keyword T5 is DERIVED from this comparison,
+      not measured separately. Then, the same day: *"I have a hunch reference is very economical
       with RAM."*
       🔮 **THE HUNCH IS A PREDICTION AND MUST BE SCORED AS ONE, INCLUDING A
       MISS.** State it before the run: *the reference writes FEWER distinct RAM
@@ -4848,7 +4851,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:23042 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:23086 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -5014,7 +5017,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:9775 (T-6FE392)8 (T-529ABE)` from `TODO.md:21206 (T-529ABE)`: a
+      `TODO.md:9778 (T-6FE392)8 (T-529ABE)` from `TODO.md:21218 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -10619,7 +10622,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:21206 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:21218 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -11831,15 +11834,21 @@ list. **When a slice lands, grep this list for what it just shipped.**
       Z80 size/speed idioms. Filed HERE rather than on a carve item on purpose:
       the constant factor is in resident interpreter code (§5's CALSLT route is
       refuted), so instruction-level work on the hot dispatch path is the shape
-      that could actually move it. ⚠️ Not read yet, and it changes nothing about
+      that could actually move it. ⚠️ Not read yet. ~~it changes nothing about
       the charter question below — optimising is only worth starting once "does
-      faithful include speed?" is answered.
+      faithful include speed?" is answered.~~ That question is answered below
+      (2026-09-22, reaffirmed 2026-09-24), so they are now readable at TIER 4.
       🏗️ **RULED BY JOOST, 2026-09-22: YES — AND IT STAYS TIER 4.** His words,
       answering *"does faithful include speed?"*: ***"yes but that is tier 4"***.
       So speed IS part of faithful and the item is no longer gated on a ruling
       — but its PRIORITY is unchanged, which is the operative half: it comes
       after every TIER 1–3 item, and picking it ahead of one would be reading
       the ruling as a promotion it explicitly is not.
+      🏗️ **REAFFIRMED BY JOOST, 2026-09-24: *"Yes, match the reference"*** —
+      asked again because the overnight loop carried this as open, which it
+      was not. Same answer, same tier. **And the T4 rung is now defined:
+      *"Track the ratio, set no bar yet"*** — a T4 row records zerobas ÷
+      reference and passes or fails on nothing (D-KWPROVEN).
       🤖 **AUTONOMOUS** — the charter question is answered, so the optimising
       work this item gates is now startable at its own tier. §5's non-repack
       comparison is already refuted; the live lead is D-SPEEDPROF's profile
@@ -15591,7 +15600,10 @@ finds zero shared names (a renamed block would otherwise make it silently blind)
       one. ⚠️ The tag must be on its OWN line: `TAG` is anchored at line start,
       so a tag sharing the `- [ ]` line parses as nothing, which is how the
       first attempt at this fix left the item still untagged.
-      🙋 NEEDS-JOOST — he ruled *"build a rig, not an exemption"* (2026-09-15,
+      ⛔ **BLOCKED** — **PARKED BY JOOST, 2026-09-24: *"Park it."*** The
+      `rigstick` tool stays in the tree, untouched and out of the battery;
+      nothing here is picked up until he un-parks it.
+      ~~🙋 NEEDS-JOOST~~ (parked above) — he ruled *"build a rig, not an exemption"* (2026-09-15,
       ruling 4). The rig is not buildable with this emulator, and that is his call
       to take, not mine to work around.
       Measured 2026-09-15 (D-RIGBLOCK,
@@ -22442,7 +22454,13 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       RE-PINNING IT WOULD BURY IT (D-PLAYBACK, 2026-09-24)**
       🎚️ APPARATUS — it is a question about a filed row's lifecycle, and about
       whether a converged reading came apart.
-      🙋 **NEEDS-JOOST** — the decision is his, and it is not a coding choice:
+      🏗️ **RULED BY JOOST, 2026-09-24: *"Run the 09-10 test first"*.** The
+      discriminating measurement below is run BEFORE anything is re-pinned or
+      left unfiled; the row stays UNFILED (the sweep keeps shouting) until it
+      has an answer.
+      🤖 **AUTONOMOUS** — run the 09-10 worktree differential below, then file
+      whichever hypothesis it leaves standing.
+      ~~🙋 **NEEDS-JOOST**~~ (answered above) — the decision was his, and it is not a coding choice:
       **re-pinning a row as "known" is how a possible regression becomes
       permanent.** The alternative is to leave it UNFILED so the sweep keeps
       shouting, which costs a red line on every run until it is resolved.
@@ -22525,7 +22543,20 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       `0 of 159` KEYWORDS PROVE ANY OF THEM (D-KWPROVEN, 2026-09-23).**
       🎚️ TIER 1 — it is the bar every other item is measured against, and three
       quarters of it has never been measurable.
-      🙋 **NEEDS-JOOST** — a rung's definition is charter-level, not a coding
+      🏗️ **RULED BY JOOST, 2026-09-24 — three of the four rungs now have a
+      definition:**
+      | rung | ruling |
+      |---|---|
+      | **T2** — reasonable time | a keyword's test program **finishes within a set time and never hangs** (accepted as proposed) |
+      | **T4** — on-par speed | ***"Track the ratio, set no bar yet"*** — a T4 row RECORDS zerobas ÷ reference and never passes or fails on it |
+      | **T5** — RAM usage | ***"The whole RAM map"*** — the comparison is the whole map, not per-keyword cells; per-keyword T5 is DERIVED from it. Consistent with his 2026-09-22 TIER 5 ruling, which the RAM-usage comparison item (TODO §"COMPARE RAM *USAGE*") already carries |
+      | **T6** — the exhaustive error set | **not ruled** — split into its own 🙋 item directly below |
+      🤖 **AUTONOMOUS** — T2's row type can be specified and built now; T4's
+      is a recorded ratio with no verdict; T5's waits on the RAM-map
+      comparison it derives from. ⚠️ Adding any of them flips negative control
+      `S36e`, which is the point: that must be a deliberate act carrying its
+      rung's definition.
+      ~~🙋 **NEEDS-JOOST**~~ (answered above for T2/T4/T5) — a rung's definition is charter-level, not a coding
       choice. What does a row that PROVES "reasonable time" look like? A wall
       against the reference, per keyword? A ratio? Same question for RAM parity
       and for "the exhaustive error set", which has no obvious finite bound.
@@ -22556,13 +22587,26 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       that ANY keyword runs in reasonable time, at on-par speed, within the
       reference's RAM, or handles its exhaustive error set. That work was
       invisible while the sheet had one column; it is now a row of dashes 159
-      wide. ⚠️ **T4 is additionally gated on the charter question** (*does
+      wide. ~~⚠️ **T4 is additionally gated on the charter question** (*does
       faithful include speed?*), so T4's row type cannot even be specified until
-      that is answered.
+      that is answered.~~ 🔴 **STALE WHEN WRITTEN:** that question had been
+      answered on 2026-09-22 (*"yes but that is tier 4"*, TIER 4 item), and this
+      sentence carried it as open for two days — a stale blocker outliving what
+      made it true.
       🔬 **PINNED BY A NEGATIVE CONTROL** (`S36e`): T2/T4/T5/T6 CANNOT be ticked.
       If that arm ever fires, a proving row type was added — which must be a
       deliberate act carrying its own definition of what the row proves, not a
       side effect of some other change.
+
+- [ ] 🎚️ **T6 — WHAT BOUNDS "THE EXHAUSTIVE ERROR SET"? THE ONE RUNG STILL
+      WITHOUT A DEFINITION (split from D-KWPROVEN, 2026-09-24).**
+      🎚️ TIER 1 — it is part of the bar every other item is measured against.
+      🙋 **NEEDS-JOOST** — rung definitions are charter-level. T2, T4 and T5
+      were ruled on 2026-09-24; T6 was not addressed and stays open. The
+      question: the set of errors a keyword can raise has no obvious finite
+      bound, so what row set would count as having PROVED it — every error
+      code the reference raises for that keyword's documented forms, or
+      something wider?
 
 - [ ] **Keyword-completeness gaps — the measured remainder of MSX1 BASIC.**
       **The coverage denominator now exists** (2026-07-26,
