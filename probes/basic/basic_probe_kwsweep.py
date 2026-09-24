@@ -2189,10 +2189,9 @@ SWEEP: list[tuple[str, str, str | None, str, str]] = [
     # 15-border's own blocks and the flood runs away on BOTH machines -- so the
     # BORDER form is measured in SCREEN 3 (multicolour, each 4x4 block its own
     # colour), where it stops the flood on both: `[5q 11 4]`.
-    # 🔴 AND THE ISOLATED PROBE FOUND A HANG (D-PAINTHANG, TODO): a SCREEN 3
-    # flood that must REPAINT non-border pixels finishes on the VG-8020 in 66
-    # jiffies and never on zerobas. These rows avoid it by construction (each
-    # fill stops at its box); the hang has its own item and blocks PAINT's T1.
+    # ❌ A "HANG" THE ISOLATED PROBE SEEMED TO FIND WAS WITHDRAWN THE SAME DAY
+    # (D-PAINTHANG): its captures passed `cap_gap`, which does not delay the
+    # capture after RUN. Timed with marks, every flood is 1.73x, any shape.
     ("paintkw_b", 'paint(15,15),11',
      'SCREEN2:LINE(10,10)-(20,20),11,B:PAINT(15,15),11:A=POINT(15,15):B=POINT(5,5):SCREEN0:PRINT"[5p";A;B;"]"',
      "stored",

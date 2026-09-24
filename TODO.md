@@ -4899,7 +4899,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:23561 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:23575 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -22907,12 +22907,25 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       ➕ **A DIVERGENCE CANDIDATE, filed below (D-VDPIE):** the reference's
       batch SURVIVED the same `vdp_d` twin that killed zerobas's.
 
-- [ ] 🔴 **A SCREEN 3 `PAINT` THAT MUST REPAINT NON-BORDER PIXELS NEVER FINISHES ON
-      ZEROBAS — THE VG-8020 DOES IT IN 66 JIFFIES (D-PAINTHANG, found 2026-09-24).**
-      🎚️ TIER 1 — happy path: `PAINT` over a picture that already has other
-      colours in it is the ordinary use, and here it hangs with no error.
-      🤖 **AUTONOMOUS** — a defect with a reproducer; the fix is in
-      `sub/graphics.asm` (G5, the span fill).
+- [x] ❌ **WITHDRAWN 2026-09-24 — THERE IS NO HANG. EVERY "NEVER FINISHES" WAS MY
+      PROBES PASSING `cap_gap`, WHICH DOES NOT DELAY THE CAPTURE AFTER `RUN`.**
+      Timed with program-written marks ([`scratchpad/paintclock_probe.py`](scratchpad/paintclock_probe.py),
+      emulated time), all four floods take **1.32 s on the VG-8020 and 2.29 s
+      here — 1.73×, identical across shapes**: empty screen, one block, a
+      full-width line, the box. That is the filed *"`PAINT` 2×"*, not a new
+      defect. The screen captures fired at the DEFAULT RUN→capture gap, which
+      the reference's 1.3 s fill fit inside and zerobas's 2.3 s did not; with
+      `run_gap=20` the same program reads `[P 11 11 115]` here. `run_gap` is
+      RUN→capture and `cap_gap` is not — recorded as D-CAPGAP two days ago and
+      misapplied in every probe written for this item.
+      🔴 **AND THE INTROSPECTION ON THE WAY WAS MIS-TIMED TOO:** PC/VRAM samples
+      at an absolute 20 s were taken while the program was still being TYPED.
+      Only a sample at 150 s, long after RUN, showed the finished result.
+      Was: *A SCREEN 3 `PAINT` THAT MUST REPAINT NON-BORDER PIXELS NEVER FINISHES
+      ON ZEROBAS — THE VG-8020 DOES IT IN 66 JIFFIES (D-PAINTHANG).*
+      🎚️ TIER 1 — happy path (as filed).
+      ~~🤖 **AUTONOMOUS** — a defect with a reproducer; the fix is in
+      `sub/graphics.asm` (G5, the span fill).~~
       🔬 **FIRST SEEN** by [`scratchpad/paintforms_probe.py`](scratchpad/paintforms_probe.py)'s
       `s3-leak` case (a border of 7 that the box cannot stop), while proving
       PAINT's other two forms.
@@ -22935,7 +22948,8 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       ➡️ **NEXT:** the same case in SCREEN 2 with a same-colour border (the shape
       `paintkw` uses) to see whether it is SCREEN 3-specific; then the span
       loop's termination test, on our own source.
-      📏 **IT HOLDS PAINT AT LEVEL 0 BY DESIGN:** D-KWPAINT2 gave PAINT all 3
+      📏 ~~**IT HOLDS PAINT AT LEVEL 0 BY DESIGN:**~~ (withdrawn: PAINT is back
+      at T1) D-KWPAINT2 gave PAINT all 3
       forms the same day (`paintkw_b` fill-colour, `paintkw_c` border-colour in
       SCREEN 3), and the sheet then read `🔴 GAP` beside `T1✓`. The PROVEN
       column's T1 now also requires NO open TIER 1 item — Joost's own TIER 1

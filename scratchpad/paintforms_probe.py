@@ -1,5 +1,9 @@
 #!/usr/bin/env python3
-r"""D-KWPAINT2 -- PAINT's fill-colour and border forms, measured with their own timing.
+r"""❌ D-PAINTHANG WITHDRAWN 2026-09-24: this probe first passed `cap_gap`,
+which does NOT delay the capture after RUN; its "never finishes" rows were that.
+Now `run_gap`. The real timing is scratchpad/paintclock_probe.py (1.73x, any shape).
+
+D-KWPAINT2 -- PAINT's fill-colour and border forms, measured with their own timing.
 
 kwsweep's rows for these read `?nomarker` on BOTH machines: a flood outran the
 capture window, so "the form fails" and "the capture came too early" were one
@@ -44,7 +48,7 @@ for name, body in CASES:
     got = []
     for m in MACHINES:
         raw = omsx_repl.run_case(m, "stored", body + TAIL, sentinel=(0xE000, 255),
-                                 sentinel_capture=True, cap_gap=120.0,
+                                 sentinel_capture=True, run_gap=30.0,
                                  timeout=600.0) or ""
         f = re.findall(r"\[P([^\]]*)\]", raw)
         got.append(" ".join(f[-1].split()) if f else "<NO MARKER>")
