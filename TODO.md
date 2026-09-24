@@ -2416,9 +2416,15 @@ item — do **one item per session** to keep context lean.
       💰 **THE FIX** is the release schedule in `event_poll` (`basic/traps.asm`):
       first release after ~40 frames of hold, then every ~3 — a RAM counter
       plus a few bytes. ⚠️ Main page 1 read 1 B free on 2026-09-25 → blocked on
-      the carve strategy (🙋 Joost), like every ROM-growing item. Pin the exact
-      delay/interval with a finer sweep (35..45, and the interval) before
-      building.
+      the carve strategy (🙋 Joost), like every ROM-growing item.
+      📌 **PINNED, 2026-09-25** (`stoptap_probe.py --fine` →
+      `scratchpad/stoptap_fine.out`, holds 30..60 frames step 2): the VG-8020
+      reads 1 up to 40 frames, 2 at 42, then 3/4/4/5/6/6/7/8 at 46..60 — steps
+      at 42, 46, 48, 52, 54, 58, 60 (alternating 4 and 2 only because the sweep
+      samples every 2 frames). **Rule to build: fire on the press; first
+      re-fire after 41 frames held; then every 3 frames** — which also predicts
+      the 100-frame point (1 + (100−41)/3 ≈ 21 ✓). 🔮 Predicted "onset 38–44,
+      then +1 per ~3 frames" — HIT.
       🙋 **NEEDS-JOOST** — the CARVE STRATEGY (main is full; see the hand-off's
       queue). The measurement is done; the build waits for bytes.
 
@@ -5141,7 +5147,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:24081 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:24087 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -5307,7 +5313,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:10099 (T-6FE392)8 (T-529ABE)` from `TODO.md:21735 (T-529ABE)`: a
+      `TODO.md:10105 (T-6FE392)8 (T-529ABE)` from `TODO.md:21741 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -10943,7 +10949,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:21735 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:21741 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

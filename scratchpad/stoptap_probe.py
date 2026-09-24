@@ -22,6 +22,8 @@ import basic_probe_stop_trap as S                                 # noqa: E402
 SIDES = [("vg8020", "Philips_VG_8020"),
          ("zb", os.environ.get("ZEROBAS_BASIC_MACHINE", "C-BIOS_MSX1_EU_REPACK_DISK"))]
 FRAMES = (1, 3, 5, 10, 25, 50, 100)
+if "--fine" in sys.argv:                       # pin the delay and the interval
+    FRAMES = tuple(range(30, 62, 2))
 FRAME = 0.02                                  # PAL
 DOWN = 0.3
 
