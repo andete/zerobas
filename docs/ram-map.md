@@ -33,7 +33,7 @@ other component's cell at the same address; the `inside` column
 names the other component's BUFFER this address falls within. That
 second one is the question a per-component map cannot answer.
 
-* **basic** — 418 declared addresses in this project's own workspace `$E000..$F37F` (384 with a machine-readable width), plus **80** in the MSX standard work area at or above `$F380`.
+* **basic** — 415 declared addresses in this project's own workspace `$E000..$F37F` (382 with a machine-readable width), plus **84** in the MSX standard work area at or above `$F380`.
 * **disk** — 127 declared addresses in this project's own workspace `$E000..$F37F` (113 with a machine-readable width), plus **24** in the MSX standard work area at or above `$F380`.
 
 ## This project's own workspace (`$E000..$F37F`)
@@ -491,9 +491,6 @@ second one is the question a per-component map cannot answer.
 | `$F01B` | 1 B | `basic` | `TKOVF` | tokeniser: 0 = ok, else the ERR CODE of the |  |
 | `$F01C` | 8 B | `basic` | `FAC` | float accumulator: value bytes as tokenised (8) |  |
 | `$F01C` | 8 B | `disk` | `FAC` | float accumulator: value bytes as tokenised (8) |  |
-| `$F024` |  | `basic` | `FOUTBUF/HORNER_ACC/MATH_R/SQRT_R` | final-correction high-precision residual scratch |  |
-| `$F036` | 1 B | `basic` | `HORNER_CNT` | fp_poly_horner's own remaining-term loop |  |
-| `$F037` | 2 B | `basic` | `HORNER_PTR` | fp_poly_horner's own advancing coeff- |  |
 | `$F03C` | 1 B | `basic` | `TKDIG` | tokeniser/formatter: significant-digit array, (1 B) |  |
 | `$F054` | 1 B | `basic` | `TKPOS` | running digit-position counter (1) |  |
 | `$F055` | 1 B | `basic` | `TKINTLEN` | integer-part digit count = P (1) |  |
@@ -634,6 +631,10 @@ extents the standard already fixes would be noise, not rigour.
 | `$F6B9` | 2 B | `basic` | `ONELIN` | 2 B: ON ERROR handler line's LINK address (the |  |
 | `$F6BB` | 1 B | `basic` | `ONEFLG` | 1 B: $FF = currently inside a handler (no RESUME |  |
 | `$F6CA` | 26 B | `basic` | `DEFTBL` | per-letter default-type map, A..Z (26) -- |  |
+| `$F7C5` |  | `basic` | `FBUFFR` | published: number-conversion buffer (43 B) |  |
+| `$F7C6` |  | `basic` | `FOUTBUF/HORNER_ACC/MATH_R/SQRT_R` | final-correction high-precision residual scratch |  |
+| `$F7D8` | 1 B | `basic` | `HORNER_CNT` | fp_poly_horner's own remaining-term loop |  |
+| `$F7D9` | 2 B | `basic` | `HORNER_PTR` | fp_poly_horner's own advancing coeff- |  |
 | `$F87F` |  | `basic` | `FNKSTR` | measured base (D-KEYSTR scout) |  |
 | `$F922` |  | `basic` | `NAMBAS` | name-table base of the current text mode (MSX work area; D-SCREDIT) |  |
 | `$F92A` | 2 B | `basic` | `CLOC` | computed VRAM byte address of the current pixel (2) |  |

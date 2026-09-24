@@ -241,7 +241,23 @@ def run_row(row):
     for line in r.stdout.split("\n"):
         if line.startswith(("SUPPORTED", "DIVERGENT", "MISSING", "SILENT-GAP", "UNREADABLE")):
             return line.split()[0]
+    # 🔴 D-KNIFENOREAD (2026-09-24): SAY WHY, because this verdict proves nothing
+    # and used to be scored as proof (see NO_READING below).
+    tail = [l for l in (r.stdout + r.stderr).split("\n") if l.strip()][-4:]
+    print("      (no verdict from the sweep; rc=%d; tail: %s)" % (r.returncode, " | ".join(tail)))
     return "NO-VERDICT"
+
+
+# 🔴 D-KNIFENOREAD (2026-09-24): A CUT THAT PRODUCED NO READING IS NOT A CUT THAT
+# WAS NOTICED. `connected` and the console flag both used `v != "SUPPORTED"`, so
+# NO-VERDICT -- the sweep printed no verdict at all -- counted as LOAD-BEARING.
+# Measured: the D-BUFMERGE chain's knife run read NO-VERDICT on EVERY cut and
+# pinned the whole statement set "knife-proven"; the next healthy run read real
+# MISSING/DIVERGENT/UNREADABLE verdicts and exactly the four explained BLIND
+# rows. An inert knife must never look like a sharp one
+# [[a-knife-can-be-inert-because-the-build-did-not-happen]].
+NO_READING = ("NO-VERDICT",)
+_no_reading = []
 
 WEAK = {}
 # 🔴 THE PIN LIVES IN `scratchpad/`, TRACKED, AND NOT IN `build/` — MEASURED
@@ -304,7 +320,8 @@ def record(kw, row, verdict, mode):
     row_rec["row"] = row
     row_rec["weak"] = row_rec.get("weak") or bool(WEAK.get(row))
     row_rec.setdefault("modes", {})[mode] = verdict
-    row_rec["connected"] = any(v != "SUPPORTED" for v in row_rec["modes"].values())
+    row_rec["connected"] = any(v != "SUPPORTED" and v not in NO_READING
+                               for v in row_rec["modes"].values())
     row_rec["verdict"] = verdict
     # 🎚️ D-KWSTMTDEN (Joost, 2026-09-14: composites "should have the same TIER and
     # tests"). THE PIN IS KEYED BY THE KEYWORD THIS RUN CUT, WHICH IS NOT ALWAYS
@@ -891,7 +908,15 @@ for kw, row, tok in TARGETS:
         io.open(ROM, "wb").write(bytes(rom))
         install()
     record(kw, row, v, "fn" if FNMODE else "stmt")
-    flag = ("LOAD-BEARING" if v != "SUPPORTED"
+    if v in NO_READING:
+        _no_reading.append(kw)
+    flag = ("⚠️ NO-READING (not proof)" if v in NO_READING
+            else "LOAD-BEARING" if v != "SUPPORTED"
             else "WEAK (already excluded)" if WEAK.get(row) else "🔴 BLIND")
     print("  %-8s row %-10s knifed -> %-12s %s" % (kw, row, v, flag))
     sys.stdout.flush()
+
+if _no_reading:
+    print("\nknife: %d cut(s) produced NO READING -- they prove nothing and are NOT "
+          "recorded as connected: %s" % (len(_no_reading), " ".join(_no_reading)))
+    sys.exit(3)

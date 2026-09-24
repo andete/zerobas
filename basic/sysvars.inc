@@ -3977,7 +3977,19 @@ TKOVF           equ     $F01B   ; tokeniser: 0 = ok, else the ERR CODE of the
                                 ; too long. dl_overflow stores it into ERRFLG
                                 ; unconditionally (D-MSGMIGRATE) (1)
 FAC             equ     $F01C   ; float accumulator: value bytes as tokenised (8)
-FOUTBUF         equ     $F024   ; flt_out formatter output scratch (24)
+; 🏗️ D-ADDR29 S1 (Joost, 2026-09-24: *"All 29"*, docs/spec-basic-addr29.md):
+; the formatter's output lives in the PUBLISHED FBUFFR, one byte in. MEASURED
+; (scratchpad/fbuffr_probe.py, scratchpad/fbuffr_run.out): the VG-8020 keeps a
+; 00 at FBUFFR+0 and the text from FBUFFR+1, so FOUTBUF = FBUFFR+1 puts a
+; formatted float's digits exactly where the reference's are. 0 ROM bytes (every
+; user spells the name), and $F024..$F03B is freed.
+; ⚠️ STILL DIFFERENT, AND EACH IS A WRITE (route W), NOT THIS EQUATE: zerobas
+; appends PRINT's trailing space even for STR$ (the reference's STR$ does not);
+; zerobas formats INTEGERS in NUMBUF, not here; and FBUFFR+0 is not written.
+; The math aliases on FOUTBUF (SQRT_R, HORNER_CNT, HORNER_PTR) move with it --
+; the reference also uses FBUFFR as scratch during SIN (D-RAMFOOT).
+FBUFFR          equ     $F7C5   ; published: number-conversion buffer (43 B)
+FOUTBUF         equ     FBUFFR+1 ; flt_out formatter output scratch (24)
 TKDIG           equ     $F03C   ; tokeniser/formatter: significant-digit array, (1 B)
                                 ; one decimal digit value (0-9) per byte (24)
 ; tk_float single-literal scan state (own choice — free RAM; transient, dead

@@ -253,7 +253,7 @@ def _tape_blank() -> str:
     return fh.name
 
 
-def _tape_readback(path: str) -> str:
+def _tape_readback(path: str, subject: bool = False) -> str:
     """The BYTES on the recorded tape, as one hex string -- this rig's reading.
 
     🔴 IT IS DECODED IN PYTHON, NOT HEXED THROUGH Tcl like the printer log: a
@@ -265,6 +265,15 @@ def _tape_readback(path: str) -> str:
     # row scored SUPPORTED because both sides returned it -- two missing fixtures
     # agreeing with each other. (The cause was this rig recovering the path by
     # slicing its own Tcl string at the wrong offset.)
+    # 🔴 D-KNIFENOREAD (2026-09-24): BUT ONLY ON THE REFERENCE. The knife cuts
+    # CSAVE on the SUBJECT side and the subject then writes no tape -- which is
+    # exactly the defect this row exists to see, and the blanket refusal turned
+    # it into "nothing was measured" (and the knife scored that as proof). A
+    # reference that records nothing IS a broken rig; a subject that records
+    # nothing is a READING, and it can never agree with the reference's real
+    # tape, so the two-missing-fixtures trap above stays shut.
+    if not _os.path.exists(path) and subject:
+        return "<no tape written>"
     if not _os.path.exists(path):
         raise SystemExit(
             "kwsweep: APPARATUS FAILURE -- the NEEDS-BLANKTAPE: rig recorded no "
@@ -4348,7 +4357,8 @@ def main() -> int:
                 # made `bytes.fromhex` fail and the row read `?noecho` on both
                 # sides -- honest, but only because that guard exists. A NUL cannot
                 # appear in a 40x24 screen scrape, so the split is unambiguous.
-                got = [(g or "") + TAPE_MARK + _tape_readback(tape_out)
+                got = [(g or "") + TAPE_MARK
+                       + _tape_readback(tape_out, subject=mach == args.zb_machine)
                        for g in got]
             for i, g in zip(idx, got):
                 out[i] = g

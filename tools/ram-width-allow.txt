@@ -35,7 +35,6 @@ basic FN_PAREA undeclared
 basic FN_PAREA_END undeclared
 basic FN_STK_FLOOR undeclared
 basic FOSIGCOUNT/TKVALEND disputed
-basic FOUTBUF/HORNER_ACC/MATH_R/SQRT_R disputed
 basic GFX_B/GFX_WE_P disputed
 basic GFX_CPHASE overruns
 basic GFX_CS_M1/GFX_DBUF/GFX_PSTK/GFX_VBUF disputed

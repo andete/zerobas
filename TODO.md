@@ -1763,8 +1763,31 @@ item — do **one item per session** to keep context lean.
       recommended** (spec §4.1): `DAC` FULL (ints at `DAC+2`, USR reads DAC —
       supersedes `usr.asm`'s HL convention); `TEMPST` pool SHRINKS to 10;
       `RNDX` now, `ARG` later; the N set OBSERVABLE-first.
-      🤖 **AUTONOMOUS — next slice: S1 `FBUFFR`** (spec §5), then the pointer
-      chain. ⚠️ Every ROM-growing slice needs a carve first (13 B).
+      ~~🤖 **AUTONOMOUS — next slice: S1 `FBUFFR`** (spec §5), then the pointer
+      chain.~~ ⚠️ Every ROM-growing slice needs a carve first (13 B).
+      🟢 **S1 `FBUFFR` SHIPPED (2026-09-24), 0 ROM bytes — and the premise was
+      measured first and was HALF wrong.** `scratchpad/fbuffr_probe.py`
+      (`fbuffr_run.out` before, `fbuffr_after.out` after): the VG-8020 keeps
+      `00` at `FBUFFR+0` and the text from `+1`, so the equate is `FOUTBUF =
+      FBUFFR+1`, not `= FBUFFR`. After it, `PRINT 3.25` leaves the reference's
+      exact text; the `SQRT_R`/`HORNER_*` aliases moved with it (the reference
+      uses FBUFFR as SIN scratch too); `$F024..$F03B` is freed.
+      📋 **STILL W (each a write, filed here, not done):** zerobas's `STR$`
+      keeps PRINT's trailing space (` 123.5 ` vs ` 123.5`); INTEGERS are
+      formatted in `NUMBUF`, not FBUFFR (`STR$(-7)`, `PRINT 42` leave stale
+      text); `FBUFFR+0` is never written.
+      ➡️ **NEXT: S2, the pointer chain** (spec §2/§5).
+      🔪 **FOUND ON THE WAY — D-KNIFENOREAD, FIXED:** `scratchpad/kwknife.py`
+      scored a cut whose sweep printed NO verdict as LOAD-BEARING
+      (`v != "SUPPORTED"`). The knife run of the D-BUFMERGE chain read
+      NO-VERDICT on EVERY cut and pinned the whole set "knife-proven"; the next
+      run read real verdicts and the four explained BLIND rows. Now NO-VERDICT
+      is ⚠️ NO-READING, never `connected`, and the run exits 3 naming them. The
+      one live case was `CSAVE`: its tape rig REFUSED whenever a side wrote no
+      tape — including the knifed subject, which is the defect the row exists to
+      see. It now refuses only a REFERENCE without a tape (a broken rig); a
+      subject without one reads `<no tape written>`, which can never agree.
+      `CSAVE` re-cut → MISSING, LOAD-BEARING.
       ➡️ **STILL TO MEASURE:** widen the op list (control flow, graphics, file
       I/O); goal (a) (free memory: `FRE(0)`/`FRE("")` after boot and after
       `CLEAR`).
@@ -5054,7 +5077,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:23821 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:23859 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -5220,7 +5243,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:9981 (T-6FE392)8 (T-529ABE)` from `TODO.md:21475 (T-529ABE)`: a
+      `TODO.md:10004 (T-6FE392)8 (T-529ABE)` from `TODO.md:21513 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -10825,7 +10848,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:21475 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:21513 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -15997,6 +16020,21 @@ finds zero shared names (a renamed block would otherwise make it silently blind)
       `plug joyporta joystick1` succeeds and whether `STICK(1)` reads it —
       **the plumbing question BOTH routes depend on**, answered before either
       is paid for. If that chain fails, neither route was worth finishing.
+      📦 **BOARD ORDERED BY JOOST, 2026-09-24: an RP2040-Zero** (native USB-C,
+      same chip as the Pico), expected by ~2026-09-26. Flash: hold BOOT while
+      plugging in → UF2 drive; Arduino IDE with Earle Philhower's RP2040 core,
+      board "Waveshare RP2040 Zero", USB stack "Adafruit TinyUSB" for a
+      COMPOSITE joystick + mouse + CDC-serial device. ⚠️ If it does not
+      enumerate on a C-to-C cable, try A-to-C (some Zero clones lack the CC
+      resistors).
+      ⚠️ **PAD/PDL ARE A MOUSE, NOT A JOYSTICK, in openMSX** (`arkanoidpad` /
+      `paddle` take host mouse motion), and our runs are WINDOWLESS
+      (`renderer none`): mouse motion may never reach the emulator. So on
+      arrival, measure FIRST, in this order: (1) does `joystick1` appear and
+      `STICK(1)` read the board headless; (2) does mouse motion move `PDL`/`PAD`
+      headless. (2) failing limits the board to STICK/STRIG — it does not make
+      the purchase wrong.
+      ⛔ **STILL PARKED** (Joost, 2026-09-24, *"Park it"*) until he picks it up.
 
 - [x] ✅ **CLOSED 2026-09-17 (D-FNKLINE + D-SCROLLBOUND + D-KEYROW): the
       function-key display line PAINTS, the row is RESERVED, and all ten cells
