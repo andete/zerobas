@@ -1,0 +1,137 @@
+# 68 of 73 cited probe(s), serial, refcache OFF, 900s each
+  1/68  boolaxis_probe               rc=0         3.4s  🔴 NOTHING PARSED -- probe measured nothing, or format unknown
+          cites TODO.md:2676
+  2/68  budget_probe                 rc=0        25.3s  --  no verdict channel BY DESIGN (declared): a measurement instrument, not an oracle. Its ROWS still need a human.
+          cites TODO.md:12361
+  3/68  cf3300_files_probe           rc=0         0.4s  🔴 NOTHING PARSED -- probe measured nothing, or format unknown
+          cites TODO.md:23453
+  4/68  chanface_probe               rc=0        17.9s  clean: 12 parsed line(s), no divergence marker
+          cites TODO.md:12567,12567
+  5/68  clearhimem_probe             rc=0         7.8s  🔴 NOTHING PARSED -- probe measured nothing, or format unknown
+          cites TODO.md:2676
+  6/68  clicksw_probe                rc=0         3.3s  🔴 NOTHING PARSED -- probe measured nothing, or format unknown
+          cites TODO.md:2676,2676
+  7/68  clrtrapstk_key_probe         rc=0        10.0s  clean: 10 parsed line(s), no divergence marker
+          cites TODO.md:13613,13613
+  8/68  clrtrapstk_sprite_probe      rc=0         8.5s  clean: 8 parsed line(s), no divergence marker
+          cites TODO.md:13613,13613
+  9/68  clrtrapstk_stop_probe        rc=2         8.0s  🔴 NOTHING PARSED -- probe measured nothing, or format unknown
+          cites TODO.md:13613,13613
+ 10/68  clrtrapstk_strig_probe       rc=0         5.5s  clean: 10 parsed line(s), no divergence marker
+          cites TODO.md:13613,13613
+ 11/68  colontail_probe              rc=0        18.8s  clean: 24 parsed line(s), no divergence marker
+          cites TODO.md:12567,12567
+ 12/68  crunchbytes_probe            rc=0         8.0s  clean: 6 parsed line(s), no divergence marker
+          cites TODO.md:12567,12567
+ 13/68  csrsw_probe                  rc=0         3.4s  🔴 NOTHING PARSED -- probe measured nothing, or format unknown
+          cites TODO.md:2676,2676
+ 14/68  ctrlstop_probe               rc=0         6.7s  🔴 NOTHING PARSED -- probe measured nothing, or format unknown
+          cites TODO.md:23453
+ 15/68  datacolon2_probe             rc=0         2.2s  🔴 NOTHING PARSED -- probe measured nothing, or format unknown
+          cites TODO.md:23453
+ 16/68  deffn_alias_probe            rc=0         8.8s  DIVERGES 2 marker(s) in 2 parsed line(s)  [2 known]  🔴 AND EXITS 0 -- invisible to any rc-only collector
+          cites TODO.md:14810
+ 17/68  deffn_nestdepth_probe        rc=0         8.9s  --  no verdict channel BY DESIGN (declared): a measurement instrument, not an oracle. Its ROWS still need a human.
+          cites TODO.md:14810,14810
+ 18/68  deleterange_probe            rc=0         2.8s  🔴 NOTHING PARSED -- probe measured nothing, or format unknown
+          cites TODO.md:2676
+ 19/68  diskwrites_probe             rc=0         9.9s  🔴 NOTHING PARSED -- probe measured nothing, or format unknown
+          cites TODO.md:1533
+ 20/68  domain_probe                 rc=0        31.0s  clean: 22 parsed line(s), no divergence marker
+          cites TODO.md:12567,12567
+ 21/68  drawleak_probe               rc=0         0.4s  🔴 NOTHING PARSED -- probe measured nothing, or format unknown
+          cites TODO.md:23453
+ 22/68  drawsubst_probe              rc=0         8.9s  🔴 NOTHING PARSED -- probe measured nothing, or format unknown
+          cites TODO.md:23453
+ 23/68  dupopen_probe                rc=0         9.7s  DIVERGES 6/11  s.same s.space s.newtwice s.modes s.seqsame s.reclaim  [6 known]  🔴 AND EXITS 0 -- invisible to any rc-only collector
+          cites TODO.md:18873,18873
+ 24/68  dupspan_probe                rc=0        45.2s  clean: 155 parsed line(s), no divergence marker
+          cites TODO.md:14367
+ 25/68  emptyop_probe                rc=0         8.1s  clean: 6 parsed line(s), no divergence marker
+          cites TODO.md:12567,12567
+ 26/68  extraarg_probe               rc=0        21.5s  clean: 14 parsed line(s), no divergence marker
+          cites TODO.md:12567,12567
+ 27/68  fatbuf_probe                 rc=0         1.2s  🔴 NOTHING PARSED -- probe measured nothing, or format unknown
+          cites TODO.md:29
+ 28/68  fcbstride_probe              rc=0         9.3s  🔴 NOTHING PARSED -- probe measured nothing, or format unknown
+          cites TODO.md:2676,2676
+ 29/68  fnarity_probe                rc=0        22.2s  clean: 18 parsed line(s), no divergence marker
+          cites TODO.md:12567,12567
+ 30/68  holdrow_probe                rc=0         8.0s  🔴 NOTHING PARSED -- probe measured nothing, or format unknown
+          cites TODO.md:2676,2676
+ 31/68  hookcount_probe              rc=0        65.1s  🔴 NOTHING PARSED -- probe measured nothing, or format unknown
+          cites TODO.md:220
+ 32/68  interpspeed_probe            rc=0        50.1s  --  no verdict channel BY DESIGN (declared): a measurement instrument, not an oracle. Its ROWS still need a human.
+          cites TODO.md:11640,11640
+ 33/68  joyplug_probe                rc=0         7.4s  🔴 NOTHING PARSED -- probe measured nothing, or format unknown
+          cites TODO.md:2676,2676
+ 34/68  keyline_probe                rc=0         1.1s  🔴 NOTHING PARSED -- probe measured nothing, or format unknown
+          cites TODO.md:23453
+ 35/68  lineentry_probe              rc=0         1.1s  clean: reported `DIFF: 0/4` -- a summary of ZERO is a measurement, not a silence
+          cites TODO.md:19075,19075
+ 36/68  loadrun_probe                rc=0         8.0s  🔴 NOTHING PARSED -- probe measured nothing, or format unknown
+          cites TODO.md:2651
+ 37/68  loc_probe                    rc=0         2.0s  --  no verdict channel BY DESIGN (declared): a measurement instrument, not an oracle. Its ROWS still need a human.
+          cites TODO.md:20961,20961
+ 38/68  maxfilestail_probe           rc=0         0.9s  clean: reported `DIFF: 0/1` -- a summary of ZERO is a measurement, not a silence
+          cites TODO.md:12567,12567
+ 39/68  mdr_probe                    rc=0         6.6s  🔴 NOTHING PARSED -- probe measured nothing, or format unknown
+          cites TODO.md:23453
+ 40/68  mergeshape_probe             rc=0        88.0s  🔴 NOTHING PARSED -- probe measured nothing, or format unknown
+          cites TODO.md:220
+ 41/68  mergewin_probe               rc=0         1.5s  🔴 NOTHING PARSED -- probe measured nothing, or format unknown
+          cites TODO.md:220
+ 42/68  mergexpr_probe               rc=0        10.4s  clean: 14 parsed line(s), no divergence marker
+          cites TODO.md:12567,12567
+ 43/68  namesurvive_probe            rc=0         1.3s  clean: 3 parsed line(s), no divergence marker
+          cites TODO.md:12567,12567
+ 44/68  ngram14_probe                rc=1        29.7s  DIVERGES 9/18  r.atn r.exphuge x.m100 x.m200 x.m1e30 x.m150 x.m170 x.m180 x.p100  [9 known]
+          cites TODO.md:9405
+ 45/68  nodiskgap_probe              rc=0         2.5s  🔴 NOTHING PARSED -- probe measured nothing, or format unknown
+          cites TODO.md:23453,23453
+ 46/68  omitarg_probe                rc=0        21.0s  clean: 15 parsed line(s), no divergence marker
+          cites TODO.md:12567,12567
+ 47/68  open2_probe                  rc=0        17.5s  DIVERGES 1/18  e.same2  [1 known]  🔴 AND EXITS 0 -- invisible to any rc-only collector
+          cites TODO.md:18873
+ 48/68  paintarg_probe               rc=0         2.3s  🔴 NOTHING PARSED -- probe measured nothing, or format unknown
+          cites TODO.md:23453
+ 49/68  parennest_probe              rc=0        23.8s  clean: 60 parsed line(s), no divergence marker
+          cites TODO.md:2676
+ 50/68  partial_probe                rc=0        10.7s  clean: 6 parsed line(s), no divergence marker
+          cites TODO.md:12567,12567
+ 51/68  playfn_fixture_probe         rc=0        17.6s  DIVERGES 6 marker(s) in 0 parsed line(s)  [5 known, 🔴 1 marker line(s) UNFILED -- read them]  🔴 AND EXITS 0 -- invisible to any rc-only collector
+          cites TODO.md:15878,15878
+ 52/68  playmml_probe                rc=0         2.5s  🔴 NOTHING PARSED -- probe measured nothing, or format unknown
+          cites TODO.md:15780,15780
+ 53/68  playnote_probe               rc=0        10.2s  🔴 NOTHING PARSED -- probe measured nothing, or format unknown
+          cites TODO.md:23453,23453
+ 54/68  playpsg_probe                rc=0        10.4s  🔴 NOTHING PARSED -- probe measured nothing, or format unknown
+          cites TODO.md:23453,23453
+ 55/68  playx_probe                  rc=1        11.0s  🔴 NOTHING PARSED -- probe measured nothing, or format unknown
+          cites TODO.md:15780,15780
+ 56/68  put3consume_probe            rc=0        17.1s  --  no verdict channel BY DESIGN (declared): a measurement instrument, not an oracle. Its ROWS still need a human.
+          cites TODO.md:19075,19075
+ 57/68  putcost_probe                rc=0        88.3s  --  no verdict channel BY DESIGN (declared): a measurement instrument, not an oracle. Its ROWS still need a human.
+          cites TODO.md:19075,19075
+ 58/68  putio_probe                  rc=0         0.2s  --  no verdict channel BY DESIGN (declared): a measurement instrument, not an oracle. Its ROWS still need a human.
+          cites TODO.md:19075,19075
+ 59/68  reclen_probe                 rc=0        26.6s  DIVERGES 4/7  p.put3 p.same3 p.close3 p.trap3  [4 known]  🔴 AND EXITS 0 -- invisible to any rc-only collector
+          cites TODO.md:19075,19075
+ 60/68  rigcap_probe                 TIMEOUT    900.0s  🔴 NOTHING PARSED -- probe measured nothing, or format unknown
+          cites TODO.md:15466,15466
+ 61/68  rungap_probe                 rc=0        67.4s  --  no verdict channel BY DESIGN (declared): a measurement instrument, not an oracle. Its ROWS still need a human.
+          cites TODO.md:19075,19075
+ 62/68  spritestate_probe            rc=0         9.3s  🔴 NOTHING PARSED -- probe measured nothing, or format unknown
+          cites TODO.md:13613,13613
+ 63/68  sticksample_probe            rc=0         1.8s  🔴 NOTHING PARSED -- probe measured nothing, or format unknown
+          cites TODO.md:2676,2676
+ 64/68  tailjunk_probe               rc=0        30.8s  clean: 25 parsed line(s), no divergence marker
+          cites TODO.md:12567,12567
+ 65/68  trailblank_probe             rc=0         7.8s  clean: 6 parsed line(s), no divergence marker
+          cites TODO.md:25586
+ 66/68  trapstate_probe              rc=0         2.5s  --  no verdict channel BY DESIGN (declared): a measurement instrument, not an oracle. Its ROWS still need a human.
+          cites TODO.md:13613,13613
+ 67/68  varptrn_probe                rc=0         8.8s  🔴 NOTHING PARSED -- probe measured nothing, or format unknown
+          cites TODO.md:2676,2676
+ 68/68  vdpie_probe                  rc=0         6.8s  🔴 NOTHING PARSED -- probe measured nothing, or format unknown
+          cites TODO.md:2676

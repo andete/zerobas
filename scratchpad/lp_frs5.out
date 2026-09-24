@@ -1,0 +1,11 @@
+# 5 of 73 cited probe(s), serial, refcache OFF, 900s each
+  1/5  aliasscope_probe             rc=0         2.7s  🔴 NOTHING PARSED -- probe measured nothing, or format unknown
+          cites TODO.md:1419
+  2/5  argtype_probe                rc=0        32.7s  clean: 22 parsed line(s), no divergence marker
+          cites TODO.md:12567,12567
+  3/5  asciidigit_probe             rc=0         9.3s  DIVERGES 2 marker(s) in 12 parsed line(s)  [2 known]  🔴 AND EXITS 0 -- invisible to any rc-only collector
+          cites TODO.md:12567,12567
+  4/5  bareform_probe               rc=1        65.0s  DIVERGES 1 marker(s) in 49 parsed line(s)  [1 known]
+          cites TODO.md:12567,12567
+  5/5  beepobs_probe                rc=0         9.1s  🔴 NOTHING PARSED -- probe measured nothing, or format unknown
+          cites TODO.md:2676

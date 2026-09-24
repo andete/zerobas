@@ -4848,7 +4848,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:22841 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:22898 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -5014,7 +5014,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:9657 (T-6FE392)8 (T-529ABE)` from `TODO.md:21088 (T-529ABE)`: a
+      `TODO.md:9676 (T-6FE392)8 (T-529ABE)` from `TODO.md:21107 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -5985,10 +5985,29 @@ list. **When a slice lands, grep this list for what it just shipped.**
       WHICH, so the pin could be neither confirmed nor go stale. Fixed with
       per-row `DIFF <label>` lines (D-RECLENV's remedy); now `[3 known]`.
       **A pin is not filed until the sweep has been re-run and agrees.**
+      📏 **RE-RUN IN FULL 2026-09-24 — 73 PROBES, SERIAL, REFCACHE OFF, THE
+      WHOLE CORPUS.** Result: **1 UNFILED · 0 NO-LONGER-DIVERGING · 35 of 73
+      NOTHING PARSED.**
+      💰 **AND THE COST LINE BELOW WAS OPTIMISTIC BUT NOT BY MUCH — MEASURED:**
+      5 probes in 119 s, then 68 in 1895 s, so **~34 minutes for the full 73** at
+      ~26 s each. ⚠️ A first reading of this called the estimate "stale by 3.6×";
+      that was the PROBE COUNT (20 → 73), not the TIME. **A count is not a
+      cost** — the corpus more than tripled while the wall time went from
+      "20 minutes" to about half an hour, because most of the growth is in
+      fast probes.
+      🔴 **35 OF 73 — NEARLY HALF — HAVE NO READABLE VERDICT CHANNEL**, against
+      this entry's own *"12 of 13 now have a readable verdict channel"* from
+      when the corpus was 13. **That line is badly stale and the ratio has gone
+      the wrong way**: every slice since has cited probes without asking whether
+      the sweep can read them. ⚠️ `NOTHING PARSED` is an honest refusal, not a
+      false green — but a corpus half of which cannot be adjudicated is a
+      denominator with a hole in it, and that is this entry's own subject.
+      ➡️ **THE UNFILED ONE IS A ROW THAT CAME BACK — filed separately below
+      (D-PLAYBACK), and DELIBERATELY NOT RE-PINNED.**
       🎚️ APPARATUS — probes that exit 0 on a divergence
-      🤖 AUTONOMOUS — the corpus is 0 UNFILED / 0 NO-LONGER-DIVERGING as of
-      2026-09-10. Re-run it in slices after any session that adds probes; it
-      costs 20 minutes, and this pass shows the debt lands the same night.
+      🤖 AUTONOMOUS — re-run it in slices after any session that adds probes.
+      **Measured 2026-09-24 at ~34 minutes for the full corpus**, and the debt
+      lands the same night.
 
 - [x] ✅ **D-OOMTAIL (2026-08-31): the two store-overflow exits share one
       body — +13 B main page 1.** `ctp_oom`'s seven-instruction tail was
@@ -10501,7 +10520,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:21088 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:21107 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -22319,6 +22338,44 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       ⚠️ **AND SWEEP FOR SIBLINGS RATHER THAN FIXING THE ONE** — if this probe
       has no target, others may not either. The sweep is the item, not the
       single file.
+
+- [ ] 🔴 **A ROW DE-PINNED AS "NO LONGER DIVERGING" IS DIVERGING AGAIN, AND
+      RE-PINNING IT WOULD BURY IT (D-PLAYBACK, 2026-09-24)**
+      🎚️ APPARATUS — it is a question about a filed row's lifecycle, and about
+      whether a converged reading came apart.
+      🙋 **NEEDS-JOOST** — the decision is his, and it is not a coding choice:
+      **re-pinning a row as "known" is how a possible regression becomes
+      permanent.** The alternative is to leave it UNFILED so the sweep keeps
+      shouting, which costs a red line on every run until it is resolved.
+      🔬 **MEASURED** (`scratchpad/filed_row_sweep.py`, whole corpus;
+      `scratchpad/lp_playfn.out`). `playfn_fixture_probe`'s row
+      `empty string, no delay` reads:
+      | | vg8020 | zb |
+      |---|---|---|
+      | now | `-1 0 0 0` | `0 0 0 0` — **DIFFER** |
+      **Stable across three consecutive runs**, so it is not a flake — and the
+      file's own standard for moving this row is *"CONFIRMED TWICE"*, which is
+      why it was run three times before anything was written here.
+      🔴 **IT WAS REMOVED FROM THE PIN ON 2026-09-10 (D-FILEDSLICE) FOR THE
+      OPPOSITE READING**, with the same discipline: *"it no longer diverges
+      (`-1 0 0 0` on both sides, no DIFFER) ... CONFIRMED TWICE BEFORE REMOVAL,
+      because these are PLAY TIMING rows"*. So zerobas matched the reference's
+      PLAY start-up transient then and does not now.
+      ❓ **TWO LIVE HYPOTHESES, AND NEITHER IS FILED AS THE CAUSE:**
+      **(a)** a genuine behaviour change — zerobas no longer shows the start-up
+      transient the VG-8020 shows;
+      **(b)** a HARNESS change since 09-10 moved when the voice state is
+      sampled. The `run_gap` seam and `$ZEROBAS_RUN_GAP` landed on 09-22/23,
+      **after** the de-pinning, and this arc has already proved twice that
+      moving a capture slot changes what a timing-sensitive row reads
+      (`kwsweep`'s four hold rows, `input-devices`'s five).
+      🔬 **THE DISCRIMINATING MEASUREMENT IS CHEAP AND UNRUN:** re-run this probe
+      against the ROM and harness as they stood on 2026-09-10
+      (`git worktree add --detach <sha>` — never rebuild mid-differential). If
+      the row is clean there and dirty here, something in between did it, and
+      the harness is the first suspect, not the ROM.
+      ⚠️ **NO ROM HAS CHANGED SINCE 2026-09-23 EVENING**, and the full battery
+      has been green all night — so whatever moved, it did not move tonight.
 
 - [ ] 🎚️ **WHAT PROVES A RUNG? T2, T4, T5 AND T6 HAVE NO PROVING ROW TYPE, SO
       `0 of 159` KEYWORDS PROVE ANY OF THEM (D-KWPROVEN, 2026-09-23).**
