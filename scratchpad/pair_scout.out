@@ -1,0 +1,3 @@
+main files scanned: 39 (shared bodies excluded: 26)
+ net   n  b  pair
+   2   4  5  and $0f  /  ld (gfx_c),a    e.g. basic/graphics.asm:75, basic/graphics.asm:192, basic/graphics.asm:740

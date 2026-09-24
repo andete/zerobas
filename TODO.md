@@ -5077,7 +5077,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:23898 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:23919 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -5243,7 +5243,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:10004 (T-6FE392)8 (T-529ABE)` from `TODO.md:21552 (T-529ABE)`: a
+      `TODO.md:10004 (T-6FE392)8 (T-529ABE)` from `TODO.md:21573 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -10848,7 +10848,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:21552 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:21573 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -16305,6 +16305,27 @@ finds zero shared names (a renamed block would otherwise make it silently blind)
       instruction-pair route (`scratchpad/jr_mapper.py`, adjacent-pair ngrams,
       `inc_skip`/`skip_comma`-style helpers). Then re-apply D-PLAYXBUILD with the
       scan in the tenant. ⚠️ `X` must not ship half-built (§7.11).
+      🔬 **THE CARVE, SCOUTED 2026-09-24 (measurement only, nothing spent):**
+      | route | offers | source |
+      |---|---|---|
+      | D `jp`→`jr` | **9 B** (9 page-1 sites) | `scratchpad/jr_mapper.py` |
+      | instruction pairs | **2 B** (best pair nets 2; the earlier helper carve harvested the rest) | `scratchpad/pair_scout.py` → `pair_scout.out` |
+      | C → sub PAGE 1 (706 B free) | only HOT leaves: the ISR/PLAY servicers, the evaluator core, `tok_skip`, the tape byte readers — every cold VERB's closure reaches `eval` in main page 1 | `scratchpad/evict_scout.py` → `evict_scout.out` |
+      So D + pairs ≈ 11 B of the ~27. Evicting a hot leaf would fund it but puts
+      a CALSLT on every interrupt/byte (T5 speed, and tape/ISR timing) — not
+      taken without Joost.
+      💡 **A SHAPE THE SCOUT SUGGESTS, UNPRICED:** a sub PAGE-0 tenant (434 B
+      free) sees main page 1, so it could call the variable lookup itself — the
+      whole `X` name resolution could leave main, which would then keep only a
+      stub + the `MUSICF` drop. Blocked on ONE question: a page-0 tenant must
+      never reach the low region or the BIOS, and the over-approximate closure
+      of `var_find_typed` (957 labels) does, via the error path. `X` on an
+      UNDEFINED variable must not create it (the reference returns empty, no
+      error), so a FIND-ONLY lookup may have a small closure — that needs a
+      path-aware check before this shape is priced.
+      ➡️ **NEXT SESSION:** (1) the find-only closure for the page-0 shape; (2) if
+      it holds, price that shape exactly; (3) bring the shapes (page-0 lookup
+      vs a hot-leaf eviction vs waiting for a carve) to Joost — the item's ASK.
       🔭 SCOUT-THEN-ASK — ✅ THE SCOUT IS DONE (above); what remains is the ASK.
       *(the original question, for the record:)* grep where the lookup lives (is it
       below `$4000`, reachable from a page-1 sub tenant, or main page 1 where the
