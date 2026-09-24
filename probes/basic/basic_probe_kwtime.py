@@ -76,6 +76,13 @@ PIN = os.path.join(_ROOT, "build", "kwtime.json")
 # boot that went wrong times nothing on EITHER side, and a pin of zero OK rows
 # would read as "no keyword completes in reasonable time" on the sheet.
 REF_FLOOR = 100
+# 💽 D-KWTDISK (2026-09-24): THE DISK ROWS ARE TIMED AGAINST THE CF-3300. The
+# VG-8020 has no drive, so a disk verb has no time there at all; the CF-3300 is
+# the reference kwsweep already scores those rows against, and it is the rule
+# Joost ruled for the RAM rung -- *"prefer the vg8020"*, disk-only cells take
+# the CF-3300. Its boot is ~6 s longer than the VG's (kwsweep's MACH_BOOT).
+DISK_REF = "National_CF-3300"
+DISK_REF_BOOT = 14.0
 MARK_LITERALS = [f"{a},{v}" for a in ("&HE000", "-8192") for v in (START, END)]
 
 
@@ -199,21 +206,27 @@ SYNCVAR = "X7"                 # the interrupt-sync variable -- K26 keeps it unu
 RESET = "SCREEN0:WIDTH37"       # the per-case starting state (see case_lines)
 FORMS: dict = {}               # row key -> its kwsweep FORM (T5 is per form)
 TIMED: dict = {}               # row key -> the declared timed occurrence, or None
+GROUP: dict = {}               # row key -> "plain" or "disk" (D-KWTDISK)
 
 
 def select_rows(only=None):
     """kwsweep's PLAIN rows that declare a FORM -- the rows T1 counts.
 
-    Plain = no rig (disk/printer/tape/hold/plug), not an editor (`PROGRAM:`) row,
+    Plain = no rig (printer/tape/hold/plug), not an editor (`PROGRAM:`) row,
     not a `RESPOND:` row: those need machinery this shape does not drive, and a
-    keyword whose only rows are rigged simply has no T2 reading yet."""
+    keyword whose only rows are rigged simply has no T2 reading yet.
+    💽 A row whose ONLY rig is the disk IS selected (D-KWTDISK) -- mounting a
+    fresh image is all it needs -- and is timed in its own group against
+    DISK_REF. A disk row with a SECOND rig (`lfiles`: disk + printer) is not."""
     out = []
     for key, _crunch, line, mode, note in kw.SWEEP:
-        if line is None or kw._row_rigs(note) or kw.row_program(note) \
+        rigs = kw._row_rigs(note)
+        if line is None or (rigs and rigs != ("disk",)) or kw.row_program(note) \
                 or kw.row_respond(note) or not kw.row_form(note):
             continue
         if only and key not in only:
             continue
+        GROUP[key] = "disk" if rigs else "plain"
         out.append((key, line, mode, row_keyword(_crunch, note)))
         FORMS[key] = kw.row_form(note)
         m = re.search(r"(?<!\S)TIMED:(\d+)(?!\S)", note)
@@ -354,7 +367,21 @@ def curlin_ok(line, caps):
     return not any(c and ERR_LINE.search(c) for c in caps)
 
 
-def calibrate(machine):
+def group_kwargs(group, machine):
+    """-> the extra run_cases kwargs a group needs on `machine`, built FRESH per
+    call: the disk rig hands out a private copy of the test image each time, so
+    the plain run and its twin both start from the image as shipped -- a row
+    that KILLs or NAMEs a file cannot change what the next measurement sees."""
+    if group != "disk":
+        return {}
+    extra = kw._rig_kwargs(("disk",))
+    extra.pop("batch", None)
+    if machine == DISK_REF:
+        extra["boot"] = DISK_REF_BOOT
+    return extra
+
+
+def calibrate(machine, extra=None):
     """-> this machine's END-path bias: from the end mark to CURLIN := $FFFF when
     the program then runs `END`. LIVE every run, never a constant -- measured
     2026-09-24 at +0.40 ms (ref) / +0.30 ms (zb) over falling off the end."""
@@ -363,9 +390,10 @@ def calibrate(machine):
               f"7 POKE&H{MARK_ADDR:04X},{START}", "10 A=1",
               f"20 POKE&H{MARK_ADDR:04X},{END}:END", "RUN"])
     so: dict = {}
-    omsx_repl.run_cases(machine, [("direct", lines)], batch=True, reset=(),
-                        capture="screen", boot=8.0, sentinel=(MARK_ADDR, END),
-                        settle_out=so, watch_values=((CURLIN_HI, 0xFF),))
+    rk = dict(capture="screen", boot=8.0, sentinel=(MARK_ADDR, END),
+              settle_out=so, watch_values=((CURLIN_HI, 0xFF),))
+    rk.update(extra or {})
+    omsx_repl.run_cases(machine, [("direct", lines)], batch=True, reset=(), **rk)
     mk = so.get("marks", {}).get(0, [])
     w = [t for t, _v in so.get("watch", {}).get(0, {}).get(CURLIN_HI, [])]
     te = [t for t, v in mk if v == END]
@@ -373,7 +401,7 @@ def calibrate(machine):
     return (tf[0] - te[0]) if te and tf else None
 
 
-def measure(machine, rows, pad=None, twin=False, caps_out=None):
+def measure(machine, rows, pad=None, twin=False, caps_out=None, extra=None):
     """Time `rows` in one batched boot -> [(mark_seconds, curlin_seconds)].
     `twin=True` times each row's TWIN; a row with no twin gets (None, None)
     without being typed."""
@@ -385,10 +413,10 @@ def measure(machine, rows, pad=None, twin=False, caps_out=None):
         return [(None, None)] * len(rows)
     specs = [("direct", case_lines(None, pad, bods[i])) for i in idx]
     so: dict = {}
-    caps = omsx_repl.run_cases(machine, specs, batch=True, reset=(),
-                               capture="screen", boot=8.0,
-                               sentinel=(MARK_ADDR, END), settle_out=so,
-                               watch_values=((CURLIN_HI, 0xFF),))
+    rk = dict(capture="screen", boot=8.0, sentinel=(MARK_ADDR, END),
+              settle_out=so, watch_values=((CURLIN_HI, 0xFF),))
+    rk.update(extra or {})
+    caps = omsx_repl.run_cases(machine, specs, batch=True, reset=(), **rk)
     if caps_out is not None:
         caps_out[:] = [None] * len(rows)
         for j, i in enumerate(idx):
@@ -418,6 +446,24 @@ def negative(zb_machine):
         return 2
     ref = [p[0] for p in measure(REF, rows)]
     zb = [p[0] for p in measure(zb_machine, rows, pad="FOR Q9=1 TO 200:NEXT")]
+    # 💽 D-KWTDISK: THE DISK GROUP GETS ITS OWN ARM, because it is a different
+    # route -- another reference machine, a mounted image, its own kwargs -- and
+    # a route that silently timed the wrong machine or nothing would still print
+    # plausible ratios. `lof` is the shortest disk row (~1.2 s on the CF-3300),
+    # so its pad is proportionate: 3000 iterations (~4.9 ms each, measured by
+    # the plain arms) put zerobas's side near 13x, where 200 would not move a
+    # one-second row at all. ⚠️ NOT MORE: 6000 (~29 s) ran past the disk rig's
+    # 20 s capture window and read HANG -- caught, but not the SLOW this arm
+    # asserts, and a HANG would pass for a different reason.
+    drow = select_rows({"lof"})
+    if len(drow) != 1 or GROUP.get("lof") != "disk":
+        print("kwtime --negative: expected the disk control row `lof`")
+        return 2
+    rows = rows + drow
+    ref += [p[0] for p in measure(DISK_REF, drow,
+                                  extra=group_kwargs("disk", DISK_REF))]
+    zb += [p[0] for p in measure(zb_machine, drow, pad="FOR Q9=1 TO 3000:NEXT",
+                                 extra=group_kwargs("disk", zb_machine))]
     bad = 0
     for (key, _l, _m, _w), r, z in zip(rows, ref, zb):
         st = status(r, z)
@@ -549,55 +595,71 @@ def main():
         print(f"kwtime: REFUSING -- row(s) {clash} write a mark value themselves")
         return 2
     fp_before = kw._rom_fingerprint()
-    rcap, zcap = [], []
-    ref = measure(REF, rows, caps_out=rcap)
-    zb = measure(a.zb_machine, rows, caps_out=zcap)
-    ref_t = measure(REF, rows, twin=True)
-    zb_t = measure(a.zb_machine, rows, twin=True)
-    fp_after = kw._rom_fingerprint()
-    rfall, zfall = machine_bias(ref), machine_bias(zb)
-    rend, zend = calibrate(REF), calibrate(a.zb_machine)
-    for side, b, e in (("ref", rfall, rend), ("zb", zfall, zend)):
-        print(f"kwtime: {side} CURLIN bias -- fall-off "
-              + ("none" if b[0] is None else
-                 f"{b[0] * 1e3:.3f} ms (spread {b[1] * 1e3:.3f}..{b[2] * 1e3:.3f})")
-              + " · END path " + ("none" if e is None else f"{e * 1e3:.3f} ms"))
-    rb, zbb = (rend,), (zend,)
     res = {}
     tally: dict = {}
-    print(f"{'row':16} {'ref ms':>9} {'zb ms':>9} {'zb/ref':>7} {'alone':>6}  status")
     n_alone = 0
     n_curlin = 0
-    for (key, _l, _m, word), rp, zp, rtp, ztp, rc_, zc_ in zip(
-            rows, ref, zb, ref_t, zb_t, rcap, zcap):
-        if not curlin_ok(_l, (rc_, zc_)):
-            # CURLIN is not the same event here (see DIRECT_RETURNERS)
-            rp, zp, rtp, ztp = ((p[0], None) for p in (rp, zp, rtp, ztp))
-        r, rv = resolve(rp, rb[0])
-        z, zv = resolve(zp, zbb[0])
-        rt, _ = resolve(rtp, rb[0])
-        zt, _ = resolve(ztp, zbb[0])
-        if rv and zv and rv != zv:
-            # one side reached its end mark and the other only ended: the two
-            # machines took DIFFERENT PATHS through the same program -- a
-            # behaviour difference, never a timing
-            st, r, z, rt, zt = "PATH-DIFFERS", None, None, None, None
-        else:
-            st = status(r, z)
-            n_curlin += rv == "curlin" and st == "OK"
-        tally[st] = tally.get(st, 0) + 1
-        ratio = z / r if r and z else None
-        al = alone(r, z, rt, zt)
-        n_alone += al is not None
-        res[key] = {"ref": r, "zb": z, "ratio": ratio, "status": st,
-                    "via": rv if rv == zv else None,
-                    "word": word, "form": FORMS.get(key),
-                    "twin_ref": rt, "twin_zb": zt, "alone": al}
-        print(f"{key:16} {r * 1e3 if r else float('nan'):9.3f} "
-              f"{z * 1e3 if z else float('nan'):9.3f} "
-              f"{(f'{ratio:.2f}' if ratio else '-'):>7} "
-              f"{(f'{al:.2f}' if al else '~'):>6}  {st}")
-    timed = sum(1 for p in ref if p[0] is not None)
+    timed = 0
+    biases = {}
+    print(f"{'row':16} {'ref ms':>9} {'zb ms':>9} {'zb/ref':>7} {'alone':>6}  status")
+    for group, refm in (("plain", REF), ("disk", DISK_REF)):
+        grows = [r for r in rows if GROUP[r[0]] == group]
+        if not grows:
+            continue
+        rcap, zcap = [], []
+        ref = measure(refm, grows, caps_out=rcap,
+                      extra=group_kwargs(group, refm))
+        zb = measure(a.zb_machine, grows, caps_out=zcap,
+                     extra=group_kwargs(group, a.zb_machine))
+        ref_t = measure(refm, grows, twin=True,
+                        extra=group_kwargs(group, refm))
+        zb_t = measure(a.zb_machine, grows, twin=True,
+                       extra=group_kwargs(group, a.zb_machine))
+        rfall, zfall = machine_bias(ref), machine_bias(zb)
+        rend = calibrate(refm, group_kwargs(group, refm))
+        zend = calibrate(a.zb_machine, group_kwargs(group, a.zb_machine))
+        biases[group] = {"ref_machine": refm,
+                         "ref": {"fall_off": rfall, "end_path": rend},
+                         "zb": {"fall_off": zfall, "end_path": zend}}
+        for side, b, e in (("ref", rfall, rend), ("zb", zfall, zend)):
+            print(f"kwtime: [{group}] {side} CURLIN bias -- fall-off "
+                  + ("none" if b[0] is None else
+                     f"{b[0] * 1e3:.3f} ms (spread {b[1] * 1e3:.3f}..{b[2] * 1e3:.3f})")
+                  + " · END path " + ("none" if e is None else f"{e * 1e3:.3f} ms"))
+        rb, zbb = (rend,), (zend,)
+        for (key, _l, _m, word), rp, zp, rtp, ztp, rc_, zc_ in zip(
+                grows, ref, zb, ref_t, zb_t, rcap, zcap):
+            if not curlin_ok(_l, (rc_, zc_)):
+                # CURLIN is not the same event here (see DIRECT_RETURNERS)
+                rp, zp, rtp, ztp = ((p[0], None) for p in (rp, zp, rtp, ztp))
+            r, rv = resolve(rp, rb[0])
+            z, zv = resolve(zp, zbb[0])
+            rt, _ = resolve(rtp, rb[0])
+            zt, _ = resolve(ztp, zbb[0])
+            if rv and zv and rv != zv:
+                # one side reached its end mark and the other only ended: the two
+                # machines took DIFFERENT PATHS through the same program -- a
+                # behaviour difference, never a timing
+                st, r, z, rt, zt = "PATH-DIFFERS", None, None, None, None
+            else:
+                st = status(r, z)
+                n_curlin += rv == "curlin" and st == "OK"
+            tally[st] = tally.get(st, 0) + 1
+            ratio = z / r if r and z else None
+            al = alone(r, z, rt, zt)
+            n_alone += al is not None
+            res[key] = {"ref": r, "zb": z, "ratio": ratio, "status": st,
+                        "via": rv if rv == zv else None,
+                        "word": word, "form": FORMS.get(key),
+                        "twin_ref": rt, "twin_zb": zt, "alone": al,
+                        "ref_machine": refm}
+            print(f"{key:16} {r * 1e3 if r else float('nan'):9.3f} "
+                  f"{z * 1e3 if z else float('nan'):9.3f} "
+                  f"{(f'{ratio:.2f}' if ratio else '-'):>7} "
+                  f"{(f'{al:.2f}' if al else '~'):>6}  {st}"
+                  + ("" if group == "plain" else f"  [{group}: {refm}]"))
+        timed += sum(1 for p in ref if p[0] is not None)
+    fp_after = kw._rom_fingerprint()
     print("\nkwtime: " + " · ".join(f"{k}={v}" for k, v in sorted(tally.items()))
           + f"  ({len(rows)} rows, bar {BAR:g}x; keyword-alone reading on {n_alone};"
           f" {n_curlin} timed via CURLIN)")
@@ -614,8 +676,7 @@ def main():
         with open(PIN, "w", encoding="utf-8") as fh:
             json.dump({"written": _t.strftime("%Y-%m-%d %H:%M:%S"),
                        "rom_fingerprint": fp_after, "bar": BAR, "rows": res,
-                       "curlin_bias": {"ref": {"fall_off": rfall, "end_path": rend},
-                                       "zb": {"fall_off": zfall, "end_path": zend}}},
+                       "curlin_bias": biases},
                       fh, indent=1, sort_keys=True)
         print(f"pin: {len(res)} timed row(s) -> {PIN}")
     return 0

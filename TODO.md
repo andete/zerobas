@@ -4968,7 +4968,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:23694 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:23716 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -22833,6 +22833,28 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       `CURLIN = $FFFF` among the cold-boot differences; the RAM-map comparison
       should carry it as a LIVE cell, not an init value. ⚠️ The whole-program-vs-keyword
       question below is Joost's and does not block either.
+      💽 **D-KWTDISK (2026-09-24): THE DISK ROWS ARE TIMED TOO — T2 92 → 115
+      KEYWORDS.** 51 keywords sat at level 1 with `T2—`, far more than the 14
+      UNTIMEABLE rows could explain: `select_rows` skipped every RIGGED row, and
+      48 of the FORM rows carry only the disk rig. They are now a second group,
+      timed against the **CF-3300** — the VG-8020 has no drive, so a disk verb
+      has no time there at all; it is the machine kwsweep already scores those
+      rows against, and the rule Joost ruled for the RAM rung (*"prefer the
+      vg8020"*, disk-only takes the CF-3300). ⚠️ That is an EXTENSION of the T2
+      ruling's *"10× the VG-8020"* to where the VG-8020 cannot answer — stated
+      here so it can be overruled, not assumed. Each measurement mounts a FRESH
+      copy of the image, so a row that KILLs or NAMEs a file cannot change what
+      its twin sees. A disk row with a SECOND rig (`lfiles`) stays out.
+      🔪 **ITS OWN NEGATIVE ARM** in `--negative`: `lof` padded with 3000
+      iterations reads **12.4× SLOW** (predicted ~13×). ⚠️ 6000 read HANG — it
+      ran past the rig's 20 s capture window — caught, but not for the reason
+      the arm asserts.
+      📊 **RESULT: 275 rows, OK 254, UNTIMEABLE 21.** The 40 timed disk rows
+      are **0.21–1.20×** — zerobas is FASTER than the CF-3300 on most disk
+      verbs (`LOF` 0.21, `DSKI$` 0.22, `FILES` 0.27; slowest `KILL` 1.20).
+      🔮 *"1–3×"* — **MISS**, low. The 7 untimeable disk rows are honest: three
+      REFUSE on every machine (`SET`, `IPL`, `CMD` — no happy path to time) and
+      four end the run themselves (`MERGE`, ASCII `SAVE`, `RUN"f"`, `LOAD"f",R`).
       ~~🙋 **NEEDS-JOOST**~~ (answered above for T2/T4/T5) — a rung's definition is charter-level, not a coding
       choice. What does a row that PROVES "reasonable time" look like? A wall
       against the reference, per keyword? A ratio? Same question for RAM parity
