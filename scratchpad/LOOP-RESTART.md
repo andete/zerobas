@@ -4,7 +4,61 @@ A `ScheduleWakeup` loop is SESSION-LOCAL and dies with the session. This file is
 the durable half: paste the command in `## The command` below into a fresh
 session and the loop resumes exactly where it stopped.
 
-## 🟢 STATE AS OF 2026-09-24 AFTERNOON — THIS IS THE CURRENT ONE. EVERYTHING BELOW IS HISTORY.
+## 🟢 STATE AS OF 2026-09-24 EVENING — THIS IS THE CURRENT ONE. EVERYTHING BELOW IS HISTORY.
+
+**Tree CLEAN, all pushed, head `02eac1ba`.** Since the afternoon hand-off
+`6b6d7b49` (SHAs from `git log`): `a49d233f` D-KWUNTIME · `fd27aa59` D-VDPIE
+closed · `6f2a1fe5` the shared-buffer audit · `6e1722b7` **D-BUFMERGE** ·
+`0ce73534` D-CONTROW · `396a45cb` D-KWTDISK · `119294a5` D-KWTLONG ·
+`a4e1c3ff` D-KWTRIG · `2ff996ce` D-RAMFOOT · `d7189a99` its naming + *"All 29"* ·
+`9dcd8147` the D-ADDR29 spec · `3dee4024` **D-ADDR29 S1** + D-KNIFENOREAD ·
+`04d5e412`/`02eac1ba` PLAY X stack reading (+ the repair of that commit).
+**Walls, read from a clean tree at the hand-off: main page 1 8 B + low 5 B = 13 B;
+sub p0 434, sub p1 706, disk 7264.** Every ROM-growing slice needs a CARVE first.
+**T2: 120 keywords** (`make tiers-md`); the 22 still `T2—` are listed by reason on
+the D-KWPROVEN item — most END or REPLACE the run, and CURLIN is measured to be a
+DIFFERENT event per machine for them (`listkw` 239×), so no end signal is
+symmetric. Treat that group as closed-by-measurement unless a new signal appears.
+
+### 🏗️ JOOST'S RULINGS, 2026-09-24 EVENING — DO NOT RE-ASK
+
+| subject | ruling |
+|---|---|
+| shared buffer | *"(b) One shared buffer"*, then *"Merge; BDOS out of scope"* — SHIPPED (D-BUFMERGE) |
+| RAM addresses | *"All 29"* (D-RAMFOOT's published variables), scratch included |
+| D-ADDR29's ✋ | `DAC` FULL (ints at DAC+2, USR reads DAC) · `TEMPST` pool → 10 · `RNDX` now, `ARG` later · N set observable-first — `docs/spec-basic-addr29.md` §4.1 |
+| the rig | Joost ORDERED an RP2040-Zero (arrives ~09-26). Still ⛔ PARKED until he picks it up; the rig item says what to measure FIRST (headless joystick, then headless mouse for PAD/PDL) |
+
+### ➡️ THE QUEUE NOW (re-scan; lowest tier first)
+
+* **TIER 1 `PLAY` `X<var>;`** (TODO §"`PLAY`'s `X<var>;` SUBSTRING…"): designed
+  (`docs/spec-basic-audio-play.md` §7.6: fixed 8-entry table, main-side scan
+  ~45 B, tenant ~76 B), **needs a ~30 B main carve**, and the item's marker is
+  🔭 "what remains is the ASK" — PRICE the shapes exactly, then ask Joost.
+* **TIER 4 D-ADDR29**, spec §5 order: S1 ✅ · **S2 the pointer chain**
+  (VARTAB/ARYTAB/STREND + FRETOP/MEMSIZ, moved TOGETHER — D-REHOME's group
+  argument) · S3 CNSDFG/ATRBYT writes · then DAC-full, TEMPST→10, RNDX, the N set.
+  S2+ all cost ROM → carve first. S1's W follow-ups (STR$ trailing space,
+  integers in NUMBUF, FBUFFR+0) are filed on the item.
+* **APPARATUS last:** the 9-probe filed-row triage.
+
+### 🔴 LESSONS PAID FOR THIS EVENING
+
+* **`ls` BEFORE ANY WRITE INTO `scratchpad/` — `cp` and `mv` too, not only
+  heredocs** — a `cp` overwrote D-PLAYXREC's tracked probe, which had ASKED THE
+  VERY QUESTION being measured. **Grep TODO/specs for the QUESTION before
+  measuring it.**
+* **Build `git add` lists from `git diff --name-only`, never from `git status
+  --short`** — an awk filter over it matched `??` files and committed 11 strays.
+* **Closing an item is a CODE change for the static gates** — a checkbox flip
+  after the battery changed tier-status AND orphaned a filed pin; re-run
+  `make gates-scoped`, and gate the commit on its rc (`&&`), never `;`.
+* **A knife cut with NO reading is not proof** (D-KNIFENOREAD): diff a knife
+  run's verdict column against the last healthy one — a uniform column is the tell.
+* **An equate move is only E if the CONTENT matches** — FBUFFR was `+1`, and
+  three differences became W items. Measure the content first.
+
+## 🟢 STATE AS OF 2026-09-24 AFTERNOON — superseded above.
 
 **Tree CLEAN, all pushed, head `b41d9548`.** SHAs from `git log`, after the
 morning hand-off `98513bcc`: `79167b21` D-KWTIME · `b21a86aa` D-KWT5ALONE ·
