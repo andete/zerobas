@@ -1483,8 +1483,20 @@ item — do **one item per session** to keep context lean.
       two maps from covering the same bytes. It needs no mutual-exclusion
       argument, which is (b)'s blocker, and it is strictly cheaper than (a). It
       does NOT give the shared-body prize (`FAT_DBUF`/`FAT_MBUF` would still be
-      two addresses), so it is a different trade, not a compromise. 🙋 **HIS CALL
-      — all three are his.**
+      two addresses), so it is a different trade, not a compromise. ~~🙋 **HIS CALL
+      — all three are his.**~~
+      🏗️ **RULED BY JOOST, 2026-09-24: *(b) ONE SHARED BUFFER*** — the
+      reference's own shape (one buffer + a restage discipline, which
+      D-ALIASBITE put in place). Chosen over (c) disjoint (the recommendation,
+      cheapest) and (a). ⚠️ **ITS PRECONDITION IS UNCHANGED AND IS NOW THE
+      WORK:** the mutual-exclusion argument §6.6q says is not established. With
+      the restage discipline in place it becomes a CHECKABLE claim — *every
+      path from main into `disk.rom` that can touch the buffer is bracketed by a
+      restaging gate (`chan_gate` save/restage)* — so the first step is a
+      STATIC AUDIT of our own source: enumerate every main→disk crossing
+      (hooks, CALSLT sites, `hk_dpload`) and classify each as gated or not.
+      🤖 **AUTONOMOUS** — the audit, then the merge if the audit holds; any
+      crossing the audit cannot bracket comes back to Joost.
 
 - [ ] 🎚️ **~~TIER 5~~ TIER 4 (SWAPPED 2026-09-24) IS NOW "MATCHES THE REFERENCE'S
       RAM USAGE" — THE RUNG, AND WHAT CAN AND CANNOT BE IN IT (D-TIER5RAM,
@@ -4899,7 +4911,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:23612 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:23624 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -5065,7 +5077,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:9826 (T-6FE392)8 (T-529ABE)` from `TODO.md:21320 (T-529ABE)`: a
+      `TODO.md:9838 (T-6FE392)8 (T-529ABE)` from `TODO.md:21332 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -10670,7 +10682,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:21320 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:21332 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
