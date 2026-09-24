@@ -447,7 +447,7 @@ FORMS: dict[str, tuple[tuple[str, ...], str]] = {
     ),
     "PAINT": (
         ("flood", "fill-colour", "border-colour"),
-        "PAINT [STEP](x,y)[,<colour>[,<border>]] -- the flood itself, the fill colour and the BORDER colour that stops it are three behaviours; a fill that ignored its border leaks. Only the flood has a row.",
+        "PAINT [STEP](x,y)[,<colour>[,<border>]] -- the flood itself, the fill colour and the BORDER colour that stops it are three behaviours; a fill that ignored its border leaks. All three have rows since D-KWPAINT2 (2026-09-24); the border one is in SCREEN 3, because in SCREEN 2 a border that differs from the fill is not a boundary at all.",
     ),
     "FRE": (
         ("free-ram", "free-string-space"),

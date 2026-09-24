@@ -4899,7 +4899,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:23527 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:23561 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -22906,6 +22906,40 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       twice before the sync and the relative floor, then the rows HIT (0.2%).
       ➕ **A DIVERGENCE CANDIDATE, filed below (D-VDPIE):** the reference's
       batch SURVIVED the same `vdp_d` twin that killed zerobas's.
+
+- [ ] 🔴 **A SCREEN 3 `PAINT` THAT MUST REPAINT NON-BORDER PIXELS NEVER FINISHES ON
+      ZEROBAS — THE VG-8020 DOES IT IN 66 JIFFIES (D-PAINTHANG, found 2026-09-24).**
+      🎚️ TIER 1 — happy path: `PAINT` over a picture that already has other
+      colours in it is the ordinary use, and here it hangs with no error.
+      🤖 **AUTONOMOUS** — a defect with a reproducer; the fix is in
+      `sub/graphics.asm` (G5, the span fill).
+      🔬 **FIRST SEEN** by [`scratchpad/paintforms_probe.py`](scratchpad/paintforms_probe.py)'s
+      `s3-leak` case (a border of 7 that the box cannot stop), while proving
+      PAINT's other two forms.
+      🔬 **MEASURED** ([`scratchpad/painthang_probe.py`](scratchpad/painthang_probe.py),
+      refcache OFF, `ON ERROR GOTO` armed, 200–400 s windows):
+      | case | VG-8020 `[inside outside jiffies]` | zerobas |
+      |---|---|---|
+      | `SCREEN3:LINE(40,40)-(80,80),15,B:PAINT(60,60),11` | `11 11 66` | **never finishes** (400 s, no error) |
+      | `SCREEN3:PAINT(60,60),11` — empty screen, full flood | `11 11 67` | `11 11 115` (1.7×) |
+      | `SCREEN3:LINE(0,0)-(80,80),15,B:PAINT(40,40),15` | `15 4 9` | `15 4 15` |
+      🎯 **THE TRIGGER IS REPAINTING, NOT SIZE:** a full-screen flood of an EMPTY
+      screen finishes (1.7×). What hangs is a flood whose border is the FILL
+      colour (the default) crossing pixels of ANOTHER colour (the 15-box), which
+      MSX PAINT paints over. So the span logic's "already painted / is border"
+      test is the first suspect — a pixel that is neither border nor fill, once
+      painted, may be re-queued, or the SCREEN 3 4x4-block read-back may never
+      report it as filled.
+      ⚠️ **NOT THE FILED SPAN-STACK ITEM** ("PAINT's SPAN STACK IS A FIXED ARRAY"),
+      which predicts ERR 7 at 121+ spans — the error trap caught nothing here.
+      ➡️ **NEXT:** the same case in SCREEN 2 with a same-colour border (the shape
+      `paintkw` uses) to see whether it is SCREEN 3-specific; then the span
+      loop's termination test, on our own source.
+      📏 **IT HOLDS PAINT AT LEVEL 0 BY DESIGN:** D-KWPAINT2 gave PAINT all 3
+      forms the same day (`paintkw_b` fill-colour, `paintkw_c` border-colour in
+      SCREEN 3), and the sheet then read `🔴 GAP` beside `T1✓`. The PROVEN
+      column's T1 now also requires NO open TIER 1 item — Joost's own TIER 1
+      rule, which the status column already applied (D-T1BLOCK, arm S36s).
 
 - [ ] 🔴 **AFTER A PROGRAM LEAVES VDP INTERRUPTS DISABLED, THE REFERENCE RECOVERS
       AND ZEROBAS DOES NOT (D-VDPIE, candidate, 2026-09-24).**

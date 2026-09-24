@@ -2180,20 +2180,31 @@ SWEEP: list[tuple[str, str, str | None, str, str]] = [
      "stored",
      "NOECHO:[U the FLOOD -- (15,15) is inside the box and is set by nothing but "
      "FORM:flood PAINT, so 15 filled against 4 blank."),
-    # 🔭 D-KWPAINT2: PAINT's OTHER TWO FORMS NEED AN ISOLATED PROBE, NOT A SWEEP
-    # ROW, and three attempts is where I stopped guessing. `PAINT(15,15),11,15`
-    # inside a drawn box read `?nomarker` on BOTH machines; reduced to
-    # `SCREEN2:PAINT(15,15),11,15` with no box it read `?nomarker` again -- but
-    # with nothing to stop it that floods the WHOLE screen, which is slow, so the
-    # second reading cannot separate "the 3-argument form faults" from "the flood
-    # outran the capture". The spec says the border IS supported here
-    # (docs/spec-basic-graphics-g5.md: the FOURTH argument is the ERR 2, and the
-    # border is parsed and range-checked), so the bar stays at N=3 and PAINT stays
-    # at 1/3 until a scratchpad probe measures the two forms with its own timing.
-    # 🎯 AND THE BORDER FORM IS PROVED BY MAKING IT LEAK, WHICH IS THE CORRECT
-    # BEHAVIOUR: PAINT fills until it meets the BORDER colour, so a border of 7 --
-    # a colour nothing on the screen is drawn in -- must NOT stop at the box.
-    # A handler that ignored the argument stops at the box and the outside stays 4.
+    # ✅ D-KWPAINT2 CLOSED 2026-09-24 -- PAINT's OTHER TWO FORMS, measured first
+    # by an isolated probe with its OWN timing (scratchpad/paintforms_probe.py:
+    # the program writes a completion mark and the capture waits for it). The
+    # sweep's earlier `?nomarker` on BOTH machines was two different things:
+    # ⚠️ in SCREEN 2 a border that differs from the fill is NOT a boundary at all
+    # -- eight pixels share one colour pair, so painting 11 recolours the
+    # 15-border's own blocks and the flood runs away on BOTH machines -- so the
+    # BORDER form is measured in SCREEN 3 (multicolour, each 4x4 block its own
+    # colour), where it stops the flood on both: `[5q 11 4]`.
+    # 🔴 AND THE ISOLATED PROBE FOUND A HANG (D-PAINTHANG, TODO): a SCREEN 3
+    # flood that must REPAINT non-border pixels finishes on the VG-8020 in 66
+    # jiffies and never on zerobas. These rows avoid it by construction (each
+    # fill stops at its box); the hang has its own item and blocks PAINT's T1.
+    ("paintkw_b", 'paint(15,15),11',
+     'SCREEN2:LINE(10,10)-(20,20),11,B:PAINT(15,15),11:A=POINT(15,15):B=POINT(5,5):SCREEN0:PRINT"[5p";A;B;"]"',
+     "stored",
+     "NOECHO:[5p FORM:fill-colour a fill colour other than the foreground: the "
+     "box is drawn in 11, the border DEFAULTS to the fill colour, so the flood "
+     "stops at it -- `[5p 11  4 ]`, inside filled, outside blank."),
+    ("paintkw_c", 'paint(60,60),11,15',
+     'SCREEN3:LINE(40,40)-(80,80),15,B:PAINT(60,60),11,15:A=POINT(60,60):B=POINT(20,20):SCREEN0:PRINT"[5q";A;B;"]"',
+     "stored",
+     "NOECHO:[5q FORM:border-colour a BORDER that differs from the fill, in SCREEN "
+     "3 where that is a real boundary: the 15-box stops an 11-fill -- `[5q 11  4 ]`. "
+     "A handler that ignored the border would flood past it."),
     # PUT SPRITE: the SCREEN 2 sprite ATTRIBUTE table is at $1B00 (6912) and its
     # first byte is the sprite's Y coordinate, so the write is read straight back
     # out of VRAM. `spritekw` only round-trips SPRITE$, which is the PATTERN table.

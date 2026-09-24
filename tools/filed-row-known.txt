@@ -34,6 +34,8 @@
 # interpreter-speed band 0.7x too low (2.5-3.1x published; 3.81x measured once
 # the emulated-time budget was widened, 2026-09-04).
 budget_probe: NO-VERDICT -- emulated-time window/used/margin percentages, for sizing probe budgets
+paintforms_probe: NO-VERDICT -- "PAINT's fill-colour and border forms, measured with their own timing" (its docstring): per-side POINT readings; the forms it proved are kwsweep rows paintkw_b/paintkw_c (D-KWPAINT2, 2026-09-24)
+painthang_probe: NO-VERDICT -- "which geometry triggers it?" (its docstring): per-side [P inside outside jiffies] characterising D-PAINTHANG; the defect is a TODO item, not a pinned row
 playmusicf_probe: NO-VERDICT -- "the reference marks ALL THREE voices at every PLAY" (its own docstring): per-side MUSICF/PLAY(0) values on the statement after PLAY, one row per case; the rows it characterises are pinned through playfn_fixture_probe (D-PLAYBACK, 2026-09-24)
 interpspeed_probe: NO-VERDICT -- TIME ratios zb/cf3300; the entry it serves is "THE INTERPRETER IS 2.5-3.8x SLOWER"
 put3consume_probe: NO-VERDICT -- cluster/LOF values under an explicit "read:" note, characterisation only

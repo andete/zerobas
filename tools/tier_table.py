@@ -459,7 +459,7 @@ def status_of(kt, kw, t3, conn, t1, nobare, parts, refuses, forms):
 RUNGS = ("T1", "T2", "T3", "T4", "T5", "T6")
 
 
-def proven_rungs(kw, forms_seen, connected, t3, t2=frozenset()):
+def proven_rungs(kw, forms_seen, connected, t3, t2=frozenset(), t1_blocked=False):
     """{rung: bool} -- what has been positively DEMONSTRATED about a keyword.
 
     ⏱ T2 comes from `kwtime_rungs` (D-KWPROVEN, 2026-09-24). 🔴 T5 NEVER TICKS,
@@ -467,7 +467,11 @@ def proven_rungs(kw, forms_seen, connected, t3, t2=frozenset()):
     `proven_cell`, and a tick would need a bar he has not set."""
     import kwforms
     need = kwforms.forms_for(kw)
-    t1 = bool(need) and connected and all(f in forms_seen for f in need)
+    # 🔴 D-T1BLOCK (2026-09-24): T1 ALSO NEEDS NO OPEN TIER 1 ITEM -- Joost's rule,
+    # which the STATUS column already applied (`blocks_tier1`) and this column did
+    # not: PAINT read `🔴 GAP` and `T1✓` side by side with a TIER 1 hang open.
+    t1 = (bool(need) and connected and all(f in forms_seen for f in need)
+          and not t1_blocked)
     return {"T1": t1, "T2": kw in t2, "T3": bool(connected and kw in t3),
             "T4": False, "T5": False, "T6": False}
 
@@ -488,8 +492,9 @@ def ladder_level(p):
     return n
 
 
-def proven_cell(kw, forms_seen, connected, t3, t2=frozenset(), t5=None):
-    p = proven_rungs(kw, forms_seen, connected, t3, t2)
+def proven_cell(kw, forms_seen, connected, t3, t2=frozenset(), t5=None,
+                t1_blocked=False):
+    p = proven_rungs(kw, forms_seen, connected, t3, t2, t1_blocked)
     t5 = t5 or {}
 
     def one(r):
@@ -1397,7 +1402,8 @@ def fmt_markdown(its, kws, evidence=None, t3=None, connected=None, forms=None,
             "T6": "🔴 NO PROVING ROW TYPE EXISTS — the exhaustive error set is unmeasured"}
     _prov = {r: 0 for r in RUNGS}
     for kw in kws:
-        p = proven_rungs(kw, forms.get(kw, set()), kw in conn, t3, t2)
+        p = proven_rungs(kw, forms.get(kw, set()), kw in conn, t3, t2,
+                         blocks_tier1(kt.get(kw)))
         for r in RUNGS:
             _prov[r] += bool(p[r])
     for r in RUNGS:
@@ -1411,7 +1417,8 @@ def fmt_markdown(its, kws, evidence=None, t3=None, connected=None, forms=None,
     # missing T2 is counted in the T3 row above but reaches nothing here.
     _lvl = {}
     for kw in kws:
-        n = ladder_level(proven_rungs(kw, forms.get(kw, set()), kw in conn, t3, t2))
+        n = ladder_level(proven_rungs(kw, forms.get(kw, set()), kw in conn, t3, t2,
+                                      blocks_tier1(kt.get(kw))))
         _lvl[n] = _lvl.get(n, 0) + 1
     out += ["", "### Level reached — the ladder (Joost, 2026-09-24)", "",
             "A keyword's LEVEL is its highest UNBROKEN run of proven rungs from "
@@ -1438,7 +1445,8 @@ def fmt_markdown(its, kws, evidence=None, t3=None, connected=None, forms=None,
     # not [[two-sections-of-one-doc-disagreed]].
     for kw in sorted(kws):
         st, ev = status_of(kt, kw, t3, conn, t1, nobare, parts, refuses, forms)
-        pr = proven_cell(kw, forms.get(kw, set()), kw in conn, t3, t2, t5)
+        pr = proven_cell(kw, forms.get(kw, set()), kw in conn, t3, t2, t5,
+                         blocks_tier1(kt.get(kw)))
         out.append(f"| `{kw}` | {STATUS[st][0]} | {pr} | {ev} |")
 
     out += _composite_section(kws, evidence, conn, forms)
@@ -1615,6 +1623,10 @@ def selftest():
         "has no bar (flipped DELIBERATELY 2026-09-24: T2 now has one, `kwtime`)",
         not any(proven_rungs("LOF", {"length"}, True, {"LOF"}, {"LOF"}, )[r]
                 for r in ("T4", "T5", "T6")))
+    arm("S36s NEGATIVE: an open TIER 1 item withholds T1 even with every form "
+        "and the knife (PAINT's hang, D-T1BLOCK)",
+        proven_rungs("LOF", {"length"}, True, set())["T1"]
+        and not proven_rungs("LOF", {"length"}, True, set(), t1_blocked=True)["T1"])
     arm("S36i T2 ticks only for a keyword kwtime proved",
         proven_rungs("LOF", {"length"}, True, set(), {"LOF"})["T2"]
         and not proven_rungs("LOF", {"length"}, True, set(), set())["T2"])
