@@ -5077,7 +5077,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:23919 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:23931 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -5243,7 +5243,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:10004 (T-6FE392)8 (T-529ABE)` from `TODO.md:21573 (T-529ABE)`: a
+      `TODO.md:10004 (T-6FE392)8 (T-529ABE)` from `TODO.md:21585 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -10848,7 +10848,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:21573 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:21585 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -16323,10 +16323,22 @@ finds zero shared names (a renamed block would otherwise make it silently blind)
       UNDEFINED variable must not create it (the reference returns empty, no
       error), so a FIND-ONLY lookup may have a small closure — that needs a
       path-aware check before this shape is priced.
-      ➡️ **NEXT SESSION:** (1) the find-only closure for the page-0 shape; (2) if
+      ~~➡️ **NEXT SESSION:** (1) the find-only closure for the page-0 shape; (2) if
       it holds, price that shape exactly; (3) bring the shapes (page-0 lookup
-      vs a hot-leaf eviction vs waiting for a carve) to Joost — the item's ASK.
-      🔭 SCOUT-THEN-ASK — ✅ THE SCOUT IS DONE (above); what remains is the ASK.
+      vs a hot-leaf eviction vs waiting for a carve) to Joost — the item's ASK.~~
+      💡 **A FOURTH SHAPE, FOUND THE SAME EVENING — AND RULED:** the scalar
+      lookup is not main code at all (`var_find_typed` is glue around the sub
+      page-0 `scv_find`), and the chain it walks is plain RAM. So the MML
+      tenant can walk it ITSELF — main ~0 B, the parse stays one atomic
+      CALSLT (§7.11's hazard gone), and nesting can use the Z80 stack like the
+      reference (§7.8). `docs/spec-basic-audio-play.md` §7.12.
+      🏗️ **RULED BY JOOST, 2026-09-24: *"Tenant walks the chain"***.
+      🤖 **AUTONOMOUS — BUILD IT:** name scan + chain walk + a stack-based
+      cursor save in `sub/playparse.asm`; ERR 13 / ERR 5 / undefined-empty per
+      §7.1's 13 rows (`scratchpad/playx_probe.py`); a `substring-exec` FORM row
+      in kwsweep (NOT `PLAY"XA$"`, which agrees for the wrong reason); a gate
+      keeping the two chain walks in step. Re-read sub page 1's wall first.
+      ~~🔭 SCOUT-THEN-ASK — ✅ THE SCOUT IS DONE (above); what remains is the ASK.~~ (answered 2026-09-24, above)
       *(the original question, for the record:)* grep where the lookup lives (is it
       below `$4000`, reachable from a page-1 sub tenant, or main page 1 where the
       tenant cannot call it?) **and price the two shapes before spending any of the

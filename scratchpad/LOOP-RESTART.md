@@ -27,14 +27,14 @@ symmetric. Treat that group as closed-by-measurement unless a new signal appears
 | shared buffer | *"(b) One shared buffer"*, then *"Merge; BDOS out of scope"* — SHIPPED (D-BUFMERGE) |
 | RAM addresses | *"All 29"* (D-RAMFOOT's published variables), scratch included |
 | D-ADDR29's ✋ | `DAC` FULL (ints at DAC+2, USR reads DAC) · `TEMPST` pool → 10 · `RNDX` now, `ARG` later · N set observable-first — `docs/spec-basic-addr29.md` §4.1 |
+| PLAY X shape | *"Tenant walks the chain"* — the MML tenant reads the variable chain in RAM itself (spec-basic-audio-play §7.12); main ~0 B, no carve needed |
 | the rig | Joost ORDERED an RP2040-Zero (arrives ~09-26). Still ⛔ PARKED until he picks it up; the rig item says what to measure FIRST (headless joystick, then headless mouse for PAD/PDL) |
 
 ### ➡️ THE QUEUE NOW (re-scan; lowest tier first)
 
-* **TIER 1 `PLAY` `X<var>;`** (TODO §"`PLAY`'s `X<var>;` SUBSTRING…"): designed
-  (`docs/spec-basic-audio-play.md` §7.6: fixed 8-entry table, main-side scan
-  ~45 B, tenant ~76 B), **needs a ~30 B main carve**, and the item's marker is
-  🔭 "what remains is the ASK" — PRICE the shapes exactly, then ask Joost.
+* **TIER 1 `PLAY` `X<var>;` — BUILD IT** (TODO §"`PLAY`'s `X<var>;`
+  SUBSTRING…", spec §7.12, RULED 2026-09-24): the MML tenant walks the variable
+  chain itself; no main carve. First item of the next session.
 * **TIER 4 D-ADDR29**, spec §5 order: S1 ✅ · **S2 the pointer chain**
   (VARTAB/ARYTAB/STREND + FRETOP/MEMSIZ, moved TOGETHER — D-REHOME's group
   argument) · S3 CNSDFG/ATRBYT writes · then DAC-full, TEMPST→10, RNDX, the N set.

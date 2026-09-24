@@ -668,6 +668,42 @@ is worse). `scratchpad/jr_mapper.py` offers 3 B today. That is a slice of its ow
 scanning, `pl_xvar` resolves an uninitialised key and the parser then reads a
 body chosen at random — strictly worse than today's honest ERR 5.
 
+### 7.12 A FOURTH SHAPE §7.2 NEVER PRICED — the tenant walks the variable chain itself (2026-09-24)
+
+§7.2 shut "resolve in the tenant" because the tenant cannot CALL main page 1.
+It does not need to. Since arrays slice-4b the scalar lookup is not main code
+at all: `var_find_typed` is thin glue around the sub page-0 tenant
+`aeng_scalar_find` → `scv_find` (`sub/arrays.asm`), and the thing it walks is
+**plain RAM**: entries `[name0][name1][type][value]` from `(PRGEND)+2` up to
+`(ARYTAB)`, stride 3 + element size (a string, type 1, holds a 3-byte
+descriptor and strides 6). A page-1 tenant can read page-2/3 RAM, so the MML
+tenant can resolve `X<var>;` by walking that chain ITSELF.
+
+| | §7.3 servicer (built 2026-09-17) | §7.12 tenant walk |
+|---|---|---|
+| main page 1 | ~40 B (servicer + `MUSICF` drop); on 2026-09-24 ~27 B short | **~0 B** (at most an error-code mapping for ERR 13) |
+| sub page 1 | 84 B + scan ~76 B | name scan + a ~35 B chain walk (706 B free on 2026-09-24) |
+| atomicity (§7.11) | BROKEN by the bounce — needs the `MUSICF` drop | **kept** — the parse stays ONE CALSLT under DI |
+| nesting | fixed 8-entry RAM table (the tenant has no locals ACROSS bounces) | the Z80 stack is usable WITHIN one call — the reference's own shape (§7.8: stack-bounded, ERR 7) — a stack check still to design |
+
+⚠️ **COSTS AND RISKS, STATED:**
+* It DUPLICATES `scv_find`'s walk (key compare, stride map) in sub page 1: two
+  copies of one layout. A chain-format change must update both, and a gate
+  should compare them.
+* It must build the key EXACTLY as the tokeniser does (significant characters,
+  name1 for a one-letter name) — a mismatch is a silent "undefined → empty".
+* It skips `fn_shadow_find` (DEF FN formals). Safe: `PLAY` is a statement and
+  cannot run while an `FN` expression is being evaluated.
+* ERR 13 for a numeric name (§7.1) must travel through the tenant's existing
+  error channel; if that channel carries a code, main pays nothing.
+
+~~🙋 **THE SHAPE IS JOOST'S CALL** (the PLAY X item's ASK).~~
+🏗️ **RULED BY JOOST, 2026-09-24: *"Tenant walks the chain"*** — over the
+servicer-plus-carve and parking. §7.3–§7.4's servicer protocol and §7.11's
+`MUSICF` drop are SUPERSEDED for `X`; §7.11's other findings (the `;` rule, `DE`
+as the queue pointer, `pt_buf` re-callable) still bind. Build it with a gate
+that keeps the tenant's chain walk and `scv_find` in step.
+
 ### 7.8 Which MECHANISM the reference uses — partly answered (D-PLAYXREC)
 
 [`scratchpad/playxrec_probe.py`](../scratchpad/playxrec_probe.py), VG-8020,
