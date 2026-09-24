@@ -1789,8 +1789,32 @@ item — do **one item per session** to keep context lean.
       subject without one reads `<no tape written>`, which can never agree.
       `CSAVE` re-cut → MISSING, LOAD-BEARING.
       ➡️ **STILL TO MEASURE:** widen the op list (control flow, graphics, file
-      I/O); goal (a) (free memory: `FRE(0)`/`FRE("")` after boot and after
-      `CLEAR`).
+      I/O).
+      📏 **GOAL (a), SAME FREE MEMORY — MEASURED 2026-09-25**
+      (`scratchpad/fremem_probe.py` → `scratchpad/fremem_run.out`; VG-8020 vs
+      zerobas's DISKLESS machine, a fresh boot per state):
+      | state | VG-8020 `FRE(0)` | zerobas | gap | Δ from boot (both) |
+      |---|---|---|---|---|
+      | boot | 28815 | 22785 | −6030 | 0 |
+      | `CLEAR 1000` | 28015 | 21985 | −6030 | −800 |
+      | `CLEAR 0` | 29015 | 22985 | −6030 | +200 |
+      | `DIM A(100)` | 27999 | 21969 | −6030 | −816 |
+      | `DIM A%(100)` | 28605 | 22575 | −6030 | −210 |
+      | 100-char string | 28809 | 22779 | −6030 | −6 |
+      | 4 scalars | 28782 | 22752 | −6030 | −33 |
+      | 10-line program | 28545 | 22515 | −6030 | −270 |
+      `FRE("")` is IDENTICAL in every state (200 / 1000 / 0 / 100 / 199).
+      🟢 **GOAL (c), ECONOMY, HOLDS EXACTLY** — every state costs the same
+      bytes on both machines, to the byte (variables, arrays, strings, lines,
+      CLEAR). 🔴 **GOAL (a) FAILS BY A CONSTANT 6030 B**: zerobas's free area
+      ends near `$D900` (the control pool; then its own `$E000..$F37F`
+      workspace), so a program of ~22.8–28.8 KB fits on the VG-8020 and not
+      here. 🔮 Predicted "a fixed offset, deltas mostly matching" — HIT, and
+      the deltas match EXACTLY.
+      🙋 **BACK TO JOOST (the rung's rule: adjustments are his):** close the
+      6030 B — which means shrinking zerobas's reserved RAM (the pool, the
+      workspace) toward the reference's layout — or accept it as a stated
+      divergence?
 
 - [x] 🔬 **PROMOTE THE THREE ASCII/MERGE DISK PROBES INTO THE BATTERY — THEIR
       EXCUSE'S PREMISE CHANGED WHEN STEP 11 SHIPPED**
@@ -5077,7 +5101,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:23986 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:24010 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -5243,7 +5267,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:10004 (T-6FE392)8 (T-529ABE)` from `TODO.md:21640 (T-529ABE)`: a
+      `TODO.md:10028 (T-6FE392)8 (T-529ABE)` from `TODO.md:21664 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -10848,7 +10872,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:21640 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:21664 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
