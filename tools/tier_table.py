@@ -468,9 +468,26 @@ def proven_rungs(kw, forms_seen, connected, t3):
             "T4": False, "T5": False, "T6": False}
 
 
+# 🪜 IT IS A LADDER (Joost, 2026-09-24, D-KWLADDER): a keyword's LEVEL is its
+# highest UNBROKEN run of proven rungs from T1. `T1✓ T2— T3✓` is level 1, not 3
+# -- a rung proven above a gap is evidence banked, not a level reached, which is
+# what the pre-09-23 scheme demanded ("building up tests and evidence to reach
+# next tiers"). ⚠️ T5 (speed) has NO BAR YET ("track the ratio, set no bar
+# yet"), so it cannot be ticked, and no keyword can reach past level 4 until
+# Joost sets one. A measured T5 ratio is shown AS A RATIO, never as a tick.
+def ladder_level(p):
+    n = 0
+    for r in RUNGS:
+        if not p[r]:
+            break
+        n += 1
+    return n
+
+
 def proven_cell(kw, forms_seen, connected, t3):
     p = proven_rungs(kw, forms_seen, connected, t3)
-    return " ".join("%s%s" % (r, "✓" if p[r] else "—") for r in RUNGS)
+    return "level %d · %s" % (ladder_level(p), " ".join(
+        "%s%s" % (r, "✓" if p[r] else "—") for r in RUNGS))
 
 
 def kw_evidence(kw, forms_seen, connected, gap_tier, lines):
@@ -1034,11 +1051,15 @@ FOOTER = ("**\"No open gap\" is not \"verified\", and a kwsweep verdict is NOT a
           "agreement point. It is not \"the happy path works\", and agreement can be "
           "vacuous: `CSAVE` once scored SUPPORTED on an empty capture, and four of the "
           "five silent-failure modes are ways two machines agree about nothing. "
-          "**Every row above is TIER 0**: nothing is established. An open TIER n item says a "
+          "An open TIER n item says a "
           "defect is FILED at n, not that n-1 was reached; a row that agrees is one agreement "
-          "point. Establishing a tier needs BREADTH — agreement points covering a verb's real "
+          "point. Establishing a rung needs BREADTH — agreement points covering a verb's real "
           "forms, not one expression — AND NON-VACUITY, a mutation check showing those rows go "
-          "red if the keyword breaks. Neither has been demonstrated for any keyword.")
+          "red if the keyword breaks. **T1 is exactly that pair** (every authored form, "
+          "knife-proven CONNECTED), so a T1 tick is the one place both have been shown; what "
+          "the knife does NOT show is that a SUBTLE defect would be seen, and the form list is "
+          "this tree's own authoring. (Until 2026-09-24 this paragraph said neither had been "
+          "demonstrated for any keyword — true on 2026-09-13, false once T1 was built.)")
 
 
 def _composite_section(kws, evidence=None, conn=None):
@@ -1201,7 +1222,7 @@ def fmt_markdown(its, kws, evidence=None, t3=None, connected=None, forms=None):
             "On 2026-09-14 that removed them, reasoning that a bar reading "
             "\"refuses correctly\" would be a TIER 6 reading wearing a TIER 1 "
             "label; Joost's 2026-09-17 refinement answers exactly that \u2014 TIER "
-            "5 is EVERY error situation, while for these words the refusal is "
+            "6 (then numbered 5) is EVERY error situation, while for these words the refusal is "
             "the ONLY path there is, so it is the normal one. `SET`, `IPL` and "
             "`CMD` have reached it; `ATTR$` and `CALL` have not, and cannot be "
             "knife-proven CONNECTED at all \u2014 there is no handler to cut.\n"
@@ -1254,10 +1275,10 @@ def fmt_markdown(its, kws, evidence=None, t3=None, connected=None, forms=None):
             "| rung | what a tick requires | keywords proving it |",
             "|---|---|---|"]
     _req = {"T1": "every authored FORM has an agreeing row, and knife-proven CONNECTED",
-            "T2": "🔴 NO PROVING ROW TYPE EXISTS — reasonable time is unmeasured for every keyword",
+            "T2": "🔴 NO PROVING ROW TYPE EXISTS YET — defined 2026-09-24: the keyword's test program completes within 10× the VG-8020's time",
             "T3": "a `PROVES-T3:` row: a COMMON ERROR situation scored against the reference",
-            "T4": "🔴 NO PROVING ROW TYPE EXISTS — RAM parity is unmeasured for every keyword",
-            "T5": "🔴 NO PROVING ROW TYPE EXISTS — on-par speed is unmeasured for every keyword",
+            "T4": "🔴 NO PROVING ROW TYPE EXISTS YET — defined 2026-09-24: derived from the whole-RAM-map comparison vs the VG-8020 (free memory, addresses, economy)",
+            "T5": "⚪ NO BAR YET — the zerobas ÷ VG-8020 ratio is RECORDED and shown, never ticked (Joost, 2026-09-24)",
             "T6": "🔴 NO PROVING ROW TYPE EXISTS — the exhaustive error set is unmeasured"}
     _prov = {r: 0 for r in RUNGS}
     for kw in kws:
@@ -1266,6 +1287,21 @@ def fmt_markdown(its, kws, evidence=None, t3=None, connected=None, forms=None):
             _prov[r] += bool(p[r])
     for r in RUNGS:
         out.append("| %s | %s | **%d** of %d |" % (r, _req[r], _prov[r], len(kws)))
+    # 🪜 AND THE LADDER, WHICH THE PER-RUNG COUNT CANNOT SHOW: a T3 tick above a
+    # missing T2 is counted in the T3 row above but reaches nothing here.
+    _lvl = {}
+    for kw in kws:
+        n = ladder_level(proven_rungs(kw, forms.get(kw, set()), kw in conn, t3))
+        _lvl[n] = _lvl.get(n, 0) + 1
+    out += ["", "### Level reached — the ladder (Joost, 2026-09-24)", "",
+            "A keyword's LEVEL is its highest UNBROKEN run of proven rungs from "
+            "T1: `T1✓ T2— T3✓` is level 1. A rung proven above a gap is evidence "
+            "banked, not a level reached. ⚠️ T5 (speed) has no bar yet, so it "
+            "is shown as a measured ratio and never ticked — no keyword can pass "
+            "level 4 until one is set.", "",
+            "| level | keywords |", "|---|---|"]
+    for n in range(len(RUNGS) + 1):
+        out.append("| %d | **%d** |" % (n, _lvl.get(n, 0)))
     out += ["", FOOTER, "", "### Alphabetical", "",
             "🎚️ **TWO COLUMNS, TWO QUESTIONS.** *known against* is what is "
             "FILED or what the sweep SEES. *proven* is what has been positively "
@@ -1449,6 +1485,12 @@ def selftest():
     # 🔴 THE HONEST GAP, PINNED. If this ever fires, a proving row type was
     # added for one of these rungs -- which must be a DELIBERATE act with its
     # own definition of what the row proves, not a side effect.
+    arm("S36f the ladder stops at the first gap",
+        ladder_level({"T1": True, "T2": False, "T3": True, "T4": False, "T5": False, "T6": False}) == 1)
+    arm("S36g NEGATIVE: no T1 is level 0 whatever is above it",
+        ladder_level({"T1": False, "T2": True, "T3": True, "T4": True, "T5": True, "T6": True}) == 0)
+    arm("S36h an unbroken run counts every rung",
+        ladder_level({r: True for r in RUNGS}) == len(RUNGS))
     arm("S36e NEGATIVE: T2/T4/T5/T6 cannot be ticked — no row type proves them",
         not any(proven_rungs("LOF", {"length"}, True, {"LOF"})[r]
                 for r in ("T2", "T4", "T5", "T6")))
@@ -1577,10 +1619,10 @@ def selftest():
             # neither that it HAS all its forms nor that it is NOT knife-proven
             # -- both of which a reader needs to know what to do about it.
             ("LOF row",
-             "| `LOF` | \U0001f534 GAP | T1\u2014 T2\u2014 T3\u2014 T4\u2014 T5\u2014 T6\u2014 | "
+             "| `LOF` | \U0001f534 GAP | level 0 \u00b7 T1\u2014 T2\u2014 T3\u2014 T4\u2014 T5\u2014 T6\u2014 | "
              "knife \u2717 \u00b7 1/1 forms \u00b7 1 open, worst TIER 1 (TODO.md:2) |" in md),
             ("ZZZ row",
-             "| `ZZZ` | \u26aa UNPROVEN | T1\u2014 T2\u2014 T3\u2014 T4\u2014 T5\u2014 T6\u2014 | "
+             "| `ZZZ` | \u26aa UNPROVEN | level 0 \u00b7 T1\u2014 T2\u2014 T3\u2014 T4\u2014 T5\u2014 T6\u2014 | "
              "knife \u2717 \u00b7 no form list |" in md),
             # \U0001f534 THE INVARIANT THE WHOLE REDESIGN EXISTS FOR, AS A NEGATIVE
             # CONTROL. `TIER 0` meant eleven different things and read as a rank

@@ -4899,7 +4899,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:23141 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:23152 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -22606,6 +22606,17 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       | **T6** — the exhaustive error set | **not ruled** — split into its own 🙋 item directly below |
       🔢 **SWAPPED THE SAME DAY (D-TIERSWAP): RAM IS T4, SPEED IS T5** — this
       table is written in the new numbering.
+      🪜 **AND THREE MORE RULINGS THE SAME MORNING (D-KWLADDER)**, asked when
+      Joost checked *"what needs to be done still for a keyword without any
+      open items"*:
+      | question | ruling |
+      |---|---|
+      | ladder or independent ticks? | **LADDER, contiguous only** — a keyword's LEVEL is its highest unbroken run of proven rungs from T1; `T1✓ T2— T3✓` is level 1. `tools/tier_table.py` prints the level and a per-level count |
+      | what does a T5 ratio show? | **the RATIO, no tick** (e.g. `T5 2.5×`) — measured, never passed or failed, until he sets a bar. So no keyword can pass level 4 today, and the sheet says why |
+      | T2's "set time"? | **WITHIN 10× OF THE REFERENCE's time** for the same test program — first *"multiple of reference"*, then the number: ***"use 10x, it will be slow, but it finishes"*** |
+      🎯 **SO T2 AND T5 ARE ONE MEASUREMENT** — zerobas ÷ reference for the
+      same program, with a completion watchdog. T2 passes at ≤ 10×; T5
+      displays it. One row type, built once, serves both rungs.
       🤖 **AUTONOMOUS** — T2's row type can be specified and built now; T5's
       is a recorded ratio with no verdict; T4's waits on the RAM-map
       comparison it derives from. ⚠️ Adding any of them flips negative control
