@@ -102,6 +102,10 @@ PINNED = {
     "one voice, no delay":    {"ref": "-1 -1 -1 0", "zb": "-1 -1 0 0"},
     "voice 2, no delay":      {"ref": "-1 -1 -1 0", "zb": "-1 0 -1 0"},
     "voice 3 only, no delay": {"ref": "-1 -1 0 -1", "zb": "-1 0 0 -1"},
+    # D-PLAYBACK (2026-09-24): re-pinned by Joost's ruling. It agreed on 09-10 only
+    # because zerobas won a race against its own ISR tick; the reference marks all
+    # three voices at every PLAY (TODO's D-PLAYWIN item).
+    "empty string, no delay": {"ref": "-1 0 0 0", "zb": "0 0 0 0"},
 }
 
 print(f"{'case':24} {'vg8020':14} {'zb':14}")

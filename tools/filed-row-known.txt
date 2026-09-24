@@ -34,6 +34,7 @@
 # interpreter-speed band 0.7x too low (2.5-3.1x published; 3.81x measured once
 # the emulated-time budget was widened, 2026-09-04).
 budget_probe: NO-VERDICT -- emulated-time window/used/margin percentages, for sizing probe budgets
+playmusicf_probe: NO-VERDICT -- "the reference marks ALL THREE voices at every PLAY" (its own docstring): per-side MUSICF/PLAY(0) values on the statement after PLAY, one row per case; the rows it characterises are pinned through playfn_fixture_probe (D-PLAYBACK, 2026-09-24)
 interpspeed_probe: NO-VERDICT -- TIME ratios zb/cf3300; the entry it serves is "THE INTERPRETER IS 2.5-3.8x SLOWER"
 put3consume_probe: NO-VERDICT -- cluster/LOF values under an explicit "read:" note, characterisation only
 aliasscope_probe: NO-VERDICT -- a WATCHPOINT BYTE COUNT over a RAM window (how many bytes a verb writes into FSECTOR_BUF between two markers). There is no reference column and no SAME/DIFF concept: the reading is a number, and D-ALIASBITE's own lesson is that a FOOTPRINT DOES NOT PREDICT AN OUTCOME -- `OPEN...FOR INPUT` writes NAME's exact footprint and the channel survives. Declared 2026-09-24 so the real holes in the corpus are not buried under it.
@@ -85,7 +86,7 @@ rungap_probe: NO-VERDICT -- measures the HARNESS (step held fixed while run_gap 
 
 deffn_alias_probe: o.alias; o.aliasnest -- "DEF FN: two formals of ONE call can alias"; the rows ARE the filing
 dupopen_probe: s.same; s.space; s.newtwice; s.modes; s.seqsame; s.reclaim -- "THE SAME FILE ON TWO CHANNELS IS ACCEPTED HERE AND REFUSED ON THE CF-3300". ⚠️ FILED IN PROSE BUT NEVER PINNED: D-DUPOPEN (2026-09-02) characterises all six rows by name in the entry, and the sweep reads THIS FILE, not prose -- so they read UNFILED for two days. The item prices the fix at 165 B of RAM (11 B x FCH_CEIL) and the cheap dirent route is refuted by s.case.
-playfn_fixture_probe: one voice, no delay; voice 2, no delay; voice 3 only, no delay; width: TIME for FOR 20; width: TIME for FOR 50 -- ⚠️ ONE LINE PER PROBE: the loader keys by probe name, so a SECOND line for the same probe silently REPLACES the first. These six rows belong to TWO different entries. Four are "PLAY(n) start-up window" -- the reference marks a voice active during PLAY's own start-up and zerobas settles instantly; `voice 3 only` and `empty string` are the same transient on another voice and on a string with NO NOTES AT ALL, which is the sharpest of the four. The two `width: TIME` rows are owned by "THE INTERPRETER IS 2.5-3.1x SLOWER THAN THE CF-3300" -- they are TIME readings (2 vs 6, 4 vs 14), not PLAY behaviour. 🔴 4 vs 14 is ~3.5x, ABOVE that entry's filed band even allowing TIME's +/-1 quantisation on small integers -- worth re-reading when it is next priced.
+playfn_fixture_probe: one voice, no delay; voice 2, no delay; voice 3 only, no delay; empty string, no delay; width: TIME for FOR 20; width: TIME for FOR 50 -- ⚠️ ONE LINE PER PROBE: the loader keys by probe name, so a SECOND line for the same probe silently REPLACES the first. These six rows belong to TWO different entries. Four are "PLAY(n) start-up window" -- the reference marks a voice active during PLAY's own start-up and zerobas settles instantly; `voice 3 only` and `empty string` are the same transient on another voice and on a string with NO NOTES AT ALL, which is the sharpest of the four. The two `width: TIME` rows are owned by "THE INTERPRETER IS 2.5-3.1x SLOWER THAN THE CF-3300" -- they are TIME readings (2 vs 6, 4 vs 14), not PLAY behaviour. 🔴 4 vs 14 is ~3.5x, ABOVE that entry's filed band even allowing TIME's +/-1 quantisation on small integers -- worth re-reading when it is next priced.
 # 🟢 2026-09-10 (D-FILEDSLICE): `empty string, no delay` REMOVED from
 # playfn_fixture_probe above -- it no longer diverges (`-1 0 0 0` on both sides,
 # no DIFFER), which is the file's own rule: "a known row that stops diverging
@@ -99,6 +100,13 @@ playfn_fixture_probe: one voice, no delay; voice 2, no delay; voice 3 only, no d
 # 🔴 NO CAUSE IS CLAIMED. Something between 2026-09-05 and today made it
 # agree; naming a commit from one observation is the mechanism-from-one-reading
 # trap, and the row's agreement is the finding either way.
+# 🔴 2026-09-24 (D-PLAYBACK): `empty string, no delay` RE-ADDED above. It
+# diverged again (`-1 0 0 0` vs `0 0 0 0`), and the 09-10 worktree differential
+# showed the agreement recorded here was a RACE zerobas won: its MUSICF bit was
+# set and not yet cleared by the next tick. The harness is exonerated (09-10 ROM
+# + today's probe still agrees); the ROM's timing moved. The reference marks ALL
+# THREE voices at every PLAY (MUSICF = 7 after `PLAY""`) -- TODO's D-PLAYWIN
+# item owns the class. Re-pinned by Joost's ruling, 2026-09-24.
 # ngram13_probe: REMOVED 2026-09-02 -- d.body-l / d.lineno-l / d.body-res are
 # NO-ORACLE, not divergences, and the probe now says so itself (6 scored, 6
 # agree, 0 diverge, 3 NO-ORACLE). A truncated store's last line has no `$00`

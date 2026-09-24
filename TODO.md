@@ -4899,7 +4899,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:23152 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:23206 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -5065,7 +5065,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:9826 (T-6FE392)8 (T-529ABE)` from `TODO.md:21271 (T-529ABE)`: a
+      `TODO.md:9826 (T-6FE392)8 (T-529ABE)` from `TODO.md:21298 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -10670,7 +10670,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:21271 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:21298 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -16103,6 +16103,33 @@ finds zero shared names (a renamed block would otherwise make it silently blind)
       different shape**, which is a different fix and a different risk.
       🟢 `no PLAY at all` reads `0 0 0 0` on both — the resting state is shared,
       so every row above is read against a real zero.
+      🔬 **THE RULE, NAMED AT LAST (D-PLAYBACK, 2026-09-24,
+      [`scratchpad/playmusicf_probe.py`](scratchpad/playmusicf_probe.py), two
+      byte-identical runs, refcache OFF).** Read MUSICF (`PEEK(&HFB3F)`, a
+      documented work-area cell) on the statement right after `PLAY`:
+      | program | vg8020 `MUSICF PLAY(0)` | zerobas |
+      |---|---|---|
+      | `PLAY""` | **`7 -1`** | `0 0` |
+      | `PLAY"L1C"` (one voice) | **`7 -1`** | `1 -1` |
+      | no PLAY | `0 0` | `0 0` |
+      🎯 **THE REFERENCE MARKS ALL THREE VOICES AT EVERY `PLAY`** — even for a
+      string with no notes, even for one voice — and its interrupt then clears
+      the idle ones over the next ticks; zerobas marks only the voices it was
+      given. Every row in the table above fits *"all three marked, idle voices
+      cleared highest-first"*: v1-only keeps v2 a moment longer than v3, v3-only
+      keeps v1 longer than v2. ⚠️ That clearing ORDER is a candidate read off
+      five rows, not a measured mechanism.
+      🔴 **AND IT SHOWS D-PLAYEMPTY (2026-09-11) MOVED ZEROBAS THE OTHER WAY.**
+      Its premise — *"the reference's MUSICF reads 0 right after `PLAY""`"*
+      (gicini `m.empty`) — is a reading taken AFTER the reference's interrupt had
+      already cleared all three bits; one statement earlier it reads 7. So the
+      fix that dropped an empty voice from the commit mask made zerobas mark
+      FEWER voices where the reference marks MORE. Both readings are points on
+      one transient, which is why they could look contradictory.
+      [[two-rules-that-coincide-on-every-row-you-have]]
+      ➕ **`empty string, no delay` JOINS THIS ITEM'S PINNED ROWS** (Joost,
+      2026-09-24) — the fourth member of the class, pinned at its measured face
+      `ref -1 0 0 0` / `zb 0 0 0 0`.
       🎚️ TIER 6 — `PLAY(n)` transient
       🔁 **PARKED (Joost, 2026-09-10): every TIER 5 item waits until TIERS 1–4 are clean, and
       *"when we get to TIER 5, we'll have to do a prioritization together"* —
@@ -22503,8 +22530,10 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       has no target, others may not either. The sweep is the item, not the
       single file.
 
-- [ ] 🔴 **A ROW DE-PINNED AS "NO LONGER DIVERGING" IS DIVERGING AGAIN, AND
-      RE-PINNING IT WOULD BURY IT (D-PLAYBACK, 2026-09-24)**
+- [x] 🟢 **CLOSED 2026-09-24 — THE 09-10 AGREEMENT WAS A RACE THE ROW WON, NOT A
+      BEHAVIOUR THAT BROKE; RE-PINNED UNDER D-PLAYWIN BY JOOST.** Was: *A ROW
+      DE-PINNED AS "NO LONGER DIVERGING" IS DIVERGING AGAIN, AND RE-PINNING IT
+      WOULD BURY IT (D-PLAYBACK, 2026-09-24)*
       🎚️ APPARATUS — it is a question about a filed row's lifecycle, and about
       whether a converged reading came apart.
       🏗️ **RULED BY JOOST, 2026-09-24: *"Run the 09-10 test first"*.** The
@@ -22546,6 +22575,31 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       the harness is the first suspect, not the ROM.
       ⚠️ **NO ROM HAS CHANGED SINCE 2026-09-23 EVENING**, and the full battery
       has been green all night — so whatever moved, it did not move tonight.
+      ✅ **RUN 2026-09-24, THREE ARMS, REFCACHE OFF, THE MACHINE RESTORED AFTER.**
+      | arm | ROM | probe + harness | `empty string, no delay` zb |
+      |---|---|---|---|
+      | A | 09-10 (`06f571a9`, worktree) | 09-10 | **`-1 0 0 0`** — agrees |
+      | B | 09-10 | TODAY's | **`-1 0 0 0`** — agrees |
+      | C | TODAY's, D-PLAYEMPTY knifed out (1 byte: `jr nz`→`jr`) | today's | **`0 0 0 0`** — differs |
+      The reference read `-1 0 0 0` in every arm.
+      🎯 **(b) HARNESS IS REFUTED** — arms A and B agree, so nothing in the probe
+      or `omsx_repl` since 09-10 moved it. **The ROM moved it.**
+      🔮 **PREDICTIONS, SCORED:** arm A *"-1 0 0 0 on both"* — **HIT**. Arm C
+      *"removing D-PLAYEMPTY brings it back"* — **MISS**: the row stays `0 0 0 0`
+      with that block cut. The block is not the (sole) cause, and its own commit
+      message says why: zerobas's old `-1` was the MUSICF bit set and not yet
+      cleared by the next ISR tick — *"a race the row won for months"* — and the
+      same commit's screen-editor tenant moved when that tick lands, with
+      D-SPEEDPROF (09-11) then making the interpreter faster (`width: TIME` rows
+      6/14 on the 09-10 ROM, 5/12 today). **So (a) is true in the weakest form:
+      the behaviour that changed is TIMING, and the 09-10 "no longer diverges"
+      was an agreement for the wrong reason.**
+      🔬 **AND THE FOLLOW-UP NAMED THE RULE D-PLAYWIN HAD LEFT OPEN** — the
+      reference marks all three voices at every `PLAY` (MUSICF = 7 even after
+      `PLAY""`). Recorded on D-PLAYWIN, which owns the class.
+      🏗️ **JOOST, 2026-09-24: *"Re-pin under D-PLAYWIN"*.** Pinned in
+      `tools/filed-row-known.txt` and in the probe's `PINNED` at its measured
+      face, so drift in EITHER direction still goes red.
 
 - [x] 🟢 **THE MARKER WORDING IS ENFORCED AT LAST, AND IT EARNED ITSELF ON THE
       FIRST RUN: THREE MORE LIVE INSTANCES (D-MARKERWORD, 2026-09-24)**
