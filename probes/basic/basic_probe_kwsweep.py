@@ -1063,7 +1063,7 @@ SWEEP: list[tuple[str, str, str | None, str, str]] = [
      "184 (sounding) vs 191 (finished) is a race between the beep and the OUT/INP "
      "two statements later. Measured 2026-09-14: ALONE both machines read 184; in "
      "the full sweep the reference reads 191 and zerobas 184, deterministically "
-     "over two runs -- zerobas is 2.5-3.8x slower (the open TIER 4 item), so it is "
+     "over two runs -- zerobas is 2.5-3.8x slower (the open on-par-speed item), so it is "
      "still sounding when the reference has stopped. The row was SUPPORTED for as "
      "long as batching happened to put the same neighbours before it. "
      "🎯 `beep_c` below reads a register BEEP does NOT put back, which has no such "
@@ -1220,7 +1220,7 @@ SWEEP: list[tuple[str, str, str | None, str, str]] = [
     # for a reason that has nothing to do with the VDP, so the first cut re-ran the
     # same loop with the interrupt back on and required that TIME advanced. That
     # doubled the run, and zerobas is 2.5-3.8x slower than the reference (the open
-    # TIER 4 item), so the pair outran the capture window: the reference answered
+    # on-par-speed item), so the pair outran the capture window: the reference answered
     # `[0l 0 -1 ]` and zerobas printed NOTHING AT ALL, and the row reported
     # INTERPRETER SPEED as a VDP divergence. Measured apart in
     # scratchpad/vdpie_probe.py, where the single-loop shape reads `[1 0 ]` on BOTH
@@ -2663,7 +2663,7 @@ SWEEP: list[tuple[str, str, str | None, str, str]] = [
     # basic/time.asm:43), a different handler from the `$CB` read selector.
     # 🎯 AND IT IS ALSO WHERE TIME'S **VALUE** GETS SCORED. `timetick` above can
     # only ask `TIME>T`, a BOOLEAN, and it has to: zerobas is 2.5-3.8x slower than
-    # the reference (the open TIER 4 item), so a delay loop's TIME VALUE would
+    # the reference (the open on-par-speed item), so a delay loop's TIME VALUE would
     # diverge on INTERPRETER SPEED and report it as a TIME defect. Writing a known
     # value and reading it back has no such dependence.
     # ⚠️ `INT(TIME/100)`, NOT `TIME`: the clock ticks at 50/60 Hz between the write

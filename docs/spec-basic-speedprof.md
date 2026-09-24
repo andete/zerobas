@@ -1,6 +1,6 @@
 # Where the cycles go — a PC profile, and the two dispatch fixes it bought (D-SPEEDPROF)
 
-TIER 4 (on-par speed). The interpreter-speed item had a measured ratio (2.5–3.8×
+TIER 4 (on-par speed; TIER 5 since the 2026-09-24 swap, D-TIERSWAP). The interpreter-speed item had a measured ratio (2.5–3.8×
 the CF-3300) and a refuted cause (the sub-ROM eviction: §5 of that item), but no
 profile. `scratchpad/speedprof_rig.py` samples `reg PC` every 5 emulated ms
 through a run, symbolises against `build/basic-reloc.sym` (code labels only —

@@ -1074,7 +1074,7 @@ FORMS: dict[str, tuple[tuple[str, ...], str]] = {
         "`TIME` is a pseudo-variable with a read selector (`$CB`) and a separate "
         "write handler (`ex_time_assign`), so the two halves are two forms. "
         "⚠️ THE READ ROW IS A BOOLEAN AND HAS TO BE: zerobas is 2.5-3.8x slower "
-        "than the reference (the open TIER 4 item), so a delay loop's TIME VALUE "
+        "than the reference (the open on-par-speed item), so a delay loop's TIME VALUE "
         "would diverge on INTERPRETER SPEED and be reported as a TIME defect. The "
         "VALUE is scored by the write row, which reads back what it wrote and has "
         "no speed dependence.",

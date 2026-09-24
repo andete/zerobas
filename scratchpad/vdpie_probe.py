@@ -53,7 +53,7 @@ CASES = {
                  '50 PRINT"[K";A;B>0;"]"', 'RUN'],
     # (5) ONE loop instead of two. Case (3) times the loop TWICE -- once with the
     #     interrupt off and once with it back on -- and zerobas is 2.5-3.8x slower
-    #     than the reference (the open TIER 4 item), so the pair may simply outrun
+    #     than the reference (the open on-par-speed item), so the pair may simply outrun
     #     the capture window. If this shape ANSWERS where (3) did not, the fault
     #     was the apparatus and not the VDP.
     "chip1":    ['10 V=VDP(1):VDP(1)=V AND 223:T=TIME',

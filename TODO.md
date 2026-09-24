@@ -1486,10 +1486,38 @@ item — do **one item per session** to keep context lean.
       two addresses), so it is a different trade, not a compromise. 🙋 **HIS CALL
       — all three are his.**
 
-- [ ] 🎚️ **TIER 5 IS NOW "MATCHES THE REFERENCE'S RAM USAGE" — THE RUNG, AND
-      WHAT CAN AND CANNOT BE IN IT (D-TIER5RAM, 2026-09-22)**
-      🎚️ TIER 5 — the rung's own definition; it is the bar every other item at
+- [ ] 🎚️ **~~TIER 5~~ TIER 4 (SWAPPED 2026-09-24) IS NOW "MATCHES THE REFERENCE'S
+      RAM USAGE" — THE RUNG, AND WHAT CAN AND CANNOT BE IN IT (D-TIER5RAM,
+      2026-09-22)**
+      🎚️ TIER 4 — the rung's own definition; it is the bar every other item at
       this tier is measured against.
+      🏗️ **SWAPPED WITH SPEED BY JOOST, 2026-09-24 (D-TIERSWAP): RAM USAGE IS
+      TIER 4, ON-PAR SPEED IS TIER 5.** He asked whether the two should swap;
+      the case put to him was (1) a RAM difference can stop a program RUNNING
+      (a listing that fits on the reference is `Out of memory` here, or a
+      `CLEAR`/`BLOAD`/`POKE` into a cell we use differently corrupts us) where a
+      speed difference mostly makes it slower; (2) with T4 ruled *"track the
+      ratio, set no bar yet"* the speed tier cannot CLOSE, and under
+      "lowest tier first" an unclosable tier would hold the RAM tier back
+      indefinitely. He chose the swap. **Prose below dated 2026-09-22/23 says
+      "TIER 5" for this rung — that is the numbering of its date.**
+      🏗️ **WHAT THE RUNG SECURES — RULED BY JOOST, 2026-09-24, ALL THREE:**
+      asked which of three goals *"matches the reference's RAM usage"* means,
+      since they can pull against each other, he chose every one:
+      | goal | what it secures | measured by |
+      |---|---|---|
+      | **(a) same free memory** | `FRE(0)`/`FRE("")` and what `CLEAR` leaves match, so a program that fits on the reference fits here | the OBSERVABLE half |
+      | **(b) same addresses** | work-area cells, undocumented ones included, live where the reference keeps them, so `PEEK`/`POKE`/`BLOAD` programs that touch them behave the same | the FOOTPRINT half |
+      | **(c) same economy** | zerobas writes no more cells than the reference for the same operation — his *"very economical"* hunch, which stays a prediction to SCORE | the FOOTPRINT half |
+      🎯 **AND THE TARGET WHEN THE REFERENCES DIVERGE IS THE VG-8020** — his
+      words, *"if the references diverge, prefer the vg8020"*, the same rule
+      as style splits [[oracle-split-prefer-vg8020]]. Cells that exist only
+      with a disk ROM, which the VG-8020 does not have, take the CF-3300.
+      This answers the *"no single referent"* objection below: "exactly" is
+      still not the bar, but there IS now one machine to match.
+      ⚠️ **WHERE (a) AND (b) CONFLICT** — matching an address can cost free
+      memory, or the reverse — **that conflict comes back to Joost**, like
+      every adjustment this rung proposes.
       🏗️ **RULED BY JOOST, 2026-09-22.** He proposed a tier *"matches the RAM
       usage of the reference exactly"*, then: ***"it would make more sense to
       make it tier 5 and bump current tier 5 to tier 6"***. Done — 13 `🎚️`
@@ -1532,8 +1560,16 @@ item — do **one item per session** to keep context lean.
 
 - [ ] 🔬 **COMPARE RAM *USAGE* AGAINST THE REFERENCE, CELL BY CELL — AND JOOST'S
       HUNCH IS THE HYPOTHESIS TO SCORE**
-      🎚️ TIER 2 — reasonable time: it is not a divergence hunt, it is a cost
-      comparison that feeds the eviction's remaining RAM blockers.
+      🎚️ TIER 4 — RAM usage: this item is the measurement the RAM rung is
+      derived from (re-tagged 2026-09-24, D-TIERSWAP; it had read TIER 2 —
+      *"a cost comparison that feeds the eviction's remaining RAM blockers"* —
+      which put the rung's own measurement at another tier's priority).
+      🔭 **SCOPE WIDENED BY JOOST'S RULINGS:** *"the whole RAM map"*
+      (2026-09-24), undocumented regions included (2026-09-22), against the
+      VG-8020 (CF-3300 for disk-only cells), for all three goals — free memory,
+      addresses, economy (D-TIER5RAM). The marker line below says DOCUMENTED
+      work area; that is its 09-21 scope, and the measurement now covers
+      both.
       🤖 **AUTONOMOUS** — measurement of the DOCUMENTED work area, which the
       clean-room line explicitly permits.
       🟢 **THE "NOT NOW" IS LIFTED, 2026-09-22.** Filed at his request on
@@ -1541,9 +1577,10 @@ item — do **one item per session** to keep context lean.
       compare variable usage between our implementation and reference and if we
       differ adjust if needed"* — and his TIER 5 ruling the next day asks for
       exactly this, widened to the UNDOCUMENTED regions. **This item is the
-      measurement that populates the TIER 5 rung above.** 🏗️ **CONFIRMED
+      measurement that populates the TIER 5 rung above** (TIER 4 since
+      2026-09-24, D-TIERSWAP). 🏗️ **CONFIRMED
       2026-09-24 (D-KWPROVEN):** asked what proves T5, Joost answered ***"The
-      whole RAM map"*** — so per-keyword T5 is DERIVED from this comparison,
+      whole RAM map"*** — so per-keyword T4 (T5 when he said it; swapped the same day) is DERIVED from this comparison,
       not measured separately. Then, the same day: *"I have a hunch reference is very economical
       with RAM."*
       🔮 **THE HUNCH IS A PREDICTION AND MUST BE SCORED AS ONE, INCLUDING A
@@ -2653,7 +2690,7 @@ item — do **one item per session** to keep context lean.
 
 - [ ] 🔴 **TOKENISED `LOAD` IS 5.8× THE REFERENCE PER BYTE, AND THAT IS NOT THE
       INTERPRETATION GAP.**
-      🎚️ TIER 4 — on-par speed, on `LOAD`.
+      🎚️ TIER 5 — on-par speed, on `LOAD`.
       🔭 **SCOUT-THEN-ASK** — profiling `dpl_*`'s per-byte path is free;
       SPENDING BYTES on it is not, and the byte budget is Joost's call.
       Measured 2026-09-18 by
@@ -2828,8 +2865,19 @@ ORDER.** Set after a night whose three commits were all TIER 5 or apparatus:
 | **TIER 1** | works correctly in the happy path | a MISSING keyword is TIER 1, not "unimplemented" |
 | **TIER 2** | works in reasonable time | usable; not yet on par |
 | **TIER 3** | handles the most common error situations | *would a 1985 magazine listing plausibly hit this?* — Type mismatch, Syntax error, Illegal function call on a bad argument, File not found, Out of DATA, Subscript out of range, Division by zero, a forgotten disk |
-| **TIER 4** | faster than or on par with the reference | the baseline is NOT 1.0 (D-INTERPSPEED §4) |
-| **TIER 5** | handles every error situation correctly | nesting depth 11, `+$$###`, string-temp-stack overflow, which of two errors wins |
+| **TIER 4** | matches the reference's RAM usage | not "exactly" — the references disagree with each other (D-TIER5RAM); per keyword it is DERIVED from the whole-RAM-map comparison |
+| **TIER 5** | faster than or on par with the reference | the baseline is NOT 1.0 (D-INTERPSPEED §4); T5 rows RECORD the ratio and set no bar yet (Joost, 2026-09-24) |
+| **TIER 6** | handles every error situation correctly | nesting depth 11, `+$$###`, string-temp-stack overflow, which of two errors wins |
+
+🔢 **THE NUMBERING HAS MOVED TWICE, SO PROSE USES THE NUMBERING OF ITS DATE.**
+**2026-09-10:** five tiers, TIER 4 = speed, TIER 5 = every error.
+**2026-09-22:** RAM usage inserted as TIER 5, every error bumped to TIER 6.
+**2026-09-24 (D-TIERSWAP):** RAM and speed swapped — TIER 4 = RAM usage,
+TIER 5 = speed. So a "TIER 5" dated before 09-22 means every error, one dated
+09-22/23 means RAM, and one from 09-24 on means speed. ⚠️ **The `🎚️` tags
+are the only live numbering; `tools/tier_table.py` reads those, never the
+prose.** The 🔁 PARKED notes quoting *"every TIER 5 item waits until TIERS 1–4
+are clean"* are 09-10 prose: that parking is of the EVERY-ERROR tier, now 6.
 
 🎯 **RULED (Joost, 2026-09-13): "kwsweep SUPPORTED is not evidence for tier 1",
 then "let's call no tier established tier 0 to make it clear" — and, shown the
@@ -4851,7 +4899,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:23086 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:23141 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -5017,7 +5065,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:9778 (T-6FE392)8 (T-529ABE)` from `TODO.md:21218 (T-529ABE)`: a
+      `TODO.md:9826 (T-6FE392)8 (T-529ABE)` from `TODO.md:21271 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -10622,7 +10670,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:21218 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:21271 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -11849,6 +11897,11 @@ list. **When a slice lands, grep this list for what it just shipped.**
       was not. Same answer, same tier. **And the T4 rung is now defined:
       *"Track the ratio, set no bar yet"*** — a T4 row records zerobas ÷
       reference and passes or fails on nothing (D-KWPROVEN).
+      🔢 **AND IT IS NOW TIER 5, NOT 4 (Joost, 2026-09-24, D-TIERSWAP)** — RAM
+      usage moved above it. His *"yes but that is tier 4"* was said in the old
+      numbering; its meaning — speed ranks after happy path, reasonable time
+      and common errors — is unchanged, and it now also ranks after RAM.
+      ⚠️ So the T4 named in the line above is T5 in the new numbering.
       🤖 **AUTONOMOUS** — the charter question is answered, so the optimising
       work this item gates is now startable at its own tier. §5's non-repack
       comparison is already refuted; the live lead is D-SPEEDPROF's profile
@@ -12086,7 +12139,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       whole widen/pack pairs rather than shaving one. That is an arithmetic-core
       change with real rounding risk and the float suites are what would have to
       hold it — a project, not a slice.
-      🎚️ TIER 4 — on-par speed: the interpreter is 2.5–3.8× slower (TIER 2, reasonable time, is met) — 17–26 % of it came back on 2026-09-11 (D-SPEEDPROF); measured on `FOR` `GOTO` `WHILE`, arithmetic and strings
+      🎚️ TIER 5 — on-par speed: the interpreter is 2.5–3.8× slower (TIER 2, reasonable time, is met) — 17–26 % of it came back on 2026-09-11 (D-SPEEDPROF); measured on `FOR` `GOTO` `WHILE`, arithmetic and strings
       🤖 AUTONOMOUS — the charter half is ANSWERED (the STANDING sequencing of
       2026-09-02: speed is a real defect), so what remains under it is measurable work.
       ⚠️ **RANKED LAST BY THAT SAME RULING** — every open DIVERGENCE outranks it, so
@@ -12210,7 +12263,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       ⚠️ And its first cut APPENDED TO THE LIST IT WAS ITERATING — two tools
       naming each other never terminated; it hung silently for 22 minutes and
       looked like a slow `make -n` sweep, not a loop.
-      🎚️ TIER 4 — on-par speed: `PAINT` 2×
+      🎚️ TIER 5 — on-par speed: `PAINT` 2×
       ~~🙋 NEEDS-JOOST — a call that is yours to make (charter / scope).~~ (re-marked 2026-09-10, see below)
       🎯 **RULED (Joost, 2026-09-10): *"follow the scheme"* — TIER 4, so it is picked only
       once TIERS 1–3 are clean; then it is autonomous.
@@ -19593,7 +19646,7 @@ finds zero shared names (a renamed block would otherwise make it silently blind)
       only ONE `PUT` to arm and dies inside a known, small routine, so whatever a
       `PUT` corrupts is reachable from there; the 3-PUT hang may share the root.
       ⚠️ ONE REFERENCE (Disk BASIC; a diskless VG-8020 cannot express it).
-      🎚️ TIER 4 — on-par speed: `PUT` (its untrappable-hang half is TIER 3)
+      🎚️ TIER 5 — on-par speed: `PUT` (its untrappable-hang half is TIER 3)
       🤖 AUTONOMOUS — the reference settles the behaviour and the bisect is done.
 
 - [x] 🟢 **D-RECLEN2 2026-08-30 — THE FACE SHIPPED, THE DOMAIN DID NOT**
@@ -22548,11 +22601,13 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       | rung | ruling |
       |---|---|
       | **T2** — reasonable time | a keyword's test program **finishes within a set time and never hangs** (accepted as proposed) |
-      | **T4** — on-par speed | ***"Track the ratio, set no bar yet"*** — a T4 row RECORDS zerobas ÷ reference and never passes or fails on it |
-      | **T5** — RAM usage | ***"The whole RAM map"*** — the comparison is the whole map, not per-keyword cells; per-keyword T5 is DERIVED from it. Consistent with his 2026-09-22 TIER 5 ruling, which the RAM-usage comparison item (TODO §"COMPARE RAM *USAGE*") already carries |
+      | **T4** — RAM usage | ***"The whole RAM map"*** — the comparison is the whole map, not per-keyword cells; per-keyword T4 is DERIVED from it. Consistent with his 2026-09-22 ruling (then numbered TIER 5), which the RAM-usage comparison item (TODO §"COMPARE RAM *USAGE*") already carries |
+      | **T5** — on-par speed | ***"Track the ratio, set no bar yet"*** — a T5 row RECORDS zerobas ÷ reference and never passes or fails on it |
       | **T6** — the exhaustive error set | **not ruled** — split into its own 🙋 item directly below |
-      🤖 **AUTONOMOUS** — T2's row type can be specified and built now; T4's
-      is a recorded ratio with no verdict; T5's waits on the RAM-map
+      🔢 **SWAPPED THE SAME DAY (D-TIERSWAP): RAM IS T4, SPEED IS T5** — this
+      table is written in the new numbering.
+      🤖 **AUTONOMOUS** — T2's row type can be specified and built now; T5's
+      is a recorded ratio with no verdict; T4's waits on the RAM-map
       comparison it derives from. ⚠️ Adding any of them flips negative control
       `S36e`, which is the point: that must be a deliberate act carrying its
       rung's definition.

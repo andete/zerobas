@@ -45,6 +45,9 @@ KWTABLE = os.path.join(ROOT, "basic", "kwtable.inc")
 # and the old "every error situation" bar moves to TIER 6. The ladder is a
 # priority order as well as a quality one, and he placed RAM fidelity ABOVE
 # exhaustive error handling deliberately.
+# 🏗️ SWAPPED BY JOOST 2026-09-24 (D-TIERSWAP): RAM usage is TIER 4 and on-par
+# speed is TIER 5. The speed rung records a ratio with no bar, so it cannot
+# close -- and under "lowest tier first" an unclosable tier would starve RAM.
 TIERS = ["TIER 1", "TIER 2", "TIER 3", "TIER 4", "TIER 5", "TIER 6"]
 CLASSES = ["APPARATUS", "BUDGET", "STANDING", "OTHER"]
 # \U0001f534 THE RANGE IS [1-6] SINCE 2026-09-22, AND THE BLANKET RENUMBER THAT
@@ -283,9 +286,9 @@ REACHED = {1: "TIER 0 — open TIER 1 item (happy path broken or keyword MISSING
            3: "TIER 0 — TIER 1 bar unmet; an open TIER 3 item also stands "
               "(a common error situation is wrong)",
            4: "TIER 0 — TIER 1 bar unmet; an open TIER 4 item also stands "
-              "(slower than the reference)",
-           5: "TIER 0 — TIER 1 bar unmet; an open TIER 5 item also stands "
               "(its RAM usage does not match the reference)",
+           5: "TIER 0 — TIER 1 bar unmet; an open TIER 5 item also stands "
+              "(slower than the reference)",
            6: "TIER 0 — TIER 1 bar unmet; an open TIER 6 item also stands "
               "(an exhaustive error case is wrong)",
            "kwgap": "TIER 0 — a gap kwsweep SEES that no open item files (DIVERGENT/MISSING)",
@@ -964,14 +967,15 @@ def blocks_tier1(entry):
     🔴 ONLY A TIER **1** ITEM DOES, AND READING IT AS "ANY OPEN ITEM" WAS MY
     MISTAKE (corrected 2026-09-14). Joost's rule says "no open item", and Joost's
     TIER LADDER says what the tiers mean: HAPPY PATH -> REASONABLE TIME -> COMMON
-    ERRORS -> ON-PAR SPEED -> EVERY ERROR. **An item at tier n says tier n is not
+    ERRORS -> RAM USAGE -> ON-PAR SPEED -> EVERY ERROR (RAM inserted 09-22,
+    swapped above speed 09-24). **An item at tier n says tier n is not
     reached. It says nothing about tier n-1.** A keyword that is SLOWER THAN THE
-    REFERENCE can have a perfect happy path -- the TIER 4 item on `FOR`/`GOTO`
+    REFERENCE can have a perfect happy path -- the speed item on `FOR`/`GOTO`
     says so in its own text: *"the interpreter is 2.5-3.8x slower (TIER 2,
     reasonable time, is met)"*.
     🎯 MEASURED COST OF THE MISTAKE: 15 statements were held out of TIER 1 by items
     that are not about the happy path at all -- eleven at TIER 6 (an exhaustive
-    error case), three at TIER 4 (speed) and one at TIER 3 (a common error).
+    error case), three at the speed tier (then TIER 4) and one at TIER 3 (a common error).
     ⚠️ The tuple is `(tier, lines, evidence)` and `(None, [], 'SUPPORTED')` is
     TRUTHY, so this reads the FIRST element -- the trap selftest S28 pins."""
     return entry is not None and entry[0] == 1
@@ -984,7 +988,7 @@ def tier1_keywords(kws, conn=None, forms=None):
     the entry is a TUPLE `(tier, lines, evidence)` and `(None, [], 'SUPPORTED')` is
     TRUTHY, so a truthiness test marks EVERY keyword as carrying an open item. That
     bug reported PSET as blocked by an item it does not have, and only comparing it
-    against PAINT (which really does carry a TIER 4 item) exposed it."""
+    against PAINT (which really does carry a speed item) exposed it."""
     conn = knife_connected() if conn is None else conn
     forms = kwsweep_forms(kws) if forms is None else forms
     out = set()
@@ -1158,8 +1162,8 @@ def fmt_markdown(its, kws, evidence=None, t3=None, connected=None, forms=None):
                          "no happy path, in the normal failing path",
                "TIER 2": "works in reasonable time",
                "TIER 3": "handles the most common error situations",
-               "TIER 4": "faster than or on par with the reference",
-               "TIER 5": "matches the reference's RAM usage",
+               "TIER 4": "matches the reference's RAM usage",
+               "TIER 5": "faster than or on par with the reference",
                "TIER 6": "handles every error situation correctly"}
     counts = dict(summary(its))
     for t in TIERS:
@@ -1252,8 +1256,8 @@ def fmt_markdown(its, kws, evidence=None, t3=None, connected=None, forms=None):
     _req = {"T1": "every authored FORM has an agreeing row, and knife-proven CONNECTED",
             "T2": "🔴 NO PROVING ROW TYPE EXISTS — reasonable time is unmeasured for every keyword",
             "T3": "a `PROVES-T3:` row: a COMMON ERROR situation scored against the reference",
-            "T4": "🔴 NO PROVING ROW TYPE EXISTS — on-par speed is unmeasured for every keyword",
-            "T5": "🔴 NO PROVING ROW TYPE EXISTS — RAM parity is unmeasured for every keyword",
+            "T4": "🔴 NO PROVING ROW TYPE EXISTS — RAM parity is unmeasured for every keyword",
+            "T5": "🔴 NO PROVING ROW TYPE EXISTS — on-par speed is unmeasured for every keyword",
             "T6": "🔴 NO PROVING ROW TYPE EXISTS — the exhaustive error set is unmeasured"}
     _prov = {r: 0 for r in RUNGS}
     for kw in kws:
@@ -1540,7 +1544,7 @@ def selftest():
         and operators() <= set(statements(_real)))
     # 🔴 AN ITEM AT TIER n BLOCKS TIER n, NOT TIER n-1 (corrected 2026-09-14).
     # Reading "no open item" as "no open item AT ANY TIER" held 15 statements out
-    # of TIER 1 on items that say nothing about the happy path -- the TIER 4 item
+    # of TIER 1 on items that say nothing about the happy path -- the speed item
     # on FOR/GOTO says so in its own text: "TIER 2, reasonable time, is met".
     arm("S34 only a TIER 1 item blocks TIER 1",
         blocks_tier1((1, [7], "SUPPORTED")) is True

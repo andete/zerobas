@@ -10,7 +10,7 @@ Joost's policy — **faster or comparable is not a worry; significantly SLOWER
 is.**
 
 🔴 BUT "SLOWER THAN BOTH REFERENCES" CANNOT BE THE GATE ON ITS OWN, and saying so
-is the whole design. `PAINT` is 2× slower TODAY and that is a filed, open TIER 4
+is the whole design. `PAINT` is 2× slower TODAY and that is a filed, open on-par-speed
 item — a gate that simply asserted the policy would be RED on arrival, and a gate
 that is red for a known reason teaches nobody anything. So the rule is:
 
@@ -111,7 +111,7 @@ def main() -> int:
     print("perf pins: every operation held within "
           f"{MARGIN:.0%} of its pinned baseline.")
     print("  (the reference columns are context — `PAINT` is a filed, open "
-          "TIER 4 item at ~2x and this check is not about that)")
+          "on-par-speed item at ~2x and this check is not about that)")
     return 0
 
 

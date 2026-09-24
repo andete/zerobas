@@ -465,7 +465,7 @@ wall-assertion-check:
 # Joost's policy is "faster or comparable is not a worry; significantly SLOWER
 # is", and the PAINT item proposed a standing check for it. 🔴 BUT "slower than
 # both references" cannot be the gate: PAINT is 2x slower today and that is a
-# filed, open TIER 4 item, so such a gate would be RED on arrival and teach
+# filed, open on-par-speed item, so such a gate would be RED on arrival and teach
 # nobody anything. This fires on DRIFT AGAINST A PIN instead -- it cannot go red
 # for being slow, only for getting SLOWER -- and the reference columns are
 # reported for context. It exists because the drift ALREADY happened unnoticed:
