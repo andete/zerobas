@@ -5077,7 +5077,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:23884 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:23898 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -5243,7 +5243,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:10004 (T-6FE392)8 (T-529ABE)` from `TODO.md:21538 (T-529ABE)`: a
+      `TODO.md:10004 (T-6FE392)8 (T-529ABE)` from `TODO.md:21552 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -10848,7 +10848,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:21538 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:21552 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -16291,6 +16291,20 @@ finds zero shared names (a renamed block would otherwise make it silently blind)
       parser tenant runs behind a CALSLT (not resumable, no locals), so zerobas
       uses a fixed 8-entry table, and the depth divergence (8 vs ~26 KB of
       stack) is the consequence §7.6 states.
+      💰 **RE-PRICED 2026-09-24 AGAINST TODAY'S WALLS (`make basic-reloc`, clean
+      tree): THE SHORTFALL MOVED ENTIRELY INTO MAIN.** D-PLAYXBUILD
+      (`docs/spec-basic-audio-play.md` §7.11, 2026-09-17) built it all and fell
+      ~30 B short with sub page 1 at 87 B and main at 61 B. **On 2026-09-24 sub
+      page 1 read 706 B free** — the tenant half (84 B) AND the name scan (~76 B,
+      §7.11's tenant option) both fit there with room to spare — while **main
+      read 13 B on 2026-09-24** (page 1 8 + low 5) against the main half measured
+      at ~40 B on 2026-09-17 (the servicer bounce + the `MUSICF` drop, which
+      must stay in `ex_play`). **So on 2026-09-24 `X` was ~27 B of MAIN carve
+      from shipping**, and nothing else. Re-read both walls before acting.
+      🤖 **AUTONOMOUS NEXT STEP: the carve** — [[carve-routes-measured-shut]]'s
+      instruction-pair route (`scratchpad/jr_mapper.py`, adjacent-pair ngrams,
+      `inc_skip`/`skip_comma`-style helpers). Then re-apply D-PLAYXBUILD with the
+      scan in the tenant. ⚠️ `X` must not ship half-built (§7.11).
       🔭 SCOUT-THEN-ASK — ✅ THE SCOUT IS DONE (above); what remains is the ASK.
       *(the original question, for the record:)* grep where the lookup lives (is it
       below `$4000`, reachable from a page-1 sub tenant, or main page 1 where the
