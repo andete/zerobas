@@ -1682,6 +1682,49 @@ item — do **one item per session** to keep context lean.
       because we made a different, deliberate architectural choice (the channel
       context, the temp-descriptor pool). The output is a priced comparison for
       Joost, not a list of things to change.
+      🔬 **D-RAMFOOT, THE FIRST MEASUREMENT (2026-09-24,
+      `scratchpad/ramfoot_probe.py`, `scratchpad/ramfoot_run.out`).** 16
+      one-line operations, VG-8020 vs zerobas, every address in `$E001..$FFFF`
+      written inside a window the program opens and closes itself
+      (`POKE&HE000,201/202`, keyed by a per-case TAG so a lost window cannot
+      shift the rows). Stack pushes are classified by SP and excluded; an empty
+      window gives the background; a positive `POKE&HE001,7` must record
+      `$E001` on both or the run REFUSES. **Deterministic** — two runs diff
+      identical.
+      🔴 **THE INTERRUPT HAD TO BE MEASURED, NOT GUESSED, AND TWO CLASSIFIERS
+      FAILED FIRST.** zerobas takes 8–14 ms from the TIME tick to its window,
+      so nearly every zerobas window holds a 50 Hz interrupt (H.TIMI hits are
+      counted per window). "Written only with interrupts off" caught
+      interpreter cells (zerobas writes `ARYTAB`/`FRETOP`/`CTLLIM` under DI),
+      and "near a tick" per op caught `FORCLR` on `COLOR`. What works is an
+      `isr` control: a wait loop spans one tick, and a cell EVERY write of
+      which sits within 0.3 ms before to 3 ms after an H.TIMI hit is the
+      interrupt's. **Interrupt signature: VG-8020 31 cells, zerobas 24** —
+      `STATFL`, `JIFFY`, the `NEWKEY` rows on both.
+      🔮 **JOOST'S HUNCH, SCORED: HIT.** *"The reference writes FEWER distinct
+      cells for the same operation"* — **on 12 of 16 ops; 527 cells vs 843
+      in total (zerobas 1.6×)**. The four exceptions: `PRINT 1` (39 vs 8),
+      `CLS` (69 vs 26), `LOCATE` (5 vs 4), `STR$` (47 vs 42). My own
+      prediction (fewer `$F380+` cells here, more in total, not on every op)
+      — HIT on all three parts.
+      📍 **GOAL (b), SAME ADDRESSES — THE STRUCTURAL FINDING.** For
+      arithmetic, variables and strings the reference writes the DOCUMENTED
+      work area (`$F662`, `$F678..`, `$F698..`, `$F6A5..`, `$F6C4..$F6C7`,
+      `$F7B4..`, `$F7F6..$F84F` recur), and zerobas writes almost none of it:
+      its FAC/ARG/conversion/variable state lives in its OWN workspace
+      (`FAC $F01C`, `ARGA $F06A`, `CVT $F0C8`, `ARYTAB $E1C0`, `VARTYPE
+      $F14E` …). The reference writes NOTHING below `$F380` except its stack.
+      ⚠️ So a program that PEEKs those documented cells reads the reference's
+      state there and zerobas's stale bytes — an ADDRESS divergence per cell,
+      to be named from the MSX2 TH work-area table and cross-checked against
+      `make sysvarsweep` (which scores documented cells) before any is filed.
+      ➕ **zerobas also writes `SLTTBL3` (`$FCC8`) and the secondary-slot
+      register `$FFFF` on most ops** — its sub-ROM tenant calls; the reference
+      writes neither for any of the 16.
+      ➡️ **NEXT:** name the reference-only cells from the published table;
+      widen the op list (control flow, graphics, file I/O); goal (a) (free
+      memory: `FRE(0)`/`FRE("")` after boot and after `CLEAR`). Every
+      ADJUSTMENT goes to Joost.
 
 - [x] 🔬 **PROMOTE THE THREE ASCII/MERGE DISK PROBES INTO THE BATTERY — THEIR
       EXCUSE'S PREMISE CHANGED WHEN STEP 11 SHIPPED**
@@ -4968,7 +5011,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:23735 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:23778 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -5134,7 +5177,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:9895 (T-6FE392)8 (T-529ABE)` from `TODO.md:21389 (T-529ABE)`: a
+      `TODO.md:9938 (T-6FE392)8 (T-529ABE)` from `TODO.md:21432 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -10739,7 +10782,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:21389 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:21432 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
