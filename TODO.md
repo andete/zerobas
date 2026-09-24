@@ -4848,7 +4848,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:22967 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:22987 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -5014,7 +5014,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:9700 (T-6FE392)8 (T-529ABE)` from `TODO.md:21131 (T-529ABE)`: a
+      `TODO.md:9720 (T-6FE392)8 (T-529ABE)` from `TODO.md:21151 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -6008,7 +6008,27 @@ list. **When a slice lands, grep this list for what it just shipped.**
       is that a footprint does not predict an outcome) · `hookcount_probe` (a
       TALLY of breakpoint entries per hook cell) · `rigcap_probe` (asks openMSX
       which pluggables EXIST — it characterises the EMULATOR, not BASIC, so
-      there is no oracle to diverge from). **32 left.**
+      there is no oracle to diverge from). **Two more on 2026-09-24:**
+      `fatbuf_probe` (reads which BYTES are resident in the CF-3300's RAM to
+      count buffer REGIONS; its own closing lines say *"evidence about REGION
+      COUNT, never about the engine"*) and `diskwrites_probe` (which cells the
+      disk side WROTE against which CHANGED on return, reporting BLIND SPOTs
+      rather than a verdict). **30 left.**
+      🔴 **AND THERE IS NO MECHANICAL TRIAGE — TWO SCANS WERE TRIED AND BOTH
+      FAILED, WHICH IS THE USEFUL PART OF THIS SLICE.**
+      **(a)** *"does it print verdict vocabulary?"* — `keyline_probe` carries
+      explicit expectations in its own header (*"it must find 'Z' somewhere ...
+      the same offsets must be blank"*) and scores ZERO: the expectations live
+      in comparisons, not in printed words.
+      **(b)** *"does it drive a reference machine?"* — nearly all of them do,
+      and `fatbuf_probe` mentions one FIVE times while being pure
+      characterisation. **MENTIONING A REFERENCE IS NOT HAVING AN ORACLE.**
+      🎯 **SO THE QUESTION IS NOT ANSWERABLE FROM THE SOURCE'S SURFACE:** it is
+      *does this probe ask "do we MATCH?" or "what does X DO?"*, and only
+      reading the probe's purpose settles it. The remaining 30 are a read-each
+      job, a few per session rather than one sweep. ⚠️ **Do not let a future
+      tick "speed this up" with a classifier** — both of the above looked
+      reasonable and were wrong in opposite directions.
       🔬 **DECLARING WAS VERIFIED EMULATOR-FREE, IN THREE DIRECTIONS**, by
       calling the sweep's own `score()` rather than re-running 34 minutes of
       probes: undeclared → `NOTHING PARSED`; declared → `BY DESIGN`; **declared
@@ -10544,7 +10564,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:21131 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:21151 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
