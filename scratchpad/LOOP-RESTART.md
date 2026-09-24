@@ -30,11 +30,25 @@ symmetric. Treat that group as closed-by-measurement unless a new signal appears
 | PLAY X shape | *"Tenant walks the chain"* — the MML tenant reads the variable chain in RAM itself (spec-basic-audio-play §7.12); main ~0 B, no carve needed |
 | the rig | Joost ORDERED an RP2040-Zero (arrives ~09-26). Still ⛔ PARKED until he picks it up; the rig item says what to measure FIRST (headless joystick, then headless mouse for PAD/PDL) |
 
+### 🌙 LATE EVENING 2026-09-24 → 25 (after the hand-off above was written)
+
+`ef8be6cd` PLAY X shape ruled · `b7864309` **D-PLAYX12 — PLAY X SHIPS** (main
+0 B; 13/13 rows match; ERR 7 on self-reference; PLAY level 0 → 2, 10/10 forms) ·
+`9316425d` **D-OKSTORE** (no prompt after a stored line / deleted line / empty
+Enter, as the reference; 2/5 → 5/5), funded by 9 `jp`→`jr` + promoting
+`skipsp_test` into the low region.
+🔴 **MAIN IS FULL: page 1 1 B, low 0 B** (clean build, 2026-09-25). Routes left
+(`scratchpad/pair_scout.py`, `evict_scout.py`, `jr_mapper.py` — re-run them): D
+is ~0 now, pairs ~2 B; the only BIG route is evicting a HOT leaf to sub page 1
+(423 B free after PLAY X), which costs speed — **Joost's call, not asked yet.**
+
 ### ➡️ THE QUEUE NOW (re-scan; lowest tier first)
 
-* **TIER 1 `PLAY` `X<var>;` — BUILD IT** (TODO §"`PLAY`'s `X<var>;`
-  SUBSTRING…", spec §7.12, RULED 2026-09-24): the MML tenant walks the variable
-  chain itself; no main carve. First item of the next session.
+* ~~**TIER 1 `PLAY` `X<var>;` — BUILD IT**~~ SHIPPED (`b7864309`).
+* 🙋 **CARVE STRATEGY** — every remaining ROM-growing item (D-ADDR29 S2+, …)
+  needs main bytes and main is full. Ask Joost whether to evict a hot leaf
+  (evaluator core / tokeniser skip / ISR servicers) to sub page 1, at a
+  measured speed cost, before any of them can start.
 * **TIER 4 D-ADDR29**, spec §5 order: S1 ✅ · **S2 the pointer chain**
   (VARTAB/ARYTAB/STREND + FRETOP/MEMSIZ, moved TOGETHER — D-REHOME's group
   argument) · S3 CNSDFG/ATRBYT writes · then DAC-full, TEMPST→10, RNDX, the N set.
