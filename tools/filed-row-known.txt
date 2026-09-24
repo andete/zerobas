@@ -36,6 +36,9 @@
 budget_probe: NO-VERDICT -- emulated-time window/used/margin percentages, for sizing probe budgets
 interpspeed_probe: NO-VERDICT -- TIME ratios zb/cf3300; the entry it serves is "THE INTERPRETER IS 2.5-3.8x SLOWER"
 put3consume_probe: NO-VERDICT -- cluster/LOF values under an explicit "read:" note, characterisation only
+aliasscope_probe: NO-VERDICT -- a WATCHPOINT BYTE COUNT over a RAM window (how many bytes a verb writes into FSECTOR_BUF between two markers). There is no reference column and no SAME/DIFF concept: the reading is a number, and D-ALIASBITE's own lesson is that a FOOTPRINT DOES NOT PREDICT AN OUTCOME -- `OPEN...FOR INPUT` writes NAME's exact footprint and the channel survives. Declared 2026-09-24 so the real holes in the corpus are not buried under it.
+hookcount_probe: NO-VERDICT -- COUNTS breakpoint entries per hook cell to answer which cells the reference's LOAD enters (spec-diskcode-eviction 6.6r). A tally of entries, not a two-sided comparison; its rows are read by a human against the eviction spec. Declared 2026-09-24.
+rigcap_probe: NO-VERDICT -- asks openMSX which joyport pluggables EXIST and whether `joystickports` takes a write. It characterises the EMULATOR, not BASIC, so there is no oracle to diverge from; the answer is a capability list. Declared 2026-09-24.
 # --- 2026-09-08: seven CHARACTERISATION probes from the missing-keyword and
 # screen-editor arcs. `filed_row_sweep` reported all seven as "NOTHING PARSED",
 # alongside a genuinely ROTTED probe (ramfree), and the two were
