@@ -89,7 +89,10 @@ CASES = [
 
 
 def main() -> int:
+    cells: dict = {}
     for mach in MACHINES:
+        if mach == "National_CF-3300" and cells.get(MACHINES[0]) and cells.get(REF):
+            verdict(cells[MACHINES[0]], cells[REF])
         print("===", mach, flush=True)
         specs = [("stored", lines) for _, lines in CASES]
         how = "boot-per-case"
@@ -121,8 +124,28 @@ def main() -> int:
             i = tail.find("<")
             j = tail.find(">", i + 1)
             cell = tail[i:j + 1] if i >= 0 and j > i else "?" + tail[:40]
+            cells.setdefault(mach, {})[name] = cell
             print(f"  {name:13} {cell!r}", flush=True)
     return 0
+
+
+REF = "Philips_VG_8020"
+
+
+def verdict(zb: dict, ref: dict) -> None:
+    """🎯 THE VERDICT CHANNEL (D-RECLENV's shape, 2026-09-25): one `DIFF <label>`
+    per row where zerobas and the VG-8020 read differently, then a SUMMARY that
+    must not itself start with the marker. Printed BEFORE the CF-3300 column,
+    because that machine's boot-per-case delivery is a known apparatus failure
+    and the harness exits hard there -- a verdict after it would never print.
+    Until this existed the probe printed three raw columns and the filed-row
+    sweep read it as NOTHING PARSED, even on the night every row agreed."""
+    bad = [k for k in zb if zb[k] != ref.get(k)]
+    for k in bad:
+        print(f"DIFF {k}  zb={zb[k]!r}  {REF}={ref.get(k)!r}", flush=True)
+    # the filed-row sweep's own SUMMARY form (`DIFF: n/m`, as maxfilestail and
+    # lineentry print it): a summary of ZERO is then a measurement, not silence
+    print(f"DIFF: {len(bad)}/{len(zb)} rows diverging vs {REF}", flush=True)
 
 
 if __name__ == "__main__":

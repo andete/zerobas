@@ -5101,7 +5101,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:24010 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:24020 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -5267,7 +5267,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:10028 (T-6FE392)8 (T-529ABE)` from `TODO.md:21664 (T-529ABE)`: a
+      `TODO.md:10038 (T-6FE392)8 (T-529ABE)` from `TODO.md:21674 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -6356,6 +6356,16 @@ list. **When a slice lands, grep this list for what it just shipped.**
       denominator with a hole in it, and that is this entry's own subject.
       ➡️ **THE UNFILED ONE IS A ROW THAT CAME BACK — filed separately below
       (D-PLAYBACK), and DELIBERATELY NOT RE-PINNED.**
+      ✅ **`playx_probe` HAS A VERDICT CHANNEL (2026-09-25) — 9 → 8 LEFT.** It
+      asks *"do we MATCH?"*, so it gets a channel, not a declaration: one
+      `DIFF <label>` per row where zerobas and the VG-8020 differ, then the
+      sweep's own `DIFF: n/m` summary — printed BEFORE the CF-3300 column,
+      whose boot-per-case delivery is a known apparatus failure that exits
+      hard. `scratchpad/playx_after.out` reads **`DIFF: 0/13`** (D-PLAYX12
+      shipped `X` the same night), and `filed_row_sweep.score()` reads it
+      clean; a planted `DIFF` row reads DIVERGES, unfiled — both directions
+      checked. Left: `cf3300_files`, `clrtrapstk_stop`, `loadrun`,
+      `mergeshape`, `mergewin`, `playmml`, `playnote`, `playpsg`.
       🎚️ APPARATUS — probes that exit 0 on a divergence
       🤖 AUTONOMOUS — re-run it in slices after any session that adds probes.
       **Measured 2026-09-24 at ~34 minutes for the full corpus**, and the debt
@@ -10872,7 +10882,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:21664 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:21674 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
