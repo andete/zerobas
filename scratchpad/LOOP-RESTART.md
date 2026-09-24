@@ -4,7 +4,103 @@ A `ScheduleWakeup` loop is SESSION-LOCAL and dies with the session. This file is
 the durable half: paste the command in `## The command` below into a fresh
 session and the loop resumes exactly where it stopped.
 
-## 🟢 STATE AS OF 2026-09-23 — THIS IS THE CURRENT ONE. EVERYTHING BELOW IS HISTORY.
+## 🟢 STATE AS OF 2026-09-24 — THIS IS THE CURRENT ONE. EVERYTHING BELOW IS HISTORY.
+
+**Tree CLEAN, all pushed, head `3eb2e3f2`.** No ROM has changed since
+2026-09-23 evening (battery hashes `ea1e4b98 b188cd31 491644a1 b8453c76`), so
+the knife pin is still valid. SHAs below read back from `git log`:
+`bfb75bd4` the rulings · `08ebb914` D-TIERSWAP · `12d5453b` D-KWLADDER ·
+`3eb2e3f2` D-PLAYBACK closed. Overnight (09-23→24): D-CAPGAP closed, D-MARKERWORD,
+D-FILEDROT re-run, and the filed-row triage down to **9 probes**.
+
+### 🔴 TWO "WAITING ON JOOST" BLOCKERS RODE THE WHOLE NIGHT AND WERE ALREADY ANSWERED
+
+The overnight prompt listed the TIER 4 speed charter and the RAM-usage
+comparison as Joost's. **Both had been ruled on 2026-09-22** and sat in their
+own TODO items; the hand-off copied the list forward without re-reading them,
+and Joost was asked the speed question a second time (same answer).
+🎯 **RULE: a hand-off's "waiting on Joost" list is a WALL READING — before
+carrying one forward, open each item and read its LATEST ruling.** The list
+below was built that way on 2026-09-24, each block read to its end with struck
+markers excluded — and a first scan that did NOT exclude `~~🙋…~~` reported
+two ruled items as 🙋. Scan by BLOCK, and strike-aware.
+
+### 🏗️ JOOST'S RULINGS, 2026-09-24 — DO NOT RE-ASK ANY OF THESE
+
+| subject | ruling |
+|---|---|
+| **tier ORDER** | **SWAPPED: TIER 4 = RAM USAGE, TIER 5 = ON-PAR SPEED.** 1 happy path · 2 reasonable time · 3 common errors · 4 RAM · 5 speed · 6 every error. Prose dated before 09-24 uses the old numbers; only the `🎚️` tags are live |
+| **speed** | in the charter (*"Yes, match the reference"*, first *"yes but that is tier 4"* on 09-22) — now at TIER 5 |
+| **RAM rung** | secures **all three**: same free memory, same ADDRESSES (undocumented cells too), same economy. **Target: the VG-8020** when references diverge (*"prefer the vg8020"*); disk-only cells take the CF-3300. A free-memory vs address conflict goes to Joost. Proof = **the whole RAM map**; per-keyword T4 is DERIVED from it |
+| **LADDER** | a keyword's LEVEL is its highest UNBROKEN run of proven rungs from T1 (`T1✓ T2— T3✓` = level 1). `tools/tier_table.py` prints it |
+| **T2** | the keyword's test program completes within **10× the VG-8020's time** (*"use 10x, it will be slow, but it finishes"*) |
+| **T5** | *"Track the ratio, set no bar yet"* — show the RATIO, never a tick |
+| **T6** | **NOT ruled** — its own 🙋 item (the only rung still undefined) |
+| **the rig** (STICK/STRIG/PAD) | *"Park it."* → ⛔ BLOCKED. `tools/rigstick.swift` stays, untouched |
+| **D-PLAYBACK** | ran; the 09-10 agreement was a RACE zerobas won. *"Re-pin under D-PLAYWIN"* — done |
+
+### 🤖 THE QUEUE, IN TIER ORDER — RE-SCAN IT, DO NOT TRUST THIS LIST
+
+➡️ **TIER 1, FIRST: D-KWPROVEN — BUILD THE T2/T5 ROW TYPE** (TODO §"WHAT
+PROVES A RUNG?"). **T2 and T5 are ONE measurement**: zerobas ÷ VG-8020 time
+for the same program, with a completion watchdog. T2 ticks at ≤ 10×; T5 SHOWS
+the ratio and never ticks. The kwsweep rows ARE the per-keyword test programs,
+so the obvious shape is timing them on both sides — ⚠️ but `TIME` quantises
+(±1 jiffy on small counts; the `width: TIME` rows read 2 vs 5), so a short row
+needs a repeat loop to be a ratio at all, and a row that is fast on both sides
+should not be scored on noise. **Design it, state the rule for "too short to
+time", plant a NEGATIVE arm (a keyword made artificially 20× slower must NOT
+tick), and flip `S36e` deliberately** — that arm exists so a proving row type
+cannot arrive as a side effect.
+📋 **TIER 1, THEN: the keyword-completeness remainder** (TODO §"Keyword-
+completeness gaps", 🤖 at its end).
+📋 **TIER 2: the same-address question** (TODO §"SHOULD MAIN AND `disk.rom` USE
+THE SAME ADDRESS…", 🤖).
+📋 **TIER 4: the RAM rung** (TODO §"TIER 4 … MATCHES THE REFERENCE'S RAM
+USAGE", §"COMPARE RAM *USAGE*", both 🤖) — the whole-map comparison vs the
+VG-8020, all three goals. Measuring is autonomous; ANY ADJUSTMENT goes to Joost.
+Score his *"very economical"* hunch as a PREDICTION, including a miss.
+📋 **TIER 5: speed** — the interpreter band, `PAINT`, `PUT` (all 🤖).
+📋 **APPARATUS (below every tier): the filed-row triage, 9 probes left** —
+`cf3300_files`, `clrtrapstk_stop`, `loadrun`, `mergeshape`, `mergewin`,
+`playmml`, `playnote`, `playpsg`, `playx`. The `play*` ones are likely REAL
+holes (they compare and cannot say so) needing a channel, not a declaration.
+Method, traps and the D-RECLENV channel shape: the 09-23 section below.
+
+### 🙋 STILL JOOST'S — READ EACH ITEM'S LATEST RULING BEFORE BELIEVING THIS
+
+* **T6** — what bounds "the exhaustive error set" (its own item, split today).
+* **`wip/saveport` / "THERE IS NO SINGLE RAM MAP"** — 🙋 *only on WHEN*.
+* **"SLIM THE FILE-CHANNEL CONTEXT"** (the *"Gap (small)"* entry) — retire/delete.
+* **`LOAD`'s cells (step 9/10)** and the disk-code-eviction constraints — 🙋.
+* **Every TIER 6 item** — PARKED since 09-10 (*"when we get to TIER 6"*, then
+  numbered 5, *"we'll have to do a prioritization together"*).
+* One cosmetic offer: split `⚫ N/A` into "particle" and "composite-only".
+
+### 🔴 LESSONS PAID FOR ON 2026-09-24 — CARRY THEM
+
+* **NOTHING RUNS IN THE REPO WHILE A BATTERY DOES — NOT EVEN A "READ-ONLY"
+  CHECK.** I ran `tools/check_selftests.py` mid-battery to answer a question;
+  its selftests plant into tracked files and restore CONTENT but not MTIME, so
+  `make -q` called the ROMs stale and `lineerr#8/8` REFUSED (rc 2, retry "REAL",
+  nothing measured). The runner's POOL WRITE guard caught it.
+* **ONLY FIVE OF THE "EIGHT EXCLUDED" ARE REAL.** `diskdep-selftest` and
+  `layout-invariant-selftest` run every battery inside `selftest-check`, and
+  `citation-check` inside `basic-reloc`. Run the five `*-acceptance` suites only
+  when something THEY READ moved — `grep` their scripts for the changed module
+  before deciding (today: none reads `tier_table`/`kwforms`).
+* **A ROW THAT AGREES CAN AGREE BECAUSE IT WON A RACE.** `empty string, no
+  delay` was de-pinned on 09-10 as "no longer diverging"; zerobas's `-1` was a
+  MUSICF bit not yet cleared by the next tick. The 3-arm worktree differential
+  (09-10 ROM + 09-10 probe / 09-10 ROM + today's probe / today's ROM knifed)
+  separated harness from ROM in ~15 min. **And a fix built on a transient
+  reading (D-PLAYEMPTY) can move the machine AWAY from the reference** —
+  MUSICF reads 7 on the reference one statement earlier than its row sampled.
+* **A KNIFE SHOULD CHANGE ONE BYTE WHEN IT CAN** — `jr nz`→`jr` kept every
+  address in place; `cmp -l` proved the plant was exactly that byte.
+* **PREDICTIONS TODAY: 1 hit, 1 miss** (the D-PLAYEMPTY knife). Score them.
+
+## 📦 STATE AS OF 2026-09-23 — superseded above, kept for its lessons.
 
 **Tree CLEAN, all pushed, head `70ab3095`.** Today shipped SIX commits, every
 sha read back from `git log` rather than from memory (this arc has already put a
@@ -1102,8 +1198,7 @@ a pattern that appears in the polling command.
 
 ## The command
 
-Paste this into a fresh session. ⚠️ **It supersedes the 27-minute cron prompt,
-which went stale within an hour of being armed** — a cron prompt is fixed at
-creation and cannot learn, which is the whole reason this file exists.
+Paste this into a fresh session. ⚠️ **A loop prompt is fixed when it is armed
+and cannot learn** — so it points HERE and this file carries the state.
 
-    /loop continue autonomously on zerobas — 🔴 READ scratchpad/LOOP-RESTART.md FIRST and BELIEVE IT OVER THIS PROMPT; then the item's own block in TODO.md to its END. 📊 RE-VERIFY THE BLOCKER *BEFORE* READING THE ITEM — fifteen re-verified, FOURTEEN STALE, two of them blocked by a sentence rather than by the machine. ➡️ THE AUTONOMOUS QUEUE IS EMPTY BELOW TIER 4: the disk keywords are done as far as the pattern reaches, the six items the carve funded have shipped, and `kwsweep` reads SUPPORTED=362 with zero missing and zero scored divergences. What is left is TIER 4 speed (the 2.5–3.8× interpreter band, PAINT, PUT) and THREE RULINGS that are Joost's, not yours: VARPTR(#n)'s FCB stride (265 vs our 306), the channel-verb CLUSTER move (ex_open has 40 page-1 call sites, 18 in loops — the helpers must travel with the bodies), and LOAD"CAS:" (fidelity costs a working feature; the faithful behaviour is a hang no row can carry). DO NOT take any of the three alone. ⚠️ AN ITEM'S MARKER CAN BE SUPERSEDED INSIDE ITS OWN BLOCK — take the LAST, not the first; taking the first reports 🙋 work as autonomous AND hides TIER 1 items. ⚠️ CHECK ROWS BY NAME, NEVER A CONVERGED TOTAL — diskbasic-acceptance says 34/34 and has no COPY row and no LFILES row. ⚠️ KEEP AN AGREEING ROW BESIDE EVERY ERROR ROW: DSKF's first cut made every call answer `Bad drive name` and the TIER 3 row PASSED on it. ⚠️ A BATCHED SUITE'S RESET MUST RESTORE EVERY GLOBAL ITS CASES MOVE. ⚠️ A ROM CHANGE INVALIDATES THE KNIFE PIN: `kwknife.py --all` AND `--allfn`, then full `make kwsweep`, then `make tiers-md`, and the ORDER for docs is TODO edit -> check_todo_citations.py --fix -> tiers-md (the tier table cites TODO LINE NUMBERS). Standing rules: full `make gates` before each commit and never commit red; STAGE EVERYTHING BEFORE THE BATTERY AND WRITE NOTHING WHILE IT RUNS; `test -e <path> && exit 1` before any `cat >` heredoc; stage explicit paths, `git add -A` banned; commit message to a FILE with `git commit -F`; commit AND push after each fix without asking; re-run the five battery-excluded targets ONLY when the ROMs actually changed; WRITE EDIT SCRIPTS TO A FILE, anchor on TEXT, refuse on a missing or non-unique anchor, and ACCUMULATE PER FILE; READ the output of every edit script; never poll with a pattern that matches the polling command itself.
+    /loop continue autonomously on zerobas — 🔴 READ scratchpad/LOOP-RESTART.md FIRST (its 2026-09-24 section is current) and BELIEVE IT OVER THIS PROMPT; then the item's own block in TODO.md to its END. 🏗️ JOOST'S RULINGS OF 2026-09-24 ARE IN THAT SECTION'S TABLE — tier order is now 1 happy path · 2 reasonable time · 3 common errors · 4 RAM USAGE (VG-8020) · 5 ON-PAR SPEED · 6 every error; a keyword's LEVEL is its unbroken run of proven rungs; T2 = within 10× the VG-8020's time; T5 = a ratio, never a tick; T6 is NOT ruled. DO NOT RE-ASK ANY OF THEM. ➡️ FIRST ITEM: TIER 1 D-KWPROVEN — build the T2/T5 row type (ONE measurement: zerobas ÷ VG-8020 time + a completion watchdog), with a "too short to time" rule and a NEGATIVE arm, and flip S36e DELIBERATELY. Then the queue in that section, lowest tier first, APPARATUS (the 9-probe filed-row triage) last. 📊 BEFORE CARRYING ANY "WAITING ON JOOST" CLAIM, OPEN THE ITEM AND READ ITS LATEST RULING — two stale blockers rode a whole night on 09-23. Scan markers by BLOCK, strike-aware, and take the LAST live one. Never quote a count or a wall — recount (`python3 tools/tier_table.py --all`, `make basic-reloc` from a CLEAN tree). 🔴 CLEAN ROOM: registers, RAM addresses, work-area RAM contents, I/O ports and slot state are READABLE; never read a ROM byte, follow a hook target, single-step into ROM or disassemble; NEVER read the bytes of the reference's RAM-resident code (§8.5). THE LOOP: implement → `make gates-fast` → `check_todo_citations.py --fix` to a FIXED POINT → `make tiers-md` → stage EXPLICIT paths (`git add -A` banned; a cited scratchpad path must be added BEFORE the gates) → ONE `make gates` and TOUCH NOTHING IN THE REPO WHILE IT RUNS (a selftest is not read-only) → the five `*-acceptance` excluded suites ONLY when something they READ moved (grep their scripts) → ONE commit, message to a FILE, `git commit -F`, check `--stat` and body → PUSH, without asking. Never commit red; READ THE LOG BEFORE BELIEVING ANY RED (today's was mine). A ROM change invalidates the knife pin (`scratchpad/kwknife.py --all` then `--allfn`). NEVER run two emulator probes at once; never `kill -9` a probe's python parent; `set renderer none; set sound_driver null` + a subprocess timeout; `python3 -u`. `ls` the path AS ITS OWN COMMAND before any `cat >` heredoc. Edit scripts to a FILE, anchored on TEXT, refusing on a missing or non-unique anchor; READ their output. State a prediction before every run and SCORE it, misses included. `timeout` does not exist on this host. MEMORY.md breaches at 16 KB — new pointers go to link-index.md. Attribution: `Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>`. 🔴 WHEN THE AUTONOMOUS QUEUE EMPTIES, SAY SO PLAINLY AND STOP THE LOOP RATHER THAN INVENTING WORK.
