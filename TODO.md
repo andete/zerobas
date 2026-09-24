@@ -4968,7 +4968,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:23716 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:23722 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -22855,6 +22855,12 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       🔮 *"1–3×"* — **MISS**, low. The 7 untimeable disk rows are honest: three
       REFUSE on every machine (`SET`, `IPL`, `CMD` — no happy path to time) and
       four end the run themselves (`MERGE`, ASCII `SAVE`, `RUN"f"`, `LOAD"f",R`).
+      ⏱ **D-KWTLONG (same day): the three rows kwtime could not TYPE are
+      shortened, reading unchanged — T2 115 → 117.** `space_b`/`mki_c` moved
+      `RIGHT$(A$,1)` into its own `B$=` statement, and `ifkw_b` spells PRINT
+      `?` (the same token); each still reads `[ 32  32 ]` / `[ 2  1 ]` / `[1h]`
+      on both sides. None of the three is a knife row (`space`, `mki`, `ifkw`
+      are), so the knife pin is untouched. `SPACE$` → level 3, `IF` → level 2.
       ~~🙋 **NEEDS-JOOST**~~ (answered above for T2/T4/T5) — a rung's definition is charter-level, not a coding
       choice. What does a row that PROVES "reasonable time" look like? A wall
       against the reference, per keyword? A ratio? Same question for RAM parity

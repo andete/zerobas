@@ -854,8 +854,12 @@ SWEEP: list[tuple[str, str, str | None, str, str]] = [
     # reads the BYTES, first and last, so the padding has to actually be spaces and
     # the string has to be spaces all the way through rather than one space and two
     # of something else.
+    # ⏱ D-KWTLONG (2026-09-24): SPLIT SO EVERY STATEMENT TYPES IN 38 COLUMNS --
+    # kwtime types explicitly numbered lines and cannot deliver one longer, so
+    # this row's keyword had no T2 reading. The READING is unchanged: `B$` holds
+    # the same RIGHT$ the PRINT used to compute inline.
     ("space_b", 'a$=space$(3)',
-     'A$=SPACE$(3):PRINT"[";ASC(A$);ASC(RIGHT$(A$,1));"]"',              "stored",
+     'A$=SPACE$(3):B$=RIGHT$(A$,1):PRINT"[";ASC(A$);ASC(B$);"]"',        "stored",
      "FORM:pad the CONTENT, not the length -- `[ 32  32 ]`, the first byte and the "
      "last, both the space character."),
     # 🔴 CSRLIN GETS A SECOND ROW, AND THE FIRST ONE IS WHY. The original
@@ -952,8 +956,10 @@ SWEEP: list[tuple[str, str, str | None, str, str]] = [
     # the ceiling is reachable but the ECHO is not usable there. Same shape as
     # `vpoke_b2`, whose note records the same lesson at 37. Stored with its own
     # marker instead.
+    # ⏱ D-KWTLONG (2026-09-24): `?` for PRINT -- the same token, 12 columns
+    # shorter, so kwtime can type the line (it was 41 with its `10 `).
     ("ifkw_b",   'if 0 then a=1 else a=2',
-     'IF 0 THEN PRINT"[1i]" ELSE PRINT"[1h]"',        "stored",
+     'IF 0 THEN ?"[1i]" ELSE ?"[1h]"',                "stored",
      "NOECHO:[1h FORM:else the ELSE branch, taken because the condition is FALSE. "
      "`[1h]`; an "
      "ELSE that was parsed and dropped prints nothing at all, and one that fell "
@@ -2773,8 +2779,12 @@ SWEEP: list[tuple[str, str, str | None, str, str]] = [
     # returning two arbitrary bytes passes. 258 is $0102, so the two bytes are
     # DIFFERENT and the row sees the VALUE **and the byte order**: little-endian is
     # `[ 2  1 ]` and a big-endian store reads `[ 1  2 ]`.
+    # ⏱ D-KWTLONG (2026-09-24): SPLIT SO EVERY STATEMENT TYPES IN 38 COLUMNS --
+    # kwtime types explicitly numbered lines and cannot deliver one longer, so
+    # this row's keyword had no T2 reading. The READING is unchanged: `B$` holds
+    # the same RIGHT$ the PRINT used to compute inline.
     ("mki_c",   'a$=mki$(258)',
-     'A$=MKI$(258):PRINT"[";ASC(A$);ASC(RIGHT$(A$,1));"]"',              "stored",
+     'A$=MKI$(258):B$=RIGHT$(A$,1):PRINT"[";ASC(A$);ASC(B$);"]"',        "stored",
      "NEEDS-DISK: " "FORM:int-to-string the BYTES and their ORDER -- 258 = $0102 "
      "stored low byte "
      "first, so `[ 2  1 ]`. `mki` reads only the LENGTH, which any two bytes pass, "
