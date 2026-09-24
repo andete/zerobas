@@ -940,8 +940,13 @@ def main():
     if ok and not skip_emu and not skips and not excl:
         try:
             with open(LAST_GREEN, "w") as fh:
+                # `sha`: tools/pick_gates.py counts commits since this run to
+                # force a full battery every 5th commit (Joost, 2026-09-24).
                 json.dump({"images": hashes(), "sources": source_fingerprint(),
-                           "when": time.strftime("%Y-%m-%d %H:%M:%S")}, fh)
+                           "when": time.strftime("%Y-%m-%d %H:%M:%S"),
+                           "sha": subprocess.run(["git", "rev-parse", "HEAD"],
+                                                 capture_output=True, text=True,
+                                                 cwd=ROOT).stdout.strip()}, fh)
             print(f"recorded: this full green battery is now the baseline a "
                   f"future skip must prove itself against")
         except OSError as e:

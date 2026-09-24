@@ -3647,3 +3647,16 @@ gates-fast:
 
 gates-full:
 	python3 tools/run_gates.py --full $(GATE_ARGS)
+
+# --- D-GATESCOPE (Joost, 2026-09-24): scoped batteries, FULL only on risk ------
+# `gates-plan` prints which tier THIS change needs and why; `gates-scoped` runs
+# it. STATIC for docs; SCOPED (static + the emulator suites a changed file or a
+# changed handler's keyword reaches, + a canary set) for a probe/tool or a
+# handler-local ROM change; FULL for shared code, an unknown blast radius, every
+# 5th commit since the last full green, and every hand-off (`HANDOFF=1`).
+# Every commit message states the tier that ran (`GATE TIER RAN:` line).
+gates-plan:
+	python3 tools/pick_gates.py $(if $(HANDOFF),--handoff,)
+
+gates-scoped:
+	python3 tools/pick_gates.py --run $(if $(HANDOFF),--handoff,)
