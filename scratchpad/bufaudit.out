@@ -1,0 +1,100 @@
+lines read 10063, labels 589, buffer symbols ['DBUF_PTR', 'DSKBUF_PTR', 'FAT_DBUF', 'FAT_MBUF', 'FSECTOR_BUF', 'FWBUF', 'MBUF_PTR', 'SECTOR_BUF', 'WBUF', 'WRBLK_MULACC', 'WRBLK_MULN', 'WRBLK_MULOP']
+
+H_DSKF    -> hk_dskf      closure   53 labels; touching  16: FAT_DBUF,FAT_MBUF
+      fac_entry_from_wbuf          basic/fat-prim-body.inc:798  FAT_MBUF
+      fac_loop                     basic/fat-prim-body.inc:718  FAT_MBUF
+      fac_straddle                 basic/fat-prim-body.inc:814  FAT_MBUF
+      fat_flush_data_sector        basic/fat-prim-body.inc:1214 FAT_DBUF
+      fat_mount                    basic/fat-prim-body.inc:175  FAT_DBUF
+      fat_read_fat_sector          basic/fat-prim-body.inc:663  FAT_MBUF
+      fat_total_clusters           basic/fat-prim-body.inc:1035 FAT_MBUF
+      fat_write_fat_entry          basic/fat-prim-body.inc:859  FAT_MBUF
+      fcf_b1_same                  basic/fat-prim-body.inc:1165 FAT_DBUF
+      fcf_have                     basic/fat-prim-body.inc:1132 FAT_DBUF,FAT_MBUF
+      fcf_loop                     basic/fat-prim-body.inc:1102 FAT_DBUF
+      ffds_mul                     basic/fat-prim-body.inc:1280 FAT_DBUF
+      ... 4 more
+
+H_MKI     -> hk_present   closure    1 labels; touching   0: -
+
+H_MKS     -> hk_mkfloat   closure    3 labels; touching   0: -
+
+H_MKD     -> hk_mkfloat   closure    3 labels; touching   0: -
+
+H_CVI     -> hk_cv        closure    2 labels; touching   0: -
+
+H_CVS     -> hk_cv        closure    2 labels; touching   0: -
+
+H_CVD     -> hk_cv        closure    2 labels; touching   0: -
+
+H_NAME    -> hk_name      closure   88 labels; touching   6: FAT_DBUF,SECTOR_BUF
+      dskio_next                   disk/driver.asm:27           SECTOR_BUF
+      fat_mount                    basic/fat-prim-body.inc:175  FAT_DBUF
+      ff_found                     basic/fat-prim-body.inc:302  FAT_DBUF
+      ff_secloop                   basic/fat-prim-body.inc:254  FAT_DBUF
+      fm_fatacc                    basic/fat-prim-body.inc:198  FAT_DBUF
+      hkn_stamp                    disk/kernel.asm:2873         FAT_DBUF
+
+H_KILL    -> hk_kill      closure   43 labels; touching  12: FAT_DBUF,FAT_MBUF
+      fat_mount                    basic/fat-prim-body.inc:175  FAT_DBUF
+      fat_next_cluster             basic/fat-prim-body.inc:390  FAT_DBUF
+      fat_read_fat_sector          basic/fat-prim-body.inc:663  FAT_MBUF
+      fat_write_fat_entry          basic/fat-prim-body.inc:859  FAT_MBUF
+      fdl_marked                   basic/fat-delete-body.inc:63 FAT_DBUF
+      ff_found                     basic/fat-prim-body.inc:302  FAT_DBUF
+      ff_secloop                   basic/fat-prim-body.inc:254  FAT_DBUF
+      fm_fatacc                    basic/fat-prim-body.inc:198  FAT_DBUF
+      fnc_straddle                 basic/fat-prim-body.inc:432  FAT_DBUF
+      fwba_loop                    basic/fat-prim-body.inc:1015 FAT_MBUF
+      fwe_byte1                    basic/fat-prim-body.inc:889  FAT_MBUF
+      fwe_str_odd                  basic/fat-prim-body.inc:946  FAT_MBUF
+
+H_FILE    -> hk_files     closure   34 labels; touching   4: FAT_DBUF
+      df_entptr                    disk/kernel.asm:3255         FAT_DBUF
+      df_secloop                   disk/kernel.asm:3183         FAT_DBUF
+      fat_mount                    basic/fat-prim-body.inc:175  FAT_DBUF
+      fm_fatacc                    basic/fat-prim-body.inc:198  FAT_DBUF
+
+H_LSET    -> hk_lrset     closure    3 labels; touching   1: FSECTOR_BUF
+      hk_lrset                     disk/kernel.asm:1999         FSECTOR_BUF
+
+H_RSET    -> hk_lrset     closure    3 labels; touching   1: FSECTOR_BUF
+      hk_lrset                     disk/kernel.asm:1999         FSECTOR_BUF
+
+H_FIELD   -> hk_field     closure    3 labels; touching   0: -
+
+H_DSKO    -> hk_present   closure    1 labels; touching   0: -
+
+H_DSKI    -> hk_present   closure    1 labels; touching   0: -
+
+H_COPY    -> hk_copy      closure  106 labels; touching  27: FAT_DBUF,FAT_MBUF
+      fac_entry_from_wbuf          basic/fat-prim-body.inc:798  FAT_MBUF
+      fac_loop                     basic/fat-prim-body.inc:718  FAT_MBUF
+      fac_straddle                 basic/fat-prim-body.inc:814  FAT_MBUF
+      fat_dir_update               basic/fat-prim-body.inc:1391 FAT_MBUF
+      fat_flush_data_sector        basic/fat-prim-body.inc:1214 FAT_DBUF
+      fat_mount                    basic/fat-prim-body.inc:175  FAT_DBUF
+      fat_next_cluster             basic/fat-prim-body.inc:390  FAT_DBUF
+      fat_read_fat_sector          basic/fat-prim-body.inc:663  FAT_MBUF
+      fat_total_clusters           basic/fat-prim-body.inc:1035 FAT_MBUF
+      fat_write_fat_entry          basic/fat-prim-body.inc:859  FAT_MBUF
+      fcf_b1_same                  basic/fat-prim-body.inc:1165 FAT_DBUF
+      fcf_have                     basic/fat-prim-body.inc:1132 FAT_DBUF,FAT_MBUF
+      ... 15 more
+
+H_ERRP    -> hk_errp      closure    9 labels; touching   0: -
+
+H_FOPEN   -> hk_dpload    closure  119 labels; touching  28: FAT_DBUF,FAT_MBUF
+      fac_entry_from_wbuf          basic/fat-prim-body.inc:798  FAT_MBUF
+      fac_loop                     basic/fat-prim-body.inc:718  FAT_MBUF
+      fac_straddle                 basic/fat-prim-body.inc:814  FAT_MBUF
+      fat_dir_update               basic/fat-prim-body.inc:1391 FAT_MBUF
+      fat_flush_data_sector        basic/fat-prim-body.inc:1214 FAT_DBUF
+      fat_io_putbyte               basic/fatiow-body.inc:33     FAT_DBUF
+      fat_mount                    basic/fat-prim-body.inc:175  FAT_DBUF
+      fat_next_cluster             basic/fat-prim-body.inc:390  FAT_DBUF
+      fat_read_fat_sector          basic/fat-prim-body.inc:663  FAT_MBUF
+      fat_total_clusters           basic/fat-prim-body.inc:1035 FAT_MBUF
+      fat_write_fat_entry          basic/fat-prim-body.inc:859  FAT_MBUF
+      fcf_b1_same                  basic/fat-prim-body.inc:1165 FAT_DBUF
+      ... 16 more

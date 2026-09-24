@@ -1497,6 +1497,46 @@ item — do **one item per session** to keep context lean.
       (hooks, CALSLT sites, `hk_dpload`) and classify each as gated or not.
       🤖 **AUTONOMOUS** — the audit, then the merge if the audit holds; any
       crossing the audit cannot bracket comes back to Joost.
+      🔬 **THE STATIC AUDIT, DONE 2026-09-24 (`scratchpad/bufaudit.py`,
+      `scratchpad/bufaudit.out`)** — label-level call closure over every source
+      `disk.asm` assembles (10063 lines, 589 labels, over-approximating: any
+      `call`/`jp`/`jr`/`djnz`/`ld rr,<label>` is an edge, and an unterminated
+      label falls through), roots = the 18 `hook_tab` pairs; then each hook's
+      MAIN call site read by hand.
+      | crossing | touches a buffer? | main's bracket | verdict |
+      |---|---|---|---|
+      | `H_DSKF` `H_NAME` `H_KILL` `H_FILE` `H_COPY` | yes — `FAT_DBUF`/`FAT_MBUF` | `chan_gate` (full: save + restage) at every site | ✅ bracketed |
+      | `H_FOPEN` → `hk_dpload` (4 sites: `cload`, `files` ×2, `save`) | yes | `chan_gate` at all 4 | ✅ bracketed |
+      | `H_LSET`/`H_RSET` → `hk_lrset` | writes `FSECTOR_BUF` **as the record, on purpose** | `chan_gate_bare` | ✅ no sector I/O — the bare gate's own rule |
+      | `H_FIELD` · `H_CVI/S/D` · `H_MKI/S/D` · `H_ERRP` | no (closures of 1–9 labels, none name a buffer) | n/a | ✅ clean |
+      | `H_DSKI`/`H_DSKO` | presence only; the body is a sub-ROM tenant on `FWBUF` | `dsk_core` → `chan_restore` | ✅ bracketed |
+      | `initext` INIT CALSLT · `interp` banner CALSLT · the DOS-boot bridge | yes | none needed | ✅ boot — no channel can be live |
+      | sub-ROM FATPRIM → `DSKIO` (`$4010`) | into the caller's page-3 buffer — main's own engine | it IS the engine | ✅ |
+      | **`SYSTEM` `$F37D` → `bdos_entry`** | **yes — the `fat_bufinit` pair** | **none: the caller is USER machine code** | 🔴 **cannot be bracketed** |
+      | **`HPHYD` `$FFA7` → `DSKIO` with a PAGE-1 destination** | **yes — bounces through `SECTOR_BUF`** (`driver.asm`) | **none: user machine code** | 🔴 **cannot be bracketed** |
+      🟢 **EVERY BASIC-VERB CROSSING HOLDS.** The two that do not are the entry
+      points a user's `USR`/`BLOAD`ed routine can call while a BASIC channel is
+      open; main is not running and cannot restage around them.
+      ⚠️ **THEY ALREADY ALIAS MAIN TODAY — THE MERGE MOVES WHAT THEY HIT, IT
+      DOES NOT CREATE THE CLASS.** Disk's `SECTOR_BUF` `$E2A0` sits on main's
+      `TEMPPOOL` and the `GFX_*` cells, and `WBUF` on 416 B of the staged
+      sector. BDOS also keeps a sector in `SECTOR_BUF` ACROSS calls
+      (`BDOS_RECIDX`), which any string expression between two calls
+      already destroys. And `DBUF_PTR`/`MBUF_PTR` (`$E816`/`$E818`, set once
+      at INIT) lie INSIDE main's `FWBUF`: after any BASIC file op a BDOS
+      rename (`$17`, `disk/fat.asm`, the only reader) writes from a garbage
+      address. All three are the same class: BDOS from BASIC, which nothing
+      measures.
+      ➡️ **WHAT THE MERGE ITSELF NEEDS, found by the same reading:** disk's
+      `SECTOR_BUF`/`WBUF` → `$E5C0`/`$E7C0`, and every disk cell now in
+      `$E754..$E779` and `$E7E8..$E819` (the `RDBLK_*`/`WRBLK_*`/`FREAD_*`
+      BDOS state, `P1_DEST`, `DBUF_PTR`/`MBUF_PTR`, and the boot-only
+      `R30_*`/`BOOT_SV_*`/`CALSLT_HL`) moved OUT, or disk's own fills would
+      overwrite its own state. ~45 B; main's map has 1325 B of holes.
+      🙋 **BACK TO JOOST, as the ruling said it would come:** the audit holds
+      for every BASIC verb and fails for BDOS/PHYDIO called from user machine
+      code. Proceed with the merge and declare BDOS-from-BASIC outside the
+      contract (as it already silently is), or not?
 
 - [ ] 🎚️ **~~TIER 5~~ TIER 4 (SWAPPED 2026-09-24) IS NOW "MATCHES THE REFERENCE'S
       RAM USAGE" — THE RUNG, AND WHAT CAN AND CANNOT BE IN IT (D-TIER5RAM,
@@ -4911,7 +4951,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:23624 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:23664 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -5077,7 +5117,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:9838 (T-6FE392)8 (T-529ABE)` from `TODO.md:21332 (T-529ABE)`: a
+      `TODO.md:9878 (T-6FE392)8 (T-529ABE)` from `TODO.md:21372 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -10682,7 +10722,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:21332 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:21372 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
