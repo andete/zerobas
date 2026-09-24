@@ -694,6 +694,16 @@ return points share the BASIC stack — but `c9`, the same nesting WITHOUT any `
 produced no reading, so the 80 `GOSUB`s themselves are not cleared of causing it.
 **A subject that moves while its control is blind is not a measurement.**
 
+🟢 **THE SELF-REFERENCE ROW, RESOLVED 2026-09-24**
+([`scratchpad/playxrec_selfrec_probe.py`](../scratchpad/playxrec_selfrec_probe.py),
+[`scratchpad/playxstack_probe.py`](../scratchpad/playxstack_probe.py)): SP sampled on
+every write drains at ~3.2 KB per emulated second from `$F09C` to near `$8BA0`,
+and the handler then reads **ERR 7 `Out of memory` at the PLAY's line**,
+trappable. The "no output in 25 s" above was the capture not waiting for it
+(`cap_gap` does not delay the capture after `RUN`; `run_gap` does). So the
+reference DOES recurse on the Z80 stack under a free-memory check. `c5` stays
+unscored.
+
 🎯 **AND IT DOES NOT CHANGE THE DESIGN EITHER WAY.** §7.6 chose a fixed 8-entry
 RAM table because **a CALSLT is not resumable and the tenant has no locals**, so
 the Z80 stack is unavailable to us whatever the reference does. Confirming
