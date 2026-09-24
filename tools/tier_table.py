@@ -494,7 +494,11 @@ def proven_cell(kw, forms_seen, connected, t3, t2=frozenset(), t5=None):
 
     def one(r):
         if r == "T5" and kw in t5:          # a RATIO, never a tick (Joost 09-24)
-            return "T5 ~" if t5[kw] is None else "T5 %s×" % ("%.2g" % t5[kw])
+            v = t5[kw]
+            if v is None:
+                return "T5 ~"
+            val, form = v if isinstance(v, tuple) else (v, None)
+            return "T5 %s×%s" % ("%.2g" % val, " " + form if form else "")
         return "%s%s" % (r, "✓" if p[r] else "—")
     return "level %d · %s" % (ladder_level(p), " ".join(one(r) for r in RUNGS))
 
@@ -669,6 +673,37 @@ def pin_rows(path=KWSWEEP_PIN):
                else f"{path} holds NO rows")
 
 
+def kwsweep_pin(path=KWSWEEP_PIN):
+    """The kwsweep pin, or None when there is none -- and REFUSED when degenerate.
+
+    🔴 D-PINONLY (2026-09-24): a `make kwsweep ONLY=widthkw` run OVERWROTE this
+    pin with ONE row, and every reader here drew a perfectly plausible sheet from
+    it -- SQR, PAINT and MOTOR as `🔴 GAP · 0/n forms`. The knife pin already had
+    a floor for exactly this (`ROW_FLOOR`); this one had none. A full sweep holds
+    ~380 rows; a pin under the floor is a partial run, not a measurement."""
+    import json
+    try:
+        with open(path, encoding="utf-8") as fh:
+            pin = json.load(fh)
+    except (OSError, ValueError):
+        return None
+    return check_kwsweep_pin(pin, path)
+
+
+def check_kwsweep_pin(pin, path="<pin>"):
+    """Refuse a degenerate kwsweep pin (pure -- the selftest drives it in memory)."""
+    n = len(pin.get("rows", {}))
+    if 0 < n < KWSWEEP_FLOOR:
+        raise SystemExit(
+            f"tier_table: REFUSING the kwsweep pin at {path} -- it holds {n} "
+            f"row(s), below the floor of {KWSWEEP_FLOOR}: a PARTIAL run (an "
+            f"`--only`?), not a sweep. Re-run `make kwsweep`.")
+    return pin
+
+
+KWSWEEP_FLOOR = 200
+
+
 def kwsweep_evidence(kws, path=KWSWEEP_PIN):
     """STATEMENT -> kwsweep verdict from the last battery's pin, or {} if none.
     WEAK rows are excluded, as kwsweep's own tally excludes them.
@@ -682,11 +717,8 @@ def kwsweep_evidence(kws, path=KWSWEEP_PIN):
     the only rows they had; the rows are not gone, they moved to the statement
     they actually drive, which the composite section renders separately. A keyword
     whose evidence was really a composite's had no evidence of its own."""
-    try:
-        import json
-        with open(path, encoding="utf-8") as fh:
-            pin = json.load(fh)
-    except (OSError, ValueError):
+    pin = kwsweep_pin(path)
+    if pin is None:
         return {}
     kwset = set(kws)
     out = {}
@@ -710,11 +742,8 @@ def kwsweep_forms(kws, path=KWSWEEP_PIN):
     🎚️ Only SUPPORTED rows count. A DIVERGENT row exercises the form and FAILS it,
     which is the opposite of evidence, and a WEAK row is excluded here for the same
     reason kwsweep's own tally excludes it."""
-    try:
-        import json
-        with open(path, encoding="utf-8") as fh:
-            pin = json.load(fh)
-    except (OSError, ValueError):
+    pin = kwsweep_pin(path)
+    if pin is None:
         return {}
     kwset = set(kws)
     out: dict[str, set] = {}
@@ -765,11 +794,8 @@ def kwsweep_t3(kws, path=KWSWEEP_PIN):
     proves TIER 1; this is the rung above it, and it is separate evidence rather
     than a stronger reading of the same row (D-KWT3, Joost 2026-09-13: "add more
     tests for each keyword proving the tier")."""
-    try:
-        import json
-        with open(path, encoding="utf-8") as fh:
-            pin = json.load(fh)
-    except (OSError, ValueError):
+    pin = kwsweep_pin(path)
+    if pin is None:
         return set()
     kwset = set(kws)
     out = set()
@@ -814,10 +840,8 @@ def kwtime_rungs(kws, sweep=None, timing=None):
         except (OSError, ValueError):
             return set(), {}
     if sweep is None:
-        try:
-            with open(KWSWEEP_PIN, encoding="utf-8") as fh:
-                sweep = json.load(fh)
-        except (OSError, ValueError):
+        sweep = kwsweep_pin()
+        if sweep is None:
             return set(), {}
 
     def rom(fp):
@@ -845,8 +869,9 @@ def kwtime_rungs(kws, sweep=None, timing=None):
             continue
         if t.get("ratio") is not None:
             al = t.get("alone")
-            if al is not None:
-                ratio[kw] = max(ratio.get(kw) or 0.0, al)
+            if al is not None and (ratio.get(kw) is None or al > ratio[kw][0]):
+                # PER FORM (Joost 2026-09-24): the cell names the WORST form
+                ratio[kw] = (al, r.get("form"))
             else:
                 ratio.setdefault(kw, None)      # timed, but not isolatable: `~`
         if t.get("status") == "OK":
@@ -1099,16 +1124,18 @@ def tier1_keywords(kws, conn=None, forms=None):
     return out
 
 
-def fmt_keywords(its, kws, evidence=None):
+def fmt_keywords(its, kws, evidence=None, t3=None, connected=None, forms=None):
+    """🔴 INJECTABLE like fmt_markdown (D-PINONLY, 2026-09-24): S8 called this on
+    the LIVE pin, so when a partial pin was refused the selftest died with it."""
     kt = keyword_tiers(its, kws, evidence)
-    t3 = kwsweep_t3(kws)
-    conn = knife_connected()
-    t1 = {kw for kw in tier1_keywords(kws, conn)
+    t3 = kwsweep_t3(kws) if t3 is None else t3
+    conn = knife_connected() if connected is None else connected
+    forms = kwsweep_forms(kws) if forms is None else forms
+    t1 = {kw for kw in tier1_keywords(kws, conn, forms)
           if not blocks_tier1(kt.get(kw))}
     nobare = no_bare_form()
     parts = particles()
     refuses = refuse_only()
-    forms = kwsweep_forms(kws)
     groups = defaultdict(list)
     for kw in kt:
         st, _ = status_of(kt, kw, t3, conn, t1, nobare, parts, refuses, forms)
@@ -1145,7 +1172,7 @@ FOOTER = ("**\"No open gap\" is not \"verified\", and a kwsweep verdict is NOT a
           "demonstrated for any keyword — true on 2026-09-13, false once T1 was built.)")
 
 
-def _composite_section(kws, evidence=None, conn=None):
+def _composite_section(kws, evidence=None, conn=None, forms=None):
     """The statements that are NOT single keywords, and why none is awarded yet.
 
     🎚️ D-KWCOMPOSITE/D-KWSUBJECT (Joost, 2026-09-14). `ON ERROR GOTO`, `PRINT #`
@@ -1175,7 +1202,7 @@ def _composite_section(kws, evidence=None, conn=None):
         return []
     kwset = set(kws)
     ev = kwsweep_evidence(kws) if evidence is None else evidence
-    forms = kwsweep_forms(kws)
+    forms = kwsweep_forms(kws) if forms is None else forms
     conn = knife_connected() if conn is None else conn
     awarded = tier1_statements(names, conn, forms, kws)
     out = ["", "## Composite and channel statements", "",
@@ -1240,7 +1267,11 @@ def fmt_markdown(its, kws, evidence=None, t3=None, connected=None, forms=None,
     kt = keyword_tiers(its, kws, evidence)
     t3 = kwsweep_t3(kws) if t3 is None else t3
     conn = knife_connected() if connected is None else connected
-    t1 = {kw for kw in tier1_keywords(kws, conn)
+    # ⚠️ `forms` BEFORE `t1` (D-PINONLY, 2026-09-24): tier1_keywords took no
+    # forms here and fetched them LIVE, so S14 still read the pin it had been
+    # made injectable to avoid -- invisible until a partial pin was refused.
+    forms = kwsweep_forms(kws) if forms is None else forms
+    t1 = {kw for kw in tier1_keywords(kws, conn, forms)
           if not blocks_tier1(kt.get(kw))}
     nobare = no_bare_form()
     parts = particles()
@@ -1251,7 +1282,6 @@ def fmt_markdown(its, kws, evidence=None, t3=None, connected=None, forms=None,
     # build step -- so S14 passed at the prompt and FAILED in the battery, on
     # the same bytes. A selftest that depends on a build artefact is a flake
     # with a schedule [[a-knife-can-be-inert-because-the-build-did-not-happen]].
-    forms = kwsweep_forms(kws) if forms is None else forms
     t2, t5 = kwtime_rungs(kws) if kwtime is None else kwtime
 
     out = ["# zerobas — priority-tier status", "",
@@ -1411,7 +1441,7 @@ def fmt_markdown(its, kws, evidence=None, t3=None, connected=None, forms=None,
         pr = proven_cell(kw, forms.get(kw, set()), kw in conn, t3, t2, t5)
         out.append(f"| `{kw}` | {STATUS[st][0]} | {pr} | {ev} |")
 
-    out += _composite_section(kws, evidence, conn)
+    out += _composite_section(kws, evidence, conn, forms)
     out += ["",
             "## Open items, keyword first", "",
             "| keyword | tier | who | what is open | TODO.md |", "|---|---|---|---|---|"]
@@ -1545,7 +1575,7 @@ def selftest():
     # -- ...)") was its own bucket in the text emitter. A keyword with nothing
     # known about it is UNPROVEN now -- same fact, and it no longer needs a
     # sentence explaining that the bucket is not a tier.
-    _fk = fmt_keywords(its, kws)
+    _fk = fmt_keywords(its, kws, evidence={}, t3=set(), connected=set(), forms={})
     arm("S8 a keyword with no item is absent from gaps, present in the footer",
         "ZZZ" not in g
         and any(l.startswith(STATUS["UNPROVEN"][0]) and "ZZZ" in l
@@ -1600,10 +1630,10 @@ def selftest():
     _t2, _t5 = kwtime_rungs(["ABS"], sweep=_sw, timing=_tm("OK", 0.98))
     arm("S36j an OK row within 10x proves T2, and its ratio is T5's reading "
         "(the git revision alone does not refuse the join)",
-        _t2 == {"ABS"} and abs(_t5["ABS"] - 0.98) < 1e-9)
+        _t2 == {"ABS"} and abs(_t5["ABS"][0] - 0.98) < 1e-9)
     _t2, _t5 = kwtime_rungs(["ABS"], sweep=_sw, timing=_tm("SLOW", 20.0))
     arm("S36k NEGATIVE: a keyword 20x slower does NOT tick T2 -- and its ratio still shows",
-        _t2 == set() and _t5["ABS"] == 20.0)
+        _t2 == set() and _t5["ABS"][0] == 20.0)
     _t2, _t5 = kwtime_rungs(["ABS"], sweep=_sw, timing=_tm("UNTIMEABLE", None))
     arm("S36l NEGATIVE: an UNTIMEABLE row is silence, not a tick", _t2 == set() and _t5 == {})
     try:
@@ -1614,7 +1644,11 @@ def selftest():
     arm("S36m NEGATIVE: a timing pin from a DIFFERENT ROM is refused", _refused)
     _t2, _t5 = kwtime_rungs(["ABS"], sweep=_sw, timing=_tm("OK", 0.47, 1.76))
     arm("S36o T5 is the KEYWORD ALONE, not the whole row (PAINT's 0.47 vs 1.76)",
-        _t2 == {"ABS"} and abs(_t5["ABS"] - 1.76) < 1e-9)
+        _t2 == {"ABS"} and abs(_t5["ABS"][0] - 1.76) < 1e-9
+        and _t5["ABS"][1] == "magnitude")
+    arm("S36q the T5 cell NAMES the worst form (WIDTH's two effects, Joost 09-24)",
+        "T5 45× text-width" in proven_cell("LOF", {"length"}, True, set(), set(),
+                                           {"LOF": (45.0, "text-width")}))
     _tmn = _tm("OK", 0.9)
     _tmn["rows"]["abs"]["alone"] = None
     _t2, _t5 = kwtime_rungs(["ABS"], sweep=_sw, timing=_tmn)
@@ -1622,6 +1656,15 @@ def selftest():
         "never the whole-row ratio",
         _t5 == {"ABS": None}
         and "T5 ~" in proven_cell("ABS", {"magnitude"}, True, set(), set(), _t5))
+    try:
+        check_kwsweep_pin({"rows": {"abs": {}}})
+        _partial_refused = False
+    except SystemExit:
+        _partial_refused = True
+    _full = {"rows": {f"r{i}": {} for i in range(KWSWEEP_FLOOR)}}
+    arm("S36r NEGATIVE: a PARTIAL kwsweep pin (an --only run) is REFUSED, not drawn "
+        "-- and a full-sized one passes", _partial_refused
+        and check_kwsweep_pin(_full) is _full)
     arm("S36n T5 shows a RATIO in the cell and never a tick, even at 0.5x",
         "T5 0.5×" in proven_cell("LOF", {"length"}, True, set(), {"LOF"}, {"LOF": 0.5})
         and "T5✓" not in proven_cell("LOF", {"length"}, True, set(), {"LOF"}, {"LOF": 0.5}))

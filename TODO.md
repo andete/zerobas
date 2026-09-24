@@ -4899,7 +4899,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:23391 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:23464 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -5065,7 +5065,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:9826 (T-6FE392)8 (T-529ABE)` from `TODO.md:21316 (T-529ABE)`: a
+      `TODO.md:9826 (T-6FE392)8 (T-529ABE)` from `TODO.md:21320 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -10670,7 +10670,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:21316 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:21320 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -12158,6 +12158,10 @@ list. **When a slice lands, grep this list for what it just shipped.**
       kwtime's batch starts from a FRESH BOOT, where zerobas is at width 39 and
       the reference at 37 — so `widthkw`'s `WIDTH 37` is a real change here and
       a no-op there. After D-WIDTHKEEP the 45× measures D-BOOTWIDTH, not WIDTH.
+      ✅ **AND SPLIT BY FORM THE SAME DAY (D-KWT5FORM, below): `WIDTH` reads
+      0.73× on a real change (45.2 vs 31.8 ms — zerobas's re-init is FASTER),
+      and a same-width `WIDTH` is below measurement on BOTH machines.** Neither
+      of its effects was ever slow; the 45× was two contaminations in turn.
       🤖 AUTONOMOUS — the charter half is ANSWERED (the STANDING sequencing of
       2026-09-02: speed is a real defect), so what remains under it is measurable work.
       ⚠️ **RANKED LAST BY THAT SAME RULING** — every open DIVERGENCE outranks it, so
@@ -22867,6 +22871,72 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       semantic ones — HIT; `PAINT` 1.8–2.1× — HIT (2.10); `abs` ≈0.7× — MISS
       (0.58: its carrying `PRINT` really is faster here, 8.0 vs 8.6 ms).
 
+- [x] 🟢 **CLOSED 2026-09-24 — D-KWT5FORM: T5 IS PER FORM, AND FIVE MEASUREMENT
+      FAULTS CAME OUT OF DOING IT.** Joost: *"a classic case of two very
+      different effects of one keyword WIDTH; I'd say both need a time
+      measurement."* The sheet's T5 cell now names the worst FORM
+      (`T5 0.73× text-width`) and the pin keeps every form's reading.
+      📏 **`WIDTH`, ANSWERED:** a real width change reads **0.73×** (45.2 ms on
+      the VG-8020, 31.8 here — zerobas's re-init is the faster); a same-width
+      `WIDTH` is **below measurement on both machines** (`~`). Neither effect is
+      slow. The 45× on the sheet was the D-WIDTHKEEP clear, then the boot width.
+      🔴 **THE FAULTS, EACH FOUND BY MEASURING:**
+      **(1) "delete only the LAST carrying statement" is wrong.** In `vdp_d` the
+      last `VDP` statement is the RESTORE of R1 after `VDP(1)=V AND 223` cleared
+      the interrupt enable; the twin left zerobas's VDP interrupts OFF and 107
+      later zerobas twins read empty. The default is every carrying statement
+      again, and a row that sets up with its own keyword DECLARES the timed one:
+      `TIMED:<n>` in its note (the three WIDTH rows).
+      **(2) cases leaked state.** The SAME twin read 831.5 ms in one run and
+      787.1 ms in the next, the difference a neighbour's twin: screen mode and
+      width survive `NEW`. Every case now starts at `SCREEN0:WIDTH37`.
+      **(3) the start mark landed at an arbitrary interrupt phase**, so a timed
+      stretch held one interrupt service more or less by chance. Lines 5–6 now
+      wait for `TIME` to tick; the mark fires just after an interrupt on both
+      machines. Whole rows then agree batch vs alone within **0.2%**. The sync
+      variable is `X7` — `Q8`, the first choice, was used by FIVE kwsweep rows
+      (arm K26 now re-checks it every run).
+      **(4) the noise floor was calibrated on short rows.** A no-op's few ms of
+      an 800–2200 ms row made T5 a ratio of two noise-sized numbers
+      (`widthkw_c` 3.93 batched, 3.32 alone). A difference must now clear 1% of
+      its own row (5× the measured row jitter) or reads `~`.
+      **(5) a partial kwsweep run overwrote the pin** — see D-PINONLY.
+      🔮 **PREDICTIONS:** `text-width` 1–5× — **MISS** (0.73); `same-width` ≈1×
+      — MISS in kind (unmeasurable, not 1×); "batch = alone within 1%" — MISS
+      twice before the sync and the relative floor, then the rows HIT (0.2%).
+      ➕ **A DIVERGENCE CANDIDATE, filed below (D-VDPIE):** the reference's
+      batch SURVIVED the same `vdp_d` twin that killed zerobas's.
+
+- [ ] 🔴 **AFTER A PROGRAM LEAVES VDP INTERRUPTS DISABLED, THE REFERENCE RECOVERS
+      AND ZEROBAS DOES NOT (D-VDPIE, candidate, 2026-09-24).**
+      🎚️ TIER 3 — a listing that blanks the screen with `VDP(1)` and ends
+      without restoring it is a plausible 1985 bug, and here it leaves the
+      machine deaf to the keyboard.
+      🤖 **AUTONOMOUS** — a measurement first.
+      🔬 **SEEN, NOT YET MEASURED DIRECTLY:** kwtime's `vdp_d` twin ran
+      `V=VDP(1):VDP(1)=V AND 223` (bit 5, the interrupt enable, cleared) and
+      ended without restoring R1. On zerobas every later case in the batch came
+      back empty — typed lines never reached BASIC; on the VG-8020 the batch
+      carried on. So something on the reference re-enables VDP interrupts after
+      a program ends (at `END`, the prompt, `NEW`, or the Ctrl-STOP each case
+      opens with) and zerobas does not.
+      ➡️ **THE MEASUREMENT:** a program that clears R1 bit 5 and ENDs, then read
+      `VDP(1)` and whether `TIME` still advances, after each of: the prompt
+      alone, `NEW`, `CLS`, Ctrl-STOP — both machines. The first step that
+      restores the bit on the reference is where zerobas's fix goes.
+
+- [x] 🟢 **CLOSED 2026-09-24 — D-PINONLY: A ONE-ROW `make kwsweep ONLY=…` OVERWROTE
+      THE PIN, AND THE SHEET DREW `SQR`/`PAINT`/`MOTOR` AS `🔴 GAP` FROM IT.** The
+      recurring class *"an instrument hands you a plausible table from an input
+      it misread"*: nothing refused. Now BOTH ends refuse — `kwsweep` writes no
+      pin on an `--only` run, and `tier_table.kwsweep_pin()` refuses a pin under
+      200 rows (the knife pin already had a floor; this one had none). Arm S36r.
+      🔴 **AND IT EXPOSED A NON-HERMETIC SELFTEST:** `fmt_keywords` (S8) and
+      `fmt_markdown`'s `tier1_keywords` call still read the LIVE pin despite
+      S14's earlier fix, so the refusal killed the selftest. Both are injectable
+      now; the selftest passes WITH a degenerate pin on disk — which is the
+      proof it no longer reads it.
+
 - [x] 🟢 **CLOSED 2026-09-24 — D-WIDTHKEEP: A `WIDTH` TO THE WIDTH ALREADY IN
       FORCE IS A NO-OP, AND ZEROBAS CLEARED THE SCREEN.** Found by T5's
       keyword-alone timing (`WIDTH 37` 32.0 ms here, 0.71 ms on the VG-8020),
@@ -22910,8 +22980,11 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       📏 **A SECOND, MEASURED CONSEQUENCE:** after D-WIDTHKEEP the sheet still
       reads `WIDTH … T5 45×`. `widthkw`'s `WIDTH 37` runs at the boot width, so
       it re-initialises the screen here (from 39) and is a no-op on the
-      reference (already 37). The fix for THIS item should bring `WIDTH`'s T5
-      down with it — a free control for the change.
+      reference (already 37). ~~The fix for THIS item should bring `WIDTH`'s T5
+      down with it — a free control for the change.~~ **No longer a control:**
+      kwtime now starts every case at `SCREEN0:WIDTH37` (D-KWT5FORM), so no
+      timed row depends on the boot width any more. The kwsweep rows that do
+      (`KEY`'s line layout, the screen windows) remain the ones to re-read.
 
 - [ ] **Keyword-completeness gaps — the measured remainder of MSX1 BASIC.**
       **The coverage denominator now exists** (2026-07-26,

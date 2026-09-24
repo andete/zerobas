@@ -91,6 +91,13 @@ MARK_LITERALS = [f"{a},{v}" for a in ("&HE000", "-8192") for v in (START, END)]
 # 🎯 The control that motivated it: `SCREEN2:SCREEN0` is 552 ms on the VG-8020 and
 # 167 ms here, so the PAINT row reads 0.47 while PAINT alone measured 1.76.
 NOISE = 0.0005            # 2x one interrupt's service time (~0.25 ms, measured)
+# 🔴 AND A RELATIVE FLOOR, because the absolute one was calibrated on SHORT rows.
+# Measured 2026-09-24 with the interrupt-synced start: whole rows agree batch vs
+# alone within 0.2%, but a no-op `WIDTH` costs a few ms of an 800-2200 ms row, so
+# its keyword-alone ratio is a ratio of two noise-sized differences (widthkw_c
+# read 3.93 batched, 3.32 alone). A difference must clear 1% of ITS OWN ROW on
+# each side -- 5x the measured row jitter -- or the reading is `~`.
+NOISE_REL = 0.01
 _KWSET = None
 
 
@@ -129,7 +136,7 @@ def carries(stmt, word):
     return re.search(pat, bare) is not None
 
 
-def twin_bodies(line, word):
+def twin_bodies(line, word, nth=None):
     """The row's PACKED body lines with every statement carrying the keyword
     DELETED -- or None when nothing carries it (a twin identical to the row
     measures nothing).
@@ -143,18 +150,37 @@ def twin_bodies(line, word):
     becomes `REM` -- an empty numbered line would DELETE the line."""
     if not word:
         return None
-    out, hit = [], False
-    for body in omsx_repl.as_stored(line):
-        parts = split_stmts(body)
-        keep = [p for p in parts if not carries(p, word)]
-        hit = hit or len(keep) != len(parts)
+    # ⏱ A ROW MAY DECLARE WHICH OCCURRENCE IS TIMED: `TIMED:<n>` in its note
+    # (Joost, 2026-09-24: WIDTH is *"a classic case of two very different effects
+    # of one keyword ... both need a time measurement"*). A row that SETS UP its
+    # state with the keyword and then EXERCISES it -- `WIDTH 36:WIDTH 37` --
+    # declares the exercise, and only that statement is deleted.
+    # 🔴 THE DEFAULT STAYS "EVERY CARRYING STATEMENT", AND "THE LAST" WAS TRIED
+    # AND MEASURED WRONG: in `vdp_d` the last `VDP` statement is the RESTORE of
+    # R1 after `VDP(1)=V AND 223` cleared the interrupt enable, so the twin left
+    # zerobas with VDP interrupts OFF and 107 later zerobas twins came back empty.
+    # Neither "first" nor "last" names the form in general; a row says so.
+    bodies = omsx_repl.as_stored(line)
+    split = [split_stmts(b) for b in bodies]
+    hits = [(bi, pi) for bi, parts in enumerate(split)
+            for pi, p in enumerate(parts) if carries(p, word)]
+    if not hits:
+        return None
+    if nth is not None:
+        if not 1 <= nth <= len(hits):
+            return None
+        hits = [hits[nth - 1]]
+    drop = set(hits)
+    out = []
+    for bi, parts in enumerate(split):
+        keep = [p for pi, p in enumerate(parts) if (bi, pi) not in drop]
         out.append(":".join(keep) if keep else "REM")
-    return out if hit else None
+    return out
 
 
-def twin_line(line, word):
+def twin_line(line, word, nth=None):
     """The twin as ONE line, for display and the selftest (None = no twin)."""
-    b = twin_bodies(line, word)
+    b = twin_bodies(line, word, nth)
     return None if b is None else ":".join(b)
 
 
@@ -164,9 +190,15 @@ def alone(r, z, rt, zt):
     if None in (r, z, rt, zt):
         return None
     dr, dz = r - rt, z - zt
-    if dr <= NOISE or dz <= NOISE:
+    if dr <= max(NOISE, NOISE_REL * r) or dz <= max(NOISE, NOISE_REL * z):
         return None
     return dz / dr
+
+
+SYNCVAR = "X7"                 # the interrupt-sync variable -- K26 keeps it unused
+RESET = "SCREEN0:WIDTH37"       # the per-case starting state (see case_lines)
+FORMS: dict = {}               # row key -> its kwsweep FORM (T5 is per form)
+TIMED: dict = {}               # row key -> the declared timed occurrence, or None
 
 
 def select_rows(only=None):
@@ -183,6 +215,9 @@ def select_rows(only=None):
         if only and key not in only:
             continue
         out.append((key, line, mode, row_keyword(_crunch, note)))
+        FORMS[key] = kw.row_form(note)
+        m = re.search(r"(?<!\S)TIMED:(\d+)(?!\S)", note)
+        TIMED[key] = int(m.group(1)) if m else None
     return out
 
 
@@ -202,10 +237,19 @@ def case_lines(line, pad=None, bodies=None):
     """The row as explicitly numbered lines, bracketed by the two marks.
     `bodies` (already packed) overrides `line` -- the twin's shape."""
     body = omsx_repl.as_stored(line) if bodies is None else bodies
-    first = f"5 CLS:POKE&H{MARK_ADDR:04X},{START}"
+    # ⏱ SYNC THE START TO THE INTERRUPT (D-KWT5FORM, 2026-09-24). The start mark
+    # used to land at an arbitrary phase of the 50 Hz interrupt, so a timed
+    # stretch held one interrupt service more or less by chance: measured, the
+    # same rows read up to ~10% apart alone vs in a batch on their keyword-alone
+    # difference. Lines 5-6 wait for TIME to tick, so line 7's mark fires just
+    # after an interrupt on BOTH machines. `SYNCVAR` is a name no kwsweep row
+    # uses -- K26 re-checks that every run, because the first choice, `Q8`, was
+    # used by FIVE rows -- created BEFORE the mark so its cost is not timed.
+    first = f"7 POKE&H{MARK_ADDR:04X},{START}"
     if pad:                                   # --negative: slow THIS side only
         first += ":" + pad
-    lines = [first] + [f"{10 * (i + 1)} {b}" for i, b in enumerate(body)]
+    lines = [f"5 CLS:{SYNCVAR}=TIME", f"6 IF TIME={SYNCVAR} THEN 6", first] + \
+        [f"{10 * (i + 1)} {b}" for i, b in enumerate(body)]
     lines.append(f"{10 * (len(body) + 1)} POKE&H{MARK_ADDR:04X},{END}")
     # 🔴 EVERY CASE OPENS WITH CTRL-STOP, THEN ITS OWN `NEW`. Measured: the twin
     # of `sprite_on` deletes `ON SPRITE GOSUB`/`SPRITE ON` and then waits forever
@@ -214,7 +258,12 @@ def case_lines(line, pad=None, bodies=None):
     # PAINT's among them. A hang must cost its own reading and nothing else.
     # The harness's own inter-case reset is OFF (`reset=()`): it types BEFORE a
     # case's lines, i.e. into the buffer of whatever is still running.
-    return [omsx_repl.BREAK_PREFIX, "NEW"] + lines + ["RUN"]
+    # 🔴 AND EVERY CASE STARTS FROM ONE STATE (D-KWT5FORM, 2026-09-24): measured,
+    # the SAME twin program read 831.5 ms in one run and 787.1 ms in the next,
+    # the only difference a NEIGHBOUR's twin -- screen mode and width leak from
+    # case to case, and `NEW` resets neither. `SCREEN0:WIDTH37` puts both machines
+    # in the same mode and width before the start mark, whatever came before.
+    return [omsx_repl.BREAK_PREFIX, "NEW", RESET] + lines + ["RUN"]
 
 
 def delta(marks):
@@ -246,7 +295,8 @@ def status(ref, zb):
 def measure(machine, rows, pad=None, twin=False):
     """Time `rows` in one batched boot. `twin=True` times each row's TWIN; a row
     with no twin gets None without being typed."""
-    bods = [twin_bodies(r[1], r[3]) if twin else omsx_repl.as_stored(r[1])
+    bods = [twin_bodies(r[1], r[3], TIMED.get(r[0])) if twin
+            else omsx_repl.as_stored(r[1])
             for r in rows]
     idx = [i for i, b in enumerate(bods) if b is not None]
     if not idx:
@@ -311,11 +361,13 @@ def selftest():
     arm("K9 neither finishes: UNTIMEABLE, not HANG", status(None, None) == "UNTIMEABLE")
     ls = case_lines('A=0:GOSUB 20:PRINT"[G";A;"]":END:A=7:RETURN')
     arm("K10 the row keeps its own 10/20/30 numbering (GOSUB 20 still lands)",
-        ls[3].startswith("10 ") and any(l.startswith("20 ") for l in ls))
+        ls[6].startswith("10 ") and any(l.startswith("20 ") for l in ls))
     arm("K22 every case opens with Ctrl-STOP then NEW -- a hung case cannot "
-        "poison the next", ls[0] == omsx_repl.BREAK_PREFIX and ls[1] == "NEW")
+        "poison the next", ls[0] == omsx_repl.BREAK_PREFIX and ls[1] == "NEW"
+        and ls[2] == RESET)
     arm("K11 the start mark is line 5 and the end mark the last numbered line",
-        ls[2].startswith("5 ") and "POKE&HE000,201" in ls[2]
+        ls[5].startswith("7 ") and "POKE&HE000,201" in ls[5]
+        and ls[4] == f"6 IF TIME={SYNCVAR} THEN 6"
         and f",{END}" in ls[-2] and ls[-1] == "RUN")
     arm("K12 the fingerprint join ignores the git revision",
         rom_part("git=abc main=1 sub=2") == rom_part("git=def main=1 sub=2")
@@ -323,6 +375,10 @@ def selftest():
     arm("K14 NEGATIVE: a 41-char statement is named as too long, not typed",
         too_long([("x", 'IF 0 THEN PRINT"[1i]" ELSE PRINT"[1h]"', "stored")]) == ["x"]
         and too_long([("y", 'PRINT"[";ABS(-5);"]"', "direct")]) == [])
+    _used = [k for k, _c, l, _m, _n in kw.SWEEP
+             if l and re.search(r"(?<![A-Z0-9])" + SYNCVAR, l.upper())]
+    arm(f"K26 NEGATIVE: no kwsweep row uses the sync variable {SYNCVAR} "
+        "(the first choice, Q8, was used by five)", not _used)
     arm("K13 no selected row writes a mark value itself",
         not [r[0] for r in select_rows() if any(m in r[1] for m in MARK_LITERALS)])
     tw = twin_line('SCREEN2:LINE(10,10)-(20,20),15,B:PAINT(15,15),15:SCREEN0', "PAINT")
@@ -338,10 +394,21 @@ def selftest():
     arm("K18 the twin keeps every line number (no re-pack): GOSUB 20 still lands",
         [l.split()[0] for l in case_lines(None, bodies=twin_bodies(_g, "GOSUB"))]
         == [l.split()[0] for l in case_lines(_g)])
+    arm("K23 a declared TIMED:2 deletes only the exercise -- the setup WIDTH stays",
+        twin_line('WIDTH 36:WIDTH 37:PRINT"[W"', "WIDTH", 2) == 'WIDTH 36:PRINT"[W"')
+    arm("K24 NEGATIVE: with no declaration EVERY carrying statement goes -- a "
+        "restore is never the one left out (vdp_d)",
+        "VDP" not in twin_line('V=VDP(1):VDP(1)=V AND 223:A=1:VDP(1)=V', "VDP")
+        and "A=1" in twin_line('V=VDP(1):VDP(1)=V AND 223:A=1:VDP(1)=V', "VDP"))
+    arm("K25 NEGATIVE: a TIMED:n past the last occurrence gives no twin, not a guess",
+        twin_line('WIDTH 37:PRINT"[W"', "WIDTH", 3) is None)
     arm("K21 a line the deletion empties becomes REM, never an empty (deleting) line",
         twin_bodies("CLS", "CLS") == ["REM"])
     arm("K19 alone(): the keyword's own time is the DIFFERENCE, zb over ref",
         abs(alone(0.624, 0.294, 0.552, 0.167) - (0.127 / 0.072)) < 1e-9)
+    arm("K27 NEGATIVE: a no-op's few ms on a LONG row is below the relative floor "
+        "(widthkw_c: 2 ms of 800 ms) -> no reading",
+        alone(0.800, 2.269, 0.798, 2.266) is None)
     arm("K20 NEGATIVE: a difference inside interrupt noise gives no reading",
         alone(0.010, 0.012, 0.0099, 0.0118) is None and alone(None, 1, 1, 1) is None)
     print("selftest:", "GREEN" if ok else "🔴 RED")
@@ -388,7 +455,8 @@ def main():
         al = alone(r, z, rt, zt)
         n_alone += al is not None
         res[key] = {"ref": r, "zb": z, "ratio": ratio, "status": st,
-                    "word": word, "twin_ref": rt, "twin_zb": zt, "alone": al}
+                    "word": word, "form": FORMS.get(key),
+                    "twin_ref": rt, "twin_zb": zt, "alone": al}
         print(f"{key:16} {r * 1e3 if r else float('nan'):9.3f} "
               f"{z * 1e3 if z else float('nan'):9.3f} "
               f"{(f'{ratio:.2f}' if ratio else '-'):>7} "

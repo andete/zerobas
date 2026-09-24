@@ -1286,8 +1286,13 @@ SWEEP: list[tuple[str, str, str | None, str, str]] = [
     # from a unique per-row marker instead, which is what the arrays and deffn
     # suites have always done with `CLS:PRINT"[";...`. So the words come back in
     # reach, and the claim is retracted where it was made.
-    ("widthkw", 'width 37',    'WIDTH 37:PRINT"[W";PEEK(-3152);"]"',  "direct",
-     "NOECHO:[W FORM:text-width WIDTH reformats the screen and takes the echo with it; the row reads LINLEN ($F3B0 = -3152) back, so a WIDTH that parses and does nothing still fails. absent => syntax error => no marker at all."),
+    # ⏱ `WIDTH 36` FIRST (D-KWT5FORM, 2026-09-24): the row's WIDTH 37 must be a
+    # CHANGE on both machines, or kwtime times a re-init on one side and a no-op
+    # on the other (zerobas boots at 39, the VG-8020 at 37 -- D-BOOTWIDTH). The
+    # reading is unchanged: LINLEN is 37 after it either way. STORED now: the
+    # two statements put the line over the 38-column direct-mode limit.
+    ("widthkw", 'width 37',    'WIDTH 36:WIDTH 37:PRINT"[W";PEEK(-3152);"]"',  "stored",
+     "NOECHO:[W FORM:text-width TIMED:2 WIDTH reformats the screen and takes the echo with it; the row reads LINLEN ($F3B0 = -3152) back, so a WIDTH that parses and does nothing still fails. absent => syntax error => no marker at all."),
     # 🌾 D-KWBATCH1: WIDTH'S SECOND FORM IS A DIFFERENT CELL, NOT A DIFFERENT
     # NUMBER. MSX keeps the text width PER MODE -- LINL40 ($F3AE) for SCREEN 0 and
     # LINL32 ($F3AF) for SCREEN 1 (both DECLARED in basic/sysvars.inc) -- and
@@ -1301,7 +1306,7 @@ SWEEP: list[tuple[str, str, str | None, str, str]] = [
     ("widthkw_b", 'width 29',
      'WIDTH 37:SCREEN1:WIDTH 29:A=PEEK(&HF3AF):B=PEEK(&HF3AE):SCREEN0:PRINT"[0a";A;B;"]"',
      "stored",
-     "NOECHO:[0a FORM:mode1-width the SCREEN 1 width, which lives in LINL32 "
+     "NOECHO:[0a FORM:mode1-width TIMED:2 the SCREEN 1 width, which lives in LINL32 "
      "($F3AF) and not in the LINL40 ($F3AE) cell `widthkw` reads. `[0a 29  37 ]`: "
      "the cell WIDTH must change AND the one it must leave alone, so a handler "
      "that wrote the wrong cell, or both, is visible either way."),
@@ -1319,7 +1324,7 @@ SWEEP: list[tuple[str, str, str | None, str, str]] = [
     ("widthkw_c", 'width 37',
      'WIDTH 37:CLS:PRINT"KKKK":WIDTH 37:B=CSRLIN:C=0:FOR I=0 TO 119:C=C-(VPEEK(I)=75):NEXT:PRINT"[4w";C;B;"]"',
      "stored",
-     "NOECHO:[4w FORM:same-width a WIDTH to the width already in force keeps the "
+     "NOECHO:[4w FORM:same-width TIMED:2 a WIDTH to the width already in force keeps the "
      "screen and the cursor: `[4w 4  1 ]` = the four K's still in VRAM and the "
      "cursor still on row 1. A handler that re-initialises the screen reads "
      "`[4w 0  0 ]`."),
@@ -4455,7 +4460,14 @@ def main() -> int:
     # evidence the tier table can read without running an emulator. Written
     # to build/ (regenerated, never tracked) and ONLY when the ROMs held still
     # for the whole run -- a discarded report must not leave a pin behind.
-    if fp_before == fp_after:
+    # 🔴 D-PINONLY (2026-09-24): an `--only` run writes NO pin. A one-row
+    # `make kwsweep ONLY=widthkw` overwrote the full pin and tools/tier_table.py
+    # drew SQR/PAINT/MOTOR as GAP from it; the reader now refuses a partial pin
+    # too, but the writer must not produce one.
+    if args.only:
+        print("pin: NOT written -- an --only run measures a subset, and the pin "
+              "is the whole sweep")
+    elif fp_before == fp_after:
         import json
         import time as _time
         stmt = {key: st for key, st, *_ in rows}
