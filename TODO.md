@@ -1549,6 +1549,11 @@ item — do **one item per session** to keep context lean.
       **none of main's `TEMPPOOL`/`GFX_*` cells sit under a disk buffer any
       more** — the merge also RETIRED the aliasing the audit found. The
       `FAT_DBUF`/`FAT_MBUF` neutral names stay (right either way).
+      ➖ **`aliasscope_probe`'s NO-VERDICT pin left `tools/filed-row-known.txt`
+      with this item** — its question (how many bytes of disk's WBUF land in
+      main's FSECTOR_BUF) no longer exists: every disk verb fills the shared
+      buffer BY DESIGN now, and `filed-pin-check` reads a pin no open item cites
+      as an orphan.
 
 - [ ] 🎚️ **~~TIER 5~~ TIER 4 (SWAPPED 2026-09-24) IS NOW "MATCHES THE REFERENCE'S
       RAM USAGE" — THE RUNG, AND WHAT CAN AND CANNOT BE IN IT (D-TIER5RAM,
@@ -4963,7 +4968,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:23676 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:23694 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -5129,7 +5134,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:9890 (T-6FE392)8 (T-529ABE)` from `TODO.md:21384 (T-529ABE)`: a
+      `TODO.md:9895 (T-6FE392)8 (T-529ABE)` from `TODO.md:21389 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -10734,7 +10739,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:21384 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:21389 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -23672,6 +23677,19 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       for each keyword"*, so the `subject:` tag is retired and the ROW is the
       attribution, with the knife kept as the sampling spot-check. **That
       spot-check now has no keyword it cannot reach.**
+      🟢 **D-CONTROW (2026-09-24): `CONT` HAD NO ROW AT ALL, AND NOW IS LEVEL 1.**
+      It was the ONLY keyword in `docs/tier-status.md`'s ⚪ UNPROVEN bucket —
+      no form list, no knife — and the only level-0 keyword that was neither a
+      particle, composite-only, the parked rig (`PAD`/`STICK`/`STRIG`) nor
+      waiting on Joost (`PLAY` ×2, `VARPTR`'s file form). New row `contkw`
+      (a `RESPOND:CONT` row: the program STOPs after `[C1]`, `CONT` is typed at
+      the prompt, `[C2]` must follow) + form `resume` in `tools/kwforms.py`.
+      🔴 **THE FIRST CUT AGREED FOR THE WRONG REASON:** anchored on the `RUN`
+      echo, the window ENDS at the prompt the STOP returns to, so both sides
+      read `[C1]|Break in 10` — SUPPORTED and blind to `CONT`. Now a `NOECHO:`
+      marker row on `[C2]`, spelled `"[C"+"2]"` so the typed source never
+      carries it. Both read `[C2]`; the knife (`CONT:contkw`) moves it to
+      UNREADABLE — LOAD-BEARING. ⚪ UNPROVEN is now **empty**.
 
 - [ ] **`LOAD"CAS:"` ACCEPTS A TOKENISED TAPE; the reference does not return.**
       Found 2026-08-03 by D-DOTGAPS (§1.2). With only a $D3 file on the tape the

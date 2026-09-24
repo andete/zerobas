@@ -216,6 +216,16 @@
    "verdict": "NO-VERDICT",
    "weak": false
   },
+  "CONT": {
+   "connected": true,
+   "modes": {
+    "stmt": "UNREADABLE"
+   },
+   "row": "contkw",
+   "subject": "CONT",
+   "verdict": "UNREADABLE",
+   "weak": false
+  },
   "COPY": {
    "connected": true,
    "modes": {
@@ -1683,6 +1693,12 @@
     "colorkw": "NO-VERDICT"
    }
   },
+  "CONT": {
+   "connected": true,
+   "rows": {
+    "contkw": "UNREADABLE"
+   }
+  },
   "COPY": {
    "connected": true,
    "rows": {
@@ -2565,5 +2581,5 @@
    }
   }
  },
- "written": "2026-09-24 15:48:03"
+ "written": "2026-09-24 16:17:13"
 }

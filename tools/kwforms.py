@@ -940,6 +940,10 @@ FORMS: dict[str, tuple[tuple[str, ...], str]] = {
         ("comment",),
         "`REM <anything>` -- one behaviour: the rest of the line is skipped. The row's discriminator is that `REM z` raises NO error, which a REM that did not skip would.",
     ),
+    "CONT": (
+        ("resume",),
+        "`CONT` -- no arguments, one behaviour: resume after a STOP/Break at the statement that follows it. The row (`contkw`, D-CONTROW) reads [C2] after [C1]; a CONT that restarted the line would print [C1] twice, and one that failed would stop at the Break.",
+    ),
     "STOP": (
         ("break",),
         "`STOP` -- no arguments, one behaviour. The row's discriminator is the `Break in 10` message, not the marker before it.",

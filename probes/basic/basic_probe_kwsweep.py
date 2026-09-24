@@ -1698,6 +1698,21 @@ SWEEP: list[tuple[str, str, str | None, str, str]] = [
      "FORM:refuse D-KWDRAIN: bare ATTR$ raises Illegal function call -- so the word IS a token here; an undefined string variable prints empty instead"),
     ("stopkw",    'stop',        'PRINT"[T1]":STOP',        "stored",
      "FORM:break D-KWDRAIN: prints then Break in 10 on both machines; without STOP there is no Break"),
+    # 🌾 D-CONTROW (2026-09-24): `CONT` HAD NO ROW AT ALL -- the only level-0
+    # keyword that was neither a particle, composite-only, the parked rig nor
+    # waiting on Joost. It is a PROMPT verb, so the row is a RESPOND: row: the
+    # program STOPs after [C1], and `CONT` typed at the prompt must resume at the
+    # statement after the STOP. The reading is `[C2]` appearing at all: without a
+    # working CONT the run ends at `Break in 10` (or `Can't CONTINUE`), and a
+    # CONT that restarted the LINE would print [C1] and Break again.
+    # 🔴 NOECHO, AND THE FIRST CUT SHOWED WHY: anchored on the `RUN` echo the
+    # window ENDS at the prompt the STOP returns to, so both sides read
+    # `[C1]|Break in 10` -- SUPPORTED, and blind to CONT entirely (a row that
+    # agrees for the wrong reason). The marker is the LAST row carrying `[C2]`,
+    # which only the resumed run prints; it is spelled `"[C"+"2]"` so the typed
+    # SOURCE never contains it, and a missing [C2] reads ?nomarker -- a refusal.
+    ("contkw",    'cont',        'PRINT"[C"+"1]":STOP:PRINT"[C"+"2]"', "stored",
+     "NOECHO:[C2] RESPOND:CONT FORM:resume D-CONTROW: STOP breaks after [C1]; CONT typed at the prompt resumes at the next statement and prints [C2] once"),
     # 🔴 D-AKCM (2026-09-17): THIS ROW AGREES ON AN ERROR. `PRINT"[";MAX;"]"` is
     # ERR 2 on BOTH references and here -- the `[` prints, then the bare `MAX`
     # raises -- so its SUPPORTED verdict is two machines failing identically. It
