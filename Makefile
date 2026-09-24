@@ -1155,6 +1155,17 @@ kwsweep: repack-machine $(DISK_TEST_DSK)
 	python3 probes/basic/basic_probe_kwsweep.py \
 	        --zb-machine $(REPACK_MACHINE) $(if $(ONLY),--only '$(ONLY)',)
 
+# --- kwtime: the T2/T5 row type (D-KWPROVEN, Joost 2026-09-24) -----------------
+# Each keyword's kwsweep test program, TIMED on the VG-8020 and here between two
+# program-written marks (emulated time, deterministic). T2 = completes within 10x
+# the reference; T5 = the ratio, shown and never ticked. Writes build/kwtime.json,
+# which tools/tier_table.py joins with kwsweep's pin. ~30 s. The --negative run
+# FIRST pads zerobas's side with a delay loop and must read every row SLOW -- a
+# live control that the ratio and the bar do what the sheet will claim.
+kwtime: repack-machine $(DISK_TEST_DSK)
+	python3 probes/basic/basic_probe_kwtime.py --negative --zb-machine $(REPACK_MACHINE)
+	python3 probes/basic/basic_probe_kwtime.py --zb-machine $(REPACK_MACHINE)
+
 # --- System-variable SWEEP (the MSX work-area denominator, NOT a pass/fail gate) ---
 # The same shape as `kwsweep`, for the other surface that had no denominator: every
 # byte of the published work area $F380..$FFFE, on all three sides, in a baseline
@@ -3424,7 +3435,7 @@ tiers-md-check:
 	@if diff -u docs/tier-status.md build/tier-status.check.md; then \
 	  echo "tiers-md-check: docs/tier-status.md matches its generator"; \
 	else \
-	  echo "🔴 tiers-md-check: docs/tier-status.md DIFFERS from its generator -- run \`make tiers-md\` (and \`make kwsweep\` first if the evidence columns are stale)"; \
+	  echo "🔴 tiers-md-check: docs/tier-status.md DIFFERS from its generator -- run \`make tiers-md\` (and \`make kwsweep kwtime\` first if the evidence columns are stale)"; \
 	  exit 1; \
 	fi
 
@@ -3565,7 +3576,7 @@ clean:
         ramfree-acceptance txtceil-acceptance \
         input-acceptance error-acceptance error-trap-acceptance stop-trap-acceptance strig-trap-acceptance key-trap-acceptance sprite-trap-acceptance intarg-acceptance abort-acceptance direct-ctrl-acceptance sound-acceptance play-acceptance play-trace-acceptance beep-acceptance float-acceptance math-acceptance subrom-acceptance \
         subrom-inttest subrom-abi-check subrom-closure-check \
-        graphics-floor-acceptance graphics-floor-teeth graphics-acceptance kwsweep sysvarsweep fat-error-acceptance \
+        graphics-floor-acceptance graphics-floor-teeth graphics-acceptance kwsweep kwtime sysvarsweep fat-error-acceptance \
         logicops-characterize cursor-characterize cursor-acceptance \
         binfre-characterize binfre-acceptance \
         missing-characterize missing-acceptance \

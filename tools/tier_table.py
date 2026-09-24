@@ -459,12 +459,16 @@ def status_of(kt, kw, t3, conn, t1, nobare, parts, refuses, forms):
 RUNGS = ("T1", "T2", "T3", "T4", "T5", "T6")
 
 
-def proven_rungs(kw, forms_seen, connected, t3):
-    """{rung: bool} -- what has been positively DEMONSTRATED about a keyword."""
+def proven_rungs(kw, forms_seen, connected, t3, t2=frozenset()):
+    """{rung: bool} -- what has been positively DEMONSTRATED about a keyword.
+
+    ⏱ T2 comes from `kwtime_rungs` (D-KWPROVEN, 2026-09-24). 🔴 T5 NEVER TICKS,
+    by Joost's ruling (*"Track the ratio, set no bar yet"*): its ratio is shown by
+    `proven_cell`, and a tick would need a bar he has not set."""
     import kwforms
     need = kwforms.forms_for(kw)
     t1 = bool(need) and connected and all(f in forms_seen for f in need)
-    return {"T1": t1, "T2": False, "T3": bool(connected and kw in t3),
+    return {"T1": t1, "T2": kw in t2, "T3": bool(connected and kw in t3),
             "T4": False, "T5": False, "T6": False}
 
 
@@ -484,10 +488,15 @@ def ladder_level(p):
     return n
 
 
-def proven_cell(kw, forms_seen, connected, t3):
-    p = proven_rungs(kw, forms_seen, connected, t3)
-    return "level %d · %s" % (ladder_level(p), " ".join(
-        "%s%s" % (r, "✓" if p[r] else "—") for r in RUNGS))
+def proven_cell(kw, forms_seen, connected, t3, t2=frozenset(), t5=None):
+    p = proven_rungs(kw, forms_seen, connected, t3, t2)
+    t5 = t5 or {}
+
+    def one(r):
+        if r == "T5" and kw in t5:          # a RATIO, never a tick (Joost 09-24)
+            return "T5 %s×" % ("%.2g" % t5[kw])
+        return "%s%s" % (r, "✓" if p[r] else "—")
+    return "level %d · %s" % (ladder_level(p), " ".join(one(r) for r in RUNGS))
 
 
 def kw_evidence(kw, forms_seen, connected, gap_tier, lines):
@@ -771,6 +780,74 @@ def kwsweep_t3(kws, path=KWSWEEP_PIN):
         if kw:
             out.add(kw)
     return out
+
+
+KWTIME_PIN = os.path.join(ROOT, "build", "kwtime.json")
+
+
+def kwtime_rungs(kws, sweep=None, timing=None):
+    """(T2 keywords, {keyword: T5 ratio}) from the kwtime pin, joined with kwsweep's.
+
+    ⏱ D-KWPROVEN (Joost, 2026-09-24): T2 = the keyword's test program completes
+    within 10x the VG-8020's time; T5 = the ratio, shown and never ticked. Both
+    come from ONE measurement, `probes/basic/basic_probe_kwtime.py`.
+    🎚️ A keyword is T2 when EVERY authored form has a SUPPORTED kwsweep row that
+    kwtime timed `OK` -- the same breadth T1 demands, so T2 can never be reached
+    on one easy form. A form whose only rows are rigged or UNTIMEABLE leaves T2
+    unproven: silence is not a tick.
+    📏 T5 is the WORST (largest) ratio over the keyword's timed rows.
+    ⚠️ IT IS THE WHOLE TEST PROGRAM'S RATIO, SETUP INCLUDED -- ruled that way, and
+    measured to matter: `SCREEN2:SCREEN0` alone is 552 ms on the VG-8020 and 167
+    ms here (0.30), so the PAINT row reads 0.47 while PAINT itself, the switch
+    subtracted, is 1.76. Filed as a question for Joost in TODO (D-KWPROVEN).
+    🔴 REFUSED, NOT AVERAGED IN, when the two pins describe different ROMs (the git
+    revision is ignored -- one battery's pins share ROMs across a commit) or the
+    timing pin is degenerate. `sweep`/`timing` are INJECTABLE for the selftest."""
+    import json
+    import kwforms
+    if timing is None:
+        try:
+            with open(KWTIME_PIN, encoding="utf-8") as fh:
+                timing = json.load(fh)
+        except (OSError, ValueError):
+            return set(), {}
+    if sweep is None:
+        try:
+            with open(KWSWEEP_PIN, encoding="utf-8") as fh:
+                sweep = json.load(fh)
+        except (OSError, ValueError):
+            return set(), {}
+
+    def rom(fp):
+        return " ".join(p for p in (fp or "").split() if not p.startswith("git="))
+    if rom(timing.get("rom_fingerprint")) != rom(sweep.get("rom_fingerprint")):
+        raise SystemExit(
+            "tier_table: REFUSING the kwtime pin -- it was measured against "
+            f"{timing.get('rom_fingerprint')} and the kwsweep pin against "
+            f"{sweep.get('rom_fingerprint')}. Re-run `make kwtime`.")
+    trows = timing.get("rows", {})
+    if 0 < len(trows) < 100:
+        raise SystemExit(f"tier_table: REFUSING the kwtime pin -- {len(trows)} "
+                         "row(s) is a degenerate run, not a measurement.")
+    kwset = set(kws)
+    ok_forms: dict = {}
+    ratio: dict = {}
+    for key, r in sweep.get("rows", {}).items():
+        if r.get("weak") or r.get("verdict") != "SUPPORTED" or not r.get("form"):
+            continue
+        t = trows.get(key)
+        if not t:
+            continue
+        kw = stmt_subject(r.get("stmt", ""), kwset, r.get("subject"))
+        if not kw:
+            continue
+        if t.get("ratio") is not None:
+            ratio[kw] = max(ratio.get(kw, 0.0), t["ratio"])
+        if t.get("status") == "OK":
+            ok_forms.setdefault(kw, set()).add(r["form"])
+    t2 = {kw for kw, got in ok_forms.items()
+          if kwforms.forms_for(kw) and all(f in got for f in kwforms.forms_for(kw))}
+    return t2, ratio
 
 
 def keyword_tiers(its, kws, evidence=None):
@@ -1137,7 +1214,8 @@ def _composite_section(kws, evidence=None, conn=None):
     return out
 
 
-def fmt_markdown(its, kws, evidence=None, t3=None, connected=None, forms=None):
+def fmt_markdown(its, kws, evidence=None, t3=None, connected=None, forms=None,
+                 kwtime=None):
     """🔴 `evidence`/`t3` are INJECTABLE because S14 was not hermetic: it built its
     markdown from the LIVE build/kwsweep-verdicts.json, so the expected `LOF` row
     changed the moment a sweep re-ran and gave LOF a verdict (it gained a
@@ -1168,6 +1246,7 @@ def fmt_markdown(its, kws, evidence=None, t3=None, connected=None, forms=None):
     # the same bytes. A selftest that depends on a build artefact is a flake
     # with a schedule [[a-knife-can-be-inert-because-the-build-did-not-happen]].
     forms = kwsweep_forms(kws) if forms is None else forms
+    t2, t5 = kwtime_rungs(kws) if kwtime is None else kwtime
 
     out = ["# zerobas — priority-tier status", "",
            "Generated by `make tiers-md` from the `🎚️` tag on every open "
@@ -1275,23 +1354,26 @@ def fmt_markdown(its, kws, evidence=None, t3=None, connected=None, forms=None):
             "| rung | what a tick requires | keywords proving it |",
             "|---|---|---|"]
     _req = {"T1": "every authored FORM has an agreeing row, and knife-proven CONNECTED",
-            "T2": "🔴 NO PROVING ROW TYPE EXISTS YET — defined 2026-09-24: the keyword's test program completes within 10× the VG-8020's time",
+            "T2": "every authored FORM has a SUPPORTED row whose test program `make kwtime` timed completing within 10× the VG-8020's time (Joost, 2026-09-24)",
             "T3": "a `PROVES-T3:` row: a COMMON ERROR situation scored against the reference",
             "T4": "🔴 NO PROVING ROW TYPE EXISTS YET — defined 2026-09-24: derived from the whole-RAM-map comparison vs the VG-8020 (free memory, addresses, economy)",
-            "T5": "⚪ NO BAR YET — the zerobas ÷ VG-8020 ratio is RECORDED and shown, never ticked (Joost, 2026-09-24)",
+            "T5": "⚪ NO BAR YET — the zerobas ÷ VG-8020 ratio of the WHOLE test program (worst row, setup included) is shown in the keyword's cell and never ticked (Joost, 2026-09-24)",
             "T6": "🔴 NO PROVING ROW TYPE EXISTS — the exhaustive error set is unmeasured"}
     _prov = {r: 0 for r in RUNGS}
     for kw in kws:
-        p = proven_rungs(kw, forms.get(kw, set()), kw in conn, t3)
+        p = proven_rungs(kw, forms.get(kw, set()), kw in conn, t3, t2)
         for r in RUNGS:
             _prov[r] += bool(p[r])
     for r in RUNGS:
-        out.append("| %s | %s | **%d** of %d |" % (r, _req[r], _prov[r], len(kws)))
+        extra = (" (a ratio is MEASURED for %d; T5 never ticks)" % len(t5)
+                 if r == "T5" else "")
+        out.append("| %s | %s | **%d** of %d%s |"
+                   % (r, _req[r], _prov[r], len(kws), extra))
     # 🪜 AND THE LADDER, WHICH THE PER-RUNG COUNT CANNOT SHOW: a T3 tick above a
     # missing T2 is counted in the T3 row above but reaches nothing here.
     _lvl = {}
     for kw in kws:
-        n = ladder_level(proven_rungs(kw, forms.get(kw, set()), kw in conn, t3))
+        n = ladder_level(proven_rungs(kw, forms.get(kw, set()), kw in conn, t3, t2))
         _lvl[n] = _lvl.get(n, 0) + 1
     out += ["", "### Level reached — the ladder (Joost, 2026-09-24)", "",
             "A keyword's LEVEL is its highest UNBROKEN run of proven rungs from "
@@ -1318,7 +1400,7 @@ def fmt_markdown(its, kws, evidence=None, t3=None, connected=None, forms=None):
     # not [[two-sections-of-one-doc-disagreed]].
     for kw in sorted(kws):
         st, ev = status_of(kt, kw, t3, conn, t1, nobare, parts, refuses, forms)
-        pr = proven_cell(kw, forms.get(kw, set()), kw in conn, t3)
+        pr = proven_cell(kw, forms.get(kw, set()), kw in conn, t3, t2, t5)
         out.append(f"| `{kw}` | {STATUS[st][0]} | {pr} | {ev} |")
 
     out += _composite_section(kws, evidence, conn)
@@ -1491,9 +1573,38 @@ def selftest():
         ladder_level({"T1": False, "T2": True, "T3": True, "T4": True, "T5": True, "T6": True}) == 0)
     arm("S36h an unbroken run counts every rung",
         ladder_level({r: True for r in RUNGS}) == len(RUNGS))
-    arm("S36e NEGATIVE: T2/T4/T5/T6 cannot be ticked — no row type proves them",
-        not any(proven_rungs("LOF", {"length"}, True, {"LOF"})[r]
-                for r in ("T2", "T4", "T5", "T6")))
+    arm("S36e NEGATIVE: T4/T5/T6 cannot be ticked — T4/T6 have no row type and T5 "
+        "has no bar (flipped DELIBERATELY 2026-09-24: T2 now has one, `kwtime`)",
+        not any(proven_rungs("LOF", {"length"}, True, {"LOF"}, {"LOF"}, )[r]
+                for r in ("T4", "T5", "T6")))
+    arm("S36i T2 ticks only for a keyword kwtime proved",
+        proven_rungs("LOF", {"length"}, True, set(), {"LOF"})["T2"]
+        and not proven_rungs("LOF", {"length"}, True, set(), set())["T2"])
+    _fp = "git=a main=1"
+    _sw = {"rom_fingerprint": "git=b main=1", "rows": {
+        "abs": {"verdict": "SUPPORTED", "weak": False, "form": "magnitude",
+                "stmt": "a=abs(-5)", "subject": None}}}
+    _pad = {f"pad{i}": {"status": "OK", "ratio": 1.0} for i in range(100)}
+    def _tm(st, ratio):
+        return {"rom_fingerprint": _fp, "rows": dict(_pad, abs={"status": st, "ratio": ratio})}
+    _t2, _t5 = kwtime_rungs(["ABS"], sweep=_sw, timing=_tm("OK", 0.98))
+    arm("S36j an OK row within 10x proves T2, and its ratio is T5's reading "
+        "(the git revision alone does not refuse the join)",
+        _t2 == {"ABS"} and abs(_t5["ABS"] - 0.98) < 1e-9)
+    _t2, _t5 = kwtime_rungs(["ABS"], sweep=_sw, timing=_tm("SLOW", 20.0))
+    arm("S36k NEGATIVE: a keyword 20x slower does NOT tick T2 -- and its ratio still shows",
+        _t2 == set() and _t5["ABS"] == 20.0)
+    _t2, _t5 = kwtime_rungs(["ABS"], sweep=_sw, timing=_tm("UNTIMEABLE", None))
+    arm("S36l NEGATIVE: an UNTIMEABLE row is silence, not a tick", _t2 == set() and _t5 == {})
+    try:
+        kwtime_rungs(["ABS"], sweep=_sw, timing=dict(_tm("OK", 1.0), rom_fingerprint="git=a main=9"))
+        _refused = False
+    except SystemExit:
+        _refused = True
+    arm("S36m NEGATIVE: a timing pin from a DIFFERENT ROM is refused", _refused)
+    arm("S36n T5 shows a RATIO in the cell and never a tick, even at 0.5x",
+        "T5 0.5×" in proven_cell("LOF", {"length"}, True, set(), {"LOF"}, {"LOF": 0.5})
+        and "T5✓" not in proven_cell("LOF", {"length"}, True, set(), {"LOF"}, {"LOF": 0.5}))
     arm("S9 summary counts UNTAGGED separately", ("UNTAGGED", 1) in summary(its))
     arm("S11 a keyword named only in the BODY does not count", "CLEAR" not in g)
     arm("S10 the real kwtable parses to 150+ keywords", len(kwtable_keywords()) >= 150)
@@ -1610,7 +1721,7 @@ def selftest():
     # LOF's only authored form is `length`; handing it in makes the rows below
     # depend on THIS fixture and not on whatever pin happens to be on disk.
     md = fmt_markdown(its, kws, evidence={}, t3=set(), connected=set(),
-                      forms={"LOF": {"length"}})
+                      forms={"LOF": {"length"}}, kwtime=(set(), {}))
     _s14 = [("summary row",
              "| TIER 1 | works correctly in the happy path \u2014 or, where there "
              "is no happy path, in the normal failing path | 1 |" in md),

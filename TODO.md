@@ -4899,7 +4899,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:23206 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:23269 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -5065,7 +5065,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:9826 (T-6FE392)8 (T-529ABE)` from `TODO.md:21298 (T-529ABE)`: a
+      `TODO.md:9826 (T-6FE392)8 (T-529ABE)` from `TODO.md:21305 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -10670,7 +10670,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:21298 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:21305 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -12140,6 +12140,13 @@ list. **When a slice lands, grep this list for what it just shipped.**
       change with real rounding risk and the float suites are what would have to
       hold it — a project, not a slice.
       🎚️ TIER 5 — on-par speed: the interpreter is 2.5–3.8× slower (TIER 2, reasonable time, is met) — 17–26 % of it came back on 2026-09-11 (D-SPEEDPROF); measured on `FOR` `GOTO` `WHILE`, arithmetic and strings
+      ⏱ **PER-KEYWORD RATIOS NOW EXIST (D-KWTIME, 2026-09-24, `make kwtime`,
+      whole test program vs the VG-8020):** median **1.15×**; the slowest are
+      the transcendentals — **`SQR` 8.6×**, `SIN` 5.4×, `COS` 5.2×, `EXP` 3.6×,
+      `LOG` 3.6× — so the mathpack, not the dispatcher, is where the widest
+      gaps are. `SQR` is the one keyword near the T2 bar (10×). ⚠️ Graphics
+      rows read BELOW 1× because zerobas's `SCREEN` switch is 3.3× faster
+      (552 vs 167 ms) — see the whole-program-vs-keyword item under D-KWPROVEN.
       🤖 AUTONOMOUS — the charter half is ANSWERED (the STANDING sequencing of
       2026-09-02: speed is a real defect), so what remains under it is measurable work.
       ⚠️ **RANKED LAST BY THAT SAME RULING** — every open DIVERGENCE outranks it, so
@@ -22671,11 +22678,40 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       🎯 **SO T2 AND T5 ARE ONE MEASUREMENT** — zerobas ÷ reference for the
       same program, with a completion watchdog. T2 passes at ≤ 10×; T5
       displays it. One row type, built once, serves both rungs.
-      🤖 **AUTONOMOUS** — T2's row type can be specified and built now; T5's
-      is a recorded ratio with no verdict; T4's waits on the RAM-map
-      comparison it derives from. ⚠️ Adding any of them flips negative control
-      `S36e`, which is the point: that must be a deliberate act carrying its
-      rung's definition.
+      ✅ **T2/T5's ROW TYPE IS BUILT (D-KWTIME, 2026-09-24):**
+      [`probes/basic/basic_probe_kwtime.py`](probes/basic/basic_probe_kwtime.py),
+      `make kwtime`, in the battery's static tier beside `kwsweep` (~30 s).
+      Each plain kwsweep row that declares a FORM is re-typed with EXPLICIT line
+      numbers (kwsweep's `RESPOND:` shape, so every `GOTO 40` still lands),
+      bracketed by two program-written marks (`docs/spec-probe-mark.md`) —
+      EMULATED time, so there is no "too short to time" rule: nothing is
+      quantised, and two full runs were **bit-identical on all 225 rows**. A
+      `CLS` precedes the start mark: without it a batched boot's accumulated
+      screen made `PRINT` scroll and moved zerobas's deltas +1.7..3.4 ms.
+      `tier_table` joins `build/kwtime.json` with kwsweep's pin: T2 = every
+      authored form has a SUPPORTED row timed `OK` (≤ 10×); T5 = the worst
+      row's ratio, SHOWN in the cell (`T5 0.98×`) and never ticked. `S36e` was
+      flipped DELIBERATELY (T4/T5/T6 still cannot tick) and five arms added,
+      three of them negative (a 20× keyword, an UNTIMEABLE row, a pin from
+      another ROM). The probe's own `--negative` run pads zerobas's side with a
+      delay loop and reads every row SLOW (98–122×) before the real run.
+      📏 **FIRST READING, 2026-09-24 — RECOUNT, NEVER QUOTE:** T2 proven for
+      **81** of 159; the ladder moved from levels 0/1 only to 20 / 58 / 57 /
+      24 at levels 0–3. Rows: OK 188, UNTIMEABLE 37, SLOW 0, HANG 0; two rows
+      not typed (`space_b`, `ifkw_b` — a statement over 38 characters). Ratio
+      median 1.15×, worst `SQR` **8.6×** (filed on the speed item).
+      🔮 **PREDICTIONS, SCORED:** *"ratios in the 2.5–3.8× interpreter band"* —
+      **MISS** (1.17–4.79× on the prototype; `PRINT`-bound rows sit near 1×).
+      *"all under 10×"* — HIT. *"the padded negative reads SLOW, ~90×"* — HIT.
+      *"no SLOW, no HANG, some UNTIMEABLE"* — HIT.
+      🤖 **AUTONOMOUS — WHAT IS LEFT OF THIS ITEM:** (1) **the 37 UNTIMEABLE
+      rows** — they `END`, `STOP`, `RETURN` or error before their last line, so
+      the end mark is never reached (`GOSUB`, `END`, `RESUME`, `ON`, `ERROR`,
+      `LIST`, `NEW`, `READ` …); they need a second shape (an end mark placed
+      where the row actually finishes, or the prompt's return), and until then
+      those keywords cannot reach T2; (2) **T4**, which is the RAM-map
+      comparison it derives from (TIER 4 item). ⚠️ The whole-program-vs-keyword
+      question below is Joost's and does not block either.
       ~~🙋 **NEEDS-JOOST**~~ (answered above for T2/T4/T5) — a rung's definition is charter-level, not a coding
       choice. What does a row that PROVES "reasonable time" look like? A wall
       against the reference, per keyword? A ratio? Same question for RAM parity
@@ -22713,10 +22749,11 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       answered on 2026-09-22 (*"yes but that is tier 4"*, TIER 4 item), and this
       sentence carried it as open for two days — a stale blocker outliving what
       made it true.
-      🔬 **PINNED BY A NEGATIVE CONTROL** (`S36e`): T2/T4/T5/T6 CANNOT be ticked.
-      If that arm ever fires, a proving row type was added — which must be a
-      deliberate act carrying its own definition of what the row proves, not a
-      side effect of some other change.
+      🔬 **PINNED BY A NEGATIVE CONTROL** (`S36e`): ~~T2/T4/T5/T6~~ **T4/T5/T6**
+      CANNOT be ticked (flipped 2026-09-24 when T2's row type landed — the
+      deliberate act this sentence asked for). If that arm ever fires, a proving
+      row type was added — which must be a deliberate act carrying its own
+      definition of what the row proves, not a side effect of some other change.
 
 - [ ] 🎚️ **T6 — WHAT BOUNDS "THE EXHAUSTIVE ERROR SET"? THE ONE RUNG STILL
       WITHOUT A DEFINITION (split from D-KWPROVEN, 2026-09-24).**
@@ -22727,6 +22764,32 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       bound, so what row set would count as having PROVED it — every error
       code the reference raises for that keyword's documented forms, or
       something wider?
+
+- [ ] 🎚️ **T2/T5: THE WHOLE TEST PROGRAM, OR THE KEYWORD ALONE? SETUP CAN HIDE
+      A KEYWORD'S OWN SPEED — MEASURED ON `PAINT` (D-KWTIME, 2026-09-24).**
+      🎚️ TIER 1 — it is part of the bar every other item is measured against.
+      🙋 **NEEDS-JOOST** — his ruling reads *"the keyword's test program"*, and
+      `make kwtime` implements it literally. The measurement below says the
+      literal reading can be dominated by SETUP, which is a question about the
+      rung's definition, not a coding choice.
+      🔬 **MEASURED, refcache OFF** (the kwtime marks, batched with `CLS`):
+      | program | VG-8020 | zerobas | ratio |
+      |---|---|---|---|
+      | `SCREEN2:SCREEN0` alone | 552 ms | 167 ms | **0.30** |
+      | the PAINT row, whole | 624 ms | 294 ms | 0.47 |
+      | **PAINT alone** (the switch subtracted) | 72 ms | 127 ms | **1.76** |
+      | LINE alone | 24 ms | 25 ms | 1.03 |
+      So zerobas's mode switch is 3.3× FASTER than the reference, and every
+      graphics row — which all open with `SCREEN2` — reads 0.26–0.49× on the
+      sheet while `PAINT` itself is 1.76×, which is the filed *"`PAINT` 2×"*.
+      ⚠️ **T2 IS NOT WRONG TODAY** (PAINT is well under 10× either way), **but
+      the shape can hide a keyword over the bar** behind fast setup, and **T5's
+      displayed ratio for the graphics keywords is not their speed**.
+      ➡️ **THE OPTIONS:** (a) keep the whole program (literal, and what a user
+      waits for); (b) subtract a per-row SETUP twin (the row minus the keyword),
+      which needs a twin authored per row; (c) whole program for T2, keyword
+      alone for T5 — T2 stays "does the program finish in reasonable time",
+      T5 becomes "is the keyword as fast". Recommendation: **(c)**.
 
 - [ ] **Keyword-completeness gaps — the measured remainder of MSX1 BASIC.**
       **The coverage denominator now exists** (2026-07-26,

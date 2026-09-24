@@ -73,7 +73,7 @@ temp-root-check todo-citation-check todo-marker-check deferral-pin-check error-a
 filed-pin-check disk-mount-check
 shared-body-check probe-reach-check battery-membership-check fixture-integrity-check
 hook-equate-check
-preflight-check latch-check diskdep-check switch-build-check kwsweep
+preflight-check latch-check diskdep-check switch-build-check kwsweep kwtime
 patch-freshness-check refcache-check knife-guard-check knife-rom-guard-check
 selftest-check
 deffn-selftest
