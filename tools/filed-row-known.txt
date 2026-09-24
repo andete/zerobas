@@ -34,6 +34,8 @@
 # interpreter-speed band 0.7x too low (2.5-3.1x published; 3.81x measured once
 # the emulated-time budget was widened, 2026-09-04).
 budget_probe: NO-VERDICT -- emulated-time window/used/margin percentages, for sizing probe budgets
+playmml_probe: NO-VERDICT -- D-KWPLAY scout 2, zb-ONLY by design (its reference column is scout 2 run 1): its three questions are ANSWERED -- `>`/`<` removed as not MSX1 MML, `X<var>;` shipped (D-PLAYX12, 2026-09-24), the R8/R13 high bits are D-PSGLATCH's read race. The verdicts it scouted for are kwsweep's synced playkw_* rows. Declared 2026-09-25 by the filed-row triage.
+playpsg_probe: NO-VERDICT -- D-KWPLAY scout 1, 'can a kwsweep row SEE an MML form?': answered YES, and the rows it made possible are kwsweep's playkw_* (each TIME-synced against the PSG read race, D-PSGLATCH). Its own reads are UNSYNCED and its c8/c9 duration rows time the FOR loop (scout 2's C), so a verdict channel here would score a known-racy instrument. Declared 2026-09-25 by the filed-row triage.
 playmusicf_probe: NO-VERDICT -- "the reference marks ALL THREE voices at every PLAY" (its own docstring): per-side MUSICF/PLAY(0) values on the statement after PLAY, one row per case; the rows it characterises are pinned through playfn_fixture_probe (D-PLAYBACK, 2026-09-24)
 interpspeed_probe: NO-VERDICT -- TIME ratios zb/cf3300; the entry it serves is "THE INTERPRETER IS 2.5-3.8x SLOWER"
 put3consume_probe: NO-VERDICT -- cluster/LOF values under an explicit "read:" note, characterisation only

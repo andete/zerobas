@@ -182,7 +182,7 @@ USAGE", §"COMPARE RAM *USAGE*", both 🤖) — the whole-map comparison vs the
 VG-8020, all three goals. Measuring is autonomous; ANY ADJUSTMENT goes to Joost.
 Score his *"very economical"* hunch as a PREDICTION, including a miss.
 📋 **TIER 5: speed** — the interpreter band, `PAINT`, `PUT` (all 🤖).
-📋 **APPARATUS (below every tier): the filed-row triage, 8 probes left** (`playx` got its channel 2026-09-25) —
+📋 **APPARATUS (below every tier): the filed-row triage, 5 probes left** (the four play* settled 2026-09-25) —
 `cf3300_files`, `clrtrapstk_stop`, `loadrun`, `mergeshape`, `mergewin`,
 `playmml`, `playnote`, `playpsg`, `playx`. The `play*` ones are likely REAL
 holes (they compare and cannot say so) needing a channel, not a declaration.

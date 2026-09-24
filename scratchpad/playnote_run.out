@@ -1,0 +1,26 @@
+=== Philips_VG_8020
+  c4_ref   '< 172 1 >'  period=428
+  n00      '< 0 0 >'  period=0
+  n01      '< 156 12 >'  period=3228
+  n02      '< 231 11 >'  period=3047
+  n38      '< 125 1 >'  period=381
+  n39      '< 104 1 >'  period=360
+  n40      '< 83 1 >'  period=339
+  n41      '< 64 1 >'  period=320
+  n42      '< 46 1 >'  period=302
+  n96      '< 13 0 >'  period=13
+  n97      '<E 5 >'
+=== C-BIOS_MSX1_EU_REPACK_DISK
+  c4_ref   '< 172 1 >'  period=428
+  n00      '< 0 0 >'  period=0
+  n01      '< 156 12 >'  period=3228
+  n02      '< 231 11 >'  period=3047
+  n38      '< 125 1 >'  period=381
+  n39      '< 104 1 >'  period=360
+  n40      '< 83 1 >'  period=339
+  n41      '< 64 1 >'  period=320
+  n42      '< 46 1 >'  period=302
+  n96      '< 13 0 >'  period=13
+  n97      '<E 5 >'
+DIFF: 0/10 rows diverging vs Philips_VG_8020 (n00 unscored: a rest)
+refcache: 0 hit, 2 miss, 2 stored

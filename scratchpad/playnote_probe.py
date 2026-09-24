@@ -47,6 +47,7 @@ CASES = [("c4_ref", prog("C"))] + [("n%02d" % n, prog("N%d" % n)) for n in NS]
 
 
 def main() -> int:
+    cells: dict = {}
     for mach in MACHINES:
         print("===", mach, flush=True)
         specs = [("stored", lines) for _, lines in CASES]
@@ -63,8 +64,23 @@ def main() -> int:
             m = cell.replace("<", " ").replace(">", " ").split()
             if len(m) == 2 and m[0].lstrip("-").isdigit():
                 per = "  period=%d" % (int(m[1]) * 256 + int(m[0]))
+            cells.setdefault(mach, {})[name] = cell
             print(f"  {name:8} {cell!r}{per}", flush=True)
+    verdict(cells.get(MACHINES[1], {}), cells.get(MACHINES[0], {}))
     return 0
+
+
+def verdict(zb: dict, ref: dict) -> None:
+    """🎯 THE VERDICT CHANNEL (D-RECLENV's shape, 2026-09-25): `DIFF <label>` per
+    row where zerobas and the VG-8020 differ, then the sweep's `DIFF: n/m`.
+    ⚠️ `n00` IS NOT SCORED -- the header says why: N0 is the REST, it sounds
+    nothing, and its R0/R1 reading is whatever the previous note left."""
+    rows = [k for k in zb if k != "n00"]
+    bad = [k for k in rows if zb[k] != ref.get(k)]
+    for k in bad:
+        print(f"DIFF {k}  zb={zb[k]!r}  {MACHINES[0]}={ref.get(k)!r}", flush=True)
+    print(f"DIFF: {len(bad)}/{len(rows)} rows diverging vs {MACHINES[0]} "
+          f"(n00 unscored: a rest)", flush=True)
 
 
 if __name__ == "__main__":
