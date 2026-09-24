@@ -121,7 +121,13 @@ for l in ORDER:
     if not same: diff.append(l)
     print(f"{l:<{w}}  " + "  ".join(f"{v:>18}" for v in vals)
           + f"   {'SAME' if same else 'DIFF'}")
-print(f"\nDIFF: {len(diff)}/{len(ORDER)}  " + " ".join(diff))
+# ⚠️ NOT `DIFF <n>/<m>`: `filed_row_sweep.py`'s MARKER counts a line
+# starting `DIFF ` as one more DIVERGING ROW, so a summary in that shape
+# inflates the count -- and with a colon it matches NOTHING and the sweep
+# reads the probe's pinned rows as no longer diverging. Fourth, fifth and
+# sixth instances of a class that had already bitten three times;
+# `rowshape-check` enforces it now (D-MARKERWORD).
+print(f"\n{len(diff)}/{len(ORDER)} rows diverging  " + " ".join(diff))
 print("🟢 CONTROLS: c.* are the shapes every other row is read against -- float\n"
       "   truthiness (IF .5 / IF -.5), the plain no-nesting ELSE, and the\n"
       "   no-ELSE line-end. If one of those reddens, no n.* row means anything.")

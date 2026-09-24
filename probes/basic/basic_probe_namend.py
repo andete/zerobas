@@ -59,5 +59,12 @@ for lab, st, why in CASES:
     if not ok:
         bad.append(lab)
     print(f"{lab:<9} {a:>9} {b:>10}   {st:<22} {'ok' if ok else 'DIFF'}   {why}")
-print(f"\nDIFF {len(bad)}/{len(CASES)}" + ("  " + " ".join(bad) if bad else ""))
+# ⚠️ NOT `DIFF <n>/<m>`: `filed_row_sweep.py`'s MARKER counts a line
+# starting `DIFF ` as one more DIVERGING ROW, so a summary in that shape
+# inflates the count -- and with a colon it matches NOTHING and the sweep
+# reads the probe's pinned rows as no longer diverging. Fourth, fifth and
+# sixth instances of a class that had already bitten three times;
+# `rowshape-check` enforces it now (D-MARKERWORD).
+print(f"\n{len(bad)}/{len(CASES)} rows diverging"
+      + ("  " + " ".join(bad) if bad else ""))
 sys.exit(1 if bad else 0)

@@ -4848,7 +4848,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:22898 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:22945 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -5014,7 +5014,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:9676 (T-6FE392)8 (T-529ABE)` from `TODO.md:21107 (T-529ABE)`: a
+      `TODO.md:9678 (T-6FE392)8 (T-529ABE)` from `TODO.md:21109 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -5976,8 +5976,10 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `asciidigit_probe` printed `  DIFF 2/5 ...`, which `MARKER`'s `^\s*DIFF\s`
       counts as one more divergent row than the run has — it reported 2 and swept
       as 3. Same remedy as `reclen_probe`'s `DIFF:` and `reclendom_probe`'s
-      `DIFF total`: the summary now says `rows diverging`. **Three instances says
-      the wording is load-bearing and nothing enforces it.**
+      `DIFF total`: the summary now says `rows diverging`. ~~**Three instances
+      says the wording is load-bearing and nothing enforces it.**~~
+      ✅ **ENFORCED 2026-09-24 (D-MARKERWORD), AND IT CAUGHT THREE MORE THE
+      MOMENT IT RAN** — see that item. Six instances, not three.
       🎯 **AND VERIFYING THE PINS IS WHAT CAUGHT THE LAST ONE.** Re-run after
       pinning, six of seven read `[N known]` — and `dskibytes_probe` read
       `[0 known, ⚠️ 3 known row(s) NO LONGER DIVERGING]` **while all three rows
@@ -10520,7 +10522,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:21107 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:21109 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -22376,6 +22378,51 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       the harness is the first suspect, not the ROM.
       ⚠️ **NO ROM HAS CHANGED SINCE 2026-09-23 EVENING**, and the full battery
       has been green all night — so whatever moved, it did not move tonight.
+
+- [x] 🟢 **THE MARKER WORDING IS ENFORCED AT LAST, AND IT EARNED ITSELF ON THE
+      FIRST RUN: THREE MORE LIVE INSTANCES (D-MARKERWORD, 2026-09-24)**
+      🎚️ APPARATUS — a probe summary that reads as a row MARKER corrupts the
+      filed-row sweep's count in one direction or blinds it in the other.
+      🤖 **AUTONOMOUS** — the rule was already written down; only the gate was
+      missing.
+      🔬 **THE HAZARD, IN THE SWEEP'S OWN TERMS.** `filed_row_sweep.py` counts
+      divergent ROWS with a MARKER that includes `^\s*DIFF\s`. A summary in
+      that shape is counted as one more diverging row; a summary that ALMOST
+      matches (`DIFF:` — a colon, not whitespace) matches nothing, so the sweep
+      sees zero markers and reads the probe's pinned rows as **NO LONGER
+      DIVERGING while every one of them is still failing**. Both have happened.
+      🔴 **IT HAD BITTEN THREE TIMES AND THE ENTRY ABOVE SAID SO** — `DIFF:`
+      (`dskibytes_probe`), `DIFF total` (`reclendom_probe`), `  DIFF 2/5`
+      (`asciidigit_probe`) — each fixed by hand, each fix leaving nothing behind
+      to stop the fourth.
+      ✅ **`rowshape-check` NOW CARRIES THE RULE**, which is its own subject:
+      that gate exists because *"a knife runner parses a probe's report"*, and
+      the sweep is another machine reading probe reports.
+      🎯 **AND IT FIRED IMMEDIATELY ON THREE LIVE PROBES** — the class was never
+      closed, only patched three times:
+      | probe | printed | direction |
+      |---|---|---|
+      | `basic_probe_catusr.py:91` | `DIFF: {}/{}` | blinds the sweep |
+      | `basic_probe_ifsem.py:124` | `DIFF: {}/{}` | blinds the sweep |
+      | `basic_probe_namend.py:62` | `DIFF {}/{}` | inflates the count |
+      All three reworded to `<n>/<m> rows diverging` (D-RECLENV's remedy), and
+      `nameord-acceptance`, `catusr-acceptance` and `ifsem-acceptance` re-run
+      GREEN. ⚠️ Nothing in `tools/` or `probes/lib/` parses `DIFF:` — checked
+      before changing any output.
+      🔴 **AND THE GATE HAD NO ARMS OF ITS OWN UNTIL TODAY.**
+      `check_report_shape.py` is STATIC over a corpus that is usually clean —
+      the exact shape that can rot to `return None` and still print `ALL PASS`
+      [[a-knife-can-be-inert-because-the-build-did-not-happen]]. It now has a
+      `--selftest` that PLANTS every subject: all three historical shapes, the
+      D-CASOPEN width fault (`'ok '` is 3 and `'DIFF'` is 4), and negative
+      controls for the legitimate per-row `DIFF <label>`, the agreed
+      `rows diverging` wording, and the OTHER marker word `DIFFER`.
+      🔴 **TWO OF THOSE NEGATIVE ARMS FIRED ON MY FIRST CUT AND WERE RIGHT TO.**
+      A `\s*` on the punctuation branch let a legitimate `DIFF {label}` match
+      (the space was skipped and `{` read as punctuation), and the `DIFF` test
+      had no word boundary so it fired inside `DIFFER`. **A matcher written for
+      three known examples got two of its edges wrong; the arms are the only
+      reason that was visible before it reddened a good probe.**
 
 - [ ] 🎚️ **WHAT PROVES A RUNG? T2, T4, T5 AND T6 HAVE NO PROVING ROW TYPE, SO
       `0 of 159` KEYWORDS PROVE ANY OF THEM (D-KWPROVEN, 2026-09-23).**

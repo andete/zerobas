@@ -341,14 +341,133 @@ class Probe:
         return bad
 
 
+# 🔴 A SUMMARY THAT LOOKS LIKE A ROW MARKER (D-MARKERWORD, 2026-09-24).
+# `scratchpad/filed_row_sweep.py` counts divergent ROWS with a MARKER regex that
+# includes `^\s*DIFF\s`. A probe that prints its TOTAL in the same shape is
+# counted as one more diverging row -- or, with a colon, as none at all. It has
+# bitten THREE times and the D-FILEDROT entry says so in as many words:
+#   `DIFF: n/m`      -> does NOT match, so the sweep saw zero markers and read
+#                       the probe's pinned rows as "NO LONGER DIVERGING" while
+#                       all of them were still failing (dskibytes_probe);
+#   `DIFF total ...` -> matches, inflating the count (reclendom_probe);
+#   `  DIFF 2/5 ...` -> matches, reported 2 and swept as 3 (asciidigit_probe).
+# Each was fixed by rewording the summary to `rows diverging`. **Three
+# instances says the wording is load-bearing and nothing enforced it** -- this
+# is that enforcement.
+# ⚠️ THE RULE IS ABOUT THE SUMMARY, NOT THE MARKER. A per-row `DIFF <label>` is
+# exactly right and must stay legal; what is forbidden is `DIFF` followed by a
+# COUNT or by a punctuation that breaks the marker.
+# ⚠️ EVERY BRANCH HERE IS ANCHORED TIGHT, AND TWO OF THEM WERE WRONG FIRST.
+# A leading `\s*` on the punctuation branch let a legitimate per-row
+# `DIFF {label}` match (the space was skipped and `{` read as punctuation), and
+# the caller's `DIFF` match had no word boundary so it fired inside `DIFFER` --
+# the OTHER marker word, which must stay legal. Both were caught by this file's
+# own NEGATIVE arms, which is what they are for.
+SUMMARY_TAIL = re.compile(r"""^(?:
+      [^\sA-Za-z]                # DIFF immediately followed by punctuation
+    | \s+(?:\{\}|\d+)\s*/      # DIFF <n>/<m> or DIFF {}/{}
+    | \s+total\b                # DIFF total
+)""", re.X)
+
+
+def literal_prefix(node: ast.AST) -> str | None:
+    """The printed text with every {placeholder} rendered as `{}`.
+
+    Only the LEADING run matters, so an expression tail is harmless; what must
+    be visible is whether the line starts `DIFF` and what follows it."""
+    out = []
+    for k, v in parts_of(node):
+        if k == "t":
+            out.append(v)
+        elif k == "f":
+            out.append("{}")
+        else:
+            out.append("{}")
+    return "".join(out) if out else None
+
+
+def marker_summary_lines(tree: ast.AST):
+    """[(lineno, text)] for every print whose line reads as a sweep MARKER but
+    is a SUMMARY. Both failure directions, because both have happened."""
+    bad = []
+    for node in ast.walk(tree):
+        if not (isinstance(node, ast.Call) and isinstance(node.func, ast.Name)
+                and node.func.id == "print" and node.args):
+            continue
+        text = literal_prefix(node.args[0])
+        if not text:
+            continue
+        m = re.match(r"\s*DIFF(?![A-Za-z])", text)   # not DIFFER
+        if not m:
+            continue
+        if SUMMARY_TAIL.match(text[m.end():]):
+            bad.append((node.lineno, text.strip()[:60]))
+    return bad
+
+
+def selftest() -> int:
+    """🔴 THIS GATE HAD NO ARMS UNTIL 2026-09-24, AND IT IS STATIC OVER A CLEAN
+    CORPUS -- the shape that can rot to `return None` and still print clean
+    [[a-knife-can-be-inert-because-the-build-did-not-happen]]. Every arm below
+    PLANTS its subject rather than trusting the tree to contain one."""
+    fails = 0
+
+    def arm(label, cond):
+        nonlocal fails
+        if not cond:
+            print(f"  check_report_shape: FAIL {label}")
+            fails += 1
+
+    def lines(src):
+        return marker_summary_lines(ast.parse(src))
+
+    # --- the three shapes that actually bit, each planted ---
+    arm("`DIFF: n/m` is caught (the colon that matched NOTHING)",
+        lines('print(f"DIFF: {n}/{m}")'))
+    arm("`DIFF total` is caught", lines('print(f"DIFF total {n}")'))
+    arm("`  DIFF 2/5` is caught (indented summary)",
+        lines('print(f"  DIFF {n}/{m} rows")'))
+    arm("a literal count is caught too", lines('print("DIFF 2/5 rows")'))
+    # --- NEGATIVE: the legitimate per-row marker must stay legal ---
+    arm("NEGATIVE: a per-row `DIFF <label>` is NOT flagged",
+        not lines('print(f"DIFF {label}  {a!r} vs {b!r}")'))
+    arm("NEGATIVE: the agreed remedy wording is NOT flagged",
+        not lines('print(f"{n} rows diverging")'))
+    arm("NEGATIVE: an unrelated line is NOT flagged",
+        not lines('print("all good")'))
+    arm("NEGATIVE: DIFFER (the other marker word) is NOT flagged",
+        not lines('print(f"DIFFER {label}")'))
+    # --- arms for the machinery the gate already turns on ---
+    fv = ast.parse("f'{x:<22}'").body[0].value.values[0]
+    arm("a width spec is read", WIDTH_SPEC.match(spec_text(fv) or ""))
+    both = ast.parse("f\"{'PASS' if ok else 'FAIL'}\"").body[0].value.values[0]
+    arm("two same-length literals are a CONSTANT width",
+        const_width(both) == 4)
+    # 🔴 THE D-CASOPEN FAULT ITSELF, PLANTED: 'ok ' is 3 and 'DIFF' is 4.
+    moves = ast.parse("f\"{'ok ' if ok else 'DIFF'}\"").body[0].value.values[0]
+    arm("NEGATIVE: two DIFFERENT-length literals are NOT constant",
+        const_width(moves) is None)
+    arm("a repr tail is seen",
+        has_repr(parts_of(ast.parse('f"{v!r}"').body[0].value)))
+    arm("NEGATIVE: a bare tail has no repr",
+        not has_repr(parts_of(ast.parse('f"{v}"').body[0].value)))
+    print("  check_report_shape: PASS" if not fails
+          else f"  check_report_shape: {fails} FAILURE(S)")
+    return 1 if fails else 0
+
+
 def main() -> int:
     ap = argparse.ArgumentParser(
         description=__doc__,
         formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--list", action="store_true")
+    ap.add_argument("--selftest", action="store_true")
     args = ap.parse_args()
+    if args.selftest:
+        return selftest()
 
     files, unparseable, probes = [], [], []
+    marker_bad: list = []
     padded_only = 0
     for root, dirs, names in os.walk(PROBES):
         dirs[:] = [d for d in dirs if d != "__pycache__"]
@@ -374,6 +493,8 @@ def main() -> int:
                     else:
                         continue
                     break
+            for ln, txt in marker_summary_lines(tree):
+                marker_bad.append((rel, ln, txt))
             p = Probe(rel, tree)
             if p.sites:
                 probes.append(p)
@@ -414,6 +535,19 @@ def main() -> int:
               "reporting a broken classifier -- and a gate whose answer is an "
               "error must never pass a dead subject.", file=sys.stderr)
         return 3
+    # 🔴 REPORTED BEFORE the row-grammar violations and failing the same run:
+    # a probe whose SUMMARY reads as a row MARKER corrupts the filed-row sweep's
+    # count in one direction or blinds it in the other, and both have happened.
+    if marker_bad:
+        print("\nMARKER-SHAPED SUMMARY LINES -- `filed_row_sweep.py` counts "
+              "these\nas one more DIVERGING ROW than the run has (or, after a "
+              "colon, as\nnone at all):\n", file=sys.stderr)
+        for rel, ln, txt in marker_bad:
+            print(f"  {rel}:{ln}\n        {txt}", file=sys.stderr)
+        print("\nFIX: a per-row marker is `DIFF <label>`; a SUMMARY must not "
+              "start with\n     it -- say `<n> rows diverging` "
+              "(D-RECLENV's remedy, used three times).", file=sys.stderr)
+        return 1
     if offenders:
         print("\nREPORT-SHAPE VIOLATIONS -- a knife runner holding a baseline "
               "taken\non one exit path cannot read this probe's other path:\n",

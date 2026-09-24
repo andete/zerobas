@@ -88,7 +88,14 @@ def main():
         print(f"{label:<{w}}  "
               + "  ".join(f"{s}={res[s].get(label)!r}" for s in sides)
               + ("   SAME" if same else "   DIFF"))
-    print(f"\nDIFF: {len(diff)}/{len(CASES)}" + ("  " + " ".join(diff) if diff else ""))
+  # ⚠️ NOT `DIFF <n>/<m>`: `filed_row_sweep.py`'s MARKER counts a line
+    # starting `DIFF ` as one more DIVERGING ROW, so a summary in that shape
+    # inflates the count -- and with a colon it matches NOTHING and the sweep
+    # reads the probe's pinned rows as no longer diverging. Fourth, fifth and
+    # sixth instances of a class that had already bitten three times;
+    # `rowshape-check` enforces it now (D-MARKERWORD).
+    print(f"\n{len(diff)}/{len(CASES)} rows diverging"
+          + ("  " + " ".join(diff) if diff else ""))
     print("READ u.cat AS A COUNT: 0 = never evaluated (a lower-priority arm "
           "cannot fix it); 1 = once (it can); 2 = twice (the filed hazard is real).")
     return 1 if diff else 0

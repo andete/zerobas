@@ -1,0 +1,51 @@
+
+MARKER-SHAPED SUMMARY LINES -- `filed_row_sweep.py` counts these
+as one more DIVERGING ROW than the run has (or, after a colon, as
+none at all):
+
+  probes/basic/basic_probe_catusr.py:91
+        DIFF: {}/{}{}
+  probes/basic/basic_probe_ifsem.py:124
+        DIFF: {}/{}  {}
+  probes/basic/basic_probe_namend.py:62
+        DIFF {}/{}{}
+
+FIX: a per-row marker is `DIFF <label>`; a SUMMARY must not start with
+     it -- say `<n> rows diverging` (D-RECLENV's remedy, used three times).
+
+probe .py files walked             : 231
+  unparseable                      : 0
+  print a width-padded label line  : 96
+  print a REPORT ROW (spec s3)     : 63
+  IN CONTRACT (rows on exit 2 AND  : 28
+              another path)
+    conform                        : 28
+    VIOLATIONS                     : 0
+      ok   probes/basic/basic_probe_arylv.py
+      ok   probes/basic/basic_probe_cassave.py
+      ok   probes/basic/basic_probe_castail.py
+      ok   probes/basic/basic_probe_deffn.py
+      ok   probes/basic/basic_probe_dskmsg.py
+      ok   probes/basic/basic_probe_fldary.py
+      ok   probes/basic/basic_probe_fldwidth.py
+      ok   probes/basic/basic_probe_forvar.py
+      ok   probes/basic/basic_probe_inputary.py
+      ok   probes/basic/basic_probe_lineerr.py
+      ok   probes/basic/basic_probe_locarg.py
+      ok   probes/basic/basic_probe_lrvar.py
+      ok   probes/basic/basic_probe_lvfix.py
+      ok   probes/basic/basic_probe_lvsites.py
+      ok   probes/basic/basic_probe_namspc.py
+      ok   probes/basic/basic_probe_nxary.py
+      ok   probes/basic/basic_probe_nxlist.py
+      ok   probes/basic/basic_probe_onerr0.py
+      ok   probes/basic/basic_probe_penderr.py
+      ok   probes/basic/basic_probe_readvar.py
+      ok   probes/basic/basic_probe_runtail.py
+      ok   probes/basic/basic_probe_screenerr.py
+      ok   probes/basic/basic_probe_stmtpend.py
+      ok   probes/basic/basic_probe_strparen.py
+      ok   probes/basic/basic_probe_tgtspc.py
+      ok   probes/basic/basic_probe_tmfp.py
+      ok   probes/basic/basic_probe_width.py
+      ok   probes/disk/disk_probe_fat_error_disposition.py
