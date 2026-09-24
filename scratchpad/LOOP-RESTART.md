@@ -4,7 +4,57 @@ A `ScheduleWakeup` loop is SESSION-LOCAL and dies with the session. This file is
 the durable half: paste the command in `## The command` below into a fresh
 session and the loop resumes exactly where it stopped.
 
-## 🟢 STATE AS OF 2026-09-24 — THIS IS THE CURRENT ONE. EVERYTHING BELOW IS HISTORY.
+## 🟢 STATE AS OF 2026-09-24 AFTERNOON — THIS IS THE CURRENT ONE. EVERYTHING BELOW IS HISTORY.
+
+**Tree CLEAN, all pushed, head `b41d9548`.** SHAs from `git log`, after the
+morning hand-off `98513bcc`: `79167b21` D-KWTIME · `b21a86aa` D-KWT5ALONE ·
+`cf1a0339` D-WIDTHKEEP · `aca68404` D-GATESCOPE · `91793588` D-KWT5FORM ·
+`4204890d` D-BOOTWIDTH + D-ZBCRLF (+D-PSGLATCH) · `a22c1af2` D-KWPAINT2 ·
+`b6a373b4` D-PAINTHANG WITHDRAWN · `b41d9548` D-CURLIN.
+
+### 🏗️ MORE OF JOOST'S RULINGS, 2026-09-24 AFTERNOON — DO NOT RE-ASK
+
+| subject | ruling |
+|---|---|
+| **T2 vs T5 measurement** | option (c): **whole program for T2, keyword ALONE for T5** (a twin without the keyword's statement) |
+| **per-form timing** | *"a classic case of two very different effects of one keyword WIDTH … both need a time measurement"* → T5 is PER FORM; a row that sets up with its own keyword declares the timed one (`TIMED:<n>`) |
+| **batteries** | **scoped, FULL on risk, and at least every 5th commit** — `make gates-plan` / `make gates-scoped`, `HANDOFF=1` at a session end |
+| **the `ZB` prompt** | text stays `ZB`, but it **ends its row with CR/LF like `Ok`** (D-ZBCRLF, shipped) |
+| **CURLIN** | *"Yes, maintain CURLIN"* — shipped (D-CURLIN) |
+| **boot width** | a presentational split (VG-8020 37, CF-3300 39) → zerobas boots at 37 (the 09-04 rule), disk rows compare at the CF-3300's 39 |
+
+### ➡️ THE QUEUE NOW
+
+* **TIER 1 D-KWPROVEN remainder:** the **37 UNTIMEABLE rows** (they END before
+  the end mark). CURLIN is now the SYMMETRIC end signal ("becomes `$FFFF`") on
+  both machines → kwtime needs a **second watchpoint** (`$F41D`, value `$FF`)
+  beside the `$E000` start mark — a `probes/lib/omsx_repl.py` change, so FULL —
+  then a BIAS check on rows both shapes can time.
+* **TIER 3 D-VDPIE** — a measurement first (does the reference re-enable VDP
+  interrupts after a program leaves R1 bit 5 clear, and where?).
+* **TIER 4 the RAM map** (whole map vs the VG-8020; free memory, addresses,
+  economy) — measuring autonomous, ADJUSTMENTS to Joost.
+* **💰 BUDGET: 13 B left in main (page 1 8 + low 5).** The next ROM-growing
+  item needs a carve first — read [[carve-routes-measured-shut]].
+
+### 🔴 LESSONS PAID FOR THIS AFTERNOON
+
+* **`cap_gap` DOES NOT DELAY THE CAPTURE AFTER `RUN`; `run_gap` DOES.** It cost a
+  false TIER 1 "PAINT hangs", filed, committed and withdrawn the same day. A slow
+  side reading `<NO MARKER>` is a BUDGET question before it is a defect.
+* **Tcl `after time T` is ABSOLUTE emulated time from power-on** — introspection
+  at 20 s sampled a program still being TYPED. And never reuse the harness's
+  Tcl names (`__f`) in a prologue.
+* **After changing kwsweep's rows, re-run kwtime too** before `make tiers-md` —
+  it times those same rows (a stale kwtime pin reddened tiers-md-check).
+* **The PSG latch race:** the reference's interrupt SELECTS R14; any
+  `OUT&HA0`→`INP(&HA2)` read is racy there. All 11 PSG rows sync to a TIME tick
+  first (`T9`/`J9` loop). Fixing ONE row moved the race to the next.
+* **A generated file is not an input** (the disk ABI) and **a keyword named in
+  a shared library's comment is not a dependency** — both found by REPLAYING a
+  real diff through `pick_gates` before trusting it.
+
+## 🟢 STATE AS OF 2026-09-24 MORNING — superseded above.
 
 **Tree CLEAN, all pushed, head `3eb2e3f2`.** No ROM has changed since
 2026-09-23 evening (battery hashes `ea1e4b98 b188cd31 491644a1 b8453c76`), so
