@@ -4899,7 +4899,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:23269 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:23341 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -5065,7 +5065,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:9826 (T-6FE392)8 (T-529ABE)` from `TODO.md:21305 (T-529ABE)`: a
+      `TODO.md:9826 (T-6FE392)8 (T-529ABE)` from `TODO.md:21312 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -10670,7 +10670,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:21305 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:21312 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -12147,6 +12147,13 @@ list. **When a slice lands, grep this list for what it just shipped.**
       gaps are. `SQR` is the one keyword near the T2 bar (10×). ⚠️ Graphics
       rows read BELOW 1× because zerobas's `SCREEN` switch is 3.3× faster
       (552 vs 167 ms) — see the whole-program-vs-keyword item under D-KWPROVEN.
+      ⏱ **AND THE KEYWORD ALONE (T5, D-KWT5ALONE, same day):** median 1.06×;
+      `PAINT` **2.1×** once the switch is subtracted; and two gaps the whole
+      rows hid entirely — **`WIDTH 37` costs 32.0 ms here and 0.71 ms on the
+      VG-8020** (≈45×), **`MOTOR OFF` 5.25 vs 0.51 ms** (≈10×). ❓ `WIDTH`'s is
+      worth a BEHAVIOUR row, not only a speed one: a width that does not change
+      may be a near no-op on the reference and a full screen re-initialise
+      here — whether the SCREEN CONTENT survives on each side is unmeasured.
       🤖 AUTONOMOUS — the charter half is ANSWERED (the STANDING sequencing of
       2026-09-02: speed is a real defect), so what remains under it is measurable work.
       ⚠️ **RANKED LAST BY THAT SAME RULING** — every open DIVERGENCE outranks it, so
@@ -22689,8 +22696,9 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       `CLS` precedes the start mark: without it a batched boot's accumulated
       screen made `PRINT` scroll and moved zerobas's deltas +1.7..3.4 ms.
       `tier_table` joins `build/kwtime.json` with kwsweep's pin: T2 = every
-      authored form has a SUPPORTED row timed `OK` (≤ 10×); T5 = the worst
-      row's ratio, SHOWN in the cell (`T5 0.98×`) and never ticked. `S36e` was
+      authored form has a SUPPORTED row timed `OK` (≤ 10×); T5 = ~~the worst
+      row's ratio~~ **the KEYWORD ALONE** (Joost's option (c), same day —
+      D-KWT5ALONE below), SHOWN in the cell and never ticked. `S36e` was
       flipped DELIBERATELY (T4/T5/T6 still cannot tick) and five arms added,
       three of them negative (a 20× keyword, an UNTIMEABLE row, a pin from
       another ROM). The probe's own `--negative` run pads zerobas's side with a
@@ -22710,7 +22718,20 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       `LIST`, `NEW`, `READ` …); they need a second shape (an end mark placed
       where the row actually finishes, or the prompt's return), and until then
       those keywords cannot reach T2; (2) **T4**, which is the RAM-map
-      comparison it derives from (TIER 4 item). ⚠️ The whole-program-vs-keyword
+      comparison it derives from (TIER 4 item).
+      🔭 **SCOUTED FOR (1), NOT BUILT:** an end mark that needs NO program text
+      is *"execution returned to direct mode"*. On the reference that is the
+      documented CURLIN (`$F41C`) becoming `$FFFF` — a RAM watch, clean-room
+      legal. ⚠️ **ZEROBAS DOES NOT MAINTAIN `$F41C`**: its `CURLINE` is at
+      `$E038` and is a POINTER, direct mode being `CURLINE == dir_line` (a ROM
+      constant; `basic/sysvars.inc`). So the shape would watch a DIFFERENT
+      cell per machine — an asymmetric instrument whose bias must be measured
+      on rows BOTH shapes can time before any ratio from it is believed.
+      🧮 **AND THAT IS A RAM-RUNG FINDING IN ITS OWN RIGHT** (goal (b), *same
+      addresses*): a program that PEEKs CURLIN reads the reference's current
+      line and zerobas's nothing. `docs/sysvar-msx1-coverage.md` already lists
+      `CURLIN = $FFFF` among the cold-boot differences; the RAM-map comparison
+      should carry it as a LIVE cell, not an init value. ⚠️ The whole-program-vs-keyword
       question below is Joost's and does not block either.
       ~~🙋 **NEEDS-JOOST**~~ (answered above for T2/T4/T5) — a rung's definition is charter-level, not a coding
       choice. What does a row that PROVES "reasonable time" look like? A wall
@@ -22765,10 +22786,14 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       code the reference raises for that keyword's documented forms, or
       something wider?
 
-- [ ] 🎚️ **T2/T5: THE WHOLE TEST PROGRAM, OR THE KEYWORD ALONE? SETUP CAN HIDE
-      A KEYWORD'S OWN SPEED — MEASURED ON `PAINT` (D-KWTIME, 2026-09-24).**
+- [x] 🟢 **RULED 2026-09-24 — (c): WHOLE PROGRAM FOR T2, KEYWORD ALONE FOR T5.**
+      Joost: ***"go with (c): whole program for T2, keyword alone for T5"***. T2
+      is already the whole program (`make kwtime` as built); T5-alone is the
+      work, filed as its own item directly below. Was: *T2/T5: THE WHOLE TEST
+      PROGRAM, OR THE KEYWORD ALONE? SETUP CAN HIDE A KEYWORD'S OWN SPEED —
+      MEASURED ON `PAINT` (D-KWTIME, 2026-09-24).*
       🎚️ TIER 1 — it is part of the bar every other item is measured against.
-      🙋 **NEEDS-JOOST** — his ruling reads *"the keyword's test program"*, and
+      ~~🙋 **NEEDS-JOOST**~~ (ruled above) — his ruling reads *"the keyword's test program"*, and
       `make kwtime` implements it literally. The measurement below says the
       literal reading can be dominated by SETUP, which is a question about the
       rung's definition, not a coding choice.
@@ -22790,6 +22815,53 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       which needs a twin authored per row; (c) whole program for T2, keyword
       alone for T5 — T2 stays "does the program finish in reasonable time",
       T5 becomes "is the keyword as fast". Recommendation: **(c)**.
+
+- [x] 🟢 **CLOSED 2026-09-24 — T5 IS THE KEYWORD ALONE, ON 149 ROWS; PAINT READS
+      2.1×, NOT 0.47×.** Was: *T5 = THE KEYWORD ALONE: TIME A TWIN WITHOUT IT AND
+      SHOW THE DIFFERENCE (D-KWT5ALONE, ruled 2026-09-24).*
+      🎚️ TIER 1 — it is part of the bar every other item is measured against.
+      🤖 **AUTONOMOUS** — the definition is ruled (option (c) above); this is
+      the measurement.
+      ➡️ **THE SHAPE:** for each timed row, a TWIN with the statement(s) that
+      carry the keyword removed, timed the same way; T5 = (zb row − zb twin) ÷
+      (ref row − ref twin). ⚠️ For a FUNCTION (`ABS` inside `PRINT`) "the
+      keyword's statement" is the whole `PRINT`, so the reading includes that
+      statement's own cost — the sheet must SAY so, not claim more precision.
+      Where removing the statement breaks the program (the twin is UNTIMEABLE)
+      or the difference is within an interrupt's service time (~0.25 ms) on
+      either side, T5 shows `~`, never a number.
+      🎯 **THE CONTROL IS ALREADY MEASURED:** `PAINT` must read ≈1.76× (switch
+      subtracted by hand), not the 0.47× the whole row gives; `LINE` ≈1.03×.
+      A NEGATIVE arm: a twin that removes NOTHING must yield `~`, not a ratio.
+      ✅ **BUILT IN `probes/basic/basic_probe_kwtime.py`; TWO DESIGN FAULTS
+      FOUND BY MEASURING, NOT BY READING:**
+      🔴 **(1) A PADDED NO-OP IS NOT A NO-OP.** The first twin swapped the
+      statement for `Z9=0` padded to the same length (to keep `as_stored`'s
+      packing). CREATING that variable cost 3.0 ms on the VG-8020 and 6.8 ms
+      here — so the twin carried extra work, heavier on zerobas's side, and
+      `abs` read 0.38. Zeros and spaces measured identical to plain `Z9=0`, so
+      the padding was never the fault: the ASSIGNMENT was. Fixed by deleting
+      the statement from the ALREADY-PACKED lines (no re-pack, so every line
+      number holds; an emptied line becomes `REM`).
+      🔴 **(2) ONE HANGING TWIN EMPTIED THE REST OF ITS BATCH.** `sprite_on`'s
+      twin deletes `ON SPRITE GOSUB`/`SPRITE ON` and waits forever for a
+      collision; every later case was typed into that running program, so 113
+      twins read empty — PAINT's among them, which worked alone. Fixed: every
+      case now opens with Ctrl-STOP (`@BREAK`) and its own `NEW`, the harness's
+      reset turned off (it types INTO a still-running program). The main pass
+      is protected by the same line.
+      📏 **READING, 2026-09-24 (two runs bit-identical, twins included):**
+      keyword-alone on **149** rows; the 12 twin misses are all semantic
+      (deleting `ERASE`/`FOR`/`DATA`/`DEFSTR`/`DEF FN` breaks what follows),
+      and read `~`. Median **1.06×**. The graphics keywords read their own
+      speed: `PAINT` **2.1×** (the whole row said 0.49), `PSET` 1.4×, `LINE`
+      1.05–3.2× across its forms. Outliers, filed on the speed item: **`WIDTH`
+      45×** and **`MOTOR` 10.3×** — both with a reference-side difference near
+      the noise floor (0.71 / 0.51 ms), so the ratio is loose but the gap is
+      not.
+      🔮 **PREDICTIONS:** main pass unchanged — HIT; twin misses only the
+      semantic ones — HIT; `PAINT` 1.8–2.1× — HIT (2.10); `abs` ≈0.7× — MISS
+      (0.58: its carrying `PRINT` really is faster here, 8.0 vs 8.6 ms).
 
 - [ ] **Keyword-completeness gaps — the measured remainder of MSX1 BASIC.**
       **The coverage denominator now exists** (2026-07-26,

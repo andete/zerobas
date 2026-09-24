@@ -494,7 +494,7 @@ def proven_cell(kw, forms_seen, connected, t3, t2=frozenset(), t5=None):
 
     def one(r):
         if r == "T5" and kw in t5:          # a RATIO, never a tick (Joost 09-24)
-            return "T5 %s×" % ("%.2g" % t5[kw])
+            return "T5 ~" if t5[kw] is None else "T5 %s×" % ("%.2g" % t5[kw])
         return "%s%s" % (r, "✓" if p[r] else "—")
     return "level %d · %s" % (ladder_level(p), " ".join(one(r) for r in RUNGS))
 
@@ -795,11 +795,13 @@ def kwtime_rungs(kws, sweep=None, timing=None):
     kwtime timed `OK` -- the same breadth T1 demands, so T2 can never be reached
     on one easy form. A form whose only rows are rigged or UNTIMEABLE leaves T2
     unproven: silence is not a tick.
-    📏 T5 is the WORST (largest) ratio over the keyword's timed rows.
-    ⚠️ IT IS THE WHOLE TEST PROGRAM'S RATIO, SETUP INCLUDED -- ruled that way, and
-    measured to matter: `SCREEN2:SCREEN0` alone is 552 ms on the VG-8020 and 167
-    ms here (0.30), so the PAINT row reads 0.47 while PAINT itself, the switch
-    subtracted, is 1.76. Filed as a question for Joost in TODO (D-KWPROVEN).
+    📏 T5 is the KEYWORD ALONE (Joost, 2026-09-24, option (c): *"whole program
+    for T2, keyword alone for T5"*): the WORST `alone` reading over the keyword's
+    rows -- each row minus a same-length TWIN with the keyword's statements
+    replaced by no-ops. `None` means rows were timed but none could isolate the
+    keyword (no twin, or a difference inside interrupt noise): shown as `~`.
+    🎯 Why not the whole program: `SCREEN2:SCREEN0` is 552 ms on the VG-8020 and
+    167 ms here, so the PAINT row reads 0.47 while PAINT alone is 1.76.
     🔴 REFUSED, NOT AVERAGED IN, when the two pins describe different ROMs (the git
     revision is ignored -- one battery's pins share ROMs across a commit) or the
     timing pin is degenerate. `sweep`/`timing` are INJECTABLE for the selftest."""
@@ -842,7 +844,11 @@ def kwtime_rungs(kws, sweep=None, timing=None):
         if not kw:
             continue
         if t.get("ratio") is not None:
-            ratio[kw] = max(ratio.get(kw, 0.0), t["ratio"])
+            al = t.get("alone")
+            if al is not None:
+                ratio[kw] = max(ratio.get(kw) or 0.0, al)
+            else:
+                ratio.setdefault(kw, None)      # timed, but not isolatable: `~`
         if t.get("status") == "OK":
             ok_forms.setdefault(kw, set()).add(r["form"])
     t2 = {kw for kw, got in ok_forms.items()
@@ -1357,7 +1363,7 @@ def fmt_markdown(its, kws, evidence=None, t3=None, connected=None, forms=None,
             "T2": "every authored FORM has a SUPPORTED row whose test program `make kwtime` timed completing within 10× the VG-8020's time (Joost, 2026-09-24)",
             "T3": "a `PROVES-T3:` row: a COMMON ERROR situation scored against the reference",
             "T4": "🔴 NO PROVING ROW TYPE EXISTS YET — defined 2026-09-24: derived from the whole-RAM-map comparison vs the VG-8020 (free memory, addresses, economy)",
-            "T5": "⚪ NO BAR YET — the zerobas ÷ VG-8020 ratio of the WHOLE test program (worst row, setup included) is shown in the keyword's cell and never ticked (Joost, 2026-09-24)",
+            "T5": "⚪ NO BAR YET — the KEYWORD ALONE: zerobas ÷ VG-8020 over each row minus a same-length twin without the keyword's statement (worst row; a function's reading includes its carrying statement; `~` = not isolatable), shown in the cell and never ticked (Joost, 2026-09-24)",
             "T6": "🔴 NO PROVING ROW TYPE EXISTS — the exhaustive error set is unmeasured"}
     _prov = {r: 0 for r in RUNGS}
     for kw in kws:
@@ -1365,7 +1371,9 @@ def fmt_markdown(its, kws, evidence=None, t3=None, connected=None, forms=None,
         for r in RUNGS:
             _prov[r] += bool(p[r])
     for r in RUNGS:
-        extra = (" (a ratio is MEASURED for %d; T5 never ticks)" % len(t5)
+        extra = (" (the keyword alone is MEASURED for %d, `~` for %d more; "
+                 "T5 never ticks)" % (sum(v is not None for v in t5.values()),
+                                      sum(v is None for v in t5.values()))
                  if r == "T5" else "")
         out.append("| %s | %s | **%d** of %d%s |"
                    % (r, _req[r], _prov[r], len(kws), extra))
@@ -1585,8 +1593,10 @@ def selftest():
         "abs": {"verdict": "SUPPORTED", "weak": False, "form": "magnitude",
                 "stmt": "a=abs(-5)", "subject": None}}}
     _pad = {f"pad{i}": {"status": "OK", "ratio": 1.0} for i in range(100)}
-    def _tm(st, ratio):
-        return {"rom_fingerprint": _fp, "rows": dict(_pad, abs={"status": st, "ratio": ratio})}
+    def _tm(st, ratio, alone_=None):
+        return {"rom_fingerprint": _fp, "rows": dict(
+            _pad, abs={"status": st, "ratio": ratio,
+                       "alone": ratio if alone_ is None else alone_})}
     _t2, _t5 = kwtime_rungs(["ABS"], sweep=_sw, timing=_tm("OK", 0.98))
     arm("S36j an OK row within 10x proves T2, and its ratio is T5's reading "
         "(the git revision alone does not refuse the join)",
@@ -1602,6 +1612,16 @@ def selftest():
     except SystemExit:
         _refused = True
     arm("S36m NEGATIVE: a timing pin from a DIFFERENT ROM is refused", _refused)
+    _t2, _t5 = kwtime_rungs(["ABS"], sweep=_sw, timing=_tm("OK", 0.47, 1.76))
+    arm("S36o T5 is the KEYWORD ALONE, not the whole row (PAINT's 0.47 vs 1.76)",
+        _t2 == {"ABS"} and abs(_t5["ABS"] - 1.76) < 1e-9)
+    _tmn = _tm("OK", 0.9)
+    _tmn["rows"]["abs"]["alone"] = None
+    _t2, _t5 = kwtime_rungs(["ABS"], sweep=_sw, timing=_tmn)
+    arm("S36p NEGATIVE: a timed row that cannot isolate the keyword shows `~`, "
+        "never the whole-row ratio",
+        _t5 == {"ABS": None}
+        and "T5 ~" in proven_cell("ABS", {"magnitude"}, True, set(), set(), _t5))
     arm("S36n T5 shows a RATIO in the cell and never a tick, even at 0.5x",
         "T5 0.5×" in proven_cell("LOF", {"length"}, True, set(), {"LOF"}, {"LOF": 0.5})
         and "T5✓" not in proven_cell("LOF", {"length"}, True, set(), {"LOF"}, {"LOF": 0.5}))
