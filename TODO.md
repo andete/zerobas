@@ -2382,6 +2382,28 @@ item — do **one item per session** to keep context lean.
       round now looks better than chasing it: **step 9 need not ADD a row** —
       sharing an existing one leaves the installed set untouched.
 
+- [ ] 🔴 **D-STOPTAP: A SHORT Ctrl-STOP TAP FIRES `ON STOP GOSUB` ~5 TIMES HERE
+      AND ONCE ON THE REFERENCE.** Found 2026-09-25 by the filed-row triage:
+      [`scratchpad/clrtrapstk_stop_probe.py`](scratchpad/clrtrapstk_stop_probe.py)'s
+      two-tap positive control (100 ms taps, 5 PAL frames each) reads
+      **VG-8020 2, zerobas 11** (`scratchpad/clrtrapstk_stop_run.out`); the
+      probe refuses the run as an instrument fault, but the tap DID land — it
+      is the subject.
+      🎯 **LIKELY CAUSE, NOT YET MEASURED:** D-STOPRELATCH (below) made a held
+      Ctrl-STOP re-fire ONCE PER FRAME while the entry is ON — measured on
+      LONG holds (121 fires on the VG-8020). A 100 ms tap is ~5 frames, and the
+      reference fires once, so its re-fire must start only after an INITIAL
+      DELAY (the keyboard auto-repeat timing is the obvious candidate —
+      `$F3F7`, next to `REPCNT`, is in the reference's interrupt signature,
+      D-RAMFOOT). zerobas re-fires from the first frame.
+      🎚️ TIER 1 — happy path: one press of Ctrl-STOP fires `ON STOP GOSUB` once.
+      🤖 **AUTONOMOUS — MEASURE FIRST:** sweep the hold length (1, 5, 10, 25,
+      50, 75, 100 frames) on both machines with a handler that only counts and
+      RETURNs, and read where the reference's count leaves 1 and how it grows —
+      then fit the rule, keeping D-STOPRELATCH's long-hold rows and D-STOPEDGE's
+      cases green. ⚠️ Main page 1 read 1 B free on 2026-09-25: a fix needs a
+      carve (or Joost's carve strategy).
+
 - [x] ✅ **DONE 2026-09-20 (D-STOPRELATCH): A HELD Ctrl-STOP NOW RE-FIRES, AND
       THE MECHANISM THE SPEC GAVE FOR THE REFERENCE'S 122 WAS WRONG.**
       `docs/spec-traps-t1-stop-reslice.md` + `disk/docs/spec-diskcode-eviction.md`
@@ -5101,7 +5123,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:24029 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:24063 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -5267,7 +5289,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:10047 (T-6FE392)8 (T-529ABE)` from `TODO.md:21683 (T-529ABE)`: a
+      `TODO.md:10081 (T-6FE392)8 (T-529ABE)` from `TODO.md:21717 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -6373,8 +6395,20 @@ list. **When a slice lands, grep this list for what it just shipped.**
       D-KWPLAY scouts whose questions are answered, and the verdicts they
       scouted for are kwsweep's TIME-synced `playkw_*` rows — `playpsg`'s own
       reads are unsynced (D-PSGLATCH's race), so a channel there would score a
-      racy instrument. **5 left:** `cf3300_files`, `clrtrapstk_stop`,
-      `loadrun`, `mergeshape`, `mergewin`.
+      racy instrument. **Then four more DECLARED** (2026-09-25):
+      [`scratchpad/cf3300_files_probe.py`](scratchpad/cf3300_files_probe.py)
+      (a refresh tool for a frozen constant),
+      [`scratchpad/loadrun_probe.py`](scratchpad/loadrun_probe.py) (a timing
+      instrument),
+      [`scratchpad/mergeshape_probe.py`](scratchpad/mergeshape_probe.py)
+      (characterises the reference's MERGE), and
+      [`scratchpad/mergewin_probe.py`](scratchpad/mergewin_probe.py) (its
+      window question was retired by D-BUFMERGE). **1 left:**
+      [`scratchpad/clrtrapstk_stop_probe.py`](scratchpad/clrtrapstk_stop_probe.py)
+      already HAS a channel, but it refuses its own run: its two-tap positive
+      control reads VG-8020 **2**, zerobas **11**, which it takes for a tap
+      that did not land. It is NOT the instrument — it is the divergence filed
+      next (D-STOPTAP), and this probe waits on it.
       🎚️ APPARATUS — probes that exit 0 on a divergence
       🤖 AUTONOMOUS — re-run it in slices after any session that adds probes.
       **Measured 2026-09-24 at ~34 minutes for the full corpus**, and the debt
@@ -10891,7 +10925,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:21683 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:21717 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
