@@ -4899,7 +4899,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:23598 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:23612 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -22978,13 +22978,27 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       column's T1 now also requires NO open TIER 1 item — Joost's own TIER 1
       rule, which the status column already applied (D-T1BLOCK, arm S36s).
 
-- [ ] 🔴 **AFTER A PROGRAM LEAVES VDP INTERRUPTS DISABLED, THE REFERENCE RECOVERS
-      AND ZEROBAS DOES NOT (D-VDPIE, candidate, 2026-09-24).**
+- [x] 🟢 **CLOSED 2026-09-24 — D-VDPIE MEASURED: NOT A DIVERGENCE A USER CAN SEE. The
+      reference does NOT recover; BOTH machines stop dead, and only the harness's
+      KEYBUF injection tells them apart.**
+      🔬 **MEASURED** (refcache off): after `VDP(1)=VDP(1) AND 223:END` a typed
+      `PRINT VDP(1)` RUNS on the VG-8020 and reads **208** (`$D0`, bit 5 still
+      CLEAR — nothing re-enabled it) and never runs on zerobas. And with IE off,
+      `TIME` advances **0 jiffies on BOTH** machines: no interrupts, so no
+      keyboard SCAN — a real user's keys reach neither. The only difference is
+      how `CHGET` waits: C-BIOS `HALT`s for an interrupt that never comes
+      (`$11A0`), the reference apparently polls the buffer, which the harness
+      fills by injection. 🔮 Prediction *"the reference restores IE"* — **MISS**.
+      ⚠️ **THE APPARATUS HAZARD STANDS:** a case that leaves VDP IE off poisons
+      every LATER case of a zerobas batch (kwtime's `vdp_d` twin did) and none
+      of a reference batch — a batch-isolation fact, not a BASIC defect.
+      Was: *AFTER A PROGRAM LEAVES VDP INTERRUPTS DISABLED, THE REFERENCE
+      RECOVERS AND ZEROBAS DOES NOT (D-VDPIE, candidate, 2026-09-24).*
       🎚️ TIER 3 — a listing that blanks the screen with `VDP(1)` and ends
       without restoring it is a plausible 1985 bug, and here it leaves the
       machine deaf to the keyboard.
-      🤖 **AUTONOMOUS** — a measurement first.
-      🔬 **SEEN, NOT YET MEASURED DIRECTLY:** kwtime's `vdp_d` twin ran
+      ~~🤖 **AUTONOMOUS** — a measurement first.~~ (measured, above)
+      🔬 **SEEN, NOT YET MEASURED DIRECTLY (as filed):** kwtime's `vdp_d` twin ran
       `V=VDP(1):VDP(1)=V AND 223` (bit 5, the interrupt enable, cleared) and
       ended without restoring R1. On zerobas every later case in the batch came
       back empty — typed lines never reached BASIC; on the VG-8020 the batch
