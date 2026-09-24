@@ -446,6 +446,30 @@ lpt_flush:
                 ld      (LPTPOS),a
                 ret
 
+; --- curlin_pub / curlin_direct: publish CURLIN ($F41C) -- D-CURLIN ----------
+; 🏗️ Joost, 2026-09-24: zerobas maintains the reference's published current-line
+; cell. `curlin_pub` IN: A = DIRECTF (1 direct / 0 program), from derive_directf;
+; `curlin_direct` is the prompt's entry. CURLIN = $FFFF in direct mode, else the
+; line NUMBER at CURLINE+2 (CURLINE points at the line's link field). Lives in
+; the LOW region beside lpt_flush for the same reason: page 1 had no room.
+; Clobbers A, HL.
+curlin_pub:
+                or      a
+                jr      nz,curlin_direct
+                ld      hl,(CURLINE)
+                inc     hl
+                inc     hl                  ; -> the line number
+                ld      a,(hl)
+                inc     hl
+                ld      h,(hl)
+                ld      l,a
+                jr      curlin_store
+curlin_direct:
+                ld      hl,$FFFF
+curlin_store:
+                ld      (CURLIN),hl
+                ret
+
 
 ; --- str_temp_alloc: A=length(0..255) -> push a temp-descriptor-stack ------
 ; entry owning a FRESH heap body of that length (§6/§7). Thin main-ROM glue

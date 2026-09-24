@@ -117,6 +117,13 @@ PSLTREG         equ     $A8     ; I/O port: primary slot select (page-1 field = 
 LINL40          equ     $F3AE   ; text columns for SCREEN 0 (WIDTH default)
 LINL32          equ     $F3AF   ; text columns for SCREEN 1 (WIDTH default)
 LINLEN          equ     $F3B0   ; current line length (active width)
+CURLIN          equ     $F41C   ; D-CURLIN (Joost, 2026-09-24): the PUBLISHED current
+                                ; line NUMBER, $FFFF in direct mode -- the reference's
+                                ; cell, which a program can PEEK. zerobas's own run loop
+                                ; keeps CURLINE (a link-field POINTER, $E038); this is
+                                ; the faithful copy, written by derive_directf and at
+                                ; the prompt. It is also kwtime's symmetric "the
+                                ; program ended" signal.
 FORCLR          equ     $F3E9   ; foreground colour
 BAKCLR          equ     $F3EA   ; background colour
 BDRCLR          equ     $F3EB   ; border colour

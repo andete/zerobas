@@ -4899,7 +4899,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:23575 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:23583 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -22737,7 +22737,15 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       on rows BOTH shapes can time before any ratio from it is believed.
       🧮 **AND THAT IS A RAM-RUNG FINDING IN ITS OWN RIGHT** (goal (b), *same
       addresses*): a program that PEEKs CURLIN reads the reference's current
-      line and zerobas's nothing. `docs/sysvar-msx1-coverage.md` already lists
+      line and zerobas's nothing. ✅ **FIXED 2026-09-24 (D-CURLIN, Joost:
+      "Yes, maintain CURLIN")** — zerobas publishes `$F41C` on every line
+      entry (`derive_directf` → `curlin_pub`, low region) and `$FFFF` at the
+      prompt; measured 10 / 300-after-GOTO / 65535-direct on BOTH machines, and
+      gated by kwsweep's `peek_curlin`. Page 1 14 → 8 B, low 26 → 5 B. **So
+      the UNTIMEABLE shape is SYMMETRIC now:** "CURLIN becomes `$FFFF`" is the
+      end-of-program signal on both machines. ➡️ NEXT for (1): kwtime needs a
+      SECOND watchpoint (the start mark is at `$E000`, this one at `$F41D`),
+      i.e. a `probes/lib` change, and a bias check on rows both shapes time. `docs/sysvar-msx1-coverage.md` already lists
       `CURLIN = $FFFF` among the cold-boot differences; the RAM-map comparison
       should carry it as a LIVE cell, not an init value. ⚠️ The whole-program-vs-keyword
       question below is Joost's and does not block either.

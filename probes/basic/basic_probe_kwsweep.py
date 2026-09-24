@@ -1294,6 +1294,17 @@ SWEEP: list[tuple[str, str, str | None, str, str]] = [
     # (the VDP status port, whose bit 7 sets every frame) is read-to-clear and
     # would disturb the BIOS interrupt handler. Left unattributed on purpose --
     # "no known gap" is the honest state for it until a safe row exists.
+    # 🏗️ D-CURLIN (Joost, 2026-09-24): zerobas now maintains the published
+    # CURLIN ($F41C) -- the current line NUMBER, $FFFF in direct mode -- which it
+    # never wrote before (its run loop keeps a POINTER, CURLINE $E038). Read from
+    # a stored line 10 it must say 10 on both machines. (Before the change
+    # nothing in zerobas wrote the cell -- docs/sysvar-msx1-coverage.md lists
+    # CURLIN among the cold-boot cells zerobas left uninitialised; what the OLD
+    # ROM read in a running program was not measured.) Measured on the new ROM
+    # first: 10 / 300 after a GOTO / 65535 direct, on both machines.
+    ("peek_curlin", 'a=peek(&hf41c)',
+     'A=PEEK(&HF41C)+256*PEEK(&HF41D):PRINT"[6c";A;"]"', "stored",
+     "the published current-line cell, read by the line it names: `[6c 10 ]`."),
     ("pokekw",  'poke 0,1',           'POKE-8192,7:PRINT"[";PEEK(-8192);"]"', "stored",
      "FORM:address-value D-KWDRAIN"),
 

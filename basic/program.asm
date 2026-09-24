@@ -734,7 +734,12 @@ derive_directf:
                 inc     a
 dd_mode:
                 ld      (DIRECTF),a
-                ret
+                ; 🏗️ D-CURLIN (Joost, 2026-09-24): publish CURLIN ($F41C) as the
+                ; reference does. Every line entry and mid-line resume passes
+                ; rp_exec, which calls this; both callers save HL or have spent it.
+                ; The body is in the LOW region (str-engine.asm): inline it did not
+                ; fit page 1 (14 B free, it needed ~23).
+                jp      curlin_pub          ; A = DIRECTF
 rp_break:
                 ld      a,(DIRECTF)         ; direct mode: no trap machinery (see
                 or      a                   ; rp_trapchk) -> always the classic break,
@@ -794,7 +799,9 @@ rp_break:
                 call    trap_pend   ; wake the run-loop dispatcher
 rp_brk_run:
                 pop     hl                  ; HL = resume stmt ptr, intact
-                jr      rp_trapchk          ; dispatch now (do NOT break)
+                jp      rp_trapchk          ; dispatch now (do NOT break) -- `jp`:
+                                            ; D-CURLIN's 16 B in derive_directf put
+                                            ; the backward span past -128 (+1 B)
 rp_real_break:
                 ; 🔴 D-STOPEDGE (2026-09-16): THE BREAK IS EDGE-TRIGGERED ON THIS
                 ; PATH TOO. Measured against the VG-8020 with a 2 s hold

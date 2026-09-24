@@ -89,6 +89,9 @@ repl:
                 call    nz,print_crlf       ; mid-row -> open a line first
                 call    txt_mode            ; D-SCREDIT: the prompt after a graphics program is
                                             ; read in SCREEN 0 on both references
+                call    curlin_direct       ; D-CURLIN: back at the prompt is
+                                            ; direct mode, CURLIN = $FFFF, as the
+                                            ; reference shows (body: str-engine.asm)
                 ld      hl,prompt_text
                 call    print_string
                 call    read_line           ; LINEBUF <- typed line (ASCII, 0-term)

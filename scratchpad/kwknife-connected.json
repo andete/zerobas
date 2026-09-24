@@ -1,5 +1,5 @@
 {
- "rom_fingerprint": "451f48bb b188cd31 719bc02e e8fa6f18",
+ "rom_fingerprint": "1b20ded1 5ebadfa5 7398d3a1 e7fd6ae2",
  "rows": {
   "ABS": {
    "connected": true,
@@ -1328,7 +1328,7 @@
    "modes": {
     "stmt": "MISSING"
    },
-   "row": "sound",
+   "row": "sound_b",
    "subject": "SOUND",
    "verdict": "MISSING",
    "weak": false
@@ -2432,7 +2432,8 @@
   "SOUND": {
    "connected": true,
    "rows": {
-    "sound": "MISSING"
+    "sound": "MISSING",
+    "sound_b": "MISSING"
    }
   },
   "SPACE$": {
@@ -2564,5 +2565,5 @@
    }
   }
  },
- "written": "2026-09-24 11:26:41"
+ "written": "2026-09-24 13:46:12"
 }
