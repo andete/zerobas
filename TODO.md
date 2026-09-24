@@ -4848,7 +4848,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:22995 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:23005 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -5014,7 +5014,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:9728 (T-6FE392)8 (T-529ABE)` from `TODO.md:21159 (T-529ABE)`: a
+      `TODO.md:9738 (T-6FE392)8 (T-529ABE)` from `TODO.md:21169 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -6021,7 +6021,17 @@ list. **When a slice lands, grep this list for what it just shipped.**
       ask whether a work-area cell is READABLE AT ALL and report PER SIDE —
       `READABLE` / `does NOT distinguish the two settings` / `INSTRUMENT FAULT`
       — three machines, three independent readings, **no cross-side verdict**;
-      the human compares them). **26 left.**
+      the human compares them). **Four more the same night:** `beepobs_probe`
+      (*"is BEEP's effect observable through the PSG?"* — it exists because
+      BEEP's sweep row prints a CONSTANT MARKER and so scores that the word RAN
+      and nothing about what it DID) · `clearhimem_probe` (FEASIBILITY: *"is
+      `CLEAR n,himem` safe to make a sweep row"*, settling two hazards before a
+      row is written) · `varptrn_probe` (asks whether a row is WRITABLE AT ALL
+      and answers no for the obvious axis: *"A row can only be written on an
+      axis where the sides CAN agree. The ADDRESS cannot"* — **a probe that
+      concludes a comparison is impossible cannot itself be one**) ·
+      `spritestate_probe` (*"This observes STATE and COUNT. The CAUSE is a
+      question for the …"*). **22 left.**
       🔴 **AND THERE IS NO MECHANICAL TRIAGE — TWO SCANS WERE TRIED AND BOTH
       FAILED, WHICH IS THE USEFUL PART OF THIS SLICE.**
       **(a)** *"does it print verdict vocabulary?"* — `keyline_probe` carries
@@ -10572,7 +10582,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:21159 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:21169 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
