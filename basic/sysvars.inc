@@ -3989,6 +3989,12 @@ FAC             equ     $F01C   ; float accumulator: value bytes as tokenised (8
 ; The math aliases on FOUTBUF (SQRT_R, HORNER_CNT, HORNER_PTR) move with it --
 ; the reference also uses FBUFFR as scratch during SIN (D-RAMFOOT).
 FBUFFR          equ     $F7C5   ; published: number-conversion buffer (43 B)
+; PLAY X (docs/spec-basic-audio-play.md §7.12, Joost 2026-09-24: "Tenant walks
+; the chain"): the MML tenant's SP at the voice-parse call, so an error exit from
+; any X nesting depth drops the saved source cursors in one `ld sp,(nn)`, and
+; depth 0 is "SP is back here". In the 24 B S1 freed at $F024 (FOUTBUF's old
+; home -- nothing addressed FAC+8.. or the old run, checked by grep).
+PLY_XSP         equ     $F024   ; PLAY X: saved SP at pt_voice's call (2)
 FOUTBUF         equ     FBUFFR+1 ; flt_out formatter output scratch (24)
 TKDIG           equ     $F03C   ; tokeniser/formatter: significant-digit array, (1 B)
                                 ; one decimal digit value (0-9) per byte (24)

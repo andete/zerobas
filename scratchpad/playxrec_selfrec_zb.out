@@ -1,0 +1,7 @@
+T 0.0 FFFF D902
+T 1.0 B816 B81C
+T 2.0 972C 972C
+CLOSE 2.666471017964568
+
+screen:   ZB |   NEW |   ZB |   10 ON ERROR GOTO 50 |   ZB |   20 A$="XA$;" |   ZB |   30 POKE&HE000,201:PLAY"XA$;":POKE&HE0 |   00,202 |   ZB |   40 PRINT"[NOERR]":END |   ZB |   50 POKE&HE000,202:PRINT"[E";ERR;ERL;" |   ]":RESUME 60 |   ZB |   60 END |   ZB |   RUN |   [E 7  30 ] |   ZB
+refcache: 0 hit, 1 miss, 1 stored

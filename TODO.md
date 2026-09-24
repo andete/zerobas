@@ -5077,7 +5077,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:23931 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:23962 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -5243,7 +5243,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:10004 (T-6FE392)8 (T-529ABE)` from `TODO.md:21585 (T-529ABE)`: a
+      `TODO.md:10004 (T-6FE392)8 (T-529ABE)` from `TODO.md:21616 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -10848,7 +10848,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:21585 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:21616 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -16175,7 +16175,38 @@ finds zero shared names (a renamed block would otherwise make it silently blind)
       `LFILES` now do. Main page 1 had **3 B** free on 2026-09-15. So this WAITS
       for the approved 256 B carve — and it is a good early customer for it.
 
-- [ ] 🔴 **`PLAY`'s `X<var>;` SUBSTRING EXECUTION IS MSX1 MML AND THIS TREE
+- [ ] 🔴 **zerobas PRINTS ITS `ZB` PROMPT AFTER EVERY STORED PROGRAM LINE; THE
+      REFERENCE PRINTS `Ok` ONLY AFTER A DIRECT COMMAND.** Seen 2026-09-24 on
+      two screens captured the same evening (`scratchpad/playxrec_selfrec_run.out`
+      on the VG-8020, the same program on zerobas): typing `NEW` then lines
+      10..60 reads `Ok | NEW | Ok | 10 … | 20 … | …` on the reference and
+      `ZB | NEW | ZB | 10 … | ZB | 20 … | ZB | …` here. Since D-ZBCRLF gave
+      `ZB` its own row, that is an EXTRA SCREEN ROW PER TYPED LINE — a program
+      typed in scrolls twice as fast as on the reference.
+      🎚️ TIER 1 — happy path: typing a program in.
+      🎯 **WHERE:** `repl` (`basic/repl.asm`) loops to the prompt after
+      `dispatch_line` whatever it did; its `dl_store` path (`basic/program.asm`)
+      should return to the LINE READ, not the prompt. ⚠️ AUTO's own line-number
+      loop and the error path must keep their current behaviour — measure
+      both. ROM cost a few bytes of main's 13.
+      🤖 **AUTONOMOUS** — measure first (a row counting prompt rows after a
+      3-line program entry, on both machines), then fix.
+
+- [x] 🟢 **SHIPPED 2026-09-24 (D-PLAYX12): `PLAY`'s `X<var>;` — THE MML TENANT
+      WALKS THE VARIABLE CHAIN ITSELF, AND MAIN SPENT 0 BYTES.** Joost's
+      ruling *"Tenant walks the chain"* (spec §7.12). `sub/playparse.asm`
+      `pt_cmd_x`…`px_letter` (270 B of sub page 1; main page 1 still 8 B, low 5 B —
+      read from a clean build 2026-09-24). **All 13 D-PLAYX rows now match the
+      VG-8020** (`scratchpad/playx_after.out`: call-not-jump, no scope, nesting,
+      lower-case, undefined = empty, ERR 13 numeric, ERR 5 without `;`), and
+      self-reference ends in **ERR 7 at the PLAY's line, trappable** —
+      `[E 7 30]` on both, zerobas after ~2.7 s against the reference's ~8.9 s
+      (fewer bytes per level). The levels live on the machine stack BENEATH the
+      return address; `pt_vparse` saves/restores SP in `PLY_XSP` so an error
+      exit at any depth unwinds. Tenth FORM row `playkw_x` doubles as the
+      chain-layout gate (it strides over `A%` `B!` `C#` `D$` to reach `E$`).
+      🕰️ **The item as filed, kept:**
+      🔴 **`PLAY`'s `X<var>;` SUBSTRING EXECUTION IS MSX1 MML AND THIS TREE
       DOES NOT IMPLEMENT IT — THE ONE FORM BETWEEN `PLAY` AND TIER 1.**
       🎚️ TIER 1 — happy path: a documented MML command that both references run.
       Measured 2026-09-15 (D-KWPLAY,
@@ -16333,7 +16364,7 @@ finds zero shared names (a renamed block would otherwise make it silently blind)
       CALSLT (§7.11's hazard gone), and nesting can use the Z80 stack like the
       reference (§7.8). `docs/spec-basic-audio-play.md` §7.12.
       🏗️ **RULED BY JOOST, 2026-09-24: *"Tenant walks the chain"***.
-      🤖 **AUTONOMOUS — BUILD IT:** name scan + chain walk + a stack-based
+      ✅ ~~🤖 **AUTONOMOUS — BUILD IT:**~~ BUILT, see the top. name scan + chain walk + a stack-based
       cursor save in `sub/playparse.asm`; ERR 13 / ERR 5 / undefined-empty per
       §7.1's 13 rows (`scratchpad/playx_probe.py`); a `substring-exec` FORM row
       in kwsweep (NOT `PLAY"XA$"`, which agrees for the wrong reason); a gate

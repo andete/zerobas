@@ -1173,6 +1173,17 @@ SWEEP: list[tuple[str, str, str | None, str, str]] = [
      "stored",
      "FORM:octave 53 against the same note's 172 three octaves down -- `O n` moves "
      "the WHOLE note table, and the period halves per octave"),
+    # 🌾 PLAY X (spec-basic-audio-play §7.12, Joost 2026-09-24 "Tenant walks the
+    # chain"): the tenth FORM. The string is reached THROUGH the variable chain,
+    # and A%/B!/C#/D$ are defined FIRST so the tenant's walk must stride over an
+    # int, a single, a double and a string (6 B) before it finds E$ -- the row IS
+    # the gate that its walk agrees with scv_find's layout. Without X this reads
+    # ERR 5 and no tone; `PLAY"XA$"` (no `;`) would agree for the WRONG reason.
+    ("playkw_x", 'play"xe$;"',
+     'A%=1:B!=2:C#=3:D$="Q":E$="O7L1T120V8C":PLAY"XE$;":FOR I=1 TO 200:NEXT:T9=TIME:FOR J9=1 TO 2:J9=1-(TIME<>T9):NEXT:OUT&HA0,0:A=INP(&HA2):PRINT"[3x";A;"]"',
+     "stored",
+     "FORM:substring-exec 53 -- O7 C reached through `X E$;`, after the chain walk "
+     "strides over A% B! C# D$; ERR 5 and no reading without X"),
     ("playkw_e", 'play"v3c"',
      'PLAY"O4L1T120V3C":FOR I=1 TO 200:NEXT:T9=TIME:FOR J9=1 TO 2:J9=1-(TIME<>T9):NEXT:OUT&HA0,8:A=INP(&HA2)AND15:PRINT"[3o";A;"]"',
      "stored",

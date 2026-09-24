@@ -38,7 +38,8 @@ fd, out = tempfile.mkstemp(); os.close(fd)
 lines = ['NEW', '10 ON ERROR GOTO 50', '20 A$="XA$;"',
          '30 POKE&HE000,201:PLAY"XA$;":POKE&HE000,202', '40 PRINT"[NOERR]":END',
          '50 POKE&HE000,202:PRINT"[E";ERR;ERL;"]":RESUME 60', '60 END', 'RUN']
-scr = omsx_repl.run_cases("Philips_VG_8020", [("direct", lines)], batch=False,
+MACH = sys.argv[1] if len(sys.argv) > 1 else "Philips_VG_8020"   # zerobas: C-BIOS_MSX1_EU_REPACK_DISK
+scr = omsx_repl.run_cases(MACH, [("direct", lines)], batch=False,
                           reset=("CLS",), boot=8.0, capture="screen",
                           run_gap=20.0, timeout=300.0,
                           prologue=(TCL.replace("@OUT@", out),))

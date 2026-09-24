@@ -75,8 +75,10 @@ pt_vloop:
                 jr      pt_vnext
 pt_vparse:
                 push    bc                  ; pt_voice reuses B (source count) + clobbers C
+                ld      (PLY_XSP),sp        ; PLAY X (§7.12): SP here = "depth 0"
                 call    pt_voice            ; parse voice B -> its VOICxQ; CF=1 on error
-                pop     bc
+                ld      sp,(PLY_XSP)        ; drop any X levels an ERROR exit left behind
+                pop     bc                  ; (ld sp does not touch the flags)
                 ret     c                   ; parse error -> AUDIO_STATUS already set, bail
 pt_vnext:
                 rlc     c                   ; next voice's mask bit (1->2->4)
@@ -143,7 +145,7 @@ pt_voice:
 pt_ch_loop:
                 ld      a,b
                 or      a
-                jp      z,pt_voice_end
+                jp      z,px_eos            ; end of THIS string: pop an X level, or end the voice
                 push    hl                  ; fetch + advance the source cursor
                 ld      hl,(MCLPTR)
                 ld      a,(hl)
@@ -175,6 +177,8 @@ pt_nn:
                 jp      z,pt_cmd_env_shape
                 cp      'M'
                 jp      z,pt_cmd_env_per
+                cp      'X'
+                jp      z,pt_cmd_x          ; X<var>; -- substring execution (§7.12)
                 ; '&' (tie), '>' and '<' are NOT MSX1 PLAY commands -- BOTH
                 ; references raise Illegal function call for all three (D-KWPLAY
                 ; 2026-09-15: scratchpad/playpsg_probe.py and playmml_probe.py, in
@@ -658,6 +662,221 @@ pn_ret:
                 or      a
                 ret     z                   ; no digits -> CF=0, HL = 0
                 scf                         ; digits present -> CF=1
+                ret
+
+; --- PLAY X<var>; -- substring execution (docs/spec-basic-audio-play.md §7.12) --
+; 🏗️ Joost, 2026-09-24: *"Tenant walks the chain"*. The tenant resolves the name
+; ITSELF by walking the scalar chain in RAM ([name0][name1][type][value] from
+; (PRGEND)+2 up to (ARYTAB) -- the layout sub/arrays.asm's scv_find walks), so
+; nothing bounces back to main and the parse stays ONE atomic CALSLT.
+; MEASURED BEHAVIOUR it reproduces (§7.1, scratchpad/playx_probe.py, VG-8020):
+;   * a CALL, not a jump: the outer string resumes after `;`; no scope (state set
+;     inside persists); it NESTS;
+;   * the `;` is mandatory -> ERR 5 without it; an UNDEFINED string is EMPTY (no
+;     error, the outer string continues); a NUMERIC name -> ERR 13;
+;   * the return points live on the STACK and overflow is ERR 7 (§7.8,
+;     scratchpad/playxrec_selfrec_probe.py).
+; KEY RULES = var_name_key's (basic/vars.asm): name0 = first letter, name1 =
+; second letter (upcased) or digit, 0 if none; 3rd+ chars ignored; spaces inside
+; the name skipped. No suffix -> DEFTBL's default for name0 (3 = string).
+; 🔴 A SAVED LEVEL SITS *BENEATH* THE RETURN ADDRESS, because every command's
+; error exit is a bare `ret` that must still land in pt_vparse -- which then
+; restores SP from PLY_XSP and drops whatever levels were pending.
+; ⚠️ It skips fn_shadow_find (DEF FN formals): PLAY is a statement and cannot
+; run while an FN expression is being evaluated.
+; ⚠️ scv_find's walk and this one must agree on the chain layout.
+pt_cmd_x:
+                call    px_nosp             ; A = first non-space char (upcased)
+                jp      c,pt_illegal        ; string ended: no name -> ERR 5
+                call    px_letter
+                jp      nc,pt_illegal       ; a name starts with a letter
+                ld      h,a                 ; H = name0
+                ld      l,0                 ; L = name1 (none yet)
+px_name:
+                call    px_nosp
+                jp      c,pt_illegal        ; ended before `;` -> ERR 5
+                cp      ';'
+                jr      z,px_deftype        ; no suffix: DEFTBL decides the type
+                cp      '$'
+                jr      z,px_dollar
+                cp      '%'
+                jr      z,px_numeric
+                cp      '!'
+                jr      z,px_numeric
+                cp      '#'
+                jr      z,px_numeric
+                call    px_letter           ; a letter ...
+                jr      c,px_ident
+                cp      '0'                 ; ... or a digit continues the name
+                jp      c,pt_illegal
+                cp      '9'+1
+                jp      nc,pt_illegal
+px_ident:
+                inc     l
+                dec     l
+                jr      nz,px_name          ; 3rd+ characters are ignored
+                ld      l,a                 ; name1
+                jr      px_name
+px_deftype:
+                ld      a,h
+                sub     'A'
+                push    hl
+                ld      hl,DEFTBL
+                add     a,l
+                ld      l,a
+                jr      nc,px_dt1
+                inc     h
+px_dt1:
+                ld      a,(hl)
+                pop     hl
+                cp      DEFTBL_STR
+                jr      z,px_walk_go
+px_numeric:
+                ld      a,13                ; a numeric name -> Type mismatch
+                jr      px_err
+px_dollar:
+                call    px_getc             ; the `;` must follow the suffix
+                jp      c,pt_illegal
+                cp      ';'
+                jp      nz,pt_illegal
+px_walk_go:
+                ; --- the chain walk: HL = key -> HL = descriptor, or "undefined"
+                push    de                  ; DE is the queue write pointer
+                push    bc                  ; B = bytes left in THIS string
+                ld      b,h
+                ld      c,l                 ; BC = key (scv_find's register form)
+                ld      hl,(PRGEND)
+                inc     hl
+                inc     hl                  ; scalar-region base
+                ld      de,(ARYTAB)         ; scalar-region end
+px_walk:
+                or      a
+                sbc     hl,de
+                add     hl,de
+                jr      z,px_undef          ; reached ARYTAB: not defined
+                ld      a,(hl)
+                cp      b
+                jr      nz,px_skip
+                inc     hl
+                ld      a,(hl)
+                dec     hl
+                cp      c
+                jr      nz,px_skip
+                inc     hl
+                inc     hl
+                ld      a,(hl)              ; type
+                dec     hl
+                dec     hl
+                dec     a                   ; type 1 = string
+                jr      z,px_found
+px_skip:
+                inc     hl
+                inc     hl
+                ld      a,(hl)              ; this entry's type -> its stride
+                inc     hl
+                cp      1
+                jr      nz,px_st
+                ld      a,3                 ; a string's value is a 3-byte descriptor
+px_st:
+                add     a,l
+                ld      l,a
+                jr      nc,px_walk
+                inc     h
+                jr      px_walk
+px_undef:
+                pop     bc
+                pop     de
+                jp      pt_ch_loop          ; undefined -> EMPTY, no error, carry on
+px_found:
+                ld      de,3
+                add     hl,de               ; HL -> [len][ptr]
+                ld      c,(hl)              ; C = length
+                inc     hl
+                ld      a,(hl)
+                inc     hl
+                ld      h,(hl)
+                ld      l,a                 ; HL = body
+                ; stack headroom: the levels live on the machine stack, whose
+                ; floor is the pool's CTLLIM -- under 256 B left is ERR 7, the
+                ; reference's answer to unbounded nesting (§7.8)
+                push    hl                  ; (body)
+                ld      hl,0
+                add     hl,sp
+                ld      de,(CTLLIM)
+                or      a
+                sbc     hl,de               ; HL = SP - floor
+                jr      c,px_oom_body       ; already below the floor
+                ld      a,h
+                or      a                   ; Z = under 256 B of headroom
+                pop     hl                  ; body back (pop keeps the flags)
+                jr      nz,px_room
+                jr      px_oom
+px_oom_body:
+                pop     hl
+px_oom:
+                pop     bc
+                pop     de
+                ld      a,7                 ; Out of memory
+px_err:
+                ld      (AUDIO_STATUS),a
+                scf
+                ret
+px_room:
+                ; enough stack: save the OUTER cursor beneath the return address
+                ex      de,hl               ; DE = body
+                ld      a,c                 ; A = body length
+                pop     bc                  ; B = bytes left in the outer string
+                ld      hl,(MCLPTR)         ; outer cursor
+                ld      (MCLPTR),de         ; parse the body next
+                pop     de                  ; DE = the queue write pointer again
+                ex      (sp),hl             ; stack top = outer cursor, HL = return
+                push    bc                  ; outer bytes-left
+                push    hl                  ; return address back on top
+                ld      b,a                 ; B = the body's length
+                jp      pt_ch_loop
+; px_eos: THIS string is exhausted. Depth 0 (SP one return address below
+; PLY_XSP) ends the voice; otherwise pop one level and resume the outer string.
+px_eos:
+                ld      hl,(PLY_XSP)
+                dec     hl
+                dec     hl                  ; SP at depth 0 (just the return address)
+                or      a
+                sbc     hl,sp
+                jp      z,pt_voice_end
+                pop     hl                  ; return address
+                pop     bc                  ; B = the outer string's bytes left
+                ex      (sp),hl             ; HL = outer cursor, return address on top
+                ld      (MCLPTR),hl
+                jp      pt_ch_loop
+; px_getc: next source char, upcased. CF=1 when the string is exhausted.
+px_getc:
+                ld      a,b
+                or      a
+                scf
+                ret     z
+                push    hl
+                ld      hl,(MCLPTR)
+                ld      a,(hl)
+                inc     hl
+                ld      (MCLPTR),hl
+                pop     hl
+                dec     b
+                call    pt_upcase
+                or      a                   ; CF=0
+                ret
+; px_nosp: px_getc, skipping spaces.
+px_nosp:
+                call    px_getc
+                ret     c
+                cp      ' '
+                jr      z,px_nosp
+                ret
+; px_letter: CF=1 iff A is 'A'..'Z' (A preserved).
+px_letter:
+                cp      'A'
+                ccf
+                ret     nc
+                cp      'Z'+1
                 ret
 
 ; --- pt_upcase: A in a..z -> A..Z ------------------------------------------
