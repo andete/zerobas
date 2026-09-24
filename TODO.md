@@ -4899,7 +4899,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:23583 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:23598 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -22743,9 +22743,24 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       prompt; measured 10 / 300-after-GOTO / 65535-direct on BOTH machines, and
       gated by kwsweep's `peek_curlin`. Page 1 14 → 8 B, low 26 → 5 B. **So
       the UNTIMEABLE shape is SYMMETRIC now:** "CURLIN becomes `$FFFF`" is the
-      end-of-program signal on both machines. ➡️ NEXT for (1): kwtime needs a
-      SECOND watchpoint (the start mark is at `$E000`, this one at `$F41D`),
-      i.e. a `probes/lib` change, and a bias check on rows both shapes time. `docs/sysvar-msx1-coverage.md` already lists
+      end-of-program signal on both machines. ✅ **(1) DONE THE SAME DAY
+      (D-KWUNTIME):** `omsx_repl` gained value-filtered extra watches
+      (`watch_values`, keyword-only, armed at the RUN slot); kwtime watches
+      `$F41D` for `$FF` and takes the first write AFTER the start mark (RUN is
+      itself a direct line and writes `$FFFF` just before). 🔬 **THE SIGNAL IS
+      NOT SYMMETRIC RAW:** from a program's end to `$FFFF` is 2.478 ms on the
+      VG-8020 and 0.254 ms here (falling off the end), 2.877 / 0.553 ms on an
+      `END` path — so each machine's END-path bias is CALIBRATED LIVE every
+      run and subtracted. 🔴 **AND IT IS ONLY THE SAME EVENT ON AN `END` PATH:**
+      the first cut accepted every row and read `stopkw` 0.26, `attrkw` 0.29,
+      `onkw_b` 0.28 and `listkw` **239×** — Break/error-message paths and
+      statements that return to direct mode themselves publish `$FFFF` at a
+      different point per machine. CURLIN is now accepted only for a row with
+      an `END` statement, none of `LIST LLIST NEW STOP CONT RUN`, and no
+      "… in <line>" message on either screen (`sprite_stop` is excluded by the
+      word STOP — conservative). **UNTIMEABLE 37 → 14, 23 rows timed via
+      CURLIN, T2 82 → 92 keywords.** ⚠️ A twin that deletes `RESUME` changes
+      the handler's control flow, so `RESUME`'s T5 (8.1×) is not its own speed. `docs/sysvar-msx1-coverage.md` already lists
       `CURLIN = $FFFF` among the cold-boot differences; the RAM-map comparison
       should carry it as a LIVE cell, not an init value. ⚠️ The whole-program-vs-keyword
       question below is Joost's and does not block either.

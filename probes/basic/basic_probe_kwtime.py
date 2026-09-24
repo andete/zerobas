@@ -292,24 +292,113 @@ def status(ref, zb):
     return "OK" if zb / ref <= BAR else "SLOW"
 
 
-def measure(machine, rows, pad=None, twin=False):
-    """Time `rows` in one batched boot. `twin=True` times each row's TWIN; a row
-    with no twin gets None without being typed."""
+CURLIN_HI = 0xF41D             # CURLIN's high byte: $FF = direct mode (D-CURLIN)
+
+
+def curlin_end(marks, watch):
+    """Emulated seconds from this case's START mark to the first CURLIN := $FFFF
+    AFTER it (the program has ended and BASIC is back in direct mode), or None.
+
+    ⏱ D-KWUNTIME (2026-09-24): the end signal for the rows that END before
+    their own end mark. Both machines publish CURLIN now (D-CURLIN). ⚠️ `RUN`
+    itself runs as a DIRECT line, so a $FFFF lands just BEFORE the start mark --
+    only a write after it counts, and before the next case's START."""
+    starts = [t for t, v in marks if v == START]
+    if not starts:
+        return None
+    t0 = starts[0]
+    nxt = starts[1] if len(starts) > 1 else float("inf")
+    ends = [t for t, _v in watch if t0 < t < nxt]
+    return (ends[0] - t0) if ends else None
+
+
+def resolve(pair, bias):
+    """One case's time: the END MARK when it fired, else CURLIN's end corrected
+    by this machine's measured bias. -> (seconds or None, "mark"|"curlin"|None)."""
+    mark, curl = pair
+    if mark is not None:
+        return mark, "mark"
+    if curl is not None and bias is not None:
+        return curl - bias, "curlin"
+    return None, None
+
+
+def machine_bias(pairs):
+    """-> (median, min, max) of CURLIN-end minus MARK-end over the cases that
+    have BOTH -- the time each machine takes from a program's end to publishing
+    $FFFF. MEASURED ASYMMETRIC: `abs` read +2.48 ms on the VG-8020 and +0.25 ms
+    here, so an uncorrected CURLIN time would flatter zerobas."""
+    d = sorted(c - m for m, c in pairs if m is not None and c is not None)
+    if not d:
+        return None, None, None
+    return d[len(d) // 2], d[0], d[-1]
+
+
+# 🔴 CURLIN'S END IS ONLY THE SAME EVENT ON BOTH MACHINES FOR AN `END` PATH.
+# Measured 2026-09-24: rows that end in a Break or an error MESSAGE (stopkw 0.26,
+# attrkw 0.29, onkw_b 0.28) or in a statement that returns to direct mode ITSELF
+# (listkw 239x) read ratios no program can have -- the reference publishes $FFFF
+# at a different point in those paths than zerobas does. So CURLIN is accepted
+# only for a row that has an END statement, names none of these, and whose
+# screen shows no "... in <line>" message on either side.
+DIRECT_RETURNERS = ("LIST", "LLIST", "NEW", "STOP", "CONT", "RUN")
+ERR_LINE = re.compile(r"\bin \d+\b")
+
+
+def curlin_ok(line, caps):
+    """May this row be timed from CURLIN? (see DIRECT_RETURNERS)"""
+    up = re.sub(r'"[^"]*("|$)', '""', line.upper())
+    words = set(re.findall(r"[A-Z]+", up))
+    if "END" not in words or words & set(DIRECT_RETURNERS):
+        return False
+    return not any(c and ERR_LINE.search(c) for c in caps)
+
+
+def calibrate(machine):
+    """-> this machine's END-path bias: from the end mark to CURLIN := $FFFF when
+    the program then runs `END`. LIVE every run, never a constant -- measured
+    2026-09-24 at +0.40 ms (ref) / +0.30 ms (zb) over falling off the end."""
+    lines = ([omsx_repl.BREAK_PREFIX, "NEW", RESET,
+              f"5 CLS:{SYNCVAR}=TIME", f"6 IF TIME={SYNCVAR} THEN 6",
+              f"7 POKE&H{MARK_ADDR:04X},{START}", "10 A=1",
+              f"20 POKE&H{MARK_ADDR:04X},{END}:END", "RUN"])
+    so: dict = {}
+    omsx_repl.run_cases(machine, [("direct", lines)], batch=True, reset=(),
+                        capture="screen", boot=8.0, sentinel=(MARK_ADDR, END),
+                        settle_out=so, watch_values=((CURLIN_HI, 0xFF),))
+    mk = so.get("marks", {}).get(0, [])
+    w = [t for t, _v in so.get("watch", {}).get(0, {}).get(CURLIN_HI, [])]
+    te = [t for t, v in mk if v == END]
+    tf = [t for t in w if te and t > te[0]]
+    return (tf[0] - te[0]) if te and tf else None
+
+
+def measure(machine, rows, pad=None, twin=False, caps_out=None):
+    """Time `rows` in one batched boot -> [(mark_seconds, curlin_seconds)].
+    `twin=True` times each row's TWIN; a row with no twin gets (None, None)
+    without being typed."""
     bods = [twin_bodies(r[1], r[3], TIMED.get(r[0])) if twin
             else omsx_repl.as_stored(r[1])
             for r in rows]
     idx = [i for i, b in enumerate(bods) if b is not None]
     if not idx:
-        return [None] * len(rows)
+        return [(None, None)] * len(rows)
     specs = [("direct", case_lines(None, pad, bods[i])) for i in idx]
     so: dict = {}
-    omsx_repl.run_cases(machine, specs, batch=True, reset=(),
-                        capture="screen", boot=8.0,
-                        sentinel=(MARK_ADDR, END), settle_out=so)
+    caps = omsx_repl.run_cases(machine, specs, batch=True, reset=(),
+                               capture="screen", boot=8.0,
+                               sentinel=(MARK_ADDR, END), settle_out=so,
+                               watch_values=((CURLIN_HI, 0xFF),))
+    if caps_out is not None:
+        caps_out[:] = [None] * len(rows)
+        for j, i in enumerate(idx):
+            caps_out[i] = caps[j] if caps else None
     marks = so.get("marks", {})
-    out = [None] * len(rows)
+    watch = so.get("watch", {})
+    out = [(None, None)] * len(rows)
     for j, i in enumerate(idx):
-        out[i] = delta(marks.get(j, []))
+        mk = marks.get(j, [])
+        out[i] = (delta(mk), curlin_end(mk, watch.get(j, {}).get(CURLIN_HI, [])))
     return out
 
 
@@ -327,8 +416,8 @@ def negative(zb_machine):
     if len(rows) != 3:
         print(f"kwtime --negative: expected 3 control rows, found {len(rows)}")
         return 2
-    ref = measure(REF, rows)
-    zb = measure(zb_machine, rows, pad="FOR Q9=1 TO 200:NEXT")
+    ref = [p[0] for p in measure(REF, rows)]
+    zb = [p[0] for p in measure(zb_machine, rows, pad="FOR Q9=1 TO 200:NEXT")]
     bad = 0
     for (key, _l, _m, _w), r, z in zip(rows, ref, zb):
         st = status(r, z)
@@ -379,6 +468,27 @@ def selftest():
              if l and re.search(r"(?<![A-Z0-9])" + SYNCVAR, l.upper())]
     arm(f"K26 NEGATIVE: no kwsweep row uses the sync variable {SYNCVAR} "
         "(the first choice, Q8, was used by five)", not _used)
+    arm("K28 a row that ENDS early is timed from CURLIN, minus the machine's bias",
+        resolve((None, 0.0158), 0.0025) == (0.0158 - 0.0025, "curlin"))
+    arm("K29 NEGATIVE: the end mark wins when it fired -- CURLIN is only the fallback",
+        resolve((0.0094, 0.0119), 0.0025) == (0.0094, "mark"))
+    arm("K30 NEGATIVE: a $FFFF BEFORE the start mark (RUN is a direct line) is ignored",
+        curlin_end([(1.0, START)], [(0.9, 255), (1.2, 255)]) is not None
+        and abs(curlin_end([(1.0, START)], [(0.9, 255), (1.2, 255)]) - 0.2) < 1e-9)
+    arm("K31 the bias is the MEDIAN over cases with both signals, with its spread",
+        machine_bias([(1.0, 1.002), (2.0, 2.003), (3.0, 3.0025), (None, 5.0)])[0]
+        == machine_bias([(1.0, 1.002), (2.0, 2.003), (3.0, 3.0025)])[0])
+    arm("K32 NEGATIVE: no case with both signals -> no bias, so no CURLIN time",
+        resolve((None, 0.5), machine_bias([(None, 0.5)])[0]) == (None, None))
+    arm("K33 an END-terminated row may use CURLIN",
+        curlin_ok('A=0:GOSUB 20:PRINT"[G";A;"]":END:A=7:RETURN', ("[G 7]", "[G 7]")))
+    arm("K34 NEGATIVE: LIST / STOP / NEW end their own way -- never CURLIN",
+        not curlin_ok('PRINT"[A]":LIST', ("", "")) and not curlin_ok('A=1:STOP:END', ("", ""))
+        and not curlin_ok('NEW:END', ("", "")))
+    arm("K35 NEGATIVE: an error MESSAGE on either screen disqualifies the row",
+        not curlin_ok('ERROR 7:END', ("Out of memory in 10", "")))
+    arm("K36 NEGATIVE: END inside a string literal is not an END statement",
+        not curlin_ok('PRINT"END"', ("", "")))
     arm("K13 no selected row writes a mark value itself",
         not [r[0] for r in select_rows() if any(m in r[1] for m in MARK_LITERALS)])
     tw = twin_line('SCREEN2:LINE(10,10)-(20,20),15,B:PAINT(15,15),15:SCREEN0', "PAINT")
@@ -439,31 +549,58 @@ def main():
         print(f"kwtime: REFUSING -- row(s) {clash} write a mark value themselves")
         return 2
     fp_before = kw._rom_fingerprint()
-    ref = measure(REF, rows)
-    zb = measure(a.zb_machine, rows)
+    rcap, zcap = [], []
+    ref = measure(REF, rows, caps_out=rcap)
+    zb = measure(a.zb_machine, rows, caps_out=zcap)
     ref_t = measure(REF, rows, twin=True)
     zb_t = measure(a.zb_machine, rows, twin=True)
     fp_after = kw._rom_fingerprint()
+    rfall, zfall = machine_bias(ref), machine_bias(zb)
+    rend, zend = calibrate(REF), calibrate(a.zb_machine)
+    for side, b, e in (("ref", rfall, rend), ("zb", zfall, zend)):
+        print(f"kwtime: {side} CURLIN bias -- fall-off "
+              + ("none" if b[0] is None else
+                 f"{b[0] * 1e3:.3f} ms (spread {b[1] * 1e3:.3f}..{b[2] * 1e3:.3f})")
+              + " · END path " + ("none" if e is None else f"{e * 1e3:.3f} ms"))
+    rb, zbb = (rend,), (zend,)
     res = {}
     tally: dict = {}
     print(f"{'row':16} {'ref ms':>9} {'zb ms':>9} {'zb/ref':>7} {'alone':>6}  status")
     n_alone = 0
-    for (key, _l, _m, word), r, z, rt, zt in zip(rows, ref, zb, ref_t, zb_t):
-        st = status(r, z)
+    n_curlin = 0
+    for (key, _l, _m, word), rp, zp, rtp, ztp, rc_, zc_ in zip(
+            rows, ref, zb, ref_t, zb_t, rcap, zcap):
+        if not curlin_ok(_l, (rc_, zc_)):
+            # CURLIN is not the same event here (see DIRECT_RETURNERS)
+            rp, zp, rtp, ztp = ((p[0], None) for p in (rp, zp, rtp, ztp))
+        r, rv = resolve(rp, rb[0])
+        z, zv = resolve(zp, zbb[0])
+        rt, _ = resolve(rtp, rb[0])
+        zt, _ = resolve(ztp, zbb[0])
+        if rv and zv and rv != zv:
+            # one side reached its end mark and the other only ended: the two
+            # machines took DIFFERENT PATHS through the same program -- a
+            # behaviour difference, never a timing
+            st, r, z, rt, zt = "PATH-DIFFERS", None, None, None, None
+        else:
+            st = status(r, z)
+            n_curlin += rv == "curlin" and st == "OK"
         tally[st] = tally.get(st, 0) + 1
         ratio = z / r if r and z else None
         al = alone(r, z, rt, zt)
         n_alone += al is not None
         res[key] = {"ref": r, "zb": z, "ratio": ratio, "status": st,
+                    "via": rv if rv == zv else None,
                     "word": word, "form": FORMS.get(key),
                     "twin_ref": rt, "twin_zb": zt, "alone": al}
         print(f"{key:16} {r * 1e3 if r else float('nan'):9.3f} "
               f"{z * 1e3 if z else float('nan'):9.3f} "
               f"{(f'{ratio:.2f}' if ratio else '-'):>7} "
               f"{(f'{al:.2f}' if al else '~'):>6}  {st}")
-    timed = sum(1 for r in ref if r is not None)
+    timed = sum(1 for p in ref if p[0] is not None)
     print("\nkwtime: " + " · ".join(f"{k}={v}" for k, v in sorted(tally.items()))
-          + f"  ({len(rows)} rows, bar {BAR:g}x; keyword-alone reading on {n_alone})")
+          + f"  ({len(rows)} rows, bar {BAR:g}x; keyword-alone reading on {n_alone};"
+          f" {n_curlin} timed via CURLIN)")
     if only is None and timed < REF_FLOOR:
         print(f"kwtime: APPARATUS FAILURE -- only {timed} row(s) timed on the "
               f"reference (floor {REF_FLOOR}); refusing to pin a degenerate run")
@@ -476,7 +613,9 @@ def main():
         os.makedirs(os.path.dirname(PIN), exist_ok=True)
         with open(PIN, "w", encoding="utf-8") as fh:
             json.dump({"written": _t.strftime("%Y-%m-%d %H:%M:%S"),
-                       "rom_fingerprint": fp_after, "bar": BAR, "rows": res},
+                       "rom_fingerprint": fp_after, "bar": BAR, "rows": res,
+                       "curlin_bias": {"ref": {"fall_off": rfall, "end_path": rend},
+                                       "zb": {"fall_off": zfall, "end_path": zend}}},
                       fh, indent=1, sort_keys=True)
         print(f"pin: {len(res)} timed row(s) -> {PIN}")
     return 0

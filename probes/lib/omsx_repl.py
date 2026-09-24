@@ -552,7 +552,8 @@ def _tcl(out_path: str, cases: list[tuple[str, list[str]]],
          # `..., None, 12.0, (), slots_out` positionally, so its `slots_out` landed
          # on `prologue` and two echo-guard assertions went red. The test caught a
          # real contract break, so the contract is what changed back.
-         hold_lead: float | None = None) -> str:
+         hold_lead: float | None = None,
+         watch_values: tuple[tuple[int, int], ...] = ()) -> str:
     """Build the whole-batch Tcl timeline. Each scheduled action gets its own
     emulated-time slot spaced by `step`, so the previous chunk is fully consumed
     (CHGET drains KEYBUF into the line editor) before the next write overwrites
@@ -860,6 +861,18 @@ def _tcl(out_path: str, cases: list[tuple[str, list[str]]],
                    + grab + '    }\n' if sentinel_capture else '')
                 + f'  }}\n'
                 f'}}')
+        # ⏱ D-KWUNTIME (2026-09-24): EXTRA VALUE-FILTERED WATCHES, e.g. CURLIN's
+        # high byte ($F41D) turning $FF = "the program ended", which both machines
+        # now publish (D-CURLIN). Armed at the RUN slot like the sentinel -- the
+        # boot writes these cells too -- and FILTERED IN TCL on the value, because
+        # an unfiltered CURLIN watch logs one line per executed program line.
+        # Logged as `watch.<idx>.<addr>=<emulated time>,<value>`.
+        for w_addr, w_val in watch_values:
+            body.append(
+                f'after time {t_run:.3f} {{ debug set_watchpoint write_mem {w_addr} '
+                f'{{}} {{ if {{$::wp_last_value == {w_val}}} {{ puts $__f '
+                f'"watch.{idx}.{w_addr}=[machine_info time],$::wp_last_value"; '
+                f'flush $__f }} }} }}')
         if sentinel_capture:
             body.append(f'after time {t:.1f} {{ if {{!$::__cap({idx})}} {{ '
                         f'set ::__cap({idx}) 1; puts $__f "case.{idx}={cap}"; '
@@ -1120,7 +1133,8 @@ def _run_batch(machine: str, cases: list[tuple[str, list[str]]], *,
                stall: float | None = None, abscap: float | None = None,
                settle_n: int = 0, settle_out: dict | None = None,
                sentinel: tuple[int, int] | None = None,
-               run_gap: float | None = None, sentinel_capture: bool = False
+               run_gap: float | None = None, sentinel_capture: bool = False,
+               watch_values: tuple[tuple[int, int], ...] = ()
                ) -> tuple[list[str | None], dict[int, list[int]], list]:
     """One boot, `cases` driven, returning `(captures, delivered, echo)` -- the
     raw engine. `delivered` maps a stored-mode case index to the line-number
@@ -1186,7 +1200,8 @@ def _run_batch(machine: str, cases: list[tuple[str, list[str]]], *,
                          holds, hold_secs, prologue, slots,
                          hold_lead=hold_lead, hb_path=hb,
                          settle_n=settle_n, sentinel=sentinel, run_gap=run_gap,
-                         sentinel_capture=sentinel_capture))
+                         sentinel_capture=sentinel_capture,
+                         watch_values=watch_values))
         for p in (out, hb):
             if os.path.exists(p):
                 os.unlink(p)
@@ -1349,6 +1364,14 @@ def _run_batch(machine: str, cases: list[tuple[str, list[str]]], *,
                         settle_out.setdefault("marks", {}).setdefault(
                             int(mk.group(1)), []).append(
                                 (float(mk.group(2)), int(mk.group(3))))
+                    continue
+                wm = re.match(r"watch\.(\d+)\.(\d+)=([\d.]+),(\d+)$", ln.strip())
+                if wm:      # D-KWUNTIME: a value-filtered extra watch fired
+                    if settle_out is not None:
+                        settle_out.setdefault("watch", {}).setdefault(
+                            int(wm.group(1)), {}).setdefault(
+                                int(wm.group(2)), []).append(
+                                    (float(wm.group(3)), int(wm.group(4))))
                     continue
                 fb = re.match(r"fallback\.(\d+)=([\d.]+)$", ln.strip())
                 if fb:      # the sentinel did NOT fire; the budget captured instead
@@ -1890,7 +1913,8 @@ def _run_cases_impl(machine: str, cases: list[tuple[str, list[str]]], *,
               run_gap: float | None = None,
               sentinel: tuple[int, int] | None = None,
               sentinel_capture: bool = False,
-              settle_out: dict | None = None) -> list[str | None]:
+              settle_out: dict | None = None,
+              watch_values: tuple[tuple[int, int], ...] = ()) -> list[str | None]:
     """Deliver `cases` (each `(mode, lines)`) and return one raw SCREEN-0 string
     per case, aligned with `cases`. THE DEFAULT ENTRY POINT for a whole probe
     matrix -- it picks the delivery granularity:
@@ -1940,6 +1964,8 @@ def _run_cases_impl(machine: str, cases: list[tuple[str, list[str]]], *,
               hold_secs=hold_secs, hold_lead=hold_lead, prologue=prologue,
               omsx=omsx, cart=cart, diska=diska, cassette=cassette, run_gap=run_gap,
               sentinel=sentinel, sentinel_capture=sentinel_capture)
+    if watch_values:
+        kw["watch_values"] = watch_values
     if settle_out is not None:
         kw["settle_out"] = settle_out
     to_single = timeout if timeout is not None else 240.0
