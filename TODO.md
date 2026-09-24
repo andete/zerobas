@@ -4968,7 +4968,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:23722 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:23735 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -22861,6 +22861,19 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       `?` (the same token); each still reads `[ 32  32 ]` / `[ 2  1 ]` / `[1h]`
       on both sides. None of the three is a knife row (`space`, `mki`, `ifkw`
       are), so the knife pin is untouched. `SPACE$` → level 3, `IF` → level 2.
+      🖨 **D-KWTRIG (same day): single-rig PRINTER and TAPE-WRITE rows are timed
+      too — T2 117 → 120** (`LPRINT`/`LPOS` 1.12×, `CSAVE` 0.83×, against the
+      VG-8020). kwtime reads RAM marks, never the artefact, so a rig only has
+      to be PRESENT. ⚠️ `tape` (CLOAD) is left out on purpose: a CLOAD replaces
+      the running program, so its end mark can never fire. 281 rows, OK 260.
+      📋 **THE 22 KEYWORDS STILL `T2—`, BY REASON:** they end or replace the
+      run (`CONT` `LIST` `NEW` `STOP` `RUN` `LOAD` `MERGE` `SAVE` `CLOAD`);
+      editor/prompt rows the shape cannot type (`AUTO` `DELETE` `RENUM`
+      `LLIST`); refuse on every machine (`CMD` `IPL` `SET`); `RESPOND:` rows
+      (`INPUT`); hold/plug rigs (`KEY` `PDL`); two rigs at once (`LFILES`);
+      and `CALL`/`USR`, whose rows are untimeable. The first group needs the
+      prompt's return as its end (the CURLIN signal, which today is accepted
+      only on an `END` path — measured asymmetric elsewhere).
       ~~🙋 **NEEDS-JOOST**~~ (answered above for T2/T4/T5) — a rung's definition is charter-level, not a coding
       choice. What does a row that PROVES "reasonable time" look like? A wall
       against the reference, per keyword? A ratio? Same question for RAM parity

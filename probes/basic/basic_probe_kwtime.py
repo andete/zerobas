@@ -83,6 +83,13 @@ REF_FLOOR = 100
 # the CF-3300. Its boot is ~6 s longer than the VG's (kwsweep's MACH_BOOT).
 DISK_REF = "National_CF-3300"
 DISK_REF_BOOT = 14.0
+# 🖨 D-KWTRIG (2026-09-24): the rigs a row may carry ALONE and still be timed.
+# kwtime reads RAM marks, never the artefact, so a rig only has to be PRESENT:
+# the printer plugged, a blank tape in the deck. ⚠️ `tape` (CLOAD) is left out
+# ON PURPOSE: a CLOAD replaces the running program with the one it loads, so
+# the end mark can never fire -- it would read UNTIMEABLE by construction after
+# a 90 s leader per case, twice. `log`/hold/plug rows are not here yet.
+TIMEABLE_RIGS = {("disk",): "disk", ("printer",): "printer", ("tapew",): "tapew"}
 MARK_LITERALS = [f"{a},{v}" for a in ("&HE000", "-8192") for v in (START, END)]
 
 
@@ -221,12 +228,13 @@ def select_rows(only=None):
     out = []
     for key, _crunch, line, mode, note in kw.SWEEP:
         rigs = kw._row_rigs(note)
-        if line is None or (rigs and rigs != ("disk",)) or kw.row_program(note) \
+        if line is None or (rigs and rigs not in TIMEABLE_RIGS) \
+                or kw.row_program(note) \
                 or kw.row_respond(note) or not kw.row_form(note):
             continue
         if only and key not in only:
             continue
-        GROUP[key] = "disk" if rigs else "plain"
+        GROUP[key] = TIMEABLE_RIGS[rigs] if rigs else "plain"
         out.append((key, line, mode, row_keyword(_crunch, note)))
         FORMS[key] = kw.row_form(note)
         m = re.search(r"(?<!\S)TIMED:(\d+)(?!\S)", note)
@@ -372,10 +380,14 @@ def group_kwargs(group, machine):
     call: the disk rig hands out a private copy of the test image each time, so
     the plain run and its twin both start from the image as shipped -- a row
     that KILLs or NAMEs a file cannot change what the next measurement sees."""
-    if group != "disk":
+    if group == "plain":
         return {}
-    extra = kw._rig_kwargs(("disk",))
-    extra.pop("batch", None)
+    extra = kw._rig_kwargs((group,))
+    # the artefact is not read here -- only the marks -- so the rig's own
+    # capture override and tape path are dropped; its `batch` is KEPT: the
+    # tape-write rig needs a boot per case (a fresh tape each time).
+    extra.pop("capture", None)
+    extra.pop("_tape_path", None)
     if machine == DISK_REF:
         extra["boot"] = DISK_REF_BOOT
     return extra
@@ -390,10 +402,10 @@ def calibrate(machine, extra=None):
               f"7 POKE&H{MARK_ADDR:04X},{START}", "10 A=1",
               f"20 POKE&H{MARK_ADDR:04X},{END}:END", "RUN"])
     so: dict = {}
-    rk = dict(capture="screen", boot=8.0, sentinel=(MARK_ADDR, END),
+    rk = dict(batch=True, capture="screen", boot=8.0, sentinel=(MARK_ADDR, END),
               settle_out=so, watch_values=((CURLIN_HI, 0xFF),))
     rk.update(extra or {})
-    omsx_repl.run_cases(machine, [("direct", lines)], batch=True, reset=(), **rk)
+    omsx_repl.run_cases(machine, [("direct", lines)], reset=(), **rk)
     mk = so.get("marks", {}).get(0, [])
     w = [t for t, _v in so.get("watch", {}).get(0, {}).get(CURLIN_HI, [])]
     te = [t for t, v in mk if v == END]
@@ -413,10 +425,10 @@ def measure(machine, rows, pad=None, twin=False, caps_out=None, extra=None):
         return [(None, None)] * len(rows)
     specs = [("direct", case_lines(None, pad, bods[i])) for i in idx]
     so: dict = {}
-    rk = dict(capture="screen", boot=8.0, sentinel=(MARK_ADDR, END),
+    rk = dict(batch=True, capture="screen", boot=8.0, sentinel=(MARK_ADDR, END),
               settle_out=so, watch_values=((CURLIN_HI, 0xFF),))
     rk.update(extra or {})
-    caps = omsx_repl.run_cases(machine, specs, batch=True, reset=(), **rk)
+    caps = omsx_repl.run_cases(machine, specs, reset=(), **rk)
     if caps_out is not None:
         caps_out[:] = [None] * len(rows)
         for j, i in enumerate(idx):
@@ -602,7 +614,8 @@ def main():
     timed = 0
     biases = {}
     print(f"{'row':16} {'ref ms':>9} {'zb ms':>9} {'zb/ref':>7} {'alone':>6}  status")
-    for group, refm in (("plain", REF), ("disk", DISK_REF)):
+    for group, refm in (("plain", REF), ("disk", DISK_REF),
+                        ("printer", REF), ("tapew", REF)):
         grows = [r for r in rows if GROUP[r[0]] == group]
         if not grows:
             continue
