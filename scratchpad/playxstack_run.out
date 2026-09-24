@@ -1,0 +1,10 @@
+d0   SP at window F09C  lowest F07C  depth    32 B   screen: ''
+d1   SP at window F09C  lowest F06C  depth    48 B   screen: ''
+d2   SP at window F09C  lowest F05A  depth    66 B   screen: ''
+d3   SP at window F09C  lowest F05C  depth    64 B   screen: ''
+d4   SP at window F09C  lowest F054  depth    72 B   screen: ''
+d5   SP at window F09C  lowest F066  depth    54 B   screen: ''
+d6   SP at window F09C  lowest F064  depth    56 B   screen: ''
+rec  SP at window F09C  lowest BE46  depth 12886 B   screen: '|||||||||||color  auto   goto   list   run'
+     full screen:   Ok |   NEW |   Ok |   10 ON ERROR GOTO 50 |   20 A$="XA$;" |   30 POKE&HE000,201:PLAY"XA$;":POKE&HE0 |   00,202 |   40 PRINT"[NOERR]":END |   50 POKE&HE000,202:PRINT"[E";ERR;ERL;" |   ]":RESUME 60 |   60 END |   RUN |   color  auto   goto   list   run
+refcache: 0 hit, 8 miss, 8 stored

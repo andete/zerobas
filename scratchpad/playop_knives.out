@@ -1,0 +1,28 @@
+=== baseline ===
+baseline roms=53cb0bd9 / ae796ccb / 83d18d11
+baseline 11 rows match playop_after.out
+
+K-PL1  roms=366a3ea6 / ae796ccb / 06dfe133
+  cut: the EOL site back to pl_syntax -- ERR 2, the pre-slice answer, at ONE of the two sites that moved
+  moved 2 rows: p.bare='2', p.trail='2'
+  ✅ EXACT — 2 predicted, 2 moved
+
+K-PL2  roms=3d6c87d1 / ae796ccb / 23cbc2dc
+  cut: the COLON site back to pl_syntax -- the OTHER site that moved, and its own two rows
+  moved 2 rows: p.colon='2', p.trailcolon='2'
+  ✅ EXACT — 2 predicted, 2 moved
+
+K-PL3  roms=98204f7c / ae796ccb / 71c8bb4c
+  cut: the COMMA site to loc_missing -- the site the measurement says must NOT move, moved on purpose
+  moved 2 rows: p.comma='24', p.dblcomma='24'
+  ✅ EXACT — 2 predicted, 2 moved
+
+K-PL4  roms=3cb99815 / ae796ccb / d531ce48
+  cut: the 4th-voice site to loc_missing -- the one TODO.md marked UNMEASURED and which the measurement says is already right
+  moved 1 rows: p.four='24'
+  ✅ EXACT — 1 predicted, 1 moved
+
+restored, roms=53cb0bd9 / ae796ccb / 83d18d11
+
+4 of 4 knives EXACT
+rc=0

@@ -1,0 +1,13 @@
+T 0.0 FFFF F09C
+T 1.0 E3E8 E3E8
+T 2.0 D74E D74E
+T 3.0 CAB2 CAB2
+T 4.0 BDFE BE02
+T 5.0 B172 B180
+T 6.0 A4DC A4E2
+T 7.0 9840 9844
+T 8.0 8BA0 8BA6
+CLOSE 8.85377471159044
+
+screen:   Ok |   NEW |   Ok |   10 ON ERROR GOTO 50 |   20 A$="XA$;" |   30 POKE&HE000,201:PLAY"XA$;":POKE&HE0 |   00,202 |   40 PRINT"[NOERR]":END |   50 POKE&HE000,202:PRINT"[E";ERR;ERL;" |   ]":RESUME 60 |   60 END |   RUN |   [E 7  30 ] |   Ok |   color  auto   goto   list   run
+refcache: 0 hit, 1 miss, 1 stored
