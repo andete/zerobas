@@ -2397,12 +2397,30 @@ item — do **one item per session** to keep context lean.
       `$F3F7`, next to `REPCNT`, is in the reference's interrupt signature,
       D-RAMFOOT). zerobas re-fires from the first frame.
       🎚️ TIER 1 — happy path: one press of Ctrl-STOP fires `ON STOP GOSUB` once.
-      🤖 **AUTONOMOUS — MEASURE FIRST:** sweep the hold length (1, 5, 10, 25,
-      50, 75, 100 frames) on both machines with a handler that only counts and
-      RETURNs, and read where the reference's count leaves 1 and how it grows —
-      then fit the rule, keeping D-STOPRELATCH's long-hold rows and D-STOPEDGE's
-      cases green. ⚠️ Main page 1 read 1 B free on 2026-09-25: a fix needs a
-      carve (or Joost's carve strategy).
+      ✅ ~~🤖 **AUTONOMOUS — MEASURE FIRST**~~ **MEASURED 2026-09-25**
+      ([`scratchpad/stoptap_probe.py`](scratchpad/stoptap_probe.py) →
+      `scratchpad/stoptap_run.out`; one fresh boot per side and length, a
+      handler that only counts and RETURNs):
+      | hold (frames) | 1 | 3 | 5 | 10 | 25 | 50 | 100 |
+      |---|---|---|---|---|---|---|---|
+      | VG-8020 fires | **0** | 1 | 1 | 1 | 1 | **4** | **21** |
+      | zerobas fires | 1 | 3 | 5 | 10 | 25 | 50 | 100 |
+      🎯 **THE RULE, FITTED:** zerobas fires EXACTLY once per frame held (what
+      D-STOPRELATCH built). The reference fires once per press, then RE-FIRES
+      only after an initial delay of ~40 frames (0.8 s), then about every 3
+      frames — both the 50- and 100-frame points fit that — i.e. the KEYBOARD
+      AUTO-REPEAT schedule; and a 1-frame tap is not seen at all. 🔮 Predicted
+      "1 for short taps, climbing past ~25–50 frames; zerobas once per frame" —
+      HIT. D-STOPRELATCH's long-hold rows agree because both counts are large,
+      not because the rule matched.
+      💰 **THE FIX** is the release schedule in `event_poll` (`basic/traps.asm`):
+      first release after ~40 frames of hold, then every ~3 — a RAM counter
+      plus a few bytes. ⚠️ Main page 1 read 1 B free on 2026-09-25 → blocked on
+      the carve strategy (🙋 Joost), like every ROM-growing item. Pin the exact
+      delay/interval with a finer sweep (35..45, and the interval) before
+      building.
+      🙋 **NEEDS-JOOST** — the CARVE STRATEGY (main is full; see the hand-off's
+      queue). The measurement is done; the build waits for bytes.
 
 - [x] ✅ **DONE 2026-09-20 (D-STOPRELATCH): A HELD Ctrl-STOP NOW RE-FIRES, AND
       THE MECHANISM THE SPEC GAVE FOR THE REFERENCE'S 122 WAS WRONG.**
@@ -5123,7 +5141,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:24063 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:24081 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -5289,7 +5307,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:10081 (T-6FE392)8 (T-529ABE)` from `TODO.md:21717 (T-529ABE)`: a
+      `TODO.md:10099 (T-6FE392)8 (T-529ABE)` from `TODO.md:21735 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -10925,7 +10943,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:21717 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:21735 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
