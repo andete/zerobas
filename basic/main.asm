@@ -510,3 +510,8 @@ __MEAS_PAGE1_END:
 ; only zerobas's real code, not the padding. As a cartridge the fill byte is
 ; never executed, so $00 vs $FF is immaterial there.
                 ds      $8000 - $, $00
+
+
+; MAKING ROOM lever B: BASIC code in C-BIOS's own padding (page 0, same slot).
+; Must come LAST -- it moves `org` below $2812; tools/split_islands.py cuts it out.
+                include "basic/islands.asm"

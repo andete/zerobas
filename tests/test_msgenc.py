@@ -84,7 +84,12 @@ def build():
     if r.returncode != 0:
         sys.stderr.write(r.stdout + r.stderr)
         raise SystemExit("pasmo failed")
-    return open(ROM, "rb").read(), load_syms(SYM)
+    # 🏝️ MAKING ROOM lever B: the image may start BELOW $2812 (C-BIOS-padding
+    # islands); cut it with the build's own splitter so LOW-based offsets hold.
+    sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(
+        os.path.abspath(__file__))), "tools"))
+    from split_islands import split
+    return split(open(ROM, "rb").read())[0], load_syms(SYM)
 
 
 def load_syms(path):

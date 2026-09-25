@@ -94,6 +94,9 @@ def load_symbols(path):
     return syms
 
 
+BASIC_IMAGE_BASE = 0x2812   # basic/main.asm BASIC_ORG (islands may sit lower)
+
+
 class Machine:
     # ⚠️ rom_base IS MANDATORY, AND IT USED TO DEFAULT TO $4000.
     # $4000 was the lean 16 KB page-1-only cartridge's org. Every test that built
@@ -111,6 +114,20 @@ class Machine:
         self.mem = bytearray(0x10000)
         with open(rom_path, "rb") as fh:
             rom = fh.read()
+        # 🏝️ MAKING ROOM lever B (2026-09-25): basic/main.asm may place code in
+        # C-BIOS's padding BELOW $2812 (basic/islands.asm), and pasmo --bin then
+        # emits ONE image from the lowest org -- so a self-assembled BASIC image
+        # can be longer than $8000 - $2812. It always ENDS at $7FFF, so its base
+        # is read from its own length. NOT a silent default: it applies only when
+        # the caller NAMED the BASIC base and the image cannot fit above it, and
+        # it says so once.
+        if rom_base == BASIC_IMAGE_BASE and rom_base + len(rom) > 0x8000:
+            base = 0x8000 - len(rom)
+            if not getattr(Machine, "_island_said", False):
+                print(f"msxtest: BASIC image carries islands -- loaded at "
+                      f"${base:04X}, not ${rom_base:04X}")
+                Machine._island_said = True
+            rom_base = base
         self.mem[rom_base:rom_base + len(rom)] = rom
         self.sym = load_symbols(sym_path)
         self.cpu = Z80(self.mem)

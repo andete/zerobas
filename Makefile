@@ -70,7 +70,7 @@ SRC   := basic/main.asm
 # the committed sources reproduces the committed patch bytes exactly, so nothing
 # shipped stale; `make deps-check` now proves the list instead of trusting it.
 # Same class as the sub-ROM's SUB_PARTS, third occurrence [[makefile-subparts-stale-tenant]].
-DEPS  := basic/interp.asm basic/initext.asm basic/title.asm basic/repl.asm \
+DEPS  := basic/interp.asm basic/initext.asm basic/islands.asm basic/title.asm basic/repl.asm \
          basic/vars.asm basic/strvar.asm basic/str-engine.asm basic/expr.asm basic/poke.asm basic/vdpio.asm \
          basic/clear.asm basic/usr.asm basic/time.asm basic/print.asm basic/screen.asm basic/list.asm \
          basic/fat.asm basic/bload.asm basic/cload.asm basic/save.asm basic/files.asm \

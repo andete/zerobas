@@ -140,7 +140,11 @@ def postcheck(name: str, tag: str) -> tuple[bool, str]:
                        f"BASIC_ORG in the sym file -- an offset from a DEFAULT "
                        f"is not a reading")
     rom = (OUT / f"{tag}-basic.rom").read_bytes()
-    off = tbl - org + (idx - 1)                 # FPERR codes are 1-based
+    # 🏝️ MAKING ROOM lever B (2026-09-25): basic/islands.asm puts code BELOW
+    # BASIC_ORG, and pasmo's image then starts at the lowest org -- it always
+    # ENDS at $7FFF, so its true base is read from its own length.
+    base = min(org, 0x8000 - len(rom))
+    off = tbl - base + (idx - 1)                # FPERR codes are 1-based
     if not (0 <= off < len(rom)):
         return False, f"{tbl_sym}[{idx_sym}={idx}] is outside the image"
     got = rom[off]

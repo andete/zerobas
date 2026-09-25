@@ -2442,9 +2442,25 @@ item — do **one item per session** to keep context lean.
       non-zero C-BIOS byte. With no island yet the merged ROM and the shipped
       patches are BYTE-IDENTICAL (md5 `01e3c83e…` before and after), and the
       overlay's three arms were exercised directly: placed / refused outside /
-      refused on non-zero base. ➡️ **(3) NEXT:** the first tenant — data is the
-      safest (a table referenced only by address, e.g. the 242 B statement
-      dispatch table fits the 248 B island before the font).
+      refused on non-zero base.
+      ✅ **(3) FIRST TENANT, 2026-09-25: `try_init_slot` (72 B) → the island
+      before the font** (`basic/islands.asm`, `org $1ACF`, with a pasmo refusal
+      at `$1BBF`). **Main page 1: 1 B → 75 B free** (clean build 2026-09-25).
+      It is the boot-time extension-ROM INIT caller — the disk ROM still
+      initialises (smoke: `FILES`/`LOF` SUPPORTED) — and it is better in page 0:
+      its CALSLT into a cartridge's page-1 INIT runs from a page the switch
+      never touches. ⚠️ The statement table (274 B, not 242) does NOT fit.
+      🔴 **THE BLAST RADIUS THE PLAN NAMED WAS REAL:** 48 Python files assemble
+      `basic/main.asm` THEMSELVES, and pasmo's image now starts at `$1ACF`.
+      `tests/msxtest.py`'s `Machine` now reads the base from the image's own
+      length when the caller names `$2812` and the image cannot fit above it
+      (loud, once); byte-indexing consumers cut the image with
+      `split_islands.split()` (`tests/test_msgenc.py` was the one that failed);
+      `tools/check_switch_builds.py` computed its table offset from
+      `BASIC_ORG` and now reads the base from the image length too — the
+      FULL battery, not the unit tests, found that one.
+      ➡️ **NEXT:** more tenants (the `$0160` island's 160 B is still empty);
+      then lever A.
 
 - [ ] 🔴 **D-STOPTAP: A SHORT Ctrl-STOP TAP FIRES `ON STOP GOSUB` ~5 TIMES HERE
       AND ONCE ON THE REFERENCE.** Found 2026-09-25 by the filed-row triage:
@@ -5211,7 +5227,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:24151 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:24167 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -5377,7 +5393,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:10169 (T-6FE392)8 (T-529ABE)` from `TODO.md:21805 (T-529ABE)`: a
+      `TODO.md:10185 (T-6FE392)8 (T-529ABE)` from `TODO.md:21821 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -11013,7 +11029,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:21805 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:21821 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

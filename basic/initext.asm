@@ -100,47 +100,10 @@ ier_done:
 ; try_init_slot: if slot A carries an "AB" header, CALSLT its INIT entry.
 ; in: A = slot id. The slot id and INIT address live in RAM (SCAN_SLOT /
 ; SCAN_INIT) because RDSLT destroys AF/BC/DE between reads.
-try_init_slot:
-                ld      (SCAN_SLOT),a
-                ld      hl,$4000
-                call    rdslt_scan
-                cp      'A'
-                ret     nz
-                ld      hl,$4001
-                call    rdslt_scan
-                cp      'B'
-                ret     nz
-                ld      hl,$4002
-                call    rdslt_scan
-                ld      (SCAN_INIT),a       ; INIT entry, low byte
-                ld      hl,$4003
-                call    rdslt_scan
-                ld      (SCAN_INIT+1),a     ; INIT entry, high byte
-                ld      hl,(SCAN_INIT)
-                ld      a,h
-                or      l
-                ret     z                   ; INIT vector $0000 -> nothing to call
-                ; inter-slot call to the extension ROM's INIT (it installs its
-                ; hooks / SYSTEM vector and returns).
-                ld      a,(SCAN_SLOT)
-                ld      (SCAN_IY+1),a       ; CALSLT reads the slot from IYh
-                ld      iy,(SCAN_IY)
-                ld      ix,(SCAN_INIT)
-                call    CALSLT
-                ; Record this external AB ROM's slot id for cross-slot BDOS calls
-                ; from BLOAD (it CALSLTs the disk ROM's bdos_entry). On the
-                ; combined machine the disk ROM is the only external AB ROM the
-                ; scan reaches, so its slot is unambiguous; a multi-ROM setup
-                ; would need per-ROM tracking (last-one-wins here — documented
-                ; limitation, PROVENANCE.md §disk-ROM slot capture).
-                ld      a,(SCAN_SLOT)
-                ld      (DISKSLOT),a
-                ld      a,1
-                ld      (DISKSLOT_OK),a
-                ret
+; try_init_slot -- MOVED to basic/islands.asm (MAKING ROOM lever B, 2026-09-25):
+; it now lives in C-BIOS's own padding before the font, in page 0, and is still
+; reached by the two `call try_init_slot` sites above.
 
-; rdslt_scan: A = RDSLT(slot=(SCAN_SLOT), addr=HL). RDSLT preserves HL, so the
-; caller sets HL; the slot id is reloaded from RAM each call (RDSLT clobbers it).
 rdslt_scan:
                 ld      a,(SCAN_SLOT)
                 jp      RDSLT               ; tail call: RDSLT's RET returns to caller
