@@ -33,7 +33,7 @@ other component's cell at the same address; the `inside` column
 names the other component's BUFFER this address falls within. That
 second one is the question a per-component map cannot answer.
 
-* **basic** — 417 declared addresses in this project's own workspace `$E000..$F37F` (384 with a machine-readable width), plus **91** in the MSX standard work area at or above `$F380`.
+* **basic** — 416 declared addresses in this project's own workspace `$E000..$F37F` (384 with a machine-readable width), plus **93** in the MSX standard work area at or above `$F380`.
 * **disk** — 127 declared addresses in this project's own workspace `$E000..$F37F` (113 with a machine-readable width), plus **24** in the MSX standard work area at or above `$F380`.
 
 ## This project's own workspace (`$E000..$F37F`)
@@ -549,8 +549,7 @@ second one is the question a per-component map cannot answer.
 | `$F106` | 1 B | `basic` | `SUBSLOT` | slot id of zerobas-sub (bit7 exp \| 3-2 \| 3), 1 (1 B) |  |
 | `$F107` | 1 B | `basic` | `SUBSLOT_OK` | 1 = a CD sub-ROM was found and recorded, else 0 (1 B) |  |
 | `$F108` | 2 B | `basic` | `DB_CUR` | wave-3 detok: the DETOKBUF write cursor, held across (2 B) |  |
-| `$F10A` |  | `basic` | `SUB_INT_RAM` | the copied trampoline stub (<= 64 B; executes from RAM) |  |
-| `$F142` | 7 B | `basic` | `RND_SEED` | packed BCD, MSD-first, 7 bytes (-> $F148) |  |
+| `$F10A` | 64 B | `basic` | `SUB_INT_RAM` | the copied trampoline stub (<= 64 B; executes from RAM) |  |
 | `$F14A` | 1 B | `basic` | `INT_MAIN_PRIM` | page-0 primary field of the MAIN (BIOS) slot (=0) (1 B) |  |
 | `$F14B` | 1 B | `basic` | `INT_SUB_PRIM` | page-0 primary field of the sub-ROM slot (=3, slot 3) (1 B) |  |
 | `$F14C` | 1 B | `basic` | `INT_SUB_SUBSL` | page-0 subslot field of the sub-ROM slot (=2, i.e. 3-2) (1 B) |  |
@@ -641,6 +640,8 @@ extents the standard already fixes would be noise, not rigour.
 | `$F7C6` |  | `basic` | `FOUTBUF/HORNER_ACC/MATH_R/SQRT_R` | final-correction high-precision residual scratch |  |
 | `$F7D8` | 1 B | `basic` | `HORNER_CNT` | fp_poly_horner's own remaining-term loop |  |
 | `$F7D9` | 2 B | `basic` | `HORNER_PTR` | fp_poly_horner's own advancing coeff- |  |
+| `$F857` |  | `basic` | `RNDX` | PUBLISHED 8 B seed; byte 0 reads 00 (1) |  |
+| `$F858` | 7 B | `basic` | `RND_SEED` | packed BCD, MSD-first, 7 bytes ($F858..$F85E) |  |
 | `$F87F` |  | `basic` | `FNKSTR` | measured base (D-KEYSTR scout) |  |
 | `$F922` |  | `basic` | `NAMBAS` | name-table base of the current text mode (MSX work area; D-SCREDIT) |  |
 | `$F92A` | 2 B | `basic` | `CLOC` | computed VRAM byte address of the current pixel (2) |  |

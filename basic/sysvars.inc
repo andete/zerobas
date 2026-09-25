@@ -4230,16 +4230,22 @@ SUB_INT_DELTA   equ     $F14D   ; self-test tenant result: JIFFY ticks observed 
 ; SUB_INT_RAM trampoline reservation above. The copied stub
 ; (sub_int_template, basic/subromcall.asm) is currently 47 bytes, but its
 ; reservation runs a conservative 64 B ($F10A..$F149) so future trampoline
-; growth has headroom -- RND_SEED claims 7 bytes of that UNUSED tail
-; ($F142..$F148), safely below $F149 and clear of INT_MAIN_PRIM ($F14A)
-; above. Safe-by-construction: subromcall.asm carries a build-time ASSERT
-; (`sub_int_template_end - sub_int_template <= RND_SEED - SUB_INT_RAM`,
-; currently 47<=56) right after sub_int_template_end, so any future
-; trampoline growth that would collide with RND_SEED FAILS THE BUILD loudly
-; instead of silently overlapping. Reset to packed(S0) by clear_vars
+; growth has headroom. RND_SEED USED TO claim 7 bytes of that unused tail
+; ($F142..$F148); since D-ADDR29 RNDX (2026-09-25, below) it lives at the
+; published RNDX+1 and the tail is the trampoline's again. subromcall.asm's
+; build-time ASSERT is now bounded by INT_MAIN_PRIM ($F14A), the next claimed
+; cell (`sub_int_template_end - sub_int_template <= INT_MAIN_PRIM -
+; SUB_INT_RAM`, currently 47<=64), so any growth that would collide FAILS THE
+; BUILD loudly instead of silently overlapping. Reset to packed(S0) by clear_vars
 ; (basic/vars.asm), the same single hook DEFTBL's own reset uses (covers
 ; NEW/CLEAR/RUN + cold boot, §15.1/§15.3).
-RND_SEED        equ     $F142   ; packed BCD, MSD-first, 7 bytes (-> $F148)
+; 🟢 D-ADDR29 RNDX (2026-09-25, Joost: "RNDX now"): the seed is the PUBLISHED
+; RNDX's own bytes. scratchpad/rndx_probe.py, 7 states (boot, RND(1), RND(0),
+; RND(-1), RND(-5), ...): zerobas's 7 packed-BCD bytes == the VG-8020's
+; RNDX+1..+7 EVERY time, and its RNDX+0 reads 00 in all of them -- so this is
+; an equate move, and $F142..$F148 returns to the SUB_INT_RAM reservation.
+RNDX            equ     $F857   ; PUBLISHED 8 B seed; byte 0 reads 00 (1)
+RND_SEED        equ     RNDX+1  ; packed BCD, MSD-first, 7 bytes ($F858..$F85E)
 ; --- Math float pack, slice F3 S3a RAM (repack build only) ------------------
 ; docs/spec-basic-float-core.md §11. Own-choice free RAM, same rationale as the
 ; F1/F2 blocks above: $F14E.. is unclaimed free RAM below DRVA_DPB ($F195,

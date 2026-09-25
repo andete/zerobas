@@ -212,14 +212,15 @@ sub_int_template:
 sub_int_template_end:
 
 ; --- RND_SEED tail-slack guard (math pack slice 2e, docs/spec-basic- -------
-; mathpack-slice2.md §15.3). RND_SEED (basic/sysvars.inc) lives in the
-; UNUSED tail of the SUB_INT_RAM reservation above ($F142..$F148, inside the
-; conservative 64-byte reservation that runs $F10A..$F149) -- safe only as
-; long as the copied stub (sub_int_template..sub_int_template_end) never
-; grows past that reservation. This build-time assert makes any future
-; growth that would collide FAIL THE BUILD loudly (an undefined symbol,
-; pasmo's own diagnostic) instead of silently overlapping RND_SEED at
-; runtime. Currently 47<=56 (RND_SEED-SUB_INT_RAM=$F142-$F10A=$38=56).
-    IF (sub_int_template_end - sub_int_template) > (RND_SEED - SUB_INT_RAM)
-                db      RND_SEED_COLLIDES_WITH_GROWN_INT_TRAMPOLINE__MOVE_RND_SEED
+; mathpack-slice2.md §15.3). RND_SEED USED TO live in the unused tail of the
+; SUB_INT_RAM reservation above ($F142..$F148, inside the conservative 64-byte
+; reservation that runs $F10A..$F149), and this assert was bounded by it.
+; 🔁 D-ADDR29 RNDX (2026-09-25) moved the seed to the published RNDX+1
+; ($F858), so the bound is now the next CLAIMED cell, INT_MAIN_PRIM ($F14A) --
+; bounding it by RND_SEED would have let the stub grow ~1.8 KB unchecked, the
+; exact "derived constant falsified from another file" shape. The assert still
+; makes any growth that would collide FAIL THE BUILD loudly (an undefined
+; symbol, pasmo's own diagnostic). Currently 47 <= 64.
+    IF (sub_int_template_end - sub_int_template) > (INT_MAIN_PRIM - SUB_INT_RAM)
+                db      INT_TRAMPOLINE_GREW_INTO_INT_MAIN_PRIM__SHRINK_OR_MOVE
     ENDIF

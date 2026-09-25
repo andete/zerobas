@@ -52,7 +52,6 @@ basic MULPROD/RND_ACCLE overruns
 basic OO_DEVTYPE overruns
 basic PU_COMMAS/PU_WP disputed
 basic SH_BASE/SH_OP disputed
-basic SUB_INT_RAM overruns
 basic TEMPPOOL undeclared
 disk BDOS_RECIDX overruns
 disk F365_STUB undeclared
