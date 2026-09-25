@@ -186,6 +186,22 @@ cgt_nd:
                 or      a                   ; anything else: NZ, NC
                 ret
 
+; outdo -- RST 18h, the PUBLISHED MSX BIOS OUTDO (MAKING ROOM lever A, step 3).
+; Contract: calls H.OUTD, then outputs A to the CURRENT output channel; every
+; register preserved. zerobas's `pchar` already IS that (screen, file, LPT:,
+; CRT: or CAS: by PRDEST/PRDEV, all four pairs and the flags kept), so the 13
+; `call pchar` sites become 1-byte `rst $18`.
+; 🔴 C-BIOS's own $0018 only calls H.OUTD, and its boot points H.OUTD at
+; `chput` -- the hook IS its output. Calling the hook AND pchar would print every
+; character twice, so the merge also patches C-BIOS's boot to leave H.OUTD a
+; RET (`ld a,$c3` -> `ld a,$c9` at $1037, below), as on the published machine.
+; A is saved around the hook as C-BIOS saves it: a hook may clobber it.
+outdo:
+                push    af
+                call    H_OUTD              ; the published hook (a RET by default)
+                pop     af
+                jp      pchar
+
     IF $ > $0200
                 db      ISLAND_BEFORE_JUMPTABLE_OVERRAN_0200__IT_WOULD_OVERWRITE_CBIOS
     ENDIF
@@ -195,3 +211,13 @@ cgt_nd:
 ; while the base still holds C-BIOS's `C3 FF 10`.
                 org     $0010
                 jp      chrgtr
+
+; --- the RST 18h vector: $0018 `jp outdo` (was C-BIOS's `jp $111B`) ---------
+                org     $0018
+                jp      outdo
+
+; --- C-BIOS's boot leaves H.OUTD a RET, not `jp chput` -----------------------
+; $1037 is C-BIOS's `ld a,$c3` before `ld (H_OUTD),a` (src/main.asm, "set up
+; hook"); only its operand byte changes. PATCH_RANGES refuses unless it is $C3.
+                org     $1038
+                db      $C9

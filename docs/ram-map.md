@@ -33,7 +33,7 @@ other component's cell at the same address; the `inside` column
 names the other component's BUFFER this address falls within. That
 second one is the question a per-component map cannot answer.
 
-* **basic** — 418 declared addresses in this project's own workspace `$E000..$F37F` (385 with a machine-readable width), plus **85** in the MSX standard work area at or above `$F380`.
+* **basic** — 418 declared addresses in this project's own workspace `$E000..$F37F` (385 with a machine-readable width), plus **86** in the MSX standard work area at or above `$F380`.
 * **disk** — 127 declared addresses in this project's own workspace `$E000..$F37F` (113 with a machine-readable width), plus **24** in the MSX standard work area at or above `$F380`.
 
 ## This project's own workspace (`$E000..$F37F`)
@@ -706,6 +706,7 @@ extents the standard already fixes would be noise, not rigour.
 | `$FE5D` |  | `disk` | `H_FOPEN` |  |  |
 | `$FE7B` |  | `basic` | `H_FILE` |  |  |
 | `$FE7B` |  | `disk` | `H_FILE` |  |  |
+| `$FEE4` |  | `basic` | `H_OUTD` | published hook OUTDO calls first (MSX2 TH hook table) |  |
 | `$FEFD` |  | `basic` | `H_ERRP` | error-print hook (D-DISKERR): the errmsg tenant offers a code it |  |
 | `$FEFD` |  | `disk` | `H_ERRP` | error-print hook (D-DISKERR): this ROM prints ERR 68..70 |  |
 | `$FF48` |  | `basic` | `H_CHRG` | published hook CHRGTR calls first (MSX2 TH hook table) |  |

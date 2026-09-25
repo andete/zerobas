@@ -115,7 +115,7 @@ print_string:
                 ld      a,(hl)
                 or      a
                 ret     z
-                call    pchar               ; screen or file (PRDEST); preserves HL
+                rst     $18                 ; screen or file (PRDEST); preserves HL
                 inc     hl
                 jr      print_string
 

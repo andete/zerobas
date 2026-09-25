@@ -403,14 +403,14 @@ pus_fx_lp:
                 or      a
                 jr      z,pus_fx_pad        ; source exhausted -> pad with spaces
                 ld      a,(hl)
-                call    pchar
+                rst     $18
                 inc     hl
                 dec     c
                 dec     b
                 jr      pus_fx_lp
 pus_fx_pad:
                 ld      a,' '
-                call    pchar
+                rst     $18
                 djnz    pus_fx_pad
                 jr      pus_done
 pus_whole:
@@ -422,7 +422,7 @@ pus_whole_lp:
                 or      a
                 jr      z,pus_done
                 ld      a,(hl)
-                call    pchar
+                rst     $18
                 inc     hl
                 dec     b
                 jr      pus_whole_lp
@@ -433,7 +433,7 @@ pus_first:
                 jr      z,pus_done          ; empty string -> emit nothing
                 call    pu_deref_body       ; HL -> bytes
                 ld      a,(hl)              ; A = first byte
-                call    pchar
+                rst     $18
 pus_done:
                 pop     hl
                 ret

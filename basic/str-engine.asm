@@ -412,7 +412,7 @@ print_strval:
                 call    pu_deref_body       ; HL = body
 psv_lp:
                 ld      a,(hl)
-                call    pchar               ; screen or file (PRDEST); preserves all
+                rst     $18                 ; screen or file (PRDEST); preserves all
                 inc     hl
                 djnz    psv_lp
                 ret

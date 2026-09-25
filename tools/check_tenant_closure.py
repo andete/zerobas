@@ -181,6 +181,9 @@ def build_callgraph(files):
                 code = lines[j]
                 for x in _XFER.finditer(code):
                     graph[name].add(x.group(1))
+                r = _RST.match(code)
+                if r:
+                    graph[name].add(rst_target(r.group(1)))
                 if j > i and _is_terminator(code):
                     break
                 j += 1
@@ -399,6 +402,33 @@ def check_page1(argv) -> int:
 
 
 _RST = re.compile(r'^\s*(?:[A-Za-z_]\w*:)?\s*rst\b\s*([^;]*)', re.I)
+
+
+# 🔁 MAKING ROOM lever A (2026-09-25): main's RST vectors are ITS OWN routines
+# (basic/islands.asm, repointed by tools/build_mainrom.py PATCH_RANGES), so an
+# `rst` in main is a CALL and the walk must follow it. `rst $18` is the one that
+# matters: outdo jumps to `pchar` in MAIN PAGE 1, so a low-region routine a
+# page-1 tenant calls back into must not use it -- and without this edge the
+# default walk would never see it.
+RST_TARGETS = {0x10: "chrgtr", 0x18: "outdo"}
+
+
+def rst_target(arg: str) -> str:
+    """The routine an `rst <arg>` enters: a named main vector, else a
+    placeholder no symbol table holds (so the walk records it and moves on)."""
+    t = arg.strip().lower()
+    try:
+        if t.startswith("$"):
+            v = int(t[1:], 16)
+        elif t.startswith("0x"):
+            v = int(t[2:], 16)
+        elif t.endswith("h"):
+            v = int(t[:-1], 16)
+        else:
+            v = int(t)
+    except ValueError:
+        return "__rst_" + t
+    return RST_TARGETS.get(v, "__rst_%02x" % v)
 
 
 def rst_sites(files):
@@ -652,6 +682,12 @@ def selftest() -> int:
         len(found_rst) == 1 and found_rst[0][1] == 1 and found_rst[0][2] == "$10")
     arm("R2 CONTROL: `rst` in a comment or inside a label name is NOT a site",
         all(i == 1 for _, i, _ in found_rst))
+    g = build_callgraph([tmp])
+    arm("R3 `rst $10` is an EDGE to chrgtr in the call graph (lever A)",
+        "chrgtr" in g.get("x", ()))
+    arm("R4 `rst 18h` / `rst $18` / `rst 24` all name outdo; `rst $38` names none",
+        rst_target("18h") == rst_target("$18") == rst_target("24") == "outdo"
+        and rst_target("$38") == "__rst_38")
     # the live tree: the rule must not be vacuous OR sweeping
     live = collect_sources("sub/sub.asm") if os.path.exists("sub/sub.asm") else []
     if live:

@@ -2518,10 +2518,38 @@ item — do **one item per session** to keep context lean.
       found on the way are fixed with it: `EXTRA` was not a recognised verdict,
       and the pin's `subjects` map still counted NO-VERDICT as connected (it
       called CALL connected; CALL's knifed row is SUPPORTED — BLIND).
-      ➡️ **NEXT: (3) OUTDO at `RST 18h`** — 13 `call pchar` sites, ~20 B;
-      ⚠️ C-BIOS's own code uses `rst $18` internally (its `inlin`), so OUR
-      OUTDO must honour the contract C-BIOS calls it with, not just ours.
-      137 B of the `$0160` island are still free.
+      ✅ **(3) BUILT 2026-09-25 — OUTDO AT `RST 18h`, 14 SITES.** `outdo`
+      (8 B, `$0160` island: `push af` / `call H_OUTD` / `pop af` / `jp pchar`)
+      — `pchar` already IS the published contract (current channel by
+      PRDEST/PRDEV, every register and the flags kept). All 14 `call pchar`
+      became `rst $18`. **Main page 1 235 → 261 B free, low region 6 → 8 B**
+      (clean build 2026-09-25). kwtime median **1.005×**, worst `keykw`
+      1.112× (KEY's listing is all output, and each character now pays the
+      hook call) — far inside the 10× bar.
+      🔴 **C-BIOS's H.OUTD IS ITS OUTPUT, SO IT HAD TO GO:** C-BIOS's `$0018`
+      only calls H.OUTD, and its boot points H.OUTD at `chput`. Hook + `pchar`
+      would print every character twice, so the merge also patches C-BIOS's
+      boot `ld a,$c3` → `ld a,$c9` at `$1037` (`PATCH_RANGES` `$1038`, refusing
+      unless it reads `$C3`): H.OUTD is a RET, as on the published machine.
+      Measured safe: only C-BIOS's INLIN reaches `$0018`, and zerobas never
+      calls INLIN.
+      🔴 **`rst` IS NOW A CALL TO BOTH GATES:** `tools/check_tenant_closure.py`
+      `build_callgraph` follows `rst $10`/`$18` to `chrgtr`/`outdo` (selftest
+      R3/R4), so a low-region routine a page-1 tenant calls back into cannot
+      hide an `rst $18` (outdo → `pchar` is main PAGE 1); and
+      `tools/check_dead_code.py` fix (13) does the same — without it `outdo`
+      read as live only through a tools/ mention and the standing control
+      refused the build.
+      ✅ **THE COMPATIBILITY WIN, MEASURED:** `scratchpad/rstvec_probe.py`
+      POKEs USR stubs that call `rst $18` (OUTDO) and `rst $10` (CHRGTR on a
+      digit, `:`, end of line, a letter) and compares both machines:
+      **DIFF: 0/5** (`scratchpad/rstvec_run.out`). Smoke: 12 output rows
+      (`PRINT`, `PRINT USING`, `LIST`, `ERROR`, `LPRINT`, `SAVE`, `PRINT#`) all
+      SUPPORTED. Knife pin: 0 flips.
+      ➡️ **LEVER A IS DONE AS SCOPED.** `SYNCHR` (`RST 08h`) stays DEFERRED
+      (its sites raise different errors; SYNCHR only raises ERR 2) and `DCOMPR`
+      (`RST 20h`) has no matching idiom. 129 B of the `$0160` island and 75 B
+      of the font island are still free for lever B tenants.
 
 - [x] 🟢 **FIXED 2026-09-25 (D-STOPTAP): `ON STOP` RE-FIRES ON THE REFERENCE'S
       AUTO-REPEAT SCHEDULE — 16/16 FINE-SWEEP STEPS AND 6/7 HOLD LENGTHS MATCH.**
@@ -5306,7 +5334,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:24247 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:24275 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -5472,7 +5500,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:10265 (T-6FE392)8 (T-529ABE)` from `TODO.md:21901 (T-529ABE)`: a
+      `TODO.md:10293 (T-6FE392)8 (T-529ABE)` from `TODO.md:21929 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -11109,7 +11137,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:21901 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:21929 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

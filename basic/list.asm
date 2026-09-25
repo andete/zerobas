@@ -217,7 +217,7 @@ lst_lp:
                 ld      (DOT),de
                 call    list_num            ; print the line number (no extra spaces)
                 ld      a,' '               ; one space between number and body
-                call    pchar
+                rst     $18
                 pop     hl                  ; HL = token body
                 call    detok               ; render the body through pchar (PRDEST)
                 call    print_crlf

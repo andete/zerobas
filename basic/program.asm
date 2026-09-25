@@ -982,7 +982,7 @@ pm_skip:        ld      a,(hl)
 pm_emit:        call    print_string        ; phrases are plain NUL-terminated text
                 pop     hl
                 jr      pm_lp
-pm_lit:         call    pchar               ; PRDEST sink (fre_abort_low zeroed it)
+pm_lit:         rst     $18                 ; PRDEST sink (fre_abort_low zeroed it)
                 jr      pm_lp
 
 ; --- pm_sub: the body lives in the sub-ROM (D-MSGSUB, docs/spec-basic- --------

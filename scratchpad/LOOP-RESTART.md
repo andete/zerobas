@@ -30,6 +30,28 @@ symmetric. Treat that group as closed-by-measurement unless a new signal appears
 | PLAY X shape | *"Tenant walks the chain"* — the MML tenant reads the variable chain in RAM itself (spec-basic-audio-play §7.12); main ~0 B, no carve needed |
 | the rig | Joost ORDERED an RP2040-Zero (arrives ~09-26). Still ⛔ PARKED until he picks it up; the rig item says what to measure FIRST (headless joystick, then headless mouse for PAD/PDL) |
 
+### ☀️ MIDDAY 2026-09-25 — READ THIS FIRST, IT SUPERSEDES THE NIGHT BELOW
+
+Since `cc30d988`: `1de440df` lever A designed · `8cb5d21b` **CHRGTR at `RST
+10h`** (50 sites) · the next commit **OUTDO at `RST 18h`** (14 sites; C-BIOS's
+boot patched so H.OUTD is a RET — it was C-BIOS's OUTPUT, hook + `pchar` would
+print twice). **LEVER A IS DONE AS SCOPED** (SYNCHR deferred, DCOMPR no idiom).
+**Walls (clean build 2026-09-25): main page 1 261 B, low 8 B; `$0160` island
+129 B free, font island 75 B free.** USR stubs calling `rst $10`/`$18` match
+the VG-8020 5/5 (`scratchpad/rstvec_probe.py`).
+🔴 **TWO APPARATUS LESSONS, BOTH FIXED:** (a) the unit harness never boots, so
+hooks were `$00` — `tests/msxtest.py` `_seed_hooks`; (b) **D-KNIFESTALE**:
+`make basic-reloc` refreshes the `.sym` but NOT the merged ROM, and the knife
+planted a fresh `stmt_error` into a stale ROM — a whole pin of false verdicts
+that LOOKED healthy. kwknife now rebuilds first. `rst` is now a call edge in
+`check_tenant_closure.py` AND `check_dead_code.py` (fix 13).
+
+➡️ **QUEUE, lowest tier first:** (1) TIER 4: scout where the 6030 B goes
+(Joost: SCOUT FIRST — TODO §"COMPARE RAM *USAGE*"); (2) D-ADDR29 S2 (the
+pointer chain, moved together) with the bytes levers A+B freed; (3) D-STOPTAP's
+remaining 1-frame-tap divergence if a tier puts it above those. Re-scan TODO
+markers before trusting this list.
+
 ### 🌅 NIGHT 2026-09-25 — READ THIS FIRST, IT SUPERSEDES THE QUEUE BELOW
 
 Head `cc30d988`, tree clean, all pushed. Since `a6d0da85`: `9e939cb5` goal (a)

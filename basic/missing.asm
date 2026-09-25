@@ -652,7 +652,7 @@ tr_set:
 trace_line:
                 push    hl                  ; guard the token cursor
                 ld      a,'['
-                call    pchar
+                rst     $18
                 ld      hl,(CURLINE)
                 inc     hl
                 inc     hl
@@ -662,7 +662,7 @@ trace_line:
                 ex      de,hl               ; HL = the line number
                 call    ln_div_entry
                 ld      a,']'
-                call    pchar
+                rst     $18
                 pop     hl
                 ret
 

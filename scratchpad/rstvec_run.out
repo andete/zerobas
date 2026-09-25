@@ -1,0 +1,18 @@
+SAME outdo
+   ref: XY]
+   zb : XY]
+SAME chrgtr_digit
+   ref: [ 1  53  65793 ]
+   zb : [ 1  53  65793 ]
+SAME chrgtr_colon
+   ref: [ 64  58  65793 ]
+   zb : [ 64  58  65793 ]
+SAME chrgtr_eol
+   ref: [ 64  0  65793 ]
+   zb : [ 64  0  65793 ]
+SAME chrgtr_letter
+   ref: [ 0  65  65793 ]
+   zb : [ 0  65  65793 ]
+
+DIFF: 0/5
+refcache: 0 hit, 2 miss, 2 stored

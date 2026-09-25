@@ -358,6 +358,16 @@ class Spans:
                 for t in IDENT.finditer(line):
                     if t.group(0) in self.nodes:
                         edges[name].add(t.group(0))
+                # (13) AN `rst` IS A CALL (MAKING ROOM lever A, 2026-09-25): main's
+                # RST 10h/18h vectors are its own `chrgtr`/`outdo`
+                # (basic/islands.asm), which no identifier names at a call site.
+                # Without this edge `outdo` read as live ONLY through a tools/
+                # mention, and the standing control above refused it.
+                r = ctc._RST.match(line)
+                if r:
+                    tgt = ctc.rst_target(r.group(1))
+                    if tgt in self.nodes:
+                        edges[name].add(tgt)
         return edges
 
     def dead(self, seeds):

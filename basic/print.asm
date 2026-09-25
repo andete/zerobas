@@ -330,7 +330,7 @@ exp_str_lp:
                 jp      z,exp_loop          ; unterminated -> stop (back to loop -> EOL)
                 cp      '"'
                 jr      z,exp_str_close
-                call    pchar               ; emit to screen or file (PRDEST)
+                rst     $18                 ; emit to screen or file (PRDEST)
                 inc     hl
                 jr      exp_str_lp
 exp_str_close:
@@ -471,7 +471,7 @@ dgp_lp:
 ; --- print_crlf: CR + LF ---------------------------------------------------
 print_crlf:
                 ld      a,13
-                call    pchar
+                rst     $18
                 ld      a,10
                 jr      pchar
 
@@ -653,6 +653,6 @@ pcz_have:
                 jp      c,print_crlf        ; -> newline instead of padding
 pcz_pad:
                 ld      a,' '
-                call    pchar               ; screen or file (PRDEST); preserves BC
+                rst     $18                 ; screen or file (PRDEST); preserves BC
                 djnz    pcz_pad
                 ret

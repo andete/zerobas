@@ -249,7 +249,7 @@ ascii_save:
                                             ; otherwise make this save TWO LINES
                                             ; (spec-basic-listrange.md §3.3)
                 ld      a,$1A               ; Ctrl-Z soft-EOF (ASCII program terminator)
-                call    pchar
+                rst     $18
                 xor     a
                 ld      (PRDEST),a          ; restore the screen sink before Close
                 ; 🔴 D-KWSAVEEND: AND THEN THE RUN STOPS -- `SAVE"x",A` ENDS THE
