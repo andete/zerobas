@@ -30,6 +30,29 @@ symmetric. Treat that group as closed-by-measurement unless a new signal appears
 | PLAY X shape | *"Tenant walks the chain"* — the MML tenant reads the variable chain in RAM itself (spec-basic-audio-play §7.12); main ~0 B, no carve needed |
 | the rig | Joost ORDERED an RP2040-Zero (arrives ~09-26). Still ⛔ PARKED until he picks it up; the rig item says what to measure FIRST (headless joystick, then headless mouse for PAD/PDL) |
 
+### 🌅 NIGHT 2026-09-25 — READ THIS FIRST, IT SUPERSEDES THE QUEUE BELOW
+
+Head `cc30d988`, tree clean, all pushed. Since `a6d0da85`: `9e939cb5` goal (a)
+measured (a constant **6030 B** less free memory; economy byte-identical) ·
+`582fa8e2`/`fc86b2c1`/`d4ee80bf` the filed-row triage · `f2df6d3f`/`d496b4ab`
+D-STOPTAP measured + pinned · `c94153c5`/`664bc47f`/`e99793b4` MAKING ROOM
+(Joost: *"Clearly reference fits everything in 32k"*; ruled **B first, then A**)
+· `84e69227` + `cc30d988` lever B's first tenants · `888b8d47` **D-STOPTAP
+FIXED** (16/16 fine steps) and the **triage DONE**.
+**Walls (clean build 2026-09-25): main page 1 140 B, low 0 B; the font island
+(`$1ACF`) 165/240 used; the `$0160` island (160 B) EMPTY.**
+🔴 **LEVER B'S BLAST RADIUS, LEARNED:** pasmo's image now starts at `$1ACF`; any
+tool that assembles `basic/main.asm` ITSELF must read the base from the image
+length (`tests/msxtest.py`) or cut it with `tools/split_islands.split()`
+(`tests/test_msgenc.py`, `tools/check_switch_builds.py` — the FULL battery found
+the last one). A new `basic/*.asm` needs a clean-room attestation and a DEPS entry.
+
+➡️ **QUEUE, lowest tier first:** (1) MAKING ROOM lever A — the `RST 08h..28h`
+vectors honouring the published `SYNCHR`/`CHRGTR`/`OUTDO`/`DCOMPR`/`GETYPR`
+contracts; a DESIGN first (which of our sites' flag uses fit each contract);
+(2) more island tenants for `$0160`; (3) TIER 4: scout the 6030 B (Joost: scout
+first), then D-ADDR29 S2 (the pointer chain) with the bytes lever B freed.
+
 ### 🌙 LATE EVENING 2026-09-24 → 25 (after the hand-off above was written)
 
 `ef8be6cd` PLAY X shape ruled · `b7864309` **D-PLAYX12 — PLAY X SHIPS** (main
