@@ -44,6 +44,18 @@ def chain(d):
 
 SHAPES = [("concat", concat), ("nest", nest), ("chain", chain)]
 
+# 🔁 D-TEMPPOL part 2: consumers that keep NO string -- each must release the
+# temporary it used up, or a 10-entry pool runs out where the reference does not.
+# Each is a WHOLE line (not a B$= expression), keyed by its own shape name.
+LINE_SHAPES = [
+    ("lensum", lambda d: 'A$="X":X=' + "+".join(["LEN(MID$(A$,1))"] * d)
+               + ":PRINT12345;X"),
+    ("print",  lambda d: 'A$="X":PRINT' + ";".join(["MID$(A$,1)"] * d)
+               + ":PRINT12345;1"),
+    ("cmp",    lambda d: 'A$="X":X=' + "+".join(['(MID$(A$,1)="X")'] * d)
+               + ":PRINT12345;X"),
+]
+
 
 def case(expr):
     return f'A$="X":B$={expr}:PRINT12345;LEN(B$)'
@@ -67,6 +79,13 @@ def main():
     for name, fn in SHAPES:
         for d in DEPTHS:
             line = case(fn(d))
+            if len(line) > 250:
+                continue
+            specs.append(("direct", [line]))
+            keys.append((name, d))
+    for name, fn in LINE_SHAPES:
+        for d in DEPTHS:
+            line = fn(d)
             if len(line) > 250:
                 continue
             specs.append(("direct", [line]))

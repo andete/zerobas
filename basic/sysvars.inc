@@ -1848,21 +1848,35 @@ SH_ERR          equ     SH_P + 2            ; result: 0 ok, 1 Out of memory, 2 =
 ; writes it 123 times over 40 merged lines. It goes to the FREE-RAM run below
 ; STRTAB, leaving $E23A..$E23F of that run still free.
 TEMPTOP         equ     $E238               ; current cursor (2 B)
-TEMPD           equ     32                  ; temp-descriptor stack depth
+; 🟢 D-ADDR29 TEMPST (2026-09-25, Joost 2026-09-24: "shrink the pool to 10"):
+; the pool IS the published TEMPST now -- 10 descriptors of 3 B at $F67A..$F697,
+; the same [len][ptr] entry format. scratchpad/tempst_probe.py measured the
+; VG-8020 taking 10 pending temporaries and raising `String formula too
+; complex` at the 11th (nested `MID$(A$,1)+(...)`), with no limit on flat chains,
+; LEN sums, PRINT items or comparisons. ⚠️ THE FIRST CUT FAILED AT DEPTH 6:
+; zerobas kept consumed temporaries to the end of the statement. D-TEMPPOL
+; (parts 1 and 2) releases them at every consumer first. The 96 B at
+; $E381..$E3E0 are freed. ⚠️ The cursor stays PRIVATE (TEMPTOP) and the pool
+; still grows DOWN: TEMPPT's value and direction are not matched by this move,
+; only the capacity and the address.
+TEMPD           equ     10                  ; temp-descriptor stack depth (TEMPST's)
 ; ⚠️ ABSOLUTE, NOT `TEMPTOP + 2`, SINCE D-MERGEWIN MOVED TEMPTOP. The pool and
 ; everything chained off it (TEMPBASE, ISRCH_*, STRENG_SPARE, MIDS_DEST) stay
 ; exactly where they were: only the two cells the ASCII line path WRITES had to
 ; leave the window, and dragging 122 B of chain behind them would have collided
 ; with the GFX block at $E3E5.
-TEMPPOOL        equ     $E381               ; $E381: low (deepest-push) address
-TEMPBASE        equ     TEMPPOOL + TEMPD*3  ; $E3E1: high boundary = the empty-
+TEMPPOOL        equ     $F67A               ; TEMPST: low (deepest-push) address
+TEMPBASE        equ     TEMPPOOL + TEMPD*3  ; $F698: high boundary = the empty-
                                             ; stack value for TEMPTOP
 ; INSTR (ev_f_instr/instr_search, str-engine.asm) resolves both operand
 ; descriptors' heap-body BASE addresses once up front (their [len][ptr]
 ; descriptors, aT/bT, are no longer inline-bodied, so IX/IY can't index bytes
 ; directly off them any more) — two scratch cells hold those bases across the
 ; search loop.
-ISRCH_A         equ     TEMPBASE            ; $E3E1: resolved A-operand body base (2 B)
+; ⚠️ ABSOLUTE SINCE D-ADDR29 TEMPST: it used to chain off TEMPBASE, and with the
+; pool at $F67A that chain would have put ISRCH_A/B on the published DSCTMP
+; ($F698) and FRETOP ($F69B). It stays where it always was.
+ISRCH_A         equ     $E3E1               ; resolved A-operand body base (2 B)
 ISRCH_B         equ     ISRCH_A + 2         ; $E3E3: resolved B-operand body base (2 B)
 ; TMISMATCH ($E3E5, 1 B) STOOD HERE -- the string-comparison D-2 marker
 ; (spec-basic-string-compare.md §3c), a boolean read by fourteen sites ahead of

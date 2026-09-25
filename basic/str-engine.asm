@@ -875,9 +875,11 @@ ev_str_arg:
                 pop     ix                  ; IX = cursor past the string operand
                 call    evsp_close          ; D-EVSPCLOSE
                 inc     ix
-                jp      flt_int_result      ; LEN/ASC/VAL return ints even when a float
-                                            ; is nested in the string arg (float.asm F1;
-                                            ; clobbers A only, then ret to the caller)
+                jp      esa_release_int     ; D-TEMPPOL: pop the consumed arg temp,
+                                            ; then flt_int_result -- LEN/ASC/VAL return
+                                            ; ints even when a float is nested in the
+                                            ; string arg (float.asm F1; clobbers A only,
+                                            ; then ret to the caller)
 ; --- D-STRTM: a NON-string argument is a type mismatch, but the operand's OWN
 ; fault outranks it (docs/spec-basic-strtm.md). This was a bare `jp nc,ev_f_tmm`
 ; -- armed WITHOUT LOOKING AT THE OPERAND -- and the comment above reasoned that
@@ -1977,7 +1979,7 @@ ems_print:
                                             ; overflow happens inside str_eval's HEX$
                                             ; argument conversion (fac_to_int_addr)
                 push    hl                  ; print_strval clobbers HL (token cursor)
-                call    print_strval
+                call    print_strval_rel    ; D-TEMPPOL: print, then pop the item's temp
                 pop     hl
                 jp      exp_loop
 ems_fallback:
@@ -2173,7 +2175,12 @@ type_mismatch_set:
 ev_rel_str:
                 ; HL = cursor past the LHS operand, STRPTR = LHS descriptor.
                 push    hl                  ; [cursor] (snapshot's CALSLT clobbers HL/IX)
-                call    str_snapshot_to_temp ; STRPTR -> LHS snapshot temp; HL = LHS temp
+                call    str_snapshot_arg    ; STRPTR -> LHS snapshot temp; HL = LHS temp
+                                            ; 🔁 D-TEMPPOL part 2: an LHS that is ALREADY
+                                            ; a temp is kept, not copied (D-CLP's rule:
+                                            ; a temp is a fixed-address GC root, safe
+                                            ; across the RHS). The copy was the second
+                                            ; descriptor per compare the probe measured.
                 ex      (sp),hl             ; [LHStemp]; HL = cursor
                 push    hl
                 pop     ix                  ; IX = cursor (for the relop reads)

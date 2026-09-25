@@ -28,7 +28,7 @@ symmetric. Treat that group as closed-by-measurement unless a new signal appears
 | RAM addresses | *"All 29"* (D-RAMFOOT's published variables), scratch included |
 | D-ADDR29's ✋ | `DAC` FULL (ints at DAC+2, USR reads DAC) · `TEMPST` pool → 10 · `RNDX` now, `ARG` later · N set observable-first — `docs/spec-basic-addr29.md` §4.1 |
 | PLAY X shape | *"Tenant walks the chain"* — the MML tenant reads the variable chain in RAM itself (spec-basic-audio-play §7.12); main ~0 B, no carve needed |
-| the rig | Joost ORDERED an RP2040-Zero (arrives ~09-26). Still ⛔ PARKED until he picks it up; the rig item says what to measure FIRST (headless joystick, then headless mouse for PAD/PDL) |
+| the rig | Joost's RP2040-Zero is **CONNECTED to the laptop since 2026-09-25** (`/dev/cu.usbmodem1101`, running firmware, not BOOTSEL; seen read-only, nothing flashed). Still ⛔ PARKED until he picks it up — he said *"keep going"*; the rig item says what to measure FIRST (headless joystick, then headless mouse for PAD/PDL) |
 
 ### ☀️ MIDDAY 2026-09-25 — READ THIS FIRST, IT SUPERSEDES THE NIGHT BELOW
 
@@ -71,10 +71,16 @@ zerobas BOOTS with the function-key line hidden (VG-8020 shows it).
 (`scratchpad/keyboot_probe.py`, 0/6 on both builds vs the VG-8020; 22 B).
 **Walls (clean build 2026-09-25): main page 1 233 B, low 5 B.**
 
-➡️ **QUEUE, lowest tier first:** (1) D-ADDR29's N set (observable first:
-`TTYPOS` `PTRFIL` `ESCCNT` `GRPHED` `LINWRK` `FNKSWI`) / S2b's temporary
-policy; (2) D-STOPTAP's 1-frame tap. 🙋 Two questions for Joost stand (the
-6030 B lever; D-HIMEMLIE's boot value). 🙋 **TWO QUESTIONS FOR JOOST** when the autonomous queue empties:
+✅ Since then: the N set (`TTYPOS`/`FNKSWI`, `b7501cd2`), `RNDX` (`a7d46493`),
+`TEMPST` measured and reverted (`910966d0`), D-TEMPPOL part 1 (`9caa9383`).
+
+✅ **D-TEMPPOL part 2 + `TEMPST` → 10 shipped** — the pool is the published
+TEMPST, 0/51 vs the VG-8020. **Walls: main page 1 190 B, low 5 B; sub p0 400 B.**
+
+➡️ **QUEUE, lowest tier first:** (1) `DAC` full (spec §4.1 — ints at `DAC+2`,
+USR reads DAC; the biggest remaining D-ADDR29 item, measure first); (2) S2b's
+heap half; (3) D-STOPTAP's 1-frame tap. 🙋 Two questions for Joost stand
+(the 6030 B lever; D-HIMEMLIE's boot value). 🙋 **TWO QUESTIONS FOR JOOST** when the autonomous queue empties:
 the 6030 B lever, and D-HIMEMLIE's boot value. Re-scan TODO markers first.
 
 ### 🌅 NIGHT 2026-09-25 — READ THIS FIRST, IT SUPERSEDES THE QUEUE BELOW

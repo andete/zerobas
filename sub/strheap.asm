@@ -164,7 +164,14 @@ she_cmp_op:
                                             ; SH_LEN as the 1-byte result field)
                 xor     a
                 ld      (SH_ERR),a
-                ret
+                ; D-TEMPPOL part 2: both operands are CONSUMED -- the answer is a
+                ; number. Pop the right (newer) then the left, each only if it
+                ; is on top: `X=(MID$(A$,1)="X")+...` held TWO temps per compare
+                ; and ran out at 8 terms on a 10-entry pool (the VG-8020: none).
+                ld      hl,(SH_DEST)
+                call    sh_pop_top
+                ld      hl,(SH_SRC)
+                jp      sh_pop_top
 she_mid_store_op:
                 jp      sh_mid_store        ; sets SH_ERR itself (0 ok / 3 range)
 she_slice_op:
@@ -1488,6 +1495,12 @@ sap_empty:
 ; without disturbing a live one. SH_ERR is already 0 on every path here.
 sap_release:
                 ld      hl,(SH_SRC)
+                ; fall through
+; --- sh_pop_top (D-TEMPPOL part 2): HL = a descriptor; pop it iff it is the ---
+; NEWEST temp-stack entry. The one rule every consumer below uses: only the top
+; entry can be released without disturbing a live one, and a variable, literal
+; or older temp is left alone. Clobbers A, D, E, H, L.
+sh_pop_top:
                 ld      de,(TEMPTOP)
                 or      a
                 sbc     hl,de
@@ -1496,7 +1509,7 @@ sap_release:
                 inc     hl
                 inc     hl
                 inc     hl
-                ld      (TEMPTOP),hl        ; pop: Tk's body is garbage now
+                ld      (TEMPTOP),hl        ; pop: its body is garbage now
                 ret
 sap_oom:
                 pop     af                  ; discard [total]

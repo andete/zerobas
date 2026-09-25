@@ -123,7 +123,7 @@ declared at the published address.
 | choice | ruling |
 |---|---|
 | `DAC` | **full**: `FAC` moves to `$F7F6` AND integers move to `DAC+2` on every integer path; `USR` then finds its argument in `DAC` as MSX machine code expects (the `HL`-only convention of `basic/usr.asm` is superseded) |
-| `TEMPST` | **shrink the pool to 10** at `$F67A` — a too-deep string expression now errors where the reference errors; 96 B of zerobas workspace freed |
+| `TEMPST` | **shrink the pool to 10** at `$F67A` — a too-deep string expression now errors where the reference errors; 96 B of zerobas workspace freed. ✅ **SHIPPED 2026-09-25**, after D-TEMPPOL made zerobas release consumed temporaries (0/51 vs the VG-8020, `scratchpad/tempst_probe.py`); `TEMPPT`'s value and direction are not matched yet |
 | `ARG` / `RNDX` | **`RNDX` now, `ARG` later** with the N set |
 | the N set | **observable first**: `TTYPOS` `PTRFIL` `ESCCNT` `GRPHED` `LINWRK` `FNKSWI`, then evaluator scratch |
 

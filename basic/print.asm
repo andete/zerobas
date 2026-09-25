@@ -468,6 +468,43 @@ dgp_lp:
 ;     callers here (pn_div, list.asm, printusing.asm) resolve to that page-0
 ;     copy by label, unchanged.
 
+; --- D-TEMPPOL part 2 (2026-09-25): release a CONSUMED temporary -----------
+; str_release_top: if STRPTR is the NEWEST temp-stack entry, pop it -- as the
+; reference frees a temporary its consumer has used up. Without it LEN/ASC/VAL
+; and every PRINT item kept their temp to the end of the statement, so a
+; 10-entry pool ran out at 11 `LEN(MID$(..))` terms or 11 printed slices where
+; the VG-8020 has no limit (scratchpad/tempst_probe.py). The descriptor's bytes
+; are untouched -- only its GC-root status ends -- so a caller that reads STRPTR
+; right after (LEN's length, ASC's first byte) still reads the right value as
+; long as nothing allocates in between. Page 1 on purpose: the two consumers are
+; in the full low region and reach this through a same-size `jp`/`call` swap.
+; Preserves HL, DE, BC, IX. Clobbers A, F.
+str_release_top:
+                push    hl
+                push    de
+                ld      hl,(STRPTR)
+                ld      de,(TEMPTOP)
+                or      a
+                sbc     hl,de
+                jr      nz,srt_keep         ; not the newest -> keep it
+                ex      de,hl               ; HL = TEMPTOP
+                inc     hl
+                inc     hl
+                inc     hl
+                ld      (TEMPTOP),hl
+srt_keep:
+                pop     de
+                pop     hl
+                ret
+; LEN/ASC/VAL's shared exit (ev_str_arg): release, then the int-result tail
+esa_release_int:
+                call    str_release_top
+                jp      flt_int_result
+; a PRINT item (ems_print): print it, then release it
+print_strval_rel:
+                call    print_strval
+                jr      str_release_top
+
 ; --- print_crlf: CR + LF ---------------------------------------------------
 print_crlf:
                 ld      a,13

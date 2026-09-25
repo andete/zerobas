@@ -33,7 +33,7 @@ other component's cell at the same address; the `inside` column
 names the other component's BUFFER this address falls within. That
 second one is the question a per-component map cannot answer.
 
-* **basic** — 416 declared addresses in this project's own workspace `$E000..$F37F` (384 with a machine-readable width), plus **93** in the MSX standard work area at or above `$F380`.
+* **basic** — 415 declared addresses in this project's own workspace `$E000..$F37F` (384 with a machine-readable width), plus **95** in the MSX standard work area at or above `$F380`.
 * **disk** — 127 declared addresses in this project's own workspace `$E000..$F37F` (113 with a machine-readable width), plus **24** in the MSX standard work area at or above `$F380`.
 
 ## This project's own workspace (`$E000..$F37F`)
@@ -250,8 +250,7 @@ second one is the question a per-component map cannot answer.
 | `$E29B` | 2 B | `disk` | `FDC_LSEC` | current logical sector (word) | `basic` STRSCR |
 | `$E29D` | 2 B | `disk` | `FDC_DEST` | current transfer address (word) | `basic` STRSCR |
 | `$E29F` | 1 B | `disk` | `FDC_TRY` | read attempt counter (1 B) | `basic` STRSCR |
-| `$E381` |  | `basic` | `TEMPPOOL` | $E381: low (deepest-push) address |  |
-| `$E3E1` | 2 B | `basic` | `ISRCH_A/TEMPBASE` | $E3E1: resolved A-operand body base (2 B) |  |
+| `$E3E1` | 2 B | `basic` | `ISRCH_A` | resolved A-operand body base (2 B) |  |
 | `$E3E3` | 2 B | `basic` | `ISRCH_B` | $E3E3: resolved B-operand body base (2 B) |  |
 | `$E3E5` | 1 B | `basic` | `GFX_BAD/STRENG_SPARE` | VRAM read-back mismatch count (1) |  |
 | `$E3E6` |  | `basic` | `MIDS_DEST` |  |  |
@@ -628,6 +627,8 @@ extents the standard already fixes would be noise, not rigour.
 | `$F41C` |  | `basic` | `CURLIN` | D-CURLIN (Joost, 2026-09-24): the PUBLISHED current |  |
 | `$F661` | 1 B | `basic` | `TTYPOS` | BASIC's 0-based print column (D-ADDR29 N set) (1) |  |
 | `$F676` |  | `basic` | `TXTTAB` | sysvar: pointer to the BASIC text base |  |
+| `$F67A` |  | `basic` | `TEMPPOOL` | TEMPST: low (deepest-push) address |  |
+| `$F698` |  | `basic` | `TEMPBASE` | $F698: high boundary = the empty- |  |
 | `$F6B3` | 2 B | `basic` | `ERRLIN` | 2 B: last error's line number, or 65535 if it |  |
 | `$F6B5` | 2 B | `basic` | `DOT` | 2 B: the line `.` names. Cold value 0 (init). |  |
 | `$F6B9` | 2 B | `basic` | `ONELIN` | 2 B: ON ERROR handler line's LINK address (the |  |

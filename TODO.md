@@ -1928,11 +1928,38 @@ item — do **one item per session** to keep context lean.
       | `X=(MID$(A$,1)="X")+…` **8** terms | -8 | `String formula too complex` (two per compare) |
       A `PRINT` of 11 sliced items is an ordinary program; shipping the pool at
       10 before these release would break it.
-      ➡️ **NEXT, D-TEMPPOL PART 2:** release the consumed temporary at the
+      ~~➡️ **NEXT, D-TEMPPOL PART 2:** release the consumed temporary at the
       numeric consumers (`LEN`/`ASC`/`VAL`/`INSTR`…), at each `PRINT` item and
       in string comparison (both operands) — the reference's "free the temp you
       consumed if it is the newest" — then re-run `tempst_probe.py` plus these
-      three shapes at 10 and ship `TEMPST` → 10 as the equate move above.
+      three shapes at 10 and ship `TEMPST` → 10 as the equate move above.~~
+      🟢 **D-TEMPPOL PART 2 + `TEMPST` → 10 SHIPPED (2026-09-25) — the pool IS
+      the published `TEMPST` (`$F67A`, 10 × 3 B) and matches the VG-8020 at
+      every depth: `scratchpad/tempst_probe.py` → `tempst_after.out`, six
+      shapes × depths 6..14 (nested concat, nested arguments, flat chain,
+      `LEN` sums, `PRINT` items, comparisons), DIFF 0/51.** 96 B of zerobas
+      workspace (`$E381..$E3E0`) freed; page 1 −35 B, sub page 0 −11 B.
+      What released what (the reference frees a temporary its consumer used up,
+      if it is the newest):
+      * `LEN`/`ASC`/`VAL` — `ev_str_arg`'s exit jumps to `esa_release_int`
+        (page 1): pop `STRPTR` if it is on top, then `flt_int_result`. All
+        three read the descriptor before anything allocates; `VAL`'s parse is
+        pure RAM. They are its only callers.
+      * each `PRINT` item — `ems_print` calls `print_strval_rel` (print, then
+        release); other `print_strval` callers are untouched.
+      * string comparison — the sub-side `she_cmp_op` pops the right operand,
+        then the left (`sh_pop_top`, shared with `sap_release`); and
+        `ev_rel_str` KEEPS a left operand that is already a temp instead of
+        copying it (`str_snapshot_arg`) — that copy was the last leak: the
+        comparison shape still failed at depth 9 with only the pops in.
+      ⚠️ Heap usage is UNCHANGED by part 2 (`scratchpad/strtemp_p2.out`,
+      4/8 as before): releasing a DESCRIPTOR does not give its body back —
+      the bytes wait for a collection, where the reference returns a body at
+      the heap's edge at once. That is S2b's remaining half.
+      📏 sysvarsweep boot BASE-DIFF 150 (unchanged — `TEMPST` is not a boot
+      cell); kwsweep SUPPORTED=382; knife 0 flips.
+      ➡️ **NEXT:** `DAC` full (spec §4.1), or S2b's heap half (return a
+      released body at FRETOP), or `TEMPPT`'s value/direction.
       🔪 **FOUND ON THE WAY — D-KNIFENOREAD, FIXED:** `scratchpad/kwknife.py`
       scored a cut whose sweep printed NO verdict as LOAD-BEARING
       (`v != "SUPPORTED"`). The knife run of the D-BUFMERGE chain read
@@ -5624,7 +5651,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:24565 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:24592 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -5790,7 +5817,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:10583 (T-6FE392)8 (T-529ABE)` from `TODO.md:22219 (T-529ABE)`: a
+      `TODO.md:10610 (T-6FE392)8 (T-529ABE)` from `TODO.md:22246 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -11427,7 +11454,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:22219 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:22246 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
