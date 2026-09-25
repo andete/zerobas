@@ -2411,6 +2411,27 @@ item — do **one item per session** to keep context lean.
       zerobas code ISLANDS at those addresses, with a gate that each island
       stays inside its run; (3) move self-contained main routines there, and
       read the walls from a clean build.
+      ✅ **(1) DONE 2026-09-25 — 408 B CONFIRMED AS PADDING IN THE SOURCE:**
+      C-BIOS `src/main.asm:620` `ds $0200 - $` (the 160 B at `$0160`, pad up to
+      its internal `jump_table`) and `src/main.asm:3091` `ds $1bbf - $` (the
+      248 B at `$1ACF`, pad up to the pinned font). Filling them moves nothing
+      as long as each island stays below its pin. The 99 B at `$0C9E` is very
+      likely the unused TAIL of C-BIOS "gap-1" after our tape bodies (spliced
+      at `$09EE` by `tools/build_mainrom.py`) — confirm before counting it; the
+      21 B at `$09D9` is too small to bother.
+      🧭 **(2) THE BUILD PLAN — THE PRECEDENT EXISTS:** `tools/build_mainrom.py`
+      ALREADY splices a second component into C-BIOS padding (the tape bodies
+      at `$09EE`, checked `$00` fill). Extend it: BASIC (`basic/main.asm`, one
+      pasmo unit, `org BASIC_ORG` = `$2812`) gains `org $0160` / `org $1ACF`
+      island blocks with pasmo `IF $ > $0200` / `IF $ > $1BBF` refusals; the
+      splice overlays ONLY the island ranges and `$2812..$7FFF`, REFUSING
+      unless the C-BIOS bytes it overwrites are all `$00`. ⚠️ Check how pasmo
+      `--bin` emits multiple orgs (a backward org may start the image at
+      `$0160` — `tools/build_mainrom.py`, `tools/pad_rom.py`, `check_reloc`'s
+      LEAN hash and `make basic-reloc`'s wall readout all assume the
+      `$2812` start). First tenants: self-contained low-region/page-1 routines
+      that neither the sub-ROM nor disk.rom import (the generated ABIs list
+      what they do).
 
 - [ ] 🔴 **D-STOPTAP: A SHORT Ctrl-STOP TAP FIRES `ON STOP GOSUB` ~5 TIMES HERE
       AND ONCE ON THE REFERENCE.** Found 2026-09-25 by the filed-row triage:
@@ -5177,7 +5198,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:24117 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:24138 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -5343,7 +5364,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:10135 (T-6FE392)8 (T-529ABE)` from `TODO.md:21771 (T-529ABE)`: a
+      `TODO.md:10156 (T-6FE392)8 (T-529ABE)` from `TODO.md:21792 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -10979,7 +11000,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:21771 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:21792 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
