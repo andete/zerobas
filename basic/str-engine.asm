@@ -631,11 +631,16 @@ str_concat_tail:
 sct_go:
                 pop     bc                  ; HL already @ '+' (skip_spaces result)
                 push    hl                  ; save cursor (@ '+')
-                call    str_snapshot_to_temp ; operand 1 -> owned temp R; HL=R, STRPTR=R
-                                            ; (unconditional: R must be a fresh temp we
-                                            ; can modify in place -- never a var slot;
-                                            ; a function-result op1 just costs one extra
-                                            ; harmless temp)
+                call    str_snapshot_arg    ; operand 1 -> owned temp R; HL=R, STRPTR=R
+                                            ; (R must be a temp we can modify in place --
+                                            ; never a var slot. 🔁 D-TEMPPOL 2026-09-25:
+                                            ; an op1 that is ALREADY a temp is owned by
+                                            ; this expression alone and IS R. It used to
+                                            ; be copied -- "one extra harmless temp" --
+                                            ; and that extra temp per level is what made
+                                            ; zerobas hold TWO descriptors per pending
+                                            ; `MID$(..)+(..)` level where the reference
+                                            ; holds one (scratchpad/tempst_probe.py).)
                 ex      (sp),hl             ; [R]; HL = cursor (@ '+')
 sct_loop:
                 rst    $10                ; past the '+'

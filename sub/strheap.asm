@@ -1442,7 +1442,7 @@ sap_ok:
                 or      a
                 jr      z,sap_empty         ; total 0 -> R becomes empty
                 call    sap_try_extend      ; D-CONCATPEAK: grow R in place if it is
-                ret     c                   ; the TOP body -- A/C restored if it is not
+                jr      c,sap_release       ; the TOP body -- A/C restored if it is not
                 push    af                  ; [total] guard
                 call    heap_alloc          ; A=total -> CF+HL=newbody / CF clear=OOM.
                                             ; May GC; R and Tk are re-read fresh below
@@ -1467,7 +1467,7 @@ sap_ok:
                 ld      (hl),d              ; R.ptr = newbody (old R body -> garbage)
                 xor     a
                 ld      (SH_ERR),a
-                ret
+                jr      sap_release
 sap_empty:
                 ld      hl,(SH_DEST)
                 xor     a
@@ -1477,6 +1477,26 @@ sap_empty:
                 inc     hl
                 ld      (hl),a              ; R.ptr = 0
                 ld      (SH_ERR),a
+                ; fall through
+; --- sap_release (D-TEMPPOL, 2026-09-25): the operand is CONSUMED -----------
+; Once Tk's bytes are in R, a Tk that is the NEWEST temp-stack entry is popped,
+; as the reference frees a consumed temporary. Without it every function
+; operand of a flat chain kept its descriptor to the end of the statement:
+; `MID$(A$,1)+MID$(A$,1)+...` ran out at 11 terms on the 10-entry pool where
+; the VG-8020 takes 14 (scratchpad/tempst_probe.py). A Tk that is a variable,
+; a literal or an OLDER temp is left alone -- only the top entry can be popped
+; without disturbing a live one. SH_ERR is already 0 on every path here.
+sap_release:
+                ld      hl,(SH_SRC)
+                ld      de,(TEMPTOP)
+                or      a
+                sbc     hl,de
+                ret     nz                  ; not the newest entry -> keep it
+                ex      de,hl               ; HL = TEMPTOP
+                inc     hl
+                inc     hl
+                inc     hl
+                ld      (TEMPTOP),hl        ; pop: Tk's body is garbage now
                 ret
 sap_oom:
                 pop     af                  ; discard [total]

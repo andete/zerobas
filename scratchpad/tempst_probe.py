@@ -7,7 +7,9 @@ holds 32. Each case nests d levels of `MID$(A$,1)+( ... )`: every level leaves
 one pending temporary while the parenthesised right-hand side is evaluated, so
 the depth at which an error first appears is the pool's effective capacity.
 A second shape keeps the temporaries as FUNCTION ARGUMENTS instead
-(`LEFT$(MID$(...),9)` nesting), because the two may be charged differently.
+(`LEFT$(MID$(...),9)` nesting), because the two may be charged differently;
+a third is a FLAT chain of function operands (`MID$(A$,1)+MID$(A$,1)+...`),
+which a pool that never releases a consumed operand runs out on.
 
 Diskless pair, fresh boot per case. Clean room: typed BASIC, screen text.
 """
@@ -34,7 +36,13 @@ def nest(d):
     return e
 
 
-SHAPES = [("concat", concat), ("nest", nest)]
+def chain(d):
+    # a FLAT chain of d function operands: each operand's own temporary is
+    # consumed by the append -- the reference frees it, so no depth limit shows
+    return "+".join(["MID$(A$,1)"] * d)
+
+
+SHAPES = [("concat", concat), ("nest", nest), ("chain", chain)]
 
 
 def case(expr):
