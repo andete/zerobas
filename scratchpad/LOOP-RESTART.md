@@ -46,11 +46,18 @@ planted a fresh `stmt_error` into a stale ROM — a whole pin of false verdicts
 that LOOKED healthy. kwknife now rebuilds first. `rst` is now a call edge in
 `check_tenant_closure.py` AND `check_dead_code.py` (fix 13).
 
-➡️ **QUEUE, lowest tier first:** (1) TIER 4: scout where the 6030 B goes
-(Joost: SCOUT FIRST — TODO §"COMPARE RAM *USAGE*"); (2) D-ADDR29 S2 (the
-pointer chain, moved together) with the bytes levers A+B freed; (3) D-STOPTAP's
-remaining 1-frame-tap divergence if a tier puts it above those. Re-scan TODO
-markers before trusting this list.
+📏 **THE 6030 B, SCOUTED** (`scratchpad/ramlayout_probe.py`): it is mostly a
+DISKLESS story — zerobas's layout is the same in both builds, so against the
+CF-3300 the gap is only **645 B**. zerobas's 6778 B above its free area =
+workspace 4992 + `DETOKBUF` 1280 + channels 306 + strings 200. 🙋 Levers priced
+for Joost in TODO §"COMPARE RAM *USAGE*" (drop `DETOKBUF` +1280 B both builds;
+NODISK re-layout ~942 B; shrink tenants; accept). And a defect: **D-HIMEMLIE**
+— `HIMEM` reads `$F380` while zerobas occupies `$DB00..$F37F`.
+
+➡️ **QUEUE, lowest tier first:** (1) TIER 4 **D-HIMEMLIE** (🤖, measure
+`CLEAR ,addr` above HIMEM on both references first); (2) D-ADDR29 S2 (the
+pointer chain, moved together); (3) D-STOPTAP's remaining 1-frame-tap
+divergence if a tier puts it above those. Re-scan TODO markers first.
 
 ### 🌅 NIGHT 2026-09-25 — READ THIS FIRST, IT SUPERSEDES THE QUEUE BELOW
 

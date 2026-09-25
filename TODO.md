@@ -1811,10 +1811,83 @@ item — do **one item per session** to keep context lean.
       workspace), so a program of ~22.8–28.8 KB fits on the VG-8020 and not
       here. 🔮 Predicted "a fixed offset, deltas mostly matching" — HIT, and
       the deltas match EXACTLY.
-      🙋 **BACK TO JOOST (the rung's rule: adjustments are his):** close the
+      ~~🙋 **BACK TO JOOST (the rung's rule: adjustments are his):** close the
       6030 B — which means shrinking zerobas's reserved RAM (the pool, the
       workspace) toward the reference's layout — or accept it as a stated
-      divergence?
+      divergence?~~
+      🏗️ **RULED BY JOOST, 2026-09-25: *"Scout where it goes"*** — account for
+      the gap before choosing.
+      📏 **SCOUTED 2026-09-25 (`scratchpad/ramlayout_probe.py` →
+      `scratchpad/ramlayout_run.out`): the boot layout of all FOUR machines,
+      read from their pointers.** The top of each free area is where the
+      stack/control pool starts — the reference's `STKTOP`, zerobas's `CTLTOP`
+      (the same expression, `strheap_varceil`):
+      | machine | top of free | `FRE(0)` | above it, up to `$F380` |
+      |---|---|---|---|
+      | VG-8020 (diskless) | `$F0A0` | 28793 | 200 strings + 536 file buffers (`MEMSIZ` `$F168`..`HIMEM` `$F380`) = **736 B** |
+      | CF-3300 (disk) | `$DB97` | 23408 | 200 strings + 536 file buffers + **5385 B disk work area** (`HIMEM` `$DE77`) = **6121 B** |
+      | zerobas, either build | `$D906` | 22763 | 306 channel table + 200 strings + **1280 B `DETOKBUF`** (`$DB00`..`$DFFF`) + **4992 B workspace** (`$E000`..`$F37F`) = **6778 B** |
+      🎯 **THE 6030 B IS MOSTLY A DISKLESS STORY.** zerobas's layout is the
+      SAME with and without a disk (`TXTMAX` = `$DB00` in both), so against
+      the DISK reference the gap is only **645 B** (23408 vs 22763), and
+      against the diskless one it is 6030. Each checks to the byte against the
+      table (6778 − 736 = 6042, 6778 − 6121 = 657; the 12 B left is the two
+      machines' margins).
+      📋 **WHERE zerobas's 6778 B GOES, LARGEST FIRST:**
+      * **workspace `$E000..$F37F`, 4992 B** — of it `docs/ram-map.md`
+        declares **2669 B `basic` + 942 B `disk`**, and ~1735 B lies in gaps
+        between declared widths. ⚠️ A gap is a READING, not free space
+        (cells addressed by offset have no row) — machine-verify before
+        claiming any. The 942 B disk share is dead weight on the DISKLESS
+        machine. Biggest `basic` tenants: `TOKBUF` 576, `FLD_DESC` 256,
+        `CAL_BUF2` 256, `STRSCR` 256, `TEMPPOOL` 96 (→ 30 by the D-ADDR29
+        ruling).
+      * **`DETOKBUF`, 1280 B** — the LIST/ASCII-SAVE render buffer, sized for
+        the worst case (254 × 5 + 1). It is the ONLY zerobas block between the
+        free area and the workspace, so it is the one lever that moves
+        `TXTMAX` directly — on BOTH builds. The reference layout shows no such
+        buffer (its strings sit directly on `STKTOP`).
+      * **channel table 306 B vs the reference's 536 B** — zerobas is 230 B
+        AHEAD here.
+      🔴 **AND ONE DEFECT THE SCOUT EXPOSED: zerobas's `HIMEM` (`$FC4A`) reads
+      `$F380` on both builds, while zerobas itself occupies `$DB00..$F37F`.**
+      On the CF-3300 `HIMEM` is `$DE77`, BELOW everything it uses, so a
+      program may trust `PEEK(&HFC4A)` as the top of its own RAM (the usual
+      way to site machine code). On zerobas the same program BLOADs over the
+      interpreter's workspace. Filed as its own item below (D-HIMEMLIE).
+      🙋 **BACK TO JOOST (the rung's rule: adjustments are his)** — which
+      lever, if any, to pull (each priced, none built; the item's own marker
+      stays 🤖 for the D-ADDR29 arc below it):
+      | lever | gain | both builds? | what it takes |
+      |---|---|---|---|
+      | (1) **drop `DETOKBUF`** — render LIST/ASCII-SAVE a token at a time, as the reference's layout implies | **+1280 B** (disk build goes 635 B AHEAD of the CF-3300) | yes | sub-ROM detok rework (sub page 0 434 B / page 1 423 B free); a speed check on LIST |
+      | (2) **a NODISK-only layout** — pack the 942 B disk share out of the diskless workspace and raise its `TXTMAX` | up to ~942 B + verified holes | diskless only | the workspace interleaves basic and disk cells; only the LOW end can be ceded (text grows up), so it is a re-layout, not a switch |
+      | (3) **shrink `basic` tenants** — `TEMPPOOL` → 30 (ruled), the 256 B buffers, verified holes | tens to hundreds of B | yes | per tenant; each needs its ceiling proved |
+      | (4) **accept** the diskless gap as a stated divergence | 0 | — | a doc line |
+
+- [ ] 🔴 **D-HIMEMLIE — zerobas's `HIMEM` SAYS `$F380` WHILE ZEROBAS LIVES AT
+      `$DB00..$F37F`**
+      🎚️ TIER 4 — RAM usage, goal (b) *same addresses*: the published cell
+      carries a value whose MEANING is wrong, not just a different number.
+      📏 **MEASURED 2026-09-25** (`scratchpad/ramlayout_probe.py` →
+      `scratchpad/ramlayout_run.out`): `PEEK` of `HIMEM` (`$FC4A`) reads
+      `$F380` on zerobas's DISK and DISKLESS builds. On the CF-3300 it reads
+      `$DE77` — BELOW its 5385 B disk work area — and on the VG-8020 `$F380`,
+      where nothing of the system's sits below it. So on both references
+      `HIMEM` is the top of the RAM a program may take; on zerobas the 6272 B
+      above `$DB00` (`DETOKBUF` + the `$E000..$F37F` workspace) sit UNDER it.
+      A program that sites machine code or data just below `PEEK(&HFC4A)` —
+      the usual idiom — writes over the interpreter.
+      ⚠️ zerobas's own ceiling is already right: `strheap_ceiling` takes
+      `min(HIMEM, TXTMAX)`, so BASIC never uses the space. Only the CELL lies.
+      🤖 **AUTONOMOUS — MEASURE FIRST, THEN FIX:** (1) on the VG-8020 and the
+      CF-3300, what does `CLEAR 200,<addr>` do with an address ABOVE the boot
+      `HIMEM` (error? which?) and what does `HIMEM` read after a legal one;
+      (2) make zerobas's boot `HIMEM` `TXTMAX` (`$DB00`) and `CLEAR`'s
+      address check agree with (1); (3) rows on both builds (the diskless
+      target must get its own, per the ruled rule), plus `make sysvarsweep`.
+      Price: a store at boot and possibly a compare in `CLEAR` — read the wall
+      first.
 
 - [x] 🔬 **PROMOTE THE THREE ASCII/MERGE DISK PROBES INTO THE BATTERY — THEIR
       EXCUSE'S PREMISE CHANGED WHEN STEP 11 SHIPPED**
@@ -5334,7 +5407,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:24275 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:24348 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -5500,7 +5573,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:10293 (T-6FE392)8 (T-529ABE)` from `TODO.md:21929 (T-529ABE)`: a
+      `TODO.md:10366 (T-6FE392)8 (T-529ABE)` from `TODO.md:22002 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -11137,7 +11210,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:21929 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:22002 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
