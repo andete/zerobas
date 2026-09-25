@@ -1801,7 +1801,43 @@ item — do **one item per session** to keep context lean.
       4 vs 16 at boot, +5 for `A$="HELLO"` on both); the ceiling is exactly
       `$DB00`, so the 12 B is inside the heap (likely per-record overhead on the
       typed loop's temporaries) — measure what they are before any move.
-      ➡️ **NEXT: S3 `CNSDFG`/`ATRBYT` writes** (spec §5), or S2b once measured.
+      📏 **S2b's 12 B, EXPLAINED (2026-09-25, `scratchpad/strtemp_probe.py` →
+      `scratchpad/strtemp_run.out`, a readout that builds no string): DIFF
+      4/8, and every DIFF is zerobas holding MORE heap, never less.** Kept
+      strings match (`A$="HELLO"` 5/5, `"AB"+"CD"` 4/4, a copy 6/6). Two
+      policies differ: (a) a LITERAL argument of a string function is copied
+      into the heap — `PRINT MID$("XYZ",2)` leaves 3 B on zerobas, 0 on the
+      reference, and `A$=MID$("ABCDEF",2,3)` holds 6 against 3; (b) a
+      released temporary is not handed back — `X=LEN(MID$(...)+"Q")` holds 10
+      against 3. The reference evidently reclaims a temporary released while
+      newest. `FRE("")` still matches because it collects first; the
+      difference is FRETOP's value and how often zerobas collects.
+      🔮 Predicted DIFF 3/8 (temporaries only) — **MISS: 4/8**, `mid_kept`
+      too; the literal snapshot (a) was not in my hypothesis.
+      ⚠️ **SO S2b IS NOT AN EQUATE MOVE.** Publishing zerobas's `FRETOP` at
+      `$F69B` today would show a value that drifts from the reference after
+      any temporary. Matching it means changing the string engine's
+      temporary policy (reference-like reclaim of the newest released
+      temporary; point at a literal instead of copying it) — goal (c)
+      economy at the temporary level, a sub-ROM string-engine slice, priced
+      when picked up.
+      ~~➡️ **NEXT: S3 `CNSDFG`/`ATRBYT` writes** (spec §5); S2b is the temporary
+      policy above.~~
+      🟢 **S3 SHIPPED FOR `ATRBYT` (2026-09-25), 6 B page 1 — and the premise
+      halved it** (`scratchpad/s3cells_probe.py`: `s3cells_run.out` before,
+      `s3cells_after.out` after). RAMFOOT counts WRITES, so the question was
+      what a PEEK reads: the reference's `COLOR` sets `ATRBYT` to the
+      foreground (`COLOR 5` → 5, `COLOR 9` in SCREEN 2 → 9, `COLOR ,1` leaves
+      15); zerobas never did. `clr_apply` now copies `FORCLR` into `ATRBYT`
+      after the commit. **`ATRBYT` 9/9 after.**
+      🔮 Predicted `CNSDFG` SAME everywhere (CLS only re-writes it) — **MISS**:
+      zerobas BOOTS with `CNSDFG` = 0 against the reference's 255, and that is
+      not a missing write — zerobas really boots with the function-key line
+      HIDDEN (the VG-8020 shows `color auto goto list run`). `KEY ON`/`KEY OFF`
+      already match. Filed as its own item, D-KEYBOOT, below; `CNSDFG` follows
+      from it.
+      ➡️ **NEXT: the N set, observable first** (spec §4.1: `TTYPOS` `PTRFIL`
+      `ESCCNT` `GRPHED` `LINWRK` `FNKSWI`), or `DAC`/`TEMPST`/`RNDX` as ruled.
       🔪 **FOUND ON THE WAY — D-KNIFENOREAD, FIXED:** `scratchpad/kwknife.py`
       scored a cut whose sweep printed NO verdict as LOAD-BEARING
       (`v != "SUPPORTED"`). The knife run of the D-BUFMERGE chain read
@@ -1889,6 +1925,29 @@ item — do **one item per session** to keep context lean.
       | (2) **a NODISK-only layout** — pack the 942 B disk share out of the diskless workspace and raise its `TXTMAX` | up to ~942 B + verified holes | diskless only | the workspace interleaves basic and disk cells; only the LOW end can be ceded (text grows up), so it is a re-layout, not a switch |
       | (3) **shrink `basic` tenants** — `TEMPPOOL` → 30 (ruled), the 256 B buffers, verified holes | tens to hundreds of B | yes | per tenant; each needs its ceiling proved |
       | (4) **accept** the diskless gap as a stated divergence | 0 | — | a doc line |
+
+- [ ] 🖥️ **D-KEYBOOT — zerobas BOOTS WITH THE FUNCTION-KEY LINE HIDDEN; THE
+      VG-8020 SHOWS IT**
+      🎚️ TIER 1 — happy path: it is on the very first screen every user sees,
+      and it moves the text window (the reference scrolls within rows 0..22 at
+      boot, zerobas within 0..23 — `docs/missing-vg8020-characterization.md`
+      §3 measured 22 vs 23 in the boot state).
+      📏 **MEASURED 2026-09-25** (`scratchpad/s3cells_probe.py` →
+      `scratchpad/s3cells_run.out`, and a boot-screen capture): the VG-8020's
+      bottom row at boot reads `color  auto   goto   list   run` and
+      `CNSDFG` = 255; zerobas's bottom row is blank and `CNSDFG` = 0. After an
+      explicit `KEY ON` the two agree (`KEY ON` paints and reserves the row
+      since D-DSPFNK, 2026-09-17) — only the BOOT state differs.
+      ⚠️ The 08-2x characterization filed the missing labels as console
+      "chrome" (C-BIOS paints none); D-DSPFNK then made `KEY ON` faithful and
+      the boot state was never revisited. No ruling keeps it hidden.
+      🤖 **AUTONOMOUS — do at boot what `KEY ON` does** (`basic/screen.asm`
+      `key_on`: `DSPFNK`, `CRTCNT` → `CON_ROWS_KEYON`, `CNSDFG` = `$FF`, the
+      paint op), from the cold-boot path. ⚠️ **THE BLAST RADIUS IS THE PRICE,
+      NOT THE BYTES:** every zerobas-side screen capture that uses row 23 or
+      scrolls to it changes; the probes that drop the last row "as chrome"
+      should start AGREEING there. Run the FULL battery, and read every
+      screen-reading suite's diff, not just its colour.
 
 - [ ] 🔴 **D-HIMEMLIE — zerobas's `HIMEM` SAYS `$F380` WHILE ZEROBAS LIVES AT
       `$DB00..$F37F`**
@@ -5457,7 +5516,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:24398 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:24457 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -5623,7 +5682,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:10416 (T-6FE392)8 (T-529ABE)` from `TODO.md:22052 (T-529ABE)`: a
+      `TODO.md:10475 (T-6FE392)8 (T-529ABE)` from `TODO.md:22111 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -11260,7 +11319,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:22052 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:22111 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

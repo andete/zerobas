@@ -235,11 +235,16 @@ clr_apply:
                 ; 🎯 The remedy is the one this tree already uses at ev_ff_arg:
                 ; ask check_expr_errors before acting, not after.
                 call    check_expr_errors   ; TMISMATCH -> ERR 13, before any store
-                ld      a,(SCRMOD)          ; CHGCLR wants the current screen mode
                 push    hl
                 call    clr_commit          ; D-PARTIAL: publish the shadow — the ONLY
                                             ; point at which COLOR becomes visible, and
                                             ; it is past every way the statement can fail
+                ; D-ADDR29 S3: the reference's COLOR also sets ATRBYT to the
+                ; foreground (scratchpad/s3cells_probe.py: COLOR 5 -> 5, COLOR 9
+                ; in SCREEN 2 -> 9; COLOR ,1 leaves it at the foreground 15).
+                ld      a,(FORCLR)
+                ld      (ATRBYT),a
+                ld      a,(SCRMOD)          ; CHGCLR wants the current screen mode
                 call    CHGCLR
                 jp      pop_exec            ; D-POPEXEC: pop hl + exec_stmt
 

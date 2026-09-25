@@ -208,8 +208,9 @@ clr_prep:
 
 ; clr_commit — publish the shadow pair, once the whole statement has parsed.
 ; Called from INSIDE clr_apply's existing `push hl` window and BEFORE `call
-; CHGCLR`, which reads the three sysvars — so it needs no HL guard of its own,
-; and it leaves A alone because clr_apply loaded SCRMOD into it first.
+; CHGCLR`, which reads the three sysvars — so it needs no HL guard of its own.
+; It leaves A alone; since D-ADDR29 S3 (2026-09-25) clr_apply loads SCRMOD AFTER
+; this call (it copies FORCLR to ATRBYT first), so that no longer matters.
 clr_commit:
                 ld      hl,(CLR_SAVE)
                 ld      (FORCLR),hl         ; FORCLR+BAKCLR are adjacent

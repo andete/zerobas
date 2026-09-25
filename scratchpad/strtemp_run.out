@@ -1,0 +1,12 @@
+case        used: ref   zb
+SAME boot            0     0   
+SAME literal         5     5   A$="HELLO"
+DIFF mid_kept        3     6   A$=MID$("ABCDEF",2,3)
+SAME concat          4     4   A$="AB"+"CD"
+SAME concat_var      6     6   A$="AB":B$=A$+"CD"
+DIFF temp_print      0     3   PRINT MID$("XYZ",2)
+DIFF temp_len        0     6   X=LEN(MID$("ABCDEF",2,3))
+DIFF temp_two        3    10   X=LEN(MID$("ABCDEF",2,3)+"Q")
+
+DIFF: 4/8
+refcache: 0 hit, 2 miss, 2 stored

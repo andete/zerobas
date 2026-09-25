@@ -140,7 +140,11 @@ declared at the published address.
    moved together, with a row that reads `STREND−ARYTAB` and `FRE`-style
    differences on both machines. Mostly equates; `VARTAB` and `STREND` may need
    writes.
-3. **S3 `CNSDFG`/`ATRBYT` writes** on `CLS`/`COLOR` — a few bytes each.
+3. ✅ **S3 — `ATRBYT` SHIPPED 2026-09-25** (`COLOR` copies the foreground, 6 B;
+   `scratchpad/s3cells_probe.py`). `CNSDFG` needed no write: zerobas boots with
+   the key line HIDDEN, so its 0 is true — the divergence is the boot state,
+   filed as D-KEYBOOT (TODO). The original plan: `CNSDFG`/`ATRBYT` writes on
+   `CLS`/`COLOR` — a few bytes each.
 4. **S4…** the ✋ items once ruled, then the N set in whatever order Joost gives.
 
 Every slice needs:

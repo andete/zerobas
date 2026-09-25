@@ -1,0 +1,13 @@
+case         CNSDFG ATRBYT   ref | zb
+DIFF boot           255 15 | 0 15       
+DIFF cls            255 15 | 0 15       CLS
+SAME keyoff           0 15 | 0 15       KEY OFF
+SAME keyoff_cls       0 15 | 0 15       KEY OFF:CLS
+SAME keyon          255 15 | 255 15     KEY OFF:KEY ON
+DIFF color5          255 5 | 0 15       COLOR 5
+DIFF color5_1_4      255 5 | 0 15       COLOR 5,1,4
+DIFF color_bg       255 15 | 0 15       COLOR ,1
+DIFF sc2_color       255 9 | 0 15       SCREEN 2:COLOR 9:SCREEN 0
+
+DIFF: 6/9
+refcache: 0 hit, 2 miss, 2 stored
