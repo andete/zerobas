@@ -54,10 +54,14 @@ for Joost in TODO §"COMPARE RAM *USAGE*" (drop `DETOKBUF` +1280 B both builds;
 NODISK re-layout ~942 B; shrink tenants; accept). And a defect: **D-HIMEMLIE**
 — `HIMEM` reads `$F380` while zerobas occupies `$DB00..$F37F`.
 
-➡️ **QUEUE, lowest tier first:** (1) TIER 4 **D-HIMEMLIE** (🤖, measure
-`CLEAR ,addr` above HIMEM on both references first); (2) D-ADDR29 S2 (the
-pointer chain, moved together); (3) D-STOPTAP's remaining 1-frame-tap
-divergence if a tier puts it above those. Re-scan TODO markers first.
+D-HIMEMLIE measured (`scratchpad/himem_probe.py`): `CLEAR`'s address rule
+already MATCHES (DIFF 0/12; both references allow up to `$F380`); what is left
+is the boot VALUE (true `$DB00` vs the VG-8020's `$F380`) — 🙋 Joost's.
+
+➡️ **QUEUE, lowest tier first:** (1) D-ADDR29 S2 (the pointer chain, moved
+together); (2) D-STOPTAP's remaining 1-frame-tap divergence if a tier puts it
+above it. 🙋 **TWO QUESTIONS FOR JOOST** when the autonomous queue empties:
+the 6030 B lever, and D-HIMEMLIE's boot value. Re-scan TODO markers first.
 
 ### 🌅 NIGHT 2026-09-25 — READ THIS FIRST, IT SUPERSEDES THE QUEUE BELOW
 

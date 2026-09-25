@@ -1880,14 +1880,39 @@ item — do **one item per session** to keep context lean.
       the usual idiom — writes over the interpreter.
       ⚠️ zerobas's own ceiling is already right: `strheap_ceiling` takes
       `min(HIMEM, TXTMAX)`, so BASIC never uses the space. Only the CELL lies.
-      🤖 **AUTONOMOUS — MEASURE FIRST, THEN FIX:** (1) on the VG-8020 and the
+      ~~🤖 **AUTONOMOUS — MEASURE FIRST, THEN FIX:** (1) on the VG-8020 and the
       CF-3300, what does `CLEAR 200,<addr>` do with an address ABOVE the boot
       `HIMEM` (error? which?) and what does `HIMEM` read after a legal one;
       (2) make zerobas's boot `HIMEM` `TXTMAX` (`$DB00`) and `CLEAR`'s
       address check agree with (1); (3) rows on both builds (the diskless
       target must get its own, per the ruled rule), plus `make sysvarsweep`.
       Price: a store at boot and possibly a compare in `CLEAR` — read the wall
-      first.
+      first.~~
+      📏 **(1) MEASURED 2026-09-25 (`scratchpad/himem_probe.py` →
+      `scratchpad/himem_run.out`): `CLEAR`'s address rule already matches —
+      DIFF 0/12.** Both references accept any address up to `$F380` and
+      raise `Illegal function call` at `$F381`; `HIMEM` then reads the
+      address given — and zerobas does all of that, on both builds.
+      🔮 **Predicted 3/12 DIFF — MISS.** I expected the CF-3300 to refuse an
+      address above its boot `HIMEM`. It does not: `CLEAR 200,&HF380` hands
+      it the whole disk work area (`FRE(0)` 23430 → 28815). The limit is
+      `$F380` on both references, not the boot `HIMEM`.
+      📍 **SO THE DIVERGENCE IS NARROWER THAN FILED, AND IT IS IN TWO
+      PLACES:** (a) at BOOT, zerobas's `HIMEM` reads `$F380` where everything
+      from `$DB00` up is zerobas's own (the CF-3300's boot value `$DE77` sits
+      below its system RAM; the VG-8020's `$F380` does too, because it has
+      none there); (b) after `CLEAR ,<addr>` above `$DB00`, zerobas records
+      the address but gives no memory for it (`CLEAR 200,&HF380`: `HIMEM`
+      `$F380` on both, `FRE(0)` 28815 there, 22785 here — `strheap_ceiling`'s
+      `min(HIMEM, TXTMAX)`), so the cell claims RAM zerobas still uses. Below
+      `$DB00` zerobas gives **242 B MORE** than the reference at every
+      address (its channel table is 230 B smaller, plus the margins).
+      🙋 **NEEDS-JOOST** — the same trade as goal (b) vs meaning: boot
+      `HIMEM` = `$DB00` makes the cell TRUE (a program siting code under it
+      is safe) but makes it DIFFER from the VG-8020's `$F380`; keeping `$F380`
+      matches the number and keeps the hazard. And for (b): clamp the stored
+      value to `$DB00`, refuse above it, or leave it. Each is a few ROM bytes;
+      none is built.
 
 - [x] 🔬 **PROMOTE THE THREE ASCII/MERGE DISK PROBES INTO THE BATTERY — THEIR
       EXCUSE'S PREMISE CHANGED WHEN STEP 11 SHIPPED**
@@ -5407,7 +5432,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:24348 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:24373 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -5573,7 +5598,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:10366 (T-6FE392)8 (T-529ABE)` from `TODO.md:22002 (T-529ABE)`: a
+      `TODO.md:10391 (T-6FE392)8 (T-529ABE)` from `TODO.md:22027 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -11210,7 +11235,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:22002 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:22027 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

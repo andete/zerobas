@@ -1,0 +1,41 @@
+== Philips_VG_8020 vs C-BIOS_MSX1_EU_REPACK_NODISK
+SAME 8020:himem    CLEAR200,&HF380
+   ref: [F380 28815 ]
+   zb : [F380 22785 ]
+SAME 8020:himem+1  CLEAR200,&HF381
+   ref: Illegal function call
+   zb : Illegal function call
+SAME 8020:F380     CLEAR200,&HF380
+   ref: [F380 28815 ]
+   zb : [F380 22785 ]
+SAME 8020:DB00     CLEAR200,&HDB00
+   ref: [DB00 22543 ]
+   zb : [DB00 22785 ]
+SAME 8020:DB01     CLEAR200,&HDB01
+   ref: [DB01 22544 ]
+   zb : [DB01 22785 ]
+SAME 8020:D000     CLEAR200,&HD000
+   ref: [D000 19727 ]
+   zb : [D000 19969 ]
+== National_CF-3300 vs C-BIOS_MSX1_EU_REPACK_DISK
+SAME CF-3300:himem    CLEAR200,&HDE77
+   ref: [DE77 23430 ]
+   zb : [DE77 22785 ]
+SAME CF-3300:himem+1  CLEAR200,&HDE78
+   ref: [DE78 23431 ]
+   zb : [DE78 22785 ]
+SAME CF-3300:F380     CLEAR200,&HF380
+   ref: [F380 28815 ]
+   zb : [F380 22785 ]
+SAME CF-3300:DB00     CLEAR200,&HDB00
+   ref: [DB00 22543 ]
+   zb : [DB00 22785 ]
+SAME CF-3300:DB01     CLEAR200,&HDB01
+   ref: [DB01 22544 ]
+   zb : [DB01 22785 ]
+SAME CF-3300:D000     CLEAR200,&HD000
+   ref: [D000 19727 ]
+   zb : [D000 19969 ]
+
+DIFF: 0/12
+refcache: 0 hit, 4 miss, 4 stored
