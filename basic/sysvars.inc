@@ -2269,13 +2269,16 @@ TXTBASE         equ     $8001   ; text base (oracle: TXTTAB value after boot)
 ; ⚠️ THE OLD COMMENT NAMED THE SMALL LEVER AND NOT THE BIG ONE. "The rise is
 ; BOUNDED BY DETOKBUF" was true and worth ~768 B; the 8192 B $C000 reservation
 ; was priced NOWHERE and held two bytes ($C120, now rehomed above).
-TXTMAX          equ     $DB00   ; repack: text ceiling. DETOKBUF sits immediately
-                                ; above it, topping out exactly at the $E000
-                                ; workspace floor.
-DETOKBUF        equ     $DB00   ; repack: 1280 B one-shot detok output buffer,
-                                ; $DB00..$DFFF. Size is a consequence of LINEMAX
-                                ; (254 chars x 5 + terminator = 1271); see the
-                                ; derivation above.
+; 🟢 D-DETOKBUF S3 (2026-09-26, Joost 2026-09-25: "Drop DETOKBUF"): THE CEILING
+; RISES TO THE WORKSPACE FLOOR, +1280 B OF BASIC RAM on both builds. DETOKBUF
+; ($DB00..$DFFF) had five users; S1 moved the four renderers to a 96 B window
+; (DB_WIN) and S2 moved the collector's sort array into the variable free area,
+; so nothing is left above the text and below $E000 (docs/spec-detokbuf-drop.md).
+; ⚠️ The disk ROM's MSX-DOS cells in this range ($DD0E work area, $DDAE interrupt
+; stub, $DF93 advertised top) are live ONLY on the DOS-boot path
+; (disk/init.asm's lay_page0_env, after a bootable boot sector) -- BASIC and DOS
+; never co-exist (D-RECLAIM), as the old buffer already relied on.
+TXTMAX          equ     $E000   ; NOT-A-CELL: the text ceiling (= the workspace floor)
 ; 🪟 D-DETOKBUF S1 (docs/spec-detokbuf-drop.md, Joost 2026-09-25 "Drop
 ; DETOKBUF"): the renderers write a 96 B WINDOW instead. The sub-side pchar
 ; (sub/detok.asm) discards the first DB_SKIP rendered bytes, stores what fits,
@@ -3614,14 +3617,13 @@ PU_WP           equ     $EEFB   ; pu_fmt_int scratch write pointer (2) -- ALIASE
 ; reaches PRDEST ($E0CB) and PRDEV ($E0CC), which ARE live across the render --
 ; PRINT# USING reads PRDEST to choose its sink.
 ;
-; This sits in DETOKBUF's tail. That buffer is 1280 bytes and is already the
-; established PRINT USING scratch (D-PUEMIT builds the finished field at
-; DETOKBUF+0), so both are live at once and cannot collide: a field is bounded by
-; PU_FMTMAX, far below the 256-byte offset here.
-PU_NUM          equ     DETOKBUF + 256      ; PRINT USING numeric render buffer,
-                                            ; 32 bytes, 0-terminated
-PU_DIG          equ     DETOKBUF + 512      ; D-PUEXP: the significant digits of
-                                            ; flt_fmt's text, point removed, 32 B
+; 🔁 THEY SAT IN DETOKBUF'S TAIL (+256, +512) UNTIL D-DETOKBUF S3 (2026-09-26)
+; deleted that buffer -- two users its spec's five-user table missed, because
+; they were DERIVED equates, not code; the assembler found them. Each now takes
+; a declared FREE-RAM run of its own: both are live at once and while
+; PRINT USING's field is being built in the render window (DB_WIN).
+PU_NUM          equ     $EA60   ; PRINT USING numeric render buffer, 0-terminated (32 B)
+PU_DIG          equ     $E05A   ; D-PUEXP: flt_fmt's significant digits, point removed (32 B)
 PU_COMMAS       equ     $EEFB   ; PRINT USING `,`: commas to insert (D-PUCOMMA) (1)
 PU_DEC          equ     $EEFC   ; PRINT USING `.`: decimal places requested (D-PUDOT) (1)
 ; CALL FORMAT loop counter — the current sector being written. write_sector's CALSLT
@@ -3842,7 +3844,7 @@ SL_CEIL         equ     $E058   ; store_line: the ceiling a store stays below (2
                                 ; FOR/NEXT, string ops, DEF FN and CLEAR, and
                                 ; reads 0 of 40 bytes changed. A map is a reading;
                                 ; that is a measurement.
-; FREE-RAM $E05A..$E080  the rest of the retired GOSUB_STK
+; FREE-RAM $E07A..$E080  the rest of the retired GOSUB_STK (PU_DIG took $E05A..$E079, D-DETOKBUF S3)
 ; D-COPY (2026-09-11): COPY "src" TO "dst" keeps the SOURCE name and what fat_find
 ; said about it across the destination's delete/create, which reuse DISK_FCB_NAME
 ; and clobber FAT_FIRSTCLUS/FAT_FILESIZE. 17 B from the band below.
@@ -3897,7 +3899,7 @@ GP_LEFT         equ     $EA3C   ; record bytes still to move, ends $EA3E (2 B)
 ; it — FOR nests to depth 9, GOSUB, crunch, PAINT, DRAW, PLAY, the string heap,
 ; disk I/O and FILES — all leaving it at 0 bytes changed (D-RAMFIX).
 CLR_SAVE        equ     $EA3E   ; fg+bg, in flight across a COLOR statement (2)
-; FREE-RAM $EA60..$EA92   (D-LOC took $EA40..$EA5F for FCH_RECNOS, 2026-09-11; asked of the machine first)
+; FREE-RAM $EA80..$EA92   (D-LOC took $EA40..$EA5F for FCH_RECNOS, 2026-09-11; PU_NUM $EA60..$EA7F, D-DETOKBUF S3, 2026-09-26)
 FOR_STK_END     equ     $EA92   ; RETIRED AS A STACK; the literal survives ONLY as
                                 ; FN_BASE's anchor below, which must not move.
 ; --- DEF FN: the parameter (shadow) area -----------------------------------

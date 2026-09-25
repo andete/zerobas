@@ -103,6 +103,9 @@ With no user left, `DETOKBUF` goes and `TXTMAX` becomes `$E000`. Every reader of
    the reference's time at 150 / 300 roots. The original plan: Sort array in `[floor, FRETOP)`, `gc_slow` otherwise.
    Rows: the GC-stress rows already in the battery, plus a tight-`CLEAR`
    many-strings row timed on both machines.
-3. **S3 — the ceiling.** Delete `DETOKBUF`, `TXTMAX` = `$E000`. Re-run
+3. ✅ **S3 — the ceiling. SHIPPED 2026-09-26:** `FRE(0)` +1280 in all eight
+   states (`scratchpad/fremem_s3.out`, gap −6030 → −4750). Two more users
+   surfaced at assembly — `PU_NUM`/`PU_DIG`, derived equates inside the buffer
+   — and moved to declared FREE-RAM runs. The plan was: Delete `DETOKBUF`, `TXTMAX` = `$E000`. Re-run
    `scratchpad/fremem_probe.py` and `scratchpad/ramlayout_probe.py`: every
    `FRE(0)` +1280, economy still identical.

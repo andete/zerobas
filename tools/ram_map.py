@@ -415,7 +415,15 @@ class Map:
                 elif n in sym:
                     self.vals[n] = sym[n]
                     self.from_sym[n] = sym[n]
-        inwin = sorted((v, n) for n, v in self.vals.items() if lo <= v < hi)
+        # 🏷 NOT-A-CELL (2026-09-26, D-DETOKBUF S3): a CONSTANT whose value merely
+        # EQUALS a window address -- TXTMAX, the text ceiling, became $E000, the
+        # workspace floor -- is not a cell of this component. It says so on its
+        # OWN equ line (`NOT-A-CELL`, explicit and greppable, never inferred), and
+        # is left out of the cell set. It still RESOLVES (other expressions may
+        # use it); only its claim to occupy RAM is dropped. Selftest A-NAC plants
+        # one each way.
+        inwin = sorted((v, n) for n, v in self.vals.items() if lo <= v < hi
+                       and not self.not_a_cell(n))
         self.byaddr: dict[int, list[str]] = {}
         for v, n in inwin:
             self.byaddr.setdefault(v, []).append(n)
@@ -517,6 +525,11 @@ class Map:
     def site(self, a):
         _, f, i, _ = self.expr[self.byaddr[a][0]]
         return f"{f}:{i}"
+
+    def not_a_cell(self, n) -> bool:
+        """True iff n's OWN equ-line comment carries the NOT-A-CELL marker."""
+        rec = self.raw.get(n)
+        return bool(rec and rec[3] and "NOT-A-CELL" in rec[3].split(";")[0][:120])
 
     def imported(self, a) -> bool:
         """True when EVERY name at this address came from a generated ABI
@@ -1324,6 +1337,23 @@ def selftest(lo, hi) -> int:
         "CONOUT_CHAR" not in d_nosym.vals
     ok["A7 cross-check is non-vacuous and clean"] = \
         d_all.crosschecked > 20 and not d_all.disagree
+
+    # ---- A-NAC NOT-A-CELL: a marked constant leaves the cell set, still resolves -
+    # (D-DETOKBUF S3: TXTMAX became $E000, the workspace floor.) Two plants at
+    # in-window addresses; only the MARKED one may vanish from byaddr, and a
+    # name that uses it must still resolve through it.
+    p9 = dict(raw)
+    b9 = PLANT_LO + 200
+    p9["__NAC_CONST"] = (f"${b9:04X}", "<plant>", 0, "NOT-A-CELL: a ceiling")
+    p9["__NAC_USER"] = ("__NAC_CONST - 4", "<plant>", 0, None)
+    p9["__NAC_CELL"] = (f"${b9 + 16:04X}", "<plant>", 0, "a real one (2 B)")
+    m9 = Map("basic", PLANT_LO, PLANT_HI, raw=p9, files=files_for("basic"))
+    ok["A-NAC a NOT-A-CELL constant is not a cell of the map"] = \
+        "__NAC_CONST" not in m9.byaddr.get(b9, [])
+    ok["A-NAC ...but still resolves for the names that use it"] = \
+        m9.vals.get("__NAC_USER") == b9 - 4
+    ok["A-NAC NEGATIVE: an unmarked neighbour IS still a cell"] = \
+        "__NAC_CELL" in m9.byaddr.get(b9 + 16, [])
 
     print()
     for k, v in ok.items():

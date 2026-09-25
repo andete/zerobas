@@ -2161,7 +2161,22 @@ item — do **one item per session** to keep context lean.
       VG-8020's ticks, 300 roots **0.42×** (it used to fall to O(n²) there),
       final strings identical. Sub page 0 292 B free after (clean build
       2026-09-26).
-      ➡️ **S3:** no user is left — delete `DETOKBUF`, raise `TXTMAX` to `$E000`.
+      🟢 **S3 SHIPPED (2026-09-26): `DETOKBUF` IS GONE, `TXTMAX` = `$E000` —
+      +1280 B OF BASIC RAM ON BOTH BUILDS, MEASURED.**
+      `scratchpad/fremem_probe.py` → `scratchpad/fremem_s3.out`: the gap to
+      the VG-8020 is **−4750 in all eight states** (was −6030), and every
+      economy delta still matches the reference to the byte. `HIMEM` follows
+      through the boot store (now `$E000`).
+      🔴 **TWO USERS THE SPEC'S FIVE-USER TABLE MISSED:** `PU_NUM` and `PU_DIG`
+      were DERIVED equates (`DETOKBUF + 256`, `+ 512`), not code, so no grep of
+      code found them — the ASSEMBLER did. They take declared FREE-RAM runs
+      now (`PU_NUM` `$EA60`, `PU_DIG` `$E05A`; both claims shrunk).
+      ⚠️ `TXTMAX` = `$E000` made a CONSTANT equal a workspace address, and the
+      RAM map read it as a cell; `tools/ram_map.py` learned an explicit
+      `NOT-A-CELL` marker on the equ's own line (selftest arms A-NAC, one
+      negative), rather than growing the allow-list. The MSX-DOS cells in the
+      old range (`$DD0E`, `$DDAE`, `$DF93`) are live only on the DOS-boot path
+      (`lay_page0_env`), which BASIC never shares.
       The table below is kept as the priced record:
       | lever | gain | both builds? | what it takes |
       |---|---|---|---|
@@ -5782,7 +5797,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:24723 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:24738 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -5948,7 +5963,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:10741 (T-6FE392)8 (T-529ABE)` from `TODO.md:22377 (T-529ABE)`: a
+      `TODO.md:10756 (T-6FE392)8 (T-529ABE)` from `TODO.md:22392 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -11585,7 +11600,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:22377 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:22392 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

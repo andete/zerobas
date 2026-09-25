@@ -33,7 +33,7 @@ DISKOP_ERR equ 0E098H   ; tenant -> main: ERR code of the last DSKIO failure, 0 
 CLPTR equ 0E02BH   ; CLOAD/LOAD: store cursor into the program area (2)
 CLINK equ 0E02DH   ; CLOAD/LOAD: saved link word of the current line
 TXTBASE equ 08001H   ; text base (oracle: TXTTAB value after boot)
-TXTMAX equ 0DB00H   ; repack: text ceiling. DETOKBUF sits immediately
+TXTMAX equ 0E000H   ; NOT-A-CELL: the text ceiling (= the workspace floor)
 PRGEND equ 0E026H   ; addr of the $0000 end-of-program marker (2 bytes)
 DSV_PTR equ 0E0EDH   ; SAVE: current source byte pointer (2)
 DSV_END equ 0E0EFH   ; SAVE/BSAVE: last source byte addr, inclusive (2)
