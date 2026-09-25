@@ -1559,9 +1559,11 @@ PLN_NUM         equ     $E234   ; 2 B: the parsed line number (BC), $FFFF if the
                                 ; BC*10+digit chain carried (pl_sat's saturation --
                                 ; dl_store's ceiling check rejects it)
 PLN_PTR         equ     $E236   ; 2 B: LINEBUF pointer at the body (HL)
-; FREE-RAM $E23A..$E240  below STRTAB/VAREND, which begin at $E240
-; 🔴 $E238..$E23A WAS PART OF THIS RUN AND IS SPENT (2026-09-21, D-MERGEWIN):
-; TEMPTOP lives there now, out of disk.rom's SECTOR_BUF window. 6 B left.
+; FREE-RAM $E23E..$E240  below STRTAB/VAREND, which begin at $E240
+; 🔴 $E238..$E23A WAS PART OF THIS RUN AND IS SPENT: TEMPTOP took $E238..$E239
+; (2026-09-21, D-MERGEWIN, out of disk.rom's SECTOR_BUF window); since
+; 2026-09-25 TEMPTOP is gone (the cursor is the published TEMPPT) and D-DETOKBUF
+; S1 took $E238..$E23D for DB_SKIP/DB_MORE/DB_RESSKIP/DB_RESUME. 2 B left.
 ; Direct-mode control flow (docs/spec-basic-direct-ctrl.md §3) claims NO new RAM:
 ; the virtual line header a typed line executes under (`dir_line`, program.asm) is
 ; a 4-byte ROM constant, and CURLINE == dir_line is the sole definition of direct
@@ -2274,6 +2276,33 @@ DETOKBUF        equ     $DB00   ; repack: 1280 B one-shot detok output buffer,
                                 ; $DB00..$DFFF. Size is a consequence of LINEMAX
                                 ; (254 chars x 5 + terminator = 1271); see the
                                 ; derivation above.
+; 🪟 D-DETOKBUF S1 (docs/spec-detokbuf-drop.md, Joost 2026-09-25 "Drop
+; DETOKBUF"): the renderers write a 96 B WINDOW instead. The sub-side pchar
+; (sub/detok.asm) discards the first DB_SKIP rendered bytes, stores what fits,
+; and sets DB_MORE for anything past the window; the resident detok_emit
+; (basic/list.asm) re-runs a re-runnable renderer (LIST, KEY LIST) with DB_SKIP
+; advanced until DB_MORE stays clear. An ordinary line renders ONCE.
+; Home: the 96 B the temp pool left at $E381 (it moved to TEMPST, D-ADDR29).
+DB_WIN          equ     $E381   ; the render window, one page (96 B)
+DB_WINSZ        equ     96      ; window size; one byte is kept for the terminator
+DB_SKIP         equ     $E238   ; rendered bytes still to discard (2 B; TEMPTOP's old cell)
+DB_MORE         equ     $E23A   ; 1 = the render ran past the window (1 B)
+; 🔁 RESUMPTION (D-DETOKBUF S1, second cut): re-rendering a whole line per
+; window made LIST of a 250 x `?` line take >8 s of emulated time against the
+; VG-8020's <1 s (linemax list-max). So LIST resumes AT A TOKEN instead: detok's
+; main loop marks each token start (DT_TOK) and counts that token's output
+; (DT_TOKN); pchar, when the window fills during a resumable render, records
+; the resume point and ABORTS the render (SP back to DB_SP) -- the next window
+; starts at that token, skipping only its already-drained bytes. Linear.
+DB_RESSKIP      equ     $E23B   ; resume: bytes of the resume token already drained (2 B)
+DB_RESUME       equ     $E23D   ; 1 = this render may abort + resume (detok only) (1 B)
+DB_SP           equ     $F01C   ; the render's SP to abort to (2 B; FAC's old cell)
+DT_TOK          equ     $F01E   ; detok: the current token's start in the line (2 B)
+DT_TOKN         equ     $F020   ; detok: bytes the current token has emitted (2 B)
+DB_RESPTR       equ     $F022   ; resume: the token to restart at (2 B)
+    IF (DB_WIN / 256) != ((DB_WIN + DB_WINSZ - 1) / 256)
+                db      DB_WIN_MUST_SIT_IN_ONE_PAGE__PCHAR_COMPARES_THE_LOW_BYTE
+    ENDIF
 PRGEND          equ     $E026   ; addr of the $0000 end-of-program marker (2 bytes)
 
 ; --- Arrays slice-1, SPLIT design (repack build only, docs/spec-basic- ------
@@ -4006,10 +4035,12 @@ RESTORE_LINE    equ     $E0BD   ; link-field a READ seeks DATA from when unposit
 ; RAM" (like every other cell in this section), just relocated off the
 ; spec's suggested addresses to avoid the collision.
 FACTYP          equ     $F01A   ; 2=int / 4=single / 8=double (1)
-TKOVF           equ     $F01B   ; tokeniser: 0 = ok, else the ERR CODE of the
-                                ; crunch-time reject -- 6 float literal, 25 body
-                                ; too long. dl_overflow stores it into ERRFLG
-                                ; unconditionally (D-MSGMIGRATE) (1)
+; TKOVF: the tokeniser's crunch-time reject -- 0 = ok, else the ERR CODE (6 a
+; float literal, 25 body too long). dl_overflow stores it into ERRFLG
+; unconditionally (D-MSGMIGRATE). ⚠️ The width lives on the equ line on purpose:
+; spread over the continuation, the width reader took a number from the middle
+; of the prose, which only mattered once D-DETOKBUF put DB_SP at $F01C.
+TKOVF           equ     $F01B   ; tokeniser reject code, 0 = ok (1 B)
 ; 🏗️ D-ADDR29 DAC, the FAC half (2026-09-25): FAC IS the published DAC. The
 ; 8 bytes are the same MSX BCD layout as the tokenised literal and as DAC, so
 ; this is an equate; $F01C..$F023 is freed. Every FAC user is offset-internal

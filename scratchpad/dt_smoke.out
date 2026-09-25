@@ -1,0 +1,85 @@
+msxtest: BASIC image carries islands -- loaded at $0010, not $2812
+build under measurement: git=9800f45b zerobas-main-eu.rom=510e9acc2234 sub.rom=7c00f40bda4f disk.rom=93e8ab5c63f2
+
+==============================================================================
+LAYER 1 — CRUNCH (tokenisation only; NOT a support answer)
+==============================================================================
+SAME   using     using "##"
+SAME   using_b   using "#.##"
+SAME   using_c   using "+##"
+SAME   using_d   using "!"
+SAME   using_e   using "##.##^^^^"
+SAME   listkw    list
+SAME   listkw_b  list 20
+SAME   listkw_c  list 20-30
+SAME   llist     llist
+SAME   keykw     key 1,"x"
+SAME   keykw_b   key 1,"x"
+SAME   keykw_on  key on
+SAME   keykw_off key off
+SAME   save      save"x"
+SAME   save_b    save"x",a
+
+==============================================================================
+LAYER 2 — SUPPORT (the load-bearing layer)
+==============================================================================
+SUPPORTED     using     PRINT USING"##";7
+            ref  [value] '7'
+SUPPORTED     using_b   PRINT"[";:PRINT USING"#.##";3.146;:PRINT"]"
+            ref  [value] '[3.15]'
+SUPPORTED     using_c   PRINT"[";:PRINT USING"+##";7;:PRINT"]"
+            ref  [value] '[ +7]'
+SUPPORTED     using_d   PRINT"[";:PRINT USING"!";"ABC";:PRINT"]"
+            ref  [value] '[A]'
+SUPPORTED     using_e   PRINT"[";:PRINT USING"##.##^^^^";123.4;:PRINT"]"
+            ref  [value] '[ 1.23E+02]'
+SUPPORTED     listkw    PRINT"[A]":LIST
+            ref  [value] '[A]|10 PRINT"[A]":LIST'
+SUPPORTED     listkw_b  PRINT"[A]":Z$="XXXXXXXXXXXXXXXXXXXXXXXX":Y$="YYYYYYYYYYYYYYYYYYYY":LIST 20
+            ref  [value] '[A]|20 Z$="XXXXXXXXXXXXXXXXXXXXXXXX"'
+SUPPORTED     listkw_c  PRINT"[A]":Z$="XXXXXXXXXXXXXXXXXXXXXXXX":Y$="YYYYYYYYYYYYYYYYYYYY":LIST 20-30
+            ref  [value] '[A]|20 Z$="XXXXXXXXXXXXXXXXXXXXXXXX"|30 Y$="YYYYYYYYYYYYYYYYYYYY"'
+SUPPORTED     llist     LLIST:REM ZQ8
+            ref  [value] '10 LLIST:REM ZQ8\\r\\n'
+SUPPORTED     keykw     KEY 1,"ZZQ":KEY LIST
+            ref  [value] 'ZZQ|auto|goto|list|run|color 15,4,4|cload"|cont|list.|run'
+SUPPORTED     keykw_b   KEY 1,"ZQ":A$="":T=TIME:W$="WWWWWWWWWWWWWWWWWW":A$=A$+INKEY$:V$="VVVVVVVVVVVVVVVVVV":IF LEN(A$)<2 AND TIME-T<99 THEN 30:KEY 1,"":PRINT"[3r";LEFT$(A$,2);"]"
+            ref  [value] '[3rZQ]'
+SUPPORTED     keykw_on  KEY ON:LOCATE 0,23:A=CSRLIN:CLS:PRINT"[K5";A;"]"
+            ref  [value] '[K5 22 ]'
+SUPPORTED     keykw_off KEY OFF:LOCATE 0,23:A=CSRLIN:CLS:PRINT"[K4";A;"]"
+            ref  [value] '[K4 23 ]'
+SUPPORTED     save      A=1:SAVE"S.BAS":OPEN"S.BAS"FOR INPUT AS#1:A=LOF(1):CLOSE#1:PRINT"[";A;"]"
+            ref  [value] '[ 68 ]'
+SUPPORTED     save_b    PRINT"[2s]":SAVE"SA.BAS",A:PRINT"[2u]"
+            ref  [value] '[2s]'
+
+==============================================================================
+COMBINED — tokenised? x observable consequence
+==============================================================================
+word       crunch  support     consequence
+------------------------------------------------------------------------------
+using      present SUPPORTED   match
+using_b    present SUPPORTED   match
+using_c    present SUPPORTED   match
+using_d    present SUPPORTED   match
+using_e    present SUPPORTED   match
+listkw     present SUPPORTED   match
+listkw_b   present SUPPORTED   match
+listkw_c   present SUPPORTED   match
+llist      present SUPPORTED   match
+keykw      present SUPPORTED   match
+keykw_b    present SUPPORTED   match
+keykw_on   present SUPPORTED   match
+keykw_off  present SUPPORTED   match
+save       present SUPPORTED   match
+save_b     present SUPPORTED   match
+
+==============================================================================
+SUMMARY  SUPPORTED=15
+         executed 15 / 15 words; 0 crunch-only
+==============================================================================
+ROWS: 15 printed, 15 scored — 0 crunch-only word(s) carry no support reading and are printed but not scored
+pin: NOT written -- an --only run measures a subset, and the pin is the whole sweep
+
+=== CRUNCH PIN — words the reference tokenises and zerobas does not ===

@@ -38,9 +38,13 @@
 ; resident drain (list.asm) can stream it through print_string. CALSLT returns to
 ; the caller with page 0 restored.
 dtk_tenant:
-                ld      de,DETOKBUF
-                ld      (DB_CUR),de         ; reset the DETOKBUF write cursor
-                call    detok               ; render the whole line into DETOKBUF
+                call    db_begin            ; cursor -> DB_WIN, DB_MORE = 0; DB_SKIP
+                                            ; is the resident loop's (D-DETOKBUF)
+                ld      a,1
+                ld      (DB_RESUME),a       ; LIST may abort + resume at a token
+                ld      (DB_SP),sp          ; the SP pchar aborts back to
+                call    detok               ; render the line through the window
+dtk_end:
                 ld      hl,(DB_CUR)
                 ld      (hl),0              ; 0-terminate for the resident drain
                 ret
@@ -50,15 +54,74 @@ dtk_tenant:
 ; "append the byte to the buffer" instead of "send it to the PRDEST sink". Like
 ; the resident pchar it PRESERVES EVERY REGISTER, so the body needs no other
 ; change. No overflow check (the buffer is sized for the worst case, header).
+; 🪟 D-DETOKBUF S1: WINDOWED. The first DB_SKIP bytes are discarded, the next
+; DB_WINSZ-1 are stored, and one past that sets DB_MORE instead of being
+; stored -- so a re-runnable renderer can be driven window by window from the
+; resident side and a 96 B buffer serves a 1271-char line. Every register and
+; flag is still preserved. (The window sits in one page: sysvars.inc asserts
+; it, and the bound test compares the low byte only.)
 pchar:
                 push    hl
                 push    af
+                ld      hl,(DT_TOKN)
+                inc     hl
+                ld      (DT_TOKN),hl        ; this token's output so far (resume skip)
+                ld      hl,(DB_SKIP)
+                ld      a,h
+                or      l
+                jr      nz,pc_skip          ; still before the window
                 ld      hl,(DB_CUR)
-                ld      (hl),a              ; A still holds the byte (push af didn't alter it)
+                ld      a,l
+                cp      low(DB_WIN + DB_WINSZ - 1)
+                jr      nc,pc_full          ; past the window (last byte: the NUL)
+                pop     af
+                ld      (hl),a
                 inc     hl
                 ld      (DB_CUR),hl
+                pop     hl
+                ret
+pc_skip:
+                dec     hl
+                ld      (DB_SKIP),hl
+                jr      pc_out
+pc_full:
+                ld      a,(DB_RESUME)
+                or      a
+                jr      z,pc_more           ; KEY LIST: just flag (skip-from-start)
+                ld      hl,(DT_TOK)         ; LIST: resume at this token, skipping
+                ld      (DB_RESPTR),hl      ; the bytes of it already drained --
+                ld      hl,(DT_TOKN)        ; DT_TOKN counted THIS byte, which was
+                dec     hl                  ; not stored
+                ld      (DB_RESSKIP),hl
+                ld      a,1
+                ld      (DB_MORE),a
+                ld      sp,(DB_SP)          ; ABORT the render: the rest of the
+                jp      dtk_end             ; line is the next window's
+pc_more:
+                ld      a,1
+                ld      (DB_MORE),a
+pc_out:
                 pop     af
                 pop     hl
+                ret
+; db_begin -- a renderer's entry: cursor at the window, DB_MORE clear.
+;   out: DE = DB_WIN, A = 0. 🔴 HL IS PRESERVED, AND THE FIRST CUT DID NOT:
+;   dtk_tenant's HL is the TOKEN BODY, and a db_begin that left HL = DB_WIN had
+;   detok render an empty window -- every LIST line blank in test_list, the
+;   helper-borrowed-the-caller's-register class, again.
+; db_begin0 -- the same for a renderer that is NEVER re-run (PRINT USING): also
+;   DB_SKIP = 0, so a stale skip from an earlier LIST can never eat its output.
+db_begin0:
+                push    hl
+                ld      hl,0
+                ld      (DB_SKIP),hl
+                pop     hl
+db_begin:
+                xor     a
+                ld      (DB_MORE),a
+                ld      (DB_RESUME),a       ; not resumable unless the tenant says so
+                ld      de,DB_WIN
+                ld      (DB_CUR),de
                 ret
 
 ; --- print_string (sub-local re-bind): append 0-terminated (HL) to DETOKBUF -

@@ -27,6 +27,13 @@
 ; does, so an operand byte is never mistaken for a token. HL is consumed.
 detok:
 dt_lp:
+                ; D-DETOKBUF: every token start is a RESUME point (the loop is
+                ; stateless between tokens -- each is decoded fresh from HL, and
+                ; the verbatim sub-loops return here at a token boundary).
+                ld      (DT_TOK),hl
+                xor     a
+                ld      (DT_TOKN),a
+                ld      (DT_TOKN+1),a
                 ld      a,(hl)
                 or      a
                 ret     z                   ; end of line
@@ -99,7 +106,9 @@ dt_apos_try:
                 dec     hl                  ; not ':REM... ' form: it was ':' then REM
                 ld      a,COLON
                 call    pchar
-                jr      dt_lp               ; HL on the REM token -> dt_rem handles it
+                jp      dt_lp               ; HL on the REM token -> dt_rem handles it
+                                            ; (jp: D-DETOKBUF's token mark at dt_lp
+                                            ; put the loop head out of jr range)
 dt_apos:
                 inc     hl                  ; past $E6
                 ld      a,QUOTE_REM         ; print '

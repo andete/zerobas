@@ -251,7 +251,7 @@ pu_to_field:
                                             ; set PU_TYPE/PU_W/PU_POS, A = no-field flag
                 jp      c,subrom_absent_error
                 push    af                  ; guard the no-field flag across the drain
-                ld      hl,DETOKBUF
+                ld      hl,DB_WIN          
                 call    print_string        ; drain literals -> pchar (PRDEST sink)
                 pop     af                  ; A = 0 field found / 1 none
                 or      a
@@ -328,7 +328,7 @@ pu_num_nosign:
                 ; on. docs/spec-basic-pufloat.md.
                 ld      ix,SUBROM_ENTRY_BASE_P0 + 3*SUBROM_IDX_PUEMIT
                 call    sc_call             ; D-SCCALL: tenant call + absent raise
-                ld      hl,DETOKBUF
+                ld      hl,DB_WIN          
                 call    print_string
                 pop     hl
                 ret

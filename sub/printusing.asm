@@ -33,6 +33,12 @@
 ; ===========================================================================
 
 BACKSLASH       equ     $5C                 ; '\' field char (pu-render.inc)
+; 🪟 D-DETOKBUF: these tenants are NOT re-runnable (pu_to_field advances
+; PU_POS), so they must never need a second window -- the worst literal run is
+; PU_FMTMAX and a numeric field is at most the format plus sign/`$`/`%`.
+    IF PU_FMTMAX + 4 > DB_WINSZ - 1
+                db      PRINT_USING_OUTPUT_MAY_EXCEED_ONE_RENDER_WINDOW
+    ENDIF
 
 ; --- pu_tofield_tenant: the SUBROM_IDX_PU_TOFIELD entry --------------------
 ; Reset the DETOKBUF cursor, run pu_to_field (emits leading literals via the
@@ -40,8 +46,7 @@ BACKSLASH       equ     $5C                 ; '\' field char (pu-render.inc)
 ; buffer, and return the no-field flag in A (0 = a field was found; 1 = none) —
 ; A is the CALSLT-safe result channel; the resident stub turns it back into CF.
 pu_tofield_tenant:
-                ld      de,DETOKBUF
-                ld      (DB_CUR),de         ; reset the DETOKBUF write cursor
+                call    db_begin0           ; D-DETOKBUF: cursor -> the window, no skip
                 call    pu_to_field         ; emit leading literals -> DETOKBUF; CF=no-field
                 ld      hl,(DB_CUR)
                 ld      (hl),0              ; 0-terminate (ld: no flag effect, CF survives)
@@ -54,8 +59,7 @@ pu_tofield_tenant:
 ; Reset the cursor, run pu_emit_tail (emits trailing literals up to the next
 ; field / format end), 0-terminate. No result flag.
 pu_tail_tenant:
-                ld      de,DETOKBUF
-                ld      (DB_CUR),de
+                call    db_begin0           ; D-DETOKBUF: cursor -> the window, no skip
                 call    pu_emit_tail
                 ld      hl,(DB_CUR)
                 ld      (hl),0
@@ -176,8 +180,7 @@ psh_done:
 ;        the asterisk fill; PU_TYPE bit2 D-PUDOLLAR's floating `$`
 ;   out  DETOKBUF = pad + digits (or `%` + digits on overflow), 0-terminated
 pu_emit_tenant:
-                ld      de,DETOKBUF
-                ld      (DB_CUR),de         ; reset the append cursor
+                call    db_begin0           ; D-DETOKBUF: cursor -> the window, no skip
                 ld      hl,PU_NUM           ; length, measured here rather than
                 ld      b,0                 ; passed -- a marshalled byte would be
 pet_len:                                    ; one more thing to keep in step

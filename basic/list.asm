@@ -257,14 +257,44 @@ detok:
                 ld      ix,SUBROM_ENTRY_BASE_P0 + 3*SUBROM_IDX_DETOK
                 ; 🎯 D-CARVE3: canonical "detokenise via the tenant, then print"
                 ; tail; basic/printusing.asm's number path jumps here.
+; 🪟 D-DETOKBUF S1: WINDOWED. The tenant renders through a 96 B window
+; (DB_WIN); while it reports DB_MORE, it is run AGAIN with DB_SKIP advanced
+; past what was already drained. Only LIST and KEY LIST can ever set DB_MORE --
+; they are re-runnable (pure over the line / the key table); PRINT USING's
+; tenants cannot, and sub/printusing.asm asserts they fit one window. An
+; ordinary line renders once, as before.
 detok_emit:
-                call    subrom_call         ; HL=token body in; sub core fills DETOKBUF
+                ld      bc,0                ; skip total
+de_win:
+                ld      (DB_SKIP),bc
+                push    bc
+                push    hl                  ; the tenant's argument, for a re-run
+                push    ix
+                call    subrom_call         ; HL=token body in; the core fills DB_WIN
                                             ; (0-terminated); CF=1 if the sub-ROM is absent
                 jp      c,subrom_absent_error ; reduced build w/o sub-ROM (never on the
                                             ; merged machine, which always ships it)
-                ld      hl,DETOKBUF
-                jp      print_string        ; drain DETOKBUF -> pchar (PRDEST sink), then
-                                            ; ret to list_walk
+                ld      hl,DB_WIN
+                call    print_string        ; drain the window -> pchar (PRDEST sink)
+                pop     ix
+                pop     hl
+                pop     bc
+                ld      a,(DB_MORE)
+                or      a
+                ret     z                   ; the whole render fit -> back to list_walk
+                ld      a,(DB_RESUME)
+                or      a
+                jr      z,de_fromstart
+                ld      hl,(DB_RESPTR)      ; LIST: resume AT the token the window
+                ld      bc,(DB_RESSKIP)     ; stopped in, skipping what was drained
+                jr      de_win
+de_fromstart:
+                ld      a,c                 ; KEY LIST: re-run from the start
+                add     a,DB_WINSZ-1        ; skip past what was just drained
+                ld      c,a
+                jr      nc,de_win
+                inc     b
+                jr      de_win
 
 ; ln_div_entry (RESIDENT copy): print HL as bare unsigned decimal. list_num and
 ; program.asm's line-number printing stay resident and reach this by in-slot call;

@@ -403,14 +403,13 @@ key_call:
                 ld      (KEYARG),a
                 push    ix
                 ld      ix,SUBROM_ENTRY_BASE_P0 + 3*SUBROM_IDX_KEYSTR
-                call    sc_call             ; D-SCCALL: tenant call + absent raise
+                ; The tenant leaves the render window printable after EVERY op --
+                ; KEY LIST's ten lines, or a lone NUL -- so the drain is
+                ; unconditional. 🪟 D-DETOKBUF: through detok_emit's windowed
+                ; loop, because KEY LIST's ~200 B no longer fit one buffer; the
+                ; other ops leave a lone NUL and never set DB_MORE.
+                call    detok_emit
                 pop     ix
-                ; The tenant leaves DETOKBUF printable after EVERY op -- LIST's
-                ; ten lines, or a lone NUL -- so the drain is unconditional and
-                ; costs no branch (the D-PUEMIT shape: render sub-side, drain
-                ; through the resident print_string).
-                ld      hl,DETOKBUF
-                call    print_string
                 jp      pop_exec            ; D-POPEXEC: pop hl + exec_stmt
 ; 🟢 D-FNKLINE (Joost, 2026-09-17: *"go with option c for KEY"*). These two used
 ; to be a bare BIOS call each, and on our target that call PAINTS NOTHING --

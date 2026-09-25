@@ -104,9 +104,9 @@ keystr_tenant:
                 ; LIST fills it, the others leave it EMPTY (a lone NUL), so
                 ; ex_key can drain unconditionally and spend no page-1 bytes on
                 ; a branch.
-                ld      hl,DETOKBUF
-                ld      (DB_CUR),hl
-                ld      (hl),0
+                call    db_begin            ; D-DETOKBUF: the window; DB_SKIP is the
+                                            ; resident loop's (KEY LIST re-runs)
+                ld      (de),a              ; A = 0: an empty window until an op writes
                 ld      a,(KEYARG)
                 or      a
                 jr      z,ks_defaults

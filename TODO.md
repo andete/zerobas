@@ -2119,7 +2119,39 @@ item — do **one item per session** to keep context lean.
       stays 🤖 for the D-ADDR29 arc below it):~~
       🏗️ **RULED BY JOOST, 2026-09-25: *"Drop DETOKBUF"*** (lever 1, as
       recommended) — render LIST/ASCII-SAVE a token at a time; +1280 B on both
-      builds. The table below is kept as the priced record:
+      builds. **Spec: [`docs/spec-detokbuf-drop.md`](docs/spec-detokbuf-drop.md)**
+      — the buffer has FIVE users (LIST, KEY LIST, two PRINT USING tenants, the
+      GC's sort array), because a sub-ROM tenant cannot print directly.
+      🟢 **S1 SHIPPED (2026-09-25): every renderer writes a 96 B WINDOW
+      (`DB_WIN`, the `$E381` the temp pool left) instead of `DETOKBUF`.** The
+      sub-side `pchar` discards `DB_SKIP` bytes, stores what fits, and sets
+      `DB_MORE` past the window; the resident `detok_emit` re-runs a
+      re-runnable renderer (LIST, KEY LIST) with the skip advanced until
+      `DB_MORE` stays clear — an ordinary line renders ONCE. PRINT USING's
+      tenants are not re-runnable and are asserted to fit one window.
+      Page 1 −23 B, sub page 0 −24 B (clean build 2026-09-25). Smoke: 15/15
+      `KEY`/`LIST`/`LLIST`/`SAVE`/`USING` rows SUPPORTED
+      (`scratchpad/dt_smoke.out`).
+      🔴 **AND THE SECOND CUT WAS TOO SLOW — the battery caught it:** re-running
+      the whole line per window made `LIST` of a 250 × `?` line take **>8 s of
+      emulated time against the VG-8020's <1 s** (`linemax` `list-max` read
+      `<none>` — the harness step expired). A render now RESUMES AT A TOKEN:
+      detok's main loop is stateless between tokens, so `dt_lp` marks each
+      token start (`DT_TOK`) and `pchar` counts its output (`DT_TOKN`); on
+      overflow in a LIST render it records the resume point and ABORTS the
+      render (SP back to `DB_SP`), and `detok_emit` restarts at that token
+      skipping only its drained bytes — linear. `KEY LIST` (~200 B) keeps the
+      cheap skip-from-start. Verified byte-identical across window breaks in a
+      keyword run, a 200-char string and a 230-char REM (unit harness), and
+      `linemax` **60/60**; the 250 × `?` line now lists in 1.5–2.5 s emulated
+      (<1 s on the reference) — inside the 10× bar. Page 1 105 B, sub page 0
+      311 B free after (clean build 2026-09-25).
+      🔴 **THE FIRST CUT RENDERED EVERY LIST LINE BLANK:** the new `db_begin`
+      left HL = `DB_WIN`, and `dtk_tenant`'s HL is the TOKEN BODY — the
+      helper-borrowed-the-caller's-register class
+      [[a-scratch-register-that-was-the-callers-value]]; `test_list` caught it.
+      ➡️ S2 (the GC's sort array) is the last `DETOKBUF` user, then S3 raises
+      `TXTMAX`. The table below is kept as the priced record:
       | lever | gain | both builds? | what it takes |
       |---|---|---|---|
       | (1) **drop `DETOKBUF`** — render LIST/ASCII-SAVE a token at a time, as the reference's layout implies | **+1280 B** (disk build goes 635 B AHEAD of the CF-3300) | yes | sub-ROM detok rework (sub page 0 434 B / page 1 423 B free); a speed check on LIST |
@@ -5739,7 +5771,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:24680 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:24712 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -5905,7 +5937,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:10698 (T-6FE392)8 (T-529ABE)` from `TODO.md:22334 (T-529ABE)`: a
+      `TODO.md:10730 (T-6FE392)8 (T-529ABE)` from `TODO.md:22366 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -11542,7 +11574,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:22334 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:22366 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

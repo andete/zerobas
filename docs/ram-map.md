@@ -33,7 +33,7 @@ other component's cell at the same address; the `inside` column
 names the other component's BUFFER this address falls within. That
 second one is the question a per-component map cannot answer.
 
-* **basic** — 413 declared addresses in this project's own workspace `$E000..$F37F` (382 with a machine-readable width), plus **98** in the MSX standard work area at or above `$F380`.
+* **basic** — 422 declared addresses in this project's own workspace `$E000..$F37F` (391 with a machine-readable width), plus **98** in the MSX standard work area at or above `$F380`.
 * **disk** — 126 declared addresses in this project's own workspace `$E000..$F37F` (112 with a machine-readable width), plus **25** in the MSX standard work area at or above `$F380`.
 
 ## This project's own workspace (`$E000..$F37F`)
@@ -240,6 +240,10 @@ second one is the question a per-component map cannot answer.
 | `$E232` | 2 B | `basic` | `POOLSIZE` | 2 B: the size CLEAR recorded. Written ONLY by |  |
 | `$E234` | 2 B | `basic` | `PLN_NUM` | 2 B: the parsed line number (BC), $FFFF if the |  |
 | `$E236` | 2 B | `basic` | `PLN_PTR` | 2 B: LINEBUF pointer at the body (HL) |  |
+| `$E238` | 2 B | `basic` | `DB_SKIP` | rendered bytes still to discard (2 B; TEMPTOP's old cell) |  |
+| `$E23A` | 1 B | `basic` | `DB_MORE` | 1 = the render ran past the window (1 B) |  |
+| `$E23B` | 2 B | `basic` | `DB_RESSKIP` | resume: bytes of the resume token already drained (2 B) |  |
+| `$E23D` | 1 B | `basic` | `DB_RESUME` | 1 = this render may abort + resume (detok only) (1 B) |  |
 | `$E268` | 2 B | `basic` | `FRETOP` | heap low boundary; heap occupies (2 B) |  |
 | `$E26A` | 3 B | `basic` | `RVDESC` | $E26A: [len:1][ptr:2] scratch descriptor (3 B) |  |
 | `$E26D` | 256 B | `basic` | `STRSCR` | [len][bytes:STRMAX] staging, $E26D..$E36C |  |
@@ -249,6 +253,7 @@ second one is the question a per-component map cannot answer.
 | `$E29B` | 2 B | `disk` | `FDC_LSEC` | current logical sector (word) | `basic` STRSCR |
 | `$E29D` | 2 B | `disk` | `FDC_DEST` | current transfer address (word) | `basic` STRSCR |
 | `$E29F` | 1 B | `disk` | `FDC_TRY` | read attempt counter (1 B) | `basic` STRSCR |
+| `$E381` | 96 B | `basic` | `DB_WIN` | the render window, one page (96 B) |  |
 | `$E3E1` | 2 B | `basic` | `ISRCH_A` | resolved A-operand body base (2 B) |  |
 | `$E3E3` | 2 B | `basic` | `ISRCH_B` | $E3E3: resolved B-operand body base (2 B) |  |
 | `$E3E5` | 1 B | `basic` | `GFX_BAD/STRENG_SPARE` | VRAM read-back mismatch count (1) |  |
@@ -485,7 +490,11 @@ second one is the question a per-component map cannot answer.
 | `$F019` | 1 B | `basic` | `CAS_VMIS` | sticky: 1 = a verify mismatch was seen (1) |  |
 | `$F01A` | 1 B | `basic` | `FACTYP` | 2=int / 4=single / 8=double (1) |  |
 | `$F01A` | 1 B | `disk` | `FACTYP` | 2=int / 4=single / 8=double (1) |  |
-| `$F01B` | 8 B | `basic` | `TKOVF` | tokeniser: 0 = ok, else the ERR CODE of the |  |
+| `$F01B` | 1 B | `basic` | `TKOVF` | tokeniser reject code, 0 = ok (1 B) |  |
+| `$F01C` | 2 B | `basic` | `DB_SP` | the render's SP to abort to (2 B; FAC's old cell) |  |
+| `$F01E` | 2 B | `basic` | `DT_TOK` | detok: the current token's start in the line (2 B) |  |
+| `$F020` | 2 B | `basic` | `DT_TOKN` | detok: bytes the current token has emitted (2 B) |  |
+| `$F022` | 2 B | `basic` | `DB_RESPTR` | resume: the token to restart at (2 B) |  |
 | `$F024` | 2 B | `basic` | `PLY_XSP` | PLAY X: saved SP at pt_voice's call (2) |  |
 | `$F026` | 1 B | `basic` | `PRMWANT` | D-OKSTORE: nonzero = print the prompt (1) |  |
 | `$F027` | 1 B | `basic` | `STOPHOLD` | D-STOPTAP: frames Ctrl-STOP has been held (1) |  |
