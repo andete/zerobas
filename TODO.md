@@ -2382,6 +2382,36 @@ item — do **one item per session** to keep context lean.
       round now looks better than chasing it: **step 9 need not ADD a row** —
       sharing an existing one leaves the installed set untouched.
 
+- [ ] 🔬 **MAKING ROOM IN MAIN — JOOST, 2026-09-25: *"We need to come up with
+      other ways to make room. Clearly reference fits everything in 32k, we
+      should be able to fit things better as well."*** Asked because main is
+      FULL (page 1 1 B, low 0 B, clean build 2026-09-25) and D-STOPTAP, the
+      D-ADDR29 slices and every other ROM-growing item wait on bytes; he
+      declined evicting hot routines to the sub-ROM. The cheap carve routes
+      are spent (`scratchpad/jr_mapper.py` ~0, `scratchpad/pair_scout.py` 2 B).
+      🎚️ TIER 1 — it gates TIER 1 items (D-STOPTAP) and everything after.
+      🔬 **SCOUTED THE SAME NIGHT — TWO LEVERS, ~800 B TOGETHER, NEITHER BUILT:**
+      | lever | size | what it takes |
+      |---|---|---|
+      | **A. the `RST` vectors** — `RST 08h..28h` are 1-byte calls; main's top targets are `skip_spaces` 63 sites, `skip_comma` 51, `inc_skip` 50, `eval` 29, `inc_eval`/`skipsp_test` 17 | **~420 B** (≈210 sites × 2 B) | page 0 is OUR C-BIOS repack, so we own the vectors — but `RST 08h..28h` are PUBLISHED MSX BIOS entries (`SYNCHR` `CHRGTR` `OUTDO` `DCOMPR` `GETYPR`) that USR machine code may call; our helpers would have to implement THOSE contracts (flags included), which is also a compatibility WIN. Today they jump into C-BIOS's own implementations (`$10ED`…) |
+      | **B. C-BIOS's own padding** — zero runs in OUR merged image: 248 B at `$1ACF` (pad before the font pinned at `$1BBF`), 160 B at `$0160` (pad before C-BIOS's internal `jump_table` at `$0200`), 99 B at `$0C9E` and 21 B at `$09D9` (after the debug-print helpers) | **~400–528 B** | same slot as main, always mapped; needs the merge tooling to place zerobas code ISLANDS in those gaps (as the low region was made, `cbios-repack/`), and each run confirmed as padding, not a zero-filled table |
+      📏 Sources: the call counts over main-only sources (shared `*-body.inc`
+      excluded); the zero runs read from `build/zerobas-main-eu.rom` and
+      located with C-BIOS's symbol table
+      (`~/projects/cbios/derived/lst/cbios_main_msx1_eu.lst`).
+      ~~🙋 **NEEDS-JOOST** — which lever(s) to build; A changes a published
+      entry-point contract, B changes the merge tooling.~~
+      🏗️ **RULED BY JOOST, 2026-09-25: *"B first, then A"*** — B is pure
+      tooling (no contract change) and unblocks D-STOPTAP/D-ADDR29 soonest; A
+      (our helpers honouring the published `SYNCHR`/`CHRGTR`/… contracts) is its
+      own slice after.
+      🤖 **AUTONOMOUS — BUILD B:** (1) confirm each zero run is padding in the
+      C-BIOS SOURCE (a `ds`/alignment pin, not a zero table); (2) teach the
+      merge (`tools/build_repacked_cbios.py` / the main-image build) to place
+      zerobas code ISLANDS at those addresses, with a gate that each island
+      stays inside its run; (3) move self-contained main routines there, and
+      read the walls from a clean build.
+
 - [ ] 🔴 **D-STOPTAP: A SHORT Ctrl-STOP TAP FIRES `ON STOP GOSUB` ~5 TIMES HERE
       AND ONCE ON THE REFERENCE.** Found 2026-09-25 by the filed-row triage:
       [`scratchpad/clrtrapstk_stop_probe.py`](scratchpad/clrtrapstk_stop_probe.py)'s
@@ -5147,7 +5177,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:24087 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:24117 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -5313,7 +5343,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:10105 (T-6FE392)8 (T-529ABE)` from `TODO.md:21741 (T-529ABE)`: a
+      `TODO.md:10135 (T-6FE392)8 (T-529ABE)` from `TODO.md:21771 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -10949,7 +10979,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:21741 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:21771 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

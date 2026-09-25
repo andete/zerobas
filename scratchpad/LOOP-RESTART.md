@@ -45,10 +45,13 @@ is ~0 now, pairs ~2 B; the only BIG route is evicting a HOT leaf to sub page 1
 ### ➡️ THE QUEUE NOW (re-scan; lowest tier first)
 
 * ~~**TIER 1 `PLAY` `X<var>;` — BUILD IT**~~ SHIPPED (`b7864309`).
-* 🙋 **CARVE STRATEGY** — every remaining ROM-growing item (D-ADDR29 S2+, …)
-  needs main bytes and main is full. Ask Joost whether to evict a hot leaf
-  (evaluator core / tokeniser skip / ISR servicers) to sub page 1, at a
-  measured speed cost, before any of them can start.
+* 🏗️ **MAKING ROOM — RULED 2026-09-25: no eviction (*"Clearly reference fits
+  everything in 32k, we should be able to fit things better"*); build lever B
+  (zerobas code islands in C-BIOS's ~400 B of padding) FIRST, then lever A
+  (the `RST 08h..28h` vectors honouring the published contracts, ~420 B).**
+  TODO §"MAKING ROOM IN MAIN". D-STOPTAP (pinned: re-fire after 41 frames,
+  then every 3) and D-ADDR29 wait on it. 🙋 also open: the 6030 B free-memory
+  gap — Joost said SCOUT WHERE IT GOES first (TODO §"COMPARE RAM *USAGE*").
 * **TIER 4 D-ADDR29**, spec §5 order: S1 ✅ · **S2 the pointer chain**
   (VARTAB/ARYTAB/STREND + FRETOP/MEMSIZ, moved TOGETHER — D-REHOME's group
   argument) · S3 CNSDFG/ATRBYT writes · then DAC-full, TEMPST→10, RNDX, the N set.
