@@ -2150,8 +2150,19 @@ item — do **one item per session** to keep context lean.
       left HL = `DB_WIN`, and `dtk_tenant`'s HL is the TOKEN BODY — the
       helper-borrowed-the-caller's-register class
       [[a-scratch-register-that-was-the-callers-value]]; `test_list` caught it.
-      ➡️ S2 (the GC's sort array) is the last `DETOKBUF` user, then S3 raises
-      `TXTMAX`. The table below is kept as the priced record:
+      🟢 **S2 SHIPPED (2026-09-26): the collector's sort array lives in the
+      VARIABLE free area** — `[ARYEND+2, SP − CTL_STACK_MARGIN)`, idle during a
+      collection since D-SPMERGE (the stack descends from the pool frontier
+      toward the arrays); base from the LIVE array walk, not the stored
+      `CTLLIM`. No room → `gc_slow` as before. The old N ≤ 256 cap was
+      `DETOKBUF`'s 512 B, not the sort's (16-bit throughout), so it is gone:
+      `scratchpad/gcspeed_probe.py` → `scratchpad/gcspeed_run.out`, a
+      collection-heavy loop on both machines — 150 roots zerobas **1.48×** the
+      VG-8020's ticks, 300 roots **0.42×** (it used to fall to O(n²) there),
+      final strings identical. Sub page 0 292 B free after (clean build
+      2026-09-26).
+      ➡️ **S3:** no user is left — delete `DETOKBUF`, raise `TXTMAX` to `$E000`.
+      The table below is kept as the priced record:
       | lever | gain | both builds? | what it takes |
       |---|---|---|---|
       | (1) **drop `DETOKBUF`** — render LIST/ASCII-SAVE a token at a time, as the reference's layout implies | **+1280 B** (disk build goes 635 B AHEAD of the CF-3300) | yes | sub-ROM detok rework (sub page 0 434 B / page 1 423 B free); a speed check on LIST |
@@ -5771,7 +5782,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:24712 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:24723 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -5937,7 +5948,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:10730 (T-6FE392)8 (T-529ABE)` from `TODO.md:22366 (T-529ABE)`: a
+      `TODO.md:10741 (T-6FE392)8 (T-529ABE)` from `TODO.md:22377 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -11574,7 +11585,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:22366 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:22377 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

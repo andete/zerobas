@@ -96,7 +96,11 @@ With no user left, `DETOKBUF` goes and `TXTMAX` becomes `$E000`. Every reader of
    writes it. Rows: LIST of an ordinary line, of a 254 × `?` line, and ASCII
    SAVE of it (byte-identical file), `KEY LIST`, `PRINT USING` — all against
    the reference; the existing lnblank/pusing/keystr/castail suites.
-2. **S2 — the collector.** Sort array in `[floor, FRETOP)`, `gc_slow` otherwise.
+2. ✅ **S2 — the collector. SHIPPED 2026-09-26, and NOT as designed above:** the
+   sort array went to the VARIABLE free area under the live SP (usually KBs),
+   not the string pool's gap (smallest exactly when a collection runs). The
+   N ≤ 256 cap went with DETOKBUF; `scratchpad/gcspeed_probe.py`: 1.48× / 0.42×
+   the reference's time at 150 / 300 roots. The original plan: Sort array in `[floor, FRETOP)`, `gc_slow` otherwise.
    Rows: the GC-stress rows already in the battery, plus a tight-`CLEAR`
    many-strings row timed on both machines.
 3. **S3 — the ceiling.** Delete `DETOKBUF`, `TXTMAX` = `$E000`. Re-run

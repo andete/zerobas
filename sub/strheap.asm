@@ -652,23 +652,43 @@ strheap_gc:
                 ld      a,(ix+4)
                 or      (ix+5)
                 jp      z,sg_finish
-                ; --- Phase C: the sort buffer is DETOKBUF ($BE00), for n <= 256
-                ; roots (2N <= 512 B). A larger live-root set can't fit -> fall
-                ; back to gc_slow (in-place O(n^2), no buffer). Switch on N, not
-                ; SP: no GC scratch on the hardware stack, ever (see the header's
-                ; SORT-BUFFER HOME + DETOKBUF-IDLE AUDIT notes).
+                ; --- Phase C: the sort buffer (2N B) --------------------------
+                ; 🔁 D-DETOKBUF S2 (2026-09-25): NOT DETOKBUF any more -- that
+                ; 1280 B buffer is gone (Joost: "Drop DETOKBUF"). The array goes
+                ; in the VARIABLE free area, [ARYEND+2, SP): since D-SPMERGE the
+                ; stack descends from the pool frontier TOWARD the arrays, so the
+                ; bottom of that gap is idle during a collection -- it is the
+                ; FRE(0) space, usually thousands of bytes. It needs 2N B plus
+                ; CTL_STACK_MARGIN of headroom under the live SP; failing that,
+                ; gc_slow (in-place O(n^2), no buffer) as before.
+                ; ✅ AND THE OLD N <= 256 CAP IS GONE WITH IT: it was DETOKBUF's
+                ; 512 B, not the sort's -- sg_shellsort is 16-bit throughout.
+                ; ⚠️ The base is the LIVE ARYEND (the array walk), not CTLLIM: a
+                ; stored derivation could be stale mid-allocation, and a stale
+                ; floor would put the array ON the arrays.
+                call    strheap_aryend      ; HL = ARYEND (preserves IX, the frame)
+                inc     hl
+                inc     hl                  ; HL = the first free byte above them
+                push    hl                  ; [base]
                 ld      l,(ix+4)
                 ld      h,(ix+5)
-                ld      de,256
+                add     hl,hl               ; 2N
+                pop     de
+                push    de                  ; DE = base   [base]
+                add     hl,de               ; the array's end
+                jp      c,gc_nobuf
+                ld      de,CTL_STACK_MARGIN
+                add     hl,de               ; ...plus the stack's headroom
+                jp      c,gc_nobuf
+                ex      de,hl               ; DE = end + margin
+                ld      hl,0
+                add     hl,sp               ; HL = SP (one word low: conservative)
                 or      a
-                sbc     hl,de               ; N - 256
-                jr      c,gc_detok          ; N < 256 -> DETOKBUF path
-                jp      nz,gc_slow          ; N > 256 -> O(n^2) fallback
-                                            ; (N == 256 exactly -> 2N=512, fits)
-gc_detok:
-                ld      hl,DETOKBUF
+                sbc     hl,de
+                jp      c,gc_nobuf          ; SP below end+margin -> no room
+                pop     hl                  ; HL = base   [ ]
                 ld      (ix+6),l
-                ld      (ix+7),h            ; BASE = DETOKBUF (fixed page-2 buffer)
+                ld      (ix+7),h            ; BASE = the free area's bottom
                 ld      (ix+10),l
                 ld      (ix+11),h           ; CURSOR = BASE (for the fill walk)
                 ; --- Phase D: fill the buffer with the root descriptor addrs ---
@@ -727,14 +747,17 @@ sg_freeframe:
                 ld      sp,hl               ; free the 22-byte frame
                 ret
 
-; --- gc_slow: O(n^2) selection compaction, NO buffer (the fallback for n > 256
-; roots, which the 512-B DETOKBUF sort buffer cannot hold -- a big FILLED
-; string array; exactly what real MSX's own collector always does). Repeatedly
+; --- gc_slow: O(n^2) selection compaction, NO buffer -- the fallback when the
+; variable free area cannot hold the 2N-B sort array under the live SP (since
+; D-DETOKBUF S2; it used to be "n > 256 roots, which the 512-B DETOKBUF sort
+; buffer cannot hold"). Exactly what real MSX's own collector always does. Repeatedly
 ; walk all roots (MODE=2) to find the highest-ptr not-yet-compacted body, move
 ; it up to DEST, repeat until none remain. Correct for arbitrary n; slower.
 ; Reuses sg_move_one for the move. BEST_PTR in frame +6 (BASE slot, unused in
 ; this path), BEST_DESC in +16 (GAP slot, unused) — both clear of the array-
 ; walk's own +12/+14 scratch. No buffer -> frees only the 22-B frame.
+gc_nobuf:
+                pop     hl                  ; drop [base]; no room -> in place
 gc_slow:
                 ; DEST is already CEIL (ix+8/9, set before Phase B).
 gcs_outer:
