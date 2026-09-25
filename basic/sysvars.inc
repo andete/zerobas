@@ -4011,6 +4011,8 @@ PLY_XSP         equ     $F024   ; PLAY X: saved SP at pt_voice's call (2)
 ; and a plain CLEAR in the silent exit (AUTO's and cassette LOAD/MERGE's nested
 ; stores cleared it -- editverb 55/61, castail 27/31).
 PRMWANT         equ     $F026   ; D-OKSTORE: nonzero = print the prompt (1)
+STOPHOLD        equ     $F027   ; D-STOPTAP: frames Ctrl-STOP has been held (1)
+STOPREP_FIRST   equ     39      ; D-STOPTAP: frames held before the first re-fire, as COUNTED here
 FOUTBUF         equ     FBUFFR+1 ; flt_out formatter output scratch (24)
 TKDIG           equ     $F03C   ; tokeniser/formatter: significant-digit array, (1 B)
                                 ; one decimal digit value (0-9) per byte (24)

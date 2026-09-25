@@ -9,6 +9,12 @@ no-CLEAR, still SERVICING  zb           1    1     1
 no-CLEAR (control)         vg8020       1    1     1
 no-CLEAR (control)         zb           1    1     1
 c.twofire POSITIVE CONTROL vg8020       2    1     1
-c.twofire POSITIVE CONTROL zb          11    1     1
+c.twofire POSITIVE CONTROL zb           2    1     1
 
-🔴 INSTRUMENT FAULT: the positive control read {'vg8020': 2, 'zb': 11} where BOTH sides must read 2. The SECOND TAP DID NOT LAND, so every other row's `1` is the instrument and not the machine. Refused.
+  CLEAR, still SERVICING     vg8020=  1  zb=  1
+  CLEAR, trap killed         vg8020=  1  zb=  1
+  no-CLEAR, still SERVICING  vg8020=  1  zb=  1
+  no-CLEAR (control)         vg8020=  1  zb=  1
+  c.twofire POSITIVE CONTROL vg8020=  2  zb=  2
+
+=== 0 divergence(s): none ===

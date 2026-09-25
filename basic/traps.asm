@@ -122,7 +122,9 @@ event_poll:
                 or      a
                 jr      nz,ep_live
     ENDIF
-                jr      ep_out              ; nothing ON, nothing servicing, no INTERVAL
+                jp      ep_out              ; nothing ON, nothing servicing, no INTERVAL
+                                            ; (`jp`: D-STOPTAP's schedule pushed ep_out
+                                            ; out of `jr` reach)
 ep_live:
                 push    hl
                 push    de
@@ -158,12 +160,47 @@ ep_live:
                 ; regression. `cp ZTS_ON` excludes SERVICING (3) and both
                 ; unsampled states, so every D-STOPEDGE case is untouched by
                 ; construction rather than by luck.
+                ; 🔴 D-STOPTAP (2026-09-25, scratchpad/stoptap_probe.py): "once per
+                ; frame" was RIGHT ON LONG HOLDS AND WRONG ON A TAP. Swept by hold
+                ; length the VG-8020 fires once per press, then re-fires only after
+                ; ~41 frames held and every ~3 after (0 1 1 1 1 4 21 for 1..100
+                ; frames; the fine sweep pins the 41 and the 3) -- the keyboard
+                ; AUTO-REPEAT schedule. zerobas fired once per frame from the first
+                ; (1 3 5 10 25 50 100), so a 100 ms tap ran a handler ~5 times.
+                ; So the release is SCHEDULED: STOPHOLD counts the frames Ctrl-STOP
+                ; is down (read off the NEWKEY snapshot the BIOS interrupt keeps --
+                ; row 7 bit 4 STOP, row 6 bit 1 CTRL, 0 = down); at 41 it releases
+                ; the shadow and drops to 38, so the next release is 3 frames on.
+                ; 🎯 THE CONSTANT IS 39, NOT THE 41 SEEN FROM OUTSIDE: this count only
+                ; starts once the interrupt's key scan has put the press in NEWKEY, and
+                ; at 41 the fine sweep read zerobas EXACTLY 2 frames late at every step
+                ; (44/48/50/54/56/60 against the reference's 42/46/48/52/54/58/60).
+                ; Released only when exactly ON, as before -- D-STOPEDGE's SERVICING
+                ; cases are untouched; the counter keeps the rhythm regardless.
+                ld      a,(NEWKEY+7)
+                and     $10                 ; STOP
+                ld      d,a
+                ld      a,(NEWKEY+6)
+                and     $02                 ; CTRL
+                or      d                   ; Z = Ctrl-STOP is down
+                ld      a,(STOPHOLD)
+                jr      nz,ep_sh_up
+                inc     a
+                cp      STOPREP_FIRST       ; first re-fire after ~41 frames held
+                jr      c,ep_sh_keep
                 ld      hl,ZTRAP+ZTI_STOP*ZTRAP_ENTSZ
                 ld      a,(hl)
                 and     ZTS_STATE_MASK
                 cp      ZTS_ON              ; exactly ON: not SERVICING, not OFF
-                jr      nz,ep_stop_held
+                jr      nz,ep_sh_rep
                 res     6,(hl)              ; ZTS_SHADOW: next boundary is a fresh edge
+ep_sh_rep:
+                ld      a,STOPREP_FIRST-3   ; ...and again every 3 frames
+                jr      ep_sh_keep
+ep_sh_up:
+                xor     a                   ; key up: the next press starts over
+ep_sh_keep:
+                ld      (STOPHOLD),a
 ep_stop_held:
     IF TRAPS_T5
                 ; --- INTERVAL (entry 0): the per-frame down-counter -------------
