@@ -627,6 +627,10 @@ def disk_abi_seeds(spans):
     return code | callback, len(callback)
 
 
+# fix (14): labels on the stubs basic/islands.asm patches INTO C-BIOS's code
+PATCH_ROOTS = ('cbios_chput_ttypos',)
+
+
 def _assert_disk_resolves_locally(m, abi):
     """THE STANDING CONTROL on fix (12), symmetric to the sub one below.
 
@@ -785,6 +789,15 @@ def main(argv):
     # THAT is the moment to build the real model for the specific names named
     # below. Until then the arm is belt-and-braces and its hole cannot bite.
     tools_arm = set(m.nodes) & external_names(['tools'])
+    # (14) C-BIOS PATCH ROOTS (MAKING ROOM lever A / D-ADDR29, 2026-09-25):
+    # basic/islands.asm places `call`s INTO C-BIOS's own code through
+    # tools/build_mainrom.py PATCH_RANGES, so C-BIOS -- not any main label --
+    # enters them. Like `init`, a DECLARED root, asserted to resolve.
+    for _root in PATCH_ROOTS:
+        if _root not in m.nodes:
+            sys.exit(f"FAIL: patch root {_root!r} is not a main label -- a rename "
+                     f"would silently drop what C-BIOS enters (fix 14)")
+    abi = abi | set(PATCH_ROOTS)
     m_seeds = {'init'} | abi | dabi | tools_arm
     m_seeds |= {n for n in m.nodes if n.startswith(PROLOGUE)}
     _without = ({'init'} | abi | dabi

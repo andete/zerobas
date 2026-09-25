@@ -1,0 +1,12 @@
+DIFF boot      TTYPOS 0|1; FNKSWI 1|0; LINWRK 65535|0   
+DIFF print_sc  TTYPOS 3|4; FNKSWI 1|0; LINWRK 65535|0   PRINT"ABC";
+DIFF print_nl  TTYPOS 0|1; FNKSWI 1|0; LINWRK 65535|0   PRINT"ABCDE"
+DIFF locate    TTYPOS 5|1; LINWRK 1|0   LOCATE 5,5
+DIFF cls       TTYPOS 0|1; FNKSWI 1|0; LINWRK 28515|0   CLS
+DIFF crt_file  TTYPOS 1|2; FNKSWI 1|0; LINWRK 65535|0   OPEN"CRT:"FOR OUTPUT AS#1:PRINT#1,"X";:CLOSE#1
+DIFF grph_chr  TTYPOS 1|2; FNKSWI 1|0; LINWRK 65535|0   PRINT CHR$(1);"A";
+DIFF esc_half  ref=['0', '0', '4', '0', '1', '65535'] zb=None  <NO OUTPUT on a side>  PRINT CHR$(27);"Y";
+
+per cell, cases differing: TTYPOS 8/8, PTRFIL 1/8, ESCCNT 1/8, GRPHED 1/8, FNKSWI 7/8, LINWRK 8/8
+DIFF: 6/6 cells
+refcache: 0 hit, 2 miss, 2 stored

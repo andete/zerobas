@@ -202,6 +202,17 @@ outdo:
                 pop     af
                 jp      pchar
 
+; ttypos_col -- TTYPOS as the reference keeps it (D-ADDR29 N set, 2026-09-25).
+; C-BIOS's CHPUT ends `ld a,(CSRX) / ld (TTYPOS),a`, a 1-BASED cursor mirror;
+; the VG-8020's TTYPOS is BASIC's 0-BASED print column (scratchpad/
+; nset_probe.py: PRINT"ABC"; -> 3 there, 4 here). The merge replaces only the
+; `ld a,(CSRX)` at $11CF with a call to this, and C-BIOS's own store that
+; follows it writes the corrected A. chput_exit pops AF, so flags are free.
+ttypos_col:
+                ld      a,(CSRX)
+                dec     a
+                ret
+
     IF $ > $0200
                 db      ISLAND_BEFORE_JUMPTABLE_OVERRAN_0200__IT_WOULD_OVERWRITE_CBIOS
     ENDIF
@@ -215,6 +226,13 @@ outdo:
 ; --- the RST 18h vector: $0018 `jp outdo` (was C-BIOS's `jp $111B`) ---------
                 org     $0018
                 jp      outdo
+
+; --- C-BIOS's CHPUT stores CSRX-1 into TTYPOS, not CSRX -----------------------
+; $11CF is C-BIOS's `ld a,(CSRX)` just before `ld (TTYPOS),a` (src/chput.asm,
+; "CSRX -> TTYPOS"). PATCH_RANGES refuses unless it reads 3A DD F3.
+                org     $11CF
+cbios_chput_ttypos:                         ; a root: C-BIOS enters it (PATCH_ROOTS)
+                call    ttypos_col
 
 ; --- C-BIOS's boot leaves H.OUTD a RET, not `jp chput` -----------------------
 ; $1037 is C-BIOS's `ld a,$c3` before `ld (H_OUTD),a` (src/main.asm, "set up

@@ -209,6 +209,8 @@ loc_apply_pos:
                 ld      b,a                 ; else clamp to the last column
 loc_col_set:
                 ld      a,b
+                ld      (TTYPOS),a          ; D-ADDR29: the reference's LOCATE moves
+                                            ; its 0-based print column too (5,5 -> 5)
                 inc     a                   ; CSRX is 1-BASED
                 ld      (CSRX),a
                 ; row -> clamp to the console's bottom row, which is

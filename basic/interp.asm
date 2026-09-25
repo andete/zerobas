@@ -178,6 +178,10 @@ init:
                 ld      (CRTCNT),a          ; reserve the bottom row
                 ld      a,$FF
                 ld      (CNSDFG),a          ; the documented "shown" flag
+                ld      a,1                 ; D-ADDR29: FNKSWI, the set shown -- the
+                ld      (FNKSWI),a          ; reference's steady 1 (F1..F5), scratchpad/
+                                            ; nset_probe.py; its interrupt flips it
+                                            ; while SHIFT is held, which zerobas does not
                 ld      a,KEYOP_FNKPAINT
                 ld      (KEYARG),a
                 ld      ix,SUBROM_ENTRY_BASE_P0 + 3*SUBROM_IDX_KEYSTR

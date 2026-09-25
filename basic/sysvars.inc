@@ -1425,6 +1425,8 @@ CON_LASTROW     equ     23      ; 0-based; CSRY is 1-based, so CSRY max = 24
 ; documents as retired-and-free are already spent (`GFX_DJ` $E220, `GFX_BAD`
 ; $E3E5); `CNSDFG` is reserved by the MSX work area and carries exactly this fact.
 CNSDFG          equ     $F3DE   ; function-key display flag: $FF = shown, 0 = hidden
+TTYPOS          equ     $F661   ; BASIC's 0-based print column (D-ADDR29 N set) (1)
+FNKSWI          equ     $FBCD   ; function-key set shown: 1 = F1..F5 (D-ADDR29 N set) (1)
                                 ; (MSX work area; measured D-CNSDFG)
 ; The two bounds the clamp picks between. 22 with the function-key line painted,
 ; 23 without -- measured on the reference in both states (D-KEYON): `LOCATE 0,23`

@@ -1836,8 +1836,32 @@ item — do **one item per session** to keep context lean.
       HIDDEN (the VG-8020 shows `color auto goto list run`). `KEY ON`/`KEY OFF`
       already match. Filed as its own item, D-KEYBOOT, below; `CNSDFG` follows
       from it.
-      ➡️ **NEXT: the N set, observable first** (spec §4.1: `TTYPOS` `PTRFIL`
-      `ESCCNT` `GRPHED` `LINWRK` `FNKSWI`), or `DAC`/`TEMPST`/`RNDX` as ruled.
+      ~~➡️ **NEXT: the N set, observable first** (spec §4.1: `TTYPOS` `PTRFIL`
+      `ESCCNT` `GRPHED` `LINWRK` `FNKSWI`), or `DAC`/`TEMPST`/`RNDX` as ruled.~~
+      🟢 **THE OBSERVABLE N SET, 2026-09-25 — 5 of 6 now read as the
+      reference's, for 8 B main + one C-BIOS patch** (`scratchpad/nset_probe.py`:
+      `nset_run.out` before, `nset_after.out` after; each cell captured into a
+      variable on the operation's own line, so the readout cannot move it):
+      | cell | before | what it was | now |
+      |---|---|---|---|
+      | `PTRFIL` `ESCCNT` `GRPHED` | 7/7 SAME | written transiently, read 0 after — **nothing to do** | SAME |
+      | `TTYPOS` | 8/8 DIFF | C-BIOS's CHPUT mirrors the 1-BASED `CSRX` into it; the reference keeps BASIC's 0-BASED print column, and `LOCATE` moves it | merge patch at `$11CF` (`call ttypos_col`, `basic/islands.asm`; C-BIOS's own `ld (TTYPOS),a` stores `CSRX`−1) + `LOCATE` stores the column (3 B) — **7/7** |
+      | `FNKSWI` | 7/8 DIFF | the reference's steady 1 (F1..F5 shown); one earlier 0 after `LOCATE` did not reproduce — its interrupt maintains the cell | boot stores 1 beside D-KEYBOOT's flags (5 B) — **7/7** |
+      | `LINWRK` | 8/8 DIFF | the reference's key-line render SCRATCH (`$6F63` = "co" of "color" after CLS, `$FFFF` otherwise; timing-dependent) | **not mimicked** — no program reads a scratch line buffer |
+      📏 `make sysvarsweep` agrees independently: its boot BASE-DIFF went
+      **159 → 157 B** (BASIC-owned 80 → 78) — `TTYPOS` and `FNKSWI` left it.
+      🔴 `check_dead_code.py` fix (14): a stub the merge patches INTO C-BIOS is
+      entered by C-BIOS, so it is a declared root (`PATCH_ROOTS`), asserted to
+      resolve like `init`.
+      📋 **FILED, NOT FIXED:** (a) `PRINT CHR$(27);"Y";` then a `PRINT` — the
+      reference takes the next two characters as the ESC Y coordinates and
+      carries on; zerobas (C-BIOS CHPUT) leaves the rest of the line invisible
+      (`esc_half`, both runs); 🎚️ TIER 6. (b) The reference's key line shows
+      F6..F10 while SHIFT is held (its interrupt flips `FNKSWI`); zerobas does
+      not; 🎚️ TIER 3 — found by reasoning from the cell, NOT yet observed on
+      screen: measure before building.
+      ➡️ **NEXT (ruled order):** `RNDX` (7 vs 8 B, spec §4), `TEMPST` → 10,
+      `DAC` full; S2b's temporary policy.
       🔪 **FOUND ON THE WAY — D-KNIFENOREAD, FIXED:** `scratchpad/kwknife.py`
       scored a cut whose sweep printed NO verdict as LOAD-BEARING
       (`v != "SUPPORTED"`). The knife run of the D-BUFMERGE chain read
@@ -2573,7 +2597,7 @@ item — do **one item per session** to keep context lean.
       round now looks better than chasing it: **step 9 need not ADD a row** —
       sharing an existing one leaves the installed set untouched.
 
-- [ ] 🔬 **MAKING ROOM IN MAIN — JOOST, 2026-09-25: *"We need to come up with
+- [x] 🔬 **MAKING ROOM IN MAIN — JOOST, 2026-09-25: *"We need to come up with
       other ways to make room. Clearly reference fits everything in 32k, we
       should be able to fit things better as well."*** Asked because main is
       FULL (page 1 1 B, low 0 B, clean build 2026-09-25) and D-STOPTAP, the
@@ -2737,6 +2761,10 @@ item — do **one item per session** to keep context lean.
       **DIFF: 0/5** (`scratchpad/rstvec_run.out`). Smoke: 12 output rows
       (`PRINT`, `PRINT USING`, `LIST`, `ERROR`, `LPRINT`, `SAVE`, `PRINT#`) all
       SUPPORTED. Knife pin: 0 flips.
+      ✅ **CLOSED 2026-09-25: main page 1 went 1 B → 261 B free in one day**
+      (lever B `cc30d988`/`84e69227`, lever A `8cb5d21b`/`a179cb26`), and the
+      items it gated have since spent some of it (D-ADDR29 S2/S3, D-KEYBOOT) —
+      read `make basic-reloc`, never this line. What remains is optional:
       ➡️ **LEVER A IS DONE AS SCOPED.** `SYNCHR` (`RST 08h`) stays DEFERRED
       (its sites raise different errors; SYNCHR only raises ERR 2) and `DCOMPR`
       (`RST 20h`) has no matching idiom. 129 B of the `$0160` island and 75 B
@@ -5525,7 +5553,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:24466 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:24494 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -5691,7 +5719,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:10484 (T-6FE392)8 (T-529ABE)` from `TODO.md:22120 (T-529ABE)`: a
+      `TODO.md:10512 (T-6FE392)8 (T-529ABE)` from `TODO.md:22148 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -11328,7 +11356,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:22120 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:22148 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

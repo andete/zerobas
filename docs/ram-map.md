@@ -33,7 +33,7 @@ other component's cell at the same address; the `inside` column
 names the other component's BUFFER this address falls within. That
 second one is the question a per-component map cannot answer.
 
-* **basic** — 417 declared addresses in this project's own workspace `$E000..$F37F` (384 with a machine-readable width), plus **89** in the MSX standard work area at or above `$F380`.
+* **basic** — 417 declared addresses in this project's own workspace `$E000..$F37F` (384 with a machine-readable width), plus **91** in the MSX standard work area at or above `$F380`.
 * **disk** — 127 declared addresses in this project's own workspace `$E000..$F37F` (113 with a machine-readable width), plus **24** in the MSX standard work area at or above `$F380`.
 
 ## This project's own workspace (`$E000..$F37F`)
@@ -627,6 +627,7 @@ extents the standard already fixes would be noise, not rigour.
 | `$F406` | 2 B | `basic` | `ACT_LOW` | active low-signal length word (the live baud) |  |
 | `$F414` | 1 B | `basic` | `ERRFLG` | 1 B: last error's MSX ERR code (0 = none yet). |  |
 | `$F41C` |  | `basic` | `CURLIN` | D-CURLIN (Joost, 2026-09-24): the PUBLISHED current |  |
+| `$F661` | 1 B | `basic` | `TTYPOS` | BASIC's 0-based print column (D-ADDR29 N set) (1) |  |
 | `$F676` |  | `basic` | `TXTTAB` | sysvar: pointer to the BASIC text base |  |
 | `$F6B3` | 2 B | `basic` | `ERRLIN` | 2 B: last error's line number, or 65535 if it |  |
 | `$F6B5` | 2 B | `basic` | `DOT` | 2 B: the line `.` names. Cold value 0 (init). |  |
@@ -660,6 +661,7 @@ extents the standard already fixes would be noise, not rigour.
 | `$FB66` |  | `basic` | `VCBB` | Voice Control Block, voice 1 |  |
 | `$FB8B` |  | `basic` | `VCBC` | Voice Control Block, voice 2 |  |
 | `$FBB2` |  | `basic` | `LINTTB` | per-row continuation table, one byte per row: 0 = the row |  |
+| `$FBCD` | 1 B | `basic` | `FNKSWI` | function-key set shown: 1 = F1..F5 (D-ADDR29 N set) (1) |  |
 | `$FBE5` | 11 B | `basic` | `NEWKEY` | key matrix snapshot, 11 B (row 6 bit 0 = SHIFT) |  |
 | `$FC4A` | 2 B | `basic` | `HIMEM` | highest RAM address BASIC may use (2 bytes) |  |
 | `$FC9E` |  | `basic` | `JIFFY` | MSX software clock, bumped by the timer ISR (MSX2 TH work area) |  |
