@@ -32,81 +32,10 @@
 
 ; init_ext_roms: run the remaining boot-scan INITs. Called from `init` just
 ; before `repl`. Clobbers AF/BC/DE/HL/IX/IY (we are pre-REPL, nothing live).
-init_ext_roms:
-                xor     a
-                ld      (DISKSLOT_OK),a     ; no disk-ROM slot recorded yet
-                ld      (SUBSLOT_OK),a      ; no zerobas-sub slot recorded yet (subrom S2b)
-                di                          ; slot switching must be uninterrupted
-                in      a,(PSLTREG)         ; primary slot select register
-                rrca
-                rrca
-                and     $03                 ; A = our page-1 primary slot
-                inc     a                   ; begin one past ourselves (scan order)
-                ld      (SCAN_PRIM),a
-ier_ploop:
-                ld      a,(SCAN_PRIM)
-                cp      4
-                jr      nc,ier_done         ; primaries (mine+1)..3 all scanned
-                ; expanded primary?  EXPTBL[prim] bit 7
-                ld      hl,EXPTBL
-                ld      e,a
-                ld      d,0
-                add     hl,de
-                bit     7,(hl)
-                jr      z,ier_single
-                ; expanded: scan secondaries 0..3
-                ld      b,0                 ; B = secondary slot
-ier_sloop:
-                ld      a,(SCAN_PRIM)
-                ld      c,a                 ; C = primary
-                ld      a,b
-                add     a,a
-                add     a,a                 ; secondary << 2  (into bits 3-2)
-                or      c                   ; | primary
-                or      $80                 ; expanded-slot flag
-                push    bc                  ; try_init_slot / CALSLT clobber BC
-                call    try_init_slot
-                call    try_sub_slot        ; also record a CD sub-ROM here (3-2; subrom S2b)
-                pop     bc
-                inc     b
-                ld      a,b
-                cp      4
-                jr      c,ier_sloop
-                jr      ier_pnext
-ier_single:
-                ld      a,(SCAN_PRIM)       ; slot id = primary (no expanded flag)
-                call    try_init_slot
-ier_pnext:
-                ld      hl,SCAN_PRIM
-                inc     (hl)                ; D-PEEPHOLE: -3 B (7 B -> 4 B)
-                jr      ier_ploop
-ier_done:
-                call    sub_int_install     ; install the page-0 EI trampoline if a
-                                            ; sub-ROM was recorded (subrom trampoline)
-                call    play_install        ; install the PLAY servicer H.TIMI seam
-                                            ; (audio Slice 3; H.TIMI is C9-free here)
-    IF TRAPS_T3
-                call    zkey_install        ; install the KEY-trap fn-key hook (traps T3;
-                                            ; H_ZKEY is C9-filled by C-BIOS's hook init)
-    ENDIF
-                call    trap_init           ; interrupt-traps T1: zero the ZTRAP table so
-                                            ; garbage boot RAM can't look like an armed
-                                            ; trap. Under the boot DI (below); the H.TIMI
-                                            ; poll installed just above fast-outs anyway
-                                            ; until TRAPENA is set. (traps.asm)
-                ei
-                ret
-
-; try_init_slot: if slot A carries an "AB" header, CALSLT its INIT entry.
-; in: A = slot id. The slot id and INIT address live in RAM (SCAN_SLOT /
-; SCAN_INIT) because RDSLT destroys AF/BC/DE between reads.
-; try_init_slot -- MOVED to basic/islands.asm (MAKING ROOM lever B, 2026-09-25):
-; it now lives in C-BIOS's own padding before the font, in page 0, and is still
-; reached by the two `call try_init_slot` sites above.
-
-rdslt_scan:
-                ld      a,(SCAN_SLOT)
-                jp      RDSLT               ; tail call: RDSLT's RET returns to caller
+; init_ext_roms + rdslt_scan -- MOVED to basic/islands.asm (MAKING ROOM lever B,
+; 2026-09-25) beside try_init_slot: the whole boot-time extension-ROM scan now
+; lives in C-BIOS's padding before the font. Still `call init_ext_roms` from
+; basic/interp.asm and `call rdslt_scan` from basic/subrom-boot.asm.
 
 ; NOTE (subrom S2b): the sub-ROM discovery recorder (try_sub_slot) and the
 ; dispatch helper/absence path (subrom_call / subrom_absent_error) live in
