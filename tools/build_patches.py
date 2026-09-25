@@ -226,15 +226,21 @@ def build_main(cbios_checkout, out_dir=None):
     print("building repacked + pristine C-BIOS from the pinned tag...")
     run([PY, os.path.join(TOOLS, "build_repacked_cbios.py"),
          "--cbios", cbios_checkout, "-o", repacked, "--pristine", pristine])
-    print("assembling relocated BASIC ($2812) + tape...")
-    run([PASMO, "--bin", os.path.join(REPO, "basic", "main.asm"), reloc])
+    print("assembling relocated BASIC ($2812) + its C-BIOS-padding islands + tape...")
     with tempfile.TemporaryDirectory() as work:
+        # MAKING ROOM lever B: pasmo emits ONE image from the lowest org, so an
+        # island below $2812 shifts it; split_islands cuts it back into the
+        # $2812-$7FFF shape every consumer expects plus the islands blob.
+        full = os.path.join(work, "basic-full.bin")
+        islands = os.path.join(build, "basic-islands.bin")
+        run([PASMO, "--bin", os.path.join(REPO, "basic", "main.asm"), full])
+        run([PY, os.path.join(TOOLS, "split_islands.py"), full, reloc, islands])
         tape_bin = os.path.join(work, "tape.bin")
         tape_sym = os.path.join(work, "tape.sym")
         run([PASMO, "--bin", os.path.join(REPO, "tape", "tape.asm"), tape_bin, tape_sym])
         print("merging the main ROM...")
         run([PY, os.path.join(TOOLS, "build_mainrom.py"),
-             repacked, reloc, tape_bin, tape_sym, merged])
+             repacked, reloc, tape_bin, tape_sym, merged, islands])
     print("making patches (vs pristine stock)...")
     run([PY, patch, "make", pristine, merged, os.path.join(dest, "zerobas-main-eu.ips")])
     run([PY, patch, "make", pristine, merged, os.path.join(dest, "zerobas-main-eu.bps")])

@@ -279,8 +279,11 @@ sub: $(SUB_ROM)
 # phony targets are never anyone else's prerequisite.
 RELOC_ROM := $(BUILD)/basic-reloc.rom
 RELOC_SYM := $(BUILD)/basic-reloc.sym
-$(RELOC_SYM): $(SRC) $(DEPS) | $(BUILD)
-	$(PASMO) --bin $(SRC) $(RELOC_ROM) $(RELOC_SYM)
+RELOC_FULL := $(BUILD)/basic-full.bin
+ISLANDS    := $(BUILD)/basic-islands.bin
+$(RELOC_SYM): $(SRC) $(DEPS) tools/split_islands.py | $(BUILD)
+	$(PASMO) --bin $(SRC) $(RELOC_FULL) $(RELOC_SYM)
+	python3 tools/split_islands.py $(RELOC_FULL) $(RELOC_ROM) $(ISLANDS)
 # Grouped-target workaround (GNU make 3.81 has no `&:`): $(RELOC_SYM)'s recipe
 # above produces BOTH files; this is a no-op follower, same pattern as the
 # zerobas-main-eu.ips/.bps pair below.

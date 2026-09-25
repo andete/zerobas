@@ -51,11 +51,39 @@ LPTOUT_VEC = (0x00A5, 0x00A8)      # C3 JP vector, target repointed to LPTOUT bo
 PAD_PDL_VECS = (0x00DB, 0x00E1)    # GTPAD ($00DB) + GTPDL ($00DE) JP vectors,
                                    # repointed off the C-BIOS debug stubs to our bodies
 CASSETTE_VECS = (0x00E2, 0x00F6)   # seven cassette vector targets
+# MAKING ROOM lever B (TODO.md, Joost 2026-09-25 "B first, then A"): C-BIOS's own
+# alignment padding that BASIC islands may occupy -- each a `ds <pin> - $` in the
+# C-BIOS source, confirmed 2026-09-25: src/main.asm:620 pads to $0200, :3091 to the
+# font at $1BBF. An island byte anywhere else, or onto a non-zero C-BIOS byte,
+# refuses the build.
+ISLAND_RANGES = ((0x0160, 0x0200), (0x1ACF, 0x1BBF))
 TAPE_BODY_LO = 0x09EE              # routine bodies; hi = tape_end (arg); must
                                    # equal tape/tape.asm FREE_ORG (D5 rev 2026-07-11)
 
 
-def build(repacked: bytes, basic: bytes, tape: bytes, tape_end: int) -> bytes:
+def overlay_islands(merged: bytearray, islands: bytes) -> int:
+    """Overlay the NON-ZERO island bytes; refuse any outside ISLAND_RANGES or onto
+    a non-zero byte of the base. Returns the byte count placed."""
+    if len(islands) != BASIC_BASE:
+        sys.exit(f"islands: expected {BASIC_BASE} B ($0000-${BASIC_BASE - 1:04X}), "
+                 f"got {len(islands)}")
+    placed = 0
+    for a, b in enumerate(islands):
+        if not b:
+            continue
+        if not any(lo <= a < hi for lo, hi in ISLAND_RANGES):
+            sys.exit(f"error: island byte at ${a:04X} lies outside every approved "
+                     f"C-BIOS padding range {[(hex(l), hex(h)) for l, h in ISLAND_RANGES]}")
+        if merged[a] != 0:
+            sys.exit(f"error: island byte at ${a:04X} would overwrite a NON-ZERO "
+                     f"C-BIOS byte (${merged[a]:02X}) -- that range is not padding")
+        merged[a] = b
+        placed += 1
+    return placed
+
+
+def build(repacked: bytes, basic: bytes, tape: bytes, tape_end: int,
+          islands: bytes = None) -> bytes:
     if len(repacked) != TOP:
         sys.exit(f"repacked C-BIOS: expected 32 KB, got {len(repacked)}")
     if len(basic) != TOP - BASIC_BASE:
@@ -97,20 +125,24 @@ def build(repacked: bytes, basic: bytes, tape: bytes, tape_end: int) -> bytes:
     for lo, hi in (LPTOUT_VEC, PAD_PDL_VECS, CASSETTE_VECS, (TAPE_BODY_LO, tape_end)):
         merged[lo:hi] = tape[lo - TAPE_BIN_BASE:hi - TAPE_BIN_BASE]
 
+    if islands is not None:
+        n = overlay_islands(merged, islands)
+        print(f"islands: {n} B placed in C-BIOS padding")
     print(f"OK: merged main ROM -- repacked C-BIOS + BASIC(${BASIC_BASE:04X}-$7FFF) "
           f"+ tape(${TAPE_BODY_LO:04X}-${tape_end:04X})")
     return bytes(merged)
 
 
 def main() -> int:
-    if len(sys.argv) != 6:
+    if len(sys.argv) not in (6, 7):
         sys.exit(__doc__)
     repacked = open(sys.argv[1], "rb").read()
     basic = open(sys.argv[2], "rb").read()
     tape = open(sys.argv[3], "rb").read()
     tape_end = sym_value(sys.argv[4], "tape_end")
     out = sys.argv[5]
-    merged = build(repacked, basic, tape, tape_end)
+    islands = open(sys.argv[6], "rb").read() if len(sys.argv) == 7 else None
+    merged = build(repacked, basic, tape, tape_end, islands)
     open(out, "wb").write(merged)
     print(f"wrote {out}: {len(merged)} bytes")
     return 0
