@@ -84,7 +84,8 @@ def run():
     STRPTR = s["STRPTR"]
     VALTYP = s["VALTYP"]
     TEMPBASE = s["TEMPBASE"]
-    TEMPTOP = s["TEMPTOP"]
+    TEMPPOOL = s["TEMPPOOL"]    # empty pool: TEMPPT = TEMPPOOL (grows UP)
+    TEMPPT = s["TEMPPT"]
 
     fails = 0
 
@@ -111,7 +112,7 @@ def run():
         each statement boundary so temps never accumulate across the many
         expressions this test evaluates directly (str_eval/eval bypass
         exec_stmt, which is where the ROM does this reset)."""
-        m.poke_w(TEMPTOP, TEMPBASE)
+        m.poke_w(TEMPPT, TEMPPOOL)
 
     def set_var(name, value):
         # A str_set_key source is a STABLE [len][ptr] descriptor (slice-4a §10):

@@ -820,16 +820,17 @@ sg_walk:
                 call    sg_walk_arrays
                 call    sg_walk_fnframe
                 ; fall through to sg_walk_temps
-; temp-stack entries [TEMPTOP, TEMPBASE), stride 3.
+; temp-stack entries [TEMPPOOL, TEMPPT), stride 3 (the pool grows UP since
+; D-ADDR29 TEMPPT).
 sg_walk_temps:
-                ld      hl,(TEMPTOP)
+                ld      hl,TEMPPOOL
 sgw_tm_lp:
-                ld      de,TEMPBASE
+                ld      de,(TEMPPT)
                 push    hl
                 or      a
-                sbc     hl,de               ; cursor - TEMPBASE
+                sbc     hl,de               ; cursor - TEMPPT
                 pop     hl
-                ret     nc                  ; cursor >= TEMPBASE -> done
+                ret     nc                  ; cursor >= TEMPPT -> done
                 call    sg_visit            ; HL preserved by sg_visit
                 ld      de,3
                 add     hl,de
@@ -1354,17 +1355,18 @@ sbc_empty:
 ; detect OOM, so an OOM is never silently swallowed. Clobbers A,B,C,D,E,H,L.
 sh_temp_push_alloc:
                 push    af                  ; [len] guard the requested length
-                ld      hl,(TEMPTOP)
+                ld      hl,(TEMPPT)         ; HL = the slot: the next free one
+                push    hl                  ; [len][slot]
                 ld      de,3
+                add     hl,de               ; HL = the new TEMPPT
+                push    hl                  ; [len][slot][new]
+                ld      de,TEMPBASE+1
                 or      a
-                sbc     hl,de
-                ld      de,TEMPPOOL
-                push    hl
-                or      a
-                sbc     hl,de
-                pop     hl
-                jr      c,stpa_overflow     ; new TEMPTOP < TEMPPOOL -> overflow
-                ld      (TEMPTOP),hl        ; slot visible; HL = slot addr
+                sbc     hl,de               ; new TEMPPT - (TEMPBASE+1)
+                pop     de                  ; DE = new TEMPPT   [len][slot]
+                pop     hl                  ; HL = slot         [len]
+                jr      nc,stpa_overflow    ; new TEMPPT > TEMPBASE -> overflow
+                ld      (TEMPPT),de         ; slot visible; HL = slot addr
                 ; init the slot [0][0] so it is NOT a GC root during the alloc
                 xor     a
                 ld      (hl),a
@@ -1501,15 +1503,14 @@ sap_release:
 ; entry can be released without disturbing a live one, and a variable, literal
 ; or older temp is left alone. Clobbers A, D, E, H, L.
 sh_pop_top:
-                ld      de,(TEMPTOP)
+                ld      de,(TEMPPT)
+                dec     de
+                dec     de
+                dec     de                  ; DE = the newest entry (TEMPPT-3)
                 or      a
                 sbc     hl,de
                 ret     nz                  ; not the newest entry -> keep it
-                ex      de,hl               ; HL = TEMPTOP
-                inc     hl
-                inc     hl
-                inc     hl
-                ld      (TEMPTOP),hl        ; pop: its body is garbage now
+                ld      (TEMPPT),de         ; pop: its body is garbage now
                 ret
 sap_oom:
                 pop     af                  ; discard [total]

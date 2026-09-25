@@ -33,7 +33,7 @@ other component's cell at the same address; the `inside` column
 names the other component's BUFFER this address falls within. That
 second one is the question a per-component map cannot answer.
 
-* **basic** — 414 declared addresses in this project's own workspace `$E000..$F37F` (383 with a machine-readable width), plus **97** in the MSX standard work area at or above `$F380`.
+* **basic** — 413 declared addresses in this project's own workspace `$E000..$F37F` (382 with a machine-readable width), plus **98** in the MSX standard work area at or above `$F380`.
 * **disk** — 126 declared addresses in this project's own workspace `$E000..$F37F` (112 with a machine-readable width), plus **25** in the MSX standard work area at or above `$F380`.
 
 ## This project's own workspace (`$E000..$F37F`)
@@ -240,7 +240,6 @@ second one is the question a per-component map cannot answer.
 | `$E232` | 2 B | `basic` | `POOLSIZE` | 2 B: the size CLEAR recorded. Written ONLY by |  |
 | `$E234` | 2 B | `basic` | `PLN_NUM` | 2 B: the parsed line number (BC), $FFFF if the |  |
 | `$E236` | 2 B | `basic` | `PLN_PTR` | 2 B: LINEBUF pointer at the body (HL) |  |
-| `$E238` | 2 B | `basic` | `TEMPTOP` | current cursor (2 B) |  |
 | `$E268` | 2 B | `basic` | `FRETOP` | heap low boundary; heap occupies (2 B) |  |
 | `$E26A` | 3 B | `basic` | `RVDESC` | $E26A: [len:1][ptr:2] scratch descriptor (3 B) |  |
 | `$E26D` | 256 B | `basic` | `STRSCR` | [len][bytes:STRMAX] staging, $E26D..$E36C |  |
@@ -626,6 +625,7 @@ extents the standard already fixes would be noise, not rigour.
 | `$F661` | 1 B | `basic` | `TTYPOS` | BASIC's 0-based print column (D-ADDR29 N set) (1) |  |
 | `$F663` | 1 B | `basic` | `VALTYP_PUB` | PUBLISHED value type: 2 int / 4 single / 8 double (1) |  |
 | `$F676` |  | `basic` | `TXTTAB` | sysvar: pointer to the BASIC text base |  |
+| `$F678` | 2 B | `basic` | `TEMPPT` | PUBLISHED cursor: next free slot (2 B) |  |
 | `$F67A` |  | `basic` | `TEMPPOOL` | TEMPST: low (deepest-push) address |  |
 | `$F698` |  | `basic` | `TEMPBASE` | $F698: high boundary = the empty- |  |
 | `$F6B3` | 2 B | `basic` | `ERRLIN` | 2 B: last error's line number, or 65535 if it |  |

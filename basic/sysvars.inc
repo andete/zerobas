@@ -1847,7 +1847,13 @@ SH_ERR          equ     SH_P + 2            ; result: 0 ok, 1 Out of memory, 2 =
 ; $E37F..$E380 is inside `disk.rom`'s SECTOR_BUF window and `mrg_storeline`
 ; writes it 123 times over 40 merged lines. It goes to the FREE-RAM run below
 ; STRTAB, leaving $E23A..$E23F of that run still free.
-TEMPTOP         equ     $E238               ; current cursor (2 B)
+; 🏗️ D-ADDR29 TEMPPT (2026-09-25): the cursor IS the published TEMPPT and the
+; pool now grows UP, as the reference's: TEMPPT points at the NEXT FREE slot,
+; TEMPPOOL (= TEMPST $F67A) when empty -- which is what a program PEEKing $F678
+; reads at rest on the VG-8020 (it read 0 here). A push takes the slot at
+; TEMPPT and advances it by 3; the newest entry is TEMPPT-3; the GC walks
+; [TEMPPOOL, TEMPPT). It was TEMPTOP ($E238), growing DOWN from TEMPBASE.
+TEMPPT          equ     $F678               ; PUBLISHED cursor: next free slot (2 B)
 ; 🟢 D-ADDR29 TEMPST (2026-09-25, Joost 2026-09-24: "shrink the pool to 10"):
 ; the pool IS the published TEMPST now -- 10 descriptors of 3 B at $F67A..$F697,
 ; the same [len][ptr] entry format. scratchpad/tempst_probe.py measured the

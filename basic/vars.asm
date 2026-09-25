@@ -1004,8 +1004,8 @@ STR_EMPTY:      db      0                   ; a shared empty-string descriptor
 ; E, H, L; also leaves (STRPTR) dangling at the released temp slot (no caller
 ; reads STRPTR after a store -- verified across every str_set_key call site).
 str_set_key:
-                ld      hl,(TEMPTOP)
-                push    hl                  ; [SAVED_TEMPTOP] -- exact restore
+                ld      hl,(TEMPPT)
+                push    hl                  ; [SAVED_TEMPPT] -- exact restore
                                             ; point, correct whether or not
                                             ; the snapshot below actually
                                             ; pushes a slot
@@ -1051,15 +1051,15 @@ str_set_key:
                                             ; sub-side body copy
                 ld      ix,SUBROM_ENTRY_BASE_P0 + 3*SUBROM_IDX_STRHEAP
                 call    sc_call             ; D-SCCALL: tenant call + absent raise
-                pop     hl                  ; [SAVED_TEMPTOP]
-                ld      (TEMPTOP),hl        ; release the H1 snapshot
+                pop     hl                  ; [SAVED_TEMPPT]
+                ld      (TEMPPT),hl        ; release the H1 snapshot
                 ld      a,(SH_ERR)
                 or      a
                 ret     z
                 jp      str_heap_oom_error
 ssk_target_oom:
-                pop     hl                  ; [SAVED_TEMPTOP]
-                ld      (TEMPTOP),hl        ; release the H1 snapshot (the
+                pop     hl                  ; [SAVED_TEMPPT]
+                ld      (TEMPPT),hl        ; release the H1 snapshot (the
                                             ; target alloc failed before ANY
                                             ; store happened, but the
                                             ; snapshot push above still ran)

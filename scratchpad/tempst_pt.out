@@ -1,0 +1,63 @@
+SAME concat depth  6   ref: len 7   zb: len 7
+SAME concat depth  7   ref: len 8   zb: len 8
+SAME concat depth  8   ref: len 9   zb: len 9
+SAME concat depth  9   ref: len 10   zb: len 10
+SAME concat depth 10   ref: len 11   zb: len 11
+SAME concat depth 11   ref: String formula too complex   zb: String formula too complex
+SAME concat depth 12   ref: String formula too complex   zb: String formula too complex
+SAME concat depth 13   ref: String formula too complex   zb: String formula too complex
+SAME concat depth 14   ref: String formula too complex   zb: String formula too complex
+SAME nest   depth  6   ref: len 1   zb: len 1
+SAME nest   depth  7   ref: len 1   zb: len 1
+SAME nest   depth  8   ref: len 1   zb: len 1
+SAME nest   depth  9   ref: len 1   zb: len 1
+SAME nest   depth 10   ref: len 1   zb: len 1
+SAME nest   depth 11   ref: len 1   zb: len 1
+SAME nest   depth 12   ref: len 1   zb: len 1
+SAME chain  depth  6   ref: len 6   zb: len 6
+SAME chain  depth  7   ref: len 7   zb: len 7
+SAME chain  depth  8   ref: len 8   zb: len 8
+SAME chain  depth  9   ref: len 9   zb: len 9
+SAME chain  depth 10   ref: len 10   zb: len 10
+SAME chain  depth 11   ref: len 11   zb: len 11
+SAME chain  depth 12   ref: len 12   zb: len 12
+SAME chain  depth 13   ref: len 13   zb: len 13
+SAME chain  depth 14   ref: len 14   zb: len 14
+SAME lensum depth  6   ref: len 6   zb: len 6
+SAME lensum depth  7   ref: len 7   zb: len 7
+SAME lensum depth  8   ref: len 8   zb: len 8
+SAME lensum depth  9   ref: len 9   zb: len 9
+SAME lensum depth 10   ref: len 10   zb: len 10
+SAME lensum depth 11   ref: len 11   zb: len 11
+SAME lensum depth 12   ref: len 12   zb: len 12
+SAME lensum depth 13   ref: len 13   zb: len 13
+SAME lensum depth 14   ref: len 14   zb: len 14
+SAME print  depth  6   ref: len 1   zb: len 1
+SAME print  depth  7   ref: len 1   zb: len 1
+SAME print  depth  8   ref: len 1   zb: len 1
+SAME print  depth  9   ref: len 1   zb: len 1
+SAME print  depth 10   ref: len 1   zb: len 1
+SAME print  depth 11   ref: len 1   zb: len 1
+SAME print  depth 12   ref: len 1   zb: len 1
+SAME print  depth 13   ref: len 1   zb: len 1
+SAME print  depth 14   ref: len 1   zb: len 1
+SAME cmp    depth  6   ref: len -6   zb: len -6
+SAME cmp    depth  7   ref: len -7   zb: len -7
+SAME cmp    depth  8   ref: len -8   zb: len -8
+SAME cmp    depth  9   ref: len -9   zb: len -9
+SAME cmp    depth 10   ref: len -10   zb: len -10
+SAME cmp    depth 11   ref: len -11   zb: len -11
+SAME cmp    depth 12   ref: len -12   zb: len -12
+SAME cmp    depth 13   ref: len -13   zb: len -13
+SAME temppt depth  6   ref: len F67A   zb: len F67A
+SAME temppt depth  7   ref: len F67A   zb: len F67A
+SAME temppt depth  8   ref: len F67A   zb: len F67A
+SAME temppt depth  9   ref: len F67A   zb: len F67A
+SAME temppt depth 10   ref: len F67A   zb: len F67A
+SAME temppt depth 11   ref: len F67A   zb: len F67A
+SAME temppt depth 12   ref: len F67A   zb: len F67A
+SAME temppt depth 13   ref: len F67A   zb: len F67A
+SAME temppt depth 14   ref: len F67A   zb: len F67A
+
+DIFF: 0/60
+refcache: 0 hit, 2 miss, 2 stored

@@ -2015,9 +2015,22 @@ item — do **one item per session** to keep context lean.
       program can only read as addresses of the reference's own buffers. Stop
       the N set here (done: `TTYPOS` `FNKSWI` `PTRFIL` `ESCCNT` `GRPHED`
       `DIMFLG` `SUBFLG` `PRMFLG` `PRTFLG`), or pursue the scratch?
+      🟢 **`TEMPPT` SHIPPED (2026-09-25): the temp pool's cursor IS the
+      published `TEMPPT` and the pool grows UP from `TEMPST`, as the
+      reference's.** At rest the VG-8020 reads `$F67A` (the empty pool's base)
+      at `$F678`; zerobas read 0. Now it points at the next free slot:
+      push = take the slot at `TEMPPT`, advance by 3, overflow past `TEMPBASE`;
+      newest = `TEMPPT`−3 (`sh_pop_top`, `str_release_top`); the GC walks
+      `[TEMPPOOL, TEMPPT)`; the statement-boundary resets load `TEMPPOOL`.
+      `TEMPTOP` (`$E238`) is gone — renamed everywhere, so no stale use could
+      survive with the old meaning; five unit tests re-seed an empty pool as
+      `TEMPPT = TEMPPOOL`. `scratchpad/tempst_probe.py` gained a `temppt`
+      shape: **DIFF 0/60** (`scratchpad/tempst_pt.out`), depth behaviour
+      unchanged. It cost sub page 0 two bytes and page 1 nothing (clean
+      build 2026-09-25). sysvarsweep boot BASE-DIFF
+      **150 → 148 B** (the two `TEMPPT` bytes).
       ➡️ **NEXT (autonomous):** S2b's heap half (return a released body at
-      FRETOP), or `TEMPPT` (at rest the reference reads `$F67A`, the empty
-      pool; zerobas's `$F678` reads 0).
+      FRETOP) — the last D-ADDR29 item not waiting on Joost.
       🔪 **FOUND ON THE WAY — D-KNIFENOREAD, FIXED:** `scratchpad/kwknife.py`
       scored a cut whose sweep printed NO verdict as LOAD-BEARING
       (`v != "SUPPORTED"`). The knife run of the D-BUFMERGE chain read
@@ -5709,7 +5722,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:24650 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:24663 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -5875,7 +5888,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:10668 (T-6FE392)8 (T-529ABE)` from `TODO.md:22304 (T-529ABE)`: a
+      `TODO.md:10681 (T-6FE392)8 (T-529ABE)` from `TODO.md:22317 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -11512,7 +11525,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:22304 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:22317 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

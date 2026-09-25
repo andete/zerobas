@@ -114,7 +114,8 @@ def run():
     FPERR = s["FPERR"]
     FPERR_TYPEMM = 10       # sysvars.inc; -> ERR 13 via interp.asm fperr_to_err
     TEMPBASE = s["TEMPBASE"]
-    TEMPTOP = s["TEMPTOP"]
+    TEMPPOOL = s["TEMPPOOL"]    # empty pool: TEMPPT = TEMPPOOL (grows UP)
+    TEMPPT = s["TEMPPT"]
 
     fails = 0
 
@@ -154,7 +155,7 @@ def run():
         the direct eval call bypasses) so operand snapshots don't accumulate."""
         tok(text)
         clear_markers()
-        m.poke_w(TEMPTOP, TEMPBASE)
+        m.poke_w(TEMPPT, TEMPPOOL)
         cpu = m.call("eval", hl=TOKBUF)
         return cpu.de & 0xFFFF
 

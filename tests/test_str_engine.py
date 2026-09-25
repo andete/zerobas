@@ -88,8 +88,9 @@ def run():
     VALTYP = s["VALTYP"]
     RVDESC = s["RVDESC"]        # the single-rvalue descriptor cell (non-concat literals)
     TEMPPOOL = s["TEMPPOOL"]    # temp-descriptor stack floor / current frontier top
-    TEMPBASE = s["TEMPBASE"]    # temp-descriptor stack base (empty = TEMPTOP)
-    TEMPTOP = s["TEMPTOP"]
+    TEMPPOOL = s["TEMPPOOL"]    # temp-descriptor pool base (empty = TEMPPT, which grows UP)
+    TEMPBASE = s["TEMPBASE"]    # one past the last slot
+    TEMPPT = s["TEMPPT"]
 
     fails = 0
 
@@ -129,7 +130,7 @@ def run():
         m.poke(SRC, text.encode("ascii") + b"\x00")
         m.mem[TOKBUF:TOKBUF + 96] = b"\x00" * 96
         m.call("tokenise", hl=SRC, de=TOKBUF)
-        m.poke_w(TEMPTOP, TEMPBASE)
+        m.poke_w(TEMPPT, TEMPPOOL)
         m.poke(VALTYP, 0)
         m.poke_w(STRPTR, 0)
         m.poke(s["FPERR"], 0)       # D-STRLONG: exec_stmt clears the pending-error

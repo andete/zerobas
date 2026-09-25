@@ -90,7 +90,8 @@ def run():
     ERRMARK = s["ERRMARK"]
     STRMAX = s["STRMAX"]     # 255 in the repack build (slice-4a widened 64->255)
     TEMPBASE = s["TEMPBASE"]
-    TEMPTOP = s["TEMPTOP"]
+    TEMPPOOL = s["TEMPPOOL"]    # empty pool: TEMPPT = TEMPPOOL (grows UP)
+    TEMPPT = s["TEMPPT"]
 
     fails = 0
 
@@ -123,7 +124,7 @@ def run():
         m.poke(s["FPERR"], 0)   # D-PENDERR: ONE cell now -- the separate
                                 # TMISMATCH byte this used to clear beside it is
                                 # retired (docs/spec-basic-penderr.md)
-        m.poke_w(TEMPTOP, TEMPBASE)
+        m.poke_w(TEMPPT, TEMPPOOL)
 
     def set_var(name, value):
         # str_set_key source = a STABLE [len][ptr] descriptor (slice-4a §10):

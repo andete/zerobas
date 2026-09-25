@@ -509,8 +509,8 @@ exec_stmt:
                 ; garbage) -- see the cold-only hook above.
                 call    check_fperr_only    ; the FIRST fault outranks the rest
                                             ; of the statement, including its end
-                ld      de,TEMPBASE         ; arrays slice-4a §6: the temp-descriptor
-                ld      (TEMPTOP),de        ; stack is emptied at every statement
+                ld      de,TEMPPOOL         ; arrays slice-4a §6: the temp-descriptor
+                ld      (TEMPPT),de        ; stack is emptied at every statement
                                             ; boundary (mirrors the old STRTMP ring's
                                             ; implicit per-statement reset) -- temps
                                             ; never survive past the statement that

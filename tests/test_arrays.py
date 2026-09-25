@@ -98,7 +98,7 @@ def make_machine():
     # CLEAR/NEW/RUN would have left behind before any of these entry points
     # ever run. FRETOP is intentionally NOT seeded here (stays 0) -- see the
     # Case 5 OOM comment below for why.
-    m.poke_w(s["TEMPTOP"], s["TEMPBASE"])
+    m.poke_w(s["TEMPPT"], s["TEMPPOOL"])
     return m
 
 

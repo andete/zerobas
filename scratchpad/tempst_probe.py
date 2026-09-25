@@ -54,6 +54,11 @@ LINE_SHAPES = [
                + ":PRINT12345;1"),
     ("cmp",    lambda d: 'A$="X":X=' + "+".join(['(MID$(A$,1)="X")'] * d)
                + ":PRINT12345;X"),
+    # 🏗️ D-ADDR29 TEMPPT: the published cursor AT REST (the next statement
+    # after d temporaries were used) -- the reference reads $F67A, the empty
+    # pool's base. zerobas read 0 before its pool grew UP from TEMPST.
+    ("temppt", lambda d: 'A$="X":B$=' + "+".join(["MID$(A$,1)"] * d)
+               + ':X=PEEK(&HF678)+256*PEEK(&HF679):PRINT12345;HEX$(X)'),
 ]
 
 

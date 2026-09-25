@@ -274,8 +274,8 @@ hr_txtmax:
                 ld      hl,TXTMAX
 hr_have:
                 ld      (FRETOP),hl         ; HL = C, the ceiling
-                ld      hl,TEMPBASE
-                ld      (TEMPTOP),hl
+                ld      hl,TEMPPOOL         ; empty pool: TEMPPT at its base
+                ld      (TEMPPT),hl
                 ret
 
 ; --- pu_deref_body: HL = a [len:1][ptr:2] descriptor address (its len byte

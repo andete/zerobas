@@ -483,15 +483,14 @@ str_release_top:
                 push    hl
                 push    de
                 ld      hl,(STRPTR)
-                ld      de,(TEMPTOP)
+                ld      de,(TEMPPT)
+                dec     de
+                dec     de
+                dec     de                  ; DE = the newest entry (TEMPPT-3)
                 or      a
                 sbc     hl,de
                 jr      nz,srt_keep         ; not the newest -> keep it
-                ex      de,hl               ; HL = TEMPTOP
-                inc     hl
-                inc     hl
-                inc     hl
-                ld      (TEMPTOP),hl
+                ld      (TEMPPT),de         ; pop
 srt_keep:
                 pop     de
                 pop     hl
