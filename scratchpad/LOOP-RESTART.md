@@ -67,10 +67,14 @@ and keeps released temporaries — a string-engine policy, not an equate) and
 ✅ **S3 `ATRBYT` shipped** (6 B; `COLOR` sets it, 9/9). S3 found **D-KEYBOOT**:
 zerobas BOOTS with the function-key line hidden (VG-8020 shows it).
 
-➡️ **QUEUE, lowest tier first:** (1) **TIER 1 D-KEYBOOT** — do `KEY ON`'s work
-at cold boot; the blast radius over screen-reading suites is the price, read
-every diff; (2) D-ADDR29's N set (observable first) / S2b's temporary policy;
-(3) D-STOPTAP's 1-frame tap. 🙋 **TWO QUESTIONS FOR JOOST** when the autonomous queue empties:
+✅ **D-KEYBOOT FIXED** — zerobas boots with the function-key line shown
+(`scratchpad/keyboot_probe.py`, 0/6 on both builds vs the VG-8020; 22 B).
+**Walls (clean build 2026-09-25): main page 1 233 B, low 5 B.**
+
+➡️ **QUEUE, lowest tier first:** (1) D-ADDR29's N set (observable first:
+`TTYPOS` `PTRFIL` `ESCCNT` `GRPHED` `LINWRK` `FNKSWI`) / S2b's temporary
+policy; (2) D-STOPTAP's 1-frame tap. 🙋 Two questions for Joost stand (the
+6030 B lever; D-HIMEMLIE's boot value). 🙋 **TWO QUESTIONS FOR JOOST** when the autonomous queue empties:
 the 6030 B lever, and D-HIMEMLIE's boot value. Re-scan TODO markers first.
 
 ### 🌅 NIGHT 2026-09-25 — READ THIS FIRST, IT SUPERSEDES THE QUEUE BELOW

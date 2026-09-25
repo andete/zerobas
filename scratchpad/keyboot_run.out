@@ -1,0 +1,11 @@
+== Philips_VG_8020 vs C-BIOS_MSX1_EU_REPACK_NODISK
+SAME row23   ref: color auto goto list run   zb: color auto goto list run
+SAME cnsdfg  ref: 255   zb: 255
+SAME bound   ref: 22   zb: 22
+== Philips_VG_8020 vs C-BIOS_MSX1_EU_REPACK_DISK
+SAME row23   ref: color auto goto list run   zb: color auto goto list run
+SAME cnsdfg  ref: 255   zb: 255
+SAME bound   ref: 22   zb: 22
+
+DIFF: 0/6
+refcache: 4 hit, 0 miss

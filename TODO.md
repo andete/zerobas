@@ -1926,8 +1926,8 @@ item — do **one item per session** to keep context lean.
       | (3) **shrink `basic` tenants** — `TEMPPOOL` → 30 (ruled), the 256 B buffers, verified holes | tens to hundreds of B | yes | per tenant; each needs its ceiling proved |
       | (4) **accept** the diskless gap as a stated divergence | 0 | — | a doc line |
 
-- [ ] 🖥️ **D-KEYBOOT — zerobas BOOTS WITH THE FUNCTION-KEY LINE HIDDEN; THE
-      VG-8020 SHOWS IT**
+- [x] 🖥️ **D-KEYBOOT — zerobas BOOTS WITH THE FUNCTION-KEY LINE HIDDEN; THE
+      VG-8020 SHOWS IT** — ✅ **FIXED 2026-09-25**, see the end of this item.
       🎚️ TIER 1 — happy path: it is on the very first screen every user sees,
       and it moves the text window (the reference scrolls within rows 0..22 at
       boot, zerobas within 0..23 — `docs/missing-vg8020-characterization.md`
@@ -1948,6 +1948,15 @@ item — do **one item per session** to keep context lean.
       scrolls to it changes; the probes that drop the last row "as chrome"
       should start AGREEING there. Run the FULL battery, and read every
       screen-reading suite's diff, not just its colour.
+      ✅ **FIXED 2026-09-25 — 22 B page 1, after `show_title` in the cold
+      boot (`basic/interp.asm`): `CRTCNT` → `CON_ROWS_KEYON`, `CNSDFG` → `$FF`,
+      the keystr tenant's paint op through `subrom_call`.** Proved by
+      `scratchpad/keyboot_probe.py` → `scratchpad/keyboot_run.out`: both
+      zerobas builds against the VG-8020 (the boot screen is presentational —
+      the VG value on both targets, Joost 2026-09-04), the bottom row, `CNSDFG`
+      and the scroll bound: **DIFF 0/6** (was 3/3 on each build). 🔮 Predicted
+      all three SAME — HIT. ⚠️ The CF-3300 boots in SCREEN 1, so it cannot be
+      scraped without a reset; per the ruling it is not the target here.
 
 - [ ] 🔴 **D-HIMEMLIE — zerobas's `HIMEM` SAYS `$F380` WHILE ZEROBAS LIVES AT
       `$DB00..$F37F`**
@@ -5516,7 +5525,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:24457 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:24466 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -5682,7 +5691,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:10475 (T-6FE392)8 (T-529ABE)` from `TODO.md:22111 (T-529ABE)`: a
+      `TODO.md:10484 (T-6FE392)8 (T-529ABE)` from `TODO.md:22120 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -11319,7 +11328,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:22111 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:22120 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

@@ -166,6 +166,22 @@ init:
                 ld      a,37
                 ld      (LINL40),a
                 call    show_title          ; startup header lines
+                ; 🖥️ D-KEYBOOT (2026-09-25): BOOT WITH THE FUNCTION-KEY LINE SHOWN,
+                ; as the VG-8020 does (`color  auto   goto   list   run` on row 23,
+                ; CNSDFG 255, the scroll bound at row 22 -- scratchpad/
+                ; s3cells_probe.py and the boot-screen capture in TODO D-KEYBOOT).
+                ; This is `key_on`'s work (basic/screen.asm) minus its statement
+                ; frame: AFTER show_title, whose INITXT clears the screen, and
+                ; through subrom_call rather than sc_call -- an absent sub-ROM
+                ; must not raise during init (the KEYSTR defaults above, same).
+                ld      a,CON_ROWS_KEYON
+                ld      (CRTCNT),a          ; reserve the bottom row
+                ld      a,$FF
+                ld      (CNSDFG),a          ; the documented "shown" flag
+                ld      a,KEYOP_FNKPAINT
+                ld      (KEYARG),a
+                ld      ix,SUBROM_ENTRY_BASE_P0 + 3*SUBROM_IDX_KEYSTR
+                call    subrom_call         ; paint row 23 (absent: stays blank)
                 ; --- the disk ROM announces itself, UNDER the main banner -----
                 ; 🧭 2026-09-01 (Joost's call). The reference prints `Disk BASIC
                 ; version 1.0` from its disk ROM on the line below the main
