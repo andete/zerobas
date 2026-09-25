@@ -239,7 +239,11 @@ def run_row(row):
                         "--zb-machine", "C-BIOS_MSX1_EU_REPACK_DISK", "--only", row],
                        capture_output=True, text=True)
     for line in r.stdout.split("\n"):
-        if line.startswith(("SUPPORTED", "DIVERGENT", "MISSING", "SILENT-GAP", "UNREADABLE")):
+        # 🔴 EXTRA TOO (2026-09-25): the sweep's classifier can return it (the
+        # reference errors, zerobas does not), and a word missing from this list
+        # read as NO-VERDICT -- a real reading thrown away.
+        if line.startswith(("SUPPORTED", "DIVERGENT", "MISSING", "SILENT-GAP",
+                            "UNREADABLE", "EXTRA")):
             return line.split()[0]
     # 🔴 D-KNIFENOREAD (2026-09-24): SAY WHY, because this verdict proves nothing
     # and used to be scored as proof (see NO_READING below).
@@ -346,7 +350,11 @@ def record(kw, row, verdict, mode):
         subs = pin.setdefault("subjects", {})
         rec = subs.setdefault(subj, {"rows": {}})
         rec["rows"][row] = verdict
-        rec["connected"] = any(v != "SUPPORTED" for v in rec["rows"].values())
+        # 🔴 THE SAME NO-READING RULE AS `rows` (2026-09-25). D-KNIFENOREAD fixed
+        # the rows map and missed this one: 8 flaked cuts left `rows` honest
+        # (connected false) while `subjects` called all 8 connected.
+        rec["connected"] = any(v != "SUPPORTED" and v not in NO_READING
+                               for v in rec["rows"].values())
     os.makedirs(os.path.dirname(PIN), exist_ok=True)
     # 🔴 CLOSE THE FILE. `json.dump(..., open(...))` leaves the handle to the
     # garbage collector: `open(...,"w")` truncates AT ONCE, so an unflushed buffer
@@ -715,6 +723,22 @@ def plant_logtab(tok):
     return (off, orig), None
 
 
+# 🔴 D-KNIFESTALE (2026-09-25): BUILD THE ROM BEFORE READING A SINGLE SYMBOL.
+# `_force_clean_rom` rebuilds at EXIT, which protects the NEXT run from THIS one
+# -- and nothing protected this run from the tree. `make basic-reloc` refreshes
+# build/basic-reloc.sym but NOT the merged ROM, so after a 1-byte source edit
+# the knife read `stmt_error` = $42FE from the new .sym and planted it into an
+# old ROM whose `stmt_error` was $42FF: every cut pointed at the LAST BYTE OF THE
+# ROUTINE BEFORE IT. The run looked healthy -- 53 MISSING became DIVERGENT, 8 read
+# nothing, NEW/REM/WIDTH went BLIND -- and hand cuts on a rebuilt ROM restored
+# every one [[a-knife-can-be-inert-because-the-build-did-not-happen]].
+try:
+    os.remove(ROM)
+except OSError:
+    pass
+subprocess.run(["make", "repack-machine"], cwd=ROOT, check=True, capture_output=True)
+if not os.path.exists(ROM):
+    sys.exit("knife: `make repack-machine` did not produce %s -- nothing was measured" % ROM)
 FNMODE = "--fn" in sys.argv
 if FNMODE:
     sys.argv = [a for a in sys.argv if a != "--fn"]

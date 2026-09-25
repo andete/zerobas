@@ -195,7 +195,7 @@ ex_color:
                 call    skip_comma
                 jr      nz,clr_apply
 clr_bg:
-                call    inc_skip           ; past the comma
+                rst    $10                ; past the comma
                 cp      ','                 ; "COLOR fg,,border" -> bg omitted
                 jr      z,clr_bd
                 or      a

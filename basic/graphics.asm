@@ -254,7 +254,7 @@ elg_second:
                 ld      (GFX_MODE),a        ; default: segment
                 call    skip_comma
                 jr      nz,elg_draw         ; no options
-                call    inc_skip           ; consume the 1st comma
+                rst    $10                ; consume the 1st comma
                 cp      ','                 ; ",," -> colour omitted, straight to box field
                 jr      z,elg_box_comma
                 ; 🔴 D-LINERR: a list that ENDS where the colour was required is
@@ -280,7 +280,7 @@ elg_second:
                 call    skip_comma
                 jr      nz,elg_draw         ; ",c" only
 elg_box_comma:
-                call    inc_skip           ; consume the box-introducing comma
+                rst    $10                ; consume the box-introducing comma
 elg_box_read:
                 ld      a,(hl)
                 cp      'B'                 ; box keyword
@@ -741,7 +741,7 @@ ex_paint:
                 ; --- optional ",[C][,[B]]" ---
                 call    skip_comma
                 jr      nz,ep_default_b     ; no fields at all -> C=FORCLR, B=C
-                call    inc_skip           ; consume the comma
+                rst    $10                ; consume the comma
                 cp      ','
                 jr      z,ep_c_empty        ; ",," -> C omitted; this comma intros B
                 ; 🔴 D-PAINTMISS (docs/spec-basic-paintmiss.md). THE COMMA IS
@@ -1325,7 +1325,7 @@ ex_put_sprite:
                 ld      (GFX_SN),de
                 call    skip_comma
                 jp      nz,gfx_syntax       ; `PUT SPRITE 0` -> ERR 2 (measured)
-                call    inc_skip
+                rst    $10     
                 cp      '('
                 jr      z,pspr_coords
                 cp      STEP_TOKEN
@@ -1346,7 +1346,7 @@ pspr_coords:
                 call    skip_comma
                 jr      nz,pspr_go
 pspr_optional:
-                call    inc_skip           ; past the ',' before the colour
+                rst    $10                ; past the ',' before the colour
                 cp      ','
                 jr      z,pspr_pattern      ; colour omitted -> keep the entry's colour
                 call    gfx_eval_int16      ; DE = colour (domain checked by the tenant)
@@ -1507,7 +1507,7 @@ g8_assign:
                 ld      (GFX_G8N),de
                 call    skip_eq             ; D-SKIPEQ: skip_spaces + cp EQ_TOKEN
                 jp      nz,gfx_syntax       ; `VDP(0)` alone / `VDP(0),1` -> ERR 2
-                call    inc_skip
+                rst    $10     
                 or      a
                 jr      z,g8_missing        ; `VDP(0)=` at end of line -> ERR 24
                 cp      ':'

@@ -315,11 +315,11 @@ sav_is_cas:
 ; so it is DEPTH-INDEPENDENT -- the same argument D-LOCPARK wrote into
 ; basic/missing.asm when it put eval_byte_checked behind a call.
 sav_flag_a:
-                call    inc_skip           ; past the ','
+                rst    $10                ; past the ','
                 call    upcase
                 cp      'A'
                 jp      nz,load_error       ; only ,A is supported
-                call    inc_skip           ; past the 'A'
+                rst    $10                ; past the 'A'
                 or      a
                 jp      nz,load_error       ; trailing junk after ,A
                 ret
@@ -649,7 +649,7 @@ bsave_opt4:
                 xor     a                   ; no 4th argument (A=0, CF clear)
                 ret
 b4_have:
-                call    inc_skip           ; past the comma
+                rst    $10                ; past the comma
                 call    upcase
                 cp      'S'
                 jr      z,b4_maybe_s

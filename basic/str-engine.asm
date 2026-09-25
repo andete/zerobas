@@ -638,7 +638,7 @@ sct_go:
                                             ; harmless temp)
                 ex      (sp),hl             ; [R]; HL = cursor (@ '+')
 sct_loop:
-                call    inc_skip           ; past the '+'
+                rst    $10                ; past the '+'
                 call    str_eval_one        ; STRPTR -> operand, HL = ADVANCED cursor, CF
                 jr      nc,sct_err2         ; malformed operand -> clean [R]
                 push    hl                  ; [R][advanced cursor] (save the ADVANCED
@@ -1452,7 +1452,7 @@ ems_close:
                 ; each leave HL past trailing spaces. The rows found the one site
                 ; that had no such guard in front of it, which reading the source
                 ; alone got wrong in both directions.
-                call    inc_skip            ; past ')' AND any spaces (D-INCSKIP)
+                rst    $10                 ; past ')' AND any spaces (D-INCSKIP)
                 cp      EQ_TOKEN            ; '=' crunches to $EF
                 jr      nz,ems_err_pop2
                 call    str_eval_next       ; D-NGRAM11: past '=', STRPTR -> RHS

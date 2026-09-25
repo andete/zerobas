@@ -4010,6 +4010,7 @@ PLY_XSP         equ     $F024   ; PLAY X: saved SP at pt_voice's call (2)
 ; FLAG (a runtime error's unwind returns with incidental flags -- onerr0 23/32)
 ; and a plain CLEAR in the silent exit (AUTO's and cassette LOAD/MERGE's nested
 ; stores cleared it -- editverb 55/61, castail 27/31).
+H_CHRG          equ     $FF48   ; published hook CHRGTR calls first (MSX2 TH hook table)
 PRMWANT         equ     $F026   ; D-OKSTORE: nonzero = print the prompt (1)
 STOPHOLD        equ     $F027   ; D-STOPTAP: frames Ctrl-STOP has been held (1)
 STOPREP_FIRST   equ     39      ; D-STOPTAP: frames held before the first re-fire, as COUNTED here

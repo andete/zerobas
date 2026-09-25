@@ -333,7 +333,7 @@ req_gosub:
 ; anyone adds) plus one saved byte -- and saying so with an arm beats asserting
 ; it in a comment. [[a-case-that-agrees-can-agree-for-the-wrong-reason]]
 str_eval_next:
-                call    inc_skip           ; past the delimiter
+                rst    $10                ; past the delimiter
                 jp      str_eval            ; TAIL jump -- see the note above
 
 ; --- req_lineno: a LINE NUMBER is REQUIRED at the cursor (D-NGRAM10) --------
@@ -1024,7 +1024,7 @@ sc_call:
 ; a call: 10 x 2 saved less this 6-byte body = 14 B. Same flags contract as
 ; skip_comma: A = the byte, Z iff it is '(' -- every caller branches on NZ.
 inc_skip_paren:
-                call    inc_skip
+                rst     $10                 ; CHRGTR: inc hl + skip spaces (lever A)
                 cp      '('
                 ret
 ; --- skip_comma: skip_spaces, then "is it a comma?" ------------------------
@@ -1104,8 +1104,13 @@ upcase:
 ; ⚠️ basic/readdata-body.inc is DELIBERATELY NOT converted: sub/readdata.asm
 ; includes it, so a `call inc_skip` there would be a main-ROM escape from a
 ; sub-ROM tenant (subrom-closure-check's subject).
-inc_skip:
-                inc     hl
+; 🔴 SUPERSEDED FOR THE FIFTY SITES, 2026-09-25 (MAKING ROOM lever A): they are
+; now 1-byte `rst $10` -- the PUBLISHED CHRGTR in basic/islands.asm, which is
+; this label's behaviour plus the contract's flags (Z at 00/':', CF on a digit)
+; and the H.CHRG hook. The "flags are what every caller expected" line above no
+; longer holds for them; it did not need to: scratchpad/rst_scout.py found no
+; site reading Z/C before setting them. The LABEL AND ITS `inc hl` ARE DELETED:
+; with the fifty gone it had no caller, and deadcode found it (1 B).
 ; --- skip_spaces: advance HL past 0x20 bytes -------------------------------
 skip_spaces:
                 ld      a,(hl)
@@ -1138,7 +1143,7 @@ skip_spaces:
 ; that a later caller quietly broke, so it is corrected rather than left standing
 ; [[a-fix-falsifies-the-justification-beside-it]].
 stmt_bare_end:
-                call    inc_skip           ; past the statement's token
+                rst    $10                ; past the statement's token
                 or      a
                 ret     z                   ; end of line
                 cp      COLON
@@ -2017,7 +2022,7 @@ cee_abort_fp:
 
 ; --- ex_letkw: optional LET keyword before an assignment -------------------
 ex_letkw:
-                call    inc_skip           ; past the LET token
+                rst    $10                ; past the LET token
     IF G8_RESIDENT
                 ; `LET VDP(0)=2` / `LET BASE(0)=…` are ERR 2 on the reference
                 ; (measured, docs/spec-basic-graphics-g8.md §3). Without this they
@@ -2097,7 +2102,7 @@ errmark_expr:
 ; A clause is either a line number (implicit GOTO) or statements. Condition is
 ; true when the expression is non-zero (no comparison operators yet).
 ex_if:
-                call    inc_skip           ; past the IF token
+                rst    $10                ; past the IF token
                 call    eval                ; DE = condition, HL after expr
                 call    check_expr_errors   ; D-2/D-F2-1: `IF A$<5 THEN...` / a runtime
                                             ; numeric error both abort before either clause
@@ -2128,7 +2133,7 @@ if_goto_form:
                 jr      z,if_false
                 jp      exec_stmt           ; true: let exec run the GOTO at HL
 if_then:
-                call    inc_skip           ; past THEN
+                rst    $10                ; past THEN
                 ld      a,d                 ; condition true?
                 or      e
                 jr      z,if_false
@@ -2142,7 +2147,7 @@ if_false:
                 call    if_skip_to_else     ; scan to ELSE token or end of line
                 or      a
                 ret     z                   ; no ELSE -> line done
-                call    inc_skip           ; past the ELSE ($A1) token
+                rst    $10                ; past the ELSE ($A1) token
                 cp      LINENO_TOKEN
                 jr      z,if_branch
                 jp      exec_stmt           ; ELSE <statements>

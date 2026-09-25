@@ -57,6 +57,10 @@ CASSETTE_VECS = (0x00E2, 0x00F6)   # seven cassette vector targets
 # font at $1BBF. An island byte anywhere else, or onto a non-zero C-BIOS byte,
 # refuses the build.
 ISLAND_RANGES = ((0x0160, 0x0200), (0x1ACF, 0x1BBF))
+# ...and the PATCHES: non-padding bytes BASIC may overwrite, each only while the
+# base still holds the exact bytes named here (a C-BIOS change refuses, loudly).
+# $0010: the RST 10h vector -> zerobas's published-contract CHRGTR (lever A).
+PATCH_RANGES = {0x0010: bytes([0xC3, 0xFF, 0x10])}
 TAPE_BODY_LO = 0x09EE              # routine bodies; hi = tape_end (arg); must
                                    # equal tape/tape.asm FREE_ORG (D5 rev 2026-07-11)
 
@@ -67,9 +71,21 @@ def overlay_islands(merged: bytearray, islands: bytes) -> int:
     if len(islands) != BASIC_BASE:
         sys.exit(f"islands: expected {BASIC_BASE} B ($0000-${BASIC_BASE - 1:04X}), "
                  f"got {len(islands)}")
+    # every PATCH the islands touch must still find C-BIOS's exact old bytes --
+    # checked ONCE, against the untouched base, before anything is overlaid
+    for p, old in PATCH_RANGES.items():
+        if any(islands[p:p + len(old)]):
+            have = bytes(merged[p:p + len(old)])
+            if have != old:
+                sys.exit(f"error: patch at ${p:04X} expects the base to hold "
+                         f"{old.hex(' ')}, found {have.hex(' ')} -- C-BIOS changed under it")
     placed = 0
     for a, b in enumerate(islands):
         if not b:
+            continue
+        if any(p <= a < p + len(old) for p, old in PATCH_RANGES.items()):
+            merged[a] = b                   # validated against the base above
+            placed += 1
             continue
         if not any(lo <= a < hi for lo, hi in ISLAND_RANGES):
             sys.exit(f"error: island byte at ${a:04X} lies outside every approved "

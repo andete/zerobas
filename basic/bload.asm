@@ -166,7 +166,7 @@ pcr_noquote:
                 cp      ','
                 jr      nz,pcr_err          ; junk after the quote -> error
                 ; --- one option flag: ,R (run) or ,S (VRAM) ----------------
-                call    inc_skip           ; past the comma
+                rst    $10                ; past the comma
                 call    upcase              ; accept ,r / ,s as well
                 cp      'R'
                 jr      z,pcr_run

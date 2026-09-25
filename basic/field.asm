@@ -392,7 +392,7 @@ field_item:
                 call    upcase
                 cp      'S'
                 jp      nz,exf_syn
-                call    inc_skip
+                rst    $10     
                 call    is_letter           ; a string variable name?
                 jp      nc,exf_syn
                 call    var_str_type        ; A=1 if `$` suffix
@@ -733,7 +733,7 @@ ex_put:
                 ; two reserved words (PUT $B3 + SPRITE $C7), disambiguated at RUN
                 ; time on the token that follows (basic/graphics.asm ex_put_sprite).
                 push    hl
-                call    inc_skip
+                rst    $10     
                 cp      SPRITE_TOKEN
                 jr      z,pus_is_sprite
                 pop     hl
@@ -749,7 +749,7 @@ ex_get:
                 xor     a                   ; mode = GET (read)
 gp_common:
                 ld      (GP_MODE),a
-                call    inc_skip           ; past the GET/PUT token
+                rst    $10                ; past the GET/PUT token
                 cp      '#'
                 jr      nz,gp_nochan
                 inc     hl

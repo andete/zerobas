@@ -133,8 +133,21 @@ class Machine:
         self.cpu = Z80(self.mem)
         self.traps = {}                # addr -> callback(machine)
         self._seed_fat_buffers()
+        self._seed_hooks()
         if "subrom_call" in self.sym:
             self._install_subrom_bridge()
+
+    def _seed_hooks(self):
+        """Fill the hook table $FD9A..$FFC9 with RET, as the BIOS does at boot.
+
+        🔁 MAKING ROOM lever A (2026-09-25): `rst $10` is CHRGTR, and CHRGTR's
+        published contract calls H.CHRG ($FF48) first (basic/islands.asm). These
+        tests never boot, so the hook was $00 and every `rst $10` slid through
+        NOPs off the top of memory. Set what the real path would have set.
+        Only for an image that HAS the entry, so other ROMs see what they saw."""
+        if "chrgtr" not in self.sym:
+            return
+        self.mem[0xFD9A:0xFFCA] = b"\xC9" * (0xFFCA - 0xFD9A)
 
     def _seed_fat_buffers(self):
         """Point the FAT engine at its buffer pair, as `init` does on the machine.

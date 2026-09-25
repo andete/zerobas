@@ -33,7 +33,7 @@ other component's cell at the same address; the `inside` column
 names the other component's BUFFER this address falls within. That
 second one is the question a per-component map cannot answer.
 
-* **basic** — 418 declared addresses in this project's own workspace `$E000..$F37F` (385 with a machine-readable width), plus **84** in the MSX standard work area at or above `$F380`.
+* **basic** — 418 declared addresses in this project's own workspace `$E000..$F37F` (385 with a machine-readable width), plus **85** in the MSX standard work area at or above `$F380`.
 * **disk** — 127 declared addresses in this project's own workspace `$E000..$F37F` (113 with a machine-readable width), plus **24** in the MSX standard work area at or above `$F380`.
 
 ## This project's own workspace (`$E000..$F37F`)
@@ -708,6 +708,7 @@ extents the standard already fixes would be noise, not rigour.
 | `$FE7B` |  | `disk` | `H_FILE` |  |  |
 | `$FEFD` |  | `basic` | `H_ERRP` | error-print hook (D-DISKERR): the errmsg tenant offers a code it |  |
 | `$FEFD` |  | `disk` | `H_ERRP` | error-print hook (D-DISKERR): this ROM prints ERR 68..70 |  |
+| `$FF48` |  | `basic` | `H_CHRG` | published hook CHRGTR calls first (MSX2 TH hook table) |  |
 | `$FFA7` |  | `disk` | `HPHYD` | PHYDIO hook (5 RAM bytes, default C9) |  |
 | `$FFCF` | 5 B | `basic` | `H_ZKEY` | fn-key delivery hook, 5-byte JP vector (zkey_install) |  |
 | `$FFF9` |  | `basic` | `LINENO_CEIL` |  |  |

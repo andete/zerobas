@@ -2487,6 +2487,41 @@ item — do **one item per session** to keep context lean.
       (`tools/build_mainrom.py`, like the tape vectors) — 0 main bytes.
       ➡️ **SLICE ORDER:** (1) the checker learns `rst`; (2) CHRGTR at `RST
       10h` + the 50 sites; (3) OUTDO at `RST 18h`.
+      ✅ **(1)+(2) BUILT 2026-09-25 — CHRGTR AT `RST 10h`, THE 50 SITES
+      CONVERTED.** `chrgtr` (23 B: `call H_CHRG`, then `inc hl` / skip spaces /
+      Z on `00`/`:` / CF on a digit) is the first tenant of the `$0160` island
+      (`basic/islands.asm`), and the merge repoints the vector:
+      `tools/build_mainrom.py` `PATCH_RANGES` rewrites `$0010` from C-BIOS's
+      `jp $10FF` to `jp chrgtr`, refusing unless the old bytes are C-BIOS's.
+      `inc_skip` lost its last caller and is deleted. **Main page 1 140 → 235 B
+      free, low region 6 B** (clean build 2026-09-25). Speed: kwtime's zerobas
+      times moved by a median **1.000×** over 261 rows (worst 1.048×,
+      `sprite_on`) — the hook call is free at this resolution.
+      🔴 **THE CHECKER, BOTH HALVES:** `tools/check_tenant_closure.py --page0`
+      now refuses (a) any `rst` in the sub build's own sources (`rst_sites`,
+      selftest arms R1/R2) and (b) any MAIN page-1 routine CALLED from a page-0
+      tenant, because main code may now `rst $10` and under a page-0 tenant
+      page 0 is the sub ROM. Both measured EMPTY on the live tree; (b) was
+      proven to fire by planting `CAS_LOW_1200` as a seed.
+      🔴 **THE UNIT HARNESS NEVER BOOTS, SO THE HOOK WAS `$00`:** 11 of 63 test
+      files went red because `rst $10` → `call H_CHRG` slid through NOPs.
+      `tests/msxtest.py` `_seed_hooks` fills `$FD9A..$FFC9` with RET, as the
+      BIOS does, for any image that has `chrgtr`.
+      🔴 **AND THE KNIFE MEASURED A STALE ROM (D-KNIFESTALE):** `make
+      basic-reloc` refreshes the `.sym` but not the merged ROM, so after the
+      1-byte `inc_skip` deletion `scratchpad/kwknife.py` planted
+      `stmt_error` = `$42FE` into a ROM whose `stmt_error` was `$42FF` — every
+      cut pointed at the byte before it. 53 MISSING → DIVERGENT, 8 NO-VERDICT,
+      NEW/REM/WIDTH "BLIND"; ten hand cuts on a rebuilt ROM gave HEAD's pin
+      back exactly, and the re-run on a fresh ROM flipped **0** connected
+      entries. The knife now rebuilds before reading a symbol; two more gaps
+      found on the way are fixed with it: `EXTRA` was not a recognised verdict,
+      and the pin's `subjects` map still counted NO-VERDICT as connected (it
+      called CALL connected; CALL's knifed row is SUPPORTED — BLIND).
+      ➡️ **NEXT: (3) OUTDO at `RST 18h`** — 13 `call pchar` sites, ~20 B;
+      ⚠️ C-BIOS's own code uses `rst $18` internally (its `inlin`), so OUR
+      OUTDO must honour the contract C-BIOS calls it with, not just ours.
+      137 B of the `$0160` island are still free.
 
 - [x] 🟢 **FIXED 2026-09-25 (D-STOPTAP): `ON STOP` RE-FIRES ON THE REFERENCE'S
       AUTO-REPEAT SCHEDULE — 16/16 FINE-SWEEP STEPS AND 6/7 HOLD LENGTHS MATCH.**
@@ -5271,7 +5306,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:24212 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:24247 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -5437,7 +5472,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:10230 (T-6FE392)8 (T-529ABE)` from `TODO.md:21866 (T-529ABE)`: a
+      `TODO.md:10265 (T-6FE392)8 (T-529ABE)` from `TODO.md:21901 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -11074,7 +11109,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:21866 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:21901 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

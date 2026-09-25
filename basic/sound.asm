@@ -53,7 +53,7 @@ PSG_DATR        equ     $A2                 ; PSG data-read port
 ; so the calibrated constant cannot drift between two copies.)
 
 ex_sound:
-                call    inc_skip           ; past the SOUND token
+                rst    $10                ; past the SOUND token
                 call    eval                ; DE = register (silent flt_to_int16)
                 call    get_byte_arg        ; A = register 0..255 (ERR6 >int16, ERR5 >255/neg)
                 cp      14                  ; registers 0..13 are the writable PSG set;

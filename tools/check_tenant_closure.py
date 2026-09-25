@@ -19,6 +19,10 @@ visibility (docs/decision-phase3-space-strategy.md §8d, subrom-tenant-playbook 
     call into the main low region ($2812-$3FFF) or the BIOS (< $2812) hits code
     that is paged out -> crash. It must ALSO not reach the sub-ROM's OWN page 1
     (>= $4000 sub-local), which is unmapped during a page-0 call.
+    🔁 SINCE MAKING ROOM lever A (2026-09-25) a MAIN PAGE-1 callee is refused as
+    well: main code uses `rst $10` (CHRGTR), and under a page-0 tenant page 0 is
+    the SUB ROM, so its $0010 is not CHRGTR. Measured empty when it was added.
+    And any `rst` in the sub build's own sources is refused (rst_sites).
 
 Three modes:
 
@@ -35,8 +39,9 @@ Three modes:
   page-0 (--page0) — seed = the page-0 entry-table tenants (sub/sub.asm
   sub_p0_table); walk the SUB call graph (sub/*.asm + its includes); fail on any
   callee that is a MAIN routine < $4000 (low region / BIOS) or a SUB-LOCAL label
-  >= $4000 (the sub's own page 1). Sub-local page-0 code + main page-1 + RAM are
-  fine. Distinguishing a sub-local $2900 (ok) from a main low-region $2900
+  >= $4000 (the sub's own page 1). Sub-local page-0 code + RAM are fine, and main
+  page-1 as a DATA target; a main page-1 CALLEE is refused since lever A (see
+  above). Distinguishing a sub-local $2900 (ok) from a main low-region $2900
   (escape) is by NAME (sub-defined label vs external equ import), not address.
 
     python3 tools/check_tenant_closure.py --page0 build/sub.sym sub/sub.asm
@@ -393,10 +398,41 @@ def check_page1(argv) -> int:
     return 0
 
 
+_RST = re.compile(r'^\s*(?:[A-Za-z_]\w*:)?\s*rst\b\s*([^;]*)', re.I)
+
+
+def rst_sites(files):
+    """Every `rst` instruction in the sub build's sources, as (file, line, arg).
+
+    🔁 MAKING ROOM lever A (2026-09-25): main's `rst $10` is CHRGTR, and it
+    lands in basic/islands.asm through the $0010 vector of SLOT-0 PAGE 0. The
+    call-graph walk above never sees an `rst` (its target is a number, not a
+    label), so a tenant that used one would pass it silently -- and a PAGE-0
+    tenant's `rst $10` reaches the SUB-ROM's own $0010, not CHRGTR. A shared
+    `*-body.inc` converted by the next carve sweep is exactly how one would
+    arrive. Measured EMPTY on the day the vector was taken; this keeps it so."""
+    out = []
+    for f in files:
+        with open(f, encoding="utf-8", errors="replace") as fh:
+            for i, line in enumerate(fh, 1):
+                m = _RST.match(line.split(";", 1)[0])
+                if m:
+                    out.append((f, i, m.group(1).strip()))
+    return out
+
+
 def check_page0(argv) -> int:
     sub_sym, sub_asm = argv[0], argv[1]
     syms = load_syms(sub_sym)
     sources = collect_sources(sub_asm)
+    rst = rst_sites(sources)
+    if rst:
+        print("FAIL: `rst` in the sub build -- a page-0 tenant's rst lands in the "
+              "SUB-ROM's own vector, not main's (main `rst $10` is CHRGTR, "
+              "basic/islands.asm). Use a `call`:", file=sys.stderr)
+        for f, i, arg in rst:
+            print(f"  {f}:{i}  rst {arg}", file=sys.stderr)
+        return 1
     graph = build_callgraph(sources)
     sub_local = set(graph)                        # every label DEFINED in the sub image
     sub_local |= sub_local_aliases(sources, sub_local)   # ...and aliases OF those
@@ -416,7 +452,8 @@ def check_page0(argv) -> int:
         stack.extend(c for c in graph.get(n, ()) if c not in seen)
 
     # Classify every callee reached from the page-0 tenants. Sub-local page-0
-    # code + main page-1 + RAM are fine; escapes are (a) an external/main import
+    # code + RAM are fine (main page-1 as DATA only -- the lever-A rule below
+    # refuses it as a callee); escapes are (a) an external/main import
     # < $4000 (main low region / BIOS, paged out), or (b) a sub-local label
     # >= $4000 (the sub's OWN page 1, not mapped during a page-0 call).
     dref = data_targets(seen, build_datagraph(sources), sub_local)
@@ -446,18 +483,34 @@ def check_page0(argv) -> int:
             escapes.append((n, addr,
                             f"{where} (switched out under a page-0 call), {how}"))
 
+    # 🔁 MAKING ROOM lever A (2026-09-25): main code now uses `rst $10`
+    # (CHRGTR), and an rst jumps into PAGE 0 -- which, under a page-0 tenant, is
+    # the SUB ROM. So a main page-1 routine is no longer a safe callee just
+    # because it is mapped: it is safe only if nothing it runs is an `rst`, and
+    # this walk cannot see main's bodies. Measured EMPTY when the vector was
+    # taken (no page-0 tenant calls main at all); refuse the first one, so that
+    # whoever adds it walks the main body for `rst` first.
+    for n in sorted(seen):
+        addr = syms.get(n)
+        if addr is not None and n not in sub_local and addr >= PAGE1:
+            escapes.append((n, addr, "main page-1 routine CALLED from a page-0 "
+                                     "tenant -- main code may `rst $10`, which "
+                                     "would land in the sub ROM's own $0010; "
+                                     "walk its body for rst before allowing it"))
+
     if escapes:
         print("FAIL: page-0 escapes — a page-0 tenant runs with slot-0 page 0 "
               "(BIOS + low region + ISR) switched out, so these callees crash "
-              "when reached. Keep them sub-local (page 0) or call only main "
-              "page-1 ($4000-$7FFF):", file=sys.stderr)
+              "when reached. Keep them sub-local (page 0); since lever A "
+              "(2026-09-25) a main page-1 callee is refused too, because main "
+              "code may `rst`:", file=sys.stderr)
         for n, a, why in escapes:
             print(f"  {n} = {a:04X}  <- {why}", file=sys.stderr)
         return 1
     print(f"OK: {len(seen)} routines in the closure of {len(seeds)} page-0 "
           f"tenants ({', '.join(seeds)}), + {len(dref)} data-referenced label(s); "
-          f"every callee and data target is sub-local page-0, main page-1, or "
-          f"RAM. No low-region/BIOS escape.")
+          f"every callee is sub-local page-0 (data targets may also be main "
+          f"page-1 or RAM). No low-region/BIOS escape, no main callee.")
     return 0
 
 
@@ -588,6 +641,17 @@ def selftest() -> int:
         "main_import" not in got)
     arm("C4 CONTROL: an alias of an UNKNOWN name is NOT sub-local",
         sub_local_aliases([tmp], set()) == set())
+    # rst guard (lever A): a planted rst is found, a comment and a label are not
+    with open(tmp, "w") as fh:
+        fh.write("x:              rst     $10\n"
+                 "                ld      a,1     ; rst $10 in a comment\n"
+                 "first_rst:\n"
+                 "                call    y\n")
+    found_rst = rst_sites([tmp])
+    arm("R1 a planted `rst $10` (behind a label) is found, once",
+        len(found_rst) == 1 and found_rst[0][1] == 1 and found_rst[0][2] == "$10")
+    arm("R2 CONTROL: `rst` in a comment or inside a label name is NOT a site",
+        all(i == 1 for _, i, _ in found_rst))
     # the live tree: the rule must not be vacuous OR sweeping
     live = collect_sources("sub/sub.asm") if os.path.exists("sub/sub.asm") else []
     if live:

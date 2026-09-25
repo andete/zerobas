@@ -313,7 +313,7 @@ dl_bare:
                 push    hl
                 inc     hl
                 inc     hl
-                call    inc_skip           ; past the 3-letter keyword
+                rst    $10                ; past the 3-letter keyword
                 pop     hl
                 or      a
                 scf
@@ -1086,7 +1086,7 @@ msg_phrase_tab:
 ; STOP interrupt trap's tri-state (spec-traps-t1-stop-reslice.md §5.2); a bare STOP
 ; (EOL / ':' / anything else) still halts.
 ex_stop:
-                call    inc_skip           ; past STOP token
+                rst    $10                ; past STOP token
                 call    onoff_decode        ; STOP ON|OFF|STOP -> A = the ZTS_ state
                 jr      c,es_set
                 jp      do_break            ; bare STOP -> record + "Break in <line>"
@@ -1600,7 +1600,7 @@ gosub_stk_over:
                 jp      raise_error
 ; --- ex_gosub: GOSUB <line> (repack: via gosub_push) -------------------------
 ex_gosub:
-                call    inc_skip           ; past the GOSUB token
+                rst    $10                ; past the GOSUB token
                 call    req_lineno          ; D-NGRAM10: $0E,<lineno LE> expected --
                                             ; BC = target, HL = just past the line
                                             ; number -- NOT yet the resume point
@@ -2004,7 +2004,7 @@ nx_comma:
                 ld      a,1
 nx_head:
                 ld      (FOR_CUR+1),a       ; park the sentinel; for_name overwrites it
-                call    inc_skip           ; past the NEXT token (or past the `,`)
+                rst    $10                ; past the NEXT token (or past the `,`)
                 call    is_letter
                 jr      nc,nx_notletter     ; no variable -- the parked sentinel stands
                 ; D-NXARY (docs/spec-basic-nxary.md, 21 rows, BOTH references
@@ -2277,7 +2277,7 @@ exr_bad:
 ; Reset the DATA cursor to the program start, or to a given line. The optional
 ; line arrives as the $0E line-number reference (branch_lineno tokenises it).
 ex_restore:
-                call    inc_skip           ; past the RESTORE token
+                rst    $10                ; past the RESTORE token
                 cp      LINENO_TOKEN        ; $0E,<lineno LE> -> restore to a line
                 jr      z,ers_line
                 ; D-DATACOLON: this arm used to be an unconditional `ret` under
@@ -2345,7 +2345,7 @@ read_one_value:
 ; N=0 or N > count of targets falls through to the next statement.
 ; Source: public MSX-BASIC language reference (ON…GOTO/GOSUB semantics).
 ex_on:
-                call    inc_skip           ; past ON_TOKEN
+                rst    $10                ; past ON_TOKEN
                 cp      ERROR_TOKEN         ; ON ERROR GOTO / GOTO 0 (error-handling S2b)
                 jp      z,ex_on_error       ; -- NOT an <expr> ON...GOTO/GOSUB list
                 cp      STOP_TOKEN          ; ON STOP GOSUB <line> (interrupt-traps T1)
@@ -2496,7 +2496,7 @@ esn_found:
 esn_p2:
                 call    skip_comma
                 jr      nz,esn_ok           ; no more commas -> HL past the list
-                call    inc_skip           ; past comma
+                rst    $10                ; past comma
                 cp      LINENO_TOKEN
                 jr      nz,esn_ok           ; malformed: stop here
                 inc     hl
@@ -2518,7 +2518,7 @@ esn_scan:
 esn_scan_lp:
                 call    skip_comma
                 jr      nz,esn_nocf         ; no more commas -> done
-                call    inc_skip           ; past comma
+                rst    $10                ; past comma
                 cp      LINENO_TOKEN
                 jr      nz,esn_nocf
                 inc     hl
@@ -2581,10 +2581,10 @@ esn_nocf:
 ; statement (unlike GOTO/RESUME), so `ON ERROR GOTO 100:PRINT"x"` must still
 ; run the rest of the line. Clobbers A, BC, DE, HL.
 ex_on_error:
-                call    inc_skip           ; past ERROR_TOKEN
+                rst    $10                ; past ERROR_TOKEN
                 cp      GOTO_TOKEN          ; syntax: ON ERROR *GOTO* <line>
                 jp      nz,stmt_error
-                call    inc_skip           ; past GOTO_TOKEN
+                rst    $10                ; past GOTO_TOKEN
                 ; --- D-ONERRGO: THE OPERAND STAGE HAS THREE OUTCOMES, MEASURED
                 ; --- ON BOTH REFERENCES (docs/spec-basic-onerrgo.md).
                 ; This used to be a bare `call req_lineno`, i.e. ONE outcome for
@@ -3062,7 +3062,7 @@ ex_strig_stmt:
                 call    skip_spaces
                 cp      ')'
                 jp      nz,trap_syntax
-                call    inc_skip
+                rst    $10     
                 call    onoff_decode        ; STRIG(n) ON|OFF|STOP; DE (the entry
                                             ; pointer) survives -- see its header
                 jp      nc,trap_syntax      ; bare `STRIG(n)` / junk -> trappable ERR 2
@@ -3183,7 +3183,7 @@ ex_key_stmt:
                 call    skip_spaces
                 cp      ')'
                 jp      nz,trap_syntax
-                call    inc_skip
+                rst    $10     
                 call    onoff_decode        ; KEY(n) ON|OFF|STOP (STOP == OFF, D-T3-6);
                                             ; DE (the entry pointer) survives
                 jp      nc,trap_syntax      ; bare `KEY(n)` / junk -> trappable ERR 2

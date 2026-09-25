@@ -154,3 +154,44 @@ rdslt_scan:
     IF $ > $1BBF
                 db      ISLAND_BEFORE_FONT_OVERRAN_1BBF__IT_WOULD_OVERWRITE_THE_FONT
     ENDIF
+
+; --- island 2: before C-BIOS's internal jump table ($0160..$01FF, 160 B) -----
+                org     $0160
+
+; chrgtr -- RST 10h, the PUBLISHED MSX BIOS CHRGTR (MAKING ROOM lever A, Joost
+; 2026-09-25 "B first, then A"; docs: the MSX2 Technical Handbook's BIOS table).
+; Contract: calls H.CHRG, then INC HL and skips spaces; A = the character at HL;
+; Z set at end of statement (00 or ':'); CF set on a digit '0'..'9'; else NZ/NC.
+; 🔴 C-BIOS's own routine behind $0010 is NOT this contract: it reads (HL) and
+; THEN increments, returning HL PAST the character. Ours is the published one,
+; and it is also exactly zerobas's `inc_skip` plus the flags -- so the 50 internal
+; `call inc_skip` sites (none reads Z/C before setting them; scratchpad/
+; rst_scout.py) become 1-byte `rst $10`, and USR machine code gets a real CHRGTR.
+chrgtr:
+                call    H_CHRG              ; the published hook (a RET by default)
+cgt_lp:
+                inc     hl
+                ld      a,(hl)
+                cp      ' '
+                jr      z,cgt_lp
+                cp      ':'                 ; end of statement -> Z
+                ret     z
+                or      a                   ; end of line -> Z (and NC)
+                ret     z
+                cp      '0'
+                jr      c,cgt_nd
+                cp      '9'+1               ; a digit -> CF
+                ret     c
+cgt_nd:
+                or      a                   ; anything else: NZ, NC
+                ret
+
+    IF $ > $0200
+                db      ISLAND_BEFORE_JUMPTABLE_OVERRAN_0200__IT_WOULD_OVERWRITE_CBIOS
+    ENDIF
+
+; --- the RST 10h vector: $0010 `jp chrgtr` (was C-BIOS's `jp $10FF`) ---------
+; tools/build_mainrom.py PATCH_RANGES allows exactly these 3 bytes, and only
+; while the base still holds C-BIOS's `C3 FF 10`.
+                org     $0010
+                jp      chrgtr

@@ -685,7 +685,7 @@ oodv_fn:
                 call    skip_spaces
                 cp      FOR_TOKEN
                 jr      nz,oodv_as          ; no FOR clause -> OUTPUT (measured)
-                call    inc_skip
+                rst    $10     
                 cp      OUT_TOKEN           ; OUTPUT = OUT + PUT (two reserved words)
                 jr      nz,oo_fail_syn      ; INPUT from LPT:/CRT: is invalid
                 inc     hl
@@ -751,7 +751,7 @@ oo_dev_cas:
                 call    skip_spaces
                 cp      FOR_TOKEN
                 jr      nz,oo_fail_syn      ; CAS: needs FOR (no RANDOM cassette)
-                call    inc_skip
+                rst    $10     
                 cp      INPUT_TOKEN
                 jr      z,oocas_in
                 cp      OUT_TOKEN           ; OUTPUT = OUT + PUT (two reserved words)
@@ -1016,7 +1016,7 @@ opr_default:
                 or      a                   ; Cy = 0
                 ret
 opr_have:
-                call    inc_skip           ; past $92
+                rst    $10                ; past $92
                 cp      EQ_TOKEN            ; '='
                 jr      nz,opr_bad
                 call    inc_eval            ; DE = record length, HL past it
@@ -1066,7 +1066,7 @@ opr_bad:
 ; the LINE token, an INPUT token ($85) means LINE INPUT; anything else — the graphics
 ; forms all begin with '(' ($28), '-' ($F2) or STEP ($DC) — is a graphics LINE.
 ex_line:
-                call    inc_skip           ; HL -> bytes after the LINE token
+                rst    $10                ; HL -> bytes after the LINE token
                 cp      INPUT_TOKEN         ; LINE must be followed by INPUT ...
                 jp      nz,ex_line_gfx      ; repack: else it's a graphics LINE (graphics.asm)
                 inc     hl                  ; HL -> after INPUT
@@ -1486,7 +1486,7 @@ oo_parse_as_chan:
                 call    upcase
                 cp      'S'
                 jp      nz,oo_fail_syn
-                call    inc_skip
+                rst    $10     
                 cp      '#'
                 jr      nz,oopac_num
                 inc     hl
@@ -1833,7 +1833,7 @@ ex_maxfiles:
                 ld      a,(hl)
                 cp      FILES_TOKEN         ; "MAXFILES" = MAX + FILES; require FILES
                 jp      nz,stmt_error       ; bare MAX is not a statement
-                call    inc_skip           ; past FILES ($B7)
+                rst    $10                ; past FILES ($B7)
                 cp      EQ_TOKEN            ; '=' ($EF)
                 jp      nz,stmt_error
                 inc     hl
@@ -1932,7 +1932,7 @@ ex_maxfiles:
 ; why the bare test below is explicit: `fname_expr` hands a non-string to
 ; els_tc_common (ERR 13, free), but NOTHING in it answers "no operand at all".
 ex_merge:
-                call    inc_skip           ; HL -> bytes after the MERGE token
+                rst    $10                ; HL -> bytes after the MERGE token
                 or      a
                 jp      z,loc_missing       ; bare MERGE -> ERR 24 (MEASURED)
                                             ; 🔴 `loc_missing`, NOT `g8_missing`:
