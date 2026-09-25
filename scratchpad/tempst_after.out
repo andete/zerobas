@@ -1,0 +1,19 @@
+DIFF concat depth  6   ref: len 7   zb: String formula too complex
+DIFF concat depth  7   ref: len 8   zb: String formula too complex
+DIFF concat depth  8   ref: len 9   zb: String formula too complex
+DIFF concat depth  9   ref: len 10   zb: String formula too complex
+DIFF concat depth 10   ref: len 11   zb: String formula too complex
+SAME concat depth 11   ref: String formula too complex   zb: String formula too complex
+SAME concat depth 12   ref: String formula too complex   zb: String formula too complex
+SAME concat depth 13   ref: String formula too complex   zb: String formula too complex
+SAME concat depth 14   ref: String formula too complex   zb: String formula too complex
+SAME nest   depth  6   ref: len 1   zb: len 1
+SAME nest   depth  7   ref: len 1   zb: len 1
+SAME nest   depth  8   ref: len 1   zb: len 1
+SAME nest   depth  9   ref: len 1   zb: len 1
+SAME nest   depth 10   ref: len 1   zb: len 1
+SAME nest   depth 11   ref: len 1   zb: len 1
+SAME nest   depth 12   ref: len 1   zb: len 1
+
+DIFF: 5/16
+refcache: 1 hit, 1 miss, 1 stored

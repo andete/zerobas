@@ -1,0 +1,19 @@
+SAME concat depth  6   ref: len 7   zb: len 7
+SAME concat depth  7   ref: len 8   zb: len 8
+SAME concat depth  8   ref: len 9   zb: len 9
+SAME concat depth  9   ref: len 10   zb: len 10
+SAME concat depth 10   ref: len 11   zb: len 11
+DIFF concat depth 11   ref: String formula too complex   zb: len 12
+DIFF concat depth 12   ref: String formula too complex   zb: len 13
+DIFF concat depth 13   ref: String formula too complex   zb: len 14
+DIFF concat depth 14   ref: String formula too complex   zb: len 15
+SAME nest   depth  6   ref: len 1   zb: len 1
+SAME nest   depth  7   ref: len 1   zb: len 1
+SAME nest   depth  8   ref: len 1   zb: len 1
+SAME nest   depth  9   ref: len 1   zb: len 1
+SAME nest   depth 10   ref: len 1   zb: len 1
+SAME nest   depth 11   ref: len 1   zb: len 1
+SAME nest   depth 12   ref: len 1   zb: len 1
+
+DIFF: 4/16
+refcache: 0 hit, 2 miss, 2 stored

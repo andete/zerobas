@@ -2,7 +2,7 @@
 # Copyright (c) 2026 Joost Yervante Damad
 # SPDX-License-Identifier: 0BSD
 """D-MISSOP3 — the THREE string rows D-MISSOPFIX left, and the denominator
-TODO.md:12997 (T-051734) says out loud is still a sample.
+TODO.md:13022 (T-051734) says out loud is still a sample.
 
 Two jobs, and the first one is the filed item's own justification:
 
@@ -16,7 +16,7 @@ Two jobs, and the first one is the filed item's own justification:
      the deferred code. So "they reach an abort by another route" is a claim
      about today's tree that was measured on a different one.
 
-  2. TODO.md:12997 (T-051734) names the verbs that are UNMEASURED, NOT GREEN: SWAP, ON n
+  2. TODO.md:13022 (T-051734) names the verbs that are UNMEASURED, NOT GREEN: SWAP, ON n
      GOTO, FIELD, PRINT#, INPUT, PLAY, DRAW, OPEN, WIDTH and PRINT USING. Each
      gets the row where a REQUIRED slot ends where a value was needed, which is
      the exact shape the D-MISSOP rule calls ERR 24.
@@ -69,7 +69,7 @@ CASES = {
     'r.keyok':    case('KEY1,"X"'),
     'r.letsok':   case('A$="X"'),
     'r.middok':   case('MID$(A$,2)="Q"', setup='A$="HELLO"'),
-    # --- the denominator TODO.md:12997 (T-051734) names as UNMEASURED, NOT GREEN -----------
+    # --- the denominator TODO.md:13022 (T-051734) names as UNMEASURED, NOT GREEN -----------
     'd.swap':     case('SWAP A,'),
     'd.ongoto':   case('ON 1 GOTO'),
     'd.width':    case('WIDTH'),

@@ -1877,9 +1877,34 @@ item — do **one item per session** to keep context lean.
       SUB_INT_RAM`; with the seed at `$F858` that bound grows to ~1.8 KB and
       guards nothing. It is now bounded by `INT_MAIN_PRIM`, the next CLAIMED
       cell [[a-derived-constant-falsified-from-another-file]].
-      ➡️ **NEXT (ruled order):** `TEMPST` → 10 (a behaviour change at depth —
+      ~~➡️ **NEXT (ruled order):** `TEMPST` → 10 (a behaviour change at depth —
       measure where the reference raises first), `DAC` full; S2b's temporary
-      policy.
+      policy.~~
+      📏 **`TEMPST` → 10: MEASURED, BUILT, AND REVERTED (2026-09-25) — the pool
+      is not the limiting quantity** (`scratchpad/tempst_probe.py`:
+      `tempst_run.out` at HEAD, `tempst_after.out` with the pool moved). Nested
+      `MID$(A$,1)+( … )`: the VG-8020 takes depth **10** and raises `String
+      formula too complex` at **11** — 10 descriptors, one per pending level.
+      zerobas's 32 went past 14. With the pool moved to `$F67A` at 10 entries
+      (equates only, plus `ISRCH_A` pinned — it chained off `TEMPBASE` and
+      would have landed on `DSCTMP`/`FRETOP`), zerobas raised the error at
+      depth **6**: it holds about TWO temporaries per level where the
+      reference holds one — the same policy S2b found (argument snapshots and
+      released temporaries are kept to the end of the statement). 🔮 Predicted
+      11 on both — **MISS**; shipping it would break programs at depth 6..10,
+      so it was reverted, nothing committed.
+      🔴 **SO THE ORDER IS: the temporary policy FIRST, then `TEMPST` → 10**,
+      which is then an equate move (and frees 96 B). Nested FUNCTION
+      arguments (`LEFT$(MID$(…),99)`, 7/7 SAME up to depth 12) do not
+      accumulate on either machine.
+      ⏱️ **ALSO SEEN, NOT MEASURED:** at HEAD, depth 16 of the same shape takes
+      longer than the harness's default step on zerobas (it answers `17`
+      correctly with a 20 s step); the reference errors at 11, so there is no
+      reference time at that depth. Measure depth 10 on both before calling it
+      a speed item.
+      ➡️ **NEXT:** the temporary policy (S2b) — release an argument snapshot
+      and a consumed temporary when they are the newest; then `TEMPST` → 10;
+      then `DAC` full.
       🔪 **FOUND ON THE WAY — D-KNIFENOREAD, FIXED:** `scratchpad/kwknife.py`
       scored a cut whose sweep printed NO verdict as LOAD-BEARING
       (`v != "SUPPORTED"`). The knife run of the D-BUFMERGE chain read
@@ -5571,7 +5596,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:24512 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:24537 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -5737,7 +5762,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:10530 (T-6FE392)8 (T-529ABE)` from `TODO.md:22166 (T-529ABE)`: a
+      `TODO.md:10555 (T-6FE392)8 (T-529ABE)` from `TODO.md:22191 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -11374,7 +11399,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:22166 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:22191 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
