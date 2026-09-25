@@ -1976,11 +1976,24 @@ item — do **one item per session** to keep context lean.
       `basic_probe_usr.py` asserts the published convention on BOTH machines
       now (its zerobas rows used to assert the opposite). `tests/test_usr.py`
       checks entry state and the returned argument.
-      ➡️ **NEXT, `DAC` THE REST:** move `FAC` itself to `$F7F6` (same 8 BCD
-      bytes — an equate, once every `FAC`-relative user is checked) and keep
-      integers at `DAC+2` on the integer paths (the part that costs bytes on
-      every site — measure what a program can PEEK first); or S2b's heap half;
-      or `TEMPPT`'s value/direction.
+      🟢 **`DAC`, THE FAC HALF, SHIPPED (2026-09-25): `FAC` IS `DAC`
+      (`$F7F6`) — an equate, and it GAVE BACK 26 B of page 1.** Every `FAC`
+      user is offset-internal (`FAC+0..+6`); `FACTYP` is addressed on its own
+      (`push_lhs_frame`, `widen_fac_to`), so nothing depended on `FAC` sitting
+      after `FACTYP`/`TKOVF`. USR's two 8-byte copies became copies of DAC onto
+      itself and are gone. `$F01C..$F023` freed. `usrdac_probe.py` still 6/6
+      (`scratchpad/usrdac_fac.out`).
+      ⚠️ `scratchpad/g4_hang_probe.py` still names `0xF01C` — it is a FROZEN
+      injector RECORD (`tools/injector-record-allow.txt`) describing its own
+      date's layout; editing it turned `injector-check` red, so it stays.
+      📏 **WHY THE INTEGER HALF WAITS:** a BASIC program cannot read DAC without
+      moving it — `PEEK(&HF7F6)` evaluates its own address and result THROUGH
+      the accumulator on the reference — so "ints at `DAC+2` on every integer
+      path" has no observable except USR, which is done. It would cost bytes
+      at every integer site for a value nothing can see; revisit only with a
+      measurement that can.
+      ➡️ **NEXT:** S2b's heap half (return a released body at FRETOP), or
+      `TEMPPT`'s value/direction, or the N set's scratch (`ARG` etc.).
       🔪 **FOUND ON THE WAY — D-KNIFENOREAD, FIXED:** `scratchpad/kwknife.py`
       scored a cut whose sweep printed NO verdict as LOAD-BEARING
       (`v != "SUPPORTED"`). The knife run of the D-BUFMERGE chain read
@@ -5672,7 +5685,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:24613 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:24626 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -5838,7 +5851,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:10631 (T-6FE392)8 (T-529ABE)` from `TODO.md:22267 (T-529ABE)`: a
+      `TODO.md:10644 (T-6FE392)8 (T-529ABE)` from `TODO.md:22280 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -11475,7 +11488,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:22267 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:22280 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

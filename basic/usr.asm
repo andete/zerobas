@@ -204,15 +204,8 @@ usr_call:
                 ; was zerobas's own; machine code written for MSX reads DAC.
                 ld      a,(FACTYP)
                 cp      2
-                jr      z,uc_int
-                push    bc                  ; a float: DAC := FAC (the same BCD bytes)
-                ld      hl,FAC
-                ld      de,DAC
-                ld      bc,8
-                ldir
-                pop     bc
-                jr      uc_go               ; A = FACTYP = 4 or 8
-uc_int:
+                jr      nz,uc_go            ; a float is ALREADY in DAC: FAC IS DAC
+                                            ; (sysvars.inc); A = FACTYP = 4 or 8
                 ld      hl,0
                 ld      (DAC),hl            ; DAC+0..1 read 00 00 on the reference
                 ld      (DAC+2),de          ; the integer argument
@@ -234,11 +227,7 @@ usr_ret:
                 ld      de,(DAC+2)          ; an integer result
                 jp      flt_int_result      ; FACTYP := 2
 ur_flt:
-                ld      (FACTYP),a
-                ld      hl,DAC              ; FAC := DAC
-                ld      de,FAC
-                ld      bc,8
-                ldir
+                ld      (FACTYP),a          ; the float result is already in FAC (= DAC)
                 jp      flt_to_int16        ; DE = the rounded int; FAC/FACTYP stand
 usr_undef:
                 pop     ix                  ; restore the cursor

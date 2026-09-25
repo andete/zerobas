@@ -4004,7 +4004,12 @@ TKOVF           equ     $F01B   ; tokeniser: 0 = ok, else the ERR CODE of the
                                 ; crunch-time reject -- 6 float literal, 25 body
                                 ; too long. dl_overflow stores it into ERRFLG
                                 ; unconditionally (D-MSGMIGRATE) (1)
-FAC             equ     $F01C   ; float accumulator: value bytes as tokenised (8)
+; 🏗️ D-ADDR29 DAC, the FAC half (2026-09-25): FAC IS the published DAC. The
+; 8 bytes are the same MSX BCD layout as the tokenised literal and as DAC, so
+; this is an equate; $F01C..$F023 is freed. Every FAC user is offset-internal
+; (FAC+0..+6) and FACTYP is addressed on its own (push_lhs_frame, widen_fac_to),
+; so nothing depended on FAC sitting after FACTYP/TKOVF.
+FAC             equ     $F7F6   ; float accumulator = DAC: value bytes as tokenised (8)
 ; 🏗️ D-ADDR29 DAC, the USR half (Joost 2026-09-24: "DAC full ... USR then finds
 ; its argument in DAC"). The PUBLISHED accumulator and type byte, as USR machine
 ; code sees them (probes/basic/basic_probe_usr.py, scratchpad/usrdac_probe.py):
@@ -4012,7 +4017,7 @@ FAC             equ     $F01C   ; float accumulator: value bytes as tokenised (8
 ; VALTYP 4/8, HL = DAC and A = VALTYP on entry; the RESULT is read back from DAC
 ; per VALTYP. zerobas's own private `VALTYP` ($E0C8) is a different variable
 ; (numeric vs string), hence the _PUB name.
-DAC             equ     $F7F6   ; PUBLISHED decimal accumulator (8 B used here)
+DAC             equ     FAC     ; PUBLISHED decimal accumulator (FAC lives there)
 VALTYP_PUB      equ     $F663   ; PUBLISHED value type: 2 int / 4 single / 8 double (1)
 ; 🏗️ D-ADDR29 S1 (Joost, 2026-09-24: *"All 29"*, docs/spec-basic-addr29.md):
 ; the formatter's output lives in the PUBLISHED FBUFFR, one byte in. MEASURED

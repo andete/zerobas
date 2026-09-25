@@ -20,7 +20,7 @@ FN_RESUME equ 0E227H   ; D-FNEXPR: cursor past a filename expr (2 B)
 DISKOP_STATUS equ 0E9FCH   ; tenant -> main: the disposition (1 B)
 DISK_FCB_NAME equ 0E0DCH   ; +1..+11: 8.3 name field (11 bytes)
 FILES_HASPAT equ 0F009H   ; FILES: 1 = a filespec pattern is in DISK_FCB_NAME (1)
-FAC equ 0F01CH   ; float accumulator: value bytes as tokenised (8)
+FAC equ 0F7F6H   ; float accumulator = DAC: value bytes as tokenised (8)
 FACTYP equ 0F01AH   ; 2=int / 4=single / 8=double (1)
 FSECTOR_BUF equ 0E5C0H   ; file data / read sector buffer ($E5C0..$E7BF)
 FWBUF equ 0E7C0H   ; FAT/dir metadata sector buffer ($E7C0..$E9BF)
@@ -47,15 +47,15 @@ FILES_ENTIDX equ 0E0FCH   ; FILES: dir entry index 0..15 within a sector (1)
 LPTPOS equ 0EA39H   ; printer head column, 0-based (1)
 
 ; --- page-1 call-back targets: reached by an INTER-SLOT call (MSX2 TH), not an absolute one ---
-fname_expr equ 06E13H
-pdfcb_resume equ 06E0CH
-dirverb_op equ 06BF6H
-main_fat_mount equ 06406H   ; main's fat_mount
-main_fat_find equ 0640AH   ; main's fat_find
-parse_disk_fcb equ 065ABH
-fat_count_free equ 06439H
-field_prologue equ 0723FH
-field_item equ 07275H
-lrset_tgt equ 07330H
-lrset_rhs equ 07352H
-lrset_finish equ 07369H
+fname_expr equ 06DF9H
+pdfcb_resume equ 06DF2H
+dirverb_op equ 06BDCH
+main_fat_mount equ 063ECH   ; main's fat_mount
+main_fat_find equ 063F0H   ; main's fat_find
+parse_disk_fcb equ 06591H
+fat_count_free equ 0641FH
+field_prologue equ 07225H
+field_item equ 0725BH
+lrset_tgt equ 07316H
+lrset_rhs equ 07338H
+lrset_finish equ 0734FH

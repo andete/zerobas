@@ -33,8 +33,8 @@ other component's cell at the same address; the `inside` column
 names the other component's BUFFER this address falls within. That
 second one is the question a per-component map cannot answer.
 
-* **basic** — 415 declared addresses in this project's own workspace `$E000..$F37F` (384 with a machine-readable width), plus **97** in the MSX standard work area at or above `$F380`.
-* **disk** — 127 declared addresses in this project's own workspace `$E000..$F37F` (113 with a machine-readable width), plus **24** in the MSX standard work area at or above `$F380`.
+* **basic** — 414 declared addresses in this project's own workspace `$E000..$F37F` (383 with a machine-readable width), plus **97** in the MSX standard work area at or above `$F380`.
+* **disk** — 126 declared addresses in this project's own workspace `$E000..$F37F` (112 with a machine-readable width), plus **25** in the MSX standard work area at or above `$F380`.
 
 ## This project's own workspace (`$E000..$F37F`)
 
@@ -486,9 +486,7 @@ second one is the question a per-component map cannot answer.
 | `$F019` | 1 B | `basic` | `CAS_VMIS` | sticky: 1 = a verify mismatch was seen (1) |  |
 | `$F01A` | 1 B | `basic` | `FACTYP` | 2=int / 4=single / 8=double (1) |  |
 | `$F01A` | 1 B | `disk` | `FACTYP` | 2=int / 4=single / 8=double (1) |  |
-| `$F01B` | 1 B | `basic` | `TKOVF` | tokeniser: 0 = ok, else the ERR CODE of the |  |
-| `$F01C` | 8 B | `basic` | `FAC` | float accumulator: value bytes as tokenised (8) |  |
-| `$F01C` | 8 B | `disk` | `FAC` | float accumulator: value bytes as tokenised (8) |  |
+| `$F01B` | 8 B | `basic` | `TKOVF` | tokeniser: 0 = ok, else the ERR CODE of the |  |
 | `$F024` | 2 B | `basic` | `PLY_XSP` | PLAY X: saved SP at pt_voice's call (2) |  |
 | `$F026` | 1 B | `basic` | `PRMWANT` | D-OKSTORE: nonzero = print the prompt (1) |  |
 | `$F027` | 1 B | `basic` | `STOPHOLD` | D-STOPTAP: frames Ctrl-STOP has been held (1) |  |
@@ -642,7 +640,8 @@ extents the standard already fixes would be noise, not rigour.
 | `$F7C6` |  | `basic` | `FOUTBUF/HORNER_ACC/MATH_R/SQRT_R` | final-correction high-precision residual scratch |  |
 | `$F7D8` | 1 B | `basic` | `HORNER_CNT` | fp_poly_horner's own remaining-term loop |  |
 | `$F7D9` | 2 B | `basic` | `HORNER_PTR` | fp_poly_horner's own advancing coeff- |  |
-| `$F7F6` | 8 B | `basic` | `DAC` | PUBLISHED decimal accumulator (8 B used here) |  |
+| `$F7F6` | 8 B | `basic` | `DAC/FAC` | float accumulator = DAC: value bytes as tokenised (8) |  |
+| `$F7F6` | 8 B | `disk` | `FAC` | float accumulator = DAC: value bytes as tokenised (8) |  |
 | `$F857` |  | `basic` | `RNDX` | PUBLISHED 8 B seed; byte 0 reads 00 (1) |  |
 | `$F858` | 7 B | `basic` | `RND_SEED` | packed BCD, MSD-first, 7 bytes ($F858..$F85E) |  |
 | `$F87F` |  | `basic` | `FNKSTR` | measured base (D-KEYSTR scout) |  |
