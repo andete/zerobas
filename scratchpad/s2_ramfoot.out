@@ -1,0 +1,110 @@
+interrupt signature (ref, 31 cells): $F3E7-$F3E8(STATFL) $F3F6-$F3F7 $FBD9-$FBEF $FC9E-$FC9F(JIFFY) $FCA2-$FCA3
+interrupt signature (zb, 24 cells): $F3E7-$F3E8(STATFL) $F3F6 $FBD9-$FBE0 $FBE5-$FBEF(NEWKEY) $FC9E-$FC9F(JIFFY)
+window duration ms / interrupts inside, per case:
+  ctl      ref    2.433 ms int=0  zb    5.801 ms int=0
+  pos      ref    3.636 ms int=0  zb   12.309 ms int=1
+  isr      ref   27.453 ms int=1  zb   35.738 ms int=2
+  num      ref    4.481 ms int=0  zb   13.699 ms int=1
+  int      ref    3.699 ms int=0  zb    8.734 ms int=1
+  str      ref    3.932 ms int=0  zb    9.426 ms int=1
+  dim      ref    5.291 ms int=0  zb   11.821 ms int=1
+  for      ref    8.870 ms int=0  zb   19.240 ms int=1
+  print    ref    7.404 ms int=0  zb    9.912 ms int=1
+  locate   ref    5.169 ms int=0  zb   13.410 ms int=1
+  cls      ref   25.109 ms int=1  zb   15.641 ms int=1
+  rnd      ref   11.867 ms int=0  zb   34.332 ms int=2
+  sin      ref   84.260 ms int=4  zb  476.782 ms int=2
+  strd     ref    6.647 ms int=0  zb   14.402 ms int=1
+  left     ref    5.371 ms int=0  zb   14.904 ms int=1
+  fre      ref    5.371 ms int=0  zb   13.233 ms int=1
+  color    ref    3.286 ms int=0  zb    8.409 ms int=1
+  peek     ref    5.175 ms int=0  zb   11.923 ms int=1
+  inkey    ref    3.899 ms int=0  zb   12.923 ms int=1
+background (ctl, excluded from every op): ref 18 cells, zb 7 cells
+  ref: $F663 $F666-$F66B $F69D-$F69E $F6AF-$F6B2 $F6BC-$F6BD $F7F8-$F7F9 $FC9B
+  zb : $E0CB(PRDEST) $E1CF-$E1D0(SAVTXT) $E238-$E239(TEMPTOP) $F01A(FACTYP) $F100(CVT_MODE)
+
+op       ref std ref own zb std zb own  shared-std
+num           18       0     11     64  4
+   ref std only: $F662 $F6A5 $F6A7-$F6A8 $F7B4-$F7B6 $F7F6-$F7F7 $F7FA-$F7FE
+   zb  std only: $F3F7 $FBE1-$FBE4 $FCC8(SLTTBL3) $FFFF
+   ref below $F380: -
+   zb  below $F380: $E028-$E02B(ARY_OP/TKNAME) $E035-$E037(ARY_ADDR) $E056-$E057(CTLLIM) $F01C-$F023(FAC) $F06A-$F07B(ARGA) $F0C8-$F0D9(CVT) $F0E6-$F0E7(FP_TMP_B) $F0E9(KEYARG/WIDIG) $F0EE(MUL_I) $F0FB-$F0FE(WSRC) $F14E-$F14F(VARTYPE) $F152(LHS_VARTYPE)
+int           11       0      6     14  4
+   ref std only: $F662 $F6A5 $F6A7-$F6A8 $F7B4-$F7B6
+   zb  std only: $FCC8(SLTTBL3) $FFFF
+   ref below $F380: -
+   zb  below $F380: $E028-$E02B(ARY_OP/TKNAME) $E035-$E037(ARY_ADDR) $E056-$E057(CTLLIM) $F14E-$F152(VARTYPE)
+str           19       0      6     29  4
+   ref std only: $F662 $F678-$F67C $F698-$F69A $F6A5 $F6A7-$F6A8 $F7B4-$F7B6
+   zb  std only: $FCC8(SLTTBL3) $FFFF
+   ref below $F380: -
+   zb  below $F380: $E028-$E02B(ARY_OP/TKNAME) $E035-$E037(ARY_ADDR) $E056-$E057(CTLLIM) $E0C8-$E0CA(VALTYP) $E20D(SH_BASE/SH_OP) $E20F-$E212(SH_SRC) $E21A-$E21B(SH_DEST) $E21E(SH_ERR) $E268-$E26C(FRETOP) $E3DE-$E3E0 $F14E(VARTYPE)
+dim            3       0      4     13  2
+   ref std only: $F662
+   zb  std only: $FCC8(SLTTBL3) $FFFF
+   ref below $F380: -
+   zb  below $F380: $E028-$E030(ARY_OP/TKNAME) $E037(ARY_ERR) $E056-$E057(CTLLIM) $F14E(VARTYPE)
+for           31       0      8     85  6
+   ref std only: $F662 $F6A1-$F6A2 $F6A5 $F6A7-$F6A8 $F7B4-$F7B6 $F7F6-$F7F7 $F7FA-$F7FE $F847-$F84F
+   zb  std only: $FCC8(SLTTBL3) $FFFF
+   ref below $F380: -
+   zb  below $F380: $E028-$E02B(ARY_OP/TKNAME) $E035-$E039(ARY_ADDR) $E03E-$E040(RESUMEPTR) $E045-$E051(FOR_CUR) $E056-$E057(CTLLIM) $E1C2-$E1C4(DIRECTF) $E1D4 $F01C-$F023(FAC) $F06A-$F07B(ARGA) $F0C8-$F0D9(CVT) $F0E6-$F0E7(FP_TMP_B) $F0E9(KEYARG/WIDIG) $F0EE(MUL_I) $F0FB-$F0FE(WSRC) $F14E-$F14F(VARTYPE)
+print         39       0      4      4  4
+   ref std only: $F416 $F678-$F67C $F698-$F69A $F7C6-$F7D6(FOUTBUF/HORNER_ACC/MATH_R/SQRT_R) $F7F6-$F7F7 $F7FA-$F7FE $F864-$F865
+   zb  std only: -
+   ref below $F380: -
+   zb  below $F380: $E0C0-$E0C3(INP_CURSOR/NUMBUF)
+locate         5       0      7      2  2
+   ref std only: $F661 $FCA6-$FCA7
+   zb  std only: $F3F7 $FBE1-$FBE4
+   ref below $F380: -
+   zb  below $F380: $E229-$E22A(LOC_COL)
+cls           69       0     26      0  26
+   ref std only: $F3DE(CNSDFG) $FBCD $FC18-$FC3F $FCA6
+   zb  std only: -
+   ref below $F380: -
+   zb  below $F380: -
+rnd          105       0     11    119  4
+   ref std only: $F662 $F6A5 $F6A7-$F6A8 $F7B4-$F7B6 $F7F6-$F7F7 $F7FA-$F845 $F847-$F84E $F857-$F85E
+   zb  std only: $F3F7 $FBE1-$FBE4 $FCC8(SLTTBL3) $FFFF
+   ref below $F380: -
+   zb  below $F380: $E028-$E02B(ARY_OP/TKNAME) $E035-$E037(ARY_ADDR) $E056-$E057(CTLLIM) $F01C-$F023(FAC) $F06A-$F07B(ARGA) $F08E-$F0A1(MULPROD/RND_ACCLE) $F0C8-$F0D9(CVT) $F0E6-$F0E7(FP_TMP_B) $F0E9(KEYARG/WIDIG) $F0EE(MUL_I) $F0FB-$F0FE(WSRC) $F142-$F148(RND_SEED) $F14E-$F14F(VARTYPE) $F152(LHS_VARTYPE) $F16E-$F17B(HORNER_G/MATH_T/RND_LE/SQRT_X) $F180-$F18D(MATH_A/RND_STATE/SQRT_Y)
+sin          107       0     27    153  11
+   ref std only: $F662 $F6A5 $F6A7-$F6A8 $F7B4-$F7B6 $F7C5(FBUFFR) $F7F5-$F7F7 $F7FA-$F845 $F847-$F84F
+   zb  std only: $F7CD-$F7DA $FCC8(SLTTBL3) $FFFF
+   ref below $F380: -
+   zb  below $F380: $E028-$E02B(ARY_OP/TKNAME) $E035-$E037(ARY_ADDR) $E056-$E057(CTLLIM) $F01C-$F023(FAC) $F06A-$F0A9(ARGA) $F0C8-$F0D9(CVT) $F0E3(FP_SHIFTAMT) $F0E6-$F0E7(FP_TMP_B) $F0E9(KEYARG/WIDIG) $F0EE-$F0F2(MUL_I) $F0FB-$F0FE(WSRC) $F14E-$F14F(VARTYPE) $F152(LHS_VARTYPE) $F16E-$F192(HORNER_G/MATH_T/RND_LE/SQRT_X) $F194(MATH_BREAK/MATH_J/SQRT_POW10)
+strd          45       2     11     33  4
+   ref std only: $F662 $F678-$F67C $F698-$F69C $F6A5 $F6A7-$F6A8 $F7B4-$F7B6 $F7C6-$F7D6(FOUTBUF/HORNER_ACC/MATH_R/SQRT_R) $F7F6-$F7F7 $F7FA-$F7FE
+   zb  std only: $F3F7 $FBE1-$FBE4 $FCC8(SLTTBL3) $FFFF
+   ref below $F380: $F167-$F168
+   zb  below $F380: $E028-$E02B(ARY_OP/TKNAME) $E035-$E037(ARY_ADDR) $E056-$E057(CTLLIM) $E0C0-$E0C1(INP_CURSOR/NUMBUF) $E0C8-$E0CA(VALTYP) $E20D-$E214(SH_BASE/SH_OP) $E21A-$E21B(SH_DEST) $E21E(SH_ERR) $E268-$E269(FRETOP) $E3DE-$E3E0 $EEFB-$EEFC(PU_COMMAS/PU_WP) $F14E(VARTYPE)
+left          21       1     11     31  4
+   ref std only: $F662 $F678-$F67C $F698-$F69C $F6A5 $F6A7-$F6A8 $F7B4-$F7B6
+   zb  std only: $F3F7 $FBE1-$FBE4 $FCC8(SLTTBL3) $FFFF
+   ref below $F380: $F168
+   zb  below $F380: $E028-$E02B(ARY_OP/TKNAME) $E035-$E037(ARY_ADDR) $E056-$E057(CTLLIM) $E0C8-$E0CA(VALTYP) $E20D(SH_BASE/SH_OP) $E20F-$E212(SH_SRC) $E215-$E216(SH_START) $E21A-$E21B(SH_DEST) $E21E(SH_ERR) $E268-$E26C(FRETOP) $E3DE-$E3E0 $F14E(VARTYPE)
+fre           18       0      6     72  4
+   ref std only: $F662 $F6A5 $F6A7-$F6A8 $F7B4-$F7B6 $F7F6-$F7F7 $F7FA-$F7FE
+   zb  std only: $FCC8(SLTTBL3) $FFFF
+   ref below $F380: -
+   zb  below $F380: $E028-$E02B(ARY_OP/TKNAME) $E035-$E037(ARY_ADDR) $E056-$E057(CTLLIM) $E20D(SH_BASE/SH_OP) $E211-$E212(SH_PTR) $E21E(SH_ERR) $F01C-$F023(FAC) $F06A-$F07B(ARGA) $F0C8-$F0D9(CVT) $F0E6-$F0E7(FP_TMP_B) $F0E9-$F0EE(KEYARG/WIDIG) $F0FB-$F0FE(WSRC) $F14E-$F14F(VARTYPE) $F152(LHS_VARTYPE)
+color          4       0      3      2  3
+   ref std only: $F3F2(ATRBYT)
+   zb  std only: -
+   ref below $F380: -
+   zb  below $F380: $EA3E-$EA3F(CLR_SAVE)
+peek          18       0      6     66  4
+   ref std only: $F662 $F6A5 $F6A7-$F6A8 $F7B4-$F7B6 $F7F6-$F7F7 $F7FA-$F7FE
+   zb  std only: $FCC8(SLTTBL3) $FFFF
+   ref below $F380: -
+   zb  below $F380: $E028-$E02B(ARY_OP/TKNAME) $E035-$E037(ARY_ADDR) $E056-$E057(CTLLIM) $F01C-$F023(FAC) $F06A-$F07B(ARGA) $F0C8-$F0D9(CVT) $F0E6-$F0E7(FP_TMP_B) $F0E9-$F0EB(KEYARG/WIDIG) $F0EE(MUL_I) $F0FB-$F0FE(WSRC) $F14E-$F14F(VARTYPE) $F152(LHS_VARTYPE)
+inkey         11       0     11     27  4
+   ref std only: $F662 $F6A5 $F6A7-$F6A8 $F7B4-$F7B6
+   zb  std only: $F3F7 $FBE1-$FBE4 $FCC8(SLTTBL3) $FFFF
+   ref below $F380: -
+   zb  below $F380: $E028-$E02B(ARY_OP/TKNAME) $E035-$E037(ARY_ADDR) $E056-$E057(CTLLIM) $E0C8-$E0CA(VALTYP) $E20D-$E214(SH_BASE/SH_OP) $E21A-$E21B(SH_DEST) $E21E(SH_ERR) $E3DE-$E3E0 $F14E(VARTYPE)
+
+ECONOMY (distinct non-stack cells, background removed): the reference writes FEWER on 13 of 16 ops; totals ref 527 vs zb 872
+refcache: 0 hit, 2 miss, 2 stored

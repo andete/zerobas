@@ -1,0 +1,13 @@
+case          ref VARTAB/ARYTAB/STREND    zb PRGEND+2/ARYTAB/CTLLIM
+SAME boot         $8003 $8019 $8019   $8003= $8019= $8019=
+SAME scalar       $8003 $8019 $8019   $8003= $8019= $8019=
+SAME two          $8003 $8024 $8024   $8003= $8024= $8024=
+SAME dim          $8003 $8019 $8051   $8003= $8019= $8051=
+SAME dim_then_sc  $8003 $8024 $805C   $8003= $8024= $805C=
+SAME string       $8003 $801F $801F   $8003= $801F= $801F=
+SAME erase        $8003 $8019 $8019   $8003= $8019= $8019=
+SAME program      $8013 $8029 $8029   $8013= $8029= $8029=
+SAME run          $8012 $8028 $8060   $8012= $8028= $8060=
+
+DIFF: 0/9
+refcache: 1 hit, 1 miss, 1 stored

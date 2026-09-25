@@ -132,7 +132,11 @@ declared at the published address.
 1. **S1 `FBUFFR`** — equate move of `FOUTBUF`, after confirming that the
    CONTENT after `PRINT`/`STR$` matches (a row that PEEKs `$F7C5..`). 0 ROM
    bytes if it does.
-2. **S2 the pointer chain** — `VARTAB`/`ARYTAB`/`STREND` (+`FRETOP`/`MEMSIZ`),
+2. ✅ **S2 the pointer chain — SHIPPED 2026-09-25** for `VARTAB`/`ARYTAB`/`STREND`
+   (`scratchpad/ptrchain_probe.py --after`: 0/9; `ARYTAB` by equate, `STREND`
+   in `strheap_ctllim`, `VARTAB` in `vars_reset`; main 3 B, sub 3 B).
+   `FRETOP`/`MEMSIZ` split out as S2b (a 12 B heap offset to explain first).
+   The original plan: `VARTAB`/`ARYTAB`/`STREND` (+`FRETOP`/`MEMSIZ`),
    moved together, with a row that reads `STREND−ARYTAB` and `FRE`-style
    differences on both machines. Mostly equates; `VARTAB` and `STREND` may need
    writes.

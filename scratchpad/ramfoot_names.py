@@ -34,7 +34,9 @@ def main():
     names, head_of = svs.build_namer(table)
     rehomed = {n: (zb, v) for n, _a, _w, zb, v in svs.REHOMED}
     op, per = None, {}
-    for ln in open(RUN):
+    # an explicit run file wins (a re-run after a re-homing, D-ADDR29 S2)
+    run = next((a for a in sys.argv[1:] if not a.startswith("--")), RUN)
+    for ln in open(run):
         m = re.match(r"^(\w+) +\d+ +\d+ +\d+ +\d+ +\d+$", ln)
         if m:
             op = m.group(1)

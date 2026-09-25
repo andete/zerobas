@@ -1776,7 +1776,32 @@ item — do **one item per session** to keep context lean.
       keeps PRINT's trailing space (` 123.5 ` vs ` 123.5`); INTEGERS are
       formatted in `NUMBUF`, not FBUFFR (`STR$(-7)`, `PRINT 42` leave stale
       text); `FBUFFR+0` is never written.
-      ➡️ **NEXT: S2, the pointer chain** (spec §2/§5).
+      ~~➡️ **NEXT: S2, the pointer chain** (spec §2/§5).~~
+      🟢 **S2 THE POINTER CHAIN SHIPPED (2026-09-25) — main 3 B, sub 3 B, and
+      the premise measured first** (`scratchpad/ptrchain_probe.py`, 9 states
+      on the VG-8020 vs zerobas: `ptrchain_run.out` before, `ptrchain_after.out`
+      after). zerobas already KEPT all three: `VARTAB` = `(PRGEND)+2`, `ARYTAB`
+      byte-identical, `STREND` = `CTLLIM`−2 (its ARYEND) in EVERY state.
+      So `ARYTAB` moved to `$F6C4` by EQUATE (`$E1C0` vacated), `STREND` is
+      stored in `strheap_ctllim` (sub; every allocator success and the reset)
+      and `VARTAB` beside `ARYTAB` in `vars_reset` (main low region).
+      **After: DIFF 0/9.** D-REHOME's REJECT-GROUP condition is met — the whole
+      chain moved together.
+      🔮 Predicted 9/9 on the first cut — **MISS, 8/9**: `VARTAB` was stored in
+      `sh_ctl_reset` (clear_vars), and a program EDIT never reaches clear_vars
+      (`vars_reset` says so in as many words), so `program` read `$8003` against
+      `$8013`. Moving the store to `vars_reset` fixed it.
+      📏 sysvarsweep: `ARYTAB`/`VARTAB`/`STREND` HONOURED, `$E1C0` QUIET; its
+      C-PRIV control was PINNED ON `$E1C0` "because it is a REJECT verdict"
+      and is re-aimed at `CTLLIM` `$E056` (private by design — the reference
+      has no control-pool floor). D-RAMFOOT re-run: reference-only documented
+      bytes **186 in 29 variables → 182 in 27** (`scratchpad/s2_ramfoot_names.out`).
+      📋 **SPLIT OUT, S2b `FRETOP`/`MEMSIZ`:** zerobas's heap reads a constant
+      **12 B more "used"** than the reference in every state (`ptrchain_str.out`:
+      4 vs 16 at boot, +5 for `A$="HELLO"` on both); the ceiling is exactly
+      `$DB00`, so the 12 B is inside the heap (likely per-record overhead on the
+      typed loop's temporaries) — measure what they are before any move.
+      ➡️ **NEXT: S3 `CNSDFG`/`ATRBYT` writes** (spec §5), or S2b once measured.
       🔪 **FOUND ON THE WAY — D-KNIFENOREAD, FIXED:** `scratchpad/kwknife.py`
       scored a cut whose sweep printed NO verdict as LOAD-BEARING
       (`v != "SUPPORTED"`). The knife run of the D-BUFMERGE chain read
@@ -5432,7 +5457,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:24373 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:24398 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -5598,7 +5623,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:10391 (T-6FE392)8 (T-529ABE)` from `TODO.md:22027 (T-529ABE)`: a
+      `TODO.md:10416 (T-6FE392)8 (T-529ABE)` from `TODO.md:22052 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -11235,7 +11260,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:22027 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:22052 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

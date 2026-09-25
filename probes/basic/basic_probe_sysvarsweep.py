@@ -198,7 +198,12 @@ REHOMED = [
     ("ERRLIN", 0xF6B3,  2, 0xF6B3, "HONOURED"),
     ("ONELIN", 0xF6B9,  2, 0xF6B9, "HONOURED"),
     ("ONEFLG", 0xF6BB,  1, 0xF6BB, "HONOURED"),
-    ("ARYTAB", 0xF6C4,  2, 0xE1C0, "REJECT-GROUP"),
+    # ✅ D-ADDR29 S2 (2026-09-25): REJECT-GROUP's own condition met -- the
+    # WHOLE chain is published (VARTAB/STREND rows below), so ARYTAB moved to
+    # $F6C4 and $E1C0 is VACATED. scratchpad/ptrchain_probe.py --after: 0/9.
+    ("ARYTAB", 0xF6C4,  2, 0xF6C4, "HONOURED"),
+    ("VARTAB", 0xF6C2,  2, 0xF6C2, "HONOURED"),
+    ("STREND", 0xF6C6,  2, 0xF6C6, "HONOURED"),
     ("DEFTBL", 0xF6CA, 26, 0xF6CA, "HONOURED"),
     # ✅ D-DOTLINE (2026-08-02) — `DOT`, the line `.` names in LIST/DELETE.
     # 🎯 THE FIRST ENTRY HERE THAT WAS NEVER RE-HOMED, because it was never
@@ -223,7 +228,13 @@ REHOMED = [
 # kept scribbling somewhere nobody reads. Captured and asserted, not assumed.
 VACATED = [("ERRCODE", 0xE1C5, 1), ("ERRLINE", 0xE1C6, 2),
            ("ONELIN'", 0xE1C8, 2), ("ONEFLG'", 0xE1CA, 1),
-           ("DEFTBL'", 0xF153, 26)]
+           ("DEFTBL'", 0xF153, 26), ("ARYTAB'", 0xE1C0, 2)]
+# 🎯 A PRIVATE CELL KEPT ONLY FOR C-PRIV. The control needs a zerobas cell that
+# is private BY DESIGN and moves when scalars are created; ARYTAB $E1C0 was it
+# until D-ADDR29 S2 honoured it -- the fourth control a re-homing inverted.
+# CTLLIM is the control pool's collision floor (= STREND+2): it will never be
+# published, because the reference has no such cell.
+CONTROL_PRIV = [("CTLLIM", 0xE056, 2)]
 
 
 def _merge_segs(spans, gap=16):
@@ -255,6 +266,7 @@ def _merge_segs(spans, gap=16):
 PRIV_SEGS = _merge_segs(
     [(a, n) for a, n in
      [(z, n) for _s, _p, n, z, _st in REHOMED] + [(a, n) for _s, a, n in VACATED]
+     + [(a, n) for _s, a, n in CONTROL_PRIV]
      if not (WORK_LO <= a <= WORK_HI)])
 PRIV_LEN = sum(ln for _a, ln in PRIV_SEGS)
 CAP_SEGS = [(WORK_LO, WORK_LEN)] + PRIV_SEGS
@@ -1234,22 +1246,24 @@ def main() -> int:
     # PRIVATE". A control pinned to a moving target has to be re-checked whenever
     # the target moves -- [[control-inverted-by-its-own-fix]], learned twice.
     #
-    # ARYTAB $E1C0 is the right anchor precisely because it is a REJECT verdict:
-    # it stays private by decision, so no future honouring can pull the rug out.
-    # Its movement is corroborated on screen by `[ 1 ]` vs `[ 3 ]` -- the scalars
-    # really were created -- and it is 2 bytes, so it exercises multi-byte
-    # indexing into the private segments as well.
+    # ARYTAB $E1C0 WAS the anchor "precisely because it is a REJECT verdict" --
+    # and D-ADDR29 S2 (2026-09-25) honoured it, so that premise failed exactly the
+    # way the paragraph above describes. The anchor is now CTLLIM $E056
+    # (CONTROL_PRIV): private BY DESIGN, since the reference has no control-pool
+    # floor at all, so no honouring can reach it. It still moves with the
+    # scalars (it is STREND+2), which `[ 1 ]` vs `[ 3 ]` corroborates on screen,
+    # and it is 2 bytes, so it still exercises multi-byte indexing.
     priv_ok = True
     print("=== C-PRIV — can the private segments be shown to MOVE? ===")
     if not {"s12-scal1", "s13-scal3"} <= set(keys):
         print("  SKIPPED (s12-scal1/s13-scal3 not in this run) — C-PRIV "
               "cannot vouch for the private segments in this run")
     else:
-        jd = _idx(0xE1C0)
+        jd = _idx(0xE056)
         a = bytes(mem["zb"]["s12-scal1"][0][jd:jd + 2])
         b = bytes(mem["zb"]["s13-scal3"][0][jd:jd + 2])
         priv_ok = a != b
-        print(f"  $E1C0 ARYTAB on zb: s12-scal1={a.hex()}  s13-scal3={b.hex()}"
+        print(f"  $E056 CTLLIM on zb: s12-scal1={a.hex()}  s13-scal3={b.hex()}"
               f"   {'OK — the segment is live' if priv_ok else 'FAIL'}")
         if not priv_ok:
             print("  A private cell that cannot be shown to move is not a "

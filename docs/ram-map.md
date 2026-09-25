@@ -33,7 +33,7 @@ other component's cell at the same address; the `inside` column
 names the other component's BUFFER this address falls within. That
 second one is the question a per-component map cannot answer.
 
-* **basic** — 418 declared addresses in this project's own workspace `$E000..$F37F` (385 with a machine-readable width), plus **86** in the MSX standard work area at or above `$F380`.
+* **basic** — 417 declared addresses in this project's own workspace `$E000..$F37F` (384 with a machine-readable width), plus **89** in the MSX standard work area at or above `$F380`.
 * **disk** — 127 declared addresses in this project's own workspace `$E000..$F37F` (113 with a machine-readable width), plus **24** in the MSX standard work area at or above `$F380`.
 
 ## This project's own workspace (`$E000..$F37F`)
@@ -200,7 +200,6 @@ second one is the question a per-component map cannot answer.
 | `$E157` |  | `basic` | `GFX_CPHASE` | CIRCLE-parse co-routine phase (sub/circleparse.asm): |  |
 | `$E158` | 1 B | `basic` | `GFX_PTX/GFX_WE_O` | main->tenant: POINT target X, 0..255 (1) |  |
 | `$E159` | 1 B | `basic` | `GFX_PTY/GFX_WRAPF` | main->tenant: POINT target Y, 0..191 (1) -> ends $E15A |  |
-| `$E1C0` | 2 B | `basic` | `ARYTAB` | live 2-byte cell: scalar-region end == array |  |
 | `$E1C2` | 1 B | `basic` | `DIRECTF` | 1 = executing a DIRECT-mode line, 0 = running a (1 B) |  |
 | `$E1C3` | 2 B | `basic` | `SAVSTK` | 2 B: SP anchor for the trap unwind. Written by |  |
 | `$E1CB` | 4 B | `basic` | `ERRRESUME` | 4 B: resume context captured at trap time — |  |
@@ -633,6 +632,9 @@ extents the standard already fixes would be noise, not rigour.
 | `$F6B5` | 2 B | `basic` | `DOT` | 2 B: the line `.` names. Cold value 0 (init). |  |
 | `$F6B9` | 2 B | `basic` | `ONELIN` | 2 B: ON ERROR handler line's LINK address (the |  |
 | `$F6BB` | 1 B | `basic` | `ONEFLG` | 1 B: $FF = currently inside a handler (no RESUME |  |
+| `$F6C2` | 2 B | `basic` | `VARTAB` | PUBLISHED: variable-table base = (PRGEND)+2 (2 B) |  |
+| `$F6C4` | 2 B | `basic` | `ARYTAB` | PUBLISHED: scalar-region end == array base (2 B) |  |
+| `$F6C6` | 2 B | `basic` | `STREND` | PUBLISHED: array-region end = ARYEND (2 B) |  |
 | `$F6CA` | 26 B | `basic` | `DEFTBL` | per-letter default-type map, A..Z (26) -- |  |
 | `$F7C5` |  | `basic` | `FBUFFR` | published: number-conversion buffer (43 B) |  |
 | `$F7C6` |  | `basic` | `FOUTBUF/HORNER_ACC/MATH_R/SQRT_R` | final-correction high-precision residual scratch |  |

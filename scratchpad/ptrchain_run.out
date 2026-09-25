@@ -1,0 +1,13 @@
+case          ref VARTAB/ARYTAB/STREND    zb PRGEND+2/ARYTAB/CTLLIM
+DIFF boot         $8003 $8019 $8019   $8003= $8019= $801B≠
+DIFF scalar       $8003 $8019 $8019   $8003= $8019= $801B≠
+DIFF two          $8003 $8024 $8024   $8003= $8024= $8026≠
+DIFF dim          $8003 $8019 $8051   $8003= $8019= $8053≠
+DIFF dim_then_sc  $8003 $8024 $805C   $8003= $8024= $805E≠
+DIFF string       $8003 $801F $801F   $8003= $801F= $8021≠
+DIFF erase        $8003 $8019 $8019   $8003= $8019= $801B≠
+DIFF program      $8013 $8029 $8029   $8013= $8029= $802B≠
+DIFF run          $8012 $8028 $8060   $8012= $8028= $8062≠
+
+DIFF: 9/9
+refcache: 0 hit, 2 miss, 2 stored

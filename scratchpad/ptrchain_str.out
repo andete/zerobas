@@ -1,0 +1,14 @@
+
+case          used string bytes: ref MEMSIZ-FRETOP   zb $DB00-FRETOP
+DIFF boot              4 (FRETOP $F164)       16 (FRETOP $DAF0)
+DIFF scalar            4 (FRETOP $F164)       16 (FRETOP $DAF0)
+DIFF two               4 (FRETOP $F164)       16 (FRETOP $DAF0)
+DIFF dim               4 (FRETOP $F164)       16 (FRETOP $DAF0)
+DIFF dim_then_sc       4 (FRETOP $F164)       16 (FRETOP $DAF0)
+DIFF string            9 (FRETOP $F15F)       21 (FRETOP $DAEB)
+DIFF erase             4 (FRETOP $F164)       16 (FRETOP $DAF0)
+DIFF program           4 (FRETOP $F164)       16 (FRETOP $DAF0)
+DIFF run               4 (FRETOP $F164)       16 (FRETOP $DAF0)
+
+STRINGS DIFF: 9/9
+refcache: 0 hit, 2 miss, 2 stored

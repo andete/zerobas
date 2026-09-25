@@ -369,6 +369,12 @@ vars_reset:
                 inc     hl
                 inc     hl                  ; HL = PRGEND+2 (empty scalar region)
                 ld      (ARYTAB),hl
+                ; D-ADDR29 S2: the PUBLISHED VARTAB is this same PRGEND+2, and
+                ; this routine's five callers (RUN, NEW, CLEAR, MAXFILES, a
+                ; program EDIT) are every path that moves PRGEND. The first cut
+                ; stored it in sh_ctl_reset (clear_vars) and an edit left it
+                ; stale -- "a program edit never reaches clear_vars", above.
+                ld      (VARTAB),hl
                 ; fall through: write the "no arrays" sentinel at (ARYTAB)
 
 ; --- ary_reset: write the "no arrays" sentinel at the current ARYTAB -------

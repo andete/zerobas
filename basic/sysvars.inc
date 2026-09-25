@@ -1028,8 +1028,20 @@ TOKMAX_BODY     equ     314     ; logical ceiling: a longer body is REFUSED (ERR
 ;              Honouring one member of a group its consumers read as a set is
 ;              WORSE than honouring none.
 ;   ⚠️ To revisit, cost publishing the WHOLE chain; do not move ARYTAB alone.
-ARYTAB          equ     $E1C0   ; live 2-byte cell: scalar-region end == array
-                                ; base (repack only; VARTAB's own dead RAM)
+; 🟢 REVISITED AND HONOURED, 2026-09-25 (D-ADDR29 S2, Joost's "All 29"): the
+; WHOLE chain is now published, which is exactly the condition above.
+; scratchpad/ptrchain_probe.py measured, in 9 states on the VG-8020 vs zerobas:
+; VARTAB == (PRGEND)+2, ARYTAB == ARYTAB, STREND == CTLLIM-2 (zerobas's ARYEND,
+; the $0000 terminator's own address) -- every state, ERASE and RUN included.
+; So ARYTAB MOVES (an equate, 0 bytes) and the other two are STORED where
+; their private twins are already derived: STREND in strheap_ctllim (sub)
+; (every allocator success path and the reset), VARTAB beside ARYTAB in
+; vars_reset (main, 3 B: its five callers -- RUN, NEW, CLEAR, MAXFILES, a program
+; EDIT -- are every path that moves PRGEND; clear_vars is NOT, an edit never
+; reaches it, which the first cut learned). $E1C0..$E1C1 is vacated.
+VARTAB          equ     $F6C2   ; PUBLISHED: variable-table base = (PRGEND)+2 (2 B)
+ARYTAB          equ     $F6C4   ; PUBLISHED: scalar-region end == array base (2 B)
+STREND          equ     $F6C6   ; PUBLISHED: array-region end = ARYEND (2 B)
 ; Error-handling S1 (docs/spec-basic-error-handling.md §5.5): the freed VARTAB
 ; window $E1C2..$E240 is the home for error-handling state. D-2 needs one byte:
 DIRECTF         equ     $E1C2   ; 1 = executing a DIRECT-mode line, 0 = running a (1 B)

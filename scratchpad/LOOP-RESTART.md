@@ -58,9 +58,13 @@ D-HIMEMLIE measured (`scratchpad/himem_probe.py`): `CLEAR`'s address rule
 already MATCHES (DIFF 0/12; both references allow up to `$F380`); what is left
 is the boot VALUE (true `$DB00` vs the VG-8020's `$F380`) — 🙋 Joost's.
 
-➡️ **QUEUE, lowest tier first:** (1) D-ADDR29 S2 (the pointer chain, moved
-together); (2) D-STOPTAP's remaining 1-frame-tap divergence if a tier puts it
-above it. 🙋 **TWO QUESTIONS FOR JOOST** when the autonomous queue empties:
+✅ **D-ADDR29 S2 SHIPPED** — `VARTAB`/`ARYTAB`/`STREND` published (0/9 vs the
+VG-8020; main 3 B, sub 3 B); `FRETOP`/`MEMSIZ` split out as S2b.
+**Walls (clean build 2026-09-25): main page 1 261 B, low 5 B; sub p0 431 B.**
+
+➡️ **QUEUE, lowest tier first:** (1) D-ADDR29 S3 (`CNSDFG`/`ATRBYT` writes)
+or S2b (measure the 12 B heap offset first); (2) D-STOPTAP's remaining
+1-frame-tap divergence if a tier puts it above them. 🙋 **TWO QUESTIONS FOR JOOST** when the autonomous queue empties:
 the 6030 B lever, and D-HIMEMLIE's boot value. Re-scan TODO markers first.
 
 ### 🌅 NIGHT 2026-09-25 — READ THIS FIRST, IT SUPERSEDES THE QUEUE BELOW

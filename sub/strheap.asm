@@ -373,6 +373,8 @@ strheap_floor:
 ; Clobbers A,B,C,D,E,H,L (strheap_aryend's).
 strheap_ctllim:
                 call    strheap_aryend      ; HL = ARYEND (the live $0000 terminator)
+                ld      (STREND),hl         ; D-ADDR29 S2: the PUBLISHED STREND is
+                                            ; exactly ARYEND (ptrchain_probe, 9/9)
                 inc     hl
                 inc     hl                  ; +2: past the live 2-byte sentinel, the
                 ld      (CTLLIM),hl         ; first byte the region does not own
@@ -1856,7 +1858,7 @@ sh_ctl_reset:
                 ld      (FSP),hl
                 ld      (TSP),hl
                 ld      (SH_PTR),hl
-                call    strheap_ctllim      ; CTLLIM := ARYEND+2
+                call    strheap_ctllim      ; CTLLIM := ARYEND+2 (and STREND)
                 xor     a
                 ld      (SH_ERR),a
                 ret
