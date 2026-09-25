@@ -2466,6 +2466,27 @@ item — do **one item per session** to keep context lean.
       Smoke: `FILES`/`LOF` (the disk ROM still initialises), `PLAY X` (the sub
       ROM is still found); unit tests green.
       ➡️ **NEXT:** the `$0160` island (160 B) is still empty; then lever A.
+      🧭 **LEVER A, DESIGNED 2026-09-25** (`scratchpad/rst_scout.py` →
+      `scratchpad/rst_scout.out`) — the vectors are only worth what IDIOMS at
+      our call sites match their PUBLISHED contracts; none of our helpers is a
+      contract as-is (`skip_comma` neither advances nor errors; `skip_spaces`
+      does not increment):
+      | vector (contract) | our idiom | sites | net |
+      |---|---|---|---|
+      | `RST 10h` CHRGTR (inc hl, skip spaces; Z on `00`/`:`, CF on a digit) | `call inc_skip` — ALL 50 followed by an instruction that does not read Z/C first | 50 | **~80 B** (100 at the sites − a ~20 B CHRGTR) |
+      | `RST 18h` OUTDO (output A, registers preserved) | `call pchar` (already preserves all four pairs) | 13 | ~20 B |
+      | `RST 08h` SYNCHR (expect a char, else Syntax error) | `call skip_comma` + `jp nz,<err>` | 21 | DEFERRED — the sites raise DIFFERENT errors (`poke_err`, `vdp_err`, `trap_syntax` …); SYNCHR only ever raises ERR 2 |
+      | `RST 20h` DCOMPR | `or a`/`sbc hl,de`/`add hl,de` | **0** | none as written |
+      🔴 **THE HAZARD, BEFORE ANY SITE CONVERTS:** an `RST` jumps into PAGE 0.
+      A main page-1 routine that a sub-ROM **page-0 tenant** calls back into
+      runs with page 0 = the SUB ROM, so an `RST 10h` there lands in the
+      sub-ROM's `$0010`. `tools/check_tenant_closure.py --page0` walks `call`
+      targets and is BLIND to `rst`: it must learn that `RST 08h..28h` is a
+      page-0 call (forbidden in those closures) first, and each of the 50 sites
+      checked against it. The vectors themselves are repointed by the merge
+      (`tools/build_mainrom.py`, like the tape vectors) — 0 main bytes.
+      ➡️ **SLICE ORDER:** (1) the checker learns `rst`; (2) CHRGTR at `RST
+      10h` + the 50 sites; (3) OUTDO at `RST 18h`.
 
 - [x] 🟢 **FIXED 2026-09-25 (D-STOPTAP): `ON STOP` RE-FIRES ON THE REFERENCE'S
       AUTO-REPEAT SCHEDULE — 16/16 FINE-SWEEP STEPS AND 6/7 HOLD LENGTHS MATCH.**
@@ -5250,7 +5271,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:24191 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:24212 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -5416,7 +5437,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:10209 (T-6FE392)8 (T-529ABE)` from `TODO.md:21845 (T-529ABE)`: a
+      `TODO.md:10230 (T-6FE392)8 (T-529ABE)` from `TODO.md:21866 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -11053,7 +11074,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:21845 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:21866 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

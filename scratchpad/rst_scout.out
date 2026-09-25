@@ -1,0 +1,15 @@
+  50  CHRGTR: inc_skip, safe
+  13  OUTDO: call pchar
+  21  SYNCHR: expect-char + error branch
+
+synchr samples:
+    basic/str-engine.asm:1416 call skip_comma / jp nz,stmt_error
+    basic/str-engine.asm:2267 call skip_comma / jp nz,stmt_error
+    basic/poke.asm:21 call skip_comma / jp nz,poke_err
+    basic/interp.asm:285 call skip_comma / jp nz,stmt_error
+    basic/interp.asm:305 call skip_spaces / jp nz,trap_syntax
+    basic/vdpio.asm:30 call skip_comma / jp nz,vdp_err
+    basic/vdpio.asm:76 call skip_comma / jp nz,vdp_err
+    basic/vdpio.asm:111 call skip_comma / jp nz,vdp_err
+
+chrgtr-reads samples:
