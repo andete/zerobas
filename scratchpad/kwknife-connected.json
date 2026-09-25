@@ -1,5 +1,5 @@
 {
- "rom_fingerprint": "7f96346c 92547d7f f8b743a5 29dfdc80",
+ "rom_fingerprint": "99f29ab3 92547d7f 25b1ead9 2ea631ba",
  "rows": {
   "ABS": {
    "connected": true,
@@ -2581,5 +2581,5 @@
    }
   }
  },
- "written": "2026-09-25 16:56:52"
+ "written": "2026-09-25 17:50:35"
 }

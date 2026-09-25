@@ -74,7 +74,8 @@ For each case we report:
   * which slot(s) carry the argument value ($3039 or $0102)
   * the VALTYP byte ($D107)
   * a PASS/FAIL based on whether the measurements confirm the
-    expected calling convention (DAC for reference; HL for zerobas).
+    expected calling convention (DAC on both since D-ADDR29 DAC, 2026-09-25;
+    zerobas used HL before).
 """
 from __future__ import annotations
 
@@ -398,62 +399,40 @@ def main() -> int:
         zb_snaps[av] = s
         print_snap("zb", s, av)
 
-    zb_hl_carries = all(
-        zb_snaps[av] is not None and decode_snap(zb_snaps[av], av)["HL"] == av
-        for av in ARGS
-    )
-    zb_dac_w2_carries = all(
-        zb_snaps[av] is not None and decode_snap(zb_snaps[av], av)["DAC_w2"] == av
-        for av in ARGS
-    )
-    # zerobas's own VALTYP ($E0C8) is unrelated to the reference's $F663;
-    # we expect $F663 to be untouched (not set to 2) by zerobas.
-    zb_valtyp_not_2 = all(
-        zb_snaps[av] is not None and decode_snap(zb_snaps[av], av)["VALTYP"] != 2
-        for av in ARGS
-    )
+    # 🔁 D-ADDR29 DAC (2026-09-25, Joost 2026-09-24: "USR then finds its
+    # argument in DAC"): zerobas now uses the PUBLISHED convention, so its rows
+    # assert the SAME three facts as the reference's. They used to assert the
+    # opposite (HL = argument, DAC and VALTYP untouched) -- the own-design
+    # convention this replaced; the return side is scratchpad/usrdac_probe.py.
+    def zb_all(pred):
+        return all(zb_snaps[av] is not None and pred(decode_snap(zb_snaps[av], av), av)
+                   for av in ARGS)
 
     print()
-    check("zb: HL carries the argument value (own-design integer-only convention)",
-          zb_hl_carries,
-          f"12345→HL=${decode_snap(zb_snaps[12345], 12345)['HL']:04X}"
-          if zb_snaps[12345] else "no data")
-    check("zb: DAC+2..3 does NOT carry the argument (zerobas skips the DAC/VALTYP protocol)",
-          not zb_dac_w2_carries,
+    check("zb: DAC+2..3 carries the argument (the published convention)",
+          zb_all(lambda d, av: d["DAC_w2"] == av),
           f"12345→DAC+2..3=${decode_snap(zb_snaps[12345], 12345)['DAC_w2']:04X}"
           if zb_snaps[12345] else "no data")
-    check("zb: VALTYP ($F663) not set to 2 by zerobas (DAC/VALTYP protocol not used)",
-          zb_valtyp_not_2,
+    check("zb: VALTYP ($F663) = 2 (integer) on entry",
+          zb_all(lambda d, av: d["VALTYP"] == 2),
           f"12345→VALTYP=${decode_snap(zb_snaps[12345], 12345)['VALTYP']:02X}"
+          if zb_snaps[12345] else "no data")
+    check("zb: HL = DAC base ($F7F6) on entry, not the argument",
+          zb_all(lambda d, av: d["HL"] == DAC_ADDR),
+          f"12345→HL=${decode_snap(zb_snaps[12345], 12345)['HL']:04X}"
           if zb_snaps[12345] else "no data")
 
     # ------------------------------------------------------------------ #
-    # Summary of measured divergence                                        #
+    # Summary                                                               #
     # ------------------------------------------------------------------ #
     print()
-    print("=== Measured divergence ===")
+    print("=== Convention ===")
     if ref_snaps[12345] and zb_snaps[12345]:
         rd = decode_snap(ref_snaps[12345], 12345)
         zd = decode_snap(zb_snaps[12345], 12345)
-        ref_conv = (
-            f"DAC+2..3 = LE-word ${rd['DAC_w2']:04X} (= 12345), "
-            f"VALTYP=${rd['VALTYP']:02X} (integer), "
-            f"HL=${rd['HL']:04X} (= DAC base address, not the arg itself)"
-        )
-        zb_conv = (
-            f"HL=${zd['HL']:04X} (= 12345 = arg), "
-            f"DAC+2..3=${zd['DAC_w2']:04X} (not the arg), "
-            f"VALTYP=${zd['VALTYP']:02X} (not set to integer)"
-        )
-        print(f"  reference passes USR arg via {ref_conv}")
-        print(f"  zerobas  passes USR arg via {zb_conv}")
-        print()
-        print("  MEASURED DIVERGENCE:")
-        print("  reference: integer USR argument in DAC+2..3 (LE word); VALTYP=$02")
-        print("             (integer); HL points to DAC base ($F7F6), not the arg.")
-        print("  zerobas:   integer USR argument in HL (direct); DAC untouched;")
-        print("             VALTYP ($F663) not set by zerobas (own-design HL-only")
-        print("             calling convention, no DAC/VALTYP protocol).")
+        for who, d in (("reference", rd), ("zerobas  ", zd)):
+            print(f"  {who}: DAC+2..3=${d['DAC_w2']:04X}  VALTYP=${d['VALTYP']:02X}"
+                  f"  HL=${d['HL']:04X}")
     else:
         print("  (insufficient data — one or more snapshots not captured)")
 

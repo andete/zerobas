@@ -1,0 +1,9 @@
+SAME ret    USR(5  )  ref: 5   zb: 5
+DIFF hl99   USR(5  )  ref: 5   zb: 99
+SAME dac77  USR(5  )  ref: 77   zb: 77
+DIFF inc    USR(5  )  ref: 6   zb: 1
+DIFF flt    USR(5  )  ref: 1.5   zb: 0
+DIFF ret    USR(1.5)  ref: 1.5   zb: 1
+
+DIFF: 4/6
+refcache: 0 hit, 2 miss, 2 stored

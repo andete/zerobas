@@ -16,18 +16,21 @@
 ; crunched stream `DEFUSR` is two tokens ($97 $DD), exactly as a real ROM crunches
 ; it; an optional USR number 0..9 follows as a digit token ($11+n).
 ;
-; CALLING CONVENTION (own design — see note): zerobas is integer-only and has no
-; floating-point DAC, so it does not use MSX-BASIC's DAC/VALTYP argument protocol.
-; Instead USR[n](arg) evaluates the 16-bit integer argument into HL and CALLs the
-; routine; the value the routine leaves in HL becomes the function result. A
+; CALLING CONVENTION — THE PUBLISHED ONE SINCE 2026-09-25 (D-ADDR29 DAC, Joost
+; 2026-09-24: "USR then finds its argument in DAC"). Oracle-measured black-box on
+; the Philips VG-8020 (probes/basic/basic_probe_usr.py for the entry side,
+; scratchpad/usrdac_probe.py for the return side; observed outputs only, no
+; disassembly): an integer argument goes to DAC+2..3 (16-bit LE at offset 2 of the
+; 8-byte DAC $F7F6, DAC+0..1 = 0) with VALTYP ($F663) = 2; a float argument is the
+; whole DAC with VALTYP 4/8 (zerobas's FAC already holds the same BCD bytes); the
+; routine is entered with HL = DAC and A = VALTYP. The RESULT is DAC again, typed
+; by VALTYP, which the routine may change -- HL on return means nothing. A
 ; never-returning routine (the typical "the game takes over" case) simply never
-; RETs, which is fine. This is sufficient for loader stubs, where the argument and
-; return value are usually `0`/ignored. The reference convention is now
-; oracle-measured (basic_probe_usr.py, black-box differential vs Philips VG-8020):
-; the reference passes an integer arg in DAC+2..3 (16-bit LE at offset 2 of the
-; 8-byte DAC $F7F6), sets VALTYP ($F663)=$02, and enters with HL->DAC base.
-; zerobas instead passes the arg directly in HL and leaves DAC/VALTYP untouched —
-; a deliberate own-design divergence (observed outputs only; no disassembly).
+; RETs, which is fine.
+; 🔁 IT USED TO BE AN OWN DESIGN: the argument in HL, the result whatever HL held,
+; DAC and VALTYP untouched, integer-only. Machine code written for MSX read the
+; argument from DAC and got 0 (usrdac_probe.py `inc`: 1 where the reference says
+; 6), and a float result read 0.
 ;
 ; Clean-room: original code; DEF USR / USR *semantics* from the public MSX-BASIC
 ; language reference; tokens from Table 2.20; USRTAB from C-BIOS sysvars. No
@@ -151,7 +154,9 @@ ev_usr:
                 cp      ')'
                 jr      nz,ev_usr_err
                 inc     ix
-                call    flt_int_result      ; USR returns an int even if its arg was a
+                ; D-ADDR29 DAC: the argument's TYPE now travels to the routine
+                ; (FACTYP stands from ev_logic), so it is no longer forced to an
+                ; int here -- usr_ret decides the result's type from VALTYP.
                 pop     af                  ; A = index
                 jr      usr_call            ; perform the call (preserves IX) -> DE
 ev_usr_err:
@@ -178,7 +183,7 @@ ev_usr_index:
                 inc     ix
                 ret
 
-; --- usr_call: call USRTAB[A] with HL=arg, capture HL as the result --------
+; --- usr_call: call USRTAB[A] with the argument in DAC; the result is DAC ---
 ; in:  A = index, DE = argument. out: DE = result. IX (the cursor) preserved.
 ; Refuses to jump if the vector is 0 (un-DEF'd) — a $0000 jump resets the MSX.
 usr_call:
@@ -193,15 +198,48 @@ usr_call:
                 ld      a,b
                 or      c
                 jr      z,usr_undef         ; vector not set -> error, no jump
-                ex      de,hl               ; HL = argument
+                ; 🏗️ D-ADDR29 DAC (2026-09-25): the PUBLISHED convention, as the
+                ; VG-8020 measures -- the argument in DAC with its type in VALTYP,
+                ; HL = DAC, A = VALTYP. The HL-argument convention this replaces
+                ; was zerobas's own; machine code written for MSX reads DAC.
+                ld      a,(FACTYP)
+                cp      2
+                jr      z,uc_int
+                push    bc                  ; a float: DAC := FAC (the same BCD bytes)
+                ld      hl,FAC
+                ld      de,DAC
+                ld      bc,8
+                ldir
+                pop     bc
+                jr      uc_go               ; A = FACTYP = 4 or 8
+uc_int:
+                ld      hl,0
+                ld      (DAC),hl            ; DAC+0..1 read 00 00 on the reference
+                ld      (DAC+2),de          ; the integer argument
+uc_go:
+                ld      (VALTYP_PUB),a
+                ld      hl,DAC              ; HL = DAC on entry, as the reference
                 ld      de,usr_ret          ; continuation after the routine RETs
                 push    de
                 push    bc                  ; routine entry
-                ret                         ; -> routine (HL=arg); its RET -> usr_ret
+                ret                         ; -> routine; its RET -> usr_ret
 usr_ret:
-                ex      de,hl               ; DE = result (whatever the routine left in HL)
+                ; the RESULT is DAC, typed by VALTYP (the routine may change both)
                 pop     ix                  ; restore the cursor
-                ret
+                ld      a,(VALTYP_PUB)
+                cp      4
+                jr      z,ur_flt
+                cp      8
+                jr      z,ur_flt
+                ld      de,(DAC+2)          ; an integer result
+                jp      flt_int_result      ; FACTYP := 2
+ur_flt:
+                ld      (FACTYP),a
+                ld      hl,DAC              ; FAC := DAC
+                ld      de,FAC
+                ld      bc,8
+                ldir
+                jp      flt_to_int16        ; DE = the rounded int; FAC/FACTYP stand
 usr_undef:
                 pop     ix                  ; restore the cursor
                 call    errmark_expr; expression-error marker

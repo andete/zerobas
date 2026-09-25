@@ -10,7 +10,9 @@ USRTAB slot holds the address we gave.
 ev_usr — expression-factor handler for `USR[n](arg)`.  Uses IX as cursor
 (expr.asm convention); entered with IX on the USR token.  Evaluates the
 argument expression into DE, loads the vector from USRTAB, and jumps to the
-routine with HL = argument.  We trap the target address to catch the call and
+routine with the argument in DAC+2..3, VALTYP 2 and HL = DAC (the published
+convention, D-ADDR29 DAC 2026-09-25; it was HL = argument).  We trap the target
+address to catch the call and
 verify that HL contains the argument.
 
 Token stream details (sysvars.inc / usr.asm):
@@ -167,10 +169,15 @@ def run():
         m.mem[slot]     = TARGET & 0xFF
         m.mem[slot + 1] = (TARGET >> 8) & 0xFF
 
-        # Capture HL on entry to the trapped routine
+        # Capture the ENTRY state of the trapped routine: HL, A, and the
+        # published DAC+2..3 / VALTYP (D-ADDR29 DAC, 2026-09-25 -- the HL-arg
+        # convention this file used to assert is superseded by the reference's).
         captured = []
         def trap_fn(machine, captured=captured):
-            captured.append(machine.cpu.hl)
+            dac = s["DAC"]
+            captured.append((machine.cpu.hl, machine.cpu.a,
+                             machine.mem[dac + 2] | (machine.mem[dac + 3] << 8),
+                             machine.mem[s["VALTYP_PUB"]]))
         m.trap(TARGET, trap_fn)
 
         # Build IX-based token stream for ev_usr:
@@ -186,15 +193,19 @@ def run():
         stream = (bytes([s["USR_TOKEN"]]) + idx_bytes +
                   b'(' + arg_toks + b')')
         m.poke(IBUF, stream)
-        m.call("ev_usr", ix=IBUF)
+        cpu = m.call("ev_usr", ix=IBUF)
 
-        ok = len(captured) == 1 and captured[0] == arg
+        # entry: HL = DAC, A = VALTYP = 2, the argument at DAC+2..3;
+        # return: a routine that leaves DAC alone returns the argument (the
+        # reference's bare-RET answer, scratchpad/usrdac_probe.py)
+        want = (s["DAC"], 2, arg, 2)
+        ok = len(captured) == 1 and captured[0] == want and cpu.de == arg
         fails += not ok
-        hl_got = captured[0] if captured else None
-        hl_s = f"{hl_got:#06x}" if hl_got is not None else "??"
+        got = captured[0] if captured else None
+        got_s = ("HL=%#06x A=%d DAC+2=%#06x VALTYP=%d" % got) if got else "??"
         print(f"{'PASS' if ok else 'FAIL'}  {desc}"
-              f" -> trap fired {len(captured)} time(s),"
-              f" HL={hl_s}  (want {arg:#06x})")
+              f" -> trap fired {len(captured)} time(s), {got_s}, result DE={cpu.de:#06x}"
+              f"  (want HL=DAC, A=2, DAC+2={arg:#06x}, VALTYP=2, result {arg:#06x})")
 
     # =========================================================================
     # ev_usr with un-DEF'd vector: ERRMARK=$DD, returns DE=0
@@ -214,7 +225,7 @@ def run():
           f"  (want ERRMARK=0xdd, DE=0)")
 
     print()
-    print("ALL PASS — ex_def stores USR vector; ev_usr calls it with HL=arg"
+    print("ALL PASS — ex_def stores USR vector; ev_usr calls it with the argument in DAC"
           if not fails else f"{fails} CASE(S) FAILED")
     return fails
 

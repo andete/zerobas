@@ -1,0 +1,67 @@
+
+=== Reference (Philips_VG_8020) ===
+  [ref] arg=12345 ($3039)
+    raw snapshot : f6 f7 97 32 9a 00 02 02 00 00 39 30 00 00 00 00
+    entering HL  = $F7F6  (arg? no)
+    entering DE  = $3297  (arg? no)
+    entering BC  = $009A  (arg? no)
+    entering A   = $02
+    VALTYP       = $02  (hypothesis: 2=integer for ref; 0=unused for zb)
+    DAC[0..7]    = 00 00 39 30 00 00 00 00
+      DAC+0..1   = $0000  (arg? no)
+      DAC+2..3   = $3039  (arg? YES)
+  [ref] arg=258 ($0102)
+    raw snapshot : f6 f7 97 32 9a 00 02 02 00 00 02 01 00 00 00 00
+    entering HL  = $F7F6  (arg? no)
+    entering DE  = $3297  (arg? no)
+    entering BC  = $009A  (arg? no)
+    entering A   = $02
+    VALTYP       = $02  (hypothesis: 2=integer for ref; 0=unused for zb)
+    DAC[0..7]    = 00 00 02 01 00 00 00 00
+      DAC+0..1   = $0000  (arg? no)
+      DAC+2..3   = $0102  (arg? YES)
+
+PASS  ref: DAC+2..3 (LE word at offset 2 in DAC) carries the argument value  [12345→DAC+2..3=$3039]
+PASS  ref: DAC+0..1 does NOT carry the argument (arg is at DAC+2, not DAC+0)  [12345→DAC+0..1=$0000]
+PASS  ref: VALTYP == 2 (integer) when an integer argument is passed  [12345→VALTYP=$02]
+PASS  ref: HL == DAC base address $F7F6 on entry (ref leaves HL pointing at DAC)  [12345→HL=$F7F6]
+PASS  ref: HL is not the raw argument value (arg is in DAC, not HL itself)  [12345→HL=$F7F6]
+
+=== zerobas (C-BIOS_MSX1_EU_REPACK_DISK) ===
+  [zb] arg=12345 ($3039)
+    raw snapshot : 39 30 a2 54 00 d0 d0 00 00 00 00 00 00 00 00 00
+    entering HL  = $3039  (arg? YES)
+    entering DE  = $54A2  (arg? no)
+    entering BC  = $D000  (arg? no)
+    entering A   = $D0
+    VALTYP       = $00  (hypothesis: 2=integer for ref; 0=unused for zb)
+    DAC[0..7]    = 00 00 00 00 00 00 00 00
+      DAC+0..1   = $0000  (arg? no)
+      DAC+2..3   = $0000  (arg? no)
+  [zb] arg=258 ($0102)
+    raw snapshot : 02 01 a2 54 00 d0 d0 00 00 00 00 00 00 00 00 00
+    entering HL  = $0102  (arg? YES)
+    entering DE  = $54A2  (arg? no)
+    entering BC  = $D000  (arg? no)
+    entering A   = $D0
+    VALTYP       = $00  (hypothesis: 2=integer for ref; 0=unused for zb)
+    DAC[0..7]    = 00 00 00 00 00 00 00 00
+      DAC+0..1   = $0000  (arg? no)
+      DAC+2..3   = $0000  (arg? no)
+
+PASS  zb: HL carries the argument value (own-design integer-only convention)  [12345→HL=$3039]
+PASS  zb: DAC+2..3 does NOT carry the argument (zerobas skips the DAC/VALTYP protocol)  [12345→DAC+2..3=$0000]
+PASS  zb: VALTYP ($F663) not set to 2 by zerobas (DAC/VALTYP protocol not used)  [12345→VALTYP=$00]
+
+=== Measured divergence ===
+  reference passes USR arg via DAC+2..3 = LE-word $3039 (= 12345), VALTYP=$02 (integer), HL=$F7F6 (= DAC base address, not the arg itself)
+  zerobas  passes USR arg via HL=$3039 (= 12345 = arg), DAC+2..3=$0000 (not the arg), VALTYP=$00 (not set to integer)
+
+  MEASURED DIVERGENCE:
+  reference: integer USR argument in DAC+2..3 (LE word); VALTYP=$02
+             (integer); HL points to DAC base ($F7F6), not the arg.
+  zerobas:   integer USR argument in HL (direct); DAC untouched;
+             VALTYP ($F663) not set by zerobas (own-design HL-only
+             calling convention, no DAC/VALTYP protocol).
+
+ALL PASS

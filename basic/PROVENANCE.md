@@ -227,7 +227,7 @@ VG-8020 reference via `basic_probe_crunch.py` (`defusr=&h9000`, `defusr0=&h9000`
 | `LIST`/`CLS`/`SCREEN`/`COLOR`/`WIDTH`/`KEY` tokens | `$93`/`$9F`/`$C5`/`$BD`/`$A0`/`$CC` | MSX2 TH Table 2.20 (handlers land in later Phase-1 tasks) | sourced |
 | `USRTAB` (10 USR vectors, 2 bytes each) | `$F39A` | C-BIOS system variables (BSD 2-clause) | sourced |
 | `DEFUSR[n]=<addr>` / `USR[n](<arg>)` syntax + USR-number 0..9 as a digit token | — | public MSX-BASIC language reference; crunch byte-identical (oracle) | sourced |
-| USR calling convention: arg in HL, CALL the routine, HL = result; refuse a `0` (un-DEF'd) vector | — | **own design** (integer-only; no DAC/VALTYP float protocol). Reference convention now oracle-measured (`basic_probe_usr.py`): integer arg in `DAC+2..3` (LE, 8-byte DAC `$F7F6`), `VALTYP $F663 =$02`, `HL`→DAC base — observed black-box, NOT taken from any disassembly | quarantined |
+| USR calling convention (since D-ADDR29 DAC, 2026-09-25): integer arg in `DAC+2..3` (LE, 8-byte DAC `$F7F6`, `DAC+0..1` = 0) or a float as the whole DAC, `VALTYP $F663` = 2/4/8, `HL`→DAC base, `A` = VALTYP; the result is DAC per VALTYP; refuse a `0` (un-DEF'd) vector. (Was an own design: arg in HL, HL = result.) | — | oracle-measured black-box on the VG-8020 (`basic_probe_usr.py` entry side, `scratchpad/usrdac_probe.py` return side) — observed outputs only, NOT taken from any disassembly | sourced |
 | DEF USR / USR parse + trampoline algorithm | — | **own code**; not derived from any disassembly | sourced |
 
 The USR *calling convention* is the one **quarantined** item so far: zerobas's
