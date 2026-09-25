@@ -156,6 +156,17 @@ init:
                 ; symptom: a CALSLT with no recorded slot and the machine never
                 ; reaches BASIC. Every later reset (NEW / RUN / CLEAR) goes through
                 ; clear_vars as normal, by which time the scan has long run.
+                ; 🏗️ D-HIMEMLIE (Joost 2026-09-25: "$DB00, truthful"): the
+                ; published HIMEM is zerobas's OWN ceiling. C-BIOS leaves $F380,
+                ; but everything from TXTMAX up is zerobas's (the LIST buffer
+                ; and the $E000 workspace), so a program siting machine code
+                ; under PEEK(&HFC4A) wrote over the interpreter. Every reader
+                ; already takes min(HIMEM, TXTMAX), so this changes no answer --
+                ; only what the cell says. Cold boot only: NEW/RUN keep it, as
+                ; the reference does; CLEAR's address rule is unchanged
+                ; (scratchpad/himem_probe.py, 0/12).
+                ld      hl,TXTMAX
+                ld      (HIMEM),hl
                 call    ctl_reset
                 ; 🔴 D-BOOTWIDTH (2026-09-24): BOOT AT WIDTH 37, THE VG-8020's.
                 ; Measured at cold boot: VG-8020 37, CF-3300 39 -- a presentational

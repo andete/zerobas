@@ -2008,13 +2008,18 @@ item — do **one item per session** to keep context lean.
       on BOTH machines, and the scorer skipped unread cases and printed SAME.
       The probe now REFUSES when any case has no reading
       [[an-unnamed-outcome-reads-as-no-outcome]].
-      🙋 **BACK TO JOOST (the ruling's own order: "observable first", then
-      evaluator scratch):** these cells ARE readable, but only as the
+      🏗️ **RULED BY JOOST, 2026-09-25: *"Stop here"*** — the N set ends with
+      `TTYPOS` `FNKSWI` `PTRFIL` `ESCCNT` `GRPHED` `DIMFLG` `SUBFLG` `PRMFLG`
+      `PRTFLG`; `ENDFOR` `TEMP` `ARYTA2` `DSCTMP` `ARG` `DECCNT` `HOLD*`
+      `LINWRK` stay a STATED divergence (they hold the reference's internal
+      pointers and scratch). The question as asked:
+      ~~🙋 BACK TO JOOST (the ruling's own order: "observable first", then
+      evaluator scratch): these cells ARE readable, but only as the
       reference's internal pointers; matching them is a re-layout of zerobas's
       evaluator, priced in the 100s of bytes and a redesign, for values a
       program can only read as addresses of the reference's own buffers. Stop
       the N set here (done: `TTYPOS` `FNKSWI` `PTRFIL` `ESCCNT` `GRPHED`
-      `DIMFLG` `SUBFLG` `PRMFLG` `PRTFLG`), or pursue the scratch?
+      `DIMFLG` `SUBFLG` `PRMFLG` `PRTFLG`), or pursue the scratch?~~
       🟢 **`TEMPPT` SHIPPED (2026-09-25): the temp pool's cursor IS the
       published `TEMPPT` and the pool grows UP from `TEMPST`, as the
       reference's.** At rest the VG-8020 reads `$F67A` (the empty pool's base)
@@ -2109,9 +2114,12 @@ item — do **one item per session** to keep context lean.
       program may trust `PEEK(&HFC4A)` as the top of its own RAM (the usual
       way to site machine code). On zerobas the same program BLOADs over the
       interpreter's workspace. Filed as its own item below (D-HIMEMLIE).
-      🙋 **BACK TO JOOST (the rung's rule: adjustments are his)** — which
+      ~~🙋 **BACK TO JOOST (the rung's rule: adjustments are his)** — which
       lever, if any, to pull (each priced, none built; the item's own marker
-      stays 🤖 for the D-ADDR29 arc below it):
+      stays 🤖 for the D-ADDR29 arc below it):~~
+      🏗️ **RULED BY JOOST, 2026-09-25: *"Drop DETOKBUF"*** (lever 1, as
+      recommended) — render LIST/ASCII-SAVE a token at a time; +1280 B on both
+      builds. The table below is kept as the priced record:
       | lever | gain | both builds? | what it takes |
       |---|---|---|---|
       | (1) **drop `DETOKBUF`** — render LIST/ASCII-SAVE a token at a time, as the reference's layout implies | **+1280 B** (disk build goes 635 B AHEAD of the CF-3300) | yes | sub-ROM detok rework (sub page 0 434 B / page 1 423 B free); a speed check on LIST |
@@ -2151,7 +2159,7 @@ item — do **one item per session** to keep context lean.
       all three SAME — HIT. ⚠️ The CF-3300 boots in SCREEN 1, so it cannot be
       scraped without a reset; per the ruling it is not the target here.
 
-- [ ] 🔴 **D-HIMEMLIE — zerobas's `HIMEM` SAYS `$F380` WHILE ZEROBAS LIVES AT
+- [x] 🔴 **D-HIMEMLIE — zerobas's `HIMEM` SAYS `$F380` WHILE ZEROBAS LIVES AT
       `$DB00..$F37F`**
       🎚️ TIER 4 — RAM usage, goal (b) *same addresses*: the published cell
       carries a value whose MEANING is wrong, not just a different number.
@@ -2193,12 +2201,21 @@ item — do **one item per session** to keep context lean.
       `min(HIMEM, TXTMAX)`), so the cell claims RAM zerobas still uses. Below
       `$DB00` zerobas gives **242 B MORE** than the reference at every
       address (its channel table is 230 B smaller, plus the margins).
-      🙋 **NEEDS-JOOST** — the same trade as goal (b) vs meaning: boot
+      🏗️ **RULED BY JOOST, 2026-09-25: *"$DB00, truthful"*** — boot `HIMEM`
+      = zerobas's own ceiling (`TXTMAX`), so code sited under it is safe; the
+      `CLEAR` rule stays as measured (it already matches).
+      ✅ **FIXED 2026-09-25:** the cold boot stores `TXTMAX` into `HIMEM`
+      (`basic/interp.asm`, 6 B page 1; symbolic, so it follows `TXTMAX` when
+      D-DETOKBUF raises it). Every reader already takes `min(HIMEM, TXTMAX)`,
+      so no answer moved: `scratchpad/ramlayout_hm.out` — zerobas `HIMEM`
+      `$DB00`, `FRE(0)` 22763 as before; `scratchpad/himem_after.out` — the
+      `CLEAR` rows still 0/12. 🔮 Predicted both — HIT.
+      ~~🙋 NEEDS-JOOST — the same trade as goal (b) vs meaning: boot
       `HIMEM` = `$DB00` makes the cell TRUE (a program siting code under it
       is safe) but makes it DIFFER from the VG-8020's `$F380`; keeping `$F380`
       matches the number and keeps the hazard. And for (b): clamp the stored
       value to `$DB00`, refuse above it, or leave it. Each is a few ROM bytes;
-      none is built.
+      none is built.~~
 
 - [x] 🔬 **PROMOTE THE THREE ASCII/MERGE DISK PROBES INTO THE BATTERY — THEIR
       EXCUSE'S PREMISE CHANGED WHEN STEP 11 SHIPPED**
@@ -5722,7 +5739,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:24663 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:24680 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -5888,7 +5905,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:10681 (T-6FE392)8 (T-529ABE)` from `TODO.md:22317 (T-529ABE)`: a
+      `TODO.md:10698 (T-6FE392)8 (T-529ABE)` from `TODO.md:22334 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -11525,7 +11542,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:22317 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:22334 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

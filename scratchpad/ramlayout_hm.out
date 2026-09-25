@@ -1,0 +1,35 @@
+Philips_VG_8020:
+   TXTTAB    $F676 = $8001
+   VARTAB    $F6C2 = $8003
+   STREND    $F6C6 = $8019
+   STKTOP    $F674 = $F0A0
+   MEMSIZ    $F672 = $F168
+   FRETOP    $F69B = $F119
+   HIMEM     $FC4A = $F380
+   FRE(0) = 28793
+C-BIOS_MSX1_EU_REPACK_NODISK:
+   TXTTAB    $F676 = $8001
+   PRGEND    $E026 = $8001
+   CSP       $E050 = $D8FB
+   CTLTOP    $E052 = $D906
+   POOLSIZE  $E232 = $00C8
+   HIMEM     $FC4A = $DB00
+   FRE(0) = 22763
+National_CF-3300:
+   TXTTAB    $F676 = $8001
+   VARTAB    $F6C2 = $8003
+   STREND    $F6C6 = $8019
+   STKTOP    $F674 = $DB97
+   MEMSIZ    $F672 = $DC5F
+   FRETOP    $F69B = $DC10
+   HIMEM     $FC4A = $DE77
+   FRE(0) = 23408
+C-BIOS_MSX1_EU_REPACK_DISK:
+   TXTTAB    $F676 = $8001
+   PRGEND    $E026 = $8001
+   CSP       $E050 = $D8FB
+   CTLTOP    $E052 = $D906
+   POOLSIZE  $E232 = $00C8
+   HIMEM     $FC4A = $DB00
+   FRE(0) = 22763
+refcache: 2 hit, 2 miss, 2 stored
