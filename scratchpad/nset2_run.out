@@ -1,0 +1,19 @@
+SAME DIMFLG    0/12  
+DIFF ENDFOR    12/12  ctl:46|0 num:50|0 int:51|0 str:54|0 dim:53|0 for:58|0
+DIFF ENDFOR+1  12/12  ctl:244|0 num:244|0 int:244|0 str:244|0 dim:244|0 for:244|0
+SAME SUBFLG    0/12  
+DIFF TEMP      12/12  ctl:54|0 num:65|0 int:59|0 str:60|0 dim:54|0 for:65|0
+DIFF TEMP+1    12/12  ctl:128|0 num:128|0 int:128|0 str:128|0 dim:128|0 for:128|0
+SAME PRMFLG    0/12  
+DIFF ARYTA2    12/12  ctl:14|0 num:25|0 int:19|0 str:20|0 dim:14|0 for:25|0
+DIFF ARYTA2+1  12/12  ctl:128|0 num:128|0 int:128|0 str:128|0 dim:128|0 for:128|0
+SAME DECCNT    0/12  
+DIFF DECCNT+1  12/12  ctl:67|0 num:67|0 int:67|0 str:67|0 dim:67|0 for:67|0
+DIFF DSCTMP    12/12  ctl:6|0 num:6|0 int:6|0 str:6|0 dim:6|0 for:6|0
+DIFF DSCTMP+1  12/12  ctl:47|0 num:47|0 int:47|0 str:45|0 dim:47|0 for:47|0
+DIFF DSCTMP+2  12/12  ctl:241|0 num:241|0 int:241|0 str:241|0 dim:241|0 for:241|0
+SAME PRTFLG    0/12  
+DIFF ARG       12/12  ctl:65|0 num:65|0 int:65|0 str:65|0 dim:65|0 for:65|0
+
+DIFF: 11/16 bytes
+refcache: 0 hit, 2 miss, 2 stored

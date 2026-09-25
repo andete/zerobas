@@ -1992,8 +1992,32 @@ item — do **one item per session** to keep context lean.
       path" has no observable except USR, which is done. It would cost bytes
       at every integer site for a value nothing can see; revisit only with a
       measurement that can.
-      ➡️ **NEXT:** S2b's heap half (return a released body at FRETOP), or
-      `TEMPPT`'s value/direction, or the N set's scratch (`ARG` etc.).
+      📏 **THE N SET'S EVALUATOR SCRATCH, MEASURED (2026-09-25,
+      `scratchpad/nset2_probe.py` → `scratchpad/nset2_run.out`): 12 operations,
+      16 bytes, each captured into an array on the operation's own line.**
+      `DIMFLG` `SUBFLG` `PRMFLG` `PRTFLG` and `DECCNT`+0 already read the same
+      after every operation. The other 11 bytes differ in EVERY case — the
+      no-op `ctl` included — because what a program reads there is the
+      reference's INTERNAL pointers: `ENDFOR` (`$F42E`+) and `TEMP`/`ARYTA2`
+      point into its own direct-line buffer and array area, `DSCTMP` is the
+      readout's own `MID$` descriptor, `ARG`/`DECCNT`+1 its math scratch.
+      Matching them means reproducing the reference's internal layout (its
+      line-buffer address, its FOR-frame bookkeeping), not adding stores.
+      🔴 **THE FIRST RUN CALLED ALL 16 SAME ON ZERO READINGS:** the readout
+      array needed `DIM` (16 > 10), every case raised `Subscript out of range`
+      on BOTH machines, and the scorer skipped unread cases and printed SAME.
+      The probe now REFUSES when any case has no reading
+      [[an-unnamed-outcome-reads-as-no-outcome]].
+      🙋 **BACK TO JOOST (the ruling's own order: "observable first", then
+      evaluator scratch):** these cells ARE readable, but only as the
+      reference's internal pointers; matching them is a re-layout of zerobas's
+      evaluator, priced in the 100s of bytes and a redesign, for values a
+      program can only read as addresses of the reference's own buffers. Stop
+      the N set here (done: `TTYPOS` `FNKSWI` `PTRFIL` `ESCCNT` `GRPHED`
+      `DIMFLG` `SUBFLG` `PRMFLG` `PRTFLG`), or pursue the scratch?
+      ➡️ **NEXT (autonomous):** S2b's heap half (return a released body at
+      FRETOP), or `TEMPPT` (at rest the reference reads `$F67A`, the empty
+      pool; zerobas's `$F678` reads 0).
       🔪 **FOUND ON THE WAY — D-KNIFENOREAD, FIXED:** `scratchpad/kwknife.py`
       scored a cut whose sweep printed NO verdict as LOAD-BEARING
       (`v != "SUPPORTED"`). The knife run of the D-BUFMERGE chain read
@@ -5685,7 +5709,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:24626 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:24650 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -5851,7 +5875,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:10644 (T-6FE392)8 (T-529ABE)` from `TODO.md:22280 (T-529ABE)`: a
+      `TODO.md:10668 (T-6FE392)8 (T-529ABE)` from `TODO.md:22304 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -11488,7 +11512,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:22280 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:22304 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
