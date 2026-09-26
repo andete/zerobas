@@ -394,9 +394,22 @@ _PLUG_TAG = "NEEDS-PLUG:"
 # ⚠️ THE STATE IS WRITTEN INTO THE PROLOGUE TEXT (`set ::zb_rig_state ...`) so
 # that the reference cache keys on it: the board is set OUTSIDE run_cases, and
 # two groups with different states would otherwise share one cached answer.
-# ⚠️ NO BOARD, NO READING: without a board answering `id`, these rows run
-# crunch-only and say so -- they are never scored, so a machine without the rig
-# cannot award or refute the joystick forms.
+# ⚠️ NO BOARD, NO NEW READING: without a board answering `id`, these rows run
+# crunch-only. 🏗️ Joost, 2026-09-26: *"carry last verdict; ask me to plug in the
+# board when really needed"* -- he does not keep the board attached. So each one
+# CARRIES its last board-backed verdict from the previous pin, marked `carried`
+# with the date it was really measured, and the report lists them apart; a row
+# never measured on the board stays unscored. A carried verdict is from an OLDER
+# build by construction -- plug the board in when a change touches STICK/STRIG.
+# 🔴 THE CARRY LIVES IN A TRACKED FILE, NOT IN THE PIN. The first cut carried
+# from build/kwsweep-verdicts.json and was proven with `ZEROBAS_RIG=off` at the
+# prompt -- then the battery's own kwsweep, which runs after `rm -rf build`, found
+# no pin, carried nothing, and turned STICK/STRIG PARTIAL (tiers-md-check red).
+# RIG_CARRY survives a clean build, and git shows when it was last measured. It
+# is written ONLY by a run that found the board, so it only ever holds readings
+# a board really produced.
+RIG_CARRY = _os.path.join(_os.path.dirname(_os.path.dirname(_os.path.dirname(
+    _os.path.abspath(__file__)))), "scratchpad", "kwsweep-rig-carry.json")
 _RIG_TAG = "NEEDS-RIG:"
 
 
@@ -4340,10 +4353,21 @@ def main() -> int:
     # board those rows lose their exec line -- crunch-only, listed with the
     # reason under NOT EXECUTED, and never scored.
     RIG = {"port": None}
+    CARRY: dict[str, dict] = {}         # rig rows carrying a board-backed verdict
     if any(_rigstate_of(_row_rigs(r[4])) for r in rows if r[2] is not None):
         RIG["port"] = rigfw.find()
         print(f"rig: {RIG['port'] or 'NO BOARD -- NEEDS-RIG: rows run crunch-only'}")
         if RIG["port"] is None:
+            try:
+                import json as _json
+                _prev = _json.load(open(RIG_CARRY))
+            except (OSError, ValueError):
+                _prev = {"rows": {}}
+            for k, c, ex, m, n in rows:
+                pr = _prev.get("rows", {}).get(k)
+                if _rigstate_of(_row_rigs(n)) and ex is not None and pr \
+                        and pr.get("measured"):
+                    CARRY[k] = {"verdict": pr["verdict"], "measured": pr["measured"]}
             rows = [(k, c, None, m,
                      "NOT RUN -- NEEDS-RIG: no rigfw board answered `id` on "
                      "/dev/cu.usbmodem* (tools/rigfw). " + n)
@@ -4625,6 +4649,14 @@ def main() -> int:
                 sv, cons = "not-run", "crunch-only — support UNKNOWN"
             print(f"{key:10} {tok:7} {sv:11} {cons}")
 
+    if CARRY:
+        print()
+        print("=" * 78)
+        print(f"CARRIED -- {len(CARRY)} rig row(s): no board answered, so each keeps its "
+              "last\nBOARD-BACKED verdict (Joost 2026-09-26). Not measured on this build.")
+        print("=" * 78)
+        for k, cv in CARRY.items():
+            print(f"  {k:12} {cv['verdict']:10} measured {cv['measured']}")
     skipped = [(k, n) for k, _, ex, _, n in rows if ex is None]
     if skipped:
         print()
@@ -4682,8 +4714,34 @@ def main() -> int:
                               "form": row_form(notes[key]),
                               # the statement it is about, when derivation is wrong
                               "subject": row_subject(notes[key]),
-                              "stmt": stmt[key]}
+                              "stmt": stmt[key],
+                              # D-RIGFW: when a rig row was really measured
+                              **({"measured": _time.strftime("%Y-%m-%d %H:%M:%S")}
+                                 if _rigstate_of(_row_rigs(notes[key])) else {})}
                         for key, s in executed}}
+        # D-RIGFW: rig rows with no board this run keep their last board-backed
+        # verdict -- visibly: `carried`, and the date of the real measurement.
+        if RIG["port"] is not None:
+            # a board answered: these rig verdicts are real -- keep them for
+            # the runs that will not have the board (RIG_CARRY)
+            _carry = {"note": "kwsweep NEEDS-RIG: verdicts from the last run that "
+                              "FOUND the rigfw board; board-less runs carry these "
+                              "(Joost 2026-09-26). Written by basic_probe_kwsweep.py.",
+                      "rom_fingerprint": fp_after,
+                      "rows": {k: {"verdict": r["verdict"], "measured": r["measured"]}
+                               for k, r in pin["rows"].items() if "measured" in r}}
+            try:
+                with open(RIG_CARRY, "w", encoding="utf-8") as fh:
+                    json.dump(_carry, fh, indent=1, sort_keys=True)
+                    fh.write("\n")
+            except OSError as e:
+                print(f"rig carry: NOT written ({e})")
+        for key, cv in CARRY.items():
+            pin["rows"][key] = {"verdict": cv["verdict"], "weak": False,
+                                "proves": None, "form": row_form(notes[key]),
+                                "subject": row_subject(notes[key]),
+                                "stmt": stmt[key], "carried": True,
+                                "measured": cv["measured"]}
         _root = _os.path.dirname(_os.path.dirname(_os.path.dirname(_os.path.abspath(__file__))))
         pin_path = _os.path.join(_root, "build", "kwsweep-verdicts.json")
         try:

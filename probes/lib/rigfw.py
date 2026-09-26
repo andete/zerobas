@@ -105,7 +105,12 @@ def _ask(fd: int, cmd: str, timeout: float = 1.5) -> list[str]:
 
 
 def find() -> str | None:
-    """The serial port of a board answering `id` with `rigfw 1`, or None."""
+    """The serial port of a board answering `id` with `rigfw 1`, or None.
+
+    `ZEROBAS_RIG=off` answers None without touching any port: the board-absent
+    path (kwsweep's carried verdicts) is testable with the board still plugged."""
+    if os.environ.get("ZEROBAS_RIG", "").lower() in ("off", "0", "no"):
+        return None
     for port in sorted(glob.glob("/dev/cu.usbmodem*")):
         try:
             fd = _open(port)

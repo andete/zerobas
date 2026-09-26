@@ -5891,7 +5891,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:25088 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:25105 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -6057,7 +6057,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:10850 (T-6FE392)8 (T-529ABE)` from `TODO.md:22742 (T-529ABE)`: a
+      `TODO.md:10850 (T-6FE392)8 (T-529ABE)` from `TODO.md:22759 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -11694,7 +11694,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:22742 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:22759 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -17137,6 +17137,23 @@ finds zero shared names (a renamed block would otherwise make it silently blind)
       constant does not care about the clock.
       🔮 Predicted all five SUPPORTED with those values — the four held rows
       HIT; `onstrig_rig` MISSED twice before the cause was found.
+      🏗️ **THE BOARD IS NOT KEPT ATTACHED (Joost, 2026-09-26: *"carry last
+      verdict; ask me to plug in the board when really needed"*).** With no
+      board, each NEEDS-RIG: row now CARRIES its last board-backed verdict from
+      the previous pin — `carried: true` plus the date it was really
+      `measured` — and kwsweep prints them under CARRIED; a row never measured
+      on the board stays unscored. Proven with the board still plugged via
+      `ZEROBAS_RIG=off` (rigfw.find answers None): all five carried SUPPORTED
+      from `2026-09-26 15:45:07` and the regenerated tier sheet was identical.
+      ⚠️ A carried verdict is from an OLDER build by construction — ask Joost to
+      plug the board in when a change touches STICK/STRIG or the rig itself.
+      🔴 **FIRST CUT CARRIED FROM THE WRONG PLACE:** it read the previous
+      `build/kwsweep-verdicts.json`, and the battery's kwsweep runs after
+      `rm -rf build` — no pin, nothing carried, STICK/STRIG PARTIAL,
+      tiers-md-check red. The carry is now the TRACKED
+      `scratchpad/kwsweep-rig-carry.json`, written only by a run that FOUND the
+      board; seeded by hand from the 15:45:07 board run (same ROM fingerprint,
+      stated in the file). Re-proven with the build pin deleted.
 
 - [x] ✅ **CLOSED 2026-09-17 (D-FNKLINE + D-SCROLLBOUND + D-KEYROW): the
       function-key display line PAINTS, the row is RESERVED, and all ten cells
