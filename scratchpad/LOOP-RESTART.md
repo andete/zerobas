@@ -30,6 +30,23 @@ symmetric. Treat that group as closed-by-measurement unless a new signal appears
 | PLAY X shape | *"Tenant walks the chain"* — the MML tenant reads the variable chain in RAM itself (spec-basic-audio-play §7.12); main ~0 B, no carve needed |
 | the rig | Joost's RP2040-Zero is **CONNECTED to the laptop since 2026-09-25** (`/dev/cu.usbmodem1101`, running firmware, not BOOTSEL; seen read-only, nothing flashed). **UN-PARKED 2026-09-26 and FLASHED with `tools/rigfw/rigfw.ino`:** headless joystick WORKS (bind `msxjoystick1_config` to `joy1`, which this install leaves EMPTY); headless mouse does NOT reach PAD/PDL. Next: STICK/STRIG rows — the rig item in TODO |
 
+### ☀️ DAY 2026-09-26 (INTERACTIVE, JOOST PRESENT) — READ THIS FIRST
+
+Shipped, all measured against the VG-8020 and pushed: the RP2040-Zero rig
+(`68482841` firmware, `d02f5777` STICK/STRIG rows — both NO KNOWN GAP),
+`df970b0a` windowed PAD findings, `57c1476f` **D-TYPEBLIND** (keys lost while
+tokenising), `8c743e78` **D-CURSORBLOCK** (the block cursor), `598c51f0`
+**D-SCR1PROMPT** (the prompt keeps SCREEN 1), `3422ff3f` **D-KEYWIDTH** (key row
+follows WIDTH), `d88e5e3c` rig rows CARRY their verdict, `e2079884`
+**D-INSMODE** (INS/DEL/BS shift; C-BIOS patch #3 for the INS/DEL key codes).
+🔌 **THE RIG IS UNPLUGGED AND STAYS SO** — it crashes a game of Joost's. Rig rows
+carry from `scratchpad/kwsweep-rig-carry.json`; ASK before any run that needs
+the board (windowed PAD work, STICK/STRIG changes), and say when he may unplug.
+⚠️ **Walls (clean build 2026-09-26): sub page 1 was 11 B free** — the next sub
+page-1 slice needs a carve first.
+➡️ **OPEN, TIER 1:** D-HOMEKEY (HOME is CLS on C-BIOS), the PAD touchpad
+switch/coordinates (needs the rig + a window). TIER 3: D-INSBOTTOM.
+
 ### 🌙 NIGHT 2026-09-25 → 26 — READ THIS FIRST, IT SUPERSEDES EVERYTHING BELOW
 
 Joost ruled three questions on 2026-09-25 (recorded in TODO): **drop DETOKBUF**
