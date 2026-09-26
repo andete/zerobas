@@ -242,13 +242,15 @@ dsi_lp:
                 ld      c,a
                 ld      a,(hl)
                 sbc     a,c
-                jr      nc,dsi_nb
-                add     a,10
-                scf
-                jr      dsi_st
-dsi_nb:
-                or      a
+                jr      nc,dsi_st           ; no borrow: CF is already 0
+                add     a,10                ; A was $F6..$FF: +10 always carries
+                                            ; out, so CF=1 IS the borrow
 dsi_st:
+                ; 🏎️ T5 (2026-09-26): this loop is fp_div's inner loop and ~50% of
+                ; a SQR's time (PC samples). It carried an `or a` on the no-borrow
+                ; path and `scf` + `jr` on the borrow path that set a carry the
+                ; `sbc` / `add a,10` had ALREADY set -- 4 bytes, and 70/84 T a
+                ; digit down to 66/68. dec/dec/djnz leave CF alone.
                 ld      (hl),a
                 dec     hl
                 dec     de

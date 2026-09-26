@@ -5913,7 +5913,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:25310 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:25323 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -6079,7 +6079,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:10872 (T-6FE392)8 (T-529ABE)` from `TODO.md:22964 (T-529ABE)`: a
+      `TODO.md:10872 (T-6FE392)8 (T-529ABE)` from `TODO.md:22977 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -11716,7 +11716,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:22964 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:22977 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -13208,6 +13208,19 @@ list. **When a slice lands, grep this list for what it just shipped.**
       0.73× on a real change (45.2 vs 31.8 ms — zerobas's re-init is FASTER),
       and a same-width `WIDTH` is below measurement on BOTH machines.** Neither
       of its effects was ever slow; the 45× was two contaminations in turn.
+      📏 **RE-MEASURED 2026-09-26 (loop, `scratchpad/sqrtime_run.out`): SQR IS NOT
+      THE GAP — DIVISION IS.** A loop timed in `TIME` ticks on both machines:
+      `SQR(I)` ×30 reads **173** on the VG-8020 and **42** here (zerobas ~4×
+      FASTER — the "SQR 8.6×" above is a stale / different-shape reading); `I/7`
+      ×300 reads **162** there and **637** here — **3.9× slower**. A PC-sample
+      profile of zerobas's SQR put ~70% of its time in `fp_div`'s restoring
+      long division over UNPACKED BCD (`dig15_sub_inplace`'s loop alone ~50%),
+      so division is the lever for SQR too. 🏎️ **First cut shipped:**
+      `dig15_sub_inplace` carried an `or a`, a `scf` and a `jr` that set a carry
+      the `sbc` / `add a,10` had already set — removed: **637 → 615** ticks
+      (−3.5%; predicted ~600, a smaller hit), −4 B of the low region (clean build 2026-09-26), 63/63 unit
+      files green. The real lever is structural (packed BCD, as the reference's
+      mathpack) and is not started.
       🤖 AUTONOMOUS — the charter half is ANSWERED (the STANDING sequencing of
       2026-09-02: speed is a real defect), so what remains under it is measurable work.
       ⚠️ **RANKED LAST BY THAT SAME RULING** — every open DIVERGENCE outranks it, so
