@@ -738,22 +738,26 @@ FORMS: dict[str, tuple[tuple[str, ...], str]] = {
         ("cursor-keys", "joystick-port"),
         "`STICK(<n>)` -- n=0 reads the CURSOR KEYS off the keyboard matrix and n=1/2 "
         "read a JOYSTICK PORT's direction lines. Different hardware, different code "
-        "inside GTSTCK, so two behaviours and not two indices. \U0001f534 THE PORT FORM IS "
-        "INSTRUMENT-BLOCKED, AND IT IS WORSE THAN \"driven from the host\" "
-        "(D-RIGBLOCK, 2026-09-15): THIS openMSX HAS NO JOYSTICK PLUGGABLE AT ALL. "
-        "Asked directly, `joyporta` accepts `mouse`, `trackball`, `arkanoidpad`, "
-        "`paddle`, `ninjatap` and `touchpad`; `joystick1`, `joystick2`, "
-        "`keyjoystick1` and `keyjoystick2` are every one of them \"No such "
-        "pluggable\". So there is nothing to plug and nothing to poke.",
+        "inside GTSTCK, so two behaviours and not two indices. \U0001f7e2 THE PORT FORM "
+        "HAS A REAL STICK SINCE D-RIGFW (2026-09-26): the RP2040-Zero rig "
+        "(tools/rigfw) is a genuine USB joystick, which SDL enumerates even "
+        "headless, reaching port A through openMSX's `msxjoystick1` once its "
+        "config binds `joy1` -- kwsweep's `NEEDS-RIG:` rows. It was "
+        "INSTRUMENT-BLOCKED before that (D-RIGBLOCK, 2026-09-15): openMSX's Tcl "
+        "cannot drive a joystick and `joystick1`/`keyjoystick1` are \"No such "
+        "pluggable\" -- still true, and the reason the rig is hardware. Without "
+        "the board attached those rows run crunch-only and award nothing.",
     ),
     "STRIG": (
         ("space-bar", "joystick-trigger"),
         "`STRIG(<n>)` -- n=0 is the SPACE BAR, read off the keyboard matrix; n=1..4 "
         "are the two triggers of each joystick port, read off the PSG. The same "
-        "split as STICK and for the same reason. \U0001f534 The trigger form is "
-        "INSTRUMENT-BLOCKED for the same measured reason STICK's port form is "
-        "(D-RIGBLOCK, 2026-09-15) -- no joystick pluggable exists in this openMSX, "
-        "and the `joystickports` debuggable will not take a write.",
+        "split as STICK and for the same reason. \U0001f7e2 The trigger form is "
+        "driven by the same RP2040-Zero rig as STICK's port form (D-RIGFW, "
+        "2026-09-26); before it, it was INSTRUMENT-BLOCKED for the same measured "
+        "reason (D-RIGBLOCK, 2026-09-15) -- the `joystickports` debuggable will "
+        "not take a write, and the PSG-latch injection fakes a trigger behind "
+        "GTTRIG rather than pressing one.",
     ),
     "FOR": (
         ("ascending", "step", "negative-step"),

@@ -4991,7 +4991,8 @@ more than one keyword in their crunch body and declare no `SUBJECT:`; every one 
 a verb plus a MODIFIER (`STEP`, `TO`, `FOR`, `ON`) or a composite `stmt_subject`
 already resolves, and the three genuine mis-attributions were all the
 `wrapper(inner)` shape — `a=asc(mki$(...))` and friends — which are now tagged.
-⚠️ **`STICK`, `STRIG` and `PDL` ARE DELIBERATELY NOT AWARDED.** Their rows read 0,
+⚠️ **`STICK`, `STRIG` and `PDL` ARE DELIBERATELY NOT AWARDED** *(by THESE rows; the
+joystick forms of STICK and STRIG have real-stick rows since D-RIGFW, 2026-09-26)*. Their rows read 0,
 which is the correct answer with nothing plugged in **and also exactly what a stub
 returns** — a reading that cannot fail. `input-devices-acceptance` exercises them
 properly; the kwsweep denominator cannot, and a bar met by an unfailable row would
@@ -5890,7 +5891,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:24875 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:24915 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -6056,7 +6057,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:10849 (T-6FE392)8 (T-529ABE)` from `TODO.md:22529 (T-529ABE)`: a
+      `TODO.md:10850 (T-6FE392)8 (T-529ABE)` from `TODO.md:22569 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -11693,7 +11694,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:22529 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:22569 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -16688,19 +16689,34 @@ verifies that the two copies cannot diverge unnoticed, and it REFUSES if it ever
 finds zero shared names (a renamed block would otherwise make it silently blind).
 📏 Main page 1 free: **3 B**, unchanged (2026-09-15) — an equate costs nothing.
 
-- [ ] 🛑 **RULING 4's RIG CANNOT BE BUILT FOR THREE OF ITS FOUR TARGETS —
-      openMSX HAS NO JOYSTICK TO DRIVE. MEASURED, NOT SHRUGGED AT.**
-      🎚️ TIER 1 — happy path: `STICK`, `STRIG` and `PAD` are stuck at 1/2, 1/2
-      and 2/3 forms for want of an INSTRUMENT, not an implementation.
+- [ ] 🛑 **RULING 4's RIG — STICK AND STRIG ARE NOW DRIVEN BY A REAL USB
+      STICK (D-RIGFW, 2026-09-26); `PAD`'s SWITCH STILL HAS NO INSTRUMENT.**
+      *(was: "CANNOT BE BUILT FOR THREE OF ITS FOUR TARGETS — openMSX HAS NO
+      JOYSTICK TO DRIVE")*
+      🎚️ TIER 1 — happy path: `PAD`'s `switch` form is stuck for want of an
+      INSTRUMENT, not an implementation. (STICK's and STRIG's joystick forms were
+      the other two and are freed — kwsweep's NEEDS-RIG: rows, below.)
       🔴 **THIS ITEM CARRIED NO `🎚️` TAG UNTIL 2026-09-17, AND AN UNTAGGED OPEN
       ITEM IS IN NO TIER LIST AND BARS NO ATTAINMENT** — invisible in the
       direction that flatters the sheet. `tools/tier_table.py` now REFUSES on
       one. ⚠️ The tag must be on its OWN line: `TAG` is anchored at line start,
       so a tag sharing the `- [ ]` line parses as nothing, which is how the
       first attempt at this fix left the item still untagged.
-      ⛔ **BLOCKED** — **PARKED BY JOOST, 2026-09-24: *"Park it."*** The
+      ~~⛔ **BLOCKED** — **PARKED BY JOOST, 2026-09-24: *"Park it."*** The
       `rigstick` tool stays in the tree, untouched and out of the battery;
-      nothing here is picked up until he un-parks it.
+      nothing here is picked up until he un-parks it.~~ Un-parked 2026-09-26.
+      ⛔ **WHAT REMAINS IS `PAD`'s SWITCH, AND IT NEEDS A WINDOW** — the
+      touchpad's switch is a host MOUSE BUTTON, and openMSX takes touchpad and
+      paddle input only from mouse events on its own window (D-RIGFW (2),
+      below: headless, the board's mouse reaches nothing). A windowed run is a
+      different apparatus. 🕗 Joost, 2026-09-26: *"you can run paddle tests
+      after 8 am when Im not playing a game on the computer"* — so it is
+      schedulable, not ruled out; it is not built yet.
+      🤖 **AUTONOMOUS** — inside that window only: measure FIRST whether a
+      WINDOWED openMSX (a renderer, not `none`) receives the board's mouse at
+      all: its window must hold focus and the pointer, so the run takes over
+      Joost's screen and cursor while it lasts. If it does, `PAD(3)`'s switch
+      and a DRIVEN `PDL` become rows; if not, say so here and stop.
       ~~🙋 NEEDS-JOOST~~ (parked above) — he ruled *"build a rig, not an exemption"* (2026-09-15,
       ruling 4). The rig is not buildable with this emulator, and that is his call
       to take, not mine to work around.
@@ -16919,11 +16935,35 @@ finds zero shared names (a renamed block would otherwise make it silently blind)
       ⚠️ Every probe run sets `save_settings_on_exit false` first:
       `settings.xml` was byte-identical after every run. A probe that binds the
       stick without that would PERSIST the binding into the battery's settings.
-      ➡️ **NEXT (autonomous, TIER 1/3): a rig library + `STICK`/`STRIG` rows
-      against the VG-8020** (`STICK(1)`, `STRIG(1)`, `ON STRIG GOSUB` with a
-      real trigger — triggers 1..4 were only reachable by the PSG-latch
-      injection until now). PAD/PDL stay unreachable headless; a WINDOWED run
-      is a different apparatus and Joost's call.
+      ~~➡️ **NEXT (autonomous, TIER 1/3): a rig library + `STICK`/`STRIG` rows
+      against the VG-8020**~~ ✅ **DONE 2026-09-26 (Joost: *"go ahead with the
+      STICK/STRIG rows"*).** `probes/lib/rigfw.py` drives the board (a state
+      like `upright+trig1`, applied from centre; any reply but `OK` raises;
+      selftest 17/17 with 10 refusal arms). kwsweep's eighth rig,
+      `NEEDS-RIG:<state>`, sets the board before each machine's boot, binds
+      `msxjoystick1` in the prologue, and centres it afterwards; with no board
+      the rows run crunch-only and are never scored. Five rows, each with a
+      second reading that must stay idle, ALL SUPPORTED against the VG-8020:
+      | row | board | reads (both) |
+      |---|---|---|
+      | `stick_rig` (FORM joystick-port) | upright | `2 0` — STICK(1), STICK(0) |
+      | `stick_rig_b` | downleft | `6` |
+      | `strig_rig` (FORM joystick-trigger) | trig1 | `-1 0 0` — STRIG(1), (3), (0) |
+      | `strig_rig_b` | trig2 | `-1 0` — STRIG(3), (1) |
+      | `onstrig_rig` | pulse+trig1 | `2` — trigger 1 fires list SLOT 1 |
+      🔴 **`onstrig_rig` FIRST READ `0` ON BOTH MACHINES — AGREEING ON THE STUB
+      VALUE.** Two causes, found one at a time: (a) the trap fires on a PRESS,
+      and the board held the trigger from before boot, so no press ever fell in
+      the wait; (b) with a 2 Hz PULSE it still read 0, because the harness runs
+      openMSX `throttle off` — a whole boot-type-RUN took 1.8 s of wall time, so
+      a 120-frame wait passed in milliseconds (a polled count of STRIG(1)
+      transitions read **0**). A pulse state now sets `throttle on`; throttled,
+      the VG-8020 counts **9** transitions in 120 frames, fires the SECOND
+      handler of `60,80` (**2**) and the only handler of `,60` (**7**)
+      (`scratchpad/rigfw_trap_run.out`). Held states need no throttle — a
+      constant does not care about the clock.
+      🔮 Predicted all five SUPPORTED with those values — the four held rows
+      HIT; `onstrig_rig` MISSED twice before the cause was found.
 
 - [x] ✅ **CLOSED 2026-09-17 (D-FNKLINE + D-SCROLLBOUND + D-KEYROW): the
       function-key display line PAINTS, the row is RESERVED, and all ten cells

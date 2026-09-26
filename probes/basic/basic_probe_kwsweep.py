@@ -92,6 +92,7 @@ import cas_decode  # reads the recording back -- the NEEDS-BLANKTAPE: capture
 import cas_encode  # the clean-room .cas encoder -- the NEEDS-TAPE: fixture
 from bas_tokenise import make_multiline_program
 import omsx_repl  # typing-free KEYBUF-injection REPL driver
+import rigfw  # the RP2040-Zero input rig (tools/rigfw) -- NEEDS-RIG: rows
 import probe_report  # 🔴 D-KWFOOT: I3 -- every exit path that prints
                       # rows ends with a POSITIVE statement of what it measured
 
@@ -380,6 +381,32 @@ _HOLD_TAG = "NEEDS-HOLD:"
 # and PHASE E), not guesses.
 _PLUG_TAG = "NEEDS-PLUG:"
 
+# 🟢 D-RIGFW: THE EIGHTH RIG IS A REAL USB JOYSTICK. `NEEDS-RIG:<state>` puts the
+# RP2040-Zero (tools/rigfw/rigfw.ino, driven by probes/lib/rigfw.py) into a
+# state -- `upright`, `trig1`, `downleft+trig2` -- BEFORE each machine's boot and
+# holds it for the whole group, then centres it. The prologue binds openMSX's
+# `msxjoystick1` (port A) to that host stick.
+# 🔴 IT EXISTS BECAUSE NOTHING ELSE CAN MOVE A JOYSTICK PORT. Every STICK/STRIG
+# row before it read the KEYBOARD forms (n=0) or the idle 0 a stub returns;
+# openMSX's Tcl cannot drive a joystick (D-RIGBLOCK), and the PSG-latch injection
+# fakes a TRIGGER behind GTTRIG's back but never a direction. The board is a
+# genuine HID device, so SDL enumerates it even headless (measured, D-RIGFW).
+# ⚠️ THE STATE IS WRITTEN INTO THE PROLOGUE TEXT (`set ::zb_rig_state ...`) so
+# that the reference cache keys on it: the board is set OUTSIDE run_cases, and
+# two groups with different states would otherwise share one cached answer.
+# ⚠️ NO BOARD, NO READING: without a board answering `id`, these rows run
+# crunch-only and say so -- they are never scored, so a machine without the rig
+# cannot award or refute the joystick forms.
+_RIG_TAG = "NEEDS-RIG:"
+
+
+def _rigstate_of(rigs: tuple[str, ...]) -> str | None:
+    """The rigfw state a rig tuple asks for, or None."""
+    for r in rigs:
+        if r.startswith("rig:"):
+            return r[len("rig:"):]
+    return None
+
 
 def _plug_of(rigs: tuple[str, ...]) -> tuple[str, ...]:
     """The openMSX `plug` prologue a rig tuple asks for, or ()."""
@@ -564,7 +591,8 @@ def _row_prefix_tags(note: str) -> tuple[str, ...]:
     out = []
     for tok in note.split():
         if (tok in _RIG_TAGS or tok in _FLAG_TAGS
-                or tok.startswith(_HOLD_TAG) or tok.startswith(_PLUG_TAG)):
+                or tok.startswith(_HOLD_TAG) or tok.startswith(_PLUG_TAG)
+                or tok.startswith(_RIG_TAG)):
             out.append(tok)
         else:
             break
@@ -584,10 +612,12 @@ def _row_rigs(note: str) -> tuple[str, ...]:
             return _RIG_TAGS[t]
         if t.startswith(_HOLD_TAG):
             return "hold:" + t[len(_HOLD_TAG):]
+        if t.startswith(_RIG_TAG):
+            return "rig:" + t[len(_RIG_TAG):]
         return "plug:" + t[len(_PLUG_TAG):]
     return tuple(_one(t) for t in _row_prefix_tags(note)
                  if t in _RIG_TAGS or t.startswith(_HOLD_TAG)
-                 or t.startswith(_PLUG_TAG))
+                 or t.startswith(_PLUG_TAG) or t.startswith(_RIG_TAG))
 
 
 def _rig_kwargs(rigs: tuple[str, ...]) -> dict:
@@ -1720,6 +1750,35 @@ SWEEP: list[tuple[str, str, str | None, str, str]] = [
      "returns. \U0001f534 IT IS ALSO THE RIG'S CONTROL, AND THAT IS NOT A CONFLICT: if it "
      "ever reads `[1w 0 ]` the matrix is not being reached and STRIG loses the form "
      "in the same breath -- one row, both jobs, and the failure is loud either way."),
+    # 🕹️ D-RIGFW: THE JOYSTICK-PORT FORMS, WITH A REAL STICK. The RP2040-Zero is
+    # held in the named state for the whole case (NEEDS-RIG:, see _RIG_TAG), and
+    # each row polls for up to 120 FRAMES like the hold rows above. Every row
+    # prints a SECOND reading that must stay idle -- STICK(0) with no key held, or
+    # the OTHER trigger -- so a routine that ignored `n` and read one source for
+    # all of them cannot pass.
+    ("stick_rig", 'a=stick(1)',
+     'S=0:T=TIME:W$="WWWWWWWWWWWWWWWWWW":IF STICK(1)THEN S=STICK(1):V$="VVVVVVV":IF S=0 AND TIME-T<120 THEN 20:PRINT"[3s";S;STICK(0);"]"',
+     "stored",
+     "NEEDS-RIG:upright SUBJECT:STICK FORM:joystick-port 2 = UP-RIGHT, off port A's "
+     "direction LINES (the PSG), with STICK(0) -- the cursor keys, nothing held -- "
+     "still 0 beside it. A direction CODE, not a flag: a stub or a keyboard read "
+     "cannot produce `2 0`"),
+    ("stick_rig_b", 'a=stick(1)',
+     'S=0:T=TIME:W$="WWWWWWWWWWWWWWWWWW":IF STICK(1)THEN S=STICK(1):V$="VVVVVVV":IF S=0 AND TIME-T<120 THEN 20:PRINT"[3w";S;"]"',
+     "stored",
+     "NEEDS-RIG:downleft SUBJECT:STICK 6 = DOWN-LEFT: the other diagonal, two "
+     "different lines, so `stick_rig`'s 2 is a decode and not a constant"),
+    ("strig_rig", 'a=strig(1)',
+     'S=0:T=TIME:W$="WWWWWWWWWWWWWWWWWW":IF STRIG(1)THEN S=-1:V$="VVVVVVV":IF S=0 AND TIME-T<120 THEN 20:PRINT"[3t";S;STRIG(3);STRIG(0);"]"',
+     "stored",
+     "NEEDS-RIG:trig1 SUBJECT:STRIG FORM:joystick-trigger -1: port A's trigger A "
+     "is down, and beside it STRIG(3) (port A's trigger B) and STRIG(0) (the space "
+     "bar) stay 0"),
+    ("strig_rig_b", 'a=strig(3)',
+     'S=0:T=TIME:W$="WWWWWWWWWWWWWWWWWW":IF STRIG(3)THEN S=-1:V$="VVVVVVV":IF S=0 AND TIME-T<120 THEN 20:PRINT"[3u";S;STRIG(1);"]"',
+     "stored",
+     "NEEDS-RIG:trig2 SUBJECT:STRIG -1 0: trigger B alone reads through n=3, and "
+     "n=1 stays 0 -- the index picks the BUTTON, not just the port"),
     ("attrkw",    'a$=attr$',    'PRINT"[";ATTR$;"]"',      "direct",
      "FORM:refuse D-KWDRAIN: bare ATTR$ raises Illegal function call -- so the word IS a token here; an undefined string variable prints empty instead"),
     ("stopkw",    'stop',        'PRINT"[T1]":STOP',        "stored",
@@ -1880,6 +1939,18 @@ SWEEP: list[tuple[str, str, str | None, str, str]] = [
      "NEEDS-HOLD:8,0x01 FORM:empty-slot-clears an EMPTY slot 0 clears the handler "
      "armed one statement earlier (spec-traps-t2-strig.md S3), so 0 fires in 120 "
      "frames with the space bar held down the whole time"),
+    # 🕹️ D-RIGFW: THE TRAP FROM A REAL JOYSTICK TRIGGER. `onstrig_b`'s program with
+    # `STRIG(1) ON` for `STRIG(0) ON` (same length, so lines 60 and 80 stay put):
+    # trigger 1 is list SLOT 1, so the SECOND handler fires. The trigger is PULSED
+    # (rigfw.Pulser): a trap needs a press inside its wait. Until the rig, triggers
+    # 1..4 were reachable only by faking the PSG latch (spec-traps-t2-strig.md §7.3).
+    ("onstrig_rig", 'on strig gosub 60,80',
+     'C=0:ON STRIG GOSUB 60,80:STRIG(1) ON:T=TIME:V$="VVVVVVVVVVVVVVVVVVVVVV":IF C=0 AND TIME-T<120 THEN 40:PRINT"[3v";C;"]":END:W$="WWWWWWWWWWW":C=1:RETURN:U$="UUUUUUUUUUUUUUUUUUUUUUUUUUU":C=2:RETURN',
+     "stored",
+     "NEEDS-RIG:pulse+trig1 2: joystick trigger 1 takes list SLOT 1, the SECOND "
+     "handler. A trap wired to the space bar only reads 0; one that took slot 0 "
+     "reads 1. \U0001f534 PULSED, NOT HELD: the trap fires on a PRESS, and a trigger "
+     "held since before boot read 0 on BOTH machines -- an agreeing stub value"),
     # 🔴 EVERY ON KEY ROW OPENS WITH `KEY n,""`, AND THE FIRST CUT WITHOUT IT WAS
     # `?noecho` ON THE REFERENCE AND A CLEAN READING ON ZEROBAS -- an apparatus
     # failure that reads exactly like a divergence. The hold lasts ~12 emulated
@@ -4265,6 +4336,20 @@ def main() -> int:
             return 2
     batch = not args.boot_per_case
 
+    # D-RIGFW: find the board ONCE, and only if a selected row needs it. With no
+    # board those rows lose their exec line -- crunch-only, listed with the
+    # reason under NOT EXECUTED, and never scored.
+    RIG = {"port": None}
+    if any(_rigstate_of(_row_rigs(r[4])) for r in rows if r[2] is not None):
+        RIG["port"] = rigfw.find()
+        print(f"rig: {RIG['port'] or 'NO BOARD -- NEEDS-RIG: rows run crunch-only'}")
+        if RIG["port"] is None:
+            rows = [(k, c, None, m,
+                     "NOT RUN -- NEEDS-RIG: no rigfw board answered `id` on "
+                     "/dev/cu.usbmodem* (tools/rigfw). " + n)
+                    if _rigstate_of(_row_rigs(n)) else (k, c, ex, m, n)
+                    for k, c, ex, m, n in rows]
+
     fp_before = _rom_fingerprint()
     print(f"build under measurement: {fp_before}\n")
 
@@ -4352,6 +4437,14 @@ def main() -> int:
                         "a NEEDS-PLUG: row cannot also need the printer rig: "
                         "both own `prologue`")
                     mkw["prologue"] = plugs
+                rstate = _rigstate_of(rig)
+                if rstate is not None:
+                    assert "prologue" not in mkw, (
+                        "a NEEDS-RIG: row cannot also plug a device or a printer: "
+                        "all three own `prologue`")
+                    mkw["prologue"] = rigfw.prologue(rstate)
+            else:
+                rstate = None
             # a rig may force its own delivery mode (see _rig_kwargs: `log` needs
             # boot-per-case or every row reads its predecessors' printer output)
             tape_out = mkw.pop("_tape_path", None)
@@ -4359,8 +4452,20 @@ def main() -> int:
                 assert len(idx) == 1, (
                     "a NEEDS-BLANKTAPE: group holds ONE row: the rig re-creates "
                     "one tape per boot, so only the last case's recording survives")
-            got = omsx_repl.run_cases(mach, [specs[i] for i in idx],
-                                      batch=mkw.pop("batch", batch), **mkw)
+            import contextlib
+            pulser = contextlib.nullcontext()
+            if rstate is not None:
+                rigfw.set_state(RIG["port"], rstate)
+                _d, _trigs, _pulse = rigfw.parse_state(rstate)
+                if _pulse:
+                    pulser = rigfw.Pulser(RIG["port"], _trigs)
+            try:
+                with pulser:
+                    got = omsx_repl.run_cases(mach, [specs[i] for i in idx],
+                                              batch=mkw.pop("batch", batch), **mkw)
+            finally:
+                if rstate is not None:
+                    rigfw.set_state(RIG["port"], "centre")
             if tape_out is not None:
                 # 🔴 A MARKER, NOT `screen_printer`'s `7c`: this rig takes the
                 # DEFAULT capture, which comes back DECODED, while both halves of a
