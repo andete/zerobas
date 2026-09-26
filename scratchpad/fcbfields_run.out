@@ -1,0 +1,7 @@
+open     VARPTR=F16E  header +0..+8: 02 FF 00 00 FD FF 00 00 FF   record +9..+12: FF 00 00 FF
+printed  VARPTR=F16E  header +0..+8: 02 FF 00 00 FD FF 00 00 FF   record +9..+12: FF 00 00 FF
+chan2    VARPTR=F277  header +0..+8: 02 FF FF 00 FD FF FF 00 00   record +9..+12: FF FF 00 00
+d_open   VARPTR=DC65  header +0..+8: 02 B5 DE 00 01 5F 00 00 9C   record +9..+12: 9F 92 F3 14
+d_print  VARPTR=DC65  header +0..+8: 02 B5 DE 00 01 5F 02 00 9C   record +9..+12: 41 42 F3 14
+d_print3 VARPTR=DC65  header +0..+8: 02 B5 DE 00 01 5F 03 00 9C   record +9..+12: 41 42 43 14
+refcache: 1 hit, 1 miss, 1 stored
