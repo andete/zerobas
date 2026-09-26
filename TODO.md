@@ -5891,7 +5891,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:24915 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:24983 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -6057,7 +6057,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:10850 (T-6FE392)8 (T-529ABE)` from `TODO.md:22569 (T-529ABE)`: a
+      `TODO.md:10850 (T-6FE392)8 (T-529ABE)` from `TODO.md:22637 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -11694,7 +11694,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:22569 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:22637 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -16689,13 +16689,51 @@ verifies that the two copies cannot diverge unnoticed, and it REFUSES if it ever
 finds zero shared names (a renamed block would otherwise make it silently blind).
 📏 Main page 1 free: **3 B**, unchanged (2026-09-15) — an equate costs nothing.
 
+- [ ] ⌨️ **D-TYPEBLIND — KEYS PRESSED WHILE ZEROBAS TOKENISES A LINE ARE LOST**
+      🎚️ TIER 1 — happy path: typing a program in, line after line, is how
+      `LIST`, `RUN` and everything else get their input; the VG-8020 loses
+      nothing on the same keystrokes.
+      📏 **MEASURED 2026-09-26** (found by the windowed PAD probe; headless,
+      openMSX `type`, no rig): after the stored line `10 N=N+1:A=PAD(0):
+      LOCATE 0,0:PRINT 44`, a queued `PRINT 5` arrives as **`NT 5`** →
+      Syntax error, and a queued `RUN` as **`RRUN`** — on zerobas only.
+      Sampling zerobas's PC every 10 ms (our own ROM + `build/sub.sym`): the
+      line is delivered at ~70 ms/key (the same rate on the VG-8020 and stock
+      C-BIOS — `type` is NOT slower here), then zerobas spends **~0.25 s** in
+      the sub-ROM tokeniser (`mk_cmp`/`mk_entry`, slot 3 in PAGE 0), and
+      during exactly that window the key-buffer pointer PUTPNT does not move
+      although `P`,`R`,`I` are being pressed — the three keys lost.
+      🎯 **LIKELY MECHANISM (not yet proven):** with the sub-ROM in page 0 the
+      IM1 vector `$0038` is the sub-ROM's, so C-BIOS's keyboard scan does not
+      run; a key pressed and released inside the window is never seen, and one
+      held across its end can register twice (`RRUN`). Two levers: keep the
+      scan running across page-0 tenant calls, or make the tokeniser fast
+      enough that the window is under a scan period (0.25 s for 38 chars is
+      also a TIER 5 speed fact on its own).
+      🤖 **AUTONOMOUS** — measure FIRST: prove the mechanism (does the
+      interrupt reach C-BIOS's scan while a page-0 tenant runs?), then a row
+      that types a line and a second one inside the window, on both machines.
+
+- [ ] ▮ **D-CURSORBLOCK — ZEROBAS SHOWS NO BLOCK CURSOR AT THE PROMPT**
+      🎚️ TIER 1 — happy path: the cursor is the first thing a user looks for.
+      📏 **REPORTED BY JOOST 2026-09-26** while watching the windowed PAD
+      runs: *"zerobas doesn't show the square rect prompt indication"* — the
+      VG-8020 shows its block cursor at `Ok`, zerobas shows none. Not yet
+      measured.
+      🤖 **AUTONOMOUS** — measure FIRST, clean room: the cursor is a VRAM /
+      pattern effect, so read the name and pattern tables at the cursor cell on
+      both machines while each waits at its prompt (and `CSRSW`, the published
+      cursor-display cell), then find where zerobas's input wait differs.
+
 - [ ] 🛑 **RULING 4's RIG — STICK AND STRIG ARE NOW DRIVEN BY A REAL USB
       STICK (D-RIGFW, 2026-09-26); `PAD`'s SWITCH STILL HAS NO INSTRUMENT.**
       *(was: "CANNOT BE BUILT FOR THREE OF ITS FOUR TARGETS — openMSX HAS NO
       JOYSTICK TO DRIVE")*
-      🎚️ TIER 1 — happy path: `PAD`'s `switch` form is stuck for want of an
-      INSTRUMENT, not an implementation. (STICK's and STRIG's joystick forms were
-      the other two and are freed — kwsweep's NEEDS-RIG: rows, below.)
+      🎚️ TIER 1 — happy path: `PAD` with a real touchpad — its `switch` reads
+      0 where the VG-8020 reads -1, and its coordinates read 0 where the VG-8020
+      follows the pen (measured windowed 2026-09-26, below). (STICK's and
+      STRIG's joystick forms were the other two targets and are freed —
+      kwsweep's NEEDS-RIG: rows, below.)
       🔴 **THIS ITEM CARRIED NO `🎚️` TAG UNTIL 2026-09-17, AND AN UNTAGGED OPEN
       ITEM IS IN NO TIER LIST AND BARS NO ATTAINMENT** — invisible in the
       direction that flatters the sheet. `tools/tier_table.py` now REFUSES on
@@ -16712,11 +16750,41 @@ finds zero shared names (a renamed block would otherwise make it silently blind)
       different apparatus. 🕗 Joost, 2026-09-26: *"you can run paddle tests
       after 8 am when Im not playing a game on the computer"* — so it is
       schedulable, not ruled out; it is not built yet.
-      🤖 **AUTONOMOUS** — inside that window only: measure FIRST whether a
+      ~~🤖 **AUTONOMOUS** — inside that window only: measure FIRST whether a
       WINDOWED openMSX (a renderer, not `none`) receives the board's mouse at
-      all: its window must hold focus and the pointer, so the run takes over
-      Joost's screen and cursor while it lasts. If it does, `PAD(3)`'s switch
-      and a DRIVEN `PDL` become rows; if not, say so here and stop.
+      all~~ 📏 **MEASURED 2026-09-26 (Joost: *"go ahead with the windowed PAD
+      test"*) — IT DOES, AND ZEROBAS DIVERGES ON TWO OF PAD's THREE FORMS.**
+      `scratchpad/rigfw_window_probe.py`: VG-8020 / zerobas, default renderer,
+      `grabinput on`, throttle on, the DEFAULT `touchpad_transform_matrix`
+      (Joost's saved one offsets X by +200 and saturated X at 255), `touchpad`
+      in port A, a typed loop printing PAD(0) PAD(3) PAD(1) PAD(2) and a pass
+      counter; the board holds mouse button 2, then button 1 while moving:
+      | phase | VG-8020 | zerobas |
+      |---|---|---|
+      | idle | `0 0 0 0` | `0 0 0 0` |
+      | button 2 (the pen SWITCH) | `0 -1 0 0` | `0 0 0 0` ✗ |
+      | button 1 (TOUCH) + motion | `-1 0 8 8` → `44 32` → `12 10` | `-1 0 0 0` — sense ✓, coordinates ✗ |
+      | released | `0 0 12 10` (latched) | `0 0 0 0` |
+      (`scratchpad/rigfw_window_touchpad_run.out` / `..._zb_run.out`.) The
+      first zerobas window read ALL zeros, sense included — Joost had tabbed
+      away from an openMSX window around then, and the repeat read the sense
+      correctly, so the first run is treated as focus-starved, not as data.
+      🎯 **THE CAUSE IS OUR OWN GTPAD'S TWO FILED GUESSES** (`tape/tape.asm`,
+      decision D-I-7): the pen button is read off R14 b4 and reads 0; the
+      uPD7001 channel-select phase was never pinned, so X and Y read one
+      unaddressed frame, which converts to 0. Both guesses were made because an
+      UNDRIVEN panel converts to 0 and "the data path's values are not
+      validatable" — **the rig removes that premise.**
+      🤖 **AUTONOMOUS** — inside Joost's window: recover the switch line and
+      the address phase from the VG-8020 by I/O-PORT tracing (PSG R15 writes,
+      R14 reads) while the board holds a touch / the switch — clean room: ports
+      only, no ROM bytes — then fix `gtpad` and add windowed rows. ⚠️ Rows that
+      need a WINDOW cannot join kwsweep's headless battery as they stand; they
+      need a rig flag that also opens a window, and they take over the screen.
+      📏 **PDL, windowed:** the VG-8020 read `255` throughout, idle included,
+      and did not follow the board (`scratchpad/rigfw_window_paddle_run.out`,
+      taken with the probe's first typing scheme). PDL has no missing form (its
+      `read` is covered by the plugged row), so this is noted, not chased.
       ~~🙋 NEEDS-JOOST~~ (parked above) — he ruled *"build a rig, not an exemption"* (2026-09-15,
       ruling 4). The rig is not buildable with this emulator, and that is his call
       to take, not mine to work around.
