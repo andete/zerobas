@@ -1,0 +1,18 @@
+--- rig: centre
+cfgset => 0 UP {{joy1 -axis1}} DOWN {{joy1 +axis1}} LEFT {{joy1 -axis0}} RIGHT {{joy1 +axis0}} A {{joy1 button0}} B {{joy1 button1}}
+ports => 63
+--- rig: up
+cfgset => 0 UP {{joy1 -axis1}} DOWN {{joy1 +axis1}} LEFT {{joy1 -axis0}} RIGHT {{joy1 +axis0}} A {{joy1 button0}} B {{joy1 button1}}
+ports => 62
+--- rig: right
+cfgset => 0 UP {{joy1 -axis1}} DOWN {{joy1 +axis1}} LEFT {{joy1 -axis0}} RIGHT {{joy1 +axis0}} A {{joy1 button0}} B {{joy1 button1}}
+ports => 55
+--- rig: downleft
+cfgset => 0 UP {{joy1 -axis1}} DOWN {{joy1 +axis1}} LEFT {{joy1 -axis0}} RIGHT {{joy1 +axis0}} A {{joy1 button0}} B {{joy1 button1}}
+ports => 57
+--- rig: trig1 on
+cfgset => 0 UP {{joy1 -axis1}} DOWN {{joy1 +axis1}} LEFT {{joy1 -axis0}} RIGHT {{joy1 +axis0}} A {{joy1 button0}} B {{joy1 button1}}
+ports => 47
+--- rig: trig2 on
+cfgset => 0 UP {{joy1 -axis1}} DOWN {{joy1 +axis1}} LEFT {{joy1 -axis0}} RIGHT {{joy1 +axis0}} A {{joy1 button0}} B {{joy1 button1}}
+ports => 31

@@ -28,7 +28,7 @@ symmetric. Treat that group as closed-by-measurement unless a new signal appears
 | RAM addresses | *"All 29"* (D-RAMFOOT's published variables), scratch included |
 | D-ADDR29's ✋ | `DAC` FULL (ints at DAC+2, USR reads DAC) · `TEMPST` pool → 10 · `RNDX` now, `ARG` later · N set observable-first — `docs/spec-basic-addr29.md` §4.1 |
 | PLAY X shape | *"Tenant walks the chain"* — the MML tenant reads the variable chain in RAM itself (spec-basic-audio-play §7.12); main ~0 B, no carve needed |
-| the rig | Joost's RP2040-Zero is **CONNECTED to the laptop since 2026-09-25** (`/dev/cu.usbmodem1101`, running firmware, not BOOTSEL; seen read-only, nothing flashed). Still ⛔ PARKED until he picks it up — he said *"keep going"*; the rig item says what to measure FIRST (headless joystick, then headless mouse for PAD/PDL) |
+| the rig | Joost's RP2040-Zero is **CONNECTED to the laptop since 2026-09-25** (`/dev/cu.usbmodem1101`, running firmware, not BOOTSEL; seen read-only, nothing flashed). **UN-PARKED 2026-09-26 and FLASHED with `tools/rigfw/rigfw.ino`:** headless joystick WORKS (bind `msxjoystick1_config` to `joy1`, which this install leaves EMPTY); headless mouse does NOT reach PAD/PDL. Next: STICK/STRIG rows — the rig item in TODO |
 
 ### 🌙 NIGHT 2026-09-25 → 26 — READ THIS FIRST, IT SUPERSEDES EVERYTHING BELOW
 
@@ -45,7 +45,7 @@ area, `TXTMAX` = `$E000`. **`FRE(0)` gap to the VG-8020: −4750 in every state
 🔴 LESSONS: a derived equate (`PU_NUM = DETOKBUF+256`) is a user no grep of
 code finds — the assembler did; re-rendering per window was quadratic (the
 battery's `linemax` caught >8 s); a comment edit mid-knife voids the run.
-The RP2040-Zero is connected (`/dev/cu.usbmodem1101`); the rig stays PARKED.
+The RP2040-Zero is connected (`/dev/cu.usbmodem1101`) and flashed as the rig (2026-09-26).
 
 ➡️ **SHIPPED LATER THAT NIGHT:** `b2b5ad38` D-KEYCLS (the key line survives
 CLS/SCREEN/WIDTH; the SHIFT→F6..F10 inference REFUTED) · `43758524` D-KEYSCR1

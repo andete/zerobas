@@ -5890,7 +5890,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:24831 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:24875 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -6056,7 +6056,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:10849 (T-6FE392)8 (T-529ABE)` from `TODO.md:22485 (T-529ABE)`: a
+      `TODO.md:10849 (T-6FE392)8 (T-529ABE)` from `TODO.md:22529 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -11693,7 +11693,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:22485 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:22529 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -16879,7 +16879,51 @@ finds zero shared names (a renamed block would otherwise make it silently blind)
       `STICK(1)` read the board headless; (2) does mouse motion move `PDL`/`PAD`
       headless. (2) failing limits the board to STICK/STRIG — it does not make
       the purchase wrong.
-      ⛔ **STILL PARKED** (Joost, 2026-09-24, *"Park it"*) until he picks it up.
+      ~~⛔ **STILL PARKED** (Joost, 2026-09-24, *"Park it"*) until he picks it up.~~
+      🟢 **UN-PARKED BY JOOST 2026-09-26 (*"Lets have a look at the rp2040 now"*)
+      — FLASHED, AND (1) IS ANSWERED YES, (2) NO.** The board arrived running
+      Raspberry Pi's factory Pico-SDK firmware (CDC + reset interface, VID
+      2E8A/PID 000A). Joost approved installing the arduino-pico core (6.1.1 —
+      **1.7 GB** in `~/Library/Arduino15`, not the ~250 MB I estimated) and
+      flashing. **`tools/rigfw/rigfw.ino`**: ONE composite device — HID
+      joystick with rigstick's descriptor byte for byte, HID mouse, CDC serial
+      speaking rigstick's command language plus `move DX DY` / `mbtn1|2` /
+      `id`, answering `OK`/`ERR:`. Flashed by the 1200-baud touch, no button.
+      macOS lists a Joystick (usage 4) and a Mouse (usage 2), "zerobas rig
+      stick".
+      🔴 **THE FILED QUESTION WAS STALE: openMSX 21 HAS NO `joystick1`
+      PLUGGABLE.** Host sticks reach the MSX through `msxjoystick1`, bound by
+      `msxjoystick1_config` — and on THIS install that setting is **EMPTY**
+      (the manual's default binds `joy1`), so an attached stick moves nothing
+      until the probe binds it: `UP {{joy1 -axis1}} DOWN {{joy1 +axis1}} LEFT
+      {{joy1 -axis0}} RIGHT {{joy1 +axis0}} A {{joy1 button0}} B {{joy1
+      button1}}` (each binding its own braced element — `{joy1 -axis1}` alone
+      is `Invalid binding: joy1`). SDL DOES enumerate the board headless: the
+      `joystick1_deadzone` setting exists with it and not without.
+      📏 **(1) YES** — `scratchpad/rigfw_joy_run.out`, `renderer none`, fresh
+      boot per state, port A pins from the `joystickports` debuggable:
+      centre **63** (control) · up 62 · right 55 · downleft 57 · trig1 47 ·
+      trig2 31 — every bit where it belongs. `scratchpad/rigfw_live_run.out`:
+      ONE running openMSX follows the board live (62 → 46 → 39 → 47 → 63 for
+      up / +trig1 / right / centre / trig off) — **a held trigger survives a
+      direction change**, the rule a `STICK`+`STRIG` row needs.
+      📏 **(2) NO** — `scratchpad/rigfw_mouse_run.out`, VG-8020: `PDL(1)`
+      stays **128** with `paddle` plugged and `PAD(0)`/`PAD(1)`/`PAD(2)` stay
+      **0 0 0** with `touchpad` plugged and mouse button 1 held, while the
+      loop counter proves the program runs and the board's moves visibly move
+      the HOST cursor. openMSX takes paddle/touchpad input from mouse events on
+      its own WINDOW, and a headless run has none. (Also measured: `PAD(12)` is
+      `Illegal function call` on the VG-8020 — the mouse forms are MSX2.)
+      🔮 Predicted (2) NO — HIT. (1) I expected to hinge on `joystick1`
+      appearing; the real hinge was the empty binding.
+      ⚠️ Every probe run sets `save_settings_on_exit false` first:
+      `settings.xml` was byte-identical after every run. A probe that binds the
+      stick without that would PERSIST the binding into the battery's settings.
+      ➡️ **NEXT (autonomous, TIER 1/3): a rig library + `STICK`/`STRIG` rows
+      against the VG-8020** (`STICK(1)`, `STRIG(1)`, `ON STRIG GOSUB` with a
+      real trigger — triggers 1..4 were only reachable by the PSG-latch
+      injection until now). PAD/PDL stay unreachable headless; a WINDOWED run
+      is a different apparatus and Joost's call.
 
 - [x] ✅ **CLOSED 2026-09-17 (D-FNKLINE + D-SCROLLBOUND + D-KEYROW): the
       function-key display line PAINTS, the row is RESERVED, and all ten cells
