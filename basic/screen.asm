@@ -346,13 +346,10 @@ key_repaint:
                 or      a
                 ret     z                   ; KEY OFF: nothing to put back
                 ld      a,(SCRMOD)
-                or      a
-                ret     nz                  ; SCREEN 0 only: ks_paint lays the row
-                                            ; out at NAMBAS + a 40-column row-23
-                                            ; offset, which in SCREEN 1 (32 columns,
-                                            ; names at $1800) lands past the name
-                                            ; table -- on the sprite attributes.
-                                            ; The SCREEN 1 key line is filed.
+                cp      2
+                ret     nc                  ; graphics modes have no key line
+                                            ; (SCREEN 1 has one since D-KEYSCR1:
+                                            ; ks_geom lays out its 32-column row)
                 ld      a,CON_ROWS_KEYON
                 ld      (CRTCNT),a          ; the bottom row stays reserved
                 push    hl

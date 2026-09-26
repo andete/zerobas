@@ -2241,7 +2241,8 @@ item — do **one item per session** to keep context lean.
       after `SCREEN 0` (22 on both). 🔮 Predicted all SAME — HIT (the
       SCREEN 1 case was an instrument limit, see below).
 
-- [ ] 🖥️ **D-KEYSCR1 — zerobas SHOWS NO FUNCTION-KEY LINE IN SCREEN 1**
+- [x] 🖥️ **D-KEYSCR1 — zerobas SHOWS NO FUNCTION-KEY LINE IN SCREEN 1** —
+      ✅ **FIXED 2026-09-26**, see the end of this item.
       🎚️ TIER 3 — visible, but only in SCREEN 1 (32-column text).
       📏 Filed 2026-09-26 while fixing D-KEYCLS: `ks_paint` (sub/keystr.asm)
       lays the row out at `NAMBAS + FNK_ROW + FNK_COL0` with `FNK_ROW` = 920 —
@@ -2253,6 +2254,17 @@ item — do **one item per session** to keep context lean.
       (layout, field width) needs a SCREEN 1-aware reader —
       `scratchpad/keycls_probe.py`'s scrape reads the SCREEN 0 table and
       returned pattern bytes on BOTH machines.
+      📏 **MEASURED:** VPEEK of row 23 at `$1800+23*32` on the VG-8020 reads
+      `··color·auto··goto··list··run···` — the same first column, 5 visible
+      characters a field on a 6-column pitch, 32 columns.
+      ✅ **FIXED 2026-09-26:** `ks_geom` (sub/keystr.asm) returns the row
+      address, field width and row length for the mode; `ks_paint`/`ks_blank`
+      use it, and the next-slot step no longer depends on the width;
+      `key_repaint` covers SCREEN 1 again. `scratchpad/keyscr1_probe.py` →
+      `scratchpad/keyscr1_run.out`: entering SCREEN 1, `CLS` in it and the
+      `KEY OFF` negative, **DIFF 0/3, byte for byte**; the SCREEN 0 probe
+      still 0/7. Sub-ROM bytes only (main page 1 unchanged). 🔮 Predicted —
+      HIT.
 
 - [x] 🔴 **D-HIMEMLIE — zerobas's `HIMEM` SAYS `$F380` WHILE ZEROBAS LIVES AT
       `$DB00..$F37F`**
@@ -5834,7 +5846,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:24775 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:24787 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -6000,7 +6012,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:10793 (T-6FE392)8 (T-529ABE)` from `TODO.md:22429 (T-529ABE)`: a
+      `TODO.md:10805 (T-6FE392)8 (T-529ABE)` from `TODO.md:22441 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -11637,7 +11649,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:22429 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:22441 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

@@ -1,0 +1,6 @@
+SAME enter   ref '  color auto  goto  list  run   '  zb '  color auto  goto  list  run   '
+SAME cls     ref '  color auto  goto  list  run   '  zb '  color auto  goto  list  run   '
+SAME keyoff  ref '                                '  zb '                                '
+
+DIFF: 0/3
+refcache: 0 hit, 2 miss, 2 stored

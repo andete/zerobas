@@ -1,0 +1,10 @@
+SAME cls         ref: color auto goto list run   zb: color auto goto list run
+SAME screen0     ref: color auto goto list run   zb: color auto goto list run
+SAME width40     ref: color auto goto list run   zb: color auto goto list run
+SAME roundtrip   ref: color auto goto list run   zb: color auto goto list run
+SAME keyon_cls   ref: color auto goto list run   zb: color auto goto list run
+SAME keyoff_cls  ref: <blank>   zb: <blank>
+SAME bound       ref: 22   zb: 22
+
+DIFF: 0/7
+refcache: 1 hit, 1 miss, 1 stored

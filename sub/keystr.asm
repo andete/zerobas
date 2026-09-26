@@ -44,6 +44,12 @@ FNK_ROW         equ     920                 ; row 23 within the name table
 FNK_COL0        equ     2                   ; first field's column
 FNK_STRIDE      equ     7                   ; field pitch
 FNK_WIDTH       equ     6                   ; visible characters a field
+; 🖥️ D-KEYSCR1 (2026-09-26): SCREEN 1 has its own geometry, MEASURED on the
+; VG-8020 (VPEEK of row 23 at $1800+23*32): `··color·auto··goto··list··run···`
+; -- the same first column, but 5 visible characters a field on a 6-column
+; pitch, in a 32-column row. ks_geom picks the pair by SCRMOD.
+FNK_ROW32       equ     736                 ; row 23 of a 32-column name table
+FNK_WIDTH32     equ     5                   ; visible characters a field, SCREEN 1
 FNK_FIELDS      equ     5                   ; F1..F5 are displayed; F6..F10 are not
 KEYSLOTS        equ     10
 KEYSTRIDE       equ     16
@@ -58,14 +64,16 @@ KEYMAX          equ     15                  ; measured truncation (D-KEYSCOUT2)
 ks_paint:
                 call    ks_blank            ; start from a clean row, so a macro
                                             ; that shortened leaves no tail
-                ld      hl,(NAMBAS)
-                ld      de,FNK_ROW + FNK_COL0
-                add     hl,de               ; HL -> row 23, first field
+                call    ks_geom             ; HL -> row 23, A = field width
+                inc     hl
+                inc     hl                  ; FNK_COL0: the first field's column
                 ld      de,FNKSTR           ; DE -> slot 1
                 ld      b,FNK_FIELDS
 ksp_field:
                 push    bc                  ; C is the data byte below
-                ld      b,FNK_WIDTH
+                push    de                  ; [n][slot]
+                push    af                  ; [n][slot][width]
+                ld      b,a
 ksp_char:
                 ld      a,(de)
                 cp      ' '
@@ -78,8 +86,10 @@ ksp_put:
                 inc     de
                 djnz    ksp_char
                 inc     hl                  ; the one-column gap
-                push    hl                  ; DE += KEYSTRIDE - FNK_WIDTH
-                ld      hl,KEYSTRIDE - FNK_WIDTH
+                pop     af                  ; A = width      [n][slot]
+                pop     de                  ; DE = this slot [n]
+                push    hl                  ; DE = the next slot: a fixed stride,
+                ld      hl,KEYSTRIDE        ; so the field width never enters it
                 add     hl,de
                 ex      de,hl
                 pop     hl
@@ -87,11 +97,29 @@ ksp_put:
                 djnz    ksp_field
                 ret
 
-ks_blank:
+; ks_geom -- the key row for the current text mode.
+;   out: HL = row 23's first name-table cell, A = visible field width,
+;        C = the row's length (what ks_blank clears). Clobbers DE.
+ks_geom:
                 ld      hl,(NAMBAS)
+                ld      a,(SCRMOD)
+                dec     a
+                jr      z,ksg_32
                 ld      de,FNK_ROW
-                add     hl,de               ; HL -> row 23, column 0
-                ld      b,FNK_STRIDE * FNK_FIELDS + FNK_COL0 + 3
+                add     hl,de
+                ld      a,FNK_WIDTH
+                ld      c,40
+                ret
+ksg_32:
+                ld      de,FNK_ROW32
+                add     hl,de
+                ld      a,FNK_WIDTH32
+                ld      c,32
+                ret
+
+ks_blank:
+                call    ks_geom             ; HL -> row 23, column 0; C = length
+                ld      b,c
 ksb_lp:
                 ld      c,' '
                 call    gfx_vram_wr
