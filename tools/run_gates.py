@@ -856,6 +856,24 @@ def main():
                     flaky.append(n)
                 print(f"  retry {n}: rc {old}->{rc}  {verdict}", flush=True)
 
+    # 🔴 D-FASTPIN (2026-09-26): A POST-CHECK READS WHAT THE POOL WROTE, AND A
+    # RETRY IS WHAT WROTE IT. tiers-md-check ran BEFORE the retries, so when the
+    # pool's kwsweep flaked (rc 2 at 0 s) and was retried green, the check had
+    # already read NO pin and gone red -- twice in one day, a false red each
+    # time (both preserved logs end `KeyError: 'tokenise'`, the msxtest temp-name
+    # race, since fixed). So after a recovered unit, a RED post-check runs once
+    # more, still serially: its inputs may only now exist. A post-check that was
+    # red for a real reason is red again, so this cannot launder a failure.
+    if flaky:
+        again = [g for g, rc, *_ in post_results if rc != 0]
+        for g in again:
+            _t0 = time.time()
+            rc = sh(["make", g], f"{OUT}/{g}.after-retry.log", env=kwcover_env(g))
+            dt = time.time() - _t0
+            print(f"  post-check {g} re-run after the retries: rc "
+                  f"{results[g][0]}->{rc}", flush=True)
+            results[g] = (rc, dt)
+
     ttot = time.time() - t0
     shard_rc = [rc for n, (rc, _) in results.items() if n.startswith("lineerr#")]
     lineerr_ran = bool(shard_rc)
