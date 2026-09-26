@@ -4910,7 +4910,9 @@ unambiguously an error, but a fence that appears in the source it echoes is the
 hazard this tree has hit before and the cell is ugly proof of it.
  So `VARPTR(#n)` is not the work; the CHANNEL BLOCK is, and
 `VARPTR(#n)` then falls out of it agreeing rather than being made to agree.
-⚠️ **NOTED, NOT STARTED** (*"just note it, you don't need to do anything now"*).
+⚠️ **NOTED, NOT STARTED** (*"just note it, you don't need to do anything now"*). ➡️ **FILED 2026-09-26 as the
+TIER 4 item D-FCBSHAPE** (Joost: *"file it as a tier 4 item"*) — the open work
+lives there now; this paragraph is its measurement record.
 🔴 **AND SCOPING IT FOUND THAT OUR TWO NUMBERS FOR THE REFERENCE'S PER-CHANNEL
 BLOCK DISAGREE BY 2, WITH NOTHING RECONCILING THEM**:
 | measurement | value | source |
@@ -5891,7 +5893,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:25173 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:25208 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -6057,7 +6059,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:10850 (T-6FE392)8 (T-529ABE)` from `TODO.md:22827 (T-529ABE)`: a
+      `TODO.md:10852 (T-6FE392)8 (T-529ABE)` from `TODO.md:22862 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -11694,7 +11696,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:22827 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:22862 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -16815,6 +16817,39 @@ finds zero shared names (a renamed block would otherwise make it silently blind)
       ⚠️ **SUB PAGE 1 IS NEARLY FULL: 11 B** (clean build 2026-09-26). The
       bottom-row growth path (a line ending ON the bottom row, under insert)
       was a GUESS and was cut to fit — D-INSBOTTOM.
+
+- [ ] 📁 **D-FCBSHAPE — ADOPT THE MSX FCB LAYOUT FOR FILE CHANNELS (39 B A CHANNEL OVER THE REFERENCE; UNLOCKS `VARPTR(#n)`)**
+      🎚️ TIER 4 — RAM usage (VG-8020): `MAXFILES` charges 306 B a channel where
+      the reference charges 267, and `VARPTR`'s file-channel form falls out of
+      the rebuild.
+      🏗️ **RULED BY JOOST:** 2026-09-16 *"I think this means we need to change to
+      the MSX's FCB shape"*; 2026-09-17 *"just note it, you don't need to do
+      anything now"*; 2026-09-26 *"file it as a tier 4 item"* — so it is filed,
+      and it was only prose inside the carve-inventory block until now (which is
+      why the tier sheet showed `VARPTR` PARTIAL with NO open item naming it).
+      📏 **WHAT IS MEASURED** (all in that prose block, the `VARPTR STANDS AT 1/2`
+      paragraph; `scratchpad/varptrn_probe.py`, `scratchpad/fcbstride_probe.py`,
+      `docs/chancost-cf3300-characterization.md` §2):
+      | | reference (VG-8020 / CF-3300) | zerobas |
+      |---|---|---|
+      | `VARPTR(#1)` | an address (−3465 / −8850) | `Syntax error` |
+      | stride #n → #n+1 | **265** = FCB: 9 header + 256 record | — (block 306) |
+      | `FRE(0)` per `MAXFILES` channel | **267** (265 + 2 in a separate per-channel table) | **306** |
+      | geometry | FCB array hangs DOWN from `$F380`, #1 lowest: `VARPTR(#n) = $F380 − 265·(MAXFILES − n + 1)` | — |
+      At `MAXFILES=15` zerobas spends **585 B** more pool than the reference.
+      💰 **THE WORK IS THE 41 BYTES, NOT THE STRIDE.** Our block is
+      `[state:FCH_STATESZ 50][record:256]`; MSX's header is 9. The per-channel
+      ENGINE state (cluster iterator `FAT_CURCLUS`/`FAT_CLUSSEC`, file meta, …)
+      needs a home outside the FCB; then a channel costs 265 + 2 and `VARPTR(#n)`
+      is `fch_ctx_addr` on the new layout, agreeing by construction.
+      ⚠️ **PRICE IT WITH THE CHANNEL I/O REDESIGN** — D-FATPAGE1 (same prose
+      block) found the ~317 B byte-level FAT I/O carve is the SAME layer; the two
+      should be designed together, and an inter-slot call per BYTE is a TIER 2
+      risk (0.156 ms each, D-XSLOTPRICE).
+      🤖 **AUTONOMOUS** — measure FIRST: the reference's 9-byte FCB header fields
+      that a program can observe (PEEK at `VARPTR(#n)` with a file open, both
+      references), and where the 2-byte per-channel entry sits; then design where
+      the 41 B go; diskless target rows too (the ruled rule).
 
 - [ ] 🧰 **D-FASTPIN — `gates-fast` CAN WIPE THE KWSWEEP PIN AND THEN SKIP THE RUN THAT MAKES IT**
       🎚️ TIER 6 — apparatus: a false red, never a false green.
