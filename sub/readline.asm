@@ -94,7 +94,7 @@ rl_ins:
                 ld      a,(INSFLG)
                 cpl
                 ld      (INSFLG),a
-                jp      rl_more
+                jr      rl_more
 rl_ctl:
                 ld      c,a
                 xor     a
@@ -125,20 +125,15 @@ rl_echo:
                 call    CHPUT
                 ld      a,(CSRX)
                 cp      b
-                jp      nc,rl_more          ; the column advanced: no wrap. A wrap
+                jr      nc,rl_more_far      ; the column advanced: no wrap. A wrap
                                             ; leaves it BELOW where it was, whether
                                             ; C-BIOS wraps on the 40th character
                                             ; (CSRX 1) or on the 41st (CSRX 2).
                 ; Wrapped on the bottom row: the screen scrolled. C-BIOS shifted
                 ; LINTTB but dropped the mark of the row that wrapped (measured)
                 ; -- write it -- and the row where input began moved up too.
-                xor     a
-                call    rl_botfix           ; [bottom-2] = 0: continues; [bottom-1] = 1
-                ld      hl,RL_ROW0
-                ld      a,(hl)
-                or      a
-                jp      z,rl_more           ; already off the top
-                dec     (hl)
+                call    rl_scrolled
+rl_more_far:
                 jp      rl_more
 rl_put:
                 ld      a,c
@@ -287,6 +282,20 @@ rl_botfix:
                 ld      (hl),1              ; [bottom-1]
                 ret
 
+; --- rl_scrolled: bookkeeping after a scroll this reader caused -------------
+; The row above the bottom now continues onto it (rl_botfix), and the row where
+; input began moved up with the screen. Shared by a typed wrap on the bottom row
+; (rl_echo) and an insert that grows a line ending there (rsr_scroll).
+rl_scrolled:
+                xor     a
+                call    rl_botfix           ; [bottom-2] = 0: continues; [bottom-1] = 1
+                ld      hl,RL_ROW0
+                ld      a,(hl)
+                or      a
+                ret     z                   ; already off the top
+                dec     (hl)
+                ret
+
 ; --- rl_vpeek: A = the screen character at row B, column C (both 1-based) ----
 ; The name table is NAMBAS + (row-1)*stride + margin + (col-1); the stride is
 ; the mode's (40 in SCREEN 0, 32 in SCREEN 1), not LINLEN, and the margin centres
@@ -381,15 +390,11 @@ rl_shift_right:
                 cp      ' '
                 jr      z,rsr_room
                 ; --- grow the line by one row, below row B ---
-                ; ⚠️ NOT on the bottom row: what the reference does when a line
-                ; that ends THERE must grow is unmeasured (a scroll is the guess),
-                ; so the last character falls off rather than ship a guess --
-                ; filed as D-INSBOTTOM.
-                ld      a,(CRTCNT)
-                cp      b
-                jr      z,rsr_room
                 ld      hl,(CSRY)           ; [the cursor: CSRY low, CSRX high]
                 push    hl
+                ld      a,(CRTCNT)
+                cp      b
+                jr      z,rsr_scroll        ; the line ends on the bottom row
                 ld      a,b
                 inc     a
                 ld      (CSRY),a            ; ESC L at the row below: C-BIOS inserts
@@ -427,8 +432,24 @@ rsr_marks:
                 inc     hl
                 ld      (hl),1              ; ... onto the new row, which ends it
                 pop     hl
+rsr_again:
                 ld      (CSRY),hl
                 jr      rl_shift_right      ; again: the new row's last cell is blank
+rsr_scroll:
+                ; 📏 D-INSBOTTOM (measured 2026-09-26, scratchpad/insbottom_probe.py):
+                ; the VG-8020 SCROLLS the screen up one row, and the line's spill
+                ; lands on the freed bottom row, which continues the line. A LF on
+                ; the bottom row scrolls; rl_scrolled then does exactly what a wrap
+                ; that scrolled does in rl_echo (LINTTB's two stale entries, and
+                ; the row where input began moves up).
+                ld      a,b
+                ld      (CSRY),a
+                ld      a,10
+                call    CHPUT
+                call    rl_scrolled
+                pop     hl
+                dec     l                   ; the cursor moved up with the screen
+                jr      rsr_again
 rsr_room:
                 ; (B,C) = the line's last cell; walk back to the cursor
 rsr_lp:

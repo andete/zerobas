@@ -85,25 +85,23 @@ ct_row_done:
                 add     hl,de
                 ex      de,hl               ; DE = character 255's pattern
                 pop     hl
+                ; D-INSMODE: in insert mode only pattern rows 5..7 are inverted --
+                ; rows 0..4 keep the glyph (the VG-8020, INSFLG 255: `rows=====iii`).
+                ; C = the rows still to copy AS-IS: 5 in insert mode ($FF and 5),
+                ; else 0.
                 ld      a,(INSFLG)
-                ld      c,a                 ; C = $FF in insert mode, else 0
+                and     5
+                ld      c,a
                 ld      b,8
 ct_copy:
                 call    RDVRM
-                ; D-INSMODE: in insert mode only pattern rows 5..7 are inverted --
-                ; rows 0..4 keep the glyph (the VG-8020, INSFLG 255: `rows=====iii`)
-                push    af
-                ld      a,b
-                cp      4                   ; B = 8..4 are rows 0..4
-                jr      c,ct_inv
-                ld      a,c
-                or      a
+                inc     c
+                dec     c                   ; Z iff no as-is rows are left (A kept)
                 jr      z,ct_inv
-                pop     af                  ; insert mode, rows 0..4: as-is
+                dec     c
                 jr      ct_put
 ct_inv:
-                pop     af
-                cpl                         ; every byte inverted, as measured
+                cpl                         ; inverted, as measured
 ct_put:
                 ex      de,hl
                 call    WRTVRM

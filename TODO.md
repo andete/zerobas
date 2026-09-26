@@ -5893,7 +5893,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:25222 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:25233 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -6059,7 +6059,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:10852 (T-6FE392)8 (T-529ABE)` from `TODO.md:22876 (T-529ABE)`: a
+      `TODO.md:10852 (T-6FE392)8 (T-529ABE)` from `TODO.md:22887 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -11696,7 +11696,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:22876 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:22887 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -16862,7 +16862,7 @@ finds zero shared names (a renamed block would otherwise make it silently blind)
       🤖 **AUTONOMOUS** — make tiers-md-check's selection pull in kwsweep (or
       keep the pin across the wipe), and prove it with a scratchpad-only change.
 
-- [ ] ⌨️ **D-INSBOTTOM — INSERT MODE ON A LINE THAT ENDS ON THE BOTTOM ROW**
+- [x] ⌨️ **D-INSBOTTOM — INSERT MODE ON A LINE THAT ENDS ON THE BOTTOM ROW**
       🎚️ TIER 3 — common errors: a corner of an editing gesture, not its
       happy path.
       📏 Not measured on the reference. zerobas (D-INSMODE) grows a full line
@@ -16870,9 +16870,20 @@ finds zero shared names (a renamed block would otherwise make it silently blind)
       ends on the bottom text row there is no row below, and the last character
       falls off. The reference probably scrolls the screen up — a guess, which
       is why it was cut rather than shipped (it also did not fit sub page 1).
-      🤖 **AUTONOMOUS** — measure FIRST: a full line on the bottom row, INS at
-      its start, one character; read the rows and LINTTB on both machines.
-      Then find the bytes (sub page 1 was 11 B free, clean build 2026-09-26).
+      ~~🤖 **AUTONOMOUS** — measure FIRST~~ ✅ **FIXED 2026-09-26 (loop).**
+      📏 Measured (`scratchpad/insbottom_probe.py`): the VG-8020 SCROLLS the
+      screen up one row and the spill lands on the freed bottom row, which
+      continues the line (LINTTB `…011` on rows 22..24). The guess that was cut
+      was right; it now ships as MEASURED behaviour: a LF on the bottom row, then
+      `rl_scrolled` — the bookkeeping rl_echo already did after a wrap that
+      scrolled, factored out and shared (LINTTB's two stale entries, the row
+      where input began moves up). `insbottom_run.out`: **SAME** — rows, cursor
+      and LINTTB. Regression: `insmode_run.out` 0/12, `cursorblock_run.out` 0/7.
+      💰 **THE BYTES:** the path is ~20 B and sub page 1 had 11. Paid by the
+      shared helper (the echo tail shrank), a tighter insert-cursor loop (C
+      counts the as-is rows; `inc c / dec c` tests it without touching A) and a
+      `jp` → `jr`. ⚠️ **SUB PAGE 1 WAS 0 B FREE AFTER IT (clean build
+      2026-09-26)** — the next sub page-1 change needs a carve first.
 
 - [x] 🏠 **D-HOMEKEY — THE HOME KEY CLEARS THE SCREEN ON ZEROBAS**
       🎚️ TIER 1 — happy path: HOME is a screen-editor key.
