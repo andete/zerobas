@@ -30,6 +30,24 @@ symmetric. Treat that group as closed-by-measurement unless a new signal appears
 | PLAY X shape | *"Tenant walks the chain"* — the MML tenant reads the variable chain in RAM itself (spec-basic-audio-play §7.12); main ~0 B, no carve needed |
 | the rig | Joost's RP2040-Zero is **CONNECTED to the laptop since 2026-09-25** (`/dev/cu.usbmodem1101`, running firmware, not BOOTSEL; seen read-only, nothing flashed). **UN-PARKED 2026-09-26 and FLASHED with `tools/rigfw/rigfw.ino`:** headless joystick WORKS (bind `msxjoystick1_config` to `joy1`, which this install leaves EMPTY); headless mouse does NOT reach PAD/PDL. Next: STICK/STRIG rows — the rig item in TODO |
 
+### 🌙 LOOP 2026-09-26 → 27 (after the day section below) — READ THIS FIRST
+
+Shipped by the loop: `a4528b25` D-HOMEKEY (C-BIOS patch #4; island 1 now at
+`$1ADB`) · `e5857ecf` D-INSBOTTOM · `45791719` the msxtest temp-name flake ·
+`8639d4a0` D-FASTPIN (a red post-check re-runs after a recovered retry) ·
+`9d550bd4` RAM control-flow economy measured (FOR 25 vs 11 B, GOSUB 7 vs 8, FN
+14 vs 13 — 🙋 filed) · `290f765e`/`39eefeae`/`5adf2a67` D-FCBSHAPE measured +
+designed (🙋 the disk build's engine-state home, spec §4) · `95f28720` division
+loop −3.5% (SQR is ~4× FASTER than the VG-8020; DIVISION is 3.9× slower) ·
+`8af1762d` PAINT mask table (flood 2.10× → 1.96×).
+⚠️ **Walls (clean build 2026-09-26): sub page 1 was 0 B, sub page 0 40 B, main
+page 1 26 B, main low 5 B.** Anything sub-side needs a carve first.
+➡️ **QUEUE:** TIERS 1–3 hold nothing autonomous (PAD needs the board; the rest
+🙋). TIER 4: D-FCBSHAPE and the frame economy wait on Joost. TIER 5: the
+structural speed levers (packed BCD for division, the FOR/GOTO working form,
+PAINT's read cache) all need a carve or a design. What is left 🤖 is
+APPARATUS.
+
 ### ☀️ DAY 2026-09-26 (INTERACTIVE, JOOST PRESENT) — READ THIS FIRST
 
 Shipped, all measured against the VG-8020 and pushed: the RP2040-Zero rig
