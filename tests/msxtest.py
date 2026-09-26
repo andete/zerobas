@@ -72,13 +72,30 @@ def _build_subrom():
     where a real page-0 or page-1 CALSLT would map them into CPU space. Callers
     slice the piece they need (see _install_subrom_bridge)."""
     if "bytes" not in _SUB_CACHE:
-        rom = tp("msxtest_sub.rom")
-        sym = tp("msxtest_sub.sym")
-        subprocess.run(["pasmo", "-I", "sub", "--bin", "sub/sub.asm", rom, sym],
-                       check=True, capture_output=True, cwd=_ROOT)
-        with open(rom, "rb") as fh:
-            _SUB_CACHE["bytes"] = fh.read()
-        _SUB_CACHE["sym"] = load_symbols(sym)
+        # 🔴 PER-PROCESS NAMES (2026-09-26). These were the fixed
+        # `msxtest_sub.rom/.sym` under the shared temp root, and every process
+        # that imports this module and needs the sub-ROM -- the unit tests, but
+        # ALSO probes such as kwsweep (via probes/disk/bas_tokenise.py) that do
+        # not set ZB_TEST_TMP -- assembled INTO the same two files. In the
+        # parallel battery one reader got another's half-written .sym:
+        # `KeyError: 'tokenise'`, kwsweep rc 2, "FLAKE (green on retry)" -- and
+        # the retry runs AFTER the post-checks, so tiers-md-check read no pin.
+        # The result is cached in-process (_SUB_CACHE) and read by nobody else,
+        # so a per-pid name loses nothing; the files are removed once read.
+        rom = tp(f"msxtest_sub.{os.getpid()}.rom")
+        sym = tp(f"msxtest_sub.{os.getpid()}.sym")
+        try:
+            subprocess.run(["pasmo", "-I", "sub", "--bin", "sub/sub.asm", rom, sym],
+                           check=True, capture_output=True, cwd=_ROOT)
+            with open(rom, "rb") as fh:
+                _SUB_CACHE["bytes"] = fh.read()
+            _SUB_CACHE["sym"] = load_symbols(sym)
+        finally:
+            for f in (rom, sym):
+                try:
+                    os.remove(f)
+                except OSError:
+                    pass
     return _SUB_CACHE["bytes"], _SUB_CACHE["sym"]
 
 

@@ -5893,7 +5893,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:25233 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:25242 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -6059,7 +6059,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:10852 (T-6FE392)8 (T-529ABE)` from `TODO.md:22887 (T-529ABE)`: a
+      `TODO.md:10852 (T-6FE392)8 (T-529ABE)` from `TODO.md:22896 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -11696,7 +11696,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:22887 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:22896 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -16861,6 +16861,15 @@ finds zero shared names (a renamed block would otherwise make it silently blind)
       next gates-fast on the SAME tree ran kwsweep (130 s) and was 45/45 green.
       🤖 **AUTONOMOUS** — make tiers-md-check's selection pull in kwsweep (or
       keep the pin across the wipe), and prove it with a scratchpad-only change.
+      📏 **A SECOND ROUTE TO THE SAME FALSE RED, 2026-09-26 (FULL battery):**
+      kwsweep failed at 0 s with `KeyError: 'tokenise'`, the runner's serial
+      retry turned it green (*"FLAKE (green on retry)"*) — but the retry runs
+      AFTER the post-checks, so tiers-md-check had already read a missing pin.
+      ✅ The FLAKE is fixed (tests/msxtest.py: the sub-ROM build used a FIXED
+      temp name, `msxtest_sub.rom/.sym`, that every importing process —
+      kwsweep included, via bas_tokenise — assembled into at once; per-pid
+      names now, 6 parallel builds 6/6). The ORDERING is still open: a
+      post-check that reads a pool artefact should run after the retries.
 
 - [x] ⌨️ **D-INSBOTTOM — INSERT MODE ON A LINE THAT ENDS ON THE BOTTOM ROW**
       🎚️ TIER 3 — common errors: a corner of an editing gesture, not its
