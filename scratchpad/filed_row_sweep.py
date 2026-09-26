@@ -245,6 +245,19 @@ def main():
         rel = f"scratchpad/{m}.py"
         args = ARGS.get(m, ())
         out = f"/tmp/zerobas/rot_{m}.out"
+        # 🔌 NEVER UNATTENDED: A PROBE THAT DRIVES THE RIG OR OPENS A WINDOW.
+        # The RP2040-Zero is a real host joystick/mouse -- it moves Joost's
+        # cursor and crashed a game of his -- and a `grabinput` window takes over
+        # his screen. His rule (2026-09-26): ask before any run that needs the
+        # board. A sweep cannot ask, so it names the probe and does not run it.
+        try:
+            src = open(os.path.join(ROOT, rel), encoding="utf-8").read()
+        except OSError:
+            src = ""
+        if re.search(r"\brigfw\b|grabinput|usbmodem", src):
+            print(f"{i:3d}/{len(todo)}  {m:28s} NOT SWEPT  needs the rig or a window "
+                  f"(ask Joost first)", flush=True)
+            continue
         t0 = time.time()
         with open(out, "w") as fh:
             try:
