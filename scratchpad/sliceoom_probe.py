@@ -8,9 +8,9 @@ allocates only the result (sub/strheap.asm op 21 + she_slice_new).
 
 Cases: the tight-pool shapes; exact VALUES of each verb; a collection forced
 DURING the argument evaluation (the kept source's body moves before the copy);
-a slice of a slice (the in-place path); and an ARRAY-element source, which
-still takes the full-copy path (its descriptor moves on a region shift) -- that
-row is expected to keep diverging and says so.
+a slice of a slice (the in-place path); and ARRAY-element sources, which get
+an OFFSET temp (their descriptor moves on a region shift, their distance from
+ARYTAB does not) -- including an auto-DIM and a collection during the arguments.
 
 Diskless pair, fresh boot per case. Clean room: typed BASIC, screen text.
 """
@@ -30,6 +30,17 @@ CASES = [
     ("gcargs",   'CLEAR 60:' + AZ + ':B$=MID$(A$,LEN(A$+A$)-30,3):PRINT12345;B$;FRE("")'),
     ("nested",   AZ + ':PRINT12345;MID$(LEFT$(A$,10),3,2);RIGHT$(MID$(A$,5,6),2)'),
     ("array50",  'CLEAR 70:DIM A$(1):A$(1)=STRING$(50,"A"):B$=MID$(A$(1),2,3):PRINT12345;LEN(B$)'),
+    # the array half (offset temps): growth and a collection during the
+    # arguments, nested slices, the empty element, a comparison.
+    # a new ARRAY auto-DIMmed DURING the argument (W is undeclared) -- the only
+    # region growth an expression can cause: a plain read of a new scalar does
+    # not create it and VARPTR of one is Illegal function call (both measured,
+    # both machines). The last number is STREND's move: nonzero = it happened.
+    ("arrdim",   'CLEAR 70:DIM A$(1):A$(1)=STRING$(50,"A"):T=0:B$="":T=PEEK(&HF6C6)+256*PEEK(&HF6C7):B$=MID$(A$(1),2+W(3),3):PRINT12345;LEN(B$);FRE("");PEEK(&HF6C6)+256*PEEK(&HF6C7)-T'),
+    ("arrvals",  'DIM A$(2):A$(1)="ABCDEFGHIJ":A$(2)="KLMNOP":PRINT12345;LEFT$(A$(1),2);RIGHT$(A$(2),3);MID$(A$(1),NV+3,2);MID$(A$(2),LEN(MID$(A$(1),2,3)),2)'),
+    ("arrgc",    'CLEAR 70:DIM A$(1):' + AZ.replace("A$", "A$(1)") + ':B$=MID$(A$(1),LEN(A$(1)+A$(1))-30,3):PRINT12345;B$;FRE("")'),
+    ("arrempty", 'DIM A$(1):PRINT12345;"<"+MID$(A$(1),1,2)+">";LEN(LEFT$(A$(0),3));MID$(A$(1),1,2)=""'),
+    ("arrcmp",   'DIM A$(1):A$(1)="HELLO":PRINT12345;MID$(A$(1),2,3)="ELL";LEFT$(A$(1),NV+1);RIGHT$(A$(1),NV+2)'),
 ]
 
 

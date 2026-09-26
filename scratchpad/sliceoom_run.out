@@ -5,7 +5,12 @@ SAME mid40     ref: 3 17   zb: 3 17
 SAME vals      ref: ABRSTCDEFST   zb: ABRSTCDEFST
 SAME gcargs    ref: JKL 37   zb: JKL 37
 SAME nested    ref: CDIJ   zb: CDIJ
-DIFF array50   ref: 3   zb: Out of string space
+SAME array50   ref: 3   zb: 3
+SAME arrdim    ref: 3 17 96   zb: 3 17 96
+SAME arrvals   ref: ABNOPCDMN   zb: ABNOPCDMN
+SAME arrgc     ref: JKL 47   zb: JKL 47
+SAME arrempty  ref: <> 0 -1   zb: <> 0 -1
+SAME arrcmp    ref: -1 HLO   zb: -1 HLO
 
-DIFF: 1/8
+DIFF: 0/13
 refcache: 0 hit, 2 miss, 2 stored

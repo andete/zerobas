@@ -280,13 +280,19 @@ she_snap_asis:
 ; `CLEAR 60:A$=STRING$(50,"A"):B$=MID$(A$,2,3)` needed 53 B and raised `Out of
 ; string space` where the VG-8020 has room (FRE("") 7 after; scratchpad/
 ; sliceoom_probe.py). A SCALAR variable's descriptor is kept AS-IS instead:
-; it is STABLE for the statement (new scalars are appended; only the ARRAY
+; it is STABLE for the statement (new scalars are appended; only the array
 ; region shifts), and the GC keeps its ptr current, so she_slice can allocate
-; just the result and copy from it. Everything else -- an array element (its
-; descriptor moves on a shift), an RVDESC or STRSCR (scratch the next
-; sub-expression can clobber) -- takes op 16's rule unchanged. Concatenation
-; and comparison stay on op 16: concat appends INTO its accumulator in place,
-; which must never be a variable.
+; just the result and copy from it. An ARRAY element's descriptor MOVES on that
+; shift, but its distance from ARYTAB does not (a new scalar moves the whole
+; region; a new array is appended past it; DIM/ERASE are statements), so it gets
+; an OFFSET TEMP: a pushed slot [len][element - ARYTAB] with no body. Every real
+; temp's ptr is a heap body (>= $8000) or 0 with len 0, and the offset is below
+; $8000 -- that bit is the tag she_slice reads, and the GC's range test already
+; skips it (ptr < FRETOP). Main reads only the len byte, which is the element's.
+; Everything else -- an RVDESC or STRSCR (scratch the next sub-expression can
+; clobber) -- takes op 16's rule unchanged. Concatenation and comparison stay
+; on op 16: concat appends INTO its accumulator in place, which must never be a
+; variable.
 she_snap_slice:
                 ld      hl,(SH_SRC)
                 ld      de,(VARTAB)
@@ -297,8 +303,30 @@ she_snap_slice:
                 ld      de,(ARYTAB)
                 or      a
                 sbc     hl,de
-                jr      nc,she_snap_keep    ; arrays and beyond -> op 16's rule
-                jr      she_snap_asis       ; a scalar: stable, keep it
+                jr      c,she_snap_asis     ; a scalar: stable, keep it
+                ex      de,hl               ; DE = element - ARYTAB
+                ld      hl,(SH_SRC)
+                ld      bc,(STREND)
+                or      a
+                sbc     hl,bc
+                jr      nc,she_snap_keep    ; past the arrays -> op 16's rule
+                push    de                  ; [ofs]
+                xor     a
+                call    sh_temp_push_alloc  ; a bodiless slot; CF clear = overflow
+                pop     de                  ; DE = ofs (pop keeps CF)
+                jr      nc,sss_full         ; A = 2
+                ld      (SH_PTR),hl
+                ld      bc,(SH_SRC)
+                ld      a,(bc)
+                ld      (hl),a              ; slot.len = the element's
+                inc     hl
+                ld      (hl),e
+                inc     hl
+                ld      (hl),d              ; slot.ptr = the offset (bit 15 clear)
+                xor     a
+sss_full:
+                ld      (SH_ERR),a
+                ret
     ENDIF
 
 she_snapshot:
@@ -336,6 +364,10 @@ she_slice:
     IF CLEARPOOL
                 call    sh_src_is_temp
                 jr      nc,she_slice_new    ; D-SLICEOOM: a kept scalar source
+                inc     hl
+                inc     hl
+                bit     7,(hl)
+                jr      z,she_slice_ofs     ; ptr < $8000: an array OFFSET temp
     ENDIF
                 ld      hl,(SH_SRC)
                 ld      a,(SH_COUNT)
@@ -398,6 +430,59 @@ she_slice_new:
                 ld      c,a
                 ld      b,0
                 ldir
+                ret
+; she_slice_ofs -- the source is an OFFSET temp op 21 pushed for an array
+; element: allocate the result's body, THEN find the element again (ARYTAB +
+; offset -- the GC may have moved its body, never its offset) and copy; the
+; slot becomes the result. During the alloc the slot is [len][offset], which
+; the GC's range test skips. A real EMPTY temp ([0][0]) lands here too, and
+; its count is 0.
+she_slice_ofs:
+                ld      a,(SH_COUNT)
+                or      a
+                jr      z,sso_empty
+                call    heap_alloc          ; A = count -> CF+HL = body / CF clear = OOM
+                jr      nc,sso_oom
+                ex      de,hl               ; DE = the new body
+                ld      hl,(SH_SRC)
+                inc     hl
+                ld      c,(hl)
+                inc     hl
+                ld      b,(hl)              ; BC = offset
+                ld      hl,(ARYTAB)
+                add     hl,bc               ; HL = the element's descriptor, NOW
+                inc     hl
+                ld      a,(hl)
+                inc     hl
+                ld      h,(hl)
+                ld      l,a                 ; HL = its body, NOW
+                ld      a,(SH_START)
+                ld      c,a
+                ld      b,0
+                add     hl,bc               ; HL = source + start
+                push    de                  ; [body]
+                ld      a,(SH_COUNT)
+                ld      c,a
+                ldir
+                pop     de                  ; DE = body
+                ld      hl,(SH_SRC)
+                ld      (hl),a              ; slot.len = count (A still = count)
+                inc     hl
+                ld      (hl),e
+                inc     hl
+                ld      (hl),d              ; slot.ptr = body
+                ret
+sso_oom:
+                ld      a,FPERR_STROOM
+                call    ssn_err             ; pending, first error wins
+sso_empty:
+                ld      hl,(SH_SRC)
+                xor     a
+                ld      (hl),a
+                inc     hl
+                ld      (hl),a
+                inc     hl
+                ld      (hl),a              ; slot = [0][0], the empty string
                 ret
 ssn_full:
                 ld      a,9                 ; String formula too complex

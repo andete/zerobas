@@ -47,10 +47,16 @@ code finds — the assembler did; re-rendering per window was quadratic (the
 battery's `linemax` caught >8 s); a comment edit mid-knife voids the run.
 The RP2040-Zero is connected (`/dev/cu.usbmodem1101`); the rig stays PARKED.
 
-➡️ **QUEUE, lowest tier first:** (1) TIER 3 — the reference's key line shows
-F6..F10 while SHIFT is held (inferred from `FNKSWI`, NOT yet observed: measure
-first); (2) TIER 4 — S2b's heap half (string slices allocate only their
-result), low observable value; (3) TIER 5 speed. TIER 6 stays parked.
+➡️ **SHIPPED LATER THAT NIGHT:** `b2b5ad38` D-KEYCLS (the key line survives
+CLS/SCREEN/WIDTH; the SHIFT→F6..F10 inference REFUTED) · `43758524` D-KEYSCR1
+(the key line in SCREEN 1) · `d8b1365e` D-SLICEOOM (slices of a scalar
+allocate only the result) · then its ARRAY half (offset temps, 0/13).
+**Walls (clean build 2026-09-26, before the array half): main page 1 61 B, low
+1 B; sub p0 175 B — the array half then spent 110 B of sub p0.**
+➡️ **QUEUE, lowest tier first:** (1) TIER 4 — S2b's heap half (a released
+temp body at FRETOP is not returned), low observable value; (2) TIER 5 speed —
+what remains is STRUCTURAL (a working form across chained expressions; the
+float suites must hold it). TIER 6 stays parked.
 
 ### ☀️ MIDDAY 2026-09-25 — READ THIS FIRST, IT SUPERSEDES THE NIGHT BELOW
 

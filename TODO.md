@@ -2266,7 +2266,7 @@ item — do **one item per session** to keep context lean.
       still 0/7. Sub-ROM bytes only (main page 1 unchanged). 🔮 Predicted —
       HIT.
 
-- [ ] 🧵 **D-SLICEOOM — `LEFT$`/`RIGHT$`/`MID$` OF A BIG STRING RAISED `Out of
+- [x] 🧵 **D-SLICEOOM — `LEFT$`/`RIGHT$`/`MID$` OF A BIG STRING RAISED `Out of
       string space` IN A TIGHT POOL WHERE THE REFERENCE HAS ROOM**
       🎚️ TIER 3 — common errors: a spurious error on a legal program.
       📏 **MEASURED 2026-09-26** (`scratchpad/sliceoom_probe.py`): `CLEAR 60:
@@ -2287,12 +2287,28 @@ item — do **one item per session** to keep context lean.
       three verbs, a COLLECTION FORCED DURING the argument evaluation
       (`MID$(A$,LEN(A$+A$)-30,3)` → `JKL`, `FRE` 37 on both), and a slice of
       a slice. 🔮 Predicted all but `array50` — HIT.
-      🤖 **AUTONOMOUS — STILL OPEN: an ARRAY-ELEMENT source** (`array50`,
+      ~~🤖 **AUTONOMOUS — STILL OPEN: an ARRAY-ELEMENT source** (`array50`,
       `Out of string space` against 3). Its descriptor MOVES when a scalar is
       created during the argument evaluation, so it keeps the full copy. A fix
       needs either the collector to tolerate two roots on one body (a view
       temp) or a re-resolution of the element after the arguments — priced
-      when picked up.
+      when picked up.~~
+      ✅ **ARRAY HALF FIXED 2026-09-26, by neither route above:** an element's
+      descriptor moves on a region shift but its DISTANCE FROM `ARYTAB` does
+      not, so op 21 pushes an OFFSET TEMP — a bodiless slot `[len][element −
+      ARYTAB]` — and `she_slice_ofs` (sub/strheap.asm) allocates the result,
+      finds the element again after the alloc and turns the slot into the
+      result. The tag is the ptr's bit 15: every real temp owns a heap body
+      (≥ `$8000`) or is `[0][0]`, and the GC's range test already skips an
+      offset. Main unchanged; sub page 0 only (clean build 2026-09-26).
+      📍 **AND THE FEARED SHIFT CANNOT HAPPEN INSIDE AN EXPRESSION:** a plain
+      read of a new scalar does not create it, and `VARPTR` of one is `Illegal
+      function call` — both measured, both machines. The only growth an
+      expression causes is an array AUTO-DIM, which appends.
+      `scratchpad/sliceoom_run.out`: **DIFF 0/13** — `array50` now 3 on both,
+      an auto-DIM during the argument (`STREND` moves 96 on both), a
+      collection during it, nested and empty elements, a comparison.
+      🔮 Predicted all SAME — HIT (I said 14 rows; it is 13).
 
 - [x] 🔴 **D-HIMEMLIE — zerobas's `HIMEM` SAYS `$F380` WHILE ZEROBAS LIVES AT
       `$DB00..$F37F`**
@@ -5874,7 +5890,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:24815 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:24831 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -6040,7 +6056,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:10833 (T-6FE392)8 (T-529ABE)` from `TODO.md:22469 (T-529ABE)`: a
+      `TODO.md:10849 (T-6FE392)8 (T-529ABE)` from `TODO.md:22485 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -11677,7 +11693,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:22469 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:22485 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
