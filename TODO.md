@@ -2266,6 +2266,34 @@ item — do **one item per session** to keep context lean.
       still 0/7. Sub-ROM bytes only (main page 1 unchanged). 🔮 Predicted —
       HIT.
 
+- [ ] 🧵 **D-SLICEOOM — `LEFT$`/`RIGHT$`/`MID$` OF A BIG STRING RAISED `Out of
+      string space` IN A TIGHT POOL WHERE THE REFERENCE HAS ROOM**
+      🎚️ TIER 3 — common errors: a spurious error on a legal program.
+      📏 **MEASURED 2026-09-26** (`scratchpad/sliceoom_probe.py`): `CLEAR 60:
+      A$=STRING$(50,"A"):B$=MID$(A$,2,3)` — VG-8020 `FRE("")` 7 afterwards,
+      zerobas `Out of string space`, and the same for `LEFT$`, `LEN(MID$(...))`
+      and a 40-byte source. zerobas COPIED the whole source into a temp before
+      slicing it (the snapshot exists so the source survives the argument
+      evaluation), needing 53 B where the reference needs 3.
+      ✅ **FIXED FOR A SCALAR SOURCE (the common case), 2026-09-26:** a new
+      op 21 (`she_snap_slice`, sub/strheap.asm) keeps a SCALAR variable's
+      descriptor AS-IS — stable for the statement (new scalars append; only
+      arrays shift) and kept current by the GC — and `she_slice_new` then
+      allocates ONLY the result and copies from the source's body re-read
+      AFTER the alloc. Concat/compare stay on op 16 (concat appends into its
+      accumulator in place). It cost the low region four bytes
+      (`str_snapshot_slice`) and the rest sub-side (clean build 2026-09-26). `scratchpad/sliceoom_run.out`: **7/8 SAME** — the four
+      tight-pool shapes (to the byte, `FRE("")` included), exact values of all
+      three verbs, a COLLECTION FORCED DURING the argument evaluation
+      (`MID$(A$,LEN(A$+A$)-30,3)` → `JKL`, `FRE` 37 on both), and a slice of
+      a slice. 🔮 Predicted all but `array50` — HIT.
+      🤖 **AUTONOMOUS — STILL OPEN: an ARRAY-ELEMENT source** (`array50`,
+      `Out of string space` against 3). Its descriptor MOVES when a scalar is
+      created during the argument evaluation, so it keeps the full copy. A fix
+      needs either the collector to tolerate two roots on one body (a view
+      temp) or a re-resolution of the element after the arguments — priced
+      when picked up.
+
 - [x] 🔴 **D-HIMEMLIE — zerobas's `HIMEM` SAYS `$F380` WHILE ZEROBAS LIVES AT
       `$DB00..$F37F`**
       🎚️ TIER 4 — RAM usage, goal (b) *same addresses*: the published cell
@@ -5846,7 +5874,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:24787 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:24815 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -6012,7 +6040,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:10805 (T-6FE392)8 (T-529ABE)` from `TODO.md:22441 (T-529ABE)`: a
+      `TODO.md:10833 (T-6FE392)8 (T-529ABE)` from `TODO.md:22469 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -11649,7 +11677,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:22441 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:22469 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

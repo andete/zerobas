@@ -148,6 +148,8 @@ strheap_engine:
                 jp      z,sh_chan_addr      ; file-channel block address (D-FCH §3.2)
                 cp      20
                 jp      z,sh_ctl_reset      ; D-CTLPOOL: derive the pool's top
+                cp      21
+                jp      z,she_snap_slice    ; D-SLICEOOM: a slice's source
     ENDIF
                 jp      sh_val_parse        ; op==13: the only other value the
                                             ; main-ROM glue ever writes
@@ -266,11 +268,37 @@ sit_no:
 she_snap_keep:
                 call    sh_src_is_temp
                 jp      nc,she_snapshot     ; not a temp -> the real snapshot
+she_snap_asis:
                 ld      hl,(SH_SRC)
                 ld      (SH_PTR),hl         ; the source IS the owned temp
                 xor     a
                 ld      (SH_ERR),a
                 ret
+
+; --- she_snap_slice: op=21 -- a SLICE's source (D-SLICEOOM, 2026-09-26) ------
+; LEFT$/RIGHT$/MID$ copied a non-temp source WHOLE before slicing it, so
+; `CLEAR 60:A$=STRING$(50,"A"):B$=MID$(A$,2,3)` needed 53 B and raised `Out of
+; string space` where the VG-8020 has room (FRE("") 7 after; scratchpad/
+; sliceoom_probe.py). A SCALAR variable's descriptor is kept AS-IS instead:
+; it is STABLE for the statement (new scalars are appended; only the ARRAY
+; region shifts), and the GC keeps its ptr current, so she_slice can allocate
+; just the result and copy from it. Everything else -- an array element (its
+; descriptor moves on a shift), an RVDESC or STRSCR (scratch the next
+; sub-expression can clobber) -- takes op 16's rule unchanged. Concatenation
+; and comparison stay on op 16: concat appends INTO its accumulator in place,
+; which must never be a variable.
+she_snap_slice:
+                ld      hl,(SH_SRC)
+                ld      de,(VARTAB)
+                or      a
+                sbc     hl,de
+                jr      c,she_snap_keep     ; below the scalars -> op 16's rule
+                ld      hl,(SH_SRC)
+                ld      de,(ARYTAB)
+                or      a
+                sbc     hl,de
+                jr      nc,she_snap_keep    ; arrays and beyond -> op 16's rule
+                jr      she_snap_asis       ; a scalar: stable, keep it
     ENDIF
 
 she_snapshot:
@@ -305,6 +333,10 @@ she_sn_full:
 ; Moves those bytes to the front of the SAME (uniquely-owned) body and sets
 ; the descriptor's length to SH_COUNT. Clobbers A, B, C, D, E, H, L.
 she_slice:
+    IF CLEARPOOL
+                call    sh_src_is_temp
+                jr      nc,she_slice_new    ; D-SLICEOOM: a kept scalar source
+    ENDIF
                 ld      hl,(SH_SRC)
                 ld      a,(SH_COUNT)
                 ld      (hl),a              ; temp.len := count
@@ -333,6 +365,51 @@ she_slice:
                                             ; < src(body+start) always when
                                             ; start>0, so a forward LDIR is safe
                 ret
+    IF CLEARPOOL
+; she_slice_new -- the source is a SCALAR variable op 21 kept (not a temp):
+; allocate ONLY the result as a new temp, then copy from the source's CURRENT
+; body -- re-read after the alloc, which may have collected and moved it. The
+; result becomes STRPTR. An overflow or OOM is a pending error (first error
+; wins), raised at the statement boundary before the value is used.
+she_slice_new:
+                ld      a,(SH_COUNT)
+                call    sh_temp_push_alloc  ; CF clear = no slot; CF set: B=err,
+                jr      nc,ssn_full         ; HL = slot, DE = body
+                ld      (STRPTR),hl         ; the result (a [0][0] slot on OOM)
+                ld      a,b
+                or      a
+                ld      a,FPERR_STROOM
+                jr      nz,ssn_err          ; heap OOM
+                ld      a,d
+                or      e
+                ret     z                   ; count 0 -> the empty string, done
+                push    de                  ; [body]
+                ld      hl,(SH_SRC)
+                inc     hl
+                ld      e,(hl)
+                inc     hl
+                ld      d,(hl)              ; DE = the source's body, NOW
+                ld      a,(SH_START)
+                ld      l,a
+                ld      h,0
+                add     hl,de               ; HL = source + start
+                pop     de                  ; DE = the new body
+                ld      a,(SH_COUNT)
+                ld      c,a
+                ld      b,0
+                ldir
+                ret
+ssn_full:
+                ld      a,9                 ; String formula too complex
+ssn_err:
+                ld      b,a
+                ld      a,(FPERR)
+                or      a
+                ret     nz                  ; first error wins
+                ld      a,b
+                ld      (FPERR),a
+                ret
+    ENDIF
 
 ; --- strheap_floor: -> HL = the STRING POOL's low boundary (D-CLP) ----------
 ; docs/spec-basic-clearpool.md §3. `min(HIMEM,TXTMAX) - POOLSIZE`, i.e. the

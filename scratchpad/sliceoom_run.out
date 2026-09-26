@@ -1,0 +1,11 @@
+SAME mid50     ref: 3 7   zb: 3 7
+SAME left50    ref: 5 5   zb: 5 5
+SAME lenmid50  ref: 3 10   zb: 3 10
+SAME mid40     ref: 3 17   zb: 3 17
+SAME vals      ref: ABRSTCDEFST   zb: ABRSTCDEFST
+SAME gcargs    ref: JKL 37   zb: JKL 37
+SAME nested    ref: CDIJ   zb: CDIJ
+DIFF array50   ref: 3   zb: Out of string space
+
+DIFF: 1/8
+refcache: 0 hit, 2 miss, 2 stored

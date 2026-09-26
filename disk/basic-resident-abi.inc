@@ -10,9 +10,9 @@
 ; main ROM, read out of our own build's symbol file. Nothing here is derived
 ; from a disassembly or byte-copy of any reference ROM.
 
-widen_rhs_operand equ 038F6H
-round_single_and_pack equ 03431H
-round_and_finalize equ 033D7H
+widen_rhs_operand equ 038FAH
+round_single_and_pack equ 03435H
+round_and_finalize equ 033DBH
 pu_deref_body equ 028C1H
 ARGA equ 0F06AH   ; operand A / working result, FPNUM record (18)
 STRSCR equ 0E26DH   ; [len][bytes:STRMAX] staging, $E26D..$E36C

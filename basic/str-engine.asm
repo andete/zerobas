@@ -567,6 +567,17 @@ str_snapshot_arg equ str_snapshot_keep
     ELSE
 str_snapshot_arg equ str_snapshot_to_temp
     ENDIF
+; --- str_snapshot_slice (D-SLICEOOM): LEFT$/RIGHT$/MID$'s source only -------
+; op 21 keeps a SCALAR variable as-is (the slice then allocates just its result,
+; sub/strheap.asm she_slice_new) and otherwise is op 16. Concat and compare keep
+; str_snapshot_arg. 4 bytes of low region.
+    IF CLEARPOOL
+str_snapshot_slice:
+                ld      a,21                ; op = 21 (a slice's source)
+                jr      sst_op
+    ELSE
+str_snapshot_slice equ str_snapshot_to_temp
+    ENDIF
 
 str_snapshot_to_temp:
                 ld      a,4                 ; op = 4 (SNAPSHOT)
@@ -987,7 +998,8 @@ str_arg_snap:
                 call    str_eval            ; STRPTR -> source; HL advanced; CF=ok
                 jr      nc,sas_decline
                 push    hl                  ; save the cursor across the snapshot
-                call    str_snapshot_arg    ; STRPTR -> an OWNED temp; HL=temp
+                call    str_snapshot_slice  ; STRPTR -> an OWNED temp, or a kept
+                                            ; SCALAR (D-SLICEOOM); HL = it
                 pop     hl
                 ret
 sas_decline:
