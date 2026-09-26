@@ -51,6 +51,7 @@ GTPDL           equ     $00DE   ; A = paddle 1..12 -> A = 0..255 dial (zerobas-t
 ; --- VDP VRAM access BIOS entry points (VPOKE / VPEEK) ---------------------
 ; Source: MSX Assembly Page BIOS call list / MSX2 Technical Handbook, VDP I/O.
 WRTVRM          equ     $004D   ; write A to VRAM address HL (VPOKE)
+INSFLG          equ     $FCA8   ; PUBLISHED insert-mode flag: $FF on, 0 off (D-INSMODE) (1 B)
 RDVRM           equ     $004A   ; read VRAM address HL -> A (VPEEK)
 
 ; --- Graphics arc (SCREEN 2 geometry engine; docs/spec-basic-graphics.md) ----

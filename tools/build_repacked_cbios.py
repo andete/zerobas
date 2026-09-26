@@ -40,11 +40,14 @@ PATCHES = [
     # divert -- the current frame's KEYBUF insertion, so BASIC's KEY trap needs
     # a seam that stock C-BIOS does not have. docs/spec-traps-t3-key.md SS4.
     os.path.join(REPO, "cbios-repack", "key-trap-hook.patch"),
+    # D-INSMODE: the INS and DEL keys produced NO character (row 8's table held
+    # $00 for both), so the screen editor could never see them; $12 / $7F.
+    os.path.join(REPO, "cbios-repack", "ins-del-keys.patch"),
 ]
 
 PINNED_TAG = "v0.29-3-gb5ad9cb"
 PRISTINE_SHA1 = "baf2e9c69252fd9b350b488d89c71887b9d05eec"
-REPACKED_SHA1 = "557aed9352cf8367eabb9a3cc081c83252579ab9"
+REPACKED_SHA1 = "8cb70b75d4fa3ecfcb972510564c563a841d46b5"
 ROM_REL = os.path.join("derived", "bin", "cbios_main_msx1_eu.rom")
 
 

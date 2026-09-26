@@ -33,7 +33,7 @@ other component's cell at the same address; the `inside` column
 names the other component's BUFFER this address falls within. That
 second one is the question a per-component map cannot answer.
 
-* **basic** — 427 declared addresses in this project's own workspace `$E000..$F37F` (397 with a machine-readable width), plus **101** in the MSX standard work area at or above `$F380`.
+* **basic** — 427 declared addresses in this project's own workspace `$E000..$F37F` (397 with a machine-readable width), plus **102** in the MSX standard work area at or above `$F380`.
 * **disk** — 126 declared addresses in this project's own workspace `$E000..$F37F` (112 with a machine-readable width), plus **25** in the MSX standard work area at or above `$F380`.
 
 ## This project's own workspace (`$E000..$F37F`)
@@ -685,6 +685,7 @@ extents the standard already fixes would be noise, not rigour.
 | `$FBE5` | 11 B | `basic` | `NEWKEY` | key matrix snapshot, 11 B (row 6 bit 0 = SHIFT) |  |
 | `$FC4A` | 2 B | `basic` | `HIMEM` | highest RAM address BASIC may use (2 bytes) |  |
 | `$FC9E` |  | `basic` | `JIFFY` | MSX software clock, bumped by the timer ISR (MSX2 TH work area) |  |
+| `$FCA8` | 1 B | `basic` | `INSFLG` | PUBLISHED insert-mode flag: $FF on, 0 off (D-INSMODE) (1 B) |  |
 | `$FCA9` |  | `basic` | `CSRSW` | cursor display: 0 = off, 1 = on |  |
 | `$FCAF` |  | `basic` | `SCRMOD` | current screen mode (0..3) |  |
 | `$FCB3` | 2 B | `basic` | `GXPOS` | pending plot X (int16 LE) |  |

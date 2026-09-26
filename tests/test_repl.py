@@ -122,8 +122,10 @@ def run():
     # Backspace ($08) erases the previous char (echo: back/space/back per erase).
     case("'AB' <bs> 'C'", b"AB\x08C\r", b"AC")
 
-    # DEL ($7F) is also erase-left (Mac Backspace via C-BIOS).
-    case("'AB' <del>", b"AB\x7F\r", b"A")
+    # DEL ($7F) deletes the character UNDER the cursor (D-INSMODE, Joost:
+    # "Faithful DEL" -- it was erase-left, for the Mac Backspace key, since
+    # June). At the end of `AB` there is nothing under the cursor: `AB` stays.
+    case("'AB' <del>", b"AB\x7F\r", b"AB")
 
     # Backspace at the start of the line is a no-op (nothing to erase).
     case("<bs> 'X'", b"\x08X\r", b"X")

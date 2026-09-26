@@ -14,7 +14,8 @@
 ; at the prompt, so the reference's editor draws the cursor itself and leaves
 ; the published cell alone -- so does this.
 ;
-; E = 1: show the cursor at CSRY/CSRX; E = 0: remove it. Both are idempotent
+; E = 1: show the cursor at CSRY/CSRX; E = 0: remove it. In insert mode
+; (INSFLG set, D-INSMODE) the cursor is the bottom three rows only. Both are idempotent
 ; (CSR_ON), so a path that removes twice, or never showed it, writes nothing.
 ; SCREEN 0 and 1 only: the line reader switches a graphics mode to text first
 ; (txt_mode), so any other mode here draws nothing rather than guess a layout.
@@ -27,7 +28,7 @@
 cursor_tenant:
                 ld      a,e
                 or      a
-                jr      z,ct_off
+                jp      z,ct_off
                 ld      a,(CSR_ON)
                 or      a
                 ret     nz                  ; already shown
@@ -84,10 +85,26 @@ ct_row_done:
                 add     hl,de
                 ex      de,hl               ; DE = character 255's pattern
                 pop     hl
+                ld      a,(INSFLG)
+                ld      c,a                 ; C = $FF in insert mode, else 0
                 ld      b,8
 ct_copy:
                 call    RDVRM
+                ; D-INSMODE: in insert mode only pattern rows 5..7 are inverted --
+                ; rows 0..4 keep the glyph (the VG-8020, INSFLG 255: `rows=====iii`)
+                push    af
+                ld      a,b
+                cp      4                   ; B = 8..4 are rows 0..4
+                jr      c,ct_inv
+                ld      a,c
+                or      a
+                jr      z,ct_inv
+                pop     af                  ; insert mode, rows 0..4: as-is
+                jr      ct_put
+ct_inv:
+                pop     af
                 cpl                         ; every byte inverted, as measured
+ct_put:
                 ex      de,hl
                 call    WRTVRM
                 ex      de,hl

@@ -5891,7 +5891,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:25120 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:25162 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -6057,7 +6057,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:10850 (T-6FE392)8 (T-529ABE)` from `TODO.md:22774 (T-529ABE)`: a
+      `TODO.md:10850 (T-6FE392)8 (T-529ABE)` from `TODO.md:22816 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -11694,7 +11694,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:22774 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:22816 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -16765,7 +16765,7 @@ finds zero shared names (a renamed block would otherwise make it silently blind)
       checked as a RELATION, so the two fonts do not matter); `screen1` →
       D-SCR1PROMPT; `insB`/`insspace` → D-INSMODE (the rows print them).
 
-- [ ] ⌨️ **D-INSMODE — ZEROBAS'S SCREEN EDITOR HAS NO INSERT MODE**
+- [x] ⌨️ **D-INSMODE — ZEROBAS'S SCREEN EDITOR HAS NO INSERT MODE**
       🎚️ TIER 1 — happy path: editing a line with INS is everyday MSX use.
       📏 **MEASURED 2026-09-26** (`scratchpad/cursorblock_run.out`, Joost:
       *"The cursor also changes in normal and insert mode."*): after the INS
@@ -16795,6 +16795,48 @@ finds zero shared names (a renamed block would otherwise make it silently blind)
       row (rows + LINTTB entries move down); DEL / BS = pull the logical line
       left; the partial cursor (rows 5..7 inverted) in `cursor_tenant` when
       INSFLG is set. `sub/readline.asm` (sub page 1). Re-run the probe after.
+      ✅ **FIXED 2026-09-26 — `scratchpad/insmode_run.out` DIFF 0/12, LINTTB
+      included; `cursorblock_run.out` 0/7 with the insert cursor.**
+      🔴 **HALF THE BUG WAS IN C-BIOS, AND THE EDITOR COULD NOT HAVE SEEN IT:**
+      its key table (`scode_tbl_otherkeys`, row 8) held **`$00` for INS and
+      DEL**, so neither key produced a character — the reason zerobas's DEL
+      "did nothing" even while readline mapped `$7F` to erase-left. Patch #3,
+      `cbios-repack/ins-del-keys.patch`: `$12` / `$7F`. The merged main ROM
+      differs in exactly TWO bytes (`$27F0`, `$27F1`), measured.
+      🔴 **AND C-BIOS's `ESC L` MOVES THE ROWS BUT NOT THEIR LINTTB:** its
+      update loads `ld d,a / ld e,0` (CRTCNT × 256), so its `lddr` lands in
+      ROM. readline shifts LINTTB itself after the insert (the probe reads
+      LINTTB on both machines: the same after the row insert).
+      🏗️ DEL is now the MSX's (Joost: *"Faithful DEL"*) — the Mac Backspace
+      key, which openMSX delivers as DEL, deletes under the cursor, as it does
+      on the VG-8020 in openMSX; the MSX BS key still erases left.
+      🔮 Predicted 12/12 — HIT; predicted the cursor probe 6/7 — MISS the good
+      way (SCREEN 1 was already fixed by D-SCR1PROMPT).
+      ⚠️ **SUB PAGE 1 IS NEARLY FULL: 11 B** (clean build 2026-09-26). The
+      bottom-row growth path (a line ending ON the bottom row, under insert)
+      was a GUESS and was cut to fit — D-INSBOTTOM.
+
+- [ ] ⌨️ **D-INSBOTTOM — INSERT MODE ON A LINE THAT ENDS ON THE BOTTOM ROW**
+      🎚️ TIER 3 — common errors: a corner of an editing gesture, not its
+      happy path.
+      📏 Not measured on the reference. zerobas (D-INSMODE) grows a full line
+      by inserting a row BELOW it (`ESC L`, measured); when the line already
+      ends on the bottom text row there is no row below, and the last character
+      falls off. The reference probably scrolls the screen up — a guess, which
+      is why it was cut rather than shipped (it also did not fit sub page 1).
+      🤖 **AUTONOMOUS** — measure FIRST: a full line on the bottom row, INS at
+      its start, one character; read the rows and LINTTB on both machines.
+      Then find the bytes (sub page 1 was 11 B free, clean build 2026-09-26).
+
+- [ ] 🏠 **D-HOMEKEY — THE HOME KEY CLEARS THE SCREEN ON ZEROBAS**
+      🎚️ TIER 1 — happy path: HOME is a screen-editor key.
+      📏 Read in C-BIOS's source while fixing D-INSMODE, NOT yet measured:
+      row 8 of its key table maps HOME to `$0C` — CLS — where an MSX gives
+      `$0B` (cursor home) and `$0C` only with SHIFT. The rows 6..11 table has
+      no SHIFT variant, so the fix is not a one-byte patch. (`type` with `$0B`
+      hung the insmode harness on the VG-8020 — find a clean way to press it.)
+      🤖 **AUTONOMOUS** — measure FIRST (HOME and SHIFT+HOME on both machines,
+      via the key matrix), then patch C-BIOS's decode.
 
 - [x] 🖥️ **D-SCR1PROMPT — THE PROMPT DROPS SCREEN 1 BACK TO SCREEN 0**
       🎚️ TIER 1 — happy path: `SCREEN 1` typed at the prompt should stay.

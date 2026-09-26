@@ -1,0 +1,17 @@
+diff --git a/src/main.asm b/src/main.asm
+index 861d7f7..23351a8 100644
+--- a/src/main.asm
++++ b/src/main.asm
+@@ -3193,7 +3193,11 @@ str_nocart:
+ scode_tbl_otherkeys:
+                 db      $00,$00,$00,$00,$00,$00,$00,$00 ;06
+                 db      $00,$00,$1B,$09,$00,$08,$00,$0D ;07
+-                db      $20,$0C,$00,$00,$1D,$1E,$1F,$1C ;08
++; zerobas repack (D-INSMODE): INS and DEL produced no character ($00), so the
++; screen editor never saw either key -- on the MSX they are $12 (INS) and $7F
++; (DEL), the codes BASIC's line editor acts on (MSX2 Technical Handbook, the
++; character set's control codes). Row 8, bits 2 and 3.
++                db      $20,$0C,$12,$7F,$1D,$1E,$1F,$1C ;08
+                 db      "*+/01234"                      ;09
+                 db      "56789-,."                      ;0a
+ 

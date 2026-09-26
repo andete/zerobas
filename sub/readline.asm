@@ -54,7 +54,9 @@ readline_tenant:
                 ld      a,(RL_KEY)          ; the key main's CHGET returned: no wait here
                 cp      3                   ; D-CTRLC: Ctrl-C aborts the line
                 jr      nz,rl_key
-                ld      a,$FF
+                xor     a
+                ld      (INSFLG),a          ; a line that ends ends insert mode
+                dec     a                   ; $FF: Ctrl-C
                 jr      rl_stat
 rl_more:
                 xor     a                   ; 0: not finished, main keeps waiting
@@ -62,19 +64,52 @@ rl_stat:
                 ld      (RL_STAT),a
                 ret
 rl_key:
+                ; 🔤 D-INSMODE (2026-09-26): the reference's edit keys SHIFT the
+                ; logical line (scratchpad/insmode_probe.py): INS (18) toggles
+                ; insert mode (INSFLG $FF), in which a typed character pushes the
+                ; rest of the line right; DEL ($7F) deletes the character UNDER the
+                ; cursor and BS (8) the one to its left, both pulling the rest in.
+                ; Enter, the cursor keys, HOME and CLS end insert mode; BS does
+                ; not. 🏗️ $7F WAS erase-left since June (the Mac Backspace key
+                ; arrives as the MSX DEL key) -- Joost ruled "Faithful DEL": the
+                ; VG-8020 in openMSX treats that key as DEL too.
                 cp      13                  ; Enter -> read the logical line back
                 jp      z,rl_enter
-                cp      8                   ; Backspace -> erase
-                jr      z,rl_bs
-                cp      $7F                 ; DEL (Mac Backspace via C-BIOS) -> erase
-                jr      z,rl_bs
-                cp      $1C                 ; $1C..$1F cursor keys, and every
-                jr      nc,rl_echo          ; printable, reach CHPUT
+                cp      8                   ; Backspace -> erase left, pull the line in
+                jp      z,rl_bs
+                cp      $7F                 ; DEL -> delete under the cursor
+                jp      z,rl_del
+                cp      18                  ; INS -> toggle insert mode
+                jr      z,rl_ins
+                cp      $20
+                jr      nc,rl_char          ; printable (>= $20; $7F went above)
+                cp      $1C                 ; $1C..$1F cursor keys
+                jr      nc,rl_ctl
                 cp      $0B                 ; HOME
-                jr      z,rl_echo
+                jr      z,rl_ctl
                 cp      $0C                 ; CLS
-                jr      z,rl_echo
+                jr      z,rl_ctl
                 jp      rl_more             ; other control bytes: dropped, as before
+rl_ins:
+                ld      a,(INSFLG)
+                cpl
+                ld      (INSFLG),a
+                jp      rl_more
+rl_ctl:
+                ld      c,a
+                xor     a
+                ld      (INSFLG),a          ; a cursor key / HOME / CLS ends insert mode
+                ld      a,c
+                jr      rl_echo
+rl_char:
+                ld      c,a
+                ld      a,(INSFLG)
+                or      a
+                ld      a,c
+                jr      z,rl_echo           ; overwrite mode: straight to the echo
+                push    af
+                call    rl_shift_right      ; make room at the cursor
+                pop     af
 rl_echo:
                 ld      c,a                 ; C = the byte to echo
                 ld      a,(CSRY)
@@ -113,16 +148,18 @@ rl_bs:
                 ld      a,(CSRX)
                 dec     a
                 jp      z,rl_more           ; column 1: nothing to erase on this row
-                ld      a,8                 ; back, blank, back: erase on screen
+                                            ; (unmeasured at a continuation row's
+                                            ; column 1 -- today's behaviour kept)
+                ld      a,$1D               ; cursor left, then delete there
                 call    CHPUT
-                ld      a,32
-                call    CHPUT
-                ld      a,8
-                call    CHPUT
+rl_del:
+                call    rl_shift_left
                 jp      rl_more
 
 ; --- Enter: the logical line under the cursor, VRAM -> (RL_HL) ---------------
 rl_enter:
+                xor     a
+                ld      (INSFLG),a          ; Enter ends insert mode (measured)
                 ld      a,(CSRY)
                 ld      b,a                 ; B = candidate first row (1-based)
 rl_up:
@@ -257,6 +294,26 @@ rl_botfix:
 rl_vpeek:
                 push    bc
                 push    de
+                call    rl_vaddr
+                call    RDVRM               ; A = VRAM byte at HL (BIOS)
+                pop     de
+                pop     bc
+                ret
+
+; --- rl_vpoke: the screen character at row B, column C := A. Preserves BC, DE. -
+rl_vpoke:
+                push    bc
+                push    de
+                push    af
+                call    rl_vaddr
+                pop     af
+                call    WRTVRM
+                pop     de
+                pop     bc
+                ret
+
+; --- rl_vaddr: HL = the name-table address of row B, column C. Clobbers A,B,DE.
+rl_vaddr:
                 ld      a,(SCRMOD)
                 or      a
                 ld      e,40
@@ -288,7 +345,150 @@ rl_vcol:
                 ld      e,a
                 ld      d,0
                 add     hl,de
-                call    RDVRM               ; A = VRAM byte at HL (BIOS)
-                pop     de
-                pop     bc
                 ret
+
+; --- rl_lastrow: B = the last row of the logical line that holds the cursor ----
+; Walks down while LINTTB says the row continues (0), never past the bottom row.
+; Clobbers A, DE, HL.
+rl_lastrow:
+                ld      a,(CSRY)
+                ld      b,a
+rl_lr_lp:
+                ld      a,(CRTCNT)
+                cp      b
+                ret     z                   ; the bottom row ends every line
+                ld      hl,LINTTB-1
+                ld      e,b
+                ld      d,0
+                add     hl,de               ; LINTTB[row-1]
+                ld      a,(hl)
+                or      a
+                ret     nz                  ; this row ends the line
+                inc     b
+                jr      rl_lr_lp
+
+; --- rl_shift_right: open a blank cell at the cursor (insert mode) -------------
+; Every cell from the cursor to the logical line's end moves one right. If the
+; line's LAST cell holds a character it would fall off, so the line first grows
+; a row -- measured: the VG-8020 pushes the line below DOWN (a new row), and
+; spills into a blank continuation row the line already has (that row's last
+; cell is a blank, so it grows nothing).
+rl_shift_right:
+                call    rl_lastrow          ; B = the last row
+                ld      a,(LINLEN)
+                ld      c,a                 ; C = the last column
+                call    rl_vpeek
+                cp      ' '
+                jr      z,rsr_room
+                ; --- grow the line by one row, below row B ---
+                ; ⚠️ NOT on the bottom row: what the reference does when a line
+                ; that ends THERE must grow is unmeasured (a scroll is the guess),
+                ; so the last character falls off rather than ship a guess --
+                ; filed as D-INSBOTTOM.
+                ld      a,(CRTCNT)
+                cp      b
+                jr      z,rsr_room
+                ld      hl,(CSRY)           ; [the cursor: CSRY low, CSRX high]
+                push    hl
+                ld      a,b
+                inc     a
+                ld      (CSRY),a            ; ESC L at the row below: C-BIOS inserts
+                ld      a,27                ; a blank row there and moves the rows
+                call    CHPUT               ; below it down (its chput_esc_ll) ...
+                ld      a,'L'
+                call    CHPUT
+                ; ... but NOT their LINTTB entries: its update loads DE from
+                ; `ld d,a / ld e,0` (CRTCNT * 256, not CRTCNT), so its lddr lands in
+                ; page-0 ROM and the table never moves. Shift it here: rows B+1 ..
+                ; CRTCNT-1 move to B+2 .. CRTCNT.
+                ld      a,(CRTCNT)
+                sub     b
+                dec     a                   ; the rows to move: CRTCNT - (B+1)
+                jr      z,rsr_marks         ; none: the new row is the bottom one
+                ld      c,a
+                push    bc
+                ld      a,(CRTCNT)
+                ld      e,a
+                ld      d,0
+                ld      hl,LINTTB-1
+                add     hl,de               ; DE -> LINTTB[bottom row - 1]
+                ld      d,h
+                ld      e,l
+                dec     hl                  ; HL -> the entry above it
+                ld      b,0
+                lddr
+                pop     bc
+rsr_marks:
+                ld      hl,LINTTB-1
+                ld      e,b
+                ld      d,0
+                add     hl,de
+                ld      (hl),0              ; row B now continues ...
+                inc     hl
+                ld      (hl),1              ; ... onto the new row, which ends it
+                pop     hl
+                ld      (CSRY),hl
+                jr      rl_shift_right      ; again: the new row's last cell is blank
+rsr_room:
+                ; (B,C) = the line's last cell; walk back to the cursor
+rsr_lp:
+                ld      a,(CSRY)
+                cp      b
+                jr      nz,rsr_move
+                ld      a,(CSRX)
+                cp      c
+                ret     z                   ; reached the cursor: its cell is free
+rsr_move:
+                ld      d,b
+                ld      e,c                 ; DE = the destination cell
+                dec     c
+                jr      nz,rsr_src
+                dec     b                   ; column 0 -> the previous row's last
+                ld      a,(LINLEN)
+                ld      c,a
+rsr_src:                                    ; BC = the source cell
+                call    rl_vpeek            ; A = the cell before (BC, DE kept)
+                push    bc
+                ld      b,d
+                ld      c,e
+                call    rl_vpoke            ; destination := A
+                pop     bc                  ; the source is the next destination
+                jr      rsr_lp
+
+; --- rl_shift_left: delete the cell at the cursor (DEL, and BS after a left) ----
+; Every cell after the cursor moves one left; the logical line's last cell
+; becomes a blank.
+rl_shift_left:
+                call    rl_lastrow
+                ld      a,b
+                ld      (RL_LAST),a         ; the last row (RL_LAST is Enter's, free here)
+                ld      a,(CSRY)
+                ld      b,a
+                ld      a,(CSRX)
+                ld      c,a                 ; (B,C) = the cursor
+rsl_lp:
+                ld      a,(RL_LAST)
+                cp      b
+                jr      nz,rsl_move
+                ld      a,(LINLEN)
+                cp      c
+                jr      nz,rsl_move
+                ld      a,' '               ; the last cell: now a blank
+                jp      rl_vpoke
+rsl_move:
+                ld      d,b
+                ld      e,c                 ; DE = the destination cell
+                ld      a,(LINLEN)
+                cp      c
+                jr      nz,rsl_col
+                inc     b                   ; past the row's end -> the next row's first
+                ld      c,0
+rsl_col:
+                inc     c                   ; BC = the source cell
+                call    rl_vpeek            ; A = the cell after (BC, DE kept)
+                push    bc
+                ld      b,d
+                ld      c,e
+                call    rl_vpoke            ; destination := A
+                pop     bc                  ; the source is the next destination
+                jr      rsl_lp

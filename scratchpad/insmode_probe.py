@@ -10,7 +10,8 @@ zerobas overwrote on INS, and its DEL and BS did not shift.
 
 Each row types a key sequence through the matrix (openMSX `type`) at the
 prompt of a fresh boot, then reads INSFLG, CSRX and the edited screen rows
-(`.` = space, `#` = the cursor cell, character 255). A CLS comes first, so the
+(`.` = space, `#` = the cursor cell, character 255), and LINTTB for rows 1..10
+(1 = the row ENDS its line, 0 = it continues) -- a row insert must move it. A CLS comes first, so the
 rows start at the top of a clean screen; zerobas's `ZB` prompt reads as `Ok`.
 
 Cases (cursor on `C` of `ABCD` = `ABCD` + two cursor-lefts):
@@ -67,7 +68,8 @@ after time 24 {{ set f [open "{out}" w]
     for {{set i 0}} {{$i < 40}} {{incr i}} {{ set c [debug read VRAM [expr {{$r*40+$i}}]]
       if {{$c == 32}} {{append s "."}} elseif {{$c == 255}} {{append s "#"}} else {{append s [format %c $c]}} }}
     append s "|" }}
-  puts $f "insflg=[debug read memory 0xFCA8] csrx=[debug read memory 0xF3DD] rows=$s"
+  set t ""; for {{set i 0}} {{$i < 10}} {{incr i}} {{ append t [expr {{[debug read memory [expr {{0xFBB2+$i}}]] ? 1 : 0}}] }}
+  puts $f "insflg=[debug read memory 0xFCA8] csrx=[debug read memory 0xF3DD] linttb=$t rows=$s"
   close $f; exit }}
 '''
     tf = os.path.join(HERE, "insmode.tcl")
