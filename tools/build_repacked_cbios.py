@@ -43,11 +43,14 @@ PATCHES = [
     # D-INSMODE: the INS and DEL keys produced NO character (row 8's table held
     # $00 for both), so the screen editor could never see them; $12 / $7F.
     os.path.join(REPO, "cbios-repack", "ins-del-keys.patch"),
+    # D-HOMEKEY: HOME gave $0C (CLS); an MSX gives $0B and CLS only with SHIFT.
+    # 12 bytes in key_ascii -- which moves the font pad (and island 1) to $1ADB.
+    os.path.join(REPO, "cbios-repack", "home-key.patch"),
 ]
 
 PINNED_TAG = "v0.29-3-gb5ad9cb"
 PRISTINE_SHA1 = "baf2e9c69252fd9b350b488d89c71887b9d05eec"
-REPACKED_SHA1 = "8cb70b75d4fa3ecfcb972510564c563a841d46b5"
+REPACKED_SHA1 = "90e75754ea2af117a7fe26eea81a3646b7de8043"
 ROM_REL = os.path.join("derived", "bin", "cbios_main_msx1_eu.rom")
 
 

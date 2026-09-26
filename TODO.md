@@ -5893,7 +5893,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:25208 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:25222 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -6059,7 +6059,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:10852 (T-6FE392)8 (T-529ABE)` from `TODO.md:22862 (T-529ABE)`: a
+      `TODO.md:10852 (T-6FE392)8 (T-529ABE)` from `TODO.md:22876 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -11696,7 +11696,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:22862 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:22876 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -16874,15 +16874,29 @@ finds zero shared names (a renamed block would otherwise make it silently blind)
       its start, one character; read the rows and LINTTB on both machines.
       Then find the bytes (sub page 1 was 11 B free, clean build 2026-09-26).
 
-- [ ] 🏠 **D-HOMEKEY — THE HOME KEY CLEARS THE SCREEN ON ZEROBAS**
+- [x] 🏠 **D-HOMEKEY — THE HOME KEY CLEARS THE SCREEN ON ZEROBAS**
       🎚️ TIER 1 — happy path: HOME is a screen-editor key.
       📏 Read in C-BIOS's source while fixing D-INSMODE, NOT yet measured:
       row 8 of its key table maps HOME to `$0C` — CLS — where an MSX gives
       `$0B` (cursor home) and `$0C` only with SHIFT. The rows 6..11 table has
       no SHIFT variant, so the fix is not a one-byte patch. (`type` with `$0B`
       hung the insmode harness on the VG-8020 — find a clean way to press it.)
-      🤖 **AUTONOMOUS** — measure FIRST (HOME and SHIFT+HOME on both machines,
-      via the key matrix), then patch C-BIOS's decode.
+      ~~🤖 **AUTONOMOUS** — measure FIRST~~ ✅ **FIXED 2026-09-26 (loop).**
+      📏 Measured first, keys on the MATRIX (`keymatrixdown`): the VG-8020's
+      HOME leaves the screen and puts the cursor at row 1 column 1, SHIFT+HOME
+      clears; zerobas cleared on both. 🔮 Predicted exactly that — HIT.
+      cbios-repack patch #4, `home-key.patch`: row 8's HOME entry is `$0B`, and
+      `key_ascii` folds SHIFT into it (`cp $0B / jr nz / ld a,(NEWKEY+6) / rrca
+      / ld a,$0C / sbc a,0` — SHIFT is active low, so `$0C − carry`), 12 bytes.
+      🔴 **THOSE 12 BYTES MOVE THE FONT PAD, AND ZEROBAS LIVES IN IT:**
+      key_ascii ($1A18) sits before C-BIOS's `ds $1bbf - $`, which is island 1
+      (basic/islands.asm). The island now starts at `$1ADB` (was `$1ACF`; 70 B
+      were free at its end), `ISLAND_RANGES` in tools/build_mainrom.py with it —
+      the builder's refusal to lay an island byte on non-zero C-BIOS code is
+      what proves the new origin. CHPUT ($11B4) and the fixed patch sites
+      ($1038, $11CF) are before key_ascii and did not move.
+      `scratchpad/homekey_run.out`: **DIFF 0/4** (HOME, SHIFT+HOME, each then
+      typing `Z`); the prompt row's `ZB`/`Ok` identity text is normalised.
 
 - [x] 🖥️ **D-SCR1PROMPT — THE PROMPT DROPS SCREEN 1 BACK TO SCREEN 0**
       🎚️ TIER 1 — happy path: `SCREEN 1` typed at the prompt should stay.

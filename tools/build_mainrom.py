@@ -56,7 +56,9 @@ CASSETTE_VECS = (0x00E2, 0x00F6)   # seven cassette vector targets
 # C-BIOS source, confirmed 2026-09-25: src/main.asm:620 pads to $0200, :3091 to the
 # font at $1BBF. An island byte anywhere else, or onto a non-zero C-BIOS byte,
 # refuses the build.
-ISLAND_RANGES = ((0x0160, 0x0200), (0x1ACF, 0x1BBF))
+# D-HOMEKEY (2026-09-26): cbios-repack patch #4 adds 12 bytes to key_ascii, which
+# sits BEFORE that pad, so the pad -- and island 1 -- start at $1ADB, not $1ACF.
+ISLAND_RANGES = ((0x0160, 0x0200), (0x1ADB, 0x1BBF))
 # ...and the PATCHES: non-padding bytes BASIC may overwrite, each only while the
 # base still holds the exact bytes named here (a C-BIOS change refuses, loudly).
 # $0010: the RST 10h vector -> zerobas's published-contract CHRGTR (lever A).

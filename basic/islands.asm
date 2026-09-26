@@ -8,7 +8,9 @@
 ; *"B first, then A"*). C-BIOS pads to pinned addresses with `ds`; those runs
 ; are zero in OUR merged image, in the SAME slot as main, and always mapped with
 ; it. Each island below is one such run, confirmed in the C-BIOS source:
-;   $1ACF..$1BBE  src/main.asm:3091 `ds $1bbf - $` -- pad up to the font
+;   $1ADB..$1BBE  src/main.asm:3091 `ds $1bbf - $` -- pad up to the font
+;                 ($1ACF until cbios-repack patch #4, D-HOMEKEY, added 12 bytes
+;                 to C-BIOS's key_ascii before it: the pad now starts 12 later)
 ;   $0160..$01FF  src/main.asm:620  `ds $0200 - $` -- pad up to jump_table
 ; tools/split_islands.py cuts these bytes out of pasmo's image and
 ; tools/build_mainrom.py overlays them, REFUSING any byte outside those ranges or
@@ -23,8 +25,8 @@
 ; from the main slot (a sub-ROM PAGE-0 tenant cannot reach it).
 ; ===========================================================================
 
-; --- island 1: before the font ($1ACF..$1BBE, 240 B usable) -----------------
-                org     $1ACF
+; --- island 1: before the font ($1ADB..$1BBE, 228 B usable) -----------------
+                org     $1ADB
 
 ; try_init_slot -- boot-time: does the slot in A carry an "AB" ROM, and if so
 ; CALSLT its INIT. From basic/initext.asm, unchanged. Better here than in page 1:
