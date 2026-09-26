@@ -2053,8 +2053,28 @@ item — do **one item per session** to keep context lean.
       see. It now refuses only a REFERENCE without a tape (a broken rig); a
       subject without one reads `<no tape written>`, which can never agree.
       `CSAVE` re-cut → MISSING, LOAD-BEARING.
-      ➡️ **STILL TO MEASURE:** widen the op list (control flow, graphics, file
-      I/O).
+      ~~➡️ **STILL TO MEASURE:** widen the op list (control flow, graphics, file
+      I/O).~~ 📏 **CONTROL FLOW MEASURED 2026-09-26 (loop,
+      `scratchpad/fremops_probe.py` → `scratchpad/fremops_run.out`)** — each row
+      reads `FRE(0)` INSIDE one running program before and after entering the
+      op, variables pre-created, so text and variables cancel:
+      | op | VG-8020 | zerobas |
+      |---|---|---|
+      | one `FOR` frame (two nested: 50 vs 22) | **25 B** | **11 B** |
+      | one `GOSUB` (two nested: 14 vs 16) | **7 B** | **8 B** |
+      | inside a `DEF FN` call | **14 B** | **13 B** |
+      | `ON ERROR` handler entered | 0 | 0 |
+      | `DIM S$(10)` / `DIM D#(10)` | 41 / 96 | 41 / 96 |
+      🔮 Predicted the arrays SAME and the frames DIFF — HIT; the size and sign
+      of each frame gap were not predicted. **A real economy divergence:** a
+      program near exhaustion reads different `FRE(0)` values and reaches `Out
+      of memory` at a different nesting depth (zerobas ~2.3× deeper in `FOR`,
+      slightly shallower in `GOSUB`).
+      🙋 **BACK TO JOOST (the rung's rule: adjustments are his):** make the
+      frames CHARGE what the reference's do (25 / 7 / 14 — padding the FOR
+      frame by 14 B wastes RAM to match), or accept the three as a stated
+      divergence. ➡️ Graphics (PAINT's stack) and file I/O (`MAXFILES`, now
+      D-FCBSHAPE) are still unmeasured here.
       📏 **GOAL (a), SAME FREE MEMORY — MEASURED 2026-09-25**
       (`scratchpad/fremem_probe.py` → `scratchpad/fremem_run.out`; VG-8020 vs
       zerobas's DISKLESS machine, a fresh boot per state):
@@ -5893,7 +5913,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:25242 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:25262 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -6059,7 +6079,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:10852 (T-6FE392)8 (T-529ABE)` from `TODO.md:22896 (T-529ABE)`: a
+      `TODO.md:10872 (T-6FE392)8 (T-529ABE)` from `TODO.md:22916 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -11696,7 +11716,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:22896 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:22916 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
