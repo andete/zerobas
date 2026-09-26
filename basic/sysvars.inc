@@ -128,6 +128,11 @@ FORCLR          equ     $F3E9   ; foreground colour
 BAKCLR          equ     $F3EA   ; background colour
 BDRCLR          equ     $F3EB   ; border colour
 SCRMOD          equ     $FCAF   ; current screen mode (0..3)
+; PUBLISHED screen-table bases (MSX work area; C-BIOS maintains all four):
+TXTNAM          equ     $F3B3   ; SCREEN 0 name table base (2 B)
+TXTCGP          equ     $F3B7   ; SCREEN 0 pattern generator base (2 B)
+T32NAM          equ     $F3BD   ; SCREEN 1 name table base (2 B)
+T32CGP          equ     $F3C1   ; SCREEN 1 pattern generator base (2 B)
 
 ; --- Cassette BIOS entry points -------------------------------------------
 ; Source: MSX Assembly Page BIOS call list / MSX2 Technical Handbook,
@@ -3844,7 +3849,11 @@ SL_CEIL         equ     $E058   ; store_line: the ceiling a store stays below (2
                                 ; FOR/NEXT, string ops, DEF FN and CLEAR, and
                                 ; reads 0 of 40 bytes changed. A map is a reading;
                                 ; that is a measurement.
-; FREE-RAM $E07A..$E080  the rest of the retired GOSUB_STK (PU_DIG took $E05A..$E079, D-DETOKBUF S3)
+; D-CURSORBLOCK (2026-09-26): the line editor's block cursor (sub/cursor.asm).
+CSR_ADDR        equ     $E07A   ; VRAM address of the cell the cursor covers (2 B)
+CSR_CHAR        equ     $E07C   ; the character it covers, put back on removal (1 B)
+CSR_ON          equ     $E07D   ; 1 while the cursor is shown, else 0 (1 B)
+; FREE-RAM $E07E..$E080  the rest of the retired GOSUB_STK (PU_DIG took $E05A..$E079, D-DETOKBUF S3; CSR_* $E07A..$E07D, D-CURSORBLOCK)
 ; D-COPY (2026-09-11): COPY "src" TO "dst" keeps the SOURCE name and what fat_find
 ; said about it across the destination's delete/create, which reuse DISK_FCB_NAME
 ; and clobber FAT_FIRSTCLUS/FAT_FILESIZE. 17 B from the band below.
@@ -4927,6 +4936,9 @@ SUBROM_IDX_PUNUM     equ 24     ; pu_num_tenant (sub/punum.asm): PRINT USING's
                                 ; numeric renderer (D-PUNUM). PAGE 1, because it
                                 ; calls flt_fmt in the main LOW region -- and
                                 ; because main page 1 had 32 B free.
+SUBROM_IDX_CURSOR    equ 26     ; cursor_tenant (sub/cursor.asm): the line
+                                ; editor's block cursor, E=1 show / E=0 remove
+                                ; (D-CURSORBLOCK). PAGE 1: it calls RDVRM/WRTVRM.
 SUBROM_IDX_READLINE  equ 25     ; readline_tenant (sub/readline.asm): the screen
                                 ; editor's line reader -- main's read_line/rl_loop
                                 ; are a stub since D-SCREDIT (docs/spec-basic-screditor.md)

@@ -1,0 +1,16 @@
+SAME prompt   ref: cell=255 inverse=yes rows=iiiiiiii csrsw=0 scrmod=0 insflg=0
+              zb:  cell=255 inverse=yes rows=iiiiiiii csrsw=0 scrmod=0 insflg=0
+SAME typing   ref: cell=255 inverse=yes rows=iiiiiiii csrsw=0 scrmod=0 insflg=0
+              zb:  cell=255 inverse=yes rows=iiiiiiii csrsw=0 scrmod=0 insflg=0
+SAME input    ref: cell=255 inverse=yes rows=iiiiiiii csrsw=0 scrmod=0 insflg=0
+              zb:  cell=255 inverse=yes rows=iiiiiiii csrsw=0 scrmod=0 insflg=0
+SAME overB    ref: cell=255 inverse=yes rows=iiiiiiii csrsw=0 scrmod=0 insflg=0
+              zb:  cell=255 inverse=yes rows=iiiiiiii csrsw=0 scrmod=0 insflg=0
+DIFF screen1  ref: cell=255 inverse=yes rows=iiiiiiii csrsw=0 scrmod=1 insflg=0
+              zb:  cell=255 inverse=yes rows=iiiiiiii csrsw=0 scrmod=0 insflg=0
+DIFF insB     ref: cell=255 inverse=NO rows======iii csrsw=0 scrmod=0 insflg=255
+              zb:  cell=255 inverse=yes rows=iiiiiiii csrsw=0 scrmod=0 insflg=0
+DIFF insspace ref: cell=255 inverse=NO rows======iii csrsw=0 scrmod=0 insflg=255
+              zb:  cell=255 inverse=yes rows=iiiiiiii csrsw=0 scrmod=0 insflg=0
+
+DIFF: 3/7

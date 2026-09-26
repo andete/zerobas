@@ -174,16 +174,24 @@ rl_loop:
                 inc     hl
                 ld      (hl),1              ; and so does the prompt row, until it wraps
 rl_wait:
+                ; D-CURSORBLOCK: the block cursor is up while the editor waits for
+                ; a key and down while the tenant edits (sub/cursor.asm).
+                ld      e,1
+                call    rl_cursor
                 ld      a,(RL_AUTO)
                 or      a
                 jr      z,rl_get            ; REPL: block in CHGET, as it always did
 rl_poll:                                    ; R-AU8: an AUTO session may NOT block
                 call    BREAKX              ; CF set = Ctrl-STOP is down
-                ret     c
+                jr      c,rl_break
                 call    CHSNS               ; ZF set = nothing waiting yet
                 jr      z,rl_poll
 rl_get:
                 call    CHGET               ; the WAIT is here, in main, inside CHGET:
+                push    af
+                ld      e,0
+                call    rl_cursor           ; cursor down before the tenant edits
+                pop     af
                 ld      (RL_KEY),a          ; interrupts live (PLAY, the traps), and the
                                             ; harness's injector latch (latch-check) sees
                                             ; the same wait it always modelled
@@ -196,6 +204,15 @@ rl_get:
                 jr      z,rl_wait           ; 0: more keys
                 rla                         ; 1 -> CF clear (Enter); $FF -> CF set (break)
                 ret
+rl_break:                                   ; Ctrl-STOP while AUTO polls: the cursor
+                ld      e,0                 ; comes down first, CF rides through
+                call    rl_cursor           ; (subrom_call returns CF clear, so
+                scf                         ; set it again)
+                ret
+; rl_cursor: E = 1 show / 0 remove the line editor's block cursor.
+rl_cursor:
+                ld      ix,SUBROM_ENTRY_BASE_P1 + 3*SUBROM_IDX_CURSOR
+                jp      subrom_call
 
 ; --- txt_mode: to SCREEN 0 if a graphics mode is up (D-SCREDIT) ---------------
 ; Measured on both references (docs/spec-basic-screditor.md §7): the prompt after

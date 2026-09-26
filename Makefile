@@ -223,7 +223,7 @@ SUB_PARTS := sub/equates.inc sub/deftype.asm sub/tkfloat.asm sub/fp_sqrt.asm sub
              sub/save.asm basic/sv-bsvdisk.inc basic/sv-bsvcas.inc \
              basic/sv-tsb.inc basic/sv-tputw.inc basic/sv-tne.inc basic/sv-diskwr.inc \
              basic/fatiocreate-body.inc basic/fatiow-body.inc \
-             sub/circleparse.asm sub/errmsg.asm sub/lineno.asm sub/readline.asm \
+             sub/circleparse.asm sub/errmsg.asm sub/lineno.asm sub/readline.asm sub/cursor.asm \
              sub/readdata.asm basic/readdata-body.inc basic/tokskip-body.inc \
              sub/beep.asm sub/lofu32.asm sub/keystr.asm sub/title.asm basic/title-body.inc \
              sub/playparse.asm sub/graphics.asm \

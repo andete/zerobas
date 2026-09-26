@@ -33,7 +33,7 @@ other component's cell at the same address; the `inside` column
 names the other component's BUFFER this address falls within. That
 second one is the question a per-component map cannot answer.
 
-* **basic** — 424 declared addresses in this project's own workspace `$E000..$F37F` (394 with a machine-readable width), plus **98** in the MSX standard work area at or above `$F380`.
+* **basic** — 427 declared addresses in this project's own workspace `$E000..$F37F` (397 with a machine-readable width), plus **101** in the MSX standard work area at or above `$F380`.
 * **disk** — 126 declared addresses in this project's own workspace `$E000..$F37F` (112 with a machine-readable width), plus **25** in the MSX standard work area at or above `$F380`.
 
 ## This project's own workspace (`$E000..$F37F`)
@@ -91,6 +91,9 @@ second one is the question a per-component map cannot answer.
 | `$E056` | 2 B | `basic` | `CTLLIM` | the pool's collision FLOOR = ARYEND+2 (2). Written (2 B) |  |
 | `$E058` | 2 B | `basic` | `SL_CEIL` | store_line: the ceiling a store stays below (2 B) |  |
 | `$E05A` | 32 B | `basic` | `PU_DIG` | D-PUEXP: flt_fmt's significant digits, point removed (32 B) |  |
+| `$E07A` | 2 B | `basic` | `CSR_ADDR` | VRAM address of the cell the cursor covers (2 B) |  |
+| `$E07C` | 1 B | `basic` | `CSR_CHAR` | the character it covers, put back on removal (1 B) |  |
+| `$E07D` | 1 B | `basic` | `CSR_ON` | 1 while the cursor is shown, else 0 (1 B) |  |
 | `$E080` | 11 B | `basic` | `COPY_SRC` | the source's 11-byte 8.3 name field |  |
 | `$E080` | 11 B | `disk` | `COPY_SRC` | the source's 11-byte 8.3 name field |  |
 | `$E08B` | 2 B | `basic` | `COPY_CLUS` | the source's first cluster (word) |  |
@@ -615,7 +618,10 @@ extents the standard already fixes would be noise, not rigour.
 | `$F3B0` |  | `basic` | `LINLEN` | current line length (active width) |  |
 | `$F3B0` |  | `disk` | `LINLEN` | current line length = the active width (ditto) |  |
 | `$F3B1` |  | `basic` | `CRTCNT` | number of text rows on the screen (MSX work area; D-SCREDIT) |  |
-| `$F3B3` |  | `basic` | `BASETAB` | BASE(0..19): 20 LE words, 4 groups of 5 (name, colour, |  |
+| `$F3B3` | 2 B | `basic` | `BASETAB/TXTNAM` | BASE(0..19): 20 LE words, 4 groups of 5 (name, colour, |  |
+| `$F3B7` | 2 B | `basic` | `TXTCGP` | SCREEN 0 pattern generator base (2 B) |  |
+| `$F3BD` | 2 B | `basic` | `T32NAM` | SCREEN 1 name table base (2 B) |  |
+| `$F3C1` | 2 B | `basic` | `T32CGP` | SCREEN 1 pattern generator base (2 B) |  |
 | `$F3DB` | 1 B | `basic` | `CLIKSW` | keyboard click: 0 = off, nonzero = on (1) |  |
 | `$F3DC` |  | `basic` | `CSRY` | cursor row (1-based); the CSRLIN pseudo-variable reads it |  |
 | `$F3DD` |  | `basic` | `CSRX` | cursor column (1-based); C-BIOS sysvars / PRINT comma zones |  |

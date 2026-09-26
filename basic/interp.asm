@@ -185,6 +185,10 @@ init:
                 ; frame: AFTER show_title, whose INITXT clears the screen, and
                 ; through subrom_call rather than sc_call -- an absent sub-ROM
                 ; must not raise during init (the KEYSTR defaults above, same).
+                xor     a                   ; D-CURSORBLOCK: power-on RAM reads $FF,
+                ld      (CSR_ON),a          ; which the cursor tenant took for "shown"
+                                            ; -- no cursor at the boot prompt, and its
+                                            ; first removal wrote $FF to VRAM $FFFF
                 ld      a,CON_ROWS_KEYON
                 ld      (CRTCNT),a          ; reserve the bottom row
                 ld      a,$FF

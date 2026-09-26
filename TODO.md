@@ -5891,7 +5891,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:25008 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:25051 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -6057,7 +6057,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:10850 (T-6FE392)8 (T-529ABE)` from `TODO.md:22662 (T-529ABE)`: a
+      `TODO.md:10850 (T-6FE392)8 (T-529ABE)` from `TODO.md:22705 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -11694,7 +11694,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:22662 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:22705 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -16739,16 +16739,59 @@ finds zero shared names (a renamed block would otherwise make it silently blind)
       PLAY. Measure one (type during a forced collection) before widening the
       fix.
 
-- [ ] ▮ **D-CURSORBLOCK — ZEROBAS SHOWS NO BLOCK CURSOR AT THE PROMPT**
+- [x] ▮ **D-CURSORBLOCK — ZEROBAS SHOWS NO BLOCK CURSOR AT THE PROMPT**
       🎚️ TIER 1 — happy path: the cursor is the first thing a user looks for.
       📏 **REPORTED BY JOOST 2026-09-26** while watching the windowed PAD
       runs: *"zerobas doesn't show the square rect prompt indication"* — the
       VG-8020 shows its block cursor at `Ok`, zerobas shows none. Not yet
       measured.
-      🤖 **AUTONOMOUS** — measure FIRST, clean room: the cursor is a VRAM /
-      pattern effect, so read the name and pattern tables at the cursor cell on
-      both machines while each waits at its prompt (and `CSRSW`, the published
-      cursor-display cell), then find where zerobas's input wait differs.
+      ~~🤖 **AUTONOMOUS** — measure FIRST~~ ✅ **FIXED 2026-09-26 (normal
+      mode).** 📏 Measured (`scratchpad/cursorblock_run.out`, VRAM + work area
+      only): while the VG-8020's editor waits, the cell at CSRY/CSRX holds
+      character **255** and pattern 255 is the covered glyph with **all 8 bytes
+      inverted** (`B` = F0 48 48 70 48 48 F0 00 → 0F B7 B7 8F B7 B7 0F FF);
+      `CSRSW` reads **0** — the editor draws it, the published cell is untouched.
+      zerobas drew nothing: its wait is C-BIOS's CHGET, which has no cursor.
+      `cursor_tenant` (sub/cursor.asm, sub page 1, index 26) shows / removes it
+      around that CHGET in `rl_wait` (basic/repl.asm), through the published
+      TXTNAM/TXTCGP/T32NAM/T32CGP bases and C-BIOS's border rule; `CSR_*` at
+      `$E07A..$E07D` from a FREE-RAM run. Main page 1 −31 B, sub page 1 −140 B
+      (clean build 2026-09-26).
+      🔴 **ONE MISS ON THE WAY: power-on RAM.** The boot prompt showed no cursor
+      — `CSR_ON` read **255**, which the tenant took for "shown", and its first
+      removal would have written `$FF` to VRAM `$FFFF`. Cold boot zeroes it now.
+      **DIFF 1/7 left of 7, and both remainders are filed as their own items:**
+      boot prompt, mid-line, `INPUT`, over a character — SAME (the inverse is
+      checked as a RELATION, so the two fonts do not matter); `screen1` →
+      D-SCR1PROMPT; `insB`/`insspace` → D-INSMODE (the rows print them).
+
+- [ ] ⌨️ **D-INSMODE — ZEROBAS'S SCREEN EDITOR HAS NO INSERT MODE**
+      🎚️ TIER 1 — happy path: editing a line with INS is everyday MSX use.
+      📏 **MEASURED 2026-09-26** (`scratchpad/cursorblock_run.out`, Joost:
+      *"The cursor also changes in normal and insert mode."*): after the INS
+      key (code 18) the VG-8020's `INSFLG` (`$FCA8`) reads **255** and its
+      cursor is a PARTIAL block — pattern rows 0..4 the glyph as-is, rows 5..7
+      inverted; zerobas's `INSFLG` stays **0** and `sub/readline.asm` has no
+      case for 18 at all, so typed characters overwrite where the reference
+      inserts. ⚠️ Related, unmeasured: readline treats `$7F` (DEL) as erase-LEFT
+      ("Mac Backspace via C-BIOS"); an MSX's DEL deletes the character UNDER
+      the cursor — measure that on both before touching it.
+      🤖 **AUTONOMOUS** — measure FIRST: what typing in insert mode does to the
+      rest of the logical line (including a wrap), and which keys end it
+      (Enter, the cursor keys, INS again) — then the editor case, INSFLG and
+      the partial cursor in `cursor_tenant`.
+
+- [ ] 🖥️ **D-SCR1PROMPT — THE PROMPT DROPS SCREEN 1 BACK TO SCREEN 0**
+      🎚️ TIER 1 — happy path: `SCREEN 1` typed at the prompt should stay.
+      📏 **MEASURED 2026-09-26** (`scratchpad/cursorblock_run.out`, row
+      `screen1`): after `SCREEN 1` the VG-8020 waits in SCREEN 1 (`SCRMOD` 1,
+      `LINLEN` 29); zerobas is back in SCREEN 0 (`SCRMOD` 0, `LINLEN` 37).
+      Cause, read in our source: `txt_mode` (basic/repl.asm) switches ANY
+      non-zero `SCRMOD` to text with INITXT, a rule measured for SCREEN 2
+      (D-SCREDIT) and too wide for SCREEN 1, which is itself a text mode.
+      🤖 **AUTONOMOUS** — measure FIRST what the reference returns to after a
+      SCREEN 2 program when the previous text mode was 1 (SCREEN 0 or 1 —
+      `OLDSCR`?), then narrow `txt_mode`.
 
 - [ ] 🛑 **RULING 4's RIG — STICK AND STRIG ARE NOW DRIVEN BY A REAL USB
       STICK (D-RIGFW, 2026-09-26); `PAD`'s SWITCH STILL HAS NO INSTRUMENT.**

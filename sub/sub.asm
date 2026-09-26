@@ -684,6 +684,9 @@ sub_p1_table:
                                                 ;   blocks in CHGET and reads VRAM through
                                                 ;   RDVRM -- BIOS, page 0 -- under EI, the
                                                 ;   bload/save precedent.
+                jp      cursor_tenant           ; index 26 (SUBROM_IDX_CURSOR): the
+                                                ;   line editor's block cursor
+                                                ;   (D-CURSORBLOCK, sub/cursor.asm).
 
 
 ; --- Page-1 PING (S2a boot-gate tenant) -----------------------------------
@@ -876,6 +879,9 @@ sub_p1_ping:
 ; D-SCREDIT. Main's read_line became a stub; the keyboard loop, the cursor keys
 ; and the VRAM read of the logical line under the cursor live here.
                 include "readline.asm"
+; cursor_tenant (index 26, sub/cursor.asm): the block cursor while the line
+; editor waits in CHGET (D-CURSORBLOCK).
+                include "cursor.asm"
 
 ; --- pad page 1 to the 32 KB ($8000) end -----------------------------------
 ; __MEAS_SUB_P1_END: page-1 free space is $8000 - __MEAS_SUB_P1_END. Same
