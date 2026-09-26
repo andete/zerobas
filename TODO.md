@@ -5891,7 +5891,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:25079 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:25088 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -6057,7 +6057,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:10850 (T-6FE392)8 (T-529ABE)` from `TODO.md:22733 (T-529ABE)`: a
+      `TODO.md:10850 (T-6FE392)8 (T-529ABE)` from `TODO.md:22742 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -11694,7 +11694,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:22733 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:22742 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -16808,7 +16808,7 @@ finds zero shared names (a renamed block would otherwise make it silently blind)
       The one left, `WIDTH 20` in SCREEN 1, is D-KEYWIDTH. Main page 1 −4 B net
       (clean build 2026-09-26).
 
-- [ ] 🔑 **D-KEYWIDTH — THE FUNCTION-KEY LINE IGNORES `WIDTH`**
+- [x] 🔑 **D-KEYWIDTH — THE FUNCTION-KEY LINE IGNORES `WIDTH`**
       🎚️ TIER 1 — happy path: `WIDTH` is common and the key line is always up.
       📏 **MEASURED 2026-09-26** (`scratchpad/scr1prompt_run.out`, row
       `s1_width`): after `SCREEN 1:WIDTH 20` the VG-8020's key row reads
@@ -16817,9 +16817,18 @@ finds zero shared names (a renamed block would otherwise make it silently blind)
       out with a fixed pitch per mode. From the readings so far the pitch looks
       like `(LINLEN+1)/5` with one column of gap (29 → 6, 20 → 4) — an
       INFERENCE from two points, not a rule.
-      🤖 **AUTONOMOUS** — measure FIRST: the key row at several WIDTHs in
-      SCREEN 0 and SCREEN 1 (including 37/39/40 in SCREEN 0, where zerobas's
-      geometry is already byte-for-byte right at 37), then derive the rule.
+      ~~🤖 **AUTONOMOUS** — measure FIRST~~ ✅ **FIXED 2026-09-26.** 📏 Swept
+      24 widths (`scratchpad/keywidth_probe.py`; 13 in SCREEN 0, 11 in SCREEN 1)
+      and the rule is exact on all of them: the row starts at the text area's
+      own border, `(row − LINLEN + 1)/2`; a field's pitch is `(LINLEN + 1)/5`
+      with `pitch − 1` characters shown; at pitch ≤ 1 (WIDTH 5, 1) the row is
+      BLANK. The two-point inference above was right. zerobas's fixed
+      stride-7/width-6 and pitch-6/width-5 were that rule's values at the boot
+      widths (37, 29) — before the fix it showed the same row at every width.
+      `ks_paint` (sub/keystr.asm) now derives border, pitch and width from
+      `LINLEN`. `scratchpad/keywidth_run.out`: **DIFF 0/24**, byte for byte
+      including every column. 🔮 Predicted 24/24 SAME — HIT. Sub page 0 −18 B
+      (clean build 2026-09-26).
 
 - [ ] 🛑 **RULING 4's RIG — STICK AND STRIG ARE NOW DRIVEN BY A REAL USB
       STICK (D-RIGFW, 2026-09-26); `PAD`'s SWITCH STILL HAS NO INSTRUMENT.**

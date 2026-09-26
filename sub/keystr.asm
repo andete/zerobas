@@ -41,15 +41,18 @@ FNKSTR          equ     $F87F               ; measured base (D-KEYSTR scout)
 ; and F5's default carries a trailing CR, and the reference shows neither as a
 ; glyph (no measured cell read below 32).
 FNK_ROW         equ     920                 ; row 23 within the name table
-FNK_COL0        equ     2                   ; first field's column
-FNK_STRIDE      equ     7                   ; field pitch
-FNK_WIDTH       equ     6                   ; visible characters a field
-; 🖥️ D-KEYSCR1 (2026-09-26): SCREEN 1 has its own geometry, MEASURED on the
-; VG-8020 (VPEEK of row 23 at $1800+23*32): `··color·auto··goto··list··run···`
-; -- the same first column, but 5 visible characters a field on a 6-column
-; pitch, in a 32-column row. ks_geom picks the pair by SCRMOD.
+; 🖥️ D-KEYSCR1 (2026-09-26): SCREEN 1's row is 32 cells, MEASURED on the
+; VG-8020 (VPEEK of row 23 at $1800+23*32): `··color·auto··goto··list··run···`.
 FNK_ROW32       equ     736                 ; row 23 of a 32-column name table
-FNK_WIDTH32     equ     5                   ; visible characters a field, SCREEN 1
+; 🔑 D-KEYWIDTH (2026-09-26): THE GEOMETRY FOLLOWS `LINLEN`, NOT THE MODE. The
+; stride-7/width-6 above (SCREEN 0) and pitch-6/width-5 (SCREEN 1) were two
+; POINTS of one rule, both taken at the boot width. Swept on the VG-8020 at 24
+; widths in both modes (scratchpad/keywidth_probe.py): the row starts at the
+; text area's own left border, (row - LINLEN + 1) / 2 -- 0 at WIDTH 40, 2 at 37,
+; 10 at 20 -- and a field's PITCH is (LINLEN + 1) / 5 with pitch-1 characters
+; shown: 8 at 40 and 39, 7 at 38..36, 6 at 30/29, 5 at 25/24, 4 at 20 (`col aut
+; got lis run`), 3 at 15, 2 at 10; at WIDTH 5 and 1 the row is BLANK. zerobas
+; kept one layout per mode, so `WIDTH 20` still showed `color auto goto ...`.
 FNK_FIELDS      equ     5                   ; F1..F5 are displayed; F6..F10 are not
 KEYSLOTS        equ     10
 KEYSTRIDE       equ     16
@@ -64,9 +67,27 @@ KEYMAX          equ     15                  ; measured truncation (D-KEYSCOUT2)
 ks_paint:
                 call    ks_blank            ; start from a clean row, so a macro
                                             ; that shortened leaves no tail
-                call    ks_geom             ; HL -> row 23, A = field width
-                inc     hl
-                inc     hl                  ; FNK_COL0: the first field's column
+                call    ks_geom             ; HL -> row 23, column 0; C = row length
+                ld      a,(LINLEN)
+                ld      b,a                 ; B = LINLEN
+                ld      a,c
+                sub     b
+                inc     a
+                srl     a                   ; the left border, (row - LINLEN + 1) / 2
+                ld      e,a
+                ld      d,0
+                add     hl,de               ; HL -> the first field
+                ld      a,b
+                inc     a                   ; LINLEN + 1 ...
+                ld      c,-1
+ksp_div:
+                inc     c
+                sub     5
+                jr      nc,ksp_div          ; ... / 5 = the pitch, in C
+                dec     c                   ; pitch - 1 = the characters shown
+                ret     z                   ; pitch 1: nothing (WIDTH 5)
+                ret     m                   ; pitch 0: nothing (WIDTH 1..3)
+                ld      a,c                 ; A = field width
                 ld      de,FNKSTR           ; DE -> slot 1
                 ld      b,FNK_FIELDS
 ksp_field:
@@ -98,23 +119,20 @@ ksp_put:
                 ret
 
 ; ks_geom -- the key row for the current text mode.
-;   out: HL = row 23's first name-table cell, A = visible field width,
-;        C = the row's length (what ks_blank clears). Clobbers DE.
+;   out: HL = row 23's first name-table cell, C = the row's length (what
+;        ks_blank clears, and what the border is measured against). Clobbers
+;        A, DE.
 ks_geom:
                 ld      hl,(NAMBAS)
                 ld      a,(SCRMOD)
                 dec     a
-                jr      z,ksg_32
                 ld      de,FNK_ROW
-                add     hl,de
-                ld      a,FNK_WIDTH
                 ld      c,40
-                ret
-ksg_32:
+                jr      nz,ksg_have
                 ld      de,FNK_ROW32
-                add     hl,de
-                ld      a,FNK_WIDTH32
                 ld      c,32
+ksg_have:
+                add     hl,de
                 ret
 
 ks_blank:
