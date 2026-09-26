@@ -5913,7 +5913,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:25277 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:25292 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -6079,7 +6079,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:10872 (T-6FE392)8 (T-529ABE)` from `TODO.md:22931 (T-529ABE)`: a
+      `TODO.md:10872 (T-6FE392)8 (T-529ABE)` from `TODO.md:22946 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -11716,7 +11716,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:22931 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:22946 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -16881,10 +16881,25 @@ finds zero shared names (a renamed block would otherwise make it silently blind)
       zerobas block must put mode at +0, device at +4, position at +6 and the
       record at +9; the 41 B of engine state go ELSEWHERE — which is what the
       reference's +1 pointer does on disk.
-      🤖 **AUTONOMOUS** — next: where the 2-byte per-channel entry sits (the FRE
-      charge is 267 = 265 + 2), then the design doc for the channel block + the
-      engine-state home (priced with the channel-I/O carve, D-FATPAGE1); diskless
-      target rows too (the ruled rule).
+      📏 **STEP 2 MEASURED 2026-09-26 (loop, `scratchpad/filtab_probe.py` →
+      `scratchpad/filtab_run.out`) — THE 2 BYTES ARE `FILTAB`'s POINTER TABLE,
+      AND THE 265 + 2 = 267 HYPOTHESIS HOLDS.** The published `FILTAB`
+      (`$F860`) points at a table of **MAXFILES + 1** two-byte FCB pointers —
+      one per channel **including #0** (the one `LOAD`/`SAVE` use) — sitting
+      directly BELOW the FCB array:
+      | MAXFILES | `FILTAB` | table | FCB #0 | #1 | #2 | #3 |
+      |---|---|---|---|---|---|---|
+      | 1 | `$F16A` | 4 B | `$F16E` | `$F277` | | |
+      | 2 | `$F05F` | 6 B | `$F065` | `$F16E` | `$F277` | |
+      | 3 | `$EF54` | 8 B | `$EF5C` | `$F065` | `$F16E` | `$F277` |
+      So, top-down from `$F380`: FCB #MAXFILES … FCB #1, FCB #0, then the
+      pointer table, `FILTAB` pointing at it. ⚠️ Correction to the D-FCBSTRIDE
+      wording above ("#1 lowest"): #1 is lowest among the USER channels; #0 sits
+      below it. The formula `VARPTR(#n) = $F380 − 265·(MAXFILES − n + 1)` stands.
+      🔮 Predicted "MAXFILES + 1 pointers just below the FCBs" — HIT.
+      🤖 **AUTONOMOUS** — next: the design doc for the channel block + FILTAB +
+      the engine-state home (priced with the channel-I/O carve, D-FATPAGE1);
+      diskless target rows too (the ruled rule).
 
 - [ ] 🧰 **D-FASTPIN — `gates-fast` CAN WIPE THE KWSWEEP PIN AND THEN SKIP THE RUN THAT MAKES IT**
       🎚️ TIER 6 — apparatus: a false red, never a false green.
