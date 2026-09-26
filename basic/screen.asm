@@ -111,6 +111,7 @@ ex_screen:
     ELSE
                 call    CHGMOD
     ENDIF
+                call    key_repaint         ; D-KEYCLS: a text mode gets its key line
                 pop     hl
 scr_extra:                                  ; the trailing arguments
                 call    skip_comma
@@ -254,7 +255,9 @@ ex_cls:
                 push    hl
                 xor     a                   ; CLS requires the zero flag set on entry
                 call    CLS
+                call    key_repaint         ; D-KEYCLS: the key line survives CLS
                 jp      pop_exec            ; D-POPEXEC: pop hl + exec_stmt
+
 
 ; --- ex_width: WIDTH <columns> ---------------------------------------------
 ; Records the line length in LINLEN and in the active mode's per-mode default
@@ -317,6 +320,7 @@ wid_apply:
                 ld      a,(SCRMOD)
                 push    hl
                 call    CHGMOD              ; re-init the screen at the new width
+                call    key_repaint         ; D-KEYCLS: the re-init cleared row 23
                 jp      pop_exec            ; D-POPEXEC: pop hl + exec_stmt
                 ; Both rejects run at ex_width's OWN depth (exec_stmt `jp`s here),
                 ; so they need no return-address parking -- the same reason
@@ -328,6 +332,38 @@ clr_missing:                                ; D-OMITARG: COLOR's trailing-comma
                                             ; reject. Same raiser, 0 bytes -- a
                                             ; second label, not a second body.
                 jp      loc_missing         ; ERR 24
+
+; --- key_repaint (D-KEYCLS, 2026-09-26): put the function-key line back ------
+; The VG-8020 keeps its key labels on row 23 across CLS, SCREEN 0, a SCREEN
+; round trip and a WIDTH change (scratchpad/keycls_probe.py); here each of them
+; cleared the row -- C-BIOS's CLS/INITXT wipe the whole screen and its DSPFNK
+; paints nothing (D-DSPFNK) -- and a re-init also reset CRTCNT, so the scroll
+; bound moved back onto the key row. When the line is ON and the mode is a text
+; mode, this repaints it through the keystr tenant (the KEY ON path) and
+; re-reserves the row. Preserves HL (every caller holds the parse cursor).
+key_repaint:
+                ld      a,(CNSDFG)
+                or      a
+                ret     z                   ; KEY OFF: nothing to put back
+                ld      a,(SCRMOD)
+                or      a
+                ret     nz                  ; SCREEN 0 only: ks_paint lays the row
+                                            ; out at NAMBAS + a 40-column row-23
+                                            ; offset, which in SCREEN 1 (32 columns,
+                                            ; names at $1800) lands past the name
+                                            ; table -- on the sprite attributes.
+                                            ; The SCREEN 1 key line is filed.
+                ld      a,CON_ROWS_KEYON
+                ld      (CRTCNT),a          ; the bottom row stays reserved
+                push    hl
+                push    ix
+                ld      a,KEYOP_FNKPAINT
+                ld      (KEYARG),a
+                ld      ix,SUBROM_ENTRY_BASE_P0 + 3*SUBROM_IDX_KEYSTR
+                call    sc_call             ; D-SCCALL: tenant call + absent raise
+                pop     ix
+                pop     hl
+                ret
 
 ; --- ex_key: KEY OFF | KEY ON ----------------------------------------------
 ex_key:

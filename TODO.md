@@ -1856,10 +1856,16 @@ item — do **one item per session** to keep context lean.
       📋 **FILED, NOT FIXED:** (a) `PRINT CHR$(27);"Y";` then a `PRINT` — the
       reference takes the next two characters as the ESC Y coordinates and
       carries on; zerobas (C-BIOS CHPUT) leaves the rest of the line invisible
-      (`esc_half`, both runs); 🎚️ TIER 6. (b) The reference's key line shows
+      (`esc_half`, both runs); 🎚️ TIER 6. ~~(b) The reference's key line shows
       F6..F10 while SHIFT is held (its interrupt flips `FNKSWI`); zerobas does
       not; 🎚️ TIER 3 — found by reasoning from the cell, NOT yet observed on
-      screen: measure before building.
+      screen: measure before building.~~ 📏 **(b) MEASURED 2026-09-26 —
+      REFUTED where it can be measured** (`scratchpad/keyshift_probe.py` →
+      `scratchpad/keyshift_run.out`): with SHIFT held while a program runs,
+      the VG-8020's row 23 still reads `color auto goto list run` and `FNKSWI`
+      stays 1 — the same as with CTRL held (the control). The prompt-idle case
+      cannot be read here: the harness releases the key before the capture.
+      The same probe found D-KEYCLS (below).
       ~~➡️ **NEXT (ruled order):** `RNDX` (7 vs 8 B, spec §4), `TEMPST` → 10,
       `DAC` full; S2b's temporary policy.~~
       🟢 **`RNDX` SHIPPED (2026-09-25), 0 ROM bytes — the "7 vs 8 B" was one
@@ -2216,6 +2222,37 @@ item — do **one item per session** to keep context lean.
       and the scroll bound: **DIFF 0/6** (was 3/3 on each build). 🔮 Predicted
       all three SAME — HIT. ⚠️ The CF-3300 boots in SCREEN 1, so it cannot be
       scraped without a reset; per the ruling it is not the target here.
+
+- [x] 🖥️ **D-KEYCLS — `CLS`, `SCREEN 0` AND A `WIDTH` CHANGE ERASED THE
+      FUNCTION-KEY LINE; THE VG-8020 KEEPS IT** — ✅ **FIXED 2026-09-26**
+      🎚️ TIER 1 — happy path: `CLS` is in nearly every program.
+      📏 Found by `scratchpad/keyshift_probe.py` (zerobas's VRAM row 23 read
+      blank after the harness's `CLS`), then measured by
+      `scratchpad/keycls_probe.py`: after `CLS`, `SCREEN 0`, `WIDTH 40`,
+      `SCREEN 1:SCREEN 0` and `KEY OFF:KEY ON:CLS` the reference's row 23
+      reads `color auto goto list run`; zerobas's was blank (C-BIOS's
+      CLS/INITXT clear the whole screen and its DSPFNK paints nothing,
+      D-DSPFNK), and a re-init also reset `CRTCNT`.
+      ✅ `key_repaint` (`basic/screen.asm`, 44 B page 1): when `CNSDFG` is on
+      and the mode is SCREEN 0, re-reserve the row and repaint it through the
+      keystr tenant; called after `CLS`, after `WIDTH`'s `CHGMOD`, and after
+      `SCREEN`'s. **After: DIFF 0/7** (`scratchpad/keycls_run.out`),
+      including the negative (`KEY OFF:CLS` stays blank) and the scroll bound
+      after `SCREEN 0` (22 on both). 🔮 Predicted all SAME — HIT (the
+      SCREEN 1 case was an instrument limit, see below).
+
+- [ ] 🖥️ **D-KEYSCR1 — zerobas SHOWS NO FUNCTION-KEY LINE IN SCREEN 1**
+      🎚️ TIER 3 — visible, but only in SCREEN 1 (32-column text).
+      📏 Filed 2026-09-26 while fixing D-KEYCLS: `ks_paint` (sub/keystr.asm)
+      lays the row out at `NAMBAS + FNK_ROW + FNK_COL0` with `FNK_ROW` = 920 —
+      row 23 of a 40-column table. In SCREEN 1 (32 columns, names at `$1800`)
+      that is `$1B9A`: past the name table AND past the sprite attributes
+      (`$1B00..$1B7F`), in unused VRAM, so `KEY ON` there corrupts nothing but
+      shows nothing. `key_repaint` is limited to SCREEN 0 for that reason.
+      🤖 **AUTONOMOUS — MEASURE FIRST:** the reference's SCREEN 1 key line
+      (layout, field width) needs a SCREEN 1-aware reader —
+      `scratchpad/keycls_probe.py`'s scrape reads the SCREEN 0 table and
+      returned pattern bytes on BOTH machines.
 
 - [x] 🔴 **D-HIMEMLIE — zerobas's `HIMEM` SAYS `$F380` WHILE ZEROBAS LIVES AT
       `$DB00..$F37F`**
@@ -5797,7 +5834,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:24738 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:24775 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -5963,7 +6000,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:10756 (T-6FE392)8 (T-529ABE)` from `TODO.md:22392 (T-529ABE)`: a
+      `TODO.md:10793 (T-6FE392)8 (T-529ABE)` from `TODO.md:22429 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -11600,7 +11637,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:22392 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:22429 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

@@ -30,6 +30,28 @@ symmetric. Treat that group as closed-by-measurement unless a new signal appears
 | PLAY X shape | *"Tenant walks the chain"* — the MML tenant reads the variable chain in RAM itself (spec-basic-audio-play §7.12); main ~0 B, no carve needed |
 | the rig | Joost's RP2040-Zero is **CONNECTED to the laptop since 2026-09-25** (`/dev/cu.usbmodem1101`, running firmware, not BOOTSEL; seen read-only, nothing flashed). Still ⛔ PARKED until he picks it up — he said *"keep going"*; the rig item says what to measure FIRST (headless joystick, then headless mouse for PAD/PDL) |
 
+### 🌙 NIGHT 2026-09-25 → 26 — READ THIS FIRST, IT SUPERSEDES EVERYTHING BELOW
+
+Joost ruled three questions on 2026-09-25 (recorded in TODO): **drop DETOKBUF**
+(done), **boot HIMEM = TXTMAX, truthful** (done), **stop the D-ADDR29 N set at
+the observable cells** (done — the evaluator scratch is a stated divergence).
+Shipped since midday: the RAM-address arc (VARTAB/ARYTAB/STREND, ATRBYT,
+TTYPOS/FNKSWI, RNDX, TEMPST/TEMPPT + D-TEMPPOL, DAC/USR + FAC at DAC, HIMEM)
+and **D-DETOKBUF S1–S3** (`b891e117`, `f1c4bde7`, `364e3fb4`): LIST renders
+through a 96 B window with token resumption, the GC sorts in the free variable
+area, `TXTMAX` = `$E000`. **`FRE(0)` gap to the VG-8020: −4750 in every state
+(was −6030); vs the CF-3300 the disk build now LEADS.**
+**Walls (clean build 2026-09-26): main page 1 105 B, low 5 B; sub p0 292 B.**
+🔴 LESSONS: a derived equate (`PU_NUM = DETOKBUF+256`) is a user no grep of
+code finds — the assembler did; re-rendering per window was quadratic (the
+battery's `linemax` caught >8 s); a comment edit mid-knife voids the run.
+The RP2040-Zero is connected (`/dev/cu.usbmodem1101`); the rig stays PARKED.
+
+➡️ **QUEUE, lowest tier first:** (1) TIER 3 — the reference's key line shows
+F6..F10 while SHIFT is held (inferred from `FNKSWI`, NOT yet observed: measure
+first); (2) TIER 4 — S2b's heap half (string slices allocate only their
+result), low observable value; (3) TIER 5 speed. TIER 6 stays parked.
+
 ### ☀️ MIDDAY 2026-09-25 — READ THIS FIRST, IT SUPERSEDES THE NIGHT BELOW
 
 Since `cc30d988`: `1de440df` lever A designed · `8cb5d21b` **CHRGTR at `RST

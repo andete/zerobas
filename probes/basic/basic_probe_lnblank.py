@@ -3131,7 +3131,12 @@ KNOWN_DIVERGE = {
     # coverage: it agrees here because the store SUCCEEDED and wrote the same
     # number the references write on a REFUSAL. The rule `crf-oom` is about is
     # gated by tests/test_program.py, not by any row in this probe.
-    "crf-oomsay":   "<nothing listed>",
+    # 🔁 RE-PINNED 2026-09-26 (D-KEYCLS): the DEFECT is unchanged -- the
+    # references refuse line 20 with `Out of memory`, zerobas stores it -- but
+    # zerobas's capture no longer ends in blank rows: its CLS now keeps the
+    # function-key line, as the references' always did, so the tail of the
+    # screen reads the labels where it read nothing.
+    "crf-oomsay":   "||||||||||||||||color  auto   goto   list   run",
     "crf-oomlst":   "20 REM BBBBBBBBBBBBBBBBBBBBBBBBBB|99 REM Z",
     # ✅ `dlt-dot` / `dlt-dotedit` RETIRED 2026-08-02 BY D-DOTLINE, and DELETED
     # rather than edited (the ninth cohort to go that way). They were pinned at
