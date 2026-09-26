@@ -5913,7 +5913,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:25292 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:25299 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -6079,7 +6079,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:10872 (T-6FE392)8 (T-529ABE)` from `TODO.md:22946 (T-529ABE)`: a
+      `TODO.md:10872 (T-6FE392)8 (T-529ABE)` from `TODO.md:22953 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -11716,7 +11716,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:22946 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:22953 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -16897,9 +16897,16 @@ finds zero shared names (a renamed block would otherwise make it silently blind)
       wording above ("#1 lowest"): #1 is lowest among the USER channels; #0 sits
       below it. The formula `VARPTR(#n) = $F380 − 265·(MAXFILES − n + 1)` stands.
       🔮 Predicted "MAXFILES + 1 pointers just below the FCBs" — HIT.
-      🤖 **AUTONOMOUS** — next: the design doc for the channel block + FILTAB +
-      the engine-state home (priced with the channel-I/O carve, D-FATPAGE1);
-      diskless target rows too (the ruled rule).
+      📝 **DESIGN WRITTEN 2026-09-26: `docs/spec-fcbshape.md`** — the measured
+      layout, today's block (its 50 B are ALL disk-engine state; the address is
+      derived in ONE place, sub op 18), the target, slices, and the walls
+      (sub page 1 was 0 B free, clean build 2026-09-26 — a carve first).
+      🙋 **NEEDS-JOOST — the disk build's engine-state home (spec §4):** (a) a
+      fixed table in the disk work area behind the FCB's +1 pointer — the
+      reference's shape; costs the disk build ~800 B of boot `FRE(0)` (it leads
+      the CF-3300 by ~635 B today) — or (b) allocate per disk OPEN (OPEN then
+      charges 61 B, not the reference's 11) or (c) size it by MAXFILES (317 B a
+      channel). The diskless build is a pure +39 B a channel either way.
 
 - [ ] 🧰 **D-FASTPIN — `gates-fast` CAN WIPE THE KWSWEEP PIN AND THEN SKIP THE RUN THAT MAKES IT**
       🎚️ TIER 6 — apparatus: a false red, never a false green.
