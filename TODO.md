@@ -5891,7 +5891,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:25105 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:25120 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -6057,7 +6057,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:10850 (T-6FE392)8 (T-529ABE)` from `TODO.md:22759 (T-529ABE)`: a
+      `TODO.md:10850 (T-6FE392)8 (T-529ABE)` from `TODO.md:22774 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -11694,7 +11694,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:22759 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:22774 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -16776,10 +16776,25 @@ finds zero shared names (a renamed block would otherwise make it silently blind)
       inserts. ⚠️ Related, unmeasured: readline treats `$7F` (DEL) as erase-LEFT
       ("Mac Backspace via C-BIOS"); an MSX's DEL deletes the character UNDER
       the cursor — measure that on both before touching it.
-      🤖 **AUTONOMOUS** — measure FIRST: what typing in insert mode does to the
-      rest of the logical line (including a wrap), and which keys end it
-      (Enter, the cursor keys, INS again) — then the editor case, INSFLG and
-      the partial cursor in `cursor_tenant`.
+      ~~🤖 **AUTONOMOUS** — measure FIRST~~ 📏 **MEASURED 2026-09-26
+      (`scratchpad/insmode_run.out`, 12 cases, CLS first per Joost; DIFF 8/12)
+      — THE GAP IS THE EDITOR'S SHIFT SEMANTICS, NOT ONLY INS.** VG-8020:
+      | keys | VG-8020 | zerobas |
+      |---|---|---|
+      | INS, `XY` (cursor on `C` of `ABCD`) | `ABXY█D` — the rest shifts right | overwrites: `ABXY█` |
+      | INS INS / INS → / INS ← / INS Enter | insert ENDS (INSFLG 0) | SAME — but VACUOUSLY: zerobas's INSFLG is always 0 |
+      | INS, Backspace, `XY` | insert STAYS on (INSFLG 255) | — |
+      | INS at the start of a 36/37-char row | the tail spills onto the next row | overwrites |
+      | INS spilling into a BLANK continuation row | uses that row | overwrites |
+      | INS spilling where the NEXT LINE sits directly below | a NEW ROW is inserted: line 20 moves down, the rows below shift | overwrites line 20's row |
+      | DEL (`$7F`) on `C` | deletes `C`, pulls the rest LEFT | wrong character, no shift |
+      | Backspace on `C` | deletes `B`, pulls the rest LEFT | blanks `B`, no shift |
+      🤖 **AUTONOMOUS** — the slice: INSFLG toggled by INS, cleared by Enter
+      and the cursor keys (not by BS); insert = shift the logical line right
+      from the cursor, spilling into its continuation row or INSERTING a screen
+      row (rows + LINTTB entries move down); DEL / BS = pull the logical line
+      left; the partial cursor (rows 5..7 inverted) in `cursor_tenant` when
+      INSFLG is set. `sub/readline.asm` (sub page 1). Re-run the probe after.
 
 - [x] 🖥️ **D-SCR1PROMPT — THE PROMPT DROPS SCREEN 1 BACK TO SCREEN 0**
       🎚️ TIER 1 — happy path: `SCREEN 1` typed at the prompt should stay.
