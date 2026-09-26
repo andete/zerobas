@@ -214,17 +214,29 @@ rl_cursor:
                 ld      ix,SUBROM_ENTRY_BASE_P1 + 3*SUBROM_IDX_CURSOR
                 jp      subrom_call
 
-; --- txt_mode: to SCREEN 0 if a graphics mode is up (D-SCREDIT) ---------------
+; --- txt_mode: back to the LAST TEXT MODE if a graphics mode is up ------------
 ; Measured on both references (docs/spec-basic-screditor.md §7): the prompt after
-; a SCREEN 2 program and an INPUT inside one read their line in SCREEN 0 (SCRMOD
-; 0, a 46-char line intact); zerobas stayed in SCREEN 2, where C-BIOS's rows are
-; 32 wide and a wrapping line read back garbled (graphics-acceptance phase M lost
-; its second program's third line). INITXT clears the screen and homes the cursor.
+; a SCREEN 2 program and an INPUT inside one read their line in a TEXT mode;
+; zerobas stayed in SCREEN 2, where C-BIOS's rows are 32 wide and a wrapping line
+; read back garbled (graphics-acceptance phase M lost its second program's third
+; line).
+; 🔴 D-SCR1PROMPT (2026-09-26): THAT RULE WAS "SCREEN 0", AND IT IS "THE LAST
+; TEXT MODE". The VG-8020 keeps SCREEN 1 at the prompt, and after `SCREEN 1`
+; then a SCREEN 2 program it comes back to SCREEN 1 (SCRMOD 1, OLDSCR 1, LINLEN
+; 29 -- scratchpad/scr1prompt_probe.py); this sent every non-zero SCRMOD to
+; INITXT, so SCREEN 1 never survived a prompt and OLDSCR always read 0. The
+; rule is the published TOTEXT's ($00D2): nothing in SCREEN 0/1, else the mode
+; OLDSCR names -- which C-BIOS's INITXT/INIT32 maintain.
+; The mode switch clears the screen, and the VG-8020 comes back WITH its
+; function-key line (every row of scr1prompt_probe.py); zerobas's came back
+; blank, so the switch is followed by key_repaint (D-KEYCLS) -- only when there
+; WAS a switch: in SCREEN 0/1 nothing is touched.
 txt_mode:
                 ld      a,(SCRMOD)
-                or      a
-                ret     z
-                jp      INITXT
+                cp      2
+                ret     c                   ; a text mode already: leave it alone
+                call    TOTEXT
+                jp      key_repaint
 
 ; 🏗️ D-ZBCRLF (Joost, 2026-09-24): *"the ZB prompt stays, but it should have
 ; the crlf like the OK prompt of the reference."* The TEXT stays `ZB` (the

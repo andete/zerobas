@@ -5891,7 +5891,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:25051 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:25079 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -6057,7 +6057,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:10850 (T-6FE392)8 (T-529ABE)` from `TODO.md:22705 (T-529ABE)`: a
+      `TODO.md:10850 (T-6FE392)8 (T-529ABE)` from `TODO.md:22733 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -11694,7 +11694,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:22705 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:22733 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -16781,7 +16781,7 @@ finds zero shared names (a renamed block would otherwise make it silently blind)
       (Enter, the cursor keys, INS again) — then the editor case, INSFLG and
       the partial cursor in `cursor_tenant`.
 
-- [ ] 🖥️ **D-SCR1PROMPT — THE PROMPT DROPS SCREEN 1 BACK TO SCREEN 0**
+- [x] 🖥️ **D-SCR1PROMPT — THE PROMPT DROPS SCREEN 1 BACK TO SCREEN 0**
       🎚️ TIER 1 — happy path: `SCREEN 1` typed at the prompt should stay.
       📏 **MEASURED 2026-09-26** (`scratchpad/cursorblock_run.out`, row
       `screen1`): after `SCREEN 1` the VG-8020 waits in SCREEN 1 (`SCRMOD` 1,
@@ -16789,9 +16789,37 @@ finds zero shared names (a renamed block would otherwise make it silently blind)
       Cause, read in our source: `txt_mode` (basic/repl.asm) switches ANY
       non-zero `SCRMOD` to text with INITXT, a rule measured for SCREEN 2
       (D-SCREDIT) and too wide for SCREEN 1, which is itself a text mode.
-      🤖 **AUTONOMOUS** — measure FIRST what the reference returns to after a
-      SCREEN 2 program when the previous text mode was 1 (SCREEN 0 or 1 —
-      `OLDSCR`?), then narrow `txt_mode`.
+      ~~🤖 **AUTONOMOUS** — measure FIRST what the reference returns to after a
+      SCREEN 2 program when the previous text mode was 1~~ ✅ **FIXED
+      2026-09-26.** 📏 The reference's rule is the LAST TEXT MODE: `SCREEN 1`
+      then a SCREEN 2 program comes back to SCREEN 1 (`OLDSCR` 1), `SCREEN 0`
+      then the same program to SCREEN 0, and an `INPUT` inside SCREEN 2 after
+      `SCREEN 1` waits in SCREEN 1. That is the published `TOTEXT` ($00D2), and
+      C-BIOS's INITXT/INIT32 already keep `OLDSCR` — zerobas's `OLDSCR` read 0
+      only because txt_mode forced INITXT at every prompt. txt_mode is now:
+      nothing in SCREEN 0/1, else `TOTEXT` + `key_repaint`.
+      🔴 **THE REPAINT WAS A SECOND, OLDER DIVERGENCE:** with the mode right,
+      every return from a graphics mode came back with a BLANK function-key row
+      where the VG-8020 repaints it — true of the old INITXT path too.
+      `scratchpad/scr1prompt_run.out`: **DIFF 1/6** — SCREEN 1 direct, SCREEN
+      1/0 + a SCREEN 2 program, SCREEN 2 direct, INPUT in SCREEN 2 all SAME
+      (mode, `OLDSCR`, `LINLEN`, `LINL32`, key row). Before: 5/6 DIFF on the
+      mode (zerobas in SCREEN 0 every time), then 5/6 on the blank key row.
+      The one left, `WIDTH 20` in SCREEN 1, is D-KEYWIDTH. Main page 1 −4 B net
+      (clean build 2026-09-26).
+
+- [ ] 🔑 **D-KEYWIDTH — THE FUNCTION-KEY LINE IGNORES `WIDTH`**
+      🎚️ TIER 1 — happy path: `WIDTH` is common and the key line is always up.
+      📏 **MEASURED 2026-09-26** (`scratchpad/scr1prompt_run.out`, row
+      `s1_width`): after `SCREEN 1:WIDTH 20` the VG-8020's key row reads
+      `col aut got lis run` — the fields SHRINK with the width — while zerobas
+      keeps `color auto goto list run`: `ks_geom` (sub/keystr.asm) lays the row
+      out with a fixed pitch per mode. From the readings so far the pitch looks
+      like `(LINLEN+1)/5` with one column of gap (29 → 6, 20 → 4) — an
+      INFERENCE from two points, not a rule.
+      🤖 **AUTONOMOUS** — measure FIRST: the key row at several WIDTHs in
+      SCREEN 0 and SCREEN 1 (including 37/39/40 in SCREEN 0, where zerobas's
+      geometry is already byte-for-byte right at 37), then derive the rule.
 
 - [ ] 🛑 **RULING 4's RIG — STICK AND STRIG ARE NOW DRIVEN BY A REAL USB
       STICK (D-RIGFW, 2026-09-26); `PAD`'s SWITCH STILL HAS NO INSTRUMENT.**

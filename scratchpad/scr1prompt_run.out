@@ -1,0 +1,14 @@
+SAME s1direct     ref: scrmod=1 oldscr=1 linlen=29 linl32=29 keys='color auto goto list run'
+                  zb:  scrmod=1 oldscr=1 linlen=29 linl32=29 keys='color auto goto list run'
+SAME s1_prog_s2   ref: scrmod=1 oldscr=1 linlen=29 linl32=29 keys='color auto goto list run'
+                  zb:  scrmod=1 oldscr=1 linlen=29 linl32=29 keys='color auto goto list run'
+SAME s0_prog_s2   ref: scrmod=0 oldscr=0 linlen=37 linl32=29 keys='color auto goto list run'
+                  zb:  scrmod=0 oldscr=0 linlen=37 linl32=29 keys='color auto goto list run'
+SAME s2direct     ref: scrmod=0 oldscr=0 linlen=37 linl32=29 keys='color auto goto list run'
+                  zb:  scrmod=0 oldscr=0 linlen=37 linl32=29 keys='color auto goto list run'
+DIFF s1_width     ref: scrmod=1 oldscr=1 linlen=20 linl32=20 keys='col aut got lis run'
+                  zb:  scrmod=1 oldscr=1 linlen=20 linl32=20 keys='color auto goto list run'
+SAME s1_input_s2  ref: scrmod=1 oldscr=1 linlen=29 linl32=29 keys='color auto goto list run'
+                  zb:  scrmod=1 oldscr=1 linlen=29 linl32=29 keys='color auto goto list run'
+
+DIFF: 1/6

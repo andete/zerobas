@@ -13,6 +13,7 @@ CHGMOD          equ     $005F   ; switch screen mode; A = mode 0..3 (SCREEN n)
 WRTVDP          equ     $0047   ; write VDP register C with value B (and update RGnSAV)
 CHGCLR          equ     $0062   ; apply FORCLR/BAKCLR/BDRCLR; A = screen mode (COLOR)
 INITXT          equ     $006C   ; init SCREEN 0 (TEXT1) and enable the display
+TOTEXT          equ     $00D2   ; to the last text mode (OLDSCR) if SCRMOD >= 2, else nothing
 CHSNS           equ     $009C   ; test the keyboard buffer -> Z if empty, NZ if a key waits
 CHGET           equ     $009F   ; wait for a character from the keyboard -> A
 CHPUT           equ     $00A2   ; output the character in A at the cursor
