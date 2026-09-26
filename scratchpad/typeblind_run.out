@@ -1,0 +1,10 @@
+SAME wrap+1.0   ref: PRINT 5 / 5
+                zb:  PRINT 5 / 5
+SAME wrap+2.0   ref: PRINT 5 / 5
+                zb:  PRINT 5 / 5
+SAME short+0.5  ref: PRINT 5 / 5
+                zb:  PRINT 5 / 5
+SAME prog       ref: 20 PRINT C$;A+B / 30 IF A<99 THEN PRINT "OK";A*B / RUN / TYPED 42 / OK 360
+                zb:  20 PRINT C$;A+B / 30 IF A<99 THEN PRINT "OK";A*B / RUN / TYPED 42 / OK 360
+
+DIFF: 0/4

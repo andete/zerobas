@@ -5891,7 +5891,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:24983 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:25008 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -6057,7 +6057,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:10850 (T-6FE392)8 (T-529ABE)` from `TODO.md:22637 (T-529ABE)`: a
+      `TODO.md:10850 (T-6FE392)8 (T-529ABE)` from `TODO.md:22662 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -11694,7 +11694,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:22637 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:22662 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -16689,7 +16689,7 @@ verifies that the two copies cannot diverge unnoticed, and it REFUSES if it ever
 finds zero shared names (a renamed block would otherwise make it silently blind).
 📏 Main page 1 free: **3 B**, unchanged (2026-09-15) — an equate costs nothing.
 
-- [ ] ⌨️ **D-TYPEBLIND — KEYS PRESSED WHILE ZEROBAS TOKENISES A LINE ARE LOST**
+- [x] ⌨️ **D-TYPEBLIND — KEYS PRESSED WHILE ZEROBAS TOKENISES A LINE ARE LOST**
       🎚️ TIER 1 — happy path: typing a program in, line after line, is how
       `LIST`, `RUN` and everything else get their input; the VG-8020 loses
       nothing on the same keystrokes.
@@ -16710,9 +16710,34 @@ finds zero shared names (a renamed block would otherwise make it silently blind)
       scan running across page-0 tenant calls, or make the tokeniser fast
       enough that the window is under a scan period (0.25 s for 38 chars is
       also a TIER 5 speed fact on its own).
-      🤖 **AUTONOMOUS** — measure FIRST: prove the mechanism (does the
+      ~~🤖 **AUTONOMOUS** — measure FIRST: prove the mechanism (does the
       interrupt reach C-BIOS's scan while a page-0 tenant runs?), then a row
-      that types a line and a second one inside the window, on both machines.
+      that types a line and a second one inside the window, on both machines.~~
+      ✅ **FIXED 2026-09-26.** The mechanism was in our own source, not a
+      guess: `subrom_call` runs EVERY page-0 tenant as `di` / `CALSLT` / `ei`,
+      so for the whole tokenise no interrupt ran at all. `tokenise_ei`
+      (sub/sub.asm) is the entry now: `ei`, `call tokenise`, `di`, `ret` —
+      interrupts live through the sub-ROM's own page-0 `$0038` trampoline, the
+      path beep and the graphics tenants already use; it returns under DI so
+      the CALSLT slot restore stays atomic. 5 B of sub page 0 (clean build
+      2026-09-26); main unchanged.
+      `scratchpad/typeblind_run.out`: **DIFF 0/4** — `PRINT 5` 1.0 / 2.0 s after
+      a wrapped stored line, 0.5 s after a short one, and a whole PROGRAM typed
+      in one go, `RUN` included (`TYPED 42` / `OK 360` on both). 🔪 **KNIFE:**
+      the table pointed back at `tokenise` → **4/4 DIFF** (`NT 5`; the program
+      loses the `2` of `20`, the `3` of `30` and the `R` of `RUN`); restored,
+      the ROM is byte-identical to the fixed build.
+      🔮 Predicted all timing rows fixed — HIT (9/9 in the latency sweep).
+      ⚠️ **NO BATTERY GATE SEES THIS CLASS.** Every probe in the battery
+      delivers keys into the key BUFFER (omsx_repl), bypassing the matrix scan
+      this bug lived in; `typeblind_probe.py` is the only witness, and it is
+      run by hand.
+      🔭 **THE SAME DI COVERS EVERY OTHER PAGE-0 TENANT.** Only the tokeniser was
+      measured. A long string collection (`strheap_engine`) or a big `DIM`'s
+      clear (`ary_engine`) runs the same way and would drop keys typed during
+      it — and, like the tokeniser, would also hold off the JIFFY tick and
+      PLAY. Measure one (type during a forced collection) before widening the
+      fix.
 
 - [ ] ▮ **D-CURSORBLOCK — ZEROBAS SHOWS NO BLOCK CURSOR AT THE PROMPT**
       🎚️ TIER 1 — happy path: the cursor is the first thing a user looks for.

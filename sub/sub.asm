@@ -130,7 +130,7 @@ DISK_BUILD      equ     0   ; D-FATENG: 1 only in disk.rom, where DSKIO is LOCAL
                 ds      SUBROM_ENTRY_BASE_P0 - $, $FF   ; $003B..$003F: dead pad
 sub_p0_table:
                 jp      sub_p0_ping             ; index 0 (SUBROM_IDX_PING)
-                jp      tokenise                ; index 1 (SUBROM_IDX_TOKENISE): the WHOLE
+                jp      tokenise_ei             ; index 1 (SUBROM_IDX_TOKENISE): the WHOLE
                                                 ;   tokeniser (wave 2). The tk_float crunch
                                                 ;   is no longer a dispatch entry — it is an
                                                 ;   in-slot `jp tk_float` from tk_loop.
@@ -299,6 +299,23 @@ sis_spin:
 ;                                     own copy). Same kwtable.inc + same org
 ;                                     gating -> the two images can't drift.
                 include "tkfloat.asm"
+; --- tokenise_ei (D-TYPEBLIND, 2026-09-26): the tokeniser with interrupts LIVE -
+; subrom_call runs every page-0 tenant under DI, and tokenising a typed line is
+; long enough to matter: ~0.25 s for a 38-character line, during which no
+; interrupt ran, so the keyboard was not scanned and keys pressed in that window
+; were LOST (`PRINT 5` typed right after the line arrived as `NT 5`, `RUN` as
+; `RRUN`; the VG-8020, which tokenises with interrupts on, lost nothing --
+; scratchpad/typeblind_probe.py). The sub-ROM owns its page-0 $0038 trampoline
+; (sub_int_template), which is what lets beep and the graphics tenants run with
+; `ei`; the tokeniser uses no alternate registers and no SP tricks, and the
+; real ISR saves what it touches. It RETURNS under DI, as every tenant did: the
+; CALSLT slot restore that follows must stay atomic. `di` sets no flags, so the
+; tokeniser's results reach the caller unchanged.
+tokenise_ei:
+                ei
+                call    tokenise
+                di
+                ret
                 include "basic/tokenise.inc"
 
 ; WAVE 3 (index 2 = detok): the LIST / ASCII-SAVE detokeniser core, evicted from
