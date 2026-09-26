@@ -5913,7 +5913,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:25323 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:25333 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -6079,7 +6079,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:10872 (T-6FE392)8 (T-529ABE)` from `TODO.md:22977 (T-529ABE)`: a
+      `TODO.md:10872 (T-6FE392)8 (T-529ABE)` from `TODO.md:22987 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -11716,7 +11716,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:22977 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:22987 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -13344,6 +13344,16 @@ list. **When a slice lands, grep this list for what it just shipped.**
       ⚠️ And its first cut APPENDED TO THE LIST IT WAS ITERATING — two tools
       naming each other never terminated; it hung silently for 22 minutes and
       looked like a slow `make -n` sweep, not a loop.
+      🏎️ **2026-09-26 (loop): THE PIXEL MASK WAS A LOOP.** A PC-sample profile of
+      a SCREEN 2 flood put ~26% in VRAM reads and ~15% in `gfx_calc_addr`'s
+      address/mask math — the mask was `$80` shifted right `x&7` times in a
+      `djnz` loop (~105 T a pixel). An 8-entry table (`gca_masks`, page-safe,
+      asserted) is a flat ~36 T; +1 B of sub page 0. The deterministic stopwatch
+      (`scratchpad/paint_stopwatch.py`), before/after ON THE SAME TREE:
+      `paint.flood` **30.92 → 28.83** (2.10× → **1.96×**), `paint.circle` 7.71 →
+      7.20, `circle` 0.258 → 0.246, `line` 0.124 → 0.119. 🔮 Predicted 8–10% —
+      got 6.8%, a smaller hit. The rest of the gap is the per-pixel VRAM read
+      (`gfx_rd_raw`/`gprd_g2`, ~26%).
       🎚️ TIER 5 — on-par speed: `PAINT` 2×
       ~~🙋 NEEDS-JOOST — a call that is yours to make (charter / scope).~~ (re-marked 2026-09-10, see below)
       🎯 **RULED (Joost, 2026-09-10): *"follow the scheme"* — TIER 4, so it is picked only

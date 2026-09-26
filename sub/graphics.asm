@@ -235,19 +235,17 @@ gfx_vram_rd:
 ; ===========================================================================
 gfx_calc_addr:
                 ; --- mask = $80 >> (x & 7) ---
+                ; 🏎️ T5 (2026-09-26): this was `$80` shifted right x&7 times in a
+                ; djnz loop -- ~105 T a pixel on average, and with the address math
+                ; ~15% of a PAINT flood's time (PC samples, paintprof). An 8-entry
+                ; table is a flat ~36 T. It must not cross a 256-byte page (H is
+                ; its high byte) -- asserted at the table.
                 ld      a,e
                 and     $07
-                jr      z,gca_mask_hi       ; x&7 = 0 -> mask = $80
-                ld      b,a                 ; B = shift count 1..7
-                ld      a,$80
-gca_mask_lp:
-                rrca                        ; $80>>1=$40, ... ; never wraps for count<=7
-                djnz    gca_mask_lp
-                jr      gca_mask_set
-gca_mask_hi:
-                ld      a,$80
-gca_mask_set:
-                ld      c,a                 ; C = bit mask
+                add     a,low gca_masks
+                ld      l,a
+                ld      h,high gca_masks
+                ld      c,(hl)              ; C = bit mask
                 ; --- addr low = (x & $F8) + (y & 7) ---   ((x>>3)*8 == x & $F8)
                 ld      a,e
                 and     $F8
@@ -264,6 +262,11 @@ gca_mask_set:
                 and     $1F                 ; y<=191 -> y>>3 <= 23
                 ld      h,a
                 ret
+gca_masks:
+                db      $80,$40,$20,$10,$08,$04,$02,$01
+    IF (gca_masks & $FF) > $F8
+                db      GCA_MASKS_CROSSES_A_PAGE__H_WOULD_BE_WRONG
+    ENDIF
 
 ; ===========================================================================
 ; gfx_calc_addr_mc -- the SCREEN 3 (MULTICOLOUR) address model. D-SCREEN3.
