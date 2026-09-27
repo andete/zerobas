@@ -30,6 +30,44 @@ symmetric. Treat that group as closed-by-measurement unless a new signal appears
 | PLAY X shape | *"Tenant walks the chain"* — the MML tenant reads the variable chain in RAM itself (spec-basic-audio-play §7.12); main ~0 B, no carve needed |
 | the rig | Joost's RP2040-Zero is **CONNECTED to the laptop since 2026-09-25** (`/dev/cu.usbmodem1101`, running firmware, not BOOTSEL; seen read-only, nothing flashed). **UN-PARKED 2026-09-26 and FLASHED with `tools/rigfw/rigfw.ino`:** headless joystick WORKS (bind `msxjoystick1_config` to `joy1`, which this install leaves EMPTY); headless mouse does NOT reach PAD/PDL. Next: STICK/STRIG rows — the rig item in TODO |
 
+### 🌙 LOOP 2026-09-27 EVENING → 09-28 ~01:00 — READ THIS FIRST (the day section below is older)
+
+**Tree clean, all pushed, head `4dbb6dfb`.** Eight TIER 1 fixes and T6 75 → **102
+of 159**. Commits (SHAs from `git log 3ba7e2de..`): `2f19bed0` D-PAINTSP ·
+`d5ce46ef` GOSUB 8→7 priced (back to Joost) · `ba67fdea` D-CARVEFP (sub p1 0 →
+266) + `docs/reference-stack-frames.md` (Joost's GOSUB study) · `bbee4856`
+D-DIMRESERVE bisected · `601a44c9` **D-STACKFLOOR** (the evaluator had no stack
+floor: a nested formula overwrote an array DIM'd to the edge) + **D-SNDVAR**
+(`SOUND 8,V` wrote the wrong register) + **D-PADTRACE** (the touchpad, traced on
+the VG-8020's PORTS with Joost's rp2040-zero, windowed) · `755a2bf3`
+**D-FORFLOAT** (FOR/NEXT was int16: `STEP .5` never ended) funded by D-CARVECAS
+(the cassette ASCII reader became the `casget` tenant, +112 B page 1) ·
+`f5040021` **D-CAS4BLK** (the tape motor never stopped between blocks; its probe
+is a gate now) · `8ab5e977` **D-GFXERRMSG** (an error in SCREEN 2 printed into
+the bitmap) + T6 batch 7 · `324f36df` T6 7b · `4dbb6dfb` **D-RUNCLOSE** (RUN
+never closed open files) + T6 batch 8.
+**Walls (clean build 2026-09-28): main page 1 8 B, low 2 B, sub p0 9 B, sub p1
+158 B, disk 7264.** Carves found tonight: `ngram_sweep --main` still pays in
+small pieces (D-NEGDE: an open-coded negate at 5 sites, +12 B); `evict_scout.py`
+named the cassette reader.
+➡️ **NEXT, by tier:** D-DISKERRS (TIER 3 — KILL of an open file, NAME onto an
+existing file, re-OPEN of a busy channel, `Q:` accepted, Input past end never
+raised; the disk handlers live in `disk.rom`, 7264 B free) · D-FORFAST (TIER 5 —
+NEXT 2.37× since D-FORFLOAT; the int fast path needs ~20 B, a carve first) ·
+D-DIMRESERVE (TIER 4, now economy only) · the T6 divergences (D-CIRCANGLE and
+friends, TIER 6) · more T6 enumeration (57 keywords left; RUN, editor commands
+and keyboard-blocking forms need other shapes).
+🔴 **FOUR PROCESS LESSONS FROM TONIGHT, all written down where they bite:**
+• a check for "is it running" that greps the TYPED command line reads a live
+  job as dead on this Mac — memory `a-liveness-check-that-greps-the-command-line`;
+  a bare-`&` knife chain survived and overlapped a second one;
+• a NEW disk batch is run PER CASE on both machines before its rows join the
+  batched sweep, and only agreeing pairs become rows — a wrong row poisons its
+  neighbours (that is how D-RUNCLOSE was found);
+• a new FOR fix slowed the default loop and broke kwsweep delay rows by TIME,
+  not by logic — delays in rows are `%` loops now;
+• kwknife has THREE witness enumerators; all three skip PROVES-T6 rows now.
+
 ### ☀️ LOOP 2026-09-27, DAY (after the rulings) — READ THIS FIRST
 
 **T6 is BUILT and 75 of 159 keywords prove it** (D-KWT6: `tools/kwerrset.py` =
