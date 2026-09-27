@@ -1,0 +1,58 @@
+==================== Philips_VG_8020
+base     SP=0xf09c STKTOP=0xf0a0 depth=  4 B  frames(+vs base)=  0 B   10 POKE &HC000,173
+   0xf09c: 01 46 00 00
+gosub1   SP=0xf095 STKTOP=0xf0a0 depth= 11 B  frames(+vs base)=  7 B   10 GOSUB 30 | 20 END | 30 POKE &HC000,173:RETURN
+   0xf098: 00 00 0A 00 0A 80 00 00
+   0xf095: 01 46 8D
+gosub1b  SP=0xf095 STKTOP=0xf0a0 depth= 11 B  frames(+vs base)=  7 B   10 A=1:GOSUB 30:B=2 | 20 END | 30 POKE &HC000,173:RETURN
+   0xf098: 00 00 0A 00 0E 80 00 00
+   0xf095: 01 46 8D
+gosub2   SP=0xf08e STKTOP=0xf0a0 depth= 18 B  frames(+vs base)= 14 B   10 GOSUB 30 | 20 END | 30 GOSUB 40:RETURN | 40 POKE &HC000,173:RETURN
+   0xf098: 00 00 0A 00 0A 80 00 00
+   0xf090: 8D 00 00 1E 00 1A 80 8D
+   0xf08e: 01 46
+for1     SP=0xf083 STKTOP=0xf0a0 depth= 29 B  frames(+vs base)= 25 B   10 FOR I=1 TO 2:POKE &HC000,173:NEXT
+   0xf098: 00 00 0A 00 0E 80 00 00
+   0xf090: 00 00 41 20 00 00 00 00
+   0xf088: 01 05 41 10 00 00 00 00
+   0xf083: 01 46 82 1F 80
+for1int  SP=0xf083 STKTOP=0xf0a0 depth= 29 B  frames(+vs base)= 25 B   10 FOR I%=1 TO 2:POKE &HC000,173:NEXT
+   0xf098: 02 00 0A 00 0F 80 00 00
+   0xf090: 9F 00 9F 00 0F 80 01 00
+   0xf088: 01 FF 9F 00 9F 00 9F 00
+   0xf083: 01 46 82 20 80
+for1dbl  SP=0xf083 STKTOP=0xf0a0 depth= 29 B  frames(+vs base)= 25 B   10 FOR I#=1 TO 2:POKE &HC000,173:NEXT
+   0xf098: 00 00 0A 00 0F 80 00 00
+   0xf090: 00 00 41 20 00 00 00 00
+   0xf088: 01 05 41 10 00 00 00 00
+   0xf083: 01 46 82 20 80
+for1stp  SP=0xf083 STKTOP=0xf0a0 depth= 29 B  frames(+vs base)= 25 B   10 FOR I=1 TO 2 STEP 3:POKE &HC000,173:NEXT
+   0xf098: 00 00 0A 00 12 80 00 00
+   0xf090: 00 00 41 20 00 00 00 00
+   0xf088: 01 05 41 30 00 00 00 00
+   0xf083: 01 46 82 23 80
+for2     SP=0xf06a STKTOP=0xf0a0 depth= 54 B  frames(+vs base)= 50 B   10 FOR I=1 TO 2:FOR J=5 TO 6:POKE &HC000,173:NEXT:NEXT
+   0xf098: 00 00 0A 00 0E 80 00 00
+   0xf090: 00 00 41 20 00 00 00 00
+   0xf088: 01 05 41 10 00 00 00 00
+   0xf080: 00 0A 00 18 80 82 2B 80
+   0xf078: 00 41 60 00 00 00 00 00
+   0xf070: 05 41 10 00 00 00 00 00
+   0xf06a: 01 46 82 36 80 01
+forgos   SP=0xf07c STKTOP=0xf0a0 depth= 36 B  frames(+vs base)= 32 B   10 FOR I=1 TO 1:GOSUB 30:NEXT | 20 END | 30 POKE &HC000,173:RETURN
+   0xf098: 00 00 0A 00 0E 80 00 00
+   0xf090: 00 00 41 10 00 00 00 00
+   0xf088: 01 05 41 10 00 00 00 00
+   0xf080: 00 0A 00 14 80 82 31 80
+   0xf07c: 01 46 8D 00
+gosfor   SP=0xf07c STKTOP=0xf0a0 depth= 36 B  frames(+vs base)= 32 B   10 GOSUB 30 | 20 END | 30 FOR I=1 TO 1:POKE &HC000,173:NEXT:RETURN
+   0xf098: 00 00 0A 00 0A 80 00 00
+   0xf090: 00 00 00 1E 00 1E 80 8D
+   0xf088: 00 00 00 41 10 00 00 00
+   0xf080: 80 01 05 41 10 00 00 00
+   0xf07c: 01 46 82 31
+onerr    SP=0xf09c STKTOP=0xf0a0 depth=  4 B  frames(+vs base)=  0 B   10 ON ERROR GOTO 30:ERROR 5 | 20 END | 30 POKE &HC000,173:RESUME 20
+   0xf09c: 01 46 00 00
+trap     SP=0xf095 STKTOP=0xf0a0 depth= 11 B  frames(+vs base)=  7 B   10 ON INTERVAL=1 GOSUB 30:INTERVAL ON | 20 GOTO 20 | 30 POKE &HC000,173:INTERVAL OFF:END
+   0xf098: 7F FC 14 00 1E 80 00 00
+   0xf095: 01 46 8D

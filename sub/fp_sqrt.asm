@@ -366,10 +366,9 @@ fsq_stop:
                 ; battery (72 characterized inputs + fresh random draws
                 ; spanning every magnitude/decimal shape) all land exactly on
                 ; the host-computed correctly-rounded 14-digit truth.
-                ld      hl,ARGA
-                call    widen_fac_to        ; ARGA := clean widen of the
+                call    widen_to_arga
+                                            ; ARGA := clean widen of the
                                             ; Heron-loop candidate y
-                ld      hl,ARGA
                 ld      de,SQRT_Y
                 call    fsq_copy18                        ; SQRT_Y := canonical candidate y
                 ; --- Newton step: c := (x'-y*y)/(2*y); y := y+c -----------
@@ -405,9 +404,8 @@ fsq_stop:
                 ld      de,ARGB
                 call    fsq_copy18                        ; ARGB := y (canonical, pre-step)
                 call    fp_add              ; FAC/ARGA := y+c
-                ld      hl,ARGA
-                call    widen_fac_to        ; ARGA := clean widen of it
-                ld      hl,ARGA
+                call    widen_to_arga
+                                            ; ARGA := clean widen of it
                 ld      de,SQRT_Y
                 call    fsq_copy18                        ; SQRT_Y := Newton-corrected y
 
@@ -452,9 +450,8 @@ fsqn_trunc1:
                 ld      de,ARGA
                 call    fsq_copy18                        ; ARGA := x'
                 call    fp_sub              ; FAC/ARGA := r1 = x'-Y0^2
-                ld      hl,ARGA
-                call    widen_fac_to        ; ARGA := clean widen of r1
-                ld      hl,ARGA
+                call    widen_to_arga
+                                            ; ARGA := clean widen of r1
                 ld      de,SQRT_R
                 call    fsq_copy18                        ; SQRT_R := r1 (retained)
                 ; --- e := y-Y0 (Y0 rebuilt fresh into ARGB) -----------------
@@ -473,9 +470,8 @@ fsqn_trunc2:
                 call    fsq_copy18                        ; ARGA := y
                 call    fp_sub              ; FAC/ARGA := e = y-Y0 (exact)
                 ; --- corr := (2*e)*Y0 (Y0 rebuilt again) --------------------
-                ld      hl,ARGA
-                call    widen_fac_to        ; ARGA := clean widen of e
-                ld      hl,ARGA
+                call    widen_to_arga
+                                            ; ARGA := clean widen of e
                 ld      de,ARGB
                 call    fsq_copy18                        ; ARGB := copy of e
                 call    fp_add              ; FAC/ARGA := 2e
@@ -517,9 +513,8 @@ fsqn_trunc3:
                 ld      de,ARGA
                 call    fsq_copy18                        ; ARGA := r1 (retained)
                 call    fp_sub              ; FAC/ARGA := r1-corr
-                ld      hl,ARGA
-                call    widen_fac_to        ; ARGA := clean widen of it
-                ld      hl,ARGA
+                call    widen_to_arga
+                                            ; ARGA := clean widen of it
                 ld      de,SQRT_R
                 call    fsq_copy18                        ; SQRT_R := r1-corr (retained)
 fsqn_e2:
@@ -538,9 +533,8 @@ fsqn_trunc4:
                 ld      de,ARGA
                 call    fsq_copy18                        ; ARGA := y
                 call    fp_sub              ; FAC/ARGA := e (rebuilt)
-                ld      hl,ARGA
-                call    widen_fac_to        ; ARGA := clean widen of e
-                ld      hl,ARGA
+                call    widen_to_arga
+                                            ; ARGA := clean widen of e
                 ld      de,ARGB
                 call    fsq_copy18                        ; ARGB := copy of e
                 call    fp_mul              ; FAC/ARGA := e2 = e*e
@@ -555,9 +549,8 @@ fsqn_trunc4:
                 ld      de,ARGA
                 call    fsq_copy18                        ; ARGA := (r1-corr)
                 call    fp_sub              ; FAC/ARGA := r2=(r1-corr)-e2
-                ld      hl,ARGA
-                call    widen_fac_to        ; ARGA := clean widen of r2
-                ld      hl,ARGA
+                call    widen_to_arga
+                                            ; ARGA := clean widen of r2
                 ld      de,SQRT_R
                 call    fsq_copy18                        ; SQRT_R := r2 (final residual)
 fsqn_r2_done:
@@ -606,9 +599,7 @@ fsqn_up_check:
                 ld      de,ARGA
                 call    fsq_copy18
                 call    fp_add              ; FAC/ARGA := y+ulp
-                ld      hl,ARGA
-                call    widen_fac_to
-                ld      hl,ARGA
+                call    widen_to_arga
                 ld      de,SQRT_Y
                 call    fsq_copy18                        ; SQRT_Y := y+ulp
                 jp      fsqn_next
@@ -704,9 +695,7 @@ fsqn_down_dexp_ok2:
                 ld      de,ARGA
                 call    fsq_copy18
                 call    fp_sub              ; FAC/ARGA := y-ulp_down
-                ld      hl,ARGA
-                call    widen_fac_to
-                ld      hl,ARGA
+                call    widen_to_arga
                 ld      de,SQRT_Y
                 call    fsq_copy18                        ; SQRT_Y := y-ulp_down
 
@@ -739,4 +728,18 @@ fsq_k_ext_done:
                 call    arga_pack_fac
                 ; FACTYP/DE set by the caller, evmc_sqr, after return
                 xor     a
+                ret
+
+; --- widen_to_arga (D-CARVEFP, 2026-09-27): FAC -> ARGA widened, HL = ARGA ----
+; `ld hl,ARGA / call widen_fac_to / ld hl,ARGA` stood verbatim at 46 sites
+; across the fp_* tenants (sqrt 9, atan 11, exp 8, log 10, sin 7, pow 1) --
+; the top candidate of scratchpad/ngram_sweep.py over sub/, never carved
+; because every earlier pass ran `--main`. One body + 46 calls = 266 B of sub
+; page 1. Flags and HL leave exactly as the inline sequence left them (the
+; `ld` sets no flags; widen_fac_to's are the last word either way). Only sites
+; with NO label inside the span were folded.
+widen_to_arga:
+                ld      hl,ARGA
+                call    widen_fac_to
+                ld      hl,ARGA
                 ret

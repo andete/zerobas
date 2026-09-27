@@ -348,18 +348,14 @@ sck_reduce:
                 call    fat_copy18          ; ARGB := SIN_C1
                 call    fp_mul              ; FAC/ARGA := nf*SIN_C1 (EXACT,
                                             ; §14.3)
-                ld      hl,ARGA
-                call    widen_fac_to
-                ld      hl,ARGA
+                call    widen_to_arga
                 ld      de,ARGB
                 call    fat_copy18          ; ARGB := nf*SIN_C1
                 ld      hl,MATH_A
                 ld      de,ARGA
                 call    fat_copy18          ; ARGA := a
                 call    fp_sub              ; FAC/ARGA := a - nf*C1 = r1
-                ld      hl,ARGA
-                call    widen_fac_to
-                ld      hl,ARGA
+                call    widen_to_arga
                 ld      de,MATH_R
                 call    fat_copy18          ; MATH_R := r1 (temporary)
 
@@ -370,9 +366,7 @@ sck_reduce:
                 ld      de,ARGB
                 call    fat_copy18          ; ARGB := SIN_C2
                 call    fp_mul              ; FAC/ARGA := nf*SIN_C2
-                ld      hl,ARGA
-                call    widen_fac_to
-                ld      hl,ARGA
+                call    widen_to_arga
                 ld      de,ARGB
                 call    fat_copy18          ; ARGB := nf*SIN_C2
                 ld      hl,MATH_R
@@ -391,9 +385,7 @@ sck_have_r:
                 ld      de,ARGB
                 call    fat_copy18          ; ARGB := r (ARGA still r)
                 call    fp_mul              ; FAC/ARGA := r*r = u
-                ld      hl,ARGA
-                call    widen_fac_to
-                ld      hl,ARGA
+                call    widen_to_arga
                 ld      de,HORNER_G
                 call    fat_copy18          ; HORNER_G := u (=MATH_T)
 
@@ -401,18 +393,14 @@ sck_have_r:
                 ld      hl,SIN_COEF
                 call    fp_poly_horner      ; FAC/ARGA := S(u); HORNER_G(u)
                                             ; preserved across the call
-                ld      hl,ARGA
-                call    widen_fac_to
-                ld      hl,ARGA
+                call    widen_to_arga
                 ld      de,ARGB
                 call    fat_copy18          ; ARGB := S
                 ld      hl,MATH_A
                 ld      de,ARGA
                 call    fat_copy18          ; ARGA := r
                 call    fp_mul              ; FAC/ARGA := r*S = sv
-                ld      hl,ARGA
-                call    widen_fac_to
-                ld      hl,ARGA
+                call    widen_to_arga
                 ld      de,MATH_A
                 call    fat_copy18          ; MATH_A := sv (r retired)
 
@@ -423,9 +411,7 @@ sck_have_r:
                                             ; fp_poly_horner, its own
                                             ; contract) -- the whole point of
                                             ; the shared kernel
-                ld      hl,ARGA
-                call    widen_fac_to
-                ld      hl,ARGA
+                call    widen_to_arga
                 ld      de,MATH_R
                 call    fat_copy18          ; MATH_R := cv
                 ret

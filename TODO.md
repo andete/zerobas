@@ -2128,6 +2128,15 @@ item — do **one item per session** to keep context lean.
       still under the reference's 25) and RETURN pays a walk (a T5 cost). That
       buys 1 byte per active GOSUB. The ruling was asked as a simple shrink; this
       is the price it did not show.
+      🔬 **THE REFERENCE'S MECHANISM, MEASURED THE SAME DAY at Joost's request**
+      ([`docs/reference-stack-frames.md`](docs/reference-stack-frames.md), RAM
+      and registers only): frames live on the Z80 stack below `STKTOP`, each
+      starting with a TYPE TOKEN and with NO chain words — GOSUB =
+      `[8D][trap entry 2][caller line 2][resume ptr 2]` (7 B; the trap pointer
+      is `$FC7F` for an `ON INTERVAL` GOSUB, `0000` otherwise), FOR =
+      `[82][var ptr 2][step sign][kind][step 8][limit 8][line 2][text ptr 2]`
+      (25 B for every variable type). RETURN/NEXT must therefore SCAN for the
+      token — the walk priced above is exactly the reference's shape.
       🙋 **BACK TO JOOST (the rung's rule: adjustments are his):** take the frame
       redesign for 1 B per GOSUB, or state
       GOSUB's 8 vs 7 as a divergence (the "never worse" rule then holds for FOR
@@ -6010,7 +6019,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:25903 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:25922 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -6176,7 +6185,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:11010 (T-6FE392)8 (T-529ABE)` from `TODO.md:23249 (T-529ABE)`: a
+      `TODO.md:11019 (T-6FE392)8 (T-529ABE)` from `TODO.md:23258 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -11857,7 +11866,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:23249 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:23258 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -24944,6 +24953,16 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       a syntax fault; zerobas apparently treats `5` as a store target. ⚠️ Check
       the bare `5=1` statement form too — the same parse may be reachable without
       `LET`.
+
+- [x] 💰 **D-CARVEFP (2026-09-27): SUB PAGE 1 0 → 266 B — THE FP TENANTS' `ld hl,ARGA
+      / call widen_fac_to / ld hl,ARGA` IS NOW ONE HELPER.** The sequence stood
+      verbatim at 46 sites (fp_sqrt 9, fp_atan 11, fp_exp 8, fp_log 10, fp_sin 7,
+      fp_pow 1) — the TOP candidate of `scratchpad/ngram_sweep.py` over the whole
+      tree, never taken because every earlier pass ran `--main`. `widen_to_arga`
+      (end of `sub/fp_sqrt.asm`); only sites with NO label inside the span were
+      folded (the D-DUPSPAN entry rule); flags and HL leave as before. The
+      page-1 closure gate passes (704 routines, 27 tenants). It funds the sub
+      page-1 halves of PUT's stamp-at-CLOSE and the TIER 6 fixes.
 
 - [x] ✅ **FIXED 2026-09-27 (D-CLEARFIT): `CLEAR n` TOO BIG FOR MEMORY HUNG OR
       CORRUPTED ZEROBAS — NOW `Out of memory`, AND A REJECTED CLEAR KEEPS THE OLD

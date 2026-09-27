@@ -164,9 +164,7 @@ flog_no_fold:
                 ld      de,ARGB
                 call    fat_copy18          ; ARGB := Khat[j]
                 call    fp_sub              ; FAC/ARGA := m-Khat[j] = num
-                ld      hl,ARGA
-                call    widen_fac_to
-                ld      hl,ARGA
+                call    widen_to_arga
                 ld      de,MATH_T
                 call    fat_copy18          ; MATH_T := num
                 ld      hl,MATH_A
@@ -178,18 +176,14 @@ flog_no_fold:
                 ld      de,ARGB
                 call    fat_copy18          ; ARGB := Khat[j]
                 call    fp_add              ; FAC/ARGA := m+Khat[j] = den
-                ld      hl,ARGA
-                call    widen_fac_to
-                ld      hl,ARGA
+                call    widen_to_arga
                 ld      de,ARGB
                 call    fat_copy18          ; ARGB := den
                 ld      hl,MATH_T
                 ld      de,ARGA
                 call    fat_copy18          ; ARGA := num
                 call    fp_div              ; FAC/ARGA := num/den = s
-                ld      hl,ARGA
-                call    widen_fac_to
-                ld      hl,ARGA
+                call    widen_to_arga
                 ld      de,MATH_A
                 call    fat_copy18          ; MATH_A := s (m retired)
 
@@ -202,16 +196,12 @@ flog_no_fold:
                 ld      de,ARGB
                 call    fat_copy18          ; ARGB := s
                 call    fp_mul              ; FAC/ARGA := s*s = g
-                ld      hl,ARGA
-                call    widen_fac_to
-                ld      hl,ARGA
+                call    widen_to_arga
                 ld      de,HORNER_G
                 call    fat_copy18          ; HORNER_G := g (MATH_T retired)
                 ld      hl,LOG_COEF
                 call    fp_poly_horner      ; FAC/ARGA := Q(g)
-                ld      hl,ARGA
-                call    widen_fac_to
-                ld      hl,ARGA
+                call    widen_to_arga
                 ld      de,MATH_T
                 call    fat_copy18          ; MATH_T(=HORNER_G) := Q
                 ld      hl,MATH_A
@@ -221,9 +211,7 @@ flog_no_fold:
                 ld      de,ARGB
                 call    fat_copy18          ; ARGB := Q
                 call    fp_mul              ; FAC/ARGA := s*Q = r
-                ld      hl,ARGA
-                call    widen_fac_to
-                ld      hl,ARGA
+                call    widen_to_arga
                 ld      de,MATH_A
                 call    fat_copy18          ; MATH_A := r (replaces s)
 
@@ -289,18 +277,14 @@ flog_enosign:
                 ld      de,ARGB
                 call    fat_copy18          ; ARGB := LN10_C2
                 call    fp_mul              ; FAC/ARGA := e'fp*LN10_C2
-                ld      hl,ARGA
-                call    widen_fac_to
-                ld      hl,ARGA
+                call    widen_to_arga
                 ld      de,ARGB
                 call    fat_copy18          ; ARGB := product
                 ld      hl,MATH_A
                 ld      de,ARGA
                 call    fat_copy18          ; ARGA := r
                 call    fp_add              ; FAC/ARGA := r + product
-                ld      hl,ARGA
-                call    widen_fac_to
-                ld      hl,ARGA
+                call    widen_to_arga
                 ld      de,MATH_A
                 call    fat_copy18          ; MATH_A := updated r
 flog_no_e1:
@@ -318,9 +302,7 @@ flog_no_e1:
                 ld      de,ARGB
                 call    fat_copy18          ; ARGB := LNK_TBL[j-1]
                 call    fp_add              ; FAC/ARGA := r + LNK_TBL[j-1]
-                ld      hl,ARGA
-                call    widen_fac_to
-                ld      hl,ARGA
+                call    widen_to_arga
                 ld      de,MATH_A
                 call    fat_copy18          ; MATH_A := updated r
 flog_no_j:
@@ -342,9 +324,7 @@ flog_no_j:
                 ld      de,ARGB
                 call    fat_copy18          ; ARGB := LN10_C1
                 call    fp_mul              ; FAC/ARGA := e'fp*LN10_C1
-                ld      hl,ARGA
-                call    widen_fac_to
-                ld      hl,ARGA
+                call    widen_to_arga
                 ld      de,ARGB
                 call    fat_copy18          ; ARGB := product
                 ld      hl,MATH_A

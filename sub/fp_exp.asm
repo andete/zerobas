@@ -341,18 +341,14 @@ fexp_n8_nosign:
                 ld      de,ARGB
                 call    fat_copy18          ; ARGB := EXP_C1
                 call    fp_mul              ; FAC/ARGA := n8fp*EXP_C1
-                ld      hl,ARGA
-                call    widen_fac_to
-                ld      hl,ARGA
+                call    widen_to_arga
                 ld      de,ARGB
                 call    fat_copy18          ; ARGB := product1
                 ld      hl,MATH_A
                 ld      de,ARGA
                 call    fat_copy18          ; ARGA := x
                 call    fp_sub              ; FAC/ARGA := x - product1 = r1
-                ld      hl,ARGA
-                call    widen_fac_to
-                ld      hl,ARGA
+                call    widen_to_arga
                 ld      de,MATH_R
                 call    fat_copy18          ; MATH_R := r1 (temporary)
 
@@ -363,9 +359,7 @@ fexp_n8_nosign:
                 ld      de,ARGB
                 call    fat_copy18          ; ARGB := EXP_C2
                 call    fp_mul              ; FAC/ARGA := n8fp*EXP_C2
-                ld      hl,ARGA
-                call    widen_fac_to
-                ld      hl,ARGA
+                call    widen_to_arga
                 ld      de,ARGB
                 call    fat_copy18          ; ARGB := product2
                 ld      hl,MATH_R
@@ -403,9 +397,7 @@ fexp_no_tcor:
                 ld      hl,EXP_COEF
                 call    fp_poly_horner      ; FAC/ARGA := E(r); HORNER_G (=r)
                                             ; preserved across the call
-                ld      hl,ARGA
-                call    widen_fac_to
-                ld      hl,ARGA
+                call    widen_to_arga
                 ld      de,MATH_R
                 call    fat_copy18          ; MATH_R := E (persistent)
                 ld      hl,HORNER_G
@@ -415,9 +407,7 @@ fexp_no_tcor:
                 ld      de,ARGB
                 call    fat_copy18          ; ARGB := E
                 call    fp_mul              ; FAC/ARGA := r*E = w
-                ld      hl,ARGA
-                call    widen_fac_to
-                ld      hl,ARGA
+                call    widen_to_arga
                 ld      de,MATH_R
                 call    fat_copy18          ; MATH_R := w (E retired)
 
@@ -435,9 +425,7 @@ fexp_no_tcor:
                 ld      de,ARGB
                 call    fat_copy18          ; ARGB := w
                 call    fp_mul              ; FAC/ARGA := That[m]*w = v
-                ld      hl,ARGA
-                call    widen_fac_to
-                ld      hl,ARGA
+                call    widen_to_arga
                 ld      de,ARGB
                 call    fat_copy18          ; ARGB := v
                 ld      a,(MATH_J)
@@ -446,9 +434,7 @@ fexp_no_tcor:
                 ld      de,ARGA
                 call    fat_copy18          ; ARGA := That[m]
                 call    fp_add              ; FAC/ARGA := That[m]+v = p
-                ld      hl,ARGA
-                call    widen_fac_to
-                ld      hl,ARGA
+                call    widen_to_arga
                 ld      de,MATH_A
                 call    fat_copy18          ; MATH_A := p (x long dead)
                 jr      fexp_scale
@@ -462,9 +448,7 @@ fexp_m_zero:
                 ld      de,ARGB
                 call    fat_copy18          ; ARGB := w
                 call    fp_add              ; FAC/ARGA := 1.0+w = p
-                ld      hl,ARGA
-                call    widen_fac_to
-                ld      hl,ARGA
+                call    widen_to_arga
                 ld      de,MATH_A
                 call    fat_copy18          ; MATH_A := p
 

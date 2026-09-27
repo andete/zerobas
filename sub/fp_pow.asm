@@ -176,10 +176,9 @@ fpw_no_mul:
                 ld      a,(FPERR)
                 or      a
                 ret     nz                  ; overflow -- FPERR/FAC already set
-                ld      hl,ARGA
-                call    widen_fac_to        ; re-derive (same underflow
+                call    widen_to_arga
+                                            ; re-derive (same underflow
                                             ; reason as the acc*s site above)
-                ld      hl,ARGA
                 ld      de,SQRT_X           ; s := s*s
                 call    fat_copy18
                 ld      hl,SQRT_Y
