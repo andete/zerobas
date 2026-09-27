@@ -6019,7 +6019,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:25922 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:25937 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -25000,6 +25000,21 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       `CLEAR 200:X=INT((FRE(0)-K)/8):DIM A(X)` completes on the VG-8020 for K
       down to ~145 and raises `Out of memory in 10` on zerobas already at K=260:
       the pool keeps `CTL_STACK_MARGIN` (256) clear below SP for ANY statement.
+      📏 **EDGE BISECTED 2026-09-27** ([`scratchpad/dimedge_probe.py`](scratchpad/dimedge_probe.py)
+      → [`scratchpad/dimedge_run.out`](scratchpad/dimedge_run.out), `DIM A(X)` with
+      `X = INT((FRE(0)-K)/8)` under a handler): the VG-8020 fits down to K=130 (137 B
+      of `FRE(0)` left; ERR 7 at K=100); zerobas fits at K=280 (258 B left) and
+      refuses from K=260 down. So the reference reserves ~130 B below what `FRE(0)`
+      reports and zerobas ~256 — the `CTL_STACK_MARGIN`. (Side reading: for the same
+      K zerobas's `FRE(0)` after the DIM is 30 B LOWER — K−22 against the
+      reference's K+8 — a separate economy gap on the same row.)
+      ⚠️ **NOT LOWERED ON THIS EVIDENCE.** The margin guards zerobas's OWN machine
+      stack — inter-slot `CALSLT` frames, sub-ROM tenants, deep expressions — whose
+      worst case is unmeasured; a margin below it lets a deep expression overwrite
+      the arrays. ➡️ **NEXT: a stack HIGH-WATER MARK** — paint the gap below SP
+      with a sentinel, run the battery's programs, and read how deep it was
+      overwritten (D-PAINTSP measured PAINT's own depth that way, with
+      breakpoints). Only then price a smaller reserve.
 
 - [ ] 🔴 **`IF 1 GOTO` (no line) IS ACCEPTED ON THE REFERENCE AND `Syntax error`
       HERE (D-IFGOTOBARE, found 2026-09-27 by T6).**
