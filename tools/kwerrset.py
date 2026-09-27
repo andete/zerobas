@@ -31,10 +31,25 @@ yet and cannot reach T6.
 from __future__ import annotations
 
 # keyword -> form -> the error codes the reference raised for that form, and
-# where that was measured. Empty until the enumeration probe writes entries.
-ERRSETS: dict[str, dict[str, frozenset[int]]] = {}
+# where that was measured (PROVENANCE); only a probe run writes an entry.
+# 📏 BATCH 1, MEASURED 2026-09-27 (D-KWT6 S2): ten one-form functions already at
+# level 3. The battery per argument: wrong type, missing, one extra, and the range
+# edges named in the probe. zerobas matched the reference on all 48 cases.
+ERRSETS: dict[str, dict[str, frozenset[int]]] = {
+    "ABS": {"magnitude": frozenset({2, 13})},
+    "SGN": {"sign": frozenset({2, 13})},
+    "INT": {"floor": frozenset({2, 13})},
+    "SQR": {"square-root": frozenset({2, 5, 13})},
+    "LOG": {"logarithm": frozenset({2, 5, 13})},
+    "EXP": {"exponential": frozenset({2, 6, 13})},
+    "ASC": {"code-of": frozenset({2, 5, 13})},
+    "CHR$": {"code-to-char": frozenset({2, 5, 6, 13})},
+    "LEN": {"length": frozenset({2, 13})},
+    "PEEK": {"address-read": frozenset({2, 6, 13})},
+}
 
-PROVENANCE: dict[str, str] = {}
+PROVENANCE: dict[str, str] = {k: "scratchpad/t6enum_probe.py -> scratchpad/t6enum_run.out (EXP: t6enum_exp.out), VG-8020, 2026-09-27"
+                              for k in ERRSETS}
 
 
 def errset_for(kw: str):

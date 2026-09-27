@@ -1,0 +1,10 @@
+keyword case                     Philips_VG_8   C-BIOS_MSX1_
+EXP    PRINT EXP("A")               (13, 20)       (13, 20)
+EXP    PRINT EXP()                   (2, 20)        (2, 20)
+EXP    PRINT EXP(1,2)                (2, 20)        (2, 20)
+EXP    PRINT EXP(99)                      OK             OK
+EXP    PRINT EXP(-99)                     OK             OK
+EXP    PRINT EXP(150)                (6, 20)        (6, 20)
+
+# the reference's error set per keyword form (code: first case)
+EXP    exponential    2: PRINT EXP()  6: PRINT EXP(150)  13: PRINT EXP("A")
