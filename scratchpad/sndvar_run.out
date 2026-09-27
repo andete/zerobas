@@ -1,0 +1,7 @@
+row   statement               VG-8020 R7 R8  zerobas R7 R8
+  lit   SOUND 8,11                     184 11         184 11
+  varv  V=12:SOUND 8,V                 184 12         184 12
+  varr  R=8:V=13:SOUND R,V             184 13         184 13
+  expr  V=7:SOUND 8,V*2                184 14         184 14
+  reg7  V=63:SOUND 7,V                  191 0          191 0
+AGREE 5/5

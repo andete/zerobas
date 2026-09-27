@@ -58,12 +58,18 @@ ex_sound:
                 call    get_byte_arg        ; A = register 0..255 (ERR6 >int16, ERR5 >255/neg)
                 cp      14                  ; registers 0..13 are the writable PSG set;
                 jp      nc,snd_illegal      ; 14..255 -> Illegal function call (ERR5)
-                ld      c,a                 ; C = register number (kept across the value eval)
+                ; 🔴 D-SNDVAR (2026-09-27): THE REGISTER RIDES THE STACK, NOT C. It was
+                ; `ld c,a` "kept across the value eval" -- and eval kept it only for a
+                ; LITERAL. A variable's lookup clobbers C, so `V=12:SOUND 8,V` wrote
+                ; the value to whatever register C held and R8 stayed 0; the VG-8020
+                ; reads 12. Every SOUND row used literals. Found by D-STACKFLOOR,
+                ; whose first cut clobbered BC for literals too and test_sound caught it.
+                push    af                  ; [register]
                 call    req_comma           ; D-NGRAM17
                 call    eval                ; DE = value (silent flt_to_int16)
                 call    get_byte_arg        ; A = value 0..255 (ERR6 >int16, ERR5 >255/neg)
                 ld      b,a                 ; B = value byte to write
-                ld      a,c
+                pop     af                  ; A = register number
                 cp      7                   ; register 7 (mixer) preserves its I/O bits
                 jr      nz,snd_nomask
                 ; The latch+access below must be atomic against play_service, which
@@ -81,12 +87,11 @@ ex_sound:
                 and     $3F                 ; value contributes only bits 0..5
                 or      c                   ; merge: (curR7 & $C0) | (val & $3F)
                 ld      b,a                 ; B = merged byte to write
-                ld      c,7                 ; C = register 7 again (snd_write latches C)
+                ld      a,7                 ; A = register 7 again (snd_write latches A)
                 jr      snd_write
 snd_nomask:
                 di                          ; single write, likewise atomic vs play_service
-snd_write:
-                ld      a,c
+snd_write:                                  ; A = the register (D-SNDVAR: no longer C)
                 out     (PSG_ADDR),a        ; latch the register number
                 ld      a,b
                 out     (PSG_DATW),a        ; write the data byte

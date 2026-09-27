@@ -575,6 +575,9 @@ FPERR_MISSOP    equ     11      ; -> ERR 24 "Missing operand" (D-MISSOP)
 ; table is DENSE and every code above it MOVES with the CLEARPOOL switch.
 FPERR_STRLONG   equ     FPERR_MISSOP + 1    ; -> ERR 15 "String too long"
 FPERR_TYPEMM    equ     10      ; -> ERR 13 "Type mismatch"
+FPERR_OOM       equ     6       ; -> ERR 7 "Out of memory" -- the SAME code on both
+                                ; CLEARPOOL arms (fperr_to_err[6]); D-STACKFLOOR's
+                                ; evaluator guard defers it (basic/expr.asm stk_guard)
 ; Graphics G8 (docs/spec-basic-graphics-g8.md). VDP(n) and BASE(n) are single-byte
 ; FUNCTION tokens, and their assignment form has no statement token of its own: a
 ; statement whose first token is $C8/$C9 IS the assignment (crunch-pinned,
@@ -3828,6 +3831,28 @@ CSP             equ     $E050   ; the pool's allocation frontier, descending (2)
 ; `parennest` at 32 nested parentheses and 16 nested string functions -- with
 ; room to spare, because the failure mode when it is too small is silent memory
 ; corruption, not an error.
+; D-STACKFLOOR: the EVALUATOR's reserve (basic/expr.asm stk_guard) is a DIFFERENT
+; quantity and is NOT this one. This margin must hold a whole statement's stack
+; under a frame push; the evaluator's need only hold what runs BELOW a factor that
+; already passed the guard -- the deepest leaf and an interrupt. Set equal to this
+; margin, every expression at the DIM edge refused, flat `B=1` included: a DIM may
+; leave ~258 B and the statement already sits below the frontier
+; (scratchpad/stackcorrupt_run.out, the first guarded run).
+STK_EVAL_RESERVE equ   128    ; see stk_guard; checked by stackcorrupt's leaf rows
+; D-STACKFLOOR: a FRAME push (ctl_alloc, DEF FN's fn_frame) keeps MORE than DIM
+; does, because a program whose GOSUB/FOR recursion ran out of memory goes on
+; evaluating expressions WITH EVERY FRAME STILL STANDING (a trapped Out of memory,
+; RESUME). The VG-8020 then still evaluates 16 nested parentheses; with the
+; frames kept only 256 clear, zerobas -- ~27 B of stack per nesting level
+; (scratchpad/leafdepth_run.out), ~60 B of statement stack, the guard's 128 --
+; managed 2, and ramfree-acceptance's n.deep RESUMEd into that refusal for ever
+; (scratchpad/poolexh_run.out). 768 = 16 levels + both, rounded to a PAGE so
+; ctl_alloc's one-byte `cp high` still is the whole test. The price is ~64 GOSUB
+; frames of depth (8 B each), against a reference that already nests ~1100 more.
+CTL_FRAME_MARGIN equ   768
+    IF low CTL_FRAME_MARGIN
+                db      CTL_FRAME_MARGIN_MUST_BE_WHOLE_PAGES
+    ENDIF
 CTL_STACK_MARGIN equ    256    ; MEASURED: ctllim-acceptance is green at this size
                                ; and 1024 costs ~130 frames of GOSUB depth for
                                ; nothing. One PAGE, so both users can subtract it

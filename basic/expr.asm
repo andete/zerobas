@@ -186,6 +186,8 @@ ev_not:
                 jr      z,ev_not_do
                 jr      ev_rel              ; no NOT -> drop to the relational layer
 ev_not_do:
+                call    stk_guard           ; D-STACKFLOOR: a NOT chain recurses HERE,
+                                            ; never through ev_f
                 inc     ix
                 call    ev_not              ; unary, right-assoc (NOT NOT x)
                 call    fac_to_int_strict_reset
@@ -476,6 +478,7 @@ ev_pw_lp:
 ; value; '(' / ')' stay verbatim; PEEK is $FF $97; a bare upcased letter is a
 ; variable; unary minus is MINUS_TOKEN.
 ev_f:
+                call    stk_guard           ; D-STACKFLOOR: no recursion below the floor
                 call    ev_sp
                 ; empty parenthesised/argument expression: a factor can never
                 ; begin with a closing ')' or a ',' (ev_f is reached only where a
@@ -707,6 +710,7 @@ ev_f_missop:                                ; D-MISSOP (docs/spec-basic-missop.m
                                             ; = ERR 2 syntax error (interp.asm),
                                             ; the same code ev_f_empty defers
                 jr      ev_f_defer
+
 ev_f_empty:                                 ; D-F2-3: the empty parenthesised/argument
                                             ; expression -> deferred FPERR=4 "syntax error",
                                             ; checked at the statement boundary (the D-F2-1
@@ -827,6 +831,60 @@ ev_f_digit:                                 ; $11..$1A -> value 0..9
                 ld      d,0
                 inc     ix
                 ret
+
+; --- stk_guard: the evaluator's STACK FLOOR (D-STACKFLOOR) -------------------
+; ⚠️ SITED AFTER ev_f_digit, NOT beside ev_f_defer: 15 B between ev_f's dispatch
+; and ev_f_digit put that `jr c,ev_f_digit` out of range. Its own `jr` reaches
+; back to ev_f_defer from here.
+; Called as the FIRST instruction of ev_f and of ev_not_do -- the two places every
+; unbounded expression recursion passes through (a parenthesis, a function
+; argument, a unary minus: ev_f; a `NOT NOT ...` chain: ev_not_do).
+; in: nothing. out: returns (CF set) while SP is more than STK_EVAL_RESERVE above
+; CTLLIM (= ARYEND+2, the arrays' first free byte). Clobbers HL and F only.
+;
+; 🔴 WHY IT EXISTS: since D-SPMERGE the machine stack descends from the pool's
+; frontier into the free gap, and the ONLY floor was ctl_alloc's static 256 B
+; margin -- tested when a FRAME is pushed, never while an expression recurses.
+; MEASURED 2026-09-27 (scratchpad/stackhw_run.out): 20 nested parentheses reach
+; 756 B below the frontier, 32 nested ABS 1332 B. So an array DIM'd to the edge
+; was OVERWRITTEN by a later formula: `A(X)` read garbage after `B=(((...)))` with
+; 300 B free, and an 8-deep formula wrecked the machine
+; (scratchpad/stackcorrupt_run.out). The VG-8020 answers every one of those rows
+; and raises Out of memory at 24 nested ABS: it checks as it recurses.
+;
+; 🎯 THE STOP IS A DEFERRED ERROR, NOT AN UNWIND. The evaluator has no
+; mid-expression abort (fp_runtime_error's header); every factor that fails
+; defers an FPERR and yields 0, and the statement boundary raises it. So the
+; guard drops ITS OWN return address -- the word under it is the return point of
+; whoever entered ev_f / ev_not_do -- and leaves as a failed factor would:
+; FPERR_OOM deferred (first error wins, penderr_set), DE = 0, no deeper call.
+; The levels above it then unwind normally, each seeing a cursor it cannot
+; consume, and their own deferrals lose to the first.
+;
+; ⚠️ THE RESERVE IS NOT ctl_alloc's 256. It must hold only what runs BELOW a
+; factor that passed: the deepest LEAF (a transcendental, a sub-ROM tenant's
+; CALSLT frames) plus an interrupt. 🔴 The first cut used the 256 (`inc h`, 1 B)
+; and every expression at the DIM edge refused, flat `B=1` included -- DIM keeps
+; 256 below the FRONTIER, and the statement's own stack already sits under that.
+; STK_EVAL_RESERVE (basic/sysvars.inc) is the evaluator's own number.
+; 🔴 BC IS PRESERVED, AND test_sound.py IS WHY. eval's header says it clobbers
+; BC, but a LITERAL factor never touched it, and ex_sound keeps the register
+; number in C across `call eval` for the value -- the first cut (`ld bc,` bare)
+; latched register 128 on every `SOUND n,v`. A contract its callers do not keep
+; is the contract the code must keep; the push/pop is 2 B.
+stk_guard:
+                ld      hl,(CTLLIM)
+                push    bc
+                ld      bc,STK_EVAL_RESERVE
+                add     hl,bc               ; HL = the floor + the reserve; CF = 0
+                                            ; (CTLLIM is a RAM address far below
+                                            ; $FF80, so the add cannot carry)
+                pop     bc                  ; (POP touches no flag)
+                sbc     hl,sp               ; CF iff SP is above it: room to recurse
+                ret     c
+                pop     hl                  ; drop our return: leave AS the factor
+                ld      e,FPERR_OOM         ; -> ERR 7 at the statement boundary
+                jr      ev_f_defer
 ev_f_byte:                                  ; $0F,<byte>
                 inc     ix
                 ld      a,(ix+0)

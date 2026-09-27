@@ -6019,7 +6019,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:25937 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:26127 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -6185,7 +6185,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:11019 (T-6FE392)8 (T-529ABE)` from `TODO.md:23258 (T-529ABE)`: a
+      `TODO.md:11019 (T-6FE392)8 (T-529ABE)` from `TODO.md:23294 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -11866,7 +11866,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:23258 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:23294 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -17288,9 +17288,11 @@ finds zero shared names (a renamed block would otherwise make it silently blind)
       STICK (D-RIGFW, 2026-09-26); `PAD`'s SWITCH STILL HAS NO INSTRUMENT.**
       *(was: "CANNOT BE BUILT FOR THREE OF ITS FOUR TARGETS — openMSX HAS NO
       JOYSTICK TO DRIVE")*
-      🎚️ TIER 1 — happy path: `PAD` with a real touchpad — its `switch` reads
+      🎚️ TIER 1 — happy path: `PAD` with a real touchpad — its `switch` read
       0 where the VG-8020 reads -1, and its coordinates read 0 where the VG-8020
-      follows the pen (measured windowed 2026-09-26, below). (STICK's and
+      follows the pen (measured windowed 2026-09-26, below). ✅ Both FIXED
+      2026-09-27 (D-PADTRACE, below); what keeps the item open is that no
+      standing row can carry a windowed rig measurement yet. (STICK's and
       STRIG's joystick forms were the other two targets and are freed —
       kwsweep's NEEDS-RIG: rows, below.)
       🔴 **THIS ITEM CARRIED NO `🎚️` TAG UNTIL 2026-09-17, AND AN UNTAGGED OPEN
@@ -17337,10 +17339,44 @@ finds zero shared names (a renamed block would otherwise make it silently blind)
       unaddressed frame, which converts to 0. Both guesses were made because an
       UNDRIVEN panel converts to 0 and "the data path's values are not
       validatable" — **the rig removes that premise.**
-      🤖 **AUTONOMOUS** — inside Joost's window: recover the switch line and
+      ~~🤖 **AUTONOMOUS** — inside Joost's window: recover the switch line and
       the address phase from the VG-8020 by I/O-PORT tracing (PSG R15 writes,
       R14 reads) while the board holds a touch / the switch — clean room: ports
-      only, no ROM bytes — then fix `gtpad` and add windowed rows. ⚠️ Rows that
+      only, no ROM bytes — then fix `gtpad` and add windowed rows.~~
+      ✅ **TRACED AND FIXED 2026-09-27 (D-PADTRACE; Joost: *"the rp2040-zero is
+      available"*, then *"retry now"*).**
+      [`scratchpad/padtrace_probe.py`](scratchpad/padtrace_probe.py) brackets one
+      `PAD(n)` with a `POKE` marker and logs every access to `$A0`/`$A1`/`$A2`
+      (register select, R15 write, R14 read by a side-effect-free port peek) on
+      the VG-8020, windowed, while the rig holds the switch, then touches at three
+      places ([`scratchpad/padtrace_run.out`](scratchpad/padtrace_run.out);
+      decoded by [`scratchpad/padtrace_decode.py`](scratchpad/padtrace_decode.py) →
+      [`scratchpad/padtrace_decode.out`](scratchpad/padtrace_decode.out)). Port 1:
+      R15 b0 = SCK, b1 = DI (the channel select), b4 = /CS; R14 b0 = contact, b1 =
+      end of conversion, b2 = SO, **b3 = the switch** (`BB` → `B3` while held).
+      A frame reads the conversion the PREVIOUS frame's DI chose (0 = X, 1 = Y):
+      the reference's six frames read X X Y X Y after a discard, `22 22 23 22 23`
+      for `PAD(1)=22 PAD(2)=23`. D-I-7 clocked on /CS and never drove DI (so
+      nothing converted), and read the switch off b4.
+      🔴 **The first windowed run read NOTHING** — PAD 0 in every phase: the
+      window was activated by app NAME and never took the pointer. Both window
+      probes now raise the openMSX process by PID before every rig step.
+      ✅ `gtpad` ([`tape/tape.asm`](tape/tape.asm), +43 B of the page-0 gap-1
+      fill, 56 B left): the traced frame (`gtpad_frame`: EOC wait — bounded, a
+      joystick holds terminal 2 — select, 8 × SCK low / read SO / SCK high,
+      deselect), discard → X → Y, and the switch on b3. **Windowed on zerobas
+      after** ([`scratchpad/rigfw_window_touchpad_zb_after_run.out`](scratchpad/rigfw_window_touchpad_zb_after_run.out)):
+      switch → `PAD(3)` **-1**; touch → sense -1 and X/Y **22 23 → 58 48 → 26 26**;
+      released → `0 0 26 26` latched — the VG-8020's shape (before: `0 0 0 0`
+      throughout). `input-devices-acceptance` stays **ALL PASS (50)**: its
+      plugged rows are undriven devices and read the same either way.
+      ⚠️ **STILL NOT A STANDING ROW:** the pen reaches openMSX only through a
+      focused window and the rig, so kwsweep's headless battery cannot carry it
+      and `PAD`'s knife stays BLIND.
+      🤖 **AUTONOMOUS** — to BUILD: a windowed rig flag for kwsweep, rows that
+      open a window, raise it by PID and step the rig, carried like the
+      NEEDS-RIG verdicts when the board is absent. ⚠️ RUNNING it takes over the
+      screen, so every run waits for Joost's window and is announced first. ⚠️ Rows that
       need a WINDOW cannot join kwsweep's headless battery as they stand; they
       need a rig flag that also opens a window, and they take over the screen.
       📏 **PDL, windowed:** the VG-8020 read `255` throughout, idle included,
@@ -24991,6 +25027,143 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       the extra call level changes nothing main-side; the disk suites judge the
       rest. After both: page 1 **8 B** free.
 
+- [x] 🔴 **A DEEP FORMULA OVERWROTE AN ARRAY DIM'd TO THE EDGE — THE EVALUATOR HAD
+      NO STACK FLOOR (D-STACKFLOOR, found 2026-09-27 by D-DIMRESERVE's high-water
+      mark)** — ✅ **FIXED 2026-09-27**, see the end of this item.
+      🎚️ TIER 1 — happy path: a legal formula silently corrupted the program's own
+      data, and at 300 B free an 8-deep one wrecked the machine.
+      📏 **THE DEPTH, MEASURED** ([`scratchpad/stackhw_probe.py`](scratchpad/stackhw_probe.py)
+      → [`scratchpad/stackhw_run.out`](scratchpad/stackhw_run.out), stack painting on
+      zerobas's own RAM): 20 nested parentheses reach **756 B** below the pool
+      frontier, 32 → **1146 B**, 32 nested `ABS` **1332 B**, 16 string functions
+      **828 B**, 6 nested `FN` **390 B** — against a `CTL_STACK_MARGIN` of 256 that
+      is only tested when a FRAME is pushed. Since D-SPMERGE the stack descends
+      toward the arrays and nothing checked it while an expression recursed.
+      📏 **THE DAMAGE, AGAINST THE REFERENCE**
+      ([`scratchpad/stackcorrupt_probe.py`](scratchpad/stackcorrupt_probe.py) →
+      [`scratchpad/stackcorrupt_run.out`](scratchpad/stackcorrupt_run.out)): DIM
+      leaving K bytes, mark the array's last element, evaluate one formula. The
+      VG-8020 answered every row (and raised `Out of memory` at 24 nested `ABS`
+      with 296 B free: it checks as it recurses); zerobas read `A(X)` as garbage
+      at K=300/600/900 and printed nothing at all at K=300 with 8 parentheses.
+      ✅ **`stk_guard` ([`basic/expr.asm`](basic/expr.asm)), called first in `ev_f`
+      and `ev_not_do`** — the two places every unbounded expression recursion
+      passes through. When SP is within `STK_EVAL_RESERVE` (128) of `CTLLIM` it
+      leaves as a failed factor does: `FPERR_OOM` deferred (first error wins),
+      DE = 0, no deeper call — the evaluator has no mid-expression abort, so the
+      statement boundary raises ERR 7.
+      🎯 **THE RESERVE IS NOT ctl_alloc's 256, AND THAT WAS MEASURED.** The first
+      cut reused it and every expression at the DIM edge refused, flat `B=1`
+      included — DIM keeps 256 below the FRONTIER and the statement's own stack
+      already sits under that. What runs below a factor that PASSED is a leaf:
+      [`scratchpad/leafdepth_probe.py`](scratchpad/leafdepth_probe.py) →
+      [`scratchpad/leafdepth_run.out`](scratchpad/leafdepth_run.out) (a breakpoint
+      on our own `stk_guard` for the lowest passing SP, a painted band for the
+      true low point) reads **at most 30 B** over 18 leaves (`ATN`, `EXP`, `^`,
+      `VAL`, `STR$`, `HEX$`, `INSTR` the deepest). 128 holds that, an interrupt
+      (~40 B, D-PAINTSP's measurement) and a garbage collection started inside
+      a leaf. The leaf sweep in `stackcorrupt_probe.py --leaf` (5 edges × 4
+      leaves × depths 0–14) found **no corrupted row**.
+      🟢 **GATED:** `ctllim-acceptance` row `l.expr` (DIM to 340 B, 40 nested
+      `ABS`, the array's top ten elements checked) reads `0 0 7` on the VG-8020,
+      the CF-3300 and zerobas. **KNIFE K-SF1** (the guard's `ret c` → `ret`, ROM
+      hash moved) turns it RED with `0 10 0`: all ten elements overwritten and
+      the formula completing — and the gate's own message called that "S=10
+      means nothing" until its checks were reordered so a corruption count is
+      read first.
+      🔴 **AND THE FULL BATTERY FOUND WHAT THE GUARD EXPOSED:** `ramfree-acceptance`
+      `n.deep` recurses `GOSUB` to Out of memory and RESUMEs into its check with
+      every frame standing; with frames kept only 256 B clear, the guard refused
+      the check's 3-level expression and the handler RESUMEd into that refusal
+      for ever. [`scratchpad/poolexh_probe.py`](scratchpad/poolexh_probe.py): the
+      VG-8020 still evaluates **16** nested parentheses with 3962 frames standing;
+      zerobas managed **2** (it used to "manage" by descending into the arrays).
+      ✅ **`CTL_FRAME_MARGIN` 768** ([`basic/sysvars.inc`](basic/sysvars.inc)) for a
+      FRAME push (`ctl_alloc`, DEF FN's frame) — 16 levels × ~27 B + the statement
+      + the guard's 128, whole pages so `cp high` is still the test; DIM, the line
+      store and the GC keep 256. Byte-neutral. After
+      ([`scratchpad/poolexh_run.out`](scratchpad/poolexh_run.out)): **ALL 16** with
+      2794 frames. Price: ~64 frames of GOSUB depth (8 B each). Gated:
+      `ctllim-acceptance` row `l.nest` (pool exhausted, then 16 nested
+      parentheses) passes on all three; **KNIFE K-SF2** (the margin back to 256)
+      reads `<NO OUTPUT>` on zerobas only.
+      💰 **FUNDED BY D-CARVERC (+12 B):** three open-coded `call skip_comma / jp
+      nz,stmt_error / inc hl` sites (`KEY n,`, `expect_comma_eval`, `DSKI$`/`DSKO$`)
+      now call `req_comma`; and `req_comma` itself moved from page 1 to the low
+      region (`basic/str-engine.asm`) so page 1 could take the guard. After it
+      and D-SNDVAR (read 2026-09-27): low **2 B**, page 1 **1 B**.
+      ⚠️ **WHAT IT COSTS, filed on D-DIMRESERVE:** at the tightest DIM edges
+      (K=280/290) even a flat expression now refuses with ERR 7 where it used to
+      run, and `B=((…8…))` at K=300 is ERR 7 where the VG-8020 completes — zerobas
+      spends ~27 B of stack per nesting level. Economy (TIER 4), not corruption.
+
+- [x] 🔴 **`SOUND r,v` WITH A VARIABLE VALUE WROTE THE WRONG REGISTER — `V=12:SOUND
+      8,V` LEFT R8 AT 0 (D-SNDVAR, found 2026-09-27 while fixing D-STACKFLOOR)** —
+      ✅ **FIXED 2026-09-27.**
+      🎚️ TIER 1 — happy path: a volume or a pitch from a variable is how SOUND is
+      used.
+      📏 `ex_sound` ([`basic/sound.asm`](basic/sound.asm)) kept the register number
+      in C across the value's `eval`, and eval leaves C alone only for a LITERAL:
+      a variable's lookup clobbers it. Every SOUND row in the gates was a literal.
+      D-STACKFLOOR's first cut clobbered BC for literals too, `tests/test_sound.py`
+      latched register 128 on every row, and that is what pointed here.
+      [`scratchpad/sndvar_probe.py`](scratchpad/sndvar_probe.py) (the PSG registers
+      read as I/O state at a `POKE` marker): BEFORE, zerobas R8 = 0 for
+      `V=12:SOUND 8,V`, `R=8:V=13:SOUND R,V` and `V=7:SOUND 8,V*2` (VG-8020 12, 13,
+      14) and R7 unchanged at 184 for `V=63:SOUND 7,V` (VG-8020 191); AFTER
+      ([`scratchpad/sndvar_run.out`](scratchpad/sndvar_run.out)) **AGREE 5/5**.
+      ✅ The register rides the stack (`push af` / `pop af`) and the write takes it
+      from A — **1 B cheaper** than the C version. `sound-acceptance` gains
+      `r8_var`, `r8_rv`, `r7_var`, the rows that can see it.
+
+- [ ] 🔴 **A `FOR` LOOP IS INT16 ARITHMETIC — `STEP .5`, `FOR A=.5 TO 3`,
+      `FOR A=1 TO 40000` and `FOR A=0 TO 1 STEP .1` ALL RUN WRONG, AND FOUR OF THEM
+      NEVER END (D-FORFLOAT, found 2026-09-27 by D-DIMRESERVE's stack probe).**
+      🎚️ TIER 1 — happy path: a fractional `STEP` and an address loop above
+      `&H8000` are in ordinary programs, and a loop that never ends is the worst
+      answer there is.
+      🤖 **AUTONOMOUS** — the reference settles every row; the frame shape is
+      measured ([`docs/reference-stack-frames.md`](docs/reference-stack-frames.md) §2).
+      📏 **MEASURED 2026-09-27** ([`scratchpad/forfloat_probe.py`](scratchpad/forfloat_probe.py)
+      → [`scratchpad/forfloat_run.out`](scratchpad/forfloat_run.out), VG-8020 against
+      the diskless build): **AGREE 4/15**. zerobas's FOR frame keeps limit and step
+      as int16 (`ex_for`, [`basic/program.asm`](basic/program.asm); the deferral is
+      "D-D" in [`docs/spec-basic-forvar.md`](docs/spec-basic-forvar.md) §5.3, never an
+      open item), and NEXT adds them to the variable's int16 tail:
+      | row | VG-8020 | zerobas |
+      |---|---|---|
+      | `FOR A=56700 TO 56702` | 56700 56701 56702 | -8836 -8835 -8834 |
+      | `FOR A=0 TO 1 STEP .25` | 0 .25 .5 .75 1 | 0 0 0 0 … **never ends** |
+      | `FOR A=.5 TO 3` | .5 1.5 2.5 | 0 1 2 3 |
+      | `FOR A=1 TO 0 STEP -.5` | 1 .5 0 | 1 |
+      | `FOR A=1 TO 32767 STEP 16384` | 1 16385, then A = 32769 | wraps, **never ends** |
+      | `FOR A%=1 TO 32767 STEP 16384` | 1 16385, then **ERR 6** | wraps, **never ends** |
+      | `FOR A!=0 TO 1 STEP .1` / `A#` | 0 .1 … 1, 11 passes | 0 0 0 … **never ends** |
+      | `FOR A=0 TO 100000 STEP 40000` | 0 40000 80000 | 0 |
+      | `FOR A=-40000 TO -39999` | -40000 -39999 | 25536 25537 |
+      | `FOR A=1 TO 3:A=A+.5` | 1.5 3 | 1.5 2.5 3.5 (NEXT truncates the variable) |
+      Agreeing: `FOR A=1 TO 2.5`, `FOR A%=1.7 TO 3`, `FOR A%=1 TO 3 STEP .5`
+      (both run away), and the `FOR A=1 TO 3` control.
+      🎯 **THE REFERENCE'S RULE, FROM ITS FRAME:** one 25 B frame whatever the type,
+      a kind byte (`05` single/double, `FF` integer) and STEP and limit as 8 B BCD —
+      so a non-`%` loop is float arithmetic and an `%` loop is int16 with Overflow.
+      ⚠️ **THE PRICE IS SPEED AND BYTES, NOT RAM.** zerobas's NEXT is already 1.6×
+      the VG-8020 (`kwtime` `nextkw`), so all-float for the default (double) loop
+      variable would cost the common `FOR I=1 TO N` loop; an int fast path must
+      stay for loops whose values are exact integers, and the float arm must be
+      reachable from it (overflow, a body that makes the variable fractional).
+      Main page 1 read 1 B and sub page 1 266 B on 2026-09-27 (after D-STACKFLOOR).
+      A frame up to the reference's 25 B is within the ruled economy.
+      ⚠️ It also blocked D-DIMRESERVE's own probe (`FOR A=L TO H` over `$DC00`
+      addresses) — that probe now walks with an integer variable instead.
+      ➡️ **DESIGN: [`docs/spec-basic-forfloat.md`](docs/spec-basic-forfloat.md)** —
+      one NEXT path built from the evaluator's own `combine_add`/`combine_cmp`
+      (int16 fast path, BCD on overflow or a fractional operand), typed limit and
+      step slots in a 25 B frame (the reference's size, inside Joost's
+      "never worse" frame ruling), FOR's once-per-loop body moved to a sub page 1
+      tenant to fund NEXT in main, and `FOR_CUR` grown to 25 B in RAM the machine
+      confirms free.
+
 - [ ] 📏 **`DIM` KEEPS A 256 B STACK RESERVE THAT THE REFERENCE DOES NOT — a DIM
       leaving ~260 B free is `Out of memory` here and fits on the VG-8020 down to
       ~145 B (D-DIMRESERVE, found 2026-09-27 by D-PAINTSP's tight rows).**
@@ -25015,6 +25188,23 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       with a sentinel, run the battery's programs, and read how deep it was
       overwritten (D-PAINTSP measured PAINT's own depth that way, with
       breakpoints). Only then price a smaller reserve.
+      📏 **MEASURED 2026-09-27 — AND IT TURNED THE QUESTION OVER.** The high-water
+      mark ([`scratchpad/stackhw_run.out`](scratchpad/stackhw_run.out)) is not
+      "a bit under 256": nested expressions reach 756–1332 B, so the 256 was
+      never what kept the stack off the arrays — nothing was, and that was
+      D-STACKFLOOR (TIER 1, fixed the same day with an evaluator guard of its
+      own, `STK_EVAL_RESERVE` 128). What is left here is ECONOMY, and it now has
+      four numbers to reconcile: DIM keeps 256 below the frontier, a frame push
+      768 (`CTL_FRAME_MARGIN`, D-STACKFLOOR's second finding),
+      the statement's own stack sits ~110 B under it, and the evaluator refuses
+      within 128 of the arrays — so at K=280/290 a FLAT expression after the
+      DIM is ERR 7 ([`scratchpad/stackcorrupt_run.out`](scratchpad/stackcorrupt_run.out),
+      `k280p0` and the leaf sweep), and zerobas's ~27 B per nesting level
+      (the leaf probe's guard SPs) makes `B=((…8…))` ERR 7 at K=300 where the
+      VG-8020 completes. ➡️ **NEXT:** with the evaluator guarded, the pool's 256
+      only has to hold a statement's non-expression stack — measure that (the
+      idle rows read ~131 B including the probe's own loop and an interrupt)
+      and price DIM's reserve down toward the reference's ~130.
 
 - [ ] 🔴 **`IF 1 GOTO` (no line) IS ACCEPTED ON THE REFERENCE AND `Syntax error`
       HERE (D-IFGOTOBARE, found 2026-09-27 by T6).**

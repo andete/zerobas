@@ -414,12 +414,11 @@ key_store:
                 ; evaluation; an error inside it resets SP, so the push is
                 ; harmless on every refusal path.
                 push    af                  ; [n]
-                call    skip_comma
-                jp      nz,stmt_error       ; KEY n without `,`: unmeasured, refuse
-                inc     hl                  ; skip_comma stops ON the comma (its
-                                            ; callers follow it with inc_eval);
-                                            ; the first cut handed the comma to
-                                            ; str_eval and every store read ERR 2
+                call    req_comma           ; KEY n without `,`: unmeasured, refuse
+                                            ; (ERR 2). req_comma CONSUMES the comma --
+                                            ; skip_comma stops ON it, and the first
+                                            ; cut handed the comma to str_eval and
+                                            ; every store read ERR 2. D-CARVERC.
                 call    fname_expr          ; STRSCR+1 := the bytes, `"`-terminated;
                                             ; FN_RESUME set. \U0001f534 It does NOT
                                             ; write the length byte -- parse_disk_fcb

@@ -1,0 +1,20 @@
+stk_guard @ $4DDF; each leaf nested 8 deep; bytes below CSP
+  leaf    guard min SP  low point  LEAF DEPTH
+  int              330        330           0
+  sin              360        370          10
+  atn              360        388          28
+  exp              358        386          28
+  log              358        366           8
+  sqr              358        364           6
+  pow              330        358          28
+  val              330        360          30
+  str              362        388          26
+  hex              364        390          26
+  mid              368        368           0
+  instr            330        358          28
+  rnd              360        376          16
+  fre              352        358           6
+  fn               383        395          12
+  usr              354        354           0
+  vpeek            354        354           0
+  stick            354        354           0

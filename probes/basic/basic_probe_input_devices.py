@@ -189,11 +189,16 @@ PDL_CONFIGS = [   # cfg label, plug prologue, documented flattened line (char §
 # --- PHASE E: PAD values with arkanoidpad plugged (ALSO TEETH) -------------
 # spec §9.4. The 0..7 matrix under arkanoidpad in port A and B, differential
 # against the VG-8020. Distinct outcomes -- sense -1, X/Y 255, button 0 -- so a
-# constant-0 PAD fails immediately. Two non-clean reference behaviours the
-# differential still holds us to (both reproduced bug-for-bug, tape.asm GTPAD): X
-# and Y read the SAME frame (address phase unvalidatable, D-I-7), and device 1's
-# X/Y (PAD 5,6) are ungated so they read 255 even with port 2 empty -- which is
-# why arkanoidA below is NOT a clean 0..3 / 4..7 mirror.
+# constant-0 PAD fails immediately. One non-clean reference behaviour the
+# differential still holds us to (tape.asm GTPAD's latch): device 1's X/Y (PAD
+# 5,6) are ungated so they read 255 even with port 2 empty -- which is why
+# arkanoidA below is NOT a clean 0..3 / 4..7 mirror.
+# ⚠️ These rows are UNDRIVEN devices, and every one agreed both before and after
+# D-PADTRACE (2026-09-27) replaced D-I-7's guessed protocol (X and Y read the same
+# unaddressed frame, clocked on /CS) with the traced one: an undriven panel
+# converts to the same bytes however it is clocked. What moved is only visible
+# with a pen ON the pad -- scratchpad/rigfw_window_probe.py, windowed, with the
+# rig (scratchpad/rigfw_window_touchpad_zb_after_run.out).
 PAD_BODY = 'PRINT"Q":FORI=0TO7:PRINTPAD(I):NEXT'
 PAD_CONFIGS = [   # cfg label, plug prologue, measured VG-8020 flattened line
     ("arkanoidA", ("plug joyporta arkanoidpad",), "Q -1 255 255 0 0 255 255 0"),

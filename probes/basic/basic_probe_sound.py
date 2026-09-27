@@ -74,6 +74,13 @@ PSG_CASES = [
     ("r7_c0",   "SOUND 7,192",  7),   # value 192 (11000000): its top 2 bits dropped
     ("r8_ff",   "SOUND 8,255",  8),   # amplitude A (full byte stored)
     ("r13_ff",  "SOUND 13,255", 13),  # envelope shape (full byte)
+    # 🔴 D-SNDVAR (2026-09-27): every row above is a LITERAL, and ex_sound kept the
+    # register in C across the value's eval -- which only a literal leaves alone.
+    # A variable value wrote nowhere near R8 (zerobas R8 = 0, the VG-8020 12;
+    # scratchpad/sndvar_probe.py). These three are the rows that can see it.
+    ("r8_var",  "V=12:SOUND 8,V",     8),   # value from a variable
+    ("r8_rv",   "R=8:V=13:SOUND R,V", 8),   # register AND value from variables
+    ("r7_var",  "V=63:SOUND 7,V",     7),   # the mixer's masked path, by variable
 ]
 
 

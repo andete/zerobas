@@ -850,24 +850,32 @@ gtpdl_done:                             ; count = 255 - c (c=0 on the cap path)
 ; $00DB GTPAD -- read the touch panel (a NEC uPD7001 4-channel serial ADC). The
 ; TH publishes the caller contract (List 5.8: sense with A&3 = 0, then read the
 ; X / Y) and the uPD7001's own datasheet (1982 NEC Microcomputer Catalog
-; pp.479-482, A/Clean) publishes the serial protocol; the joyport pin mapping was
-; recovered from our black-box oracle (i2_input_notes.md §4.5/4.6): the port's one
-; output line R15 b4 (port 1) / b5 (port 2) carries CS/SCK, SO comes back on
-; R14 b2 (terminal 3), the pen-contact / device-present line on R14 b0
-; (terminal 1, active low). No reference ROM was read.
+; pp.479-482, A/Clean) publishes the serial protocol. 📏 THE PIN MAP IS MEASURED
+; (D-PADTRACE, 2026-09-27, scratchpad/padtrace_probe.py + padtrace_decode.py): the
+; VG-8020's I/O PORT traffic during each PAD(n), windowed, with the rig's mouse
+; holding the pen -- ports only, no ROM byte. Port 1:
+;   R15 (out): b0 = SCK (terminal 6), b1 = DI (terminal 7, the channel select),
+;              b4 = /CS (terminal 8, low = selected)
+;   R14 (in):  b0 = pen contact (terminal 1, low = touched), b1 = end of
+;              conversion (terminal 2), b2 = SO (terminal 3), b3 = the pen SWITCH
+;              (terminal 4, low = pressed)
+; Port 2 by the same terminals: SCK b2, DI b3, /CS b5 (no port-2 trace exists).
 ;
 ; A = device*4 + sub:  device 0/1 = touch panel 1/2; sub 0 sense (report whether
 ; the panel is contacted, $FF/$00), 1 = X (channel 0), 2 = Y (channel 3), 3 =
 ; button ($FF pressed else $00). BASIC passes 0..7 only; ids 8..19 (light pen,
 ; mouse) are real BIOS surface but out of this arc's scope -> 0.
 ;
-; DELIBERATE DEVIATION (decision D-I-7, signed off): the uPD7001 address phase --
-; two channel-select bits clocked in through the port's single output line -- was
-; never pinned by the oracle (i2_input_notes.md §4.6: the data path's values are
-; not validatable, and an untouched panel converts to 0 so SO carries no
-; distinguishing bits). So X and Y run the SAME 8-clock read frame; on real
-; hardware they would carry different coordinates, here they read the same
-; converted byte. This is documented, not hidden.
+; 🔴 D-I-7's TWO GUESSES ARE RETIRED BY THAT TRACE. The address phase was omitted
+; ("the data path's values are not validatable": an undriven panel converts to 0)
+; and the clock was driven on R15 b4 -- which is /CS -- so nothing converted and
+; X/Y read 0 while the VG-8020 followed the pen; and the switch was read off R14
+; b4 where the trace shows b3. A FRAME, as traced: wait for end-of-conversion,
+; select with SCK high and DI set, then eight times SCK low / read SO / SCK high,
+; then deselect. The value read is the conversion the PREVIOUS frame's DI chose
+; (DI 0 = X, DI 1 = Y): the reference's frames read X X Y X Y after a discarded
+; first, e.g. 22 22 23 22 23 for PAD(1)=22 PAD(2)=23. Three frames give the same
+; X and Y: discard (select X), X (select Y), Y.
 ;
 ; The X/Y LATCH (TH List 5.8, matched to the VG-8020): a `sense` (sub 0) that
 ; finds the panel contacted runs the conversion and stores the coordinates in
@@ -898,11 +906,14 @@ gtpad_tp:
                 ; for reading (b6), C = same with the 8th terminal LOW (the SCK/CS
                 ; drive line).  device 0 -> port 1 (b6=0, drive b4); device 1 ->
                 ; port 2 (b6=1, drive b5).
-                ld      b,$BF           ; port 1: b7=1 b6=0(if1) b5=1 b4=1
-                ld      c,$AF           ; port 1: b4=0
+                ld      b,$BF           ; port 1 read select: b7=1 b6=0 b5=1 b4=1
+                ld      c,$8D           ; port 1 frame: selected, SCK high, DI 0
+                                        ; (the trace's own value)
+                ld      hl,$0110        ; H = SCK (b0), L = /CS (b4); DI = SCK*2
                 jr      z,gtpad_dev
-                ld      b,$FF           ; port 2: b7=1 b6=1(if2) b5=1 b4=1
-                ld      c,$DF           ; port 2: b5=0
+                ld      b,$FF           ; port 2 read select: b7=1 b6=1 b5=1 b4=1
+                ld      c,$C7           ; port 2 frame: selected, SCK high, DI 0
+                ld      hl,$0420        ; H = SCK (b2), L = /CS (b5)
 gtpad_dev:
                 ; X (sub 1) and Y (sub 2) are pure latch reads -- no port I/O, no di.
                 ld      a,e
@@ -913,9 +924,10 @@ gtpad_dev:
                 di                      ; sense / button touch the port
                 or      a
                 jr      z,gtpad_sense   ; sub 0
-                ; sub 3: button (trigger terminal, R14 b4, active low)
+                ; sub 3: the pen SWITCH (terminal 4, R14 b3, active low -- the
+                ; trace's B3 against BB; D-I-7 read b4, and PAD(3) read 0)
                 call    gtpad_selread   ; select the port, read R14
-                and     %00010000
+                and     %00001000
                 ei
                 ld      a,0
                 ret     nz              ; high = not pressed -> $00
@@ -930,9 +942,17 @@ gtpad_gety:
 gtpad_sense:
                 call    gtpad_contact
                 jr      nz,gtpad_sense_no
-                call    gtpad_convert   ; contacted -> convert and latch X and Y
-                ld      (PADX),a        ; X and Y read the same frame (address phase
-                ld      (PADY),a        ;  omitted, D-I-7): latch the byte to both
+                push    bc              ; [C = the DI-0 frame value]
+                call    gtpad_frame     ; discarded -- it selects X (DI 0)
+                ld      a,h
+                add     a,a             ; the DI bit is the SCK bit's neighbour
+                or      c
+                ld      c,a             ; DI 1
+                call    gtpad_frame     ; A = X, and it selects Y
+                ld      (PADX),a
+                pop     bc              ; DI 0 again
+                call    gtpad_frame     ; A = Y
+                ld      (PADY),a
                 ei
                 ld      a,$FF           ; contacted -> $FF
                 ret
@@ -959,15 +979,28 @@ gtpad_contact:
                 ret                     ; Z = contacted
 
 ;--------------------------------
-; gtpad_convert: clock 8 bits MSB-first off the uPD7001's SO line (R14 b2) for the
-; port whose 8th-terminal-high value is B and low value is C. Returns A = the byte.
-; The address (channel) phase is omitted -- see the DELIBERATE DEVIATION above.
-; Changes: AF, C, DE, HL   (B preserved)
-gtpad_convert:
+; gtpad_frame: one uPD7001 frame, as the VG-8020 runs it (D-PADTRACE). In: C = the
+; R15 value "selected, SCK high, DI as wanted", H = the port's SCK bit, L = its
+; /CS bit. Out: A = the 8 bits read off SO (R14 b2), MSB first -- the conversion
+; the PREVIOUS frame's DI selected. Changes: AF, DE   (B, C, H, L preserved)
+gtpad_frame:
+                ld      e,0             ; end-of-conversion wait, bounded: a JOYSTICK
+gtpad_eoc:                              ; in the port holds terminal 2 (down) low
+                ld      a,14            ; for as long as it is pushed
+                out     (PSG_REGS),a
+                in      a,(PSG_STAT)
+                and     %00000010       ; R14 b1 = end of conversion
+                jr      nz,gtpad_go
+                dec     e
+                jr      nz,gtpad_eoc
+gtpad_go:
                 ld      d,0             ; D = accumulated byte
-                ld      l,8             ; 8 result bits
+                ld      e,8             ; 8 result bits
 gtpad_cbit:
                 ld      a,c
+                call    psg_r15         ; selected, SCK high (DI held)
+                ld      a,c
+                xor     h
                 call    psg_r15         ; SCK low
                 ld      a,14
                 out     (PSG_REGS),a
@@ -978,10 +1011,13 @@ gtpad_cbit:
                 jr      z,gtpad_cnext
                 inc     d               ; SO high -> set this bit
 gtpad_cnext:
-                ld      a,b
-                call    psg_r15         ; SCK high
-                dec     l
+                dec     e
                 jr      nz,gtpad_cbit
+                ld      a,c
+                call    psg_r15         ; SCK high
+                ld      a,c
+                or      l
+                call    psg_r15         ; deselect -- the conversion starts
                 ld      a,d
                 ret
 

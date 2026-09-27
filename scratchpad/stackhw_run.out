@@ -1,0 +1,14 @@
+zerobas machine-stack depth below CSP (bytes; 48 = nothing reached the band, 1500 = AT LEAST the band):
+  idle          131   A=1
+  parens20      756   A=((((((((((((((((((((1+1)+1)+1)+1)+1)+1)+1)+1)+1)+1)+1)+1)+
+  parens32     1146   A=((((((((((((((((((((((((((((((((1+1)+1)+1)+1)+1)+1)+1)+1)+
+  abs32        1332   A=ABS(ABS(ABS(ABS(ABS(ABS(ABS(ABS(ABS(ABS(ABS(ABS(ABS(ABS(AB
+  str16         828   A=LEN(CHR$(ASC(CHR$(ASC(CHR$(ASC(CHR$(ASC(CHR$(ASC(CHR$(ASC(
+  transcend     334   A=SIN(COS(TAN(ATN(EXP(LOG(SQR(2)))))))
+  strings       129   A$=MID$(LEFT$(RIGHT$(STRING$(50,65),40),30),5,10)+CHR$(65)+H
+  using         131   PRINT USING "###.##";12.345
+  graphics      156   SCREEN 2:CIRCLE(128,96),50,15:PAINT(128,96),8,15:DRAW"U10R10
+  play          139   PLAY"CDEFGAB":FOR W=1 TO 300:NEXT
+  fn3           235   DEF FNA(X)=X*2+1:A=FNA(FNA(FNA(3)))
+  fn6           390   DEF FNA(X)=X*2+1:A=FNA(FNA(FNA(FNA(FNA(FNA(3))))))
+  errtrap       129   ON ERROR GOTO 50:A=1/0

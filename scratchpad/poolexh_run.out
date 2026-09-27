@@ -1,0 +1,3 @@
+reads [ALL d frames] (every depth fitted) or [STOP deepest-that-fitted ERR frames]
+  control  VG-8020 ALL 16 0                 zerobas ALL 16 0
+  gosub    VG-8020 ALL 16 3962              zerobas ALL 16 2794

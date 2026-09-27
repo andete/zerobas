@@ -90,8 +90,14 @@ p = subprocess.Popen(["openmsx", "-machine", MACH,
 try:
     # focus the window: grab only takes effect while openMSX is the key window
     time.sleep(3)
-    subprocess.run(["osascript", "-e", 'tell application "openMSX" to activate'],
-                   capture_output=True, timeout=10)
+    # 🔴 FOCUS BY PROCESS ID (D-PADTRACE, 2026-09-27): activating `application
+    # "openMSX"` by name left the window unfocused in a padtrace run and every
+    # PAD read 0 -- a null result, not a reading. Raised again before each step.
+    raise_ = lambda: subprocess.run(
+        ["osascript", "-e", 'tell application "System Events" to set frontmost '
+         f'of (first process whose unix id is {p.pid}) to true'],
+        capture_output=True, timeout=10)
+    raise_()
     t0 = time.time()
     while not (os.path.exists(SNAP) and os.path.getsize(SNAP) > 10):
         time.sleep(0.2)
@@ -102,6 +108,7 @@ try:
     log = []
     try:
         for label, cmds in STEPS:
+            raise_()
             for c in cmds:
                 r = rigfw._ask(fd, c)
                 assert r[-1:] == ["OK"], (c, r)

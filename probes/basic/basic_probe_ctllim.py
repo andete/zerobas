@@ -136,6 +136,61 @@ def scal_prog():
             *_REC]
 
 
+EXPR_K = 340     # bytes a DIM leaves by FRE(0) for l.expr
+EXPR_NEST = 40   # nested ABS: the VG-8020 raises Out of memory from 24 at ~300 B
+
+
+def expr_prog():
+    """D-STACKFLOOR: the EVALUATOR's floor, not the pool's. DIM to the edge, mark
+    the array's TOP elements -- the ones next to the stack -- then evaluate one
+    formula nested far deeper than the gap holds. Since D-SPMERGE the machine
+    stack descends toward the arrays, and before stk_guard nothing stopped an
+    EXPRESSION there: 20 nested parentheses with 600 B free overwrote `A(X)`
+    (scratchpad/stackcorrupt_run.out). Every machine must refuse with ERR 7 and
+    leave the marked elements intact; D is 0 here (no recursion of frames)."""
+    # 🎯 ONLY THE TOP TEN ELEMENTS ARE MARKED, and that is the whole row, not a
+    # shortcut: they are the bytes nearest the stack, and marking ~3500 elements
+    # (each access crosses a slot) would not fit the budget. `K` is created
+    # BEFORE the DIM for the reason ary_prog's line 15 gives.
+    # ⚠️ THE FILL AND THE TAIL ARE GOTO LOOPS: a FOR frame at the edge is a
+    # second thing that could refuse, and this row is about the expression.
+    return ["5 CLEAR 200",
+            "10 ONERRORGOTO900",
+            "15 I=0:D=0:S=0:E=0:K=0",
+            f"20 K=INT((FRE(0)-{EXPR_K})/8):DIMA(K)",
+            "30 I=K-9",
+            "32 A(I)=I:I=I+1:IFI<=KTHEN32",
+            "40 D=0:S=0:E=0",
+            "50 B=" + "ABS(" * EXPR_NEST + "1" + ")" * EXPR_NEST,
+            "70 I=K-9",
+            "72 IFA(I)<>ITHENS=S+1",
+            "74 I=I+1:IFI<=KTHEN72",
+            '76 CLS:PRINT"[";D;S;E;"]":END',
+            *_REC]
+
+
+NEST_AFTER = 16  # nested parentheses evaluated with the pool EXHAUSTED
+
+
+def nest_prog():
+    """D-STACKFLOOR: the pool driven to its floor, then a 16-deep expression WITH
+    EVERY FRAME STILL STANDING (the handler RESUMEs, it does not RETURN). The
+    VG-8020 evaluates it (scratchpad/poolexh_run.out, 3962 frames standing);
+    with frames kept only 256 clear of the arrays zerobas managed 2 levels once
+    the evaluator had a floor, and a refusal here RESUMEs into itself -- which
+    this gate reads as NOTHING PRINTED. CTL_FRAME_MARGIN (768) is the fix."""
+    expr = "(" * NEST_AFTER + "1" + "+1)" * NEST_AFTER
+    return ["5 CLEAR 200",
+            "10 ONERRORGOTO900",
+            "15 D=0:S=0:E=0:B=0",
+            "40 D=0:S=0:E=0",
+            "50 GOSUB800",
+            f"70 B={expr}",
+            f"72 IFB<>{NEST_AFTER + 1}THENS=S+1",
+            '76 CLS:PRINT"[";D;S;E;"]":END',
+            *_REC]
+
+
 def ctl_prog():
     """THE CONTROL. Five scalars, no bulk allocation, same recursion. Every
     machine must read S=0 -- if it does not, the tail itself is broken and the
@@ -158,6 +213,10 @@ CASES = [
     ("l.ctl",  "ctl", ctl_prog(),  "CONTROL: five scalars, no bulk allocation"),
     ("l.ary",  "row", ary_prog(),  f"DIM A({N}), filled, then the pool driven down"),
     ("l.scal", "row", scal_prog(), f"{SCALARS} scalars -- the OTHER allocator"),
+    ("l.nest", "row", nest_prog(), f"pool exhausted, then {NEST_AFTER} nested "
+                                   f"parentheses -- the FRAME margin (D-STACKFLOOR)"),
+    ("l.expr", "row", expr_prog(), f"DIM to {EXPR_K} B, then {EXPR_NEST} nested ABS "
+                                   f"-- the EVALUATOR's floor (D-STACKFLOOR)"),
 ]
 
 NUM = re.compile(r"^[-0-9 .E+]+$")
@@ -242,21 +301,40 @@ def main():
             got_s = parts(got[s][lab])
             if got_s is None:                     # zerobas only, per the note above
                 bad.append(f"{s}/{lab}")
+                if lab == "l.nest":
+                    # knife K-SF2 (CTL_FRAME_MARGIN back to 256) reads exactly this
+                    print(f"🔴 {s} {lab}: NOTHING PRINTED while both references "
+                          f"answered -- the tail's expression was REFUSED (ERR 7) "
+                          f"and the handler RESUMEd into the refusal for ever: the "
+                          f"frames left the evaluator too little room "
+                          f"(CTL_FRAME_MARGIN, basic/sysvars.inc).")
+                    continue
                 print(f"🔴 {s} {lab}: NOTHING PRINTED while both references "
                       f"answered. A floor stale enough to reach the interpreter's "
                       f"own state takes the machine with it -- that IS the "
                       f"corruption, in its loudest form.")
                 continue
             d, corrupt, err = got_s
-            if err != 7:
+            # 🔴 CORRUPTION IS TESTED FIRST, AND A COUNT IS NEVER EXPLAINED AWAY.
+            # The knife on l.expr (stk_guard cut) read `0 10 0`: all ten marked
+            # elements overwritten and the formula COMPLETING, ERR 0. The old
+            # order reported that as "never driven to its floor, so S=10 means
+            # nothing" -- red for the right row, with the finding named as noise.
+            if corrupt:
                 bad.append(f"{s}/{lab}")
-                print(f"🔴 {s} {lab}: stopped on ERR {err}, not 7 -- the pool was "
-                      f"never driven to its floor, so S={corrupt} means nothing")
-            elif corrupt:
+                if lab == "l.expr":
+                    print(f"🔴 {s} {lab}: {corrupt} CELL(S) CORRUPTED, ERR {err} -- "
+                          f"the MACHINE STACK descended into the array while an "
+                          f"expression recursed. On zerobas that is the "
+                          f"evaluator's floor (basic/expr.asm stk_guard).")
+                else:
+                    print(f"🔴 {s} {lab}: {corrupt} CELL(S) CORRUPTED after {d} "
+                          f"frames -- the control pool descended INTO live "
+                          f"variables. On zerobas that is CTLLIM stale-LOW (spec §17).")
+            elif err != 7:
                 bad.append(f"{s}/{lab}")
-                print(f"🔴 {s} {lab}: {corrupt} CELL(S) CORRUPTED after {d} frames "
-                      f"-- the control pool descended INTO live variables. On "
-                      f"zerobas that is CTLLIM stale-LOW (spec §17).")
+                print(f"🔴 {s} {lab}: stopped on ERR {err}, not 7 -- the floor was "
+                      f"never reached, so S=0 proves nothing")
 
     # --- 🎯 and the floor must MOVE with the region, or the cache is simply not
     #     tracking. An allocation has to COST depth, on every machine.

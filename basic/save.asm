@@ -696,9 +696,8 @@ b4_expr:
 ; changed here: no row measures it, because the forms that reach it have valid
 ; start/end and would start a real tape write. Left as filed, not as agreed.
 expect_comma_eval:
-                call    skip_comma
-                jp      nz,stmt_error       ; ERR 2, RAISED — trappable
-                inc     hl                  ; past the comma
+                call    req_comma           ; ERR 2, RAISED — trappable; past the
+                                            ; comma (D-CARVERC: the helper's body)
                 jp      eval                ; DE = value, HL advanced (BC clobbered)
 
 ; ===========================================================================

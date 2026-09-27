@@ -106,7 +106,8 @@ ctl_alloc:
                 ; the floor is correct and the reservation was missing.
                 ; HL is base-CTLLIM here, so one byte of it is the whole test.
                 ld      a,h
-                cp      high CTL_STACK_MARGIN
+                cp      high CTL_FRAME_MARGIN ; D-STACKFLOOR: a frame's own margin,
+                                            ; bigger than DIM's (sysvars.inc)
                 jr      c,ca_full           ; less than the reserve left -> pool full
                 add     hl,bc               ; HL = the base again. `add` back rather
                                             ; than push/pop -- the relocation this
@@ -2288,9 +2289,7 @@ dsk_core:
                 ld      a,62                ; Bad drive name
                 jp      raise_error
 dsk_drv_ok:
-                call    skip_comma
-                jp      nz,stmt_error
-                inc     hl
+                call    req_comma           ; D-CARVERC: ERR 2 without it, past it
                 call    eval_int16_checked  ; DE = sector
                 ; 🔴 THIS POKES A CELL THE OPEN CHANNEL OWNS, AND THAT IS WHY
                 ; THE RESTORE BELOW IS NOT OPTIONAL (D-ALIASWCELL, 2026-09-23).
@@ -2327,3 +2326,33 @@ dsk_out:
                 or      a
                 ret     z
                 jp      disk_error          ; DSKIO error -> its code (D-DISKERR)
+
+; 🎯 PROMOTED HERE FROM basic/interp.asm (page 1) BY D-STACKFLOOR, 2026-09-27: the
+; evaluator's stack guard needed 3 B more than page 1 had, while the low region
+; had 9 free after D-CARVERC. The two share ONE budget and include order alone
+; decides the region ([[carve-routes-measured-shut]]); req_comma has no relative
+; jump and nothing falls into it, so the move is byte-neutral and position-free.
+; --- req_comma: the argument separator this statement REQUIRES ---------------
+; D-NGRAM17. `call skip_spaces / cp ',' / jp nz,stmt_error / inc hl` -- *a comma
+; belongs here* -- stood open-coded at four sites, one per verb: FIELD
+; (exf_havech), INPUT# (inp_readvar), SWAP (ex_swap) and SOUND (ex_sound).
+; 9 B each.
+;
+; 🔴 THE FAMILY IS BIGGER THAN THE COLLAPSIBLE SET, and the difference is WHERE
+; THEY JUMP. `basic/` has 72 `cp ','` sites; enumerated at instruction level they
+; group by destination -- 4 to `stmt_error` (the comma is REQUIRED: these), 3 to
+; `exec_stmt` (an OPTIONAL comma that simply ends the statement) and a tail of
+; two-site groups each branching to its own local label. Only a shared
+; DESTINATION can share a body; a caller's own decline target is what keeps it at
+; the call site (the D-NGRAM11 rule).
+;
+; ⚠️ The extra return address costs nothing on the failing path: `stmt_error`
+; never returns and both its arms reset SP -- the same fact `req_letter` above
+; rests on. On the succeeding path the `inc hl` is INSIDE the helper, so the
+; comma is consumed exactly once; `g.*` rows read the argument AFTER it to say so
+; (scratchpad/reqcomma_probe.py).
+req_comma:
+                call    skip_comma
+                jp      nz,stmt_error       ; no comma: the statement aborts
+                inc     hl                  ; consume it
+                ret

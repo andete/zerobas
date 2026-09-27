@@ -485,7 +485,13 @@ POSTCHECKS = ["tiers-md-check"]
 # set a battery may legitimately refresh under you.
 REGENERATED = ["zerobas-main-eu.ips", "zerobas-main-eu.bps",
                "tape/zerobas-tape-msx1.ips", "tape/zerobas-tape-msx1.bps",
-               "sub/basic-resident-abi.inc", "sub/math-coeffs.inc"]
+               "sub/basic-resident-abi.inc", "sub/math-coeffs.inc",
+               # NOT a make target, and in this list on purpose: kwsweep rewrites
+               # its NEEDS-RIG carry every time the rigfw board answers (the
+               # verdicts, and their timestamps), and kwsweep is its ONLY reader,
+               # so no pool unit can read it torn. With the board plugged in the
+               # battery went rc 2 on a 135/135 run for exactly this (2026-09-27).
+               "scratchpad/kwsweep-rig-carry.json"]
 
 
 def snapshot_tracked():

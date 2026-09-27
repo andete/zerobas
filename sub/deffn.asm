@@ -542,7 +542,7 @@ fnf_save:
                 sbc     hl,de               ; ... minus the floor (CF was clear)
                 jr      c,fnf_full1         ; below it
                 ld      a,h
-                cp      high CTL_STACK_MARGIN
+                cp      high CTL_FRAME_MARGIN ; ctl_alloc's frame margin (D-STACKFLOOR)
 fnf_full1:      pop     hl                  ; HL = base (pop keeps the flags)
                 jr      c,fnf_full          ; less than the stack's reserve left
                 ld      (CSP),hl            ; the frontier IS the frame's base
