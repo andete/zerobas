@@ -5,15 +5,12 @@
 ; 256-byte tape block into CAL_BUF).
 ;
 ; docs/spec-eviction-g5-space.md. Extracted verbatim from basic/cload.asm so
-; the SAME source feeds two homes, both UNCONDITIONAL (cal_refill itself does
-; not move -- only the reason it needs a second home changed):
-;   * basic/cload.asm: included at this file's
-;     ORIGINAL position, unchanged -- still the routine cal_getbyte /
-;     ascii_read_lines call.
-;   * sub-ROM PAGE-1 tenant (sub/casmatch.asm, repack only): a DUPLICATE,
-;     because cas_skip_data's csd_ascii arm (basic/casmatch-body.inc) moved
-;     sub-side whole and still needs to call cal_refill; sharing this file
-;     keeps the two copies from drifting apart.
+; the SAME source once fed two homes. 🔴 SINCE D-CARVECAS (2026-09-27) IT FEEDS
+; ONE: sub/casmatch.asm (sub-ROM page 1), whose casmatch_tenant and
+; casget_tenant hold every caller -- cas_skip_data's csd_ascii arm, cal_getbyte's
+; serve/read-ahead body (cal_serve) and cas_ascii_setup. basic/cload.asm no
+; longer includes it; its cal_getbyte and cas_ascii_setup are stubs into the
+; casget tenant. The file stays a separate include so its history reads whole.
 ;
 ; Clean-room: our own code, extracted verbatim from basic/cload.asm (see
 ; that file's header for the cassette file-format provenance).

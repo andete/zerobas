@@ -63,7 +63,11 @@ def main():
     agree = 0
     for i, (k, s) in enumerate(ROWS):
         r, z = reading(res[REF][i]), reading(res[ZB][i])
-        same = r == z
+        # 🔴 COMPARED WITHOUT WHITESPACE: the capture joins screen rows with a
+        # space, so a value that straddles a line wrap reads `2 .5` / `- 39999`
+        # on one machine and whole on the other -- the post-fix run read 13/15
+        # with the SAME numbers on both sides of the two "diverging" rows.
+        same = "".join(r.split()) == "".join(z.split())
         agree += same
         print(f"{'  ' if same else '✗ '}{k:9} {s}")
         print(f"     VG-8020: {r}")

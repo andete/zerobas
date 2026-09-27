@@ -33,7 +33,7 @@ other component's cell at the same address; the `inside` column
 names the other component's BUFFER this address falls within. That
 second one is the question a per-component map cannot answer.
 
-* **basic** — 429 declared addresses in this project's own workspace `$E000..$F37F` (399 with a machine-readable width), plus **102** in the MSX standard work area at or above `$F380`.
+* **basic** — 434 declared addresses in this project's own workspace `$E000..$F37F` (404 with a machine-readable width), plus **102** in the MSX standard work area at or above `$F380`.
 * **disk** — 126 declared addresses in this project's own workspace `$E000..$F37F` (112 with a machine-readable width), plus **25** in the MSX standard work area at or above `$F380`.
 
 ## This project's own workspace (`$E000..$F37F`)
@@ -84,7 +84,6 @@ second one is the question a per-component map cannot answer.
 | `$E040` | 1 B | `basic` | `RESUMEFLAG` | 1 = resume at RESUMEPTR (set by RETURN / NEXT) (1 B) |  |
 | `$E041` | 2 B | `basic` | `GSP` | newest GOSUB frame's address; == CTLTOP if none (2) |  |
 | `$E043` | 2 B | `basic` | `FSP` | the FOR run's FLOOR: FOR frames are [CSP,FSP) (2) |  |
-| `$E045` | 6 B | `basic` | `FOR_CUR` | scratch: a working copy of one FOR frame (11), and |  |
 | `$E050` | 2 B | `basic` | `CSP` | the pool's allocation frontier, descending (2) |  |
 | `$E052` | 2 B | `basic` | `CTLTOP` | the pool's TOP = strheap_varceil(), cached (2) |  |
 | `$E054` | 2 B | `basic` | `TSP` | newest trap SERVICE record; valid iff TRAPSVC != 0 (2) |  |
@@ -110,6 +109,12 @@ second one is the question a per-component map cannot answer.
 | `$E098` | 1 B | `disk` | `DISKOP_ERR` | tenant -> main: ERR code of the last DSKIO failure, 0 = none (1) |  |
 | `$E099` | 2 B | `basic` | `FNSP` | newest FN frame's address, 0 = no FN call live (2) |  |
 | `$E09B` | 1 B | `basic` | `FN_FST` | tenant -> main: 0 = frame saved, 1 = pool full -> ERR 7 (1) |  |
+| `$E09C` | 29 B | `basic` | `FOR_CUR` | scratch: a working copy of one FOR frame (25), and |  |
+| `$E09F` | 9 B | `basic` | `FOR_LIM` | the limit slot [type][8] (9) |  |
+| `$E0A8` | 9 B | `basic` | `FOR_STEP` | the step slot [type][8] (9) |  |
+| `$E0B1` | 2 B | `basic` | `FOR_LINE` | CURLINE of the FOR (2) |  |
+| `$E0B3` | 2 B | `basic` | `FOR_BODY` | the loop body's text pointer (2) |  |
+| `$E0B5` | 1 B | `basic` | `FOR_SIGN` | NEXT's scratch: the step's sign byte (1) |  |
 | `$E0B8` | 1 B | `basic` | `DATASTATE` | 0 = unpositioned (RESTORE), 1 = ready, 2 = exhausted (1 B) |  |
 | `$E0B9` | 2 B | `basic` | `DATAPTR` | next unread DATA item (ASCII) in the program (2) |  |
 | `$E0BB` | 2 B | `basic` | `DATALINE` | link-field of the line holding DATAPTR (2) |  |

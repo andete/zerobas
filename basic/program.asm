@@ -1785,11 +1785,70 @@ for_key:                                    ; (VARTYPE) = the resolved type (F3/
                 ld      (FOR_CUR+2),a
                 ret
 
+; --- slot_store / slot_load: a FOR frame's typed limit/step slot (D-FORFLOAT) --
+; A slot is [FACTYP][8]: an int16 in its first two bytes, or FAC's eight. Its
+; job is to hand NEXT the value exactly as the factor that FOR evaluated left it,
+; so combine_add / combine_cmp see the same operand an expression would.
+; slot_store: HL = slot, the value live (FACTYP + DE or FAC). Clobbers A,BC,DE,HL.
+; 🐌 D-FORFAST: A FLOAT LOOP'S int16 LIMIT/STEP IS WIDENED ONCE, HERE. Stored as
+; an int16, `FOR I=1 TO 400` made every NEXT widen both through widen_int_to
+; (div10 and all): 42 BCD unpacks per NEXT against 14 before D-FORFLOAT
+; (scratchpad/nextcost_counts.py). The reference keeps a float loop's STEP and
+; limit as 8-byte BCD too (docs/reference-stack-frames.md §2). A `%` loop keeps
+; int16 slots, which is what keeps its arithmetic on the int fast path.
+slot_store:
+                ld      a,(FOR_CUR+2)
+                cp      2
+                jr      z,sst_go            ; a `%` loop: slots stay as given
+                ld      a,(FACTYP)
+                cp      2
+                jr      nz,sst_go           ; already BCD
+                push    hl
+                call    arga_widen          ; int16 -> a packed double, FACTYP = 8
+                call    round_and_finalize
+                pop     hl
+sst_go:
+                ld      a,(FACTYP)
+                ld      (hl),a
+                inc     hl
+                cp      2
+                jr      nz,sst_fac
+                ld      (hl),e
+                inc     hl
+                ld      (hl),d
+                ret
+sst_fac:
+                ex      de,hl
+                ld      hl,FAC
+                ld      bc,8
+                ldir
+                ret
+; slot_load: HL = slot -> FACTYP, and DE (int16) or FAC. Out: A = the byte whose
+; bit 7 is the value's SIGN -- an int16's high byte, a BCD value's lead byte
+; (sign + exponent). Clobbers A,BC,DE,HL.
+slot_load:
+                ld      a,(hl)
+                ld      (FACTYP),a
+                inc     hl
+                cp      2
+                jr      nz,sld_fac
+                ld      e,(hl)
+                inc     hl
+                ld      d,(hl)
+                ld      a,d
+                ret
+sld_fac:
+                ld      de,FAC
+                ld      a,(hl)
+                ld      bc,8
+                ldir
+                ret
+
 ; --- ex_for: FOR <var> = <init> TO <limit> [STEP <step>] ---------------------
 ; Assign init to the loop variable, then push a frame
-; [name0:1][name1:1][type:1][limit:2][step:2][CURLINE:2][resume-ptr:2] and fall
-; through to run the loop body (the statements following FOR). NEXT consults the
-; top frame.
+; [name1][name0][type][limit slot:9][step slot:9][CURLINE:2][resume-ptr:2] (25 B,
+; the reference's size -- D-FORFLOAT, sysvars.inc FOR_FRAME) and fall through to
+; run the loop body (the statements following FOR). NEXT consults the top frame.
 ;
 ; D-FORVAR (docs/spec-basic-forvar.md, 30 of 32 measured rows, BOTH references
 ; agreeing on all 32): a FOR loop variable is an ordinary scalar variable
@@ -1829,8 +1888,12 @@ ex_for:
                 call    skip_spaces
                 cp      TO_TOKEN           ; TO -> $D9
                 jp      nz,stmt_error
-                call    inc_eval            ; DE = limit
-                ld      (FOR_CUR+3),de      ; frame[3..4] = limit
+                call    inc_eval            ; the limit, as a factor leaves it
+                push    hl
+                ld      hl,FOR_LIM
+                call    slot_store          ; D-FORFLOAT: typed, not an int16 tail
+                pop     hl
+                call    set_factyp2         ; the default STEP below is an int16 1
                 call    skip_spaces
                 ; D-NXARY: the default is loaded FIRST and eval overwrites it, so the
                 ; two arms stop needing a join (-2 B). `ld de,nn` touches no flag, so
@@ -1843,13 +1906,16 @@ ex_for:
                 jr      nz,ef_havestep
                 call    inc_eval            ; DE = step
 ef_havestep:
-                ld      (FOR_CUR+5),de      ; frame[5..6] = step
-                ld      (FOR_CUR+9),hl      ; frame[9..10] = resume ptr (loop body)
+                push    hl
+                ld      hl,FOR_STEP
+                call    slot_store          ; the step, typed
+                pop     hl
+                ld      (FOR_BODY),hl       ; the resume ptr (loop body)
                 push    hl                  ; D-NXARY: and it rides the stack to the
                                             ; tail below instead of being re-loaded --
                                             ; ldir does not touch the stack (-1 B)
                 ld      de,(CURLINE)
-                ld      (FOR_CUR+7),de      ; frame[7..8] = CURLINE
+                ld      (FOR_LINE),de       ; CURLINE
                 ; D-CTLPOOL: the FOR_STK_END bound test is gone with the array.
                 ; ⚠️ FSP IS NOT TOUCHED HERE, and that is the invariant the whole
                 ; NEXT walk rests on: the FOR run is [CSP, FSP), so lowering the
@@ -2113,35 +2179,49 @@ nx_have:
                 ld      de,FOR_CUR          ; work on a copy of the frame
                 ld      bc,FOR_FRAME
                 ldir
-                call    for_get             ; DE = current value  (var := var + step)
-                ld      hl,(FOR_CUR+5)      ; step
-                add     hl,de               ; HL = stepped value
-                push    hl                  ; [stepped] -- the stack is the scratch the
-                ex      de,hl               ; retired FOR_NEW cell used to be
-                call    for_set
-                ld      hl,(FOR_CUR+5)      ; loop test depends on the step sign
-                bit     7,h
-                pop     hl                  ; HL = stepped value (POP touches no flag)
-                jr      nz,nx_neg
-                ; D-NXLIST §4.4: the two arms differ ONLY in which cmp16_bits verdict
-                ; ends the loop, and cmp16_bits touches A, HL, DE and the flags and
-                ; nothing else -- so the verdict rides in B and the limit load and the
-                ; call are written once. Row m.step (`FOR A=3 TO 1 STEP -1` inside a
-                ; list) is what guards the negative arm in THIS battery.
-                ld      b,4                 ; step >= 0: end when value > limit
-                jr      nx_limit
-nx_neg:
-                ld      b,1                 ; step <  0: end when value < limit
-nx_limit:
-                ld      de,(FOR_CUR+3)      ; the limit
-                call    cmp16_bits          ; 1=<, 2==, 4=>
+                ; D-FORFLOAT: `var := var + step`, then `var : limit`, BOTH through the
+                ; evaluator's own operators and its fixed LHS-frame protocol (`push
+                ; de` / push_lhs_frame, then the rhs as a factor leaves it). Each has
+                ; an int16 fast path that PROMOTES to BCD on overflow and a BCD path
+                ; for anything fractional or past int16 -- so `STEP .25`, `FOR A=
+                ; 56700 TO 56702`, `FOR A=1 TO 32767 STEP 16384` (A ends at 32769) and
+                ; a body that makes the variable fractional are all the reference's
+                ; (scratchpad/forfloat_probe.py). The int16 `add hl,de` this replaced
+                ; wrapped every one of them, and four never ended.
+                call    for_get             ; the variable, at its OWN type
+                push    de
+                call    push_lhs_frame
+                ld      hl,FOR_STEP
+                call    slot_load           ; the step as the rhs; A = its sign byte
+                ld      (FOR_SIGN),a
+                call    combine_add         ; var + step
+                call    for_set_typed       ; stored, and left in FAC/DE as stored
+                call    check_expr_errors   ; a `%` loop's Overflow is ERR 6 HERE, on
+                                            ; the NEXT line (row edgeint) -- not at the
+                                            ; body's first statement, which is where
+                                            ; D-STMTPEND's boundary would report it
+                push    de
+                call    push_lhs_frame
+                ld      hl,FOR_LIM
+                call    slot_load
+                call    combine_cmp         ; A = 1 <, 2 =, 4 >
+                ; D-NXLIST §4.4: the two directions differ ONLY in which verdict ends
+                ; the loop. Row m.step (`FOR A=3 TO 1 STEP -1` inside a list) guards
+                ; the negative arm in THIS battery.
+                ld      b,a
+                ld      a,(FOR_SIGN)
+                rla                         ; CF = the step is negative
+                ld      a,4                 ; step >= 0: end when value > limit
+                jr      nc,nx_dir
+                ld      a,1                 ; step <  0: end when value < limit
+nx_dir:
                 cp      b
                 jr      z,nx_end
 nx_again:
                 pop     hl                  ; frame stays on the stack
-                ld      hl,(FOR_CUR+7)      ; resume at the loop body
+                ld      hl,(FOR_LINE)       ; resume at the loop body
                 ld      (CURLINE),hl
-                ld      hl,(FOR_CUR+9)
+                ld      hl,(FOR_BODY)
                 ld      (RESUMEPTR),hl
                 ld      a,1
                 ld      (RESUMEFLAG),a

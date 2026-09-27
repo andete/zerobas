@@ -669,6 +669,13 @@ var_store_fac:
                 jr      z,vsf_int
                 cp      4
                 jr      z,vsf_single
+                ; 🐌 D-FORFAST: a DOUBLE already in FAC is already packed and
+                ; rounded -- every producer ends in round_and_finalize or copies
+                ; stored bytes -- so widening it to 14 digits and packing it back is
+                ; a no-op that NEXT paid on every pass (and LET on every A#=).
+                ld      a,(FACTYP)
+                cp      8
+                jr      z,vsf_coerced
                 call    arga_widen          ; D-ARGAWIDEN
                                             ; double) into a 14-digit ARGA (float-
                                             ; arith.asm)
@@ -909,24 +916,30 @@ elas_abort_fp   equ     cee_abort_fp
 ; deftbl_num_type, whose "ERR 13 on a DEFSTR letter" job moved to PARSE time,
 ; where row f.defstr says both references put it.
 ;
-; The loop math itself stays plain int16 (D-D: a typed/float loop variable is
-; deferred); for_set tags DE as int16 (FACTYP=2) so var_store_fac coerces the
-; int value into the target's own resolved type -- which is what makes
-; `FOR A#=1 TO 3` store into the double entry `PRINT A#` reads back (row f.hash),
-; and `FOR A%=` into the int one `A` does not (row f.coll).
+; D-FORFLOAT (docs/spec-basic-forfloat.md): the loop math is the EVALUATOR's now,
+; so a value reaches the variable at its own type. Two entries:
+;   for_set_typed -- NEXT's store: the live FACTYP/FAC/DE as combine_add left it,
+;       coerced by var_store_fac, whose FPERR on an int16 overflow is the
+;       reference's ERR 6 for a `%` loop (row edgeint).
+;   for_set -- FOR's initial value: the same, EXCEPT that a `%` loop variable
+;       still takes eval's int16 tail (FACTYP forced to 2). That tail is what
+;       `FOR A%=1.7 TO 3` starting at 2 on both references rests on (row
+;       intinit); var_store_fac's own int coercion truncates, and would give 1.
+;       A non-`%` variable takes the value whole (`FOR A=.5` starts at .5).
 for_get:
                 ld      bc,(FOR_CUR)        ; name0, name1
                 ld      a,(FOR_CUR+2)       ; the resolved type -- var_find_typed keys on
                 jp      var_load_fac        ; all three (FAC/FACTYP=type, DE=int16 tail)
 for_set:
-                ld      bc,(FOR_CUR)
-                call    set_factyp2
-                                           ; FOR/NEXT always hand for_set a plain int16
-                                            ; value -- tag it so var_store_fac's target
-                                            ; coercion widens DE via widen_int_to instead
-                                            ; of misreading FAC
                 ld      a,(FOR_CUR+2)
-                jp      var_store_fac       ; tail call (DE preserved throughout)
+                cp      2
+                call    z,set_factyp2       ; a `%` loop keeps eval's int16 tail
+for_set_typed:
+                ld      bc,(FOR_CUR)
+                ld      a,(FOR_CUR+2)
+                jp      var_store_fac       ; tail call: FAC/FACTYP (or DE for an
+                                            ; int) are left as STORED, which is what
+                                            ; NEXT compares with the limit
 
 ; --- string-variable store (own-design; see PROVENANCE.md) -----------------
 ; Parallel to the numeric var_find/get/set, but over STRTAB, whose entries are

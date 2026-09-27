@@ -189,6 +189,31 @@ CASES = [
     ("f.step",   ['FOR AB=10 TO 1 STEP -3', 'NEXT', 'PRINT"[";AB;"]"']),
     # --- the NEGATIVE control ------------------------------------------------
     ("f.ary",    ['DIM A(3)', 'FOR A(1)=1 TO 3', 'NEXT', 'PRINT"[OK]"']),
+    # --- D-FORFLOAT: the loop MATH, not the name (docs/spec-basic-forfloat.md).
+    # Until 2026-09-27 a FOR loop was int16 arithmetic: these read 0 0 0 ...
+    # forever, wrapped at 32767, or dropped the fraction a body wrote. Every row
+    # is BOUNDED (W>12 -> END), so a regression reads as no output, not a hang;
+    # scratchpad/forfloat_probe.py is the 15-row characterization.
+    ("x.step25", ['FOR A=0 TO 1 STEP .25:S=S+A:W=W+1:IF W>12 THEN END', 'NEXT',
+                  'PRINT"[";A;S;W;"]"']),
+    ("x.half",   ['FOR A=.5 TO 3:S=S+A:W=W+1:IF W>12 THEN END', 'NEXT',
+                  'PRINT"[";A;S;W;"]"']),
+    ("x.big",    ['FOR A=56700 TO 56702:W=W+1:IF W>12 THEN END', 'NEXT',
+                  'PRINT"[";A;W;"]"']),
+    ("x.neg",    ['FOR A=-40000 TO -39999:W=W+1:IF W>12 THEN END', 'NEXT',
+                  'PRINT"[";A;W;"]"']),
+    ("x.edge",   ['FOR A=1 TO 32767 STEP 16384:W=W+1:IF W>12 THEN END', 'NEXT',
+                  'PRINT"[";A;W;"]"']),
+    ("x.hstep",  ['FOR A=0 TO 100000 STEP 40000:W=W+1:IF W>12 THEN END', 'NEXT',
+                  'PRINT"[";A;W;"]"']),
+    ("x.negfr",  ['FOR A=1 TO 0 STEP -.5:S=S+A:W=W+1:IF W>12 THEN END', 'NEXT',
+                  'PRINT"[";A;S;W;"]"']),
+    ("x.single", ['FOR A!=0 TO 1 STEP .1:W=W+1:IF W>20 THEN END', 'NEXT',
+                  'PRINT"[";A!;W;"]"']),
+    ("x.double", ['FOR A#=0 TO 1 STEP .1:W=W+1:IF W>20 THEN END', 'NEXT',
+                  'PRINT"[";A#;W;"]"']),
+    ("x.body",   ['FOR A=1 TO 3:A=A+.5:W=W+1:IF W>12 THEN END', 'NEXT',
+                  'PRINT"[";A;W;"]"']),
 ]
 CONTROLS = ("c.for", "c.next", "c.let")
 CONTROL_WANT = {"c.for": " 4 ", "c.next": " 4 ", "c.let": " 7 "}

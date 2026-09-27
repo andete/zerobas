@@ -1,6 +1,6 @@
 # D-FORFLOAT — a FOR loop that is not int16 arithmetic
 
-Status: **DESIGN** (2026-09-27). Item: `TODO.md` D-FORFLOAT (TIER 1).
+Status: **SHIPPED** 2026-09-27 (AGREE 15/15). Item: `TODO.md` D-FORFLOAT (TIER 1); its speed price is D-FORFAST (TIER 5). §3.3 changed in the build: the FOR body could NOT move to a tenant (eval is main page 1), so D-CARVECAS funded it; and slots keep their own type (TODO has both corrections).
 Evidence: [`scratchpad/forfloat_probe.py`](../scratchpad/forfloat_probe.py) →
 [`scratchpad/forfloat_run.out`](../scratchpad/forfloat_run.out) (AGREE 4/15),
 the reference's frame layout in [`docs/reference-stack-frames.md`](reference-stack-frames.md) §2.

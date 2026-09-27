@@ -1254,8 +1254,14 @@ SWEEP: list[tuple[str, str, str | None, str, str]] = [
      "FORM:envelope `10 208 7` -- R13 is the envelope SHAPE (`S10`) and R11/R12 "
      "the 16-bit envelope PERIOD, 7*256+208 = 2000 (`M2000`). Three cells, two "
      "commands, and no default produces any of them"),
+    # 🐌 D-FORFLOAT (2026-09-27): THIS ROW'S DELAY LOOP IS AN `%` LOOP, AND THE
+    # REASON IS THE CAPTURE WINDOW, NOT THE SUBJECT. A default-type FOR became
+    # BCD arithmetic (faithful; `nextkw` 1.64x -> 2.37x the VG-8020, D-FORFAST),
+    # and the 200/400-pass delay then outran the batch window on zerobas only:
+    # vdp_d / timetick printed NOTHING and playkw_g's note had FINISHED. An `%`
+    # loop runs the int16 path on both machines; the loop was always a delay.
     ("playkw_g", 'play"","","c"',
-     'PLAY"","","O4L2T120V8C":FOR I=1 TO 200:NEXT:A=PLAY(1):B=PLAY(2):C=PLAY(3):PRINT"[3q";A;B;C;"]"',
+     'PLAY"","","O4L2T120V8C":FOR I%=1 TO 200:NEXT:A=PLAY(1):B=PLAY(2):C=PLAY(3):PRINT"[3q";A;B;C;"]"',
      "stored",
      "FORM:multi-voice `0 0 -1` -- the THIRD string sounds and the first two are "
      "the faithful empty-voice skip. An implementation with one voice, or one that "
@@ -1331,8 +1337,14 @@ SWEEP: list[tuple[str, str, str | None, str, str]] = [
     # 🎯 THE GUARD COMES FROM ANOTHER ROW INSTEAD: `timetick` runs the SAME 400
     # iterations with the interrupt ON and requires `TIME>T`, so "the loop is long
     # enough to tick" is established there and does not have to be paid for here.
+    # 🐌 D-FORFLOAT (2026-09-27): THIS ROW'S DELAY LOOP IS AN `%` LOOP, AND THE
+    # REASON IS THE CAPTURE WINDOW, NOT THE SUBJECT. A default-type FOR became
+    # BCD arithmetic (faithful; `nextkw` 1.64x -> 2.37x the VG-8020, D-FORFAST),
+    # and the 200/400-pass delay then outran the batch window on zerobas only:
+    # vdp_d / timetick printed NOTHING and playkw_g's note had FINISHED. An `%`
+    # loop runs the int16 path on both machines; the loop was always a delay.
     ("vdp_d",   'vdp(1)=208',
-     'V=VDP(1):VDP(1)=V AND 223:T=TIME:FOR I=1 TO 400:NEXT:A=TIME-T:VDP(1)=V:PRINT"[0l";A;"]"',
+     'V=VDP(1):VDP(1)=V AND 223:T=TIME:FOR I%=1 TO 400:NEXT:A=TIME-T:VDP(1)=V:PRINT"[0l";A;"]"',
      "stored",
      "NOECHO:[0l FORM:write the write reaching the CHIP, not the mirror: clearing "
      "VDP register 1 bit 5 stops the frame interrupt, so JIFFY stops and TIME "
@@ -2858,8 +2870,14 @@ SWEEP: list[tuple[str, str, str | None, str, str]] = [
     # across two 40-column rows and screen_tail's echo match fails -> ?noecho ->
     # UNREADABLE. In stored mode the echoed command is just "RUN". (Caught by the
     # MAX_DIRECT_ECHO guard below, which exists so this cannot recur silently.)
+    # 🐌 D-FORFLOAT (2026-09-27): THIS ROW'S DELAY LOOP IS AN `%` LOOP, AND THE
+    # REASON IS THE CAPTURE WINDOW, NOT THE SUBJECT. A default-type FOR became
+    # BCD arithmetic (faithful; `nextkw` 1.64x -> 2.37x the VG-8020, D-FORFAST),
+    # and the 200/400-pass delay then outran the batch window on zerobas only:
+    # vdp_d / timetick printed NOTHING and playkw_g's note had FINISHED. An `%`
+    # loop runs the int16 path on both machines; the loop was always a delay.
     ("timetick", "a=time",
-     'T=TIME:FOR I=1 TO 400:NEXT:PRINT"[";TIME>T;"]"', "stored",
+     'T=TIME:FOR I%=1 TO 400:NEXT:PRINT"[";TIME>T;"]"', "stored",
      "FORM:read THE discriminator: a real TIME advances across a delay loop; the "
      "variable `TI` does not. This is the row that catches the silent gap."),
     # 🌾 D-KWBATCH2: `TIME = <expr>` is the WRITE half (ex_time_assign,

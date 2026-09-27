@@ -3806,13 +3806,26 @@ CAS_WBUF        equ     $E600   ; cassette ASCII save: 256-byte tape block buffe
 ; invariant that reproduces it with no per-frame type tag and no walk.
 GSP             equ     $E041   ; newest GOSUB frame's address; == CTLTOP if none (2)
 FSP             equ     $E043   ; the FOR run's FLOOR: FOR frames are [CSP,FSP) (2)
-FOR_FRAME       equ     11      ; FOR frame size, in bytes (see the layout above)
-FOR_CUR         equ     $E045   ; scratch: a working copy of one FOR frame (11), and
+; D-FORFLOAT (docs/spec-basic-forfloat.md): a FOR frame is 25 B, the reference's
+; own size (docs/reference-stack-frames.md §2), laid out
+;   [name1][name0][type] [limit: type + 8] [step: type + 8] [CURLINE:2] [body:2]
+; A SLOT is what a factor leaves: FACTYP, then the int16 (type 2, 2 B used) or
+; FAC's 8 bytes -- so NEXT runs `var + step` and `var : limit` through the
+; evaluator's own combine_add / combine_cmp, int16 fast path and BCD alike.
+FOR_FRAME       equ     25      ; FOR frame size, in bytes
+; $E045..$E04F held FOR_CUR (11 B) until D-FORFLOAT grew it to 25.
+; FREE-RAM $E045..$E050  the old 11-byte FOR_CUR, free since D-FORFLOAT moved it to $E09C
+FOR_CUR         equ     $E09C   ; scratch: a working copy of one FOR frame (25), and
                                 ; ALSO the key a NEXT parses into before it matches
                                 ; (spec §4.3 -- nx_have only writes it after the
-                                ; match, so the two uses cannot collide). Ends at
-                                ; $E04F: exactly the span the retired FOR_NEW frees,
-                                ; so GOSUB_STK below is untouched.
+                                ; match, so the two uses cannot collide). D-FORFLOAT
+                                ; moved it into the declared-free remainder of the
+                                ; pre-D-FORVAR FOR stack ($E09C..$E0B8, 28 B).
+FOR_LIM         equ     FOR_CUR + 3     ; the limit slot [type][8] (9)
+FOR_STEP        equ     FOR_CUR + 12    ; the step slot [type][8] (9)
+FOR_LINE        equ     FOR_CUR + 21    ; CURLINE of the FOR (2)
+FOR_BODY        equ     FOR_CUR + 23    ; the loop body's text pointer (2)
+FOR_SIGN        equ     FOR_CUR + 25    ; NEXT's scratch: the step's sign byte (1)
 ; $E04E was FOR_NEW — NEXT's freshly-stepped loop value, parked in RAM across the
 ; var_set call. D-FORVAR keeps it on the STACK instead (one push/pop replaces one
 ; store and two loads on mutually exclusive branches), and FOR_CUR grew over it.
@@ -3934,7 +3947,7 @@ DISKOP_ERR      equ     $E098   ; tenant -> main: ERR code of the last DSKIO fai
 ; second cell, and the abort unwind walks the chain to the outermost.
 FNSP            equ     $E099   ; newest FN frame's address, 0 = no FN call live (2)
 FN_FST          equ     $E09B   ; tenant -> main: 0 = frame saved, 1 = pool full -> ERR 7 (1)
-; FREE-RAM $E09C..$E0B8  the rest of the pre-D-FORVAR FOR stack, free since it relocated (D-COPY took $E080..$E090, D-FNPOOL $E099..$E09B)
+; FREE-RAM $E0B6..$E0B8  the rest of the pre-D-FORVAR FOR stack (D-COPY took $E080..$E090, D-FNPOOL $E099..$E09B, D-FORFLOAT's FOR_CUR + FOR_SIGN $E09C..$E0B5)
 ; --- D-STRADDLE: the random-record PASS cursor (2026-09-06) -----------------
 ; A record whose span crosses a 512-byte sector boundary is written in TWO
 ; passes, and these two words are the state that has to survive `frnd_locate`,
@@ -4988,6 +5001,10 @@ SUBROM_IDX_PUNUM     equ 24     ; pu_num_tenant (sub/punum.asm): PRINT USING's
                                 ; numeric renderer (D-PUNUM). PAGE 1, because it
                                 ; calls flt_fmt in the main LOW region -- and
                                 ; because main page 1 had 32 B free.
+SUBROM_IDX_CASGET    equ 27     ; casget_tenant (sub/casmatch.asm): the cassette
+                                ; ASCII byte source, L = 0 serve / 1 prime
+                                ; (D-CARVECAS, funding D-FORFLOAT). PAGE 1: it
+                                ; calls TAPION/TAPIN, beside casmatch's cal_refill.
 SUBROM_IDX_CURSOR    equ 26     ; cursor_tenant (sub/cursor.asm): the line
                                 ; editor's block cursor, E=1 show / E=0 remove
                                 ; (D-CURSORBLOCK). PAGE 1: it calls RDVRM/WRTVRM.

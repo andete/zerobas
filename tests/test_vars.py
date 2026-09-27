@@ -273,7 +273,16 @@ def run():
     # Round-trip through the frame key, single-char name at the DEFtbl default.
     reset_tables()
     for_key(ord("A"), 0, 8)                    # clear_vars leaves every letter DOUBLE
-    m.call("for_set", de=0x7777)
+    # D-FORFLOAT: for_set now stores the value AS eval LEFT IT -- FACTYP
+    # included -- and forces int16 only for a `%` loop variable. Every value
+    # below is an int literal, which eval leaves with FACTYP = 2; say so,
+    # rather than inheriting whatever an earlier case left in FACTYP (the
+    # first run read 0x7777 for BOTH names off a stale FAC).
+    def for_set_int(de):
+        m.poke(s["FACTYP"], 2)
+        return m.call("for_set", de=de)
+
+    for_set_int(0x7777)
     cpu_g = m.call("for_get")
     ok_shim = (cpu_g.de == 0x7777)
     fails += not ok_shim
@@ -284,9 +293,9 @@ def run():
     # the whole point of the slice, and invisible to the case above.
     reset_tables()
     for_key(ord("A"), ord("B"), 8)
-    m.call("for_set", de=0x1111)
+    for_set_int(0x1111)
     for_key(ord("A"), 0, 8)
-    m.call("for_set", de=0x2222)
+    for_set_int(0x2222)
     for_key(ord("A"), ord("B"), 8)
     ab = m.call("for_get").de
     for_key(ord("A"), 0, 8)
@@ -300,9 +309,9 @@ def run():
     # the reference matches on.
     reset_tables()
     for_key(ord("A"), 0, TYPE_INT)
-    m.call("for_set", de=0x0444)
+    for_set_int(0x0444)
     for_key(ord("A"), 0, 8)
-    m.call("for_set", de=0x0555)
+    for_set_int(0x0555)
     for_key(ord("A"), 0, TYPE_INT)
     ai = m.call("for_get").de
     for_key(ord("A"), 0, 8)

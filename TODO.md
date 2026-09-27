@@ -6019,7 +6019,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:26127 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:26215 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -25116,7 +25116,69 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       from A — **1 B cheaper** than the C version. `sound-acceptance` gains
       `r8_var`, `r8_rv`, `r7_var`, the rows that can see it.
 
-- [ ] 🔴 **A `FOR` LOOP IS INT16 ARITHMETIC — `STEP .5`, `FOR A=.5 TO 3`,
+- [ ] 🔴 **A 4-BLOCK ASCII TAPE NO LONGER LOADS WHOLE — `LOAD"CAS:"` OF A
+      21-LINE (814-BYTE) PROGRAM KEEPS 360 OF ITS 631 TOKENISED BYTES
+      (D-CAS4BLK, found 2026-09-27 by D-CARVECAS's regression check).**
+      🎚️ TIER 1 — happy path: an ASCII program on tape longer than two blocks is
+      an ordinary program, and it loads truncated with no error.
+      🤖 **AUTONOMOUS** — the probe already exists and says exactly where.
+      📏 [`probes/basic/basic_probe_cas_ascii.py`](probes/basic/basic_probe_cas_ascii.py)
+      assertion 4 FAILS on the committed ROM 601a44c9
+      ([`scratchpad/cas4blk_head_run.out`](scratchpad/cas4blk_head_run.out)) and on
+      the D-CARVECAS build alike — both keep the same 360 correct bytes, so the
+      carve is neutral and the defect is older. Assertions 1–3 (a real 5-line
+      tape, a 2-block program, tokenised CLOAD) pass.
+      🔴 **A REGRESSION NO GATE COULD SEE:** this exact case is what the double
+      buffer fixed on 2026-08-18 (782a9282, "one buffer can't outrun a slow
+      line's own tokenise cost"), and `basic_probe_cas_ascii.py` is in no make
+      target, so nothing has run it since.
+      🔬 **HYPOTHESIS, NOT MEASURED:** the read-ahead is one block, and it only
+      holds while tokenising a block takes less time than the tape needs to
+      reach the next leader. Tokenising has moved into the sub ROM since (the
+      wave-2 tokeniser, D-EVLNO's line-number scanner), each a slot crossing per
+      line. The next step is to time a block's tokenise against the leader gap
+      rather than assume it.
+      ➡️ And the probe goes into a make target when it is green, so this cannot
+      recur silently.
+
+- [ ] 🐌 **A DEFAULT-TYPE `FOR` LOOP IS 44 % SLOWER SINCE D-FORFLOAT — `NEXT`
+      2.37× THE VG-8020, WAS 1.64× (D-FORFAST, filed 2026-09-27).**
+      🎚️ TIER 5 — on-par speed: correctness came first (D-FORFLOAT, TIER 1);
+      this is its measured price, not a defect.
+      🤖 **AUTONOMOUS** — a fast path, measured by `make kwtime` (`nextkw*`,
+      `forkw*`) and held to `forvar-acceptance`'s `x.*` rows.
+      📏 `kwtime` on the D-FORFLOAT build: `nextkw` 35.5 vs 15.0 (2.37×),
+      `nextkw_b` 2.34×, `nextkw_c` 2.66×; `forkw` 3.05×. Every NEXT of a
+      single/double variable now unpacks the variable, runs a BCD add and a BCD
+      compare, and repacks, where it used to add two int16s.
+      📏 **PROFILED 2026-09-27** (`scratchpad/nextcost_counts.py`, calls per
+      NEXT of an empty `FOR I=1 TO n:NEXT`): **42 BCD unpacks** (`wsrc_unpack`)
+      against 14 before D-FORFLOAT, plus two `widen_int_to` (div10 4.1/NEXT) —
+      every NEXT widened the int16 step and limit.
+      ✅ **Two taken at once, 29 B:** a float loop's int16 limit/step is widened
+      ONCE, in `slot_store` (div10 4.1 → 0.01, `widen_int_to` 2 → 0 per NEXT —
+      the reference keeps them as BCD too); and `var_store_fac` skips the
+      widen-and-repack of a DOUBLE that is already packed (LET gains too).
+      Whole-row `nextkw` did not move (35.5 ms, 2.37×): the BCD add and compare
+      themselves dominate.
+      ⚠️ **It already cost a gate:** kwsweep's `vdp_d`, `timetick` and
+      `playkw_g` use 200/400-pass FOR loops as DELAYS, and the slower NEXT ran
+      them past the batch capture window (`vdp_d`/`timetick` printed nothing,
+      `playkw_g`'s note had finished). Their delays are `%` loops now, with the
+      reason beside each row.
+      💡 **The shape of a fast path** (not measured yet): FOR knows when init,
+      limit and step are all exact int16 and the variable is not `%`; NEXT could
+      run the int16 path then, IF it can prove the variable still holds what the
+      last NEXT stored (a body may write `A=A+.5`, row `x.body`) — e.g. by
+      keeping that value's packed bytes in the frame and comparing them, which
+      is cheaper than a BCD add. Promote to the BCD path on int16 overflow (row
+      `x.edge`, A = 32769). 💰 The cheapest exactness test found reads the digits
+      `for_get` already unpacks (`domain_convert_core` leaves them in CVT, with
+      `dexp`): the value is an exact int16 iff dexp ≤ 5 and digits dexp..14 are
+      zero — ~20 B, against main page 1's 5 B read 2026-09-27 after the two speedups. It needs
+      a carve first.
+
+- [x] 🔴 **A `FOR` LOOP IS INT16 ARITHMETIC — `STEP .5`, `FOR A=.5 TO 3`,
       `FOR A=1 TO 40000` and `FOR A=0 TO 1 STEP .1` ALL RUN WRONG, AND FOUR OF THEM
       NEVER END (D-FORFLOAT, found 2026-09-27 by D-DIMRESERVE's stack probe).**
       🎚️ TIER 1 — happy path: a fractional `STEP` and an address loop above
@@ -25163,6 +25225,32 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       "never worse" frame ruling), FOR's once-per-loop body moved to a sub page 1
       tenant to fund NEXT in main, and `FOR_CUR` grown to 25 B in RAM the machine
       confirms free.
+      ✅ **FIXED 2026-09-27 — AGREE 15/15** ([`scratchpad/forfloat_after_run.out`](scratchpad/forfloat_after_run.out);
+      was 4/15). As designed, with two corrections the code forced:
+      • **Main-ROM funded by D-CARVECAS, not by moving FOR to a tenant.** `eval`
+        and the float operators' callers live in main page 1, which a tenant
+        cannot reach, so the FOR body cannot leave; instead the cassette ASCII
+        byte source (`cal_getbyte` + `cas_ascii_setup` + main's `cal_refill`
+        copy) became the `casget` tenant (sub page 1, beside casmatch's own
+        `cal_refill`): page 1 **1 → 113 B**, then D-FORFLOAT spent 79 of it
+        (page 1 34 B, sub page 1 162 B, read 2026-09-27).
+      • **A slot keeps its own type** (`[FACTYP][8]`, 25 B frame) rather than
+        converting to the loop's kind, and a `%` loop's init still takes eval's
+        int16 tail (`FOR A%=1.7` starts at 2 on both references;
+        var_store_fac's own int coercion truncates).
+      `slot_store`/`slot_load` + NEXT through `push_lhs_frame`/`combine_add`/
+      `combine_cmp` ([`basic/program.asm`](basic/program.asm)); `FOR_CUR` moved to
+      `$E09C` in the declared-free remainder of the old FOR stack; `%` overflow
+      is ERR 6 on the NEXT line (`check_expr_errors` right after the store).
+      🟢 **GATED:** `forvar-acceptance` gains ten `x.*` rows (fractional STEP
+      and init, past int16 both ways, the 32769 edge, a negative fraction,
+      single/double accumulation, a body that writes a fraction): **10/10**, the
+      VG-8020 and the CF-3300 agreeing on all ten. **KNIFE K-FF1** (slot_store
+      forced to the int16 tail, ROM hash moved) turns 4 of them red.
+      ⚠️ **THE PRICE, FILED AS D-FORFAST:** `nextkw` 1.64× → **2.37×** the
+      VG-8020 (`forkw` 2.49× → 3.05×) — a default-type loop now runs a BCD add
+      and compare per pass. Inside T2's 10×; kwtime's negative arm had to
+      re-price its delay pad (3000 → 2000 iterations) for the same reason.
 
 - [ ] 📏 **`DIM` KEEPS A 256 B STACK RESERVE THAT THE REFERENCE DOES NOT — a DIM
       leaving ~260 B free is `Out of memory` here and fits on the VG-8020 down to

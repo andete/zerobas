@@ -687,6 +687,9 @@ sub_p1_table:
                 jp      cursor_tenant           ; index 26 (SUBROM_IDX_CURSOR): the
                                                 ;   line editor's block cursor
                                                 ;   (D-CURSORBLOCK, sub/cursor.asm).
+                jp      casget_tenant           ; index 27 (SUBROM_IDX_CASGET): the
+                                                ;   cassette ASCII byte source
+                                                ;   (D-CARVECAS, sub/casmatch.asm).
 
 
 ; --- Page-1 PING (S2a boot-gate tenant) -----------------------------------

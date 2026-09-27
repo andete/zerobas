@@ -84,7 +84,10 @@ follows a named one; nesting DEPTH; the `A`/`A%`/`A$` identity; and — forced b
 * **`FOR A(1)=`** — `Syntax error` on both references, and it must **stay** so.
   Carried as a NEGATIVE control (`f.ary`).
 * **A float-valued loop** (`STEP .5`) — the loop MATH is int16 in this tree by
-  D-D and is not this slice's to change.
+  D-D and is not this slice's to change. ✅ **Changed 2026-09-27 by D-FORFLOAT**
+  ([`spec-basic-forfloat.md`](spec-basic-forfloat.md)): the math is the
+  evaluator's now, typed limit/step slots in a 25 B frame; the §5.3 boundary
+  below is history.
 * **`NEXT A(1)`** — unmeasured; `for_name` parses the name and the `(` then
   reaches statement position, i.e. it inherits the multi-variable residual's
   shape rather than getting an answer of its own.
@@ -327,6 +330,12 @@ c,type_mismatch_error` there would have been 6 bytes spent to produce the wrong
 message. §4.2's type code makes the miss automatic instead.
 
 ### 5.3 The loop MATH is untouched, and that is a boundary not an omission
+
+> 🔴 **SUPERSEDED 2026-09-27 (D-FORFLOAT, [`spec-basic-forfloat.md`](spec-basic-forfloat.md)).**
+> The boundary held for this slice; D-FORFLOAT then measured what it cost
+> (4 of 15 rows agreeing, four loops that never ended) and replaced the int16
+> math. `for_set` no longer forces `FACTYP=2` except for a `%` loop's initial
+> value.
 
 `for_set` still tags the value `FACTYP=2` and the limit/step are still int16.
 D-D deferred a float-valued loop and this slice does not reopen it: what changes

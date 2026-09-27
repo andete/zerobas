@@ -462,11 +462,15 @@ def negative(zb_machine):
     # route -- another reference machine, a mounted image, its own kwargs -- and
     # a route that silently timed the wrong machine or nothing would still print
     # plausible ratios. `lof` is the shortest disk row (~1.2 s on the CF-3300),
-    # so its pad is proportionate: 3000 iterations (~4.9 ms each, measured by
-    # the plain arms) put zerobas's side near 13x, where 200 would not move a
-    # one-second row at all. ⚠️ NOT MORE: 6000 (~29 s) ran past the disk rig's
-    # 20 s capture window and read HANG -- caught, but not the SLOW this arm
-    # asserts, and a HANG would pass for a different reason.
+    # so its pad is proportionate: ~14 s of delay loop puts zerobas's side near
+    # 12x, where 200 iterations would not move a one-second row at all.
+    # ⚠️ NOT MORE: 6000 iterations (~29 s) ran past the disk rig's 20 s capture
+    # window and read HANG -- caught, but not the SLOW this arm asserts, and a
+    # HANG would pass for a different reason.
+    # 🔴 THE PAD IS PRICED IN ITERATIONS, SO IT MOVES WHEN NEXT DOES. It was
+    # 3000 at ~4.9 ms each; D-FORFLOAT (2026-09-27) made a default-type loop
+    # float arithmetic, ~7 ms a pass (`nextkw` 1.64x -> 2.37x the VG-8020), and
+    # 3000 then read HANG. 2000 is the same ~14 s.
     drow = select_rows({"lof"})
     if len(drow) != 1 or GROUP.get("lof") != "disk":
         print("kwtime --negative: expected the disk control row `lof`")
@@ -474,7 +478,7 @@ def negative(zb_machine):
     rows = rows + drow
     ref += [p[0] for p in measure(DISK_REF, drow,
                                   extra=group_kwargs("disk", DISK_REF))]
-    zb += [p[0] for p in measure(zb_machine, drow, pad="FOR Q9=1 TO 3000:NEXT",
+    zb += [p[0] for p in measure(zb_machine, drow, pad="FOR Q9=1 TO 2000:NEXT",
                                  extra=group_kwargs("disk", zb_machine))]
     bad = 0
     for (key, _l, _m, _w), r, z in zip(rows, ref, zb):

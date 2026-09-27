@@ -811,32 +811,14 @@ cas_ascii_load:
 ; it inside block 1 well before a block 2 would ever be asked for).
 ;   out: CF set = data block 1 read failed.
 cas_ascii_setup:
-                ; cal_refill fills "whichever buffer CAL_CURHI is NOT pointing
-                ; at" (cal-refill-body.inc), so set CAL_CURHI to CAL_BUF2's high
-                ; byte FIRST -- that makes this call fill CAL_BUF (block 1),
-                ; TAPION + fill back-to-back so it stays in do_tape_prog's regime.
-                ld      a,CAL_BUF2 >> 8
-                ld      (CAL_CURHI),a
-                call    cal_refill          ; data block 1 leader + slurp 256 bytes
-                ret     c                   ; block 1 unreadable -> CF
-                ; Block 1 is ready. NOW point CAL_CURHI at CAL_BUF (it IS what
-                ; gets served first) and refill AGAIN -- cal_refill will target
-                ; the buffer CAL_CURHI is NOT pointing at, i.e. CAL_BUF2, priming
-                ; block 2 immediately, before ascii_read_lines has tokenised a
-                ; single byte of block 1.
-                ld      a,CAL_BUF >> 8
-                ld      (CAL_CURHI),a
-                call    cal_refill          ; data block 2 leader + slurp 256 bytes
-                ld      a,0                 ; 🔴 NOT `xor a`: cal_refill's CF is
-                                            ; the test on the very next line and
-                                            ; xor would CLEAR it (D-PEEPHOLE).
-                jr      nc,cas_1blk
-                ld      a,1                 ; no block 2 -> a genuine 1-block file
-cas_1blk:
-                ld      (CAL_NEEDFILL),a
-                xor     a
-                ld      (CAL_CNT),a         ; serve CAL_BUF (block 1) from position 0
-                ret                         ; CF clear: block 1 primed OK (own contract)
+                ; 💰 D-CARVECAS: the body (prime block 1, then block 2 at once) is
+                ; the casget tenant's op 1 now (sub/casmatch.asm), beside the sub
+                ; ROM's own cal_refill; it answers A = $FF when block 1 is
+                ; unreadable, and `rra` turns that back into this label's CF.
+                ld      l,1
+                call    casget_call
+                rra                         ; $FF -> CF set, 0 -> CF clear
+                ret
 
 ; --- cas_ascii_drive: run ascii_read_lines off the tape byte source, then restore
 ; the default (disk) source and stop the motor. Shared by cas_ascii_load (LOAD) and
@@ -869,55 +851,19 @@ cas_ascii_drive:
 cal_getbyte:
                 ld      a,(CAL_NEEDFILL)
                 cp      2
-                jr      z,cal_geof          ; a prior drain hit true EOF -> report it now
-                ld      a,(CAL_CURHI)
-                ld      h,a
-                ld      a,(CAL_CNT)
-                ld      l,a                 ; HL = CAL_CURHI's buffer + CAL_CNT
-                ld      a,(hl)              ; A = the byte to return
-                ld      b,a                 ; hold it across the bump (and any swap/refill)
-                ld      a,l
-                inc     a                   ; advance position; 255 -> 0 wraps (8-bit)
-                ld      (CAL_CNT),a
-                jr      nz,cal_srv_ret      ; still within the buffer -> done
-                ; This buffer just drained on the byte in B. Is the OTHER one
-                ; (the read-ahead target) actually holding a block?
-                ld      a,(CAL_NEEDFILL)
-                or      a
-                jr      z,cal_gb_swap
-                ; No -- this was genuinely the last byte on the tape. Return it
-                ; (already read fine) but latch a TERMINAL eof so the very next
-                ; call reports CF without touching either buffer again.
-                ld      a,2
-                ld      (CAL_NEEDFILL),a
-                jr      cal_srv_ret
-cal_gb_swap:
-                ld      a,(CAL_CURHI)
-                xor     CAL_XORHI           ; A = the OTHER (pre-fetched) buffer's high byte
-                ld      (CAL_CURHI),a       ; swap -- CAL_CNT is already 0, correct for it
-                ; Now read AHEAD again: refill the buffer we just swapped OUT of
-                ; (now free) with the block after next. cal_refill targets
-                ; "whichever buffer CAL_CURHI is NOT pointing at", which after the
-                ; swap above is exactly the just-freed one.
-                ld      a,b
-                ld      (CAL_SAVE),a        ; the drained byte must survive TAPIN
-                call    cal_refill
-                ld      a,0                 ; 🔴 NOT `xor a`: cal_refill's CF is
-                                            ; the test below; xor clears carry
-                                            ; (D-PEEPHOLE).
-                jr      nc,cal_gb_flag
-                ld      a,1                 ; no block after next -> fine, EOF stops first
-cal_gb_flag:
-                ld      (CAL_NEEDFILL),a
-                ld      a,(CAL_SAVE)
-                ld      b,a                 ; restore the byte to return
-cal_srv_ret:
-                ld      a,b
-                or      a                   ; CF clear = byte valid
-                ret
-cal_geof:
-                scf                         ; terminal EOF, latched by a prior drain
-                ret
+                scf                         ; terminal EOF, latched by a prior drain:
+                ret     z                   ; answered here, no crossing
+                ; 💰 D-CARVECAS: serving the byte -- and the buffer swap + the
+                ; read-ahead refill on the byte that drains one -- is the casget
+                ; tenant's op 0 (sub/casmatch.asm). A crosses back as the byte, and
+                ; subrom_call's own `or a` is exactly this routine's "CF clear = a
+                ; byte" answer, so the tail needs no conversion. The tape timing
+                ; requirements above are unchanged: the refill still runs
+                ; back-to-back with the drain, one CALSLT later.
+                ld      l,0
+casget_call:
+                ld      ix,SUBROM_ENTRY_BASE_P1 + 3*SUBROM_IDX_CASGET
+                jp      sc_call             ; A = the tenant's answer, CF clear
 
 ; --- cas_in_getbyte: OPEN"CAS:" FOR INPUT byte source (ARL_GETBYTE target) ----
 ; Wraps cal_getbyte with the sequential-file EOF rule: a Ctrl-Z ($1A) in the data
@@ -938,11 +884,10 @@ cig_eof:
                 scf
                 ret
 
-; cal_refill: shared verbatim via basic/cal-refill-body.inc so the sub-ROM
-; casmatch tenant's own duplicate (needed because cas_skip_data's csd_ascii
-; arm moved sub-side, docs/spec-eviction-g5-space.md) can never drift from
-; this resident copy (still used here by cal_getbyte/ascii_read_lines).
-                include "basic/cal-refill-body.inc"
+; cal_refill: NO LONGER RESIDENT (D-CARVECAS). Its only main callers were
+; cal_getbyte's refill and cas_ascii_setup, and both bodies are the casget
+; tenant's now (sub/casmatch.asm), which reaches the sub ROM's own copy of
+; basic/cal-refill-body.inc -- the one casmatch already carried. 32 B.
 
 ; --- disk_prog_load: load a TOKENISED BASIC program from disk ----------------
 ; The disk analogue of do_tape_prog. The FCB at DISK_FCB is fully built (drive
