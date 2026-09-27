@@ -1,6 +1,6 @@
 # D-FCBSHAPE — the MSX FCB layout for file channels
 
-Status: **design, not started** (2026-09-26). TODO item D-FCBSHAPE, TIER 4.
+Status: **design, not started** (2026-09-26); §4 ruled (a) 2026-09-27. TODO item D-FCBSHAPE, TIER 4.
 Ruled by Joost 2026-09-16: *"I think this means we need to change to the MSX's
 FCB shape."* Filed as TIER 4 on 2026-09-26.
 
@@ -48,7 +48,12 @@ missing `VARPTR` form.
 - **The 50 B of disk-engine state leave the block.** The reference's own answer
   is the +1..+2 pointer into the disk ROM's work area.
 
-## 4. The choice for the disk build — 🙋 Joost's
+## 4. The choice for the disk build — RULED (a) by Joost, 2026-09-27
+
+**Ruled: (a), the fixed disk table** — the reference's shape. The disk build
+pays ~800 B of boot `FRE(0)`; per channel and per `OPEN` match the reference.
+The options as they were put:
+
 
 The diskless build needs no engine state for its devices (CRT:, LPT:, GRP:,
 CAS:), so for it the change is a pure gain of 39 B a channel. The disk build

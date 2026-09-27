@@ -221,7 +221,7 @@ item — do **one item per session** to keep context lean.
       REFERENCE'S LOOP IS **PER SECTOR** — SO THE SLICE THAT WAS BUILT IS THE
       WRONG SHAPE.**
       🎚️ TIER 2 — reasonable time, on `LOAD`.
-      🙋 **NEEDS-JOOST** — a far better-posed question than before.
+      ~~🙋 **NEEDS-JOOST**~~ — a far better-posed question than before.
       MEASURED 2026-09-19 (D-HOOKCOUNT, `scratchpad/hookcount_probe.py`,
       §6.6r): two independent runs, every figure identical, three controls green.
       🔴 **THE METHOD WAS THE PROBLEM ALL ALONG.** Un-claiming a cell is a
@@ -493,6 +493,11 @@ item — do **one item per session** to keep context lean.
       `disk_probe_save_ascii` 42 — all differential against the CF-3300 and
       identical; `mergewin_probe.py` CLEAN on both fixtures with its control
       firing 258 / 1898.
+      🔁 **RE-MARKED 2026-09-27 — THE 🙋 AT THE TOP IS STALE.** Step 9 shipped
+      2026-09-20, step 11 2026-09-21, and step 10 (`OPEN`) was APPROVED by Joost
+      2026-09-22 (*"yes, we need to do this"*). Its blocker is RAM, and the lever it
+      names — PAINT's span stack — was ruled RE-ARCHITECT on 2026-09-27.
+      🤖 **AUTONOMOUS** — ruled above; price it from a clean tree, carve first.
 
 - [x] 🟢 **STEP 13: DELETE THE THREE-ROM ROUND TRIP THE PORTED DISK VERBS STILL
       MAKE — CLOSED 2026-09-21, ALL FOUR SLICES SHIPPED**
@@ -2101,10 +2106,16 @@ item — do **one item per session** to keep context lean.
       program near exhaustion reads different `FRE(0)` values and reaches `Out
       of memory` at a different nesting depth (zerobas ~2.3× deeper in `FOR`,
       slightly shallower in `GOSUB`).
-      🙋 **BACK TO JOOST (the rung's rule: adjustments are his):** make the
+      ~~🙋 **BACK TO JOOST (the rung's rule: adjustments are his):** make the
       frames CHARGE what the reference's do (25 / 7 / 14 — padding the FOR
       frame by 14 B wastes RAM to match), or accept the three as a stated
-      divergence. ➡️ Graphics (PAINT's stack) and file I/O (`MAXFILES`, now
+      divergence.~~ 🏗️ **RULED BY JOOST 2026-09-27: SHRINK OURS ONLY** — shrink only a frame
+      where zerobas is BIGGER, so it is never worse than the reference. That is
+      GOSUB alone (8 → 7 B). FOR (11 vs 25) and DEF FN (13 vs 14) are already
+      smaller here and stay. ⚠️ The question as asked wrongly listed FN as
+      bigger too; the ruling's rule ("never worse") decides it, and FN is
+      already inside it. 🤖 **AUTONOMOUS now**: GOSUB's frame 8 → 7 B,
+      re-measured with `scratchpad/fremops_probe.py`. ➡️ Graphics (PAINT's stack) and file I/O (`MAXFILES`, now
       D-FCBSHAPE) are still unmeasured here. ➡️ PAINT's stack is ALREADY FILED
       and characterised — "PAINT's SPAN STACK IS A FIXED ARRAY" (TIER 3, 🙋
       NEEDS-JOOST: a fixed 120-span cap against the reference's STKTOP-bound
@@ -2473,7 +2484,7 @@ item — do **one item per session** to keep context lean.
 - [ ] 🧮 **THERE IS NO SINGLE RAM MAP, AND THAT IS WHAT MAKES EVERY RAM QUESTION
       EXPENSIVE** — Joost, 2026-09-21: *"Don't you have a single RAM map?"*
       🎚️ TIER 2 — reasonable time; it is apparatus, and it gates steps 10-11.
-      🙋 **NEEDS-JOOST** — only on WHEN. He raised it while step 11's port was
+      ~~🙋 **NEEDS-JOOST**~~ — only on WHEN. He raised it while step 11's port was
       the queued work and said which to spend next is his call; the work itself
       needs no ruling.
       🔴 **THE EVIDENCE IS §6.6ar.** `tools/ram_map.py` offered 22
@@ -2876,14 +2887,23 @@ item — do **one item per session** to keep context lean.
       ⚠️ The 16 parked spans in `disk.rom` were the wrong shape for a per-sector
       service; against the measured whole-loop shape they deserve a fresh look
       rather than automatic retirement.
+      🔁 **RE-MARKED 2026-09-27 — THE 🙋 ("only on WHEN") IS STALE.** The map
+      shipped (`tools/ram_map.py`) and has a gate (D-RAMGATE, `make
+      ram-map-check`); what is left here is the ⚠️ residual list above.
+      🤖 **AUTONOMOUS** — ruled above; price it from a clean tree, carve first.
 
 - [ ] 🔴 **PAINT's SPAN STACK IS A FIXED ARRAY; THE REFERENCE'S GROWS DOWN FROM
       `STKTOP` — A DIVERGENCE NO ROW COVERS, AND THE BIGGEST RAM LEVER WE HAVE.**
       🎚️ TIER 3 — COMMON ERRORS. The divergence only shows at the capacity edge
       or under a low `CLEAR ,addr`; no happy path depends on it.
-      🙋 **NEEDS-JOOST** — it re-architects a shipped, well-gated feature
+      ~~🙋 **NEEDS-JOOST** — it re-architects a shipped, well-gated feature
       (`sub/graphics.asm` G5), and the reason to do it now is a RAM shortage in a
-      different subsystem. Whether that is worth the risk is his call, not mine.
+      different subsystem. Whether that is worth the risk is his call, not mine.~~
+      🏗️ **RULED BY JOOST 2026-09-27: RE-ARCHITECT — GROW BELOW SP.** The span stack gets its
+      own cursor below SP with an overflow test against the control-frame pool,
+      the 360 B array goes, and the acceptance row is the same fill at two
+      HIMEMs on both machines. 🤖 **AUTONOMOUS now**, sub-ROM carve first.
+      🤖 **AUTONOMOUS** — ruled by Joost 2026-09-27 (above); a carve comes first.
       🎯 **RAISED BY JOOST 2026-09-20:** *"I was wondering about it because if
       we'd use the plain stack we wouldn't need a dedicated region."* Correct,
       and the record supports it more strongly than the question assumed.
@@ -3345,7 +3365,7 @@ item — do **one item per session** to keep context lean.
       that made this readable was sweeping a knob that should not matter — and
       finding that it does.
 
-- [ ] 🛑 **SUPERSEDED — kept for its reasoning, but its CAUSE was wrong (see the
+- [x] 🛑 **SUPERSEDED — kept for its reasoning, but its CAUSE was wrong (see the
       18-hook item above): `$FE5D` and the file-buffer-0 reading.**
       🎚️ TIER 2 — reasonable time, on `LOAD`.
       🙋 **NEEDS-JOOST** — his ruling (§6.6m) said *"the reference is the better
@@ -3440,6 +3460,8 @@ item — do **one item per session** to keep context lean.
       for `OPEN`, `MERGE` and `SAVE`; an unrecognised selector already returns
       `CF=0` so main carries on. Each arm is one more test against `ret nz`.
       The measurement behind it (2026-09-19, D-LOADHOOK,
+      🔁 **CLOSED 2026-09-27 — SUPERSEDED, as its own title says.** The `$FE5D` +
+      selector ruling it asked about was taken and step 9 shipped on it.
 
 - [x] ✅ **DONE 2026-09-19 (D-DISKDEAD): `disk.rom` NOW HAS A DEAD-CODE SWEEP,
       AND ITS FIRST RUN FOUND THE 109 B IT WAS BUILT FOR.**
@@ -3558,7 +3580,7 @@ item — do **one item per session** to keep context lean.
       RAM — THE "NEVER WHILE BASIC IS LIVE" PREMISE IS GOING STALE.**
       🎚️ TIER 2 — it is a correctness constraint on the disk-code eviction, not
       an apparatus nicety.
-      🙋 **NEEDS-JOOST** — it changes what step 9 must buy, so it belongs with
+      ~~🙋 **NEEDS-JOOST**~~ — it changes what step 9 must buy, so it belongs with
       the `$FE5D` decision rather than ahead of it.
       Found 2026-09-19 (D-RAMABI) while carrying widths into the generated ABI;
       INDEPENDENT of which cell step 9 ends up claiming
@@ -3584,6 +3606,10 @@ item — do **one item per session** to keep context lean.
       disk-side stream a buffer that does not alias main's live workspace.
       `disk.rom` had free space at the last reading, so it may simply be
       affordable — but that is a measurement, not a claim.
+      🔁 **RE-MARKED 2026-09-27 — THE 🙋 IS STALE.** It waited on the `$FE5D`
+      decision, which was taken (step 9 shipped on it, 2026-09-20). The hazard
+      itself is step 10's to SOLVE (the item above says so).
+      🤖 **AUTONOMOUS** — ruled above; price it from a clean tree, carve first.
 
 - [ ] 🔴 **`refcache-check` GOES RED ON THE CALENDAR, AND THE RETRY ARM CALLS IT
       "REAL".**
@@ -5947,7 +5973,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:25486 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:25566 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -6113,7 +6139,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:10944 (T-6FE392)8 (T-529ABE)` from `TODO.md:23140 (T-529ABE)`: a
+      `TODO.md:10973 (T-6FE392)8 (T-529ABE)` from `TODO.md:23212 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -8407,10 +8433,13 @@ list. **When a slice lands, grep this list for what it just shipped.**
       the only one reachable solely from `dispatch_line`'s pre-tokenise match.
       🎚️ TIER 6 — the error IS raised and is the right error; what differs is the
       line attribution on `CONT`
-      🙋 NEEDS-JOOST — TIER 5, and the fix touches a path whose comment records a
+      ~~🙋 NEEDS-JOOST~~ — TIER 5, and the fix touches a path whose comment records a
       DELIBERATE design choice (`print_msg` instead of `raise_error`, to keep the
       prompt case from jumping into a finished program), so it is worth his eye
       before it is changed rather than a quiet edit.
+      🏗️ **RULED BY JOOST 2026-09-27 (his "ask me in detail" pass): YES — ADD THE LINE IN-PROGRAM.** Raise with the line when CONT
+      runs inside a program; keep the deliberate `print_msg` path for the prompt.
+      🤖 **AUTONOMOUS** — ruled above; price it from a clean tree, carve first.
 
 - [x] ✅ **D-MERGERET (2026-09-12): `MERGE` AND `LOAD` BOTH FAILED TO RETURN TO
       COMMAND LEVEL — and the sweep the item asked for is what found the SECOND
@@ -10973,7 +11002,10 @@ list. **When a slice lands, grep this list for what it just shipped.**
       Each touches a load-bearing subsystem whose internal invariant has no
       external oracle — which is why this is now 🙋 and not 🤖.
       🎚️ TIER 6 — which of two applicable errors wins (`String too long` precedence)
-      🙋 **NEEDS-JOOST** — a refactor of the string heap's ownership rules.
+      ~~🙋 **NEEDS-JOOST**~~ — a refactor of the string heap's ownership rules.
+      🏗️ **RULED BY JOOST 2026-09-27 (his "ask me in detail" pass): YES — THE OWNERSHIP REFACTOR.** The length check must see the
+      operands before any copy; design around the GC hazard above.
+      🤖 **AUTONOMOUS** — ruled above; price it from a clean tree, carve first.
 
 - [x] 🟢 **THE MISSING-OPERAND HALF: `5+` READS ERR 24 WHERE BOTH REFERENCES SAY
       ERR 2 — ENUMERATED 2026-08-29, AND THE PRICE IS THE REASON IT IS NOW 🙋**
@@ -11788,7 +11820,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:23140 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:23212 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -14840,10 +14872,14 @@ list. **When a slice lands, grep this list for what it just shipped.**
       🔁 **PARKED (Joost, 2026-09-10): every TIER 5 item waits until TIERS 1–4 are clean, and
       *"when we get to TIER 5, we'll have to do a prioritization together"* —
       the TIER 5 order is a joint pass, not the loop's pick.
-      🙋 NEEDS-JOOST — over the 20 B cap, and the only thing still open here.
+      ~~🙋 NEEDS-JOOST~~ — over the 20 B cap, and the only thing still open here.
       `OPEN "file" AS 1` is idiomatic BASIC that works on the reference and is a
       Syntax error here; the design is read out of the code, needs no sub-ROM
       change, and `make asciidigit-acceptance` holds both rows either way.
+      🏗️ **RULED BY JOOST 2026-09-27 (his "ask me in detail" pass): YES — FIX `OPEN"f"AS 1` / `NAME ... AS 5`, carve first.** The
+      ASCII-digit arm in `ev_f`, as designed above; `asciidigit-acceptance`'s two
+      pins flip to agreement and are deleted.
+      🤖 **AUTONOMOUS** — ruled above; price it from a clean tree, carve first.
 
 - [x] ✅ **A TRAP HANDLER LEFT WITHOUT ITS `RETURN` IS PERMANENTLY DEAD — AND
       THAT IS FAITHFUL** ~~; WHAT IS NOT IS THE SIX-EVENT CAP~~ — **the cap half
@@ -16344,8 +16380,12 @@ list. **When a slice lands, grep this list for what it just shipped.**
       🔁 **PARKED (Joost, 2026-09-10): every TIER 5 item waits until TIERS 1–4 are clean, and
       *"when we get to TIER 5, we'll have to do a prioritization together"* —
       the TIER 5 order is a joint pass, not the loop's pick.
-      🙋 NEEDS-JOOST — the ~99 B array he authorised is refuted; the pool route
+      ~~🙋 NEEDS-JOOST~~ — the ~99 B array he authorised is refuted; the pool route
       needs no RAM but is a slice across four files, and that is a bigger yes.
+      🏗️ **RULED BY JOOST 2026-09-27 (his "ask me in detail" pass): YES — THE POOL ROUTE.** Evaluate every actual into the control
+      pool before binding (`docs/spec-deffn-alias.md`). ⚠️ The 503-vs-505 reading
+      quoted to him is 2026-08-27's; re-run it on today's ROM before building.
+      🤖 **AUTONOMOUS** — ruled above; price it from a clean tree, carve first.
 
 - [x] ⚠️ **`DEF FN`: a STRING formal's shadow slot is not a GC root.** Filed
       2026-08-22 by D-DEFFN,
@@ -17060,7 +17100,11 @@ finds zero shared names (a renamed block would otherwise make it silently blind)
       layout, today's block (its 50 B are ALL disk-engine state; the address is
       derived in ONE place, sub op 18), the target, slices, and the walls
       (sub page 1 was 0 B free, clean build 2026-09-26 — a carve first).
-      🙋 **NEEDS-JOOST — the disk build's engine-state home (spec §4):** (a) a
+      ~~🙋~~ 🏗️ **RULED BY JOOST 2026-09-27: (a), THE FIXED DISK TABLE** — the reference's
+      shape; the disk build pays ~800 B of boot `FRE(0)` for it. 🤖 **AUTONOMOUS
+      now** (slices S1–S3, spec §6), carve first.
+      🤖 **AUTONOMOUS** — ruled by Joost 2026-09-27 (above); a carve comes first.
+      Was: **NEEDS-JOOST — the disk build's engine-state home (spec §4):** (a) a
       fixed table in the disk work area behind the FCB's +1 pointer — the
       reference's shape; costs the disk build ~800 B of boot `FRE(0)` (it leads
       the CF-3300 by ~635 B today) — or (b) allocate per disk OPEN (OPEN then
@@ -17212,6 +17256,9 @@ finds zero shared names (a renamed block would otherwise make it silently blind)
       ~~⛔ **BLOCKED** — **PARKED BY JOOST, 2026-09-24: *"Park it."*** The
       `rigstick` tool stays in the tree, untouched and out of the battery;
       nothing here is picked up until he un-parks it.~~ Un-parked 2026-09-26.
+      🔌 **JOOST, 2026-09-27: *"I'll tell you when"*** — the windowed I/O-trace
+      session waits for him to plug the board in and say go; ask, never start
+      it unprompted, and say when he may unplug.
       ⛔ **WHAT REMAINS IS `PAD`'s SWITCH, AND IT NEEDS A WINDOW** — the
       touchpad's switch is a host MOUSE BUTTON, and openMSX takes touchpad and
       paddle input only from mouse events on its own window (D-RIGFW (2),
@@ -17959,12 +18006,17 @@ finds zero shared names (a renamed block would otherwise make it silently blind)
       🔁 **PARKED (Joost, 2026-09-10): every TIER 5 item waits until TIERS 1–4 are clean, and
       *"when we get to TIER 5, we'll have to do a prioritization together"* —
       the TIER 5 order is a joint pass, not the loop's pick.
-      🙋 **NEEDS-JOOST — and the measurement argues for DECLINING.** The window is
+      ~~🙋 **NEEDS-JOOST~~ — and the measurement argues for DECLINING.** The window is
       unobservable to any program that executes one statement first; the gate rows
       already accommodate it explicitly (`SETTLE`); and reproducing it means
       matching a transient whose rule is still unnamed, in `playsvc.asm`'s
       interrupt servicer. **Worth-it is the question, and it is yours** — the
       measuring the item asked for is done.
+      🏗️ **RULED BY JOOST 2026-09-27 (his "ask me in detail" pass): DECLINE.** The start-up transient is not reproduced; a STATED
+      DIVERGENCE, and the gate rows' `SETTLE` stays as the visible accommodation.
+      🔁 **STANDING** — kept OPEN only so its two pins (`playfn_fixture_probe`,
+      `playmusicf_probe`) stay cited and swept: a declined divergence with live
+      pins is standing, not closed (closing it orphaned them — `filed-pin-check`).
 
 - [ ] ⚠️ **The bare-`jp raise_error` carve family is worth ~2 B, and the reason
       is worth more than the bytes.** Filed 2026-08-22 by D-DUPSPAN,
@@ -21006,10 +21058,14 @@ finds zero shared names (a renamed block would otherwise make it silently blind)
       still the charter answer — but it is not the safety answer I implied
       [[a-justification-parenthesis-is-an-unrun-claim]].
       🎚️ TIER 6 — `OPEN` of the same file on two channels is accepted here, refused on the CF-3300
-      🙋 **NEEDS-JOOST — the measuring is DONE, the spend is yours.** 165 B of
+      ~~🙋 **NEEDS-JOOST~~ — the measuring is DONE, the spend is yours.** 165 B of
       RAM to make zerobas refuse what it currently permits, mirroring a
       per-channel verbatim name the reference is now measured to keep.
       [[deffn-ramhunt-slice]]
+      🏗️ **RULED BY JOOST 2026-09-27 (his "ask me in detail" pass): FOLD INTO D-FCBSHAPE.** Refuse like the reference (its exact
+      verbatim-name rule) once channels have the MSX FCB shape, where the name has
+      a home — not as a separate ~165 B spend now. Picked up with D-FCBSHAPE's slices.
+      🤖 **AUTONOMOUS** — ruled above; price it from a clean tree, carve first.
 
 - [x] 🟢 **(superseded, kept for its row work) A SECOND DISK `OPEN` RAISES A
       SPURIOUS `Syntax error` — THE OPEN
@@ -21413,7 +21469,14 @@ finds zero shared names (a renamed block would otherwise make it silently blind)
       the shared buffer — crash-safety kept, unlike the 🙋 stamp trade) lands
       in `fat_rand_put`, which is built into main page 1 AND sub page 1, and
       those walls read 5 B and 0 B free (clean build 2026-09-27). It needs an
-      absolute carve in both first. The directory-stamp half stays 🙋.
+      absolute carve in both first. ~~The directory-stamp half stays 🙋.~~
+      🏗️ **RULED BY JOOST 2026-09-27: FAITHFUL — STAMP AT CLOSE.** Drop the per-`PUT`
+      directory stamp and buffer the record sector like the reference: faster
+      and bug-for-bug faithful, and zerobas KNOWINGLY gives up D-PUTCUT's crash
+      safety (a cut after `PUT` will leave the reference's dangling 0-byte
+      entry). 🤖 **AUTONOMOUS now**; the acceptance rows are D-PUTCACHE's
+      same-record / different-sector ladders and D-PUTCUT's crash image, which
+      must now MATCH the CF-3300's.
 
       ⬇️ **THE ORIGINAL FILING FOLLOWS, KEPT BECAUSE ITS ROW WORK IS SOUND** —
       every characterisation below (PUT count, not layout; survives CLOSE; not
@@ -21823,7 +21886,12 @@ finds zero shared names (a renamed block would otherwise make it silently blind)
       🔁 **PARKED (Joost, 2026-09-10): every TIER 5 item waits until TIERS 1–4 are clean, and
       *"when we get to TIER 5, we'll have to do a prioritization together"* —
       the TIER 5 order is a joint pass, not the loop's pick.
-      🙋 NEEDS-JOOST — a call that is yours to make (refactor, no oracle).
+      ~~🙋 NEEDS-JOOST~~ — a call that is yours to make (refactor, no oracle).
+      🏗️ **RULED BY JOOST 2026-09-27 (his "ask me in detail" pass): YES — POINT AT PROGRAM TEXT.** A READ DATA literal's
+      descriptor points into the program like the reference's; a string body in
+      text must be copied out before the program is edited, NEW'd or loaded over.
+      🤖 **AUTONOMOUS** — ruled above; price it from a clean tree, carve first.
+
 - [x] 🟡 **`load error` IS PRINTED, NOT RAISED — ✅ FIXED AT ALL SIX MISSING-FILE
       VERBS (D-LOADERR-FIX 2026-08-20, 16 B; D-BLNF 2026-08-21, `BLOAD`, 4 B main
       + 12 B sub). WHAT REMAINS IS ONE ROW AND IT IS A DIFFERENT FACE.**
@@ -22049,7 +22117,7 @@ finds zero shared names (a renamed block would otherwise make it silently blind)
       and **`d.huge` still ERR 7 on both — the ceiling still EXISTS**, which a
       change that removed the bound entirely would have passed.
 
-- [ ] 🙋 **THE LAST FIELD ROW (`e.val`) NEEDS DESCRIPTOR-BASED BINDING, AND IT IS
+- [x] 🙋 **THE LAST FIELD ROW (`e.val`) NEEDS DESCRIPTOR-BASED BINDING, AND IT IS
       THE ROW WHERE THE REFERENCE IS WORSE.** Filed 2026-09-01 after D-FLDCLOSE
       shipped (`CLOSE` matches the reference on 8 of 9 rows).
       After `CLOSE` + reopen + `FIELD#1,10 AS C$` + `LSET C$="ZZZZZZZZZZ"`:
@@ -22069,6 +22137,10 @@ finds zero shared names (a renamed block would otherwise make it silently blind)
       the TIER 5 order is a joint pass, not the loop's pick.
       🙋 NEEDS-JOOST — the measuring is done (9 rows, both machines, mechanism
       identified); what is left is whether to reproduce a silent aliasing bug.
+      🏗️ **RULED BY JOOST 2026-09-27 (his "ask me in detail" pass): SANE — KEEP OURS.** `FLD_TAB` binding stays; a stale fielded
+      variable reads empty after CLOSE where the CF-3300 silently reads another
+      channel's data. A STATED DIVERGENCE; closed.
+
 - [x] 🟢 **THE REFERENCE PRINTS A DISK-ROM BANNER LINE AND ZEROBAS PRINTS NONE.**
       Noticed 2026-09-01 by Joost while reviewing the main banner.
       | | reference (CF-3300) | zerobas |
@@ -24671,7 +24743,15 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
 - [ ] 🎚️ **T6 — WHAT BOUNDS "THE EXHAUSTIVE ERROR SET"? THE ONE RUNG STILL
       WITHOUT A DEFINITION (split from D-KWPROVEN, 2026-09-24).**
       🎚️ TIER 1 — it is part of the bar every other item is measured against.
-      🙋 **NEEDS-JOOST** — rung definitions are charter-level. T2, T4 and T5
+      🏗️ **RULED BY JOOST 2026-09-27: THE REFERENCE'S ERRORS, DOCUMENTED FORMS.** A keyword
+      proves T6 when, for each documented syntax form, it has one row per
+      distinct error the reference raises for that form (wrong type, out of
+      range, missing argument, illegal direct, …), each matching the reference's
+      error CODE and LINE. Finite per keyword, enumerable by probing the
+      reference. 🤖 **AUTONOMOUS now**: build the T6 row type (same shape as
+      D-KWPROVEN's T2/T5) and its per-keyword enumeration.
+      🤖 **AUTONOMOUS** — ruled by Joost 2026-09-27 (above); a carve comes first.
+      Was: 🙋 **NEEDS-JOOST** — rung definitions are charter-level. T2, T4 and T5
       were ruled on 2026-09-24; T6 was not addressed and stays open. The
       question: the set of errors a keyword can raise has no obvious finite
       bound, so what row set would count as having PROVED it — every error
@@ -25483,7 +25563,7 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       carries it. Both read `[C2]`; the knife (`CONT:contkw`) moves it to
       UNREADABLE — LOAD-BEARING. ⚪ UNPROVEN is now **empty**.
 
-- [ ] **`LOAD"CAS:"` ACCEPTS A TOKENISED TAPE; the reference does not return.**
+- [x] **`LOAD"CAS:"` ACCEPTS A TOKENISED TAPE; the reference does not return.**
       Found 2026-08-03 by D-DOTGAPS (§1.2). With only a $D3 file on the tape the
       VG-8020 printed no `Found:` and no error and sat there — it searches past
       a non-ASCII header to the end of the tape and waits. zerobas answers, via
@@ -25507,6 +25587,8 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       direction, which is why ties go to 🙋.
       🎚️ TIER 6 — `LOAD"CAS:"` accepts what the reference hangs on
       🙋 NEEDS-JOOST — bug-for-bug fidelity here costs a working feature; that trade is his call.
+      🏗️ **RULED BY JOOST 2026-09-27 (his "ask me in detail" pass): KEEP THE FEATURE.** zerobas keeps loading a tokenised tape via
+      `LOAD"CAS:"`; the reference's hang is a STATED DIVERGENCE. Closed.
 
 - [x] 🔴 **A LINE STORE IS BOUNDED BY THE CONSTANT `TXTMAX`, NOT BY HIMEM.**
       Found 2026-08-03 by D-DOTGAPS (§4.2/§6 D4). After
@@ -28113,7 +28195,7 @@ and left 37 B behind.
       🎚️ BUDGET — NO-ORACLE bucket
       🤖 AUTONOMOUS — the reference or a gate settles it; finishable unattended (no his-decision signal found).
 
-- [ ] **zerobas' `VALTYP $E0C8` READS `$FF` AT COLD BOOT — ✅ CAUSE MEASURED
+- [x] **zerobas' `VALTYP $E0C8` READS `$FF` AT COLD BOOT — ✅ CAUSE MEASURED
       2026-08-21 (D-VALTYP), FIX PRICED AT 3 B AND DECLINED.**
       [`docs/valtyp-coldram-notes.md`](docs/valtyp-coldram-notes.md).
       🎯 **IT IS POWER-ON RAM, NOT A WRITE.** Read as a WINDOW instead of one
@@ -28151,6 +28233,8 @@ and left 37 B behind.
       *"when we get to TIER 5, we'll have to do a prioritization together"* —
       the TIER 5 order is a joint pass, not the loop's pick.
       🙋 NEEDS-JOOST — a call that is yours to make (charter / scope).
+      🏗️ **RULED BY JOOST 2026-09-27 (his "ask me in detail" pass): KEEP DECLINED.** Reopen only for a caller that reads VALTYP
+      before writing it. Closed.
 
 - [ ] ⚠️ **THE `--say` SURFACE IS STILL UN-GATED OUTSIDE `ONLY=lnrd-`.** Split
       out 2026-08-09 from the `dir-name` item above, whose *payload* is now green

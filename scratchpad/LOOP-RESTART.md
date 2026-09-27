@@ -30,6 +30,34 @@ symmetric. Treat that group as closed-by-measurement unless a new signal appears
 | PLAY X shape | *"Tenant walks the chain"* — the MML tenant reads the variable chain in RAM itself (spec-basic-audio-play §7.12); main ~0 B, no carve needed |
 | the rig | Joost's RP2040-Zero is **CONNECTED to the laptop since 2026-09-25** (`/dev/cu.usbmodem1101`, running firmware, not BOOTSEL; seen read-only, nothing flashed). **UN-PARKED 2026-09-26 and FLASHED with `tools/rigfw/rigfw.ino`:** headless joystick WORKS (bind `msxjoystick1_config` to `joy1`, which this install leaves EMPTY); headless mouse does NOT reach PAD/PDL. Next: STICK/STRIG rows — the rig item in TODO |
 
+### 🏗️ JOOST'S RULINGS 2026-09-27 (morning, his "ask me in detail" pass) — READ THIS FIRST, DO NOT RE-ASK
+
+The queue the night loop stopped on is OPEN again: every 🙋 in TIERS 1–6 is ruled.
+
+| item | ruling |
+|---|---|
+| D-FCBSHAPE §4 | **(a) the fixed disk table** — disk build pays ~800 B boot `FRE(0)` |
+| duplicate `OPEN` of one file | **fold into D-FCBSHAPE** — refuse like the reference once the FCB holds the name |
+| RAM frame economy | **shrink ours only** → GOSUB 8 → 7 B (FOR and FN are already smaller; the question wrongly listed FN) |
+| PAINT span stack | **re-architect: grow below SP** — frees the 360 B array; unblocks step 10's RAM |
+| `PUT` directory stamp | **faithful: stamp at CLOSE** — knowingly gives up D-PUTCUT's crash safety |
+| T6 rung | **the reference's errors, per documented form** (code AND line) |
+| `OPEN"f"AS 1` / `NAME..AS 5` | **fix it**, carve first |
+| DATA literal strings | **point at program text** (copy out before edit/NEW/load) |
+| DEF FN actual scope | **the pool route** — re-run 503-vs-505 on today's ROM first |
+| `String too long` precedence | **the ownership refactor** |
+| `CONT` in a program | **add the line** in-program; keep the prompt's `print_msg` |
+| FIELD `e.val` | **keep ours** (stated divergence, closed) |
+| `LOAD"CAS:"` tokenised tape | **keep the feature** (stated divergence, closed) |
+| `PLAY(n)` transient | **decline** (closed) · VALTYP at cold boot: **keep declined** (closed) |
+| PAD touchpad | **"I'll tell you when"** — wait for him to plug the board in and say go |
+
+Four TIER 2 🙋 markers were STALE when read (step 9/10's, the `$FE5D` one —
+closed as superseded — the RAM map's, and the hook-FAT hazard's); re-marked.
+⚠️ Almost every ruled item needs ROM bytes, and the walls are main page 1 5 B,
+low 5 B, sub p0 16 B, sub p1 0 B (clean build 2026-09-27): **carve first**,
+lowest tier first — T6's row type (TIER 1) and GOSUB's frame (TIER 4) lead.
+
 ### 🌙 LOOP 2026-09-27, 02:00 → (after the section below) — READ THIS FIRST
 
 Shipped: `2c8343ad` rigcap/cf3300_arch headless + the sweep refuses a windowed
