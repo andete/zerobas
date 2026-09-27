@@ -6019,7 +6019,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:26300 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:26330 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -24979,6 +24979,13 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       first word (`NOECHO:Illegal` …); `row_t6_code` steps over a leading
       `NOECHO:` itself (the shared prefix parser does not, on purpose).
       📊 **T6 75 → 90 of 159** (tier sheet, knife re-pinned on the final ROM).
+      🟢 **7b (same night): CIRCLE and PAINT, once their three unread cases were
+      read ALONE** ([`scratchpad/t6enum_b7_rerun.out`](scratchpad/t6enum_b7_rerun.out)):
+      `PAINT(1,1),1,16` is a slow fill that completes and `CIRCLE(99,99),-5` a
+      huge circle that completes after MINUTES — neither an error — while
+      `PAINT(1,1),1,1,1` is 2, which the batch window had missed. 18 rows, 17
+      SUPPORTED; **T6 90 → 91** (PAINT). CIRCLE stays T6- on a real divergence,
+      D-CIRCANGLE, and zerobas's negative-radius refusal is D-CIRCNEGR.
       🔮 Predicted +17 keywords, got +15: `ON GOTO` / `ON GOSUB` are composites
       the sheet scores in its composite table, and PAD and PLAY are held by
       their own open items.
@@ -25402,6 +25409,29 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       check comes after the action (CLS) or never (END). Blocks CLS and END's T6.
       ➕ **`STOP 1` too (batch 7, `t7stopbreak2` EXTRA):** the VG-8020 raises
       `Syntax error`, zerobas breaks as if the `1` were not there. Blocks STOP's T6.
+
+- [ ] 🔴 **`CIRCLE` ACCEPTS AN ARC ANGLE PAST 2π — `CIRCLE(99,99),5,1,7` DRAWS
+      HERE AND IS `Illegal function call` ON THE REFERENCE (D-CIRCANGLE, found
+      2026-09-27 by T6 batch 7b).**
+      🎚️ TIER 6 — `CIRCLE`'s start/end angle out of range
+      🤖 **AUTONOMOUS** — the reference settles it; the parse is the
+      `circleparse_tenant` (sub page 1).
+      `t7circlearc5` reads `Illegal function call in 10` on the VG-8020 and
+      nothing on zerobas, which draws; alone, `…,5,1,7`, `…,5,1,6.3` and the END
+      angle `…,5,1,1,7` are all 5 on the reference (6.3 > 2π) and all accepted
+      here ([`scratchpad/t6enum_b7_rerun.out`](scratchpad/t6enum_b7_rerun.out) has
+      the negative-radius half; these three are the same session's run).
+      Blocks CIRCLE's T6 (the `arc` form's code 5 has no agreeing case).
+
+- [ ] 🔴 **`CIRCLE(99,99),-5` IS `Illegal function call` HERE AND DRAWS ON THE
+      REFERENCE (D-CIRCNEGR, found 2026-09-27 by T6 batch 7b).**
+      🎚️ TIER 6 — `CIRCLE` with a negative radius
+      🤖 **AUTONOMOUS** — the reference settles it.
+      [`scratchpad/t6enum_b7_rerun.out`](scratchpad/t6enum_b7_rerun.out): the
+      VG-8020 accepts it and draws for MINUTES (a radius read as unsigned, a
+      huge clipped circle) before `[OK]`; zerobas refuses at once with 5. Not a
+      T6 blocker — the reference raises nothing there — and matching it means
+      matching a very slow draw, so the fix is worth measuring before choosing.
 
 - [ ] 🔴 **`DEF USR=70000` IS ACCEPTED HERE AND `Overflow` ON THE REFERENCE
       (D-DEFUSRRANGE, found 2026-09-27 by T6 batch 7).**

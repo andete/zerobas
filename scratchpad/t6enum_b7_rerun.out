@@ -1,0 +1,17 @@
+D-KWT6 batch 7 -- the three cases that gave NO READING in scratchpad/t6enum_b7.out,
+re-run ALONE on 2026-09-27 with t6enum_probe.program() (ON ERROR GOTO 90 / the
+case / [OK] or [ERR ERL], reported in SCREEN 0) and a longer run window.
+
+VG-8020 (Philips_VG_8020), run_gap 60 s:
+  SCREEN 2:PAINT(1,1),1,16      -> OK        a slow fill; border 16 is accepted
+  SCREEN 2:PAINT(1,1),1,1,1     -> (2, 20)   Syntax error -- PAINT border-colour gains 2
+  SCREEN 2:CIRCLE(99,99),-5     -> no reading at 60 s (still in SCREEN 2, drawing)
+VG-8020, run_gap 600 s:
+  SCREEN 2:CIRCLE(99,99),-5     -> OK        completes after minutes: a huge circle, no error
+
+zerobas (C-BIOS_MSX1_EU_REPACK_NODISK), run_gap 600 s:
+  SCREEN 2:CIRCLE(99,99),-5     -> (5, 20)   Illegal function call -- D-CIRCNEGR, filed
+  SCREEN 2:PAINT(1,1),1,16      -> OK        agrees
+
+So CIRCLE's and PAINT's error sets are complete: centre-radius {2,5,13} (the negative
+radius raises nothing on the reference), border-colour {2,13}.

@@ -131,10 +131,15 @@ ERRSETS: dict[str, dict[str, frozenset[int]]] = {
     "DEFDBL": {"single-letter": frozenset({2}), "letter-range": frozenset({2})},
     "DEFSTR": {"single-letter": frozenset({2}), "letter-range": frozenset({2})},
     # --- batch 7: graphics statements, device functions, ON/KEY/FN, PLAY, SET.
-    # 🔴 CIRCLE AND PAINT ARE NOT HERE, ON PURPOSE: `CIRCLE(99,99),-5` and both
-    # `PAINT(1,1),1,16` / `PAINT(1,1),1,1,1` gave the REFERENCE no reading, so
-    # those forms' sets are not known to be complete -- an entry is a
-    # measurement, and a partly-read form is not one.
+    # 🔬 CIRCLE AND PAINT WERE HELD BACK until their three unread cases were
+    # (scratchpad/t6enum_b7_rerun.out)
+    # read alone (2026-09-27): `PAINT(1,1),1,1,1` is 2 and `PAINT(1,1),1,16`
+    # completes (a slow fill, 60 s); `CIRCLE(99,99),-5` completes too, after
+    # MINUTES (a huge circle) -- so neither is an error, and PAINT's border form
+    # gains the 2 the batch window missed. zerobas raises 5 on the negative
+    # radius: D-CIRCNEGR, filed, and not part of the reference's set.
+    "CIRCLE": {"centre-radius": frozenset({2, 5, 13}), "arc": frozenset({5, 13}), "step-relative": frozenset({2, 13}), "aspect": frozenset({2, 5, 13}), "colour-default": frozenset({24})},
+    "PAINT": {"flood": frozenset({2, 5, 13}), "fill-colour": frozenset({5, 13}), "border-colour": frozenset({2, 13})},
     "PSET": {"colour-explicit": frozenset({2, 5, 13}), "colour-default": frozenset({2, 24}), "step-relative": frozenset({2, 5, 13}), "mode-screen3": frozenset({5, 6, 13})},
     "PRESET": {"colour-default": frozenset({2, 5, 13}), "colour-explicit": frozenset({5, 13}), "step-relative": frozenset({2, 13}), "mode-screen3": frozenset({5, 13})},
     "LINE": {"segment": frozenset({2, 5, 13}), "box": frozenset({2, 5}), "filled-box": frozenset({2, 5}), "step-relative": frozenset({2, 13}), "omitted-start": frozenset({2, 13}), "colour-default": frozenset({2, 13, 24})},
@@ -162,7 +167,7 @@ _B3 = {"MKI$", "CVI", "MKS$", "CVS", "MKD$", "CVD", "DSKF"}
 _B4 = {"INSTR", "MID$", "NEXT", "RETURN", "RESTORE", "GOTO", "READ", "SWAP", "ERASE", "DIM"}
 _B6 = {"FOR", "IF", "CLEAR", "COLOR", "SCREEN", "LOCATE", "TIME", "DEFINT", "DEFSNG",
        "DEFDBL", "DEFSTR"}
-_B7 = {"PSET", "PRESET", "LINE", "DRAW", "BASE", "VDP", "SPRITE", "ON GOTO", "ON GOSUB",
+_B7 = {"PSET", "PRESET", "LINE", "DRAW", "CIRCLE", "PAINT", "BASE", "VDP", "SPRITE", "ON GOTO", "ON GOSUB",
        "KEY", "STICK", "STRIG", "PDL", "PAD", "DEF USR", "DEF FN", "FN", "STOP", "PLAY",
        "SET"}
 _B5 = {"AND", "OR", "XOR", "EQV", "IMP", "NOT", "MOD", "BEEP", "CLS", "TRON", "TROFF",
