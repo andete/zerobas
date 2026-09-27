@@ -2105,7 +2105,10 @@ item — do **one item per session** to keep context lean.
       frames CHARGE what the reference's do (25 / 7 / 14 — padding the FOR
       frame by 14 B wastes RAM to match), or accept the three as a stated
       divergence. ➡️ Graphics (PAINT's stack) and file I/O (`MAXFILES`, now
-      D-FCBSHAPE) are still unmeasured here.
+      D-FCBSHAPE) are still unmeasured here. ➡️ PAINT's stack is ALREADY FILED
+      and characterised — "PAINT's SPAN STACK IS A FIXED ARRAY" (TIER 3, 🙋
+      NEEDS-JOOST: a fixed 120-span cap against the reference's STKTOP-bound
+      stack, both directions) — so it is not an open measurement here.
       📏 **GOAL (a), SAME FREE MEMORY — MEASURED 2026-09-25**
       (`scratchpad/fremem_probe.py` → `scratchpad/fremem_run.out`; VG-8020 vs
       zerobas's DISKLESS machine, a fresh boot per state):
@@ -5944,7 +5947,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:25394 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:25407 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -6110,7 +6113,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:10925 (T-6FE392)8 (T-529ABE)` from `TODO.md:23048 (T-529ABE)`: a
+      `TODO.md:10928 (T-6FE392)8 (T-529ABE)` from `TODO.md:23061 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -11769,7 +11772,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:23048 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:23061 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -21320,8 +21323,18 @@ finds zero shared names (a renamed block would otherwise make it silently blind)
       the failing rows are "BLIND FOR THAT REASON (they write three records)".
       They are blind because they CLOSE. Corrected in
       `scratchpad/reclen_probe.py`.
-      🤖 AUTONOMOUS — the reference settles it; the subject is `CLOSE` after a
-      write, measured at 3.51 s there against >24 s here.
+      ~~🤖 AUTONOMOUS — the reference settles it; the subject is `CLOSE` after a
+      write, measured at 3.51 s there against >24 s here.~~
+      🔴 **THAT MARKER CITED A RETRACTED FIGURE (found 2026-09-27, loop).** The
+      ">24 s" is D-CLOSEFLUSH's, and `scratchpad/reclen_probe.py`'s own
+      printout records it as withdrawn by D-PUTFLOOR (two instrument bugs). The
+      live mechanism is D-PUTCACHE above: a full read-modify-write per `PUT`,
+      where the reference keeps the sector buffered. 💰 **THE LEVER IS PRICED
+      SHUT TODAY:** a write-through cache (skip the re-read of a sector still in
+      the shared buffer — crash-safety kept, unlike the 🙋 stamp trade) lands
+      in `fat_rand_put`, which is built into main page 1 AND sub page 1, and
+      those walls read 5 B and 0 B free (clean build 2026-09-27). It needs an
+      absolute carve in both first. The directory-stamp half stays 🙋.
 
       ⬇️ **THE ORIGINAL FILING FOLLOWS, KEPT BECAUSE ITS ROW WORK IS SOUND** —
       every characterisation below (PUT count, not layout; survives CLOSE; not
