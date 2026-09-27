@@ -28142,9 +28142,26 @@ and left 37 B behind.
       emulator, and `tools/check_selftests.py` excuses it from the static gate
       for exactly that reason, so arms added there would be gated by nothing
       cheap.
-      ➡️ **STILL OPEN: nothing yet PASSES `why`.** The channel exists and is
+      ~~➡️ **STILL OPEN: nothing yet PASSES `why`.** The channel exists and is
       tested; converting call sites is opportunistic, and the audit of which rows
-      are in the bracketless state still has no mechanical route. Same shape as [`chancost` NOREAD](docs/chancost-cf3300-characterization.md):
+      are in the bracketless state still has no mechanical route.~~
+      🟢 **D-SAYBLIND (2026-09-27, loop): THE PROBE THIS ITEM WAS FOUND IN NOW
+      PASSES `why` AND REFUSES A BLIND ROW.** `basic_probe_lnblank.py`'s
+      SAY_ONLY reader (`say_span`) keeps the reason: no echo row → `<NO ECHO>`
+      (refused), no bracket / an unterminated one → `<none: no bracket>` /
+      `<none: aborted mid-PRINT>` (readings — one side aborting where the others
+      print is a finding). A row where EVERY answered side has no reading is
+      refused as BLIND instead of compared. 🔴 **AND THE SAME SHAPE WAS LIVE
+      THROUGH A SECOND SENTINEL:** the TAIL_ONLY reader's `<NO ECHO>` was
+      commented "(fatal)" but was not in `BAD`, so three sides that all lost
+      the echo row would have AGREED. It is in `BAD` now.
+      [`tests/test_lnblank_blind.py`](tests/test_lnblank_blind.py), 11 arms under
+      `make unit-test`, NEGATIVE arms included (all-sides no-reading refused;
+      one side only is NOT refused); it caught my first cut, which keyed on
+      "aborted" — a word the no-`[` reason also contains. `make
+      lnblank-say-acceptance` after: **208/208**, 0 BLIND (predicted — hit).
+      ➡️ **STILL OPEN:** the other 35 files that reach the span reader pass no
+      `why`; converting them stays opportunistic. Same shape as [`chancost` NOREAD](docs/chancost-cf3300-characterization.md):
       a sentinel that also means "no reading" is not a measurement.
       🎚️ APPARATUS — --say readout
       🤖 AUTONOMOUS — the reference or a gate settles it; finishable unattended (no his-decision signal found).

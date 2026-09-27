@@ -3207,11 +3207,46 @@ def decode(hexstr):
     return f"line {lineno} | {gloss(body)}"
 
 
-BAD = ("NOCAPTURE", "UNSTABLE")
+# 🔴 `<NO ECHO>` WAS DESCRIBED AS FATAL AND WAS NOT IN THIS LIST (found
+# 2026-09-27): the TAIL_ONLY reader's comment calls it "(fatal)", but only these
+# prefixes are refused, so three sides that ALL lost the echo row compared EQUAL
+# and reported agreement -- the D-NAMBLANK shape through a second sentinel.
+BAD = ("NOCAPTURE", "UNSTABLE", "<NO ECHO>")
 
 
 def is_bad(v) -> bool:
     return any(v.startswith(p) for p in BAD)
+
+
+# --- a SAY_ONLY row's reading, with the span reader's REASON kept ------------
+# `result_span_after_echo` returns None for four situations; this used to fold
+# all of them into one `<none>`, which compares EQUAL on every side. Now: no
+# capture -> NOCAPTURE and no echo row -> `<NO ECHO>` (both refused by is_bad);
+# no bracket and an unterminated one stay READINGS (a side that aborts where the
+# others print is a real divergence) but carry their reason, and a row where NO
+# side has a reading is refused below as BLIND (D-SAYBLIND, 2026-09-27).
+NO_READING = "<none"
+
+
+def say_span(raw, cmdline):
+    if raw is None:
+        return "NOCAPTURE"
+    why = {}
+    got = omsx_repl.result_span_after_echo(raw, cmdline, why)
+    if got is not None:
+        return got
+    r = why.get("reason", "")
+    if "echo row" in r:
+        return "<NO ECHO>"
+    # key on the reason's OWN distinguishing phrase: the no-'[' text also
+    # contains "aborted" (it names both of its possible causes)
+    return f"{NO_READING}: {'aborted mid-PRINT' if 'mid-PRINT' in r else 'no bracket'}>"
+
+
+def blind(values) -> bool:
+    """True iff every side that answered has NO reading -- such a row compares
+    EQUAL and would report agreement while having measured nothing."""
+    return bool(values) and all(v.startswith(NO_READING) for v in values)
 
 
 # --- the echo guard ----------------------------------------------------------
@@ -3478,9 +3513,7 @@ def run_side(side, cases, repeat, echo, saymode=False, isolate=False):
                                            (t or "<nothing listed>"))(
                                     omsx_repl.screen_tail(raw, lines[-1]))))
                   if label in TAIL_ONLY else
-                  (lambda raw: ("NOCAPTURE" if raw is None else
-                                (omsx_repl.result_span_after_echo(raw, lines[-1])
-                                 or "<none>")))
+                  (lambda raw: say_span(raw, lines[-1]))
                   if label in SAY_ONLY else
                   (lambda raw: say(raw, lines, reset)))
             vals = [rd(r[i]) for r in runs]
@@ -3770,7 +3803,7 @@ def main():
     # oracles agree with each other"; with zerobas in the list it is the
     # differential. Informational rows are reported but never gate.
     npass = ngate = 0
-    diverge, stale, ungated = [], [], []
+    diverge, stale, ungated, blindrows = [], [], [], []
     for i, (label, _l) in enumerate(sel):
         # 🔴 A ROW MEASURED ON ONE SIDE HAS NOTHING TO AGREE WITH, AND THE
         # OBVIOUS TEST FOR IT IS WRONG. Counting DISTINCT VALUES cannot tell "one
@@ -3785,6 +3818,9 @@ def main():
             ungated.append(label)
             continue
         vals = {cols[s][i] for s in answered}
+        if blind(vals):
+            blindrows.append(f"{label}: {sorted(vals)}")
+            continue
         ok = len(vals) == 1
         # ⚠️ AN ALLOWLIST THAT MUST KEEP MATCHING IS A CONTROL; ONE THAT ONLY
         # SUPPRESSES IS ROT. A KNOWN_DIVERGE row passes only if it STILL diverges
@@ -3818,6 +3854,13 @@ def main():
         print("\nALLOWLIST FAILURE -- KNOWN_DIVERGE no longer describes zerobas:")
         for m in stale:
             print(f"  {m}")
+
+    if blindrows:
+        print("\nBLIND -- no side has a reading, so these rows would have "
+              "compared EQUAL and reported agreement (D-SAYBLIND):")
+        for m in blindrows:
+            print(f"  {m}")
+        return 1
 
     if ungated:
         print("\nMEASURED BUT NOT GATING -- fewer than two sides could answer "
