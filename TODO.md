@@ -2114,8 +2114,24 @@ item — do **one item per session** to keep context lean.
       GOSUB alone (8 → 7 B). FOR (11 vs 25) and DEF FN (13 vs 14) are already
       smaller here and stay. ⚠️ The question as asked wrongly listed FN as
       bigger too; the ruling's rule ("never worse") decides it, and FN is
-      already inside it. 🤖 **AUTONOMOUS now**: GOSUB's frame 8 → 7 B,
-      re-measured with `scratchpad/fremops_probe.py`. ➡️ Graphics (PAINT's stack) and file I/O (`MAXFILES`, now
+      already inside it. ~~🤖 **AUTONOMOUS now**: GOSUB's frame 8 → 7 B,
+      re-measured with `scratchpad/fremops_probe.py`.~~
+      🔴 **PRICED 2026-09-27 (loop): 8 → 7 IS A REDESIGN, NOT A SHRINK — BACK TO
+      JOOST ON THE COST.** The frame is `[CURLINE:2][resume:2][prevGSP:2]
+      [prevFSP:2]` (`basic/sysvars.inc` `GOSUB_FRAME`), and its own comment
+      says *"Both are needed; neither is derivable from the other"*: `prevGSP`
+      chains GOSUB frames because FOR frames interleave, `prevFSP` is D-FORRET's
+      restore point. No field fits a byte (`prevFSP` is an arbitrary distance).
+      The one 7-byte shape: drop `prevGSP` for a 1-byte TYPE and find the
+      previous GOSUB by WALKING the pool, as the reference does — so every frame
+      kind (FOR, GOSUB, trap, FN) must become self-describing (FOR 11 → 12 B,
+      still under the reference's 25) and RETURN pays a walk (a T5 cost). That
+      buys 1 byte per active GOSUB. The ruling was asked as a simple shrink; this
+      is the price it did not show.
+      🙋 **BACK TO JOOST (the rung's rule: adjustments are his):** take the frame
+      redesign for 1 B per GOSUB, or state
+      GOSUB's 8 vs 7 as a divergence (the "never worse" rule then holds for FOR
+      and FN only). ➡️ Graphics (PAINT's stack) and file I/O (`MAXFILES`, now
       D-FCBSHAPE) are still unmeasured here. ➡️ PAINT's stack is ALREADY FILED
       and characterised — "PAINT's SPAN STACK IS A FIXED ARRAY" (TIER 3, 🙋
       NEEDS-JOOST: a fixed 120-span cap against the reference's STKTOP-bound
@@ -5994,7 +6010,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:25887 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:25903 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -6160,7 +6176,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:10994 (T-6FE392)8 (T-529ABE)` from `TODO.md:23233 (T-529ABE)`: a
+      `TODO.md:11010 (T-6FE392)8 (T-529ABE)` from `TODO.md:23249 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -11841,7 +11857,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:23233 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:23249 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
