@@ -732,10 +732,18 @@ def plant_logtab(tok):
 # ROUTINE BEFORE IT. The run looked healthy -- 53 MISSING became DIVERGENT, 8 read
 # nothing, NEW/REM/WIDTH went BLIND -- and hand cuts on a rebuilt ROM restored
 # every one [[a-knife-can-be-inert-because-the-build-did-not-happen]].
-try:
-    os.remove(ROM)
-except OSError:
-    pass
+# 🔴 D-KNIFEBASE (2026-09-27): delete EVERY built ROM, not only the merged one.
+# The merged ROM is assembled from basic-reloc.rom, sub.rom and disk.rom, and a
+# part left mutated by an aborted tool is NEWER than its sources, so `make`
+# re-merges it and the baseline this run cuts into is not a build of the tree
+# -- the filed "knife baseline integrity" failure, one level down. Measured: a
+# byte flipped in build/sub.rom SURVIVED the old start-up rebuild.
+for _p in (ROM,) + tuple(os.path.join(ROOT, "build", n)
+                         for n in ("basic-reloc.rom", "sub.rom", "disk.rom")):
+    try:
+        os.remove(_p)
+    except OSError:
+        pass
 subprocess.run(["make", "repack-machine"], cwd=ROOT, check=True, capture_output=True)
 if not os.path.exists(ROM):
     sys.exit("knife: `make repack-machine` did not produce %s -- nothing was measured" % ROM)

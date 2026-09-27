@@ -5947,7 +5947,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:25408 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:25423 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -6113,7 +6113,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:10929 (T-6FE392)8 (T-529ABE)` from `TODO.md:23062 (T-529ABE)`: a
+      `TODO.md:10944 (T-6FE392)8 (T-529ABE)` from `TODO.md:23077 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -6439,7 +6439,22 @@ list. **When a slice lands, grep this list for what it just shipped.**
       🎚️ APPARATUS — battery-score validity window
       🤖 AUTONOMOUS — a re-run settles each one.
 
-- [ ] 🔴 **THE KNIFE PROVES ITS OWN PLANT TOOK AND NEVER PROVES WHAT IT
+- [x] ✅ **DONE 2026-09-27 (D-KNIFESTALE 09-25 + D-KNIFEBASE): THE KNIFE NOW
+      REBUILDS EVERY ROM IT DEPENDS ON BEFORE ITS FIRST READ.** D-KNIFESTALE
+      had already made `scratchpad/kwknife.py` delete and rebuild the MERGED
+      ROM before reading a symbol — but the merged ROM is assembled from
+      `basic-reloc.rom`, `sub.rom` and `disk.rom`, and a part left mutated by
+      an aborted tool is newer than its sources, so `make` re-merged it.
+      🔬 **Both directions shown, not argued:** a byte flipped in
+      `build/sub.rom` SURVIVED `kwknife.py --list` (which runs the start-up and
+      exits) on the old code — hash `d21e0812fd78` before and after — and on the
+      new code, which deletes all four ROMs first, came back as the clean build's
+      `603afa14e21b`. Cost ~4.6 s per run. ⚠️ The "cheap second arm" below (a
+      baseline distribution reproducible across two reads) was NOT built; the
+      🔭 denominator note (kwsweep and the suites trust `build/` the same way)
+      stays true — the battery's own clean + fingerprint line is their guard.
+      ⬇️ Original filing:
+      🔴 **THE KNIFE PROVES ITS OWN PLANT TOOK AND NEVER PROVES WHAT IT
       PLANTED INTO WAS CLEAN — AND THE FAILURE MANUFACTURES CONNECTEDNESS.**
       Measured 2026-09-18 during D-FIELDMOVE. A `make gates-fast` aborted
       (`Error 1`) with a `kwsweep` mutation still planted in `build/`; the knife
@@ -11773,7 +11788,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:23062 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:23077 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
