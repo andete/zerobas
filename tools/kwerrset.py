@@ -46,10 +46,37 @@ ERRSETS: dict[str, dict[str, frozenset[int]]] = {
     "CHR$": {"code-to-char": frozenset({2, 5, 6, 13})},
     "LEN": {"length": frozenset({2, 13})},
     "PEEK": {"address-read": frozenset({2, 6, 13})},
+    # 📏 BATCH 2, MEASURED 2026-09-27 (t6enum_probe.py --batch=2 -> t6enum_b2.out):
+    # multi-argument functions and statements, every argument faulted in turn.
+    "LEFT$": {"prefix": frozenset({2, 5, 6, 13})},
+    "RIGHT$": {"suffix": frozenset({2, 5, 6, 13})},
+    "STRING$": {"repeat": frozenset({2, 5, 13})},
+    "HEX$": {"to-hex": frozenset({2, 6, 13})},
+    "OCT$": {"to-octal": frozenset({2, 6, 13})},
+    "BIN$": {"to-binary": frozenset({2, 6, 13})},
+    "SPACE$": {"pad": frozenset({2, 5, 13})},
+    "STR$": {"number-to-string": frozenset({2, 13})},
+    "CINT": {"to-integer": frozenset({2, 6, 13})},
+    "FIX": {"truncate": frozenset({2, 13})},
+    "CSNG": {"to-single": frozenset({2, 13})},
+    "CDBL": {"to-double": frozenset({2, 13})},
+    "SIN": {"sine": frozenset({2, 13})},
+    "COS": {"cosine": frozenset({2, 13})},
+    "TAN": {"tangent": frozenset({2, 6, 13})},
+    "ATN": {"arctangent": frozenset({2, 13})},
+    "VPEEK": {"address-read": frozenset({2, 5, 6, 13})},
+    "POKE": {"address-value": frozenset({2, 5, 6, 13, 24})},
+    "VPOKE": {"address-value": frozenset({2, 5, 6, 13, 24})},
+    "SOUND": {"register-value": frozenset({2, 5, 13, 24})},
 }
 
-PROVENANCE: dict[str, str] = {k: "scratchpad/t6enum_probe.py -> scratchpad/t6enum_run.out (EXP: t6enum_exp.out), VG-8020, 2026-09-27"
-                              for k in ERRSETS}
+_B1 = {"ABS", "SGN", "INT", "SQR", "LOG", "EXP", "ASC", "CHR$", "LEN", "PEEK"}
+PROVENANCE: dict[str, str] = {
+    k: ("scratchpad/t6enum_probe.py -> scratchpad/t6enum_run.out (EXP: t6enum_exp.out)"
+        if k in _B1 else
+        "scratchpad/t6enum_probe.py --batch=2 -> scratchpad/t6enum_b2.out")
+       + ", VG-8020, 2026-09-27"
+    for k in ERRSETS}
 
 
 def errset_for(kw: str):

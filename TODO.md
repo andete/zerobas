@@ -5973,7 +5973,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:25613 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:25649 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -24801,9 +24801,45 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       overflow and its set read {2, 13}. `EXP(150)` added: {2, 6, 13}.
       ⚠️ **THE BATTERY IS THE BOUND**, stated in the probe: type, missing, extra,
       and the named range edges. A code no case elicits is not in the set.
-      ➡️ **NEXT: batch 2** — multi-argument and statement keywords (LEFT$,
+      ~~➡️ **NEXT: batch 2** — multi-argument and statement keywords (LEFT$,
       STRING$, INSTR, MID$, POKE, VPOKE, SOUND, …), where each ARGUMENT needs its
-      own faults and statements add illegal-direct.
+      own faults and statements add illegal-direct.~~
+      🟢 **BATCH 2 SHIPPED (2026-09-27): 126 cases, 22 keywords, every argument
+      faulted in turn** (`t6enum_probe.py --batch=2` →
+      [`scratchpad/t6enum_b2.out`](scratchpad/t6enum_b2.out)). 60 more
+      `PROVES-T6:` rows, 60/60 SUPPORTED; sets for 20 keywords in `kwerrset.py`.
+      🔴 **THE BATTERY FOUND TWO REAL DIVERGENCES** — filed below as their own
+      TIER 6 items: `STRING$(2,"")` (ref 5, zb 2) and `TAN(1E38)` (ref 6, zb OK).
+      TAN's code 6 has no row, so TAN correctly does NOT reach T6.
+      ⚠️ **MKI$ AND CVI ARE EXCLUDED — WRONG ORACLE.** They are Disk BASIC
+      functions; on the diskless VG-8020 `MKI$("A")` and `CVI(5)` read 5, not
+      13, and `MKI$(1,1)` 2 where zb says 13. They need the CF-3300 as the
+      reference (the probe needs a `--ref` option for it).
+      🔮 Misses: a BARE statement (`POKE`, `VPOKE`, `SOUND`) is **24** Missing
+      operand on both, not 2; `TAN(1E38)` overflows on the reference; the MKI$/CVI
+      type faults read 5 (the oracle problem above).
+      ➡️ **NEXT:** MKI$/CVI (and the other disk functions) on the CF-3300; then
+      the multi-FORM keywords (INSTR, MID$, VAL, …), whose rows must name each
+      form.
+
+- [ ] 🔴 **`STRING$(2,"")` IS `Syntax error` HERE AND `Illegal function call` ON
+      THE REFERENCE (D-STRINGEMPTY, found 2026-09-27 by the T6 enumeration).**
+      🎚️ TIER 6 — `STRING$` with an EMPTY string as its character argument
+      🤖 **AUTONOMOUS** — the reference settles it; a ROM change, carve first.
+      `scratchpad/t6enum_b2.out`: `PRINT STRING$(2,"")` → VG-8020 `(5, 20)`,
+      zerobas `(2, 20)`. The empty-string character argument is a DOMAIN fault on
+      the reference (Illegal function call), not a syntax one. Every other
+      STRING$ case agreed (type, both range edges, missing, extra).
+
+- [ ] 🔴 **`TAN(1E38)` OVERFLOWS ON THE REFERENCE AND RETURNS A VALUE HERE
+      (D-TANBIG, found 2026-09-27 by the T6 enumeration).**
+      🎚️ TIER 6 — `TAN` of a huge argument
+      🤖 **AUTONOMOUS** — the reference settles it; measure the edge first.
+      `scratchpad/t6enum_b2.out`: `PRINT TAN(1E38)` → VG-8020 `(6, 20)` Overflow,
+      zerobas prints a number. `SIN(1E38)` and `COS(1E38)` agree (no error on
+      either), so it is TAN's own path — likely the reference's quotient
+      SIN/COS overflowing after a lossy argument reduction. ➡️ First bisect the
+      argument where the reference starts raising; it blocks TAN's T6.
 
 - [x] 🟢 **RULED 2026-09-24 — (c): WHOLE PROGRAM FOR T2, KEYWORD ALONE FOR T5.**
       Joost: ***"go with (c): whole program for T2, keyword alone for T5"***. T2

@@ -51,8 +51,70 @@ BATCH = {
 }
 
 
+# --- BATCH 2 (2026-09-27): MULTI-ARGUMENT functions and STATEMENTS -------------
+# Each ARGUMENT gets its own faults: wrong type (N gets "A", S gets 5) and the
+# range edges listed for it; then the call MISSING its last argument, with NO
+# arguments, and with one EXTRA argument. A statement (stmt=True) is typed bare.
+# keyword -> (form, stmt?, [(kind, valid, [edges])])
+N, S = "N", "S"
+BATCH2 = {
+    "LEFT$":   ("prefix",          False, [(S, '"AB"', []), (N, "1", ["-1", "256", "70000"])]),
+    "RIGHT$":  ("suffix",          False, [(S, '"AB"', []), (N, "1", ["-1", "256", "70000"])]),
+    "STRING$": ("repeat",          False, [(N, "2", ["-1", "256"]),
+                                           ("X", '"A"', ['""', "256", "-1"])]),
+    "HEX$":    ("to-hex",          False, [(N, "1", ["70000", "-70000"])]),
+    "OCT$":    ("to-octal",        False, [(N, "1", ["70000", "-70000"])]),
+    "BIN$":    ("to-binary",       False, [(N, "1", ["70000", "-70000"])]),
+    "SPACE$":  ("pad",             False, [(N, "1", ["-1", "256"])]),
+    "MKI$":    ("int-to-string",   False, [(N, "1", ["32768", "-32769"])]),
+    "CVI":     ("string-to-int",   False, [(S, '"AB"', ['""', '"A"'])]),
+    "STR$":    ("number-to-string", False, [(N, "1", [])]),
+    "CINT":    ("to-integer",      False, [(N, "1", ["32768", "-32769"])]),
+    "FIX":     ("truncate",        False, [(N, "1", ["-1E38"])]),
+    "CSNG":    ("to-single",       False, [(N, "1", ["1E38"])]),
+    "CDBL":    ("to-double",       False, [(N, "1", ["1E38"])]),
+    "SIN":     ("sine",            False, [(N, "1", ["1E38"])]),
+    "COS":     ("cosine",          False, [(N, "1", ["1E38"])]),
+    "TAN":     ("tangent",         False, [(N, "1", ["1E38"])]),
+    "ATN":     ("arctangent",      False, [(N, "1", ["1E38"])]),
+    "VPEEK":   ("address-read",    False, [(N, "1", ["16384", "-1", "70000"])]),
+    # &H9000, not a work-area address: the `extra` case pokes BEFORE its Syntax
+    # error, and $E800 is zerobas's private workspace. $9000 is free program/
+    # variable space on both machines at this program size.
+    "POKE":    ("address-value",   True,  [(N, "&H9000", ["65536", "-32769"]),
+                                           (N, "1", ["256", "-1"])]),
+    "VPOKE":   ("address-value",   True,  [(N, "1", ["16384", "-1", "70000"]),
+                                           (N, "1", ["256", "-1"])]),
+    "SOUND":   ("register-value",  True,  [(N, "8", ["14", "-1", "256"]),
+                                           (N, "0", ["256", "-1"])]),
+}
+
+
+def _call(kw, stmt, args):
+    a = ",".join(args)
+    return f"{kw} {a}".rstrip() if stmt else f"PRINT {kw}({a})"
+
+
+def batch2_cases(kw, form, stmt, spec):
+    valid = [v for _k, v, _e in spec]
+    for i, (kind, _v, edges) in enumerate(spec):
+        bad = ['"A"'] if kind == N else (["5"] if kind == S else [])
+        for x in bad + edges:
+            yield kw, form, x, _call(kw, stmt, valid[:i] + [x] + valid[i + 1:])
+    if len(valid) > 1:
+        yield kw, form, "missing-last", _call(kw, stmt, valid[:-1])
+    yield kw, form, "no-args", _call(kw, stmt, [])
+    yield kw, form, "extra", _call(kw, stmt, valid + [valid[-1]])
+
+
 def cases():
     only = next((a.split("=", 1)[1] for a in sys.argv if a.startswith("--only=")), None)
+    if "--batch=2" in sys.argv:
+        for kw, (form, stmt, spec) in BATCH2.items():
+            if only and kw not in only.split(","):
+                continue
+            yield from batch2_cases(kw, form, stmt, spec)
+        return
     for kw, (form, tpl, args) in BATCH.items():
         if only and kw not in only.split(","):
             continue
@@ -85,10 +147,10 @@ def main():
                                   capture="screen")
            for m in machines}
     sets = {}
-    print(f"{'keyword':6} {'case':22} " + " ".join(f"{m[:12]:>14}" for m in machines))
+    print(f"{'keyword':7} {'case':30} " + " ".join(f"{m[:12]:>14}" for m in machines))
     for i, (kw, form, a, st) in enumerate(cs):
         vals = [reading(res[m][i]) for m in machines]
-        print(f"{kw:6} {st:22} " + " ".join(f"{str(v):>14}" for v in vals))
+        print(f"{kw:7} {st:30} " + " ".join(f"{str(v):>14}" for v in vals))
         v = vals[0]
         if isinstance(v, tuple):
             sets.setdefault(kw, {}).setdefault(form, {}).setdefault(v[0], st)
