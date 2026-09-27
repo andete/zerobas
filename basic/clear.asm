@@ -81,6 +81,18 @@ ex_clear:
                 ; because the second statement NEVER RAN (z.seq: `UNTRAPPED Syntax
                 ; error in 30` on both references -- untrapped because the first
                 ; CLEAR had already killed the handler, D-CLRTRAP §3.1).
+                ; 🔴 D-CLEARFIT (2026-09-27): THE OLD POOL SIZE RIDES THE STACK UNTIL
+                ; THE NEW ONE FITS. `CLEAR 30000` stored POOLSIZE with NO fit check:
+                ; the sub-side pool floor fell below the program text, and zerobas
+                ; HUNG (no prompt) where both references say `Out of memory`;
+                ; `CLEAR 25000` -- ACCEPTED on the VG-8020, which has ~4.7 KB more
+                ; BASIC RAM -- corrupted the screen instead (found by the T6
+                ; enumeration, scratchpad/t6enum_b6.out). A rejected CLEAR must also
+                ; leave the OLD size: the himem arm's own ERR 7 used to leave the
+                ; new one stored behind it. Pushed in BOTH builds, so clr_h_store's
+                ; pop balances whatever CLEARPOOL says.
+                ld      bc,(POOLSIZE)
+                push    bc                  ; [old pool size]
     IF CLEARPOOL
                 ; --- D-CLP: the argument is RECORDED, and checked first ---------
                 ; It used to be evaluated and thrown away, so `CLEAR -1`,
@@ -111,11 +123,17 @@ ex_clear:
                 call    eval                ; <string-space>, evaluated and ignored
     ENDIF
                 call    skip_comma          ; a second (memory-top) arg?
-                jr      nz,clr_done         ; no comma -> done
+                jr      z,clr_himem         ; yes -> the memory-top arm
+                ; D-CLEARFIT: NO second argument -- the ceiling stays where it is, and
+                ; the new string space must fit UNDER it by the same rule the
+                ; memory-top arm applies (floor = PRGEND + POOLSIZE + margin); the
+                ; ERR 7, the restore and the (unchanged) HIMEM store are all its.
+                push    hl                  ; the cursor, as clr_floor's caller holds it
+                ld      de,(HIMEM)          ; "value" = the CURRENT ceiling
+                jr      clr_floor
 clr_himem:
-                ; ⚠️ REACHED BY FALLTHROUGH ONLY since D-CLRFIX deleted its one
-                ; incoming jump (the leading-comma arm above). `jr nz,clr_done`
-                ; three lines up is the only way in.
+                ; ⚠️ Since D-CLEARFIT reached by `jr z,clr_himem` just above (the
+                ; comma); D-CLRFIX had deleted the leading-comma arm's jump here.
                 rst    $10                ; past the comma
                 ; 🔴 D-CLRFIX: `call eval` STOOD HERE WITH NO CHECK OF ANY KIND,
                 ; and the slot deferred EVERY fault code -- 24 (`CLEAR 200,`),
@@ -184,6 +202,7 @@ clr_himem:
                 or      a
                 sbc     hl,de
                 jr      nc,clr_h_ill
+clr_floor:
                 ld      hl,(PRGEND)         ; floor = PRGEND + POOLSIZE + margin
                 ld      bc,(POOLSIZE)
                 add     hl,bc
@@ -202,6 +221,11 @@ clr_h_set:                                  ; (fperr_to_err[3] = 5)
 clr_h_ok:
                 pop     hl                  ; restore the statement cursor
 clr_h_store:
+                pop     bc                  ; BC = the OLD pool size (D-CLEARFIT)
+                call    fperr_test          ; a fault is pending -> CLEAR is REJECTED,
+                jr      z,clr_h_fits        ; so the old pool size goes back BEFORE
+                ld      (POOLSIZE),bc       ; the raise; nothing else was stored yet
+clr_h_fits:
                 call    check_expr_errors   ; raise BEFORE the store and the wipe
                 ld      (HIMEM),de          ; record CLEAR's ceiling
 clr_done:

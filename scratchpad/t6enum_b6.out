@@ -1,0 +1,149 @@
+keyword case                                           Philips_VG_8   C-BIOS_MSX1_
+FOR     FOR I="A" TO 2:NEXT                                (13, 20)       (13, 20)
+FOR     FOR I=1 TO "A":NEXT                                (13, 20)       (13, 20)
+FOR     FOR I=1:NEXT                                        (2, 20)        (2, 20)
+FOR     FOR 5=1 TO 2:NEXT                                   (2, 20)        (2, 20)
+FOR     FOR I=1 TO:NEXT                                    (24, 20)       (24, 20)
+FOR     FOR A$=1 TO 2:NEXT                                 (13, 20)       (13, 20)
+FOR     FOR I=1 TO 2 STEP "A":NEXT                         (13, 20)       (13, 20)
+FOR     FOR I=1 TO 2 STEP:NEXT                             (24, 20)       (24, 20)
+FOR     FOR I=1 TO 2 STEP 1,2:NEXT                          (2, 20)        (2, 20)
+FOR     FOR I=2 TO 1 STEP -"A":NEXT                        (13, 20)       (13, 20)
+FOR     FOR I=2 TO 1 STEP -:NEXT                           (24, 20)       (24, 20)
+FOR     FOR I=2 TO 1 STEP -1 -:NEXT                        (24, 20)       (24, 20)
+IF      IF "A" THEN 30                                     (13, 20)       (13, 20)
+IF      IF THEN 30                                          (2, 20)        (2, 20)
+IF      IF 1 THEN 99                                        (8, 20)        (8, 20)
+IF      IF 1 THEN                                                OK             OK
+IF      IF 0 THEN 30 ELSE 99                                (8, 20)        (8, 20)
+IF      IF "A" THEN 30 ELSE 30                             (13, 20)       (13, 20)
+IF      IF 0 THEN 30 ELSE                                        OK             OK
+IF      IF 1 GOTO 99                                        (8, 20)        (8, 20)
+IF      IF 1 GOTO                                                OK        (2, 20)
+IF      IF 1 GOTO "A"                                       (2, 20)        (2, 20)
+IF      IF "A" GOTO 30                                     (13, 20)       (13, 20)
+CLEAR   CLEAR 1,2,3                                         (2, 20)        (5, 20)
+CLEAR   CLEAR,                                              (2, 20)        (2, 20)
+CLEAR   CLEAR -1                                            (5, 20)        (5, 20)
+CLEAR   CLEAR 70000                                         (6, 20)        (6, 20)
+CLEAR   CLEAR "A"                                          (13, 20)       (13, 20)
+CLEAR   CLEAR 30000                                         (7, 20)           None
+CLEAR   CLEAR 200,"A"                                      (13, 20)       (13, 20)
+CLEAR   CLEAR 200,&H7000                                    (5, 20)        (5, 20)
+CLEAR   CLEAR 200,-1                                        (5, 20)        (5, 20)
+CLEAR   CLEAR 200,                                         (24, 20)       (24, 20)
+COLOR   COLOR 16                                            (5, 20)        (5, 20)
+COLOR   COLOR "A"                                          (13, 20)       (13, 20)
+COLOR   COLOR -1                                            (5, 20)        (5, 20)
+COLOR   COLOR ,16                                           (5, 20)        (5, 20)
+COLOR   COLOR ,"A"                                         (13, 20)       (13, 20)
+COLOR   COLOR ,-1                                           (5, 20)        (5, 20)
+COLOR   COLOR ,,16                                          (5, 20)        (5, 20)
+COLOR   COLOR ,,"A"                                        (13, 20)       (13, 20)
+COLOR   COLOR 1,1,1,1                                       (2, 20)        (2, 20)
+SCREEN  SCREEN 4                                            (5, 20)        (5, 20)
+SCREEN  SCREEN "A"                                         (13, 20)       (13, 20)
+SCREEN  SCREEN -1                                           (5, 20)        (5, 20)
+SCREEN  SCREEN ,4                                           (5, 20)        (5, 20)
+SCREEN  SCREEN ,"A"                                        (13, 20)       (13, 20)
+SCREEN  SCREEN ,-1                                          (5, 20)        (5, 20)
+SCREEN  SCREEN ,,"A"                                       (13, 20)       (13, 20)
+SCREEN  SCREEN ,,256                                        (5, 20)        (5, 20)
+SCREEN  SCREEN ,,,,,,                                       (2, 20)        (2, 20)
+LOCATE  LOCATE 40                                              None           None
+   ⚠️ LOCATE 'LOCATE 40': NO READING on the reference -- not scored
+LOCATE  LOCATE "A"                                         (13, 20)       (13, 20)
+LOCATE  LOCATE -1                                           (5, 20)        (5, 20)
+LOCATE  LOCATE 1,24                                              OK             OK
+LOCATE  LOCATE 1,"A"                                       (13, 20)       (13, 20)
+LOCATE  LOCATE 1,-1                                         (5, 20)        (5, 20)
+LOCATE  LOCATE ,24                                               OK             OK
+LOCATE  LOCATE ,"A"                                        (13, 20)       (13, 20)
+LOCATE  LOCATE 1,1,2                                           None           None
+   ⚠️ LOCATE 'LOCATE 1,1,2': NO READING on the reference -- not scored
+LOCATE  LOCATE 1,1,"A"                                     (13, 20)       (13, 20)
+LOCATE  LOCATE 1,1,1,1                                         None           None
+   ⚠️ LOCATE 'LOCATE 1,1,1,1': NO READING on the reference -- not scored
+TIME    A$=TIME                                            (13, 20)       (13, 20)
+TIME    PRINT TIME(1)                                            OK             OK
+TIME    TIME="A"                                           (13, 20)       (13, 20)
+TIME    TIME=70000                                          (6, 20)        (6, 20)
+TIME    TIME=                                              (24, 20)       (24, 20)
+TIME    TIME=-1                                                  OK             OK
+DEFINT  DEFINT 5                                            (2, 20)        (2, 20)
+DEFINT  DEFINT                                              (2, 20)        (2, 20)
+DEFINT  DEFINT A,                                           (2, 20)        (2, 20)
+DEFINT  DEFINT "A"                                          (2, 20)        (2, 20)
+DEFINT  DEFINT A-                                           (2, 20)        (2, 20)
+DEFINT  DEFINT A-5                                          (2, 20)        (2, 20)
+DEFINT  DEFINT Z-A                                          (2, 20)        (2, 20)
+DEFINT  DEFINT A-B-C                                        (2, 20)        (2, 20)
+DEFSNG  DEFSNG 5                                            (2, 20)        (2, 20)
+DEFSNG  DEFSNG                                              (2, 20)        (2, 20)
+DEFSNG  DEFSNG A,                                           (2, 20)        (2, 20)
+DEFSNG  DEFSNG "A"                                          (2, 20)        (2, 20)
+DEFSNG  DEFSNG A-                                           (2, 20)        (2, 20)
+DEFSNG  DEFSNG A-5                                          (2, 20)        (2, 20)
+DEFSNG  DEFSNG Z-A                                          (2, 20)        (2, 20)
+DEFSNG  DEFSNG A-B-C                                        (2, 20)        (2, 20)
+DEFDBL  DEFDBL 5                                            (2, 20)        (2, 20)
+DEFDBL  DEFDBL                                              (2, 20)        (2, 20)
+DEFDBL  DEFDBL A,                                           (2, 20)        (2, 20)
+DEFDBL  DEFDBL "A"                                          (2, 20)        (2, 20)
+DEFDBL  DEFDBL A-                                           (2, 20)        (2, 20)
+DEFDBL  DEFDBL A-5                                          (2, 20)        (2, 20)
+DEFDBL  DEFDBL Z-A                                          (2, 20)        (2, 20)
+DEFDBL  DEFDBL A-B-C                                        (2, 20)        (2, 20)
+DEFSTR  DEFSTR 5                                            (2, 20)        (2, 20)
+DEFSTR  DEFSTR                                              (2, 20)        (2, 20)
+DEFSTR  DEFSTR A,                                           (2, 20)        (2, 20)
+DEFSTR  DEFSTR "A"                                          (2, 20)        (2, 20)
+DEFSTR  DEFSTR A-                                           (2, 20)        (2, 20)
+DEFSTR  DEFSTR A-5                                          (2, 20)        (2, 20)
+DEFSTR  DEFSTR Z-A                                          (2, 20)        (2, 20)
+DEFSTR  DEFSTR A-B-C                                        (2, 20)        (2, 20)
+RESUME  RESUME NEXT                                            None           None
+   ⚠️ RESUME 'RESUME NEXT': NO READING on the reference -- not scored
+RESUME  RESUME NEXT,1                                          None           None
+   ⚠️ RESUME 'RESUME NEXT,1': NO READING on the reference -- not scored
+RESUME  RESUME                                                 None           None
+   ⚠️ RESUME 'RESUME': NO READING on the reference -- not scored
+RESUME  RESUME,                                                None           None
+   ⚠️ RESUME 'RESUME,': NO READING on the reference -- not scored
+RESUME  RESUME 30                                              None           None
+   ⚠️ RESUME 'RESUME 30': NO READING on the reference -- not scored
+RESUME  RESUME "A"                                             None           None
+   ⚠️ RESUME 'RESUME "A"': NO READING on the reference -- not scored
+RESUME  RESUME 30,1                                            None           None
+   ⚠️ RESUME 'RESUME 30,1': NO READING on the reference -- not scored
+
+# the reference's error set per keyword form (code: first case)
+FOR    ascending      2: FOR I=1:NEXT  13: FOR I="A" TO 2:NEXT  24: FOR I=1 TO:NEXT
+FOR    step           2: FOR I=1 TO 2 STEP 1,2:NEXT  13: FOR I=1 TO 2 STEP "A":NEXT  24: FOR I=1 TO 2 STEP:NEXT
+FOR    negative-step  13: FOR I=2 TO 1 STEP -"A":NEXT  24: FOR I=2 TO 1 STEP -:NEXT
+IF     then           2: IF THEN 30  8: IF 1 THEN 99  13: IF "A" THEN 30
+IF     else           8: IF 0 THEN 30 ELSE 99  13: IF "A" THEN 30 ELSE 30
+IF     goto           2: IF 1 GOTO "A"  8: IF 1 GOTO 99  13: IF "A" GOTO 30
+CLEAR  bare           2: CLEAR 1,2,3
+CLEAR  string-space   5: CLEAR -1  6: CLEAR 70000  7: CLEAR 30000  13: CLEAR "A"
+CLEAR  himem          5: CLEAR 200,&H7000  13: CLEAR 200,"A"  24: CLEAR 200,
+COLOR  foreground     5: COLOR 16  13: COLOR "A"
+COLOR  background     5: COLOR ,16  13: COLOR ,"A"
+COLOR  border         2: COLOR 1,1,1,1  5: COLOR ,,16  13: COLOR ,,"A"
+SCREEN mode           5: SCREEN 4  13: SCREEN "A"
+SCREEN sprite-size    5: SCREEN ,4  13: SCREEN ,"A"
+SCREEN key-click      2: SCREEN ,,,,,,  5: SCREEN ,,256  13: SCREEN ,,"A"
+LOCATE column         5: LOCATE -1  13: LOCATE "A"
+LOCATE row            5: LOCATE 1,-1  13: LOCATE 1,"A"
+LOCATE omitted-column 13: LOCATE ,"A"
+LOCATE cursor-switch  13: LOCATE 1,1,"A"
+TIME   read           13: A$=TIME
+TIME   write          6: TIME=70000  13: TIME="A"  24: TIME=
+DEFINT single-letter  2: DEFINT 5
+DEFINT letter-range   2: DEFINT A-
+DEFSNG single-letter  2: DEFSNG 5
+DEFSNG letter-range   2: DEFSNG A-
+DEFDBL single-letter  2: DEFDBL 5
+DEFDBL letter-range   2: DEFDBL A-
+DEFSTR single-letter  2: DEFSTR 5
+DEFSTR letter-range   2: DEFSTR A-

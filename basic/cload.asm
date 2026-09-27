@@ -1010,15 +1010,12 @@ disk_prog_load:
                 ; what the reference gives a diskless machine. diskslot_test
                 ; above still runs first, so the diskless path is unchanged.
                 ld      a,FOPEN_SEL_LOAD
-                ld      (FOPEN_SEL),a
-                ld      hl,H_FOPEN
-                call    chan_gate           ; claimed -> disk.rom ran the WHOLE
+                call    fopen_cross           ; claimed -> disk.rom ran the WHOLE
                                             ; load, and CLPTR/CLINK are seeded
                 ; (3) decode what it did. DISKOP_STATUS, not A: that is what
                 ; every other hook in hook_tab answers through (hk_files,
                 ; hk_kill, hk_copy) and main already decodes it that way.
-                ld      a,(DISKOP_STATUS)
-                or      a
+                ; (A = DISKOP_STATUS, Z iff 0 -- fopen_cross, D-CARVEFO)
                 jp      z,dpl_done          ; 0 = loaded -> relink and commit
                 dec     a
                 jp      z,df_notfound       ; 1 = not found -> ERR 53, and it

@@ -202,6 +202,57 @@ BATCH5 = {
 }
 
 
+# --- BATCH 6 (2026-09-27): multi-form STATEMENTS -------------------------------
+# Only FAULTS are typed: a valid SCREEN would switch mode under the capture, a
+# valid CLEAR resets the handler, a valid WAIT blocks forever (WAIT is not here;
+# nor WIDTH, whose mode1 form needs a SCREEN 1 reading). RESUME's forms all read
+# "RESUME without error" (22) outside a handler -- plus their syntax faults.
+def _deft(k):
+    return [("single-letter", [f"{k} 5", f"{k}", f"{k} A,", f'{k} "A"']),
+            ("letter-range", [f"{k} A-", f"{k} A-5", f"{k} Z-A", f"{k} A-B-C"])]
+
+
+BATCH6 = {
+    "FOR": [
+        ("ascending", ['FOR I="A" TO 2:NEXT', 'FOR I=1 TO "A":NEXT', "FOR I=1:NEXT",
+                       "FOR 5=1 TO 2:NEXT", "FOR I=1 TO:NEXT", "FOR A$=1 TO 2:NEXT"]),
+        ("step", ['FOR I=1 TO 2 STEP "A":NEXT', "FOR I=1 TO 2 STEP:NEXT",
+                  "FOR I=1 TO 2 STEP 1,2:NEXT"]),
+        ("negative-step", ['FOR I=2 TO 1 STEP -"A":NEXT', "FOR I=2 TO 1 STEP -:NEXT",
+                           "FOR I=2 TO 1 STEP -1 -:NEXT"])],
+    "IF": [
+        ("then", ['IF "A" THEN 30', "IF THEN 30", "IF 1 THEN 99", "IF 1 THEN"]),
+        ("else", ["IF 0 THEN 30 ELSE 99", 'IF "A" THEN 30 ELSE 30', "IF 0 THEN 30 ELSE"]),
+        ("goto", ["IF 1 GOTO 99", "IF 1 GOTO", 'IF 1 GOTO "A"', 'IF "A" GOTO 30'])],
+    "CLEAR": [
+        ("bare", ["CLEAR 1,2,3", "CLEAR,"]),
+        ("string-space", ["CLEAR -1", "CLEAR 70000", 'CLEAR "A"', "CLEAR 30000"]),
+        ("himem", ['CLEAR 200,"A"', "CLEAR 200,&H7000", "CLEAR 200,-1", "CLEAR 200,"])],
+    "COLOR": [
+        ("foreground", ["COLOR 16", 'COLOR "A"', "COLOR -1"]),
+        ("background", ["COLOR ,16", 'COLOR ,"A"', "COLOR ,-1"]),
+        ("border", ["COLOR ,,16", 'COLOR ,,"A"', "COLOR 1,1,1,1"])],
+    "SCREEN": [
+        ("mode", ["SCREEN 4", 'SCREEN "A"', "SCREEN -1"]),
+        ("sprite-size", ["SCREEN ,4", 'SCREEN ,"A"', "SCREEN ,-1"]),
+        ("key-click", ['SCREEN ,,"A"', "SCREEN ,,256", "SCREEN ,,,,,,"])],
+    "LOCATE": [
+        ("column", ["LOCATE 40", 'LOCATE "A"', "LOCATE -1"]),
+        ("row", ["LOCATE 1,24", 'LOCATE 1,"A"', "LOCATE 1,-1"]),
+        ("omitted-column", ["LOCATE ,24", 'LOCATE ,"A"']),
+        ("cursor-switch", ["LOCATE 1,1,2", 'LOCATE 1,1,"A"', "LOCATE 1,1,1,1"])],
+    "TIME": [
+        ("read", ["A$=TIME", "PRINT TIME(1)"]),
+        ("write", ['TIME="A"', "TIME=70000", "TIME=", "TIME=-1"])],
+    "DEFINT": _deft("DEFINT"), "DEFSNG": _deft("DEFSNG"),
+    "DEFDBL": _deft("DEFDBL"), "DEFSTR": _deft("DEFSTR"),
+    "RESUME": [
+        ("next", ["RESUME NEXT", "RESUME NEXT,1"]),
+        ("bare", ["RESUME", "RESUME,"]),
+        ("line", ["RESUME 30", 'RESUME "A"', "RESUME 30,1"])],
+}
+
+
 def _call(kw, stmt, args):
     a = ",".join(args)
     return f"{kw} {a}".rstrip() if stmt else f"PRINT {kw}({a})"
@@ -221,8 +272,10 @@ def batch2_cases(kw, form, stmt, spec):
 
 def cases():
     only = next((a.split("=", 1)[1] for a in sys.argv if a.startswith("--only=")), None)
-    if "--batch=4" in sys.argv or "--batch=5" in sys.argv:
-        for kw, formlist in (BATCH5 if "--batch=5" in sys.argv else BATCH4).items():
+    if any(f"--batch={n}" in sys.argv for n in (4, 5, 6)):
+        b = (BATCH6 if "--batch=6" in sys.argv else
+             BATCH5 if "--batch=5" in sys.argv else BATCH4)
+        for kw, formlist in b.items():
             if only and kw not in only.split(","):
                 continue
             for form, stmts in formlist:

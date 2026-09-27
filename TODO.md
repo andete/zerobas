@@ -5973,7 +5973,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:25800 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:25856 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -24860,6 +24860,17 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       reader, said why.
       🔮 Misses: an operator missing its right side is **24** Missing operand, not
       2; `POS("A")` is accepted on the reference.
+      🟢 **BATCH 6 SHIPPED (2026-09-27): multi-form STATEMENTS** — FOR, IF, CLEAR,
+      COLOR, SCREEN, LOCATE, TIME, DEFINT/SNG/DBL/STR (`--batch=6` →
+      [`scratchpad/t6enum_b6.out`](scratchpad/t6enum_b6.out)), 107 cases, 56 rows,
+      56/56 SUPPORTED. 🔴 **IT FOUND THE WORST BUG OF THE DAY — `CLEAR 30000`
+      HUNG ZEROBAS** (D-CLEARFIT, FIXED above, funded by the D-CARVEFO carve),
+      plus D-IFGOTOBARE and D-CLEAR3ARG (filed). T6 64 → **75** — predicted
+      ~73 and MISSED by assuming D-CLEAR3ARG blocked CLEAR; `CLEAR,` covers its
+      code 2. ⚠️ RESUME is NOT measurable by
+      this probe — "RESUME without error" is untrappable on both machines, so it
+      stays unrated; three valid `LOCATE` cases read nothing on the reference
+      because the cursor move put the output above the reader's window.
       🔴 **AND MY S1 READER WAS WRONG, CAUGHT BY THE COUNT:** predicted T6 42, the
       sheet read **40** — NEXT and RETURN missing with every row SUPPORTED.
       `kwsweep_t6_cover` used `stmt_keyword` (the FIRST keyword), so
@@ -24896,6 +24907,51 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       a syntax fault; zerobas apparently treats `5` as a store target. ⚠️ Check
       the bare `5=1` statement form too — the same parse may be reachable without
       `LET`.
+
+- [x] ✅ **FIXED 2026-09-27 (D-CLEARFIT): `CLEAR n` TOO BIG FOR MEMORY HUNG OR
+      CORRUPTED ZEROBAS — NOW `Out of memory`, AND A REJECTED CLEAR KEEPS THE OLD
+      POOL.** Found by the T6 enumeration (batch 6): `CLEAR 30000` gave NO prompt
+      at all (the VG-8020 says `Out of memory`), and `CLEAR 25000` — ACCEPTED on
+      the VG-8020, which has ~4.7 KB more BASIC RAM — filled the screen with
+      garbage. Cause: the one-argument form stored `POOLSIZE` after a SIGN check
+      only, so the sub-side pool floor fell below the program text; and the
+      two-argument form's own `Out of memory` left the new size stored behind it.
+      Fix (`basic/clear.asm`, +22 B): the old `POOLSIZE` rides the stack; the
+      one-argument form enters the memory-top arm's floor check
+      (`PRGEND + POOLSIZE + CLR_HIMEM_MARGIN`) with the CURRENT ceiling; a pending
+      fault at `clr_h_store` puts the old size back before the raise.
+      **Measured, both machines:** `CLEAR 30000` → `Out of memory` and the next
+      line runs; `FRE("")` after it reads the OLD pool (200; 500 after a prior
+      `CLEAR 500`); `CLEAR 30000,&HE000` restores the same way; `CLEAR 20000`
+      accepted. ⚠️ `CLEAR 25000` is `Out of memory` here and accepted on the
+      reference — the RAM gap (TIER 4), now a clean refusal instead of a crash.
+      Row `t6clearss7` pins it.
+      💰 **FUNDED BY A CARVE, D-CARVEFO (+26 B, main page 1 4 → 30 B):** the
+      five-instruction `$FE5D` crossing (`ld (FOPEN_SEL),a / ld hl,H_FOPEN / call
+      chan_gate / ld a,(DISKOP_STATUS) / or a`) stood verbatim at four page-1
+      sites (`disk_prog_load`, `sav_is_disk`, `dsk_aopen`, `dsk_agetbyte`) and is
+      now `fopen_cross` (`basic/files.asm`) — the top main-region candidate of
+      `scratchpad/ngram_sweep.py --main`. chan_gate keeps its own return point, so
+      the extra call level changes nothing main-side; the disk suites judge the
+      rest. After both: page 1 **8 B** free.
+
+- [ ] 🔴 **`IF 1 GOTO` (no line) IS ACCEPTED ON THE REFERENCE AND `Syntax error`
+      HERE (D-IFGOTOBARE, found 2026-09-27 by T6).**
+      🎚️ TIER 6 — `IF … GOTO` with no line number
+      🤖 **AUTONOMOUS** — the reference settles it.
+      `scratchpad/t6enum_b6.out` + a raw-screen capture: VG-8020 prints `[OK]`
+      (the statement completes; nothing jumps), zerobas `(2, 20)`. `IF 1 GOTO 99`
+      (8) and `IF 1 GOTO "A"` (2) agree.
+
+- [ ] 🔴 **`CLEAR 1,2,3` IS `Illegal function call` HERE AND `Syntax error` ON
+      THE REFERENCE (D-CLEAR3ARG, found 2026-09-27 by T6).**
+      🎚️ TIER 6 — `CLEAR` with three arguments
+      🤖 **AUTONOMOUS** — the reference settles it.
+      `scratchpad/t6enum_b6.out`: VG-8020 `(2, 20)`, zerobas `(5, 20)` — zerobas
+      range-checks the second argument (`2` < `$8000` → ERR 5) before seeing the
+      third; the reference rejects the statement shape first. ⚠️ NOT a T6
+      blocker (first written as one, and the tier sheet refuted it): the bare
+      form's code 2 also comes from `CLEAR,`, which agrees — CLEAR reads T6✓.
 
 - [ ] 🔴 **`ERROR`'s ARGUMENT IS NOT CHECKED LIKE THE REFERENCE'S — `ERROR "A"`,
       bare `ERROR`, `ERROR 70000` all raise 5 HERE; `ERROR 1,1` RAISES ERROR 1

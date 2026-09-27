@@ -164,6 +164,21 @@ cg_unclaimed:
                 ld      a,5                 ; Illegal function call -- TRAPPABLE,
                 jp      raise_error         ; which is what the reference gives
 
+; --- fopen_cross (D-CARVEFO, 2026-09-27): the `$FE5D` open-hook crossing ------
+; A = the FOPEN_SEL selector. Stores it, crosses H_FOPEN through chan_gate, and
+; returns A = DISKOP_STATUS with Z iff it is 0 (CF clear). The five-instruction
+; sequence stood verbatim at FOUR page-1 sites (disk_prog_load, sav_is_disk,
+; dsk_aopen, dsk_agetbyte); one body + four calls = 26 B of main page 1, carved
+; for D-CLEARFIT. chan_gate keeps its own return point (cg_back) and inspects no
+; caller frame, so one more call level changes nothing on the main side.
+fopen_cross:
+                ld      (FOPEN_SEL),a
+                ld      hl,H_FOPEN
+                call    chan_gate
+                ld      a,(DISKOP_STATUS)
+                or      a
+                ret
+
 ; chan_gate_bare -- the SAME crossing with NO channel bookkeeping, for the two
 ; verbs whose whole job is to write the live channel's record.
 ; 🔴 FIELD AND LSET/RSET MUST NOT TAKE THE FULL GATE, AND FIVE SUITES SAID SO.
@@ -2129,11 +2144,7 @@ arl_getbyte:
 ; diskless machine must not reach chan_gate's ERR 5 by this road.
 dsk_aopen:
                 ld      a,FOPEN_SEL_AOPEN
-                ld      (FOPEN_SEL),a
-                ld      hl,H_FOPEN
-                call    chan_gate
-                ld      a,(DISKOP_STATUS)
-                or      a                   ; 0 -> Z, and CF is CLEAR here
+                call    fopen_cross         ; A = DISKOP_STATUS, Z iff 0 (D-CARVEFO)                   ; 0 -> Z, and CF is CLEAR here
                 ret     z
                 scf
                 ret
@@ -2152,11 +2163,7 @@ dsk_aopen:
 ; Preserves nothing, which that contract already allows.
 dsk_agetbyte:
                 ld      a,FOPEN_SEL_GETB
-                ld      (FOPEN_SEL),a
-                ld      hl,H_FOPEN
-                call    chan_gate
-                ld      a,(DISKOP_STATUS)
-                or      a
+                call    fopen_cross         ; A = DISKOP_STATUS, Z iff 0 (D-CARVEFO)
                 jr      nz,dag_eof          ; nonzero = EOF
                 ld      a,c                 ; the byte -- BC crosses intact
                 or      a                   ; CF clear = a byte follows

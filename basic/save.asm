@@ -216,11 +216,8 @@ sav_is_disk:
                 ; disk.rom recorded one in DISKOP_ERR and prints `load error`
                 ; when it did not.
                 ld      a,FOPEN_SEL_SAVE
-                ld      (FOPEN_SEL),a
-                ld      hl,H_FOPEN
-                call    chan_gate           ; unclaimed -> ERR 5; claimed -> it ran
-                ld      a,(DISKOP_STATUS)
-                or      a
+                call    fopen_cross         ; unclaimed -> ERR 5; claimed -> it ran;
+                                            ; A = DISKOP_STATUS, Z iff 0 (D-CARVEFO)
                 ret     z                   ; 0 = written
                 jp      disk_error          ; 3 = mount / disk full / write / I-O
 

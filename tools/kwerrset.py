@@ -117,11 +117,26 @@ ERRSETS: dict[str, dict[str, frozenset[int]]] = {
     "POS": {"column-read": frozenset({2})},
     "LPOS": {"column-read": frozenset({2})},
     "RND": {"reseeded-draw": frozenset({2, 13})},
+    # 📏 BATCH 6, MEASURED 2026-09-27 (t6enum_probe.py --batch=6 -> t6enum_b6.out):
+    # multi-form statements; RESUME not measurable by this probe (untrappable).
+    "FOR": {"ascending": frozenset({2, 13, 24}), "step": frozenset({2, 13, 24}), "negative-step": frozenset({13, 24})},
+    "IF": {"then": frozenset({2, 8, 13}), "else": frozenset({8, 13}), "goto": frozenset({2, 8, 13})},
+    "CLEAR": {"bare": frozenset({2}), "string-space": frozenset({5, 6, 7, 13}), "himem": frozenset({5, 13, 24})},
+    "COLOR": {"foreground": frozenset({5, 13}), "background": frozenset({5, 13}), "border": frozenset({2, 5, 13})},
+    "SCREEN": {"mode": frozenset({5, 13}), "sprite-size": frozenset({5, 13}), "key-click": frozenset({2, 5, 13})},
+    "LOCATE": {"column": frozenset({5, 13}), "row": frozenset({5, 13}), "omitted-column": frozenset({13}), "cursor-switch": frozenset({13})},
+    "TIME": {"read": frozenset({13}), "write": frozenset({6, 13, 24})},
+    "DEFINT": {"single-letter": frozenset({2}), "letter-range": frozenset({2})},
+    "DEFSNG": {"single-letter": frozenset({2}), "letter-range": frozenset({2})},
+    "DEFDBL": {"single-letter": frozenset({2}), "letter-range": frozenset({2})},
+    "DEFSTR": {"single-letter": frozenset({2}), "letter-range": frozenset({2})},
 }
 
 _B1 = {"ABS", "SGN", "INT", "SQR", "LOG", "EXP", "ASC", "CHR$", "LEN", "PEEK"}
 _B3 = {"MKI$", "CVI", "MKS$", "CVS", "MKD$", "CVD", "DSKF"}
 _B4 = {"INSTR", "MID$", "NEXT", "RETURN", "RESTORE", "GOTO", "READ", "SWAP", "ERASE", "DIM"}
+_B6 = {"FOR", "IF", "CLEAR", "COLOR", "SCREEN", "LOCATE", "TIME", "DEFINT", "DEFSNG",
+       "DEFDBL", "DEFSTR"}
 _B5 = {"AND", "OR", "XOR", "EQV", "IMP", "NOT", "MOD", "BEEP", "CLS", "TRON", "TROFF",
        "END", "CSRLIN", "ERL", "ERR", "ERROR", "GOSUB", "INKEY$", "INP", "LET", "OUT",
        "POINT", "POS", "LPOS", "RND"}
@@ -134,6 +149,8 @@ PROVENANCE: dict[str, str] = {
         if k in _B4 else
         "scratchpad/t6enum_probe.py --batch=5 -> scratchpad/t6enum_b5.out, VG-8020"
         if k in _B5 else
+        "scratchpad/t6enum_probe.py --batch=6 -> scratchpad/t6enum_b6.out, VG-8020"
+        if k in _B6 else
         "scratchpad/t6enum_probe.py --batch=2 -> scratchpad/t6enum_b2.out, VG-8020")
        + ", 2026-09-27"
     for k in ERRSETS}
