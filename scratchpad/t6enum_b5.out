@@ -1,0 +1,115 @@
+keyword case                                           Philips_VG_8   C-BIOS_MSX1_
+AND     PRINT 1 AND "A"                                    (13, 20)       (13, 20)
+AND     PRINT 1 AND                                        (24, 20)       (24, 20)
+AND     PRINT 70000 AND 1                                   (6, 20)        (6, 20)
+AND     PRINT 1 AND 70000                                   (6, 20)        (6, 20)
+OR      PRINT 1 OR "A"                                     (13, 20)       (13, 20)
+OR      PRINT 1 OR                                         (24, 20)       (24, 20)
+OR      PRINT 70000 OR 1                                    (6, 20)        (6, 20)
+OR      PRINT 1 OR 70000                                    (6, 20)        (6, 20)
+XOR     PRINT 1 XOR "A"                                    (13, 20)       (13, 20)
+XOR     PRINT 1 XOR                                        (24, 20)       (24, 20)
+XOR     PRINT 70000 XOR 1                                   (6, 20)        (6, 20)
+XOR     PRINT 1 XOR 70000                                   (6, 20)        (6, 20)
+EQV     PRINT 1 EQV "A"                                    (13, 20)       (13, 20)
+EQV     PRINT 1 EQV                                        (24, 20)       (24, 20)
+EQV     PRINT 70000 EQV 1                                   (6, 20)        (6, 20)
+EQV     PRINT 1 EQV 70000                                   (6, 20)        (6, 20)
+IMP     PRINT 1 IMP "A"                                    (13, 20)       (13, 20)
+IMP     PRINT 1 IMP                                        (24, 20)       (24, 20)
+IMP     PRINT 70000 IMP 1                                   (6, 20)        (6, 20)
+IMP     PRINT 1 IMP 70000                                   (6, 20)        (6, 20)
+NOT     PRINT NOT "A"                                      (13, 20)       (13, 20)
+NOT     PRINT NOT                                          (24, 20)       (24, 20)
+NOT     PRINT NOT 70000                                     (6, 20)        (6, 20)
+MOD     PRINT 5 MOD 0                                      (11, 20)       (11, 20)
+MOD     PRINT 5 MOD "A"                                    (13, 20)       (13, 20)
+MOD     PRINT 5 MOD                                        (24, 20)       (24, 20)
+MOD     PRINT 70000 MOD 2                                   (6, 20)        (6, 20)
+BEEP    BEEP 1                                              (2, 20)        (2, 20)
+BEEP    BEEP,                                               (2, 20)        (2, 20)
+CLS     CLS 1                                               (2, 20)           None
+CLS     CLS,                                                (2, 20)           None
+TRON    TRON 1                                              (2, 20)        (2, 20)
+TRON    TRON,                                               (2, 20)        (2, 20)
+TROFF   TROFF 1                                             (2, 20)        (2, 20)
+TROFF   TROFF,                                              (2, 20)        (2, 20)
+END     END 1                                               (2, 20)           None
+END     END,                                                (2, 20)           None
+CSRLIN  PRINT CSRLIN(1)                                          OK             OK
+CSRLIN  A=CSRLIN 1                                          (2, 20)        (2, 20)
+ERL     PRINT ERL(1)                                             OK             OK
+ERL     A=ERL 1                                             (2, 20)        (2, 20)
+ERR     PRINT ERR(1)                                             OK             OK
+ERR     A=ERR 1                                             (2, 20)        (2, 20)
+ERROR   ERROR 0                                             (5, 20)        (5, 20)
+ERROR   ERROR 256                                           (5, 20)        (5, 20)
+ERROR   ERROR "A"                                          (13, 20)        (5, 20)
+ERROR   ERROR                                              (24, 20)        (5, 20)
+ERROR   ERROR -1                                            (5, 20)        (5, 20)
+ERROR   ERROR 70000                                         (6, 20)        (5, 20)
+ERROR   ERROR 1,1                                           (2, 20)        (1, 20)
+GOSUB   GOSUB 99                                            (8, 20)        (8, 20)
+GOSUB   GOSUB                                               (2, 20)        (2, 20)
+GOSUB   GOSUB "A"                                           (2, 20)        (2, 20)
+GOSUB   GOSUB -1                                            (2, 20)        (2, 20)
+GOSUB   GOSUB 70000                                         (8, 20)        (8, 20)
+INKEY$  PRINT INKEY$(1)                                          OK             OK
+INKEY$  A=INKEY$                                           (13, 20)       (13, 20)
+INP     PRINT INP("A")                                     (13, 20)       (13, 20)
+INP     PRINT INP()                                         (2, 20)        (2, 20)
+INP     PRINT INP(256)                                           OK             OK
+INP     PRINT INP(-1)                                            OK             OK
+INP     PRINT INP(1,2)                                      (2, 20)        (2, 20)
+LET     LET A="X"                                          (13, 20)       (13, 20)
+LET     LET A$=5                                           (13, 20)       (13, 20)
+LET     LET 5=1                                             (2, 20)           None
+LET     LET                                                 (2, 20)        (2, 20)
+LET     LET A                                               (2, 20)        (2, 20)
+OUT     OUT "A",1                                          (13, 20)       (13, 20)
+OUT     OUT &H2F,"A"                                       (13, 20)       (13, 20)
+OUT     OUT 256,1                                                OK             OK
+OUT     OUT &H2F,256                                        (5, 20)        (5, 20)
+OUT     OUT &H2F                                            (2, 20)        (2, 20)
+OUT     OUT                                                (24, 20)       (24, 20)
+OUT     OUT &H2F,1,1                                        (2, 20)        (2, 20)
+POINT   PRINT POINT("A",1)                                 (13, 20)       (13, 20)
+POINT   PRINT POINT(1)                                      (2, 20)        (2, 20)
+POINT   PRINT POINT()                                       (2, 20)        (2, 20)
+POINT   PRINT POINT(1,1,1)                                  (2, 20)        (2, 20)
+POS     PRINT POS("A")                                           OK       (13, 20)
+POS     PRINT POS()                                         (2, 20)        (2, 20)
+POS     PRINT POS(1,2)                                      (2, 20)        (2, 20)
+LPOS    PRINT LPOS("A")                                          OK       (13, 20)
+LPOS    PRINT LPOS()                                        (2, 20)        (2, 20)
+LPOS    PRINT LPOS(1,2)                                     (2, 20)        (2, 20)
+RND     PRINT RND("A")                                     (13, 20)       (13, 20)
+RND     PRINT RND()                                         (2, 20)        (2, 20)
+RND     PRINT RND(1,2)                                      (2, 20)        (2, 20)
+
+# the reference's error set per keyword form (code: first case)
+AND    bitwise-and    6: PRINT 70000 AND 1  13: PRINT 1 AND "A"  24: PRINT 1 AND
+OR     bitwise-or     6: PRINT 70000 OR 1  13: PRINT 1 OR "A"  24: PRINT 1 OR
+XOR    bitwise-xor    6: PRINT 70000 XOR 1  13: PRINT 1 XOR "A"  24: PRINT 1 XOR
+EQV    equivalence    6: PRINT 70000 EQV 1  13: PRINT 1 EQV "A"  24: PRINT 1 EQV
+IMP    implication    6: PRINT 70000 IMP 1  13: PRINT 1 IMP "A"  24: PRINT 1 IMP
+NOT    bitwise-not    6: PRINT NOT 70000  13: PRINT NOT "A"  24: PRINT NOT
+MOD    modulo         6: PRINT 70000 MOD 2  11: PRINT 5 MOD 0  13: PRINT 5 MOD "A"  24: PRINT 5 MOD
+BEEP   no-argument    2: BEEP 1
+CLS    no-argument    2: CLS 1
+TRON   toggle         2: TRON 1
+TROFF  toggle         2: TROFF 1
+END    terminate      2: END 1
+CSRLIN row-read       2: A=CSRLIN 1
+ERL    error-line     2: A=ERL 1
+ERR    error-code     2: A=ERR 1
+ERROR  raise          2: ERROR 1,1  5: ERROR 0  6: ERROR 70000  13: ERROR "A"  24: ERROR
+GOSUB  call           2: GOSUB  8: GOSUB 99
+INKEY$ poll-key       13: A=INKEY$
+INP    port-read      2: PRINT INP()  13: PRINT INP("A")
+LET    assign         2: LET 5=1  13: LET A="X"
+OUT    port-value     2: OUT &H2F  5: OUT &H2F,256  13: OUT "A",1  24: OUT
+POINT  pixel-read     2: PRINT POINT(1)  13: PRINT POINT("A",1)
+POS    column-read    2: PRINT POS()
+LPOS   column-read    2: PRINT LPOS()
+RND    reseeded-draw  2: PRINT RND()  13: PRINT RND("A")

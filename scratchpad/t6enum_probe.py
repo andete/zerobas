@@ -158,6 +158,50 @@ BATCH4 = {
 }
 
 
+# --- BATCH 5 (2026-09-27): one-form OPERATORS, bare statements and readers ------
+# OUT's `extra` case writes its port BEFORE the Syntax error, so it uses &H2F, an
+# unused port. ERROR's valid form raises its own argument, so only MALFORMED
+# forms are faulted. REM is absent: a comment has no errors, and a zero
+# denominator proves nothing.
+def _op(kw):
+    return [f'PRINT 1 {kw} "A"', f"PRINT 1 {kw}", f"PRINT 70000 {kw} 1",
+            f"PRINT 1 {kw} 70000"]
+
+
+BATCH5 = {
+    "AND": [("bitwise-and", _op("AND"))],
+    "OR": [("bitwise-or", _op("OR"))],
+    "XOR": [("bitwise-xor", _op("XOR"))],
+    "EQV": [("equivalence", _op("EQV"))],
+    "IMP": [("implication", _op("IMP"))],
+    "NOT": [("bitwise-not", ['PRINT NOT "A"', "PRINT NOT", "PRINT NOT 70000"])],
+    "MOD": [("modulo", ["PRINT 5 MOD 0", 'PRINT 5 MOD "A"', "PRINT 5 MOD",
+                        "PRINT 70000 MOD 2"])],
+    "BEEP": [("no-argument", ["BEEP 1", "BEEP,"])],
+    "CLS": [("no-argument", ["CLS 1", "CLS,"])],
+    "TRON": [("toggle", ["TRON 1", "TRON,"])],
+    "TROFF": [("toggle", ["TROFF 1", "TROFF,"])],
+    "END": [("terminate", ["END 1", "END,"])],
+    "CSRLIN": [("row-read", ["PRINT CSRLIN(1)", "A=CSRLIN 1"])],
+    "ERL": [("error-line", ["PRINT ERL(1)", "A=ERL 1"])],
+    "ERR": [("error-code", ["PRINT ERR(1)", "A=ERR 1"])],
+    "ERROR": [("raise", ["ERROR 0", "ERROR 256", 'ERROR "A"', "ERROR", "ERROR -1",
+                         "ERROR 70000", "ERROR 1,1"])],
+    "GOSUB": [("call", ["GOSUB 99", "GOSUB", 'GOSUB "A"', "GOSUB -1", "GOSUB 70000"])],
+    "INKEY$": [("poll-key", ["PRINT INKEY$(1)", "A=INKEY$"])],
+    "INP": [("port-read", ['PRINT INP("A")', "PRINT INP()", "PRINT INP(256)",
+                           "PRINT INP(-1)", "PRINT INP(1,2)"])],
+    "LET": [("assign", ['LET A="X"', "LET A$=5", "LET 5=1", "LET", "LET A"])],
+    "OUT": [("port-value", ['OUT "A",1', 'OUT &H2F,"A"', "OUT 256,1", "OUT &H2F,256",
+                            "OUT &H2F", "OUT", "OUT &H2F,1,1"])],
+    "POINT": [("pixel-read", ['PRINT POINT("A",1)', "PRINT POINT(1)", "PRINT POINT()",
+                              "PRINT POINT(1,1,1)"])],
+    "POS": [("column-read", ['PRINT POS("A")', "PRINT POS()", "PRINT POS(1,2)"])],
+    "LPOS": [("column-read", ['PRINT LPOS("A")', "PRINT LPOS()", "PRINT LPOS(1,2)"])],
+    "RND": [("reseeded-draw", ['PRINT RND("A")', "PRINT RND()", "PRINT RND(1,2)"])],
+}
+
+
 def _call(kw, stmt, args):
     a = ",".join(args)
     return f"{kw} {a}".rstrip() if stmt else f"PRINT {kw}({a})"
@@ -177,8 +221,8 @@ def batch2_cases(kw, form, stmt, spec):
 
 def cases():
     only = next((a.split("=", 1)[1] for a in sys.argv if a.startswith("--only=")), None)
-    if "--batch=4" in sys.argv:
-        for kw, formlist in BATCH4.items():
+    if "--batch=4" in sys.argv or "--batch=5" in sys.argv:
+        for kw, formlist in (BATCH5 if "--batch=5" in sys.argv else BATCH4).items():
             if only and kw not in only.split(","):
                 continue
             for form, stmts in formlist:

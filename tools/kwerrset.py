@@ -89,11 +89,42 @@ ERRSETS: dict[str, dict[str, frozenset[int]]] = {
     "SWAP": {"exchange": frozenset({2, 13})},
     "ERASE": {"free-array": frozenset({2, 5})},
     "DIM": {"one-dimensional": frozenset({2, 5, 6, 9, 10, 13}), "multi-dimensional": frozenset({5, 9, 10, 13})},
+    # 📏 BATCH 5, MEASURED 2026-09-27 (t6enum_probe.py --batch=5 -> t6enum_b5.out).
+    # ⚠️ INKEY$'s only code (13) is `A=INKEY$` -- the ASSIGNMENT's type mismatch,
+    # since `INKEY$(1)` reads OK on the reference: weak evidence for INKEY$ itself.
+    "AND": {"bitwise-and": frozenset({6, 13, 24})},
+    "OR": {"bitwise-or": frozenset({6, 13, 24})},
+    "XOR": {"bitwise-xor": frozenset({6, 13, 24})},
+    "EQV": {"equivalence": frozenset({6, 13, 24})},
+    "IMP": {"implication": frozenset({6, 13, 24})},
+    "NOT": {"bitwise-not": frozenset({6, 13, 24})},
+    "MOD": {"modulo": frozenset({6, 11, 13, 24})},
+    "BEEP": {"no-argument": frozenset({2})},
+    "CLS": {"no-argument": frozenset({2})},
+    "TRON": {"toggle": frozenset({2})},
+    "TROFF": {"toggle": frozenset({2})},
+    "END": {"terminate": frozenset({2})},
+    "CSRLIN": {"row-read": frozenset({2})},
+    "ERL": {"error-line": frozenset({2})},
+    "ERR": {"error-code": frozenset({2})},
+    "ERROR": {"raise": frozenset({2, 5, 6, 13, 24})},
+    "GOSUB": {"call": frozenset({2, 8})},
+    "INKEY$": {"poll-key": frozenset({13})},
+    "INP": {"port-read": frozenset({2, 13})},
+    "LET": {"assign": frozenset({2, 13})},
+    "OUT": {"port-value": frozenset({2, 5, 13, 24})},
+    "POINT": {"pixel-read": frozenset({2, 13})},
+    "POS": {"column-read": frozenset({2})},
+    "LPOS": {"column-read": frozenset({2})},
+    "RND": {"reseeded-draw": frozenset({2, 13})},
 }
 
 _B1 = {"ABS", "SGN", "INT", "SQR", "LOG", "EXP", "ASC", "CHR$", "LEN", "PEEK"}
 _B3 = {"MKI$", "CVI", "MKS$", "CVS", "MKD$", "CVD", "DSKF"}
 _B4 = {"INSTR", "MID$", "NEXT", "RETURN", "RESTORE", "GOTO", "READ", "SWAP", "ERASE", "DIM"}
+_B5 = {"AND", "OR", "XOR", "EQV", "IMP", "NOT", "MOD", "BEEP", "CLS", "TRON", "TROFF",
+       "END", "CSRLIN", "ERL", "ERR", "ERROR", "GOSUB", "INKEY$", "INP", "LET", "OUT",
+       "POINT", "POS", "LPOS", "RND"}
 PROVENANCE: dict[str, str] = {
     k: ("scratchpad/t6enum_probe.py -> scratchpad/t6enum_run.out (EXP: t6enum_exp.out), VG-8020"
         if k in _B1 else
@@ -101,6 +132,8 @@ PROVENANCE: dict[str, str] = {
         if k in _B3 else
         "scratchpad/t6enum_probe.py --batch=4 -> scratchpad/t6enum_b4.out, VG-8020"
         if k in _B4 else
+        "scratchpad/t6enum_probe.py --batch=5 -> scratchpad/t6enum_b5.out, VG-8020"
+        if k in _B5 else
         "scratchpad/t6enum_probe.py --batch=2 -> scratchpad/t6enum_b2.out, VG-8020")
        + ", 2026-09-27"
     for k in ERRSETS}

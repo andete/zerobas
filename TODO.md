@@ -5973,7 +5973,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:25731 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:25785 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -24850,6 +24850,16 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       form list, not for this probe.
       🔮 Misses: `DIM A(10000)` is 9 Subscript out of range, not 7; `RESTORE,` is
       8 on both.
+      🟢 **BATCH 5 SHIPPED (2026-09-27): 25 one-form operators, bare statements
+      and readers** (`--batch=5` → [`scratchpad/t6enum_b5.out`](scratchpad/t6enum_b5.out)),
+      87 cases, 46 rows 46/46 SUPPORTED. 🔴 **FIVE DIVERGENCES**, filed above the
+      MID$ item: D-LETNUM (`LET 5=1` CORRUPTS the screen — TIER 3), D-ERRORARG,
+      D-BAREEXTRA (`CLS 1` clears first, `END 1` ends silently), D-POSDUMMY.
+      CLS, END and ERROR stay T6- (codes with no agreeing case). Five of the
+      cases first read `<no reading>` on zerobas; the raw screens, not the
+      reader, said why.
+      🔮 Misses: an operator missing its right side is **24** Missing operand, not
+      2; `POS("A")` is accepted on the reference.
       🔴 **AND MY S1 READER WAS WRONG, CAUGHT BY THE COUNT:** predicted T6 42, the
       sheet read **40** — NEXT and RETURN missing with every row SUPPORTED.
       `kwsweep_t6_cover` used `stmt_keyword` (the FIRST keyword), so
@@ -24858,6 +24868,50 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       reader always did), the four scenario rows declare it, and arm S36z pins it
       (NEGATIVE half: undeclared, it is NEVER guessed as NEXT; a mutation back to
       `stmt_keyword` turns S36z RED). Re-read: **T6 42 of 159**.
+
+- [ ] 🔴 **`LET 5=1` CORRUPTS THE SCREEN ON ZEROBAS — THE REFERENCE RAISES
+      `Syntax error` (D-LETNUM, found 2026-09-27 by the T6 enumeration).**
+      🎚️ TIER 3 — COMMON ERRORS: an error path that DAMAGES the machine is worse
+      than a wrong message, whatever the statement's frequency.
+      🤖 **AUTONOMOUS** — the reference settles it; find what the path writes first.
+      `scratchpad/t6enum_b5.out` (raw screens captured the same day): VG-8020
+      `[ 2 20 ]` under an `ON ERROR` handler; zerobas shows the listing
+      OVERWRITTEN (`NEW ERROR GOTO 90 …`, `R;ERL;"]":END`) and stray bytes
+      (`p    p @`), no handler output at all. `LET` with a NUMBER as its target is
+      a syntax fault; zerobas apparently treats `5` as a store target. ⚠️ Check
+      the bare `5=1` statement form too — the same parse may be reachable without
+      `LET`.
+
+- [ ] 🔴 **`ERROR`'s ARGUMENT IS NOT CHECKED LIKE THE REFERENCE'S — `ERROR "A"`,
+      bare `ERROR`, `ERROR 70000` all raise 5 HERE; `ERROR 1,1` RAISES ERROR 1
+      (D-ERRORARG, found 2026-09-27 by T6).**
+      🎚️ TIER 6 — `ERROR` with a malformed argument
+      🤖 **AUTONOMOUS** — the reference settles it.
+      `scratchpad/t6enum_b5.out`: VG-8020 13 / 24 / 6 / 2; zerobas 5 / 5 / 5 / 1.
+      The reference evaluates the argument as an ordinary integer expression
+      (type, missing operand, overflow) and then demands the statement end;
+      zerobas collapses every fault to 5 and runs `ERROR 1` before seeing `,1`.
+      `ERROR 0` and `ERROR 256` agree (5). Blocks ERROR's T6.
+
+- [ ] 🔴 **`CLS 1` CLEARS THE SCREEN BEFORE ITS `Syntax error`, AND `END 1` ENDS
+      SILENTLY — trailing junk after a no-argument statement (D-BAREEXTRA, found
+      2026-09-27 by T6).**
+      🎚️ TIER 6 — `CLS` / `END` followed by an argument
+      🤖 **AUTONOMOUS** — the reference settles it.
+      Raw screens (`t6enum_b5.out` + the same-day capture): `CLS 1` / `CLS,` —
+      the VG-8020 raises `[ 2 20 ]` with the screen intact; zerobas CLEARS the
+      screen, then raises the same `[ 2 20 ]`. `END 1` / `END,` — VG-8020
+      `[ 2 20 ]`; zerobas ends the program with NO error. BEEP, TRON and TROFF
+      agree (2 before any effect), so it is these two handlers: the statement-end
+      check comes after the action (CLS) or never (END). Blocks CLS and END's T6.
+
+- [ ] 🔴 **`POS("A")` / `LPOS("A")` ARE `Type mismatch` HERE AND ACCEPTED ON THE
+      REFERENCE (D-POSDUMMY, found 2026-09-27 by T6).**
+      🎚️ TIER 6 — `POS`/`LPOS` with a string dummy argument
+      🤖 **AUTONOMOUS** — the reference settles it.
+      `scratchpad/t6enum_b5.out`: VG-8020 prints a value (`OK`), zerobas `(13,
+      20)`. The argument is a DUMMY on the reference and its type is not checked.
+      Not a T6 blocker (the reference raises nothing there), but a divergence.
 
 - [ ] 🔴 **AN EXTRA ARGUMENT TO `MID$` IS `Type mismatch` HERE AND `Syntax error`
       ON THE REFERENCE — `MID$("AB",1,1,1)` AND `MID$(5,1)="X"` (D-MIDEXTRA,
