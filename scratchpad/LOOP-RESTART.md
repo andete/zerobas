@@ -48,6 +48,21 @@ after on the unchanged tree: all five exit 0. Not amended (pushed history).
 PUT's write-through cache needs a carve in main p1 AND sub p1; the sub-side
 `sh_pop_top` reclaim (comparisons, concat operands) needs ~20 B of sub p0 and
 has no separating row yet. What is left 🤖 is APPARATUS.
+**Later the same night (apparatus):** `92668b33` **D-CASCUT** + `6a2881ca`
+**D-SSTROW** — all four sites the D-DUPSPAN2 alias audit named are now reached
+by knife-proven rows or gone; `6a2881ca` also **D-PLANCHILD** (the gate planner
+follows child probes run by path — it had planned 0 suites for a
+`basic_probe_string.py` edit) · `4e22c989` DEF FN knife roster 12 → 14 (K-RK1
+moved 0 of 73 and falsified two comments) · `680da6b4` the predecessor-walk
+item priced at 0 bytes.
+🛑 **LOOP STOPPED 2026-09-27 ~06:30 — THE AUTONOMOUS QUEUE IS EMPTY IN PRACTICE.**
+What remains 🤖 is a COST decision (`--say` widening, six synthesised refusal
+checks), a wide-blast fixture change (an ASCII `.BAS` on the test image for
+`merge-alive`), evidence-waiting (`refcache-check`'s calendar red), or priced
+at ~0 (the 24 undecidable ENDIF spans). None is worth doing unattended.
+🙋 **FOR JOOST:** D-FCBSHAPE §4 · the RAM frame economy (FOR 25 vs 11 B) ·
+PAINT's span stack · PUT's directory-stamp trade · T6 · the PAD touchpad fix
+(needs the rig plugged in + a window).
 
 ### 🌙 LOOP 2026-09-26 → 27 (after the day section below) — READ THIS FIRST
 
