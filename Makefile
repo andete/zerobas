@@ -2193,6 +2193,14 @@ castail-characterize: repack-machine $(DISK_TEST_DSK)
 	        --sides $(if $(SIDES),'$(SIDES)',vg8020,cf3300,zb) \
 	        $(if $(ONLY),--only '$(ONLY)',)
 
+# --- cas-ascii-acceptance: LOAD"CAS:" of ASCII tapes, 1 to 4 blocks (D-CAS4BLK) --
+# 🔴 This probe existed since 2026-08-18 in NO make target, and its 4-block
+# assertion went red unseen: the tape PLAYED ON while BASIC tokenised, until a
+# block took longer than the next leader (cal_refill never stopped the motor).
+# A gate is what keeps a fixed timing bug fixed.
+cas-ascii-acceptance: repack-machine
+	python3 probes/basic/basic_probe_cas_ascii.py
+
 castail-acceptance: repack-machine $(DISK_TEST_DSK)
 	python3 probes/basic/basic_probe_castail.py --gate \
 	        --sides $(if $(SIDES),'$(SIDES)',vg8020,cf3300,zb) \
@@ -3592,7 +3600,7 @@ clean:
         editverb-acceptance lptverb-characterize lptverb-acceptance \
         dskmsg-characterize dskmsg-acceptance \
         runtail-characterize runtail-acceptance runline-acceptance \
-        castail-characterize castail-acceptance \
+        castail-characterize castail-acceptance cas-ascii-acceptance \
         cassave-characterize cassave-acceptance \
         readvar-characterize readvar-acceptance \
         inputary-characterize inputary-acceptance \

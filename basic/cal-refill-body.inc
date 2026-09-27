@@ -50,7 +50,19 @@ cal_fill_lp:
                 inc     a
                 ld      (CAL_CNT),a         ; pos++ (255 -> 0 ends the 256-byte block)
                 jr      nz,cal_fill_lp
-                ret                         ; CF clear; buffer full, CAL_CNT = 0
+                ; 🔴 D-CAS4BLK: THE MOTOR STOPS AFTER EVERY BLOCK. It never did, so the
+                ; tape PLAYED ON while ascii_read_lines tokenised, and a block whose
+                ; lines took longer to tokenise than the next leader lasts let the
+                ; tape run past it -- the double buffer only moved that one block
+                ; later. A 21-line, 4-block program kept 360 of 631 bytes
+                ; (probes/basic/basic_probe_cas_ascii.py, assertion 4) once
+                ; tokenising got slower. Stopped, the tape WAITS: the next refill's
+                ; TAPION turns the motor on and relocks on the next block's own
+                ; leader, which is what the per-block leaders of the ASCII format
+                ; are for. openMSX's cassette player honours the motor line.
+                call    TAPIOF              ; motor off (and EI)
+                or      a                   ; CF clear; buffer full, CAL_CNT = 0
+                ret
 cal_fill_fail:
                 scf                         ; truncated block -> EOF
                 ret

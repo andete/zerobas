@@ -783,6 +783,13 @@ err_verify:     db      "Verify",MSGESC_ERROR,0         ; 15 B -> 8 B
 ;      block 1, just as promptly. cal_getbyte's steady-state read-ahead (below)
 ;      keeps every later block just as prompt, one block early.
 ;
+; 🔴 D-CAS4BLK (2026-09-27): EVERYTHING ABOVE ASSUMES THE TAPE KEEPS PLAYING, AND
+; SINCE THEN IT DOES NOT. cal_refill never stopped the motor, which is why block
+; timing mattered at all -- and a 4-block program regressed to 360 of 631 bytes
+; once tokenising got slower. It now ends with TAPIOF, so the tape WAITS while a
+; block is tokenised and TAPION restarts it at the next block's leader. The
+; double buffer and requirement (2) are kept (both still hold, and harmless),
+; but they are no longer what makes a long program load.
 ; ascii_read_lines stops at the first Ctrl-Z ($1A) — which every producer puts in
 ; the LAST real block (§0.1) — so the reader stops before ever draining the final
 ; block, and the read-ahead is never asked for a non-existent block on a

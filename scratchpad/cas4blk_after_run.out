@@ -1,0 +1,10 @@
+Assertion 1 — real-tape ASCII load oracle (HARDBOIL.CAS):
+msxtest: BASIC image carries islands -- loaded at $0010, not $2812
+  [PASS] LOAD"CAS:" of a real 5-line ASCII tape matches the tokenised image
+Assertion 2 — multi-block ASCII load (>256 bytes -> 2 tape blocks):
+  [PASS] 25-line (333-byte, 2 blocks) ASCII program loads byte-identical
+Assertion 3 — tokenised CLOAD still loads (no $D3-path regression):
+  [PASS] tokenised 3-line CLOAD unchanged
+Assertion 4 — 4-block ASCII load (>768 bytes, real-program density):
+  [PASS] 21-line (814-byte, 4 blocks) ASCII program loads byte-identical
+CAS-ASCII: PASS

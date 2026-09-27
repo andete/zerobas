@@ -6019,7 +6019,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:26215 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:26229 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -25116,7 +25116,7 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       from A — **1 B cheaper** than the C version. `sound-acceptance` gains
       `r8_var`, `r8_rv`, `r7_var`, the rows that can see it.
 
-- [ ] 🔴 **A 4-BLOCK ASCII TAPE NO LONGER LOADS WHOLE — `LOAD"CAS:"` OF A
+- [x] 🔴 **A 4-BLOCK ASCII TAPE NO LONGER LOADS WHOLE — `LOAD"CAS:"` OF A
       21-LINE (814-BYTE) PROGRAM KEEPS 360 OF ITS 631 TOKENISED BYTES
       (D-CAS4BLK, found 2026-09-27 by D-CARVECAS's regression check).**
       🎚️ TIER 1 — happy path: an ASCII program on tape longer than two blocks is
@@ -25140,6 +25140,20 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       rather than assume it.
       ➡️ And the probe goes into a make target when it is green, so this cannot
       recur silently.
+      ✅ **FIXED 2026-09-27 — THE MOTOR, NOT THE CLOCK.** The hypothesis above
+      had the effect right and the mechanism wrong: nothing needed to be faster.
+      `cal_refill` read a block and NEVER STOPPED THE MOTOR, so the tape played
+      on through every tokenise; the double buffer bought one block of slack and
+      no more. It now ends with `TAPIOF` (motor off — our own `tape/tape.asm`
+      tapiof, `stmotr` 0), so the tape WAITS while BASIC tokenises and the next
+      refill's `TAPION` turns it back on and relocks on the next block's own
+      leader, which is what the per-block leaders are for
+      ([`basic/cal-refill-body.inc`](basic/cal-refill-body.inc), sub page 1 only
+      since D-CARVECAS: +4 B there, main untouched). After
+      ([`scratchpad/cas4blk_after_run.out`](scratchpad/cas4blk_after_run.out)):
+      **CAS-ASCII PASS, 4 of 4**. 🟢 **GATED:** `cas-ascii-acceptance`, in the
+      battery; the knife is the before-state itself — the same code without the
+      call failed assertion 4 on two builds.
 
 - [ ] 🐌 **A DEFAULT-TYPE `FOR` LOOP IS 44 % SLOWER SINCE D-FORFLOAT — `NEXT`
       2.37× THE VG-8020, WAS 1.64× (D-FORFAST, filed 2026-09-27).**
