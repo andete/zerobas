@@ -5913,7 +5913,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:25345 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:25359 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -6079,7 +6079,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:10876 (T-6FE392)8 (T-529ABE)` from `TODO.md:22999 (T-529ABE)`: a
+      `TODO.md:10890 (T-6FE392)8 (T-529ABE)` from `TODO.md:23013 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -7208,6 +7208,20 @@ list. **When a slice lands, grep this list for what it just shipped.**
       🤖 AUTONOMOUS — re-run it in slices after any session that adds probes.
       **Measured 2026-09-24 at ~34 minutes for the full corpus**, and the debt
       lands the same night.
+
+      📏 **RE-RUN IN FULL 2026-09-27 (loop) — 91 PROBES, SERIAL, REFCACHE OFF: 0
+      UNFILED, 0 UNDECLARED NOTHING-PARSED, 0 NO-LONGER-DIVERGING.** The first
+      pass read 5 UNFILED and 11 NOTHING PARSED, and every one was bookkeeping
+      or a stale PROBE, not a new defect: `ptrchain_probe` reads the pre-move
+      private cells unless given `--after` (now in the sweep's ARGS; it reads
+      `DIFF: 0/9`); `strtemp_probe` hard-coded the old `$DB00` ceiling (every
+      row read 64256; it now reads HIMEM, and its 4 real rows are S2b's heap
+      half, pinned); `nset`/`nset2` are the cells Joost's 2026-09-25 "Stop here"
+      names; `fremops` is today's frame economy; the 11 silent ones are
+      characterisation/timing instruments, now DECLARED with their own reasons.
+      🔌 The sweep also REFUSES any probe that drives the rig or opens a window
+      (`rigfw_window_probe`: NOT SWEPT — ask Joost first). ⚠️ `rigcap_probe`
+      (declared, no verdict) TIMED OUT at 600 s — unread; look before trusting it.
 
 - [x] ✅ **D-OOMTAIL (2026-08-31): the two store-overflow exits share one
       body — +13 B main page 1.** `ctp_oom`'s seven-instruction tail was
@@ -11720,7 +11734,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:22999 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:23013 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

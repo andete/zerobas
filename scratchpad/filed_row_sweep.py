@@ -59,6 +59,10 @@ MARKER = re.compile(r"(?:🔴\s*DIFF\b|\bDIFF\s*$|\bDIVERGENCE\b|"
 # three-arm run has its own controls (MARK / LMARK) and is worth keeping.
 ARGS = {
     "casfch_probe": ("--input-only",),
+    # D-ADDR29 S2 built: read zerobas's PUBLISHED VARTAB/ARYTAB/STREND. Without
+    # the flag it reads the pre-move private cells, which now read $FFFF (a
+    # 9/9 "divergence" that was the probe, 2026-09-27 triage).
+    "ptrchain_probe": ("--after",),
 }
 
 # every row shape seen in this corpus, not just the one the first probe used

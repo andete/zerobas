@@ -10,7 +10,9 @@ string at all -- two PEEK sums printed after a numeric fence (12345) -- and the
 cases separate "a string that stays" from "a temporary that is released".
 
 Used bytes: MEMSIZ - FRETOP on the VG-8020 ($F672, $F69B); $DB00 - FRETOP on
-zerobas (its FRETOP $E268 below the fixed ceiling TXTMAX $DB00). Diskless
+zerobas (its FRETOP $E268 below the ceiling -- read as the published HIMEM
+$FC4A, which boots = TXTMAX; it was a hard-coded $DB00, stale since D-DETOKBUF
+S3 moved TXTMAX to $E000: every row read 64256). Diskless
 pair, fresh boot per case. Clean room: typed BASIC, documented cells and
 zerobas's own, screen text. No ROM byte.
 """
@@ -21,7 +23,7 @@ import omsx_repl
 
 REF, ZB = "Philips_VG_8020", "C-BIOS_MSX1_EU_REPACK_NODISK"
 READ = {REF: "PRINT12345;PEEK(&HF672)+256*PEEK(&HF673)-PEEK(&HF69B)-256*PEEK(&HF69C)",
-        ZB: "PRINT12345;&HDB00-PEEK(&HE268)-256*PEEK(&HE269)"}
+        ZB: "PRINT12345;PEEK(&HFC4A)+256*PEEK(&HFC4B)-PEEK(&HE268)-256*PEEK(&HE269)"}
 CASES = [
     ("boot",       []),
     ("literal",    ['A$="HELLO"']),
