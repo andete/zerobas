@@ -414,6 +414,13 @@ def enumerate_targets():
         # a new finding; labelling it BLIND would double-count a known one.
         note = row[4] if len(row) > 4 else ""
         WEAK[key] = note.startswith("WEAK:")
+        # 🔴 D-KWT6 (2026-09-27): a `PROVES-T6:` row is an ERROR row -- `PRINT
+        # BIN$()` raises Syntax error whether or not the handler is knifed, so it
+        # can never witness CONNECTEDNESS. The first re-pin after the T6 batches
+        # picked `t6bin2` for BIN$ and reported it NOT connected, which would have
+        # cost BIN$ its T1. Never a witness.
+        if sweep.row_t6_code(note) is not None:
+            continue
         kw2any.setdefault(kw, key)
         base = kw.lower().rstrip("$")
         if kw not in kw2row and (key == base or key.startswith(base)):
@@ -464,6 +471,8 @@ def enumerate_fn_targets():
         if not kw:
             continue
         WEAK[key] = (row[4] if len(row) > 4 else "").startswith("WEAK:")
+        if sweep.row_t6_code(row[4] if len(row) > 4 else "") is not None:
+            continue                     # an ERROR row never witnesses (D-KWT6)
         base = kw.lower().rstrip("$")
         if kw not in kw2row and (key == base or key.startswith(base)):
             kw2row[kw] = key

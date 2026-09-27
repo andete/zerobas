@@ -2070,15 +2070,28 @@ ex_letkw:
                 jp      z,gfx_syntax
     ENDIF
                 ; `LET TIME=5` is ERR 2 on the reference (spec-basic-time.md
-                ; §1.4) and needs the same explicit guard as VDP/BASE above, for
+                ; §1.4) and needs a guard like VDP/BASE above (it was a TIME-token
+                ; compare until D-LETNUM; the letter test below now covers it), for
                 ; the same reason: ex_let would take the token for a variable
                 ; name and silently assign to nothing. It must raise DIRECTLY —
                 ; routing it to ex_time_assign would PERFORM the assignment,
                 ; since HL sits on the TIME token exactly as it does when
                 ; exec_stmt dispatches the legal bare form.
+                ; 🔴 D-LETNUM (2026-09-27): ANY target that is not a LETTER is a
+                ; Syntax error, TIME included. ex_let's name parse is documented as
+                ; "guaranteed a letter" and only the implicit-LET path guaranteed
+                ; it: `LET 5=1` handed it a digit TOKEN, the DEFtbl type lookup
+                ; indexed below the table, and the store wrote a garbage-typed
+                ; value -- the screen filled with font bytes and, in a longer run,
+                ; the machine REBOOTED (scratchpad/t6enum_b5.out; the reference
+                ; says `Syntax error`). One letter test subsumes the TIME-token
+                ; compare that stood here (+1 B); `stmt_error` is a trappable ERR 2
+                ; -- `LET 5` already reached it through ex_let_err and trapped as
+                ; `[ 2 20 ]` on the T6 run -- and `basic_probe_time`'s `let` row
+                ; pins LET TIME=5's ERR 2.
                 ld      a,(hl)
-                cp      TIME_TOKEN
-                jp      z,tm_err2
+                call    is_letter           ; CF set = letter, A preserved
+                jp      nc,stmt_error
                 jp      ex_let              ; reuse <letter> = <expr>
 
 ; --- ex_goto: GOTO <line> --------------------------------------------------

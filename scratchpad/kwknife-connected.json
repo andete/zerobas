@@ -1,5 +1,5 @@
 {
- "rom_fingerprint": "d554c009 7cf6aeca 0bba9eea b4a1364a",
+ "rom_fingerprint": "fe417e51 7cf6aeca 997ecedc d6b9af5e",
  "rows": {
   "ABS": {
    "connected": true,
@@ -1611,7 +1611,8 @@
   "BIN$": {
    "connected": true,
    "rows": {
-    "bin": "MISSING"
+    "bin": "MISSING",
+    "t6bin2": "SUPPORTED"
    }
   },
   "BLOAD": {
@@ -2581,5 +2582,5 @@
    }
   }
  },
- "written": "2026-09-27 02:53:53"
+ "written": "2026-09-27 11:08:44"
 }

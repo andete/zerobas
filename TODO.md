@@ -5973,7 +5973,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:25785 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:25800 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -24869,11 +24869,26 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       (NEGATIVE half: undeclared, it is NEVER guessed as NEXT; a mutation back to
       `stmt_keyword` turns S36z RED). Re-read: **T6 42 of 159**.
 
-- [ ] 🔴 **`LET 5=1` CORRUPTS THE SCREEN ON ZEROBAS — THE REFERENCE RAISES
+- [x] ✅ **FIXED 2026-09-27 (D-LETNUM): `LET <non-letter>` IS A SYNTAX ERROR
+      AGAIN, +1 B.** `ex_letkw` (`basic/interp.asm`) now tests the target with
+      `is_letter` and raises `stmt_error` otherwise; the TIME-token compare that
+      stood there is subsumed (TIME is a token). ROOT CAUSE: `var_name_key` is
+      documented "guaranteed a letter" and only the implicit-LET path guaranteed
+      it — the explicit LET token jumped straight in, so a digit TOKEN became
+      `name0`, the DEFtbl type lookup indexed below the table, and the store wrote
+      a garbage-typed value. A direct-mode run showed it worse than the batch did:
+      the screen filled with font bytes, and `PRINT 7 / LET 5=1 / PRINT 8`
+      REBOOTED the machine. After: `LET 5=1`, `LET 5`, `LET "A"=1`, `LET .=1`,
+      `LET TIME=5` all `Syntax error` on both machines, the sequence prints `7`,
+      the error, `8`, and a trapped `20 LET 5=1` reads `[ 2 20 ]` on both. Row
+      `t6letnum2` pins it. ⚠️ `gfx_syntax`'s header claims `stmt_error` is not
+      trappable; `LET 5` trapped through it on this very run — that comment is
+      stale (not touched here).
+      Was: 🔴 **`LET 5=1` CORRUPTS THE SCREEN ON ZEROBAS — THE REFERENCE RAISES
       `Syntax error` (D-LETNUM, found 2026-09-27 by the T6 enumeration).**
       🎚️ TIER 3 — COMMON ERRORS: an error path that DAMAGES the machine is worse
       than a wrong message, whatever the statement's frequency.
-      🤖 **AUTONOMOUS** — the reference settles it; find what the path writes first.
+      ~~🤖 **AUTONOMOUS** — the reference settles it; find what the path writes first.~~
       `scratchpad/t6enum_b5.out` (raw screens captured the same day): VG-8020
       `[ 2 20 ]` under an `ON ERROR` handler; zerobas shows the listing
       OVERWRITTEN (`NEW ERROR GOTO 90 …`, `R;ERL;"]":END`) and stray bytes

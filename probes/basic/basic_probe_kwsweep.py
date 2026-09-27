@@ -3689,6 +3689,10 @@ SWEEP: list[tuple[str, str, str | None, str, str]] = [
      "PROVES-T6:2 FORM:assign"),
     ("t6leta13", 'let A="X"', 'LET A="X"', "stored",
      "PROVES-T6:13 FORM:assign"),
+    # 🔴 D-LETNUM's regression row: `LET 5=1` FILLED THE SCREEN WITH FONT BYTES and
+    # rebooted zerobas until 2026-09-27 (a digit token reached the name parse).
+    ("t6letnum2", 'let 5=1', 'LET 5=1', "stored",
+     "PROVES-T6:2 FORM:assign"),
     ("t6outpv2", 'out &H2F', 'OUT &H2F', "stored",
      "PROVES-T6:2 FORM:port-value"),
     ("t6outpv5", 'out &H2F,256', 'OUT &H2F,256', "stored",

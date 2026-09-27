@@ -47,15 +47,15 @@ FILES_ENTIDX equ 0E0FCH   ; FILES: dir entry index 0..15 within a sector (1)
 LPTPOS equ 0EA39H   ; printer head column, 0-based (1)
 
 ; --- page-1 call-back targets: reached by an INTER-SLOT call (MSX2 TH), not an absolute one ---
-fname_expr equ 06E89H
-pdfcb_resume equ 06E82H
-dirverb_op equ 06C6CH
-main_fat_mount equ 0647CH   ; main's fat_mount
-main_fat_find equ 06480H   ; main's fat_find
-parse_disk_fcb equ 06621H
-fat_count_free equ 064AFH
-field_prologue equ 072B5H
-field_item equ 072EBH
-lrset_tgt equ 073A6H
-lrset_rhs equ 073C8H
-lrset_finish equ 073DFH
+fname_expr equ 06E8AH
+pdfcb_resume equ 06E83H
+dirverb_op equ 06C6DH
+main_fat_mount equ 0647DH   ; main's fat_mount
+main_fat_find equ 06481H   ; main's fat_find
+parse_disk_fcb equ 06622H
+fat_count_free equ 064B0H
+field_prologue equ 072B6H
+field_item equ 072ECH
+lrset_tgt equ 073A7H
+lrset_rhs equ 073C9H
+lrset_finish equ 073E0H
