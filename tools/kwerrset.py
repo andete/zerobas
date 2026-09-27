@@ -77,15 +77,30 @@ ERRSETS: dict[str, dict[str, frozenset[int]]] = {
     "MKD$": {"double-to-string": frozenset({2, 13})},
     "CVD": {"string-to-double": frozenset({2, 5, 13})},
     "DSKF": {"free-space": frozenset({2, 5, 13, 62})},
+    # 📏 BATCH 4, MEASURED 2026-09-27 (t6enum_probe.py --batch=4 -> t6enum_b4.out):
+    # statements and multi-form keywords, one-line scenarios per form.
+    "INSTR": {"search": frozenset({2, 13}), "search-from": frozenset({2, 5, 6, 13})},
+    "MID$": {"substring-3arg": frozenset({2, 5, 6, 13}), "substring-to-end": frozenset({2, 5, 13}), "assign": frozenset({2, 5, 13})},
+    "NEXT": {"bare": frozenset({1}), "named": frozenset({1, 2}), "comma-list": frozenset({1})},
+    "RETURN": {"bare": frozenset({3}), "line": frozenset({2, 3, 8})},
+    "RESTORE": {"bare": frozenset({8}), "line": frozenset({8})},
+    "GOTO": {"jump": frozenset({2, 8})},
+    "READ": {"read-data": frozenset({2, 4, 6})},
+    "SWAP": {"exchange": frozenset({2, 13})},
+    "ERASE": {"free-array": frozenset({2, 5})},
+    "DIM": {"one-dimensional": frozenset({2, 5, 6, 9, 10, 13}), "multi-dimensional": frozenset({5, 9, 10, 13})},
 }
 
 _B1 = {"ABS", "SGN", "INT", "SQR", "LOG", "EXP", "ASC", "CHR$", "LEN", "PEEK"}
 _B3 = {"MKI$", "CVI", "MKS$", "CVS", "MKD$", "CVD", "DSKF"}
+_B4 = {"INSTR", "MID$", "NEXT", "RETURN", "RESTORE", "GOTO", "READ", "SWAP", "ERASE", "DIM"}
 PROVENANCE: dict[str, str] = {
     k: ("scratchpad/t6enum_probe.py -> scratchpad/t6enum_run.out (EXP: t6enum_exp.out), VG-8020"
         if k in _B1 else
         "scratchpad/t6enum_probe.py --batch=3 -> scratchpad/t6enum_b3.out, CF-3300"
         if k in _B3 else
+        "scratchpad/t6enum_probe.py --batch=4 -> scratchpad/t6enum_b4.out, VG-8020"
+        if k in _B4 else
         "scratchpad/t6enum_probe.py --batch=2 -> scratchpad/t6enum_b2.out, VG-8020")
        + ", 2026-09-27"
     for k in ERRSETS}

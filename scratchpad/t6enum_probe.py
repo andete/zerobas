@@ -104,6 +104,60 @@ BATCH3 = {
 }
 
 
+# --- BATCH 4 (2026-09-27): STATEMENTS and MULTI-FORM keywords ------------------
+# Their errors are SCENARIOS (NEXT without FOR, RETURN without GOSUB, Out of DATA),
+# not argument faults, so each (keyword, form) lists hand-written ONE-LINE cases:
+# set-up goes on the same line with colons so ERL stays the line under test.
+# RETURN's line form needs a live GOSUB to reach its own error (8), and gets one
+# by recursing into its own line: `IF X=0 THEN X=1:GOSUB 20 ELSE RETURN 99`.
+# VAL and FRE are NOT here: their "forms" are argument CONTENT/type, which no
+# syntax fault can tell apart.
+BATCH4 = {
+    "INSTR": [
+        ("search", ['PRINT INSTR("AB",5)', 'PRINT INSTR("AB")', "PRINT INSTR()",
+                    'PRINT INSTR("AB","B","C")']),
+        ("search-from", ['PRINT INSTR(0,"AB","B")', 'PRINT INSTR(256,"AB","B")',
+                         'PRINT INSTR(70000,"AB","B")', 'PRINT INSTR(1,5,"B")',
+                         'PRINT INSTR(1,"AB",5)', 'PRINT INSTR(1,"AB","B","C")',
+                         'PRINT INSTR(1,"AB")'])],
+    "MID$": [
+        ("substring-3arg", ["PRINT MID$(5,1,1)", 'PRINT MID$("AB",0,1)',
+                            'PRINT MID$("AB",256,1)', 'PRINT MID$("AB",1,-1)',
+                            'PRINT MID$("AB",1,256)', 'PRINT MID$("AB","A",1)',
+                            'PRINT MID$("AB",1,"A")', 'PRINT MID$("AB",1,1,1)',
+                            'PRINT MID$("AB",70000,1)']),
+        ("substring-to-end", ["PRINT MID$(5,1)", 'PRINT MID$("AB",0)',
+                              'PRINT MID$("AB")', 'PRINT MID$("AB","A")', "PRINT MID$()"]),
+        ("assign", ['A$="AB":MID$(A$,0)="X"', 'A$="AB":MID$(A$,1)=5',
+                    'A$="AB":MID$(A$,3)="X"', 'A$="AB":MID$(A$,1,-1)="X"',
+                    'A$="AB":MID$(A$,1,1)', 'MID$(5,1)="X"', 'A$="AB":MID$(A$)="X"',
+                    'A$="AB":MID$(A$,256)="X"'])],
+    "NEXT": [
+        ("bare", ["NEXT", "FOR I=1 TO 2:NEXT:NEXT"]),
+        ("named", ["NEXT I", "FOR I=1 TO 2:NEXT J", "FOR I=1 TO 2:NEXT A$",
+                   "FOR I=1 TO 2:NEXT 5"]),
+        ("comma-list", ["FOR I=1 TO 2:FOR J=1 TO 2:NEXT J,K", "NEXT I,J",
+                        "FOR I=1 TO 2:FOR J=1 TO 2:NEXT J,"])],
+    "RETURN": [
+        ("bare", ["RETURN"]),
+        ("line", ["RETURN 99", "IF X=0 THEN X=1:GOSUB 20 ELSE RETURN 99",
+                  'IF X=0 THEN X=1:GOSUB 20 ELSE RETURN "A"'])],
+    "RESTORE": [
+        ("bare", ["RESTORE,", "RESTORE 1,2"]),
+        ("line", ["RESTORE 99", 'RESTORE "A"', "RESTORE -1", "RESTORE 70000"])],
+    "GOTO": [("jump", ["GOTO 99", "GOTO", 'GOTO "A"', "GOTO -1", "GOTO 70000"])],
+    "READ": [("read-data", ["READ A", "READ A:DATA X", "READ 5", "READ",
+                            "READ A:DATA 1E99"])],
+    "SWAP": [("exchange", ["SWAP A,B$", "SWAP A", "SWAP", "SWAP A,5"])],
+    "ERASE": [("free-array", ["ERASE A", "ERASE", "ERASE 5", "DIM A(2):ERASE A,A"])],
+    "DIM": [
+        ("one-dimensional", ["DIM A(2):DIM A(2)", "DIM A(-1)", 'DIM A("X")',
+                             "DIM A(70000)", "DIM A(10000)", "DIM 5"]),
+        ("multi-dimensional", ["DIM B(2,2):DIM B(2,2)", "DIM B(-1,2)", 'DIM B(2,"X")',
+                               "DIM B(200,200)"])],
+}
+
+
 def _call(kw, stmt, args):
     a = ",".join(args)
     return f"{kw} {a}".rstrip() if stmt else f"PRINT {kw}({a})"
@@ -123,6 +177,14 @@ def batch2_cases(kw, form, stmt, spec):
 
 def cases():
     only = next((a.split("=", 1)[1] for a in sys.argv if a.startswith("--only=")), None)
+    if "--batch=4" in sys.argv:
+        for kw, formlist in BATCH4.items():
+            if only and kw not in only.split(","):
+                continue
+            for form, stmts in formlist:
+                for st in stmts:
+                    yield kw, form, st, st
+        return
     if "--batch=2" in sys.argv or "--batch=3" in sys.argv:
         b = BATCH3 if "--batch=3" in sys.argv else BATCH2
         for kw, (form, stmt, spec) in b.items():
@@ -180,10 +242,10 @@ def main():
                                      reset=("", "SCREEN 0", "CLS") if cf else ("CLS",),
                                      boot=14.0 if cf else 8.0, capture="screen", **kw)
     sets = {}
-    print(f"{'keyword':7} {'case':30} " + " ".join(f"{m[:12]:>14}" for m in machines))
+    print(f"{'keyword':7} {'case':44} " + " ".join(f"{m[:12]:>14}" for m in machines))
     for i, (kw, form, a, st) in enumerate(cs):
         vals = [reading(res[m][i]) for m in machines]
-        print(f"{kw:7} {st:30} " + " ".join(f"{str(v):>14}" for v in vals))
+        print(f"{kw:7} {st:44} " + " ".join(f"{str(v):>14}" for v in vals))
         v = vals[0]
         if isinstance(v, tuple):
             sets.setdefault(kw, {}).setdefault(form, {}).setdefault(v[0], st)

@@ -5973,7 +5973,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:25689 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:25731 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -24832,8 +24832,50 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       functions) and `DSKF(-1)`/`DSKF(256)` (ref 5, zb 62 Bad drive name).
       🔮 Every reference value predicted right; the three divergences were not
       predicted — they are zerobas's.
-      ➡️ **NEXT:** the multi-FORM keywords (INSTR, MID$, VAL, …), whose rows must
-      name each form; then statements with channel/line arguments.
+      ~~➡️ **NEXT:** the multi-FORM keywords (INSTR, MID$, VAL, …), whose rows must
+      name each form; then statements with channel/line arguments.~~
+      🟢 **BATCH 4 SHIPPED (2026-09-27): statements and multi-form keywords**
+      (`t6enum_probe.py --batch=4` → [`scratchpad/t6enum_b4.out`](scratchpad/t6enum_b4.out)).
+      Their errors are SCENARIOS, so each (keyword, form) has hand-written ONE-LINE
+      cases (set-up on the same line); `RETURN`'s line form reaches its own 8 by
+      recursing into its line (`IF X=0 THEN X=1:GOSUB 20 ELSE RETURN 99`). 80
+      cases, 10 keywords / 17 forms, 43 rows — each the FIRST case that AGREED for
+      its code — 43/43 SUPPORTED.
+      🔴 **THREE MORE DIVERGENCES**, filed below: `MID$("AB",1,1,1)` and
+      `MID$(5,1)="X"` (ref 2, zb 13 — the D-MKEXTRA shape) and `READ A:DATA 1E99`
+      (ref 6 Overflow, zb 2). MID$'s substring-3arg code 2 and READ's code 6 have no
+      agreeing case, so MID$ and READ stay T6-.
+      ⚠️ VAL and FRE are NOT enumerable this way: their "forms" are argument
+      CONTENT/type, which no syntax fault can tell apart — a question for the
+      form list, not for this probe.
+      🔮 Misses: `DIM A(10000)` is 9 Subscript out of range, not 7; `RESTORE,` is
+      8 on both.
+      🔴 **AND MY S1 READER WAS WRONG, CAUGHT BY THE COUNT:** predicted T6 42, the
+      sheet read **40** — NEXT and RETURN missing with every row SUPPORTED.
+      `kwsweep_t6_cover` used `stmt_keyword` (the FIRST keyword), so
+      `FOR I=1 TO 2:NEXT J` counted for FOR and `IF … ELSE RETURN 99` for IF. It
+      now uses `stmt_subject` with the row's declared `SUBJECT:` (as the forms
+      reader always did), the four scenario rows declare it, and arm S36z pins it
+      (NEGATIVE half: undeclared, it is NEVER guessed as NEXT; a mutation back to
+      `stmt_keyword` turns S36z RED). Re-read: **T6 42 of 159**.
+
+- [ ] 🔴 **AN EXTRA ARGUMENT TO `MID$` IS `Type mismatch` HERE AND `Syntax error`
+      ON THE REFERENCE — `MID$("AB",1,1,1)` AND `MID$(5,1)="X"` (D-MIDEXTRA,
+      found 2026-09-27 by T6).**
+      🎚️ TIER 6 — `MID$` with an extra or non-variable argument
+      🤖 **AUTONOMOUS** — the reference settles it; likely ONE fix with D-MKEXTRA.
+      `scratchpad/t6enum_b4.out`: both read VG-8020 `(2, 20)`, zerobas `(13, 20)`.
+      The same shape as D-MKEXTRA (the MK$ functions): the argument parse
+      evaluates past where the reference demands `)` / a variable, and then
+      type-checks. Blocks MID$'s T6 (substring-3arg code 2 has no agreeing case).
+
+- [ ] 🔴 **`READ A` OF `DATA 1E99` IS `Syntax error` HERE AND `Overflow` ON THE
+      REFERENCE (D-READOVF, found 2026-09-27 by T6).**
+      🎚️ TIER 6 — `READ` of an out-of-range numeric DATA item
+      🤖 **AUTONOMOUS** — the reference settles it.
+      `scratchpad/t6enum_b4.out`: VG-8020 `(6, 20)`, zerobas `(2, 20)`. 1E99 is a
+      well-formed number past the single range; the reference converts it and
+      overflows, zerobas's DATA scanner rejects it as syntax. Blocks READ's T6.
 
 - [ ] 🔴 **`MKI$` ACCEPTS AN OUT-OF-RANGE INTEGER — `MKI$(32768)` IS `Overflow`
       ON THE CF-3300 AND A STRING HERE (D-MKIRANGE, found 2026-09-27 by T6).**

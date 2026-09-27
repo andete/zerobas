@@ -791,14 +791,14 @@ def tier1_status(kw, forms_seen, connected, blocked_by_tier1_item):
     return True, "CONNECTED, %d/%d forms, no open item" % (len(need), len(need))
 
 
-def kwsweep_t6_cover(kws, path=KWSWEEP_PIN):
+def kwsweep_t6_cover(kws, path=KWSWEEP_PIN, pin=None):
     """{keyword: {form: {codes}}} -- what SUPPORTED `PROVES-T6:<code>` rows cover.
 
     🏗️ D-KWT6 (Joost, 2026-09-27): a T6 row is one reference error, for one FORM,
     matched in code AND line (the row runs `stored`, so ` in <line>` is compared).
     A row with no `FORM:` or no code covers nothing -- kwsweep refuses such a row
     at startup, and this reader does not guess one."""
-    pin = kwsweep_pin(path)
+    pin = kwsweep_pin(path) if pin is None else pin
     if pin is None:
         return {}
     kwset = set(kws)
@@ -807,7 +807,11 @@ def kwsweep_t6_cover(kws, path=KWSWEEP_PIN):
         if (r.get("weak") or r.get("proves") != "T6" or r.get("verdict") != "SUPPORTED"
                 or not r.get("form") or not r.get("t6code")):
             continue
-        kw = stmt_keyword(r.get("stmt", ""), kwset)
+        # 🔴 stmt_SUBJECT, not stmt_keyword (D-KWT6 batch 4): a scenario row's set-up
+        # leads with ANOTHER keyword (`FOR I=1 TO 2:NEXT J`, `IF ... ELSE RETURN 99`)
+        # and declares `SUBJECT:`; the first cut read those rows as FOR and IF, and
+        # NEXT/RETURN lost T6 with every row SUPPORTED. The forms reader always did this.
+        kw = stmt_subject(r.get("stmt", ""), kwset, r.get("subject"))
         if kw:
             out.setdefault(kw, {}).setdefault(r["form"], set()).add(r["t6code"])
     return out
@@ -1688,6 +1692,14 @@ def selftest():
                     lambda kw: ("length", "other")) == set())
     arm("S36x NEGATIVE: a zero denominator proves nothing",
         _t6({"LOF": {"length": set()}}, es={"LOF": {"length": frozenset()}}) == set())
+    _pinr = lambda subj: {"rows": {"r": {"verdict": "SUPPORTED", "weak": False,
+                                         "proves": "T6", "t6code": 1, "form": "bare",
+                                         "stmt": "for i=1 to 2:next j",
+                                         "subject": subj}}}
+    arm("S36z a T6 row is attributed by its DECLARED SUBJECT (NEXT behind FOR); "
+        "NEGATIVE: undeclared it reads as FOR, never guessed as NEXT",
+        kwsweep_t6_cover(["FOR", "NEXT"], pin=_pinr("NEXT")) == {"NEXT": {"bare": {1}}}
+        and "NEXT" not in kwsweep_t6_cover(["FOR", "NEXT"], pin=_pinr(None)))
     arm("S36y NEGATIVE: T6 needs the knife (not CONNECTED -> no tick)",
         not proven_rungs("LOF", {"length"}, False, set(), t6={"LOF"})["T6"])
     arm("S36s NEGATIVE: an open TIER 1 item withholds T1 even with every form "
