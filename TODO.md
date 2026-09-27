@@ -5947,7 +5947,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:25450 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:25463 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -6113,7 +6113,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:10944 (T-6FE392)8 (T-529ABE)` from `TODO.md:23104 (T-529ABE)`: a
+      `TODO.md:10944 (T-6FE392)8 (T-529ABE)` from `TODO.md:23117 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -11788,7 +11788,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:23104 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:23117 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -15901,9 +15901,22 @@ list. **When a slice lands, grep this list for what it just shipped.**
       the plan then reads `string-acceptance`. Selftest arm P12b, with a
       NEGATIVE half, and a mutation removing the literal-following turns it
       RED in the module under test.
-      ➡️ **STILL OWED: `ctp_err_pop`, `ctp_link_err`** (`basic/cload.asm`) —
+      ~~➡️ **STILL OWED: `ctp_err_pop`, `ctp_link_err`** (`basic/cload.asm`) —
       CLOAD's tape-read failures inside a program body; the row is a
-      truncated `.cas` image, cut inside the link word and inside the body.
+      truncated `.cas` image, cut inside the link word and inside the body.~~
+      🟢 **AND THE LAST 2 SETTLED THE SAME NIGHT (D-CASCUT):**
+      `basic_probe_castail.py` (castail-acceptance) gains `cas-cut-link` and
+      `cas-cut-body` — a tokenised tape that ENDS inside the program, CLOAD,
+      then Ctrl-STOP. All three sides (VG-8020, CF-3300, zerobas) read
+      `<load-failed>` and return to a working prompt (`:alive`). A knife per
+      exit (redirect to `ctp_oom`) moves ONLY its own row. 🔴 **The first
+      `cas-cut-link` reached the WRONG exit**: it kept both link bytes on the
+      premise that the last byte before the silence is never framed; on
+      zerobas that byte IS read, the knife on `ctp_link_err` moved nothing and
+      the one on `ctp_err_pop` moved both rows. Cutting after link-LOW fixed
+      it. Same answer on all three sides either way — only the knife could
+      tell. **All four sites the audit named are now reached or gone.** The
+      per-site row set for the other 27 aliases is still owed separately.
       🎚️ APPARATUS — per-site alias rows
       🤖 AUTONOMOUS — the reference or a gate settles it; finishable unattended (roster + count fixed 2026-08-26; the 21 knives remain, now priced).
 

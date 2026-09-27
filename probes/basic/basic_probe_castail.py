@@ -50,6 +50,14 @@ their verb's line UNFILTERED:
                        PINNED divergence for a reason that is NOT the progress
                        line (see below)
 
+D-CASCUT adds a tokenised tape that ENDS INSIDE THE PROGRAM, read with CLOAD and
+broken with Ctrl-STOP (knife-checked, one exit each):
+
+  `cas-cut-link`       the tape ends after a link word's LOW byte -> the
+                       loader's link-high failure exit (`ctp_link_err`)
+  `cas-cut-body`       the tape ends inside a line's body -> its body-read
+                       failure exit (`ctp_err_pop`)
+
 🔴 THE `-res` ROWS EXIST BECAUSE AN EMPTY PROGRAM HIDES A WRONG RUN. Measured in
 D-RUNTAIL under two separate knives ([[an-empty-program-hides-a-wrong-run]]):
 `run-miss` -- a failed load with NOTHING resident -- held GREEN over a machine
@@ -345,6 +353,40 @@ CASES_T2T = [
      ((2, "listing", True),)),
 ]
 
+# --- D-CASCUT (2026-09-27): a TOKENISED tape that ENDS INSIDE THE PROGRAM -----
+# The D-DUPSPAN2 alias audit found CLOAD's two mid-program read-failure exits
+# (`basic/cload.asm` `ctp_link_err`, `ctp_err_pop`) exercised by NO gate. A
+# tape that stops inside the program reaches them: the device half BLOCKS on
+# silence once a block's data runs out, so the read waits until Ctrl-STOP, and
+# the TAPIN that was waiting returns CF:
+#
+#   `cas-cut-link`  the tape ends after line 20's link-LOW byte: the link-high
+#                   read blocks -> `ctp_link_err`
+#   `cas-cut-body`  the tape ends three bytes into line 10's body -> the next
+#                   body read blocks -> `ctp_err_pop`
+#
+# 🔴 THE FIRST CUT OF `cas-cut-link` REACHED THE WRONG EXIT, AND ONLY A KNIFE
+# SAID SO. It kept BOTH link bytes, on the premise that the last byte before the
+# silence is never framed (the `twot` note above). On zerobas that byte IS read:
+# a knife on `ctp_link_err` moved nothing, while a knife on `ctp_err_pop` moved
+# BOTH rows -- the line-number read was the one blocking. Same answer on all
+# three sides either way, which is exactly why the reading could not tell.
+#
+# Every side is expected to report its aborted-load message (`<load-failed>`)
+# and return to a working prompt (`:alive`). Both rows are knife-checked
+# against the zerobas exit they name.
+CUT_PROG = [(10, 'PRINT"ZQ9"'), (20, 'PRINT"ZQ7"')]
+CASES_CUTL = [
+    ("cas-cut-link", ['10 PRINT"ZQ1"', f'CLOAD"{CAS_NAME}"', W_LOAD, "@BREAK",
+                      W_AFTER, f'PRINT"{ALIVE}"'],                     1,
+     ((5, "alive", True),)),
+]
+CASES_CUTB = [
+    ("cas-cut-body", ['10 PRINT"ZQ1"', f'CLOAD"{CAS_NAME}"', W_LOAD, "@BREAK",
+                      W_AFTER, f'PRINT"{ALIVE}"'],                     1,
+     ((5, "alive", True),)),
+]
+
 # --- D-CASOPEN: the THIRD reading -- what `FOR OUTPUT` does with a name -------
 # 🔴 THE SCREEN CANNOT ANSWER THIS ONE. `OPEN"CAS:WX" FOR OUTPUT` prints nothing
 # on any of the three sides whether it records the name, records six spaces, or
@@ -388,7 +430,7 @@ REC_READINGS = ("tape", "data")
 UNFILTERED_SUBJECTS = {"cas2-load", "cas2-merge", "cas2-open", "cas2-cload",
                        "cas2-bare", "cas2-openbare"}
 
-ALL_CASES = CASES + CASES_T2 + CASES_T2T + CASES_REC
+ALL_CASES = CASES + CASES_T2 + CASES_T2T + CASES_CUTL + CASES_CUTB + CASES_REC
 
 # 🔴 THE PINNED DIVERGENCE. Not an agreement row: the three sides are EXPECTED to
 # differ, and each side's exact reading is written down so the day any of them
@@ -566,6 +608,13 @@ def tape_path(kind: str = "one") -> str:
                         [(10, 'PRINT"ZQ8"')], TXTBASE))
                     + build_cas_basic(CAS_NAME, make_multiline_program(
                         [(10, 'PRINT"ZQ9"')], TXTBASE)))
+        elif kind in ("cutl", "cutb"):
+            # D-CASCUT: the program image, cut. Line 10's length is its own
+            # link word minus the text base.
+            prog = make_multiline_program(CUT_PROG, TXTBASE)
+            len1 = (prog[0] | prog[1] << 8) - TXTBASE
+            keep = len1 + 1 if kind == "cutl" else 4 + 3
+            blob = _tok_file_nopad(CAS_NAME, prog[:keep])
         else:
             raise ValueError(kind)
         with open(p, "wb") as f:
@@ -601,7 +650,8 @@ def tape_readback(wav):
 
 
 # (fixture kind, the rows that mount it) -- one `run_cases` call each.
-GROUPS = (("one", CASES), ("two", CASES_T2), ("twot", CASES_T2T))
+GROUPS = (("one", CASES), ("two", CASES_T2), ("twot", CASES_T2T),
+          ("cutl", CASES_CUTL), ("cutb", CASES_CUTB))
 
 
 def run_side(side, only):
