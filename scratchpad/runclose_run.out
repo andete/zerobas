@@ -1,0 +1,4 @@
+case            CF-3300      zerobas
+  run-close     [ 59 20 ]    [ 59 20 ]
+  end-close          [OK]         [OK]
+  new-close          [OK]         [OK]

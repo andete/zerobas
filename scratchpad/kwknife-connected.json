@@ -1,5 +1,5 @@
 {
- "rom_fingerprint": "75fe1e6f 291e651a 70e86c66 9788b60d",
+ "rom_fingerprint": "06c98ad7 291e651a 70e86c66 8c0d0e2a",
  "rows": {
   "ABS": {
    "connected": true,
@@ -1982,7 +1982,8 @@
   "INPUT$": {
    "connected": true,
    "rows": {
-    "inputdol_b": "MISSING"
+    "inputdol_b": "MISSING",
+    "t8inputconsole13": "DIVERGENT"
    }
   },
   "INT": {
@@ -2582,5 +2583,5 @@
    }
   }
  },
- "written": "2026-09-27 22:08:47"
+ "written": "2026-09-28 00:03:48"
 }

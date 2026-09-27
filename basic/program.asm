@@ -428,6 +428,15 @@ run_prog:
                 ld      hl,TXTBASE
                 ld      (GOTOTGT),hl        ; bare RUN: start at the top
 run_prog_at:                                ; RUN <lineno>: GOTOTGT = that line
+                ; 🔴 D-RUNCLOSE (2026-09-27): RUN CLOSES EVERY OPEN FILE FIRST, and
+                ; it never did. Measured on the CF-3300: a program that opens #1
+                ; and ends, then a second program's `PRINT #1` -> 59 File not OPEN
+                ; after the RUN; zerobas kept #1 open and wrote to it. NEW and END
+                ; do NOT close on the reference (both measured), which is why this
+                ; sits here and not in clear_vars. Found because kwsweep's stored
+                ; disk rows (each one a RUN) leaked channels into their
+                ; neighbours and read 38 fake EXTRAs (D-KWT6 batch 8).
+                call    fch_close_all       ; nothing live: GOTOTGT is in RAM
                 call    clear_vars
                 call    vars_reset          ; arrays slice-1 (§9.6) + slice-4b (§3b): a
                                             ; fresh RUN has no live scalars/arrays

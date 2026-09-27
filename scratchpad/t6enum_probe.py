@@ -372,6 +372,84 @@ BATCH7 = {
 }
 
 
+# --- BATCH 8 (2026-09-27): DISK BASIC statements, on the CF-3300 --------------
+# Run like batch 3: the disk-equipped CF-3300 against zerobas's DISK build, each
+# on a PRIVATE copy of disk/test720.dsk (a case may create, rename or kill a
+# file). Scenarios are ONE line with their set-up in front, batch 4's shape.
+# Keyboard-blocking forms (INPUT, LINE INPUT, INPUT$'s console) and the printer
+# (LFILES) are left out: a case that waits reads as NO READING, not as a code.
+BATCH8 = {
+    "OPEN": [
+        ("input", ['OPEN "NOSUCH.TXT" FOR INPUT AS #1', 'OPEN "A" FOR INPUT AS #16',
+                   'OPEN 5 FOR INPUT AS #1', 'OPEN "A" FOR INPUT', 'OPEN "A*.TXT" FOR INPUT AS #1',
+                   'OPEN "X1.TXT" FOR OUTPUT AS #1:OPEN "X1.TXT" FOR INPUT AS #2',
+                   'OPEN "A" FOR INPUT AS #0']),
+        ("output", ['OPEN "Q:X.TXT" FOR OUTPUT AS #1',
+                    'OPEN "X2.TXT" FOR OUTPUT AS #1:OPEN "X3.TXT" FOR OUTPUT AS #1',
+                    'OPEN "X.TXT" FOR OUTPUT AS #"A"', 'OPEN "" FOR OUTPUT AS #1']),
+        ("append", ['OPEN "NOSUCH.TXT" FOR APPEND AS #1', 'OPEN "X.TXT" FOR APPEND AS 1,2']),
+        ("random", ['OPEN "R.DAT" AS #1 LEN=0', 'OPEN "R.DAT" AS #1 LEN=257',
+                    'OPEN "R.DAT" AS #1 LEN="A"', 'OPEN "R.DAT" AS #1 LEN'])],
+    "CLOSE": [
+        ("all", ["CLOSE 1,", 'CLOSE "A"']),
+        ("channel", ["CLOSE #16", 'CLOSE #"A"', "CLOSE #-1"])],
+    "KILL": [
+        ("delete-file", ['KILL "NOSUCH.TXT"', "KILL 5", "KILL",
+                         'OPEN "K1.TXT" FOR OUTPUT AS #1:KILL "K1.TXT"', 'KILL "Q:A.TXT"'])],
+    "NAME": [
+        ("rename", ['NAME "NOSUCH.TXT" AS "B.TXT"', 'NAME 5 AS "B"', 'NAME "A.TXT"',
+                    'OPEN "N1.TXT" FOR OUTPUT AS #1:CLOSE:OPEN "N2.TXT" FOR OUTPUT AS #1:CLOSE:NAME "N1.TXT" AS "N2.TXT"'])],
+    "FILES": [
+        ("bare", ["FILES 5", "FILES,"]),
+        ("pattern", ['FILES "NOSUCH.*"', 'FILES "Q:*.*"'])],
+    "FIELD": [
+        ("bind-buffer", ["FIELD #1,4 AS A$", 'OPEN "R1.DAT" AS #1 LEN=8:FIELD #1,9 AS A$',
+                         'OPEN "R2.DAT" AS #1:FIELD #1,4 AS A', "FIELD #16,4 AS A$",
+                         'OPEN "R3.DAT" AS #1:FIELD #1,4'])],
+    "LSET": [("left-justify", ["LSET A=1", "LSET A$", 'LSET 5="A"'])],
+    "RSET": [("right-justify", ["RSET A=1", "RSET A$", 'RSET 5="A"'])],
+    "EOF": [("at-end", ["A=EOF(1)", "A=EOF(16)", 'A=EOF("A")', 'OPEN "E1.TXT" FOR OUTPUT AS #1:A=EOF(1)'])],
+    "LOC": [("position", ["A=LOC(1)", "A=LOC(16)", 'A=LOC("A")'])],
+    "LOF": [("length", ["A=LOF(1)", "A=LOF(16)", 'A=LOF("A")'])],
+    "MERGE": [("merge-file", ['MERGE "NOSUCH.BAS"', "MERGE 5", "MERGE"])],
+    "LOAD": [
+        ("plain", ['LOAD "NOSUCH.BAS"', "LOAD 5", "LOAD"]),
+        ("run", ['LOAD "NOSUCH.BAS",R', 'LOAD "X.BAS",Q'])],
+    "SAVE": [
+        ("tokenised", ["SAVE 5", 'SAVE "Q:X.BAS"', "SAVE"]),
+        ("ascii", ['SAVE "X.BAS",B', 'SAVE "X.BAS",A,1'])],
+    "BLOAD": [
+        ("plain", ['BLOAD "NOSUCH.BIN"', "BLOAD 5", "BLOAD"]),
+        ("run", ['BLOAD "NOSUCH.BIN",R']),
+        ("vram", ['BLOAD "NOSUCH.BIN",S', 'BLOAD "X.BIN",Q'])],
+    "BSAVE": [
+        ("range", ['BSAVE "X.BIN",&HC000', 'BSAVE "X.BIN","A",1', "BSAVE 5,1,2"]),
+        ("with-entry", ['BSAVE "X.BIN",&HC000,&HC010,"A"', 'BSAVE "X.BIN",&HC000,&HC010,1,2'])],
+    "COPY": [("file-to-file", ['COPY "NOSUCH.TXT" TO "B.TXT"', 'COPY 5 TO "B"', 'COPY "A.TXT"'])],
+    "DSKI$": [("read-sector", ["A$=DSKI$(0,9999)", "A$=DSKI$(5,0)", 'A$=DSKI$("A",0)', "A$=DSKI$(0)"])],
+    "DSKO$": [("write-sector", ["DSKO$ 0,9999", "DSKO$ 5,0", 'DSKO$ "A",0', "DSKO$ 0"])],
+    "GET #": [("fielded-record", ["GET #1,1", 'OPEN "R4.DAT" AS #1:GET #1,0',
+                                  'OPEN "R5.DAT" AS #1:GET #1,"A"', "GET #16"])],
+    "PUT #": [("fielded-record", ["PUT #1,1", 'OPEN "R6.DAT" AS #1:PUT #1,0',
+                                  'OPEN "R7.DAT" AS #1:PUT #1,"A"', "PUT #16"])],
+    "INPUT #": [("string-read", ["INPUT #1,A$", "INPUT #16,A$",
+                                 'OPEN "I1.TXT" FOR OUTPUT AS #1:INPUT #1,A$',
+                                 'OPEN "I2.TXT" FOR OUTPUT AS #1:CLOSE:OPEN "I2.TXT" FOR INPUT AS #1:INPUT #1,A$'])],
+    "PRINT #": [("channel-write", ['PRINT #1,"A"', 'PRINT #16,"A"',
+                                   'OPEN "I3.TXT" FOR OUTPUT AS #1:CLOSE:OPEN "I3.TXT" FOR INPUT AS #1:PRINT #1,"A"'])],
+    "MAX FILES": [("set", ["MAXFILES=16", 'MAXFILES="A"', "MAXFILES", "MAXFILES=-1"])],
+    "INPUT$": [
+        ("console", ["A$=INPUT$(0)", 'A$=INPUT$("A")', "A$=INPUT$(256)"]),
+        ("channel", ["A$=INPUT$(1,#1)", "A$=INPUT$(1,#16)", "A$=INPUT$(0,#1)",
+                     'OPEN "I4.TXT" FOR OUTPUT AS #1:CLOSE:OPEN "I4.TXT" FOR INPUT AS #1:A$=INPUT$(1,#1)'])],
+    "CALL": [("refuse", ["CALL FOO", "CALL", "CALL 5"])],
+    "RUN": [
+        ("bare", ["RUN,", "RUN 1,2"]),
+        ("line", ["RUN 99", 'RUN "A",5']),
+        ("file", ['RUN "NOSUCH.BAS"', 'RUN "Q:X.BAS"'])],
+}
+
+
 def batch2_cases(kw, form, stmt, spec):
     valid = [v for _k, v, _e in spec]
     for i, (kind, _v, edges) in enumerate(spec):
@@ -386,8 +464,9 @@ def batch2_cases(kw, form, stmt, spec):
 
 def cases():
     only = next((a.split("=", 1)[1] for a in sys.argv if a.startswith("--only=")), None)
-    if any(f"--batch={n}" in sys.argv for n in (4, 5, 6, 7)):
-        b = (BATCH7 if "--batch=7" in sys.argv else
+    if any(f"--batch={n}" in sys.argv for n in (4, 5, 6, 7, 8)):
+        b = (BATCH8 if "--batch=8" in sys.argv else
+             BATCH7 if "--batch=7" in sys.argv else
              BATCH6 if "--batch=6" in sys.argv else
              BATCH5 if "--batch=5" in sys.argv else BATCH4)
         for kw, formlist in b.items():
@@ -443,7 +522,7 @@ def _disk_image():
 
 
 def main():
-    disk = "--batch=3" in sys.argv
+    disk = "--batch=3" in sys.argv or "--batch=8" in sys.argv
     ref, zb = (("National_CF-3300", "C-BIOS_MSX1_EU_REPACK_DISK") if disk else (REF, ZB))
     machines = [ref] + ([zb] if "--zb" in sys.argv else [])
     cs = list(cases())

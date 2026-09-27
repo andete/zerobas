@@ -160,6 +160,36 @@ ERRSETS: dict[str, dict[str, frozenset[int]]] = {
     "STOP": {"break": frozenset({2})},
     "PLAY": {"notes": frozenset({5, 13}), "note-number": frozenset({5}), "rest": frozenset({5}), "octave": frozenset({5}), "default-length": frozenset({5}), "tempo": frozenset({5}), "volume": frozenset({5}), "envelope": frozenset({5}), "multi-voice": frozenset({2, 13}), "substring-exec": frozenset({5, 13})},
     "SET": {"refuse": frozenset({5})},
+    # --- batch 8: Disk BASIC statements, on the CF-3300 (NEEDS-DISK rows). RUN is
+    # NOT here: `RUN 99` / `RUN 1,2` gave no reading -- RUN disarms ON ERROR, so
+    # its line form's errors are untrappable to this probe and its set is not
+    # known complete.
+    "OPEN": {"input": frozenset({2, 13, 52, 53, 56}), "output": frozenset({13, 54, 56, 62}), "append": frozenset({2, 53}), "random": frozenset({2, 5, 13})},
+    "CLOSE": {"all": frozenset({13, 24}), "channel": frozenset({5, 13, 52})},
+    "KILL": {"delete-file": frozenset({13, 24, 53, 62, 64})},
+    "NAME": {"rename": frozenset({13, 53, 65})},
+    "FILES": {"bare": frozenset({2, 13}), "pattern": frozenset({53, 62})},
+    "FIELD": {"bind-buffer": frozenset({2, 13, 50, 52, 59})},
+    "LSET": {"left-justify": frozenset({2, 13})},
+    "RSET": {"right-justify": frozenset({2, 13})},
+    "EOF": {"at-end": frozenset({13, 52, 59, 61})},
+    "LOC": {"position": frozenset({13, 52, 59})},
+    "LOF": {"length": frozenset({13, 52, 59})},
+    "MERGE": {"merge-file": frozenset({13, 24, 53})},
+    "LOAD": {"plain": frozenset({13, 24, 53}), "run": frozenset({2, 53})},
+    "SAVE": {"tokenised": frozenset({13, 24, 62}), "ascii": frozenset({2})},
+    "BLOAD": {"plain": frozenset({13, 24, 53}), "run": frozenset({53}), "vram": frozenset({53})},
+    "BSAVE": {"range": frozenset({2, 13}), "with-entry": frozenset({2, 13})},
+    "COPY": {"file-to-file": frozenset({13, 53})},
+    "DSKI$": {"read-sector": frozenset({2, 13, 62})},
+    "DSKO$": {"write-sector": frozenset({2, 13, 62})},
+    "GET #": {"fielded-record": frozenset({5, 13, 52, 59})},
+    "PUT #": {"fielded-record": frozenset({5, 13, 52, 59})},
+    "INPUT #": {"string-read": frozenset({52, 55, 59})},
+    "PRINT #": {"channel-write": frozenset({52, 59})},
+    "MAX FILES": {"set": frozenset({2, 5, 13})},
+    "INPUT$": {"console": frozenset({5, 13}), "channel": frozenset({52, 55, 59})},
+    "CALL": {"refuse": frozenset({2})},
 }
 
 _B1 = {"ABS", "SGN", "INT", "SQR", "LOG", "EXP", "ASC", "CHR$", "LEN", "PEEK"}
@@ -170,6 +200,7 @@ _B6 = {"FOR", "IF", "CLEAR", "COLOR", "SCREEN", "LOCATE", "TIME", "DEFINT", "DEF
 _B7 = {"PSET", "PRESET", "LINE", "DRAW", "CIRCLE", "PAINT", "BASE", "VDP", "SPRITE", "ON GOTO", "ON GOSUB",
        "KEY", "STICK", "STRIG", "PDL", "PAD", "DEF USR", "DEF FN", "FN", "STOP", "PLAY",
        "SET"}
+_B8 = {"OPEN", "CLOSE", "KILL", "NAME", "FILES", "FIELD", "LSET", "RSET", "EOF", "LOC", "LOF", "MERGE", "LOAD", "SAVE", "BLOAD", "BSAVE", "COPY", "DSKI$", "DSKO$", "GET #", "PUT #", "INPUT #", "PRINT #", "MAX FILES", "INPUT$", "CALL"}
 _B5 = {"AND", "OR", "XOR", "EQV", "IMP", "NOT", "MOD", "BEEP", "CLS", "TRON", "TROFF",
        "END", "CSRLIN", "ERL", "ERR", "ERROR", "GOSUB", "INKEY$", "INP", "LET", "OUT",
        "POINT", "POS", "LPOS", "RND"}
@@ -178,6 +209,8 @@ PROVENANCE: dict[str, str] = {
         if k in _B1 else
         "scratchpad/t6enum_probe.py --batch=3 -> scratchpad/t6enum_b3.out, CF-3300"
         if k in _B3 else
+        "scratchpad/t6enum_probe.py --batch=8 -> scratchpad/t6enum_b8.out, CF-3300"
+        if k in _B8 else
         "scratchpad/t6enum_probe.py --batch=4 -> scratchpad/t6enum_b4.out, VG-8020"
         if k in _B4 else
         "scratchpad/t6enum_probe.py --batch=5 -> scratchpad/t6enum_b5.out, VG-8020"

@@ -6019,7 +6019,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:26330 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:26401 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -24986,6 +24986,25 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       `PAINT(1,1),1,1,1` is 2, which the batch window had missed. 18 rows, 17
       SUPPORTED; **T6 90 → 91** (PAINT). CIRCLE stays T6- on a real divergence,
       D-CIRCANGLE, and zerobas's negative-radius refusal is D-CIRCNEGR.
+      🟢 **BATCH 8 SHIPPED (2026-09-28): Disk BASIC statements, on the CF-3300**
+      (`--batch=8` → [`scratchpad/t6enum_b8.out`](scratchpad/t6enum_b8.out); per
+      case on both machines → [`scratchpad/t6enum_b8_zb.out`](scratchpad/t6enum_b8_zb.out)),
+      126 cases over 27 keywords; RUN left out (its line form's errors are
+      untrappable to the probe). **94 agree; the other 32 are D-DISKERRS**, whose
+      pairs stay in the denominator, so those keywords stay T6-. **80 rows** for
+      the agreeing pairs, **80/80 SUPPORTED. T6 91 → 102 of 159** (predicted ~102).
+      🔴 **THE FIRST RUN PUT ALL 101 ROWS IN AND READ 47 EXTRAs, AND THEY WERE
+      NOT DIVERGENCES:** a contiguous run, and cases like `LOAD 5` that agree
+      when booted alone. It was D-RUNCLOSE (fixed, above): each stored row is a
+      RUN, zerobas's RUN never closed the channels the previous row opened, and
+      they leaked forward — four OLD rows broke beside them. Two apparatus
+      lessons, both kept: a new disk batch is checked PER CASE on both machines
+      before its rows join the batched sweep, and only agreeing pairs become
+      rows (a wrong row poisons its neighbours in batch mode).
+      🔴 **AND THE KNIFE PICKED AN ERROR ROW AGAIN:** INPUT$'s witness moved to
+      `t8inputconsole13`. INPUT$ has no token, so its row is found by its
+      `SUBJECT:` tag in a THIRD enumerator branch that the D-KWT6 skip had not
+      reached; it skips T6 rows now, and the witness is `inputdol_b` again.
       🔮 Predicted +17 keywords, got +15: `ON GOTO` / `ON GOSUB` are composites
       the sheet scores in its composite table, and PAD and PLAY are held by
       their own open items.
@@ -25128,6 +25147,25 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       (K=280/290) even a flat expression now refuses with ERR 7 where it used to
       run, and `B=((…8…))` at K=300 is ERR 7 where the VG-8020 completes — zerobas
       spends ~27 B of stack per nesting level. Economy (TIER 4), not corruption.
+
+- [x] 🔴 **`RUN` DID NOT CLOSE THE FILES A PROGRAM LEFT OPEN — the next program
+      could still write the old channel (D-RUNCLOSE, found 2026-09-27 by T6
+      batch 8)** — ✅ **FIXED 2026-09-27.**
+      🎚️ TIER 1 — happy path: a program that writes a file and ends without
+      CLOSE is common, and RUN is where the reference closes (and so flushes) it.
+      📏 [`scratchpad/runclose_probe.py`](scratchpad/runclose_probe.py) →
+      [`scratchpad/runclose_run.out`](scratchpad/runclose_run.out), one boot per
+      case, CF-3300 against the DISK build: after a program opens #1 and ends,
+      a second program's `PRINT #1` is **59 File not OPEN** on the reference —
+      RUN closed it — and zerobas wrote to it. **END and NEW do NOT close on the
+      reference** (a direct `PRINT #1` works after either), so the fix is RUN's
+      alone. Found because kwsweep's stored disk rows (each one a RUN) leaked
+      channels into their neighbours: 38 fake EXTRAs, and four OLD rows
+      (`loadkw`, `set`, `ipl`, `cmd`) broken beside them.
+      ✅ `call fch_close_all` at `run_prog_at` ([`basic/program.asm`](basic/program.asm)),
+      the entry bare RUN, `RUN <line>` and `RUN "file"` all reach — 3 B of page 1.
+      After: 59 on both, and the kwsweep batch reads **855 SUPPORTED** with every
+      poisoned row back (and three older disk rows that had read UNREADABLE).
 
 - [x] 🔴 **AN ERROR IN A GRAPHICS PROGRAM SHOWED NO MESSAGE — `SCREEN 2:PSET
       (10,10),16` LEFT A BARE `ZB` WHERE THE VG-8020 SAYS `Illegal function call
@@ -25449,6 +25487,39 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       `t7deffnnumeric2` / `t7deffnstringvalued2` (EXTRA): `DEF FNA(5)=1` and
       `DEF FNA$(5)=1` are Syntax error on the VG-8020 and stored here. A formal
       is a NAME. Blocks DEF FN's T6.
+
+- [ ] 🔴 **DISK BASIC'S ERROR SURFACE: 32 OF 126 CASES DIVERGE FROM THE CF-3300,
+      AND FOUR OF THEM LOSE DATA SILENTLY (D-DISKERRS, found 2026-09-27 by T6
+      batch 8).**
+      🎚️ TIER 3 — common errors: a KILL, NAME or re-OPEN that the reference
+      refuses goes through here, and reading past the end of a file returns
+      nothing where the reference says Input past end.
+      🤖 **AUTONOMOUS** — every row is measured; split off an item per shape
+      as each is fixed.
+      📏 [`scratchpad/t6enum_b8_zb.out`](scratchpad/t6enum_b8_zb.out): every case
+      booted ALONE on both machines (a private disk image each). 94 agree; of
+      the 32 that do not, two are `RUN 99` / `RUN 1,2`, which the reference
+      cannot report to an ON ERROR handler (RUN disarms it). The rest,
+      reference → zerobas:
+      • **accepted where the reference refuses, and it can lose data:**
+        `KILL` of an OPEN file (64 → ok), `NAME` onto an EXISTING file (65 → ok),
+        re-`OPEN` of a busy channel (54 → ok), any `Q:` drive — OPEN, KILL,
+        SAVE, RUN (62 → ok; `FILES "Q:*.*"` 62 → 53).
+      • **the common error paths:** `INPUT #` / `INPUT$(n,#)` past the end
+        (55 → ok), `EOF` / `INPUT #` / `PRINT #` on a channel opened the other
+        way (61 / 52 → ok).
+      • **wrong code:** `OPEN "A*.TXT"` 56 → 53; `LEN="A"` 13 → 5; bare `LEN`
+        2 → 5; `NAME "A.TXT"` 53 → 2; `COPY "A.TXT"` 53 → 5; `GET`/`PUT #1,"A"`
+        13 → 5; `BLOAD "X.BIN",Q` 53 → ok.
+      • **wrong LINE:** BSAVE's `"A"` faults report **line 30** instead of 20.
+      • **extra arguments accepted:** `LOAD …,Q`, `RUN "A",5`, a fifth BSAVE
+        argument (2 → ok); `INPUT$(0)` / `INPUT$(256)` (5 → ok).
+      • **no reading at all:** `SAVE "X.BAS",B` and `SAVE "X.BAS",A,1` —
+        nothing on zerobas's screen.
+      Their kwsweep rows are NOT in the battery (each would be DIVERGENT, and
+      in batch mode a wrong one poisons its neighbours); the denominator in
+      `tools/kwerrset.py` still holds them, so OPEN, KILL, NAME, FILES, EOF,
+      LOAD, SAVE, BSAVE, GET #, PUT #, INPUT # and INPUT$ stay T6-.
 
 - [ ] 🔴 **`POS("A")` / `LPOS("A")` ARE `Type mismatch` HERE AND ACCEPTED ON THE
       REFERENCE (D-POSDUMMY, found 2026-09-27 by T6).**

@@ -502,6 +502,12 @@ def enumerate_fn_targets():
         for r in sweep.SWEEP:
             if r[2] is None or len(r) < 5:
                 continue
+            # 🔴 THE THIRD SITE, AND THE ONE THE D-KWT6 SKIP MISSED: the first
+            # re-pin after T6 batch 8 took `t8inputconsole13` (a PROVES-T6 error
+            # row declaring SUBJECT:INPUT$, and earlier in the file) as INPUT$'s
+            # witness in place of `inputdol_b`. An error row never witnesses.
+            if sweep.row_t6_code(r[4]) is not None:
+                continue
             if sweep.row_subject(r[4]) == kw:
                 out.append((kw, r[0], None))
                 break
