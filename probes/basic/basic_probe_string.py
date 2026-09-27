@@ -78,6 +78,18 @@ CASES = [
     ("VAL",           'PRINT "[";VAL("34")+1;"]"',             r"\[\s*35\s*\]"),
     # verb wrapping a concat (spec nest `LEFT$(A$+B$,3)`)
     ("nest",          'PRINT "[";LEFT$("XY"+"ZW",3);"]"',      r"\[XYZ\]"),
+    # 🎯 D-SSTROW (2026-09-27): the TEMP-POOL EDGE THROUGH `sst_overflow`'s
+    # body (basic/str-engine.asm, "String formula too complex"), which the
+    # D-DUPSPAN2 alias audit found NO gate exercising. HEX$'s result tail
+    # (`shx_finish`) reaches it through the `shxf_overflow` alias when the pool
+    # is full: each nesting level holds one temp, so with HEX$(1) innermost
+    # depth 9 fits the 10-entry pool and depth 10 does not. Both expectations
+    # are the VG-8020's own answers, measured the same night on the same lines.
+    # 🔴 THE FIRST PAIR USED `A$` innermost (tempst_probe's `concat` shape) and a
+    # knife on sst_overflow did NOT move it: that ERR 16 is raised by the
+    # slice's own push, sub-side. This pair was knifed and DOES move.
+    ("hex.depth9",   'A$="X":B$=MID$(A$,1)+(MID$(A$,1)+(MID$(A$,1)+(MID$(A$,1)+(MID$(A$,1)+(MID$(A$,1)+(MID$(A$,1)+(MID$(A$,1)+(MID$(A$,1)+(HEX$(1)))))))))):PRINT "[";LEN(B$);"]"', r"\[\s*10\s*\]"),
+    ("hex.depth10",  'A$="X":B$=MID$(A$,1)+(MID$(A$,1)+(MID$(A$,1)+(MID$(A$,1)+(MID$(A$,1)+(MID$(A$,1)+(MID$(A$,1)+(MID$(A$,1)+(MID$(A$,1)+(MID$(A$,1)+(HEX$(1))))))))))):PRINT "[";LEN(B$);"]"', r"String formula too complex"),
     # string-functions slice (spec-basic-string-functions.md §5) -- HEX$/OCT$/
     # SPACE$/STRING$/INSTR live on the repack build.
     ("HEX$",          'PRINT "[";HEX$(255);"]"',               r"\[FF\]"),

@@ -60,6 +60,13 @@ GENERATED = tuple(run_gates.REGENERATED) + ("disk/basic-resident-abi.inc",)
 DISK_CANARY = ("diskbasic-acceptance", "bdos-acceptance", "fat-error-acceptance")
 MODULE_DIRS = ("probes/lib", "probes/basic", "probes/disk", "tools", "scratchpad")
 IMPORT = re.compile(r"^\s*(?:import|from)\s+([A-Za-z_]\w*)", re.M)
+# 🔴 D-PLANCHILD (2026-09-27): an acceptance WRAPPER can run its child probes
+# as SUBPROCESSES, by path -- `STRING = os.path.join(HERE, "basic_probe_string.py")`
+# in string_acceptance.py -- which no `import` names. The closure missed every
+# such child, so an edit to basic_probe_string.py planned ZERO emulator suites
+# while string-acceptance runs it. A quoted `<name>.py` literal that resolves to
+# a local module is followed too; over-inclusion only widens scope.
+PYLIT = re.compile(r"""["']([A-Za-z_]\w*)\.py["']""")
 HANDLER = re.compile(r"^ex_(\w+):", re.M)
 
 
@@ -96,7 +103,8 @@ def closure(script, read=None, resolve=None):
         if p in seen:
             continue
         seen.add(p)
-        for m in IMPORT.findall(read(p)):
+        src = read(p)
+        for m in IMPORT.findall(src) + PYLIT.findall(src):
             f = resolve(m)
             if f and f not in seen:
                 todo.append(f)
@@ -293,6 +301,13 @@ def selftest():
         "nothing unimported (NEGATIVE: d)",
         closure("a.py", read=lambda p: _src.get(p, ""), resolve=_res)
         == {"a.py", "b.py", "c.py"})
+    _src2 = {"w.py": 'CHILD = os.path.join(HERE, "kid.py")\nimport os',
+             "kid.py": "", "other.py": ""}
+    _res2 = {"kid": "kid.py", "other": "other.py"}.get
+    arm("P12b a child run BY PATH (a quoted `kid.py`) is in the closure "
+        "(D-PLANCHILD); NEGATIVE: an unnamed module is not",
+        closure("w.py", read=lambda p: _src2.get(p, ""), resolve=_res2)
+        == {"w.py", "kid.py"})
     _own = {t: {f for f in fs if not f.startswith("probes/lib/")} for t, fs in files.items()}
     text["probes/lib/omsx_repl.py"] = "a comment naming WIDTH"
     files["math-acceptance"] |= {"probes/lib/omsx_repl.py"}
