@@ -400,9 +400,7 @@ print_number:
 pn_neg:
                 ld      a,'-'
                 ld      (NUMBUF),a
-                ld      hl,0
-                or      a
-                sbc     hl,de               ; HL = -value = magnitude
+                call    neg_de_hl           ; HL = -value = magnitude
 pn_conv:
                 call    dgt_push            ; D-DGTPUSH: the shared digit loop
                 ld      de,NUMBUF+1         ; write digits after the sign char

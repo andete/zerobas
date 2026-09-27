@@ -861,6 +861,10 @@ do_break:
                 ld      (ENDFLAG),a         ; stop the run, fall back to the REPL
                 ; report: "break in <lineno>" + CR/LF. The line number is at
                 ; CURLINE+2 (the lineno field after the 2-byte link).
+                call    txt_mode            ; D-GFXERRMSG: `Break in 10` on the TEXT
+                                            ; screen, as ra_abort does for an error --
+                                            ; in SCREEN 2 it went into the bitmap and
+                                            ; only `ZB` showed (VG-8020: `Break in 10`)
                 ld      hl,brk_msg
                 call    print_string
                 ; repack (D-2): the " in <lineno>" + CRLF tail is the SHARED

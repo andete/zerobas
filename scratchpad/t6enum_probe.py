@@ -258,6 +258,120 @@ def _call(kw, stmt, args):
     return f"{kw} {a}".rstrip() if stmt else f"PRINT {kw}({a})"
 
 
+# --- BATCH 7 (2026-09-27): graphics statements, device functions, ON/KEY/FN ---
+# A graphics case sets SCREEN 2 (or 3) ON ITS OWN LINE; program() then puts
+# `SCREEN 0:` in front of the handler's PRINTs, because the reading is text and
+# a PRINT in a bitmap mode draws nowhere the reader looks. Only cases whose
+# statement names SCREEN get that shape, so batches 1-6 are unchanged.
+G = "SCREEN 2:"
+BATCH7 = {
+    "PSET": [
+        ("colour-explicit", [G + "PSET(10,10),16", G + 'PSET(10,10),"A"', G + "PSET(10,10),-1",
+                             G + 'PSET("A",10)', "PSET(10,10),1", G + "PSET(10)", G + "PSET 10,10"]),
+        ("colour-default", [G + "PSET(10,10", G + "PSET(10,10),", G + "PSET(,10)"]),
+        ("step-relative", [G + 'PSET STEP("A",1)', G + "PSET STEP 1,1", G + "PSET STEP(1,1),16"]),
+        ("mode-screen3", ["SCREEN 3:PSET(10,10),16", 'SCREEN 3:PSET(10,10),"A"',
+                          "SCREEN 3:PSET(99999,1)"])],
+    "PRESET": [
+        ("colour-default", [G + "PRESET(10,10", G + "PRESET(10)", G + 'PRESET("A",10)',
+                            "PRESET(10,10)", G + "PRESET 10,10"]),
+        ("colour-explicit", [G + "PRESET(10,10),16", G + 'PRESET(10,10),"A"', G + "PRESET(10,10),-1"]),
+        ("step-relative", [G + 'PRESET STEP("A",1)', G + "PRESET STEP 1,1"]),
+        ("mode-screen3", ["SCREEN 3:PRESET(10,10),16", 'SCREEN 3:PRESET(10,10),"A"'])],
+    "LINE": [
+        ("segment", [G + 'LINE(0,0)-("A",1)', G + "LINE(0,0)-", G + "LINE(0,0)(1,1)",
+                     G + "LINE(0,0)-(1,1),16", "LINE(0,0)-(1,1)", G + "LINE(0,0)-(1)"]),
+        ("box", [G + "LINE(0,0)-(9,9),1,C", G + "LINE(0,0)-(9,9),16,B", G + "LINE(0,0)-(9,9),1,B,1"]),
+        ("filled-box", [G + "LINE(0,0)-(9,9),1,BX", G + "LINE(0,0)-(9,9),16,BF"]),
+        ("step-relative", [G + 'LINE STEP("A",1)-(9,9)', G + "LINE STEP(1,1)-STEP",
+                           G + "LINE STEP 1,1-(9,9)"]),
+        ("omitted-start", [G + 'LINE -("A",1)', G + "LINE -(9)", G + "LINE -"]),
+        ("colour-default", [G + "LINE(0,0)-(9,9),", G + "LINE(0,0)-(9,9),,", G + 'LINE(0,0)-(9,9),"A"'])],
+    "CIRCLE": [
+        ("centre-radius", [G + "CIRCLE(99,99)", G + 'CIRCLE(99,99),"A"', G + "CIRCLE(99,99),-5",
+                           G + "CIRCLE(99,99),5,16", "CIRCLE(99,99),5", G + "CIRCLE(99),5"]),
+        ("arc", [G + "CIRCLE(99,99),5,1,7", G + 'CIRCLE(99,99),5,1,"A"', G + "CIRCLE(99,99),5,1,1,7"]),
+        ("step-relative", [G + 'CIRCLE STEP("A",1),5', G + "CIRCLE STEP 1,1,5"]),
+        ("aspect", [G + 'CIRCLE(99,99),5,1,,,"A"', G + "CIRCLE(99,99),5,1,,,-1",
+                    G + "CIRCLE(99,99),5,1,,,1,1"]),
+        ("colour-default", [G + "CIRCLE(99,99),5,", G + "CIRCLE(99,99),5,,"])],
+    "PAINT": [
+        ("flood", [G + 'PAINT("A",1)', G + "PAINT(1)", "PAINT(1,1)", G + "PAINT 1,1"]),
+        ("fill-colour", [G + "PAINT(1,1),16", G + 'PAINT(1,1),"A"', G + "PAINT(1,1),-1"]),
+        ("border-colour", [G + "PAINT(1,1),1,16", G + 'PAINT(1,1),1,"A"', G + "PAINT(1,1),1,1,1"])],
+    "DRAW": [
+        ("movement", [G + 'DRAW"Q"', G + "DRAW 5", 'DRAW"U5"', G + 'DRAW"U-"', G + 'DRAW"U99999"']),
+        ("move-absolute", [G + 'DRAW"M"', G + 'DRAW"M5"', G + 'DRAW"M5,"']),
+        ("move-relative", [G + 'DRAW"M+5"', G + 'DRAW"M+5,"', G + 'DRAW"M+99999,1"']),
+        ("blank-prefix", [G + 'DRAW"B"', G + 'DRAW"BQ"']),
+        ("no-update-prefix", [G + 'DRAW"N"', G + 'DRAW"NQ"']),
+        ("colour", [G + 'DRAW"C16"', G + 'DRAW"C"', G + 'DRAW"C-1"']),
+        ("scale", [G + 'DRAW"S256"', G + 'DRAW"S"', G + 'DRAW"S-1"']),
+        ("angle", [G + 'DRAW"A4"', G + 'DRAW"A"', G + 'DRAW"A-1"']),
+        ("substring-exec", [G + 'DRAW"XZ$;"', G + 'DRAW"X"', G + 'DRAW"XA;"']),
+        ("variable-substitution", [G + 'DRAW"U=Q;"', G + 'DRAW"U=A$;"', G + 'DRAW"U="'])],
+    "BASE": [
+        ("read", ["A=BASE(20)", 'A=BASE("A")', "A=BASE(-1)", "A=BASE"]),
+        ("write", ["BASE(20)=0", 'BASE(5)="A"', "BASE(5)=-1", "BASE(5)=70000", "BASE(5)="])],
+    "VDP": [
+        ("read", ["A=VDP(8)", 'A=VDP("A")', "A=VDP(-1)", "A=VDP"]),
+        ("write", ["VDP(8)=0", 'VDP(7)="A"', "VDP(7)=256", "VDP(7)=-1", "VDP(7)="])],
+    "SPRITE": [
+        ("pattern-write", ['SPRITE$(32)="A"', 'SPRITE$("A")="A"', "SPRITE$(1)=5", 'SPRITE$(-1)="A"']),
+        ("enable", ["SPRITE ON 1", "SPRITE ON,"]),
+        ("disable", ["SPRITE OFF 1", "SPRITE STOP 1"])],
+    "ON GOTO": [
+        ("index-goto", ['ON "A" GOTO 30', "ON -1 GOTO 30", "ON 256 GOTO 30", "ON 1 GOTO 99",
+                        "ON 1 GOTO", "ON 1 GOTO 30,"])],
+    "ON GOSUB": [
+        ("index-gosub", ['ON "A" GOSUB 30', "ON -1 GOSUB 30", "ON 256 GOSUB 30", "ON 1 GOSUB 99",
+                         "ON 1 GOSUB"])],
+    "KEY": [
+        ("assign", ['KEY 11,"A"', "KEY 1,5", 'KEY 0,"A"', 'KEY "A","B"', "KEY 1"]),
+        ("list", ["KEY LIST 1"]),
+        ("display-on", ["KEY ON 1"]),
+        ("display-off", ["KEY OFF 1"])],
+    "STICK": [
+        ("cursor-keys", ["A=STICK(3)", 'A=STICK("A")', "A=STICK(-1)", "A=STICK"]),
+        ("joystick-port", ["A=STICK(1,1)", "A=STICK(2.5)+STICK(3)"])],
+    "STRIG": [
+        ("space-bar", ["A=STRIG(5)", 'A=STRIG("A")', "A=STRIG(-1)", "A=STRIG"]),
+        ("joystick-trigger", ["A=STRIG(1,1)", "A=STRIG(4)+STRIG(5)"])],
+    "PDL": [
+        ("read", ["A=PDL(13)", "A=PDL(0)", 'A=PDL("A")', "A=PDL"])],
+    "PAD": [
+        ("touch-status", ["A=PAD(8)", 'A=PAD("A")', "A=PAD(-1)", "A=PAD"]),
+        ("coordinate", ["A=PAD(1,1)", "A=PAD(2)+PAD(9)"]),
+        ("switch", ["A=PAD(3,1)", "A=PAD(7)+PAD(20)"])],
+    "DEF USR": [
+        ("default", ['DEF USR="A"', "DEF USR=70000", "DEF USR", "DEF USR=-1", "DEF USR=1,2"]),
+        ("numbered", ['DEF USR9="A"', "DEF USR9", "DEF USR9=70000"])],
+    "DEF FN": [
+        ("numeric", ["DEF FNA(X)=", "DEF FNA(5)=1", "DEF FN(X)=1", "DEF FNA(X", "DEF FNA(X,)=1"]),
+        ("string-valued", ["DEF FNA$(X)=", "DEF FNA$(5)=1", "DEF FNA$(X$"])],
+    "FN": [
+        ("numeric", ["DEF FNA(X)=X:A=FNA(1,2)", 'DEF FNA(X)=X:A=FNA("A")', "A=FNB(1)",
+                     "DEF FNA(X)=X:A=FNA"]),
+        ("string-valued", ['DEF FNA$(X)=STR$(X):A$=FNA$("A")', "A$=FNB$(1)",
+                           "DEF FNA$(X)=STR$(X):A=FNA$(1)"])],
+    "STOP": [
+        ("break", ["STOP 1", "STOP ON 1", "STOP,"])],
+    "PLAY": [
+        ("notes", ['PLAY"H"', "PLAY 5", 'PLAY"C99"']),
+        ("note-number", ['PLAY"N97"', 'PLAY"N"', 'PLAY"N-1"']),
+        ("rest", ['PLAY"R0"', 'PLAY"R65"']),
+        ("octave", ['PLAY"O9"', 'PLAY"O0"']),
+        ("default-length", ['PLAY"L0"', 'PLAY"L65"']),
+        ("tempo", ['PLAY"T31"', 'PLAY"T256"']),
+        ("volume", ['PLAY"V16"', 'PLAY"V-1"']),
+        ("envelope", ['PLAY"S16"', 'PLAY"M0"', 'PLAY"M65536"']),
+        ("multi-voice", ['PLAY"C","D","E","F"', 'PLAY"C",5']),
+        ("substring-exec", ['PLAY"XZ$;"', 'PLAY"X"', 'PLAY"XA;"'])],
+    "SET": [
+        ("refuse", ["SET 1", "SET", 'SET "A"'])],
+}
+
+
 def batch2_cases(kw, form, stmt, spec):
     valid = [v for _k, v, _e in spec]
     for i, (kind, _v, edges) in enumerate(spec):
@@ -272,8 +386,9 @@ def batch2_cases(kw, form, stmt, spec):
 
 def cases():
     only = next((a.split("=", 1)[1] for a in sys.argv if a.startswith("--only=")), None)
-    if any(f"--batch={n}" in sys.argv for n in (4, 5, 6)):
-        b = (BATCH6 if "--batch=6" in sys.argv else
+    if any(f"--batch={n}" in sys.argv for n in (4, 5, 6, 7)):
+        b = (BATCH7 if "--batch=7" in sys.argv else
+             BATCH6 if "--batch=6" in sys.argv else
              BATCH5 if "--batch=5" in sys.argv else BATCH4)
         for kw, formlist in b.items():
             if only and kw not in only.split(","):
@@ -297,15 +412,21 @@ def cases():
 
 
 def program(stmt):
-    return ["NEW", "10 ON ERROR GOTO 90", f"20 {stmt}", '30 PRINT"[OK]":END',
-            '90 PRINT"[";ERR;ERL;"]":END', "RUN"]
+    # batch 7: a case that switches to a bitmap SCREEN reports back in SCREEN 0
+    # (a PRINT in SCREEN 2 draws where no reader looks); every other case is the
+    # batches-1..6 program, unchanged.
+    back = "SCREEN 0:" if "SCREEN" in stmt else ""
+    return ["NEW", "10 ON ERROR GOTO 90", f"20 {stmt}", f'30 {back}PRINT"[OK]":END',
+            f'90 {back}PRINT"[";ERR;ERL;"]":END', "RUN"]
 
 
 def reading(raw):
     rows = [(raw or "")[i * omsx_repl.COLS:(i + 1) * omsx_repl.COLS]
             for i in range(omsx_repl.ROWS)]
     runi = [i for i, r in enumerate(rows) if r.strip() == "RUN"]
-    out = "".join(rows[runi[-1] + 1:]) if runi else ""
+    # a batch-7 case's `SCREEN 0` clears the echoed RUN away: then the screen
+    # holds ONLY the handler's output, so all of it is the reading
+    out = "".join(rows[runi[-1] + 1:]) if runi else "".join(rows)
     m = re.findall(r"\[\s*(\d+)\s+(\d+)\s*\]|\[OK\]", out)
     if not m:
         return None

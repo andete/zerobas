@@ -1549,6 +1549,16 @@ ra_abort:                                    ; the S1/S2a abort body (HL = messa
                 ; depth-independence (D-CUR-D) is untouched; fre_abort_low resets SP
                 ; from SAVSTK as its own first act regardless.
                 push    hl                   ; guard the message across the record
+                ; 🔴 D-GFXERRMSG (2026-09-27): BACK TO THE TEXT MODE *BEFORE* THE
+                ; MESSAGE. An untrapped error in SCREEN 2 printed its message INTO
+                ; the bitmap, and only the prompt came back to text: the user saw a
+                ; bare `ZB` and no error at all. The VG-8020 shows `Illegal function
+                ; call in 10` then `Ok` on the text screen (found by D-KWT6 batch 7,
+                ; whose 46 graphics rows read nothing here). txt_mode is the
+                ; prompt's own rule -- nothing in SCREEN 0/1 -- and a TRAPPED error
+                ; never reaches this label, so a handler keeps its graphics mode.
+                ; TOTEXT clobbers everything: the message rides the push above.
+                call    txt_mode
                 ld      hl,(SAVTXT)
                 call    cont_record          ; (basic/program.asm; run mode only)
                 pop     hl

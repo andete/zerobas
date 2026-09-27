@@ -6019,7 +6019,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:26229 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:26300 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -24961,6 +24961,31 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       reader always did), the four scenario rows declare it, and arm S36z pins it
       (NEGATIVE half: undeclared, it is NEVER guessed as NEXT; a mutation back to
       `stmt_keyword` turns S36z RED). Re-read: **T6 42 of 159**.
+      🟢 **BATCH 7 SHIPPED (2026-09-27): graphics statements, device functions,
+      ON/KEY/FN, PLAY and SET** (`--batch=7` → [`scratchpad/t6enum_b7.out`](scratchpad/t6enum_b7.out)),
+      226 cases over 22 keywords; 125 rows for the 20 whose every form read
+      whole. **120 SUPPORTED, 5 EXTRA** (zerobas accepts what the reference
+      refuses): D-DEFUSRRANGE, D-DEFFNPARAM and `STOP 1` (D-BAREEXTRA), filed
+      below — they block DEF USR, DEF FN and STOP.
+      ⛔ **CIRCLE and PAINT are left out on purpose:** `CIRCLE(99,99),-5` and
+      both `PAINT(1,1),1,16` / `PAINT(1,1),1,1,1` gave the REFERENCE no reading,
+      so those forms' sets are not known to be complete.
+      🔴 **THE 46 GRAPHICS ROWS FOUND A TIER 1 BUG BEFORE THEY PROVED ANYTHING:**
+      they read nothing on EITHER side, and the raw screens said why — an
+      untrapped error in SCREEN 2 prints `Illegal function call in 10` on the
+      VG-8020 and NOTHING on zerobas (D-GFXERRMSG, fixed, below). And the
+      apparatus had to learn one thing: the return to the text screen clears
+      the echoed RUN on both machines, so those rows read from the message's
+      first word (`NOECHO:Illegal` …); `row_t6_code` steps over a leading
+      `NOECHO:` itself (the shared prefix parser does not, on purpose).
+      📊 **T6 75 → 90 of 159** (tier sheet, knife re-pinned on the final ROM).
+      🔮 Predicted +17 keywords, got +15: `ON GOTO` / `ON GOSUB` are composites
+      the sheet scores in its composite table, and PAD and PLAY are held by
+      their own open items.
+      🔮 Predicted ~110 of 125 SUPPORTED with graphics divergences; it was 120
+      with NONE in graphics — the misses were all argument checks elsewhere.
+      And a first cut of the row NAMES collided (`colour-explicit` /
+      `colour-default` cut to six letters); the duplicate-key guard refused it.
 
 - [x] ✅ **FIXED 2026-09-27 (D-LETNUM): `LET <non-letter>` IS A SYNTAX ERROR
       AGAIN, +1 B.** `ex_letkw` (`basic/interp.asm`) now tests the target with
@@ -25096,6 +25121,33 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       (K=280/290) even a flat expression now refuses with ERR 7 where it used to
       run, and `B=((…8…))` at K=300 is ERR 7 where the VG-8020 completes — zerobas
       spends ~27 B of stack per nesting level. Economy (TIER 4), not corruption.
+
+- [x] 🔴 **AN ERROR IN A GRAPHICS PROGRAM SHOWED NO MESSAGE — `SCREEN 2:PSET
+      (10,10),16` LEFT A BARE `ZB` WHERE THE VG-8020 SAYS `Illegal function call
+      in 10`; `STOP` LOST ITS `Break in 10` THE SAME WAY (D-GFXERRMSG, found
+      2026-09-27 by T6 batch 7)** — ✅ **FIXED 2026-09-27.**
+      🎚️ TIER 1 — happy path: every mistake in a graphics program, and every
+      STOP in one, reported nothing at all.
+      📏 Raw screens, both machines, one row per boot: the VG-8020 returns to the
+      text screen and THEN prints the message (`Illegal function call in 10`,
+      `Ok`; `Break in 10`, `Ok`); zerobas printed the message INTO the SCREEN 2
+      bitmap and returned to text only for the prompt, so the user saw `ZB`.
+      Found because all 46 batch-7 graphics rows read nothing on zerobas.
+      ✅ `call txt_mode` — the prompt's own rule, back to the last TEXT mode,
+      nothing in SCREEN 0/1 — at the top of `ra_abort` ([`basic/interp.asm`](basic/interp.asm),
+      the untrapped-error path, so a trapped error keeps its graphics mode) and
+      in `do_break` before `Break` ([`basic/program.asm`](basic/program.asm)).
+      After: both read the reference's text; the 46 graphics rows are SUPPORTED
+      (read from the message's first word, since the return to text clears the
+      echo on both machines).
+      💰 **FUNDED BY D-NEGDE (+12 B page 1):** `ld hl,0 / or a / sbc hl,de` stood
+      at five sites. Two wanted DE negated in place — `float.asm`'s existing
+      `neg_de` (INPUT's sign, and pu_fmt_int, whose push/pop/ex around the
+      negate existed only to protect HL: 9 B → 3); three want HL = -DE with the
+      overflow flag and call a new `neg_de_hl` (low region, last in
+      `float-arith.asm`, which must still END in `ret`). `PRINT -5;-32768;-1.5`
+      and `A=-(-3)` read the same on both machines after it. Page 1 after both:
+      11 B, read 2026-09-27.
 
 - [x] 🔴 **`SOUND r,v` WITH A VARIABLE VALUE WROTE THE WRONG REGISTER — `V=12:SOUND
       8,V` LEFT R8 AT 0 (D-SNDVAR, found 2026-09-27 while fixing D-STACKFLOOR)** —
@@ -25348,6 +25400,25 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       `[ 2 20 ]`; zerobas ends the program with NO error. BEEP, TRON and TROFF
       agree (2 before any effect), so it is these two handlers: the statement-end
       check comes after the action (CLS) or never (END). Blocks CLS and END's T6.
+      ➕ **`STOP 1` too (batch 7, `t7stopbreak2` EXTRA):** the VG-8020 raises
+      `Syntax error`, zerobas breaks as if the `1` were not there. Blocks STOP's T6.
+
+- [ ] 🔴 **`DEF USR=70000` IS ACCEPTED HERE AND `Overflow` ON THE REFERENCE
+      (D-DEFUSRRANGE, found 2026-09-27 by T6 batch 7).**
+      🎚️ TIER 6 — `DEF USR[n]=` with an address past 65535
+      🤖 **AUTONOMOUS** — the reference settles it.
+      `t7defusrdefault6` / `t7defusrnumbered6` (EXTRA): the VG-8020 raises
+      Overflow (6) for `DEF USR=70000` and `DEF USR9=70000`; zerobas stores
+      something and runs on. `DEF USR="A"` (13) and a bare `DEF USR` (2) agree.
+      Blocks DEF USR's T6.
+
+- [ ] 🔴 **`DEF FNA(5)=1` IS ACCEPTED HERE AND `Syntax error` ON THE REFERENCE
+      (D-DEFFNPARAM, found 2026-09-27 by T6 batch 7).**
+      🎚️ TIER 6 — a DEF FN parameter that is not a variable name
+      🤖 **AUTONOMOUS** — the reference settles it.
+      `t7deffnnumeric2` / `t7deffnstringvalued2` (EXTRA): `DEF FNA(5)=1` and
+      `DEF FNA$(5)=1` are Syntax error on the VG-8020 and stored here. A formal
+      is a NAME. Blocks DEF FN's T6.
 
 - [ ] 🔴 **`POS("A")` / `LPOS("A")` ARE `Type mismatch` HERE AND ACCEPTED ON THE
       REFERENCE (D-POSDUMMY, found 2026-09-27 by T6).**

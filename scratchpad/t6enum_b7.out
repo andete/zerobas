@@ -1,0 +1,303 @@
+keyword case                                           Philips_VG_8
+PSET    SCREEN 2:PSET(10,10),16                             (5, 20)
+PSET    SCREEN 2:PSET(10,10),"A"                           (13, 20)
+PSET    SCREEN 2:PSET(10,10),-1                             (5, 20)
+PSET    SCREEN 2:PSET("A",10)                              (13, 20)
+PSET    PSET(10,10),1                                       (5, 20)
+PSET    SCREEN 2:PSET(10)                                   (2, 20)
+PSET    SCREEN 2:PSET 10,10                                 (2, 20)
+PSET    SCREEN 2:PSET(10,10                                 (2, 20)
+PSET    SCREEN 2:PSET(10,10),                              (24, 20)
+PSET    SCREEN 2:PSET(,10)                                  (2, 20)
+PSET    SCREEN 2:PSET STEP("A",1)                          (13, 20)
+PSET    SCREEN 2:PSET STEP 1,1                              (2, 20)
+PSET    SCREEN 2:PSET STEP(1,1),16                          (5, 20)
+PSET    SCREEN 3:PSET(10,10),16                             (5, 20)
+PSET    SCREEN 3:PSET(10,10),"A"                           (13, 20)
+PSET    SCREEN 3:PSET(99999,1)                              (6, 20)
+PRESET  SCREEN 2:PRESET(10,10                               (2, 20)
+PRESET  SCREEN 2:PRESET(10)                                 (2, 20)
+PRESET  SCREEN 2:PRESET("A",10)                            (13, 20)
+PRESET  PRESET(10,10)                                       (5, 20)
+PRESET  SCREEN 2:PRESET 10,10                               (2, 20)
+PRESET  SCREEN 2:PRESET(10,10),16                           (5, 20)
+PRESET  SCREEN 2:PRESET(10,10),"A"                         (13, 20)
+PRESET  SCREEN 2:PRESET(10,10),-1                           (5, 20)
+PRESET  SCREEN 2:PRESET STEP("A",1)                        (13, 20)
+PRESET  SCREEN 2:PRESET STEP 1,1                            (2, 20)
+PRESET  SCREEN 3:PRESET(10,10),16                           (5, 20)
+PRESET  SCREEN 3:PRESET(10,10),"A"                         (13, 20)
+LINE    SCREEN 2:LINE(0,0)-("A",1)                         (13, 20)
+LINE    SCREEN 2:LINE(0,0)-                                 (2, 20)
+LINE    SCREEN 2:LINE(0,0)(1,1)                             (2, 20)
+LINE    SCREEN 2:LINE(0,0)-(1,1),16                         (5, 20)
+LINE    LINE(0,0)-(1,1)                                     (5, 20)
+LINE    SCREEN 2:LINE(0,0)-(1)                              (2, 20)
+LINE    SCREEN 2:LINE(0,0)-(9,9),1,C                        (2, 20)
+LINE    SCREEN 2:LINE(0,0)-(9,9),16,B                       (5, 20)
+LINE    SCREEN 2:LINE(0,0)-(9,9),1,B,1                      (2, 20)
+LINE    SCREEN 2:LINE(0,0)-(9,9),1,BX                       (2, 20)
+LINE    SCREEN 2:LINE(0,0)-(9,9),16,BF                      (5, 20)
+LINE    SCREEN 2:LINE STEP("A",1)-(9,9)                    (13, 20)
+LINE    SCREEN 2:LINE STEP(1,1)-STEP                        (2, 20)
+LINE    SCREEN 2:LINE STEP 1,1-(9,9)                        (2, 20)
+LINE    SCREEN 2:LINE -("A",1)                             (13, 20)
+LINE    SCREEN 2:LINE -(9)                                  (2, 20)
+LINE    SCREEN 2:LINE -                                     (2, 20)
+LINE    SCREEN 2:LINE(0,0)-(9,9),                          (24, 20)
+LINE    SCREEN 2:LINE(0,0)-(9,9),,                          (2, 20)
+LINE    SCREEN 2:LINE(0,0)-(9,9),"A"                       (13, 20)
+CIRCLE  SCREEN 2:CIRCLE(99,99)                              (2, 20)
+CIRCLE  SCREEN 2:CIRCLE(99,99),"A"                         (13, 20)
+CIRCLE  SCREEN 2:CIRCLE(99,99),-5                              None
+   ⚠️ CIRCLE 'SCREEN 2:CIRCLE(99,99),-5': NO READING on the reference -- not scored
+CIRCLE  SCREEN 2:CIRCLE(99,99),5,16                         (5, 20)
+CIRCLE  CIRCLE(99,99),5                                     (5, 20)
+CIRCLE  SCREEN 2:CIRCLE(99),5                               (2, 20)
+CIRCLE  SCREEN 2:CIRCLE(99,99),5,1,7                        (5, 20)
+CIRCLE  SCREEN 2:CIRCLE(99,99),5,1,"A"                     (13, 20)
+CIRCLE  SCREEN 2:CIRCLE(99,99),5,1,1,7                      (5, 20)
+CIRCLE  SCREEN 2:CIRCLE STEP("A",1),5                      (13, 20)
+CIRCLE  SCREEN 2:CIRCLE STEP 1,1,5                          (2, 20)
+CIRCLE  SCREEN 2:CIRCLE(99,99),5,1,,,"A"                   (13, 20)
+CIRCLE  SCREEN 2:CIRCLE(99,99),5,1,,,-1                     (5, 20)
+CIRCLE  SCREEN 2:CIRCLE(99,99),5,1,,,1,1                    (2, 20)
+CIRCLE  SCREEN 2:CIRCLE(99,99),5,                          (24, 20)
+CIRCLE  SCREEN 2:CIRCLE(99,99),5,,                         (24, 20)
+PAINT   SCREEN 2:PAINT("A",1)                              (13, 20)
+PAINT   SCREEN 2:PAINT(1)                                   (2, 20)
+PAINT   PAINT(1,1)                                          (5, 20)
+PAINT   SCREEN 2:PAINT 1,1                                  (2, 20)
+PAINT   SCREEN 2:PAINT(1,1),16                              (5, 20)
+PAINT   SCREEN 2:PAINT(1,1),"A"                            (13, 20)
+PAINT   SCREEN 2:PAINT(1,1),-1                              (5, 20)
+PAINT   SCREEN 2:PAINT(1,1),1,16                               None
+   ⚠️ PAINT 'SCREEN 2:PAINT(1,1),1,16': NO READING on the reference -- not scored
+PAINT   SCREEN 2:PAINT(1,1),1,"A"                          (13, 20)
+PAINT   SCREEN 2:PAINT(1,1),1,1,1                              None
+   ⚠️ PAINT 'SCREEN 2:PAINT(1,1),1,1,1': NO READING on the reference -- not scored
+DRAW    SCREEN 2:DRAW"Q"                                    (5, 20)
+DRAW    SCREEN 2:DRAW 5                                    (13, 20)
+DRAW    DRAW"U5"                                            (5, 20)
+DRAW    SCREEN 2:DRAW"U-"                                   (5, 20)
+DRAW    SCREEN 2:DRAW"U99999"                               (5, 20)
+DRAW    SCREEN 2:DRAW"M"                                    (5, 20)
+DRAW    SCREEN 2:DRAW"M5"                                   (5, 20)
+DRAW    SCREEN 2:DRAW"M5,"                                  (5, 20)
+DRAW    SCREEN 2:DRAW"M+5"                                  (5, 20)
+DRAW    SCREEN 2:DRAW"M+5,"                                 (5, 20)
+DRAW    SCREEN 2:DRAW"M+99999,1"                            (5, 20)
+DRAW    SCREEN 2:DRAW"B"                                         OK
+DRAW    SCREEN 2:DRAW"BQ"                                   (5, 20)
+DRAW    SCREEN 2:DRAW"N"                                         OK
+DRAW    SCREEN 2:DRAW"NQ"                                   (5, 20)
+DRAW    SCREEN 2:DRAW"C16"                                  (5, 20)
+DRAW    SCREEN 2:DRAW"C"                                    (5, 20)
+DRAW    SCREEN 2:DRAW"C-1"                                  (5, 20)
+DRAW    SCREEN 2:DRAW"S256"                                 (5, 20)
+DRAW    SCREEN 2:DRAW"S"                                    (5, 20)
+DRAW    SCREEN 2:DRAW"S-1"                                  (5, 20)
+DRAW    SCREEN 2:DRAW"A4"                                   (5, 20)
+DRAW    SCREEN 2:DRAW"A"                                    (5, 20)
+DRAW    SCREEN 2:DRAW"A-1"                                  (5, 20)
+DRAW    SCREEN 2:DRAW"XZ$;"                                      OK
+DRAW    SCREEN 2:DRAW"X"                                    (5, 20)
+DRAW    SCREEN 2:DRAW"XA;"                                 (13, 20)
+DRAW    SCREEN 2:DRAW"U=Q;"                                      OK
+DRAW    SCREEN 2:DRAW"U=A$;"                               (13, 20)
+DRAW    SCREEN 2:DRAW"U="                                   (5, 20)
+BASE    A=BASE(20)                                          (5, 20)
+BASE    A=BASE("A")                                        (13, 20)
+BASE    A=BASE(-1)                                          (5, 20)
+BASE    A=BASE                                              (2, 20)
+BASE    BASE(20)=0                                          (5, 20)
+BASE    BASE(5)="A"                                        (13, 20)
+BASE    BASE(5)=-1                                          (5, 20)
+BASE    BASE(5)=70000                                       (6, 20)
+BASE    BASE(5)=                                           (24, 20)
+VDP     A=VDP(8)                                                 OK
+VDP     A=VDP("A")                                         (13, 20)
+VDP     A=VDP(-1)                                           (5, 20)
+VDP     A=VDP                                               (2, 20)
+VDP     VDP(8)=0                                            (5, 20)
+VDP     VDP(7)="A"                                         (13, 20)
+VDP     VDP(7)=256                                          (5, 20)
+VDP     VDP(7)=-1                                           (5, 20)
+VDP     VDP(7)=                                            (24, 20)
+SPRITE  SPRITE$(32)="A"                                     (5, 20)
+SPRITE  SPRITE$("A")="A"                                    (5, 20)
+SPRITE  SPRITE$(1)=5                                        (5, 20)
+SPRITE  SPRITE$(-1)="A"                                     (5, 20)
+SPRITE  SPRITE ON 1                                         (2, 20)
+SPRITE  SPRITE ON,                                          (2, 20)
+SPRITE  SPRITE OFF 1                                        (2, 20)
+SPRITE  SPRITE STOP 1                                       (2, 20)
+ON GOTO ON "A" GOTO 30                                     (13, 20)
+ON GOTO ON -1 GOTO 30                                       (5, 20)
+ON GOTO ON 256 GOTO 30                                      (5, 20)
+ON GOTO ON 1 GOTO 99                                        (8, 20)
+ON GOTO ON 1 GOTO                                           (2, 20)
+ON GOTO ON 1 GOTO 30,                                            OK
+ON GOSUB ON "A" GOSUB 30                                    (13, 20)
+ON GOSUB ON -1 GOSUB 30                                      (5, 20)
+ON GOSUB ON 256 GOSUB 30                                     (5, 20)
+ON GOSUB ON 1 GOSUB 99                                       (8, 20)
+ON GOSUB ON 1 GOSUB                                          (2, 20)
+KEY     KEY 11,"A"                                          (5, 20)
+KEY     KEY 1,5                                            (13, 20)
+KEY     KEY 0,"A"                                           (5, 20)
+KEY     KEY "A","B"                                        (13, 20)
+KEY     KEY 1                                               (2, 20)
+KEY     KEY LIST 1                                          (2, 20)
+KEY     KEY ON 1                                            (2, 20)
+KEY     KEY OFF 1                                           (2, 20)
+STICK   A=STICK(3)                                          (5, 20)
+STICK   A=STICK("A")                                       (13, 20)
+STICK   A=STICK(-1)                                         (5, 20)
+STICK   A=STICK                                             (2, 20)
+STICK   A=STICK(1,1)                                        (2, 20)
+STICK   A=STICK(2.5)+STICK(3)                               (5, 20)
+STRIG   A=STRIG(5)                                          (5, 20)
+STRIG   A=STRIG("A")                                       (13, 20)
+STRIG   A=STRIG(-1)                                         (5, 20)
+STRIG   A=STRIG                                             (2, 20)
+STRIG   A=STRIG(1,1)                                        (2, 20)
+STRIG   A=STRIG(4)+STRIG(5)                                 (5, 20)
+PDL     A=PDL(13)                                           (5, 20)
+PDL     A=PDL(0)                                            (5, 20)
+PDL     A=PDL("A")                                         (13, 20)
+PDL     A=PDL                                               (2, 20)
+PAD     A=PAD(8)                                            (5, 20)
+PAD     A=PAD("A")                                         (13, 20)
+PAD     A=PAD(-1)                                           (5, 20)
+PAD     A=PAD                                               (2, 20)
+PAD     A=PAD(1,1)                                          (2, 20)
+PAD     A=PAD(2)+PAD(9)                                     (5, 20)
+PAD     A=PAD(3,1)                                          (2, 20)
+PAD     A=PAD(7)+PAD(20)                                    (5, 20)
+DEF USR DEF USR="A"                                        (13, 20)
+DEF USR DEF USR=70000                                       (6, 20)
+DEF USR DEF USR                                             (2, 20)
+DEF USR DEF USR=-1                                               OK
+DEF USR DEF USR=1,2                                         (2, 20)
+DEF USR DEF USR9="A"                                       (13, 20)
+DEF USR DEF USR9                                            (2, 20)
+DEF USR DEF USR9=70000                                      (6, 20)
+DEF FN  DEF FNA(X)=                                              OK
+DEF FN  DEF FNA(5)=1                                        (2, 20)
+DEF FN  DEF FN(X)=1                                         (2, 20)
+DEF FN  DEF FNA(X                                           (2, 20)
+DEF FN  DEF FNA(X,)=1                                       (2, 20)
+DEF FN  DEF FNA$(X)=                                             OK
+DEF FN  DEF FNA$(5)=1                                       (2, 20)
+DEF FN  DEF FNA$(X$                                         (2, 20)
+FN      DEF FNA(X)=X:A=FNA(1,2)                             (2, 20)
+FN      DEF FNA(X)=X:A=FNA("A")                            (13, 20)
+FN      A=FNB(1)                                           (18, 20)
+FN      DEF FNA(X)=X:A=FNA                                  (2, 20)
+FN      DEF FNA$(X)=STR$(X):A$=FNA$("A")                   (13, 20)
+FN      A$=FNB$(1)                                         (18, 20)
+FN      DEF FNA$(X)=STR$(X):A=FNA$(1)                      (13, 20)
+STOP    STOP 1                                              (2, 20)
+STOP    STOP ON 1                                           (2, 20)
+STOP    STOP,                                               (2, 20)
+PLAY    PLAY"H"                                             (5, 20)
+PLAY    PLAY 5                                             (13, 20)
+PLAY    PLAY"C99"                                           (5, 20)
+PLAY    PLAY"N97"                                           (5, 20)
+PLAY    PLAY"N"                                             (5, 20)
+PLAY    PLAY"N-1"                                           (5, 20)
+PLAY    PLAY"R0"                                            (5, 20)
+PLAY    PLAY"R65"                                           (5, 20)
+PLAY    PLAY"O9"                                            (5, 20)
+PLAY    PLAY"O0"                                            (5, 20)
+PLAY    PLAY"L0"                                            (5, 20)
+PLAY    PLAY"L65"                                           (5, 20)
+PLAY    PLAY"T31"                                           (5, 20)
+PLAY    PLAY"T256"                                          (5, 20)
+PLAY    PLAY"V16"                                           (5, 20)
+PLAY    PLAY"V-1"                                           (5, 20)
+PLAY    PLAY"S16"                                           (5, 20)
+PLAY    PLAY"M0"                                            (5, 20)
+PLAY    PLAY"M65536"                                        (5, 20)
+PLAY    PLAY"C","D","E","F"                                 (2, 20)
+PLAY    PLAY"C",5                                          (13, 20)
+PLAY    PLAY"XZ$;"                                               OK
+PLAY    PLAY"X"                                             (5, 20)
+PLAY    PLAY"XA;"                                          (13, 20)
+SET     SET 1                                               (5, 20)
+SET     SET                                                 (5, 20)
+SET     SET "A"                                             (5, 20)
+
+# the reference's error set per keyword form (code: first case)
+PSET   colour-explicit 2: SCREEN 2:PSET(10)  5: SCREEN 2:PSET(10,10),16  13: SCREEN 2:PSET(10,10),"A"
+PSET   colour-default 2: SCREEN 2:PSET(10,10  24: SCREEN 2:PSET(10,10),
+PSET   step-relative  2: SCREEN 2:PSET STEP 1,1  5: SCREEN 2:PSET STEP(1,1),16  13: SCREEN 2:PSET STEP("A",1)
+PSET   mode-screen3   5: SCREEN 3:PSET(10,10),16  6: SCREEN 3:PSET(99999,1)  13: SCREEN 3:PSET(10,10),"A"
+PRESET colour-default 2: SCREEN 2:PRESET(10,10  5: PRESET(10,10)  13: SCREEN 2:PRESET("A",10)
+PRESET colour-explicit 5: SCREEN 2:PRESET(10,10),16  13: SCREEN 2:PRESET(10,10),"A"
+PRESET step-relative  2: SCREEN 2:PRESET STEP 1,1  13: SCREEN 2:PRESET STEP("A",1)
+PRESET mode-screen3   5: SCREEN 3:PRESET(10,10),16  13: SCREEN 3:PRESET(10,10),"A"
+LINE   segment        2: SCREEN 2:LINE(0,0)-  5: SCREEN 2:LINE(0,0)-(1,1),16  13: SCREEN 2:LINE(0,0)-("A",1)
+LINE   box            2: SCREEN 2:LINE(0,0)-(9,9),1,C  5: SCREEN 2:LINE(0,0)-(9,9),16,B
+LINE   filled-box     2: SCREEN 2:LINE(0,0)-(9,9),1,BX  5: SCREEN 2:LINE(0,0)-(9,9),16,BF
+LINE   step-relative  2: SCREEN 2:LINE STEP(1,1)-STEP  13: SCREEN 2:LINE STEP("A",1)-(9,9)
+LINE   omitted-start  2: SCREEN 2:LINE -(9)  13: SCREEN 2:LINE -("A",1)
+LINE   colour-default 2: SCREEN 2:LINE(0,0)-(9,9),,  13: SCREEN 2:LINE(0,0)-(9,9),"A"  24: SCREEN 2:LINE(0,0)-(9,9),
+CIRCLE centre-radius  2: SCREEN 2:CIRCLE(99,99)  5: SCREEN 2:CIRCLE(99,99),5,16  13: SCREEN 2:CIRCLE(99,99),"A"
+CIRCLE arc            5: SCREEN 2:CIRCLE(99,99),5,1,7  13: SCREEN 2:CIRCLE(99,99),5,1,"A"
+CIRCLE step-relative  2: SCREEN 2:CIRCLE STEP 1,1,5  13: SCREEN 2:CIRCLE STEP("A",1),5
+CIRCLE aspect         2: SCREEN 2:CIRCLE(99,99),5,1,,,1,1  5: SCREEN 2:CIRCLE(99,99),5,1,,,-1  13: SCREEN 2:CIRCLE(99,99),5,1,,,"A"
+CIRCLE colour-default 24: SCREEN 2:CIRCLE(99,99),5,
+PAINT  flood          2: SCREEN 2:PAINT(1)  5: PAINT(1,1)  13: SCREEN 2:PAINT("A",1)
+PAINT  fill-colour    5: SCREEN 2:PAINT(1,1),16  13: SCREEN 2:PAINT(1,1),"A"
+PAINT  border-colour  13: SCREEN 2:PAINT(1,1),1,"A"
+DRAW   movement       5: SCREEN 2:DRAW"Q"  13: SCREEN 2:DRAW 5
+DRAW   move-absolute  5: SCREEN 2:DRAW"M"
+DRAW   move-relative  5: SCREEN 2:DRAW"M+5"
+DRAW   blank-prefix   5: SCREEN 2:DRAW"BQ"
+DRAW   no-update-prefix 5: SCREEN 2:DRAW"NQ"
+DRAW   colour         5: SCREEN 2:DRAW"C16"
+DRAW   scale          5: SCREEN 2:DRAW"S256"
+DRAW   angle          5: SCREEN 2:DRAW"A4"
+DRAW   substring-exec 5: SCREEN 2:DRAW"X"  13: SCREEN 2:DRAW"XA;"
+DRAW   variable-substitution 5: SCREEN 2:DRAW"U="  13: SCREEN 2:DRAW"U=A$;"
+BASE   read           2: A=BASE  5: A=BASE(20)  13: A=BASE("A")
+BASE   write          5: BASE(20)=0  6: BASE(5)=70000  13: BASE(5)="A"  24: BASE(5)=
+VDP    read           2: A=VDP  5: A=VDP(-1)  13: A=VDP("A")
+VDP    write          5: VDP(8)=0  13: VDP(7)="A"  24: VDP(7)=
+SPRITE pattern-write  5: SPRITE$(32)="A"
+SPRITE enable         2: SPRITE ON 1
+SPRITE disable        2: SPRITE OFF 1
+ON GOTO index-goto     2: ON 1 GOTO  5: ON -1 GOTO 30  8: ON 1 GOTO 99  13: ON "A" GOTO 30
+ON GOSUB index-gosub    2: ON 1 GOSUB  5: ON -1 GOSUB 30  8: ON 1 GOSUB 99  13: ON "A" GOSUB 30
+KEY    assign         2: KEY 1  5: KEY 11,"A"  13: KEY 1,5
+KEY    list           2: KEY LIST 1
+KEY    display-on     2: KEY ON 1
+KEY    display-off    2: KEY OFF 1
+STICK  cursor-keys    2: A=STICK  5: A=STICK(3)  13: A=STICK("A")
+STICK  joystick-port  2: A=STICK(1,1)  5: A=STICK(2.5)+STICK(3)
+STRIG  space-bar      2: A=STRIG  5: A=STRIG(5)  13: A=STRIG("A")
+STRIG  joystick-trigger 2: A=STRIG(1,1)  5: A=STRIG(4)+STRIG(5)
+PDL    read           2: A=PDL  5: A=PDL(13)  13: A=PDL("A")
+PAD    touch-status   2: A=PAD  5: A=PAD(8)  13: A=PAD("A")
+PAD    coordinate     2: A=PAD(1,1)  5: A=PAD(2)+PAD(9)
+PAD    switch         2: A=PAD(3,1)  5: A=PAD(7)+PAD(20)
+DEF USR default        2: DEF USR  6: DEF USR=70000  13: DEF USR="A"
+DEF USR numbered       2: DEF USR9  6: DEF USR9=70000  13: DEF USR9="A"
+DEF FN numeric        2: DEF FNA(5)=1
+DEF FN string-valued  2: DEF FNA$(5)=1
+FN     numeric        2: DEF FNA(X)=X:A=FNA(1,2)  13: DEF FNA(X)=X:A=FNA("A")  18: A=FNB(1)
+FN     string-valued  13: DEF FNA$(X)=STR$(X):A$=FNA$("A")  18: A$=FNB$(1)
+STOP   break          2: STOP 1
+PLAY   notes          5: PLAY"H"  13: PLAY 5
+PLAY   note-number    5: PLAY"N97"
+PLAY   rest           5: PLAY"R0"
+PLAY   octave         5: PLAY"O9"
+PLAY   default-length 5: PLAY"L0"
+PLAY   tempo          5: PLAY"T31"
+PLAY   volume         5: PLAY"V16"
+PLAY   envelope       5: PLAY"S16"
+PLAY   multi-voice    2: PLAY"C","D","E","F"  13: PLAY"C",5
+PLAY   substring-exec 5: PLAY"X"  13: PLAY"XA;"
+SET    refuse         5: SET 1

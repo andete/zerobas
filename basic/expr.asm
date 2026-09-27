@@ -976,9 +976,7 @@ ev_f_neg:
                                             ; than unary minus, §13.1/13.3 --
                                             ; this is what makes -2^2=-4 AND
                                             ; 2^-3^2=2^-(3^2) fall out for free)
-                ld      hl,0
-                or      a
-                sbc     hl,de               ; HL = 0 - operand. P/V is set for
+                call    neg_de_hl           ; HL = 0 - operand. P/V is set for
                                             ; EXACTLY one int16 operand: $8000
                                             ; (0-(-32768) = +32768, out of range).
                                             ; $8000 is its own two's-complement

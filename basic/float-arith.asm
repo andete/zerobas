@@ -1717,9 +1717,7 @@ abs16:
                 ret     z
                 push    af
                 ex      de,hl
-                ld      hl,0
-                or      a
-                sbc     hl,de
+                call    neg_de_hl           ; D-NEGDE: HL = -DE
                 pop     af
                 ret
 
@@ -2336,5 +2334,20 @@ fpt_allfrac:
                 pop     af
                 ret     z
                 scf
+                ret
+
+; --- neg_de_hl: HL = 0 - DE, with `sbc hl,de`'s flags (P/V = int16 overflow,
+; the one ev_f_neg reads) -- D-NEGDE (2026-09-27). NOT float.asm's neg_de,
+; which negates DE IN PLACE and keeps HL: the two sites that wanted that
+; (INPUT's sign, pu_fmt_int) call it now. `ld hl,0 / or a / sbc hl,de` stood
+; open-coded at THREE sites that want the result in HL (unary minus, the
+; number renderer, and this file's own). SITED IN THE LOW REGION so the page-1
+; sites reach it, and LAST in this file on purpose: subromcall.asm's header
+; rests on this file ENDING in `ret` (nothing may fall forward into
+; subrom_call). A untouched.
+neg_de_hl:
+                ld      hl,0
+                or      a
+                sbc     hl,de
                 ret
 

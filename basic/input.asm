@@ -390,10 +390,9 @@ inf_fin:
                 jr      z,inf_bad           ; no digit at all -> invalid
                 bit     0,c
                 jr      z,inf_ok
-                ld      hl,0                ; negate: DE = 0 - DE
-                or      a
-                sbc     hl,de
-                ex      de,hl
+                call    neg_de              ; negate: DE = 0 - DE (float.asm's; HL kept.
+                                            ; D-NEGDE: this was `ld hl,0 / or a /
+                                            ; sbc hl,de / ex de,hl`, 6 B for the same DE)
 inf_ok:
                 or      a                   ; CF clear = valid
                 ret

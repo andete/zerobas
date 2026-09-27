@@ -10,9 +10,9 @@
 ; main ROM, read out of our own build's symbol file. Nothing here is derived
 ; from a disassembly or byte-copy of any reference ROM.
 
-widen_rhs_operand equ 038FAH
-round_single_and_pack equ 03435H
-round_and_finalize equ 033DBH
+widen_rhs_operand equ 038F6H
+round_single_and_pack equ 03431H
+round_and_finalize equ 033D7H
 pu_deref_body equ 028C1H
 ARGA equ 0F06AH   ; operand A / working result, FPNUM record (18)
 STRSCR equ 0E26DH   ; [len][bytes:STRMAX] staging, $E26D..$E36C
@@ -47,15 +47,15 @@ FILES_ENTIDX equ 0E0FCH   ; FILES: dir entry index 0..15 within a sector (1)
 LPTPOS equ 0EA39H   ; printer head column, 0-based (1)
 
 ; --- page-1 call-back targets: reached by an INTER-SLOT call (MSX2 TH), not an absolute one ---
-fname_expr equ 06E3DH
-pdfcb_resume equ 06E36H
-dirverb_op equ 06C20H
-main_fat_mount equ 064AAH   ; main's fat_mount
-main_fat_find equ 064AEH   ; main's fat_find
-parse_disk_fcb equ 0664FH
-fat_count_free equ 064DDH
-field_prologue equ 07255H
-field_item equ 0728BH
-lrset_tgt equ 07346H
-lrset_rhs equ 07368H
-lrset_finish equ 0737FH
+fname_expr equ 06E34H
+pdfcb_resume equ 06E2DH
+dirverb_op equ 06C17H
+main_fat_mount equ 064A1H   ; main's fat_mount
+main_fat_find equ 064A5H   ; main's fat_find
+parse_disk_fcb equ 06646H
+fat_count_free equ 064D4H
+field_prologue equ 0724CH
+field_item equ 07282H
+lrset_tgt equ 0733DH
+lrset_rhs equ 0735FH
+lrset_finish equ 07376H

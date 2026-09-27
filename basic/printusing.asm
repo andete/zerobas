@@ -342,12 +342,10 @@ pu_fmt_int:
                 jr      z,pfi_pos
                 ld      (hl),'-'
                 inc     hl
-                push    hl                  ; save the digits-start pointer
-                ld      hl,0
-                or      a
-                sbc     hl,de               ; HL = -value (magnitude)
-                ex      de,hl               ; DE = magnitude
-                pop     hl                  ; HL = NUMBUF+1
+                call    neg_de              ; DE = magnitude (float.asm's neg_de keeps HL
+                                            ; = NUMBUF+1, which is all the push/pop and
+                                            ; the ex around a `sbc hl,de` negate were
+                                            ; for -- D-NEGDE, 9 B -> 3)
 pfi_pos:
                 ld      (PU_WP),hl          ; digits start
                 ex      de,hl               ; HL = magnitude

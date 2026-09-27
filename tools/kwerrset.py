@@ -130,6 +130,31 @@ ERRSETS: dict[str, dict[str, frozenset[int]]] = {
     "DEFSNG": {"single-letter": frozenset({2}), "letter-range": frozenset({2})},
     "DEFDBL": {"single-letter": frozenset({2}), "letter-range": frozenset({2})},
     "DEFSTR": {"single-letter": frozenset({2}), "letter-range": frozenset({2})},
+    # --- batch 7: graphics statements, device functions, ON/KEY/FN, PLAY, SET.
+    # 🔴 CIRCLE AND PAINT ARE NOT HERE, ON PURPOSE: `CIRCLE(99,99),-5` and both
+    # `PAINT(1,1),1,16` / `PAINT(1,1),1,1,1` gave the REFERENCE no reading, so
+    # those forms' sets are not known to be complete -- an entry is a
+    # measurement, and a partly-read form is not one.
+    "PSET": {"colour-explicit": frozenset({2, 5, 13}), "colour-default": frozenset({2, 24}), "step-relative": frozenset({2, 5, 13}), "mode-screen3": frozenset({5, 6, 13})},
+    "PRESET": {"colour-default": frozenset({2, 5, 13}), "colour-explicit": frozenset({5, 13}), "step-relative": frozenset({2, 13}), "mode-screen3": frozenset({5, 13})},
+    "LINE": {"segment": frozenset({2, 5, 13}), "box": frozenset({2, 5}), "filled-box": frozenset({2, 5}), "step-relative": frozenset({2, 13}), "omitted-start": frozenset({2, 13}), "colour-default": frozenset({2, 13, 24})},
+    "DRAW": {"movement": frozenset({5, 13}), "move-absolute": frozenset({5}), "move-relative": frozenset({5}), "blank-prefix": frozenset({5}), "no-update-prefix": frozenset({5}), "colour": frozenset({5}), "scale": frozenset({5}), "angle": frozenset({5}), "substring-exec": frozenset({5, 13}), "variable-substitution": frozenset({5, 13})},
+    "BASE": {"read": frozenset({2, 5, 13}), "write": frozenset({5, 6, 13, 24})},
+    "VDP": {"read": frozenset({2, 5, 13}), "write": frozenset({5, 13, 24})},
+    "SPRITE": {"pattern-write": frozenset({5}), "enable": frozenset({2}), "disable": frozenset({2})},
+    "ON GOTO": {"index-goto": frozenset({2, 5, 8, 13})},
+    "ON GOSUB": {"index-gosub": frozenset({2, 5, 8, 13})},
+    "KEY": {"assign": frozenset({2, 5, 13}), "list": frozenset({2}), "display-on": frozenset({2}), "display-off": frozenset({2})},
+    "STICK": {"cursor-keys": frozenset({2, 5, 13}), "joystick-port": frozenset({2, 5})},
+    "STRIG": {"space-bar": frozenset({2, 5, 13}), "joystick-trigger": frozenset({2, 5})},
+    "PDL": {"read": frozenset({2, 5, 13})},
+    "PAD": {"touch-status": frozenset({2, 5, 13}), "coordinate": frozenset({2, 5}), "switch": frozenset({2, 5})},
+    "DEF USR": {"default": frozenset({2, 6, 13}), "numbered": frozenset({2, 6, 13})},
+    "DEF FN": {"numeric": frozenset({2}), "string-valued": frozenset({2})},
+    "FN": {"numeric": frozenset({2, 13, 18}), "string-valued": frozenset({13, 18})},
+    "STOP": {"break": frozenset({2})},
+    "PLAY": {"notes": frozenset({5, 13}), "note-number": frozenset({5}), "rest": frozenset({5}), "octave": frozenset({5}), "default-length": frozenset({5}), "tempo": frozenset({5}), "volume": frozenset({5}), "envelope": frozenset({5}), "multi-voice": frozenset({2, 13}), "substring-exec": frozenset({5, 13})},
+    "SET": {"refuse": frozenset({5})},
 }
 
 _B1 = {"ABS", "SGN", "INT", "SQR", "LOG", "EXP", "ASC", "CHR$", "LEN", "PEEK"}
@@ -137,6 +162,9 @@ _B3 = {"MKI$", "CVI", "MKS$", "CVS", "MKD$", "CVD", "DSKF"}
 _B4 = {"INSTR", "MID$", "NEXT", "RETURN", "RESTORE", "GOTO", "READ", "SWAP", "ERASE", "DIM"}
 _B6 = {"FOR", "IF", "CLEAR", "COLOR", "SCREEN", "LOCATE", "TIME", "DEFINT", "DEFSNG",
        "DEFDBL", "DEFSTR"}
+_B7 = {"PSET", "PRESET", "LINE", "DRAW", "BASE", "VDP", "SPRITE", "ON GOTO", "ON GOSUB",
+       "KEY", "STICK", "STRIG", "PDL", "PAD", "DEF USR", "DEF FN", "FN", "STOP", "PLAY",
+       "SET"}
 _B5 = {"AND", "OR", "XOR", "EQV", "IMP", "NOT", "MOD", "BEEP", "CLS", "TRON", "TROFF",
        "END", "CSRLIN", "ERL", "ERR", "ERROR", "GOSUB", "INKEY$", "INP", "LET", "OUT",
        "POINT", "POS", "LPOS", "RND"}
@@ -151,6 +179,8 @@ PROVENANCE: dict[str, str] = {
         if k in _B5 else
         "scratchpad/t6enum_probe.py --batch=6 -> scratchpad/t6enum_b6.out, VG-8020"
         if k in _B6 else
+        "scratchpad/t6enum_probe.py --batch=7 -> scratchpad/t6enum_b7.out, VG-8020"
+        if k in _B7 else
         "scratchpad/t6enum_probe.py --batch=2 -> scratchpad/t6enum_b2.out, VG-8020")
        + ", 2026-09-27"
     for k in ERRSETS}
