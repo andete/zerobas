@@ -84,8 +84,10 @@ dfn_stored:
                 jp      dfn_delim           ; a FORMAL -> the delimiters must agree
 
 ; --- dfn_is_result: Z iff FN_KEY names the $FFFF result slot ---------------
-; A formal's name0 is an upcased letter, so $FF is a key no formal can carry --
-; the same argument the resident coercion's own `$FFFF` re-key rides on.
+; A formal's name0 is an upcased letter, so $FF is a key no formal can carry.
+; ⚠️ That argument does its work HERE, in the phase test (knife K-IR1). The coercion's own `$FFFF` re-key below does not lean on it: only one
+; slot is live there, and knife K-RK1 (a LETTER key written instead) moved 0 of
+; 73 rows (scratchpad/deffn_knives.py, 2026-09-27).
 dfn_is_result:
                 ld      a,(FN_KEY+1)        ; name0 (ld (FN_KEY),bc puts B high)
                 inc     a

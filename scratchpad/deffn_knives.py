@@ -145,6 +145,35 @@ KNIVES = [
      # was sound: a 42-row set scored exactly says little about the one line cut.
      {"b.nested", "b.noarg", "b.param", "b.paramnew", "b.redef", "b.str", "b.two", "o.actualfirst", "o.argnoarg", "o.clearwipe.ctl", "o.defint", "o.defint.ctl", "o.defintbang", "o.defstr", "o.dynaddr", "o.dynorder", "o.dynscope", "o.dynself", "o.errrestore", "o.fnbang", "o.fnpct", "o.global", "o.ifthen", "o.namespace", "o.nestsame", "o.outer.ctl", "o.outerabs", "o.outerafter", "o.outerbefore", "o.outernoarg", "o.p3", "o.p5", "o.p8", "o.p9", "o.quotedcolon", "o.realcell", "o.runtwice", "o.stmtcolon", "o.suffn", "o.sufformal", "o.twocalls", "o.varptr"}, set(), SUB_MOVES),
 
+    # --- 2026-09-27 (loop): the item's LAST TWO, read before cutting --------
+    ("K-LP1  fnf_save copies the FIXED cells only, not the live formals",
+     ROOT / "sub/deffn.asm",
+     "                sub     low FN_PAREA\n"
+     "                add     a,FN_CELLS          ; A = the live prefix's size\n",
+     "                xor     a                   ; K-LP1\n"
+     "                add     a,FN_CELLS          ; A = the live prefix's size\n",
+     # MEASURED 2026-09-27. Predicted qualitatively "nested-call rows only" --
+     # HIT, but the recursion row (b.recurse: ref ERR 7, zb <NO OUTPUT> -- a
+     # smaller frame lets the recursion run past the stack reserve) was not named.
+     {"o.dynself", "o.nestsame", "o.outerafter", "o.outernoarg"},
+     {"b.recurse"}, SUB_MOVES),
+    ("K-RK1  the result re-key writes a LETTER key ($58 $00), not $FFFF",
+     ROOT / "sub/deffn.asm",
+     "                ld      hl,FN_PAREA\n"
+     "                ld      (hl),$FF\n"
+     "                inc     hl\n"
+     "                ld      (hl),$FF\n",
+     "                ld      hl,FN_PAREA\n"
+     "                ld      (hl),$00            ; K-RK1\n"
+     "                inc     hl\n"
+     "                ld      (hl),$58\n",
+     # 🔴 MEASURED 2026-09-27: ZERO of 73 (the row set has grown since 08-26's 71) -- predicted "the numeric successful
+     # calls move", MISS. At the re-key only ONE slot is live (FN_FEND is set to
+     # exactly one slot), so no formal can collide whatever the key says; the
+     # "$FF is a key no formal can carry" argument does its work in
+     # dfn_is_result's PHASE test (K-IR1), not here. EXACT with an empty set:
+     # the emptiness is the finding [[knife-that-reddens-nothing-is-the-finding]].
+     set(), set(), SUB_MOVES),
     ("K-GS1  dfn_a_x's grow-never-shrink guard removed",
      ROOT / "sub/deffn.asm",
      "                jr      c,dfn_a_x\n"

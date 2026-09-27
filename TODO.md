@@ -5947,7 +5947,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:25463 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:25479 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -6113,7 +6113,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:10944 (T-6FE392)8 (T-529ABE)` from `TODO.md:23117 (T-529ABE)`: a
+      `TODO.md:10944 (T-6FE392)8 (T-529ABE)` from `TODO.md:23133 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -11788,7 +11788,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:23117 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:23133 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -15626,10 +15626,26 @@ list. **When a slice lands, grep this list for what it just shipped.**
       🟢 **AND K-IR1 VINDICATES THE ITEM'S OWN REASON FOR SKIPPING IT**: 42 of 71
       rows scored exactly says very little about the one line cut, which is
       precisely why a wide prediction is worth less than a narrow one.
-      ➡️ **TWO REMAIN**: `fn_enter`'s "only the live part" copy length and the
+      ~~➡️ **TWO REMAIN**: `fn_enter`'s "only the live part" copy length and the
       `$FFFF` result-slot **key** (K-RT1 cuts the TYPE it writes, not the key).
       Neither has a label this sweep could site precisely; they need reading
-      before cutting.
+      before cutting.~~
+      ✅ **BOTH KNIFED 2026-09-27 (loop) — ROSTER 12 → 14.** Read first: the
+      live-prefix copy moved into the sub-ROM's `fnf_save` (D-FNPOOL), and the
+      re-key is the two `ld (hl),$FF` in `dfn_bodydone`.
+      ```
+      K-LP1  fnf_save copies the fixed cells only   4 DIFF + b.recurse BLANK
+      K-RK1  the re-key writes a LETTER key          0 of 73
+      ```
+      🔮 K-LP1 predicted "nested-call rows only" — HIT, bar the recursion row
+      (`b.recurse`: ref ERR 7, zb `<NO OUTPUT>`), not named. K-RK1 predicted
+      "the numeric successful calls move" — **MISS: nothing moved.** Only one
+      slot is live at the re-key, so no formal can collide whatever the key
+      says; the "`$FF` is a key no formal can carry" argument does its work in
+      `dfn_is_result`'s PHASE test (K-IR1), not in the coercion. Both source
+      comments that leaned on it are corrected in place, 0 ROM bytes (sub and
+      main hashes unchanged). ⚠️ That makes the re-key's two `ld (hl),$FF`
+      UNOBSERVABLE by this row set — like K-GS1, not a licence to delete them.
       🎚️ APPARATUS — knife roster
       🤖 AUTONOMOUS — the reference or a gate settles it; finishable unattended (3 of 5 knifed 2026-08-26; 2 remain, unsited).
 

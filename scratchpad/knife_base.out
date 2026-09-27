@@ -1,7 +1,8 @@
-    capture-on-signal: 71 on signal, 1 fell back to the scheduled budget   [signalled at 56.1-88.1 emulated s]
+    capture-on-signal: 76 on signal, 1 fell back to the scheduled budget   ⚠️ 2 REPLAYED from the refcache -- not measured on this run   [signalled at 56.1-104.1 emulated s]
       ⚠️ NEVER SIGNALLED (captured on the budget, as before this conversion): zb:o.clearwipe3
 PASS b.ctl            ref='6'  zb='6'
 ok   b.forward        ref='ERR 18 AT 60'  zb='ERR 18 AT 60'
+ok   b.nest10         ref='1'  zb='1'
 ok   b.nested         ref='8'  zb='8'
 ok   b.noarg          ref='7'  zb='7'
 ok   b.param          ref='3 5'  zb='3 5'
@@ -40,6 +41,10 @@ ok   o.errfend18      ref='5 18'  zb='5 18'
 ok   o.errrestore     ref='5 11'  zb='5 11'
 ok   o.fnbang         ref='2.5'  zb='2.5'
 ok   o.fnpct          ref='2'  zb='2'
+ok   o.gcroot         ref='ABCD'  zb='ABCD'
+PASS o.gcroot.ctla    ref='ABCD'  zb='ABCD'
+PASS o.gcroot.ctln    ref='ABCD'  zb='ABCD'
+PASS o.gcroot.ctlv    ref='ABCD'  zb='ABCD'
 ok   o.global         ref='5'  zb='5'
 ok   o.ifnot          ref='ERR 18 AT 60'  zb='ERR 18 AT 60'
 ok   o.ifthen         ref='3'  zb='3'
@@ -87,4 +92,4 @@ ok   z.p10def         ref='OK'  zb='OK'
 PASS claim:o.sameaddr  zb:o.sameaddr='27179'  VARPTR(formal) differs from VARPTR(variable)
 PASS claim:z.addr2    zb:z.addr2='-5473'  zb:z.addr2i='-5473'  the shadow cell does not move with nesting
 PASS claim:z.addr     zb:z.addr='-5473'  zb:z.addr.ctl='-32679'  the shadow is not the variable's own cell
-ROWS: 87 printed, 82 scored — 0 of 71 DEF FN rows still divergent; 0 of 8 controls failed
+ROWS: 92 printed, 87 scored — 0 of 73 DEF FN rows still divergent; 0 of 11 controls failed

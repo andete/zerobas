@@ -345,7 +345,9 @@ fn_sn:
 ; The coercion rides the variable store rather than duplicating the codec: by
 ; now the formals have been read and slot 0 is dead, so the tenant re-keys it
 ; $FFFF -- a key no formal can carry, since a formal's name0 is always a letter
-; -- and this is the int-truncate / single-round / double-widen ladder spec
+; (⚠️ not load-bearing HERE: only that one slot is live, and knife K-RK1, a
+; letter key instead, moved 0 of 73 rows -- the argument's work is the tenant's
+; phase test, K-IR1) -- and this is the int-truncate / single-round / double-widen ladder spec
 ; §11.2 already owns. It is what makes `DEF FNA%(X)=X/2` answer 2 where its `!`
 ; twin answers 2.5.
 fn_ld:
