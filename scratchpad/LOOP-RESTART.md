@@ -30,6 +30,29 @@ symmetric. Treat that group as closed-by-measurement unless a new signal appears
 | PLAY X shape | *"Tenant walks the chain"* — the MML tenant reads the variable chain in RAM itself (spec-basic-audio-play §7.12); main ~0 B, no carve needed |
 | the rig | Joost's RP2040-Zero is **CONNECTED to the laptop since 2026-09-25** (`/dev/cu.usbmodem1101`, running firmware, not BOOTSEL; seen read-only, nothing flashed). **UN-PARKED 2026-09-26 and FLASHED with `tools/rigfw/rigfw.ino`:** headless joystick WORKS (bind `msxjoystick1_config` to `joy1`, which this install leaves EMPTY); headless mouse does NOT reach PAD/PDL. Next: STICK/STRIG rows — the rig item in TODO |
 
+### ☀️ LOOP 2026-09-27, DAY (after the rulings) — READ THIS FIRST
+
+**T6 is BUILT and 75 of 159 keywords prove it** (D-KWT6: `tools/kwerrset.py` =
+the denominator, kwsweep `PROVES-T6:<code>` rows, `scratchpad/t6enum_probe.py
+--batch=1..6` = the enumeration; each batch's `.out` is the provenance).
+Commits: `be4becc2` S1 · `c013ffcc` b1 · `0bbb86be` b2 · `eb6f4940` b3 (disk
+functions on the CF-3300) · `d42bfc78` b4 (+ S36z: rows attributed by declared
+SUBJECT) · `f5073b4d` b5 · `8b622667` **D-LETNUM** (`LET 5=1` corrupted and
+rebooted zerobas; + kwknife never takes a T6 error row as its witness) ·
+`94c45b58` **D-CLEARFIT** (`CLEAR 30000` HUNG zerobas) funded by **D-CARVEFO**
+(`fopen_cross`, +26 B) + b6.
+🔴 **THE ENUMERATION IS A BUG FINDER:** 16 divergences filed today as TIER 6
+items (D-STRINGEMPTY D-TANBIG D-MKIRANGE D-MKEXTRA D-DSKFRANGE D-MIDEXTRA
+D-READOVF D-ERRORARG D-BAREEXTRA D-POSDUMMY D-IFGOTOBARE D-CLEAR3ARG); two
+were machine-damaging and are FIXED (LET, CLEAR).
+⚠️ Not enumerable by the trap probe: VAL/FRE (forms are argument content),
+RESUME (untrappable), WAIT (blocks), WIDTH (SCREEN 1 reading). Disk-only
+keywords use `--batch=3`'s CF-3300 pairing.
+**Walls (2026-09-27, after D-CLEARFIT): main page 1 8 B, low 5 B, sub p0 16 B,
+sub p1 0 B.** ➡️ NEXT by tier: TIER 3 PAINT span stack (ruled: grow below SP —
+needs a sub carve), TIER 4 GOSUB frame 8 → 7, then the TIER 6 fixes (most need
+a few bytes; `scratchpad/ngram_sweep.py --main` found today's carve).
+
 ### 🏗️ JOOST'S RULINGS 2026-09-27 (morning, his "ask me in detail" pass) — READ THIS FIRST, DO NOT RE-ASK
 
 The queue the night loop stopped on is OPEN again: every 🙋 in TIERS 1–6 is ruled.
