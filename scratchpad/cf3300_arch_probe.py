@@ -51,8 +51,18 @@ def main() -> int:
             "  close $f\n"
             "  exit\n"
             "}\n")
-    subprocess.run(["openmsx", "-machine", MACHINE, "-command", "source %s" % tcl],
-                   stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    # headless and bounded (2026-09-27): it opened a WINDOW and had no timeout,
+    # like rigcap_probe, which hung the filed-row sweep for 600 s
+    try:
+        subprocess.run(["openmsx", "-machine", MACHINE,
+                        "-command", "set save_settings_on_exit false; "
+                        "set renderer none; set sound_driver null",
+                        "-command", "source %s" % tcl],
+                       stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+                       timeout=180)
+    except subprocess.TimeoutExpired:
+        print("openMSX did not exit within 180 s -- the query hung, nothing was measured")
+        return 1
     if not os.path.exists(out):
         print("openMSX produced nothing -- the query failed, nothing was measured")
         return 1

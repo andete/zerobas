@@ -262,6 +262,13 @@ def main():
             print(f"{i:3d}/{len(todo)}  {m:28s} NOT SWEPT  needs the rig or a window "
                   f"(ask Joost first)", flush=True)
             continue
+        # 🪟 NOR A PROBE THAT LAUNCHES openMSX ITSELF WITHOUT `renderer none`:
+        # rigcap_probe did (2026-09-27) -- a real window on his screen at night,
+        # hung until this sweep's timeout, which kills python, not openMSX.
+        if '"openmsx"' in src and "renderer none" not in src:
+            print(f"{i:3d}/{len(todo)}  {m:28s} NOT SWEPT  launches openMSX with a "
+                  f"WINDOW (make it headless first)", flush=True)
+            continue
         t0 = time.time()
         with open(out, "w") as fh:
             try:
