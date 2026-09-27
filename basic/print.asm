@@ -474,9 +474,10 @@ dgp_lp:
 ; and every PRINT item kept their temp to the end of the statement, so a
 ; 10-entry pool ran out at 11 `LEN(MID$(..))` terms or 11 printed slices where
 ; the VG-8020 has no limit (scratchpad/tempst_probe.py). The descriptor's bytes
-; are untouched -- only its GC-root status ends -- so a caller that reads STRPTR
-; right after (LEN's length, ASC's first byte) still reads the right value as
-; long as nothing allocates in between. Page 1 on purpose: the two consumers are
+; are untouched -- its GC-root status ends, and (D-S2BHEAP) a body at the
+; heap's edge moves FRETOP past it, but no byte is written -- so a caller that
+; reads STRPTR right after (LEN's length, ASC's first byte) still reads the
+; right value as long as nothing allocates in between. Page 1 on purpose: the two consumers are
 ; in the full low region and reach this through a same-size `jp`/`call` swap.
 ; Preserves HL, DE, BC, IX. Clobbers A, F.
 str_release_top:
@@ -491,6 +492,25 @@ str_release_top:
                 sbc     hl,de
                 jr      nz,srt_keep         ; not the newest -> keep it
                 ld      (TEMPPT),de         ; pop
+                ; D-S2BHEAP (2026-09-27): a body at the heap's edge is given
+                ; back at once, as the reference's FRETOP reads -- `X=LEN(MID$(
+                ; "ABCDEF",2,3))` holds 0 B on both (scratchpad/strtemp_probe.py).
+                ; A temp's body is uniquely owned (sh_src_is_temp's invariant).
+                ex      de,hl               ; HL = the entry
+                ld      a,(hl)              ; A = len
+                inc     hl
+                ld      e,(hl)
+                inc     hl
+                ld      d,(hl)              ; DE = body
+                ld      hl,(FRETOP)
+                sbc     hl,de               ; CF is clear: the pop's sbc gave Z
+                jr      nz,srt_keep         ; not the edge: waits for a collection
+                add     a,e
+                ld      l,a
+                adc     a,d
+                sub     l
+                ld      h,a                 ; HL = body + len
+                ld      (FRETOP),hl
 srt_keep:
                 pop     de
                 pop     hl

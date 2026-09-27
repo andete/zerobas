@@ -369,33 +369,56 @@ she_slice:
                 bit     7,(hl)
                 jr      z,she_slice_ofs     ; ptr < $8000: an array OFFSET temp
     ENDIF
+                ; D-S2BHEAP (2026-09-27): the kept bytes go to the body's HIGH
+                ; end, so the trimmed PREFIX is the part at the heap's edge --
+                ; and a body AT the edge (FRETOP) gives it back at once, as the
+                ; reference's heap reads: `A$=MID$("ABCDEF",2,3)` holds 3 B, not
+                ; the 6 of the literal's copy (scratchpad/strtemp_probe.py).
                 ld      hl,(SH_SRC)
-                ld      a,(SH_COUNT)
-                ld      (hl),a              ; temp.len := count
-                or      a
+                ld      bc,(SH_START)       ; C = start, B = count
+                ld      a,(hl)              ; A = the body's length
+                ld      (hl),b              ; temp.len := count
+                inc     b
+                dec     b
                 ret     z                   ; count 0 -> empty, done
-                ld      a,(SH_START)
-                or      a
-                ret     z                   ; start 0 -> already at the front
-                push    af                  ; guard start                    [START]
+                sub     b                   ; A = shift = length - count
+                ret     z                   ; nothing trimmed (start 0)
                 inc     hl
+                push    hl                  ; [&ptr]
                 ld      e,(hl)
                 inc     hl
-                ld      d,(hl)              ; DE = body (ptr field, fresh read)
-                pop     af                  ; A = start                        [ ]
-                push    de                  ; guard body (destination base)      [BODY]
+                ld      d,(hl)              ; DE = body
+                ld      hl,(FRETOP)
+                or      a
+                sbc     hl,de               ; Z iff the body is the heap's edge
+                ld      l,a
+                ld      h,0
+                add     hl,de               ; HL = new ptr = body + shift (Z kept)
+                jr      nz,ss_inner
+                ld      (FRETOP),hl         ; the prefix is free space again
+ss_inner:
+                ex      (sp),hl             ; [new ptr], HL = &ptr
+                pop     de                  ; DE = new ptr
+                ld      (hl),e
+                inc     hl
+                ld      (hl),d              ; temp.ptr = new ptr
+                sub     c                   ; A = bytes trimmed off the END
+                ret     z                   ; none: the kept bytes end the body
                 ld      h,d
-                ld      l,e                 ; HL = body (copy)
-                ld      c,a
-                ld      b,0                 ; BC = start (zero-extended)
-                add     hl,bc               ; HL = body+start = source
-                pop     de                  ; DE = body = destination              [ ]
-                ld      a,(SH_COUNT)
-                ld      c,a
+                ld      l,e
+                ld      c,b
                 ld      b,0                 ; BC = count
-                ldir                        ; move count bytes forward; dst(body)
-                                            ; < src(body+start) always when
-                                            ; start>0, so a forward LDIR is safe
+                add     hl,bc
+                dec     hl
+                ld      d,h
+                ld      e,l                 ; DE = the destination's last byte
+                push    bc
+                ld      c,a
+                ld      b,0
+                or      a
+                sbc     hl,bc               ; HL = the source's last byte
+                pop     bc
+                lddr                        ; dst > src and they overlap: from the top
                 ret
     IF CLEARPOOL
 ; she_slice_new -- the source is a SCALAR variable op 21 kept (not a temp):

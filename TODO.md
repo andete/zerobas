@@ -2040,8 +2040,39 @@ item — do **one item per session** to keep context lean.
       unchanged. It cost sub page 0 two bytes and page 1 nothing (clean
       build 2026-09-25). sysvarsweep boot BASE-DIFF
       **150 → 148 B** (the two `TEMPPT` bytes).
-      ➡️ **NEXT (autonomous):** S2b's heap half (return a released body at
-      FRETOP) — the last D-ADDR29 item not waiting on Joost.
+      ~~➡️ **NEXT (autonomous):** S2b's heap half (return a released body at
+      FRETOP) — the last D-ADDR29 item not waiting on Joost.~~
+      🟢 **D-S2BHEAP SHIPPED (2026-09-27, loop): THE HEAP'S EDGE IS GIVEN
+      BACK — `strtemp_probe` DIFF 4/8 → 1/8** (`scratchpad/strtemp_s2b.out`).
+      Two changes, both at the edge (FRETOP) only:
+      * `str_release_top` (main page 1, the PRINT-item and `LEN`/`ASC`/`VAL`
+        release) moves FRETOP past a popped temp whose body starts AT FRETOP —
+        the classic "free the last temporary" rule. Safe because a temp's body
+        is uniquely owned (`sh_src_is_temp`'s invariant); the GC's
+        `OLD_FRETOP` root test is why that invariant is load-bearing.
+      * `she_slice` keeps the kept bytes at the body's HIGH end (was: the
+        front), so the trimmed PREFIX is the part at the edge, and a body at
+        FRETOP returns it at once. `A$=MID$("ABCDEF",2,3)` now holds 3 B, as
+        the reference, where the literal's 6-byte copy used to stay whole.
+        That is part (a) of the 12 B, answered without touching the literal
+        copy.
+      | row | VG-8020 | before | after |
+      |---|---|---|---|
+      | `mid_kept` | 3 | 6 | **3** |
+      | `temp_print` | 0 | 3 | **0** |
+      | `temp_len` | 0 | 6 | **0** |
+      | `temp_two` `LEN(MID$(..)+"Q")` | 3 | 7 | **0** |
+      🔮 Predicted 0/8 — **MISS on `temp_two`**: zerobas now holds 3 B LESS
+      than the reference (it held 4 B more). The concat accumulator EXTENDS
+      the `MID$` temp in place (D-CONCATPEAK), so the release gives back the
+      whole thing; the reference allocates a fresh body under the operand and
+      leaves the operand stranded. Matching it would mean de-optimising
+      D-CONCATPEAK, which exists to match the reference's PEAK — left as a
+      stated divergence in the generous direction.
+      ⚠️ The sub-side releases (`sh_pop_top`: a comparison's operands, a
+      consumed concat operand) still only pop — sub page 0 has 16 B left after
+      this slice (clean build 2026-09-27; main page 1 5 B). No probe row
+      separates them yet.
       🔪 **FOUND ON THE WAY — D-KNIFENOREAD, FIXED:** `scratchpad/kwknife.py`
       scored a cut whose sweep printed NO verdict as LOAD-BEARING
       (`v != "SUPPORTED"`). The knife run of the D-BUFMERGE chain read
@@ -5913,7 +5944,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:25363 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:25394 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -6079,7 +6110,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:10894 (T-6FE392)8 (T-529ABE)` from `TODO.md:23017 (T-529ABE)`: a
+      `TODO.md:10925 (T-6FE392)8 (T-529ABE)` from `TODO.md:23048 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -11738,7 +11769,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:23017 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:23048 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
