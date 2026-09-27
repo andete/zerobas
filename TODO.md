@@ -5973,7 +5973,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:25566 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:25588 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -24757,6 +24757,28 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       bound, so what row set would count as having PROVED it — every error
       code the reference raises for that keyword's documented forms, or
       something wider?
+
+      🟢 **D-KWT6 S1 SHIPPED (2026-09-27): THE ROW TYPE AND THE RUNG RULE — 0
+      KEYWORDS MEASURED YET, ON PURPOSE.**
+      * **The denominator** is [`tools/kwerrset.py`](tools/kwerrset.py): keyword
+        → form → the error codes the REFERENCE raised, each entry written from a
+        probe run with its provenance. EMPTY today; absence is UNRATED, never an
+        empty set.
+      * **The row** is a kwsweep `PROVES-T6:<code>` prefix tag on a `stored` row
+        with a `FORM:` tag; the pin records `proves: "T6"` and `t6code`.
+        `main` REFUSES before running anything a T6 row that is not `stored`, has
+        no `FORM:`, has a malformed code, or carries the tag outside the prefix run
+        (where the parser would silently drop it) — four planted rows, four
+        refusals, `rc 2`.
+      * **The rung** (`tools/tier_table.py` `t6_keywords`): CONNECTED, every
+        authored form measured, a non-zero denominator, and every (form, code)
+        covered by a SUPPORTED row. S36e flipped DELIBERATELY for T6; six arms
+        S36t–S36y, five NEGATIVE; a mutation forcing T6 false turns S36t RED.
+      ➡️ **NEXT, S2: the ENUMERATION probe** — per keyword form, apply a fixed
+      fault battery on the REFERENCE (wrong type, each argument out of range,
+      missing / extra argument, illegal direct where it applies), record the
+      DISTINCT codes into `kwerrset.py`, then write the rows. Start with one
+      keyword that is already T1–T3 so the first T6 tick is real evidence.
 
 - [x] 🟢 **RULED 2026-09-24 — (c): WHOLE PROGRAM FOR T2, KEYWORD ALONE FOR T5.**
       Joost: ***"go with (c): whole program for T2, keyword alone for T5"***. T2

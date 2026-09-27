@@ -486,6 +486,22 @@ def _holdtime_of(rigs: tuple[str, ...]) -> tuple[float, float] | None:
 # Division by zero, Out of DATA, File not found. Not nesting depth 11; that is
 # TIER 5 and does not belong on one of these rows.
 _FLAG_TAGS = ("NOFURN:", "PROVES-T3:")
+# 🏗️ D-KWT6 (Joost, 2026-09-27): `PROVES-T6:<code>` -- one error the REFERENCE
+# raises for this row's FORM, matched in code AND line. The code is DECLARED on the
+# row (e.g. `PROVES-T6:5`) so the tier table can join it against the measured set
+# in tools/kwerrset.py; the row must run `stored` (so ` in <line>` is compared) and
+# carry a `FORM:` tag. `main` refuses a row that breaks any of the three.
+_T6_TAG = "PROVES-T6:"
+
+
+def row_t6_code(note: str):
+    """The error code a `PROVES-T6:<code>` row declares; -1 if malformed; None if
+    the row makes no T6 claim."""
+    for tok in _row_prefix_tags(note):
+        if tok.startswith(_T6_TAG):
+            v = tok[len(_T6_TAG):]
+            return int(v) if v.isdigit() and 0 < int(v) < 256 else -1
+    return None
 
 # 🎚️ `FORM:<name>` — WHICH SYNTACTIC FORM OF ITS KEYWORD THIS ROW EXERCISES, and
 # the reason TIER 1 needs it (Joost, 2026-09-14: "connected + N forms + no open
@@ -603,7 +619,7 @@ def _row_prefix_tags(note: str) -> tuple[str, ...]:
     reference's function-key line -- a furniture difference reported as a defect."""
     out = []
     for tok in note.split():
-        if (tok in _RIG_TAGS or tok in _FLAG_TAGS
+        if (tok in _RIG_TAGS or tok in _FLAG_TAGS or tok.startswith(_T6_TAG)
                 or tok.startswith(_HOLD_TAG) or tok.startswith(_PLUG_TAG)
                 or tok.startswith(_RIG_TAG)):
             out.append(tok)
@@ -4336,6 +4352,27 @@ def main() -> int:
             "lines exceed one screen row, so their echo can never match"))
         return 2
 
+    # 🏗️ D-KWT6: a T6 row that could not prove what it declares is a PROBE DEFECT,
+    # refused before anything runs -- never a row the tier table silently skips.
+    bad_t6 = [(k, why) for k, _, _, mode, n in SWEEP if row_t6_code(n) is not None
+              for why in (("not `stored` (the line would not be compared)"
+                           if mode != "stored" else None),
+                          ("no FORM: tag" if not row_form(n) else None),
+                          ("malformed code" if row_t6_code(n) == -1 else None))
+              if why]
+    # ...and a tag written AFTER the prefix run is IGNORED by the parser, the
+    # `NOFURN:`-lost-on-the-tape-rows class: refuse it rather than lose it.
+    bad_t6 += [(k, "PROVES-T6: is not in the note's prefix run, so it is ignored")
+               for k, _, _, _, n in SWEEP
+               if _T6_TAG in n and row_t6_code(n) is None]
+    if bad_t6:
+        print("probe defect — PROVES-T6: rows that cannot prove their claim:")
+        for k, why in bad_t6:
+            print(f"    {k:9} {why}")
+        print(probe_report.footer(
+            len(bad_t6), 0, "probe defect, nothing measured: malformed PROVES-T6: rows"))
+        return 2
+
     rows = SWEEP
     if args.only:
         want = {s.strip() for s in args.only.split(",")}
@@ -4709,7 +4746,11 @@ def main() -> int:
                               "weak": notes[key].startswith("WEAK:"),
                               # what the row CLAIMS to prove; absent = TIER 1 only
                               "proves": ("T3" if "PROVES-T3:" in
-                                         _row_prefix_tags(notes[key]) else None),
+                                         _row_prefix_tags(notes[key]) else
+                                         "T6" if row_t6_code(notes[key]) else None),
+                              # D-KWT6: the reference error a T6 row proves
+                              **({"t6code": row_t6_code(notes[key])}
+                                 if row_t6_code(notes[key]) else {}),
                               # which FORM of the keyword this row exercises
                               "form": row_form(notes[key]),
                               # the statement it is about, when derivation is wrong
