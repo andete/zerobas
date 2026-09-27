@@ -544,7 +544,13 @@ def run_asm_paint(m, screen, seed, C, B):
     probes/basic/basic_probe_graphics.py's PAINT phases, not here; this
     trapped model validates the pure flood-fill graph-walk (topology, stack
     behaviour, termination) against the Python oracle below."""
-    m.poke(m.addr("GFX_PTOP"), 0)
+    # D-PAINTSP: gfx_paint_op's own gfx_pstk_reset sets the span stack up from SP
+    # and ARYEND, and ARYEND is found by WALKING the arrays from ARYTAB to their
+    # $00 terminator -- so the harness must supply an (empty) array region, as a
+    # booted machine always has. Without it ARYTAB=0 and the walk ran through
+    # the ROM forever (runaway at the first cut).
+    m.poke_w(m.addr("ARYTAB"), 0x9000)
+    m.poke(0x9000, b"\x00")
     m.poke(m.addr("GFX_POVF"), 0)
 
     def do_read(mm):
@@ -1068,10 +1074,17 @@ def run():
     check(bad != ref, "teeth: nudging WS_P by one step breaks the "
           "arc_hpi_pi captured match (anti-green-build)")
 
-    # --- G5 PAINT (docs/spec-basic-graphics-g5.md) -- span-stack push/pop ---
-    CAP = m.sym["GFX_PSTK_CAP"]
-    m.poke(m.addr("GFX_PTOP"), 0)
-    m.poke(m.addr("GFX_POVF"), 0)
+    # --- G5 PAINT -- the span stack (D-PAINTSP, 2026-09-27) --------------------
+    # It grows DOWN from GFX_PBASE and refuses below GFX_PFLOOR, so its capacity
+    # is whatever MEMORY the two cursors leave -- not a constant. The arms set the
+    # cursors directly (gfx_pstk_reset derives them from SP and ARYEND).
+    def pstk_setup(base, n):
+        m.poke_w(m.addr("GFX_PBASE"), base)
+        m.poke_w(m.addr("GFX_PSP"), base)
+        m.poke_w(m.addr("GFX_PFLOOR"), base - 3 * n)   # room for EXACTLY n entries
+        m.poke(m.addr("GFX_POVF"), 0)
+
+    pstk_setup(0xD000, 10)
     seq = [(1, 2, 3), (10, 20, 30), (191, 0, 255)]
     for y, xl, xr in seq:
         m.call("gfx_pstk_push", a=y, b=xl, c=xr)
@@ -1082,30 +1095,37 @@ def run():
             break
         got.append((cpu.a, cpu.b, cpu.c))
     check(got == list(reversed(seq)), f"gfx_pstk push/pop LIFO order {got}")
+    _psp = m.peek(m.addr("GFX_PSP"), 2)
+    check(_psp[0] | _psp[1] << 8 == 0xD000,
+          "gfx_pstk: popping everything returns the cursor to the base")
 
-    m.poke(m.addr("GFX_PTOP"), 0)
-    m.poke(m.addr("GFX_POVF"), 0)
-    for i in range(CAP):
-        m.call("gfx_pstk_push", a=i & 0xFF, b=0, c=0)
-    top = m.peek(m.addr("GFX_PTOP"))[0]
-    ovf = m.peek(m.addr("GFX_POVF"))[0]
-    check(top == CAP and ovf == 0,
-          f"gfx_pstk fills exactly to CAP={CAP} without overflow (top={top} ovf={ovf})")
-    m.call("gfx_pstk_push", a=99, b=0, c=0)
-    top2 = m.peek(m.addr("GFX_PTOP"))[0]
-    ovf2 = m.peek(m.addr("GFX_POVF"))[0]
-    check(top2 == CAP and ovf2 == 1,
-          f"gfx_pstk push past CAP sets overflow, top unchanged (top={top2} ovf={ovf2})")
-    # teeth: an entry that DOES land (index CAP-1, not dropped) must be poppable
-    m.poke(m.addr("GFX_PTOP"), 0)
-    m.poke(m.addr("GFX_POVF"), 0)
-    for i in range(CAP - 1):
+    for n in (5, 200):
+        # 🎯 THE POINT OF D-PAINTSP: the capacity follows the room given -- 200
+        # entries fit where the old fixed array stopped at 120.
+        pstk_setup(0xD000, n)
+        for i in range(n):
+            m.call("gfx_pstk_push", a=i & 0xFF, b=0, c=0)
+        ovf = m.peek(m.addr("GFX_POVF"))[0]
+        check(ovf == 0, f"gfx_pstk: {n} entries fit in room for {n} (ovf={ovf})")
+        m.call("gfx_pstk_push", a=99, b=0, c=0)
+        ovf2 = m.peek(m.addr("GFX_POVF"))[0]
+        check(ovf2 == 1, f"gfx_pstk: entry {n + 1} crosses the floor and sets overflow")
+
+    # teeth: the LAST legal entry (the one ending exactly at the floor) stores its
+    # payload, and the refused one did not overwrite it
+    pstk_setup(0xD000, 4)
+    for i in range(3):
         m.call("gfx_pstk_push", a=0, b=0, c=0)
-    m.call("gfx_pstk_push", a=77, b=88, c=99)      # the CAP-th (last legal) entry
+    m.call("gfx_pstk_push", a=77, b=88, c=99)      # the 4th = last legal entry
+    m.call("gfx_pstk_push", a=11, b=22, c=33)      # refused
     cpu = m.call("gfx_pstk_pop")
     check(carry(cpu) and (cpu.a, cpu.b, cpu.c) == (77, 88, 99),
-          "teeth: the boundary (CAP-th) push actually stores its payload, "
-          "not just bumps the counter (anti-green-build)")
+          "teeth: the boundary push stores its payload and the refused one does "
+          "not overwrite it (anti-green-build)")
+    # NEGATIVE: an empty stack pops nothing and says so with CF clear
+    pstk_setup(0xD000, 4)
+    cpu = m.call("gfx_pstk_pop")
+    check(not carry(cpu), "gfx_pstk: an EMPTY stack pops nothing (CF clear)")
 
     # --- G5 PAINT -- gfx_paint_inside/gfx_paint_passable decision logic -----
     # (gfx_paint_read trapped -- BIT-AWARE, the VG-8020 bug fix's own header

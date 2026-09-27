@@ -1959,7 +1959,7 @@ STRENG_SPARE    equ     ISRCH_B + 2         ; $E3E5: 1 B free (was TMISMATCH)
 ; -- which makes re-scanning an already-filled span a safe, cheap no-op and
 ; removes the need for Smith's direction/overhang bookkeeping entirely). This
 ; buys MORE capacity per byte than the spec's own estimate assumed.
-GFX_PTOP        equ     $E3E8   ; span-stack top-of-stack index, 0..GFX_PSTK_CAP (1)
+; $E3E8 was GFX_PTOP (the fixed array's 8-bit index) until D-PAINTSP.
 GFX_POVF        equ     $E3E9   ; 1 = the stack overflowed; resident raises ERR 7 (1)
 GFX_PTESTX      equ     $E3EA   ; gfx_paint_inside/gfx_paint_plot: pixel-under-test X (1)
 GFX_PTESTY      equ     $E3EB   ; ...Y (1)
@@ -1983,6 +1983,28 @@ GFX_PSTK_CAP    equ     120     ; capacity (360 B); window is 376 B ($E3E8..$E56
                                 ; =640 B > 376 B available) but achievable ONLY
                                 ; because of the 3 B/entry redesign above.
 GFX_PSTK_END    equ     GFX_PSTK + GFX_PSTK_CAP*GFX_PSTK_ENTSZ
+; 🏗️ D-PAINTSP (Joost's ruling 2026-09-27, "grow below SP"): PAINT's span stack
+; is NO LONGER this array. It grows DOWN from SP - GFX_PAINT_MARGIN toward
+; ARYEND+2 -- the free gap the GC's sort buffer already uses (sub/strheap.asm
+; Phase C) -- so, as on the reference, a fill only runs out when MEMORY does.
+; The window keeps its size because DRAW (GFX_DBUF), the arc mask (GFX_CS_M1)
+; and sprite staging (GFX_VBUF) alias it; during a PAINT it holds only the
+; three 16-bit cursors below. GFX_PSTK_CAP no longer bounds PAINT.
+; At +8/+10/+12, which no other alias of the window declares (+0 is the
+; CS_M1/DBUF/PSTK/VBUF group, +4 GFX_CS_M2, +32 GFX_SN, +256 GFX_DPTR) -- at +0/+4
+; they joined those names and `ram-map-check` read them as DISPUTED widths.
+GFX_PSP         equ     GFX_PSTK + 8    ; the span stack's top (lowest used byte) (2)
+GFX_PBASE       equ     GFX_PSTK + 10   ; its empty position = SP - GFX_PAINT_MARGIN (2)
+GFX_PFLOOR      equ     GFX_PSTK + 12   ; the lowest byte it may use = ARYEND + 2 (2)
+; D-PAINTSP: how far below the SP at gfx_pstk_reset the entries start. NOT the
+; general CTL_STACK_MARGIN (256): that is the pool's reserve for ANY statement,
+; and with it a simple fill with ~266 B free raised ERR 7 where the VG-8020
+; completes (scratchpad/paintsp_run.out, tight-300). MEASURED on zerobas with
+; breakpoints on its own sub-ROM routines (scratchpad/paintsp_run.out notes):
+; the fill's deepest call sits 10 B below the reset SP, the deepest interrupt
+; ENTRY 18 B below; the IM1 handler then saves every register (20 B, the
+; alternate set included) and calls the timer hook. 128 B covers that twice over.
+GFX_PAINT_MARGIN equ    128
     IF GFX_PSTK_END > $E560
                 db      PAINT_SPAN_STACK_OVERRAN_E560_DISK_WBUF_WALL
     ENDIF
@@ -2018,8 +2040,11 @@ GFX_PSTK_END    equ     GFX_PSTK + GFX_PSTK_CAP*GFX_PSTK_ENTSZ
 ; draw to continue the statement stream, so the two must not and do not overlap.
 GFX_CS_M1       equ     GFX_PSTK        ; $E3F2: D-ARCMASK: 2*M*M during the M
                                         ; floor-correction (was cross_ge0's mag1) (4)
-GFX_CS_M2       equ     GFX_CS_M1 + 4   ; $E3F6: r*r for the same compare, CONTIGUOUS with
-                                        ; M1 -- gcx_zlp tests both as one 8-byte run (4)
+GFX_CS_M2       equ     GFX_CS_M1 + 4   ; $E3F6: r*r for the same compare (4)
+                                        ; CONTIGUOUS with M1 -- gcx_zlp tests both as one
+                                        ; 8-byte run. (The width moved onto the equ line
+                                        ; for D-PAINTSP: ram_map reads it only there, and
+                                        ; GFX_PSP at +8 made the missing width visible.)
 GFX_DBUF        equ     GFX_PSTK        ; $E3F2: frame text (concatenated), 256 B
 GFX_DBUF_CAP    equ     256
 GFX_DPTR        equ     GFX_DBUF + GFX_DBUF_CAP   ; $E4F2: parse cursor in the current frame (2)

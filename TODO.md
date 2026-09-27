@@ -2892,8 +2892,29 @@ item — do **one item per session** to keep context lean.
       ram-map-check`); what is left here is the ⚠️ residual list above.
       🤖 **AUTONOMOUS** — ruled above; price it from a clean tree, carve first.
 
-- [ ] 🔴 **PAINT's SPAN STACK IS A FIXED ARRAY; THE REFERENCE'S GROWS DOWN FROM
+- [x] 🔴 **PAINT's SPAN STACK IS A FIXED ARRAY; THE REFERENCE'S GROWS DOWN FROM
       `STKTOP` — A DIVERGENCE NO ROW COVERS, AND THE BIGGEST RAM LEVER WE HAVE.**
+      ✅ **SHIPPED 2026-09-27 (D-PAINTSP), per the ruling.** The span stack grows
+      DOWN from `SP − GFX_PAINT_MARGIN` toward `ARYEND+2` — the free gap the GC's
+      sort buffer already uses — with three 16-bit cursors (`GFX_PSP`/`PBASE`/
+      `PFLOOR`) at the front of the old window; `gfx_pstk_addr` is gone. Sub page 0
+      16 → 9 B. The margin is PAINT's OWN, MEASURED (breakpoints on our own sub-ROM
+      routines): the fill's deepest call 10 B below the reset SP, the deepest
+      interrupt entry 18 B; `GFX_PAINT_MARGIN` = 128. 🔴 The first cut used the
+      general `CTL_STACK_MARGIN` (256) and a simple fill with ~266 B free raised
+      ERR 7 where the VG-8020 completes — the probe caught it.
+      📏 [`scratchpad/paintsp_probe.py`](scratchpad/paintsp_probe.py) →
+      [`scratchpad/paintsp_run.out`](scratchpad/paintsp_run.out): combs at the
+      default ceiling and under `CLEAR 200,&H8500`/`&H8800`, and simple fills with
+      1200/600/300 B free — ERR 0 on BOTH machines in every row.
+      ⚠️ **NO ROW YET DISCRIMINATES OLD FROM NEW, AND WHY IS MEASURED:** (1)
+      zerobas's PAINT holds ≤ 2 spans at once on every comb/dotted pattern tried
+      (a watchpoint on `GFX_PSP`), so the 120 cap was never the limit there; (2) in
+      tight memory zerobas's own `DIM` refuses first (D-DIMRESERVE) before PAINT
+      reaches the band where the reference runs out. The first comb rows were
+      VACUOUS besides — colour 4 on the default colour-4 background paints
+      nothing — and a knife on the OLD build is what exposed it.
+      ⬇️ The original filing:
       🎚️ TIER 3 — COMMON ERRORS. The divergence only shows at the capacity edge
       or under a low `CLEAR ,addr`; no happy path depends on it.
       ~~🙋 **NEEDS-JOOST** — it re-architects a shipped, well-gated feature
@@ -5973,7 +5994,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:25856 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:25887 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -6139,7 +6160,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:10973 (T-6FE392)8 (T-529ABE)` from `TODO.md:23212 (T-529ABE)`: a
+      `TODO.md:10994 (T-6FE392)8 (T-529ABE)` from `TODO.md:23233 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -11820,7 +11841,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:23212 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:23233 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -24934,6 +24955,16 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       `scratchpad/ngram_sweep.py --main`. chan_gate keeps its own return point, so
       the extra call level changes nothing main-side; the disk suites judge the
       rest. After both: page 1 **8 B** free.
+
+- [ ] 📏 **`DIM` KEEPS A 256 B STACK RESERVE THAT THE REFERENCE DOES NOT — a DIM
+      leaving ~260 B free is `Out of memory` here and fits on the VG-8020 down to
+      ~145 B (D-DIMRESERVE, found 2026-09-27 by D-PAINTSP's tight rows).**
+      🎚️ TIER 4 — RAM usage (VG-8020): economy at the memory edge
+      🤖 **AUTONOMOUS** — measure the reference's exact edge, then set the reserve
+      from zerobas's measured need (as D-PAINTSP did for PAINT).
+      `CLEAR 200:X=INT((FRE(0)-K)/8):DIM A(X)` completes on the VG-8020 for K
+      down to ~145 and raises `Out of memory in 10` on zerobas already at K=260:
+      the pool keeps `CTL_STACK_MARGIN` (256) clear below SP for ANY statement.
 
 - [ ] 🔴 **`IF 1 GOTO` (no line) IS ACCEPTED ON THE REFERENCE AND `Syntax error`
       HERE (D-IFGOTOBARE, found 2026-09-27 by T6).**

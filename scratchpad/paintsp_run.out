@@ -1,0 +1,9 @@
+row               VG-8020  zerobas   (ERR; 0 = the fill completed)
+SAME comb2-default           0        0
+SAME comb2-8500              0        0
+SAME comb4-default           0        0
+SAME comb2-8800              0        0
+DIFF tight-1200         0 1200   0 1162
+DIFF tight-600           0 600    0 562
+DIFF tight-300           0 296    0 266
+SAME tight-100        ";E;FRE(0);" ";E;FRE(0);"

@@ -28,7 +28,6 @@ fch_modes_ptr    POINTER  returns HL = FCH_MODES + A; the load reads the mode by
 pu_deref_body    POINTER  returns HL = RVDESC / the body pointer it just built
 ztrap_entry      POINTER  returns HL = ZTRAP + 3A; the load reads the trap state
 tgt_desc_fix     POINTER  returns HL = offset + ARYTAB (the D-ARYLV §13a fixup)
-gfx_pstk_addr    POINTER  returns HL = GFX_PSTK + slot
 df_entptr        POINTER  returns HL = FSECTOR_BUF + entry offset
 
 inc_eval         CLOBBER  returns the value in DE; A is scratch, HL the advanced

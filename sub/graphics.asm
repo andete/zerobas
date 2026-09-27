@@ -2191,80 +2191,78 @@ gfx_neg16_de:
 ; ===========================================================================
 
 ; ---------------------------------------------------------------------------
-; gfx_pstk_addr -- IN: A = index (0..GFX_PSTK_CAP-1). OUT: HL = GFX_PSTK +
-; index*GFX_PSTK_ENTSZ. Pure address arithmetic. Clobbers DE/HL; A preserved.
+; 🏗️ D-PAINTSP (2026-09-27, Joost: "grow below SP"): the span stack lives in the
+; FREE GAP between the arrays and the machine stack -- [ARYEND+2, SP -
+; GFX_PAINT_MARGIN), the bounds sub/strheap.asm's GC sort buffer uses but with
+; PAINT's own MEASURED margin (basic/sysvars.inc) --
+; and grows DOWN. It was a fixed 120-span array, so a fill needing 121+ spans
+; raised ERR 7 at NORMAL memory where the reference completes, and a fill under
+; `CLEAR ,&H8500` succeeded where the reference runs out. Now it runs out when
+; memory does. The margin keeps the tenant's own frames AND interrupt frames
+; (the fill runs EI'd) clear of the entries; nothing allocates during a fill,
+; so nothing else claims the gap. Entries stay [y][xL][xR], 3 B.
 ; ---------------------------------------------------------------------------
-gfx_pstk_addr:
-                ld      l,a
-                ld      h,0                 ; HL = index
-                ld      e,a
-                ld      d,0                 ; DE = index
-                add     hl,hl               ; HL = index*2
-                add     hl,de               ; HL = index*3 (GFX_PSTK_ENTSZ)
-                ld      de,GFX_PSTK
-                add     hl,de
-                ret
 
-; ---------------------------------------------------------------------------
-; gfx_pstk_reset -- empties the span stack and clears the overflow flag.
-; Clobbers A.
-; ---------------------------------------------------------------------------
+; gfx_pstk_reset -- base = SP - GFX_PAINT_MARGIN, floor = ARYEND + 2, empty,
+; overflow flag clear. Clobbers A/BC/DE/HL.
 gfx_pstk_reset:
+                ld      hl,0
+                add     hl,sp
+                ld      de,-GFX_PAINT_MARGIN
+                add     hl,de               ; the empty position
+                ld      (GFX_PBASE),hl
+                ld      (GFX_PSP),hl
+                call    strheap_aryend      ; HL = ARYEND
+                inc     hl
+                inc     hl                  ; the first free byte above the arrays
+                ld      (GFX_PFLOOR),hl
                 xor     a
-                ld      (GFX_PTOP),a
                 ld      (GFX_POVF),a
                 ret
 
-; ---------------------------------------------------------------------------
-; gfx_pstk_push -- IN: A=y, B=xL, C=xR. Pushes one span entry. On overflow
-; (GFX_PTOP already at capacity) sets GFX_POVF=1 and drops the entry instead
-; of storing it -- the caller (gfx_paint_flood) checks GFX_POVF and aborts the
-; fill (spec §4 D3: overflow -> ERR 7, raised by the resident). Clobbers
-; A/DE/HL; B/C preserved.
-; ---------------------------------------------------------------------------
+; gfx_pstk_push -- IN: A=y, B=xL, C=xR. Pushes one entry; if it would cross the
+; floor, sets GFX_POVF=1 and drops it (the flood aborts, the resident raises
+; ERR 7). Clobbers A/DE/HL; B/C preserved.
 gfx_pstk_push:
-                push    af                  ; stash y
-                ld      a,(GFX_PTOP)
-                cp      GFX_PSTK_CAP
-                jr      c,gpp_ok
-                pop     af
-                ld      a,1
-                ld      (GFX_POVF),a
-                ret
-gpp_ok:
-                call    gfx_pstk_addr       ; HL = slot addr (A=index still loaded; BC preserved)
-                pop     af                  ; A = y
+                ld      hl,(GFX_PSP)
+                dec     hl
+                dec     hl
+                dec     hl                  ; HL = the new entry
+                ld      de,(GFX_PFLOOR)
+                push    hl
+                or      a
+                sbc     hl,de               ; entry - floor (A untouched)
+                pop     hl
+                jr      c,gpp_ovf           ; below the floor -> out of memory
+                ld      (GFX_PSP),hl
                 ld      (hl),a
                 inc     hl
                 ld      (hl),b
                 inc     hl
                 ld      (hl),c
-                ld      a,(GFX_PTOP)
-                inc     a
-                ld      (GFX_PTOP),a
+                ret
+gpp_ovf:
+                ld      a,1
+                ld      (GFX_POVF),a
                 ret
 
-; ---------------------------------------------------------------------------
 ; gfx_pstk_pop -- OUT: CF=1 and A=y,B=xL,C=xR (an entry was popped), or CF=0
-; (the stack was already empty; A/B/C untouched). Clobbers A/DE/HL (+B/C on
-; success only).
-; ---------------------------------------------------------------------------
+; (empty; A/B/C untouched). Clobbers DE/HL (+A/B/C on success only).
 gfx_pstk_pop:
-                ld      a,(GFX_PTOP)
+                ld      hl,(GFX_PSP)
+                ld      de,(GFX_PBASE)
                 or      a
-                jr      z,gpop_empty
-                dec     a
-                ld      (GFX_PTOP),a
-                call    gfx_pstk_addr       ; HL = slot addr
+                sbc     hl,de               ; top - base (A untouched)
+                ret     z                   ; empty: Z, and CF clear from the sbc
+                add     hl,de               ; HL = top again
                 ld      a,(hl)
                 inc     hl
                 ld      b,(hl)
                 inc     hl
                 ld      c,(hl)
+                inc     hl
+                ld      (GFX_PSP),hl
                 scf
-                ret
-gpop_empty:
-                or      a
                 ret
 
 ; --- (removed) gfx_border_read ----------------------------------------------

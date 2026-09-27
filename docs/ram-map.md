@@ -33,7 +33,7 @@ other component's cell at the same address; the `inside` column
 names the other component's BUFFER this address falls within. That
 second one is the question a per-component map cannot answer.
 
-* **basic** — 427 declared addresses in this project's own workspace `$E000..$F37F` (397 with a machine-readable width), plus **102** in the MSX standard work area at or above `$F380`.
+* **basic** — 429 declared addresses in this project's own workspace `$E000..$F37F` (399 with a machine-readable width), plus **102** in the MSX standard work area at or above `$F380`.
 * **disk** — 126 declared addresses in this project's own workspace `$E000..$F37F` (112 with a machine-readable width), plus **25** in the MSX standard work area at or above `$F380`.
 
 ## This project's own workspace (`$E000..$F37F`)
@@ -262,7 +262,6 @@ second one is the question a per-component map cannot answer.
 | `$E3E3` | 2 B | `basic` | `ISRCH_B` | $E3E3: resolved B-operand body base (2 B) |  |
 | `$E3E5` | 1 B | `basic` | `GFX_BAD/STRENG_SPARE` | VRAM read-back mismatch count (1) |  |
 | `$E3E6` |  | `basic` | `MIDS_DEST` |  |  |
-| `$E3E8` | 1 B | `basic` | `GFX_PTOP` | span-stack top-of-stack index, 0..GFX_PSTK_CAP (1) |  |
 | `$E3E9` | 1 B | `basic` | `GFX_POVF` | 1 = the stack overflowed; resident raises ERR 7 (1) |  |
 | `$E3EA` | 1 B | `basic` | `GFX_PTESTX` | gfx_paint_inside/gfx_paint_plot: pixel-under-test X (1) |  |
 | `$E3EB` | 1 B | `basic` | `GFX_PTESTY` | ...Y (1) |  |
@@ -273,7 +272,10 @@ second one is the question a per-component map cannot answer.
 | `$E3F0` | 1 B | `basic` | `GFX_PSCY` | gfx_paint_scan_row: the neighbour row being scanned (1) |  |
 | `$E3F1` | 1 B | `basic` | `GFX_PSPA` | gfx_paint_scan_row: pending sub-span's start column (1) |  |
 | `$E3F2` |  | `basic` | `GFX_CS_M1/GFX_DBUF/GFX_PSTK/GFX_VBUF` | span-stack array base: GFX_PSTK_CAP * [y][xL][xR] |  |
-| `$E3F6` | 8 B | `basic` | `GFX_CS_M2` | $E3F6: r*r for the same compare, CONTIGUOUS with |  |
+| `$E3F6` | 4 B | `basic` | `GFX_CS_M2` | $E3F6: r*r for the same compare (4) |  |
+| `$E3FA` | 2 B | `basic` | `GFX_PSP` | the span stack's top (lowest used byte) (2) |  |
+| `$E3FC` | 2 B | `basic` | `GFX_PBASE` | its empty position = SP - GFX_PAINT_MARGIN (2) |  |
+| `$E3FE` | 2 B | `basic` | `GFX_PFLOOR` | the lowest byte it may use = ARYEND + 2 (2) |  |
 | `$E412` | 2 B | `basic` | `GFX_SN` | $E412: SPRITE$ entry index / PUT SPRITE plane (2) |  |
 | `$E414` | 1 B | `basic` | `GFX_VLEN` | $E414: the entry size the tenant read back (1) |  |
 | `$E415` | 2 B | `basic` | `GFX_SDESC` | $E415: SPRITE$(n)= RHS string descriptor |  |
