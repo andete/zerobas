@@ -90,6 +90,20 @@ BATCH2 = {
 }
 
 
+# --- BATCH 3 (2026-09-27): DISK BASIC functions -- `--disk` runs the CF-3300
+# against zerobas's DISK build, the pairing kwsweep's NEEDS-DISK: rows use. Batch
+# 2 showed the diskless VG-8020 is the wrong oracle here (MKI$("A") read 5).
+BATCH3 = {
+    "MKI$": ("int-to-string",    False, [(N, "1", ["32768", "-32769"])]),
+    "CVI":  ("string-to-int",    False, [(S, '"AB"', ['""', '"A"'])]),
+    "MKS$": ("single-to-string", False, [(N, "1", [])]),
+    "CVS":  ("string-to-single", False, [(S, '"ABCD"', ['""', '"ABC"'])]),
+    "MKD$": ("double-to-string", False, [(N, "1", [])]),
+    "CVD":  ("string-to-double", False, [(S, '"ABCDEFGH"', ['""', '"ABCDEFG"'])]),
+    "DSKF": ("free-space",       False, [(N, "0", ["9", "-1", "256"])]),
+}
+
+
 def _call(kw, stmt, args):
     a = ",".join(args)
     return f"{kw} {a}".rstrip() if stmt else f"PRINT {kw}({a})"
@@ -109,8 +123,9 @@ def batch2_cases(kw, form, stmt, spec):
 
 def cases():
     only = next((a.split("=", 1)[1] for a in sys.argv if a.startswith("--only=")), None)
-    if "--batch=2" in sys.argv:
-        for kw, (form, stmt, spec) in BATCH2.items():
+    if "--batch=2" in sys.argv or "--batch=3" in sys.argv:
+        b = BATCH3 if "--batch=3" in sys.argv else BATCH2
+        for kw, (form, stmt, spec) in b.items():
             if only and kw not in only.split(","):
                 continue
             yield from batch2_cases(kw, form, stmt, spec)
@@ -139,13 +154,31 @@ def reading(raw):
     return "OK" if last == ("", "") else (int(last[0]), int(last[1]))
 
 
+def _disk_image():
+    import shutil, tempfile
+    fh = tempfile.NamedTemporaryFile(suffix=".dsk", delete=False)
+    fh.close()
+    shutil.copy(os.path.join(REPO, "disk", "test720.dsk"), fh.name)
+    return fh.name
+
+
 def main():
-    machines = [REF] + ([ZB] if "--zb" in sys.argv else [])
+    disk = "--batch=3" in sys.argv
+    ref, zb = (("National_CF-3300", "C-BIOS_MSX1_EU_REPACK_DISK") if disk else (REF, ZB))
+    machines = [ref] + ([zb] if "--zb" in sys.argv else [])
     cs = list(cases())
-    res = {m: omsx_repl.run_cases(m, [("direct", program(st)) for *_, st in cs],
-                                  batch=False, reset=("CLS",), boot=8.0,
-                                  capture="screen")
-           for m in machines}
+    res = {}
+    for m in machines:
+        kw = {}
+        if disk:
+            # a PRIVATE writable copy per machine; the CF-3300 boots SCREEN 1 and
+            # needs kwsweep's MACH_RESET_PRE / MACH_BOOT (an Enter, SCREEN 0; 14 s)
+            kw = dict(diska=_disk_image(), step=8.0, cap_gap=20.0)
+        cf = m.startswith("National")
+        res[m] = omsx_repl.run_cases(m, [("direct", program(st)) for *_, st in cs],
+                                     batch=False,
+                                     reset=("", "SCREEN 0", "CLS") if cf else ("CLS",),
+                                     boot=14.0 if cf else 8.0, capture="screen", **kw)
     sets = {}
     print(f"{'keyword':7} {'case':30} " + " ".join(f"{m[:12]:>14}" for m in machines))
     for i, (kw, form, a, st) in enumerate(cs):

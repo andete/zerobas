@@ -68,14 +68,26 @@ ERRSETS: dict[str, dict[str, frozenset[int]]] = {
     "POKE": {"address-value": frozenset({2, 5, 6, 13, 24})},
     "VPOKE": {"address-value": frozenset({2, 5, 6, 13, 24})},
     "SOUND": {"register-value": frozenset({2, 5, 13, 24})},
+    # 📏 BATCH 3, MEASURED 2026-09-27 on the CF-3300 (the Disk BASIC oracle;
+    # t6enum_probe.py --batch=3 -> t6enum_b3.out).
+    "MKI$": {"int-to-string": frozenset({2, 6, 13})},
+    "CVI": {"string-to-int": frozenset({2, 5, 13})},
+    "MKS$": {"single-to-string": frozenset({2, 13})},
+    "CVS": {"string-to-single": frozenset({2, 5, 13})},
+    "MKD$": {"double-to-string": frozenset({2, 13})},
+    "CVD": {"string-to-double": frozenset({2, 5, 13})},
+    "DSKF": {"free-space": frozenset({2, 5, 13, 62})},
 }
 
 _B1 = {"ABS", "SGN", "INT", "SQR", "LOG", "EXP", "ASC", "CHR$", "LEN", "PEEK"}
+_B3 = {"MKI$", "CVI", "MKS$", "CVS", "MKD$", "CVD", "DSKF"}
 PROVENANCE: dict[str, str] = {
-    k: ("scratchpad/t6enum_probe.py -> scratchpad/t6enum_run.out (EXP: t6enum_exp.out)"
+    k: ("scratchpad/t6enum_probe.py -> scratchpad/t6enum_run.out (EXP: t6enum_exp.out), VG-8020"
         if k in _B1 else
-        "scratchpad/t6enum_probe.py --batch=2 -> scratchpad/t6enum_b2.out")
-       + ", VG-8020, 2026-09-27"
+        "scratchpad/t6enum_probe.py --batch=3 -> scratchpad/t6enum_b3.out, CF-3300"
+        if k in _B3 else
+        "scratchpad/t6enum_probe.py --batch=2 -> scratchpad/t6enum_b2.out, VG-8020")
+       + ", 2026-09-27"
     for k in ERRSETS}
 
 

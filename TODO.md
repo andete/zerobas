@@ -5973,7 +5973,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:25649 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:25689 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -24818,9 +24818,49 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       🔮 Misses: a BARE statement (`POKE`, `VPOKE`, `SOUND`) is **24** Missing
       operand on both, not 2; `TAN(1E38)` overflows on the reference; the MKI$/CVI
       type faults read 5 (the oracle problem above).
-      ➡️ **NEXT:** MKI$/CVI (and the other disk functions) on the CF-3300; then
+      ~~➡️ **NEXT:** MKI$/CVI (and the other disk functions) on the CF-3300; then
       the multi-FORM keywords (INSTR, MID$, VAL, …), whose rows must name each
-      form.
+      form.~~
+      🟢 **BATCH 3 SHIPPED (2026-09-27): the Disk BASIC functions ON THE CF-3300**
+      (`t6enum_probe.py --batch=3` → [`scratchpad/t6enum_b3.out`](scratchpad/t6enum_b3.out);
+      zerobas's DISK build, the pairing kwsweep's `NEEDS-DISK:` rows use). 32 cases,
+      7 sets, 18 `NEEDS-DISK: PROVES-T6:` rows, 18/18 SUPPORTED. CVI, CVS, CVD,
+      MKS$ and MKD$ reach T6; MKI$ and DSKF do not — their missing code's only
+      case DIVERGES.
+      🔴 **THREE MORE REAL DIVERGENCES**, filed below: `MKI$(32768)` (ref 6
+      Overflow, zb accepts it), `MK?$(1,1)` (ref 2, zb 13, all three MK$
+      functions) and `DSKF(-1)`/`DSKF(256)` (ref 5, zb 62 Bad drive name).
+      🔮 Every reference value predicted right; the three divergences were not
+      predicted — they are zerobas's.
+      ➡️ **NEXT:** the multi-FORM keywords (INSTR, MID$, VAL, …), whose rows must
+      name each form; then statements with channel/line arguments.
+
+- [ ] 🔴 **`MKI$` ACCEPTS AN OUT-OF-RANGE INTEGER — `MKI$(32768)` IS `Overflow`
+      ON THE CF-3300 AND A STRING HERE (D-MKIRANGE, found 2026-09-27 by T6).**
+      🎚️ TIER 6 — `MKI$` outside −32768..32767
+      🤖 **AUTONOMOUS** — the reference settles it; a ROM change, carve first.
+      `scratchpad/t6enum_b3.out`: `MKI$(32768)` and `MKI$(-32769)` → CF-3300
+      `(6, 20)`, zerobas prints a result. The argument is an INTEGER conversion
+      on the reference (CINT's own Overflow — `CINT(32768)` agrees on both,
+      batch 2), so MKI$ must convert through the same range check. Blocks MKI$'s T6.
+
+- [ ] 🔴 **`MKI$(1,1)` / `MKS$(1,1)` / `MKD$(1,1)` ARE `Type mismatch` HERE AND
+      `Syntax error` ON THE CF-3300 (D-MKEXTRA, found 2026-09-27 by T6).**
+      🎚️ TIER 6 — an EXTRA argument to the MK$ functions
+      🤖 **AUTONOMOUS** — the reference settles it.
+      `scratchpad/t6enum_b3.out`: all three read CF-3300 `(2, 20)`, zerobas
+      `(13, 20)`. The CV functions' extra-argument cases AGREE (2 on both), so it
+      is the MK$ family's argument parse, which evaluates past the `,` and then
+      type-checks instead of demanding `)`.
+
+- [ ] 🔴 **`DSKF(-1)` / `DSKF(256)` ARE `Bad drive name` HERE AND `Illegal
+      function call` ON THE CF-3300 (D-DSKFRANGE, found 2026-09-27 by T6).**
+      🎚️ TIER 6 — `DSKF` with a drive number outside a byte
+      🤖 **AUTONOMOUS** — the reference settles it.
+      `scratchpad/t6enum_b3.out`: CF-3300 `(5, 20)`, zerobas `(62, 20)`.
+      `DSKF(9)` — a byte, but no such drive — is `Bad drive name` (62) on BOTH, so
+      the reference range-checks the argument as a BYTE first (5) and only then
+      the drive. Blocks DSKF's T6.
 
 - [ ] 🔴 **`STRING$(2,"")` IS `Syntax error` HERE AND `Illegal function call` ON
       THE REFERENCE (D-STRINGEMPTY, found 2026-09-27 by the T6 enumeration).**
