@@ -30,6 +30,25 @@ symmetric. Treat that group as closed-by-measurement unless a new signal appears
 | PLAY X shape | *"Tenant walks the chain"* — the MML tenant reads the variable chain in RAM itself (spec-basic-audio-play §7.12); main ~0 B, no carve needed |
 | the rig | Joost's RP2040-Zero is **CONNECTED to the laptop since 2026-09-25** (`/dev/cu.usbmodem1101`, running firmware, not BOOTSEL; seen read-only, nothing flashed). **UN-PARKED 2026-09-26 and FLASHED with `tools/rigfw/rigfw.ino`:** headless joystick WORKS (bind `msxjoystick1_config` to `joy1`, which this install leaves EMPTY); headless mouse does NOT reach PAD/PDL. Next: STICK/STRIG rows — the rig item in TODO |
 
+### 🌙 LOOP 2026-09-27, 02:00 → (after the section below) — READ THIS FIRST
+
+Shipped: `2c8343ad` rigcap/cf3300_arch headless + the sweep refuses a windowed
+launch · `acbe7b2d` **D-S2BHEAP** (TIER 4: the string heap's edge is given back;
+strtemp DIFF 4/8 → 1/8, the one left is zerobas holding LESS) · `33bac256` two
+stale markers (PUT's retracted 24 s; PAINT's stack is already a filed 🙋) ·
+`bf0f03e7` **D-SAYBLIND** (a `--say` row with no reading anywhere is refused;
+`<NO ECHO>` is in `BAD`) · `10bcb617` strtemp's pin follows D-S2BHEAP ·
+`2a794a76` **D-KNIFEBASE** (the knife deletes all four built ROMs first).
+🔴 **`2a794a76`'s body says "+ the excluded five" and they had NOT run** — FULL
+came from the every-5th rule, which does not add them. They were run straight
+after on the unchanged tree: all five exit 0. Not amended (pushed history).
+**Walls (clean build 2026-09-27): main page 1 5 B, low 5 B, sub p0 16 B, sub p1
+0 B.** Every ROM slice needs a carve first.
+➡️ **QUEUE:** TIERS 1–5 hold nothing autonomous without a carve or a ruling —
+PUT's write-through cache needs a carve in main p1 AND sub p1; the sub-side
+`sh_pop_top` reclaim (comparisons, concat operands) needs ~20 B of sub p0 and
+has no separating row yet. What is left 🤖 is APPARATUS.
+
 ### 🌙 LOOP 2026-09-26 → 27 (after the day section below) — READ THIS FIRST
 
 Shipped by the loop: `a4528b25` D-HOMEKEY (C-BIOS patch #4; island 1 now at
