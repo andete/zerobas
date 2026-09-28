@@ -229,14 +229,14 @@ def select_rows(only=None):
     for key, _crunch, line, mode, note in kw.SWEEP:
         rigs = kw._row_rigs(note)
         if line is None or (rigs and rigs not in TIMEABLE_RIGS) \
-                or kw.row_program(note) \
-                or kw.row_respond(note) or not kw.row_form(note):
+                or kw.row_program(note) or not kw.row_form(note):
             continue
         if only and key not in only:
             continue
         GROUP[key] = TIMEABLE_RIGS[rigs] if rigs else "plain"
         out.append((key, line, mode, row_keyword(_crunch, note)))
         FORMS[key] = kw.row_form(note)
+        RESP[key] = kw.row_respond(note)   # D-KWT2RESP: typed in the burst
         m = re.search(r"(?<!\S)TIMED:(\d+)(?!\S)", note)
         TIMED[key] = int(m.group(1)) if m else None
     return out
@@ -251,7 +251,7 @@ MAX_TYPED = 38
 
 def too_long(rows):
     return [r[0] for r in rows
-            if any(len(l) > MAX_TYPED for l in case_lines(r[1]))]
+            if any(len(l) > MAX_TYPED for l in case_lines(r[1], resp=RESP.get(r[0])))]
 
 
 # ⌨️ D-KWT2TA (Joost 2026-09-28: lifting level-1 keywords is the priority). A row
@@ -266,9 +266,21 @@ def too_long(rows):
 # waiting line); the fixed prompt round-trip is ~30 ms VG-8020 / ~79 ms here,
 # included on both sides.
 TA_TAIL = f"RUN\rPOKE&H{MARK_ADDR:04X},{END}"
+# ⌨️ D-KWT2RESP: a `RESPOND:` row (INPUT at the console, CONT after a STOP) waits
+# for typed input, which kwtime could not give it. Its burst carries the response
+# lines BETWEEN `RUN` and the mark: INPUT takes its answer from the buffer, the
+# program reaches its own end-mark line, and the trailing mark is only a backstop.
+RESP: dict = {}
 
 
-def case_lines(line, pad=None, bodies=None, typeahead=False):
+def ta_tail(resp=None):
+    """The type-ahead burst: RUN, then any response lines, then the END mark."""
+    if not resp:
+        return TA_TAIL
+    return "\r".join(["RUN", *resp, f"POKE&H{MARK_ADDR:04X},{END}"])
+
+
+def case_lines(line, pad=None, bodies=None, typeahead=False, resp=None):
     """The row as explicitly numbered lines, bracketed by the two marks.
     `bodies` (already packed) overrides `line` -- the twin's shape.
     `typeahead` ends it with TA_TAIL instead of a plain `RUN` (D-KWT2TA)."""
@@ -299,7 +311,8 @@ def case_lines(line, pad=None, bodies=None, typeahead=False):
     # the only difference a NEIGHBOUR's twin -- screen mode and width leak from
     # case to case, and `NEW` resets neither. `SCREEN0:WIDTH37` puts both machines
     # in the same mode and width before the start mark, whatever came before.
-    return [omsx_repl.BREAK_PREFIX, "NEW", RESET] + lines + [TA_TAIL if typeahead else "RUN"]
+    tail = ta_tail(resp) if (typeahead or resp) else "RUN"
+    return [omsx_repl.BREAK_PREFIX, "NEW", RESET] + lines + [tail]
 
 
 def delta(marks):
@@ -439,7 +452,8 @@ def measure(machine, rows, pad=None, twin=False, caps_out=None, extra=None,
     idx = [i for i, b in enumerate(bods) if b is not None]
     if not idx:
         return [(None, None)] * len(rows)
-    specs = [("direct", case_lines(None, pad, bods[i], typeahead)) for i in idx]
+    specs = [("direct", case_lines(None, pad, bods[i], typeahead, RESP.get(rows[i][0])))
+             for i in idx]
     so: dict = {}
     rk = dict(batch=True, capture="screen", boot=8.0, sentinel=(MARK_ADDR, END),
               settle_out=so, watch_values=((CURLIN_HI, 0xFF),))
@@ -531,6 +545,11 @@ def selftest():
         ta_lines[-1] == f"RUN\rPOKE&H{MARK_ADDR:04X},{END}")
     arm("K41 NEGATIVE: without typeahead the case ends in a plain RUN",
         case_lines("LIST")[-1] == "RUN")
+    arm("K43 a RESPOND row's burst carries the response between RUN and the mark",
+        ta_tail(["HELLO"]) == f"RUN\rHELLO\rPOKE&H{MARK_ADDR:04X},{END}"
+        and case_lines("INPUT A$", resp=["HELLO"])[-1].startswith("RUN\rHELLO\r"))
+    arm("K44 NEGATIVE: a row with no response keeps the plain burst",
+        ta_tail(None) == TA_TAIL)
     arm("K42 the type-ahead burst fits one KEYBUF injection",
         len(ta_lines[-1]) <= omsx_repl.MAX_DIRECT)
     ls = case_lines('A=0:GOSUB 20:PRINT"[G";A;"]":END:A=7:RETURN')

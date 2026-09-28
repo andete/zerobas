@@ -1,0 +1,14 @@
+msxtest: BASIC image carries islands -- loaded at $0010, not $2812
+row                 ref ms     zb ms  zb/ref  alone  status
+kwtime: [plain] ref CURLIN bias -- fall-off 2.478 ms (spread -20.268..2.478) · END path 2.877 ms
+kwtime: [plain] zb CURLIN bias -- fall-off 0.263 ms (spread -39.500..0.263) · END path 0.562 ms
+contkw              77.574    54.547    0.70      ~  OK
+inputdol_b           9.322    13.744    1.47   1.10  OK
+inputcon            24.752    38.876    1.57   1.63  OK
+inputcon_b          25.040    34.692    1.39   1.43  OK
+inputcon_c          31.388    45.341    1.44   1.51  OK
+lineinput           26.182    43.380    1.66   1.74  OK
+lineinput_b         24.385    37.337    1.53   1.52  OK
+
+kwtime: OK=7  (7 rows, bar 10x; keyword-alone reading on 6; 0 timed via CURLIN, 0 via a type-ahead end)
+refcache: 2 hit, 4 miss, 4 stored, 2 replayed provenance

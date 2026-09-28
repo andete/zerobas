@@ -6019,7 +6019,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:26815 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:26831 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -25866,11 +25866,27 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       untouched, and no existing caller's Tcl changes. Full run
       ([`kwt2ta_kwtime.out`](scratchpad/kwt2ta_kwtime.out)): UNTIMEABLE 498 → 6, OK 266 →
       810, 544 rows via the type-ahead end, every ratio under the 10× bar.
-      ➡️ **THE SEVEN LEFT, AND WHY:** AUTO, CLOAD, CONT, LLIST have only `PROGRAM:`
+      ✅ **D-KWT2RESP (same day): the `RESPOND:` rows carry their typed response in the
+      burst** (`RUN`, the response lines, then the mark), so INPUT at the console and
+      CONT after a STOP are timed: all 7 rows OK
+      ([`kwt2resp_only.out`](scratchpad/kwt2resp_only.out)), full run
+      ([`kwt2resp_kwtime.out`](scratchpad/kwt2resp_kwtime.out)) OK 810 → 817, **level 1
+      7 → 5** (INPUT and CONT reach level 2). Left: AUTO, CLOAD, LFILES, LLIST, RUN.
+      ➡️ **THE SEVEN LEFT (before D-KWT2RESP), AND WHY:** AUTO, CLOAD, CONT, LLIST have only `PROGRAM:`
       (editor) rows, which kwtime skips; LFILES's row carries TWO rigs (disk +
       printer); INPUT's console forms are `RESPOND:` rows (a type-ahead RESPONSE is the
       natural next shape); RUN's `bare` form restarts its own program forever inside a
       case (`runkw_b`). Then VARPTR (level 0) — `VARPTR(#n)` — per the plan.
+
+- [ ] 🔴 **A `DSKF` WITH A BAD ARGUMENT TAKES ~1 s HERE AND ~0.09 s ON THE CF-3300 —
+      10.4–10.8×, OVER THE T2 BAR (D-DSKFSLOW, found 2026-09-28 by the type-ahead T2
+      pass).**
+      🎚️ TIER 2 — reasonable time: an error that should be immediate costs a second.
+      🤖 **AUTONOMOUS** — likely the disk is touched (mount / free-cluster count)
+      BEFORE the argument is checked; trace `hk_dskf` and the main-side argument path.
+      📏 [`kwt2resp_kwtime.out`](scratchpad/kwt2resp_kwtime.out): `t6dskf2` 89.2 vs
+      960.7 ms, `t6dskf13` 100.7 vs 1045.8 ms. DSKF keeps its T2 (each form has another
+      OK row); the error path is what is slow.
 
 - [ ] 🔴 **`RUN`'S T5 RATIO FLIPS BETWEEN RUNS — 1.1×, 1.5× AND 1.7× ON 2026-09-28 —
       SO `tiers-md-check` GOES RED AFTER ANY BATTERY THAT RE-RUNS `kwtime` (D-RUNT5NOISE).**
