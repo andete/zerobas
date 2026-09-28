@@ -1,0 +1,7 @@
+keyword case                                           Philips_VG_8   C-BIOS_MSX1_
+NEW     NEW 1                                               (2, 20)        (2, 20)
+NEW     NEW "A"                                             (2, 20)        (2, 20)
+
+# the reference's error set per keyword form (code: first case)
+NEW    erase-program  2: NEW 1
+refcache: 0 hit, 2 miss, 2 stored

@@ -4523,6 +4523,10 @@ SWEEP: list[tuple[str, str, str | None, str, str]] = [
      "PROVES-T6:2 SUBJECT:LIST FORM:single-line"),
     ('t10listrange2', 'list 65536-', 'LIST 65536-', "stored",
      "PROVES-T6:2 SUBJECT:LIST FORM:range"),
+    # D-NEWARG (2026-09-28): `NEW 1` erased the program here; Syntax error and the
+    # program intact on both machines now (scratchpad/newarg_after.out).
+    ('t10newerasepgm2', 'new 1', 'NEW 1', "stored",
+     "PROVES-T6:2 SUBJECT:NEW FORM:erase-program"),
     ('t10csavesavetotape13', 'csave 5', 'CSAVE 5', "stored",
      "PROVES-T6:13 SUBJECT:CSAVE FORM:save-to-tape"),
     ('t10csavesavetotape24', 'csave', 'CSAVE', "stored",

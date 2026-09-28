@@ -703,6 +703,13 @@ rp_goto:
 ; ⚠️ SITED IMMEDIATELY ABOVE `end_line_end` SO THE STOP IS A FALL-THROUGH, not a
 ; `jp` -- 3 bytes, in a region that had 2 free.
 ex_new:
+                ; 🔴 D-NEWARG (2026-09-28): `NEW 1` ERASED THE PROGRAM. NEW takes no
+                ; argument; the VG-8020 answers `20 NEW 1` with `Syntax error in 20`
+                ; and LIST still shows the program, where zerobas erased it
+                ; (scratchpad/newarg_before.out; T6 batch 10, t6enum_b10.out). The
+                ; check comes FIRST, before anything is cleared.
+                call    stmt_bare_end       ; Z iff the statement ends here
+                jp      nz,stmt_error       ; anything else: ERR 2, nothing erased
                 call    clear_vars          ; NEW clears variables too (dl_new's
                                             ; own comment: MS-BASIC semantics)
                 call    new_prog            ; then the stored program itself
@@ -817,7 +824,7 @@ rp_break:
                 call    trap_pend   ; wake the run-loop dispatcher
 rp_brk_run:
                 pop     hl                  ; HL = resume stmt ptr, intact
-                jr      rp_trapchk          ; dispatch now (do NOT break) -- `jp`:
+                jp      rp_trapchk          ; dispatch now (do NOT break) -- `jp`:
                                             ; D-CURLIN's 16 B in derive_directf put
                                             ; the backward span past -128 (+1 B)
 rp_real_break:

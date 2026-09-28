@@ -6019,7 +6019,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:26782 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:26791 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -25858,7 +25858,16 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       batch-10 FULL run, `scratchpad/b10_scoped.out`). Twice today the only red in a
       battery was this cell, and each time the fix was regenerating the doc.
 
-- [ ] 🔴 **`NEW 1` / `NEW "A"` ARE `Syntax error` ON THE VG-8020; HERE THEY GIVE NO
+- [x] ✅ **FIXED 2026-09-28 (D-NEWARG): `NEW` WITH ANYTHING AFTER IT IS `Syntax error`
+      AND ERASES NOTHING.** Confirmed first: zerobas ERASED the program on `20 NEW 1`
+      (LIST empty, [`newarg_before.out`](scratchpad/newarg_before.out)); the VG-8020
+      says `Syntax error in 20` and keeps it. `ex_new` now opens with `stmt_bare_end` /
+      `jp nz,stmt_error`, BEFORE anything is cleared — after
+      ([`newarg_after.out`](scratchpad/newarg_after.out)) the same face as the VG-8020.
+      Funded by moving `pdf_baddrive` (5 B) into the low region beside its sibling
+      `pdf_badname`; a `jr` the insertion pushed past -128 went back to `jp` (+1). Walls
+      after: low 1 B, page 1 0 B (2026-09-28). Row `t10newerasepgm2`; NEW reaches T6.
+      *(the filing:)* 🔴 **`NEW 1` / `NEW "A"` ARE `Syntax error` ON THE VG-8020; HERE THEY GIVE NO
       READING — MOST LIKELY THE PROGRAM IS ERASED (D-NEWARG, found 2026-09-28 by T6
       batch 10).**
       🎚️ TIER 3 — a typo after NEW would lose the program where the reference refuses.

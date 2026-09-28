@@ -1,0 +1,12 @@
+refcache: 0 hit, 1 miss, 1 stored
+     ZB
+     NEW
+     ZB
+     10 PRINT 12345
+     20 NEW 1
+     RUN
+      12345
+     ZB
+     LIST
+     ZB
+     color  auto   goto   list   run

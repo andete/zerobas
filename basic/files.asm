@@ -997,11 +997,11 @@ pdfcb_resume:
 ; FILES and RUN (t6enum_b8_zb.out); A:, a: and B: -- its phantom drive, which
 ; waits for a disk -- are not errors. The same fix D-FSPEC made for a malformed
 ; NAME (pdf_badname, 56), and bound per build the same way: sub/bload.asm keeps
-; bl_load_error for BLOAD, whose answer is unmeasured. Page 1, not the low
-; region beside pdf_badname: the low region had 2 B.
-pdf_baddrive:
-                ld      a,62
-                jp      raise_error
+; bl_load_error for BLOAD, whose answer is unmeasured.
+; 🧭 THE BODY MOVED TO THE LOW REGION on 2026-09-28 (D-NEWARG), beside its
+; sibling pdf_badname in basic/str-engine.asm: page 1 was where it first went
+; because the low region had 2 B that day; D-CARVESEQ left the low region 6 B
+; and page 1 2, and NEW's end-of-statement check needed page 1's.
 
 fname_expr:
                 call    skip_spaces         ; 🔴 D-FNEXPR2: **INSIDE**, and it was a

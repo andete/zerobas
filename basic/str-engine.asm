@@ -134,6 +134,11 @@ ca_full:
 pdf_badname:
                 ld      a,56
                 jp      raise_error
+; pdf_baddrive -- a drive past B: -> ERR 62 `Bad drive name` (D-DRVNAME; the full
+; story is at its old site in basic/files.asm). Moved here 2026-09-28 (D-NEWARG).
+pdf_baddrive:
+                ld      a,62
+                jp      raise_error
 
 ctl_reset:
                 ; 🔴 THIS MUST SURVIVE BEING CALLED BEFORE THE SUB ROM EXISTS.
