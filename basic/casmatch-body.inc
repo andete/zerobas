@@ -129,11 +129,13 @@ csd_asc_scan:
                 djnz    csd_asc_scan
                 jr      csd_ascii           ; no Ctrl-Z in this block -> next block
 csd_tok:
-                ; NB: assumes the tokenised data block ENDS at the $0000 end-link
-                ; (our CSAVE writes payload then TAPOOF — no trailing in-block pad),
-                ; so after $0000 the next TAPION relocks on the following header.
-                ; (cas_encode's single-file 16-byte pad would leave slack; the
-                ; name-match gate builds skip fixtures CSAVE-faithfully.)
+                ; NB: stops at the $0000 end-link and does NOT read the SEVEN $00
+                ; bytes every CSAVE writes after it (VG-8020, CF-3300 and zerobas
+                ; alike -- scratchpad/csavetail_probe.out; the old note here said
+                ; "no trailing pad", sourced from our own save.asm). The next
+                ; TAPION must therefore relock PAST them: its CAS_SKIP is long
+                ; enough that a lock cannot complete inside them (D-CASRELOCK,
+                ; tape/tape.asm). A CLOAD that reads a file leaves the same seven.
                 call    TAPION              ; data block leader
                 ret     c
                 ld      hl,TXTBASE

@@ -398,9 +398,11 @@ def encode_byte(byte, short=SHORT, long_=LONG, level0=0x00):
     return _halves_to_samples(halves, level0)
 
 
-def leader(short, n_halves=80, level0=0x00):
+def leader(short, n_halves=400, level0=0x00):
     """A pure carrier leader: n_halves short (high-freq) halves — the tone
-    TAPION locks onto and measures to derive LOWLIM."""
+    TAPION locks onto and measures to derive LOWLIM. 400, was 80: TAPION now
+    needs CAS_SKIP (256) + CAS_RUNLEN (16) unbroken halves (D-CASRELOCK); a real
+    leader is >= 8000 (a short header's 4000 cycles)."""
     return _halves_to_samples([short] * n_halves, level0)
 
 
@@ -461,6 +463,23 @@ def test_tapion_silence_and_dead(m, fails):
     fails += not ok
     print(f"{'PASS' if ok else 'FAIL'}  tapion leading-silence then leader: "
           f"CF={int(carry(cpu))} (want 0 = locked)")
+
+    # D-CASRELOCK: the SEVEN $00 bytes CSAVE writes after a program's end-link
+    # (VG-8020, CF-3300 and zerobas alike) are still on the tape when the NEXT
+    # TAPION runs -- a skip and a load both stop at the end-link. Each zero byte
+    # is 18 long halves (start + 8 zero bits) then 8 short (2 stop bits), no
+    # flat anywhere, so the old 32+16-edge lock completed INSIDE them and
+    # derived LOWLIM from data. The lock must instead meet the silence after
+    # the tail and relock on the real leader: LOWLIM from the LEADER, 7*H.
+    tail = _halves_to_samples(([2 * H] * 18 + [H] * 8) * 7, 0x00)
+    mt = machine()
+    mt.cpu.io_in = Samples(tail + [0x00] * 256 + leader(H))
+    cpu = mt.call("tapion")
+    lowlim_t = mt.mem[m.sym["LOWLIM"]]
+    ok = (not carry(cpu)) and lowlim_t == 7 * H
+    fails += not ok
+    print(f"{'PASS' if ok else 'FAIL'}  tapion relocks PAST a CSAVE tail (7 x $00): "
+          f"CF={int(carry(cpu))}, LOWLIM={lowlim_t} (want 0, {7 * H} -- the leader's)")
 
     # Dead tape: the level never flips, so every cas_half times out until the
     # CAS_FLATMAX budget is exhausted -> failure.

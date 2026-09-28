@@ -1,0 +1,24 @@
+python3 tools/install-repack-machine.py --merged build/zerobas-main-eu.rom --disk-rom build/disk.rom \
+	  --sub-rom build/sub.rom
+wrote C-BIOS_MSX1_EU_REPACK_DISK  (-> machine "C-BIOS_MSX1_EU_REPACK_DISK": merged repack ROM in slot 0, zerobas-disk in slot 3-1, zerobas-sub in slot 3-2)
+     /Users/joost/.openMSX/share/machines/C-BIOS_MSX1_EU_REPACK_DISK.xml
+python3 tools/install-repack-machine.py --merged build/zerobas-main-eu.rom --sub-rom build/sub.rom \
+	  --no-disk
+wrote C-BIOS_MSX1_EU_REPACK_NODISK  (-> machine "C-BIOS_MSX1_EU_REPACK_NODISK": merged repack ROM in slot 0, slot 3-1 EMPTY (diskless target), zerobas-sub in slot 3-2)
+     /Users/joost/.openMSX/share/machines/C-BIOS_MSX1_EU_REPACK_NODISK.xml
+python3 probes/basic/basic_probe_castail.py --gate \
+	        --sides vg8020,cf3300,zb \
+	        --only 'cas2-cloadprog' \
+	        --repeat 1
+msxtest: BASIC image carries islands -- loaded at $0010, not $2812
+D-CASTAIL — what a machine prints after RUN"CAS:x" / LOAD"CAS:x",R   sides: vg8020, cf3300, zb
+==============================================================================
+ok   cas2-cloadprog          vg8020='<nothing>'  cf3300='<nothing>'  zb='<nothing>'
+ok   cas2-cloadprog:listing  vg8020='10 PRINT"ZQ9"'  cf3300='10 PRINT"ZQ9"'  zb='10 PRINT"ZQ9"'   [CONTROL]
+ROWS: 2 printed, 2 scored — 2 agree, 0 diverge, 0 pinned
+==============================================================================
+2/2 scored readings agree (21 cases, 17 positive controls, 0 pinned divergence row(s))
+SIDES: vg8020,cf3300,zb — every MSX1 has a CASSETTE PORT, so unlike the disk battery the VG-8020 is a legitimate reference here
+NORMALISED: a tail that is EXACTLY the side's own aborted-load message reads '<load-failed>' (vg8020='Device I/O error', cf3300='Device I/O error', zb='load error') — the quarantined wording divergence, not re-opened here
+PINNED: the tape-search progress rows ('Found:RT', 'Skip :RT', and the same pair for 'SK') are dropped from the D-CASTAIL tails, where they are not the subject, and read UNFILTERED by every cas2-* row, where they are. All three sides print them since D-CASSEARCH, so the filter now normalises an AGREEMENT rather than blessing one machine's silence
+refcache: 0 hit, 3 miss, 3 stored

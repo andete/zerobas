@@ -1174,7 +1174,7 @@ ev_ff_ckdone:
                 cp      EOF_TOKEN
                 jr      z,ev_ff_eof
                 cp      LOF_TOKEN
-                jp      z,ev_ff_lof         ; `jp` since D-LOC: the LOC test below
+                jr      z,ev_ff_lof         ; `jp` since D-LOC: the LOC test below
                                             ; sits between this and its target
                                             ; ⚠️ D-SPMERGE step 5 tried `jr` here on
                                             ; jr_mapper's 2026-09-12 proposal and the

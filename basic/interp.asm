@@ -1840,7 +1840,7 @@ ee_raise:
 ex_resume:
                 ld      a,(ONEFLG)
                 or      a
-                jp      z,ex_resume_noerr   ; `jp`, not `jr`: the err_msgtab entry for
+                jr      z,ex_resume_noerr   ; `jp`, not `jr`: the err_msgtab entry for
                                             ; ERR 24 pushed this forward span one byte
                                             ; past `jr`'s reach. Same reason REM_TOKEN
                                             ; needed an IF/ELSE in the old dispatch

@@ -1,0 +1,90 @@
+=== Tier 1: cas_baud ===
+PASS  cas_baud: active == CS120 -> 1200 (Z=1, want 1200=1)
+PASS  cas_baud: active == CS240 -> 2400 (Z=0, want 1200=0)
+PASS  cas_baud: garbage active -> default 1200 (Z=1, want 1200=1)
+PASS  cas_baud: blank active (00 00) -> 1200 (Z=1, want 1200=1)
+
+=== Tier 1: cas_short/cas_long ===
+PASS  cas_short @ 1200 -> C=52 (want 52)
+PASS  cas_long @ 1200 -> C=106 (want 106)
+PASS  cas_short @ 2400 -> C=24 (want 24)
+PASS  cas_long @ 2400 -> C=52 (want 52)
+
+=== Tier 1: cas_islong ===
+PASS  cas_islong: B=4 (B*4=16 vs LOWLIM=20) -> long=0 (want 0)
+PASS  cas_islong: B=5 (B*4=20 vs LOWLIM=20) -> long=1 (want 1)
+PASS  cas_islong: B=6 (B*4=24 vs LOWLIM=20) -> long=1 (want 1)
+PASS  cas_islong: B=3 (B*4=12 vs LOWLIM=20) -> long=0 (want 0)
+PASS  cas_islong near-margin: B=3 (B*4=12 vs 21) -> long=0 (want 0; short carrier)
+PASS  cas_islong near-margin: B=5 (B*4=20 vs 21) -> long=0 (want 0; 1.5x transition artifact (integer thresh would mis-flag))
+PASS  cas_islong near-margin: B=6 (B*4=24 vs 21) -> long=1 (want 1; 2x real long)
+
+=== Tier 2: stmotr ===
+PASS  stmotr(A=0) stop -> OUT [(171, 9)] (want [(0xab,0x9)])
+PASS  stmotr(A=1) start -> OUT [(171, 8)] (want [(0xab,0x8)])
+PASS  stmotr(A=$FF) toggle when ON -> OUT [(171, 9)] (want [(0xab,0x9)])
+PASS  stmotr(A=$FF) toggle when OFF -> OUT [(171, 8)] (want [(0xab,0x8)])
+
+=== Tier 2: cas_latch ===
+PASS  cas_latch -> OUT [(160, 14)] (want [(160, 14)])
+
+=== Tier 2: cas_cycle ===
+PASS  cas_cycle -> OUT [(171, 11), (171, 10)] (want [(171, 11), (171, 10)])
+
+=== Tier 2: tapiof ===
+PASS  tapiof -> OUT [(171, 9)] (want [(171, 9)])
+
+=== Tier 2: tapout tone frame ===
+PASS  tapout(0x00) tones LLLLLLLLLS (want LLLLLLLLLS)
+PASS  tapout(0xff) tones LSSSSSSSSS (want LSSSSSSSSS)
+PASS  tapout(0x01) tones LSLLLLLLLS (want LSLLLLLLLS)
+PASS  tapout(0x80) tones LLLLLLLLSS (want LLLLLLLLSS)
+PASS  tapout(0xa5) tones LSLSLLSLSS (want LSLSLLSLSS)
+
+=== Tier 2: tapout cycle count ===
+PASS  tapout(0x00) cycles=13 (want 13+popcount=13)
+PASS  tapout(0xff) cycles=21 (want 13+popcount=21)
+PASS  tapout(0x01) cycles=14 (want 13+popcount=14)
+PASS  tapout(0xa5) cycles=17 (want 13+popcount=17)
+PASS  tapout(0x41) cycles=15 (want 13+popcount=15)
+
+=== Tier 2: tapoon header ===
+PASS  tapoon(short) cycles=4000 (want 4000), motor_on=True
+PASS  tapoon(long) cycles=16000 (want 16000), motor_on=True
+
+=== Tier 2: tapoof flush ===
+PASS  tapoof flush cycles=32 (want 32), motor_off=True
+
+=== Tier 2: cas_half ===
+PASS  cas_half low->high: B=3, D=0x80, CF=0 (want B=3, D=0x80, CF=0)
+PASS  cas_half high->low: B=3, D=0x00, CF=0 (want B=3, D=0x00, CF=0)
+PASS  cas_half flat-low -> timeout CF=1 (want CF=1)
+PASS  cas_half flat-high -> timeout CF=1 (want CF=1)
+
+=== Tier 2: tapion lock + LOWLIM calibration ===
+PASS  tapion clean leader: CF=0 (want 0), LOWLIM=28 (want 7*4=28)
+PASS  tapion turns motor on (=True)
+PASS  tapion slow leader (H=20, sum>255): CF=0, LOWLIM=140 (want 0, 140)
+
+=== Tier 2: tapion silence tolerance + dead-tape fail ===
+PASS  tapion leading-silence then leader: CF=0 (want 0 = locked)
+FAIL  tapion relocks PAST a CSAVE tail (7 x $00): CF=0, LOWLIM=47 (want 0, 28 -- the leader's)
+PASS  tapion dead/flat tape: CF=1 (want 1 = fail)
+
+=== Tier 2: tapin self-calibrated (tapion-derived LOWLIM) ===
+      (tapion derived LOWLIM=28 from an H=4 leader)
+PASS  tapin (self-calibrated, LOWLIM=28) decodes 0x00 -> A=0x00, CF=0
+PASS  tapin (self-calibrated, LOWLIM=28) decodes 0xff -> A=0xff, CF=0
+PASS  tapin (self-calibrated, LOWLIM=28) decodes 0xa5 -> A=0xa5, CF=0
+PASS  tapin (self-calibrated, LOWLIM=28) decodes 0x41 -> A=0x41, CF=0
+
+=== Tier 2: tapin no-start-bit timeout ===
+PASS  tapin no-start-bit (all short) -> hunt timeout CF=1 (want 1)
+
+=== Tier 2: tapin decode (hand-set LOWLIM) ===
+PASS  tapin decodes 0x00 -> A=0x00, CF=0 (want CF=0)
+PASS  tapin decodes 0xff -> A=0xff, CF=0 (want CF=0)
+PASS  tapin decodes 0xa5 -> A=0xa5, CF=0 (want CF=0)
+PASS  tapin decodes 0x41 -> A=0x41, CF=0 (want CF=0)
+
+1 CHECK(S) FAILED

@@ -1,5 +1,5 @@
 {
- "rom_fingerprint": "9f653ab3 db34668d 95556202 ac21216c",
+ "rom_fingerprint": "ef6cf68d 7118fc9f 8fd9e617 94231123",
  "rows": {
   "ABS": {
    "connected": true,
@@ -838,11 +838,11 @@
   "LOF": {
    "connected": true,
    "modes": {
-    "fn": "DIVERGENT"
+    "fn": "MISSING"
    },
    "row": "lof",
    "subject": "LOF",
-   "verdict": "DIVERGENT",
+   "verdict": "MISSING",
    "weak": false
   },
   "LOG": {
@@ -2082,7 +2082,7 @@
   "LOF": {
    "connected": true,
    "rows": {
-    "lof": "DIVERGENT"
+    "lof": "MISSING"
    }
   },
   "LOG": {
@@ -2583,5 +2583,5 @@
    }
   }
  },
- "written": "2026-09-28 17:11:47"
+ "written": "2026-09-28 22:04:13"
 }

@@ -6019,7 +6019,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:26863 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:26982 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -24437,6 +24437,10 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
 
 - [x] 🛑 **WITHDRAWN THE SAME NIGHT IT WAS FILED — THERE IS NO ROM DEFECT
       (D-CLOADSKIP, 2026-09-23). IT WAS AN UNFAITHFUL FIXTURE.**
+      🔴 **AND THE WITHDRAWAL WAS WRONG (2026-09-28, D-CASRELOCK).** The "faithful"
+      replacement had NO pad; CSAVE writes SEVEN `$00` after the end-link on all
+      three machines, and on THAT tape zerobas's `CLOAD"ZR"` read `load error` —
+      the defect was real (TAPION locked inside the tail). Fixed; see D-CASRELOCK.
       🔬 **THE REFUTATION:** `kwsweep`'s tape fixture built BOTH files with
       `cas_encode.build_cas_basic`, which appends **16 `$00` pad bytes** after
       the end-link for SINGLE-file framing. On a MULTI-file tape those unread
@@ -25893,7 +25897,17 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       `auto` 2.59×, `auto_bare` 2.62×, `auto_step` 2.04×; full run
       ([`kwt2auto_full.out`](scratchpad/kwt2auto_full.out)) OK 820 → 823, **level 1
       2 → 1, level 2 111 → 112**.
-      ➡️ **ONE LEFT: CLOAD, AND IT IS NOW ONE-SIDED.** The tape group is also boot-per-
+      ✅ **CLOAD (same day): timed, LEVEL 1 1 → 0 — and it took TWO TIER 1 fixes,
+      not a harness change.** The reference's missing reading was two real
+      findings stacked: kwsweep's tape fixture was not CSAVE-faithful (D-CASRELOCK:
+      the VG-8020 hung on it, and on the faithful tape zerobas could not reach a
+      second file) and zerobas ran on after an in-program CLOAD (D-CLOADPROG), so
+      the two machines took different paths. Both fixed and gated (blocks below);
+      kwtime ([`cloadprog_kwtime.out`](scratchpad/cloadprog_kwtime.out)): `cload` 1.00×,
+      `cload_b` 1.01×, via the type-ahead end; OK 823 → 825, **level 1 1 → 0, level 2
+      112 → 113**. What is left below T2 is level 0: VARPTR (D-VARPTRFCB) and the
+      N/A keywords.
+      *(superseded, kept:)* **ONE LEFT: CLOAD, AND IT IS NOW ONE-SIDED.** The tape group is also boot-per-
       case with two rows, so D-SETTLEKEY unblinded it — on zerobas only: `cload`
       11523 ms, `cload_b` 5767 ms, the VG-8020 NO reading (REF-ONLY-MISSING, was
       UNTIMEABLE on both). Next: does the reference's load drop the type-ahead
@@ -25909,6 +25923,111 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       printer); INPUT's console forms are `RESPOND:` rows (a type-ahead RESPONSE is the
       natural next shape); RUN's `bare` form restarts its own program forever inside a
       case (`runkw_b`). Then VARPTR (level 0) — `VARPTR(#n)` — per the plan.
+
+- [x] ✅ **A SECOND FILE ON A REAL TAPE COULD NOT BE LOADED — `CLOAD"B"` OVER A FIRST
+      FILE, AND `CLOAD` THEN `CLOAD`, READ `load error` WHERE BOTH REFERENCES LOAD IT
+      (D-CASRELOCK, found and fixed 2026-09-28). D-CLOADSKIP WAS REAL; ITS WITHDRAWAL
+      WAS THE ERROR.**
+      🎚️ TIER 1 — happy path: two programs CSAVEd onto one tape, the second loaded by
+      name or by a second CLOAD, is ordinary MSX BASIC.
+      🔬 **HOW IT SURFACED:** D-KWT2AUTO's re-keying unblinded kwtime's tape group —
+      zerobas timed `cload` (11.5 s), the VG-8020 gave NO reading. The VG-8020 never
+      returned from ANY CLOAD on kwsweep's fixture: `Found:ZR` and no `Ok`, even with
+      a 200 s window and no type-ahead
+      ([`cload_ta_probe2.out`](scratchpad/cload_ta_probe2.out)). castail had already
+      written the reason down: a loaded file with NO trailing pad hangs both
+      references.
+      📏 **WHAT CSAVE WRITES** ([`csavetail_probe.py`](scratchpad/csavetail_probe.py) →
+      [`csavetail_probe.out`](scratchpad/csavetail_probe.out), decoded off each machine's
+      own recording): the program's `$0000` end-link, then **SEVEN `$00`** — identical
+      on the VG-8020, the CF-3300 and zerobas. Neither `cas_encode` builder is that
+      (16 / 0); "real CSAVE tapes have no such pad" had been sourced from OUR
+      `save.asm`, never a reference.
+      📏 **ON THE FAITHFUL TAPE** ([`cload_ta_probe3.out`](scratchpad/cload_ta_probe3.out),
+      [`cload_ta_probe4.out`](scratchpad/cload_ta_probe4.out)): the VG-8020 reads
+      `Skip :ZQ / Found:ZR / Ok` and LISTs ZR; `CLOAD`,`CLOAD` takes ZQ then ZR.
+      zerobas: `Skip :ZQ / load error`, and the second CLOAD `load error` keeping ZQ.
+      🎯 **CAUSE: TAPION LOCKED INSIDE THE SEVEN BYTES.** Both the skip (`csd_tok`) and
+      a load stop at the end-link, so the next TAPION starts on the tail; a `$00`
+      byte is ~26 halves with no flat, and 32+16 unbroken halves were enough to lock.
+      **FIX (tape/tape.asm):** `CAS_SKIP` 32 → 256, zero bytes: 256+16 halves exceed
+      the tail (~182, +64 of TAPOOF's flush on a tape we wrote), so a lock attempt
+      meets the silence after it, sees a flat and relocks on the real leader. A
+      per-half steadiness test was tried FIRST and refused real leaders — on
+      openMSX's rendering a leader half is 2–4 counts and any compare shifts the
+      next edge ([`tapion_trace.out`](scratchpad/tapion_trace.out): 4,2,4,2) — and
+      was reverted; the prediction ("all four arms OK") MISSED.
+      ✅ **GATED:** castail's `twot` tape is now built as CSAVE writes it
+      (`cas_encode.build_cas_basic_csave`), and a new row `cas2-cload2` (`CLOAD`,
+      `CLOAD`, `LIST` → ZQ9, a CONTROL). Knife: `CAS_SKIP` back to 32 (ROM hash
+      `4a244426` → `1ae921de`, restored after) turns `cas2-cload`, its listing,
+      `cas2-cload2` and its listing RED on zerobas
+      ([`casrelock_knife.out`](scratchpad/casrelock_knife.out)); fixed, all agree on the
+      three sides ([`casrelock_castail.out`](scratchpad/casrelock_castail.out)). kwsweep's
+      tape fixture moved to the same builder. And a UNIT test with no emulator
+      (`tests/test_tape.py`: seven zero bytes, silence, a leader — LOWLIM must be
+      the LEADER's 28): with `CAS_SKIP` 32 it reads 47, locked in the data
+      ([`casrelock_unit_knife.out`](scratchpad/casrelock_unit_knife.out)). The
+      synthetic `leader()` grew 80 → 400 halves to clear the new lock.
+      🔴 **THE LESSON, AGAIN: A WITHDRAWAL IS A CLAIM TOO.** D-CLOADSKIP was withdrawn
+      on "the ROM was right, the fixture was not" — true of the 16-byte pad, and
+      then the replacement fixture was taken as faithful on the word of our OWN
+      writer. The reference's side of the tape had never been read.
+      ⚠️ **NOT MEASURED:** a BSAVE"CAS:" / binary file's tail, and a file after an
+      ASCII (`$EA`) one; the ASCII leader-budget margin moved by 224 halves of a
+      ≥8000-half leader (the cas-ascii gates are the witness).
+
+- [x] ✅ **`CLOAD` RUN FROM A PROGRAM KEPT EXECUTING THE PROGRAM IT HAD JUST REPLACED —
+      `Syntax error in 3346` WHERE THE VG-8020 AND THE CF-3300 STOP AT `Ok`
+      (D-CLOADPROG, found and fixed 2026-09-28).**
+      🎚️ TIER 1 — happy path: a program that CLOADs another is ordinary MSX BASIC,
+      and running stale text can do anything (kwtime's case ran the old line 20's
+      POKE after the load).
+      🔬 **HOW IT SURFACED:** with D-CASRELOCK fixed, kwtime still had no reference
+      reading for CLOAD — because the two machines took DIFFERENT PATHS: zerobas
+      reached the case's END mark (line 20, AFTER the CLOAD), the VG-8020 only
+      returned to direct mode. kwtime's REF-ONLY-MISSING was right.
+      📏 [`cload_ta_probe7.out`](scratchpad/cload_ta_probe7.out): `7 POKE&HE000,201 /
+      10 CLOAD"ZR" / 20 POKE&HE000,202`, RUN — VG-8020 `Ok`, zerobas `Skip :ZQ /
+      Found:ZR / Syntax error in 3346`; both LIST ZR.
+      🎯 **CAUSE: D-MERGERET'S BUG IN THE SIBLING VERB.** `do_cload` ended in
+      `jp do_tape_prog`, whose `ret` hands control back to the exec loop at the
+      stale cursor; LOAD had been fixed to `end_line_end` on 2026-09-12 and CLOAD
+      was not swept — the symbol was fixed, not the MECHANISM.
+      **FIX (basic/cload.asm):** `call do_tape_prog / ret c / jp end_line_end`.
+      `CLOAD?` takes it too, MEASURED: after a successful verify the VG-8020 does
+      not run the rest of the typed line either
+      ([`cload_ta_probe8.out`](scratchpad/cload_ta_probe8.out)); a mismatch returns CF
+      and never reaches it. +3 B, funded by three `jp`→`jr` (`jr_mapper.py`:
+      interp.asm, expr.asm, sv-diskwr.inc).
+      ✅ **GATED:** castail row `cas2-cloadprog` (RUN's tail, search rows filtered;
+      listing CONTROL ZQ9) agrees on all three sides
+      ([`cloadprog_castail.out`](scratchpad/cloadprog_castail.out)); knife = HEAD's
+      `do_cload` (ROM `18174499` → `dd204242`, restored) reads `Syntax error in
+      3346` against `<nothing>` ([`cloadprog_knife.out`](scratchpad/cloadprog_knife.out)).
+      🔴 **LESSON:** I first read the one-sided kwtime row as apparatus and widened
+      kwtime's second pass for it; the raw readings then showed zerobas had
+      reached its END mark, i.e. a real PATH difference. The widening was reverted
+      unused. **A one-sided timing is a behaviour question before it is a harness
+      one.**
+      ⚠️ **NOT SWEPT:** the other verbs that REPLACE the program from a statement
+      context — `RUN"CAS:"` and `LOAD"CAS:"` go through `dl_loaded` / `run_prog_top`
+      (gated by castail); MERGE keeps the program. A sweep for `jp do_tape_prog` /
+      `jp disk_prog_load` tails found no other.
+
+- [ ] 🔴 **INSIDE A RUNNING PROGRAM THE VG-8020 PRINTS NO `Skip :`/`Found:` SEARCH
+      ROWS; ZEROBAS PRINTS THEM (D-CASSAYPROG, found 2026-09-28).**
+      🎚️ TIER 1 — happy path: a program that CLOADs gets two extra screen rows here.
+      🤖 **AUTONOMOUS** — measure first, then a sub-ROM tenant edit (`cm_say`).
+      📏 [`cload_ta_probe6.out`](scratchpad/cload_ta_probe6.out) /
+      [`cload_ta_probe7.out`](scratchpad/cload_ta_probe7.out): `10 CLOAD"ZR"`, RUN —
+      VG-8020 `RUN / Ok`, zerobas `RUN / Skip :ZQ / Found:ZR / ZB`; typed at the
+      prompt both print them (castail `cas2-*`).
+      ⚠️ **TWO RULES COINCIDE ON THIS ONE ROW:** "silent while a program runs"
+      (CURLIN ≠ $FFFF) and "silent for CLOAD's in-program form". The rows that
+      separate them: `10 LOAD"CAS:RT"`, `10 RUN"CAS:RT"`, `10 OPEN"CAS:RT" FOR INPUT
+      AS #1` and `10 MERGE"CAS:RT"` in a program, on BOTH references. castail's
+      filtered rows cannot see it — the subject must be read UNFILTERED.
 
 - [ ] 🔴 **A `DSKF` WITH A BAD ARGUMENT TAKES ~1 s HERE AND ~0.09 s ON THE CF-3300 —
       10.4–10.8×, OVER THE T2 BAR (D-DSKFSLOW, found 2026-09-28 by the type-ahead T2

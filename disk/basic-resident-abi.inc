@@ -54,10 +54,10 @@ LPT_MODE equ 00005H   ; FCH_MODES value: channel open to the LPT: printer device
 fname_expr equ 06E38H
 pdfcb_resume equ 06E31H
 dirverb_op equ 06C1BH
-main_fat_mount equ 0649EH   ; main's fat_mount
-main_fat_find equ 064A2H   ; main's fat_find
-parse_disk_fcb equ 06643H
-fat_count_free equ 064D1H
+main_fat_mount equ 0649CH   ; main's fat_mount
+main_fat_find equ 064A0H   ; main's fat_find
+parse_disk_fcb equ 06641H
+fat_count_free equ 064CFH
 field_prologue equ 07259H
 field_item equ 0728FH
 lrset_tgt equ 0734AH

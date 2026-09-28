@@ -164,7 +164,8 @@ import omsx_repl                                                 # noqa: E402
 import probe_report                                              # noqa: E402
 import probe_tmp                                                 # noqa: E402
 from basic_probe_cas_ascii import build_ascii_cas                # noqa: E402
-from cas_encode import CAS_SYNC, BASIC_ID, build_cas_basic       # noqa: E402
+from cas_encode import (CAS_SYNC, BASIC_ID, build_cas_basic,      # noqa: E402
+                        build_cas_basic_csave)
 from bas_tokenise import make_multiline_program                  # noqa: E402
 import cas_decode                                                # noqa: E402
 
@@ -351,6 +352,22 @@ CASES_T2 = [
 CASES_T2T = [
     ("cas2-cload", [f'CLOAD"{CAS_NAME}"', W_LOAD2, "LIST"],            0,
      ((2, "listing", True),)),
+    # D-CASRELOCK: a SECOND `CLOAD` after a first takes the NEXT file. The first
+    # read stops at the end-link, so the second TAPION starts on the seven $00
+    # CSAVE wrote after it -- the same relock the skip above needs, reached by
+    # a different verb sequence (no name, no skip). zerobas read `load error`
+    # here and kept the FIRST program, which LIST exposes as ZQ8.
+    ("cas2-cload2", ["CLOAD", W_LOAD, "CLOAD", W_LOAD, "LIST"],         0,
+     ((4, "listing", True),)),
+    # D-CLOADPROG: CLOAD run FROM A PROGRAM. The load replaces the program, and
+    # the VG-8020 then stops at `Ok`; zerobas carried on at the stale cursor
+    # and read `Syntax error in 3346` out of whatever sat under it
+    # (scratchpad/cload_ta_probe7.out). The subject is RUN's tail -- the search
+    # rows filtered as everywhere else, so it reads `<nothing>` on a machine
+    # that stopped -- and the listing is the CONTROL that the load happened.
+    ("cas2-cloadprog", ["7 POKE&HE000,201", f'10 CLOAD"{CAS_NAME}"',
+                        "20 POKE&HE000,202", "RUN", W_LOAD2, "LIST"],   3,
+     ((5, "listing", True),)),
 ]
 
 # --- D-CASCUT (2026-09-27): a TOKENISED tape that ENDS INSIDE THE PROGRAM -----
@@ -482,6 +499,12 @@ CONTROLS = {
     "cas2-load:listing":      ("ZQ9",),
     "cas2-merge:listing":     ("ZQ9", "ZQ1"),
     "cas2-cload:listing":     ("ZQ9",),
+    # D-CASRELOCK: the second of two CLOADs took the SECOND file. A relock that
+    # fails keeps the first program (ZQ8); a dead machine reads nothing.
+    "cas2-cload2:listing":    ("ZQ9",),
+    # D-CLOADPROG: the program CLOAD was run from is GONE -- the tape's RT is
+    # what LIST shows. A machine that never loaded lists line 7.
+    "cas2-cloadprog:listing": ("ZQ9",),
     # ✅ D-CASOPEN: the fourth verb's control, and the row that used to be half of
     # a pinned divergence (see PINNED). ZQ9 is the SECOND file -- the whole claim
     # of `cas2-open` is that the search stepped over the first.
@@ -563,8 +586,10 @@ _TAPE: dict[str, str] = {}
 
 def _tok_file_nopad(name: str, program: bytes) -> bytes:
     """A tokenised .cas file whose data block ends EXACTLY at the program's
-    $0000 end-link, with NO trailing in-block padding -- what our own CSAVE
-    writes. `cas_encode.build_cas_basic` appends 16 $00 pad bytes for
+    $0000 end-link, with NO trailing in-block padding -- NOT what any CSAVE
+    writes (all three machines write SEVEN $00 after the end-link, D-CASRELOCK
+    2026-09-28); kept for the D-CASCUT tapes, which are cut on purpose.
+    `cas_encode.build_cas_basic` appends 16 $00 pad bytes for
     single-file framing, and on a MULTI-file tape those unread pad bytes leave a
     skipped file mid-block so the next TAPION cannot relock
     (basic/casmatch-body.inc `csd_tok`). The same fixture shape
@@ -604,9 +629,17 @@ def tape_path(kind: str = "one") -> str:
             # needs the pad to frame the final byte (cas_encode.build_cas_basic).
             # Built no-pad, BOTH references read the search rows correctly and
             # then never returned to the prompt -- `<NO ECHO>` on the LIST half.
-            blob = (_tok_file_nopad(SKIP_NAME, make_multiline_program(
+            # 🔴 D-CASRELOCK (2026-09-28): AND THE TWO FRAMINGS WERE BOTH WRONG.
+            # CSAVE writes the end-link then SEVEN $00 on every machine measured
+            # (scratchpad/csavetail_probe.out) -- the "skipped file has no pad"
+            # half was OUR save.asm's claim, never a reference's. On a tape of
+            # that shape zerobas's skip left the seven bytes unread and TAPION
+            # locked inside them (`load error`). Both files are now built
+            # exactly as CSAVE writes them, which is what makes `cas2-cload`
+            # and `cas2-cload2` rows about a REAL tape.
+            blob = (build_cas_basic_csave(SKIP_NAME, make_multiline_program(
                         [(10, 'PRINT"ZQ8"')], TXTBASE))
-                    + build_cas_basic(CAS_NAME, make_multiline_program(
+                    + build_cas_basic_csave(CAS_NAME, make_multiline_program(
                         [(10, 'PRINT"ZQ9"')], TXTBASE)))
         elif kind in ("cutl", "cutb"):
             # D-CASCUT: the program image, cut. Line 10's length is its own

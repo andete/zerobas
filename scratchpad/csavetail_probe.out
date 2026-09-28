@@ -1,0 +1,7 @@
+vg8020  header@0 total=45 from-ZQ9: 5a 51 39 00 00 00 00 00 00 00 00 00 00
+vg8020  after end-link: 7 byte(s), nonzero=0
+zb      header@0 total=45 from-ZQ9: 5a 51 39 00 00 00 00 00 00 00 00 00 00
+zb      after end-link: 7 byte(s), nonzero=0
+cf3300  header@0 total=45 from-ZQ9: 5a 51 39 00 00 00 00 00 00 00 00 00 00
+cf3300  after end-link: 7 byte(s), nonzero=0
+refcache: 0 hit, 3 miss, 3 stored

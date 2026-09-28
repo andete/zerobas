@@ -218,7 +218,7 @@ def _tape_fixture() -> str:
     # Two logical images back to back IS a two-file tape: each is
     # `sync+header+sync+data`, which is exactly how a multi-program .cas is laid
     # out. Nothing in the encoder needed changing.
-    # 🔴 CSAVE-FAITHFUL, NO TRAILING PAD -- AND THIS FIXTURE WAS NOT, WHICH IS
+    # 🔴 CSAVE-FAITHFUL -- SEVEN TRAILING $00, NOT 16 AND NOT 0 -- AND THIS FIXTURE WAS NOT, WHICH IS
     # WHAT THE `cload` ROW WAS ACTUALLY MEASURING (D-CLOADSKIP, 2026-09-23).
     # `cas_encode.build_cas_basic` appends 16 $00 bytes after the end-link for
     # SINGLE-file framing. On a MULTI-file tape those unread pad bytes leave a
@@ -229,11 +229,17 @@ def _tape_fixture() -> str:
     # `basic_probe_cas_match.py:tok_file_nopad` had already built a helper to
     # avoid. This probe kept using the padded builder, so `CLOAD"ZR"` was being
     # asked to skip a file that a real CSAVE never writes.
-    # ⚠️ Real CSAVE tapes have no such pad (save.asm: payload then TAPOOF), so
-    # the unpadded form is the faithful one and the padded form was testing the
-    # fixture rather than the verb.
-    fh.write(cas_encode.build_cas_basic_nopad(TAPE_NAME, TAPE_PROGRAM)
-             + cas_encode.build_cas_basic_nopad(TAPE_NAME2, TAPE_PROGRAM2))
+    # 🔴 D-CASRELOCK (2026-09-28): AND THE UNPADDED FORM WAS NOT FAITHFUL EITHER.
+    # "Real CSAVE tapes have no such pad" came from OUR save.asm; decoded off the
+    # recordings, CSAVE writes the end-link then SEVEN $00 on the VG-8020, the
+    # CF-3300 and zerobas (scratchpad/csavetail_probe.out). On the unpadded tape
+    # the VG-8020 never returned from `CLOAD"ZR"` -- `Found:ZR` and no `Ok`, even
+    # at 200 s -- and these rows AGREED ANYWAY, because both sides are read
+    # mid-search (`Skip :ZQ`). kwtime could not time the reference at all. On
+    # the faithful tape zerobas read `load error`: the D-CLOADSKIP defect was
+    # real, and is fixed in tape/tape.asm (CAS_SKIP).
+    fh.write(cas_encode.build_cas_basic_csave(TAPE_NAME, TAPE_PROGRAM)
+             + cas_encode.build_cas_basic_csave(TAPE_NAME2, TAPE_PROGRAM2))
     fh.close()
     if not _TAPE_TEMPS:
         atexit.register(_drop_tape_temps)

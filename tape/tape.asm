@@ -154,7 +154,20 @@ CAS_FLUSHLEN:   equ     32              ; trailing carrier cycles flushed at TAP
 ; TAPION lock: skip CAS_SKIP edges to clear the motor-restart spin-up, then
 ; average LOWLIM over CAS_RUNLEN leader halves. CAS_RUNLEN stays 16 (the >>4
 ; LOWLIM scaling depends on it).
-CAS_SKIP:       equ     32
+; 🔴 D-CASRELOCK (2026-09-28): 256, WAS 32 -- AND THE LENGTH IS THE WHOLE FIX.
+; CSAVE writes the program's $0000 end-link and then SEVEN $00 bytes -- measured
+; identical on the VG-8020, the CF-3300 and zerobas (scratchpad/csavetail_probe.out).
+; A reader that stops at the end-link leaves them on the tape, and a zero byte
+; is ~26 halves with no flat, so 32+16 edges LOCKED INSIDE THEM: `CLOAD` then
+; `CLOAD`, and `CLOAD"B"` over a first file, read `load error` here where both
+; references load the second file. The tail is ~182 halves (+64 of TAPOOF's
+; flush carrier on a tape WE wrote) and silence follows it, so a lock that needs
+; 256+16 unbroken halves cannot complete inside it: it meets the gap, sees a
+; flat and relocks on the real leader (>= 8000 halves). A per-half STEADINESS
+; test was tried first and refused REAL leaders: on openMSX's rendering a leader
+; half is 2-4 counts, and any compare between halves shifts the next edge
+; (scratchpad/tapion_trace.out: 4,2,4,2). Only the lean edge count survives.
+CAS_SKIP:       equ     256
 CAS_RUNLEN:     equ     16
 ; Leading-silence tolerance. openMSX renders a .cas as audio with ~2 s of silence
 ; before the leader (CasImage.cc LONG_SILENCE), and a real/recorded tape can have
@@ -511,7 +524,7 @@ tapion_wait:
                 scf                     ; budget exhausted -> no tape, fail
                 ret
 tapion_skip0:
-                ld      b,CAS_SKIP      ; clear the spin-up transient
+                ld      b,CAS_SKIP & $FF ; clear the spin-up transient (0 = 256)
 tapion_skip:
                 push    bc
                 call    cas_half

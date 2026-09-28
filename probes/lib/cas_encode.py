@@ -128,13 +128,40 @@ def build_cas_basic_nopad(name: str, program: bytes) -> bytes:
     `basic_probe_kwsweep.py` built a two-file tape with the padded builder, so
     `CLOAD"ZR"` read `Skip :ZQ|load error` where the reference read
     `Skip :ZQ|Found:ZR`. That was filed as a TIER 1 ROM defect and refuted the
-    same night: the ROM was right and the fixture was not. **Real CSAVE tapes
-    have no such pad** (save.asm: payload then TAPOOF), so THIS is the faithful
-    shape and the padded one is the special case.
+    same night -- 🔴 AND THE REFUTATION WAS ITSELF WRONG (D-CASRELOCK,
+    2026-09-28). "Real CSAVE tapes have no such pad" was sourced from OUR OWN
+    save.asm, never from a reference. Decoded off the recording, CSAVE writes
+    the end-link and then SEVEN $00 on the VG-8020, the CF-3300 and zerobas alike
+    (scratchpad/csavetail_probe.out) -- so NEITHER builder is faithful: this one
+    is 7 short, `build_cas_basic` 9 long. On the faithful tape zerobas's
+    `CLOAD"ZR"` DID fail where both references load (TAPION locked inside the
+    seven bytes; fixed in tape/tape.asm). Both references HANG loading a file
+    built by THIS function (they never return to `Ok`), so it is only a shape
+    for a file that is SKIPPED, and even then not a real one.
+    👉 USE `build_cas_basic_csave` FOR A TAPE A MACHINE COULD HAVE WRITTEN.
     ⚠️ The caller still owns the terminating $0000 link, exactly as for
     `build_cas_basic`."""
     return (CAS_SYNC + bytes([BASIC_ID] * 10)
             + name[:6].ljust(6).encode("ascii") + CAS_SYNC + program)
+
+
+# What CSAVE writes after the program's $0000 end-link: SEVEN $00, identical on
+# the VG-8020, the CF-3300 and zerobas (scratchpad/csavetail_probe.out, decoded
+# off each machine's own recording -- outputs only).
+CSAVE_TAIL = 7
+
+
+def build_cas_basic_csave(name: str, program: bytes) -> bytes:
+    """A tokenised BASIC .cas file laid out EXACTLY as CSAVE writes it: header,
+    then the program image, its $0000 end-link, and CSAVE_TAIL $00 bytes.
+
+    The one builder of the three that a real machine could have produced, so the
+    one to use for ANY tape a row reads as a real tape -- single-file or multi.
+    D-CASRELOCK (2026-09-28): on a two-file tape of this shape both references
+    read `Skip :ZQ` / `Found:ZR` / `Ok` and zerobas read `load error`; neither of
+    the other builders could have shown it.
+    ⚠️ The caller still owns the terminating $0000 link."""
+    return build_cas_basic_nopad(name, program) + bytes(CSAVE_TAIL)
 
 
 def selftest() -> int:

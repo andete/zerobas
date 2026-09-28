@@ -89,5 +89,5 @@ disk_putbyte:
 ; jumps to sv_load_error. Returns to the caller's caller (the REPL) on success.
 disk_write_end:
                 call    fat_io_close
-                jp      c,sv_load_error
+                jr      c,sv_load_error
                 ret                         ; back to the prompt

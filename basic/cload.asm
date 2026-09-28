@@ -78,11 +78,27 @@ dcl_name:
                 ; for a reader to assume the whole verb was measured.
                 call    fname_expr          ; HL -> the staged '"'-terminated copy
                 call    cas_capture_name    ; -> CAS_WANT + CAS_WANT_ON=1
-                jp      do_tape_prog        ; (CLOAD has no ,R; trailing chars ignored)
+                jr      dcl_load            ; (CLOAD has no ,R)
 dcl_noname:
                 xor     a
                 ld      (CAS_WANT_ON),a     ; no name -> load the next tape file
-                jp      do_tape_prog
+dcl_load:
+                call    do_tape_prog
+                ret     c                   ; failed: already reported (as before)
+                ; 🔴 D-CLOADPROG (2026-09-28): D-MERGERET'S BUG, IN THE SIBLING VERB.
+                ; This was `jp do_tape_prog`, whose `ret` handed control back to
+                ; the exec loop -- which carried on with the next statement of a
+                ; program the load had just REPLACED. `7 POKE&HE000,201 /
+                ; 10 CLOAD"ZR" / 20 POKE&HE000,202`, RUN: `Syntax error in 3346`
+                ; here, a line number read out of whatever sat under the stale
+                ; cursor, where the VG-8020 stops at a clean `Ok`
+                ; (scratchpad/cload_ta_probe7.out). LOAD already ends the line
+                ; this way (dl_loaded); END/NEW/LIST share the tail.
+                ; ✅ CLOAD? TOO, MEASURED: after a SUCCESSFUL verify the VG-8020
+                ; does not run the rest of the line either -- `CLOAD?"ZQ":PRINT`
+                ; prints nothing past `Ok` (scratchpad/cload_ta_probe8.out), and a
+                ; mismatch returns CF (verify_error) and never gets here.
+                jp      end_line_end
 
 ; --- do_load: LOAD <name> | LOAD "CAS:filename" | LOAD "A:filename"[,R] ------
 ; Entry: HL -> the bytes after the LOAD token. ⚠️ D-FNEXPR2: the argument is a
@@ -452,7 +468,7 @@ cas_open_match:
 ; Consumed by `ret c` at dl_cas_close (LOAD"CAS:x",R) and dr_is_cas (RUN"CAS:x"),
 ; which must then run NOTHING: both references print their message and stop,
 ; where zerobas ran whatever program was resident (castail characterization §4).
-; do_cload reaches here by `jp` and has no ,R, so it consumes no carry.
+; do_cload `call`s here (D-CLOADPROG) and `ret c`s on a failure -- no ,R.
 ;
 ; 🔴 load_error IS NOT TOUCHED, for the reason spec-basic-runtail.md §3.2 gives:
 ; ~50 jp/call sites across seven files, several of which resume into their caller
