@@ -648,7 +648,7 @@ def _tcl(out_path: str, cases: list[tuple[str, list[str]]],
             # remember when the last REAL injection was scheduled -- see
             # `last_inj` below; a trailing `@WAIT` must not move this.
             last_inj[0] = t
-            if "\r" in text:
+            if "\r" in text or "\x03" in text:
                 # D-KWT2TA (2026-09-28): a line that CARRIES a CR -- a TYPE-AHEAD
                 # burst, `RUN` + CR + a second line that must wait in KEYBUF until
                 # the prompt asks again. A raw CR does not survive the trip to
@@ -657,9 +657,12 @@ def _tcl(out_path: str, cases: list[tuple[str, list[str]]],
                 # byte; the text stays BRACED, so no BASIC character is ever
                 # interpreted. No existing caller passes a CR: their Tcl is
                 # byte-identical to before.
-                txt = text.replace("\r", "<CR>")
+                # D-KWT2AUTO: Ctrl-C ($03) the same way -- AUTO's line entry is
+                # left only by a break, and a type-ahead burst has to carry it
+                txt = text.replace("\r", "<CR>").replace("\x03", "<C3>")
                 body.append(f'after time {t:.1f} {{ {proc} '
-                            f'[string map [list "<CR>" "\\r"] {{{txt}}}] }}')
+                            f'[string map [list "<CR>" "\\r" "<C3>" "\\x03"] '
+                            f'{{{txt}}}] }}')
             else:
                 body.append(f'after time {t:.1f} {{ {proc} {{{text}}} }}')
             if echo:
@@ -1996,10 +1999,29 @@ def _run_cases_impl(machine: str, cases: list[tuple[str, list[str]]], *,
         # emulated time and changes nothing observable; a probe that does NOT
         # prepend (i.e. a converted one) now behaves the same in both modes,
         # which is the whole point.
-        return [run_batch(machine, [c], reset=reset, timeout=to_single,
-                          holds=[holds[i]] if holds else None,
-                          verify_delivery=verify_delivery, **kw)[0]
-                for i, c in enumerate(cases)]
+        # 🔴 D-SETTLEKEY (2026-09-28): EACH BOOT GETS ITS OWN `settle_out`, MERGED
+        # BACK UNDER THE CASE'S TRUE INDEX. Every per-case entry in it (`marks`,
+        # `watch`, `samples`, `span`) is keyed by the case's index WITHIN ITS OWN
+        # BOOT -- always 0 here -- so a shared dict piled every case's readings
+        # under key 0, concatenated. kwtime's boot-per-case groups then timed
+        # nothing past a one-row group: case 0 met case 1's START before any END,
+        # and cases 1..n found no marks at all (measured on AUTO's three rows:
+        # all six marks under key 0). A single-case call is unchanged (0 stays 0).
+        so = kw.pop("settle_out", None)
+        out = []
+        for i, c in enumerate(cases):
+            one: dict | None = {} if so is not None else None
+            out.append(run_batch(machine, [c], reset=reset, timeout=to_single,
+                                 holds=[holds[i]] if holds else None,
+                                 verify_delivery=verify_delivery,
+                                 **(dict(kw, settle_out=one) if one is not None else kw))[0])
+            for name, per_case in (one or {}).items():
+                if isinstance(per_case, dict):
+                    for k0, v in per_case.items():
+                        so.setdefault(name, {})[i + k0] = v
+                else:
+                    so[name] = per_case
+        return out
 
     # scale the safety-net timeout with the emulated timeline length
     to = timeout if timeout is not None else max(240.0, 1.5 * len(cases) + 120.0)

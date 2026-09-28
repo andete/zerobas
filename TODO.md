@@ -6019,7 +6019,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:26844 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:26863 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -25880,7 +25880,26 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       ([`kwt2rig_only.out`](scratchpad/kwt2rig_only.out)): `runkw_b`, `llist`, `lfiles` OK;
       full run ([`kwt2rig_kwtime.out`](scratchpad/kwt2rig_kwtime.out)) OK 817 → 820,
       **level 1 5 → 2**.
-      ➡️ **TWO LEFT:** CLOAD — a `tape` group now exists, but both rows still read
+      ✅ **D-KWT2AUTO (same day): AUTO is timed, level 1 2 → 1 — and the fix was
+      an APPARATUS bug older than the item (D-SETTLEKEY).** The burst gained a Ctrl-C
+      (`ta_tail(esc=True)`, sent through the same Tcl escape as the CR; selftest
+      K48, K49 NEGATIVE), but the three AUTO rows still read UNTIMEABLE. The cause
+      was `omsx_repl.run_cases` itself: a boot-per-case call (`batch=False`) handed
+      every boot the SAME `settle_out`, and each boot keys its case 0 — so all
+      three rows' marks landed under key 0, concatenated, and no row could be
+      timed. It re-keys each boot's readings to the case's own index now; selftest
+      K50 (a fake `run_batch`, no emulator) fails against the old code, K51 NEGATIVE
+      pins the one-case call. `--only` ([`kwt2auto_only.out`](scratchpad/kwt2auto_only.out)):
+      `auto` 2.59×, `auto_bare` 2.62×, `auto_step` 2.04×; full run
+      ([`kwt2auto_full.out`](scratchpad/kwt2auto_full.out)) OK 820 → 823, **level 1
+      2 → 1, level 2 111 → 112**.
+      ➡️ **ONE LEFT: CLOAD, AND IT IS NOW ONE-SIDED.** The tape group is also boot-per-
+      case with two rows, so D-SETTLEKEY unblinded it — on zerobas only: `cload`
+      11523 ms, `cload_b` 5767 ms, the VG-8020 NO reading (REF-ONLY-MISSING, was
+      UNTIMEABLE on both). Next: does the reference's load drop the type-ahead
+      (a KEYBUF cleared by the tape routines would also be a zerobas divergence), or
+      outlast the capture window? Measure with a burst that PRINTs, not a mark.
+      *(superseded, kept:)* **TWO LEFT:** CLOAD — a `tape` group now exists, but both rows still read
       UNTIMEABLE even with the type-ahead end (unmeasured why: a load outlasting the
       run's capture window, or the tape routines clearing KEYBUF); and AUTO — auto-
       numbering takes typed lines as PROGRAM TEXT, so its burst needs a Ctrl-C to

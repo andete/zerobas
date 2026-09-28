@@ -405,7 +405,8 @@ def run_side(side: str, only: list[str]) -> dict:
     🟢 BATCHING MAKES THE SIGNAL TALLY MORE CORRECT, NOT LESS, WHICH IS THE
     OPPOSITE OF WHAT THE OLD COMMENT HERE IMPLIED. It said "a fresh `so` per
     call ... every boot indexes from 0, so one dict reused across the loop would
-    hold a single entry" -- true, and it is a statement about `batch=False`.
+    hold a single entry" -- true THEN, and a statement about `batch=False`; since
+    D-SETTLEKEY (2026-09-28) `run_cases` re-keys a boot-per-case call too.
     `settle_out` keys by the case index the emulator emits, so under `batch=True`
     a matrix of N cases writes N DISTINCT keys into ONE dict. The per-call dict
     was a boot-per-case workaround, not a barrier to batching.

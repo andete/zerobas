@@ -1,0 +1,10 @@
+msxtest: BASIC image carries islands -- loaded at $0010, not $2812
+row                 ref ms     zb ms  zb/ref  alone  status
+kwtime: [boot] ref CURLIN bias -- fall-off -33.421 ms (spread -58.900..-32.971) · END path 2.877 ms
+kwtime: [boot] zb CURLIN bias -- fall-off -77.250 ms (spread -77.506..-76.182) · END path 0.562 ms
+auto                33.968    88.136    2.59   2.58  OK  [boot: Philips_VG_8020]
+auto_bare           33.253    87.168    2.62   2.60  OK  [boot: Philips_VG_8020]
+auto_step           59.748   121.738    2.04   2.01  OK  [boot: Philips_VG_8020]
+
+kwtime: OK=3  (3 rows, bar 10x; keyword-alone reading on 3; 0 timed via CURLIN, 0 via a type-ahead end)
+refcache: 1 hit, 5 miss, 5 stored, 1 replayed provenance

@@ -97,7 +97,10 @@ TIMEABLE_RIGS = {("disk",): "disk", ("printer",): "printer", ("tapew",): "tapew"
                  # timeable now -- the load replaces the program, but the mark
                  # waiting in KEYBUF runs when the prompt comes back.
                  ("log",): "printer", ("disk", "printer"): "diskprinter",
-                 ("tape",): "tape"}
+                 ("tape",): "tape",
+                 # ⌨️ D-KWT2AUTO: AUTO's rows boot per case (it leaves the machine
+                 # in line entry); their burst leaves AUTO with a Ctrl-C (ta_tail)
+                 ("boot",): "boot"}
 GROUP_RIGS = {"diskprinter": ("disk", "printer")}
 # ⌨️ D-KWT2RIG: a row whose timed work IS a restart. `runkw_b` ends its first pass
 # in `RUN`, which re-runs the case's own START-mark line; delta() would take that
@@ -286,14 +289,17 @@ TA_TAIL = f"RUN\rPOKE&H{MARK_ADDR:04X},{END}"
 RESP: dict = {}
 
 
-def ta_tail(resp=None):
-    """The type-ahead burst: RUN, then any response lines, then the END mark."""
-    if not resp:
+def ta_tail(resp=None, esc=False):
+    """The type-ahead burst: RUN, then any response lines, then the END mark.
+    `esc` (D-KWT2AUTO) puts a Ctrl-C before the mark: AUTO's line entry takes
+    every typed line as program TEXT, and only a break leaves it."""
+    if not resp and not esc:
         return TA_TAIL
-    return "\r".join(["RUN", *resp, f"POKE&H{MARK_ADDR:04X},{END}"])
+    return "\r".join(["RUN", *(resp or [])]) + "\r" + ("\x03" if esc else "") + \
+        f"POKE&H{MARK_ADDR:04X},{END}"
 
 
-def case_lines(line, pad=None, bodies=None, typeahead=False, resp=None):
+def case_lines(line, pad=None, bodies=None, typeahead=False, resp=None, esc=False):
     """The row as explicitly numbered lines, bracketed by the two marks.
     `bodies` (already packed) overrides `line` -- the twin's shape.
     `typeahead` ends it with TA_TAIL instead of a plain `RUN` (D-KWT2TA)."""
@@ -324,7 +330,7 @@ def case_lines(line, pad=None, bodies=None, typeahead=False, resp=None):
     # the only difference a NEIGHBOUR's twin -- screen mode and width leak from
     # case to case, and `NEW` resets neither. `SCREEN0:WIDTH37` puts both machines
     # in the same mode and width before the start mark, whatever came before.
-    tail = ta_tail(resp) if (typeahead or resp) else "RUN"
+    tail = ta_tail(resp, esc) if (typeahead or resp or esc) else "RUN"
     return [omsx_repl.BREAK_PREFIX, "NEW", RESET] + lines + [tail]
 
 
@@ -471,7 +477,8 @@ def measure(machine, rows, pad=None, twin=False, caps_out=None, extra=None,
     idx = [i for i, b in enumerate(bods) if b is not None]
     if not idx:
         return [(None, None)] * len(rows)
-    specs = [("direct", case_lines(None, pad, bods[i], typeahead, RESP.get(rows[i][0])))
+    specs = [("direct", case_lines(None, pad, bods[i], typeahead, RESP.get(rows[i][0]),
+                                   esc=rows[i][3] == "AUTO"))
              for i in idx]
     so: dict = {}
     rk = dict(batch=True, capture="screen", boot=8.0, sentinel=(MARK_ADDR, END),
@@ -576,6 +583,31 @@ def selftest():
         delta([(1.0, START), (1.5, START), (1.9, END)]) is None)
     arm("K47 NEGATIVE: a declared restart that never ended cannot borrow the next case's END",
         delta([(1.0, START), (1.5, START), (2.0, START), (2.4, END)], 1) is None)
+    arm("K48 an AUTO burst puts a Ctrl-C before the mark, after any response",
+        ta_tail(["REM Z"], esc=True) == f"RUN\rREM Z\r\x03POKE&H{MARK_ADDR:04X},{END}")
+    arm("K49 NEGATIVE: no Ctrl-C unless asked",
+        "\x03" not in ta_tail(["REM Z"]) and "\x03" not in TA_TAIL)
+    # D-SETTLEKEY: a boot-per-case group's readings must land under each case's
+    # OWN index -- a fake run_batch stands in for the boot, so this runs with no
+    # emulator. The failure it guards was silent: every mark under key 0.
+    def fake_rb(machine, cases, **kw):
+        so = kw.get("settle_out")
+        if so is not None:
+            so.setdefault("marks", {})[0] = [cases[0][0]]
+        return [cases[0][0]]
+    real_rb, omsx_repl.run_batch = omsx_repl.run_batch, fake_rb
+    try:
+        so50: dict = {}
+        omsx_repl._run_cases_impl("M", [("a", []), ("b", []), ("c", [])],
+                                  batch=False, settle_out=so50)
+        so51: dict = {}
+        omsx_repl._run_cases_impl("M", [("a", [])], batch=False, settle_out=so51)
+    finally:
+        omsx_repl.run_batch = real_rb
+    arm("K50 boot-per-case marks land under each case's own index",
+        so50.get("marks") == {0: ["a"], 1: ["b"], 2: ["c"]})
+    arm("K51 NEGATIVE: a one-case call keeps key 0 and nothing else",
+        so51.get("marks") == {0: ["a"]})
     arm("K42 the type-ahead burst fits one KEYBUF injection",
         len(ta_lines[-1]) <= omsx_repl.MAX_DIRECT)
     ls = case_lines('A=0:GOSUB 20:PRINT"[G";A;"]":END:A=7:RETURN')
@@ -689,7 +721,7 @@ def main():
     print(f"{'row':16} {'ref ms':>9} {'zb ms':>9} {'zb/ref':>7} {'alone':>6}  status")
     for group, refm in (("plain", REF), ("disk", DISK_REF),
                         ("printer", REF), ("tapew", REF),
-                        ("diskprinter", DISK_REF), ("tape", REF)):
+                        ("diskprinter", DISK_REF), ("tape", REF), ("boot", REF)):
         grows = [r for r in rows if GROUP[r[0]] == group]
         if not grows:
             continue

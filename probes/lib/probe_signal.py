@@ -73,10 +73,12 @@ _NUM_END = re.compile(r"^(\d+\s+)END$")
 def kwargs(out: dict) -> dict:
     """The capture-on-signal kwargs, wired to record HOW each capture happened.
 
-    🔴 ONE FRESH `out` PER `run_cases` CALL. Under `batch=False` each case is its
-    own boot and every boot indexes its cases from 0, so a dict shared across
-    cases holds ONE entry however many ran -- and the tally would under-count
-    without anything ever looking wrong."""
+    🔴 ONE FRESH `out` PER `run_cases` CALL. Every call indexes its cases from 0,
+    so a dict reused across CALLS overwrites the earlier call's entries -- and
+    the tally would under-count without anything ever looking wrong. (Within
+    ONE call, boot-per-case included, each case has its own key since
+    D-SETTLEKEY, 2026-09-28; before that a `batch=False` call piled every
+    case's readings under key 0.)"""
     return dict(sentinel=(MARK_ADDR, MARK_VAL), sentinel_capture=True,
                 settle_out=out)
 
