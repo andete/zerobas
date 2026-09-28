@@ -1,0 +1,8 @@
+msxtest: BASIC image carries islands -- loaded at $0010, not $2812
+case      VG-8020 ms  zerobas ms   ratio
+list3         187.8      337.4   1.80
+list30       1303.7     1329.3   1.02
+new            31.0       81.1   2.62
+stop           80.0       87.1   1.09
+end            29.7       79.2   2.67
+refcache: 0 hit, 2 miss, 2 stored

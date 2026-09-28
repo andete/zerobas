@@ -6019,7 +6019,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:26791 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:26815 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -25847,6 +25847,30 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       no reading here (a mask truncated to 0 never matches); `WAIT 1,1,256` (5, 20)
       there, accepted here. Every other WAIT case agrees (2, 6, 13, 24). Blocks
       WAIT's T6 (code 5 in both forms).
+
+- [ ] 🟢 **D-KWT2TA SHIPPED 2026-09-28: A TYPE-AHEAD END MARK TIMES THE RUN-ENDING
+      COMMANDS — LEVEL 1 22 → 7, LEVEL 2 86 → 106. SEVEN REMAIN, BY SHAPE.**
+      🎚️ TIER 1 — 🏗️ Joost 2026-09-28: lifting the level-0/1 keywords is THE
+      priority (*"go ahead with that plan"*), ahead of the TIER 3-6 defect queue.
+      🤖 **AUTONOMOUS** — the shapes below, each its own harness step.
+      📏 kwtime's SECOND PASS re-times every row neither side could end: the same case
+      program, but `RUN` + CR + the END mark injected into KEYBUF in ONE burst, so the
+      mark line runs only when the prompt reads input again — right after the
+      command — on BOTH machines through the same BIOS buffer. RAM marks only; no ROM
+      address observed. Prototype [`scratchpad/kwt2_typeahead_probe.py`](scratchpad/kwt2_typeahead_probe.py)
+      → [`kwt2_typeahead_run.out`](scratchpad/kwt2_typeahead_run.out): its NEGATIVE arm
+      reads LIST of 30 lines 1304/1329 ms against 3 lines 188/337 ms, so the reading is
+      the command's work (LIST does not eat the waiting line). The harness needed one
+      change: a CR inside a typed line did not survive the trip to openMSX (arrived
+      as `RUNPOKE…`); `omsx_repl` now sends it through Tcl's `"\r"` escape, braced text
+      untouched, and no existing caller's Tcl changes. Full run
+      ([`kwt2ta_kwtime.out`](scratchpad/kwt2ta_kwtime.out)): UNTIMEABLE 498 → 6, OK 266 →
+      810, 544 rows via the type-ahead end, every ratio under the 10× bar.
+      ➡️ **THE SEVEN LEFT, AND WHY:** AUTO, CLOAD, CONT, LLIST have only `PROGRAM:`
+      (editor) rows, which kwtime skips; LFILES's row carries TWO rigs (disk +
+      printer); INPUT's console forms are `RESPOND:` rows (a type-ahead RESPONSE is the
+      natural next shape); RUN's `bare` form restarts its own program forever inside a
+      case (`runkw_b`). Then VARPTR (level 0) — `VARPTR(#n)` — per the plan.
 
 - [ ] 🔴 **`RUN`'S T5 RATIO FLIPS BETWEEN RUNS — 1.1×, 1.5× AND 1.7× ON 2026-09-28 —
       SO `tiers-md-check` GOES RED AFTER ANY BATTERY THAT RE-RUNS `kwtime` (D-RUNT5NOISE).**

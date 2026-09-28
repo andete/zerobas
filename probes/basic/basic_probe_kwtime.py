@@ -254,9 +254,24 @@ def too_long(rows):
             if any(len(l) > MAX_TYPED for l in case_lines(r[1]))]
 
 
-def case_lines(line, pad=None, bodies=None):
+# ⌨️ D-KWT2TA (Joost 2026-09-28: lifting level-1 keywords is the priority). A row
+# that ENDS, STOPS, LISTS, RENUMs... the run never reaches its end-mark line, and
+# CURLIN is a different event per machine for those paths (DIRECT_RETURNERS). So
+# its SECOND pass types `RUN` + CR + the END mark in ONE KEYBUF burst: the mark
+# line waits in the type-ahead buffer and runs only when the prompt asks for input
+# again -- right after the command finished -- on BOTH machines, through the same
+# BIOS buffer. Symmetric by construction; RAM marks only; no ROM address observed.
+# Measured (scratchpad/kwt2_typeahead_run.out): LIST of 30 lines 1304/1329 ms vs of
+# 3 lines 188/337 ms, so the reading IS the command's work (LIST does not eat the
+# waiting line); the fixed prompt round-trip is ~30 ms VG-8020 / ~79 ms here,
+# included on both sides.
+TA_TAIL = f"RUN\rPOKE&H{MARK_ADDR:04X},{END}"
+
+
+def case_lines(line, pad=None, bodies=None, typeahead=False):
     """The row as explicitly numbered lines, bracketed by the two marks.
-    `bodies` (already packed) overrides `line` -- the twin's shape."""
+    `bodies` (already packed) overrides `line` -- the twin's shape.
+    `typeahead` ends it with TA_TAIL instead of a plain `RUN` (D-KWT2TA)."""
     body = omsx_repl.as_stored(line) if bodies is None else bodies
     # ⏱ SYNC THE START TO THE INTERRUPT (D-KWT5FORM, 2026-09-24). The start mark
     # used to land at an arbitrary phase of the 50 Hz interrupt, so a timed
@@ -284,7 +299,7 @@ def case_lines(line, pad=None, bodies=None):
     # the only difference a NEIGHBOUR's twin -- screen mode and width leak from
     # case to case, and `NEW` resets neither. `SCREEN0:WIDTH37` puts both machines
     # in the same mode and width before the start mark, whatever came before.
-    return [omsx_repl.BREAK_PREFIX, "NEW", RESET] + lines + ["RUN"]
+    return [omsx_repl.BREAK_PREFIX, "NEW", RESET] + lines + [TA_TAIL if typeahead else "RUN"]
 
 
 def delta(marks):
@@ -413,7 +428,8 @@ def calibrate(machine, extra=None):
     return (tf[0] - te[0]) if te and tf else None
 
 
-def measure(machine, rows, pad=None, twin=False, caps_out=None, extra=None):
+def measure(machine, rows, pad=None, twin=False, caps_out=None, extra=None,
+            typeahead=False):
     """Time `rows` in one batched boot -> [(mark_seconds, curlin_seconds)].
     `twin=True` times each row's TWIN; a row with no twin gets (None, None)
     without being typed."""
@@ -423,7 +439,7 @@ def measure(machine, rows, pad=None, twin=False, caps_out=None, extra=None):
     idx = [i for i, b in enumerate(bods) if b is not None]
     if not idx:
         return [(None, None)] * len(rows)
-    specs = [("direct", case_lines(None, pad, bods[i])) for i in idx]
+    specs = [("direct", case_lines(None, pad, bods[i], typeahead)) for i in idx]
     so: dict = {}
     rk = dict(batch=True, capture="screen", boot=8.0, sentinel=(MARK_ADDR, END),
               settle_out=so, watch_values=((CURLIN_HI, 0xFF),))
@@ -510,6 +526,13 @@ def selftest():
     arm("K7 exactly 10x is OK (\"within 10x\")", status(1.0, 10.0) == "OK")
     arm("K8 reference finishes, zerobas does not: HANG", status(1.0, None) == "HANG")
     arm("K9 neither finishes: UNTIMEABLE, not HANG", status(None, None) == "UNTIMEABLE")
+    ta_lines = case_lines("LIST", typeahead=True)
+    arm("K40 the type-ahead case ends RUN + CR + the END mark, in ONE line",
+        ta_lines[-1] == f"RUN\rPOKE&H{MARK_ADDR:04X},{END}")
+    arm("K41 NEGATIVE: without typeahead the case ends in a plain RUN",
+        case_lines("LIST")[-1] == "RUN")
+    arm("K42 the type-ahead burst fits one KEYBUF injection",
+        len(ta_lines[-1]) <= omsx_repl.MAX_DIRECT)
     ls = case_lines('A=0:GOSUB 20:PRINT"[G";A;"]":END:A=7:RETURN')
     arm("K10 the row keeps its own 10/20/30 numbering (GOSUB 20 still lands)",
         ls[6].startswith("10 ") and any(l.startswith("20 ") for l in ls))
@@ -615,6 +638,7 @@ def main():
     tally: dict = {}
     n_alone = 0
     n_curlin = 0
+    n_ta = [0]
     timed = 0
     biases = {}
     print(f"{'row':16} {'ref ms':>9} {'zb ms':>9} {'zb/ref':>7} {'alone':>6}  status")
@@ -676,10 +700,30 @@ def main():
                   f"{(f'{al:.2f}' if al else '~'):>6}  {st}"
                   + ("" if group == "plain" else f"  [{group}: {refm}]"))
         timed += sum(1 for p in ref if p[0] is not None)
+        # --- D-KWT2TA pass 2: the rows NEITHER side could end, re-timed by a
+        # type-ahead end mark (see TA_TAIL). Marks only -- never CURLIN.
+        ta = [r for r in grows if res.get(r[0], {}).get("status") == "UNTIMEABLE"]
+        if ta:
+            tr = measure(refm, ta, extra=group_kwargs(group, refm), typeahead=True)
+            tz = measure(a.zb_machine, ta, extra=group_kwargs(group, a.zb_machine),
+                         typeahead=True)
+            for (key, _l, _m, word), rp, zp in zip(ta, tr, tz):
+                r, z = rp[0], zp[0]
+                st = status(r, z)
+                tally["UNTIMEABLE"] -= 1
+                tally[st] = tally.get(st, 0) + 1
+                ratio = z / r if r and z else None
+                res[key].update({"ref": r, "zb": z, "ratio": ratio, "status": st,
+                                 "via": "typeahead" if st != "UNTIMEABLE" else None})
+                print(f"{key:16} {r * 1e3 if r else float('nan'):9.3f} "
+                      f"{z * 1e3 if z else float('nan'):9.3f} "
+                      f"{(f'{ratio:.2f}' if ratio else '-'):>7} {'~':>6}  {st}"
+                      "  [type-ahead end]")
+                n_ta[0] += st == "OK"
     fp_after = kw._rom_fingerprint()
     print("\nkwtime: " + " · ".join(f"{k}={v}" for k, v in sorted(tally.items()))
           + f"  ({len(rows)} rows, bar {BAR:g}x; keyword-alone reading on {n_alone};"
-          f" {n_curlin} timed via CURLIN)")
+          f" {n_curlin} timed via CURLIN, {n_ta[0]} via a type-ahead end)")
     if only is None and timed < REF_FLOOR:
         print(f"kwtime: APPARATUS FAILURE -- only {timed} row(s) timed on the "
               f"reference (floor {REF_FLOOR}); refusing to pin a degenerate run")

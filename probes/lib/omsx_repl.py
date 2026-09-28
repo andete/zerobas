@@ -648,7 +648,20 @@ def _tcl(out_path: str, cases: list[tuple[str, list[str]]],
             # remember when the last REAL injection was scheduled -- see
             # `last_inj` below; a trailing `@WAIT` must not move this.
             last_inj[0] = t
-            body.append(f'after time {t:.1f} {{ {proc} {{{text}}} }}')
+            if "\r" in text:
+                # D-KWT2TA (2026-09-28): a line that CARRIES a CR -- a TYPE-AHEAD
+                # burst, `RUN` + CR + a second line that must wait in KEYBUF until
+                # the prompt asks again. A raw CR does not survive the trip to
+                # openMSX (measured: `RUN\rPOKE...` arrived as `RUNPOKE...`), so it
+                # travels as a placeholder and Tcl's own "\r" escape makes the
+                # byte; the text stays BRACED, so no BASIC character is ever
+                # interpreted. No existing caller passes a CR: their Tcl is
+                # byte-identical to before.
+                txt = text.replace("\r", "<CR>")
+                body.append(f'after time {t:.1f} {{ {proc} '
+                            f'[string map [list "<CR>" "\\r"] {{{txt}}}] }}')
+            else:
+                body.append(f'after time {t:.1f} {{ {proc} {{{text}}} }}')
             if echo:
                 body.append(f'after time {t + ECHO_GAP * step:.2f} '
                             f'{{ __echo {len(slots_out)} }}')
