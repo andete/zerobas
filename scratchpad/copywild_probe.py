@@ -1,5 +1,12 @@
 """D-COPYWILD: what does a WILDCARD COPY do on the reference?
 
+🔴 FENCE FIXED 2026-09-28 (round 5): every `[` is printed as CHR$(91). Before, a
+case that printed NOTHING read the TYPED ECHO of its own `PRINT"[|OK]"` -- the
+reading regex excludes a bracket holding a quote, and `[|OK]` holds none. That is
+how `x_cwild` read "OK" where copy-acceptance's fenced survey reads ERR 5 on the
+CF-3300 (scratchpad/copy_survey.out) -- [[trapsvc-echo-fence]]. Rounds 1-4 are
+suspect wherever they read a bare `[|OK]` or `[X1|OK]`-shaped value.
+
 scratchpad/copynameopen_run.out's `c_wild` read 5 (Illegal function call) for
 `COPY "A*.TXT" TO "C*.TXT"` on zerobas. Before porting anything, ask the CF-3300
 what a wildcard COPY copies and what it names each copy -- one boot per case, a
@@ -21,7 +28,7 @@ sys.path.insert(0, os.path.join(REPO, "probes", "lib"))
 sys.path.insert(0, os.path.join(REPO, "scratchpad"))
 import omsx_repl, t6enum_probe as t
 
-TAIL = ['90 PRINT"[";A$;"|";B$;ERR;ERL;"]":END', "RUN"]
+TAIL = ['90 PRINT CHR$(91);"";A$;"|";B$;ERR;ERL;"]":END', "RUN"]
 MK = ('20 OPEN "A1.TXT" FOR OUTPUT AS #1:PRINT #1,"X1":CLOSE:'
       'OPEN "A2.TXT" FOR OUTPUT AS #1:PRINT #1,"X2":CLOSE')
 
@@ -36,13 +43,20 @@ def prog(*body):
 
 CASES = {
     "w_star": prog('30 COPY "A*.TXT" TO "C*.TXT"',
-                   '40 ' + rd("A$", "C1.TXT") + ':' + rd("B$", "C2.TXT") + ':PRINT"[";A$;"|";B$;"OK]":END'),
+                   '40 ' + rd("A$", "C1.TXT") + ':' + rd("B$", "C2.TXT") + ':PRINT CHR$(91);"";A$;"|";B$;"OK]":END'),
     "w_quest": prog('30 COPY "A?.TXT" TO "D?.TXT"',
-                    '40 ' + rd("A$", "D1.TXT") + ':' + rd("B$", "D2.TXT") + ':PRINT"[";A$;"|";B$;"OK]":END'),
-    "w_ext": prog('30 COPY "A1.*" TO "E1.*"', '40 ' + rd("A$", "E1.TXT") + ':PRINT"[";A$;"|OK]":END'),
-    "w_plain": prog('30 COPY "A*.TXT" TO "F.TXT"', '40 ' + rd("A$", "F.TXT") + ':PRINT"[";A$;"|OK]":END'),
-    "w_none": prog('30 COPY "Z*.TXT" TO "C*.TXT":PRINT"[|OK]":END'),
-    "w_keep": prog('30 COPY "A*.TXT" TO "G*.TXT"', '40 ' + rd("A$", "A1.TXT") + ':PRINT"[";A$;"|OK]":END'),
+                    '40 ' + rd("A$", "D1.TXT") + ':' + rd("B$", "D2.TXT") + ':PRINT CHR$(91);"";A$;"|";B$;"OK]":END'),
+    "w_ext": prog('30 COPY "A1.*" TO "E1.*"', '40 ' + rd("A$", "E1.TXT") + ':PRINT CHR$(91);"";A$;"|OK]":END'),
+    "w_plain": prog('30 COPY "A*.TXT" TO "F.TXT"', '40 ' + rd("A$", "F.TXT") + ':PRINT CHR$(91);"";A$;"|OK]":END'),
+    "w_none": prog('30 COPY "Z*.TXT" TO "C*.TXT":PRINT CHR$(91);"|OK]":END'),
+    "w_keep": prog('30 COPY "A*.TXT" TO "G*.TXT"', '40 ' + rd("A$", "A1.TXT") + ':PRINT CHR$(91);"";A$;"|OK]":END'),
+    # --- round 4: D-COPY's `c.wild` (docs/spec-basic-copy.md) measured
+    # `COPY"*.BAS"TO"Z.BAS"` = ERR 5 over the FIXTURE's three .BAS files, while
+    # w_plain (two FRESHLY WRITTEN A*.TXT to a plain F.TXT) never completed. Which
+    # separates them -- fresh files, or the destination's shape? No line-20 writes.
+    "x_cwild": ["NEW", "10 ON ERROR GOTO 90", '30 COPY "*.BAS" TO "Z.BAS":PRINT CHR$(91);"|OK]":END'] + TAIL,
+    "x_multi": ["NEW", "10 ON ERROR GOTO 90", '30 COPY "PROG*.BAS" TO "Q*.BAS"',
+                '40 OPEN "Q.BAS" FOR INPUT AS #1:B$=STR$(LOF(1)):CLOSE:PRINT CHR$(91);"|";B$;"OK]":END'] + TAIL,
 }
 
 

@@ -1,0 +1,4 @@
+case                  CF-3300              zerobas
+✗ x_cwild                 [|OK]            [| 5 30 ]
+✗ x_multi            [| 53 40 ]            [| 5 30 ]
+refcache: 0 hit, 4 miss, 4 stored

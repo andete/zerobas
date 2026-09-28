@@ -6019,7 +6019,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:26707 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:26712 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -25637,12 +25637,17 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       • ONE match — `COPY "A1.*" TO "E1.*"` copies A1.TXT to E1.TXT on the CF-3300
         (`[X1|OK]`, [`copywild_run.out`](scratchpad/copywild_run.out)); zerobas: 5.
       • NO match — `COPY "Z*.TXT" TO "C*.TXT"` is 53 there; zerobas: 5.
-      • 🔴 **TWO OR MORE matches NEVER COMPLETE ON THE REFERENCE** (`A*.TXT` over
-        A1/A2 to `C*.TXT`, `D?.TXT`, a plain `F.TXT`, or `G*.TXT`): no reading at a
-        20 s, 90 s or 240 s window ([`copywild_run2.out`](scratchpad/copywild_run2.out),
-        [`copywild_run3.out`](scratchpad/copywild_run3.out)), and the screen after
-        `RUN` stays blank — no output, no `Ok` ([`copywild_screen.out`](scratchpad/copywild_screen.out)).
-        Unasked: whether a key or more time ends it on real hardware.
+      • 🔴 **CORRECTED SAME DAY — "TWO OR MORE MATCHES NEVER COMPLETE" WAS TOO
+        STRONG, AND ONE READING WAS MY PROBE'S ECHO.** `copywild_probe.py`'s regex
+        read the TYPED `PRINT"[|OK]"` when a case printed nothing ([[trapsvc-echo-fence]]);
+        fenced now (CHR$(91)), re-run ([`copywild_run5.out`](scratchpad/copywild_run5.out)):
+        three FIXTURE matches `PROG*.BAS` → `Q*.BAS` COMPLETE (line 40 runs); two
+        FRESHLY WRITTEN `A1`/`A2` → `C*.TXT` / `D?.TXT` / `G*.TXT` give no reading at
+        20–240 s ([`copywild_screen.out`](scratchpad/copywild_screen.out): blank after RUN);
+        `*.BAS` → a PLAIN `Z.BAS` is ERR 5 untrapped in copy-acceptance's fenced
+        survey ([`copy_survey.out`](scratchpad/copy_survey.out), which also confirms
+        its pinned `c.wild` against the CF-3300 today) but gives no reading inside an
+        ON ERROR program. Unasked: why fresh files and ON ERROR change the outcome.
       ➡️ **FOR JOOST:** faithfulness would mean copying the reference's HANG for
       two or more matches. The autonomous part is the single-match copy (dest
       `?`/`*` filled from the source name) and the no-match 53; what to do for
