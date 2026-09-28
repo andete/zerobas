@@ -513,10 +513,46 @@ BATCH9 = {
 }
 
 
+# --- BATCH 10 (2026-09-28): editor / program / device commands, ERROR cases only.
+# ⚠️ Left out on purpose: AUTO (enters auto-numbering and waits), a bare CLOAD and a
+# valid CSAVE (wait for tape), LLIST / LFILES (may block with no printer), and any
+# VALID LIST -- it would print this probe's own `PRINT"[OK]"` line and read as OK
+# (the echo class: scratchpad/copywild_probe.py, 2026-09-28).
+BATCH10 = {
+    "MOTOR": [
+        ("toggle", ["MOTOR 2", "MOTOR -1", 'MOTOR "A"', "MOTOR 256"]),
+        ("on", ["MOTOR ON 1", "MOTOR ON,"]),
+        ("off", ["MOTOR OFF 1", "MOTOR OFF,"]),
+    ],
+    "CMD": [("refuse", ["CMD", "CMD 1", 'CMD "A"'])],
+    "IPL": [("refuse", ["IPL", "IPL 1"])],
+    "CONT": [("resume", ["CONT", "CONT 1"])],
+    "RENUM": [
+        ("renumber-all", ['RENUM "A"', "RENUM 65536"]),
+        ("renumber-from", ["RENUM 100,65536", 'RENUM 100,"A"']),
+        ("renumber-partial", ["RENUM 100,5", "RENUM 1,90,1"]),
+        ("renumber-increment", ["RENUM ,,0", "RENUM 100,,65536", 'RENUM 100,,"A"']),
+    ],
+    "DELETE": [
+        ("delete-line", ["DELETE 25", 'DELETE "A"', "DELETE 65536"]),
+        ("delete-range", ["DELETE 30-25", "DELETE 25-26", "DELETE 20-"]),
+        ("delete-to-line", ["DELETE -25", "DELETE -"]),
+    ],
+    "LIST": [
+        ("bare-list", ['LIST "A"', "LIST 1,"]),
+        ("single-line", ["LIST 65536"]),
+        ("range", ["LIST 65536-", "LIST -65536"]),
+    ],
+    "NEW": [("erase-program", ["NEW 1", 'NEW "A"'])],
+    "CSAVE": [("save-to-tape", ["CSAVE 5", "CSAVE", 'CSAVE "A",2'])],
+}
+
+
 def cases():
     only = next((a.split("=", 1)[1] for a in sys.argv if a.startswith("--only=")), None)
-    if any(f"--batch={n}" in sys.argv for n in (4, 5, 6, 7, 8, 9)):
-        b = (BATCH9 if "--batch=9" in sys.argv else
+    if any(f"--batch={n}" in sys.argv for n in (4, 5, 6, 7, 8, 9, 10)):
+        b = (BATCH10 if "--batch=10" in sys.argv else
+             BATCH9 if "--batch=9" in sys.argv else
              BATCH8 if "--batch=8" in sys.argv else
              BATCH7 if "--batch=7" in sys.argv else
              BATCH6 if "--batch=6" in sys.argv else

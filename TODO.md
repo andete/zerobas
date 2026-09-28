@@ -6019,7 +6019,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:26754 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:26782 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -25847,6 +25847,34 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       no reading here (a mask truncated to 0 never matches); `WAIT 1,1,256` (5, 20)
       there, accepted here. Every other WAIT case agrees (2, 6, 13, 24). Blocks
       WAIT's T6 (code 5 in both forms).
+
+- [ ] 🔴 **`RUN`'S T5 RATIO FLIPS BETWEEN RUNS — 1.1×, 1.5× AND 1.7× ON 2026-09-28 —
+      SO `tiers-md-check` GOES RED AFTER ANY BATTERY THAT RE-RUNS `kwtime` (D-RUNT5NOISE).**
+      🎚️ APPARATUS — a red that carries no information about the ROM.
+      🤖 **AUTONOMOUS** — find why RUN's keyword-alone reading is unstable (its row
+      re-runs a program, so the twin subtraction may be timing the reboot of the run
+      rather than RUN itself) and either stabilise it or report it as `~`.
+      📏 Three readings in one day, one ROM: 1.1× (07:40), 1.5× (15:30), 1.7× (the
+      batch-10 FULL run, `scratchpad/b10_scoped.out`). Twice today the only red in a
+      battery was this cell, and each time the fix was regenerating the doc.
+
+- [ ] 🔴 **`NEW 1` / `NEW "A"` ARE `Syntax error` ON THE VG-8020; HERE THEY GIVE NO
+      READING — MOST LIKELY THE PROGRAM IS ERASED (D-NEWARG, found 2026-09-28 by T6
+      batch 10).**
+      🎚️ TIER 3 — a typo after NEW would lose the program where the reference refuses.
+      🤖 **AUTONOMOUS** — the reference settles it: NEW takes no argument, so anything
+      after it but the end of the statement is ERR 2 BEFORE anything is erased
+      (`stmt_bare_end` is the existing test).
+      📏 [`scratchpad/t6enum_b10.out`](scratchpad/t6enum_b10.out): (2, 20) there; no
+      reading here. First confirm the erase (LIST after a trapped `NEW 1`), then fix.
+      Blocks NEW's T6.
+
+- [ ] 🔴 **`CONT` INSIDE A RUNNING PROGRAM IS `Can't continue` (17) ON THE VG-8020 AND
+      A NO-OP HERE (D-CONTPROG, found 2026-09-28 by T6 batch 10).**
+      🎚️ TIER 6 — CONT with nothing to continue.
+      🤖 **AUTONOMOUS** — the reference settles it.
+      📏 [`scratchpad/t6enum_b10.out`](scratchpad/t6enum_b10.out): `CONT` and `CONT 1`
+      read (17, 20) there and OK here. Blocks CONT's T6.
 
 - [ ] 🔴 **A BARE `USR` / `USR1` IS `Syntax error` ON THE VG-8020 AND ACCEPTED HERE
       (D-USRBARE, found 2026-09-28 by T6 batch 9).**

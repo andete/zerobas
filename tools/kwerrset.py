@@ -189,6 +189,21 @@ ERRSETS: dict[str, dict[str, frozenset[int]]] = {
     # the in-program shape. RESUME read nothing on EITHER machine (a shape problem,
     # not a set) and WIDTH's same-width / PRINT's separator forms were not asked,
     # so those three keywords are not entered.
+    # 📏 BATCH 10, MEASURED 2026-09-28 on the VG-8020 (--batch=10 ->
+    # scratchpad/t6enum_b10.out): editor / program / device commands, error cases
+    # only. AUTO, CLOAD, LLIST and LFILES were left out (they wait for input, tape
+    # or a printer); `RENUM 100,5` and `CSAVE "A",2` read nothing on either machine.
+    "MOTOR": {"toggle": frozenset({2}), "on": frozenset({2}), "off": frozenset({2})},
+    "CMD": {"refuse": frozenset({5})},
+    "IPL": {"refuse": frozenset({5})},
+    "CONT": {"resume": frozenset({17})},
+    "RENUM": {"renumber-all": frozenset({2}), "renumber-from": frozenset({2}),
+              "renumber-partial": frozenset({5}), "renumber-increment": frozenset({2, 5})},
+    "DELETE": {"delete-line": frozenset({2, 5}), "delete-range": frozenset({5}),
+               "delete-to-line": frozenset({5})},
+    "LIST": {"bare-list": frozenset({2}), "single-line": frozenset({2}), "range": frozenset({2})},
+    "NEW": {"erase-program": frozenset({2})},
+    "CSAVE": {"save-to-tape": frozenset({13, 24})},
     "FRE": {"free-ram": frozenset({2}), "free-string-space": frozenset({2})},
     "VAL": {"integer": frozenset({2, 13}), "exponent": frozenset({6}), "radix-prefix": frozenset({6}),
             "fraction": frozenset({2}), "partial-parse": frozenset({2})},
@@ -245,6 +260,9 @@ PROVENANCE: dict[str, str] = {
 for _k in ("NAME", "COPY"):
     PROVENANCE[_k] += ("; code 64 from scratchpad/killopen_probe.py -> "
                        "scratchpad/copynameopen_run.out, CF-3300, 2026-09-28")
+for _k in ("MOTOR", "CMD", "IPL", "CONT", "RENUM", "DELETE", "LIST", "NEW", "CSAVE"):
+    PROVENANCE[_k] = ("scratchpad/t6enum_probe.py --batch=10 -> scratchpad/t6enum_b10.out, "
+                      "VG-8020, 2026-09-28")
 for _k in ("FRE", "VAL", "USR", "VARPTR", "WAIT", "DATA"):
     PROVENANCE[_k] = ("scratchpad/t6enum_probe.py --batch=9 -> scratchpad/t6enum_b9.out, "
                       "VG-8020, 2026-09-28")

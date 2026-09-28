@@ -1,0 +1,66 @@
+keyword case                                           Philips_VG_8   C-BIOS_MSX1_
+MOTOR   MOTOR 2                                             (2, 20)        (2, 20)
+MOTOR   MOTOR -1                                            (2, 20)        (2, 20)
+MOTOR   MOTOR "A"                                           (2, 20)        (2, 20)
+MOTOR   MOTOR 256                                           (2, 20)        (2, 20)
+MOTOR   MOTOR ON 1                                          (2, 20)        (2, 20)
+MOTOR   MOTOR ON,                                           (2, 20)        (2, 20)
+MOTOR   MOTOR OFF 1                                         (2, 20)        (2, 20)
+MOTOR   MOTOR OFF,                                          (2, 20)        (2, 20)
+CMD     CMD                                                 (5, 20)        (5, 20)
+CMD     CMD 1                                               (5, 20)        (5, 20)
+CMD     CMD "A"                                             (5, 20)        (5, 20)
+IPL     IPL                                                 (5, 20)        (5, 20)
+IPL     IPL 1                                               (5, 20)        (5, 20)
+CONT    CONT                                               (17, 20)             OK
+CONT    CONT 1                                             (17, 20)             OK
+RENUM   RENUM "A"                                           (2, 20)        (2, 20)
+RENUM   RENUM 65536                                         (2, 20)        (2, 20)
+RENUM   RENUM 100,65536                                     (2, 20)        (2, 20)
+RENUM   RENUM 100,"A"                                       (2, 20)        (2, 20)
+RENUM   RENUM 100,5                                            None           None
+   ⚠️ RENUM 'RENUM 100,5': NO READING on the reference -- not scored
+RENUM   RENUM 1,90,1                                        (5, 20)        (5, 20)
+RENUM   RENUM ,,0                                           (5, 20)        (5, 20)
+RENUM   RENUM 100,,65536                                    (2, 20)        (2, 20)
+RENUM   RENUM 100,,"A"                                      (2, 20)        (2, 20)
+DELETE  DELETE 25                                           (5, 20)        (5, 20)
+DELETE  DELETE "A"                                          (2, 20)        (2, 20)
+DELETE  DELETE 65536                                        (2, 20)        (2, 20)
+DELETE  DELETE 30-25                                        (5, 20)        (5, 20)
+DELETE  DELETE 25-26                                        (5, 20)        (5, 20)
+DELETE  DELETE 20-                                          (5, 20)        (5, 20)
+DELETE  DELETE -25                                          (5, 20)        (5, 20)
+DELETE  DELETE -                                            (5, 20)        (5, 20)
+LIST    LIST "A"                                            (2, 20)        (2, 20)
+LIST    LIST 1,                                             (2, 20)        (2, 20)
+LIST    LIST 65536                                          (2, 20)        (2, 20)
+LIST    LIST 65536-                                         (2, 20)        (2, 20)
+LIST    LIST -65536                                         (2, 20)        (2, 20)
+NEW     NEW 1                                               (2, 20)           None
+NEW     NEW "A"                                             (2, 20)           None
+CSAVE   CSAVE 5                                            (13, 20)       (13, 20)
+CSAVE   CSAVE                                              (24, 20)       (24, 20)
+CSAVE   CSAVE "A",2                                            None           None
+   ⚠️ CSAVE 'CSAVE "A",2': NO READING on the reference -- not scored
+
+# the reference's error set per keyword form (code: first case)
+MOTOR  toggle         2: MOTOR 2
+MOTOR  on             2: MOTOR ON 1
+MOTOR  off            2: MOTOR OFF 1
+CMD    refuse         5: CMD
+IPL    refuse         5: IPL
+CONT   resume         17: CONT
+RENUM  renumber-all   2: RENUM "A"
+RENUM  renumber-from  2: RENUM 100,65536
+RENUM  renumber-partial 5: RENUM 1,90,1
+RENUM  renumber-increment 2: RENUM 100,,65536  5: RENUM ,,0
+DELETE delete-line    2: DELETE "A"  5: DELETE 25
+DELETE delete-range   5: DELETE 30-25
+DELETE delete-to-line 5: DELETE -25
+LIST   bare-list      2: LIST "A"
+LIST   single-line    2: LIST 65536
+LIST   range          2: LIST 65536-
+NEW    erase-program  2: NEW 1
+CSAVE  save-to-tape   13: CSAVE 5  24: CSAVE
+refcache: 0 hit, 2 miss, 2 stored
