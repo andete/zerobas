@@ -2899,6 +2899,18 @@ hkn_a:
                 jr      nz,hkn_syn
                 inc     hl
                 ld      (FN_RESUME),hl      ; the NEW name's text starts here
+                ; 🔴 D-COPYNAMEOPEN (2026-09-28): an OPEN old file is 64, and it
+                ; outranks the new name's 65 -- measured on the CF-3300
+                ; (scratchpad/killopen_probe.py n_oldin/n_oldout/n_both). It must run
+                ; HERE, before main_fat_find below: that call rewrites main's
+                ; FWR_DIRSEC/DIROFF, which are the live channel's own position and
+                ; exactly what hkk_open_check reads for it. The LOCAL mount primes
+                ; this ROM's read_sector; if it fails, main's mount reports it.
+                call    fat_mount
+                jr      c,hkn_nolocal
+                call    hkk_open_check      ; CF=1: the OLD name is open
+                jr      c,hkn_open
+hkn_nolocal:
                 ld      ix,main_fat_mount
                 call    calbak
                 jr      c,hkn_io            ; no disk / bad BPB
@@ -2936,8 +2948,12 @@ hkn_a:
                 jr      c,hkn_io
                 ld      a,1                 ; renamed
                 jr      hkn_done
+hkn_open:
+                ld      a,64                ; `File still open` (D-COPYNAMEOPEN)
+                jr      hkn_err
 hkn_exists:
                 ld      a,65                ; `File already exists`, raised by
+hkn_err:
                 ld      (DISKOP_ERR),a      ; disk_error from status 2 (hkn_io) --
                 jr      hkn_io              ; NOT a fall into hkn_nf's status 0
 hkn_nf:
@@ -3093,7 +3109,29 @@ hkc_to:
                 call    calbak              ; DESTINATION name
                 ld      ix,pdfcb_resume
                 call    calbak              ; -> DISK_FCB_NAME
+                ; 🔴 D-COPYNAMEOPEN (2026-09-28): an OPEN source OR destination is
+                ; 64 on the CF-3300 (scratchpad/killopen_probe.py c_srcin, c_srcout,
+                ; c_dstout, c_wild) and was copied here. Both names are parsed, so
+                ; no syntax outcome moves. DISK_FCB_NAME holds the destination and
+                ; COPY_SRC the source; hkk_open_check matches DISK_FCB_NAME, so the
+                ; source is swapped in for its turn and swapped straight back.
+                call    fat_mount           ; LOCAL, for hkk_open_check's reads;
+                jr      c,hkc_go            ; on failure hkc_body reports it
+                call    hkk_open_check      ; the destination
+                jr      c,hkc_open
+                call    hkc_swap
+                call    hkk_open_check      ; the source
+                push    af
+                call    hkc_swap            ; DISK_FCB_NAME = the destination again
+                pop     af
+                jr      c,hkc_open
+hkc_go:
                 call    hkc_body            ; LOCAL: A = 0/1/2/3
+                jr      hkc_done
+hkc_open:
+                ld      a,64                ; `File still open`
+                ld      (DISKOP_ERR),a
+                ld      a,2                 ; -> disk_error raises DISKOP_ERR
                 jr      hkc_done
 hkc_ref:
                 ld      a,3                 ; refused -> ERR 5
@@ -3104,8 +3142,24 @@ hkc_done:
                 ; rather than storing it, for the same reason: the tenant it
                 ; replaces wrote the cell itself, and two writers on one channel
                 ; is what §6.6aw's empty-drive `Syntax error` was.
-                ld      (DISKOP_STATUS),a
-                scf                         ; CF=1: the hook is claimed
+                jp      hk_claim_status     ; D-ERRKEEP: stores it, and a status 2
+                                            ; keeps its code past chan_gate's restore
+
+; hkc_swap -- exchange the 11-byte names in DISK_FCB_NAME and COPY_SRC
+; (D-COPYNAMEOPEN). Clobbers A, BC, DE, HL.
+hkc_swap:
+                ld      hl,DISK_FCB_NAME
+                ld      de,COPY_SRC
+                ld      b,11
+hks_lp:
+                ld      a,(de)
+                ld      c,(hl)
+                ld      (hl),a
+                ld      a,c
+                ld      (de),a
+                inc     hl
+                inc     de
+                djnz    hks_lp
                 ret
 
 ; --- hkc_body: COPY's sector loop, IN THIS ROM ------------------------------

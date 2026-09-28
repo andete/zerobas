@@ -2330,6 +2330,9 @@ status-2 code used to reach main as 0 — `chan_gate`'s restore re-stages the li
 channel, and every successful sector read writes `DISKOP_ERR = 0`. KILL and NAME
 now end in `hk_claim_status`, which on status 2 leaves no channel live, so the
 restore does nothing and the channel's next `fch_select` reloads it.
+**NAME and COPY share the check (D-COPYNAMEOPEN, same day):** an open old name
+(NAME, where 64 outranks the new name's 65) and an open source OR destination
+(COPY) are 64 on the CF-3300 (`scratchpad/copynameopen_run.out`).
 
 ## NAME — rename a file (basic/files.asm, basic/interp.asm, basic/sysvars.inc)
 

@@ -1,0 +1,10 @@
+case                   CF-3300              zerobas
+✗ c_srcin              [ 64 30 ]                 [OK]
+✗ c_srcout             [ 64 30 ]                 [OK]
+✗ c_dstout             [ 64 30 ]                 [OK]
+✗ c_wild               [ 64 30 ]             [ 5 30 ]
+✗ n_oldin              [ 64 30 ]                 [OK]
+✗ n_oldout             [ 64 30 ]                 [OK]
+✗ n_both               [ 64 30 ]            [ 65 30 ]
+  n_newopen            [ 65 30 ]            [ 65 30 ]
+refcache: 0 hit, 16 miss, 16 stored

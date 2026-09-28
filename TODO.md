@@ -6019,7 +6019,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:26596 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:26616 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -25624,6 +25624,16 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       ⚠️ NOT MEASURED: the cassette forms (`BSAVE"CAS:…"`, `BLOAD"CAS:…"`) — the
       same `ret`, no tape to play here.
 
+- [ ] 🔴 **`COPY "A*.TXT" TO "C*.TXT"` IS `Illegal function call` HERE (D-COPYWILD,
+      found 2026-09-28).**
+      🎚️ TIER 3 — a wildcard COPY is the ordinary way to copy a set of files.
+      🤖 **AUTONOMOUS** — measure the reference's wildcard COPY first (what it
+      copies, and what `C*.TXT` makes of each name), then port it into `hkc_body`.
+      📏 [`copynameopen_run.out`](scratchpad/copynameopen_run.out) `c_wild` read 5 here
+      before D-COPYNAMEOPEN; it agrees now (64) only because the open check runs
+      first — with nothing open the refusal is still there. Its shape on the
+      CF-3300 with nothing open is unmeasured.
+
 - [ ] 🔴 **ZEROBAS NEVER SAYS `Disk write protected`: EVERY WRITE TO A PROTECTED DISK
       "SUCCEEDS" (D-WPROTECT, found 2026-09-28).**
       🎚️ TIER 3 — common errors, and it loses data silently: the program believes it
@@ -25642,11 +25652,21 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       ➡️ AND D-ERRKEEP2 (below the D-DISKERRS item) CANNOT BE MEASURED THIS WAY UNTIL
       THIS IS FIXED: write protect was meant to be its error source.
 
-- [ ] 🔴 **`COPY` AND `NAME` OF AN OPEN FILE ARE `File still open` (64) ON THE CF-3300
-      AND GO THROUGH HERE (D-COPYNAMEOPEN, found 2026-09-28).**
-      🎚️ TIER 3 — the KILL shape, on the two other directory verbs.
-      🤖 **AUTONOMOUS** — disk.rom only: `hk_copy` / `hk_name` can call D-KILLOPEN's
-      `hkk_open_check` on the source name before touching anything.
+- [x] ✅ **FIXED 2026-09-28 (D-COPYNAMEOPEN): `COPY` AND `NAME` OF AN OPEN FILE ARE
+      `File still open` (64), AS ON THE CF-3300.** Zero main bytes.
+      📏 Re-asked on a WRITABLE image ([`copynameopen_run.out`](scratchpad/copynameopen_run.out)):
+      64 for an open source (INPUT or OUTPUT), an open DESTINATION too, and a
+      wildcard source; NAME's open old name is 64 and OUTRANKS the new name's 65
+      (`n_both`). After ([`copynameopen_after_run.out`](scratchpad/copynameopen_after_run.out)):
+      all eight agree, and plain COPY / NAME with nothing open still work.
+      `hk_name` runs D-KILLOPEN's `hkk_open_check` right after the `AS` parse and
+      BEFORE `main_fat_find` — that call rewrites main's `FWR_DIRSEC`/`DIROFF`,
+      the live channel's own position. `hk_copy` checks the destination, swaps
+      `COPY_SRC` into `DISK_FCB_NAME` for the source's turn and back, and now ends
+      in `hk_claim_status` (D-ERRKEEP). Rows `t8namerename64`, `t8copyfiletofile64`;
+      NAME and COPY each GAINED 64 in `tools/kwerrset.py` — batch 8 never opened a
+      file first.
+      *(the filing:)* 🎚️ TIER 3 — the KILL shape, on the two other directory verbs.
       📏 [`errkeep2_run3.out`](scratchpad/errkeep2_run3.out): `wp_copy` (`COPY "HI.TXT"
       TO "HJ.TXT"` with HI.TXT open FOR INPUT) and `wp_name` (`NAME "HI.TXT" AS
       "HJ.TXT"`, same) read 64 on the CF-3300 and OK here. Those rows ran on a

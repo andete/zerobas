@@ -167,7 +167,11 @@ ERRSETS: dict[str, dict[str, frozenset[int]]] = {
     "OPEN": {"input": frozenset({2, 13, 52, 53, 56}), "output": frozenset({13, 54, 56, 62}), "append": frozenset({2, 53}), "random": frozenset({2, 5, 13})},
     "CLOSE": {"all": frozenset({13, 24}), "channel": frozenset({5, 13, 52})},
     "KILL": {"delete-file": frozenset({13, 24, 53, 62, 64})},
-    "NAME": {"rename": frozenset({13, 53, 65})},
+    # NAME and COPY gained 64 on 2026-09-28 (D-COPYNAMEOPEN): batch 8 never opened
+    # a file first. An OPEN old name (NAME) or an open source or destination
+    # (COPY) is `File still open` on the CF-3300 (scratchpad/killopen_probe.py ->
+    # scratchpad/copynameopen_run.out), and for NAME it outranks 65.
+    "NAME": {"rename": frozenset({13, 53, 64, 65})},
     "FILES": {"bare": frozenset({2, 13}), "pattern": frozenset({53, 62})},
     "FIELD": {"bind-buffer": frozenset({2, 13, 50, 52, 59})},
     "LSET": {"left-justify": frozenset({2, 13})},
@@ -183,7 +187,7 @@ ERRSETS: dict[str, dict[str, frozenset[int]]] = {
     "SAVE": {"tokenised": frozenset({2, 13, 24, 62}), "ascii": frozenset({2})},
     "BLOAD": {"plain": frozenset({13, 24, 53}), "run": frozenset({53}), "vram": frozenset({53})},
     "BSAVE": {"range": frozenset({2, 13}), "with-entry": frozenset({2, 13})},
-    "COPY": {"file-to-file": frozenset({13, 53})},
+    "COPY": {"file-to-file": frozenset({13, 53, 64})},
     "DSKI$": {"read-sector": frozenset({2, 13, 62})},
     "DSKO$": {"write-sector": frozenset({2, 13, 62})},
     "GET #": {"fielded-record": frozenset({5, 13, 52, 59})},
@@ -225,6 +229,9 @@ PROVENANCE: dict[str, str] = {
         "scratchpad/t6enum_probe.py --batch=2 -> scratchpad/t6enum_b2.out, VG-8020")
        + ", 2026-09-27"
     for k in ERRSETS}
+for _k in ("NAME", "COPY"):
+    PROVENANCE[_k] += ("; code 64 from scratchpad/killopen_probe.py -> "
+                       "scratchpad/copynameopen_run.out, CF-3300, 2026-09-28")
 PROVENANCE["SAVE"] += ("; tokenised code 2 from scratchpad/colon_probe.py -> "
                        "scratchpad/colon_after_run.out, CF-3300, 2026-09-28")
 

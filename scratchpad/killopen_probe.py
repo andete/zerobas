@@ -80,6 +80,26 @@ CASES.update({
                 '20 OPEN "K1.TXT" FOR OUTPUT AS #1:PRINT #1,"AB"', '30 KILL "K1.TXT"',
                 '40 PRINT #1,"CD":CLOSE:OPEN "K1.TXT" FOR INPUT AS #1:INPUT #1,A$:INPUT #1,B$',
                 '50 PRINT"[";A$;B$;E;"OK]":END', "90 E=ERR:RESUME NEXT", "RUN"],
+    # --- round 6 (D-COPYNAMEOPEN): COPY and NAME of an OPEN file, writable image.
+    # errkeep2_run3.out read 64 for both on a WRITE-PROTECTED image; re-asked
+    # here, plus the orderings a fix must choose between.
+    "c_srcin": prog("20 " + W("A", "X") + ':OPEN "A.TXT" FOR INPUT AS #1',
+                    '30 COPY "A.TXT" TO "C.TXT":PRINT"[OK]":END'),
+    "c_srcout": prog('20 OPEN "A.TXT" FOR OUTPUT AS #1', '30 COPY "A.TXT" TO "C.TXT":PRINT"[OK]":END'),
+    "c_dstout": prog("20 " + W("A", "X") + ':OPEN "C.TXT" FOR OUTPUT AS #1',
+                     '30 COPY "A.TXT" TO "C.TXT":PRINT"[OK]":END'),
+    "c_wild": prog("20 " + W("A", "X") + ':OPEN "A.TXT" FOR INPUT AS #1',
+                   '30 COPY "A*.TXT" TO "C*.TXT":PRINT"[OK]":END'),
+    "n_oldin": prog("20 " + W("A", "X") + ':OPEN "A.TXT" FOR INPUT AS #1',
+                    '30 NAME "A.TXT" AS "D.TXT":PRINT"[OK]":END'),
+    "n_oldout": prog('20 OPEN "A.TXT" FOR OUTPUT AS #1', '30 NAME "A.TXT" AS "D.TXT":PRINT"[OK]":END'),
+    "n_both": prog("20 " + W("B", "X") + ':OPEN "A.TXT" FOR OUTPUT AS #1',
+                   '30 NAME "A.TXT" AS "B.TXT":PRINT"[OK]":END'),
+    "n_newopen": prog("20 " + W("A", "X") + ':OPEN "E.TXT" FOR OUTPUT AS #1',
+                      '30 NAME "A.TXT" AS "E.TXT":PRINT"[OK]":END'),
+    # controls for round 6: nothing open, so both verbs must still WORK
+    "c_plain": prog("20 " + W("A", "X"), '30 COPY "A.TXT" TO "C.TXT":OPEN "C.TXT" FOR INPUT AS #1:INPUT #1,A$:PRINT"[";A$;"OK]":END'),
+    "n_plain": prog("20 " + W("A", "X"), '30 NAME "A.TXT" AS "D.TXT":OPEN "D.TXT" FOR INPUT AS #1:INPUT #1,A$:PRINT"[";A$;"OK]":END'),
 })
 
 

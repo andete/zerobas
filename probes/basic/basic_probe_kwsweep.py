@@ -4397,6 +4397,13 @@ SWEEP: list[tuple[str, str, str | None, str, str]] = [
      "NEEDS-DISK: SUBJECT:BSAVE FORM:range"),
     ('t8bloadcolon', 'bsave "sl.bin",&hc000,&hc010:bload "sl.bin":print "bl"', 'BSAVE "SL.BIN",&HC000,&HC010:BLOAD "SL.BIN":PRINT "BL"', "stored",
      "NEEDS-DISK: SUBJECT:BLOAD FORM:plain"),
+    # D-COPYNAMEOPEN (2026-09-28): NAME of an OPEN file, and COPY of one, are 64 on
+    # the CF-3300 and went through here. One open file each (the capture window:
+    # see t8namerenameopen below).
+    ('t8namerename64', 'open "no3.txt" for output as #1:name "no3.txt" as "no4.txt"', 'OPEN "NO3.TXT" FOR OUTPUT AS #1:NAME "NO3.TXT" AS "NO4.TXT"', "stored",
+     "NEEDS-DISK: PROVES-T6:64 SUBJECT:NAME FORM:rename"),
+    ('t8copyfiletofile64', 'open "co.txt" for output as #1:copy "co.txt" to "cp.txt"', 'OPEN "CO.TXT" FOR OUTPUT AS #1:COPY "CO.TXT" TO "CP.TXT"', "stored",
+     "NEEDS-DISK: PROVES-T6:64 SUBJECT:COPY FORM:file-to-file"),
     ('t8killdeletefile64', 'open "ko.txt" for output as #1:kill "ko.txt"', 'OPEN "KO.TXT" FOR OUTPUT AS #1:KILL "KO.TXT"', "stored",
      "NEEDS-DISK: PROVES-T6:64 SUBJECT:KILL FORM:delete-file"),
     # D-ERRKEEP (2026-09-28): the SAME 65 as t8namerename65, with a file OPEN. It
