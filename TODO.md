@@ -6019,7 +6019,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:26616 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:26640 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -25731,6 +25731,30 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       lookup, FOR, IF-skip, PLAY/timer ISR) except `read_line` (162 B closure,
       sub page 1 has 135) and `pu_num_int` (its closure is `pu_fmt_int` +
       `dgt_push`, shared with STR$ and PRINT).
+      💰 **FUNDED 2026-09-28 BY D-CARVESEQ: MAIN 11 → 42 B** (low 7 → 30, page 1 4 →
+      12): `vsf_wb_copy` (the array element store joins the scalar store's FAC
+      copy, -8), `caddsub_disp` (the float add/sub dispatch, -8), `flo_finish`
+      (`flo_zero` joins its tail, -7), `cur_lineno` (the current line number, 3
+      sites, -8). Three more were read and DECLINED: `vdpio`'s and POKE's
+      argument prologue (`check_fperr_only`'s abort discards ONE resume address,
+      so a helper frame breaks it), and the ON STRIG/KEY GOSUB slot store (a
+      frame between pushes).
+      🔴 **AND THE PRICE ROSE TO ~59 B, SO IT STILL DOES NOT FIT IN MAIN.** Two
+      things the first pricing missed: (1) the line source must end `or a` on
+      every non-CR byte, since `cp $0D` leaves CF set for bytes below CR and the
+      reader would take a TAB for end of file; (2) `EOF()` must NOT peek an
+      OUTPUT channel — a peek that refills overwrites `FSECTOR_BUF`, which holds
+      that channel's unwritten data — so it keeps the byte count for other modes
+      and pays a mode test.
+      ➡️ **THE DESIGN THAT FITS: A SUB-ROM `seqio` TENANT.** Sub page 1 (132 B on 2026-09-28)
+      already carries a copy of `fatio-body.inc` in the BLOAD tenant, bound to the
+      real primitives and working on main's own `FREAD_*` / `FAT_DBUF`. The peek
+      with the Ctrl-Z rule, the CR-LF line source and the EOF test go there; main
+      keeps two byte-source stubs (EOF comes back in a RAM latch, since
+      `subrom_call` ends `or a`), the EOF call and the two 55 raises — ~35 B. A
+      crossing per byte is what the reference does too (its H.INDS hook is entered
+      once per byte of an ASCII read). ⚠️ Price the per-byte crossing with `make
+      kwtime` before shipping: T2 is 10× the VG-8020's time.
       ➡️ **THE FUNDING ROUTE IS STEP 10** (OPEN and the channel I/O into disk.rom,
       approved 2026-09-22, 7 KB free there): once the channel read lives in
       disk.rom this is written there, with room for the exact rule. Until then

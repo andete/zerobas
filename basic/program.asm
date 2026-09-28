@@ -939,13 +939,7 @@ print_in_lineno:
                 jp      nz,print_crlf
                 ld      hl,in_msg
                 call    print_string        ; " in "
-                ld      hl,(CURLINE)
-                inc     hl
-                inc     hl
-                ld      e,(hl)              ; lineno LE -> DE
-                inc     hl
-                ld      d,(hl)
-                ex      de,hl               ; HL = line number
+                call    cur_lineno          ; HL = line number
                 call    ln_div_entry
                 jp      print_crlf
 in_msg:         db      " in ",0

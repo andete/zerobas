@@ -858,13 +858,10 @@ asw_coerced:
                 ld      a,(VS_TARGET_TYPE)
                 cp      2
                 jr      z,asw_wb_int
-                ld      c,a                 ; byte count (4 single / 8 double)
-                ld      b,0
-                push    hl
-                pop     de                  ; DE = dest (element address)
-                ld      hl,FAC
-                ldir                        ; FAC -> element address, verbatim
-                ret
+                jp      vsf_wb_copy         ; A = byte count (4 single / 8 double),
+                                            ; HL = the element: FAC -> it verbatim.
+                                            ; vars.asm's scalar store ran the same 11
+                                            ; bytes (D-SEQEOF funding carve, -8 B)
 asw_wb_int:
                 ld      de,(VS_INT_VAL)     ; the coerced value
                 ld      (hl),e

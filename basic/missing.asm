@@ -655,13 +655,7 @@ trace_line:
                 push    hl                  ; guard the token cursor
                 ld      a,'['
                 rst     $18
-                ld      hl,(CURLINE)
-                inc     hl
-                inc     hl
-                ld      e,(hl)              ; lineno LE -> DE
-                inc     hl
-                ld      d,(hl)
-                ex      de,hl               ; HL = the line number
+                call    cur_lineno          ; HL = the line number
                 call    ln_div_entry
                 ld      a,']'
                 rst     $18

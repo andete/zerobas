@@ -1830,15 +1830,14 @@ caddsub_int_check:
                 jr      z,caddsub_ok        ; '-' with RHS $8000 -> stay int
 caddsub_ovf:
                 call    caddsub_widen_both
-                ld      a,(FP_OPMODE)
-                or      a
-                jp      z,fp_add
-                jp      fp_sub
+                jr      caddsub_disp        ; the same 10-byte dispatch as the float
+                                            ; arm's (D-SEQEOF funding carve, -8 B)
 caddsub_ok:
                 ex      de,hl
                 jp      set_factyp_int_ret
 caddsub_float:
                 call    widen_both_operands
+caddsub_disp:
                 ld      a,(FP_OPMODE)
                 or      a
                 jp      z,fp_add

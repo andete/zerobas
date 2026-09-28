@@ -149,12 +149,9 @@ flo_zero:
                 inc     hl
                 ld      (hl),'0'
                 inc     hl
-                ld      (hl),' '
-                inc     hl
-                xor     a
-                ld      (hl),a
-                ld      hl,FOUTBUF
-                ret                         ; D-STRFLT: HL = the formatted text
+                jr      flo_finish          ; its trailing space + terminator +
+                                            ; HL = FOUTBUF, verbatim (D-SEQEOF
+                                            ; funding carve, -7 B)
 
 ; --- flo_is_fixed: CF set iff -1 <= dec_exp <= 14. Preserves HL. -----------
 ; Clobbers A, DE.

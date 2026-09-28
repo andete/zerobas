@@ -1162,6 +1162,20 @@ stmt_bare_end:
                 cp      COLON
                 ret                         ; Z iff ':'
 
+; --- cur_lineno: HL = the line number of the line being run (CURLINE's +2/+3) --
+; 💰 D-CARVESEQ (2026-09-28, -8 B): open-coded at three sites (the ERRLIN capture,
+; `missing`'s `[n]`, the ` in n` of an error message), 9 B each. A leaf: no
+; stack, no exit, so a call is exact. Out: HL = line number, DE = CURLINE+3.
+cur_lineno:
+                ld      hl,(CURLINE)
+                inc     hl
+                inc     hl
+                ld      e,(hl)              ; lineno LE -> DE
+                inc     hl
+                ld      d,(hl)
+                ex      de,hl               ; HL = the line number
+                ret
+
 ; --- fre_abort_low -------------------------------------------------------------
 ; The abort funnel (basic/arrays.asm) sets ENDFLAG (D-1) + emits the fresh-line and
 ; prints; the shared error sites in interp.asm/program.asm jump to it. (The retired
@@ -1626,13 +1640,7 @@ record_errline:
                 ld      a,(DIRECTF)
                 or      a
                 jr      nz,rel_direct
-                ld      hl,(CURLINE)
-                inc     hl
-                inc     hl
-                ld      e,(hl)
-                inc     hl
-                ld      d,(hl)
-                ex      de,hl              ; HL = the erroring line number
+                call    cur_lineno          ; HL = the erroring line number
                 ld      (ERRLIN),hl
                 ; D-DOTLINE writer (c) (docs/spec-basic-dotline.md §2 R-DOT3c):
                 ; an error in a STORED line records that line, which is what
