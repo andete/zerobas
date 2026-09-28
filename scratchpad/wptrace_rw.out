@@ -1,0 +1,9 @@
+image: WRITABLE (control)
+reading: [OK]
+5 write(s) reached fdc_write_phys
+  status after a write: 00  (ST_WP $40 clear)  A8=FC
+  status after a write: 00  (ST_WP $40 clear)  A8=FC
+  status after a write: 00  (ST_WP $40 clear)  A8=FC
+  status after a write: 00  (ST_WP $40 clear)  A8=FC
+  status after a write: 00  (ST_WP $40 clear)  A8=FC
+refcache: 0 hit, 1 miss, 1 stored

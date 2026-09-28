@@ -1,0 +1,5 @@
+case                   CF-3300              zerobas
+  k_out                [ 64 30 ]            [ 64 30 ]
+  k_after           [ABCD 64 OK]         [ABCD 64 OK]
+  n_open               [ 65 30 ]            [ 65 30 ]
+refcache: 0 hit, 6 miss, 6 stored

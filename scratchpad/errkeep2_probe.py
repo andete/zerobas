@@ -54,6 +54,10 @@ RW = {
     "sv_line": prog('30 SAVE "X.BAS"', '40 PRINT"[OK]":END'),
     "bs_colon": prog('30 BSAVE "X.BIN",&HC000,&HC010:PRINT"[OK]":END'),
     "sa_colon": prog('30 SAVE "X.BAS",A:PRINT"[OK]":END'),
+    # --- round 3: with a file OPEN, SAVE never reached the drive at all
+    # (scratchpad/wptrace_open.out: no fdc_write_phys). Does it SAVE? Read back.
+    "sv_openrw": prog('20 OPEN "HI.TXT" FOR INPUT AS #1', '30 SAVE "Y.BAS"',
+                      '40 CLOSE:OPEN "Y.BAS" FOR INPUT AS #1:A$=INPUT$(1,#1):PRINT"[";ASC(A$);"]":END'),
 }
 
 
@@ -77,10 +81,15 @@ def main():
             r = re.findall(r"\[[^\]\"]*\]", raw)
             got[(m, k)] = " ".join(r[-1].split()) if r else "NO READING"
     print(f"{'case':9} {'CF-3300':>16} {'zerobas':>16}")
+    bad = 0
     for k in only:
         a, b = got[("National_CF-3300", k)], got[("C-BIOS_MSX1_EU_REPACK_DISK", k)]
         print(f"{'  ' if a == b else '✗ '}{k:9} {a:>16} {b:>16}")
-    return 0
+        # a reading that is not a reading can never pass (the NO READING twin)
+        bad += a != b or "NO READING" in (a, b)
+    # D-WPROTECT: a gate now (make wprotect-acceptance) -- the exit code is the verdict
+    print(f"WPROTECT: {'PASS' if not bad else f'FAIL ({bad} of {len(only)})'}")
+    return 1 if bad else 0
 
 
 if __name__ == "__main__":

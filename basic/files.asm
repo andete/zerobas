@@ -145,6 +145,12 @@ chan_gate:
                                             ; worth 2 B, not because it is a fix.
 cg_noflush:
                 pop     af
+                ld      (FOPEN_SEL),a       ; D-SAVEOPEN: the caller's A is fopen_cross's
+                                            ; selector, stored AFTER the flush above
+                                            ; (which marshals through this very cell).
+                                            ; Every other gate's hook ignores it:
+                                            ; FILES sets its own, DSKI$/DSKO$'s
+                                            ; dirverb_op and main's primitives too.
 cg_cross:
                 ld      de,cg_back          ; call THROUGH HL: the cell is
                 push    de                  ; `F7 <slot> <lo> <hi> C9`, so its own
@@ -171,10 +177,16 @@ cg_unclaimed:
 ; dsk_aopen, dsk_agetbyte); one body + four calls = 26 B of main page 1, carved
 ; for D-CLEARFIT. chan_gate keeps its own return point (cg_back) and inspects no
 ; caller frame, so one more call level changes nothing on the main side.
+; 🔴 D-SAVEOPEN (2026-09-28): THE SELECTOR IS STORED BY chan_gate NOW, AFTER ITS
+; FLUSH, NOT HERE BEFORE IT. FOPEN_SEL aliases DISKOP_OP, and with a channel LIVE
+; chan_gate first flushes it -- fch_save_active -> a FAT primitive marshalled
+; through DISKOP_OP -- which overwrote the selector, so disk.rom's H_FOPEN
+; dispatcher saw no verb and did nothing: `SAVE` with a file open wrote NOTHING
+; and answered OK (the CF-3300 saves; scratchpad/errkeep2_probe.py sv_openrw read
+; 255 there and 53 here). chan_gate already carried A across the flush.
 fopen_cross:
-                ld      (FOPEN_SEL),a
                 ld      hl,H_FOPEN
-                call    chan_gate
+                call    chan_gate           ; A = the selector: stored after the flush
                 ld      a,(DISKOP_STATUS)
                 or      a
                 ret

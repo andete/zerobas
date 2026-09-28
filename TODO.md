@@ -6019,7 +6019,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:26657 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:26692 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -25571,6 +25571,10 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
         in its own `ld (DISKOP_STATUS),a / scf / ret`; routing each through
         `hk_claim_status` is the disk-side fix, per hook, with a row that opens a
         file first. 🎚️ TIER 3. 🤖 AUTONOMOUS.
+        ✅ **PARTLY DONE 2026-09-28:** `hk_claim_status` is keyed on a pending
+        DISKOP_ERR now (every hook's encoding), and KILL, NAME, COPY and SAVE end
+        in it (`wp_save` agrees at 68 with a file open). LOAD / MERGE / ASCII LOAD
+        (`hk_dpload`, `hk_aopen`, `hk_agetb`) and DSKF still end on their own.
         ➡️ **OPEN's half is still open, and wider than filed:** round 2 found the
         CF-3300 also refuses a SECOND open of the same FILE on another channel
         with 54 (`o_same2`, and `o_samein2` even FOR INPUT); zerobas accepts
@@ -25634,7 +25638,38 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       first — with nothing open the refusal is still there. Its shape on the
       CF-3300 with nothing open is unmeasured.
 
-- [ ] 🔴 **ZEROBAS NEVER SAYS `Disk write protected`: EVERY WRITE TO A PROTECTED DISK
+- [x] ✅ **FIXED 2026-09-28 (D-WPROTECT + D-SAVEOPEN): A WRITE ERROR REACHES BASIC —
+      A PROTECTED DISK IS `Disk write protected` (68) — AND `SAVE` WITH A FILE OPEN
+      SAVES.** 📏 [`scratchpad/errkeep2_probe.py`](scratchpad/errkeep2_probe.py) →
+      [`errkeep2_run6.out`](scratchpad/errkeep2_run6.out): all 8 agree; a gate now,
+      `make wprotect-acceptance` (in the battery), and its knife is measured —
+      putting the old instruction back FAILS 5 of 8
+      ([`wprotect_knife.out`](scratchpad/wprotect_knife.out)).
+      🔴 **THE ROOT WAS ONE INSTRUCTION IN OUR DRIVER, AND IT SWALLOWED EVERY WRITE
+      ERROR, NOT JUST WRITE PROTECT.** `fdc_write_phys` tested the DSKIO code with
+      `cp 0`, which always clears the carry (nothing is below 0): a protected disk
+      left "successful", and every other failure was pushed with that cleared carry
+      and popped back as success. Found by tracing OUR disk.rom
+      ([`scratchpad/wptrace_probe.py`](scratchpad/wptrace_probe.py)): ST_WP set after
+      all 5 writes ([`wptrace_run.out`](scratchpad/wptrace_run.out)) and `dc_result`
+      reached at Cy = 0 every time ([`wptrace_run2.out`](scratchpad/wptrace_run2.out)).
+      `inc a / dec a` — same 2 bytes, Z iff A = 0, carry kept.
+      Then two more layers, each measured: SAVE ,A's resident write path reported
+      through `sv_load_error` = `load_error` (a printed `load error`, no code) —
+      rebound onto `disk_error` (0 B); and `hk_dpsave` now ends in
+      `hk_claim_status`, which is keyed on a PENDING CODE rather than status 2, so
+      SAVE's status-3 68 survives an open file (D-ERRKEEP2 for SAVE).
+      🔴 **D-SAVEOPEN, found by the last layer: with ANY file open, `SAVE` wrote
+      NOTHING and answered OK** — `sv_openrw` read the saved file back as 255 on the
+      CF-3300 and `File not found` here. `fopen_cross` stored the verb selector
+      `FOPEN_SEL` (which aliases `DISKOP_OP`) and THEN called `chan_gate`, whose
+      flush of the live channel marshals through that very cell, so disk.rom's
+      H_FOPEN dispatcher saw no verb. `chan_gate` stores it now, after the flush
+      (it already carried A across it) — 0 B.
+      ⚠️ The round-1 readings ([`errkeep2_run.out`](scratchpad/errkeep2_run.out)) were
+      CONTAMINATED by D-SAVECOLON, and round 3 ([`errkeep2_run3.out`](scratchpad/errkeep2_run3.out))
+      read OK for everything because of the driver.
+      *(the filing:)* 🔴 **ZEROBAS NEVER SAYS `Disk write protected`: EVERY WRITE TO A PROTECTED DISK
       "SUCCEEDS" (D-WPROTECT, found 2026-09-28).**
       🎚️ TIER 3 — common errors, and it loses data silently: the program believes it
       saved.

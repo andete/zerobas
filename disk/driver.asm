@@ -242,7 +242,18 @@ fdc_wp_attempt:
                 call    fdc_write_data
                 jp      nc, fdc_io_done ; success: Cy = 0, HL = buffer + 512
                 ; failure: A = error code, Cy = 1
-                cp      0               ; error code 0 = write protected -> no retry
+                ; 🔴 D-WPROTECT (2026-09-28): THIS WAS `cp 0`, AND IT CLEARED THE CARRY
+                ; ON EVERY FAILED WRITE -- nothing is below 0, so `cp 0` always leaves
+                ; Cy = 0. Write-protect (A = 0) left here "successful"; every other
+                ; error was pushed below with that cleared carry and popped back at
+                ; fdc_wp_fail2 as a success too. So no disk WRITE error ever reached
+                ; BASIC: SAVE / BSAVE / OPEN FOR OUTPUT on a protected disk answered
+                ; OK where the CF-3300 raises 68 (scratchpad/errkeep2_run3.out), and
+                ; scratchpad/wptrace_probe.py saw ST_WP set after all 5 writes with
+                ; dc_result reached at Cy = 0 every time. `inc a / dec a` tests
+                ; A = 0 in the same 2 bytes and leaves Cy alone.
+                inc     a
+                dec     a               ; Z iff A = 0 (write protected); Cy KEPT
                 jr      z, fdc_wp_fail
                 push    af
                 ld      a, (FDC_TRY)

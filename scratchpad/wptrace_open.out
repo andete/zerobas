@@ -1,0 +1,22 @@
+image: read-only
+reading: [OK]
+0 write(s) reached fdc_write_phys
+    DISKOP_ERR <-   0  pc=5725  A8=FC
+    DISKOP_ERR <-   0  pc=5859  A8=FC
+    DISKOP_ERR <-   0  pc=5725  A8=FC
+    DISKOP_ERR <-   0  pc=5859  A8=FC
+  bp dc_result              F=44 A=00 A8=FC
+  bp dc_result              F=44 A=00 A8=FC
+  bp dc_result              F=44 A=00 A8=FC
+  bp dc_result              F=44 A=00 A8=FC
+  bp dc_result              F=44 A=00 A8=FC
+  bp hk_dpsave              F=42 A=41 A8=F0
+  bp sv_load_error          F=00 A=01 A8=F0
+    DISKOP_ERR <-   0  pc=5725  A8=FC
+    DISKOP_ERR <-   0  pc=5859  A8=FC
+    DISKOP_ERR <-   0  pc=5725  A8=FC
+    DISKOP_ERR <-   0  pc=5859  A8=FC
+    DISKOP_ERR <-   0  pc=5725  A8=FC
+    DISKOP_ERR <-   0  pc=5725  A8=FC
+    DISKOP_ERR <-   0  pc=5725  A8=FC
+refcache: 0 hit, 1 miss, 1 stored

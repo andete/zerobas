@@ -2201,6 +2201,16 @@ castail-characterize: repack-machine $(DISK_TEST_DSK)
 cas-ascii-acceptance: repack-machine
 	python3 probes/basic/basic_probe_cas_ascii.py
 
+# --- wprotect-acceptance: disk WRITE errors reach BASIC (D-WPROTECT, D-SAVEOPEN) --
+# 🔴 zerobas reported NO disk write error at all until 2026-09-28: the driver's
+# `cp 0` cleared the carry on every failed write, so a write-protected disk
+# answered OK where the CF-3300 raises 68 -- and SAVE with a file open wrote
+# nothing and answered OK (its selector was overwritten by the gate's flush).
+# kwsweep cannot hold these rows: it runs on ONE writable image, and write
+# protect needs a read-only one per case. The probe makes a private read-only copy.
+wprotect-acceptance: repack-machine $(DISK_TEST_DSK)
+	python3 -u probes/basic/basic_probe_wprotect.py
+
 castail-acceptance: repack-machine $(DISK_TEST_DSK)
 	python3 probes/basic/basic_probe_castail.py --gate \
 	        --sides $(if $(SIDES),'$(SIDES)',vg8020,cf3300,zb) \
@@ -3600,7 +3610,7 @@ clean:
         editverb-acceptance lptverb-characterize lptverb-acceptance \
         dskmsg-characterize dskmsg-acceptance \
         runtail-characterize runtail-acceptance runline-acceptance \
-        castail-characterize castail-acceptance cas-ascii-acceptance \
+        castail-characterize castail-acceptance cas-ascii-acceptance wprotect-acceptance \
         cassave-characterize cassave-acceptance \
         readvar-characterize readvar-acceptance \
         inputary-characterize inputary-acceptance \

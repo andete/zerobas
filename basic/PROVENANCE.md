@@ -1936,6 +1936,17 @@ raises `Syntax error` AFTER the write; the reference's order there is unmeasured
 Funded by four carves (`jr` for `jp` in `cas_ascii_load`, `str_lr_count` for
 LEFT$/RIGHT$, `cpow_tail` for `evmc_dispatch`, `dl_loaded` for LOAD's tape arm).
 
+
+**A write error reaches BASIC (D-WPROTECT / D-SAVEOPEN, 2026-09-28).** Measured on
+the CF-3300 (`scratchpad/errkeep2_probe.py`, gate `wprotect-acceptance`): SAVE,
+SAVE ,A, BSAVE and OPEN FOR OUTPUT on a write-protected disk raise 68, and SAVE
+with another file open saves. zerobas answered OK to all of them: our driver's
+`fdc_write_phys` tested the DSKIO code with `cp 0`, which clears the carry, so no
+write failure ever left DSKIO (now `inc a / dec a`); SAVE ,A's resident path
+reported through `load_error` (now `disk_error`); and with a channel live,
+`chan_gate`'s flush overwrote the verb selector `fopen_cross` had just stored
+(now stored after the flush).
+
 ## tape SAVE / CSAVE — cassette write side (basic/save.asm, basic/interp.asm, basic/sysvars.inc)
 
 The WRITE complement of *§Phase 1 cassette load* (CLOAD/LOAD"CAS:"). `CSAVE"name"`,

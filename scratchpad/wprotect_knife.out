@@ -1,0 +1,81 @@
+pasmo -I disk --bin disk/disk.asm build/disk.rom build/disk.sym
+WARNING: Switching to 3 pass mode on line 162 of file equates.inc
+WARNING: Var ARGA is never used on line 17 of file basic-resident-abi.inc
+WARNING: Var DISKOP_SEL_COPY is never used on line 47 of file equates.inc
+WARNING: Var DISKOP_SEL_COPYSTASH is never used on line 46 of file equates.inc
+WARNING: Var DISKOP_SEL_KILL is never used on line 44 of file equates.inc
+WARNING: Var DISKOP_SEL_NAME_STAMP is never used on line 45 of file equates.inc
+WARNING: Var FILES_TOKEN is never used on line 54 of file equates.inc
+WARNING: Var boot_disk is never used on line 355 of file init.asm
+WARNING: Var build_drvtbl is never used on line 585 of file init.asm
+WARNING: Var build_resident is never used on line 648 of file init.asm
+WARNING: Var build_wa_table is never used on line 552 of file init.asm
+WARNING: Var conin is never used on line 200 of file kernel.asm
+WARNING: Var conout is never used on line 263 of file kernel.asm
+WARNING: Var curdrv is never used on line 174 of file kernel.asm
+WARNING: Var dirverb_op is never used on line 56 of file basic-resident-abi.inc
+WARNING: Var fat_io_open is never used on line 26 of file basic/fatio-body.inc
+WARNING: Var gdate_handler is never used on line 435 of file kernel.asm
+WARNING: Var getalloc is never used on line 115 of file kernel.asm
+WARNING: Var int_h is never used on line 153 of file pageenv.asm
+WARNING: Var k_41EF is never used on line 73 of file pageenv.asm
+WARNING: Var k_436C is never used on line 188 of file driver.asm
+WARNING: Var k_4392 is never used on line 199 of file driver.asm
+WARNING: Var k_456F is never used on line 512 of file driver.asm
+WARNING: Var k_461D is never used on line 652 of file driver.asm
+WARNING: Var k_46BA is never used on line 27 of file fat.asm
+WARNING: Var k_4720 is never used on line 59 of file fat.asm
+WARNING: Var k_477D is never used on line 86 of file fat.asm
+WARNING: Var k_4788 is never used on line 95 of file fat.asm
+WARNING: Var k_4793 is never used on line 99 of file fat.asm
+WARNING: Var k_47BE is never used on line 114 of file fat.asm
+WARNING: Var k_4919 is never used on line 3614 of file kernel.asm
+WARNING: Var k_4935 is never used on line 3615 of file kernel.asm
+WARNING: Var k_498C is never used on line 3616 of file kernel.asm
+WARNING: Var k_49B4 is never used on line 3617 of file kernel.asm
+WARNING: Var k_4A39 is never used on line 3618 of file kernel.asm
+WARNING: Var k_4B59 is never used on line 3619 of file kernel.asm
+WARNING: Var k_4BE5 is never used on line 3620 of file kernel.asm
+WARNING: Var k_4C25 is never used on line 3621 of file kernel.asm
+WARNING: Var k_501E is never used on line 52 of file kernel.asm
+WARNING: Var k_504E is never used on line 63 of file kernel.asm
+WARNING: Var k_509F is never used on line 128 of file kernel.asm
+WARNING: Var k_53A7 is never used on line 218 of file kernel.asm
+WARNING: Var k_543C is never used on line 232 of file kernel.asm
+WARNING: Var k_5445 is never used on line 235 of file kernel.asm
+WARNING: Var k_544E is never used on line 238 of file kernel.asm
+WARNING: Var k_5462 is never used on line 273 of file kernel.asm
+WARNING: Var k_5465 is never used on line 275 of file kernel.asm
+WARNING: Var k_55DB is never used on line 456 of file kernel.asm
+WARNING: Var k_55E6 is never used on line 459 of file kernel.asm
+WARNING: Var k_55FF is never used on line 462 of file kernel.asm
+WARNING: Var seldsk_drv is never used on line 197 of file kernel.asm
+WARNING: Var setdta_cache is never used on line 79 of file kernel.asm
+WARNING: Var setrnd is never used on line 194 of file kernel.asm
+WARNING: Var sfirst is never used on line 38 of file kernel.asm
+WARNING: Var snext is never used on line 41 of file kernel.asm
+WARNING: Var widen_rhs_operand is never used on line 13 of file basic-resident-abi.inc
+python3 tools/pad_rom.py build/disk.rom 16384
+build/disk.rom: 16384 bytes (exact -- the assembler wrote the whole image)
+python3 tools/install-repack-machine.py --merged build/zerobas-main-eu.rom --disk-rom build/disk.rom \
+	  --sub-rom build/sub.rom
+wrote C-BIOS_MSX1_EU_REPACK_DISK  (-> machine "C-BIOS_MSX1_EU_REPACK_DISK": merged repack ROM in slot 0, zerobas-disk in slot 3-1, zerobas-sub in slot 3-2)
+     /Users/joost/.openMSX/share/machines/C-BIOS_MSX1_EU_REPACK_DISK.xml
+python3 tools/install-repack-machine.py --merged build/zerobas-main-eu.rom --sub-rom build/sub.rom \
+	  --no-disk
+wrote C-BIOS_MSX1_EU_REPACK_NODISK  (-> machine "C-BIOS_MSX1_EU_REPACK_NODISK": merged repack ROM in slot 0, slot 3-1 EMPTY (diskless target), zerobas-sub in slot 3-2)
+     /Users/joost/.openMSX/share/machines/C-BIOS_MSX1_EU_REPACK_NODISK.xml
+python3 -u scratchpad/errkeep2_probe.py wp_ctl wp_save wp_asave wp_bsave \
+	        wp_copy wp_name wp_out sv_openrw
+case               CF-3300          zerobas
+✗ wp_ctl           [ 68 30 ]             [OK]
+✗ wp_save          [ 68 30 ]             [OK]
+✗ wp_asave         [ 68 30 ]             [OK]
+✗ wp_bsave         [ 68 30 ]             [OK]
+  wp_copy          [ 64 30 ]        [ 64 30 ]
+  wp_name          [ 64 30 ]        [ 64 30 ]
+✗ wp_out           [ 68 30 ]             [OK]
+  sv_openrw          [ 255 ]          [ 255 ]
+WPROTECT: FAIL (5 of 8)
+refcache: 0 hit, 16 miss, 16 stored
+make: *** [wprotect-acceptance] Error 1

@@ -1,0 +1,30 @@
+image: read-only
+reading: [OK]
+5 write(s) reached fdc_write_phys
+  bp dc_result              F=44 A=00 A8=FC
+  bp dc_result              F=44 A=00 A8=FC
+  bp dc_result              F=44 A=00 A8=FC
+  bp dc_result              F=44 A=00 A8=FC
+  bp hk_dpsave              F=42 A=53 A8=FC
+  bp dc_result              F=44 A=00 A8=FC
+  bp dc_result              F=44 A=00 A8=FC
+  bp fatprim_write_sector   F=44 A=00 A8=FC
+  bp dc_result              F=44 A=00 A8=FC
+  bp dc_result              F=44 A=00 A8=FC
+  bp dc_result              F=44 A=00 A8=FC
+  bp dc_result              F=44 A=00 A8=FC
+  bp fatprim_write_sector   F=AC A=02 A8=FC
+  bp dc_result              F=44 A=00 A8=FC
+  bp fatprim_write_sector   F=44 A=00 A8=FC
+  bp dc_result              F=44 A=00 A8=FC
+  bp fatprim_write_sector   F=00 A=00 A8=FC
+  bp dc_result              F=44 A=00 A8=FC
+  bp dc_result              F=44 A=00 A8=FC
+  bp fatprim_write_sector   F=40 A=00 A8=FC
+  bp dc_result              F=44 A=00 A8=FC
+  status after a write: 40  (ST_WP $40 SET)  A8=FC
+  status after a write: 40  (ST_WP $40 SET)  A8=FC
+  status after a write: 40  (ST_WP $40 SET)  A8=FC
+  status after a write: 40  (ST_WP $40 SET)  A8=FC
+  status after a write: 40  (ST_WP $40 SET)  A8=FC
+refcache: 0 hit, 1 miss, 1 stored

@@ -93,7 +93,7 @@ cursor-acceptance time-acceptance namspc-acceptance arrdim-acceptance
 asciidigit-acceptance
 arylv-acceptance badfnum-acceptance beep-acceptance binfre-acceptance
 perf-pin-check
-cassave-acceptance castail-acceptance cas-ascii-acceptance deffn-acceptance direct-ctrl-acceptance
+cassave-acceptance castail-acceptance cas-ascii-acceptance wprotect-acceptance deffn-acceptance direct-ctrl-acceptance
 dskmsg-acceptance editverb-acceptance fldary-acceptance fldwidth-acceptance
 forvar-acceptance gicini-acceptance graphics-floor-acceptance ifsem-acceptance input-acceptance nodisk-acceptance pusing-acceptance catterm-acceptance catusr-acceptance nameord-acceptance namegate-acceptance
 inputary-acceptance key-trap-acceptance linemax-acceptance lnblank-acceptance

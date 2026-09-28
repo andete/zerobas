@@ -2406,8 +2406,8 @@ hk_dpsave:
                 call    sav_disk_write      ; `call`, not `jp`: sv_load_error's
                                             ; `ret` lands here, which is the sub
                                             ; tenant's own discipline preserved
-                scf                         ; claimed, whatever the disposition
-                ret
+                ld      a,(DISKOP_STATUS)   ; D-ERRKEEP2: out through the shared
+                jp      hk_claim_status     ; tail, so a 68 survives an open file
 
 ; sv_load_error -- the disk-local reporter, rebound exactly as the sub-ROM
 ; tenant rebinds it. Resident it is a zero-byte EQU onto `load_error`, which
@@ -3000,8 +3000,14 @@ hkn_done:
 ; ⚠️ Every OTHER hook that reports status 2 has the same hole until it ends here.
 hk_claim_status:
                 ld      (DISKOP_STATUS),a
-                cp      2
-                jr      nz,hcs_claim
+                ; D-ERRKEEP2 (2026-09-28): keyed on a PENDING CODE, not on status 2.
+                ; The hooks do not share one status encoding -- SAVE's failure is
+                ; status 3 -- but every one leaves its code in DISKOP_ERR, and a
+                ; successful transfer clears that cell, so "a code is pending" is
+                ; exactly the case the restore would wipe.
+                ld      a,(DISKOP_ERR)
+                or      a
+                jr      z,hcs_claim
                 xor     a
                 ld      (FCH_ACTIVE),a      ; no channel live: see above
 hcs_claim:

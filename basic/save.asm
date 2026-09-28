@@ -78,7 +78,13 @@
 ; Each engine's `IF the repack build` stub re-declares the SAME entry label the
 ; resident parse already reaches by `jr`/fall-through, so not one parse
 ; instruction changes.
-sv_load_error   equ     load_error          ; resident: a zero-byte EQU, so every
+; 🔴 D-WPROTECT (2026-09-28): ONTO disk_error, NOT load_error. The resident write
+; paths (SAVE ,A's disk_write_begin / putbyte / end) reported a write-protected
+; disk as `load error`, printed and continued, where the CF-3300 raises 68
+; (scratchpad/errkeep2_probe.py wp_asave). disk_error raises the mapped DSKIO code
+; when one is pending and falls to load_error otherwise -- a successful transfer
+; clears DISKOP_ERR, so a failure that is not a DSKIO one keeps its old face.
+sv_load_error   equ     disk_error          ; resident: a zero-byte EQU, so every
                                             ; `jp sv_load_error` in the shared bodies
                                             ; assembles to the frozen cart's bytes.
                                             ; In the tenant it is the sub-local
