@@ -1,0 +1,18 @@
+case                   CF-3300              zerobas
+  empty               [| 55 30 ]           [| 55 30 ]
+  second            [HI| 55 40 ]         [HI| 55 40 ]
+  noterm               [HI|-1OK]            [HI|-1OK]
+  line2             [HI| 55 40 ]         [HI| 55 40 ]
+  dol_part           [X| 55 30 ]          [X| 55 30 ]
+  dol_all         [HI |Y 55 40 ]       [HI |Y 55 40 ]
+  list2            [HI|Y 55 30 ]        [HI|Y 55 30 ]
+  comma                  [HI|OK]              [HI|OK]
+  z_len              [HI| 2 3OK]          [HI| 2 3OK]
+  z_eofcr            [HI|-1 5OK]          [HI|-1 5OK]
+  z_mid          [A|-1 4 55 40 ]      [A|-1 4 55 40 ]
+  z_midin             [A| 1-1OK]           [A| 1-1OK]
+  lf_swal           [HI| 55 30 ]         [HI| 55 30 ]
+  lf_line           [HI| 55 30 ]         [HI| 55 30 ]
+  lf_eof                [A| 0OK]             [A| 0OK]
+  loop               [L1L2| 2OK]          [L1L2| 2OK]
+refcache: 0 hit, 32 miss, 32 stored

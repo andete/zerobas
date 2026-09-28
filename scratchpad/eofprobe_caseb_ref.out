@@ -1,0 +1,11 @@
+  MSX BASIC version 1.0
+  Copyright 1983 by Microsoft
+  23430 Bytes free
+  Disk BASIC version 1.0
+  Ok
+  open"hi.txt" for input as #1:
+  line input#1,a$:line input#1,
+  a$:print eof(1):close#1
+  Input past end
+  Ok
+  color auto  goto  list  run

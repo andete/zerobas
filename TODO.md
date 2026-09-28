@@ -6019,7 +6019,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:26640 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:26657 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -25673,7 +25673,24 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       write-protected image, so re-measure on a writable one; whether COPY also
       refuses an open DESTINATION is unasked.
 
-- [ ] 🔴 **A SEQUENTIAL FILE READS ITS CTRL-Z END MARKER AS DATA: THE TEXTBOOK
+- [x] ✅ **FIXED 2026-09-28 (D-SEQEOF): A TEXT FILE READS THE REFERENCE'S WAY — CTRL-Z
+      ENDS IT, INPUT# EATS THE LF AFTER ITS CR, AND A READ AT THE END IS 55.** The
+      textbook `IF EOF(1) … LINE INPUT` loop reads 2 lines on both machines, not 3.
+      A sub-ROM tenant, `seqio_tenant` (sub/bload.asm, SUBROM_IDX_SEQIO 28), on the
+      BLOAD tenant's fatio copy: `seq_peek` (the next byte, never consumed; Ctrl-Z
+      reads as the end), the byte op (INPUT#'s CR swallows a following LF;
+      `FCH_RDMODE` 2 = INPUT$, raw) and EOF()'s test (a peek for a channel open FOR
+      INPUT; the old byte count for every other mode, never a peek that could
+      refill over an OUTPUT channel's unwritten sector). The end comes back in
+      `SEQ_EOF` ($E045, from the FREE-RAM run), since `subrom_call` returns only A.
+      Main: `fat_io_seqbyte` / `fat_io_eof` (IX-guarded: they cross per byte, inside
+      the evaluator), INPUT$ marks itself raw, and the two 55 raises. Funded by
+      D-CARVESEQ; walls after: main low 6, page 1 2, sub p1 5 (2026-09-28).
+      📏 [`scratchpad/ipe_probe.py`](scratchpad/ipe_probe.py) → [`ipe_after_run.out`](scratchpad/ipe_after_run.out):
+      all 16 cases agree. Rows `t8inputstringread55`, `t8inputdolchannel55` (55 was
+      in both denominators and unproven), `seqeof_eofcr`, `seqeof_ctrlz`; kwsweep 872
+      SUPPORTED; kwtime clean with the per-byte crossing.
+      *(the filing:)* 🔴 **A SEQUENTIAL FILE READS ITS CTRL-Z END MARKER AS DATA: THE TEXTBOOK
       `IF EOF(1) … LINE INPUT #1` LOOP READS ONE LINE TOO MANY, AND NO READ EVER
       SAYS `Input past end` (D-SEQEOF, found 2026-09-28 from D-DISKERRS).**
       🎚️ TIER 1 — happy path: reading a text file line by line until EOF is the

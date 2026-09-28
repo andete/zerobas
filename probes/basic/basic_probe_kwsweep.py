@@ -4404,6 +4404,20 @@ SWEEP: list[tuple[str, str, str | None, str, str]] = [
      "NEEDS-DISK: PROVES-T6:64 SUBJECT:NAME FORM:rename"),
     ('t8copyfiletofile64', 'open "co.txt" for output as #1:copy "co.txt" to "cp.txt"', 'OPEN "CO.TXT" FOR OUTPUT AS #1:COPY "CO.TXT" TO "CP.TXT"', "stored",
      "NEEDS-DISK: PROVES-T6:64 SUBJECT:COPY FORM:file-to-file"),
+    # D-SEQEOF (2026-09-28): a text file's Ctrl-Z was DATA here and no read ever
+    # said Input past end; the textbook `IF EOF(1) ... LINE INPUT` loop read one
+    # line too many (scratchpad/ipe_probe.py, 16 cases, all agree after).
+    ('t8inputstringread55', 'open "sa.txt" for output as #1:close:open "sa.txt" for input as #1:input #1,a$', 'OPEN "SA.TXT" FOR OUTPUT AS #1:CLOSE:OPEN "SA.TXT" FOR INPUT AS #1:INPUT #1,A$', "stored",
+     "NEEDS-DISK: PROVES-T6:55 SUBJECT:INPUT # FORM:string-read"),
+    ('t8inputdolchannel55', 'open "sb.txt" for output as #1:close:open "sb.txt" for input as #1:a$=input$(1,#1)', 'OPEN "SB.TXT" FOR OUTPUT AS #1:CLOSE:OPEN "SB.TXT" FOR INPUT AS #1:A$=INPUT$(1,#1)', "stored",
+     "NEEDS-DISK: PROVES-T6:55 SUBJECT:INPUT$ FORM:channel"),
+    ('seqeof_eofcr', 'open "sc.txt" for output as #1:print #1,"l1":print #1,"l2":close:open "sc.txt" for input as #1:line input #1,a$:line input #1,b$:print "[";eof(1);"]"', 'OPEN "SC.TXT" FOR OUTPUT AS #1:PRINT #1,"L1":PRINT #1,"L2":CLOSE:OPEN "SC.TXT" FOR INPUT AS #1:LINE INPUT #1,A$:LINE INPUT #1,B$:PRINT "[";EOF(1);"]"', "stored",
+     "NEEDS-DISK: SUBJECT:EOF FORM:at-end -1 right after the LAST line: its CR's LF "
+     "is swallowed and a Ctrl-Z is next. Read 0 here before D-SEQEOF, so an "
+     "`IF EOF(1)` loop read the Ctrl-Z as a third line"),
+    ('seqeof_ctrlz', 'open "sd.txt" for output as #1:print #1,"hi";:close:open "sd.txt" for input as #1:input #1,a$:print "[";len(a$);"]"', 'OPEN "SD.TXT" FOR OUTPUT AS #1:PRINT #1,"HI";:CLOSE:OPEN "SD.TXT" FOR INPUT AS #1:INPUT #1,A$:PRINT "[";LEN(A$);"]"', "stored",
+     "NEEDS-DISK: SUBJECT:INPUT # FORM:string-read 2: the field ends BEFORE the "
+     "Ctrl-Z CLOSE wrote. Read 3 here before D-SEQEOF -- the Ctrl-Z was data"),
     ('t8killdeletefile64', 'open "ko.txt" for output as #1:kill "ko.txt"', 'OPEN "KO.TXT" FOR OUTPUT AS #1:KILL "KO.TXT"', "stored",
      "NEEDS-DISK: PROVES-T6:64 SUBJECT:KILL FORM:delete-file"),
     # D-ERRKEEP (2026-09-28): the SAME 65 as t8namerename65, with a file OPEN. It

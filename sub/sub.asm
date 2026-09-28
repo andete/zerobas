@@ -690,6 +690,9 @@ sub_p1_table:
                 jp      casget_tenant           ; index 27 (SUBROM_IDX_CASGET): the
                                                 ;   cassette ASCII byte source
                                                 ;   (D-CARVECAS, sub/casmatch.asm).
+                jp      seqio_tenant            ; index 28 (SUBROM_IDX_SEQIO): a text
+                                                ;   file's byte source + EOF()
+                                                ;   (D-SEQEOF, sub/bload.asm).
 
 
 ; --- Page-1 PING (S2a boot-gate tenant) -----------------------------------

@@ -48,7 +48,13 @@ ZEROBAS = os.environ.get("ZEROBAS", os.path.dirname(os.path.dirname(os.path.dirn
 SRC_DSK = os.environ.get("DISK_DSK", os.path.join(ZEROBAS, "disk", "test720.dsk"))
 
 CASE_A = 'open"hi.txt" for input as #1:print lof(1);eof(1):close#1'
-CASE_B = ('open"hi.txt" for input as #1:line input#1,a$:line input#1,a$'
+# 🔴 D-SEQEOF (2026-09-28): CASE B READ THE LINE TWICE, AND ITS "want -1" WAS NEVER
+# ASKED OF THE REFERENCE. HI.TXT is ONE CRLF-terminated line; the second LINE INPUT
+# reads past the end, and the CF-3300 answers `Input past end` there
+# (scratchpad/eofprobe_caseb_ref.out) -- zerobas used to return an empty string, so
+# the old case passed on a behaviour the reference does not have. One LINE INPUT
+# consumes the line AND its LF (the INPUT# rule), leaving nothing: EOF(1) = -1.
+CASE_B = ('open"hi.txt" for input as #1:line input#1,a$'
           ':print eof(1):close#1')
 
 

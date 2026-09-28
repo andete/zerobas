@@ -2183,6 +2183,16 @@ Clean-room: original code; verb semantics + the FCB-by-name / sequential read mo
 from the public MSX-BASIC language reference and the black-box CF-3300 DSKIO trace
 (file-channel-protocol.md §2/§3); the byte stream reuses fat.asm. No disassembly.
 
+
+**Text-file rules (D-SEQEOF, 2026-09-28).** Measured on the CF-3300 oracle
+(`scratchpad/ipe_probe.py` → `scratchpad/ipe_after_run.out`, 16 cases): Ctrl-Z
+($1A) is a soft end of file and is never consumed (INPUT stops before it, EOF() is
+-1 when it is next, a read at it is 55, LOF still counts it); INPUT#/LINE INPUT#
+swallow the LF after their CR while INPUT$ reads the pair as data; a read at the
+end raises 55 and leaves its target unchanged. Our own design: the `seqio_tenant`
+sub-ROM tenant (sub/bload.asm) runs the rules on the BLOAD tenant's fatio copy, and
+main reaches it per byte through `fat_io_seqbyte` / `fat_io_eof` (basic/input.asm).
+
 ## file channel — sequential write (OPEN FOR OUTPUT / PRINT# / CLOSE) (basic/files.asm, basic/print.asm, basic/interp.asm, basic/repl.asm, basic/strvar.asm, basic/sysvars.inc)
 
 The WRITE complement of the read path above, EXTEND over the fat.asm write engine

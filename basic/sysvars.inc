@@ -3814,7 +3814,8 @@ FSP             equ     $E043   ; the FOR run's FLOOR: FOR frames are [CSP,FSP) 
 ; evaluator's own combine_add / combine_cmp, int16 fast path and BCD alike.
 FOR_FRAME       equ     25      ; FOR frame size, in bytes
 ; $E045..$E04F held FOR_CUR (11 B) until D-FORFLOAT grew it to 25.
-; FREE-RAM $E045..$E050  the old 11-byte FOR_CUR, free since D-FORFLOAT moved it to $E09C
+SEQ_EOF         equ     $E045   ; seqio tenant -> main: 1 = no byte / at the end (D-SEQEOF) (1 B)
+; FREE-RAM $E046..$E050  the old 11-byte FOR_CUR, free since D-FORFLOAT moved it to $E09C
 FOR_CUR         equ     $E09C   ; scratch: a working copy of one FOR frame (25), and
                                 ; ALSO the key a NEXT parses into before it matches
                                 ; (spec §4.3 -- nx_have only writes it after the
@@ -5001,6 +5002,11 @@ SUBROM_IDX_PUNUM     equ 24     ; pu_num_tenant (sub/punum.asm): PRINT USING's
                                 ; numeric renderer (D-PUNUM). PAGE 1, because it
                                 ; calls flt_fmt in the main LOW region -- and
                                 ; because main page 1 had 32 B free.
+SUBROM_IDX_SEQIO     equ 28     ; seqio_tenant (sub/bload.asm): a TEXT file's byte
+                                ; source -- Ctrl-Z is a soft end, INPUT#'s CR eats
+                                ; the LF after it -- and EOF()'s test; L = 0 byte /
+                                ; 2 EOF, the answer's end flag in SEQ_EOF (D-SEQEOF).
+                                ; PAGE 1: it runs on sub/bload.asm's fatio copy.
 SUBROM_IDX_CASGET    equ 27     ; casget_tenant (sub/casmatch.asm): the cassette
                                 ; ASCII byte source, L = 0 serve / 1 prime
                                 ; (D-CARVECAS, funding D-FORFLOAT). PAGE 1: it

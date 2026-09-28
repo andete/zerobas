@@ -245,5 +245,95 @@ dev_cas:
 ; tenant is affordable.
                 include "basic/fatio-body.inc"       ; fat_io_open + fat_io_getbyte
 
+; --- seqio_tenant: a sequential TEXT file's bytes, the reference's way (D-SEQEOF) --
+; SUBROM_IDX_SEQIO. Measured on the CF-3300 (scratchpad/ipe_probe.py, 16 cases:
+; ipe_run.out, ipe_run2.out, ipe_run3.out), three rules zerobas broke:
+;   R1  Ctrl-Z ($1A) is a SOFT end of file and is never consumed: INPUT stops
+;       before it, EOF() is -1 when it is NEXT, a read at it is 55.
+;   R2  INPUT# / LINE INPUT# swallow the LF after their CR; INPUT$ does not.
+;   R3  a read at the end raises 55 -- main's side (files.asm, strvar.asm).
+; It runs HERE because main had ~42 B and the rules cost ~59 there: this is the
+; same fatio copy BLOAD uses, bound to the real primitives, on main's own FREAD_*
+; and FAT_DBUF. A crossing per byte is what the reference does too (H.INDS).
+;   in : L = 0 -> the next byte (FCH_RDMODE 2 = INPUT$, raw; else the INPUT#
+;               line rule); L = 2 -> EOF()'s test for the selected channel
+;   out: A = the byte; SEQ_EOF = 1 when there was none (the end, or Ctrl-Z next),
+;        else 0 -- subrom_call returns only A, so the flag rides in RAM.
+seqio_tenant:
+                ld      a,l
+                or      a
+                jr      nz,sq_eoftest
+                call    seq_peek            ; A = next byte; CF = nothing to read
+                jr      c,sq_end
+                call    fat_io_getbyte      ; consume it
+                cp      $0D
+                jr      nz,sq_byte
+                ld      a,(FCH_RDMODE)
+                cp      2                   ; INPUT$ reads the CR-LF pair as data
+                jr      z,sq_cr
+                call    seq_peek            ; INPUT#: what follows the CR?
+                jr      c,sq_cr
+                cp      $0A
+                call    z,fat_io_getbyte    ; an LF: swallow it (R2)
+sq_cr:
+                ld      a,$0D
+sq_byte:
+                ld      hl,SEQ_EOF
+                ld      (hl),0
+                ret
+sq_eoftest:
+                ld      a,(FCH_MODE)
+                dec     a                   ; open FOR INPUT?
+                jr      z,sq_eofpeek
+                ld      hl,(FREAD_LEFT)     ; any other mode: the byte count, as
+                ld      de,(FREAD_LEFT+2)   ; EOF() always read it -- never a peek,
+                ld      a,h                 ; which could refill FAT_DBUF over an
+                or      l                   ; OUTPUT channel's unwritten bytes
+                or      d
+                or      e
+                jr      z,sq_end
+                jr      sq_byte
+sq_eofpeek:
+                call    seq_peek
+                jr      nc,sq_byte
+sq_end:
+                ld      a,1
+                ld      (SEQ_EOF),a
+                ret
+
+; seq_peek -- the next byte WITHOUT consuming it: A = it, CF clear; CF set when
+; nothing is left or the next byte is Ctrl-Z (R1). fat_io_getbyte's own bounds
+; and refill, stopped short of the advance, so a peek that refills leaves
+; FREAD_OFF at 0 exactly as the getbyte after it expects.
+seq_peek:
+                ld      hl,(FREAD_LEFT)
+                ld      de,(FREAD_LEFT+2)
+                ld      a,h
+                or      l
+                or      d
+                or      e
+                jr      z,sqp_end
+                ld      hl,(FREAD_OFF)
+                ld      de,512
+                or      a
+                sbc     hl,de
+                jr      c,sqp_have
+                call    fat_read_file_sector
+                jr      c,sqp_end
+                ld      hl,0
+                ld      (FREAD_OFF),hl
+sqp_have:
+                ld      hl,(FREAD_OFF)
+                ld      de,FAT_DBUF
+                add     hl,de
+                ld      a,(hl)
+                cp      $1A
+                jr      z,sqp_end
+                or      a
+                ret
+sqp_end:
+                scf
+                ret
+
 ; The verb body itself, shared with the resident side.
                 include "basic/bload-body.inc"       ; do_bload .. disk_load_fin

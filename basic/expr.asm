@@ -1328,14 +1328,11 @@ ev_ff_eof:                                  ; EOF(n): -1 at end of the input fil
                 jp      nc,ev_f_ifc         ; -> function error (never fch_select them)
                 ld      a,e
                 call    fch_select
-                ld      hl,FREAD_LEFT
-                ld      a,(hl)
-                inc     hl
-                or      (hl)
-                inc     hl
-                or      (hl)
-                inc     hl
-                or      (hl)
+                call    fat_io_eof          ; D-SEQEOF: CF = at the end -- Ctrl-Z
+                                            ; NEXT counts (R1); other modes keep the
+                                            ; byte count (the tenant does both)
+                sbc     a,a
+                inc     a                   ; Z iff at the end
                 ld      de,0
                 ret     nz                  ; bytes remain -> not EOF -> 0
                 dec     de                  ; all delivered -> EOF -> -1 ($FFFF)

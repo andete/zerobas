@@ -275,12 +275,35 @@ inpc_nomore:
 ;   out: ARL_GETBYTE set. ⚠️ CLOBBERS HL -- input_common holds the BASIC text
 ;        cursor there and guards it; INPUT$ has already pushed its own.
 arl_set_src:
-                ld      hl,fat_io_getbyte
+                ld      hl,fat_io_seqbyte   ; D-SEQEOF: the text rules (seqio tenant)
                 cp      CAS_IN_MODE
                 jr      nz,ass_store
                 ld      hl,cas_in_getbyte
 ass_store:
                 ld      (ARL_GETBYTE),hl
+                ret
+
+; --- fat_io_seqbyte / fat_io_eof: stubs over the seqio tenant (D-SEQEOF) -----
+; fat_io_seqbyte is the ARL_GETBYTE source for a disk channel open FOR INPUT
+; (INPUT#, LINE INPUT#, INPUT$): the next byte by the reference's text rules,
+; CF set at the end. fat_io_eof is EOF()'s test: CF set = at the end. Both guard
+; IX -- EOF() and INPUT$ run inside the evaluator, whose token cursor it is, and
+; this crosses once per BYTE, where the old source crossed only on a refill.
+; ASCII LOAD / MERGE keep fat_io_getbyte: a program's Ctrl-Z ends it anyway.
+fat_io_eof:
+                ld      l,2
+                jr      seq_call
+fat_io_seqbyte:
+                ld      l,0
+seq_call:
+                push    ix
+                ld      ix,SUBROM_ENTRY_BASE_P1 + 3*SUBROM_IDX_SEQIO
+                call    sc_call             ; A = the byte (subrom_call's `or a`)
+                pop     ix
+                ld      c,a
+                ld      a,(SEQ_EOF)
+                rra                         ; CF = the end flag
+                ld      a,c
                 ret
 
 ; --- linebuf_getbyte: ARL_GETBYTE source for the console line --------------

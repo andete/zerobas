@@ -1179,6 +1179,11 @@ inp_readvar:
                 push    hl                  ; guard the BASIC text cursor
                 push    bc                  ; guard the variable key across the read
                 call    read_into_strscr    ; fill STRSCR [len][bytes] from the file
+                jr      nc,inp_got          ; stopped on a delimiter
+                ld      a,(STRSCR)
+                or      a                   ; D-SEQEOF R3: the end, and not one byte
+                jp      z,gp_past_eof       ; read -> 55 (raise_error resets SP)
+inp_got:
                 pop     bc
                 call    tgt_store_str       ; scalar key OR element address
                 pop     hl

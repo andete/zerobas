@@ -33,7 +33,7 @@ other component's cell at the same address; the `inside` column
 names the other component's BUFFER this address falls within. That
 second one is the question a per-component map cannot answer.
 
-* **basic** — 434 declared addresses in this project's own workspace `$E000..$F37F` (404 with a machine-readable width), plus **102** in the MSX standard work area at or above `$F380`.
+* **basic** — 435 declared addresses in this project's own workspace `$E000..$F37F` (405 with a machine-readable width), plus **102** in the MSX standard work area at or above `$F380`.
 * **disk** — 128 declared addresses in this project's own workspace `$E000..$F37F` (114 with a machine-readable width), plus **25** in the MSX standard work area at or above `$F380`.
 
 ## This project's own workspace (`$E000..$F37F`)
@@ -85,6 +85,7 @@ second one is the question a per-component map cannot answer.
 | `$E040` | 1 B | `basic` | `RESUMEFLAG` | 1 = resume at RESUMEPTR (set by RETURN / NEXT) (1 B) |  |
 | `$E041` | 2 B | `basic` | `GSP` | newest GOSUB frame's address; == CTLTOP if none (2) |  |
 | `$E043` | 2 B | `basic` | `FSP` | the FOR run's FLOOR: FOR frames are [CSP,FSP) (2) |  |
+| `$E045` | 1 B | `basic` | `SEQ_EOF` | seqio tenant -> main: 1 = no byte / at the end (D-SEQEOF) (1 B) |  |
 | `$E050` | 2 B | `basic` | `CSP` | the pool's allocation frontier, descending (2) |  |
 | `$E052` | 2 B | `basic` | `CTLTOP` | the pool's TOP = strheap_varceil(), cached (2) |  |
 | `$E054` | 2 B | `basic` | `TSP` | newest trap SERVICE record; valid iff TRAPSVC != 0 (2) |  |

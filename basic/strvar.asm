@@ -516,7 +516,9 @@ sid_ok:
                 ld      a,e
                 call    fch_select          ; make channel f live; FCH_MODE = its mode
                 pop     af
-                call    arl_set_src         ; A = 1 -> fat_io_getbyte
+                call    arl_set_src         ; A = 1 -> fat_io_seqbyte
+                ld      a,2                 ; D-SEQEOF: INPUT$ reads RAW -- the CR-LF
+                ld      (FCH_RDMODE),a      ; pair is two bytes of data to it
 sid_read:
                 call    str_inputd_read     ; fill STRSCR [len][bytes] with n bytes
                 call    strscr_desc         ; RVDESC -> [len][ptr] wrapping STRSCR
@@ -535,7 +537,9 @@ sidr_lp:
                 jr      z,sidr_done         ; consumed all n
                 call    arl_getbyte         ; D-CASINP: through the vector, so a
                                             ; CAS: channel sources from the tape
-                jr      c,sidr_done         ; EOF before n -> stop (partial)
+                jp      c,gp_past_eof       ; D-SEQEOF R3: the end before n bytes is
+                                            ; 55, and the target keeps its old value
+                                            ; (was: stop, and return a short string)
                 ld      c,a                 ; C = the byte read
                 ld      hl,INDLR_N
                 dec     (hl)                ; D-PEEPHOLE: -3 B (7 B -> 4 B)
