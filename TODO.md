@@ -6019,7 +6019,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:26982 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:27005 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -26093,6 +26093,29 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       📏 [`scratchpad/t6enum_b9.out`](scratchpad/t6enum_b9.out): `VARPTR(#0)` OK,
       `VARPTR(#16)` 52, `VARPTR(#"A")` 13 on the VG-8020; all three `Syntax error`
       here. VARPTR stays level 0 (1/2 forms) and T6- until the form exists.
+      📏 **MEASURED 2026-09-28 — THE CONTRACT IS A LAYOUT, NOT A VALUE**
+      ([`varptrfcb_probe.py`](scratchpad/varptrfcb_probe.py) →
+      [`varptrfcb_probe.out`](scratchpad/varptrfcb_probe.out)). On BOTH references
+      `VARPTR(#n)` is the address of channel n's file control block, for every n
+      in 0..MAXFILES, OPEN OR NOT: `MAXFILES=3` gives −4260 −3995 −3730 −3465 on the
+      VG-8020 and −9645 −9380 −9115 −8850 on the CF-3300 — **a 265-byte stride on
+      both** (9 header bytes + a 256-byte buffer). The block's byte +0 is the MODE
+      (2 after `FOR OUTPUT`, 1 after `FOR INPUT`), and the DATA BUFFER starts at +9
+      (the CF-3300 shows `HEL` there after `PRINT#1,"HELLO"`). Errors: `#4` past
+      MAXFILES is 52, `#-1` and `#256` are 5 — both references.
+      🙋 **WHY THIS WAITS ON JOOST.** The absolute addresses differ machine to
+      machine, so the only readings a row can AGREE on are the LAYOUT's: the
+      stride, the mode byte at +0, the buffer at +9. zerobas has no such blocks —
+      modes live in `FCH_MODES` ($EA00), state is swapped through context blocks,
+      and the buffers are not 265-byte per-channel blocks below HIMEM. So the form
+      is either (a) **a re-layout of channel storage to the reference's FCB shape**
+      — which also moves FRE and the RAM map, i.e. TIER 4 (RAM usage vs the
+      VG-8020) work, and is the only version under which programs that PEEK/POKE
+      a channel's buffer run — or (b) **an address with no agreed layout**, which
+      would tick T1 on a row that agrees for the wrong reason (a nonzero value),
+      and which this tree's rules forbid. Autonomously, (b) is out and (a) is a
+      design decision. VARPTR is the ONLY keyword left below level 2 that is not
+      N/A (2026-09-28, after D-CASRELOCK/D-CLOADPROG took CLOAD to level 2).
 
 - [ ] 🔴 **`READ A%` OF `DATA 99999` IS `Overflow` ON THE VG-8020 AND ACCEPTED HERE
       (D-READINTOVF, found 2026-09-28 by T6 batch 9).**
