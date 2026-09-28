@@ -50,7 +50,8 @@ parse_disk_fcb:
                 jr      z,drive_a
                 cp      'B'
                 jr      z,drive_b
-                jp      bl_load_error          ; "X:" with X not A/B -> reject
+                jp      pdf_baddrive           ; "X:" with X not A/B -> ERR 62 (D-DRVNAME;
+                                               ; binds per build, like pdf_badname)
 drive_a:
                 ld      a,1
                 jr      set_drive
@@ -74,8 +75,8 @@ build_name:
                 ; pattern, printing TWO messages [[load-error-is-not-abort]].
                 ; Measured uniform across KILL/LOAD/SAVE/OPEN/FILES on the
                 ; reference, which is why one site serves all eleven callers.
-                ; ⚠️ The DRIVE-LETTER reject above still goes to bl_load_error:
-                ; `FILES"C:X"` is unmeasured and is not this row's subject.
+                ; ✅ The DRIVE-LETTER reject above is measured now (D-DRVNAME,
+                ; scratchpad/drvname_run.out) and raises 62 through pdf_baddrive.
                 ; ⚠️ `pdf_badname` BINDS PER BUILD, like bl_load_error does: the
                 ; RESIDENT copy raises ERR 56, the TENANT copy (reached only by
                 ; do_bload inside sub/bload.asm) keeps bl_load_error's file-and-

@@ -86,7 +86,7 @@ CASES = [
     # must go all the way through. The probe renames HI.TXT to itself, on its own
     # temp COPY of the image, so the fixture is untouched either way.
     ("name.exok", 'NAME"HI.TXT"AS"HI.TXT"',
-     "well formed, old file EXISTS: does the second site complete? 0 = yes"),
+     "well formed, old file EXISTS, new name exists too: does the second site complete? 65 = yes (the existence check runs AFTER both names parse)"),
     # \U0001f3af CRUNCHED CONSTANT vs VARIABLE. `NAME 5 AS"X.DAT"` (name.old5) is the
     # SAME crunched numeric constant through the FIRST fname_expr site and it
     # answers 13, so a crunched constant is not inherently the problem -- but the
@@ -131,23 +131,12 @@ PINNED = {
     # face defect: the fix is not "produce 13 here", it is "hand els_tc_common
     # the operand", after which 13 and 11 both fall out. One pin, one mechanism.
     "name.exdiv": ("11", "2"),
-    # `NAME"HI.TXT"AS"HI.TXT"` renames a file onto a name that already exists.
-    # The CF-3300 refuses with ERR 65 `File already exists`; zerobas performs it
-    # and returns 0. Added only to establish that the SECOND fname_expr site is
-    # REACHED and COMPLETES -- it is, and it does.
-    # \U0001f534 AND IT IS NOT A NEW FINDING, WHICH IS WHAT I FIRST CALLED IT. The
-    # tree already carried it in TWO places as a deliberate own-design gap:
-    # `basic/files.asm`'s ex_name header ("Divergences: no \"new already exists\"
-    # check (own design)") and PROVENANCE.md §NAME ("Divergences (own design,
-    # quarantined): no \"new name already exists\" check (a later refinement)").
-    # One grep would have said so. What this row DOES add is real but smaller: the
-    # quarantine was PROSE, asserted and never driven, and it is now a measured
-    # row with the reference's own face (65) beside ours (0)
-    # [[a-justification-parenthesis-is-an-unrun-claim]].
-    # ⚠️ NOTE FOR WHOEVER CLOSES IT: `sub/errmsg.asm` treats 65..255 as "not one
-    # of ours" and prints em_unprintable, so ERR 65 needs a MESSAGE as well as a
-    # check -- part of why it was deferred as "a later refinement".
-    "name.exok": ("65", "0"),
+    # `name.exok` IS NO LONGER PINNED. It was ("65", "0"): the CF-3300 refuses a
+    # rename onto an existing name with 65 `File already exists` and zerobas
+    # performed it. D-NAMEEXIST (2026-09-28) added the check in hk_name and the
+    # message in sub/errmsg.asm -- the two halves this pin's own note said a fix
+    # would need -- and the row now agrees at 65. It still proves what it was
+    # added for: 65 is raised only after the SECOND fname_expr site has parsed.
     # The same mechanism as name.ex5, at two more operand shapes. Pinned together
     # because they are ONE defect: see the block comment on name.ex5.
     "name.ex55": ("13", "2"),

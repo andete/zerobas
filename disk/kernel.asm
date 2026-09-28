@@ -2821,10 +2821,34 @@ hkn_a:
                 ld      hl,STRSCR + 1
                 ld      ix,parse_disk_fcb
                 call    calbak              ; new -> DISK_FCB_NAME
+                ; 🔴 D-NAMEEXIST (2026-09-28): A NEW NAME THAT ALREADY EXISTS IS
+                ; `File already exists` (65), AND IT USED TO BE STAMPED OVER: the
+                ; directory then held TWO entries of that name. Measured on the
+                ; CF-3300 (scratchpad/t6enum_b8_zb.out, `NAME "N1.TXT" AS
+                ; "N2.TXT"` with both present). Look the new name up with the same
+                ; fat_find -- but it records its hit in FWR_DIRSEC/DIROFF, which is
+                ; exactly where hkn_stamp is about to write, so the OLD file's
+                ; location is kept across it and put back.
+                ld      hl,(main_FWR_DIRSEC)
+                push    hl
+                ld      hl,(main_FWR_DIROFF)
+                push    hl
+                ld      hl,DISK_FCB_NAME
+                ld      ix,main_fat_find
+                call    calbak              ; CF clear = the new name is taken
+                pop     hl                  ; (POP and LD (nn),HL touch no flag)
+                ld      (main_FWR_DIROFF),hl
+                pop     hl
+                ld      (main_FWR_DIRSEC),hl
+                jr      nc,hkn_exists
                 call    hkn_stamp           ; LOCAL now -- no call-back, no sub-ROM
                 jr      c,hkn_io
                 ld      a,1                 ; renamed
                 jr      hkn_done
+hkn_exists:
+                ld      a,65                ; `File already exists`, raised by
+                ld      (DISKOP_ERR),a      ; disk_error from status 2 (hkn_io) --
+                jr      hkn_io              ; NOT a fall into hkn_nf's status 0
 hkn_nf:
                 xor     a                   ; 0 = old file not found -> ERR 53
                 jr      hkn_done

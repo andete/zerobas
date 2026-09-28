@@ -112,6 +112,7 @@ bl_upcase:
 ; unmeasured verb on a reading taken for five others is exactly what D-DSKMSG
 ; declined to do for NAME.
 pdf_badname     equ     bl_load_error
+pdf_baddrive    equ     bl_load_error   ; D-DRVNAME: the same, for a drive past B:
 
 bl_load_error:
                 call    TAPIOF

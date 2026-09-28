@@ -95,6 +95,12 @@ at 60. So the disk-ROM boundary is at **60**, not 50.
 | 62 | `Unprintable error` | `Bad drive name` | `unprintable error` |
 | 63 | `Unprintable error` | `Bad sector number` | `unprintable error` |
 | 64 | `Unprintable error` | `File still open` | `unprintable error` |
+| 65 | — (not measured: diskless) | `File already exists` | — (nothing raised 65) |
+
+➕ **65 was added 2026-09-28 (D-NAMEEXIST)**, after this table's run: nothing in
+zerobas raised it until `NAME` onto an existing file did. The CF-3300's text is
+the kwsweep reading of row `t8namerename65` (`File already exists in 40`) and
+[`scratchpad/nameexist_run.out`](../scratchpad/nameexist_run.out) its code.
 
 The 60..64 disagreement is **the reading that proves each machine is being read
 on its own terms** — a row where both refs agreed there would be the suspicious

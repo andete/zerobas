@@ -1,0 +1,4 @@
+case              CF-3300          zerobas
+  exists          [ 65 30 ]        [ 65 30 ]
+  rename        [HI 53 50 ]      [HI 53 50 ]
+  nosuch          [ 53 20 ]        [ 53 20 ]

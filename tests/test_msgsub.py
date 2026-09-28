@@ -64,6 +64,7 @@ EXPECT = {
     62: "Bad drive name",
     63: "Bad sector number",
     64: "File still open",
+    65: "File already exists",     # D-NAMEEXIST, 2026-09-28 (doc §2, CF-3300)
 
     # --- D-MSGMIGRATE: the sixteen that MOVED here from main page 1 ----------
     # ⚠️ THESE ARRIVED BY HAND-OFF, AND THE HAND-OFF IS THE HAZARD. Each one was

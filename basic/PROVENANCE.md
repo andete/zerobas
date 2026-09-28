@@ -2364,12 +2364,21 @@ now reads as `File not found` too. Stated, not measured; `KILL` has the identica
 residual one primitive over. Separating either needs a status out of the
 primitive, which `tnt_files` has and `NAME` does not.
 
-**Divergences (own design, quarantined):** no "new name already exists" check (a
-later refinement); the drive prefix on either name is accepted and ignored for the
-stamp (single drive); a missing disk / mount failure / stamp I-O error still
+**Divergences (own design, quarantined):** a missing disk / mount failure / stamp I-O error still
 reuses `load_error`, and no row anywhere drives that arm (D-DKNAME's knife
 K-NAME2 is the written-down predicted miss that proves it). Only the
 **missing-old-file** disposition is reference-exact.
+
+🔴 **THIS PARAGRAPH USED TO OPEN WITH TWO MORE DIVERGENCES, BOTH NOW CLOSED
+(2026-09-28).** D-NAMEEXIST: `hk_name` looks the new name up with `fat_find`
+before stamping (saving and restoring the `FWR_DIRSEC`/`FWR_DIROFF` cells that
+lookup overwrites) and raises 65 `File already exists`, which `sub/errmsg.asm`
+now prints. D-DRVNAME: `pdfcb` refuses a drive letter past `B:` with 62 `Bad
+drive name`, as the CF-3300 does for every letter from `C:` on. Both were
+measured, not asserted: `scratchpad/nameexist_probe.py` and
+`scratchpad/drvname_probe.py`, CF-3300 against zerobas, one boot per case. `B:`
+still differs — the CF-3300 prompts for the phantom drive's disk swap, which is
+filed under D-DISKERRS.
 
 Clean-room: original code; NAME semantics + the 8.3 dir-field layout from the public
 MSX-BASIC reference + Microsoft FAT spec, validated by the byte-identical CF-3300

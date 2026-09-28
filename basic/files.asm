@@ -977,6 +977,20 @@ pdfcb_resume:
                 ld      hl,(FN_RESUME)
                 ret
 
+; --- pdf_baddrive: a drive past B: -> ERR 62 `Bad drive name` (D-DRVNAME) -----
+; parse_disk_fcb sent it to bl_load_error, and load_error PRINTS AND RETURNS --
+; from inside the parser, so the caller carried on with the drive still at its
+; default A: and `OPEN "Q:F.TXT" FOR OUTPUT` made the file on A:. The CF-3300
+; raises 62 for C: .. H: and Q: (scratchpad/drvname_run.out) on OPEN, KILL, SAVE,
+; FILES and RUN (t6enum_b8_zb.out); A:, a: and B: -- its phantom drive, which
+; waits for a disk -- are not errors. The same fix D-FSPEC made for a malformed
+; NAME (pdf_badname, 56), and bound per build the same way: sub/bload.asm keeps
+; bl_load_error for BLOAD, whose answer is unmeasured. Page 1, not the low
+; region beside pdf_badname: the low region had 2 B.
+pdf_baddrive:
+                ld      a,62
+                jp      raise_error
+
 fname_expr:
                 call    skip_spaces         ; 🔴 D-FNEXPR2: **INSIDE**, and it was a
                                             ; defect that it was not. See the
@@ -1796,9 +1810,12 @@ kill_status:                            ; D-COPY shares this decode (0/1/2)
 ; REST of that sentence stands: no disk / mount / stamp I-O still reuse
 ; load_error, and no row anywhere measures what the reference says there.
 ;
-; Divergences: no "new already exists" check (own design); single drive (the
-; drive prefix on either name is accepted + ignored for the stamp); the no-disk /
-; mount / I-O wording (quarantined). See basic/PROVENANCE.md §NAME.
+; Divergences: the no-disk / mount / I-O wording (quarantined). See
+; basic/PROVENANCE.md §NAME. 🔴 THIS LINE USED TO NAME TWO MORE, BOTH NOW FALSE:
+; D-NAMEEXIST (2026-09-28) added the "new name already exists" check (65, in
+; hk_name, measured against the CF-3300 by scratchpad/nameexist_probe.py), and
+; D-DRVNAME made pdfcb refuse a drive letter past B: with 62 (a prefix of A: or
+; B: is still accepted; B: is the CF-3300's phantom drive, see D-DISKERRS).
 ; 🧭 D-DISKVERB2 (2026-09-15): THE BODY IS NOT HERE ANY MORE -- it is `hk_name`
 ; in disk/kernel.asm, reached through H_NAME, on the pattern KILL established.
 ; What is left is the cursor hand-off and the decode.

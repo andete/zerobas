@@ -6019,7 +6019,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:26401 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:26424 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -25502,9 +25502,32 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       cannot report to an ON ERROR handler (RUN disarms it). The rest,
       reference → zerobas:
       • **accepted where the reference refuses, and it can lose data:**
-        `KILL` of an OPEN file (64 → ok), `NAME` onto an EXISTING file (65 → ok),
-        re-`OPEN` of a busy channel (54 → ok), any `Q:` drive — OPEN, KILL,
-        SAVE, RUN (62 → ok; `FILES "Q:*.*"` 62 → 53).
+        `KILL` of an OPEN file (64 → ok), ~~`NAME` onto an EXISTING file (65 →
+        ok)~~, re-`OPEN` of a busy channel (54 → ok), ~~any `Q:` drive — OPEN,
+        KILL, SAVE, RUN (62 → ok; `FILES "Q:*.*"` 62 → 53)~~.
+        ✅ **D-DRVNAME (2026-09-28):** a drive past B: raises 62 now.
+        `parse_disk_fcb` rejected it with `bl_load_error`, which PRINTS AND
+        RETURNS from inside the parser, so the caller went on with drive A: and
+        `OPEN "Q:F.TXT"` made the file on A:. It goes to `pdf_baddrive` (62,
+        page 1, bound per build like D-FSPEC's `pdf_badname`; the BLOAD tenant
+        keeps its unmeasured answer). [`scratchpad/drvname_probe.py`](scratchpad/drvname_probe.py):
+        before [`drvname_run.out`](scratchpad/drvname_run.out), after
+        [`drvname_after_run.out`](scratchpad/drvname_after_run.out) — C: .. H:
+        and Q: agree at 62. ⚠️ **B: still differs, and it is not an error:**
+        the CF-3300 treats B: as its PHANTOM drive and waits for a disk; zerobas
+        uses A:. A prompt, not a code — noted, not chased.
+        ✅ **D-NAMEEXIST (2026-09-28):** `hk_name` (disk.rom) looks the NEW name
+        up first and refuses with 65, saving and restoring FWR_DIRSEC/DIROFF
+        around that lookup because they are exactly where the rename stamps.
+        [`scratchpad/nameexist_probe.py`](scratchpad/nameexist_probe.py) →
+        [`nameexist_run.out`](scratchpad/nameexist_run.out): exists 65, the
+        ordinary rename still reads `HI` from the new name with the old one
+        gone, and not-found 53 — all agree. Its message had never been needed:
+        `Unprintable error in 40` until sub/errmsg.asm gained ERR 65's row.
+        Five batch-8 rows restored with them; **FILES and NAME reach T6 → 104**.
+        🔮 Predicted 103 (FILES only) — NAME was wrongly assumed blocked by
+        `NAME "A.TXT"` (53 there, 2 here): T6 needs ONE agreeing row per (form,
+        code), and 53 already has one (`NAME "NOSUCH.TXT" AS …`).
       • **the common error paths:** `INPUT #` / `INPUT$(n,#)` past the end
         (55 → ok), `EOF` / `INPUT #` / `PRINT #` on a channel opened the other
         way (61 / 52 → ok).

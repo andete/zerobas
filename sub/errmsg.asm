@@ -165,7 +165,12 @@ em_table:
                 dw      em_bad_sector
                 db      64
                 dw      em_file_still_open
-EM_ROWS         equ     30
+                db      65                  ; D-NAMEEXIST (2026-09-28): the first code
+                dw      em_file_exists      ; ever raised past 64 -- NAME onto an
+                                            ; existing file. Without this row it
+                                            ; printed `Unprintable error in 40`
+                                            ; where the CF-3300 prints the text below
+EM_ROWS         equ     31
 
 ; The dense-range four (main's err_msgtab entries 12/15/18/19 point at
 ; err_subhosted for these). Both references agree on all four.
@@ -197,6 +202,7 @@ em_bad_fat:         db  "Bad FAT",0                     ; ERR 60
 em_bad_drive:       db  "Bad drive name",0              ; ERR 62
 em_bad_sector:      db  "Bad sector number",0           ; ERR 63
 em_file_still_open: db  "File still open",0             ; ERR 64
+em_file_exists:     db  "File already exists",0         ; ERR 65 (CF-3300, t8namerename65)
 
 ; --- D-MSGMIGRATE: the fifteen messages that MOVED HERE from main page 1 ------
 ; docs/spec-basic-msgmigrate.md §2.1. Unlike everything above, zerobas RAISES

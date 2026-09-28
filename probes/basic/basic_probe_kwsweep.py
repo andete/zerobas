@@ -4319,6 +4319,18 @@ SWEEP: list[tuple[str, str, str | None, str, str]] = [
      "NEEDS-DISK: PROVES-T6:59 SUBJECT:INPUT$ FORM:channel"),
     ('t8callrefuse2', 'call foo', 'CALL FOO', "stored",
      "NEEDS-DISK: PROVES-T6:2 SUBJECT:CALL FORM:refuse"),
+    # ➕ D-DRVNAME / D-NAMEEXIST (2026-09-28): five batch-8 pairs that agree now
+    # -- a drive past B: raises 62, and NAME onto an existing file 65.
+    ('t8filespattern62', 'files "q:*.*"', 'FILES "Q:*.*"', "stored",
+     "NEEDS-DISK: PROVES-T6:62 SUBJECT:FILES FORM:pattern"),
+    ('t8killdeletefile62', 'kill "q:a.txt"', 'KILL "Q:A.TXT"', "stored",
+     "NEEDS-DISK: PROVES-T6:62 SUBJECT:KILL FORM:delete-file"),
+    ('t8namerename65', 'open "n1.txt" for output as #1:close:open "n2.txt" for output as #1:close:name "n1.txt" as "n2.txt"', 'OPEN "N1.TXT" FOR OUTPUT AS #1:CLOSE:OPEN "N2.TXT" FOR OUTPUT AS #1:CLOSE:NAME "N1.TXT" AS "N2.TXT"', "stored",
+     "NEEDS-DISK: PROVES-T6:65 SUBJECT:NAME FORM:rename"),
+    ('t8openoutput62', 'open "q:x.txt" for output as #1', 'OPEN "Q:X.TXT" FOR OUTPUT AS #1', "stored",
+     "NEEDS-DISK: PROVES-T6:62 SUBJECT:OPEN FORM:output"),
+    ('t8savetokenised62', 'save "q:x.bas"', 'SAVE "Q:X.BAS"', "stored",
+     "NEEDS-DISK: PROVES-T6:62 SUBJECT:SAVE FORM:tokenised"),
     # 🎚️ D-KWT3 BATCH 1 — the TIER 3 rung: each row is a SECOND row for a keyword
     # that already has a happy-path one, scoring the error a 1985 magazine listing
     # would plausibly hit. The legend's own test picked them, one per error class.
