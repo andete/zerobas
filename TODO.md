@@ -25631,8 +25631,8 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
 - [ ] 🔴 **`COPY "A*.TXT" TO "C*.TXT"` IS `Illegal function call` HERE (D-COPYWILD,
       found 2026-09-28).**
       🎚️ TIER 3 — a wildcard COPY is the ordinary way to copy a set of files.
-      🤖 **AUTONOMOUS** for the two measured shapes below; the multi-match one is a
-      question for Joost.
+      🤖 **AUTONOMOUS** — the two measured shapes below (one match, no match); the
+      multi-match behaviour is a question for Joost (➡️ at the end).
       📏 **MEASURED 2026-09-28** ([`scratchpad/copywild_probe.py`](scratchpad/copywild_probe.py)):
       • ONE match — `COPY "A1.*" TO "E1.*"` copies A1.TXT to E1.TXT on the CF-3300
         (`[X1|OK]`, [`copywild_run.out`](scratchpad/copywild_run.out)); zerobas: 5.
@@ -25643,7 +25643,7 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
         [`copywild_run3.out`](scratchpad/copywild_run3.out)), and the screen after
         `RUN` stays blank — no output, no `Ok` ([`copywild_screen.out`](scratchpad/copywild_screen.out)).
         Unasked: whether a key or more time ends it on real hardware.
-      🙋 **FOR JOOST:** faithfulness would mean copying the reference's HANG for
+      ➡️ **FOR JOOST:** faithfulness would mean copying the reference's HANG for
       two or more matches. The autonomous part is the single-match copy (dest
       `?`/`*` filled from the source name) and the no-match 53; what to do for
       several matches — refuse (5, today), copy them all, or match the hang — is

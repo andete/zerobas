@@ -265,7 +265,7 @@ A keyword's LEVEL is its highest UNBROKEN run of proven rungs from T1: `T1✓ T2
 | `LOAD` | TIER 2 | 🤖 | reasonable time, on `LOAD`. | 220 |
 | — | TIER 2 | 🤖 | reasonable time; it is apparatus, and it gates steps 10-11. | 2509 |
 | — | TIER 2 | 🤖 | it is a correctness constraint on the disk-code eviction, not | 3625 |
-| `COPY`, `TO` | TIER 3 | ? | a wildcard COPY is the ordinary way to copy a set of files. | 25631 |
+| `COPY`, `TO` | TIER 3 | 🤖 | a wildcard COPY is the ordinary way to copy a set of files. | 25631 |
 | — | TIER 3 | 🤖 | a KILL, NAME or re-OPEN that the reference | 25504 |
 | `DIM` | TIER 4 | 🤖 | RAM usage (VG-8020): economy at the memory edge | 25379 |
 | `VARPTR` | TIER 4 | 🤖 | RAM usage (VG-8020): `MAXFILES` charges 306 B a channel where | 17086 |
