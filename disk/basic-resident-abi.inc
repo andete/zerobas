@@ -45,6 +45,10 @@ COPY_CLUS equ 0E08BH   ; the source's first cluster (word)
 COPY_LEFT equ 0E08DH   ; bytes still to copy (4-byte LE)
 FILES_ENTIDX equ 0E0FCH   ; FILES: dir entry index 0..15 within a sector (1)
 LPTPOS equ 0EA39H   ; printer head column, 0-based (1)
+FCH_ACTIVE equ 0E012H   ; channel live in the engine globals, 0 = none (1)
+FCH_MODES equ 0EA00H   ; 16 B ($EA00..$EA0F)
+FCH_STATESZ equ 00032H   ; $E9C9..$E9FA inclusive = 50 bytes
+LPT_MODE equ 00005H   ; FCH_MODES value: channel open to the LPT: printer device
 
 ; --- page-1 call-back targets: reached by an INTER-SLOT call (MSX2 TH), not an absolute one ---
 fname_expr equ 06E39H
@@ -59,3 +63,4 @@ field_item equ 07287H
 lrset_tgt equ 07342H
 lrset_rhs equ 07364H
 lrset_finish equ 0737BH
+fch_ctx_addr equ 06F7EH

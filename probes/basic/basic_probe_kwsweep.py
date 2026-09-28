@@ -4327,6 +4327,18 @@ SWEEP: list[tuple[str, str, str | None, str, str]] = [
      "NEEDS-DISK: PROVES-T6:62 SUBJECT:KILL FORM:delete-file"),
     ('t8namerename65', 'open "n1.txt" for output as #1:close:open "n2.txt" for output as #1:close:name "n1.txt" as "n2.txt"', 'OPEN "N1.TXT" FOR OUTPUT AS #1:CLOSE:OPEN "N2.TXT" FOR OUTPUT AS #1:CLOSE:NAME "N1.TXT" AS "N2.TXT"', "stored",
      "NEEDS-DISK: PROVES-T6:65 SUBJECT:NAME FORM:rename"),
+    # D-KILLOPEN (2026-09-28): KILL of an OPEN file is 64 `File still open` on the
+    # CF-3300 and deleted the file under a live channel here
+    # (scratchpad/killopen_probe.py). Its own names: the refused file stays behind
+    # on the image, and nothing else may trip over it.
+    ('t8killdeletefile64', 'open "ko.txt" for output as #1:kill "ko.txt"', 'OPEN "KO.TXT" FOR OUTPUT AS #1:KILL "KO.TXT"', "stored",
+     "NEEDS-DISK: PROVES-T6:64 SUBJECT:KILL FORM:delete-file"),
+    # D-ERRKEEP (2026-09-28): the SAME 65 as t8namerename65, with a file OPEN. It
+    # read ERR 0 here -- chan_gate's restore re-staged the live channel and every
+    # successful sector read writes DISKOP_ERR = 0, so the code was gone before
+    # main decoded it. Not a PROVES row (65 has one); it guards the mechanism.
+    ('t8namerenameopen', 'open "no1.txt" for output as #1:close:open "no2.txt" for output as #1:close:open "zo.txt" for output as #1:name "no1.txt" as "no2.txt"', 'OPEN "NO1.TXT" FOR OUTPUT AS #1:CLOSE:OPEN "NO2.TXT" FOR OUTPUT AS #1:CLOSE:OPEN "ZO.TXT" FOR OUTPUT AS #1:NAME "NO1.TXT" AS "NO2.TXT"', "stored",
+     "NEEDS-DISK: SUBJECT:NAME FORM:rename"),
     ('t8openoutput62', 'open "q:x.txt" for output as #1', 'OPEN "Q:X.TXT" FOR OUTPUT AS #1', "stored",
      "NEEDS-DISK: PROVES-T6:62 SUBJECT:OPEN FORM:output"),
     ('t8savetokenised62', 'save "q:x.bas"', 'SAVE "Q:X.BAS"', "stored",

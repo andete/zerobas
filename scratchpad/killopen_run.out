@@ -1,0 +1,12 @@
+case                   CF-3300              zerobas
+✗ k_out                [ 64 30 ]                 [OK]
+✗ k_in                 [ 64 30 ]                 [OK]
+  k_nonact             [ 52 20 ]            [ 52 20 ]
+✗ k_wild               [ 64 30 ]                 [OK]
+  k_closed                  [OK]                 [OK]
+  c_out                [HELLOOK]            [HELLOOK]
+  c_in                 [HELLOOK]            [HELLOOK]
+✗ o_busy               [ 54 30 ]                 [OK]
+  o_same               [ 52 30 ]            [ 52 30 ]
+  o_samein             [ 52 30 ]            [ 52 30 ]
+refcache: 0 hit, 20 miss, 20 stored

@@ -34,7 +34,7 @@ names the other component's BUFFER this address falls within. That
 second one is the question a per-component map cannot answer.
 
 * **basic** — 434 declared addresses in this project's own workspace `$E000..$F37F` (404 with a machine-readable width), plus **102** in the MSX standard work area at or above `$F380`.
-* **disk** — 126 declared addresses in this project's own workspace `$E000..$F37F` (112 with a machine-readable width), plus **25** in the MSX standard work area at or above `$F380`.
+* **disk** — 128 declared addresses in this project's own workspace `$E000..$F37F` (114 with a machine-readable width), plus **25** in the MSX standard work area at or above `$F380`.
 
 ## This project's own workspace (`$E000..$F37F`)
 
@@ -43,6 +43,7 @@ second one is the question a per-component map cannot answer.
 | `$E010` | 1 B | `basic` | `ERRMARK` | error landmark marker byte (1 B) |  |
 | `$E011` | 1 B | `basic` | `MAXF` | current MAXFILES ceiling (0..FCH_CEIL); default 1 (1) |  |
 | `$E012` | 1 B | `basic` | `FCH_ACTIVE` | channel live in the engine globals, 0 = none (1) |  |
+| `$E012` | 1 B | `disk` | `FCH_ACTIVE` | channel live in the engine globals, 0 = none (1) |  |
 | `$E013` | 1 B | `basic` | `TKLNUM` | tokeniser: 1 = line-number mode is armed (1) |  |
 | `$E016` | 1 B | `basic` | `INDLR_N` | INPUT$(n,#f): remaining bytes to read (transient, 1) (1 B) |  |
 | `$E017` | 2 B | `basic` | `MRG_PTR` | MERGE: write cursor into LINEBUF for the current line (2) |  |
@@ -434,6 +435,7 @@ second one is the question a per-component map cannot answer.
 | `$E9FD` |  | `basic` | `DISKOP_A/PLY_NUMOVF` | tenant -> main: the primitive's real A output, |  |
 | `$E9FE` |  | `basic` | `BN_PTR/DISKOP_HL` | tenant -> main: the primitive's real HL output |  |
 | `$EA00` | 16 B | `basic` | `FCH_MODES` | 16 B ($EA00..$EA0F) |  |
+| `$EA00` | 16 B | `disk` | `FCH_MODES` | 16 B ($EA00..$EA0F) |  |
 | `$EA10` | 32 B | `basic` | `FCH_RECLENS` | 32 B ($EA10..$EA2F). ~~$EA92..$EAFF free (110 B)~~ |  |
 | `$EA30` | 2 B | `basic` | `RN_PTR` | RENUM: the reference-pass cursor (2) |  |
 | `$EA32` | 2 B | `basic` | `AU_NUM/RN_NEW` | AUTO: the line number being prompted (2) |  |

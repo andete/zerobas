@@ -193,6 +193,19 @@ REQUIRED_DISK_RAM = [
     "FILES_ENTIDX",             # dir entry index 0..15 within the current sector
     "LPTPOS",                   # printer head column: LFILES zeroes it at the end
                                 # of a listing that emitted something (D-DFEND)
+    # D-KILLOPEN: KILL walks the channel table to refuse an OPEN file (64). Read
+    # only. FCH_STATESZ is published so the offset of FWR_DIRSEC inside a saved
+    # context block is DERIVED rather than written down as 46: sysvars.inc
+    # defines FCH_STATESZ = FWR_DIROFF+2-FCH_STATE0, so the span base is
+    # main_FWR_DIROFF+2-FCH_STATESZ, and a context-layout change moves both or
+    # neither. (Publishing FCH_STATE0 itself failed ram-map-check: it names a
+    # span's BASE, not a cell, and has no width of its own.)
+    "FCH_ACTIVE",               # channel live in the engine globals, 0 = none
+    "FCH_MODES",                # [ch] = 0 closed / 1..4 disk / 5.. device, cassette
+    "FCH_STATESZ",              # ⚠️ a CONSTANT: the saved per-channel state size
+    "LPT_MODE",                 # ⚠️ a CONSTANT, not a cell: modes below it are
+                                # disk files. Published so the disk side's test
+                                # cannot drift from fch_mode_class's `cp LPT_MODE`
 ]
 # CALL-BACK: main PAGE-1 targets, reached by an INTER-SLOT CALL, not by an
 # absolute one -- the third class, and the one the hook re-architecture needs
@@ -251,6 +264,11 @@ REQUIRED_DISK_CALLBACK: list[str] = [
     "lrset_tgt",                # CF=1: HL = FLD_TAB entry; CF=0: not fielded
     "lrset_rhs",                # STRPTR = the RHS descriptor
     "lrset_finish",             # destination, then the sub-ROM store
+    # D-KILLOPEN: KILL refuses a file that is OPEN (64), which needs every
+    # open channel's directory position. The live channel's is in the engine
+    # globals (main_FWR_DIRSEC above); a saved one is in its context block,
+    # whose address only main can compute (the sub-ROM strheap op 18).
+    "fch_ctx_addr",             # A = channel -> HL = its context block
 ]
 
 Profile = collections.namedtuple("Profile", "code ram callback what")

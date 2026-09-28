@@ -6019,7 +6019,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:26489 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:26523 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -25502,7 +25502,7 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       cannot report to an ON ERROR handler (RUN disarms it). The rest,
       reference → zerobas:
       • **accepted where the reference refuses, and it can lose data:**
-        `KILL` of an OPEN file (64 → ok), ~~`NAME` onto an EXISTING file (65 →
+        ~~`KILL` of an OPEN file (64 → ok)~~, ~~`NAME` onto an EXISTING file (65 →
         ok)~~, re-`OPEN` of a busy channel (54 → ok), ~~any `Q:` drive — OPEN,
         KILL, SAVE, RUN (62 → ok; `FILES "Q:*.*"` 62 → 53)~~.
         ✅ **D-DRVNAME (2026-09-28):** a drive past B: raises 62 now.
@@ -25528,6 +25528,40 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
         🔮 Predicted 103 (FILES only) — NAME was wrongly assumed blocked by
         `NAME "A.TXT"` (53 there, 2 here): T6 needs ONE agreeing row per (form,
         code), and 53 already has one (`NAME "NOSUCH.TXT" AS …`).
+        ✅ **D-KILLOPEN (2026-09-28):** `hk_kill` (disk.rom) refuses a file that
+        is OPEN with 64 before deleting anything — every disk mode (OUTPUT,
+        INPUT, APPEND, RANDOM), the live channel or a saved one, and through a
+        wildcard, all measured against the CF-3300:
+        [`scratchpad/killopen_probe.py`](scratchpad/killopen_probe.py) → before
+        [`killopen_run.out`](scratchpad/killopen_run.out) /
+        [`killopen_run2.out`](scratchpad/killopen_run2.out), after
+        [`killopen_after_run.out`](scratchpad/killopen_after_run.out). Zero main
+        bytes. Row `t8killdeletefile64`; **KILL reaches T6 → 105.**
+        🔴 **THE FIRST BUILD REFUSED CORRECTLY AND STILL READ `ERR 0 ERL 0`**
+        (D-ERRKEEP): with a file open, `chan_gate`'s restore re-stages the live
+        channel after the hook, and every successful sector read writes
+        `DISKOP_ERR = 0` — so the 64 was gone before `disk_error` read it, and
+        `load_error` printed and carried on. NAME's 65 had the same hole
+        (`n_open`: 65 there, ERR 0 here) and D-NAMEEXIST's probe could not see
+        it, because no file was open in it. KILL and NAME now end in
+        `hk_claim_status`, which on status 2 leaves NO channel live: chan_gate
+        saved it before crossing, so the restore is deferred to the channel's
+        next `fch_select` rather than skipped (`k_after`: write, refused, write,
+        read back `ABCD` on both). Row `t8namerenameopen` guards it.
+        🔮 Round 1 put three cases on `#2` without `MAXFILES=2`: all read 52 on
+        BOTH machines — agreeing for the wrong reason; re-asked in round 2.
+        ⚠️ **THE HOLE IS A CLASS, AND ONLY TWO HOOKS ARE OUT OF IT (D-ERRKEEP2).**
+        Every other disk.rom hook that reports status 2 with a code in
+        `DISKOP_ERR` — COPY, FILES, DSKF, the LOAD/SAVE/BSAVE handlers — loses that
+        code the same way whenever a file is OPEN (a `Disk offline` or a write
+        protect then prints as a load error and the program continues). Each ends
+        in its own `ld (DISKOP_STATUS),a / scf / ret`; routing each through
+        `hk_claim_status` is the disk-side fix, per hook, with a row that opens a
+        file first. 🎚️ TIER 3. 🤖 AUTONOMOUS.
+        ➡️ **OPEN's half is still open, and wider than filed:** round 2 found the
+        CF-3300 also refuses a SECOND open of the same FILE on another channel
+        with 54 (`o_same2`, and `o_samein2` even FOR INPUT); zerobas accepts
+        both. OPEN is main code, and main was 3 B free on 2026-09-28.
       • **the common error paths:** `INPUT #` / `INPUT$(n,#)` past the end
         (55 → ok) — ➡️ **now its own TIER 1 item, D-SEQEOF (below): it is not
         just a missing code, zerobas reads the Ctrl-Z end marker as DATA and the

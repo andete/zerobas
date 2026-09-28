@@ -1,0 +1,5 @@
+case                   CF-3300              zerobas
+✗ k_nonact2            [ 64 30 ]                 [OK]
+✗ o_same2              [ 54 30 ]                 [OK]
+✗ o_samein2            [ 54 30 ]                 [OK]
+refcache: 0 hit, 6 miss, 6 stored

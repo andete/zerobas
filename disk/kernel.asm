@@ -2735,6 +2735,22 @@ hk_kill:
                 call    fat_mount       ; LOCAL primitive body
                 ld      a,2             ; 2 = mount / DSKIO error -> disk_error
                 jr      c,hkk_done
+                ; 🔴 D-KILLOPEN (2026-09-28): AN OPEN FILE IS REFUSED, BEFORE
+                ; ANYTHING IS DELETED. This loop used to delete whatever matched,
+                ; open or not -- `OPEN "K1.TXT" FOR OUTPUT AS #1 : KILL "K1.TXT"`
+                ; freed the chain under a live channel. Measured on the CF-3300
+                ; (scratchpad/killopen_probe.py): 64 `File still open` for a file
+                ; open FOR OUTPUT or FOR INPUT, on the live channel or a saved one,
+                ; and through a wildcard; a CLOSEd file deletes. The refusal comes
+                ; back the way hkn_exists's 65 does: DISKOP_ERR + status 2, which
+                ; main's kill_status already sends to disk_error -- no main byte.
+                call    hkk_open_check  ; CF=1: an open file matches the pattern
+                jr      nc,hkk_none_open
+                ld      a,64            ; File still open
+                ld      (DISKOP_ERR),a
+                ld      a,2
+                jr      hkk_done
+hkk_none_open:
                 ld      c,0             ; C = deleted-any flag
 hkk_loop:
                 push    bc
@@ -2752,9 +2768,84 @@ hkk_done:
                 ; answer `Syntax error` at an empty drive (see hkn_done). The
                 ; pre-set that used to stand above was harmless only because the
                 ; tenant it guarded overwrote the cell itself.
-                ld      (DISKOP_STATUS),a   ; 0 none matched / 1 deleted / 2 mount
-                scf                     ; CF=1: the hook is claimed
+                jp      hk_claim_status ; 0 none matched / 1 deleted / 2 mount
+                                        ; or refused (DISKOP_ERR says which)
+
+; --- hkk_open_check: does an OPEN disk file match DISK_FCB_NAME? (D-KILLOPEN) --
+; The RULE is the CF-3300 oracle's, measured (scratchpad/killopen_probe.py); the
+; walk below is our own design over our own channel table.
+; Walks FCH_MODES[1..15]. For each DISK channel (mode 1..LPT_MODE-1) it takes the
+; file's directory position -- from the engine globals if the channel is the live
+; one, else from its saved context block -- re-reads that directory sector into
+; this ROM's FAT_DBUF and matches the entry against the KILL pattern with the very
+; name_cmp fat_find uses, so `KILL "K*.TXT"` sees an open K1.TXT as the reference
+; does. ⚠️ The position is MAIN's (main_FWR_DIRSEC/DIROFF and the context copy of
+; them), never this ROM's own FWR_DIRSEC, which is disk-map scratch at $E4xx.
+; It is valid for every disk mode: main's fat_find records it on OPEN FOR INPUT
+; and fat_io_create on OUTPUT.
+;   out: CF=1 a match is open; CF=0 none (or a read failed -- then the delete loop
+;        below meets the same drive and reports it). Clobbers everything.
+hkk_open_check:
+                ld      b,1                 ; B = channel
+hoc_loop:
+                ld      a,b
+                cp      16                  ; FCH_MODES is [0..FCH_CEIL=15]
+                ret     nc                  ; walked them all: none open (CF=0)
+                ld      hl,FCH_MODES
+                ld      e,b
+                ld      d,0
+                add     hl,de
+                ld      a,(hl)
+                or      a
+                jr      z,hoc_next          ; closed
+                cp      LPT_MODE
+                jr      nc,hoc_next         ; a device or cassette channel
+                push    bc
+                ld      a,(FCH_ACTIVE)
+                cp      b
+                jr      nz,hoc_saved
+                ld      de,(main_FWR_DIRSEC)    ; the live channel: the globals
+                ld      hl,(main_FWR_DIROFF)
+                jr      hoc_have
+hoc_saved:
+                ld      a,b
+                ld      ix,fch_ctx_addr
+                call    calbak              ; HL = the channel's context block
+                ld      de,main_FWR_DIRSEC-(main_FWR_DIROFF+2-FCH_STATESZ)
+                add     hl,de               ; HL -> its saved FWR_DIRSEC (the
+                                            ; span base is FWR_DIROFF+2-FCH_STATESZ,
+                                            ; by sysvars.inc's own definition)
+                ld      e,(hl)
+                inc     hl
+                ld      d,(hl)              ; DE = the dir sector
+                inc     hl
+                ld      a,(hl)
+                inc     hl
+                ld      h,(hl)
+                ld      l,a                 ; HL = the entry offset (FWR_DIROFF
+                                            ; follows FWR_DIRSEC; asserted below)
+hoc_have:
+                push    hl                  ; the offset
+                ld      hl,FAT_DBUF
+                call    read_sector         ; DE = sector -> FAT_DBUF
+                pop     de                  ; DE = the offset
+                jr      c,hoc_skip          ; unreadable: leave it to the delete
+                ld      hl,FAT_DBUF
+                add     hl,de               ; HL -> the open file's dir entry
+                ld      de,DISK_FCB_NAME
+                call    name_cmp            ; Z = it matches the pattern
+                jr      nz,hoc_skip
+                pop     bc
+                scf                         ; an open file matches
                 ret
+hoc_skip:
+                pop     bc
+hoc_next:
+                inc     b
+                jr      hoc_loop
+    IF main_FWR_DIROFF - main_FWR_DIRSEC - 2
+                db      HKK_OPEN_CHECK_READS_FWR_DIROFF_AS_THE_WORD_AFTER_FWR_DIRSEC
+    ENDIF
 
 ; ⚠️ STILL CONFLATED, AND IT TRAVELS WITH THE CODE: a DSKIO failure INSIDE
 ; fat_delete, after the mount and before anything was deleted, returns C = 0 and
@@ -2868,7 +2959,36 @@ hkn_done:
                 ; AS "B.BAS"` at an EMPTY DRIVE answered `Syntax error` instead of
                 ; `Disk offline`, because the cell held 4. The cell is a SHARED
                 ; channel, not ours; the only safe time to write it is last.
+                ; D-ERRKEEP: through the tail KILL shares, which also keeps a
+                ; status-2 ERR code alive past chan_gate's restore (header below).
+                ; FALLS THROUGH into it.
+
+; --- hk_claim_status: the claimed-hook tail KILL and NAME share (D-ERRKEEP) -----
+; A = the verb's DISKOP_STATUS. Stores it, returns CF=1 (claimed) -- and on status
+; 2 first marks NO channel live (FCH_ACTIVE = 0). Our own design; the reason is
+; measured (scratchpad/killopen_probe.py, n_open and the k_* rows): with a file
+; OPEN, a status-2 code reached main as 0 and fell to load_error's print-and-
+; continue -- the handler saw `ERR 0 ERL 0` where the CF-3300 traps 64 / 65.
+; 🔴 THE WIPE IS MAIN'S RESTORE, NOT THIS ROM. chan_gate saves the live channel
+; before the crossing and, after it, reloads that channel and RE-STAGES its sector
+; (chan_restore_st -> fch_load_ctx -> fch_restage). That re-stage is a sector
+; read, and every successful read writes DISKOP_ERR = 0 (basic/fat-prim-body.inc,
+; "no code pending"). chan_restore_st keeps DISKOP_STATUS across it, not the code.
+; 🎯 Why FCH_ACTIVE = 0 is exact rather than a dodge: the save chan_gate did before
+; crossing left the channel's context block current, so "nothing live" is true,
+; chan_restore returns at its `ret z`, and the channel's next use goes through
+; fch_select, which reloads that same block and re-stages the same sector --
+; the restore, deferred to when it is needed. Only status 2 does this: success
+; keeps the eager restore it always had. The main-side fix (hold DISKOP_ERR in
+; chan_restore_st too) is 8 B of main page 1, which had 3 on 2026-09-28.
+; ⚠️ Every OTHER hook that reports status 2 has the same hole until it ends here.
+hk_claim_status:
                 ld      (DISKOP_STATUS),a
+                cp      2
+                jr      nz,hcs_claim
+                xor     a
+                ld      (FCH_ACTIVE),a      ; no channel live: see above
+hcs_claim:
                 scf                         ; CF=1: the hook is claimed
                 ret
 ; --- hkn_stamp: overwrite the located dir entry's 8.3 name, IN THIS ROM ------

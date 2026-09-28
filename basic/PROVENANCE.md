@@ -2300,6 +2300,22 @@ Clean-room: original code; KILL semantics + the `$E5` deleted-marker / chain-fre
 rules from the public MSX-BASIC reference + Microsoft FAT spec, validated by the
 byte-identical CF-3300 differential. No disassembly.
 
+
+**An OPEN file is refused (D-KILLOPEN, 2026-09-28).** Measured on the CF-3300
+oracle (`scratchpad/killopen_probe.py`): `KILL` of a file open on any channel —
+FOR OUTPUT, INPUT, APPEND or RANDOM, the live channel or a saved one, named or
+matched by a wildcard — raises 64 `File still open` and deletes nothing; a
+CLOSEd file deletes. `hk_kill` (disk.rom) walks `FCH_MODES` before its delete
+loop, re-reads each open disk channel's directory entry from its recorded
+position (`FWR_DIRSEC`/`FWR_DIROFF`, from the globals for the live channel, from
+the context block otherwise) and matches it against the pattern with `fat_find`'s
+own `name_cmp`. Own design over our own channel table; zero main bytes.
+**And the code survives the trip home (D-ERRKEEP):** with a file open, a
+status-2 code used to reach main as 0 — `chan_gate`'s restore re-stages the live
+channel, and every successful sector read writes `DISKOP_ERR = 0`. KILL and NAME
+now end in `hk_claim_status`, which on status 2 leaves no channel live, so the
+restore does nothing and the channel's next `fch_select` reloads it.
+
 ## NAME — rename a file (basic/files.asm, basic/interp.asm, basic/sysvars.inc)
 
 `NAME "old" AS "new"` renames a file by overwriting its directory entry's 8.3 name
