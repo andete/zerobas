@@ -1,0 +1,8 @@
+case                  CF-3300              zerobas
+✗ w_star             NO READING            [| 5 30 ]
+✗ w_quest            NO READING            [| 5 30 ]
+✗ w_ext                 [X1|OK]            [| 5 30 ]
+✗ w_plain            NO READING            [| 5 30 ]
+✗ w_none             [| 53 30 ]            [| 5 30 ]
+✗ w_keep             NO READING            [| 5 30 ]
+refcache: 0 hit, 12 miss, 12 stored

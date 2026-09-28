@@ -6019,7 +6019,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:26692 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:26707 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -25631,8 +25631,23 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
 - [ ] 🔴 **`COPY "A*.TXT" TO "C*.TXT"` IS `Illegal function call` HERE (D-COPYWILD,
       found 2026-09-28).**
       🎚️ TIER 3 — a wildcard COPY is the ordinary way to copy a set of files.
-      🤖 **AUTONOMOUS** — measure the reference's wildcard COPY first (what it
-      copies, and what `C*.TXT` makes of each name), then port it into `hkc_body`.
+      🤖 **AUTONOMOUS** for the two measured shapes below; the multi-match one is a
+      question for Joost.
+      📏 **MEASURED 2026-09-28** ([`scratchpad/copywild_probe.py`](scratchpad/copywild_probe.py)):
+      • ONE match — `COPY "A1.*" TO "E1.*"` copies A1.TXT to E1.TXT on the CF-3300
+        (`[X1|OK]`, [`copywild_run.out`](scratchpad/copywild_run.out)); zerobas: 5.
+      • NO match — `COPY "Z*.TXT" TO "C*.TXT"` is 53 there; zerobas: 5.
+      • 🔴 **TWO OR MORE matches NEVER COMPLETE ON THE REFERENCE** (`A*.TXT` over
+        A1/A2 to `C*.TXT`, `D?.TXT`, a plain `F.TXT`, or `G*.TXT`): no reading at a
+        20 s, 90 s or 240 s window ([`copywild_run2.out`](scratchpad/copywild_run2.out),
+        [`copywild_run3.out`](scratchpad/copywild_run3.out)), and the screen after
+        `RUN` stays blank — no output, no `Ok` ([`copywild_screen.out`](scratchpad/copywild_screen.out)).
+        Unasked: whether a key or more time ends it on real hardware.
+      🙋 **FOR JOOST:** faithfulness would mean copying the reference's HANG for
+      two or more matches. The autonomous part is the single-match copy (dest
+      `?`/`*` filled from the source name) and the no-match 53; what to do for
+      several matches — refuse (5, today), copy them all, or match the hang — is
+      a ruling, not a measurement.
       📏 [`copynameopen_run.out`](scratchpad/copynameopen_run.out) `c_wild` read 5 here
       before D-COPYNAMEOPEN; it agrees now (64) only because the open check runs
       first — with nothing open the refusal is still there. Its shape on the
