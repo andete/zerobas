@@ -6019,7 +6019,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:26831 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:26844 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -25872,6 +25872,19 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       ([`kwt2resp_only.out`](scratchpad/kwt2resp_only.out)), full run
       ([`kwt2resp_kwtime.out`](scratchpad/kwt2resp_kwtime.out)) OK 810 → 817, **level 1
       7 → 5** (INPUT and CONT reach level 2). Left: AUTO, CLOAD, LFILES, LLIST, RUN.
+      ✅ **D-KWT2RIG (same day): three more shapes.** `log` (a logged printer) times as
+      a plugged printer — kwtime reads marks, not the log; LFILES gets a disk+printer
+      group against the CF-3300; RUN's `bare` row DECLARES its restart (`RESTARTS`),
+      so `delta()` accepts the END after its own second START and still refuses one
+      after a third (selftest K45–K47, the last two NEGATIVE). `--only`
+      ([`kwt2rig_only.out`](scratchpad/kwt2rig_only.out)): `runkw_b`, `llist`, `lfiles` OK;
+      full run ([`kwt2rig_kwtime.out`](scratchpad/kwt2rig_kwtime.out)) OK 817 → 820,
+      **level 1 5 → 2**.
+      ➡️ **TWO LEFT:** CLOAD — a `tape` group now exists, but both rows still read
+      UNTIMEABLE even with the type-ahead end (unmeasured why: a load outlasting the
+      run's capture window, or the tape routines clearing KEYBUF); and AUTO — auto-
+      numbering takes typed lines as PROGRAM TEXT, so its burst needs a Ctrl-C to
+      leave AUTO before the mark (the injector carries only a CR today).
       ➡️ **THE SEVEN LEFT (before D-KWT2RESP), AND WHY:** AUTO, CLOAD, CONT, LLIST have only `PROGRAM:`
       (editor) rows, which kwtime skips; LFILES's row carries TWO rigs (disk +
       printer); INPUT's console forms are `RESPOND:` rows (a type-ahead RESPONSE is the

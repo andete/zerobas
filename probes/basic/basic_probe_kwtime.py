@@ -89,7 +89,20 @@ DISK_REF_BOOT = 14.0
 # ON PURPOSE: a CLOAD replaces the running program with the one it loads, so
 # the end mark can never fire -- it would read UNTIMEABLE by construction after
 # a 90 s leader per case, twice. `log`/hold/plug rows are not here yet.
-TIMEABLE_RIGS = {("disk",): "disk", ("printer",): "printer", ("tapew",): "tapew"}
+TIMEABLE_RIGS = {("disk",): "disk", ("printer",): "printer", ("tapew",): "tapew",
+                 # ⌨️ D-KWT2RIG (2026-09-28), with the type-ahead end mark in place:
+                 # `log` is a printer whose output is logged -- kwtime reads marks,
+                 # so a plugged printer is all it needs; `disk`+`printer` (LFILES)
+                 # gets its own group against the CF-3300; and `tape` (CLOAD) IS
+                 # timeable now -- the load replaces the program, but the mark
+                 # waiting in KEYBUF runs when the prompt comes back.
+                 ("log",): "printer", ("disk", "printer"): "diskprinter",
+                 ("tape",): "tape"}
+GROUP_RIGS = {"diskprinter": ("disk", "printer")}
+# ⌨️ D-KWT2RIG: a row whose timed work IS a restart. `runkw_b` ends its first pass
+# in `RUN`, which re-runs the case's own START-mark line; delta() would take that
+# second START as the NEXT case's and refuse the END. It declares how many.
+RESTARTS = {"runkw_b": 1}
 MARK_LITERALS = [f"{a},{v}" for a in ("&HE000", "-8192") for v in (START, END)]
 
 
@@ -315,7 +328,7 @@ def case_lines(line, pad=None, bodies=None, typeahead=False, resp=None):
     return [omsx_repl.BREAK_PREFIX, "NEW", RESET] + lines + [tail]
 
 
-def delta(marks):
+def delta(marks, restarts=0):
     """Emulated seconds from this case's START mark to its END mark, or None.
 
     In a batched boot every case arms its own watchpoint and none is removed, so
@@ -326,8 +339,14 @@ def delta(marks):
     if not starts:
         return None
     t0 = starts[0]
-    nxt = starts[1] if len(starts) > 1 else float("inf")
-    ends = [t for t, v in marks if v == END and t0 < t < nxt]
+    # D-KWT2RIG: a row that declares `restarts` re-runs its own START line that
+    # many times; the END must come AFTER those and BEFORE the next case's START
+    k = 1 + restarts
+    if restarts and len(starts) < k:
+        return None
+    lo = starts[k - 1]
+    nxt = starts[k] if len(starts) > k else float("inf")
+    ends = [t for t, v in marks if v == END and lo < t < nxt]
     return (ends[0] - t0) if ends else None
 
 
@@ -410,7 +429,7 @@ def group_kwargs(group, machine):
     that KILLs or NAMEs a file cannot change what the next measurement sees."""
     if group == "plain":
         return {}
-    extra = kw._rig_kwargs((group,))
+    extra = kw._rig_kwargs(GROUP_RIGS.get(group, (group,)))
     # the artefact is not read here -- only the marks -- so the rig's own
     # capture override and tape path are dropped; its `batch` is KEPT: the
     # tape-write rig needs a boot per case (a fresh tape each time).
@@ -468,7 +487,8 @@ def measure(machine, rows, pad=None, twin=False, caps_out=None, extra=None,
     out = [(None, None)] * len(rows)
     for j, i in enumerate(idx):
         mk = marks.get(j, [])
-        out[i] = (delta(mk), curlin_end(mk, watch.get(j, {}).get(CURLIN_HI, [])))
+        out[i] = (delta(mk, RESTARTS.get(rows[i][0], 0)),
+                  curlin_end(mk, watch.get(j, {}).get(CURLIN_HI, [])))
     return out
 
 
@@ -550,6 +570,12 @@ def selftest():
         and case_lines("INPUT A$", resp=["HELLO"])[-1].startswith("RUN\rHELLO\r"))
     arm("K44 NEGATIVE: a row with no response keeps the plain burst",
         ta_tail(None) == TA_TAIL)
+    arm("K45 a declared restart: the END after the second START is this case's",
+        abs(delta([(1.0, START), (1.5, START), (1.9, END)], 1) - 0.9) < 1e-9)
+    arm("K46 NEGATIVE: without the declaration the restart's START fences it off",
+        delta([(1.0, START), (1.5, START), (1.9, END)]) is None)
+    arm("K47 NEGATIVE: a declared restart that never ended cannot borrow the next case's END",
+        delta([(1.0, START), (1.5, START), (2.0, START), (2.4, END)], 1) is None)
     arm("K42 the type-ahead burst fits one KEYBUF injection",
         len(ta_lines[-1]) <= omsx_repl.MAX_DIRECT)
     ls = case_lines('A=0:GOSUB 20:PRINT"[G";A;"]":END:A=7:RETURN')
@@ -662,7 +688,8 @@ def main():
     biases = {}
     print(f"{'row':16} {'ref ms':>9} {'zb ms':>9} {'zb/ref':>7} {'alone':>6}  status")
     for group, refm in (("plain", REF), ("disk", DISK_REF),
-                        ("printer", REF), ("tapew", REF)):
+                        ("printer", REF), ("tapew", REF),
+                        ("diskprinter", DISK_REF), ("tape", REF)):
         grows = [r for r in rows if GROUP[r[0]] == group]
         if not grows:
             continue

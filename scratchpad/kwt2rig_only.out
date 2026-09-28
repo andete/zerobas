@@ -1,0 +1,22 @@
+msxtest: BASIC image carries islands -- loaded at $0010, not $2812
+row                 ref ms     zb ms  zb/ref  alone  status
+kwtime: [plain] ref CURLIN bias -- fall-off none · END path 2.877 ms
+kwtime: [plain] zb CURLIN bias -- fall-off none · END path 0.562 ms
+runkw_b                nan       nan       -      ~  UNTIMEABLE
+runkw_b             77.021   158.152    2.05      ~  OK  [type-ahead end]
+kwtime: [printer] ref CURLIN bias -- fall-off none · END path 2.877 ms
+kwtime: [printer] zb CURLIN bias -- fall-off none · END path 0.562 ms
+llist                  nan       nan       -      ~  UNTIMEABLE  [printer: Philips_VG_8020]
+llist              133.259   265.088    1.99      ~  OK  [type-ahead end]
+kwtime: [diskprinter] ref CURLIN bias -- fall-off 2.478 ms (spread 2.478..2.478) · END path 2.877 ms
+kwtime: [diskprinter] zb CURLIN bias -- fall-off 0.263 ms (spread 0.263..0.263) · END path 0.562 ms
+lfiles            1065.433   227.953    0.21   0.20  OK  [diskprinter: National_CF-3300]
+kwtime: [tape] ref CURLIN bias -- fall-off none · END path 2.877 ms
+kwtime: [tape] zb CURLIN bias -- fall-off none · END path 0.562 ms
+cload                  nan       nan       -      ~  UNTIMEABLE  [tape: Philips_VG_8020]
+cload_b                nan       nan       -      ~  UNTIMEABLE  [tape: Philips_VG_8020]
+cload                  nan       nan       -      ~  UNTIMEABLE  [type-ahead end]
+cload_b                nan       nan       -      ~  UNTIMEABLE  [type-ahead end]
+
+kwtime: OK=3 · UNTIMEABLE=2  (5 rows, bar 10x; keyword-alone reading on 1; 0 timed via CURLIN, 2 via a type-ahead end)
+refcache: 2 hit, 28 miss, 28 stored, 2 replayed provenance
