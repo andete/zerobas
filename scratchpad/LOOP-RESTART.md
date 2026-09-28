@@ -30,6 +30,50 @@ symmetric. Treat that group as closed-by-measurement unless a new signal appears
 | PLAY X shape | *"Tenant walks the chain"* — the MML tenant reads the variable chain in RAM itself (spec-basic-audio-play §7.12); main ~0 B, no carve needed |
 | the rig | Joost's RP2040-Zero is **CONNECTED to the laptop since 2026-09-25** (`/dev/cu.usbmodem1101`, running firmware, not BOOTSEL; seen read-only, nothing flashed). **UN-PARKED 2026-09-26 and FLASHED with `tools/rigfw/rigfw.ino`:** headless joystick WORKS (bind `msxjoystick1_config` to `joy1`, which this install leaves EMPTY); headless mouse does NOT reach PAD/PDL. Next: STICK/STRIG rows — the rig item in TODO |
 
+### ☀️ LOOP 2026-09-28 ~01:00 → ~15:00 — READ THIS FIRST (the sections below are older)
+
+**All pushed, head `94e0e612`.** Commits (`git log 5fbeb280..`): `f91f72ea` D-DRVNAME
++ D-NAMEEXIST · `6918e1bb` D-SEQEOF filed · `8212cb58` **D-KILLOPEN** + **D-ERRKEEP** ·
+`5da5c0ae` **D-SAVECOLON** (SAVE/BSAVE/BLOAD ended their LINE; `SAVE"X":PRINT` never
+saved) · `3f478c37` **D-PADWIN** (Joost's ruling below) · `2ef751fc` **D-COPYNAMEOPEN** ·
+`084a714f` D-CARVESEQ (main 11 → 42 B) · `17576a9e` **D-SEQEOF** (Ctrl-Z / LF / 55; the
+`IF EOF(1)` loop read one line too many) · `6b24106a` **D-WPROTECT** + **D-SAVEOPEN** (no
+disk WRITE error ever reached BASIC — one `cp 0` in our driver; and SAVE with a file
+open wrote NOTHING) + gate `wprotect-acceptance` · `ea50a6fe` D-COPYWILD measured ·
+`94e0e612` its correction (see lessons).
+**T1 140 → 145, T6 102 → 105.** **Walls (built 2026-09-28 ~15:00): main low 6 B +
+page 1 2 B; sub p0 9, sub p1 5 (the seqio tenant took 127), disk 7055.** Main AND
+sub p1 are nearly full again — carve before any growing slice.
+🏗️ **JOOST'S RULING 2026-09-28 — DO NOT RE-ASK:** *"as pad is very much a leaf
+command it makes sense to have a stored verdict, having it go invalid on any rom
+change seems harsh"* — PAD's switch carries its windowed verdict
+(`scratchpad/kwsweep-window-carry.json`, `NEEDS-WINDOW:` rows), warning only when
+`gtpad`'s instructions change.
+➡️ **NEXT, by tier:** D-COPYWILD's autonomous half (single-match copy + no-match 53;
+the multi-match HANG is a question for Joost, in the item) · D-ERRKEEP2's rest (LOAD /
+MERGE / ASCII-LOAD / DSKF hooks with a file open — needs an error source that is not
+write protect, e.g. an eject mid-program) · OPEN of a busy channel / of an already-open
+file (54: MAIN code, ~19 B, needs a carve) · D-FORFAST (TIER 5, main bytes) · more T6
+enumeration.
+🔴 **FIVE LESSONS FROM TODAY:**
+• **A NEVER-COMPLETING REFERENCE IS A FINDING, NOT A TIMING BUG** — wildcard COPY of 2+
+  files: no reading at 20/90/240 s and a blank screen; ask a longer window ONCE, then
+  dump the raw screen before assuming capture timing.
+• **THE COMMIT WENT IN BESIDE ITS VERDICT** — `ea50a6fe` was sent in the same parallel
+  tool batch as the read of its gate result, and pushed RED claiming green. Never batch
+  an irreversible act with the check that gates it (memory
+  `never-batch-the-commit-with-the-verdict`).
+• **A PROBE'S "want" CAN BE AN UNASKED ASSUMPTION** — `disk_probe_eof.py` Case B wanted
+  EOF -1 after a second LINE INPUT past the end; the CF-3300 says `Input past end`. Its
+  reference half had only ever run Case A.
+• **FOLLOW A SWALLOWED ERROR UP WITH BREAKPOINTS ON OUR OWN ROM** — `wptrace_probe.py`
+  found the `cp 0` in three rounds (driver sees ST_WP → DSKIO returns Cy=0 → the
+  offending instruction), and the third round exposed D-SAVEOPEN by showing NO write
+  reached the drive at all.
+• **A kwsweep row can be pushed out of the reference's capture window by rows AHEAD
+  of it** — `t8namerenameopen` (four file ops) read the bare function-key bar after four
+  new rows were inserted before it; make disk rows short.
+
 ### 🌙 LOOP 2026-09-27 EVENING → 09-28 ~01:00 — READ THIS FIRST (the day section below is older)
 
 **Tree clean, all pushed, head `4dbb6dfb`.** Eight TIER 1 fixes and T6 75 → **102
