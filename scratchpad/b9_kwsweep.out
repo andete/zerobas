@@ -1,0 +1,3774 @@
+python3 tools/install-repack-machine.py --merged build/zerobas-main-eu.rom --disk-rom build/disk.rom \
+	  --sub-rom build/sub.rom
+wrote C-BIOS_MSX1_EU_REPACK_DISK  (-> machine "C-BIOS_MSX1_EU_REPACK_DISK": merged repack ROM in slot 0, zerobas-disk in slot 3-1, zerobas-sub in slot 3-2)
+     /Users/joost/.openMSX/share/machines/C-BIOS_MSX1_EU_REPACK_DISK.xml
+python3 tools/install-repack-machine.py --merged build/zerobas-main-eu.rom --sub-rom build/sub.rom \
+	  --no-disk
+wrote C-BIOS_MSX1_EU_REPACK_NODISK  (-> machine "C-BIOS_MSX1_EU_REPACK_NODISK": merged repack ROM in slot 0, slot 3-1 EMPTY (diskless target), zerobas-sub in slot 3-2)
+     /Users/joost/.openMSX/share/machines/C-BIOS_MSX1_EU_REPACK_NODISK.xml
+python3 probes/basic/basic_probe_kwsweep.py \
+	        --zb-machine C-BIOS_MSX1_EU_REPACK_DISK 
+msxtest: BASIC image carries islands -- loaded at $0010, not $2812
+rig: /dev/cu.usbmodem101
+build under measurement: git=e7d13dcd zerobas-main-eu.rom=79fe0e80f44c sub.rom=149107138927 disk.rom=58643f0e77b1
+
+==============================================================================
+LAYER 1 — CRUNCH (tokenisation only; NOT a support answer)
+==============================================================================
+SAME   abs       a=abs(-5)
+SAME   int       a=int(1.7)
+SAME   len       a=len("ab")
+SAME   chr       a$=chr$(65)
+SAME   mid       a$=mid$("hi",1,1)
+SAME   mid_b     a$=mid$("hello",3)
+SAME   mid_c     mid$(a$,2,3)="xyz"
+SAME   instr     a=instr("ab","b")
+SAME   instr_b   a=instr(2,"aba","a")
+SAME   hex       a$=hex$(255)
+SAME   sqr       a=sqr(9)
+SAME   peek      a=peek(0)
+SAME   peek_b    a=peek(-8192)
+SAME   varptr    a=varptr(b)
+SAME   varptr_b  a=varptr(z(1))
+SAME   stick     a=stick(0)
+SAME   stick_hold a=stick(0)
+SAME   erase     erase a
+SAME   erase_b   erase q
+SAME   swapctl   a=1
+SAME   asc       a=asc("A")
+SAME   cint      a=cint(1.7)
+SAME   cdbl      a=cdbl(1)
+SAME   csng      a=csng(1.5)
+SAME   fix       a=fix(-1.7)
+SAME   sgn       a=sgn(-3)
+SAME   sin       a=sin(0)
+SAME   sin_b     a=sin(1)
+SAME   cos       a=cos(0)
+SAME   tan       a=tan(0)
+SAME   tan_b     a=tan(1)
+SAME   atn       a=atn(1)
+SAME   exp       a=exp(1)
+SAME   log       a=log(1)
+SAME   mod       a=7 mod 3
+SAME   notop     a=not 0
+SAME   andop     a=5 and 3
+SAME   orop      a=5 or 3
+SAME   xorop     a=5 xor 3
+SAME   oct       a$=oct$(8)
+SAME   valkw     a=val("-12")
+SAME   valkw_b   a=val("1.5")
+SAME   valkw_c   a=val("1e3")
+SAME   valkw_d   a=val("&hff")
+SAME   valkw_e   a=val("12abc")
+SAME   left      a$=left$("abc",2)
+SAME   right     a$=right$("abc",2)
+SAME   str       a$=str$(5)
+SAME   stringf   a$=string$(3,"x")
+SAME   space     a$=space$(3)
+SAME   space_b   a$=space$(3)
+SAME   csrlind   a=csrlin
+SAME   let       let a=5
+SAME   rem       rem x
+SAME   rnd       a=rnd(1)
+SAME   rnd_b     a=rnd(-1)
+SAME   cvi       a=cvi("ab")
+SAME   using     using "##"
+SAME   using_b   using "#.##"
+SAME   using_c   using "+##"
+SAME   using_d   using "!"
+SAME   using_e   using "##.##^^^^"
+SAME   then      then a=1
+SAME   elsekw    else a=1
+SAME   tokw      to 5
+SAME   stepkw    step 2
+SAME   offkw     off
+SAME   ifkw      if 1 then a=2
+SAME   ifkw_b    if 0 then a=1 else a=2
+SAME   ifkw_c    if 3>2 goto 40
+SAME   forkw     for i=1 to 3
+SAME   forkw_b   for i=1 to 9 step 4
+SAME   forkw_c   for i=3 to 1 step -1
+SAME   nextkw    next i
+SAME   nextkw_b  next i
+SAME   nextkw_c  next j,i
+SAME   clearkw   clear 100
+SAME   clear_b   clear
+SAME   clear_c   clear 100,&hd000
+SAME   dimkw     dim a(2)
+SAME   dimkw_b   dim e(2,3)
+SAME   sound_b   sound 0,123
+SAME   beep      beep
+SAME   beep_b    beep
+SAME   beep_c    beep
+SAME   sound     sound 7,255
+SAME   playkw    play"c"
+SAME   playkw_b  play"n40"
+SAME   playkw_c  play"r"
+SAME   playkw_d  play"o7c"
+SAME   playkw_x  play"xe$;"
+SAME   playkw_e  play"v3c"
+SAME   playkw_f  play"s10m2000c"
+SAME   playkw_g  play"","","c"
+SAME   playkw_h  play"l64c"
+SAME   playkw_i  play"t32c"
+SAME   vpeek     a=vpeek(0)
+SAME   vpoke     vpoke 0,1
+SAME   vdpkw     a=vdp(1)
+SAME   vdp_b     a=vdp(1)
+SAME   vdp_c     vdp(7)=5
+SAME   vdp_d     vdp(1)=208
+SAME   inpkw     a=inp(168)
+SAME   inp_b     a=inp(&ha2)
+SAME   outkw     out 160,7
+SAME   out_b     out 161,77
+SAME   peek_curlin a=peek(&hf41c)
+SAME   pokekw    poke 0,1
+SAME   widthkw   width 37
+SAME   widthkw_b width 29
+SAME   widthkw_c width 37
+SAME   circlekw  circle(50,50),10
+SAME   circlekw_b circle(50,50),10,15,0,1.57
+SAME   circlekw_c circle step(20,20),10,15
+SAME   circlekw_d circle(50,50),20,15,,,.5
+SAME   circlekw_e circle(50,50),10
+SAME   drawkw    draw"c15r5"
+SAME   drawkw_b  draw"c15d5"
+SAME   drawkw_c  draw"m50,50"
+SAME   drawkw_d  draw"m+20,+0"
+SAME   drawkw_e  draw"bm50,50r5"
+SAME   drawkw_f  draw"nr5d3"
+SAME   drawkw_g  draw"c7r5"
+SAME   drawkw_h  draw"s8r2"
+SAME   drawkw_i  draw"a1r5"
+SAME   drawkw_j  draw"xa$;"
+SAME   drawkw_k  draw"r=a;"
+SAME   spritekw  sprite on
+SAME   sprite_on sprite on
+SAME   sprite_off sprite off
+SAME   sprite_stop sprite stop
+SAME   spritekw_b sprite$(3)=string$(8,222)
+SAME   basekw    a=base(2)
+SAME   basekw_b  base(5)=6144
+SAME   pdlkw     a=pdl(1)
+SAME   padkw     a=pad(0)
+SAME   pdl_plug  a=pdl(1)
+SAME   pad_plug  a=pad(0)
+SAME   pad_plug_b a=pad(1)
+SAME   pad_win_switch a=pad(3)
+SAME   strig_hold a=strig(0)
+SAME   stick_rig a=stick(1)
+SAME   stick_rig_b a=stick(1)
+SAME   strig_rig a=strig(1)
+SAME   strig_rig_b a=strig(3)
+SAME   attrkw    a$=attr$
+SAME   stopkw    stop
+SAME   contkw    cont
+SAME   maxkw     max
+SAME   strigkw   a=strig(0)
+SAME   onkw      on error goto 20
+SAME   onkw_b    on error goto 0
+SAME   ongoto    on 2 goto 20,30
+SAME   ongosub   on 2 gosub 30,40
+SAME   oninterval on interval=10 gosub 40
+SAME   oninterval_b on interval=10 gosub
+SAME   onsprite  on sprite gosub 70
+SAME   onsprite_b on sprite gosub
+SAME   onstrig   on strig gosub 60
+SAME   onstrig_b on strig gosub 60,80
+SAME   onstrig_c on strig gosub ,60
+SAME   onstrig_rig on strig gosub 60,80
+SAME   onstop    on stop gosub 60
+SAME   onstop_b  on stop gosub
+SAME   onkey     on key gosub 60
+SAME   onkey_b   on key gosub 60,80
+SAME   onkey_c   on key gosub ,60
+SAME   errorkw   error 7
+SAME   errorkw_b error 53
+SAME   errkw     a=err
+SAME   erlkw     a=erl
+SAME   resumekw  resume next
+SAME   resumekw_b resume
+SAME   resumekw_c resume 40
+SAME   defintkw  defint a
+SAME   defint_b  defint a-c
+SAME   listkw    list
+SAME   listkw_b  list 20
+SAME   listkw_c  list 20-30
+SAME   deletekw  delete 99
+SAME   del_line  delete 20
+SAME   del_range delete 20-30
+SAME   del_head  delete -20
+SAME   del_tail  delete 20-
+SAME   newkw     new
+SAME   gosubkw   gosub 20
+SAME   returnkw  return
+SAME   endkw     end
+SAME   datakw    data 42
+SAME   datakw_b  data "x,y"
+SAME   datakw_c  data a b
+SAME   datakw_d  data 1,,3
+SAME   readkw    read q
+SAME   restorekw restore
+SAME   restorekw_b restore 50
+SAME   returnkw_b return 40
+SAME   psetkw    pset(1,1)
+SAME   psetkw_b  pset(2,2),7
+SAME   psetkw_c  pset(10,10),15
+SAME   psetkw_d  pset(5,5)
+SAME   psetkw_e  pset step(5,0),15
+SAME   presetkw  preset(1,1)
+SAME   presetkw_b preset(3,3),9
+SAME   presetkw_c preset step(10,0)
+SAME   presetkw_d preset(10,10)
+SAME   paintkw   paint(15,15),15
+SAME   paintkw_b paint(15,15),11
+SAME   paintkw_c paint(60,60),11,15
+SAME   putsprite put sprite 0,(100,50),15,0
+SAME   putsprite_b put sprite 0,(100,50),13,1
+SAME   pointkw   a=point(1,1)
+SAME   pointkw_b a=point(20,20)
+SAME   linekw    line(1,1)-(5,1)
+SAME   linekw_b  line(1,1)-(9,9),15,b
+SAME   linekw_c  line(1,1)-(9,9),15,bf
+SAME   linekw_d  line step(0,0)-step(5,0),15
+SAME   linekw_e  line -(20,10),15
+SAME   linekw_f  line(1,1)-(5,1)
+SAME   colorkw   color 7
+SAME   colorkw_b color ,5
+SAME   colorkw_c color ,,3
+SAME   clskw     cls
+SAME   locate    locate 10,0
+SAME   locate_b  locate 0,5
+SAME   locate_c  locate ,7
+SAME   locate_d  locate ,,1
+SAME   csrlin    a=csrlin
+SAME   pos       a=pos(0)
+SAME   tab       print tab(5);"x"
+SAME   spc       print spc(5);"x"
+SAME   printkw_b print "a","b"
+SAME   printkw_c print "ab";"cd"
+SAME   printkw_d print "ab";
+SAME   swap      swap a,b
+SAME   fre       a=fre(0)
+SAME   fre_b     a=fre(0)
+SAME   fre_c     a=fre("")
+SAME   tron      tron
+SAME   troff     troff
+SAME   tron_b    tron
+SAME   troff_b   troff
+SAME   renum     renum 100
+SAME   ren_bare  renum
+SAME   ren_start renum 100
+SAME   ren_old   renum 100,7
+SAME   ren_step  renum 100,,20
+SAME   defsng    defsng a
+SAME   defsng_b  defsng a-c
+SAME   defdbl    defdbl a
+SAME   defdbl_b  defdbl a-c
+SAME   defstr    defstr a
+SAME   defstr_b  defstr a-c
+SAME   deffn     def fna(x)=x+1
+SAME   fnkw      a=fnb(5)
+SAME   fnkw_b    a$=fnt$("z")
+SAME   deffn_b   def fns$(x$)=x$+"!"
+SAME   eqv       a=5 eqv 3
+SAME   imp       a=5 imp 3
+SAME   llist     llist
+SAME   motor     motor off
+SAME   motor_b   motor on
+SAME   motor_c   motor
+SAME   time      time=0
+SAME   timetick  a=time
+SAME   time_c    time=30000
+SAME   interval  interval on
+SAME   mki       a$=mki$(1)
+SAME   mki_c     a$=mki$(258)
+SAME   mks       a$=mks$(1)
+SAME   mks_b     a=asc(mks$(1.5))
+SAME   mkd       a$=mkd$(1)
+SAME   mkd_b     a=asc(mkd$(1.5))
+SAME   cvs       a=cvs("abcd")
+SAME   cvd       a=cvd("abcdefgh")
+SAME   cvi_b     a=cvi(mki$(-1))
+SAME   cvs_b     a=cvs(mks$(1.5))
+SAME   cvd_b     a=cvd(mkd$(.1))
+SAME   mki_b     a=asc(mki$(258))
+SAME   usrkw     a=usr(0)
+SAME   defusr    def usr=-8192
+SAME   defusr_b  def usr1=-8192
+SAME   usrkw_b   a=usr1(7)
+SAME   screenkw  screen 2
+SAME   screenkw_c screen 2,3
+SAME   screenkw_d screen ,,1
+SAME   keykw     key 1,"x"
+SAME   keykw_b   key 1,"x"
+SAME   keykw_on  key on
+SAME   keykw_off key off
+SAME   waitkw    wait 0,1
+SAME   waitkw_b  wait 0,1,1
+SAME   lposkw    a=lpos(0)
+SAME   lprintkw  lprint"x"
+SAME   dskf      a=dskf(0)
+SAME   files     files
+SAME   files_b   files
+SAME   lof       a=lof(1)
+SAME   openkw_b  open"prog.bas"for input as#2
+SAME   maxfiles  maxfiles=2
+SAME   eof       a=eof(1)
+SAME   bload     bload"x"
+SAME   cload     cload"zr"
+SAME   cload_b   cload
+SAME   inkey     a$=inkey$
+SAME   csave     csave"zq"
+SAME   t6abs2    a=abs()
+SAME   t6abs13   a=abs("A")
+SAME   t6sgn2    a=sgn()
+SAME   t6sgn13   a=sgn("A")
+SAME   t6int2    a=int()
+SAME   t6int13   a=int("A")
+SAME   t6sqr2    a=sqr()
+SAME   t6sqr5    a=sqr(-1)
+SAME   t6sqr13   a=sqr("A")
+SAME   t6log2    a=log()
+SAME   t6log5    a=log(0)
+SAME   t6log13   a=log("A")
+SAME   t6exp2    a=exp()
+SAME   t6exp6    a=exp(150)
+SAME   t6exp13   a=exp("A")
+SAME   t6asc2    a=asc()
+SAME   t6asc5    a=asc("")
+SAME   t6asc13   a=asc(5)
+SAME   t6chr2    a=chr$()
+SAME   t6chr5    a=chr$(256)
+SAME   t6chr6    a=chr$(70000)
+SAME   t6chr13   a=chr$("A")
+SAME   t6len2    a=len()
+SAME   t6len13   a=len(5)
+SAME   t6peek2   a=peek()
+SAME   t6peek6   a=peek(65536)
+SAME   t6peek13  a=peek("A")
+SAME   t6left2   a=left$("AB")
+SAME   t6left5   a=left$("AB",-1)
+SAME   t6left6   a=left$("AB",70000)
+SAME   t6left13  a=left$(5,1)
+SAME   t6right2  a=right$("AB")
+SAME   t6right5  a=right$("AB",-1)
+SAME   t6right6  a=right$("AB",70000)
+SAME   t6right13 a=right$(5,1)
+SAME   t6string2 a=string$(2)
+SAME   t6string5 a=string$(-1,"A")
+SAME   t6string13 a=string$("A","A")
+SAME   t6hex2    a=hex$()
+SAME   t6hex6    a=hex$(70000)
+SAME   t6hex13   a=hex$("A")
+SAME   t6oct2    a=oct$()
+SAME   t6oct6    a=oct$(70000)
+SAME   t6oct13   a=oct$("A")
+SAME   t6bin2    a=bin$()
+SAME   t6bin6    a=bin$(70000)
+SAME   t6bin13   a=bin$("A")
+SAME   t6space2  a=space$()
+SAME   t6space5  a=space$(-1)
+SAME   t6space13 a=space$("A")
+SAME   t6str2    a=str$()
+SAME   t6str13   a=str$("A")
+SAME   t6cint2   a=cint()
+SAME   t6cint6   a=cint(32768)
+SAME   t6cint13  a=cint("A")
+SAME   t6fix2    a=fix()
+SAME   t6fix13   a=fix("A")
+SAME   t6csng2   a=csng()
+SAME   t6csng13  a=csng("A")
+SAME   t6cdbl2   a=cdbl()
+SAME   t6cdbl13  a=cdbl("A")
+SAME   t6sin2    a=sin()
+SAME   t6sin13   a=sin("A")
+SAME   t6cos2    a=cos()
+SAME   t6cos13   a=cos("A")
+SAME   t6tan2    a=tan()
+SAME   t6tan13   a=tan("A")
+SAME   t6atn2    a=atn()
+SAME   t6atn13   a=atn("A")
+SAME   t6vpeek2  a=vpeek()
+SAME   t6vpeek5  a=vpeek(16384)
+SAME   t6vpeek6  a=vpeek(70000)
+SAME   t6vpeek13 a=vpeek("A")
+SAME   t6poke2   poke &H9000
+SAME   t6poke5   poke &H9000,256
+SAME   t6poke6   poke 65536,1
+SAME   t6poke13  poke "A",1
+SAME   t6poke24  poke
+SAME   t6vpoke2  vpoke 1
+SAME   t6vpoke5  vpoke 16384,1
+SAME   t6vpoke6  vpoke 70000,1
+SAME   t6vpoke13 vpoke "A",1
+SAME   t6vpoke24 vpoke
+SAME   t6sound2  sound 8
+SAME   t6sound5  sound 14,0
+SAME   t6sound13 sound "A",0
+SAME   t6sound24 sound
+SAME   t6mki2    a=mki$()
+SAME   t6mki13   a=mki$("A")
+SAME   t6cvi2    a=cvi()
+SAME   t6cvi5    a=cvi("")
+SAME   t6cvi13   a=cvi(5)
+SAME   t6mks2    a=mks$()
+SAME   t6mks13   a=mks$("A")
+SAME   t6cvs2    a=cvs()
+SAME   t6cvs5    a=cvs("")
+SAME   t6cvs13   a=cvs(5)
+SAME   t6mkd2    a=mkd$()
+SAME   t6mkd13   a=mkd$("A")
+SAME   t6cvd2    a=cvd()
+SAME   t6cvd5    a=cvd("")
+SAME   t6cvd13   a=cvd(5)
+SAME   t6dskf2   a=dskf()
+SAME   t6dskf13  a=dskf("A")
+SAME   t6dskf62  a=dskf(9)
+SAME   t6instrs2 a=instr("AB")
+SAME   t6instrs13 a=instr("AB",5)
+SAME   t6instrsf2 a=instr(1,"AB","B","C")
+SAME   t6instrsf5 a=instr(0,"AB","B")
+SAME   t6instrsf6 a=instr(70000,"AB","B")
+SAME   t6instrsf13 a=instr(1,5,"B")
+SAME   t6mids35  a=mid$("AB",0,1)
+SAME   t6mids36  a=mid$("AB",70000,1)
+SAME   t6mids313 a=mid$(5,1,1)
+SAME   t6midste2 a=mid$("AB")
+SAME   t6midste5 a=mid$("AB",0)
+SAME   t6midste13 a=mid$(5,1)
+SAME   t6mida2   A$="AB":mid$(A$,1,1)
+SAME   t6mida5   A$="AB":mid$(A$,0)="X"
+SAME   t6mida13  A$="AB":mid$(A$,1)=5
+SAME   t6nextb1  next
+SAME   t6nextn1  next I
+SAME   t6nextn2  FOR I=1 TO 2:next 5
+SAME   t6nextcl1 FOR I=1 TO 2:FOR J=1 TO 2:next J,K
+SAME   t6returnb3 return
+SAME   t6returnl2 IF X=0 THEN X=1:GOSUB 20 ELSE return "A"
+SAME   t6returnl3 return 99
+SAME   t6returnl8 IF X=0 THEN X=1:GOSUB 20 ELSE return 99
+SAME   t6restoreb8 restore,
+SAME   t6restorel8 restore 99
+SAME   t6gotoj2  goto
+SAME   t6gotoj8  goto 99
+SAME   t6readrd2 read A:DATA X
+SAME   t6readrd4 read A
+SAME   t6swape2  swap A
+SAME   t6swape13 swap A,B$
+SAME   t6erasefa2 erase
+SAME   t6erasefa5 erase A
+SAME   t6dimod2  dim 5
+SAME   t6dimod5  dim A(-1)
+SAME   t6dimod6  dim A(70000)
+SAME   t6dimod9  dim A(10000)
+SAME   t6dimod10 dim A(2):DIM A(2)
+SAME   t6dimod13 dim A("X")
+SAME   t6dimmd5  dim B(-1,2)
+SAME   t6dimmd9  dim B(200,200)
+SAME   t6dimmd10 dim B(2,2):DIM B(2,2)
+SAME   t6dimmd13 dim B(2,"X")
+SAME   t6andba6  a=70000 and 1
+SAME   t6andba13 a=1 and "A"
+SAME   t6andba24 a=1 and
+SAME   t6orbo6   a=70000 or 1
+SAME   t6orbo13  a=1 or "A"
+SAME   t6orbo24  a=1 or
+SAME   t6xorbx6  a=70000 xor 1
+SAME   t6xorbx13 a=1 xor "A"
+SAME   t6xorbx24 a=1 xor
+SAME   t6eqve6   a=70000 eqv 1
+SAME   t6eqve13  a=1 eqv "A"
+SAME   t6eqve24  a=1 eqv
+SAME   t6impi6   a=70000 imp 1
+SAME   t6impi13  a=1 imp "A"
+SAME   t6impi24  a=1 imp
+SAME   t6notbn6  a=not 70000
+SAME   t6notbn13 a=not "A"
+SAME   t6notbn24 a=not
+SAME   t6modm6   a=70000 mod 2
+SAME   t6modm11  a=5 mod 0
+SAME   t6modm13  a=5 mod "A"
+SAME   t6modm24  a=5 mod
+SAME   t6beepna2 beep 1
+SAME   t6tront2  tron 1
+SAME   t6trofft2 troff 1
+SAME   t6csrlinrr2 A=csrlin 1
+SAME   t6erlel2  A=erl 1
+SAME   t6errec2  A=err 1
+SAME   t6errorr5 error 0
+SAME   t6gosubc2 gosub
+SAME   t6gosubc8 gosub 99
+SAME   t6inkeypk13 A=inkey$
+SAME   t6inppr2  a=inp()
+SAME   t6inppr13 a=inp("A")
+SAME   t6leta2   let
+SAME   t6leta13  let A="X"
+SAME   t6letnum2 let 5=1
+SAME   t6outpv2  out &H2F
+SAME   t6outpv5  out &H2F,256
+SAME   t6outpv13 out "A",1
+SAME   t6outpv24 out
+SAME   t6pointpr2 a=point(1)
+SAME   t6pointpr13 a=point("A",1)
+SAME   t6poscr2  a=pos()
+SAME   t6lposcr2 a=lpos()
+SAME   t6rndrd2  a=rnd()
+SAME   t6rndrd13 a=rnd("A")
+SAME   t6fora2   for I=1:NEXT
+SAME   t6fora13  for I="A" TO 2:NEXT
+SAME   t6fora24  for I=1 TO:NEXT
+SAME   t6fors2   for I=1 TO 2 STEP 1,2:NEXT
+SAME   t6fors13  for I=1 TO 2 STEP "A":NEXT
+SAME   t6fors24  for I=1 TO 2 STEP:NEXT
+SAME   t6forns13 for I=2 TO 1 STEP -"A":NEXT
+SAME   t6forns24 for I=2 TO 1 STEP -:NEXT
+SAME   t6ift2    if THEN 30
+SAME   t6ift8    if 1 THEN 99
+SAME   t6ift13   if "A" THEN 30
+SAME   t6ife8    if 0 THEN 30 ELSE 99
+SAME   t6ife13   if "A" THEN 30 ELSE 30
+SAME   t6ifg2    if 1 GOTO "A"
+SAME   t6ifg8    if 1 GOTO 99
+SAME   t6ifg13   if "A" GOTO 30
+SAME   t6clearb2 clear,
+SAME   t6clearss5 clear -1
+SAME   t6clearss6 clear 70000
+SAME   t6clearss7 clear 30000
+SAME   t6clearss13 clear "A"
+SAME   t6clearh5 clear 200,&H7000
+SAME   t6clearh13 clear 200,"A"
+SAME   t6clearh24 clear 200,
+SAME   t6colorf5 color 16
+SAME   t6colorf13 color "A"
+SAME   t6colorbg5 color ,16
+SAME   t6colorbg13 color ,"A"
+SAME   t6colorbd2 color 1,1,1,1
+SAME   t6colorbd5 color ,,16
+SAME   t6colorbd13 color ,,"A"
+SAME   t6screenm5 screen 4
+SAME   t6screenm13 screen "A"
+SAME   t6screenss5 screen ,4
+SAME   t6screenss13 screen ,"A"
+SAME   t6screenkc2 screen ,,,,,,
+SAME   t6screenkc5 screen ,,256
+SAME   t6screenkc13 screen ,,"A"
+SAME   t6locatec5 locate -1
+SAME   t6locatec13 locate "A"
+SAME   t6locater5 locate 1,-1
+SAME   t6locater13 locate 1,"A"
+SAME   t6locateoc13 locate ,"A"
+SAME   t6locatecs13 locate 1,1,"A"
+SAME   t6timer13 A$=time
+SAME   t6timew6  time=70000
+SAME   t6timew13 time="A"
+SAME   t6timew24 time=
+SAME   t6defintsl2 defint 5
+SAME   t6defintlr2 defint A-
+SAME   t6defsngsl2 defsng 5
+SAME   t6defsnglr2 defsng A-
+SAME   t6defdblsl2 defdbl 5
+SAME   t6defdbllr2 defdbl A-
+SAME   t6defstrsl2 defstr 5
+SAME   t6defstrlr2 defstr A-
+SAME   t7psetcolourexplicit2 screen 2:pset(10)
+SAME   t7psetcolourexplicit5 screen 2:pset(10,10),16
+SAME   t7psetcolourexplicit13 screen 2:pset(10,10),"a"
+SAME   t7psetcolourdefault2 screen 2:pset(10,10
+SAME   t7psetcolourdefault24 screen 2:pset(10,10),
+SAME   t7psetsteprelative2 screen 2:pset step 1,1
+SAME   t7psetsteprelative5 screen 2:pset step(1,1),16
+SAME   t7psetsteprelative13 screen 2:pset step("a",1)
+SAME   t7psetmodescreen35 screen 3:pset(10,10),16
+SAME   t7psetmodescreen36 screen 3:pset(99999,1)
+SAME   t7psetmodescreen313 screen 3:pset(10,10),"a"
+SAME   t7presetcolourdefault2 screen 2:preset(10,10
+SAME   t7presetcolourdefault5 preset(10,10)
+SAME   t7presetcolourdefault13 screen 2:preset("a",10)
+SAME   t7presetcolourexplicit5 screen 2:preset(10,10),16
+SAME   t7presetcolourexplicit13 screen 2:preset(10,10),"a"
+SAME   t7presetsteprelative2 screen 2:preset step 1,1
+SAME   t7presetsteprelative13 screen 2:preset step("a",1)
+SAME   t7presetmodescreen35 screen 3:preset(10,10),16
+SAME   t7presetmodescreen313 screen 3:preset(10,10),"a"
+SAME   t7linesegment2 screen 2:line(0,0)-
+SAME   t7linesegment5 screen 2:line(0,0)-(1,1),16
+SAME   t7linesegment13 screen 2:line(0,0)-("a",1)
+SAME   t7linebox2 screen 2:line(0,0)-(9,9),1,c
+SAME   t7linebox5 screen 2:line(0,0)-(9,9),16,b
+SAME   t7linefilledbox2 screen 2:line(0,0)-(9,9),1,bx
+SAME   t7linefilledbox5 screen 2:line(0,0)-(9,9),16,bf
+SAME   t7linesteprelative2 screen 2:line step(1,1)-step
+SAME   t7linesteprelative13 screen 2:line step("a",1)-(9,9)
+SAME   t7lineomittedstart2 screen 2:line -(9)
+SAME   t7lineomittedstart13 screen 2:line -("a",1)
+SAME   t7linecolourdefault2 screen 2:line(0,0)-(9,9),,
+SAME   t7linecolourdefault13 screen 2:line(0,0)-(9,9),"a"
+SAME   t7linecolourdefault24 screen 2:line(0,0)-(9,9),
+SAME   t7drawmovement5 screen 2:draw"q"
+SAME   t7drawmovement13 screen 2:draw 5
+SAME   t7drawmoveabsolute5 screen 2:draw"m"
+SAME   t7drawmoverelative5 screen 2:draw"m+5"
+SAME   t7drawblankprefix5 screen 2:draw"bq"
+SAME   t7drawnoupdateprefix5 screen 2:draw"nq"
+SAME   t7drawcolour5 screen 2:draw"c16"
+SAME   t7drawscale5 screen 2:draw"s256"
+SAME   t7drawangle5 screen 2:draw"a4"
+SAME   t7drawsubstringexec5 screen 2:draw"x"
+SAME   t7drawsubstringexec13 screen 2:draw"xa;"
+SAME   t7drawvariablesubstitution5 screen 2:draw"u="
+SAME   t7drawvariablesubstitution13 screen 2:draw"u=a$;"
+SAME   t7baseread2 a=base
+SAME   t7baseread5 a=base(20)
+SAME   t7baseread13 a=base("a")
+SAME   t7basewrite5 base(20)=0
+SAME   t7basewrite6 base(5)=70000
+SAME   t7basewrite13 base(5)="a"
+SAME   t7basewrite24 base(5)=
+SAME   t7vdpread2 a=vdp
+SAME   t7vdpread5 a=vdp(-1)
+SAME   t7vdpread13 a=vdp("a")
+SAME   t7vdpwrite5 vdp(8)=0
+SAME   t7vdpwrite13 vdp(7)="a"
+SAME   t7vdpwrite24 vdp(7)=
+SAME   t7spritepatternwrite5 sprite$(32)="a"
+SAME   t7spriteenable2 sprite on 1
+SAME   t7spritedisable2 sprite off 1
+SAME   t7ongotoindexgoto2 on 1 goto
+SAME   t7ongotoindexgoto5 on -1 goto 30
+SAME   t7ongotoindexgoto8 on 1 goto 99
+SAME   t7ongotoindexgoto13 on "a" goto 30
+SAME   t7ongosubindexgosub2 on 1 gosub
+SAME   t7ongosubindexgosub5 on -1 gosub 30
+SAME   t7ongosubindexgosub8 on 1 gosub 99
+SAME   t7ongosubindexgosub13 on "a" gosub 30
+SAME   t7keyassign2 key 1
+SAME   t7keyassign5 key 11,"a"
+SAME   t7keyassign13 key 1,5
+SAME   t7keylist2 key list 1
+SAME   t7keydisplayon2 key on 1
+SAME   t7keydisplayoff2 key off 1
+SAME   t7stickcursorkeys2 a=stick
+SAME   t7stickcursorkeys5 a=stick(3)
+SAME   t7stickcursorkeys13 a=stick("a")
+SAME   t7stickjoystickport2 a=stick(1,1)
+SAME   t7stickjoystickport5 a=stick(2.5)+stick(3)
+SAME   t7strigspacebar2 a=strig
+SAME   t7strigspacebar5 a=strig(5)
+SAME   t7strigspacebar13 a=strig("a")
+SAME   t7strigjoysticktrigger2 a=strig(1,1)
+SAME   t7strigjoysticktrigger5 a=strig(4)+strig(5)
+SAME   t7pdlread2 a=pdl
+SAME   t7pdlread5 a=pdl(13)
+SAME   t7pdlread13 a=pdl("a")
+SAME   t7padtouchstatus2 a=pad
+SAME   t7padtouchstatus5 a=pad(8)
+SAME   t7padtouchstatus13 a=pad("a")
+SAME   t7padcoordinate2 a=pad(1,1)
+SAME   t7padcoordinate5 a=pad(2)+pad(9)
+SAME   t7padswitch2 a=pad(3,1)
+SAME   t7padswitch5 a=pad(7)+pad(20)
+SAME   t7defusrdefault2 def usr
+SAME   t7defusrdefault6 def usr=70000
+SAME   t7defusrdefault13 def usr="a"
+SAME   t7defusrnumbered2 def usr9
+SAME   t7defusrnumbered6 def usr9=70000
+SAME   t7defusrnumbered13 def usr9="a"
+SAME   t7deffnnumeric2 def fna(5)=1
+SAME   t7deffnstringvalued2 def fna$(5)=1
+SAME   t7fnnumeric2 def fna(x)=x:a=fna(1,2)
+SAME   t7fnnumeric13 def fna(x)=x:a=fna("a")
+SAME   t7fnnumeric18 a=fnb(1)
+SAME   t7fnstringvalued13 def fna$(x)=str$(x):a$=fna$("a")
+SAME   t7fnstringvalued18 a$=fnb$(1)
+SAME   t7stopbreak2 stop 1
+SAME   t7playnotes5 play"h"
+SAME   t7playnotes13 play 5
+SAME   t7playnotenumber5 play"n97"
+SAME   t7playrest5 play"r0"
+SAME   t7playoctave5 play"o9"
+SAME   t7playdefaultlength5 play"l0"
+SAME   t7playtempo5 play"t31"
+SAME   t7playvolume5 play"v16"
+SAME   t7playenvelope5 play"s16"
+SAME   t7playmultivoice2 play"c","d","e","f"
+SAME   t7playmultivoice13 play"c",5
+SAME   t7playsubstringexec5 play"x"
+SAME   t7playsubstringexec13 play"xa;"
+SAME   t7setrefuse5 set 1
+SAME   t7circlecentreradius2 screen 2:circle(99,99)
+SAME   t7circlecentreradius5 screen 2:circle(99,99),5,16
+SAME   t7circlecentreradius13 screen 2:circle(99,99),"a"
+SAME   t7circlearc5 screen 2:circle(99,99),5,1,7
+SAME   t7circlearc13 screen 2:circle(99,99),5,1,"a"
+SAME   t7circlesteprelative2 screen 2:circle step 1,1,5
+SAME   t7circlesteprelative13 screen 2:circle step("a",1),5
+SAME   t7circleaspect2 screen 2:circle(99,99),5,1,,,1,1
+SAME   t7circleaspect5 screen 2:circle(99,99),5,1,,,-1
+SAME   t7circleaspect13 screen 2:circle(99,99),5,1,,,"a"
+SAME   t7circlecolourdefault24 screen 2:circle(99,99),5,
+SAME   t7paintflood2 screen 2:paint(1)
+SAME   t7paintflood5 paint(1,1)
+SAME   t7paintflood13 screen 2:paint("a",1)
+SAME   t7paintfillcolour5 screen 2:paint(1,1),16
+SAME   t7paintfillcolour13 screen 2:paint(1,1),"a"
+SAME   t7paintbordercolour2 screen 2:paint(1,1),1,1,1
+SAME   t7paintbordercolour13 screen 2:paint(1,1),1,"a"
+SAME   t8openinput2 open "a" for input
+SAME   t8openinput13 open 5 for input as #1
+SAME   t8openinput52 open "a" for input as #16
+SAME   t8openinput53 open "nosuch.txt" for input as #1
+SAME   t8openoutput13 open "x.txt" for output as #"a"
+SAME   t8openoutput56 open "" for output as #1
+SAME   t8openappend2 open "x.txt" for append as 1,2
+SAME   t8openappend53 open "nosuch.txt" for append as #1
+SAME   t8openrandom5 open "r.dat" as #1 len=0
+SAME   t8closeall13 close "a"
+SAME   t8closeall24 close 1,
+SAME   t8closechannel5 close #-1
+SAME   t8closechannel13 close #"a"
+SAME   t8closechannel52 close #16
+SAME   t8killdeletefile13 kill 5
+SAME   t8killdeletefile24 kill
+SAME   t8killdeletefile53 kill "nosuch.txt"
+SAME   t8namerename13 name 5 as "b"
+SAME   t8namerename53 name "nosuch.txt" as "b.txt"
+SAME   t8filesbare2 files,
+SAME   t8filesbare13 files 5
+SAME   t8filespattern53 files "nosuch.*"
+SAME   t8fieldbindbuffer2 open "r3.dat" as #1:field #1,4
+SAME   t8fieldbindbuffer13 open "r2.dat" as #1:field #1,4 as a
+SAME   t8fieldbindbuffer50 open "r1.dat" as #1 len=8:field #1,9 as a$
+SAME   t8fieldbindbuffer52 field #16,4 as a$
+SAME   t8fieldbindbuffer59 field #1,4 as a$
+SAME   t8lsetleftjustify2 lset a$
+SAME   t8lsetleftjustify13 lset a=1
+SAME   t8rsetrightjustify2 rset a$
+SAME   t8rsetrightjustify13 rset a=1
+SAME   t8eofatend13 a=eof("a")
+SAME   t8eofatend52 a=eof(16)
+SAME   t8eofatend59 a=eof(1)
+SAME   t8locposition13 a=loc("a")
+SAME   t8locposition52 a=loc(16)
+SAME   t8locposition59 a=loc(1)
+SAME   t8loflength13 a=lof("a")
+SAME   t8loflength52 a=lof(16)
+SAME   t8loflength59 a=lof(1)
+SAME   t8mergemergefile13 merge 5
+SAME   t8mergemergefile24 merge
+SAME   t8mergemergefile53 merge "nosuch.bas"
+SAME   t8loadplain13 load 5
+SAME   t8loadplain24 load
+SAME   t8loadplain53 load "nosuch.bas"
+SAME   t8loadrun53 load "nosuch.bas",r
+SAME   t8savetokenised13 save 5
+SAME   t8savetokenised24 save
+SAME   t8bloadplain13 bload 5
+SAME   t8bloadplain24 bload
+SAME   t8bloadplain53 bload "nosuch.bin"
+SAME   t8bloadrun53 bload "nosuch.bin",r
+SAME   t8bloadvram53 bload "nosuch.bin",s
+SAME   t8bsaverange2 bsave "x.bin",&hc000
+SAME   t8copyfiletofile13 copy 5 to "b"
+SAME   t8copyfiletofile53 copy "nosuch.txt" to "b.txt"
+SAME   t8dskireadsector2 a$=dski$(0)
+SAME   t8dskireadsector13 a$=dski$("a",0)
+SAME   t8dskireadsector62 a$=dski$(5,0)
+SAME   t8dskowritesector2 dsko$ 0
+SAME   t8dskowritesector13 dsko$ "a",0
+SAME   t8dskowritesector62 dsko$ 5,0
+SAME   t8getfieldedrecord5 open "r4.dat" as #1:get #1,0
+SAME   t8getfieldedrecord52 get #16
+SAME   t8getfieldedrecord59 get #1,1
+SAME   t8putfieldedrecord5 open "r6.dat" as #1:put #1,0
+SAME   t8putfieldedrecord52 put #16
+SAME   t8putfieldedrecord59 put #1,1
+SAME   t8inputstringread52 input #16,a$
+SAME   t8inputstringread59 input #1,a$
+SAME   t8printchannelwrite52 print #16,"a"
+SAME   t8printchannelwrite59 print #1,"a"
+SAME   t8maxfilesset2 maxfiles
+SAME   t8maxfilesset5 maxfiles=16
+SAME   t8maxfilesset13 maxfiles="a"
+SAME   t8inputconsole13 a$=input$("a")
+SAME   t8inputchannel52 a$=input$(1,#16)
+SAME   t8inputchannel59 a$=input$(1,#1)
+SAME   t8callrefuse2 call foo
+SAME   t8filespattern62 files "q:*.*"
+SAME   t8killdeletefile62 kill "q:a.txt"
+SAME   t8namerename65 open "n1.txt" for output as #1:close:open "n2.txt" for output as #1:close:name "n1.txt" as "n2.txt"
+SAME   t8savetokenised2 save "sj.bas" 5
+SAME   t8savecolon save "sc.bas":print "sc"
+SAME   t8bsavecolon bsave "sb.bin",&hc000,&hc010:print "bs"
+SAME   t8bloadcolon bsave "sl.bin",&hc000,&hc010:bload "sl.bin":print "bl"
+SAME   t8namerename64 open "no3.txt" for output as #1:name "no3.txt" as "no4.txt"
+SAME   t8copyfiletofile64 open "co.txt" for output as #1:copy "co.txt" to "cp.txt"
+SAME   t8inputstringread55 open "sa.txt" for output as #1:close:open "sa.txt" for input as #1:input #1,a$
+SAME   t8inputdolchannel55 open "sb.txt" for output as #1:close:open "sb.txt" for input as #1:a$=input$(1,#1)
+SAME   seqeof_eofcr open "sc.txt" for output as #1:print #1,"l1":print #1,"l2":close:open "sc.txt" for input as #1:line input #1,a$:line input #1,b$:print "[";eof(1);"]"
+SAME   seqeof_ctrlz open "sd.txt" for output as #1:print #1,"hi";:close:open "sd.txt" for input as #1:input #1,a$:print "[";len(a$);"]"
+SAME   t9frefreeram2 a=fre()
+SAME   t9frefreestringspace2 a=fre("","")
+SAME   t9valinteger13 a=val(5)
+SAME   t9valinteger2 a=val()
+SAME   t9valexponent6 a=val("1e99")
+SAME   t9valradixprefix6 a=val("&hfffff")
+SAME   t9valfraction2 a=val(".5",1)
+SAME   t9valpartialparse2 a=val("12x",1)
+SAME   t9usrdefault2 a=usr()
+SAME   t9usrnumbered2 a=usr1(1,2)
+SAME   t9varptrvariable2 a=varptr(5)
+SAME   t9waitportmask24 wait
+SAME   t9waitportmask2 wait 1
+SAME   t9waitportmask13 wait "a",1
+SAME   t9waitportmask6 wait 256*256,1
+SAME   t9waitportmaskxor13 wait 1,1,"a"
+SAME   t9widthtextwidth5 width 41
+SAME   t9widthtextwidth13 width "a"
+SAME   t9widthtextwidth24 width
+SAME   t9widthmode1width5 screen 1:width 33
+SAME   t9widthmode1width13 screen 1:width "a"
+SAME   t9printtabitem13 print tab("a")
+SAME   t9printtabitem5 print tab(256)
+SAME   t9printtabitem2 print tab()
+SAME   t9printspcitem13 print spc("a")
+SAME   t9printspcitem5 print spc(256)
+SAME   t9printspcitem2 print spc()
+SAME   t9dataunquotedstring2 read a:data x
+SAME   t9dataquotedstring2 read a:data "1"
+SAME   t9dataemptyitem4 read a,b,c:data ,
+SAME   t8killdeletefile64 open "ko.txt" for output as #1:kill "ko.txt"
+SAME   t8namerenameopen open "zo.txt" for output as #1:name "hi.txt" as "hi.txt"
+SAME   t8openoutput62 open "q:x.txt" for output as #1
+SAME   t8savetokenised62 save "q:x.bas"
+SAME   sqr_t3    a=sqr(-1)
+SAME   asc_t3    a=asc("")
+SAME   left_t3   a$=left$(5,1)
+SAME   dim_t3    dim zz(2)
+SAME   read_t3   read zv
+SAME   chr_t3    a$=chr$(256)
+SAME   mid_t3    a$=mid$("ab",0)
+SAME   log_t3    a=log(0)
+SAME   str_t3    a$=string$(300,"a")
+SAME   goto_t3   goto 9999
+SAME   gotokw    goto 40
+SAME   next_t3   next
+SAME   ret_t3    return
+SAME   instr_t3  a=instr(0,"ab","a")
+SAME   poke_t3   poke 70000,0
+SAME   peek_t3   a=peek(70000)
+SAME   sgn_t3    a=sgn("a")
+SAME   abs_t3    a=abs("a")
+SAME   rest_t3   restore 9999
+SAME   erase_t3  erase zq9
+SAME   swap_t3   swap zq9,zq8$
+SAME   space_t3  a$=space$(300)
+SAME   len_t3    a=len(5)
+SAME   hex_t3    a$=hex$("a")
+SAME   oct_t3    a$=oct$("a")
+SAME   int_t3    a=int("a")
+SAME   exp_t3    a=exp(1000)
+SAME   vpoke_t3  vpoke 20000,0
+SAME   sound_t3  sound 20,0
+SAME   fn_t3     a=fnzz(1)
+SAME   kill_t3   kill"nosuch.bas"
+SAME   cvi_t3    a=cvi("a")
+SAME   mki_t3    a$=mki$("a")
+SAME   dskf_t3   a=dskf(9)
+SAME   sgn_b     a=sgn(-5)
+SAME   fix_b     a=fix(-2.7)
+SAME   cos_b     a=cos(0)
+SAME   vpoke_b   vpoke 16383,7
+SAME   vpoke_b2  vpoke 100,255
+SAME   close     close
+SAME   close_b   close
+SAME   bsave     bsave"x",0,1
+SAME   save      save"x"
+SAME   kill      kill"x"
+SAME   merge     merge"x"
+SAME   lset      lset a$="x"
+SAME   rset      rset a$="x"
+SAME   inputkw   input#1,a$
+SAME   input_b   input#1,a$
+SAME   inputdol_b a$=input$(1)
+SAME   inputdol_c a$=input$(3,#1)
+SAME   inputcon  input a$
+SAME   inputcon_b input "n";a
+SAME   inputcon_c input a,b
+SAME   lineinput line input a$
+SAME   lineinput_b line input "q";a$
+SAME   getkw     get#1,1
+SAME   puthash   put#1,2
+SAME   printhash print#1,"abc"
+SAME   callkw    call zzq
+SAME   callkw_b  call foo
+SAME   runkw     run 20
+SAME   runkw_b   run
+SAME   dski      a$=dski$(0,0)
+SAME   dsko      dsko$0,0
+SAME   copy      copy"a:x"to"a:y"
+SAME   set       set password
+SAME   attr      a$=attr$(0)
+SAME   ipl       ipl
+SAME   cmd       cmd"x"
+SAME   lfiles    lfiles
+SAME   loc       a=loc(1)
+SAME   openkw    open"o.txt"for output as#1
+SAME   namekw    name"nm.txt" as "nm2.txt"
+SAME   open_c    open"oa.txt"for append as#1
+SAME   open_d    open"or.dat"as#1
+SAME   fieldkw   field#1,4 as a$
+SAME   bsave_b   bsave"x",0,1,2
+SAME   bload_b   bload"x",r
+SAME   bload_c   bload"x",s
+SAME   save_b    save"x",a
+SAME   runkw_c   run"prog3.bas"
+SAME   loadkw    load"prog3.bas",r
+SAME   load_b    load"prog3.bas"
+SAME   bin       a$=bin$(5)
+SAME   inputdol  a$=input$(1)
+SAME   auto      auto 100
+SAME   auto_bare auto
+SAME   auto_step auto 100,5
+
+==============================================================================
+LAYER 2 — SUPPORT (the load-bearing layer)
+==============================================================================
+EXTRA         t7defusrdefault6 DEF USR=70000
+            ref  [error:overflow] 'Overflow in 10'
+            zb   [value] ''
+EXTRA         t7defusrnumbered6 DEF USR9=70000
+            ref  [error:overflow] 'Overflow in 10'
+            zb   [value] ''
+EXTRA         t7deffnnumeric2 DEF FNA(5)=1
+            ref  [error:syntax error] 'Syntax error in 10'
+            zb   [value] ''
+EXTRA         t7deffnstringvalued2 DEF FNA$(5)=1
+            ref  [error:syntax error] 'Syntax error in 10'
+            zb   [value] ''
+EXTRA         t7stopbreak2 STOP 1
+            ref  [error:syntax error] 'Syntax error in 10'
+            zb   [value] 'Break in 10'
+UNREADABLE    t7circlearc5 SCREEN 2:CIRCLE(99,99),5,1,7
+            ref  [error:illegal function call] 'Illegal function call in 10'
+            zb   [?nomarker] ''
+UNREADABLE    t9widthmode1width5 SCREEN 1:WIDTH 33
+            ref  [?noecho] ''
+            zb   [?noecho] ''
+UNREADABLE    t9widthmode1width13 SCREEN 1:WIDTH "A"
+            ref  [?noecho] ''
+            zb   [?noecho] ''
+UNREADABLE    t9printtabitem13 PRINT TAB("A")
+            ref  [?noecho] ''
+            zb   [?noecho] ''
+UNREADABLE    t9printtabitem5 PRINT TAB(256)
+            ref  [?noecho] ''
+            zb   [?noecho] ''
+UNREADABLE    t9printtabitem2 PRINT TAB()
+            ref  [?noecho] ''
+            zb   [?noecho] ''
+UNREADABLE    t9printspcitem13 PRINT SPC("A")
+            ref  [?noecho] ''
+            zb   [?noecho] ''
+UNREADABLE    t9printspcitem5 PRINT SPC(256)
+            ref  [?noecho] ''
+            zb   [?noecho] ''
+UNREADABLE    t9printspcitem2 PRINT SPC()
+            ref  [?noecho] ''
+            zb   [?noecho] ''
+UNREADABLE    t9dataunquotedstring2 READ A:DATA X
+            ref  [?noecho] ''
+            zb   [?noecho] ''
+UNREADABLE    t9dataquotedstring2 READ A:DATA "1"
+            ref  [?noecho] ''
+            zb   [?noecho] ''
+UNREADABLE    t9dataemptyitem4 READ A,B,C:DATA ,
+            ref  [?noecho] ''
+            zb   [?noecho] ''
+UNREADABLE    sqr_t3    PRINT SQR(-1)
+            ref  [?noecho] ''
+            zb   [?noecho] ''
+UNREADABLE    asc_t3    PRINT ASC("")
+            ref  [?noecho] ''
+            zb   [?noecho] ''
+UNREADABLE    left_t3   PRINT LEFT$(5,1)
+            ref  [?noecho] ''
+            zb   [?noecho] ''
+UNREADABLE    dim_t3    DIM ZZ(2):ZZ(9)=1
+            ref  [?noecho] ''
+            zb   [?noecho] ''
+UNREADABLE    read_t3   READ ZV
+            ref  [?noecho] ''
+            zb   [?noecho] ''
+UNREADABLE    chr_t3    PRINT CHR$(256)
+            ref  [?noecho] ''
+            zb   [?noecho] ''
+UNREADABLE    mid_t3    PRINT MID$("AB",0)
+            ref  [?noecho] ''
+            zb   [?noecho] ''
+UNREADABLE    log_t3    PRINT LOG(0)
+            ref  [?noecho] ''
+            zb   [?noecho] ''
+UNREADABLE    str_t3    PRINT STRING$(300,"A")
+            ref  [?noecho] ''
+            zb   [?noecho] ''
+UNREADABLE    goto_t3   GOTO 9999
+            ref  [?noecho] ''
+            zb   [?noecho] ''
+UNREADABLE    gotokw    A=0:GOTO 40:A=7:Z$="XXXXXXXXXXXXXXXXXXXXXXXX":Y$="YYYYYYYYYYYYYYYYYYYYYYYY":PRINT"[1e";A;"]"
+            ref  [?nomarker] ''
+            zb   [?nomarker] ''
+UNREADABLE    next_t3   NEXT
+            ref  [?noecho] ''
+            zb   [?noecho] ''
+UNREADABLE    ret_t3    RETURN
+            ref  [?noecho] ''
+            zb   [?noecho] ''
+UNREADABLE    instr_t3  PRINT INSTR(0,"AB","A")
+            ref  [?noecho] ''
+            zb   [?noecho] ''
+UNREADABLE    poke_t3   POKE 70000,0
+            ref  [?noecho] ''
+            zb   [?noecho] ''
+UNREADABLE    peek_t3   PRINT PEEK(70000)
+            ref  [?noecho] ''
+            zb   [?noecho] ''
+UNREADABLE    sgn_t3    PRINT SGN("A")
+            ref  [?noecho] ''
+            zb   [?noecho] ''
+UNREADABLE    abs_t3    PRINT ABS("A")
+            ref  [?noecho] ''
+            zb   [?noecho] ''
+UNREADABLE    rest_t3   RESTORE 9999
+            ref  [?noecho] ''
+            zb   [?noecho] ''
+UNREADABLE    erase_t3  ERASE ZQ9
+            ref  [?noecho] ''
+            zb   [?noecho] ''
+UNREADABLE    swap_t3   SWAP ZQ9,ZQ8$
+            ref  [?noecho] ''
+            zb   [?noecho] ''
+UNREADABLE    space_t3  PRINT SPACE$(300)
+            ref  [?noecho] ''
+            zb   [?noecho] ''
+UNREADABLE    len_t3    PRINT LEN(5)
+            ref  [?noecho] ''
+            zb   [?noecho] ''
+UNREADABLE    hex_t3    PRINT HEX$("A")
+            ref  [?noecho] ''
+            zb   [?noecho] ''
+UNREADABLE    oct_t3    PRINT OCT$("A")
+            ref  [?noecho] ''
+            zb   [?noecho] ''
+UNREADABLE    int_t3    PRINT INT("A")
+            ref  [?noecho] ''
+            zb   [?noecho] ''
+UNREADABLE    exp_t3    PRINT EXP(1000)
+            ref  [?noecho] ''
+            zb   [?noecho] ''
+UNREADABLE    vpoke_t3  VPOKE 20000,0
+            ref  [?noecho] ''
+            zb   [?noecho] ''
+UNREADABLE    sound_t3  SOUND 20,0
+            ref  [?noecho] ''
+            zb   [?noecho] ''
+UNREADABLE    fn_t3     PRINT FNZZ(1)
+            ref  [?noecho] ''
+            zb   [?noecho] ''
+UNREADABLE    sgn_b     PRINT"[";SGN(-5);SGN(0);SGN(5);"]"
+            ref  [?noecho] ''
+            zb   [?noecho] ''
+UNREADABLE    fix_b     PRINT"[";FIX(-2.7);FIX(2.7);"]"
+            ref  [?noecho] ''
+            zb   [?noecho] ''
+UNREADABLE    cos_b     PRINT"[";COS(0);"]"
+            ref  [?noecho] ''
+            zb   [?noecho] ''
+UNREADABLE    vpoke_b   VPOKE 16383,7:PRINT"[";VPEEK(16383);"]"
+            ref  [?noecho] ''
+            zb   [?noecho] ''
+UNREADABLE    vpoke_b2  VPOKE 100,255:PRINT"[";VPEEK(100);"]"
+            ref  [?noecho] ''
+            zb   [?noecho] ''
+UNREADABLE    inputdol_b A$=INPUT$(1):PRINT"[0y";A$;"]"
+            ref  [?nomarker] ''
+            zb   [?nomarker] ''
+UNREADABLE    inputcon  INPUT A$:PRINT"[0z";A$;"]"
+            ref  [?nomarker] ''
+            zb   [?nomarker] ''
+UNREADABLE    inputcon_b INPUT "N";A:PRINT"[1a";A;"]"
+            ref  [?nomarker] ''
+            zb   [?nomarker] ''
+UNREADABLE    inputcon_c INPUT A,B:PRINT"[1b";A;B;"]"
+            ref  [?nomarker] ''
+            zb   [?nomarker] ''
+UNREADABLE    lineinput LINE INPUT A$:PRINT"[1c";A$;"]"
+            ref  [?nomarker] ''
+            zb   [?nomarker] ''
+UNREADABLE    lineinput_b LINE INPUT "Q";A$:PRINT"[1d";A$;"]"
+            ref  [?nomarker] ''
+            zb   [?nomarker] ''
+UNREADABLE    callkw    CALL=1:PRINT"[C1]"
+            ref  [?noecho] ''
+            zb   [?noecho] ''
+UNREADABLE    callkw_b  CALL FOO:PRINT"[C2]"
+            ref  [?noecho] ''
+            zb   [?noecho] ''
+UNREADABLE    runkw     POKE&HE001,0:POKE&HE001,PEEK(&HE001)+1:IF PEEK(&HE001)<2 THEN RUN 20:PRINT"[";PEEK(&HE001);"]"
+            ref  [?noecho] ''
+            zb   [?noecho] ''
+UNREADABLE    runkw_b   A=VPEEK(4096):IF A=99 THEN PRINT"[2x]":END:VPOKE 4096,99:RUN
+            ref  [?noecho] ''
+            zb   [?noecho] ''
+UNREADABLE    bin       PRINT"[";BIN$(5);"]"
+            ref  [?noecho] ''
+            zb   [?noecho] ''
+SUPPORTED     abs       PRINT"[";ABS(-5);"]"
+            ref  [value] '[ 5 ]'
+SUPPORTED     int       PRINT"[";INT(1.7);"]"
+            ref  [value] '[ 1 ]'
+SUPPORTED     len       PRINT"[";LEN("ab");"]"
+            ref  [value] '[ 2 ]'
+SUPPORTED     chr       PRINT"[";CHR$(65);"]"
+            ref  [value] '[A]'
+SUPPORTED     mid       PRINT"[";MID$("hi",2,1);"]"
+            ref  [value] '[i]'
+SUPPORTED     mid_b     PRINT"[";MID$("hello",3);"]"
+            ref  [value] '[llo]'
+SUPPORTED     mid_c     A$="abcdef":MID$(A$,2,3)="XYZ":PRINT"[";A$;"]"
+            ref  [value] '[aXYZef]'
+SUPPORTED     instr     PRINT"[";INSTR("ab","b");"]"
+            ref  [value] '[ 2 ]'
+SUPPORTED     instr_b   PRINT"[";INSTR(2,"ABA","A");"]"
+            ref  [value] '[ 3 ]'
+SUPPORTED     hex       PRINT"[";HEX$(255);"]"
+            ref  [value] '[FF]'
+SUPPORTED     sqr       PRINT"[";SQR(9);"]"
+            ref  [value] '[ 3 ]'
+SUPPORTED     peek      PRINT"[";PEEK(0)>=0;"]"
+            ref  [value] '[-1 ]'
+SUPPORTED     peek_b    POKE-8192,66:PRINT"[";PEEK(-8192);"]"
+            ref  [value] '[ 66 ]'
+SUPPORTED     varptr    B=1:PRINT"[";VARPTR(B)>0;"]"
+            ref  [value] '[ 0 ]'
+SUPPORTED     varptr_b  A=0:B=0:DIM Z(4):A=VARPTR(Z(1)):B=VARPTR(Z(0)):PRINT"[";A-B;"]"
+            ref  [value] '[ 8 ]'
+SUPPORTED     stick     PRINT"[";STICK(0);"]"
+            ref  [value] '[ 0 ]'
+SUPPORTED     stick_hold S=0:T=TIME:W$="WWWWWWWWWWWWWWWWWW":IF STICK(0)THEN S=STICK(0):V$="VVVVVVV":IF S=0 AND TIME-T<120 THEN 20:PRINT"[2d";S;"]"
+            ref  [value] '[2d 1 ]'
+SUPPORTED     erase     DIM Q(2):ERASE Q:PRINT"[ok]"
+            ref  [value] '[ok]'
+SUPPORTED     erase_b   DIM Q(2):Q(1)=5:ERASE Q:DIM Q(2):PRINT"[";Q(1);"]"
+            ref  [value] '[ 0 ]'
+SUPPORTED     swapctl   A=1:PRINT"[";A;"]"
+            ref  [value] '[ 1 ]'
+SUPPORTED     asc       PRINT"[";ASC("A");"]"
+            ref  [value] '[ 65 ]'
+SUPPORTED     cint      PRINT"[";CINT(1.7);"]"
+            ref  [value] '[ 1 ]'
+SUPPORTED     cdbl      PRINT"[";CDBL(1)/3;"]"
+            ref  [value] '[ .33333333333333 ]'
+SUPPORTED     csng      PRINT"[";CSNG(1.5);"]"
+            ref  [value] '[ 1.5 ]'
+SUPPORTED     fix       PRINT"[";FIX(-1.7);"]"
+            ref  [value] '[-1 ]'
+SUPPORTED     sgn       PRINT"[";SGN(-3);"]"
+            ref  [value] '[-1 ]'
+SUPPORTED     sin       PRINT"[";SIN(0);"]"
+            ref  [value] '[ 0 ]'
+SUPPORTED     sin_b     PRINT"[";INT(SIN(1)*1000);"]"
+            ref  [value] '[ 841 ]'
+SUPPORTED     cos       PRINT"[";COS(0);"]"
+            ref  [value] '[ 1 ]'
+SUPPORTED     tan       PRINT"[";TAN(0);"]"
+            ref  [value] '[ 0 ]'
+SUPPORTED     tan_b     PRINT"[";INT(TAN(1)*1000);"]"
+            ref  [value] '[ 1557 ]'
+SUPPORTED     atn       PRINT"[";INT(ATN(1)*1000);"]"
+            ref  [value] '[ 785 ]'
+SUPPORTED     exp       PRINT"[";INT(EXP(1)*1000);"]"
+            ref  [value] '[ 2718 ]'
+SUPPORTED     log       PRINT"[";LOG(1);"]"
+            ref  [value] '[ 0 ]'
+SUPPORTED     mod       PRINT"[";7 MOD 3;"]"
+            ref  [value] '[ 1 ]'
+SUPPORTED     notop     PRINT"[";NOT 0;"]"
+            ref  [value] '[-1 ]'
+SUPPORTED     andop     PRINT"[";5 AND 3;"]"
+            ref  [value] '[ 1 ]'
+SUPPORTED     orop      PRINT"[";5 OR 3;"]"
+            ref  [value] '[ 7 ]'
+SUPPORTED     xorop     PRINT"[";5 XOR 3;"]"
+            ref  [value] '[ 6 ]'
+SUPPORTED     oct       PRINT"[";OCT$(8);"]"
+            ref  [value] '[10]'
+SUPPORTED     valkw     PRINT"[";VAL("-12");"]"
+            ref  [value] '[-12 ]'
+SUPPORTED     valkw_b   PRINT"[";VAL("1.5");"]"
+            ref  [value] '[ 1.5 ]'
+SUPPORTED     valkw_c   PRINT"[";VAL("1E3");"]"
+            ref  [value] '[ 1000 ]'
+SUPPORTED     valkw_d   PRINT"[";VAL("&HFF");"]"
+            ref  [value] '[ 255 ]'
+SUPPORTED     valkw_e   PRINT"[";VAL("12ABC");"]"
+            ref  [value] '[ 12 ]'
+SUPPORTED     left      PRINT"[";LEFT$("abc",2);"]"
+            ref  [value] '[ab]'
+SUPPORTED     right     PRINT"[";RIGHT$("abc",2);"]"
+            ref  [value] '[bc]'
+SUPPORTED     str       PRINT"[";STR$(5);"]"
+            ref  [value] '[ 5]'
+SUPPORTED     stringf   PRINT"[";STRING$(3,"x");"]"
+            ref  [value] '[xxx]'
+SUPPORTED     space     PRINT"[";LEN(SPACE$(3));"]"
+            ref  [value] '[ 3 ]'
+SUPPORTED     space_b   A$=SPACE$(3):B$=RIGHT$(A$,1):PRINT"[";ASC(A$);ASC(B$);"]"
+            ref  [value] '[ 32  32 ]'
+SUPPORTED     csrlind   A=CSRLIN:PRINT:PRINT"[";CSRLIN-A;"]"
+            ref  [value] '|[ 1 ]'
+SUPPORTED     let       LET A=5:PRINT"[";A;"]"
+            ref  [value] '[ 5 ]'
+SUPPORTED     rem       PRINT"[";1;"]":REM z
+            ref  [value] '[ 1 ]'
+SUPPORTED     rnd       PRINT"[";RND(1)<1;"]"
+            ref  [value] '[-1 ]'
+SUPPORTED     rnd_b     A=RND(-1):PRINT"[";INT(A*10000);"]"
+            ref  [value] '[ 438 ]'
+SUPPORTED     cvi       PRINT"[";CVI(MKI$(7));"]"
+            ref  [value] '[ 7 ]'
+SUPPORTED     using     PRINT USING"##";7
+            ref  [value] '7'
+SUPPORTED     using_b   PRINT"[";:PRINT USING"#.##";3.146;:PRINT"]"
+            ref  [value] '[3.15]'
+SUPPORTED     using_c   PRINT"[";:PRINT USING"+##";7;:PRINT"]"
+            ref  [value] '[ +7]'
+SUPPORTED     using_d   PRINT"[";:PRINT USING"!";"ABC";:PRINT"]"
+            ref  [value] '[A]'
+SUPPORTED     using_e   PRINT"[";:PRINT USING"##.##^^^^";123.4;:PRINT"]"
+            ref  [value] '[ 1.23E+02]'
+SUPPORTED     then      IF 2>1 THEN PRINT"[3]"
+            ref  [value] '[3]'
+SUPPORTED     elsekw    IF 0 THEN PRINT 1 ELSE PRINT"[8]"
+            ref  [value] '[8]'
+SUPPORTED     tokw      FOR I=1 TO 3:NEXT:PRINT"[";I;"]"
+            ref  [value] '[ 4 ]'
+SUPPORTED     stepkw    FOR I=1TO5STEP2:NEXT:PRINT"[";I;"]"
+            ref  [value] '[ 7 ]'
+SUPPORTED     offkw     INTERVAL OFF:PRINT"[9]"
+            ref  [value] '[9]'
+SUPPORTED     ifkw      IF 3>2 THEN PRINT"[4]"
+            ref  [value] '[4]'
+SUPPORTED     ifkw_b    IF 0 THEN ?"[1i]" ELSE ?"[1h]"
+            ref  [value] '[1h]'
+SUPPORTED     ifkw_c    A=0:IF 3>2 GOTO 40:A=7:Z$="XXXXXXXXXXXXXXXXXXXXXXXX":Y$="YYYYYYYYYYYYYYYYYYYYYYYY":PRINT"[1j";A;"]"
+            ref  [value] '[1j 0 ]'
+SUPPORTED     forkw     S=0:FOR I=1 TO 3:S=S+I:NEXT:PRINT"[";S;"]"
+            ref  [value] '[ 6 ]'
+SUPPORTED     forkw_b   S=0:FOR I=1 TO 9 STEP 4:S=S+I:NEXT:PRINT"[";S;"]"
+            ref  [value] '[ 15 ]'
+SUPPORTED     forkw_c   S=0:FOR I=3 TO 1 STEP -1:S=S*10+I:NEXT:PRINT"[";S;"]"
+            ref  [value] '[ 321 ]'
+SUPPORTED     nextkw    FOR I=1 TO 2:NEXT:PRINT"[";I;"]"
+            ref  [value] '[ 3 ]'
+SUPPORTED     nextkw_b  FOR I=1 TO 2:NEXT I:PRINT"[";I;"]"
+            ref  [value] '[ 3 ]'
+SUPPORTED     nextkw_c  FOR I=1 TO 2:FOR J=1 TO 2:NEXT J,I:PRINT"[";I;J;"]"
+            ref  [value] '[ 3  3 ]'
+SUPPORTED     clearkw   CLEAR 100:PRINT"[5]"
+            ref  [value] '[5]'
+SUPPORTED     clear_b   A=5:CLEAR:A=A+1:PRINT"[";A;"]"
+            ref  [value] '[ 1 ]'
+SUPPORTED     clear_c   POKE&HE003,PEEK(&HFC4A):POKE&HE004,PEEK(&HFC4B):CLEAR 100,&HD000:A=PEEK(&HFC4A)+256*PEEK(&HFC4B):PRINT"[";A;"]":B=PEEK(&HE003)+256*PEEK(&HE004):CLEAR 100,B
+            ref  [value] '[ 53248 ]'
+SUPPORTED     dimkw     DIM D(2):D(1)=5:PRINT"[";D(1);"]"
+            ref  [value] '[ 5 ]'
+SUPPORTED     dimkw_b   DIM E(2,3):E(1,2)=7:PRINT"[";E(1,2);E(2,1);"]"
+            ref  [value] '[ 7  0 ]'
+SUPPORTED     sound_b   SOUND 0,123:T9=TIME:FOR J9=1 TO 2:J9=1-(TIME<>T9):NEXT:OUT&HA0,0:PRINT"[";INP(&HA2);"]"
+            ref  [value] '[ 123 ]'
+SUPPORTED     beep      BEEP:PRINT"[6]"
+            ref  [value] '[6]'
+SUPPORTED   ! WEAK  beep_b    SOUND 7,255:BEEP:T9=TIME:FOR J9=1 TO 2:J9=1-(TIME<>T9):NEXT:OUT&HA0,7:PRINT"[";INP(&HA2);"]"
+            ref  [value] '[ 184 ]'
+            zb   [value] '[ 184 ]'
+            WEAK: D-KWBATCH5 DEMOTED THIS ROW: IT READS A TRANSIENT AND THE TWO MACHINES DIFFER IN SPEED. The mixer is restored when the beep FINISHES, so 184 (sounding) vs 191 (finished) is a race between the beep and the OUT/INP two statements later. Measured 2026-09-14: ALONE both machines read 184; in the full sweep the reference reads 191 and zerobas 184, deterministically over two runs -- zerobas is 2.5-3.8x slower (the open on-par-speed item), so it is still sounding when the reference has stopped. The row was SUPPORTED for as long as batching happened to put the same neighbours before it. 🎯 `beep_c` below reads a register BEEP does NOT put back, which has no such race. THE ORIGINAL NOTE'S CLAIM IS STILL TRUE, it just is not SCOREABLE.
+SUPPORTED     beep_c    SOUND 0,0:BEEP:T9=TIME:FOR J9=1 TO 2:J9=1-(TIME<>T9):NEXT:OUT&HA0,0:PRINT"[";INP(&HA2);"]"
+            ref  [value] '[ 85 ]'
+SUPPORTED     sound     SOUND 7,255:PRINT"[7]"
+            ref  [value] '[7]'
+SUPPORTED     playkw    PLAY"O4L1T120V8C":FOR I=1 TO 200:NEXT:T9=TIME:FOR J9=1 TO 2:J9=1-(TIME<>T9):NEXT:OUT&HA0,0:A=INP(&HA2):PRINT"[3i";A;"]"
+            ref  [value] '[3i 172 ]'
+SUPPORTED     playkw_b  PLAY"L1T120V8N40":FOR I=1 TO 200:NEXT:T9=TIME:FOR J9=1 TO 2:J9=1-(TIME<>T9):NEXT:OUT&HA0,0:A=INP(&HA2):PRINT"[3j";A;"]"
+            ref  [value] '[3j 83 ]'
+SUPPORTED     playkw_c  PLAY"O4L1T120V8C","O4L1T120V8R":FOR I=1 TO 200:NEXT:T9=TIME:FOR J9=1 TO 2:J9=1-(TIME<>T9):NEXT:OUT&HA0,8:A=INP(&HA2)AND15:OUT&HA0,9:B=INP(&HA2)AND15:PRINT"[3k";A;B;"]"
+            ref  [value] '[3k 8  0 ]'
+SUPPORTED     playkw_d  PLAY"O7L1T120V8C":FOR I=1 TO 200:NEXT:T9=TIME:FOR J9=1 TO 2:J9=1-(TIME<>T9):NEXT:OUT&HA0,0:A=INP(&HA2):PRINT"[3l";A;"]"
+            ref  [value] '[3l 53 ]'
+SUPPORTED     playkw_x  A%=1:B!=2:C#=3:D$="Q":E$="O7L1T120V8C":PLAY"XE$;":FOR I=1 TO 200:NEXT:T9=TIME:FOR J9=1 TO 2:J9=1-(TIME<>T9):NEXT:OUT&HA0,0:A=INP(&HA2):PRINT"[3x";A;"]"
+            ref  [value] '[3x 53 ]'
+SUPPORTED     playkw_e  PLAY"O4L1T120V3C":FOR I=1 TO 200:NEXT:T9=TIME:FOR J9=1 TO 2:J9=1-(TIME<>T9):NEXT:OUT&HA0,8:A=INP(&HA2)AND15:PRINT"[3o";A;"]"
+            ref  [value] '[3o 3 ]'
+SUPPORTED     playkw_f  PLAY"O4L1T120S10M2000C":FOR I=1 TO 200:NEXT:T9=TIME:FOR J9=1 TO 2:J9=1-(TIME<>T9):NEXT:OUT&HA0,13:A=INP(&HA2)AND15:OUT&HA0,11:B=INP(&HA2):OUT&HA0,12:C=INP(&HA2):PRINT"[3p";A;B;C;"]"
+            ref  [value] '[3p 10  208  7 ]'
+SUPPORTED     playkw_g  PLAY"","","O4L2T120V8C":FOR I%=1 TO 200:NEXT:A=PLAY(1):B=PLAY(2):C=PLAY(3):PRINT"[3q";A;B;C;"]"
+            ref  [value] '[3q 0  0 -1 ]'
+SUPPORTED     playkw_h  A=0:B=0:PLAY"O4T120V8L64C":T=TIME:W$="WWWWWWWWWWWW":IF TIME-T<40 THEN 30:U$="UUUUUUUUUUUUUU":A=PLAY(0):PLAY"O4T120V8L2C":T=TIME:V$="VVVVVVVVVVVV":IF TIME-T<40 THEN 70:X$="XXXXXXXXXXXXXX":B=PLAY(0):PRINT"[3m";A;B;"]"
+            ref  [value] '[3m 0 -1 ]'
+SUPPORTED     playkw_i  A=0:B=0:PLAY"O4L4V8T255C":T=TIME:W$="WWWWWWWWWWWW":IF TIME-T<40 THEN 30:U$="UUUUUUUUUUUUUU":A=PLAY(0):PLAY"O4L4V8T32C":T=TIME:V$="VVVVVVVVVVVV":IF TIME-T<40 THEN 70:X$="XXXXXXXXXXXXXX":B=PLAY(0):PRINT"[3n";A;B;"]"
+            ref  [value] '[3n 0 -1 ]'
+SUPPORTED     vpeek     VPOKE 0,7:PRINT"[";VPEEK(0);"]"
+            ref  [value] '[ 7 ]'
+SUPPORTED     vpoke     VPOKE 0,9:PRINT"[";VPEEK(0);"]"
+            ref  [value] '[ 9 ]'
+SUPPORTED     vdpkw     PRINT"[";VDP(1)>0;"]"
+            ref  [value] '[-1 ]'
+SUPPORTED     vdp_b     PRINT"[";VDP(1);"]"
+            ref  [value] '[ 240 ]'
+SUPPORTED     vdp_c     VDP(7)=5:A=VDP(7):VDP(7)=4:B=VDP(7):PRINT"[0d";A;B;"]"
+            ref  [value] '[0d 5  4 ]'
+SUPPORTED     vdp_d     V=VDP(1):VDP(1)=V AND 223:T=TIME:FOR I%=1 TO 400:NEXT:A=TIME-T:VDP(1)=V:PRINT"[0l";A;"]"
+            ref  [value] '[0l 0 ]'
+SUPPORTED     inpkw     PRINT"[";INP(&HA8)>0 ;"]"
+            ref  [value] '[-1 ]'
+SUPPORTED     inp_b     T9=TIME:FOR J9=1 TO 2:J9=1-(TIME<>T9):NEXT:OUT&HA0,0:OUT&HA1,66:OUT&HA0,0:PRINT"[";INP(&HA2);"]"
+            ref  [value] '[ 66 ]'
+SUPPORTED     outkw     OUT &HA0,7:PRINT"[8]"
+            ref  [value] '[8]'
+SUPPORTED     out_b     T9=TIME:FOR J9=1 TO 2:J9=1-(TIME<>T9):NEXT:OUT&HA0,0:OUT&HA1,77:OUT&HA0,0:PRINT"[";INP(&HA2);"]"
+            ref  [value] '[ 77 ]'
+SUPPORTED     peek_curlin A=PEEK(&HF41C)+256*PEEK(&HF41D):PRINT"[6c";A;"]"
+            ref  [value] '[6c 10 ]'
+SUPPORTED     pokekw    POKE-8192,7:PRINT"[";PEEK(-8192);"]"
+            ref  [value] '[ 7 ]'
+SUPPORTED     widthkw   WIDTH 36:WIDTH 37:PRINT"[W";PEEK(-3152);"]"
+            ref  [value] '[W 37 ]'
+SUPPORTED     widthkw_b WIDTH 37:SCREEN1:WIDTH 29:A=PEEK(&HF3AF):B=PEEK(&HF3AE):SCREEN0:PRINT"[0a";A;B;"]"
+            ref  [value] '[0a 29  37 ]'
+SUPPORTED     widthkw_c WIDTH 37:CLS:PRINT"KKKK":WIDTH 37:B=CSRLIN:C=0:FOR I=0 TO 119:C=C-(VPEEK(I)=75):NEXT:PRINT"[4w";C;B;"]"
+            ref  [value] '[4w 4  1 ]'
+SUPPORTED     circlekw  SCREEN2:CIRCLE(50,50),10,15:A=POINT(60,50):SCREEN0:PRINT"[Q";A;"]"
+            ref  [value] '[Q 15 ]'
+SUPPORTED     circlekw_b SCREEN2:CIRCLE(50,50),10,15,0,1.57:A=POINT(60,50):B=POINT(40,50):SCREEN0:PRINT"[F";A;B;"]"
+            ref  [value] '[F 15  4 ]'
+SUPPORTED     circlekw_c SCREEN2:PSET(30,30),15:CIRCLE STEP(20,20),10,15:A=POINT(60,50):B=POINT(30,20):SCREEN0:PRINT"[0h";A;B;"]"
+            ref  [value] '[0h 15  4 ]'
+SUPPORTED     circlekw_d SCREEN2:CIRCLE(50,50),20,15,,,.5:A=POINT(70,50):B=POINT(50,70):SCREEN0:PRINT"[0i";A;B;"]"
+            ref  [value] '[0i 15  4 ]'
+SUPPORTED     circlekw_e SCREEN2:COLOR 11:CIRCLE(50,50),10:A=POINT(60,50):B=POINT(50,50):SCREEN0:PRINT"[0j";A;B;"]":COLOR 15
+            ref  [value] '[0j 11  4 ]'
+SUPPORTED     drawkw    SCREEN2:PSET(10,10),15:DRAW"A0S4C15R5":A=POINT(14,10):SCREEN0:PRINT"[D";A;"]"
+            ref  [value] '[D 15 ]'
+SUPPORTED     drawkw_b  SCREEN2:PSET(10,10),15:DRAW"A0S4C15D5":A=POINT(10,14):SCREEN0:PRINT"[E";A;"]"
+            ref  [value] '[E 15 ]'
+SUPPORTED     drawkw_c  SCREEN2:PSET(10,10),15:DRAW"A0S4C15M50,50":A=POINT(30,30):SCREEN0:PRINT"[2y";A;"]"
+            ref  [value] '[2y 15 ]'
+SUPPORTED     drawkw_d  SCREEN2:PSET(10,10),15:DRAW"A0S4C15M+20,+0":A=POINT(25,10):SCREEN0:PRINT"[2z";A;"]"
+            ref  [value] '[2z 15 ]'
+SUPPORTED     drawkw_e  SCREEN2:PSET(10,10),15:DRAW"A0S4C15BM50,50R5":A=POINT(30,30):B=POINT(52,50):SCREEN0:PRINT"[3a";A;B;"]"
+            ref  [value] '[3a 4  15 ]'
+SUPPORTED     drawkw_f  SCREEN2:PSET(10,10),15:DRAW"A0S4C15NR5D3":A=POINT(12,10):B=POINT(10,12):SCREEN0:PRINT"[3b";A;B;"]"
+            ref  [value] '[3b 15  15 ]'
+SUPPORTED     drawkw_g  SCREEN2:PSET(10,10),15:DRAW"A0S4C7R5":A=POINT(14,10):SCREEN0:PRINT"[3c";A;"]"
+            ref  [value] '[3c 7 ]'
+SUPPORTED     drawkw_h  SCREEN2:PSET(10,10),15:DRAW"A0C15S8R2":A=POINT(13,10):SCREEN0:PRINT"[3d";A;"]"
+            ref  [value] '[3d 15 ]'
+SUPPORTED     drawkw_i  SCREEN2:PSET(10,50),15:DRAW"S4C15A1R5":A=POINT(10,47):B=POINT(13,50):SCREEN0:PRINT"[3e";A;B;"]"
+            ref  [value] '[3e 15  4 ]'
+SUPPORTED     drawkw_j  SCREEN2:A$="R5":PSET(10,10),15:DRAW"A0S4C15XA$;":A=POINT(14,10):SCREEN0:PRINT"[3f";A;"]"
+            ref  [value] '[3f 15 ]'
+SUPPORTED     drawkw_k  SCREEN2:A=5:PSET(10,10),15:DRAW"A0S4C15R=A;":B=POINT(14,10):SCREEN0:PRINT"[3g";B;"]"
+            ref  [value] '[3g 15 ]'
+SUPPORTED     spritekw  SCREEN2:SPRITE$(0)=STRING$(8,255):A=ASC(SPRITE$(0)):SCREEN0:PRINT"[Z";A;"]"
+            ref  [value] '[Z 255 ]'
+SUPPORTED     sprite_on SCREEN2:SPRITE$(0)=STRING$(8,255):C=0:ON SPRITE GOSUB 80:SPRITE ON:PUTSPRITE0,(100,100),15,0:PUTSPRITE1,(104,100),15,0:T=TIME:V$="VVVVVVVVVVVVVVVVVVVVVVVV":IF C=0 AND TIME-T<120 THEN 60:SCREEN0:PRINT"[2j";C>0;"]":END:W1=55:C=C+1:RETURN
+            ref  [value] '[2j-1 ]'
+SUPPORTED     sprite_off SCREEN2:SPRITE$(0)=STRING$(8,255):C=0:ON SPRITE GOSUB 80:SPRITE OFF:PUTSPRITE0,(100,100),15,0:PUTSPRITE1,(104,100),15,0:T=TIME:V$="VVVVVVVVVVVVVVVVVVVVVV":IF C=0 AND TIME-T<30 THEN 60:SCREEN0:PRINT"[2k";C;"]":END:W1=55:C=C+1:RETURN
+            ref  [value] '[2k 0 ]'
+SUPPORTED     sprite_stop SCREEN2:SPRITE$(0)=STRING$(8,255):C=0:ON SPRITE GOSUB 80:SPRITE STOP:PUTSPRITE0,(100,100),15,0:PUTSPRITE1,(104,100),15,0:T=TIME:V$="VVVVVVVVVVVVVVVV":IF C=0 AND TIME-T<30 THEN 60:SCREEN0:PRINT"[2l";C;"]":END:W1=55:C=C+1:RETURN
+            ref  [value] '[2l 0 ]'
+SUPPORTED     spritekw_b SCREEN2:SPRITE$(3)=STRING$(8,222):SPRITE$(0)=STRING$(8,111):A=ASC(SPRITE$(3)):SCREEN0:PRINT"[Y";A;"]"
+            ref  [value] '[Y 222 ]'
+SUPPORTED     basekw    PRINT"[";BASE(2);"]"
+            ref  [value] '[ 2048 ]'
+SUPPORTED     basekw_b  V=BASE(5):BASE(5)=&H1800:A=BASE(5):BASE(5)=V:PRINT"[0r";A;"]"
+            ref  [value] '[0r 6144 ]'
+SUPPORTED     pdlkw     PRINT"[";PDL(1);"]"
+            ref  [value] '[ 255 ]'
+SUPPORTED     padkw     PRINT"[";PAD(9);"]"
+            ref  [error:illegal function call] '[|Illegal function call'
+SUPPORTED     pdl_plug  PRINT"[";PDL(1);"]"
+            ref  [value] '[ 128 ]'
+SUPPORTED     pad_plug  PRINT"[";PAD(0);"]"
+            ref  [value] '[-1 ]'
+SUPPORTED     pad_plug_b PRINT"[";PAD(1);"]"
+            ref  [value] '[ 255 ]'
+SUPPORTED     strig_hold S=0:T=TIME:W$="WWWWWWWWWWWWWWWWWW":IF STRIG(0)THEN S=-1:V$="VVVVVVV":IF S=0 AND TIME-T<120 THEN 20:PRINT"[1w";S;"]"
+            ref  [value] '[1w-1 ]'
+SUPPORTED     stick_rig S=0:T=TIME:W$="WWWWWWWWWWWWWWWWWW":IF STICK(1)THEN S=STICK(1):V$="VVVVVVV":IF S=0 AND TIME-T<120 THEN 20:PRINT"[3s";S;STICK(0);"]"
+            ref  [value] '[3s 2  0 ]'
+SUPPORTED     stick_rig_b S=0:T=TIME:W$="WWWWWWWWWWWWWWWWWW":IF STICK(1)THEN S=STICK(1):V$="VVVVVVV":IF S=0 AND TIME-T<120 THEN 20:PRINT"[3w";S;"]"
+            ref  [value] '[3w 6 ]'
+SUPPORTED     strig_rig S=0:T=TIME:W$="WWWWWWWWWWWWWWWWWW":IF STRIG(1)THEN S=-1:V$="VVVVVVV":IF S=0 AND TIME-T<120 THEN 20:PRINT"[3t";S;STRIG(3);STRIG(0);"]"
+            ref  [value] '[3t-1  0  0 ]'
+SUPPORTED     strig_rig_b S=0:T=TIME:W$="WWWWWWWWWWWWWWWWWW":IF STRIG(3)THEN S=-1:V$="VVVVVVV":IF S=0 AND TIME-T<120 THEN 20:PRINT"[3u";S;STRIG(1);"]"
+            ref  [value] '[3u-1  0 ]'
+SUPPORTED     attrkw    PRINT"[";ATTR$;"]"
+            ref  [error:illegal function call] '[|Illegal function call'
+SUPPORTED     stopkw    PRINT"[T1]":STOP
+            ref  [value] '[T1]|Break in 10'
+SUPPORTED     contkw    PRINT"[C"+"1]":STOP:PRINT"[C"+"2]"
+            ref  [value] '[C2]'
+SUPPORTED     maxkw     PRINT"[";MAX;"]"
+            ref  [error:syntax error] '[|Syntax error'
+SUPPORTED     strigkw   PRINT"[";STRIG(5);"]"
+            ref  [error:illegal function call] '[|Illegal function call'
+SUPPORTED     onkw      ON ERROR GOTO 20:ERROR 7:END:PRINT"[R";ERR;ERL;"]":END
+            ref  [value] '[R 7  10 ]'
+SUPPORTED     onkw_b    ON ERROR GOTO 40:ON ERROR GOTO 0:ERROR 7:A=1:A=2:A=3:A=4:A=5:A=6:A=7:A=8:A=9:B=1:B=2:B=3:B=4:B=5:PRINT"[0w1]":END
+            ref  [error:out of memory] 'Out of memory in 20'
+SUPPORTED     ongoto    ON 2 GOTO 20,30:PRINT"[J00]":END:REM ZQ:PRINT"[J77]":END:PRINT"[J99]":END
+            ref  [value] '[J99]'
+SUPPORTED     ongosub   ON 2 GOSUB 30,40:PRINT"[K";A;"]":END:REM ZZZZZZZZZZZZZZZZZZZZZZ:A=77:RETURN:REM QQQQQQQQQQQQQQ:A=99:RETURN
+            ref  [value] '[K 99 ]'
+SUPPORTED     oninterval C=0:ON INTERVAL=10 GOSUB 40:INTERVAL ON:IF C=0 THEN 20:PRINT"[1q";C>0;"]":END:W$="WWWWWW":C=C+1:RETURN
+            ref  [value] '[1q-1 ]'
+SUPPORTED     oninterval_b C=0:ON INTERVAL=10 GOSUB 60:INTERVAL ON:IF C=0 THEN 20:ON INTERVAL=10 GOSUB:C=0:T=TIME:IF TIME-T<30 THEN 40:PRINT"[1r";C;"]":END:W$="WWWWWWWW":C=C+1:RETURN
+            ref  [value] '[1r 0 ]'
+SUPPORTED     onsprite  SCREEN2:SPRITE$(0)=STRING$(8,255):C=0:ON SPRITE GOSUB 70:SPRITE ON:PUTSPRITE0,(100,100),15,0:PUTSPRITE1,(104,100),15,0:IF C=0 THEN 50:W$="WWWWWWWWWWWWWW":SCREEN0:PRINT"[1s";C>0;"]":END:C=C+1:RETURN
+            ref  [value] '[1s-1 ]'
+SUPPORTED     onsprite_b SCREEN2:SPRITE$(0)=STRING$(8,255):C=0:ON SPRITE GOSUB 90:SPRITE ON:PUTSPRITE0,(100,100),15,0:PUTSPRITE1,(104,100),15,0:IF C=0 THEN 50:W$="WWWWWWWWWWWWWW":ON SPRITE GOSUB:C=0:T=TIME:IF TIME-T<30 THEN 70:V$="VVVVVVVV":SCREEN0:PRINT"[1t";C;"]":END:W1=55:C=C+1:RETURN
+            ref  [value] '[1t 0 ]'
+SUPPORTED     onstrig   C=0:ON STRIG GOSUB 60:STRIG(0) ON:T=TIME:V$="VVVVVVVVVVVVVVVVVVVVVVVV":IF C=0 AND TIME-T<120 THEN 40:PRINT"[1x";C>0;"]":END:W$="WWWWWWWWW":C=C+1:RETURN
+            ref  [value] '[1x-1 ]'
+SUPPORTED     onstrig_b C=0:ON STRIG GOSUB 60,80:STRIG(0) ON:T=TIME:V$="VVVVVVVVVVVVVVVVVVVVVV":IF C=0 AND TIME-T<120 THEN 40:PRINT"[1y";C;"]":END:W$="WWWWWWWWWWW":C=1:RETURN:U$="UUUUUUUUUUUUUUUUUUUUUUUUUUU":C=2:RETURN
+            ref  [value] '[1y 1 ]'
+SUPPORTED     onstrig_c C=0:ON STRIG GOSUB 60:ON STRIG GOSUB ,60:STRIG(0) ON:T=TIME:IF C=0 AND TIME-T<120 THEN 40:PRINT"[1z";C;"]":END:W$="WWWWWWWWW":C=C+1:RETURN
+            ref  [value] '[1z 0 ]'
+SUPPORTED     onstrig_rig C=0:ON STRIG GOSUB 60,80:STRIG(1) ON:T=TIME:V$="VVVVVVVVVVVVVVVVVVVVVV":IF C=0 AND TIME-T<120 THEN 40:PRINT"[3v";C;"]":END:W$="WWWWWWWWWWW":C=1:RETURN:U$="UUUUUUUUUUUUUUUUUUUUUUUUUUU":C=2:RETURN
+            ref  [value] '[3v 2 ]'
+SUPPORTED     onstop    C=0:ON STOP GOSUB 60:STOP ON:T=TIME:V$="VVVVVVVVVVVVVVVVVVVVVV":IF C=0 AND TIME-T<200 THEN 30:PRINT"[2q";C>0;"]":END:W$="WWWWWW":Y$="YYYYYYYYYYYYYYYYYYYYYYYY":C=C+1:RETURN
+            ref  [value] '[2q-1 ]'
+SUPPORTED     onstop_b  C=0:ON STOP GOSUB 60:ON STOP GOSUB:STOP ON:T=TIME:IF C=0 AND TIME-T<200 THEN 30:PRINT"[2r";C;"]":END:W$="WWWWWWWW":Y$="YYYYYYYYYYYYYYYYYYYYYYYY":C=C+1:RETURN
+            ref  [value] 'Break in 30'
+SUPPORTED     onkey     KEY 1,"":C=0:ON KEY GOSUB 60:KEY(1) ON:T=TIME:V$="VVVVVVVVVVVVVVVVVVVVVVVV":IF C=0 AND TIME-T<120 THEN 40:PRINT"[2a";C>0;"]":END:W$="WWWWWWWWW":C=C+1:RETURN
+            ref  [value] '[2a-1 ]'
+SUPPORTED     onkey_b   KEY 2,"":C=0:ON KEY GOSUB 60,80:KEY(2) ON:T=TIME:V$="VVVVVVVVVVVVVVVVVVVVVV":IF C=0 AND TIME-T<120 THEN 40:PRINT"[2b";C;"]":END:W$="WWWWWWWWWWW":C=1:RETURN:U$="UUUUUUUUUUUUUUUUUUUUUUUUUUU":C=2:RETURN
+            ref  [value] '[2b 2 ]'
+SUPPORTED     onkey_c   KEY 1,"":C=0:ON KEY GOSUB 60:ON KEY GOSUB ,60:KEY(1) ON:T=TIME:V$="VVVVVVVVVVVVVVVVVVVVVVVV":IF C=0 AND TIME-T<120 THEN 40:PRINT"[2c";C;"]":END:W$="WWWWWWWW":C=C+1:RETURN
+            ref  [value] '[2c 0 ]'
+SUPPORTED     errorkw   ON ERROR GOTO 20:ERROR 7:END:PRINT"[R";ERR;ERL;"]":END
+            ref  [value] '[R 7  10 ]'
+SUPPORTED     errorkw_b ON ERROR GOTO 20:ERROR 53:END:PRINT"[I";ERR;ERL;"]":END
+            ref  [value] '[I 53  10 ]'
+SUPPORTED     errkw     ON ERROR GOTO 20:ERROR 7:END:PRINT"[R";ERR;ERL;"]":END
+            ref  [value] '[R 7  10 ]'
+SUPPORTED     erlkw     ON ERROR GOTO 20:ERROR 7:END:PRINT"[R";ERR;ERL;"]":END
+            ref  [value] '[R 7  10 ]'
+SUPPORTED     resumekw  ON ERROR GOTO 30:ERROR 7:PRINT"[U";A;"]":END:A=5:RESUME NEXT
+            ref  [value] '[U 0 ]'
+SUPPORTED     resumekw_b ON ERROR GOTO 40:B=-1:W$="WWWWWWW":A=SQR(B):Y$="YYYYYYYYYYYYYYYYYYYY":PRINT"[1n";A;"]":END:V$="VVVVVVVV":B=9:RESUME
+            ref  [value] '[1n 3 ]'
+SUPPORTED     resumekw_c ON ERROR GOTO 50:A=7:W$="WWWWWWWW":ERROR 7:Y$="YYYYYYYYYYYYYYYYYYYYY":A=8:U$="UUUUUUUUUUUUUUUUUUUUUUUUU":PRINT"[1o";A;"]":END:V$="VVVVVVVV":RESUME 40
+            ref  [value] '[1o 7 ]'
+SUPPORTED     defintkw  DEFINT A:A=1.7:PRINT"[";A;"]"
+            ref  [value] '[ 1 ]'
+SUPPORTED     defint_b  DEFINT A-C:C=1.7:PRINT"[";C;"]"
+            ref  [value] '[ 1 ]'
+SUPPORTED     listkw    PRINT"[A]":LIST
+            ref  [value] '[A]|10 PRINT"[A]":LIST'
+SUPPORTED     listkw_b  PRINT"[A]":Z$="XXXXXXXXXXXXXXXXXXXXXXXX":Y$="YYYYYYYYYYYYYYYYYYYY":LIST 20
+            ref  [value] '[A]|20 Z$="XXXXXXXXXXXXXXXXXXXXXXXX"'
+SUPPORTED     listkw_c  PRINT"[A]":Z$="XXXXXXXXXXXXXXXXXXXXXXXX":Y$="YYYYYYYYYYYYYYYYYYYY":LIST 20-30
+            ref  [value] '[A]|20 Z$="XXXXXXXXXXXXXXXXXXXXXXXX"|30 Y$="YYYYYYYYYYYYYYYYYYYY"'
+SUPPORTED     deletekw  PRINT"[A]":DELETE 99
+            ref  [error:illegal function call] '[A]|Illegal function call in 10'
+SUPPORTED     del_line  DELETE 20
+            ref  [value] '10 REM Z1\\r\\n30 REM Z3\\r\\n'
+SUPPORTED     del_range DELETE 20-30
+            ref  [value] '10 REM Z1\\r\\n'
+SUPPORTED     del_head  DELETE -20
+            ref  [value] '30 REM Z3\\r\\n'
+SUPPORTED     del_tail  DELETE 20-
+            ref  [error:illegal function call] 'Illegal function call'
+SUPPORTED     newkw     PRINT"[A]":NEW
+            ref  [value] '[A]'
+SUPPORTED     gosubkw   A=0:GOSUB 20:PRINT"[G";A;"]":END:A=7:RETURN
+            ref  [value] '[G 7 ]'
+SUPPORTED     returnkw  A=0:GOSUB 20:PRINT"[H";A;"]":END:A=7:RETURN
+            ref  [value] '[H 7 ]'
+SUPPORTED     endkw     A=0:GOSUB 20:PRINT"[J";A;"]":END:A=7:RETURN
+            ref  [value] '[J 7 ]'
+SUPPORTED     datakw    DATA 42:READ A:PRINT"[";A;"]"
+            ref  [value] '[ 42 ]'
+SUPPORTED     datakw_b  DATA "X,Y":READ A$:PRINT"[";A$;"]"
+            ref  [value] '[X,Y]'
+SUPPORTED     datakw_c  DATA A B:READ A$:PRINT"[";LEN(A$);A$;"]"
+            ref  [value] '[ 3 A B]'
+SUPPORTED     datakw_d  DATA 1,,3:READ A,B,C:PRINT"[";A;B;C;"]"
+            ref  [value] '[ 1  0  3 ]'
+SUPPORTED     readkw    READ Q:RESTORE:READ R:PRINT"[E";Q+R;"]":END:DATA 3
+            ref  [value] '[E 6 ]'
+SUPPORTED     restorekw READ Q:RESTORE:READ R:PRINT"[F";Q+R;"]":END:DATA 3
+            ref  [value] '[F 6 ]'
+SUPPORTED     restorekw_b READ Q:RESTORE 50:READ R:PRINT"[1k";Q;R;"]":END:W$="WWWWWW":Y$="YYYYYYYYYYYYYYYYYYYYYY":DATA 7:V$="VVVVVVVVVVVVVVVVVVVVVV":DATA 9:DATA 11
+            ref  [value] '[1k 7  11 ]'
+SUPPORTED     returnkw_b A=0:GOSUB 50:Z$="XXXXXXXXXXXXXXXXXXXXXXXX":A=A+1:Y$="YYYYYYYYYYYYYYYYYYYYYYY":PRINT"[1l";A;"]":END:W$="WWWWWWWW":A=5:RETURN 40
+            ref  [value] '[1l 5 ]'
+SUPPORTED     psetkw    SCREEN2:PSET(1,1),15:A=POINT(1,1):SCREEN0:PRINT"[S";A;"]"
+            ref  [value] '[S 15 ]'
+SUPPORTED     psetkw_b  SCREEN2:PSET(2,2),7:A=POINT(2,2):SCREEN0:PRINT"[H";A;"]"
+            ref  [value] '[H 7 ]'
+SUPPORTED     psetkw_c  SCREEN3:PSET(10,10),15:A=POINT(10,10):SCREEN0:PRINT"[X";A;"]"
+            ref  [value] '[X 15 ]'
+SUPPORTED     psetkw_d  SCREEN2:COLOR 11:PSET(5,5):A=POINT(5,5):SCREEN0:PRINT"[A";A;"]":COLOR 15
+            ref  [value] '[A 11 ]'
+SUPPORTED     psetkw_e  SCREEN2:PSET(10,10),15:PSET STEP(5,0),15:A=POINT(15,10):SCREEN0:PRINT"[B";A;"]"
+            ref  [value] '[B 15 ]'
+SUPPORTED     presetkw  SCREEN2:PSET(1,1),15:PRESET(1,1):A=POINT(1,1):SCREEN0:PRINT"[R";A;"]"
+            ref  [value] '[R 4 ]'
+SUPPORTED     presetkw_b SCREEN2:PRESET(3,3),9:A=POINT(3,3):SCREEN0:PRINT"[M";A;"]"
+            ref  [value] '[M 9 ]'
+SUPPORTED     presetkw_c SCREEN2:PSET(20,10),15:PSET(10,10),15:PRESET STEP(10,0):A=POINT(20,10):B=POINT(10,10):SCREEN0:PRINT"[1";A;B;"]"
+            ref  [value] '[1 4  15 ]'
+SUPPORTED     presetkw_d SCREEN3:PSET(10,10),15:PSET(12,10),15:PRESET(10,10):A=POINT(10,10):B=POINT(12,10):SCREEN0:PRINT"[2";A;B;"]"
+            ref  [value] '[2 4  15 ]'
+SUPPORTED     paintkw   SCREEN2:LINE(10,10)-(20,20),15,B:PAINT(15,15),15:A=POINT(15,15):SCREEN0:PRINT"[U";A;"]"
+            ref  [value] '[U 15 ]'
+SUPPORTED     paintkw_b SCREEN2:LINE(10,10)-(20,20),11,B:PAINT(15,15),11:A=POINT(15,15):B=POINT(5,5):SCREEN0:PRINT"[5p";A;B;"]"
+            ref  [value] '[5p 11  4 ]'
+SUPPORTED     paintkw_c SCREEN3:LINE(40,40)-(80,80),15,B:PAINT(60,60),11,15:A=POINT(60,60):B=POINT(20,20):SCREEN0:PRINT"[5q";A;B;"]"
+            ref  [value] '[5q 11  4 ]'
+SUPPORTED     putsprite SCREEN2:SPRITE$(0)=STRING$(8,255):PUT SPRITE 0,(100,50),15,0:A=VPEEK(6912):SCREEN0:PRINT"[V";A;"]"
+            ref  [value] '[V 50 ]'
+SUPPORTED     putsprite_b SCREEN2:SPRITE$(1)=STRING$(8,255):PUT SPRITE 0,(100,50),13,1:A=VPEEK(6914):B=VPEEK(6915):SCREEN0:PRINT"[0x";A;B;"]"
+            ref  [value] '[0x 1  13 ]'
+SUPPORTED     pointkw   SCREEN2:PSET(1,1),15:A=POINT(1,1):SCREEN0:PRINT"[T";A;"]"
+            ref  [value] '[T 15 ]'
+SUPPORTED     pointkw_b SCREEN2:PSET(1,1),15:A=POINT(1,1):B=POINT(20,20):SCREEN0:PRINT"[0m";A;B;"]"
+            ref  [value] '[0m 15  4 ]'
+SUPPORTED     linekw    SCREEN2:LINE(1,1)-(5,1),15:A=POINT(3,1):SCREEN0:PRINT"[L";A;"]"
+            ref  [value] '[L 15 ]'
+SUPPORTED     linekw_b  SCREEN2:LINE(1,1)-(9,9),15,B:A=POINT(9,1):SCREEN0:PRINT"[P";A;"]"
+            ref  [value] '[P 15 ]'
+SUPPORTED     linekw_c  SCREEN2:LINE(1,1)-(9,9),15,BF:A=POINT(7,3):B=POINT(20,20):SCREEN0:PRINT"[0n";A;B;"]"
+            ref  [value] '[0n 15  4 ]'
+SUPPORTED     linekw_d  SCREEN2:PSET(10,10),15:LINE STEP(0,0)-STEP(5,0),15:A=POINT(13,10):B=POINT(3,0):SCREEN0:PRINT"[0o";A;B;"]"
+            ref  [value] '[0o 15  4 ]'
+SUPPORTED     linekw_e  SCREEN2:PSET(10,10),15:LINE -(20,10),15:A=POINT(15,10):B=POINT(15,7):SCREEN0:PRINT"[0p";A;B;"]"
+            ref  [value] '[0p 15  4 ]'
+SUPPORTED     linekw_f  SCREEN2:COLOR 11:LINE(1,1)-(5,1):A=POINT(3,1):B=POINT(3,10):SCREEN0:PRINT"[0q";A;B;"]":COLOR 15
+            ref  [value] '[0q 11  4 ]'
+SUPPORTED     colorkw   COLOR 7:PRINT"[O";PEEK(-3095);"]"
+            ref  [value] '[O 7 ]'
+SUPPORTED     colorkw_b COLOR 7:COLOR ,5:A=PEEK(&HF3EA):B=PEEK(&HF3E9):PRINT"[3";A;B;"]":COLOR 15,4,4
+            ref  [value] '[3 5  7 ]'
+SUPPORTED     colorkw_c COLOR 7:COLOR ,,3:A=PEEK(&HF3EB):B=PEEK(&HF3E9):PRINT"[4";A;B;"]":COLOR 15,4,4
+            ref  [value] '[4 3  7 ]'
+SUPPORTED     clskw     CLS:PRINT"[C";CSRLIN;"]"
+            ref  [value] '[C 0 ]'
+SUPPORTED     locate    LOCATE 10:PRINT"[X]"
+            ref  [value] '[X]'
+SUPPORTED     locate_b  CLS:LOCATE 0,5:PRINT"[N";CSRLIN;"]"
+            ref  [value] '[N 5 ]'
+SUPPORTED     locate_c  CLS:LOCATE 9,3:LOCATE ,7:A=CSRLIN:B=POS(0):PRINT"[0b";A;B;"]"
+            ref  [value] '[0b 7  9 ]'
+SUPPORTED     locate_d  C=PEEK(&HFCA9):POKE&HFCA9,99:LOCATE,,0:A=PEEK(&HFCA9):LOCATE,,1:B=PEEK(&HFCA9):LOCATE,,2:D=PEEK(&HFCA9):POKE&HFCA9,C:PRINT"[0e";A;B;D;"]"
+            ref  [value] '[0e 0  1  1 ]'
+SUPPORTED   ! WEAK  csrlin    PRINT:PRINT:PRINT"[";CSRLIN;"]"
+            ref  [value] '||[ 4 ]'
+            zb   [value] '||[ 4 ]'
+            WEAK: absent => variable CSRLIN reads 0; real => the (non-zero) cursor row -- but the VALUE is ambient scroll state, so only the non-zero-ness is a reading. Scored WEAK for the reason the block above gives, and measured 2026-09-07 (D-WAITGAP, scratchpad/csrlin_probe.py): on THIS row the two REFERENCES disagree with EACH OTHER -- vg8020 11, cf3300 8, zb 10 -- in one batch, so it cannot score anything by construction. Anchored with CLS all three agree everywhere (CLS 0/0/0, CLS:PRINT 1/1/1, CLS:PRINT:PRINT 2/2/2) and CSRLIN is correct: LOCATE 0,5 -> 5, 0,10 -> 10, 0,0 -> 0 on all three, which is the decisive form because a set row admits no scroll history.
+SUPPORTED     pos       PRINT"    ";:PRINT"[";POS(0);"]"
+            ref  [value] '[ 5 ]'
+SUPPORTED     tab       PRINT"[";TAB(5);"X]"
+            ref  [value] '[    X]'
+SUPPORTED     spc       PRINT"[";SPC(5);"X]"
+            ref  [value] '[     X]'
+SUPPORTED     printkw_b CLS:PRINT"A","B";:A=POS(0):PRINT"[0t";A;"]"
+            ref  [value] 'A             B[0t 15 ]'
+SUPPORTED     printkw_c CLS:PRINT"AB";"CD";:A=POS(0):PRINT"[0u";A;"]"
+            ref  [value] 'ABCD[0u 4 ]'
+SUPPORTED     printkw_d CLS:PRINT"AB";:A=CSRLIN:PRINT"[0v";A;"]"
+            ref  [value] 'AB[0v 0 ]'
+SUPPORTED     swap      A=1:B=2:SWAP A,B:PRINT"[";A;B;"]"
+            ref  [value] '[ 2  1 ]'
+SUPPORTED     fre       PRINT"[";FRE(0)>1000;"]"
+            ref  [value] '[-1 ]'
+SUPPORTED     fre_b     A=FRE(0):DIM Z(9):B=FRE(0):PRINT"[";A-B;"]"
+            ref  [value] '[ 99 ]'
+SUPPORTED     fre_c     A=FRE(""):B$=STRING$(50,"X"):C=FRE(""):PRINT"[";A-C;"]"
+            ref  [value] '[ 50 ]'
+SUPPORTED     tron      TRON:TROFF:PRINT"[ok]"
+            ref  [value] '[ok]'
+SUPPORTED     troff     TROFF:PRINT"[ok]"
+            ref  [value] '[ok]'
+SUPPORTED     tron_b    TRON:A=1:REM ZZZZZZZZZZZZZZZZZZZZZZZZZ:B=2:PRINT"[0k]"
+            ref  [value] '[20][30][0k]'
+SUPPORTED     troff_b   TRON:A=1:REM ZZZZZZZZZZZZZZZZZZZZZZZZZ:TROFF:B=2:REM QQQQQQQQQQQQQQQQQQQQQQ:PRINT"[0g]"
+            ref  [value] '[20][30][0g]'
+SUPPORTED     renum     RENUM 100:PRINT"[R1]"
+            ref  [error:undefined line] 'Undefined line 100 in 10'
+SUPPORTED     ren_bare  RENUM
+            ref  [value] '10 REM Z1\\r\\n20 REM Z2\\r\\n30 REM Z3\\r\\n'
+SUPPORTED     ren_start RENUM 100
+            ref  [value] '100 REM Z1\\r\\n110 REM Z2\\r\\n120 REM Z3\\r\\n'
+SUPPORTED     ren_old   RENUM 100,7
+            ref  [value] '5 REM Z1\\r\\n100 REM Z2\\r\\n110 REM Z3\\r\\n'
+SUPPORTED     ren_step  RENUM 100,,20
+            ref  [value] '100 REM Z1\\r\\n120 REM Z2\\r\\n140 REM Z3\\r\\n'
+SUPPORTED     defsng    DEFSNG A:A=1.5:PRINT"[";A;"]"
+            ref  [value] '[ 1.5 ]'
+SUPPORTED     defsng_b  DEFINT A-C:DEFSNG A-C:C=1.5:PRINT"[";C;"]"
+            ref  [value] '[ 1.5 ]'
+SUPPORTED     defdbl    DEFDBL A:A=1.5:PRINT"[";A;"]"
+            ref  [value] '[ 1.5 ]'
+SUPPORTED     defdbl_b  DEFDBL A-C:C=1/3:PRINT"[";C;"]"
+            ref  [value] '[ .33333333333333 ]'
+SUPPORTED     defstr    DEFSTR A:A="x":PRINT"[";A;"]"
+            ref  [value] '[x]'
+SUPPORTED     defstr_b  DEFSTR A-C:C="x":PRINT"[";C;"]"
+            ref  [value] '[x]'
+SUPPORTED     deffn     DEF FNA(X)=X+1:PRINT"[";FNA(2);"]"
+            ref  [value] '[ 3 ]'
+SUPPORTED     fnkw      DEF FNB(X)=X*X:PRINT"[";FNB(5);"]"
+            ref  [value] '[ 25 ]'
+SUPPORTED     fnkw_b    DEF FNT$(X$)=X$+"?":PRINT"[";FNT$("Z");"]"
+            ref  [value] '[Z?]'
+SUPPORTED     deffn_b   DEF FNS$(X$)=X$+"!":PRINT"[";FNS$("A");"]"
+            ref  [value] '[A!]'
+SUPPORTED     eqv       PRINT"[";5 EQV 3;"]"
+            ref  [value] '[-7 ]'
+SUPPORTED     imp       PRINT"[";5 IMP 3;"]"
+            ref  [value] '[-5 ]'
+SUPPORTED     llist     LLIST:REM ZQ8
+            ref  [value] '10 LLIST:REM ZQ8\\r\\n'
+SUPPORTED     motor     MOTOR OFF:A=INP(&HAA)AND16:PRINT"[2n";A;"]"
+            ref  [value] '[2n 16 ]'
+SUPPORTED     motor_b   MOTOR ON:A=INP(&HAA)AND16:MOTOR OFF:PRINT"[2m";A;"]"
+            ref  [value] '[2m 0 ]'
+SUPPORTED     motor_c   MOTOR OFF:MOTOR:A=INP(&HAA)AND16:MOTOR OFF:PRINT"[2o";A;"]"
+            ref  [value] '[2o 0 ]'
+SUPPORTED   ! WEAK  time      T=TIME:PRINT"[";TIME>=T;"]"
+            ref  [value] '[-1 ]'
+            zb   [value] '[-1 ]'
+            WEAK: absent => variable TI, always 0, and `0>=0` is STILL true, so this row passes on a machine with no TIME. The `timetick` row is the real test.
+SUPPORTED     timetick  T=TIME:FOR I%=1 TO 400:NEXT:PRINT"[";TIME>T;"]"
+            ref  [value] '[-1 ]'
+SUPPORTED     time_c    TIME=30000:A=INT(TIME/100):TIME=10000:B=INT(TIME/100):PRINT"[0e";A;B;"]"
+            ref  [value] '[0e 300  100 ]'
+SUPPORTED     mki       PRINT"[";LEN(MKI$(1));"]"
+            ref  [value] '[ 2 ]'
+SUPPORTED     mki_c     A$=MKI$(258):B$=RIGHT$(A$,1):PRINT"[";ASC(A$);ASC(B$);"]"
+            ref  [value] '[ 2  1 ]'
+SUPPORTED     mks       PRINT"[";LEN(MKS$(1));"]"
+            ref  [value] '[ 4 ]'
+SUPPORTED     mks_b     PRINT"[";ASC(MKS$(1.5));"]"
+            ref  [value] '[ 65 ]'
+SUPPORTED     mkd       PRINT"[";LEN(MKD$(1));"]"
+            ref  [value] '[ 8 ]'
+SUPPORTED     mkd_b     PRINT"[";ASC(MKD$(1.5));"]"
+            ref  [value] '[ 65 ]'
+SUPPORTED     cvs       PRINT"[";CVS(MKS$(1));"]"
+            ref  [value] '[ 1 ]'
+SUPPORTED     cvd       PRINT"[";CVD(MKD$(1));"]"
+            ref  [value] '[ 1 ]'
+SUPPORTED     cvi_b     A=CVI(MKI$(-1)):B=CVI(MKI$(32767)):PRINT"[";A;B;"]"
+            ref  [value] '[-1  32767 ]'
+SUPPORTED     cvs_b     PRINT"[";CVS(MKS$(1.5));"]"
+            ref  [value] '[ 1.5 ]'
+SUPPORTED     cvd_b     PRINT"[";CVD(MKD$(.1));"]"
+            ref  [value] '[ .1 ]'
+SUPPORTED     mki_b     PRINT"[";ASC(MKI$(258));"]"
+            ref  [value] '[ 2 ]'
+SUPPORTED     usrkw     POKE-8192,&HC9:DEFUSR=-8192:A=USR(7):PRINT"[U";A;"]"
+            ref  [value] '[U 7 ]'
+SUPPORTED     defusr    POKE-8192,&HC9:DEFUSR=-8192:A=USR(7):PRINT"[1u";A;"]"
+            ref  [value] '[1u 7 ]'
+SUPPORTED     defusr_b  POKE-8192,&HC9:DEFUSR1=-8192:A=USR1(7):PRINT"[1v";A;"]"
+            ref  [value] '[1v 7 ]'
+SUPPORTED     usrkw_b   POKE-8192,&HC9:DEFUSR1=-8192:A=USR1(7):PRINT"[";A;"]"
+            ref  [value] '[ 7 ]'
+SUPPORTED     screenkw  SCREEN2:A=PEEK(&HFCAF):SCREEN0:PRINT"[G";A;"]"
+            ref  [value] '[G 2 ]'
+SUPPORTED     screenkw_c SCREEN2,3:A=PEEK(&HF3E0):SCREEN2,0:B=PEEK(&HF3E0):SCREEN0:PRINT"[0c";A;B;"]"
+            ref  [value] '[0c 227  224 ]'
+SUPPORTED     screenkw_d POKE&HF3DB,99:SCREEN,,0:A=PEEK(&HF3DB):SCREEN,,1:B=PEEK(&HF3DB):SCREEN,,2:PRINT"[0d";A;B;PEEK(&HF3DB);"]"
+            ref  [value] '[0d 0  1  2 ]'
+SUPPORTED     keykw     KEY 1,"ZZQ":KEY LIST
+            ref  [value] 'ZZQ|auto|goto|list|run|color 15,4,4|cload"|cont|list.|run'
+SUPPORTED     keykw_b   KEY 1,"ZQ":A$="":T=TIME:W$="WWWWWWWWWWWWWWWWWW":A$=A$+INKEY$:V$="VVVVVVVVVVVVVVVVVV":IF LEN(A$)<2 AND TIME-T<99 THEN 30:KEY 1,"":PRINT"[3r";LEFT$(A$,2);"]"
+            ref  [value] '[3rZQ]'
+SUPPORTED     keykw_on  KEY ON:LOCATE 0,23:A=CSRLIN:CLS:PRINT"[K5";A;"]"
+            ref  [value] '[K5 22 ]'
+SUPPORTED     keykw_off KEY OFF:LOCATE 0,23:A=CSRLIN:CLS:PRINT"[K4";A;"]"
+            ref  [value] '[K4 23 ]'
+SUPPORTED     waitkw    WAIT &HA8,&HFF:PRINT"[Y1]"
+            ref  [value] '[Y1]'
+SUPPORTED     waitkw_b  WAIT &HA8,&H0F,&H0F:PRINT"[1m]"
+            ref  [value] '[1m]'
+SUPPORTED     lposkw    LPRINT"ABC";:PRINT"[P";LPOS(0);"]"
+            ref  [value] '[P 3 ]'
+SUPPORTED     lprintkw  LPRINT"ABC";:PRINT"[P";LPOS(0);"]"
+            ref  [value] '[P 3 ]'
+SUPPORTED     dskf      PRINT"[";DSKF(1);"]"
+            ref  [value] '[ 706 ]'
+SUPPORTED     files     FILES"HI.TXT":PRINT"[8]"
+            ref  [value] 'HI      .TXT [8]'
+SUPPORTED     files_b   FILES:PRINT"[9]"
+            ref  [value] 'TEST    .BIN HI      .TXT PROG    .BIN|PROG    .BAS PROG2   .BAS PROG3   .BAS|[9]'
+SUPPORTED     lof       OPEN"HI.TXT"FOR INPUT AS#1:A=LOF(1):CLOSE#1:PRINT"[";A;"]"
+            ref  [value] '[ 26 ]'
+SUPPORTED     openkw_b  MAXFILES=2:OPEN"HI.TXT"FOR INPUT AS#2:A$=INPUT$(2,#2):CLOSE#2:PRINT"[";A$;"]":MAXFILES=1
+            ref  [value] '[He]'
+SUPPORTED     maxfiles  A=7:MAXFILES=2:PRINT"[1p";A;"]":MAXFILES=1
+            ref  [value] '[1p 0 ]'
+SUPPORTED     eof       OPEN"HI.TXT"FOR INPUT AS#1:A$=INPUT$(26,#1):A=EOF(1):CLOSE#1:PRINT"[";A;"]"
+            ref  [value] '[-1 ]'
+SUPPORTED     bload     POKE&HC000,7:BLOAD"PROG.BIN":A=PEEK(&HC000):PRINT"[";A;"]"
+            ref  [value] '[ 62 ]'
+SUPPORTED     cload     CLOAD"ZR"
+            ref  [value] 'Skip :ZQ|Found:ZR'
+SUPPORTED     cload_b   CLOAD
+            ref  [value] 'Found:ZQ'
+SUPPORTED     inkey     POKE&HFBF0,65:POKE&HF3FA,&HF0:POKE&HF3FB,&HFB:POKE&HF3F8,&HF1:POKE&HF3F9,&HFB:A$=INKEY$:PRINT"[";A$;LEN(A$);"]"
+            ref  [value] '[A 1 ]'
+SUPPORTED     csave     PRINT"[Z9]":CSAVE"ZQ"
+            ref  [value] 'D3 D3 D3 D3 D3 D3 D3 D3 D3 D3 5A 51 20 20 20 20 13 80 0A 00 91 22 5B 5A 39 5D 22 3A 9A 22 5A 51 22 00 00 00 00 00 00 00 00 00 00'
+SUPPORTED     t6abs2    PRINT ABS()
+            ref  [error:syntax error] 'Syntax error in 10'
+SUPPORTED     t6abs13   PRINT ABS("A")
+            ref  [error:type mismatch] 'Type mismatch in 10'
+SUPPORTED     t6sgn2    PRINT SGN()
+            ref  [error:syntax error] 'Syntax error in 10'
+SUPPORTED     t6sgn13   PRINT SGN("A")
+            ref  [error:type mismatch] 'Type mismatch in 10'
+SUPPORTED     t6int2    PRINT INT()
+            ref  [error:syntax error] 'Syntax error in 10'
+SUPPORTED     t6int13   PRINT INT("A")
+            ref  [error:type mismatch] 'Type mismatch in 10'
+SUPPORTED     t6sqr2    PRINT SQR()
+            ref  [error:syntax error] 'Syntax error in 10'
+SUPPORTED     t6sqr5    PRINT SQR(-1)
+            ref  [error:illegal function call] 'Illegal function call in 10'
+SUPPORTED     t6sqr13   PRINT SQR("A")
+            ref  [error:type mismatch] 'Type mismatch in 10'
+SUPPORTED     t6log2    PRINT LOG()
+            ref  [error:syntax error] 'Syntax error in 10'
+SUPPORTED     t6log5    PRINT LOG(0)
+            ref  [error:illegal function call] 'Illegal function call in 10'
+SUPPORTED     t6log13   PRINT LOG("A")
+            ref  [error:type mismatch] 'Type mismatch in 10'
+SUPPORTED     t6exp2    PRINT EXP()
+            ref  [error:syntax error] 'Syntax error in 10'
+SUPPORTED     t6exp6    PRINT EXP(150)
+            ref  [error:overflow] 'Overflow in 10'
+SUPPORTED     t6exp13   PRINT EXP("A")
+            ref  [error:type mismatch] 'Type mismatch in 10'
+SUPPORTED     t6asc2    PRINT ASC()
+            ref  [error:syntax error] 'Syntax error in 10'
+SUPPORTED     t6asc5    PRINT ASC("")
+            ref  [error:illegal function call] 'Illegal function call in 10'
+SUPPORTED     t6asc13   PRINT ASC(5)
+            ref  [error:type mismatch] 'Type mismatch in 10'
+SUPPORTED     t6chr2    PRINT CHR$()
+            ref  [error:syntax error] 'Syntax error in 10'
+SUPPORTED     t6chr5    PRINT CHR$(256)
+            ref  [error:illegal function call] 'Illegal function call in 10'
+SUPPORTED     t6chr6    PRINT CHR$(70000)
+            ref  [error:overflow] 'Overflow in 10'
+SUPPORTED     t6chr13   PRINT CHR$("A")
+            ref  [error:type mismatch] 'Type mismatch in 10'
+SUPPORTED     t6len2    PRINT LEN()
+            ref  [error:syntax error] 'Syntax error in 10'
+SUPPORTED     t6len13   PRINT LEN(5)
+            ref  [error:type mismatch] 'Type mismatch in 10'
+SUPPORTED     t6peek2   PRINT PEEK()
+            ref  [error:syntax error] 'Syntax error in 10'
+SUPPORTED     t6peek6   PRINT PEEK(65536)
+            ref  [error:overflow] 'Overflow in 10'
+SUPPORTED     t6peek13  PRINT PEEK("A")
+            ref  [error:type mismatch] 'Type mismatch in 10'
+SUPPORTED     t6left2   PRINT LEFT$("AB")
+            ref  [error:syntax error] 'Syntax error in 10'
+SUPPORTED     t6left5   PRINT LEFT$("AB",-1)
+            ref  [error:illegal function call] 'Illegal function call in 10'
+SUPPORTED     t6left6   PRINT LEFT$("AB",70000)
+            ref  [error:overflow] 'Overflow in 10'
+SUPPORTED     t6left13  PRINT LEFT$(5,1)
+            ref  [error:type mismatch] 'Type mismatch in 10'
+SUPPORTED     t6right2  PRINT RIGHT$("AB")
+            ref  [error:syntax error] 'Syntax error in 10'
+SUPPORTED     t6right5  PRINT RIGHT$("AB",-1)
+            ref  [error:illegal function call] 'Illegal function call in 10'
+SUPPORTED     t6right6  PRINT RIGHT$("AB",70000)
+            ref  [error:overflow] 'Overflow in 10'
+SUPPORTED     t6right13 PRINT RIGHT$(5,1)
+            ref  [error:type mismatch] 'Type mismatch in 10'
+SUPPORTED     t6string2 PRINT STRING$(2)
+            ref  [error:syntax error] 'Syntax error in 10'
+SUPPORTED     t6string5 PRINT STRING$(-1,"A")
+            ref  [error:illegal function call] 'Illegal function call in 10'
+SUPPORTED     t6string13 PRINT STRING$("A","A")
+            ref  [error:type mismatch] 'Type mismatch in 10'
+SUPPORTED     t6hex2    PRINT HEX$()
+            ref  [error:syntax error] 'Syntax error in 10'
+SUPPORTED     t6hex6    PRINT HEX$(70000)
+            ref  [error:overflow] 'Overflow in 10'
+SUPPORTED     t6hex13   PRINT HEX$("A")
+            ref  [error:type mismatch] 'Type mismatch in 10'
+SUPPORTED     t6oct2    PRINT OCT$()
+            ref  [error:syntax error] 'Syntax error in 10'
+SUPPORTED     t6oct6    PRINT OCT$(70000)
+            ref  [error:overflow] 'Overflow in 10'
+SUPPORTED     t6oct13   PRINT OCT$("A")
+            ref  [error:type mismatch] 'Type mismatch in 10'
+SUPPORTED     t6bin2    PRINT BIN$()
+            ref  [error:syntax error] 'Syntax error in 10'
+SUPPORTED     t6bin6    PRINT BIN$(70000)
+            ref  [error:overflow] 'Overflow in 10'
+SUPPORTED     t6bin13   PRINT BIN$("A")
+            ref  [error:type mismatch] 'Type mismatch in 10'
+SUPPORTED     t6space2  PRINT SPACE$()
+            ref  [error:syntax error] 'Syntax error in 10'
+SUPPORTED     t6space5  PRINT SPACE$(-1)
+            ref  [error:illegal function call] 'Illegal function call in 10'
+SUPPORTED     t6space13 PRINT SPACE$("A")
+            ref  [error:type mismatch] 'Type mismatch in 10'
+SUPPORTED     t6str2    PRINT STR$()
+            ref  [error:syntax error] 'Syntax error in 10'
+SUPPORTED     t6str13   PRINT STR$("A")
+            ref  [error:type mismatch] 'Type mismatch in 10'
+SUPPORTED     t6cint2   PRINT CINT()
+            ref  [error:syntax error] 'Syntax error in 10'
+SUPPORTED     t6cint6   PRINT CINT(32768)
+            ref  [error:overflow] 'Overflow in 10'
+SUPPORTED     t6cint13  PRINT CINT("A")
+            ref  [error:type mismatch] 'Type mismatch in 10'
+SUPPORTED     t6fix2    PRINT FIX()
+            ref  [error:syntax error] 'Syntax error in 10'
+SUPPORTED     t6fix13   PRINT FIX("A")
+            ref  [error:type mismatch] 'Type mismatch in 10'
+SUPPORTED     t6csng2   PRINT CSNG()
+            ref  [error:syntax error] 'Syntax error in 10'
+SUPPORTED     t6csng13  PRINT CSNG("A")
+            ref  [error:type mismatch] 'Type mismatch in 10'
+SUPPORTED     t6cdbl2   PRINT CDBL()
+            ref  [error:syntax error] 'Syntax error in 10'
+SUPPORTED     t6cdbl13  PRINT CDBL("A")
+            ref  [error:type mismatch] 'Type mismatch in 10'
+SUPPORTED     t6sin2    PRINT SIN()
+            ref  [error:syntax error] 'Syntax error in 10'
+SUPPORTED     t6sin13   PRINT SIN("A")
+            ref  [error:type mismatch] 'Type mismatch in 10'
+SUPPORTED     t6cos2    PRINT COS()
+            ref  [error:syntax error] 'Syntax error in 10'
+SUPPORTED     t6cos13   PRINT COS("A")
+            ref  [error:type mismatch] 'Type mismatch in 10'
+SUPPORTED     t6tan2    PRINT TAN()
+            ref  [error:syntax error] 'Syntax error in 10'
+SUPPORTED     t6tan13   PRINT TAN("A")
+            ref  [error:type mismatch] 'Type mismatch in 10'
+SUPPORTED     t6atn2    PRINT ATN()
+            ref  [error:syntax error] 'Syntax error in 10'
+SUPPORTED     t6atn13   PRINT ATN("A")
+            ref  [error:type mismatch] 'Type mismatch in 10'
+SUPPORTED     t6vpeek2  PRINT VPEEK()
+            ref  [error:syntax error] 'Syntax error in 10'
+SUPPORTED     t6vpeek5  PRINT VPEEK(16384)
+            ref  [error:illegal function call] 'Illegal function call in 10'
+SUPPORTED     t6vpeek6  PRINT VPEEK(70000)
+            ref  [error:overflow] 'Overflow in 10'
+SUPPORTED     t6vpeek13 PRINT VPEEK("A")
+            ref  [error:type mismatch] 'Type mismatch in 10'
+SUPPORTED     t6poke2   POKE &H9000
+            ref  [error:syntax error] 'Syntax error in 10'
+SUPPORTED     t6poke5   POKE &H9000,256
+            ref  [error:illegal function call] 'Illegal function call in 10'
+SUPPORTED     t6poke6   POKE 65536,1
+            ref  [error:overflow] 'Overflow in 10'
+SUPPORTED     t6poke13  POKE "A",1
+            ref  [error:type mismatch] 'Type mismatch in 10'
+SUPPORTED     t6poke24  POKE
+            ref  [error:missing operand] 'Missing operand in 10'
+SUPPORTED     t6vpoke2  VPOKE 1
+            ref  [error:syntax error] 'Syntax error in 10'
+SUPPORTED     t6vpoke5  VPOKE 16384,1
+            ref  [error:illegal function call] 'Illegal function call in 10'
+SUPPORTED     t6vpoke6  VPOKE 70000,1
+            ref  [error:overflow] 'Overflow in 10'
+SUPPORTED     t6vpoke13 VPOKE "A",1
+            ref  [error:type mismatch] 'Type mismatch in 10'
+SUPPORTED     t6vpoke24 VPOKE
+            ref  [error:missing operand] 'Missing operand in 10'
+SUPPORTED     t6sound2  SOUND 8
+            ref  [error:syntax error] 'Syntax error in 10'
+SUPPORTED     t6sound5  SOUND 14,0
+            ref  [error:illegal function call] 'Illegal function call in 10'
+SUPPORTED     t6sound13 SOUND "A",0
+            ref  [error:type mismatch] 'Type mismatch in 10'
+SUPPORTED     t6sound24 SOUND
+            ref  [error:missing operand] 'Missing operand in 10'
+SUPPORTED     t6mki2    PRINT MKI$()
+            ref  [error:syntax error] 'Syntax error in 10'
+SUPPORTED     t6mki13   PRINT MKI$("A")
+            ref  [error:type mismatch] 'Type mismatch in 10'
+SUPPORTED     t6cvi2    PRINT CVI()
+            ref  [error:syntax error] 'Syntax error in 10'
+SUPPORTED     t6cvi5    PRINT CVI("")
+            ref  [error:illegal function call] 'Illegal function call in 10'
+SUPPORTED     t6cvi13   PRINT CVI(5)
+            ref  [error:type mismatch] 'Type mismatch in 10'
+SUPPORTED     t6mks2    PRINT MKS$()
+            ref  [error:syntax error] 'Syntax error in 10'
+SUPPORTED     t6mks13   PRINT MKS$("A")
+            ref  [error:type mismatch] 'Type mismatch in 10'
+SUPPORTED     t6cvs2    PRINT CVS()
+            ref  [error:syntax error] 'Syntax error in 10'
+SUPPORTED     t6cvs5    PRINT CVS("")
+            ref  [error:illegal function call] 'Illegal function call in 10'
+SUPPORTED     t6cvs13   PRINT CVS(5)
+            ref  [error:type mismatch] 'Type mismatch in 10'
+SUPPORTED     t6mkd2    PRINT MKD$()
+            ref  [error:syntax error] 'Syntax error in 10'
+SUPPORTED     t6mkd13   PRINT MKD$("A")
+            ref  [error:type mismatch] 'Type mismatch in 10'
+SUPPORTED     t6cvd2    PRINT CVD()
+            ref  [error:syntax error] 'Syntax error in 10'
+SUPPORTED     t6cvd5    PRINT CVD("")
+            ref  [error:illegal function call] 'Illegal function call in 10'
+SUPPORTED     t6cvd13   PRINT CVD(5)
+            ref  [error:type mismatch] 'Type mismatch in 10'
+SUPPORTED     t6dskf2   PRINT DSKF()
+            ref  [error:syntax error] 'Syntax error in 10'
+SUPPORTED     t6dskf13  PRINT DSKF("A")
+            ref  [error:type mismatch] 'Type mismatch in 10'
+SUPPORTED     t6dskf62  PRINT DSKF(9)
+            ref  [value] 'Bad drive name in 10'
+SUPPORTED     t6instrs2 PRINT INSTR("AB")
+            ref  [error:syntax error] 'Syntax error in 10'
+SUPPORTED     t6instrs13 PRINT INSTR("AB",5)
+            ref  [error:type mismatch] 'Type mismatch in 10'
+SUPPORTED     t6instrsf2 PRINT INSTR(1,"AB","B","C")
+            ref  [error:syntax error] 'Syntax error in 10'
+SUPPORTED     t6instrsf5 PRINT INSTR(0,"AB","B")
+            ref  [error:illegal function call] 'Illegal function call in 10'
+SUPPORTED     t6instrsf6 PRINT INSTR(70000,"AB","B")
+            ref  [error:overflow] 'Overflow in 10'
+SUPPORTED     t6instrsf13 PRINT INSTR(1,5,"B")
+            ref  [error:type mismatch] 'Type mismatch in 10'
+SUPPORTED     t6mids35  PRINT MID$("AB",0,1)
+            ref  [error:illegal function call] 'Illegal function call in 10'
+SUPPORTED     t6mids36  PRINT MID$("AB",70000,1)
+            ref  [error:overflow] 'Overflow in 10'
+SUPPORTED     t6mids313 PRINT MID$(5,1,1)
+            ref  [error:type mismatch] 'Type mismatch in 10'
+SUPPORTED     t6midste2 PRINT MID$("AB")
+            ref  [error:syntax error] 'Syntax error in 10'
+SUPPORTED     t6midste5 PRINT MID$("AB",0)
+            ref  [error:illegal function call] 'Illegal function call in 10'
+SUPPORTED     t6midste13 PRINT MID$(5,1)
+            ref  [error:type mismatch] 'Type mismatch in 10'
+SUPPORTED     t6mida2   A$="AB":MID$(A$,1,1)
+            ref  [error:syntax error] 'Syntax error in 10'
+SUPPORTED     t6mida5   A$="AB":MID$(A$,0)="X"
+            ref  [error:illegal function call] 'Illegal function call in 10'
+SUPPORTED     t6mida13  A$="AB":MID$(A$,1)=5
+            ref  [error:type mismatch] 'Type mismatch in 10'
+SUPPORTED     t6nextb1  NEXT
+            ref  [value] 'NEXT without FOR in 10'
+SUPPORTED     t6nextn1  NEXT I
+            ref  [value] 'NEXT without FOR in 10'
+SUPPORTED     t6nextn2  FOR I=1 TO 2:NEXT 5
+            ref  [error:syntax error] 'Syntax error in 10'
+SUPPORTED     t6nextcl1 FOR I=1 TO 2:FOR J=1 TO 2:NEXT J,K
+            ref  [value] 'NEXT without FOR in 10'
+SUPPORTED     t6returnb3 RETURN
+            ref  [value] 'RETURN without GOSUB in 10'
+SUPPORTED     t6returnl2 IF X=0 THEN X=1:GOSUB 20 ELSE RETURN "A"
+            ref  [value] ''
+SUPPORTED     t6returnl3 RETURN 99
+            ref  [value] 'RETURN without GOSUB in 10'
+SUPPORTED     t6returnl8 IF X=0 THEN X=1:GOSUB 20 ELSE RETURN 99
+            ref  [value] ''
+SUPPORTED     t6restoreb8 RESTORE,
+            ref  [error:undefined line] 'Undefined line number in 10'
+SUPPORTED     t6restorel8 RESTORE 99
+            ref  [error:undefined line] 'Undefined line number in 10'
+SUPPORTED     t6gotoj2  GOTO
+            ref  [error:syntax error] 'Syntax error in 10'
+SUPPORTED     t6gotoj8  GOTO 99
+            ref  [error:undefined line] 'Undefined line number in 10'
+SUPPORTED     t6readrd2 READ A:DATA X
+            ref  [error:syntax error] 'Syntax error in 10'
+SUPPORTED     t6readrd4 READ A
+            ref  [value] 'Out of DATA in 10'
+SUPPORTED     t6swape2  SWAP A
+            ref  [error:syntax error] 'Syntax error in 10'
+SUPPORTED     t6swape13 SWAP A,B$
+            ref  [error:type mismatch] 'Type mismatch in 10'
+SUPPORTED     t6erasefa2 ERASE
+            ref  [error:syntax error] 'Syntax error in 10'
+SUPPORTED     t6erasefa5 ERASE A
+            ref  [error:illegal function call] 'Illegal function call in 10'
+SUPPORTED     t6dimod2  DIM 5
+            ref  [error:syntax error] 'Syntax error in 10'
+SUPPORTED     t6dimod5  DIM A(-1)
+            ref  [error:illegal function call] 'Illegal function call in 10'
+SUPPORTED     t6dimod6  DIM A(70000)
+            ref  [error:overflow] 'Overflow in 10'
+SUPPORTED     t6dimod9  DIM A(10000)
+            ref  [error:subscript out of range] 'Subscript out of range in 10'
+SUPPORTED     t6dimod10 DIM A(2):DIM A(2)
+            ref  [error:redimensioned array] 'Redimensioned array in 10'
+SUPPORTED     t6dimod13 DIM A("X")
+            ref  [error:type mismatch] 'Type mismatch in 10'
+SUPPORTED     t6dimmd5  DIM B(-1,2)
+            ref  [error:illegal function call] 'Illegal function call in 10'
+SUPPORTED     t6dimmd9  DIM B(200,200)
+            ref  [error:subscript out of range] 'Subscript out of range in 10'
+SUPPORTED     t6dimmd10 DIM B(2,2):DIM B(2,2)
+            ref  [error:redimensioned array] 'Redimensioned array in 10'
+SUPPORTED     t6dimmd13 DIM B(2,"X")
+            ref  [error:type mismatch] 'Type mismatch in 10'
+SUPPORTED     t6andba6  PRINT 70000 AND 1
+            ref  [error:overflow] 'Overflow in 10'
+SUPPORTED     t6andba13 PRINT 1 AND "A"
+            ref  [error:type mismatch] 'Type mismatch in 10'
+SUPPORTED     t6andba24 PRINT 1 AND
+            ref  [error:missing operand] 'Missing operand in 10'
+SUPPORTED     t6orbo6   PRINT 70000 OR 1
+            ref  [error:overflow] 'Overflow in 10'
+SUPPORTED     t6orbo13  PRINT 1 OR "A"
+            ref  [error:type mismatch] 'Type mismatch in 10'
+SUPPORTED     t6orbo24  PRINT 1 OR
+            ref  [error:missing operand] 'Missing operand in 10'
+SUPPORTED     t6xorbx6  PRINT 70000 XOR 1
+            ref  [error:overflow] 'Overflow in 10'
+SUPPORTED     t6xorbx13 PRINT 1 XOR "A"
+            ref  [error:type mismatch] 'Type mismatch in 10'
+SUPPORTED     t6xorbx24 PRINT 1 XOR
+            ref  [error:missing operand] 'Missing operand in 10'
+SUPPORTED     t6eqve6   PRINT 70000 EQV 1
+            ref  [error:overflow] 'Overflow in 10'
+SUPPORTED     t6eqve13  PRINT 1 EQV "A"
+            ref  [error:type mismatch] 'Type mismatch in 10'
+SUPPORTED     t6eqve24  PRINT 1 EQV
+            ref  [error:missing operand] 'Missing operand in 10'
+SUPPORTED     t6impi6   PRINT 70000 IMP 1
+            ref  [error:overflow] 'Overflow in 10'
+SUPPORTED     t6impi13  PRINT 1 IMP "A"
+            ref  [error:type mismatch] 'Type mismatch in 10'
+SUPPORTED     t6impi24  PRINT 1 IMP
+            ref  [error:missing operand] 'Missing operand in 10'
+SUPPORTED     t6notbn6  PRINT NOT 70000
+            ref  [error:overflow] 'Overflow in 10'
+SUPPORTED     t6notbn13 PRINT NOT "A"
+            ref  [error:type mismatch] 'Type mismatch in 10'
+SUPPORTED     t6notbn24 PRINT NOT
+            ref  [error:missing operand] 'Missing operand in 10'
+SUPPORTED     t6modm6   PRINT 70000 MOD 2
+            ref  [error:overflow] 'Overflow in 10'
+SUPPORTED     t6modm11  PRINT 5 MOD 0
+            ref  [error:division by zero] 'Division by zero in 10'
+SUPPORTED     t6modm13  PRINT 5 MOD "A"
+            ref  [error:type mismatch] 'Type mismatch in 10'
+SUPPORTED     t6modm24  PRINT 5 MOD
+            ref  [error:missing operand] 'Missing operand in 10'
+SUPPORTED     t6beepna2 BEEP 1
+            ref  [error:syntax error] 'Syntax error in 10'
+SUPPORTED     t6tront2  TRON 1
+            ref  [error:syntax error] 'Syntax error in 10'
+SUPPORTED     t6trofft2 TROFF 1
+            ref  [error:syntax error] 'Syntax error in 10'
+SUPPORTED     t6csrlinrr2 A=CSRLIN 1
+            ref  [error:syntax error] 'Syntax error in 10'
+SUPPORTED     t6erlel2  A=ERL 1
+            ref  [error:syntax error] 'Syntax error in 10'
+SUPPORTED     t6errec2  A=ERR 1
+            ref  [error:syntax error] 'Syntax error in 10'
+SUPPORTED     t6errorr5 ERROR 0
+            ref  [error:illegal function call] 'Illegal function call in 10'
+SUPPORTED     t6gosubc2 GOSUB
+            ref  [error:syntax error] 'Syntax error in 10'
+SUPPORTED     t6gosubc8 GOSUB 99
+            ref  [error:undefined line] 'Undefined line number in 10'
+SUPPORTED     t6inkeypk13 A=INKEY$
+            ref  [error:type mismatch] 'Type mismatch in 10'
+SUPPORTED     t6inppr2  PRINT INP()
+            ref  [error:syntax error] 'Syntax error in 10'
+SUPPORTED     t6inppr13 PRINT INP("A")
+            ref  [error:type mismatch] 'Type mismatch in 10'
+SUPPORTED     t6leta2   LET
+            ref  [error:syntax error] 'Syntax error in 10'
+SUPPORTED     t6leta13  LET A="X"
+            ref  [error:type mismatch] 'Type mismatch in 10'
+SUPPORTED     t6letnum2 LET 5=1
+            ref  [error:syntax error] 'Syntax error in 10'
+SUPPORTED     t6outpv2  OUT &H2F
+            ref  [error:syntax error] 'Syntax error in 10'
+SUPPORTED     t6outpv5  OUT &H2F,256
+            ref  [error:illegal function call] 'Illegal function call in 10'
+SUPPORTED     t6outpv13 OUT "A",1
+            ref  [error:type mismatch] 'Type mismatch in 10'
+SUPPORTED     t6outpv24 OUT
+            ref  [error:missing operand] 'Missing operand in 10'
+SUPPORTED     t6pointpr2 PRINT POINT(1)
+            ref  [error:syntax error] 'Syntax error in 10'
+SUPPORTED     t6pointpr13 PRINT POINT("A",1)
+            ref  [error:type mismatch] 'Type mismatch in 10'
+SUPPORTED     t6poscr2  PRINT POS()
+            ref  [error:syntax error] 'Syntax error in 10'
+SUPPORTED     t6lposcr2 PRINT LPOS()
+            ref  [error:syntax error] 'Syntax error in 10'
+SUPPORTED     t6rndrd2  PRINT RND()
+            ref  [error:syntax error] 'Syntax error in 10'
+SUPPORTED     t6rndrd13 PRINT RND("A")
+            ref  [error:type mismatch] 'Type mismatch in 10'
+SUPPORTED     t6fora2   FOR I=1:NEXT
+            ref  [error:syntax error] 'Syntax error in 10'
+SUPPORTED     t6fora13  FOR I="A" TO 2:NEXT
+            ref  [error:type mismatch] 'Type mismatch in 10'
+SUPPORTED     t6fora24  FOR I=1 TO:NEXT
+            ref  [error:missing operand] 'Missing operand in 10'
+SUPPORTED     t6fors2   FOR I=1 TO 2 STEP 1,2:NEXT
+            ref  [error:syntax error] 'Syntax error in 10'
+SUPPORTED     t6fors13  FOR I=1 TO 2 STEP "A":NEXT
+            ref  [error:type mismatch] 'Type mismatch in 10'
+SUPPORTED     t6fors24  FOR I=1 TO 2 STEP:NEXT
+            ref  [error:missing operand] 'Missing operand in 10'
+SUPPORTED     t6forns13 FOR I=2 TO 1 STEP -"A":NEXT
+            ref  [error:type mismatch] 'Type mismatch in 10'
+SUPPORTED     t6forns24 FOR I=2 TO 1 STEP -:NEXT
+            ref  [error:missing operand] 'Missing operand in 10'
+SUPPORTED     t6ift2    IF THEN 30
+            ref  [error:syntax error] 'Syntax error in 10'
+SUPPORTED     t6ift8    IF 1 THEN 99
+            ref  [error:undefined line] 'Undefined line number in 10'
+SUPPORTED     t6ift13   IF "A" THEN 30
+            ref  [error:type mismatch] 'Type mismatch in 10'
+SUPPORTED     t6ife8    IF 0 THEN 30 ELSE 99
+            ref  [error:undefined line] 'Undefined line number in 10'
+SUPPORTED     t6ife13   IF "A" THEN 30 ELSE 30
+            ref  [error:type mismatch] 'Type mismatch in 10'
+SUPPORTED     t6ifg2    IF 1 GOTO "A"
+            ref  [error:syntax error] 'Syntax error in 10'
+SUPPORTED     t6ifg8    IF 1 GOTO 99
+            ref  [error:undefined line] 'Undefined line number in 10'
+SUPPORTED     t6ifg13   IF "A" GOTO 30
+            ref  [error:type mismatch] 'Type mismatch in 10'
+SUPPORTED     t6clearb2 CLEAR,
+            ref  [error:syntax error] 'Syntax error in 10'
+SUPPORTED     t6clearss5 CLEAR -1
+            ref  [error:illegal function call] 'Illegal function call in 10'
+SUPPORTED     t6clearss6 CLEAR 70000
+            ref  [error:overflow] 'Overflow in 10'
+SUPPORTED     t6clearss7 CLEAR 30000
+            ref  [error:out of memory] 'Out of memory in 10'
+SUPPORTED     t6clearss13 CLEAR "A"
+            ref  [error:type mismatch] 'Type mismatch in 10'
+SUPPORTED     t6clearh5 CLEAR 200,&H7000
+            ref  [error:illegal function call] 'Illegal function call in 10'
+SUPPORTED     t6clearh13 CLEAR 200,"A"
+            ref  [error:type mismatch] 'Type mismatch in 10'
+SUPPORTED     t6clearh24 CLEAR 200,
+            ref  [error:missing operand] 'Missing operand in 10'
+SUPPORTED     t6colorf5 COLOR 16
+            ref  [error:illegal function call] 'Illegal function call in 10'
+SUPPORTED     t6colorf13 COLOR "A"
+            ref  [error:type mismatch] 'Type mismatch in 10'
+SUPPORTED     t6colorbg5 COLOR ,16
+            ref  [error:illegal function call] 'Illegal function call in 10'
+SUPPORTED     t6colorbg13 COLOR ,"A"
+            ref  [error:type mismatch] 'Type mismatch in 10'
+SUPPORTED     t6colorbd2 COLOR 1,1,1,1
+            ref  [error:syntax error] 'Syntax error in 10'
+SUPPORTED     t6colorbd5 COLOR ,,16
+            ref  [error:illegal function call] 'Illegal function call in 10'
+SUPPORTED     t6colorbd13 COLOR ,,"A"
+            ref  [error:type mismatch] 'Type mismatch in 10'
+SUPPORTED     t6screenm5 SCREEN 4
+            ref  [error:illegal function call] 'Illegal function call in 10'
+SUPPORTED     t6screenm13 SCREEN "A"
+            ref  [error:type mismatch] 'Type mismatch in 10'
+SUPPORTED     t6screenss5 SCREEN ,4
+            ref  [error:illegal function call] 'Illegal function call in 10'
+SUPPORTED     t6screenss13 SCREEN ,"A"
+            ref  [error:type mismatch] 'Type mismatch in 10'
+SUPPORTED     t6screenkc2 SCREEN ,,,,,,
+            ref  [error:syntax error] 'Syntax error in 10'
+SUPPORTED     t6screenkc5 SCREEN ,,256
+            ref  [error:illegal function call] 'Illegal function call in 10'
+SUPPORTED     t6screenkc13 SCREEN ,,"A"
+            ref  [error:type mismatch] 'Type mismatch in 10'
+SUPPORTED     t6locatec5 LOCATE -1
+            ref  [error:illegal function call] 'Illegal function call in 10'
+SUPPORTED     t6locatec13 LOCATE "A"
+            ref  [error:type mismatch] 'Type mismatch in 10'
+SUPPORTED     t6locater5 LOCATE 1,-1
+            ref  [error:illegal function call] 'Illegal function call in 10'
+SUPPORTED     t6locater13 LOCATE 1,"A"
+            ref  [error:type mismatch] 'Type mismatch in 10'
+SUPPORTED     t6locateoc13 LOCATE ,"A"
+            ref  [error:type mismatch] 'Type mismatch in 10'
+SUPPORTED     t6locatecs13 LOCATE 1,1,"A"
+            ref  [error:type mismatch] 'Type mismatch in 10'
+SUPPORTED     t6timer13 A$=TIME
+            ref  [error:type mismatch] 'Type mismatch in 10'
+SUPPORTED     t6timew6  TIME=70000
+            ref  [error:overflow] 'Overflow in 10'
+SUPPORTED     t6timew13 TIME="A"
+            ref  [error:type mismatch] 'Type mismatch in 10'
+SUPPORTED     t6timew24 TIME=
+            ref  [error:missing operand] 'Missing operand in 10'
+SUPPORTED     t6defintsl2 DEFINT 5
+            ref  [error:syntax error] 'Syntax error in 10'
+SUPPORTED     t6defintlr2 DEFINT A-
+            ref  [error:syntax error] 'Syntax error in 10'
+SUPPORTED     t6defsngsl2 DEFSNG 5
+            ref  [error:syntax error] 'Syntax error in 10'
+SUPPORTED     t6defsnglr2 DEFSNG A-
+            ref  [error:syntax error] 'Syntax error in 10'
+SUPPORTED     t6defdblsl2 DEFDBL 5
+            ref  [error:syntax error] 'Syntax error in 10'
+SUPPORTED     t6defdbllr2 DEFDBL A-
+            ref  [error:syntax error] 'Syntax error in 10'
+SUPPORTED     t6defstrsl2 DEFSTR 5
+            ref  [error:syntax error] 'Syntax error in 10'
+SUPPORTED     t6defstrlr2 DEFSTR A-
+            ref  [error:syntax error] 'Syntax error in 10'
+SUPPORTED     t7psetcolourexplicit2 SCREEN 2:PSET(10)
+            ref  [error:syntax error] 'Syntax error in 10'
+SUPPORTED     t7psetcolourexplicit5 SCREEN 2:PSET(10,10),16
+            ref  [error:illegal function call] 'Illegal function call in 10'
+SUPPORTED     t7psetcolourexplicit13 SCREEN 2:PSET(10,10),"A"
+            ref  [error:type mismatch] 'Type mismatch in 10'
+SUPPORTED     t7psetcolourdefault2 SCREEN 2:PSET(10,10
+            ref  [error:syntax error] 'Syntax error in 10'
+SUPPORTED     t7psetcolourdefault24 SCREEN 2:PSET(10,10),
+            ref  [error:missing operand] 'Missing operand in 10'
+SUPPORTED     t7psetsteprelative2 SCREEN 2:PSET STEP 1,1
+            ref  [error:syntax error] 'Syntax error in 10'
+SUPPORTED     t7psetsteprelative5 SCREEN 2:PSET STEP(1,1),16
+            ref  [error:illegal function call] 'Illegal function call in 10'
+SUPPORTED     t7psetsteprelative13 SCREEN 2:PSET STEP("A",1)
+            ref  [error:type mismatch] 'Type mismatch in 10'
+SUPPORTED     t7psetmodescreen35 SCREEN 3:PSET(10,10),16
+            ref  [error:illegal function call] 'Illegal function call in 10'
+SUPPORTED     t7psetmodescreen36 SCREEN 3:PSET(99999,1)
+            ref  [error:overflow] 'Overflow in 10'
+SUPPORTED     t7psetmodescreen313 SCREEN 3:PSET(10,10),"A"
+            ref  [error:type mismatch] 'Type mismatch in 10'
+SUPPORTED     t7presetcolourdefault2 SCREEN 2:PRESET(10,10
+            ref  [error:syntax error] 'Syntax error in 10'
+SUPPORTED     t7presetcolourdefault5 PRESET(10,10)
+            ref  [error:illegal function call] 'Illegal function call in 10'
+SUPPORTED     t7presetcolourdefault13 SCREEN 2:PRESET("A",10)
+            ref  [error:type mismatch] 'Type mismatch in 10'
+SUPPORTED     t7presetcolourexplicit5 SCREEN 2:PRESET(10,10),16
+            ref  [error:illegal function call] 'Illegal function call in 10'
+SUPPORTED     t7presetcolourexplicit13 SCREEN 2:PRESET(10,10),"A"
+            ref  [error:type mismatch] 'Type mismatch in 10'
+SUPPORTED     t7presetsteprelative2 SCREEN 2:PRESET STEP 1,1
+            ref  [error:syntax error] 'Syntax error in 10'
+SUPPORTED     t7presetsteprelative13 SCREEN 2:PRESET STEP("A",1)
+            ref  [error:type mismatch] 'Type mismatch in 10'
+SUPPORTED     t7presetmodescreen35 SCREEN 3:PRESET(10,10),16
+            ref  [error:illegal function call] 'Illegal function call in 10'
+SUPPORTED     t7presetmodescreen313 SCREEN 3:PRESET(10,10),"A"
+            ref  [error:type mismatch] 'Type mismatch in 10'
+SUPPORTED     t7linesegment2 SCREEN 2:LINE(0,0)-
+            ref  [error:syntax error] 'Syntax error in 10'
+SUPPORTED     t7linesegment5 SCREEN 2:LINE(0,0)-(1,1),16
+            ref  [error:illegal function call] 'Illegal function call in 10'
+SUPPORTED     t7linesegment13 SCREEN 2:LINE(0,0)-("A",1)
+            ref  [error:type mismatch] 'Type mismatch in 10'
+SUPPORTED     t7linebox2 SCREEN 2:LINE(0,0)-(9,9),1,C
+            ref  [error:syntax error] 'Syntax error in 10'
+SUPPORTED     t7linebox5 SCREEN 2:LINE(0,0)-(9,9),16,B
+            ref  [error:illegal function call] 'Illegal function call in 10'
+SUPPORTED     t7linefilledbox2 SCREEN 2:LINE(0,0)-(9,9),1,BX
+            ref  [error:syntax error] 'Syntax error in 10'
+SUPPORTED     t7linefilledbox5 SCREEN 2:LINE(0,0)-(9,9),16,BF
+            ref  [error:illegal function call] 'Illegal function call in 10'
+SUPPORTED     t7linesteprelative2 SCREEN 2:LINE STEP(1,1)-STEP
+            ref  [error:syntax error] 'Syntax error in 10'
+SUPPORTED     t7linesteprelative13 SCREEN 2:LINE STEP("A",1)-(9,9)
+            ref  [error:type mismatch] 'Type mismatch in 10'
+SUPPORTED     t7lineomittedstart2 SCREEN 2:LINE -(9)
+            ref  [error:syntax error] 'Syntax error in 10'
+SUPPORTED     t7lineomittedstart13 SCREEN 2:LINE -("A",1)
+            ref  [error:type mismatch] 'Type mismatch in 10'
+SUPPORTED     t7linecolourdefault2 SCREEN 2:LINE(0,0)-(9,9),,
+            ref  [error:syntax error] 'Syntax error in 10'
+SUPPORTED     t7linecolourdefault13 SCREEN 2:LINE(0,0)-(9,9),"A"
+            ref  [error:type mismatch] 'Type mismatch in 10'
+SUPPORTED     t7linecolourdefault24 SCREEN 2:LINE(0,0)-(9,9),
+            ref  [error:missing operand] 'Missing operand in 10'
+SUPPORTED     t7drawmovement5 SCREEN 2:DRAW"Q"
+            ref  [error:illegal function call] 'Illegal function call in 10'
+SUPPORTED     t7drawmovement13 SCREEN 2:DRAW 5
+            ref  [error:type mismatch] 'Type mismatch in 10'
+SUPPORTED     t7drawmoveabsolute5 SCREEN 2:DRAW"M"
+            ref  [error:illegal function call] 'Illegal function call in 10'
+SUPPORTED     t7drawmoverelative5 SCREEN 2:DRAW"M+5"
+            ref  [error:illegal function call] 'Illegal function call in 10'
+SUPPORTED     t7drawblankprefix5 SCREEN 2:DRAW"BQ"
+            ref  [error:illegal function call] 'Illegal function call in 10'
+SUPPORTED     t7drawnoupdateprefix5 SCREEN 2:DRAW"NQ"
+            ref  [error:illegal function call] 'Illegal function call in 10'
+SUPPORTED     t7drawcolour5 SCREEN 2:DRAW"C16"
+            ref  [error:illegal function call] 'Illegal function call in 10'
+SUPPORTED     t7drawscale5 SCREEN 2:DRAW"S256"
+            ref  [error:illegal function call] 'Illegal function call in 10'
+SUPPORTED     t7drawangle5 SCREEN 2:DRAW"A4"
+            ref  [error:illegal function call] 'Illegal function call in 10'
+SUPPORTED     t7drawsubstringexec5 SCREEN 2:DRAW"X"
+            ref  [error:illegal function call] 'Illegal function call in 10'
+SUPPORTED     t7drawsubstringexec13 SCREEN 2:DRAW"XA;"
+            ref  [error:type mismatch] 'Type mismatch in 10'
+SUPPORTED     t7drawvariablesubstitution5 SCREEN 2:DRAW"U="
+            ref  [error:illegal function call] 'Illegal function call in 10'
+SUPPORTED     t7drawvariablesubstitution13 SCREEN 2:DRAW"U=A$;"
+            ref  [error:type mismatch] 'Type mismatch in 10'
+SUPPORTED     t7baseread2 A=BASE
+            ref  [error:syntax error] 'Syntax error in 10'
+SUPPORTED     t7baseread5 A=BASE(20)
+            ref  [error:illegal function call] 'Illegal function call in 10'
+SUPPORTED     t7baseread13 A=BASE("A")
+            ref  [error:type mismatch] 'Type mismatch in 10'
+SUPPORTED     t7basewrite5 BASE(20)=0
+            ref  [error:illegal function call] 'Illegal function call in 10'
+SUPPORTED     t7basewrite6 BASE(5)=70000
+            ref  [error:overflow] 'Overflow in 10'
+SUPPORTED     t7basewrite13 BASE(5)="A"
+            ref  [error:type mismatch] 'Type mismatch in 10'
+SUPPORTED     t7basewrite24 BASE(5)=
+            ref  [error:missing operand] 'Missing operand in 10'
+SUPPORTED     t7vdpread2 A=VDP
+            ref  [error:syntax error] 'Syntax error in 10'
+SUPPORTED     t7vdpread5 A=VDP(-1)
+            ref  [error:illegal function call] 'Illegal function call in 10'
+SUPPORTED     t7vdpread13 A=VDP("A")
+            ref  [error:type mismatch] 'Type mismatch in 10'
+SUPPORTED     t7vdpwrite5 VDP(8)=0
+            ref  [error:illegal function call] 'Illegal function call in 10'
+SUPPORTED     t7vdpwrite13 VDP(7)="A"
+            ref  [error:type mismatch] 'Type mismatch in 10'
+SUPPORTED     t7vdpwrite24 VDP(7)=
+            ref  [error:missing operand] 'Missing operand in 10'
+SUPPORTED     t7spritepatternwrite5 SPRITE$(32)="A"
+            ref  [error:illegal function call] 'Illegal function call in 10'
+SUPPORTED     t7spriteenable2 SPRITE ON 1
+            ref  [error:syntax error] 'Syntax error in 10'
+SUPPORTED     t7spritedisable2 SPRITE OFF 1
+            ref  [error:syntax error] 'Syntax error in 10'
+SUPPORTED     t7ongotoindexgoto2 ON 1 GOTO
+            ref  [error:syntax error] 'Syntax error in 10'
+SUPPORTED     t7ongotoindexgoto5 ON -1 GOTO 30
+            ref  [error:illegal function call] 'Illegal function call in 10'
+SUPPORTED     t7ongotoindexgoto8 ON 1 GOTO 99
+            ref  [error:undefined line] 'Undefined line number in 10'
+SUPPORTED     t7ongotoindexgoto13 ON "A" GOTO 30
+            ref  [error:type mismatch] 'Type mismatch in 10'
+SUPPORTED     t7ongosubindexgosub2 ON 1 GOSUB
+            ref  [error:syntax error] 'Syntax error in 10'
+SUPPORTED     t7ongosubindexgosub5 ON -1 GOSUB 30
+            ref  [error:illegal function call] 'Illegal function call in 10'
+SUPPORTED     t7ongosubindexgosub8 ON 1 GOSUB 99
+            ref  [error:undefined line] 'Undefined line number in 10'
+SUPPORTED     t7ongosubindexgosub13 ON "A" GOSUB 30
+            ref  [error:type mismatch] 'Type mismatch in 10'
+SUPPORTED     t7keyassign2 KEY 1
+            ref  [error:syntax error] 'Syntax error in 10'
+SUPPORTED     t7keyassign5 KEY 11,"A"
+            ref  [error:illegal function call] 'Illegal function call in 10'
+SUPPORTED     t7keyassign13 KEY 1,5
+            ref  [error:type mismatch] 'Type mismatch in 10'
+SUPPORTED     t7keylist2 KEY LIST 1
+            ref  [error:syntax error] 'ZZQ|auto|goto|list|run|color 15,4,4|cload"|cont|list.|run|Syntax error in 10'
+SUPPORTED     t7keydisplayon2 KEY ON 1
+            ref  [error:syntax error] 'Syntax error in 10'
+SUPPORTED     t7keydisplayoff2 KEY OFF 1
+            ref  [error:syntax error] 'Syntax error in 10'
+SUPPORTED     t7stickcursorkeys2 A=STICK
+            ref  [error:syntax error] 'Syntax error in 10'
+SUPPORTED     t7stickcursorkeys5 A=STICK(3)
+            ref  [error:illegal function call] 'Illegal function call in 10'
+SUPPORTED     t7stickcursorkeys13 A=STICK("A")
+            ref  [error:type mismatch] 'Type mismatch in 10'
+SUPPORTED     t7stickjoystickport2 A=STICK(1,1)
+            ref  [error:syntax error] 'Syntax error in 10'
+SUPPORTED     t7stickjoystickport5 A=STICK(2.5)+STICK(3)
+            ref  [error:illegal function call] 'Illegal function call in 10'
+SUPPORTED     t7strigspacebar2 A=STRIG
+            ref  [error:syntax error] 'Syntax error in 10'
+SUPPORTED     t7strigspacebar5 A=STRIG(5)
+            ref  [error:illegal function call] 'Illegal function call in 10'
+SUPPORTED     t7strigspacebar13 A=STRIG("A")
+            ref  [error:type mismatch] 'Type mismatch in 10'
+SUPPORTED     t7strigjoysticktrigger2 A=STRIG(1,1)
+            ref  [error:syntax error] 'Syntax error in 10'
+SUPPORTED     t7strigjoysticktrigger5 A=STRIG(4)+STRIG(5)
+            ref  [error:illegal function call] 'Illegal function call in 10'
+SUPPORTED     t7pdlread2 A=PDL
+            ref  [error:syntax error] 'Syntax error in 10'
+SUPPORTED     t7pdlread5 A=PDL(13)
+            ref  [error:illegal function call] 'Illegal function call in 10'
+SUPPORTED     t7pdlread13 A=PDL("A")
+            ref  [error:type mismatch] 'Type mismatch in 10'
+SUPPORTED     t7padtouchstatus2 A=PAD
+            ref  [error:syntax error] 'Syntax error in 10'
+SUPPORTED     t7padtouchstatus5 A=PAD(8)
+            ref  [error:illegal function call] 'Illegal function call in 10'
+SUPPORTED     t7padtouchstatus13 A=PAD("A")
+            ref  [error:type mismatch] 'Type mismatch in 10'
+SUPPORTED     t7padcoordinate2 A=PAD(1,1)
+            ref  [error:syntax error] 'Syntax error in 10'
+SUPPORTED     t7padcoordinate5 A=PAD(2)+PAD(9)
+            ref  [error:illegal function call] 'Illegal function call in 10'
+SUPPORTED     t7padswitch2 A=PAD(3,1)
+            ref  [error:syntax error] 'Syntax error in 10'
+SUPPORTED     t7padswitch5 A=PAD(7)+PAD(20)
+            ref  [error:illegal function call] 'Illegal function call in 10'
+SUPPORTED     t7defusrdefault2 DEF USR
+            ref  [error:syntax error] 'Syntax error in 10'
+SUPPORTED     t7defusrdefault13 DEF USR="A"
+            ref  [error:type mismatch] 'Type mismatch in 10'
+SUPPORTED     t7defusrnumbered2 DEF USR9
+            ref  [error:syntax error] 'Syntax error in 10'
+SUPPORTED     t7defusrnumbered13 DEF USR9="A"
+            ref  [error:type mismatch] 'Type mismatch in 10'
+SUPPORTED     t7fnnumeric2 DEF FNA(X)=X:A=FNA(1,2)
+            ref  [error:syntax error] 'Syntax error in 10'
+SUPPORTED     t7fnnumeric13 DEF FNA(X)=X:A=FNA("A")
+            ref  [error:type mismatch] 'Type mismatch in 10'
+SUPPORTED     t7fnnumeric18 A=FNB(1)
+            ref  [value] 'Undefined user function in 10'
+SUPPORTED     t7fnstringvalued13 DEF FNA$(X)=STR$(X):A$=FNA$("A")
+            ref  [error:type mismatch] 'Type mismatch in 10'
+SUPPORTED     t7fnstringvalued18 A$=FNB$(1)
+            ref  [value] 'Undefined user function in 10'
+SUPPORTED     t7playnotes5 PLAY"H"
+            ref  [error:illegal function call] 'Illegal function call in 10'
+SUPPORTED     t7playnotes13 PLAY 5
+            ref  [error:type mismatch] 'Type mismatch in 10'
+SUPPORTED     t7playnotenumber5 PLAY"N97"
+            ref  [error:illegal function call] 'Illegal function call in 10'
+SUPPORTED     t7playrest5 PLAY"R0"
+            ref  [error:illegal function call] 'Illegal function call in 10'
+SUPPORTED     t7playoctave5 PLAY"O9"
+            ref  [error:illegal function call] 'Illegal function call in 10'
+SUPPORTED     t7playdefaultlength5 PLAY"L0"
+            ref  [error:illegal function call] 'Illegal function call in 10'
+SUPPORTED     t7playtempo5 PLAY"T31"
+            ref  [error:illegal function call] 'Illegal function call in 10'
+SUPPORTED     t7playvolume5 PLAY"V16"
+            ref  [error:illegal function call] 'Illegal function call in 10'
+SUPPORTED     t7playenvelope5 PLAY"S16"
+            ref  [error:illegal function call] 'Illegal function call in 10'
+SUPPORTED     t7playmultivoice2 PLAY"C","D","E","F"
+            ref  [error:syntax error] 'Syntax error in 10'
+SUPPORTED     t7playmultivoice13 PLAY"C",5
+            ref  [error:type mismatch] 'Type mismatch in 10'
+SUPPORTED     t7playsubstringexec5 PLAY"X"
+            ref  [error:illegal function call] 'Illegal function call in 10'
+SUPPORTED     t7playsubstringexec13 PLAY"XA;"
+            ref  [error:type mismatch] 'Type mismatch in 10'
+SUPPORTED     t7setrefuse5 SET 1
+            ref  [error:illegal function call] 'Illegal function call in 10'
+SUPPORTED     t7circlecentreradius2 SCREEN 2:CIRCLE(99,99)
+            ref  [error:syntax error] 'Syntax error in 10'
+SUPPORTED     t7circlecentreradius5 SCREEN 2:CIRCLE(99,99),5,16
+            ref  [error:illegal function call] 'Illegal function call in 10'
+SUPPORTED     t7circlecentreradius13 SCREEN 2:CIRCLE(99,99),"A"
+            ref  [error:type mismatch] 'Type mismatch in 10'
+SUPPORTED     t7circlearc13 SCREEN 2:CIRCLE(99,99),5,1,"A"
+            ref  [error:type mismatch] 'Type mismatch in 10'
+SUPPORTED     t7circlesteprelative2 SCREEN 2:CIRCLE STEP 1,1,5
+            ref  [error:syntax error] 'Syntax error in 10'
+SUPPORTED     t7circlesteprelative13 SCREEN 2:CIRCLE STEP("A",1),5
+            ref  [error:type mismatch] 'Type mismatch in 10'
+SUPPORTED     t7circleaspect2 SCREEN 2:CIRCLE(99,99),5,1,,,1,1
+            ref  [error:syntax error] 'Syntax error in 10'
+SUPPORTED     t7circleaspect5 SCREEN 2:CIRCLE(99,99),5,1,,,-1
+            ref  [error:illegal function call] 'Illegal function call in 10'
+SUPPORTED     t7circleaspect13 SCREEN 2:CIRCLE(99,99),5,1,,,"A"
+            ref  [error:type mismatch] 'Type mismatch in 10'
+SUPPORTED     t7circlecolourdefault24 SCREEN 2:CIRCLE(99,99),5,
+            ref  [error:missing operand] 'Missing operand in 10'
+SUPPORTED     t7paintflood2 SCREEN 2:PAINT(1)
+            ref  [error:syntax error] 'Syntax error in 10'
+SUPPORTED     t7paintflood5 PAINT(1,1)
+            ref  [error:illegal function call] 'Illegal function call in 10'
+SUPPORTED     t7paintflood13 SCREEN 2:PAINT("A",1)
+            ref  [error:type mismatch] 'Type mismatch in 10'
+SUPPORTED     t7paintfillcolour5 SCREEN 2:PAINT(1,1),16
+            ref  [error:illegal function call] 'Illegal function call in 10'
+SUPPORTED     t7paintfillcolour13 SCREEN 2:PAINT(1,1),"A"
+            ref  [error:type mismatch] 'Type mismatch in 10'
+SUPPORTED     t7paintbordercolour2 SCREEN 2:PAINT(1,1),1,1,1
+            ref  [error:syntax error] 'Syntax error in 10'
+SUPPORTED     t7paintbordercolour13 SCREEN 2:PAINT(1,1),1,"A"
+            ref  [error:type mismatch] 'Type mismatch in 10'
+SUPPORTED     t8openinput2 OPEN "A" FOR INPUT
+            ref  [error:syntax error] 'Syntax error in 10'
+SUPPORTED     t8openinput13 OPEN 5 FOR INPUT AS #1
+            ref  [error:type mismatch] 'Type mismatch in 10'
+SUPPORTED     t8openinput52 OPEN "A" FOR INPUT AS #16
+            ref  [error:bad file] 'Bad file number in 10'
+SUPPORTED     t8openinput53 OPEN "NOSUCH.TXT" FOR INPUT AS #1
+            ref  [error:file not found] 'File not found in 10'
+SUPPORTED     t8openoutput13 OPEN "X.TXT" FOR OUTPUT AS #"A"
+            ref  [error:type mismatch] 'Type mismatch in 10'
+SUPPORTED     t8openoutput56 OPEN "" FOR OUTPUT AS #1
+            ref  [error:bad file] 'Bad file name in 10'
+SUPPORTED     t8openappend2 OPEN "X.TXT" FOR APPEND AS 1,2
+            ref  [error:syntax error] 'Syntax error in 10'
+SUPPORTED     t8openappend53 OPEN "NOSUCH.TXT" FOR APPEND AS #1
+            ref  [error:file not found] 'File not found in 10'
+SUPPORTED     t8openrandom5 OPEN "R.DAT" AS #1 LEN=0
+            ref  [error:illegal function call] 'Illegal function call in 10'
+SUPPORTED     t8closeall13 CLOSE "A"
+            ref  [error:type mismatch] 'Type mismatch in 10'
+SUPPORTED     t8closeall24 CLOSE 1,
+            ref  [error:missing operand] 'Missing operand in 10'
+SUPPORTED     t8closechannel5 CLOSE #-1
+            ref  [error:illegal function call] 'Illegal function call in 10'
+SUPPORTED     t8closechannel13 CLOSE #"A"
+            ref  [error:type mismatch] 'Type mismatch in 10'
+SUPPORTED     t8closechannel52 CLOSE #16
+            ref  [error:bad file] 'Bad file number in 10'
+SUPPORTED     t8killdeletefile13 KILL 5
+            ref  [error:type mismatch] 'Type mismatch in 10'
+SUPPORTED     t8killdeletefile24 KILL
+            ref  [error:missing operand] 'Missing operand in 10'
+SUPPORTED     t8killdeletefile53 KILL "NOSUCH.TXT"
+            ref  [error:file not found] 'File not found in 10'
+SUPPORTED     t8namerename13 NAME 5 AS "B"
+            ref  [error:type mismatch] 'Type mismatch in 10'
+SUPPORTED     t8namerename53 NAME "NOSUCH.TXT" AS "B.TXT"
+            ref  [error:file not found] 'File not found in 10'
+SUPPORTED     t8filesbare2 FILES,
+            ref  [error:syntax error] 'Syntax error in 10'
+SUPPORTED     t8filesbare13 FILES 5
+            ref  [error:type mismatch] 'Type mismatch in 10'
+SUPPORTED     t8filespattern53 FILES "NOSUCH.*"
+            ref  [error:file not found] 'File not found in 10'
+SUPPORTED     t8fieldbindbuffer2 OPEN "R3.DAT" AS #1:FIELD #1,4
+            ref  [error:syntax error] 'Syntax error in 10'
+SUPPORTED     t8fieldbindbuffer13 OPEN "R2.DAT" AS #1:FIELD #1,4 AS A
+            ref  [error:type mismatch] 'Type mismatch in 20'
+SUPPORTED     t8fieldbindbuffer50 OPEN "R1.DAT" AS #1 LEN=8:FIELD #1,9 AS A$
+            ref  [error:overflow] 'FIELD overflow in 20'
+SUPPORTED     t8fieldbindbuffer52 FIELD #16,4 AS A$
+            ref  [error:bad file] 'Bad file number in 10'
+SUPPORTED     t8fieldbindbuffer59 FIELD #1,4 AS A$
+            ref  [value] 'File not OPEN in 10'
+SUPPORTED     t8lsetleftjustify2 LSET A$
+            ref  [error:syntax error] 'Syntax error in 10'
+SUPPORTED     t8lsetleftjustify13 LSET A=1
+            ref  [error:type mismatch] 'Type mismatch in 10'
+SUPPORTED     t8rsetrightjustify2 RSET A$
+            ref  [error:syntax error] 'Syntax error in 10'
+SUPPORTED     t8rsetrightjustify13 RSET A=1
+            ref  [error:type mismatch] 'Type mismatch in 10'
+SUPPORTED     t8eofatend13 A=EOF("A")
+            ref  [error:type mismatch] 'Type mismatch in 10'
+SUPPORTED     t8eofatend52 A=EOF(16)
+            ref  [error:bad file] 'Bad file number in 10'
+SUPPORTED     t8eofatend59 A=EOF(1)
+            ref  [value] 'File not OPEN in 10'
+SUPPORTED     t8locposition13 A=LOC("A")
+            ref  [error:type mismatch] 'Type mismatch in 10'
+SUPPORTED     t8locposition52 A=LOC(16)
+            ref  [error:bad file] 'Bad file number in 10'
+SUPPORTED     t8locposition59 A=LOC(1)
+            ref  [value] 'File not OPEN in 10'
+SUPPORTED     t8loflength13 A=LOF("A")
+            ref  [error:type mismatch] 'Type mismatch in 10'
+SUPPORTED     t8loflength52 A=LOF(16)
+            ref  [error:bad file] 'Bad file number in 10'
+SUPPORTED     t8loflength59 A=LOF(1)
+            ref  [value] 'File not OPEN in 10'
+SUPPORTED     t8mergemergefile13 MERGE 5
+            ref  [error:type mismatch] 'Type mismatch in 10'
+SUPPORTED     t8mergemergefile24 MERGE
+            ref  [error:missing operand] 'Missing operand in 10'
+SUPPORTED     t8mergemergefile53 MERGE "NOSUCH.BAS"
+            ref  [error:file not found] 'File not found in 10'
+SUPPORTED     t8loadplain13 LOAD 5
+            ref  [error:type mismatch] 'Type mismatch in 10'
+SUPPORTED     t8loadplain24 LOAD
+            ref  [error:missing operand] 'Missing operand in 10'
+SUPPORTED     t8loadplain53 LOAD "NOSUCH.BAS"
+            ref  [error:file not found] 'File not found in 10'
+SUPPORTED     t8loadrun53 LOAD "NOSUCH.BAS",R
+            ref  [error:file not found] 'File not found in 10'
+SUPPORTED     t8savetokenised13 SAVE 5
+            ref  [error:type mismatch] 'Type mismatch in 10'
+SUPPORTED     t8savetokenised24 SAVE
+            ref  [error:missing operand] 'Missing operand in 10'
+SUPPORTED     t8bloadplain13 BLOAD 5
+            ref  [error:type mismatch] 'Type mismatch in 10'
+SUPPORTED     t8bloadplain24 BLOAD
+            ref  [error:missing operand] 'Missing operand in 10'
+SUPPORTED     t8bloadplain53 BLOAD "NOSUCH.BIN"
+            ref  [error:file not found] 'File not found in 10'
+SUPPORTED     t8bloadrun53 BLOAD "NOSUCH.BIN",R
+            ref  [error:file not found] 'File not found in 10'
+SUPPORTED     t8bloadvram53 BLOAD "NOSUCH.BIN",S
+            ref  [error:file not found] 'File not found in 10'
+SUPPORTED     t8bsaverange2 BSAVE "X.BIN",&HC000
+            ref  [error:syntax error] 'Syntax error in 10'
+SUPPORTED     t8copyfiletofile13 COPY 5 TO "B"
+            ref  [error:type mismatch] 'Type mismatch in 10'
+SUPPORTED     t8copyfiletofile53 COPY "NOSUCH.TXT" TO "B.TXT"
+            ref  [error:file not found] 'File not found in 10'
+SUPPORTED     t8dskireadsector2 A$=DSKI$(0)
+            ref  [error:syntax error] 'Syntax error in 10'
+SUPPORTED     t8dskireadsector13 A$=DSKI$("A",0)
+            ref  [error:type mismatch] 'Type mismatch in 10'
+SUPPORTED     t8dskireadsector62 A$=DSKI$(5,0)
+            ref  [value] 'Bad drive name in 10'
+SUPPORTED     t8dskowritesector2 DSKO$ 0
+            ref  [error:syntax error] 'Syntax error in 10'
+SUPPORTED     t8dskowritesector13 DSKO$ "A",0
+            ref  [error:type mismatch] 'Type mismatch in 10'
+SUPPORTED     t8dskowritesector62 DSKO$ 5,0
+            ref  [value] 'Bad drive name in 10'
+SUPPORTED     t8getfieldedrecord5 OPEN "R4.DAT" AS #1:GET #1,0
+            ref  [error:illegal function call] 'Illegal function call in 10'
+SUPPORTED     t8getfieldedrecord52 GET #16
+            ref  [error:bad file] 'Bad file number in 10'
+SUPPORTED     t8getfieldedrecord59 GET #1,1
+            ref  [value] 'File not OPEN in 10'
+SUPPORTED     t8putfieldedrecord5 OPEN "R6.DAT" AS #1:PUT #1,0
+            ref  [error:illegal function call] 'Illegal function call in 10'
+SUPPORTED     t8putfieldedrecord52 PUT #16
+            ref  [error:bad file] 'Bad file number in 10'
+SUPPORTED     t8putfieldedrecord59 PUT #1,1
+            ref  [value] 'File not OPEN in 10'
+SUPPORTED     t8inputstringread52 INPUT #16,A$
+            ref  [error:bad file] 'Bad file number in 10'
+SUPPORTED     t8inputstringread59 INPUT #1,A$
+            ref  [value] 'File not OPEN in 10'
+SUPPORTED     t8printchannelwrite52 PRINT #16,"A"
+            ref  [error:bad file] 'Bad file number in 10'
+SUPPORTED     t8printchannelwrite59 PRINT #1,"A"
+            ref  [value] 'File not OPEN in 10'
+SUPPORTED     t8maxfilesset2 MAXFILES
+            ref  [error:syntax error] 'Syntax error in 10'
+SUPPORTED     t8maxfilesset5 MAXFILES=16
+            ref  [error:illegal function call] 'Illegal function call in 10'
+SUPPORTED     t8maxfilesset13 MAXFILES="A"
+            ref  [error:type mismatch] 'Type mismatch in 10'
+SUPPORTED     t8inputconsole13 A$=INPUT$("A")
+            ref  [error:type mismatch] 'Type mismatch in 10'
+SUPPORTED     t8inputchannel52 A$=INPUT$(1,#16)
+            ref  [error:bad file] 'Bad file number in 10'
+SUPPORTED     t8inputchannel59 A$=INPUT$(1,#1)
+            ref  [value] 'File not OPEN in 10'
+SUPPORTED     t8callrefuse2 CALL FOO
+            ref  [error:syntax error] 'Syntax error in 10'
+SUPPORTED     t8filespattern62 FILES "Q:*.*"
+            ref  [value] 'Bad drive name in 10'
+SUPPORTED     t8killdeletefile62 KILL "Q:A.TXT"
+            ref  [value] 'Bad drive name in 10'
+SUPPORTED     t8namerename65 OPEN "N1.TXT" FOR OUTPUT AS #1:CLOSE:OPEN "N2.TXT" FOR OUTPUT AS #1:CLOSE:NAME "N1.TXT" AS "N2.TXT"
+            ref  [value] 'File already exists in 40'
+SUPPORTED     t8savetokenised2 SAVE "SJ.BAS" 5
+            ref  [error:syntax error] 'Syntax error in 10'
+SUPPORTED     t8savecolon SAVE "SC.BAS":PRINT "SC"
+            ref  [value] 'SC'
+SUPPORTED     t8bsavecolon BSAVE "SB.BIN",&HC000,&HC010:PRINT "BS"
+            ref  [value] 'BS'
+SUPPORTED     t8bloadcolon BSAVE "SL.BIN",&HC000,&HC010:BLOAD "SL.BIN":PRINT "BL"
+            ref  [value] 'BL'
+SUPPORTED     t8namerename64 OPEN "NO3.TXT" FOR OUTPUT AS #1:NAME "NO3.TXT" AS "NO4.TXT"
+            ref  [value] 'File still open in 20'
+SUPPORTED     t8copyfiletofile64 OPEN "CO.TXT" FOR OUTPUT AS #1:COPY "CO.TXT" TO "CP.TXT"
+            ref  [value] 'File still open in 20'
+SUPPORTED     t8inputstringread55 OPEN "SA.TXT" FOR OUTPUT AS #1:CLOSE:OPEN "SA.TXT" FOR INPUT AS #1:INPUT #1,A$
+            ref  [value] 'Input past end in 40'
+SUPPORTED     t8inputdolchannel55 OPEN "SB.TXT" FOR OUTPUT AS #1:CLOSE:OPEN "SB.TXT" FOR INPUT AS #1:A$=INPUT$(1,#1)
+            ref  [value] 'Input past end in 40'
+SUPPORTED     seqeof_eofcr OPEN "SC.TXT" FOR OUTPUT AS #1:PRINT #1,"L1":PRINT #1,"L2":CLOSE:OPEN "SC.TXT" FOR INPUT AS #1:LINE INPUT #1,A$:LINE INPUT #1,B$:PRINT "[";EOF(1);"]"
+            ref  [value] '[-1 ]'
+SUPPORTED     seqeof_ctrlz OPEN "SD.TXT" FOR OUTPUT AS #1:PRINT #1,"HI";:CLOSE:OPEN "SD.TXT" FOR INPUT AS #1:INPUT #1,A$:PRINT "[";LEN(A$);"]"
+            ref  [value] '[ 2 ]'
+SUPPORTED     t9frefreeram2 A=FRE()
+            ref  [error:syntax error] 'Syntax error in 10'
+SUPPORTED     t9frefreestringspace2 A=FRE("","")
+            ref  [error:syntax error] 'Syntax error in 10'
+SUPPORTED     t9valinteger13 A=VAL(5)
+            ref  [error:type mismatch] 'Type mismatch in 10'
+SUPPORTED     t9valinteger2 A=VAL()
+            ref  [error:syntax error] 'Syntax error in 10'
+SUPPORTED     t9valexponent6 A=VAL("1E99")
+            ref  [error:overflow] 'Overflow in 10'
+SUPPORTED     t9valradixprefix6 A=VAL("&HFFFFF")
+            ref  [error:overflow] 'Overflow in 10'
+SUPPORTED     t9valfraction2 A=VAL(".5",1)
+            ref  [error:syntax error] 'Syntax error in 10'
+SUPPORTED     t9valpartialparse2 A=VAL("12X",1)
+            ref  [error:syntax error] 'Syntax error in 10'
+SUPPORTED     t9usrdefault2 A=USR()
+            ref  [error:syntax error] 'Syntax error in 10'
+SUPPORTED     t9usrnumbered2 A=USR1(1,2)
+            ref  [error:syntax error] 'Syntax error in 10'
+SUPPORTED     t9varptrvariable2 A=VARPTR(5)
+            ref  [error:syntax error] 'Syntax error in 10'
+SUPPORTED     t9waitportmask24 WAIT
+            ref  [error:missing operand] 'Missing operand in 10'
+SUPPORTED     t9waitportmask2 WAIT 1
+            ref  [error:syntax error] 'Syntax error in 10'
+SUPPORTED     t9waitportmask13 WAIT "A",1
+            ref  [error:type mismatch] 'Type mismatch in 10'
+SUPPORTED     t9waitportmask6 WAIT 256*256,1
+            ref  [error:overflow] 'Overflow in 10'
+SUPPORTED     t9waitportmaskxor13 WAIT 1,1,"A"
+            ref  [error:type mismatch] 'Type mismatch in 10'
+SUPPORTED     t9widthtextwidth5 WIDTH 41
+            ref  [error:illegal function call] 'Illegal function call in 10'
+SUPPORTED     t9widthtextwidth13 WIDTH "A"
+            ref  [error:type mismatch] 'Type mismatch in 10'
+SUPPORTED     t9widthtextwidth24 WIDTH
+            ref  [error:missing operand] 'Missing operand in 10'
+SUPPORTED     t8killdeletefile64 OPEN "KO.TXT" FOR OUTPUT AS #1:KILL "KO.TXT"
+            ref  [value] 'File still open in 20'
+SUPPORTED     t8namerenameopen OPEN "ZO.TXT" FOR OUTPUT AS #1:NAME "HI.TXT" AS "HI.TXT"
+            ref  [value] 'File already exists in 20'
+SUPPORTED     t8openoutput62 OPEN "Q:X.TXT" FOR OUTPUT AS #1
+            ref  [value] 'Bad drive name in 10'
+SUPPORTED     t8savetokenised62 SAVE "Q:X.BAS"
+            ref  [value] 'Bad drive name in 10'
+SUPPORTED     kill_t3   KILL"NOSUCH.BAS"
+            ref  [error:file not found] 'File not found'
+SUPPORTED     cvi_t3    PRINT CVI("A")
+            ref  [error:illegal function call] 'Illegal function call'
+SUPPORTED     mki_t3    PRINT MKI$("A")
+            ref  [error:type mismatch] 'Type mismatch'
+SUPPORTED     dskf_t3   PRINT DSKF(9)
+            ref  [value] 'Bad drive name'
+SUPPORTED     close     OPEN"W.TXT"FOR OUTPUT AS#1:PRINT#1,"ABC":CLOSE#1:OPEN"W.TXT"FOR INPUT AS#1:A=LOF(1):CLOSE#1:PRINT"[";A;"]"
+            ref  [value] '[ 6 ]'
+SUPPORTED     close_b   OPEN"W4.TXT"FOR OUTPUT AS#1:PRINT#1,"AB":CLOSE:OPEN"W4.TXT"FOR INPUT AS#1:A=LOF(1):CLOSE#1:PRINT"[";A;"]"
+            ref  [value] '[ 5 ]'
+SUPPORTED     bsave     POKE&HC800,99:BSAVE"O.BIN",&HC800,&HC800:POKE&HC800,7:BLOAD"O.BIN":A=PEEK(&HC800):PRINT"[";A;"]"
+            ref  [value] '[ 99 ]'
+SUPPORTED     save      A=1:SAVE"S.BAS":OPEN"S.BAS"FOR INPUT AS#1:A=LOF(1):CLOSE#1:PRINT"[";A;"]"
+            ref  [value] '[ 68 ]'
+SUPPORTED     kill      A=DSKF(1):KILL"PROG2.BAS":B=DSKF(1):PRINT"[";B-A;"]"
+            ref  [value] '[ 1 ]'
+SUPPORTED     merge     OPEN"N.BAS"FOR OUTPUT AS#1:PRINT#1,"100 END":CLOSE:PRINT"[M0]":MERGE"N.BAS":PRINT"[M1]"
+            ref  [value] '[M0]'
+SUPPORTED     lset      OPEN"R.DAT"AS#1:FIELD#1,4 AS A$:LSET A$="B":A=ASC(A$):CLOSE#1:PRINT"[";A;"]"
+            ref  [value] '[ 66 ]'
+SUPPORTED     rset      OPEN"R.DAT"AS#1:FIELD#1,4 AS A$:RSET A$="B":A=ASC(A$):CLOSE#1:PRINT"[";A;"]"
+            ref  [value] '[ 32 ]'
+SUPPORTED     inputkw   OPEN"HI.TXT"FOR INPUT AS#1:INPUT#1,A$:CLOSE#1:PRINT"[I";LEN(A$);"]"
+            ref  [value] '[I 24 ]'
+SUPPORTED     input_b   OPEN"HI.TXT"FOR INPUT AS#1:INPUT#1,A$:CLOSE#1:PRINT"[";LEFT$(A$,5);"]"
+            ref  [value] '[Hello]'
+SUPPORTED     inputdol_c OPEN"IDL.TXT"FOR OUTPUT AS#1:PRINT#1,"ABC":CLOSE#1:OPEN"IDL.TXT"FOR INPUT AS#1:A$=INPUT$(3,#1):CLOSE#1:PRINT"[";A$;"]"
+            ref  [value] '[ABC]'
+SUPPORTED     getkw     OPEN"R.DAT"AS#1:FIELD#1,4 AS A$:LSET A$="B":PUT#1,1:LSET A$="Z":A=ASC(A$):GET#1,1:B=ASC(A$):CLOSE#1:PRINT"[G";A;B;"]"
+            ref  [value] '[G 90  66 ]'
+SUPPORTED     puthash   OPEN"Q.DAT"AS#1:FIELD#1,4 AS A$:LSET A$="K":PUT#1,1:LSET A$="Z":PUT#1,2:GET#1,1:A=ASC(A$):GET#1,2:B=ASC(A$):CLOSE#1:PRINT"[";A;B;"]"
+            ref  [value] '[ 75  90 ]'
+SUPPORTED     printhash OPEN"P.TXT"FOR OUTPUT AS#1:PRINT#1,"ABC":CLOSE#1:OPEN"P.TXT"FOR INPUT AS#1:A$=INPUT$(3,#1):CLOSE#1:PRINT"[";A$;"]"
+            ref  [value] '[ABC]'
+SUPPORTED     dski      A$=DSKI$(0,7):B=PEEK(&HF351)+256*PEEK(&HF352):A=PEEK(B):PRINT"[";A;"]"
+            ref  [value] '[ 84 ]'
+SUPPORTED     dsko      A$=DSKI$(0,7):B=PEEK(&HF351)+256*PEEK(&HF352):POKE B,88:DSKO$0,7:A$=DSKI$(0,0):A$=DSKI$(0,7):A=PEEK(B):PRINT"[";A;"]"
+            ref  [value] '[ 88 ]'
+SUPPORTED     copy      COPY"HI.TXT" TO "H2.TXT":OPEN"H2.TXT"FOR INPUT AS#1:A=LOF(1):CLOSE#1:PRINT"[";A;"]"
+            ref  [value] '[ 26 ]'
+SUPPORTED     set       SET PASSWORD
+            ref  [error:illegal function call] 'Illegal function call in 10'
+SUPPORTED     ipl       IPL
+            ref  [error:illegal function call] 'Illegal function call in 10'
+SUPPORTED     cmd       CMD"X"
+            ref  [error:illegal function call] 'Illegal function call in 10'
+SUPPORTED     lfiles    LPRINT"AB";:LFILES:PRINT"[P";LPOS(0);"]"
+            ref  [value] '[P 0 ]'
+SUPPORTED     loc       OPEN"HI.TXT"FOR INPUT AS#1:A$=INPUT$(10,#1):A=LOC(1):CLOSE#1:PRINT"[";A;"]"
+            ref  [value] '[ 26 ]'
+SUPPORTED     openkw    OPEN"O.TXT"FOR OUTPUT AS#1:PRINT#1,"AB":CLOSE#1:OPEN"O.TXT"FOR INPUT AS#1:A=LOF(1):CLOSE#1:PRINT"[";A;"]"
+            ref  [value] '[ 5 ]'
+SUPPORTED     namekw    OPEN"NM.TXT"FOR OUTPUT AS#1:PRINT#1,"AB":CLOSE#1:NAME"NM.TXT" AS "NM2.TXT":OPEN"NM2.TXT"FOR INPUT AS#1:A=LOF(1):CLOSE#1:PRINT"[2p";A;"]"
+            ref  [value] '[2p 5 ]'
+SUPPORTED     open_c    OPEN"OA.TXT"FOR OUTPUT AS#1:PRINT#1,"AB":CLOSE#1:OPEN"OA.TXT"FOR APPEND AS#1:A=LOF(1):PRINT#1,"CD":CLOSE#1:PRINT"[2f";A;"]"
+            ref  [value] '[2f 5 ]'
+SUPPORTED     open_d    OPEN"OR.DAT"AS#1:FIELD#1,4 AS A$:LSET A$="PQRS":PUT#1,1:GET#1,1:PRINT"[2e";A$;"]":CLOSE#1
+            ref  [value] '[2ePQRS]'
+SUPPORTED     fieldkw   OPEN"F.DAT"AS#1:FIELD#1,4 AS A$:LSET A$="WXYZ":PUT#1,1:GET#1,1:PRINT"[";A$;"]":CLOSE#1
+            ref  [value] '[WXYZ]'
+SUPPORTED     bsave_b   POKE&HC800,99:BSAVE"O2.BIN",&HC800,&HC800,&HC900:OPEN"O2.BIN"FOR INPUT AS#1:B$=INPUT$(7,#1):CLOSE#1:PRINT"[2t";ASC(MID$(B$,7,1));"]"
+            ref  [value] '[2t 201 ]'
+SUPPORTED     bload_b   POKE&HC800,&H3E:POKE&HC801,42:POKE&HC802,&H32:POKE&HC803,6:POKE&HC804,&HC8:POKE&HC805,&HC9:BSAVE"R.BIN",&HC800,&HC805,&HC800:POKE&HC806,0:BLOAD"R.BIN",R:A=PEEK(&HC806):PRINT"[2v";A;"]"
+            ref  [value] '[2v 42 ]'
+SUPPORTED     bload_c   POKE&HC800,77:BSAVE"V.BIN",&HC800,&HC800:VPOKE 2048,0:BLOAD"V.BIN",S:A=VPEEK(2048):PRINT"[2w";A;"]"
+            ref  [value] '[2w 77 ]'
+SUPPORTED     save_b    PRINT"[2s]":SAVE"SA.BAS",A:PRINT"[2u]"
+            ref  [value] '[2s]'
+SUPPORTED     runkw_c   RUN"PROG3.BAS"
+            ref  [value] '[3h]'
+SUPPORTED     loadkw    LOAD"PROG3.BAS",R
+            ref  [value] '[3h]'
+SUPPORTED     load_b    LOAD"PROG3.BAS"
+            ref  [value] '10 PRINT"[3h]"\\r\\n'
+SUPPORTED     auto      AUTO 100
+            ref  [value] '100'
+SUPPORTED     auto_bare AUTO
+            ref  [value] '10*'
+SUPPORTED     auto_step AUTO 100,5
+            ref  [value] '100 REM Z|105'
+
+==============================================================================
+COMBINED — tokenised? x observable consequence
+==============================================================================
+word       crunch  support     consequence
+------------------------------------------------------------------------------
+abs        present SUPPORTED   match
+int        present SUPPORTED   match
+len        present SUPPORTED   match
+chr        present SUPPORTED   match
+mid        present SUPPORTED   match
+mid_b      present SUPPORTED   match
+mid_c      present SUPPORTED   match
+instr      present SUPPORTED   match
+instr_b    present SUPPORTED   match
+hex        present SUPPORTED   match
+sqr        present SUPPORTED   match
+peek       present SUPPORTED   match
+peek_b     present SUPPORTED   match
+varptr     present SUPPORTED   match
+varptr_b   present SUPPORTED   match
+stick      present SUPPORTED   match
+stick_hold present SUPPORTED   match
+erase      present SUPPORTED   match
+erase_b    present SUPPORTED   match
+swapctl    present SUPPORTED   match
+asc        present SUPPORTED   match
+cint       present SUPPORTED   match
+cdbl       present SUPPORTED   match
+csng       present SUPPORTED   match
+fix        present SUPPORTED   match
+sgn        present SUPPORTED   match
+sin        present SUPPORTED   match
+sin_b      present SUPPORTED   match
+cos        present SUPPORTED   match
+tan        present SUPPORTED   match
+tan_b      present SUPPORTED   match
+atn        present SUPPORTED   match
+exp        present SUPPORTED   match
+log        present SUPPORTED   match
+mod        present SUPPORTED   match
+notop      present SUPPORTED   match
+andop      present SUPPORTED   match
+orop       present SUPPORTED   match
+xorop      present SUPPORTED   match
+oct        present SUPPORTED   match
+valkw      present SUPPORTED   match
+valkw_b    present SUPPORTED   match
+valkw_c    present SUPPORTED   match
+valkw_d    present SUPPORTED   match
+valkw_e    present SUPPORTED   match
+left       present SUPPORTED   match
+right      present SUPPORTED   match
+str        present SUPPORTED   match
+stringf    present SUPPORTED   match
+space      present SUPPORTED   match
+space_b    present SUPPORTED   match
+csrlind    present SUPPORTED   match
+let        present SUPPORTED   match
+rem        present SUPPORTED   match
+rnd        present SUPPORTED   match
+rnd_b      present SUPPORTED   match
+cvi        present SUPPORTED   match
+using      present SUPPORTED   match
+using_b    present SUPPORTED   match
+using_c    present SUPPORTED   match
+using_d    present SUPPORTED   match
+using_e    present SUPPORTED   match
+then       present SUPPORTED   match
+elsekw     present SUPPORTED   match
+tokw       present SUPPORTED   match
+stepkw     present SUPPORTED   match
+offkw      present SUPPORTED   match
+ifkw       present SUPPORTED   match
+ifkw_b     present SUPPORTED   match
+ifkw_c     present SUPPORTED   match
+forkw      present SUPPORTED   match
+forkw_b    present SUPPORTED   match
+forkw_c    present SUPPORTED   match
+nextkw     present SUPPORTED   match
+nextkw_b   present SUPPORTED   match
+nextkw_c   present SUPPORTED   match
+clearkw    present SUPPORTED   match
+clear_b    present SUPPORTED   match
+clear_c    present SUPPORTED   match
+dimkw      present SUPPORTED   match
+dimkw_b    present SUPPORTED   match
+sound_b    present SUPPORTED   match
+beep       present SUPPORTED   match
+beep_b     present SUPPORTED   match
+beep_c     present SUPPORTED   match
+sound      present SUPPORTED   match
+playkw     present SUPPORTED   match
+playkw_b   present SUPPORTED   match
+playkw_c   present SUPPORTED   match
+playkw_d   present SUPPORTED   match
+playkw_x   present SUPPORTED   match
+playkw_e   present SUPPORTED   match
+playkw_f   present SUPPORTED   match
+playkw_g   present SUPPORTED   match
+playkw_h   present SUPPORTED   match
+playkw_i   present SUPPORTED   match
+vpeek      present SUPPORTED   match
+vpoke      present SUPPORTED   match
+vdpkw      present SUPPORTED   match
+vdp_b      present SUPPORTED   match
+vdp_c      present SUPPORTED   match
+vdp_d      present SUPPORTED   match
+inpkw      present SUPPORTED   match
+inp_b      present SUPPORTED   match
+outkw      present SUPPORTED   match
+out_b      present SUPPORTED   match
+peek_curlin present SUPPORTED   match
+pokekw     present SUPPORTED   match
+widthkw    present SUPPORTED   match
+widthkw_b  present SUPPORTED   match
+widthkw_c  present SUPPORTED   match
+circlekw   present SUPPORTED   match
+circlekw_b present SUPPORTED   match
+circlekw_c present SUPPORTED   match
+circlekw_d present SUPPORTED   match
+circlekw_e present SUPPORTED   match
+drawkw     present SUPPORTED   match
+drawkw_b   present SUPPORTED   match
+drawkw_c   present SUPPORTED   match
+drawkw_d   present SUPPORTED   match
+drawkw_e   present SUPPORTED   match
+drawkw_f   present SUPPORTED   match
+drawkw_g   present SUPPORTED   match
+drawkw_h   present SUPPORTED   match
+drawkw_i   present SUPPORTED   match
+drawkw_j   present SUPPORTED   match
+drawkw_k   present SUPPORTED   match
+spritekw   present SUPPORTED   match
+sprite_on  present SUPPORTED   match
+sprite_off present SUPPORTED   match
+sprite_stop present SUPPORTED   match
+spritekw_b present SUPPORTED   match
+basekw     present SUPPORTED   match
+basekw_b   present SUPPORTED   match
+pdlkw      present SUPPORTED   match
+padkw      present SUPPORTED   match
+pdl_plug   present SUPPORTED   match
+pad_plug   present SUPPORTED   match
+pad_plug_b present SUPPORTED   match
+pad_win_switch present not-run     crunch-only — support UNKNOWN
+strig_hold present SUPPORTED   match
+stick_rig  present SUPPORTED   match
+stick_rig_b present SUPPORTED   match
+strig_rig  present SUPPORTED   match
+strig_rig_b present SUPPORTED   match
+attrkw     present SUPPORTED   match
+stopkw     present SUPPORTED   match
+contkw     present SUPPORTED   match
+maxkw      present SUPPORTED   match
+strigkw    present SUPPORTED   match
+onkw       present SUPPORTED   match
+onkw_b     present SUPPORTED   match
+ongoto     present SUPPORTED   match
+ongosub    present SUPPORTED   match
+oninterval present SUPPORTED   match
+oninterval_b present SUPPORTED   match
+onsprite   present SUPPORTED   match
+onsprite_b present SUPPORTED   match
+onstrig    present SUPPORTED   match
+onstrig_b  present SUPPORTED   match
+onstrig_c  present SUPPORTED   match
+onstrig_rig present SUPPORTED   match
+onstop     present SUPPORTED   match
+onstop_b   present SUPPORTED   match
+onkey      present SUPPORTED   match
+onkey_b    present SUPPORTED   match
+onkey_c    present SUPPORTED   match
+errorkw    present SUPPORTED   match
+errorkw_b  present SUPPORTED   match
+errkw      present SUPPORTED   match
+erlkw      present SUPPORTED   match
+resumekw   present SUPPORTED   match
+resumekw_b present SUPPORTED   match
+resumekw_c present SUPPORTED   match
+defintkw   present SUPPORTED   match
+defint_b   present SUPPORTED   match
+listkw     present SUPPORTED   match
+listkw_b   present SUPPORTED   match
+listkw_c   present SUPPORTED   match
+deletekw   present SUPPORTED   match
+del_line   present SUPPORTED   match
+del_range  present SUPPORTED   match
+del_head   present SUPPORTED   match
+del_tail   present SUPPORTED   match
+newkw      present SUPPORTED   match
+gosubkw    present SUPPORTED   match
+returnkw   present SUPPORTED   match
+endkw      present SUPPORTED   match
+datakw     present SUPPORTED   match
+datakw_b   present SUPPORTED   match
+datakw_c   present SUPPORTED   match
+datakw_d   present SUPPORTED   match
+readkw     present SUPPORTED   match
+restorekw  present SUPPORTED   match
+restorekw_b present SUPPORTED   match
+returnkw_b present SUPPORTED   match
+psetkw     present SUPPORTED   match
+psetkw_b   present SUPPORTED   match
+psetkw_c   present SUPPORTED   match
+psetkw_d   present SUPPORTED   match
+psetkw_e   present SUPPORTED   match
+presetkw   present SUPPORTED   match
+presetkw_b present SUPPORTED   match
+presetkw_c present SUPPORTED   match
+presetkw_d present SUPPORTED   match
+paintkw    present SUPPORTED   match
+paintkw_b  present SUPPORTED   match
+paintkw_c  present SUPPORTED   match
+putsprite  present SUPPORTED   match
+putsprite_b present SUPPORTED   match
+pointkw    present SUPPORTED   match
+pointkw_b  present SUPPORTED   match
+linekw     present SUPPORTED   match
+linekw_b   present SUPPORTED   match
+linekw_c   present SUPPORTED   match
+linekw_d   present SUPPORTED   match
+linekw_e   present SUPPORTED   match
+linekw_f   present SUPPORTED   match
+colorkw    present SUPPORTED   match
+colorkw_b  present SUPPORTED   match
+colorkw_c  present SUPPORTED   match
+clskw      present SUPPORTED   match
+locate     present SUPPORTED   match
+locate_b   present SUPPORTED   match
+locate_c   present SUPPORTED   match
+locate_d   present SUPPORTED   match
+csrlin     present SUPPORTED   match
+pos        present SUPPORTED   match
+tab        present SUPPORTED   match
+spc        present SUPPORTED   match
+printkw_b  present SUPPORTED   match
+printkw_c  present SUPPORTED   match
+printkw_d  present SUPPORTED   match
+swap       present SUPPORTED   match
+fre        present SUPPORTED   match
+fre_b      present SUPPORTED   match
+fre_c      present SUPPORTED   match
+tron       present SUPPORTED   match
+troff      present SUPPORTED   match
+tron_b     present SUPPORTED   match
+troff_b    present SUPPORTED   match
+renum      present SUPPORTED   match
+ren_bare   present SUPPORTED   match
+ren_start  present SUPPORTED   match
+ren_old    present SUPPORTED   match
+ren_step   present SUPPORTED   match
+defsng     present SUPPORTED   match
+defsng_b   present SUPPORTED   match
+defdbl     present SUPPORTED   match
+defdbl_b   present SUPPORTED   match
+defstr     present SUPPORTED   match
+defstr_b   present SUPPORTED   match
+deffn      present SUPPORTED   match
+fnkw       present SUPPORTED   match
+fnkw_b     present SUPPORTED   match
+deffn_b    present SUPPORTED   match
+eqv        present SUPPORTED   match
+imp        present SUPPORTED   match
+llist      present SUPPORTED   match
+motor      present SUPPORTED   match
+motor_b    present SUPPORTED   match
+motor_c    present SUPPORTED   match
+time       present SUPPORTED   match
+timetick   present SUPPORTED   match
+time_c     present SUPPORTED   match
+interval   present not-run     crunch-only — support UNKNOWN
+mki        present SUPPORTED   match
+mki_c      present SUPPORTED   match
+mks        present SUPPORTED   match
+mks_b      present SUPPORTED   match
+mkd        present SUPPORTED   match
+mkd_b      present SUPPORTED   match
+cvs        present SUPPORTED   match
+cvd        present SUPPORTED   match
+cvi_b      present SUPPORTED   match
+cvs_b      present SUPPORTED   match
+cvd_b      present SUPPORTED   match
+mki_b      present SUPPORTED   match
+usrkw      present SUPPORTED   match
+defusr     present SUPPORTED   match
+defusr_b   present SUPPORTED   match
+usrkw_b    present SUPPORTED   match
+screenkw   present SUPPORTED   match
+screenkw_c present SUPPORTED   match
+screenkw_d present SUPPORTED   match
+keykw      present SUPPORTED   match
+keykw_b    present SUPPORTED   match
+keykw_on   present SUPPORTED   match
+keykw_off  present SUPPORTED   match
+waitkw     present SUPPORTED   match
+waitkw_b   present SUPPORTED   match
+lposkw     present SUPPORTED   match
+lprintkw   present SUPPORTED   match
+dskf       present SUPPORTED   match
+files      present SUPPORTED   match
+files_b    present SUPPORTED   match
+lof        present SUPPORTED   match
+openkw_b   present SUPPORTED   match
+maxfiles   present SUPPORTED   match
+eof        present SUPPORTED   match
+bload      present SUPPORTED   match
+cload      present SUPPORTED   match
+cload_b    present SUPPORTED   match
+inkey      present SUPPORTED   match
+csave      present SUPPORTED   match
+t6abs2     present SUPPORTED   match
+t6abs13    present SUPPORTED   match
+t6sgn2     present SUPPORTED   match
+t6sgn13    present SUPPORTED   match
+t6int2     present SUPPORTED   match
+t6int13    present SUPPORTED   match
+t6sqr2     present SUPPORTED   match
+t6sqr5     present SUPPORTED   match
+t6sqr13    present SUPPORTED   match
+t6log2     present SUPPORTED   match
+t6log5     present SUPPORTED   match
+t6log13    present SUPPORTED   match
+t6exp2     present SUPPORTED   match
+t6exp6     present SUPPORTED   match
+t6exp13    present SUPPORTED   match
+t6asc2     present SUPPORTED   match
+t6asc5     present SUPPORTED   match
+t6asc13    present SUPPORTED   match
+t6chr2     present SUPPORTED   match
+t6chr5     present SUPPORTED   match
+t6chr6     present SUPPORTED   match
+t6chr13    present SUPPORTED   match
+t6len2     present SUPPORTED   match
+t6len13    present SUPPORTED   match
+t6peek2    present SUPPORTED   match
+t6peek6    present SUPPORTED   match
+t6peek13   present SUPPORTED   match
+t6left2    present SUPPORTED   match
+t6left5    present SUPPORTED   match
+t6left6    present SUPPORTED   match
+t6left13   present SUPPORTED   match
+t6right2   present SUPPORTED   match
+t6right5   present SUPPORTED   match
+t6right6   present SUPPORTED   match
+t6right13  present SUPPORTED   match
+t6string2  present SUPPORTED   match
+t6string5  present SUPPORTED   match
+t6string13 present SUPPORTED   match
+t6hex2     present SUPPORTED   match
+t6hex6     present SUPPORTED   match
+t6hex13    present SUPPORTED   match
+t6oct2     present SUPPORTED   match
+t6oct6     present SUPPORTED   match
+t6oct13    present SUPPORTED   match
+t6bin2     present SUPPORTED   match
+t6bin6     present SUPPORTED   match
+t6bin13    present SUPPORTED   match
+t6space2   present SUPPORTED   match
+t6space5   present SUPPORTED   match
+t6space13  present SUPPORTED   match
+t6str2     present SUPPORTED   match
+t6str13    present SUPPORTED   match
+t6cint2    present SUPPORTED   match
+t6cint6    present SUPPORTED   match
+t6cint13   present SUPPORTED   match
+t6fix2     present SUPPORTED   match
+t6fix13    present SUPPORTED   match
+t6csng2    present SUPPORTED   match
+t6csng13   present SUPPORTED   match
+t6cdbl2    present SUPPORTED   match
+t6cdbl13   present SUPPORTED   match
+t6sin2     present SUPPORTED   match
+t6sin13    present SUPPORTED   match
+t6cos2     present SUPPORTED   match
+t6cos13    present SUPPORTED   match
+t6tan2     present SUPPORTED   match
+t6tan13    present SUPPORTED   match
+t6atn2     present SUPPORTED   match
+t6atn13    present SUPPORTED   match
+t6vpeek2   present SUPPORTED   match
+t6vpeek5   present SUPPORTED   match
+t6vpeek6   present SUPPORTED   match
+t6vpeek13  present SUPPORTED   match
+t6poke2    present SUPPORTED   match
+t6poke5    present SUPPORTED   match
+t6poke6    present SUPPORTED   match
+t6poke13   present SUPPORTED   match
+t6poke24   present SUPPORTED   match
+t6vpoke2   present SUPPORTED   match
+t6vpoke5   present SUPPORTED   match
+t6vpoke6   present SUPPORTED   match
+t6vpoke13  present SUPPORTED   match
+t6vpoke24  present SUPPORTED   match
+t6sound2   present SUPPORTED   match
+t6sound5   present SUPPORTED   match
+t6sound13  present SUPPORTED   match
+t6sound24  present SUPPORTED   match
+t6mki2     present SUPPORTED   match
+t6mki13    present SUPPORTED   match
+t6cvi2     present SUPPORTED   match
+t6cvi5     present SUPPORTED   match
+t6cvi13    present SUPPORTED   match
+t6mks2     present SUPPORTED   match
+t6mks13    present SUPPORTED   match
+t6cvs2     present SUPPORTED   match
+t6cvs5     present SUPPORTED   match
+t6cvs13    present SUPPORTED   match
+t6mkd2     present SUPPORTED   match
+t6mkd13    present SUPPORTED   match
+t6cvd2     present SUPPORTED   match
+t6cvd5     present SUPPORTED   match
+t6cvd13    present SUPPORTED   match
+t6dskf2    present SUPPORTED   match
+t6dskf13   present SUPPORTED   match
+t6dskf62   present SUPPORTED   match
+t6instrs2  present SUPPORTED   match
+t6instrs13 present SUPPORTED   match
+t6instrsf2 present SUPPORTED   match
+t6instrsf5 present SUPPORTED   match
+t6instrsf6 present SUPPORTED   match
+t6instrsf13 present SUPPORTED   match
+t6mids35   present SUPPORTED   match
+t6mids36   present SUPPORTED   match
+t6mids313  present SUPPORTED   match
+t6midste2  present SUPPORTED   match
+t6midste5  present SUPPORTED   match
+t6midste13 present SUPPORTED   match
+t6mida2    present SUPPORTED   match
+t6mida5    present SUPPORTED   match
+t6mida13   present SUPPORTED   match
+t6nextb1   present SUPPORTED   match
+t6nextn1   present SUPPORTED   match
+t6nextn2   present SUPPORTED   match
+t6nextcl1  present SUPPORTED   match
+t6returnb3 present SUPPORTED   match
+t6returnl2 present SUPPORTED   match
+t6returnl3 present SUPPORTED   match
+t6returnl8 present SUPPORTED   match
+t6restoreb8 present SUPPORTED   match
+t6restorel8 present SUPPORTED   match
+t6gotoj2   present SUPPORTED   match
+t6gotoj8   present SUPPORTED   match
+t6readrd2  present SUPPORTED   match
+t6readrd4  present SUPPORTED   match
+t6swape2   present SUPPORTED   match
+t6swape13  present SUPPORTED   match
+t6erasefa2 present SUPPORTED   match
+t6erasefa5 present SUPPORTED   match
+t6dimod2   present SUPPORTED   match
+t6dimod5   present SUPPORTED   match
+t6dimod6   present SUPPORTED   match
+t6dimod9   present SUPPORTED   match
+t6dimod10  present SUPPORTED   match
+t6dimod13  present SUPPORTED   match
+t6dimmd5   present SUPPORTED   match
+t6dimmd9   present SUPPORTED   match
+t6dimmd10  present SUPPORTED   match
+t6dimmd13  present SUPPORTED   match
+t6andba6   present SUPPORTED   match
+t6andba13  present SUPPORTED   match
+t6andba24  present SUPPORTED   match
+t6orbo6    present SUPPORTED   match
+t6orbo13   present SUPPORTED   match
+t6orbo24   present SUPPORTED   match
+t6xorbx6   present SUPPORTED   match
+t6xorbx13  present SUPPORTED   match
+t6xorbx24  present SUPPORTED   match
+t6eqve6    present SUPPORTED   match
+t6eqve13   present SUPPORTED   match
+t6eqve24   present SUPPORTED   match
+t6impi6    present SUPPORTED   match
+t6impi13   present SUPPORTED   match
+t6impi24   present SUPPORTED   match
+t6notbn6   present SUPPORTED   match
+t6notbn13  present SUPPORTED   match
+t6notbn24  present SUPPORTED   match
+t6modm6    present SUPPORTED   match
+t6modm11   present SUPPORTED   match
+t6modm13   present SUPPORTED   match
+t6modm24   present SUPPORTED   match
+t6beepna2  present SUPPORTED   match
+t6tront2   present SUPPORTED   match
+t6trofft2  present SUPPORTED   match
+t6csrlinrr2 present SUPPORTED   match
+t6erlel2   present SUPPORTED   match
+t6errec2   present SUPPORTED   match
+t6errorr5  present SUPPORTED   match
+t6gosubc2  present SUPPORTED   match
+t6gosubc8  present SUPPORTED   match
+t6inkeypk13 present SUPPORTED   match
+t6inppr2   present SUPPORTED   match
+t6inppr13  present SUPPORTED   match
+t6leta2    present SUPPORTED   match
+t6leta13   present SUPPORTED   match
+t6letnum2  present SUPPORTED   match
+t6outpv2   present SUPPORTED   match
+t6outpv5   present SUPPORTED   match
+t6outpv13  present SUPPORTED   match
+t6outpv24  present SUPPORTED   match
+t6pointpr2 present SUPPORTED   match
+t6pointpr13 present SUPPORTED   match
+t6poscr2   present SUPPORTED   match
+t6lposcr2  present SUPPORTED   match
+t6rndrd2   present SUPPORTED   match
+t6rndrd13  present SUPPORTED   match
+t6fora2    present SUPPORTED   match
+t6fora13   present SUPPORTED   match
+t6fora24   present SUPPORTED   match
+t6fors2    present SUPPORTED   match
+t6fors13   present SUPPORTED   match
+t6fors24   present SUPPORTED   match
+t6forns13  present SUPPORTED   match
+t6forns24  present SUPPORTED   match
+t6ift2     present SUPPORTED   match
+t6ift8     present SUPPORTED   match
+t6ift13    present SUPPORTED   match
+t6ife8     present SUPPORTED   match
+t6ife13    present SUPPORTED   match
+t6ifg2     present SUPPORTED   match
+t6ifg8     present SUPPORTED   match
+t6ifg13    present SUPPORTED   match
+t6clearb2  present SUPPORTED   match
+t6clearss5 present SUPPORTED   match
+t6clearss6 present SUPPORTED   match
+t6clearss7 present SUPPORTED   match
+t6clearss13 present SUPPORTED   match
+t6clearh5  present SUPPORTED   match
+t6clearh13 present SUPPORTED   match
+t6clearh24 present SUPPORTED   match
+t6colorf5  present SUPPORTED   match
+t6colorf13 present SUPPORTED   match
+t6colorbg5 present SUPPORTED   match
+t6colorbg13 present SUPPORTED   match
+t6colorbd2 present SUPPORTED   match
+t6colorbd5 present SUPPORTED   match
+t6colorbd13 present SUPPORTED   match
+t6screenm5 present SUPPORTED   match
+t6screenm13 present SUPPORTED   match
+t6screenss5 present SUPPORTED   match
+t6screenss13 present SUPPORTED   match
+t6screenkc2 present SUPPORTED   match
+t6screenkc5 present SUPPORTED   match
+t6screenkc13 present SUPPORTED   match
+t6locatec5 present SUPPORTED   match
+t6locatec13 present SUPPORTED   match
+t6locater5 present SUPPORTED   match
+t6locater13 present SUPPORTED   match
+t6locateoc13 present SUPPORTED   match
+t6locatecs13 present SUPPORTED   match
+t6timer13  present SUPPORTED   match
+t6timew6   present SUPPORTED   match
+t6timew13  present SUPPORTED   match
+t6timew24  present SUPPORTED   match
+t6defintsl2 present SUPPORTED   match
+t6defintlr2 present SUPPORTED   match
+t6defsngsl2 present SUPPORTED   match
+t6defsnglr2 present SUPPORTED   match
+t6defdblsl2 present SUPPORTED   match
+t6defdbllr2 present SUPPORTED   match
+t6defstrsl2 present SUPPORTED   match
+t6defstrlr2 present SUPPORTED   match
+t7psetcolourexplicit2 present SUPPORTED   match
+t7psetcolourexplicit5 present SUPPORTED   match
+t7psetcolourexplicit13 present SUPPORTED   match
+t7psetcolourdefault2 present SUPPORTED   match
+t7psetcolourdefault24 present SUPPORTED   match
+t7psetsteprelative2 present SUPPORTED   match
+t7psetsteprelative5 present SUPPORTED   match
+t7psetsteprelative13 present SUPPORTED   match
+t7psetmodescreen35 present SUPPORTED   match
+t7psetmodescreen36 present SUPPORTED   match
+t7psetmodescreen313 present SUPPORTED   match
+t7presetcolourdefault2 present SUPPORTED   match
+t7presetcolourdefault5 present SUPPORTED   match
+t7presetcolourdefault13 present SUPPORTED   match
+t7presetcolourexplicit5 present SUPPORTED   match
+t7presetcolourexplicit13 present SUPPORTED   match
+t7presetsteprelative2 present SUPPORTED   match
+t7presetsteprelative13 present SUPPORTED   match
+t7presetmodescreen35 present SUPPORTED   match
+t7presetmodescreen313 present SUPPORTED   match
+t7linesegment2 present SUPPORTED   match
+t7linesegment5 present SUPPORTED   match
+t7linesegment13 present SUPPORTED   match
+t7linebox2 present SUPPORTED   match
+t7linebox5 present SUPPORTED   match
+t7linefilledbox2 present SUPPORTED   match
+t7linefilledbox5 present SUPPORTED   match
+t7linesteprelative2 present SUPPORTED   match
+t7linesteprelative13 present SUPPORTED   match
+t7lineomittedstart2 present SUPPORTED   match
+t7lineomittedstart13 present SUPPORTED   match
+t7linecolourdefault2 present SUPPORTED   match
+t7linecolourdefault13 present SUPPORTED   match
+t7linecolourdefault24 present SUPPORTED   match
+t7drawmovement5 present SUPPORTED   match
+t7drawmovement13 present SUPPORTED   match
+t7drawmoveabsolute5 present SUPPORTED   match
+t7drawmoverelative5 present SUPPORTED   match
+t7drawblankprefix5 present SUPPORTED   match
+t7drawnoupdateprefix5 present SUPPORTED   match
+t7drawcolour5 present SUPPORTED   match
+t7drawscale5 present SUPPORTED   match
+t7drawangle5 present SUPPORTED   match
+t7drawsubstringexec5 present SUPPORTED   match
+t7drawsubstringexec13 present SUPPORTED   match
+t7drawvariablesubstitution5 present SUPPORTED   match
+t7drawvariablesubstitution13 present SUPPORTED   match
+t7baseread2 present SUPPORTED   match
+t7baseread5 present SUPPORTED   match
+t7baseread13 present SUPPORTED   match
+t7basewrite5 present SUPPORTED   match
+t7basewrite6 present SUPPORTED   match
+t7basewrite13 present SUPPORTED   match
+t7basewrite24 present SUPPORTED   match
+t7vdpread2 present SUPPORTED   match
+t7vdpread5 present SUPPORTED   match
+t7vdpread13 present SUPPORTED   match
+t7vdpwrite5 present SUPPORTED   match
+t7vdpwrite13 present SUPPORTED   match
+t7vdpwrite24 present SUPPORTED   match
+t7spritepatternwrite5 present SUPPORTED   match
+t7spriteenable2 present SUPPORTED   match
+t7spritedisable2 present SUPPORTED   match
+t7ongotoindexgoto2 present SUPPORTED   match
+t7ongotoindexgoto5 present SUPPORTED   match
+t7ongotoindexgoto8 present SUPPORTED   match
+t7ongotoindexgoto13 present SUPPORTED   match
+t7ongosubindexgosub2 present SUPPORTED   match
+t7ongosubindexgosub5 present SUPPORTED   match
+t7ongosubindexgosub8 present SUPPORTED   match
+t7ongosubindexgosub13 present SUPPORTED   match
+t7keyassign2 present SUPPORTED   match
+t7keyassign5 present SUPPORTED   match
+t7keyassign13 present SUPPORTED   match
+t7keylist2 present SUPPORTED   match
+t7keydisplayon2 present SUPPORTED   match
+t7keydisplayoff2 present SUPPORTED   match
+t7stickcursorkeys2 present SUPPORTED   match
+t7stickcursorkeys5 present SUPPORTED   match
+t7stickcursorkeys13 present SUPPORTED   match
+t7stickjoystickport2 present SUPPORTED   match
+t7stickjoystickport5 present SUPPORTED   match
+t7strigspacebar2 present SUPPORTED   match
+t7strigspacebar5 present SUPPORTED   match
+t7strigspacebar13 present SUPPORTED   match
+t7strigjoysticktrigger2 present SUPPORTED   match
+t7strigjoysticktrigger5 present SUPPORTED   match
+t7pdlread2 present SUPPORTED   match
+t7pdlread5 present SUPPORTED   match
+t7pdlread13 present SUPPORTED   match
+t7padtouchstatus2 present SUPPORTED   match
+t7padtouchstatus5 present SUPPORTED   match
+t7padtouchstatus13 present SUPPORTED   match
+t7padcoordinate2 present SUPPORTED   match
+t7padcoordinate5 present SUPPORTED   match
+t7padswitch2 present SUPPORTED   match
+t7padswitch5 present SUPPORTED   match
+t7defusrdefault2 present SUPPORTED   match
+t7defusrdefault6 present EXTRA       ref 'Overflow in 10' vs zb ''
+t7defusrdefault13 present SUPPORTED   match
+t7defusrnumbered2 present SUPPORTED   match
+t7defusrnumbered6 present EXTRA       ref 'Overflow in 10' vs zb ''
+t7defusrnumbered13 present SUPPORTED   match
+t7deffnnumeric2 present EXTRA       ref 'Syntax error in 10' vs zb ''
+t7deffnstringvalued2 present EXTRA       ref 'Syntax error in 10' vs zb ''
+t7fnnumeric2 present SUPPORTED   match
+t7fnnumeric13 present SUPPORTED   match
+t7fnnumeric18 present SUPPORTED   match
+t7fnstringvalued13 present SUPPORTED   match
+t7fnstringvalued18 present SUPPORTED   match
+t7stopbreak2 present EXTRA       ref 'Syntax error in 10' vs zb 'Break in 10'
+t7playnotes5 present SUPPORTED   match
+t7playnotes13 present SUPPORTED   match
+t7playnotenumber5 present SUPPORTED   match
+t7playrest5 present SUPPORTED   match
+t7playoctave5 present SUPPORTED   match
+t7playdefaultlength5 present SUPPORTED   match
+t7playtempo5 present SUPPORTED   match
+t7playvolume5 present SUPPORTED   match
+t7playenvelope5 present SUPPORTED   match
+t7playmultivoice2 present SUPPORTED   match
+t7playmultivoice13 present SUPPORTED   match
+t7playsubstringexec5 present SUPPORTED   match
+t7playsubstringexec13 present SUPPORTED   match
+t7setrefuse5 present SUPPORTED   match
+t7circlecentreradius2 present SUPPORTED   match
+t7circlecentreradius5 present SUPPORTED   match
+t7circlecentreradius13 present SUPPORTED   match
+t7circlearc5 present UNREADABLE  ref 'Illegal function call in 10' vs zb ''
+t7circlearc13 present SUPPORTED   match
+t7circlesteprelative2 present SUPPORTED   match
+t7circlesteprelative13 present SUPPORTED   match
+t7circleaspect2 present SUPPORTED   match
+t7circleaspect5 present SUPPORTED   match
+t7circleaspect13 present SUPPORTED   match
+t7circlecolourdefault24 present SUPPORTED   match
+t7paintflood2 present SUPPORTED   match
+t7paintflood5 present SUPPORTED   match
+t7paintflood13 present SUPPORTED   match
+t7paintfillcolour5 present SUPPORTED   match
+t7paintfillcolour13 present SUPPORTED   match
+t7paintbordercolour2 present SUPPORTED   match
+t7paintbordercolour13 present SUPPORTED   match
+t8openinput2 present SUPPORTED   match
+t8openinput13 present SUPPORTED   match
+t8openinput52 present SUPPORTED   match
+t8openinput53 present SUPPORTED   match
+t8openoutput13 present SUPPORTED   match
+t8openoutput56 present SUPPORTED   match
+t8openappend2 present SUPPORTED   match
+t8openappend53 present SUPPORTED   match
+t8openrandom5 present SUPPORTED   match
+t8closeall13 present SUPPORTED   match
+t8closeall24 present SUPPORTED   match
+t8closechannel5 present SUPPORTED   match
+t8closechannel13 present SUPPORTED   match
+t8closechannel52 present SUPPORTED   match
+t8killdeletefile13 present SUPPORTED   match
+t8killdeletefile24 present SUPPORTED   match
+t8killdeletefile53 present SUPPORTED   match
+t8namerename13 present SUPPORTED   match
+t8namerename53 present SUPPORTED   match
+t8filesbare2 present SUPPORTED   match
+t8filesbare13 present SUPPORTED   match
+t8filespattern53 present SUPPORTED   match
+t8fieldbindbuffer2 present SUPPORTED   match
+t8fieldbindbuffer13 present SUPPORTED   match
+t8fieldbindbuffer50 present SUPPORTED   match
+t8fieldbindbuffer52 present SUPPORTED   match
+t8fieldbindbuffer59 present SUPPORTED   match
+t8lsetleftjustify2 present SUPPORTED   match
+t8lsetleftjustify13 present SUPPORTED   match
+t8rsetrightjustify2 present SUPPORTED   match
+t8rsetrightjustify13 present SUPPORTED   match
+t8eofatend13 present SUPPORTED   match
+t8eofatend52 present SUPPORTED   match
+t8eofatend59 present SUPPORTED   match
+t8locposition13 present SUPPORTED   match
+t8locposition52 present SUPPORTED   match
+t8locposition59 present SUPPORTED   match
+t8loflength13 present SUPPORTED   match
+t8loflength52 present SUPPORTED   match
+t8loflength59 present SUPPORTED   match
+t8mergemergefile13 present SUPPORTED   match
+t8mergemergefile24 present SUPPORTED   match
+t8mergemergefile53 present SUPPORTED   match
+t8loadplain13 present SUPPORTED   match
+t8loadplain24 present SUPPORTED   match
+t8loadplain53 present SUPPORTED   match
+t8loadrun53 present SUPPORTED   match
+t8savetokenised13 present SUPPORTED   match
+t8savetokenised24 present SUPPORTED   match
+t8bloadplain13 present SUPPORTED   match
+t8bloadplain24 present SUPPORTED   match
+t8bloadplain53 present SUPPORTED   match
+t8bloadrun53 present SUPPORTED   match
+t8bloadvram53 present SUPPORTED   match
+t8bsaverange2 present SUPPORTED   match
+t8copyfiletofile13 present SUPPORTED   match
+t8copyfiletofile53 present SUPPORTED   match
+t8dskireadsector2 present SUPPORTED   match
+t8dskireadsector13 present SUPPORTED   match
+t8dskireadsector62 present SUPPORTED   match
+t8dskowritesector2 present SUPPORTED   match
+t8dskowritesector13 present SUPPORTED   match
+t8dskowritesector62 present SUPPORTED   match
+t8getfieldedrecord5 present SUPPORTED   match
+t8getfieldedrecord52 present SUPPORTED   match
+t8getfieldedrecord59 present SUPPORTED   match
+t8putfieldedrecord5 present SUPPORTED   match
+t8putfieldedrecord52 present SUPPORTED   match
+t8putfieldedrecord59 present SUPPORTED   match
+t8inputstringread52 present SUPPORTED   match
+t8inputstringread59 present SUPPORTED   match
+t8printchannelwrite52 present SUPPORTED   match
+t8printchannelwrite59 present SUPPORTED   match
+t8maxfilesset2 present SUPPORTED   match
+t8maxfilesset5 present SUPPORTED   match
+t8maxfilesset13 present SUPPORTED   match
+t8inputconsole13 present SUPPORTED   match
+t8inputchannel52 present SUPPORTED   match
+t8inputchannel59 present SUPPORTED   match
+t8callrefuse2 present SUPPORTED   match
+t8filespattern62 present SUPPORTED   match
+t8killdeletefile62 present SUPPORTED   match
+t8namerename65 present SUPPORTED   match
+t8savetokenised2 present SUPPORTED   match
+t8savecolon present SUPPORTED   match
+t8bsavecolon present SUPPORTED   match
+t8bloadcolon present SUPPORTED   match
+t8namerename64 present SUPPORTED   match
+t8copyfiletofile64 present SUPPORTED   match
+t8inputstringread55 present SUPPORTED   match
+t8inputdolchannel55 present SUPPORTED   match
+seqeof_eofcr present SUPPORTED   match
+seqeof_ctrlz present SUPPORTED   match
+t9frefreeram2 present SUPPORTED   match
+t9frefreestringspace2 present SUPPORTED   match
+t9valinteger13 present SUPPORTED   match
+t9valinteger2 present SUPPORTED   match
+t9valexponent6 present SUPPORTED   match
+t9valradixprefix6 present SUPPORTED   match
+t9valfraction2 present SUPPORTED   match
+t9valpartialparse2 present SUPPORTED   match
+t9usrdefault2 present SUPPORTED   match
+t9usrnumbered2 present SUPPORTED   match
+t9varptrvariable2 present SUPPORTED   match
+t9waitportmask24 present SUPPORTED   match
+t9waitportmask2 present SUPPORTED   match
+t9waitportmask13 present SUPPORTED   match
+t9waitportmask6 present SUPPORTED   match
+t9waitportmaskxor13 present SUPPORTED   match
+t9widthtextwidth5 present SUPPORTED   match
+t9widthtextwidth13 present SUPPORTED   match
+t9widthtextwidth24 present SUPPORTED   match
+t9widthmode1width5 present UNREADABLE  ref '' vs zb ''
+t9widthmode1width13 present UNREADABLE  ref '' vs zb ''
+t9printtabitem13 present UNREADABLE  ref '' vs zb ''
+t9printtabitem5 present UNREADABLE  ref '' vs zb ''
+t9printtabitem2 present UNREADABLE  ref '' vs zb ''
+t9printspcitem13 present UNREADABLE  ref '' vs zb ''
+t9printspcitem5 present UNREADABLE  ref '' vs zb ''
+t9printspcitem2 present UNREADABLE  ref '' vs zb ''
+t9dataunquotedstring2 present UNREADABLE  ref '' vs zb ''
+t9dataquotedstring2 present UNREADABLE  ref '' vs zb ''
+t9dataemptyitem4 present UNREADABLE  ref '' vs zb ''
+t8killdeletefile64 present SUPPORTED   match
+t8namerenameopen present SUPPORTED   match
+t8openoutput62 present SUPPORTED   match
+t8savetokenised62 present SUPPORTED   match
+sqr_t3     present UNREADABLE  ref '' vs zb ''
+asc_t3     present UNREADABLE  ref '' vs zb ''
+left_t3    present UNREADABLE  ref '' vs zb ''
+dim_t3     present UNREADABLE  ref '' vs zb ''
+read_t3    present UNREADABLE  ref '' vs zb ''
+chr_t3     present UNREADABLE  ref '' vs zb ''
+mid_t3     present UNREADABLE  ref '' vs zb ''
+log_t3     present UNREADABLE  ref '' vs zb ''
+str_t3     present UNREADABLE  ref '' vs zb ''
+goto_t3    present UNREADABLE  ref '' vs zb ''
+gotokw     present UNREADABLE  ref '' vs zb ''
+next_t3    present UNREADABLE  ref '' vs zb ''
+ret_t3     present UNREADABLE  ref '' vs zb ''
+instr_t3   present UNREADABLE  ref '' vs zb ''
+poke_t3    present UNREADABLE  ref '' vs zb ''
+peek_t3    present UNREADABLE  ref '' vs zb ''
+sgn_t3     present UNREADABLE  ref '' vs zb ''
+abs_t3     present UNREADABLE  ref '' vs zb ''
+rest_t3    present UNREADABLE  ref '' vs zb ''
+erase_t3   present UNREADABLE  ref '' vs zb ''
+swap_t3    present UNREADABLE  ref '' vs zb ''
+space_t3   present UNREADABLE  ref '' vs zb ''
+len_t3     present UNREADABLE  ref '' vs zb ''
+hex_t3     present UNREADABLE  ref '' vs zb ''
+oct_t3     present UNREADABLE  ref '' vs zb ''
+int_t3     present UNREADABLE  ref '' vs zb ''
+exp_t3     present UNREADABLE  ref '' vs zb ''
+vpoke_t3   present UNREADABLE  ref '' vs zb ''
+sound_t3   present UNREADABLE  ref '' vs zb ''
+fn_t3      present UNREADABLE  ref '' vs zb ''
+kill_t3    present SUPPORTED   match
+cvi_t3     present SUPPORTED   match
+mki_t3     present SUPPORTED   match
+dskf_t3    present SUPPORTED   match
+sgn_b      present UNREADABLE  ref '' vs zb ''
+fix_b      present UNREADABLE  ref '' vs zb ''
+cos_b      present UNREADABLE  ref '' vs zb ''
+vpoke_b    present UNREADABLE  ref '' vs zb ''
+vpoke_b2   present UNREADABLE  ref '' vs zb ''
+close      present SUPPORTED   match
+close_b    present SUPPORTED   match
+bsave      present SUPPORTED   match
+save       present SUPPORTED   match
+kill       present SUPPORTED   match
+merge      present SUPPORTED   match
+lset       present SUPPORTED   match
+rset       present SUPPORTED   match
+inputkw    present SUPPORTED   match
+input_b    present SUPPORTED   match
+inputdol_b present UNREADABLE  ref '' vs zb ''
+inputdol_c present SUPPORTED   match
+inputcon   present UNREADABLE  ref '' vs zb ''
+inputcon_b present UNREADABLE  ref '' vs zb ''
+inputcon_c present UNREADABLE  ref '' vs zb ''
+lineinput  present UNREADABLE  ref '' vs zb ''
+lineinput_b present UNREADABLE  ref '' vs zb ''
+getkw      present SUPPORTED   match
+puthash    present SUPPORTED   match
+printhash  present SUPPORTED   match
+callkw     present UNREADABLE  ref '' vs zb ''
+callkw_b   present UNREADABLE  ref '' vs zb ''
+runkw      present UNREADABLE  ref '' vs zb ''
+runkw_b    present UNREADABLE  ref '' vs zb ''
+dski       present SUPPORTED   match
+dsko       present SUPPORTED   match
+copy       present SUPPORTED   match
+set        present SUPPORTED   match
+attr       present not-run     crunch-only — support UNKNOWN
+ipl        present SUPPORTED   match
+cmd        present SUPPORTED   match
+lfiles     present SUPPORTED   match
+loc        present SUPPORTED   match
+openkw     present SUPPORTED   match
+namekw     present SUPPORTED   match
+open_c     present SUPPORTED   match
+open_d     present SUPPORTED   match
+fieldkw    present SUPPORTED   match
+bsave_b    present SUPPORTED   match
+bload_b    present SUPPORTED   match
+bload_c    present SUPPORTED   match
+save_b     present SUPPORTED   match
+runkw_c    present SUPPORTED   match
+loadkw     present SUPPORTED   match
+load_b     present SUPPORTED   match
+bin        present UNREADABLE  ref '' vs zb ''
+inputdol   present not-run     crunch-only — support UNKNOWN
+auto       present SUPPORTED   match
+auto_bare  present SUPPORTED   match
+auto_step  present SUPPORTED   match
+
+==============================================================================
+CARRIED -- 1 WINDOW row(s): input that reaches openMSX only through its
+focused window; each keeps its windowed verdict and does NOT expire with the ROM
+(Joost 2026-09-28). Not measured on this build.
+==============================================================================
+  pad_win_switch SUPPORTED  measured 2026-09-27  (scratchpad/rigfw_window_touchpad_run.out (VG-8020: PAD(3) -1 while mouse button 2 held, 0 otherwise) vs scratchpad/rigfw_window_touchpad_zb_after_run.out (zerobas at 601a44c9, D-PADTRACE: the same))
+
+==============================================================================
+NOT EXECUTED — 4 words, crunch-only. Reasons below; these are
+COVERAGE HOLES IN THIS PROBE, not evidence of support.
+==============================================================================
+  pad_win_switch NEEDS-WINDOW:switch SUBJECT:PAD FORM:switch -1 while the pen switch is held, 0 released -- both machines, windowed, 2026-09-27
+  interval  needs a stored ON INTERVAL=n GOSUB program + a timed window; covered by probes/basic/basic_probe_interval_trap.py (T5 slice), not duplicated here
+  attr      NEEDS-DISK: MSX-DOS2-era; measured for the record
+  inputdol  BLOCKS waiting for a keypress
+
+==============================================================================
+SUMMARY  EXTRA=5  UNREADABLE=58  SUPPORTED=845  WEAK(excluded)=3
+         executed 911 / 915 words; 4 crunch-only
+==============================================================================
+ROWS: 915 printed, 911 scored — 4 crunch-only word(s) carry no support reading and are printed but not scored
+pin: 912 row verdict(s) -> /Users/joost/projects/zerobas/build/kwsweep-verdicts.json
+
+=== CRUNCH PIN — words the reference tokenises and zerobas does not ===
+refcache: 46 hit, 18 miss, 18 stored

@@ -462,10 +462,62 @@ def batch2_cases(kw, form, stmt, spec):
     yield kw, form, "extra", _call(kw, stmt, valid + [valid[-1]])
 
 
+# --- BATCH 9 (2026-09-28): the never-enumerated keywords that fit the in-program
+# shape. Each case is meant to RAISE; the valid shapes are kwsweep's already.
+# ⚠️ WAIT has NO valid case here -- a satisfied mask never returns and the probe
+# would hang; LPRINT is left out (no printer: the reference may block on it).
+BATCH9 = {
+    "FRE": [
+        ("free-ram", ["A=FRE()", "A=FRE(0,1)", "A=FRE"]),
+        ("free-string-space", ['A=FRE("","")', 'A=FRE("']),
+    ],
+    "VAL": [
+        ("integer", ["A=VAL(5)", "A=VAL()", 'A=VAL("1","2")', "A=VAL"]),
+        ("exponent", ['A=VAL("1E99")', 'A=VAL("1D99")']),
+        ("radix-prefix", ['A=VAL("&HFFFFF")', 'A=VAL("&B")']),
+        ("fraction", ['A=VAL(".5",1)']),
+        ("partial-parse", ['A=VAL("12X",1)']),
+    ],
+    "USR": [
+        ("default", ["A=USR", "A=USR()", "A=USR(1,2)"]),
+        ("numbered", ["A=USR1(1,2)", "A=USR1", "A=USR1()"]),
+    ],
+    "VARPTR": [
+        ("variable", ["A=VARPTR(5)", "A=VARPTR()", "A=VARPTR(A,B)", "A=VARPTR"]),
+        ("file-channel", ["A=VARPTR(#0)", "A=VARPTR(#16)", 'A=VARPTR(#"A")']),
+    ],
+    "WAIT": [
+        ("port-mask", ["WAIT", "WAIT 1", 'WAIT "A",1', "WAIT 1,256", 'WAIT 1,"A"',
+                       "WAIT 256*256,1"]),
+        ("port-mask-xor", ["WAIT 1,1,256", 'WAIT 1,1,"A"', "WAIT 1,1,1,1"]),
+    ],
+    "WIDTH": [
+        ("text-width", ["WIDTH 41", 'WIDTH "A"', "WIDTH", "WIDTH 0", "WIDTH 1,1", "WIDTH 256"]),
+        ("mode1-width", ["SCREEN 1:WIDTH 33", 'SCREEN 1:WIDTH "A"', "SCREEN 1:WIDTH 0"]),
+    ],
+    "PRINT": [
+        ("tab-item", ['PRINT TAB("A")', "PRINT TAB(256)", "PRINT TAB(-1)", "PRINT TAB()"]),
+        ("spc-item", ['PRINT SPC("A")', "PRINT SPC(256)", "PRINT SPC(-1)", "PRINT SPC()"]),
+    ],
+    "RESUME": [
+        ("bare", ["RESUME"]),
+        ("next", ["RESUME NEXT"]),
+        ("line", ["RESUME 100", 'RESUME "A"', "RESUME 65536"]),
+    ],
+    "DATA": [
+        ("unquoted-string", ["READ A:DATA X"]),
+        ("quoted-string", ['READ A:DATA "1"']),
+        ("numeric", ["READ A%:DATA 99999", "READ A:DATA 1E99"]),
+        ("empty-item", ["READ A,B,C:DATA ,"]),
+    ],
+}
+
+
 def cases():
     only = next((a.split("=", 1)[1] for a in sys.argv if a.startswith("--only=")), None)
-    if any(f"--batch={n}" in sys.argv for n in (4, 5, 6, 7, 8)):
-        b = (BATCH8 if "--batch=8" in sys.argv else
+    if any(f"--batch={n}" in sys.argv for n in (4, 5, 6, 7, 8, 9)):
+        b = (BATCH9 if "--batch=9" in sys.argv else
+             BATCH8 if "--batch=8" in sys.argv else
              BATCH7 if "--batch=7" in sys.argv else
              BATCH6 if "--batch=6" in sys.argv else
              BATCH5 if "--batch=5" in sys.argv else BATCH4)

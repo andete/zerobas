@@ -6019,7 +6019,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:26712 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:26749 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -25831,6 +25831,43 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       approved 2026-09-22, 7 KB free there): once the channel read lives in
       disk.rom this is written there, with room for the exact rule. Until then
       the rows above are the spec.
+
+- [ ] 🔴 **`WAIT port,mask` DOES NOT RANGE-CHECK A MASK PAST 255 — `WAIT 1,256` IS
+      `Illegal function call` ON THE VG-8020 AND NEVER RETURNS HERE (D-WAITMASK,
+      found 2026-09-28 by T6 batch 9).**
+      🎚️ TIER 3 — a typo'd mask hangs the machine where the reference refuses.
+      🤖 **AUTONOMOUS** — the reference settles it: the mask and the xor byte are
+      BYTE arguments (`eval_byte_checked`'s domain).
+      📏 [`scratchpad/t6enum_b9.out`](scratchpad/t6enum_b9.out): `WAIT 1,256` (5, 20) there,
+      no reading here (a mask truncated to 0 never matches); `WAIT 1,1,256` (5, 20)
+      there, accepted here. Every other WAIT case agrees (2, 6, 13, 24). Blocks
+      WAIT's T6 (code 5 in both forms).
+
+- [ ] 🔴 **A BARE `USR` / `USR1` IS `Syntax error` ON THE VG-8020 AND ACCEPTED HERE
+      (D-USRBARE, found 2026-09-28 by T6 batch 9).**
+      🎚️ TIER 6 — `USR` without its argument.
+      🤖 **AUTONOMOUS** — the reference settles it.
+      📏 [`scratchpad/t6enum_b9.out`](scratchpad/t6enum_b9.out): `A=USR` and `A=USR1` read
+      (2, 20) there and OK here. Does NOT block T6 (code 2 has agreeing rows in
+      both forms: `A=USR()`, `A=USR1(1,2)`), but it is a divergence.
+
+- [ ] 🔴 **`VARPTR(#n)` — THE FILE-CHANNEL FORM — DOES NOT EXIST HERE (D-VARPTRFCB,
+      found 2026-09-28 by T6 batch 9).**
+      🎚️ TIER 6 — the file-channel form of VARPTR.
+      🤖 **AUTONOMOUS** — measure what `VARPTR(#n)` returns for an OPEN channel
+      first (the address of its file control block on the reference; clean-room: the
+      VALUE is readable, its layout is ours).
+      📏 [`scratchpad/t6enum_b9.out`](scratchpad/t6enum_b9.out): `VARPTR(#0)` OK,
+      `VARPTR(#16)` 52, `VARPTR(#"A")` 13 on the VG-8020; all three `Syntax error`
+      here. VARPTR stays level 0 (1/2 forms) and T6- until the form exists.
+
+- [ ] 🔴 **`READ A%` OF `DATA 99999` IS `Overflow` ON THE VG-8020 AND ACCEPTED HERE
+      (D-READINTOVF, found 2026-09-28 by T6 batch 9).**
+      🎚️ TIER 6 — READ into an integer variable out of its range.
+      🤖 **AUTONOMOUS** — the reference settles it; likely the same site as D-READOVF.
+      📏 [`scratchpad/t6enum_b9.out`](scratchpad/t6enum_b9.out): (6, 20) there, OK here.
+      Blocks DATA's T6 (`numeric` form, code 6), with D-READOVF (`DATA 1E99`: 6
+      there, 2 here).
 
 - [ ] 🔴 **`POS("A")` / `LPOS("A")` ARE `Type mismatch` HERE AND ACCEPTED ON THE
       REFERENCE (D-POSDUMMY, found 2026-09-27 by T6).**

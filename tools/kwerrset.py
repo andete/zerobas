@@ -184,6 +184,19 @@ ERRSETS: dict[str, dict[str, frozenset[int]]] = {
     # SAVE tokenised gained 2 on 2026-09-28: batch 8 never asked a junk TAIL, and
     # `SAVE "J.BAS" 5` is Syntax error on the CF-3300, raised before any write
     # (scratchpad/colon_probe.py junk5 -> scratchpad/colon_after_run.out).
+    # 📏 BATCH 9, MEASURED 2026-09-28 on the VG-8020 (scratchpad/t6enum_probe.py
+    # --batch=9 -> scratchpad/t6enum_b9.out): the never-enumerated keywords that fit
+    # the in-program shape. RESUME read nothing on EITHER machine (a shape problem,
+    # not a set) and WIDTH's same-width / PRINT's separator forms were not asked,
+    # so those three keywords are not entered.
+    "FRE": {"free-ram": frozenset({2}), "free-string-space": frozenset({2})},
+    "VAL": {"integer": frozenset({2, 13}), "exponent": frozenset({6}), "radix-prefix": frozenset({6}),
+            "fraction": frozenset({2}), "partial-parse": frozenset({2})},
+    "USR": {"default": frozenset({2}), "numbered": frozenset({2})},
+    "VARPTR": {"variable": frozenset({2}), "file-channel": frozenset({13, 52})},
+    "WAIT": {"port-mask": frozenset({2, 5, 6, 13, 24}), "port-mask-xor": frozenset({5, 13})},
+    "DATA": {"unquoted-string": frozenset({2}), "quoted-string": frozenset({2}),
+             "numeric": frozenset({6}), "empty-item": frozenset({4})},
     "SAVE": {"tokenised": frozenset({2, 13, 24, 62}), "ascii": frozenset({2})},
     "BLOAD": {"plain": frozenset({13, 24, 53}), "run": frozenset({53}), "vram": frozenset({53})},
     "BSAVE": {"range": frozenset({2, 13}), "with-entry": frozenset({2, 13})},
@@ -232,6 +245,9 @@ PROVENANCE: dict[str, str] = {
 for _k in ("NAME", "COPY"):
     PROVENANCE[_k] += ("; code 64 from scratchpad/killopen_probe.py -> "
                        "scratchpad/copynameopen_run.out, CF-3300, 2026-09-28")
+for _k in ("FRE", "VAL", "USR", "VARPTR", "WAIT", "DATA"):
+    PROVENANCE[_k] = ("scratchpad/t6enum_probe.py --batch=9 -> scratchpad/t6enum_b9.out, "
+                      "VG-8020, 2026-09-28")
 PROVENANCE["SAVE"] += ("; tokenised code 2 from scratchpad/colon_probe.py -> "
                        "scratchpad/colon_after_run.out, CF-3300, 2026-09-28")
 

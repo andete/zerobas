@@ -1,0 +1,96 @@
+keyword case                                           Philips_VG_8   C-BIOS_MSX1_
+FRE     A=FRE()                                             (2, 20)        (2, 20)
+FRE     A=FRE(0,1)                                          (2, 20)        (2, 20)
+FRE     A=FRE                                               (2, 20)        (2, 20)
+FRE     A=FRE("","")                                        (2, 20)        (2, 20)
+FRE     A=FRE("                                             (2, 20)        (2, 20)
+VAL     A=VAL(5)                                           (13, 20)       (13, 20)
+VAL     A=VAL()                                             (2, 20)        (2, 20)
+VAL     A=VAL("1","2")                                      (2, 20)        (2, 20)
+VAL     A=VAL                                               (2, 20)        (2, 20)
+VAL     A=VAL("1E99")                                       (6, 20)        (6, 20)
+VAL     A=VAL("1D99")                                       (6, 20)        (6, 20)
+VAL     A=VAL("&HFFFFF")                                    (6, 20)        (6, 20)
+VAL     A=VAL("&B")                                              OK             OK
+VAL     A=VAL(".5",1)                                       (2, 20)        (2, 20)
+VAL     A=VAL("12X",1)                                      (2, 20)        (2, 20)
+USR     A=USR                                               (2, 20)             OK
+USR     A=USR()                                             (2, 20)        (2, 20)
+USR     A=USR(1,2)                                          (2, 20)        (2, 20)
+USR     A=USR1(1,2)                                         (2, 20)        (2, 20)
+USR     A=USR1                                              (2, 20)             OK
+USR     A=USR1()                                            (2, 20)        (2, 20)
+VARPTR  A=VARPTR(5)                                         (2, 20)        (2, 20)
+VARPTR  A=VARPTR()                                          (2, 20)        (2, 20)
+VARPTR  A=VARPTR(A,B)                                       (2, 20)        (2, 20)
+VARPTR  A=VARPTR                                            (2, 20)        (2, 20)
+VARPTR  A=VARPTR(#0)                                             OK        (2, 20)
+VARPTR  A=VARPTR(#16)                                      (52, 20)        (2, 20)
+VARPTR  A=VARPTR(#"A")                                     (13, 20)        (2, 20)
+WAIT    WAIT                                               (24, 20)       (24, 20)
+WAIT    WAIT 1                                              (2, 20)        (2, 20)
+WAIT    WAIT "A",1                                         (13, 20)       (13, 20)
+WAIT    WAIT 1,256                                          (5, 20)           None
+WAIT    WAIT 1,"A"                                         (13, 20)       (13, 20)
+WAIT    WAIT 256*256,1                                      (6, 20)        (6, 20)
+WAIT    WAIT 1,1,256                                        (5, 20)             OK
+WAIT    WAIT 1,1,"A"                                       (13, 20)       (13, 20)
+WAIT    WAIT 1,1,1,1                                           None           None
+   ⚠️ WAIT 'WAIT 1,1,1,1': NO READING on the reference -- not scored
+WIDTH   WIDTH 41                                            (5, 20)        (5, 20)
+WIDTH   WIDTH "A"                                          (13, 20)       (13, 20)
+WIDTH   WIDTH                                              (24, 20)       (24, 20)
+WIDTH   WIDTH 0                                             (5, 20)        (5, 20)
+WIDTH   WIDTH 1,1                                              None           None
+   ⚠️ WIDTH 'WIDTH 1,1': NO READING on the reference -- not scored
+WIDTH   WIDTH 256                                           (5, 20)        (5, 20)
+WIDTH   SCREEN 1:WIDTH 33                                   (5, 20)        (5, 20)
+WIDTH   SCREEN 1:WIDTH "A"                                 (13, 20)       (13, 20)
+WIDTH   SCREEN 1:WIDTH 0                                    (5, 20)        (5, 20)
+PRINT   PRINT TAB("A")                                     (13, 20)       (13, 20)
+PRINT   PRINT TAB(256)                                      (5, 20)        (5, 20)
+PRINT   PRINT TAB(-1)                                       (5, 20)        (5, 20)
+PRINT   PRINT TAB()                                         (2, 20)        (2, 20)
+PRINT   PRINT SPC("A")                                     (13, 20)       (13, 20)
+PRINT   PRINT SPC(256)                                      (5, 20)        (5, 20)
+PRINT   PRINT SPC(-1)                                       (5, 20)        (5, 20)
+PRINT   PRINT SPC()                                         (2, 20)        (2, 20)
+RESUME  RESUME                                                 None           None
+   ⚠️ RESUME 'RESUME': NO READING on the reference -- not scored
+RESUME  RESUME NEXT                                            None           None
+   ⚠️ RESUME 'RESUME NEXT': NO READING on the reference -- not scored
+RESUME  RESUME 100                                             None           None
+   ⚠️ RESUME 'RESUME 100': NO READING on the reference -- not scored
+RESUME  RESUME "A"                                             None           None
+   ⚠️ RESUME 'RESUME "A"': NO READING on the reference -- not scored
+RESUME  RESUME 65536                                           None           None
+   ⚠️ RESUME 'RESUME 65536': NO READING on the reference -- not scored
+DATA    READ A:DATA X                                       (2, 20)        (2, 20)
+DATA    READ A:DATA "1"                                     (2, 20)        (2, 20)
+DATA    READ A%:DATA 99999                                  (6, 20)             OK
+DATA    READ A:DATA 1E99                                    (6, 20)        (2, 20)
+DATA    READ A,B,C:DATA ,                                   (4, 20)        (4, 20)
+
+# the reference's error set per keyword form (code: first case)
+FRE    free-ram       2: A=FRE()
+FRE    free-string-space 2: A=FRE("","")
+VAL    integer        2: A=VAL()  13: A=VAL(5)
+VAL    exponent       6: A=VAL("1E99")
+VAL    radix-prefix   6: A=VAL("&HFFFFF")
+VAL    fraction       2: A=VAL(".5",1)
+VAL    partial-parse  2: A=VAL("12X",1)
+USR    default        2: A=USR
+USR    numbered       2: A=USR1(1,2)
+VARPTR variable       2: A=VARPTR(5)
+VARPTR file-channel   13: A=VARPTR(#"A")  52: A=VARPTR(#16)
+WAIT   port-mask      2: WAIT 1  5: WAIT 1,256  6: WAIT 256*256,1  13: WAIT "A",1  24: WAIT
+WAIT   port-mask-xor  5: WAIT 1,1,256  13: WAIT 1,1,"A"
+WIDTH  text-width     5: WIDTH 41  13: WIDTH "A"  24: WIDTH
+WIDTH  mode1-width    5: SCREEN 1:WIDTH 33  13: SCREEN 1:WIDTH "A"
+PRINT  tab-item       2: PRINT TAB()  5: PRINT TAB(256)  13: PRINT TAB("A")
+PRINT  spc-item       2: PRINT SPC()  5: PRINT SPC(256)  13: PRINT SPC("A")
+DATA   unquoted-string 2: READ A:DATA X
+DATA   quoted-string  2: READ A:DATA "1"
+DATA   numeric        6: READ A%:DATA 99999
+DATA   empty-item     4: READ A,B,C:DATA ,
+refcache: 0 hit, 2 miss, 2 stored
