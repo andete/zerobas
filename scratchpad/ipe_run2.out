@@ -1,0 +1,6 @@
+case                   CF-3300              zerobas
+✗ z_len              [HI| 2 3OK]          [HI| 3 3OK]
+✗ z_eofcr            [HI|-1 5OK]          [HI| 0 5OK]
+✗ z_mid          [A|-1 4 55 40 ]        [A| 0 4 26OK]
+✗ z_midin             [A| 1-1OK]          [AB| 4-1OK]
+refcache: 0 hit, 8 miss, 8 stored

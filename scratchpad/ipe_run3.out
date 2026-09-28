@@ -1,0 +1,6 @@
+case                   CF-3300              zerobas
+✗ lf_swal           [HI| 55 30 ]           [HI| 10OK]
+✗ lf_line           [HI| 55 30 ]           [HI| 10OK]
+  lf_eof                [A| 0OK]             [A| 0OK]
+✗ loop               [L1L2| 2OK]          [L1L2| 3OK]
+refcache: 0 hit, 8 miss, 8 stored

@@ -1,0 +1,10 @@
+case                   CF-3300              zerobas
+✗ empty               [| 55 30 ]                [|OK]
+✗ second            [HI| 55 40 ]              [HI|OK]
+  noterm               [HI|-1OK]            [HI|-1OK]
+✗ line2             [HI| 55 40 ]              [HI|OK]
+✗ dol_part           [X| 55 30 ]             [ 5 |OK]
+✗ dol_all         [HI |Y 55 40 ]             [ 4 |OK]
+✗ list2            [HI|Y 55 30 ]              [HI|OK]
+  comma                  [HI|OK]              [HI|OK]
+refcache: 0 hit, 16 miss, 16 stored

@@ -6019,7 +6019,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:26424 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:26489 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -25529,8 +25529,10 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
         `NAME "A.TXT"` (53 there, 2 here): T6 needs ONE agreeing row per (form,
         code), and 53 already has one (`NAME "NOSUCH.TXT" AS …`).
       • **the common error paths:** `INPUT #` / `INPUT$(n,#)` past the end
-        (55 → ok), `EOF` / `INPUT #` / `PRINT #` on a channel opened the other
-        way (61 / 52 → ok).
+        (55 → ok) — ➡️ **now its own TIER 1 item, D-SEQEOF (below): it is not
+        just a missing code, zerobas reads the Ctrl-Z end marker as DATA and the
+        textbook `IF EOF(1)` loop reads one line too many** — `EOF` / `INPUT #` /
+        `PRINT #` on a channel opened the other way (61 / 52 → ok).
       • **wrong code:** `OPEN "A*.TXT"` 56 → 53; `LEN="A"` 13 → 5; bare `LEN`
         2 → 5; `NAME "A.TXT"` 53 → 2; `COPY "A.TXT"` 53 → 5; `GET`/`PUT #1,"A"`
         13 → 5; `BLOAD "X.BIN",Q` 53 → ok.
@@ -25543,6 +25545,69 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       in batch mode a wrong one poisons its neighbours); the denominator in
       `tools/kwerrset.py` still holds them, so OPEN, KILL, NAME, FILES, EOF,
       LOAD, SAVE, BSAVE, GET #, PUT #, INPUT # and INPUT$ stay T6-.
+
+- [ ] 🔴 **A SEQUENTIAL FILE READS ITS CTRL-Z END MARKER AS DATA: THE TEXTBOOK
+      `IF EOF(1) … LINE INPUT #1` LOOP READS ONE LINE TOO MANY, AND NO READ EVER
+      SAYS `Input past end` (D-SEQEOF, found 2026-09-28 from D-DISKERRS).**
+      🎚️ TIER 1 — happy path: reading a text file line by line until EOF is the
+      way every program reads a file, and it gets an extra `CHR$(26)` line.
+      🤖 **AUTONOMOUS** — the reference settles every rule below; the blocker is
+      MAIN BYTES, and the funding route is named at the end.
+      📏 [`scratchpad/ipe_probe.py`](scratchpad/ipe_probe.py), 16 cases, one boot
+      each, the CF-3300 against zerobas's DISK build, a private image each:
+      [`ipe_run.out`](scratchpad/ipe_run.out) (the error),
+      [`ipe_run2.out`](scratchpad/ipe_run2.out) (Ctrl-Z),
+      [`ipe_run3.out`](scratchpad/ipe_run3.out) (the LF and the loop). 12 differ.
+      **The reference's rule, three parts, every prediction held:**
+      • **R1 — Ctrl-Z ($1A) is a soft end of file, and it is NOT consumed.**
+        `INPUT` stops before it (`"HI"` with no CRLF reads LEN 2 there, 3 here);
+        `EOF(1)` is −1 as soon as it is the NEXT byte (after `INPUT$` took the
+        `"A"` of `"A"+CHR$(26)+"B"`: −1 there, 0 here); a read AT it is 55
+        (zerobas hands back ASC 26). `LOF` still counts it (3 / 5 on both).
+      • **R2 — `INPUT #` and `LINE INPUT #` swallow the LF after their CR;
+        `INPUT$` does not.** After `INPUT #1,A$` over `"HI"+CRLF`, `EOF(1)` is −1
+        and `INPUT$(1,#1)` is 55 on the reference; zerobas leaves the LF, so
+        EOF is 0 and INPUT$ returns ASC 10. `INPUT$(4,#1)` over the same file
+        returns all 4 bytes on both (the CR-LF pair is data to INPUT$).
+      • **R3 — a read at EOF raises 55, and the target keeps its old value.**
+        Empty file, a second `INPUT #`, a second `LINE INPUT #`, the second target
+        of `INPUT #1,A$,B$` (A$ assigned, B$ not), `INPUT$(5,#1)` of a 4-byte
+        file (A$ keeps `"X"`), `INPUT$` exactly at the end. A field ENDED by the
+        EOF is fine (`"HI"` without CRLF reads `HI`, no error, on both).
+      🎯 **THE LOOP ROW:** `L1`,`L2` written by `PRINT #`; `IF EOF(1) THEN 50 :
+      LINE INPUT #1,C$ : N=N+1` → **N = 2 on the reference, 3 here.** That is R1
+      and R2 together: after `L2`'s CR the LF and the Ctrl-Z are still unread, so
+      EOF says 0, and the next LINE INPUT skips the LF and reads the Ctrl-Z.
+      🔴 **IT IS NOT ONE MISSING `ld a,55`.** R3 alone would never fire on a file
+      either machine writes — the Ctrl-Z is always there and zerobas reads it as
+      a byte. R1 without R2 still gets the loop wrong (EOF sees the LF).
+      ⚠️ **THE READER IS SHARED WITH CONSOLE INPUT.** `read_into_strscr` also
+      serves `INPUT` / `LINE INPUT` from the keyboard (`linebuf_getbyte`), where
+      an empty line is NOT an error; the 55 belongs at the FILE call sites. And
+      `fatio-body.inc` is shared with the sub-ROM BLOAD tenant, where a $1A inside
+      a binary must NOT end the read — R1 belongs in main's copy only, which
+      `IF SUB_BUILD` already provides (`basic/bload-body.inc` uses it). Main's
+      copy of `fat_io_getbyte` is reached ONLY through `ARL_GETBYTE` (INPUT #,
+      INPUT$, ASCII LOAD/MERGE — the last already stops at Ctrl-Z), so R1 there
+      changes nothing else.
+      💰 **PRICED 2026-09-28: ~45 B OF MAIN.** Split main's `fat_io_getbyte` into a
+      non-consuming peek + an advance (+10 with the Ctrl-Z test), an LF-skip latch
+      set at `ris_lp`'s CR and honoured by the peek (~26, and it must not leak
+      across channels — `fch_select` swaps the FREAD_* cells but not a new
+      latch), EOF() through the peek (−3), 55 at the INPUT# and INPUT$ sites
+      (~10). A sub-ROM tenant does NOT make it cheaper: `subrom_call` ends `or a`,
+      so the EOF flag needs a RAM latch and a test in main on every byte, ~35 B
+      of stubs, plus a crossing per byte.
+      🔴 **MAIN WAS 5 B FREE ON 2026-09-28 at f91f72ea (page 1 3, low 2) AND EVERY CARVE ROUTE WAS RE-RUN THAT DAY
+      AND IS DRY:** `ngram_sweep.py --main` tops out at 11 B, `jr_mapper.py` finds
+      2 sites, and `evict_scout.py`'s rows of ≥ 40 B net are hot paths (variable
+      lookup, FOR, IF-skip, PLAY/timer ISR) except `read_line` (162 B closure,
+      sub page 1 has 135) and `pu_num_int` (its closure is `pu_fmt_int` +
+      `dgt_push`, shared with STR$ and PRINT).
+      ➡️ **THE FUNDING ROUTE IS STEP 10** (OPEN and the channel I/O into disk.rom,
+      approved 2026-09-22, 7 KB free there): once the channel read lives in
+      disk.rom this is written there, with room for the exact rule. Until then
+      the rows above are the spec.
 
 - [ ] 🔴 **`POS("A")` / `LPOS("A")` ARE `Type mismatch` HERE AND ACCEPTED ON THE
       REFERENCE (D-POSDUMMY, found 2026-09-27 by T6).**
