@@ -132,26 +132,15 @@ dl_cas_close:
                                             ; expression and take only the ,R tail
                 jr      c,load_error
                 call    do_tape_prog        ; load the tokenised program off tape
-                ret     c                   ; D-CASTAIL defect B (docs/spec-basic-
-                                            ; castail.md §3.2): the tape load FAILED and
-                                            ; has already reported. LOAD"CAS:x",R must
-                                            ; not then run whatever was resident -- both
-                                            ; references print their message and stop
-                                            ; (characterization §4, cas-loadr-brk-res)
-                ld      a,(RUNFLAG)          ; ,R ? -> run it; else back to the REPL
-                or      a
-                jp      z,end_line_end      ; 🔴 D-MERGERET: `ret z` RESUMED THE
-                                            ; STATEMENT STREAM, and after a LOAD the
-                                            ; program that stream belongs to IS GONE.
-                                            ; See the disk arm below for the measured
-                                            ; face; this arm is the same code and is
-                                            ; changed by the same reasoning, with NO
-                                            ; row -- nothing in this tree can PLAY a
-                                            ; tape (only record one), which D-KWTAPE
-                                            ; measured. Named as unmeasured rather
-                                            ; than left inconsistent with its twin.
-                jr      run_prog_top        ; RUN the loaded program -- at TOP LEVEL,
-                                            ; never nested (§3.1, and see run_prog_top)
+                jr      dl_loaded           ; D-SAVECOLON carve (-8 B page 1): the
+                                            ; tail from here was dl_is_disk's 10
+                                            ; bytes verbatim -- `ret c` (D-CASTAIL
+                                            ; defect B: a FAILED tape load has already
+                                            ; reported, so ,R must not run what was
+                                            ; resident), then ,R -> run_prog_top, else
+                                            ; end_line_end (D-MERGERET: after a LOAD the
+                                            ; statement stream is gone). The disk arm
+                                            ; carries the measured rows for both.
 
 ; --- do_load disk path: LOAD "A:name"[,R] -----------------------------------
 ; D-FNEXPR2: this paragraph used to read "HL was advanced partway through the
@@ -167,6 +156,7 @@ dl_is_disk:
                 call    pcr_noquote         ; ,R tail only -- no quote in the text
                 jr      c,load_error
                 call    disk_prog_load      ; load the tokenised program into TXTBASE
+dl_loaded:                                  ; the tape arm joins here (D-SAVECOLON)
                 ret     c                   ; D-RUNTAIL defect B (docs/spec-basic-
                                             ; runtail.md §3.2): the load FAILED and has
                                             ; already reported. LOAD"missing",R must not
@@ -797,10 +787,12 @@ err_verify:     db      "Verify",MSGESC_ERROR,0         ; 15 B -> 8 B
 ; do_cload) applies RUNFLAG exactly as the tokenised path's `ret`.
 cas_ascii_load:
                 call    cas_ascii_setup     ; skip the rest of the header + prime block 1
-                jp      c,dpl_err           ; header / block-1 unreadable -> load error
+                jr      c,dpl_err           ; header / block-1 unreadable -> load error
+                                            ; (D-SAVECOLON carve: jp -> jr, in range
+                                            ; since D-CARVECAS moved the reader out)
                 call    new_prog            ; LOAD replaces the current program
                 call    cas_ascii_drive     ; read+tokenise+store via the tape source
-                jp      c,dpl_err           ; non-numbered line -> abort
+                jr      c,dpl_err           ; non-numbered line -> abort (jp -> jr)
                 ret                         ; caller handles ,R / returns to the REPL.
                                             ; D-CASTAIL: CF is ALREADY CLEAR here (the
                                             ; `jp c` above did not take), so the ASCII

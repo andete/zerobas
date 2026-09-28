@@ -177,7 +177,10 @@ ERRSETS: dict[str, dict[str, frozenset[int]]] = {
     "LOF": {"length": frozenset({13, 52, 59})},
     "MERGE": {"merge-file": frozenset({13, 24, 53})},
     "LOAD": {"plain": frozenset({13, 24, 53}), "run": frozenset({2, 53})},
-    "SAVE": {"tokenised": frozenset({13, 24, 62}), "ascii": frozenset({2})},
+    # SAVE tokenised gained 2 on 2026-09-28: batch 8 never asked a junk TAIL, and
+    # `SAVE "J.BAS" 5` is Syntax error on the CF-3300, raised before any write
+    # (scratchpad/colon_probe.py junk5 -> scratchpad/colon_after_run.out).
+    "SAVE": {"tokenised": frozenset({2, 13, 24, 62}), "ascii": frozenset({2})},
     "BLOAD": {"plain": frozenset({13, 24, 53}), "run": frozenset({53}), "vram": frozenset({53})},
     "BSAVE": {"range": frozenset({2, 13}), "with-entry": frozenset({2, 13})},
     "COPY": {"file-to-file": frozenset({13, 53})},
@@ -222,6 +225,8 @@ PROVENANCE: dict[str, str] = {
         "scratchpad/t6enum_probe.py --batch=2 -> scratchpad/t6enum_b2.out, VG-8020")
        + ", 2026-09-27"
     for k in ERRSETS}
+PROVENANCE["SAVE"] += ("; tokenised code 2 from scratchpad/colon_probe.py -> "
+                       "scratchpad/colon_after_run.out, CF-3300, 2026-09-28")
 
 
 def errset_for(kw: str):

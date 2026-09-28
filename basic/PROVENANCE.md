@@ -1921,6 +1921,21 @@ to genuine MSX-DOS) is already established for the BDOS layer by
 `disk_probe_fwrite.py` (disk/PROVENANCE.md §FAT12 write-back); these handlers only
 drive that proven BDOS write subset.
 
+
+**The rest of the line runs (D-SAVECOLON, 2026-09-28).** Measured on the CF-3300
+(`scratchpad/colon_probe.py` → `scratchpad/colon_after_run.out`): `SAVE "X.BAS":PRINT`,
+`BSAVE "X.BIN",&HC000,&HC010:PRINT` and `BLOAD "Y.BIN":PRINT` save or load and then
+print, and real junk after SAVE's name (`SAVE "J.BAS" 5`) is `Syntax error`
+raised before anything is written. zerobas read the `:` as trailing junk
+(`load_error`) and, for all three, ended the whole line: a handler's `ret`
+returns to `exec_stmt`'s caller, not to the next statement. SAVE now requires end
+of statement (`stmt_bare_end`, else `stmt_error`) and all three continue through
+`exec_stmt` with the cursor past their arguments; BLOAD's comes back from its
+sub-ROM tenant in `FN_RESUME` (`pcr_ok`). ⚠️ Junk after BSAVE's arguments now
+raises `Syntax error` AFTER the write; the reference's order there is unmeasured.
+Funded by four carves (`jr` for `jp` in `cas_ascii_load`, `str_lr_count` for
+LEFT$/RIGHT$, `cpow_tail` for `evmc_dispatch`, `dl_loaded` for LOAD's tape arm).
+
 ## tape SAVE / CSAVE — cassette write side (basic/save.asm, basic/interp.asm, basic/sysvars.inc)
 
 The WRITE complement of *§Phase 1 cassette load* (CLOAD/LOAD"CAS:"). `CSAVE"name"`,

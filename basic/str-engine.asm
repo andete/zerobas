@@ -1254,14 +1254,7 @@ str_fn_left:
                 jr      nz,str_arg_empty
                 inc     hl                  ; HL = cursor past ')'
                 push    hl                  ; save cursor
-                ld      l,c
-                ld      h,b                 ; HL = temp addr (kept through the clamp)
-                ld      (STRPTR),hl         ; STRPTR = temp (eval may have moved it)
-                ld      a,(bc)              ; A = templen
-                ld      b,d
-                ld      c,e                 ; BC = n (the requested count)
-                call    str_min_bc          ; A = min(templen, n) ; preserves HL=temp
-                ld      e,a                 ; E = count
+                call    str_lr_count        ; HL = temp, E = count (D-SAVECOLON carve)
                 ld      d,0                 ; D = start = 0 (LEFT$ -> pure truncation)
                 ld      b,h
                 ld      c,l                 ; BC = temp addr
@@ -1285,20 +1278,33 @@ str_fn_right:
                 jr      nz,str_arg_empty
                 inc     hl
                 push    hl
-                ld      l,c
-                ld      h,b                 ; HL = temp addr (kept through the clamp)
-                ld      (STRPTR),hl         ; STRPTR = temp
-                ld      a,(bc)              ; templen
-                ld      b,d
-                ld      c,e                 ; BC = n (the requested count)
-                call    str_min_bc          ; A = count = min(templen, n) ; HL=temp preserved
-                ld      e,a                 ; E = count
+                call    str_lr_count        ; HL = temp, E = count (D-SAVECOLON carve)
                 ld      a,(hl)              ; templen (HL still = temp base)
                 sub     e                   ; A = start = templen - count
                 ld      d,a                 ; D = start
                 ld      b,h
                 ld      c,l                 ; BC = temp addr
                 jr      str_slice_done      ; D-CARVE2 (-4 B, low region)
+
+; str_lr_count -- the clamp LEFT$ and RIGHT$ both ran verbatim (D-SAVECOLON carve,
+; 2026-09-28, -5 B low region; scratchpad/ngram_sweep.py --main ranked the pair).
+;   in : BC = the temp copy [len][bytes], DE = n (the requested count)
+;   out: HL = temp, (STRPTR) = temp, E = min(templen, n). Clobbers A, BC.
+; 🔴 ONLY THIS MIDDLE SPAN IS SHARED, AND THAT IS THE WHOLE CONSTRAINT. The prefix
+; before it is just as identical, but its `jr nc/nz,str_arg_empty` exits reach
+; str_eval_no, a DEFERRED error that RETURNS to the evaluator -- a helper's return
+; address (or a selector flag parked on the stack) would be left under it. This
+; span starts after both sites' own `push hl` and has no exit, so a call is exact.
+str_lr_count:
+                ld      l,c
+                ld      h,b                 ; HL = temp addr (kept through the clamp)
+                ld      (STRPTR),hl         ; STRPTR = temp (eval may have moved it)
+                ld      a,(bc)              ; A = templen
+                ld      b,d
+                ld      c,e                 ; BC = n (the requested count)
+                call    str_min_bc          ; A = min(templen, n) ; preserves HL=temp
+                ld      e,a                 ; E = count
+                ret
 
 ; MID$(a$,p[,n]): count bytes from 1-based position p (or to end if n omitted).
 ; p<1 is clamped to the start; p>len yields "". Snapshot, then slice.

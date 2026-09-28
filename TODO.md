@@ -6019,7 +6019,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:26523 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:26583 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -25579,6 +25579,66 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       in batch mode a wrong one poisons its neighbours); the denominator in
       `tools/kwerrset.py` still holds them, so OPEN, KILL, NAME, FILES, EOF,
       LOAD, SAVE, BSAVE, GET #, PUT #, INPUT # and INPUT$ stay T6-.
+
+- [x] ✅ **FIXED 2026-09-28 (D-SAVECOLON): `SAVE`, `BSAVE` AND `BLOAD` LET THE REST OF
+      THEIR LINE RUN.** 🎚️ TIER 1 — happy path: `BLOAD"X.BIN":DEFUSR=&HC000` is how
+      a BASIC loader is written. Found by D-ERRKEEP2's write-protect probe, whose
+      every row put a `:` statement after the verb.
+      📏 [`scratchpad/colon_probe.py`](scratchpad/colon_probe.py), 13 cases, every disk
+      verb followed by `:PRINT"[OK]"`, the CF-3300 against zerobas's DISK build:
+      before [`colon_run.out`](scratchpad/colon_run.out) — SAVE, `SAVE … ` (a space),
+      BSAVE (3 and 4 arguments) and BLOAD failed, the other seven agreed; after
+      [`colon_after_run.out`](scratchpad/colon_after_run.out) — all 13 agree.
+      Two causes: SAVE read the `:` as trailing junk (`or a / jp nz,load_error`), and
+      all three returned with `ret`, which ends the LINE (the dispatcher enters a
+      handler by `push de / ret`, so the handler's `ret` goes to `exec_stmt`'s
+      caller). Now SAVE demands end of statement (junk is `Syntax error` BEFORE the
+      write, as `junk5` measured — the reference creates no file) and all three `jp
+      exec_stmt` with the cursor past their arguments; BLOAD's comes back from the
+      sub-ROM tenant in `FN_RESUME`.
+      💰 **+17 B of main page 1, funded by four carves** (page 1 3 → 21 → 4, low 2 →
+      7): `jp`→`jr` ×2 in `cas_ascii_load`; `str_lr_count`, the clamp LEFT$ and RIGHT$
+      ran verbatim (only the middle span — their `str_arg_empty` exits RETURN through
+      `str_eval_no`, so neither a helper's return address nor a flag may sit on the
+      stack there); `cpow_tail`, `evmc_dispatch`'s 11-byte `subrom_call` tail; and
+      `dl_loaded`, LOAD's tape arm joining the disk arm's `,R` tail.
+      Rows `t8savetokenised2` (PROVES-T6:2 — SAVE's tokenised set GAINED 2, which
+      batch 8 never asked), `t8savecolon`, `t8bsavecolon`, `t8bloadcolon`. kwsweep 866
+      SUPPORTED. 🔴 Adding them pushed `t8namerenameopen` (four file operations) past
+      the CF-3300's capture window: its reference reading came back as the bare
+      function-key bar while zerobas read 65. Shortened to one open file plus
+      `NAME "HI.TXT" AS "HI.TXT"` (the fixture's own file, refused, unchanged).
+      ⚠️ NOT MEASURED: the cassette forms (`BSAVE"CAS:…"`, `BLOAD"CAS:…"`) — the
+      same `ret`, no tape to play here.
+
+- [ ] 🔴 **ZEROBAS NEVER SAYS `Disk write protected`: EVERY WRITE TO A PROTECTED DISK
+      "SUCCEEDS" (D-WPROTECT, found 2026-09-28).**
+      🎚️ TIER 3 — common errors, and it loses data silently: the program believes it
+      saved.
+      🤖 **AUTONOMOUS** — the reference settles it; trace our own driver.
+      📏 [`scratchpad/errkeep2_probe.py`](scratchpad/errkeep2_probe.py) → [`errkeep2_run3.out`](scratchpad/errkeep2_run3.out)
+      (a private copy of the fixture image made read-only on the host, which the
+      emulator mounts write-protected): `SAVE`, `SAVE ,A`, `BSAVE` and `OPEN … FOR
+      OUTPUT` all raise 68 on the CF-3300 and answer OK on zerobas — with or without
+      another file open. `disk/driver.asm` does test the FDC's write-protect bit
+      (bit 6 → DSKIO code 0 → 68 in `dc_fail`), so the first question is whether that
+      arm is ever reached: a watchpoint on `DISKOP_ERR` saw only zeros
+      ([`scratchpad/wpsave_trace.py`](scratchpad/wpsave_trace.py)).
+      ⚠️ The round-1 readings ([`errkeep2_run.out`](scratchpad/errkeep2_run.out)) are
+      CONTAMINATED — every row had a `:` after its verb, i.e. D-SAVECOLON.
+      ➡️ AND D-ERRKEEP2 (below the D-DISKERRS item) CANNOT BE MEASURED THIS WAY UNTIL
+      THIS IS FIXED: write protect was meant to be its error source.
+
+- [ ] 🔴 **`COPY` AND `NAME` OF AN OPEN FILE ARE `File still open` (64) ON THE CF-3300
+      AND GO THROUGH HERE (D-COPYNAMEOPEN, found 2026-09-28).**
+      🎚️ TIER 3 — the KILL shape, on the two other directory verbs.
+      🤖 **AUTONOMOUS** — disk.rom only: `hk_copy` / `hk_name` can call D-KILLOPEN's
+      `hkk_open_check` on the source name before touching anything.
+      📏 [`errkeep2_run3.out`](scratchpad/errkeep2_run3.out): `wp_copy` (`COPY "HI.TXT"
+      TO "HJ.TXT"` with HI.TXT open FOR INPUT) and `wp_name` (`NAME "HI.TXT" AS
+      "HJ.TXT"`, same) read 64 on the CF-3300 and OK here. Those rows ran on a
+      write-protected image, so re-measure on a writable one; whether COPY also
+      refuses an open DESTINATION is unasked.
 
 - [ ] 🔴 **A SEQUENTIAL FILE READS ITS CTRL-Z END MARKER AS DATA: THE TEXTBOOK
       `IF EOF(1) … LINE INPUT #1` LOOP READS ONE LINE TOO MANY, AND NO READ EVER

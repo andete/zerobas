@@ -1,0 +1,55 @@
+reading: [ 0 0 ]
+  bp ex_save A8=FC
+  bp diskslot_test A8=F0
+  bp diskslot_test A8=F0
+  bp ex_save A8=FC
+  bp ex_save A8=FC
+  bp disk_write_begin A8=FC
+  bp disk_write_begin A8=FC
+  bp disk_write_begin A8=FC
+  bp disk_write_begin A8=FC
+  bp disk_write_begin A8=FC
+  bp disk_write_begin A8=FC
+  bp disk_write_begin A8=FC
+  bp disk_write_begin A8=FC
+  bp disk_write_begin A8=FC
+  bp disk_write_begin A8=FC
+  bp disk_write_begin A8=FC
+  bp disk_write_begin A8=FC
+  bp disk_write_begin A8=FC
+  bp disk_write_begin A8=FC
+  bp disk_write_begin A8=FC
+  bp disk_write_begin A8=FC
+  bp disk_write_begin A8=FC
+  bp disk_write_begin A8=FC
+  bp disk_write_begin A8=FC
+  bp disk_write_begin A8=FC
+  bp disk_write_begin A8=FC
+  bp disk_write_begin A8=FC
+  bp disk_write_begin A8=FC
+  bp disk_write_begin A8=FC
+  bp disk_write_begin A8=FC
+  bp disk_write_begin A8=FC
+  bp disk_write_begin A8=FC
+  bp disk_write_begin A8=FC
+  bp disk_write_begin A8=FC
+  bp disk_write_begin A8=FC
+  bp disk_write_begin A8=FC
+  bp disk_write_begin A8=FC
+  bp disk_write_begin A8=FC
+  bp disk_write_begin A8=FC
+  bp disk_write_begin A8=FC
+  bp disk_write_begin A8=FC
+  bp disk_write_begin A8=FC
+  bp disk_write_begin A8=FC
+  bp disk_write_begin A8=FC
+  bp disk_write_begin A8=FC
+  bp disk_write_begin A8=FC
+  bp ex_save A8=F0
+  bp load_error A8=F0
+4 write(s) to DISKOP_ERR (value, pc, A8, candidates):
+    0  pc=5722  A8=FC  main:exp_stmt_end+0 | sub:fatprim_tenant+1 | disk:k_55FF+291
+    0  pc=5856  A8=FC  main:exp_tab+12 | sub:dc_result+3 | disk:k_55FF+599
+    0  pc=5722  A8=FC  main:exp_stmt_end+0 | sub:fatprim_tenant+1 | disk:k_55FF+291
+    0  pc=5856  A8=FC  main:exp_tab+12 | sub:dc_result+3 | disk:k_55FF+599
+refcache: 0 hit, 1 miss, 1 stored

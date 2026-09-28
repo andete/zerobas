@@ -1,0 +1,6 @@
+case               CF-3300          zerobas
+✗ sv_colon              [OK]          [ 0 0 ]
+  sv_line               [OK]             [OK]
+✗ bs_colon              [OK]          [ 0 0 ]
+  sa_colon              [OK]             [OK]
+refcache: 0 hit, 8 miss, 8 stored

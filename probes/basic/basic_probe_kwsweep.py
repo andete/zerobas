@@ -4331,13 +4331,30 @@ SWEEP: list[tuple[str, str, str | None, str, str]] = [
     # CF-3300 and deleted the file under a live channel here
     # (scratchpad/killopen_probe.py). Its own names: the refused file stays behind
     # on the image, and nothing else may trip over it.
+    # D-SAVECOLON (2026-09-28): SAVE / BSAVE / BLOAD ended the LINE, and SAVE
+    # read the `:` of a following statement as junk -- `SAVE "X.BAS":PRINT 1`
+    # never saved and never printed (scratchpad/colon_probe.py). Real junk is
+    # Syntax error on the CF-3300 BEFORE the write, which batch 8 never asked.
+    ('t8savetokenised2', 'save "sj.bas" 5', 'SAVE "SJ.BAS" 5', "stored",
+     "NEEDS-DISK: PROVES-T6:2 SUBJECT:SAVE FORM:tokenised"),
+    ('t8savecolon', 'save "sc.bas":print "sc"', 'SAVE "SC.BAS":PRINT "SC"', "stored",
+     "NEEDS-DISK: SUBJECT:SAVE FORM:tokenised"),
+    ('t8bsavecolon', 'bsave "sb.bin",&hc000,&hc010:print "bs"', 'BSAVE "SB.BIN",&HC000,&HC010:PRINT "BS"', "stored",
+     "NEEDS-DISK: SUBJECT:BSAVE FORM:range"),
+    ('t8bloadcolon', 'bsave "sl.bin",&hc000,&hc010:bload "sl.bin":print "bl"', 'BSAVE "SL.BIN",&HC000,&HC010:BLOAD "SL.BIN":PRINT "BL"', "stored",
+     "NEEDS-DISK: SUBJECT:BLOAD FORM:plain"),
     ('t8killdeletefile64', 'open "ko.txt" for output as #1:kill "ko.txt"', 'OPEN "KO.TXT" FOR OUTPUT AS #1:KILL "KO.TXT"', "stored",
      "NEEDS-DISK: PROVES-T6:64 SUBJECT:KILL FORM:delete-file"),
     # D-ERRKEEP (2026-09-28): the SAME 65 as t8namerename65, with a file OPEN. It
     # read ERR 0 here -- chan_gate's restore re-staged the live channel and every
     # successful sector read writes DISKOP_ERR = 0, so the code was gone before
     # main decoded it. Not a PROVES row (65 has one); it guards the mechanism.
-    ('t8namerenameopen', 'open "no1.txt" for output as #1:close:open "no2.txt" for output as #1:close:open "zo.txt" for output as #1:name "no1.txt" as "no2.txt"', 'OPEN "NO1.TXT" FOR OUTPUT AS #1:CLOSE:OPEN "NO2.TXT" FOR OUTPUT AS #1:CLOSE:OPEN "ZO.TXT" FOR OUTPUT AS #1:NAME "NO1.TXT" AS "NO2.TXT"', "stored",
+    # 🔴 SHORTENED 2026-09-28 (D-SAVECOLON's sweep): the first cut created two files
+    # before the open one, and once four rows ahead of it were added the CF-3300's
+    # reading came back as the bare function-key bar -- its output was not yet on
+    # screen when the batch captured (zerobas read 65 correctly). The fixture's own
+    # HI.TXT renamed onto itself is 65 with ONE file opened, and changes nothing.
+    ('t8namerenameopen', 'open "zo.txt" for output as #1:name "hi.txt" as "hi.txt"', 'OPEN "ZO.TXT" FOR OUTPUT AS #1:NAME "HI.TXT" AS "HI.TXT"', "stored",
      "NEEDS-DISK: SUBJECT:NAME FORM:rename"),
     ('t8openoutput62', 'open "q:x.txt" for output as #1', 'OPEN "Q:X.TXT" FOR OUTPUT AS #1', "stored",
      "NEEDS-DISK: PROVES-T6:62 SUBJECT:OPEN FORM:output"),

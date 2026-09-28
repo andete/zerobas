@@ -1,0 +1,9 @@
+case               CF-3300          zerobas
+✗ wp_ctl           [ 68 30 ]             [OK]
+✗ wp_save          [ 68 30 ]             [OK]
+✗ wp_asave         [ 68 30 ]             [OK]
+✗ wp_bsave         [ 68 30 ]             [OK]
+✗ wp_copy          [ 64 30 ]             [OK]
+✗ wp_name          [ 64 30 ]             [OK]
+✗ wp_out           [ 68 30 ]             [OK]
+refcache: 0 hit, 14 miss, 14 stored

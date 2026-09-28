@@ -1,0 +1,15 @@
+case                 CF-3300            zerobas
+✗ save                    [OK]            [ 0 0 ]
+✗ save_sp                 [OK]            [ 0 0 ]
+  asave                   [OK]               [OK]
+✗ bsave                   [OK]            [ 0 0 ]
+✗ bsave_x                 [OK]            [ 0 0 ]
+✗ bload                   [OK]            [ 0 0 ]
+  copy                    [OK]               [OK]
+  name                    [OK]               [OK]
+  kill                    [OK]               [OK]
+  files                   [OK]               [OK]
+  open                    [OK]               [OK]
+  close                   [OK]               [OK]
+✗ junk5            [ 2 53 40 ]        [ 0 53 40 ]
+refcache: 0 hit, 26 miss, 26 stored

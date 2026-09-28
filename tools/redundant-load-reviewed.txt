@@ -27,6 +27,7 @@
 fch_modes_ptr    POINTER  returns HL = FCH_MODES + A; the load reads the mode byte
 pu_deref_body    POINTER  returns HL = RVDESC / the body pointer it just built
 ztrap_entry      POINTER  returns HL = ZTRAP + 3A; the load reads the trap state
+str_lr_count     CLOBBER  returns A = E = the CLAMPED count; HL = temp, so (HL) is templen -- a different value (RIGHT$ needs it; D-SAVECOLON 2026-09-28)
 tgt_desc_fix     POINTER  returns HL = offset + ARYTAB (the D-ARYLV §13a fixup)
 df_entptr        POINTER  returns HL = FSECTOR_BUF + entry offset
 

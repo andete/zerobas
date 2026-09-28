@@ -230,6 +230,8 @@ pcr_err:
                 scf
                 ret
 pcr_ok:
+                ld      (FN_RESUME),hl      ; D-SAVECOLON: the cursor past the tail,
+                                            ; for main's load_handoff to continue at
                 or      a                   ; CF clear = success
                 ret
 

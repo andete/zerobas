@@ -2181,11 +2181,12 @@ evmc_dispatch:
                 push    ix                  ; guard the text cursor
                 push    hl
                 pop     ix                  ; IX = tenant entry
-                call    subrom_call         ; CF=1 iff sub-ROM absent. Result in FAC.
-                pop     ix                  ; restore the text cursor (flags survive)
-                jp      c,subrom_absent_error ; reduced build w/o sub-ROM (never on the
-                                            ; merged machine, which always ships it)
-                jp      fac_dbl_int16       ; D-NGRAM14: tail -- FACTYP=8, then
+                jp      cpow_tail           ; D-SAVECOLON carve (-8 B page 1): the
+                                            ; rest was cpow_dispatch's 11 bytes
+                                            ; verbatim -- `call subrom_call / pop ix
+                                            ; (flags survive) / jp c,subrom_absent_error
+                                            ; / jp fac_dbl_int16` (float-arith.asm).
+                                            ; D-NGRAM14: tail -- FACTYP=8, then
                                             ; DE := flt_to_int16(FAC). The body is
                                             ; in basic/float-arith.asm, page-0 low:
                                             ; two of its four reachers run with page 1

@@ -152,8 +152,18 @@ bsv_is_disk:
 bsv_set_exec:
                 ld      (EXECPTR),de
 bsv_open:
+                ; D-SAVECOLON: `jp sv_tenant` returned from the HANDLER, which ends
+                ; the line -- `BSAVE "X.BIN",&HC000,&HC010:PRINT 1` never printed
+                ; (the CF-3300 does; scratchpad/colon_probe.py). HL is the cursor
+                ; past the last argument; sv_tenant raises on failure (SP reset),
+                ; so only the success path comes back to the pop.
+                ; ⚠️ Junk after the arguments now meets exec_stmt: ERR 2, but AFTER
+                ; the write -- the reference's order for BSAVE is unmeasured.
+                push    hl
                 ld      a,SV_OP_BSV_DISK
-                jp      sv_tenant           ; BSAVE -> disk: the write engine is a tenant
+                call    sv_tenant           ; BSAVE -> disk: the write engine is a tenant
+                pop     hl
+                jp      exec_stmt
 
 ; --- tape BSAVE path ---
 bsv_is_cas:
@@ -202,8 +212,21 @@ sav_is_disk:
                 ; --- optional ,A -> ASCII listing save; else tokenised ------
                 call    skip_comma
                 jr      z,sav_ascii_flag    ; SAVE"name",<flag> -> check for ,A
-                or      a
-                jp      nz,load_error       ; trailing junk after the name
+                ; 🔴 D-SAVECOLON (2026-09-28): `SAVE "X.BAS":PRINT 1` FAILED HERE.
+                ; This was `or a / jp nz,load_error`, so the `:` of a following
+                ; statement read as "trailing junk" and the save never happened; and
+                ; the `ret z` below then ended the whole LINE (a handler's `ret`
+                ; returns to exec_stmt's caller). Measured on the CF-3300
+                ; (scratchpad/colon_probe.py): `SAVE "X.BAS":PRINT"[OK]"` saves and
+                ; prints; real junk (`SAVE "J.BAS" 5`) is Syntax error BEFORE any
+                ; write -- the file is not created. So: end of statement or ERR 2,
+                ; then continue the line from the cursor.
+                ; `dec hl` because stmt_bare_end opens with rst $10 (inc hl + skip
+                ; spaces): skip_comma left HL ON the byte, so this lands back on it.
+                dec     hl
+                call    stmt_bare_end       ; Z iff 0 or ':'
+                jp      nz,stmt_error       ; junk: ERR 2, nothing written (junk5)
+                push    hl                  ; the statement's end, for exec_stmt
                 ; --- SAVE -> disk, tokenised: HAND IT TO disk.rom ------
                 ; D-SAVEPORT, step 12 (spec-diskcode-eviction.md §6.6ao), same
                 ; ruling and same cell as step 9's LOAD. This used to be
@@ -218,8 +241,9 @@ sav_is_disk:
                 ld      a,FOPEN_SEL_SAVE
                 call    fopen_cross         ; unclaimed -> ERR 5; claimed -> it ran;
                                             ; A = DISKOP_STATUS, Z iff 0 (D-CARVEFO)
-                ret     z                   ; 0 = written
-                jp      disk_error          ; 3 = mount / disk full / write / I-O
+                pop     hl                  ; flags survive the pop
+                jp      nz,disk_error       ; 3 = mount / disk full / write / I-O
+                jp      exec_stmt           ; 0 = written: the rest of the line runs
 
 ; --- SAVE"name",A -> ASCII listing save --------------------------------------
 ; sav_ascii_flag: HL is at the ',' after the filename. Accept only ",A" (any

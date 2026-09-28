@@ -93,9 +93,14 @@ do_bload:
 
 ; load_handoff — shared ,R exec handoff, RESIDENT in both builds (see above).
 load_handoff:
+                ; D-SAVECOLON: `ret z` ended the LINE, so `BLOAD "Y.BIN":PRINT 1`
+                ; never printed (the CF-3300 does; scratchpad/colon_probe.py). The
+                ; tenant parses the `,R`/`,S` tail and now leaves the cursor past it
+                ; in FN_RESUME (sub/bload.asm pcr_ok); plain BLOAD continues there.
+                ld      hl,(FN_RESUME)
                 ld      a,(RUNFLAG)
                 or      a
-                ret     z                   ; plain BLOAD: return to caller
+                jp      z,exec_stmt         ; plain BLOAD: the rest of the line runs
                 ld      hl,(EXECPTR)
                 jp      (hl)
 

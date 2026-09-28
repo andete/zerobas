@@ -2068,6 +2068,11 @@ cpow_dispatch:
                                             ; IS the token cursor here (same
                                             ; discipline as evmc_sqr/atn/log)
                 ld      ix,SUBROM_ENTRY_BASE_P1 + 3*SUBROM_IDX_POW
+; cpow_tail -- a ZERO-BYTE label: evmc_dispatch (basic/expr.asm) ended in these
+; exact 11 bytes and jumps here now (D-SAVECOLON carve, -8 B main page 1). The
+; entry contract is the one both sites had: IX = the tenant entry, the text cursor
+; pushed once beneath the return address.
+cpow_tail:
                 call    subrom_call         ; CF=1 iff sub-ROM absent. Result
                                             ; in FAC (COMPUTE-ONLY tenant).
                 pop     ix
