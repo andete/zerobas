@@ -1,0 +1,18 @@
+connectors: cassetteport: 
+joyporta: 
+joyportb: 
+printerport: 
+
+joystick1 -> NO (No such pluggable: joystick1)
+joystick2 -> NO (No such pluggable: joystick2)
+keyjoystick1 -> NO (No such pluggable: keyjoystick1)
+keyjoystick2 -> NO (No such pluggable: keyjoystick2)
+mouse -> OK
+trackball -> OK
+arkanoidpad -> OK
+paddle -> OK
+ninjatap -> OK
+touchpad -> OK
+joystickports size: 2
+joystickports read: 63
+joystickports read after write: 63

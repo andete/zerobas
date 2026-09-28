@@ -411,6 +411,50 @@ _PLUG_TAG = "NEEDS-PLUG:"
 RIG_CARRY = _os.path.join(_os.path.dirname(_os.path.dirname(_os.path.dirname(
     _os.path.abspath(__file__)))), "scratchpad", "kwsweep-rig-carry.json")
 _RIG_TAG = "NEEDS-RIG:"
+# 🪟 D-PADWIN: `NEEDS-WINDOW:<state>` -- a row whose input reaches openMSX ONLY
+# through its own focused WINDOW (the touchpad's pen and switch are host mouse
+# events; headless, the board's mouse reaches nothing). kwsweep has no windowed
+# runner, so such a row is CRUNCH-ONLY in SWEEP (exec None -- which is also what
+# keeps kwknife from ever choosing it as a witness) and its verdict is CARRIED
+# from WIN_CARRY, a tracked file written from a real windowed measurement.
+# 🏗️ Joost, 2026-09-28: *"as pad is very much a leaf command it makes sense to
+# have a stored verdict, having it go invalid on any rom change seems harsh"* --
+# so a carried window verdict does NOT expire with the ROM. What it records
+# beside the verdict is a digest of `gtpad`'s own INSTRUCTIONS (tape/tape.asm,
+# comments and blanks stripped), and a mismatch WARNS -- re-measure windowed --
+# without dropping the verdict.
+_WIN_TAG = "NEEDS-WINDOW:"
+WIN_CARRY = _os.path.join(_os.path.dirname(_os.path.dirname(_os.path.dirname(
+    _os.path.abspath(__file__)))), "scratchpad", "kwsweep-window-carry.json")
+
+
+def _win_state(note: str) -> str | None:
+    """The window state a row asks for (NEEDS-WINDOW:<state>), or None."""
+    for tok in _row_prefix_tags(note):
+        if tok.startswith(_WIN_TAG):
+            return tok[len(_WIN_TAG):]
+    return None
+
+
+def _gtpad_digest() -> str:
+    """sha1[:12] of gtpad's instructions: tape/tape.asm from `gtpad:` up to
+    `tape_end:`, each line's comment cut and whitespace collapsed, blanks
+    dropped -- so a comment edit is not a code change, and any instruction is."""
+    import hashlib
+    path = _os.path.join(_os.path.dirname(_os.path.dirname(_os.path.dirname(
+        _os.path.abspath(__file__)))), "tape", "tape.asm")
+    keep, on = [], False
+    for line in open(path, encoding="utf-8", errors="replace"):
+        code = " ".join(line.split(";")[0].split())
+        if code.startswith("gtpad:"):
+            on = True
+        elif code.startswith("tape_end:"):
+            break
+        if on and code:
+            keep.append(code)
+    if not keep:
+        return "NO-GTPAD"               # refuse to digest an empty span
+    return hashlib.sha1("\n".join(keep).encode()).hexdigest()[:12]
 
 
 def _rigstate_of(rigs: tuple[str, ...]) -> str | None:
@@ -631,7 +675,7 @@ def _row_prefix_tags(note: str) -> tuple[str, ...]:
     for tok in note.split():
         if (tok in _RIG_TAGS or tok in _FLAG_TAGS or tok.startswith(_T6_TAG)
                 or tok.startswith(_HOLD_TAG) or tok.startswith(_PLUG_TAG)
-                or tok.startswith(_RIG_TAG)):
+                or tok.startswith(_RIG_TAG) or tok.startswith(_WIN_TAG)):
             out.append(tok)
         else:
             break
@@ -1782,6 +1826,16 @@ SWEEP: list[tuple[str, str, str | None, str, str]] = [
     ("pad_plug_b",'a=pad(1)',    'PRINT"[";PAD(1);"]"',      "direct",
      "NEEDS-PLUG:a,arkanoidpad SUBJECT:PAD FORM:coordinate 255: index 1 is the X "
      "COORDINATE, a different quantity from index 0's sense bit"),
+    # 🪟 D-PADWIN: PAD's SWITCH, whose only input is a host mouse button on a
+    # FOCUSED openMSX window -- so no exec here, and the verdict is carried from
+    # scratchpad/kwsweep-window-carry.json (see _WIN_TAG). Measured windowed with
+    # the rp2040 rig holding mouse button 2: the VG-8020 read PAD(3) = -1 while
+    # held and 0 otherwise (scratchpad/rigfw_window_touchpad_run.out); zerobas read
+    # 0 throughout until D-PADTRACE, and -1 while held after it
+    # (scratchpad/rigfw_window_touchpad_zb_after_run.out).
+    ("pad_win_switch", 'a=pad(3)', None, "direct",
+     "NEEDS-WINDOW:switch SUBJECT:PAD FORM:switch -1 while the pen switch is held, "
+     "0 released -- both machines, windowed, 2026-09-27"),
     # 🔬 D-KWHOLD: THE CONTROL FOR THE KEY-MATRIX RIG, AND IT COMES FIRST. Every
     # STICK/STRIG/PDL row in this file reads the IDLE value, which is 0 -- exactly
     # what a stub returns -- so none of them can separate. This row holds the SPACE
@@ -5469,6 +5523,19 @@ def main() -> int:
                     if _rigstate_of(_row_rigs(n)) else (k, c, ex, m, n)
                     for k, c, ex, m, n in rows]
 
+    # D-PADWIN: window rows never execute here; each carries its windowed verdict.
+    WCARRY: dict[str, dict] = {}
+    if any(_win_state(r[4]) for r in rows if len(r) > 4):
+        try:
+            import json as _json
+            _w = _json.load(open(WIN_CARRY))
+        except (OSError, ValueError):
+            _w = {"rows": {}}
+        for k, c, ex, m, n in rows:
+            pr = _w.get("rows", {}).get(k)
+            if _win_state(n) and pr and pr.get("measured"):
+                WCARRY[k] = pr
+
     fp_before = _rom_fingerprint()
     print(f"build under measurement: {fp_before}\n")
 
@@ -5752,6 +5819,21 @@ def main() -> int:
         print("=" * 78)
         for k, cv in CARRY.items():
             print(f"  {k:12} {cv['verdict']:10} measured {cv['measured']}")
+    if WCARRY:
+        print()
+        print("=" * 78)
+        print(f"CARRIED -- {len(WCARRY)} WINDOW row(s): input that reaches openMSX only "
+              "through its\nfocused window; each keeps its windowed verdict and does "
+              "NOT expire with the ROM\n(Joost 2026-09-28). Not measured on this build.")
+        print("=" * 78)
+        live = _gtpad_digest()
+        for k, cv in WCARRY.items():
+            print(f"  {k:14} {cv['verdict']:10} measured {cv['measured']}  "
+                  f"({cv.get('source', '?')})")
+            if cv.get("code_digest") != live:
+                print(f"  ⚠️  {k}: gtpad CHANGED since it was measured (then "
+                      f"{cv.get('code_digest')}, now {live}) -- re-measure windowed "
+                      "(scratchpad/rigfw_window_probe.py); the verdict is kept")
     skipped = [(k, n) for k, _, ex, _, n in rows if ex is None]
     if skipped:
         print()
@@ -5836,6 +5918,12 @@ def main() -> int:
             except OSError as e:
                 print(f"rig carry: NOT written ({e})")
         for key, cv in CARRY.items():
+            pin["rows"][key] = {"verdict": cv["verdict"], "weak": False,
+                                "proves": None, "form": row_form(notes[key]),
+                                "subject": row_subject(notes[key]),
+                                "stmt": stmt[key], "carried": True,
+                                "measured": cv["measured"]}
+        for key, cv in WCARRY.items():        # D-PADWIN: the same shape
             pin["rows"][key] = {"verdict": cv["verdict"], "weak": False,
                                 "proves": None, "form": row_form(notes[key]),
                                 "subject": row_subject(notes[key]),

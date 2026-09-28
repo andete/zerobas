@@ -1,0 +1,11 @@
+{
+ "note": "kwsweep NEEDS-WINDOW: verdicts -- input that reaches openMSX only through its focused WINDOW (the touchpad's pen and switch are host mouse events), which kwsweep's headless battery cannot drive. Each row CARRIES the verdict of a real windowed measurement and does not expire with the ROM (Joost 2026-09-28: 'pad is very much a leaf command'). code_digest is basic_probe_kwsweep._gtpad_digest() of the gtpad that was measured; kwsweep WARNS when it no longer matches. Written by hand from the cited windowed runs, which are the only way to produce one.",
+ "rows": {
+  "pad_win_switch": {
+   "code_digest": "822e3822a03e",
+   "measured": "2026-09-27",
+   "source": "scratchpad/rigfw_window_touchpad_run.out (VG-8020: PAD(3) -1 while mouse button 2 held, 0 otherwise) vs scratchpad/rigfw_window_touchpad_zb_after_run.out (zerobas at 601a44c9, D-PADTRACE: the same)",
+   "verdict": "SUPPORTED"
+  }
+ }
+}

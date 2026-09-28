@@ -1,3 +1,8 @@
+# 2026-09-28 (D-PADWIN): rigcap_probe left this file -- its owning item (ruling 4's rig: STICK/STRIG/PAD
+# instruments) closed once PAD's switch carried its windowed verdict (Joost: "pad is very much a leaf command").
+# Re-run by hand (scratchpad/rigcap_rerun.out): unchanged from D-RIGBLOCK -- joystick1/2 and keyjoystick1/2 are
+# still "No such pluggable" and joystickports still reads 63 after a write. The question it asked (can openMSX
+# drive a joystick?) is answered around, by the rp2040 rig, rather than by the emulator.
 # 2026-09-11 (D-SCREDIT): editline_probe left this file -- its owning item (the screen editor) closed with the
 # happy path shipped; re-run by hand with the refcache off, it still only REPORTS the glass, and its three
 # boundary rows are screditor-acceptance's x.plain/x.reenter/x.vpoke now, in a machine-neutral form.
@@ -44,7 +49,6 @@ playmusicf_probe: NO-VERDICT -- "the reference marks ALL THREE voices at every P
 interpspeed_probe: NO-VERDICT -- TIME ratios zb/cf3300; the entry it serves is "THE INTERPRETER IS 2.5-3.8x SLOWER"
 put3consume_probe: NO-VERDICT -- cluster/LOF values under an explicit "read:" note, characterisation only
 hookcount_probe: NO-VERDICT -- COUNTS breakpoint entries per hook cell to answer which cells the reference's LOAD enters (spec-diskcode-eviction 6.6r). A tally of entries, not a two-sided comparison; its rows are read by a human against the eviction spec. Declared 2026-09-24.
-rigcap_probe: NO-VERDICT -- asks openMSX which joyport pluggables EXIST and whether `joystickports` takes a write. It characterises the EMULATOR, not BASIC, so there is no oracle to diverge from; the answer is a capability list. Declared 2026-09-24.
 fatbuf_probe: NO-VERDICT -- CHARACTERISES THE REFERENCE, does not compare against it: it reads which BYTES are resident in the CF-3300's RAM to count buffer REGIONS. Its own closing lines say so -- "this reads WHICH BYTES ARE RESIDENT, not which routine put them there ... evidence about REGION COUNT, never about the engine" -- and it states its own asymmetry. There is nothing to diverge from. Declared 2026-09-24.
 diskwrites_probe: NO-VERDICT -- measures the CROSSING: which cells the disk side wrote against which changed on return, and cross-checks that the two SETS differ. It reports BLIND SPOTs rather than a pass/fail, and neither set is a reference reading. Declared 2026-09-24.
 mdr_probe: NO-VERDICT -- says so in its own first line: "Feasibility scouting for MOTOR / DELETE / RENUM sweep rows", with CONTROL m0 asking whether MOTOR has ANY observable in the PPI port C value. A feasibility question, not a comparison. Declared 2026-09-24.
