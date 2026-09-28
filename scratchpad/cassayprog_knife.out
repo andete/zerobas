@@ -1,0 +1,50 @@
+python3 tools/install-repack-machine.py --merged build/zerobas-main-eu.rom --disk-rom build/disk.rom \
+	  --sub-rom build/sub.rom
+wrote C-BIOS_MSX1_EU_REPACK_DISK  (-> machine "C-BIOS_MSX1_EU_REPACK_DISK": merged repack ROM in slot 0, zerobas-disk in slot 3-1, zerobas-sub in slot 3-2)
+     /Users/joost/.openMSX/share/machines/C-BIOS_MSX1_EU_REPACK_DISK.xml
+python3 tools/install-repack-machine.py --merged build/zerobas-main-eu.rom --sub-rom build/sub.rom \
+	  --no-disk
+wrote C-BIOS_MSX1_EU_REPACK_NODISK  (-> machine "C-BIOS_MSX1_EU_REPACK_NODISK": merged repack ROM in slot 0, slot 3-1 EMPTY (diskless target), zerobas-sub in slot 3-2)
+     /Users/joost/.openMSX/share/machines/C-BIOS_MSX1_EU_REPACK_NODISK.xml
+python3 probes/basic/basic_probe_castail.py --gate \
+	        --sides 'vg8020,zb' \
+	        --only 'cas2' \
+	        --repeat 1
+castail: 5 reading(s) diverge
+msxtest: BASIC image carries islands -- loaded at $0010, not $2812
+D-CASTAIL — what a machine prints after RUN"CAS:x" / LOAD"CAS:x",R   sides: vg8020, zb
+==============================================================================
+ok   cas2-load               vg8020='Skip :SK / Found:RT'  zb='Skip :SK / Found:RT'
+ok   cas2-load:listing       vg8020='10 PRINT"ZQ9"'  zb='10 PRINT"ZQ9"'   [CONTROL]
+ok   cas2-merge              vg8020='Skip :SK / Found:RT'  zb='Skip :SK / Found:RT'
+ok   cas2-merge:listing      vg8020='10 PRINT"ZQ9" / 20 PRINT"ZQ1"'  zb='10 PRINT"ZQ9" / 20 PRINT"ZQ1"'   [CONTROL]
+ok   cas2-open               vg8020='Skip :SK / Found:RT'  zb='Skip :SK / Found:RT'
+ok   cas2-open:echo          vg8020='10 PRINT"ZQ9"'  zb='10 PRINT"ZQ9"'   [CONTROL]
+ok   cas2-openbare           vg8020='Found:SK'  zb='Found:SK'
+ok   cas2-openbare:echo      vg8020='10 PRINT"ZQ8"'  zb='10 PRINT"ZQ8"'   [CONTROL]
+ok   cas2-opencase           vg8020='<load-failed>'  zb='<load-failed>'
+ok   cas2-opencase:alive     vg8020='ZQ6'  zb='ZQ6'   [CONTROL]
+ok   cas2-bare               vg8020='Found:SK'  zb='Found:SK'
+ok   cas2-bare:listing       vg8020='10 PRINT"ZQ8"'  zb='10 PRINT"ZQ8"'   [CONTROL]
+DIFF cas2p-load              vg8020='<nothing>'  zb='Skip :SK / Found:RT'
+ok   cas2p-load:listing      vg8020='10 PRINT"ZQ9"'  zb='10 PRINT"ZQ9"'   [CONTROL]
+DIFF cas2p-merge             vg8020='<nothing>'  zb='Skip :SK / Found:RT'
+ok   cas2p-merge:listing     vg8020='10 PRINT"ZQ9"'  zb='10 PRINT"ZQ9"'   [CONTROL]
+DIFF cas2p-run               vg8020='ZQ9'  zb='Skip :SK / Found:RT / ZQ9'   [CONTROL]
+DIFF cas2p-open              vg8020='[OK]'  zb='Skip :SK / Found:RT / [OK]'   [CONTROL]
+ok   cas2-cload              vg8020='Skip :SK / Found:RT'  zb='Skip :SK / Found:RT'
+ok   cas2-cload:listing      vg8020='10 PRINT"ZQ9"'  zb='10 PRINT"ZQ9"'   [CONTROL]
+ok   cas2-cload2             vg8020='<nothing>'  zb='<nothing>'
+ok   cas2-cload2:listing     vg8020='10 PRINT"ZQ9"'  zb='10 PRINT"ZQ9"'   [CONTROL]
+DIFF cas2p-cload             vg8020='<nothing>'  zb='Skip :SK / Found:RT'
+ok   cas2p-cload:listing     vg8020='10 PRINT"ZQ9"'  zb='10 PRINT"ZQ9"'   [CONTROL]
+ok   cas2-cloadprog          vg8020='<nothing>'  zb='<nothing>'
+ok   cas2-cloadprog:listing  vg8020='10 PRINT"ZQ9"'  zb='10 PRINT"ZQ9"'   [CONTROL]
+ROWS: 26 printed, 26 scored — 21 agree, 5 diverge, 0 pinned
+==============================================================================
+21/26 scored readings agree (26 cases, 22 positive controls, 0 pinned divergence row(s))
+SIDES: vg8020,cf3300,zb — every MSX1 has a CASSETTE PORT, so unlike the disk battery the VG-8020 is a legitimate reference here
+NORMALISED: a tail that is EXACTLY the side's own aborted-load message reads '<load-failed>' (vg8020='Device I/O error', cf3300='Device I/O error', zb='load error') — the quarantined wording divergence, not re-opened here
+PINNED: the tape-search progress rows ('Found:RT', 'Skip :RT', and the same pair for 'SK') are dropped from the D-CASTAIL tails, where they are not the subject, and read UNFILTERED by every cas2-* row, where they are. All three sides print them since D-CASSEARCH, so the filter now normalises an AGREEMENT rather than blessing one machine's silence
+refcache: 0 hit, 4 miss, 4 stored
+make: *** [castail-acceptance] Error 1

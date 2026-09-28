@@ -1,0 +1,11 @@
+msxtest: BASIC image carries islands -- loaded at $0010, not $2812
+d-load           vg8020='Skip :SK / Found:RT'  cf3300='Skip :SK / Found:RT'  zb='Skip :SK / Found:RT'
+p-cload          vg8020='<nothing>'  cf3300='<nothing>'  zb='Skip :SK / Found:RT'
+p-cload:listing  vg8020='10 PRINT"ZQ9"'  cf3300='10 PRINT"ZQ9"'  zb='10 PRINT"ZQ9"'
+p-load           vg8020='<nothing>'  cf3300='<nothing>'  zb='Skip :SK / Found:RT'
+p-load:listing   vg8020='10 PRINT"ZQ9"'  cf3300='10 PRINT"ZQ9"'  zb='10 PRINT"ZQ9"'
+p-merge          vg8020='<nothing>'  cf3300='<nothing>'  zb='Skip :SK / Found:RT'
+p-merge:listing  vg8020='10 PRINT"ZQ9"'  cf3300='10 PRINT"ZQ9"'  zb='10 PRINT"ZQ9"'
+p-open           vg8020='[OK]'  cf3300='[OK]'  zb='Skip :SK / Found:RT / [OK]'
+p-run            vg8020='ZQ9'  cf3300='ZQ9'  zb='Skip :SK / Found:RT / ZQ9'
+refcache: 0 hit, 6 miss, 6 stored

@@ -214,6 +214,17 @@ csd_tok_err:
 ; nothing can land beside it -- so no battery can score trimmed against padded
 ; (characterization §6), and trimming would only cost bytes.
 cm_say:
+                ; 🔴 D-CASSAYPROG (2026-09-28): ONLY AT THE PROMPT. Run from a
+                ; PROGRAM, all five verbs print NO search row on either reference
+                ; -- CLOAD, LOAD"CAS:", MERGE"CAS:", RUN"CAS:" and OPEN"CAS:" FOR
+                ; INPUT, `<nothing>` on the VG-8020 and the CF-3300 alike, where
+                ; the same statement typed at the prompt prints `Skip :SK /
+                ; Found:RT` (scratchpad/cassayprog_probe.out). One rule fits all
+                ; five, so it is sited here with the emit, not per verb: CURLIN's
+                ; high byte is $FF only in direct mode (D-CURLIN).
+                ld      a,(CURLIN+1)
+                inc     a
+                ret     nz                  ; a program runs: no row
                 call    cm_six              ; the 6-char prefix
                 ld      hl,CAS_HDRNAME
                 call    cm_six              ; the 6-char tape header name

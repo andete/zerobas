@@ -347,6 +347,19 @@ CASES_T2 = [
     # reads it. Its reading must therefore be measured, not assumed to follow.
     ("cas2-bare",  ['LOAD"CAS:"', W_LOAD, "LIST"],                     0,
      ((2, "listing", True),)),
+    # D-CASSAYPROG: the SAME search, run FROM A PROGRAM. Both references print
+    # NO search row for any of the five verbs (scratchpad/cassayprog_probe.out)
+    # -- the subject is RUN's tail, read UNFILTERED, so a `Skip :`/`Found:` row
+    # is the divergence and `<nothing>` / the verb's own output is agreement.
+    ("cas2p-load",  [f'10 LOAD"CAS:{CAS_NAME}"', "RUN", W_LOAD2, "LIST"],  1,
+     ((3, "listing", True),)),
+    ("cas2p-merge", [f'10 MERGE"CAS:{CAS_NAME}"', "RUN", W_LOAD2, "LIST"], 1,
+     ((3, "listing", True),)),
+    ("cas2p-run",   [f'10 RUN"CAS:{CAS_NAME}"', "RUN", W_LOAD2],           1,
+     None),
+    ("cas2p-open",  ["MAXFILES=1", f'10 OPEN"CAS:{CAS_NAME}" FOR INPUT AS #1',
+                     '20 CLOSE:PRINT CHR$(91)+"OK]"', "RUN", W_LOAD2],     3,
+     None),
 ]
 
 CASES_T2T = [
@@ -365,6 +378,8 @@ CASES_T2T = [
     # (scratchpad/cload_ta_probe7.out). The subject is RUN's tail -- the search
     # rows filtered as everywhere else, so it reads `<nothing>` on a machine
     # that stopped -- and the listing is the CONTROL that the load happened.
+    ("cas2p-cload", [f'10 CLOAD"{CAS_NAME}"', "RUN", W_LOAD2, "LIST"],     1,
+     ((3, "listing", True),)),
     ("cas2-cloadprog", ["7 POKE&HE000,201", f'10 CLOAD"{CAS_NAME}"',
                         "20 POKE&HE000,202", "RUN", W_LOAD2, "LIST"],   3,
      ((5, "listing", True),)),
@@ -445,7 +460,11 @@ REC_READINGS = ("tape", "data")
 # measuring nothing at all ([[gate-can-be-green-while-measuring-nothing]]).
 # `cas2-opencase` is deliberately NOT here -- see its comment above.
 UNFILTERED_SUBJECTS = {"cas2-load", "cas2-merge", "cas2-open", "cas2-cload",
-                       "cas2-bare", "cas2-openbare"}
+                       "cas2-bare", "cas2-openbare",
+                       # D-CASSAYPROG: the in-program forms -- the ABSENCE of
+                       # the search row is their subject
+                       "cas2p-load", "cas2p-merge", "cas2p-run", "cas2p-open",
+                       "cas2p-cload"}
 
 ALL_CASES = CASES + CASES_T2 + CASES_T2T + CASES_CUTL + CASES_CUTB + CASES_REC
 
@@ -505,6 +524,13 @@ CONTROLS = {
     # D-CLOADPROG: the program CLOAD was run from is GONE -- the tape's RT is
     # what LIST shows. A machine that never loaded lists line 7.
     "cas2-cloadprog:listing": ("ZQ9",),
+    # D-CASSAYPROG: each in-program verb still DID its job -- a silent machine
+    # that loaded nothing would agree on the missing search row for free.
+    "cas2p-load:listing":     ("ZQ9",),
+    "cas2p-merge:listing":    ("ZQ9",),
+    "cas2p-run":              ("ZQ9",),
+    "cas2p-open":             ("[OK]",),
+    "cas2p-cload:listing":    ("ZQ9",),
     # ✅ D-CASOPEN: the fourth verb's control, and the row that used to be half of
     # a pinned divergence (see PINNED). ZQ9 is the SECOND file -- the whole claim
     # of `cas2-open` is that the search stepped over the first.

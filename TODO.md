@@ -6019,7 +6019,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:27005 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:27023 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -26015,8 +26015,8 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       (gated by castail); MERGE keeps the program. A sweep for `jp do_tape_prog` /
       `jp disk_prog_load` tails found no other.
 
-- [ ] 🔴 **INSIDE A RUNNING PROGRAM THE VG-8020 PRINTS NO `Skip :`/`Found:` SEARCH
-      ROWS; ZEROBAS PRINTS THEM (D-CASSAYPROG, found 2026-09-28).**
+- [x] ✅ **INSIDE A RUNNING PROGRAM THE VG-8020 PRINTS NO `Skip :`/`Found:` SEARCH
+      ROWS; ZEROBAS PRINTED THEM (D-CASSAYPROG, found and fixed 2026-09-28).**
       🎚️ TIER 1 — happy path: a program that CLOADs gets two extra screen rows here.
       🤖 **AUTONOMOUS** — measure first, then a sub-ROM tenant edit (`cm_say`).
       📏 [`cload_ta_probe6.out`](scratchpad/cload_ta_probe6.out) /
@@ -26028,6 +26028,24 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       separate them: `10 LOAD"CAS:RT"`, `10 RUN"CAS:RT"`, `10 OPEN"CAS:RT" FOR INPUT
       AS #1` and `10 MERGE"CAS:RT"` in a program, on BOTH references. castail's
       filtered rows cannot see it — the subject must be read UNFILTERED.
+      ✅ **FIXED THE SAME DAY — ONE RULE FOR ALL FIVE VERBS.** Measured first
+      ([`cassayprog_probe.py`](scratchpad/cassayprog_probe.py) →
+      [`cassayprog_probe.out`](scratchpad/cassayprog_probe.out)): run from a program,
+      CLOAD, `LOAD"CAS:"`, `MERGE"CAS:"`, `RUN"CAS:"` and `OPEN"CAS:" FOR INPUT` print
+      NO search row on the VG-8020 AND the CF-3300; typed at the prompt, `LOAD"CAS:RT"`
+      prints `Skip :SK / Found:RT` on all three sides. So the rule is "no row while a
+      program runs", not anything CLOAD-specific — prediction ("silent for all five,
+      ~65%") hit. **FIX (basic/casmatch-body.inc `cm_say`, the shared emit):**
+      `ld a,(CURLIN+1) / inc a / ret nz` — CURLIN's high byte is $FF only in direct
+      mode (D-CURLIN). +5 B sub page 1 (1 B left).
+      ✅ **GATED:** castail rows `cas2p-load`/`-merge`/`-run`/`-open`/`-cload`, subjects
+      read UNFILTERED, each with a CONTROL that the verb still worked (ZQ9 listed or
+      run, `[OK]` after the OPEN) — agree on all three sides
+      ([`cassayprog_castail.out`](scratchpad/cassayprog_castail.out)). Knife: the guard
+      removed (sub ROM `f0d17f00` → `6aaa1a76`, restored) turns exactly the five
+      subjects RED while all 21 direct-mode `cas2-*` rows stay green — the rows that
+      would catch a guard silencing the PROMPT too
+      ([`cassayprog_knife.out`](scratchpad/cassayprog_knife.out)).
 
 - [ ] 🔴 **A `DSKF` WITH A BAD ARGUMENT TAKES ~1 s HERE AND ~0.09 s ON THE CF-3300 —
       10.4–10.8×, OVER THE T2 BAR (D-DSKFSLOW, found 2026-09-28 by the type-ahead T2
