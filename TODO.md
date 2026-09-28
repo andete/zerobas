@@ -6019,7 +6019,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:26749 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:26754 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -25832,7 +25832,12 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       disk.rom this is written there, with room for the exact rule. Until then
       the rows above are the spec.
 
-- [ ] 🔴 **`WAIT port,mask` DOES NOT RANGE-CHECK A MASK PAST 255 — `WAIT 1,256` IS
+- [x] ✅ **FIXED 2026-09-28 (D-WAITMASK): WAIT's mask and xor are BYTE arguments —
+      `ex_wait` (basic/vdpio.asm) takes them with `eval_byte_checked` instead of the
+      wrapping `eval_addr`, the same swap D-RAWVAL made for OUT's value; 0 B. All of
+      batch 9's WAIT cases agree ([`waitmask_after.out`](scratchpad/waitmask_after.out)),
+      rows `t9waitportmask5` / `t9waitportmaskxor5`; WAIT reaches T6.
+      *(the filing:)* 🔴 **`WAIT port,mask` DOES NOT RANGE-CHECK A MASK PAST 255 — `WAIT 1,256` IS
       `Illegal function call` ON THE VG-8020 AND NEVER RETURNS HERE (D-WAITMASK,
       found 2026-09-28 by T6 batch 9).**
       🎚️ TIER 3 — a typo'd mask hangs the machine where the reference refuses.

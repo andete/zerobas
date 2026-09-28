@@ -76,14 +76,19 @@ ex_wait:
                 call    skip_comma          ; the mask is NOT optional
                 jp      nz,vdp_err
                 inc     hl
-                call    eval_addr           ; DE = mask
+                call    eval_byte_checked   ; DE = mask, 0..255 -- D-WAITMASK (2026-09-28):
+                                            ; was eval_addr, whose ADDRESS domain wraps, so
+                                            ; `WAIT 1,256` masked with 0 and never returned
+                                            ; where the VG-8020 raises 5
+                                            ; (scratchpad/t6enum_b9.out). Same 3 bytes; its
+                                            ; sticky-FPERR check keeps `WAIT 256*256,1` at 6
                 ld      d,e                 ; D = mask
                 ld      e,0                 ; E = xor, defaulted
                 call    skip_comma
                 jr      nz,wt_go            ; two-argument form
                 inc     hl
                 push    de                  ; guard mask+default across the eval
-                call    eval_addr           ; DE = xor
+                call    eval_byte_checked   ; DE = xor, 0..255 (D-WAITMASK: `WAIT 1,1,256` is 5)
                 ld      a,e
                 pop     de
                 ld      e,a                 ; E = the given xor

@@ -4446,6 +4446,12 @@ SWEEP: list[tuple[str, str, str | None, str, str]] = [
      "PROVES-T6:2 SUBJECT:USR FORM:numbered"),
     ('t9varptrvariable2', 'a=varptr(5)', 'A=VARPTR(5)', "stored",
      "PROVES-T6:2 SUBJECT:VARPTR FORM:variable"),
+    # D-WAITMASK (2026-09-28): the code-5 pairs, agreeing once the mask and xor are
+    # byte-checked (scratchpad/waitmask_after.out); `WAIT 1,256` never returned before.
+    ('t9waitportmask5', 'wait 1,256', 'WAIT 1,256', "stored",
+     "PROVES-T6:5 SUBJECT:WAIT FORM:port-mask"),
+    ('t9waitportmaskxor5', 'wait 1,1,256', 'WAIT 1,1,256', "stored",
+     "PROVES-T6:5 SUBJECT:WAIT FORM:port-mask-xor"),
     ('t9waitportmask24', 'wait', 'WAIT', "stored",
      "PROVES-T6:24 SUBJECT:WAIT FORM:port-mask"),
     ('t9waitportmask2', 'wait 1', 'WAIT 1', "stored",

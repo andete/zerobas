@@ -1,0 +1,16 @@
+keyword case                                           Philips_VG_8   C-BIOS_MSX1_
+WAIT    WAIT                                               (24, 20)       (24, 20)
+WAIT    WAIT 1                                              (2, 20)        (2, 20)
+WAIT    WAIT "A",1                                         (13, 20)       (13, 20)
+WAIT    WAIT 1,256                                          (5, 20)        (5, 20)
+WAIT    WAIT 1,"A"                                         (13, 20)       (13, 20)
+WAIT    WAIT 256*256,1                                      (6, 20)        (6, 20)
+WAIT    WAIT 1,1,256                                        (5, 20)        (5, 20)
+WAIT    WAIT 1,1,"A"                                       (13, 20)       (13, 20)
+WAIT    WAIT 1,1,1,1                                           None           None
+   ⚠️ WAIT 'WAIT 1,1,1,1': NO READING on the reference -- not scored
+
+# the reference's error set per keyword form (code: first case)
+WAIT   port-mask      2: WAIT 1  5: WAIT 1,256  6: WAIT 256*256,1  13: WAIT "A",1  24: WAIT
+WAIT   port-mask-xor  5: WAIT 1,1,256  13: WAIT 1,1,"A"
+refcache: 0 hit, 2 miss, 2 stored
