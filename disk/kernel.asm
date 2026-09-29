@@ -475,6 +475,105 @@ k_55FF:
 ; milestone 4 fills each contract. CLEAN-ROOM: exposing ABI entry points + own
 ; contract code, never shared-kernel bytes — same legitimacy class as the $4010
 ; BIOS jump table. Veneer safety confirmed by disk_probe_dosboot_veneer.py.
+; --- hk_mki: MKI$'s float coercion (D-MKIRANGE; own code, spec-basic-mksd.md) ---
+; Sources: the MK$ contract of docs/spec-basic-mksd.md; the DAC float layout as
+; documented in the MSX2 Technical Handbook's Math-Pack section; the range and
+; truncation rules are black-box CF-3300 oracle readings. Our own code.
+; MKI$ packs main's DE, which `eval` leaves as the argument truncated to 16 bits
+; -- right for an INTEGER, and wrong at the edges for a FLOAT: `MKI$(32768)` gave
+; -32768 here and Overflow on the CF-3300, `MKI$(-32769)` 32767 against Overflow,
+; and `MKI$(-32768.4)` 32767 against -32768 (scratchpad/mkirange_run.out). The
+; reference TRUNCATES toward zero (1.5 -> 1, -1.5 -> -1, measured to agree) and
+; overflows outside -32768..32767. So for a float this recomputes the value from
+; FAC's BCD digits (sign|exp-64, then two digits a byte, high nibble first) and
+; stores it over main's DE in STRSCR+1; out of range defers Overflow through
+; FPERR (1 -> ERR 6), first error wins, as every other factor refusal does.
+; Everything crosses in RAM (hk_mkfloat's ABI). 📍 In the $5602 fill: the tail
+; is full.
+hk_mki:
+                ld      a,(FACTYP)
+                cp      2
+                jr      z,hkmi_done         ; an INTEGER: main's DE is already right
+                ld      hl,0
+                ld      a,(FAC)
+                and     $7F
+                sub     $40                 ; A = integer digits of the value
+                jr      c,hkmi_store        ; |x| < 1 (zero included): 0
+                jr      z,hkmi_store
+                cp      6
+                jr      nc,hkmi_ovf         ; 6+ integer digits: out of range
+                ld      b,a                 ; B = digits to take
+                ld      de,FAC+1
+                ld      c,0                 ; bit 0 clear = high nibble next
+hkmi_dig:
+                ld      a,(de)
+                bit     0,c
+                jr      nz,hkmi_lo
+                rrca
+                rrca
+                rrca
+                rrca
+                jr      hkmi_nib
+hkmi_lo:
+                inc     de                  ; low nibble: this byte is done
+hkmi_nib:
+                and     $0F
+                push    de
+                ld      d,h
+                ld      e,l                 ; HL = HL*10 + digit, carry = past 65535
+                add     hl,hl
+                jr      c,hkmi_ovfp
+                add     hl,hl
+                jr      c,hkmi_ovfp
+                add     hl,de
+                jr      c,hkmi_ovfp
+                add     hl,hl
+                jr      c,hkmi_ovfp
+                ld      e,a
+                ld      d,0
+                add     hl,de
+                jr      c,hkmi_ovfp
+                pop     de
+                inc     c
+                djnz    hkmi_dig
+                ld      a,(FAC)
+                rla                         ; CF = the sign
+                jr      c,hkmi_neg
+                bit     7,h                 ; positive: at most 32767
+                jr      nz,hkmi_ovf
+                jr      hkmi_store
+hkmi_neg:
+                ld      a,h                 ; negative: magnitude at most 32768
+                cp      $80
+                jr      c,hkmi_negate
+                jr      nz,hkmi_ovf
+                ld      a,l
+                or      a
+                jr      nz,hkmi_ovf
+hkmi_negate:
+                xor     a                   ; HL = -HL
+                sub     l
+                ld      l,a
+                sbc     a,a
+                sub     h
+                ld      h,a
+hkmi_store:
+                ld      (STRSCR+1),hl       ; low byte then high: MKI$'s packed form
+hkmi_done:
+                scf                         ; claimed
+                ret
+hkmi_ovfp:
+                pop     de
+hkmi_ovf:
+                ld      a,(FPERR)
+                or      a
+                jr      nz,hkmi_zero        ; an earlier error wins
+                inc     a
+                ld      (FPERR),a           ; 1 = Overflow -> ERR 6, deferred
+hkmi_zero:
+                ld      hl,0
+                jr      hkmi_store
+
 ; --- hkc_body: COPY's sector loop, IN THIS ROM ------------------------------
 ; 📍 SITED IN THE $5602..$5FE4 FILL with hkc_resolve (D-DSKFLOCAL, 2026-09-29):
 ; the tail after runtime.asm is full, and fat_count_free's local body needed
@@ -2469,8 +2568,8 @@ ibh_lp:
 hook_tab:
                 dw      H_DSKF, hk_dskf     ; D-DSKFMOVE: body here, not just
                                              ; its presence
-                dw      H_MKI,  hk_present   ; MKI$'s store needs DE, which does
-                                             ; not survive CALSLT -- stays main-side
+                dw      H_MKI,  hk_mki       ; DE crosses in STRSCR+1; a FLOAT
+                                             ; argument is converted HERE (D-MKIRANGE)
                 dw      H_MKS,  hk_mkfloat   ; the float coercion LIVES HERE now
                 dw      H_MKD,  hk_mkfloat
                 dw      H_CVI,  hk_cv       ; D-CVMOVE: the conversion lives HERE

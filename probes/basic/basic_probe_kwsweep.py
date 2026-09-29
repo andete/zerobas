@@ -3580,6 +3580,13 @@ SWEEP: list[tuple[str, str, str | None, str, str]] = [
      "NEEDS-DISK: PROVES-T6:2 FORM:int-to-string"),
     ("t6mki13", 'a=mki$("A")', 'PRINT MKI$("A")', "stored",
      "NEEDS-DISK: PROVES-T6:13 FORM:int-to-string"),
+    # D-MKIRANGE (2026-09-29): a FLOAT argument is truncated, then overflows
+    # outside -32768..32767 (scratchpad/mkirange_run.out). The -32768.4 row is
+    # the in-range edge, which read 32767 here -- a wrong value, not an error.
+    ("t6mki6", 'a=mki$(32768)', 'PRINT MKI$(32768)', "stored",
+     "NEEDS-DISK: PROVES-T6:6 FORM:int-to-string"),
+    ("t6mkiedge", 'a=cvi(mki$(-32768.4))', 'PRINT CVI(MKI$(-32768.4))', "stored",
+     "NEEDS-DISK: FORM:int-to-string"),
     ("t6cvi2", 'a=cvi()', 'PRINT CVI()', "stored",
      "NEEDS-DISK: PROVES-T6:2 FORM:string-to-int"),
     ("t6cvi5", 'a=cvi("")', 'PRINT CVI("")', "stored",

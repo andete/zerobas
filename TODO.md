@@ -6019,7 +6019,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:27193 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:27209 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -26311,14 +26311,30 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       well-formed number past the single range; the reference converts it and
       overflows, zerobas's DATA scanner rejects it as syntax. Blocks READ's T6.
 
-- [ ] 🔴 **`MKI$` ACCEPTS AN OUT-OF-RANGE INTEGER — `MKI$(32768)` IS `Overflow`
-      ON THE CF-3300 AND A STRING HERE (D-MKIRANGE, found 2026-09-27 by T6).**
+- [x] ✅ **`MKI$` ACCEPTED AN OUT-OF-RANGE INTEGER — `MKI$(32768)` IS `Overflow`
+      ON THE CF-3300 AND WAS A STRING HERE (D-MKIRANGE, found 2026-09-27 by T6, fixed 2026-09-29).**
       🎚️ TIER 6 — `MKI$` outside −32768..32767
       🤖 **AUTONOMOUS** — the reference settles it; a ROM change, carve first.
       `scratchpad/t6enum_b3.out`: `MKI$(32768)` and `MKI$(-32769)` → CF-3300
       `(6, 20)`, zerobas prints a result. The argument is an INTEGER conversion
       on the reference (CINT's own Overflow — `CINT(32768)` agrees on both,
       batch 2), so MKI$ must convert through the same range check. Blocks MKI$'s T6.
+      ✅ **FIXED 2026-09-29 — IN disk.rom, ZERO MAIN BYTES.** Measured wider first
+      ([`mkirange_run.out`](scratchpad/mkirange_run.out), CF-3300 vs zerobas, read
+      back with `CVI`): the reference TRUNCATES a float toward zero (1.5 → 1, 2.5 →
+      2, -1.5 → -1, 32767.4 → 32767 — all agreed already) and overflows outside
+      -32768..32767. Three cells diverged: `32768` (6 there, -32768 here), `-32769`
+      (6 there, 32767 here) and **`-32768.4` — -32768 there, 32767 here: a wrong
+      VALUE, not a missing error.** Cause: MKI$ packs main's DE, which `eval` leaves
+      as the argument squeezed to 16 bits. **FIX:** the MKI$ hook was a bare
+      presence check (`hk_present`); it is `hk_mki` now, which for a non-integer
+      FACTYP recomputes the value from FAC's BCD digits and stores it over DE in
+      STRSCR+1, deferring Overflow through FPERR (first error wins) out of range.
+      Placed in the `$5602` fill. After ([`mkirange_after.out`](scratchpad/mkirange_after.out))
+      all seven agree, the overflow rows even print the same partial screen. Rows
+      `t6mki6` (PROVES-T6:6) and `t6mkiedge` (the -32768.4 value) SUPPORTED;
+      knife = HEAD's kernel.asm (disk ROM `923c6b33` → `3454bc5b`, restored) turns
+      both non-green ([`mkirange_knife.out`](scratchpad/mkirange_knife.out)).
 
 - [ ] 🔴 **`MKI$(1,1)` / `MKS$(1,1)` / `MKD$(1,1)` ARE `Type mismatch` HERE AND
       `Syntax error` ON THE CF-3300 (D-MKEXTRA, found 2026-09-27 by T6).**

@@ -77,6 +77,14 @@ CASES = {
                     '40 A=PEEK(&HF676)+256*PEEK(&HF677):B$=""',
                     '50 FOR I=A+4 TO A+22:B$=B$+RIGHT$("0"+HEX$(PEEK(I)),2):NEXT',
                     '60 PRINT CHR$(91);B$;"]":END', "RUN 40"],
+    # --- round 9 (D-MKIRANGE): MKI$ of a FLOAT argument -- rounding and range
+    "m_15": ["NEW", "10 ON ERROR GOTO 90", '30 PRINT CHR$(91);CVI(MKI$(1.5));"|OK]":END'] + TAIL,
+    "m_25": ["NEW", "10 ON ERROR GOTO 90", '30 PRINT CHR$(91);CVI(MKI$(2.5));"|OK]":END'] + TAIL,
+    "m_m15": ["NEW", "10 ON ERROR GOTO 90", '30 PRINT CHR$(91);CVI(MKI$(-1.5));"|OK]":END'] + TAIL,
+    "m_x7": ["NEW", "10 ON ERROR GOTO 90", '30 PRINT CHR$(91);CVI(MKI$(32767.4));"|OK]":END'] + TAIL,
+    "m_x8": ["NEW", "10 ON ERROR GOTO 90", '30 PRINT CHR$(91);CVI(MKI$(32768));"|OK]":END'] + TAIL,
+    "m_neg": ["NEW", "10 ON ERROR GOTO 90", '30 PRINT CHR$(91);CVI(MKI$(-32768.4));"|OK]":END'] + TAIL,
+    "m_n9": ["NEW", "10 ON ERROR GOTO 90", '30 PRINT CHR$(91);CVI(MKI$(-32769));"|OK]":END'] + TAIL,
     "x_multi": ["NEW", "10 ON ERROR GOTO 90", '30 COPY "PROG*.BAS" TO "Q*.BAS"',
                 '40 OPEN "Q.BAS" FOR INPUT AS #1:B$=STR$(LOF(1)):CLOSE:PRINT CHR$(91);"|";B$;"OK]":END'] + TAIL,
 }

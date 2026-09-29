@@ -1,0 +1,42 @@
+msxtest: BASIC image carries islands -- loaded at $0010, not $2812
+build under measurement: git=8074f22b zerobas-main-eu.rom=9807c45c189a sub.rom=8608aab8f78b disk.rom=cbd7b76c604a
+
+==============================================================================
+LAYER 1 — CRUNCH (tokenisation only; NOT a support answer)
+==============================================================================
+SAME   t6mki2    a=mki$()
+SAME   t6mki13   a=mki$("A")
+SAME   t6mki6    a=mki$(32768)
+SAME   t6mkiedge a=cvi(mki$(-32768.4))
+
+==============================================================================
+LAYER 2 — SUPPORT (the load-bearing layer)
+==============================================================================
+SUPPORTED     t6mki2    PRINT MKI$()
+            ref  [error:syntax error] 'Syntax error in 10'
+SUPPORTED     t6mki13   PRINT MKI$("A")
+            ref  [error:type mismatch] 'Type mismatch in 10'
+SUPPORTED     t6mki6    PRINT MKI$(32768)
+            ref  [error:overflow] 'Overflow in 10'
+SUPPORTED     t6mkiedge PRINT CVI(MKI$(-32768.4))
+            ref  [value] '-32768'
+
+==============================================================================
+COMBINED — tokenised? x observable consequence
+==============================================================================
+word       crunch  support     consequence
+------------------------------------------------------------------------------
+t6mki2     present SUPPORTED   match
+t6mki13    present SUPPORTED   match
+t6mki6     present SUPPORTED   match
+t6mkiedge  present SUPPORTED   match
+
+==============================================================================
+SUMMARY  SUPPORTED=4
+         executed 4 / 4 words; 0 crunch-only
+==============================================================================
+ROWS: 4 printed, 4 scored — 0 crunch-only word(s) carry no support reading and are printed but not scored
+pin: NOT written -- an --only run measures a subset, and the pin is the whole sweep
+
+=== CRUNCH PIN — words the reference tokenises and zerobas does not ===
+refcache: 0 hit, 4 miss, 4 stored

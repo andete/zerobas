@@ -1,0 +1,9 @@
+case                  CF-3300              zerobas
+  m_15                 [ 1 |OK]             [ 1 |OK]
+  m_25                 [ 2 |OK]             [ 2 |OK]
+  m_m15                [-1 |OK]             [-1 |OK]
+  m_x7             [ 32767 |OK]         [ 32767 |OK]
+  m_x8               [[| 6 30 ]           [[| 6 30 ]
+  m_neg            [-32768 |OK]         [-32768 |OK]
+  m_n9               [[| 6 30 ]           [[| 6 30 ]
+refcache: 0 hit, 14 miss, 14 stored
