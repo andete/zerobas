@@ -6019,7 +6019,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:27055 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:27077 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -25635,8 +25635,8 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
 - [ ] 🔴 **`COPY "A*.TXT" TO "C*.TXT"` IS `Illegal function call` HERE (D-COPYWILD,
       found 2026-09-28).**
       🎚️ TIER 3 — a wildcard COPY is the ordinary way to copy a set of files.
-      🤖 **AUTONOMOUS** — the two measured shapes below (one match, no match); the
-      multi-match behaviour is a question for Joost (➡️ at the end).
+      🙋 **NEEDS-JOOST** — the autonomous half (one match, no match, the destination
+      fill) SHIPPED 2026-09-28; only the multi-match ruling (➡️ at the end) is left.
       📏 **MEASURED 2026-09-28** ([`scratchpad/copywild_probe.py`](scratchpad/copywild_probe.py)):
       • ONE match — `COPY "A1.*" TO "E1.*"` copies A1.TXT to E1.TXT on the CF-3300
         (`[X1|OK]`, [`copywild_run.out`](scratchpad/copywild_run.out)); zerobas: 5.
@@ -25652,6 +25652,28 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
         survey ([`copy_survey.out`](scratchpad/copy_survey.out), which also confirms
         its pinned `c.wild` against the CF-3300 today) but gives no reading inside an
         ON ERROR program. Unasked: why fresh files and ON ERROR change the outcome.
+      ✅ **THE AUTONOMOUS HALF IS DONE (2026-09-28).** Measured first, three more
+      single-match shapes on the CF-3300 ([`copywild_run6.out`](scratchpad/copywild_run6.out)):
+      `COPY "A1.*" TO "E?.*"` → E1.TXT, `COPY "A1.T?T" TO "K1.TXT"` → K1.TXT, and —
+      the one that widened the rule — **`COPY "A1.TXT" TO "H?.TXT"` → H1.TXT: a '?'
+      in the DESTINATION takes the source's character even when the source is
+      plain.** zerobas made a file literally named `H?.TXT` there.
+      **FIX (disk/kernel.asm `hkc_body`, zero main bytes):** a '?' source is
+      COUNTED against the root directory (`hkc_resolve`, fat_find's walk and
+      `name_cmp`): 0 → 53, exactly 1 → its real name becomes the source, 2+ → 5 as
+      before; then every destination '?' is filled from the source, for a plain
+      source too, before the self-copy check. The count lives in `COPY_LEFT`
+      (COPY's own cell, set only after) and the one match is re-fetched with
+      `fat_find`, so no RAM is added.
+      📏 After ([`copywild_run7.out`](scratchpad/copywild_run7.out)): all five cases
+      agree. ✅ **GATED:** `copy-acceptance` rows `c.wild1` (`HI.*` → `H2.*`),
+      `c.wmid` (`T?ST.BIN`), `c.wnone` (53) and `c.fill` (`TEST.BIN` → `X???.BIN`),
+      each copy read BYTE-FOR-BYTE off the image — 12/12 agree with the CF-3300
+      ([`copywild_survey.out`](scratchpad/copywild_survey.out)). Knife: HEAD's
+      kernel.asm (disk ROM `6af04b37` → `d410d692`, restored) turns exactly those
+      four RED — `c.fill`'s error FACE even reads OK under the knife, and only the
+      byte check catches the literal `X???.BIN` ([`copywild_knife.out`](scratchpad/copywild_knife.out)).
+      🙋 **WHAT REMAINS IS ONLY THE RULING BELOW** — two or more matches (5 today).
       ➡️ **FOR JOOST:** faithfulness would mean copying the reference's HANG for
       two or more matches. The autonomous part is the single-match copy (dest
       `?`/`*` filled from the source name) and the no-match 53; what to do for

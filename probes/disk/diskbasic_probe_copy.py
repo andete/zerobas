@@ -15,6 +15,13 @@ wrote nothing, or wrote the wrong clusters, cannot pass.
     c.self    COPY"PROG.BAS"TO"PROG.BAS"     -> ERR 5, PROG.BAS intact
     c.wild    COPY"*.BAS"TO"Z.BAS"           -> ERR 5
     c.nodest  COPY"PROG.BAS"                 -> ERR 5 (parses, refused -- not ERR 2)
+  D-COPYWILD (2026-09-28): a '?'/'*' SOURCE with ONE match copies it, NO match is 53,
+  and every '?' in the DESTINATION takes the source's character -- for a PLAIN
+  source too (scratchpad/copywild_run6.out, measured on the CF-3300 first):
+    c.wild1   COPY"HI.*"TO"H2.*"             H2.TXT == HI.TXT
+    c.wmid    COPY"T?ST.BIN"TO"T3.BIN"       T3.BIN == TEST.BIN
+    c.wnone   COPY"Z*.TXT"TO"C*.TXT"         -> ERR 53
+    c.fill    COPY"TEST.BIN"TO"X???.BIN"     XEST.BIN == TEST.BIN
 Faces and contents were measured on the CF-3300 first (scratchpad/copyverb_probe.py
 and the 2026-09-11 rows in the spec); --survey shows that column.
 """
@@ -53,9 +60,14 @@ CASES = [
     ("c.self",    ['20 COPY"PROG.BAS"TO"PROG.BAS"', '30 PRINT"[c.self OK]":END'],                       ("PROG    BAS", "PROG    BAS")),
     ("c.wild",    ['20 COPY"*.BAS"TO"Z.BAS"', '30 PRINT"[c.wild OK]":END'],                             None),
     ("c.nodest",  ['20 COPY"PROG.BAS"', '30 PRINT"[c.nodest OK]":END'],                                 None),
+    ("c.wild1",   ['20 COPY"HI.*"TO"H2.*"', '30 PRINT"[c.wild1 OK]":END'],                              ("H2      TXT", "HI      TXT")),
+    ("c.wmid",    ['20 COPY"T?ST.BIN"TO"T3.BIN"', '30 PRINT"[c.wmid OK]":END'],                         ("T3      BIN", "TEST    BIN")),
+    ("c.wnone",   ['20 COPY"Z*.TXT"TO"C*.TXT"', '30 PRINT"[c.wnone OK]":END'],                          None),
+    ("c.fill",    ['20 COPY"TEST.BIN"TO"X???.BIN"', '30 PRINT"[c.fill OK]":END'],                       ("XEST    BIN", "TEST    BIN")),
 ]
 EXPECT = {"c.plain": "OK", "c.big": "OK", "c.exist": "OK", "c.var": "OK",
-          "c.missing": "ERR 53", "c.self": "ERR 5", "c.wild": "ERR 5", "c.nodest": "ERR 5"}
+          "c.missing": "ERR 53", "c.self": "ERR 5", "c.wild": "ERR 5", "c.nodest": "ERR 5",
+          "c.wild1": "OK", "c.wmid": "OK", "c.wnone": "ERR 53", "c.fill": "OK"}
 
 def fence(tag, cap):
     """The printed `[tag ...]`, never the typed echo (an echo carries `";`)."""

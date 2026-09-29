@@ -3213,6 +3213,34 @@ hks_lp:
 hkc_body:
                 call    fat_mount
                 jp      c,hkc_io            ; A = 2
+                ; 🟢 D-COPYWILD (2026-09-28): a '?' SOURCE is RESOLVED, no longer
+                ; refused. Measured on the CF-3300 (scratchpad/copywild_run6.out):
+                ; ONE match copies (`A1.*` / `A1.T?T`), NO match is 53. Two or more
+                ; stay ERR 5 -- the reference never returns there, and what to do
+                ; instead is Joost's ruling (TODO D-COPYWILD).
+                ld      hl,COPY_SRC
+                ld      b,11
+hkc_wild:       ld      a,(hl)
+                cp      '?'                 ; pdfcb turns '*' into '?'s too
+                jp      z,hkc_resolve
+                inc     hl
+                djnz    hkc_wild
+hkc_fill:
+                ; ...and every '?' in the DESTINATION takes the source's character
+                ; at that position -- the CF-3300 does it for a PLAIN source too:
+                ; `COPY "A1.TXT" TO "H?.TXT"` makes H1.TXT, where this made a file
+                ; literally named `H?.TXT` (copywild_run6.out s_plainq).
+                ld      hl,COPY_SRC
+                ld      de,DISK_FCB_NAME
+                ld      b,11
+hkc_df:         ld      a,(de)
+                cp      '?'
+                jr      nz,hkc_dk
+                ld      a,(hl)
+                ld      (de),a
+hkc_dk:         inc     hl
+                inc     de
+                djnz    hkc_df
                 ld      hl,COPY_SRC
                 ld      de,DISK_FCB_NAME
                 ld      b,11
@@ -3224,13 +3252,6 @@ hkc_same:       ld      a,(de)
                 djnz    hkc_same
                 jp      hkc_ill             ; all 11 bytes equal: a self-copy
 hkc_differ:     ld      hl,COPY_SRC
-                ld      b,11
-hkc_wild:       ld      a,(hl)
-                cp      '?'                 ; pdfcb turns '*' into '?'s too
-                jp      z,hkc_ill
-                inc     hl
-                djnz    hkc_wild
-                ld      hl,COPY_SRC
                 call    fat_find
                 jp      c,hkc_nf            ; A = 0
                 ld      hl,(FAT_FIRSTCLUS)
@@ -3298,6 +3319,75 @@ hkc_ill:        ld      a,3                 ; refused -> ERR 5
                 ret
 hkc_nf:         xor     a                   ; 0 = source not found -> ERR 53
                 ret
+
+; hkc_resolve -- D-COPYWILD: COUNT the root entries the '?' source matches
+; (fat_find's own walk and name_cmp, which honours '?'), then:
+;   0 -> hkc_nf (53) / 2+ -> hkc_ill (5, pending Joost) / exactly 1 -> the real
+;   name replaces the pattern in COPY_SRC and the copy goes on at hkc_fill.
+; The count lives in COPY_LEFT, COPY's own cell, which hkc_body sets only AFTER
+; this returns; the one match is fetched again with fat_find, whose HL is the
+; entry on return -- so no scratch RAM is added.
+hkc_resolve:
+                xor     a
+                ld      (COPY_LEFT),a       ; the match count
+                ld      hl,(FAT_FIRSTROOT)
+                ld      (FAT_DIRSEC),hl
+                ld      hl,(FAT_ROOTSECS)
+                ld      (FAT_DIRREM),hl
+hkr_sec:        ld      hl,(FAT_DIRREM)
+                ld      a,h
+                or      l
+                jr      z,hkr_end           ; every root sector scanned
+                ld      de,(FAT_DIRSEC)
+                ld      hl,FAT_DBUF
+                call    read_sector
+                jp      c,hkc_io
+                ld      hl,FAT_DBUF
+                ld      b,16                ; 512 / 32 entries per sector
+hkr_ent:        ld      a,(hl)
+                or      a
+                jr      z,hkr_end           ; $00 = end of directory
+                cp      $E5
+                jr      z,hkr_next          ; deleted entry
+                push    hl
+                ld      de,11
+                add     hl,de
+                ld      a,(hl)              ; attribute byte (+11)
+                pop     hl
+                and     $18                 ; volume label / directory: skip
+                jr      nz,hkr_next
+                push    bc
+                push    hl
+                ld      de,COPY_SRC
+                call    name_cmp            ; trashes A, BC, DE, HL
+                pop     hl
+                pop     bc
+                jr      nz,hkr_next
+                ld      a,(COPY_LEFT)
+                inc     a
+                ld      (COPY_LEFT),a
+hkr_next:       ld      de,32
+                add     hl,de
+                djnz    hkr_ent
+                ld      hl,(FAT_DIRSEC)
+                inc     hl
+                ld      (FAT_DIRSEC),hl
+                ld      hl,(FAT_DIRREM)
+                dec     hl
+                ld      (FAT_DIRREM),hl
+                jr      hkr_sec
+hkr_end:        ld      a,(COPY_LEFT)
+                or      a
+                jr      z,hkc_nf            ; no match -> 53
+                dec     a
+                jr      nz,hkc_ill          ; two or more -> 5
+                ld      hl,COPY_SRC
+                call    fat_find            ; the one match; HL = its entry
+                jp      c,hkc_io
+                ld      de,COPY_SRC
+                ld      bc,11
+                ldir                        ; its real name replaces the pattern
+                jp      hkc_fill
 
 ; --- hk_files: FILES and LFILES, in the disk ROM (MSX2 TH hook) -------------
 ; D-DISKVERB4, spec-diskbasic-hook-rearchitecture.md phase 3, the last of the

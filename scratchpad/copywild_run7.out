@@ -1,0 +1,7 @@
+case                  CF-3300              zerobas
+  s_extq                [X1|OK]              [X1|OK]
+  s_plainq              [X1|OK]              [X1|OK]
+  s_midq                [X1|OK]              [X1|OK]
+  w_ext                 [X1|OK]              [X1|OK]
+  w_none             [| 53 30 ]           [| 53 30 ]
+refcache: 0 hit, 10 miss, 10 stored

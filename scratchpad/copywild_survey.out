@@ -1,0 +1,14 @@
+  ok   c.plain   zb='OK'       bytes=same(16/16)       want='OK'  cf3300='OK' bytes=same(16/16)
+  ok   c.big     zb='OK'       bytes=same(2048/2048)   want='OK'  cf3300='OK' bytes=same(2048/2048)
+  ok   c.exist   zb='OK'       bytes=same(26/26)       want='OK'  cf3300='OK' bytes=same(26/26)
+  ok   c.var     zb='OK'       bytes=same(16/16)       want='OK'  cf3300='OK' bytes=same(16/16)
+  ok   c.missing zb='ERR 53'                           want='ERR 53'  cf3300='ERR 53'
+  ok   c.self    zb='ERR 5'    bytes=same(16/16)       want='ERR 5'  cf3300='ERR 5' bytes=same(16/16)
+  ok   c.wild    zb='ERR 5'                            want='ERR 5'  cf3300='ERR 5'
+  ok   c.nodest  zb='ERR 5'                            want='ERR 5'  cf3300='ERR 5'
+  ok   c.wild1   zb='OK'       bytes=same(26/26)       want='OK'  cf3300='OK' bytes=same(26/26)
+  ok   c.wmid    zb='OK'       bytes=same(2048/2048)   want='OK'  cf3300='OK' bytes=same(2048/2048)
+  ok   c.wnone   zb='ERR 53'                           want='ERR 53'  cf3300='ERR 53'
+  ok   c.fill    zb='OK'       bytes=same(2048/2048)   want='OK'  cf3300='OK' bytes=same(2048/2048)
+12 rows, 0 diverge: none
+refcache: 0 hit, 24 miss, 24 stored

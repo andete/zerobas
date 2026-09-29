@@ -55,6 +55,10 @@ CASES = {
     # w_plain (two FRESHLY WRITTEN A*.TXT to a plain F.TXT) never completed. Which
     # separates them -- fresh files, or the destination's shape? No line-20 writes.
     "x_cwild": ["NEW", "10 ON ERROR GOTO 90", '30 COPY "*.BAS" TO "Z.BAS":PRINT CHR$(91);"|OK]":END'] + TAIL,
+    # --- round 6 (D-COPYWILD build): the DESTINATION fill, one match each.
+    "s_extq": prog('30 COPY "A1.*" TO "E?.*"', '40 ' + rd("A$", "E1.TXT") + ':PRINT CHR$(91);"";A$;"|OK]":END'),
+    "s_plainq": prog('30 COPY "A1.TXT" TO "H?.TXT"', '40 ' + rd("A$", "H1.TXT") + ':PRINT CHR$(91);"";A$;"|OK]":END'),
+    "s_midq": prog('30 COPY "A1.T?T" TO "K1.TXT"', '40 ' + rd("A$", "K1.TXT") + ':PRINT CHR$(91);"";A$;"|OK]":END'),
     "x_multi": ["NEW", "10 ON ERROR GOTO 90", '30 COPY "PROG*.BAS" TO "Q*.BAS"',
                 '40 OPEN "Q.BAS" FOR INPUT AS #1:B$=STR$(LOF(1)):CLOSE:PRINT CHR$(91);"|";B$;"OK]":END'] + TAIL,
 }
