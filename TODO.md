@@ -6019,7 +6019,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:27255 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:27267 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -24678,6 +24678,18 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       T6 (selftest S36za, S36zb NEGATIVE: not without connectedness). Effect,
       measured the same day: level 3 **32 → 121**, level 2 **113 → 24**. The 24 get
       REAL `PROVES-T3:` rows next (Joost: *"then real T3 rows for the 24"*).
+      ✅ **AND 19 OF THE 24 HAVE THEM (D-KWT3 batches 6–7, same day)** — CONT, DATA,
+      RESUME, RUN, TAN, WIDTH, PRINT, ERROR, CIRCLE, LOAD, OPEN, EOF, INPUT, CLOAD,
+      BSAVE, SAVE, LPRINT, LFILES, AUTO: one `PROVES-T3:` row each, every one
+      SUPPORTED against the reference AND checked to show the intended error on both
+      sides, not blank-equals-blank ([`kwt3b6.out`](scratchpad/kwt3b6.out),
+      [`kwt3b7.out`](scratchpad/kwt3b7.out), [`kwt3auto.out`](scratchpad/kwt3auto.out)).
+      No divergence found. Level 3 **121 → 140**, level 2 **24 → 5**; kwsweep 933 → 952.
+      🙋 **THE LAST FIVE HAVE NO NATURAL COMMON ERROR:** REM cannot raise one at all;
+      END, STOP and CLS only error with junk after the word (and CLS/END's junk case
+      is a known divergence, the TIER 6 item on `CLS` / `END` followed by an
+      argument); LLIST's real-world error is a printer that is not ready, which the
+      rig cannot produce. Asked of Joost 2026-09-29.
       🎚️ TIER 1 — it is the bar every other item is measured against, and three
       quarters of it has never been measurable.
       🏗️ **RULED BY JOOST, 2026-09-24 — three of the four rungs now have a

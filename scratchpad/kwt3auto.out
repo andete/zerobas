@@ -1,0 +1,30 @@
+msxtest: BASIC image carries islands -- loaded at $0010, not $2812
+build under measurement: git=2ad8cead zerobas-main-eu.rom=8dfe2fbd906e sub.rom=8608aab8f78b disk.rom=ceb4c424e3bf
+
+==============================================================================
+LAYER 1 — CRUNCH (tokenisation only; NOT a support answer)
+==============================================================================
+SAME   auto_t3   auto 10,0
+
+==============================================================================
+LAYER 2 — SUPPORT (the load-bearing layer)
+==============================================================================
+SUPPORTED     auto_t3   AUTO 10,0
+            ref  [error:illegal function call] 'Illegal function call'
+
+==============================================================================
+COMBINED — tokenised? x observable consequence
+==============================================================================
+word       crunch  support     consequence
+------------------------------------------------------------------------------
+auto_t3    present SUPPORTED   match
+
+==============================================================================
+SUMMARY  SUPPORTED=1
+         executed 1 / 1 words; 0 crunch-only
+==============================================================================
+ROWS: 1 printed, 1 scored — 0 crunch-only word(s) carry no support reading and are printed but not scored
+pin: NOT written -- an --only run measures a subset, and the pin is the whole sweep
+
+=== CRUNCH PIN — words the reference tokenises and zerobas does not ===
+refcache: 0 hit, 4 miss, 4 stored

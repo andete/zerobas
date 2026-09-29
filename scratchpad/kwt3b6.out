@@ -1,0 +1,74 @@
+msxtest: BASIC image carries islands -- loaded at $0010, not $2812
+build under measurement: git=2ad8cead zerobas-main-eu.rom=8dfe2fbd906e sub.rom=8608aab8f78b disk.rom=ceb4c424e3bf
+
+==============================================================================
+LAYER 1 — CRUNCH (tokenisation only; NOT a support answer)
+==============================================================================
+SAME   cont_t3   cont
+SAME   data_t3   data abc
+SAME   resume_t3 resume
+SAME   run_t3    run 999
+SAME   tan_t3    a=tan("a")
+SAME   width_t3  width 41
+SAME   print_t3  print "a"+1
+SAME   error_t3  error 0
+SAME   circle_t3 circle(100,100),20
+SAME   load_t3   load"nosuch.bas"
+SAME   open_t3   open"nosuch.txt" for input as #1
+SAME   eof_t3    a=eof(1)
+
+==============================================================================
+LAYER 2 — SUPPORT (the load-bearing layer)
+==============================================================================
+SUPPORTED     cont_t3   CONT
+            ref  [value] "Can't CONTINUE"
+SUPPORTED     data_t3   READ ZA:DATA ABC
+            ref  [error:syntax error] 'Syntax error in 10'
+SUPPORTED     resume_t3 RESUME
+            ref  [error:error] 'RESUME without error'
+SUPPORTED     run_t3    RUN 999
+            ref  [error:undefined line] 'Undefined line number'
+SUPPORTED     tan_t3    PRINT TAN("A")
+            ref  [error:type mismatch] 'Type mismatch'
+SUPPORTED     width_t3  WIDTH 41
+            ref  [error:illegal function call] 'Illegal function call'
+SUPPORTED     print_t3  PRINT "A"+1
+            ref  [error:type mismatch] 'Type mismatch'
+SUPPORTED     error_t3  ERROR 0
+            ref  [error:illegal function call] 'Illegal function call'
+SUPPORTED     circle_t3 CIRCLE(100,100),20
+            ref  [error:illegal function call] 'Illegal function call'
+SUPPORTED     load_t3   LOAD"NOSUCH.BAS"
+            ref  [error:file not found] 'File not found'
+SUPPORTED     open_t3   OPEN"NOSUCH.TXT" FOR INPUT AS #1
+            ref  [error:file not found] 'File not found'
+SUPPORTED     eof_t3    PRINT EOF(1)
+            ref  [value] 'File not OPEN'
+
+==============================================================================
+COMBINED — tokenised? x observable consequence
+==============================================================================
+word       crunch  support     consequence
+------------------------------------------------------------------------------
+cont_t3    present SUPPORTED   match
+data_t3    present SUPPORTED   match
+resume_t3  present SUPPORTED   match
+run_t3     present SUPPORTED   match
+tan_t3     present SUPPORTED   match
+width_t3   present SUPPORTED   match
+print_t3   present SUPPORTED   match
+error_t3   present SUPPORTED   match
+circle_t3  present SUPPORTED   match
+load_t3    present SUPPORTED   match
+open_t3    present SUPPORTED   match
+eof_t3     present SUPPORTED   match
+
+==============================================================================
+SUMMARY  SUPPORTED=12
+         executed 12 / 12 words; 0 crunch-only
+==============================================================================
+ROWS: 12 printed, 12 scored — 0 crunch-only word(s) carry no support reading and are printed but not scored
+pin: NOT written -- an --only run measures a subset, and the pin is the whole sweep
+
+=== CRUNCH PIN — words the reference tokenises and zerobas does not ===
+refcache: 0 hit, 7 miss, 7 stored

@@ -4694,6 +4694,55 @@ SWEEP: list[tuple[str, str, str | None, str, str]] = [
      "NEEDS-DISK: " "PROVES-T3: " "Type mismatch — MKI$ converts a NUMBER"),
     ("dskf_t3", 'a=dskf(9)',   'PRINT DSKF(9)',        "direct",
      "NEEDS-DISK: " "PROVES-T3: " "a drive letter that does not exist"),
+    # 🎚️ D-KWT3 BATCH 6 (2026-09-29, Joost: T6 implies T3, "then real T3 rows for
+    # the 24") -- the level-2 keywords whose T6 is not proven, so a T3 row of
+    # their own is what lifts them. Same filter as batches 1-5: the error a 1985
+    # listing would plausibly hit, written to DISAGREE if it can.
+    ("cont_t3", 'cont',        'CONT',                  "direct",
+     "PROVES-T3: " "Can't continue -- CONT with nothing stopped"),
+    ("data_t3", 'data abc',    'READ ZA:DATA ABC',      "stored",
+     "PROVES-T3: " "the classic `Syntax error` IN THE DATA LINE: a numeric "
+     "READ hits text"),
+    ("resume_t3", 'resume',    'RESUME',                "direct",
+     "PROVES-T3: " "RESUME without error"),
+    ("run_t3",  'run 999',     'RUN 999',               "direct",
+     "PROVES-T3: " "Undefined line number -- RUN to a line that is not there"),
+    ("tan_t3",  'a=tan("a")',  'PRINT TAN("A")',        "direct",
+     "PROVES-T3: " "Type mismatch on a trig function"),
+    ("width_t3", 'width 41',   'WIDTH 41',              "direct",
+     "PROVES-T3: " "Illegal function call past SCREEN 0's 40 columns"),
+    ("print_t3", 'print "a"+1', 'PRINT "A"+1',          "direct",
+     "PROVES-T3: " "Type mismatch -- adding a number to a string in a PRINT"),
+    ("error_t3", 'error 0',    'ERROR 0',               "direct",
+     "PROVES-T3: " "Illegal function call -- ERROR with code 0"),
+    ("circle_t3", 'circle(100,100),20', 'CIRCLE(100,100),20', "direct",
+     "PROVES-T3: " "Illegal function call -- a graphics statement in SCREEN 0"),
+    ("load_t3", 'load"nosuch.bas"', 'LOAD"NOSUCH.BAS"', "direct",
+     "NEEDS-DISK: " "PROVES-T3: " "File not found -- the wrong disk in the drive"),
+    ("open_t3", 'open"nosuch.txt" for input as #1',
+     'OPEN"NOSUCH.TXT" FOR INPUT AS #1',                "direct",
+     "NEEDS-DISK: " "PROVES-T3: " "File not found -- reading a data file "
+     "that is not there"),
+    ("eof_t3",  'a=eof(1)',    'PRINT EOF(1)',          "direct",
+     "NEEDS-DISK: " "PROVES-T3: " "File not open -- EOF on a channel never "
+     "OPENed"),
+    # 🎚️ D-KWT3 BATCH 7 (2026-09-29) -- the rigged half of the 24.
+    ("input_t3", 'input za',   'INPUT ZA:PRINT"[I";ZA;"]"', "stored",
+     "PROVES-T3: " "RESPOND:ABC|5 `?Redo from start` -- text typed where a number "
+     "is asked, then a number"),
+    ("cload_t3", 'cload 5',    'CLOAD 5',               "direct",
+     "PROVES-T3: " "Type mismatch -- a number where the tape name goes"),
+    ("bsave_t3", 'bsave"x.bin",&hc000', 'BSAVE"X.BIN",&HC000', "direct",
+     "NEEDS-DISK: " "PROVES-T3: " "the end address forgotten"),
+    ("save_t3", 'save',        'SAVE',                  "direct",
+     "NEEDS-DISK: " "PROVES-T3: " "SAVE with no file name"),
+    ("lprint_t3", 'lprint "a"+1', 'LPRINT "A"+1',       "direct",
+     "NEEDS-PRINTER: " "PROVES-T3: " "Type mismatch in an LPRINT expression"),
+    ("auto_t3", 'auto 10,0',   'AUTO 10,0',             "direct",
+     "PROVES-T3: " "an increment of 0 -- the typo in `AUTO 10,10`"),
+    ("lfiles_t3", 'lfiles"zz*.*"', 'LFILES"ZZ*.*"',     "direct",
+     "NEEDS-DISK: " "NEEDS-PRINTER: " "PROVES-T3: " "File not found -- a "
+     "pattern nothing matches"),
     # 🎚️ D-KWBREADTH BATCH 1 — the OTHER half of establishing a tier. A keyword
     # with one agreeing row has one agreement point; these cover a verb's FORMS.
     # ⚠️ Every reading here is a VALUE, not an error (silent-failure mode 6, learned

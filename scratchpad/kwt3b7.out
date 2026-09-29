@@ -1,0 +1,50 @@
+msxtest: BASIC image carries islands -- loaded at $0010, not $2812
+build under measurement: git=2ad8cead zerobas-main-eu.rom=8dfe2fbd906e sub.rom=8608aab8f78b disk.rom=ceb4c424e3bf
+
+==============================================================================
+LAYER 1 — CRUNCH (tokenisation only; NOT a support answer)
+==============================================================================
+SAME   input_t3  input za
+SAME   cload_t3  cload 5
+SAME   bsave_t3  bsave"x.bin",&hc000
+SAME   save_t3   save
+SAME   lprint_t3 lprint "a"+1
+SAME   lfiles_t3 lfiles"zz*.*"
+
+==============================================================================
+LAYER 2 — SUPPORT (the load-bearing layer)
+==============================================================================
+SUPPORTED     input_t3  INPUT ZA:PRINT"[I";ZA;"]"
+            ref  [value] '? ABC|?Redo from start|? 5|[I 5 ]'
+SUPPORTED     cload_t3  CLOAD 5
+            ref  [error:type mismatch] 'Type mismatch'
+SUPPORTED     bsave_t3  BSAVE"X.BIN",&HC000
+            ref  [error:syntax error] 'Syntax error'
+SUPPORTED     save_t3   SAVE
+            ref  [error:missing operand] 'Missing operand'
+SUPPORTED     lprint_t3 LPRINT "A"+1
+            ref  [error:type mismatch] 'Type mismatch'
+SUPPORTED     lfiles_t3 LFILES"ZZ*.*"
+            ref  [error:file not found] 'File not found'
+
+==============================================================================
+COMBINED — tokenised? x observable consequence
+==============================================================================
+word       crunch  support     consequence
+------------------------------------------------------------------------------
+input_t3   present SUPPORTED   match
+cload_t3   present SUPPORTED   match
+bsave_t3   present SUPPORTED   match
+save_t3    present SUPPORTED   match
+lprint_t3  present SUPPORTED   match
+lfiles_t3  present SUPPORTED   match
+
+==============================================================================
+SUMMARY  SUPPORTED=6
+         executed 6 / 6 words; 0 crunch-only
+==============================================================================
+ROWS: 6 printed, 6 scored — 0 crunch-only word(s) carry no support reading and are printed but not scored
+pin: NOT written -- an --only run measures a subset, and the pin is the whole sweep
+
+=== CRUNCH PIN — words the reference tokenises and zerobas does not ===
+refcache: 0 hit, 13 miss, 13 stored
