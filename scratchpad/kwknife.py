@@ -364,6 +364,20 @@ def record(kw, row, verdict, mode):
         json.dump(pin, fh, indent=1, sort_keys=True)
 
 
+def _error_row(note):
+    """True for a row that proves an ERROR (`PROVES-T6:<code>` or `PROVES-T3:`) --
+    it raises whether or not the handler is knifed, so it never witnesses
+    CONNECTEDNESS.
+    🔴 D-KNIFET3 (2026-09-29): the D-KWT6 skip named T6 only. The first re-pin
+    after the T3 batches moved SEVEN witnesses onto `*_t3` rows (AUTO BSAVE INPUT
+    LFILES LOAD RUN SAVE -- each sits earlier in the sweep than its happy-path
+    row and shares its stem) and `bsave_t3` read 🔴 BLIND: BSAVE with no end
+    address errors with or without a BSAVE handler."""
+    import basic_probe_kwsweep as sweep
+    return (sweep.row_t6_code(note) is not None
+            or "PROVES-T3:" in sweep._row_prefix_tags(note))
+
+
 def enumerate_targets():
     """Every statement keyword in stmt_table, paired with the kwsweep row that
     claims it -- read from the TABLE and from the SWEEP, never hand-listed.
@@ -419,7 +433,7 @@ def enumerate_targets():
         # can never witness CONNECTEDNESS. The first re-pin after the T6 batches
         # picked `t6bin2` for BIN$ and reported it NOT connected, which would have
         # cost BIN$ its T1. Never a witness.
-        if sweep.row_t6_code(note) is not None:
+        if _error_row(note):
             continue
         kw2any.setdefault(kw, key)
         base = kw.lower().rstrip("$")
@@ -506,7 +520,7 @@ def enumerate_fn_targets():
             # re-pin after T6 batch 8 took `t8inputconsole13` (a PROVES-T6 error
             # row declaring SUBJECT:INPUT$, and earlier in the file) as INPUT$'s
             # witness in place of `inputdol_b`. An error row never witnesses.
-            if sweep.row_t6_code(r[4]) is not None:
+            if _error_row(r[4]):
                 continue
             if sweep.row_subject(r[4]) == kw:
                 out.append((kw, r[0], None))

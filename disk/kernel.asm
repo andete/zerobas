@@ -3300,13 +3300,12 @@ hkn_noas:
                 ; 🔴 D-NOASTO (2026-09-29): with no `AS` the CF-3300 looks the OLD
                 ; name up FIRST -- `NAME "NOPE.TXT"` is 53 there, `NAME "HI.TXT"` 2
                 ; (scratchpad/noasto_run.out). This read 2 for both.
-                ld      ix,main_fat_mount
-                call    calbak
-                jr      c,hkn_io            ; no disk / bad BPB
+                ; D-NOASTOFOLD: the same lookup COPY's no-TO path makes -- one
+                ; helper, LOCAL FAT (nothing is stamped on this path, so main's
+                ; entry-location record that NAME's rename needs is not wanted).
                 ld      hl,DISK_FCB_NAME
-                ld      ix,main_fat_find
-                call    calbak
-                jr      c,hkn_nf            ; missing -> 53
+                call    hk_srcfind
+                jr      c,hkn_done          ; A = 2 (I/O) or 0 (missing -> 53)
 hkn_syn:
                 ld      a,4                 ; no `AS` -> Syntax error
 hkn_done:
@@ -3488,13 +3487,9 @@ hkc_noto:
                 ; 🔴 D-NOASTO (2026-09-29): ...but only if the SOURCE exists. The
                 ; CF-3300 looks it up first: `COPY "NOPE.TXT"` is 53 there,
                 ; `COPY "HI.TXT"` 5 (scratchpad/noasto_run.out). This read 5 for both.
-                call    fat_mount
-                ld      a,2                 ; (flags kept) mount failure -> I/O
-                jr      c,hkc_done
                 ld      hl,COPY_SRC
-                call    fat_find
-                ld      a,0                 ; (flags kept) 0 = not found -> 53
-                jr      c,hkc_done
+                call    hk_srcfind          ; D-NOASTOFOLD: shared with NAME's no-AS
+                jr      c,hkc_done          ; A = 2 (I/O) or 0 (missing -> 53)
 hkc_ref:
                 ld      a,3                 ; refused -> ERR 5
 hkc_done:
@@ -3522,6 +3517,22 @@ hks_lp:
                 inc     hl
                 inc     de
                 djnz    hks_lp
+                ret
+
+; hk_srcfind -- D-NOASTOFOLD (2026-09-29): mount, then look the 8.3 name at HL up,
+; LOCALLY. NAME's no-AS and COPY's no-TO paths both need exactly this (the
+; CF-3300 looks the source up before refusing the missing connective,
+; scratchpad/noasto_run.out), and D-NOASTO had written it twice -- the
+; duplicate Joost's 2026-09-29 rule forbids. Our own code.
+;   out: CF=0 found; CF=1 with A = 2 (mount failed -> I/O) or 0 (missing -> 53)
+hk_srcfind:
+                push    hl
+                call    fat_mount
+                pop     hl
+                ld      a,2                 ; (flags kept) mount failure -> I/O
+                ret     c
+                call    fat_find
+                ld      a,0                 ; (flags kept) 0 = not found -> 53
                 ret
 
 

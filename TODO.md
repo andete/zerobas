@@ -6019,7 +6019,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:27272 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:27301 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -26378,9 +26378,9 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       where CINT rounds — so the reused routine is the TRUNCATING one (FIX/INT's),
       with the int16 range check. Rows `t6mki6` / `t6mkiedge` are the regression net.
 
-- [ ] 🔴 **D-NOASTO WROTE THE SAME "MOUNT, LOOK THE SOURCE UP, 53 IF MISSING" TWICE —
+- [x] ✅ **D-NOASTO WROTE THE SAME "MOUNT, LOOK THE SOURCE UP, 53 IF MISSING" TWICE —
       ONCE IN `hk_name`, ONCE IN `hk_copy` (D-NOASTOFOLD, filed 2026-09-29 under
-      Joost's rule).**
+      Joost's rule, fixed 2026-09-29).**
       🎚️ BUDGET — code space: ~15 B of disk.rom duplicated.
       🤖 **AUTONOMOUS** — fold into one helper both handlers call; rows
       `t8namenoasmiss` / `t8copynotomiss` are the regression net.
@@ -26389,6 +26389,35 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       disk-local one) — so the helper takes the lookup as the shared shape only if
       that difference does not matter on the no-`AS` path, where nothing is stamped.
       Check before folding.
+      ✅ **FIXED 2026-09-29.** One helper, `hk_srcfind` (disk/kernel.asm): mount,
+      then the disk-local `fat_find`, returning carry with A = 2 (mount failed) or
+      0 (not found → 53); `hkn_noas` and `hkc_noto` both call it. The check came out
+      as the ⚠️ hoped: the no-`AS` path stamps nothing, so NAME's use of the local
+      lookup there is safe, and main's `fat_find` is still called back on the
+      stamping (`AS`) path. disk.rom free 6534 → 6542 B
+      ([`noastofold_walls.out`](scratchpad/noastofold_walls.out)). Rows
+      `t8namenoasmiss` / `t8copynotomiss` / `t8namerename65` / `t8namerenameopen` /
+      `t8copyfiletofile53` SUPPORTED ([`noastofold_kwsweep.out`](scratchpad/noastofold_kwsweep.out));
+      NAME/COPY with no `AS`/`TO`, on a file that exists and one that does not, agree
+      with the CF-3300 ([`noastofold_probe.out`](scratchpad/noastofold_probe.out));
+      copy rows 12/12 ([`noastofold_copy.out`](scratchpad/noastofold_copy.out)); whole
+      sweep SUPPORTED 952 ([`noastofold_kwsweep_full.out`](scratchpad/noastofold_kwsweep_full.out)),
+      kwtime OK 838 ([`noastofold_kwtime.out`](scratchpad/noastofold_kwtime.out)).
+
+- [x] ✅ **THE KNIFE TOOK `PROVES-T3:` ERROR ROWS AS CONNECTEDNESS WITNESSES
+      (D-KNIFET3, found and fixed 2026-09-29).**
+      🎚️ APPARATUS — the TIER 1 "connected" evidence.
+      The D-KWT6 skip in `scratchpad/kwknife.py` refused `PROVES-T6:` rows only. The
+      re-pin after the fold moved AUTO BSAVE INPUT LFILES LOAD RUN SAVE onto their
+      `*_t3` rows (each sits earlier in the sweep than its happy-path row and shares
+      its stem), and the committed pin already had GOTO and KILL on `goto_t3` /
+      `kill_t3`. `bsave_t3` read 🔴 BLIND — BSAVE with no end address errors with or
+      without a BSAVE handler ([`noastofold_knife_all.out`](scratchpad/noastofold_knife_all.out));
+      the other eight happened to stay load-bearing on a row that could not prove it.
+      Now `_error_row` refuses both tags at both witness sites. Re-pin: all nine
+      LOAD-BEARING on their happy-path rows, no error row a witness, BLIND back to
+      exactly MAX CALL VDP BASE / ELSE PAD ([`knifet3_all.out`](scratchpad/knifet3_all.out),
+      [`knifet3_fn.out`](scratchpad/knifet3_fn.out)).
 
 - [x] ✅ **`MKI$(1,1)` / `MKS$(1,1)` / `MKD$(1,1)` WERE `Type mismatch` HERE AND
       `Syntax error` ON THE CF-3300 (D-MKEXTRA, found 2026-09-27 by T6, fixed 2026-09-29).**

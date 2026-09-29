@@ -1,5 +1,5 @@
 {
- "rom_fingerprint": "8dfe2fbd 8608aab8 ceb4c424 a16d5155",
+ "rom_fingerprint": "8dfe2fbd 8608aab8 852d2467 a16d5155",
  "rows": {
   "ABS": {
    "connected": true,
@@ -608,11 +608,11 @@
   "GOTO": {
    "connected": true,
    "modes": {
-    "stmt": "DIVERGENT"
+    "stmt": "MISSING"
    },
-   "row": "goto_t3",
+   "row": "gotokw",
    "subject": "GOTO",
-   "verdict": "DIVERGENT",
+   "verdict": "MISSING",
    "weak": false
   },
   "HEX$": {
@@ -728,11 +728,11 @@
   "KILL": {
    "connected": true,
    "modes": {
-    "stmt": "DIVERGENT"
+    "stmt": "MISSING"
    },
-   "row": "kill_t3",
+   "row": "kill",
    "subject": "KILL",
-   "verdict": "DIVERGENT",
+   "verdict": "MISSING",
    "weak": false
   },
   "LEFT$": {
@@ -1593,7 +1593,8 @@
   "AUTO": {
    "connected": true,
    "rows": {
-    "auto": "MISSING"
+    "auto": "MISSING",
+    "auto_t3": "DIVERGENT"
    }
   },
   "BASE": {
@@ -1624,7 +1625,8 @@
   "BSAVE": {
    "connected": true,
    "rows": {
-    "bsave": "MISSING"
+    "bsave": "MISSING",
+    "bsave_t3": "SUPPORTED"
    }
   },
   "CALL": {
@@ -1968,6 +1970,7 @@
   "INPUT": {
    "connected": true,
    "rows": {
+    "input_t3": "MISSING",
     "inputcon": "MISSING",
     "inputcon_b": "MISSING",
     "inputcon_c": "MISSING"
@@ -2007,6 +2010,7 @@
   "KILL": {
    "connected": true,
    "rows": {
+    "kill": "MISSING",
     "kill_t3": "DIVERGENT"
    }
   },
@@ -2031,7 +2035,8 @@
   "LFILES": {
    "connected": true,
    "rows": {
-    "lfiles": "MISSING"
+    "lfiles": "MISSING",
+    "lfiles_t3": "DIVERGENT"
    }
   },
   "LINE": {
@@ -2064,6 +2069,7 @@
   "LOAD": {
    "connected": true,
    "rows": {
+    "load_t3": "DIVERGENT",
     "loadkw": "MISSING"
    }
   },
@@ -2412,6 +2418,7 @@
   "RUN": {
    "connected": true,
    "rows": {
+    "run_t3": "DIVERGENT",
     "runkw": "MISSING"
    }
   },
@@ -2419,7 +2426,8 @@
    "connected": true,
    "rows": {
     "save": "MISSING",
-    "save_b": "MISSING"
+    "save_b": "MISSING",
+    "save_t3": "DIVERGENT"
    }
   },
   "SCREEN": {
@@ -2583,5 +2591,5 @@
    }
   }
  },
- "written": "2026-09-29 13:06:00"
+ "written": "2026-09-29 16:41:00"
 }

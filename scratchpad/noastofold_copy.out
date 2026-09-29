@@ -1,0 +1,23 @@
+python3 tools/install-repack-machine.py --merged build/zerobas-main-eu.rom --disk-rom build/disk.rom \
+	  --sub-rom build/sub.rom
+wrote C-BIOS_MSX1_EU_REPACK_DISK  (-> machine "C-BIOS_MSX1_EU_REPACK_DISK": merged repack ROM in slot 0, zerobas-disk in slot 3-1, zerobas-sub in slot 3-2)
+     /Users/joost/.openMSX/share/machines/C-BIOS_MSX1_EU_REPACK_DISK.xml
+python3 tools/install-repack-machine.py --merged build/zerobas-main-eu.rom --sub-rom build/sub.rom \
+	  --no-disk
+wrote C-BIOS_MSX1_EU_REPACK_NODISK  (-> machine "C-BIOS_MSX1_EU_REPACK_NODISK": merged repack ROM in slot 0, slot 3-1 EMPTY (diskless target), zerobas-sub in slot 3-2)
+     /Users/joost/.openMSX/share/machines/C-BIOS_MSX1_EU_REPACK_NODISK.xml
+ZEROBAS_BASIC_MACHINE=C-BIOS_MSX1_EU_REPACK_DISK python3 probes/disk/diskbasic_probe_copy.py
+  ok   c.plain   zb='OK'       bytes=same(16/16)       want='OK'
+  ok   c.big     zb='OK'       bytes=same(2048/2048)   want='OK'
+  ok   c.exist   zb='OK'       bytes=same(26/26)       want='OK'
+  ok   c.var     zb='OK'       bytes=same(16/16)       want='OK'
+  ok   c.missing zb='ERR 53'                           want='ERR 53'
+  ok   c.self    zb='ERR 5'    bytes=same(16/16)       want='ERR 5'
+  ok   c.wild    zb='ERR 5'                            want='ERR 5'
+  ok   c.nodest  zb='ERR 5'                            want='ERR 5'
+  ok   c.wild1   zb='OK'       bytes=same(26/26)       want='OK'
+  ok   c.wmid    zb='OK'       bytes=same(2048/2048)   want='OK'
+  ok   c.wnone   zb='ERR 53'                           want='ERR 53'
+  ok   c.fill    zb='OK'       bytes=same(2048/2048)   want='OK'
+12 rows, 0 diverge: none
+refcache: 0 hit, 12 miss, 12 stored

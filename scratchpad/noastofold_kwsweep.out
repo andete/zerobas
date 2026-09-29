@@ -1,0 +1,46 @@
+msxtest: BASIC image carries islands -- loaded at $0010, not $2812
+build under measurement: git=83bdfe74 zerobas-main-eu.rom=8dfe2fbd906e sub.rom=8608aab8f78b disk.rom=852d24673236
+
+==============================================================================
+LAYER 1 — CRUNCH (tokenisation only; NOT a support answer)
+==============================================================================
+SAME   t8copyfiletofile53 copy "nosuch.txt" to "b.txt"
+SAME   t8namerename65 open "n1.txt" for output as #1:close:open "n2.txt" for output as #1:close:name "n1.txt" as "n2.txt"
+SAME   t8namerenameopen open "zo.txt" for output as #1:name "hi.txt" as "hi.txt"
+SAME   t8namenoasmiss name "nope.txt"
+SAME   t8copynotomiss copy "nope.txt"
+
+==============================================================================
+LAYER 2 — SUPPORT (the load-bearing layer)
+==============================================================================
+SUPPORTED     t8copyfiletofile53 COPY "NOSUCH.TXT" TO "B.TXT"
+            ref  [error:file not found] 'File not found in 10'
+SUPPORTED     t8namerename65 OPEN "N1.TXT" FOR OUTPUT AS #1:CLOSE:OPEN "N2.TXT" FOR OUTPUT AS #1:CLOSE:NAME "N1.TXT" AS "N2.TXT"
+            ref  [value] 'File already exists in 40'
+SUPPORTED     t8namerenameopen OPEN "ZO.TXT" FOR OUTPUT AS #1:NAME "HI.TXT" AS "HI.TXT"
+            ref  [value] 'File already exists in 20'
+SUPPORTED     t8namenoasmiss NAME "NOPE.TXT"
+            ref  [error:file not found] 'File not found in 10'
+SUPPORTED     t8copynotomiss COPY "NOPE.TXT"
+            ref  [error:file not found] 'File not found in 10'
+
+==============================================================================
+COMBINED — tokenised? x observable consequence
+==============================================================================
+word       crunch  support     consequence
+------------------------------------------------------------------------------
+t8copyfiletofile53 present SUPPORTED   match
+t8namerename65 present SUPPORTED   match
+t8namerenameopen present SUPPORTED   match
+t8namenoasmiss present SUPPORTED   match
+t8copynotomiss present SUPPORTED   match
+
+==============================================================================
+SUMMARY  SUPPORTED=5
+         executed 5 / 5 words; 0 crunch-only
+==============================================================================
+ROWS: 5 printed, 5 scored — 0 crunch-only word(s) carry no support reading and are printed but not scored
+pin: NOT written -- an --only run measures a subset, and the pin is the whole sweep
+
+=== CRUNCH PIN — words the reference tokenises and zerobas does not ===
+refcache: 0 hit, 4 miss, 4 stored

@@ -1,0 +1,6 @@
+case                  CF-3300              zerobas
+  n_noas_ex            [| 2 30 ]            [| 2 30 ]
+  n_noas_miss           [| 53 30 ]           [| 53 30 ]
+  c_noto_ex            [| 5 30 ]            [| 5 30 ]
+  c_noto_miss           [| 53 30 ]           [| 53 30 ]
+refcache: 0 hit, 8 miss, 8 stored
