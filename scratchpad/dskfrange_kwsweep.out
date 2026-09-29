@@ -1,0 +1,42 @@
+msxtest: BASIC image carries islands -- loaded at $0010, not $2812
+build under measurement: git=caae71d3 zerobas-main-eu.rom=70da61677c1a sub.rom=8608aab8f78b disk.rom=dbb4454519a3
+
+==============================================================================
+LAYER 1 — CRUNCH (tokenisation only; NOT a support answer)
+==============================================================================
+SAME   t6dskf2   a=dskf()
+SAME   t6dskf62  a=dskf(9)
+SAME   t6dskf5   a=dskf(-1)
+SAME   t6dskf5b  a=dskf(256)
+
+==============================================================================
+LAYER 2 — SUPPORT (the load-bearing layer)
+==============================================================================
+SUPPORTED     t6dskf2   PRINT DSKF()
+            ref  [error:syntax error] 'Syntax error in 10'
+SUPPORTED     t6dskf62  PRINT DSKF(9)
+            ref  [value] 'Bad drive name in 10'
+SUPPORTED     t6dskf5   PRINT DSKF(-1)
+            ref  [error:illegal function call] 'Illegal function call in 10'
+SUPPORTED     t6dskf5b  PRINT DSKF(256)
+            ref  [error:illegal function call] 'Illegal function call in 10'
+
+==============================================================================
+COMBINED — tokenised? x observable consequence
+==============================================================================
+word       crunch  support     consequence
+------------------------------------------------------------------------------
+t6dskf2    present SUPPORTED   match
+t6dskf62   present SUPPORTED   match
+t6dskf5    present SUPPORTED   match
+t6dskf5b   present SUPPORTED   match
+
+==============================================================================
+SUMMARY  SUPPORTED=4
+         executed 4 / 4 words; 0 crunch-only
+==============================================================================
+ROWS: 4 printed, 4 scored — 0 crunch-only word(s) carry no support reading and are printed but not scored
+pin: NOT written -- an --only run measures a subset, and the pin is the whole sweep
+
+=== CRUNCH PIN — words the reference tokenises and zerobas does not ===
+refcache: 0 hit, 4 miss, 4 stored

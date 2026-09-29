@@ -1483,11 +1483,12 @@ ev_ff_dskf:                                 ; DSKF(d): free clusters on the driv
                 ; dirverb handlers answer through: 0 = counted, non-zero = the
                 ; drive is out of range. The BOUND is measured, not judged, and
                 ; the measurement lives with the body in disk/kernel.asm.
+                ; D-DSKFRANGE (2026-09-29): the cell carries the ERR CODE itself
+                ; (0 = counted) -- 62 for a byte that is no drive, 5 for a value
+                ; that is not a byte at all -- so the rule lives with the body.
                 ld      a,(DISKOP_STATUS)
                 or      a
-                jr      z,ev_dskf_ok
-                ld      a,62                ; `Bad drive name`, as measured
-                jp      raise_error
+                jp      nz,raise_error
 ev_dskf_ok:
                 ld      de,(FAC)            ; DE = free cluster count
                 ret

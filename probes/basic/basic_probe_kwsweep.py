@@ -3612,6 +3612,13 @@ SWEEP: list[tuple[str, str, str | None, str, str]] = [
      "NEEDS-DISK: PROVES-T6:13 FORM:free-space"),
     ("t6dskf62", 'a=dskf(9)', 'PRINT DSKF(9)', "stored",
      "NEEDS-DISK: PROVES-T6:62 FORM:free-space"),
+    # D-DSKFRANGE (2026-09-29): a BYTE first, then a drive -- 5 for a value that
+    # is not a byte, where this read 62 (scratchpad/t6enum_b3.out). 256 guards
+    # the other side of the byte.
+    ("t6dskf5", 'a=dskf(-1)', 'PRINT DSKF(-1)', "stored",
+     "NEEDS-DISK: PROVES-T6:5 FORM:free-space"),
+    ("t6dskf5b", 'a=dskf(256)', 'PRINT DSKF(256)', "stored",
+     "NEEDS-DISK: FORM:free-space"),
     # 🏗️ D-KWT6 BATCH 4 (2026-09-27) — statements and multi-form keywords, hand-
     # written one-line SCENARIOS per form (t6enum_probe.py --batch=4 ->
     # t6enum_b4.out). Each row is the FIRST case that AGREED for its code; MID$'s

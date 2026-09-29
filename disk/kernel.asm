@@ -2104,7 +2104,9 @@ hklr_rhs:
 ;   in   FAC          = the drive argument, staged by main because chan_gate
 ;                       clobbers DE building its own return address
 ;   out  FAC          = the free cluster count (when DISKOP_STATUS = 0)
-;        DISKOP_STATUS= 0 counted, 1 drive out of range -> main raises ERR 62
+;        DISKOP_STATUS= 0 counted, else the ERR code main raises: 62 `Bad drive
+;                       name` for a byte past the last drive, 5 `Illegal function
+;                       call` for a value that is not a byte (D-DSKFRANGE)
 ;        CF = 1 (claimed), which is what chan_gate tests
 ;
 ; 📏 THE BOUND IS MEASURED, NOT JUDGED, and it moved here with the code it
@@ -2135,11 +2137,16 @@ hk_dskf:
                 or      a
                 jr      nz,hkdf_done        ; a deferred error: count nothing
                 ld      de,(FAC)            ; the drive argument
+                ; 🔴 D-DSKFRANGE (2026-09-29): A BYTE FIRST, THEN A DRIVE. On the
+                ; CF-3300 `DSKF(-1)` / `DSKF(256)` are 5 and `DSKF(9)` is 62
+                ; (scratchpad/t6enum_b3.out); this read 62 for all three.
                 ld      a,d
-                or      a                   ; >255 cannot be a drive
+                or      a
+                ld      a,5                 ; (flags kept) not a byte -> 5
                 jr      nz,hkdf_bad
                 ld      a,e
                 cp      3                   ; 0..2 accepted, 3+ refused
+                ld      a,62                ; (flags kept) no such drive -> 62
                 jr      nc,hkdf_bad
                 ld      ix,fat_count_free   ; DE = free clusters, via the tenant
                 call    calbak
@@ -2150,8 +2157,7 @@ hkdf_done:
                 scf
                 ret
 hkdf_bad:
-                ld      a,1
-                ld      (DISKOP_STATUS),a   ; main raises ERR 62 `Bad drive name`
+                ld      (DISKOP_STATUS),a   ; A = the ERR code main raises
                 scf
                 ret
 

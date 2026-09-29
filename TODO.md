@@ -6019,7 +6019,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:27103 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:27118 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -26267,14 +26267,29 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       is the MK$ family's argument parse, which evaluates past the `,` and then
       type-checks instead of demanding `)`.
 
-- [ ] 🔴 **`DSKF(-1)` / `DSKF(256)` ARE `Bad drive name` HERE AND `Illegal
-      function call` ON THE CF-3300 (D-DSKFRANGE, found 2026-09-27 by T6).**
+- [x] ✅ **`DSKF(-1)` / `DSKF(256)` WERE `Bad drive name` HERE AND `Illegal
+      function call` ON THE CF-3300 (D-DSKFRANGE, found 2026-09-27 by T6, fixed 2026-09-29).**
       🎚️ TIER 6 — `DSKF` with a drive number outside a byte
       🤖 **AUTONOMOUS** — the reference settles it.
       `scratchpad/t6enum_b3.out`: CF-3300 `(5, 20)`, zerobas `(62, 20)`.
       `DSKF(9)` — a byte, but no such drive — is `Bad drive name` (62) on BOTH, so
       the reference range-checks the argument as a BYTE first (5) and only then
       the drive. Blocks DSKF's T6.
+      ✅ **FIXED 2026-09-29 — AND IT GAVE MAIN 4 BYTES BACK.** `hk_dskf` (disk.rom)
+      checks a BYTE first (5) and only then the drive (62), and `DISKOP_STATUS` now
+      carries the ERR CODE itself (0 = counted) instead of a flag main mapped to a
+      hard-wired 62 — so main's tail is `or a / jp nz,raise_error`, and page 1 went
+      0 → 4 B free (`make basic-reloc`, 2026-09-29). Rows `t6dskf5` (PROVES-T6:5,
+      `DSKF(-1)`) and `t6dskf5b` (`DSKF(256)`) SUPPORTED against the CF-3300
+      ([`dskfrange_kwsweep.out`](scratchpad/dskfrange_kwsweep.out)); knife = HEAD's
+      kernel.asm AND expr.asm together (reverting only the disk half would have main
+      raise the old flag value 1 as an ERROR CODE — no knife at all) turns both
+      non-green ([`dskfrange_knife.out`](scratchpad/dskfrange_knife.out)).
+      ⚠️ **THEY READ `EXTRA`, NOT `DIVERGENT`, UNDER THE KNIFE** — kwsweep's error
+      classifier does not know `Bad drive name`, so "5 there, 62 here" looks like
+      "the reference refuses, zerobas does not". Still not green, so the gate bites;
+      but the label is wrong, and a real divergence between two DISK error messages
+      would be mis-reported the same way.
 
 - [ ] 🔴 **`STRING$(2,"")` IS `Syntax error` HERE AND `Illegal function call` ON
       THE REFERENCE (D-STRINGEMPTY, found 2026-09-27 by the T6 enumeration).**
