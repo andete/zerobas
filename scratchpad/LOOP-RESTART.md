@@ -30,6 +30,45 @@ symmetric. Treat that group as closed-by-measurement unless a new signal appears
 | PLAY X shape | *"Tenant walks the chain"* — the MML tenant reads the variable chain in RAM itself (spec-basic-audio-play §7.12); main ~0 B, no carve needed |
 | the rig | Joost's RP2040-Zero is **CONNECTED to the laptop since 2026-09-25** (`/dev/cu.usbmodem1101`, running firmware, not BOOTSEL; seen read-only, nothing flashed). **UN-PARKED 2026-09-26 and FLASHED with `tools/rigfw/rigfw.ino`:** headless joystick WORKS (bind `msxjoystick1_config` to `joy1`, which this install leaves EMPTY); headless mouse does NOT reach PAD/PDL. Next: STICK/STRIG rows — the rig item in TODO |
 
+### 🌙 LOOP 2026-09-28 ~15:00 → 09-29 — READ THIS FIRST (the sections below are older)
+
+**All pushed, head `3146e8d6`.** Commits (`git log 780d1b66..`): `e7d13dcd` D-COPYWILD
+corrected · `2b4ecd16`/`7813db7c` **T6 batches 9–10 (105 → 116)** · `370ce54b` D-WAITMASK ·
+`f0b3a7c3` **D-NEWARG** (`20 NEW 1` ERASED the program) · `295b767b`/`10ff2ad3`/`b46bf8ca`
+**the type-ahead T2 method** (D-KWT2TA/RESP/RIG: UNTIMEABLE 498 → 6) · `00c76337` **D-SETTLEKEY**
+(a boot-per-case `run_cases` piled every case's marks under key 0) · `ca76bbeb`
+**D-CASRELOCK + D-CLOADPROG** (TIER 1 ×2: a second file on a real tape would not load;
+CLOAD in a program ran on at a stale cursor) · `11981839` D-VARPTRFCB measured ·
+`6a78195d` **D-CASSAYPROG** · `4b0b1266` **D-DSKFSLOW** + D-KWTRATCHET filed · `3146e8d6`
+**D-COPYWILD** autonomous half.
+🎯 **JOOST'S 09-28 PRIORITY IS MET AS FAR AS IT CAN GO WITHOUT HIM: LEVEL 1 IS EMPTY.**
+Level 0 = VARPTR (🙋 D-VARPTRFCB: `VARPTR(#n)` is a 265-byte-stride FCB layout on both
+references — re-lay channel storage, which is TIER 4 work, or nothing) + the N/A
+keywords. Every other keyword is at level 2+.
+**Walls (`make basic-reloc`, 2026-09-29): main low 1 B + page 1 0 B; sub p0 9, sub p1
+1; disk 6892 (largest hole 2531).** 🔴 **Main and sub p1 are FULL** — the last three
+fixes were placed in `disk.rom` on purpose (zero main bytes); anything that must
+live in main needs a carve first (`scratchpad/jr_mapper.py` found only 3 on 09-28).
+🙋 **OPEN FOR JOOST:** D-VARPTRFCB (above) · D-COPYWILD's multi-match (5 today; the
+reference never returns) · everything older still listed in TODO.
+➡️ **NEXT, AUTONOMOUS, by tier:** TIER 3 D-DISKERRS' remainder (D-ERRKEEP2's LOAD/MERGE/
+ASCII-LOAD hooks — the witness needs a READ failure while the open file's sector still
+reads, i.e. a crafted image; OPEN's 54 is main bytes) → TIER 4/5 → the 27 TIER 6
+items → apparatus (D-KWTRATCHET is new and cheap: only 2 of 825 OK rows sit above 6×).
+🔴 **LESSONS, EACH COST A MISS TODAY:**
+• **A WITHDRAWAL IS A CLAIM TOO.** D-CLOADSKIP was withdrawn on "the fixture was
+unfaithful" and its replacement was taken as faithful on the word of OUR writer
+(`save.asm`). CSAVE writes the end-link + SEVEN `$00` on all three machines; nobody had
+read the reference's tape. Two TIER 1 bugs hid behind it.
+• **A ONE-SIDED TIMING IS A BEHAVIOUR QUESTION BEFORE A HARNESS ONE.** I widened kwtime's
+pass 2 for CLOAD's REF-ONLY-MISSING; the raw readings showed zerobas had REACHED its END
+mark — a real path difference (D-CLOADPROG). The widening was reverted unused.
+• **A FILED CAUSE CAN BE RIGHT IN SPIRIT AND WRONG IN MECHANISM.** D-DSKFSLOW said "the
+disk is touched before the argument is checked"; the bad-DRIVE check was always first —
+the slow two were the evaluator's DEFERRED errors (FPERR). Time the controls first.
+• **A per-half steadiness test cannot work at 2–4 counts a half** (openMSX's leader):
+any compare shifts the next edge. D-CASRELOCK's fix is the lean edge count, longer.
+
 ### ☀️ LOOP 2026-09-28 ~01:00 → ~15:00 — READ THIS FIRST (the sections below are older)
 
 **All pushed, head `94e0e612`.** Commits (`git log 5fbeb280..`): `f91f72ea` D-DRVNAME
