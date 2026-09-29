@@ -6019,7 +6019,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:27382 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:27405 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -6185,7 +6185,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:11019 (T-6FE392)8 (T-529ABE)` from `TODO.md:23317 (T-529ABE)`: a
+      `TODO.md:11019 (T-6FE392)8 (T-529ABE)` from `TODO.md:23340 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -11866,7 +11866,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:23317 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:23340 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -17166,6 +17166,29 @@ finds zero shared names (a renamed block would otherwise make it silently blind)
       the CF-3300 by ~635 B today) — or (b) allocate per disk OPEN (OPEN then
       charges 61 B, not the reference's 11) or (c) size it by MAXFILES (317 B a
       channel). The diskless build is a pure +39 B a channel either way.
+      🟢 **S0 SHIPPED 2026-09-29 — THE BLOCK LAYOUT MOVES INTO ONE ROM, AND IT WAS
+      THE CARVE.** D-CPY18 had just opened sub page 1 (1 → 699 B). Main's
+      `fch_save_active` / `fch_load_ctx` were pure copies between the engine
+      globals and the block, plus two crossings into the FAT tenant, so their
+      bodies moved INTO the tenant (`t_fch_save` / `t_fch_load`, selectors
+      `DISKOP_SEL_FCH_SAVE` 21 / `_LOAD` 22). Main keeps 13 B shims, and
+      `fch_restage` / `fch_flush_active` lost their only callers and went. A save
+      still reports the FLUSH's status (Cy, A, HL carried across the copies),
+      because `chan_gate`'s claimed-status logic reads it that way.
+      **Main page 1 0 → 41 B; sub page 1 699 → 648 B** — both predicted (~41, ~648)
+      from the instruction count ([`fcbs0_walls.out`](scratchpad/fcbs0_walls.out)).
+      `diskbasic-acceptance` 34/34 converged; knife BLIND unchanged
+      ([`fcbs0_knife_all.out`](scratchpad/fcbs0_knife_all.out),
+      [`fcbs0_knife_fn.out`](scratchpad/fcbs0_knife_fn.out)), kwsweep SUPPORTED 952
+      ([`fcbs0_kwsweep.out`](scratchpad/fcbs0_kwsweep.out)), kwtime OK 838
+      ([`fcbs0_kwtime.out`](scratchpad/fcbs0_kwtime.out)). ⚠️ **Spec §6 now records a
+      constraint the slices had not faced:** the DISK and NODISK machines run the
+      SAME main and sub images, so the layout cannot differ per build at assembly
+      time. S1 and S2 are ONE runtime design, not "diskless first".
+      ➡️ **NEXT: S1+S2 together** (`docs/spec-fcbshape.md` §6): the layout in
+      the tenant plus op 18's stride, the `FILTAB` table, the header fields, and
+      the disk-engine state's fixed table (ruled (a)) reached through the +1
+      pointer. VARPTR(#n) needs main bytes, and 41 now exist.
 
 - [x] 🧰 **D-FASTPIN — `gates-fast` CAN WIPE THE KWSWEEP PIN AND THEN SKIP THE RUN THAT MAKES IT**
       🎚️ TIER 6 — apparatus: a false red, never a false green.

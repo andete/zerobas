@@ -91,6 +91,10 @@ sub ROM has 505 B (p0) + 50 B (p1).
 | `files.asm` | `fat.asm` | **3** | `fat_io_append`, `fch_flush_active`, `fch_restage` |
 | `field.asm` | `fat.asm` | **3** | `fatprim_bounce` ×3 |
 
+*(Since D-FCBSHAPE S0, 2026-09-29: `files.asm`'s two channel-context edges are
+`fatprim_bounce` ×2 instead of the two shims, which are gone. The count is
+unchanged; this table records the measurement of its date.)*
+
 **Six, not twenty-eight.** The reason is visible in `basic/fat.asm`'s own header:
 the primitive/sector layer was evicted to the sub-ROM tenants (`fatprim_tenant`,
 `fatio-body.inc`) after that estimate was written, and what remains of

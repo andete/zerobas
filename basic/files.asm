@@ -1430,42 +1430,35 @@ fch_ctx_addr:
 ; ⚠️ IX: the flush is a CALSLT, which this routine never used to contain. Its
 ; header contract says IX/IY survive because the EOF/LOF function callers rely on
 ; the token cursor — so guard it here rather than at nine call sites.
+;
+; 🏗️ D-FCBSHAPE S0 (2026-09-29): BOTH BODIES NOW LIVE IN THE FAT TENANT
+; (sub/fatprim.asm t_fch_save / t_fch_load), and these are shims. The flush-
+; then-copy order, the record travelling with the state (D-FIELDFIX) and the
+; flush's result being what a save reports are all kept there, in words. The
+; point is D-FCBSHAPE's: the block's LAYOUT is now known in one ROM, the one
+; its later slices change -- and main page 1 got the difference back.
+; HL = the context block rides through CALSLT untouched; fch_ctx_addr's own
+; CALSLT does not touch the engine globals, so computing it before the flush
+; (the old order was flush, then address) changes nothing it reads.
 fch_save_active:
                 ld      a,(FCH_ACTIVE)
                 or      a
                 ret     z                   ; nothing live -> nothing to save
-                call    fch_flush_active
-                ld      a,(FCH_ACTIVE)      ; the CALSLT inside clobbered it
                 call    fch_ctx_addr        ; HL = ctx[active]
-                ex      de,hl               ; DE = ctx dest
-                ld      hl,FCH_STATE0       ; copy the 50-byte engine-state span
-                ld      bc,FCH_STATESZ
-                ldir                        ; DE -> ctx + FCH_STATESZ
-                ; D-FIELDFIX: and the RECORD travels too, which field.asm's header
-                ; has always said it does. DE already points at the block's record
-                ; slot. Without this a FIELD on a non-current channel slices
-                ; whatever the last GET left in the one global buffer.
-                ld      hl,FSECTOR_BUF
-                ld      bc,FCH_RECMAX
-                ldir
-                ret
+                ld      a,DISKOP_SEL_FCH_SAVE
+                jp      fatprim_bounce      ; flush, then globals + record -> ctx
 
 ; fch_load_ctx — load channel A's context block into the engine globals and make
 ; it the active channel (FCH_ACTIVE = A). Clobbers A/BC/DE/HL.
 ;
-; ⚠️ IX guarded for the same reason as fch_save_active: fch_restage is a CALSLT.
+; ⚠️ IX guarded for the same reason as fch_save_active: the tenant is a CALSLT.
 fch_load_ctx:
                 push    af                  ; keep the channel number
                 call    fch_ctx_addr        ; HL = ctx[A]
-                ld      de,FCH_STATE0
-                ld      bc,FCH_STATESZ
-                ldir                        ; ctx state -> globals
-                ld      de,FSECTOR_BUF      ; D-FIELDFIX: restore THIS channel's
-                ld      bc,FCH_RECMAX       ; record -- the twin of the save above
-                ldir
                 pop     af
-                ld      (FCH_ACTIVE),a
-                jp      fch_restage         ; re-read this channel's staged sector
+                ld      (FCH_ACTIVE),a      ; the re-stage reads it
+                ld      a,DISKOP_SEL_FCH_LOAD
+                jp      fatprim_bounce      ; ctx -> globals + record, re-stage
 
 ; fch_sync_mirror — FCH_NUM = FCH_ACTIVE, FCH_MODE = FCH_MODES[FCH_ACTIVE].
 fch_sync_mirror:

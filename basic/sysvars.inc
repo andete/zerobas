@@ -3136,6 +3136,11 @@ DISKOP_SEL_FCH_RESTAGE          equ 19
 DISKOP_SEL_FCH_DETACH           equ 20  ; the inverse: flush the dirty partial
                                         ; sector in place before handing the
                                         ; shared buffer to another channel
+; D-FCBSHAPE S0 (2026-09-29): the channel context save/load, main's
+; fch_save_active/fch_load_ctx bodies moved into the tenant so the block's
+; layout is known in ONE ROM. HL = the context block (fch_ctx_addr).
+DISKOP_SEL_FCH_SAVE             equ 21  ; flush, then globals + record -> block
+DISKOP_SEL_FCH_LOAD             equ 22  ; block -> globals + record, then re-stage
 ; DISKOP_OP selector values for the dirverb_tenant (SUBROM_IDX_DIRVERB, Phase 2,
 ; spec §12). A SEPARATE value namespace on the SAME DISKOP_OP cell: fatprim
 ; (index 12) and dirverb (index 13) are never in flight at once (one subrom_call

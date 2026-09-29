@@ -77,6 +77,18 @@ slice below starts before a carve has priced its bytes.
 
 ## 6. Slices (after §4 is ruled)
 
+0. **S0 — the block layout moves into ONE ROM (✅ 2026-09-29).** Main's
+   `fch_save_active` / `fch_load_ctx` copied the 50 B state span and the 256 B
+   record between the engine globals and the block, so the LAYOUT was known in
+   main, the region with no bytes. Both bodies now live in the FAT tenant (sub
+   page 1: `t_fch_save` / `t_fch_load`, selectors 21/22); main keeps 13 B shims
+   that compute the block address and bounce. Behaviour unchanged, main page 1
+   **0 → 41 B**, sub page 1 699 → 648 B. S1/S2 now change the layout in the
+   tenant plus op 18's stride, not in main. Note the machines share images: the
+   DISK and NODISK targets run the SAME main and sub ROMs, so the layout
+   cannot differ per build at assembly time — S1 and S2 are one runtime
+   design (265 B blocks for all; the disk-engine state reached through the
+   +1 pointer only when a disk file is open).
 1. **S1 — the layout, diskless first.** 265 B blocks, the `FILTAB` table, the
    header fields kept at their offsets, `VARPTR(#n)`. Diskless rows on the
    NODISK target (the ruled rule: any disk-related work adds rows there).

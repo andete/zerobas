@@ -71,7 +71,7 @@ fatprim_tenant:
                 ld      (DISKOP_ERR),a      ; D-DISKERR: no DSKIO failure pending yet
                 ld      a,(DISKOP_OP)
                 ld      c,a
-                ld      b,0                 ; BC = op (0..14)
+                ld      b,0                 ; BC = op (0..22)
                 ld      ix,fp_table
                 add     ix,bc
                 add     ix,bc
@@ -111,6 +111,11 @@ fp_table:
 ; main page 1 has 6 B free.
                 jp      t_fch_restage           ; 19 DISKOP_SEL_FCH_RESTAGE
                 jp      t_fch_detach            ; 20 DISKOP_SEL_FCH_DETACH
+; --- rows 21-22: the channel context save/load (D-FCBSHAPE S0), main's
+; fch_save_active/fch_load_ctx bodies moved here so the block layout lives in
+; one ROM. HL = the context block on entry to both.
+                jp      t_fch_save              ; 21 DISKOP_SEL_FCH_SAVE
+                jp      t_fch_load              ; 22 DISKOP_SEL_FCH_LOAD
 
 ; --- uniform result-stash tails --------------------------------------------
 ; Persist {HL, A, STATUS} into the DISKOP block; STATUS=0 (ok) from
@@ -217,8 +222,48 @@ t_fch_restage:
                 jp      c,fp_stash_err
                 jp      fp_stash_ok
 
+; t_fch_load (D-FCBSHAPE S0): channel context block -> the engine globals, then
+; the re-stage. HL = the block (main's fch_ctx_addr, passed through CALSLT
+; untouched); FCH_ACTIVE is already the new channel, which the re-stage reads.
+; This was main's fch_load_ctx body, moved whole: the block's LAYOUT is now
+; known in one ROM only, the one D-FCBSHAPE's later slices change.
+t_fch_load:
+                ld      de,FCH_STATE0
+                ld      bc,FCH_STATESZ
+                ldir                        ; ctx state -> globals
+                ld      de,FSECTOR_BUF      ; D-FIELDFIX: and this channel's record
+                ld      bc,FCH_RECMAX
+                ldir
+                jr      t_fch_restage
+
+; t_fch_save (D-FCBSHAPE S0): flush, then the engine globals -> channel context
+; block at HL. Was main's fch_save_active body, moved whole.
+; ⚠️ The flush comes FIRST, while the globals still hold the live state: it
+; updates FWR_SECIDX (and FWR_CLUS/FWR_FIRST if it allocates), all inside the
+; saved span. ⚠️ And the FLUSH's result is what this op reports -- Cy, A and HL
+; as fat_detach_channel left them, carried across the copies. The old resident
+; path reached the flush through its own bounce and then only copied, so
+; DISKOP_STATUS after a save was the flush's, and chan_gate's claimed-status
+; logic reads it that way.
+t_fch_save:
+                push    hl                  ; the ctx block
+                call    fat_detach_channel
+                ex      (sp),hl             ; HL = ctx; stack = the flush's HL
+                push    af                  ; the flush's A and Cy
+                ex      de,hl               ; DE = ctx
+                ld      hl,FCH_STATE0       ; the 50-byte engine-state span
+                ld      bc,FCH_STATESZ
+                ldir                        ; DE -> ctx + FCH_STATESZ
+                ld      hl,FSECTOR_BUF      ; D-FIELDFIX: the record travels too
+                ld      bc,FCH_RECMAX
+                ldir
+                pop     af
+                pop     hl
+                jr      t_fch_result
+
 t_fch_detach:
                 call    fat_detach_channel
+t_fch_result:
                 jp      c,fp_stash_err
                 jp      fp_stash_ok
 
