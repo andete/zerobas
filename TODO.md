@@ -6019,7 +6019,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:27433 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:27445 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -26457,7 +26457,8 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       rule).**
       🎚️ BUDGET — code space: ~95 B of disk.rom that exists only to route around a
       full main wall.
-      🤖 **AUTONOMOUS** — needs 3–4 B of main page 1 (a carve), then a one-call fix.
+      ~~🤖 **AUTONOMOUS** — needs 3–4 B of main page 1 (a carve), then a one-call fix.~~
+      Now 🙋 at the end of this block (2026-09-29).
       🏗️ **THE RULE (Joost, 2026-09-29):** error checks go at SHARED chokepoints or are
       filed with a price; TIER 6 spends no main bytes; and a private copy of an
       existing routine is never written to dodge a wall. D-MKIRANGE broke the third:
@@ -26469,6 +26470,17 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       (`MKI$(1.5)` → 1 on the CF-3300, [`mkirange_run.out`](scratchpad/mkirange_run.out))
       where CINT rounds — so the reused routine is the TRUNCATING one (FIX/INT's),
       with the int16 range check. Rows `t6mki6` / `t6mkiedge` are the regression net.
+      🙋 **NEEDS-JOOST** — **THE FILED FIX PUTS TWO OF THE RULE'S THREE PARTS AGAINST
+      EACH OTHER** (2026-09-29). Main page 1 had bytes again (29 B after D-OPENSAME, 2026-09-29), so the
+      "carve first" blocker is gone. But the fix as filed spends main bytes (a call
+      in `str_mkf`) on a TIER 6 behaviour, which part 2 forbids, to remove the
+      private copy that part 3 forbids. The 0-main-byte shape would have disk.rom
+      call main's conversion back (`calbak`). Main's truncating float → int16
+      RAISES Overflow, though, where `hk_mki` must DEFER it through FPERR (first
+      error wins), and raising from inside a disk → main callback is unproven here.
+      Which part yields is his call: (a) spend ~4 B of main (part 3 over part 2),
+      (b) keep the disk copy (part 2 over part 3), or (c) build and prove a
+      non-raising main entry reachable by `calbak`, pricing its main bytes first.
 
 - [x] ✅ **D-NOASTO WROTE THE SAME "MOUNT, LOOK THE SOURCE UP, 53 IF MISSING" TWICE —
       ONCE IN `hk_name`, ONCE IN `hk_copy` (D-NOASTOFOLD, filed 2026-09-29 under

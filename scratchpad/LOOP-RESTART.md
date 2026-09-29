@@ -30,6 +30,37 @@ symmetric. Treat that group as closed-by-measurement unless a new signal appears
 | PLAY X shape | *"Tenant walks the chain"* — the MML tenant reads the variable chain in RAM itself (spec-basic-audio-play §7.12); main ~0 B, no carve needed |
 | the rig | Joost's RP2040-Zero is **CONNECTED to the laptop since 2026-09-25** (`/dev/cu.usbmodem1101`, running firmware, not BOOTSEL; seen read-only, nothing flashed). **UN-PARKED 2026-09-26 and FLASHED with `tools/rigfw/rigfw.ino`:** headless joystick WORKS (bind `msxjoystick1_config` to `joy1`, which this install leaves EMPTY); headless mouse does NOT reach PAD/PDL. Next: STICK/STRIG rows — the rig item in TODO |
 
+### 🌆 LOOP 2026-09-29 AFTERNOON → EVENING — READ THIS FIRST (the sections below are older)
+
+**Commits (`git log 83bdfe74..`):** `ac9ca210` D-NOASTOFOLD + **D-KNIFET3** (the knife took
+`PROVES-T3:` error rows as connectedness witnesses — 9 keywords, BSAVE BLIND) · `8f900589`
+**D-DIMRESERVE measured** (the DIM-edge gap is the EVALUATOR's stack: 147 B a statement here
+vs 79 B on the VG-8020, 36 B per expression entry walking all 12 precedence levels) ·
+`673271c4` **D-CPY18** (sub page 1 **1 → 699 B**: the math tenants' 162 record copies folded
+into entry points; fp_atan's private copy of the copy routine gone; bit-identical A/B) ·
+`0bfea44f` **D-FCBSHAPE S0** (channel save/load bodies into the FAT tenant; main page 1
+**0 → 41 B**) · then **D-OPENSAME** (a file open on another channel is 54, as on the
+CF-3300 in every mode; main 41 → 29 B).
+**Walls (`make basic-reloc`, 2026-09-29 evening): main page 1 29 B, low 1 B; sub p0 9 B,
+sub p1 648 B; disk 6522 B (largest hole 2046).** Recount before quoting.
+🙋 **NEW FOR JOOST (in TODO, both 🙋):** (1) **D-DIMRESERVE** — rewrite `eval`'s precedence
+levels as a climber (the per-statement stack economy, also a T5 speed lever; main code);
+(2) **D-MKIREUSE** — its filed fix puts the rule's part 2 (TIER 6 spends no main bytes)
+against part 3 (no private copies); which yields?
+➡️ **NEXT, AUTONOMOUS:** TIER 4 **D-FCBSHAPE S1+S2 together** (`docs/spec-fcbshape.md` §6:
+the DISK and NODISK machines share images, so the layout is ONE runtime design —
+265 B blocks, `FILTAB`, header fields, the disk-engine state's fixed table behind the +1
+pointer; VARPTR(#n) needs main bytes, 29 exist) → TIER 5 → TIER 6 → apparatus.
+🔴 **LESSONS, EACH COST A MISS TODAY:**
+• **A SKIP THAT NAMES ONE TAG MISSES ITS SIBLING TAG.** The knife's error-row skip named
+`PROVES-T6:`; `PROVES-T3:` rows then became witnesses (third site of the same class).
+• **A SCANNER'S COUNT IS A CLAIM — MAKE THE EDIT REFUSE ON IT, AND CROSS-CHECK IT.** D-CPY18's
+first scan missed four sites; the edit script refused, an independent awk pass agreed with
+the script to the site. Alias the buffers by ADDRESS (HORNER_G = SQRT_X was missed once).
+• **A STORED ROW's LINE NUMBERS ARE THE PACKING's, NOT THE STATEMENT COUNT** (`as_stored`
+packs ≤34 chars): `ON ERROR GOTO 60` read `Undefined line number` on BOTH machines —
+SUPPORTED for the wrong reason.
+
 ### 🌙 LOOP 2026-09-28 ~15:00 → 09-29 — READ THIS FIRST (the sections below are older)
 
 🏗️ **JOOST'S RULINGS 2026-09-29 — DO NOT RE-ASK:**
