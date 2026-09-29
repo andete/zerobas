@@ -98,3 +98,46 @@ slice below starts before a carve has priced its bytes.
 3. **S3 — the channel-I/O carve** (D-FATPAGE1) is the same layer and should be
    priced together: its ~317 B of byte-level FAT I/O would move sub-side only
    with the LOOP, not the byte routine (0.156 ms per inter-slot call).
+
+## 7. S1+S2 as one design — where the disk-engine table lives (2026-09-29)
+
+**Measured first** ([`scratchpad/clearmax_run.out`](../scratchpad/clearmax_run.out),
+`scratchpad/clearmax_probe.py`; `HIMEM` `$FC4A` and `FRE(0)` at boot, then
+`CLEAR 200,<addr>` on a ladder up to `$F380`, one boot per case):
+
+| machine | boot `HIMEM` | boot `FRE(0)` | `CLEAR 200,&HF380` |
+|---|---|---|---|
+| VG-8020 | `$F380` | 28765 | accepted, `HIMEM` = `$F380` |
+| CF-3300 | **`$DE77`** | 23380 | **accepted**, `HIMEM` = `$F380` |
+| zerobas, both builds | `$E000` | 24015 | accepted, `HIMEM` = `$F380` — but `strheap_ceiling` clamps the top to `TXTMAX`, so nothing is gained |
+
+🔑 **The reference reserves its disk work area by LOWERING `HIMEM` AT BOOT and
+does NOT protect it afterwards.** `CLEAR ,addr` is accepted all the way to
+`$F380` on the CF-3300, over the ~5 KB its disk ROM keeps below it. Predicted
+"refused above boot HIMEM": MISS on both the CF-3300 and zerobas.
+
+**So S2's table takes the reference's own shape, for 0 main bytes:**
+- the disk ROM's init lowers `HIMEM` by the table size (16 × 50 = 800 B, or
+  `(MAXF_CEIL+1) × FCH_STATESZ`), exactly as the CF-3300's does;
+- the table sits at a CONSTANT address, `TXTMAX − 800`, because every boot
+  starts from `HIMEM = TXTMAX`; a disk file's FCB `+1..+2` holds
+  `table + ch × FCH_STATESZ`;
+- a later `CLEAR ,addr` above it exposes the table, as the reference exposes
+  its work area — faithful, and a listing that raises `HIMEM` past boot's is
+  already unusual on the CF-3300.
+- The diskless machine never lowers `HIMEM`; its devices keep no engine
+  state, so it takes the pure 39 B-per-channel gain.
+
+**The slice, all in ONE commit** (both machines run the same images):
+1. op 18's stride `FCH_CTXSZ` 306 → 265; the 256 B record at `+9`; `MAXFILES`
+   also carves the `FILTAB` table (MAXFILES + 1 words) — sub page 0, 9 B free
+   (2026-09-29): **price it first**, a page-0 carve may come before it;
+2. `t_fch_save` / `t_fch_load` (sub page 1) copy the 50 B state through the
+   `+1` pointer when the channel is a disk file, and the record at `+9`;
+3. OPEN writes mode `+0`, device `+4`, the pointer `+1` (disk files), and the
+   position `+6` is kept as the reference moves it;
+4. disk.rom init: `HIMEM −= 800`;
+5. `VARPTR(#n)` = `fch_ctx_addr` (main; 29 B free, 2026-09-29).
+Rows: `MAXFILES` 0..4 `FRE(0)` steps on BOTH targets, the `VARPTR(#n)` stride,
+PEEKs of `+0`/`+4`/`+6` after an OPEN, and the disk build's boot `FRE(0)` (it
+should trail the CF-3300 by ~165 B, down from leading by 635).

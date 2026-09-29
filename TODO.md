@@ -6019,7 +6019,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:27445 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:27453 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -6185,7 +6185,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:11019 (T-6FE392)8 (T-529ABE)` from `TODO.md:23340 (T-529ABE)`: a
+      `TODO.md:11019 (T-6FE392)8 (T-529ABE)` from `TODO.md:23348 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -11866,7 +11866,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:23340 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:23348 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -17189,6 +17189,14 @@ finds zero shared names (a renamed block would otherwise make it silently blind)
       the tenant plus op 18's stride, the `FILTAB` table, the header fields, and
       the disk-engine state's fixed table (ruled (a)) reached through the +1
       pointer. VARPTR(#n) needs main bytes, and 41 now exist.
+      📐 **DESIGNED 2026-09-29 (spec §7), from a measurement:** every machine
+      accepts `CLEAR 200,&HF380`, the CF-3300 included, whose boot `HIMEM` is
+      `$DE77`, below its own disk work area ([`clearmax_run.out`](scratchpad/clearmax_run.out)).
+      The reference reserves that area by LOWERING `HIMEM` AT BOOT and does not
+      protect it afterwards. So the disk-engine table takes the same shape for 0
+      main bytes: disk.rom init lowers `HIMEM` by 800, and the table sits at the
+      constant `TXTMAX − 800`. The slice is one commit; sub page 0 (9 B,
+      2026-09-29) is its likely wall, so it gets priced first.
 
 - [x] 🧰 **D-FASTPIN — `gates-fast` CAN WIPE THE KWSWEEP PIN AND THEN SKIP THE RUN THAT MAKES IT**
       🎚️ TIER 6 — apparatus: a false red, never a false green.
