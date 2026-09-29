@@ -4589,6 +4589,20 @@ SWEEP: list[tuple[str, str, str | None, str, str]] = [
      "NEEDS-DISK: PROVES-T6:54 SUBJECT:OPEN FORM:output"),
     ('t8openreuse', 'open "x4.txt" for output as #1:close:open "x5.txt" for output as #1:print "[ok]"', 'OPEN "X4.TXT" FOR OUTPUT AS #1:CLOSE:OPEN "X5.TXT" FOR OUTPUT AS #1:PRINT"[OK]"', "stored",
      "NEEDS-DISK: SUBJECT:OPEN FORM:output"),
+    # 🔴 D-OPENSAME (2026-09-29): the SAME FILE on a second channel is `File already
+    # open` (54) on the CF-3300 in every mode; it opened here. Trapped rather than
+    # a PROVES-T6 row, because the row must put MAXFILES back to 1 or every later
+    # disk row in the batch runs with two channels -- and the restore goes AFTER
+    # the PRINT (openkw_b's lesson: MAXFILES is an implicit CLEAR). `PRINT #1`
+    # in the handler proves the refused OPEN left the first channel usable.
+    # ⚠️ `GOTO 40` IS THE PACKING's line, not the statement count: as_stored packs
+    # statements greedily into <=34-char lines (10 MAXFILES..GOTO / 20 OPEN #1 /
+    # 30 OPEN #2:END / 40 E=ERR:PRINT#1:CLOSE / 50 PRINT:MAXFILES:END). The first
+    # cut said 60 and BOTH machines read `Undefined line number` -- SUPPORTED for
+    # the wrong reason.
+    ('t8opensame54', 'open "x6.txt" for output as #2',
+     'MAXFILES=2:ON ERROR GOTO 40:OPEN"X6.TXT"FOR OUTPUT AS#1:OPEN"X6.TXT"FOR OUTPUT AS#2:END:E=ERR:PRINT#1,"Q":CLOSE:PRINT"[S";E;"]":MAXFILES=1:END',
+     "stored", "NEEDS-DISK: SUBJECT:OPEN FORM:output"),
     ('t8savetokenised62', 'save "q:x.bas"', 'SAVE "Q:X.BAS"', "stored",
      "NEEDS-DISK: PROVES-T6:62 SUBJECT:SAVE FORM:tokenised"),
     # 🎚️ D-KWT3 BATCH 1 — the TIER 3 rung: each row is a SECOND row for a keyword

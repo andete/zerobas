@@ -1,0 +1,36 @@
+msxtest: BASIC image carries islands -- loaded at $0010, not $2812
+build under measurement: git=0bfea44f zerobas-main-eu.rom=d755f2fc3236 sub.rom=e8ad6ef45722 disk.rom=84b932990fec
+
+==============================================================================
+LAYER 1 — CRUNCH (tokenisation only; NOT a support answer)
+==============================================================================
+SAME   t8openreuse open "x4.txt" for output as #1:close:open "x5.txt" for output as #1:print "[ok]"
+SAME   t8opensame54 open "x6.txt" for output as #2
+
+==============================================================================
+LAYER 2 — SUPPORT (the load-bearing layer)
+==============================================================================
+DIVERGENT     t8opensame54 MAXFILES=2:ON ERROR GOTO 40:OPEN"X6.TXT"FOR OUTPUT AS#1:OPEN"X6.TXT"FOR OUTPUT AS#2:END:E=ERR:PRINT#1,"Q":CLOSE:PRINT"[S";E;"]":MAXFILES=1:END
+            ref  [value] '[S 54 ]'
+            zb   [value] ''
+SUPPORTED     t8openreuse OPEN "X4.TXT" FOR OUTPUT AS #1:CLOSE:OPEN "X5.TXT" FOR OUTPUT AS #1:PRINT"[OK]"
+            ref  [value] '[OK]'
+
+==============================================================================
+COMBINED — tokenised? x observable consequence
+==============================================================================
+word       crunch  support     consequence
+------------------------------------------------------------------------------
+t8openreuse present SUPPORTED   match
+t8opensame54 present DIVERGENT   ref '[S 54 ]' vs zb ''
+
+==============================================================================
+SUMMARY  DIVERGENT=1  SUPPORTED=1
+         executed 2 / 2 words; 0 crunch-only
+==============================================================================
+ROWS: 2 printed, 2 scored — 0 crunch-only word(s) carry no support reading and are printed but not scored
+pin: NOT written -- an --only run measures a subset, and the pin is the whole sweep
+
+=== CRUNCH PIN — words the reference tokenises and zerobas does not ===
+refcache: 0 hit, 4 miss, 4 stored
+knife = HEAD's files.asm + kernel.asm; ROMs fixed c5edf9f31c24 24ddabf3f0f9  -> knifed d755f2fc3236 84b932990fec  -> restored c5edf9f31c24 24ddabf3f0f9 

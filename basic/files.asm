@@ -555,6 +555,20 @@ oo_setmode:
                 ld      d,0                 ; restore DE = channel for the rest of do_open
                 call    diskslot_test
                 jr      z,oo_nodisk         ; no disk -> fail BEFORE claiming a slot
+                ; 🔴 D-OPENSAME (2026-09-29): a file ALREADY OPEN on another channel
+                ; is `File already open` (54) on the CF-3300 in every mode, and the
+                ; first channel keeps its data (scratchpad/opensame_before.out).
+                ; disk.rom's hkk_open_check is the walk (KILL/NAME/COPY use it);
+                ; asked through the full gate, because it reads directory sectors
+                ; into the buffer the live channel stages in. Before the claim, so
+                ; a refusal leaves every channel as it was.
+                push    de                  ; the channel
+                push    hl                  ; the text cursor
+                ld      a,FOPEN_SEL_OCHK
+                call    fopen_cross         ; NZ: this file is open on a channel
+                pop     hl
+                pop     de
+                jp      nz,oo_fail_54
                 ; claim the channel's slot (saving any OTHER active channel) so the
                 ; engine globals belong to this channel before fat_io_* fills them.
                 ; 🔴 D-OPEN2FIX: HL IS GUARDED HERE, NOT ONE CALL LATER.
@@ -1554,6 +1568,7 @@ oopac_num:
                 or      a
                 ld      a,e
                 ret     z                   ; free: A = E = the channel
+oo_fail_54:                                 ; D-OPENSAME joins here too
                 ld      e,54                ; `File already open`
                 jp      oo_fail_e
 

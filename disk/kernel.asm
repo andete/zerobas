@@ -789,6 +789,23 @@ hkr_end:        ld      a,(COPY_LEFT)
                 ldir                        ; its real name replaces the pattern
                 jp      hkc_fill
 
+; --- hk_ochk: OPEN's same-file check (D-OPENSAME, FOPEN_SEL_OCHK) ----------
+; The CF-3300 refuses a second OPEN of one file with `File already open` (54)
+; in every mode -- OUTPUT, INPUT, RANDOM, APPEND-then-INPUT -- and the refused
+; OPEN leaves the first channel's data intact (scratchpad/opensame_before.out,
+; oracle). Main asks before it claims the channel: DISKOP_STATUS non-zero back
+; means "open elsewhere". The walk is hkk_open_check, the one KILL / NAME /
+; COPY already use (Joost's rule 3: no private copy). A mount failure answers
+; 0 -- say nothing -- so OPEN's own path meets and reports the same drive.
+; 📍 In the $5602..$5FE4 fill for hkc_resolve's reason; entered by `jp`.
+hk_ochk:
+                call    fat_mount           ; LOCAL, for hkk_open_check's reads
+                ld      a,0                 ; (flags kept)
+                jp      c,hdl_answer        ; no mount: nothing to say
+                call    hkk_open_check      ; CF=1: an open file matches
+                sbc     a,a                 ; $FF open / 0 not
+                jp      hdl_answer          ; stores it, disarms, claims
+
                 ds      $5FE5 - $, $00  ; pad to the first free-region kernel entry
                 jp      k_5FE5          ; $5FE5
                 ds      $607B - $, $00
@@ -2849,6 +2866,8 @@ hk_dpload:
                 jr      z,hk_aopen          ; step 11 (D-MERGEPORT)
                 cp      FOPEN_SEL_GETB
                 jr      z,hk_agetb          ; step 11, once per BYTE
+                cp      FOPEN_SEL_OCHK
+                jp      z,hk_ochk           ; D-OPENSAME: OPEN's same-file check
                 cp      FOPEN_SEL_LOAD
                 ret     nz                  ; CF=0: not mine. Step 10 (OPEN) adds
                                             ; its arm right here.

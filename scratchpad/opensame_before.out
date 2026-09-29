@@ -1,0 +1,9 @@
+case                   CF-3300              zerobas
+✗ o_same2              [ 54 30 ]                 [OK]
+✗ o_samein2            [ 54 30 ]                 [OK]
+  o_diff2                   [OK]                 [OK]
+  o_reopen2                 [OK]                 [OK]
+✗ o_samerand2            [ 54 30 ]                 [OK]
+✗ o_sameapp2            [ 54 30 ]                 [OK]
+✗ o_samekeep2           [Q1Q2 54 ]           NO READING
+refcache: 0 hit, 14 miss, 14 stored

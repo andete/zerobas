@@ -1,0 +1,42 @@
+msxtest: BASIC image carries islands -- loaded at $0010, not $2812
+build under measurement: git=0bfea44f zerobas-main-eu.rom=c5edf9f31c24 sub.rom=e8ad6ef45722 disk.rom=24ddabf3f0f9
+
+==============================================================================
+LAYER 1 — CRUNCH (tokenisation only; NOT a support answer)
+==============================================================================
+SAME   openkw_b  open"prog.bas"for input as#2
+SAME   t8openoutput54 open "x2.txt" for output as #1:open "x3.txt" for output as #1
+SAME   t8openreuse open "x4.txt" for output as #1:close:open "x5.txt" for output as #1:print "[ok]"
+SAME   t8opensame54 open "x6.txt" for output as #2
+
+==============================================================================
+LAYER 2 — SUPPORT (the load-bearing layer)
+==============================================================================
+SUPPORTED     openkw_b  MAXFILES=2:OPEN"HI.TXT"FOR INPUT AS#2:A$=INPUT$(2,#2):CLOSE#2:PRINT"[";A$;"]":MAXFILES=1
+            ref  [value] '[He]'
+SUPPORTED     t8openoutput54 OPEN "X2.TXT" FOR OUTPUT AS #1:OPEN "X3.TXT" FOR OUTPUT AS #1
+            ref  [value] 'File already open in 20'
+SUPPORTED     t8openreuse OPEN "X4.TXT" FOR OUTPUT AS #1:CLOSE:OPEN "X5.TXT" FOR OUTPUT AS #1:PRINT"[OK]"
+            ref  [value] '[OK]'
+SUPPORTED     t8opensame54 MAXFILES=2:ON ERROR GOTO 40:OPEN"X6.TXT"FOR OUTPUT AS#1:OPEN"X6.TXT"FOR OUTPUT AS#2:END:E=ERR:PRINT#1,"Q":CLOSE:PRINT"[S";E;"]":MAXFILES=1:END
+            ref  [value] '[S 54 ]'
+
+==============================================================================
+COMBINED — tokenised? x observable consequence
+==============================================================================
+word       crunch  support     consequence
+------------------------------------------------------------------------------
+openkw_b   present SUPPORTED   match
+t8openoutput54 present SUPPORTED   match
+t8openreuse present SUPPORTED   match
+t8opensame54 present SUPPORTED   match
+
+==============================================================================
+SUMMARY  SUPPORTED=4
+         executed 4 / 4 words; 0 crunch-only
+==============================================================================
+ROWS: 4 printed, 4 scored — 0 crunch-only word(s) carry no support reading and are printed but not scored
+pin: NOT written -- an --only run measures a subset, and the pin is the whole sweep
+
+=== CRUNCH PIN — words the reference tokenises and zerobas does not ===
+refcache: 2 hit, 2 miss, 2 stored

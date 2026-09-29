@@ -183,6 +183,12 @@ FOPEN_SEL_SAVE  equ     $53     ; step 12 (D-SAVEPORT): tokenised SAVE. Same
                                 ; rule as LOAD's $4C -- outside DISKOP_SEL_*'s
                                 ; 0..7 range, so an idle cell can never read as
                                 ; "SAVE is asking".
+FOPEN_SEL_OCHK  equ     $4F     ; D-OPENSAME (2026-09-29): OPEN's same-file check
+                                ; -- is DISK_FCB_NAME open on a channel? The
+                                ; CF-3300 answers `File already open` (54) to a
+                                ; second OPEN of one file in every mode
+                                ; (scratchpad/opensame_before.out). Outside every
+                                ; DISKOP_SEL_* range, like the rest.
 FOPEN_SEL_LOAD  equ     $4C     ; 🔴 NOT 0, AND THE REASON IS MEASURED. This
                                 ; aliases DISKOP_OP, whose 0 is a LIVE value --
                                 ; `DISKOP_SEL_KILL equ 0` -- so a selector of 0

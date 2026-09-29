@@ -64,6 +64,23 @@ CASES.update({
     "k_nonact2": ["NEW", "5 MAXFILES=2"] + CASES_R1["k_nonact"][1:],
     "o_same2": ["NEW", "5 MAXFILES=2"] + CASES_R1["o_same"][1:],
     "o_samein2": ["NEW", "5 MAXFILES=2"] + CASES_R1["o_samein"][1:],
+    # --- round 5 (D-OPENSAME, 2026-09-29): the controls the 54 must NOT fire on,
+    # the two modes rounds 1-2 did not ask, and the first channel's data after
+    # the refusal (the check crosses the full gate with #1 live).
+    "o_diff2": ["NEW", "5 MAXFILES=2"] + prog('20 OPEN "X2.TXT" FOR OUTPUT AS #1',
+                '30 OPEN "X3.TXT" FOR OUTPUT AS #2:PRINT"[OK]":END')[1:],
+    "o_reopen2": ["NEW", "5 MAXFILES=2"] + prog('20 OPEN "X2.TXT" FOR OUTPUT AS #1:CLOSE #1',
+                  '30 OPEN "X2.TXT" FOR OUTPUT AS #2:PRINT"[OK]":END')[1:],
+    "o_samerand2": ["NEW", "5 MAXFILES=2"] + prog('20 OPEN "X2.DAT" AS #1 LEN=16',
+                    '30 OPEN "X2.DAT" AS #2 LEN=16:PRINT"[OK]":END')[1:],
+    "o_sameapp2": ["NEW", "5 MAXFILES=2"] + prog("20 " + W("X2", "X") + ':OPEN "X2.TXT" FOR APPEND AS #1',
+                   '30 OPEN "X2.TXT" FOR INPUT AS #2:PRINT"[OK]":END')[1:],
+    "o_samekeep2": ["NEW", "5 MAXFILES=2", "10 ON ERROR GOTO 80",
+                    '20 OPEN "X2.TXT" FOR OUTPUT AS #1:PRINT #1,"Q1"',
+                    '30 OPEN "X2.TXT" FOR OUTPUT AS #2', "40 END",
+                    '80 E=ERR:RESUME 85',
+                    '85 PRINT #1,"Q2":CLOSE:OPEN "X2.TXT" FOR INPUT AS #1:INPUT #1,A$,B$',
+                    '86 PRINT"[";A$;B$;E;"]":END', "RUN"],
     # --- round 3 (after D-KILLOPEN): the two disk modes rounds 1-2 did not ask.
     "k_rand": prog('20 OPEN "K1.DAT" AS #1 LEN=16', '30 KILL "K1.DAT":PRINT"[OK]":END'),
     "k_app": prog("20 " + W("K1", "X") + ':OPEN "K1.TXT" FOR APPEND AS #1',

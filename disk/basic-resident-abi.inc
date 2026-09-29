@@ -52,15 +52,15 @@ FCH_STATESZ equ 00032H   ; $E9C9..$E9FA inclusive = 50 bytes
 LPT_MODE equ 00005H   ; FCH_MODES value: channel open to the LPT: printer device
 
 ; --- page-1 call-back targets: reached by an INTER-SLOT call (MSX2 TH), not an absolute one ---
-fname_expr equ 06E21H
-pdfcb_resume equ 06E1AH
+fname_expr equ 06E2DH
+pdfcb_resume equ 06E26H
 dirverb_op equ 06C03H
 main_fat_mount equ 06499H   ; main's fat_mount
 main_fat_find equ 0649DH   ; main's fat_find
 parse_disk_fcb equ 06629H
-field_prologue equ 07230H
-field_item equ 07266H
-lrset_tgt equ 07321H
-lrset_rhs equ 07343H
-lrset_finish equ 0735AH
-fch_ctx_addr equ 06F6FH
+field_prologue equ 0723CH
+field_item equ 07272H
+lrset_tgt equ 0732DH
+lrset_rhs equ 0734FH
+lrset_finish equ 07366H
+fch_ctx_addr equ 06F7BH

@@ -6019,7 +6019,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:27405 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:27433 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -25714,14 +25714,42 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       files.asm (main ROM `bd9e17c1` → `745ef2f8`, restored) turns the 54 row
       DIVERGENT — `File already open in 20` there, nothing here — while the
       control stays green ([`openbusy_knife.out`](scratchpad/openbusy_knife.out)).
-      ➡️ **Still open from this line:** the SAME FILE on a second channel (54 on
+      ~~➡️ **Still open from this line:** the SAME FILE on a second channel (54 on
       the CF-3300 even FOR INPUT, `o_same2` / `o_samein2`) — that needs a name
       compare against the open channels, which `hkk_open_check` already does in
-      disk.rom; main has no bytes left to cross to it.
-      ➡️ **OPEN's half is still open, and wider than filed:** round 2 found the
+      disk.rom; main has no bytes left to cross to it.~~
+      ~~➡️ **OPEN's half is still open, and wider than filed:** round 2 found the
         CF-3300 also refuses a SECOND open of the same FILE on another channel
         with 54 (`o_same2`, and `o_samein2` even FOR INPUT); zerobas accepts
-        both. OPEN is main code, and main was 3 B free on 2026-09-28.
+        both. OPEN is main code, and main was 3 B free on 2026-09-28.~~
+      ✅ **D-OPENSAME (2026-09-29): the same file on a second channel is 54 now.**
+      Unblocked by D-FCBSHAPE S0's 41 B of main page 1. Measured first, round 5 of
+      `killopen_probe.py` ([`opensame_before.out`](scratchpad/opensame_before.out)):
+      the CF-3300 refuses in EVERY mode — OUTPUT, INPUT, RANDOM, APPEND-then-INPUT
+      — accepts a different file and the same file after CLOSE, and the refused
+      OPEN leaves #1 writing (`Q1Q2 54`). All 7 predicted, all hit. OPEN now asks
+      disk.rom before it claims the channel: a new `FOPEN_SEL_OCHK` ($4F) arm in
+      `hk_dpload` runs `hkk_open_check` (the walk KILL/NAME/COPY already use — rule
+      3), through the full gate because it reads directory sectors into the live
+      channel's buffer. It shares OPEN-BUSY's `ld e,54` tail (`oo_fail_54`). Main
+      page 1 41 → 29 B, disk.rom 6542 → 6522 B
+      ([`opensame_walls.out`](scratchpad/opensame_walls.out)). After: 7/7 agree
+      ([`opensame_after.out`](scratchpad/opensame_after.out)). Guard row
+      `t8opensame54` (trapped, `[S 54 ]` on both; it restores MAXFILES=1 after its
+      PRINT) SUPPORTED ([`opensame_kwsweep.out`](scratchpad/opensame_kwsweep.out));
+      knife = HEAD's files.asm + kernel.asm (ROM hashes checked both ways) turns it
+      DIVERGENT while `t8openreuse` stays green
+      ([`opensame_knife.out`](scratchpad/opensame_knife.out)). Whole sweep SUPPORTED
+      953 ([`opensame_kwsweep_full.out`](scratchpad/opensame_kwsweep_full.out)),
+      kwtime OK 839, the new row 0.42× ([`opensame_kwtime.out`](scratchpad/opensame_kwtime.out)),
+      knife BLIND unchanged ([`opensame_knife_all.out`](scratchpad/opensame_knife_all.out),
+      [`opensame_knife_fn.out`](scratchpad/opensame_knife_fn.out)). 🔴 Its first cut said
+      `ON ERROR GOTO 60` and BOTH machines read `Undefined line number` — SUPPORTED
+      for the wrong reason; `as_stored` packs statements into ≤34-char lines, so
+      the handler is line 40.
+      ⚠️ Not asked: a WILDCARD name (`OPEN "A*.TXT"`, 56 on the CF-3300, 53 here)
+      while a matching file is open — the check would answer 54 first. It is the
+      same wrong-code case already listed below.
       • **the common error paths:** `INPUT #` / `INPUT$(n,#)` past the end
         (55 → ok) — ➡️ **now its own TIER 1 item, D-SEQEOF (below): it is not
         just a missing code, zerobas reads the Ctrl-Z end marker as DATA and the

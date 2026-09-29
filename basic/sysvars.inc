@@ -3428,7 +3428,10 @@ FOPEN_SEL_GETB  equ     $47         ; step 11: hand back ONE byte of it. 🔴 Th
                                     ; generated keeps them in step.
 FOPEN_SEL_LOAD  equ     $4C         ; NOT 0: 0 is a live DISKOP_OP value and
                                     ; $FE5D is reached on paths that are not
-                                    ; ours -- see disk/equates.inc (§6.6p)   ; FILES handler
+                                    ; ours -- see disk/equates.inc (§6.6p)
+FOPEN_SEL_OCHK  equ     $4F         ; D-OPENSAME: is DISK_FCB_NAME already open on
+                                    ; a channel? (OPEN's 54). Same rule: outside
+                                    ; every DISKOP_SEL_* range (fatprim 0..22).   ; FILES handler
 H_DSKO          equ     $FDEF   ; DSKO$ handler -- 🔴 WAS $FDF4 AND THAT WAS WRONG
                                 ; (D-DSKOHOOK 2026-09-15). The CF-3300 claims $FDEF and does
                                 ; NOT claim $FDF4, and un-claiming $FDEF on it (POKE ,201 --
