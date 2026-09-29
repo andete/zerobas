@@ -32,6 +32,13 @@ symmetric. Treat that group as closed-by-measurement unless a new signal appears
 
 ### 🌙 LOOP 2026-09-28 ~15:00 → 09-29 — READ THIS FIRST (the sections below are older)
 
+🏗️ **JOOST'S RULINGS 2026-09-29 — DO NOT RE-ASK:**
+| subject | ruling |
+|---|---|
+| VARPTR(#n) | *"agree, go with (c)"* — built with the TIER 4 RAM re-layout of channel storage, never standalone; the item is ⛔ BLOCKED on it |
+| error checks | *"yes, record the rule"* — (1) at a SHARED chokepoint or FILED WITH ITS PRICE, never per-command; (2) TIER 6 spends NO main bytes; (3) no private copy of an existing routine to dodge a wall. Two cleanups filed under it: D-MKIREUSE, D-NOASTOFOLD. Memory: `error-checks-at-shared-chokepoints` |
+
+
 **All pushed, head `3146e8d6`.** Commits (`git log 780d1b66..`): `e7d13dcd` D-COPYWILD
 corrected · `2b4ecd16`/`7813db7c` **T6 batches 9–10 (105 → 116)** · `370ce54b` D-WAITMASK ·
 `f0b3a7c3` **D-NEWARG** (`20 NEW 1` ERASED the program) · `295b767b`/`10ff2ad3`/`b46bf8ca`

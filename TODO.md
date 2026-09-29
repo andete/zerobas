@@ -6019,7 +6019,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:27218 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:27248 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -26335,6 +26335,36 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       `t6mki6` (PROVES-T6:6) and `t6mkiedge` (the -32768.4 value) SUPPORTED;
       knife = HEAD's kernel.asm (disk ROM `923c6b33` → `3454bc5b`, restored) turns
       both non-green ([`mkirange_knife.out`](scratchpad/mkirange_knife.out)).
+
+- [ ] 🔴 **`hk_mki` DUPLICATES A CONVERSION MAIN ALREADY HAS — REPLACE IT WITH A CALL
+      TO MAIN'S CHECKED FLOAT → INT16 (D-MKIREUSE, filed 2026-09-29 under Joost's
+      rule).**
+      🎚️ BUDGET — code space: ~95 B of disk.rom that exists only to route around a
+      full main wall.
+      🤖 **AUTONOMOUS** — needs 3–4 B of main page 1 (a carve), then a one-call fix.
+      🏗️ **THE RULE (Joost, 2026-09-29):** error checks go at SHARED chokepoints or are
+      filed with a price; TIER 6 spends no main bytes; and a private copy of an
+      existing routine is never written to dodge a wall. D-MKIRANGE broke the third:
+      `hk_mki` (disk/kernel.asm) re-implements BCD → int16 truncation and range
+      checking, where main's CINT path already converts FAC with the reference's
+      Overflow. The right shape is `str_mkf` calling that conversion for a
+      non-integer argument before the hook, and `H_MKI` returning to `hk_present`.
+      ⚠️ Measure first that CINT's rounding is NOT what MKI$ wants: MKI$ TRUNCATES
+      (`MKI$(1.5)` → 1 on the CF-3300, [`mkirange_run.out`](scratchpad/mkirange_run.out))
+      where CINT rounds — so the reused routine is the TRUNCATING one (FIX/INT's),
+      with the int16 range check. Rows `t6mki6` / `t6mkiedge` are the regression net.
+
+- [ ] 🔴 **D-NOASTO WROTE THE SAME "MOUNT, LOOK THE SOURCE UP, 53 IF MISSING" TWICE —
+      ONCE IN `hk_name`, ONCE IN `hk_copy` (D-NOASTOFOLD, filed 2026-09-29 under
+      Joost's rule).**
+      🎚️ BUDGET — code space: ~15 B of disk.rom duplicated.
+      🤖 **AUTONOMOUS** — fold into one helper both handlers call; rows
+      `t8namenoasmiss` / `t8copynotomiss` are the regression net.
+      ⚠️ The two differ in WHICH FAT they use (NAME calls main's `fat_find` back
+      because main's records the entry location NAME's stamp reads; COPY uses the
+      disk-local one) — so the helper takes the lookup as the shared shape only if
+      that difference does not matter on the no-`AS` path, where nothing is stamped.
+      Check before folding.
 
 - [x] ✅ **`MKI$(1,1)` / `MKS$(1,1)` / `MKD$(1,1)` WERE `Type mismatch` HERE AND
       `Syntax error` ON THE CF-3300 (D-MKEXTRA, found 2026-09-27 by T6, fixed 2026-09-29).**
