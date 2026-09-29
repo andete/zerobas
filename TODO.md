@@ -6019,7 +6019,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:27141 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:27150 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -26194,8 +26194,17 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
 
 - [ ] 🔴 **`VARPTR(#n)` — THE FILE-CHANNEL FORM — DOES NOT EXIST HERE (D-VARPTRFCB,
       found 2026-09-28 by T6 batch 9).**
-      🎚️ TIER 6 — the file-channel form of VARPTR.
-      🤖 **AUTONOMOUS** — measure what `VARPTR(#n)` returns for an OPEN channel
+      🎚️ TIER 4 — RAM usage (VG-8020): the form IS the reference's channel-block layout
+      (re-tagged from TIER 6 by Joost's ruling below).
+      🏗️ **RULED BY JOOST 2026-09-29 — DO NOT RE-ASK: option (c)** (*"agree, go with
+      (c)"*). VARPTR STAYS AT LEVEL 0 FOR NOW; `VARPTR(#n)` is built as option (a) —
+      re-lay channel storage to the reference's 265-byte block shape (mode +0,
+      buffer +9) — AS PART OF THE TIER 4 RAM WORK, when channel storage is revisited
+      anyway, NOT as a standalone level lift. Option (b), an address with no agreed
+      layout, is out for good.
+      ⛔ **BLOCKED** — by Joost's ruling (2026-09-29): until the TIER 4 RAM work
+      re-lays channel storage; then it is that slice's job, not a separate one.
+      *(was, before the ruling:)* **AUTONOMOUS** — measure what `VARPTR(#n)` returns for an OPEN channel
       first (the address of its file control block on the reference; clean-room: the
       VALUE is readable, its layout is ours).
       📏 [`scratchpad/t6enum_b9.out`](scratchpad/t6enum_b9.out): `VARPTR(#0)` OK,
@@ -26211,7 +26220,7 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       (2 after `FOR OUTPUT`, 1 after `FOR INPUT`), and the DATA BUFFER starts at +9
       (the CF-3300 shows `HEL` there after `PRINT#1,"HELLO"`). Errors: `#4` past
       MAXFILES is 52, `#-1` and `#256` are 5 — both references.
-      🙋 **WHY THIS WAITS ON JOOST.** The absolute addresses differ machine to
+      *(the question, answered by the ruling above:)* **WHY THIS WAITED ON JOOST.** The absolute addresses differ machine to
       machine, so the only readings a row can AGREE on are the LAYOUT's: the
       stride, the mode byte at +0, the buffer at +9. zerobas has no such blocks —
       modes live in `FCH_MODES` ($EA00), state is swapped through context blocks,
