@@ -1,0 +1,5 @@
+National_C dski   ERR=['0']  screen=['Ok', 'A$=DSKI$(0,4000)', 'Ok', '[ 0 ]', 'Ok']
+National_C list   ERR=['70']  screen=['Disk offline', 'Ok', '[ 70 ]', 'Ok', 'LIST', 'Ok']
+C-BIOS_MSX dski   ERR=['69']  screen=['ZB', 'A$=DSKI$(0,4000)', 'Disk I/O error', 'ZB', '[ 69 ]', 'ZB']
+C-BIOS_MSX list   ERR=['0']  screen=['ZB', 'ZB', '[ 0 ]', 'ZB', 'LIST', 'ZB']
+refcache: 0 hit, 4 miss, 4 stored

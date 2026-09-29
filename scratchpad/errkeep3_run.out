@@ -1,0 +1,5 @@
+National_C plain  ERR=['70']  screen=['Ok', 'Disk offline', 'Ok', '[ 70 ]', 'Ok']
+National_C open   ERR=['70', '70']  screen=['Ok', '[ 70 ]', 'Ok', 'Ok', '[ 70 ]', 'Ok']
+C-BIOS_MSX plain  ERR=['0']  screen=['ZB', 'ZB', '[ 0 ]', 'ZB']
+C-BIOS_MSX open   ERR=['0', '0']  screen=['ZB', '[ 0 ]', 'ZB', 'ZB', '[ 0 ]', 'ZB']
+refcache: 0 hit, 4 miss, 4 stored

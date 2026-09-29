@@ -6019,7 +6019,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:27166 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:27193 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -25589,7 +25589,16 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
         DISKOP_ERR now (every hook's encoding), and KILL, NAME, COPY and SAVE end
         in it (`wp_save` agrees at 68 with a file open). LOAD / MERGE / ASCII LOAD
         (`hk_dpload`, `hk_aopen`, `hk_agetb`) and DSKF still end on their own.
-          ✅ **D-NOASTO (2026-09-29): `NAME "A.TXT"` 53 → 2 AND `COPY "A.TXT"` 53 → 5 ARE
+        🔬 **THEIR WITNESS IS NOT REACHABLE IN EMULATION (measured 2026-09-29).** The
+        hole needs a READ failure inside the file being loaded while the open file's
+        own sector still reads. openMSX reads every in-range sector of an intact
+        image, and an ejected disk fails the channel's re-stage too. A crafted image
+        with a first cluster PAST THE VOLUME ([`errkeep3_probe.py`](scratchpad/errkeep3_probe.py)
+        → [`errkeep3_run.out`](scratchpad/errkeep3_run.out)) does not reach it either:
+        zerobas's FAT walk ends the chain there and never reads (filed as D-BADCLUSTER).
+        So these three stay on their own ending until a witness exists — routing them
+        through `hk_claim_status` blind is a change no row could check.
+        ✅ **D-NOASTO (2026-09-29): `NAME "A.TXT"` 53 → 2 AND `COPY "A.TXT"` 53 → 5 ARE
         ONE ORDER, AND BOTH AGREE NOW.** With no `AS` / `TO` the CF-3300 looks the
         SOURCE up first: missing is 53, present is the verb's own refusal — NAME 2,
         COPY 5 ([`noasto_run.out`](scratchpad/noasto_run.out); the present-file NAME
@@ -26110,6 +26119,24 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       subjects RED while all 21 direct-mode `cas2-*` rows stay green — the rows that
       would catch a guard silencing the PROMPT too
       ([`cassayprog_knife.out`](scratchpad/cassayprog_knife.out)).
+
+- [ ] 🔴 **A FILE WHOSE CLUSTER CHAIN POINTS PAST THE VOLUME LOADS AS AN EMPTY
+      PROGRAM HERE, SILENTLY; THE CF-3300 SAYS `Disk offline` — AND `DSKI$` PAST THE
+      LAST SECTOR DIVERGES THE OTHER WAY (D-BADCLUSTER, found 2026-09-29).**
+      🎚️ TIER 6 — corrupt media: neither shape arises on an intact disk.
+      🤖 **AUTONOMOUS** — the reference settles both.
+      📏 A crafted copy of `disk/test720.dsk` with one extra root entry, `BAD.BAS`,
+      first cluster $7F0 (past a 720 KB volume), size 1000
+      ([`errkeep3_probe.py`](scratchpad/errkeep3_probe.py) →
+      [`errkeep3_run.out`](scratchpad/errkeep3_run.out),
+      [`errkeep3_run2.out`](scratchpad/errkeep3_run2.out)):
+      • `LOAD "BAD.BAS"` — CF-3300 `Disk offline` (70), with or without a file open;
+        zerobas NOTHING (ERR 0, `LIST` empty): the FAT walk treats an out-of-volume
+        cluster as the end of the chain and loads zero bytes without complaint.
+      • `A$=DSKI$(0,4000)` — CF-3300 no error (ERR 0); zerobas `Disk I/O error` (69).
+      The open channel survived the failed LOAD on the CF-3300 (a later `PRINT #1`
+      raised nothing), so LOAD does NOT close files there — worth knowing for
+      D-ERRKEEP2 whenever a witness turns up.
 
 - [x] ✅ **A `DSKF` WITH A BAD ARGUMENT TOOK ~1 s HERE AND ~0.09 s ON THE CF-3300 —
       10.4–10.8×, OVER THE T2 BAR (D-DSKFSLOW, found 2026-09-28 by the type-ahead T2
