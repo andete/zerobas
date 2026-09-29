@@ -616,8 +616,8 @@ FORMS: dict[str, tuple[tuple[str, ...], str]] = {
         "LINE INPUT [<prompt>;]<var> -- the whole point is that it does NOT split: commas and leading spaces are KEPT where INPUT would have split at the comma and eaten the space. That is the whole-line form; the prompt is the second.",
     ),
     "INPUT #": (
-        ("string-read",),
-        "INPUT #<channel>,<var> -- one behaviour. Joost ruled bare INPUT and INPUT # different functions, and they are: the console form waits on the keyboard, this one reads a channel. Both of its rows drive this one form; input_b is a better instrument for it, not a second form.",
+        ("string-read", "numeric-read"),
+        "INPUT #<channel>,<var> -- one behaviour. Joost ruled bare INPUT and INPUT # different functions, and they are: the console form waits on the keyboard, this one reads a channel. Both of its rows drive this one form; input_b is a better instrument for it, not a second form. 🔴 D-INPNUM (2026-09-29): AND IT HAD A SECOND FORM ALL ALONG -- a NUMERIC target, which zerobas refused with Type mismatch for every value; authoring one form here is why nothing asked.",
     ),
     "GET #": (
         ("fielded-record",),

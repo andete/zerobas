@@ -1,0 +1,5 @@
+case                              CF-3300                          zerobas
+✗ one                             [ 1 2 0 ]                       [ 0 0 13 ]
+✗ seq                       [ 1 2 10 20 0 ]                   [ 0 0 0 0 13 ]
+✗ alt                       [ 1 2 10 20 0 ]                   [ 0 0 0 0 13 ]
+refcache: 0 hit, 6 miss, 6 stored

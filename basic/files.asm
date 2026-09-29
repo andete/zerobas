@@ -1192,7 +1192,15 @@ inp_setsrc:
                 pop     hl
 inp_readvar:
                 call    req_comma           ; D-NGRAM17
-                call    req_letter          ; D-NGRAM: a string variable name must follow
+                call    req_letter          ; D-NGRAM: a variable name must follow
+                ; 🔴 D-INPNUM (2026-09-29): a NUMERIC target was Type mismatch here for
+                ; every value -- `PRINT #1,5` read back with `INPUT #1,X` is 5 on the
+                ; CF-3300 (scratchpad/inpnum_run.out). input.asm's inp_numitem reads
+                ; it; LINE INPUT # comes straight back to inp_str from there.
+                call    var_str_type        ; A = 1 if the name carries a '$'
+                or      a
+                jp      z,inp_numitem
+inp_str:
                 call    str_target_parse    ; string-var target: type-check, parse,
                                             ; raise -- D-NGRAM9
                 ; D-LVFIX (docs/spec-basic-lvsites.md §4.2): the target is any
@@ -1215,6 +1223,7 @@ inp_got:
                 pop     bc
                 call    tgt_store_str       ; scalar key OR element address
                 pop     hl
+inp_tail:                                   ; D-INPNUM: the numeric item rejoins here
                 ; arrays slice-4c (§7.3) follow-up, same disposition as
                 ; console/LINE INPUT's own checks (basic/input.asm): a
                 ; scalar-CHAIN OOM here sets FPERR but does not itself abort.
@@ -1277,8 +1286,21 @@ ris_lp:
                 jp     z,ris_done
                 ld      c,a                 ; C = candidate data byte
                 ld      a,(FCH_RDMODE)
+                dec     a
+                jr      z,ris_keep          ; 1: line mode keeps everything (but CR/LF)
+                dec     a
+                jr      nz,ris_field        ; 0: field mode
+                ; 2: a NUMERIC item (D-INPNUM, inp_numitem): the CF-3300 reads
+                ; `PRINT #1,1;2` -- " 1  2 " -- back as 1 then 2, so a blank ENDS
+                ; the number once one has begun; before it, a blank is skipped.
+                ld      a,c
+                cp      ' '
+                jr      nz,ris_field
+                ld      a,(IN_RDLEN)
                 or      a
-                jr      nz,ris_keep         ; line mode keeps everything (but CR/LF)
+                jr      z,ris_lp            ; a leading blank
+                jp      ris_done            ; the blank after the number (`jp`: past jr reach)
+ris_field:
                 ld      a,c
                 cp      ','                 ; field mode stops at a comma
                 jp     z,ris_done

@@ -4896,6 +4896,20 @@ SWEEP: list[tuple[str, str, str | None, str, str]] = [
      "`inputkw` scores LEN(A$)=24, which "
      "a read returning 24 BLANKS passes just as well as the real line; HI.TXT is "
      "\"Hello from zerobas-disk!\" (tools/make_test_dsk.py), so this reads Hello."),
+    # 🔴 D-INPNUM (2026-09-29): INPUT # read STRING targets only -- `INPUT #1,X` was
+    # Type mismatch for every number, and INPUT #'s form list had only
+    # `string-read`, so nothing asked. 1.5 and 40000 are the two values the old
+    # integer-only readers got wrong (a fraction; past int16), and `;` puts them on
+    # ONE line, so the blank between them is what separates the two items.
+    ("inputnum", "input#1,x",
+     'OPEN"N.TXT"FOR OUTPUT AS#1:PRINT#1,1.5;40000:CLOSE#1:OPEN"N.TXT"FOR INPUT AS#1:INPUT#1,X,Y:CLOSE#1:PRINT"[N";X;Y;"]"',
+     "stored", "NEEDS-DISK: SUBJECT:INPUT_# FORM:numeric-read two numbers written on "
+     "one line and read back as numbers (D-INPNUM)"),
+    # D-INPNUM, the console half: `INPUT A` answered 1.5 was ?Redo and 40000 became
+    # -25536 (input_num_field was a 16-bit integer validator).
+    ("input_flt", 'input za', 'INPUT ZA:INPUT ZB:PRINT"[F";ZA;ZB;"]"', "stored",
+     "RESPOND:1.5|40000 FORM:no-prompt a fraction and a value past int16, typed "
+     "(D-INPNUM)"),
     # ⌨️ D-KWRESPOND: THE CONTROL ROW, AND IT COMES FIRST ON PURPOSE. Apparatus
     # inside a measurement is where this session kept getting bitten, so before any
     # row DEPENDS on the response channel, one row proves the channel itself

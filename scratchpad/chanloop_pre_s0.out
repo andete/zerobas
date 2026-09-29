@@ -1,0 +1,4 @@
+case                              CF-3300                          zerobas
+✗ control                 [ 1 2| 10 20| 0 ]                         [|| 13 ]
+✗ forloop       [ 1 2 3 4| 10 20 30 40| 0 ]                       NO READING
+refcache: 0 hit, 4 miss, 4 stored

@@ -346,6 +346,8 @@ tp_set:
 ; Clobbers everything. Both arms coerce into the target's own resolved type.
 tgt_store_num:
                 call    set_factyp2
+tgt_store_fac:                              ; D-INPNUM: a value already in FAC with its
+                                            ; own FACTYP (INPUT's parsed float) joins here
                                            ; DE is a plain int16 (F3: the store widens
                                             ; it per the target's type, e.g. double)
                 ld      hl,(TGT_ADDR)

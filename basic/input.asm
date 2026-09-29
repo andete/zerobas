@@ -21,7 +21,7 @@
 ;                                       until an ARRAY ELEMENT became a legal
 ;                                       target on all THREE of its arms.
 ; The only genuinely new code is `linebuf_getbyte` (the LINEBUF byte source), the
-; prompt/var-list driver, the strict numeric-field validator `input_num_field`, and
+; prompt/var-list driver, the strict numeric-field reader `inp_num` (D-INPNUM), and
 ; the D-2 re-prompt loop (?redo from start / ?extra ignored).
 ;
 ; FCH_RDMODE distinguishes the two entries (set by files.asm before the hook):
@@ -113,13 +113,13 @@ inpc_vloop:
                 push    bc                  ; [stack: varstart, key]
                 push    hl                  ; [stack: varstart, key, textcur]
                 call    read_into_strscr    ; STRSCR <- the next field (mode 0)
-                call    input_num_field     ; STRSCR -> DE; CF set if not an integer
+                call    inp_num             ; D-INPNUM: STRSCR -> a number; CF = ?redo
                 jr      c,inpc_redo3        ; bad numeric field -> ?redo
                 pop     hl                  ; textcur
                 pop     bc                  ; key
                 push    hl                  ; guard textcur across the store
-                call    tgt_store_num       ; D-ARYLV: var[key] := DE, or the resolved
-                                            ; ELEMENT := DE, coerced either way (vars.asm)
+                call    inp_store           ; D-ARYLV: var[key] := the number, or the
+                                            ; resolved ELEMENT := it, coerced either way
                 pop     hl
                 jr      inpc_after
 inpc_vstr:
@@ -333,95 +333,86 @@ lgb_eof:
                 scf
                 ret
 
-; --- input_num_field: STRSCR field -> signed 16-bit integer -----------------
-; Strict validator for a numeric INPUT field (str_val_parse is too lenient — it
-; would accept "12x" as 12). Accepts (spaces)(+|-)?(digit+)(spaces) and nothing
-; else; empty / non-numeric / trailing junk is rejected so the driver can ?redo.
-; in:  STRSCR = [len][bytes].
-; out: DE = value; CF clear iff a clean integer, CF set otherwise.
-; Clobbers A,BC,DE,HL.
-input_num_field:
-                ld      hl,STRSCR
-                ld      b,(hl)              ; B = field length
-                inc     hl                  ; HL -> the bytes
-                ld      de,0                ; DE = accumulator
-                ld      c,0                 ; C: bit0 = negative, bit1 = saw a digit
-inf_lead:
-                ld      a,b
+; --- inp_num: the STRSCR field -> a NUMBER, strictly (D-INPNUM, 2026-09-29) ---
+; This was `input_num_field`, a 16-bit INTEGER validator (105 B), so `INPUT A`
+; answered `1.5`, `1E3` or `&H10` was ?Redo here and `40000` silently became
+; -25536 -- the VG-8020 reads all four (scratchpad/inpnum_run.out). VAL's parse
+; already reads every one of those forms (sub/strheap.asm sh_val_parse over
+; tk_float, rule 3: no second parser); op 19 runs it over STRSCR's field and
+; SH_SRC says where the number ended. The console's own rule, measured
+; (scratchpad/inpnum_run2.out): only BLANKS may follow it -- `1-2` and `&H1G`
+; are ?Redo -- while an empty field, `+`, `-` and `.` are 0 and `1 2` is 12.
+; out: CF clear = a number: SH_LEN = 0 and DE = the int16, or SH_LEN = FACTYP
+;      (4/8) with the value in FAC. CF set = ?Redo. Clobbers A,BC,DE,HL,IX.
+inp_num:
+                call    inp_val             ; SH_ERR / SH_LEN / SH_PTR|FAC / SH_SRC
+                ld      a,(SH_ERR)
                 or      a
-                jr      z,inf_fin           ; ran out during the lead -> no digit -> bad
-                ld      a,(hl)
-                cp      ' '
-                jr      nz,inf_sign
-                inc     hl
-                dec     b
-                jr      inf_lead            ; skip leading spaces
-inf_sign:
-                cp      '-'
-                jr      nz,inf_plus
-                set     0,c                 ; negative
-                inc     hl
-                dec     b
-                jr      inf_digits
-inf_plus:
-                cp      '+'
-                jr      nz,inf_digits
-                inc     hl
-                dec     b
-inf_digits:
-                ld      a,b
-                or      a
-                jr      z,inf_fin
-                ld      a,(hl)
-                cp      '0'
-                jr      c,inf_trail
-                cp      '9'+1
-                jr      nc,inf_trail
-                sub     '0'                 ; A = digit 0..9
-                push    hl
-                push    af
-                ld      h,d
-                ld      l,e                 ; HL = acc
-                add     hl,hl               ; *2
-                add     hl,hl               ; *4
-                add     hl,hl               ; *8
-                ex      de,hl               ; DE = acc*8 ; HL = acc
-                add     hl,hl               ; HL = acc*2
-                add     hl,de               ; HL = acc*10
-                pop     af                  ; A = digit
-                ld      d,0
-                ld      e,a
-                add     hl,de               ; HL = acc*10 + digit
-                ex      de,hl               ; DE = new accumulator
-                pop     hl
-                set     1,c                 ; saw a digit
-                inc     hl
-                dec     b
-                jr      inf_digits
-inf_trail:
-                ld      a,b                 ; remaining chars must be spaces only
-                or      a
-                jr      z,inf_fin
-                ld      a,(hl)
-                cp      ' '
-                jr      nz,inf_bad
-                inc     hl
-                dec     b
-                jr      inf_trail
-inf_fin:
-                bit     1,c
-                jr      z,inf_bad           ; no digit at all -> invalid
-                bit     0,c
-                jr      z,inf_ok
-                call    neg_de              ; negate: DE = 0 - DE (float.asm's; HL kept.
-                                            ; D-NEGDE: this was `ld hl,0 / or a /
-                                            ; sbc hl,de / ex de,hl`, 6 B for the same DE)
-inf_ok:
-                or      a                   ; CF clear = valid
-                ret
-inf_bad:
                 scf
+                ret     nz                  ; a refused literal (`&`, `1E99`) -> ?Redo
+                ld      hl,(SH_SRC)         ; where the number ended
+                ld      de,(TKVALEND)       ; one past the field's last byte
+inm_lp:
+                push    hl
+                or      a
+                sbc     hl,de
+                pop     hl
+                jr      z,inm_ok            ; only blanks followed (Z, CF clear)
+                ld      a,(hl)
+                inc     hl
+                cp      ' '
+                jr      z,inm_lp
+                scf                         ; anything else after the number
                 ret
+inm_ok:
+                ld      de,(SH_PTR)         ; the int16, when SH_LEN says int
+                ret
+
+; inp_val: VAL's parse over the STRSCR field (sub op 19). Shared by console
+; INPUT (inp_num, strict) and INPUT # (inp_numitem, lenient: the CF-3300 reads
+; `12X` in a file as 12).
+inp_val:
+                ld      a,19
+                jp      sh_call_op
+
+;   inp_numitem: INPUT #'s NUMERIC target (D-INPNUM). Reached by `jp` from
+; files.asm's inp_readvar with HL on the variable name and FCH_RDMODE as INPUT #
+; or LINE INPUT # set it. The item is read by read_into_strscr's numeric mode (a
+; blank ends it), parsed LENIENTLY (`12X` in a file reads 12 on the CF-3300 --
+; the console's strictness is not the file's), stored as LET stores, and the
+; statement goes on at inp_tail exactly as a string item does. Measured rules:
+; scratchpad/inpnum_run2.out (FILE round 2).
+inp_numitem:
+                ld      a,(FCH_RDMODE)
+                or      a
+                jp      nz,inp_str          ; LINE INPUT #: a string target only --
+                                            ; str_target_parse raises its mismatch
+                call    tgt_parse_req       ; A = 0 (numeric): BC = key, HL past it
+                push    hl                  ; the text cursor
+                push    bc                  ; the key
+                ld      a,2
+                ld      (FCH_RDMODE),a      ; the numeric item rule
+                call    read_into_strscr
+                ld      a,0                 ; (flags kept) back to field mode, for a
+                ld      (FCH_RDMODE),a      ; string target later in the list
+                jr      nc,inu_got          ; stopped on a delimiter
+                ld      a,(STRSCR)
+                or      a
+                jp      z,gp_past_eof       ; the end, and not one byte read -> 55
+inu_got:
+                call    inp_val             ; lenient: SH_ERR is not a refusal here
+                pop     bc
+                call    inp_store
+                pop     hl
+                jp      inp_tail
+
+; inp_store: the parsed number -> the resolved target (console INPUT and INPUT #).
+; in: BC = key, (TGT_ADDR) per tgt_parse, SH_LEN / DE / FAC as inp_num leaves them.
+inp_store:
+                ld      a,(SH_LEN)
+                or      a
+                jp      z,tgt_store_num     ; an int16 in DE
+                jp      tgt_store_fac       ; a float in FAC, FACTYP already its type
 
 ; D-MSGENC (§4.2): no phrase hit in either, but both shed the baked CRLF, which
 ; print_msg now emits. Their two print sites below move to print_msg with them.

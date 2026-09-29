@@ -1,0 +1,90 @@
+msxtest: BASIC image carries islands -- loaded at $0010, not $2812
+knife: statement handlers -> stmt_error $4325; a row still SUPPORTED is BLIND
+
+  NEXT     row nextkw     knifed -> MISSING      LOAD-BEARING
+  FOR      row forkw      knifed -> MISSING      LOAD-BEARING
+  IF       row ifkw       knifed -> MISSING      LOAD-BEARING
+  GOTO     row gotokw     knifed -> MISSING      LOAD-BEARING
+  GOSUB    row gosubkw    knifed -> MISSING      LOAD-BEARING
+  RETURN   row returnkw   knifed -> MISSING      LOAD-BEARING
+  PRINT    row printkw_b  knifed -> UNREADABLE   LOAD-BEARING
+  ON       row onkw       knifed -> MISSING      LOAD-BEARING
+  LET      row let        knifed -> MISSING      LOAD-BEARING
+  END      row endkw      knifed -> MISSING      LOAD-BEARING
+  WAIT     row waitkw     knifed -> MISSING      LOAD-BEARING
+  BLOAD    row bload      knifed -> MISSING      LOAD-BEARING
+  CLOAD    row cload      knifed -> MISSING      LOAD-BEARING
+  LOAD     row loadkw     knifed -> MISSING      LOAD-BEARING
+  RUN      row runkw      knifed -> MISSING      LOAD-BEARING
+  NEW      row newkw      knifed -> MISSING      LOAD-BEARING
+  BSAVE    row bsave      knifed -> MISSING      LOAD-BEARING
+  SAVE     row save       knifed -> MISSING      LOAD-BEARING
+  FILES    row files      knifed -> MISSING      LOAD-BEARING
+  LFILES   row lfiles     knifed -> MISSING      LOAD-BEARING
+  SET      row set        knifed -> DIVERGENT    LOAD-BEARING
+  IPL      row ipl        knifed -> DIVERGENT    LOAD-BEARING
+  CMD      row cmd        knifed -> DIVERGENT    LOAD-BEARING
+  MERGE    row merge      knifed -> MISSING      LOAD-BEARING
+  OPEN     row openkw_b   knifed -> MISSING      LOAD-BEARING
+  INPUT    row inputkw    knifed -> MISSING      LOAD-BEARING
+  LINE     row linekw     knifed -> UNREADABLE   LOAD-BEARING
+  CLOSE    row close      knifed -> MISSING      LOAD-BEARING
+  KILL     row kill       knifed -> MISSING      LOAD-BEARING
+  NAME     row namekw     knifed -> MISSING      LOAD-BEARING
+  DSKO$    row dsko       knifed -> MISSING      LOAD-BEARING
+  COPY     row copy       knifed -> MISSING      LOAD-BEARING
+  MAX      row maxkw      knifed -> SUPPORTED    🔴 BLIND
+  FIELD    row fieldkw    knifed -> MISSING      LOAD-BEARING
+  LSET     row lset       knifed -> MISSING      LOAD-BEARING
+  RSET     row rset       knifed -> MISSING      LOAD-BEARING
+  GET      row getkw      knifed -> MISSING      LOAD-BEARING
+  PUT      row putsprite  knifed -> UNREADABLE   LOAD-BEARING
+  CALL     row callkw     knifed -> SUPPORTED    🔴 BLIND
+  CSAVE    row csave      knifed -> MISSING      LOAD-BEARING
+  POKE     row pokekw     knifed -> MISSING      LOAD-BEARING
+  VPOKE    row vpoke      knifed -> MISSING      LOAD-BEARING
+  OUT      row outkw      knifed -> MISSING      LOAD-BEARING
+  CLEAR    row clearkw    knifed -> MISSING      LOAD-BEARING
+  DEF      row deffn      knifed -> MISSING      LOAD-BEARING
+  DEFSTR   row defstr     knifed -> MISSING      LOAD-BEARING
+  DEFINT   row defintkw   knifed -> MISSING      LOAD-BEARING
+  DEFSNG   row defsng     knifed -> MISSING      LOAD-BEARING
+  DEFDBL   row defdbl     knifed -> MISSING      LOAD-BEARING
+  CLS      row clskw      knifed -> MISSING      LOAD-BEARING
+  SCREEN   row screenkw   knifed -> MISSING      LOAD-BEARING
+  COLOR    row colorkw    knifed -> MISSING      LOAD-BEARING
+  WIDTH    row widthkw    knifed -> MISSING      LOAD-BEARING
+  KEY      row keykw      knifed -> MISSING      LOAD-BEARING
+  LIST     row listkw     knifed -> MISSING      LOAD-BEARING
+  REM      row rem        knifed -> MISSING      LOAD-BEARING
+  DATA     row datakw     knifed -> MISSING      LOAD-BEARING
+  READ     row readkw     knifed -> MISSING      LOAD-BEARING
+  RESTORE  row restorekw  knifed -> MISSING      LOAD-BEARING
+  STOP     row stopkw     knifed -> MISSING      LOAD-BEARING
+  CONT     row contkw     knifed -> UNREADABLE   LOAD-BEARING
+  DIM      row dimkw      knifed -> MISSING      LOAD-BEARING
+  ERASE    row erase      knifed -> MISSING      LOAD-BEARING
+  ERROR    row errorkw    knifed -> DIVERGENT    LOAD-BEARING
+  RESUME   row resumekw   knifed -> MISSING      LOAD-BEARING
+  SOUND    row sound_b    knifed -> MISSING      LOAD-BEARING
+  PLAY     row playkw     knifed -> MISSING      LOAD-BEARING
+  BEEP     row beep       knifed -> MISSING      LOAD-BEARING
+  PSET     row psetkw     knifed -> UNREADABLE   LOAD-BEARING
+  PRESET   row presetkw   knifed -> UNREADABLE   LOAD-BEARING
+  CIRCLE   row circlekw   knifed -> UNREADABLE   LOAD-BEARING
+  PAINT    row paintkw    knifed -> UNREADABLE   LOAD-BEARING
+  DRAW     row drawkw     knifed -> UNREADABLE   LOAD-BEARING
+  SPRITE   row spritekw   knifed -> UNREADABLE   LOAD-BEARING
+  VDP      row vdpkw      knifed -> SUPPORTED    🔴 BLIND
+  BASE     row basekw     knifed -> SUPPORTED    🔴 BLIND
+  TIME     row time       knifed -> SUPPORTED    WEAK (already excluded)
+  MOTOR    row motor      knifed -> MISSING      LOAD-BEARING
+  TRON     row tron       knifed -> MISSING      LOAD-BEARING
+  TROFF    row troff      knifed -> MISSING      LOAD-BEARING
+  LOCATE   row locate     knifed -> MISSING      LOAD-BEARING
+  DELETE   row deletekw   knifed -> DIVERGENT    LOAD-BEARING
+  LLIST    row llist      knifed -> MISSING      LOAD-BEARING
+  RENUM    row renum      knifed -> DIVERGENT    LOAD-BEARING
+  AUTO     row auto       knifed -> MISSING      LOAD-BEARING
+  LPRINT   row lprintkw   knifed -> MISSING      LOAD-BEARING
+  SWAP     row swap       knifed -> MISSING      LOAD-BEARING

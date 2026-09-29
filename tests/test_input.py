@@ -10,9 +10,15 @@ The full statement (prompt printing, read_line, var assignment) needs the keyboa
 the screen, which is the openMSX oracle probe's job (basic_probe_input.py). What is
 pure in-RAM logic and fully testable here — the genuinely new code the slice added:
 
-  * input_num_field — the strict numeric-field validator. str_val_parse (VAL's parser)
-    is too lenient (it would accept "12x" as 12); input_num_field accepts exactly
-    (spaces)(+|-)?(digit+)(spaces) and rejects everything else so the driver can ?redo.
+  * (RETIRED 2026-09-29, D-INPNUM) input_num_field — a 16-bit INTEGER validator whose
+    contract this file used as its oracle: `1 2`, `3.5`, empty, `+`, `-` and blanks
+    all "invalid". The references MEASURED every one of those as accepted (12, 3.5,
+    0, 0, 0, 0 -- scratchpad/inpnum_run.out, inpnum_run2.out), and 40000 wrapped to
+    -25536. Its replacement `inp_num` parses through the sub-ROM (strheap op 19, a
+    CALSLT this host sim does not run), so its oracle is the emulator differential:
+    scratchpad/inpnum_probe.py and kwsweep rows `input_flt` / `inputnum`.
+  * the NUMERIC field mode (2) of read_into_strscr (D-INPNUM): a blank before the
+    item is skipped and a blank after it ENDS it -- pure in-RAM logic, tested below.
   * linebuf_getbyte — the ARL_GETBYTE byte-source vector for a console line: next
     LINEBUF byte, advance INP_CURSOR, CF set (EOF) at the 0 terminator WITHOUT
     advancing (the same end contract fat_io_getbyte / cas_in_getbyte present).
@@ -71,36 +77,6 @@ def run():
 
     def s16(v):
         return v - 0x10000 if v >= 0x8000 else v
-
-    # -----------------------------------------------------------------------
-    # input_num_field: STRSCR [len][bytes] -> DE signed int16, CF set iff invalid.
-    # Oracle: signed decimal parse; ONLY (spaces)(+|-)?(digit+)(spaces) is valid.
-    # -----------------------------------------------------------------------
-    def num_field(text):
-        b = text.encode("ascii")
-        m.poke(STRSCR, bytes([len(b)]) + b)
-        cpu = m.call("input_num_field")
-        return carry(cpu), s16(cpu.de)
-
-    # valid integers
-    report("num '42'",       num_field("42"),      (False, 42))
-    report("num '0'",        num_field("0"),       (False, 0))
-    report("num '-7'",       num_field("-7"),      (False, -7))
-    report("num '+9'",       num_field("+9"),      (False, 9))
-    report("num '32767'",    num_field("32767"),   (False, 32767))
-    report("num '-32768'",   num_field("-32768"),  (False, s16(0x8000)))
-    # surrounding spaces are tolerated (leading + trailing)
-    report("num '  5  '",    num_field("  5  "),   (False, 5))
-    report("num ' -3'",      num_field(" -3"),     (False, -3))
-    # invalid -> CF set (DE undefined, only the flag matters)
-    report("num '' (empty) CF",   num_field("")[0],      True)
-    report("num '12x' CF",        num_field("12x")[0],   True)   # trailing junk
-    report("num 'x' CF",          num_field("x")[0],      True)
-    report("num '-' CF",          num_field("-")[0],      True)   # sign, no digit
-    report("num '+' CF",          num_field("+")[0],      True)
-    report("num '1 2' CF",        num_field("1 2")[0],    True)   # embedded space
-    report("num '3.5' CF",        num_field("3.5")[0],    True)   # fractional
-    report("num '  ' CF",         num_field("  ")[0],     True)   # spaces only
 
     # -----------------------------------------------------------------------
     # linebuf_getbyte: next LINEBUF byte, advance INP_CURSOR; CF at the 0
@@ -176,17 +152,27 @@ def run():
     report("line mode keeps leading space", read_field(1), b" hello")
 
     # -----------------------------------------------------------------------
-    # End-to-end field-then-parse: split a numeric field then validate it, the
-    # exact numeric-var path (read_into_strscr -> input_num_field).
+    # D-INPNUM: the NUMERIC item mode (2) -- a blank before the item is skipped,
+    # a blank after it ends it; comma and CR still end it. Oracle: the CF-3300
+    # reads `PRINT #1,1;2` (" 1  2 ") back as 1 then 2, "  3" as 3, "3,4" as 3
+    # then 4 (scratchpad/inpnum_run2.out, FILE round 2).
     # -----------------------------------------------------------------------
-    setup_line(b" -12 ,rest")
-    m.poke(FCH_RDMODE, 0)
-    m.call("read_into_strscr")                      # STRSCR <- " -12 "
-    cpu = m.call("input_num_field")
-    report("split+parse ' -12 ' -> (CF,DE)", (carry(cpu), s16(cpu.de)), (False, -12))
+    setup_line(b" 1  2 ")
+    report("numeric item 1 of ' 1  2 '", read_field(2), b"1")
+    report("numeric item 2 of ' 1  2 '", read_field(2), b"2")
+    setup_line(b"  3")
+    report("numeric item '  3'", read_field(2), b"3")
+    setup_line(b"3,4")
+    report("numeric item 1 of '3,4'", read_field(2), b"3")
+    report("numeric item 2 of '3,4'", read_field(2), b"4")
+    setup_line(b"12X")
+    report("numeric item '12X' (the parse skips the junk)", read_field(2), b"12X")
+    # and field mode (0) is unchanged by it: a blank is DATA there
+    setup_line(b" 1  2 ")
+    report("field mode keeps ' 1  2 ' whole", read_field(0), b" 1  2 ")
 
     print()
-    print("ALL PASS — console INPUT core (num-field, linebuf source, split) matches contract"
+    print("ALL PASS — console INPUT core (linebuf source, field/line/numeric split) matches contract"
           if not fails else f"{fails} CASE(S) FAILED")
     return fails
 

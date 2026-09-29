@@ -146,6 +146,8 @@ strheap_engine:
                 jp      z,sh_free_vars      ; FRE(n) -- free VARIABLE space (D-CLP)
                 cp      18
                 jp      z,sh_chan_addr      ; file-channel block address (D-FCH §3.2)
+                cp      19
+                jp      z,sh_val_scr        ; D-INPNUM: VAL-parse the STRSCR field
                 cp      20
                 jp      z,sh_ctl_reset      ; D-CTLPOOL: derive the pool's top
                 cp      21
@@ -2658,6 +2660,23 @@ svs_oom:
 ; at (STRPTR); page-1/low both byte-full). Parses an optional-sign leading
 ; decimal integer from (STRPTR)'s body -> SH_PTR (0 if no digits; integer-
 ; only, spec D-E; SH_ERR always 0). Clobbers A,B,C,D,E,H,L.
+; --- sh_val_scr: op=19 (D-INPNUM) -- the same parse over STRSCR's field ------
+; INPUT's numeric targets (console and INPUT #) read the typed / file field into
+; STRSCR = [len][bytes] and need VAL's reading of it: every form 1985 listings
+; type -- fractions, exponents, `&H`, a type suffix, blanks inside the number --
+; is already right in sh_val_parse / tk_float (rule 3: no second parser). The
+; field is not a string DESCRIPTOR, so this entry decodes [len][bytes] itself and
+; joins the body below. SH_SRC then says where the number ended, for the
+; console's strictness test (`1-2` and `&H1G` are ?Redo on the VG-8020;
+; scratchpad/inpnum_run2.out).
+sh_val_scr:
+                xor     a
+                ld      (SH_LEN),a
+                ld      hl,STRSCR
+                ld      b,(hl)              ; B = the field's length
+                inc     hl                  ; HL = its first byte
+                jr      svp_body
+
 sh_val_parse:
                 xor     a
                 ld      (SH_LEN),a          ; 0 = "the answer is the integer in
@@ -2672,6 +2691,7 @@ sh_val_parse:
                 inc     hl
                 ld      d,(hl)              ; DE = ptr (body)
                 ex      de,hl               ; HL = body cursor
+svp_body:
                 ; --- D-VALFLT: publish the body's END as tk_float's bound ------
                 ; A string body is not 0-terminated, so the crunch would run off
                 ; it. TKVALEND is a POSITION, not a counter, because tkf_fetch's
@@ -2683,6 +2703,9 @@ sh_val_parse:
                 ld      e,b
                 add     hl,de
                 ld      (TKVALEND),hl       ; one past the last body byte
+                ld      (SH_SRC),hl         ; D-INPNUM: where the number ENDED --
+                                            ; the end unless a scan below stops
+                                            ; short (tk_float, a base literal)
                 pop     hl
                 ld      de,0                ; the "no number here" answer
                 ld      c,e                 ; C bit0 = negative flag
@@ -2761,6 +2784,8 @@ svp_flt:
                 ld      sp,hl               ; 10 bytes of scratch AT SP
                 ex      de,hl               ; HL = source cursor, DE = emit dest
                 call    tk_float
+                ld      (SH_SRC),hl         ; D-INPNUM: tk_float's stop (tkf_done
+                                            ; hands the source cursor back in HL)
                 ld      a,(TKOVF)
                 or      a
                 jr      nz,svp_frel         ; refused: NOTHING was emitted, so the
@@ -2958,6 +2983,8 @@ svp_bovfpop:
 svp_bpopfin:
                 pop     bc
 svp_bfin:
+                ld      (SH_SRC),de         ; D-INPNUM: the base scan's stop (DE is
+                                            ; its cursor on this path)
                 ex      de,hl               ; DE = accumulator (the value)
                 ld      (SH_PTR),de
                 xor     a

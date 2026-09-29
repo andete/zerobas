@@ -1,0 +1,4 @@
+case                              CF-3300                          zerobas
+✗ one1                            [ 1 2 0 ]                       [ 0 0 13 ]
+✗ one1s                           [1 /2 0 ]                      [ 1 / 2 0 ]
+refcache: 0 hit, 4 miss, 4 stored

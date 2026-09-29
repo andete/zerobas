@@ -6019,7 +6019,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:27453 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:27539 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -25928,6 +25928,92 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       "HJ.TXT"`, same) read 64 on the CF-3300 and OK here. Those rows ran on a
       write-protected image, so re-measure on a writable one; whether COPY also
       refuses an open DESTINATION is unasked.
+
+- [x] ✅ **A NUMERIC INPUT TARGET TOOK ONLY A 16-BIT INTEGER — `INPUT #1,X` WAS `Type
+      mismatch` FOR ANY NUMBER, AND CONSOLE `INPUT A` ANSWERED `40000` STORED -25536
+      (D-INPNUM, found and fixed 2026-09-29).**
+      🎚️ TIER 1 — happy path: writing numbers to a file and reading them back, and
+      typing a fraction at an `INPUT`, are what 1985 listings do.
+      Found by accident: a channel-switching probe ([`chanloop_run.out`](scratchpad/chanloop_run.out))
+      failed even with ONE channel, and the split ([`chanloop_run3.out`](scratchpad/chanloop_run3.out))
+      pointed at numeric `INPUT #`. **Not a regression:** the tree before today's S0
+      ([`chanloop_pre_s0.out`](scratchpad/chanloop_pre_s0.out)) and before D-SEQEOF
+      ([`chanloop_pre_seqeof.out`](scratchpad/chanloop_pre_seqeof.out)) fail the same.
+      📏 [`inpnum_run.out`](scratchpad/inpnum_run.out): **file** — `PRINT #1,v` then
+      `INPUT #1,X` reads every v back on the CF-3300 (5, -3, 1.5, 40000, 1E3, -.025,
+      1/3, 123456789, …) and is ERR 13 for ALL ten here; the file form's target
+      parser is string-only (`inp_readvar` → `str_target_parse`, and its own comment
+      says "Numeric `INPUT #n` is still rejected"). **Console** — `INPUT A` reads
+      1.5, 40000, 1E3, -.025, `&H10` (16) and `1D2` (100) on the VG-8020; here only
+      a 16-bit integer is taken (`input_num_field`), the rest are `?Redo`, and
+      **40000 silently becomes -25536** — a wrong answer with no error.
+      🔮 Predicted every row, MISS on one: 40000 was expected to `?Redo` and WRAPS.
+      🕳️ **WHY NO GATE SAW IT:** `tools/kwforms.py` authors INPUT # with ONE form,
+      `string-read`, so INPUT # read 1/1 forms and level 3 over a missing form;
+      console INPUT's rows answer integers. The denominator was mine.
+      ➡️ **THE FIX, TWO SLICES, RULE 3 (no private copies):** VAL's parser
+      (`sh_val_parse`, strheap op 13 — tk_float underneath) already reads every
+      form above. (B) console: replace `input_num_field` with op 13 plus a strict
+      "only blanks after the number" check — the parser must publish where it
+      stopped (~3 B of sub page 0) — which should FREE main bytes (the validator is
+      ~70 B); (A) file: accept a numeric target in `inp_readvar`, read its field by
+      the numeric rule, convert through op 13, store as LET does. Edge rules are
+      being measured (round 2, `inpnum_probe.py console2 file2`).
+      📏 **THE EDGE RULES, MEASURED FIRST** ([`inpnum_run2.out`](scratchpad/inpnum_run2.out)),
+      and they differ by form. **Console:** `1 2` is 12 (blanks inside a number are
+      ignored), `1-2` and `&H1G` are ?Redo (only blanks may follow the number), an
+      empty field and a bare `+`/`-`/`.` are 0, and `1E`, `5.`, `.5` and `3!` are
+      taken. **File:** a BLANK ends a numeric item (`PRINT #1,1;2` reads back as 1,
+      then 2), junk after the number is skipped (`12X` is 12, then 55 at the end),
+      and `3,4`, a leading blank, `&H10` and data across two lines all read.
+      ✅ **FIXED 2026-09-29, rule 3 throughout.** One parser: VAL's (`sh_val_parse`
+      over tk_float), reached through a new strheap op 19 that parses STRSCR's
+      field in place and publishes where the number stopped (SH_SRC).
+      - **Console:** `inp_num` is that parse plus the only-blanks-follow check. It
+        replaces `input_num_field`, 105 B of main low region, with ~30.
+      - **File:** `inp_readvar` sends a numeric target to `inp_numitem` (low region).
+        That reads the item by a new numeric mode of `read_into_strscr` (a blank
+        ends it once begun), parses it leniently, and stores through
+        `tgt_store_fac`, a 0-byte entry into LET's typed store.
+      - **LINE INPUT #** keeps its string-only target.
+      - **Funding:** sub page 0 went 9 → 47 B from three 19-long `inc sp`/`dec sp`
+        runs in `sub/arrays.asm`'s scalar-alloc frame, now `ld hl,±19 / add hl,sp
+        / ld sp,hl` with DE (or nothing) carrying HL — DE and the flags are dead at
+        all three sites.
+      - **Walls, 2026-09-29:** main low 1 → 10 B, page 1 29 → 5 B, sub page 0 9 → 21 B
+        ([`inpnum_walls.out`](scratchpad/inpnum_walls.out)).
+      After: all 44 console and file cases agree
+      ([`inpnum_after.out`](scratchpad/inpnum_after.out)). New rows `inputnum`
+      (FORM `numeric-read`, now authored in `tools/kwforms.py`) and `input_flt`
+      (RESPOND 1.5 / 40000) are SUPPORTED
+      ([`inpnum_kwsweep.out`](scratchpad/inpnum_kwsweep.out)). The knife (HEAD's
+      input/files/vars/strheap, ROM hashes checked both ways) turns them MISSING
+      (Type mismatch) and DIVERGENT (?Redo); the three older INPUT rows stay green
+      ([`inpnum_knife.out`](scratchpad/inpnum_knife.out)). Whole sweep SUPPORTED 955
+      ([`inpnum_kwsweep_full.out`](scratchpad/inpnum_kwsweep_full.out)), kwtime OK 841
+      ([`inpnum_kwtime.out`](scratchpad/inpnum_kwtime.out)), knife BLIND unchanged
+      ([`inpnum_knife_all.out`](scratchpad/inpnum_knife_all.out),
+      [`inpnum_knife_fn.out`](scratchpad/inpnum_knife_fn.out)); all three predicted.
+      ⚠️ **Not covered by this fix:** a STRING item keeps its leading blank here and
+      the CF-3300 strips it (`one1s`, [`chanloop_run3.out`](scratchpad/chanloop_run3.out)).
+      The console's string rule is unmeasured. Filed under D-CHANSWITCH below
+      until measured.
+
+- [ ] 🔴 **TWO OUTPUT CHANNELS WRITTEN ALTERNATELY LOSE THE DATA — FILE A READS `1 0 2
+      0` AND FILE B IS EMPTY (D-CHANSWITCH, found 2026-09-29).**
+      🎚️ TIER 1 — happy path: writing two files at once (a report and a log, a
+      merge) is ordinary.
+      🤖 **AUTONOMOUS** — the CF-3300 settles it; find where the switch goes wrong.
+      [`chanloop_run4.out`](scratchpad/chanloop_run4.out) (`scratchpad/chanloop_probe.py`,
+      readable only since D-INPNUM): `PRINT #1,1:PRINT #2,10:PRINT #1,2:PRINT #2,20`
+      reads back `1 2 | 10 20` on the CF-3300 and `1 0 2 0 || 55` here. With FOR
+      or GOSUB frames standing it is worse (no reading at all). The `forloop`,
+      `gosub` and `nested` cases were built to test a SEPARATE hypothesis, read off
+      the code: `sh_chan_addr` derives the block address from `strheap_varceil`,
+      which returns `min(ceiling, CSP)`. So a standing control frame would MOVE
+      the channel blocks and a save would write over the newest frame. The
+      straight-line failure comes first; the frame hypothesis is still unanswered.
+      Also here: the STRING-item leading-blank divergence from D-INPNUM.
 
 - [x] ✅ **FIXED 2026-09-28 (D-SEQEOF): A TEXT FILE READS THE REFERENCE'S WAY — CTRL-Z
       ENDS IT, INPUT# EATS THE LF AFTER ITS CR, AND A READ AT THE END IS 55.** The

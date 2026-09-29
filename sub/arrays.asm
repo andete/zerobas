@@ -681,25 +681,14 @@ scv_alloc:
                 ; not found: HL = ARYTAB (= old scalar-region end = the
                 ; insertion point). Open the frame -- dec sp/inc sp touch no
                 ; register or flag other than SP, so HL survives untouched.
-                dec     sp
-                dec     sp
-                dec     sp
-                dec     sp
-                dec     sp
-                dec     sp
-                dec     sp
-                dec     sp
-                dec     sp
-                dec     sp
-                dec     sp
-                dec     sp
-                dec     sp
-                dec     sp
-                dec     sp
-                dec     sp
-                dec     sp
-                dec     sp
-                dec     sp                  ; reserve a 19-byte scratch frame
+                ; D-INPNUM funding (2026-09-29): was 19 x `dec sp` -- HL (scv_find's
+                ; result) survives through DE, which is dead here (its first use below
+                ; is a write) and so are the flags (IY is set next). 7 B, not 19.
+                ex      de,hl
+                ld      hl,-19
+                add     hl,sp
+                ld      sp,hl               ; reserve a 19-byte scratch frame
+                ex      de,hl
                 ld      iy,0
                 add     iy,sp               ; IY = frame base
                 ld      (iy+4),l
@@ -874,25 +863,11 @@ scva_zero_lp:
                 ; --- return HL = new entry base, CF set ---------------------
                 ld      l,(iy+4)
                 ld      h,(iy+5)
-                inc     sp
-                inc     sp
-                inc     sp
-                inc     sp
-                inc     sp
-                inc     sp
-                inc     sp
-                inc     sp
-                inc     sp
-                inc     sp
-                inc     sp
-                inc     sp
-                inc     sp
-                inc     sp
-                inc     sp
-                inc     sp
-                inc     sp
-                inc     sp
-                inc     sp                  ; deallocate the 19-byte frame
+                ex      de,hl               ; D-INPNUM funding: HL is the caller's
+                ld      hl,19               ; result, carried in DE (dead here; the
+                add     hl,sp               ; `scf` below sets the flag it returns)
+                ld      sp,hl               ; deallocate the 19-byte frame -- 7 B, not 19
+                ex      de,hl
                 ; D-CTLPOOL: the region's end just moved -- refresh the control
                 ; pool's collision floor. HL is the caller's result, so it rides
                 ; the stack across the walk.
@@ -902,25 +877,9 @@ scva_zero_lp:
                 scf
                 ret
 scv_oom:
-                inc     sp
-                inc     sp
-                inc     sp
-                inc     sp
-                inc     sp
-                inc     sp
-                inc     sp
-                inc     sp
-                inc     sp
-                inc     sp
-                inc     sp
-                inc     sp
-                inc     sp
-                inc     sp
-                inc     sp
-                inc     sp
-                inc     sp
-                inc     sp
-                inc     sp                  ; deallocate the 19-byte frame
+                ld      hl,19               ; D-INPNUM funding: HL is no result on
+                add     hl,sp               ; this path (A=4, CF clear below), so
+                ld      sp,hl               ; deallocate the 19-byte frame -- 5 B, not 19
                 ld      a,4                 ; ARY_ERR: Out of memory (same
                                             ; code arrays' own OOM uses)
                 or      a                   ; CF clear
