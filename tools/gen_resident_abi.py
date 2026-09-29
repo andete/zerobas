@@ -108,6 +108,8 @@ REQUIRED_DISK_RAM = [
     "FILES_HASPAT",             # D-DISKVERB4: 1 = a filespec pattern is staged,
                                 # 0 = list the whole directory
     "FAC",                      # the packed float accumulator
+    "FPERR",                    # D-DSKFSLOW: the evaluator's DEFERRED error;
+                                # hk_dskf counts nothing while one is pending
     "FACTYP",                   # 2 / 4 / 8
     # D-LRSETMOVE: hk_lrset walks main's FLD_TAB entry and fills the three
     # cells the sub-ROM store tenant reads. It WALKS the table; main OWNS it.

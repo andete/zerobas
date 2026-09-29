@@ -6019,7 +6019,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:27023 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:27055 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -25852,7 +25852,7 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       there, accepted here. Every other WAIT case agrees (2, 6, 13, 24). Blocks
       WAIT's T6 (code 5 in both forms).
 
-- [ ] 🟢 **D-KWT2TA SHIPPED 2026-09-28: A TYPE-AHEAD END MARK TIMES THE RUN-ENDING
+- [x] 🟢 **D-KWT2TA SHIPPED 2026-09-28: A TYPE-AHEAD END MARK TIMES THE RUN-ENDING
       COMMANDS — LEVEL 1 22 → 7, LEVEL 2 86 → 106. SEVEN REMAIN, BY SHAPE.**
       🎚️ TIER 1 — 🏗️ Joost 2026-09-28: lifting the level-0/1 keywords is THE
       priority (*"go ahead with that plan"*), ahead of the TIER 3-6 defect queue.
@@ -26047,7 +26047,7 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       would catch a guard silencing the PROMPT too
       ([`cassayprog_knife.out`](scratchpad/cassayprog_knife.out)).
 
-- [ ] 🔴 **A `DSKF` WITH A BAD ARGUMENT TAKES ~1 s HERE AND ~0.09 s ON THE CF-3300 —
+- [x] ✅ **A `DSKF` WITH A BAD ARGUMENT TOOK ~1 s HERE AND ~0.09 s ON THE CF-3300 —
       10.4–10.8×, OVER THE T2 BAR (D-DSKFSLOW, found 2026-09-28 by the type-ahead T2
       pass).**
       🎚️ TIER 2 — reasonable time: an error that should be immediate costs a second.
@@ -26056,6 +26056,38 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       📏 [`kwt2resp_kwtime.out`](scratchpad/kwt2resp_kwtime.out): `t6dskf2` 89.2 vs
       960.7 ms, `t6dskf13` 100.7 vs 1045.8 ms. DSKF keeps its T2 (each form has another
       OK row); the error path is what is slow.
+      ✅ **FIXED 2026-09-28 — AND THE FILED CAUSE WAS WRONG IN ITS DETAIL.** Not "the
+      disk is touched before the argument is checked": the argument IS checked
+      first for a bad DRIVE (`DSKF(9)` was always 92 ms). The slow two are the
+      evaluator's DEFERRED errors — `DSKF()` evaluates to 0 with FPERR=Syntax
+      error, `DSKF("A")` with FPERR=Type mismatch — raised at the statement
+      boundary, so `hk_dskf` first counted the WHOLE disk as drive 0: `DSKF()` took
+      960.7 ms, the same as a real `DSKF(0)` (966.7), where the CF-3300 answers
+      `DSKF()` in 88 ms and `DSKF(0)` in 1016.9 (so the COUNT itself is on par). A
+      plain `PRINT 1+` / `PRINT ASC(5)` error is 92 ms: the cost was DSKF's alone.
+      **FIX (disk/kernel.asm `hk_dskf`):** while FPERR is non-zero, count nothing
+      and hand back 0; main raises the SAME deferred error at the SAME point. FPERR
+      joins the generated disk ABI (`tools/gen_resident_abi.py`), 0 main bytes.
+      📏 [`dskfslow_after.out`](scratchpad/dskfslow_after.out): `DSKF()` 92.0 ms /
+      `Syntax error in 10`, `DSKF("A")` 89.3 / `Type mismatch in 10`, `DSKF(0)` still
+      counts (706), `DSKF(9)` 92.7 / `Bad drive name`.
+      ⚠️ **NO GATE WOULD CATCH IT COMING BACK** — kwtime's SLOW is a reported
+      finding, not a failure (filed below as D-KWTRATCHET).
+
+- [ ] 🔴 **A kwtime ROW THAT REGRESSES FROM OK TO SLOW OR HANG FAILS NO GATE
+      (D-KWTRATCHET, found 2026-09-28 while fixing D-DSKFSLOW).**
+      🎚️ APPARATUS — the T2 rung (reasonable time) has no regression guard per ROW.
+      🤖 **AUTONOMOUS** — design is the whole item.
+      📏 `make kwtime` exits 0 on SLOW/HANG by design ("findings, reported, not gate
+      failures"), and its pin is `build/kwtime.json` — an untracked build artifact, so
+      a fresh clone has nothing to compare against. The tracked record,
+      `docs/tier-status.md`, is PER KEYWORD: DSKF kept its T2 through D-DSKFSLOW
+      because each form had another OK row, so reverting that fix would change no
+      tracked byte and redden nothing. A ratchet wants a TRACKED per-row baseline
+      (the OK set) and a failure when a baseline-OK row reads SLOW/HANG.
+      ⚖️ **FLAKE RISK MEASURED LOW:** of 825 OK rows only 2 sit above 6× — `sqr`
+      8.25×, `resumekw_b` 6.76× (build/kwtime.json, 2026-09-28) — so a 10× ratchet
+      would rarely trip on noise; D-RUNT5NOISE's flip was a T5 ratio, not T2.
 
 - [ ] 🔴 **`RUN`'S T5 RATIO FLIPS BETWEEN RUNS — 1.1×, 1.5× AND 1.7× ON 2026-09-28 —
       SO `tiers-md-check` GOES RED AFTER ANY BATTERY THAT RE-RUNS `kwtime` (D-RUNT5NOISE).**

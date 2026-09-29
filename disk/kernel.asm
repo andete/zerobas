@@ -2049,6 +2049,18 @@ hklr_rhs:
 ; the SUB ROM's fatprim tenant, so the walk is neither here nor in main. Moving
 ; the walk itself is part of the 2394 B question (TODO), not of this verb.
 hk_dskf:
+                ; 🔴 D-DSKFSLOW (2026-09-28): NOTHING TO COUNT WHILE AN ERROR IS
+                ; PENDING. The evaluator DEFERS an argument error -- `DSKF()` is 0
+                ; with FPERR=Syntax error, `DSKF("A")` FPERR=Type mismatch -- and
+                ; raises it at the statement boundary, so this used to walk the
+                ; whole FAT first: ~960 ms here where the CF-3300 answers in ~90
+                ; (kwtime t6dskf2 / t6dskf13, 10.4-10.8x, over the T2 bar). The
+                ; count is skipped and 0 handed back; main raises the SAME error
+                ; at the SAME point as before, only without the walk.
+                ld      de,0
+                ld      a,(FPERR)
+                or      a
+                jr      nz,hkdf_done        ; a deferred error: count nothing
                 ld      de,(FAC)            ; the drive argument
                 ld      a,d
                 or      a                   ; >255 cannot be a drive
@@ -2058,6 +2070,7 @@ hk_dskf:
                 jr      nc,hkdf_bad
                 ld      ix,fat_count_free   ; DE = free clusters, via the tenant
                 call    calbak
+hkdf_done:
                 ld      (FAC),de
                 xor     a
                 ld      (DISKOP_STATUS),a   ; counted

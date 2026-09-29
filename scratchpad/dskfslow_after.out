@@ -1,0 +1,4 @@
+x_dskf2   PRINT DSKF()          92.0 ms  ['Syntax error in 10', 'ZB']
+x_dskf13  PRINT DSKF("A")       89.3 ms  ['Type mismatch in 10', 'ZB']
+x_dskf0   PRINT DSKF(0)        880.6 ms  ['706', 'ZB']
+x_dskf62  PRINT DSKF(9)         92.7 ms  ['Bad drive name in 10', 'ZB']

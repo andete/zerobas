@@ -34,7 +34,7 @@ names the other component's BUFFER this address falls within. That
 second one is the question a per-component map cannot answer.
 
 * **basic** — 435 declared addresses in this project's own workspace `$E000..$F37F` (405 with a machine-readable width), plus **102** in the MSX standard work area at or above `$F380`.
-* **disk** — 128 declared addresses in this project's own workspace `$E000..$F37F` (114 with a machine-readable width), plus **25** in the MSX standard work area at or above `$F380`.
+* **disk** — 129 declared addresses in this project's own workspace `$E000..$F37F` (115 with a machine-readable width), plus **25** in the MSX standard work area at or above `$F380`.
 
 ## This project's own workspace (`$E000..$F37F`)
 
@@ -532,6 +532,7 @@ second one is the question a per-component map cannot answer.
 | `$F065` | 1 B | `basic` | `FOMBYTES` | mantissa byte count: 3 (single) / 7 (double) (1) |  |
 | `$F067` | 2 B | `basic` | `TKSRCSAVE` | (2) |  |
 | `$F069` | 1 B | `basic` | `FPERR` | runtime numeric-error flag: 0 none / 1 overflow / (1 B) |  |
+| `$F069` | 1 B | `disk` | `FPERR` | runtime numeric-error flag: 0 none / 1 overflow / (1 B) |  |
 | `$F06A` | 18 B | `basic` | `ARGA` | operand A / working result, FPNUM record (18) |  |
 | `$F06A` | 18 B | `disk` | `ARGA` | operand A / working result, FPNUM record (18) |  |
 | `$F07C` | 18 B | `basic` | `ARGB` | operand B, FPNUM record (18) |  |
