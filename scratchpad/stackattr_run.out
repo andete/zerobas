@@ -1,0 +1,76 @@
+pass 1: CSP = $DE06, depth 145 B
+pass 2: depth 145 B (pass 1 145); deepest SP $DD75 = CSP-145, PC $3C26 main:htimi_guard+1 | sub:widen_uint_to+184
+stack words, deepest first (offset below CSP, value, candidate):
+  CSP-145  $FCA5  -
+  CSP-143  $9F8C  -
+  CSP-141  $1903  sub:sh_free_vars+15
+  CSP-139  $004C  main:ev_ff_argtab_len+63 | sub:sub_p0_table+12
+  CSP-137  $8B00  -
+  CSP-135  $032C  main:ttypos_col+429 | sub:tiv_lp+10
+  CSP-133  $0003  -
+  CSP-131  $8B00  -
+  CSP-129  $FCC8  -
+  CSP-127  $8B01  -
+  CSP-125  $4100  main:exec_stmt+8 | sub:fsq_norm_done+10
+  CSP-123  $8B00  -
+  CSP-121  $807D  main:err_notopen_raise+130 | sub:ct_off+144
+  CSP-119  $3C13  main:subrom_call+16 | sub:widen_uint_to+165
+  CSP-117  $44C9  main:ex_if+0 | sub:widen_to_arga+185
+  CSP-115  $42F1  main:sc_call+3 | sub:fsqn_up_check+7
+  CSP-113  $3DE8  main:ary_engine_call+7 | sub:vars_reset+157
+  CSP-111  $47FD  main:var_find_typed+17
+  CSP-109  $807D  main:err_notopen_raise+130 | sub:ct_off+144
+  CSP-107  $482A  main:var_load_fac+4
+  CSP-105  $022A  main:ttypos_col+171 | sub:tkf_try_exponent+2
+  CSP-103  $4CDA  main:ev_pw_lp+0 | sub:fexp_magloop+8
+  CSP-101  $4CA9  main:ev_t_lp+0 | sub:fp_exp+7
+  CSP- 99  $4C8C  main:ev_idiv_lp+0 | sub:fc16_lt+1
+  CSP- 97  $4C6F  main:ev_mod_lp+0 | sub:fat_no_recip+18
+  CSP- 95  $4C3E  main:ev_e_lp+0 | sub:fat_no_break+5
+  CSP- 93  $4BD6  main:evr_scan+0 | sub:fat_r2_done+12
+  CSP- 91  $4B5D  main:ev_lg+8 | sub:fat_r1_done+25
+  CSP- 89  $4BAB  main:logtab+12 | sub:fat_r1_done+103
+  CSP- 87  $4B5D  main:ev_lg+8 | sub:fat_r1_done+25
+  CSP- 85  $4BA8  main:logtab+9 | sub:fat_r1_done+100
+  CSP- 83  $4B5D  main:ev_lg+8 | sub:fat_r1_done+25
+  CSP- 81  $4BA5  main:logtab+6 | sub:fat_r1_done+97
+  CSP- 79  $4B5D  main:ev_lg+8 | sub:fat_r1_done+25
+  CSP- 77  $4BA2  main:logtab+3 | sub:fat_r1_done+94
+  CSP- 75  $4B5D  main:ev_lg+8 | sub:fat_r1_done+25
+  CSP- 73  $4B9F  main:logtab+0 | sub:fat_r1_done+91
+  CSP- 71  $4EB2  main:ev_ff_arg+10 | sub:fexp_scale+18
+  CSP- 69  $0097  main:ev_ff_argtab_len+138 | sub:tk_float+2
+  CSP- 67  $4CDA  main:ev_pw_lp+0 | sub:fexp_magloop+8
+  CSP- 65  $4CA9  main:ev_t_lp+0 | sub:fp_exp+7
+  CSP- 63  $4C8C  main:ev_idiv_lp+0 | sub:fc16_lt+1
+  CSP- 61  $4C6F  main:ev_mod_lp+0 | sub:fat_no_recip+18
+  CSP- 59  $4C3E  main:ev_e_lp+0 | sub:fat_no_break+5
+  CSP- 57  $4BD6  main:evr_scan+0 | sub:fat_r2_done+12
+  CSP- 55  $4B5D  main:ev_lg+8 | sub:fat_r1_done+25
+  CSP- 53  $4BAB  main:logtab+12 | sub:fat_r1_done+103
+  CSP- 51  $4B5D  main:ev_lg+8 | sub:fat_r1_done+25
+  CSP- 49  $4BA8  main:logtab+9 | sub:fat_r1_done+100
+  CSP- 47  $4B5D  main:ev_lg+8 | sub:fat_r1_done+25
+  CSP- 45  $4BA5  main:logtab+6 | sub:fat_r1_done+97
+  CSP- 43  $4B5D  main:ev_lg+8 | sub:fat_r1_done+25
+  CSP- 41  $4BA2  main:logtab+3 | sub:fat_r1_done+94
+  CSP- 39  $4B5D  main:ev_lg+8 | sub:fat_r1_done+25
+  CSP- 37  $4B9F  main:logtab+0 | sub:fat_r1_done+91
+  CSP- 35  $4B4C  main:eval+11 | sub:fat_r1_done+8
+  CSP- 33  $004F  main:ev_ff_argtab_len+66 | sub:sub_p0_table+15
+  CSP- 31  $44CD  main:ex_if+4 | sub:widen_to_arga+189
+  CSP- 29  $7670  main:rp_run+3 | sub:bsv_open+17
+  CSP- 27  $464E  main:repl_read+11
+  CSP- 25  $4100  main:exec_stmt+8 | sub:fsq_norm_done+10
+  CSP- 23  $0202  main:ttypos_col+131 | sub:tkf_inrange+7
+  CSP- 21  $DDD6  -
+  CSP- 19  $FFFF  -
+  CSP- 17  $FFFF  -
+  CSP- 15  $FFFF  -
+  CSP- 13  $0102  main:ev_ff_argtab_len+245 | sub:tkf_classify+30
+  CSP- 11  $FF00  -
+  CSP-  9  $FFFF  -
+  CSP-  7  $FFFF  -
+  CSP-  5  $5DFF  main:ep_strig_next+7 | sub:ffds_alloc+20
+  CSP-  3  $7580  main:dl_bare+7 | sub:sv_t_bsv_disk+0
+refcache: 0 hit, 2 miss, 2 stored

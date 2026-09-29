@@ -1,0 +1,12 @@
+machine-stack depth below the statement-level base (bytes; 48 = nothing reached the band, 1500 = AT LEAST the band):
+  case       VG-8020  zerobas
+  idle            79      147   A=1
+  flat            79      145   A=B+C*D-E/2
+  paren4          79      196   A=((((1+1)+1)+1)+1)
+  strings         79      145   A$=MID$(LEFT$(RIGHT$(STRING$(50,65),40),30),5,10)+CHR$(6
+  print           79      145   PRINT 1;"X";2.5
+  using           79      143   PRINT USING "###.##";12.345
+  graphics        79      156   SCREEN 2:CIRCLE(128,96),50,15:PAINT(128,96),8,15:DRAW"U1
+  play            83      153   PLAY"CDEFGAB":FOR W=1 TO 300:NEXT
+  errtrap         79      147   ON ERROR GOTO 50:A=1/0
+refcache: 0 hit, 2 miss, 2 stored

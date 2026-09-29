@@ -6019,7 +6019,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:27301 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:27342 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -25418,8 +25418,9 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       leaving ~260 B free is `Out of memory` here and fits on the VG-8020 down to
       ~145 B (D-DIMRESERVE, found 2026-09-27 by D-PAINTSP's tight rows).**
       🎚️ TIER 4 — RAM usage (VG-8020): economy at the memory edge
-      🤖 **AUTONOMOUS** — measure the reference's exact edge, then set the reserve
-      from zerobas's measured need (as D-PAINTSP did for PAINT).
+      ~~🤖 **AUTONOMOUS** — measure the reference's exact edge, then set the reserve
+      from zerobas's measured need (as D-PAINTSP did for PAINT).~~ Measured; now
+      🙋 at the end of this block (2026-09-29).
       `CLEAR 200:X=INT((FRE(0)-K)/8):DIM A(X)` completes on the VG-8020 for K
       down to ~145 and raises `Out of memory in 10` on zerobas already at K=260:
       the pool keeps `CTL_STACK_MARGIN` (256) clear below SP for ANY statement.
@@ -25451,10 +25452,50 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       DIM is ERR 7 ([`scratchpad/stackcorrupt_run.out`](scratchpad/stackcorrupt_run.out),
       `k280p0` and the leaf sweep), and zerobas's ~27 B per nesting level
       (the leaf probe's guard SPs) makes `B=((…8…))` ERR 7 at K=300 where the
-      VG-8020 completes. ➡️ **NEXT:** with the evaluator guarded, the pool's 256
+      VG-8020 completes. ~~➡️ **NEXT:** with the evaluator guarded, the pool's 256
       only has to hold a statement's non-expression stack — measure that (the
       idle rows read ~131 B including the probe's own loop and an interrupt)
-      and price DIM's reserve down toward the reference's ~130.
+      and price DIM's reserve down toward the reference's ~130.~~
+      📏 **MEASURED 2026-09-29 — THE RESERVE IS NOT THE LEVER; THE EVALUATOR'S
+      STACK IS.** Three readings, all by stack painting:
+      (1) **Every disk verb stays under the probe's own floor** — OPEN (all four
+      modes), INPUT #, LOF/LOC/EOF/INPUT$, RANDOM FIELD/PUT/GET, SAVE, BSAVE/BLOAD,
+      FILES, KILL, NAME, COPY, DSKF, DSKI$, and the 53 / 64 error paths read
+      143–147 B against `A=1`'s 145 on the disk machine
+      ([`stackhwdisk_run.out`](scratchpad/stackhwdisk_run.out)). So nothing measured
+      is deeper than the 256 reserve. (`twochan` is void: `MAXFILES` CLEARs the
+      probe's own variables. `SAVE ,A` gives no reading because it ends the run,
+      as on the reference — row `save_b`.)
+      (2) **The same statement is 79 B on the VG-8020 and 147 B here**
+      ([`stackhwref_run.out`](scratchpad/stackhwref_run.out), identical programs,
+      base = `STKTOP` there and `CSP` here). Every expression case reads the
+      reference's floor of 79; `A=((((1+1)+1)+1)+1)` reads 196 here. The old
+      ~131 was from before D-STACKFLOOR's guard.
+      (3) **Where the 147 goes** ([`stackattr_run.out`](scratchpad/stackattr_run.out),
+      a write watchpoint on our own stack at its deepest point, words named from
+      our symbol table): statement level (`exec_stmt` / `repl_read` / `rp_run` /
+      `ex_if`) ~32 B; **the evaluator's precedence chain, 36 B** — `eval` →
+      `logtab`/`ev_lg` ×5 → `evr_scan` → `ev_e_lp` → `ev_mod_lp` → `ev_idiv_lp` →
+      `ev_t_lp` → `ev_pw_lp`, eighteen return addresses pushed whether or not any
+      operator is present; **the same 36 B again** for `PEEK`'s argument
+      (`ev_ff_arg` re-enters the chain); and ~38 B for the variable lookup through
+      the sub-ROM (`var_load_fac` → `ary_engine_call` → `sc_call` →
+      `subrom_call`) with an interrupt (`htimi_guard`) on top.
+      🔮 Predicted: the interrupt ≥ 30 B of it — MISS (~24 B with its sub-ROM
+      frames); VG-8020 idle 40–80 — HIT (79); zerobas idle 131 ± 5 — MISS (147,
+      see (2)); the reference's PAINT reading ≥ 300 — MISS (79, few spans held).
+      ➡️ **SO THE ~120 B DIM-EDGE GAP IS MOSTLY THE EVALUATOR'S SHAPE.** A flat
+      expression after an edge DIM needs the statement's stack plus
+      `STK_EVAL_RESERVE`, which is why 256 is already near the floor. The
+      reference fits the same statement in 79 B. An evaluator that climbs
+      precedence only when it meets an operator (one frame per nesting level, not
+      eighteen) would give back ~34 B per expression entry. That is also a
+      stack-economy (goal (c)) and speed (TIER 5) lever for every keyword.
+      🙋 **NEEDS-JOOST — a rewrite of `eval`'s precedence levels in main** (the
+      most-shared code in the tree, main at 0 B). A table-driven climber may come
+      out SMALLER than twelve hand-written level loops, but that is a prediction,
+      not a measurement. Under the RAM rung's own rule an adjustment it proposes
+      comes back to him. The DIM reserve itself stays at 256 until then.
 
 - [ ] 🔴 **`IF 1 GOTO` (no line) IS ACCEPTED ON THE REFERENCE AND `Syntax error`
       HERE (D-IFGOTOBARE, found 2026-09-27 by T6).**

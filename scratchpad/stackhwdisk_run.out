@@ -1,0 +1,20 @@
+zerobas (DISK) machine-stack depth below CSP (bytes; 48 = nothing reached the band, 1500 = AT LEAST the band); second number = ERR if trapped:
+  idle         145   0   A=1
+  openout      147   0   OPEN"S.TXT" FOR OUTPUT AS #1:PRINT #1,"HELLO":CLOSE
+  inputf       147   0   OPEN"K.TXT" FOR INPUT AS #1:INPUT #1,A$:CLOSE
+  append       145   0   OPEN"K.TXT" FOR APPEND AS #1:PRINT #1,"MORE":CLOSE
+  chanfns      143   0   OPEN"K.TXT" FOR INPUT AS #1:A=LOF(1)+LOC(1)+EOF(1):A$=INPUT$(2,#
+  twochan        0   0   MAXFILES=2:OPEN"K.TXT" FOR INPUT AS #1:OPEN"T.TXT" FOR OUTPUT AS
+  random       143   0   OPEN"R.DAT" AS #1 LEN=32:FIELD #1,32 AS F$:LSET F$="X":PUT #1,1:
+  save         147   0   SAVE"P.BAS"
+  saveasc   NO READING   SAVE"Q.BAS",A
+  bsvbld       143   0   BSAVE"B.BIN",&HC000,&HC0FF:BLOAD"B.BIN"
+  files        145   0   FILES
+  kill         145   0   KILL"K.TXT"
+  name         145   0   NAME"K.TXT" AS "N.TXT"
+  copy         145   0   COPY"K.TXT" TO "C.TXT"
+  dskf         145   0   A=DSKF(0)
+  dski         145   0   A$=DSKI$(0,0)
+  nofile       143  53   OPEN"NOSUCH.TXT" FOR INPUT AS #1
+  killopen     143  64   OPEN"K.TXT" FOR INPUT AS #1:KILL"K.TXT"
+refcache: 0 hit, 18 miss, 18 stored
