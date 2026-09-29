@@ -252,10 +252,8 @@ REQUIRED_DISK_CALLBACK: list[str] = [
     "main_fat_mount=fat_mount",   # CF=1: no disk / bad BPB
     "main_fat_find=fat_find",     # HL = 8.3 name; CF=1: not found
     "parse_disk_fcb",           # HL = [len]name text -> DISK_FCB_NAME
-    # D-DSKFMOVE phase: DSKF's body runs in disk.rom and calls back for the
-    # count, which is a 13 B stub onto the SUB ROM's fatprim tenant -- so the
-    # walk is in neither ROM that this call crosses between.
-    "fat_count_free",           # DE = free clusters; CF=1: no disk
+    # (D-DSKFLOCAL, 2026-09-29: `fat_count_free` is no longer a callback --
+    # disk.rom assembles the body itself and hk_dskf calls it locally.)
     # D-LRSETMOVE: LSET/RSET's three BUNDLES. Each is one logical act, not
     # one helper -- the target parse alone would otherwise be five
     # crossings. All three may RAISE, which is safe from a call-back.

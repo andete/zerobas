@@ -1,0 +1,4 @@
+case                  CF-3300              zerobas
+  n_as5_abs           [| 53 30 ]           [| 53 30 ]
+✗ n_as5_ex           [| 13 30 ]            [| 2 30 ]
+refcache: 0 hit, 4 miss, 4 stored

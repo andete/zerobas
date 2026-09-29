@@ -1,0 +1,54 @@
+msxtest: BASIC image carries islands -- loaded at $0010, not $2812
+build under measurement: git=5d27c0d8 zerobas-main-eu.rom=c189b30b88c7 sub.rom=8608aab8f78b disk.rom=98b2d9ea9ee1
+
+==============================================================================
+LAYER 1 — CRUNCH (tokenisation only; NOT a support answer)
+==============================================================================
+SAME   dskf      a=dskf(0)
+SAME   t6dskf2   a=dskf()
+SAME   t6dskf13  a=dskf("A")
+SAME   t6dskf62  a=dskf(9)
+SAME   t6dskf5   a=dskf(-1)
+SAME   t6dskf5b  a=dskf(256)
+SAME   dskf_t3   a=dskf(9)
+
+==============================================================================
+LAYER 2 — SUPPORT (the load-bearing layer)
+==============================================================================
+SUPPORTED     dskf      PRINT"[";DSKF(1);"]"
+            ref  [value] '[ 706 ]'
+SUPPORTED     t6dskf2   PRINT DSKF()
+            ref  [error:syntax error] 'Syntax error in 10'
+SUPPORTED     t6dskf13  PRINT DSKF("A")
+            ref  [error:type mismatch] 'Type mismatch in 10'
+SUPPORTED     t6dskf62  PRINT DSKF(9)
+            ref  [value] 'Bad drive name in 10'
+SUPPORTED     t6dskf5   PRINT DSKF(-1)
+            ref  [error:illegal function call] 'Illegal function call in 10'
+SUPPORTED     t6dskf5b  PRINT DSKF(256)
+            ref  [error:illegal function call] 'Illegal function call in 10'
+SUPPORTED     dskf_t3   PRINT DSKF(9)
+            ref  [value] 'Bad drive name'
+
+==============================================================================
+COMBINED — tokenised? x observable consequence
+==============================================================================
+word       crunch  support     consequence
+------------------------------------------------------------------------------
+dskf       present SUPPORTED   match
+t6dskf2    present SUPPORTED   match
+t6dskf13   present SUPPORTED   match
+t6dskf62   present SUPPORTED   match
+t6dskf5    present SUPPORTED   match
+t6dskf5b   present SUPPORTED   match
+dskf_t3    present SUPPORTED   match
+
+==============================================================================
+SUMMARY  SUPPORTED=7
+         executed 7 / 7 words; 0 crunch-only
+==============================================================================
+ROWS: 7 printed, 7 scored — 0 crunch-only word(s) carry no support reading and are printed but not scored
+pin: NOT written -- an --only run measures a subset, and the pin is the whole sweep
+
+=== CRUNCH PIN — words the reference tokenises and zerobas does not ===
+refcache: 0 hit, 4 miss, 4 stored

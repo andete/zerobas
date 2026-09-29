@@ -475,6 +475,148 @@ k_55FF:
 ; milestone 4 fills each contract. CLEAN-ROOM: exposing ABI entry points + own
 ; contract code, never shared-kernel bytes — same legitimacy class as the $4010
 ; BIOS jump table. Veneer safety confirmed by disk_probe_dosboot_veneer.py.
+; --- hkc_body: COPY's sector loop, IN THIS ROM ------------------------------
+; 📍 SITED IN THE $5602..$5FE4 FILL with hkc_resolve (D-DSKFLOCAL, 2026-09-29):
+; the tail after runtime.asm is full, and fat_count_free's local body needed
+; its room. Entered by hk_copy's absolute `call`, so it can live anywhere.
+; D-COPYLOCAL (disk/docs/spec-diskcode-eviction.md §6.6az). The `tnt_copy` body
+; verbatim, less its DISKOP_STATUS store; every routine it calls was ALREADY in
+; this assembly (basic/fat-prim-body.inc, included above), and every write-cursor
+; cell it uses -- FWR_SECIDX / FWR_CLUS / FWR_FIRST / FWR_BYTES / FWR_BUFLEN --
+; was already declared disk-local in disk/equates.inc. Only COPY's own three
+; cells had to be published.
+; Sources: our own FAT12 engine and our own COPY semantics (basic/PROVENANCE.md
+; §COPY, docs/spec-basic-copy.md §3); the refusals are black-box readings on the
+; CF-3300, not decoded code.
+;
+;   in : COPY_SRC = the source 8.3 name, DISK_FCB_NAME = the destination
+;   out: A = 0 source not found (ERR 53) / 1 copied / 2 mount, full or I-O
+;        (load_error) / 3 refused (ERR 5)
+;
+; The order is forced and each step says by what: mount; refuse a self-copy and a
+; wildcard source (both measured, both ERR 5); `fat_find` the SOURCE FIRST --
+; it records the entry location in FWR_DIRSEC/FWR_DIROFF, which the destination's
+; create must own afterwards -- and stash its first cluster and size, because the
+; destination's delete and create clobber FAT_FIRSTCLUS/FAT_FILESIZE through
+; fat_find; delete an old destination (the reference overwrites); create the new
+; one and reset the write cursor exactly as fat_io_create does; reopen the
+; source; then per sector read, clamp to what is left, and flush. The read
+; iterator (FAT_CURCLUS/FAT_CLUSSEC) and the write cursor (FWR_*) are disjoint
+; cells; FAT_DBUF is the one shared buffer and that is the point.
+; 🔴 `FAT_DBUF`, NOT `FSECTOR_BUF`: the sub-ROM body's comment named the
+; per-ROM spelling, which in THIS ROM is main's buffer at $E5C0 rather than ours
+; at $E2A0 (§6.6c) -- one address since D-BUFMERGE, the spelling stays neutral.
+; The primitives themselves are already neutral (§6.6ax).
+hkc_body:
+                call    fat_mount
+                jp      c,hkc_io            ; A = 2
+                ; 🟢 D-COPYWILD (2026-09-28): a '?' SOURCE is RESOLVED, no longer
+                ; refused. Measured on the CF-3300 (scratchpad/copywild_run6.out):
+                ; ONE match copies (`A1.*` / `A1.T?T`), NO match is 53. Two or more
+                ; stay ERR 5 -- the reference never returns there, and what to do
+                ; instead is Joost's ruling (TODO D-COPYWILD).
+                ld      hl,COPY_SRC
+                ld      b,11
+hkc_wild:       ld      a,(hl)
+                cp      '?'                 ; pdfcb turns '*' into '?'s too
+                jp      z,hkc_resolve
+                inc     hl
+                djnz    hkc_wild
+hkc_fill:
+                ; ...and every '?' in the DESTINATION takes the source's character
+                ; at that position -- the CF-3300 does it for a PLAIN source too:
+                ; `COPY "A1.TXT" TO "H?.TXT"` makes H1.TXT, where this made a file
+                ; literally named `H?.TXT` (copywild_run6.out s_plainq).
+                ld      hl,COPY_SRC
+                ld      de,DISK_FCB_NAME
+                ld      b,11
+hkc_df:         ld      a,(de)
+                cp      '?'
+                jr      nz,hkc_dk
+                ld      a,(hl)
+                ld      (de),a
+hkc_dk:         inc     hl
+                inc     de
+                djnz    hkc_df
+                ld      hl,COPY_SRC
+                ld      de,DISK_FCB_NAME
+                ld      b,11
+hkc_same:       ld      a,(de)
+                cp      (hl)
+                jr      nz,hkc_differ
+                inc     hl
+                inc     de
+                djnz    hkc_same
+                jp      hkc_ill             ; all 11 bytes equal: a self-copy
+hkc_differ:     ld      hl,COPY_SRC
+                call    fat_find
+                jp      c,hkc_nf            ; A = 0
+                ld      hl,(FAT_FIRSTCLUS)
+                ld      (COPY_CLUS),hl
+                ld      hl,(FAT_FILESIZE)
+                ld      (COPY_LEFT),hl
+                ld      hl,(FAT_FILESIZE+2)
+                ld      (COPY_LEFT+2),hl
+                call    fat_delete          ; an old destination; Cy = 1 "none" is fine
+                ld      hl,DISK_FCB_NAME
+                call    fat_dir_create
+                jp      c,hkc_io
+                xor     a
+                ld      (FWR_SECIDX),a
+                ld      hl,0
+                ld      (FWR_CLUS),hl
+                ld      (FWR_FIRST),hl
+                ld      (FWR_BYTES),hl
+                ld      (FWR_BYTES+2),hl
+                ld      hl,(COPY_CLUS)
+                ld      (FAT_FIRSTCLUS),hl
+                call    fat_open
+hkc_loop:
+                ld      hl,(COPY_LEFT)
+                ld      a,(COPY_LEFT+2)
+                or      h
+                or      l
+                jr      z,hkc_fin
+                call    fat_read_file_sector    ; -> FAT_DBUF
+                jr      c,hkc_fin           ; chain ended before the size did:
+                                            ; stamp what arrived
+                ld      de,512
+                ld      hl,(COPY_LEFT)
+                ld      a,(COPY_LEFT+2)
+                or      a
+                jr      nz,hkc_n            ; >= 65536 left: a whole sector
+                or      a
+                sbc     hl,de
+                jr      nc,hkc_n            ; >= 512 left: a whole sector
+                ld      de,(COPY_LEFT)      ; the tail: n = left
+hkc_n:          ld      (FWR_BUFLEN),de
+                ld      hl,(COPY_LEFT)      ; left -= n
+                or      a
+                sbc     hl,de
+                ld      (COPY_LEFT),hl
+                jr      nc,hkc_nb
+                ld      hl,COPY_LEFT+2
+                dec     (hl)
+hkc_nb:         ld      hl,(FWR_BYTES)      ; FWR_BYTES += n
+                add     hl,de
+                ld      (FWR_BYTES),hl
+                jr      nc,hkc_fl
+                ld      hl,FWR_BYTES+2
+                inc     (hl)
+hkc_fl:         call    fat_flush_data_sector   ; allocates/extends, writes FAT_DBUF
+                jp      c,hkc_io
+                jr      hkc_loop
+hkc_fin:        call    fat_dir_update      ; true size + first cluster
+                jp      c,hkc_io
+                ld      a,1                 ; copied
+                ret
+hkc_io:         ld      a,2                 ; mount / full / I-O -> load_error
+                ret
+hkc_ill:        ld      a,3                 ; refused -> ERR 5
+                ret
+hkc_nf:         xor     a                   ; 0 = source not found -> ERR 53
+                ret
+
 ; hkc_resolve -- D-COPYWILD: COUNT the root entries the '?' source matches
 ; (fat_find's own walk and name_cmp, which honours '?'), then:
 ;   0 -> hkc_nf (53) / 2+ -> hkc_ill (5, pending Joost) / exactly 1 -> the real
@@ -2148,8 +2290,9 @@ hk_dskf:
                 cp      3                   ; 0..2 accepted, 3+ refused
                 ld      a,62                ; (flags kept) no such drive -> 62
                 jr      nc,hkdf_bad
-                ld      ix,fat_count_free   ; DE = free clusters, via the tenant
-                call    calbak
+                call    fat_count_free      ; DE = free clusters -- LOCAL since
+                                            ; D-DSKFLOCAL: no crossing to main,
+                                            ; and none on to the sub ROM
 hkdf_done:
                 ld      (FAC),de
                 xor     a
@@ -3282,144 +3425,6 @@ hks_lp:
                 djnz    hks_lp
                 ret
 
-; --- hkc_body: COPY's sector loop, IN THIS ROM ------------------------------
-; D-COPYLOCAL (disk/docs/spec-diskcode-eviction.md §6.6az). The `tnt_copy` body
-; verbatim, less its DISKOP_STATUS store; every routine it calls was ALREADY in
-; this assembly (basic/fat-prim-body.inc, included above), and every write-cursor
-; cell it uses -- FWR_SECIDX / FWR_CLUS / FWR_FIRST / FWR_BYTES / FWR_BUFLEN --
-; was already declared disk-local in disk/equates.inc. Only COPY's own three
-; cells had to be published.
-; Sources: our own FAT12 engine and our own COPY semantics (basic/PROVENANCE.md
-; §COPY, docs/spec-basic-copy.md §3); the refusals are black-box readings on the
-; CF-3300, not decoded code.
-;
-;   in : COPY_SRC = the source 8.3 name, DISK_FCB_NAME = the destination
-;   out: A = 0 source not found (ERR 53) / 1 copied / 2 mount, full or I-O
-;        (load_error) / 3 refused (ERR 5)
-;
-; The order is forced and each step says by what: mount; refuse a self-copy and a
-; wildcard source (both measured, both ERR 5); `fat_find` the SOURCE FIRST --
-; it records the entry location in FWR_DIRSEC/FWR_DIROFF, which the destination's
-; create must own afterwards -- and stash its first cluster and size, because the
-; destination's delete and create clobber FAT_FIRSTCLUS/FAT_FILESIZE through
-; fat_find; delete an old destination (the reference overwrites); create the new
-; one and reset the write cursor exactly as fat_io_create does; reopen the
-; source; then per sector read, clamp to what is left, and flush. The read
-; iterator (FAT_CURCLUS/FAT_CLUSSEC) and the write cursor (FWR_*) are disjoint
-; cells; FAT_DBUF is the one shared buffer and that is the point.
-; 🔴 `FAT_DBUF`, NOT `FSECTOR_BUF`: the sub-ROM body's comment named the
-; per-ROM spelling, which in THIS ROM is main's buffer at $E5C0 rather than ours
-; at $E2A0 (§6.6c) -- one address since D-BUFMERGE, the spelling stays neutral.
-; The primitives themselves are already neutral (§6.6ax).
-hkc_body:
-                call    fat_mount
-                jp      c,hkc_io            ; A = 2
-                ; 🟢 D-COPYWILD (2026-09-28): a '?' SOURCE is RESOLVED, no longer
-                ; refused. Measured on the CF-3300 (scratchpad/copywild_run6.out):
-                ; ONE match copies (`A1.*` / `A1.T?T`), NO match is 53. Two or more
-                ; stay ERR 5 -- the reference never returns there, and what to do
-                ; instead is Joost's ruling (TODO D-COPYWILD).
-                ld      hl,COPY_SRC
-                ld      b,11
-hkc_wild:       ld      a,(hl)
-                cp      '?'                 ; pdfcb turns '*' into '?'s too
-                jp      z,hkc_resolve
-                inc     hl
-                djnz    hkc_wild
-hkc_fill:
-                ; ...and every '?' in the DESTINATION takes the source's character
-                ; at that position -- the CF-3300 does it for a PLAIN source too:
-                ; `COPY "A1.TXT" TO "H?.TXT"` makes H1.TXT, where this made a file
-                ; literally named `H?.TXT` (copywild_run6.out s_plainq).
-                ld      hl,COPY_SRC
-                ld      de,DISK_FCB_NAME
-                ld      b,11
-hkc_df:         ld      a,(de)
-                cp      '?'
-                jr      nz,hkc_dk
-                ld      a,(hl)
-                ld      (de),a
-hkc_dk:         inc     hl
-                inc     de
-                djnz    hkc_df
-                ld      hl,COPY_SRC
-                ld      de,DISK_FCB_NAME
-                ld      b,11
-hkc_same:       ld      a,(de)
-                cp      (hl)
-                jr      nz,hkc_differ
-                inc     hl
-                inc     de
-                djnz    hkc_same
-                jp      hkc_ill             ; all 11 bytes equal: a self-copy
-hkc_differ:     ld      hl,COPY_SRC
-                call    fat_find
-                jp      c,hkc_nf            ; A = 0
-                ld      hl,(FAT_FIRSTCLUS)
-                ld      (COPY_CLUS),hl
-                ld      hl,(FAT_FILESIZE)
-                ld      (COPY_LEFT),hl
-                ld      hl,(FAT_FILESIZE+2)
-                ld      (COPY_LEFT+2),hl
-                call    fat_delete          ; an old destination; Cy = 1 "none" is fine
-                ld      hl,DISK_FCB_NAME
-                call    fat_dir_create
-                jp      c,hkc_io
-                xor     a
-                ld      (FWR_SECIDX),a
-                ld      hl,0
-                ld      (FWR_CLUS),hl
-                ld      (FWR_FIRST),hl
-                ld      (FWR_BYTES),hl
-                ld      (FWR_BYTES+2),hl
-                ld      hl,(COPY_CLUS)
-                ld      (FAT_FIRSTCLUS),hl
-                call    fat_open
-hkc_loop:
-                ld      hl,(COPY_LEFT)
-                ld      a,(COPY_LEFT+2)
-                or      h
-                or      l
-                jr      z,hkc_fin
-                call    fat_read_file_sector    ; -> FAT_DBUF
-                jr      c,hkc_fin           ; chain ended before the size did:
-                                            ; stamp what arrived
-                ld      de,512
-                ld      hl,(COPY_LEFT)
-                ld      a,(COPY_LEFT+2)
-                or      a
-                jr      nz,hkc_n            ; >= 65536 left: a whole sector
-                or      a
-                sbc     hl,de
-                jr      nc,hkc_n            ; >= 512 left: a whole sector
-                ld      de,(COPY_LEFT)      ; the tail: n = left
-hkc_n:          ld      (FWR_BUFLEN),de
-                ld      hl,(COPY_LEFT)      ; left -= n
-                or      a
-                sbc     hl,de
-                ld      (COPY_LEFT),hl
-                jr      nc,hkc_nb
-                ld      hl,COPY_LEFT+2
-                dec     (hl)
-hkc_nb:         ld      hl,(FWR_BYTES)      ; FWR_BYTES += n
-                add     hl,de
-                ld      (FWR_BYTES),hl
-                jr      nc,hkc_fl
-                ld      hl,FWR_BYTES+2
-                inc     (hl)
-hkc_fl:         call    fat_flush_data_sector   ; allocates/extends, writes FAT_DBUF
-                jp      c,hkc_io
-                jr      hkc_loop
-hkc_fin:        call    fat_dir_update      ; true size + first cluster
-                jp      c,hkc_io
-                ld      a,1                 ; copied
-                ret
-hkc_io:         ld      a,2                 ; mount / full / I-O -> load_error
-                ret
-hkc_ill:        ld      a,3                 ; refused -> ERR 5
-                ret
-hkc_nf:         xor     a                   ; 0 = source not found -> ERR 53
-                ret
 
 
 ; --- hk_files: FILES and LFILES, in the disk ROM (MSX2 TH hook) -------------

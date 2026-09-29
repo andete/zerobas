@@ -236,25 +236,8 @@ fatprim_bounce:
 
 
 
-; fat_count_free — DE-based (not Cy/HL), so it gets its own tail: see basic/
-; fat-prim-body.inc for the full contract ("DE = free cluster count"). No
-; new RAM cell: the tenant wrapper (sub/fatprim.asm t_fat_count_free) mirrors
-; DE into FAT_WRTMP2 (fat_count_free's OWN scratch, already RAM-visible both
-; sides) before returning, on EVERY exit path (see basic/sysvars.inc's
-; DISKOP block comment for why that is safe). The original never guaranteed
-; a Cy contract here either (its only caller, expr.asm ev_ff_dskf, reads DE
-; only) so this shim does not fabricate one.
-fat_count_free:
-                ld      a,DISKOP_SEL_FAT_COUNT_FREE
-                call    fatprim_op
-                jp     c,fcfs_absent
-                ld      de,(FAT_WRTMP2)
-                ret
-; D-DUPSPAN2: an ALIAS, not a second copy -- byte-identical to vptr_none,
-; and POSITION-INDEPENDENT by tools/dupspan_indep.py (terminates, no
-; escaping relative jump, not entered by fallthrough, same ROM region).
-; The NAME and every call site survive; un-alias here for a distinct face.
-fcfs_absent     equ     vptr_none
+; (D-DSKFLOCAL, 2026-09-29: main's fat_count_free stub is gone -- its only
+; caller was disk.rom's hk_dskf, which now runs the body locally.)
 
 
 

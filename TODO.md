@@ -6019,7 +6019,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:27118 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:27141 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -6185,7 +6185,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:11019 (T-6FE392)8 (T-529ABE)` from `TODO.md:23307 (T-529ABE)`: a
+      `TODO.md:11019 (T-6FE392)8 (T-529ABE)` from `TODO.md:23317 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -11866,7 +11866,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:23307 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:23317 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -14914,6 +14914,16 @@ list. **When a slice lands, grep this list for what it just shipped.**
       canonical marker in one block as AMBIGUOUS, and it is right to: this item
       has one open question, not two.
       🎯 The scouting the older 🔭 asked for is DONE; what is left is the call.
+      🙋 **FOR JOOST, RE-READ 2026-09-29: THIS ITEM'S TIER TAG UNDERSELLS IT.** The
+      tag says TIER 6 (NAME's type fault), but the same gap makes `OPEN "F" FOR
+      OUTPUT AS 1` — no `#`, an ordinary way to write OPEN — a `Syntax error`
+      here where the CF-3300 opens the file (`o.as1`, still pinned by
+      `asciidigit-acceptance`). That is a HAPPY-PATH form, i.e. TIER 1. Priced from
+      the code on 2026-09-29: the `ev_f` arm (digit test, fake `[len][ptr]`
+      descriptor, the existing VAL tenant, `IX` from `TKSRCSAVE`) is ≈ 28 B of main
+      page 1 plus a 3-byte RAM cell; page 1 was **17 B** on 2026-09-29, after D-DSKFLOCAL. A
+      narrower OPEN-only digit parse would be cheaper but leaves NAME and any future
+      ASCII-parsed verb out. Which one, and whether it is TIER 1, is the call.
       🎚️ TIER 6 — `NAME old AS <non-string>` type fault
       🔁 **PARKED (Joost, 2026-09-10): every TIER 5 item waits until TIERS 1–4 are clean, and
       *"when we get to TIER 5, we'll have to do a prioritization together"* —
@@ -26290,6 +26300,19 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       "the reference refuses, zerobas does not". Still not green, so the gate bites;
       but the label is wrong, and a real divergence between two DISK error messages
       would be mis-reported the same way.
+      ✅ **D-DSKFLOCAL (same day): DSKF COUNTS INSIDE `disk.rom` NOW, AND MAIN GETS 13
+      MORE BYTES — page 1 4 → 17 B.** `fat_count_free` was the ONE body of the FAT
+      engine `disk.rom` excluded, only because the disk ABI bound the name as a
+      CALLBACK to main's 13 B stub onto the sub-ROM tenant (two crossings for one
+      count; the body's own comment named this as "a separate slice"). The body is
+      in both builds now, the callback is gone from `tools/gen_resident_abi.py`,
+      `hk_dskf` calls it locally, and main's stub is deleted (`check_dead_code`: 0
+      dead in all three builds). The disk ROM's tail was full again, so COPY's
+      `hkc_body` moved into the `$5602` fill beside `hkc_resolve` (largest hole 2181 B
+      after). Witnesses: all seven DSKF rows SUPPORTED, `DSKF(1)`'s cluster count
+      equal to the CF-3300's ([`dskflocal_kwsweep.out`](scratchpad/dskflocal_kwsweep.out)),
+      `copy-acceptance` 12/12. DSKF is barely faster (882.5 vs 885.5 ms) — the FAT
+      walk is the cost, not the crossings.
 
 - [ ] 🔴 **`STRING$(2,"")` IS `Syntax error` HERE AND `Illegal function call` ON
       THE REFERENCE (D-STRINGEMPTY, found 2026-09-27 by the T6 enumeration).**

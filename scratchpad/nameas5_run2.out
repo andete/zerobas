@@ -1,0 +1,5 @@
+case                  CF-3300              zerobas
+  c_to5              [| 13 30 ]           [| 13 30 ]
+  n_asvar            [| 13 30 ]           [| 13 30 ]
+  n_asparen           [| 13 30 ]           [| 13 30 ]
+refcache: 0 hit, 6 miss, 6 stored

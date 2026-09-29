@@ -65,6 +65,18 @@ CASES = {
     "n_noas_miss": ["NEW", "10 ON ERROR GOTO 90", '30 NAME "NOPE.TXT":PRINT CHR$(91);"|OK]":END'] + TAIL,
     "c_noto_miss": ["NEW", "10 ON ERROR GOTO 90", '30 COPY "NOPE.TXT":PRINT CHR$(91);"|OK]":END'] + TAIL,
     "c_noto_ex": ["NEW", "10 ON ERROR GOTO 90", '30 COPY "HI.TXT":PRINT CHR$(91);"|OK]":END'] + TAIL,
+    # --- round 8 (NAME AS <non-string>, TODO item from 2026-08-26, re-measured
+    # after NAME moved into disk.rom)
+    "n_as5_abs": ["NEW", "10 ON ERROR GOTO 90", '30 NAME "X.DAT" AS 5:PRINT CHR$(91);"|OK]":END'] + TAIL,
+    "n_as5_ex": ["NEW", "10 ON ERROR GOTO 90", '30 NAME "HI.TXT" AS 5:PRINT CHR$(91);"|OK]":END'] + TAIL,
+    "c_to5": ["NEW", "10 ON ERROR GOTO 90", '30 COPY "HI.TXT" TO 5:PRINT CHR$(91);"|OK]":END'] + TAIL,
+    "n_asvar": ["NEW", "10 ON ERROR GOTO 90", '30 NAME "HI.TXT" AS A:PRINT CHR$(91);"|OK]":END'] + TAIL,
+    "n_asparen": ["NEW", "10 ON ERROR GOTO 90", '30 NAME "HI.TXT" AS (5):PRINT CHR$(91);"|OK]":END'] + TAIL,
+    # the STORED bytes of `30 NAME "HI.TXT" AS 5` (program text is RAM output)
+    "n_as5_bytes": ["NEW", '30 NAME "HI.TXT" AS 5',
+                    '40 A=PEEK(&HF676)+256*PEEK(&HF677):B$=""',
+                    '50 FOR I=A+4 TO A+22:B$=B$+RIGHT$("0"+HEX$(PEEK(I)),2):NEXT',
+                    '60 PRINT CHR$(91);B$;"]":END', "RUN 40"],
     "x_multi": ["NEW", "10 ON ERROR GOTO 90", '30 COPY "PROG*.BAS" TO "Q*.BAS"',
                 '40 OPEN "Q.BAS" FOR INPUT AS #1:B$=STR$(LOF(1)):CLOSE:PRINT CHR$(91);"|";B$;"OK]":END'] + TAIL,
 }

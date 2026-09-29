@@ -1083,11 +1083,10 @@ ftc_done:
 ; stub onto the sub-ROM tenant. Defining it here as well is a redefinition, which
 ; the assembler refuses -- and it was the ONLY such clash between this body and
 ; the disk ABI (checked: 1 of 29 ABI names).
-; ⚠️ SO THE SLOT CROSSING SURVIVES THE SWAP. With the engine now local, disk.rom
-; COULD count free clusters without leaving the slot -- a strictly better DSKF
-; path, and a separate slice rather than something smuggled into an atomic swap.
-    IF DISK_BUILD
-    ELSE
+;  ✅ D-DSKFLOCAL (2026-09-29): THAT SEPARATE SLICE IS DONE -- the body is in
+; BOTH builds now, the callback is gone from the disk ABI, and hk_dskf counts
+; without leaving the slot. Main's 13 B stub onto the sub-ROM tenant had no
+; other caller and is deleted.
 fat_count_free:
                 call    fat_mount
                 jp      c, fcf_zero
@@ -1209,7 +1208,6 @@ fcf_zero:
 ; the file's current data sector, allocating/extending the cluster chain first.
 ;   out: Cy = 0 ok, Cy = 1 = disk full / write error
 ; (Microsoft FAT spec §3.3 data-sector math.)
-    ENDIF
 
 fat_flush_data_sector:
                 ; zero-pad the unused tail of the buffer (bytes WRBUFLEN..511) so a
