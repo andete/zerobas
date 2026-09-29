@@ -1,0 +1,50 @@
+msxtest: BASIC image carries islands -- loaded at $0010, not $2812
+build under measurement: git=6de68e42 zerobas-main-eu.rom=8dfe2fbd906e sub.rom=8608aab8f78b disk.rom=ceb4c424e3bf
+
+==============================================================================
+LAYER 1 — CRUNCH (tokenisation only; NOT a support answer)
+==============================================================================
+SAME   t6mki2    a=mki$()
+SAME   t6mkix    a=mki$(1,1)
+SAME   t6mksx    a=mks$(1,1)
+SAME   t6mkdx    a=mkd$(1,1)
+SAME   t6mki13   a=mki$("A")
+SAME   t6mki6    a=mki$(32768)
+
+==============================================================================
+LAYER 2 — SUPPORT (the load-bearing layer)
+==============================================================================
+SUPPORTED     t6mki2    PRINT MKI$()
+            ref  [error:syntax error] 'Syntax error in 10'
+SUPPORTED     t6mkix    PRINT MKI$(1,1)
+            ref  [error:syntax error] 'Syntax error in 10'
+SUPPORTED     t6mksx    PRINT MKS$(1,1)
+            ref  [error:syntax error] 'Syntax error in 10'
+SUPPORTED     t6mkdx    PRINT MKD$(1,1)
+            ref  [error:syntax error] 'Syntax error in 10'
+SUPPORTED     t6mki13   PRINT MKI$("A")
+            ref  [error:type mismatch] 'Type mismatch in 10'
+SUPPORTED     t6mki6    PRINT MKI$(32768)
+            ref  [error:overflow] 'Overflow in 10'
+
+==============================================================================
+COMBINED — tokenised? x observable consequence
+==============================================================================
+word       crunch  support     consequence
+------------------------------------------------------------------------------
+t6mki2     present SUPPORTED   match
+t6mkix     present SUPPORTED   match
+t6mksx     present SUPPORTED   match
+t6mkdx     present SUPPORTED   match
+t6mki13    present SUPPORTED   match
+t6mki6     present SUPPORTED   match
+
+==============================================================================
+SUMMARY  SUPPORTED=6
+         executed 6 / 6 words; 0 crunch-only
+==============================================================================
+ROWS: 6 printed, 6 scored — 0 crunch-only word(s) carry no support reading and are printed but not scored
+pin: NOT written -- an --only run measures a subset, and the pin is the whole sweep
+
+=== CRUNCH PIN — words the reference tokenises and zerobas does not ===
+refcache: 0 hit, 4 miss, 4 stored

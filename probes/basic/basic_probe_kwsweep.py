@@ -3578,6 +3578,14 @@ SWEEP: list[tuple[str, str, str | None, str, str]] = [
     # for MKI$'s 6 or DSKF's 5: those cases DIVERGE and are filed.
     ("t6mki2", 'a=mki$()', 'PRINT MKI$()', "stored",
      "NEEDS-DISK: PROVES-T6:2 FORM:int-to-string"),
+    # D-MKEXTRA (2026-09-29): an EXTRA argument is Syntax error on the CF-3300 and
+    # read Type mismatch here (scratchpad/t6enum_b3.out). Guards, one per verb.
+    ("t6mkix", 'a=mki$(1,1)', 'PRINT MKI$(1,1)', "stored",
+     "NEEDS-DISK: FORM:int-to-string"),
+    ("t6mksx", 'a=mks$(1,1)', 'PRINT MKS$(1,1)', "stored",
+     "NEEDS-DISK: FORM:single-to-string"),
+    ("t6mkdx", 'a=mkd$(1,1)', 'PRINT MKD$(1,1)', "stored",
+     "NEEDS-DISK: FORM:double-to-string"),
     ("t6mki13", 'a=mki$("A")', 'PRINT MKI$("A")', "stored",
      "NEEDS-DISK: PROVES-T6:13 FORM:int-to-string"),
     # D-MKIRANGE (2026-09-29): a FLOAT argument is truncated, then overflows

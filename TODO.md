@@ -6019,7 +6019,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:27209 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:27218 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -26336,14 +26336,23 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       knife = HEAD's kernel.asm (disk ROM `923c6b33` → `3454bc5b`, restored) turns
       both non-green ([`mkirange_knife.out`](scratchpad/mkirange_knife.out)).
 
-- [ ] 🔴 **`MKI$(1,1)` / `MKS$(1,1)` / `MKD$(1,1)` ARE `Type mismatch` HERE AND
-      `Syntax error` ON THE CF-3300 (D-MKEXTRA, found 2026-09-27 by T6).**
+- [x] ✅ **`MKI$(1,1)` / `MKS$(1,1)` / `MKD$(1,1)` WERE `Type mismatch` HERE AND
+      `Syntax error` ON THE CF-3300 (D-MKEXTRA, found 2026-09-27 by T6, fixed 2026-09-29).**
       🎚️ TIER 6 — an EXTRA argument to the MK$ functions
       🤖 **AUTONOMOUS** — the reference settles it.
       `scratchpad/t6enum_b3.out`: all three read CF-3300 `(2, 20)`, zerobas
       `(13, 20)`. The CV functions' extra-argument cases AGREE (2 on both), so it
       is the MK$ family's argument parse, which evaluates past the `,` and then
       type-checks instead of demanding `)`.
+      ✅ **FIXED 2026-09-29.** `str_mkf` (basic/strvar.asm) now answers anything but
+      `)` after the argument with `stmt_error` instead of falling to `str_eval_no`,
+      whose numeric re-drive was what turned it into 13; `stmt_error` keeps
+      first-error-wins (D-STMTPEND), so a fault the argument already raised still
+      outranks it. `jr` → `jp`, +1 B: main page 1 was 0 B after (2026-09-29). Guard
+      rows `t6mkix` / `t6mksx` / `t6mkdx` SUPPORTED against the CF-3300
+      ([`mkextra_kwsweep.out`](scratchpad/mkextra_kwsweep.out)); knife = HEAD's
+      strvar.asm (main ROM `77fae9d6` → `bd9e17c1`, restored) turns all three
+      DIVERGENT ([`mkextra_knife.out`](scratchpad/mkextra_knife.out)).
 
 - [x] ✅ **`DSKF(-1)` / `DSKF(256)` WERE `Bad drive name` HERE AND `Illegal
       function call` ON THE CF-3300 (D-DSKFRANGE, found 2026-09-27 by T6, fixed 2026-09-29).**

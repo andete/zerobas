@@ -321,7 +321,13 @@ str_mkf:
                 pop     bc
                 ld      a,(hl)
                 cp      ')'
-                jr      nz,str_eval_no
+                ; 🔴 D-MKEXTRA (2026-09-29): anything but `)` here is `Syntax error`
+                ; on the CF-3300 -- `MKI$(1,1)` / `MKS$(1,1)` / `MKD$(1,1)` read (2, 20)
+                ; there (scratchpad/t6enum_b3.out) and 13 here, because str_eval_no
+                ; re-drives the whole thing numerically and fails on the type.
+                ; stmt_error keeps first-error-wins, so a fault the argument
+                ; already raised still outranks it (D-STMTPEND).
+                jp      nz,stmt_error
                 inc     hl                  ; HL past ')'
                 push    hl                  ; guard the cursor across the STRSCR write
                 ld      a,c
