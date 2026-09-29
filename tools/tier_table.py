@@ -458,6 +458,19 @@ def status_of(kt, kw, t3, conn, t1, nobare, parts, refuses, forms):
 # honest size. Designing those row types is filed and is Joost's (D-KWPROVEN).
 RUNGS = ("T1", "T2", "T3", "T4", "T5", "T6")
 
+# 🏗️ T3 NOT APPLICABLE, BY DECLARATION (Joost, 2026-09-29, "go with (A)"). These
+# keywords have no error a 1985 listing would plausibly hit, so no PROVES-T3 row
+# can be written for them; each carries its reason, and the table renders the
+# tick as `T3∅`, never `T3✓`, so a declaration is never mistaken for a
+# measurement. Adding a keyword here is a RULING, not a convenience.
+T3_NA = {
+    "REM":   "cannot raise any error at all",
+    "END":   "errors only with junk after the word -- a T6 case, not a common one",
+    "STOP":  "errors only with junk after the word -- a T6 case, not a common one",
+    "CLS":   "errors only with junk after the word -- a T6 case, not a common one",
+    "LLIST": "its real-world error is a printer that is not ready, which no rig can produce",
+}
+
 
 def proven_rungs(kw, forms_seen, connected, t3, t2=frozenset(), t1_blocked=False,
                  t6=frozenset()):
@@ -479,7 +492,7 @@ def proven_rungs(kw, forms_seen, connected, t3, t2=frozenset(), t1_blocked=False
     # a separate PROVES-T3 row. 89 keywords sat at level 2 with T6✓ and T3— that
     # day, held back only by the missing tag.
     return {"T1": t1, "T2": kw in t2,
-            "T3": bool(connected and (kw in t3 or kw in t6)),
+            "T3": bool(connected and (kw in t3 or kw in t6 or kw in T3_NA)),
             "T4": False, "T5": False, "T6": bool(connected and kw in t6)}
 
 
@@ -511,6 +524,8 @@ def proven_cell(kw, forms_seen, connected, t3, t2=frozenset(), t5=None,
                 return "T5 ~"
             val, form = v if isinstance(v, tuple) else (v, None)
             return "T5 %s×%s" % ("%.2g" % val, " " + form if form else "")
+        if r == "T3" and p[r] and kw in T3_NA and kw not in t3 and kw not in t6:
+            return "T3∅"                    # declared not applicable, not measured
         return "%s%s" % (r, "✓" if p[r] else "—")
     return "level %d · %s" % (ladder_level(p), " ".join(one(r) for r in RUNGS))
 
@@ -1453,7 +1468,7 @@ def fmt_markdown(its, kws, evidence=None, t3=None, connected=None, forms=None,
             "|---|---|---|"]
     _req = {"T1": "every authored FORM has an agreeing row, and knife-proven CONNECTED",
             "T2": "every authored FORM has a SUPPORTED row whose test program `make kwtime` timed completing within 10× the VG-8020's time (Joost, 2026-09-24)",
-            "T3": "a `PROVES-T3:` row: a COMMON ERROR situation scored against the reference — or T6 ticked, which proves every error the reference raises and so the common ones (Joost, 2026-09-29)",
+            "T3": "a `PROVES-T3:` row: a COMMON ERROR situation scored against the reference — or T6 ticked, which proves every error the reference raises and so the common ones (Joost, 2026-09-29); `T3∅` = declared NOT APPLICABLE, the keyword has no common error to prove (REM END STOP CLS LLIST, Joost 2026-09-29)",
             "T4": "🔴 NO PROVING ROW TYPE EXISTS YET — defined 2026-09-24: derived from the whole-RAM-map comparison vs the VG-8020 (free memory, addresses, economy)",
             "T5": "⚪ NO BAR YET — the KEYWORD ALONE: zerobas ÷ VG-8020 over each row minus a same-length twin without the keyword's statement (worst row; a function's reading includes its carrying statement; `~` = not isolatable), shown in the cell and never ticked (Joost, 2026-09-24)",
             "T6": "for EVERY authored form, one SUPPORTED `PROVES-T6:<code>` row per error the REFERENCE raises for that form (the measured set in `tools/kwerrset.py`), matched in code AND line; knife-proven CONNECTED (Joost, 2026-09-27)"}
@@ -1673,6 +1688,14 @@ def selftest():
         proven_rungs("LOF", {"length"}, True, set(), t6={"LOF"})["T3"])
     arm("S36zb NEGATIVE: a T6 cover that is NOT connected ticks no T3",
         not proven_rungs("LOF", {"length"}, False, set(), t6={"LOF"})["T3"])
+    # 🏗️ Joost 2026-09-29, (A): a declared not-applicable T3 counts for the ladder
+    # and RENDERS as T3∅ -- never as a measured tick.
+    arm("S36zc a T3_NA keyword ticks T3 and renders it as T3∅",
+        proven_rungs("REM", set(), True, set())["T3"]
+        and "T3∅" in proven_cell("REM", set(), True, set()))
+    arm("S36zd NEGATIVE: a keyword NOT declared, with no row and no T6, ticks no T3",
+        "REM" in T3_NA and "LOF" not in T3_NA
+        and not proven_rungs("LOF", {"length"}, True, set())["T3"])
     # 🔴 THE HONEST GAP, PINNED. If this ever fires, a proving row type was
     # added for one of these rungs -- which must be a DELIBERATE act with its
     # own definition of what the row proves, not a side effect.

@@ -6019,7 +6019,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:27267 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:27272 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -24690,6 +24690,11 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       is a known divergence, the TIER 6 item on `CLS` / `END` followed by an
       argument); LLIST's real-world error is a printer that is not ready, which the
       rig cannot produce. Asked of Joost 2026-09-29.
+      🏗️ **RULED (Joost, same day): *"go with (A)"* — T3 DECLARED NOT APPLICABLE for
+      those five,** each with its reason, in `tools/tier_table.py` `T3_NA`; the table
+      renders the tick as `T3∅`, never `T3✓` (selftest S36zc, S36zd NEGATIVE). A
+      keyword joins `T3_NA` only by ruling. **Level 2 is EMPTY: every keyword but
+      VARPTR and the 13 N/A entries is at level 3 (145).**
       🎚️ TIER 1 — it is the bar every other item is measured against, and three
       quarters of it has never been measurable.
       🏗️ **RULED BY JOOST, 2026-09-24 — three of the four rungs now have a
