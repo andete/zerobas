@@ -4550,6 +4550,14 @@ SWEEP: list[tuple[str, str, str | None, str, str]] = [
     # HI.TXT renamed onto itself is 65 with ONE file opened, and changes nothing.
     ('t8namerenameopen', 'open "zo.txt" for output as #1:name "hi.txt" as "hi.txt"', 'OPEN "ZO.TXT" FOR OUTPUT AS #1:NAME "HI.TXT" AS "HI.TXT"', "stored",
      "NEEDS-DISK: SUBJECT:NAME FORM:rename"),
+    # D-NOASTO (2026-09-29): with no `AS` / `TO` the CF-3300 looks the SOURCE up
+    # first -- missing is 53, present is the verb's own refusal (NAME 2, COPY 5;
+    # scratchpad/noasto_run.out). Both read the refusal here for a missing file.
+    # Not PROVES rows (53 has one per form); they guard the ORDER.
+    ('t8namenoasmiss', 'name "nope.txt"', 'NAME "NOPE.TXT"', "stored",
+     "NEEDS-DISK: SUBJECT:NAME FORM:rename"),
+    ('t8copynotomiss', 'copy "nope.txt"', 'COPY "NOPE.TXT"', "stored",
+     "NEEDS-DISK: SUBJECT:COPY FORM:file-to-file"),
     ('t8openoutput62', 'open "q:x.txt" for output as #1', 'OPEN "Q:X.TXT" FOR OUTPUT AS #1', "stored",
      "NEEDS-DISK: PROVES-T6:62 SUBJECT:OPEN FORM:output"),
     ('t8savetokenised62', 'save "q:x.bas"', 'SAVE "Q:X.BAS"', "stored",

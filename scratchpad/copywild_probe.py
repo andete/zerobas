@@ -59,6 +59,12 @@ CASES = {
     "s_extq": prog('30 COPY "A1.*" TO "E?.*"', '40 ' + rd("A$", "E1.TXT") + ':PRINT CHR$(91);"";A$;"|OK]":END'),
     "s_plainq": prog('30 COPY "A1.TXT" TO "H?.TXT"', '40 ' + rd("A$", "H1.TXT") + ':PRINT CHR$(91);"";A$;"|OK]":END'),
     "s_midq": prog('30 COPY "A1.T?T" TO "K1.TXT"', '40 ' + rd("A$", "K1.TXT") + ':PRINT CHR$(91);"";A$;"|OK]":END'),
+    # --- round 7 (D-DISKERRS): does the reference look the SOURCE up before it
+    # complains about a missing TO / AS? (no line-20 writes; fixture names)
+    "n_noas_ex": ["NEW", "10 ON ERROR GOTO 90", '30 NAME "HI.TXT":PRINT CHR$(91);"|OK]":END'] + TAIL,
+    "n_noas_miss": ["NEW", "10 ON ERROR GOTO 90", '30 NAME "NOPE.TXT":PRINT CHR$(91);"|OK]":END'] + TAIL,
+    "c_noto_miss": ["NEW", "10 ON ERROR GOTO 90", '30 COPY "NOPE.TXT":PRINT CHR$(91);"|OK]":END'] + TAIL,
+    "c_noto_ex": ["NEW", "10 ON ERROR GOTO 90", '30 COPY "HI.TXT":PRINT CHR$(91);"|OK]":END'] + TAIL,
     "x_multi": ["NEW", "10 ON ERROR GOTO 90", '30 COPY "PROG*.BAS" TO "Q*.BAS"',
                 '40 OPEN "Q.BAS" FOR INPUT AS #1:B$=STR$(LOF(1)):CLOSE:PRINT CHR$(91);"|";B$;"OK]":END'] + TAIL,
 }

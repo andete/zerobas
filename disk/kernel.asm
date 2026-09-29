@@ -475,6 +475,79 @@ k_55FF:
 ; milestone 4 fills each contract. CLEAN-ROOM: exposing ABI entry points + own
 ; contract code, never shared-kernel bytes — same legitimacy class as the $4010
 ; BIOS jump table. Veneer safety confirmed by disk_probe_dosboot_veneer.py.
+; hkc_resolve -- D-COPYWILD: COUNT the root entries the '?' source matches
+; (fat_find's own walk and name_cmp, which honours '?'), then:
+;   0 -> hkc_nf (53) / 2+ -> hkc_ill (5, pending Joost) / exactly 1 -> the real
+;   name replaces the pattern in COPY_SRC and the copy goes on at hkc_fill.
+; The count lives in COPY_LEFT, COPY's own cell, which hkc_body sets only AFTER
+; this returns; the one match is fetched again with fat_find, whose HL is the
+; entry on return -- so no scratch RAM is added.
+; 📍 SITED IN THE $5602..$5FE4 FILL, not beside hkc_body: the tail region after
+; runtime.asm reached the ROM's end with D-NOASTO (an empty disk.rom), and code
+; placed above `ds $5FE5 - $` shifts nothing downstream. Entered by `jp`,
+; left by `jp`, so it can live anywhere.
+hkc_resolve:
+                xor     a
+                ld      (COPY_LEFT),a       ; the match count
+                ld      hl,(FAT_FIRSTROOT)
+                ld      (FAT_DIRSEC),hl
+                ld      hl,(FAT_ROOTSECS)
+                ld      (FAT_DIRREM),hl
+hkr_sec:        ld      hl,(FAT_DIRREM)
+                ld      a,h
+                or      l
+                jr      z,hkr_end           ; every root sector scanned
+                ld      de,(FAT_DIRSEC)
+                ld      hl,FAT_DBUF
+                call    read_sector
+                jp      c,hkc_io
+                ld      hl,FAT_DBUF
+                ld      b,16                ; 512 / 32 entries per sector
+hkr_ent:        ld      a,(hl)
+                or      a
+                jr      z,hkr_end           ; $00 = end of directory
+                cp      $E5
+                jr      z,hkr_next          ; deleted entry
+                push    hl
+                ld      de,11
+                add     hl,de
+                ld      a,(hl)              ; attribute byte (+11)
+                pop     hl
+                and     $18                 ; volume label / directory: skip
+                jr      nz,hkr_next
+                push    bc
+                push    hl
+                ld      de,COPY_SRC
+                call    name_cmp            ; trashes A, BC, DE, HL
+                pop     hl
+                pop     bc
+                jr      nz,hkr_next
+                ld      a,(COPY_LEFT)
+                inc     a
+                ld      (COPY_LEFT),a
+hkr_next:       ld      de,32
+                add     hl,de
+                djnz    hkr_ent
+                ld      hl,(FAT_DIRSEC)
+                inc     hl
+                ld      (FAT_DIRSEC),hl
+                ld      hl,(FAT_DIRREM)
+                dec     hl
+                ld      (FAT_DIRREM),hl
+                jr      hkr_sec
+hkr_end:        ld      a,(COPY_LEFT)
+                or      a
+                jp      z,hkc_nf            ; no match -> 53
+                dec     a
+                jp      nz,hkc_ill          ; two or more -> 5
+                ld      hl,COPY_SRC
+                call    fat_find            ; the one match; HL = its entry
+                jp      c,hkc_io
+                ld      de,COPY_SRC
+                ld      bc,11
+                ldir                        ; its real name replaces the pattern
+                jp      hkc_fill
+
                 ds      $5FE5 - $, $00  ; pad to the first free-region kernel entry
                 jp      k_5FE5          ; $5FE5
                 ds      $607B - $, $00
@@ -2904,12 +2977,12 @@ hkn_sp:
 hkn_a:
                 call    hkn_up
                 cp      'A'
-                jr      nz,hkn_syn
+                jr      nz,hkn_noas
                 inc     hl
                 ld      a,(hl)
                 call    hkn_up
                 cp      'S'
-                jr      nz,hkn_syn
+                jr      nz,hkn_noas
                 inc     hl
                 ld      (FN_RESUME),hl      ; the NEW name's text starts here
                 ; 🔴 D-COPYNAMEOPEN (2026-09-28): an OPEN old file is 64, and it
@@ -2975,6 +3048,17 @@ hkn_nf:
 hkn_io:
                 ld      a,2                 ; mount / I-O -> the mapped disk code
                 jr      hkn_done
+hkn_noas:
+                ; 🔴 D-NOASTO (2026-09-29): with no `AS` the CF-3300 looks the OLD
+                ; name up FIRST -- `NAME "NOPE.TXT"` is 53 there, `NAME "HI.TXT"` 2
+                ; (scratchpad/noasto_run.out). This read 2 for both.
+                ld      ix,main_fat_mount
+                call    calbak
+                jr      c,hkn_io            ; no disk / bad BPB
+                ld      hl,DISK_FCB_NAME
+                ld      ix,main_fat_find
+                call    calbak
+                jr      c,hkn_nf            ; missing -> 53
 hkn_syn:
                 ld      a,4                 ; no `AS` -> Syntax error
 hkn_done:
@@ -3122,7 +3206,7 @@ hkc_sp:
                 jr      hkc_sp
 hkc_to:
                 cp      TO_TOKEN
-                jr      nz,hkc_ref          ; no `TO` -> ERR 5 (measured), not ERR 2
+                jp      nz,hkc_noto         ; no `TO` -> ERR 5 (measured), not ERR 2
                 inc     hl
                 ld      ix,fname_expr
                 call    calbak              ; DESTINATION name
@@ -3152,6 +3236,17 @@ hkc_open:
                 ld      (DISKOP_ERR),a
                 ld      a,2                 ; -> disk_error raises DISKOP_ERR
                 jr      hkc_done
+hkc_noto:
+                ; 🔴 D-NOASTO (2026-09-29): ...but only if the SOURCE exists. The
+                ; CF-3300 looks it up first: `COPY "NOPE.TXT"` is 53 there,
+                ; `COPY "HI.TXT"` 5 (scratchpad/noasto_run.out). This read 5 for both.
+                call    fat_mount
+                ld      a,2                 ; (flags kept) mount failure -> I/O
+                jr      c,hkc_done
+                ld      hl,COPY_SRC
+                call    fat_find
+                ld      a,0                 ; (flags kept) 0 = not found -> 53
+                jr      c,hkc_done
 hkc_ref:
                 ld      a,3                 ; refused -> ERR 5
 hkc_done:
@@ -3320,74 +3415,6 @@ hkc_ill:        ld      a,3                 ; refused -> ERR 5
 hkc_nf:         xor     a                   ; 0 = source not found -> ERR 53
                 ret
 
-; hkc_resolve -- D-COPYWILD: COUNT the root entries the '?' source matches
-; (fat_find's own walk and name_cmp, which honours '?'), then:
-;   0 -> hkc_nf (53) / 2+ -> hkc_ill (5, pending Joost) / exactly 1 -> the real
-;   name replaces the pattern in COPY_SRC and the copy goes on at hkc_fill.
-; The count lives in COPY_LEFT, COPY's own cell, which hkc_body sets only AFTER
-; this returns; the one match is fetched again with fat_find, whose HL is the
-; entry on return -- so no scratch RAM is added.
-hkc_resolve:
-                xor     a
-                ld      (COPY_LEFT),a       ; the match count
-                ld      hl,(FAT_FIRSTROOT)
-                ld      (FAT_DIRSEC),hl
-                ld      hl,(FAT_ROOTSECS)
-                ld      (FAT_DIRREM),hl
-hkr_sec:        ld      hl,(FAT_DIRREM)
-                ld      a,h
-                or      l
-                jr      z,hkr_end           ; every root sector scanned
-                ld      de,(FAT_DIRSEC)
-                ld      hl,FAT_DBUF
-                call    read_sector
-                jp      c,hkc_io
-                ld      hl,FAT_DBUF
-                ld      b,16                ; 512 / 32 entries per sector
-hkr_ent:        ld      a,(hl)
-                or      a
-                jr      z,hkr_end           ; $00 = end of directory
-                cp      $E5
-                jr      z,hkr_next          ; deleted entry
-                push    hl
-                ld      de,11
-                add     hl,de
-                ld      a,(hl)              ; attribute byte (+11)
-                pop     hl
-                and     $18                 ; volume label / directory: skip
-                jr      nz,hkr_next
-                push    bc
-                push    hl
-                ld      de,COPY_SRC
-                call    name_cmp            ; trashes A, BC, DE, HL
-                pop     hl
-                pop     bc
-                jr      nz,hkr_next
-                ld      a,(COPY_LEFT)
-                inc     a
-                ld      (COPY_LEFT),a
-hkr_next:       ld      de,32
-                add     hl,de
-                djnz    hkr_ent
-                ld      hl,(FAT_DIRSEC)
-                inc     hl
-                ld      (FAT_DIRSEC),hl
-                ld      hl,(FAT_DIRREM)
-                dec     hl
-                ld      (FAT_DIRREM),hl
-                jr      hkr_sec
-hkr_end:        ld      a,(COPY_LEFT)
-                or      a
-                jr      z,hkc_nf            ; no match -> 53
-                dec     a
-                jr      nz,hkc_ill          ; two or more -> 5
-                ld      hl,COPY_SRC
-                call    fat_find            ; the one match; HL = its entry
-                jp      c,hkc_io
-                ld      de,COPY_SRC
-                ld      bc,11
-                ldir                        ; its real name replaces the pattern
-                jp      hkc_fill
 
 ; --- hk_files: FILES and LFILES, in the disk ROM (MSX2 TH hook) -------------
 ; D-DISKVERB4, spec-diskbasic-hook-rearchitecture.md phase 3, the last of the

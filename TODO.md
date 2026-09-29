@@ -6019,7 +6019,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:27077 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:27103 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -25579,7 +25579,23 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
         DISKOP_ERR now (every hook's encoding), and KILL, NAME, COPY and SAVE end
         in it (`wp_save` agrees at 68 with a file open). LOAD / MERGE / ASCII LOAD
         (`hk_dpload`, `hk_aopen`, `hk_agetb`) and DSKF still end on their own.
-        ➡️ **OPEN's half is still open, and wider than filed:** round 2 found the
+          ✅ **D-NOASTO (2026-09-29): `NAME "A.TXT"` 53 → 2 AND `COPY "A.TXT"` 53 → 5 ARE
+        ONE ORDER, AND BOTH AGREE NOW.** With no `AS` / `TO` the CF-3300 looks the
+        SOURCE up first: missing is 53, present is the verb's own refusal — NAME 2,
+        COPY 5 ([`noasto_run.out`](scratchpad/noasto_run.out); the present-file NAME
+        case was unmeasured until then and predicted 2, hit). `hk_name` / `hk_copy`
+        (disk.rom) now mount and look the source up on that path. 🔴 **THE DISK
+        ROM'S TAIL WAS FULL:** the first build came out EMPTY — the region after
+        `runtime.asm` had reached the ROM's end — so D-COPYWILD's `hkc_resolve` moved
+        into the `$5602..$5FE4` fill (above `ds $5FE5 - $`, which shifts nothing),
+        and `check_disk_walls` now reads the largest hole 2399 B there. **The disk
+        ROM's free space is INTERIOR holes; anything new in the tail must displace
+        into one.** After ([`noasto_after.out`](scratchpad/noasto_after.out)): the four
+        cases and the wildcard COPY cases all agree. Guard rows `t8namenoasmiss` /
+        `t8copynotomiss` (kwsweep, SUPPORTED); knife = HEAD's kernel.asm (disk ROM
+        `cf40cbbb` → `6af04b37`, restored) turns both DIVERGENT
+        ([`noasto_knife.out`](scratchpad/noasto_knife.out)).
+      ➡️ **OPEN's half is still open, and wider than filed:** round 2 found the
         CF-3300 also refuses a SECOND open of the same FILE on another channel
         with 54 (`o_same2`, and `o_samein2` even FOR INPUT); zerobas accepts
         both. OPEN is main code, and main was 3 B free on 2026-09-28.
@@ -25589,7 +25605,7 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
         textbook `IF EOF(1)` loop reads one line too many** — `EOF` / `INPUT #` /
         `PRINT #` on a channel opened the other way (61 / 52 → ok).
       • **wrong code:** `OPEN "A*.TXT"` 56 → 53; `LEN="A"` 13 → 5; bare `LEN`
-        2 → 5; `NAME "A.TXT"` 53 → 2; `COPY "A.TXT"` 53 → 5; `GET`/`PUT #1,"A"`
+        2 → 5; ~~`NAME "A.TXT"` 53 → 2; `COPY "A.TXT"` 53 → 5~~ (D-NOASTO); `GET`/`PUT #1,"A"`
         13 → 5; `BLOAD "X.BIN",Q` 53 → ok.
       • **wrong LINE:** BSAVE's `"A"` faults report **line 30** instead of 20.
       • **extra arguments accepted:** `LOAD …,Q`, `RUN "A",5`, a fifth BSAVE
@@ -26120,6 +26136,16 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       📏 Three readings in one day, one ROM: 1.1× (07:40), 1.5× (15:30), 1.7× (the
       batch-10 FULL run, `scratchpad/b10_scoped.out`). Twice today the only red in a
       battery was this cell, and each time the fix was regenerating the doc.
+      📏 **2026-09-29 — NOT RUN ALONE, AND THE NOISE IS THE REFERENCE'S:** FIELD's T5
+      went 1.94× → 8.66× between two runs with zerobas's `fieldkw` identical to
+      0.01 ms (2128.9) and the CF-3300's row moving 4012 → 3821 ms, because the second
+      run re-measured the reference instead of replaying its cache
+      ([`noasto_kwtime.out`](scratchpad/noasto_kwtime.out) against
+      [`copywild_kwtime.out`](scratchpad/copywild_kwtime.out)). The twin subtraction
+      makes a ~5% reference wobble a 4.5× swing in the cell. Four other disk keywords
+      moved the same run (BLOAD, DSKO$, KILL, LSET). So the fix is not RUN-specific:
+      a T5 cell whose REFERENCE side is a disk row needs either several reference
+      samples or a stability rule before it is shown as a number.
 
 - [x] ✅ **FIXED 2026-09-28 (D-NEWARG): `NEW` WITH ANYTHING AFTER IT IS `Syntax error`
       AND ERASES NOTHING.** Confirmed first: zerobas ERASED the program on `20 NEW 1`
