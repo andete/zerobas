@@ -36,6 +36,7 @@ symmetric. Treat that group as closed-by-measurement unless a new signal appears
 | subject | ruling |
 |---|---|
 | VARPTR(#n) | *"agree, go with (c)"* — built with the TIER 4 RAM re-layout of channel storage, never standalone; the item is ⛔ BLOCKED on it |
+| T3 rung | *"go with (a), then real T3 rows for the 24"* — T6✓ implies T3✓ (`tier_table.proven_rungs`); level 3 32 → 121, level 2 113 → 24; the 24 get real `PROVES-T3:` rows next |
 | error checks | *"yes, record the rule"* — (1) at a SHARED chokepoint or FILED WITH ITS PRICE, never per-command; (2) TIER 6 spends NO main bytes; (3) no private copy of an existing routine to dodge a wall. Two cleanups filed under it: D-MKIREUSE, D-NOASTOFOLD. Memory: `error-checks-at-shared-chokepoints` |
 
 

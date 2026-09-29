@@ -6019,7 +6019,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:27248 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:27255 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -24671,6 +24671,13 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
 
 - [ ] 🎚️ **WHAT PROVES A RUNG? T2, T4, T5 AND T6 HAVE NO PROVING ROW TYPE, SO
       `0 of 159` KEYWORDS PROVE ANY OF THEM (D-KWPROVEN, 2026-09-23).**
+      🏗️ **RULED BY JOOST 2026-09-29 — DO NOT RE-ASK: T6✓ IMPLIES T3✓** (*"go with
+      (a)"*). T6 proves every error the reference raises for every form, so the
+      common errors T3 asks about are among them; `tools/tier_table.py`
+      `proven_rungs` ticks T3 for a connected keyword with a `PROVES-T3:` row OR
+      T6 (selftest S36za, S36zb NEGATIVE: not without connectedness). Effect,
+      measured the same day: level 3 **32 → 121**, level 2 **113 → 24**. The 24 get
+      REAL `PROVES-T3:` rows next (Joost: *"then real T3 rows for the 24"*).
       🎚️ TIER 1 — it is the bar every other item is measured against, and three
       quarters of it has never been measurable.
       🏗️ **RULED BY JOOST, 2026-09-24 — three of the four rungs now have a

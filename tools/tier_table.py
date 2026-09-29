@@ -473,7 +473,13 @@ def proven_rungs(kw, forms_seen, connected, t3, t2=frozenset(), t1_blocked=False
     # not: PAINT read `🔴 GAP` and `T1✓` side by side with a TIER 1 hang open.
     t1 = (bool(need) and connected and all(f in forms_seen for f in need)
           and not t1_blocked)
-    return {"T1": t1, "T2": kw in t2, "T3": bool(connected and kw in t3),
+    # 🏗️ T3 ⊂ T6 (Joost, 2026-09-29, "go with (a)"): T6 proves EVERY error the
+    # reference raises for every form, so the common ones (T3's "a 1985 listing
+    # would plausibly hit this") are among them -- a T6✓ keyword ticks T3 without
+    # a separate PROVES-T3 row. 89 keywords sat at level 2 with T6✓ and T3— that
+    # day, held back only by the missing tag.
+    return {"T1": t1, "T2": kw in t2,
+            "T3": bool(connected and (kw in t3 or kw in t6)),
             "T4": False, "T5": False, "T6": bool(connected and kw in t6)}
 
 
@@ -1447,7 +1453,7 @@ def fmt_markdown(its, kws, evidence=None, t3=None, connected=None, forms=None,
             "|---|---|---|"]
     _req = {"T1": "every authored FORM has an agreeing row, and knife-proven CONNECTED",
             "T2": "every authored FORM has a SUPPORTED row whose test program `make kwtime` timed completing within 10× the VG-8020's time (Joost, 2026-09-24)",
-            "T3": "a `PROVES-T3:` row: a COMMON ERROR situation scored against the reference",
+            "T3": "a `PROVES-T3:` row: a COMMON ERROR situation scored against the reference — or T6 ticked, which proves every error the reference raises and so the common ones (Joost, 2026-09-29)",
             "T4": "🔴 NO PROVING ROW TYPE EXISTS YET — defined 2026-09-24: derived from the whole-RAM-map comparison vs the VG-8020 (free memory, addresses, economy)",
             "T5": "⚪ NO BAR YET — the KEYWORD ALONE: zerobas ÷ VG-8020 over each row minus a same-length twin without the keyword's statement (worst row; a function's reading includes its carrying statement; `~` = not isolatable), shown in the cell and never ticked (Joost, 2026-09-24)",
             "T6": "for EVERY authored form, one SUPPORTED `PROVES-T6:<code>` row per error the REFERENCE raises for that form (the measured set in `tools/kwerrset.py`), matched in code AND line; knife-proven CONNECTED (Joost, 2026-09-27)"}
@@ -1661,6 +1667,12 @@ def selftest():
     arm("S36d T3 needs a PROVES-T3 row",
         proven_rungs("LOF", {"length"}, True, {"LOF"})["T3"]
         and not proven_rungs("LOF", {"length"}, True, set())["T3"])
+    # 🏗️ Joost 2026-09-29, (a): T6✓ implies T3✓ -- every reference error covers
+    # the common ones. The NEGATIVE keeps the connectedness rule for it too.
+    arm("S36za T6 ticks T3 with no PROVES-T3 row",
+        proven_rungs("LOF", {"length"}, True, set(), t6={"LOF"})["T3"])
+    arm("S36zb NEGATIVE: a T6 cover that is NOT connected ticks no T3",
+        not proven_rungs("LOF", {"length"}, False, set(), t6={"LOF"})["T3"])
     # 🔴 THE HONEST GAP, PINNED. If this ever fires, a proving row type was
     # added for one of these rungs -- which must be a DELIBERATE act with its
     # own definition of what the row proves, not a side effect.
