@@ -81,15 +81,11 @@
 ; routines it calls).
 ; =============================================================================
 
-; --- fat_copy18: HL=src, DE=dst -> copies an 18-byte FPNUM record (own -----
-; design; kept as its own local copy rather than importing fp_sqrt.asm's
-; fsq_copy18 so this file stays self-contained -- identical body). Clobbers
-; B, C, and (per LDIR) A's flags; preserves HL/DE end state exactly as a raw
-; "ld bc,18 / ldir" would.
-fat_copy18:
-                ld      bc,18
-                ldir
-                ret
+; --- fat_copy18 and the cpy_* entries live in fp_sqrt.asm (D-CPY18) ---------
+; This file used to keep its own `fat_copy18`, "kept as its own local copy ...
+; so this file stays self-contained -- identical body" to fp_sqrt.asm's
+; fsq_copy18. It was a private copy of an existing routine; both names now sit
+; on ONE body in fp_sqrt.asm (same assembly unit, included first).
 
 ; --- fp_poly_horner: HL -> a count-prefixed coeff table (`db n` then n -----
 ; 18-byte FPCONST-shaped records, listed HIGH-order first c[n-1]..c[0]); the
@@ -121,8 +117,7 @@ fp_poly_horner:
                                             ; after taking c[top]
                 ld      (HORNER_CNT),a
                 ld      (HORNER_PTR),hl     ; HL now on c[top]'s record
-                ld      de,HORNER_ACC
-                call    fat_copy18          ; acc := c[top] (a FPCONST record
+                call    cpy_to_r    ; acc := c[top] (a FPCONST record
                                             ; is already canonical, guard=0,
                                             ; per gen_math_coeffs.py)
                 ld      hl,(HORNER_PTR)
@@ -134,30 +129,21 @@ fph_loop:
                 or      a
                 jr      z,fph_done          ; no more terms -- acc stands
                 ; --- acc := acc*g ---------------------------------------
-                ld      hl,HORNER_ACC
-                ld      de,ARGA
-                call    fat_copy18          ; ARGA := acc
-                ld      hl,HORNER_G
-                ld      de,ARGB
-                call    fat_copy18          ; ARGB := g
+                call    cpy_r_arga  ; ARGA := acc
+                call    cpy_x_argb  ; ARGB := g (HORNER_G = SQRT_X)
                 call    fp_mul              ; FAC/ARGA := acc*g (rounded)
                 call    widen_to_arga
                                             ; ARGA := clean widen
-                ld      de,HORNER_ACC
-                call    fat_copy18          ; acc := acc*g
+                call    cpy_to_r    ; acc := acc*g
                 ; --- acc := acc + c[i] -----------------------------------
-                ld      hl,HORNER_ACC
-                ld      de,ARGA
-                call    fat_copy18          ; ARGA := acc
+                call    cpy_r_arga  ; ARGA := acc
                 ld      hl,(HORNER_PTR)
-                ld      de,ARGB
-                call    fat_copy18          ; ARGB := c[i] (raw table copy,
+                call    cpy_argb    ; ARGB := c[i] (raw table copy,
                                             ; canonical per the generator)
                 call    fp_add              ; FAC/ARGA := acc + c[i] (rounded)
                 call    widen_to_arga
                                             ; ARGA := clean widen
-                ld      de,HORNER_ACC
-                call    fat_copy18          ; acc := acc + c[i]
+                call    cpy_to_r    ; acc := acc + c[i]
                 ; --- advance the table pointer, decrement remaining count -
                 ld      hl,(HORNER_PTR)
                 ld      de,18
@@ -168,9 +154,7 @@ fph_loop:
                 ld      (HORNER_CNT),a
                 jr      fph_loop
 fph_done:
-                ld      hl,HORNER_ACC
-                ld      de,ARGA
-                call    fat_copy18          ; ARGA := final acc (canonical)
+                call    cpy_r_arga  ; ARGA := final acc (canonical)
                 call    arga_pack_fac       ; FAC := acc (guaranteed correct
                                             ; regardless of loop-pass count)
                 ret
@@ -199,18 +183,14 @@ fat_nonzero:
                 ; --- step 1: sign-fold (atan is odd) ------------------------
                 ld      a,(ARGA+FPNUM_SIGN)
                 ld      (MATH_SIGN),a       ; s := sign(x)
-                ld      hl,ARGA
-                ld      de,MATH_A
-                call    fat_copy18          ; MATH_A := x (full copy incl. s)
+                call    cpy_arga_y  ; MATH_A := x (full copy incl. s)
                 xor     a
                 ld      (MATH_A+FPNUM_SIGN),a   ; MATH_A := |x| (a >= 0 now)
 
                 ; --- step 2: reduction 1 -- |x|>1 -> a:=1/a -----------------
                 xor     a
                 ld      (MATH_RECIP),a      ; default: no reduction-1
-                ld      hl,MATH_A
-                ld      de,ARGA
-                call    fat_copy18          ; ARGA := a
+                call    cpy_y_arga  ; ARGA := a
                 ld      hl,ARGB
                 xor     a
                 ld      de,1
@@ -220,9 +200,7 @@ fat_nonzero:
                 jr      nz,fat_r1_done      ; a<=1 -> skip
                 ld      a,1
                 ld      (MATH_RECIP),a
-                ld      hl,MATH_A
-                ld      de,ARGB
-                call    fat_copy18          ; ARGB := a (denominator)
+                call    cpy_y_argb  ; ARGB := a (denominator)
                 ld      hl,ARGA
                 xor     a
                 ld      de,1
@@ -230,32 +208,25 @@ fat_nonzero:
                 call    fp_div              ; FAC/ARGA := 1/a (rounded)
                 call    widen_to_arga
                                             ; ARGA := clean widen
-                ld      de,MATH_A
-                call    fat_copy18          ; MATH_A := new a = 1/a_old
+                call    cpy_to_y    ; MATH_A := new a = 1/a_old
 fat_r1_done:
 
                 ; --- step 3: reduction 2 -- a>BREAK -> the tan-half-angle ---
                 ; substitution a := (a*SQRT3-1)/(a+SQRT3)
                 xor     a
                 ld      (MATH_BREAK),a      ; default: no reduction-2
-                ld      hl,MATH_A
-                ld      de,ARGA
-                call    fat_copy18          ; ARGA := a
+                call    cpy_y_arga  ; ARGA := a
                 ld      hl,BREAK
-                ld      de,ARGB
-                call    fat_copy18          ; ARGB := BREAK (canonical const)
+                call    cpy_argb    ; ARGB := BREAK (canonical const)
                 call    fp_cmp              ; A=cmp(a,BREAK)
                 cp      4
                 jr      nz,fat_r2_done      ; a<=BREAK -> skip
                 ld      a,1
                 ld      (MATH_BREAK),a
                 ; numerator := a*SQRT3 - 1
-                ld      hl,MATH_A
-                ld      de,ARGA
-                call    fat_copy18          ; ARGA := a
+                call    cpy_y_arga  ; ARGA := a
                 ld      hl,SQRT3
-                ld      de,ARGB
-                call    fat_copy18          ; ARGB := SQRT3
+                call    cpy_argb    ; ARGB := SQRT3
                 call    fp_mul              ; FAC/ARGA := a*SQRT3
                 ld      hl,ARGA
                 call    widen_fac_to        ; ARGA := clean widen
@@ -266,97 +237,68 @@ fat_r1_done:
                 call    fp_sub              ; FAC/ARGA := a*SQRT3 - 1
                 call    widen_to_arga
                                             ; ARGA := clean widen (numerator)
-                ld      de,MATH_T
-                call    fat_copy18          ; MATH_T := numerator (persistent)
+                call    cpy_to_x    ; MATH_T := numerator (persistent)
                 ; denominator := a + SQRT3
-                ld      hl,MATH_A
-                ld      de,ARGA
-                call    fat_copy18          ; ARGA := a (original, untouched)
+                call    cpy_y_arga  ; ARGA := a (original, untouched)
                 ld      hl,SQRT3
-                ld      de,ARGB
-                call    fat_copy18          ; ARGB := SQRT3
+                call    cpy_argb    ; ARGB := SQRT3
                 call    fp_add              ; FAC/ARGA := a + SQRT3
                 call    widen_to_arga
                                             ; ARGA := clean widen (denom)
-                ld      de,ARGB
-                call    fat_copy18          ; ARGB := denominator
-                ld      hl,MATH_T
-                ld      de,ARGA
-                call    fat_copy18          ; ARGA := numerator
+                call    cpy_argb    ; ARGB := denominator
+                call    cpy_x_arga  ; ARGA := numerator
                 call    fp_div              ; FAC/ARGA := numerator/denom
                 call    widen_to_arga
                                             ; ARGA := clean widen
-                ld      de,MATH_A
-                call    fat_copy18          ; MATH_A := new a
+                call    cpy_to_y    ; MATH_A := new a
 fat_r2_done:
 
                 ; --- step 4: core -- g:=a*a; P:=horner(g); r:=a*P -----------
-                ld      hl,MATH_A
-                ld      de,ARGA
-                call    fat_copy18          ; ARGA := a
-                ld      hl,MATH_A
-                ld      de,ARGB
-                call    fat_copy18          ; ARGB := a
+                call    cpy_y_arga  ; ARGA := a
+                call    cpy_y_argb  ; ARGB := a
                 call    fp_mul              ; FAC/ARGA := a*a = g
                 call    widen_to_arga
                                             ; ARGA := clean widen of g
-                ld      de,HORNER_G
-                call    fat_copy18          ; HORNER_G := g (MATH_T retired)
+                call    cpy_to_x    ; HORNER_G := g (MATH_T retired)
 
                 ld      hl,ATAN_COEF
                 call    fp_poly_horner      ; FAC/ARGA := P(g)
                 call    widen_to_arga
                                             ; ARGA := clean widen of P
-                ld      de,MATH_T
-                call    fat_copy18          ; MATH_T := P (persistent)
+                call    cpy_to_x    ; MATH_T := P (persistent)
 
-                ld      hl,MATH_A
-                ld      de,ARGA
-                call    fat_copy18          ; ARGA := a
-                ld      hl,MATH_T
-                ld      de,ARGB
-                call    fat_copy18          ; ARGB := P
+                call    cpy_y_arga  ; ARGA := a
+                call    cpy_x_argb  ; ARGB := P
                 call    fp_mul              ; FAC/ARGA := a*P = r
                 call    widen_to_arga
                                             ; ARGA := clean widen of r
-                ld      de,MATH_R
-                call    fat_copy18          ; MATH_R := r (persistent)
+                call    cpy_to_r    ; MATH_R := r (persistent)
 
                 ; --- step 5: reconstruct ------------------------------------
                 ld      a,(MATH_BREAK)
                 or      a
                 jr      z,fat_no_break
-                ld      hl,MATH_R
-                ld      de,ARGA
-                call    fat_copy18          ; ARGA := r
+                call    cpy_r_arga  ; ARGA := r
                 ld      hl,PI_6
-                ld      de,ARGB
-                call    fat_copy18          ; ARGB := PI_6
+                call    cpy_argb    ; ARGB := PI_6
                 call    fp_add              ; FAC/ARGA := r + PI_6
                 call    widen_to_arga
                                             ; ARGA := clean widen
-                ld      de,MATH_R
-                call    fat_copy18          ; MATH_R := updated r
+                call    cpy_to_r    ; MATH_R := updated r
 fat_no_break:
                 ld      a,(MATH_RECIP)
                 or      a
                 jr      z,fat_no_recip
                 ld      hl,PI_2
-                ld      de,ARGA
-                call    fat_copy18          ; ARGA := PI_2
-                ld      hl,MATH_R
-                ld      de,ARGB
-                call    fat_copy18          ; ARGB := r
+                call    cpy_arga    ; ARGA := PI_2
+                call    cpy_r_argb  ; ARGB := r
                 call    fp_sub              ; FAC/ARGA := PI_2 - r
                 call    widen_to_arga
                                             ; ARGA := clean widen
-                ld      de,MATH_R
-                call    fat_copy18          ; MATH_R := updated r
+                call    cpy_to_r    ; MATH_R := updated r
 fat_no_recip:
                 ; --- apply sign, pack FAC ------------------------------------
-                ld      hl,MATH_R
-                ld      de,ARGA
-                call    fat_copy18          ; ARGA := final magnitude r
+                call    cpy_r_arga  ; ARGA := final magnitude r
                 ld      a,(MATH_SIGN)
                 ld      (ARGA+FPNUM_SIGN),a ; r is always > 0 here (x<>0 on
                                             ; this path), so a direct sign

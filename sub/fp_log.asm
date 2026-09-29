@@ -30,7 +30,8 @@
 ;
 ; HOME: the sub-ROM PAGE-1 island (sub/sub.asm), dispatched from evmc_log
 ; (basic/expr.asm) via subrom_call/SUBROM_ENTRY_BASE_P1+SUBROM_IDX_LOG.
-; Fourth page-1 tenant; reuses fp_atan.asm's fat_copy18 + fp_poly_horner and
+; Fourth page-1 tenant; reuses fp_sqrt.asm's record copy (fat_copy18 and the
+; cpy_* entries, D-CPY18), fp_atan.asm's fp_poly_horner, and
 ; fp_exp.asm's fexp_tbl18addr DIRECTLY (same assembly unit, sub/sub.asm
 ; includes fp_atan.asm then fp_exp.asm before this file -- see fp_exp.asm's
 ; own header for why sharing those helpers across the matched EXP/LOG pair is
@@ -101,9 +102,7 @@ fp_log:
                 ld      hl,(ARGA+FPNUM_DEXP)
                 dec     hl                  ; e' := dexp-1
                 ld      (MATH_N),hl
-                ld      hl,ARGA
-                ld      de,MATH_A
-                call    fat_copy18          ; MATH_A := x (full copy incl.
+                call    cpy_arga_y  ; MATH_A := x (full copy incl.
                                             ; digit array)
                 ld      hl,1
                 ld      (MATH_A+FPNUM_DEXP),hl  ; force dexp:=1 -> the digit
@@ -119,12 +118,9 @@ flog_jscan_loop:
                 ld      a,(HORNER_CNT)
                 cp      8
                 jr      z,flog_jscan_done   ; scanned all 8 -> j=8 (fold)
-                ld      hl,MATH_A
-                ld      de,ARGA
-                call    fat_copy18          ; ARGA := m
+                call    cpy_y_arga  ; ARGA := m
                 ld      hl,(HORNER_PTR)
-                ld      de,ARGB
-                call    fat_copy18          ; ARGB := LOG_BP[current]
+                call    cpy_argb    ; ARGB := LOG_BP[current]
                 call    fp_cmp              ; A = cmp(m, LOG_BP[current])
                 cp      4
                 jr      nz,flog_jscan_done  ; m<=bp: stop, j stands
@@ -155,65 +151,43 @@ flog_no_fold:
 
                 ; --- step 3: s := (m-Khat[j])/(m+Khat[j]) -> MATH_A ---------
                 ; (m retired) -------------------------------------------------
-                ld      hl,MATH_A
-                ld      de,ARGA
-                call    fat_copy18          ; ARGA := m
+                call    cpy_y_arga  ; ARGA := m
                 ld      a,(MATH_J)
                 ld      hl,POW8_TBL
                 call    fexp_tbl18addr      ; HL := POW8_TBL + 18*j
-                ld      de,ARGB
-                call    fat_copy18          ; ARGB := Khat[j]
+                call    cpy_argb    ; ARGB := Khat[j]
                 call    fp_sub              ; FAC/ARGA := m-Khat[j] = num
                 call    widen_to_arga
-                ld      de,MATH_T
-                call    fat_copy18          ; MATH_T := num
-                ld      hl,MATH_A
-                ld      de,ARGA
-                call    fat_copy18          ; ARGA := m (still intact)
+                call    cpy_to_x    ; MATH_T := num
+                call    cpy_y_arga  ; ARGA := m (still intact)
                 ld      a,(MATH_J)
                 ld      hl,POW8_TBL
                 call    fexp_tbl18addr      ; HL := POW8_TBL + 18*j (re-fetch)
-                ld      de,ARGB
-                call    fat_copy18          ; ARGB := Khat[j]
+                call    cpy_argb    ; ARGB := Khat[j]
                 call    fp_add              ; FAC/ARGA := m+Khat[j] = den
                 call    widen_to_arga
-                ld      de,ARGB
-                call    fat_copy18          ; ARGB := den
-                ld      hl,MATH_T
-                ld      de,ARGA
-                call    fat_copy18          ; ARGA := num
+                call    cpy_argb    ; ARGB := den
+                call    cpy_x_arga  ; ARGA := num
                 call    fp_div              ; FAC/ARGA := num/den = s
                 call    widen_to_arga
-                ld      de,MATH_A
-                call    fat_copy18          ; MATH_A := s (m retired)
+                call    cpy_to_y    ; MATH_A := s (m retired)
 
                 ; --- step 4: core: g := s*s -> HORNER_G; Q := horner(g); ----
                 ; r := s*Q (s from MATH_A; r replaces it there) --------------
-                ld      hl,MATH_A
-                ld      de,ARGA
-                call    fat_copy18          ; ARGA := s
-                ld      hl,MATH_A
-                ld      de,ARGB
-                call    fat_copy18          ; ARGB := s
+                call    cpy_y_arga  ; ARGA := s
+                call    cpy_y_argb  ; ARGB := s
                 call    fp_mul              ; FAC/ARGA := s*s = g
                 call    widen_to_arga
-                ld      de,HORNER_G
-                call    fat_copy18          ; HORNER_G := g (MATH_T retired)
+                call    cpy_to_x    ; HORNER_G := g (MATH_T retired)
                 ld      hl,LOG_COEF
                 call    fp_poly_horner      ; FAC/ARGA := Q(g)
                 call    widen_to_arga
-                ld      de,MATH_T
-                call    fat_copy18          ; MATH_T(=HORNER_G) := Q
-                ld      hl,MATH_A
-                ld      de,ARGA
-                call    fat_copy18          ; ARGA := s
-                ld      hl,MATH_T
-                ld      de,ARGB
-                call    fat_copy18          ; ARGB := Q
+                call    cpy_to_x    ; MATH_T(=HORNER_G) := Q
+                call    cpy_y_arga  ; ARGA := s
+                call    cpy_x_argb  ; ARGB := Q
                 call    fp_mul              ; FAC/ARGA := s*Q = r
                 call    widen_to_arga
-                ld      de,MATH_A
-                call    fat_copy18          ; MATH_A := r (replaces s)
+                call    cpy_to_y    ; MATH_A := r (replaces s)
 
                 ; --- step 5: reconstruct -------------------------------------
                 ld      hl,(MATH_N)
@@ -224,14 +198,11 @@ flog_no_fold:
                 or      l
                 jr      nz,flog_not_negone
                 ; e' == -1: FAC := r + NEGLNK_TBL[j]
-                ld      hl,MATH_A
-                ld      de,ARGA
-                call    fat_copy18          ; ARGA := r
+                call    cpy_y_arga  ; ARGA := r
                 ld      a,(MATH_J)
                 ld      hl,NEGLNK_TBL
                 call    fexp_tbl18addr
-                ld      de,ARGB
-                call    fat_copy18          ; ARGB := NEGLNK_TBL[j]
+                call    cpy_argb    ; ARGB := NEGLNK_TBL[j]
                 jp      fp_add              ; tail: FAC := r+NEGLNK_TBL[j]
                                             ; (COMPUTE-ONLY; round_and_
                                             ; finalize packs FAC)
@@ -270,41 +241,30 @@ flog_ewiden:
                 ld      (MATH_T+FPNUM_SIGN),a
 flog_enosign:
                 ; r += e'fp*LN10_C2
-                ld      hl,MATH_T
-                ld      de,ARGA
-                call    fat_copy18          ; ARGA := e'fp
+                call    cpy_x_arga  ; ARGA := e'fp
                 ld      hl,LN10_C2
-                ld      de,ARGB
-                call    fat_copy18          ; ARGB := LN10_C2
+                call    cpy_argb    ; ARGB := LN10_C2
                 call    fp_mul              ; FAC/ARGA := e'fp*LN10_C2
                 call    widen_to_arga
-                ld      de,ARGB
-                call    fat_copy18          ; ARGB := product
-                ld      hl,MATH_A
-                ld      de,ARGA
-                call    fat_copy18          ; ARGA := r
+                call    cpy_argb    ; ARGB := product
+                call    cpy_y_arga  ; ARGA := r
                 call    fp_add              ; FAC/ARGA := r + product
                 call    widen_to_arga
-                ld      de,MATH_A
-                call    fat_copy18          ; MATH_A := updated r
+                call    cpy_to_y    ; MATH_A := updated r
 flog_no_e1:
                 ; if j != 0: r += LNK_TBL[j-1]
                 ld      a,(MATH_J)
                 or      a
                 jr      z,flog_no_j
-                ld      hl,MATH_A
-                ld      de,ARGA
-                call    fat_copy18          ; ARGA := r
+                call    cpy_y_arga  ; ARGA := r
                 ld      a,(MATH_J)
                 dec     a                   ; j-1 (0-based LNK_TBL index)
                 ld      hl,LNK_TBL
                 call    fexp_tbl18addr
-                ld      de,ARGB
-                call    fat_copy18          ; ARGB := LNK_TBL[j-1]
+                call    cpy_argb    ; ARGB := LNK_TBL[j-1]
                 call    fp_add              ; FAC/ARGA := r + LNK_TBL[j-1]
                 call    widen_to_arga
-                ld      de,MATH_A
-                call    fat_copy18          ; MATH_A := updated r
+                call    cpy_to_y    ; MATH_A := updated r
 flog_no_j:
                 ; if e' != 0: r += e'fp*LN10_C1 (final -- largest addend last)
                 ld      hl,(MATH_N)
@@ -315,19 +275,13 @@ flog_no_j:
                                             ; the j-add above or, if that too
                                             ; was skipped, step 4's own final
                                             ; fp_mul -- already packed it)
-                ld      hl,MATH_T
-                ld      de,ARGA
-                call    fat_copy18          ; ARGA := e'fp (still intact --
+                call    cpy_x_arga  ; ARGA := e'fp (still intact --
                                             ; only ever read via fat_copy18
                                             ; since it was built)
                 ld      hl,LN10_C1
-                ld      de,ARGB
-                call    fat_copy18          ; ARGB := LN10_C1
+                call    cpy_argb    ; ARGB := LN10_C1
                 call    fp_mul              ; FAC/ARGA := e'fp*LN10_C1
                 call    widen_to_arga
-                ld      de,ARGB
-                call    fat_copy18          ; ARGB := product
-                ld      hl,MATH_A
-                ld      de,ARGA
-                call    fat_copy18          ; ARGA := r
+                call    cpy_argb    ; ARGB := product
+                call    cpy_y_arga  ; ARGA := r
                 jp      fp_add              ; tail: FAC := r + product (final)

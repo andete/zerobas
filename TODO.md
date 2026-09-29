@@ -6019,7 +6019,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:27342 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:27382 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -26459,6 +26459,46 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       LOAD-BEARING on their happy-path rows, no error row a witness, BLIND back to
       exactly MAX CALL VDP BASE / ELSE PAD ([`knifet3_all.out`](scratchpad/knifet3_all.out),
       [`knifet3_fn.out`](scratchpad/knifet3_fn.out)).
+
+- [x] ✅ **SUB PAGE 1: 1 B → 699 B FREE — THE MATH TENANTS' 162 RECORD COPIES FOLD
+      INTO SHARED ENTRY POINTS (D-CPY18, carved 2026-09-29).**
+      🎚️ BUDGET — funds the TIER 4 queue (D-FCBSHAPE's slices, D-ADDR29's writes),
+      which was waiting on sub page 1 at 1 B.
+      Found by `scratchpad/ngram_sweep.py`: the six math tenants (`sub/fp_sqrt`,
+      `fp_atan`, `fp_exp`, `fp_log`, `fp_pow`, `fp_sin`) made 162 calls to an 18-byte
+      record copy, 161 of them as `ld hl,<src> / ld de,<dst> / call` (9 B) or `ld
+      de,<dst> / call` (6 B). The buffers ALIAS — `MATH_A` = `SQRT_Y`, `MATH_T` =
+      `SQRT_X` = `HORNER_G`, `MATH_R` = `SQRT_R` = `HORNER_ACC` — so a site is named by
+      the address it copies. And `fp_atan.asm`'s `fat_copy18` was a byte-identical
+      PRIVATE COPY of `fp_sqrt.asm`'s `fsq_copy18` (its own header said so), which
+      Joost's rule 3 forbids. Now 14 entry points sit in front of ONE body in
+      `fp_sqrt.asm`: each site is one `call`. `cpy_y_arga` (32 sites) falls into the
+      body for free; the rest pay one `jr`. Edit by `scratchpad/cpy18_edit.py` (dry
+      run, refusing on any family count that moved).
+      🔴 **MY FIRST SCAN UNDERCOUNTED AND THE EDIT SCRIPT REFUSED IT:** it missed
+      four sites (three in `fp_pow.asm`, one in `fp_sqrt.asm`). An independent awk
+      classification of all 162 calls then agreed with the script to the site. The
+      script's first write also missed that `HORNER_G` = `SQRT_X`: the code was
+      correct but carried a redundant 5 B entry, folded by hand the same hour.
+      🔮 **Walls predicted ~699 B from the site count (88 × 6 + 73 × 3 − 55 B of
+      entries + 6 B of duplicate body) — HIT, exactly 699**
+      ([`cpy18_walls_before.out`](scratchpad/cpy18_walls_before.out) 1 B →
+      [`cpy18_walls_after.out`](scratchpad/cpy18_walls_after.out) 699 B; sub page 0
+      unchanged at 9).
+      🔬 **BIT-IDENTICAL, A/B against HEAD's math:** 95 SQR/ATN/SIN/COS/TAN/EXP/LOG/
+      `^`/RND results at double precision, errors included, give the same output on
+      the carved ROM and on HEAD's ROM rebuilt from stashed sources — 91 read, and
+      the four overflow-range cases unread on BOTH, so they say nothing
+      ([`cpy18_ab_new.out`](scratchpad/cpy18_ab_new.out),
+      [`cpy18_ab_old.out`](scratchpad/cpy18_ab_old.out); both sides measured, 0
+      cache hits).
+      ⏱️ **Speed:** kwtime's zerobas times rose 0.04–0.16% on the math rows. SQR
+      stays 8.25× (328.51 → 328.64 ms) — predicted <0.1% on every row: MISS for COS
+      and LOG (+0.16%) ([`cpy18_kwtime.out`](scratchpad/cpy18_kwtime.out), OK 838).
+      Knife BLIND unchanged (MAX CALL VDP BASE / ELSE PAD,
+      [`cpy18_knife_all.out`](scratchpad/cpy18_knife_all.out),
+      [`cpy18_knife_fn.out`](scratchpad/cpy18_knife_fn.out)); kwsweep SUPPORTED 952
+      ([`cpy18_kwsweep.out`](scratchpad/cpy18_kwsweep.out)).
 
 - [x] ✅ **`MKI$(1,1)` / `MKS$(1,1)` / `MKD$(1,1)` WERE `Type mismatch` HERE AND
       `Syntax error` ON THE CF-3300 (D-MKEXTRA, found 2026-09-27 by T6, fixed 2026-09-29).**

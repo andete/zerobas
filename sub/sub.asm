@@ -743,8 +743,8 @@ sub_p1_ping:
                 include "fp_log.asm"
 
 ; fp_pow (math pack slice 2c, docs/spec-basic-mathpack-slice2.md §13): the
-; FIFTH page-1 tenant, the `^` operator. Reuses fp_atan.asm's fat_copy18
-; directly (same assembly unit) and, for its fractional path, calls
+; FIFTH page-1 tenant, the `^` operator. Reuses fp_sqrt.asm's record copy
+; and its cpy_* entries (D-CPY18; same assembly unit) and, for its fractional path, calls
 ; fp_exp/fp_log DIRECTLY (same assembly unit, both already included above)
 ; -- the first tenant-to-tenant composition, no nested subrom_call. Same
 ; resident-ABI surface subset as the other page-1 tenants; no new

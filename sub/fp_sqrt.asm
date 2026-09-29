@@ -82,6 +82,39 @@ fms_zero_lp:
 ; routine, just given a call site instead of repeating the 2 setup bytes
 ; every time). Clobbers B, C, and (per LDIR) A's flags; preserves HL/DE end
 ; state exactly as a raw inline "ld bc,18 / ldir" would.
+;
+; 💰 D-CPY18 (2026-09-29): THE ENTRIES BELOW ARE THE SAME COPY WITH ITS OPERANDS
+; PRELOADED. The math tenants (fp_sqrt/atan/exp/log/pow/sin) made 162 copy calls,
+; 161 of them as `ld hl,<src> / ld de,<dst> / call` (9 B) or `ld de,<dst> /
+; call` (6 B), and the buffers ALIAS: MATH_A = SQRT_Y ("y"), MATH_T = SQRT_X
+; ("x", and HORNER_G too), MATH_R = SQRT_R = HORNER_ACC ("r") -- basic/sysvars.inc. Each site is
+; one `call` now. Every entry leaves exactly the registers the raw sequence did
+; (HL/DE advanced 18 by the LDIR, BC 0); `cpy_y_arga` falls straight into the
+; body and costs nothing, the others pay one `jr` (12 T on a ~400 T copy).
+; fp_atan.asm's `fat_copy18` was a byte-identical private copy of this body; the
+; name is kept on it here for the one call that sets both registers itself.
+cpy_x_argb:     ld      hl,SQRT_X           ; SQRT_X / MATH_T / HORNER_G -> ARGB
+                jr      cpy_argb
+cpy_r_argb:     ld      hl,SQRT_R           ; SQRT_R / MATH_R / HORNER_ACC -> ARGB
+                jr      cpy_argb
+cpy_y_argb:     ld      hl,SQRT_Y           ; SQRT_Y / MATH_A -> ARGB
+cpy_argb:       ld      de,ARGB             ; HL -> ARGB
+                jr      fsq_copy18
+cpy_arga_y:     ld      hl,ARGA             ; ARGA -> SQRT_Y / MATH_A
+cpy_to_y:       ld      de,SQRT_Y           ; HL -> SQRT_Y / MATH_A
+                jr      fsq_copy18
+cpy_arga_x:     ld      hl,ARGA             ; ARGA -> SQRT_X / MATH_T / HORNER_G
+cpy_to_x:       ld      de,SQRT_X           ; HL -> SQRT_X / MATH_T / HORNER_G
+                jr      fsq_copy18
+cpy_to_r:       ld      de,SQRT_R           ; HL -> SQRT_R / MATH_R / HORNER_ACC
+                jr      fsq_copy18
+cpy_x_arga:     ld      hl,SQRT_X           ; SQRT_X / MATH_T / HORNER_G -> ARGA
+                jr      cpy_arga
+cpy_r_arga:     ld      hl,SQRT_R           ; SQRT_R / MATH_R / HORNER_ACC -> ARGA
+                jr      cpy_arga
+cpy_y_arga:     ld      hl,SQRT_Y           ; SQRT_Y / MATH_A -> ARGA
+cpy_arga:       ld      de,ARGA             ; HL -> ARGA
+fat_copy18:
 fsq_copy18:
                 ld      bc,18
                 ldir
@@ -236,29 +269,19 @@ fsq_norm_hi:
 fsq_norm_done:
                 ; ARGA now holds x' in [1,100), dig[14] still 0 (only dexp
                 ; changed) -- seed both persistent buffers from it
-                ld      hl,ARGA
-                ld      de,SQRT_X
-                call    fsq_copy18
-                ld      hl,ARGA
-                ld      de,SQRT_Y
-                call    fsq_copy18
+                call    cpy_arga_x
+                call    cpy_arga_y
                 ld      a,1
                 ld      (SQRT_ITER),a
 fsq_iter_lp:
                 ; --- t := x'/y ---
-                ld      hl,SQRT_X
-                ld      de,ARGA
-                call    fsq_copy18
-                ld      hl,SQRT_Y
-                ld      de,ARGB
-                call    fsq_copy18
+                call    cpy_x_arga
+                call    cpy_y_argb
                 call    fp_div              ; FAC/ARGA := x'/y (rounded)
                 ; --- sum := y + t (both operands re-derived canonical) -----
                 ld      hl,ARGB
                 call    widen_fac_to        ; ARGB := clean widen of t
-                ld      hl,SQRT_Y
-                ld      de,ARGA
-                call    fsq_copy18                        ; ARGA := y (already canonical)
+                call    cpy_y_arga  ; ARGA := y (already canonical)
                 call    fp_add              ; FAC/ARGA := y+t (rounded)
                 ; --- y_new := sum/2 -----------------------------------------
                 ld      hl,ARGA
@@ -272,9 +295,7 @@ fsq_iter_lp:
                 ld      a,(SQRT_ITER)
                 cp      1
                 jr      z,fsq_no_check
-                ld      hl,SQRT_Y
-                ld      de,ARGB
-                call    fsq_copy18                        ; ARGB := y_old (fp_cmp only reads
+                call    cpy_y_argb  ; ARGB := y_old (fp_cmp only reads
                                             ; the 14 significant digits, so a
                                             ; raw copy is fine here)
                 call    fp_cmp              ; A=1(y_new<y_old)/2(==)/4(>)
@@ -369,27 +390,18 @@ fsq_stop:
                 call    widen_to_arga
                                             ; ARGA := clean widen of the
                                             ; Heron-loop candidate y
-                ld      de,SQRT_Y
-                call    fsq_copy18                        ; SQRT_Y := canonical candidate y
+                call    cpy_to_y    ; SQRT_Y := canonical candidate y
                 ; --- Newton step: c := (x'-y*y)/(2*y); y := y+c -----------
-                ld      hl,SQRT_Y
-                ld      de,ARGA
-                call    fsq_copy18
-                ld      hl,SQRT_Y
-                ld      de,ARGB
-                call    fsq_copy18
+                call    cpy_y_arga
+                call    cpy_y_argb
                 call    fp_mul              ; FAC/ARGA := y*y (rounded)
                 ld      hl,ARGB
                 call    widen_fac_to        ; ARGB := clean widen of y*y
-                ld      hl,SQRT_X
-                ld      de,ARGA
-                call    fsq_copy18                        ; ARGA := x' (already canonical)
+                call    cpy_x_arga  ; ARGA := x' (already canonical)
                 call    fp_sub              ; FAC/ARGA := x'-y*y (signed)
                 ld      hl,ARGA
                 call    widen_fac_to        ; ARGA := clean widen of the diff
-                ld      hl,SQRT_Y
-                ld      de,ARGB
-                call    fsq_copy18                        ; ARGB := y (canonical)
+                call    cpy_y_argb  ; ARGB := y (canonical)
                 call    fp_div              ; FAC/ARGA := diff/y (rounded)
                 ld      hl,ARGA
                 call    widen_fac_to        ; ARGA := clean widen of diff/y
@@ -400,14 +412,11 @@ fsq_stop:
                 call    fp_div              ; FAC/ARGA := c = (x'-y*y)/(2y)
                 ld      hl,ARGA
                 call    widen_fac_to        ; ARGA := clean widen of c
-                ld      hl,SQRT_Y
-                ld      de,ARGB
-                call    fsq_copy18                        ; ARGB := y (canonical, pre-step)
+                call    cpy_y_argb  ; ARGB := y (canonical, pre-step)
                 call    fp_add              ; FAC/ARGA := y+c
                 call    widen_to_arga
                                             ; ARGA := clean widen of it
-                ld      de,SQRT_Y
-                call    fsq_copy18                        ; SQRT_Y := Newton-corrected y
+                call    cpy_to_y    ; SQRT_Y := Newton-corrected y
 
                 ; --- decision loop (bounded DECIDE_MAX_ITER passes) --------
                 ; DECIDE_MAX_ITER=1 (own finding, gate-verified): a SECOND
@@ -430,9 +439,7 @@ fsq_stop:
 fsqn_loop:
                 ; === r2 := high-precision (x'-y*y) via the Y0/e split ======
                 ; --- Y0*Y0 (exact) ------------------------------------------
-                ld      hl,SQRT_Y
-                ld      de,ARGA
-                call    fsq_copy18                        ; ARGA := y (raw copy)
+                call    cpy_y_arga  ; ARGA := y (raw copy)
                 ld      hl,ARGA+FPNUM_DIG+7
                 ld      b,7
                 xor     a
@@ -441,23 +448,17 @@ fsqn_trunc1:
                 inc     hl
                 djnz    fsqn_trunc1         ; ARGA := Y0 (7 sig digits + 7*0)
                 ld      hl,ARGA
-                ld      de,ARGB
-                call    fsq_copy18                        ; ARGB := Y0 too
+                call    cpy_argb    ; ARGB := Y0 too
                 call    fp_mul              ; FAC/ARGA := Y0*Y0 (EXACT)
                 ld      hl,ARGB
                 call    widen_fac_to        ; ARGB := clean widen of Y0^2
-                ld      hl,SQRT_X
-                ld      de,ARGA
-                call    fsq_copy18                        ; ARGA := x'
+                call    cpy_x_arga  ; ARGA := x'
                 call    fp_sub              ; FAC/ARGA := r1 = x'-Y0^2
                 call    widen_to_arga
                                             ; ARGA := clean widen of r1
-                ld      de,SQRT_R
-                call    fsq_copy18                        ; SQRT_R := r1 (retained)
+                call    cpy_to_r    ; SQRT_R := r1 (retained)
                 ; --- e := y-Y0 (Y0 rebuilt fresh into ARGB) -----------------
-                ld      hl,SQRT_Y
-                ld      de,ARGB
-                call    fsq_copy18
+                call    cpy_y_argb
                 ld      hl,ARGB+FPNUM_DIG+7
                 ld      b,7
                 xor     a
@@ -465,21 +466,16 @@ fsqn_trunc2:
                 ld      (hl),a
                 inc     hl
                 djnz    fsqn_trunc2         ; ARGB := Y0
-                ld      hl,SQRT_Y
-                ld      de,ARGA
-                call    fsq_copy18                        ; ARGA := y
+                call    cpy_y_arga  ; ARGA := y
                 call    fp_sub              ; FAC/ARGA := e = y-Y0 (exact)
                 ; --- corr := (2*e)*Y0 (Y0 rebuilt again) --------------------
                 call    widen_to_arga
                                             ; ARGA := clean widen of e
-                ld      de,ARGB
-                call    fsq_copy18                        ; ARGB := copy of e
+                call    cpy_argb    ; ARGB := copy of e
                 call    fp_add              ; FAC/ARGA := 2e
                 ld      hl,ARGA
                 call    widen_fac_to        ; ARGA := clean widen of 2e
-                ld      hl,SQRT_Y
-                ld      de,ARGB
-                call    fsq_copy18
+                call    cpy_y_argb
                 ld      hl,ARGB+FPNUM_DIG+7
                 ld      b,7
                 xor     a
@@ -509,19 +505,14 @@ fsqn_trunc3:
                 ld      hl,ARGB+FPNUM_DIG
                 call    dig15_iszero
                 jp      z,fsqn_e2           ; corr==0 -- SQRT_R stays r1
-                ld      hl,SQRT_R
-                ld      de,ARGA
-                call    fsq_copy18                        ; ARGA := r1 (retained)
+                call    cpy_r_arga  ; ARGA := r1 (retained)
                 call    fp_sub              ; FAC/ARGA := r1-corr
                 call    widen_to_arga
                                             ; ARGA := clean widen of it
-                ld      de,SQRT_R
-                call    fsq_copy18                        ; SQRT_R := r1-corr (retained)
+                call    cpy_to_r    ; SQRT_R := r1-corr (retained)
 fsqn_e2:
                 ; --- e2 := e*e (Y0/e rebuilt a final time) ------------------
-                ld      hl,SQRT_Y
-                ld      de,ARGB
-                call    fsq_copy18
+                call    cpy_y_argb
                 ld      hl,ARGB+FPNUM_DIG+7
                 ld      b,7
                 xor     a
@@ -529,14 +520,11 @@ fsqn_trunc4:
                 ld      (hl),a
                 inc     hl
                 djnz    fsqn_trunc4         ; ARGB := Y0
-                ld      hl,SQRT_Y
-                ld      de,ARGA
-                call    fsq_copy18                        ; ARGA := y
+                call    cpy_y_arga  ; ARGA := y
                 call    fp_sub              ; FAC/ARGA := e (rebuilt)
                 call    widen_to_arga
                                             ; ARGA := clean widen of e
-                ld      de,ARGB
-                call    fsq_copy18                        ; ARGB := copy of e
+                call    cpy_argb    ; ARGB := copy of e
                 call    fp_mul              ; FAC/ARGA := e2 = e*e
                 ld      hl,ARGB
                 call    widen_fac_to        ; ARGB := clean widen of e2
@@ -545,14 +533,11 @@ fsqn_trunc4:
                 ld      hl,ARGB+FPNUM_DIG
                 call    dig15_iszero
                 jp      z,fsqn_r2_done      ; e2==0 -- SQRT_R already r2
-                ld      hl,SQRT_R
-                ld      de,ARGA
-                call    fsq_copy18                        ; ARGA := (r1-corr)
+                call    cpy_r_arga  ; ARGA := (r1-corr)
                 call    fp_sub              ; FAC/ARGA := r2=(r1-corr)-e2
                 call    widen_to_arga
                                             ; ARGA := clean widen of r2
-                ld      de,SQRT_R
-                call    fsq_copy18                        ; SQRT_R := r2 (final residual)
+                call    cpy_to_r    ; SQRT_R := r2 (final residual)
 fsqn_r2_done:
 
                 ; === decide: stay / step +1ulp / step -1ulp =================
@@ -574,15 +559,11 @@ fsqn_up_check:
                 ld      a,1
                 ld      hl,ARGB
                 call    fsq_mk_small        ; ARGB := ulp
-                ld      hl,SQRT_Y
-                ld      de,ARGA
-                call    fsq_copy18
+                call    cpy_y_arga
                 call    fp_mul              ; FAC/ARGA := threshold=y*ulp
                 ld      hl,ARGB
                 call    widen_fac_to        ; ARGB := clean widen of threshold
-                ld      hl,SQRT_R
-                ld      de,ARGA
-                call    fsq_copy18                        ; ARGA := r2 (positive)
+                call    cpy_r_arga  ; ARGA := r2 (positive)
                 call    fp_cmp              ; A=cmp(r2,threshold)
                 cp      1
                 jp      z,fsqn_done         ; r2<threshold -- y stays
@@ -595,13 +576,10 @@ fsqn_up_check:
                 ld      a,1
                 ld      hl,ARGB
                 call    fsq_mk_small        ; ARGB := ulp (rebuilt)
-                ld      hl,SQRT_Y
-                ld      de,ARGA
-                call    fsq_copy18
+                call    cpy_y_arga
                 call    fp_add              ; FAC/ARGA := y+ulp
                 call    widen_to_arga
-                ld      de,SQRT_Y
-                call    fsq_copy18                        ; SQRT_Y := y+ulp
+                call    cpy_to_y    ; SQRT_Y := y+ulp
                 jp      fsqn_next
 
 fsqn_down_check:
@@ -649,18 +627,14 @@ fsqn_down_dexp_ok:
                 ld      a,1
                 ld      hl,ARGB
                 call    fsq_mk_small        ; ARGB := ulp_down
-                ld      hl,SQRT_Y
-                ld      de,ARGA
-                call    fsq_copy18
+                call    cpy_y_arga
                 call    fp_mul              ; FAC/ARGA := threshold=y*ulp_down
                 ld      hl,ARGB
                 call    widen_fac_to        ; ARGB := clean widen of threshold
                 ld      a,(ARGB+FPNUM_SIGN)
                 xor     $80
                 ld      (ARGB+FPNUM_SIGN),a ; ARGB := -threshold
-                ld      hl,SQRT_R
-                ld      de,ARGA
-                call    fsq_copy18                        ; ARGA := r2 (negative)
+                call    cpy_r_arga  ; ARGA := r2 (negative)
                 call    fp_cmp              ; A=cmp(r2,-threshold)
                 cp      4
                 jp      z,fsqn_done         ; r2>-threshold strictly -> stay
@@ -691,13 +665,10 @@ fsqn_down_dexp_ok2:
                 ld      a,1
                 ld      hl,ARGB
                 call    fsq_mk_small        ; ARGB := ulp_down (rebuilt)
-                ld      hl,SQRT_Y
-                ld      de,ARGA
-                call    fsq_copy18
+                call    cpy_y_arga
                 call    fp_sub              ; FAC/ARGA := y-ulp_down
                 call    widen_to_arga
-                ld      de,SQRT_Y
-                call    fsq_copy18                        ; SQRT_Y := y-ulp_down
+                call    cpy_to_y    ; SQRT_Y := y-ulp_down
 
 fsqn_next:
                 ld      a,(SQRT_ITER)
@@ -708,9 +679,7 @@ fsqn_next:
                                             ; stands (never expected to fire)
                 jp      fsqn_loop
 fsqn_done:
-                ld      hl,SQRT_Y
-                ld      de,ARGA
-                call    fsq_copy18                        ; ARGA := final correctly-rounded y
+                call    cpy_y_arga  ; ARGA := final correctly-rounded y
 
                 ; --- rescale by 10^SQRT_K (dexp+=SQRT_K -- exact) -----------
                 ld      a,(SQRT_K)

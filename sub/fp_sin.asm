@@ -41,9 +41,10 @@
 ; HOME: the sub-ROM PAGE-1 island (sub/sub.asm), dispatched from
 ; evmc_sin/evmc_cos/evmc_tan (basic/expr.asm) via subrom_call/
 ; SUBROM_ENTRY_BASE_P1+SUBROM_IDX_{SIN,COS,TAN}. Sixth/seventh/eighth page-1
-; tenants (after fp_sqrt/fp_atan/fp_exp/fp_log/fp_pow); reuses fp_atan.asm's
-; fat_copy18/fp_poly_horner directly (same assembly unit, sub/sub.asm
-; includes fp_atan.asm before this file) and math-coeffs.inc's
+; tenants (after fp_sqrt/fp_atan/fp_exp/fp_log/fp_pow); reuses fp_sqrt.asm's
+; record copy (fat_copy18, the cpy_* entries -- D-CPY18) and fp_atan.asm's
+; fp_poly_horner directly (same assembly unit, sub/sub.asm includes both
+; before this file) and math-coeffs.inc's
 ; SIN_COEF/COS_COEF/TWO_OVER_PI/SIN_C1/SIN_C2 records (already emitted +
 ; committed, §14.3). Resident-ABI surface is the SAME SUBSET every prior
 ; page-1 tenant uses (fp_add/fp_sub/fp_mul/fp_div/dig15_iszero/
@@ -219,19 +220,14 @@ fsc_pack_zero:
 ; file's header). Works on a=|x| -- the wrappers own the x-sign.
 sincos_kernel:
                 ; --- step 1: a := |x| ---------------------------------------
-                ld      hl,ARGA
-                ld      de,MATH_A
-                call    fat_copy18          ; MATH_A := x (persistent)
+                call    cpy_arga_y  ; MATH_A := x (persistent)
                 xor     a
                 ld      (MATH_A+FPNUM_SIGN),a   ; MATH_A := |x| = a
 
                 ; --- step 2: q := a*TWO_OVER_PI -----------------------------
-                ld      hl,MATH_A
-                ld      de,ARGA
-                call    fat_copy18          ; ARGA := a
+                call    cpy_y_arga  ; ARGA := a
                 ld      hl,TWO_OVER_PI
-                ld      de,ARGB
-                call    fat_copy18          ; ARGB := TWO_OVER_PI
+                call    cpy_argb    ; ARGB := TWO_OVER_PI
                 call    fp_mul              ; FAC/ARGA := a*TWO_OVER_PI = q
                 ld      hl,ARGA
                 call    widen_fac_to        ; ARGA := q, canonical
@@ -310,9 +306,7 @@ sck_trunc_zero:
                 ld      (hl),a
                 inc     hl
                 djnz    sck_trunc_zero
-                ld      hl,ARGA
-                ld      de,MATH_T
-                call    fat_copy18          ; MATH_T := nf (persistent)
+                call    cpy_arga_x    ; MATH_T := nf (persistent)
                 jp      sck_reduce
 sck_dexp_le0:
                 ; q' in [0.5,1), n=0 -- skip the reduction entirely (n*C1=
@@ -320,9 +314,7 @@ sck_dexp_le0:
                 ; not computing, is the safe choice here)
                 xor     a
                 ld      (MATH_J),a          ; quad := 0
-                ld      hl,MATH_A
-                ld      de,ARGA
-                call    fat_copy18          ; ARGA := a (r = a directly)
+                call    cpy_y_arga  ; ARGA := a (r = a directly)
                 jp      sck_have_r
 sck_floor:
                 ; dexp'>=15: |x|>=~1.57E14, x meaningless -- FLOOR
@@ -340,69 +332,48 @@ sck_floor:
 
                 ; --- step 4: reduce: r := a - nf*SIN_C1 - nf*SIN_C2 ---------
 sck_reduce:
-                ld      hl,MATH_T
-                ld      de,ARGA
-                call    fat_copy18          ; ARGA := nf
+                call    cpy_x_arga  ; ARGA := nf
                 ld      hl,SIN_C1
-                ld      de,ARGB
-                call    fat_copy18          ; ARGB := SIN_C1
+                call    cpy_argb    ; ARGB := SIN_C1
                 call    fp_mul              ; FAC/ARGA := nf*SIN_C1 (EXACT,
                                             ; §14.3)
                 call    widen_to_arga
-                ld      de,ARGB
-                call    fat_copy18          ; ARGB := nf*SIN_C1
-                ld      hl,MATH_A
-                ld      de,ARGA
-                call    fat_copy18          ; ARGA := a
+                call    cpy_argb    ; ARGB := nf*SIN_C1
+                call    cpy_y_arga  ; ARGA := a
                 call    fp_sub              ; FAC/ARGA := a - nf*C1 = r1
                 call    widen_to_arga
-                ld      de,MATH_R
-                call    fat_copy18          ; MATH_R := r1 (temporary)
+                call    cpy_to_r    ; MATH_R := r1 (temporary)
 
-                ld      hl,MATH_T
-                ld      de,ARGA
-                call    fat_copy18          ; ARGA := nf (still intact)
+                call    cpy_x_arga  ; ARGA := nf (still intact)
                 ld      hl,SIN_C2
-                ld      de,ARGB
-                call    fat_copy18          ; ARGB := SIN_C2
+                call    cpy_argb    ; ARGB := SIN_C2
                 call    fp_mul              ; FAC/ARGA := nf*SIN_C2
                 call    widen_to_arga
-                ld      de,ARGB
-                call    fat_copy18          ; ARGB := nf*SIN_C2
-                ld      hl,MATH_R
-                ld      de,ARGA
-                call    fat_copy18          ; ARGA := r1
+                call    cpy_argb    ; ARGB := nf*SIN_C2
+                call    cpy_r_arga  ; ARGA := r1
                 call    fp_sub              ; FAC/ARGA := r1 - nf*C2 = r2 = r
                 ld      hl,ARGA
                 call    widen_fac_to        ; ARGA := r, canonical (nf now
                                             ; dead, MATH_T free)
 sck_have_r:
                 ; --- step 5: u := r*r ---------------------------------------
+                call    cpy_arga_y  ; MATH_A := r (a retired)
                 ld      hl,ARGA
-                ld      de,MATH_A
-                call    fat_copy18          ; MATH_A := r (a retired)
-                ld      hl,ARGA
-                ld      de,ARGB
-                call    fat_copy18          ; ARGB := r (ARGA still r)
+                call    cpy_argb    ; ARGB := r (ARGA still r)
                 call    fp_mul              ; FAC/ARGA := r*r = u
                 call    widen_to_arga
-                ld      de,HORNER_G
-                call    fat_copy18          ; HORNER_G := u (=MATH_T)
+                call    cpy_to_x    ; HORNER_G := u (=MATH_T)
 
                 ; --- step 6: sv := r*S(u) -----------------------------------
                 ld      hl,SIN_COEF
                 call    fp_poly_horner      ; FAC/ARGA := S(u); HORNER_G(u)
                                             ; preserved across the call
                 call    widen_to_arga
-                ld      de,ARGB
-                call    fat_copy18          ; ARGB := S
-                ld      hl,MATH_A
-                ld      de,ARGA
-                call    fat_copy18          ; ARGA := r
+                call    cpy_argb    ; ARGB := S
+                call    cpy_y_arga  ; ARGA := r
                 call    fp_mul              ; FAC/ARGA := r*S = sv
                 call    widen_to_arga
-                ld      de,MATH_A
-                call    fat_copy18          ; MATH_A := sv (r retired)
+                call    cpy_to_y    ; MATH_A := sv (r retired)
 
                 ; --- step 7: cv := C(u) -------------------------------------
                 ld      hl,COS_COEF
@@ -412,8 +383,7 @@ sck_have_r:
                                             ; contract) -- the whole point of
                                             ; the shared kernel
                 call    widen_to_arga
-                ld      de,MATH_R
-                call    fat_copy18          ; MATH_R := cv
+                call    cpy_to_r    ; MATH_R := cv
                 ret
                 ; [MATH_A=sv, MATH_R=cv, MATH_J=quad]
 

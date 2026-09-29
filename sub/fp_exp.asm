@@ -33,11 +33,12 @@
 ;
 ; HOME: the sub-ROM PAGE-1 island (sub/sub.asm), dispatched from evmc_exp
 ; (basic/expr.asm) via subrom_call/SUBROM_ENTRY_BASE_P1+SUBROM_IDX_EXP.
-; Third page-1 tenant (after fp_sqrt, fp_atan); reuses fp_atan.asm's
-; fat_copy18 + fp_poly_horner DIRECTLY (same assembly unit, sub/sub.asm
-; includes fp_atan.asm first) rather than re-duplicating them -- unlike
-; fat_copy18 itself (which fp_atan.asm keeps as ITS OWN private duplicate of
-; fp_sqrt.asm's fsq_copy18 for file self-containment), EXP and LOG are
+; Third page-1 tenant (after fp_sqrt, fp_atan); reuses fp_sqrt.asm's record
+; copy (fat_copy18 and the cpy_* entries) and fp_atan.asm's fp_poly_horner
+; DIRECTLY (same assembly unit, sub/sub.asm includes both first) rather than
+; re-duplicating them. (fp_atan.asm USED to keep fat_copy18 as its own private
+; duplicate of fp_sqrt.asm's fsq_copy18; D-CPY18 folded the two into one body,
+; 2026-09-29.) EXP and LOG are
 ; delivered as a matched pair in this one slice and already share the
 ; math-coeffs.inc table set, so sharing this file's own new helpers
 ; (fexp_cmp16/fexp_tbl18addr below) with fp_log.asm is the same kind of
@@ -190,12 +191,9 @@ fexp_tbl18addr:
 ; disposition; never touches FACTYP/DE -- evmc_exp's job).
 fp_exp:
                 ; --- step 1: MATH_A := x; q := x*EXP_RC ---------------------
-                ld      hl,ARGA
-                ld      de,MATH_A
-                call    fat_copy18          ; MATH_A := x (persistent)
+                call    cpy_arga_y  ; MATH_A := x (persistent)
                 ld      hl,EXP_RC
-                ld      de,ARGB
-                call    fat_copy18          ; ARGB := EXP_RC (ARGA already x)
+                call    cpy_argb    ; ARGB := EXP_RC (ARGA already x)
                 call    fp_mul              ; FAC/ARGA := x*EXP_RC = q
                 ld      hl,ARGA
                 call    widen_fac_to        ; ARGA := clean widen of q
@@ -334,37 +332,24 @@ fexp_n8_nosign:
 
                 ; --- step 5: reduce: r := x - n8fp*EXP_C1 - n8fp*EXP_C2 -----
                 ; [- EXP_TCOR[m-1] if m<>0] ----------------------------------
-                ld      hl,MATH_T
-                ld      de,ARGA
-                call    fat_copy18          ; ARGA := n8fp
+                call    cpy_x_arga  ; ARGA := n8fp
                 ld      hl,EXP_C1
-                ld      de,ARGB
-                call    fat_copy18          ; ARGB := EXP_C1
+                call    cpy_argb    ; ARGB := EXP_C1
                 call    fp_mul              ; FAC/ARGA := n8fp*EXP_C1
                 call    widen_to_arga
-                ld      de,ARGB
-                call    fat_copy18          ; ARGB := product1
-                ld      hl,MATH_A
-                ld      de,ARGA
-                call    fat_copy18          ; ARGA := x
+                call    cpy_argb    ; ARGB := product1
+                call    cpy_y_arga  ; ARGA := x
                 call    fp_sub              ; FAC/ARGA := x - product1 = r1
                 call    widen_to_arga
-                ld      de,MATH_R
-                call    fat_copy18          ; MATH_R := r1 (temporary)
+                call    cpy_to_r    ; MATH_R := r1 (temporary)
 
-                ld      hl,MATH_T
-                ld      de,ARGA
-                call    fat_copy18          ; ARGA := n8fp (still intact)
+                call    cpy_x_arga  ; ARGA := n8fp (still intact)
                 ld      hl,EXP_C2
-                ld      de,ARGB
-                call    fat_copy18          ; ARGB := EXP_C2
+                call    cpy_argb    ; ARGB := EXP_C2
                 call    fp_mul              ; FAC/ARGA := n8fp*EXP_C2
                 call    widen_to_arga
-                ld      de,ARGB
-                call    fat_copy18          ; ARGB := product2
-                ld      hl,MATH_R
-                ld      de,ARGA
-                call    fat_copy18          ; ARGA := r1
+                call    cpy_argb    ; ARGB := product2
+                call    cpy_r_arga  ; ARGA := r1
                 call    fp_sub              ; FAC/ARGA := r1 - product2 = r2
                 ld      hl,ARGA
                 call    widen_fac_to
@@ -373,43 +358,31 @@ fexp_n8_nosign:
                 or      a
                 jr      z,fexp_no_tcor
                 ld      hl,ARGA
-                ld      de,MATH_R
-                call    fat_copy18          ; MATH_R := r2 (stash)
+                call    cpy_to_r    ; MATH_R := r2 (stash)
                 ld      a,(MATH_J)
                 dec     a                   ; m-1 (0-based EXP_TCOR index)
                 ld      hl,EXP_TCOR
                 call    fexp_tbl18addr
-                ld      de,ARGB
-                call    fat_copy18          ; ARGB := EXP_TCOR[m-1]
-                ld      hl,MATH_R
-                ld      de,ARGA
-                call    fat_copy18          ; ARGA := r2
+                call    cpy_argb    ; ARGB := EXP_TCOR[m-1]
+                call    cpy_r_arga  ; ARGA := r2
                 call    fp_sub              ; FAC/ARGA := r2 - EXP_TCOR[m-1]
                 ld      hl,ARGA
                 call    widen_fac_to
 fexp_no_tcor:
                 ; final r -> HORNER_G (=MATH_T, n8fp now dead)
-                ld      hl,ARGA
-                ld      de,HORNER_G
-                call    fat_copy18          ; HORNER_G := r
+                call    cpy_arga_x    ; HORNER_G := r
 
                 ; --- step 6: core: E := horner(r, EXP_COEF); w := r*E -------
                 ld      hl,EXP_COEF
                 call    fp_poly_horner      ; FAC/ARGA := E(r); HORNER_G (=r)
                                             ; preserved across the call
                 call    widen_to_arga
-                ld      de,MATH_R
-                call    fat_copy18          ; MATH_R := E (persistent)
-                ld      hl,HORNER_G
-                ld      de,ARGA
-                call    fat_copy18          ; ARGA := r (still canonical)
-                ld      hl,MATH_R
-                ld      de,ARGB
-                call    fat_copy18          ; ARGB := E
+                call    cpy_to_r    ; MATH_R := E (persistent)
+                call    cpy_x_arga  ; ARGA := r (still canonical; HORNER_G = SQRT_X)
+                call    cpy_r_argb  ; ARGB := E
                 call    fp_mul              ; FAC/ARGA := r*E = w
                 call    widen_to_arga
-                ld      de,MATH_R
-                call    fat_copy18          ; MATH_R := w (E retired)
+                call    cpy_to_r    ; MATH_R := w (E retired)
 
                 ; --- step 7: reconstruct mantissa ---------------------------
                 ld      a,(MATH_J)
@@ -419,24 +392,18 @@ fexp_no_tcor:
                 ld      a,(MATH_J)
                 ld      hl,POW8_TBL
                 call    fexp_tbl18addr      ; HL := POW8_TBL + 18*m
-                ld      de,ARGA
-                call    fat_copy18          ; ARGA := That[m]
-                ld      hl,MATH_R
-                ld      de,ARGB
-                call    fat_copy18          ; ARGB := w
+                call    cpy_arga    ; ARGA := That[m]
+                call    cpy_r_argb  ; ARGB := w
                 call    fp_mul              ; FAC/ARGA := That[m]*w = v
                 call    widen_to_arga
-                ld      de,ARGB
-                call    fat_copy18          ; ARGB := v
+                call    cpy_argb    ; ARGB := v
                 ld      a,(MATH_J)
                 ld      hl,POW8_TBL
                 call    fexp_tbl18addr      ; HL := POW8_TBL + 18*m (re-fetch)
-                ld      de,ARGA
-                call    fat_copy18          ; ARGA := That[m]
+                call    cpy_arga    ; ARGA := That[m]
                 call    fp_add              ; FAC/ARGA := That[m]+v = p
                 call    widen_to_arga
-                ld      de,MATH_A
-                call    fat_copy18          ; MATH_A := p (x long dead)
+                call    cpy_to_y    ; MATH_A := p (x long dead)
                 jr      fexp_scale
 fexp_m_zero:
                 ; m==0: p := 1.0 + w
@@ -444,13 +411,10 @@ fexp_m_zero:
                 xor     a
                 ld      de,1
                 call    widen_uint_to       ; ARGA := 1.0
-                ld      hl,MATH_R
-                ld      de,ARGB
-                call    fat_copy18          ; ARGB := w
+                call    cpy_r_argb  ; ARGB := w
                 call    fp_add              ; FAC/ARGA := 1.0+w = p
                 call    widen_to_arga
-                ld      de,MATH_A
-                call    fat_copy18          ; MATH_A := p
+                call    cpy_to_y    ; MATH_A := p
 
 fexp_scale:
                 ; --- step 8: FAC := p rescaled by 10^n. A power-of-ten -----
@@ -497,9 +461,7 @@ fexp_scale:
                 ld      de,(MATH_N)         ; n
                 add     hl,de
                 ld      (MATH_A+FPNUM_DEXP),hl  ; MATH_A's dexp += n (exact)
-                ld      hl,MATH_A
-                ld      de,ARGA
-                call    fat_copy18          ; ARGA := p, rescaled
+                call    cpy_y_arga  ; ARGA := p, rescaled
                 ld      hl,(ARGA+FPNUM_DEXP)    ; = the rescaled p's own dexp
                 ld      de,ARGB
                 xor     a

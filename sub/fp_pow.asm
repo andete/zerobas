@@ -116,9 +116,7 @@ fp_pow:
                 jp      nz,fp_pow_frac
 
 ; --- int path: LSB-first square-and-multiply (§13.1 rule 3, sim-proven) ----
-                ld      hl,ARGA
-                ld      de,SQRT_X
-                call    fat_copy18          ; s := x
+                call    cpy_arga_x    ; s := x
                 ld      hl,ARGA
                 xor     a
                 ld      de,1
@@ -128,9 +126,7 @@ fpw_lp:
                 ld      hl,(MATH_N)
                 bit     0,l
                 jr      z,fpw_no_mul
-                ld      hl,SQRT_X
-                ld      de,ARGB
-                call    fat_copy18          ; ARGB := s; acc := acc*s
+                call    cpy_x_argb  ; ARGB := s; acc := acc*s
                 call    fp_mul
                 ld      a,(FPERR)
                 or      a
@@ -163,15 +159,9 @@ fpw_no_mul:
                 ld      a,h
                 or      l
                 jr      z,fpw_done
-                ld      hl,ARGA
-                ld      de,SQRT_Y
-                call    fat_copy18          ; stash acc
-                ld      hl,SQRT_X
-                ld      de,ARGA
-                call    fat_copy18
-                ld      hl,SQRT_X
-                ld      de,ARGB
-                call    fat_copy18          ; ARGA/ARGB := s; s := s*s
+                call    cpy_arga_y  ; stash acc
+                call    cpy_x_arga
+                call    cpy_x_argb  ; ARGA/ARGB := s; s := s*s
                 call    fp_mul
                 ld      a,(FPERR)
                 or      a
@@ -179,11 +169,8 @@ fpw_no_mul:
                 call    widen_to_arga
                                             ; re-derive (same underflow
                                             ; reason as the acc*s site above)
-                ld      de,SQRT_X           ; s := s*s
-                call    fat_copy18
-                ld      hl,SQRT_Y
-                ld      de,ARGA             ; ARGA := acc (restored)
-                call    fat_copy18
+                call    cpy_to_x
+                call    cpy_y_arga
                 jr      fpw_lp
 fpw_done:
                 ld      a,(MATH_J)
@@ -224,8 +211,7 @@ fpw_done:
                 call    dig15_iszero
                 jr      z,fpw_recip_zero
                 ld      hl,ARGA
-                ld      de,ARGB
-                call    fat_copy18          ; ARGB := p (acc)
+                call    cpy_argb    ; ARGB := p (acc)
                 ld      hl,ARGA
                 xor     a
                 ld      de,1
