@@ -652,9 +652,11 @@ oo_fail_syn:
 ; CF-3300 answers ERR 5 to `LEN=0`, `LEN=257` and `LEN=512`, and accepts
 ; everything in 1..256.
 oo_fail_ifc:
+                ld      e,5                 ; Illegal function call
+oo_fail_e:                                  ; E = the ERR code (D-OPENBUSY shares it)
                 xor     a
                 ld      (FCH_MODE),a
-                ld      a,5                 ; Illegal function call
+                ld      a,e
                 jp      raise_error
 
 ; --- oo_fail_bfn: OPEN's BAD FILE NUMBER reject (S-FCH-2, ERR 52) ------------
@@ -1545,7 +1547,22 @@ oopac_num:
                 ; sample would have shipped wrong (spec §2).
                 call    fch_check_d         ; D != 0 -> ERR 5; else A = E, Z <=> ch 0
                 jp      z,oo_fail_bfn       ; OPEN's channel-0 exception -> ERR 52
-                jr      fch_check_nz        ; > MAXF -> ERR 52; else return A = E
+                call    fch_check_nz        ; > MAXF -> ERR 52; else A = E
+                ; 🔴 D-OPENBUSY (2026-09-29): A CHANNEL THAT IS ALREADY OPEN IS 54.
+                ; `OPEN "X2.TXT" FOR OUTPUT AS #1:OPEN "X3.TXT" FOR OUTPUT AS #1`
+                ; is `File already open` on the CF-3300 (scratchpad/t6enum_b8_zb.out)
+                ; and was accepted here -- the second OPEN took the channel over.
+                ; Here, after the number is valid and before any file work, so it
+                ; covers every OPEN form (disk, LPT:/CRT:, CAS:) at one site.
+                push    hl                  ; the cursor
+                call    fch_modes_ptr       ; HL = &FCH_MODES[ch] (A, HL only)
+                ld      a,(hl)
+                pop     hl
+                or      a
+                ld      a,e
+                ret     z                   ; free: A = E = the channel
+                ld      e,54                ; `File already open`
+                jp      oo_fail_e
 
 ; fch_modes_ptr — HL = &FCH_MODES[A]. A = channel. Clobbers A and HL ONLY.
 ;

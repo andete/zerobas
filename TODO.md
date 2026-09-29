@@ -6019,7 +6019,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:27150 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:27166 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -25530,7 +25530,7 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       reference → zerobas:
       • **accepted where the reference refuses, and it can lose data:**
         ~~`KILL` of an OPEN file (64 → ok)~~, ~~`NAME` onto an EXISTING file (65 →
-        ok)~~, re-`OPEN` of a busy channel (54 → ok), ~~any `Q:` drive — OPEN,
+        ok)~~, ~~re-`OPEN` of a busy channel (54 → ok)~~ (D-OPENBUSY), ~~any `Q:` drive — OPEN,
         KILL, SAVE, RUN (62 → ok; `FILES "Q:*.*"` 62 → 53)~~.
         ✅ **D-DRVNAME (2026-09-28):** a drive past B: raises 62 now.
         `parse_disk_fcb` rejected it with `bl_load_error`, which PRINTS AND
@@ -25605,6 +25605,22 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
         `t8copynotomiss` (kwsweep, SUPPORTED); knife = HEAD's kernel.asm (disk ROM
         `cf40cbbb` → `6af04b37`, restored) turns both DIVERGENT
         ([`noasto_knife.out`](scratchpad/noasto_knife.out)).
+      ✅ **D-OPENBUSY (2026-09-29): re-`OPEN` of a busy channel is 54 now.**
+      `oo_parse_as_chan` — the "AS [#]n" clause every OPEN form shares (disk,
+      LPT:/CRT:, CAS:) — checks `FCH_MODES[ch]` after the number is validated and
+      before any file work, and fails through a new `oo_fail_e` tail (the
+      `oo_fail_ifc` cleanup with the code in E). +16 B of main page 1, funded by
+      D-DSKFLOCAL's 13 and D-DSKFRANGE's 4 (page 1 was 1 B after, 2026-09-29).
+      Rows `t8openoutput54` (PROVES-T6:54) and the control `t8openreuse` (CLOSE,
+      then the same channel opens again) SUPPORTED against the CF-3300
+      ([`openbusy_kwsweep.out`](scratchpad/openbusy_kwsweep.out)); knife = HEAD's
+      files.asm (main ROM `bd9e17c1` → `745ef2f8`, restored) turns the 54 row
+      DIVERGENT — `File already open in 20` there, nothing here — while the
+      control stays green ([`openbusy_knife.out`](scratchpad/openbusy_knife.out)).
+      ➡️ **Still open from this line:** the SAME FILE on a second channel (54 on
+      the CF-3300 even FOR INPUT, `o_same2` / `o_samein2`) — that needs a name
+      compare against the open channels, which `hkk_open_check` already does in
+      disk.rom; main has no bytes left to cross to it.
       ➡️ **OPEN's half is still open, and wider than filed:** round 2 found the
         CF-3300 also refuses a SECOND open of the same FILE on another channel
         with 54 (`o_same2`, and `o_samein2` even FOR INPUT); zerobas accepts

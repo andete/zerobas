@@ -4567,6 +4567,13 @@ SWEEP: list[tuple[str, str, str | None, str, str]] = [
      "NEEDS-DISK: SUBJECT:COPY FORM:file-to-file"),
     ('t8openoutput62', 'open "q:x.txt" for output as #1', 'OPEN "Q:X.TXT" FOR OUTPUT AS #1', "stored",
      "NEEDS-DISK: PROVES-T6:62 SUBJECT:OPEN FORM:output"),
+    # D-OPENBUSY (2026-09-29): an OPEN onto a channel that is already open is 54
+    # on the CF-3300 (scratchpad/t6enum_b8_zb.out) and took the channel over here.
+    # The reuse row is the control: after CLOSE the same channel opens again.
+    ('t8openoutput54', 'open "x2.txt" for output as #1:open "x3.txt" for output as #1', 'OPEN "X2.TXT" FOR OUTPUT AS #1:OPEN "X3.TXT" FOR OUTPUT AS #1', "stored",
+     "NEEDS-DISK: PROVES-T6:54 SUBJECT:OPEN FORM:output"),
+    ('t8openreuse', 'open "x4.txt" for output as #1:close:open "x5.txt" for output as #1:print "[ok]"', 'OPEN "X4.TXT" FOR OUTPUT AS #1:CLOSE:OPEN "X5.TXT" FOR OUTPUT AS #1:PRINT"[OK]"', "stored",
+     "NEEDS-DISK: SUBJECT:OPEN FORM:output"),
     ('t8savetokenised62', 'save "q:x.bas"', 'SAVE "Q:X.BAS"', "stored",
      "NEEDS-DISK: PROVES-T6:62 SUBJECT:SAVE FORM:tokenised"),
     # 🎚️ D-KWT3 BATCH 1 — the TIER 3 rung: each row is a SECOND row for a keyword

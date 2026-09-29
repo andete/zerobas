@@ -1,0 +1,38 @@
+msxtest: BASIC image carries islands -- loaded at $0010, not $2812
+build under measurement: git=e1c276a9 zerobas-main-eu.rom=9807c45c189a sub.rom=8608aab8f78b disk.rom=b493ea130036
+
+==============================================================================
+LAYER 1 — CRUNCH (tokenisation only; NOT a support answer)
+==============================================================================
+SAME   t8openoutput62 open "q:x.txt" for output as #1
+SAME   t8openoutput54 open "x2.txt" for output as #1:open "x3.txt" for output as #1
+SAME   t8openreuse open "x4.txt" for output as #1:close:open "x5.txt" for output as #1:print "[ok]"
+
+==============================================================================
+LAYER 2 — SUPPORT (the load-bearing layer)
+==============================================================================
+SUPPORTED     t8openoutput62 OPEN "Q:X.TXT" FOR OUTPUT AS #1
+            ref  [value] 'Bad drive name in 10'
+SUPPORTED     t8openoutput54 OPEN "X2.TXT" FOR OUTPUT AS #1:OPEN "X3.TXT" FOR OUTPUT AS #1
+            ref  [value] 'File already open in 20'
+SUPPORTED     t8openreuse OPEN "X4.TXT" FOR OUTPUT AS #1:CLOSE:OPEN "X5.TXT" FOR OUTPUT AS #1:PRINT"[OK]"
+            ref  [value] '[OK]'
+
+==============================================================================
+COMBINED — tokenised? x observable consequence
+==============================================================================
+word       crunch  support     consequence
+------------------------------------------------------------------------------
+t8openoutput62 present SUPPORTED   match
+t8openoutput54 present SUPPORTED   match
+t8openreuse present SUPPORTED   match
+
+==============================================================================
+SUMMARY  SUPPORTED=3
+         executed 3 / 3 words; 0 crunch-only
+==============================================================================
+ROWS: 3 printed, 3 scored — 0 crunch-only word(s) carry no support reading and are printed but not scored
+pin: NOT written -- an --only run measures a subset, and the pin is the whole sweep
+
+=== CRUNCH PIN — words the reference tokenises and zerobas does not ===
+refcache: 0 hit, 4 miss, 4 stored
