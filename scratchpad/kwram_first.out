@@ -1,0 +1,16 @@
+msxtest: BASIC image carries islands -- loaded at $0010, not $2812
+row              kw         (a)      (b)         (c)  detail
+abs              ABS        PASS     FAIL      0.21x  ref-only $F416 $F678 $F679 $F67A $F67B $F67C… | zb-only 
+int              INT        PASS     FAIL      1.56x  ref-only $F416 $F66C $F66D $F678 $F679 $F67A… | zb-only $F7F8 $F7F9 | value $F7C9
+len              LEN        PASS     FAIL      0.36x  ref-only $F416 $F678 $F679 $F67A $F67B $F67C… | zb-only 
+chr              CHR$       PASS     FAIL      1.11x  ref-only $F416 $F678 $F679 $F698 $F699 $F69A… | zb-only $FCC8 | value $F67B $F67C
+peek             PEEK       PASS     FAIL      0.57x  ref-only $F416 $F664 $F678 $F679 $F67A $F67B… | zb-only 
+asc              ASC        PASS     FAIL      0.38x  ref-only $F416 $F678 $F679 $F67A $F67B $F67C… | zb-only 
+sgn              SGN        PASS     FAIL      0.21x  ref-only $F416 $F678 $F679 $F67A $F67B $F67C… | zb-only 
+str              STR$       PASS     FAIL      0.70x  ref-only $F416 $F678 $F679 $F698 $F699 $F69A… | zb-only $F3F7 $FBE1 $FBE2 $FBE3 $FBE4 $FCC8 | value $F67A $F67B $F67C
+let              LET        PASS     FAIL      2.06x  ref-only $F416 $F662 $F678 $F679 $F67A $F67B… | zb-only $F3F7 $F7F8 $F7F9 $FBE1 $FBE2 $FBE3… | value $F7C9
+dimkw            DIM        PASS     FAIL      2.27x  ref-only $F416 $F662 $F678 $F679 $F67A $F67B… | zb-only $F7F8 $F7F9 $FCC8 | value $F7C9
+kwram: a=PASS b=FAIL: 10
+kwram cache: 0 group(s) replayed, 2 measured
+pin: NOT written -- an --only run measures a subset
+refcache: 0 hit, 0 miss, 2 stored

@@ -1,0 +1,9 @@
+msxtest: BASIC image carries islands -- loaded at $0010, not $2812
+  abs        (b) FAIL  zb-only $F3B0 $F3F7 $FBE1 $FBE2 $FBE3 $FBE4
+  chr        (b) FAIL  zb-only $F3B0 $FCC8
+  int        (b) FAIL  zb-only $F3B0 $F3F7 $F7F8 $F7F9 $FBE1 $FBE2 $FBE3 $FBE4
+  len        (b) FAIL  zb-only $F3B0
+  let        (b) FAIL  zb-only $F3B0 $F7F8 $F7F9 $FCC8
+  peek       (b) FAIL  zb-only $F3B0
+kwram --negative: GREEN -- a planted cell is caught
+refcache: 0 hit, 0 miss, 2 stored

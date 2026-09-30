@@ -1169,6 +1169,21 @@ kwtime: repack-machine $(DISK_TEST_DSK)
 	python3 probes/basic/basic_probe_kwtime.py --negative --zb-machine $(REPACK_MACHINE)
 	python3 probes/basic/basic_probe_kwtime.py --zb-machine $(REPACK_MACHINE)
 
+# --- kwram: the T4 row type (D-KWPROVEN; row type ruled by Joost 2026-09-30) -----
+# Each keyword's kwsweep test program run inside a RAM write-watch window on the
+# VG-8020 (the CF-3300 for disk-only rows) and here -- D-RAMFOOT's instrument.
+# (a) FRE(0)/FRE("") move by the same amount; (b) the same set of documented
+# work-area cells ($F380..) written, each ending on the same value; (c) cells
+# written zerobas / reference, shown and never ticked. Writes build/kwram.json,
+# which tools/tier_table.py joins with kwsweep's pin. The selftest, then the
+# --negative run (a documented cell planted on zerobas's side of every row must
+# FAIL (b)) come first. The reference side is replayed from the probe cache when
+# the same group was measured before (Joost 2026-09-30).
+kwram: repack-machine $(DISK_TEST_DSK)
+	python3 probes/basic/basic_probe_kwram.py --selftest
+	python3 probes/basic/basic_probe_kwram.py --negative --zb-machine $(REPACK_MACHINE)
+	python3 probes/basic/basic_probe_kwram.py --zb-machine $(REPACK_MACHINE)
+
 # --- System-variable SWEEP (the MSX work-area denominator, NOT a pass/fail gate) ---
 # The same shape as `kwsweep`, for the other surface that had no denominator: every
 # byte of the published work area $F380..$FFFE, on all three sides, in a baseline
@@ -3597,7 +3612,7 @@ clean:
         ramfree-acceptance txtceil-acceptance \
         input-acceptance error-acceptance error-trap-acceptance stop-trap-acceptance strig-trap-acceptance key-trap-acceptance sprite-trap-acceptance intarg-acceptance abort-acceptance direct-ctrl-acceptance sound-acceptance play-acceptance play-trace-acceptance beep-acceptance float-acceptance math-acceptance subrom-acceptance \
         subrom-inttest subrom-abi-check subrom-closure-check \
-        graphics-floor-acceptance graphics-floor-teeth graphics-acceptance kwsweep kwtime sysvarsweep fat-error-acceptance \
+        graphics-floor-acceptance graphics-floor-teeth graphics-acceptance kwsweep kwtime kwram sysvarsweep fat-error-acceptance \
         logicops-characterize cursor-characterize cursor-acceptance \
         binfre-characterize binfre-acceptance \
         missing-characterize missing-acceptance \

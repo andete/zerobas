@@ -473,7 +473,7 @@ T3_NA = {
 
 
 def proven_rungs(kw, forms_seen, connected, t3, t2=frozenset(), t1_blocked=False,
-                 t6=frozenset()):
+                 t6=frozenset(), t4=frozenset()):
     """{rung: bool} -- what has been positively DEMONSTRATED about a keyword.
 
     ⏱ T2 comes from `kwtime_rungs` (D-KWPROVEN, 2026-09-24). 🔴 T5 NEVER TICKS,
@@ -493,7 +493,10 @@ def proven_rungs(kw, forms_seen, connected, t3, t2=frozenset(), t1_blocked=False
     # day, held back only by the missing tag.
     return {"T1": t1, "T2": kw in t2,
             "T3": bool(connected and (kw in t3 or kw in t6 or kw in T3_NA)),
-            "T4": False, "T5": False, "T6": bool(connected and kw in t6)}
+            # 🧮 T4 from `kwram_rungs` (Joost, 2026-09-30: strict (b), (c) shown, the
+            # reference's undocumented cells reported and not ticked)
+            "T4": bool(connected and kw in t4), "T5": False,
+            "T6": bool(connected and kw in t6)}
 
 
 # 🪜 IT IS A LADDER (Joost, 2026-09-24, D-KWLADDER): a keyword's LEVEL is its
@@ -513,11 +516,16 @@ def ladder_level(p):
 
 
 def proven_cell(kw, forms_seen, connected, t3, t2=frozenset(), t5=None,
-                t1_blocked=False, t6=frozenset()):
-    p = proven_rungs(kw, forms_seen, connected, t3, t2, t1_blocked, t6)
+                t1_blocked=False, t6=frozenset(), t4=frozenset(), t4c=None):
+    p = proven_rungs(kw, forms_seen, connected, t3, t2, t1_blocked, t6, t4)
     t5 = t5 or {}
+    t4c = t4c or {}
 
     def one(r):
+        if r == "T4" and t4c.get(kw):         # (c) economy: SHOWN beside the tick
+            val, form = t4c[kw]
+            return "T4%s %s×%s" % ("✓" if p[r] else "—", "%.2g" % val,
+                                   " " + form if form else "")
         if r == "T5" and kw in t5:          # a RATIO, never a tick (Joost 09-24)
             v = t5[kw]
             if v is None:
@@ -957,6 +965,71 @@ def kwtime_rungs(kws, sweep=None, timing=None):
     return t2, ratio
 
 
+KWRAM_PIN = os.path.join(ROOT, "build", "kwram.json")
+
+
+def kwram_rungs(kws, sweep=None, ram=None):
+    """(T4 keywords, {keyword: (worst economy ratio, its form)}) from the kwram pin.
+
+    🧮 D-KWPROVEN's T4 (Joost: DERIVED from the whole-RAM-map comparison against
+    the VG-8020; the row type ruled 2026-09-30). A keyword is T4 when EVERY
+    authored form has a SUPPORTED kwsweep row that `probes/basic/basic_probe_kwram
+    .py` rated PASS on (a) -- FRE(0)/FRE("") move by the same amount -- AND on (b)
+    -- the same set of documented work-area cells written, each ending on the same
+    value. (c), cells written zerobas / reference, is SHOWN (the worst form's) and
+    never ticked. An UNRATED row (a window that did not close, variables the row
+    wiped) proves nothing: silence is not a tick.
+    🔴 REFUSED, as kwtime's is, when the two pins describe different ROMs or the
+    kwram pin is a degenerate run. `sweep`/`ram` are INJECTABLE for the selftest."""
+    import json
+    import kwforms
+    from_disk = ram is None
+    if ram is None:
+        try:
+            with open(KWRAM_PIN, encoding="utf-8") as fh:
+                ram = json.load(fh)
+        except (OSError, ValueError):
+            return set(), {}
+    if sweep is None:
+        sweep = kwsweep_pin()
+        if sweep is None:
+            return set(), {}
+
+    def rom(fp):
+        return " ".join(p for p in (fp or "").split() if not p.startswith("git="))
+    if rom(ram.get("rom_fingerprint")) != rom(sweep.get("rom_fingerprint")):
+        raise SystemExit(
+            "tier_table: REFUSING the kwram pin -- it was measured against "
+            f"{ram.get('rom_fingerprint')} and the kwsweep pin against "
+            f"{sweep.get('rom_fingerprint')}. Re-run `make kwram`.")
+    rrows = ram.get("rows", {})
+    # the degenerate-run guard is for the PIN ON DISK; an injected selftest pin
+    # is one row by design
+    if from_disk and 0 < len(rrows) < 100:
+        raise SystemExit(f"tier_table: REFUSING the kwram pin -- {len(rrows)} "
+                         "row(s) is a degenerate run, not a measurement.")
+    kwset = set(kws)
+    ok_forms: dict = {}
+    econ: dict = {}
+    for key, r in sweep.get("rows", {}).items():
+        if r.get("weak") or r.get("verdict") != "SUPPORTED" or not r.get("form"):
+            continue
+        m = rrows.get(key)
+        if not m:
+            continue
+        kw = stmt_subject(r.get("stmt", ""), kwset, r.get("subject"))
+        if not kw:
+            continue
+        c = m.get("c")
+        if c is not None and (kw not in econ or c > econ[kw][0]):
+            econ[kw] = (c, r.get("form"))
+        if m.get("a") == "PASS" and m.get("b") == "PASS":
+            ok_forms.setdefault(kw, set()).add(r["form"])
+    t4 = {kw for kw, got in ok_forms.items()
+          if kwforms.forms_for(kw) and all(f in got for f in kwforms.forms_for(kw))}
+    return t4, econ
+
+
 def keyword_tiers(its, kws, evidence=None):
     """keyword -> (worst open tier 1..5 or None, sorted item lines, evidence).
 
@@ -1324,7 +1397,7 @@ def _composite_section(kws, evidence=None, conn=None, forms=None):
 
 
 def fmt_markdown(its, kws, evidence=None, t3=None, connected=None, forms=None,
-                 kwtime=None, t6=None):
+                 kwtime=None, t6=None, kwram=None):
     """🔴 `evidence`/`t3` are INJECTABLE because S14 was not hermetic: it built its
     markdown from the LIVE build/kwsweep-verdicts.json, so the expected `LOF` row
     changed the moment a sweep re-ran and gave LOF a verdict (it gained a
@@ -1360,6 +1433,7 @@ def fmt_markdown(its, kws, evidence=None, t3=None, connected=None, forms=None,
     # with a schedule [[a-knife-can-be-inert-because-the-build-did-not-happen]].
     t2, t5 = kwtime_rungs(kws) if kwtime is None else kwtime
     t6 = t6_keywords(kws, kwsweep_t6_cover(kws)) if t6 is None else t6
+    t4, t4c = kwram_rungs(kws) if kwram is None else kwram
 
     out = ["# zerobas — priority-tier status", "",
            "Generated by `make tiers-md` from the `🎚️` tag on every open "
@@ -1469,20 +1543,21 @@ def fmt_markdown(its, kws, evidence=None, t3=None, connected=None, forms=None,
     _req = {"T1": "every authored FORM has an agreeing row, and knife-proven CONNECTED",
             "T2": "every authored FORM has a SUPPORTED row whose test program `make kwtime` timed completing within 10× the VG-8020's time (Joost, 2026-09-24)",
             "T3": "a `PROVES-T3:` row: a COMMON ERROR situation scored against the reference — or T6 ticked, which proves every error the reference raises and so the common ones (Joost, 2026-09-29); `T3∅` = declared NOT APPLICABLE, the keyword has no common error to prove (REM END STOP CLS LLIST, Joost 2026-09-29)",
-            "T4": "🔴 NO PROVING ROW TYPE EXISTS YET — defined 2026-09-24: derived from the whole-RAM-map comparison vs the VG-8020 (free memory, addresses, economy)",
+            "T4": "for EVERY authored form, a SUPPORTED row that `make kwram` rated PASS on (a) FREE MEMORY — FRE(0)/FRE(\"\") move by the same amount — and (b) ADDRESSES — the same set of documented work-area cells ($F380..) written, each ending on the same value; (c) ECONOMY, cells written zerobas ÷ reference, is shown beside it and never ticked (row type ruled by Joost 2026-09-30; the rung, derived from the whole-RAM-map comparison vs the VG-8020, 2026-09-24)",
             "T5": "⚪ NO BAR YET — the KEYWORD ALONE: zerobas ÷ VG-8020 over each row minus a same-length twin without the keyword's statement (worst row; a function's reading includes its carrying statement; `~` = not isolatable), shown in the cell and never ticked (Joost, 2026-09-24)",
             "T6": "for EVERY authored form, one SUPPORTED `PROVES-T6:<code>` row per error the REFERENCE raises for that form (the measured set in `tools/kwerrset.py`), matched in code AND line; knife-proven CONNECTED (Joost, 2026-09-27)"}
     _prov = {r: 0 for r in RUNGS}
     for kw in kws:
         p = proven_rungs(kw, forms.get(kw, set()), kw in conn, t3, t2,
-                         blocks_tier1(kt.get(kw)), t6)
+                         blocks_tier1(kt.get(kw)), t6, t4)
         for r in RUNGS:
             _prov[r] += bool(p[r])
     for r in RUNGS:
         extra = (" (the keyword alone is MEASURED for %d, `~` for %d more; "
                  "T5 never ticks)" % (sum(v is not None for v in t5.values()),
                                       sum(v is None for v in t5.values()))
-                 if r == "T5" else "")
+                 if r == "T5" else
+                 " (economy measured for %d)" % len(t4c) if r == "T4" else "")
         out.append("| %s | %s | **%d** of %d%s |"
                    % (r, _req[r], _prov[r], len(kws), extra))
     # 🪜 AND THE LADDER, WHICH THE PER-RUNG COUNT CANNOT SHOW: a T3 tick above a
@@ -1490,7 +1565,7 @@ def fmt_markdown(its, kws, evidence=None, t3=None, connected=None, forms=None,
     _lvl = {}
     for kw in kws:
         n = ladder_level(proven_rungs(kw, forms.get(kw, set()), kw in conn, t3, t2,
-                                      blocks_tier1(kt.get(kw)), t6))
+                                      blocks_tier1(kt.get(kw)), t6, t4))
         _lvl[n] = _lvl.get(n, 0) + 1
     out += ["", "### Level reached — the ladder (Joost, 2026-09-24)", "",
             "A keyword's LEVEL is its highest UNBROKEN run of proven rungs from "
@@ -1518,7 +1593,7 @@ def fmt_markdown(its, kws, evidence=None, t3=None, connected=None, forms=None,
     for kw in sorted(kws):
         st, ev = status_of(kt, kw, t3, conn, t1, nobare, parts, refuses, forms)
         pr = proven_cell(kw, forms.get(kw, set()), kw in conn, t3, t2, t5,
-                         blocks_tier1(kt.get(kw)), t6)
+                         blocks_tier1(kt.get(kw)), t6, t4, t4c)
         out.append(f"| `{kw}` | {STATUS[st][0]} | {pr} | {ev} |")
 
     out += _composite_section(kws, evidence, conn, forms)
@@ -1705,11 +1780,37 @@ def selftest():
         ladder_level({"T1": False, "T2": True, "T3": True, "T4": True, "T5": True, "T6": True}) == 0)
     arm("S36h an unbroken run counts every rung",
         ladder_level({r: True for r in RUNGS}) == len(RUNGS))
-    arm("S36e NEGATIVE: T4/T5 cannot be ticked — T4 has no row type and T5 has no "
-        "bar (flipped DELIBERATELY 2026-09-24 for T2, `kwtime`, and 2026-09-27 for "
-        "T6, D-KWT6)",
-        not any(proven_rungs("LOF", {"length"}, True, {"LOF"}, {"LOF"},
-                             t6={"LOF"})[r] for r in ("T4", "T5")))
+    arm("S36e NEGATIVE: T5 cannot be ticked — it has no bar; and T4 ticks ONLY from "
+        "a kwram proof (flipped DELIBERATELY 2026-09-24 for T2, `kwtime`, 2026-09-27 "
+        "for T6, D-KWT6, and 2026-09-30 for T4, `kwram`)",
+        not proven_rungs("LOF", {"length"}, True, {"LOF"}, {"LOF"},
+                         t6={"LOF"}, t4={"LOF"})["T5"]
+        and not proven_rungs("LOF", {"length"}, True, {"LOF"}, {"LOF"},
+                             t6={"LOF"})["T4"])
+    # 🧮 T4 (Joost, 2026-09-30): every authored form needs a SUPPORTED row that
+    # kwram rated PASS on (a) AND (b); (c) is shown, never ticked.
+    _rsw = {"rom_fingerprint": "git=a main=1",
+            "rows": {"absr": {"stmt": "PRINT ABS(-1)", "form": "magnitude",
+                              "verdict": "SUPPORTED"}}}
+    _rm = lambda a, b, c=0.8, fp="git=b main=1": {"rom_fingerprint": fp, "rows": {
+        "absr": {"a": a, "b": b, "c": c}}}
+    _t4, _t4c = kwram_rungs(["ABS"], sweep=_rsw, ram=_rm("PASS", "PASS"))
+    arm("S36zf T4 ticks when (a) and (b) pass for every form, and shows (c)",
+        _t4 == {"ABS"} and _t4c["ABS"][0] == 0.8
+        and "T4✓ 0.8×" in proven_cell("ABS", {"magnitude"}, True, set(), t4=_t4, t4c=_t4c))
+    arm("S36zg NEGATIVE: a (b) FAIL is no T4, and the ratio is still shown",
+        kwram_rungs(["ABS"], sweep=_rsw, ram=_rm("PASS", "FAIL", 2.1))[0] == set()
+        and "T4— 2.1×" in proven_cell("ABS", {"magnitude"}, True, set(),
+                                      t4c=kwram_rungs(["ABS"], sweep=_rsw,
+                                                      ram=_rm("PASS", "FAIL", 2.1))[1]))
+    arm("S36zh NEGATIVE: an UNRATED (a) is no T4 -- silence is not a tick",
+        kwram_rungs(["ABS"], sweep=_rsw, ram=_rm("UNRATED", "PASS"))[0] == set())
+    try:
+        kwram_rungs(["ABS"], sweep=_rsw, ram=_rm("PASS", "PASS", fp="git=b main=2"))
+        _refused = False
+    except SystemExit:
+        _refused = True
+    arm("S36zi NEGATIVE: a kwram pin from another ROM is REFUSED", _refused)
     # 🏗️ D-KWT6 (Joost 2026-09-27): T6 ticks only on a FULL cover of a MEASURED set.
     _es = {"LOF": {"length": frozenset({5, 13})}}
     _ff = lambda kw: ("length",) if kw == "LOF" else ()
@@ -1910,7 +2011,7 @@ def selftest():
     # LOF's only authored form is `length`; handing it in makes the rows below
     # depend on THIS fixture and not on whatever pin happens to be on disk.
     md = fmt_markdown(its, kws, evidence={}, t3=set(), connected=set(),
-                      forms={"LOF": {"length"}}, kwtime=(set(), {}), t6=set())
+                      forms={"LOF": {"length"}}, kwtime=(set(), {}), t6=set(), kwram=(set(), {}))
     _s14 = [("summary row",
              "| TIER 1 | works correctly in the happy path \u2014 or, where there "
              "is no happy path, in the normal failing path | 1 |" in md),

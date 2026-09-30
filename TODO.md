@@ -6019,7 +6019,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:27683 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:27738 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -24771,6 +24771,61 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       | **T4** — RAM usage | ***"The whole RAM map"*** — the comparison is the whole map, not per-keyword cells; per-keyword T4 is DERIVED from it. Consistent with his 2026-09-22 ruling (then numbered TIER 5), which the RAM-usage comparison item (TODO §"COMPARE RAM *USAGE*") already carries |
       | **T5** — on-par speed | ***"Track the ratio, set no bar yet"*** — a T5 row RECORDS zerobas ÷ reference and never passes or fails on it |
       | **T6** — the exhaustive error set | **not ruled** — split into its own 🙋 item directly below |
+      🏗️ **T4's ROW TYPE, RULED BY JOOST 2026-09-30 — all three recommendations
+      (*"agree with all three recommendations, build it"*):**
+      | question | ruling |
+      |---|---|
+      | (b) strictness | **STRICT** — the same SET of documented work-area cells ($F380..) written, and each ENDS on the same value |
+      | (c) economy | **SHOWN, never ticked** — cells written zerobas ÷ reference, like T5's ratio |
+      | undocumented cells in the reference's own workspace | **REPORTED, not ticked** — (c) counts them; T4 does not require matching them |
+      and on caching: *"reference is not going to change behavior all of a sudden, so
+      once we know what memory reference uses, we don't need to measure that again,
+      unless we do a different test"* — the reference side is replayed from the probe
+      cache, keyed on the machine's bytes and the exact test.
+      🔨 **BUILT 2026-09-30:** `make kwram` (`probes/basic/basic_probe_kwram.py`,
+      D-RAMFOOT's instrument over kwtime's rows) writes `build/kwram.json`, and
+      `tools/tier_table.py` `kwram_rungs` ticks T4 when EVERY authored form has a
+      SUPPORTED row that is PASS on (a) FRE(0)/FRE("") delta AND (b). S36e was flipped
+      DELIBERATELY for T4 (T5 stays barred); arms S36zf–zi, three NEGATIVE.
+      📏 **FIRST READING 2026-09-30 — T4 0 of 159, economy measured for 123**
+      ([`kwram_full.out`](scratchpad/kwram_full.out), 298 happy-path rows):
+      - **(b) FAILS on all 246 rated rows** — predicted. Always the same cells:
+        the reference writes `$F678–$F67A` / `$F698–$F69A` / `$F416` / `$F864–$F865`
+        on every statement (and `$F7FE`, `$F7D4–$F7D5` on most); zerobas writes
+        `$F7F8–$F7F9` and `$FCC8` (SLTTBL, its sub-ROM slot switching) on ~155.
+        This is the D-ADDR29 arc's work list, ranked by reach.
+      - **(a) PASSES on 219 of 237** (predicted ~85%). The 18 FAILs are real
+        free-memory findings: DEF FN / FN (22 B there, 11 here), OPEN / FIELD
+        (6 against 0), GET / PUT # (28 against 22), LSET / RSET (17 / 11), DATA
+        strings and DEFSTR (the string pool charged 0 there, 1–3 here), PLAY
+        strings (0 there, 52 / 12 here).
+      - **(c)** median 1.26×; zerobas writes FEWER cells on 102 of 246 rows —
+        the "very economical" hunch holds per statement, not everywhere.
+      - **52 rows UNRATED** — predicted under 5%, MISS: rows whose control flow
+        leaves before the closing line (END, NEW, LIST, GOSUB, ON GOTO, ERROR …).
+        kwtime reaches them with a type-ahead end mark; kwram cannot yet.
+      🔴 **THREE INSTRUMENT FAULTS ON THE WAY, EACH CAUGHT BY A CONTROL OR A
+      REFUSAL, NONE BY LUCK:**
+      - Every row was silently dropped for a >38-character typed line. The filter
+        now NAMES what it drops and refuses an empty run.
+      - A 660-case boot outran the 1800 s wall watchdog; the positive control
+        refused the result. Each window is now flushed once, at close, and rows
+        run in 40-row chunks.
+      - Error rows (T6/T3) can never close a window: the first full run was 590 of
+        836 UNRATED. Happy-path rows only now.
+      One more was mine in the check, not the tool: a determinism "identical"
+      whose second run had REPLAYED the first from the cache. Redone with
+      `ZEROBAS_REFCACHE=0`: identical live against live, and across batch sizes
+      once both machines' interrupt signatures are subtracted from both sides
+      (zerobas's handler writes the keyboard rows only on SOME ticks).
+      `--negative` (a documented cell planted on zerobas's side) FAILs (b) on
+      every row ([`kwram_negative.out`](scratchpad/kwram_negative.out)).
+      ➡️ `make kwram` is in the battery beside `kwtime`. 💰 **Its cost there: 1917 s
+      (32 min) in the pool on 2026-09-30, the battery's longest unit.** The emulator
+      tier runs with `ZEROBAS_REFCACHE=0` by design, so the reference side is
+      measured live every battery. Whether the gate may replay the reference side
+      (Joost: *"once we know what memory reference uses, we don't need to measure
+      that again"*) is a policy change to the gate tier: 🔭 filed, not taken.
       🔢 **SWAPPED THE SAME DAY (D-TIERSWAP): RAM IS T4, SPEED IS T5** — this
       table is written in the new numbering.
       🪜 **AND THREE MORE RULINGS THE SAME MORNING (D-KWLADDER)**, asked when
