@@ -1,0 +1,55 @@
+  quiet       20944 hit(s) over  33 cell(s)
+  files       21257 hit(s) over  35 cell(s)
+  openclose   20926 hit(s) over  41 cell(s)
+  writeS      24168 hit(s) over  44 cell(s)
+  writeL      37325 hit(s) over  45 cell(s)
+  readS       24225 hit(s) over  45 cell(s)
+  readL       29452 hit(s) over  45 cell(s)
+  eoflof      24186 hit(s) over  47 cell(s)
+
+=== DELTA vs quiet (cells any case moved) ===
+cell       files openclose    writeS    writeL     readS     readL    eoflof
+$FD9A        -18      -115     +1377     +1286     +1476     +1447     +1465
+$FD9F        -18      -115     +1377     +1286     +1476     +1447     +1465
+$FDA4       +110       +30       +53       +70       +49       +65       +50
+$FDA9         +0        +0        +1        +1        +1        +1        +1
+$FDAE         +0        +0        +1        +1        +1        +1        +1
+$FDC2         +2       +30       +53       +70       +49       +65       +50
+$FE4E         +0        +1        +2       +41        +2       +41        +4
+$FE53         +0        +0        +1       +40        +1       +40        +0
+$FE58         +0        +1        +1        +1        +1        +1        +1
+$FE5D         +0        +1        +1        +1        +1        +1        +1
+$FE62         +0        +1        +1        +1        +1        +1        +1
+$FE7B         +1        +0        +0        +0        +0        +0        +0
+$FE85         +0        +0       +40     +4000        +0        +0        +0
+$FE8A         +0        +0        +0        +0       +40     +4000        +0
+$FE8F         +0        +0        +0        +0        +1       +40        +0
+$FE94         +0        +0        +0        +0        +0        +0        +2
+$FE9E         +0        +0        +0        +0        +0        +0        +1
+$FEA3         +0        +0        +0        +0        +0        +0        +1
+$FEB2         +0        +1        +1        +1        +1        +1        +1
+$FEB7         +0        +1        +1        +1        +1        +1        +1
+$FEDF       +113       +30       +94     +4110       +49       +65       +50
+$FEE4       +110       +30       +93     +4070       +49       +65       +50
+$FEE9         +3        +0        +1       +40        +0        +0        +0
+$FF25         +0        +6        +8       +12        +7       +11        +9
+$FF2A         +0        +4        +6        +9        +4        +7        +5
+$FF2F         +0        +4        +6        +9        +4        +7        +3
+$FF34         +0        +2        +2        +3        +3        +4        +4
+$FF3E         +0        +1        +2       +82        +2       +82        +3
+$FF43         +0        +1        +2       +82        +2       +82        +3
+$FF48         -1       +17       +42      +802       +37      +759       +41
+$FF5C         +1        +1        +2       +41        +1        +1        +1
+$FF66         +0        +2        +6      +164        +5      +124        +6
+$FF70         +0        +1        +2       +41        +2       +41        +3
+$FF75         +0        +0        +0        +0        +0        +0        +2
+$FF7A         +0        +0        +0        +0        +0        +0        +2
+$FF9D         +0        +1        +2       +41        +2       +41        +1
+$FFA2         +0        +0        +0        +1        +1       +41        +2
+$FFCF         +5       +23       +23       +37        +6       +13        +6
+$FFD4         +5       +23       +23       +37        +6       +13        +6
+
+[writeL screen tail] '                                                                                 color   auto    goto    list    run    '
+
+[readL screen tail] '                                                                                 color   auto    goto    list    run    '
+refcache: 0 hit, 8 miss, 8 stored

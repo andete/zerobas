@@ -4039,6 +4039,47 @@ price it in bytes. And the filed correction to `basic/fat.asm:11` and the
 relocation spec is still open — this section does not close it, it only stops
 re-importing the claim they overstate.
 
+### 6.6bb 🔬 STEP 10's INTERFACE, MEASURED — THE CHANNEL VERBS CROSS AT EIGHT CLAIMED CELLS, PER BYTE FOR THE DATA (D-CHANHOOK, 2026-10-01)
+
+§6.2's open list said the hook cells for `PRINT#` / `INPUT#` / `CLOSE` were never
+measured; only `$FE5D` was. Two probes now measure them.
+- **The counter.** [`scratchpad/chanhook_probe.py`](../../scratchpad/chanhook_probe.py)
+  → [`chanhook_run.out`](../../scratchpad/chanhook_run.out) uses D-HOOKCOUNT's
+  instrument: an entry counter on every published slot, nothing read, nothing
+  followed. The `quiet` baseline fired and `FILES` moved `H_FILE` only.
+- **The classifier.** [`scratchpad/hookclaim_probe.py`](../../scratchpad/hookclaim_probe.py)
+  → [`hookclaim_run.out`](../../scratchpad/hookclaim_run.out) reads ONLY the first
+  byte of each slot: `F7` claimed, `C9` a bare `ret`.
+- Every case paired a small (40 B, 1 sector) with a large (4000 B, 8 sectors)
+  transfer, so per-byte, per-sector and per-operation counts separate.
+
+| cell | small → large | shape | CF-3300 | zerobas |
+|---|---|---|---|---|
+| `$FE5D` (H.NULO) | 1 → 1, every OPEN | per OPEN | CLAIMED | CLAIMED |
+| `$FE58`, `$FE62`, `$FEB2`, `$FEB7` | 1 → 1 | per OPEN/CLOSE | CLAIMED | `ret` |
+| `$FE4E` | 2 → 41 | per channel STATEMENT | CLAIMED | `ret` |
+| **`$FE85`** | **40 → 4000** (`PRINT#`) | **per BYTE out** | CLAIMED | `ret` |
+| **`$FE8A`** | **40 → 4000** (`INPUT$`) | **per BYTE in** | CLAIMED | `ret` |
+| `$FE9E`, `$FEA3` | EOF / LOF only | per call | CLAIMED | `ret` |
+| `$FFCF`/`$FFD4` | read 6 → 13, write 23 → 37 | per SECTOR | `ret` | — |
+
+🔮 Predicted before the run: OPEN once at `$FE5D`, a claimed cell per byte for
+`PRINT#` and for `INPUT$` (MERGE's `$FE8A`, §6.6ap), and a per-sector cell moving
+~+7. All hit, except the WRITE side's sector count: +14 for 7 more sectors, two
+entries a sector.
+🎯 **WHAT IT PINS FOR STEP 10.** The reference's main ROM hands every channel
+operation to the disk ROM at a claimed cell: the open and close, each statement,
+each BYTE, EOF and LOF. The sector loop behind the byte cells never crosses back
+(`$FFCF` is a bare `ret` there, a per-sector notification). Of those eight cells
+zerobas claims one. So step 10 is not "move OPEN". It is **the byte I/O behind
+`$FE85`/`$FE8A`, with the channel's sector state living on the disk side**, which is
+§6.6an's RAM question with a measured shape. The per-byte crossing is ON-PAR by
+§6.2c (0.20× the reference's own per-byte cost).
+⚠️ The cell NAMES are not asserted here. Only counts and first bytes were read;
+§6.6v's lesson (a name identifies A verb that uses a cell, not the only one) holds.
+⚠️ The claimed-slot totals match §6.6v's census: CF-3300 **35**, zerobas **19**.
+Every cell zerobas claims, the CF-3300 claims too.
+
 ## 7. The channel trio, and the wall that is not one
 
 `LSET`/`RSET`/`FIELD` need the channel engine: `fch_check` `$7080`,

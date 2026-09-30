@@ -1,0 +1,26 @@
+claimed slots: CF-3300 35, zerobas 19 of 118
+
+cell    CF-3300  zerobas
+$FE4E   CLAIMED      ret
+$FE53       ret      ret
+$FE58   CLAIMED      ret
+$FE5D   CLAIMED  CLAIMED
+$FE62   CLAIMED      ret
+$FE85   CLAIMED      ret
+$FE8A   CLAIMED      ret
+$FE8F       ret      ret
+$FE94       ret      ret
+$FE9E   CLAIMED      ret
+$FEA3   CLAIMED      ret
+$FEB2   CLAIMED      ret
+$FEB7   CLAIMED      ret
+$FEDF       ret      ret
+$FEE4       ret      ret
+$FEE9       ret      ret
+$FF75       ret      ret
+$FF7A       ret      ret
+$FFCF       ret      ?C3
+$FFD4       ret      ret
+
+claimed on the CF-3300 and NOT here: $FD9F $FE4E $FE58 $FE62 $FE71 $FE76 $FE80 $FE85 $FE8A $FE99 $FE9E $FEA3 $FEAD $FEB2 $FEB7 $FFAC
+claimed here and NOT on the CF-3300: 
