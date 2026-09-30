@@ -208,7 +208,7 @@ ERRSETS: dict[str, dict[str, frozenset[int]]] = {
     "VAL": {"integer": frozenset({2, 13}), "exponent": frozenset({6}), "radix-prefix": frozenset({6}),
             "fraction": frozenset({2}), "partial-parse": frozenset({2})},
     "USR": {"default": frozenset({2}), "numbered": frozenset({2})},
-    "VARPTR": {"variable": frozenset({2}), "file-channel": frozenset({13, 52})},
+    "VARPTR": {"variable": frozenset({2}), "file-channel": frozenset({2, 5, 13, 52})},
     "WAIT": {"port-mask": frozenset({2, 5, 6, 13, 24}), "port-mask-xor": frozenset({5, 13})},
     "DATA": {"unquoted-string": frozenset({2}), "quoted-string": frozenset({2}),
              "numeric": frozenset({6}), "empty-item": frozenset({4})},
@@ -266,6 +266,9 @@ for _k in ("MOTOR", "CMD", "IPL", "CONT", "RENUM", "DELETE", "LIST", "NEW", "CSA
 for _k in ("FRE", "VAL", "USR", "VARPTR", "WAIT", "DATA"):
     PROVENANCE[_k] = ("scratchpad/t6enum_probe.py --batch=9 -> scratchpad/t6enum_b9.out, "
                       "VG-8020, 2026-09-28")
+PROVENANCE["VARPTR"] += ("; file-channel codes 2 (`#` alone) and 5 (#-1, #256) from "
+                         "scratchpad/varptrch_probe.py -> scratchpad/varptrch_run.out, "
+                         "VG-8020 AND CF-3300, 2026-09-30 -- batch 9 never faulted them")
 PROVENANCE["SAVE"] += ("; tokenised code 2 from scratchpad/colon_probe.py -> "
                        "scratchpad/colon_after_run.out, CF-3300, 2026-09-28")
 

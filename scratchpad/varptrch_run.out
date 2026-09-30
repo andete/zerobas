@@ -1,0 +1,17 @@
+case             vg8020       cf3300           zb         zbnd
+closed.1             -1           -1           -1           -1
+closed.2         ERR 52       ERR 52       ERR 52       ERR 52
+stride              265          265          265          265
+stride3             530          530          530          530
+shift       -3465 -3730  -8850 -9115  -9459 -9726  -8659 -8926
+ch0                  -1           -1       ERR 59       ERR 59
+chneg             ERR 5        ERR 5        ERR 5        ERR 5
+ch256             ERR 5        ERR 5        ERR 5        ERR 5
+chstr            ERR 13       ERR 13       ERR 13       ERR 13
+chfrac                0            0            0            0
+spaces               -1           -1           -1           -1
+bare              ERR 2        ERR 2        ERR 2        ERR 2
+noclose           ERR 2        ERR 2        ERR 2        ERR 2
+hdr                   2            2          255          255
+typeint              -1           -1           -1           -1
+refcache: 0 hit, 4 miss, 4 stored

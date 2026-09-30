@@ -1077,6 +1077,8 @@ ev_ff_arg:
                 ; INP / EOF / LOF alike). Same BUG C class, and same cure, as the
                 ; CVI missing-'(' fix below: defer the syntax error via ev_f_empty
                 ; so the statement's check_expr_errors aborts.
+ev_ff_arg_in:                               ; D-VARPTRCH: VARPTR(#n) joins here with
+                                            ; IX on the `#` and C = VARPTR_TOKEN
                 inc     ix
                 push    bc                  ; guard the selector across the eval
                 call    ev_logic            ; DE = argument (full expression)
@@ -1167,6 +1169,11 @@ ev_ff_ckdone:
                 pop     bc                  ; C = selector restored for the read dispatch
                 call    flt_int_result      ; the function returns an int even if its
                 ld      a,c                 ; dispatch on the selector
+                cp      VARPTR_TOKEN        ; D-VARPTRCH: VARPTR(#n), which joined at
+                jp      z,ev_ff_varptrch    ; ev_ff_arg_in with this selector. FIRST
+                                            ; in the chain on purpose: LOF's `jr`
+                                            ; below has no slack, and any byte put
+                                            ; between it and its target breaks it
                 cp      VPEEK_TOKEN
                 jr      z,ev_ff_vpeek
                 cp      INP_TOKEN
@@ -1213,7 +1220,7 @@ ev_ff_ckdone:
                 ld      e,(hl)              ; read one byte
                 ld      d,0                 ; PEEK yields 0..255
                 ret
-ev_ff_pos:                                  ; POS(n): the cursor COLUMN, 0-based.
+ev_ff_pos:                                 ; POS(n): the cursor COLUMN, 0-based.
                 ; MEASURED: the argument is parsed and then DISCARDED -- POS(0),
                 ; POS(1), POS(99), POS(-1) and POS(1+1) all give the same answer, so
                 ; it is a true dummy and NOT a selector. It therefore takes no domain
@@ -1413,6 +1420,25 @@ ev_ff_loc:                                  ; LOC(n): D-LOC (2026-09-10)
                 inc     hl
                 ld      d,(hl)              ; DE = the record number (int result)
                 ret
+; --- ev_ff_varptrch: VARPTR(#n) -- the address of channel n's FCB ------------
+; D-VARPTRCH (2026-09-30). Both references answer the address of the channel's
+; 265 B FCB (9 header + the 256 B record), strided 265 apart; this tree answered
+; Syntax error. Since D-FCBSHAPE S1+S2 our channel block IS that shape, so the
+; answer is fch_ctx_addr's, agreeing on the stride by construction (the BASE is
+; machine-specific on every machine, as the variable form's is).
+; The channel takes the verbs' one rule (fch_check: 5 / 59 / 52 -- `VARPTR(#2)`
+; at the default MAXFILES is 52 on both references, measured by D-VARPTRN). An
+; UNOPENED channel answers its address, as on the references: no mode test.
+; ⚠️ fch_ctx_addr is a CALSLT and IX is the evaluator's token cursor -- the
+; lof_nz lesson (every `PRINT LOF(1)` read Syntax error when a tenant call left
+; IX pointing at the sub-ROM table).
+ev_ff_varptrch:
+                call    fch_check           ; 5 / 59 / 52; A = E = the channel
+                push    ix
+                call    fch_ctx_addr        ; HL = channel A's block
+                pop     ix
+                ex      de,hl               ; DE = the address; FACTYP is already
+                ret                         ; int (ev_ff_ckdone's flt_int_result)
 
 ; fch_mode_class — the shared channel-mode classifier. A = FCH_MODES[E]; raises
 ; ERR 59 "file not open" if that is 0; CF set if E is a disk file channel
@@ -2309,6 +2335,9 @@ evmc_exp_overflow:
 ; on read, which is what ev_f_arr does and what the references do; the oracle
 ; here covers the unset SCALAR only, and the fix is scoped to it.
 ev_f_varptr:
+                ld      c,a                 ; C = VARPTR_TOKEN (the dispatch's `cp`
+                                            ; left it in A): ev_ff_arg's selector for
+                                            ; the `#` form below; ixsp keeps C
                 call    ixsp_paren_req     ; D-IXSP
                 ; D-EVFERR: both these sites are Syntax error (2) on both
                 ; references, and BOTH LOOKED GREEN because ev_f_err leaves the
@@ -2318,6 +2347,9 @@ ev_f_varptr:
                 ; NOTHING left over separate them: `A=VARPTR` and `A=VARPTR(`
                 ; COMPLETED SILENTLY. Byte-neutral retargets.
                 call    ixsp                ; D-IXSP
+                cp      '#'                 ; D-VARPTRCH: VARPTR(#n) is a channel's
+                jp      z,ev_ff_arg_in      ; FCB address -- the int-argument path
+                                            ; EOF/LOF/LOC take, selector in C
                 call    is_letter           ; the argument must be a variable name
                 jp      nc,ev_f_empty
                 push    ix

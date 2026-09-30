@@ -36,6 +36,7 @@ import sys
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, os.path.join(ROOT, "tools"))
 import run_gates  # noqa: E402  -- EMULATOR, SCRIPT_REF, _make_n, LAST_GREEN
+import probe_tmp  # noqa: E402  -- the temp root run_gates keeps flake logs under
 
 EVERY_NTH = 5                  # Joost: "5 commits"
 # Shared code: a change here can move any suite. Prefix entries end in "/".
@@ -360,6 +361,16 @@ def main(argv):
     for t in x5:
         r = subprocess.run(["make", t], cwd=ROOT, capture_output=True, text=True)
         print(f"{t} exit={r.returncode}")
+        # 🔴 D-X5LOG (2026-09-30): a failing suite's output used to be DROPPED.
+        # bdos-acceptance exited 2 in a FULL run and was 12/12 green alone, and
+        # the failing run had left nothing to read -- "read the log before
+        # believing any red" had no log. Keep it whenever the exit is non-zero.
+        if r.returncode:
+            log = os.path.join(probe_tmp.ROOT, "gate_flakes", f"x5-{t}.log")
+            os.makedirs(os.path.dirname(log), exist_ok=True)
+            with open(log, "w", encoding="utf-8") as fh:
+                fh.write(r.stdout + r.stderr)
+            print(f"  log kept: {log}")
         rc = rc or r.returncode
     print(f"GATE TIER RAN: {mode}" + (f" ({len(emu)} emulator suites)"
                                       if mode == "SCOPED" else ""))

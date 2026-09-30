@@ -886,6 +886,15 @@ SWEEP: list[tuple[str, str, str | None, str, str]] = [
      "D-KWDRAIN: VARPTR's arithmetic, not its non-zero-ness -- the array element "
      "stride, 8 (MSX defaults to DOUBLE). A delta, so the machine-dependent base "
      "FORM:variable cancels; A and B are created BEFORE the DIM so the array cannot move."),
+    # 🟢 D-VARPTRCH (2026-09-30): the FILE-CHANNEL form. Its address is machine-
+    # specific like the variable form's, so the row reads the DELTA -- the FCB
+    # stride, 265 on both references and here since D-FCBSHAPE S1+S2
+    # (scratchpad/varptrch_run.out). MAXFILES=1 goes back AFTER the PRINT: an
+    # assignment to MAXFILES is an implicit CLEAR (the INPUT$ row's lesson).
+    ("varptr_ch", 'a=varptr(#1)',
+     'MAXFILES=2:A=VARPTR(#1):B=VARPTR(#2):PRINT"[";B-A;"]":MAXFILES=1', "stored",
+     "FORM:file-channel D-VARPTRCH: the FCB stride, 265 -- 9 header + the 256 B "
+     "record. It was Syntax error here; a 306 B block (before D-FCBSHAPE) reads 306."),
     ("stick",   "a=stick(0)",         'PRINT"[";STICK(0);"]"',           "direct", "control"),
     # 🌾 D-KWPLUG: `stick` below reads the idle 0 a stub also returns. This one holds
     # the CURSOR-UP key (matrix row 8, bit $20) and reads the direction code.
@@ -4474,6 +4483,16 @@ SWEEP: list[tuple[str, str, str | None, str, str]] = [
      "PROVES-T6:2 SUBJECT:USR FORM:numbered"),
     ('t9varptrvariable2', 'a=varptr(5)', 'A=VARPTR(5)', "stored",
      "PROVES-T6:2 SUBJECT:VARPTR FORM:variable"),
+    # D-VARPTRCH (2026-09-30): the file-channel form's four codes, all measured on
+    # both references (scratchpad/varptrch_run.out; 13 and 52 also t6enum_b9.out).
+    ('t9varptrchan52', 'a=varptr(#16)', 'A=VARPTR(#16)', "stored",
+     "PROVES-T6:52 SUBJECT:VARPTR FORM:file-channel"),
+    ('t9varptrchan13', 'a=varptr(#"a")', 'A=VARPTR(#"A")', "stored",
+     "PROVES-T6:13 SUBJECT:VARPTR FORM:file-channel"),
+    ('t9varptrchan5', 'a=varptr(#-1)', 'A=VARPTR(#-1)', "stored",
+     "PROVES-T6:5 SUBJECT:VARPTR FORM:file-channel"),
+    ('t9varptrchan2', 'a=varptr(#)', 'A=VARPTR(#)', "stored",
+     "PROVES-T6:2 SUBJECT:VARPTR FORM:file-channel"),
     # D-WAITMASK (2026-09-28): the code-5 pairs, agreeing once the mask and xor are
     # byte-checked (scratchpad/waitmask_after.out); `WAIT 1,256` never returned before.
     ('t9waitportmask5', 'wait 1,256', 'WAIT 1,256', "stored",

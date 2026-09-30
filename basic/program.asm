@@ -3101,10 +3101,19 @@ ex_ff_stmt:
 ;     handler table and takes the machine down (case S2, reproducible x3); we
 ;     raise a trappable ERR 2 instead (D-T2-4).
 ; Flow continues on the same line.
+;
+; 💰 D-ONTRAPMERGE (2026-09-30): THIS LOOP IS ALSO ON KEY GOSUB's. The two were
+; byte-for-byte the same 46 B but for the slot limit (5 / 10) and the trap index
+; (ZTI_STRIG0+C / ZTI_KEY1+9-C, the reversed KEY band). The limit rides in B --
+; which the loop already guards across trap_line_link -- and the index arm tells
+; the two apart by B's bit 3 (5 = %0101, 10 = %1010). ex_on_key sets B = 10 and
+; jumps in at eon_trap_in. The T3 spec's "duplicate, specialise" verdict priced
+; the constants as RAM PARAMETERS (76 B); in a register they cost 8.
 ex_on_strig:
-                inc     hl                  ; past the STRIG selector byte
+                ld      bc,5*256+0          ; B = slot limit, C = slot index 0..4
+eon_trap_in:                                ; ex_on_key joins with B = 10
+                inc     hl                  ; past the STRIG selector byte / KEY token
                 call    req_gosub           ; D-NGRAM18
-                ld      c,0                 ; C = slot index 0..4
 eostr_lp:
                 call    skip_spaces
                 push    bc                  ; trap_line_link clobbers BC (find_line_bc)
@@ -3116,6 +3125,13 @@ eostr_store:
                 push    hl                  ; guard the cursor
                 push    de                  ; guard the LINK across ztrap_entry (clobbers DE)
                 ld      a,c
+    IF TRAPS_T3
+                bit     3,b                 ; B = 10: ON KEY -- the REVERSED band
+                jr      z,eostr_idx
+                neg
+                add     a,ZTI_KEY1+9-ZTI_STRIG0 ; + ZTI_STRIG0 below = ZTI_KEY1+9-C
+eostr_idx:
+    ENDIF
                 add     a,ZTI_STRIG0
                 call    ztrap_entry         ; HL = &ZTRAP[3+C] (the state byte)
                 pop     de
@@ -3129,8 +3145,10 @@ eostr_store:
                 jp      nz,exec_stmt        ; no -> statement done, continue the line
                 inc     hl                  ; consume the comma
                 ld      a,c
-                cp      5                   ; slots 0..4 only
-                jp      nc,trap_syntax      ; a 6th slot -> trappable ERR 2 (D-T2-4)
+                cp      b                   ; slots 0..B-1 only
+                jp      nc,trap_syntax      ; a 6th STRIG slot -> trappable ERR 2
+                                            ; (D-T2-4); an 11th KEY slot -> ERR 2
+                                            ; (§1.4 K15), as the reference raises
                 jr      eostr_lp
 
 ; --- ex_strig_stmt: STRIG(n) ON | OFF | STOP ---------------------------------
@@ -3207,6 +3225,10 @@ strig_illegal   equ     gb_illegal  ; ERR 5 (STRIG n out of 0..4, KEY n out of 1
 ; instruction is free while a parameter costs a RAM byte, a store per setter, a
 ; load per use and a helper call. Generalisation pays across MANY callers; with
 ; two it is a net loss. So: duplicate, specialise, and let each copy be small.
+; 🔴 EXCEPT THE ON ... GOSUB LOOP, SINCE D-ONTRAPMERGE (2026-09-30): its only
+; differences were two constants, and a REGISTER carries them for 8 B where RAM
+; cost 76 -- so ex_on_key is now a 6-byte entry into ex_on_strig's loop (-44 B).
+; The verdict above stands for the other parsers and for RAM parameters.
 ;
 ; The KEY band is laid out REVERSED -- KEY 10 at ZTI_KEY1, KEY 1 at ZTI_KEY1+9 --
 ; so ct_find's ASCENDING scan services the family high-numbered-first as the
@@ -3221,36 +3243,9 @@ strig_illegal   equ     gb_illegal  ; ERR 5 (STRIG n out of 0..4, KEY n out of 1
 ; here NO deviation is needed: the reference raises a clean ERR 2 itself, unlike
 ; T2's 6th STRIG slot which takes the machine down.
 ex_on_key:
-                inc     hl                  ; past the KEY token
-                call    req_gosub           ; D-NGRAM18
-                ld      c,0                 ; C = slot index 0..9
-eokey_lp:
-                call    skip_spaces
-                push    bc                  ; trap_line_link clobbers BC (find_line_bc)
-                call    trap_line_link
-                pop     bc                  ; pop does not disturb CF
-                jr      c,eokey_store
-                ld      de,0                ; empty slot -> CLEAR this key's handler
-eokey_store:
-                push    hl                  ; guard the cursor
-                push    de                  ; guard the LINK across ztrap_entry
-                ld      a,ZTI_KEY1+9
-                sub     c                   ; REVERSED band (see above)
-                call    ztrap_entry         ; HL = &ZTRAP[...] (the state byte)
-                pop     de
-                inc     hl                  ; -> the handler field
-                ld      (hl),e
-                inc     hl
-                ld      (hl),d
-                pop     hl                  ; HL = cursor
-                inc     c
-                call    skip_comma          ; another slot?
-                jp      nz,exec_stmt        ; no -> statement done, continue the line
-                inc     hl                  ; consume the comma
-                ld      a,c
-                cp      10                  ; slots 0..9 only
-                jp      nc,trap_syntax      ; an 11th slot -> ERR 2 (§1.4 K15)
-                jr      eokey_lp
+                ld      bc,10*256+0         ; B = slot limit, C = slot index 0..9
+                jp      eon_trap_in         ; D-ONTRAPMERGE: STRIG's loop, whose
+                                            ; index arm reverses the band for B = 10
 
 ; --- ex_key_stmt: KEY(n) ON | OFF | STOP ------------------------------------
 ; Reached from ex_key's `(` peek (basic/screen.asm) with HL on the `(`, tested

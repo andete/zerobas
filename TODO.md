@@ -6019,7 +6019,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:27738 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:27814 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -6185,7 +6185,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:11019 (T-6FE392)8 (T-529ABE)` from `TODO.md:23383 (T-529ABE)`: a
+      `TODO.md:11019 (T-6FE392)8 (T-529ABE)` from `TODO.md:23459 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -11866,7 +11866,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:23383 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:23459 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -17229,9 +17229,85 @@ finds zero shared names (a renamed block would otherwise make it silently blind)
         [`fcbs12_kwtime.out`](scratchpad/fcbs12_kwtime.out),
         [`fcbs12_knife_all.out`](scratchpad/fcbs12_knife_all.out),
         [`fcbs12_knife_fn.out`](scratchpad/fcbs12_knife_fn.out)).
-      ➡️ **LEFT:** `VARPTR(#n)` (~15 B of main — a carve first; page 1 was 3 B on
-      2026-09-30), the FCB header FIELDS (mode +0, device +4, position +6: nothing
-      writes them yet), and FILTAB's pointer CONTENTS.
+      ➡️ **LEFT:** ~~`VARPTR(#n)`~~ SHIPPED as D-VARPTRCH (below, 23 B after the
+      D-ONTRAPMERGE carve). Still open, all three MEASURED on 2026-09-30:
+      - the FCB header FIELDS (mode +0, device +4, position +6): nothing writes
+        them. `PEEK(VARPTR(#1))` after `OPEN"CRT:"` reads 2 on both references
+        and 255 here.
+      - **FCB #0** (the LOAD/SAVE channel): `VARPTR(#0)` is an address on both
+        references and ERR 59 here, because this tree reserves no FCB #0.
+      - the GEOMETRY: FILTAB's pointer table sits BELOW the reference's FCB array,
+        so `VARPTR(#1)` shifts 265 per MAXFILES step there and 267 here.
+      ([`varptrch_run.out`](scratchpad/varptrch_run.out))
+
+- [x] 💰 **D-ONTRAPMERGE — ON KEY GOSUB RUNS ON STRIG's LOOP: MAIN PAGE 1 3 → 38 B**
+      🎚️ TIER 1 — the carve that funds D-VARPTRCH (below).
+      `ex_on_strig` and `ex_on_key` (basic/program.asm) were the same 46 B
+      loop but for two constants: the slot limit (5 / 10) and the trap index
+      (`ZTI_STRIG0+C` / `ZTI_KEY1+9-C`, the reversed KEY band). The limit now
+      rides in B, which the loop already guarded across `trap_line_link`, and
+      the index arm reads B's bit 3 (5 = %0101, 10 = %1010) under `IF TRAPS_T3`.
+      `ex_on_key` is a 6-byte entry. The T3 spec's "duplicate, specialise"
+      verdict priced the constants as RAM PARAMETERS (76 B); in a register they
+      cost 8. The paragraph that said so is corrected in place, not deleted.
+      🔮 Predicted ~36 B: **35 B**, a miss by 1. `ngram_sweep --main` had priced
+      the shared run at 11 B; it matches exact sequences and cannot see two
+      loops differing only in immediates.
+
+- [x] 🔗 **D-VARPTRCH — `VARPTR(#n)` ANSWERS ITS CHANNEL's FCB ADDRESS (IT WAS `Syntax error`)**
+      🎚️ TIER 1 — VARPTR was the last keyword at level 0; its file-channel form
+      was missing.
+      `ev_f_varptr` sends a `#` into `ev_ff_arg_in`, the int-argument path that
+      EOF/LOF/LOC take, with `VARPTR_TOKEN` as the selector. `ev_ff_varptrch`
+      applies the verbs' one channel rule (`fch_check`: 5 / 59 / 52) and answers
+      `fch_ctx_addr`, under an IX guard (the `lof_nz` lesson). Main page 1
+      38 → 15 B (23 B, predicted 22 + the 1 B `jp` below).
+      ⚠️ The first build failed: LOF's dispatch `jr` has NO slack, and any byte
+      between it and `ev_ff_lof` breaks it. The selector test is FIRST in the
+      chain and the body sits past LOC.
+      📏 **Measured, four machines** ([`varptrch_run.out`](scratchpad/varptrch_run.out)):
+      | case | VG-8020 | CF-3300 | zerobas disk | zerobas nodisk |
+      |---|---|---|---|---|
+      | stride #1→#2 / #1→#3 | 265 / 530 | 265 / 530 | 265 / 530 | 265 / 530 |
+      | `#2` at default MAXFILES | 52 | 52 | 52 | 52 |
+      | `#-1`, `#256` / `#"A"` / `#` | 5 / 13 / 2 | same | same | same |
+      | `#1.6` − `#1` | 0 | 0 | 0 | 0 |
+      | `#1` shift MAXFILES 1→2 | 265 | 265 | **267** | **267** |
+      | `#0` | an address | an address | **59** | **59** |
+      | `PEEK(VARPTR(#1))` after OPEN CRT: | 2 | 2 | **255** | **255** |
+      🔮 Predicted 59 for `#0` here and did not know the references: they have
+      FCB #0 (the LOAD/SAVE channel), which this tree does not reserve.
+      Predicted 0 for the header byte: **255**, a miss (uninitialised).
+      Predicted the 267 shift, a hit: our 2 FILTAB bytes a channel sit ABOVE the
+      blocks, and the reference's pointer table sits BELOW the FCB array.
+      📏 **T6 denominator widened** (`tools/kwerrset.py`): batch 9 measured
+      {13, 52} for the file-channel form and never faulted a negative channel
+      or a bare `#`. Both references raise 5 and 2 there, so it is now
+      {2, 5, 13, 52}, with a row for each.
+      📏 Knife BLIND unchanged (5 + 3; VARPTR connected via `varptr_b`), whole
+      sweep SUPPORTED 964 (predicted 964), UNREADABLE 0; kwtime OK 850 against a
+      predicted 846, a miss: the five new rows ALL time (error rows through the
+      type-ahead end); `varptr_ch` 1.80×
+      ([`varptrch_knife_all.out`](scratchpad/varptrch_knife_all.out),
+      [`varptrch_knife_fn.out`](scratchpad/varptrch_knife_fn.out),
+      [`varptrch_kwsweep.out`](scratchpad/varptrch_kwsweep.out),
+      [`varptrch_kwtime.out`](scratchpad/varptrch_kwtime.out)).
+      ➡️ **LEFT, in D-FCBSHAPE's list:** FCB #0 (`VARPTR(#0)`), the header
+      bytes (mode +0, device +4, position +6), and the geometry: FILTAB below
+      the array, so `#1` shifts 265 per channel, not 267.
+
+- [x] 🧰 **D-X5LOG — THE EXCLUDED FIVE's OUTPUT WAS DISCARDED, SO A RED LEFT NOTHING TO READ**
+      🎚️ TIER 6 — apparatus.
+      📏 **2026-09-30, the D-VARPTRCH battery:** FULL 138/138 green, but
+      `bdos-acceptance` exited 2. `tools/pick_gates.py` ran the excluded five
+      with `capture_output=True` and printed only the exit code, so the failing
+      run left no log. Rerun alone three times it was 12/12 converged, 17-20 s
+      each ([`varptrch_bdos.out`](scratchpad/varptrch_bdos.out)). The cause is
+      UNKNOWN and is recorded as unknown, not as a flake.
+      ✅ The runner now writes a failing suite's output to
+      `gate_flakes/x5-<suite>.log` under the probe temp root and prints the path.
+      Exercised with a target that cannot build: exit 2, log kept.
+      ➡️ If bdos-acceptance goes red again, that log is the first thing to read.
 
 - [x] 🧰 **D-FASTPIN — `gates-fast` CAN WIPE THE KWSWEEP PIN AND THEN SKIP THE RUN THAT MAKES IT**
       🎚️ TIER 6 — apparatus: a false red, never a false green.
