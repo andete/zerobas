@@ -26,11 +26,8 @@ do_vpoke:
                 call    eval                ; D-F2-2 stage B: VPOKE's address is the VRAM
                 call    get_vram_arg        ; domain 0..16383 (NOT the 0..65535 address
                                             ; domain F2 wired) -- >int16 ERR 6, 16384.. ERR 5.
-                push    de                  ; save address
-                call    skip_comma          ; comma required
-                jp     nz,vdp_err
-                inc     hl
-                call    eval_byte_checked   ; DE = value 0..255, HL = cursor
+                call    vdp_comma_byte      ; D-VDPCB: BC = the first argument,
+                                            ; DE = the byte (the old push/pop pair)
                                             ; 🔴 D-RAWVAL: the VALUE is a BYTE, not an
                                             ; address. `eval_addr` applies the ADDRESS
                                             ; domain -- which WRAPS by design -- so
@@ -44,10 +41,11 @@ do_vpoke:
                                             ; stays ERR 6 (overflow beats domain) --
                                             ; the row nobody had, because every existing
                                             ; row pairs a bad address with a legal value.
-                pop     bc                  ; BC = VRAM address (popped BEFORE the check so
-                                            ; the stack is SP-clean for check_fperr_only --
-                                            ; same shape do_out now uses; an out-of-domain
-                                            ; addr OR value -> Overflow abort, ERR 6)
+                                            ; BC = the VRAM address, popped (inside
+                                            ; vdp_comma_byte) BEFORE the check so the
+                                            ; stack is SP-clean for check_fperr_only --
+                                            ; an out-of-domain addr OR value -> Overflow
+                                            ; abort, ERR 6
                 call    check_fperr_only
                 ld      a,e                 ; A = low byte of value
                 push    hl                  ; save the executor's cursor
@@ -72,11 +70,10 @@ do_vpoke:
 ex_wait:
                 inc     hl                  ; past the token
                 call    eval_addr           ; DE = port (checked, as OUT's is)
-                push    de
-                call    skip_comma          ; the mask is NOT optional
-                jp      nz,vdp_err
-                inc     hl
-                call    eval_byte_checked   ; DE = mask, 0..255 -- D-WAITMASK (2026-09-28):
+                call    vdp_comma_byte      ; D-VDPCB: BC = the port, DE = the mask
+                push    bc                  ; wt_go pops it after the optional xor
+                                            ; (the mask is NOT optional)
+                                            ; DE = mask, 0..255 -- D-WAITMASK (2026-09-28):
                                             ; was eval_addr, whose ADDRESS domain wraps, so
                                             ; `WAIT 1,256` masked with 0 and never returned
                                             ; where the VG-8020 raises 5
@@ -112,11 +109,8 @@ do_out:
                 ; look tidier and would be a REGRESSION on the port
                 ; [[two-rules-that-coincide-on-every-row-you-have]].
                 call    eval_addr           ; D-F2-2 A1: OUT's port/value are the checked
-                push    de                  ; save port
-                call    skip_comma          ; comma required
-                jp     nz,vdp_err
-                inc     hl
-                call    eval_byte_checked   ; DE = value 0..255, HL = cursor
+                call    vdp_comma_byte      ; D-VDPCB: BC = the first argument,
+                                            ; DE = the byte (the old push/pop pair)
                                             ; 🔴 D-RAWVAL: the VALUE is a BYTE, not an
                                             ; address. `eval_addr` applies the ADDRESS
                                             ; domain -- which WRAPS by design -- so
@@ -130,7 +124,6 @@ do_out:
                                             ; stays ERR 6 (overflow beats domain) --
                                             ; the row nobody had, because every existing
                                             ; row pairs a bad address with a legal value.
-                pop     bc                  ; BC = port (C = port number)
                 call    check_fperr_only    ; an out-of-domain port OR value (FPERR sticky
                                             ; across both eval_addr's, set-only) -> Overflow
                                             ; abort (ERR 6). Same SP-clean tail-jumped-driver
@@ -147,3 +140,20 @@ do_out:
 ; escaping relative jump, not entered by fallthrough, same ROM region).
 ; The NAME and every call site survive; un-alias here for a distinct face.
 vdp_err         equ     ex_let_err
+
+; --- vdp_comma_byte: `,<byte>` after a first argument (D-VDPCB, 2026-09-30) -----
+; in: DE = the first argument (already checked by the caller's own domain),
+; HL = the cursor on the comma. out: BC = the first argument, DE = the byte
+; (eval_byte_checked: ERR 5 outside 0..255, ERR 6 outside int16), HL past it.
+; 💰 `push de / call skip_comma / jp nz,vdp_err / inc hl / call eval_byte_checked`
+; stood at THREE sites (VPOKE, OUT, WAIT), and two of them popped the saved
+; argument into BC at once -- so the pop moves in here too. vdp_err raises
+; (raise_error resets SP), so the extra return address on that path is harmless.
+vdp_comma_byte:
+                push    de
+                call    skip_comma          ; comma required
+                jp      nz,vdp_err
+                inc     hl
+                call    eval_byte_checked   ; DE = 0..255, HL = cursor
+                pop     bc
+                ret

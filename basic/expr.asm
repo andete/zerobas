@@ -1230,9 +1230,7 @@ ev_ff_pos:                                 ; POS(n): the cursor COLUMN, 0-based.
                 ; already produces.
                 ld      a,(CSRX)
                 dec     a                   ; CSRX is 1-based, POS 0-based
-                ld      e,a
-                ld      d,0
-                ret
+                jr      ev_ret_e            ; D-RETTAIL: DE = A (0..255)
 ev_ff_lpos:                                 ; LPOS(n): the PRINTER column, 0-based.
                 ; D-LPTVERB, docs/lptverb-msx1-characterization.md §3. Every rule
                 ; POS's comment above states holds here too and was re-measured
@@ -1253,15 +1251,11 @@ ev_ff_lpos:                                 ; LPOS(n): the PRINTER column, 0-bas
                 ; No `dec a` either: LPTPOS is already 0-based, where CSRX is
                 ; 1-based. A copied `dec a` would read 255 at line start.
                 ld      a,(LPTPOS)
-                ld      e,a
-                ld      d,0
-                ret
+                jr      ev_ret_e            ; D-RETTAIL: DE = A (0..255)
 ev_ff_vpeek:                                ; VPEEK: read one byte of VRAM (DE = addr)
                 ex      de,hl               ; HL = VRAM address (RDVRM wants it here)
                 call    RDVRM               ; A = VRAM[HL]; makes no register guarantees
-                ld      e,a
-                ld      d,0                 ; VPEEK yields 0..255
-                ret
+                jr      ev_ret_e            ; D-RETTAIL: DE = A (0..255) -- VPEEK yields 0..255
     IF I1_RESIDENT
 ; --- STICK(n) / STRIG(n): input devices, slice I1 --------------------------
 ; docs/spec-basic-input-devices.md §5/§6. Thin wrappers over the published BIOS
@@ -1287,9 +1281,7 @@ ev_ff_stick:                                ; STICK(n): 0 = centred, else 1..8 c
                 call    GTSTCK
                 ei
                 pop     ix
-                ld      e,a
-                ld      d,0                 ; direction is 0..8, never negative
-                ret
+                jr      ev_ret_e            ; D-RETTAIL: DE = A (0..255) -- direction is 0..8, never negative
 ev_ff_strig:                                ; STRIG(n): 0 not pressed, -1 pressed
                 ld      a,e                 ; A = trigger (0 space, 1..4 buttons)
                 push    ix
@@ -1305,6 +1297,7 @@ ev_ff_inp:                                  ; INP: read one Z80 port (DE = port)
                 ld      b,d
                 ld      c,e                 ; BC = port (in (a),(c) reads from BC)
                 in      a,(c)               ; A = port input
+ev_ret_e:                                   ; D-RETTAIL: the shared `DE = A` return
                 ld      e,a
                 ld      d,0                 ; INP yields 0..255
                 ret
@@ -1412,10 +1405,10 @@ lof_nz:
                 pop     ix                  ;   the sub-ROM is absent (flags survive)
                 jp      c,subrom_absent_error ; reduced build w/o sub-ROM, as evmc_sqr
                 call    arga_pack_fac       ; ARGA -> FAC as a double (14 digits, exact)
-                ld      a,8
-                ld      (FACTYP),a
-                jp      flt_to_int16        ; refresh DE: the silent address-domain
-                                            ; contract every ev_f_* tail keeps
+                jp      fac_dbl_int16       ; FACTYP := 8, then refresh DE: the silent
+                                            ; address-domain contract every ev_f_* tail
+                                            ; keeps (D-TAILMERGE: it was that body
+                                            ; verbatim, float-arith.asm)
 
 ev_ff_loc:                                  ; LOC(n): D-LOC (2026-09-10)
                 ; Measured on the CF-3300 (D-LOCSEM, scratchpad/loc_probe.py): on a
@@ -1769,9 +1762,7 @@ ev_ff_pdl:                                  ; PDL(n): 0..255 paddle dial positio
                 push    ix
                 call    GTPDL
                 pop     ix
-                ld      e,a
-                ld      d,0                 ; 0..255, never negative
-                ret
+                jp      ev_ret_e            ; D-RETTAIL: DE = A (0..255) -- 0..255, never negative
 ev_ff_pad:                                  ; PAD(n): touch panel read
                 ld      a,e
                 and     3                   ; sub-function (before the call may clobber E)
@@ -2683,12 +2674,8 @@ arga_widen:
 ; so the caller sees HL = ARGA+FPNUM_DIG and Z as before -- and it lives in the
 ; LOW region (basic/str-engine.asm): float-arith's callers are in the resident
 ; closure that sub page-1 tenants reach, and check_tenant_closure said so.
-ixsp_paren_req:
-                call    ixsp_paren
-                ret     z
-                inc     sp
-                inc     sp
-                jp      ev_f_empty
+; (ixsp_paren_req moved to the LOW region, basic/str-engine.asm, by D-INPQUOTE:
+; page 1 was 7 B short and the low region had 9 spare -- one budget, D-DEMOTE.)
 tgt_parse_req:
                 call    tgt_parse
                 ret     z

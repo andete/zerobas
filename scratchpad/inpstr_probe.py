@@ -18,13 +18,19 @@ sys.path.insert(0, os.path.join(REPO, "scratchpad"))
 import omsx_repl, t6enum_probe as t
 
 Q = 'CHR$(34)'
-SHOW = ('B$="":FOR I=1 TO LEN(A$):C$=MID$(A$,I,1):IF C$=" " THEN C$="_"',
+SHOW = ('B$="":FOR I=1 TO LEN(A$):C$=MID$(A$,I,1):IF C$=" " THEN C$="_" ELSE IF C$=CHR$(34) THEN C$="#"',
         'B$=B$+C$:NEXT')
 # (name, the PRINT #1 argument list that writes the file)
 FILE = [("num", '5'), ("lead", '"  AB"'), ("trail", '"AB  "'), ("embed", '"A B"'),
         ("both", '"  AB  "'), ("quoted", Q + '+"  AB  "+' + Q), ("comma", '"  AB  ,CD"'),
-        ("empty", '""'), ("qcomma", Q + '+"A,B"+' + Q)]
-TYPED = ["  AB", "AB  ", "  AB  ", "A B", '"  AB  "', '"A,B"', "  AB  ,CD"]
+        ("empty", '""'), ("qcomma", Q + '+"A,B"+' + Q),
+        # D-INPQUOTE's edges (2026-09-30): what follows the closing quote, an
+        # unterminated quote, a quote that is NOT the first byte, blanks before it
+        ("qjunk", Q + '+"AB"+' + Q + '+"CD"'), ("qjunkc", Q + '+"AB"+' + Q + '+"CD,EF"'),
+        ("qopen", Q + '+"AB,CD"'), ("qmid", '"A"+' + Q + '+"B"+' + Q),
+        ("qlead", '"  "+' + Q + '+"AB"+' + Q)]
+TYPED = ["  AB", "AB  ", "  AB  ", "A B", '"  AB  "', '"A,B"', "  AB  ,CD",
+         '"AB"CD', '  "AB"', '"AB', 'A"B"']
 
 
 def show_lines(first):

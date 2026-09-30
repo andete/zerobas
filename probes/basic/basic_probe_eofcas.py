@@ -99,8 +99,10 @@ BSLOTS = [("li1.E", 3), ("li2.E", 4), ("eof.E", 0), ("eof.A", 1), ("len", 2), ("
 
 def run(machine, lines=None, tape_lines=("HELLO", "WORLD"), cap=60.0, timeout=180.0):
     lines = LINES if lines is None else lines
-    subprocess.run(["pkill", "-9", "openmsx"], capture_output=True)
-    time.sleep(1.0)
+    # 🔴 NO `pkill -9 openmsx` HERE (D-PKILL, 2026-09-30). casfch_probe's rig began
+    # with one, and copied into a GATE it killed every emulator the parallel pool
+    # was running -- kwtime read 51, then 32 rows HANG in two FULL batteries.
+    # This run's own openMSX is killed by its process group below.
     tmp = tempfile.mkdtemp(prefix="eofcas_")
     d = Fat12Image()
     d.add_file("AUTOEXEC", "BAS", ("\r\n".join(lines) + "\r\n").encode())

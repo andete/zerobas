@@ -6019,7 +6019,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:27976 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:28070 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -26409,7 +26409,7 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       unchanged ([`inpstr_knife_all.out`](scratchpad/inpstr_knife_all.out),
       [`inpstr_knife_fn.out`](scratchpad/inpstr_knife_fn.out)); all predicted.
 
-- [ ] 🔴 **A QUOTED INPUT FIELD IS TAKEN AS RAW BYTES — `"A,B"` SPLITS AT THE COMMA
+- [x] ✅ **A QUOTED INPUT FIELD IS TAKEN AS RAW BYTES — `"A,B"` SPLITS AT THE COMMA
       AND THE QUOTES BECOME DATA; BOTH REFERENCES TAKE THE QUOTED TEXT VERBATIM
       (D-INPQUOTE, found 2026-09-29 by D-INPSTR's measurement).**
       🎚️ TIER 3 — MSX BASIC has no WRITE #, so a quoted field only arises when a
@@ -26426,6 +26426,68 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       skip to the delimiter after it; the field reader is shared by console and
       file, so that is the one chokepoint). Main page 1 was 12 B and low 3 B on
       2026-09-29: a carve first.
+      ✅ **SHIPPED 2026-09-30 — THE FILED ROWS AGREE, FILE AND CONSOLE; THREE NEW
+      EDGES ARE FILED AS D-INPQUOTE2 (below).** `read_into_strscr` (basic/files.asm,
+      the one field reader) opens a quoted field when `"` is the field's FIRST byte
+      (leading blanks already shed). Inside it every byte but `"` is data, commas
+      included. The state lives in STRSCR's length byte (0 / `"` / `,`), which
+      every exit rewrites with the length. FCH_RDMODE could not carry it: the
+      statement sets that ONCE and reads it per variable.
+      💰 **Funded by four carves the same afternoon, ZERO behaviour change each:**
+      - **D-VDPCB:** VPOKE/OUT/WAIT's `,<byte>` parse is one helper,
+        `vdp_comma_byte`, with the saved argument popped into BC inside it. 12 B.
+      - **D-RETTAIL:** six `ld e,a / ld d,0 / ret` tails jump to INP's (kept
+        because INP is unconditional; STICK/PDL sit in `IF`s). 10 B.
+      - **D-TAILMERGE:** 15 B.
+        - LOF's double tail was `fac_dbl_int16` verbatim.
+        - The ERR 7 tails share `err7_mark` after their landmark byte.
+        - ARGA's exponent bump is `arga_dexp_inc`.
+      - **D-DEMOTE:** `ixsp_paren_req` (9 B) moved from page 1 to the low region
+        (str-engine.asm, beside its D-PAIRCARVE2 sibling). The page was 7 B short
+        and the low region had 9; they are one budget.
+      - Main page 1 4 → 2 B and low 3 → 0 B around a 42 B fix (predicted 42, hit).
+        `ngram_sweep --main` had priced the VDP run at 12 B and the tails at 5–6
+        each; all four landed within 1 B of it.
+      📏 [`inpquote_run.out`](scratchpad/inpquote_run.out) (inpstr_probe extended):
+      - The four filed cells agree now: file `quoted`/`qcomma`, console
+        `"  AB  "`/`"A,B"`.
+      - Also agreeing: a quote NOT first is data (`A"B"`), and blanks before the
+        quote are shed.
+      - Row `inputquote` (`"A, B"` → LEN 4 and ` B`) is SUPPORTED. The knife
+        (HEAD's files.asm) makes it DIVERGENT, `[Q 2 ]`, with `inputstr` green
+        ([`inpquote_knife.out`](scratchpad/inpquote_knife.out)).
+      - Knife BLIND unchanged, sweep SUPPORTED 961 (the rig rows CARRIED; the board
+        is off USB), kwtime OK 852: all predicted, all hit
+        ([`inpquote_knife_all.out`](scratchpad/inpquote_knife_all.out),
+        [`inpquote_knife_fn.out`](scratchpad/inpquote_knife_fn.out),
+        [`inpquote_kwsweep.out`](scratchpad/inpquote_kwsweep.out),
+        [`inpquote_kwtime.out`](scratchpad/inpquote_kwtime.out)).
+
+- [ ] 🔴 **D-INPQUOTE2 — WHAT FOLLOWS A CLOSING QUOTE, AND AN UNCLOSED ONE, ARE NOT
+      THE REFERENCE's (MEASURED 2026-09-30 WHILE SHIPPING D-INPQUOTE)**
+      🎚️ TIER 6 — every error / edge: a program writes its own quotes AND text
+      after them, or leaves one open.
+      🤖 **AUTONOMOUS** — the rules are measured; the shape needs a PEEK.
+      🔴 **D-INPQUOTE's filed rule was wrong in its last clause.** It said *"after
+      the closing quote the rest of the field up to its comma or CR is consumed"*.
+      Only the quote-then-CR case had ever been run
+      ([[a-justification-parenthesis-is-an-unrun-claim]]).
+      [`inpquote_run.out`](scratchpad/inpquote_run.out), CF-3300 → zerobas:
+      - `"AB"CD` then `NX`: A$ = AB on both, then the next LINE INPUT reads
+        **`CD`** there and `NX` here. After the closing quote the FIELD ENDS and
+        the rest belongs to the next read; a CR/LF right after the quote is still
+        consumed (`quoted`/`qcomma` agree).
+      - `"AB"CD,EF`: the next LINE INPUT reads **`CD,EF`** there and `EF` here.
+      - `"AB,CD` (unclosed): **CR and LF are DATA inside quotes.** A$ is 11 bytes,
+        through the next line to the end of file, and then the LINE INPUT is 55.
+        Here the field is `AB,CD` and the read goes on.
+      - Console `"AB"CD` → **`?Redo from start`** on the VG-8020; AB here.
+      🎯 **SHAPE:** after the closing quote, eat blanks and at most ONE comma, or
+      ONE CR with its LF, and leave anything else. That is a PEEK, which main's
+      reader has not got. The seqio tenant's `sq_numitem` already does exactly this
+      for a numeric item, so a disk string item belongs there too. The tape is a
+      peek of `CAL_*` (D-EOFCAS's); the console answers `?Redo` instead.
+
 
 - [x] ✅ **FIXED 2026-09-28 (D-SEQEOF): A TEXT FILE READS THE REFERENCE'S WAY — CTRL-Z
       ENDS IT, INPUT# EATS THE LF AFTER ITS CR, AND A READ AT THE END IS 55.** The
@@ -26787,7 +26849,24 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       ⚠️ **NO GATE WOULD CATCH IT COMING BACK** — kwtime's SLOW is a reported
       finding, not a failure (filed below as D-KWTRATCHET).
 
-- [ ] 🧰 **D-KWTLOAD — kwtime's WATCHDOG IS WALL-CLOCK, AND UNDER POOL LOAD IT CALLED 51 ROWS `HANG` (T2 148 → 123 ON THE SHEET)**
+- [x] 🧰 **D-KWTLOAD — kwtime's WATCHDOG IS WALL-CLOCK, AND UNDER POOL LOAD IT CALLED 51 ROWS `HANG` (T2 148 → 123 ON THE SHEET)**
+      🔴 **THE DIAGNOSIS BELOW WAS WRONG, AND SO WAS THE COMMIT MESSAGE OF
+      `e4e46bbf`, WHICH SAID "load".** A second FULL battery, the D-INPQUOTE one,
+      repeated it: 32 HANG, 130 UNTIMEABLE. The two failing batteries are exactly
+      the two with 139 units, and the 139th is **`eofcas-acceptance`, MY gate**.
+      Its `run()` was copied from `casfch_probe` and began with
+      `pkill -9 openmsx`, which kills EVERY emulator on the host, including the
+      ones kwtime and kwsweep were running in the parallel pool. Unit times say
+      the same: kwtime ran 1544 s and 1368 s in those two batteries, against 1650
+      in the green ones. Its rows did not run slow; they were cut down.
+      ✅ **FIXED as D-PKILL:** the line is gone from
+      `probes/basic/basic_probe_eofcas.py`; that probe's own openMSX dies by its
+      process group. The other two probes that `pkill` (`cas_match_cf3300`,
+      `cas_verify`) are not in the battery, and `omsx_missing_teeth` is excluded
+      on purpose.
+      🔴 **CLASS: A GATE MUST NOT KILL WHAT IT DID NOT START.** Nothing checked it;
+      filed below as D-PKILLGATE.
+      *(the original, load-based reading, kept as it was written:)*
       🎚️ TIER 6 — apparatus: a false red (tiers-md-check), never a false green.
       📏 **2026-09-30, the D-EOFCAS FULL battery:**
       - kwtime's pin read OK 674, UNTIMEABLE 130, HANG 51, REF-ONLY-MISSING 5.
@@ -26811,6 +26890,14 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
         what it is.
       Measure first: which of the 51 still HANG at 2× the watchdog under the same
       pool load.
+
+- [ ] 🧰 **D-PKILLGATE — NO STATIC CHECK STOPS A BATTERY PROBE FROM KILLING OTHER EMULATORS**
+      🎚️ TIER 6 — apparatus: it produced a false red twice on 2026-09-30.
+      A `pkill`/`killall openmsx` in any unit the pool runs (`run_gates.GATES`)
+      kills its neighbours' emulators; the reds read as kwtime rows HANGing, a
+      symptom two units away from the cause (D-KWTLOAD).
+      🤖 **AUTONOMOUS** — a static check that walks each battery target's probe sources and refuses a
+      host-wide kill, with a selftest on a planted line.
 
 - [ ] 🔴 **A kwtime ROW THAT REGRESSES FROM OK TO SLOW OR HANG FAILS NO GATE
       (D-KWTRATCHET, found 2026-09-28 while fixing D-DSKFSLOW).**
@@ -26882,8 +26969,15 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       (2, 20) there and OK here. Does NOT block T6 (code 2 has agreeing rows in
       both forms: `A=USR()`, `A=USR1(1,2)`), but it is a divergence.
 
-- [ ] 🔴 **`VARPTR(#n)` — THE FILE-CHANNEL FORM — DOES NOT EXIST HERE (D-VARPTRFCB,
+- [x] ✅ **`VARPTR(#n)` — THE FILE-CHANNEL FORM — DOES NOT EXIST HERE (D-VARPTRFCB,
       found 2026-09-28 by T6 batch 9).**
+      ✅ **CLOSED 2026-09-30, AS THE RULING SAID IT WOULD BE.** The TIER 4 re-layout
+      happened (D-FCBSHAPE S1+S2: a 265 B block, the record at +9), and the form
+      followed as **D-VARPTRCH**: stride 265 on four machines, the ERR 5/13/52/2
+      faces as the references, VARPTR level 0 → 3. What this item also named is on
+      D-FCBSHAPE's LEFT list: the MODE byte at +0 (2 there, 255 here), and
+      `VARPTR(#0)`, an address there and 59 here, because this tree reserves no
+      FCB #0.
       🎚️ TIER 4 — RAM usage (VG-8020): the form IS the reference's channel-block layout
       (re-tagged from TIER 6 by Joost's ruling below).
       🏗️ **RULED BY JOOST 2026-09-29 — DO NOT RE-ASK: option (c)** (*"agree, go with
@@ -26892,8 +26986,8 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       buffer +9) — AS PART OF THE TIER 4 RAM WORK, when channel storage is revisited
       anyway, NOT as a standalone level lift. Option (b), an address with no agreed
       layout, is out for good.
-      ⛔ **BLOCKED** — by Joost's ruling (2026-09-29): until the TIER 4 RAM work
-      re-lays channel storage; then it is that slice's job, not a separate one.
+      ~~⛔ **BLOCKED** — by Joost's ruling (2026-09-29): until the TIER 4 RAM work
+      re-lays channel storage; then it is that slice's job, not a separate one.~~
       *(was, before the ruling:)* **AUTONOMOUS** — measure what `VARPTR(#n)` returns for an OPEN channel
       first (the address of its file control block on the reference; clean-room: the
       VALUE is readable, its layout is ours).

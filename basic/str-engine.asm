@@ -33,6 +33,18 @@
 ; str_snapshot_to_temp.
 ; ===========================================================================
 
+; ixsp_paren_req (D-PAIRCARVE2, basic/expr.asm) -- `(` is REQUIRED: Z returns as
+; the open-coded pair did; NZ discards this helper's own return address and jumps
+; to ev_f_empty, whose deferred error returns ONE FRAME FURTHER OUT. 💰 MOVED HERE
+; 2026-09-30 by D-INPQUOTE: page 1 was 7 B short and this region had 9 B spare;
+; the two share one budget, and a low-region routine is visible to every caller.
+ixsp_paren_req:
+                call    ixsp_paren
+                ret     z
+                inc     sp
+                inc     sp
+                jp      ev_f_empty
+
 ; --- arga_dig_iszero: HL := ARGA+FPNUM_DIG, then dig15_iszero (D-PAIRCARVE2) ----
 ; 💰 The pair stood at SEVEN sites, 6 B each against 3 for a call. dig15_iszero
 ; preserves HL, so the caller sees HL = ARGA+FPNUM_DIG and Z exactly as the
@@ -935,9 +947,7 @@ ev_ff_asc:
                 inc     hl
                 ld      d,(hl)              ; DE = ptr (the body address)
                 ld      a,(de)              ; first byte of the body
-                ld      e,a
-                ld      d,0
-                ret
+                jp      ev_ret_e            ; D-RETTAIL: DE = A (0..255)
 ev_ff_val:
                 call    ev_str_arg          ; STRPTR -> the string-arg descriptor;
                                             ; IX advanced past ')'

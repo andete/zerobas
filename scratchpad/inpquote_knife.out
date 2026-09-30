@@ -1,0 +1,35 @@
+msxtest: BASIC image carries islands -- loaded at $0010, not $2812
+build under measurement: git=e4e46bbf zerobas-main-eu.rom=67f012cef273 sub.rom=fd9b8fc67997 disk.rom=6c8c3a04d4c1
+
+==============================================================================
+LAYER 1 — CRUNCH (tokenisation only; NOT a support answer)
+==============================================================================
+SAME   inputstr  input#1,a$
+SAME   inputquote input#1,a$
+
+==============================================================================
+LAYER 2 — SUPPORT (the load-bearing layer)
+==============================================================================
+DIVERGENT     inputquote OPEN"S3.TXT"FOR OUTPUT AS#1:PRINT#1,CHR$(34)+"A, B"+CHR$(34):CLOSE#1:OPEN"S3.TXT"FOR INPUT AS#1:INPUT#1,A$:CLOSE#1:PRINT"[Q";LEN(A$);MID$(A$,3,2);"]"
+            ref  [value] '[Q 4  B]'
+            zb   [value] '[Q 2 ]'
+SUPPORTED     inputstr  OPEN"S2.TXT"FOR OUTPUT AS#1:PRINT#1,5:CLOSE#1:OPEN"S2.TXT"FOR INPUT AS#1:INPUT#1,A$:CLOSE#1:PRINT"[S";LEN(A$);A$;"]"
+            ref  [value] '[S 2 5 ]'
+
+==============================================================================
+COMBINED — tokenised? x observable consequence
+==============================================================================
+word       crunch  support     consequence
+------------------------------------------------------------------------------
+inputstr   present SUPPORTED   match
+inputquote present DIVERGENT   ref '[Q 4  B]' vs zb '[Q 2 ]'
+
+==============================================================================
+SUMMARY  DIVERGENT=1  SUPPORTED=1
+         executed 2 / 2 words; 0 crunch-only
+==============================================================================
+ROWS: 2 printed, 2 scored — 0 crunch-only word(s) carry no support reading and are printed but not scored
+pin: NOT written -- an --only run measures a subset, and the pin is the whole sweep
+
+=== CRUNCH PIN — words the reference tokenises and zerobas does not ===
+refcache: 0 hit, 4 miss, 4 stored

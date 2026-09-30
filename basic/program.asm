@@ -1298,9 +1298,8 @@ store_line:
                 ret     z                   ; ok (tenant already relinked +
                                             ; vars_reset)
                 ld      a,$CC               ; out-of-memory landmark (distinct byte)
-                ld      (ERRMARK),a
-                ld      a,7                 ; ERR 7: out of memory (error-handling S2a)
-                jp      raise_error
+                jp      err7_mark           ; D-TAILMERGE: ERRMARK := A, then ERR 7 --
+                                            ; gosub_stk_over's own tail, verbatim
 ; 🎯 err_mem IS NOW AN ALIAS, NOT A STRING. It was the lowercase twin of arrays'
 ; capitalised err_mem_arr ("o" vs "O" + MSGESC_UTOF + "memory"); D-MSGEXACT made
 ; both the reference's `Out of memory`, so they became byte-identical and this
@@ -1609,6 +1608,8 @@ ctl_get:
 ; gosub_stk_over: shared control-stack-overflow tail (ex_gosub + eon_gosub).
 gosub_stk_over:
                 ld      a,$CE               ; control-stack overflow landmark
+err7_mark:                                  ; D-TAILMERGE: A = the landmark; the
+                                            ; out-of-memory tail above joins here
                 ld      (ERRMARK),a
                 ld      a,7                 ; ERR 7: out of memory (error-handling S2a)
                 jp      raise_error

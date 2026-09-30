@@ -1275,6 +1275,13 @@ inp_tail:                                   ; D-INPNUM: the numeric item rejoins
 read_into_strscr:
                 xor     a
                 ld      (IN_RDLEN),a
+                ; 🔴 D-INPQUOTE (2026-09-30): STRSCR's length byte is the QUOTE STATE
+                ; while the field is read -- 0 none, `"` inside a quoted field, `,`
+                ; past its closing quote -- because every exit (ris_done =
+                ; sidr_done) rewrites it with the length. FCH_RDMODE could not
+                ; carry it: the statement sets that ONCE and reads it again per
+                ; variable, so `INPUT #1,A$,N` would have inherited the state.
+                ld      (STRSCR),a
 ris_lp:
                 call    arl_getbyte         ; byte source vector: fat_io_getbyte (disk)
                                             ; or cas_in_getbyte (CAS: input), set by
@@ -1285,6 +1292,9 @@ ris_lp:
                 cp      $0D                 ; CR ends the line / field
                 jp     z,ris_done
                 ld      c,a                 ; C = candidate data byte
+                ld      a,(STRSCR)
+                or      a
+                jr      nz,ris_quoted       ; D-INPQUOTE: inside or past the quotes
                 ld      a,(FCH_RDMODE)
                 or      a
                 jr      nz,ris_keep         ; line mode keeps everything (but CR/LF)
@@ -1300,10 +1310,22 @@ ris_lp:
                 ; and embedded blanks stay (scratchpad/inpstr_run.out). Console and
                 ; file share this field reader, so one test serves both.
                 cp      ' '
-                jr      nz,ris_keep
+                jr      nz,ris_nb
                 ld      a,(IN_RDLEN)
                 or      a
                 jr      z,ris_lp            ; a blank before the field's first byte
+ris_nb:
+                ; D-INPQUOTE: a `"` as the field's FIRST byte (leading blanks
+                ; already shed) opens a quoted field: file and console alike, `"A,B"`
+                ; is A,B and `"  AB  "` keeps its blanks, on both references
+                ; (scratchpad/inpstr_run.out). Anywhere else a quote is data.
+                ld      a,c
+                cp      '"'
+                jr      nz,ris_keep
+                ld      a,(IN_RDLEN)
+                or      a
+                ld      a,c                 ; the state IS the awaited byte: `"`
+                jr      z,ris_setq
 ris_keep:
                 ld      a,(IN_RDLEN)
                 cp      STRMAX
@@ -1315,6 +1337,23 @@ ris_keep:
                 ld      (hl),c              ; store the byte
                 ld      hl,IN_RDLEN
                 inc     (hl)                ; D-PEEPHOLE: -3 B (7 B -> 4 B)
+                jr      ris_lp
+; ris_quoted -- A = the quote state (the byte awaited), C = the byte read. Inside
+; the quotes every byte but `"` is data, commas included; the closing quote
+; switches to `,`, and past it everything up to the comma is DISCARDED (both
+; references consume the rest of the field). CR and EOF already ended the read.
+ris_quoted:
+                cp      c
+                jr      z,ris_qhit
+                cp      '"'
+                jr      z,ris_keep          ; inside: data
+                jr      ris_lp              ; past the closing quote: dropped
+ris_qhit:
+                cp      ','
+                jp      z,ris_done          ; past it, the comma ends the field
+                ld      a,','               ; the closing quote: now await the comma
+ris_setq:
+                ld      (STRSCR),a
                 jr      ris_lp
 ; D-DUPSPAN2: an ALIAS, not a second copy -- byte-identical to sidr_done,
 ; and POSITION-INDEPENDENT by tools/dupspan_indep.py (terminates, no

@@ -4951,6 +4951,13 @@ SWEEP: list[tuple[str, str, str | None, str, str]] = [
      'OPEN"S2.TXT"FOR OUTPUT AS#1:PRINT#1,5:CLOSE#1:OPEN"S2.TXT"FOR INPUT AS#1:INPUT#1,A$:CLOSE#1:PRINT"[S";LEN(A$);A$;"]"',
      "stored", "NEEDS-DISK: SUBJECT:INPUT_# FORM:string-read a number read back as a "
      "string sheds its leading blank (D-INPSTR)"),
+    # 🔴 D-INPQUOTE (2026-09-30): a QUOTED field is taken verbatim, its comma and
+    # blanks included -- `"A, B"` reads A, B (LEN 4) on the CF-3300; here it split at
+    # the comma and kept the quote (scratchpad/inpquote_run.out).
+    ("inputquote", "input#1,a$",
+     'OPEN"S3.TXT"FOR OUTPUT AS#1:PRINT#1,CHR$(34)+"A, B"+CHR$(34):CLOSE#1:OPEN"S3.TXT"FOR INPUT AS#1:INPUT#1,A$:CLOSE#1:PRINT"[Q";LEN(A$);MID$(A$,3,2);"]"',
+     "stored", "NEEDS-DISK: SUBJECT:INPUT_# FORM:string-read a quoted field keeps its "
+     "comma and blank: LEN 4, and ' B' after the comma (D-INPQUOTE)"),
     # D-INPNUM, the console half: `INPUT A` answered 1.5 was ?Redo and 40000 became
     # -25536 (input_num_field was a 16-bit integer validator).
     ("input_flt", 'input za', 'INPUT ZA:INPUT ZB:PRINT"[F";ZA;ZB;"]"', "stored",

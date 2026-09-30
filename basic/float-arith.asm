@@ -417,6 +417,7 @@ arga_carry_renorm:
                 lddr
                 ld      a,1
                 ld      (ARGA+FPNUM_DIG),a
+arga_dexp_inc:                              ; D-TAILMERGE: ARGA's decimal exponent + 1
                 ld      hl,(ARGA+FPNUM_DEXP)
                 inc     hl
                 ld      (ARGA+FPNUM_DEXP),hl
@@ -583,10 +584,7 @@ ar6_lp:
                 ld      (hl),a
                 inc     hl
                 djnz    ar6_lp
-                ld      hl,(ARGA+FPNUM_DEXP)
-                inc     hl
-                ld      (ARGA+FPNUM_DEXP),hl
-                ret
+                jp      arga_dexp_inc       ; D-TAILMERGE: the same 4-instruction tail
 
 ; --- arga_pack_single: ARGA_SIGN/ARGA_DEXP/ARGA_DIG[0..5] -> FAC (single). ---
 ; Same nibble-packing technique as arga_pack_fac, scoped to 6 digits / 3
