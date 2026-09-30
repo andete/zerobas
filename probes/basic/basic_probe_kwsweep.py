@@ -4920,6 +4920,13 @@ SWEEP: list[tuple[str, str, str | None, str, str]] = [
      'MAXFILES=2:OPEN"C1.TXT"FOR OUTPUT AS#1:OPEN"C2.TXT"FOR OUTPUT AS#2:FOR I=1 TO 3:PRINT#1,I:PRINT#2,I*10:NEXT:CLOSE:OPEN"C1.TXT"FOR INPUT AS#1:OPEN"C2.TXT"FOR INPUT AS#2:INPUT#1,A,B,C:INPUT#2,D,E,F:CLOSE:PRINT"[C";A;B;C;D;E;F;"]":MAXFILES=1',
      "stored", "NEEDS-DISK: SUBJECT:OPEN FORM:output two channels switched inside a "
      "FOR loop (D-CHANSWITCH)"),
+    # 🔴 D-INPSTR (2026-09-29): a STRING field's leading blanks are not data. A
+    # number written by PRINT #1 is " 5 "; the CF-3300 reads it back as "5 " (LEN 2)
+    # and this read " 5 " (LEN 3). Console INPUT shares the field reader.
+    ("inputstr", "input#1,a$",
+     'OPEN"S2.TXT"FOR OUTPUT AS#1:PRINT#1,5:CLOSE#1:OPEN"S2.TXT"FOR INPUT AS#1:INPUT#1,A$:CLOSE#1:PRINT"[S";LEN(A$);A$;"]"',
+     "stored", "NEEDS-DISK: SUBJECT:INPUT_# FORM:string-read a number read back as a "
+     "string sheds its leading blank (D-INPSTR)"),
     # D-INPNUM, the console half: `INPUT A` answered 1.5 was ?Redo and 40000 became
     # -25536 (input_num_field was a 16-bit integer validator).
     ("input_flt", 'input za', 'INPUT ZA:INPUT ZB:PRINT"[F";ZA;ZB;"]"', "stored",

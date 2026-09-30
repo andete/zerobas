@@ -1294,6 +1294,16 @@ ris_lp:
                 ld      a,c
                 cp      ','                 ; field mode stops at a comma
                 jp     z,ris_done
+                ; 🔴 D-INPSTR (2026-09-29): a field's LEADING blanks are not data --
+                ; `INPUT #1,A$` of " 5 " (what PRINT #1,5 writes) is "5 " on the
+                ; CF-3300 and `INPUT A$` typed "  AB" is "AB" on the VG-8020; trailing
+                ; and embedded blanks stay (scratchpad/inpstr_run.out). Console and
+                ; file share this field reader, so one test serves both.
+                cp      ' '
+                jr      nz,ris_keep
+                ld      a,(IN_RDLEN)
+                or      a
+                jr      z,ris_lp            ; a blank before the field's first byte
 ris_keep:
                 ld      a,(IN_RDLEN)
                 cp      STRMAX

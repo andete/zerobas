@@ -6019,7 +6019,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:27581 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:27622 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -26052,10 +26052,51 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       read a number FOLLOWED by another read across a line end, so they could not
       see what the item consumed. The first reading of this bug blamed the channel
       switch; the bytes said otherwise.
-      ⚠️ **Still open:** a STRING item keeps its leading blank here, and the
+      ~~⚠️ **Still open:** a STRING item keeps its leading blank here, and the
       CF-3300 strips it (`one1s`, [`chanloop_run3.out`](scratchpad/chanloop_run3.out)).
-      The console's string rule is unmeasured. Tape (CAS:) numeric items keep the
-      field rule (no peek there).
+      The console's string rule is unmeasured.~~ → D-INPSTR / D-INPQUOTE below.
+      ⚠️ Tape (CAS:) numeric items keep the field rule (no peek there).
+
+- [x] ✅ **A STRING INPUT FIELD KEPT ITS LEADING BLANKS — `INPUT #1,A$` OF WHAT
+      `PRINT #1,5` WROTE WAS " 5 " (LEN 3), THE CF-3300's "5 " (D-INPSTR, found and
+      fixed 2026-09-29).**
+      🎚️ TIER 1 — happy path: a number written to a file and read back as a string,
+      and a line typed with a leading space.
+      📏 Measured first, file AND console, and what the next read sees
+      ([`inpstr_run.out`](scratchpad/inpstr_run.out), `scratchpad/inpstr_probe.py`,
+      blanks shown as `_`). On both references a string field's LEADING blanks are
+      stripped; trailing and embedded blanks stay up to the comma or CR; a quoted
+      field is taken verbatim, blanks and commas included. Here leading blanks were
+      data, and a quote was an ordinary byte.
+      ✅ Leading blanks: 9 B in `read_into_strscr`'s field mode, which console and
+      file share. Page 1 22 → 12 B ([`inpstr_walls.out`](scratchpad/inpstr_walls.out)).
+      After: every unquoted case agrees, file and console, including what the
+      following LINE INPUT reads ([`inpstr_after.out`](scratchpad/inpstr_after.out)).
+      Row `inputstr` (`[S 2 5 ]`) SUPPORTED ([`inpstr_kwsweep.out`](scratchpad/inpstr_kwsweep.out));
+      knife = HEAD's files.asm (hashes checked both ways) turns it DIVERGENT, with
+      four INPUT neighbours green ([`inpstr_knife.out`](scratchpad/inpstr_knife.out)).
+      Whole sweep SUPPORTED 958 ([`inpstr_kwsweep_full.out`](scratchpad/inpstr_kwsweep_full.out)),
+      kwtime OK 844 ([`inpstr_kwtime.out`](scratchpad/inpstr_kwtime.out)), knife BLIND
+      unchanged ([`inpstr_knife_all.out`](scratchpad/inpstr_knife_all.out),
+      [`inpstr_knife_fn.out`](scratchpad/inpstr_knife_fn.out)); all predicted.
+
+- [ ] 🔴 **A QUOTED INPUT FIELD IS TAKEN AS RAW BYTES — `"A,B"` SPLITS AT THE COMMA
+      AND THE QUOTES BECOME DATA; BOTH REFERENCES TAKE THE QUOTED TEXT VERBATIM
+      (D-INPQUOTE, found 2026-09-29 by D-INPSTR's measurement).**
+      🎚️ TIER 3 — MSX BASIC has no WRITE #, so a quoted field only arises when a
+      program writes the quotes itself (or a user types them); the common forms
+      are D-INPSTR's.
+      🤖 **AUTONOMOUS** — the rule is measured; the wall is the cost.
+      [`inpstr_run.out`](scratchpad/inpstr_run.out) and
+      [`inpstr_after.out`](scratchpad/inpstr_after.out): file and console alike,
+      `"  AB  "` is `__AB__` (LEN 6) and `"A,B"` is `A,B`; after the closing quote
+      the rest of the field up to its comma or CR is consumed. Here both read NO
+      READING in the probe (A$ holds the quote character, which the reader's
+      fence excludes).
+      💰 **PRICED ~30–40 B of main** (a quoted sub-loop in `read_into_strscr` plus the
+      skip to the delimiter after it; the field reader is shared by console and
+      file, so that is the one chokepoint). Main page 1 was 12 B and low 3 B on
+      2026-09-29: a carve first.
 
 - [x] ✅ **FIXED 2026-09-28 (D-SEQEOF): A TEXT FILE READS THE REFERENCE'S WAY — CTRL-Z
       ENDS IT, INPUT# EATS THE LF AFTER ITS CR, AND A READ AT THE END IS 55.** The

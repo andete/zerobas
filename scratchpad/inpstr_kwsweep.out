@@ -1,0 +1,46 @@
+msxtest: BASIC image carries islands -- loaded at $0010, not $2812
+build under measurement: git=59a5a1d2 zerobas-main-eu.rom=30b5c4c56072 sub.rom=91bc544ad003 disk.rom=a5fb1422c4fa
+
+==============================================================================
+LAYER 1 — CRUNCH (tokenisation only; NOT a support answer)
+==============================================================================
+SAME   input_t3  input za
+SAME   inputkw   input#1,a$
+SAME   input_b   input#1,a$
+SAME   inputnum2 input#1,x
+SAME   inputstr  input#1,a$
+
+==============================================================================
+LAYER 2 — SUPPORT (the load-bearing layer)
+==============================================================================
+SUPPORTED     input_t3  INPUT ZA:PRINT"[I";ZA;"]"
+            ref  [value] '? ABC|?Redo from start|? 5|[I 5 ]'
+SUPPORTED     inputkw   OPEN"HI.TXT"FOR INPUT AS#1:INPUT#1,A$:CLOSE#1:PRINT"[I";LEN(A$);"]"
+            ref  [value] '[I 24 ]'
+SUPPORTED     input_b   OPEN"HI.TXT"FOR INPUT AS#1:INPUT#1,A$:CLOSE#1:PRINT"[";LEFT$(A$,5);"]"
+            ref  [value] '[Hello]'
+SUPPORTED     inputnum2 OPEN"N2.TXT"FOR OUTPUT AS#1:PRINT#1,1:PRINT#1,"XY":CLOSE#1:OPEN"N2.TXT"FOR INPUT AS#1:INPUT#1,X:LINE INPUT#1,A$:CLOSE#1:PRINT"[M";X;A$;"]"
+            ref  [value] '[M 1 XY]'
+SUPPORTED     inputstr  OPEN"S2.TXT"FOR OUTPUT AS#1:PRINT#1,5:CLOSE#1:OPEN"S2.TXT"FOR INPUT AS#1:INPUT#1,A$:CLOSE#1:PRINT"[S";LEN(A$);A$;"]"
+            ref  [value] '[S 2 5 ]'
+
+==============================================================================
+COMBINED — tokenised? x observable consequence
+==============================================================================
+word       crunch  support     consequence
+------------------------------------------------------------------------------
+input_t3   present SUPPORTED   match
+inputkw    present SUPPORTED   match
+input_b    present SUPPORTED   match
+inputnum2  present SUPPORTED   match
+inputstr   present SUPPORTED   match
+
+==============================================================================
+SUMMARY  SUPPORTED=5
+         executed 5 / 5 words; 0 crunch-only
+==============================================================================
+ROWS: 5 printed, 5 scored — 0 crunch-only word(s) carry no support reading and are printed but not scored
+pin: NOT written -- an --only run measures a subset, and the pin is the whole sweep
+
+=== CRUNCH PIN — words the reference tokenises and zerobas does not ===
+refcache: 2 hit, 5 miss, 5 stored

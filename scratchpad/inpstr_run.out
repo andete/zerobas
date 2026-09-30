@@ -1,0 +1,21 @@
+FILE: PRINT #1,<w>:PRINT #1,"NX" then INPUT #1,A$ and LINE INPUT #1,R$ -> [A$ with _ | LEN | R$ ERR]
+case                 National_CF-3300       C-BIOS_MSX1_EU_REPAC
+✗ 'num'                  [5_| 2 |NX 0 ]            [_5_| 3 |NX 0 ]
+✗ 'lead'                 [AB| 2 |NX 0 ]           [__AB| 4 |NX 0 ]
+  'trail'              [AB__| 4 |NX 0 ]           [AB__| 4 |NX 0 ]
+  'embed'               [A_B| 3 |NX 0 ]            [A_B| 3 |NX 0 ]
+✗ 'both'               [AB__| 4 |NX 0 ]         [__AB__| 6 |NX 0 ]
+✗ 'quoted'           [__AB__| 6 |NX 0 ]                 NO READING
+✗ 'comma'              [AB__| 4 |CD 0 ]         [__AB__| 6 |CD 0 ]
+  'empty'                  [| 0 |NX 0 ]               [| 0 |NX 0 ]
+✗ 'qcomma'              [A,B| 3 |NX 0 ]                 NO READING
+CONSOLE: INPUT A$ typed -> [A$ with _ | LEN]
+case                  Philips_VG_8020       C-BIOS_MSX1_EU_REPAC
+✗ '  AB'                       [AB| 2 ]                 [__AB| 4 ]
+  'AB  '                       [AB| 2 ]                   [AB| 2 ]
+✗ '  AB  '                     [AB| 2 ]                 [__AB| 4 ]
+  'A B'                       [A_B| 3 ]                  [A_B| 3 ]
+✗ '"  AB  "'               [__AB__| 6 ]                 NO READING
+✗ '"A,B"'                     [A,B| 3 ]                 NO READING
+✗ '  AB  ,CD'                 [AB__| 4 ]               [__AB__| 6 ]
+refcache: 0 hit, 32 miss, 32 stored

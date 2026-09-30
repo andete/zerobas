@@ -58,9 +58,9 @@ dirverb_op equ 06C03H
 main_fat_mount equ 06499H   ; main's fat_mount
 main_fat_find equ 0649DH   ; main's fat_find
 parse_disk_fcb equ 06629H
-field_prologue equ 07243H
-field_item equ 07279H
-lrset_tgt equ 07334H
-lrset_rhs equ 07356H
-lrset_finish equ 0736DH
-fch_ctx_addr equ 06F82H
+field_prologue equ 0724DH
+field_item equ 07283H
+lrset_tgt equ 0733EH
+lrset_rhs equ 07360H
+lrset_finish equ 07377H
+fch_ctx_addr equ 06F8CH
