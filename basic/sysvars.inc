@@ -3588,7 +3588,11 @@ FCH_CTXSZ       equ     FCH_BLKSZ + 2               ; 267: what MAXFILES charges
 ; later CLEAR above it exposes it exactly as the reference exposes its own
 ; (scratchpad/clearmax_run.out). A diskless machine never touches it: no disk
 ; channel can exist there, and the tenant copies state for DISK channels only.
-DSK_ENGTAB      equ     TXTMAX - (FCH_CEIL+1)*FCH_STATESZ   ; NOT-A-CELL: $DCE0, 800 B
+; 💰 D-ENGROW0 (2026-09-30): ROW 0 IS NOT RESERVED. The base stays here so row ch
+; is still DSK_ENGTAB + ch*FCH_STATESZ, but the disk ROM's init sets HIMEM to
+; row 1 (TXTMAX - FCH_CEIL*FCH_STATESZ): the reserve is 750 B, and the 50 B
+; below it are ordinary RAM that nothing here reads or writes.
+DSK_ENGTAB      equ     TXTMAX - (FCH_CEIL+1)*FCH_STATESZ   ; NOT-A-CELL: $DCE0 (row 0, unreserved); 750 B reserved from $DD12
 ; --- Phase 2c slice 1: random-access FIELD table + fielded-read scratch -----
 ; zerobas stores string vars INLINE in STRTAB ([name0][name1][len][bytes:32]); a
 ; MS-BASIC-style descriptor pointing into a record buffer does not exist. So a

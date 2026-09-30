@@ -109,16 +109,21 @@ for label, _, _ in CASES:
 # RED on drift in EITHER direction. ⚠️ Keyed by SIDE NAME, never by position --
 # `sides` is argv here, so a positional pin would compare the wrong machine.
 PINNED = {
-    # measured 2026-09-10. The filing is "THE SAME FILE ON TWO CHANNELS is
-    # accepted here and refused on the CF-3300" -- these six are that sentence.
-    # The CONTROLS (a.ch2only, d.ts2ch1, t.seq1, n.nomaxf) are deliberately NOT
-    # pinned: they are the fixture check, not the finding.
-    "s.same":     {"cf3300": "<File already open>", "zb": "OK"},
-    "s.space":    {"cf3300": "<File already open>", "zb": "OK"},
-    "s.newtwice": {"cf3300": "<File already open>", "zb": "OK"},
-    "s.modes":    {"cf3300": "<File already open>", "zb": "OK"},
-    "s.seqsame":  {"cf3300": "<File already open>", "zb": "OK"},
-    "s.reclaim":  {"cf3300": "<File already open>", "zb": "OK"},
+    # RE-PINNED 2026-09-30 (scratchpad/dupopen_after_fcb.out): D-OPENSAME
+    # (2026-09-29) made these six REFUSE here, as on the CF-3300 -- it asks
+    # disk.rom whether the DIRECTORY ENTRY is already open. What is left is
+    # s.case: the CF-3300 compares the TYPED 8.3 name, case-sensitively, so
+    # `ts.dat` after `TS.DAT` opens there and is refused here. It is pinned
+    # now, because it is the finding. The CONTROLS (a.ch2only, d.ts2ch1,
+    # t.seq1, n.nomaxf) are deliberately NOT pinned: they are the fixture
+    # check, not the finding.
+    "s.same":     {"cf3300": "<File already open>", "zb": "<File already open>"},
+    "s.space":    {"cf3300": "<File already open>", "zb": "<File already open>"},
+    "s.newtwice": {"cf3300": "<File already open>", "zb": "<File already open>"},
+    "s.modes":    {"cf3300": "<File already open>", "zb": "<File already open>"},
+    "s.seqsame":  {"cf3300": "<File already open>", "zb": "<File already open>"},
+    "s.reclaim":  {"cf3300": "<File already open>", "zb": "<File already open>"},
+    "s.case":     {"cf3300": "OK", "zb": "<File already open>"},
 }
 
 _drift = []

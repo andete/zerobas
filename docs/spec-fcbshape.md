@@ -145,6 +145,11 @@ stays the table base, which `basic/program.asm`'s store ceiling reads through
 op 18. Measured: 267 B a channel on both machines (`chancost-characterize`), and
 the disk build's boot FRE(0) exactly 800 B under the diskless build's. TODO
 D-FCBSHAPE carries the readings.
+**Later the same day:** item 5 shipped as D-VARPTRCH, and D-ENGROW0 stopped
+reserving the table's row 0. Rows are indexed by channel number (1..15), so row 0
+was never read or written; HIMEM now drops by 15 × 50 = **750 B**, and the table
+base stays at `TXTMAX − 800` with row 0 below HIMEM as ordinary RAM. Readings in
+TODO D-ENGROW0.
 Rows: `MAXFILES` 0..4 `FRE(0)` steps on BOTH targets, the `VARPTR(#n)` stride,
 PEEKs of `+0`/`+4`/`+6` after an OPEN, and the disk build's boot `FRE(0)` (it
 should trail the CF-3300 by ~165 B, down from leading by 635).

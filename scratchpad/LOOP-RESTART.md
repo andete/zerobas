@@ -30,6 +30,42 @@ symmetric. Treat that group as closed-by-measurement unless a new signal appears
 | PLAY X shape | *"Tenant walks the chain"* — the MML tenant reads the variable chain in RAM itself (spec-basic-audio-play §7.12); main ~0 B, no carve needed |
 | the rig | Joost's RP2040-Zero is **CONNECTED to the laptop since 2026-09-25** (`/dev/cu.usbmodem1101`, running firmware, not BOOTSEL; seen read-only, nothing flashed). **UN-PARKED 2026-09-26 and FLASHED with `tools/rigfw/rigfw.ino`:** headless joystick WORKS (bind `msxjoystick1_config` to `joy1`, which this install leaves EMPTY); headless mouse does NOT reach PAD/PDL. Next: STICK/STRIG rows — the rig item in TODO |
 
+### ☀️ LOOP 2026-09-30 DAY — READ THIS FIRST (the sections below are older)
+
+**Commits after the night section (`git log eaa63e58..`):** `c5f876fd`
+**D-FCBSHAPE S1+S2** (a channel is the reference's 265 B FCB; MAXFILES charges
+267 on both machines; disk-engine state in `DSK_ENGTAB` under a boot-lowered
+HIMEM) · `c3bf6ed6` **D-CIRCANGLE** (CIRCLE refuses |angle| ≥ 6.283245; the
+boundary is not 2π) · `d74789c4` **kwram — the T4 row type** (Joost's ruling of
+09-30 in the table above; T4 reads 0 of 159 because (b) fails everywhere on the
+same documented cells, which ranks the D-ADDR29 re-homing) · `00ee880b`
+**D-ONTRAPMERGE** (ON KEY runs on ON STRIG's loop: main page 1 +35 B) +
+**D-VARPTRCH** (`VARPTR(#n)` answers the FCB address; VARPTR level 0 → 3, **no
+keyword is at level 0 now**) + D-X5LOG (the excluded five keep a failing log).
+**Walls (`make basic-reloc`, 2026-09-30 ~17:30): main page 1 15 B, low 3 B; sub
+p0 18 B, sub p1 440 B; disk 6517 B.** Recount before quoting.
+🔴 **`bdos-acceptance` exited 2 once in `00ee880b`'s FULL run with NO log (the
+runner dropped it), then 12/12 three times alone.** Cause unknown. D-X5LOG keeps
+the log now: if it goes red again, read `gate_flakes/x5-bdos-acceptance.log`.
+➡️ **NEXT, AUTONOMOUS, by tier:** TIER 2 **STEP 10** (OPEN + channel I/O into
+`disk.rom`, approved 2026-09-22; its RAM lever, PAINT's span stack, SHIPPED as
+D-PAINTSP) — a DESIGN + PRICING slice first, from a clean tree; it is also the
+funding route for main bytes (D-INPQUOTE's note). Then TIER 3 D-INPQUOTE (~30-40
+B main) and D-ERRKEEP2's rest, TIER 4 D-FCBSHAPE's LEFT list (FCB #0, header
+fields, FILTAB geometry) and the D-ADDR29 re-homing kwram ranks.
+🔭 kwram costs ~28 min of battery wall (it sets gates-fast's wall too) — the
+reference-replay question is filed under the T4 item.
+🔴 **LESSONS TODAY:**
+• **A SCANNER THAT MATCHES EXACT SEQUENCES CANNOT SEE TWO LOOPS THAT DIFFER IN
+IMMEDIATES.** ngram_sweep priced the ON KEY/STRIG pair at 11 B; merged with the
+constants in a register it was 35. Read the top candidates' SURROUNDINGS.
+• **A `jr` WITH NO SLACK IS A WALL INSIDE A ROUTINE.** Inserting any byte between
+LOF's dispatch `jr` and its target broke the build twice; put new tests AHEAD of
+a jr chain.
+• **A MEASURED DENOMINATOR IS ONLY AS WIDE AS THE FAULTS ITS BATCH TRIED.** Batch 9
+gave VARPTR(#) {13, 52}; a negative channel and a bare `#` add 5 and 2 on both
+references.
+
 ### 🌃 LOOP 2026-09-29 NIGHT → 09-30 — READ THIS FIRST (the sections below are older)
 
 **Commits after the evening section:** the D-FCBSHAPE S1+S2 DESIGN (spec §7: every

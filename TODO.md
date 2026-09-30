@@ -6019,7 +6019,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:27814 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:27869 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -6185,7 +6185,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:11019 (T-6FE392)8 (T-529ABE)` from `TODO.md:23459 (T-529ABE)`: a
+      `TODO.md:11019 (T-6FE392)8 (T-529ABE)` from `TODO.md:23514 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -11866,7 +11866,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:23459 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:23514 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -17296,6 +17296,36 @@ finds zero shared names (a renamed block would otherwise make it silently blind)
       bytes (mode +0, device +4, position +6), and the geometry: FILTAB below
       the array, so `#1` shifts 265 per channel, not 267.
 
+- [x] 💰 **D-ENGROW0 — THE DISK-ENGINE TABLE RESERVED A ROW NOTHING USES: +50 B OF BOOT `FRE(0)` ON THE DISK MACHINE**
+      🎚️ TIER 4 — RAM usage (VG-8020): the disk build trailed the CF-3300's boot
+      FRE(0) by 126 B, and 50 of them bought nothing.
+      Found while pricing `s.case` (the OPEN item above): `fch_engrow` and
+      `hoc_saved` index `DSK_ENGTAB` by channel number, and channels are 1..15.
+      The comment on the add loop already said "row 0 unused", yet the disk
+      ROM's init lowered HIMEM by all 16 rows. It now reserves rows 1..15
+      (`TXTMAX − FCH_CEIL*FCH_STATESZ`, 750 B). The base stays put, with row 0
+      below HIMEM as ordinary RAM. One constant in `disk/kernel.asm`; 0 main
+      bytes.
+      📏 [`bootfre_probe.py`](scratchpad/bootfre_probe.py) (S1+S2's inline script,
+      written down; it now resets to SCREEN 0, which the CF-3300 needs):
+      | | VG-8020 | CF-3300 | nodisk | disk |
+      |---|---|---|---|---|
+      | before ([`.out`](scratchpad/engrow0_before.out)) | 62336 / 28815 | 56951 / 23430 | 57344 / 24104 | 56544 / 23304 |
+      | after ([`.out`](scratchpad/engrow0_run.out)) | same | same | same | **56594 / 23354** |
+      🔮 Predicted HIMEM 56594 and FRE 23354: hit, both. The disk build now
+      trails the CF-3300 by **76 B**. ⚠️ FRE reads 46 B above
+      `fcbs12_bootfre.out` on every machine because that script's program is lost.
+      The offset is uniform, so the differences compare and the absolutes do not.
+      Rows 1..15 still sit wholly inside the reserve: row 1 starts AT HIMEM,
+      and row 15 ends at TXTMAX−1. `chancost-characterize` 53 cases, 0 filed
+      divergences ([`.out`](scratchpad/engrow0_chancost.out)).
+      `diskbasic-acceptance` 34/34. Knife BLIND unchanged, whole sweep SUPPORTED 964,
+      kwtime OK 850; all three predicted and all three hit
+      ([`engrow0_knife_all.out`](scratchpad/engrow0_knife_all.out),
+      [`engrow0_knife_fn.out`](scratchpad/engrow0_knife_fn.out),
+      [`engrow0_kwsweep.out`](scratchpad/engrow0_kwsweep.out),
+      [`engrow0_kwtime.out`](scratchpad/engrow0_kwtime.out)).
+
 - [x] 🧰 **D-X5LOG — THE EXCLUDED FIVE's OUTPUT WAS DISCARDED, SO A RED LEFT NOTHING TO READ**
       🎚️ TIER 6 — apparatus.
       📏 **2026-09-30, the D-VARPTRCH battery:** FULL 138/138 green, but
@@ -21312,7 +21342,32 @@ finds zero shared names (a renamed block would otherwise make it silently blind)
       🏗️ **RULED BY JOOST 2026-09-27 (his "ask me in detail" pass): FOLD INTO D-FCBSHAPE.** Refuse like the reference (its exact
       verbatim-name rule) once channels have the MSX FCB shape, where the name has
       a home — not as a separate ~165 B spend now. Picked up with D-FCBSHAPE's slices.
-      🤖 **AUTONOMOUS** — ruled above; price it from a clean tree, carve first.
+      ~~🤖 **AUTONOMOUS** — ruled above; price it from a clean tree, carve first.~~
+      📏 **RE-MEASURED 2026-09-30, AFTER D-OPENSAME AND D-FCBSHAPE S1+S2
+      ([`dupopen_after_fcb.out`](scratchpad/dupopen_after_fcb.out)): 10 OF 11 AGREE.**
+      D-OPENSAME asks disk.rom whether the DIRECTORY ENTRY is already open, so
+      `s.same`, `s.space`, `s.newtwice`, `s.modes`, `s.seqsame` and `s.reclaim` are
+      all `File already open` here now. 🔮 Predicted all six plus `s.case` as the
+      lone DIFF: hit. The probe's pinned faces were re-pinned to the measurement,
+      and `s.case` is pinned too because it is the finding.
+      🔴 **ONLY `s.case` IS LEFT, AND THE RULING's PREMISE DID NOT HOLD FOR IT.**
+      The CF-3300 compares the TYPED 8.3 name, case-sensitively, so `ts.dat` after
+      `TS.DAT` opens there; here it is refused, because both names reach the same
+      directory entry. The ruling expected the MSX FCB shape to give the name a home.
+      It does not: the 9-byte header has no name field, and the disk-engine row
+      (`FCH_STATE0`..`FWR_DIROFF`, 50 B) holds only iterator and directory-position
+      state. The reference keeps the name in a 37 B block in its disk work area.
+      💰 **PRICE:** an 11-byte name in each reserved `DSK_ENGTAB` row is 15 × 11 =
+      **165 B** more of the disk machine's boot reserve (it trails the CF-3300's
+      boot FRE by 76 B since D-ENGROW0). There are no main bytes; the compare is
+      disk.rom's. ⚠️ A TIER 4 cost for a TIER 6 edge, and the edge is the hole in
+      the reference's own guard (the case-changed name above).
+      ✅ Seen while pricing: the reserve held an unused row 0. Shipped as
+      D-ENGROW0 (+50 B of disk boot FRE), which also moves the price below to 15 rows.
+      🙋 **NEEDS-JOOST** — spend 165 B of disk-machine RAM to reproduce the verbatim-name
+      rule (the letter of the 09-27 ruling), or keep the directory-entry rule and
+      pin `s.case` as a documented divergence (the ruling's intent: no separate
+      spend)?
 
 - [x] 🟢 **(superseded, kept for its row work) A SECOND DISK `OPEN` RAISES A
       SPURIOUS `Syntax error` — THE OPEN

@@ -1,0 +1,83 @@
+python3 tools/install-repack-machine.py --merged build/zerobas-main-eu.rom --disk-rom build/disk.rom \
+	  --sub-rom build/sub.rom
+wrote C-BIOS_MSX1_EU_REPACK_DISK  (-> machine "C-BIOS_MSX1_EU_REPACK_DISK": merged repack ROM in slot 0, zerobas-disk in slot 3-1, zerobas-sub in slot 3-2)
+     /Users/joost/.openMSX/share/machines/C-BIOS_MSX1_EU_REPACK_DISK.xml
+python3 tools/install-repack-machine.py --merged build/zerobas-main-eu.rom --sub-rom build/sub.rom \
+	  --no-disk
+wrote C-BIOS_MSX1_EU_REPACK_NODISK  (-> machine "C-BIOS_MSX1_EU_REPACK_NODISK": merged repack ROM in slot 0, slot 3-1 EMPTY (diskless target), zerobas-sub in slot 3-2)
+     /Users/joost/.openMSX/share/machines/C-BIOS_MSX1_EU_REPACK_NODISK.xml
+ZEROBAS_BASIC_MACHINE=C-BIOS_MSX1_EU_REPACK_DISK \
+	  python3 probes/disk/diskbasic_probe_chancost.py \
+	          \
+	        
+case                reference        zerobas   verdict
+----------------------------------------------------------------------
+ctl_syntax             SYNTAX         SYNTAX   agree
+ctl_noop                23430          23354   informational (slope below)
+boot                    23430          23354   informational (slope below)
+mf0                     23697          23621   informational (slope below)
+mf1                     23430          23354   informational (slope below)
+mf2                     23163          23087   informational (slope below)
+mf3                     22896          22820   informational (slope below)
+mf4                     22629          22553   informational (slope below)
+mf8                     21561          21485   informational (slope below)
+mf15                    19692          19616   informational (slope below)
+mf16                      IFC            IFC   agree
+mf255                     IFC            IFC   agree
+open_after              23163          23087   informational (slope below)
+str0                      200            200   agree
+str8                      200            200   agree
+lof_new                     0              0   agree
+lof_existing               26             26   agree
+sem_var                     0              0   agree
+sem_var_ctl                 5              5   agree
+sem_str                     0              0   agree
+sem_str_ctl                 2              2   agree
+sem_same                    0              0   agree
+sem_reopen                FNO            FNO   agree
+sem_zero                  BFN            BFN   agree
+sem_hinum                 BFN            BFN   agree
+sem_clear                 500            500   agree
+dim_fits                 7777           7777   agree
+dim_over                  OOM            OOM   agree
+err_over                    5              5   agree
+err_badchan               BFN            BFN   agree
+err_notopen                59             59   agree
+bfn_trap                 7052           7052   agree
+bfn_zero                 7052           7052   agree
+fno_eof                  7059           7059   agree
+bfn_ctl                  7005           7005   agree
+mf_disarm                 IFC            IFC   agree
+mf_ctl                   7777           7777   agree
+clr_disarm                IFC            IFC   agree
+clr_ctl                  7777           7777   agree
+mfd_300                   IFC            IFC   agree
+mfd_65536                 OVF            OVF   agree
+mfd_70000                 OVF            OVF   agree
+mfd_neg                   IFC            IFC   agree
+mfd_neg16                 IFC            IFC   agree
+mfd_frac                  BFN            BFN   agree
+mfd_frac_ctl             7777           7777   agree
+mfd_frac15               7777           7777   agree
+mfd_expr                  IFC            IFC   agree
+mfd_noeq               SYNTAX         SYNTAX   agree
+mfd_32767                 IFC            IFC   agree
+mfd_32768                 OVF            OVF   agree
+mfd_n32768                IFC            IFC   agree
+mfd_n32769                OVF            OVF   agree
+
+meta(ref): meta scrmod=01 linlen=1d himem=77de txttab=0180
+meta(zb) : meta scrmod=00 linlen=25 himem=12dd txttab=0180
+
+ ref: per-channel = 267 B/channel, charged from the FRE(0) pool; highest accepted MAXFILES = 15
+  zb: per-channel = 267 B/channel, charged from the FRE(0) pool; highest accepted MAXFILES = 15
+
+HEADLINE:
+  reference charges 267 B per channel, dynamically, up to 15;
+  zerobas   charges 267 B per channel, dynamically, up to 15.
+  (D-FCH §3.2 made the MECHANISMS the same -- carved out of the FRE(0)
+   pool at MAXFILES time, ceiling 15; D-FCBSHAPE S1+S2 (2026-09-30) made
+   the CONSTANTS the same too: a 265 B block, the reference's FCB shape,
+   + its 2 B FILTAB word; the disk-engine state lives in a fixed table.)
+
+GATE: both machines charge per-channel, linearly, ceiling 15 — 53 cases, 0 filed divergences.

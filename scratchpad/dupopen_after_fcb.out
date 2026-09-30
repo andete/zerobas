@@ -1,0 +1,16 @@
+
+row                           cf3300                        zb   verdict
+c.diff                            OK                        OK   SAME
+c.closed                          OK                        OK   SAME
+s.same           <File already open>       <File already open>   SAME
+s.case                            OK       <File already open>   DIFF
+s.space          <File already open>       <File already open>   SAME
+s.newtwice       <File already open>       <File already open>   SAME
+s.modes          <File already open>       <File already open>   SAME
+s.seqsame        <File already open>       <File already open>   SAME
+s.reclaim        <File already open>       <File already open>   SAME
+q.upcase                          OK                        OK   SAME
+q.samecase                        OK                        OK   SAME
+
+DIFF: 1/11  s.case
+refcache: 0 hit, 22 miss, 22 stored

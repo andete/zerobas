@@ -2565,7 +2565,12 @@ install_basic_hooks:
                 ; boot keeps a HIMEM already below TXTMAX, and every reader takes
                 ; min(HIMEM, TXTMAX), so the string pool, the channels and the
                 ; stack all sit under it from the first prompt.
-                ld      hl, TXTMAX-(FCH_CEIL+1)*FCH_STATESZ
+                ; 💰 D-ENGROW0 (2026-09-30): the table is indexed by channel number and
+                ; channels are 1..FCH_CEIL, so its row 0 is never touched -- reserve
+                ; rows 1..FCH_CEIL only. The base (DSK_ENGTAB) stays where it is, one
+                ; unreserved row below HIMEM, and the disk machine's boot FRE(0) is
+                ; 50 B higher (scratchpad/engrow0_run.out).
+                ld      hl, TXTMAX-FCH_CEIL*FCH_STATESZ
                 ld      (HIMEM), hl
                 ld      hl, FWBUF           ; D-DSKIO: publish the DSKI$/DSKO$ buffer at the
                 ld      (DSKBUF_PTR), hl    ; cell the MSX idiom PEEKs (docs/spec-basic-dskio.md)
