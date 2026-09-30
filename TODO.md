@@ -6019,7 +6019,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:27869 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:27976 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -6185,7 +6185,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:11019 (T-6FE392)8 (T-529ABE)` from `TODO.md:23514 (T-529ABE)`: a
+      `TODO.md:11019 (T-6FE392)8 (T-529ABE)` from `TODO.md:23593 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -11866,7 +11866,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:23514 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:23593 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -17295,6 +17295,85 @@ finds zero shared names (a renamed block would otherwise make it silently blind)
       ➡️ **LEFT, in D-FCBSHAPE's list:** FCB #0 (`VARPTR(#0)`), the header
       bytes (mode +0, device +4, position +6), and the geometry: FILTAB below
       the array, so `#1` shifts 265 per channel, not 267.
+
+- [x] 📼 **D-EOFCAS — `EOF()` ON A TAPE OPENED FOR INPUT ANSWERS, AS ON THE CF-3300 (IT WAS `Illegal function call`)**
+      🎚️ TIER 1 — happy path: the ordinary tape read loop ends on EOF, and
+      here it died on the first one.
+      Found from Joost's question (2026-09-30), "the channels, are they only
+      disk or also tape?". Both. `ev_ff_eof` sent EVERY non-disk channel to
+      `ev_f_ifc`, and that answer had been measured for `CRT:` only.
+      📏 [`basic_probe_eofcas.py`](probes/basic/basic_probe_eofcas.py) (the
+      `casfch_probe` rig: AUTOEXEC.BAS + an `$EA` tape, the same program on both
+      machines, answers read out of RAM):
+      - Before ([`eofcas_run.out`](scratchpad/eofcas_run.out)): the CF-3300 reads 0, 0,
+        then −1 after the last line; zerobas raised 5 at all three. 🔮 Predicted
+        exactly, hit.
+      - The `CAS:` OUTPUT half is NO-ORACLE: the CF-3300 never came back from
+        `OPEN"CAS:T"FOR OUTPUT` with the input tape mounted.
+      🛠 **The fix:** non-disk channels go to a new seqio tenant op, 6, with the
+      mode in H (`eof_dev`, basic/expr.asm; `sq_deveof`, sub/bload.asm).
+      - A `CAS:` INPUT channel PEEKS the tape. The reader keeps
+        `CAL_CURHI:CAL_CNT` on the next byte after every serve, and latches
+        `CAL_NEEDFILL = 2` when there is none. So the end is that latch, or a
+        Ctrl-Z next.
+      - Any other device keeps `ev_f_ifc`'s answer: FPERR 3, first error wins,
+        EOF reads 0. The `CRT:` control still reads 5 on both machines.
+      - Never `fch_select`: a cassette channel's record copy would land on
+        `CAL_BUF`.
+      - Main page 1 11 → 4 B (7, predicted ~7). Sub page 1 440 → 376 B.
+      🔴 **THREE MISSES ON THE WAY, EACH CAUGHT BY A READING:**
+      1. The bare peek read 0 after the last line where the CF-3300 reads −1.
+         Our line reader ignores an LF only when it REACHES it, so the LF
+         after the last CR was still next. The peek now looks past one LF,
+         into the read-ahead buffer when the LF is a buffer's last byte.
+      2. The first boundary case used one 254-character line. LINE INPUT
+         refused it on BOTH machines, and a later `E=0` hid that, so every
+         cell agreed for the wrong reason (LEN 0 on both sides).
+      3. The second case (126 + 124) read cleanly and still missed the
+         boundary: its LF sat at byte 253, my arithmetic. Two 126-character
+         lines put CR/LF at bytes 254/255, checked against the built tape.
+         `CLEAR 1000` was needed too: 252 characters are ERR 14 in the default
+         200 B.
+      After ([`eofcas_after.out`](scratchpad/eofcas_after.out)): all three tapes
+      agree, and `len` 126 witnesses the geometry. The two boundary tapes are
+      identical up to byte 255 and answer 0 and −1, so the peek read across.
+      ⚠️ One branch no faithful tape reaches: an LF as the tape's LAST byte
+      with no block after it. The producer always ends with a Ctrl-Z block.
+      🔒 **Gate `eofcas-acceptance`** (emulator tier; exit 1 on any DIFF). Knife:
+      HEAD's `expr.asm` + `sub/bload.asm` turn it red with 10 DIFFs, every
+      tape-EOF cell, while the `CRT:` cells stay equal
+      ([`eofcas_knife.out`](scratchpad/eofcas_knife.out)).
+      📏 Knife BLIND unchanged, kwtime OK 851 (predicted, hit), kwram re-pinned.
+      Sweep SUPPORTED 960 against a predicted 965, a miss. The five are the rig
+      rows: the RP2040 board was no longer attached (no `/dev/cu.usbmodem*`), so
+      they ran crunch-only and CARRIED (Joost 2026-09-26). Not the change.
+      ([`eofcas_knife_all.out`](scratchpad/eofcas_knife_all.out),
+      [`eofcas_knife_fn.out`](scratchpad/eofcas_knife_fn.out),
+      [`eofcas_kwsweep.out`](scratchpad/eofcas_kwsweep.out),
+      [`eofcas_kwtime.out`](scratchpad/eofcas_kwtime.out))
+
+- [x] 🔴 **D-EOFMODE — `EOF()` ON A DISK CHANNEL NOT OPEN FOR INPUT IS `Bad file mode` (61), AS ON THE CF-3300 (IT ANSWERED 0)**
+      🎚️ TIER 3 — common errors (D-DISKERRS' "the common error paths" line).
+      📏 [`eofmode_probe.py`](scratchpad/eofmode_probe.py) →
+      [`eofmode_run.out`](scratchpad/eofmode_run.out): OUTPUT, APPEND **and
+      RANDOM** are all 61, and trappable. 🔮 Predicted a value for RANDOM, because
+      MS Disk BASIC's documentation allows EOF there: a MISS. The machine says 61.
+      INPUT controls: 0, then −1 after `INPUT$(26,#1)`.
+      🔴 The first cut's fixture wrote its own file (OPEN/PRINT#/CLOSE, then
+      re-OPEN), and the CF-3300 never came back from those three programs. The
+      disk's own `HI.TXT` is opened instead. Not chased: it is not this item.
+      🛠 `ev_ff_eof`: after `fch_mode_class`, `dec a / jp nz,sid_badmode`. The
+      tail is INPUT$'s existing 61 raise (strvar.asm, now labelled): rule 3,
+      no private copy. 4 B of main page 1 (15 → 11, predicted 4, hit).
+      After ([`eofmode_after.out`](scratchpad/eofmode_after.out)): 7/7 agree. Row
+      `t8eofatend61` (PROVES-T6:61, the row batch 8's denominator named) is
+      SUPPORTED. Knife: HEAD's `expr.asm` makes it EXTRA (`Bad file mode in 20`
+      there, nothing here) while `t8eofatend59` stays SUPPORTED
+      ([`eofmode_knife.out`](scratchpad/eofmode_knife.out)).
+      📏 **Batch 8 re-measured the same day** ([`t6enum_b8_0930.out`](scratchpad/t6enum_b8_0930.out)):
+      15 of 126 disagreed (predicted ~14), two of them the `RUN` rows the
+      reference cannot report. This row was one of the 13; the other 12 stand
+      in D-DISKERRS' list.
 
 - [x] 💰 **D-ENGROW0 — THE DISK-ENGINE TABLE RESERVED A ROW NOTHING USES: +50 B OF BOOT `FRE(0)` ON THE DISK MACHINE**
       🎚️ TIER 4 — RAM usage (VG-8020): the disk build trailed the CF-3300's boot
@@ -26005,6 +26084,9 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       ⚠️ Not asked: a WILDCARD name (`OPEN "A*.TXT"`, 56 on the CF-3300, 53 here)
       while a matching file is open — the check would answer 54 first. It is the
       same wrong-code case already listed below.
+      ✅ **D-EOFMODE (2026-09-30): `EOF` on a channel opened the other way is 61 now**
+      (OUTPUT, APPEND and RANDOM alike); batch 8 re-measured the same day leaves 12
+      real rows, listed below ([`t6enum_b8_0930.out`](scratchpad/t6enum_b8_0930.out)).
       • **the common error paths:** `INPUT #` / `INPUT$(n,#)` past the end
         (55 → ok) — ➡️ **now its own TIER 1 item, D-SEQEOF (below): it is not
         just a missing code, zerobas reads the Ctrl-Z end marker as DATA and the
@@ -26704,6 +26786,31 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       counts (706), `DSKF(9)` 92.7 / `Bad drive name`.
       ⚠️ **NO GATE WOULD CATCH IT COMING BACK** — kwtime's SLOW is a reported
       finding, not a failure (filed below as D-KWTRATCHET).
+
+- [ ] 🧰 **D-KWTLOAD — kwtime's WATCHDOG IS WALL-CLOCK, AND UNDER POOL LOAD IT CALLED 51 ROWS `HANG` (T2 148 → 123 ON THE SHEET)**
+      🎚️ TIER 6 — apparatus: a false red (tiers-md-check), never a false green.
+      📏 **2026-09-30, the D-EOFCAS FULL battery:**
+      - kwtime's pin read OK 674, UNTIMEABLE 130, HANG 51, REF-ONLY-MISSING 5.
+        The HANG rows were mostly the disk group (`bload`, `bload_b`, …).
+      - The standalone run an hour earlier, on the same sources, read OK 851.
+      - kwsweep ran 855 s in that pool, against 475 s the previous battery.
+      - The sheet lost T2 on 25 disk keywords, and `tiers-md-check` went red.
+      - Re-run alone on the SAME ROM fingerprint (`d81e327e`/`19cca2b5`/`5190d0ef`):
+        OK 851, HANG 0 ([`eofcas_kwtime2.out`](scratchpad/eofcas_kwtime2.out)).
+      - The rig was re-plugged mid-battery; nothing in kwtime reads it. Recorded,
+        not suspected. ⚠️ It dropped off USB again within minutes (no
+        `/dev/cu.usbmodem*`), so the rig rows stay CARRIED from 19:24. An
+        intermittent connection, told to Joost.
+      🎯 A completion watchdog measured in wall seconds reads a slow, loaded host
+      as a machine that never finished. It is the same class as the
+      `apparatus-is-part-of-the-measurement` entries.
+      🤖 **AUTONOMOUS** — candidates, none chosen:
+      - bound the watchdog in EMULATED time (openMSX `after time`), not wall time;
+      - retry HANG rows serially before the pin is written;
+      - have tiers-md-check name "N rows HANG" in its refusal, so the red says
+        what it is.
+      Measure first: which of the 51 still HANG at 2× the watchdog under the same
+      pool load.
 
 - [ ] 🔴 **A kwtime ROW THAT REGRESSES FROM OK TO SLOW OR HANG FAILS NO GATE
       (D-KWTRATCHET, found 2026-09-28 while fixing D-DSKFSLOW).**

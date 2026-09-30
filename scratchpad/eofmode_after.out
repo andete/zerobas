@@ -1,0 +1,9 @@
+case         cf3300         zb
+out          ERR 61     ERR 61  SAME
+app          ERR 61     ERR 61  SAME
+rnd          ERR 61     ERR 61  SAME
+rndput       ERR 61     ERR 61  SAME
+in                0          0  SAME
+inend            -1         -1  SAME
+outtrap      ERR 61     ERR 61  SAME
+refcache: 0 hit, 2 miss, 2 stored

@@ -4318,6 +4318,11 @@ SWEEP: list[tuple[str, str, str | None, str, str]] = [
      "NEEDS-DISK: PROVES-T6:52 SUBJECT:EOF FORM:at-end"),
     ('t8eofatend59', 'a=eof(1)', 'A=EOF(1)', "stored",
      "NEEDS-DISK: PROVES-T6:59 SUBJECT:EOF FORM:at-end"),
+    # D-EOFMODE (2026-09-30): EOF on a disk channel not open FOR INPUT is 61 on
+    # the CF-3300 -- OUTPUT, APPEND and RANDOM alike (scratchpad/eofmode_run.out);
+    # it answered 0 here. The row the batch-8 denominator named.
+    ('t8eofatend61', 'open "e1.txt" for output as #1:a=eof(1)', 'OPEN "E1.TXT" FOR OUTPUT AS #1:A=EOF(1)', "stored",
+     "NEEDS-DISK: PROVES-T6:61 SUBJECT:EOF FORM:at-end"),
     ('t8locposition13', 'a=loc("a")', 'A=LOC("A")', "stored",
      "NEEDS-DISK: PROVES-T6:13 SUBJECT:LOC FORM:position"),
     ('t8locposition52', 'a=loc(16)', 'A=LOC(16)', "stored",

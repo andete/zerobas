@@ -1,0 +1,9 @@
+case         cf3300         zb
+out          ERR 61          0  DIFF
+app          ERR 61          0  DIFF
+rnd          ERR 61          0  DIFF
+rndput       ERR 61          0  DIFF
+in                0          0  SAME
+inend            -1         -1  SAME
+outtrap      ERR 61          7  DIFF
+refcache: 0 hit, 2 miss, 2 stored

@@ -1,0 +1,48 @@
+python3 tools/install-repack-machine.py --merged build/zerobas-main-eu.rom --disk-rom build/disk.rom \
+	  --sub-rom build/sub.rom
+wrote C-BIOS_MSX1_EU_REPACK_DISK  (-> machine "C-BIOS_MSX1_EU_REPACK_DISK": merged repack ROM in slot 0, zerobas-disk in slot 3-1, zerobas-sub in slot 3-2)
+     /Users/joost/.openMSX/share/machines/C-BIOS_MSX1_EU_REPACK_DISK.xml
+python3 tools/install-repack-machine.py --merged build/zerobas-main-eu.rom --sub-rom build/sub.rom \
+	  --no-disk
+wrote C-BIOS_MSX1_EU_REPACK_NODISK  (-> machine "C-BIOS_MSX1_EU_REPACK_NODISK": merged repack ROM in slot 0, slot 3-1 EMPTY (diskless target), zerobas-sub in slot 3-2)
+     /Users/joost/.openMSX/share/machines/C-BIOS_MSX1_EU_REPACK_NODISK.xml
+python3 probes/basic/basic_probe_eofcas.py
+
+  two lines, HELLO / WORLD
+  slot      CF-3300  zerobas
+  open.E          0        0   SAME
+  open.A          0        0   SAME
+  line1.E         0        0   SAME
+  line1.A         0        0   SAME
+  line2.E         0        0   SAME
+  line2.A       255      255   SAME
+  IMARK         165      165   SAME
+  out.E         255        5   NO-ORACLE (the CF-3300 never got here)
+  out.A         255        7   NO-ORACLE (the CF-3300 never got here)
+  MARK          255      165   NO-ORACLE (the CF-3300 never got here)
+
+  boundary, a third line follows
+  slot      CF-3300  zerobas
+  li1.E           0        0   SAME
+  li2.E           0        0   SAME
+  eof.E           0        0   SAME
+  eof.A           0        0   SAME
+  len           126      126   SAME
+  IMARK         165      165   SAME
+  crt.E           5        5   SAME
+  crt.A           7        7   SAME
+  MARK          165      165   SAME
+
+  boundary, the file ends there
+  slot      CF-3300  zerobas
+  li1.E           0        0   SAME
+  li2.E           0        0   SAME
+  eof.E           0        0   SAME
+  eof.A         255      255   SAME
+  len           126      126   SAME
+  IMARK         165      165   SAME
+  crt.E           5        5   SAME
+  crt.A           7        7   SAME
+  MARK          165      165   SAME
+
+0 rows diverging  

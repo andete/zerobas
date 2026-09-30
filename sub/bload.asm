@@ -263,7 +263,9 @@ dev_cas:
 seqio_tenant:
                 ld      a,l
                 cp      4
-                jr      z,sq_numitem        ; D-CHANSWITCH
+                jp      z,sq_numitem        ; D-CHANSWITCH (`jp`: sq_deveof sits between)
+                cp      6
+                jr      z,sq_deveof         ; D-EOFCAS
                 or      a
                 jr      nz,sq_eoftest
                 call    seq_peek            ; A = next byte; CF = nothing to read
@@ -303,6 +305,57 @@ sq_end:
                 ld      a,1
                 ld      (SEQ_EOF),a
                 ret
+
+; --- sq_deveof: L = 6 -- EOF() on a NON-DISK channel, H = its mode (D-EOFCAS) --
+; Measured on the CF-3300 (scratchpad/eofcas_run.out): a tape opened FOR INPUT
+; answers 0 while data remains and -1 once the last line is read. The tape
+; reader keeps (CAL_CURHI:CAL_CNT) on the NEXT byte after every serve (a drained
+; buffer is swapped for the read-ahead one on the byte that drains it), and
+; latches CAL_NEEDFILL = 2 when there is none -- so the end is that latch, or a
+; Ctrl-Z next, the same soft end cas_in_getbyte stops INPUT# on. A peek, nothing
+; consumed. Any OTHER device channel keeps ev_f_ifc's answer, which is main's
+; deferred FPERR=3 (first error wins) with EOF reading 0.
+sq_deveof:
+                ld      a,h
+                cp      CAS_IN_MODE
+                jr      nz,sq_devifc
+                ld      a,(CAL_NEEDFILL)
+                cp      2
+                jr      z,sq_end            ; the tape's last byte was served
+                ld      a,(CAL_CURHI)
+                ld      h,a
+                ld      a,(CAL_CNT)
+                ld      l,a
+                ld      a,(hl)              ; the next byte, not consumed
+                ; 🔴 LOOK PAST ONE LF. The reference's INPUT# swallows the LF after
+                ; its CR; our line reader (read_into_strscr) ignores an LF only when
+                ; it REACHES it, so after the last line the LF is still next and a
+                ; bare peek read 0 where the CF-3300 reads -1 (eofcas_after.out,
+                ; first cut). The byte after it may be the read-ahead buffer's
+                ; first -- or nothing, when no block follows (CAL_NEEDFILL != 0).
+                cp      $0A
+                jr      nz,sq_dev1a
+                inc     l
+                jr      nz,sq_devnext       ; still inside this buffer
+                ld      a,(CAL_NEEDFILL)
+                or      a
+                jr      nz,sq_end           ; the LF was the tape's last byte
+                ld      a,h
+                xor     CAL_XORHI
+                ld      h,a                 ; the read-ahead buffer, offset 0
+sq_devnext:
+                ld      a,(hl)
+sq_dev1a:
+                cp      $1A
+                jr      z,sq_end            ; Ctrl-Z next: the soft end
+                jr      sq_byte
+sq_devifc:
+                ld      a,(FPERR)
+                or      a
+                jr      nz,sq_byte          ; a fault is already pending: it wins
+                ld      a,3                 ; FPERR 3 -> ERR 5, as ev_f_ifc
+                ld      (FPERR),a
+                jr      sq_byte
 
 ; --- sq_numitem: L = 4 -- ONE NUMERIC INPUT # item into STRSCR (D-CHANSWITCH) --
 ; Measured on the CF-3300 (scratchpad/inpnum_run2.out, inpnum_run3.out): leading
@@ -378,7 +431,7 @@ sqn_done:
 sqn_eof:
                 xor     a
                 ld      (STRSCR),a
-                jr      sq_end
+                jp      sq_end              ; `jp`: sq_deveof sits between (D-EOFCAS)
 
 ; seq_peek -- the next byte WITHOUT consuming it: A = it, CF clear; CF set when
 ; nothing is left or the next byte is Ctrl-Z (R1). fat_io_getbyte's own bounds

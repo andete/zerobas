@@ -508,6 +508,7 @@ sid_filef:
                 cp      4
                 ld      a,55                ; input past end (modes 2/3/5/6 alike)
                 jr      nz,sid_raise
+sid_badmode:                                ; D-EOFMODE: EOF() raises here too
                 ld      a,61                ; bad file mode (RANDOM)
 sid_raise:
                 jp      raise_error         ; no `pop hl` -- raise_error resets SP

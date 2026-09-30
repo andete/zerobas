@@ -53,15 +53,15 @@ FCH_CEIL equ 0000FH   ; repack: the MEASURED reference ceiling (§3, exactly
 LPT_MODE equ 00005H   ; FCH_MODES value: channel open to the LPT: printer device
 
 ; --- page-1 call-back targets: reached by an INTER-SLOT call (MSX2 TH), not an absolute one ---
-fname_expr equ 06E4DH
-pdfcb_resume equ 06E46H
-dirverb_op equ 06C23H
-main_fat_mount equ 064B9H   ; main's fat_mount
-main_fat_find equ 064BDH   ; main's fat_find
-parse_disk_fcb equ 06649H
-field_prologue equ 0726DH
-field_item equ 072A3H
-lrset_tgt equ 0735EH
-lrset_rhs equ 07380H
-lrset_finish equ 07397H
-fch_ctx_addr equ 06FACH
+fname_expr equ 06E58H
+pdfcb_resume equ 06E51H
+dirverb_op equ 06C2EH
+main_fat_mount equ 064C4H   ; main's fat_mount
+main_fat_find equ 064C8H   ; main's fat_find
+parse_disk_fcb equ 06654H
+field_prologue equ 07278H
+field_item equ 072AEH
+lrset_tgt equ 07369H
+lrset_rhs equ 0738BH
+lrset_finish equ 073A2H
+fch_ctx_addr equ 06FB7H

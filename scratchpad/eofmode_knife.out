@@ -1,0 +1,35 @@
+msxtest: BASIC image carries islands -- loaded at $0010, not $2812
+build under measurement: git=639e3778 zerobas-main-eu.rom=b1c8c303301d sub.rom=e5a9ef894345 disk.rom=5579e3e30d30
+
+==============================================================================
+LAYER 1 — CRUNCH (tokenisation only; NOT a support answer)
+==============================================================================
+SAME   t8eofatend59 a=eof(1)
+SAME   t8eofatend61 open "e1.txt" for output as #1:a=eof(1)
+
+==============================================================================
+LAYER 2 — SUPPORT (the load-bearing layer)
+==============================================================================
+EXTRA         t8eofatend61 OPEN "E1.TXT" FOR OUTPUT AS #1:A=EOF(1)
+            ref  [error:bad file] 'Bad file mode in 20'
+            zb   [value] ''
+SUPPORTED     t8eofatend59 A=EOF(1)
+            ref  [value] 'File not OPEN in 10'
+
+==============================================================================
+COMBINED — tokenised? x observable consequence
+==============================================================================
+word       crunch  support     consequence
+------------------------------------------------------------------------------
+t8eofatend59 present SUPPORTED   match
+t8eofatend61 present EXTRA       ref 'Bad file mode in 20' vs zb ''
+
+==============================================================================
+SUMMARY  EXTRA=1  SUPPORTED=1
+         executed 2 / 2 words; 0 crunch-only
+==============================================================================
+ROWS: 2 printed, 2 scored — 0 crunch-only word(s) carry no support reading and are printed but not scored
+pin: NOT written -- an --only run measures a subset, and the pin is the whole sweep
+
+=== CRUNCH PIN — words the reference tokenises and zerobas does not ===
+refcache: 0 hit, 4 miss, 4 stored

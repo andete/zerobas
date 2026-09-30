@@ -1332,12 +1332,31 @@ ev_ff_eof:                                  ; EOF(n): -1 at end of the input fil
                 ; `OPEN"CRT:"FOR OUTPUT AS#1:A=EOF(1)` is ERR 5 on BOTH
                 ; references and COMPLETED SILENTLY here. ev_f_ifc is the
                 ; deferred FPERR=3 -> ERR 5 idiom; byte-neutral retarget.
-                jp      nc,ev_f_ifc         ; -> function error (never fch_select them)
+                ; 🔴 D-EOFCAS (2026-09-30): NOT EVERY DEVICE CHANNEL. A TAPE opened
+                ; FOR INPUT answers EOF on the CF-3300 -- 0, 0, then -1 after the
+                ; last line (scratchpad/eofcas_run.out) -- and it was ERR 5 here,
+                ; so the textbook tape loop died on its first EOF. Every non-disk
+                ; channel goes to the seqio tenant's op 6 with its mode in H: a
+                ; CAS: input channel peeks the tape, any other keeps ev_f_ifc's
+                ; answer (the tenant sets the same deferred FPERR=3, first error
+                ; wins, and EOF reads 0). Never fch_select one: a cassette channel
+                ; owns no fat.asm ctx, and its record copy would land on CAL_BUF.
+                jr      nc,eof_dev
+                ; 🔴 D-EOFMODE (2026-09-30): a DISK channel answers EOF only when it
+                ; is open FOR INPUT. OUTPUT, APPEND and RANDOM are all `Bad file
+                ; mode` (61), trappable, on the CF-3300 -- RANDOM too, which MS
+                ; Disk BASIC's documentation allows (scratchpad/eofmode_run.out).
+                ; Here EOF(1) on an OUTPUT channel answered 0 and the program ran
+                ; on. A = FCH_MODES[E] (fch_mode_class), INPUT = 1. INPUT$'s own
+                ; 61 raise is the tail: no private copy.
+                dec     a
+                jp      nz,sid_badmode
                 ld      a,e
                 call    fch_select
-                call    fat_io_eof          ; D-SEQEOF: CF = at the end -- Ctrl-Z
+                call    fat_io_eof         ; D-SEQEOF: CF = at the end -- Ctrl-Z
                                             ; NEXT counts (R1); other modes keep the
                                             ; byte count (the tenant does both)
+eof_answer:
                 sbc     a,a
                 inc     a                   ; Z iff at the end
                 ld      de,0
@@ -1439,6 +1458,13 @@ ev_ff_varptrch:
                 pop     ix
                 ex      de,hl               ; DE = the address; FACTYP is already
                 ret                         ; int (ev_ff_ckdone's flt_int_result)
+eof_dev:                                    ; D-EOFCAS: A = FCH_MODES[E], not disk.
+                                            ; Past LOC on purpose: LOF's dispatch
+                                            ; `jr` has no slack for a byte before it
+                ld      h,a
+                ld      l,6
+                call    seq_call            ; CF = at the end (tape); 0 otherwise
+                jr      eof_answer
 
 ; fch_mode_class — the shared channel-mode classifier. A = FCH_MODES[E]; raises
 ; ERR 59 "file not open" if that is 0; CF set if E is a disk file channel

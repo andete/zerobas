@@ -2216,6 +2216,14 @@ castail-characterize: repack-machine $(DISK_TEST_DSK)
 cas-ascii-acceptance: repack-machine
 	python3 probes/basic/basic_probe_cas_ascii.py
 
+# --- eofcas-acceptance: EOF() on a tape channel (D-EOFCAS, 2026-09-30) --------
+# A CAS: channel opened FOR INPUT answers EOF on the CF-3300 (0 while data
+# remains, -1 after the last line) and was ERR 5 here. Same program on both
+# machines (AUTOEXEC.BAS + an $EA tape), RAM read back; three tapes, two of them
+# putting the last LF on the tape buffer's LAST byte.
+eofcas-acceptance: repack-machine
+	python3 probes/basic/basic_probe_eofcas.py
+
 # --- wprotect-acceptance: disk WRITE errors reach BASIC (D-WPROTECT, D-SAVEOPEN) --
 # 🔴 zerobas reported NO disk write error at all until 2026-09-28: the driver's
 # `cp 0` cleared the carry on every failed write, so a write-protected disk

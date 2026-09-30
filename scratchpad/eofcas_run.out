@@ -1,0 +1,26 @@
+    5 MAXFILES=2
+    10 ONERRORGOTO900
+    20 OPEN"CAS:D"FOR INPUT AS#1
+    30 E=0:A=7:A=EOF(1):POKE&HD005,E:POKE&HD006,A AND 255
+    40 LINE INPUT#1,A$
+    50 E=0:A=7:A=EOF(1):POKE&HD007,E:POKE&HD008,A AND 255
+    60 LINE INPUT#1,B$
+    70 E=0:A=7:A=EOF(1):POKE&HD009,E:POKE&HD00A,A AND 255
+    72 POKE&HD00B,&HA5
+    75 E=0:A=7:OPEN"CAS:T"FOR OUTPUT AS#2
+    77 A=EOF(2):POKE&HD00C,E:POKE&HD00D,A AND 255
+    80 POKE&HD00E,&HA5
+    88 END
+    900 E=ERR:RESUME NEXT
+
+  slot      CF-3300  zerobas
+  open.E          0        5   DIFF
+  open.A          0        7   DIFF
+  line1.E         0        5   DIFF
+  line1.A         0        7   DIFF
+  line2.E         0        5   DIFF
+  line2.A       255        7   DIFF
+  IMARK         165      165   SAME
+  out.E         255        5   DIFF
+  out.A         255        7   DIFF
+  MARK          255      165   DIFF
