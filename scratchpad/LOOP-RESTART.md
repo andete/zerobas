@@ -30,6 +30,40 @@ symmetric. Treat that group as closed-by-measurement unless a new signal appears
 | PLAY X shape | *"Tenant walks the chain"* — the MML tenant reads the variable chain in RAM itself (spec-basic-audio-play §7.12); main ~0 B, no carve needed |
 | the rig | Joost's RP2040-Zero is **CONNECTED to the laptop since 2026-09-25** (`/dev/cu.usbmodem1101`, running firmware, not BOOTSEL; seen read-only, nothing flashed). **UN-PARKED 2026-09-26 and FLASHED with `tools/rigfw/rigfw.ino`:** headless joystick WORKS (bind `msxjoystick1_config` to `joy1`, which this install leaves EMPTY); headless mouse does NOT reach PAD/PDL. Next: STICK/STRIG rows — the rig item in TODO |
 
+### 🌙 LOOP 2026-09-30 EVENING → 10-01 — READ THIS FIRST (the sections below are older)
+
+**Commits after the day section:** `639e3778` **D-ENGROW0** (the disk ROM stopped
+reserving the engine table's unused row 0: +50 B disk boot FRE; the OPEN `s.case`
+remainder priced at 165 B and put to Joost) · `e4e46bbf` **D-EOFCAS** (TIER 1: EOF()
+on a TAPE opened for input answered Illegal function call; found from Joost's
+question "are channels only disk or also tape?") + **D-EOFMODE** (EOF on a disk
+channel not open for input is 61) + gate `eofcas-acceptance` · `7c488429`
+**D-INPQUOTE** (quoted INPUT fields, funded by four zero-behaviour carves:
+D-VDPCB, D-RETTAIL, D-TAILMERGE, D-DEMOTE) + D-INPQUOTE2 filed + **D-PKILL** · then
+**D-PKILLGATE** (`make hostkill-check`).
+**Walls (`make basic-reloc`, 2026-10-01 ~00:30): main page 1 2 B, low 0 B; sub
+p0 18 B, sub p1 376 B.** Main is FULL again — carve before any main-byte item.
+🙋 **NEW FOR JOOST:** the OPEN same-file `s.case` row: spend 165 B of disk-machine
+RAM on the verbatim-name rule, or pin it as a divergence (TODO, the OPEN item).
+🔌 **The rig drops off USB intermittently** (seen twice on 09-30). Board-less runs
+CARRY its five rows (Joost 09-26); the last board-backed pin is `7c488429`'s.
+➡️ **NEXT, AUTONOMOUS:** most items need main bytes (the n-gram TAIL list has a few
+5–6 B pairs left; `evict_scout` finds only hot paths). D-INPQUOTE2's disk half
+fits the seqio tenant (sq_numitem's peek pattern) but its routing needs ~10 B of
+main. STEP 10 (OPEN into disk.rom) is the architecture item, and its "TIER 2" tag
+is stale (LOAD is T2✓).
+🔴 **LESSONS TONIGHT:**
+• **A GATE MUST NOT KILL WHAT IT DID NOT START.** A `pkill -9 openmsx` copied
+from a scratchpad rig into a gate killed the pool's emulators; kwtime read 51/32
+rows HANG, and I blamed LOAD in a commit message. Unit COUNT and unit TIMES
+across batteries found it. Memory: `a-gate-must-not-kill-what-it-did-not-start`.
+• **A BOUNDARY CASE MUST WITNESS ITS OWN GEOMETRY.** D-EOFCAS's first boundary
+tape agreed on every cell because LINE INPUT refused the line on BOTH machines;
+the second put the LF at byte 253, not 255. Only a `len` slot and a byte dump of
+the built tape made the case real.
+• **A FILED RULE's LAST CLAUSE IS OFTEN THE UNRUN ONE.** D-INPQUOTE's "the rest of
+the field is consumed" was never measured past quote-then-CR; three edges differ.
+
 ### ☀️ LOOP 2026-09-30 DAY — READ THIS FIRST (the sections below are older)
 
 **Commits after the night section (`git log eaa63e58..`):** `c5f876fd`

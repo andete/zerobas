@@ -6019,7 +6019,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:28070 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:28079 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -26891,7 +26891,16 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       Measure first: which of the 51 still HANG at 2× the watchdog under the same
       pool load.
 
-- [ ] 🧰 **D-PKILLGATE — NO STATIC CHECK STOPS A BATTERY PROBE FROM KILLING OTHER EMULATORS**
+- [x] 🧰 **D-PKILLGATE — NO STATIC CHECK STOPS A BATTERY PROBE FROM KILLING OTHER EMULATORS**
+      ✅ **BUILT 2026-10-01: `make hostkill-check`** (`tools/check_no_hostkill.py`,
+      STATIC tier). It walks every unit in run_gates' lists, the recipe's
+      `python3 <file>.py` scripts, and their in-repo imports transitively, and
+      refuses `pkill`/`killall` in CODE. Measured three ways:
+      - selftest: a pkill planted behind an import is CAUGHT, and a comment-only
+        mention passes;
+      - the real tree: 139 units clean;
+      - the D-PKILL line put back into `basic_probe_eofcas.py`: RED, naming file
+        and line (restored byte-identical after).
       🎚️ TIER 6 — apparatus: it produced a false red twice on 2026-09-30.
       A `pkill`/`killall openmsx` in any unit the pool runs (`run_gates.GATES`)
       kills its neighbours' emulators; the reds read as kwtime rows HANGing, a

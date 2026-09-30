@@ -1034,6 +1034,13 @@ battery-membership-check:
 	python3 tools/check_battery_membership.py --selftest
 	python3 tools/check_battery_membership.py
 
+# --- hostkill-check: no battery unit kills what it did not start (D-PKILLGATE) --
+# 🔴 2026-09-30: a gate built from a scratchpad rig ran `pkill -9 openmsx` and
+# killed the pool's other emulators; kwtime read 32-51 rows HANG two units away.
+hostkill-check:
+	python3 tools/check_no_hostkill.py --selftest
+	python3 tools/check_no_hostkill.py
+
 # --- D-FIXTUREPOLL (docs/spec-fixturepoll.md): the generated disk images -------
 # disk/test720.dsk is UNTRACKED and generated. A probe wrote TS.DAT into the
 # local copy; namspc-acceptance refused (nobody collected it) and D-FILESROT then
