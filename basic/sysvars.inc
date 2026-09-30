@@ -3572,7 +3572,23 @@ FCH_CEIL        equ     15      ; repack: the MEASURED reference ceiling (§3, e
 ; 267 = 256 + 11. Growing the block to hold the record charges the same thing in
 ; the same way; zerobas's 50 was the outlier.
 FCH_RECMAX      equ     256     ; the largest record (the OPEN LEN= domain is 1..256)
-FCH_CTXSZ       equ     FCH_STATESZ + FCH_RECMAX
+; 🏗️ D-FCBSHAPE S1+S2 (2026-09-30, docs/spec-fcbshape.md §7): the block is the
+; REFERENCE's shape now -- a 9-byte header and the 256-byte record, 265 B, the
+; `VARPTR(#n+1) - VARPTR(#n)` stride both references measure -- and MAXFILES
+; charges 267 a channel (the 2 extra bytes are the FILTAB word the references
+; keep per channel; zerobas reserves them above the blocks, contents not yet
+; kept). The 50 B of disk-ENGINE state left the block for DSK_ENGTAB below.
+FCH_HDRSZ       equ     9       ; the FCB header: mode +0, device +4, position +6
+FCH_BLKSZ       equ     FCH_HDRSZ + FCH_RECMAX      ; 265: the block, and the stride
+FCH_CTXSZ       equ     FCH_BLKSZ + 2               ; 267: what MAXFILES charges
+; DSK_ENGTAB -- a DISK channel's engine state (the FCH_STATE0 span), one row per
+; channel number, row 0 unused. RULED (a) by Joost 2026-09-27: a FIXED table in
+; the disk work area, the reference's shape. The disk ROM's init lowers HIMEM to
+; its base at boot, as the CF-3300's lowers HIMEM over its own work area, and a
+; later CLEAR above it exposes it exactly as the reference exposes its own
+; (scratchpad/clearmax_run.out). A diskless machine never touches it: no disk
+; channel can exist there, and the tenant copies state for DISK channels only.
+DSK_ENGTAB      equ     TXTMAX - (FCH_CEIL+1)*FCH_STATESZ   ; NOT-A-CELL: $DCE0, 800 B
 ; --- Phase 2c slice 1: random-access FIELD table + fielded-read scratch -----
 ; zerobas stores string vars INLINE in STRTAB ([name0][name1][len][bytes:32]); a
 ; MS-BASIC-style descriptor pointing into a record buffer does not exist. So a

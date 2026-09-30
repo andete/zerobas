@@ -138,6 +138,13 @@ does NOT protect it afterwards.** `CLEAR ,addr` is accepted all the way to
    position `+6` is kept as the reference moves it;
 4. disk.rom init: `HIMEM −= 800`;
 5. `VARPTR(#n)` = `fch_ctx_addr` (main; 29 B free, 2026-09-29).
+**✅ SHIPPED 2026-09-30, items 1, 2 and 4 plus main's boot store** (item 3's
+header fields and item 5, `VARPTR(#n)`, are left). One change from the plan: the
+2 FILTAB bytes a channel sit ABOVE the blocks, not below, so channel 1's block
+stays the table base, which `basic/program.asm`'s store ceiling reads through
+op 18. Measured: 267 B a channel on both machines (`chancost-characterize`), and
+the disk build's boot FRE(0) exactly 800 B under the diskless build's. TODO
+D-FCBSHAPE carries the readings.
 Rows: `MAXFILES` 0..4 `FRE(0)` steps on BOTH targets, the `VARPTR(#n)` stride,
 PEEKs of `+0`/`+4`/`+6` after an OPEN, and the disk build's boot `FRE(0)` (it
 should trail the CF-3300 by ~165 B, down from leading by 635).

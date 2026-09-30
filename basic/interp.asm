@@ -165,7 +165,19 @@ init:
                 ; only what the cell says. Cold boot only: NEW/RUN keep it, as
                 ; the reference does; CLEAR's address rule is unchanged
                 ; (scratchpad/himem_probe.py, 0/12).
+                ; 🏗️ D-FCBSHAPE S2 (2026-09-30): KEEP A HIMEM A DISK ROM HAS ALREADY
+                ; LOWERED. The disk ROM's INIT runs in the slot scan, BEFORE this,
+                ; and reserves its engine table under HIMEM the reference's way;
+                ; storing TXTMAX here unconditionally would hand that RAM back to
+                ; BASIC. C-BIOS leaves $F380, above TXTMAX, so a diskless boot
+                ; still reads TXTMAX. The high bytes decide it ($DC.. vs $E0..).
                 ld      hl,TXTMAX
+                ld      de,(HIMEM)
+                ld      a,d
+                cp      h
+                jr      nc,bh_store         ; HIMEM at or above TXTMAX: TXTMAX
+                ex      de,hl               ; a disk ROM lowered it: keep it
+bh_store:
                 ld      (HIMEM),hl
                 call    ctl_reset
                 ; 🔴 D-BOOTWIDTH (2026-09-24): BOOT AT WIDTH 37, THE VG-8020's.

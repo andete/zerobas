@@ -205,6 +205,9 @@ REQUIRED_DISK_RAM = [
     "FCH_ACTIVE",               # channel live in the engine globals, 0 = none
     "FCH_MODES",                # [ch] = 0 closed / 1..4 disk / 5.. device, cassette
     "FCH_STATESZ",              # ⚠️ a CONSTANT: the saved per-channel state size
+    "FCH_CEIL",                 # ⚠️ a CONSTANT: the channel ceiling -- with TXTMAX and
+                                # FCH_STATESZ it DERIVES the engine table's address
+                                # (D-FCBSHAPE S2), so the two ROMs cannot drift
     "LPT_MODE",                 # ⚠️ a CONSTANT, not a cell: modes below it are
                                 # disk files. Published so the disk side's test
                                 # cannot drift from fch_mode_class's `cp LPT_MODE`

@@ -160,6 +160,8 @@ H_FOPEN         equ     $FE5D
 ; of it is the closing quote, not the verb. Same shape, different side of the
 ; call -- so the selector crosses in RAM (§6.6n).
 FOPEN_SEL       equ     DISKOP_OP
+HIMEM           equ     $FC4A   ; the published BASIC ceiling (MSX2 Technical Handbook,
+                                ; work area) -- D-FCBSHAPE S2 lowers it at init
 SUB_BUILD       equ     0       ; this is the DISK build, not the sub-ROM
 
 FOPEN_SEL_AOPEN equ     $41     ; step 11 (D-MERGEPORT): open an ASCII program

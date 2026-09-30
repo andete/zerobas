@@ -1,0 +1,8 @@
+case                              CF-3300                          zerobas
+  control                 [ 1 2| 10 20| 0 ]                [ 1 2| 10 20| 0 ]
+  forloop       [ 1 2 3 4| 10 20 30 40| 0 ]      [ 1 2 3 4| 10 20 30 40| 0 ]
+  gosub              [ 1 2 3| 10 20 30| 0 ]           [ 1 2 3| 10 20 30| 0 ]
+  nested            [ 1 2 2 4| 2 3 3 4| 0 ]          [ 1 2 2 4| 2 3 3 4| 0 ]
+  rd2s                          [PQ|RS| 0 ]                      [PQ|RS| 0 ]
+  rd2alt                         [PRQS| 0 ]                       [PRQS| 0 ]
+refcache: 0 hit, 12 miss, 12 stored

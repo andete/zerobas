@@ -649,7 +649,7 @@ strheap_chantab:
                 or      a
                 ret     z                   ; MAXFILES=0 -> no table at all
                 ld      b,a
-                ld      de,-FCH_CTXSZ
+                ld      de,-FCH_CTXSZ       ; 267 a channel (D-FCBSHAPE S1)
 svc_sub_lp:
                 add     hl,de               ; CF set iff no borrow (HL >= block)
                 jr      nc,svc_under
@@ -2142,7 +2142,8 @@ sh_chan_addr:
                 dec     a
                 jr      z,sca_have          ; channel 1 -> the first block
                 ld      b,a
-                ld      de,FCH_CTXSZ
+                ld      de,FCH_BLKSZ        ; D-FCBSHAPE S1: the 265 B stride; the
+                                            ; 2 B a channel above the blocks are FILTAB's
 sca_lp:
                 add     hl,de
                 djnz    sca_lp

@@ -49,18 +49,19 @@ LPTPOS equ 0EA39H   ; printer head column, 0-based (1)
 FCH_ACTIVE equ 0E012H   ; channel live in the engine globals, 0 = none (1)
 FCH_MODES equ 0EA00H   ; 16 B ($EA00..$EA0F)
 FCH_STATESZ equ 00032H   ; $E9C9..$E9FA inclusive = 50 bytes
+FCH_CEIL equ 0000FH   ; repack: the MEASURED reference ceiling (§3, exactly
 LPT_MODE equ 00005H   ; FCH_MODES value: channel open to the LPT: printer device
 
 ; --- page-1 call-back targets: reached by an INTER-SLOT call (MSX2 TH), not an absolute one ---
-fname_expr equ 06E2DH
-pdfcb_resume equ 06E26H
-dirverb_op equ 06C03H
-main_fat_mount equ 06499H   ; main's fat_mount
-main_fat_find equ 0649DH   ; main's fat_find
-parse_disk_fcb equ 06629H
-field_prologue equ 0724DH
-field_item equ 07283H
-lrset_tgt equ 0733EH
-lrset_rhs equ 07360H
-lrset_finish equ 07377H
-fch_ctx_addr equ 06F8CH
+fname_expr equ 06E36H
+pdfcb_resume equ 06E2FH
+dirverb_op equ 06C0CH
+main_fat_mount equ 064A2H   ; main's fat_mount
+main_fat_find equ 064A6H   ; main's fat_find
+parse_disk_fcb equ 06632H
+field_prologue equ 07256H
+field_item equ 0728CH
+lrset_tgt equ 07347H
+lrset_rhs equ 07369H
+lrset_finish equ 07380H
+fch_ctx_addr equ 06F95H

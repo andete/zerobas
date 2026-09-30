@@ -228,9 +228,16 @@ t_fch_restage:
 ; This was main's fch_load_ctx body, moved whole: the block's LAYOUT is now
 ; known in one ROM only, the one D-FCBSHAPE's later slices change.
 t_fch_load:
+                push    hl                  ; the block
+                call    fch_engrow          ; HL = the channel's engine row; CF = none
+                jr      c,tfl_rec           ; a device channel keeps no engine state
                 ld      de,FCH_STATE0
                 ld      bc,FCH_STATESZ
-                ldir                        ; ctx state -> globals
+                ldir                        ; engine row -> globals
+tfl_rec:
+                pop     hl
+                ld      de,FCH_HDRSZ
+                add     hl,de               ; the record, after the FCB header
                 ld      de,FSECTOR_BUF      ; D-FIELDFIX: and this channel's record
                 ld      bc,FCH_RECMAX
                 ldir
@@ -250,16 +257,47 @@ t_fch_save:
                 call    fat_detach_channel
                 ex      (sp),hl             ; HL = ctx; stack = the flush's HL
                 push    af                  ; the flush's A and Cy
-                ex      de,hl               ; DE = ctx
+                push    hl                  ; the block
+                call    fch_engrow          ; HL = the engine row; CF = no disk channel
+                jr      c,tfs_rec
+                ex      de,hl               ; DE = the row
                 ld      hl,FCH_STATE0       ; the 50-byte engine-state span
                 ld      bc,FCH_STATESZ
-                ldir                        ; DE -> ctx + FCH_STATESZ
+                ldir
+tfs_rec:
+                pop     hl                  ; the block
+                ld      de,FCH_HDRSZ
+                add     hl,de
+                ex      de,hl               ; DE = the record, after the FCB header
                 ld      hl,FSECTOR_BUF      ; D-FIELDFIX: the record travels too
                 ld      bc,FCH_RECMAX
                 ldir
                 pop     af
                 pop     hl
                 jr      t_fch_result
+
+; fch_engrow (D-FCBSHAPE S2): -> HL = DSK_ENGTAB + ch*FCH_STATESZ for the channel
+; in FCH_ACTIVE, CF clear -- or CF set when that channel is not a DISK file (mode
+; 0 or >= LPT_MODE): a device or cassette channel keeps no engine state, and on a
+; diskless machine the table is not reserved at all. Clobbers A,B,C,D,E.
+fch_engrow:
+                ld      a,(FCH_ACTIVE)
+                ld      c,a
+                ld      b,0
+                ld      hl,FCH_MODES
+                add     hl,bc
+                ld      a,(hl)
+                dec     a                   ; disk modes 1..LPT_MODE-1 -> 0..LPT_MODE-2
+                cp      LPT_MODE-1
+                ccf
+                ret     c                   ; closed, device or cassette
+                ld      hl,DSK_ENGTAB
+                ld      de,FCH_STATESZ
+                ld      b,c
+feng_lp:
+                add     hl,de               ; row ch (row 0 unused); no carry below $E000
+                djnz    feng_lp
+                ret
 
 t_fch_detach:
                 call    fat_detach_channel

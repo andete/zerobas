@@ -1,0 +1,10 @@
+case                   CF-3300              zerobas
+  k_nonact2            [ 64 30 ]            [ 64 30 ]
+  o_same2              [ 54 30 ]            [ 54 30 ]
+  o_samein2            [ 54 30 ]            [ 54 30 ]
+  o_samekeep2           [Q1Q2 54 ]           [Q1Q2 54 ]
+  o_diff2                   [OK]                 [OK]
+  n_open               [ 65 30 ]            [ 65 30 ]
+  k_out                [ 64 30 ]            [ 64 30 ]
+  c_srcin              [ 64 30 ]            [ 64 30 ]
+refcache: 0 hit, 16 miss, 16 stored

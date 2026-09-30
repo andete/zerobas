@@ -2559,6 +2559,14 @@ fdc_wp_chkrdy:
 ; may re-read the FAT through FWBUF -- exactly as the reference's raw buffer is
 ; volatile across directory work.
 install_basic_hooks:
+                ; 🏗️ D-FCBSHAPE S2 (2026-09-30): RESERVE THE DISK-ENGINE TABLE under
+                ; HIMEM, as the CF-3300's disk ROM lowers HIMEM over its own work
+                ; area at boot ($DE77 there -- scratchpad/clearmax_run.out). Main's
+                ; boot keeps a HIMEM already below TXTMAX, and every reader takes
+                ; min(HIMEM, TXTMAX), so the string pool, the channels and the
+                ; stack all sit under it from the first prompt.
+                ld      hl, TXTMAX-(FCH_CEIL+1)*FCH_STATESZ
+                ld      (HIMEM), hl
                 ld      hl, FWBUF           ; D-DSKIO: publish the DSKI$/DSKO$ buffer at the
                 ld      (DSKBUF_PTR), hl    ; cell the MSX idiom PEEKs (docs/spec-basic-dskio.md)
                 ld      hl, hook_tab
@@ -3161,13 +3169,17 @@ hoc_loop:
                 ld      hl,(main_FWR_DIROFF)
                 jr      hoc_have
 hoc_saved:
+                ; D-FCBSHAPE S2 (2026-09-30): a saved DISK channel's engine state is
+                ; its row of the fixed engine table (main's DSK_ENGTAB, derived here
+                ; from the published TXTMAX/FCH_CEIL/FCH_STATESZ so the two ROMs
+                ; cannot drift) -- no call back into main any more.
+                ld      hl,TXTMAX-(FCH_CEIL+1)*FCH_STATESZ + main_FWR_DIRSEC-(main_FWR_DIROFF+2-FCH_STATESZ)
+                ld      de,FCH_STATESZ
                 ld      a,b
-                ld      ix,fch_ctx_addr
-                call    calbak              ; HL = the channel's context block
-                ld      de,main_FWR_DIRSEC-(main_FWR_DIROFF+2-FCH_STATESZ)
-                add     hl,de               ; HL -> its saved FWR_DIRSEC (the
-                                            ; span base is FWR_DIROFF+2-FCH_STATESZ,
-                                            ; by sysvars.inc's own definition)
+hoc_row:
+                add     hl,de               ; row ch -> HL -> its saved FWR_DIRSEC
+                dec     a
+                jr      nz,hoc_row
                 ld      e,(hl)
                 inc     hl
                 ld      d,(hl)              ; DE = the dir sector

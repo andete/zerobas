@@ -8,9 +8,10 @@ Originally the question was: zerobas spends 562 B per channel and caps at
 FCH_CEIL=2; what does the reference actually spend, and what is its ceiling?
 Answer: 267 B/channel, dynamically, ceiling exactly 15. D-FCH then made zerobas
 use the SAME MECHANISM -- carved out of the FRE(0) pool at MAXFILES time,
-ceiling 15 -- at its own honest 50 B/channel (a zerobas block IS 50 B; its
-sector staging is the shared FSECTOR_BUF write-back cache, so it charges what it
-uses rather than padding to match a number).
+ceiling 15 -- at its own 50 B/channel then (a zerobas block WAS 50 B of engine
+state). D-FCBSHAPE S1+S2 (2026-09-30, Joost's ruling (a)) gave it the
+reference's FCB shape -- a 265 B block, 267 B charged -- with the engine state
+in a fixed table under HIMEM, so the constants now agree too.
 
 So this is now an ACCEPTANCE GATE. It returns non-zero on oracle drift, on any
 divergence not in the explicit KNOWN_DIVERGE allowlist (each entry naming the
@@ -774,10 +775,10 @@ def main() -> int:
         print("HEADLINE:")
         print(f"  reference charges {rs[0]:g} B per channel, dynamically, up to {rc};")
         print(f"  zerobas   charges {zs[0]:g} B per channel, dynamically, up to {zc}.")
-        print("  (D-FCH §3.2: both MECHANISMS are now the same -- carved out of the")
-        print("   FRE(0) pool at MAXFILES time, ceiling 15. The per-channel CONSTANTS")
-        print("   differ because a zerobas block IS 50 B: its sector staging is the")
-        print("   shared FSECTOR_BUF cache, so it charges what it uses.)")
+        print("  (D-FCH §3.2 made the MECHANISMS the same -- carved out of the FRE(0)")
+        print("   pool at MAXFILES time, ceiling 15; D-FCBSHAPE S1+S2 (2026-09-30) made")
+        print("   the CONSTANTS the same too: a 265 B block, the reference's FCB shape,")
+        print("   + its 2 B FILTAB word; the disk-engine state lives in a fixed table.)")
 
     if oracle_bad:
         print(f"\nORACLE DRIFT on {oracle_bad} — the reference no longer reproduces "

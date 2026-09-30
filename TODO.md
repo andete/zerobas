@@ -6019,7 +6019,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:27622 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:27657 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -6185,7 +6185,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:11019 (T-6FE392)8 (T-529ABE)` from `TODO.md:23348 (T-529ABE)`: a
+      `TODO.md:11019 (T-6FE392)8 (T-529ABE)` from `TODO.md:23383 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -11866,7 +11866,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:23348 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:23383 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -17197,6 +17197,41 @@ finds zero shared names (a renamed block would otherwise make it silently blind)
       main bytes: disk.rom init lowers `HIMEM` by 800, and the table sits at the
       constant `TXTMAX − 800`. The slice is one commit; sub page 0 (9 B,
       2026-09-29) is its likely wall, so it gets priced first.
+      🟢 **S1+S2 SHIPPED 2026-09-30, WITHOUT `VARPTR(#n)`.**
+      - **Block and charge:** a channel block is 265 B (the reference's 9-byte
+        FCB header + the 256 B record), and `MAXFILES` charges 267 a channel
+        (`FCH_CTXSZ`, the 2 FILTAB bytes above the blocks). Channel 1 stays at
+        the table base, because `program.asm`'s store ceiling reads it that way.
+      - **Engine state:** a DISK channel's 50 B go to/from `DSK_ENGTAB` (row =
+        channel number) in the FAT tenant (`fch_engrow`); device and cassette
+        channels keep none.
+      - **Reserve:** disk.rom's init sets `HIMEM` to the table base. Main's boot
+        store keeps a HIMEM already below `TXTMAX` (the disk ROM's INIT runs
+        FIRST, in the slot scan; +9 B of main page 1, measured 2026-09-30).
+      - **disk.rom:** `hkk_open_check` reads a saved channel's dir position from
+        the table, with no call back into main.
+      - **Walls, 2026-09-30:** main page 1 12 → 3 B, sub page 1 524 → 474 B,
+        disk 6522 → 6517 B ([`fcbs12_walls.out`](scratchpad/fcbs12_walls.out)).
+      📏 **Measured:**
+      - `chancost-characterize` reads **267 B a channel on BOTH machines**, ceiling
+        15, 53 cases, 0 filed divergences ([`fcbs12_chancost.out`](scratchpad/fcbs12_chancost.out)).
+        🔮 Predicted it would report a stale allowlist entry: MISS — it gates the
+        mechanism, not the constant.
+      - The disk machine boots with `HIMEM` `$DCE0`, and its FRE(0) is exactly 800 B
+        under the diskless build's; with that program it trails the CF-3300 by
+        126 B, where it used to lead by ~635 ([`fcbs12_bootfre.out`](scratchpad/fcbs12_bootfre.out)).
+      - Channel switching, in and out of FOR/GOSUB, and the open-file refusals
+        (54/64/65, KILL of a NON-active open file included) all agree
+        ([`fcbs12_chanloop.out`](scratchpad/fcbs12_chanloop.out),
+        [`fcbs12_killopen.out`](scratchpad/fcbs12_killopen.out)).
+      - Whole sweep SUPPORTED 958, kwtime OK 844, knife BLIND unchanged
+        ([`fcbs12_kwsweep_full.out`](scratchpad/fcbs12_kwsweep_full.out),
+        [`fcbs12_kwtime.out`](scratchpad/fcbs12_kwtime.out),
+        [`fcbs12_knife_all.out`](scratchpad/fcbs12_knife_all.out),
+        [`fcbs12_knife_fn.out`](scratchpad/fcbs12_knife_fn.out)).
+      ➡️ **LEFT:** `VARPTR(#n)` (~15 B of main — a carve first; page 1 was 3 B on
+      2026-09-30), the FCB header FIELDS (mode +0, device +4, position +6: nothing
+      writes them yet), and FILTAB's pointer CONTENTS.
 
 - [x] 🧰 **D-FASTPIN — `gates-fast` CAN WIPE THE KWSWEEP PIN AND THEN SKIP THE RUN THAT MAKES IT**
       🎚️ TIER 6 — apparatus: a false red, never a false green.
