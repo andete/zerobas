@@ -1,0 +1,46 @@
+msxtest: BASIC image carries islands -- loaded at $0010, not $2812
+build under measurement: git=0e9dcaa0 zerobas-main-eu.rom=37b6340cc3a2 sub.rom=91bc544ad003 disk.rom=a43ae5ea22d6
+
+==============================================================================
+LAYER 1 — CRUNCH (tokenisation only; NOT a support answer)
+==============================================================================
+SAME   openkw_b  open"prog.bas"for input as#2
+SAME   t8opensame54 open "x6.txt" for output as #2
+SAME   inputnum  input#1,x
+SAME   inputnum2 input#1,x
+SAME   chanfor   open"c1.txt"for output as#1
+
+==============================================================================
+LAYER 2 — SUPPORT (the load-bearing layer)
+==============================================================================
+SUPPORTED     openkw_b  MAXFILES=2:OPEN"HI.TXT"FOR INPUT AS#2:A$=INPUT$(2,#2):CLOSE#2:PRINT"[";A$;"]":MAXFILES=1
+            ref  [value] '[He]'
+SUPPORTED     t8opensame54 MAXFILES=2:ON ERROR GOTO 40:OPEN"X6.TXT"FOR OUTPUT AS#1:OPEN"X6.TXT"FOR OUTPUT AS#2:END:E=ERR:PRINT#1,"Q":CLOSE:PRINT"[S";E;"]":MAXFILES=1:END
+            ref  [value] '[S 54 ]'
+SUPPORTED     inputnum  OPEN"N.TXT"FOR OUTPUT AS#1:PRINT#1,1.5;40000:CLOSE#1:OPEN"N.TXT"FOR INPUT AS#1:INPUT#1,X,Y:CLOSE#1:PRINT"[N";X;Y;"]"
+            ref  [value] '[N 1.5  40000 ]'
+SUPPORTED     inputnum2 OPEN"N2.TXT"FOR OUTPUT AS#1:PRINT#1,1:PRINT#1,"XY":CLOSE#1:OPEN"N2.TXT"FOR INPUT AS#1:INPUT#1,X:LINE INPUT#1,A$:CLOSE#1:PRINT"[M";X;A$;"]"
+            ref  [value] '[M 1 XY]'
+SUPPORTED     chanfor   MAXFILES=2:OPEN"C1.TXT"FOR OUTPUT AS#1:OPEN"C2.TXT"FOR OUTPUT AS#2:FOR I=1 TO 3:PRINT#1,I:PRINT#2,I*10:NEXT:CLOSE:OPEN"C1.TXT"FOR INPUT AS#1:OPEN"C2.TXT"FOR INPUT AS#2:INPUT#1,A,B,C:INPUT#2,D,E,F:CLOSE:PRINT"[C";A;B;C;D;E;F;"]":MAXFILES=1
+            ref  [value] '[C 1  2  3  10  20  30 ]'
+
+==============================================================================
+COMBINED — tokenised? x observable consequence
+==============================================================================
+word       crunch  support     consequence
+------------------------------------------------------------------------------
+openkw_b   present SUPPORTED   match
+t8opensame54 present SUPPORTED   match
+inputnum   present SUPPORTED   match
+inputnum2  present SUPPORTED   match
+chanfor    present SUPPORTED   match
+
+==============================================================================
+SUMMARY  SUPPORTED=5
+         executed 5 / 5 words; 0 crunch-only
+==============================================================================
+ROWS: 5 printed, 5 scored — 0 crunch-only word(s) carry no support reading and are printed but not scored
+pin: NOT written -- an --only run measures a subset, and the pin is the whole sweep
+
+=== CRUNCH PIN — words the reference tokenises and zerobas does not ===
+refcache: 0 hit, 4 miss, 4 stored

@@ -17,8 +17,11 @@ pure in-RAM logic and fully testable here — the genuinely new code the slice a
     -25536. Its replacement `inp_num` parses through the sub-ROM (strheap op 19, a
     CALSLT this host sim does not run), so its oracle is the emulator differential:
     scratchpad/inpnum_probe.py and kwsweep rows `input_flt` / `inputnum`.
-  * the NUMERIC field mode (2) of read_into_strscr (D-INPNUM): a blank before the
-    item is skipped and a blank after it ENDS it -- pure in-RAM logic, tested below.
+  * (D-CHANSWITCH) a NUMERIC INPUT # item is read in the seqio tenant (sub-ROM,
+    sq_numitem) because its rules need a PEEK -- `" 1  2 "` leaves "2 " for the next
+    read. D-INPNUM's first cut, a numeric mode of read_into_strscr tested here for a
+    day, left the trailing " \r\n" and read `1 0 2 0`; its oracle is now the emulator
+    rows `inputnum` / `inputnum2` / `chanfor`.
   * linebuf_getbyte — the ARL_GETBYTE byte-source vector for a console line: next
     LINEBUF byte, advance INP_CURSOR, CF set (EOF) at the 0 terminator WITHOUT
     advancing (the same end contract fat_io_getbyte / cas_in_getbyte present).
@@ -151,28 +154,8 @@ def run():
     setup_line(b" hello")
     report("line mode keeps leading space", read_field(1), b" hello")
 
-    # -----------------------------------------------------------------------
-    # D-INPNUM: the NUMERIC item mode (2) -- a blank before the item is skipped,
-    # a blank after it ends it; comma and CR still end it. Oracle: the CF-3300
-    # reads `PRINT #1,1;2` (" 1  2 ") back as 1 then 2, "  3" as 3, "3,4" as 3
-    # then 4 (scratchpad/inpnum_run2.out, FILE round 2).
-    # -----------------------------------------------------------------------
-    setup_line(b" 1  2 ")
-    report("numeric item 1 of ' 1  2 '", read_field(2), b"1")
-    report("numeric item 2 of ' 1  2 '", read_field(2), b"2")
-    setup_line(b"  3")
-    report("numeric item '  3'", read_field(2), b"3")
-    setup_line(b"3,4")
-    report("numeric item 1 of '3,4'", read_field(2), b"3")
-    report("numeric item 2 of '3,4'", read_field(2), b"4")
-    setup_line(b"12X")
-    report("numeric item '12X' (the parse skips the junk)", read_field(2), b"12X")
-    # and field mode (0) is unchanged by it: a blank is DATA there
-    setup_line(b" 1  2 ")
-    report("field mode keeps ' 1  2 ' whole", read_field(0), b" 1  2 ")
-
     print()
-    print("ALL PASS — console INPUT core (linebuf source, field/line/numeric split) matches contract"
+    print("ALL PASS — console INPUT core (linebuf source, field/line split) matches contract"
           if not fails else f"{fails} CASE(S) FAILED")
     return fails
 

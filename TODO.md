@@ -6019,7 +6019,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:27539 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:27581 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -25971,10 +25971,13 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       field in place and publishes where the number stopped (SH_SRC).
       - **Console:** `inp_num` is that parse plus the only-blanks-follow check. It
         replaces `input_num_field`, 105 B of main low region, with ~30.
-      - **File:** `inp_readvar` sends a numeric target to `inp_numitem` (low region).
-        That reads the item by a new numeric mode of `read_into_strscr` (a blank
-        ends it once begun), parses it leniently, and stores through
-        `tgt_store_fac`, a 0-byte entry into LET's typed store.
+      - **File:** `inp_readvar` sends a numeric target to `inp_numitem` (low region),
+        which parses it leniently and stores through `tgt_store_fac`, a 0-byte entry
+        into LET's typed store. ~~The item was read by a new numeric mode of
+        `read_into_strscr`~~ — 🔴 **WRONG FOR A DAY, see D-CHANSWITCH below:** that
+        mode ended the item AT the blank and left the blank and CR-LF after it
+        unread, so two numbers on two lines read `1 0 2 0`. The item is now read in
+        the seqio tenant, which can peek.
       - **LINE INPUT #** keeps its string-only target.
       - **Funding:** sub page 0 went 9 → 47 B from three 19-long `inc sp`/`dec sp`
         runs in `sub/arrays.asm`'s scalar-alloc frame, now `ld hl,±19 / add hl,sp
@@ -25999,11 +26002,10 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       The console's string rule is unmeasured. Filed under D-CHANSWITCH below
       until measured.
 
-- [ ] 🔴 **TWO OUTPUT CHANNELS WRITTEN ALTERNATELY LOSE THE DATA — FILE A READS `1 0 2
-      0` AND FILE B IS EMPTY (D-CHANSWITCH, found 2026-09-29).**
+- [x] ✅ **TWO FILES WRITTEN AND READ TOGETHER CAME BACK WRONG — TWO BUGS, ONE OF THEM
+      MINE (D-CHANSWITCH, found and fixed 2026-09-29).**
       🎚️ TIER 1 — happy path: writing two files at once (a report and a log, a
       merge) is ordinary.
-      🤖 **AUTONOMOUS** — the CF-3300 settles it; find where the switch goes wrong.
       [`chanloop_run4.out`](scratchpad/chanloop_run4.out) (`scratchpad/chanloop_probe.py`,
       readable only since D-INPNUM): `PRINT #1,1:PRINT #2,10:PRINT #1,2:PRINT #2,20`
       reads back `1 2 | 10 20` on the CF-3300 and `1 0 2 0 || 55` here. With FOR
@@ -26014,6 +26016,46 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       the channel blocks and a save would write over the newest frame. The
       straight-line failure comes first; the frame hypothesis is still unanswered.
       Also here: the STRING-item leading-blank divergence from D-INPNUM.
+      🔬 **THE BYTES FIRST** ([`chanloop_run5.out`](scratchpad/chanloop_run5.out)): both
+      files are BYTE-IDENTICAL on the two machines after the alternating writes
+      (`INPUT$(LOF(1),#1)` read 55 on BOTH, since LOF counts the Ctrl-Z; the dump
+      reads to EOF instead). Two INPUT channels switched with LINE INPUT agree too
+      ([`chanloop_run7.out`](scratchpad/chanloop_run7.out)). So the fault was on the
+      numeric READ side, and it was **(1) MINE, from D-INPNUM an hour earlier**.
+      The numeric item ended at the blank after the number and left `" \r\n"`, so
+      `EOF(1)` stayed false and the next read returned 0 or 55. Measured what the
+      reference consumes ([`inpnum_run3.out`](scratchpad/inpnum_run3.out)): blanks,
+      then ONE CR-LF or ONE comma, and any other byte stays for the next item
+      (`" 1  2 "` leaves "2 "). That needs a PEEK, so the item now reads in the
+      seqio tenant (`sq_numitem`, sub page 1, L = 4). `read_into_strscr` is back
+      to its two modes, and a CAS: channel keeps the field rule.
+      **(2) THE FRAME HYPOTHESIS, CONFIRMED** ([`chanloop_run8.out`](scratchpad/chanloop_run8.out)):
+      with that fixed, the FOR / GOSUB / nested cases still gave NO READING and
+      53. `sh_chan_addr` took the block address from `strheap_varceil`, whose
+      D-CTLPOOL clamp returns CSP while a frame stands, so a channel switch saved
+      306 B over the FOR/GOSUB frame. It now calls `strheap_chantab`, varceil's
+      first half without the clamp (+3 B of sub page 0). Walls 2026-09-29: main low
+      3 B, page 1 22 B, sub page 0 18 B, sub page 1 524 B
+      ([`chanswitch_walls.out`](scratchpad/chanswitch_walls.out)).
+      ✅ **After** ([`chanloop_run9.out`](scratchpad/chanloop_run9.out)): all six
+      channel cases agree; all 26 numeric file cases agree
+      ([`chanswitch_inpnum.out`](scratchpad/chanswitch_inpnum.out)). Rows `inputnum2`
+      (the CR-LF goes with the number) and `chanfor` (two channels switched in a
+      FOR loop) are SUPPORTED ([`chanswitch_kwsweep.out`](scratchpad/chanswitch_kwsweep.out)).
+      One-line knives, hash-checked, turn each DIVERGENT and nothing else
+      ([`chanswitch_knife.out`](scratchpad/chanswitch_knife.out)). Whole sweep SUPPORTED
+      957 ([`chanswitch_kwsweep_full.out`](scratchpad/chanswitch_kwsweep_full.out)),
+      kwtime OK 843 ([`chanswitch_kwtime.out`](scratchpad/chanswitch_kwtime.out)), knife
+      BLIND unchanged ([`chanswitch_knife_all.out`](scratchpad/chanswitch_knife_all.out),
+      [`chanswitch_knife_fn.out`](scratchpad/chanswitch_knife_fn.out)); all predicted.
+      🔴 **THE LESSON, AND IT IS ONE I HAD FILED:** D-INPNUM's 20 file cases never
+      read a number FOLLOWED by another read across a line end, so they could not
+      see what the item consumed. The first reading of this bug blamed the channel
+      switch; the bytes said otherwise.
+      ⚠️ **Still open:** a STRING item keeps its leading blank here, and the
+      CF-3300 strips it (`one1s`, [`chanloop_run3.out`](scratchpad/chanloop_run3.out)).
+      The console's string rule is unmeasured. Tape (CAS:) numeric items keep the
+      field rule (no peek there).
 
 - [x] ✅ **FIXED 2026-09-28 (D-SEQEOF): A TEXT FILE READS THE REFERENCE'S WAY — CTRL-Z
       ENDS IT, INPUT# EATS THE LF AFTER ITS CR, AND A READ AT THE END IS 55.** The

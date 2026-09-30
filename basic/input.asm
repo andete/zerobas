@@ -390,12 +390,8 @@ inp_numitem:
                 call    tgt_parse_req       ; A = 0 (numeric): BC = key, HL past it
                 push    hl                  ; the text cursor
                 push    bc                  ; the key
-                ld      a,2
-                ld      (FCH_RDMODE),a      ; the numeric item rule
-                call    read_into_strscr
-                ld      a,0                 ; (flags kept) back to field mode, for a
-                ld      (FCH_RDMODE),a      ; string target later in the list
-                jr      nc,inu_got          ; stopped on a delimiter
+                call    inp_numread         ; STRSCR <- the item; CF = the end
+                jr      nc,inu_got
                 ld      a,(STRSCR)
                 or      a
                 jp      z,gp_past_eof       ; the end, and not one byte read -> 55
@@ -405,6 +401,19 @@ inu_got:
                 call    inp_store
                 pop     hl
                 jp      inp_tail
+
+; inp_numread: one numeric INPUT # item -> STRSCR; CF = the end of the file.
+; A DISK channel reads it in the seqio tenant (L = 4), which can PEEK -- the rules
+; need it (D-CHANSWITCH, sub/bload.asm sq_numitem). A CAS: channel has no peek
+; and keeps the field rule (commas and CR split; a blank does not).
+inp_numread:
+                ld      hl,(ARL_GETBYTE)
+                ld      de,fat_io_seqbyte
+                or      a
+                sbc     hl,de
+                jp      nz,read_into_strscr ; CAS: the field rule (FCH_RDMODE is 0)
+                ld      l,4
+                jp      seq_call
 
 ; inp_store: the parsed number -> the resolved target (console INPUT and INPUT #).
 ; in: BC = key, (TGT_ADDR) per tgt_parse, SH_LEN / DE / FAC as inp_num leaves them.

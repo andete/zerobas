@@ -4905,6 +4905,21 @@ SWEEP: list[tuple[str, str, str | None, str, str]] = [
      'OPEN"N.TXT"FOR OUTPUT AS#1:PRINT#1,1.5;40000:CLOSE#1:OPEN"N.TXT"FOR INPUT AS#1:INPUT#1,X,Y:CLOSE#1:PRINT"[N";X;Y;"]"',
      "stored", "NEEDS-DISK: SUBJECT:INPUT_# FORM:numeric-read two numbers written on "
      "one line and read back as numbers (D-INPNUM)"),
+    # 🔴 D-CHANSWITCH (2026-09-29): what a numeric item CONSUMES. " 1 " + CR, then
+    # "XY": the CF-3300 eats the blank, the CR and the LF with the number, so the
+    # LINE INPUT reads XY. D-INPNUM's first cut left " \r\n" and read "" here.
+    ("inputnum2", "input#1,x",
+     'OPEN"N2.TXT"FOR OUTPUT AS#1:PRINT#1,1:PRINT#1,"XY":CLOSE#1:OPEN"N2.TXT"FOR INPUT AS#1:INPUT#1,X:LINE INPUT#1,A$:CLOSE#1:PRINT"[M";X;A$;"]"',
+     "stored", "NEEDS-DISK: SUBJECT:INPUT_# FORM:numeric-read the number takes its "
+     "trailing blank and CR-LF with it (D-CHANSWITCH)"),
+    # 🔴 D-CHANSWITCH: two OUTPUT channels switched inside a FOR loop. sh_chan_addr
+    # derived the channel block from strheap_varceil, whose CSP clamp put channel
+    # 1's block ON the FOR frame, so the switch's save wrote over the loop: NO
+    # READING here, both files on the CF-3300. MAXFILES=1 goes back after the PRINT.
+    ("chanfor", "open\"c1.txt\"for output as#1",
+     'MAXFILES=2:OPEN"C1.TXT"FOR OUTPUT AS#1:OPEN"C2.TXT"FOR OUTPUT AS#2:FOR I=1 TO 3:PRINT#1,I:PRINT#2,I*10:NEXT:CLOSE:OPEN"C1.TXT"FOR INPUT AS#1:OPEN"C2.TXT"FOR INPUT AS#2:INPUT#1,A,B,C:INPUT#2,D,E,F:CLOSE:PRINT"[C";A;B;C;D;E;F;"]":MAXFILES=1',
+     "stored", "NEEDS-DISK: SUBJECT:OPEN FORM:output two channels switched inside a "
+     "FOR loop (D-CHANSWITCH)"),
     # D-INPNUM, the console half: `INPUT A` answered 1.5 was ?Redo and 40000 became
     # -25536 (input_num_field was a 16-bit integer validator).
     ("input_flt", 'input za', 'INPUT ZA:INPUT ZB:PRINT"[F";ZA;ZB;"]"', "stored",

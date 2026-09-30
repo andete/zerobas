@@ -1286,21 +1286,11 @@ ris_lp:
                 jp     z,ris_done
                 ld      c,a                 ; C = candidate data byte
                 ld      a,(FCH_RDMODE)
-                dec     a
-                jr      z,ris_keep          ; 1: line mode keeps everything (but CR/LF)
-                dec     a
-                jr      nz,ris_field        ; 0: field mode
-                ; 2: a NUMERIC item (D-INPNUM, inp_numitem): the CF-3300 reads
-                ; `PRINT #1,1;2` -- " 1  2 " -- back as 1 then 2, so a blank ENDS
-                ; the number once one has begun; before it, a blank is skipped.
-                ld      a,c
-                cp      ' '
-                jr      nz,ris_field
-                ld      a,(IN_RDLEN)
                 or      a
-                jr      z,ris_lp            ; a leading blank
-                jp      ris_done            ; the blank after the number (`jp`: past jr reach)
-ris_field:
+                jr      nz,ris_keep         ; line mode keeps everything (but CR/LF)
+                ; (D-INPNUM's numeric mode lived here for a day and is gone: a
+                ; numeric item's rules need a PEEK -- `" 1  2 "` leaves "2 " for
+                ; the next read -- and only the seqio tenant has one; D-CHANSWITCH.)
                 ld      a,c
                 cp      ','                 ; field mode stops at a comma
                 jp     z,ris_done

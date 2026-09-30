@@ -595,16 +595,7 @@ strheap_ctllim:
 ; rather than wrapping the ceiling above the pool.
 ; Clobbers A,B,C,D,E,H,L. Preserves IX/IY (both array callers rely on IY).
 strheap_varceil:
-                call    strheap_floor       ; HL = the string pool's floor
-                ld      a,(MAXF)
-                or      a
-                jr      z,svc_ctl           ; MAXFILES=0 -> no table at all
-                ld      b,a
-                ld      de,-FCH_CTXSZ
-svc_sub_lp:
-                add     hl,de               ; CF set iff no borrow (HL >= block)
-                jr      nc,svc_under
-                djnz    svc_sub_lp
+                call    strheap_chantab     ; HL = the channel table's base
 svc_ctl:
                 ; 🎯 D-CTLPOOL, THE SYMMETRIC HALF -- and it is one comparison.
                 ; Control frames descend from this same ceiling, so the variable
@@ -639,6 +630,30 @@ svc_ctl:
                 pop     hl
                 ret     c                   ; ceiling already below CSP -> unchanged
                 ex      de,hl               ; CSP is the lower of the two
+                ret
+
+; --- strheap_chantab: -> HL = the FILE-CHANNEL TABLE's base (D-CHANSWITCH) ---
+; `strheap_floor() - MAXF*FCH_CTXSZ`: varceil's own first half, WITHOUT the
+; D-CTLPOOL clamp to CSP. 🔴 sh_chan_addr (op 18) used to derive the block
+; address from strheap_varceil itself -- and with a FOR or GOSUB frame standing
+; the clamp returns CSP, so channel 1's block sat ON the newest control frame
+; and every channel switch (fch_save_active, 306 B) wrote over it. Measured,
+; not reasoned: two OUTPUT channels written in a FOR loop gave NO READING and
+; from a GOSUB `File not found`, where the CF-3300 writes both files
+; (scratchpad/chanloop_run8.out). The table does not move with the frames;
+; only the variable region's ceiling does.
+; Clobbers A,B,C,D,E,H,L.
+strheap_chantab:
+                call    strheap_floor       ; HL = the string pool's floor
+                ld      a,(MAXF)
+                or      a
+                ret     z                   ; MAXFILES=0 -> no table at all
+                ld      b,a
+                ld      de,-FCH_CTXSZ
+svc_sub_lp:
+                add     hl,de               ; CF set iff no borrow (HL >= block)
+                jr      nc,svc_under
+                djnz    svc_sub_lp
                 ret
 svc_under:
                 ld      hl,0                ; the table does not fit under the pool
@@ -2120,7 +2135,9 @@ sh_ctl_reset:
 ; (strheap_varceil, via strheap_floor/strheap_ceiling) was already sub-ROM, so
 ; keeping the caller resident would have bought nothing and cost real bytes.
 sh_chan_addr:
-                call    strheap_varceil     ; HL = the table base (= var ceiling)
+                call    strheap_chantab     ; HL = the table base -- NOT varceil, whose
+                                            ; CSP clamp moved it onto the control
+                                            ; frames (D-CHANSWITCH)
                 ld      a,(SH_LEN)          ; A = channel number (1-based)
                 dec     a
                 jr      z,sca_have          ; channel 1 -> the first block

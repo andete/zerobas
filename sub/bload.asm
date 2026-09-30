@@ -256,11 +256,14 @@ dev_cas:
 ; same fatio copy BLOAD uses, bound to the real primitives, on main's own FREAD_*
 ; and FAT_DBUF. A crossing per byte is what the reference does too (H.INDS).
 ;   in : L = 0 -> the next byte (FCH_RDMODE 2 = INPUT$, raw; else the INPUT#
-;               line rule); L = 2 -> EOF()'s test for the selected channel
+;               line rule); L = 2 -> EOF()'s test for the selected channel;
+;        L = 4 -> one NUMERIC INPUT # item into STRSCR (D-CHANSWITCH, sq_numitem)
 ;   out: A = the byte; SEQ_EOF = 1 when there was none (the end, or Ctrl-Z next),
 ;        else 0 -- subrom_call returns only A, so the flag rides in RAM.
 seqio_tenant:
                 ld      a,l
+                cp      4
+                jr      z,sq_numitem        ; D-CHANSWITCH
                 or      a
                 jr      nz,sq_eoftest
                 call    seq_peek            ; A = next byte; CF = nothing to read
@@ -300,6 +303,82 @@ sq_end:
                 ld      a,1
                 ld      (SEQ_EOF),a
                 ret
+
+; --- sq_numitem: L = 4 -- ONE NUMERIC INPUT # item into STRSCR (D-CHANSWITCH) --
+; Measured on the CF-3300 (scratchpad/inpnum_run2.out, inpnum_run3.out): leading
+; blanks, CRs and LFs are skipped; the item ends at a blank, a comma or a CR; then
+; the blanks after it are eaten, and ONE comma, or ONE CR with its LF, with them
+; -- but any other byte belongs to the NEXT item and stays: `" 1  2 "` read with
+; INPUT #1,X leaves "2 " for a LINE INPUT, `" 1 \r\n"` leaves nothing (EOF is -1
+; after the last number), `"1   ,2"` leaves "2". Leaving a byte needs a PEEK,
+; which is why this lives here and not in main's read_into_strscr (D-INPNUM's
+; first cut ended the item at the blank and left " \r\n": the NEXT read met the
+; CR and returned 0, so two numbers on two lines read `1 0 2 0`).
+; out: STRSCR = [len][bytes]; SEQ_EOF = 1 only when the end came before any byte.
+sq_numitem:
+                xor     a
+                ld      (IN_RDLEN),a
+sqn_lead:
+                call    seq_peek
+                jr      c,sqn_eof           ; the end before any byte
+                cp      ' '
+                jr      z,sqn_skip
+                cp      $0D
+                jr      z,sqn_skip
+                cp      $0A
+                jr      nz,sqn_body
+sqn_skip:
+                call    fat_io_getbyte
+                jr      sqn_lead
+sqn_body:
+                call    seq_peek
+                jr      c,sqn_done          ; the end (or Ctrl-Z) closes the item
+                cp      ' '
+                jr      z,sqn_tail
+                cp      ','
+                jr      z,sqn_tail
+                cp      $0D
+                jr      z,sqn_tail
+                call    fat_io_getbyte      ; A = the byte (it clobbers the rest)
+                ld      c,a
+                ld      a,(IN_RDLEN)
+                cp      STRMAX
+                jr      nc,sqn_body         ; full: drop it, keep consuming
+                ld      e,a
+                ld      d,0
+                ld      hl,STRSCR+1
+                add     hl,de
+                ld      (hl),c
+                ld      hl,IN_RDLEN
+                inc     (hl)
+                jr      sqn_body
+sqn_tail:
+                call    seq_peek
+                jr      c,sqn_done
+                cp      ' '
+                jr      nz,sqn_delim
+                call    fat_io_getbyte      ; a blank after the number
+                jr      sqn_tail
+sqn_delim:
+                cp      ','
+                jr      z,sqn_eat
+                cp      $0D
+                jr      nz,sqn_done         ; the NEXT item's byte: leave it
+                call    fat_io_getbyte      ; the CR ...
+                call    seq_peek
+                jr      c,sqn_done
+                cp      $0A
+                jr      nz,sqn_done
+sqn_eat:
+                call    fat_io_getbyte      ; ... and its LF, or the comma
+sqn_done:
+                ld      a,(IN_RDLEN)
+                ld      (STRSCR),a
+                jp      sq_byte             ; SEQ_EOF = 0
+sqn_eof:
+                xor     a
+                ld      (STRSCR),a
+                jr      sq_end
 
 ; seq_peek -- the next byte WITHOUT consuming it: A = it, CF clear; CF set when
 ; nothing is left or the next byte is Ctrl-Z (R1). fat_io_getbyte's own bounds

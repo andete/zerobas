@@ -1,0 +1,6 @@
+case                              CF-3300                          zerobas
+  control                 [ 1 2| 10 20| 0 ]                [ 1 2| 10 20| 0 ]
+✗ forloop       [ 1 2 3 4| 10 20 30 40| 0 ]                       NO READING
+✗ gosub              [ 1 2 3| 10 20 30| 0 ]                         [|| 53 ]
+✗ nested            [ 1 2 2 4| 2 3 3 4| 0 ]                       NO READING
+refcache: 0 hit, 8 miss, 8 stored

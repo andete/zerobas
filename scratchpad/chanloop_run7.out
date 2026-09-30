@@ -1,0 +1,4 @@
+case                              CF-3300                          zerobas
+  rd2s                          [PQ|RS| 0 ]                      [PQ|RS| 0 ]
+  rd2alt                         [PRQS| 0 ]                       [PRQS| 0 ]
+refcache: 0 hit, 4 miss, 4 stored

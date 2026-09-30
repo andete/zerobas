@@ -1,0 +1,9 @@
+FILE round 3: what a numeric item consumes (X X$ | EOF after | LINE INPUT rest | LEN ERR)
+value              National_CF-3300   C-BIOS_MSX1_EU_REPAC
+✗ 'blankcr'        [ 1 | 0 |XY| 2 0 ]       [ 1 | 0 || 0 0 ]
+✗ 'twoitems'       [ 1 | 0 |2 | 2 0 ]    [ 1 | 0 | 2 | 3 0 ]
+  'comma'           [ 1 | 0 |2| 1 0 ]      [ 1 | 0 |2| 1 0 ]
+✗ 'blanks'          [ 1 | 0 |2| 1 0 ]    [ 1 | 0 | ,2| 4 0 ]
+  'strafter'    [ 0 AB | 0 |CD| 2 0 ]  [ 0 AB | 0 |CD| 2 0 ]
+✗ 'eoflast'             [ 1 |-1 | 0 ]          [ 1 | 0 | 0 ]
+refcache: 0 hit, 12 miss, 12 stored

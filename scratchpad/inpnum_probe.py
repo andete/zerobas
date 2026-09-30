@@ -31,6 +31,37 @@ WRITTEN2 = ['1;2', '1,2', '"12X"', '"  3"', '"1 2"', '""', '"&H10"', '"3,4"',
             '"5":PRINT #1,"6"', '-1;-2']
 
 
+# --- round 3 (D-CHANSWITCH, 2026-09-29): what does a numeric INPUT # item
+# CONSUME after the number? A LINE INPUT that follows shows the rest, and EOF
+# shows whether a trailing " \r\n" went with it.
+AFTER = [  # (name, the lines written with PRINT #1 -- each a PRINT argument list)
+    ("blankcr", ['1', '"XY"']),          # " 1 \r\n" then "XY": INPUT X; LINE INPUT -> ?
+    ("twoitems", ['1;2']),               # " 1  2 \r\n": INPUT X; LINE INPUT -> ?
+    ("comma", ['"1,2"']),                # "1,2\r\n": INPUT X; LINE INPUT -> ?
+    ("blanks", ['"1   ,2"']),            # blanks then a comma
+    ("strafter", ['"AB ,CD"']),          # a STRING item's trailing blank + comma
+]
+
+
+def after_cases():
+    out = []
+    for k, lines in AFTER:
+        w = ":".join(f"PRINT #1,{l}" for l in lines)
+        out.append((k, ["NEW", "10 ON ERROR GOTO 90",
+                        f'20 OPEN "N.TXT" FOR OUTPUT AS #1:{w}:CLOSE',
+                        '30 OPEN "N.TXT" FOR INPUT AS #1',
+                        '35 IF LEFT$("' + k + '",3)="str" THEN INPUT #1,X$ ELSE INPUT #1,X',
+                        '40 E1=EOF(1):LINE INPUT #1,R$:CLOSE',
+                        '50 PRINT CHR$(91);X;X$;"|";E1;"|";R$;"|";LEN(R$);E;CHR$(93):END',
+                        "90 E=ERR:RESUME 50", "RUN"]))
+    out.append(("eoflast", ["NEW", "10 ON ERROR GOTO 90",
+                            '20 OPEN "N.TXT" FOR OUTPUT AS #1:PRINT #1,1:CLOSE',
+                            '30 OPEN "N.TXT" FOR INPUT AS #1:INPUT #1,X:E1=EOF(1):CLOSE',
+                            '50 PRINT CHR$(91);X;"|";E1;"|";E;CHR$(93):END',
+                            "90 E=ERR:RESUME 50", "RUN"]))
+    return out
+
+
 def console_cases2():
     return [(v, ["NEW", "10 INPUT A", "20 PRINT CHR$(91);A;CHR$(93)", "RUN", v, "7"])
             for v in TYPED2]
@@ -94,6 +125,9 @@ def main():
     if "console2" in which:
         print("CONSOLE round 2: INPUT A, typed value then 7 (a ?Redo reads the 7)")
         run(("Philips_VG_8020", "C-BIOS_MSX1_EU_REPACK_NODISK"), console_cases2(), False)
+    if "after" in which:
+        print("FILE round 3: what a numeric item consumes (X X$ | EOF after | LINE INPUT rest | LEN ERR)")
+        run(("National_CF-3300", "C-BIOS_MSX1_EU_REPACK_DISK"), after_cases(), True)
     if "file2" in which:
         print("FILE round 2: PRINT #1,<v> then INPUT #1,X,Y (X Y ERR)")
         run(("National_CF-3300", "C-BIOS_MSX1_EU_REPACK_DISK"), file_cases2(), True)

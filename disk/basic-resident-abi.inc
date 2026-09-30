@@ -10,9 +10,9 @@
 ; main ROM, read out of our own build's symbol file. Nothing here is derived
 ; from a disassembly or byte-copy of any reference ROM.
 
-widen_rhs_operand equ 038FEH
-round_single_and_pack equ 03439H
-round_and_finalize equ 033DFH
+widen_rhs_operand equ 03905H
+round_single_and_pack equ 03440H
+round_and_finalize equ 033E6H
 pu_deref_body equ 028C6H
 ARGA equ 0F06AH   ; operand A / working result, FPNUM record (18)
 STRSCR equ 0E26DH   ; [len][bytes:STRMAX] staging, $E26D..$E36C
@@ -58,9 +58,9 @@ dirverb_op equ 06C03H
 main_fat_mount equ 06499H   ; main's fat_mount
 main_fat_find equ 0649DH   ; main's fat_find
 parse_disk_fcb equ 06629H
-field_prologue equ 07254H
-field_item equ 0728AH
-lrset_tgt equ 07345H
-lrset_rhs equ 07367H
-lrset_finish equ 0737EH
-fch_ctx_addr equ 06F93H
+field_prologue equ 07243H
+field_item equ 07279H
+lrset_tgt equ 07334H
+lrset_rhs equ 07356H
+lrset_finish equ 0736DH
+fch_ctx_addr equ 06F82H

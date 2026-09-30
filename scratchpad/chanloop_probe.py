@@ -47,6 +47,42 @@ CASES = {
             '20 OPEN "A.TXT" FOR OUTPUT AS #1:PRINT #1,1:PRINT #1,2:CLOSE',
             '30 OPEN "A.TXT" FOR INPUT AS #1:INPUT #1,X,Y:CLOSE',
             '90 PRINT CHR$(91);X;Y;E;CHR$(93):END', '95 E=ERR:RESUME 90', "RUN"],
+    # round 4 (D-CHANSWITCH): the BYTES of both files after the alternating writes.
+    # 🔴 First cut read INPUT$(LOF(1),#1): 55 on BOTH machines -- LOF counts a byte a
+    # text read does not deliver (the Ctrl-Z end mark). Read to EOF instead.
+    "dumpA": ["NEW", "5 MAXFILES=2", "10 ON ERROR GOTO 95", OPEN2,
+              '30 PRINT #1,1:PRINT #2,10:PRINT #1,2:PRINT #2,20:CLOSE',
+              '40 OPEN "A.TXT" FOR INPUT AS #1:L=LOF(1)',
+              '45 IF EOF(1) THEN 48 ELSE A$=A$+INPUT$(1,#1):GOTO 45',
+              '48 CLOSE:PRINT CHR$(91);L;LEN(A$);":";',
+              '50 FOR I=1 TO LEN(A$):PRINT ASC(MID$(A$,I,1));:NEXT',
+              '60 PRINT E;CHR$(93):END', '95 E=ERR:RESUME 60', "RUN"],
+    "dumpB": ["NEW", "5 MAXFILES=2", "10 ON ERROR GOTO 95", OPEN2,
+              '30 PRINT #1,1:PRINT #2,10:PRINT #1,2:PRINT #2,20:CLOSE',
+              '40 OPEN "B.TXT" FOR INPUT AS #1:L=LOF(1)',
+              '45 IF EOF(1) THEN 48 ELSE A$=A$+INPUT$(1,#1):GOTO 45',
+              '48 CLOSE:PRINT CHR$(91);L;LEN(A$);":";',
+              '50 FOR I=1 TO LEN(A$):PRINT ASC(MID$(A$,I,1));:NEXT',
+              '60 PRINT E;CHR$(93):END', '95 E=ERR:RESUME 60', "RUN"],
+    # round 5 (D-CHANSWITCH): the files are byte-identical on both machines
+    # (chanloop_run5.out), so the fault is on the READ side -- two INPUT channels,
+    # #1 read to its end, then #2. LINE INPUT (strings) so it runs on trees from
+    # before D-INPNUM too, which answers whether S0 (0bfea44f) caused it.
+    "rd2s": ["NEW", "5 MAXFILES=2", "10 ON ERROR GOTO 95",
+             '20 OPEN "A.TXT" FOR OUTPUT AS #1:PRINT #1,"P":PRINT #1,"Q":CLOSE',
+             '25 OPEN "B.TXT" FOR OUTPUT AS #1:PRINT #1,"R":PRINT #1,"S":CLOSE',
+             '30 OPEN "A.TXT" FOR INPUT AS #1:OPEN "B.TXT" FOR INPUT AS #2',
+             '40 IF EOF(1) THEN 50 ELSE LINE INPUT #1,X$:A$=A$+X$:GOTO 40',
+             '50 IF EOF(2) THEN 60 ELSE LINE INPUT #2,X$:B$=B$+X$:GOTO 50',
+             '60 CLOSE:PRINT CHR$(91);A$;"|";B$;"|";E;CHR$(93):END',
+             '95 E=ERR:RESUME 60', "RUN"],
+    "rd2alt": ["NEW", "5 MAXFILES=2", "10 ON ERROR GOTO 95",
+               '20 OPEN "A.TXT" FOR OUTPUT AS #1:PRINT #1,"P":PRINT #1,"Q":CLOSE',
+               '25 OPEN "B.TXT" FOR OUTPUT AS #1:PRINT #1,"R":PRINT #1,"S":CLOSE',
+               '30 OPEN "A.TXT" FOR INPUT AS #1:OPEN "B.TXT" FOR INPUT AS #2',
+               '40 LINE INPUT #1,W$:LINE INPUT #2,X$:LINE INPUT #1,Y$:LINE INPUT #2,Z$',
+               '60 CLOSE:PRINT CHR$(91);W$;X$;Y$;Z$;"|";E;CHR$(93):END',
+               '95 E=ERR:RESUME 60', "RUN"],
     # round 3: `one` failed too -- is it MAXFILES=2, or numeric INPUT #?
     "one1": ["NEW", "10 ON ERROR GOTO 95",
              '20 OPEN "A.TXT" FOR OUTPUT AS #1:PRINT #1,1:PRINT #1,2:CLOSE',
