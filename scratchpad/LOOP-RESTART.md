@@ -30,7 +30,32 @@ symmetric. Treat that group as closed-by-measurement unless a new signal appears
 | PLAY X shape | *"Tenant walks the chain"* — the MML tenant reads the variable chain in RAM itself (spec-basic-audio-play §7.12); main ~0 B, no carve needed |
 | the rig | Joost's RP2040-Zero is **CONNECTED to the laptop since 2026-09-25** (`/dev/cu.usbmodem1101`, running firmware, not BOOTSEL; seen read-only, nothing flashed). **UN-PARKED 2026-09-26 and FLASHED with `tools/rigfw/rigfw.ino`:** headless joystick WORKS (bind `msxjoystick1_config` to `joy1`, which this install leaves EMPTY); headless mouse does NOT reach PAD/PDL. Next: STICK/STRIG rows — the rig item in TODO |
 
-### 🌆 LOOP 2026-09-29 AFTERNOON → EVENING — READ THIS FIRST (the sections below are older)
+### 🌃 LOOP 2026-09-29 NIGHT → 09-30 — READ THIS FIRST (the sections below are older)
+
+**Commits after the evening section:** the D-FCBSHAPE S1+S2 DESIGN (spec §7: every
+machine accepts `CLEAR 200,&HF380`, so the disk-engine table takes the reference's
+shape, HIMEM lowered at boot, table at `TXTMAX − 800`) · **D-INPNUM** (TIER 1:
+`INPUT #1,X` was Type mismatch for EVERY number; console `INPUT A` took only int16,
+40000 → -25536 silently — both now VAL's parser, strheap op 19) · **D-CHANSWITCH**
+(TIER 1: (1) my own D-INPNUM left the blank+CR after a number unread → `1 0 2 0`,
+fixed in the seqio tenant with a PEEK; (2) a channel switch inside FOR/GOSUB wrote
+the 306 B context OVER the frame — `sh_chan_addr` used varceil's CSP clamp, now
+`strheap_chantab`) · **D-INPSTR** (TIER 1: a string field's leading blanks are not
+data). Filed: **D-INPQUOTE** (TIER 3, quoted fields, ~30–40 B main).
+**Walls (`make basic-reloc`, 2026-09-30 ~04:00): main page 1 12 B, low 3 B; sub p0
+18 B, sub p1 524 B.** Recount before quoting.
+🔴 **ALL THREE TIER 1 BUGS WERE FOUND BY ACCIDENT, testing D-FCBSHAPE's frame
+hypothesis** — a probe for one thing that could not read its own answer. The class:
+[[a-reader-is-tested-by-what-it-leaves]] (new memory).
+➡️ **NEXT, AUTONOMOUS:** main is scarce again, so **a carve by S0's pattern** (move
+pure copy/compute main code into sub page 1 behind a tenant op; the n-gram scout
+finds nothing in main), then **D-FCBSHAPE S1+S2** (~23 B main: boot `HIMEM =
+min(HIMEM,TXTMAX)` ~8 B — disk init runs BEFORE main's store, so without it the
+lowered HIMEM is overwritten — and `VARPTR(#n)` ~15 B), then D-INPQUOTE.
+🙋 **Still Joost's:** D-DIMRESERVE's evaluator rewrite · D-MKIREUSE's rule conflict ·
+the older list in TODO.
+
+### 🌆 LOOP 2026-09-29 AFTERNOON → EVENING (older)
 
 **Commits (`git log 83bdfe74..`):** `ac9ca210` D-NOASTOFOLD + **D-KNIFET3** (the knife took
 `PROVES-T3:` error rows as connectedness witnesses — 9 keywords, BSAVE BLIND) · `8f900589`
