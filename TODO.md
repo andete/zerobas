@@ -6019,7 +6019,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:27657 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:27683 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -25606,18 +25606,44 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       ➕ **`STOP 1` too (batch 7, `t7stopbreak2` EXTRA):** the VG-8020 raises
       `Syntax error`, zerobas breaks as if the `1` were not there. Blocks STOP's T6.
 
-- [ ] 🔴 **`CIRCLE` ACCEPTS AN ARC ANGLE PAST 2π — `CIRCLE(99,99),5,1,7` DRAWS
+- [x] ✅ **`CIRCLE` ACCEPTED AN ARC ANGLE PAST ~2π — `CIRCLE(99,99),5,1,7` DREW
       HERE AND IS `Illegal function call` ON THE REFERENCE (D-CIRCANGLE, found
-      2026-09-27 by T6 batch 7b).**
+      2026-09-27 by T6 batch 7b, fixed 2026-09-30).**
       🎚️ TIER 6 — `CIRCLE`'s start/end angle out of range
-      🤖 **AUTONOMOUS** — the reference settles it; the parse is the
-      `circleparse_tenant` (sub page 1).
       `t7circlearc5` reads `Illegal function call in 10` on the VG-8020 and
       nothing on zerobas, which draws; alone, `…,5,1,7`, `…,5,1,6.3` and the END
       angle `…,5,1,1,7` are all 5 on the reference (6.3 > 2π) and all accepted
       here ([`scratchpad/t6enum_b7_rerun.out`](scratchpad/t6enum_b7_rerun.out) has
       the negative-radius half; these three are the same session's run).
       Blocks CIRCLE's T6 (the `arc` form's code 5 has no agreeing case).
+      📏 **THE BOUNDARY IS NOT 2π, AND IT TOOK FIVE ROUNDS TO SAY SO**
+      ([`circang_run.out`](scratchpad/circang_run.out) …
+      [`circang_run5.out`](scratchpad/circang_run5.out), `scratchpad/circang_probe.py`,
+      VG-8020 vs zerobas, start AND end angle):
+      - `6.28319`, `6.2832` and every double near 2π DRAW.
+      - The single literals `6.28324` / `6.28325` split, and so do the doubles
+        `6.2832449#` / `6.283245#`.
+      - Negatives refuse by magnitude.
+      So the rule is `|angle| ≥ 6.283245`, the rounding boundary of 6.28324.
+      🔮 Predicted a 2π-in-single-precision boundary: MISS on every case between
+      2π and 6.283245.
+      ✅ **FIXED:** `cpt_angle_from_arga` (sub/circleparse.asm, sub page 1) compares
+      the magnitude with the measured constant (`cpy_argb` / `fp_cmp`, rule 3) and
+      leaves through the existing `cpt_err5`, so the refusal raises before any
+      pixel is drawn, as the reference does. Sub page 1 474 → 440 B, no main byte
+      (TIER 6's rule) ([`circang_walls.out`](scratchpad/circang_walls.out)).
+      After: all 84 cases agree ([`circang_after.out`](scratchpad/circang_after.out)).
+      `t7circlearc5` UNREADABLE → SUPPORTED — it was the sweep's one UNREADABLE row
+      ([`circang_kwsweep.out`](scratchpad/circang_kwsweep.out)). The knife (HEAD's
+      circleparse.asm, hashes checked both ways) turns it UNREADABLE again, with
+      its neighbours green ([`circang_knife.out`](scratchpad/circang_knife.out)).
+      Whole sweep SUPPORTED 959, UNREADABLE 0
+      ([`circang_kwsweep_full.out`](scratchpad/circang_kwsweep_full.out)); kwtime OK
+      845 ([`circang_kwtime.out`](scratchpad/circang_kwtime.out)). Predicted 844:
+      MISS — the arc row used to be REF-ONLY-MISSING (zerobas never reached its end
+      mark) and now times. Knife BLIND unchanged
+      ([`circang_knife_all.out`](scratchpad/circang_knife_all.out),
+      [`circang_knife_fn.out`](scratchpad/circang_knife_fn.out)). **CIRCLE reaches T6.**
 
 - [ ] 🔴 **`CIRCLE(99,99),-5` IS `Illegal function call` HERE AND DRAWS ON THE
       REFERENCE (D-CIRCNEGR, found 2026-09-27 by T6 batch 7b).**

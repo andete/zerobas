@@ -1,0 +1,40 @@
+msxtest: BASIC image carries islands -- loaded at $0010, not $2812
+build under measurement: git=c5f876fd zerobas-main-eu.rom=c8be9d1e91bc sub.rom=37be3cfda06d disk.rom=b77ce5512d47
+
+==============================================================================
+LAYER 1 — CRUNCH (tokenisation only; NOT a support answer)
+==============================================================================
+SAME   circlekw  circle(50,50),10
+SAME   t7circlearc5 screen 2:circle(99,99),5,1,7
+SAME   t7circlearc13 screen 2:circle(99,99),5,1,"a"
+
+==============================================================================
+LAYER 2 — SUPPORT (the load-bearing layer)
+==============================================================================
+UNREADABLE    t7circlearc5 SCREEN 2:CIRCLE(99,99),5,1,7
+            ref  [error:illegal function call] 'Illegal function call in 10'
+            zb   [?nomarker] ''
+SUPPORTED     circlekw  SCREEN2:CIRCLE(50,50),10,15:A=POINT(60,50):SCREEN0:PRINT"[Q";A;"]"
+            ref  [value] '[Q 15 ]'
+SUPPORTED     t7circlearc13 SCREEN 2:CIRCLE(99,99),5,1,"A"
+            ref  [error:type mismatch] 'Type mismatch in 10'
+
+==============================================================================
+COMBINED — tokenised? x observable consequence
+==============================================================================
+word       crunch  support     consequence
+------------------------------------------------------------------------------
+circlekw   present SUPPORTED   match
+t7circlearc5 present UNREADABLE  ref 'Illegal function call in 10' vs zb ''
+t7circlearc13 present SUPPORTED   match
+
+==============================================================================
+SUMMARY  UNREADABLE=1  SUPPORTED=2
+         executed 3 / 3 words; 0 crunch-only
+==============================================================================
+ROWS: 3 printed, 3 scored — 0 crunch-only word(s) carry no support reading and are printed but not scored
+pin: NOT written -- an --only run measures a subset, and the pin is the whole sweep
+
+=== CRUNCH PIN — words the reference tokenises and zerobas does not ===
+refcache: 2 hit, 2 miss, 2 stored
+knife = HEAD's circleparse.asm; sub.rom fixed e5a9ef894345 -> knifed 37be3cfda06d -> restored e5a9ef894345

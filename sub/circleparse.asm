@@ -351,10 +351,33 @@ cpt_angle_from_arga:
                 ld      (hl),a              ; negative -> a spoke is drawn later
                 xor     a
                 ld      (ARGA+FPNUM_SIGN),a ; ARGA := |angle|
+                ; 🔴 D-CIRCANGLE (2026-09-30): an arc angle whose MAGNITUDE reaches
+                ; 6.283245 is `Illegal function call` on the VG-8020, start or end
+                ; alike; this drew. Bisected, not assumed (scratchpad/circang_run
+                ; .. circang_run5.out): 6.2832449# draws, 6.283245# refuses; in
+                ; single precision 6.28324 draws and 6.28325 refuses, and -6.3 / -7
+                ; refuse by magnitude. That is NOT 2*pi in any precision (6.28319 and
+                ; 6.2832 draw), so the rule is the measured boundary itself.
+                ld      hl,cpt_angmax
+                call    cpy_argb            ; ARGB := 6.283245 (fp_sqrt.asm's entry)
+                call    fp_cmp              ; A = 1 (<) / 2 (=) / 4 (>); ARGA intact
+                dec     a
+                jr      z,cpt_ang_ok        ; |angle| < 6.283245
+                pop     hl                  ; drop our caller's return: the refusal
+                jp      cpt_err5            ; leaves the whole segment (GFX_RES = 5)
+cpt_ang_ok:
                 call    cpt_boundary_prep   ; reads GFX_CS_AY for the dest base
                 ld      a,1
                 ld      (GFX_ARCF),a        ; actually GIVEN -> arc mode
                 ret
+
+; cpt_angmax: the arc-angle magnitude the reference first refuses (D-CIRCANGLE),
+; in the math pack's FPCONST layout -- sign, dexp (value = d0.d1.. x 10^(dexp-1)),
+; 15 digits.
+cpt_angmax:
+                db 000h            ; sign  (+)
+                dw 1               ; dexp
+                db 6, 2, 8, 3, 2, 4, 5, 0, 0, 0, 0, 0, 0, 0, 0   ; 6.283245
 
 ; cpt_asp_scale256: S := TRUNC(minor_ratio*256) -> GFX_ASPS. -----------------
 ; 🔴 D-CIRCDOM: this used to say "round(...)" and to `call cpt_round`, and the

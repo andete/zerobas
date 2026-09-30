@@ -1,0 +1,18 @@
+case                    VG-8020  zerobas   (ERR; 0 = drew)
+  start 6.28321               0        0
+  end 6.28321                 0        0
+  start 6.28322               0        0
+  end 6.28322                 0        0
+✗ start 6.28325               5        0
+✗ end 6.28325                 5        0
+✗ start 6.2833                5        0
+✗ end 6.2833                  5        0
+✗ start 6.2834                5        0
+✗ end 6.2834                  5        0
+  start 6.28320001#           0        0
+  end 6.28320001#             0        0
+  start 6.2832#               0        0
+  end 6.2832#                 0        0
+  start -6.28321              0        0
+  end -6.28321                0        0
+refcache: 0 hit, 2 miss, 2 stored

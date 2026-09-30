@@ -1,0 +1,94 @@
+case                    VG-8020  zerobas   (ERR; 0 = drew)
+  start 6.28                  0        0
+  end 6.28                    0        0
+  start 6.2831                0        0
+  end 6.2831                  0        0
+  start 6.28318               0        0
+  end 6.28318                 0        0
+  start 6.283185              0        0
+  end 6.283185                0        0
+  start 6.2831853             0        0
+  end 6.2831853               0        0
+  start 6.28319               0        0
+  end 6.28319                 0        0
+  start 6.2832                0        0
+  end 6.2832                  0        0
+  start -6.2831               0        0
+  end -6.2831                 0        0
+  start -6.2832               0        0
+  end -6.2832                 0        0
+  start 7                     5        5
+  end 7                       5        5
+  start 6.283185307#          0        0
+  end 6.283185307#            0        0
+  start 6.28318531#           0        0
+  end 6.28318531#             0        0
+refcache: 1 hit, 1 miss, 1 stored
+case                    VG-8020  zerobas   (ERR; 0 = drew)
+  start 6.2835                5        5
+  end 6.2835                  5        5
+  start 6.284                 5        5
+  end 6.284                   5        5
+  start 6.285                 5        5
+  end 6.285                   5        5
+  start 6.29                  5        5
+  end 6.29                    5        5
+  start 6.295                 5        5
+  end 6.295                   5        5
+  start 6.3                   5        5
+  end 6.3                     5        5
+  start 6.4                   5        5
+  end 6.4                     5        5
+  start 6.5                   5        5
+  end 6.5                     5        5
+  start -6.3                  5        5
+  end -6.3                    5        5
+  start -7                    5        5
+  end -7                      5        5
+refcache: 1 hit, 1 miss, 1 stored
+case                    VG-8020  zerobas   (ERR; 0 = drew)
+  start 6.28321               0        0
+  end 6.28321                 0        0
+  start 6.28322               0        0
+  end 6.28322                 0        0
+  start 6.28325               5        5
+  end 6.28325                 5        5
+  start 6.2833                5        5
+  end 6.2833                  5        5
+  start 6.2834                5        5
+  end 6.2834                  5        5
+  start 6.28320001#           0        0
+  end 6.28320001#             0        0
+  start 6.2832#               0        0
+  end 6.2832#                 0        0
+  start -6.28321              0        0
+  end -6.28321                0        0
+refcache: 1 hit, 1 miss, 1 stored
+case                    VG-8020  zerobas   (ERR; 0 = drew)
+  start 6.28323               0        0
+  end 6.28323                 0        0
+  start 6.283235              0        0
+  end 6.283235                0        0
+  start 6.28324               0        0
+  end 6.28324                 0        0
+  start 6.283245              5        5
+  end 6.283245                5        5
+  start 6.28323#              0        0
+  end 6.28323#                0        0
+  start 6.28324#              0        0
+  end 6.28324#                0        0
+refcache: 1 hit, 1 miss, 1 stored
+case                    VG-8020  zerobas   (ERR; 0 = drew)
+  start 6.283241#             0        0
+  end 6.283241#               0        0
+  start 6.283243#             0        0
+  end 6.283243#               0        0
+  start 6.2832449#            0        0
+  end 6.2832449#              0        0
+  start 6.283245#             5        5
+  end 6.283245#               5        5
+  start 6.283247#             5        5
+  end 6.283247#               5        5
+  start 6.28325#              5        5
+  end 6.28325#                5        5
+refcache: 1 hit, 1 miss, 1 stored
