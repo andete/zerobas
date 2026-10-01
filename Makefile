@@ -2231,6 +2231,12 @@ cas-ascii-acceptance: repack-machine
 eofcas-acceptance: repack-machine
 	python3 probes/basic/basic_probe_eofcas.py
 
+# --- dosdate-acceptance: DOS dates as the CF-3300 (D-CLOSESTAMP, D-DOSDATE) -----
+# FCLOSE re-dating a WRRND-written file, and SDATE moving GDATE and the file stamp.
+# FAILS until both land; excluded from the battery with that reason.
+dosdate-acceptance: repack-machine
+	ZEROBAS_BASIC_MACHINE=$(REPACK_MACHINE) python3 probes/disk/disk_probe_dosdate.py
+
 # --- savedate-acceptance: disk BASIC stamps the directory as the CF-3300 (D-WRBLKSEEK (b))
 # Joost 2026-10-01 "Stamp as 3300": SAVE, SAVE ,A and OPEN FOR OUTPUT each stamp
 # date 0821h (1984-01-01), time 0, at the same directory index as the CF-3300.

@@ -73,7 +73,7 @@ def build(dos: str, out: str, com: bytes, big: bool = False, wseek: bool = False
 
 
 def run_once(machine: str, dsk: str, boot_s: int, end_s: int, timeout: float,
-             phase_log: str | None = None) -> None:
+             phase_log: str | None = None, cmd: str = "WRBLK", extra_tcl: str = "") -> None:
     """Run WRBLK.COM exactly ONCE per machine.
 
     🔴 NOT RT.run, AND WHY: RT.run types `WRBLK` every 6 s on top of AUTOEXEC,
@@ -85,8 +85,8 @@ def run_once(machine: str, dsk: str, boot_s: int, end_s: int, timeout: float,
     not (RT.run's own note), so stock gets AUTOEXEC only and ours one typed
     command."""
     import signal, subprocess as sp, time
-    typed = "" if machine == RT.REF_MACHINE else f'after time {boot_s} {{ type "WRBLK\\r" }}\n'
-    tcl = f"set throttle off\n{typed}after time {end_s} {{ exit }}\n"
+    typed = "" if machine == RT.REF_MACHINE else f'after time {boot_s} {{ type "{cmd}\\r" }}\n'
+    tcl = f"set throttle off\n{typed}{extra_tcl}after time {end_s} {{ exit }}\n"
     if phase_log:
         # --time: poll the exerciser's PHASE byte ($C000, page-3 TPA -- the
         # program's own data, never ROM) every 50 ms of EMULATED time and log

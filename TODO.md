@@ -6045,7 +6045,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:28456 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:28480 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -27234,8 +27234,25 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       Our `_GDATE` returns the constant 1984-01-01 and our stamp is the
       constant 0821h. If the CF-3300's DATE command changes what it stamps, our
       SDATE has to store a date and both have to read it.
-      📏 **MEASURE FIRST:** DATE in AUTOEXEC.BAT, then FMAKE, on both machines;
-      read the directory entry and FCB +20..21.
+      📏 **MEASURED** ([`dosdate_before.out`](scratchpad/dosdate_before.out),
+      `make dosdate-acceptance`, probes/disk/dosdate.asm): GDATE, SDATE
+      1999-12-31, GDATE again, then FMAKE + WRBLK + FCLOSE.
+      - **CF-3300:** GDATE goes 1984-01-01 (Sunday) → **1999-12-31, A = 5
+        (Friday)**, and NEWD.TXT is stamped **`279Fh` = 1999-12-31**.
+      - **Ours:** SDATE returns A = 0 but changes nothing: GDATE stays
+        1984-01-01, and the stamp stays `0821h`.
+      Predicted both, hit.
+      🛠 **FIX SHAPE (not built):**
+      - SDATE stores a date in our RAM; GDATE returns it, with the DAY OF WEEK
+        computed (stock's 1999-12-31 = 5).
+      - `dir_stamp_date` and `fcb_mark_written`/`fmake_fcb_fill` stamp the
+        stored date, not the constant.
+      - FIND FIRST which ROM entry the kernel's SDATE path enters (the M9 GDATE
+        slice's call-trace method, docs/tier2-gdate-spec.md -- entries, never
+        bytes).
+      - PRICE: the date cell lives in disk RAM, but `dir_stamp_date` is also in
+        sub.rom (disk BASIC's copy). Does a date set in DOS survive into BASIC
+        on the CF-3300? Measure before deciding where the cell goes.
       🤖 **AUTONOMOUS** — the reference settles it.
 
 - [ ] 🔴 **D-CLOSESTAMP — DOES THE CF-3300'S FCLOSE DATE A FILE THAT WAS ONLY WRRND-WRITTEN
@@ -27246,8 +27263,15 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       the file never rewrites the entry, so FCLOSE leaves its old date. On the
       CF-3300, +24's 40h -- cleared by a write -- reads like a "modified" flag
       that FCLOSE might act on.
-      📏 **MEASURE FIRST:** FOPEN a file dated 0, WRRND inside its size, FCLOSE,
-      on both machines; read the directory entry.
+      📏 **MEASURED** ([`dosdate_before.out`](scratchpad/dosdate_before.out),
+      same exerciser): FIXD.TXT (dated 0) is FOPENed, WRRND writes record 0
+      inside its 256 B, then FCLOSE. **CF-3300 `0821h`, ours `0000`.** So the
+      CF-3300's FCLOSE dates a file written while open. Predicted, hit (about
+      60% confidence).
+      🛠 **FIX SHAPE (not built):** our FCLOSE of a READ-opened FCB does nothing.
+      When the FCB's +24 has its 40h CLEARED (a write happened, the flag this
+      slice's `fcb_mark_written` now keeps), FCLOSE re-dates the entry: find it
+      through +25 (filled since (b)), `dir_stamp_date`, write it back.
       🤖 **AUTONOMOUS** — the reference settles it.
 
 - [ ] 🔴 **D-BLKIOPERCALL — EVERY BLOCK I/O CALL STILL RE-MOUNTS AND RE-FINDS, AND EVERY WRBLK

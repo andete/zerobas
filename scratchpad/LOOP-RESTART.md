@@ -75,8 +75,11 @@ CARRY its five rows (Joost 09-26); the last board-backed pin is `7c488429`'s.
   🏗️ **Joost 2026-10-01 "Stamp as 3300":** files are dated 0821h (1984-01-01),
   time 0, as the CF-3300 (gate `savedate-acceptance`).
   A WRITE dates a file too, and COPY carries the source's date (both measured).
-  ➡️ **NEXT, by tier: D-DOSDATE and D-CLOSESTAMP (TIER 1, measure first), then
-  S10.B (TIER 2).** D-BLKIOPERCALL is TIER 5.
+  📏 D-DOSDATE and D-CLOSESTAMP MEASURED (`make dosdate-acceptance`, a failing
+  row excluded with its reason): the CF-3300's FCLOSE re-dates a written file,
+  and its SDATE moves GDATE and the stamps.
+  ➡️ **NEXT, by tier: D-CLOSESTAMP (small), then D-DOSDATE (find the SDATE ROM
+  entry first), then S10.B (TIER 2).** D-BLKIOPERCALL is TIER 5.
 - (was) 🔴 **THE PROOF FOUND D-WRBLKRS (TODO):** our WRBLK is only right at a record
   size of 128. At RS = 1 it allocates 32 clusters for 256 B, while the
   CF-3300 is exact. Fix it first: a byte-offset transfer looping per sector.
