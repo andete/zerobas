@@ -4080,6 +4080,91 @@ zerobas claims one. So step 10 is not "move OPEN". It is **the byte I/O behind
 ⚠️ The claimed-slot totals match §6.6v's census: CF-3300 **35**, zerobas **19**.
 Every cell zerobas claims, the CF-3300 claims too.
 
+### 6.6bc 📐 A STEP-10 DESIGN THAT DISSOLVES §6.6an's RAM BLOCKER — THE CHANNEL IS A BDOS FCB, AND ITS BUFFER IS THE BASIC FCB's RECORD (proposal, 2026-10-01)
+
+§6.6an blocked step 10 on RAM: *"a channel holds its sector between
+statements, and there is nowhere to put it"*. That premise assumed OUR shape, a
+live 512 B sector per channel. The reference's shape, assembled from measured
+facts, does not need one.
+
+**MEASURED** (each with its reading):
+1. A BASIC FCB is 265 B: 9 header + a 256 B RECORD at +9. Header +0 is the mode,
+   +4 the device, **+6 the buffer position** (`00 → 02 → 03` after `"AB"`,
+   `"ABC"`). D-FCBSHAPE step 1, `fcbfields_run.out`.
+2. Its +1..+2 is a POINTER into the disk work area (`$DEB5` on the CF-3300).
+   The per-channel blocks there stride **37 B** (`$DEB6` → `$DEDB`), and hold the
+   typed 8.3 name. D-DUPOPEN's scan, `fcbname_stride.out`.
+3. The data crosses the hook PER BYTE (`$FE85` out, `$FE8A` in). The sector
+   work is on the disk side and never crosses back. §6.6bb.
+
+**INFERRED, TO BE MEASURED BEFORE IT IS BUILT ON.** 37 B is the size of a
+CP/M-style BDOS FCB (name, extent, record fields). The reading is that the disk
+ROM keeps one BDOS FCB per channel and moves the 256 B record with BDOS block
+I/O: the byte hooks fill or drain the record at +6, and a full or empty record
+costs one block transfer. That would put the 512 B sector cache in the DISK
+ROM's work area, used only INSIDE a crossing. Nothing needs to survive between
+statements except the record, which the FCB already holds.
+
+🎯 **WHY THIS FITS zerobas NOW, AND DID NOT IN SEPTEMBER:**
+- D-FCBSHAPE S1+S2 gave every channel the 265 B block, with the record at +9.
+- `disk.rom` already carries a BDOS FCB layer from the BDOS-parity work:
+  `bdos_create`, `bdos_seqwrite`, `fopen_fill_body`, block read/write
+  (`wrblk_body`, `rdrnd`/`wrrnd`).
+- So the per-channel disk state becomes a 37 B BDOS FCB in `DSK_ENGTAB` (today
+  a 50 B row of OUR engine globals). The byte I/O is `disk.rom` claiming
+  `$FE85`/`$FE8A`.
+
+**WHAT FALLS OUT, IF THE INFERENCE HOLDS:**
+- (a) **RAM:** 15 × (50 − 37) = **195 B** of disk-machine reserve returns.
+  The disk build would then LEAD the CF-3300's boot FRE instead of trailing by
+  76 B.
+- (b) **The s.case rule is free:** the verbatim name lives in the BDOS FCB, as
+  the reference's does, which is the home Joost's 09-27 ruling expected. That
+  would answer the pending 165 B question for free.
+- (c) **Main bytes:** main's disk-channel byte path (the `fat_io_*` shims,
+  `fch_select`'s save/load for disk channels, the write-back flush), the FAT
+  tenant's channel half and the seqio tenant's disk half go. D-CHANHOOK's crude
+  count puts ~800 B of main code on disk-channel paths (`files.asm` ~600,
+  `field.asm` ~180), before callees.
+- (d) **`VARPTR(#n)`'s header** (+0 mode, +6 position) becomes real, closing
+  D-FCBSHAPE's LEFT list.
+
+**SLICES, each shippable alone and each measured first:**
+- **S10.0** — measure the inference: after OPEN on the CF-3300, does the 37 B
+  block change at record boundaries (every 256 bytes) or per byte? That is a
+  PEEK of work-area RAM, which is permitted. The answer decides the rest.
+- **S10.1** — `PRINT#` to a disk channel: `disk.rom` claims `$FE85`, fills the
+  record at +6, and on 256 writes the block through its BDOS layer. CLOSE
+  flushes.
+- **S10.2** — `INPUT#`/`INPUT$`/`LINE INPUT#`: `disk.rom` claims `$FE8A` and
+  drains the record, refilling by block. The seqio rules (Ctrl-Z soft end,
+  CR-LF, the numeric-item peek) move with it. **D-INPQUOTE2's peek falls into
+  this slice.**
+- **S10.3** — OPEN/CLOSE/EOF/LOF through their claimed cells. The engine row
+  becomes the BDOS FCB, and the old globals' swap retires.
+- **S10.4** — RANDOM (`GET`/`PUT`/`FIELD`): the record already IS the FIELD
+  buffer, so the block read/write is the whole of it.
+
+⚠️ **THE DISKLESS MACHINE is untouched.** Device and cassette channels never
+cross; they stay main's, as on the reference, whose main ROM owns
+`CRT:`/`LPT:`/`CAS:`. That is why the byte hooks, not main's verbs, are the
+seam.
+
+📏 **S10.0, FIRST READING (2026-10-01, [`scratchpad/fcbblock_probe.py`](../../scratchpad/fcbblock_probe.py)
+→ [`fcbblock_run.out`](../../scratchpad/fcbblock_run.out)) — HALF ANSWERED.**
+- After OPEN and 0, 1 and 255 bytes of `PRINT#1,...;`, header **+6 reads 0, 1,
+  255** (the buffer position, per byte).
+- **The 37 B block does not change at all** over those bytes, so it is not
+  updated per byte.
+- Its bytes match the public MSX-DOS FCB layout: a drive byte, then the 11
+  characters of the typed name (`S0      TXT`), then block and record-size
+  fields. The inference survives its first test.
+- 🔴 **The record-boundary half is unanswered: the CF-3300 goes silent at the
+  256th byte**, the first record write, at a 40 s and at a 150 s capture alike,
+  with no error on screen. Tonight's D-EOFMODE first fixture stalled the same way
+  on a write-then-reopen. That is a harness question (filed as D-CFWSTALL), and
+  S10.1 must not be built until the boundary is read.
+
 ## 7. The channel trio, and the wall that is not one
 
 `LSET`/`RSET`/`FIELD` need the channel engine: `fch_check` `$7080`,

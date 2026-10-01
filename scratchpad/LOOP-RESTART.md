@@ -47,11 +47,18 @@ p0 18 B, sub p1 376 B.** Main is FULL again — carve before any main-byte item.
 RAM on the verbatim-name rule, or pin it as a divergence (TODO, the OPEN item).
 🔌 **The rig drops off USB intermittently** (seen twice on 09-30). Board-less runs
 CARRY its five rows (Joost 09-26); the last board-backed pin is `7c488429`'s.
-➡️ **NEXT, AUTONOMOUS:** most items need main bytes (the n-gram TAIL list has a few
-5–6 B pairs left; `evict_scout` finds only hot paths). D-INPQUOTE2's disk half
-fits the seqio tenant (sq_numitem's peek pattern) but its routing needs ~10 B of
-main. STEP 10 (OPEN into disk.rom) is the architecture item, and its "TIER 2" tag
-is stale (LOAD is T2✓).
+➡️ **NEXT, AUTONOMOUS — STEP 10, WHICH NOW HAS A MEASURED INTERFACE AND A DESIGN.**
+- `e0e55d70` **D-CHANHOOK** (spec §6.6bb): the CF-3300's channel verbs cross
+  at EIGHT claimed cells, the data PER BYTE (`$FE85` out, `$FE8A` in). zerobas
+  claims only `$FE5D`.
+- §6.6bc is the design that dissolves the old RAM blocker. The channel is a
+  37 B MSX-DOS FCB in the disk work area (`disk.rom` already has a BDOS FCB
+  layer), and its buffer is the BASIC FCB's 256 B record (D-FCBSHAPE made it).
+- If it holds: +195 B of disk RAM, s.case for free, ~800 B of main code out.
+- **S10.0 is HALF read:** the FCB is not touched per byte, but the CF-3300
+  goes silent at the first 256-byte record write. **D-CFWSTALL is therefore
+  the first thing to do** (TIER 6 apparatus, but it gates step 10).
+- Main bytes are at 2 + 0; the n-gram TAIL list still has a few 4–6 B pairs.
 🔴 **LESSONS TONIGHT:**
 • **A GATE MUST NOT KILL WHAT IT DID NOT START.** A `pkill -9 openmsx` copied
 from a scratchpad rig into a gate killed the pool's emulators; kwtime read 51/32

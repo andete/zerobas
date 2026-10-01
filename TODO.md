@@ -6031,7 +6031,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:28091 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:28103 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -26919,6 +26919,18 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       symptom two units away from the cause (D-KWTLOAD).
       🤖 **AUTONOMOUS** — a static check that walks each battery target's probe sources and refuses a
       host-wide kill, with a selftest on a planted line.
+
+- [ ] 🧰 **D-CFWSTALL — THE CF-3300 GOES SILENT AT A MID-PROGRAM RECORD WRITE IN OUR HARNESS**
+      🎚️ TIER 6 — apparatus. It blocks step 10's S10.0 measurement (spec §6.6bc).
+      📏 2026-10-01 ([`fcbblock_run.out`](scratchpad/fcbblock_run.out)): after
+      `OPEN…FOR OUTPUT` the program prints stages at 0, 1 and 255 bytes. At the
+      256th byte (the first 256-byte record write) the screen stays blank at a
+      40 s and at a 150 s capture, with no error. D-EOFMODE's first fixture
+      (OPEN/PRINT#/CLOSE, then re-OPEN) stalled the same way the same night.
+      Writes of under 256 B with a CLOSE work (inpstr_probe, dupopen_probe).
+      🤖 **AUTONOMOUS** — first separate: disk activity still running (openMSX
+      drive LED, a Tcl `after` on emulated time) versus a hang (the PC stuck in
+      one ROM page); then try the zerobas-owned test image vs a fresh FAT12 one.
 
 - [ ] 🔴 **A kwtime ROW THAT REGRESSES FROM OK TO SLOW OR HANG FAILS NO GATE
       (D-KWTRATCHET, found 2026-09-28 while fixing D-DSKFSLOW).**
