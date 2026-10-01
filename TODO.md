@@ -6045,7 +6045,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:28485 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:28500 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -27242,17 +27242,32 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       - **Ours:** SDATE returns A = 0 but changes nothing: GDATE stays
         1984-01-01, and the stamp stays `0821h`.
       Predicted both, hit.
-      🛠 **FIX SHAPE (not built):**
-      - SDATE stores a date in our RAM; GDATE returns it, with the DAY OF WEEK
-        computed (stock's 1999-12-31 = 5).
-      - `dir_stamp_date` and `fcb_mark_written`/`fmake_fcb_fill` stamp the
-        stored date, not the constant.
-      - FIND FIRST which ROM entry the kernel's SDATE path enters (the M9 GDATE
-        slice's call-trace method, docs/tier2-gdate-spec.md -- entries, never
-        bytes).
-      - PRICE: the date cell lives in disk RAM, but `dir_stamp_date` is also in
-        sub.rom (disk BASIC's copy). Does a date set in DOS survive into BASIC
-        on the CF-3300? Measure before deciding where the cell goes.
+      📏 **DESIGN INPUT, MEASURED** ([`sdatemem.out`](scratchpad/sdatemem.out),
+      [`sdatemem_probe.py`](scratchpad/sdatemem_probe.py)):
+      - **Where the CF-3300 keeps the date:** `$F33B..$F33C`, work-area RAM,
+        read as data. It is a **day count since 1980-01-01**: `05B5h` = 1461
+        (1984-01-01) from boot, before DOS runs; `1C88h` = 7304 after SDATE
+        1999-12-31. ❌ **MISS, scored: predicted a count from 1984** (00 00 →
+        D3 16). Day of week = (days + 2) mod 7, since 1980-01-01 was a Tuesday:
+        1461 → 0 (Sunday), 7304 → 5 (Friday), both as GDATE returned.
+      - **Where SDATE enters OUR disk ROM:** the first page-1 PC during the call
+        is **`$5552`**, our own code. That is the zero padding after
+        `gdate_handler`: **ours NOP-slides from `$5552` into the pinned `jp
+        gtime_body` at `$55DB`**, runs GTIME, and returns A = 0 by luck. A
+        latent bug of the M24/M26 NOP-slide class.
+      - `$F330..$F33F` is unassigned in our RAM map (ours reads C9 there), so
+        `$F33B` is free to hold the count as stock does -- the cell-for-cell
+        layout TIER 4 wants.
+      🛠 **FIX SHAPE:**
+      - a pinned `k_5552: jp sdate_body`;
+      - DATE_DAYS = `$F33B` (2 B), 1461 at disk-ROM init;
+      - `sdate_body` validates HL/D/E and stores the count. Measure stock's A
+        for an INVALID date first;
+      - `gdate_handler` converts the count to Y/M/D + day of week;
+      - the DOS-side stamps encode from it.
+      ⚠️ **The sub-ROM copy of `dir_stamp_date`** (disk BASIC) waits on one more
+      measurement: does a date set in DOS reach BASIC's SAVE stamp on the
+      CF-3300? Until then it stays the constant.
       🤖 **AUTONOMOUS** — the reference settles it.
 
 - [x] ✅ **D-CLOSESTAMP — DOES THE CF-3300'S FCLOSE DATE A FILE THAT WAS ONLY WRRND-WRITTEN
