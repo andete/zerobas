@@ -16,7 +16,8 @@
 BDOS    equ     $0005
 PHASE   equ     $C000                   ; page-3 TPA byte: 1 writing, 2 RDBLK reading,
                                         ; 3 RDRND reading, 4 done (5 seek reading, 6 done
-                                        ; when BIG.BIN is on the disk)
+                                        ; when BIG.BIN is on the disk; 7 big write, 8 done
+                                        ; when WSEEK.BIN is)
 ERRS    equ     $C001                   ; the seek phase's count of WRONG blocks
 FCBDUMP equ     $C010                   ; BIG.BIN's FCB (37 B) after FOPEN, after block 0
                                         ; and after block 5, at +0/+30h/+60h: which fields
@@ -197,6 +198,66 @@ sk_next:
         ld      a, 6
         ld      (PHASE), a
 no_big:
+        ; --- WRITE-SEEK SIDE (D-WRBLKSEEK), only when WSEEK.BIN exists (the
+        ; probe's --wseek): FMAKE BIGW.BIN and write it whole in 256 B WRBLKs at
+        ; RS = 1, block k = 256 x k. The phase's TIME is the row: a WRBLK that
+        ; walks the file from its head every call is quadratic. BIGW's FCB is
+        ; dumped after FMAKE (+0C0h) and after block 5 (+090h).
+        ld      de, fcbf
+        ld      c, $0F                  ; FOPEN WSEEK.BIN, the marker
+        call    BDOS
+        or      a
+        jr      nz, no_wseek
+        ld      a, 7
+        ld      (PHASE), a
+        ld      de, fcbw
+        ld      c, $16                  ; FMAKE BIGW.BIN
+        call    BDOS
+        ld      hl, fcbw
+        ld      de, FCBDUMP + $C0
+        ld      bc, 37
+        ldir
+        ld      hl, 1
+        ld      (fcbw + 14), hl
+        ld      hl, 0
+        ld      (fcbw + 33), hl
+        ld      (fcbw + 35), hl
+        xor     a
+        ld      (blkn), a
+        ld      b, 128                  ; 32 KB
+wk_loop:
+        push    bc
+        ld      a, (blkn)
+        ld      hl, dta
+        ld      b, 0
+wk_fill:
+        ld      (hl), a
+        inc     hl
+        djnz    wk_fill
+        ld      de, fcbw
+        ld      hl, 256
+        ld      c, $26                  ; WRBLK
+        push    ix
+        call    BDOS
+        pop     ix
+        ld      a, (blkn)
+        cp      5
+        jr      nz, wk_nodump
+        ld      hl, fcbw
+        ld      de, FCBDUMP + $90
+        ld      bc, 37
+        ldir
+wk_nodump:
+        ld      hl, blkn
+        inc     (hl)
+        pop     bc
+        djnz    wk_loop
+        ld      de, fcbw
+        ld      c, $10                  ; FCLOSE
+        call    BDOS
+        ld      a, 8
+        ld      (PHASE), a
+no_wseek:
         ld      c, $00                  ; terminate
         call    BDOS
         ret
@@ -293,5 +354,13 @@ fcbr:
 fcbg:
         db      0
         db      "BIG     BIN"
+        ds      40 - 12, 0
+fcbf:
+        db      0
+        db      "WSEEK   BIN"
+        ds      40 - 12, 0
+fcbw:
+        db      0
+        db      "BIGW    BIN"
         ds      40 - 12, 0
 dta:    ds      256

@@ -60,12 +60,14 @@ def assemble() -> bytes:
 BIG = bytes(k for k in range(128) for _ in range(256))
 
 
-def build(dos: str, out: str, com: bytes, big: bool = False) -> None:
+def build(dos: str, out: str, com: bytes, big: bool = False, wseek: bool = False) -> None:
     shutil.copyfile(dos, out)
     img = bytearray(open(out, "rb").read())
     fat12_add(img, "WRBLK", "COM", com)          # RT.run types WRBLK at the prompt
     if big:
         fat12_add(img, "BIG", "BIN", BIG)
+    if wseek:
+        fat12_add(img, "WSEEK", "BIN", b"x")     # the marker: run the write phase
     fat12_add(img, "AUTOEXEC", "BAT", b"WRBLK\r\n")
     open(out, "wb").write(img)
 
@@ -94,7 +96,7 @@ def run_once(machine: str, dsk: str, boot_s: int, end_s: int, timeout: float,
                 "set v [debug read memory 0xC000]; "
                 "if {$v != $ph_last} { puts $ph_f \"$v [machine_info time] "
                 "[debug read memory 0xC001]\"; "
-                "if {$v == 6} { foreach b {0xC010 0xC040 0xC070} { set l {}; "
+                "if {$v == 6 || $v == 8} { foreach b {0xC010 0xC040 0xC070 0xC0A0 0xC0D0} { set l {}; "
                 "for {set i 0} {$i < 37} {incr i} { lappend l [debug read memory [expr {$b + $i}]] }; "
                 "puts $ph_f \"FCB $b $l\" } }; "
                 "flush $ph_f; set ph_last $v }; after time 0.05 ph_poll }\n"
@@ -114,6 +116,7 @@ def run_once(machine: str, dsk: str, boot_s: int, end_s: int, timeout: float,
 
 
 SEEK: dict = {}   # tag -> (seconds or None, wrong blocks or None), from phase_times
+WSEEK: dict = {}  # tag -> seconds or None, the big-write phase
 
 
 def phase_times(plog: str, tag: str = "") -> str:
@@ -124,7 +127,7 @@ def phase_times(plog: str, tag: str = "") -> str:
           (ln.split() for ln in open(plog) if ln.strip() and not ln.startswith("FCB"))]
     t, errs = {}, None
     for v, at, e in ev:
-        if v in (1, 2, 3, 4, 5, 6):
+        if v in (1, 2, 3, 4, 5, 6, 7, 8):
             t[v] = at
         if v == 6:
             errs = e
@@ -132,11 +135,16 @@ def phase_times(plog: str, tag: str = "") -> str:
         return f"INCOMPLETE {ev[-6:]}"
     out = (f"write {t[2] - t[1]:.2f} s, RDBLK read {t[3] - t[2]:.2f} s, "
            f"RDRND read {t[4] - t[3]:.2f} s")
+    if 7 in t:
+        WSEEK[tag] = t[8] - t[7] if 8 in t else None
+        out_w = (f", WSEEK write (32 KB) " + (f"{t[8] - t[7]:.2f} s" if 8 in t else "UNFINISHED"))
+    else:
+        out_w = ""
     if 5 in t:
         SEEK[tag] = (t[6] - t[5], errs) if 6 in t else (None, None)
         out += (f", SEEK read (32 KB) " + (f"{t[6] - t[5]:.2f} s, {errs} wrong block(s)"
                                           if 6 in t else "UNFINISHED"))
-    return out
+    return out + out_w
 
 
 def file_bytes(f: "RT.Fat12", name: str):
@@ -173,15 +181,18 @@ def main() -> int:
     # --seek: put BIG.BIN (32 KB) on the disk, so the exerciser's fifth phase
     # reads it whole in 256 B RDBLKs -- D-RDBLKSEEK's row, read with --time.
     ap.add_argument("--seek", action="store_true")
+    # --wseek: put the WSEEK.BIN marker on the disk, so the exerciser writes
+    # BIGW.BIN (32 KB) in 256 B WRBLKs -- D-WRBLKSEEK's row, timed.
+    ap.add_argument("--wseek", action="store_true")
     a = ap.parse_args()
     com = assemble()
     ok = True
     fcbs: dict = {}
     for tag, machine in (("OURS ", RT.OUR_MACHINE), ("STOCK", RT.REF_MACHINE)):
         dsk = probe_tmp.tmp(f"wrblk_alt_{tag.strip().lower()}.dsk")
-        build(a.dos_disk, dsk, com, a.seek)
+        build(a.dos_disk, dsk, com, a.seek, a.wseek)
         plog = (probe_tmp.tmp(f"wrblk_alt_{tag.strip().lower()}.phase")
-                if a.time or a.seek else None)
+                if a.time or a.seek or a.wseek else None)
         try:
             run_once(machine, dsk, a.boot, a.end, a.timeout, plog)
         except TimeoutError as e:
@@ -194,11 +205,18 @@ def main() -> int:
                 if ln.startswith("FCB"):
                     _, base, *bs = ln.split()
                     what = {"0xC010": "after FOPEN", "0xC040": "after block 0",
-                            "0xC070": "after block 5"}[base]
+                            "0xC070": "after block 5", "0xC0A0": "after write 5",
+                            "0xC0D0": "after FMAKE"}[base]
+                    # a dump whose phase did not run holds garbage: skip it
+                    if what in ("after FOPEN", "after block 0", "after block 5") and not a.seek:
+                        continue
+                    if what in ("after FMAKE", "after write 5") and not a.wseek:
+                        continue
                     fcbs.setdefault(what, {})[tag.strip()] = [int(b) for b in bs]
                     print(f"  {tag} FCB {what:13} " + " ".join(f"{int(b):02X}" for b in bs))
         f = RT.Fat12(dsk)
-        names = ["ALT1", "ALT2"] + (["OUT"] if a.read else []) + (["OUT2"] if a.rnd else [])
+        names = (["ALT1", "ALT2"] + (["OUT"] if a.read else []) + (["OUT2"] if a.rnd else [])
+                 + (["BIGW"] if a.wseek else []))
         for name in names:
             d, data = file_bytes(f, name)
             if d is None:
@@ -206,18 +224,22 @@ def main() -> int:
                 ok = False
                 continue
             chain, term = f.chain(d["cluster"])
-            good = data == EXPECT[name]
+            good = data == (BIG if name == "BIGW" else EXPECT[name])
             blocks = [data[i] for i in range(0, len(data), 128 if name == "OUT2" else 256)]
-            print(f"  {tag} {name}.BIN size={d['size']} chain={chain} "
-                  f"eoc={term >= 0xFF8} blocks={[hex(b) for b in blocks]} "
+            if name == "BIGW":
+                blocks = blocks[:6] + ["..."] + blocks[-2:] if len(blocks) > 8 else blocks
+            print(f"  {tag} {name}.BIN size={d['size']} chain={chain if len(chain) < 9 else chain[:4] + ['...']} "
+                  f"eoc={term >= 0xFF8} blocks={[b if isinstance(b, str) else hex(b) for b in blocks]} "
                   f"{'AS EXPECTED' if good else 'WRONG'}")
             ok = ok and good and term >= 0xFF8
     # The FCB dumps, compared: every byte must agree except the divergences
     # still OPEN, named here so a new one cannot hide among them. +25 (the
     # directory index FOPEN fills) is D-WRBLKSEEK's; +28..31 (the running
     # cluster) closed with D-RDBLKSEEK.
-    known = {25}
+    # The WRITE dumps also name +28..31: WRBLK does not keep the running
+    # cluster yet (D-WRBLKSEEK, open).
     for what, by in fcbs.items():
+        known = {25, 28, 29, 30, 31} if what in ("after FMAKE", "after write 5") else {25}
         if "OURS" in by and "STOCK" in by:
             diff = [i for i in range(37) if by["OURS"][i] != by["STOCK"][i]]
             new = [i for i in diff if i not in known]
@@ -235,6 +257,17 @@ def main() -> int:
         else:
             ratio = zs / rs
             print(f"  SEEK: ours {zs:.2f} s / CF-3300 {rs:.2f} s = {ratio:.1f}x "
+                  f"({'within' if ratio <= 10 else 'OVER'} T2's 10x)")
+            ok = ok and ratio <= 10
+    # --wseek: the 32 KB write, ours within T2's 10x of the CF-3300 (D-WRBLKSEEK).
+    if a.wseek:
+        zw, rw = WSEEK.get("OURS"), WSEEK.get("STOCK")
+        if zw is None or rw is None:
+            print(f"  WSEEK: UNFINISHED (ours {zw}, stock {rw})")
+            ok = False
+        else:
+            ratio = zw / rw
+            print(f"  WSEEK: ours {zw:.2f} s / CF-3300 {rw:.2f} s = {ratio:.1f}x "
                   f"({'within' if ratio <= 10 else 'OVER'} T2's 10x)")
             ok = ok and ratio <= 10
     print(f"\n{'PASS' if ok else 'FAIL'}: two FCBs alternating block/random I/O "

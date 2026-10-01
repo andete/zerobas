@@ -69,8 +69,9 @@ CARRY its five rows (Joost 09-26); the last board-backed pin is `7c488429`'s.
   `wrblkalt-acceptance` runs `--read --rnd --end 150`. S10.A is DONE.
   ✅ **D-RDBLKSEEK's read side FIXED: 147× → 3.1×** (`k47b2_seek`, FCB-resident
   positioning from +26/+28/+30). D-FOPENRC fixed on the way (`4022a78a`).
-  ➡️ **NEXT: D-WRBLKSEEK (TIER 2)** -- the write side. Measure a big-file
-  WRBLK phase FIRST. **Then S10.B.**
+  ➡️ **NEXT: D-WRBLKSEEK (TIER 2), MEASURED 59× on a 32 KB write** (`--wseek`).
+  Fix (a) WRBLK keeps FCB +16/+26/+28/+30 and positions from them, then
+  (b) FMAKE fills +20..25. **Then S10.B.**
 - (was) 🔴 **THE PROOF FOUND D-WRBLKRS (TODO):** our WRBLK is only right at a record
   size of 128. At RS = 1 it allocates 32 clusters for 256 B, while the
   CF-3300 is exact. Fix it first: a byte-offset transfer looping per sector.

@@ -1,0 +1,18 @@
+WARNING: Var start is never used on line 27 of file /Users/joost/projects/zerobas/probes/disk/wrblk_alt.asm
+  OURS  phases: write 16.75 s, RDBLK read 25.85 s, RDRND read 23.95 s, WSEEK write (32 KB) 1838.20 s
+  OURS  FCB after write 5 00 42 49 47 57 20 20 20 20 42 49 4E 00 00 01 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 06 00 00
+  OURS  FCB after FMAKE   00 42 49 47 57 20 20 20 20 42 49 4E 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+  OURS  ALT1.BIN size=1024 chain=[340] eoc=True blocks=['0x11', '0x13', '0x15', '0x17'] AS EXPECTED
+  OURS  ALT2.BIN size=1024 chain=[341] eoc=True blocks=['0x12', '0x14', '0x16', '0x18'] AS EXPECTED
+  OURS  BIGW.BIN size=32768 chain=[345, 346, 347, 348, '...'] eoc=True blocks=['0x0', '0x1', '0x2', '0x3', '0x4', '0x5', '...', '0x7e', '0x7f'] AS EXPECTED
+  STOCK phases: write 9.40 s, RDBLK read 8.55 s, RDRND read 9.40 s, WSEEK write (32 KB) 30.95 s
+  STOCK FCB after write 5 00 42 49 47 57 20 20 20 20 42 49 4E 00 00 01 00 00 06 00 00 21 08 00 00 00 32 59 01 5A 01 01 00 00 00 06 00 00
+  STOCK FCB after FMAKE   00 42 49 47 57 20 20 20 20 42 49 4E 00 00 00 00 00 00 00 00 21 08 00 00 40 32 00 00 00 00 00 00 00 00 00 00 00
+  STOCK ALT1.BIN size=1024 chain=[340] eoc=True blocks=['0x11', '0x13', '0x15', '0x17'] AS EXPECTED
+  STOCK ALT2.BIN size=1024 chain=[341] eoc=True blocks=['0x12', '0x14', '0x16', '0x18'] AS EXPECTED
+  STOCK BIGW.BIN size=32768 chain=[345, 346, 347, 348, '...'] eoc=True blocks=['0x0', '0x1', '0x2', '0x3', '0x4', '0x5', '...', '0x7e', '0x7f'] AS EXPECTED
+  FCB after write 5 differs at [17, 20, 21, 25, 26, 27, 28, 29, 30] -- NOT KNOWN: [17, 20, 21, 26, 27]
+  FCB after FMAKE   differs at [20, 21, 24, 25] -- NOT KNOWN: [20, 21, 24]
+  WSEEK: ours 1838.20 s / CF-3300 30.95 s = 59.4x (OVER T2's 10x)
+
+FAIL: two FCBs alternating block/random I/O do NOT persist as written on both machines

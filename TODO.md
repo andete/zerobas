@@ -6045,7 +6045,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:28340 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:28353 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -27129,24 +27129,37 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       CF-3300. The old code read 147×, so that arm has a red to show.
       The WRITE side is D-WRBLKSEEK, below.
 
-- [ ] 🔴 **D-WRBLKSEEK — BLOCK WRITES STILL MOUNT, FIND AND WALK FROM THE FILE'S HEAD ON EVERY
-      CALL; FOPEN/FMAKE LEAVE FCB +25 AT 0 (filed 2026-10-01, D-RDBLKSEEK's other half)**
+- [ ] 🔴 **D-WRBLKSEEK — A 32 KB FILE WRITTEN IN 256 B WRBLKs TAKES 59× THE CF-3300, AND WRBLK/FMAKE
+      LEAVE THE FCB FIELDS STOCK KEEPS AT 0 (filed 2026-10-01, D-RDBLKSEEK's other half; MEASURED)**
       🎚️ TIER 2 — reasonable time: step 10's PRINT# to a file is a run of 256 B
       WRBLKs onto a growing file.
-      🔬 From the code, NOT MEASURED for a big file: `wrblk_body` re-mounts and
-      re-finds every call (D-RDBLKMULTI's pattern, kept for the directory
-      update), and `wrblk_position_sec`'s first positioning per call walks from
-      +26 through `wrblk_read_or_extend_sector`, which READS every sector it
-      passes. So a file written in 256 B WRBLKs costs quadratic sector reads,
-      as reads did. Measured on 1 KB: write phase ours 17.20 / CF-3300 9.20 s (1.9×).
-      📏 +25 (directory index): stock fills it at FOPEN (`2Ch` for BIG.BIN), ours
-      leaves 0 -- the one byte `wrblkalt-acceptance` still names as known.
-      🛠 **FIX SHAPE:** measure FIRST (a big-file WRBLK phase under `--time`).
-      Then position from +28/+30 as `k47b2_seek` does, extending at the tail.
-      FOPEN/FMAKE fill +25, so the directory update reaches its entry without a
-      per-call `fat_find`.
+      📏 **FAILING ROW** ([`wrblkseek_before.out`](scratchpad/wrblkseek_before.out)):
+      `disk_probe_wrblk_alt.py --wseek --time` -- a marker file makes the
+      exerciser FMAKE BIGW.BIN and write it whole in 256 B WRBLKs at RS = 1,
+      block k = 256 × k. **Ours 1838.20 s, CF-3300 30.95 s, emulated: 59.4×.**
+      BIGW.BIN is byte-exact on both.
+      Predicted ours ~1700 s, OVER 10×: hit. ❌ **MISS, scored: predicted stock
+      ~150 s.** Stock writes a growing file at 0.24 s a call; the 1.15 s a call
+      measured earlier was two files ALTERNATING.
+      🔬 **The cost, from the code:** `wrblk_body` re-mounts and re-finds every
+      call, and `wrblk_position_sec`'s first positioning per call walks from the
+      head through `wrblk_read_or_extend_sector`, which READS every sector it
+      passes: quadratic, as reads were.
+      📏 **THE FCB, read as data** (after FMAKE, after block 5):
+      - After FMAKE, stock fills +20..21 date `0821h` (1984-01-01), +24 `40h`,
+        +25 `32h` (directory index). **Ours leaves all four at 0.**
+      - After block 5, stock keeps +16..19 the SIZE (`600h`), +26 the first
+        cluster (`0159h`, allocated by the first write) and +28/+30 the running
+        cluster (`015Ah`/1). **Ours leaves all of them at 0.**
+      🛠 **FIX SHAPE, in two commits:**
+      - (a) WRBLK keeps +16 / +26 / +28 / +30 current and positions from them,
+        as `k47b2_seek` does, extending at the tail. This is the speed fix.
+      - (b) FMAKE fills +20..25 as stock does: the date it stamps, +24 `40h`, +25
+        the directory index. That also lets WRBLK's directory update reach its
+        entry without a per-call `fat_find`.
+      Then `--wseek` joins `wrblkalt-acceptance` (it fails on 10× and on any FCB
+      byte outside the named open set).
       🤖 **AUTONOMOUS** — the reference settles it.
-
 
 - [x] ✅ **D-RDRNDMULTI — BDOS `$21`/`$22` RDRND/WRRND POSITIONED IN THE LAST-FOUND FILE, NOT THE
       FCB'S (found 2026-10-01 by reading D-RDBLKMULTI's sibling; FIXED the same day)**
