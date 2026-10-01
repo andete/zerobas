@@ -6045,7 +6045,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:28533 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:28554 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -27298,9 +27298,30 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       🔬 Ours: disk BASIC stamps through sub.rom's `dir_stamp_date`, which keeps
       the constant 0821h. disk.rom's copy reads DATE_DAYS. The CF-3300 keeps
       the count at `$F33B` from boot, BASIC mode included.
-      📏 **MEASURE FIRST:** SDATE in a COM, then the `BASIC` command, then SAVE, on
-      both machines; read the entry's date. If the CF-3300 stamps the set
-      date, sub.rom's copy needs the conversion too (sub p1 is ~350 B; price it).
+      📏 **MEASURED ON THE CF-3300** ([`sdatebasic.out`](scratchpad/sdatebasic.out),
+      [`sdatebasic_probe.py`](scratchpad/sdatebasic_probe.py)): SDATE 1999-12-31
+      in a COM, then `BASIC`, then `10 REM` + `SAVE"DDB.BAS"` -- stamped **`279Fh`
+      = 1999-12-31**. The DOS date reaches BASIC. Predicted, hit. So sub.rom's
+      copy needs the stored date too (price the conversion in sub p1).
+      🚫 **BLOCKED ON OURS by D-DOSBASIC (below):** `BASIC` does nothing there.
+      ❌ Two probe faults before that reading: the first cut named the file
+      B.BAS, which the DOS test disk ALREADY HOLDS (252 B, dated 2D71h), so
+      "ours" read a stale entry; and the first screen dump read VRAM 0, the
+      pattern table in SCREEN 1, not the name table (VDP R#2).
+      🤖 **AUTONOMOUS** — the reference settles it.
+
+- [ ] 🔴 **D-DOSBASIC — MSX-DOS'S `BASIC` COMMAND DOES NOTHING ON OURS: `A>BASIC` RETURNS TO `A>`
+      (found 2026-10-01 measuring D-DOSDATEBASIC)**
+      🎚️ TIER 1 — happy path: leaving MSX-DOS for disk BASIC is ordinary use.
+      📏 [`sdatebasic.out`](scratchpad/sdatebasic.out), our name table read at 38 s
+      and 58 s: `A>BASIC` and `A>` again, twice; the BASIC lines typed after it
+      land at the DOS prompt (`A>NEW`, `A>"DDB.BAS"`). The CF-3300 enters disk
+      BASIC and SAVEs.
+      🛠 **FIRST STEP:** find which disk-ROM entry COMMAND.COM's `BASIC` reaches
+      on OURS -- the first page-1 PCs after typing it, the SDATE method
+      (`sdatemem_probe.py`; our own code, never the reference's) -- and what
+      ours does there. Then the CF-3300's state on arrival in BASIC, read as
+      work-area RAM.
       🤖 **AUTONOMOUS** — the reference settles it.
 
 - [x] ✅ **D-CLOSESTAMP — DOES THE CF-3300'S FCLOSE DATE A FILE THAT WAS ONLY WRRND-WRITTEN

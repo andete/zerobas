@@ -85,8 +85,10 @@ CARRY its five rows (Joost 09-26); the last board-backed pin is `7c488429`'s.
   ✅ D-DOSDATE fixed, DOS side: SDATE ($5552, was a NOP-slide into GTIME)
   stores the day count at $F33B as the CF-3300; GDATE and the DOS stamps
   read it. `dosdate-acceptance` is in the battery.
-  ➡️ **NEXT, by tier: D-DOSDATEBASIC (TIER 1, measure first), then S10.B
-  (TIER 2).** D-BLKIOPERCALL is TIER 5.
+  📏 D-DOSDATEBASIC: the CF-3300's BASIC stamps the DOS date (279Fh);
+  ours is BLOCKED -- 🔴 **D-DOSBASIC: `A>BASIC` does nothing on ours.**
+  ➡️ **NEXT, by tier: D-DOSBASIC (TIER 1, trace the entry first), then
+  D-DOSDATEBASIC, then S10.B (TIER 2).** D-BLKIOPERCALL is TIER 5.
 - (was) 🔴 **THE PROOF FOUND D-WRBLKRS (TODO):** our WRBLK is only right at a record
   size of 128. At RS = 1 it allocates 32 clusters for 256 B, while the
   CF-3300 is exact. Fix it first: a byte-offset transfer looping per sector.
