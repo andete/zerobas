@@ -1625,70 +1625,30 @@ k47b2_rs_ok:
                 ld      hl, (DOS_DTAPTR)
                 ld      (BDOS_DTA), hl
                 ld      (RDBLK_DST), hl
-                ; --- step 6: find THIS FCB's file, then open + size ----------------
-                ; 🔴 D-RDBLKMULTI (2026-10-01): this was `call fat_open` alone, which
-                ; re-primes from FAT_FIRSTCLUS/FAT_FILESIZE -- whatever the LAST
-                ; fat_find left there (the last FOPEN, or any WRBLK, which re-finds
-                ; its own file). Two FCBs read alternately both read the last-found
-                ; file: probes/disk/disk_probe_wrblk_alt.py --read gave OUT.BIN eight
-                ; copies of 12h where the CF-3300 gives 11h..18h. Re-locate the file
-                ; by the FCB's own name every call, as wrblk_body does.
+                ; --- steps 6+7: POSITION FROM THE FCB (D-RDBLKSEEK, 2026-10-01) ------
+                ; 🔴 This was: re-mount (the boot sector), re-find (the root directory)
+                ; and fat_open on EVERY call, then skip RR records by FETCHING every
+                ; byte before them. A 32 KB file read in 256 B RDBLKs took 2150.91
+                ; emulated s against the CF-3300's 14.65 (147x,
+                ; disk_probe_wrblk_alt.py --seek). The CF-3300 keeps a running
+                ; cluster in the FCB (published layout, read as data after FOPEN /
+                ; block 0 / block 5): +26 first cluster, +28 the last cluster
+                ; accessed, +30 its index in the chain. So does this now:
+                ;   size from +16..19, first cluster from +26 (both filled by FOPEN,
+                ;   so two FCBs stay two files -- D-RDBLKMULTI's guarantee, without
+                ;   its per-call name lookup), start offset O = RR x RS, target
+                ;   cluster index ci = O / (512 x spc); walk the chain from +28/+30
+                ;   when that is at or before ci (else from +26), write ci's cluster
+                ;   back to +28/+30, prime the iterator at O's sector.
+                ; Geometry is mounted only when it has never been read.
                 ld      hl, 0
                 ld      (RDBLK_DONE), hl    ; no records delivered yet (also the count
-                                            ; the not-found exit below writes back)
-                call    fat_mount
-                jp      c, k47b2_eof        ; unreadable disk -> EOF, nothing delivered
-                pop     hl
-                push    hl
-                inc     hl                  ; HL -> FCB+1, the 8.3 name (fat_find's contract)
-                call    fat_find            ; Cy=0 found -> FAT_FIRSTCLUS/FAT_FILESIZE set
-                jp      c, k47b2_eof        ; no such file -> EOF, nothing delivered
-                call    fat_open            ; prime the iterator at THIS file's start
-                ld      hl, (FAT_FILESIZE)
-                ld      (BDOS_BYTESLEFT), hl
-                ld      hl, (FAT_FILESIZE + 2)
-                ld      (BDOS_BYTESLEFT + 2), hl
-                ld      hl, 512
-                ld      (RDBLK_BUFPOS), hl  ; force a sector refill on the first byte
-                ; --- step 7: position to record RR ---------------------------------
-                ; Skip RR whole records by discarding RS bytes each via the shared
-                ; k47b2_nextbyte helper (below), bounded by EOF (no multiply, no
-                ; overflow; sector-seek is a deferred optimisation, §3.2 step 7 -- $27
-                ; is not a hot loop and files are small). RR is a 24-bit FCB field, but
-                ; (same narrowing as the M26 RDRND/WRRND precedent, and this
-                ; milestone's realistic-file-size scope) only the low 16 bits of
-                ; RDBLK_RRSTART are used as the skip count.
-                ; RDBLK_RRSTART must survive UNTOUCHED for step 9's write-back, so the
-                ; skip loop counts records SKIPPED SO FAR (0 upward) in RDBLK_DONE
-                ; instead of counting RRSTART down -- RDBLK_DONE is otherwise unused
-                ; until step 8, and is reset to 0 again right after this loop.
-k47b2_pos_recloop:
-                ld      hl, (RDBLK_DONE)
-                ld      de, (RDBLK_RRSTART)
-                or      a
-                sbc     hl, de
-                jr      z, k47b2_pos_done   ; skipped RR records -> positioned at record RR
-                ld      hl, (RDBLK_RECSIZE)
-                ld      (RDBLK_CNT), hl     ; bytes to discard for this record
-k47b2_pos_byteloop:
-                ld      hl, (RDBLK_CNT)
-                ld      a, h
-                or      l
-                jr      nz, k47b2_pos_needbyte
-                ld      hl, (RDBLK_DONE)    ; whole record discarded -> count it, next record
-                inc     hl
-                ld      (RDBLK_DONE), hl
-                jr      k47b2_pos_recloop
-k47b2_pos_needbyte:
-                call    k47b2_nextbyte      ; discard A; Cy=1 -> EOF/chain-end
-                jr      c, k47b2_pos_done
-                ld      hl, (RDBLK_CNT)
-                dec     hl
-                ld      (RDBLK_CNT), hl
-                jr      k47b2_pos_byteloop
+                                            ; the EOF exits below write back)
+                pop     ix
+                push    ix                  ; IX = the FCB (k47b2_seek's input)
+                call    k47b2_seek          ; Cy = 1 -> nothing to deliver
+                jp      c, k47b2_eof
 k47b2_pos_done:
-                ld      hl, 0
-                ld      (RDBLK_DONE), hl    ; reset for step 8's real delivered-count use
                 ; --- step 8: transfer loop (zero-pad variant of rdb_recloop_body) --
                 ; "Partial record" (>=1 byte already copied this record) is recovered
                 ; by comparing RDBLK_CNT (bytes still owed) against RDBLK_RECSIZE (the
@@ -3926,6 +3886,120 @@ dfo_done:
 
                 ds      $75A5 - $, $00
                 jp      k_75A5          ; $75A5
+
+; k47b2_seek -- RDBLK's positioning (D-RDBLKSEEK), from k47b2_body's steps 6+7;
+; its header there says what and why. Lives here because k47b2_body's region
+; had ~10 B of slack before the $75A5 pin.
+;   in:  IX = the FCB, RDBLK_RECSIZE resolved
+;   out: Cy = 1 nothing to deliver (unreadable disk, or RR x RS past the end);
+;        Cy = 0 positioned -- BDOS_BYTESLEFT, FAT_CURCLUS/FAT_CLUSSEC,
+;        RDBLK_BUFPOS primed, FCB +28..31 := the cluster holding O and its index
+k47b2_seek:
+                ld      a, (FAT_SECPERCLUS)
+                or      a
+                jr      nz, k47b2_geom
+                call    fat_mount
+                ret     c                   ; unreadable disk -> EOF, nothing delivered
+k47b2_geom:
+                ld      hl, (RDBLK_RECSIZE)
+                ld      (WRBLK_RS), hl
+                call    wrblk_off24         ; WRBLK_REC = O, the 24-bit start BYTE offset
+                ; BDOS_BYTESLEFT := size (FCB+16..19) - O; past the end -> EOF
+                ld      a, (ix+16)
+                ld      hl, WRBLK_REC
+                sub     (hl)
+                ld      (BDOS_BYTESLEFT), a
+                ld      a, (ix+17)
+                inc     hl
+                sbc     a, (hl)
+                ld      (BDOS_BYTESLEFT + 1), a
+                ld      a, (ix+18)
+                inc     hl
+                sbc     a, (hl)
+                ld      (BDOS_BYTESLEFT + 2), a
+                ld      a, (ix+19)
+                sbc     a, 0
+                ld      (BDOS_BYTESLEFT + 3), a
+                ret     c                   ; O > size: nothing to deliver
+                ; HL := O >> 9 (the sector index in the file; O is 24-bit)
+                ld      a, (WRBLK_REC + 2)
+                ld      h, a
+                ld      a, (WRBLK_REC + 1)
+                ld      l, a
+                srl     h
+                rr      l
+                ; FAT_CLUSSEC := sector-in-cluster, HL := ci (spc is a power of two)
+                ld      a, (FAT_SECPERCLUS)
+                dec     a
+                and     l
+                ld      (FAT_CLUSSEC), a
+                ld      a, (FAT_SECPERCLUS)
+k47b2_ci:
+                srl     a
+                jr      c, k47b2_ci_done
+                srl     h
+                rr      l
+                jr      k47b2_ci
+k47b2_ci_done:
+                ld      (RDBLK_CNT), hl     ; ci, parked: step 8 reloads RDBLK_CNT per
+                                            ; record, so it is free until then (no new RAM)
+                ; start from the FCB's running cluster when it is at or before ci
+                ld      e, (ix+30)
+                ld      d, (ix+31)
+                or      a
+                sbc     hl, de              ; HL = ci - idx
+                ld      c, (ix+28)
+                ld      b, (ix+29)          ; BC = that cluster
+                jr      c, k47b2_from_first
+                ld      a, b
+                or      a
+                jr      nz, k47b2_walk_in
+                ld      a, c
+                cp      2
+                jr      nc, k47b2_walk_in   ; a real cluster -> walk from it
+k47b2_from_first:
+                ld      hl, (RDBLK_CNT)      ; walk ci steps from the first cluster
+                ld      c, (ix+26)
+                ld      b, (ix+27)
+k47b2_walk_in:
+                ex      de, hl              ; DE = steps to walk
+                ld      h, b
+                ld      l, c                ; HL = the cluster
+k47b2_walk:
+                ld      a, d
+                or      e
+                jr      z, k47b2_walked
+                push    de
+                call    fat_next_cluster    ; HL := the next link (clobbers A/BC/DE)
+                pop     de
+                dec     de
+                jr      k47b2_walk
+k47b2_walked:
+                ld      (ix+28), l
+                ld      (ix+29), h          ; +28 := the cluster holding O
+                ld      (FAT_CURCLUS), hl
+                ld      hl, (RDBLK_CNT)
+                ld      (ix+30), l
+                ld      (ix+31), h          ; +30 := its index in the chain
+                ; prime the byte source at O: a whole-sector start refills on the
+                ; first byte; otherwise read the sector now and start inside it
+                ld      a, (WRBLK_REC + 1)
+                and     1
+                ld      h, a
+                ld      a, (WRBLK_REC)
+                ld      l, a                ; HL = O & 511
+                or      h
+                jr      nz, k47b2_mid
+                ld      hl, 512
+                ld      (RDBLK_BUFPOS), hl  ; force a sector refill on the first byte
+                ret                         ; Cy = 0 (from the `or h` above)
+k47b2_mid:
+                push    hl
+                call    fat_read_file_sector
+                pop     hl
+                ret     c
+                ld      (RDBLK_BUFPOS), hl
+                ret                         ; Cy = 0 (fat_read_file_sector's)
                 ds      $77B8 - $, $00
                 jp      k_77B8          ; $77B8
                 ds      $782B - $, $00

@@ -14,10 +14,12 @@ delivered (unchanged at/past EOF, since HL=0 there).
 This test drives the REAL relocated body (k47b2_body, reached via the k_47B2
 veneer's `jp` -- called directly by symbol here, exactly as test_wrblk_cursor.py
 and test_wrblk_body_e2e.py call their routines under test by label) against a
-synthetic FAT12 file. k47b2_body itself calls fat_open (re-priming the
-iterator from FAT_FIRSTCLUS), so the test seeds FAT_FIRSTCLUS/FAT_FILESIZE
-directly -- exactly the state a preceding kernel FOPEN would have left, per
-k_47B2's own long-standing contract note (kernel.asm).
+synthetic FAT12 file. Since D-RDBLKSEEK (2026-10-01) k47b2_body positions from
+the FCB itself, as the CF-3300 does: size +16..19, first cluster +26, the
+running cluster +28/+30 -- the fields FOPEN fills (fopen_fill_body). So the
+test fills those, and POISONS the FAT_FIRSTCLUS/FAT_FILESIZE globals the old
+body trusted: a body that still read the last-found file's state fails here
+(D-RDBLKMULTI's guarantee, pinned at unit level).
 
 Cases mirror the spec's §1-Q3 table:
   (a) mid-file             RR=1 cnt=1  -> A=0 HL=1 RR=2,   record 1 delivered
@@ -66,9 +68,9 @@ def make_file(m, name, data, first_cluster=5, secperclus_bytes=512):
     the read/write traps, mount the (synthetic) BPB for real via fat_mount
     (seeds FAT_SECPERCLUS/FAT_FIRSTDATA/etc. -- k47b2_body's rdblk_getbyte ->
     fat_read_file_sector chain needs these, normally seeded once at boot), and
-    seed FAT_FIRSTCLUS/FAT_FILESIZE as a preceding kernel FOPEN/fat_find would
-    have (k47b2_body's own contract -- it re-primes via fat_open only, it does
-    not search for the file itself; matches k_47B2's long-standing design)."""
+    record the file's first cluster and size for setup_fcb, which fills them
+    into the FCB as FOPEN does. The globals are POISONED, not seeded: since
+    D-RDBLKSEEK the body must not read them."""
     nclus = max(1, (len(data) + secperclus_bytes - 1) // secperclus_bytes)
     chain_links = []
     for i in range(nclus - 1):
@@ -81,15 +83,22 @@ def make_file(m, name, data, first_cluster=5, secperclus_bytes=512):
     disk.install(m)
     cpu = m.call("fat_mount")
     assert not (cpu.f & 0x01), "fat_mount failed against the synthetic BPB"
-    m.poke_w(m.addr("FAT_FIRSTCLUS"), first_cluster)
-    m.poke(m.addr("FAT_FILESIZE"), struct.pack("<I", len(data)))
+    m.poke_w(m.addr("FAT_FIRSTCLUS"), 0x0FF7)  # poison: a bad-cluster marker
+    m.poke(m.addr("FAT_FILESIZE"), bytes(4))    # poison: an empty file
+    _OPEN.update(first=first_cluster, size=len(data))
     return disk
+
+
+_OPEN: dict = {}   # the last make_file's first cluster and size (what FOPEN reads)
 
 
 def setup_fcb(m, name, rs, rr):
     m.poke(FCB, bytes(37))
     m.poke(FCB + 1, n83(name))
     m.poke_w(FCB + 14, rs)                      # FCB+14..15: record size
+    m.poke(FCB + 16, struct.pack("<I", _OPEN["size"]))  # +16..19 size (FOPEN's fill)
+    m.poke_w(FCB + 26, _OPEN["first"])          # +26 first cluster (FOPEN's fill)
+    m.poke_w(FCB + 28, _OPEN["first"])          # +28 running cluster = first, +30 = 0
     m.poke(FCB + 33, struct.pack("<I", rr)[:3])  # FCB+33..35: random-record (24-bit)
     m.poke_w(m.addr("DOS_DTAPTR"), DTA)
 

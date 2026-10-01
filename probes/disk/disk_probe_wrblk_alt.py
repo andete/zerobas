@@ -113,7 +113,10 @@ def run_once(machine: str, dsk: str, boot_s: int, end_s: int, timeout: float,
         raise TimeoutError(f"TIMEOUT running {machine}")
 
 
-def phase_times(plog: str) -> str:
+SEEK: dict = {}   # tag -> (seconds or None, wrong blocks or None), from phase_times
+
+
+def phase_times(plog: str, tag: str = "") -> str:
     """The write and read phases' emulated durations from the PHASE log: the
     LAST 1 -> 2, 2 -> 3 and 3 -> 4 transitions (the byte holds boot garbage before
     the program first writes it)."""
@@ -130,6 +133,7 @@ def phase_times(plog: str) -> str:
     out = (f"write {t[2] - t[1]:.2f} s, RDBLK read {t[3] - t[2]:.2f} s, "
            f"RDRND read {t[4] - t[3]:.2f} s")
     if 5 in t:
+        SEEK[tag] = (t[6] - t[5], errs) if 6 in t else (None, None)
         out += (f", SEEK read (32 KB) " + (f"{t[6] - t[5]:.2f} s, {errs} wrong block(s)"
                                           if 6 in t else "UNFINISHED"))
     return out
@@ -176,7 +180,8 @@ def main() -> int:
     for tag, machine in (("OURS ", RT.OUR_MACHINE), ("STOCK", RT.REF_MACHINE)):
         dsk = probe_tmp.tmp(f"wrblk_alt_{tag.strip().lower()}.dsk")
         build(a.dos_disk, dsk, com, a.seek)
-        plog = probe_tmp.tmp(f"wrblk_alt_{tag.strip().lower()}.phase") if a.time else None
+        plog = (probe_tmp.tmp(f"wrblk_alt_{tag.strip().lower()}.phase")
+                if a.time or a.seek else None)
         try:
             run_once(machine, dsk, a.boot, a.end, a.timeout, plog)
         except TimeoutError as e:
@@ -184,7 +189,7 @@ def main() -> int:
             ok = False
             continue
         if plog:
-            print(f"  {tag} phases: {phase_times(plog)}")
+            print(f"  {tag} phases: {phase_times(plog, tag.strip())}")
             for ln in open(plog):
                 if ln.startswith("FCB"):
                     _, base, *bs = ln.split()
@@ -208,16 +213,30 @@ def main() -> int:
                   f"{'AS EXPECTED' if good else 'WRONG'}")
             ok = ok and good and term >= 0xFF8
     # The FCB dumps, compared: every byte must agree except the divergences
-    # still OPEN, named here so a new one cannot hide among them. +25 (dir
-    # index) and +28..31 (running cluster) are D-RDBLKSEEK's.
-    known = {25, 28, 29, 30, 31}
+    # still OPEN, named here so a new one cannot hide among them. +25 (the
+    # directory index FOPEN fills) is D-WRBLKSEEK's; +28..31 (the running
+    # cluster) closed with D-RDBLKSEEK.
+    known = {25}
     for what, by in fcbs.items():
         if "OURS" in by and "STOCK" in by:
             diff = [i for i in range(37) if by["OURS"][i] != by["STOCK"][i]]
             new = [i for i in diff if i not in known]
             print(f"  FCB {what:13} differs at {diff}"
-                  + (f" -- NOT KNOWN: {new}" if new else " (all known: D-RDBLKSEEK)"))
+                  + (f" -- NOT KNOWN: {new}" if new else " (all known: D-WRBLKSEEK)"))
             ok = ok and not new
+    # --seek: the 32 KB read must be RIGHT on both (0 wrong blocks) and, on
+    # ours, within T2's 10x of the CF-3300 (D-RDBLKSEEK: it was 147x).
+    if a.seek:
+        zs, ze = SEEK.get("OURS", (None, None))
+        rs, re_ = SEEK.get("STOCK", (None, None))
+        if zs is None or rs is None or ze != 0 or re_ != 0:
+            print(f"  SEEK: UNFINISHED or WRONG (ours {zs} s/{ze} wrong, stock {rs} s/{re_} wrong)")
+            ok = False
+        else:
+            ratio = zs / rs
+            print(f"  SEEK: ours {zs:.2f} s / CF-3300 {rs:.2f} s = {ratio:.1f}x "
+                  f"({'within' if ratio <= 10 else 'OVER'} T2's 10x)")
+            ok = ok and ratio <= 10
     print(f"\n{'PASS' if ok else 'FAIL'}: two FCBs alternating block/random I/O "
           f"{'persist as written' if ok else 'do NOT persist as written'} on both machines")
     return 0 if ok else 1

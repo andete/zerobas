@@ -1,0 +1,45 @@
+PASS  (a) mid-file: A=0 (want 0)
+PASS    HL=1 (want 1)
+PASS    BC=1 (want 1, BC==HL)
+PASS    record 1's 128 bytes landed at DTA (not record 0)
+PASS    nothing written past the one requested record
+PASS    RR advanced to 2 (want 2 = entry-RR 1 + HL 1)
+PASS  (b) EOF mid-transfer: A=1 (want 1)
+PASS    HL=2 (want 2)
+PASS    BC=2 (want 2, BC==HL)
+PASS    record 1 landed correctly
+PASS    record 2 landed correctly
+PASS    RR advanced to 3 (want 3 = entry-RR 1 + HL 2)
+PASS  (b') partial tail: A=1 (want 1)
+PASS    HL=2 (want 2, the partial record COUNTS)
+PASS    record 2 (partial, 44 real bytes) zero-padded to RS=128
+PASS    RR advanced to 3 (want 3 = entry-RR 1 + HL 2)
+PASS  (c) at EOF: A=1 (want 1)
+PASS    HL=0 (want 0)
+PASS    BC=0 (want 0, BC==HL)
+PASS    DTA untouched (nothing delivered)
+PASS    RR unchanged at 3 (want 3, += HL 0)
+PASS  (c') past EOF: A=1 (want 1)
+PASS    HL=0 (want 0)
+PASS    DTA untouched (nothing delivered)
+PASS    RR unchanged at 10 (want 10, += HL 0)
+PASS    IX=F195 (want DRVA_DPB)
+PASS    IY=DA40 (want entry FCB ptr DA40)
+PASS    $F306 cleared (M20 dispatcher-flag rule)
+PASS  RS=1 mid-file: A=0 (want 0)
+PASS    HL=2 (want 2)
+PASS    bytes 3,4 delivered (RR=3, RS=1)
+PASS    RR advanced to 5 (want 5 = 3+2)
+PASS  RS=1 boot-shape (huge HL): A=1 (want 1, EOF)
+PASS    HL=10 (want 10 = filesize)
+PASS    BC=10 (want 10, BC==HL)
+PASS    the whole file landed at DTA in order
+PASS    RR advanced to 10 (want 10, harmless per §3.2)
+PASS  RS=0 (defaults to 128): A=0 (want 0)
+PASS    record 1 (128B) delivered under the RS=0->128 default
+PASS  RS=64 EOF mid-transfer: A=1 (want 1)
+PASS    HL=1 (want 1, only record 2 exists)
+PASS    record 2 (last, exact multiple, RS=64) delivered
+PASS    RR advanced to 3 (want 3 = 2+1)
+
+ALL PASS — M31 k_47B2 faithful Random Block Read

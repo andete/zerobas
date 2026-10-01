@@ -6045,7 +6045,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:28308 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:28340 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -27076,8 +27076,8 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       differing byte outside the named open set (+25, +28..31, D-RDBLKSEEK's).
       Predicted: only those. Hit.
 
-- [ ] 🔴 **D-RDBLKSEEK — BLOCK I/O PAYS A FULL MOUNT + FIND + CHAIN WALK ON EVERY CALL: A 32 KB FILE
-      READ IN 256 B RDBLKs TAKES 147× THE CF-3300 (found 2026-10-01 with D-RDBLKMULTI's fix; MEASURED)**
+- [x] ✅ **D-RDBLKSEEK — BLOCK READS PAID A FULL MOUNT + FIND + CHAIN WALK ON EVERY CALL: A 32 KB FILE
+      READ IN 256 B RDBLKs TOOK 147× THE CF-3300 (found 2026-10-01 with D-RDBLKMULTI's fix; READ SIDE FIXED the same day)**
       🎚️ TIER 2 — reasonable time: step 10's channels move by 256 B RDBLK/WRBLK,
       so every INPUT#/PRINT# file pays this.
       📏 **FAILING ROW** ([`rdblkseek_before.out`](scratchpad/rdblkseek_before.out),
@@ -27112,9 +27112,41 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       covers D-RDBLKMULTI/D-WRBLKRS's multi-file correctness without the name
       lookup those fixes added. Geometry staleness on a disk swap is the risk to
       price (DSKCHG).
-      The row is OPT-IN (`--seek`): at 147× ours runs ~2150 emulated s, too long
-      for the gate. It joins `wrblkalt-acceptance` when the fix brings it under 10×.
+      ✅ **FIXED, READ SIDE** ([`rdblkseek_after.out`](scratchpad/rdblkseek_after.out)):
+      `k47b2_body`'s steps 6+7 are now `k47b2_seek` (disk/kernel.asm, in the
+      hole after the `$75A5` pin -- the body's own region had ~10 B of slack and
+      the first build overran it). It positions from the FCB: size +16, first
+      cluster +26, start O = RR × RS (`wrblk_off24`), the chain walked from
+      +28/+30 when that is at or before O's cluster, which it writes back.
+      Geometry is mounted only if it was never read. No new RAM (the cluster
+      index parks in RDBLK_CNT). disk.rom 108 B (6404 → 6296 free).
+      - **32 KB read: ours 45.30 s, CF-3300 14.65 s = 3.1×** (was 147×), 0 wrong
+        blocks on both. ❌ **MISS, scored: predicted 30–40 s.**
+      - **FCB +28/+30 now equal stock's after block 0 and block 5**; only +25 differs.
+      - The 1 KB RDBLK phase: 29.75 → 24.45 s.
+      Gate: `wrblkalt-acceptance` now runs `--seek` (`--end 300`). It FAILS on a
+      wrong block, an FCB byte outside the named open set, or ours over 10× the
+      CF-3300. The old code read 147×, so that arm has a red to show.
+      The WRITE side is D-WRBLKSEEK, below.
+
+- [ ] 🔴 **D-WRBLKSEEK — BLOCK WRITES STILL MOUNT, FIND AND WALK FROM THE FILE'S HEAD ON EVERY
+      CALL; FOPEN/FMAKE LEAVE FCB +25 AT 0 (filed 2026-10-01, D-RDBLKSEEK's other half)**
+      🎚️ TIER 2 — reasonable time: step 10's PRINT# to a file is a run of 256 B
+      WRBLKs onto a growing file.
+      🔬 From the code, NOT MEASURED for a big file: `wrblk_body` re-mounts and
+      re-finds every call (D-RDBLKMULTI's pattern, kept for the directory
+      update), and `wrblk_position_sec`'s first positioning per call walks from
+      +26 through `wrblk_read_or_extend_sector`, which READS every sector it
+      passes. So a file written in 256 B WRBLKs costs quadratic sector reads,
+      as reads did. Measured on 1 KB: write phase ours 17.20 / CF-3300 9.20 s (1.9×).
+      📏 +25 (directory index): stock fills it at FOPEN (`2Ch` for BIG.BIN), ours
+      leaves 0 -- the one byte `wrblkalt-acceptance` still names as known.
+      🛠 **FIX SHAPE:** measure FIRST (a big-file WRBLK phase under `--time`).
+      Then position from +28/+30 as `k47b2_seek` does, extending at the tail.
+      FOPEN/FMAKE fill +25, so the directory update reaches its entry without a
+      per-call `fat_find`.
       🤖 **AUTONOMOUS** — the reference settles it.
+
 
 - [x] ✅ **D-RDRNDMULTI — BDOS `$21`/`$22` RDRND/WRRND POSITIONED IN THE LAST-FOUND FILE, NOT THE
       FCB'S (found 2026-10-01 by reading D-RDBLKMULTI's sibling; FIXED the same day)**

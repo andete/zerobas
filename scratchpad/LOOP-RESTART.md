@@ -67,10 +67,10 @@ CARRY its five rows (Joost 09-26); the last board-backed pin is `7c488429`'s.
 - ✅ **D-RDBLKMULTI FIXED (`73a434d2`) and D-RDRNDMULTI FIXED (next commit):**
   RDBLK and RDRND/WRRND re-find the file by the FCB's name every call;
   `wrblkalt-acceptance` runs `--read --rnd --end 150`. S10.A is DONE.
-  ➡️ **NEXT: D-RDBLKSEEK (TIER 2), MEASURED 147× on a 32 KB read** -- the
-  per-call mount/find/seek is the larger cost, not the quadratic skip. The fix
-  is FCB-resident positioning (+26/+28/+30, stock's own fields, measured);
-  see the TODO item's fix shape. **Then S10.B.**
+  ✅ **D-RDBLKSEEK's read side FIXED: 147× → 3.1×** (`k47b2_seek`, FCB-resident
+  positioning from +26/+28/+30). D-FOPENRC fixed on the way (`4022a78a`).
+  ➡️ **NEXT: D-WRBLKSEEK (TIER 2)** -- the write side. Measure a big-file
+  WRBLK phase FIRST. **Then S10.B.**
 - (was) 🔴 **THE PROOF FOUND D-WRBLKRS (TODO):** our WRBLK is only right at a record
   size of 128. At RS = 1 it allocates 32 clusters for 256 B, while the
   CF-3300 is exact. Fix it first: a byte-offset transfer looping per sector.
