@@ -991,64 +991,80 @@ wrblk_rs_ok:
                 ld      a, h
                 or      l
                 jp      z, wrblk_zero_path
+                ; 🔴 D-WRBLKRS (2026-10-01): A BYTE TRANSFER, NOT A 128-BYTE-RECORD ONE.
+                ; The old loop moved RS bytes a record but POSITIONED as if every
+                ; record were 128 B (record-in-sector = REC & 3, sector = REC / 4),
+                ; so RS = 1 -- MSX-DOS1's ordinary block-I/O idiom and step 10's
+                ; channel shape -- put byte 255 in "sector 63": a 32-cluster chain
+                ; for 256 bytes, while the CF-3300 wrote one cluster
+                ; (probes/disk/disk_probe_wrblk_alt.py). Now: start = RR * RS,
+                ; budget = (HL * RS) & $FFFF (the contract above), one SECTOR a
+                ; step. WRBLK_REC holds the 24-bit BYTE offset and WRBLK_CNT the
+                ; bytes still to write. RS = 128 writes the same bytes as before, in
+                ; fewer sector writes. Nothing here touches WBUF before the loop
+                ; (wrblk_off24's note).
+                ld      de, (WRBLK_RS)
+                call    wrblk_mul16         ; HL = (HL * RS) & $FFFF
                 ld      (WRBLK_CNT), hl
-                ; M29: reset the position cursor once before the per-record loop
-                ; starts -- wrblk_position_ext will (re)validate it on its first
-                ; call this wrblk_body invocation (wrblk_zero_path never calls
-                ; wrblk_position_ext, so this is unreached/irrelevant there).
+                call    wrblk_off24         ; WRBLK_REC := (RR * RS) & $FFFFFF
                 xor     a
                 ld      (WRBLK_CURVALID), a
-; --- main per-record loop: position (extending through any gap), overlay RS DTA
-; bytes at the record's (rec&3)*128 slot within its 512-byte sector, persist. ---
 wrblk_loop:
                 ld      hl, (WRBLK_CNT)
                 ld      a, h
                 or      l
                 jp      z, wrblk_loop_done
-                call    wrblk_position_ext  ; Cy=0 ok, SECTOR_BUF <- target sector's bytes
+                ld      a, (WRBLK_REC + 2)
+                ld      b, a
+                ld      a, (WRBLK_REC + 1)
+                srl     b
+                rra
+                ld      c, a                ; BC = offset >> 9 = sector-in-file
+                call    wrblk_position_sec  ; Cy=0 ok, SECTOR_BUF <- target sector's bytes
                 jp      c, wrblk_full
-                ld      a, (WRBLK_RECSEC)
-                ld      l, a
-                ld      h, 0
-                add     hl, hl
-                add     hl, hl
-                add     hl, hl
-                add     hl, hl
-                add     hl, hl
-                add     hl, hl
-                add     hl, hl              ; HL = WRBLK_RECSEC * 128 (0/128/256/384)
+                ld      a, (WRBLK_REC + 1)
+                and     1
+                ld      d, a
+                ld      a, (WRBLK_REC)
+                ld      e, a                ; DE = offset & 511 = within
+                ld      hl, 512
+                or      a
+                sbc     hl, de              ; HL = room left in this sector
+                push    de                  ; [within]
+                ld      de, (WRBLK_CNT)
+                push    hl
+                or      a
+                sbc     hl, de
+                pop     hl
+                jr      c, wrblk_room       ; room < remaining -> chunk = room
+                ex      de, hl              ; else chunk = remaining
+wrblk_room:
+                ld      b, h
+                ld      c, l                ; BC = chunk
+                pop     hl                  ; HL = within
                 ld      de, SECTOR_BUF
                 add     hl, de
-                ex      de, hl              ; DE = dest in SECTOR_BUF
-                ld      hl, (BDOS_DTA)      ; HL = source record in the caller's DTA
-                ld      bc, (WRBLK_RS)
+                ex      de, hl              ; DE = SECTOR_BUF + within
+                ld      hl, (BDOS_DTA)      ; HL = the caller's bytes
+                push    bc                  ; [chunk]
                 ldir
+                ld      (BDOS_DTA), hl
                 call    rrnd_sector         ; DE = absolute logical sector to persist
-                                            ; (reused unchanged: pure function of
-                                            ; FAT_CURCLUS/FAT_CLUSSEC, valid regardless
-                                            ; of how they were last set)
                 ld      hl, SECTOR_BUF
                 call    write_sector
+                pop     bc                  ; chunk (pop leaves the flags alone)
                 jp      c, wrblk_ioerr
-                ; advance DTA by RS
-                ld      hl, (BDOS_DTA)
-                ld      de, (WRBLK_RS)
-                add     hl, de
-                ld      (BDOS_DTA), hl
-                ; WRBLK_REC += 1 (24-bit)
                 ld      hl, (WRBLK_REC)
-                inc     hl
-                ld      (WRBLK_REC), hl
-                ld      a, h
-                or      l
-                jr      nz, wrblk_reci_noc
-                ld      a, (WRBLK_REC + 2)
-                inc     a
-                ld      (WRBLK_REC + 2), a
-wrblk_reci_noc:
+                add     hl, bc
+                ld      (WRBLK_REC), hl     ; offset += chunk (24-bit)
+                jr      nc, wrblk_off_nc
+                ld      hl, WRBLK_REC + 2
+                inc     (hl)
+wrblk_off_nc:
                 ld      hl, (WRBLK_CNT)
-                dec     hl
-                ld      (WRBLK_CNT), hl
+                or      a
+                sbc     hl, bc
+                ld      (WRBLK_CNT), hl     ; remaining -= chunk
                 jp      wrblk_loop
 wrblk_loop_done:
                 ; new_RR := RR_start + HL_requested (24-bit + 16-bit)
@@ -1146,27 +1162,10 @@ wrblk_finish:                              ; shared tail: M20 dispatcher-flag ru
 ;        4-records/512-byte-sector convention -- independent of RS, which only
 ;        scales the byte quantity copied per record and the RR/byte-budget
 ;        bookkeeping, per spec §3.3)
-wrblk_position_ext:
-                ld      a, (WRBLK_REC)
-                and     3
-                ld      (WRBLK_RECSEC), a
-                ; target sector-in-file = WRBLK_REC >> 2 (24-bit value; D:E:A below)
-                ld      a, (WRBLK_REC + 2)
-                ld      d, a
-                ld      a, (WRBLK_REC + 1)
-                ld      e, a
-                ld      a, (WRBLK_REC)
-                ld      b, 2
-wpe_shr:
-                srl     d
-                rr      e
-                rra
-                djnz    wpe_shr
-                ; D:E:A = target sector-in-file; D is always 0 for any file this ROM's
-                ; FAT12 (720K-class floppy) volumes can hold, so BC below is a safe
-                ; 16-bit sector-in-file count.
-                ld      c, a
-                ld      b, e                ; BC = target_sec (16-bit; D/high byte always 0)
+wrblk_position_sec:                         ; D-WRBLKRS: in BC = the target SECTOR-in-file
+                                            ; (the caller computes it from a BYTE offset;
+                                            ; the record -> sector head that assumed 128 B
+                                            ; records is gone)
                 ld      a, (WRBLK_CURVALID)
                 or      a
                 jr      z, wpe_fresh
@@ -1376,6 +1375,59 @@ wmr_noadd:
                 djnz    wmr_loop
                 ret
 
+; wrblk_off24 -- WRBLK_REC := (RR * RS) & $FFFFFF: the start BYTE offset
+; (D-WRBLKRS). RR = (ix+33..35), RS = (WRBLK_RS). 🔴 NOT wrblk_mul_rr_rs, and
+; why: that routine's accumulator lives at WBUF+500..511, and WBUF IS the FAT/dir
+; write-back buffer (FAT_MBUF) that the extension below allocates clusters
+; through. The old code only called it AFTER the loop. Before the loop, its 12
+; bytes could ride a FAT sector back to disk, and in FAT12 offsets 500..511 hold
+; the entries of clusters ~333..341. Registers and WRBLK_REC only here.
+wrblk_off24:
+                xor     a
+                ld      (WRBLK_REC), a
+                ld      (WRBLK_REC + 1), a
+                ld      (WRBLK_REC + 2), a
+                ld      l, (ix+33)
+                ld      h, (ix+34)
+                ld      c, (ix+35)          ; C:HL = RR, shifted LEFT each step
+                ld      de, (WRBLK_RS)      ; DE = RS, shifted RIGHT each step
+                ld      b, 16
+wo24_lp:
+                srl     d
+                rr      e                   ; CY = the next bit of RS
+                jr      nc, wo24_no
+                ld      a, (WRBLK_REC)
+                add     a, l
+                ld      (WRBLK_REC), a
+                ld      a, (WRBLK_REC + 1)
+                adc     a, h
+                ld      (WRBLK_REC + 1), a
+                ld      a, (WRBLK_REC + 2)
+                adc     a, c
+                ld      (WRBLK_REC + 2), a
+wo24_no:
+                add     hl, hl
+                rl      c                   ; C:HL <<= 1
+                djnz    wo24_lp
+                ret
+; wrblk_mul16 -- HL := (HL * DE) & $FFFF, MSB-first shift-and-add. D-WRBLKRS: the
+; byte budget, WRBLK's documented `(HL*RS) & $FFFF`. Trashes A, BC, DE.
+wrblk_mul16:
+                ld      b, h
+                ld      c, l                ; BC = the multiplicand
+                ld      hl, 0
+                ld      a, 16
+wm16_lp:
+                add     hl, hl
+                ex      de, hl
+                add     hl, hl              ; DE <<= 1, CY = its old MSB
+                ex      de, hl
+                jr      nc, wm16_no
+                add     hl, bc
+wm16_no:
+                dec     a
+                jr      nz, wm16_lp
+                ret
 ; wrblk_size_max — BDOS_WRBYTES(32) := max(FAT_FILESIZE, WRBLK_MULACC). Simple
 ; 32-bit unsigned compare (MSB byte first); copies the winner into BDOS_WRBYTES.
 wrblk_size_max:

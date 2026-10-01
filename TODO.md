@@ -6045,7 +6045,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:28165 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:28200 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -26963,7 +26963,7 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       🤖 **AUTONOMOUS** — next: the same reads with the dump loop removed (only
       +6 printed); then the loop alone without the PEEK of the work area.
 
-- [ ] 🔴 **D-WRBLKRS — BDOS `$26` WRBLK IS ONLY RIGHT FOR A RECORD SIZE OF 128: AT RS = 1 IT
+- [x] ✅ **D-WRBLKRS — BDOS `$26` WRBLK IS ONLY RIGHT FOR A RECORD SIZE OF 128: AT RS = 1 IT
       ALLOCATES A 32-CLUSTER CHAIN FOR 256 BYTES AND MISPLACES THE DATA (found 2026-10-01 by S10.A's proof)**
       🎚️ TIER 1 — happy path, on the DOS sub-track: RS = 1 block I/O is the ordinary MSX-DOS1
       way to copy or load a file, and step 10's channel shape (spec §6.6bc) is exactly it.
@@ -26993,6 +26993,41 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       ⚠️ Check the READ side (RDBLK; the mini layer's `bdos_rdblk`, and RDRND's
       `rrnd_position`) for the same 128 assumption before S10.C relies on it.
       🤖 **AUTONOMOUS** — the reference settles it; disk.rom has ~6.5 KB free.
+      ✅ **FIXED 2026-10-01 — A BYTE TRANSFER, ONE SECTOR A STEP.** `wrblk_body`
+      (disk/kernel.asm):
+      - start offset = RR × RS (new `wrblk_off24`), budget = (HL × RS) & $FFFF
+        (new `wrblk_mul16`);
+      - each step positions to offset/512 (`wrblk_position_ext`'s record→sector
+        head is gone: `wrblk_position_sec` takes the sector), copies
+        min(512 − offset%512, remaining) and writes;
+      - `WRBLK_REC`/`WRBLK_CNT` now hold the byte offset and the bytes left.
+      disk.rom 6517 → 6444 B free.
+      🔴 **My first cut called `wrblk_mul_rr_rs` before the loop**, and its
+      accumulator lives at WBUF+500..511. WBUF is the FAT/dir write-back buffer
+      the extension allocates through, and those offsets hold FAT12 entries
+      ~333..341. The FAT matched stock anyway, by luck. The tell was ONE CLUSTER
+      LESS of `rr24` in the same window (9 against HEAD's 10). The register-only
+      `wrblk_off24` reads 10, as HEAD does.
+      📏 **After:**
+      - the alternation proof PASSES on both: two files byte-exact, chains equal
+        to stock's ([`wrblkrs_after.out`](scratchpad/wrblkrs_after.out));
+      - the roundtrip's six cases: `within`/`extend`/`rr24`/`multi` MATCH stock,
+        `shrink` and `del_realloc` keep their documented shapes
+        ([`wrblkrs_roundtrip.out`](scratchpad/wrblkrs_roundtrip.out));
+      - `bdos-acceptance` 12/12 converged
+        ([`wrblkrs_bdos.out`](scratchpad/wrblkrs_bdos.out)).
+      ⚠️ The roundtrip probe's DEFAULT `--end 34` is too short for `rr24` on HEAD
+      AND on the fix (both reach ~10 of 33 clusters). It needs `--end 90`. That
+      is pre-existing and noted, not changed.
+      🔒 **Gate `wrblkalt-acceptance`** (emulator tier, 2 s). Its knife is the
+      pre-fix ROM, which failed it ([`wrblk_alt_run.out`](scratchpad/wrblk_alt_run.out)).
+      📏 Knife BLIND unchanged, sweep SUPPORTED 966 (the rig answered), kwtime OK 852
+      ([`wrblkrs_knife_all.out`](scratchpad/wrblkrs_knife_all.out),
+      [`wrblkrs_knife_fn.out`](scratchpad/wrblkrs_knife_fn.out),
+      [`wrblkrs_kwsweep.out`](scratchpad/wrblkrs_kwsweep.out),
+      [`wrblkrs_kwtime.out`](scratchpad/wrblkrs_kwtime.out)).
+      ➡️ Still open: the READ side (RDBLK; the mini layer's `bdos_rdblk`; RDRND's
+      `rrnd_position`) may share the 128 assumption. Check it before S10.C.
 
 - [ ] 🔴 **A kwtime ROW THAT REGRESSES FROM OK TO SLOW OR HANG FAILS NO GATE
       (D-KWTRATCHET, found 2026-09-28 while fixing D-DSKFSLOW).**

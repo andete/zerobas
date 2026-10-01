@@ -2231,6 +2231,14 @@ cas-ascii-acceptance: repack-machine
 eofcas-acceptance: repack-machine
 	python3 probes/basic/basic_probe_eofcas.py
 
+# --- wrblkalt-acceptance: two FCBs, RS = 1, alternating WRBLK (D-WRBLKRS) ------
+# The BDOSX RAM gate is BLIND to disk writes; this reads the persisted artifact.
+# Our WRBLK positioned as if every record were 128 B, so RS = 1 -- MSX-DOS1's
+# block-I/O idiom and step 10's channel shape -- built a 32-cluster chain for
+# 256 B. Both files must come out byte-exact on ours AND the CF-3300.
+wrblkalt-acceptance: repack-machine
+	ZEROBAS_BASIC_MACHINE=$(REPACK_MACHINE) python3 probes/disk/disk_probe_wrblk_alt.py
+
 # --- wprotect-acceptance: disk WRITE errors reach BASIC (D-WPROTECT, D-SAVEOPEN) --
 # 🔴 zerobas reported NO disk write error at all until 2026-09-28: the driver's
 # `cp 0` cleared the carry on every failed write, so a write-protected disk

@@ -4215,6 +4215,10 @@ With a real RUN→capture budget (`run_gap`), both directions read cleanly
   every record were 128 B, whatever the FCB's record size, and RS = 1 is the
   shape step 10 needs. **S10.A's first deliverable is that fix.** The
   alternation proof is its acceptance test.
+  ✅ **FIXED THE SAME NIGHT** (TODO D-WRBLKRS): WRBLK is a byte transfer, one
+  sector a step. The alternation proof passes on both machines, and it is now
+  the gate `wrblkalt-acceptance`. **S10.A is DONE for the write side.** The read
+  side (RDBLK) is checked before S10.C.
 
 🔴 **D-CFWSTALL WAS MINE, AND IT IS THE DOCUMENTED CLASS.** `run_cases` captures
 `step` seconds after RUN, and `cap_gap` never moves it. omsx_repl's docstring

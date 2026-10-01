@@ -434,10 +434,10 @@ RRND_CLUSSEC    equ     $E561   ; FAT_CLUSSEC-1 across the cluster->sector multi
 ; DRV_TRAMP $E800) -- clear of every other disk region; CONIN's own buffer state is
 ; dead whenever a BDOS FCB call (WRBLK included) is running, same lifetime-disjoint
 ; reuse discipline as RRND_RECSEC/RRND_CLUSSEC above (own choice, no oracle bytes).
-WRBLK_REC       equ     $E57A   ; 24-bit target record number for the current step (3 bytes)
+WRBLK_REC       equ     $E57A   ; D-WRBLKRS: the 24-bit BYTE offset of the next write (3 bytes)
 WRBLK_RECSEC    equ     $E57D   ; WRBLK_REC & 3 (record-in-sector) across the seek/extend loop (1 B)
 WRBLK_RS        equ     $E57E   ; resolved record size (FCB+14..15, 0 -> 128) (word)
-WRBLK_CNT       equ     $E580   ; records still to process this call (word, counts down to 0)
+WRBLK_CNT       equ     $E580   ; D-WRBLKRS: BYTES still to write this call (word, counts down to 0)
 WRBLK_REQ       equ     $E582   ; the ORIGINAL requested count (word; HL is pinned-preserved
                                 ; on exit, per [LANDED-A] -- WRBLK returns HL = requested, not actual)
 WRBLK_PREVCLUS  equ     $E584   ; cluster before the current step's advance/allocate (word);

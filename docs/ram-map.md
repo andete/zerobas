@@ -372,10 +372,10 @@ second one is the question a per-component map cannot answer.
 | `$E574` | 2 B | `disk` | `FREAD_OFF/RDBLK_BUFPOS` | byte index within FAT_DBUF (0..512) (word) |  |
 | `$E576` | 2 B | `disk` | `RDBLK_DST` | current DTA write pointer (word; from BDOS_DTA) |  |
 | `$E578` | 2 B | `disk` | `P1_DEST` | saved page-1 destination word (dskio bounce path) |  |
-| `$E57A` | 3 B | `disk` | `WRBLK_REC` | 24-bit target record number for the current step (3 bytes) |  |
+| `$E57A` | 3 B | `disk` | `WRBLK_REC` | D-WRBLKRS: the 24-bit BYTE offset of the next write (3 bytes) |  |
 | `$E57D` | 1 B | `disk` | `WRBLK_RECSEC` | WRBLK_REC & 3 (record-in-sector) across the seek/extend loop (1 B) |  |
 | `$E57E` | 2 B | `disk` | `WRBLK_RS` | resolved record size (FCB+14..15, 0 -> 128) (word) |  |
-| `$E580` | 2 B | `disk` | `WRBLK_CNT` | records still to process this call (word, counts down to 0) |  |
+| `$E580` | 2 B | `disk` | `WRBLK_CNT` | D-WRBLKRS: BYTES still to write this call (word, counts down to 0) |  |
 | `$E582` | 2 B | `disk` | `WRBLK_REQ` | the ORIGINAL requested count (word; HL is pinned-preserved |  |
 | `$E584` | 2 B | `disk` | `WRBLK_PREVCLUS` | cluster before the current step's advance/allocate (word); |  |
 | `$E586` | 2 B | `disk` | `WRBLK_KEEPCNT` | shrink path: clusters-to-keep walk countdown (word) |  |

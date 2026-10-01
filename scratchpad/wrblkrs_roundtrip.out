@@ -1,0 +1,69 @@
+WARNING: Var start is never used on line 30 of file /Users/joost/projects/zerobas/probes/disk/wrblk_rt.asm
+
+===== CASE within (recnum=3 rs=128 cnt=1 file=2048B) =====
+  [ours ran]
+  [stock ran]
+    OURS : size=2048 first_clus=336 chain_len=2 term=0xfff
+       chain=[336, 337]
+       rec[3] first16=a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5 (all==fill? True)
+    STOCK: size=2048 first_clus=336 chain_len=2 term=0xfff
+       chain=[336, 337]
+       rec[3] first16=a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5 (all==fill? True)
+  => MATCH (size/chain/rec)
+
+===== CASE extend (recnum=12 rs=128 cnt=1 file=512B) =====
+  [ours ran]
+  [stock ran]
+    OURS : size=1664 first_clus=336 chain_len=2 term=0xfff
+       chain=[336, 341]
+       rec[12] first16=b6b6b6b6b6b6b6b6b6b6b6b6b6b6b6b6 (all==fill? True)
+    STOCK: size=1664 first_clus=336 chain_len=2 term=0xfff
+       chain=[336, 341]
+       rec[12] first16=b6b6b6b6b6b6b6b6b6b6b6b6b6b6b6b6 (all==fill? True)
+  => MATCH (size/chain/rec)
+
+===== CASE rr24 (recnum=256 rs=128 cnt=1 file=512B) =====
+  [ours ran]
+  [stock ran]
+    OURS : size=32896 first_clus=336 chain_len=33 term=0xfff
+       chain=[336, 341, 342, 343, 344, 345, 346, 347, 348, 349, 350, 351, 352, 353, 354, 355]...
+       rec[256] first16=c7c7c7c7c7c7c7c7c7c7c7c7c7c7c7c7 (all==fill? True)
+    STOCK: size=32896 first_clus=336 chain_len=33 term=0xfff
+       chain=[336, 341, 342, 343, 344, 345, 346, 347, 348, 349, 350, 351, 352, 353, 354, 355]...
+       rec[256] first16=c7c7c7c7c7c7c7c7c7c7c7c7c7c7c7c7 (all==fill? True)
+  => MATCH (size/chain/rec)
+
+===== CASE shrink (recnum=3 rs=128 cnt=0 file=4096B) =====
+  [ours ran]
+  [stock ran]
+    OURS : size=384 first_clus=336 chain_len=1 term=0xfff
+       chain=[336]
+       rec[3] first16=44444444444444444444444444444444 (all==fill? True)
+    STOCK: size=384 first_clus=336 chain_len=4 term=0xfff
+       chain=[336, 337, 338, 339]
+       rec[3] first16=44444444444444444444444444444444 (all==fill? True)
+  => shrink: ours self-consistency below; stock expected broken
+     ours term=0xfff (EOC>=0xff8 good); ours size=384
+
+===== CASE multi (recnum=0 rs=128 cnt=8 file=512B) =====
+  [ours ran]
+  [stock ran]
+    OURS : size=1024 first_clus=336 chain_len=1 term=0xfff
+       chain=[336]
+       rec[6] first16=d8d8d8d8d8d8d8d8d8d8d8d8d8d8d8d8 (all==fill? True)
+    STOCK: size=1024 first_clus=336 chain_len=1 term=0xfff
+       chain=[336]
+       rec[6] first16=d8d8d8d8d8d8d8d8d8d8d8d8d8d8d8d8 (all==fill? True)
+  => MATCH (size/chain/rec)
+
+===== CASE del_realloc (recnum=8 rs=128 cnt=1 file=512B) =====
+  [ours ran]
+  [stock ran]
+    OURS : size=1152 first_clus=340 chain_len=2 term=0xfff
+       chain=[340, 336]
+       rec[8] first16=e9e9e9e9e9e9e9e9e9e9e9e9e9e9e9e9 (all==fill? True)
+    STOCK: size=1152 first_clus=340 chain_len=2 term=0xfff
+       chain=[340, 339]
+       rec[8] first16=e9e9e9e9e9e9e9e9e9e9e9e9e9e9e9e9 (all==fill? True)
+  => divergence(alloc-order, PRE-EXISTING not M30): ours self-consistent=True, ours reuses freed-low cluster=True
+     ours chain=[340, 336] vs stock chain=[340, 339] (same size/len/rec; only cluster numbers differ) -- spec §6.2
