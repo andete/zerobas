@@ -4208,6 +4208,13 @@ With a real RUN→capture budget (`run_gap`), both directions read cleanly
   WRBLK and RDBLK-style calls on TWO FCBs, held byte-exact against stock. Then
   check which create/close/RDBLK entries the BASIC slices need exist at
   canonical depth or only in the mini layer (`bdos_rdblk` lives in driver.asm).
+- 🔴 **AND THE PROOF FAILED ON OURS, FOR A REASON THAT IS NOT ALTERNATION
+  (2026-10-01, D-WRBLKRS, [`disk_probe_wrblk_alt.py`](../../probes/disk/disk_probe_wrblk_alt.py)).**
+  The CF-3300 writes both files exactly. Ours allocates a 32-cluster chain for
+  ALT1's first 256 B and crawls. `wrblk_body`'s per-record loop positions as if
+  every record were 128 B, whatever the FCB's record size, and RS = 1 is the
+  shape step 10 needs. **S10.A's first deliverable is that fix.** The
+  alternation proof is its acceptance test.
 
 🔴 **D-CFWSTALL WAS MINE, AND IT IS THE DOCUMENTED CLASS.** `run_cases` captures
 `step` seconds after RUN, and `cap_gap` never moves it. omsx_repl's docstring

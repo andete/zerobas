@@ -6045,7 +6045,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:28134 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:28165 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -26962,6 +26962,37 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
         capture timing.
       🤖 **AUTONOMOUS** — next: the same reads with the dump loop removed (only
       +6 printed); then the loop alone without the PEEK of the work area.
+
+- [ ] 🔴 **D-WRBLKRS — BDOS `$26` WRBLK IS ONLY RIGHT FOR A RECORD SIZE OF 128: AT RS = 1 IT
+      ALLOCATES A 32-CLUSTER CHAIN FOR 256 BYTES AND MISPLACES THE DATA (found 2026-10-01 by S10.A's proof)**
+      🎚️ TIER 1 — happy path, on the DOS sub-track: RS = 1 block I/O is the ordinary MSX-DOS1
+      way to copy or load a file, and step 10's channel shape (spec §6.6bc) is exactly it.
+      📏 [`disk_probe_wrblk_alt.py`](probes/disk/disk_probe_wrblk_alt.py) →
+      [`wrblk_alt_run.out`](scratchpad/wrblk_alt_run.out): two FCBs, RS = 1,
+      alternating 256 B WRBLKs.
+      - The **CF-3300 writes both files exactly**: 1024 B each, one cluster, blocks
+        11h/13h/15h/17h and 12h/14h/16h/18h.
+      - **Ours** gives ALT1 size 256 with a **32-cluster** chain and only its first
+        block, and is still crawling at 150 s (ALT2 never reached).
+      - An FOPEN'd empty file with RS = 128 MATCHES stock, which separates the
+        record size from "empty file" and from alternation.
+      🔬 **CAUSE, from the code (disk/kernel.asm `wrblk_body` / `wrblk_position_ext`):**
+      the header's contract reads RS from the FCB, but the per-record loop
+      positions as if every record were 128 B. Record-in-sector is `WRBLK_REC & 3`,
+      the copy destination is `RECSEC × 128` and the target sector is `REC / 4`.
+      At RS = 1, byte 255 is "sector 63": 64 sectors, which on this 720 KB disk is
+      32 clusters, allocated one by one (the known O(n²) `fat_alloc`). Every
+      roundtrip case uses `rs=128`, so the path was never exercised.
+      🛠 **FIX SHAPE (not built):** a BYTE-offset transfer. Start = RR × RS (the
+      existing `wrblk_mul_rr_rs` arithmetic) and budget = (HL × RS) & $FFFF. Loop
+      per SECTOR: position to offset/512, copy min(512 − offset%512, remaining)
+      from the DTA, write. The positioning becomes sector-indexed, and M29's
+      cursor carries over, keyed on the sector instead of the record.
+      Gates: disk_probe_wrblk_roundtrip's six cases stay byte-identical, the
+      alternation proof passes, and `bdos-acceptance` stays converged.
+      ⚠️ Check the READ side (RDBLK; the mini layer's `bdos_rdblk`, and RDRND's
+      `rrnd_position`) for the same 128 assumption before S10.C relies on it.
+      🤖 **AUTONOMOUS** — the reference settles it; disk.rom has ~6.5 KB free.
 
 - [ ] 🔴 **A kwtime ROW THAT REGRESSES FROM OK TO SLOW OR HANG FAILS NO GATE
       (D-KWTRATCHET, found 2026-09-28 while fixing D-DSKFSLOW).**

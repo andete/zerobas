@@ -1,0 +1,7 @@
+WARNING: Var start is never used on line 18 of file /Users/joost/projects/zerobas/probes/disk/wrblk_alt.asm
+  OURS  ALT1.BIN size=256 chain=[338, 339, 340, 341, 342, 343, 344, 345, 346, 347, 348, 349, 350, 351, 352, 353, 354, 355, 356, 357, 358, 359, 360, 361, 362, 363, 364, 365, 366, 367, 368, 369] eoc=True blocks=['0x11'] WRONG
+  OURS  ALT2.BIN NOT WRITTEN
+  STOCK ALT1.BIN size=1024 chain=[338] eoc=True blocks=['0x11', '0x13', '0x15', '0x17'] AS EXPECTED
+  STOCK ALT2.BIN size=1024 chain=[339] eoc=True blocks=['0x12', '0x14', '0x16', '0x18'] AS EXPECTED
+
+FAIL: two FCBs alternating WRBLK do NOT persist as written on both machines

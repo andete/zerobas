@@ -62,6 +62,12 @@ CARRY its five rows (Joost 09-26); the last board-backed pin is `7c488429`'s.
   every call, so they are multi-file already. Only `driver.asm`'s BLOAD mini
   layer is single-file. Add a BDOSX case alternating two FCBs, and check which
   create/close/RDBLK entries exist at canonical depth. Then OPEN/PRINT#/CLOSE.
+- 🔴 **THE PROOF FOUND D-WRBLKRS (TODO):** our WRBLK is only right at a record
+  size of 128. At RS = 1 it allocates 32 clusters for 256 B, while the
+  CF-3300 is exact. Fix it first: a byte-offset transfer looping per sector.
+  The acceptance test is `disk_probe_wrblk_alt.py` (it needs
+  ZEROBAS_BASIC_MACHINE=C-BIOS_MSX1_EU_REPACK_DISK). The roundtrip probe's six
+  rs=128 cases must stay byte-identical.
 - 🔴 D-CFWSTALL was MY capture timing: the capture fires `step` after RUN, and
   `cap_gap` never moves it, `run_gap` does. omsx_repl documents it; I raised
   `cap_gap` twice and bisected a phantom.
