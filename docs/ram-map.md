@@ -372,7 +372,7 @@ second one is the question a per-component map cannot answer.
 | `$E574` | 2 B | `disk` | `FREAD_OFF/RDBLK_BUFPOS` | byte index within FAT_DBUF (0..512) (word) |  |
 | `$E576` | 2 B | `disk` | `RDBLK_DST` | current DTA write pointer (word; from BDOS_DTA) |  |
 | `$E578` | 2 B | `disk` | `P1_DEST` | saved page-1 destination word (dskio bounce path) |  |
-| `$E57A` | 3 B | `disk` | `WRBLK_REC` | D-WRBLKRS: the 24-bit BYTE offset of the next write (3 bytes) |  |
+| `$E57A` | 4 B | `disk` | `COPY_STAMP/WRBLK_REC` | $E57A..$E57D: Disk BASIC COPY's SOURCE time/date (+22..25), carried to the |  |
 | `$E57D` | 1 B | `disk` | `WRBLK_RECSEC` | wrblk_seek's sector-in-cluster (D-WRBLKSEEK; its old record-in-sector use died with D-WRBLKRS) (1 B) |  |
 | `$E57E` | 2 B | `disk` | `WRBLK_RS` | resolved record size (FCB+14..15, 0 -> 128) (word) |  |
 | `$E580` | 2 B | `disk` | `WRBLK_CNT` | D-WRBLKRS: BYTES still to write this call (word, counts down to 0) |  |

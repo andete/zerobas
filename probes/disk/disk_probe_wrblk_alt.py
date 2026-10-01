@@ -240,15 +240,16 @@ def main() -> int:
     # still OPEN, named here so a new one cannot hide among them. +25 (the
     # directory index FOPEN fills) is D-WRBLKSEEK's; +28..31 (the running
     # cluster) closed with D-RDBLKSEEK.
-    # The WRITE dumps also name FMAKE's fill: +20..21 the date, +24 (stock 40h
-    # after FMAKE) -- D-WRBLKSEEK (b), open. +16..19/+26/+28/+30 closed with (a).
+    # Since D-WRBLKSEEK (b) the open set is EMPTY: every FCB byte of every dump
+    # must equal the CF-3300's. (+25 and FMAKE's +20/21/24 closed with (b);
+    # +16..19/+26/+28/+30 with (a) and D-RDBLKSEEK.)
     for what, by in fcbs.items():
-        known = {20, 21, 24, 25} if what in ("after FMAKE", "after write 5") else {25}
+        known: set = set()
         if "OURS" in by and "STOCK" in by:
             diff = [i for i in range(37) if by["OURS"][i] != by["STOCK"][i]]
             new = [i for i in diff if i not in known]
             print(f"  FCB {what:13} differs at {diff}"
-                  + (f" -- NOT KNOWN: {new}" if new else " (all known: D-WRBLKSEEK (b))"))
+                  + (f" -- NOT KNOWN: {new}" if new else " (byte-identical)"))
             ok = ok and not new
     # --seek: the 32 KB read must be RIGHT on both (0 wrong blocks) and, on
     # ours, within T2's 10x of the CF-3300 (D-RDBLKSEEK: it was 147x).

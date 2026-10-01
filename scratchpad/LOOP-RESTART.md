@@ -71,8 +71,12 @@ CARRY its five rows (Joost 09-26); the last board-backed pin is `7c488429`'s.
   positioning from +26/+28/+30). D-FOPENRC fixed on the way (`4022a78a`).
   ✅ **D-WRBLKSEEK (a): the 32 KB write went 59× → 8.8×** (`wrblk_seek`,
   `wrblk_fcb_keep`, FMAKE clears +16..31).
-  ➡️ **NEXT: D-WRBLKSEEK (b)**, FMAKE's +20..25. Read disk/PROVENANCE.md's
-  date ruling FIRST. **Then S10.B.**
+  ✅ **D-WRBLKSEEK (b): every FCB dump byte-identical to the CF-3300's.**
+  🏗️ **Joost 2026-10-01 "Stamp as 3300":** files are dated 0821h (1984-01-01),
+  time 0, as the CF-3300 (gate `savedate-acceptance`).
+  A WRITE dates a file too, and COPY carries the source's date (both measured).
+  ➡️ **NEXT, by tier: D-DOSDATE and D-CLOSESTAMP (TIER 1, measure first), then
+  S10.B (TIER 2).** D-BLKIOPERCALL is TIER 5.
 - (was) 🔴 **THE PROOF FOUND D-WRBLKRS (TODO):** our WRBLK is only right at a record
   size of 128. At RS = 1 it allocates 32 clusters for 256 B, while the
   CF-3300 is exact. Fix it first: a byte-offset transfer looping per sector.

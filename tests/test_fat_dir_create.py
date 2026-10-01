@@ -4,8 +4,9 @@
 
 fat_dir_create scans the root directory for the first usable 32-byte slot — a
 $00 end-marker OR a $E5 deleted entry OR an existing same-name entry — stamps the
-11-byte 8.3 name into it, sets the attribute byte (+11) and zeros the rest
-(+12..31), records the slot's location in BDOS_DIRSEC/BDOS_DIROFF (for the later
+11-byte 8.3 name into it, sets the attribute byte (+11), zeros the rest
+(+12..31) and stamps the date 0821h at +24..25 (as the CF-3300; Joost
+2026-10-01), records the slot's location in BDOS_DIRSEC/BDOS_DIROFF (for the later
 Close-time fat_dir_update), and writes the sector back. read_sector/write_sector
 are MOCKED against a synthetic root-dir image; the scan + stamp run for real.
 
@@ -117,7 +118,11 @@ def run():
         check(stamped == n83(name), f"  name stamped at slot {exp_index}: "
               f"{stamped!r} == {n83(name)!r}")
         check(img[off + 11] == 0x00, f"  attr byte (+11) = {img[off + 11]:#04x} (want 0x00)")
-        check(bytes(img[off + 12:off + 32]) == b"\x00" * 20, "  tail (+12..31) zeroed")
+        # Joost 2026-10-01 "Stamp as 3300": the tail is zero EXCEPT the date at
+        # +24..25 = 0821h (1984-01-01, the CF-3300's stamp); time +22..23 stays 0.
+        want_tail = b"\x00" * 12 + b"\x21\x08" + b"\x00" * 6
+        check(bytes(img[off + 12:off + 32]) == want_tail,
+              "  tail (+12..31) zeroed but for the date 0821h at +24..25")
         ds = m.mem[m.addr("BDOS_DIRSEC")] | (m.mem[m.addr("BDOS_DIRSEC") + 1] << 8)
         do = m.mem[m.addr("BDOS_DIROFF")] | (m.mem[m.addr("BDOS_DIROFF") + 1] << 8)
         check(ds == FIRSTROOT, f"  BDOS_DIRSEC = {ds} (want {FIRSTROOT})")

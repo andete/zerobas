@@ -388,9 +388,12 @@ bdos_create_body:                       ; [bdos_create, bdos_create_failpop) —
                 jp      c, bdos_create_failpop      ; jr->jp: relocated
                 pop     hl              ; HL = FCB
                 call    fcb_clear_tail  ; D-WRBLKSEEK: +16..31 := 0 (HL kept)
+                push    hl
                 inc     hl              ; HL = FCB+1 = 8.3 name
                 call    fat_dir_create  ; find/make a dir slot, write the entry
+                pop     hl              ; HL = FCB (pop leaves the flags alone)
                 jp      c, bdos_create_err          ; jr->jp: relocated
+                call    fmake_fcb_fill  ; D-WRBLKSEEK (b): +20..21, +24, +25 as stock
                 ; prime the write iterator: no cluster yet, empty buffer, 0 bytes.
                 xor     a
                 ld      (BDOS_WRSECIDX), a
@@ -651,6 +654,11 @@ hkc_same:       ld      a,(de)
 hkc_differ:     ld      hl,COPY_SRC
                 call    fat_find
                 jp      c,hkc_nf            ; A = 0
+                ld      de,22               ; D-COPYDATE: keep the SOURCE's time/date
+                add     hl,de               ; (+22..25) for the destination
+                ld      de,COPY_STAMP
+                ld      bc,4
+                ldir
                 ld      hl,(FAT_FIRSTCLUS)
                 ld      (COPY_CLUS),hl
                 ld      hl,(FAT_FILESIZE)
@@ -707,6 +715,21 @@ hkc_fl:         call    fat_flush_data_sector   ; allocates/extends, writes FAT_
                 jp      c,hkc_io
                 jr      hkc_loop
 hkc_fin:        call    fat_dir_update      ; true size + first cluster
+                jp      c,hkc_io
+                ; 🔴 D-COPYDATE (2026-10-01): the CF-3300's COPY carries the SOURCE's
+                ; time/date to the destination (disk_probe_savedate.py: a source dated
+                ; 0 copies as 0), where fat_dir_update just stamped 0821h. Patch the
+                ; entry in the buffer fat_dir_update wrote, and write it once more.
+                ld      hl,(FWR_DIROFF)
+                ld      de,FAT_MBUF+22
+                add     hl,de
+                ex      de,hl               ; DE -> the entry's +22
+                ld      hl,COPY_STAMP
+                ld      bc,4
+                ldir
+                ld      de,(FWR_DIRSEC)
+                ld      hl,FAT_MBUF
+                call    write_sector
                 jp      c,hkc_io
                 ld      a,1                 ; copied
                 ret
@@ -2100,6 +2123,7 @@ wrrnd_extend:
                 ex      de, hl              ; HL -> name (fat_find's contract)
                 call    fat_find            ; Cy=0 found; HL = &matched dirent (in SECTOR_BUF)
                 jp      c, wre_ioerr
+                call    dir_stamp_date      ; a written file is dated as the CF-3300's
                 ld      de, DIRENT_FILESIZE
                 add     hl, de              ; HL -> dirent+28 (file size field)
                 pop     de                  ; DE = newsize (restore across fat_mount/fat_find)
@@ -2168,6 +2192,8 @@ wsww_shr7:
                 ; copy+28/29 := BDOS_WRCLUS (word) -- the write iterator's cluster
                 ld      hl, (BDOS_WRCLUS)
                 ld      ($DA40+28), hl
+                ld      hl, $DA40
+                call    fcb_mark_written    ; +20..23 date/time, +24's 40h cleared (BDOSX8)
                 ; copy+30 := (K-1) div recPerClus, recPerClus = FAT_SECPERCLUS*RECPERSEC
                 pop     hl                  ; HL = K
                 dec     hl                  ; HL = K-1
@@ -3904,6 +3930,82 @@ dfo_done:
                 ds      $75A5 - $, $00
                 jp      k_75A5          ; $75A5
 
+; fcb_mark_written -- what a WRITE does to the FCB on the CF-3300 (D-WRBLKSEEK
+; (b), read as data): +20..21 := the date 0821h and +22..23 := time 0 (Joost
+; 2026-10-01, "Stamp as 3300"; BDOSX/BDOSX3/BDOSX6 read 0821h after a write to a
+; file dated 0), and +24's 40h cleared (40h after FMAKE/FOPEN, 00h after a
+; write: --wseek's dump, BDOSX8). in: HL = the FCB; trashes DE, HL
+fcb_mark_written:
+                ld      de, 20
+                add     hl, de
+                ld      (hl), $21
+                inc     hl
+                ld      (hl), $08           ; +20..21 date
+                inc     hl
+                ld      (hl), 0
+                inc     hl
+                ld      (hl), 0             ; +22..23 time
+                inc     hl
+                res     6, (hl)             ; +24
+                ret
+
+; fmake_fcb_fill -- FMAKE's FCB fields as the CF-3300 fills them (D-WRBLKSEEK
+; (b), read as data after FMAKE): +20..21 the date 0821h (Joost 2026-10-01,
+; "Stamp as 3300"), +24 40h, +25 the entry's index in the root directory. Time
+; +22..23 stays 0. in: HL = the FCB, FWR_DIRSEC/FWR_DIROFF from fat_dir_create.
+fmake_fcb_fill:
+                ld      de, 20
+                add     hl, de
+                ld      (hl), $21
+                inc     hl
+                ld      (hl), $08           ; +20..21 = 0821h
+                inc     hl
+                inc     hl
+                inc     hl
+                ld      (hl), $40           ; +24
+                inc     hl
+                push    hl
+                ld      de, (FWR_DIRSEC)
+                ld      hl, (FWR_DIROFF)
+                call    dir_index
+                pop     hl
+                ld      (hl), a             ; +25
+                ret
+
+; fcb_dirloc -- FOPEN's FCB +25 := the found entry's index (D-WRBLKSEEK (b);
+; stock 2Ch for BIG.BIN, ours left 0). Register-only: FWR_DIRSEC/DIROFF are
+; BDOS_DIRSEC/DIROFF, an open-for-write file's, and must survive an FOPEN.
+;   in: HL = the entry fat_find matched (in SECTOR_BUF), FAT_DIRSEC, IX = the
+;   FCB; out: HL kept; trashes A, BC, DE
+fcb_dirloc:
+                push    hl
+                ld      de, SECTOR_BUF
+                or      a
+                sbc     hl, de              ; HL = the entry's byte offset
+                ld      de, (FAT_DIRSEC)
+                call    dir_index
+                ld      (ix+25), a
+                pop     hl
+                ret
+
+; dir_index -- A := a root-directory entry's index: (sector - first root
+; sector) x 16 + offset / 32. in: DE = its sector, HL = its byte offset (< 512).
+dir_index:
+                add     hl, hl
+                add     hl, hl
+                add     hl, hl              ; H = offset / 32
+                ex      de, hl              ; HL = the sector, D = offset / 32
+                ld      bc, (FAT_FIRSTROOT)
+                or      a
+                sbc     hl, bc              ; L = the sector's index in the root
+                ld      a, l
+                add     a, a
+                add     a, a
+                add     a, a
+                add     a, a
+                add     a, d
+                ret
+
 ; fcb_clear_tail -- FMAKE's FCB +16..31 := 0 (D-WRBLKSEEK). WRBLK now positions
 ; from +28/+30 (wrblk_seek); a program that REUSES an FCB for a new file would
 ; otherwise walk the OLD file's clusters. Stock after FMAKE: +26..31 are 0.
@@ -4027,6 +4129,9 @@ wrblk_fcb_keep:
                 ld      hl, (FAT_FIRSTCLUS)
                 ld      (ix+26), l
                 ld      (ix+27), h
+                push    ix
+                pop     hl
+                call    fcb_mark_written    ; +20..23 date/time, +24's 40h cleared
                 ld      a, (WRBLK_CURVALID)
                 or      a
                 ret     z                   ; nothing positioned this call
@@ -5348,6 +5453,9 @@ wrrnd_body:
                 ld      hl, SECTOR_BUF
                 call    write_sector
                 jp      c, wrrnd_ioerr
+                push    ix
+                pop     hl
+                call    fcb_mark_written    ; +20..23 date/time, +24's 40h cleared (BDOSX3)
                 call    wrrnd_extend        ; M36: grow ix+16..19 + the on-disk dirent if this
                                             ; write landed past the previous end-of-file
                 jp      c, wrrnd_ioerr

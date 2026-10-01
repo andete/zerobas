@@ -1298,7 +1298,7 @@ ffds_mul:
 ; fresh entry; record the slot's sector + offset in FWR_DIRSEC/FWR_DIROFF.
 ;   in:  HL = 11-byte 8.3 name field
 ;   out: Cy = 0 ok, Cy = 1 = directory full / I/O error
-; (Microsoft FAT spec §3.4. Date/time = 0 is the documented divergence — no clock.)
+; (Microsoft FAT spec §3.4. Date 0821h, time 0: as the CF-3300, Joost 2026-10-01.)
 fat_dir_create:
                 ld      (FAT_NAMEPTR), hl
                 ld      hl, (FAT_FIRSTROOT)
@@ -1363,14 +1363,15 @@ fdcr_useslot:
                 ld      (de), a             ; +11 = $00
                 inc     de
                 ; zero +12..+31 (S1/S2, rec-count, alloc-map, date/time, first
-                ; cluster, size). Date/time = 0 is the documented divergence.
+                ; cluster, size), then stamp the date.
                 ld      b, 20               ; +12..+31 is 20 bytes
 fdcr_zero:
                 xor     a
                 ld      (de), a
                 inc     de
                 djnz    fdcr_zero
-                pop     hl                  ; discard slot pointer
+                pop     hl                  ; HL = the slot
+                call    dir_stamp_date      ; +22..25 := time 0, date 0821h (as the CF-3300)
                 ; write the dir sector back.
                 ld      de, (FWR_DIRSEC)
                 ld      hl, FAT_MBUF
@@ -1382,8 +1383,31 @@ fdcr_full:
                 scf
                 ret
 
+; dir_stamp_date — a directory entry's +22..25 := time 0, date 0821h. 🔴 Joost
+; 2026-10-01, "Stamp as 3300": 0821h is 1984-01-01, MSX-DOS's default date -- the
+; CF-3300 has no clock either. It stamps a file when it is CREATED (SAVE, SAVE ,A,
+; OPEN FOR OUTPUT, DOS FMAKE: probes/disk/disk_probe_savedate.py, --wseek's FCB
+; dump) and when it is WRITTEN (BDOSX/BDOSX3/BDOSX6 read 0821h after WRBLK/WRRND
+; on a file dated 0). It was $0000, "no fabricated clock" -- that premise fell.
+;   in: HL = the entry; out: HL kept; trashes A, DE
+dir_stamp_date:
+                push    hl
+                ld      de, 22
+                add     hl, de
+                xor     a
+                ld      (hl), a
+                inc     hl
+                ld      (hl), a             ; +22..23 time = 0
+                inc     hl
+                ld      (hl), $21
+                inc     hl
+                ld      (hl), $08           ; +24..25 date = 0821h
+                pop     hl
+                ret
+
 ; fat_dir_update — rewrite the open-for-write file's directory entry at Close with
-; its true byte count (DIRENT_FILESIZE) and first cluster (DIRENT_FIRSTCLUS).
+; its true byte count (DIRENT_FILESIZE) and first cluster (DIRENT_FIRSTCLUS), and
+; date it as the CF-3300 dates a written file (dir_stamp_date).
 ;   out: Cy = 0 ok, Cy = 1 = I/O error
 ; (Microsoft FAT spec §3.4.)
 fat_dir_update:
@@ -1395,6 +1419,7 @@ fat_dir_update:
                 ld      hl, (FWR_DIROFF)
                 ld      de, FAT_MBUF
                 add     hl, de
+                call    dir_stamp_date      ; a written file is dated as the CF-3300's
                 ; +26 first cluster (LE) = FWR_FIRST
                 push    hl
                 ld      de, DIRENT_FIRSTCLUS

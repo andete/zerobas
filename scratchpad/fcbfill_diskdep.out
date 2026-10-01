@@ -1,0 +1,4 @@
+79 make target(s) run a probe needing test720.dsk; 78 declare $(DISK_TEST_DSK), 1 do not
+  MISSING-DEP  savedate-acceptance: runs probes/disk/disk_probe_savedate.py (names the image) with no $(DISK_TEST_DSK)
+
+FIX: add $(DISK_TEST_DSK) to each target's prerequisites. `disk/test720.dsk` is generated, not tracked.

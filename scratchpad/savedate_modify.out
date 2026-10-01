@@ -1,0 +1,19 @@
+CF-3300: screen has [DONE]
+  SD1.BAS  dir index  10  +22..25 (time, date) = 00 00 21 08  size 9
+  SD2.BAS  dir index  11  +22..25 (time, date) = 00 00 21 08  size 9
+  SD3.TXT  dir index  12  +22..25 (time, date) = 00 00 21 08  size 4
+  FIX.TXT  dir index   6  +22..25 (time, date) = 00 00 21 08  size 7
+  FIXR.DAT dir index   7  +22..25 (time, date) = 00 00 21 08  size 64
+  CP.TXT   dir index  13  +22..25 (time, date) = 00 00 00 00  size 3
+  FIXI.TXT dir index   9  +22..25 (time, date) = 00 00 00 00  size 3
+OURS: screen has [DONE]
+  SD1.BAS  dir index  10  +22..25 (time, date) = 00 00 21 08  size 9
+  SD2.BAS  dir index  11  +22..25 (time, date) = 00 00 21 08  size 9
+  SD3.TXT  dir index  12  +22..25 (time, date) = 00 00 21 08  size 4
+  FIX.TXT  dir index   6  +22..25 (time, date) = 00 00 21 08  size 7
+  FIXR.DAT dir index   7  +22..25 (time, date) = 00 00 21 08  size 64
+  CP.TXT   dir index  13  +22..25 (time, date) = 00 00 21 08  size 3
+  FIXI.TXT dir index   9  +22..25 (time, date) = 00 00 00 00  size 3
+
+FAIL: disk BASIC directory stamps DIFFER on ['CP.TXT']
+refcache: 0 hit, 2 miss, 2 stored

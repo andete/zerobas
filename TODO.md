@@ -6045,7 +6045,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:28377 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:28456 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -27129,8 +27129,8 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       CF-3300. The old code read 147×, so that arm has a red to show.
       The WRITE side is D-WRBLKSEEK, below.
 
-- [ ] 🔴 **D-WRBLKSEEK — A 32 KB FILE WRITTEN IN 256 B WRBLKs TAKES 59× THE CF-3300, AND WRBLK/FMAKE
-      LEAVE THE FCB FIELDS STOCK KEEPS AT 0 (filed 2026-10-01, D-RDBLKSEEK's other half; MEASURED)**
+- [x] ✅ **D-WRBLKSEEK — A 32 KB FILE WRITTEN IN 256 B WRBLKs TOOK 59× THE CF-3300, AND WRBLK/FMAKE
+      LEFT THE FCB FIELDS STOCK KEEPS AT 0 (filed 2026-10-01, D-RDBLKSEEK's other half; FIXED the same day)**
       🎚️ TIER 2 — reasonable time: step 10's PRINT# to a file is a run of 256 B
       WRBLKs onto a growing file.
       📏 **FAILING ROW** ([`wrblkseek_before.out`](scratchpad/wrblkseek_before.out)):
@@ -27177,13 +27177,92 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       - Every earlier phase unchanged (read 3.1×), and all 64 unit-test files
         pass (five drive WRBLK; checked BEFORE the gate this time).
       `wrblkalt-acceptance` now runs `--wseek` (`--end 600`).
-      ➡️ **(b) OPEN:** FMAKE's +20..21 (date `0821h`), +24 (`40h`), +25 (directory
-      index), the only bytes the gate still names. +25 would also let WRBLK's
-      directory update skip `fat_find` -- the per-call cost that keeps the write
-      near 9×. 🔴 **The date is a documented divergence** (our directory
-      entries stamp 0, disk/PROVENANCE.md): read that ruling BEFORE copying
-      `0821h`.
+      ✅ **(b) DONE.** 🏗️ **Joost 2026-10-01, "Stamp as 3300"**: the date was a
+      documented divergence ("no fabricated clock", PROVENANCE §BDOS WRITE).
+      Its premise fell: the CF-3300 has no clock either and stamps MSX-DOS's
+      default 0821h (1984-01-01), time 0. The paragraph is inverted, not
+      deleted.
+      - 📏 First measured on disk BASIC ([`savedate_run.out`](scratchpad/savedate_run.out)):
+        SAVE, SAVE ,A and OPEN FOR OUTPUT all stamp `00 00 21 08` on the
+        CF-3300; ours `00 00 00 00`. Same directory index (6/7/8), same size.
+        Predicted, hit. (The probe's first run forgot the CF-3300's SCREEN 0
+        reset -- a repeat of an earlier probe fault this session.)
+      - `fat_dir_create` (`basic/fat-prim-body.inc`, in BOTH disk.rom and
+        sub.rom) stamps +24..25 = 0821h.
+      - FMAKE fills FCB +20..21 = 0821h, +24 = 40h, +25 = the entry's index
+        (`fmake_fcb_fill`). FOPEN fills +25 (`fcb_dirloc`, register-only:
+        FWR_DIRSEC/DIROFF are an open-for-write file's and must survive).
+        WRBLK clears +24's 40h, as stock (40h after FMAKE, 00h after a write).
+      - disk.rom 88 B (6067 → 5979 free), sub p1 10 B (376 → 366); main untouched.
+      ✅ **AFTER, first cut** ([`fcbfill_gate1.out`](scratchpad/fcbfill_gate1.out)): all
+      five FCB dumps BYTE-IDENTICAL to the CF-3300's; write 8.7×, read 3.1×.
+      🔴 **THE FULL BATTERY THEN WENT RED: `bdos-acceptance`'s BDOSX8** (FMAKE +
+      ten WRSEQs) read +24 stock `00h`, ours `40h`. On stock a sequential write
+      clears +24's 40h too, not just WRBLK. Before (b), BDOSX8 agreed for the
+      WRONG REASON: our FMAKE filled nothing, so +24 was 0 anyway.
+      🔬 **Reading every EXCUSED byte** (a wrapper printing the gate's suppressed
+      diffs, [`fcbfill_bdos_excused.out`](scratchpad/fcbfill_bdos_excused.out))
+      showed BDOSX/BDOSX3/BDOSX6's allowlisted FCB date reading stock `21 08`,
+      ours `00 00`, after a WRBLK/WRRND on a file DATED 0. So on the CF-3300 a
+      WRITE dates the file, as well as a create.
+      📏 **MEASURED IN BASIC TOO** ([`savedate_modify.out`](scratchpad/savedate_modify.out)),
+      on fixtures dated 0: APPEND and a random PUT re-date to 0821h; a file only
+      OPENed FOR INPUT stays 0 (the negative arm). And ❌ **MISS, scored: COPY
+      does NOT date the destination.** It carries the SOURCE's time/date (a
+      source dated 0 copies as 0); I had guessed 0821h.
+      🛠 **THE REST OF (b):**
+      - `dir_stamp_date` (shared body, both ROMs) dates an entry when
+        `fat_dir_create`, `fat_dir_update` or `wrrnd_extend` writes it.
+      - `fcb_mark_written` (FCB +20..23 date/time, +24's 40h cleared) runs on
+        WRBLK, WRSEQ and WRRND.
+      - D-COPYDATE: COPY keeps the source's +22..25 (in `COPY_STAMP`, 4 B
+        borrowed from WRBLK_REC/WRBLK_RECSEC, which COPY never shares) and
+        writes them over the destination's stamp at the end.
+      ✅ **AFTER** ([`savedate_after.out`](scratchpad/savedate_after.out),
+      [`fcbfill_bdos_strict.out`](scratchpad/fcbfill_bdos_strict.out)): all seven
+      disk BASIC files match the CF-3300 (create, modify, COPY, read). BDOSX
+      converges 12/12 with **17 FCB date/+24/+25 allowlist entries REMOVED**.
+      They fired nowhere, and kept they could only hide a regression; what's
+      left excused is contract-undefined registers only. Predicted, hit.
+      Size (b) in total: disk.rom 178 B (6067 → 5889 free), sub p1 23 B
+      (376 → 353); main untouched.
+      Left: D-DOSDATE, D-CLOSESTAMP and D-BLKIOPERCALL, below.
+
+- [ ] 🔴 **D-DOSDATE — DOES A DOS `DATE` MOVE THE CF-3300'S FILE STAMP? (filed 2026-10-01 with
+      D-WRBLKSEEK (b))**
+      🎚️ TIER 1 — happy path on the DOS sub-track: set the date, write a file.
+      Our `_GDATE` returns the constant 1984-01-01 and our stamp is the
+      constant 0821h. If the CF-3300's DATE command changes what it stamps, our
+      SDATE has to store a date and both have to read it.
+      📏 **MEASURE FIRST:** DATE in AUTOEXEC.BAT, then FMAKE, on both machines;
+      read the directory entry and FCB +20..21.
       🤖 **AUTONOMOUS** — the reference settles it.
+
+- [ ] 🔴 **D-CLOSESTAMP — DOES THE CF-3300'S FCLOSE DATE A FILE THAT WAS ONLY WRRND-WRITTEN
+      INSIDE ITS SIZE? (filed 2026-10-01 with D-WRBLKSEEK (b))**
+      🎚️ TIER 1 — happy path on the DOS sub-track: open, overwrite a record, close.
+      🔬 From the code: ours dates the directory entry only where it rewrites it
+      (create, `fat_dir_update`, `wrrnd_extend`). A WRRND that does not grow
+      the file never rewrites the entry, so FCLOSE leaves its old date. On the
+      CF-3300, +24's 40h -- cleared by a write -- reads like a "modified" flag
+      that FCLOSE might act on.
+      📏 **MEASURE FIRST:** FOPEN a file dated 0, WRRND inside its size, FCLOSE,
+      on both machines; read the directory entry.
+      🤖 **AUTONOMOUS** — the reference settles it.
+
+- [ ] 🔴 **D-BLKIOPERCALL — EVERY BLOCK I/O CALL STILL RE-MOUNTS AND RE-FINDS, AND EVERY WRBLK
+      REWRITES THE DIRECTORY: 3.1× (read) AND 8.7× (write) THE CF-3300 ON 32 KB
+      (filed 2026-10-01 with D-WRBLKSEEK)**
+      🎚️ TIER 5 — on-par speed: inside T2's 10×, so this is the ratio, not the rung.
+      🔬 From the code: `wrblk_body` runs `fat_mount` + `fat_find` +
+      `fat_dir_update` every call, each a trip to track 0 and back. RDBLK only
+      mounts when the geometry was never read. FCB +25 (filled since
+      D-WRBLKSEEK (b)) gives the directory entry's location without a find.
+      ⚠️ `fat_mount` also resets the allocation hint per operation (M30): a
+      WRBLK that skips it must reset FAT_ALLOCHINT itself.
+      📏 The row exists: `wrblkalt-acceptance`'s `--wseek`/`--seek` ratios.
+      🤖 **AUTONOMOUS** — the reference settles it.
+
 
 - [x] ✅ **D-RDRNDMULTI — BDOS `$21`/`$22` RDRND/WRRND POSITIONED IN THE LAST-FOUND FILE, NOT THE
       FCB'S (found 2026-10-01 by reading D-RDBLKMULTI's sibling; FIXED the same day)**

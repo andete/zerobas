@@ -13,7 +13,7 @@
 ;   out: A = $00 created / $FF error (disk full / write protect / I/O)
 ; Mounts the volume, then finds or makes a root-directory slot for the name and
 ; writes a fresh dir entry (name, attribute $00, first cluster = 0, size = 0,
-; timestamps = 0 — see the date/time divergence in disk/PROVENANCE.md). No data
+; date 0821h, time 0 -- as the CF-3300, Joost 2026-10-01). No data
 ; cluster is allocated yet: the first cluster is allocated lazily on the first
 ; Sequential Write, so a zero-byte file occupies no clusters (matching MSX-DOS).
 bdos_create:
@@ -393,6 +393,7 @@ fopen_fill_body:
                 ex      de, hl              ; HL -> name (fat_find's contract)
                 call    fat_find            ; Cy=0 found; HL preserved = &matched dirent
                 jp      c, ffb_miss
+                call    fcb_dirloc          ; +25 := the entry's index (D-WRBLKSEEK (b))
                 ; date/time (§0.1 addendum, confirmed against the FAT12 dir-entry
                 ; layout on our own test disk): FCB+20/21 := dirent+24/25 (date),
                 ; FCB+22/23 := dirent+22/23 (time) — a word-swap vs. the dirent's
@@ -452,11 +453,9 @@ ffb_rcok:
                 ld      hl, FAT_FILESIZE
                 ld      bc, 4
                 ldir
-                ; +24 devid: oracle-observed constant (§3 RC-1). +25 dirloc is
-                ; left at the kernel's pre-zero — a per-file directory-slot index
-                ; we don't compute; confirmed cosmetic-only (the prior M21a run
-                ; loaded and executed BDOSX.COM correctly with this field
-                ; mismatched — see tier2-review-queue.md).
+                ; +24 devid: oracle-observed constant (§3 RC-1). +25 dirloc was left
+                ; at the kernel's pre-zero ("cosmetic-only") until D-WRBLKSEEK (b):
+                ; fcb_dirloc above now fills it, as the CF-3300 does.
                 ld      (ix+24), $40
                 ; +26/27 top cluster, +28/29 last cluster (fresh open: both = first)
                 ld      hl, (FAT_FIRSTCLUS)

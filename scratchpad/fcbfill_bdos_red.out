@@ -1,0 +1,50 @@
+python3 probes/disk/disk_bdos_acceptance.py 
+
+===== BDOSX (build_bdosx_disk.py) =====
+  PASS  BDOSX capture 0x0300:0x180: 0-byte-diff (all 2 allowlisted — FCB+20 date-lo — we intentionally do NOT stamp file dates (fat.asm; PROVENANCE date/time); FCB+21 date-hi — ditto (no date stamp))
+  PASS  BDOSX capture 0x0400:0x180: 0-byte-diff (anchor t=17.8 ≥ keys-at); live-reg delta [AF] (benign epilogue)
+
+===== BDOSX2 (build_bdosx2_disk.py) =====
+  PASS  BDOSX2 capture 0x0340:0x70: 0-byte-diff (anchor t=32.2 ≥ keys-at); live-reg delta [AF] (benign epilogue)
+
+===== BDOSX3 (build_bdosx3_disk.py) =====
+  PASS  BDOSX3 capture 0x03b0:0x125: 0-byte-diff (all 6 allowlisted — FCB+20 date-lo — we intentionally do NOT stamp file dates (fat.asm; PROVENANCE date/time); FCB+21 date-hi — ditto (no date stamp); FCB+24 devid — accepted-cosmetic (M22a dirloc class); regs rec14 FREN($17) L — register UNDEFINED on return (contract pins A only); regs rec16 FOPEN-miss($0F) H — register UNDEFINED on the miss path (A=FF is pinned); regs rec16 FOPEN-miss($0F) L — ditto (undefined on miss))
+  PASS  BDOSX3 capture 0x04d5:0x380: 0-byte-diff (anchor t=29.6 ≥ keys-at); live-reg delta [AF] (benign epilogue)
+
+===== BDOSX0 (build_bdosx0_disk.py) =====
+  PASS  BDOSX0 callseq: ALIGNED, no divergence
+  SKIP  BDOSX0 screen (screen; not gated — use --with-screen)
+
+===== BDOSX4 (build_bdosx4_disk.py) =====
+  PASS  BDOSX4 capture 0x01c5:0x80: 0-byte-diff (anchor t=18.0 ≥ keys-at); live-reg delta [AF] (benign epilogue)
+
+===== BDOSX5 (build_bdosx5_disk.py) =====
+  PASS  BDOSX5 capture 0x019a:0x65: 0-byte-diff (all 1 allowlisted — regs rec2 FOPEN-miss($0F) L — register UNDEFINED on the miss path (A=FF is pinned))
+
+===== BDOSX6 (build_bdosx6_disk.py) =====
+  PASS  BDOSX6 capture 0x0207:0x69: 0-byte-diff (all 3 allowlisted — FCB+20 date-lo — we intentionally do NOT stamp file dates (fat.asm; PROVENANCE date/time); FCB+21 date-hi — ditto (no date stamp); regs rec1 RDRND($21) L — ancillary register (stock mirrors L:=A on EOF; contract pins A=01))
+  PASS  BDOSX6 capture 0x0270:0x80: 0-byte-diff (anchor t=17.6 ≥ keys-at); live-reg delta [IY] (benign epilogue)
+
+===== BDOSX7 (build_bdosx7_disk.py) =====
+  PASS  BDOSX7 capture 0x01b8:0x65: 0-byte-diff (all 2 allowlisted — regs rec0 FREN($17) H — register UNDEFINED on return (contract pins A only); regs rec0 FREN($17) L — ditto (undefined; A=FF is pinned))
+
+===== BDOSX8 (build_bdosx8_disk.py) =====
+  FAIL  BDOSX8 capture 0x01ab:0xca: BYTE DIFF (2 UNEXCUSED: 01C3, 0268; regs: AF)
+    --- probe tail ---
+>>AF    0042   0044
+  BC    0000   0000
+  DE    01CB   01CB
+  HL    0000   0000
+  IX    0238   0238
+  IY    DA40   DA40
+
+  memory 0x01ab+202: 2 of 202 bytes differ
+    01C3: stock=00 ours=40
+    0268: stock=00 ours=40
+
+  register diffs: AF
+
+===== BDOSX acceptance: 11/12 gated differentials converged (1 screen skipped) =====
+DIVERGENCE — the BDOS surface no longer matches stock:
+  - BDOSX8 capture 0x01ab:0xca: BYTE DIFF (2 UNEXCUSED: 01C3, 0268; regs: AF)
+make[1]: *** [bdos-acceptance] Error 1

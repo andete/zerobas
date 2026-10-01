@@ -2231,6 +2231,12 @@ cas-ascii-acceptance: repack-machine
 eofcas-acceptance: repack-machine
 	python3 probes/basic/basic_probe_eofcas.py
 
+# --- savedate-acceptance: disk BASIC stamps the directory as the CF-3300 (D-WRBLKSEEK (b))
+# Joost 2026-10-01 "Stamp as 3300": SAVE, SAVE ,A and OPEN FOR OUTPUT each stamp
+# date 0821h (1984-01-01), time 0, at the same directory index as the CF-3300.
+savedate-acceptance: repack-machine $(DISK_TEST_DSK)
+	ZEROBAS_BASIC_MACHINE=$(REPACK_MACHINE) python3 probes/disk/disk_probe_savedate.py
+
 # --- wrblkalt-acceptance: two FCBs, RS = 1, alternating WRBLK (D-WRBLKRS) ------
 # The BDOSX RAM gate is BLIND to disk writes; this reads the persisted artifact.
 # Our WRBLK positioned as if every record were 128 B, so RS = 1 -- MSX-DOS1's

@@ -128,18 +128,14 @@ def _flag_val(argv: list[str], flag: str, default, cast):
 # exerciser is re-assembled to a different layout, the moved bytes show up as UNEXCUSED
 # (the gate stays honest). Root-caused 2026-07-04 (Fable write-path investigation).
 ALLOWLIST = {
-    "BDOSX": {
-        # Same documented classes BDOSX3 already excuses (FCB base $0300 here):
-        0x0314: "FCB+20 date-lo — we intentionally do NOT stamp file dates (fat.asm; PROVENANCE date/time)",
-        0x0315: "FCB+21 date-hi — ditto (no date stamp)",
-        0x0318: "FCB+24 devid — accepted-cosmetic (M22a dirloc class)",
-        0x0319: "FCB+25 dirloc — accepted-cosmetic (M22a dirloc class)",
-    },
+    # 🟢 D-WRBLKSEEK (b), 2026-10-01: the FCB date (+20/21), +24 and dirloc (+25)
+    # entries every exerciser carried are GONE -- not excused, MATCHED. Joost ruled
+    # "Stamp as 3300": FMAKE/FOPEN fill +20..25 and a write dates the FCB and clears
+    # +24's 40h, as the CF-3300 does. They fired nowhere once that landed
+    # (scratchpad/fcbfill_bdos_excused2.out), so keeping them would only have hidden
+    # a regression at those bytes.
+    "BDOSX": {},
     "BDOSX3": {
-        0x03C4: "FCB+20 date-lo — we intentionally do NOT stamp file dates (fat.asm; PROVENANCE date/time)",
-        0x03C5: "FCB+21 date-hi — ditto (no date stamp)",
-        0x03C8: "FCB+24 devid — accepted-cosmetic (M22a dirloc class)",
-        0x03C9: "FCB+25 dirloc — accepted-cosmetic (M22a dirloc class)",
         0x044C: "regs rec14 FREN($17) L — register UNDEFINED on return (contract pins A only)",
         0x045B: "regs rec16 FOPEN-miss($0F) H — register UNDEFINED on the miss path (A=FF is pinned)",
         0x045C: "regs rec16 FOPEN-miss($0F) L — ditto (undefined on miss)",
@@ -155,15 +151,11 @@ ALLOWLIST = {
         # Tier-C case 4 (WRRND past-EOF, M36). The size extension (in-memory FCB AND
         # the on-disk dirent, proven by the re-FOPEN size) is byte-identical to stock;
         # residuals are all documented/ancillary classes:
-        0x021B: "FCB+20 date-lo — we intentionally do NOT stamp file dates (fat.asm; PROVENANCE date/time)",
-        0x021C: "FCB+21 date-hi — ditto (no date stamp)",
-        0x0220: "FCB+25 dirloc — accepted-cosmetic (M22a dirloc class)",
         0x023B: "regs rec1 RDRND($21) L — ancillary register (stock mirrors L:=A on EOF; contract pins A=01)",
     },
     "BDOSX7": {
         # Tier-C case 5 (FREN rename-collision, M35). The collision is now refused
         # byte-identically (record 0 A=FF; source survives; dest intact); residuals:
-        0x01D1: "FCB+25 dirloc — accepted-cosmetic (M22a dirloc class)",
         0x01E3: "regs rec0 FREN($17) H — register UNDEFINED on return (contract pins A only)",
         0x01E4: "regs rec0 FREN($17) L — ditto (undefined; A=FF is pinned)",
     },
@@ -172,14 +164,9 @@ ALLOWLIST = {
         # EX / +32 CR), running size (+16..19), first cluster (+26/27), current
         # cluster (+28/29) and rec-in-cluster (+30) are now byte-identical to stock
         # in BOTH the live post-FCLOSE FCB (base $01AB) AND the frozen post-WRSEQ
-        # snapshot (fcbsnap $0250). The only residuals are the same documented
-        # date/dirloc classes every BDOSX exerciser carries:
-        0x01BF: "FCB+20 date-lo — we intentionally do NOT stamp file dates (fat.asm; PROVENANCE date/time)",
-        0x01C0: "FCB+21 date-hi — ditto (no date stamp)",
-        0x01C4: "FCB+25 dirloc — accepted-cosmetic (M22a dirloc class)",
-        0x0264: "fcbsnap+20 date-lo — ditto (frozen post-WRSEQ copy of the FCB)",
-        0x0265: "fcbsnap+21 date-hi — ditto",
-        0x0269: "fcbsnap+25 dirloc — ditto (frozen post-WRSEQ copy)",
+        # snapshot (fcbsnap $0250). Since D-WRBLKSEEK (b) the date/dirloc residuals
+        # match too, so nothing is excused here. (This exerciser is the one that
+        # caught WRSEQ not clearing +24's 40h.)
     },
 }
 

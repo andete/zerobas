@@ -671,15 +671,22 @@ structural image diff.
 | The file OUR ROM writes is Opened + Sequentially Read **byte-identical by genuine MSX-DOS 1** (correct data + EOF) | — | **CROSS-MACHINE PASS** (`disk_probe_fwrite.py` PART 2): proves our FAT chain + directory entry are valid to real MSX-DOS, not just to our own reader | oracle-confirmed |
 | Same name+content file written by OUR ROM vs by MSX-DOS → identical DATA + identical dir entry **excluding date/time (+22..25) and the free-list-dependent first cluster (+26..27)** | — | **STRUCTURAL PASS** (`disk_probe_fwrite.py` PART 3): each image's data recovered by walking its OWN FAT chain (proving both chains valid); the dir entry matches MSX-DOS apart from the documented timestamp divergence and the cluster pointer (the MSX-DOS image also carries WRITER.COM/AUTOEXEC, so its free list differs) | oracle-confirmed |
 
-> **Date/time stamp — intentional divergence (no fabricated clock).** MSX-DOS
-> stamps the directory entry's last-modified date/time (+22..25) from the system
-> clock. zerobas has **no RTC / clock source**, so Create/Close write these four
-> bytes as **$0000**. This is a deliberate divergence in the SAME spirit as the
-> read-side FCB-bookkeeping divergence: the file's NAME, SIZE, FIRST-CLUSTER, FAT
-> CHAIN, and DATA all match genuine MSX-DOS byte-for-byte (proven by
-> `disk_probe_fwrite.py`); only the timestamp differs. We do **not** invent a
-> clock. The structural differential explicitly masks +22..25 and reports the
-> observed MSX-DOS value (e.g. `$00002108`) alongside our `$00000000`.
+> **Date/time stamp — SUPERSEDED 2026-10-01: stamped as the CF-3300 (Joost,
+> "Stamp as 3300").** This paragraph said zerobas has no RTC, so Create/Close
+> wrote +22..25 as **$0000** rather than invent a clock. **The premise fell:**
+> the CF-3300 has no RTC either. It stamps time 0 and date **0821h**
+> (1984-01-01), MSX-DOS's default date, held in RAM. That is a known constant,
+> not a clock reading; the `$00002108` this differential reported for MSX-DOS
+> was exactly it. Since then a file is dated 0821h, time 0, when it is
+> CREATED (SAVE, SAVE ,A, OPEN FOR OUTPUT, DOS FMAKE) and when it is WRITTEN
+> (APPEND, a random PUT, DOS WRBLK/WRSEQ/WRRND), in the directory entry and
+> in the FCB (+20..23), all measured on the CF-3300
+> (`disk_probe_savedate.py`, gate `savedate-acceptance`; `bdos-acceptance`;
+> `disk_probe_wrblk_alt.py --wseek`). Two measured exceptions: a file only READ
+> keeps its date, and **COPY carries the SOURCE's date** to the destination.
+> Our `_GDATE` already returned the same default. Whether a DOS `DATE` command
+> moves the stamp, and whether FCLOSE dates a file WRRND-written inside its
+> size, are NOT measured yet (TODO D-DOSDATE, D-CLOSESTAMP).
 
 > **Implementation note.** Realised in `disk/disk.asm` as `bdos_create` /
 > `bdos_seqwrite` / the write branch of `bdos_close`, on top of a FAT12
@@ -711,7 +718,7 @@ write goes through the already differential-confirmed `dskio` write path.
 | Directory-entry create: find a free root-dir slot ($00 end-marker or $E5 deleted) or the existing same-named entry; write name (+0..10), attribute (+11), zero +12..31 | — | Microsoft FAT spec §3.4 (dir entry layout, $00/$E5 slot markers) | sourced |
 | Directory-entry first-cluster field | +26..27 (word LE) | Microsoft FAT spec §3.4 | sourced |
 | Directory-entry file-size field | +28..31 (dword LE) | Microsoft FAT spec §3.4 | sourced |
-| Directory-entry date/time fields | +22..25 = $0000 (intentional divergence, no clock — see §BDOS WRITE) | own design (documented divergence) | sourced |
+| Directory-entry date/time fields | +22..23 time = 0, +24..25 date = 0821h (1984-01-01, the CF-3300's stamp; was $0000 until 2026-10-01 — see §BDOS WRITE) | oracle-measured (`disk_probe_savedate.py`), Joost's ruling 2026-10-01 | sourced |
 | Data write: buffer record bytes into `SECTOR_BUF`, write full 512-byte sectors at `firstData + (cluster−2)×secPerClus + sectorInCluster`, zero-pad the partial final sector | — | Microsoft FAT spec §3.3 (data-sector math); own buffering | sourced |
 | Truncate-if-exists: Create reusing an existing same-named dir slot orphans the old chain (does not free it) | — | own design simplification (loader-create subset); acceptable because the read/round-trip and cross-machine probes confirm the new chain + size are correct | quarantined |
 | Whole FAT12 write-back differential-confirmed vs MSX-DOS 1 | — | **oracle PASS** (`disk_probe_fwrite.py`): functional read-back, cross-machine MSX-DOS read, structural image diff — see §BDOS WRITE | oracle-confirmed |
@@ -938,3 +945,5 @@ field-for-field confirmed against the CF-3300 (§DPB). The two remaining
 `quarantined` write-side items are the
 truncate-orphan simplification (re-Create leaks the old chain) and the
 date/time-stamp divergence (no clock) — both documented and oracle-bounded.
+(2026-10-01: the date/time divergence is CLOSED, stamped as the CF-3300 — see
+§BDOS WRITE.)
