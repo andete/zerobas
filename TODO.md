@@ -500,6 +500,11 @@ item — do **one item per session** to keep context lean.
       🤖 **AUTONOMOUS** — ruled above; price it from a clean tree, carve first.
       ⚠️ **THE TIER TAG IS STALE (2026-10-01):** `LOAD` is T2✓ on the sheet; what is
       left here, step 10, is the ownership move, not LOAD's speed.
+      ✅ **S10.0 ANSWERED 2026-10-01 (spec §6.6bc):** the CF-3300's channel is a
+      record-size-1 MSX-DOS FCB moved by 256 B BLOCK I/O. The FCB changes only at
+      record boundaries; header +6 is the byte position. The design that puts the
+      buffer in the BASIC FCB's record, and needs no live sector between
+      statements, holds. ➡️ Next: S10.1, PRINT# through `$FE85`.
       🔬 **STEP 10's INTERFACE MEASURED 2026-10-01 (D-CHANHOOK, spec §6.6bb):**
       - The CF-3300's channel verbs cross at EIGHT claimed cells: OPEN/CLOSE,
         each statement (`$FE4E`), each BYTE out (`$FE85`) and in (`$FE8A`), and
@@ -6031,7 +6036,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:28103 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:28125 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -6197,7 +6202,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:11031 (T-6FE392)8 (T-529ABE)` from `TODO.md:23605 (T-529ABE)`: a
+      `TODO.md:11036 (T-6FE392)8 (T-529ABE)` from `TODO.md:23610 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -11878,7 +11883,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:23605 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:23610 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -26920,7 +26925,16 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       🤖 **AUTONOMOUS** — a static check that walks each battery target's probe sources and refuses a
       host-wide kill, with a selftest on a planted line.
 
-- [ ] 🧰 **D-CFWSTALL — THE CF-3300 GOES SILENT AT A MID-PROGRAM RECORD WRITE IN OUR HARNESS**
+- [x] 🧰 **D-CFWSTALL — THE CF-3300 GOES SILENT AT A MID-PROGRAM RECORD WRITE IN OUR HARNESS**
+      ❌ **WITHDRAWN 2026-10-01 — THERE WAS NO STALL; THE CAPTURE WAS EARLY.**
+      `run_cases` fires the capture `step` seconds after RUN (4 s here), and
+      `cap_gap`, which I raised twice, never moves it. `run_gap` does, and with
+      `run_gap=120` both directions read every stage
+      ([`fcbblock_run.out`](scratchpad/fcbblock_run.out),
+      [`fcbblock_read.out`](scratchpad/fcbblock_read.out)). It is omsx_repl's own
+      documented trap (D-TWOFILE). The bisection below found that FOR loops
+      "caused" it only because they made the program slower than the window.
+      *(the investigation as it went, kept:)*
       🎚️ TIER 6 — apparatus. It blocks step 10's S10.0 measurement (spec §6.6bc).
       📏 2026-10-01 ([`fcbblock_run.out`](scratchpad/fcbblock_run.out)): after
       `OPEN…FOR OUTPUT` the program prints stages at 0, 1 and 255 bytes. At the
@@ -26928,9 +26942,17 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       40 s and at a 150 s capture, with no error. D-EOFMODE's first fixture
       (OPEN/PRINT#/CLOSE, then re-OPEN) stalled the same way the same night.
       Writes of under 256 B with a CLOSE work (inpstr_probe, dupopen_probe).
-      🤖 **AUTONOMOUS** — first separate: disk activity still running (openMSX
-      drive LED, a Tcl `after` on emulated time) versus a hang (the PC stuck in
-      one ROM page); then try the zerobas-owned test image vs a fresh FAT12 one.
+      📏 **NARROWED, same night:**
+      - **Not the image.** inpstr_probe writes on the same `test720.dsk` and
+        works.
+      - **Not writes only.** The `--read` variant goes silent at byte 257, the
+        next record ([`fcbblock_read.out`](scratchpad/fcbblock_read.out)).
+      - **Not "a record cannot be crossed".** D-CHANHOOK's `readL` read 4000 B
+        across records and completed.
+      - What differs is this program's PEEK/HEX$ loop between transfers, or the
+        capture timing.
+      🤖 **AUTONOMOUS** — next: the same reads with the dump loop removed (only
+      +6 printed); then the loop alone without the PEEK of the work area.
 
 - [ ] 🔴 **A kwtime ROW THAT REGRESSES FROM OK TO SLOW OR HANG FAILS NO GATE
       (D-KWTRATCHET, found 2026-09-28 while fixing D-DSKFSLOW).**

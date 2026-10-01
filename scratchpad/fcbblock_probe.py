@@ -15,6 +15,11 @@ Clean room: this PEEKs WORK-AREA RAM that holds DATA (the block holds the typed
 file name, D-DUPOPEN), which is readable. It reads no ROM byte and no
 RAM-resident code, and follows nothing.
 
+🔴 D-CFWSTALL WAS THIS PROBE: its first cut built the 37 bytes into a growing
+S$, and with that string churn the CF-3300 went silent at the next record
+transfer (write AND read). The same reads with no string building cross every
+boundary. Each byte is printed directly now.
+
 Stages, cumulative bytes written with `PRINT#1,...;` (no CR/LF): 0, 1, 255,
 256, 257, 512, 513. Each prints header +6 and the 37 bytes, as hex.
 """
@@ -26,23 +31,42 @@ import omsx_repl  # noqa: E402
 
 PROG = [
     "NEW",
-    "10 CLEAR 400:OPEN\"S0.TXT\"FOR OUTPUT AS#1:V=VARPTR(#1):P=PEEK(V+1)+256*PEEK(V+2)",
+    "10 CLEAR 2000:OPEN\"S0.TXT\"FOR OUTPUT AS#1:V=VARPTR(#1):P=PEEK(V+1)+256*PEEK(V+2)",
     "20 GOSUB 100:PRINT#1,\"A\";:GOSUB 100:PRINT#1,STRING$(254,66);:GOSUB 100",
     "30 PRINT#1,\"C\";:GOSUB 100:PRINT#1,\"D\";:GOSUB 100",
     "40 PRINT#1,STRING$(255,69);:GOSUB 100:PRINT#1,\"F\";:GOSUB 100:CLOSE:END",
-    "100 S$=\"\":FOR I=0 TO 36:S$=S$+RIGHT$(\"0\"+HEX$(PEEK(P+I)),2):NEXT",
-    "110 PRINT\"[\";PEEK(V+6);S$;\"]\";:RETURN",
+    "100 PRINT\"[\";PEEK(V+6);:FOR I=0 TO 36:PRINT RIGHT$(\"0\"+HEX$(PEEK(P+I)),2);:NEXT:PRINT\"]\";:RETURN",
     "SCREEN 0:WIDTH 40:CLS:RUN",
 ]
 STAGES = [0, 1, 255, 256, 257, 512, 513]
 
+# --read: the same stages READING a 600 B file (D-CFWSTALL blocks the write side:
+# the CF-3300 goes silent at the first record write). A read crosses the same
+# record boundaries, so block I/O shows the same signature either way.
+RPROG = [
+    "NEW",
+    "10 CLEAR 2000:OPEN\"R6.TXT\"FOR INPUT AS#1:V=VARPTR(#1):P=PEEK(V+1)+256*PEEK(V+2)",
+    "20 GOSUB 100:A$=INPUT$(1,#1):GOSUB 100:A$=INPUT$(254,#1):GOSUB 100",
+    "30 A$=INPUT$(1,#1):GOSUB 100:A$=INPUT$(1,#1):GOSUB 100",
+    "40 A$=INPUT$(255,#1):GOSUB 100:A$=INPUT$(1,#1):GOSUB 100:CLOSE:END",
+    "100 PRINT\"[\";PEEK(V+6);:FOR I=0 TO 36:PRINT RIGHT$(\"0\"+HEX$(PEEK(P+I)),2);:NEXT:PRINT\"]\";:RETURN",
+    "SCREEN 0:WIDTH 40:CLS:RUN",
+]
+
 
 def main():
     tmp = tempfile.mkstemp(suffix=".dsk")[1]
-    shutil.copyfile(os.path.join(REPO, "disk", "test720.dsk"), tmp)
-    raw = omsx_repl.run_cases("National_CF-3300", [("direct", PROG)], batch=False,
+    prog = PROG
+    if "--read" in sys.argv:
+        sys.path.insert(0, os.path.join(REPO, "scratchpad"))
+        import loadrun_probe as LR
+        LR.write_files(tmp, {"R6      TXT": bytes((65 + i % 26) for i in range(600))})
+        prog = RPROG
+    else:
+        shutil.copyfile(os.path.join(REPO, "disk", "test720.dsk"), tmp)
+    raw = omsx_repl.run_cases("National_CF-3300", [("direct", prog)], batch=False,
                               reset=("", "SCREEN 0"), boot=14.0, step=4.0,
-                              cap_gap=150.0, diska=tmp, capture="screen")[0] or ""
+                              cap_gap=10.0, run_gap=120.0, diska=tmp, capture="screen")[0] or ""
     got = re.findall(r"\[\s*(\d+)\s*([0-9A-F]{74})\s*\]", raw)
     if len(got) != len(STAGES):
         print(f"INSTRUMENT FAULT: {len(got)} of {len(STAGES)} stages read")

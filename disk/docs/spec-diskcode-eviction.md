@@ -4150,6 +4150,27 @@ cross; they stay main's, as on the reference, whose main ROM owns
 `CRT:`/`LPT:`/`CAS:`. That is why the byte hooks, not main's verbs, are the
 seam.
 
+✅ **S10.0 ANSWERED (2026-10-01) — BLOCK I/O, AS INFERRED. THE DESIGN HOLDS.**
+With a real RUN→capture budget (`run_gap`), both directions read cleanly
+([`fcbblock_run.out`](../../scratchpad/fcbblock_run.out),
+[`fcbblock_read.out`](../../scratchpad/fcbblock_read.out)).
+- **Write:** header +6 cycles 0..255 per byte. The 37 B FCB changes ONLY when a
+  record FILLS (at 256 and at 512): the file size (+16..+19) goes 256 → 512,
+  the random record (+33..+36) advances by 256, and the cluster fields
+  (+24..+29) are set on the first flush.
+- **Read:** the FCB changes only when the NEXT record is fetched (at 257 and
+  513). The random record reads 512, then 600: the file's end, after a short
+  last block.
+- The record-size field (+14..+15) is 1, so the FCB counts BYTES, and one
+  transfer moves a 256 B record. That is MSX-DOS block I/O on a record-size-1
+  FCB. Nothing in the FCB moves per byte.
+🔴 **D-CFWSTALL WAS MINE, AND IT IS THE DOCUMENTED CLASS.** `run_cases` captures
+`step` seconds after RUN, and `cap_gap` never moves it. omsx_repl's docstring
+says *"a capture taken too early looks like a defect, not like a timeout"*
+(D-TWOFILE's five wrong diagnoses). I raised `cap_gap` twice and then
+bisected a "stall" through string space and FOR loops. The loops only made
+the program slower than the 4 s window.
+
 📏 **S10.0, FIRST READING (2026-10-01, [`scratchpad/fcbblock_probe.py`](../../scratchpad/fcbblock_probe.py)
 → [`fcbblock_run.out`](../../scratchpad/fcbblock_run.out)) — HALF ANSWERED.**
 - After OPEN and 0, 1 and 255 bytes of `PRINT#1,...;`, header **+6 reads 0, 1,
@@ -4164,6 +4185,17 @@ seam.
   with no error on screen. Tonight's D-EOFMODE first fixture stalled the same way
   on a write-then-reopen. That is a harness question (filed as D-CFWSTALL), and
   S10.1 must not be built until the boundary is read.
+- **The read side, same night (`--read`, [`fcbblock_read.out`](../../scratchpad/fcbblock_read.out)):**
+  +6 reads 0, 0, 254, 255 after 0, 1, 255, 256 bytes of `INPUT$`, so it lags
+  one byte on reads. The 37 B block is again unchanged through 256 bytes, and
+  the program again goes silent at the NEXT record (byte 257).
+  ⚠️ That run's first cut died of my own `Out of string space` (CLEAR 400), so
+  a silent screen was checked by dumping it.
+  🔴 **This contradicts a simple story.** D-CHANHOOK's `readL` read 4000 B
+  across records on the same machine and the same image builder, and
+  completed. So D-CFWSTALL is about THIS program or harness: the PEEK/HEX$
+  loop between transfers, or the capture timing. It is not "the CF-3300
+  cannot cross a record".
 
 ## 7. The channel trio, and the wall that is not one
 

@@ -55,9 +55,12 @@ CARRY its five rows (Joost 09-26); the last board-backed pin is `7c488429`'s.
   37 B MSX-DOS FCB in the disk work area (`disk.rom` already has a BDOS FCB
   layer), and its buffer is the BASIC FCB's 256 B record (D-FCBSHAPE made it).
 - If it holds: +195 B of disk RAM, s.case for free, ~800 B of main code out.
-- **S10.0 is HALF read:** the FCB is not touched per byte, but the CF-3300
-  goes silent at the first 256-byte record write. **D-CFWSTALL is therefore
-  the first thing to do** (TIER 6 apparatus, but it gates step 10).
+- **S10.0 is ANSWERED:** the channel is a record-size-1 MSX-DOS FCB moved by
+  256 B block I/O. It changes only at record boundaries, and header +6 is the
+  byte position. **Next: S10.1, PRINT# through `$FE85`.**
+- 🔴 D-CFWSTALL was MY capture timing: the capture fires `step` after RUN, and
+  `cap_gap` never moves it, `run_gap` does. omsx_repl documents it; I raised
+  `cap_gap` twice and bisected a phantom.
 - Main bytes are at 2 + 0; the n-gram TAIL list still has a few 4–6 B pairs.
 🔴 **LESSONS TONIGHT:**
 • **A GATE MUST NOT KILL WHAT IT DID NOT START.** A `pkill -9 openmsx` copied
