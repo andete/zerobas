@@ -14,8 +14,12 @@
 ; each. Clean-room: published BDOS FCB calls only (MSX2 TH / map.grauw.nl).
 
 BDOS    equ     $0005
+PHASE   equ     $C000                   ; page-3 TPA byte: 1 writing, 2 reading, 3 done
+                                        ; (a timing hook: a poller reads it, nothing else)
         org     $0100
 start:
+        ld      a, 1
+        ld      (PHASE), a
         ld      de, fcba
         ld      c, $16                  ; FMAKE
         call    BDOS
@@ -54,6 +58,8 @@ round:
         ; ALTERNATELY with RDBLK $27, 256 a call, appending every block to OUT.BIN
         ; with WRBLK. A read side that positions as if records were 128 B shows
         ; up as OUT.BIN's blocks out of order or wrong. Expected: 11h..18h.
+        ld      a, 2
+        ld      (PHASE), a
         ld      de, fcba
         ld      c, $0F                  ; FOPEN
         call    BDOS
@@ -86,6 +92,8 @@ rround:
         ld      de, fcbo
         ld      c, $10
         call    BDOS
+        ld      a, 3
+        ld      (PHASE), a
         ld      c, $00                  ; terminate
         call    BDOS
         ret

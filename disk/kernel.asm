@@ -1624,16 +1624,31 @@ k47b2_rs_ok:
                 ld      hl, (DOS_DTAPTR)
                 ld      (BDOS_DTA), hl
                 ld      (RDBLK_DST), hl
-                ; --- step 6: open + size -------------------------------------------
-                call    fat_open            ; re-prime the iterator (FAT_FIRSTCLUS already found)
+                ; --- step 6: find THIS FCB's file, then open + size ----------------
+                ; 🔴 D-RDBLKMULTI (2026-10-01): this was `call fat_open` alone, which
+                ; re-primes from FAT_FIRSTCLUS/FAT_FILESIZE -- whatever the LAST
+                ; fat_find left there (the last FOPEN, or any WRBLK, which re-finds
+                ; its own file). Two FCBs read alternately both read the last-found
+                ; file: probes/disk/disk_probe_wrblk_alt.py --read gave OUT.BIN eight
+                ; copies of 12h where the CF-3300 gives 11h..18h. Re-locate the file
+                ; by the FCB's own name every call, as wrblk_body does.
+                ld      hl, 0
+                ld      (RDBLK_DONE), hl    ; no records delivered yet (also the count
+                                            ; the not-found exit below writes back)
+                call    fat_mount
+                jp      c, k47b2_eof        ; unreadable disk -> EOF, nothing delivered
+                pop     hl
+                push    hl
+                inc     hl                  ; HL -> FCB+1, the 8.3 name (fat_find's contract)
+                call    fat_find            ; Cy=0 found -> FAT_FIRSTCLUS/FAT_FILESIZE set
+                jp      c, k47b2_eof        ; no such file -> EOF, nothing delivered
+                call    fat_open            ; prime the iterator at THIS file's start
                 ld      hl, (FAT_FILESIZE)
                 ld      (BDOS_BYTESLEFT), hl
                 ld      hl, (FAT_FILESIZE + 2)
                 ld      (BDOS_BYTESLEFT + 2), hl
                 ld      hl, 512
                 ld      (RDBLK_BUFPOS), hl  ; force a sector refill on the first byte
-                ld      hl, 0
-                ld      (RDBLK_DONE), hl    ; no records delivered yet
                 ; --- step 7: position to record RR ---------------------------------
                 ; Skip RR whole records by discarding RS bytes each via the shared
                 ; k47b2_nextbyte helper (below), bounded by EOF (no multiply, no

@@ -61,7 +61,8 @@ def build(dos: str, out: str, com: bytes) -> None:
     open(out, "wb").write(img)
 
 
-def run_once(machine: str, dsk: str, boot_s: int, end_s: int, timeout: float) -> None:
+def run_once(machine: str, dsk: str, boot_s: int, end_s: int, timeout: float,
+             phase_log: str | None = None) -> None:
     """Run WRBLK.COM exactly ONCE per machine.
 
     🔴 NOT RT.run, AND WHY: RT.run types `WRBLK` every 6 s on top of AUTOEXEC,
@@ -75,6 +76,16 @@ def run_once(machine: str, dsk: str, boot_s: int, end_s: int, timeout: float) ->
     import signal, subprocess as sp, time
     typed = "" if machine == RT.REF_MACHINE else f'after time {boot_s} {{ type "WRBLK\\r" }}\n'
     tcl = f"set throttle off\n{typed}after time {end_s} {{ exit }}\n"
+    if phase_log:
+        # --time: poll the exerciser's PHASE byte ($C000, page-3 TPA -- the
+        # program's own data, never ROM) every 50 ms of EMULATED time and log
+        # each change with the emulated clock.
+        tcl += (f"set ph_last -1\nset ph_f [open {{{phase_log}}} w]\n"
+                "proc ph_poll {} { global ph_last ph_f; "
+                "set v [debug read memory 0xC000]; "
+                "if {$v != $ph_last} { puts $ph_f \"$v [machine_info time]\"; "
+                "flush $ph_f; set ph_last $v }; after time 0.05 ph_poll }\n"
+                "after time 1 ph_poll\n")
     tcl_path = dsk + ".tcl"
     open(tcl_path, "w").write(tcl)
     cmd = [RT.OMSX, "-machine", machine, "-diska", dsk,
@@ -87,6 +98,20 @@ def run_once(machine: str, dsk: str, boot_s: int, end_s: int, timeout: float) ->
     if proc.poll() is None:
         os.killpg(os.getpgid(proc.pid), signal.SIGKILL)   # our own child only
         raise TimeoutError(f"TIMEOUT running {machine}")
+
+
+def phase_times(plog: str) -> str:
+    """The write and read phases' emulated durations from the PHASE log: the
+    LAST 1 -> 2 and 2 -> 3 transitions (the byte holds boot garbage before
+    the program first writes it)."""
+    ev = [(int(v), float(t)) for v, t in (ln.split() for ln in open(plog) if ln.strip())]
+    t = {}
+    for v, at in ev:
+        if v in (1, 2, 3):
+            t[v] = at
+    if not all(k in t for k in (1, 2, 3)) or not t[1] < t[2] < t[3]:
+        return f"INCOMPLETE {ev[-6:]}"
+    return f"write {t[2] - t[1]:.2f} s, read {t[3] - t[2]:.2f} s"
 
 
 def file_bytes(f: "RT.Fat12", name: str):
@@ -107,22 +132,31 @@ def main() -> int:
     ap.add_argument("--end", type=int, default=60)
     ap.add_argument("--timeout", type=float, default=120)
     # --read: also check OUT.BIN, the READ side (RDBLK $27, RS = 1, two FCBs
-    # alternately). D-RDBLKMULTI (2026-10-01): ours returns the LAST-OPENED file's
-    # first block for every call, so this half FAILS until that is fixed. The
-    # gate (`make wrblkalt-acceptance`) runs without it.
+    # alternately). D-RDBLKMULTI (fixed 2026-10-01): ours read whichever file was
+    # found LAST. The gate (`make wrblkalt-acceptance`) runs with it, and with
+    # --end 120: ours takes ~44 emulated s for both phases, past the default
+    # 60 s window once boot is counted (the scripted exit cut OUT.BIN's last
+    # block on the first run -- an unfinished program, not a wrong one).
     ap.add_argument("--read", action="store_true")
+    # --time: report each machine's EMULATED seconds for the write phase (FMAKE
+    # .. FCLOSE of ALT1/ALT2) and the read phase (FOPEN .. FCLOSE of OUT.BIN),
+    # from the exerciser's PHASE byte. A ratio, never a tick (T5's rule).
+    ap.add_argument("--time", action="store_true")
     a = ap.parse_args()
     com = assemble()
     ok = True
     for tag, machine in (("OURS ", RT.OUR_MACHINE), ("STOCK", RT.REF_MACHINE)):
         dsk = probe_tmp.tmp(f"wrblk_alt_{tag.strip().lower()}.dsk")
         build(a.dos_disk, dsk, com)
+        plog = probe_tmp.tmp(f"wrblk_alt_{tag.strip().lower()}.phase") if a.time else None
         try:
-            run_once(machine, dsk, a.boot, a.end, a.timeout)
+            run_once(machine, dsk, a.boot, a.end, a.timeout, plog)
         except TimeoutError as e:
             print(f"  {tag} {e}")
             ok = False
             continue
+        if plog:
+            print(f"  {tag} phases: {phase_times(plog)}")
         f = RT.Fat12(dsk)
         for name in (("ALT1", "ALT2", "OUT") if a.read else ("ALT1", "ALT2")):
             d, data = file_bytes(f, name)

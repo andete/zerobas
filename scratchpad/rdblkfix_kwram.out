@@ -1,0 +1,340 @@
+python3 tools/install-repack-machine.py --merged build/zerobas-main-eu.rom --disk-rom build/disk.rom \
+	  --sub-rom build/sub.rom
+wrote C-BIOS_MSX1_EU_REPACK_DISK  (-> machine "C-BIOS_MSX1_EU_REPACK_DISK": merged repack ROM in slot 0, zerobas-disk in slot 3-1, zerobas-sub in slot 3-2)
+     /Users/joost/.openMSX/share/machines/C-BIOS_MSX1_EU_REPACK_DISK.xml
+python3 tools/install-repack-machine.py --merged build/zerobas-main-eu.rom --sub-rom build/sub.rom \
+	  --no-disk
+wrote C-BIOS_MSX1_EU_REPACK_NODISK  (-> machine "C-BIOS_MSX1_EU_REPACK_NODISK": merged repack ROM in slot 0, slot 3-1 EMPTY (diskless target), zerobas-sub in slot 3-2)
+     /Users/joost/.openMSX/share/machines/C-BIOS_MSX1_EU_REPACK_NODISK.xml
+python3 probes/basic/basic_probe_kwram.py --selftest
+msxtest: BASIC image carries islands -- loaded at $0010, not $2812
+  ok   R1 identical sides pass (a) and (b)
+  ok   R2 NEGATIVE: an extra documented cell fails (b)
+  ok   R3 NEGATIVE: the same cell ending on another value fails (b)
+  ok   R4 NEGATIVE: a different FRE delta fails (a)
+  ok   R5 a wiped sentinel is UNRATED, never PASS
+  ok   R6 an unclosed window rates nothing
+  ok   R7 (c) is the cell ratio
+  ok   R8 the slot register is not a documented cell
+  ok   R9 reading parses and checks the sentinel
+  ok   R10 case_lines keeps the row's own numbering at 10, 20
+  ok   R11 NEGATIVE: a carrier clash is found
+  ok   R12 parse re-keys by tag and carries values
+kwram selftest: GREEN
+python3 probes/basic/basic_probe_kwram.py --negative --zb-machine C-BIOS_MSX1_EU_REPACK_DISK
+msxtest: BASIC image carries islands -- loaded at $0010, not $2812
+  abs        (b) FAIL  zb-only $F3B0
+  chr        (b) FAIL  zb-only $F3B0 $FCC8
+  int        (b) FAIL  zb-only $F3B0 $F7F8 $F7F9
+  len        (b) FAIL  zb-only $F3B0
+  let        (b) FAIL  zb-only $F3B0 $F7F8 $F7F9 $FCC8
+  peek       (b) FAIL  zb-only $F3B0
+kwram --negative: GREEN -- a planted cell is caught
+refcache: 0 hit, 0 miss, 1 stored
+python3 probes/basic/basic_probe_kwram.py --zb-machine C-BIOS_MSX1_EU_REPACK_DISK
+msxtest: BASIC image carries islands -- loaded at $0010, not $2812
+row              kw         (a)      (b)         (c)  detail
+abs              ABS        PASS     FAIL      0.21x  ref-only $F416 $F678 $F679 $F67A $F67B $F67C… | zb-only 
+int              INT        PASS     FAIL      1.56x  ref-only $F416 $F66C $F66D $F678 $F679 $F67A… | zb-only $F7F8 $F7F9 | value $F7C9
+len              LEN        PASS     FAIL      0.36x  ref-only $F416 $F678 $F679 $F67A $F67B $F67C… | zb-only 
+chr              CHR$       PASS     FAIL      1.11x  ref-only $F416 $F678 $F679 $F698 $F699 $F69A… | zb-only $FCC8 | value $F67B $F67C
+mid              MID$       PASS     FAIL      1.39x  ref-only $F416 $F678 $F679 $F698 $F699 $F69A… | zb-only $FCC8 | value $F67B $F67C
+mid_b            MID$       PASS     FAIL      1.25x  ref-only $F416 $F678 $F679 $F698 $F699 $F69A… | zb-only $FCC8 | value $F67A $F67B $F67C
+mid_c            MID$       PASS     FAIL      1.38x  ref-only $F416 $F662 $F678 $F679 $F698 $F699… | zb-only $FCC8 | value $F67A $F67B $F67C
+instr            INSTR      PASS     FAIL      0.90x  ref-only $F416 $F678 $F679 $F698 $F699 $F69A… | zb-only $FCC8 | value $F67A $F67B $F67C $F67E
+instr_b          INSTR      PASS     FAIL      0.90x  ref-only $F416 $F678 $F679 $F698 $F699 $F69A… | zb-only $FCC8 | value $F67A $F67B $F67C $F67E
+hex              HEX$       PASS     FAIL      1.00x  ref-only $F416 $F678 $F679 $F698 $F699 $F69A… | zb-only $FCC8 | value $F67A $F67B $F67C
+sqr              SQR        PASS     FAIL      1.74x  ref-only $F416 $F678 $F679 $F67A $F67B $F67C… | zb-only $F7D7 $F7F8 $F7F9 $FCC8 | value $F7C9 $F7CA $F7CB $F7CC
+peek             PEEK       PASS     FAIL      0.57x  ref-only $F416 $F664 $F678 $F679 $F67A $F67B… | zb-only 
+peek_b           PEEK       PASS     FAIL      0.23x  ref-only $F416 $F678 $F679 $F67A $F67B $F67C… | zb-only 
+varptr_b         VARPTR     PASS     FAIL      2.37x  ref-only $F416 $F662 $F664 $F678 $F679 $F67A… | zb-only $F7F8 $F7F9 $FCC8 | value $F7C9
+varptr_ch        VARPTR     UNRATED  FAIL      1.29x  ref-only $F416 $F662 $F664 $F672 $F673 $F674… | zb-only $F6C2 $F6C3 $F7F8 $F7F9 $FCC8 | value $F6C6 $F6C7 $F7CB
+erase_b          ERASE      PASS     FAIL      2.65x  ref-only $F416 $F662 $F678 $F679 $F67A $F67B… | zb-only $F7C9 $F7F8 $F7F9 $FCC8
+asc              ASC        PASS     FAIL      0.38x  ref-only $F416 $F678 $F679 $F67A $F67B $F67C… | zb-only 
+cint             CINT       PASS     FAIL      0.79x  ref-only $F416 $F66C $F66D $F678 $F679 $F67A… | zb-only $F7F8 $F7F9 | value $F7F7
+cdbl             CDBL       PASS     FAIL      2.58x  ref-only $F416 $F664 $F678 $F679 $F67A $F67B… | zb-only $F7D7 $F7F8 $F7F9
+csng             CSNG       PASS     FAIL      1.66x  ref-only $F416 $F66C $F66D $F678 $F679 $F67A… | zb-only $F7F8 $F7F9 | value $F7CB
+fix              FIX        PASS     FAIL      1.56x  ref-only $F416 $F66C $F66D $F678 $F679 $F67A… | zb-only $F7F8 $F7F9 | value $F7C9 $F7F6
+sgn              SGN        PASS     FAIL      0.21x  ref-only $F416 $F678 $F679 $F67A $F67B $F67C… | zb-only 
+sin_b            SIN        PASS     FAIL      1.69x  ref-only $F416 $F664 $F678 $F679 $F67A $F67B… | zb-only $F7D7 $F7D8 $F7D9 $F7DA $F7F8 $F7F9… | value $F7CB $F7CC $F7CD $F7CE
+cos              COS        PASS     FAIL      1.54x  ref-only $F416 $F678 $F679 $F67A $F67B $F67C… | zb-only $F7D7 $F7D8 $F7D9 $F7DA $F7F8 $F7F9… | value $F7C9 $F7CA $F7CB $F7CC
+tan_b            TAN        PASS     FAIL      1.87x  ref-only $F416 $F664 $F678 $F679 $F67A $F67B… | zb-only $F7D7 $F7D8 $F7D9 $F7DA $F7F8 $F7F9… | value $F7CC $F7CD $F7CE $F7CF
+atn              ATN        PASS     FAIL      1.87x  ref-only $F416 $F664 $F678 $F679 $F67A $F67B… | zb-only $F7D7 $F7D8 $F7D9 $F7DA $F7F8 $F7F9… | value $F7CB $F7CC $F7CD $F7CE
+exp              EXP        PASS     FAIL      1.63x  ref-only $F416 $F664 $F678 $F679 $F67A $F67B… | zb-only $F7D7 $F7D8 $F7D9 $F7DA $F7F8 $F7F9… | value $F7CC $F7CD $F7CE $F7CF
+log              LOG        PASS     FAIL      3.83x  ref-only $F416 $F678 $F679 $F67A $F67B $F67C… | zb-only $F7CD $F7CE $F7CF $F7D0 $F7D1 $F7D2…
+mod              MOD        PASS     FAIL      0.23x  ref-only $F416 $F678 $F679 $F67A $F67B $F67C… | zb-only 
+notop            NOT        PASS     FAIL      0.21x  ref-only $F416 $F678 $F679 $F67A $F67B $F67C… | zb-only 
+andop            AND        PASS     FAIL      0.21x  ref-only $F416 $F678 $F679 $F67A $F67B $F67C… | zb-only 
+orop             OR         PASS     FAIL      0.21x  ref-only $F416 $F678 $F679 $F67A $F67B $F67C… | zb-only 
+xorop            XOR        PASS     FAIL      0.21x  ref-only $F416 $F678 $F679 $F67A $F67B $F67C… | zb-only 
+oct              OCT$       PASS     FAIL      1.00x  ref-only $F416 $F678 $F679 $F698 $F699 $F69A… | zb-only $FCC8 | value $F67A $F67B $F67C
+valkw            VAL        PASS     FAIL      0.95x  ref-only $F416 $F419 $F41A $F41B $F678 $F679… | zb-only $FCC8
+valkw_b          VAL        PASS     FAIL      1.76x  ref-only $F416 $F419 $F41A $F41B $F678 $F679… | zb-only $F7F8 $F7F9 $FCC8 | value $F7CB
+valkw_c          VAL        PASS     FAIL      1.83x  ref-only $F416 $F419 $F41A $F41B $F678 $F679… | zb-only $F7F8 $F7F9 $FCC8 | value $F7CC
+valkw_d          VAL        PASS     FAIL      0.64x  ref-only $F416 $F419 $F41A $F41B $F678 $F679… | zb-only $FCC8
+valkw_e          VAL        PASS     FAIL      0.95x  ref-only $F416 $F419 $F41A $F41B $F678 $F679… | zb-only $FCC8
+left             LEFT$      PASS     FAIL      1.32x  ref-only $F416 $F678 $F679 $F698 $F699 $F69A… | zb-only $FCC8 | value $F67A $F67B $F67C
+right            RIGHT$     PASS     FAIL      1.32x  ref-only $F416 $F678 $F679 $F698 $F699 $F69A… | zb-only $FCC8 | value $F67A $F67B $F67C
+str              STR$       PASS     FAIL      0.58x  ref-only $F416 $F678 $F679 $F698 $F699 $F69A… | zb-only $FCC8 | value $F67A $F67B $F67C
+stringf          STRING$    PASS     FAIL      1.15x  ref-only $F416 $F678 $F679 $F698 $F699 $F69A… | zb-only $FCC8 | value $F67A $F67B $F67C
+space_b          SPACE$     PASS     FAIL      0.80x  ref-only $F416 $F662 $F678 $F679 $F698 $F699… | zb-only $FCC8 | value $F67A $F67B $F67C
+csrlind          CSRLIN     PASS     FAIL      2.25x  ref-only $F416 $F662 $F664 $F678 $F679 $F67A… | zb-only $F7F8 $F7F9 $FCC8 | value $F7C9
+let              LET        PASS     FAIL      1.96x  ref-only $F416 $F662 $F678 $F679 $F67A $F67B… | zb-only $F7F8 $F7F9 $FCC8 | value $F7C9
+rem              REM        PASS     FAIL      0.21x  ref-only $F416 $F678 $F679 $F67A $F67B $F67C… | zb-only 
+rnd_b            RND        PASS     FAIL      1.47x  ref-only $F416 $F662 $F664 $F678 $F679 $F67A… | zb-only $F7F8 $F7F9 $FCC8 | value $F7CB
+using            PRINT      PASS     FAIL      0.82x  ref-only $F416 $F678 $F679 $F67A $F67B $F67C… | zb-only $FCC8
+using_b          PRINT      PASS     FAIL      1.87x  ref-only $F416 $F66C $F66D $F678 $F679 $F67A… | zb-only $F7F8 $F7F9 $FCC8 | value $F7C7 $F7C8 $F7C9 $F7CA
+using_c          PRINT      PASS     FAIL      0.89x  ref-only $F416 $F678 $F679 $F67A $F67B $F67C… | zb-only $FCC8
+using_d          PRINT      PASS     FAIL      1.14x  ref-only $F416 $F678 $F679 $F67A $F67B $F67C… | zb-only $FCC8
+using_e          PRINT      PASS     FAIL      2.12x  ref-only $F416 $F66C $F66D $F678 $F679 $F67A… | zb-only $F7F8 $F7F9 $FCC8 | value $F7C7 $F7C8 $F7C9 $F7CA
+ifkw             IF         PASS     FAIL      1.19x  ref-only $F416 $F664 $F678 $F679 $F67A $F67B… | zb-only 
+ifkw_b           IF         PASS     FAIL      0.27x  ref-only $F416 $F678 $F679 $F67A $F67B $F67C… | zb-only 
+ifkw_c           IF         PASS     FAIL      2.47x  ref-only $F416 $F662 $F664 $F678 $F679 $F67A… | zb-only $F7C9 $F7F8 $F7F9 $FCC8
+forkw            FOR        PASS     FAIL      2.65x  ref-only $F416 $F662 $F664 $F678 $F679 $F67A… | zb-only $F7F8 $F7F9 $FCC8 | value $F7C9
+forkw_b          FOR        PASS     FAIL      2.66x  ref-only $F416 $F662 $F664 $F678 $F679 $F67A… | zb-only $F7F8 $F7F9 $FCC8 | value $F7CA
+forkw_c          FOR        PASS     FAIL      1.49x  ref-only $F416 $F662 $F664 $F678 $F679 $F67A… | zb-only $F7F8 $F7F9 $FCC8 | value $F7CB
+nextkw           NEXT       PASS     FAIL      2.67x  ref-only $F416 $F662 $F678 $F679 $F67A $F67B… | zb-only $F7F8 $F7F9 $FCC8 | value $F7C9
+nextkw_b         NEXT       PASS     FAIL      2.70x  ref-only $F416 $F662 $F678 $F679 $F67A $F67B… | zb-only $F7F8 $F7F9 $FCC8 | value $F7C9
+nextkw_c         NEXT       PASS     FAIL      2.70x  ref-only $F416 $F662 $F678 $F679 $F67A $F67B… | zb-only $F7F8 $F7F9 $FCC8 | value $F7C9
+clearkw          CLEAR      UNRATED  FAIL      0.77x  ref-only $F416 $F672 $F673 $F674 $F675 $F678… | zb-only $F6C2 $F6C3 $FCC8 | value $F6C6 $F6C7 $FC4A $FC4B
+clear_b          CLEAR      UNRATED  FAIL      1.35x  ref-only $F416 $F662 $F664 $F678 $F679 $F67A… | zb-only $F6C2 $F6C3 $F7F8 $F7F9 $FCC8 | value $F7C9
+clear_c          CLEAR      UNRATED  FAIL      1.11x  ref-only $F416 $F662 $F664 $F672 $F673 $F674… | zb-only $F6C2 $F6C3 $F7F8 $F7F9 $FCC8 | value $F6C6 $F7CD $F7F6 $F7F7
+dimkw            DIM        PASS     FAIL      2.27x  ref-only $F416 $F662 $F678 $F679 $F67A $F67B… | zb-only $F7F8 $F7F9 $FCC8 | value $F7C9
+dimkw_b          DIM        PASS     FAIL      2.27x  ref-only $F416 $F662 $F678 $F679 $F67A $F67B… | zb-only $F7F8 $F7F9 $FCC8 | value $F7C9
+sound_b          SOUND      PASS     FAIL      2.37x  ref-only $F416 $F662 $F664 $F678 $F679 $F67A… | zb-only $F7F8 $F7F9 $FCC8 | value $F7F6 $F7F7
+beep             BEEP       PASS     FAIL      0.05x  ref-only $F416 $F678 $F679 $F67A $F67B $F67C… | zb-only $FCC8
+beep_c           BEEP       PASS     FAIL      0.76x  ref-only $F416 $F662 $F664 $F678 $F679 $F67A… | zb-only $F7F8 $F7F9 $FCC8 | value $F7F6 $F7F7
+sound            SOUND      PASS     FAIL      0.27x  ref-only $F416 $F678 $F679 $F67A $F67B $F67C… | zb-only 
+playkw           PLAY       PASS     FAIL      1.76x  ref-only $F416 $F662 $F664 $F678 $F679 $F67A… | zb-only $F7F8 $F7F9 $F95C $F95D $F95E $F971… | value $F7CB $F959 $F95A $F976
+playkw_b         PLAY       PASS     FAIL      1.68x  ref-only $F416 $F662 $F664 $F678 $F679 $F67A… | zb-only $F7F8 $F7F9 $F95C $F95D $F95E $F971… | value $F7CA $F959 $F95A $F976
+playkw_c         PLAY       PASS     FAIL      1.63x  ref-only $F416 $F662 $F664 $F678 $F679 $F67A… | zb-only $F7F8 $F7F9 $F95C $F95D $F95E $F962… | value $F7C9 $F959 $F95A $F95F
+playkw_d         PLAY       PASS     FAIL      1.68x  ref-only $F416 $F662 $F664 $F678 $F679 $F67A… | zb-only $F7F8 $F7F9 $F95C $F95D $F95E $F971… | value $F7CA $F959 $F95A $F976
+playkw_x         PLAY       FAIL     FAIL      1.75x  FRE ref (79, 0) zb (79, 12)  ref-only $F416 $F55E $F55F $F560 $F662 $F664… | zb-only $F7F8 $F7F9 $F95C $F95D $F95E $F971… | value $F67A $F67B $F67C $F7CA
+playkw_e         PLAY       PASS     FAIL      1.67x  ref-only $F416 $F662 $F664 $F678 $F679 $F67A… | zb-only $F7F8 $F7F9 $F95C $F95D $F95E $F971… | value $F7C9 $F959 $F95A $F976
+playkw_f         PLAY       PASS     FAIL      1.68x  ref-only $F416 $F662 $F664 $F678 $F679 $F67A… | zb-only $F7F8 $F7F9 $F95C $F95D $F95E $F971… | value $F7C9 $F7CA $F7CB $F959
+playkw_g         PLAY       PASS     FAIL      1.50x  ref-only $F416 $F662 $F678 $F679 $F67A $F67B… | zb-only $F7F8 $F7F9 $F968 $F969 $F96A $F971… | value $F7C9 $F7F6 $F965 $F966
+playkw_h         PLAY       FAIL     FAIL      1.47x  FRE ref (57, 0) zb (57, 52)  ref-only $F416 $F662 $F664 $F678 $F679 $F698… | zb-only $F7F8 $F7F9 $F95C $F95D $F95E $F971… | value $F67A $F67B $F67C $F7C9
+playkw_i         PLAY       FAIL     FAIL      1.54x  FRE ref (57, 0) zb (57, 52)  ref-only $F416 $F662 $F664 $F678 $F679 $F698… | zb-only $F7F8 $F7F9 $F95C $F95D $F95E $F971… | value $F67A $F67B $F67C $F7C9
+vpeek            VPEEK      PASS     FAIL      0.21x  ref-only $F416 $F678 $F679 $F67A $F67B $F67C… | zb-only 
+vpoke            VPOKE      PASS     FAIL      0.21x  ref-only $F416 $F678 $F679 $F67A $F67B $F67C… | zb-only 
+vdpkw            VDP        PASS     FAIL      0.60x  ref-only $F416 $F664 $F678 $F679 $F67A $F67B… | zb-only 
+vdp_b            VDP        PASS     FAIL      0.28x  ref-only $F416 $F678 $F679 $F67A $F67B $F67C… | zb-only 
+vdp_c            VDP        PASS     FAIL      2.06x  ref-only $F416 $F662 $F678 $F679 $F67A $F67B… | zb-only $F7F8 $F7F9 $FCC8 | value $F7C9
+vdp_d            VDP        PASS     FAIL      3.12x  ref-only $F416 $F662 $F664 $F678 $F679 $F67A… | zb-only $F7C9 $F7F8 $F7F9 $FCC8
+inpkw            INP        PASS     FAIL      0.57x  ref-only $F416 $F664 $F678 $F679 $F67A $F67B… | zb-only 
+inp_b            INP        PASS     FAIL      2.35x  ref-only $F416 $F662 $F664 $F678 $F679 $F67A… | zb-only $F7F8 $F7F9 $FCC8 | value $F7F6 $F7F7
+outkw            OUT        PASS     FAIL      0.27x  ref-only $F416 $F678 $F679 $F67A $F67B $F67C… | zb-only 
+out_b            OUT        PASS     FAIL      2.40x  ref-only $F416 $F662 $F664 $F678 $F679 $F67A… | zb-only $F7F8 $F7F9 $FCC8 | value $F7F6 $F7F7
+pokekw           POKE       PASS     FAIL      0.21x  ref-only $F416 $F678 $F679 $F67A $F67B $F67C… | zb-only 
+widthkw          WIDTH      PASS     FAIL      0.55x  ref-only $F3B2 $F3DE $F416 $F678 $F679 $F67A… | zb-only $F3B1 $F3DF $F3E0 $F3E1 $F3E3 $F3E6… | value $FBB2 $FBB3 $FBB4 $FBB5
+widthkw_b        WIDTH      PASS     FAIL      1.36x  ref-only $F3B2 $F3DE $F416 $F662 $F678 $F679… | zb-only $F3B1 $F7F8 $F7F9 $FCC8 | value $F3E2 $F3E4 $F3E5 $F7CA
+widthkw_c        WIDTH      UNRATED  FAIL      1.51x  ref-only $F3DE $F416 $F662 $F664 $F678 $F679… | zb-only $F3B1 $F7F8 $F7F9 $FCC8 | value $F7C9 $FBB2 $FBB3 $FBB4
+circlekw         CIRCLE     PASS     FAIL      0.93x  ref-only $F3B2 $F3DE $F416 $F662 $F678 $F679… | zb-only $F3B1 $F7F8 $F7F9 $FCC8 | value $F3E2 $F3E4 $F3E5 $F7CA
+circlekw_b       CIRCLE     PASS     FAIL      1.21x  ref-only $F3B2 $F3DE $F416 $F662 $F66C $F66D… | zb-only $F3B1 $F7F8 $F7F9 $FCC8 | value $F3E2 $F3E4 $F3E5 $F7C9
+circlekw_c       CIRCLE     PASS     FAIL      0.93x  ref-only $F3B2 $F3DE $F416 $F662 $F678 $F679… | zb-only $F3B1 $F7F8 $F7F9 $FCC8 | value $F3E2 $F3E4 $F3E5 $F7C9
+circlekw_d       CIRCLE     PASS     FAIL      1.16x  ref-only $F3B2 $F3DE $F416 $F662 $F66C $F66D… | zb-only $F3B1 $F7F8 $F7F9 $FCC8 | value $F3E2 $F3E4 $F3E5 $F7C9
+circlekw_e       CIRCLE     PASS     FAIL      0.94x  ref-only $F3B2 $F3DE $F416 $F662 $F678 $F679… | zb-only $F3B1 $F7F8 $F7F9 $FCC8 | value $F3E2 $F3E4 $F3E5 $F7C9
+drawkw           DRAW       PASS     FAIL      1.61x  ref-only $F3B2 $F3DE $F3ED $F3EE $F3F0 $F3F1… | zb-only $F3B1 $F7F8 $F7F9 $FCC8 | value $F3E2 $F3E4 $F3E5 $F7CA
+drawkw_b         DRAW       PASS     FAIL      1.61x  ref-only $F3B2 $F3DE $F3ED $F3EE $F3F0 $F3F1… | zb-only $F3B1 $F7F8 $F7F9 $FCC8 | value $F3E2 $F3E4 $F3E5 $F7CA
+drawkw_c         DRAW       PASS     FAIL      1.59x  ref-only $F3B2 $F3DE $F3ED $F3EE $F3F0 $F3F1… | zb-only $F3B1 $F7F8 $F7F9 $FCC8 | value $F3E2 $F3E4 $F3E5 $F7CA
+drawkw_d         DRAW       PASS     FAIL      1.61x  ref-only $F3B2 $F3DE $F3ED $F3EE $F3F0 $F3F1… | zb-only $F3B1 $F7F8 $F7F9 $FCC8 | value $F3E2 $F3E4 $F3E5 $F7CA
+drawkw_e         DRAW       PASS     FAIL      1.61x  ref-only $F3B2 $F3DE $F3ED $F3EE $F3F0 $F3F1… | zb-only $F3B1 $F7F8 $F7F9 $FCC8 | value $F3E2 $F3E4 $F3E5 $F7CA
+drawkw_f         DRAW       PASS     FAIL      1.61x  ref-only $F3B2 $F3DE $F3ED $F3EE $F3F0 $F3F1… | zb-only $F3B1 $F7F8 $F7F9 $FCC8 | value $F3E2 $F3E4 $F3E5 $F7CA
+drawkw_g         DRAW       PASS     FAIL      1.60x  ref-only $F3B2 $F3DE $F3ED $F3EE $F3F0 $F3F1… | zb-only $F3B1 $F7F8 $F7F9 $FCC8 | value $F3E2 $F3E4 $F3E5 $F7C9
+drawkw_h         DRAW       PASS     FAIL      1.61x  ref-only $F3B2 $F3DE $F3ED $F3EE $F3F0 $F3F1… | zb-only $F3B1 $F7F8 $F7F9 $FCC8 | value $F3E2 $F3E4 $F3E5 $F7CA
+drawkw_i         DRAW       PASS     FAIL      1.61x  ref-only $F3B2 $F3DE $F3ED $F3EE $F3F0 $F3F1… | zb-only $F3B1 $F7F8 $F7F9 $FCC8 | value $F3E2 $F3E4 $F3E5 $F7C9
+drawkw_j         DRAW       FAIL     FAIL      1.72x  FRE ref (17, 0) zb (17, 2)  ref-only $F3B2 $F3DE $F3ED $F3EE $F3F0 $F3F1… | zb-only $F3B1 $F7F8 $F7F9 $FCC8 | value $F3E2 $F3E4 $F3E5 $F67A
+drawkw_k         DRAW       PASS     FAIL      1.60x  ref-only $F3B2 $F3DE $F3ED $F3EE $F3F0 $F3F1… | zb-only $F3B1 $F7F8 $F7F9 $FCC8 | value $F3E2 $F3E4 $F3E5 $F7CA
+spritekw         SPRITE     PASS     FAIL      1.42x  ref-only $F3B2 $F3DE $F416 $F662 $F678 $F679… | zb-only $F3B1 $F7F8 $F7F9 $FCC8 | value $F3E2 $F3E4 $F3E5 $F67A
+sprite_on        SPRITE     UNRATED  UNRATED       -  
+sprite_off       SPRITE     UNRATED  UNRATED       -  
+sprite_stop      SPRITE     UNRATED  UNRATED       -  
+basekw           BASE       PASS     FAIL      0.31x  ref-only $F416 $F678 $F679 $F67A $F67B $F67C… | zb-only 
+basekw_b         BASE       PASS     FAIL      2.07x  ref-only $F416 $F662 $F678 $F679 $F67A $F67B… | zb-only $F7F8 $F7F9 $FCC8 | value $F7CC
+attrkw           ATTR$      UNRATED  UNRATED       -  
+stopkw           STOP       UNRATED  UNRATED       -  
+onkw             ON         UNRATED  UNRATED       -  
+onkw_b           ON         UNRATED  UNRATED       -  
+ongoto           ON         UNRATED  UNRATED       -  
+ongosub          ON         UNRATED  UNRATED       -  
+oninterval       ON         UNRATED  UNRATED       -  
+oninterval_b     ON         UNRATED  UNRATED       -  
+onsprite         ON         UNRATED  UNRATED       -  
+onsprite_b       ON         UNRATED  UNRATED       -  
+errorkw          ERROR      UNRATED  UNRATED       -  
+errorkw_b        ERROR      UNRATED  UNRATED       -  
+errkw            ERR        UNRATED  UNRATED       -  
+erlkw            ERL        UNRATED  UNRATED       -  
+resumekw         RESUME     UNRATED  UNRATED       -  
+resumekw_b       RESUME     UNRATED  UNRATED       -  
+resumekw_c       RESUME     UNRATED  UNRATED       -  
+defintkw         DEFINT     PASS     FAIL      1.05x  ref-only $F416 $F662 $F66C $F66D $F678 $F679… | zb-only $F7F8 $F7F9 $FCC8 | value $F7F7
+defint_b         DEFINT     PASS     FAIL      1.05x  ref-only $F416 $F662 $F66C $F66D $F678 $F679… | zb-only $F7F8 $F7F9 $FCC8 | value $F7F7
+listkw           LIST       UNRATED  UNRATED       -  
+listkw_b         LIST       UNRATED  UNRATED       -  
+listkw_c         LIST       UNRATED  UNRATED       -  
+newkw            NEW        UNRATED  UNRATED       -  
+gosubkw          GOSUB      UNRATED  UNRATED       -  
+returnkw         RETURN     UNRATED  UNRATED       -  
+endkw            END        UNRATED  UNRATED       -  
+datakw           DATA       PASS     FAIL      2.08x  ref-only $F416 $F662 $F678 $F679 $F67A $F67B… | zb-only $F7F8 $F7F9 $FCC8 | value $F7CA
+datakw_b         DATA       FAIL     FAIL      1.86x  FRE ref (6, 0) zb (6, 3)  ref-only $F416 $F662 $F678 $F679 $F698 $F699… | zb-only $FCC8 | value $F67A $F67B $F67C
+datakw_c         DATA       FAIL     FAIL      1.09x  FRE ref (6, 0) zb (6, 3)  ref-only $F416 $F662 $F678 $F679 $F698 $F699… | zb-only $FCC8 | value $F67A $F67B $F67C
+datakw_d         DATA       PASS     FAIL      2.04x  ref-only $F416 $F662 $F678 $F679 $F67A $F67B… | zb-only $F7F8 $F7F9 $FCC8 | value $F7C9
+readkw           READ       UNRATED  UNRATED       -  
+restorekw        RESTORE    UNRATED  UNRATED       -  
+restorekw_b      RESTORE    UNRATED  UNRATED       -  
+returnkw_b       RETURN     UNRATED  UNRATED       -  
+psetkw           PSET       PASS     FAIL      1.36x  ref-only $F3B2 $F3DE $F416 $F662 $F678 $F679… | zb-only $F3B1 $F7F8 $F7F9 $FCC8 | value $F3E2 $F3E4 $F3E5 $F7CA
+psetkw_b         PSET       PASS     FAIL      1.34x  ref-only $F3B2 $F3DE $F416 $F662 $F678 $F679… | zb-only $F3B1 $F7F8 $F7F9 $FCC8 | value $F3E2 $F3E4 $F3E5 $F7C9
+psetkw_c         PSET       PASS     FAIL      1.36x  ref-only $F3B2 $F3DE $F416 $F662 $F678 $F679… | zb-only $F3B1 $F7F8 $F7F9 $FCC8 | value $F3E4 $F3E5 $F7CA $F927
+psetkw_d         PSET       PASS     FAIL      1.37x  ref-only $F3B2 $F3DE $F416 $F662 $F678 $F679… | zb-only $F3B1 $F7F8 $F7F9 $FCC8 | value $F3E2 $F3E4 $F3E5 $F7CA
+psetkw_e         PSET       PASS     FAIL      1.36x  ref-only $F3B2 $F3DE $F416 $F662 $F678 $F679… | zb-only $F3B1 $F7F8 $F7F9 $FCC8 | value $F3E2 $F3E4 $F3E5 $F7CA
+presetkw         PRESET     PASS     FAIL      1.34x  ref-only $F3B2 $F3DE $F416 $F662 $F678 $F679… | zb-only $F3B1 $F7F8 $F7F9 $FCC8 | value $F3E2 $F3E4 $F3E5 $F7C9
+presetkw_b       PRESET     PASS     FAIL      1.34x  ref-only $F3B2 $F3DE $F416 $F662 $F678 $F679… | zb-only $F3B1 $F7F8 $F7F9 $FCC8 | value $F3E2 $F3E4 $F3E5 $F7C9
+presetkw_c       PRESET     PASS     FAIL      1.36x  ref-only $F3B2 $F3DE $F416 $F662 $F678 $F679… | zb-only $F3B1 $F7F8 $F7F9 $FCC8 | value $F3E2 $F3E4 $F3E5 $F7CA
+presetkw_d       PRESET     PASS     FAIL      1.36x  ref-only $F3B2 $F3DE $F416 $F662 $F678 $F679… | zb-only $F3B1 $F7F8 $F7F9 $FCC8 | value $F3E4 $F3E5 $F7CA $F927
+paintkw          PAINT      PASS     FAIL      1.43x  ref-only $F3B2 $F3DE $F3ED $F3EE $F3F0 $F3F1… | zb-only $F3B1 $F7F8 $F7F9 $FCC8 | value $F3E2 $F3E4 $F3E5 $F7CA
+paintkw_b        PAINT      PASS     FAIL      1.43x  ref-only $F3B2 $F3DE $F3ED $F3EE $F3F0 $F3F1… | zb-only $F3B1 $F7F8 $F7F9 $FCC8 | value $F3E2 $F3E4 $F3E5 $F7C9
+paintkw_c        PAINT      PASS     FAIL      1.46x  ref-only $F3B2 $F3DE $F3ED $F3EE $F3F0 $F3F1… | zb-only $F3B1 $F7F8 $F7F9 $FCC8 | value $F3E4 $F3E5 $F7C9 $F7CA
+putsprite        PUT        PASS     FAIL      1.41x  ref-only $F3B2 $F3DE $F416 $F662 $F678 $F679… | zb-only $F3B1 $F7F8 $F7F9 $FCC8 | value $F3E2 $F3E4 $F3E5 $F67A
+putsprite_b      PUT        PASS     FAIL      1.41x  ref-only $F3B2 $F3DE $F416 $F662 $F678 $F679… | zb-only $F3B1 $F7F8 $F7F9 $FCC8 | value $F3E2 $F3E4 $F3E5 $F67A
+pointkw          POINT      PASS     FAIL      1.36x  ref-only $F3B2 $F3DE $F416 $F662 $F678 $F679… | zb-only $F3B1 $F7F8 $F7F9 $FCC8 | value $F3E2 $F3E4 $F3E5 $F7CA
+pointkw_b        POINT      PASS     FAIL      1.36x  ref-only $F3B2 $F3DE $F416 $F662 $F678 $F679… | zb-only $F3B1 $F7F8 $F7F9 $FCC8 | value $F3E2 $F3E4 $F3E5 $F7C9
+linekw           LINE       PASS     FAIL      1.46x  ref-only $F3B2 $F3DE $F3ED $F3EE $F3F0 $F3F1… | zb-only $F3B1 $F7F8 $F7F9 $FCC8 | value $F3E2 $F3E4 $F3E5 $F7CA
+linekw_b         LINE       PASS     FAIL      1.51x  ref-only $F3B2 $F3DE $F3ED $F3EE $F3F0 $F3F1… | zb-only $F3B1 $F7F8 $F7F9 $FCC8 | value $F3E2 $F3E4 $F3E5 $F7CA
+linekw_c         LINE       PASS     FAIL      1.61x  ref-only $F3B2 $F3DE $F416 $F662 $F678 $F679… | zb-only $F3B1 $F7F8 $F7F9 $FCC8 | value $F3E2 $F3E4 $F3E5 $F7C9
+linekw_d         LINE       PASS     FAIL      1.46x  ref-only $F3B2 $F3DE $F3ED $F3EE $F3F0 $F3F1… | zb-only $F3B1 $F7F8 $F7F9 $FCC8 | value $F3E2 $F3E4 $F3E5 $F7C9
+linekw_e         LINE       PASS     FAIL      1.46x  ref-only $F3B2 $F3DE $F3ED $F3EE $F3F0 $F3F1… | zb-only $F3B1 $F7F8 $F7F9 $FCC8 | value $F3E2 $F3E4 $F3E5 $F7C9
+linekw_f         LINE       PASS     FAIL      1.46x  ref-only $F3B2 $F3DE $F3ED $F3EE $F3F0 $F3F1… | zb-only $F3B1 $F7F8 $F7F9 $FCC8 | value $F3E2 $F3E4 $F3E5 $F7C9
+colorkw          COLOR      PASS     FAIL      0.33x  ref-only $F416 $F678 $F679 $F67A $F67B $F67C… | zb-only 
+colorkw_b        COLOR      PASS     FAIL      1.91x  ref-only $F416 $F662 $F678 $F679 $F67A $F67B… | zb-only $F7F8 $F7F9 $FCC8 | value $F7C9
+colorkw_c        COLOR      PASS     FAIL      1.91x  ref-only $F416 $F662 $F678 $F679 $F67A $F67B… | zb-only $F7F8 $F7F9 $FCC8 | value $F7C9
+clskw            CLS        PASS     FAIL      0.45x  ref-only $F3DE $F416 $F678 $F679 $F67A $F67B… | zb-only $F3B1 $FCC8 | value $FBB2 $FBB3 $FBB4 $FBB5
+locate           LOCATE     PASS     FAIL      0.38x  ref-only $F416 $F678 $F679 $F67A $F67B $F67C… | zb-only 
+locate_b         LOCATE     PASS     FAIL      0.41x  ref-only $F3DE $F416 $F678 $F679 $F67A $F67B… | zb-only $F3B1 $FCC8 | value $FBB2 $FBB3 $FBB4 $FBB5
+locate_c         LOCATE     PASS     FAIL      1.11x  ref-only $F3DE $F416 $F662 $F678 $F679 $F67A… | zb-only $F3B1 $F7F8 $F7F9 $FCC8 | value $F7C9 $FBB2 $FBB3 $FBB4
+locate_d         LOCATE     PASS     FAIL      1.66x  ref-only $F416 $F662 $F678 $F679 $F67A $F67B… | zb-only $F7F8 $F7F9 $FCC8 | value $F7C9
+pos              POS        PASS     FAIL      0.21x  ref-only $F416 $F678 $F679 $F67A $F67B $F67C… | zb-only 
+tab              PRINT      PASS     FAIL      0.27x  ref-only $F416 $F678 $F679 $F67A $F67B $F67C… | zb-only 
+spc              PRINT      PASS     FAIL      0.27x  ref-only $F416 $F678 $F679 $F67A $F67B $F67C… | zb-only 
+printkw_b        PRINT      PASS     FAIL      1.12x  ref-only $F3DE $F416 $F662 $F678 $F679 $F67A… | zb-only $F3B1 $F7F8 $F7F9 $FCC8 | value $F7CA $FBB2 $FBB3 $FBB4
+printkw_c        PRINT      PASS     FAIL      1.10x  ref-only $F3DE $F416 $F662 $F678 $F679 $F67A… | zb-only $F3B1 $F7F8 $F7F9 $FCC8 | value $F7C9 $FBB2 $FBB3 $FBB4
+printkw_d        PRINT      PASS     FAIL      1.05x  ref-only $F3DE $F416 $F662 $F678 $F679 $F67A… | zb-only $F3B1 $F7C9 $F7F8 $F7F9 $FCC8 | value $FBB2 $FBB3 $FBB4 $FBB5
+swap             SWAP       PASS     FAIL      1.81x  ref-only $F416 $F662 $F678 $F679 $F67A $F67B… | zb-only $F7F8 $F7F9 $FCC8 | value $F7C9
+fre_b            FRE        PASS     FAIL      2.45x  ref-only $F416 $F662 $F664 $F678 $F679 $F67A… | zb-only $F7F8 $F7F9 $FCC8 | value $F7CA
+fre_c            FRE        PASS     FAIL      1.38x  ref-only $F416 $F662 $F664 $F678 $F679 $F698… | zb-only $F7F8 $F7F9 $FCC8 | value $F67A $F67B $F67C $F7CA
+tron             TRON       PASS     FAIL      0.31x  ref-only $F416 $F678 $F679 $F67A $F67B $F67C… | zb-only 
+troff            TROFF      PASS     FAIL      0.31x  ref-only $F416 $F678 $F679 $F67A $F67B $F67C… | zb-only 
+tron_b           TRON       UNRATED  FAIL      1.90x  ref-only $F416 $F662 $F678 $F679 $F67A $F67B… | zb-only $F7F8 $F7F9 $FCC8
+troff_b          TROFF      PASS     FAIL      1.90x  ref-only $F416 $F662 $F678 $F679 $F67A $F67B… | zb-only $F7F8 $F7F9 $FCC8
+defsng           DEFSNG     PASS     FAIL      1.70x  ref-only $F416 $F662 $F66C $F66D $F678 $F679… | zb-only $F7F8 $F7F9 $FCC8 | value $F7CB
+defsng_b         DEFSNG     PASS     FAIL      1.67x  ref-only $F416 $F662 $F66C $F66D $F678 $F679… | zb-only $F7F8 $F7F9 $FCC8 | value $F7CB
+defdbl           DEFDBL     PASS     FAIL      1.92x  ref-only $F416 $F662 $F66C $F66D $F678 $F679… | zb-only $F7F8 $F7F9 $FCC8 | value $F7CB
+defdbl_b         DEFDBL     PASS     FAIL      2.42x  ref-only $F416 $F662 $F664 $F678 $F679 $F67A… | zb-only $F7D7 $F7F8 $F7F9 $FCC8
+defstr           DEFSTR     FAIL     FAIL      1.59x  FRE ref (6, 0) zb (6, 1)  ref-only $F416 $F662 $F678 $F679 $F698 $F699… | zb-only $FCC8 | value $F67A $F67B $F67C
+defstr_b         DEFSTR     FAIL     FAIL      1.55x  FRE ref (6, 0) zb (6, 1)  ref-only $F416 $F662 $F678 $F679 $F698 $F699… | zb-only $FCC8 | value $F67A $F67B $F67C
+deffn            DEF        FAIL     FAIL      1.78x  FRE ref (22, 0) zb (11, 0)  ref-only $F416 $F662 $F664 $F678 $F679 $F67A… | zb-only $F7F8 $F7F9 $FCC8 | value $F6C4 $F6C6 $F7C9
+fnkw             FN         FAIL     FAIL      1.18x  FRE ref (22, 0) zb (11, 0)  ref-only $F416 $F662 $F664 $F678 $F679 $F67A… | zb-only $F7F8 $F7F9 $FCC8 | value $F6C4 $F6C6 $F7CA
+fnkw_b           FN         FAIL     FAIL      1.26x  FRE ref (12, 0) zb (6, 0)  ref-only $F416 $F662 $F678 $F679 $F698 $F699… | zb-only $F67D $F67E $F67F $FCC8 | value $F67A $F67B $F67C $F6C4
+deffn_b          DEF        FAIL     FAIL      1.26x  FRE ref (12, 0) zb (6, 0)  ref-only $F416 $F662 $F678 $F679 $F698 $F699… | zb-only $F67D $F67E $F67F $FCC8 | value $F67A $F67B $F67C $F6C4
+eqv              EQV        PASS     FAIL      0.21x  ref-only $F416 $F678 $F679 $F67A $F67B $F67C… | zb-only 
+imp              IMP        PASS     FAIL      0.21x  ref-only $F416 $F678 $F679 $F67A $F67B $F67C… | zb-only 
+motor            MOTOR      PASS     FAIL      2.00x  ref-only $F416 $F662 $F678 $F679 $F67A $F67B… | zb-only $F7F8 $F7F9 $FCC8 | value $F7CA
+motor_b          MOTOR      PASS     FAIL      2.11x  ref-only $F416 $F662 $F678 $F679 $F67A $F67B… | zb-only $F7C9 $F7F8 $F7F9 $FCC8
+motor_c          MOTOR      PASS     FAIL      2.11x  ref-only $F416 $F662 $F678 $F679 $F67A $F67B… | zb-only $F7C9 $F7F8 $F7F9 $FCC8
+timetick         TIME       PASS     FAIL      2.44x  ref-only $F416 $F662 $F664 $F678 $F679 $F67A… | zb-only $F7F8 $F7F9 $FCC8 | value $F7F6 $F7F7
+time_c           TIME       PASS     FAIL      2.33x  ref-only $F416 $F662 $F664 $F678 $F679 $F67A… | zb-only $F7F8 $F7F9 $FCC8 | value $F7CB
+usrkw            USR        UNRATED  UNRATED       -  
+defusr           DEF        UNRATED  UNRATED       -  
+defusr_b         DEF        UNRATED  UNRATED       -  
+usrkw_b          USR        UNRATED  UNRATED       -  
+screenkw         SCREEN     PASS     FAIL      1.35x  ref-only $F3B2 $F3DE $F416 $F662 $F678 $F679… | zb-only $F3B1 $F7F8 $F7F9 $FCC8 | value $F3E2 $F3E4 $F3E5 $F7C9
+screenkw_c       SCREEN     PASS     FAIL      1.38x  ref-only $F3B2 $F3DE $F416 $F662 $F678 $F679… | zb-only $F3B1 $F7F8 $F7F9 $FCC8 | value $F3E2 $F3E4 $F3E5 $F7CB
+screenkw_d       SCREEN     PASS     FAIL      2.04x  ref-only $F416 $F662 $F678 $F679 $F67A $F67B… | zb-only $F7F8 $F7F9 $FCC8 | value $F7C7 $F7C9 $F7F7
+keykw            KEY        PASS     FAIL      1.77x  ref-only $F3DE $F678 $F679 $F67A $F67B $F67C… | zb-only $FCC8
+keykw_on         KEY        PASS     FAIL      1.14x  ref-only $F416 $F662 $F678 $F679 $F67A $F67B… | zb-only $F3B1 $F7F8 $F7F9 $FCC8 | value $F7CA $FBB2 $FBB3 $FBB4
+keykw_off        KEY        PASS     FAIL      1.75x  ref-only $F416 $F662 $F678 $F679 $F67A $F67B… | zb-only $F3B1 $F7F8 $F7F9 $FCC8 | value $F7CA $FBB2 $FBB3 $FBB4
+waitkw           WAIT       PASS     FAIL      0.27x  ref-only $F416 $F678 $F679 $F67A $F67B $F67C… | zb-only 
+waitkw_b         WAIT       PASS     FAIL      0.27x  ref-only $F416 $F678 $F679 $F67A $F67B $F67C… | zb-only 
+maxfiles         MAX        UNRATED  FAIL      1.15x  ref-only $F416 $F662 $F672 $F673 $F674 $F675… | zb-only $F6C2 $F6C3 $F7C9 $F7F8 $F7F9 $FCC8 | value $F7F7
+inkey            INKEY$     PASS     FAIL      0.83x  ref-only $F416 $F662 $F678 $F679 $F698 $F699… | zb-only $FCC8 | value $F67A $F67B $F67C
+gotokw           GOTO       PASS     FAIL      2.14x  ref-only $F416 $F662 $F678 $F679 $F67A $F67B… | zb-only $F7C9 $F7F8 $F7F9 $FCC8
+vpoke_b          VPOKE      PASS     FAIL      0.21x  ref-only $F416 $F678 $F679 $F67A $F67B $F67C… | zb-only 
+vpoke_b2         VPOKE      PASS     FAIL      0.26x  ref-only $F416 $F678 $F679 $F67A $F67B $F67C… | zb-only 
+callkw_b         CALL       UNRATED  UNRATED       -  
+runkw            RUN        UNRATED  FAIL      0.97x  ref-only $F416 $F664 $F678 $F679 $F67A $F67B… | zb-only $F6C2 $F6C3 $FCC8 | value $F6C6
+runkw_b          RUN        UNRATED  UNRATED       -  
+bin              BIN$       PASS     FAIL      0.83x  ref-only $F416 $F678 $F679 $F698 $F699 $F69A… | zb-only $FCC8 | value $F67A $F67B $F67C
+cvi              CVI        PASS     FAIL      0.59x  ref-only $F416 $F678 $F679 $F67A $F67B $F67C… | zb-only $F3F7 $FBE1 $FBE2 $FBE3 $FBE4 | value $F7F6 $F7F7
+mki_c            MKI$       PASS     FAIL      0.98x  ref-only $F416 $F662 $F678 $F679 $F698 $F699… | zb-only $F3F7 $FBE1 $FBE2 $FBE3 $FBE4 | value $F67A $F67B $F67C
+mks              MKS$       PASS     FAIL      1.57x  ref-only $F416 $F678 $F679 $F67A $F67B $F67C… | zb-only $F7F8 $F7F9 | value $F7F7
+mks_b            MKS$       PASS     FAIL      1.65x  ref-only $F416 $F66C $F66D $F678 $F679 $F67A… | zb-only $F3F7 $F7F8 $F7F9 $FBE1 $FBE2 $FBE3… | value $F7F6 $F7F7
+mkd              MKD$       PASS     FAIL      1.63x  ref-only $F3F7 $F416 $F678 $F679 $F67A $F67B… | zb-only $F7F8 $F7F9 | value $F7F7
+mkd_b            MKD$       PASS     FAIL      1.72x  ref-only $F416 $F66C $F66D $F678 $F679 $F67A… | zb-only $F7F8 $F7F9 | value $F7F6 $F7F7
+cvs              CVS        PASS     FAIL      1.93x  ref-only $F416 $F678 $F679 $F67A $F67B $F67C… | zb-only $F7F8 $F7F9 | value $F7C9
+cvd              CVD        PASS     FAIL      2.32x  ref-only $F416 $F678 $F679 $F67A $F67B $F67C… | zb-only $F7F8 $F7F9 | value $F7C9
+mki_b            MKI$       PASS     FAIL      0.41x  ref-only $F416 $F678 $F679 $F67A $F67B $F67C… | zb-only 
+dskf             DSKF       PASS     FAIL      0.51x  ref-only $F416 $F678 $F679 $F67A $F67B $F67C… | zb-only  | value $F7F6 $F7F7
+files            FILES      PASS     FAIL      0.22x  ref-only $F416 $F568 $F569 $F56A $F56B $F56C… | zb-only 
+files_b          FILES      PASS     FAIL      0.21x  ref-only $F416 $F568 $F569 $F56A $F56B $F56C… | zb-only  | value $F3DC
+lof              LOF        PASS     FAIL      0.22x  ref-only $F416 $F568 $F569 $F56A $F56B $F56C… | zb-only $F7F8 $F7F9 | value $F7CA
+openkw_b         OPEN       UNRATED  FAIL      0.23x  ref-only $F416 $F568 $F569 $F56A $F56B $F56C… | zb-only $F6C2 $F6C3 | value $F67A $F67B $F67C $F6C6
+eof              EOF        PASS     FAIL      0.23x  ref-only $F416 $F568 $F569 $F56A $F56B $F56C… | zb-only $F7F8 $F7F9 | value $F67A $F67B $F67C $F7C9
+bload            BLOAD      PASS     FAIL      0.21x  ref-only $F416 $F568 $F569 $F56A $F56B $F56C… | zb-only $F7F8 $F7F9 | value $F7CA
+t6mkix           MKI$       UNRATED  UNRATED       -  
+t6mksx           MKS$       UNRATED  UNRATED       -  
+t6mkdx           MKD$       UNRATED  UNRATED       -  
+t6mkiedge        CVI        PASS     FAIL      1.16x  ref-only $F416 $F66C $F66D $F678 $F679 $F67A… | zb-only $F3F7 $F7F8 $F7F9 $FBE1 $FBE2 $FBE3… | value $F7F6 $F7F7
+t6dskf5b         DSKF       UNRATED  UNRATED       -  
+t8savecolon      SAVE       PASS     FAIL      0.38x  ref-only $F3F7 $F416 $F568 $F569 $F56A $F56B… | zb-only 
+t8bsavecolon     BSAVE      PASS     FAIL      0.41x  ref-only $F3F7 $F416 $F568 $F569 $F56A $F56B… | zb-only 
+t8bloadcolon     BLOAD      PASS     FAIL      0.42x  ref-only $F416 $F568 $F569 $F56A $F56B $F56C… | zb-only 
+seqeof_eofcr     EOF        PASS     FAIL      0.43x  ref-only $F416 $F55E $F55F $F560 $F568 $F569… | zb-only  | value $F67A $F67B $F67C
+seqeof_ctrlz     INPUT      PASS     FAIL      0.43x  ref-only $F416 $F55D $F55E $F55F $F560 $F568… | zb-only  | value $F67A $F67B $F67C
+t8namerenameopen NAME       UNRATED  UNRATED       -  
+t8namenoasmiss   NAME       UNRATED  UNRATED       -  
+t8copynotomiss   COPY       UNRATED  UNRATED       -  
+t8openreuse      OPEN       PASS     FAIL      0.42x  ref-only $F416 $F568 $F569 $F56A $F56B $F56C… | zb-only 
+t8opensame54     OPEN       UNRATED  UNRATED       -  
+close            CLOSE      PASS     FAIL      0.45x  ref-only $F416 $F568 $F569 $F56A $F56B $F56C… | zb-only $F7F8 $F7F9 | value $F7C9
+close_b          CLOSE      PASS     FAIL      0.45x  ref-only $F416 $F568 $F569 $F56A $F56B $F56C… | zb-only $F7F8 $F7F9 | value $F7C9
+bsave            BSAVE      PASS     FAIL      0.45x  ref-only $F416 $F568 $F569 $F56A $F56B $F56C… | zb-only $F7F8 $F7F9 | value $F7CA
+save             SAVE       PASS     FAIL      0.42x  ref-only $F416 $F568 $F569 $F56A $F56B $F56C… | zb-only $F7F8 $F7F9 | value $F7CB
+kill             KILL       PASS     FAIL      0.46x  ref-only $F416 $F568 $F569 $F56A $F56B $F56C… | zb-only $F7F8 $F7F9 | value $F7C9
+merge            MERGE      UNRATED  UNRATED       -  
+lset             LSET       FAIL     FAIL      0.46x  FRE ref (17, 0) zb (11, 0)  ref-only $F416 $F568 $F569 $F56A $F56B $F56C… | zb-only $F7F8 $F7F9 | value $F6C4 $F6C6 $F7CA
+rset             RSET       FAIL     FAIL      0.27x  FRE ref (17, 0) zb (11, 0)  ref-only $F416 $F568 $F569 $F56A $F56B $F56C… | zb-only $F7F8 $F7F9 | value $F6C4 $F6C6 $F7CA
+inputkw          INPUT      PASS     FAIL      0.21x  ref-only $F416 $F55D $F55E $F55F $F560 $F561… | zb-only  | value $F67A $F67B $F67C
+input_b          INPUT      PASS     FAIL      0.21x  ref-only $F416 $F55D $F55E $F55F $F560 $F561… | zb-only  | value $F67A $F67B $F67C
+inputnum         INPUT      PASS     FAIL      0.45x  ref-only $F416 $F55D $F55E $F55F $F560 $F561… | zb-only $F7F8 $F7F9 | value $F7CD
+inputnum2        INPUT      PASS     FAIL      0.46x  ref-only $F416 $F55D $F55E $F55F $F560 $F568… | zb-only $F7F8 $F7F9 | value $F67A $F67B $F67C $F7C9
+chanfor          OPEN       UNRATED  FAIL      0.43x  ref-only $F416 $F55D $F55E $F55F $F560 $F568… | zb-only $F6C2 $F6C3 $F7F8 $F7F9 | value $F6C6 $F7CA
+inputstr         INPUT      PASS     FAIL      0.43x  ref-only $F416 $F55D $F55E $F55F $F560 $F568… | zb-only  | value $F67A $F67B $F67C
+inputquote       INPUT      PASS     FAIL      0.43x  ref-only $F416 $F55D $F55E $F55F $F560 $F561… | zb-only  | value $F67A $F67B $F67C $F67E
+inputdol_c       INPUT$     PASS     FAIL      0.43x  ref-only $F416 $F568 $F569 $F56A $F56B $F56C… | zb-only  | value $F67A $F67B $F67C
+getkw            GET        FAIL     FAIL      0.43x  FRE ref (28, 0) zb (22, 0)  ref-only $F416 $F568 $F569 $F56A $F56B $F56C… | zb-only $F7F8 $F7F9 | value $F6C4 $F6C6 $F7CA
+puthash          PUT        FAIL     FAIL      0.39x  FRE ref (28, 0) zb (22, 0)  ref-only $F416 $F568 $F569 $F56A $F56B $F56C… | zb-only $F7F8 $F7F9 | value $F6C4 $F6C6 $F7CA
+printhash        PRINT      PASS     FAIL      0.43x  ref-only $F416 $F568 $F569 $F56A $F56B $F56C… | zb-only  | value $F67A $F67B $F67C
+dski             DSKI$      PASS     FAIL      0.26x  ref-only $F416 $F662 $F664 $F678 $F679 $F698… | zb-only $F7F8 $F7F9 | value $F67A $F67B $F67C $F7CA
+dsko             DSKO$      PASS     FAIL      0.27x  ref-only $F416 $F662 $F664 $F678 $F679 $F698… | zb-only $F7F8 $F7F9 | value $F67A $F67B $F67C $F7CA
+copy             COPY       PASS     FAIL      0.38x  ref-only $F416 $F568 $F569 $F56A $F56B $F56C… | zb-only $F7F8 $F7F9 | value $F7CA
+set              SET        UNRATED  UNRATED       -  
+ipl              IPL        UNRATED  UNRATED       -  
+cmd              CMD        UNRATED  UNRATED       -  
+loc              LOC        PASS     FAIL      0.22x  ref-only $F416 $F568 $F569 $F56A $F56B $F56C… | zb-only $F7F8 $F7F9 | value $F67A $F67B $F67C $F7CA
+openkw           OPEN       PASS     FAIL      0.45x  ref-only $F416 $F568 $F569 $F56A $F56B $F56C… | zb-only $F7F8 $F7F9 | value $F7C9
+namekw           NAME       PASS     FAIL      0.44x  ref-only $F416 $F568 $F569 $F56A $F56B $F56C… | zb-only $F7F8 $F7F9 | value $F7C9
+open_c           OPEN       PASS     FAIL      0.44x  ref-only $F416 $F568 $F569 $F56A $F56B $F56C… | zb-only $F7F8 $F7F9 | value $F7C9
+open_d           OPEN       FAIL     FAIL      0.40x  FRE ref (6, 0) zb (0, 0)  ref-only $F416 $F568 $F569 $F56A $F56B $F56C… | zb-only 
+fieldkw          FIELD      FAIL     FAIL      0.40x  FRE ref (6, 0) zb (0, 0)  ref-only $F416 $F568 $F569 $F56A $F56B $F56C… | zb-only 
+bsave_b          BSAVE      PASS     FAIL      0.43x  ref-only $F416 $F568 $F569 $F56A $F56B $F56C… | zb-only  | value $F67B $F67C
+bload_b          BLOAD      PASS     FAIL      0.45x  ref-only $F416 $F568 $F569 $F56A $F56B $F56C… | zb-only $F7F8 $F7F9 | value $F7CA
+bload_c          BLOAD      PASS     FAIL      0.45x  ref-only $F416 $F568 $F569 $F56A $F56B $F56C… | zb-only $F7F8 $F7F9 | value $F7CA
+save_b           SAVE       UNRATED  UNRATED       -  
+runkw_c          RUN        UNRATED  UNRATED       -  
+loadkw           LOAD       UNRATED  UNRATED       -  
+kwram: a=FAIL b=FAIL: 18 · a=PASS b=FAIL: 220 · a=UNRATED b=FAIL: 10 · a=UNRATED b=UNRATED: 52
+kwram cache: 8 group(s) replayed, 8 measured
+pin: 300 row(s) -> /Users/joost/projects/zerobas/build/kwram.json
+refcache: 0 hit, 0 miss, 8 stored

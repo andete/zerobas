@@ -6045,7 +6045,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:28226 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:28262 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -27029,8 +27029,8 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       ➡️ Still open: the READ side (RDBLK; the mini layer's `bdos_rdblk`; RDRND's
       `rrnd_position`) may share the 128 assumption. Check it before S10.C.
 
-- [ ] 🔴 **D-RDBLKMULTI — BDOS `$27` RDBLK READS THE LAST-OPENED FILE'S FIRST BLOCK, WHATEVER FCB
-      AND RECORD IT IS GIVEN (found 2026-10-01, the read half of S10.A's proof)**
+- [x] ✅ **D-RDBLKMULTI — BDOS `$27` RDBLK READS THE LAST-FOUND FILE, WHATEVER FCB IT IS
+      GIVEN (found 2026-10-01, the read half of S10.A's proof; FIXED the same day)**
       🎚️ TIER 1 — happy path, on the DOS sub-track: two files open and read in turn is
       any copy or merge program, and step 10's input side (S10.C) is exactly it.
       📏 `disk_probe_wrblk_alt.py --read` ([`rdblkmulti_run.out`](scratchpad/rdblkmulti_run.out)):
@@ -27038,21 +27038,57 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       ALTERNATELY with 256 B RDBLKs. Every block is appended to OUT.BIN with WRBLK
       (D-WRBLKRS fixed, so the write is trustworthy).
       - **The CF-3300's OUT.BIN is 11h..18h in order.**
-      - **Ours is 12h eight times**: ALT2's first block, the file FOPENed LAST, for
-        every call.
-      🔬 **TWO DEFECTS, from the code (disk/kernel.asm `k47b2_body`, M31):**
-      - (1) it does `call fat_open ; re-prime the iterator (FAT_FIRSTCLUS already
-        found)`, i.e. it reads whichever file the kernel's LAST FOPEN found, not
-        the FCB's. The coverage doc says as much of RDRND/WRRND.
-      - (2) the position is not honoured either: reading the wrong file at
-        RR = 0/256/512/768 would still give 12h/14h/16h/18h, not 12h four
-        times.
-      🛠 **FIX SHAPE (not built), D-WRBLKRS's pattern:** re-mount and `fat_find` by
-      the FCB's own name every call, then a byte-offset read, one sector a step
-      (start = RR × RS, budget = HL × RS), zero-padding the partial last record
-      as M31 does. Check RDRND (`rrnd_position`) for the same two.
-      Gate: the probe's `--read` half joins `wrblkalt-acceptance`, and
-      `bdos-acceptance` stays converged (BDOSX boot loaders read at RR = 0, RS = 1).
+      - **Ours was 12h eight times.**
+      🔬 **ONE DEFECT, not the two first filed.** `k47b2_body` (M31) did `call
+      fat_open ; re-prime the iterator (FAT_FIRSTCLUS already found)`, i.e. it read
+      whichever file the LAST `fat_find` found -- the last FOPEN, or the last WRBLK,
+      which re-finds its own file every call.
+      ❌ **MISS, scored: the filing's defect (2), "the position is not honoured",
+      was WRONG.** The skip loop honours RR. The first RDBLK read ALT2 (FOPENed
+      last) at RR = 0 = 12h; from then on every RDBLK read OUT.BIN itself, the
+      file the preceding WRBLK had re-found, at RR 0/256/512/... -- which holds
+      only 12h. The fix touched defect (1) alone and all eight blocks came right.
+      🛠 **FIX:** re-mount and `fat_find` by the FCB's own name every call (as
+      `wrblk_body` does); a missing file or an unreadable disk is EOF with nothing
+      delivered. disk.rom 15 B (6444 → 6429 free); main and sub untouched.
+      ✅ **AFTER** ([`rdblkfix_run180.out`](scratchpad/rdblkfix_run180.out)): OUT.BIN
+      11h..18h on BOTH machines. The `--read` half now runs in `wrblkalt-acceptance`,
+      with `--end 120`: the first run at the default 60 s window gave OUT.BIN 7
+      blocks of 8 -- the scripted exit cut an UNFINISHED program, not a wrong one
+      (the 180 s rerun is the proof).
+      ⏱️ **SPEED, measured with `--time`** ([`rdblkfix_time.out`](scratchpad/rdblkfix_time.out),
+      emulated seconds, the exerciser's own PHASE byte): write phase ours 16.00 /
+      CF-3300 9.20 (1.7×); read phase 27.90 / 8.95 (3.1×). Inside T2's 10× -- but see
+      D-RDBLKSEEK: the read cost grows with the POSITION.
+
+- [ ] 🔴 **D-RDBLKSEEK — RDBLK REACHES ITS START BY FETCHING EVERY BYTE BEFORE IT, SO A FILE
+      READ IN BLOCKS COSTS QUADRATIC TIME (found 2026-10-01, with D-RDBLKMULTI's fix)**
+      🎚️ TIER 2 — reasonable time: step 10's input side reads a channel in 256 B
+      blocks, and every block re-skips from the file's start.
+      📏 Measured on 1 KB files only: read phase 3.1× the CF-3300
+      ([`rdblkfix_time.out`](scratchpad/rdblkfix_time.out)). 🔮 **PROJECTED, NOT
+      MEASURED:** block k skips k × 256 bytes through `rdblk_getbyte`, which reads
+      every sector it passes, so a 20 KB file read whole costs ~Σk sector reads
+      (≈ 800 for 80 blocks) where one pass needs 40. That crosses 10× well before
+      20 KB.
+      🛠 **FIX SHAPE (not built):** start = RR × RS as a byte offset (the 24-bit
+      `wrblk_off24` already computes it), walk the chain by CLUSTERS without
+      reading data sectors, read only the sector holding the start. Measure FIRST:
+      `--time` on a file large enough to cross 10× is the failing row, and it must
+      exist before the fix.
+      🤖 **AUTONOMOUS** — the reference settles it.
+
+- [ ] 🔴 **D-RDRNDMULTI — BDOS `$21`/`$22` RDRND/WRRND POSITION IN THE LAST-FOUND FILE, NOT THE
+      FCB'S (found 2026-10-01 by reading D-RDBLKMULTI's sibling)**
+      🎚️ TIER 1 — happy path on the DOS sub-track, the same class as D-RDBLKMULTI;
+      NOT on step 10's path (channels move by RDBLK/WRBLK).
+      🔬 From the code, unmeasured: `rrnd_position` (disk/kernel.asm) seeds the
+      iterator with `call fat_open ; reset iterator to file start (FAT_FIRSTCLUS)`,
+      the global the last `fat_find` left. Its header says so in so many words
+      ("only reuse the kernel's OWN preceding FOPEN state"). It also reads only r0
+      (a documented M26 narrowing: files to 32 640 B).
+      🛠 **FIX SHAPE:** D-RDBLKMULTI's ~12 bytes in `rrnd_position`. Needs its own
+      failing row first: two FOPENed files, RDRND alternately, on both machines.
       🤖 **AUTONOMOUS** — the reference settles it.
 
 - [ ] 🔴 **A kwtime ROW THAT REGRESSES FROM OK TO SLOW OR HANG FAILS NO GATE

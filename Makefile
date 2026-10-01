@@ -2236,8 +2236,10 @@ eofcas-acceptance: repack-machine
 # Our WRBLK positioned as if every record were 128 B, so RS = 1 -- MSX-DOS1's
 # block-I/O idiom and step 10's channel shape -- built a 32-cluster chain for
 # 256 B. Both files must come out byte-exact on ours AND the CF-3300.
+# --read adds the READ side (D-RDBLKMULTI): both files reopened and read in turn
+# with RS = 1 RDBLK, copied onto OUT.BIN -- ours read the last-FOUND file.
 wrblkalt-acceptance: repack-machine
-	ZEROBAS_BASIC_MACHINE=$(REPACK_MACHINE) python3 probes/disk/disk_probe_wrblk_alt.py
+	ZEROBAS_BASIC_MACHINE=$(REPACK_MACHINE) python3 probes/disk/disk_probe_wrblk_alt.py --read --end 120
 
 # --- wprotect-acceptance: disk WRITE errors reach BASIC (D-WPROTECT, D-SAVEOPEN) --
 # 🔴 zerobas reported NO disk write error at all until 2026-09-28: the driver's
