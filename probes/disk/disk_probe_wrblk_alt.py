@@ -41,7 +41,10 @@ import probe_tmp  # noqa: E402  -- the one temp root (temp-root-check)
 HERE = os.path.dirname(os.path.abspath(__file__))
 ASM = os.path.join(HERE, "wrblk_alt.asm")
 EXPECT = {"ALT1": bytes(b for f in (0x11, 0x13, 0x15, 0x17) for b in [f] * 256),
-          "ALT2": bytes(b for f in (0x12, 0x14, 0x16, 0x18) for b in [f] * 256)}
+          "ALT2": bytes(b for f in (0x12, 0x14, 0x16, 0x18) for b in [f] * 256),
+          # the READ side: both files read back alternately with RS = 1 RDBLK and
+          # appended to OUT.BIN with WRBLK -- the blocks in interleaved order
+          "OUT": bytes(b for f in range(0x11, 0x19) for b in [f] * 256)}
 
 
 def assemble() -> bytes:
@@ -103,6 +106,11 @@ def main() -> int:
     ap.add_argument("--boot", type=int, default=14)
     ap.add_argument("--end", type=int, default=60)
     ap.add_argument("--timeout", type=float, default=120)
+    # --read: also check OUT.BIN, the READ side (RDBLK $27, RS = 1, two FCBs
+    # alternately). D-RDBLKMULTI (2026-10-01): ours returns the LAST-OPENED file's
+    # first block for every call, so this half FAILS until that is fixed. The
+    # gate (`make wrblkalt-acceptance`) runs without it.
+    ap.add_argument("--read", action="store_true")
     a = ap.parse_args()
     com = assemble()
     ok = True
@@ -116,7 +124,7 @@ def main() -> int:
             ok = False
             continue
         f = RT.Fat12(dsk)
-        for name in ("ALT1", "ALT2"):
+        for name in (("ALT1", "ALT2", "OUT") if a.read else ("ALT1", "ALT2")):
             d, data = file_bytes(f, name)
             if d is None:
                 print(f"  {tag} {name}.BIN NOT WRITTEN")

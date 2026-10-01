@@ -63,8 +63,11 @@ CARRY its five rows (Joost 09-26); the last board-backed pin is `7c488429`'s.
   layer is single-file. Add a BDOSX case alternating two FCBs, and check which
   create/close/RDBLK entries exist at canonical depth. Then OPEN/PRINT#/CLOSE.
 - ✅ **D-WRBLKRS FIXED (WRBLK is a byte transfer; gate `wrblkalt-acceptance`).
-  S10.A's write side is done.** Next: check RDBLK/RDRND for the same
-  128-B assumption, then S10.B (OPEN FOR OUTPUT/PRINT#/CLOSE on WRBLK).
+  S10.A's write side is done.**
+- 🔴 **The read side is D-RDBLKMULTI (TODO):** RDBLK reads the LAST-FOPENed
+  file's first block for every call (`fat_open` on global state). Fix it by
+  WRBLK's pattern; `disk_probe_wrblk_alt.py --read` is its acceptance test.
+  Then S10.B.
 - (was) 🔴 **THE PROOF FOUND D-WRBLKRS (TODO):** our WRBLK is only right at a record
   size of 128. At RS = 1 it allocates 32 clusters for 256 B, while the
   CF-3300 is exact. Fix it first: a byte-offset transfer looping per sector.

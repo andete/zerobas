@@ -6045,7 +6045,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:28200 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:28226 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -27028,6 +27028,32 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       [`wrblkrs_kwtime.out`](scratchpad/wrblkrs_kwtime.out)).
       ➡️ Still open: the READ side (RDBLK; the mini layer's `bdos_rdblk`; RDRND's
       `rrnd_position`) may share the 128 assumption. Check it before S10.C.
+
+- [ ] 🔴 **D-RDBLKMULTI — BDOS `$27` RDBLK READS THE LAST-OPENED FILE'S FIRST BLOCK, WHATEVER FCB
+      AND RECORD IT IS GIVEN (found 2026-10-01, the read half of S10.A's proof)**
+      🎚️ TIER 1 — happy path, on the DOS sub-track: two files open and read in turn is
+      any copy or merge program, and step 10's input side (S10.C) is exactly it.
+      📏 `disk_probe_wrblk_alt.py --read` ([`rdblkmulti_run.out`](scratchpad/rdblkmulti_run.out)):
+      after the write phase, both files are reopened (FOPEN), RS = 1, and read
+      ALTERNATELY with 256 B RDBLKs. Every block is appended to OUT.BIN with WRBLK
+      (D-WRBLKRS fixed, so the write is trustworthy).
+      - **The CF-3300's OUT.BIN is 11h..18h in order.**
+      - **Ours is 12h eight times**: ALT2's first block, the file FOPENed LAST, for
+        every call.
+      🔬 **TWO DEFECTS, from the code (disk/kernel.asm `k47b2_body`, M31):**
+      - (1) it does `call fat_open ; re-prime the iterator (FAT_FIRSTCLUS already
+        found)`, i.e. it reads whichever file the kernel's LAST FOPEN found, not
+        the FCB's. The coverage doc says as much of RDRND/WRRND.
+      - (2) the position is not honoured either: reading the wrong file at
+        RR = 0/256/512/768 would still give 12h/14h/16h/18h, not 12h four
+        times.
+      🛠 **FIX SHAPE (not built), D-WRBLKRS's pattern:** re-mount and `fat_find` by
+      the FCB's own name every call, then a byte-offset read, one sector a step
+      (start = RR × RS, budget = HL × RS), zero-padding the partial last record
+      as M31 does. Check RDRND (`rrnd_position`) for the same two.
+      Gate: the probe's `--read` half joins `wrblkalt-acceptance`, and
+      `bdos-acceptance` stays converged (BDOSX boot loaders read at RR = 0, RS = 1).
+      🤖 **AUTONOMOUS** — the reference settles it.
 
 - [ ] 🔴 **A kwtime ROW THAT REGRESSES FROM OK TO SLOW OR HANG FAILS NO GATE
       (D-KWTRATCHET, found 2026-09-28 while fixing D-DSKFSLOW).**

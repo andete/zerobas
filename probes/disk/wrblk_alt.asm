@@ -50,8 +50,60 @@ round:
         ld      de, fcbb
         ld      c, $10
         call    BDOS
+        ; --- READ SIDE (D-WRBLKRS follow-up): reopen both, RS = 1, and read them
+        ; ALTERNATELY with RDBLK $27, 256 a call, appending every block to OUT.BIN
+        ; with WRBLK. A read side that positions as if records were 128 B shows
+        ; up as OUT.BIN's blocks out of order or wrong. Expected: 11h..18h.
+        ld      de, fcba
+        ld      c, $0F                  ; FOPEN
+        call    BDOS
+        ld      de, fcbb
+        ld      c, $0F
+        call    BDOS
+        ld      de, fcbo
+        ld      c, $16                  ; FMAKE OUT.BIN
+        call    BDOS
+        ld      hl, 1
+        ld      (fcba + 14), hl
+        ld      (fcbb + 14), hl
+        ld      (fcbo + 14), hl
+        ld      hl, 0
+        ld      (fcba + 33), hl
+        ld      (fcba + 35), hl
+        ld      (fcbb + 33), hl
+        ld      (fcbb + 35), hl
+        ld      (fcbo + 33), hl
+        ld      (fcbo + 35), hl
+        ld      b, 4
+rround:
+        push    bc
+        ld      de, fcba
+        call    rd_copy
+        ld      de, fcbb
+        call    rd_copy
+        pop     bc
+        djnz    rround
+        ld      de, fcbo
+        ld      c, $10
+        call    BDOS
         ld      c, $00                  ; terminate
         call    BDOS
+        ret
+
+; rd_copy -- DE = the FCB to read: RDBLK 256 x 1 B into the DTA, then WRBLK
+; those 256 B onto OUT.BIN.
+rd_copy:
+        ld      hl, 256
+        ld      c, $27                  ; RDBLK
+        push    ix
+        call    BDOS
+        pop     ix
+        ld      de, fcbo
+        ld      hl, 256
+        ld      c, $26                  ; WRBLK
+        push    ix
+        call    BDOS
+        pop     ix
         ret
 
 ; wr_one -- DE = the FCB. Fill the DTA with (fillv), WRBLK 256 records of 1 B
@@ -83,5 +135,9 @@ fcba:
 fcbb:
         db      0
         db      "ALT2    BIN"
+        ds      40 - 12, 0
+fcbo:
+        db      0
+        db      "OUT     BIN"
         ds      40 - 12, 0
 dta:    ds      256
