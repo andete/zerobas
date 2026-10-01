@@ -1389,19 +1389,29 @@ fdcr_full:
 ; OPEN FOR OUTPUT, DOS FMAKE: probes/disk/disk_probe_savedate.py, --wseek's FCB
 ; dump) and when it is WRITTEN (BDOSX/BDOSX3/BDOSX6 read 0821h after WRBLK/WRRND
 ; on a file dated 0). It was $0000, "no fabricated clock" -- that premise fell.
-;   in: HL = the entry; out: HL kept; trashes A, DE
+; D-DOSDATE: in disk.rom the date is the DOS date SDATE keeps (DATE_DAYS);
+; sub.rom (disk BASIC's copy) keeps 0821h until it is measured whether a date
+; set in DOS reaches BASIC's SAVE on the CF-3300.
+;   in: HL = the entry; out: HL kept; trashes A, BC, DE
 dir_stamp_date:
                 push    hl
-                ld      de, 22
-                add     hl, de
+    IF DISK_BUILD
+                call    date_fat_word       ; DE = the DOS date (trashes AF, BC, HL)
+                pop     hl
+                push    hl
+    ELSE
+                ld      de, $0821
+    ENDIF
+                ld      bc, 22
+                add     hl, bc
                 xor     a
                 ld      (hl), a
                 inc     hl
                 ld      (hl), a             ; +22..23 time = 0
                 inc     hl
-                ld      (hl), $21
+                ld      (hl), e
                 inc     hl
-                ld      (hl), $08           ; +24..25 date = 0821h
+                ld      (hl), d             ; +24..25 date
                 pop     hl
                 ret
 

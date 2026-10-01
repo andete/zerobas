@@ -175,6 +175,12 @@ init:
                 ; on every host incl. C-BIOS (provider-oracle-scope.md §8.16,
                 ; tier2-cbios-dosboot-autoexec-f340.md).
                 call    set_ramad
+                ; D-DOSDATE: the DOS date starts at 1984-01-01, MSX-DOS's default, as
+                ; a day count since 1980-01-01 in DATE_DAYS -- the cell and value the
+                ; CF-3300 has from boot (scratchpad/sdatemem.out). SDATE moves it;
+                ; GDATE and every file stamp read it.
+                ld      hl, 1461
+                ld      (DATE_DAYS), hl
                 ; fall into the DOS-boot bridge (TH ch.3); it returns to the BIOS
                 ; boot scan, falling through to BASIC for a non-system disk.
                 ; --- intentional fall-through to boot_disk -------------------

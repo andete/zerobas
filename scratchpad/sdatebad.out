@@ -1,0 +1,15 @@
+STOCK: PHASE=2 (2 = finished)
+OURS: PHASE=2 (2 = finished)
+
+date          STOCK A   days    OURS A   days
+2100-01-01         FF   1461         0  51657   <- differs
+1979-12-31         FF   1461         0  51657   <- differs
+1999-13-01         FF   1461         0  51657   <- differs
+1999-00-01         FF   1461         0  51657   <- differs
+1999-01-00         FF   1461         0  51657   <- differs
+1999-02-29         FF   1461         0  51657   <- differs
+1999-04-31         FF   1461         0  51657   <- differs
+2000-02-29          0   7364         0  51657   <- differs
+1980-01-01          0      0         0  51657   <- differs
+2099-12-31          0  43829         0  51657   <- differs
+1999-12-31          0   7304         0  51657   <- differs

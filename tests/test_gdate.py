@@ -58,6 +58,9 @@ def run():
     build()
     m = Machine(ROM, SYM, rom_base=DISK_BASE)
     m.poke(F306, 0x01)                         # kernel set it to 1 on BDOS entry
+    # D-DOSDATE: _GDATE returns the STORED date now; disk-ROM init leaves 1461
+    # (1984-01-01) in DATE_DAYS, as the CF-3300 has from boot. Seed it so.
+    m.poke(m.addr("DATE_DAYS"), bytes([1461 & 0xFF, 1461 >> 8]))
 
     # call with junk inputs — the contract ignores them, must overwrite.
     cpu = m.call("gdate_handler", hl=0xFFFF, de=0xFFFF, bc=0xFFFF, a=0xFF)

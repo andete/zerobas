@@ -13,6 +13,7 @@ SYSTEM          equ     $F37D   ; SYSTEM sysvar: BDOS entry-point word
 ; page 0). MSX2 TH work area; the disk-ROM-INIT responsibility is confirmed by a
 ; black-box differential (provider-oracle-scope.md §8.8/§8.16). EXPTBL flags which
 ; primary slots are expanded. (EXPTBL also in basic/sysvars.inc — same address.)
+DATE_DAYS       equ     $F33B   ; the DOS date: a day count since 1980-01-01, where the CF-3300 keeps it (1461 = 1984-01-01 from boot; D-DOSDATE) (2 B)
 DOS_F340        equ     $F340   ; disk work-area flag the kernel reads at init (§8.33); $00 = ok (1 B)
 RAMAD0          equ     $F341   ; RAM-slot id per page ($F341-$F344), MSX2 TH work area
 EXPTBL          equ     $FCC1   ; expanded-slot flags, 1 byte/primary, bit 7 = expanded

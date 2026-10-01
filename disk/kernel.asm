@@ -437,12 +437,14 @@ write_sector:                           ; relocated (entry collided with $4935 v
 ; `ds $5FE5 - $` absorbs the shift). See docs/tier2-gdate-spec.md.
                 ds      $553C - $, $00      ; pad to the canonical _GDATE entry
 gdate_handler:
-                ld      hl, $07C0           ; year = 1984
-                ld      de, $0101           ; D = month 01, E = day 01
-                ld      bc, $0000
-                xor     a                   ; A = 0 (Sunday); F = $44 (Z,P/V), as stock
-                ld      ($F306), a          ; clear dispatcher re-entrancy flag (stock parity)
-                ret
+                jp      gdate_body          ; D-DOSDATE: the STORED date, not a constant
+                ; --- MSX-DOS-1 kernel _SDATE entry: $5552 (D-DOSDATE, 2026-10-01) ------
+                ; Measured, not assumed: the first page-1 PC during SDATE on ours is
+                ; $5552 (scratchpad/sdatemem.out). It was zero padding here, so ours
+                ; NOP-slid into the pinned `jp gtime_body` at $55DB and returned A = 0
+                ; for every date, valid or not.
+                ds      $5552 - $, $00
+k_5552:         jp      sdate_body
 
 ; --- MSX-DOS-1 kernel GTIME/STIME/VERIFY entries: $55DB/$55E6/$55FF (M22a) ----
 ; While processing BDOS GTIME ($2C) / STIME ($2D) / VERIFY ($2E) the relocated
@@ -887,6 +889,200 @@ cr_err:
                 ld      a, $FF
                 ret
 
+
+; ===== D-DOSDATE (2026-10-01): the DOS date, kept as the CF-3300 keeps it ====
+; DATE_DAYS ($F33B) is a day count since 1980-01-01 (a Tuesday): 1461 from boot
+; (1984-01-01). Measured on the CF-3300 (scratchpad/sdatebad.out): SDATE stores
+; 1980-01-01 .. 2099-12-31 with real month lengths and leap years (A = 0) and
+; rejects anything else with A = $FF, leaving the count alone; GDATE returns it
+; with the day of week; every file stamp is it (Joost 2026-10-01, "Stamp as
+; 3300"). Over 1980..2099 every fourth year is a leap year, exactly.
+
+; sdate_body -- in: HL = year, D = month, E = day; out: A = 0 stored / $FF not.
+; $F306 is left as the dispatcher set it: A is the result, mirrored into L.
+sdate_body:
+                ld      bc, -1980
+                add     hl, bc
+                jr      nc, sd_bad          ; before 1980
+                ld      a, h
+                or      a
+                jr      nz, sd_bad
+                ld      a, l
+                cp      120
+                jr      nc, sd_bad          ; after 2099
+                ld      c, a                ; C = year - 1980
+                ld      a, d
+                dec     a
+                cp      12
+                jr      nc, sd_bad          ; month not 1..12 (0 wraps to 255)
+                ld      b, a                ; B = month - 1
+                ld      a, e
+                dec     a                   ; A = day - 1 (day 0 wraps to 255)
+                push    af
+                call    month_len           ; A = this month's length
+                ld      d, a
+                pop     af
+                cp      d
+                jr      nc, sd_bad          ; past the month's last day
+                ld      l, a
+                ld      h, 0                ; HL = day - 1
+sd_mon:
+                ld      a, b
+                or      a
+                jr      z, sd_yr
+                dec     b
+                call    month_len           ; + every earlier month of this year
+                ld      e, a
+                ld      d, 0
+                add     hl, de
+                jr      sd_mon
+sd_yr:
+                ld      a, c
+                or      a
+                jr      z, sd_store
+sd_yrlp:
+                dec     c                   ; + every earlier year
+                ld      de, 365
+                ld      a, c
+                and     3
+                jr      nz, sd_yadd
+                inc     de                  ; 1980 + C is a leap year
+sd_yadd:
+                add     hl, de
+                ld      a, c
+                or      a
+                jr      nz, sd_yrlp
+sd_store:
+                ld      (DATE_DAYS), hl
+                xor     a
+                ret
+sd_bad:
+                ld      a, $FF
+                ret
+
+; gdate_body -- _GDATE's contract (docs/tier2-gdate-spec.md §4): HL = year,
+; D = month, E = day, A = day of week (0 = Sunday), BC = 0, F = $44, and $F306
+; cleared so the kernel passes HL through (the M20 rule).
+gdate_body:
+                call    gdate_core
+                ld      b, a
+                xor     a
+                ld      ($F306), a          ; F = $44 (Z, P/V) from the xor
+                ld      a, b                ; A = day of week, flags untouched
+                ld      bc, 0
+                ret
+
+; gdate_core -- DATE_DAYS as a date. No side effects outside the registers (the
+; stamps call it mid-BDOS, where $F306 must stay as the dispatcher set it).
+;   out: HL = year, D = month, E = day, A = day of week; trashes BC, F
+gdate_core:
+                ld      hl, (DATE_DAYS)
+                push    hl
+                inc     hl
+                inc     hl                  ; days + 2: 1980-01-01 was a Tuesday
+                ld      e, l
+                ld      l, h
+                ld      h, 0
+                add     hl, hl
+                add     hl, hl              ; high byte x 4 (256 = 4 mod 7)
+                ld      d, 0
+                add     hl, de              ; + low byte: the same remainder mod 7
+                ld      de, -7
+gc_mod7:
+                add     hl, de
+                jr      c, gc_mod7
+                ld      de, 7
+                add     hl, de              ; L = (days + 2) mod 7
+                pop     de                  ; DE = days
+                push    hl                  ; [day of week]
+                ex      de, hl              ; HL = days
+                ld      c, 0                ; C = year - 1980
+gc_yr:
+                ld      de, 365
+                ld      a, c
+                and     3
+                jr      nz, gc_yl
+                inc     de
+gc_yl:
+                or      a
+                sbc     hl, de
+                jr      c, gc_yrd           ; inside this year
+                inc     c
+                jr      gc_yr
+gc_yrd:
+                add     hl, de              ; HL = the day of the year, from 0
+                ld      b, 0                ; B = month - 1
+gc_mon:
+                call    month_len
+                ld      e, a
+                ld      d, 0
+                or      a
+                sbc     hl, de
+                jr      c, gc_mond          ; inside this month
+                inc     b
+                jr      gc_mon
+gc_mond:
+                add     hl, de              ; L = the day of the month, from 0
+                ld      a, l
+                inc     a
+                ld      e, a                ; E = day
+                ld      d, b
+                inc     d                   ; D = month
+                ld      l, c
+                ld      h, 0
+                ld      bc, 1980
+                add     hl, bc              ; HL = year
+                pop     bc                  ; C = day of week
+                ld      a, c
+                ret
+
+; month_len -- A := the length of month B (0 = January) in year 1980 + C.
+; Keeps BC, DE, HL.
+month_len:
+                push    hl
+                ld      hl, month_days
+                ld      a, l
+                add     a, b
+                ld      l, a
+                jr      nc, ml_nc
+                inc     h
+ml_nc:
+                ld      a, (hl)
+                pop     hl
+                cp      28
+                ret     nz                  ; not February
+                bit     0, c
+                ret     nz
+                bit     1, c
+                ret     nz                  ; not a leap year
+                inc     a                   ; 29
+                ret
+month_days:     db      31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31
+
+; date_fat_word -- DE := DATE_DAYS as a FAT date word: (year - 1980) << 9 |
+; month << 5 | day (1984-01-01 = 0821h, 1999-12-31 = 279Fh). Trashes AF, BC, HL.
+date_fat_word:
+                call    gdate_core          ; HL = year, D = month, E = day
+                ld      bc, -1980
+                add     hl, bc
+                ld      a, l
+                add     a, a                ; (year - 1980) << 1: bits 15..9
+                ld      h, a
+                ld      a, d
+                srl     a
+                srl     a
+                srl     a                   ; month >> 3: bit 8
+                or      h
+                ld      h, a
+                ld      a, d
+                rrca
+                rrca
+                rrca
+                and     $E0                 ; (month << 5) & $E0: bits 7..5
+                or      e                   ; day: bits 4..0
+                ld      l, a
+                ex      de, hl
+                ret
 
                 ds      $5FE5 - $, $00  ; pad to the first free-region kernel entry
                 jp      k_5FE5          ; $5FE5
@@ -3994,11 +4190,14 @@ dfo_done:
 ; file dated 0), and +24's 40h cleared (40h after FMAKE/FOPEN, 00h after a
 ; write: --wseek's dump, BDOSX8). in: HL = the FCB; trashes DE, HL
 fcb_mark_written:
-                ld      de, 20
-                add     hl, de
-                ld      (hl), $21
+                push    hl
+                call    date_fat_word       ; DE = the DOS date (D-DOSDATE)
+                pop     hl
+                ld      bc, 20
+                add     hl, bc
+                ld      (hl), e
                 inc     hl
-                ld      (hl), $08           ; +20..21 date
+                ld      (hl), d             ; +20..21 date
                 inc     hl
                 ld      (hl), 0
                 inc     hl
@@ -4012,11 +4211,14 @@ fcb_mark_written:
 ; "Stamp as 3300"), +24 40h, +25 the entry's index in the root directory. Time
 ; +22..23 stays 0. in: HL = the FCB, FWR_DIRSEC/FWR_DIROFF from fat_dir_create.
 fmake_fcb_fill:
-                ld      de, 20
-                add     hl, de
-                ld      (hl), $21
+                push    hl
+                call    date_fat_word       ; DE = the DOS date (D-DOSDATE)
+                pop     hl
+                ld      bc, 20
+                add     hl, bc
+                ld      (hl), e
                 inc     hl
-                ld      (hl), $08           ; +20..21 = 0821h
+                ld      (hl), d             ; +20..21 = the DOS date
                 inc     hl
                 inc     hl
                 inc     hl

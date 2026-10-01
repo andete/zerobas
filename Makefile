@@ -2233,7 +2233,7 @@ eofcas-acceptance: repack-machine
 
 # --- dosdate-acceptance: DOS dates as the CF-3300 (D-CLOSESTAMP, D-DOSDATE) -----
 # FCLOSE re-dating a WRRND-written file, and SDATE moving GDATE and the file stamp.
-# FAILS until both land; excluded from the battery with that reason.
+# In the battery since both landed (2026-10-01).
 dosdate-acceptance: repack-machine
 	ZEROBAS_BASIC_MACHINE=$(REPACK_MACHINE) python3 probes/disk/disk_probe_dosdate.py
 

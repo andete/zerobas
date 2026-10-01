@@ -6045,7 +6045,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:28500 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:28533 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -27228,7 +27228,7 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       (376 → 353); main untouched.
       Left: D-DOSDATE, D-CLOSESTAMP and D-BLKIOPERCALL, below.
 
-- [ ] 🔴 **D-DOSDATE — DOES A DOS `DATE` MOVE THE CF-3300'S FILE STAMP? (filed 2026-10-01 with
+- [x] ✅ **D-DOSDATE — DOES A DOS `DATE` MOVE THE CF-3300'S FILE STAMP? (filed 2026-10-01 with
       D-WRBLKSEEK (b))**
       🎚️ TIER 1 — happy path on the DOS sub-track: set the date, write a file.
       Our `_GDATE` returns the constant 1984-01-01 and our stamp is the
@@ -27265,9 +27265,42 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
         for an INVALID date first;
       - `gdate_handler` converts the count to Y/M/D + day of week;
       - the DOS-side stamps encode from it.
-      ⚠️ **The sub-ROM copy of `dir_stamp_date`** (disk BASIC) waits on one more
-      measurement: does a date set in DOS reach BASIC's SAVE stamp on the
-      CF-3300? Until then it stays the constant.
+      📏 **SDATE's answers, measured** ([`sdatebad.out`](scratchpad/sdatebad.out),
+      [`sdatebad_probe.py`](scratchpad/sdatebad_probe.py)): on the CF-3300 seven
+      invalid dates (2100, 1979, month 13/0, day 0, 1999-02-29, 1999-04-31)
+      return A = `FFh` and leave the count alone. 2000-02-29, 1980-01-01,
+      2099-12-31 and 1999-12-31 return 0 and store 7364/0/43829/7304. Predicted
+      the split, hit; 2099-12-31's acceptance was the open part. On ours every
+      call returned 0 and stored nothing (the NOP-slide).
+      ✅ **FIXED, DOS SIDE (2026-10-01):**
+      - pinned `k_5552: jp sdate_body`; DATE_DAYS = `$F33B`, 1461 from disk-ROM init;
+      - `sdate_body` validates and stores, with $F306 left set: its result is A;
+      - `gdate_handler` → `gdate_body` = `gdate_core` (the count → Y/M/D + day
+        of week) + the $F306 clear;
+      - `date_fat_word` packs the count for the stamps: `fcb_mark_written`,
+        `fmake_fcb_fill`, and `dir_stamp_date` in disk.rom only (`IF
+        DISK_BUILD`). `gdate_core` has no side effects, because the stamps run
+        mid-BDOS, where clearing $F306 would change WRSEQ/WRRND's HL.
+      - disk.rom 242 B (5818 → 5576 free), sub p1 1 B, no new RAM beyond the
+        CF-3300's own `$F33B` cell (unassigned in our map).
+      ✅ **AFTER** ([`dosdatefix_after.out`](scratchpad/dosdatefix_after.out)):
+      `dosdate-acceptance` PASSES -- GDATE 1999-12-31 Friday, NEWD stamped
+      279Fh, as the CF-3300 -- and joins the battery. `tests/test_sdate.py`
+      pins the CF-3300's eleven SDATE rows and the reverse conversion over nine
+      day counts against Python's calendar (all pass first run).
+      `test_gdate.py` and `test_fat_dir_create.py` now seed DATE_DAYS = 1461, as
+      boot does (checked BEFORE the gate).
+      ➡️ Left: D-DOSDATEBASIC, below.
+
+- [ ] 🔴 **D-DOSDATEBASIC — DOES A DATE SET IN DOS REACH DISK BASIC'S STAMPS ON THE CF-3300?
+      (filed 2026-10-01 with D-DOSDATE)**
+      🎚️ TIER 1 — happy path: DATE in DOS, then BASIC, then SAVE.
+      🔬 Ours: disk BASIC stamps through sub.rom's `dir_stamp_date`, which keeps
+      the constant 0821h. disk.rom's copy reads DATE_DAYS. The CF-3300 keeps
+      the count at `$F33B` from boot, BASIC mode included.
+      📏 **MEASURE FIRST:** SDATE in a COM, then the `BASIC` command, then SAVE, on
+      both machines; read the entry's date. If the CF-3300 stamps the set
+      date, sub.rom's copy needs the conversion too (sub p1 is ~350 B; price it).
       🤖 **AUTONOMOUS** — the reference settles it.
 
 - [x] ✅ **D-CLOSESTAMP — DOES THE CF-3300'S FCLOSE DATE A FILE THAT WAS ONLY WRRND-WRITTEN

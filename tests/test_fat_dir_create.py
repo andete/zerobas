@@ -64,6 +64,9 @@ def make_machine(entries):
     """entries: list of 32-byte dir entries laid into root sector 0; the rest of
     the root directory is $00 (free)."""
     m = Machine(ROM, SYM, rom_base=DISK_BASE)
+    # D-DOSDATE: disk.rom stamps the DOS date (DATE_DAYS), which disk-ROM init
+    # leaves at 1461 = 1984-01-01, as the CF-3300 has from boot. Seed it so.
+    m.poke_w(m.addr("DATE_DAYS"), 1461)
     img = bytearray(ROOTSECS * SECSIZE)
     off = 0
     for e in entries:

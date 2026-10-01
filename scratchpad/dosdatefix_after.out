@@ -1,0 +1,14 @@
+STOCK: PHASE=2 (2 = finished)
+  GDATE before               (1984, 1, 1, 0)
+  SDATE A                    0
+  GDATE after                (1999, 12, 31, 5)
+  FIXD after WRRND+FCLOSE    time 0000 date 0821 = 1984-01-01
+  NEWD (after SDATE)         time 0000 date 279F = 1999-12-31
+OURS: PHASE=2 (2 = finished)
+  GDATE before               (1984, 1, 1, 0)
+  SDATE A                    0
+  GDATE after                (1999, 12, 31, 5)
+  FIXD after WRRND+FCLOSE    time 0000 date 0821 = 1984-01-01
+  NEWD (after SDATE)         time 0000 date 279F = 1999-12-31
+
+PASS: both machines agree
