@@ -56,10 +56,16 @@ def assemble() -> bytes:
     return open(com, "rb").read()
 
 
-def build(dos: str, out: str, com: bytes) -> None:
+# --seek: BIG.BIN, 32 KB, block k = 256 x k (k = 0..127) -- D-RDBLKSEEK's file
+BIG = bytes(k for k in range(128) for _ in range(256))
+
+
+def build(dos: str, out: str, com: bytes, big: bool = False) -> None:
     shutil.copyfile(dos, out)
     img = bytearray(open(out, "rb").read())
     fat12_add(img, "WRBLK", "COM", com)          # RT.run types WRBLK at the prompt
+    if big:
+        fat12_add(img, "BIG", "BIN", BIG)
     fat12_add(img, "AUTOEXEC", "BAT", b"WRBLK\r\n")
     open(out, "wb").write(img)
 
@@ -86,7 +92,11 @@ def run_once(machine: str, dsk: str, boot_s: int, end_s: int, timeout: float,
         tcl += (f"set ph_last -1\nset ph_f [open {{{phase_log}}} w]\n"
                 "proc ph_poll {} { global ph_last ph_f; "
                 "set v [debug read memory 0xC000]; "
-                "if {$v != $ph_last} { puts $ph_f \"$v [machine_info time]\"; "
+                "if {$v != $ph_last} { puts $ph_f \"$v [machine_info time] "
+                "[debug read memory 0xC001]\"; "
+                "if {$v == 6} { foreach b {0xC010 0xC040 0xC070} { set l {}; "
+                "for {set i 0} {$i < 37} {incr i} { lappend l [debug read memory [expr {$b + $i}]] }; "
+                "puts $ph_f \"FCB $b $l\" } }; "
                 "flush $ph_f; set ph_last $v }; after time 0.05 ph_poll }\n"
                 "after time 1 ph_poll\n")
     tcl_path = dsk + ".tcl"
@@ -107,15 +117,22 @@ def phase_times(plog: str) -> str:
     """The write and read phases' emulated durations from the PHASE log: the
     LAST 1 -> 2, 2 -> 3 and 3 -> 4 transitions (the byte holds boot garbage before
     the program first writes it)."""
-    ev = [(int(v), float(t)) for v, t in (ln.split() for ln in open(plog) if ln.strip())]
-    t = {}
-    for v, at in ev:
-        if v in (1, 2, 3, 4):
+    ev = [(int(v), float(at), int(e)) for v, at, e in
+          (ln.split() for ln in open(plog) if ln.strip() and not ln.startswith("FCB"))]
+    t, errs = {}, None
+    for v, at, e in ev:
+        if v in (1, 2, 3, 4, 5, 6):
             t[v] = at
+        if v == 6:
+            errs = e
     if not all(k in t for k in (1, 2, 3, 4)) or not t[1] < t[2] < t[3] < t[4]:
         return f"INCOMPLETE {ev[-6:]}"
-    return (f"write {t[2] - t[1]:.2f} s, RDBLK read {t[3] - t[2]:.2f} s, "
-            f"RDRND read {t[4] - t[3]:.2f} s")
+    out = (f"write {t[2] - t[1]:.2f} s, RDBLK read {t[3] - t[2]:.2f} s, "
+           f"RDRND read {t[4] - t[3]:.2f} s")
+    if 5 in t:
+        out += (f", SEEK read (32 KB) " + (f"{t[6] - t[5]:.2f} s, {errs} wrong block(s)"
+                                          if 6 in t else "UNFINISHED"))
+    return out
 
 
 def file_bytes(f: "RT.Fat12", name: str):
@@ -149,12 +166,15 @@ def main() -> int:
     # .. FCLOSE of ALT1/ALT2) and the read phase (FOPEN .. FCLOSE of OUT.BIN),
     # from the exerciser's PHASE byte. A ratio, never a tick (T5's rule).
     ap.add_argument("--time", action="store_true")
+    # --seek: put BIG.BIN (32 KB) on the disk, so the exerciser's fifth phase
+    # reads it whole in 256 B RDBLKs -- D-RDBLKSEEK's row, read with --time.
+    ap.add_argument("--seek", action="store_true")
     a = ap.parse_args()
     com = assemble()
     ok = True
     for tag, machine in (("OURS ", RT.OUR_MACHINE), ("STOCK", RT.REF_MACHINE)):
         dsk = probe_tmp.tmp(f"wrblk_alt_{tag.strip().lower()}.dsk")
-        build(a.dos_disk, dsk, com)
+        build(a.dos_disk, dsk, com, a.seek)
         plog = probe_tmp.tmp(f"wrblk_alt_{tag.strip().lower()}.phase") if a.time else None
         try:
             run_once(machine, dsk, a.boot, a.end, a.timeout, plog)
@@ -164,6 +184,12 @@ def main() -> int:
             continue
         if plog:
             print(f"  {tag} phases: {phase_times(plog)}")
+            for ln in open(plog):
+                if ln.startswith("FCB"):
+                    _, base, *bs = ln.split()
+                    what = {"0xC010": "after FOPEN", "0xC040": "after block 0",
+                            "0xC070": "after block 5"}[base]
+                    print(f"  {tag} FCB {what:13} " + " ".join(f"{int(b):02X}" for b in bs))
         f = RT.Fat12(dsk)
         names = ["ALT1", "ALT2"] + (["OUT"] if a.read else []) + (["OUT2"] if a.rnd else [])
         for name in names:

@@ -15,7 +15,12 @@
 
 BDOS    equ     $0005
 PHASE   equ     $C000                   ; page-3 TPA byte: 1 writing, 2 RDBLK reading,
-                                        ; 3 RDRND reading, 4 done
+                                        ; 3 RDRND reading, 4 done (5 seek reading, 6 done
+                                        ; when BIG.BIN is on the disk)
+ERRS    equ     $C001                   ; the seek phase's count of WRONG blocks
+FCBDUMP equ     $C010                   ; BIG.BIN's FCB (37 B) after FOPEN, after block 0
+                                        ; and after block 5, at +0/+30h/+60h: which fields
+                                        ; each machine keeps (D-RDBLKSEEK's design input)
                                         ; (a timing hook: a poller reads it, nothing else)
         org     $0100
 start:
@@ -134,6 +139,64 @@ nround:
         call    BDOS
         ld      a, 4
         ld      (PHASE), a
+        ; --- SEEK SIDE (D-RDBLKSEEK), only when BIG.BIN exists (the probe's
+        ; --seek): read it WHOLE in 256 B RDBLKs at RS = 1. Block k is 256 x k,
+        ; so a mispositioned read counts in ERRS. The phase's TIME is the row:
+        ; a read that reaches RR by fetching every byte before it is quadratic.
+        xor     a
+        ld      (ERRS), a
+        ld      (blkn), a
+        ld      de, fcbg
+        ld      c, $0F                  ; FOPEN BIG.BIN
+        call    BDOS
+        or      a
+        jr      nz, no_big
+        ld      a, 5
+        ld      (PHASE), a
+        ld      de, FCBDUMP
+        call    fcb_dump
+        ld      hl, 1
+        ld      (fcbg + 14), hl
+        ld      hl, 0
+        ld      (fcbg + 33), hl
+        ld      (fcbg + 35), hl
+        ld      b, 128                  ; 32 KB
+sk_loop:
+        push    bc
+        ld      de, fcbg
+        ld      hl, 256
+        ld      c, $27                  ; RDBLK
+        push    ix
+        call    BDOS
+        pop     ix
+        ld      a, (blkn)
+        ld      de, FCBDUMP + $30
+        or      a
+        call    z, fcb_dump
+        ld      a, (blkn)
+        ld      de, FCBDUMP + $60
+        cp      5
+        call    z, fcb_dump
+        ld      hl, dta
+        ld      a, (blkn)
+        ld      b, 0
+sk_cmp:
+        cp      (hl)
+        jr      nz, sk_bad
+        inc     hl
+        djnz    sk_cmp
+        jr      sk_next
+sk_bad:
+        ld      hl, ERRS
+        inc     (hl)
+sk_next:
+        ld      hl, blkn
+        inc     (hl)
+        pop     bc
+        djnz    sk_loop
+        ld      a, 6
+        ld      (PHASE), a
+no_big:
         ld      c, $00                  ; terminate
         call    BDOS
         ret
@@ -152,6 +215,13 @@ rd_copy:
         push    ix
         call    BDOS
         pop     ix
+        ret
+
+; fcb_dump -- copy BIG.BIN's FCB (37 B) to DE.
+fcb_dump:
+        ld      hl, fcbg
+        ld      bc, 37
+        ldir
         ret
 
 ; rnd_copy -- DE = the FCB: random record := (recn), RDRND one 128 B record into
@@ -203,6 +273,7 @@ wo_fill:
 
 fillv:  db      0
 recn:   db      0
+blkn:   db      0
 fcba:
         db      0
         db      "ALT1    BIN"
@@ -218,5 +289,9 @@ fcbo:
 fcbr:
         db      0
         db      "OUT2    BIN"
+        ds      40 - 12, 0
+fcbg:
+        db      0
+        db      "BIG     BIN"
         ds      40 - 12, 0
 dta:    ds      256

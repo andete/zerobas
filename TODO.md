@@ -6045,7 +6045,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:28270 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:28293 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -27061,21 +27061,44 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       CF-3300 9.20 (1.7×); read phase 27.90 / 8.95 (3.1×). Inside T2's 10× -- but see
       D-RDBLKSEEK: the read cost grows with the POSITION.
 
-- [ ] 🔴 **D-RDBLKSEEK — RDBLK REACHES ITS START BY FETCHING EVERY BYTE BEFORE IT, SO A FILE
-      READ IN BLOCKS COSTS QUADRATIC TIME (found 2026-10-01, with D-RDBLKMULTI's fix)**
-      🎚️ TIER 2 — reasonable time: step 10's input side reads a channel in 256 B
-      blocks, and every block re-skips from the file's start.
-      📏 Measured on 1 KB files only: read phase 3.1× the CF-3300
-      ([`rdblkfix_time.out`](scratchpad/rdblkfix_time.out)). 🔮 **PROJECTED, NOT
-      MEASURED:** block k skips k × 256 bytes through `rdblk_getbyte`, which reads
-      every sector it passes, so a 20 KB file read whole costs ~Σk sector reads
-      (≈ 800 for 80 blocks) where one pass needs 40. That crosses 10× well before
-      20 KB.
-      🛠 **FIX SHAPE (not built):** start = RR × RS as a byte offset (the 24-bit
-      `wrblk_off24` already computes it), walk the chain by CLUSTERS without
-      reading data sectors, read only the sector holding the start. Measure FIRST:
-      `--time` on a file large enough to cross 10× is the failing row, and it must
-      exist before the fix.
+- [ ] 🔴 **D-RDBLKSEEK — BLOCK I/O PAYS A FULL MOUNT + FIND + CHAIN WALK ON EVERY CALL: A 32 KB FILE
+      READ IN 256 B RDBLKs TAKES 147× THE CF-3300 (found 2026-10-01 with D-RDBLKMULTI's fix; MEASURED)**
+      🎚️ TIER 2 — reasonable time: step 10's channels move by 256 B RDBLK/WRBLK,
+      so every INPUT#/PRINT# file pays this.
+      📏 **FAILING ROW** ([`rdblkseek_before.out`](scratchpad/rdblkseek_before.out),
+      repeated in [`rdblkseek_fcb.out`](scratchpad/rdblkseek_fcb.out)):
+      `disk_probe_wrblk_alt.py --seek --time` puts BIG.BIN (32 KB, block k = 256 × k)
+      on the disk, and a fifth phase reads it whole in 256 B RDBLKs at RS = 1.
+      **Ours 2150.91 s, CF-3300 14.65 s, emulated: 147×.** 0 wrong blocks on both.
+      Predicted ≥ 10×: hit, and the size of the miss is the finding below.
+      🔬 **TWO COSTS, and the filed one is the smaller.**
+      - (a) THE FILED ONE: the skip to RR fetches every byte before it, so the read
+        is quadratic in the file size.
+      - (b) **A PER-CALL CONSTANT ~15× stock's on its own:** ~1.7 s an RDBLK on
+        small files (phase 2) against stock's 0.11 s. Every call re-mounts (the
+        boot sector, track 0) and re-finds (the root directory), then seeks ~40
+        tracks out to the data; every DSKIO also drops the motor (`mtoff`).
+        Fixing (a) alone leaves ~15×.
+      🔬 **HOW THE CF-3300 AVOIDS BOTH -- its FCB, read as DATA after FOPEN, after
+      block 0 and after block 5 (`rdblkseek_fcb.out`; the published MSX-DOS FCB):**
+      - +26..27 first cluster `0151h` on both machines.
+      - **+28..29 last cluster accessed and +30..31 its relative index: stock walks
+        them `0151h/0` → `0152h/1` by block 5; ours leaves them at the FOPEN fill.**
+      - +25 (directory entry index): stock `2Ch`, ours `00h`.
+      - +14..15 after FOPEN: stock `8000h`, ours `0000h` -- not understood,
+        recorded only.
+      So stock positions from the FCB's own running cluster: no mount, no find,
+      at most one chain step per new cluster.
+      🛠 **FIX SHAPE (not built):** RDBLK and WRBLK position from the FCB, as stock
+      does. First cluster from +26, size from +16, start from +28/+30 when it
+      is at or before the target (else from +26), and update +28/+30 on every
+      call. The WRBLK side needs FOPEN/FMAKE to fill +25 so the directory update
+      can find its entry without a scan. No per-call `fat_mount`. That also
+      covers D-RDBLKMULTI/D-WRBLKRS's multi-file correctness without the name
+      lookup those fixes added. Geometry staleness on a disk swap is the risk to
+      price (DSKCHG).
+      The row is OPT-IN (`--seek`): at 147× ours runs ~2150 emulated s, too long
+      for the gate. It joins `wrblkalt-acceptance` when the fix brings it under 10×.
       🤖 **AUTONOMOUS** — the reference settles it.
 
 - [x] ✅ **D-RDRNDMULTI — BDOS `$21`/`$22` RDRND/WRRND POSITIONED IN THE LAST-FOUND FILE, NOT THE
