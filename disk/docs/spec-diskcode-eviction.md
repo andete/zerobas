@@ -4193,6 +4193,21 @@ With a real RUN→capture budget (`run_gap`), both directions read cleanly
      half.
 - S10.A is the prerequisite and can be built and gated on its own, with no
   BASIC-visible change.
+- 🔴 **AND THE "SINGLE-FILE" PREMISE ABOVE WAS HALF WRONG, CORRECTED THE SAME
+  NIGHT.** The one-file header is `disk/driver.asm`'s MINI layer, the read-only
+  subset BLOAD uses. The kernel's CANONICAL FCB entries are a different layer:
+  WRBLK `$47BE`, RDRND `$4788`, WRRND `$4793` and WRABS `$4720` are what
+  `bdos-acceptance` drives byte-exact against the stock ROM. They keep NO state
+  between calls. `wrblk_body` re-mounts, finds the directory entry by the FCB's
+  own name and positions from the FCB's random record and record size every
+  call; its M29 cursor lives only within one invocation. Its FCB fields already
+  match stock except +20/21 (date), +24 and +25 (the allowlist). So those
+  entries are multi-file by construction, at the price of a directory lookup per
+  call: per 256 B record under S10.0's shape, which is on-par territory.
+  ➡️ **S10.A SHRINKS to a proof, not a rewrite:** a BDOSX case that alternates
+  WRBLK and RDBLK-style calls on TWO FCBs, held byte-exact against stock. Then
+  check which create/close/RDBLK entries the BASIC slices need exist at
+  canonical depth or only in the mini layer (`bdos_rdblk` lives in driver.asm).
 
 🔴 **D-CFWSTALL WAS MINE, AND IT IS THE DOCUMENTED CLASS.** `run_cases` captures
 `step` seconds after RUN, and `cap_gap` never moves it. omsx_repl's docstring
