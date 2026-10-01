@@ -6045,7 +6045,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:28353 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:28377 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -27159,6 +27159,30 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
         entry without a per-call `fat_find`.
       Then `--wseek` joins `wrblkalt-acceptance` (it fails on 10× and on any FCB
       byte outside the named open set).
+      ✅ **(a) DONE** ([`wrblkseek_after.out`](scratchpad/wrblkseek_after.out)):
+      - `wpe_fresh` seeks by CLUSTERS for a file that has one (`wrblk_seek`: from
+        +28/+30 when at or before the target, FAT reads only). An empty file
+        keeps the head walk, which allocates its first cluster.
+      - `wrblk_fcb_keep` writes +16..19 / +26 / +28 / +30 back after every call.
+      - FMAKE now zeroes +16..31 (`fcb_clear_tail`). Without that, a REUSED FCB
+        would hand `wrblk_seek` another file's clusters. Our FMAKE wrote nothing
+        into the FCB, and stock's +26..31 are 0 after FMAKE.
+      - disk.rom 229 B (6296 → 6067 free; 206 B of new routines after the
+        `$75A5` pin, the rest call sites), no new RAM (`WRBLK_RECSEC`, dead since
+        D-WRBLKRS, holds the sector-in-cluster).
+      - **32 KB write: ours 272.56 s, CF-3300 30.95 s = 8.8×** (was 59.4×).
+        BIGW byte-exact on both, and +16/+26/+28/+30 now equal stock's after
+        block 5. ❌ **MISS, scored: predicted 5–8×.** The remaining cost is per
+        call: mount, find and the directory update.
+      - Every earlier phase unchanged (read 3.1×), and all 64 unit-test files
+        pass (five drive WRBLK; checked BEFORE the gate this time).
+      `wrblkalt-acceptance` now runs `--wseek` (`--end 600`).
+      ➡️ **(b) OPEN:** FMAKE's +20..21 (date `0821h`), +24 (`40h`), +25 (directory
+      index), the only bytes the gate still names. +25 would also let WRBLK's
+      directory update skip `fat_find` -- the per-call cost that keeps the write
+      near 9×. 🔴 **The date is a documented divergence** (our directory
+      entries stamp 0, disk/PROVENANCE.md): read that ruling BEFORE copying
+      `0821h`.
       🤖 **AUTONOMOUS** — the reference settles it.
 
 - [x] ✅ **D-RDRNDMULTI — BDOS `$21`/`$22` RDRND/WRRND POSITIONED IN THE LAST-FOUND FILE, NOT THE

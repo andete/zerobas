@@ -1,0 +1,42 @@
+WARNING: Var start is never used on line 27 of file /Users/joost/projects/zerobas/probes/disk/wrblk_alt.asm
+  OURS  phases: write 17.75 s, RDBLK read 22.85 s, RDRND read 24.35 s, SEEK read (32 KB) 45.55 s, 0 wrong block(s), WSEEK write (32 KB) 272.56 s
+  OURS  FCB after FOPEN   00 42 49 47 20 20 20 20 20 42 49 4E 00 00 00 80 00 80 00 00 00 00 00 00 40 00 52 01 52 01 00 00 00 00 00 00 00
+  OURS  FCB after block 0 00 42 49 47 20 20 20 20 20 42 49 4E 00 00 01 00 00 80 00 00 00 00 00 00 40 00 52 01 52 01 00 00 00 00 01 00 00
+  OURS  FCB after block 5 00 42 49 47 20 20 20 20 20 42 49 4E 00 00 01 00 00 80 00 00 00 00 00 00 40 00 52 01 53 01 01 00 00 00 06 00 00
+  OURS  FCB after write 5 6F 72 20 72 65 74 72 79 0D 0A 24 00 4D 53 58 44 4F 53 20 20 53 59 53 00 00 01 00 00 00 00 00 00 00 00 00 00 00
+  OURS  FCB after FMAKE   00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+  OURS  FCB after FOPEN   00 42 49 47 20 20 20 20 20 42 49 4E 00 00 00 80 00 80 00 00 00 00 00 00 40 00 52 01 52 01 00 00 00 00 00 00 00
+  OURS  FCB after block 0 00 42 49 47 20 20 20 20 20 42 49 4E 00 00 01 00 00 80 00 00 00 00 00 00 40 00 52 01 52 01 00 00 00 00 01 00 00
+  OURS  FCB after block 5 00 42 49 47 20 20 20 20 20 42 49 4E 00 00 01 00 00 80 00 00 00 00 00 00 40 00 52 01 53 01 01 00 00 00 06 00 00
+  OURS  FCB after write 5 00 42 49 47 57 20 20 20 20 42 49 4E 00 00 01 00 00 06 00 00 00 00 00 00 00 00 79 01 7A 01 01 00 00 00 06 00 00
+  OURS  FCB after FMAKE   00 42 49 47 57 20 20 20 20 42 49 4E 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+  OURS  ALT1.BIN size=1024 chain=[372] eoc=True blocks=['0x11', '0x13', '0x15', '0x17'] AS EXPECTED
+  OURS  ALT2.BIN size=1024 chain=[373] eoc=True blocks=['0x12', '0x14', '0x16', '0x18'] AS EXPECTED
+  OURS  OUT.BIN size=2048 chain=[374, 375] eoc=True blocks=['0x11', '0x12', '0x13', '0x14', '0x15', '0x16', '0x17', '0x18'] AS EXPECTED
+  OURS  OUT2.BIN size=1024 chain=[376] eoc=True blocks=['0x11', '0x12', '0x13', '0x14', '0x15', '0x16', '0x17', '0x18'] AS EXPECTED
+  OURS  BIGW.BIN size=32768 chain=[377, 378, 379, 380, '...'] eoc=True blocks=['0x0', '0x1', '0x2', '0x3', '0x4', '0x5', '...', '0x7e', '0x7f'] AS EXPECTED
+  STOCK phases: write 9.65 s, RDBLK read 9.10 s, RDRND read 10.00 s, SEEK read (32 KB) 14.65 s, 0 wrong block(s), WSEEK write (32 KB) 30.95 s
+  STOCK FCB after FOPEN   00 42 49 47 20 20 20 20 20 42 49 4E 00 00 00 80 00 80 00 00 00 00 00 00 40 2C 52 01 52 01 00 00 00 00 00 00 00
+  STOCK FCB after block 0 00 42 49 47 20 20 20 20 20 42 49 4E 00 00 01 00 00 80 00 00 00 00 00 00 40 2C 52 01 52 01 00 00 00 00 01 00 00
+  STOCK FCB after block 5 00 42 49 47 20 20 20 20 20 42 49 4E 00 00 01 00 00 80 00 00 00 00 00 00 40 2C 52 01 53 01 01 00 00 00 06 00 00
+  STOCK FCB after write 5 6F 72 20 72 65 74 72 79 0D 0A 24 00 4D 53 58 44 4F 53 20 20 53 59 53 00 00 01 00 80 09 00 00 50 2D 24 A0 40 07
+  STOCK FCB after FMAKE   00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+  STOCK FCB after FOPEN   00 42 49 47 20 20 20 20 20 42 49 4E 00 00 00 80 00 80 00 00 00 00 00 00 40 2C 52 01 52 01 00 00 00 00 00 00 00
+  STOCK FCB after block 0 00 42 49 47 20 20 20 20 20 42 49 4E 00 00 01 00 00 80 00 00 00 00 00 00 40 2C 52 01 52 01 00 00 00 00 01 00 00
+  STOCK FCB after block 5 00 42 49 47 20 20 20 20 20 42 49 4E 00 00 01 00 00 80 00 00 00 00 00 00 40 2C 52 01 53 01 01 00 00 00 06 00 00
+  STOCK FCB after write 5 00 42 49 47 57 20 20 20 20 42 49 4E 00 00 01 00 00 06 00 00 21 08 00 00 00 33 79 01 7A 01 01 00 00 00 06 00 00
+  STOCK FCB after FMAKE   00 42 49 47 57 20 20 20 20 42 49 4E 00 00 00 00 00 00 00 00 21 08 00 00 40 33 00 00 00 00 00 00 00 00 00 00 00
+  STOCK ALT1.BIN size=1024 chain=[372] eoc=True blocks=['0x11', '0x13', '0x15', '0x17'] AS EXPECTED
+  STOCK ALT2.BIN size=1024 chain=[373] eoc=True blocks=['0x12', '0x14', '0x16', '0x18'] AS EXPECTED
+  STOCK OUT.BIN size=2048 chain=[374, 375] eoc=True blocks=['0x11', '0x12', '0x13', '0x14', '0x15', '0x16', '0x17', '0x18'] AS EXPECTED
+  STOCK OUT2.BIN size=1024 chain=[376] eoc=True blocks=['0x11', '0x12', '0x13', '0x14', '0x15', '0x16', '0x17', '0x18'] AS EXPECTED
+  STOCK BIGW.BIN size=32768 chain=[377, 378, 379, 380, '...'] eoc=True blocks=['0x0', '0x1', '0x2', '0x3', '0x4', '0x5', '...', '0x7e', '0x7f'] AS EXPECTED
+  FCB after FOPEN   differs at [25] (all known: D-WRBLKSEEK)
+  FCB after block 0 differs at [25] (all known: D-WRBLKSEEK)
+  FCB after block 5 differs at [25] (all known: D-WRBLKSEEK)
+  FCB after write 5 differs at [20, 21, 25] -- NOT KNOWN: [20, 21]
+  FCB after FMAKE   differs at [20, 21, 24, 25] -- NOT KNOWN: [20, 21, 24]
+  SEEK: ours 45.55 s / CF-3300 14.65 s = 3.1x (within T2's 10x)
+  WSEEK: ours 272.56 s / CF-3300 30.95 s = 8.8x (within T2's 10x)
+
+FAIL: two FCBs alternating block/random I/O do NOT persist as written on both machines

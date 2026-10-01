@@ -2242,9 +2242,11 @@ eofcas-acceptance: repack-machine
 # --seek adds a 32 KB file read whole in 256 B RDBLKs (D-RDBLKSEEK): 0 wrong blocks
 # on both, and ours within T2's 10x of the CF-3300 (it was 147x, now ~3x), plus
 # the FCB dumps compared byte for byte outside the named open set.
-# --end 300: ours takes ~115 emulated s for the four phases, plus boot.
+# --wseek adds a 32 KB file WRITTEN in 256 B WRBLKs (D-WRBLKSEEK): byte-exact on
+# both, ours within 10x (it was 59x, now ~9x), its FCB compared outside the named set.
+# --end 600: ours takes ~390 emulated s for the five phases, plus boot.
 wrblkalt-acceptance: repack-machine
-	ZEROBAS_BASIC_MACHINE=$(REPACK_MACHINE) python3 probes/disk/disk_probe_wrblk_alt.py --read --rnd --seek --end 300
+	ZEROBAS_BASIC_MACHINE=$(REPACK_MACHINE) python3 probes/disk/disk_probe_wrblk_alt.py --read --rnd --seek --wseek --end 600
 
 # --- wprotect-acceptance: disk WRITE errors reach BASIC (D-WPROTECT, D-SAVEOPEN) --
 # 🔴 zerobas reported NO disk write error at all until 2026-09-28: the driver's

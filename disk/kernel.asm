@@ -387,6 +387,7 @@ bdos_create_body:                       ; [bdos_create, bdos_create_failpop) —
                 call    fat_mount
                 jp      c, bdos_create_failpop      ; jr->jp: relocated
                 pop     hl              ; HL = FCB
+                call    fcb_clear_tail  ; D-WRBLKSEEK: +16..31 := 0 (HL kept)
                 inc     hl              ; HL = FCB+1 = 8.3 name
                 call    fat_dir_create  ; find/make a dir slot, write the entry
                 jp      c, bdos_create_err          ; jr->jp: relocated
@@ -1084,6 +1085,7 @@ wrblk_loop_done:
                 call    wrblk_mul_rr_rs     ; WRBLK_MULACC := (ix+33..35, = new_RR) * RS
                 call    wrblk_size_max
                 call    wrblk_set_wrfirst
+                call    wrblk_fcb_keep      ; D-WRBLKSEEK: FCB +16/+26/+28/+30, as stock
                 call    fat_dir_update
                 jp      c, wrblk_ioerr2
                 xor     a
@@ -1159,10 +1161,8 @@ wrblk_finish:                              ; shared tail: M20 dispatcher-flag ru
 ;        "uninitialised", no zero-fill, EXCEPT the delta==0 same-sector case,
 ;        where SECTOR_BUF already holds it from the previous call -- no I/O);
 ;        Cy = 1 = disk full / I/O error
-;        WRBLK_RECSEC := WRBLK_REC & 3 (record-in-sector; the codebase's fixed
-;        4-records/512-byte-sector convention -- independent of RS, which only
-;        scales the byte quantity copied per record and the RR/byte-budget
-;        bookkeeping, per spec §3.3)
+;        (the old WRBLK_RECSEC record-in-sector output died with D-WRBLKRS;
+;        the cell is wrblk_seek's sector-in-cluster now)
 wrblk_position_sec:                         ; D-WRBLKRS: in BC = the target SECTOR-in-file
                                             ; (the caller computes it from a BYTE offset;
                                             ; the record -> sector head that assumed 128 B
@@ -1203,6 +1203,23 @@ wpe_fresh:
                 ld      (WRBLK_CURSEC), bc
                 ld      a, 1
                 ld      (WRBLK_CURVALID), a
+                ; 🔴 D-WRBLKSEEK (2026-10-01): this walked from the head, READING every
+                ; sector it passed -- a 32 KB file written in 256 B WRBLKs took 59x the
+                ; CF-3300 (disk_probe_wrblk_alt.py --wseek). A file that already has a
+                ; cluster now seeks by CLUSTERS from the FCB's running cluster
+                ; (wrblk_seek, no data reads); an empty one keeps the head walk, which
+                ; allocates its first cluster.
+                ld      hl, (FAT_FIRSTCLUS)
+                ld      a, h
+                or      a
+                jr      nz, wpe_seek
+                ld      a, l
+                cp      2
+                jr      c, wpe_head
+wpe_seek:
+                call    wrblk_seek          ; BC = the wrblk_read_or_extend_sector steps left
+                jr      wpe_walk
+wpe_head:
                 inc     bc                  ; BC = walk-loop count (>=1; sector 0 needs 1 step)
 wpe_walk:
                 push    bc                  ; wrblk_read_or_extend_sector clobbers BC
@@ -3886,6 +3903,148 @@ dfo_done:
 
                 ds      $75A5 - $, $00
                 jp      k_75A5          ; $75A5
+
+; fcb_clear_tail -- FMAKE's FCB +16..31 := 0 (D-WRBLKSEEK). WRBLK now positions
+; from +28/+30 (wrblk_seek); a program that REUSES an FCB for a new file would
+; otherwise walk the OLD file's clusters. Stock after FMAKE: +26..31 are 0.
+;   in: HL = the FCB; out: HL kept; trashes A, B, DE
+fcb_clear_tail:
+                push    hl
+                ld      de, 16
+                add     hl, de
+                ld      b, 16
+fct_lp:
+                ld      (hl), 0
+                inc     hl
+                djnz    fct_lp
+                pop     hl
+                ret
+
+; wrblk_seek -- WRBLK's first positioning in a call, by CLUSTERS (D-WRBLKSEEK).
+; The file has a first cluster (the caller checked). Target cluster index ci =
+; sector / spc; the walk starts from FCB +28/+30 when that is at or before ci
+; (else from FAT_FIRSTCLUS) and reads only FAT sectors. If the chain ends
+; first, the iterator stops on the last real cluster marked exhausted, and the
+; returned step count lets wrblk_read_or_extend_sector grow it from there.
+;   in:  BC = the target sector-in-file, IX = the FCB, fat_open done
+;   out: BC = wrblk_read_or_extend_sector steps still to take (>= 1);
+;        FAT_CURCLUS/FAT_CLUSSEC set for the first of them
+wrblk_seek:
+                ld      h, b
+                ld      l, c
+                ld      a, (FAT_SECPERCLUS)
+                dec     a
+                and     l
+                ld      (WRBLK_RECSEC), a   ; the sector-in-cluster (spc is a power of two)
+                ld      a, (FAT_SECPERCLUS)
+ws_ci:
+                srl     a
+                jr      c, ws_cid
+                srl     h
+                rr      l
+                jr      ws_ci
+ws_cid:
+                push    hl                  ; [ci]
+                ld      e, (ix+30)
+                ld      d, (ix+31)
+                or      a
+                sbc     hl, de              ; HL = ci - the FCB's index
+                ld      c, (ix+28)
+                ld      b, (ix+29)          ; BC = the FCB's running cluster
+                jr      c, ws_first
+                ld      a, b
+                or      a
+                jr      nz, ws_in
+                ld      a, c
+                cp      2
+                jr      nc, ws_in           ; a real cluster -> walk from it
+ws_first:
+                pop     hl
+                push    hl                  ; HL = ci steps from the first cluster
+                ld      bc, (FAT_FIRSTCLUS)
+ws_in:
+                ex      de, hl              ; DE = clusters to walk
+                ld      h, b
+                ld      l, c                ; HL = the cluster
+ws_walk:
+                ld      a, d
+                or      e
+                jr      z, ws_at
+                push    hl                  ; [the cluster]
+                push    de
+                call    fat_next_cluster    ; HL := its link (clobbers A/BC/DE)
+                pop     de
+                ld      a, h
+                cp      $0F
+                jr      c, ws_ok            ; < $0F00: a real link
+                ld      a, l
+                cp      $F8
+                jr      c, ws_ok            ; < $0FF8: a real link
+                pop     hl                  ; the chain ENDS after this cluster
+                ld      (FAT_CURCLUS), hl
+                ld      a, (FAT_SECPERCLUS)
+                ld      (FAT_CLUSSEC), a    ; exhausted: the next step extends
+                dec     de                  ; steps = (DE-1) x spc + sector-in-cluster + 1
+                ld      hl, 0
+                ld      b, a
+ws_mul:
+                add     hl, de
+                djnz    ws_mul
+                ld      a, (WRBLK_RECSEC)
+                inc     a
+                ld      e, a
+                ld      d, 0
+                add     hl, de
+                jr      ws_tail
+ws_ok:
+                inc     sp
+                inc     sp                  ; drop the saved cluster
+                dec     de
+                jr      ws_walk
+ws_at:
+                ld      (FAT_CURCLUS), hl
+                ld      a, (WRBLK_RECSEC)
+                ld      (FAT_CLUSSEC), a
+                ld      hl, 1               ; one step: read the target sector
+ws_tail:
+                pop     de                  ; drop [ci]
+                ld      b, h
+                ld      c, l
+                ret
+
+; wrblk_fcb_keep -- after a WRBLK, the FCB carries what the CF-3300's does
+; (D-WRBLKSEEK, read as data after block 5): +16..19 the size, +26 the first
+; cluster, +28/+30 the cluster last written and its index in the chain.
+;   in:  IX = the FCB; BDOS_WRBYTES = the new size; FAT_FIRSTCLUS; and, when the
+;        call positioned (WRBLK_CURVALID), FAT_CURCLUS / WRBLK_CURSEC
+wrblk_fcb_keep:
+                ld      hl, (BDOS_WRBYTES)
+                ld      (ix+16), l
+                ld      (ix+17), h
+                ld      hl, (BDOS_WRBYTES + 2)
+                ld      (ix+18), l
+                ld      (ix+19), h
+                ld      hl, (FAT_FIRSTCLUS)
+                ld      (ix+26), l
+                ld      (ix+27), h
+                ld      a, (WRBLK_CURVALID)
+                or      a
+                ret     z                   ; nothing positioned this call
+                ld      hl, (FAT_CURCLUS)
+                ld      (ix+28), l
+                ld      (ix+29), h
+                ld      hl, (WRBLK_CURSEC)
+                ld      a, (FAT_SECPERCLUS)
+wfk_ci:
+                srl     a
+                jr      c, wfk_cid
+                srl     h
+                rr      l
+                jr      wfk_ci
+wfk_cid:
+                ld      (ix+30), l
+                ld      (ix+31), h
+                ret
 
 ; k47b2_seek -- RDBLK's positioning (D-RDBLKSEEK), from k47b2_body's steps 6+7;
 ; its header there says what and why. Lives here because k47b2_body's region

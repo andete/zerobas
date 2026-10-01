@@ -212,8 +212,12 @@ def main() -> int:
                         continue
                     if what in ("after FMAKE", "after write 5") and not a.wseek:
                         continue
+                    # the poller dumps at phase 6 AND 8: the LAST dump is the real one
                     fcbs.setdefault(what, {})[tag.strip()] = [int(b) for b in bs]
-                    print(f"  {tag} FCB {what:13} " + " ".join(f"{int(b):02X}" for b in bs))
+            for what, by in fcbs.items():
+                if tag.strip() in by:
+                    print(f"  {tag} FCB {what:13} "
+                          + " ".join(f"{b:02X}" for b in by[tag.strip()]))
         f = RT.Fat12(dsk)
         names = (["ALT1", "ALT2"] + (["OUT"] if a.read else []) + (["OUT2"] if a.rnd else [])
                  + (["BIGW"] if a.wseek else []))
@@ -236,15 +240,15 @@ def main() -> int:
     # still OPEN, named here so a new one cannot hide among them. +25 (the
     # directory index FOPEN fills) is D-WRBLKSEEK's; +28..31 (the running
     # cluster) closed with D-RDBLKSEEK.
-    # The WRITE dumps also name +28..31: WRBLK does not keep the running
-    # cluster yet (D-WRBLKSEEK, open).
+    # The WRITE dumps also name FMAKE's fill: +20..21 the date, +24 (stock 40h
+    # after FMAKE) -- D-WRBLKSEEK (b), open. +16..19/+26/+28/+30 closed with (a).
     for what, by in fcbs.items():
-        known = {25, 28, 29, 30, 31} if what in ("after FMAKE", "after write 5") else {25}
+        known = {20, 21, 24, 25} if what in ("after FMAKE", "after write 5") else {25}
         if "OURS" in by and "STOCK" in by:
             diff = [i for i in range(37) if by["OURS"][i] != by["STOCK"][i]]
             new = [i for i in diff if i not in known]
             print(f"  FCB {what:13} differs at {diff}"
-                  + (f" -- NOT KNOWN: {new}" if new else " (all known: D-WRBLKSEEK)"))
+                  + (f" -- NOT KNOWN: {new}" if new else " (all known: D-WRBLKSEEK (b))"))
             ok = ok and not new
     # --seek: the 32 KB read must be RIGHT on both (0 wrong blocks) and, on
     # ours, within T2's 10x of the CF-3300 (D-RDBLKSEEK: it was 147x).
