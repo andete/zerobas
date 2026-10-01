@@ -57,7 +57,10 @@ CARRY its five rows (Joost 09-26); the last board-backed pin is `7c488429`'s.
 - If it holds: +195 B of disk RAM, s.case for free, ~800 B of main code out.
 - **S10.0 is ANSWERED:** the channel is a record-size-1 MSX-DOS FCB moved by
   256 B block I/O. It changes only at record boundaries, and header +6 is the
-  byte position. **Next: S10.1, PRINT# through `$FE85`.**
+  byte position. **Next: S10.A** (spec §6.6bc "SLICE ORDER CORRECTED"):
+  make `disk.rom`'s BDOS engine FCB-stateful and multi-FCB. It is single-file
+  today by its own header; gate it with `bdos-acceptance`. Then the
+  OPEN/PRINT#/CLOSE vertical slice.
 - 🔴 D-CFWSTALL was MY capture timing: the capture fires `step` after RUN, and
   `cap_gap` never moves it, `run_gap` does. omsx_repl documents it; I raised
   `cap_gap` twice and bisected a phantom.

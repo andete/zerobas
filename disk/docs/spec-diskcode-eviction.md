@@ -4164,6 +4164,36 @@ With a real RUN→capture budget (`run_gap`), both directions read cleanly
 - The record-size field (+14..+15) is 1, so the FCB counts BYTES, and one
   transfer moves a 256 B record. That is MSX-DOS block I/O on a record-size-1
   FCB. Nothing in the FCB moves per byte.
+📐 **SLICE ORDER CORRECTED (2026-10-01, from reading the code, not measured):**
+- **S10.1 cannot be "PRINT# alone".** Main's `fat_io_putbyte` buffers into
+  `FAT_DBUF` under main's own `FWR_*` engine globals. Those exist only because
+  MAIN's OPEN created the file, so the byte path cannot move unless the
+  per-channel state is the disk side's FROM OPEN.
+- `disk.rom`'s BDOS layer is the natural home, but today it is **single-file
+  by its own header** (`disk/driver.asm`, `bdos_entry`):
+  - one file open at a time;
+  - the position lives in the global FAT iterator;
+  - the FCB's extent, record and cluster fields are a documented divergence,
+    never written.
+- The reference keeps exactly those fields live per channel. S10.0 saw +16..19
+  (size), +24..29 (clusters) and +33..36 (random record) move at each record
+  boundary.
+- **So the order is:**
+  1. **S10.A** — make the BDOS engine FCB-STATEFUL: position and cluster
+     fields in the FCB, not in globals, and several FCBs open at once. Gate:
+     `bdos-acceptance` must stay byte-exact against the stock oracle, and its
+     FCB-field allowlist SHRINKS as the fields become real.
+  2. **S10.B** — the vertical slice: OPEN FOR OUTPUT (FMAKE on the channel's
+     FCB in `DSK_ENGTAB`), PRINT# (the record at +9, `+6` the position, WRBLK
+     of 256 at a full record), CLOSE (the partial record, then FCLOSE).
+  3. **S10.C** — the input side: OPEN FOR INPUT, `INPUT#`/`INPUT$`/`EOF`/`LOF`
+     on RDBLK. D-INPQUOTE2's peek belongs here.
+  4. **S10.D** — RANDOM.
+  5. **S10.E** — retire main's engine globals and the FAT tenant's channel
+     half.
+- S10.A is the prerequisite and can be built and gated on its own, with no
+  BASIC-visible change.
+
 🔴 **D-CFWSTALL WAS MINE, AND IT IS THE DOCUMENTED CLASS.** `run_cases` captures
 `step` seconds after RUN, and `cap_gap` never moves it. omsx_repl's docstring
 says *"a capture taken too early looks like a defect, not like a timeout"*
