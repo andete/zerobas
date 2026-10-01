@@ -424,8 +424,19 @@ ffb_shift:
                 ld      a, b
                 or      a
                 jr      z, ffb_noround
-                inc     l
+                inc     hl
 ffb_noround:
+                ; 🔴 D-FOPENRC (2026-10-01): the cap tested L alone, so a count of
+                ; 256 ($0100, a 32 KB file) stored $00 where the CF-3300 stores $80
+                ; (disk_probe_wrblk_alt.py --seek's FCB dump), and a size >= 64 KB
+                ; lost its high word entirely. ANY high bit caps.
+                ld      a, (FAT_FILESIZE + 2)
+                ld      b, a
+                ld      a, (FAT_FILESIZE + 3)
+                or      b
+                or      h
+                ld      a, $80
+                jr      nz, ffb_rcok
                 ld      a, l
                 cp      $81
                 jr      c, ffb_rcok

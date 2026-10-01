@@ -6045,7 +6045,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:28293 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:28308 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -27061,6 +27061,21 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       CF-3300 9.20 (1.7×); read phase 27.90 / 8.95 (3.1×). Inside T2's 10× -- but see
       D-RDBLKSEEK: the read cost grows with the POSITION.
 
+- [x] ✅ **D-FOPENRC — FOPEN'S RECORD COUNT (FCB +15) WRAPPED FOR A FILE OF 32 KB OR MORE
+      (found and fixed 2026-10-01, from D-RDBLKSEEK's FCB dump)**
+      🎚️ TIER 1 — happy path on the DOS sub-track: a wrong FCB field after a plain FOPEN.
+      📏 **BEFORE** ([`rdblkseek_fcb.out`](scratchpad/rdblkseek_fcb.out)): BIG.BIN
+      (32 768 B) after FOPEN, +15 is stock `80h`, ours `00h`.
+      🔬 `fopen_fill_body` (disk/fat.asm) computes ceil(size/128) and caps it
+      at 128, but the cap compared L alone: 256 = `0100h` stored `00h`, and a size
+      of 64 KB or more lost its high word entirely.
+      🛠 **FIX:** any bit in H or the size's high word caps; the rounding is
+      `inc hl` (it was `inc l`). disk.rom 13 B (6417 → 6404 free).
+      ✅ **AFTER** ([`fopenrc_after.out`](scratchpad/fopenrc_after.out)): +15 =
+      `80h` on both. The probe now COMPARES the three FCB dumps and fails on any
+      differing byte outside the named open set (+25, +28..31, D-RDBLKSEEK's).
+      Predicted: only those. Hit.
+
 - [ ] 🔴 **D-RDBLKSEEK — BLOCK I/O PAYS A FULL MOUNT + FIND + CHAIN WALK ON EVERY CALL: A 32 KB FILE
       READ IN 256 B RDBLKs TAKES 147× THE CF-3300 (found 2026-10-01 with D-RDBLKMULTI's fix; MEASURED)**
       🎚️ TIER 2 — reasonable time: step 10's channels move by 256 B RDBLK/WRBLK,
@@ -27085,8 +27100,8 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       - **+28..29 last cluster accessed and +30..31 its relative index: stock walks
         them `0151h/0` → `0152h/1` by block 5; ours leaves them at the FOPEN fill.**
       - +25 (directory entry index): stock `2Ch`, ours `00h`.
-      - +14..15 after FOPEN: stock `8000h`, ours `0000h` -- not understood,
-        recorded only.
+      - +15 after FOPEN: stock `80h`, ours `00h` -- the record count's cap
+        compared L alone. That was D-FOPENRC, fixed on its own.
       So stock positions from the FCB's own running cluster: no mount, no find,
       at most one chain step per new cluster.
       🛠 **FIX SHAPE (not built):** RDBLK and WRBLK position from the FCB, as stock

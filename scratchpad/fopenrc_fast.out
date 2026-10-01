@@ -1,0 +1,67 @@
+python3 tools/run_gates.py --static 
+=== warm-up (serial build of shared artifacts) ===
+warm-up 8s
+=== refcache OFF for every unit: a gate measures, it never replays (docs/spec-refcache.md §7) ===
+=== SKIPPING 94 emulator target(s): --static: the emulator tier was NOT run ===
+=== 4 tree-mutating unit(s), SERIAL (they rewrite a shared tracked file) ===
+  rc=0              1s  switch-build-check
+  rc=0              6s  diskdep-check
+  rc=0              0s  wall-literal-check
+  rc=0             61s  selftest-check
+  (post-mutator refresh 8s -- the plants moved mtimes, so the pool would otherwise race a rebuild)
+=== 42 units, J=8, lineerr in 8 shards, nice=0 solo=None ===
+  rc=0              4s  basic-reloc
+  rc=0              0s  deps-check
+  rc=0              0s  subrom-abi-check
+  rc=0              0s  diskrom-abi-check
+  rc=0              0s  rom-parts-check
+  rc=0              1s  subrom-closure-check
+  rc=0             27s  unit-test
+  rc=0              1s  deadcode
+  rc=0              4s  wall-assertion-check
+  rc=0              0s  ram-claim-check
+  rc=0              2s  ram-map-check
+  rc=0              0s  build-assert-check
+  rc=0              5s  needle-case-check
+  rc=0              0s  redundant-load-check
+  rc=0              2s  rowshape-check
+  rc=0              6s  injector-check
+  rc=0              0s  dead-alias-check
+  rc=0              2s  hostkill-check
+  rc=0              1s  temp-root-check
+  rc=2              4s  todo-citation-check
+  rc=0              0s  todo-marker-check
+  rc=0              0s  deferral-pin-check
+  rc=0              1s  error-alphabet-check
+  rc=0              2s  chokepoint-check
+  rc=0              0s  filed-pin-check
+  rc=0              2s  disk-mount-check
+  rc=0              0s  shared-body-check
+  rc=0              0s  probe-reach-check
+  rc=0              0s  battery-membership-check
+  rc=0              0s  fixture-integrity-check
+  rc=0              0s  hook-equate-check
+  rc=0              1s  preflight-check
+  rc=0              5s  latch-check
+  rc=0            476s  kwsweep
+  rc=0           1028s  kwtime
+  rc=0           1685s  kwram
+  rc=0             11s  patch-freshness-check
+  rc=0              2s  refcache-check
+  rc=0              0s  knife-guard-check
+  rc=0              1s  knife-rom-guard-check
+  rc=0              0s  deffn-selftest
+  rc=0              0s  probe-sides-selftest
+=== 1 post-pool unit(s), SERIAL (they read what the pool just wrote) ===
+  rc=2              0s  tiers-md-check
+
+=== retrying 1 red unit(s) SERIALLY (flake vs real) ===
+  retry todo-citation-check: rc 2->2  REAL (still red)
+
+=== wall 1702s (8s build + 1695s gates) ===
+GATES: 45/47 green [STATIC TIER ONLY]
+  ⚠️  94 EMULATOR TARGET(S) NOT RUN — --static: the emulator tier was NOT run
+  ⚠️  this is NOT a full battery; `make gates-full` to force one
+RED: todo-citation-check tiers-md-check
+hashes: 746944c7 fd9b8fc6 7111a2d6 a2e5b8da
+make: *** [gates-fast] Error 1

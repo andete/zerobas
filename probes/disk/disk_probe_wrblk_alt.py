@@ -172,6 +172,7 @@ def main() -> int:
     a = ap.parse_args()
     com = assemble()
     ok = True
+    fcbs: dict = {}
     for tag, machine in (("OURS ", RT.OUR_MACHINE), ("STOCK", RT.REF_MACHINE)):
         dsk = probe_tmp.tmp(f"wrblk_alt_{tag.strip().lower()}.dsk")
         build(a.dos_disk, dsk, com, a.seek)
@@ -189,6 +190,7 @@ def main() -> int:
                     _, base, *bs = ln.split()
                     what = {"0xC010": "after FOPEN", "0xC040": "after block 0",
                             "0xC070": "after block 5"}[base]
+                    fcbs.setdefault(what, {})[tag.strip()] = [int(b) for b in bs]
                     print(f"  {tag} FCB {what:13} " + " ".join(f"{int(b):02X}" for b in bs))
         f = RT.Fat12(dsk)
         names = ["ALT1", "ALT2"] + (["OUT"] if a.read else []) + (["OUT2"] if a.rnd else [])
@@ -205,6 +207,17 @@ def main() -> int:
                   f"eoc={term >= 0xFF8} blocks={[hex(b) for b in blocks]} "
                   f"{'AS EXPECTED' if good else 'WRONG'}")
             ok = ok and good and term >= 0xFF8
+    # The FCB dumps, compared: every byte must agree except the divergences
+    # still OPEN, named here so a new one cannot hide among them. +25 (dir
+    # index) and +28..31 (running cluster) are D-RDBLKSEEK's.
+    known = {25, 28, 29, 30, 31}
+    for what, by in fcbs.items():
+        if "OURS" in by and "STOCK" in by:
+            diff = [i for i in range(37) if by["OURS"][i] != by["STOCK"][i]]
+            new = [i for i in diff if i not in known]
+            print(f"  FCB {what:13} differs at {diff}"
+                  + (f" -- NOT KNOWN: {new}" if new else " (all known: D-RDBLKSEEK)"))
+            ok = ok and not new
     print(f"\n{'PASS' if ok else 'FAIL'}: two FCBs alternating block/random I/O "
           f"{'persist as written' if ok else 'do NOT persist as written'} on both machines")
     return 0 if ok else 1
