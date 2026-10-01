@@ -131,7 +131,10 @@ any future zerobas-disk work (e.g. the deferred multi-hardware variant layer,
   real veneer (`fopen_fill_body`, disk/fat.asm) after relocating the colliding `fdc_di_save..getdpb`
   span to fat.asm's free tail; `$47B2` (kernel RDBLK) rewritten from a COMMAND.COM-only diagnostic
   loader into a generic body (`k_47B2`, disk/kernel.asm) that trusts the preceding FOPEN's
-  FAT_FIRSTCLUS/FAT_FILESIZE and streams to EOF via `bdos_seqread`. **DO NOT re-litigate the fill
+  FAT_FIRSTCLUS/FAT_FILESIZE and streams to EOF via `bdos_seqread`. 🔴 **SUPERSEDED 2026-10-01:
+  trusting the preceding FOPEN's globals was wrong with two files open** — RDBLK (D-RDBLKMULTI)
+  and RDRND/WRRND (D-RDRNDMULTI) now re-find the file by the FCB's own name every call, as WRBLK
+  always did; `make wrblkalt-acceptance` is the proof. **DO NOT re-litigate the fill
   contract** (uniform across calling instances, §0.1 of [tier2-m21-spec.md](tier2-m21-spec.md)) or
   the exit-register contracts (§5.5, both pinned and now verified byte-identical). **Remember:** our
   internal `BDOS_DTA` cell and the kernel's `DOS_DTAPTR` ($F23D) are SEPARATE — any future page-1

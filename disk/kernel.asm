@@ -930,8 +930,9 @@ fsize_miss:
 ; thing instead: free the tail chain + EOF-mark so FCLOSE keeps succeeding. This
 ; is an INTENTIONAL, DOCUMENTED divergence from stock's known-broken behaviour,
 ; not a regression (see tier2-bdos-coverage.md).
-; Unlike RDRND/WRRND (which only reuse the kernel's OWN preceding FOPEN state,
-; FAT_FIRSTCLUS/FAT_FILESIZE, never touching the directory entry), WRBLK must
+; Unlike RDRND/WRRND (which re-find the file for FAT_FIRSTCLUS/FAT_FILESIZE only
+; -- they reused the last FOPEN's globals until D-RDRNDMULTI -- and never write
+; the directory entry), WRBLK must
 ; persist size/first-cluster back to disk -- so it re-locates the entry itself
 ; (fat_mount + fat_find on copy+1..11) to recover FAT_DIRSEC/a dirent offset for
 ; fat_dir_update, exactly like fsize_body/fopen_fill_body/fren_body already do.
@@ -4971,6 +4972,18 @@ rrnd_position:
                 ld      (BDOS_DTA), hl      ; reseed our own DTA cell (M19 lesson:
                                             ; the kernel's real SETDTA only ever
                                             ; touches DOS_DTAPTR, never BDOS_DTA)
+                ; 🔴 D-RDRNDMULTI (2026-10-01): find THIS FCB's file first. fat_open
+                ; alone re-primed from FAT_FIRSTCLUS/FAT_FILESIZE, i.e. whatever the
+                ; LAST fat_find found -- two FCBs read alternately with RDRND both
+                ; read the last-found file (disk_probe_wrblk_alt.py --rnd: OUT2.BIN
+                ; 12h x 8 where the CF-3300 gives 11h..18h). D-RDBLKMULTI's fix.
+                call    fat_mount
+                ret     c                   ; unreadable disk -> both callers' Cy path
+                push    ix
+                pop     hl
+                inc     hl                  ; HL -> copy+1, the 8.3 name (fat_find's contract)
+                call    fat_find            ; Cy=0 found -> FAT_FIRSTCLUS/FAT_FILESIZE set
+                ret     c                   ; no such file -> both callers' Cy path
                 ld      a, (ix+33)          ; A = r0 (target record, 0..255; see scope note)
                 push    af
                 call    fat_open            ; reset iterator to file start (FAT_FIRSTCLUS)

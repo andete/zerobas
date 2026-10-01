@@ -6045,7 +6045,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:28262 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:28270 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -27078,18 +27078,26 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       exist before the fix.
       🤖 **AUTONOMOUS** — the reference settles it.
 
-- [ ] 🔴 **D-RDRNDMULTI — BDOS `$21`/`$22` RDRND/WRRND POSITION IN THE LAST-FOUND FILE, NOT THE
-      FCB'S (found 2026-10-01 by reading D-RDBLKMULTI's sibling)**
+- [x] ✅ **D-RDRNDMULTI — BDOS `$21`/`$22` RDRND/WRRND POSITIONED IN THE LAST-FOUND FILE, NOT THE
+      FCB'S (found 2026-10-01 by reading D-RDBLKMULTI's sibling; FIXED the same day)**
       🎚️ TIER 1 — happy path on the DOS sub-track, the same class as D-RDBLKMULTI;
       NOT on step 10's path (channels move by RDBLK/WRBLK).
-      🔬 From the code, unmeasured: `rrnd_position` (disk/kernel.asm) seeds the
-      iterator with `call fat_open ; reset iterator to file start (FAT_FIRSTCLUS)`,
-      the global the last `fat_find` left. Its header says so in so many words
-      ("only reuse the kernel's OWN preceding FOPEN state"). It also reads only r0
-      (a documented M26 narrowing: files to 32 640 B).
-      🛠 **FIX SHAPE:** D-RDBLKMULTI's ~12 bytes in `rrnd_position`. Needs its own
-      failing row first: two FOPENed files, RDRND alternately, on both machines.
-      🤖 **AUTONOMOUS** — the reference settles it.
+      🔬 `rrnd_position` (disk/kernel.asm) seeded the iterator with `call fat_open ;
+      reset iterator to file start (FAT_FIRSTCLUS)`, the global the last `fat_find`
+      left. Its header said so ("only reuse the kernel's OWN preceding FOPEN state").
+      📏 **FAILING ROW FIRST** ([`rdrndmulti_before.out`](scratchpad/rdrndmulti_before.out)):
+      `disk_probe_wrblk_alt.py --rnd` -- a third phase reopens ALT1/ALT2 (RS = 128)
+      and RDRNDs record 2k of each in turn (block k's fill), appending each 128 B
+      record to OUT2.BIN. **CF-3300 11h..18h; ours 12h × 8.** Predicted, hit.
+      🛠 **FIX:** D-RDBLKMULTI's re-mount + `fat_find` by copy+1 in `rrnd_position`;
+      a missing file or unreadable disk takes both callers' existing Cy path
+      (RDRND EOF, WRRND I/O error). disk.rom 12 B (6429 → 6417 free).
+      ✅ **AFTER** ([`rdrndmulti_after.out`](scratchpad/rdrndmulti_after.out)): OUT2.BIN
+      11h..18h on both; every other file unchanged. RDRND phase 25.15 / 9.40 s
+      (2.7×). WRRND shares `rrnd_position` and is NOT separately rowed -- its
+      overlay path is unchanged; the gate proves RDRND only.
+      Gate: `wrblkalt-acceptance` now runs `--read --rnd --end 150`. The M26 r0-only
+      narrowing (files to 32 640 B) stands, documented, unrelated.
 
 - [ ] 🔴 **A kwtime ROW THAT REGRESSES FROM OK TO SLOW OR HANG FAILS NO GATE
       (D-KWTRATCHET, found 2026-09-28 while fixing D-DSKFSLOW).**

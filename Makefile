@@ -2238,8 +2238,10 @@ eofcas-acceptance: repack-machine
 # 256 B. Both files must come out byte-exact on ours AND the CF-3300.
 # --read adds the READ side (D-RDBLKMULTI): both files reopened and read in turn
 # with RS = 1 RDBLK, copied onto OUT.BIN -- ours read the last-FOUND file.
+# --rnd adds RDRND (D-RDRNDMULTI), the same defect: record 2k of each, alternately.
+# --end 150: ours takes ~72 emulated s for the three phases, plus boot.
 wrblkalt-acceptance: repack-machine
-	ZEROBAS_BASIC_MACHINE=$(REPACK_MACHINE) python3 probes/disk/disk_probe_wrblk_alt.py --read --end 120
+	ZEROBAS_BASIC_MACHINE=$(REPACK_MACHINE) python3 probes/disk/disk_probe_wrblk_alt.py --read --rnd --end 150
 
 # --- wprotect-acceptance: disk WRITE errors reach BASIC (D-WPROTECT, D-SAVEOPEN) --
 # 🔴 zerobas reported NO disk write error at all until 2026-09-28: the driver's

@@ -14,7 +14,8 @@
 ; each. Clean-room: published BDOS FCB calls only (MSX2 TH / map.grauw.nl).
 
 BDOS    equ     $0005
-PHASE   equ     $C000                   ; page-3 TPA byte: 1 writing, 2 reading, 3 done
+PHASE   equ     $C000                   ; page-3 TPA byte: 1 writing, 2 RDBLK reading,
+                                        ; 3 RDRND reading, 4 done
                                         ; (a timing hook: a poller reads it, nothing else)
         org     $0100
 start:
@@ -92,7 +93,46 @@ rround:
         ld      de, fcbo
         ld      c, $10
         call    BDOS
+        ; --- RDRND SIDE (D-RDRNDMULTI): reopen both, RS = 128, and read them
+        ; ALTERNATELY with RDRND $21 at record 2k (= block k's fill), appending
+        ; each 128 B record to OUT2.BIN with WRBLK. Expected: 11h..18h, 128 B each.
         ld      a, 3
+        ld      (PHASE), a
+        ld      de, fcba
+        ld      c, $0F                  ; FOPEN
+        call    BDOS
+        ld      de, fcbb
+        ld      c, $0F
+        call    BDOS
+        ld      de, fcbr
+        ld      c, $16                  ; FMAKE OUT2.BIN
+        call    BDOS
+        ld      hl, 128
+        ld      (fcba + 14), hl
+        ld      (fcbb + 14), hl
+        ld      hl, 1
+        ld      (fcbr + 14), hl
+        ld      hl, 0
+        ld      (fcbr + 33), hl
+        ld      (fcbr + 35), hl
+        xor     a
+        ld      (recn), a
+        ld      b, 4
+nround:
+        push    bc
+        ld      de, fcba
+        call    rnd_copy
+        ld      de, fcbb
+        call    rnd_copy
+        ld      hl, recn
+        inc     (hl)
+        inc     (hl)
+        pop     bc
+        djnz    nround
+        ld      de, fcbr
+        ld      c, $10
+        call    BDOS
+        ld      a, 4
         ld      (PHASE), a
         ld      c, $00                  ; terminate
         call    BDOS
@@ -108,6 +148,32 @@ rd_copy:
         pop     ix
         ld      de, fcbo
         ld      hl, 256
+        ld      c, $26                  ; WRBLK
+        push    ix
+        call    BDOS
+        pop     ix
+        ret
+
+; rnd_copy -- DE = the FCB: random record := (recn), RDRND one 128 B record into
+; the DTA, then WRBLK those 128 B onto OUT2.BIN.
+rnd_copy:
+        ld      hl, 33
+        add     hl, de
+        ld      a, (recn)
+        ld      (hl), a
+        inc     hl
+        xor     a
+        ld      (hl), a
+        inc     hl
+        ld      (hl), a
+        inc     hl
+        ld      (hl), a
+        ld      c, $21                  ; RDRND
+        push    ix
+        call    BDOS
+        pop     ix
+        ld      de, fcbr
+        ld      hl, 128
         ld      c, $26                  ; WRBLK
         push    ix
         call    BDOS
@@ -136,6 +202,7 @@ wo_fill:
         ret
 
 fillv:  db      0
+recn:   db      0
 fcba:
         db      0
         db      "ALT1    BIN"
@@ -147,5 +214,9 @@ fcbb:
 fcbo:
         db      0
         db      "OUT     BIN"
+        ds      40 - 12, 0
+fcbr:
+        db      0
+        db      "OUT2    BIN"
         ds      40 - 12, 0
 dta:    ds      256

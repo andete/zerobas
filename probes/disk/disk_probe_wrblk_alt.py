@@ -44,7 +44,10 @@ EXPECT = {"ALT1": bytes(b for f in (0x11, 0x13, 0x15, 0x17) for b in [f] * 256),
           "ALT2": bytes(b for f in (0x12, 0x14, 0x16, 0x18) for b in [f] * 256),
           # the READ side: both files read back alternately with RS = 1 RDBLK and
           # appended to OUT.BIN with WRBLK -- the blocks in interleaved order
-          "OUT": bytes(b for f in range(0x11, 0x19) for b in [f] * 256)}
+          "OUT": bytes(b for f in range(0x11, 0x19) for b in [f] * 256),
+          # the RDRND side: record 2k of each file (block k's fill), alternately,
+          # 128 B a record, appended to OUT2.BIN
+          "OUT2": bytes(b for f in range(0x11, 0x19) for b in [f] * 128)}
 
 
 def assemble() -> bytes:
@@ -102,16 +105,17 @@ def run_once(machine: str, dsk: str, boot_s: int, end_s: int, timeout: float,
 
 def phase_times(plog: str) -> str:
     """The write and read phases' emulated durations from the PHASE log: the
-    LAST 1 -> 2 and 2 -> 3 transitions (the byte holds boot garbage before
+    LAST 1 -> 2, 2 -> 3 and 3 -> 4 transitions (the byte holds boot garbage before
     the program first writes it)."""
     ev = [(int(v), float(t)) for v, t in (ln.split() for ln in open(plog) if ln.strip())]
     t = {}
     for v, at in ev:
-        if v in (1, 2, 3):
+        if v in (1, 2, 3, 4):
             t[v] = at
-    if not all(k in t for k in (1, 2, 3)) or not t[1] < t[2] < t[3]:
+    if not all(k in t for k in (1, 2, 3, 4)) or not t[1] < t[2] < t[3] < t[4]:
         return f"INCOMPLETE {ev[-6:]}"
-    return f"write {t[2] - t[1]:.2f} s, read {t[3] - t[2]:.2f} s"
+    return (f"write {t[2] - t[1]:.2f} s, RDBLK read {t[3] - t[2]:.2f} s, "
+            f"RDRND read {t[4] - t[3]:.2f} s")
 
 
 def file_bytes(f: "RT.Fat12", name: str):
@@ -134,10 +138,13 @@ def main() -> int:
     # --read: also check OUT.BIN, the READ side (RDBLK $27, RS = 1, two FCBs
     # alternately). D-RDBLKMULTI (fixed 2026-10-01): ours read whichever file was
     # found LAST. The gate (`make wrblkalt-acceptance`) runs with it, and with
-    # --end 120: ours takes ~44 emulated s for both phases, past the default
-    # 60 s window once boot is counted (the scripted exit cut OUT.BIN's last
+    # --end 150: ours takes ~72 emulated s for all three phases (--time), past
+    # the default 60 s window once boot is counted (the scripted exit cut OUT.BIN's last
     # block on the first run -- an unfinished program, not a wrong one).
     ap.add_argument("--read", action="store_true")
+    # --rnd: also check OUT2.BIN, the RDRND side ($21, RS = 128, two FCBs
+    # alternately at record 2k). D-RDRNDMULTI (2026-10-01).
+    ap.add_argument("--rnd", action="store_true")
     # --time: report each machine's EMULATED seconds for the write phase (FMAKE
     # .. FCLOSE of ALT1/ALT2) and the read phase (FOPEN .. FCLOSE of OUT.BIN),
     # from the exerciser's PHASE byte. A ratio, never a tick (T5's rule).
@@ -158,7 +165,8 @@ def main() -> int:
         if plog:
             print(f"  {tag} phases: {phase_times(plog)}")
         f = RT.Fat12(dsk)
-        for name in (("ALT1", "ALT2", "OUT") if a.read else ("ALT1", "ALT2")):
+        names = ["ALT1", "ALT2"] + (["OUT"] if a.read else []) + (["OUT2"] if a.rnd else [])
+        for name in names:
             d, data = file_bytes(f, name)
             if d is None:
                 print(f"  {tag} {name}.BIN NOT WRITTEN")
@@ -166,12 +174,12 @@ def main() -> int:
                 continue
             chain, term = f.chain(d["cluster"])
             good = data == EXPECT[name]
-            blocks = [data[i] for i in range(0, len(data), 256)]
+            blocks = [data[i] for i in range(0, len(data), 128 if name == "OUT2" else 256)]
             print(f"  {tag} {name}.BIN size={d['size']} chain={chain} "
                   f"eoc={term >= 0xFF8} blocks={[hex(b) for b in blocks]} "
                   f"{'AS EXPECTED' if good else 'WRONG'}")
             ok = ok and good and term >= 0xFF8
-    print(f"\n{'PASS' if ok else 'FAIL'}: two FCBs alternating WRBLK "
+    print(f"\n{'PASS' if ok else 'FAIL'}: two FCBs alternating block/random I/O "
           f"{'persist as written' if ok else 'do NOT persist as written'} on both machines")
     return 0 if ok else 1
 
