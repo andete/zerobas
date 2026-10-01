@@ -6045,7 +6045,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:28480 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:28485 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -27255,7 +27255,7 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
         on the CF-3300? Measure before deciding where the cell goes.
       🤖 **AUTONOMOUS** — the reference settles it.
 
-- [ ] 🔴 **D-CLOSESTAMP — DOES THE CF-3300'S FCLOSE DATE A FILE THAT WAS ONLY WRRND-WRITTEN
+- [x] ✅ **D-CLOSESTAMP — DOES THE CF-3300'S FCLOSE DATE A FILE THAT WAS ONLY WRRND-WRITTEN
       INSIDE ITS SIZE? (filed 2026-10-01 with D-WRBLKSEEK (b))**
       🎚️ TIER 1 — happy path on the DOS sub-track: open, overwrite a record, close.
       🔬 From the code: ours dates the directory entry only where it rewrites it
@@ -27268,11 +27268,16 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       inside its 256 B, then FCLOSE. **CF-3300 `0821h`, ours `0000`.** So the
       CF-3300's FCLOSE dates a file written while open. Predicted, hit (about
       60% confidence).
-      🛠 **FIX SHAPE (not built):** our FCLOSE of a READ-opened FCB does nothing.
-      When the FCB's +24 has its 40h CLEARED (a write happened, the flag this
-      slice's `fcb_mark_written` now keeps), FCLOSE re-dates the entry: find it
-      through +25 (filled since (b)), `dir_stamp_date`, write it back.
-      🤖 **AUTONOMOUS** — the reference settles it.
+      🛠 **FIXED (2026-10-01):** `bdos_close`'s read path now goes to `close_read`
+      (disk/kernel.asm). When FCB +24's 40h is CLEARED (a write happened,
+      `fcb_mark_written`), it re-dates the entry, found through +25: sector
+      FIRSTROOT + index / 16, offset (index mod 16) × 32. A file only read
+      is untouched. disk.rom 71 B (5889 → 5818 free). It sits in the hole
+      before `$5FE5`: the first build overran the `$75A5` hole, which now has
+      ~43 B left.
+      ✅ **AFTER** ([`closestamp_after.out`](scratchpad/closestamp_after.out)): FIXD
+      `0821h` on both. Predicted: only D-DOSDATE's two readings still differ.
+      Hit.
 
 - [ ] 🔴 **D-BLKIOPERCALL — EVERY BLOCK I/O CALL STILL RE-MOUNTS AND RE-FINDS, AND EVERY WRBLK
       REWRITES THE DIRECTORY: 3.1× (read) AND 8.7× (write) THE CF-3300 ON 32 KB

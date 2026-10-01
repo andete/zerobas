@@ -709,8 +709,8 @@ bdos_close:
                 ld      a, (BDOS_WRMODE)
                 or      a
                 jr      nz, bdos_close_write
-                xor     a               ; read close: nothing to flush
-                ret
+                jp      close_read      ; read close: nothing to flush, but a WRITTEN
+                                        ; file is re-dated (D-CLOSESTAMP)
 bdos_close_write:
                 xor     a
                 ld      (BDOS_WRMODE), a    ; the file is no longer open for write

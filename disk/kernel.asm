@@ -830,6 +830,64 @@ hk_ochk:
                 sbc     a,a                 ; $FF open / 0 not
                 jp      hdl_answer          ; stores it, disarms, claims
 
+; close_read -- FCLOSE of a file opened by FOPEN (D-CLOSESTAMP, 2026-10-01). Here,
+; in the hole before the $5FE5 pin, because the one after $75A5 is full. The
+; CF-3300 re-dates a file written while open: FIXD.TXT, dated 0, FOPEN + WRRND
+; inside its size + FCLOSE reads 0821h there, 0000 here
+; (probes/disk/disk_probe_dosdate.py). The FCB says whether a write happened
+; (+24's 40h cleared, fcb_mark_written) and where the entry is (+25, the root
+; index FOPEN filled): sector FIRSTROOT + index / 16, offset (index mod 16) x 32.
+;   in: DE = the FCB (the kernel's copy, $DA40); out: A = $00 ok / $FF I/O error
+close_read:
+                ld      hl, 24
+                add     hl, de
+                bit     6, (hl)
+                jr      nz, cr_ok           ; not written since FOPEN: nothing to do
+                inc     hl
+                ld      a, (hl)             ; A = the entry's index (+25)
+                push    af
+                rrca
+                rrca
+                rrca
+                rrca
+                and     $0F                 ; A = index / 16
+                ld      e, a
+                ld      d, 0
+                ld      hl, (FAT_FIRSTROOT)
+                add     hl, de
+                ex      de, hl              ; DE = the entry's sector
+                pop     af
+                and     $0F
+                ld      l, a
+                ld      h, 0
+                add     hl, hl
+                add     hl, hl
+                add     hl, hl
+                add     hl, hl
+                add     hl, hl              ; HL = (index mod 16) x 32
+                push    hl
+                push    de
+                ld      hl, SECTOR_BUF
+                call    read_sector
+                pop     de
+                pop     hl
+                jr      c, cr_err
+                push    de
+                ld      de, SECTOR_BUF
+                add     hl, de              ; HL -> the entry
+                call    dir_stamp_date      ; as the CF-3300 dates a written file
+                pop     de
+                ld      hl, SECTOR_BUF
+                call    write_sector
+                jr      c, cr_err
+cr_ok:
+                xor     a
+                ret
+cr_err:
+                ld      a, $FF
+                ret
+
+
                 ds      $5FE5 - $, $00  ; pad to the first free-region kernel entry
                 jp      k_5FE5          ; $5FE5
                 ds      $607B - $, $00
