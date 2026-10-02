@@ -752,8 +752,7 @@ ev_f_err:                                   ; the SILENT landmark -- and as of D
                                             ; a factor deciding to fail with NO error
                                             ; code, which measured wrong at every one of
                                             ; the seven sites that had made it.
-                call    errmark_expr; expression error marker
-                jp      ret_de0
+                jp      errmark_ret0        ; expression error marker, DE = 0
 
 ; --- ev_f_errfn / ev_f_erlfn: ERR / ERL -> DE (error-handling S2a, docs/ ---
 ; spec-basic-error-handling-s2a-packet.md §3/(f)). Single-byte value tokens,
@@ -763,8 +762,9 @@ ev_f_err:                                   ; the SILENT landmark -- and as of D
 ; widening code is needed here.
 ev_f_errfn:                                 ; ERR -> ERRFLG (1 B) widened to DE
                 ld      a,(ERRFLG)
-                ld      e,a
-                ld      d,0
+ev_ret_e_ix:                                ; D-TAILIX (2026-10-02): the shared tail
+                ld      e,a                 ; ev_f_digit and ev_f_byte jump to --
+                ld      d,0                 ; DE = A, step past the token, done
                 inc     ix
                 ret
 ev_f_erlfn:                                 ; ERL -> ERRLIN (word), widened to FAC
@@ -827,10 +827,7 @@ ev_f_uword:                                 ; HL = an unsigned 0..65535 -> FAC (
 ev_f_digit:                                 ; $11..$1A -> value 0..9
                 ld      a,(ix+0)
                 sub     INT_DIGIT_BASE
-                ld      e,a
-                ld      d,0
-                inc     ix
-                ret
+                jr      ev_ret_e_ix
 
 ; --- stk_guard: the evaluator's STACK FLOOR (D-STACKFLOOR) -------------------
 ; ⚠️ SITED AFTER ev_f_digit, NOT beside ev_f_defer: 15 B between ev_f's dispatch
@@ -888,10 +885,7 @@ stk_guard:
 ev_f_byte:                                  ; $0F,<byte>
                 inc     ix
                 ld      a,(ix+0)
-                ld      e,a
-                ld      d,0
-                inc     ix
-                ret
+                jr      ev_ret_e_ix
 ev_f_word:                                  ; $0C/$1C,<word LE>
                 inc     ix
                 ld      a,(ix+0)

@@ -161,8 +161,7 @@ ev_usr:
                 jr      usr_call            ; perform the call (preserves IX) -> DE
 ev_usr_err:
                 pop     af                  ; discard saved index
-                call    errmark_expr; expression-error marker (cf. ev_f_err)
-                jp      ret_de0
+                jp      errmark_ret0        ; expression-error marker (cf. ev_f_err), DE = 0
 
 ; --- ev_usr_index: optional USR number 0..9 from the IX stream -------------
 ; ⚠️ THE DEFAULT ARM IS usr_index's, NOT A COPY (D-DEFTYPETOK funding trim).
@@ -231,8 +230,7 @@ ur_flt:
                 jp      flt_to_int16        ; DE = the rounded int; FAC/FACTYP stand
 usr_undef:
                 pop     ix                  ; restore the cursor
-                call    errmark_expr; expression-error marker
-                jp      ret_de0
+                jp      errmark_ret0        ; expression-error marker, DE = 0
 
 ; --- ex_deftype: DEFINT|DEFSNG|DEFDBL|DEFSTR <ranges> ----------------------
 ; (repack build only; docs/spec-basic-float-core.md §11.1) HL -> the statement's

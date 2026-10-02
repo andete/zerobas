@@ -2148,6 +2148,12 @@ ex_goto_undef:
 ; handling. A helper may only be spliced where the instruction above it cannot
 ; reach it -- `interp.asm`'s own `pop_exec` note makes the same point about
 ; `exec`, one screen away.
+; D-TAILIX (2026-10-02): errmark_ret0 is the `call errmark_expr / jp ret_de0`
+; tail that stood at three sites (ev_f_err, ev_usr_err, usr_undef): DE := 0 and
+; fall into the marker. Same end state as the old order -- A = $DD, DE = 0, F
+; untouched -- at 3 B of entry against 3 B saved per site.
+errmark_ret0:
+                ld      de,0
 errmark_expr:
                 ld      a,$DD
                 ld      (ERRMARK),a

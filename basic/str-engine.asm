@@ -2180,8 +2180,7 @@ type_mismatch_set:
                                             ; not a second flag. Written direct, not
                                             ; via penderr_set: FPERR is provably 0 on
                                             ; this path (the `ret nz` above tested it).
-                call    errmark_expr; expression-error marker (ev_f_err convention)
-                ret
+                jp      errmark_expr        ; expression-error marker (ev_f_err convention)
 
 ; --- ev_rel_str: the string-compare path of ev_rel --------------------------
 ; Reached from expr.asm's ev_rel (a near-zero-byte gated hook there) when the LHS
