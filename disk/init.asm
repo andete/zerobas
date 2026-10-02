@@ -43,7 +43,12 @@
 ; work-area pointer in HL, preserving every other register (black-box oracle, a3
 ; §8.13: disk_probe_dosboot_4030.py --sweep). Inlined at exactly $4030 (not a JP)
 ; so it lands on the address the boot CALLs; `ld hl,nn`+`ret` preserves AF too.
-                ; $4022: zerobas's own extension entry -- print this ROM's
+                ; $4022: BASENT, the STANDARD disk-ROM entry "start BASIC" that
+                ; MSX-DOS's BASIC command calls (D-DOSBASIC, 2026-10-02). zerobas
+                ; had put its own banner here, so A>BASIC printed the banner and
+                ; COMMAND.COM reloaded. The banner entry moved to $7F7C
+                ; (runtime.asm); its history follows.
+                ; Banner: zerobas's own extension entry -- print this ROM's
                 ; banner line. 🧭 IT IS CALLED FROM THE MAIN ROM, NOT FROM INIT,
                 ; AND THE ORDER IS WHY (2026-09-01). On the reference the disk
                 ; line sits UNDER the main banner, but zerobas's `show_title` is
@@ -53,7 +58,7 @@
                 ; scan printed. interp.asm therefore CALSLTs here AFTER the
                 ; banner. (Swapping the two instead HANGS the machine: measured.)
                 ds      $4022 - $, $00  ; pad up to the pinned $4022 entry
-                jp      disk_show_banner ; $4022: emit "zerobas Disk BASIC"
+                jp      basent_body     ; $4022: BASENT -- leave DOS for disk BASIC
                 ds      $402D - $, $00  ; pad $4025-$402C (unused kernel-entry slots)
                 jp      k_402D          ; $402D: COMMAND.COM-load kernel entry (Tier-2)
                 ld      hl, GETWRK_AREA ; $4030: return our work-area base
@@ -178,7 +183,11 @@ init:
                 ; D-DOSDATE: the DOS date starts at 1984-01-01, MSX-DOS's default, as
                 ; a day count since 1980-01-01 in DATE_DAYS -- the cell and value the
                 ; CF-3300 has from boot (scratchpad/sdatemem.out). SDATE moves it;
-                ; GDATE and every file stamp read it.
+                ; GDATE and every file stamp read it. NOT on a BASENT restart
+                ; (D-DOSBASIC): the date set in DOS must reach BASIC, as on the
+                ; CF-3300 (scratchpad/sdatebasic.out: SAVE stamped 279Fh).
+                call    basent_pending
+                jr      z, boot_disk        ; a BASENT restart keeps the DOS date
                 ld      hl, 1461
                 ld      (DATE_DAYS), hl
                 ; fall into the DOS-boot bridge (TH ch.3); it returns to the BIOS
@@ -359,6 +368,14 @@ DRV_TRAMP       equ     $E592   ; 4 CALLF trampolines, 5 bytes each ($E592-$E5A5
 ; placement is governed by GETWRK_AREA, not this field.
 DOS_RESV_TOP    equ     $DF93   ; top-of-reserved-RAM advertised in DRVTBL+1 (not the lever)
 boot_disk:
+                ; D-DOSBASIC: a BASENT restart wants BASIC, not DOS -- clear the
+                ; request and fall through to BASIC as a non-system disk does.
+                call    basent_pending
+                jr      nz, boot_disk_go
+                ld      hl, 0
+                ld      (BASENT_REQ), hl
+                ret
+boot_disk_go:
                 xor     a               ; drive A
                 ld      b, 1            ; one sector
                 ld      c, a            ; media byte (ignored, single-drive)

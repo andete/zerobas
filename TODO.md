@@ -6045,7 +6045,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:28658 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:28701 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -27292,7 +27292,7 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       boot does (checked BEFORE the gate).
       ➡️ Left: D-DOSDATEBASIC, below.
 
-- [ ] 🔴 **D-DOSDATEBASIC — DOES A DATE SET IN DOS REACH DISK BASIC'S STAMPS ON THE CF-3300?
+- [x] ✅ **D-DOSDATEBASIC — DOES A DATE SET IN DOS REACH DISK BASIC'S STAMPS ON THE CF-3300?
       (filed 2026-10-01 with D-DOSDATE)**
       🎚️ TIER 1 — happy path: DATE in DOS, then BASIC, then SAVE.
       🔬 Ours: disk BASIC stamps through sub.rom's `dir_stamp_date`, which keeps
@@ -27303,7 +27303,11 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       in a COM, then `BASIC`, then `10 REM` + `SAVE"DDB.BAS"` -- stamped **`279Fh`
       = 1999-12-31**. The DOS date reaches BASIC. Predicted, hit. So sub.rom's
       copy needs the stored date too (price the conversion in sub p1).
-      🚫 **BLOCKED ON OURS by D-DOSBASIC (below):** `BASIC` does nothing there.
+      🚫 **WAS BLOCKED ON OURS by D-DOSBASIC (below):** `BASIC` did nothing there.
+      ✅ **SETTLED WITH D-DOSBASIC'S FIX (2026-10-02):** ours stamps `279Fh` too.
+      Disk BASIC's SAVE goes through disk.rom's `dir_stamp_date` (the stored
+      date), not sub.rom's constant copy, and BASENT keeps DATE_DAYS.
+      `dosbasic-acceptance` pins it.
       ❌ Two probe faults before that reading: the first cut named the file
       B.BAS, which the DOS test disk ALREADY HOLDS (252 B, dated 2D71h), so
       "ours" read a stale entry; and the first screen dump read VRAM 0, the
@@ -27340,7 +27344,7 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       DPB at `$F195`, `p1_blit`, the `$F365` stub, WA_SEG) is ALSO skipped on C-BIOS.
       None measured broken yet. D-DOSBASIC's remaining cause may be one of them.
 
-- [ ] 🔴 **D-DOSBASIC — MSX-DOS'S `BASIC` COMMAND DOES NOTHING ON OURS: `A>BASIC` RETURNS TO `A>`
+- [x] ✅ **D-DOSBASIC — MSX-DOS'S `BASIC` COMMAND DID NOTHING ON OURS: `A>BASIC` RETURNED TO `A>`
       (found 2026-10-01 measuring D-DOSDATEBASIC)**
       🎚️ TIER 1 — happy path: leaving MSX-DOS for disk BASIC is ordinary use.
       📏 [`sdatebasic.out`](scratchpad/sdatebasic.out), our name table read at 38 s
@@ -27422,9 +27426,48 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
          Do not land on another standard slot (`$4025`..).
       2. Implement **BASENT at `$4022`**: leave DOS and start disk BASIC, with
          the main ROM in pages 0/1 and BASIC initialised without re-booting
-         DOS. MEASURE FIRST: stock's state on arrival in BASIC (its screen:
-         the full BASIC + Disk BASIC banner, `23430 Bytes free`), and what
-         our main ROM's cold-start path does when entered from DOS.
+         DOS. Stock's arrival screen (`stock_timeline.py`): the full `MSX BASIC
+         version 1.0` / copyright / `23430 Bytes free` / `Disk BASIC version
+         1.0` / `Ok`. 📐 **DESIGN (2026-10-02, not built):** disk-ROM bytes
+         only, if main's `init` (interp.asm, the cartridge-header entry: EI,
+         clear_vars, ..., init_ext_roms, banner, `jp repl`) is exported via
+         `tools/gen_resident_abi.py`:
+         - BASENT sets a BASIC-requested flag (disk work RAM), DI, refills the
+           hook area with RET as the BIOS does at power-on (DOS's hooks must
+           not survive), sets a sane SP, then -- from a tiny PAGE-3
+           trampoline, because BASENT itself runs in page 1 -- writes `$A8` so
+           pages 0/1 are the main ROM's slot and `jp init`.
+         - Disk INIT, seeing the flag: clears it, does NOT reseed DATE_DAYS
+           (the DOS date must reach BASIC: D-DOSDATEBASIC), and `boot_disk`
+           returns without booting DOS. The hooks are reinstalled by INIT as on
+           any boot.
+         - Risks to measure: C-BIOS state `init` assumes (SP, VDP, keyboard
+           buffers) that DOS may have changed; the page-0 interrupt vector
+           (moot once page 0 is the main ROM again).
+         - Gate: `A>BASIC` reaches `Ok` on ours, and `dosdate`'s row grows a
+           BASIC SAVE stamped with the DOS date.
+      ✅ **FIXED (2026-10-02), as designed:**
+      - the banner entry moved to a pinned `$7F7C` (runtime.asm, outside the
+        standard table); main's `ld ix,$4022` → `ld ix,$7F7C` (0 B);
+      - `$4022: jp basent_body` (kernel.asm, the hole before `$5FE5`):
+        BASENT_REQ (`$F33D`, a 2-byte `'B','A'` signature, so power-on RAM
+        cannot match) is set. A page-3 copy of `basent_tramp` (in SECTOR_BUF)
+        refills the hooks with RET, sets SP `$F2EC`, ANDs `$A8` with `$F0`
+        (pages 0/1 → slot 0) and jumps through the main ROM's own cartridge
+        header (`ld hl,($4002)`). No ABI export is needed; this is how the BIOS
+        enters it ([`initstate.out`](scratchpad/initstate.out): SP `F2EC`,
+        `$A8` `F0`, DI at a normal boot);
+      - disk INIT: `set_ramad`'s caller skips the DATE_DAYS reseed and
+        `boot_disk` returns at once (clearing the request) when BASENT is
+        pending (`basent_pending`).
+      - The first build failed dead-code-check: an EMPTY label left before
+        `boot_disk` read as padding and broke the fall-through. Fixed with a
+        direct `jr z, boot_disk`.
+      - disk.rom 78 B (5573 → 5495 free); main 0 B; sub 0 B.
+      ✅ **AFTER** (gate **`dosbasic-acceptance`**, [`basent_gate1.out`](scratchpad/basent_gate1.out)):
+      `A>BASIC` enters disk BASIC (zerobas's banner, `ZB` prompt), and DDB.BAS
+      is saved with **date `279Fh` = 1999-12-31, size 9 -- identical to the
+      CF-3300**. 65/65 unit files.
       Then D-DOSDATEBASIC can be measured on ours.
       🤖 **AUTONOMOUS** — the reference settles it.
 

@@ -1,0 +1,50 @@
+--- STOCK screen at 38 s:
+   |  MSX BASIC version 1.0
+   |  Copyright 1983 by Microsoft
+   |  23430 Bytes free
+   |  Disk BASIC version 1.0
+   |  Ok
+   |  color auto  goto  list  run
+--- STOCK screen at 58 s:
+   |  MSX BASIC version 1.0
+   |  Copyright 1983 by Microsoft
+   |  23430 Bytes free
+   |  Disk BASIC version 1.0
+   |  Ok
+   |  NEW
+   |  Ok
+   |  10 REM
+   |  SAVE"DDB.BAS"
+   |  Ok
+   |  color auto  goto  list  run
+STOCK: DDB.BAS time 0000 date 279F = 1999-12-31  size 9
+--- OURS screen at 38 s:
+   |  zerobas version 0.1
+   |  clean-room MSX1 BASIC
+   |  zerobas Disk BASIC
+   |  ZB
+   |  S
+   |  Syntax error
+   |  ZB
+   |  BASIC
+   |  Syntax error
+   |  ZB
+   |  color  auto   goto   list   run
+--- OURS screen at 58 s:
+   |  zerobas version 0.1
+   |  clean-room MSX1 BASIC
+   |  zerobas Disk BASIC
+   |  ZB
+   |  S
+   |  Syntax error
+   |  ZB
+   |  BASIC
+   |  Syntax error
+   |  ZB
+   |  NEW
+   |  ZB
+   |  10 REM
+   |  SAVE"DDB.BAS"
+   |  ZB
+   |  color  auto   goto   list   run
+OURS: DDB.BAS time 0000 date 279F = 1999-12-31  size 9

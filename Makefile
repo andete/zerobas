@@ -2231,6 +2231,11 @@ cas-ascii-acceptance: repack-machine
 eofcas-acceptance: repack-machine
 	python3 probes/basic/basic_probe_eofcas.py
 
+# --- dosbasic-acceptance: A>BASIC reaches disk BASIC, the DOS date with it (D-DOSBASIC) ------
+# zerobas had its own banner at $4022, the standard BASENT entry MSX-DOS's BASIC calls.
+dosbasic-acceptance: repack-machine
+	ZEROBAS_BASIC_MACHINE=$(REPACK_MACHINE) python3 probes/disk/disk_probe_dosbasic.py
+
 # --- strout-acceptance: BDOS $09 STROUT prints, as on the CF-3300 (D-STROUT) ----------
 # RES_PRINT ($F1C9) lived below the RAMAD $FF gate, so the C-BIOS target never had it.
 strout-acceptance: repack-machine

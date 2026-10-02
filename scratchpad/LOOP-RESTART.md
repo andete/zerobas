@@ -92,9 +92,11 @@ CARRY its five rows (Joost 09-26); the last board-backed pin is `7c488429`'s.
   skipped on C-BIOS -- unmeasured.
   🎯 **D-DOSBASIC ROOT CAUSE: zerobas put its own banner entry at $4022, the
   standard disk-ROM BASENT ("start BASIC") that MSX-DOS's BASIC command calls.**
-  ➡️ **NEXT, by tier: D-DOSBASIC's fix -- move the banner entry, then build
-  BASENT (measure stock's arrival in BASIC first). Then D-DOSDATEBASIC, then
-  S10.B (TIER 2).**
+  ✅ **D-DOSBASIC FIXED: BASENT at $4022 restarts BASIC through main's own
+  cartridge header; the banner moved to $7F7C. D-DOSDATEBASIC settled with it
+  (279Fh on both). Gate `dosbasic-acceptance`.**
+  ➡️ **NEXT, by tier: S10.B (TIER 2) -- OPEN FOR OUTPUT/PRINT#/CLOSE on the
+  disk-side FCB via WRBLK. D-BLKIOPERCALL is TIER 5.**
 - (was) 🔴 **THE PROOF FOUND D-WRBLKRS (TODO):** our WRBLK is only right at a record
   size of 128. At RS = 1 it allocates 32 clusters for 256 B, while the
   CF-3300 is exact. Fix it first: a byte-offset transfer looping per sector.

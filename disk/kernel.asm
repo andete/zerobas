@@ -1084,6 +1084,53 @@ date_fat_word:
                 ex      de, hl
                 ret
 
+; ===== D-DOSBASIC (2026-10-02): BASENT, "start BASIC" from MSX-DOS ==========
+; COMMAND.COM's BASIC command reaches the disk ROM's $4022 (traced: its handler at
+; $D06E, the $F368 hook, then $4022 -- scratchpad/d06e_trace.out). The CF-3300
+; then shows a fresh BASIC: the full banner, `Disk BASIC version 1.0`, `Ok`.
+; Ours restarts BASIC the way the BIOS starts it: main's cartridge INIT (the
+; `AB` header's $4002 word), with the state the BIOS hands it (measured at a
+; normal boot, scratchpad/initstate.out: SP $F2EC, pages 0/1 the main ROM, DI),
+; hooks refilled with RET as at power-on, and a request flag so the disk INIT it
+; reruns keeps the DOS date and does not boot DOS again.
+
+; basent_pending -- Z when a BASENT restart is pending (BASENT_REQ = 'B','A').
+; Trashes A, HL.
+basent_pending:
+                ld      hl, (BASENT_REQ)
+                ld      a, l
+                cp      'B'
+                ret     nz
+                ld      a, h
+                cp      'A'
+                ret
+
+; basent_body -- $4022. Runs in page 1 (this ROM), so the switch away from it
+; happens in a copy of basent_tramp placed in page-3 RAM (SECTOR_BUF: scratch).
+basent_body:
+                di
+                ld      hl, 'A' * 256 + 'B'
+                ld      (BASENT_REQ), hl    ; 'B','A'
+                ld      hl, basent_tramp
+                ld      de, SECTOR_BUF
+                ld      bc, basent_tramp_end - basent_tramp
+                ldir
+                jp      SECTOR_BUF
+; basent_tramp -- position-independent: no absolute jumps or calls inside it.
+basent_tramp:
+                ld      sp, $F2EC           ; the SP the BIOS enters INIT with
+                ld      hl, $FD9A           ; every hook back to RET, as at power-on:
+                ld      de, $FD9B           ; DOS's must not survive into BASIC; the
+                ld      bc, $FFC9 - $FD9A   ; ROM INITs main reruns put theirs back
+                ld      (hl), $C9
+                ldir
+                in      a, ($A8)
+                and     $F0                 ; pages 0/1 -> primary slot 0, the BIOS
+                out     ($A8), a            ; slot; pages 2/3 stay the RAM they are
+                ld      hl, ($4002)         ; the main ROM's cartridge INIT
+                jp      (hl)
+basent_tramp_end:
+
                 ds      $5FE5 - $, $00  ; pad to the first free-region kernel entry
                 jp      k_5FE5          ; $5FE5
                 ds      $607B - $, $00

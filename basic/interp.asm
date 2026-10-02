@@ -217,7 +217,7 @@ bh_store:
                 ; 🧭 2026-09-01 (Joost's call). The reference prints `Disk BASIC
                 ; version 1.0` from its disk ROM on the line below the main
                 ; header; zerobas printed nothing. The text and the routine live
-                ; in the DISK ROM (its $4022 entry, body in kernel.asm's $75A5
+                ; in the DISK ROM (its $7F7C entry, body in kernel.asm's $75A5
                 ; pad) -- only the call is here.
                 ; 🔴 IT CANNOT BE DONE THE OBVIOUS WAY, AND THE OBVIOUS WAY HANGS.
                 ; Letting the disk INIT print is one line of code -- but
@@ -236,7 +236,8 @@ bh_store:
                 ld      e,0
                 push    de
                 pop     iy                  ; IYh = disk-ROM slot id (CALSLT ABI)
-                ld      ix,$4022            ; the disk ROM's banner entry
+                ld      ix,$7F7C            ; the disk ROM's banner entry (D-DOSBASIC: it
+                                            ; was $4022, which is the standard BASENT)
                 di
                 call    CALSLT
                 ei

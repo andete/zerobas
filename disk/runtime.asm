@@ -645,6 +645,11 @@ dos_clear_screen:
 ; $7FB8-$7FBF mirrored x8). The window is now entirely dead $00 pad. The IF turns any
 ; below-window code that grows INTO the window into a LOUD build error (a bare
 ; negative `ds` only warns -> a silent empty object).
+                ; D-DOSBASIC: zerobas's banner entry, pinned here, OUTSIDE the
+                ; standard $4010-$4033 disk-ROM table -- it sat at $4022, which is
+                ; BASENT. Main CALSLTs it (basic/interp.asm, `ld ix,$7F7C`).
+                ds      $7F7C - $, $00
+k_7F7C:         jp      disk_show_banner    ; $7F7C: emit "zerobas Disk BASIC"
                 IF ($ > $7F80)
                 ENDIF
                 ds      $7FD1 - $, $00      ; skip OVER the dead $7F80-$7FBF FDC window
