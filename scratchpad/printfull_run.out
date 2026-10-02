@@ -1,0 +1,3 @@
+== CF-3300:  Ok OPEN"PF.TXT"FOR OUTPUT AS#1:PRINT"[O]" [O] Ok FOR I=1TO40:PRINT#1,STRING$(20,65):NEXT :PRINT"[L]" Disk full Ok PRINT"E=";ERR;I E= 66 12 Ok color auto goto list run 
+== OURS:  ZB OPEN"PF.TXT"FOR OUTPUT AS#1:PRINT"[O] " [O] ZB FOR I=1TO40:PRINT#1,STRING$(20,65):NE XT:PRINT"[L]" color auto goto list run 
+refcache: 0 hit, 2 miss, 2 stored

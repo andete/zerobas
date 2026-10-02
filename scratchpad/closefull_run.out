@@ -1,0 +1,7 @@
+== CF-3300: 706 free clusters marked used
+  screen:  OPEN"CG.TXT"FOR OUTPUT AS#1:PRINT"[R]" File already open Ok PRINT"E2=";ERR E2= 54 Ok CLOSE#1:PRINT"[C2]" [C2] Ok PRINT"E3=";ERR E3= 54 Ok 10 REM SAVE"SF.BAS":PRINT"[S]" Disk full Ok PRINT"E5=";ERR E5= 66 Ok PRINT"[END]" [END] Ok color auto goto list run 
+  CF.TXT entry: {'idx': 6, 'cluster': 0, 'size': 0, 'attr': 0}
+== OURS: 706 free clusters marked used
+  screen:  " [R] ZB PRINT"E2=";ERR E2= 0 ZB CLOSE#1:PRINT"[C2]" [C2] ZB PRINT"E3=";ERR E3= 0 ZB 10 REM SAVE"SF.BAS":PRINT"[S]" load error ZB PRINT"E5=";ERR E5= 0 ZB PRINT"[END]" [END] ZB color auto goto list run 
+  CF.TXT entry: {'idx': 6, 'cluster': 0, 'size': 0, 'attr': 0}
+refcache: 0 hit, 2 miss, 2 stored

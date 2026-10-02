@@ -6045,7 +6045,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:28701 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:28748 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -26488,6 +26488,53 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
         [`inpquote_knife_fn.out`](scratchpad/inpquote_knife_fn.out),
         [`inpquote_kwsweep.out`](scratchpad/inpquote_kwsweep.out),
         [`inpquote_kwtime.out`](scratchpad/inpquote_kwtime.out)).
+
+- [ ] 🔴 **D-DISKFULL — A FULL DISK IS NEVER "Disk full" (ERR 66) ON OURS: CLOSE IS SILENT, SAVE SAYS
+      `load error`, AND PRINT# HANGS (found 2026-10-02 from the S10.B flow map; MEASURED)**
+      🎚️ TIER 3 — common errors: a full disk is the ordinary write error.
+      ⚠️ **The PRINT# face is a HANG**, not a wrong message.
+      📏 One disk with every free cluster marked used (`full_disk()`), on both
+      machines:
+      - **CLOSE** ([`closefull_run.out`](scratchpad/closefull_run.out),
+        [`closefull_probe.py`](scratchpad/closefull_probe.py)): OPEN FOR OUTPUT
+        + `PRINT#1,"HELLO"` + CLOSE (the first cluster is allocated AT close).
+        CF-3300: **Disk full, ERR 66**; the channel STAYS OPEN (re-OPEN #1 →
+        File already open, 54); a second CLOSE frees it silently. Ours: `[C]`,
+        no error, ERR 0, the channel closed. CF.TXT's entry is identical
+        (cluster 0, size 0).
+      - **SAVE** (same probe): CF-3300 **Disk full, ERR 66**; ours `load error`,
+        ERR untouched.
+      - **PRINT#** ([`printfull_run.out`](scratchpad/printfull_run.out),
+        [`printfull_probe.py`](scratchpad/printfull_probe.py)): a loop of 22 B
+        lines. CF-3300 stops with **Disk full at I = 12** (264 B, its first
+        256 B record flush). **Ours never returns** (no `[L]`, no prompt, a 60 s
+        window).
+      - Also seen on the CF-3300: the typed program line after the failed
+        PRINT# said Disk full too -- entering a line closes the files, and that
+        close flushes again.
+      🔬 **CAUSE, from the code (the hang's mechanism inferred, not traced):**
+      - NOTHING on ours raises ERR 66. `disk_error` raises a pending DSKIO code
+        (DISKOP_ERR), else `load_error`; a FAT allocation failure is not a
+        DSKIO error, so it leaves no code.
+      - `fdcc_disk` (files.asm) drops the carry of `fat_io_putbyte`/
+        `fat_io_close`, though `chan_gate`'s comment says CLOSE re-raises it.
+      - `pch_disk` (print.asm) drops `fat_io_putbyte`'s carry. After a failed
+        512 B flush the buffer length stays 512, so the next byte lands PAST
+        `FSECTOR_BUF` (into WBUF) -- the likely hang.
+      🛠 **FIX SHAPE (not built):**
+      1. `fat_alloc_cluster`'s no-free-cluster exit sets DISKOP_ERR = 66 (the
+         shared fat-prim-body.inc: disk.rom + sub.rom). SAVE then raises 66
+         through its existing `disk_error`.
+      2. `fat_io_putbyte` never stores past the buffer after a failed flush;
+         `pch_disk` raises via `disk_error`.
+      3. `fdcc_disk` on carry: demote the channel's mode to INPUT (the next
+         CLOSE frees it without a flush; re-OPEN still sees 54, as the
+         CF-3300), then raise.
+      4. 💰 2 and 3 are MAIN bytes (~15-20 B). Main page 1 was 2 B free on
+         2026-10-02: a carve first.
+      Then a gate from the two probes; the hang probe must fail by TIMEOUT, not
+      hang the gate.
+      🤖 **AUTONOMOUS** — the reference settles it.
 
 - [ ] 🔴 **D-INPQUOTE2 — WHAT FOLLOWS A CLOSING QUOTE, AND AN UNCLOSED ONE, ARE NOT
       THE REFERENCE's (MEASURED 2026-09-30 WHILE SHIPPING D-INPQUOTE)**
