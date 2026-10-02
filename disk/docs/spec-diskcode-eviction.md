@@ -4219,6 +4219,25 @@ With a real RUN→capture budget (`run_gap`), both directions read cleanly
   sector a step. The alternation proof passes on both machines, and it is now
   the gate `wrblkalt-acceptance`. **S10.A is DONE for the write side.** The read
   side (RDBLK) is checked before S10.C.
+  ✅ **S10.A IS DONE IN BOTH DIRECTIONS (2026-10-01/02).** Each item is in TODO,
+  and each is a `wrblkalt-acceptance` arm unless noted:
+  - **Read side:** RDBLK read the LAST-found file (D-RDBLKMULTI), and so did
+    RDRND/WRRND (D-RDRNDMULTI); both now find the FCB's own file.
+  - **Speed:** block I/O re-walked the file from its head every call. Reads
+    are now 3.1× the CF-3300 (D-RDBLKSEEK, was 147×) and writes 8.7×
+    (D-WRBLKSEEK (a), was 59×), both positioned from the FCB's running
+    cluster (+26/+28/+30) as stock does.
+  - **The FCB fields stock keeps are now live on ours:** +16 size, +26/+28/+30
+    clusters, FMAKE/FOPEN's +20..+25 (date, 40h, directory index), and a
+    write's date and +24 clear (D-WRBLKSEEK (b), D-FOPENRC, D-CLOSESTAMP).
+    **`bdos-acceptance`'s FCB date/devid/dirloc allowlist is GONE**, not
+    shrunk: 17 entries, none fired once those landed.
+  - **Dates** follow the CF-3300 (Joost 2026-10-01, "Stamp as 3300"): the DOS
+    date at `$F33B` (D-DOSDATE), carried into BASIC (D-DOSDATEBASIC).
+  - What S10.B inherits on the price side: each RDBLK/WRBLK still re-mounts
+    and re-finds, D-BLKIOPERCALL, TIER 5.
+  ➡️ **NEXT: S10.B**, OPEN FOR OUTPUT / PRINT# / CLOSE on a channel FCB in
+  `DSK_ENGTAB`.
 
 🔴 **D-CFWSTALL WAS MINE, AND IT IS THE DOCUMENTED CLASS.** `run_cases` captures
 `step` seconds after RUN, and `cap_gap` never moves it. omsx_repl's docstring
