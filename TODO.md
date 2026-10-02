@@ -6045,7 +6045,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:28834 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:28872 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -26604,7 +26604,7 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       - `diskfull-acceptance` gains a BSAVE face on a full disk. KNIFED: without
         the `ld sp` the face has no summary line and the gate FAILs.
 
-- [ ] **D-DISKFULLSTAMP — A WRITE THAT FILLS THE DISK MID-FILE LEAVES A LOST CLUSTER ON OURS;
+- [x] ✅ **D-DISKFULLSTAMP — A WRITE THAT FILLS THE DISK MID-FILE LEAVES A LOST CLUSTER ON OURS;
       THE CF-3300 POINTS THE DIRECTORY AT IT (MEASURED 2026-10-02)**
       🎚️ TIER 3 — common errors: a full disk is ordinary, and it should not
       quietly cost disk space.
@@ -26621,6 +26621,44 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       (1 KB) nor the request (16 KB + 7). Measure it before choosing what ours
       stamps: try other free-cluster counts and other lengths.
       🤖 **AUTONOMOUS** — the CF-3300's entry settles what to stamp.
+      📏 **THE 8 BYTES, READ THE SAME DAY**
+      ([`bsvfull_stamp.out`](scratchpad/bsvfull_stamp.out); file content the
+      machine wrote, not ROM).
+      - The 8 bytes are `FE 0080 BFFF 8000` + `1A`: the 7-byte header and a
+        Ctrl-Z. That holds for 16 KB, 2 KB and 1031 B images, and with TWO
+        free clusters too: the CF-3300 takes ONE cluster and leaves the
+        second free.
+      - Every failing case takes the same 192 ticks.
+      - A 263 B image that FITS is 263 B with NO Ctrl-Z.
+      So: header written, data block refused WHOLE, file CLOSED (the close adds
+      the Ctrl-Z), then 66.
+      ✅ **FIXED 2026-10-02 FOR BSAVE** (`bsv_open`, basic/sv-bsvdisk.inc):
+      - After the create, `fat_count_free` counts the free clusters, and the
+        clusters needed for header + image are compared with that count.
+      - If the image does not fit: header, Ctrl-Z, `fat_io_close`, then 66 --
+        no data and no lost cluster.
+      - Ours matches the CF-3300's entry and its 8 bytes in all five cases.
+      - `diskfull-acceptance` gains a `bstamp` face (one free cluster; entry and
+        content compared live). KNIFED: with the verdict forced to "fits", ours
+        reads cluster 0, size 0 and the gate FAILs.
+      - Sub page 1: 354 → 275 B.
+      ⚠️ The other writers are NOT measured: D-SAVEFULLSTAMP below.
+
+- [ ] **D-SAVEFULLSTAMP — WHAT DO SAVE, SAVE ,A AND PRINT#+CLOSE LEAVE ON THE DISK WHEN IT
+      FILLS MID-FILE? (filed 2026-10-02 from D-DISKFULLSTAMP; NOT MEASURED)**
+      🎚️ TIER 3 — common errors: same class as D-DISKFULLSTAMP.
+      🔬 From the code: on ours, every one of them aborts or raises without
+      `fat_io_close` once a flush fails mid-file, so the clusters already
+      written are allocated and unreferenced. That is the lost cluster
+      D-DISKFULLSTAMP measured for BSAVE.
+      - Tokenised SAVE is disk.rom's `hk_dpsave`.
+      - `SAVE ,A` is main's resident path.
+      - PRINT#+CLOSE: a failed CLOSE keeps the channel (D-DISKFULL), so its
+        chain is held by the channel until the second CLOSE frees it.
+      ➡️ **MEASURE FIRST,** with `bsvfull_probe.py`'s one-free-cluster disk and a
+      program or file bigger than a cluster: the CF-3300's entry and content.
+      It may not refuse whole the way BSAVE's block write does.
+      🤖 **AUTONOMOUS** — the CF-3300's entries settle it.
 
 - [ ] 🔴 **D-INPQUOTE2 — WHAT FOLLOWS A CLOSING QUOTE, AND AN UNCLOSED ONE, ARE NOT
       THE REFERENCE's (MEASURED 2026-09-30 WHILE SHIPPING D-INPQUOTE)**

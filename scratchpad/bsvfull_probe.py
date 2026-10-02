@@ -20,7 +20,7 @@ import disk_probe_wrblk_roundtrip as RT             # noqa: E402
 
 LEAVE = int(os.environ.get("LEAVE", "1"))          # free clusters to leave
 PROG = ["NEW", "10 ON ERROR GOTO 90", "20 TIME=0",
-        '30 BSAVE"BF.BIN",&H8000,&HBFFF', '40 PRINT"B";0;TIME;"#":END',
+        '30 BSAVE"BF.BIN",&H8000,&H' + os.environ.get("END", "BFFF"), '40 PRINT"B";0;TIME;"#":END',
         '90 PRINT"B";ERR;TIME;"#":END', "RUN"]
 
 
@@ -49,7 +49,9 @@ def leave_free(path, n):
 
 
 def main():
-    for tag, machine, hz in (("CF-3300", "National_CF-3300", 60), ("OURS", "C-BIOS_MSX1_EU_REPACK_DISK", 50)):
+    sides = (("CF-3300", "National_CF-3300", 60), ("OURS", "C-BIOS_MSX1_EU_REPACK_DISK", 50))
+    only = os.environ.get("ONLY")                  # CF-3300 / OURS: one side
+    for tag, machine, hz in (x for x in sides if not only or x[0] == only):
         dsk = probe_tmp.tmp(f"bsvfull_{tag}.dsk")
         shutil.copyfile(os.path.join(REPO, "disk", "test720.dsk"), dsk)
         leave_free(dsk, LEAVE)
@@ -61,12 +63,16 @@ def main():
         m = re.findall(r"\bB ?(-?\d+) ?(\d+) ?#", scr)
         print(f"== {tag}: {('ERR %s, %s ticks (%.1f s)' % (m[-1][0], m[-1][1], int(m[-1][1]) / hz)) if m else 'NO READING'}")
         print(f"   screen tail: {scr[-200:]}")
-        print(f"   BF.BIN entry: {RT.Fat12(dsk).dirent('BF', 'BIN')}")
+        ent = RT.Fat12(dsk).dirent('BF', 'BIN')
+        print(f"   BF.BIN entry: {ent}")
+        if ent and ent.get("cluster"):              # the file's first bytes: data the
+            off = 14 * 512 + (ent["cluster"] - 2) * 1024   # machine WROTE, not ROM
+            print(f"   first 16 B: {open(dsk, 'rb').read()[off:off + 16].hex(' ')}")
         img = open(dsk, "rb").read()
-        c = 714                                     # the one cluster left free
-        i = 512 + c * 3 // 2
-        v = img[i] | img[i + 1] << 8
-        print(f"   FAT[{c}] = {(v >> 4) if c & 1 else (v & 0xFFF):03X} (000 = free)")
+        for c in range(715 - LEAVE, 715):          # the clusters left free
+            i = 512 + c * 3 // 2
+            v = img[i] | img[i + 1] << 8
+            print(f"   FAT[{c}] = {(v >> 4) if c & 1 else (v & 0xFFF):03X} (000 = free)")
     return 0
 
 

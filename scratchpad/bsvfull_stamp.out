@@ -1,0 +1,36 @@
+## LEAVE=1 END=&HBFFF
+== CF-3300: ERR 66, 192 ticks (3.2 s)
+   BF.BIN entry: {'idx': 6, 'cluster': 714, 'size': 8, 'attr': 0}
+   FAT[714] = FFF (000 = free)
+## LEAVE=2 END=&HBFFF
+== CF-3300: ERR 66, 192 ticks (3.2 s)
+   BF.BIN entry: {'idx': 6, 'cluster': 713, 'size': 8, 'attr': 0}
+   FAT[713] = FFF (000 = free)
+   FAT[714] = 000 (000 = free)
+## LEAVE=1 END=&H87FF
+== CF-3300: ERR 66, 192 ticks (3.2 s)
+   BF.BIN entry: {'idx': 6, 'cluster': 714, 'size': 8, 'attr': 0}
+   FAT[714] = FFF (000 = free)
+## LEAVE=1 END=&H83FF
+== CF-3300: ERR 66, 192 ticks (3.2 s)
+   BF.BIN entry: {'idx': 6, 'cluster': 714, 'size': 8, 'attr': 0}
+   FAT[714] = FFF (000 = free)
+## LEAVE=1 END=&H80FF
+== CF-3300: ERR 0, 185 ticks (3.1 s)
+   BF.BIN entry: {'idx': 6, 'cluster': 714, 'size': 263, 'attr': 0}
+   FAT[714] = FFF (000 = free)
+## first bytes (LEAVE=1)
+## LEAVE=1 END=&HBFFF CF-3300
+== CF-3300: ERR 66, 192 ticks (3.2 s)
+   BF.BIN entry: {'idx': 6, 'cluster': 714, 'size': 8, 'attr': 0}
+   first 16 B: fe 00 80 ff bf 00 80 1a ff ff ff ff ff ff ff ff
+   FAT[714] = FFF (000 = free)
+## LEAVE=1 END=&HBFFF OURS
+== OURS: ERR 66, 1 ticks (0.0 s)
+   BF.BIN entry: {'idx': 6, 'cluster': 0, 'size': 0, 'attr': 0}
+   FAT[714] = FFF (000 = free)
+## LEAVE=1 END=&H80FF CF-3300
+== CF-3300: ERR 0, 185 ticks (3.1 s)
+   BF.BIN entry: {'idx': 6, 'cluster': 714, 'size': 263, 'attr': 0}
+   first 16 B: fe 00 80 ff 80 00 80 00 0f 80 0a 00 95 20 a6 20
+   FAT[714] = FFF (000 = free)

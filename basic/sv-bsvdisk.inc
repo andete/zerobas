@@ -16,7 +16,10 @@
 ; `sv_load_error` is the one rebound name: resident it is a zero-byte EQU onto
 ; `load_error`; in the tenant it is the
 ; sub-local reporter that sets SV_STAT and lets the resident stub report ONCE.
-; Its `ret`-not-abort shape is preserved exactly -- see [[load-error-is-not-abort]].
+; ~~Its `ret`-not-abort shape is preserved exactly~~ -- 🔴 NOT ANY MORE: since
+; D-DISKFULLRETRY (2026-10-02) it ABORTS to save_tenant from any depth, because
+; the resume retried a failed flush on every remaining byte
+; ([[load-error-is-not-abort]], sub/save.asm's ERROR PATH note).
 ;
 ; CLEAN-ROOM: our own code, moved. Cassette/disk format provenance unchanged
 ; (basic/PROVENANCE.md).
@@ -25,6 +28,52 @@
 bsv_open:
                 ; --- create the file and set the DTA -----------------------
                 call    disk_write_begin    ; require DISKSLOT_OK; Set-DTA; Create
+                ; --- D-DISKFULLSTAMP: does the whole image FIT? ------------
+                ; MEASURED on the CF-3300 (scratchpad/bsvfull_stamp.out): when it
+                ; does not, the header is written, the data block is refused
+                ; WHOLE (no partial data, no second cluster even with two free),
+                ; and the file is CLOSED -- a Ctrl-Z after the header, size 8,
+                ; one cluster, then 66. Streaming on until the disk filled left
+                ; ours a LOST cluster (an allocated chain no entry points at).
+                ; So count first. The count borrows FWR_CLUS/FWR_FIRST and
+                ; FAT_DBUF as scratch; the buffer is still empty here and the
+                ; two cells are re-zeroed, so the stream starts as created.
+                call    fat_count_free      ; DE = free clusters
+                push    de
+                ld      hl,0
+                ld      (FWR_CLUS),hl
+                ld      (FWR_FIRST),hl
+                ld      hl,(DSV_END)
+                ld      de,(CURPTR)
+                or      a
+                sbc     hl,de               ; HL = length - 1
+                ld      de,7
+                add     hl,de               ; HL = header + length - 1, CF = bit 16
+                ld      a,h
+                rra                         ; A = (header + length - 1) >> 9
+                inc     a
+                ld      c,a                 ; C = sectors needed (1..129)
+                ld      a,(FAT_SECPERCLUS)
+                ld      e,a
+                ld      b,0
+bsv_cl:
+                inc     b                   ; B = clusters needed = ceil(C / spc)
+                ld      a,c
+                sub     e
+                ld      c,a
+                jr      z,bsv_cld
+                jr      nc,bsv_cl
+bsv_cld:
+                pop     de                  ; DE = free clusters
+                ld      a,d
+                or      a
+                ld      a,0                 ; (flags kept) 256+ free: anything fits
+                jr      nz,bsv_hdr
+                ld      a,e
+                cp      b
+                sbc     a,a                 ; A = $FF: free < needed, 0: it fits
+bsv_hdr:
+                push    af                  ; the verdict, across the header writes
                 ; --- 7-byte header: $FE start(LE) end(LE) exec(LE) ----------
                 ; disk_putbyte clobbers ALL registers (its CALSLT may flush a
                 ; record), so each 16-bit field is emitted via disk_putword, which
@@ -38,6 +87,9 @@ bsv_open:
                 call    disk_putword
                 ld      hl,EXECPTR          ; exec (LE)
                 call    disk_putword
+                pop     af
+                or      a
+                jr      nz,bsv_full         ; D-DISKFULLSTAMP: the block cannot fit
                 ; --- data bytes [start..end] inclusive, RAM or VRAM --------
                 ; With ",S" (VRAM_FLAG) the start/end are VRAM addresses and each
                 ; byte is fetched via RDVRM ($004A) instead of a RAM read; the
@@ -68,3 +120,15 @@ bsv_next:
                 jr      bsv_data
 bsv_fin:
                 jp      disk_write_end      ; flush + Close + back to the prompt
+; bsv_full -- the CF-3300's refusal: close the file as it stands (its CLOSE adds
+; the Ctrl-Z; the successful path does not -- a 263 B BSAVE is 263 B there), then
+; 66. A close that cannot even place the header (no free cluster at all) fails
+; with the allocator's own 66 pending.
+bsv_full:
+                ld      a,$1A
+                call    disk_putbyte
+                call    fat_io_close        ; header + Ctrl-Z, stamped
+                jp      c,sv_load_error     ; its code is already pending
+                ld      a,66                ; Disk full
+                ld      (DISKOP_ERR),a
+                jp      sv_load_error
