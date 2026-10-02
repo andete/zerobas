@@ -106,8 +106,19 @@ CARRY its five rows (Joost 09-26); the last board-backed pin is `7c488429`'s.
   the block address (HL at $FE85 as stock, or stashed at OPEN); the channel
   switch must skip mode-2 rows; find every reader of main's FWR_* for output
   channels (LOF); main is a few bytes POSITIVE -> carve first; gates.
-  ➡️ **NEXT: the carve, then S10.B's steps in that order. D-DISKFULL with it
-  (TIER 3). D-BLKIOPERCALL is TIER 5.**
+  ~~➡️ NEXT: the carve, then S10.B's steps in that order. D-DISKFULL with it
+  (TIER 3). D-BLKIOPERCALL is TIER 5.~~
+  ✅ **2026-10-02 afternoon: the carve (D-TAILIX, 3d596233, +15 B) and
+  D-DISKFULL (ab148740, gate `diskfull-acceptance`) both shipped.** D-DISKFULL
+  did NOT wait for S10.B; it went in on today's main path. Main is at 8 B free
+  — RE-READ IT with `make basic-reloc`, never from here. disk.rom's SAVE now
+  aborts at its first failure (`hkds_run`/`DPSAVE_SP`); the sub tenant does
+  not (D-DISKFULLRETRY, TIER 2, measure first).
+  ➡️ **NEXT: S10.B per spec §6.6bc's build plan.** It must KEEP D-DISKFULL's
+  behaviour: a failed CLOSE keeps the channel open, and PRINT# raises 66. It
+  is expected to move `diskfull-acceptance`'s PRINT# pin from I = 24 to 12.
+  D-DISKFULLRETRY (TIER 2) is a smaller item that could go first.
+  D-BLKIOPERCALL is TIER 5.
 - (was) 🔴 **THE PROOF FOUND D-WRBLKRS (TODO):** our WRBLK is only right at a record
   size of 128. At RS = 1 it allocates 32 clusters for 256 B, while the
   CF-3300 is exact. Fix it first: a byte-offset transfer looping per sector.
