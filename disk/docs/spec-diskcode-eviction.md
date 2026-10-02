@@ -4278,6 +4278,37 @@ RAM data only), for `OPEN FOR OUTPUT : PRINT#1,"AB" : CLOSE`:
   and whether the channel's 50 B engine row can shrink to the 37 B FCB while
   INPUT channels (S10.C) still use main's engine.
 
+🛠 **S10.B BUILD PLAN (2026-10-02; read from the code, not built)**
+1. **APPEND rides along.** `oo_storemode` stores APPEND as mode 2, so its
+   PRINT# goes through `$FE85` too. Its open is FOPEN with the random record
+   = the file size; WRBLK is byte-granular, so the first record lands exactly
+   at the old end.
+2. **The record block's address.** Main computes it with `fch_ctx_addr` →
+   sub tenant op 18 (`sh_chan_addr`: `strheap_chantab` + (ch−1) × 265). The
+   disk ROM cannot call that, and copying the heap arithmetic would duplicate
+   it. Two choices:
+   - (a) main loads HL = the block at `$FE85`, as stock does (+3 B in
+     `pch_disk`);
+   - (b) OPEN stores it in the channel's `DSK_ENGTAB` row, read back by the
+     handlers (a few B in `oo_create`).
+   (b) costs once per OPEN, not per byte; (a) matches stock's contract.
+3. **Channel switching.** `t_fch_save`/`t_fch_load` (sub/fatprim.asm) copy
+   main's 50 B engine globals into the row and `FSECTOR_BUF` into block+9 for
+   every DISK mode. For a mode-2 channel on the new path they must do
+   NEITHER: the row now holds the BDOS FCB, and the record IS block+9. (A sub
+   change; sub p1 was 352 B free on 2026-10-02.)
+4. **Mode-2 readers of main's globals.** LOF (and anything else on an output
+   channel) would read stale `FWR_*`. Find every reader first; on the new path
+   LOF = FCB +16 + the position.
+5. **Main bytes.** `pch_disk` is byte-neutral (3 B call for 3 B); `fdcc_disk`
+   saves ~2 B; `oo_create`/`oo_append` grow by the selector plus (2b). With
+   D-DISKFULL's raise, the net is a few bytes POSITIVE against 2 B free on
+   2026-10-02: **a small carve first** (`scratchpad/kwknife.py` and the n-gram
+   tools find them).
+6. **Gates.** `diskbasic-acceptance` (34 verbs against the CF-3300), the
+   `fat-error` rows, a NEW multi-record probe (several 256 B records, two
+   channels alternating, APPEND), and D-DISKFULL's two probes.
+
 🔴 **D-CFWSTALL WAS MINE, AND IT IS THE DOCUMENTED CLASS.** `run_cases` captures
 `step` seconds after RUN, and `cap_gap` never moves it. omsx_repl's docstring
 says *"a capture taken too early looks like a defect, not like a timeout"*

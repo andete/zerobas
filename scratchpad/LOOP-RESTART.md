@@ -102,7 +102,11 @@ CARRY its five rows (Joost 09-26); the last board-backed pin is `7c488429`'s.
   FCB + the byte as a pushed AF; $FE62 = CLOSE with HL FCB. Plan: pch_disk's
   call becomes $FE85 (byte-neutral), fdcc_disk's becomes $FE62 (saves bytes),
   disk.rom claims both, D-DISKFULL folds in.
-  ➡️ **NEXT, by tier: BUILD S10.B per that plan (TIER 2), D-DISKFULL with it
+  🛠 **S10.B BUILD PLAN written (spec §6.6bc, six points):** APPEND rides along;
+  the block address (HL at $FE85 as stock, or stashed at OPEN); the channel
+  switch must skip mode-2 rows; find every reader of main's FWR_* for output
+  channels (LOF); main is a few bytes POSITIVE -> carve first; gates.
+  ➡️ **NEXT: the carve, then S10.B's steps in that order. D-DISKFULL with it
   (TIER 3). D-BLKIOPERCALL is TIER 5.**
 - (was) 🔴 **THE PROOF FOUND D-WRBLKRS (TODO):** our WRBLK is only right at a record
   size of 128. At RS = 1 it allocates 32 clusters for 256 B, while the
