@@ -1,0 +1,18 @@
+== STOCK
+  0.3677 F368 pc=036A slot0=true s31=0
+  0.3678 F368 pc=036D slot0=true s31=0
+  0.3678 F369 pc=036A slot0=true s31=0
+  0.3678 F369 pc=036D slot0=true s31=0
+  0.3678 F36A pc=036A slot0=true s31=0
+  0.3678 F36A pc=036D slot0=true s31=0
+  3.8021 F368 pc=57BE slot0=0 s31=true
+  3.8021 F369 pc=57BE slot0=0 s31=true
+  3.8021 F36A pc=57BE slot0=0 s31=true
+  6.9114 F368 pc=58F0 slot0=0 s31=true
+  9.6457 F369 pc=5A4C slot0=0 s31=true
+  9.6457 F36A pc=5A4C slot0=0 s31=true
+  9.6514 F368 pc=5C5D slot0=0 s31=true
+== OURS
+  0.0549 F368 pc=0F32 slot0=true s31=0
+  0.0549 F369 pc=0F32 slot0=true s31=0
+  0.0549 F36A pc=0F32 slot0=true s31=0

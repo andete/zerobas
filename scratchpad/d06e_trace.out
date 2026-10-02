@@ -1,0 +1,30 @@
+STOCK: 3000 PCs after $D06E, 449 runs
+OURS: 3000 PCs after $D06E, 486 runs
+
+identical for the first 1 runs; from there:
+    0    STOCK $F368..$F368 rom=0 SP=D527 A=00 HL=D06E              OURS $F368..$F368 rom=0 SP=D527 A=00 HL=D06E
+    1 <> STOCK $DF57..$DF57 rom=0 SP=D527 A=00 HL=D06E              OURS $D071..$D071 rom=0 SP=D529 A=00 HL=D06E
+    2 <> STOCK $DF5F..$DF68 rom=0 SP=D527 A=00 HL=D06E              OURS $4022..$4022 rom=0 SP=D529 A=00 HL=D06E
+    3 <> STOCK $0024..$0024 rom=0 SP=D51D A=87 HL=406E              OURS $677C..$6789 rom=0 SP=D529 A=00 HL=D06E
+    4 <> STOCK $DE9B..$DE9B rom=0 SP=D51D A=87 HL=406E              OURS $00A2..$00A2 rom=0 SP=D51D A=7A HL=6795
+    5 <> STOCK $DEC1..$DECF rom=0 SP=D51B A=87 HL=406E              OURS $0038..$0038 rom=0 SP=D51B A=7A HL=6795
+    6 <> STOCK $DECC..$DEDE rom=0 SP=D519 A=03 HL=406E              OURS $DDAE..$DDC9 rom=0 SP=D51B A=7A HL=6795
+    7 <> STOCK $DEDC..$DEDE rom=0 SP=D519 A=00 HL=406E              OURS $DDFA..$DDFA rom=0 SP=D513 A=FC HL=6795
+    8 <> STOCK $DEDC..$DEDE rom=0 SP=D519 A=55 HL=406E              OURS $0038..$0038 rom=true SP=D511 A=FC HL=6795
+    9 <> STOCK $DEDC..$DEE5 rom=0 SP=D519 A=AA HL=406E              OURS $18E6..$18F4 rom=true SP=D511 A=FC HL=6795
+   10 <> STOCK $DE9E..$DE9E rom=0 SP=D51D A=87 HL=406E              OURS $FD9A..$FD9A rom=0 SP=D4FB A=FC HL=2467
+   11 <> STOCK $DEA8..$DEA8 rom=0 SP=D51D A=87 HL=406E              OURS $18F7..$18FD rom=true SP=D4FD A=FC HL=2467
+   12 <> STOCK $DF10..$DF12 rom=0 SP=D51B A=87 HL=406E              OURS $194E..$195D rom=true SP=D4FD A=1F HL=2467
+   13 <> STOCK $DEAB..$DEAF rom=0 SP=D51D A=87 HL=406E              OURS $DDFD..$DE08 rom=0 SP=D513 A=FC HL=6795
+   14 <> STOCK $DEE6..$DF01 rom=0 SP=D519 A=87 HL=406E              OURS $00A3..$00A3 rom=0 SP=D51D A=7A HL=6795
+   15 <> STOCK $DEFE..$DF09 rom=0 SP=D515 A=00 HL=406E              OURS $0038..$0038 rom=0 SP=D51B A=7A HL=6795
+   16 <> STOCK $003B..$0044 rom=0 SP=D515 A=FF HL=F36E              OURS $DDAE..$DDC9 rom=0 SP=D51B A=7A HL=6795
+   17 <> STOCK $004E..$0054 rom=0 SP=D515 A=04 HL=F300              OURS $DDFA..$DDFA rom=0 SP=D513 A=FC HL=6795
+   18 <> STOCK $DF0C..$DF0F rom=0 SP=D517 A=FF HL=F300              OURS $0038..$0038 rom=true SP=D511 A=FC HL=6795
+   19 <> STOCK $DEB2..$DEBF rom=0 SP=D51B A=03 HL=F300              OURS $18E6..$18F4 rom=true SP=D511 A=FC HL=6795
+   20 <> STOCK $DE9B..$DE9B rom=0 SP=D51D A=03 HL=406E              OURS $FD9A..$FD9A rom=0 SP=D4FB A=FC HL=2467
+   21 <> STOCK $DEC1..$DECF rom=0 SP=D51B A=03 HL=406E              OURS $18F7..$18FD rom=true SP=D4FD A=FC HL=2467
+   22 <> STOCK $DECC..$DEDE rom=0 SP=D519 A=03 HL=406E              OURS $194E..$195D rom=true SP=D4FD A=1F HL=2467
+   23 <> STOCK $DEDC..$DEDE rom=0 SP=D519 A=00 HL=406E              OURS $DDFD..$DE08 rom=0 SP=D513 A=FC HL=6795
+   24 <> STOCK $DEDC..$DEDE rom=0 SP=D519 A=55 HL=406E              OURS $00A4..$00A4 rom=0 SP=D51D A=7A HL=6795
+   25 <> STOCK $DEDC..$DEE5 rom=0 SP=D519 A=AA HL=406E              OURS $0038..$0038 rom=0 SP=D51B A=7A HL=6795

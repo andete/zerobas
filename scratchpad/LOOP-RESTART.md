@@ -90,10 +90,11 @@ CARRY its five rows (Joost 09-26); the last board-backed pin is `7c488429`'s.
   ✅ D-STROUT fixed: RES_PRINT was never installed on C-BIOS (under the RAMAD
   $FF gate), so STROUT printed nothing. The rest of build_resident is ALSO
   skipped on C-BIOS -- unmeasured.
-  ➡️ **NEXT, by tier: D-DOSBASIC -- on ours `BASIC` reloads COMMAND.COM; stock
-  pages its disk ROM in for $406E per typed character, then ENASLTs the main
-  ROM into page 0 and jumps into BASIC (IX = 7D31). Check what $406E is in
-  OUR ROM first (padding again, like $5552?). Then D-DOSDATEBASIC, then S10.B.**
+  🎯 **D-DOSBASIC ROOT CAUSE: zerobas put its own banner entry at $4022, the
+  standard disk-ROM BASENT ("start BASIC") that MSX-DOS's BASIC command calls.**
+  ➡️ **NEXT, by tier: D-DOSBASIC's fix -- move the banner entry, then build
+  BASENT (measure stock's arrival in BASIC first). Then D-DOSDATEBASIC, then
+  S10.B (TIER 2).**
 - (was) 🔴 **THE PROOF FOUND D-WRBLKRS (TODO):** our WRBLK is only right at a record
   size of 128. At RS = 1 it allocates 32 clusters for 256 B, while the
   CF-3300 is exact. Fix it first: a byte-offset transfer looping per sector.

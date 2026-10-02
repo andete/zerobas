@@ -6045,7 +6045,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:28634 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:28658 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -27394,14 +27394,38 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
         Ours makes NO slot call during `BASIC` and reloads COMMAND.COM: the
         branch is taken before the switch to the main ROM, plausibly at the
         `$406E` step.
-      🛠 **NEXT STEP:** the BDOS calls (C at `$0005`, registers only) each machine
-      makes while `BASIC` is parsed. Ours: 02 02 09 09 0A. Which BDOS call
-      reaches the disk ROM's `$406E` on stock, and what is `$406E` in our ROM?
-      (`build/disk.sym`: a canonical entry, or padding as `$5552` was.)
-      📏 Checked: in OUR ROM `$406E` is neither -- it falls inside `boot_disk`
-      (label `$4060`). But ours never takes that path (no slot calls during
-      `BASIC`), so the kernel's per-character `$406E` call is CONDITIONAL on
-      something that differs. Find the condition before any `$406E` entry.
+      🎯 **ROOT CAUSE FOUND (2026-10-02), all registers / addresses / our own code:**
+      - Both machines make the same BDOS calls up to the BASIC handler; its
+        address comes from COMMAND.COM's own command table: **`$D06E`**
+        ([`afterstrout_reads.out`](scratchpad/afterstrout_reads.out)).
+      - Anchored on PC = `$D06E` ([`d06e_trace.out`](scratchpad/d06e_trace.out)), the next
+        PC on both is the **`$F368`** hook. Stock's JUMPS (SP unchanged) into
+        the kernel at `$DF57`, which ENASLTs the disk ROM in. Ours is the
+        C-BIOS RET fill, so COMMAND.COM goes straight on (`D071`) to **our
+        disk ROM's `$4022`**.
+      - 🔴 **`$4022` IS THE STANDARD DISK-ROM ENTRY BASENT ("start BASIC", the
+        MSX2 Technical Handbook's disk-ROM interface), and zerobas put its OWN
+        `jp disk_show_banner` there** (disk/init.asm). So `A>BASIC` prints our
+        banner line (the CHPUT loop in the trace), returns into nothing
+        COMMAND.COM expects, and COMMAND.COM is reloaded. init.asm's own
+        comment calls `$4022-$402F` "further disk-ROM/DOS-kernel entries".
+      - Stock's disk ROM writes `$F368..$F36A` three times (3.80 / 6.91 /
+        9.65 s, PCs `57BE`/`58F0`/`5A4C`+`5C5D`, slot 3.1); ours never
+        ([`f368_writer.out`](scratchpad/f368_writer.out), writer PCs only). Ours reaching
+        `$4022` without it suggests the hook isn't needed for THIS path, but
+        the normal BDOS dispatch also calls `$F368`. Leave it as it is unless
+        a measurement says otherwise.
+      🛠 **FIX SHAPE (not built):**
+      1. Move zerobas's banner entry OFF `$4022`. The main ROM CALSLTs it
+         (interp.asm), so keep that instruction's size: main page 1 was 2 B free on
+         2026-10-02 (`make basic-reloc`) -- re-read the wall before building.
+         Do not land on another standard slot (`$4025`..).
+      2. Implement **BASENT at `$4022`**: leave DOS and start disk BASIC, with
+         the main ROM in pages 0/1 and BASIC initialised without re-booting
+         DOS. MEASURE FIRST: stock's state on arrival in BASIC (its screen:
+         the full BASIC + Disk BASIC banner, `23430 Bytes free`), and what
+         our main ROM's cold-start path does when entered from DOS.
+      Then D-DOSDATEBASIC can be measured on ours.
       🤖 **AUTONOMOUS** — the reference settles it.
 
 - [x] ✅ **D-CLOSESTAMP — DOES THE CF-3300'S FCLOSE DATE A FILE THAT WAS ONLY WRRND-WRITTEN
