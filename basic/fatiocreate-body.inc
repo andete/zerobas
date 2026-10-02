@@ -29,11 +29,14 @@
 ; iterator: no cluster yet, empty buffer, zero bytes. The first cluster is
 ; allocated lazily on the first flush.
 fat_io_create:
-                call    fat_mount
-                ret     c
-                ld      hl, DISK_FCB_NAME
-                call    fat_dir_create
-                ret     c
+                ; 🔴 D-DISKFULL (2026-10-02): THE WRITE STATE IS RESET FIRST, before
+                ; the mount and the directory entry, not after them. A failed
+                ; create (an empty drive, a write-protected disk) used to return
+                ; with the cells still holding whatever the last stream left --
+                ; disk.rom's BDOS_WRBUFLEN read $FFFF -- and a caller whose error
+                ; path resumes (the sub-ROM tenant's sv_load_error `ret`s into its
+                ; loop) then wrote on from that. Neither fat_mount nor
+                ; fat_dir_create reads or writes any of these cells.
                 xor     a
                 ld      (FWR_SECIDX), a
                 ld      hl, 0
@@ -54,5 +57,7 @@ fat_io_create:
                 ; and a half-initialised one is the same defect one reader away.
                 ld      (FAT_FILESIZE), hl
                 ld      (FAT_FILESIZE + 2), hl
-                or      a                   ; Cy = 0 success
-                ret
+                call    fat_mount
+                ret     c
+                ld      hl, DISK_FCB_NAME
+                jp      fat_dir_create      ; tail: Cy = 0 created, 1 = dir full / I-O

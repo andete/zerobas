@@ -1790,7 +1790,8 @@ fdcc_disk:
                 jr      nz,fdcc_clear       ; INPUT (or none): no dirty state to flush
                 ld      a,$1A               ; OUTPUT: CP/M text-EOF (Ctrl-Z), as on the
                 call    fat_io_putbyte      ; real CF-3300 CLOSE of a sequential file
-                call    fat_io_close        ; flush partial sector + dir size/cluster
+                call    nc,fat_io_close     ; flush partial sector + dir size/cluster
+                jr      c,fdcc_fail         ; D-DISKFULL: the flush failed
 fdcc_clear:
                 ; 🧭 CLOSE LEAVES THE FIELD DEFINITIONS ALONE (2026-09-01,
                 ; Joost's call: match the reference). This used to
@@ -1816,6 +1817,18 @@ fdcc_clear:
                 ld      (FCH_MODE),a        ; mirror
                 ld      (FCH_ACTIVE),a      ; globals no longer hold a valid channel
                 ret
+; 🔴 D-DISKFULL (2026-10-02, measured on the CF-3300 with every cluster used):
+; a CLOSE whose flush fails is `Disk full` (66) and the channel STAYS OPEN -- a
+; re-OPEN of it is File already open (54) -- and a SECOND CLOSE frees it
+; without an error. So: demote the channel to INPUT (1), which the next CLOSE
+; frees at fdcc_clear without touching the disk, and raise what the write left
+; pending. The mirror FCH_MODE is not written: every reader runs fch_select
+; first, which re-stamps it. This used to drop the carry and free the channel.
+fdcc_fail:
+                ld      a,(FCH_ACTIVE)      ; = the channel (fch_select made it active)
+                call    fch_modes_ptr
+                ld      (hl),1              ; FCH_MODES[ch] = INPUT: open, nothing to flush
+                jp      disk_error
 
 ; fch_close_all — close every open channel (flushing OUTPUT ones). Used by bare
 ; CLOSE and by MAXFILES (which reinitialises the channel table). Guard HL caller-

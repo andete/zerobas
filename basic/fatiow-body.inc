@@ -31,8 +31,26 @@
 ; true byte count for fat_io_close to stamp into the directory entry. The flush's
 ; DSKIO clobbers all registers, so state is kept in RAM.
 fat_io_putbyte:
-                ld      c, a                ; C = byte to store (survives the math)
+                ld      c, a                ; C = byte to store
+                ; 🔴 D-DISKFULL (2026-10-02): THE FLUSH COMES FIRST, when the
+                ; buffer is already full -- it used to come AFTER the 512th store,
+                ; and a failed flush (a full disk) left FWR_BUFLEN at 512, so the
+                ; NEXT byte landed past the buffer. That was PRINT#'s hang on a
+                ; full disk. Now a failed flush returns before storing, the
+                ; buffer stays full, and every later call retries the flush and
+                ; fails the same way. The file's bytes are unchanged: the 512th
+                ; byte's flush simply waits for the 513th byte, or CLOSE.
                 ld      hl, (FWR_BUFLEN)
+                ld      a, h
+                cp      2                   ; FWR_BUFLEN = 512 ($0200): full
+                jr      c, fip_store
+                push    bc                  ; the flush's DSKIO clobbers everything
+                call    fat_flush_data_sector
+                pop     bc
+                ret     c                   ; disk full / write error: NOTHING stored
+                ld      hl, 0
+                ld      (FWR_BUFLEN), hl    ; buffer drained
+fip_store:
                 ; 🔴 `FAT_DBUF`, NEVER `FSECTOR_BUF` -- the SAME rule
                 ; fatio-body.inc states for the read side, and this file was
                 ; MISSED when D-FATENG applied it (D-SAVEPORT, 2026-09-20). In
@@ -51,17 +69,6 @@ fat_io_putbyte:
                 inc     hl
                 ld      (FWR_BUFLEN), hl
                 call    fwr_bytes_inc       ; FWR_BYTES += 1 (4-byte LE)
-                ; if the 512-byte buffer is now full, flush it.
-                ld      hl, (FWR_BUFLEN)
-                ld      de, 512
-                or      a
-                sbc     hl, de
-                jr      c, fip_ok           ; buffer not full yet
-                call    fat_flush_data_sector
-                ret     c                   ; disk full / write error
-                ld      hl, 0
-                ld      (FWR_BUFLEN), hl    ; buffer drained
-fip_ok:
                 or      a                   ; Cy = 0 success
                 ret
 

@@ -596,6 +596,8 @@ pch_lpt_home:
 pch_disk:
                 ld      a,c
                 call    fat_io_putbyte
+                jp      c,disk_error        ; D-DISKFULL: a full disk is ERR 66 here,
+                                            ; as on the CF-3300 (it used to be dropped)
 pch_done:
                 pop     af
                 pop     bc

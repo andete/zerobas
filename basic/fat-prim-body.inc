@@ -690,6 +690,9 @@ fat_read_fat_sector:
 ; (Microsoft FAT spec §3.2: $000 = free, $FF8-$FFF = end-of-chain.)
 fat_alloc_cluster:
                 call    fat_total_clusters  ; DE = total clusters (reads boot sector)
+                ret     c                   ; D-DISKFULL: a failed boot-sector read is
+                                            ; ITS code (70 at an empty drive), not 66 --
+                                            ; DE = 0 would scan nothing and say "full"
                 ld      (FAT_WRTMP), de
                 ; FAT_FATSEC tracks which FAT sector is in FAT_MBUF; -1 = none loaded.
                 ld      hl, $FFFF
@@ -788,6 +791,12 @@ fac_found:
                 or      a                   ; Cy = 0 success, HL = cluster
                 ret
 fac_full:
+                ; D-DISKFULL (2026-10-02): leave ERR 66 `Disk full` PENDING, the
+                ; way dc_fail leaves a DSKIO code, so `disk_error` raises it.
+                ; Nothing wrote one before: a full disk was not a DSKIO failure,
+                ; so SAVE said `load error` and CLOSE/PRINT# said nothing.
+                ld      a,66
+                ld      (DISKOP_ERR),a
                 scf                         ; disk full
                 ret
 

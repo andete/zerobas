@@ -4305,6 +4305,12 @@ RAM data only), for `OPEN FOR OUTPUT : PRINT#1,"AB" : CLOSE`:
    D-DISKFULL's raise, the net is a few bytes POSITIVE against 2 B free on
    2026-10-02: **a small carve first** (`scratchpad/kwknife.py` and the n-gram
    tools find them).
+   ✅ **Done the same day, and D-DISKFULL did NOT wait for S10.B:** the D-TAILIX
+   carve gave 15 B, and D-DISKFULL (TIER 3) shipped on today's main path for
+   9 of them net (8 B left). So S10.B starts from a path that already raises 66
+   and keeps a failed CLOSE's channel open; it must keep both, and
+   `diskfull-acceptance`'s PRINT# pin (I = 24 vs the CF-3300's 12) is the row
+   it is expected to move.
 6. **Gates.** `diskbasic-acceptance` (34 verbs against the CF-3300), the
    `fat-error` rows, a NEW multi-record probe (several 256 B records, two
    channels alternating, APPEND), and D-DISKFULL's two probes.

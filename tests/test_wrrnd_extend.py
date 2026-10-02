@@ -134,7 +134,8 @@ class Disk:
         # engine's writes through untrapped, so the simulated FAT never
         # updated and the cluster read back 0x000.
         m.trap("fatprim_write_sector", write_sector)
-        m.trap("fat_total_clusters", lambda mm: setattr(mm.cpu, "de", TOTAL_CLUSTERS))
+        m.trap("fat_total_clusters", lambda mm: (setattr(mm.cpu, "de", TOTAL_CLUSTERS),  # CF = 0: success (D-DISKFULL: alloc now reads it)
+                                                          setattr(mm.cpu, "f", mm.cpu.f & ~0x01)))
 
     def dirent_size(self):
         return struct.unpack_from("<I", self.root, 28)[0]

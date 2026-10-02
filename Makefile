@@ -2253,6 +2253,15 @@ dosdate-acceptance: repack-machine
 savedate-acceptance: repack-machine $(DISK_TEST_DSK)
 	ZEROBAS_BASIC_MACHINE=$(REPACK_MACHINE) python3 probes/disk/disk_probe_savedate.py
 
+# --- diskfull-acceptance: a full disk is Disk full (ERR 66), as the CF-3300 (D-DISKFULL)
+# CLOSE (the channel stays open, a second CLOSE frees it), SAVE and PRINT#, each
+# on a fresh test720 copy with every free cluster marked used. PRINT# HUNG
+# before the fix; the verdict is a summary line, so a hang fails by the window.
+# PRINT#'s I is a pinned divergence (12 on the CF-3300's 256 B record, 24 on our
+# 512 B sector) that S10.B is expected to move.
+diskfull-acceptance: repack-machine $(DISK_TEST_DSK)
+	ZEROBAS_BASIC_MACHINE=$(REPACK_MACHINE) python3 probes/disk/disk_probe_diskfull.py
+
 # --- wrblkalt-acceptance: two FCBs, RS = 1, alternating WRBLK (D-WRBLKRS) ------
 # The BDOSX RAM gate is BLIND to disk writes; this reads the persisted artifact.
 # Our WRBLK positioned as if every record were 128 B, so RS = 1 -- MSX-DOS1's

@@ -6045,7 +6045,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:28748 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:28801 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -26489,7 +26489,7 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
         [`inpquote_kwsweep.out`](scratchpad/inpquote_kwsweep.out),
         [`inpquote_kwtime.out`](scratchpad/inpquote_kwtime.out)).
 
-- [ ] 🔴 **D-DISKFULL — A FULL DISK IS NEVER "Disk full" (ERR 66) ON OURS: CLOSE IS SILENT, SAVE SAYS
+- [x] ✅ **D-DISKFULL — A FULL DISK IS NEVER "Disk full" (ERR 66) ON OURS: CLOSE IS SILENT, SAVE SAYS
       `load error`, AND PRINT# HANGS (found 2026-10-02 from the S10.B flow map; MEASURED)**
       🎚️ TIER 3 — common errors: a full disk is the ordinary write error.
       ⚠️ **The PRINT# face is a HANG**, not a wrong message.
@@ -26535,6 +26535,59 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       Then a gate from the two probes; the hang probe must fail by TIMEOUT, not
       hang the gate.
       🤖 **AUTONOMOUS** — the reference settles it.
+      ✅ **FIXED 2026-10-02, gate `diskfull-acceptance`**
+      ([`disk_probe_diskfull.py`](probes/disk/disk_probe_diskfull.py), all three
+      faces live against the CF-3300). The fix shape above, as built:
+      1. `fac_full` (basic/fat-prim-body.inc) leaves 66 in DISKOP_ERR.
+      2. `fat_io_putbyte` (basic/fatiow-body.inc) flushes a FULL buffer BEFORE
+         the store, not after the 512th. A failed flush stores nothing, so the
+         buffer cannot overrun -- the hang -- and the change is -4 B.
+      3. `pch_disk` raises through `disk_error`.
+      4. `fdcc_disk` on a failed flush demotes the channel to INPUT
+         (`fdcc_fail`) and raises: the channel stays open (re-OPEN → 54) and
+         the next CLOSE frees it, as measured.
+      5. 🔴 **A FIFTH PIECE THE FIX SHAPE DID NOT NAME:** with 1–4 in, all three
+         faces raised ERR 66 and printed `Unprintable error`. Main hosts no
+         text for 66; disk.rom's `hk_errp` table hosted only 68/69/70. It gains
+         the row (CF-3300 text `Disk full`, 13 B of disk.rom). My prediction
+         missed it: I priced the raise and not the message.
+      6. 🔴 **AND THE FULL BATTERY CAUGHT TWO REGRESSIONS 1–5 MADE (144/146):**
+         - `nodiskerr` s.save: an EMPTY drive said 66, not 70. A failed boot-
+           sector read in `fat_total_clusters` returns CF with DE = 0, and
+           `fat_alloc_cluster` ignored the CF, scanned nothing and reached
+           `fac_full`, which now WRITES a code. Fixed: `ret c` after the call.
+         - `wprotect` wp_ctl/wp_save/wp_bsave read `[OK]`, not 68. Not a wrong
+           answer -- a SLOW one ([`dfwp_trace.py`](scratchpad/dfwp_trace.py),
+           our disk.rom only: main reached `raise_error` with 68). A failed
+           create left the write state uninitialised (disk.rom's
+           `BDOS_WRBUFLEN` read `$FFFF`), the SAVE loop resumed after
+           `sv_load_error`'s `ret`, and flush-first putbyte retried a doomed
+           write-protected flush on EVERY byte. The probe then read `[OK]` off
+           the ECHOED SOURCE `PRINT"[OK]"` (the trapsvc-echo-fence class).
+           Fixed three ways: `fat_io_create` resets the write state FIRST
+           (-3 B in each ROM, a tail `jp fat_dir_create`); disk.rom's SAVE
+           ABORTS at its first failure (`hkds_run` saves SP in `DPSAVE_SP`, a
+           borrowed WRBLK cell, and `sv_load_error` restores it), as main's
+           resident path already did ([[load-error-is-not-abort]]); and the
+           wprotect probe drops quoted text before reading `[...]`.
+      💰 Main +9 B net, paid by the D-TAILIX carve (3d59623): 17 → 8 B free.
+      📌 **A DIVERGENCE IS LEFT, AND THE GATE PINS IT:** PRINT# fails at I = 24
+         on ours (the first 512 B sector flush) and at I = 12 on the CF-3300 (its
+         first 256 B record). S10.B puts PRINT# on the 256 B record and should
+         move it; that pin then goes red on purpose.
+
+- [ ] **D-DISKFULLRETRY — A BSAVE THAT FILLS THE DISK MID-WRITE MAY RETRY A DOOMED FLUSH PER
+      BYTE (from the code 2026-10-02, NOT MEASURED)**
+      🎚️ TIER 2 — reasonable time: the answer (66) is right; only its time is in doubt.
+      🔬 D-DISKFULL left the sub-ROM SAVE tenant's `sv_load_error` as a `ret` into
+      its caller's loop (sub/save.asm header, "ERROR PATH"); disk.rom's SAVE now
+      aborts instead. Once a flush has failed mid-stream the buffer stays full,
+      so every later `disk_putbyte` of a BSAVE retries the flush: a boot-sector
+      read and a FAT scan per byte. It ends with 66 either way.
+      ➡️ **MEASURE FIRST:** BSAVE of 16 KB onto a disk with ~1 free cluster, time
+      it against the CF-3300. If it is slow, the fix is disk.rom's (`hkds_run`
+      / `DPSAVE_SP`), which needs a RAM cell on the sub side.
+      🤖 **AUTONOMOUS** — the CF-3300 times it.
 
 - [ ] 🔴 **D-INPQUOTE2 — WHAT FOLLOWS A CLOSING QUOTE, AND AN UNCLOSED ONE, ARE NOT
       THE REFERENCE's (MEASURED 2026-09-30 WHILE SHIPPING D-INPQUOTE)**

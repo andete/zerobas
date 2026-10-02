@@ -95,7 +95,8 @@ def make_machine(used_clusters):
     # engine's writes through untrapped, so the simulated FAT never
     # updated and the cluster read back 0x000.
     m.trap("fatprim_write_sector", write_sector)
-    m.trap("fat_total_clusters", lambda mm: setattr(mm.cpu, "de", TOTAL))
+    m.trap("fat_total_clusters", lambda mm: (setattr(mm.cpu, "de", TOTAL),  # CF = 0: success (D-DISKFULL: alloc now reads it)
+                                                          setattr(mm.cpu, "f", mm.cpu.f & ~0x01)))
     m.poke_w(m.addr("FAT_FATSTART"), FATSTART)
     m.poke(m.addr("FAT_NUMFATS"), NUMFATS)
     m.poke_w(m.addr("FAT_SECPERFAT"), SECPERFAT)

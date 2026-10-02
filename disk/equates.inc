@@ -442,6 +442,9 @@ COPY_STAMP      equ     WRBLK_REC ; $E57A..$E57D: Disk BASIC COPY's SOURCE time/
                                   ; destination as the CF-3300 does (D-COPYDATE). Borrowed: only DOS WRBLK uses
                                   ; these 4 bytes, and it never runs inside a BASIC COPY (4 B)
 WRBLK_RS        equ     $E57E   ; resolved record size (FCB+14..15, 0 -> 128) (word)
+DPSAVE_SP       equ     WRBLK_RS ; hk_dpsave's SP, so sv_load_error ABORTS the SAVE (D-DISKFULL).
+                                 ; Borrowed like COPY_STAMP: only DOS WRBLK uses it, never inside
+                                 ; a BASIC SAVE (word)
 WRBLK_CNT       equ     $E580   ; D-WRBLKRS: BYTES still to write this call (word, counts down to 0)
 WRBLK_REQ       equ     $E582   ; the ORIGINAL requested count (word; HL is pinned-preserved
                                 ; on exit, per [LANDED-A] -- WRBLK returns HL = requested, not actual)

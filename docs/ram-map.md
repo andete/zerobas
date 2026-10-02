@@ -374,7 +374,7 @@ second one is the question a per-component map cannot answer.
 | `$E578` | 2 B | `disk` | `P1_DEST` | saved page-1 destination word (dskio bounce path) |  |
 | `$E57A` | 4 B | `disk` | `COPY_STAMP/WRBLK_REC` | $E57A..$E57D: Disk BASIC COPY's SOURCE time/date (+22..25), carried to the |  |
 | `$E57D` | 1 B | `disk` | `WRBLK_RECSEC` | wrblk_seek's sector-in-cluster (D-WRBLKSEEK; its old record-in-sector use died with D-WRBLKRS) (1 B) |  |
-| `$E57E` | 2 B | `disk` | `WRBLK_RS` | resolved record size (FCB+14..15, 0 -> 128) (word) |  |
+| `$E57E` | 2 B | `disk` | `DPSAVE_SP/WRBLK_RS` | hk_dpsave's SP, so sv_load_error ABORTS the SAVE (D-DISKFULL). |  |
 | `$E580` | 2 B | `disk` | `WRBLK_CNT` | D-WRBLKRS: BYTES still to write this call (word, counts down to 0) |  |
 | `$E582` | 2 B | `disk` | `WRBLK_REQ` | the ORIGINAL requested count (word; HL is pinned-preserved |  |
 | `$E584` | 2 B | `disk` | `WRBLK_PREVCLUS` | cluster before the current step's advance/allocate (word); |  |

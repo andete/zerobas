@@ -107,7 +107,8 @@ class Harness:
         # engine's writes through untrapped, so the simulated FAT never
         # updated and the cluster read back 0x000.
         self.m.trap("fatprim_write_sector", write_sector)
-        self.m.trap("fat_total_clusters", lambda mm: setattr(mm.cpu, "de", total_clusters))
+        self.m.trap("fat_total_clusters", lambda mm: (setattr(mm.cpu, "de", total_clusters),  # CF = 0: success (D-DISKFULL: alloc now reads it)
+                                                          setattr(mm.cpu, "f", mm.cpu.f & ~0x01)))
 
         self.m.poke_w(self.m.addr("FAT_FATSTART"), FATSTART)
         self.m.poke(self.m.addr("FAT_NUMFATS"), NUMFATS)

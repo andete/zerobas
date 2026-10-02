@@ -89,7 +89,11 @@ def main():
                                       boot=14.0 if cf else 8.0, capture="screen",
                                       diska=image(k in WRITABLE), step=8.0,
                                       cap_gap=20.0)[0] or ""
-            r = re.findall(r"\[[^\]\"]*\]", raw)
+            # D-DISKFULL (2026-10-02): the program's own SOURCE is on screen,
+            # and `PRINT"[OK]"` carries a bracket too -- a run still going at
+            # capture read as [OK], a wrong answer instead of NO READING. Quoted
+            # text is source, never output: drop it before looking.
+            r = re.findall(r"\[[^\]\"]*\]", re.sub(r'"[^"\n]*"', "", raw))
             got[(m, k)] = " ".join(r[-1].split()) if r else "NO READING"
     print(f"{'case':9} {'CF-3300':>16} {'zerobas':>16}")
     bad = 0

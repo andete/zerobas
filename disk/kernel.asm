@@ -2860,7 +2860,8 @@ hkcv_float:
 ; does not host. Prints the text through CHPUT (BIOS, page 0) and returns CF=1;
 ; a code that is not ours returns CF=0 and main prints `Unprintable error`.
 ; Texts measured on the CF-3300 (`ERROR 68/69/70` in a program): `Disk write
-; protected`, `Disk I/O error`, `Disk offline`.
+; protected`, `Disk I/O error`, `Disk offline`. D-DISKFULL (2026-10-02) adds 66,
+; `Disk full`, read off the CF-3300's screen on a disk with no free cluster.
 hk_errp:
                 ld      hl, dk_errtab
 hke_lp:
@@ -2890,6 +2891,8 @@ hke_no:
                 or      a                   ; CF=0: not ours
                 ret
 dk_errtab:
+                db      66                  ; D-DISKFULL: the allocator leaves it pending
+                dw      dk_e66
                 db      68
                 dw      dk_e68
                 db      69
@@ -2897,6 +2900,7 @@ dk_errtab:
                 db      70
                 dw      dk_e70
                 db      0
+dk_e66:         db      "Disk full", 0      ; CF-3300 text (disk_probe_diskfull.py)
 dk_e68:         db      "Disk write protected", 0
 dk_e69:         db      "Disk I/O error", 0
 dk_e70:         db      "Disk offline", 0
@@ -3139,11 +3143,21 @@ hk_dpsave:
                 xor     a
                 ld      (DISKOP_ERR),a      ; D-DISKERR: no DSKIO failure pending
                 ld      (DISKOP_STATUS),a   ; assume written; sv_load_error flips it
-                call    sav_disk_write      ; `call`, not `jp`: sv_load_error's
-                                            ; `ret` lands here, which is the sub
-                                            ; tenant's own discipline preserved
+                call    hkds_run            ; sv_load_error's `ret` lands HERE, from
+                                            ; any depth (D-DISKFULL, below)
                 ld      a,(DISKOP_STATUS)   ; D-ERRKEEP2: out through the shared
                 jp      hk_claim_status     ; tail, so a 68 survives an open file
+; 🔴 D-DISKFULL (2026-10-02): THE FIRST FAILURE ENDS THE SAVE. sv_load_error used
+; to set the status and `ret` -- to whoever had `jp`'d into it, i.e. back INTO
+; sav_disk_write's loop, which wrote on. After a failed create the write state was
+; never initialised (BDOS_WRBUFLEN read $FFFF): the old putbyte stored one byte at
+; SECTOR_BUF+$FFFF and wrapped, and the flush-first putbyte retried a doomed flush
+; on EVERY byte -- a write-protected SAVE took long enough that wprotect-acceptance
+; captured before it answered (scratchpad/dfwp_trace.py). Resident, sv_load_error
+; is disk_error and raises; here it now unwinds to hk_dpsave the same way.
+hkds_run:
+                ld      (DPSAVE_SP),sp      ; = the return address into hk_dpsave
+                jp      sav_disk_write
 
 ; sv_load_error -- the disk-local reporter, rebound exactly as the sub-ROM
 ; tenant rebinds it. Resident it is a zero-byte EQU onto `load_error`, which
@@ -3208,7 +3222,8 @@ hkg_st:
 sv_load_error:
                 ld      a,3                 ; mount / disk full / write / I-O
                 ld      (DISKOP_STATUS),a
-                ret
+                ld      sp,(DPSAVE_SP)      ; D-DISKFULL: unwind to hk_dpsave, from
+                ret                         ; whatever depth the failure was found at
 
 ; --- hk_dpload: the tokenised LOAD loop, in the disk ROM ---------------------
 ; D-DPLMOVE. Step 9 of disk/docs/spec-diskcode-eviction.md §6.2, unblocked by
