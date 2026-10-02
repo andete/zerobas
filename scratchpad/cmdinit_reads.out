@@ -1,0 +1,6 @@
+STOCK: 456 COMMAND.COM reads over 456 addresses
+OURS: 456 COMMAND.COM reads over 456 addresses
+
+addresses COMMAND.COM reads on the CF-3300 but NOT on ours:
+
+addresses COMMAND.COM reads on OURS but not on the CF-3300 (with ours' values):

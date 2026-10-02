@@ -6045,7 +6045,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:28606 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:28634 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -27370,10 +27370,38 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
         bytes read from the BASIC ROM at that moment look like the disk ROM
         capturing a BASIC address (where to return to BASIC?). Ours captures
         nothing like it. A HYPOTHESIS, not a finding.
-      🛠 **NEXT STEP:** what does stock WRITE right after that `$7D2F` read (a
-      write watchpoint, ADDRESSES only on the reference), and what do those
-      cells hold on ours (values allowed)? Then whether COMMAND.COM reads them
-      when it starts.
+      - The writes right after that read: only the stack, so the two bytes
+        are not stored at once (`stock7d2f_writes`, addresses only).
+      - **COMMAND.COM's start-up reads are IDENTICAL on both**: 456 addresses,
+        one read each, its own relocation ([`cmdinit_reads.out`](scratchpad/cmdinit_reads.out);
+        windows from each machine's own screen timeline: ours starts COMMAND
+        at 8-9 s, stock at 11-12 s; filter = PC in page 0 and not slot 0).
+      - **During `BASIC`, ours RELOCATES COMMAND.COM AGAIN** (the same 456
+        reads at 14.49 s, [`cmdbasic_reads.out`](scratchpad/cmdbasic_reads.out)): it is
+        reloaded, hence `A>`. Stock runs no COMMAND.COM code then -- it is
+        in BASIC.
+      - 🎯 **STOCK'S PATH INTO BASIC**, BIOS slot calls with registers only
+        ([`basic_bios.out`](scratchpad/basic_bios.out)), after COMMAND.COM echoes
+        `BASIC`:
+        - 12.6475-12.6578 s: the kernel (IX = F195, IY = DA40) pages the disk
+          ROM in for **`$406E`**, once per character of the typed `BASIC`
+          (DE = D342..D347, the command buffer). Ours never reaches `$406E`
+          (our disk-ROM trace after Enter shows only CONOUT).
+        - 12.6584 s: `ENASLT A=83 HL=8080`, then **`ENASLT A=00 HL=0080`**
+          (SP = C1FE, COMMAND.COM's stack): the MAIN ROM into page 0.
+        - 12.7289 s: `ENASLT A=00 HL=409F` with IX = **7D31**, next to the
+          `$7D2F..30` bytes stock read at DOS init.
+        Ours makes NO slot call during `BASIC` and reloads COMMAND.COM: the
+        branch is taken before the switch to the main ROM, plausibly at the
+        `$406E` step.
+      🛠 **NEXT STEP:** the BDOS calls (C at `$0005`, registers only) each machine
+      makes while `BASIC` is parsed. Ours: 02 02 09 09 0A. Which BDOS call
+      reaches the disk ROM's `$406E` on stock, and what is `$406E` in our ROM?
+      (`build/disk.sym`: a canonical entry, or padding as `$5552` was.)
+      📏 Checked: in OUR ROM `$406E` is neither -- it falls inside `boot_disk`
+      (label `$4060`). But ours never takes that path (no slot calls during
+      `BASIC`), so the kernel's per-character `$406E` call is CONDITIONAL on
+      something that differs. Find the condition before any `$406E` entry.
       🤖 **AUTONOMOUS** — the reference settles it.
 
 - [x] ✅ **D-CLOSESTAMP — DOES THE CF-3300'S FCLOSE DATE A FILE THAT WAS ONLY WRRND-WRITTEN
