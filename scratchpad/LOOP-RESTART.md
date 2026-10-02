@@ -98,10 +98,12 @@ CARRY its five rows (Joost 09-26); the last board-backed pin is `7c488429`'s.
   🔴 **D-DISKFULL (TIER 3), measured 2026-10-02:** a full disk is never ERR 66
   on ours -- CLOSE silent, SAVE `load error`, PRINT# HANGS. Needs ~15-20 B of
   main: a carve first.
-  ➡️ **NEXT, by tier: S10.B (TIER 2) -- OPEN FOR OUTPUT/PRINT#/CLOSE on the
-  disk-side FCB via WRBLK -- then D-DISKFULL (TIER 3). S10.B touches the same
-  CLOSE/PRINT# disk paths, so design D-DISKFULL's raise to fit it.
-  D-BLKIOPERCALL is TIER 5.**
+  📐 **S10.B design input recorded (spec §6.6bc):** the CF-3300's $FE85 = HL
+  FCB + the byte as a pushed AF; $FE62 = CLOSE with HL FCB. Plan: pch_disk's
+  call becomes $FE85 (byte-neutral), fdcc_disk's becomes $FE62 (saves bytes),
+  disk.rom claims both, D-DISKFULL folds in.
+  ➡️ **NEXT, by tier: BUILD S10.B per that plan (TIER 2), D-DISKFULL with it
+  (TIER 3). D-BLKIOPERCALL is TIER 5.**
 - (was) 🔴 **THE PROOF FOUND D-WRBLKRS (TODO):** our WRBLK is only right at a record
   size of 128. At RS = 1 it allocates 32 clusters for 256 B, while the
   CF-3300 is exact. Fix it first: a byte-offset transfer looping per sector.

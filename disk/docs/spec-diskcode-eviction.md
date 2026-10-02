@@ -4239,6 +4239,45 @@ With a real RUN→capture budget (`run_gap`), both directions read cleanly
   ➡️ **NEXT: S10.B**, OPEN FOR OUTPUT / PRINT# / CLOSE on a channel FCB in
   `DSK_ENGTAB`.
 
+📐 **S10.B DESIGN INPUT (2026-10-02), MEASURED**
+**1. Our path today** (a read-only map of the code): every disk-channel byte
+stays in MAIN.
+- `pch_disk` → `fat_io_putbyte` buffers into `FSECTOR_BUF` under main's 50 B
+  engine globals; the sub-ROM FAT tenant is called once per 512 B.
+- CLOSE: `fdcc_disk` → `fat_io_close`.
+- `$FE5D` (OPEN's same-file check) is the ONLY disk-ROM crossing.
+- ~550 B of main code is disk-channel-only, but it is SHARED with `SAVE",A"`,
+  so S10.B alone retires little; main's savings come at S10.E.
+
+**2. The CF-3300's hook contract**
+([`hookregs_run.out`](../../scratchpad/hookregs_run.out), registers and
+RAM data only), for `OPEN FOR OUTPUT : PRINT#1,"AB" : CLOSE`:
+
+| Hook | Entered | On entry |
+|---|---|---|
+| `$FEB2`, `$FEB7`, `$FE58`, `$FE5D` | OPEN | |
+| `$FE4E` | once per channel statement | |
+| **`$FE85`** | once per byte (A, B, CR, LF) | HL = the channel's BASIC FCB (`$DD6E`); the byte is **A of an AF pushed just before the call** (the stack: return address, then AF = `4103`/`4202`/`0D6A`/`0A6A`); BC and D are the PRINT item's cursor and remaining count |
+| **`$FE62`** | CLOSE | HL = the BASIC FCB |
+
+**3. Plan, byte-neutral or better in main:**
+- `pch_disk`'s `ld a,c / call fat_io_putbyte` (4 B) becomes a call to
+  `$FE85` with HL = the FCB. Our ABI passes the byte in A; mirroring stock's
+  pushed AF would cost 2 more main bytes -- a divergence to record unless
+  priced in.
+- `fdcc_disk`'s two calls become one `$FE62` call (saves bytes).
+- `oo_create`'s `fat_io_create` becomes a `$FE5D` selector (FMAKE on the
+  channel's FCB).
+- **`disk.rom` claims `$FE85`**: it fills the record at FCB+9 at position
+  +6, and on a full 256 B record WRBLKs it through the channel's 37 B BDOS
+  FCB in `DSK_ENGTAB`.
+- **`$FE62`**: the partial record, then FCLOSE.
+- **D-DISKFULL folds in here:** WRBLK's failure becomes ERR 66 raised from
+  the hook, the CF-3300's own place for it.
+- Open questions for the build: what `$FEB2`/`$FEB7`/`$FE58` carry at OPEN,
+  and whether the channel's 50 B engine row can shrink to the 37 B FCB while
+  INPUT channels (S10.C) still use main's engine.
+
 🔴 **D-CFWSTALL WAS MINE, AND IT IS THE DOCUMENTED CLASS.** `run_cases` captures
 `step` seconds after RUN, and `cap_gap` never moves it. omsx_repl's docstring
 says *"a capture taken too early looks like a defect, not like a timeout"*
